@@ -12095,3 +12095,94 @@ def k301(c):
             out.write('\n')
         c.eq(M.failed_ids(f), {'B', 'C', 'E'}, 'a proposal, a request with no route and an error are replayed; a computed route is not; an empty line is ignored', what='failed ids')
     c.ok("'--failed'" in src and "'replay.jsonl'" in src and "'table_replay.md'" in src and "os.path.join(out, 'detail.jsonl')" in src, 'route_matrix.py', 'the option exists and the replay has its own files (replay.jsonl, table_replay.md): the first pass (detail.jsonl, table.md) is not rewritten by it')
+
+@case('K302', 'Route engine, SOG-0354 lot L5 (4) defect 3: the pairs (entry, exit) of the free route are tried in the order of their lower bound WITHOUT a fixed number — until the bound of the next exceeds the best cost found, or the time of the section (3 s) or the bound of the phase is used up — and the answer says how many were tried (`sections.free.tried`, `stopped`); CYYZ → EDDF « out » (the fifth exit is the first that works) answers a route',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) defect 3 (matrix of 16 Nov: the 8 eastbound « out » requests to EDDF and LFPG, `no_chain`; ergonomics session: « les sorties sont essayées dans l\'ordre de leur borne, SANS nombre fixe ; arrêt quand la borne de la suivante dépasse le meilleur coût trouvé, ou quand le temps de la section est épuisé ; la réponse dit combien ont été essayées »). Cause found by AeroDB: the exits ETARI, PIKIL, VENER and RESNO (first points of the tracks that go west, 55-57 N 15-20 W) are joined to the network by DCT links to nodes of Scotland and Northern Ireland that have only LOW airways (N562, N552, FL195-255): the search from the exit stops after 4 states (0.01 s); with TRIES raised to 9 the fifth exit tried (DOGAL) works. A failing try costs 0.01 to 0.05 s: three tries were far too few. Now the tries continue while their bound can still beat the best found.')
+def k302(c):
+    import heapq
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, sections as S
+    pos = {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'H1': (60.5, -8.0), 'H2': (44.0, -70.0), 'I1': (52.0, -16.0), 'I2': (52.2, -16.0), 'I3': (51.8, -16.0), 'EB': (60.0, -15.0),
+           'X1': (57.0, -40.0), 'X2': (56.0, -45.0), 'X3': (55.0, -50.0), 'X4': (58.0, -42.0), 'X5': (47.0, -62.0), 'X6': (30.0, -60.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    g.setdefault('DEP', []).append(('H1', {'a': 'DEP', 'b': 'H1', 'route': 'UL1', 'nm': engine.nm(nodes['DEP'], nodes['H1'])}))
+    g.setdefault('H2', []).append(('ARR', {'a': 'H2', 'b': 'ARR', 'route': 'UL2', 'nm': engine.nm(nodes['H2'], nodes['ARR'])}))
+
+    class Fake:
+        def __init__(self, ends):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'ends': ends}, None, None
+            self.depart, self.nat_rejected, self._nat_high = None, frozenset(), {'H1', 'H2', 'I1', 'I2', 'I3'}
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+            best, q, prev = {s: 0.0}, [(0.0, s)], {}
+            while q:
+                d, u = heapq.heappop(q)
+                if not goals and u == e:
+                    break
+                if d > best[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < best.get(v, 1e18):
+                        best[v] = d + ed['nm']
+                        prev[v] = (u, v, ed)
+                        heapq.heappush(q, (best[v], v))
+
+            def way(x):
+                legs, node = [], x
+                while node != s:
+                    legs.append(prev[node])
+                    node = prev[node][0]
+                return list(reversed(legs))
+            self.last_search = {'expanded': len(best), 'seconds': 0.0, 'found': True}
+            if goals:
+                return {x: {'path': way(x), 'cost': best[x], 'band': (36000, 36000)} for x in goals if x in best}
+            if e not in best:
+                return None
+            self.last_search.update(cost=best[e], band=band)
+            return way(e)
+    # one entry that the departure reaches (EB) and five exits ranked by their bound: the first four are joined to nothing that leads to the arrival (the nearest high nodes are the islands), the fifth is near H2
+    ends = {f'T{i}': ['EB', f'X{i}'] for i in range(1, 6)}
+    nav = Fake(ends)
+    path = S.solve(nav, g, 'DEP', 'ARR')
+    free = nav.sections_info['free']
+    c.eq((bool(path), free['ok'], free['exit'], free['tried'], free['stopped']), (True, True, 'X5', 5, 'end'),
+         'the first four exits fail, the fifth works: FIVE tries, not three (red before: no chain); the answer says how many', what='fifth exit')
+    # a sixth exit, far from the path, whose bound is above the cost already found: it is not tried
+    nav2 = Fake(dict(ends, T6=['EB', 'X6']))
+    S.solve(nav2, g, 'DEP', 'ARR')
+    f2 = nav2.sections_info['free']
+    c.eq((f2['exit'], f2['tried'], f2['stopped']), ('X5', 5, 'bound'), 'a sixth exit whose lower bound is above the best cost found is not tried: the answer stops on the bound', what='bound')
+    # the time of the section is used up: no chain, and the reason says the time
+    saved = F.FREE_S
+    F.FREE_S = -1.0
+    try:
+        nav3 = Fake(ends)
+        none = S.solve(nav3, g, 'DEP', 'ARR')
+    finally:
+        F.FREE_S = saved
+    f3 = nav3.sections_info['free']
+    c.eq((none, f3['ok'], f3['stopped'], f3['tried'], f3['reason'] == F.NO_TIME), (None, False, 'time', 0, True), 'when the time of the section is used up the answer says so (nothing is invented, the whole search follows)', what='time')
+    src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
+    c.ok('TRIES' not in src and 'FREE_S' in src and 'dead.add(o)' in src, 'free_route.py', 'no fixed number of tries any more; the time of the section and the dead exit remain')
+    data = Path('E:/DEFA/data')
+    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    from route_engine import plan as P, view, results_cache
+    results_cache.ENABLED = False
+    try:
+        args = {'action': 'compute', 'adep': 'CYYZ', 'adest': 'EDDF', 'fl': 370, 'date': '2026-11-17T13:40', 'alternatives': False, 'proposals': True}
+        res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        c.ok(bool(res['primary'].get('ok')) and res['sections']['free'].get('ok') is True, str((res['primary'].get('error'), res['sections'].get('free'))), 'CYYZ → EDDF on the real base, a departure outside the window of the east tracks: a route by a free route (it had none before: three tries, all on exits joined to low airways)')
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None

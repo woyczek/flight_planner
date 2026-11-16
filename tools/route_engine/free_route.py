@@ -6,6 +6,7 @@ entre un point d'ENTRÉE et un point de SORTIE océaniques.
 Les entrées et les sorties sont celles de TOUTES les routes du jour (les deux extrémités de chaque route du message lu, dans les deux sens) : le message du jour est tout ce que le lanceur garde ; aucune mémoire de la saison n'est lue ni écrite. Le couple (entrée, sortie) est celui dont le coût estimé (minorant) de la chaîne est le plus petit ; l'Europe (ou l'Amérique) est ensuite cherchée par `Nav.search`, comme pour une route NAT.
 Une route libre est CALCULÉE, jamais lue dans un texte : ses tronçons portent `origin: 'random'` (la réponse : `sections.free.source`), le contrôle la dit « route libre, créée » (aucune autorisation océanique vérifiée). Quand aucune route du jour ne donne un point océanique connu, on le dit (« aucun point d'entrée océanique connu ») ; on n'en invente pas."""
 import math
+import time
 
 from . import engine, nat_layer
 
@@ -14,10 +15,11 @@ STEP_LON = 10          # un point par 10° de longitude
 LOW_FT, HIGH_FT = 28500, 60000      # le plancher de l'espace RVSM / HLA et le plafond : une route libre est une route de croisière
 CHUNK = 5              # les entrées cherchées ensemble, les plus proches du chemin d'abord
 NEED = 2               # la recherche vers un paquet d'entrées s'arrête dès que deux sont atteintes (une entrée inatteignable fait sinon parcourir tout l'espace des états)
-TRIES = 3              # les couples (entrée, sortie) essayés, dans l'ordre de leur minorant
+FREE_S = 3.0           # le temps de la section (§ 13.4 : 3 s) : les couples (entrée, sortie) sont essayés dans l'ordre de leur minorant, SANS nombre fixe (SOG-0354 L5 4, défaut 3), jusqu'à ce que le minorant du suivant dépasse le meilleur coût trouvé, ou que ce temps (ou la borne de la phase) soit épuisé
 LABEL = 'route libre, créée'
 NO_REACH = 'aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau'
 NO_CHAIN = 'aucune chaîne par une route libre n\'a abouti'
+NO_TIME = 'le temps de la route libre est épuisé avant qu\'une chaîne n\'aboutisse'
 NO_POINT = 'aucun point d\'entrée océanique connu : aucune route du jour n\'en donne'
 
 
@@ -68,10 +70,11 @@ def _links(nav, node, high, into, band):
             (node, k, dict(a=node, b=k, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, zone='nat', nat_link='exit')) for d, k in near]
 
 
-def solve(nav, g, start, end, ratio, resolve, europe):
+def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     """(chaîne, None) ou (None, raison) : la meilleure route libre résolue ; la chaîne : { entry, exit, points: [id], nm, cost, path, sections }.
     SOG-0354 L5 (2 bis) : UNE seule recherche du départ vers TOUTES les entrées (`europe(g2, start, entries)` → { entrée atteinte : { path, cost, band } }, celle de sections : le mécanisme de L5 1 bis), puis les couples entre entrées ATTEINTES, dans l'ordre de leur minorant (le coût RÉEL de la section d'Europe + le reste estimé) :
     les essais ne sont plus gaspillés sur des entrées que le départ n'atteint pas (LFPO / LFPG → KLAX : les entrées proches du chemin ne s'atteignent pas depuis Paris à FL370) ; une sortie dont la section d'Amérique n'a pas abouti n'est pas reprise. `resolve(g2, start, end, entry, exit, legs, first)` est celui de sections
+    SOG-0354 L5 (4) défaut 3 : les couples sont essayés dans l'ordre de leur minorant SANS nombre fixe (trois essais ne suffisaient pas : CYYZ → EDDF aboutit à la cinquième sortie, les quatre premières échouent chacune en 0,01 s) ; arrêt quand le minorant du suivant dépasse le meilleur coût trouvé, ou quand FREE_S (ou la borne de la phase) est épuisé ; `report` (un dict) reçoit { tried, stopped : 'bound' | 'time' | 'end' } : la réponse dit combien ont été essayés.
     (même recherche par sections qu'une route NAT) ; le graphe `g2` est celui de `g` avec les raccords de TOUTES les entrées et sorties (des arêtes DCT de simulation, comme nat_layer.add)."""
     a, b = nav.nodes[start], nav.nodes[end]
     start_east = a['lon'] > WEST_LON
@@ -99,17 +102,36 @@ def solve(nav, g, start, end, ratio, resolve, europe):
     # les entrées par ordre de leur meilleur minorant (distances orthodromiques) : la recherche vers TOUTES les entrées parcourt tout l'espace dès qu'une n'est pas atteignable (EIDW → KJFK : 13 portes, 31 000 états, 4,8 s, contre 260 états vers l'entrée voulue) :
     # elles sont cherchées PAR PAQUETS de CHUNK, les plus proches du chemin d'abord ; le paquet suivant seulement si le précédent n'a donné aucune route
     rank = sorted(entries, key=lambda i: min(engine.nm(a, nav.nodes[i]) + ocean[(i, o)] + engine.nm(nav.nodes[o], b) for o in exits))
-    dead, tried, any_reached = set(), 0, False
+    dead, tried, any_reached, best = set(), 0, False, None
+    report = report if report is not None else {}
+    report.update(tried=0, stopped='end')
+    began = time.perf_counter()
+    pack_bound = lambda i: ratio * min(engine.nm(a, nav.nodes[i]) + ocean[(i, o)] + engine.nm(nav.nodes[o], b) for o in exits)      # le minorant du meilleur couple de cette entrée (la recherche d'Europe vaut au moins ratio × le grand cercle)
+
+    def out_of_time():
+        now = time.perf_counter()
+        return now - began > FREE_S or (engine.DEADLINE is not None and now >= engine.DEADLINE)
     for start_at in range(0, len(rank), CHUNK):
+        if best and pack_bound(rank[start_at]) >= best['cost']:      # le paquet suivant ne peut pas faire mieux
+            report['stopped'] = 'bound'
+            break
+        if out_of_time():
+            report['stopped'] = 'time'
+            break
         reached = europe(g2, start, rank[start_at:start_at + CHUNK])
         any_reached = any_reached or bool(reached)
         pairs = sorted(((reached[i]['cost'] + ratio * (ocean[(i, o)] + engine.nm(nav.nodes[o], b)), i, o) for i in reached for o in exits), key=lambda x: x[0])
         for bound, i, o in pairs:
-            if tried >= TRIES:
+            if best and bound >= best['cost']:      # les couples suivants ne peuvent pas faire mieux que le meilleur trouvé
+                report['stopped'] = 'bound'
                 break
             if o in dead:
                 continue
+            if out_of_time():
+                report['stopped'] = 'time'
+                break
             tried += 1
+            report['tried'] = tried
             keys = [i] + [nav.add({'id': n, 'lat': la, 'lon': lo}) for la, lo, n in pts_of[(i, o)]] + [o]
             keys = [k for n, k in enumerate(keys) if n == 0 or k != keys[n - 1]]
             legs = []
@@ -119,10 +141,16 @@ def solve(nav, g, start, end, ratio, resolve, europe):
             resolved = resolve(g2, start, end, i, o, legs, reached[i])
             if resolved:
                 cost, path, sects = resolved
-                return {'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'points': [nav.nodes[k]['id'] for k in keys], 'nm': round(ocean[(i, o)], 1), 'cost': cost, 'path': path, 'sections': sects}, None
+                if best is None or cost < best['cost']:
+                    best = {'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'points': [nav.nodes[k]['id'] for k in keys], 'nm': round(ocean[(i, o)], 1), 'cost': cost, 'path': path, 'sections': sects}
+                continue
             dead.add(o)      # la section d'Amérique de cette sortie n'a pas abouti (ou la borne a coupé) : elle n'est pas reprise avec une autre entrée
-        if tried >= TRIES:
+        if report['stopped'] == 'time':
             break
+    if best:
+        return dict(best, tried=tried, stopped=report['stopped']), None
+    if report['stopped'] == 'time':
+        return None, NO_TIME
     if not any_reached:
         return None, NO_REACH
     return None, NO_CHAIN

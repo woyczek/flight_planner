@@ -195,13 +195,14 @@ def _europe(nav, g, start, entries, info, key='europe', need=None, track=None):
 
 def _free(nav, g, start, end, ratio, info):
     """SOG-0354 L5 (2) : aucune route du jour ne convient : la route libre CRÉÉE (free_route), résolue par les mêmes sections ; `info['free']` dit ce qui a été fait (ou pourquoi rien : « aucun point d'entrée océanique connu »), `info['source']` vaut 'random' ; None si rien n'a abouti (la recherche entière suit)."""
+    report = {}
     made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs, first: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True, first=first),
-                                 lambda g2, s, entries: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre'))
+                                 lambda g2, s, entries: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre'), report)
     if not made:
-        info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why}
+        info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why, **report}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
         return None
-    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm']}
+    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm'], 'tried': made.get('tried'), 'stopped': made.get('stopped')}
     info['source'], info['sections'], info['cost'] = 'random', made['sections'], round(made['cost'], 1)
     info['reason'] = (info.get('reason') or '') + ' Route libre créée : ' + ' '.join(made['points']) + '.'
     return made['path']

@@ -326,6 +326,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4, defect 2, 16 November, case K300)**: a retry at a lower level is made only when the reason of the first failure is a matter of level (`plan.level_matters`); otherwise the answer leaves at once with its reason (`level_retry`). `sections` and `timing` describe the requested level, the retries are listed apart (`timing.retries`). A request with no route: 4.2 s on the real base (14.5 s before).
 
+**Done (L5 4, defect 3, 16 November, case K302)**: the pairs of the free route are tried without a fixed number, until the bound of the next exceeds the best cost found or the time of the section (3 s) is used up; `sections.free.tried` says how many. CYYZ → EDDF « out » answers a route (4.4 s).
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |
