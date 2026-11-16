@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 254,
+  "tests": 255,
   "verdicts": 188
  },
  "apps": [
@@ -3467,10 +3467,10 @@
     "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
     "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)"
    },
-   "test": "D'abord RELANCE LE LANCEUR. Sur l'ordinateur : Carburant, EIDW → KJFK (ou EGLL → KJFK), FL370, « Proposer une route ». Attendu : la réponse arrive en 8 secondes environ au lieu de 15 (la ligne de mesure en bas le dit). Elle est TOUJOURS une proposition de repli, pas une route contrôlée : c'est attendu à cette étape — la suite (couloir, routes publiées de la FAA, découpage en sections) arrive par tranches. LFOE → KTPA et EGLL → KDEN : même route qu'avant, un peu plus vite. Dis-moi seulement si un vol est devenu plus lent ou si une route a changé.",
+   "test": "RELANCE LE LANCEUR. Carburant, EIDW → KJFK (ou EIDW → KBOS), FL370, « Proposer une route ». Attendu : au bout de 14 secondes environ, une vraie ROUTE (plus une « proposition de repli ») — par une route NAT du jour puis une route nord-américaine, autour de 3 000 NM. Un seul itinéraire est proposé sur ces vols (pas le temps de chercher des alternatives). LFOE → KTPA et EGLL → KDEN : même route qu'avant, en 4 à 5 secondes, trois alternatives. Un vol en Europe : rien ne change. LFPO → KLAX reste une proposition tant que les États-Unis ne sont pas reconstruits dans Données.",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T14:54:38Z"
+   "delivered": "2026-11-16T15:39:43Z"
   },
   {
    "id": "SOG-0355",
@@ -3639,10 +3639,10 @@
     "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
     "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta"
    },
-   "test": "D'abord RELANCE LE LANCEUR (son Python a changé). Puis sur l'ordinateur : Maintenance › Données › Europe du Nord › Islande › « Mettre à jour ce pays ». Attendu : la source Avians est prise (le lanceur lit le sommaire, la page des points et 31 pages de routes : compte une à deux minutes), le pays se construit, plus de « aucune page de route dans le sommaire ». Si la prise échoue encore : la carte de la source dit « Le téléchargement de cette source a échoué » puis la phrase du lanceur, sans « fichier illisible » — copie-moi cette phrase. Le lien de la carte ouvre la page de l'ENR 4.4 et ne dit plus « chemin à vérifier ». Si tu déposes le PDF de l'ENR 4.4, le refus dit maintenant de déposer la",
+   "test": "RELANCE LE LANCEUR (son Python a encore changé), puis : Maintenance › Données › Europe du Nord › Islande › « Mettre à jour ce pays ». Attendu cette fois : la prise va au bout — le sommaire, la page des points et 31 pages de routes, une à la fois avec une pause entre deux (compte une à deux minutes) —, puis le pays se construit. Plus de « name 'time' is not defined ». Si elle échoue encore, copie-moi la phrase de la carte comme tu viens de le faire : c'est ce qui m'a permis de trouver la cause en dix minutes.",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T14:16:39Z",
+   "delivered": "2026-11-16T15:39:43Z",
    "previous": {
     "verdict": "ko",
     "comment": "voir screeshot : eaip.avians.is/.... « fichier illisible » chemin manuel : https://eaip.avians.is/A_10-2026_2026_10_29/documents/PDF/BI-ENR%204.4.pdf#ENR-4.4 actuellement téléchargé sur downloads. Si on tente de télécharger : « Ce fichier ne ressemble à aucune source prise ici. Sources prises par l’envoi : SIA France, NATS UK, LFV, openAIP, FAA, UK Mil AIP ENR 5.2, EUROCONTROL : RAD et points FRA, NAV Portugal, Avians. »",
@@ -3827,6 +3827,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T14:47:54Z"
+  },
+  {
+   "id": "SOG-0384",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : dix secondes après l'ouverture, l'état de la base n'est toujours pas lu",
+    "en": "Data: ten seconds after opening, the state of the base is still not read",
+    "de": "Daten: zehn Sekunden nach dem Öffnen ist der Zustand der Basis noch nicht gelesen",
+    "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse"
+   },
+   "test": "RELANCE LE LANCEUR. Ouvre Maintenance › Données. Attendu : en deux secondes environ la ligne du cycle, l'état de la base (plus de « L'état de votre base n'est pas connu : il n'a pas encore été lu »), les groupes de pays avec leurs comptes et la carte en couleurs. Recharge la page deux ou trois fois : même résultat à chaque fois.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T15:31:28Z"
   }
  ],
  "decisions": [

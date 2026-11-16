@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "bbd2e16",
+  "organisation": "f29e2cd",
   "fiches": 383,
   "untranslated": 0,
   "priorities": 374
@@ -4870,11 +4870,12 @@
     {
      "id": "SOG-0384",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Données : dix secondes après l'ouverture, l'état de la base n'est toujours pas lu",
      "en": "Data: ten seconds after opening, the state of the base is still not read",
      "de": "Daten: zehn Sekunden nach dem Öffnen ist der Zustand der Basis noch nicht gelesen",
-     "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse"
+     "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse",
+     "test": true
     }
    ]
   },
