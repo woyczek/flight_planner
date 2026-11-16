@@ -3484,10 +3484,10 @@
     "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
     "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)"
    },
-   "test": "D'abord RELANCE LE LANCEUR. Carburant, étape Route, « Calculer A → B » (les temps sont ceux mesurés par AeroDB sur ta base). (1) EIDW → KJFK, départ vers 12 h Z : une route en 2 secondes à froid, moins d'une seconde ensuite ; sous l'itinéraire, la preuve de chaque morceau (« calculée », « publiée, route NAT E du 16/11 »). (2) Le même vol, départ à 03 h Z : une ROUTE LIBRE créée (« route libre, créée ») ; le pli « n routes NAT du jour écartées » dit pourquoi chacune est écartée ; ce vol-là peut prendre 6 à 8 secondes (connu, en cours de réduction). (3) Sans heure de départ : la route NAT est prise et une ligne dit « Heure de départ non donnée : validité horaire des routes NAT non vérifiée ». ",
+   "test": "D'abord RELANCE LE LANCEUR. Carburant, étape Route, « Calculer A → B » (les temps sont ceux mesurés par AeroDB sur ta base, dans le pire cas ; aucun vol transatlantique ne doit dépasser 5 secondes). (1) EIDW → KJFK, départ vers 12 h Z : une route en 2 secondes à froid, moins d'une seconde ensuite ; sous l'itinéraire, la preuve de chaque morceau (« calculée », « publiée, route NAT … »). (2) Le même vol, départ à 03 h Z : une ROUTE LIBRE créée (« route libre, créée »), en 1 à 2 secondes ; le pli « n routes NAT du jour écartées » dit pourquoi chacune est écartée. (3) Sans heure de départ : la route NAT est prise et une ligne dit « Heure de départ non donnée : validité horaire des routes NAT non",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T20:23:27Z"
+   "delivered": "2026-11-16T21:29:41Z"
   },
   {
    "id": "SOG-0355",
