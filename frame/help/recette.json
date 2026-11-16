@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 244,
+  "tests": 245,
   "verdicts": 163
  },
  "apps": [
@@ -3587,10 +3587,24 @@
     "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
     "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta"
    },
-   "test": "Relance d'abord le lanceur (son Python a changé). Sur l'ordinateur, Données, Islande, coche d'usage personnel faite : « Mettre à jour ce pays ». C'est la première prise réelle sur le site d'Avians (35 requêtes environ, une à la fois) : à la fin la source Avians dit l'édition du 29/10/2026 et « 31 pages lues sur 31 » (ou le nombre lu, avec la page qui manque), et le pays se construit. Si la prise échoue encore, copie-moi la phrase affichée.",
+   "test": "Relance d'abord le lanceur (son Python a changé). Sur l'ordinateur, Données, Islande, case d'usage personnel cochée : la carte Avians dit « Prise par le lanceur — dépôt à la main possible si elle échoue ». « Mettre à jour ce pays » : c'est la première prise réelle sur le site d'Avians (35 requêtes environ). Réussite : édition du 29/10/2026, « 31 pages lues sur 31 », le pays se construit. Échec : la fiche dit « La prise a échoué », le bandeau propose de réessayer ou de déposer les pages, la carte donne l'adresse essayée et le nombre de pages lues, et « Choisir le fichier… » accepte tes pages .html une à une (l'ENR 4.4 et au moins une route) ; le pays construit ainsi dit « Édition non connue »",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T08:10:14Z"
+   "delivered": "2026-11-16T09:30:01Z"
+  },
+  {
+   "id": "SOG-0369",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : une source dite « pas à jour » alors qu'une source primaire à jour porte le même contenu (DIRCAM pris au SIA, openAIP en rouge, Portugal publié par éditions)",
+    "en": "Data: a source shown « not up to date » while an up-to-date primary source carries the same content (DIRCAM taken from the SIA, openAIP in red, Portugal published by editions)",
+    "de": "Daten: eine Quelle gilt als « nicht aktuell », obwohl eine aktuelle Primärquelle denselben Inhalt liefert (DIRCAM über SIA, openAIP rot, Portugal nach Ausgaben)",
+    "es": "Datos: una fuente dicha « no al día » cuando una fuente primaria al día lleva el mismo contenido (DIRCAM tomado del SIA, openAIP en rojo, Portugal por ediciones)"
+   },
+   "test": "Relance d'abord le lanceur. Sur l'ordinateur, Données : dans « À faire ce mois-ci », openAIP n'est plus « en retard ». Ouvre la France : la carte DIRCAM dit son âge (« … jours ») sans « pas à jour », et ses deux lieux de prise (site de la DIRCAM, CD DIRCAM du SIA) ; la carte openAIP dit son âge en gris. Ouvre le Royaume-Uni : si un contenu n'est pas à jour, la fiche le dit par contenu (« espaces : openAIP seulement… », « points : en retard (NATS UK) »). La tuile de chaque pays à faire nomme l'étape.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T09:27:56Z"
   },
   {
    "id": "SOG-0370",

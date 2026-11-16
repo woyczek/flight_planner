@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "edf7cc3",
+  "organisation": "d063c79",
   "fiches": 374,
   "untranslated": 0,
   "priorities": 310
@@ -2988,11 +2988,12 @@
     {
      "id": "SOG-0369",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : une source dite « pas à jour » alors qu'une source primaire à jour porte le même contenu (DIRCAM pris au SIA, openAIP en rouge, Portugal publié par éditions)",
      "en": "Data: a source shown « not up to date » while an up-to-date primary source carries the same content (DIRCAM taken from the SIA, openAIP in red, Portugal published by editions)",
      "de": "Daten: eine Quelle gilt als « nicht aktuell », obwohl eine aktuelle Primärquelle denselben Inhalt liefert (DIRCAM über SIA, openAIP rot, Portugal nach Ausgaben)",
-     "es": "Datos: una fuente dicha « no al día » cuando una fuente primaria al día lleva el mismo contenido (DIRCAM tomado del SIA, openAIP en rojo, Portugal por ediciones)"
+     "es": "Datos: una fuente dicha « no al día » cuando una fuente primaria al día lleva el mismo contenido (DIRCAM tomado del SIA, openAIP en rojo, Portugal por ediciones)",
+     "test": true
     }
    ]
   },
