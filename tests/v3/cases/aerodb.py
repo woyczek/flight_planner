@@ -11165,3 +11165,17 @@ def k288(c):
         time.sleep(0.02)
     c.eq([jobs2.view(o['job']).get('state') for o in others], ['done', 'done'], 'and they answer while the slow read is still running (what is slow does not block another read)', what='screen answers')
     gate2.set()
+    # Sécurisation: a page cannot start a hundred reads: at most MAX_READS run at once (counted RUNNING, under the lock), the next gets the usual refusal 409 busy (and starts again once one has ended)
+    gate3 = threading.Event()
+    hold_read = lambda job, args, ctx: (gate3.wait(10), {'ok': True})[1]
+    jobs3 = RJ.Jobs({('base', 'build'): (hold_read, lambda a: {}), ('base', 'status'): (hold_read, lambda a: {})}, {})
+    jobs3.start('base', 'build', {})
+    started = [jobs3.start('base', 'status', {}) for _ in range(RJ.Jobs.MAX_READS + 4)]
+    c.eq(([bool(s.get('ok')) for s in started].count(True), [s.get('status') for s in started if not s.get('ok')], {s.get('reason') for s in started if not s.get('ok')}), (RJ.Jobs.MAX_READS, [409] * 4, {'busy'}),
+         'ten reads asked at once while a job writes: six start (MAX_READS), the other four get the usual refusal 409 « busy » (with the job that holds the place)', what='cap')
+    gate3.set()
+    deadline = time.time() + 5
+    while time.time() < deadline and any(jobs3.view(s['job']).get('state') == 'running' for s in started if s.get('ok')):
+        time.sleep(0.02)
+    again = jobs3.start('base', 'status', {})
+    c.eq(bool(again.get('ok')), True, 'once the reads have ended a new one starts', what='cap released')

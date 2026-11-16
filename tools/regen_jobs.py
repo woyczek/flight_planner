@@ -327,11 +327,15 @@ class Jobs:
             pass
 
     READS_KEPT = 32
+    MAX_READS = 6      # SOG-0384 (Sécurisation) : au plus six lectures parallèles EN COURS à la fois (l'écran en lance trois à l'ouverture), comptées sous le verrou : une page ne peut pas en lancer cent (READS_KEPT ne borne que ce qui est GARDÉ) ; la septième : le refus « occupé » (409)
 
     def _start_read(self, key, fn, a, author):
         """SOG-0384 : une lecture pure part à côté du travail en cours (et des autres lectures), sans tenir la place : un fil à elle, son identifiant, ni le fichier du dernier travail, ni le journal persistant, ni le délai minimal."""
         job = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
         with self.lock:
+            running = sum(1 for r in self.reads.values() if r.data['state'] == 'running')
+            if running >= self.MAX_READS:
+                return {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running', **({'job': self.cur.id, 'running': self._summary(self.cur)} if self.cur and self.cur.data['state'] == 'running' else {}), 'reads': running, 'max_reads': self.MAX_READS}      # le refus habituel « occupé », avec le travail qui tient la place
             self.reads[job.id] = job
             while len(self.reads) > self.READS_KEPT:
                 old = next(iter(self.reads))

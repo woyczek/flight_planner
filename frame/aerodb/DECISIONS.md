@@ -3222,6 +3222,7 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Measured** (the ergonomics session asked three lines): `base/status` 0.44 s before and 0.69 s after `1e8ac887f` (84 zones); `pdf/status` 0.15 s; and the launcher refuses a second job while one runs (409 busy), reproduced on his real base with the real job manager: the screen asks the three reads together, one was refused.
 - **Done**: the pure reads run beside the job that holds the place (K288, red before: the reads started 409). See INTEGRATION « Launcher jobs ».
 - **Choices of this session** (to relax if wished): the list `PARALLEL` is the pure reads only; `route/compute` keeps its own rule (SIDE beside a background read); a read is not refused while a job writes zones (the verbs read files that are replaced atomically; a state read during a build can show the zone as it was a moment ago); `held` (the update of the suite) still refuses them.
+- **Cap added** (Sécurisation's relay, 16:2x): at most six reads running at once (`Jobs.MAX_READS`), the seventh refused 409 `busy`; the screen starts three. K288.
 - **Not done**: the page's own behaviour on a refused read (it should have said « busy », not « état non lu »): for Réglages, now rarely reachable.
 
 ## 16 November 2026 — SOG-0354: the bounds of a flight across the Atlantic
