@@ -227,6 +227,7 @@ def add(nav, nm):
             if not near:
                 nav.nat['skipped'].append(f'{t["id"]}: {end} sans réseau haut à moins de {LINK_NM} NM')
         nav.nat['tracks'].append(t['id'])
+        nav.nat.setdefault('ends', {})[t['id']] = [keys[0], keys[-1]]      # SOG-0354 L5 (2) : les deux extrémités de chaque route du jour : les entrées et les sorties d'une route libre créée (free_route)
         nav.nat.setdefault('meta', {})[t['id']] = meta      # SOG-0354 L5 : la méta de chaque track, pour dire pourquoi l'une est écartée (check)
         nav.nat['directions'] = sorted(set(nav.nat['directions']) | ({'east', 'west'} if direction == 'both' else {direction}))
         nav.nat['stale'] = nav.nat['stale'] or stale

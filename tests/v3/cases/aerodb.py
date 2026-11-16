@@ -11472,3 +11472,87 @@ def k293(c):
     nav2.depart = (datetime.datetime(2026, 11, 16, 3, 0), 'now')
     c.eq((S.solve(nav2, g, 'DEP', 'ARR'), sorted(r['track'] for r in nav2.sections_info['rejected'] if r['code'] == 'time'), nav2.sections_info['chosen'], bool(nav2.sections_info.get('reason')), nav2.sections_info['depart']['basis']),
          (None, ['A', 'C', 'F'], None, True, 'now'), 'at 03:00 (before the message is valid): no track is valid (B is still set aside for its level, D for its direction), the answer says each one and the reason (« la recherche entière suit »), the basis says « now »', what='no track')
+
+
+@case('K294', 'Route engine, SOG-0354 lot L5 (2): when no track of the day is valid for the flight, a FREE route is CREATED — a point per 10 degrees of longitude, at the whole degree of latitude of the shortest path, between an entry and an exit taken from the ends of all the routes of the day (both directions) — resolved by the same sections, labelled « route libre, créée » (`origin: random`, `sections.free.source: random`), computed and never read from a text; with no known oceanic point the answer says so',
+      'K', static=True,
+      rule='SOG-0354 L5 (2) (note § 13.2). Measured on the real base (EIDW → KJFK and KJFK → EIDW at 03:00, the message of the day being valid from 11:30): before, no route in 15 s; now the route is found in 1.9 s: DOGAL 54/20 53/30 51/40 48/50 NICSO (1441.7 NM), the Europe and the America sections found by Nav.search. `free_route.interior(a, b)` gives the points (one per multiple of 10 of longitude strictly between the two ends, from a to b, the latitude of the great circle rounded to the whole degree, named « 54/30 »); `free_route.solve` takes the ends of all the routes of the day (`nav.nat[\'ends\']`: the first and the last point of each route, both directions), tries the pairs in the order of their lower bound (ratio × distances + the length of the free route), adds the simulation links from the high network to the chosen entry and from the chosen exit to the network, and resolves with `sections._resolve(…, created=True)`; `sections.solve` falls back to it when no track is valid or no chain succeeded; the legs carry `origin: random` and the control says « Route libre océanique, créée » (review: no oceanic clearance checked); with no end known the answer says « aucun point d\'entrée océanique connu » and the whole search follows.')
+def k294(c):
+    import datetime
+    import math
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, sections as S
+    utc = datetime.timezone.utc
+    a, b = {'lat': 54.0, 'lon': -15.0}, {'lat': 48.0, 'lon': -52.0}
+    pts = F.interior(a, b)
+    # the reference: the great circle through a and b, by vectors (independent of the formula of the code)
+    vec = lambda p: (math.cos(math.radians(p['lat'])) * math.cos(math.radians(p['lon'])), math.cos(math.radians(p['lat'])) * math.sin(math.radians(p['lon'])), math.sin(math.radians(p['lat'])))
+    va, vb = vec(a), vec(b)
+    n = (va[1] * vb[2] - va[2] * vb[1], va[2] * vb[0] - va[0] * vb[2], va[0] * vb[1] - va[1] * vb[0])
+    ref = lambda lon: math.degrees(math.atan(-(n[0] * math.cos(math.radians(lon)) + n[1] * math.sin(math.radians(lon))) / n[2]))
+    c.eq([p[1] for p in pts], [-20, -30, -40, -50], 'one point per multiple of 10 degrees of longitude strictly between the two ends, from the first to the second', what='lons')
+    c.ok(all(isinstance(p[0], int) and abs(p[0] - ref(p[1])) <= .5 for p in pts), str(pts), 'the latitude is the WHOLE degree nearest to the great circle')
+    c.eq([p[2] for p in pts], [f'{p[0]}/{-p[1]}' for p in pts], 'named in the form of the NAT routes (« 54/30 »: north, west)', what='names')
+    c.eq([p[1] for p in F.interior(b, a)], [-50, -40, -30, -20], 'the other way: the same points, in the order of the flight', what='reverse')
+    c.eq((F.interior({'lat': 50.0, 'lon': -12.0}, {'lat': 50.0, 'lon': -18.0}), F.interior({'lat': 50.0, 'lon': -20.0}, {'lat': 50.0, 'lon': -30.0})), ([], []), 'no multiple of 10 strictly between: no point (the ends themselves are never doubled)', what='none')
+    nodes = {}
+    for k, (la, lo) in {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'EA': (52.0, -15.0), 'EB': (60.0, -15.0), 'XA': (47.0, -60.0), 'XB': (30.0, -60.0), 'H1': (52.5, -8.0), 'H2': (44.0, -70.0)}.items():
+        nodes[k] = {'id': k, 'lat': la, 'lon': lo}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0, 'ceiling': 37000, 'speed_kt': 450}
+    g.setdefault('DEP', []).append(('H1', {'a': 'DEP', 'b': 'H1', 'route': 'UL1', 'nm': engine.nm(nodes['DEP'], nodes['H1'])}))
+    g.setdefault('H2', []).append(('ARR', {'a': 'H2', 'b': 'ARR', 'route': 'UL2', 'nm': engine.nm(nodes['H2'], nodes['ARR'])}))
+
+    class Fake:
+        def __init__(self, ends=True):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'meta': {'A': {'track': 'A', 'direction': 'west', 'levels': [370], 'levels_west': [370], 'levels_east': [], 'from': '2026-11-16T11:30:00Z', 'to': '2026-11-16T19:00:00Z'}}, 'tracks': ['A']}, None, None
+            if ends:
+                self.nat['ends'] = {'A': ['EA', 'XA'], 'B': ['EB', 'XB']}
+            self.depart, self.nat_rejected, self._nat_high = (datetime.datetime(2026, 11, 16, 3, 0), 'request'), frozenset(), {'H1', 'H2'}
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False):
+            import heapq
+            best, q, prev = {s: 0.0}, [(0.0, s)], {}
+            while q:
+                d, u = heapq.heappop(q)
+                if u == e:
+                    break
+                if d > best[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < best.get(v, 1e18):
+                        best[v] = d + ed['nm']
+                        prev[v] = (u, v, ed)
+                        heapq.heappush(q, (best[v], v))
+            if e not in best:
+                return None
+            legs, node = [], e
+            while node != s:
+                legs.append(prev[node])
+                node = prev[node][0]
+            legs.reverse()
+            self.last_search = {'cost': best[e], 'band': band, 'expanded': len(best), 'seconds': 0.0, 'found': True}
+            return legs
+    nav = Fake()
+    path = S.solve(nav, g, 'DEP', 'ARR')
+    info = nav.sections_info
+    names = [nav.nodes[u]['id'] for u, _v, _e in path] + [nav.nodes[path[-1][1]]['id']] if path else []
+    c.ok(bool(path) and names[:3] == ['DEP', 'H1', 'EA'] and names[-3:] == ['XA', 'H2', 'ARR'], str(names), 'at 03:00 (the only track is valid from 11:30) the flight is NOT left without a route: DEP, the network, the entry EA, the free route, the exit XA, the network, ARR — the entry and the exit nearest to the path, not EB / XB')
+    mid = names[names.index('EA'):names.index('XA') + 1] if path else []
+    c.eq(mid[1:-1], [f'{p[0]}/{-p[1]}' for p in F.interior(nodes['EA'], nodes['XA'])], 'the points of the free route are the ones of `interior` (a point per 10 degrees, whole degree)', what='points')
+    c.eq((info['source'], info['chosen'], [s['name'] for s in info['sections']], [s['proof'] for s in info['sections']], info['free']['source'], info['free']['label'], info['free']['ok'], info['free']['points'] == mid),
+         ('random', None, ['europe', 'route libre', 'amérique'], ['computed', 'created', 'computed'], 'random', 'route libre, créée', True, True),
+         'the answer says it: source random, no track chosen, the three sections with the proof « created » for the free route, the label « route libre, créée »', what='answer')
+    c.eq(sorted(r['track'] for r in info['rejected']), ['A'], 'the tracks set aside are still said (A: time)', what='rejected')
+    c.eq([e.get('origin') for _u, _v, e in path].count('random'), len(mid) - 1, 'every leg of the free route carries origin random (and none other does): the control says « route libre, créée »', what='origin')
+    c.ok(all(e.get('nat') is None for _u, _v, e in path), 'nat meta on a leg', 'the free route is not a NAT track: no track meta on its legs')
+    nav2 = Fake(ends=False)
+    c.eq((S.solve(nav2, g, 'DEP', 'ARR'), nav2.sections_info['free']['ok'], 'aucun point d\'entrée océanique connu' in nav2.sections_info['free']['reason'], 'aucun point d\'entrée océanique connu' in nav2.sections_info['reason']), (None, False, True, True),
+         'with no oceanic point known the answer says « aucun point d\'entrée océanique connu » and invents none; the whole search follows', what='none known')
+    src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
+    c.ok("origin=e.get('origin')" in src and 'Route libre océanique, créée' in src, 'engine.py', 'the legs keep the origin and the control says « Route libre océanique, créée » (review: no oceanic clearance checked)')

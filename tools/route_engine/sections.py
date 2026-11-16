@@ -10,7 +10,7 @@ il n'est pas, par construction, le meilleur de tous les vols (un vol sans track 
 `solve` rend le chemin (la liste des tronçons, comme Nav.search) ou None (pas applicable : pas de track dans le sens du vol, un vol hors Atlantique, rien de résolu) ; dans ce cas la recherche entière suit, comme sans l'option. Ce que la dernière résolution a fait est dans `nav.sections_info` : les sections (nom, de, à, distance, coût, états développés), la track retenue, les tracks essayées."""
 import datetime
 
-from . import engine, nat_layer
+from . import engine, free_route, nat_layer
 
 WEST_LON, EAST_LON = -35.0, -15.0      # les mêmes limites que plan.crosses_ocean et nat_layer.hint
 
@@ -99,11 +99,11 @@ def solve(nav, g, start, end):
 
     def said():
         info['rejected'] = [{'track': tid, 'code': code, 'text': text} for tid, (code, text) in sorted(rejected.items())]
+    ratio = min((e.get('_cost', e['nm']) / e['nm'] for es in g.values() for _v, e in es if e['nm'] > .00001), default=0)
     if not candidates:
         said()
-        info['reason'] = 'Aucune route NAT valable pour ce vol : la recherche entière suit.'
-        return None
-    ratio = min((e.get('_cost', e['nm']) / e['nm'] for es in g.values() for _v, e in es if e['nm'] > .00001), default=0)
+        info['reason'] = 'Aucune route NAT valable pour ce vol.'
+        return _free(nav, g, start, end, ratio, info)
     skeleton = sorted(((ratio * (engine.nm(a, nav.nodes[o['entry']]) + engine.nm(nav.nodes[o['exit']], b)) + o['cost'], tid, o) for tid, o in candidates), key=lambda x: x[0])
     info['candidates'] = [{'track': tid, 'lower_bound': round(lb, 1)} for lb, tid, _o in skeleton]
     best = None
@@ -122,11 +122,24 @@ def solve(nav, g, start, end):
             best = resolved + (tid,)
     said()
     if best is None:
-        info['reason'] = 'Aucune chaîne par une route NAT valable n\'a abouti : la recherche entière suit.'
-        return None
+        info['reason'] = 'Aucune chaîne par une route NAT valable n\'a abouti.'
+        return _free(nav, g, start, end, ratio, info)
     cost, path, sections, tid = best
     info['chosen'], info['sections'], info['cost'] = tid, sections, round(cost, 1)
     return path
+
+
+def _free(nav, g, start, end, ratio, info):
+    """SOG-0354 L5 (2) : aucune route du jour ne convient : la route libre CRÉÉE (free_route), résolue par les mêmes sections ; `info['free']` dit ce qui a été fait (ou pourquoi rien : « aucun point d'entrée océanique connu »), `info['source']` vaut 'random' ; None si rien n'a abouti (la recherche entière suit)."""
+    made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True))
+    if not made:
+        info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why}
+        info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
+        return None
+    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm']}
+    info['source'], info['sections'], info['cost'] = 'random', made['sections'], round(made['cost'], 1)
+    info['reason'] = (info.get('reason') or '') + ' Route libre créée : ' + ' '.join(made['points']) + '.'
+    return made['path']
 
 
 def _sub(g, legs):
@@ -138,11 +151,13 @@ def _sub(g, legs):
     return sub
 
 
-def _resolve(nav, g, start, end, tid, o):
+def _resolve(nav, g, start, end, tid, o, created=False):
     """(coût, chemin, sections) de la chaîne départ → entrée → track → sortie → arrivée, ou None (une section n'a pas abouti, ou le budget est atteint)."""
-    spans = (('europe', g, start, o['entry'], None, True), ('track ' + tid, _sub(g, o['legs']), o['entry'], o['exit'], 'band', True), ('amérique', g, o['exit'], end, 'band', False))
+    spans = ((None, g, start, o['entry'], None, True), ('route libre' if created else 'track ' + tid, _sub(g, o['legs']), o['entry'], o['exit'], 'band', True), (None, g, o['exit'], end, 'band', False))
     path, total, band, sections = [], 0.0, None, []
     for name, graph, s, e, use_band, is_gate in spans:
+        if name is None:      # une section d'extrémité porte le nom de son côté de l'océan (le vol peut aller dans les deux sens)
+            name = 'europe' if nav.nodes[s if s == start else e]['lon'] > WEST_LON else 'amérique'
         try:
             part = nav.search(graph, s, e, (), False, False, band if use_band else None, gate=is_gate)
         except ValueError:
@@ -154,5 +169,5 @@ def _resolve(nav, g, start, end, tid, o):
         total += ls['cost']
         path.extend(part)
         sections.append({'name': name, 'from': nav.nodes[s]['id'], 'to': nav.nodes[e]['id'], 'nm': round(sum(x['nm'] for _u, _v, x in part), 1), 'cost': round(ls['cost'], 1), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'),
-                         'proof': 'published' if name.startswith('track') else 'computed'})
+                         'proof': 'created' if created and name == 'route libre' else 'published' if name.startswith('track') else 'computed'})
     return total, path, sections

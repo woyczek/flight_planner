@@ -724,7 +724,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
             procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_partial=bool(e.get('partial')),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
-            nat=e.get('nat'),nat_link=e.get('nat_link')))   # SOG-0078 ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
+            nat=e.get('nat'),nat_link=e.get('nat_link'),origin=e.get('origin')))   # SOG-0078 ; SOG-0354 L5 (2) : origin='random' = route libre CRÉÉE (jamais lue) ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
     # SOG-0371 (aller-retour) : une route que le moteur a ÉCRITE est relue sans refus. Son raccord DCT depuis (vers) un aérodrome sans SID (STAR) lue est libre au contrôle comme à la recherche (la montée n'y est pas tenue au plancher de l'airway suivante) ;
@@ -743,6 +743,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
         used=list(dict.fromkeys(n['track'] for n in nat_legs)); issued=next((n['issued'] for n in nat_legs if n.get('issued')),None); stale=any(n['stale'] for n in nat_legs)
         issue('REVUE',f'Routes NAT du {issued or "?"}'+(', périmées' if stale else '')+f' : {" ".join("NAT"+t for t in used)}. '
               +('Prises quand même (le message en vigueur au moment du vol n\'est pas lu) ; ' if stale else 'Message du jour ; ')+'autorisation océanique non vérifiée.')
+    random_legs=[l for l in legs if l.get('origin')=='random']
+    if random_legs:issue('REVUE','Route libre océanique, créée : '+' '.join(dict.fromkeys(l['start']['id'] for l in random_legs))+' '+random_legs[-1]['end']['id']+' (un point par 10° de longitude, à la latitude entière du chemin le plus court). Non publiée : autorisation océanique non vérifiée.')
     if not nat_legs and legs and getattr(nav,'nat',None):   # SOG-0263 : un vol qui traverse sans track dans son sens le dit, au lieu de se taire
         hint=nat_layer.hint(nav,dep,arr)
         if hint:issue('REVUE',hint)

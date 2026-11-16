@@ -3258,3 +3258,10 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done**: see INTEGRATION « Route engine, lot L5 (1) ». K293 (written, not run here: the sessions no longer run the cases; to be replayed by the ergonomics session).
 - **Choices of this session** (to relax if wished): the estimated time at the entry is the departure of the request plus the distance to the entry at the cruise speed (climb ignored: a few minutes); the hour of the request is read as UTC; a track whose message has no `from` / `to` is valid at any hour; the validity is checked only with the option `sections` for now (the whole search without the option is unchanged until `sections` becomes the default, L5 (3)).
 - **Not done**: the random route when no track is valid (L5 2: the EIDW → KJFK request at 03:00 returns no route today); the single search of Europe towards all the entries (L5 1 bis); `timing` (L5 3); the matrix (L5 4).
+
+## 16 November 2026 — SOG-0354 lot L5 (2): the random route
+
+- **Asked** (ergonomics session 17:21): when no track of the day fits, CREATE a random route (a point per 10°, whole degree, along the shortest path, entries and exits of all today's routes, both directions, no season memory), label `source: random` « route libre, créée », and say « no oceanic entry point known » when none.
+- **Done**: see INTEGRATION « Route engine, lot L5 (2) ». K294 (written, not run here: replayed by the ergonomics session).
+- **Choices of this session** (to relax if wished): the sides of the ocean are told by the longitude (35°W); the lower bound of a pair is the cheapest cost per NM × the distances + the length of the free route (so the pair is the one nearest to the path, not a guarantee of the cheapest, and three pairs are tried); the free route has no validity hour and no level list (a free route is flown at any level of 28 500–60 000 ft); the leg key is `origin` (the legs of the view already carry a `source` (the file of a procedure)), the answer says `source: random` under `sections.free`.
+- **Not done**: `timing` and the bounds (L5 3); one European search to all the entries (L5 1 bis); the matrix (L5 4).
