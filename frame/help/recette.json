@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
   "tests": 256,
-  "verdicts": 189
+  "verdicts": 204
  },
  "apps": [
   "pilote",
@@ -1894,13 +1894,16 @@
    },
    "test": "Carburant, un vol vers LFST (Strasbourg), bloc « Procédures », côté arrivée, « Source et cartes » › « Relire » (la lecture des procédures de LFST repart ; une notification dit la fin). Puis « Changer » de l'approche : les approches RNAV / RNP de LFST sont dans la liste, marquées « à vérifier », plus aucune « en doute » ; les ILS et LOC sont proposés « par leur carte ».",
    "since": "2026-11-11",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-13T20:36:16Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "deux rnav à vérifier, aucune ils, aucune vor, aucune loc. pourtant existantes.",
-    "at": "2026-11-12T08:03:29Z"
-   }
+   "at": "2026-11-16T16:28:00Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "deux rnav à vérifier, aucune ils, aucune vor, aucune loc. pourtant existantes.",
+     "at": "2026-11-12T08:03:29Z"
+    }
+   ]
   },
   {
    "id": "SOG-0233",
@@ -3555,8 +3558,9 @@
    },
    "test": "Si le bandeau « GitLab limite les requêtes » revient et dure (trois attentes de suite), il ajoute « ce jeton sert peut-être à plusieurs appareils » avec un lien vers Réglages › Accès aux données. Sans limite, rien à voir : dis-moi seulement si la phrase te paraît juste.",
    "since": "2026-11-15",
-   "state": "todo",
-   "delivered": "2026-11-15T19:57:37Z"
+   "state": "ok",
+   "delivered": "2026-11-15T19:57:37Z",
+   "at": "2026-11-16T16:29:55Z"
   },
   {
    "id": "SOG-0361",
@@ -3583,8 +3587,9 @@
    },
    "test": "Recharge la page (ordinateur ou téléphone). Réglages : avec ton jeton neuf, plus de point jaune sur « Mise en route ». Pour voir l'alerte : dans Accès, sur un dépôt GitHub, déclare une date d'expiration à 3 jours : le pli dit « Accès aux données : le jeton expire dans 3 jours » avec un point jaune ; à demain : rouge ; à hier : phrase rouge en tête des Réglages et sous l'en-tête. Remets ensuite la vraie date.",
    "since": "2026-11-15",
-   "state": "todo",
-   "delivered": "2026-11-15T19:49:45Z"
+   "state": "ok",
+   "delivered": "2026-11-15T19:49:45Z",
+   "at": "2026-11-16T16:29:49Z"
   },
   {
    "id": "SOG-0363",
@@ -3641,8 +3646,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli. Envoie un signalement (avec ou sans photo), même pendant une synchronisation difficile : il n'arrive qu'UNE fois — je te le confirme à la lecture du dépôt.",
    "since": "2026-11-15",
-   "state": "todo",
-   "delivered": "2026-11-15T19:42:45Z"
+   "state": "ok",
+   "delivered": "2026-11-15T19:42:45Z",
+   "at": "2026-11-16T16:29:36Z"
   },
   {
    "id": "SOG-0368",
@@ -3655,13 +3661,16 @@
    },
    "test": "RELANCE LE LANCEUR (son Python a encore changé), puis : Maintenance › Données › Europe du Nord › Islande › « Mettre à jour ce pays ». Attendu cette fois : la prise va au bout — le sommaire, la page des points et 31 pages de routes, une à la fois avec une pause entre deux (compte une à deux minutes) —, puis le pays se construit. Plus de « name 'time' is not defined ». Si elle échoue encore, copie-moi la phrase de la carte comme tu viens de le faire : c'est ce qui m'a permis de trouver la cause en dix minutes.",
    "since": "2026-11-16",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-16T15:39:43Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "voir screeshot : eaip.avians.is/.... « fichier illisible » chemin manuel : https://eaip.avians.is/A_10-2026_2026_10_29/documents/PDF/BI-ENR%204.4.pdf#ENR-4.4 actuellement téléchargé sur downloads. Si on tente de télécharger : « Ce fichier ne ressemble à aucune source prise ici. Sources prises par l’envoi : SIA France, NATS UK, LFV, openAIP, FAA, UK Mil AIP ENR 5.2, EUROCONTROL : RAD et points FRA, NAV Portugal, Avians. »",
-    "at": "2026-11-16T13:31:15Z"
-   }
+   "at": "2026-11-16T16:27:39Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "voir screeshot : eaip.avians.is/.... « fichier illisible » chemin manuel : https://eaip.avians.is/A_10-2026_2026_10_29/documents/PDF/BI-ENR%204.4.pdf#ENR-4.4 actuellement téléchargé sur downloads. Si on tente de télécharger : « Ce fichier ne ressemble à aucune source prise ici. Sources prises par l’envoi : SIA France, NATS UK, LFV, openAIP, FAA, UK Mil AIP ENR 5.2, EUROCONTROL : RAD et points FRA, NAV Portugal, Avians. »",
+     "at": "2026-11-16T13:31:15Z"
+    }
+   ]
   },
   {
    "id": "SOG-0369",
@@ -3674,8 +3683,9 @@
    },
    "test": "Relance d'abord le lanceur. Sur l'ordinateur, Données : dans « À faire ce mois-ci », openAIP n'est plus « en retard ». Ouvre la France : la carte DIRCAM dit son âge (« … jours ») sans « pas à jour », et ses deux lieux de prise (site de la DIRCAM, CD DIRCAM du SIA) ; la carte openAIP dit son âge en gris. Ouvre le Royaume-Uni : si un contenu n'est pas à jour, la fiche le dit par contenu (« espaces : openAIP seulement… », « points : en retard (NATS UK) »). La tuile de chaque pays à faire nomme l'étape.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T09:27:56Z"
+   "state": "ok",
+   "delivered": "2026-11-16T09:27:56Z",
+   "at": "2026-11-16T16:30:33Z"
   },
   {
    "id": "SOG-0370",
@@ -3688,8 +3698,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli. Données, Europe du Sud, Portugal : la tuile dit « ! un fichier à prendre » ; la fiche dit « Un fichier à prendre », CONSTRUIT « ✓ 12/11 · édition précédente », un seul bandeau, et le fichier « ✓ vu : « AIP Portugal 2611 » » sans « manquant » ni « renommez ». « Prendre le fichier téléchargé » : le fichier est pris tel quel et le pays se reconstruit. Puis Océans, Atlantique Nord : l'état dit les routes du jour et leur validité, le bouton s'appelle « Lire les routes NAT du jour ».",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T08:49:20Z"
+   "state": "ok",
+   "delivered": "2026-11-16T08:49:20Z",
+   "at": "2026-11-16T16:30:29Z"
   },
   {
    "id": "SOG-0371",
@@ -3702,8 +3713,9 @@
    },
    "test": "Relance d'abord le lanceur (son Python a changé). Carburant, EGLL → KJFK, routes NAT du jour lues : « Calculer A → B » (15 s au plus), prends la proposition, puis « Contrôler » : la réponse arrive en une à deux secondes et la route est acceptée. « Copier le diagnostic » : la valeur « launcher » est sous 5 000 ms.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T08:28:47Z"
+   "state": "ok",
+   "delivered": "2026-11-16T08:28:47Z",
+   "at": "2026-11-16T16:30:25Z"
   },
   {
    "id": "SOG-0372",
@@ -3742,8 +3754,7 @@
    },
    "test": "D'abord : mets à jour la bibliothèque PDF du poste (pypdf 6.21.4 au moins — si elle est trop ancienne, l'écran affiche la commande à lancer), coche l'usage personnel dans Données, relance le lanceur. Puis sur l'ordinateur : Carburant, un vol au départ d'EGLL, étape Route, Procédures, Départ EGLL, pli « Source et cartes » : « Lire les départs dans le paquet du Royaume-Uni ». La ligne répond « n SID lues en partie (point de sortie et niveaux) » (24 attendues). Choisis une piste puis une SID : elle dit « lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte », et la Carte ne dessine aucun tracé de départ. Si la ligne dit autre chose (« Lecture impossible… », « Aucun paquet… »",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T09:16:46Z"
+   "state": "known"
   },
   {
    "id": "SOG-0375",
@@ -3756,8 +3767,9 @@
    },
    "test": "Sur l'ordinateur (ton X-Plane), recharge l'appli. Carburant, un vol dont un point n'est connu que par ton X-Plane (un point du Canada, par exemple) : ajoute-le par « Ajouter un point ». Attendu sur le poste : rien ne change — le point est sur la Carte, la distance et le devis le comptent. Puis ouvre le vol écrit dans le dépôt, E:\\DEFA\\data\\pilot\\RBR\\current_flight.json : ce point y porte son NOM et « local »: « xplane », SANS lat ni lon. Sur ton téléphone, le même vol nomme le point sans le placer. Sur la Carte du poste, déplace un autre point de la route : le point d'X-Plane garde sa place dans la route. Au passage : ajoute un point ou applique un « Direct vers » juste après avoir changé la",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T15:21:08Z"
+   "state": "ok",
+   "delivered": "2026-11-16T15:21:08Z",
+   "at": "2026-11-16T16:30:21Z"
   },
   {
    "id": "SOG-0376",
@@ -3770,8 +3782,9 @@
    },
    "test": "RELANCE LE LANCEUR. Ouvre Maintenance › Données : la ligne ambre « Lecture des PDF : … » a DISPARU (tes bibliothèques sont bonnes ; un état bon se tait). Puis essaie SOG-0374 : Carburant, un vol au départ d'EGLL, Procédures, pli « Source et cartes », « Lire les départs dans le paquet du Royaume-Uni ». Si tu relances installer_bibliotheques.cmd, il dit « rien à faire », le dossier des commandes, et qu'il manque au PATH — ce n'est pas une erreur.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T15:54:28Z"
+   "state": "ok",
+   "delivered": "2026-11-16T15:54:28Z",
+   "at": "2026-11-16T16:30:17Z"
   },
   {
    "id": "SOG-0377",
@@ -3784,8 +3797,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli. Carburant, un vol avec SID et STAR, étape Procédures : change la SID. Attendu : seul le côté Départ se redessine, une fois ; plus de second rafraîchissement de toute la carte deux secondes après (c'était la relance de la météo) ; le vol n'est écrit qu'une fois. Dis-moi si la phase de rafraîchissement te paraît encore longue sur ton poste : la mesure a été faite sur un banc d'essai, pas chez toi.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T15:21:09Z"
+   "state": "ok",
+   "delivered": "2026-11-16T15:21:09Z",
+   "at": "2026-11-16T16:27:16Z"
   },
   {
    "id": "SOG-0378",
@@ -3798,8 +3812,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Maintenance › Données. Clique un pays dans la liste, un bouton, un pli : chaque clic agit du premier coup. Sélectionne un texte à la souris hors de la carte : il se sélectionne et la carte ne bouge pas. Glisse sur la carte : elle se déplace, comme avant. Relâche la souris hors de la fenêtre puis reviens : la carte ne suit plus la souris.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T13:57:38Z"
+   "state": "ok",
+   "delivered": "2026-11-16T13:57:38Z",
+   "at": "2026-11-16T16:30:14Z"
   },
   {
    "id": "SOG-0380",
@@ -3812,8 +3827,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Carburant, ton vol EGLL → LFPO, champ Route « EGLL MAY Y47 DRAKE DCT SITET A34 LGL H20 BOBSA BOBSA9E LFPO/02 », puis « Contrôler ». Attendu : plus de « Point inconnu dans AeroDB : LFPO/02 » ; la piste 02 est prise comme piste d'arrivée si tu n'en as pas choisi d'autre ; le champ garde ton texte tel quel.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T14:38:20Z"
+   "state": "ok",
+   "delivered": "2026-11-16T14:38:20Z",
+   "at": "2026-11-16T16:27:20Z"
   },
   {
    "id": "SOG-0382",
@@ -3826,8 +3842,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Carte, couche « Contrôleurs en ligne » allumée, survole les pastilles d'un grand aérodrome tenu par plusieurs contrôleurs (EDDS ce midi). L'infobulle donne UNE position par ligne avec sa fréquence — « TWR 118.805 · VATSIM » —, du sol vers le haut (ATIS, DEL, GND, TWR, APP), jamais de points de suspension sur une fréquence ; au-delà de huit positions, « + n autres ». Même chose au toucher sur le téléphone.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T14:30:03Z"
+   "state": "ok",
+   "delivered": "2026-11-16T14:30:03Z",
+   "at": "2026-11-16T16:27:23Z"
   },
   {
    "id": "SOG-0383",
@@ -3840,8 +3857,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Carte, ton vol LFST → EIDW, barbules de vent allumées, au zoom de ta capture de 15 h 11. Attendu : le trait de la route se lit d'un bout à l'autre — aucune barbule posée dessus, ni par son pied ni par sa hampe ; elles alternent d'un côté et de l'autre ; il y en a une douzaine, pas soixante-dix ; les repères de distance (425, 400…) et TOC / TOD ne sont pas couverts. Zoome et dézoome : jamais deux barbules collées. Même chose au téléphone.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T14:47:54Z"
+   "state": "ok",
+   "delivered": "2026-11-16T14:47:54Z",
+   "at": "2026-11-16T16:27:26Z"
   },
   {
    "id": "SOG-0384",
@@ -3886,6 +3904,22 @@
     "Une ligne d'ensemble seulement, le détail dans un écran à part",
     "Pas dans l'appli : un tableau tenu par l'ergonome suffit",
     "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0070",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "De la sortie d'une route NAT à la côte ouest des États-Unis : quel algorithme ?",
+   "context": "Trois propositions, à challenger avec les tiens (écris-les dans le texte). A — L'ARBRE DES ARRIVÉES : toutes les routes publiées par la FAA qui finissent à l'aérodrome forment un arbre ; on cherche le chemin le moins cher de la sortie de l'océan jusqu'à un point de cet arbre, puis on suit la route publiée jusqu'au bout. B — LA ROUTE LIBRE À POINTS PUBLIÉS : le plus court chemin échantillonné tous les 200 à 300 NM, chaque point remplacé par le point publié le plus proche (les États-Unis ont une grille de points faite pour ça) ; aucune recherche, quelques millisecondes, 1 à 2 % de plus que le plus court. C — LA RECHERCHE SUR LES VOIES HAUTES SEULES, à niveau fixe, sans les étiquettes d'altitude qui coûtent cher aujourd'hui (elles ne servent qu'à la montée et à la descente). Ce que je ne sais pas encore : combien de routes publiées finissent à KLAX, KSFO, KSEA et d'où elles partent — AeroDB le mesure. Préalable dans tous les cas : reconstruire les États-Unis dans Données (ta base est au cycle du 1er octobre).",
+   "options": [
+    "A pour la fin, B pour le milieu, C en secours",
+    "B seul : route libre à points publiés, la plus simple",
+    "C seul : une vraie recherche sur les voies hautes",
+    "J'ai mon algorithme (dans le texte)"
    ],
    "since": "2026-11-16",
    "state": "todo",

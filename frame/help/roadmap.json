@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a2f162d",
+  "organisation": "03d8ea4",
   "fiches": 387,
   "untranslated": 0,
   "priorities": 374
@@ -286,13 +286,12 @@
     {
      "id": "SOG-0374",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Royaume-Uni : aucune SID lue pour EGLL (les départs ne sont publiés qu'en PDF) — les lire depuis l'eAIP déposé",
      "en": "United Kingdom: no SID read for EGLL (departures are published as PDF only) — read them from the deposited eAIP",
      "de": "Vereinigtes Königreich: keine SID für EGLL gelesen (Abflüge nur als PDF veröffentlicht) — aus dem abgelegten eAIP lesen",
      "es": "Reino Unido: ninguna SID leída para EGLL (las salidas solo se publican en PDF) — leerlas del eAIP depositado",
-     "rank": 311,
-     "test": true
+     "rank": 311
     }
    ]
   },
@@ -829,8 +828,7 @@
      "fr": "Carburant : au contrôle de la route, « LFPO/02 » (aérodrome et piste d'arrivée) est pris pour un point inconnu",
      "en": "Fuel: at the route check, 'LFPO/02' (arrival aerodrome and runway) is taken for an unknown point",
      "de": "Kraftstoff: bei der Streckenprüfung wird „LFPO/02“ (Zielflugplatz und Piste) als unbekannter Punkt gewertet",
-     "es": "Combustible: en el control de la ruta, «LFPO/02» (aeródromo y pista de llegada) se toma por un punto desconocido",
-     "test": true
+     "es": "Combustible: en el control de la ruta, «LFPO/02» (aeródromo y pista de llegada) se toma por un punto desconocido"
     }
    ]
   },
@@ -950,8 +948,7 @@
      "fr": "Carburant : après le choix ou le changement d'une SID ou d'une STAR, une longue phase de rafraîchissement",
      "en": "Fuel: a long refresh after choosing or changing a SID or a STAR",
      "de": "Kraftstoff: lange Aktualisierung nach Wahl oder Wechsel einer SID oder STAR",
-     "es": "Combustible: una larga actualización tras elegir o cambiar una SID o una STAR",
-     "test": true
+     "es": "Combustible: una larga actualización tras elegir o cambiar una SID o una STAR"
     }
    ]
   },
@@ -1605,8 +1602,7 @@
      "fr": "Carte : l'infobulle des contrôleurs en ligne coupe la liste quand il y a plusieurs fréquences",
      "en": "Map: the tooltip of online controllers cuts the list when there are several frequencies",
      "de": "Karte: der Tooltip der Online-Lotsen schneidet die Liste ab, wenn es mehrere Frequenzen gibt",
-     "es": "Mapa: la etiqueta de los controladores en línea corta la lista cuando hay varias frecuencias",
-     "test": true
+     "es": "Mapa: la etiqueta de los controladores en línea corta la lista cuando hay varias frecuencias"
     }
    ]
   },
@@ -1649,8 +1645,7 @@
      "fr": "Carte : les barbules de vent cachent le tracé de la route — les poser en quinconce de part et d'autre, et moins nombreuses",
      "en": "Map: the wind barbs hide the route line — stagger them on either side, and fewer of them",
      "de": "Karte: die Windfiedern verdecken die Streckenlinie — versetzt beidseitig anordnen, und weniger davon",
-     "es": "Mapa: las barbas de viento tapan el trazado de la ruta — colocarlas al tresbolillo a ambos lados, y menos",
-     "test": true
+     "es": "Mapa: las barbas de viento tapan el trazado de la ruta — colocarlas al tresbolillo a ambos lados, y menos"
     }
    ]
   },
@@ -3207,8 +3202,7 @@
      "en": "Data: a source shown « not up to date » while an up-to-date primary source carries the same content (DIRCAM taken from the SIA, openAIP in red, Portugal published by editions)",
      "de": "Daten: eine Quelle gilt als « nicht aktuell », obwohl eine aktuelle Primärquelle denselben Inhalt liefert (DIRCAM über SIA, openAIP rot, Portugal nach Ausgaben)",
      "es": "Datos: una fuente dicha « no al día » cuando una fuente primaria al día lleva el mismo contenido (DIRCAM tomado del SIA, openAIP en rojo, Portugal por ediciones)",
-     "rank": 344,
-     "test": true
+     "rank": 344
     }
    ]
   },
@@ -3230,8 +3224,7 @@
      "en": "Iceland: taking Avians fails (« unreadable file ») and nothing allows a manual drop; ENR 3.2 routes come one page per route",
      "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
      "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta",
-     "rank": 345,
-     "test": true
+     "rank": 345
     }
    ]
   },
@@ -3373,8 +3366,7 @@
      "en": "LFST: no approach (several RNAV, several conventional); no taxiway names",
      "de": "LFST: kein Anflug (mehrere RNAV, mehrere konventionelle); keine Rollwegnamen",
      "es": "LFST: ninguna aproximación (varias RNAV, varias convencionales); sin nombres de calles de rodaje",
-     "rank": 176,
-     "test": true
+     "rank": 176
     }
    ]
   },
@@ -4141,8 +4133,7 @@
      "en": "Licence: the position of a point read from X-Plane can reach the group's repository with the flight",
      "de": "Lizenz: die Position eines aus X-Plane gelesenen Punkts kann mit dem Flug ins Repository der Gruppe gelangen",
      "es": "Licencia: la posición de un punto leído en X-Plane puede llegar al repositorio del grupo con el vuelo",
-     "rank": 351,
-     "test": true
+     "rank": 351
     }
    ]
   },
@@ -4914,8 +4905,7 @@
      "fr": "Données : sur la page de mise à jour, un clic est pris pour un glisser, même hors de la carte",
      "en": "Data: on the update page a click is taken for a drag, even outside the map",
      "de": "Daten: auf der Aktualisierungsseite wird ein Klick als Ziehen gewertet, auch außerhalb der Karte",
-     "es": "Datos: en la página de actualización un clic se toma por un arrastre, incluso fuera del mapa",
-     "test": true
+     "es": "Datos: en la página de actualización un clic se toma por un arrastre, incluso fuera del mapa"
     }
    ]
   },
@@ -5182,8 +5172,7 @@
      "fr": "Installation : les bibliothèques Python en option s'installent par un script, et l'écran dit lesquelles manquent",
      "en": "Installation: optional Python libraries are installed by a script, and the screen says which ones are missing",
      "de": "Installation: optionale Python-Bibliotheken werden per Skript installiert, und der Bildschirm sagt, welche fehlen",
-     "es": "Instalación: las bibliotecas opcionales de Python se instalan con un script, y la pantalla dice cuáles faltan",
-     "test": true
+     "es": "Instalación: las bibliotecas opcionales de Python se instalan con un script, y la pantalla dice cuáles faltan"
     }
    ]
   },
@@ -5609,8 +5598,7 @@
      "en": "Settings: the yellow dot on « Getting started » does not say what is wrong; GitLab token: warn 5 days before, louder the day before, louder still once expired",
      "de": "Einstellungen: der gelbe Punkt bei « Erste Schritte » sagt nicht, was fehlt; GitLab-Token: 5 Tage vorher warnen, am Vortag deutlicher, abgelaufen noch deutlicher",
      "es": "Ajustes: el punto amarillo de « Puesta en marcha » no dice qué falla; token de GitLab: avisar 5 días antes, más fuerte la víspera, más aún caducado",
-     "rank": 366,
-     "test": true
+     "rank": 366
     }
    ]
   },
@@ -5822,8 +5810,7 @@
      "en": "Report: the same report reaches the repository two or three times",
      "de": "Melden: dieselbe Meldung kommt zwei- oder dreimal im Repository an",
      "es": "Avisar: un mismo aviso llega dos o tres veces al repositorio",
-     "rank": 369,
-     "test": true
+     "rank": 369
     }
    ]
   },
@@ -5868,8 +5855,7 @@
      "en": "GitLab sync: the banner said « request limit » for hours — everything came back after renewing the token",
      "de": "GitLab-Synchronisation: das Banner meldete stundenlang « Anfragelimit » — nach Erneuern des Tokens war alles wieder in Ordnung",
      "es": "Sincronización GitLab: el aviso decía « límite de peticiones » durante horas — todo volvió al renovar el token",
-     "rank": 371,
-     "test": true
+     "rank": 371
     }
    ]
   },
@@ -5913,8 +5899,7 @@
      "en": "« Compute A → B »: 39.7 s spent in the launcher for EGLL → KJFK with the day's NAT tracks read",
      "de": "« A → B berechnen »: 39,7 s im Launcher für EGLL → KJFK mit gelesenen NAT-Tracks des Tages",
      "es": "« Calcular A → B »: 39,7 s en el lanzador para EGLL → KJFK con las rutas NAT del día leídas",
-     "rank": 373,
-     "test": true
+     "rank": 373
     }
    ]
   },
@@ -5936,8 +5921,7 @@
      "en": "Data: a country's sheet contradicts itself (Portugal; North Atlantic)",
      "de": "Daten: das Blatt eines Landes widerspricht sich (Portugal; Nordatlantik)",
      "es": "Datos: la ficha de un país se contradice (Portugal; Atlántico Norte)",
-     "rank": 374,
-     "test": true
+     "rank": 374
     }
    ]
   },
