@@ -330,6 +330,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4, defect 4, 16 November, case K303)**: a RAD finding « X compulsory for the traffic via Y » (LF2096: ETIKI for REGHI) is corrected first by passing X next to Y (the free route reaches Y by X); Y is set aside only if that fails, and the answer says the detour with both distances; a RAD retry that imposes nothing new is never played. LEMD → KBOS: 3 267 NM by KORUL ETIKI REGHI, no error (3 219 NM via REGHI with two errors; 4 812 NM by the next entry).
 
+**Done (L5 4, second run of the matrix, 16 November, 21:12-21:23)**: after the four fixes, the whole matrix once on the real base: 144 requests, 144 with a route, none a proposal, none in error, median 2.2 s, maximum 8.2 s, none over 20 s, 17 over 5 s (EIDW « out » free-route European search; the RAD retries of LEMD and LFPG). The acceptance of 13.3 (« none returns a proposal ») is met; the target of 5 s for a request with no route is met (there is none); the 17 requests over 5 s are in `frame/aerodb/INTEGRATION.md` with where the time goes.
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |
