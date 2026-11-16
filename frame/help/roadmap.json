@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "58cc79f",
+  "organisation": "edf7cc3",
   "fiches": 374,
   "untranslated": 0,
   "priorities": 310
@@ -285,11 +285,12 @@
     {
      "id": "SOG-0374",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Royaume-Uni : aucune SID lue pour EGLL (les départs ne sont publiés qu'en PDF) — les lire depuis l'eAIP déposé",
      "en": "United Kingdom: no SID read for EGLL (departures are published as PDF only) — read them from the deposited eAIP",
      "de": "Vereinigtes Königreich: keine SID für EGLL gelesen (Abflüge nur als PDF veröffentlicht) — aus dem abgelegten eAIP lesen",
-     "es": "Reino Unido: ninguna SID leída para EGLL (las salidas solo se publican en PDF) — leerlas del eAIP depositado"
+     "es": "Reino Unido: ninguna SID leída para EGLL (las salidas solo se publican en PDF) — leerlas del eAIP depositado",
+     "test": true
     }
    ]
   },
