@@ -3169,6 +3169,41 @@ def k279(c):
         finally:
             AF._pause = orig_pause
 
+
+def _sg():
+    """(fonction ajouter, contrôle, fonction lire, contrôle de lecture, espace de noms du module, Job) du jeu « signalement », chargé comme le lanceur le charge."""
+    RJ = _mods()[0]
+    fn, check = RJ.REGISTRY[('signalement', 'ajouter')]
+    rd, check_rd = RJ.REGISTRY[('signalement', 'lire')]
+    return fn, check, rd, check_rd, fn.__globals__, RJ.Job
+
+
+def _png(w, h, size=0):
+    import struct
+    import zlib
+    ihdr = struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)
+    b = b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + ihdr + struct.pack('>I', zlib.crc32(b'IHDR' + ihdr)) + struct.pack('>I', 0) + b'IEND' + struct.pack('>I', zlib.crc32(b'IEND'))
+    return b + b'\0' * max(0, size - len(b))
+
+
+def _jpg(w, h):
+    return b'\xff\xd8\xff\xe0\x00\x04ab\xff\xc0\x00\x0b\x08' + h.to_bytes(2, 'big') + w.to_bytes(2, 'big') + b'\x01\x01\x11\x00\xff\xd9'
+
+
+def _webp(w, h):
+    body = b'WEBP' + b'VP8X' + (10).to_bytes(4, 'little') + b'\0\0\0\0' + (w - 1).to_bytes(3, 'little') + (h - 1).to_bytes(3, 'little')
+    return b'RIFF' + len(body).to_bytes(4, 'little') + body
+
+
+def _b64(raw):
+    import base64
+    return base64.b64encode(raw).decode()
+
+
+GOOD_SG = {'kind': 'bug', 'title': 'Le bouton ne répond pas', 'text': 'Je touche « Démarrer » et rien ne se passe.\n\tDeuxième ligne.', 'screen': 'fuel',
+           'ctx': {'version': '3.0.0-alpha.5', 'lang': 'fr', 'design': 'swiss', 'size': 'phone', 'tone': 'day'}}
+
+
 @case('K262', 'signalement/ajouter and signalement/lire: organisation/SIGNALEMENTS.json written by the launcher (no organisation folder said and nothing created, closed lists, a title of 80 and a text of 2000 without control characters, an unknown key refused, the identifier made here, 1000 entries, what the file already holds kept as it is, an unreadable file never replaced, a pilot report taken once) (SOG-0316)', 'K',
       static=True, rule='SOG-0316 (the user, Q-0046: his own reports go « direct chez » the ergonomist, in organisation/SIGNALEMENTS.json): a launcher verb on the existing job route, same guards as recette/verdict; Sécurisation (13 Nov): closed lists for kind and screen, no free field, identifier generated here, 1000 entries refused by code, an unreadable file refused not replaced, a pilot text is untrusted (the folder is not an identity: « signalé depuis le dossier de »)')
 def k262(c):
