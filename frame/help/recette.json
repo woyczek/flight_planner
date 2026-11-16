@@ -3601,10 +3601,10 @@
     "de": "« A → B berechnen »: 39,7 s im Launcher für EGLL → KJFK mit gelesenen NAT-Tracks des Tages",
     "es": "« Calcular A → B »: 39,7 s en el lanzador para EGLL → KJFK con las rutas NAT del día leídas"
    },
-   "test": "Relance d'abord le lanceur (son Python a changé). Carburant, EGLL → KJFK, routes NAT du jour lues : « Calculer A → B », prends la proposition, puis « Contrôler » (c'est ce geste qui avait pris 40 s). « Copier le diagnostic » : la valeur « launcher » est sous 15 000 ms. (Une suite est en cours pour que « Contrôler » réponde en 5 s.)",
+   "test": "Relance d'abord le lanceur (son Python a changé). Carburant, EGLL → KJFK, routes NAT du jour lues : « Calculer A → B » (15 s au plus), prends la proposition, puis « Contrôler » : la réponse arrive en une à deux secondes et la route est acceptée. « Copier le diagnostic » : la valeur « launcher » est sous 5 000 ms.",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T08:14:47Z"
+   "delivered": "2026-11-16T08:28:47Z"
   }
  ],
  "decisions": [
