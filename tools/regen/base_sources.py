@@ -12,7 +12,7 @@ state 'skipped', error 'personal'), ukmil (gb), navcan (ca), nat (nat). Les sour
 vue ni dans le résultat. AUCUN commit (décision du 30 octobre) : les sources brutes sont ignorées par git (tools/data_template/.gitignore). Annulation entre deux fichiers
 (openaip : entre deux couches ; faa : entre deux couches) ; une source en échec n'arrête pas les autres.
   Vue (GET regen/job?id=) : `zones: { <zone>: { state ('waiting' | 'fetching' | 'done' | 'failed' | 'cancelled'), done, total, error?, sources: { <source>: { state
-  ('downloaded' | 'unchanged' | 'failed' | 'skipped' | 'manual'), files?, bytes?, error?, status? } } } }` ; step « N zones sur M », done / total en zones (unit 'zones').
+  ('downloaded' | 'unchanged' | 'failed' | 'skipped' | 'manual'), files?, bytes?, error?, status?, message? (la phrase de l'échec, adresse essayée comprise, 240 signes au plus : SOG-0368), pages? { read, of, missing? } et stopped? (le refus de l'hôte : une prise par pages), edition?, from?, datedBy?, deposited? } } } }` ; step « N zones sur M », done / total en zones (unit 'zones').
   Par zone, done / total = sources téléchargeables essayées n / m (une source 'skipped' n'est pas comptée) ; `sources` porte aussi, dès le départ, les sources 'manual'
   et 'skipped'. 'downloaded' : au moins un fichier écrit ; 'unchanged' : rien n'a changé (304, ou contenu identique) ; 'failed' : une erreur (les fichiers obtenus quand même
   sont comptés). Une zone est 'failed' si une de ses sources a échoué (`error` = le code de la première), sinon 'done'. Codes d'une source : 'network', 'http' (+ status),
@@ -46,6 +46,7 @@ import shutil
 import subprocess
 import sys
 import time
+import unicodedata
 import zipfile
 import zip_guard
 
@@ -352,16 +353,25 @@ HTTP_RE = re.compile(r'\bHTTP(?: Error)? (\d{3})\b')
 PARSE_RE = re.compile(r'illisible|aucun|introuvable|chang[ée]|invalide|inconnu|service FAA|Expecting|JSON|decod|Extra data|Unterminated', re.I)
 
 
+def said(text, ctx=None, n=240):
+    """Une phrase d'échec rendue à l'écran (SOG-0368, `message` et `stopped` d'une source) : clean_error (secrets, jetons, adresses de courriel), PUIS les caractères de contrôle (Cc : une tabulation ou un saut de ligne devient une espace) et les marques de format (Cf : U+202E et les autres
+    marques bidirectionnelles, U+200B…) sont retirés — un hôte tiers ne fait ni inverser ni masquer un bout de la phrase —, PUIS `n` signes au plus."""
+    out = regen_jobs.clean_error(str(text), ctx)
+    out = ''.join(' ' if c in '\t\n\r\x0b\x0c' else c for c in out)
+    return ''.join(c for c in out if unicodedata.category(c) not in ('Cc', 'Cf'))[:n]
+
+
 def classify(item):
     """Un échec d'aero_fetch (le texte de ses `errors`, ou l'exception qui s'est échappée d'une de ses fonctions) → { error: 'network' | 'http' | 'parse', status?, text }.
     HTTP n (404, 502…) → 'http' + status ; une forme inattendue (PDF illisible, page changée, JSON refusé, exception qui n'est pas du réseau) → 'parse' ; le reste → 'network'."""
     text = str(item)
+    extra = {k: getattr(item, k) for k in ('pages', 'stopped') if getattr(item, k, None)}      # SOG-0368 : ce qu'un échec dit de ses pages et du refus de l'hôte (aero_fetch.Failure)
     m = HTTP_RE.search(text)
     if m:
-        return {'error': 'http', 'status': int(m.group(1)), 'text': text}
+        return {'error': 'http', 'status': int(m.group(1)), 'text': text, **extra}
     if (isinstance(item, BaseException) and not isinstance(item, OSError)) or PARSE_RE.search(text):
-        return {'error': 'parse', 'text': text}
-    return {'error': 'network', 'text': text}
+        return {'error': 'parse', 'text': text, **extra}
+    return {'error': 'network', 'text': text, **extra}
 
 
 def _names(folder):
@@ -482,19 +492,21 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset(), downl
         errors.append(classify('aucun fichier rendu (format changé ?)'))
     if errors:
         e = errors[0]
-        entry = {'state': 'failed', 'error': e['error'], **({'status': e['status']} if 'status' in e else {})}
+        entry = {'state': 'failed', 'error': e['error'], **({'status': e['status']} if 'status' in e else {}), **{k: e[k] for k in ('pages', 'stopped') if k in e}}
         if files:
             entry.update(files=len(files), bytes=sum(f.get('bytes', 0) for f in files))
     else:
         entry = {'state': 'downloaded' if any(not f.get('unchanged') for f in files) else 'unchanged', 'files': len(files),
                  'bytes': sum(f.get('bytes', 0) for f in files)}
-    for k in ('edition', 'from', 'datedBy', 'future', 'older_than_cycle', 'skipped', 'refused'):      # SOG-0244 : ce que l'écran dit d'un eAIP pris à la main (l'édition lue, le nom du fichier, à venir, plus ancienne que le cycle, routes sans nom, fichiers non pris)
+    for k in ('edition', 'from', 'datedBy', 'future', 'older_than_cycle', 'skipped', 'refused', 'pages', 'stopped'):      # SOG-0244 : ce que l'écran dit d'un eAIP pris à la main (l'édition lue, le nom du fichier, à venir, plus ancienne que le cycle, routes sans nom, fichiers non pris)
         v = next((f[k] for f in files if f.get(k) not in (None, False, [], {})), None)
         if v is not None:
             entry[k] = v
     dep = max((f['deposited'] for f in files if f.get('deposited')), default=None)
     if dep:
         entry['deposited'] = dep      # lu dans un fichier choisi à la main faute de réseau, DATÉ : « déposé le … » (jamais pris pour une lecture du jour)
+    if isinstance(entry.get('stopped'), str):      # le refus de l'hôte est une phrase d'un tiers : nettoyée comme `message`
+        entry['stopped'] = said(entry['stopped'])
     mods = [f"{FOLDERS[p]}/{f['name']}" for f in files if not f.get('unchanged')] + removed
     return entry, files, errors, mods, cancelled
 
@@ -563,7 +575,9 @@ def fetch(job, args, ctx):
             elif entry['state'] == 'failed':
                 bad = True
                 first_error = first_error or entry['error']
-                failed.append({'zone': z, 'source': s, 'error': entry['error'], **({'status': entry['status']} if 'status' in entry else {})})
+                entry['message'] = said(errors[0]['text'], ctx)      # SOG-0368 : la phrase de l'échec (avec l'adresse essayée), pour la carte de la source : dans la vue et dans `failed`
+                view.source(z, s, entry)
+                failed.append({'zone': z, 'source': s, 'error': entry['error'], **({'status': entry['status']} if 'status' in entry else {}), **{k: entry[k] for k in ('message', 'pages', 'stopped') if k in entry}})
                 job.log(f"{z}: {s} échec ({entry['error']}{' ' + str(entry['status']) if 'status' in entry else ''}) : {errors[0]['text']}")
             elif entry['state'] == 'skipped':
                 good += 1  # rien à télécharger (export absent) : dit une fois à la fin, la zone reste faite

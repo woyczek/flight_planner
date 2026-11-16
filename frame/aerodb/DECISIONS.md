@@ -3145,3 +3145,7 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 ## 16 November 2026 — SOG-0368 touch-up: a partial site file does not block a complete deposit
 
 - **Touch-up** (Sécurisation, audit 217, relayed 16 Nov 9:19; decided by the ergonomics session): a partial file from the site (pages read < expected) does not block a complete deposit; it does not replace a complete site file. When both could exist the deposit REPLACES the partial one, so the builder reads one file. Red before: K279 (the deposit was refused « une édition prise sur le site est déjà là »).
+
+## 16 November 2026 — SOG-0368: the card of a failed taking
+
+- **Card** (Réglages, relayed 16 Nov 9:42; Sécurisation accepted with one touch-up): `message`, `pages`, `stopped` on the failed source in the view and in `failed[]`; the sentences are cleaned by ONE function (`said`: clean_error, control characters and format marks removed, 240 characters). `builtCycle` for an editions source is the cycle in force when the edition held is in force (see INTEGRATION), not the date of the data. Red before: K279 (no `message` / `pages` / `stopped`; a sentence with U+202E and a control character reaching the screen); K54 now checks `message` apart.

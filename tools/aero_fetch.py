@@ -62,6 +62,18 @@ MAX_BYTES = 200 * 1024 * 1024  # 200 Mo au plus par réponse : au-delà, le tél
 CHUNK = 1024 * 1024
 
 
+class Failure(str):
+    """Un échec d'une prise, DIT en une phrase, qui porte en plus ce que la carte de la source doit montrer (SOG-0368 : `pages` { read, of, missing? } et `stopped`, la phrase du refus de l'hôte) : classify() les garde dans l'entrée de la vue."""
+    pages = None
+    stopped = None
+
+
+def failure(text, pages=None, stopped=None):
+    f = Failure(text)
+    f.pages, f.stopped = pages, stopped
+    return f
+
+
 class TooLarge(OSError):
     """Réponse plus grande que MAX_BYTES : lecture arrêtée, rien n'est écrit (une erreur réseau pour l'appelant)."""
 
@@ -578,7 +590,7 @@ def avians(data, downloads=None, today=None):
     elif not complete:
         better = [n for n, (dep, d) in present.items() if n != entry['name'] or _read_of(os.path.join(folder, n)) > pages.get('read', 0)]
         if better:      # rien n'est écrit : ni ce partiel, ni le retrait d'une édition complète
-            return [], [f'{label} : {pages.get("read")} page(s) de routes lue(s) sur {pages.get("of")} ; l’hôte a refusé' + (f' ({entry["stopped"]})' if entry.get('stopped') else '') + f' ; le fichier déjà là ({sorted(better)[-1]}) est gardé, rien n’a été écrit']
+            return [], [failure(f'{label} : {pages.get("read")} page(s) de routes lue(s) sur {pages.get("of")} ; l’hôte a refusé' + (f' ({entry["stopped"]})' if entry.get('stopped') else '') + f' ; le fichier déjà là ({sorted(better)[-1]}) est gardé, rien n’a été écrit', pages=dict(pages), stopped=entry.get('stopped'))]
     body = entry.pop('body')
     path = os.path.join(folder, entry['name'])
     entry['bytes'] = len(body)

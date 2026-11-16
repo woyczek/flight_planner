@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Sources: the card of a failed taking can say why** (SOG-0368) — on a failed source, `zones[zone].sources[source]` and `failed[]` of `base/fetch` carry `message` (the sentence of the failure with the address tried; before, only in the console log), and `pages` { read, of, missing? } and `stopped` (the refusal of the host) when the taking is by pages (Iceland); `message` and `stopped` are cleaned (secrets, then control characters and format marks such as U+202E removed, then 240 characters at most): a third-party host cannot invert or hide a part of the screen. Launcher Python: restart the launcher. Case K279.
 - **Iceland: a partial file from the site no longer blocks a complete deposit** (SOG-0368, audit 217) — a hand deposit replaces a file taken from the site whose count says fewer pages read than expected; it still never replaces a COMPLETE one. The zone holds one file of this source, so the builder reads the deposit only. Launcher Python: restart the launcher. Case K279.
 - **Fuel, Route field: a NAT track absent from the day's tracks read is said on a calm line (« Route NAT G : absente des routes du 16/11 »), never « point inconnu »** (fuel DECISIONS; noreg F230; SOG-0372).
 - **Fuel, a route taken: the points the engine placed for it are known to the Route field (read bounded), never « Points inconnus »** (fuel DECISIONS; noreg F229; SOG-0372 c).

@@ -255,14 +255,16 @@ def k54(c):
             c.eq(z['es']['sources']['openaip'], {'state': 'skipped', 'error': 'absent'}, 'es: no openAIP export (the four layers absent) is absent, not a failure', what='es openaip')
             c.eq(z['es']['sources']['enaire'], {'state': 'skipped', 'error': 'personal'}, 'es: ENAIRE is a personal licence, not declared: skipped, never fetched', what='es enaire')
             c.eq((z['es']['state'], z['es']['done'], z['es']['total'], z['es'].get('error')), ('done', 1, 1, None), 'es: done (nothing to download is not a failure); the skipped source is not counted', what='es zone')
-            c.eq(z['ca']['sources']['openaip'], {'state': 'failed', 'error': 'http', 'status': 500, 'files': 1, 'bytes': len(apt)}, 'ca openAIP: one layer 500, another written: failed, the file still counted', what='ca openaip')
-            c.eq(z['ca']['sources']['navcan'], {'state': 'failed', 'error': 'network'}, 'ca NAV CANADA: a time-out is a network failure', what='ca navcan')
+            nomsg = lambda e: {k: v for k, v in e.items() if k != 'message'}      # `message` (SOG-0368: the sentence of the failure, 240 characters at most) is checked once below
+            c.eq(nomsg(z['ca']['sources']['openaip']), {'state': 'failed', 'error': 'http', 'status': 500, 'files': 1, 'bytes': len(apt)}, 'ca openAIP: one layer 500, another written: failed, the file still counted', what='ca openaip')
+            c.eq(nomsg(z['ca']['sources']['navcan']), {'state': 'failed', 'error': 'network'}, 'ca NAV CANADA: a time-out is a network failure', what='ca navcan')
+            c.ok(all(isinstance(z['ca']['sources'][k].get('message'), str) and 0 < len(z['ca']['sources'][k]['message']) <= 240 for k in ('openaip', 'navcan')), str({k: z['ca']['sources'][k].get('message') for k in ('openaip', 'navcan')}), 'a failed source says why: `message`, the sentence of the failure, 240 characters at most')
             c.ok(not any(u for u, s in net.calls if 'enaire' in u.lower()), str(net.calls), 'ENAIRE was not asked for anything')
             c.eq(sorted(k for k in z['gb']['sources']), ['nats', 'openaip', 'ukmil'], 'the view carries downloadable, manual and skipped sources; xplane (local) and mora (computed) are left out', what='sources in the view')
             c.eq(res['fetched'], ['gb', 'ca'], 'fetched: the zones where something changed (ca wrote a layer although another failed)', what='fetched')
             c.eq(res['unchanged'], ['es'], 'unchanged: es (nothing there, nothing changed)', what='unchanged')
             c.eq(res['absent'], ['ca_nav', 'ca_rpp', 'es_apt', 'es_asp', 'es_nav', 'es_rpp', 'gb_nav', 'gb_rpp'], 'absent: the layers openAIP does not have (403, 404)', what='absent')
-            c.eq(res['failed'], [{'zone': 'ca', 'source': 'navcan', 'error': 'network'},
+            c.eq([nomsg(f) for f in res['failed']], [{'zone': 'ca', 'source': 'navcan', 'error': 'network'},
                                  {'zone': 'ca', 'source': 'openaip', 'error': 'http', 'status': 500}], 'failed: zone, source, code (+ status), in the order they ran', what='failed')
             c.eq((res['ok'], res['reason']), (False, 'partial'), 'not ok, partial: others succeeded', what='verdict')
             nats = next(m for m in res['manual'] if m['source'] == 'nats')
@@ -3220,6 +3222,31 @@ def k279(c):
             deposit([(f'avians_is_enr_3.2_Y{i}.html', F.route_page(f'Y{i}', F.pts_of('KEFLA', 'GRIMS'))) for i in range(1, 130)])
             got, day = A.deposited([str(up)], today)
             c.eq(len([k for k in got if k != 'points']), 100, 'more than 100 route pages deposited: 100 are kept (as the summary of the site)', what='100 routes')
+            # the card of a failed taking (audit 217 addendum): the sentence with the address, `pages` and `stopped` reach the view and `failed`
+            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td2:
+                data2 = _repo(DS, td2)
+                z = data2 / 'sia' / 'zones' / 'is'
+                z.mkdir(parents=True)
+                (z / 'avians_is_enr_20260903.geojson').write_text('{"type":"FeatureCollection","features":[],"pages":{"read":3,"of":3}}', encoding='utf-8')
+                with _Net(AF, site(**{Y23: ('http', 429)})):
+                    view, res = _run(RJ, BS, 'fetch', {'zones': ['is'], 'personal': ['avians']}, _ctx(DS, data2))
+                src = view['zones']['is']['sources']['avians']
+                f = (res.get('failed') or [{}])[0]
+                c.eq((src.get('state'), src.get('pages'), '429' in str(src.get('stopped')), 'gardé' in str(src.get('message')), len(str(src.get('message'))) <= 240, f.get('pages'), f.get('message') == src.get('message'), f.get('stopped') == src.get('stopped')),
+                     ('failed', {'read': 1, 'of': 3}, True, True, True, {'read': 1, 'of': 3}, True, True),
+                     'a failed taking says WHY on its card: `message` (the sentence, 240 characters at most), `pages` { read, of } and `stopped` (the refusal of the host), in the view of the zone AND in `failed`', what='failed card')
+                # the sentence of a third-party host never inverts or hides a part of the screen: control characters and format marks (U+202E, U+200B…) are removed, then 240 characters
+                with _Net(AF, site(**{Y23: ('os', 'timed out ‮tail​' + 'x' * 400)})):
+                    view, res = _run(RJ, BS, 'fetch', {'zones': ['is'], 'personal': ['avians']}, _ctx(DS, data2))
+                src = view['zones']['is']['sources']['avians']
+                bad = [ch for ch in str(src.get('message')) + str(src.get('stopped')) + str(res['failed'][0].get('message')) + str(res['failed'][0].get('stopped')) if ch in '‮​']
+                c.eq((bad, 'tail' in src['message'], 'tail' in src['stopped'], len(src['message']) <= 240, len(src['stopped']) <= 240, res['failed'][0].get('stopped') == src['stopped']), ([], True, True, True, True, True),
+                     'the sentence of a host with U+202E, a control character and U+200B reaches the card without them (`message` AND `stopped`, in the view and in `failed`), 240 characters at most', what='clean sentence')
+                (z / 'avians_is_enr_20260903.geojson').unlink()
+                with _Net(AF, {'eaip.avians.is': ('os', 'timed out')}):
+                    view, res = _run(RJ, BS, 'fetch', {'zones': ['is'], 'personal': ['avians']}, _ctx(DS, data2))
+                src = view['zones']['is']['sources']['avians']
+                c.ok(src.get('state') == 'failed' and 'https://eaip.avians.is/' in str(src.get('message')) and len(src['message']) <= 240, str(src), 'a site that does not answer: the sentence carries the address tried')
         finally:
             AF._pause = orig_pause
 

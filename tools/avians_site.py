@@ -17,6 +17,15 @@ PAUSE_S = 0.5
 HAVE_MAX = 16 * 1024 * 1024
 
 
+class Said(str):
+    """Une phrase d'échec qui porte `pages` { read, of, missing? } et `stopped` (le refus de l'hôte) : la carte de la source les montre (tools/regen/base_sources.classify les lit par attribut)."""
+
+    def __new__(cls, text, pages=None, stopped=None):
+        s = str.__new__(cls, text)
+        s.pages, s.stopped = pages, stopped
+        return s
+
+
 def refusal(e):
     """Une erreur de lecture est-elle un REFUS de l'hôte (à respecter : 403, 429, 5xx, délai, réseau) plutôt qu'une page absente (404, 410) ?"""
     return not (isinstance(e, urllib.error.HTTPError) and e.code in (404, 410))
@@ -67,7 +76,7 @@ def from_site(get, folder, today=None, sleep=time.sleep):
             missing.append(url)
     info = {'read': len(pages), 'of': len(names), **({'missing': missing[:5]} if missing else {})}
     if not pages:
-        return [], [f'{label} : aucune page de route lue sur {len(names)}' + (f' ; l’hôte a refusé : {stopped}' if stopped else '') + ' ; rien n’a été écrit']
+        return [], [Said(f'{label} : aucune page de route lue sur {len(names)}' + (f' ; l’hôte a refusé : {stopped}' if stopped else '') + ' ; rien n’a été écrit', info, stopped[:240] if stopped else None)]
     try:
         g, n, m = A.convert(points_page, pages, issue, info)
     except ValueError as e:
