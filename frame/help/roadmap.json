@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9eda6f6",
+  "organisation": "f9687ba",
   "fiches": 387,
   "untranslated": 0,
   "priorities": 374,
@@ -2101,11 +2101,12 @@
     {
      "id": "SOG-0386",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Feuille de route : une vue d'ensemble par grande fonction et par capacité, avec un pourcentage",
      "en": "Roadmap: an overview by main function and by capability, with a percentage",
      "de": "Roadmap: eine Übersicht nach Hauptfunktion und Fähigkeit, mit Prozentwert",
-     "es": "Hoja de ruta: una vista de conjunto por gran función y por capacidad, con un porcentaje"
+     "es": "Hoja de ruta: una vista de conjunto por gran función y por capacidad, con un porcentaje",
+     "test": true
     },
     {
      "id": "SOG-0387",
