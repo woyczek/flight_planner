@@ -3906,54 +3906,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0068",
-   "fiche": "SOG-0354",
-   "app": "maintenance",
-   "question": "L'agent d'essais (file d'attente, un seul essai à la fois) : qui ?",
-   "context": "Tu as rappelé le principe : les sessions ne jouent plus leurs essais. Aucun agent d'essais n'existe encore dans le dépôt. En attendant ta réponse, c'est moi qui joue tout, un essai à la fois : les sessions m'envoient le commit et les cas.",
-   "options": [
-    "Une session dédiée « Essais », que tu démarres ou que je démarre sur ton mot",
-    "L'ergonome reste le seul à jouer les essais",
-    "Un verrou dans l'outil d'essais : n'importe qui lance, un seul tourne, les autres attendent",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0069",
-   "fiche": "SOG-0386",
-   "app": "pilote",
-   "question": "Vue d'ensemble en tête de la feuille de route : quelle forme ?",
-   "context": "Tu as raison, quatorze barres c'est trop. Proposition : UNE ligne (« Ensemble : 67 % ») puis quatre groupes repliés — Préparer et voler (Carburant et route, Carte, Météo) ; Missions et compagnie (Missions, Ordres de vol, Compte rendu, Site) ; Suivre (Mes vols, Statistiques, Atterrissages, Aéronefs) ; Socle (Données, Réglages, Aide). On ouvre un groupe pour voir ses fonctions.",
-   "options": [
-    "Une ligne d'ensemble et quatre groupes repliés",
-    "Une ligne d'ensemble seulement, le détail dans un écran à part",
-    "Pas dans l'appli : un tableau tenu par l'ergonome suffit",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0070",
-   "fiche": "SOG-0354",
-   "app": "maintenance",
-   "question": "Sortie NAT → côte ouest : la mesure dit que c'est déjà rapide. Que veux-tu challenger ?",
-   "context": "QUESTION REPOSÉE à 18 h 08 avec la mesure d'AeroDB sur ta vraie base (l'ordre des options a changé). De la sortie de l'océan à Los Angeles, le moteur trouve la route en moins d'un centième de seconde (152 états), par une route nord-américaine, des voies publiées et la STAR ; le vol entier Dublin → Los Angeles répond en 3,4 s à froid et 0,5 s à chaud (5 095 NM). Mes propositions A (arbre des arrivées) et C (voies hautes seules) sont condamnées par ces chiffres ; B existe déjà (la route libre). Ce que je conteste maintenant : chercher un nouvel algorithme là où le temps est déjà bon. Le vrai manque est la FIABILITÉ : de Paris vers la côte ouest le moteur ne rend pas de route (défaut trouvé par AeroDB, en correction), et aucune matrice de vols ne prouve encore le reste. Deux erreurs de ma part à corriger : ta base des États-Unis n'est PAS périmée (cycle du 29 octobre) ; et les PDF du Canada n'ont aucun tableau de voies ni de points — il n'y a rien à y lire.",
-   "options": [
-    "D'accord : on fiabilise (Paris → côte ouest, puis la matrice de vols)",
-    "Je veux comparer avec mon algorithme (je le décris dans le texte)",
-    "Lire aussi l'en-route du CIFP (voies des États-Unis et morceaux du Canada)",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
@@ -4138,6 +4090,63 @@
    "choice": null,
    "text": "le crash est lié au pilote graphique. rien à voir avec les sessions. néanmoins, les essais ne sont plus censés être faits par les sessions, mais par un agent dédié, qui gère une file d’attente, et un non recouvrement. c’est le principe.",
    "at": "2026-11-16T16:18:12Z"
+  },
+  {
+   "id": "Q-0068",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "L'agent d'essais (file d'attente, un seul essai à la fois) : qui ?",
+   "context": "Tu as rappelé le principe : les sessions ne jouent plus leurs essais. Aucun agent d'essais n'existe encore dans le dépôt. En attendant ta réponse, c'est moi qui joue tout, un essai à la fois : les sessions m'envoient le commit et les cas.",
+   "options": [
+    "Une session dédiée « Essais », que tu démarres ou que je démarre sur ton mot",
+    "L'ergonome reste le seul à jouer les essais",
+    "Un verrou dans l'outil d'essais : n'importe qui lance, un seul tourne, les autres attendent",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-16T19:37:21Z"
+  },
+  {
+   "id": "Q-0069",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Vue d'ensemble en tête de la feuille de route : quelle forme ?",
+   "context": "Tu as raison, quatorze barres c'est trop. Proposition : UNE ligne (« Ensemble : 67 % ») puis quatre groupes repliés — Préparer et voler (Carburant et route, Carte, Météo) ; Missions et compagnie (Missions, Ordres de vol, Compte rendu, Site) ; Suivre (Mes vols, Statistiques, Atterrissages, Aéronefs) ; Socle (Données, Réglages, Aide). On ouvre un groupe pour voir ses fonctions.",
+   "options": [
+    "Une ligne d'ensemble et quatre groupes repliés",
+    "Une ligne d'ensemble seulement, le détail dans un écran à part",
+    "Pas dans l'appli : un tableau tenu par l'ergonome suffit",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-16T19:37:35Z"
+  },
+  {
+   "id": "Q-0070",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "Sortie NAT → côte ouest : la mesure dit que c'est déjà rapide. Que veux-tu challenger ?",
+   "context": "QUESTION REPOSÉE à 18 h 08 avec la mesure d'AeroDB sur ta vraie base (l'ordre des options a changé). De la sortie de l'océan à Los Angeles, le moteur trouve la route en moins d'un centième de seconde (152 états), par une route nord-américaine, des voies publiées et la STAR ; le vol entier Dublin → Los Angeles répond en 3,4 s à froid et 0,5 s à chaud (5 095 NM). Mes propositions A (arbre des arrivées) et C (voies hautes seules) sont condamnées par ces chiffres ; B existe déjà (la route libre). Ce que je conteste maintenant : chercher un nouvel algorithme là où le temps est déjà bon. Le vrai manque est la FIABILITÉ : de Paris vers la côte ouest le moteur ne rend pas de route (défaut trouvé par AeroDB, en correction), et aucune matrice de vols ne prouve encore le reste. Deux erreurs de ma part à corriger : ta base des États-Unis n'est PAS périmée (cycle du 29 octobre) ; et les PDF du Canada n'ont aucun tableau de voies ni de points — il n'y a rien à y lire.",
+   "options": [
+    "D'accord : on fiabilise (Paris → côte ouest, puis la matrice de vols)",
+    "Je veux comparer avec mon algorithme (je le décris dans le texte)",
+    "Lire aussi l'en-route du CIFP (voies des États-Unis et morceaux du Canada)",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "on ajoute cifp si on a des possibilités supplémentaires.",
+   "at": "2026-11-16T19:38:21Z"
   }
  ]
 }
