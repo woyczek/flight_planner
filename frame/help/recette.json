@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 237,
+  "tests": 238,
   "verdicts": 152
  },
  "apps": [
@@ -3494,6 +3494,20 @@
    "since": "2026-11-15",
    "state": "todo",
    "delivered": "2026-11-15T19:36:39Z"
+  },
+  {
+   "id": "SOG-0364",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte au téléphone : dans le volet du bas, la fiche d'un espace est cachée à côté de la pile des espaces",
+    "en": "Map on the phone: in the bottom sheet, an airspace's card is hidden beside the airspace stack",
+    "de": "Karte am Telefon: im unteren Blatt ist die Karte eines Luftraums neben dem Luftraumstapel verdeckt",
+    "es": "Mapa en el teléfono: en la hoja inferior, la ficha de un espacio queda oculta junto a la pila de espacios"
+   },
+   "test": "Sur le téléphone, recharge l'appli. Carte : touche un point où il n'y a qu'un espace — sa fiche s'ouvre en entier dans le volet du bas (nom, type, limites sur une ligne), sans pile à côté et sans texte coupé. Touche un point où il y en a plusieurs : un bandeau étroit en haut du volet, et dessous la fiche de l'espace choisi, lisible sans défiler de côté. Ferme la fiche : les notes de la carte reviennent.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-15T20:00:53Z"
   },
   {
    "id": "SOG-0365",

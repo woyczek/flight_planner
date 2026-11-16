@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "24f871e",
+  "organisation": "8b55394",
   "fiches": 369,
   "untranslated": 0,
   "priorities": 310
@@ -1376,7 +1376,7 @@
     {
      "id": "SOG-0353",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Carte à côté de Carburant et Carte en grand : la même vue avec les mêmes paramètres — une spécification de ce qui survit",
      "en": "Map beside Fuel and full Map: the same view with the same parameters — a specification of what survives",
      "de": "Karte neben Kraftstoff und große Karte: dieselbe Ansicht mit denselben Parametern — eine Spezifikation dessen, was erhalten bleibt",
@@ -1635,11 +1635,12 @@
     {
      "id": "SOG-0364",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte au téléphone : dans le volet du bas, la fiche d'un espace est cachée à côté de la pile des espaces",
      "en": "Map on the phone: in the bottom sheet, an airspace's card is hidden beside the airspace stack",
      "de": "Karte am Telefon: im unteren Blatt ist die Karte eines Luftraums neben dem Luftraumstapel verdeckt",
-     "es": "Mapa en el teléfono: en la hoja inferior, la ficha de un espacio queda oculta junto a la pila de espacios"
+     "es": "Mapa en el teléfono: en la hoja inferior, la ficha de un espacio queda oculta junto a la pila de espacios",
+     "test": true
     }
    ]
   },
