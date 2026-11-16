@@ -229,3 +229,68 @@ L2b therefore goes in three steps, one at a time, each judged on this table: (1)
 `PFR_SEG` and of the conditions of the published routes, with fixed-sentence errors for a hostile file, reviewed by
 Sécurisation; (3) gates, skeleton, lazy resolution and section cache, behind a request option, shown to the user on
 EIDW → KBOS and EIDW → KJFK before it becomes the default.
+
+## 13. Lot L5 — a North Atlantic route that is reliable and bounded (the user's priority, 16 November)
+
+*"mes points clef, actuellement : sécuriser et fiabiliser le calcul des routes. je préfère passer du temps sur l'algo
+de création de route nord atlantique, et s'assurer que tout se charge en temps contraint."* This lot comes before
+everything else of this note. Four requirements; each is a case, and the matrix of 13.3 is the proof.
+
+### 13.1 Reliable: a track is taken only when it is valid for this flight
+
+- **Direction**: the track's direction is the flight's.
+- **Time**: the estimated time at the track's entry point is inside the validity of the track message. The estimate
+  is the departure time of the request plus the time of the section before the ocean; without a departure time, the
+  request is answered for "now" and says so.
+- **Level**: the requested level is one of the track's levels for that direction.
+- A track that fails one of the three is not a gate, and the answer names the reason once per track ("track E: not
+  valid at 0340Z", "track E: FL370 not offered"). Never a silent omission.
+
+### 13.2 Complete: when no track of the day fits, the engine creates a random route
+
+Outside the hours of the track system, at a level no track offers, or on a day whose message is not read, the crossing
+is a **random route**, created, not proposed:
+
+- one point at each ten degrees of longitude between the oceanic entry and exit, on the shortest path between them,
+  its latitude rounded to the whole degree (the form `54N030W`, written `54/30`);
+- the entry and the exit are the published points nearest to that path on each side of the ocean, among the points
+  the tracks of the season use (kept from the messages read) and the oceanic boundary points of the base; when the base
+  has none, the answer says "no oceanic entry point known" — it does not invent one;
+- the section is labelled `source: random` and said on the screen "route libre, créée" with its points; the message of
+  the day, when read, is still shown so the pilot can see why no track was taken.
+
+The user decides nothing here: the route is always given, and always says how it was made.
+
+### 13.3 Proven: a matrix of flights, on the real base, kept and replayed
+
+Six aerodromes in Europe (EIDW, EGLL, LFPG, EHAM, EDDF, LEMD) × six in North America (KJFK, KBOS, KIAD, KORD, CYYZ,
+CYUL), both directions, two departure times (one inside the track system for that direction, one outside): 144
+requests. For each: route or not, total time, and the proof of each section (`computed`, `published`, `random`,
+`direct`). Run by AeroDB read-only on the user's base; the table goes to `frame/aerodb/INTEGRATION.md`; a reduced set on
+fixtures becomes a case replayed at every change of the engine. Accepted when: every request returns a route or a
+named reason; none returns a "proposal"; no direct over 200 NM without its reason.
+
+### 13.4 Bounded: every step has its bound and says it
+
+| Step | Bound | When it is exceeded |
+|---|---|---|
+| context (base loaded) | 2 s cold, 0 s warm | the answer says the base is loading and how long it took |
+| tracks of the day (already read) | 0.2 s | the crossing is a random route, said |
+| skeleton | 0.5 s | — (it is arithmetic) |
+| each section | 3 s | the section is a labelled direct with its reason |
+| whole answer, transatlantic, cold | 5 s target, 20 s hard | nothing is ever returned after 20 s |
+
+The answer carries `timing: { context_s, tracks_s, skeleton_s, sections: [{ name, seconds, bound_s, hit }], total_s }`
+so the screen and the matrix read the same numbers. The loading of the launcher's state (SOG-0384) follows the same
+rule: a read is bounded, said, and never blocks another.
+
+### 13.5 Safe
+
+The text of the tracks of the day and the text of the route are untrusted inputs (bounds already reviewed: one letter,
+forty points, finite numbers). A created point is computed, never read from a text. Any new reader of a deposited
+file goes through the security review before its push.
+
+### 13.6 Order
+
+(1) validity of a track; (2) the random route; (3) `timing` and the bounds; (4) the matrix. One report per point. The
+reader of `PFR_SEG`, the Canadian reading (L4) and the published-direct NAR come after.
