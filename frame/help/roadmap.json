@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d1112c6",
+  "organisation": "0127f27",
   "fiches": 383,
   "untranslated": 0,
   "priorities": 374
@@ -925,11 +925,12 @@
     {
      "id": "SOG-0377",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : après le choix ou le changement d'une SID ou d'une STAR, une longue phase de rafraîchissement",
      "en": "Fuel: a long refresh after choosing or changing a SID or a STAR",
      "de": "Kraftstoff: lange Aktualisierung nach Wahl oder Wechsel einer SID oder STAR",
-     "es": "Combustible: una larga actualización tras elegir o cambiar una SID o una STAR"
+     "es": "Combustible: una larga actualización tras elegir o cambiar una SID o una STAR",
+     "test": true
     }
    ]
   },
@@ -1010,12 +1011,13 @@
     {
      "id": "SOG-0372",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Routes NAT à l'étape Route : la lecture du jour réussit sans que l'écran le montre ; la proposition calculée sur les routes périmées reste ; la route prise donne des « points inconnus »",
      "en": "NAT tracks at the Route step: the day's read succeeds without the screen showing it; the proposal computed on outdated tracks stays; the route taken gives « unknown points »",
      "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
      "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »",
-     "rank": 324
+     "rank": 324,
+     "test": true
     }
    ]
   },
@@ -4062,12 +4064,13 @@
     {
      "id": "SOG-0375",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Licence : la position d'un point lu dans X-Plane peut partir dans le dépôt du groupe avec le vol",
      "en": "Licence: the position of a point read from X-Plane can reach the group's repository with the flight",
      "de": "Lizenz: die Position eines aus X-Plane gelesenen Punkts kann mit dem Flug ins Repository der Gruppe gelangen",
      "es": "Licencia: la posición de un punto leído en X-Plane puede llegar al repositorio del grupo con el vuelo",
-     "rank": 351
+     "rank": 351,
+     "test": true
     }
    ]
   },

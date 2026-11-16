@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 252,
+  "tests": 254,
   "verdicts": 188
  },
  "apps": [
@@ -3700,9 +3700,15 @@
     "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
     "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »"
    },
-   "test": "Relance d'abord le lanceur. Carburant, un vol transatlantique (EGLL → KJFK), étape Route. Si la ligne dit les routes NAT périmées : « Lire les routes NAT du jour » — la ligne dit « Lecture… » puis la date et la validité, sans recharger la page ; une proposition calculée sur les routes d'un autre jour disparaît, avec « Recalculer ». « Calculer A → B », prends une proposition par une route NAT : aucune ligne « Points inconnus ».",
+   "test": "Sur l'ordinateur, recharge l'appli. Carburant, EIDW → KJFK, étape Route : lis les routes NAT du jour si la ligne le demande, puis prends une route proposée par une route NAT (ou écris « … MALOT NATG 54/50 … » avec une lettre du jour). Attendu : sur la Carte la traversée suit les points de la route NAT, plus un trait droit de l'entrée à la sortie ; la distance et le devis ont changé en conséquence. Si les routes du jour ne sont pas lues ou si l'entrée ou la sortie n'est pas sur la route du jour, une ligne grise le DIT (« Route NAT G : …, traversée tracée en direct »). Après la sortie de l'océan, les tronçons vers New York peuvent rester en direct et la ligne des voies le dit : c'est la zone d",
    "since": "2026-11-16",
-   "state": "known",
+   "state": "todo",
+   "delivered": "2026-11-16T15:24:11Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "les nats sont bonnes, mais on a toujours des tracés directs entre Dubiln et JFK. j’utilise ce bug report comme container.",
+    "at": "2026-11-16T13:53:10Z"
+   },
    "history": [
     {
      "verdict": "ok",
@@ -3725,6 +3731,20 @@
    "delivered": "2026-11-16T09:16:46Z"
   },
   {
+   "id": "SOG-0375",
+   "app": "maintenance",
+   "title": {
+    "fr": "Licence : la position d'un point lu dans X-Plane peut partir dans le dépôt du groupe avec le vol",
+    "en": "Licence: the position of a point read from X-Plane can reach the group's repository with the flight",
+    "de": "Lizenz: die Position eines aus X-Plane gelesenen Punkts kann mit dem Flug ins Repository der Gruppe gelangen",
+    "es": "Licencia: la posición de un punto leído en X-Plane puede llegar al repositorio del grupo con el vuelo"
+   },
+   "test": "Sur l'ordinateur (ton X-Plane), recharge l'appli. Carburant, un vol dont un point n'est connu que par ton X-Plane (un point du Canada, par exemple) : ajoute-le par « Ajouter un point ». Attendu sur le poste : rien ne change — le point est sur la Carte, la distance et le devis le comptent. Puis ouvre le vol écrit dans le dépôt, E:\\DEFA\\data\\pilot\\RBR\\current_flight.json : ce point y porte son NOM et « local »: « xplane », SANS lat ni lon. Sur ton téléphone, le même vol nomme le point sans le placer. Sur la Carte du poste, déplace un autre point de la route : le point d'X-Plane garde sa place dans la route. Au passage : ajoute un point ou applique un « Direct vers » juste après avoir changé la",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T15:21:08Z"
+  },
+  {
    "id": "SOG-0376",
    "app": "maintenance",
    "title": {
@@ -3737,6 +3757,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T14:51:53Z"
+  },
+  {
+   "id": "SOG-0377",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : après le choix ou le changement d'une SID ou d'une STAR, une longue phase de rafraîchissement",
+    "en": "Fuel: a long refresh after choosing or changing a SID or a STAR",
+    "de": "Kraftstoff: lange Aktualisierung nach Wahl oder Wechsel einer SID oder STAR",
+    "es": "Combustible: una larga actualización tras elegir o cambiar una SID o una STAR"
+   },
+   "test": "Sur l'ordinateur, recharge l'appli. Carburant, un vol avec SID et STAR, étape Procédures : change la SID. Attendu : seul le côté Départ se redessine, une fois ; plus de second rafraîchissement de toute la carte deux secondes après (c'était la relance de la météo) ; le vol n'est écrit qu'une fois. Dis-moi si la phase de rafraîchissement te paraît encore longue sur ton poste : la mesure a été faite sur un banc d'essai, pas chez toi.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T15:21:09Z"
   },
   {
    "id": "SOG-0378",
