@@ -12651,3 +12651,94 @@ def k308(c):
     c.ok(F.FREE_STATES == 60000 and F.FREE_S == 3.0, str((F.FREE_STATES, F.FREE_S)), 'the budget: 60 000 states for the whole free route, 3 s as the last-resort safety')
     src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
     c.ok('states_total' in src and 'def _search(' in src, 'engine.py', '`Nav.states_total` counts the states of every search (the budget of the free route is its difference)')
+
+
+@case('K309', 'Route engine, SOG-0389 (a): the answer carries its levels as FIELDS — a NAT track set aside for the LEVEL says the levels it offers in the direction of the flight (`sections.rejected[].levels`), and `sections` says the level TAKEN (`fl`) and where it comes from (`fl_basis`: `request` when the request gives it, `default` when it does not and the engine uses FL180); nothing else changes — no level is chosen on its own',
+      'K', static=True,
+      rule='SOG-0389 (the user: « La route ne prend pas les nats », KABQ → EGLL; ergonomics session 22:43 after the measure of AeroDB: the track is taken at FL340-FL400, and at any other level all the tracks are set aside for the LEVEL and a free route is made; a flight with no level is computed at FL180 and nothing says it is a default). Before, the levels that a track offers were only in the sentence of the rejection (« FL370 non proposé vers l\'est (FL350 à FL400) ») and the level used was not said. Now the answer has them as fields for the screen: `sections.rejected[]` of code `level` carries `levels` (the list of the message for that direction), `sections.fl` the level taken and `sections.fl_basis` `request` or `default` (`view.to_request` puts `fl_basis` in the request: `default` when the screen sends no `fl`, which `plan.check_request` accepts as `request` or `default` only). Nothing else changes.')
+def k309(c):
+    import datetime
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import engine, import_books as I, plan as PL, sections as S, view, results_cache
+    utc = datetime.timezone.utc
+    # 1. the request: where the level comes from
+    base = {'action': 'compute', 'adep': 'KABQ', 'adest': 'EGLL'}
+    got = [(view.to_request(dict(base, **extra))['fl'], view.to_request(dict(base, **extra))['fl_basis']) for extra in ({}, {'fl': None}, {'fl': 370})]
+    c.eq(got, [(180, 'default'), (180, 'default'), (370, 'request')], 'no `fl` (or null): the engine\'s default FL180 and the basis `default`; a level given: `request`', what='to_request')
+    refused = []
+    for v in ('guess', 3, None):
+        try:
+            PL.check_request(dict(view.to_request(dict(base, fl=370)), fl_basis=v))
+            refused.append(False)
+        except ValueError:
+            refused.append(True)
+    c.eq((PL.check_request(dict(view.to_request(dict(base, fl=370)), fl_basis='default'))['fl_basis'], refused), ('default', [True, True, True]), '`fl_basis` is `request` or `default`, a closed field of the request', what='check_request')
+    # 2. the sections: a track set aside for the level says its levels; another reason does not
+    nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}, 'EB': {'id': 'EB', 'lat': 54.0, 'lon': -15.0}, 'XB': {'id': 'XB', 'lat': 48.0, 'lon': -60.0},
+             'EC': {'id': 'EC', 'lat': 56.0, 'lon': -15.0}, 'XC': {'id': 'XC', 'lat': 50.0, 'lon': -60.0}}
+    meta = lambda tid, direction, west=(), east=(): {'track': tid, 'direction': direction, 'levels': [], 'levels_east': list(east), 'levels_west': list(west), 'from': '2026-11-16T11:30:00Z', 'to': '2026-11-16T19:00:00Z', 'stale': False}
+    mb, mc = meta('B', 'west', west=(350, 390)), meta('C', 'east', east=(350, 370))
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0, 'ceiling': 37000, 'speed_kt': 450}
+    for tid, (a, b), m in (('B', ('EB', 'XB'), mb), ('C', ('EC', 'XC'), mc)):
+        g[a] = [(b, {'a': a, 'b': b, 'route': 'NAT' + tid, 'nm': engine.nm(nodes[a], nodes[b]), 'nat': dict(m), 'dir': 'F'})]
+
+    class Fake:
+        def __init__(self, basis=None):
+            self.nodes, self.last_search, self.sections_info, self.nat = nodes, None, None, {'meta': {'B': mb, 'C': mc}, 'tracks': ['B', 'C']}
+            self.depart, self.nat_rejected = (datetime.datetime(2026, 11, 16, 12, 0), 'request'), frozenset()
+            if basis:
+                self.fl_basis = basis
+
+        def search(self, *a, **k):
+            return None
+    out = []
+    for basis in (None, 'default'):
+        nav = Fake(basis)
+        S.solve(nav, g, 'DEP', 'ARR')
+        out.append((nav.sections_info['fl'], nav.sections_info['fl_basis'], nav.sections_info['rejected']))
+    expected_rejected = [{'track': 'B', 'code': 'level', 'text': 'route NAT B : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390]}, {'track': 'C', 'code': 'direction', 'text': 'route NAT C : sens contraire (la track va vers l\'est, le vol vers l\'ouest)'}]
+    c.eq(out, [(370, 'request', expected_rejected), (370, 'default', expected_rejected)],
+         'the track B offers FL350 and FL390 westbound: set aside for the LEVEL at FL370, it says `levels: [350, 390]`; C is set aside for the direction and has NO `levels`; `fl` is the level taken and `fl_basis` where it comes from (red before: neither field)', what='fields')
+    # 3. the engine, on the bench of K237: a flight with no level is at FL180 and says it; at FL370 the track is taken
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+        with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [A]}, f)
+        results_cache.ENABLED = False
+        try:
+            def run(**extra):
+                args = dict({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T04:30', 'alternatives': False, 'proposals': True}, **extra)
+                res = PL.compute(view.to_request(args), data, radz, fra)
+                sec = res.get('sections') or {}
+                return sec.get('fl'), sec.get('fl_basis'), [(r['track'], r['code'], r.get('levels')) for r in sec.get('rejected', [])]
+            nolevel, level = run(), run(fl=370)
+        finally:
+            results_cache.ENABLED = True
+        c.eq((nolevel, level), ((180, 'default', [('A', 'level', [350, 360, 370])]), (370, 'request', [])),
+             'KJFK → EGLL with NO level: FL180, said `default`, the track A (levels 350-370) set aside for the level with its levels; at FL370: the level is `request`, the track is taken and nothing is set aside', what='engine')

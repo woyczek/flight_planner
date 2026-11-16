@@ -140,8 +140,11 @@ def _solve(nav, g, start, end):
 
     nav.nat_rejected = frozenset(rejected)      # la recherche entière qui suit (si rien n'abouti ici) ne prend pas non plus une track écartée pour ce vol
 
+    info['fl'], info['fl_basis'] = fl, getattr(nav, 'fl_basis', 'request')      # SOG-0389 : le niveau PRIS et d'où il vient (`request` ou `default` : FL180 quand la demande n'en donne pas)
+
     def said():
-        info['rejected'] = [{'track': tid, 'code': code, 'text': text} for tid, (code, text) in sorted(rejected.items())]
+        info['rejected'] = [dict({'track': tid, 'code': code, 'text': text}, **({'levels': [int(x) for x in ((meta.get(tid) or {}).get('levels_' + ('east' if east else 'west')) or [])]} if code == 'level' else {}))      # SOG-0389 : une track écartée pour le NIVEAU dit les niveaux qu'elle offre dans ce sens (des champs, plus seulement la phrase)
+                            for tid, (code, text) in sorted(rejected.items())]
     ratio = min((e.get('_cost', e['nm']) / e['nm'] for es in g.values() for _v, e in es if e['nm'] > .00001), default=0)
     if not candidates:
         said()

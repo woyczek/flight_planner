@@ -24,7 +24,7 @@ def to_request(args):
     action = args.get('action')
     if action not in ACTIONS:
         raise ValueError('action : compute ou check')
-    req = {'dep': args.get('adep', ''), 'arr': args.get('adest', ''), 'fl': DEFAULT_FL if args.get('fl') is None else args['fl'], 'use_procedures': True}      # fl absent (ou null) : le niveau par défaut du moteur, dit ici plutôt que deviné plus bas
+    req = {'dep': args.get('adep', ''), 'arr': args.get('adest', ''), 'fl': DEFAULT_FL if args.get('fl') is None else args['fl'], 'fl_basis': 'default' if args.get('fl') is None else 'request', 'use_procedures': True}      # SOG-0389 : `fl_basis` dit d'où vient le niveau (la réponse le rend dans `sections.fl_basis`)      # fl absent (ou null) : le niveau par défaut du moteur, dit ici plutôt que deviné plus bas
     for src, dst in (('rwyDep', 'dep_runway'), ('rwyArr', 'arr_runway'), ('date', 'date')):
         if args.get(src):
             req[dst] = args[src]

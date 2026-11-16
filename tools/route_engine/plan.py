@@ -19,7 +19,7 @@ import threading
 from . import engine, fra, layered, nat_layer, planning, recovery
 
 FIELDS = {
-    'proposals': bool, 'sections': bool, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
+    'proposals': bool, 'sections': bool, 'fl_basis': str, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
     'speed_kt': (int, float), 'terminal_speed_kt': (int, float), 'climb_fpm': (int, float), 'descent_fpm': (int, float),
     'allow_levels': bool, 'use_procedures': bool, 'alternatives': bool, 'alternatives_budget': (int, float), 'alternative_levels': (list, str), 'enable_fra': bool, 'level_strategy': str,
     'objective': str, 'traffic': str, 'require_fra': bool, 'unable_rnav': bool, 'fra_preference': (int, float), 'aircraft': str, 'fuel_climb': (int, float), 'fuel_cruise': (int, float), 'fuel_descent': (int, float),     # RouteSim 4 (planning.py)
@@ -67,6 +67,8 @@ def check_request(request):
         raise ValueError('traffic : IFR seulement (le calcul VFR de RouteSim 4, vfr.py, n’est pas porté)')
     if len(out.get('aircraft', '')) > 20:
         raise ValueError('aircraft : 20 signes au plus')
+    if out.get('fl_basis', 'request') not in ('request', 'default'):
+        raise ValueError('fl_basis : request ou default')
     if out.get('level_strategy', 'natural') not in ('natural', 'adapt'):
         raise ValueError('level_strategy : natural ou adapt')
     if isinstance(out.get('via'), list) and (len(out['via']) > 8 or any(not isinstance(x, str) for x in out['via'])):
@@ -258,6 +260,7 @@ def plan(request, root):
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
     nav.nat_rejected = frozenset()
+    nav.fl_basis = request.get('fl_basis', 'request')      # SOG-0389 : d'où vient le niveau : `request` (la demande le donne) ou `default` (le défaut du moteur, FL180 : sans niveau) ; dit dans `sections.fl_basis`
     nav.sections_info = None      # SOG-0354 L5 (4) : rien d'une demande précédente (le contexte est gardé) ne passe dans la réponse de celle-ci
     nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ que la demande donne (sans heure : (None, 'none'), la validité horaire n'est pas vérifiée, dit)
     context_s = round(time.perf_counter() - context_began, 3)
