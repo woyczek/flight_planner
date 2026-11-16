@@ -623,8 +623,7 @@
       provider: 'avians',
       pick: {
         glob: '*.html',
-        name: 'BI-ENR 4.4-en-GB.html',
-        fallback: true // SOG-0368 : le dépôt à la main n'est qu'un REPLI après un échec de la prise du lanceur (le Portugal, lui, se prend à la main d'emblée) : la page ne dit pas « à prendre à la main »
+        name: 'BI-ENR 4.4-en-GB.html'
       }
     },
     steps: {
