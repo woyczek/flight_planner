@@ -2165,3 +2165,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   airway when the base knows it). Shown as text (`esc`). And « 0 écart » is held by a no-break space (the capture of F241 at 390 px cut
   « 0 / écart »). F242 (red on the parent: the token dropped from the route line and from the
   flight).
+- **16 Nov 2026 — SOG-0389 (b), the level of the computation said** (the user: « KABQ → EGLL … La route ne prend pas les nats. »;
+  AeroDB measured: from FL340 to FL400 the NAT track V is taken; the flight had no level, the page sent no `fl`, the engine took FL180
+  and set every NAT track aside for the level; nothing on the screen said FL180 was not the flight's level). `RE.normalize(res, action,
+  asked)` gives `level = { fl, basis: 'request' | 'default' }`: `sections.fl` / `sections.fl_basis` of the engine first (announced by
+  AeroDB, read as untrusted: FL an integer 10 to 660, the basis one of two words), then `level` of an answer kept on the device
+  (`answerOf` stores it in route_alts.json, so a reload says the same), then the request itself (no `fl` → the engine's default level).
+  `basis === 'default'` → a line at the head of the route, « Niveau non donné : route calculée à FL180 par défaut » (`[data-rnolevel]`),
+  with « Donner le niveau » (`data-do="rgolevel"`: the Flight step, the Level field centred and focused); the grey FL of a route line at
+  that level reads « FL180 par défaut », never as the flight's level. `proofOf` keeps for each NAT track set aside its `code` (direction,
+  level, time, rad, network; '' otherwise) and its `levels` (integers FL10 to FL660, twenty at most, sorted) — not shown yet: the line
+  « Aucune route NAT à FLxxx » and « Recalculer à FLxxx » wait for Q-0072. F240 (red on the parent: no line, the FL plain, no code nor
+  levels kept).

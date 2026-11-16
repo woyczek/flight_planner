@@ -475,6 +475,18 @@ const TX = {
     'Caducado (calculado a las {t}): nuevo AIRAC, base cambiada o rutas NAT de otro día'
   ],
   rRecompute: ['Recalculer', 'Compute again', 'Neu berechnen', 'Recalcular'],
+  // SOG-0389 (b) : un vol sans niveau — le moteur calcule à son niveau par défaut ; dit en tête de la route, avec le chemin du champ Niveau
+  rNoLevel: ['Niveau non donné : route calculée à FL{fl} par défaut', 'Level not given: route computed at FL{fl} by default',
+    'Flugfläche nicht angegeben: Route standardmäßig auf FL{fl} berechnet', 'Nivel no indicado: ruta calculada a FL{fl} por defecto'
+  ],
+  rNoLevel0: ['Niveau non donné : route calculée au niveau par défaut du moteur',
+    'Level not given: route computed at the engine’s default level',
+    'Flugfläche nicht angegeben: Route auf der Standardflugfläche des Rechners berechnet',
+    'Nivel no indicado: ruta calculada al nivel por defecto del motor'
+  ],
+  rNoLevelGo: ['Donner le niveau', 'Give the level', 'Flugfläche angeben', 'Indicar el nivel'],
+  // le FL gris de la ligne de route, quand c'est le niveau par défaut du moteur (jamais pris pour celui du vol)
+  rFlDefault: ['FL{fl} par défaut', 'FL{fl} by default', 'FL{fl} (Standard)', 'FL{fl} por defecto'],
   rClose: ['Fermer les propositions', 'Close the proposals', 'Vorschläge schließen', 'Cerrar las propuestas'],
   // SOG-0296 : deux demandes — la route de tête tout de suite, les variantes ensuite ; le cache du poste dit
   rMoreBusy: ['Variantes en recherche…', 'Searching for variants…', 'Varianten werden gesucht…', 'Buscando variantes…'],
@@ -3061,6 +3073,7 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="acgo"]')) return acGo();
   if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
   if (e.target.closest('[data-do="rclose"]')) return proposalsEnd(); // SOG-0224 : « Fermer les propositions »
+  if (e.target.closest('[data-do="rgolevel"]')) return goLevel(); // SOG-0389 (b) : « Donner le niveau »
   const rb = e.target.closest('[data-do="rcompute"],[data-do="rcheck"],[data-do="rtake"]');
   if (rb) return rb.dataset.do === 'rtake' ? routeTake(+rb.dataset.i) : routeAsk(rb.dataset.do === 'rcompute' ? 'compute' : 'check');
   const ar = e.target.closest('[data-altlist] [data-alt]');
@@ -3952,7 +3965,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
     if (box) box.innerHTML = `<p class="f-warn" data-rfail>${esc(tt(TX.rFail))} ${retry}</p>`;
     return;
   }
-  const n = RE.normalize(res, act);
+  const n = RE.normalize(res, act, args); // la demande : sans `fl`, le niveau du calcul est celui du moteur (SOG-0389)
   if (!n.ok) {
     // SOG-0125 : sans RAD, la phrase et le lien vers sa ligne de Données (l'import se fait là, jamais depuis Carburant) ; le message du
     // lanceur, qui nomme un travail, n'est pas montré au pilote
@@ -3982,7 +3995,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
     n,
     // SOG-0224 : ce qui fait survivre la liste et son détail (route_alts.json, schéma 2) ; la réponse elle-même, relue par
     // RE.normalize à chaque lecture (une entrée non fiable, bornée au même endroit que la réponse du lanceur)
-    answer: answerOf(res),
+    answer: answerOf(res, n),
     // SOG-0296 : un résultat du cache du poste garde l'heure de SON calcul (« du cache, calculé à … ») ; la règle « périmé » la lit
     computed_at: n.cache?.at || new Date().toISOString(),
     cache: n.cache,
@@ -4460,6 +4473,17 @@ function routeAltsDraw() {
     box.innerHTML = dropped;
     return;
   }
+  // SOG-0389 (b) : un vol sans niveau — le niveau par défaut du moteur dit en tête, avec le chemin du champ Niveau
+  const L = A.n?.level,
+    flTxt3 = fl => String(fl).padStart(3, '0'),
+    noLevel = L?.basis === 'default' && A.list?.length ? `<p class="f-row f-warn fu-rage" data-rnolevel><span>${esc(L.fl !== null ? tt(TX
+      .rNoLevel, {
+        fl: flTxt3(L.fl)
+      }) : tt(TX.rNoLevel0))}</span><button type="button" class="fu-linkbtn" data-do="rgolevel">${esc(tt(TX.rNoLevelGo))}</button></p>` :
+    '',
+    flOf = a => a.fl === null ? '' : L?.basis === 'default' && a.fl === L.fl ? tt(TX.rFlDefault, {
+      fl: flTxt3(a.fl)
+    }) : `FL${flTxt3(a.fl)}`;
   const name = (a, i) => a.name || (a.proposal ? tt(TX.rProposal, {
     n: A.list.slice(0, i + 1).filter(x => x.proposal).length
   }) : a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
@@ -4473,13 +4497,13 @@ function routeAltsDraw() {
   // SOG-0134 : la ligne montrée (un appui sur elle ou sur son tracé dans la Carte) est marquée et son détail déplié ; « Choisir » la prend
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
     head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}${A.cache?.hit ? ' data-cache' : ''}><span>${esc(tt(A.stale ? TX.rStale : A.cache?.hit ? TX.rCache : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
-  box.innerHTML = head + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+  box.innerHTML = head + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
@@ -4617,9 +4641,10 @@ function acKey() {
 }
 /** SOG-0224 : la réponse du lanceur gardée dans l'objet — les seules clés que RE.normalize lit, bornées comme il les borne (trois
  *  itinéraires, 300 remarques) ; relue par RE.normalize à chaque lecture. */
-function answerOf(res) {
+function answerOf(res, n = null) {
   return {
     ok: true,
+    level: n?.level || null, // SOG-0389 (b) : le niveau du calcul et sa base, relus par RE.normalize
     alternatives: (Array.isArray(res?.alternatives) ? res.alternatives : []).slice(0, 3),
     issues: (Array.isArray(res?.issues) ? res.issues : []).slice(0, 300),
     message: String(res?.message ?? '').slice(0, 300),
@@ -5230,6 +5255,18 @@ function routeSteps(r, distanceNm) {
   return out.length ? out : null;
 }
 // ---------------------------------------------------------------- pas de la préparation
+/** SOG-0389 (b) : « Donner le niveau » — le pas Vol, le champ Niveau au milieu de l'écran et pris. */
+function goLevel() {
+  goStep(0);
+  const i = S.body?.querySelector('input[data-k="fl"]');
+  if (!i) return;
+  i.scrollIntoView?.({
+    block: 'center'
+  });
+  i.focus({
+    preventScroll: true
+  });
+}
 /** Va au pas i (0 Vol, 1 Route, 2 Météo, 3 Résultat, 4 Départ) : un seul pas visible sur téléphone et dans un volet ;
  *  dans un module large tous le sont (CSS @container) et la barre de pas est cachée. Pas gardé sur l'appareil. */
 function goStep(i) {

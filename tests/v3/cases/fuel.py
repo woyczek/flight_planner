@@ -6634,6 +6634,68 @@ def f242(c):
     c.ok(' LUGEN N12A-N34B NEPIX ' in f" {d['route']['text']} ", d['route']['text'], 'the flight keeps the launcher\'s text, airway by airway')
 
 
+@case('F240', 'Route step, a flight WITHOUT level: the engine computes at its default level (FL180, the request sends no `fl`); a line at '
+      'the head of the route says it (« Niveau non donné : route calculée à FL180 par défaut ») and leads to the Level field; the grey FL of '
+      'the route line says « par défaut », never passes for the level of the flight; kept on reload; the engine read keeps the code and the '
+      'levels of each NAT track set aside', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0389 (b) (the user: « KABQ → EGLL … La route ne prend pas les nats. »; AeroDB measured: no level in the flight, no `fl` '
+      'sent, FL180 taken, every NAT track set aside for the level); the ergonomist, 16/11 at 22 h 43: the line and its way to the field, '
+      'proofOf keeps code and levels; the line « Aucune route NAT à FLxxx » and « Recalculer » wait for Q-0072; a fake launcher')
+def f240(c):
+    T = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    # the engine's level when the request has none (invented answer, no `sections`: the page knows it sent no level)
+    st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 180,
+                       [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')])]
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['level'] = {'ft': None}
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    sent = _compute_now(c, st)
+    c.eq(sorted({str(a.get('fl')) for a in sent}), ['None'], 'no level in the flight: no request sends `fl` (the head route, then the variants)', what='request')
+    L = f'{FUEL} [data-routealts] [data-rnolevel]'
+    c.until(f"!!document.querySelector('{L}')", timeout=10000, what='the line « Niveau non donné »')
+    c.eq(norm(c.text(f'{L} > span') or ''), norm(tx(T, 'rNoLevel', c.lang).replace('{fl}', '180')),
+         '« Niveau non donné : route calculée à FL180 par défaut »', what='line')
+    R0 = f'{FUEL} [data-altlist] [data-alt="0"]'
+    c.ok(norm(tx(T, 'rFlDefault', c.lang).replace('{fl}', '180')) in norm(c.text(R0) or ''), c.text(R0),
+         'the grey FL of the route line says « par défaut »')
+    c.js(f"document.querySelector('{L}').scrollIntoView({{block: 'center'}})")  # never under the fixed header
+    c.shot(f'F240_{c.design}_390_{c.lang}_nolevel.png')
+    # kept: the list read again from the device says it the same
+    c.page.reload(wait_until='load')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{L}')", timeout=15000, what='the line, after a reload')
+    # the way to the field: the Flight step, the Level field focused
+    c.tap(f'{L} [data-do="rgolevel"]')
+    c.until(f"document.activeElement?.matches?.('{FUEL} [data-k=\"fl\"]')", timeout=5000, what='the Level field focused')
+    c.ok(c.js(f"window.__t.shown(document.querySelector('{FUEL} [data-k=\"fl\"]'))"), '', 'the Level field on screen')
+    # a flight WITH level: no line, the FL plain
+    st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270,
+                       [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')])]
+    c.page.fill(f'{FUEL} input[data-k="fl"]', '270')
+    cf_doc(c, lambda d: (d.get('level') or {}).get('ft') == 27000, 'the level written with the flight')
+    to_step(c, 1)
+    sent = _compute_now(c, st)
+    c.eq(sorted({str(a.get('fl')) for a in sent}), ['270'], 'the level of the flight sent, by each request', what='request with level')
+    c.eq(c.count(L), 0, 'a flight with its level: no line', what='line with level')
+    # the engine read: sections.fl / fl_basis said first; each NAT track set aside keeps its code and its levels (bounded)
+    got = c.js("""() => import('/modules/fuel/route_engine.js').then(m => {
+      const alt = { name: 'x', route: 'KABQ DCT EGLL', distanceNm: 4300, fl: 180, segments: [{ from: 'KABQ', to: 'EGLL' }] },
+        n = m.normalize({ ok: true, alternatives: [alt], issues: [], sections: { fl: 180, fl_basis: 'default', sections: [],
+          rejected: [{ track: 'V', code: 'level', text: "route NAT V : FL180 non proposé vers l'est (FL340 à FL400)",
+            levels: [340, 350, 360, 370, 380, 390, 400] }, { track: 'W', code: 'evil<b>', text: 'x', levels: ['1e9', 99999, -5, 410] }] } },
+          'compute', { fl: 270 });
+      return { level: n.level, rej: n.plans[0].proof.rejected.map(r => [r.track, r.code, r.levels]) };
+    })""")
+    c.eq(got['level'], {'fl': 180, 'basis': 'default'}, 'the engine’s basis said first (sections.fl_basis)', what='level')
+    c.eq(got['rej'], [['V', 'level', [340, 350, 360, 370, 380, 390, 400]], ['W', '', [410]]],
+         'the code (known codes only) and the levels (FL10 to FL660) of each track set aside', what='rejected')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

@@ -8,7 +8,9 @@
 //   request({ action, dep, arr, points, text, fl, date, depRunway, arrRunway }) → la demande (champs du contrat seulement, jamais
 //     null) : compute = via, les points saisis entre les terrains (passages imposés, huit au plus) ; check = route, le texte saisi.
 //   run(launcher, args) → Promise<object | null> : le résultat du travail, null sans réponse.
-//   normalize(result, action) → { ok, reason, message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason }] } :
+//   normalize(result, action, asked) → { ok, reason, message, errors: [texte], plans: [plan], limitation, gaps: [{ name, reason }],
+//     level } : level = { fl, basis: 'request' | 'default' } (SOG-0389 : le niveau du calcul et d'où il vient — sections.fl / fl_basis
+//     du moteur d'abord, puis `level` d'une réponse gardée, puis la demande `asked` : sans `fl`, le niveau par défaut du moteur) ou null ;
 //     plan = { role ('primary' | 'alternative'), name, route, distanceNm, fl, accepted, errors: [texte], faults, sid, star,
 //     segments: [{ from, to, via, state, reasons: [{ kind, text, ruleId }] }] } ; trois itinéraires au plus, un seul en check.
 //   Un itinéraire au contrôle incomplet faute de données (RouteSim du 9 nov. 17 h 05 : incomplete: true, ses raisons dans les issues
@@ -224,7 +226,10 @@ function controlOf(c) {
  *  lettre de la route NAT tirée du nom « track E » d'une section publiée ; les routes NAT écartées et pourquoi (`rejected` : six au plus,
  *  lettre par motif, phrase bornée à 160 signes, sans caractère de commande ni marque de format ; un « route NAT E : » en tête retiré, la
  *  page le dit) ; l'heure de départ absente de la demande (`depart.basis` = 'none' : la validité horaire des routes NAT n'a pas été vérifiée ;
- *  'request' sinon). { list, rejected, noTime } ; null sans rien de lisible. */
+ *  'request' sinon). Chaque route écartée garde son code (`direction`, `level`, `time`, `rad`, `network` ; '' sinon) et les niveaux
+ *  qu'elle offre (SOG-0389 : `levels`, entiers de FL10 à FL660, vingt au plus, triés). { list, rejected, noTime } ; null sans rien. */
+const REJ_CODES = ['direction', 'level', 'time', 'rad', 'network'];
+
 function proofOf(v) {
   const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
     list = own(v, 'sections');
@@ -252,9 +257,14 @@ function proofOf(v) {
     rejected = (Array.isArray(rej) ? rej : []).slice(0, 6).map(x => {
       const t = text(own(x, 'track'), 4).toUpperCase(),
         why = text(own(x, 'text'), 160).replace(/\p{Cf}/gu, '').replace(/^route\s+NAT\s+[A-Z]{1,2}\s*:\s*/i, '').trim();
+      const code = own(x, 'code'),
+        lv = own(x, 'levels');
       return /^[A-Z]{1,2}$/.test(t) && why ? {
         track: t,
-        why
+        why,
+        code: REJ_CODES.includes(code) ? code : '',
+        levels: [...new Set((Array.isArray(lv) ? lv : []).slice(0, 40).filter(n => Number.isInteger(n) && n >= 10 && n <= 660))]
+          .sort((a, b) => a - b).slice(0, 20)
       } : null;
     }).filter(Boolean),
     noTime = own(own(v, 'depart'), 'basis') === 'none';
@@ -327,7 +337,23 @@ function altOf(a, role, errors, reviews = []) {
 
 /** La réponse du travail, nettoyée (voir l'en-tête). Les erreurs du moteur (issues de niveau error) vont à la route saisie en check ;
  *  en compute, sans itinéraire possible, la première dit pourquoi. */
-export function normalize(res, action = 'compute') {
+/** SOG-0389 (b) : le niveau du calcul et d'où il vient, lu comme une entrée non sûre — `sections.fl` et `sections.fl_basis` du moteur
+ *  ('request' | 'default') d'abord ; sinon `level` d'une réponse gardée sur l'appareil (route_alts.json) ; sinon la demande : sans `fl`,
+ *  le moteur a pris son niveau par défaut. FL entier de 10 à 660 ou null ; null sans base connue. */
+function levelOf(res, asked, plans) {
+  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
+    fl = n => Number.isInteger(n) && n >= 10 && n <= 660 ? n : null,
+    sec = own(res, 'sections'),
+    kept = own(res, 'level'),
+    basis = ['request', 'default'].includes(own(sec, 'fl_basis')) ? own(sec, 'fl_basis') : ['request', 'default'].includes(own(kept,
+      'basis')) ? own(kept, 'basis') : asked && typeof asked === 'object' ? (fl(asked.fl) !== null ? 'request' : 'default') : '';
+  return basis ? {
+    fl: fl(own(sec, 'fl')) ?? fl(own(kept, 'fl')) ?? plans[0]?.fl ?? null,
+    basis
+  } : null;
+}
+
+export function normalize(res, action = 'compute', asked = null) {
   if (!res || res.ok !== true) return {
     ok: false,
     reason: ['invalid', 'no-rad', 'failed', 'busy', 'offline', 'stopped'].includes(res?.reason) ? res.reason : 'failed',
@@ -355,6 +381,7 @@ export function normalize(res, action = 'compute') {
     message: !plans.length && errors[0] ? errors[0] : text(res.message, 300),
     errors,
     plans,
+    level: check ? null : levelOf(res, asked, plans),
     limitation: text(res.limitation, 400),
     // SOG-0161 (AeroDB 329847a19) : ce que la réponse est — une route calculée, des propositions de repli, rien ; déduit des itinéraires
     // pour une réponse plus ancienne
