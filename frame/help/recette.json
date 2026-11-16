@@ -3484,10 +3484,10 @@
     "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
     "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)"
    },
-   "test": "RELANCE LE LANCEUR. Carburant, EIDW → KJFK (ou EIDW → KBOS), FL370, « Proposer une route ». Attendu : au bout de 14 secondes environ, une vraie ROUTE (plus une « proposition de repli ») — par une route NAT du jour puis une route nord-américaine, autour de 3 000 NM. Un seul itinéraire est proposé sur ces vols (pas le temps de chercher des alternatives). LFOE → KTPA et EGLL → KDEN : même route qu'avant, en 4 à 5 secondes, trois alternatives. Un vol en Europe : rien ne change. LFPO → KLAX reste une proposition tant que les États-Unis ne sont pas reconstruits dans Données.",
+   "test": "D'abord RELANCE LE LANCEUR. Carburant, étape Route, « Calculer A → B ». (1) EIDW → KJFK, départ dans la fenêtre des routes NAT vers l'ouest (vers 12 h Z) : une route en 2 secondes environ ; sous l'itinéraire, la ligne de preuve — « EIDW–… : calculée · … : publiée, route NAT E du 16/11 · …–KJFK : calculée ». (2) Le même vol avec un départ à 03 h Z : une ROUTE LIBRE créée (« … : route libre, créée »), en 2 secondes ; le pli « n routes NAT du jour écartées » donne la raison de chacune. (3) Sans heure de départ : la route NAT est prise et une ligne dit « Heure de départ non donnée : validité horaire des routes NAT non vérifiée ». (4) EIDW → KLAX : une route en 3 à 4 secondes. Pas encore bon, en ",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T15:39:43Z"
+   "delivered": "2026-11-16T17:15:26Z"
   },
   {
    "id": "SOG-0355",
