@@ -2078,3 +2078,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   workbook (another nature, decided), flights already written, `cache/fuel/route_alts.json` (device cache, never sent). F232 (red before).
   With it, audit 219: the launcher's sentence in Procedures loses the format marks (`\p{Cf}`: U+202E, U+200B…) like the control
   characters; F231 extended (red before).
+- **16 Nov 2026 — a route change made during a reading of the route is never overwritten by it** (F232 red 3 times in 3 at Sécurisation
+  and 3 in 5 at the ergonomist: « Direct vers » applied while the reading of the route started by the mount was in progress was lost,
+  the flight written with the route of before; not caused by SOG-0375, revealed by its case). `resolveRoute` kept the route OBJECT across
+  the wait of `RM.routeModel` and, when the object was the same, took the reading as current; « Ajouter un point » and « Direct vers »
+  change that object IN PLACE (points, then the text through `routeEdited`), so a reading ending before the next write (300 ms) wrote its
+  points (and, at the exit of the field, its text) over the newer route. Now the text, departure and arrival read are taken as VALUES
+  before the wait and the route of after is compared with them, the object the same or not; a change re-reads the newer route. F235
+  (red before 3 times in 3: the reading held by the case, released right after « Ajouter un point »); F232 no longer waits for the end of
+  the mount before « Appliquer » (8 times green in a row).

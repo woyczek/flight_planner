@@ -6210,13 +6210,51 @@ def f232(c):
     c.open('fuel?direct=XPLAN', docs=_direct_docs())
     c.until(f"(document.querySelector('{FUEL} [data-block=direct]:not([hidden]) [data-directsays]')?.textContent || '').includes('XPLAN')", timeout=15000,
             what='the panel of the direct, for XPLAN')
-    c.settle()   # the mount ends (the flight read, the address taken again): the panel tapped is the one that stays
-    c.tap(f'{FUEL} [data-do="directapply"]')
+    c.tap(f'{FUEL} [data-do="directapply"]')   # at once: the reading of the route of the mount may still be in progress (F235)
     # the point imposed by the mission (PT4) is skipped: the second confirmation comes after the tap (ctx.ask), waited for, never raced
     c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the second confirmation (an imposed point skipped)')
     c.tap('.f-modal [data-ok]')
     d = cf_doc(c, lambda d: 'XPLAN' in [p.get('id') for p in (d.get('route') or {}).get('points') or []], 'the direct written', timeout=10000)
     _xp_written(c, d, '« Direct vers »')
+
+
+# F235: while window.__hold is set, aerodb's answer for NEPIX waits for window.__go() (a route reading held in progress); window.__held
+# says it is waiting; every other name at once
+_HOLD_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const late = (f, id) => window.__hold && String(id || '').toUpperCase() === 'NEPIX'
+          ? new Promise(r => { window.__held = true; window.__go = () => { window.__hold = false; window.__held = false; r() } }).then(f) : f();
+        const c = db.coords, ca = db.coordsAll;
+        db.coords = (id, o) => late(() => c.call(db, id, o), id);
+        if (ca) db.coordsAll = (id, o) => late(() => ca.call(db, id, o), id) } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F235', 'Route step: a point added while the route is being read again is kept — the reading in progress, started on the text of '
+      'before and ending before the write (the route object changed in place), never writes its points and its text over the newer route',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0375 follow-up (F232 red 3 times in 3 at Sécurisation, 3 in 5 at the ergonomist: « Direct vers » applied while the reading of '
+      'the route of the mount was in progress was lost); the reading kept the route OBJECT across its wait and compared it with itself, and '
+      '« Ajouter un point » / « Direct vers » change that object in place; the reading held by the case (aerodb stub), released at once')
+def f235(c):
+    c.page.add_init_script(_HOLD_STUB)
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    if not c.js("document.querySelector('[data-module=fuel] details[data-fold=pts]')?.open"):
+        c.tap(f'{FUEL} details[data-fold="pts"] > summary')
+    c.settle()
+    c.js("window.__hold = true")
+    c.page.fill(f'{FUEL} [data-k="rtext"]', 'LFRS LUGEN DCT NEPIX LFML')   # a reading starts 500 ms later, held on NEPIX
+    c.until("window.__held === true", timeout=8000, what='the reading of the route in progress (held)')
+    c.page.fill(f'{FUEL} [data-k="addpt"]', 'TSTA 45 1')
+    c.tap(f'{FUEL} [data-do="addpt"]')              # the route changed in place while the reading waits
+    c.js("window.__go()")                           # the reading ends before the write (300 ms) replaces the flight's object
+    c.wait(2500)
+    d = cf_doc(c, lambda d: True, 'the flight')
+    ids = [p.get('id') for p in (d.get('route') or {}).get('points') or []]
+    words = str((d.get('route') or {}).get('text') or '').split()
+    c.ok('TSTA' in ids and 'TSTA' in words, [ids, words], 'the point added is kept, in the points and in the text written')
+    c.ok('TSTA' in (c.text(f'{FUEL} [data-pts]') or ''), c.text(f'{FUEL} [data-pts]'), 'and on the screen')
 
 
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '

@@ -5495,6 +5495,9 @@ function resolveRoute(normalize = true) {
     }), 'warn');
     const s = S,
       asked = S.flight.route, // la route lue : l'enregistrement du vol (writeFlight) en fait un nouvel objet pendant la lecture
+      // F235 : le texte, le départ et l'arrivée lus, en VALEURS — « Ajouter un point » et « Direct vers » changent l'objet de la route en
+      // place pendant la lecture : comparé à lui-même, il passait pour inchangé et la lecture d'avant écrasait la route nouvelle
+      was = [asked.text, asked.dep, asked.arr],
       // les points déjà connus du vol, et ceux des procédures choisies (la sortie d'une SID, l'entrée d'une STAR) : un nom qu'aerodb ne
       // connaît pas mais qu'une procédure lue porte (BEPAN de la BEPA4E, SOG-0012) prend sa position ; aerodb passe toujours d'abord
       known = knownPoints(asked, true),
@@ -5518,9 +5521,10 @@ function resolveRoute(normalize = true) {
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     // le vol a changé d'objet pendant la lecture (chaque enregistrement du vol, writeFlight, en fait un nouveau ; un autre écrivain
     // aussi) : la lecture vaut pour la route d'aujourd'hui quand elle a le même texte, départ et arrivée, sinon elle est refaite ;
-    // jamais écrite sur l'objet d'avant (les points s'y perdaient dès qu'une lecture durait plus de 300 ms : N13 / N24 sous charge, F142)
+    // jamais écrite sur l'objet d'avant (les points s'y perdaient dès qu'une lecture durait plus de 300 ms : N13 / N24 sous charge, F142) ;
+    // la comparaison porte sur les valeurs lues, que l'objet soit le même ou non (F235)
     const r = S.flight.route ||= emptyFlight().route;
-    if (r !== asked && (r.text !== asked.text || r.dep !== asked.dep || r.arr !== asked.arr)) return resolveRoute(normalize);
+    if (r.text !== was[0] || r.dep !== was[1] || r.arr !== was[2]) return resolveRoute(normalize);
     r.points = markLocks(r, points);
     // une voie écrite qui ne relie pas ses deux points : tronçon direct, dit une fois par texte (pas à chaque frappe) (§ 10.31)
     const bad = badAirways.map(x => tt(TX.awyBad, x)).join(' · ');
