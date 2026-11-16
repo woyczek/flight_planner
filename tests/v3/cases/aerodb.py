@@ -11524,12 +11524,12 @@ def k294(c):
             self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
             return p['id']
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
             import heapq
             best, q, prev = {s: 0.0}, [(0.0, s)], {}
             while q:
                 d, u = heapq.heappop(q)
-                if u == e:
+                if not goals and u == e:
                     break
                 if d > best[u]:
                     continue
@@ -11538,6 +11538,17 @@ def k294(c):
                         best[v] = d + ed['nm']
                         prev[v] = (u, v, ed)
                         heapq.heappush(q, (best[v], v))
+            if goals:      # SOG-0354 L5 (2 bis): ONE search to all the entries
+                self.last_search = {'expanded': len(best), 'seconds': 0.0, 'found': True}
+                out = {}
+                for x in goals:
+                    if x in best:
+                        legs, node = [], x
+                        while node != s:
+                            legs.append(prev[node])
+                            node = prev[node][0]
+                        out[x] = {'path': list(reversed(legs)), 'cost': best[x], 'band': (36000, 36000)}
+                return out
             if e not in best:
                 return None
             legs, node = [], e
@@ -11595,3 +11606,95 @@ def k295(c):
     c.eq((none, nav.last_search.get('found')), ({}, False), 'no entry reached: an empty answer (the caller falls back), found False', what='none')
     src = (ROOT / 'tools' / 'route_engine' / 'sections.py').read_text(encoding='utf-8')
     c.ok('goals=entries' in src and "first=europe[o['entry']]" in src and src.count('nav.search(graph, s, e') == 1, 'sections.py', 'sections.solve makes ONE search to all the entries (`_europe`) and resolves each track from it (`first=`): the European section is no longer searched once per track')
+
+
+@case('K297', 'Route engine, SOG-0354 lot L5 (2 bis): the free route makes ONE search (per pack of five, the nearest to the path first) from the departure to the ends of the routes of the day (`free_route.solve(…, europe)`), then tries the pairs between the ends that were REACHED, in the order of their lower bound with the real European cost — the tries are no longer spent on entries that the departure cannot reach, and an exit whose America section failed is not taken again; LFPO → KLAX and LFPG → KLAX (no route before) answer a route',
+      'K', static=True,
+      rule='SOG-0354 L5 (2 bis) (found by AeroDB while measuring the west coast, 16 Nov; asked by the ergonomics session). Before, `free_route.solve` ranked all the pairs (entry, exit) by a bound made of great-circle distances and tried the first three, each with its own European search (about 1 s when the entry is not reachable): from Paris at FL370 the entries nearest to the path are not reachable, the three tries were lost and LFPO → KLAX / LFPG → KLAX had no route (and LFPG took 20.1 s). Now: one search to all the entries (the mechanism of L5 1 bis: `Nav.search(goals=…)`), the pairs only among the entries reached, ranked with their real European cost, at most TRIES = 3 tries, an exit that failed is dead for the next pairs. Then the entries are searched by PACKS of five (the nearest to the path first; a search to all of them goes through all the states as soon as one is unreachable: EIDW → KJFK 13 entries, 31 000 states, 4.8 s instead of 260 states), each pack stopping as soon as two entries are reached (`Nav.search(…, need=2)`). Measured on the real base (read only): LFPO → KLAX a route in 3.1 s (ATSUR 52/20 54/30 55/40 5530/50 → NICSO, 5 624 NM) and LFPG → KLAX in 2.9 s, 5 630 NM (before: no route, 13.9 s and 20.1 s); EIDW → KJFK at 03:00 stays at 2.0 s, 2 839 NM')
+def k297(c):
+    import heapq
+    import sys
+    import time
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, sections as S
+    pos = {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'H1': (60.5, -8.0), 'H2': (44.0, -70.0), 'I1': (52.0, -16.0), 'I2': (52.2, -16.0), 'I3': (51.8, -16.0),
+           'EA1': (52.0, -15.0), 'EA2': (52.1, -15.0), 'EA3': (52.2, -15.0), 'EA4': (52.3, -15.0), 'EB': (60.0, -15.0), 'XA': (47.0, -60.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    g.setdefault('DEP', []).append(('H1', {'a': 'DEP', 'b': 'H1', 'route': 'UL1', 'nm': engine.nm(nodes['DEP'], nodes['H1'])}))
+    g.setdefault('H2', []).append(('ARR', {'a': 'H2', 'b': 'ARR', 'route': 'UL2', 'nm': engine.nm(nodes['H2'], nodes['ARR'])}))
+
+    class Fake:
+        def __init__(self, ends):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'ends': ends}, None, None
+            self.depart, self.nat_rejected, self._nat_high = None, frozenset(), {'H1', 'H2', 'I1', 'I2', 'I3'}
+            self.goal_calls = 0
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+            best, q, prev = {s: 0.0}, [(0.0, s)], {}
+            while q:
+                d, u = heapq.heappop(q)
+                if not goals and u == e:
+                    break
+                if d > best[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < best.get(v, 1e18):
+                        best[v] = d + ed['nm']
+                        prev[v] = (u, v, ed)
+                        heapq.heappush(q, (best[v], v))
+
+            def way(x):
+                legs, node = [], x
+                while node != s:
+                    legs.append(prev[node])
+                    node = prev[node][0]
+                return list(reversed(legs))
+            self.last_search = {'expanded': len(best), 'seconds': 0.0, 'found': True}
+            if goals:
+                self.goal_calls += 1
+                return {x: {'path': way(x), 'cost': best[x], 'band': (36000, 36000)} for x in goals if x in best}
+            if e not in best:
+                return None
+            self.last_search.update(cost=best[e], band=band)
+            return way(e)
+    # four entries near the path that the departure cannot reach (their only high nodes are islands) and one farther north that it reaches: the old code spent its three tries on the first
+    ends = {'T1': ['EA1', 'XA'], 'T2': ['EA2', 'XA'], 'T3': ['EA3', 'XA'], 'T4': ['EA4', 'XA'], 'T5': ['EB', 'XA']}
+    nav = Fake(ends)
+    path = S.solve(nav, g, 'DEP', 'ARR')
+    info = nav.sections_info
+    names = ([nav.nodes[u]['id'] for u, _v, _e in path] + [nav.nodes[path[-1][1]]['id']]) if path else []
+    c.ok(bool(path) and names[:3] == ['DEP', 'H1', 'EB'] and names[-3:] == ['XA', 'H2', 'ARR'], str(names), 'the four entries near the path are not reachable (their only high nodes are islands): the free route goes by the one that IS (EB, farther north) instead of losing its tries on the four others')
+    c.eq((nav.goal_calls, info['free']['ok'], info['free']['entry'], info['europe_free']['goals'], info['europe_free']['reached']), (1, True, 'EB', 5, 1),
+         'ONE search to all the five entries (not one per pair), one entry reached, the free route made by it', what='one search')
+    c.eq(S.solve(Fake({'T1': ['EA1', 'XA'], 'T2': ['EA2', 'XA']}), g, 'DEP', 'ARR'), None, 'no entry reached: no route (the whole search follows) and the answer says it', what='none reached')
+    nav2 = Fake({'T1': ['EA1', 'XA'], 'T2': ['EA2', 'XA']})
+    S.solve(nav2, g, 'DEP', 'ARR')
+    c.ok('atteignable' in nav2.sections_info['free']['reason'], str(nav2.sections_info['free']), 'the reason is said: « aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau »')
+    src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
+    c.ok('dead.add(o)' in src and 'rank[start_at:start_at + CHUNK]' in src and 'pairs[:TRIES]' not in src and 'NEED' in src, 'free_route.py', 'one search per pack of entries (the nearest to the path first, stopping at two reached), the pairs only among the entries reached, an exit that failed is not taken again, no more « the first three pairs » by great-circle bound')
+    data = Path('E:/DEFA/data')
+    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    from route_engine import plan as P, view, results_cache
+    results_cache.ENABLED = False
+    try:
+        for dep in ('LFPO', 'LFPG'):
+            args = {'action': 'compute', 'adep': dep, 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-16T12:00', 'alternatives': False, 'proposals': True, 'sections': True}
+            t = time.perf_counter()
+            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+            took = time.perf_counter() - t
+            p = res['primary']
+            made = [l for l in p.get('legs', []) if l.get('origin') == 'random']
+            c.eq((bool(p.get('ok')), len(made) >= 2, (res.get('sections') or {}).get('source'), took < 21.0), (True, True, 'random', True),
+                 dep + ' → KLAX on the real base: a ROUTE by a free route created (it had none before: the entries nearest to the path are not reachable from Paris at FL370), and the whole answer inside the bound of 20 s (the last search ends a few tenths after it: 20.2 s measured, 21 s allowed)', what='real ' + dep)
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None

@@ -223,14 +223,14 @@ class Nav:
     LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente ; jamais interdite (un maillon bas peut être la seule liaison), mais évitée
     nat_rejected=frozenset()      # SOG-0354 L5 (1) : les tracks écartées pour CE vol (sections.solve, avec l'option `sections`) : la recherche entière qui suit ne les prend pas non plus ; remis à vide par plan.plan à chaque demande
 
-    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False,goals=None):
+    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False,goals=None,need=None):
         """A* with ordered milestones and nondominated reachable-altitude labels.
         Heuristic is geodesic distance through remaining milestones, scaled by
         the cheapest cost/NM in this graph. It stays admissible with FRA bonus.
         SOG-0354 L2b (3) : `gate` vrai = `end` est une PORTE (un point au milieu du vol), pas l'arrivée : ni la descente d'arrivée ni le niveau d'arrivée ne sont exigés ; la bande finale (low, high)
         et le coût sont rendus dans `last_search` (`band`, `cost`) pour que la section suivante parte de cette bande (`initial_band`).
         SOG-0354 L5 (1 bis) : `goals` (des nœuds, sans jalons) = UNE seule recherche vers TOUTES ces portes : l'heuristique est la distance à la plus proche, chaque porte est notée à son premier dépilage (le plus petit coût : l'heuristique reste cohérente) et la recherche continue jusqu'à ce que toutes soient notées ; le résultat est
-        { porte: { path, cost, band } } (celles atteintes), jamais une exception de budget : une porte non atteinte manque (`last_search['truncated']` dit que le budget a coupé). `end` est alors ignoré (toute porte convient).
+        { porte: { path, cost, band } } (celles atteintes), jamais une exception de budget : une porte non atteinte manque (`last_search['truncated']` dit que le budget a coupé). `end` est alors ignoré (toute porte convient). `need` : s'arrêter dès que ce nombre de portes est atteint (la route libre n'a besoin que des plus proches : une porte inatteignable fait sinon parcourir tout l'espace des états, 31 000 états, 5 s pour EIDW → KJFK).
         """
         import time
         begun=time.perf_counter();expanded=0;fra_reachable=False
@@ -283,7 +283,7 @@ class Nav:
                     while walk!=origin:
                         previous,e=prev[walk];path.append((previous[0],walk[0],e));walk=previous
                     reached[u]=dict(path=list(reversed(path)),cost=cost,band=(low,high))
-                    if len(reached)==len(goal_set):
+                    if len(reached)==len(goal_set) or (need and len(reached)>=need):
                         self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,goals=len(goal_set))
                         return reached
             elif u==end and index==len(names) and (seen_fra or not require_fra):

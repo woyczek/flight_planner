@@ -145,17 +145,20 @@ def solve(nav, g, start, end):
     return path
 
 
-def _europe(nav, g, start, entries, info):
-    """{ entrée: { path, cost, band } } : UNE recherche (`Nav.search(goals=…)`) du départ vers toutes les entrées ; `info['europe']` dit ce qu'elle a fait (portes, atteintes, états, secondes, coupée par le budget)."""
-    found = nav.search(g, start, entries[0], (), False, False, None, gate=True, goals=entries) or {}
+def _europe(nav, g, start, entries, info, key='europe', need=None):
+    """{ entrée: { path, cost, band, expanded, seconds } } : UNE recherche (`Nav.search(goals=…)`) du départ vers toutes les entrées ; `info[key]` dit ce qu'elle a fait (portes, atteintes, états, secondes, coupée par le budget) ; `europe_free` pour la route libre (L5 2 bis)."""
+    found = nav.search(g, start, entries[0], (), False, False, None, gate=True, goals=entries, **({'need': need} if need else {})) or {}
     ls = nav.last_search or {}
-    info['europe'] = {'goals': len(entries), 'reached': len(found), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'), 'truncated': bool(ls.get('truncated'))}
+    for x in found.values():
+        x['expanded'], x['seconds'] = ls.get('expanded'), ls.get('seconds')
+    info[key] = {'goals': len(entries), 'reached': len(found), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'), 'truncated': bool(ls.get('truncated'))}
     return found
 
 
 def _free(nav, g, start, end, ratio, info):
     """SOG-0354 L5 (2) : aucune route du jour ne convient : la route libre CRÉÉE (free_route), résolue par les mêmes sections ; `info['free']` dit ce qui a été fait (ou pourquoi rien : « aucun point d'entrée océanique connu »), `info['source']` vaut 'random' ; None si rien n'a abouti (la recherche entière suit)."""
-    made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True))
+    made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs, first: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True, first=first),
+                                 lambda g2, s, entries: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED))
     if not made:
         info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
@@ -183,7 +186,7 @@ def _resolve(nav, g, start, end, tid, o, created=False, first=None):
         if name is None:      # une section d'extrémité porte le nom de son côté de l'océan (le vol peut aller dans les deux sens)
             name = 'europe' if nav.nodes[s if s == start else e]['lon'] > WEST_LON else 'amérique'
         if number == 0 and first:      # la section d'Europe de cette entrée vient de la recherche vers toutes les entrées (_europe)
-            part, ls = first['path'], {'band': first['band'], 'cost': first['cost'], 'expanded': (nav.sections_info or {}).get('europe', {}).get('expanded'), 'seconds': (nav.sections_info or {}).get('europe', {}).get('seconds'), 'shared': True}
+            part, ls = first['path'], {'band': first['band'], 'cost': first['cost'], 'expanded': first.get('expanded'), 'seconds': first.get('seconds'), 'shared': True}
         else:
             try:
                 part = nav.search(graph, s, e, (), False, False, band if use_band else None, gate=is_gate)
