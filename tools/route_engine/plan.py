@@ -204,7 +204,7 @@ def plan(request, root):
         request['via'] = [w for w in words if not engine.route_connector(w, nav, airways, procedure_names)]
         if request.get('mode', 'calculate') == 'validate':
             request['via'] = []        # SOG-0081 : le contrôle d'une route saisie n'impose aucun passage (ses points sont les extrémités de ses airways ; plus de 8 d'entre eux refusaient toute route longue)
-    if request.get('mode', 'calculate') == 'calculate' and request.get('allow_levels', True):
+    if request.get('allow_levels', True):      # SOG-0371 (aller-retour) : le contrôle lit la route avec le MÊME modèle vertical que la recherche qui l'a écrite (une route du moteur n'est pas refusée au contrôle pour une montée que la recherche adaptait)
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
     request['_deadline'] = started + HEAD_BUDGET_S
@@ -237,6 +237,8 @@ def plan(request, root):
                 break
     engine.DEADLINE = started + TOTAL_BUDGET_S
     rejected = not primary['ok'] or bool(primary.get('data_gaps')) or any(i['level'] == 'ERREUR' for i in primary['issues'])
+    # SOG-0371 : en CONTRÔLE (une route saisie, sans `alternatives` demandées) la réponse dit ce qui est refusé, dans la borne de la route de tête : ni variantes d'office ni propositions de repli (c'est « Calculer A → B » qui cherche)
+    check_only = request.get('mode', 'calculate') == 'validate' and not request.get('alternatives')
     coverage_gaps = recovery.terminal_gaps(request, nav) if rejected else []
     alternatives = []
     failures = list(coverage_gaps)
@@ -246,7 +248,7 @@ def plan(request, root):
     budget_hit = rejected and 'Budget de recherche atteint' in str(primary.get('error') or '')
     if budget_hit and not coverage_gaps:
         failures.append('Alternatives non cherchées : la recherche de la route de tête a atteint son budget (elles en auraient épuisé un autre à chaque niveau).')
-    if (rejected or request.get('alternatives')) and not coverage_gaps and not budget_hit:
+    if (rejected or request.get('alternatives')) and not coverage_gaps and not budget_hit and not check_only:
         if not rejected:          # SOG-0296 : la route de tête est bonne, les alternatives sont un PLUS : leur recherche a son propre budget (8 s, `alternatives_budget`) ; un plan refusé garde les 25 s (ses propositions sont son recours)
             secs = float(request.get('alternatives_budget', ALT_BUDGET_S))
             limit['until'] = min(limit['until'], time.perf_counter() + secs)
@@ -341,7 +343,7 @@ def plan(request, root):
                         failures.append(f'FL{level}: ' + str(e))
         except (ValueError, SearchBudget) as e:
             failures.append(str(e))
-    wanted = rejected or bool(request.get('alternatives'))
+    wanted = (rejected or bool(request.get('alternatives'))) and not check_only
     if not alternatives:
         failures.extend(e for t in tested for e in t['errors'])
     alternatives.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
@@ -353,7 +355,7 @@ def plan(request, root):
     message = (f'{len(alternatives)} alternative(s) sans incompatibilité détectée. Le niveau et les paliers de chaque proposition sont affichés.'
                if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''
     repli = None
-    if rejected and not alternatives:
+    if rejected and not alternatives and not check_only:
         nav._routing_cache.clear()
         try:
             repli = recovery.propose(request, nav, rad)
@@ -365,7 +367,7 @@ def plan(request, root):
         layered.annotate(r, rad)
     return dict(primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
-                automatic_alternatives=rejected, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
+                automatic_alternatives=rejected and not check_only, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 
 
 def _cut(text):

@@ -9786,7 +9786,7 @@ def k267(c):
                 out[label] = (len(res['alternative_attempts']), len(res['alternatives']), res['alternative_message'][:40])
         finally:
             time.perf_counter, engine.assess = real
-    c.eq((out['25 s'][0], out['25 s'][1]), (3, 3), 'with the whole 25 s the three alternatives are tried (the baseline of the fixture)', what='baseline')
+    c.eq((out['25 s'][0], out['25 s'][1]), (4, 3), 'with the whole 25 s the alternatives are tried: four searches, three alternatives (the baseline of the fixture; the first search, FL350 with adapted levels, is the primary itself now that the check reads an aerodrome with no SID as the search does — SOG-0371 — so it is not an alternative)', what='baseline')
     c.ok(out['1 s'][0] < 3 and out['1 s'][1] < out['25 s'][1], str(out), 'with `alternatives_budget` 1 the search stops after the first search that goes past it: fewer attempts, fewer alternatives, the primary unchanged')
     c.eq(out['default'][0], 3, 'the default is 8 s: three searches of 3 s fit before the third check (6 s)', what='default')
     c.eq(out['none asked'][1], 0, 'no alternatives asked: none searched (the primary alone, as before)', what='none')
@@ -10053,6 +10053,73 @@ def k273(c):
     c.eq((ok, ' L1:B>D ' in route), (True, True), 'with no other link the low airway is taken in the middle too (B to D): avoided, never forbidden', what='only link')
     ok, route, nm = run(True, fl=170)
     c.eq((ok, '>CH ' in route), (True, False), 'at FL170 the low airway is NOT low (its ceiling is the level): the shorter one is flown', what='not low')
+
+
+@case('K281', 'Route engine: a CHECK says what is refused and does not search variants (SOG-0371); a route the engine wrote is read back by the check without refusal (its DCT connector from an aerodrome with no SID is free, the same vertical model as the search); every itinerary of the answer carries the POSITIONS of its points (SOG-0372 c)', 'K', static=True,
+      rule='Ergonomist 16 Nov 2026 (the user\'s « SOG route check EGLL → KJFK · launcher 39685 ms » is the CHECK, one request, not « Calculer A → B »): the route taken carried « NATG » and « PARCH4 », the engine refused it then searched variants of its own (`automatic_alternatives = rejected`, the 25 s of a refused plan); decided: (a) a check gives no variants unless `alternatives` is asked, (b) a route the engine wrote is read back without refusal, (c) the points of each itinerary with their positions (« Prendre » copies the text into the Fuel field, and a point the engine knows but no zone read by the browser carries became « point inconnu »).')
+def k281(c):
+    import json
+    import math
+    import os
+    import sys
+    import tempfile
+    import time
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I
+    from route_engine import plan as P
+    from route_engine import view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        os.makedirs(d)
+        nodes = {'A': (49.1, 2.9), 'B': (52.16, 7.19), 'CH': (56.0, 7.5), 'D': (56.24, 12.91), 'E': (59.3, 17.2)}
+        pt = lambda k: {'id': k, 'lat': nodes[k][0], 'lon': nodes[k][1]}
+        aw = lambda r, a, b, lo, hi: {'route': r, 'a': pt(a), 'b': pt(b), 'lower': lo, 'upper': hi}
+        high = [aw('H1', 'A', 'B', 24500, 66000), aw('H1', 'B', 'CH', 24500, 66000), aw('H1', 'CH', 'D', 24500, 66000), aw('H1', 'D', 'E', 24500, 66000)]
+        files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['LFPO', 'PARIS ORLY', 48.72328, 2.37958, 291, 0, 0], ['ESSA', 'STOCKHOLM ARLANDA', 59.6519, 17.9186, 137, 0, 0]]},
+                 'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in nodes.items()], 'navaids': [], 'airways': high}
+        for k, v in files.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        P.drop_contexts()
+        try:
+            base = {'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'enableFra': False}
+            req = V.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': False})
+            res = P.compute(req, data, rad, None)
+            written = res['primary']['route']
+            c.ok(res['primary'].get('ok') and ' H1 ' in f' {written} ', written, 'the engine writes a route on the high airway (the floor 24 500 ft is above the natural climb of the first connector)')
+            # (b) the route the engine wrote is read back by the check without refusal, in the bound of the head route, with no variant searched
+            t0 = time.perf_counter()
+            creq = V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': written, 'enable_fra': False})
+            back = P.compute(creq, data, rad, None)
+            errors = [i['text'] for i in back['primary'].get('issues') or [] if i['level'] == 'ERREUR']
+            c.eq((errors, back['automatic_alternatives'], back['alternatives'], back['recovery'], time.perf_counter() - t0 < P.HEAD_BUDGET_S), ([], False, [], None, True),
+                 'the route the engine wrote is accepted by the check (no ERREUR: no refusal for a climb the search adapted), within 5 s, no variant', what='round trip')
+            # (a) a refused check: what is refused, no variants, no fallback proposals; with `alternatives` asked the search is still there
+            bad = written.replace(' H1 ', ' H1 ZZZ ', 1)
+            t0 = time.perf_counter()
+            r1 = P.compute(V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': bad, 'enable_fra': False}), data, rad, None)
+            c.eq(([i['text'] for i in r1['primary']['issues'] if i['level'] == 'ERREUR' and 'ZZZ' in i['text']] != [], r1['automatic_alternatives'], r1['alternatives'], r1['recovery'], r1['alternative_message'], time.perf_counter() - t0 < P.HEAD_BUDGET_S),
+                 (True, False, [], None, '', True), 'a refused check says what is refused (the unknown point) in the bound of the head route: no automatic variants, no fallback proposals, no message about variants', what='refused check')
+            r2 = P.compute(V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': bad, 'enable_fra': False, 'alternatives': True}), data, rad, None)
+            c.ok(r2['alternative_message'] != '' or r2['alternative_failures'], str(r2['alternative_message']), 'with `alternatives` asked the check still searches variants')
+            # (c) the positions of the points of each itinerary
+            alt = V.to_view(res, req)['alternatives'][0]
+            pts = alt['points']
+            ids = [p['id'] for p in pts]
+            c.ok(ids[0] == 'LFPO' and ids[-1] == 'ESSA' and {'A', 'B', 'CH', 'D', 'E'} <= set(ids) and len({(p['id'], p['lat'], p['lon']) for p in pts}) == len(pts)
+                 and all(set(p) == {'id', 'lat', 'lon'} and math.isfinite(p['lat']) and math.isfinite(p['lon']) for p in pts), str(pts[:3]),
+                 'each itinerary carries its points with their positions: the aerodromes and the points of the route, in order, without duplicates, finite numbers')
+            c.eq({p['id']: (p['lat'], p['lon']) for p in pts if p['id'] in nodes}, {k: v for k, v in nodes.items()}, 'the positions are the base\'s', what='positions')
+            c.ok(len(pts) <= V.MAX_POINTS and len(json.dumps(pts)) < 60000, str(len(pts)), 'the points are bounded in number and size')
+        finally:
+            P.drop_contexts()
 
 
 @case('K274', 'Route engine: a fallback proposal after the search budget says so (`status: proposal`, a sentence) and does not cost the budget of every level (SOG-0161, EIDW → KBOS: 35 s)', 'K', static=True,

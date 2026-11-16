@@ -7,6 +7,7 @@ Réponse : { ok, alternatives: [alt], segments: [seg], issues: [{ level: 'error'
   seg = { from, to, via, state: 'ok' | 'error', reasons: [{ kind: 'RAD' | 'FRA' | 'direction' | 'floor' | 'ceiling' | 'altitude' | 'continuity', text, ruleId?, deltaFt? }] } ;
   `segments` du niveau supérieur = ceux de la première alternative (la proposée, ou la route saisie). Le texte des motifs est celui du moteur ; le genre est reconnu d'après lui (rien n'est inventé : un motif inconnu est « altitude »).
 """
+import math
 import re
 
 ACTIONS = ('compute', 'check')
@@ -112,10 +113,29 @@ def name_of(r, requested_fl):
     return base + (f' · FL{r["fl"]}' if r.get('fl') != requested_fl else '')
 
 
+MAX_POINTS = 600
+
+
+def points_of(r):
+    """Les POSITIONS des points d'un itinéraire, dans l'ordre (SOG-0372 c) : { id, lat, lon } sans doublon, nombres finis arrondis, au plus MAX_POINTS. « Prendre » copie le texte de la route dans le champ de Carburant : un point que le moteur connaît
+    (NICSO, ajouté par la couche NAT) mais qu'aucune zone lue par le navigateur ne porte y devenait « point inconnu » ; la page lit ces positions. Rien de plus n'est écrit dans data/."""
+    out, seen = [], set()
+    for leg in r.get('legs') or []:
+        for k in ('start', 'end'):
+            p = leg.get(k) or {}
+            i, la, lo = p.get('id'), p.get('lat'), p.get('lon')
+            if isinstance(i, str) and isinstance(la, (int, float)) and isinstance(lo, (int, float)) and math.isfinite(la) and math.isfinite(lo):
+                key = (i, round(la, 5), round(lo, 5))
+                if key not in seen:
+                    seen.add(key)
+                    out.append({'id': i[:40], 'lat': key[1], 'lon': key[2]})
+    return out[:MAX_POINTS]
+
+
 def alternative(i, r, requested_fl):
     segs = [segment(l) for l in r.get('legs') or []]
     errors = [x for x in r.get('issues') or [] if x['level'] == 'ERREUR']
-    return {'id': f'alt{i}', 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
+    return {'id': f'alt{i}', 'points': points_of(r), 'name': name_of(r, requested_fl), 'route': r.get('route', ''), 'distanceNm': r.get('distance_nm'), 'fl': r.get('fl'), 'profile': thin((r.get('profile') or {}).get('points')),
             'sid': procedure(r, 'SID'), 'star': procedure(r, 'STAR'), 'faults': max(sum(1 for s in segs if s['state'] == 'error'), len(errors)), 'incomplete': bool(r.get('data_gaps')), 'segments': segs,
             **({'nat': nat_of(segs)} if nat_of(segs) else {}),       # SOG-0263
             **({'control': {'controlledPct': r['control']['controlled_pct'], 'incompletePct': r['control']['incomplete_pct'], 'fallbackPct': r['control']['fallback_pct'], 'errorPct': r['control']['error_pct'],

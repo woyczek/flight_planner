@@ -709,7 +709,10 @@ def assess(request,_nav=None,_rad=None,_path=None):
             nat=e.get('nat'),nat_link=e.get('nat_link')))   # SOG-0078 ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
-    free=dict(free_departure=generated and bool(legs) and legs[0]['via']=='DCT' and legs[0].get('kind')!='SID',free_arrival=generated and bool(legs) and legs[-1]['via']=='DCT' and legs[-1].get('kind') not in ['STAR','APPROACH_LINK'])   # SOG-0161 : le même raccord libre que la recherche
+    # SOG-0371 (aller-retour) : une route que le moteur a ÉCRITE est relue sans refus. Son raccord DCT depuis (vers) un aérodrome sans SID (STAR) lue est libre au contrôle comme à la recherche (la montée n'y est pas tenue au plancher de l'airway suivante) ;
+    # un aérodrome qui a des procédures lues garde la rigueur du contrôle (une route saisie « LFPG DCT … » doit prendre sa SID)
+    no_proc=lambda ad,kind:not nav.procedures.stats.get(ad,{}).get(kind+'_usable',0)
+    free=dict(free_departure=bool(legs) and legs[0]['via']=='DCT' and legs[0].get('kind')!='SID' and (generated or no_proc(dep,'SID')),free_arrival=bool(legs) and legs[-1]['via']=='DCT' and legs[-1].get('kind') not in ['STAR','APPROACH_LINK'] and (generated or no_proc(arr,'STAR')))   # SOG-0161 : le même raccord libre que la recherche
     profile=flight_profile.build(legs,dep_elev or 0,arr_elev or 0,fl,**options,strategy=strategy,**free)
     for l in legs:
         if l.get('data_gap'):l['compatible']=None
