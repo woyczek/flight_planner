@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9cedb71",
+  "organisation": "bc1043f",
   "fiches": 382,
   "untranslated": 0,
   "priorities": 374
@@ -3239,7 +3239,7 @@
     {
      "id": "SOG-0341",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Registre des immatriculations : comment un téléphone appairé y accède-t-il, s'il n'est pas publié ?",
      "en": "Aircraft register: how does a paired phone reach it, if it is not published?",
      "de": "Luftfahrzeugregister: wie erreicht ein gekoppeltes Telefon es, wenn es nicht veröffentlicht ist?",
@@ -5091,11 +5091,12 @@
     {
      "id": "SOG-0376",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Installation : les bibliothèques Python en option s'installent par un script, et l'écran dit lesquelles manquent",
      "en": "Installation: optional Python libraries are installed by a script, and the screen says which ones are missing",
      "de": "Installation: optionale Python-Bibliotheken werden per Skript installiert, und der Bildschirm sagt, welche fehlen",
-     "es": "Instalación: las bibliotecas opcionales de Python se instalan con un script, y la pantalla dice cuáles faltan"
+     "es": "Instalación: las bibliotecas opcionales de Python se instalan con un script, y la pantalla dice cuáles faltan",
+     "test": true
     }
    ]
   },
