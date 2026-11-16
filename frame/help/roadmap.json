@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c1ccdaa",
+  "organisation": "9027d42",
   "fiches": 382,
   "untranslated": 0,
   "priorities": 374
@@ -1578,11 +1578,12 @@
     {
      "id": "SOG-0382",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : l'infobulle des contrôleurs en ligne coupe la liste quand il y a plusieurs fréquences",
      "en": "Map: the tooltip of online controllers cuts the list when there are several frequencies",
      "de": "Karte: der Tooltip der Online-Lotsen schneidet die Liste ab, wenn es mehrere Frequenzen gibt",
-     "es": "Mapa: la etiqueta de los controladores en línea corta la lista cuando hay varias frecuencias"
+     "es": "Mapa: la etiqueta de los controladores en línea corta la lista cuando hay varias frecuencias",
+     "test": true
     }
    ]
   },
