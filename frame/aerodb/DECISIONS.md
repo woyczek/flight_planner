@@ -3265,3 +3265,10 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done**: see INTEGRATION « Route engine, lot L5 (2) ». K294 (written, not run here: replayed by the ergonomics session).
 - **Choices of this session** (to relax if wished): the sides of the ocean are told by the longitude (35°W); the lower bound of a pair is the cheapest cost per NM × the distances + the length of the free route (so the pair is the one nearest to the path, not a guarantee of the cheapest, and three pairs are tried); the free route has no validity hour and no level list (a free route is flown at any level of 28 500–60 000 ft); the leg key is `origin` (the legs of the view already carry a `source` (the file of a procedure)), the answer says `source: random` under `sections.free`.
 - **Not done**: `timing` and the bounds (L5 3); one European search to all the entries (L5 1 bis); the matrix (L5 4).
+
+## 16 November 2026 — SOG-0354 lot L5 (1 bis): one European search to all the entries
+
+- **Asked** (ergonomics session 17:21): ONE search to all the entries so that LFOE → KTPA and EGLL → KDEN lose nothing with the option.
+- **Done**: see INTEGRATION « Route engine, lot L5 (1 bis) ». K295 (written, not run here), K290 and K293 updated for the new call (`goals`).
+- **Choices of this session** (to relax if wished): the search is exhaustive (no cut on the cost of the farthest entry): an entry that no altitude reaches makes it go through all the states (34 030 states, 0.67 s, for EGLL → KDEN where two of five entries are not reachable); a cut such as « more than 1.6 × the nearest + 300 » would save that time but could lose a better far entry — not done. **LFOE → KTPA now answers the free route** (see the note): the whole search reached the entries by NATR, an east track, against its direction; to decide: may the tail of a track set aside serve as a connector?
+- **Not done**: the same single search for the pairs of the free route (it makes up to three European searches, 0.02 s each on the measured flights); `timing` (L5 3); the matrix (L5 4).

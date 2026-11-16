@@ -223,12 +223,14 @@ class Nav:
     LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente ; jamais interdite (un maillon bas peut être la seule liaison), mais évitée
     nat_rejected=frozenset()      # SOG-0354 L5 (1) : les tracks écartées pour CE vol (sections.solve, avec l'option `sections`) : la recherche entière qui suit ne les prend pas non plus ; remis à vide par plan.plan à chaque demande
 
-    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False):
+    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False,goals=None):
         """A* with ordered milestones and nondominated reachable-altitude labels.
         Heuristic is geodesic distance through remaining milestones, scaled by
         the cheapest cost/NM in this graph. It stays admissible with FRA bonus.
         SOG-0354 L2b (3) : `gate` vrai = `end` est une PORTE (un point au milieu du vol), pas l'arrivée : ni la descente d'arrivée ni le niveau d'arrivée ne sont exigés ; la bande finale (low, high)
         et le coût sont rendus dans `last_search` (`band`, `cost`) pour que la section suivante parte de cette bande (`initial_band`).
+        SOG-0354 L5 (1 bis) : `goals` (des nœuds, sans jalons) = UNE seule recherche vers TOUTES ces portes : l'heuristique est la distance à la plus proche, chaque porte est notée à son premier dépilage (le plus petit coût : l'heuristique reste cohérente) et la recherche continue jusqu'à ce que toutes soient notées ; le résultat est
+        { porte: { path, cost, band } } (celles atteintes), jamais une exception de budget : une porte non atteinte manque (`last_search['truncated']` dit que le budget a coupé). `end` est alors ignoré (toute porte convient).
         """
         import time
         begun=time.perf_counter();expanded=0;fra_reachable=False
@@ -239,13 +241,16 @@ class Nav:
         origin=(start,0,bool(fra_already),low,high)
         ratios=[e.get('_cost',e['nm'])/e['nm'] for es in g.values() for _,e in es if e['nm']>.00001]
         ratio=min(ratios,default=0)
+        goal_set=set(goals) if goals else None
+        reached={}
+        if goal_set:end=min(goal_set);waypoints=();names=[]
         targets=[self.nodes[k] for k in waypoints]+[self.nodes[end]]
         suffix=[0.]*len(targets)
         for i in range(len(targets)-2,-1,-1):suffix[i]=suffix[i+1]+nm(targets[i],targets[i+1])
         heuristics={}
         def heuristic(u,index):
             key=(u,index)
-            if key not in heuristics:heuristics[key]=ratio*(nm(self.nodes[u],targets[index])+suffix[index])
+            if key not in heuristics:heuristics[key]=ratio*(min(nm(self.nodes[u],self.nodes[x]) for x in goal_set) if goal_set else nm(self.nodes[u],targets[index])+suffix[index])
             return heuristics[key]
         if flight:
             cruise=flight['ceiling'];kt=flight['speed_kt']/3600
@@ -265,13 +270,23 @@ class Nav:
         labels[origin[:3]].append((0,low,high,origin))
         while q:
             if expanded%128==0 and (expanded>=100000 or time.perf_counter()>stop_at):
-                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=False,truncated=True,fra_reachable=fra_reachable)
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated=True,fra_reachable=fra_reachable)
+                if goal_set:return reached
                 raise ValueError(f'Budget de recherche atteint ({max(stop_at-begun,0):.0f} s / 100 000 états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
             _,cost,state=heapq.heappop(q)
             if cost!=costs.get(state):continue
             expanded+=1;u,index,seen_fra,low,high=state
             fra_reachable=fra_reachable or '|FRA|' in u
-            if u==end and index==len(names) and (seen_fra or not require_fra):
+            if goal_set:
+                if u in goal_set and u not in reached:
+                    path,walk=[],state
+                    while walk!=origin:
+                        previous,e=prev[walk];path.append((previous[0],walk[0],e));walk=previous
+                    reached[u]=dict(path=list(reversed(path)),cost=cost,band=(low,high))
+                    if len(reached)==len(goal_set):
+                        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,goals=len(goal_set))
+                        return reached
+            elif u==end and index==len(names) and (seen_fra or not require_fra):
                 if flight and not gate and not low-.01<=flight['arrival']<=high+.01:continue
                 path=[]
                 while state!=origin:
@@ -312,8 +327,8 @@ class Nav:
                 kept.append((new,c,d,next_state));labels[next_state[:3]]=kept
                 costs[next_state]=new;prev[next_state]=(state,e)
                 heapq.heappush(q,(new+heuristic(v,next_index),new,next_state))
-        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=False,fra_reachable=fra_reachable)
-        return None
+        self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=bool(reached),fra_reachable=fra_reachable)
+        return reached if goal_set else None
 
     def path(self,g,start,end):return self.search(g,start,end)
 

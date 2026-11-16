@@ -11219,7 +11219,11 @@ def k290(c):
         def __init__(self):
             self.nodes, self.calls, self.last_search, self.sections_info = nodes, [], None, None
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None):
+            if goals:      # SOG-0354 L5 (1 bis): ONE search to all the entries: { entry: { path, cost, band } }
+                self.calls.append((s, tuple(sorted(goals)), band, gate))
+                self.last_search = {'expanded': 5, 'seconds': 0.0, 'found': True}
+                return {x: {'path': [(s, x, {'nm': engine.nm(nodes[s], nodes[x]), 'route': 'DCT'})], 'cost': engine.nm(nodes[s], nodes[x]) * 1.2, 'band': (36000, 36000)} for x in goals}
             self.calls.append((s, e, band, gate))
             if graph is g:      # the two end sections: a straight leg (the cost is the distance)
                 d = engine.nm(nodes[s], nodes[e])
@@ -11235,9 +11239,10 @@ def k290(c):
     nav = Fake()
     path = S.solve(nav, g, 'DEP', 'ARR')
     info = nav.sections_info
-    c.eq((info['chosen'], [t['track'] for t in info['tried']], [s['proof'] for s in info['sections']], path[0][0], path[-1][1]), ('T1', ['T1', 'T2'], ['computed', 'published', 'computed'], 'DEP', 'ARR'),
-         'the best chain (T1) is chosen; T2 is resolved because its lower bound is below the cost of T1; T3 (far north, its lower bound above the best cost) and T5 are NOT resolved: the expensive search is not made for them (lazy resolution); the sections are computed, published, computed', what='lazy')
-    c.eq([(s, e, gate) for s, e, b, gate in nav.calls[:3]], [('DEP', 'E1', True), ('E1', 'X1', True), ('X1', 'ARR', False)], 'a section that ends at a gate is a gate (no arrival level asked); the last one is not', what='gates')
+    tried = [t['track'] for t in info['tried']]
+    c.eq((info['chosen'], tried[0], 'T3' in tried, 'T5' in tried, [s['proof'] for s in info['sections']], path[0][0], path[-1][1]), ('T1', 'T1', False, False, ['computed', 'published', 'computed'], 'DEP', 'ARR'),
+         'the best chain (T1) is chosen and resolved first; (T2 is resolved only if its bound — the REAL cost of its entry from the one search to all the entries — is below the cost of T1); T3 (far north, its lower bound above the best cost) and T5 are NOT resolved: the expensive search is not made for them (lazy resolution); the sections are computed, published, computed', what='lazy')
+    c.eq((nav.calls[0][:2], [(s, e, gate) for s, e, b, gate in nav.calls[1:3]], nav.calls[0][3]), (('DEP', ('E1', 'E2', 'E3', 'E5')), [('E1', 'X1', True), ('X1', 'ARR', False)], True), 'ONE search from the departure to all the entries (L5 1 bis), then the track and the America section of the best chain; a section that ends at a gate is a gate (no arrival level asked); the last one is not', what='gates')
     c.eq(nav.calls[1][2], (36000, 36000), 'the final altitude band of a section is the initial band of the next', what='band')
     nodes['EU'] = {'id': 'EU', 'lat': 48.0, 'lon': 2.0}
     c.eq(S.solve(Fake(), g, 'DEP', 'EU'), None, 'a flight inside Europe: not applicable (the whole search is made)', what='europe')
@@ -11448,7 +11453,11 @@ def k293(c):
             self.depart = (datetime.datetime(2026, 11, 16, 12, 0), 'request')
             self.nat_rejected = frozenset()
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None):
+            if goals:      # SOG-0354 L5 (1 bis): ONE search to all the entries
+                self.calls.append((s, tuple(sorted(goals))))
+                self.last_search = {'expanded': 1, 'seconds': 0.0, 'found': True}
+                return {x: {'path': [(s, x, {'nm': engine.nm(nodes[s], nodes[x]), 'route': 'DCT'})], 'cost': engine.nm(nodes[s], nodes[x]) * 1.2, 'band': (37000, 37000)} for x in goals}
             self.calls.append((s, e))
             if graph is g:
                 d = engine.nm(nodes[s], nodes[e])
@@ -11556,3 +11565,33 @@ def k294(c):
          'with no oceanic point known the answer says « aucun point d\'entrée océanique connu » and invents none; the whole search follows', what='none known')
     src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
     c.ok("origin=e.get('origin')" in src and 'Route libre océanique, créée' in src, 'engine.py', 'the legs keep the origin and the control says « Route libre océanique, créée » (review: no oceanic clearance checked)')
+
+
+@case('K295', 'Route engine, SOG-0354 lot L5 (1 bis): ONE search from the departure to ALL the track entries (`Nav.search(goals=…)`) gives each entry its real cost, its path and its altitude band — the same cost as a search to that entry alone — and an entry that cannot be reached is missing from the answer (no budget exception); `sections.solve` makes that one European search instead of one per track and chooses with the real costs',
+      'K', static=True,
+      rule='SOG-0354 L5 (1 bis) (note § 13; the user: « s\'assurer que tout se charge en temps contraint »). Before, `sections.solve` searched the European section once PER TRACK (5 searches of about 8 600 states for EGLL → KDEN, more than the single 13 000-state search of the whole route: the option cost time for the flights that cross by the north-west). Now `Nav.search(goals=[…])` is one A* whose heuristic is the distance to the NEAREST goal (consistent: the first pop of a goal is its cheapest), that notes each goal when it is first popped and goes on until all are noted; the answer is { goal: { path, cost, band } }; a goal that is not reached is missing and a budget that cuts returns what was reached (`last_search.truncated`). `sections.solve` takes the real cost and band of every entry from it (the skeleton is then exact on the European side and the hour at the entry is checked with the REAL distance), and resolves the track and the America section for the tracks that the best chain does not exclude. Measured on the real base, read only: EIDW → KJFK 5 entries in 400 states (0.03 s, the same costs as five searches), EGLL → KDEN 1.0 s against 2.3 s for the whole search, the same route; LFOE → KTPA: no entry of the day is reachable at this level without a track that is set aside (NATR is an EAST track that the whole search used against its direction): the answer is the free route of K294, 4060.8 NM against 4734.3 NM.')
+def k295(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in {'S': (50.0, 0.0), 'N1': (50.0, 2.0), 'A': (50.0, 4.0), 'B': (52.0, 4.0), 'C': (48.0, 4.0), 'Z': (60.0, 30.0)}.items()}
+    g = engine.RoutingGraph()
+    for u, v in (('S', 'N1'), ('N1', 'A'), ('N1', 'B'), ('N1', 'C'), ('A', 'B'), ('S', 'C')):
+        g.setdefault(u, []).append((v, {'a': u, 'b': v, 'route': 'UL' + u + v, 'nm': engine.nm(nodes[u], nodes[v])}))
+    nav = engine.Nav.__new__(engine.Nav)
+    nav.nodes = nodes
+    multi = nav.search(g, 'S', 'A', (), False, False, None, gate=True, goals=['A', 'B', 'C'])
+    stats = dict(nav.last_search)
+    single = {}
+    for x in ('A', 'B', 'C'):
+        single[x] = (nav.search(g, 'S', x, (), False, False, None, gate=True), nav.last_search['cost'])
+    names = lambda legs: [legs[0][0]] + [v for _u, v, _e in legs]
+    c.eq((sorted(multi), stats.get('goals'), stats.get('found')), (['A', 'B', 'C'], 3, True), 'one search reaches the three entries and says how many it noted', what='all')
+    c.eq([(round(multi[x]['cost'], 6), names(multi[x]['path'])) for x in ('A', 'B', 'C')], [(round(single[x][1], 6), names(single[x][0])) for x in ('A', 'B', 'C')], 'each entry has the SAME cost and the SAME path as a search to that entry alone (the heuristic to the nearest goal is consistent: the first pop of a goal is its cheapest)', what='same')
+    c.ok(all('band' in multi[x] and len(multi[x]['band']) == 2 for x in multi), str(multi.keys()), 'each entry carries its final altitude band (the initial band of the next section)')
+    part = nav.search(g, 'S', 'A', (), False, False, None, gate=True, goals=['A', 'Z', 'C'])
+    c.eq((sorted(part), nav.last_search.get('found'), nav.last_search.get('truncated')), (['A', 'C'], True, None), 'an entry that no path reaches (Z) is MISSING from the answer; the others are there; no exception, and the search says it found something', what='unreached')
+    none = nav.search(g, 'S', 'Z', (), False, False, None, gate=True, goals=['Z'])
+    c.eq((none, nav.last_search.get('found')), ({}, False), 'no entry reached: an empty answer (the caller falls back), found False', what='none')
+    src = (ROOT / 'tools' / 'route_engine' / 'sections.py').read_text(encoding='utf-8')
+    c.ok('goals=entries' in src and "first=europe[o['entry']]" in src and src.count('nav.search(graph, s, e') == 1, 'sections.py', 'sections.solve makes ONE search to all the entries (`_europe`) and resolves each track from it (`first=`): the European section is no longer searched once per track')
