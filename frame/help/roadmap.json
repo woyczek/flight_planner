@@ -1,11 +1,11 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-15",
+ "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1d3d124",
-  "fiches": 366,
+  "organisation": "24f871e",
+  "fiches": 369,
   "untranslated": 0,
   "priorities": 310
  },
@@ -2918,6 +2918,48 @@
    ]
   },
   {
+   "id": "maintenance-aerodb-catalogue-etat-ecran-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "AeroDB (catalogue, état) ; écran Données",
+    "en": "AeroDB (catalogue, état) ; écran Données",
+    "de": "AeroDB (catalogue, état) ; écran Données",
+    "es": "AeroDB (catalogue, état) ; écran Données"
+   },
+   "items": [
+    {
+     "id": "SOG-0369",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : une source dite « pas à jour » alors qu'une source primaire à jour porte le même contenu (DIRCAM pris au SIA, openAIP en rouge, Portugal publié par éditions)",
+     "en": "Data: a source shown « not up to date » while an up-to-date primary source carries the same content (DIRCAM taken from the SIA, openAIP in red, Portugal published by editions)",
+     "de": "Daten: eine Quelle gilt als « nicht aktuell », obwohl eine aktuelle Primärquelle denselben Inhalt liefert (DIRCAM über SIA, openAIP rot, Portugal nach Ausgaben)",
+     "es": "Datos: una fuente dicha « no al día » cuando una fuente primaria al día lleva el mismo contenido (DIRCAM tomado del SIA, openAIP en rojo, Portugal por ediciones)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-aerodb-lanceur-ecran-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "AeroDB ; lanceur ; écran Données",
+    "en": "AeroDB ; lanceur ; écran Données",
+    "de": "AeroDB ; lanceur ; écran Données",
+    "es": "AeroDB ; lanceur ; écran Données"
+   },
+   "items": [
+    {
+     "id": "SOG-0368",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Islande : la prise d'Avians échoue (« fichier illisible ») et rien ne permet de déposer à la main ; les routes de l'ENR 3.2 sont à une page par route",
+     "en": "Iceland: taking Avians fails (« unreadable file ») and nothing allows a manual drop; ENR 3.2 routes come one page per route",
+     "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
+     "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta"
+    }
+   ]
+  },
+  {
    "id": "maintenance-aide",
    "app": "maintenance",
    "label": {
@@ -5486,6 +5528,27 @@
      "en": "Security: a file read from the data repository has no size cap (read to the end, in memory, on the phone)",
      "de": "Sicherheit: eine aus dem Daten-Repository gelesene Datei hat keine Größengrenze (bis zum Ende gelesen, im Speicher, am Telefon)",
      "es": "Seguridad: un archivo leído del repositorio de datos no tiene tope de tamaño (leído hasta el final, en memoria, en el teléfono)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-ecran-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "écran Données",
+    "en": "écran Données",
+    "de": "écran Données",
+    "es": "écran Données"
+   },
+   "items": [
+    {
+     "id": "SOG-0370",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : la fiche d'un pays se contredit (Portugal ; Atlantique Nord)",
+     "en": "Data: a country's sheet contradicts itself (Portugal; North Atlantic)",
+     "de": "Daten: das Blatt eines Landes widerspricht sich (Portugal; Nordatlantik)",
+     "es": "Datos: la ficha de un país se contradice (Portugal; Atlántico Norte)"
     }
    ]
   },
