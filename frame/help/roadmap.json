@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "43f226e",
-  "fiches": 378,
+  "organisation": "91723d7",
+  "fiches": 380,
   "untranslated": 0,
   "priorities": 310
  },
@@ -780,6 +780,27 @@
      "en": "Fuel, Route step: show on the map the procedure hovered in a drop-down list",
      "de": "Kraftstoff, Schritt Route: das in einer Auswahlliste überfahrene Verfahren auf der Karte zeigen",
      "es": "Combustible, paso Ruta: mostrar en el mapa el procedimiento señalado en una lista desplegable"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-controle-de-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; contrôle de route",
+    "en": "Carburant ; contrôle de route",
+    "de": "Carburant ; contrôle de route",
+    "es": "Carburant ; contrôle de route"
+   },
+   "items": [
+    {
+     "id": "SOG-0380",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : au contrôle de la route, « LFPO/02 » (aérodrome et piste d'arrivée) est pris pour un point inconnu",
+     "en": "Fuel: at the route check, 'LFPO/02' (arrival aerodrome and runway) is taken for an unknown point",
+     "de": "Kraftstoff: bei der Streckenprüfung wird „LFPO/02“ (Zielflugplatz und Piste) als unbekannter Punkt gewertet",
+     "es": "Combustible: en el control de la ruta, «LFPO/02» (aeródromo y pista de llegada) se toma por un punto desconocido"
     }
    ]
   },
@@ -1611,6 +1632,27 @@
      "en": "Map: hovering a route point shows it on the map; while panning, show the points too",
      "de": "Karte: ein Routenpunkt unter dem Zeiger wird auf der Karte gezeigt; beim Verschieben auch die Punkte zeigen",
      "es": "Mapa: al pasar sobre un punto de la ruta se muestra en el mapa; al desplazar, mostrar también los puntos"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-reseaux-suivi-du-vol",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; réseaux ; suivi du vol",
+    "en": "Carte ; réseaux ; suivi du vol",
+    "de": "Carte ; réseaux ; suivi du vol",
+    "es": "Carte ; réseaux ; suivi du vol"
+   },
+   "items": [
+    {
+     "id": "SOG-0381",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carte : les espaces tenus par un contrôleur IVAO ou VATSIM, et le temps avant de devoir le contacter",
+     "en": "Map: the airspaces held by an IVAO or VATSIM controller, and the time before having to contact them",
+     "de": "Karte: die von einem IVAO- oder VATSIM-Lotsen besetzten Lufträume und die Zeit bis zur Kontaktaufnahme",
+     "es": "Mapa: los espacios atendidos por un controlador de IVAO o VATSIM, y el tiempo antes de tener que contactarlo"
     }
    ]
   },
