@@ -2,9 +2,10 @@
 
 Règles (celles de l'ergonomie et de Sécurisation, toutes tenues ici) :
   · le lanceur n'IMPORTE JAMAIS pypdf, pdfplumber, pdfminer ni Pillow : il lit leurs versions dans un sous-processus isolé (`python -I -c`, importlib.metadata : aucune ligne de ces bibliothèques ne s'y exécute) et lit un PDF dans un
-    AUTRE sous-processus (tools/pdf_child.py) ; ni le lanceur ni la page n'installent quoi que ce soit : une bibliothèque qui manque ou trop ancienne est DITE avec la commande à lancer (COMMAND) ;
-  · les minima (MINIMA) sont ceux de Sécurisation : pypdf ≥ 6.21.4 (trois avis de déni de service avant), pdfplumber ≥ 0.11.10 (qui exige pdfminer.six 20260107, sans avis), Pillow ≥ 13.0.0 (39 avis avant, tous corrigés) ; la version
-    est comparée en NOMBRES (pdfminer.six est une date) ; pypdfium2 n'en fait pas partie : il reste à la page ;
+    AUTRE sous-processus (tools/pdf_child.py) ; ni le lanceur ni la page n'installent quoi que ce soit : une bibliothèque qui manque ou trop ancienne est DITE, avec le NOM du script à lancer (SOG-0376 : installer_bibliotheques.cmd ou .sh, jamais une commande pip à recopier) ;
+  · les minima (MINIMA) sont ceux de Sécurisation et viennent du SEUL fichier des bornes, tools/requirements-optional.txt, que lit aussi le script d'installation (tools/optional_libs.py, un lecteur strict) : pypdf ≥ 6.21.4 (trois avis de
+    déni de service avant), pdfplumber ≥ 0.11.10 (qui exige pdfminer.six 20260107, sans avis), Pillow ≥ 13.0.0 (39 avis avant, tous corrigés) ; la version est comparée en NOMBRES (pdfminer.six est une date) ; un fichier des bornes refusé
+    rend l'état « bornes illisibles » et n'autorise AUCUNE lecture ;
   · le sous-processus de lecture : `python -I` (ni dossier courant ni variables PYTHON*), dossier courant = un dossier temporaire VIDE, environnement NETTOYÉ (rien d'autre que SYSTEMROOT), délai dur avec arrêt de TOUT l'arbre
     de processus (objet Job sous Windows, groupe de processus ailleurs), mémoire limitée (MEMORY_LIMIT : objet Job sous Windows, RLIMIT_AS ailleurs), pages comptées, rend son résultat dans UN fichier de son dossier temporaire (taille
     bornée) ; ce résultat est une ENTRÉE NON FIABLE : JSON sans nombre non fini, deux champs fermés, textes nettoyés des caractères de contrôle et bornés ;
@@ -20,9 +21,17 @@ import sys
 import tempfile
 import time
 
-MINIMA = (('pypdf', '6.21.4', '7'), ('pdfplumber', '0.11.10', '0.12'), ('Pillow', '13.0.0', '14'), ('pdfminer.six', '20260107', None))      # (paquet, minimum inclus, maximum exclu ou None)
-COMMAND = 'python -m pip install "pypdf>=6.21.4,<7" "pdfplumber>=0.11.10,<0.12" "Pillow>=13.0.0,<14"'
-PURPOSES = {'text': ('pypdf',), 'vectors': ('pdfplumber', 'pdfminer.six', 'Pillow')}           # ce que chaque lecture exige
+import optional_libs
+
+try:
+    GROUPS = optional_libs.load()
+    BOUNDS_ERROR = None
+except ValueError as _e:      # fichier des bornes refusé : rien n'est lu, et l'état le dit (jamais « prête » sur des bornes inconnues)
+    GROUPS, BOUNDS_ERROR = [], str(_e)
+MINIMA = optional_libs.minima(GROUPS)      # (paquet, minimum inclus, maximum exclu ou None), du fichier des bornes
+SCRIPT = 'installer_bibliotheques.cmd' if sys.platform == 'win32' else 'installer_bibliotheques.sh'      # le script à la racine de la suite, nommé dans chaque phrase d'échec
+PURPOSES = {'text': ('pypdf',), 'vectors': ('pdfplumber', 'pdfminer.six', 'Pillow'), 'ocr': ('pypdfium2', 'rapidocr-onnxruntime')}           # ce que chaque lecture exige
+HOW_TO = f'À faire : lancer {SCRIPT}, dans le dossier de la suite, puis relancer le lanceur.'      # le texte FIXE du remède : jamais construit depuis un contenu
 MAX_PDF_BYTES = 1024 ** 3               # l'AIP civil du Royaume-Uni fait 772 Mo
 MAX_PAGES = 400
 MAX_CHARS_PAGE = 200_000
@@ -103,7 +112,11 @@ def status(versions_of=None):
     have = (versions_of or versions)()
     packages = [{'name': n, 'version': have.get(n), 'minimum': lo, 'maximum': hi, 'state': judge(n, have.get(n))} for n, lo, hi in MINIMA]
     by = {p['name']: p['state'] for p in packages}
-    out = {'packages': packages, 'ready': {k: all(by.get(n) == 'ok' for n in v) for k, v in PURPOSES.items()}, 'command': COMMAND, 'python': '.'.join(map(str, sys.version_info[:3]))}
+    ready = {k: bool(MINIMA) and all(by.get(n) == 'ok' for n in v) for k, v in PURPOSES.items()}
+    groups = [{'id': g['id'], 'packages': [p[0] for p in g['packages']], 'ready': all(by.get(p[0]) == 'ok' for p in g['packages'])} for g in GROUPS]
+    out = {'packages': packages, 'groups': groups, 'ready': ready, 'script': SCRIPT, 'python': '.'.join(map(str, sys.version_info[:3]))}
+    if BOUNDS_ERROR:
+        out['error'] = 'bounds'
     if versions_of is None:
         _STATUS['at'], _STATUS['value'] = now, json.loads(json.dumps(out))
     return out
@@ -111,11 +124,14 @@ def status(versions_of=None):
 
 def require(purpose, versions_of=None):
     """Lève PdfError('missing' | 'version') avec la commande si une bibliothèque de `purpose` manque ou est trop ancienne."""
+    if BOUNDS_ERROR:
+        raise PdfError('failed', 'lecture de PDF impossible : le fichier des bornes (tools/requirements-optional.txt) est refusé ; rien n’est lu. ' + HOW_TO)
     st = status(versions_of)
     bad = [p for p in st['packages'] if p['name'] in PURPOSES[purpose] and p['state'] != 'ok']
     if bad:
-        what = ', '.join(f"{p['name']} {'absent' if p['state'] == 'missing' else p['version'] + (' trop ancienne' if p['state'] == 'old' else ' trop récente')}" for p in bad)
-        raise PdfError('missing' if all(p['state'] == 'missing' for p in bad) else 'version', f'lecture de PDF impossible : {what}. À lancer sur le poste : {COMMAND}')
+        # un texte FIXE : les noms viennent de la liste fermée, l'état est un des quatre mots du jugement, la version lue n'est PAS recopiée (la page la dit, à son tour, depuis `pdf/status`)
+        what = ', '.join(f"{p['name']} {'absent' if p['state'] == 'missing' else 'trop ancienne' if p['state'] == 'old' else 'trop récente'}" for p in bad)
+        raise PdfError('missing' if all(p['state'] == 'missing' for p in bad) else 'version', f'lecture de PDF impossible : {what}. {HOW_TO}')
 
 
 # ----------------------------------------------------------------------------------------------------------------------- le chemin du PDF

@@ -2,7 +2,7 @@
 
 Source : les pages « AD 2 <OACI> DATA … CODE » de l'eAIP (tables de codage ARINC : une ligne par tronçon) et « AD 2 <OACI>
 DATA 01 » (coordonnées des points propres aux procédures). Lecture des PDF par pypdf, dépendance FACULTATIVE de ce
-constructeur de poste (jamais du lanceur ni de la page) : python -m pip install pypdf. Le reste est la bibliothèque standard.
+constructeur de poste (jamais du lanceur ni de la page) : installer_bibliotheques.cmd (ou .sh). Le reste est la bibliothèque standard.
 
   python tools/proc_sia.py LFBD LFAV --eaip https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_01_OCT_2026/FRANCE/AIRAC-2026-10-01 \
       --out data/proc [--cache dossier] [--base-dir dossier_base_sia] [--rows-dir dossier_pour_fixtures]

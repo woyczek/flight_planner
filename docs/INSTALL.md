@@ -164,6 +164,14 @@ Bibliothèque standard uniquement :
 | `tools/bump_versions.py` | `--neutral` : références à `?v=0` (état du dépôt ; le lanceur pose les empreintes réelles en servant) ; sans option : empreintes réelles pour un usage sans lanceur |
 | `tools/new_family_pages.py famille.json` | crée les pages d'une nouvelle famille de missions |
 
+### Optional Python libraries (PDF reading, OCR)
+
+Some optional readings (UK procedure charts, VAC charts, the workstation builders) need Python libraries that the launcher never imports and never installs. They are installed by a script run by you, nothing else:
+
+- Windows: double-click `installer_bibliotheques.cmd`; macOS / Linux: `sh installer_bibliotheques.sh` — in the folder of the suite. Python is looked for as `lancer.cmd` / `lancer.sh` do (and is not installed by this script: run the launcher first).
+- The script says the interpreter it uses, what it will install and from where (PyPI, prebuilt versions only), asks `o/N` (no by default) once for PDF reading (pypdf, pdfplumber, Pillow) and once for OCR (heavy), installs for your account only (`--user`; it refuses to run as an administrator), never lowers a version, reads the versions again at the end. `--dry-run` shows the command and runs nothing. Then restart the launcher.
+- The names and bounds are in `tools/requirements-optional.txt`, the single file read by the script and by the launcher (`pypdf>=6.21.4,<7`, …). The Data screen says the state in one line; the failures say the name of the script, never a pip command.
+
 ### Données SIA (Missions SIA)
 
 Le studio cartographique utilise les données AIRAC du SIA, **hors dépôt** (≈ 80 Mo par cycle) : Paramètres ›

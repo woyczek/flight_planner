@@ -57,7 +57,7 @@ def render_page(path, page=0, dpi=300):
     try:
         import pypdfium2
     except ImportError:
-        raise SystemExit('pypdfium2 manque : python -m pip install pypdfium2 (dépendance facultative des constructeurs de poste, '
+        raise SystemExit('pypdfium2 manque : lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite, et acceptez le groupe « OCR » (dépendance facultative des constructeurs de poste, '
                          'voir tools/proc_ocr.py ; ni le lanceur ni la page n\'en ont besoin).')
     pdf = pypdfium2.PdfDocument(str(path))
     try:
@@ -86,7 +86,7 @@ def backend():
 
 
 def _missing():
-    return SystemExit('OCR manque : installer Tesseract et le mettre dans le PATH, ou python -m pip install rapidocr-onnxruntime '
+    return SystemExit('OCR manque : installer Tesseract et le mettre dans le PATH, ou lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite, et acceptez le groupe « OCR » '
                       '(dépendance facultative des constructeurs de poste, voir tools/proc_ocr.py ; ni le lanceur ni la page n\'en ont besoin).')
 
 
@@ -219,7 +219,7 @@ def page_count(path):
     try:
         import pypdfium2
     except ImportError:
-        raise SystemExit('pypdfium2 manque : python -m pip install pypdfium2 (dépendance facultative des constructeurs de poste, voir tools/proc_ocr.py).')
+        raise SystemExit('pypdfium2 manque : lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite, et acceptez le groupe « OCR » (dépendance facultative des constructeurs de poste, voir tools/proc_ocr.py).')
     pdf = pypdfium2.PdfDocument(str(path))
     try:
         return len(pdf)

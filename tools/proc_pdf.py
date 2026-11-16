@@ -1,6 +1,6 @@
 """Lecture des PDF d'AIP, partagée par tous les lecteurs (V3 § 10.29 (b)) : texte par page (pypdf, polices décalées), nature d'un document, listes de coordonnées de points, lecture sous délai.
 
-pypdf est une dépendance FACULTATIVE des constructeurs de poste (jamais du lanceur ni de la page) : python -m pip install pypdf. `limited` fait une lecture dans un PROCESSUS SÉPARÉ, au plus
+pypdf est une dépendance FACULTATIVE des constructeurs de poste (jamais du lanceur ni de la page) : installer_bibliotheques.cmd (ou .sh), SOG-0376. `limited` fait une lecture dans un PROCESSUS SÉPARÉ, au plus
 PDF_TIMEOUT s (OCR_TIMEOUT pour l'OCR) : un PDF piégé ou démesuré ne bloque pas l'outil. proc_ocr, proc_ead, proc_sia et proc_records s'en servent ; aucun ne lit l'autre.
 Bibliothèque standard, plus pypdf à la demande.
 """
@@ -17,7 +17,7 @@ def pdf_reader(path):
     try:
         from pypdf import PdfReader
     except ImportError:
-        raise SystemExit('pypdf manque : python -m pip install pypdf (dépendance facultative des constructeurs de poste, '
+        raise SystemExit('pypdf manque : lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite (dépendance facultative des constructeurs de poste, '
                          'voir tools/proc_pdf.py ; ni le lanceur ni la page n\'en ont besoin).')
     try:       # pages à ~700 000 opérations de tracé : « LimitReachedError » au-delà de la limite par défaut (pypdf récent seulement ; sinon on ignore)
         from pypdf._configuration import overwrite_configuration

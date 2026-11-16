@@ -1,0 +1,26 @@
+# Bibliothèques Python OPTIONNELLES de la suite (SOG-0376) — le SEUL fichier des bornes.
+#
+# Lu par DEUX lecteurs et par personne d'autre : tools/install_libs.py (le script installer_bibliotheques.cmd / .sh, lancé
+# par l'utilisateur) et tools/pdf_guard.py (l'état « lecture des PDF : prête », lu par le lanceur sans rien importer).
+# Ni le lanceur ni une page n'installent quoi que ce soit.
+#
+# Format STRICT (tools/optional_libs.py refuse le fichier entier au premier écart, il ne devine rien) :
+#   · une ligne « # group: <pdf|ocr> » ouvre un groupe ; les autres lignes « # … » et les lignes vides sont des notes ;
+#   · une ligne de bibliothèque est « nom>=minimum,<maximum » (le maximum est facultatif), le nom étant dans la liste
+#     fermée du lecteur ; rien d'autre : ni -e, ni --index-url, ni URL, ni dépôt, ni chemin, ni condition.
+# Une version PLUS RÉCENTE que le maximum n'est jamais « corrigée » : le script ne descend jamais une version.
+
+# group: pdf
+# Lecture des PDF (cartes de procédures, cartes VAC) : pypdf lit le texte ; pdfplumber (qui tire pdfminer.six) et Pillow
+# servent la vectorisation. Minima de Sécurisation (14/11/2026) : pypdf — trois avis de déni de service avant 6.21.4 ;
+# pdfplumber 0.11.10 exige pdfminer.six 20260107 (sans avis) ; Pillow 13.0.0 corrige 39 avis.
+pypdf>=6.21.4,<7
+pdfplumber>=0.11.10,<0.12
+Pillow>=13.0.0,<14
+pdfminer.six>=20260107
+
+# group: ocr
+# OCR des constructeurs de poste (tools/proc_ocr.py), à part : lourd (numpy, opencv, onnxruntime) et rarement utile.
+# Jamais installé par défaut.
+pypdfium2>=5,<6
+rapidocr-onnxruntime>=1.2.3,<2

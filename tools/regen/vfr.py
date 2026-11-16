@@ -211,7 +211,8 @@ def build(job, args, ctx):
         import pypdf  # noqa: F401  (dépendance facultative de tools/report-vfr : requirements-vfr.txt)
     except ImportError:
         view.set(state='failed', error='no-pypdf')
-        return {'ok': False, 'cycle': cycle, 'reason': 'no-pypdf', 'message': 'pypdf is missing: python -m pip install pypdf'}
+        import pdf_guard      # le texte FIXE du remède (SOG-0376) : le nom du script, jamais une commande pip à recopier
+        return {'ok': False, 'cycle': cycle, 'reason': 'no-pypdf', 'message': 'pypdf manque. ' + pdf_guard.HOW_TO}
     folder = cache_dir(data, cycle)
     if not os.path.isdir(folder) or not any(n.startswith('AD-2.') for n in os.listdir(folder)):
         view.set(state='failed', error='no-cache')

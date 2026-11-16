@@ -9805,20 +9805,20 @@ def k268(c):
     sys.path.insert(0, str(ROOT / 'tools'))
     import pdf_guard as G
     RJ = _regen()
-    ok = lambda: {'pypdf': '6.21.4', 'pdfplumber': '0.11.10', 'Pillow': '13.0.0', 'pdfminer.six': '20260107'}
+    ok = lambda: {'pypdf': '6.21.4', 'pdfplumber': '0.11.10', 'Pillow': '13.0.0', 'pdfminer.six': '20260107', 'pypdfium2': '5.14.0', 'rapidocr-onnxruntime': '1.2.3'}
     c.eq([(p['name'], p['state']) for p in G.status(lambda: {'pypdf': '6.21.3', 'pdfplumber': None, 'Pillow': '12.3.0', 'pdfminer.six': '20250101'})['packages']],
-         [('pypdf', 'old'), ('pdfplumber', 'missing'), ('Pillow', 'old'), ('pdfminer.six', 'old')], 'a library below its minimum is « old », an absent one « missing » (the workstation\'s pypdf 6.21.3 and Pillow 12.3.0 are old)', what='old')
+         [('pypdf', 'old'), ('pdfplumber', 'missing'), ('Pillow', 'old'), ('pdfminer.six', 'old'), ('pypdfium2', 'missing'), ('rapidocr-onnxruntime', 'missing')], 'a library below its minimum is « old », an absent one « missing » (the workstation\'s pypdf 6.21.3 and Pillow 12.3.0 are old)', what='old')
     c.eq([G.judge('pypdf', v) for v in ('6.21.4', '6.99.0', '7.0.0', '6.9.0', '6.21.10')], ['ok', 'ok', 'new', 'old', 'ok'], 'versions are compared as NUMBERS (6.21.10 is above 6.21.4, 6.9.0 below), the next major is refused', what='numbers')
     st = G.status(ok)
-    c.eq((st['ready'], st['command']), ({'text': True, 'vectors': True}, G.COMMAND), 'with every minimum met both uses are ready; the command is the one of Sécurisation', what='ready')
-    c.ok('pypdf>=6.21.4,<7' in G.COMMAND and 'pdfplumber>=0.11.10,<0.12' in G.COMMAND and 'Pillow>=13.0.0,<14' in G.COMMAND, G.COMMAND, 'the command names the three minima and the upper bounds')
+    c.eq((st['ready'], st['script']), ({'text': True, 'vectors': True, 'ocr': True}, G.SCRIPT), 'with every minimum met every use is ready; the SCRIPT is named (SOG-0376: no pip command)', what='ready')
+    c.ok(G.SCRIPT in ('installer_bibliotheques.cmd', 'installer_bibliotheques.sh') and not hasattr(G, 'COMMAND') and 'pip' not in G.HOW_TO, G.HOW_TO, 'no pip command is kept: the sentence of the remedy is fixed and names the script (the bounds are in tools/requirements-optional.txt, case K284)')
     for purpose, bad, want in (('text', {'pypdf': None}, 'missing'), ('text', {'pypdf': '6.21.3'}, 'version'), ('vectors', {'Pillow': '12.3.0'}, 'version')):
         try:
             G.require(purpose, lambda: {**ok(), **bad})
             got = None
         except G.PdfError as e:
-            got = (e.reason, G.COMMAND in str(e))
-        c.eq(got, (want, True), f'{purpose} with {bad}: refused, said with the command', what=f'require {purpose}')
+            got = (e.reason, G.HOW_TO in str(e) and 'pip' not in str(e) and '6.21.3' not in str(e))
+        c.eq(got, (want, True), f'{purpose} with {bad}: refused, said with the fixed sentence that names the script (no version read is copied into it)', what=f'require {purpose}')
     # the launcher never imports the libraries: asked in a clean interpreter
     code = f"import sys; sys.path.insert(0, {str(ROOT / 'tools')!r}); import pdf_guard; pdf_guard.status(); print([m for m in ('pypdf', 'pdfplumber', 'pdfminer', 'PIL', 'pypdfium2') if m in sys.modules])"
     r = subprocess.run([sys.executable, '-I', '-c', code], capture_output=True, timeout=60)
@@ -9839,7 +9839,7 @@ def k268(c):
     c.eq((len(calls), a == b), (2, True), 'the answer of pdf/status is kept a few seconds: two calls in a row read the versions once, a call after the delay reads them again', what='status cache')
     fn, check = RJ.REGISTRY[('pdf', 'status')]
     r = fn(RJ.Job('pdf', 'status', {}), {}, {})
-    c.eq((check({}), check({'x': 1}), r['ok'], sorted(r)), ({}, None, True, ['command', 'ok', 'packages', 'python', 'ready']), 'the verb pdf/status takes no argument and answers read-only: packages, ready, command, python', what='verb')
+    c.eq((check({}), check({'x': 1}), r['ok'], sorted(r)), ({}, None, True, ['groups', 'ok', 'packages', 'python', 'ready', 'script']), 'the verb pdf/status takes no argument and answers read-only: packages, groups, ready, script, python', what='verb')
 
     def tiny(text):
         body = f'BT /F1 18 Tf 20 100 Td ({text}) Tj ET'.encode()
@@ -10555,3 +10555,163 @@ def k278(c):
         finally:
             engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
             P.drop_contexts()
+
+
+@case('K284', 'Optional Python libraries (SOG-0376): ONE bounds file read by a strict reader (a closed list of names, the form « name>=min,<max », any option of pip, URL, repository or path refuses the whole file), held equal to the minima of pdf_guard; a script that installs for the user only (never elevated, never lowered, pypdf and the others missing or too old only, isolated, wheels only, the index fixed), asks o/N and says what it will do; the launcher and the pages never run pip and the sentences of failure name the script',
+      'K', static=True,
+      rule='SOG-0376 (the user, 16 Nov 2026: « si python à lancer pour installer des bibliothèque, il faut que ça apparaisse dans une page ou un script d\'installation ») with the opinion of Sécurisation: the page SAYS, the script INSTALLS (a launcher or a page that installed code taken from the network would have a power it does not have, rule of pdf_guard). One file of bounds (tools/requirements-optional.txt) in two groups (pdf, ocr), read by tools/optional_libs.py for pdf_guard AND the script, every line validated by a strict pattern and a closed list of names, the whole file refused at the first deviation (counter-proof: without that validation a line « --index-url https://evil » or « pypdf @ https://… » would go to pip); installer_bibliotheques.cmd / .sh look for Python as lancer.cmd / lancer.sh do (same order, compared here) and call tools/install_libs.py: --user (omitted in a virtual environment), never administrator, `-m pip` with -P from Python 3.11, an empty working folder, no PYTHON* variable, no -I, --only-binary :all:, --index-url https://pypi.org/simple, --isolated unless --allow-pip-config, --no-input, no --require-hashes (it would freeze the security fixes), never a lower version (a library NEWER than its maximum is left as it is), the question o/N whose default is no, --dry-run, the versions read again at the end. The failures of the launcher say a FIXED sentence that names the script (no pip command, no version copied in it).')
+def k284(c):
+    import ast
+    import importlib
+    import subprocess
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import install_libs as IL
+    import optional_libs as OL
+    import pdf_guard as G
+    # (1) one file, read by one reader, held equal to the minima of pdf_guard
+    groups = OL.load()
+    c.eq(([g['id'] for g in groups], OL.minima(groups) == G.MINIMA, [p[0] for p in groups[0]['packages']], [p[0] for p in groups[1]['packages']]),
+         (['pdf', 'ocr'], True, ['pypdf', 'pdfplumber', 'Pillow', 'pdfminer.six'], ['pypdfium2', 'rapidocr-onnxruntime']),
+         'the bounds file has two groups (pdf, ocr) and the minima of pdf_guard ARE the lines of the file (one source: the script and the state cannot disagree)', what='one file')
+    c.eq({p[0]: (p[1], p[2]) for p in G.MINIMA if p[0] in ('pypdf', 'pdfplumber', 'Pillow', 'pdfminer.six')},
+         {'pypdf': ('6.21.4', '7'), 'pdfplumber': ('0.11.10', '0.12'), 'Pillow': ('13.0.0', '14'), 'pdfminer.six': ('20260107', None)}, 'the minima of Sécurisation (14 Nov) are the ones of the file', what='minima')
+    # (2) the counter-proof: any other line refuses the WHOLE file
+    good = '# group: pdf\npypdf>=6.21.4,<7\n'
+    hostile = ['-e .', '-r other.txt', '--index-url https://evil.example/simple', '--extra-index-url https://evil.example/simple', '--hash=sha256:00', '--require-hashes', 'https://evil.example/pypdf-6.21.4-py3-none-any.whl',
+               'git+https://evil.example/pypdf.git', './pypdf', '/tmp/pypdf', 'pypdf @ https://evil.example/pypdf.whl', 'pypdf', 'pypdf==6.21.4', 'pypdf>=6.21.4,<7 ; python_version > "3"', 'pypdf>=6.21.4,<7 --index-url https://evil.example',
+               'pypdf>=6.21.4,<7,!=6.22', 'pypdf>=6.21.4,<7 # note', 'unknown-package>=1,<2', 'PyPDF>=6.21.4,<7', 'pypdf[crypto]>=6.21.4,<7', 'pypdf>=６.21.4,<7', 'pypdf>=1.0​']
+    refused = []
+    for line in hostile:
+        try:
+            OL.parse(good + line + '\n')
+            refused.append(None)
+        except ValueError:
+            refused.append(line)
+    c.eq([h for h in refused if h is None], [], 'every line that is not « name>=min,<max » of the closed list refuses the whole file: ' + ', '.join(hostile[:6]) + ' …', what='hostile lines')
+    for bad, why in (('pypdf>=6.21.4,<7\n', 'a library outside a group'), ('# group: pdf\n', 'a group without a library'), ('# group: pdf\npypdf>=1,<2\n# group: pdf\npdfplumber>=1,<2\n', 'a group twice'), ('# group: net\npypdf>=1,<2\n', 'an unknown group'),
+                     ('# group: pdf\npypdf>=1,<2\npypdf>=1,<2\n', 'a name twice'), ('# group:pdf\npypdf>=1,<2\n', 'a malformed group line'), ('# group: pdf\n' + 'pypdf>=1,<2\n' * 100, 'too many lines'), ('# group: pdf\n# ' + 'x' * 9000 + '\npypdf>=1,<2\n', 'too big')):
+        try:
+            OL.parse(bad)
+            got = None
+        except ValueError as e:
+            got = str(e)
+        c.ok(got, str(got), f'refused: {why}')
+    c.eq([g['id'] for g in OL.parse('# a note\n\n# group: pdf\n# another note\npypdf>=6.21.4,<7\r\npdfminer.six>=20260107\n')], ['pdf'], 'notes, blank lines and CRLF are fine; the upper bound is optional', what='notes')
+    # a file refused by the reader leaves pdf_guard saying « bounds » and reading NOTHING (never « ready » on unknown bounds)
+    real_load = OL.load
+    OL.load = lambda path=None: (_ for _ in ()).throw(ValueError('ligne 3 : refusée'))
+    try:
+        importlib.reload(G)
+        st = G.status(lambda: {})
+        try:
+            G.require('text', lambda: {'pypdf': '6.21.4'})
+            got = None
+        except G.PdfError as e:
+            got = (e.reason, G.HOW_TO in str(e))
+        c.eq((st.get('error'), st['ready'], got), ('bounds', {'text': False, 'vectors': False, 'ocr': False}, ('failed', True)), 'a bounds file that is refused: the state says « bounds », nothing is ready, no PDF is read, and the sentence names the script', what='bounds refused')
+    finally:
+        OL.load = real_load
+        importlib.reload(G)
+    c.eq(G.BOUNDS_ERROR, None, 'pdf_guard reads the real file again once the reader works', what='reload')
+    # (3) the state the page reads: the script's NAME (never a command), the groups, the three readiness flags
+    have = {'pypdf': '6.21.3', 'pdfplumber': None, 'Pillow': '12.3.0', 'pdfminer.six': None, 'pypdfium2': '5.14.0', 'rapidocr-onnxruntime': '1.2.3'}
+    st = G.status(lambda: have)
+    c.eq((st['script'], [(g['id'], g['ready']) for g in st['groups']], st['ready'], 'command' in st), (G.SCRIPT, [('pdf', False), ('ocr', True)], {'text': False, 'vectors': False, 'ocr': True}, False),
+         'pdf/status carries the NAME of the script, the groups and their readiness, and no command', what='state')
+    c.eq(G.SCRIPT, 'installer_bibliotheques.cmd' if sys.platform == 'win32' else 'installer_bibliotheques.sh', 'the script named is the one of the platform', what='script name')
+    # (4) the installer, with a fake pip and a fake keyboard
+    calls, said = [], []
+
+    def run(cmd, **kw):
+        calls.append((cmd, kw))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    versions = [dict(have, Pillow='14.1.0')]            # Pillow is NEWER than its maximum: never lowered
+    IL_in_venv = IL.in_venv
+    IL.in_venv = lambda: False
+    try:
+        seq = iter([versions[0], dict(versions[0], pypdf='6.21.5', pdfplumber='0.11.10', **{'pdfminer.six': '20260107'})])
+        rc = IL.main(['--lang', 'fr'], run=run, ask=lambda q: (said.append(q), 'o')[1], out=said.append, have_of=lambda names: next(seq), admin=False)
+        cmd, kw = calls[0]
+        spec_args = [a for a in cmd if '>=' in a]
+        c.eq((rc, len(calls), sorted(spec_args)), (0, 1, sorted(['pypdf>=6.21.4,<7', 'pdfplumber>=0.11.10,<0.12', 'pdfminer.six>=20260107'])),
+             'only what is MISSING or TOO OLD goes to pip (pypdf, pdfplumber, pdfminer.six); Pillow, newer than its maximum, is left as it is (a version is never lowered); the OCR libraries are fine: no second call', what='what goes to pip')
+        flags = ' '.join(cmd[: cmd.index('install') + 1 + len(IL.PIP_FLAGS) + 3])
+        c.ok(cmd[1:3] == ['-P', '-m'] and cmd[3:5] == ['pip', 'install'] and '--user' in cmd and '--isolated' in cmd and '--no-input' in cmd and '--only-binary' in cmd and ':all:' in cmd
+             and cmd[cmd.index('--index-url') + 1] == 'https://pypi.org/simple' and '--require-hashes' not in cmd and '-I' not in cmd and '--upgrade' not in cmd and '--force-reinstall' not in cmd, flags,
+             '`python -P -m pip install --only-binary :all: --index-url https://pypi.org/simple --no-input --isolated --user …`: no -I, no --require-hashes, no --upgrade')
+        cwd = Path(kw['cwd'])
+        c.eq((cwd.is_dir(), list(cwd.iterdir()), [k for k in kw['env'] if k.upper().startswith('PYTHON')], kw.get('stdin') == subprocess.DEVNULL, 'shell' in kw), (True, [], [], True, False),
+             'the working folder is a neutral EMPTY one, no PYTHON* variable reaches pip, the command is a list (never a shell), no keyboard is given to pip', what='sandbox')
+        text = '\n'.join(map(str, said))
+        c.ok(sys.executable in text and 'https://pypi.org/simple' in text and 'Pillow' in text and 'jamais de descente' in text and 'prêt' in text and 'lancer.cmd' in text and '[o/N]' in ''.join(q for q in said if '[o/N]' in q),
+             text[:300], 'the script says the interpreter, where the packages come from, what it will do for each (Pillow: left as it is), asks o/N, reads the versions again and says to restart the launcher')
+        # the other answers, the options
+        for answer in ('', 'n', 'N', 'non', 'x', None):
+            calls.clear()
+
+            def ask_no(q, a=answer):
+                if a is None:
+                    raise EOFError
+                return a
+            IL.main(['--lang', 'fr'], run=run, ask=ask_no, out=lambda *_: None, have_of=lambda names: dict(have), admin=False)
+            if calls:
+                break
+        c.eq(len(calls), 0, 'the default answer is NO: an empty answer, n, non, anything else and a closed keyboard install nothing', what='default no')
+        calls.clear()
+        IL.main(['--dry-run', '--lang', 'en'], run=run, ask=lambda q: 'y', out=said.append, have_of=lambda names: dict(have), admin=False)
+        c.eq(len(calls), 0, '--dry-run shows the command and runs nothing', what='dry run')
+        calls.clear()
+        IL.main(['--lang', 'en'], run=run, ask=lambda q: 'y', out=lambda *_: None, have_of=lambda names: dict(have), admin=True)
+        c.eq(len(calls), 0, 'run as an administrator or as root: refused, nothing is run', what='admin')
+        c.eq(IL.main(['--lang', 'en'], run=run, ask=lambda q: 'y', out=lambda *_: None, have_of=lambda names: dict(have), admin=True), 2, 'the refusal has its own exit code', what='admin code')
+        calls.clear()
+        IL.main(['--allow-pip-config', '--lang', 'en'], run=run, ask=lambda q: 'y', out=lambda *_: None, have_of=lambda names: dict(have), admin=False)
+        c.ok(calls and '--isolated' not in calls[0][0], str(calls[0][0] if calls else None), 'the explicit option --allow-pip-config lifts --isolated (never by default)')
+        calls.clear()
+        OL.load = lambda path=None: (_ for _ in ()).throw(ValueError('ligne 1 : refusée'))
+        try:
+            rc = IL.main(['--lang', 'fr'], run=run, ask=lambda q: 'o', out=said.append, have_of=lambda names: dict(have), admin=False)
+        finally:
+            OL.load = real_load
+        c.eq((rc, len(calls)), (2, 0), 'a bounds file that is refused: nothing is installed', what='bounds refused, installer')
+    finally:
+        IL.in_venv = IL_in_venv
+    c.eq((IL.pip_command(['x>=1'], 'py', False, True, (3, 11))[:3], IL.pip_command(['x>=1'], 'py', False, True, (3, 10))[:3], '--user' in IL.pip_command(['x>=1'], 'py', True, True, (3, 12)), '--user' in IL.pip_command(['x>=1'], 'py', False, True, (3, 12))),
+         (['py', '-P', '-m'], ['py', '-m', 'pip'], False, True), '-P from Python 3.11; --user outside a virtual environment, omitted inside one', what='pip_command')
+    c.eq(IL.clean_env({'PYTHONPATH': 'x', 'pythonhome': 'y', 'PYTHONSTARTUP': 'z', 'PATH': 'p', 'APPDATA': 'a'}), {'PATH': 'p', 'APPDATA': 'a'}, 'no PYTHON* variable (PYTHONPATH, PYTHONHOME, PYTHONSTARTUP) reaches pip', what='clean env')
+    # the texts: four languages, the same fields in each
+    fields = lambda t: sorted(re.findall(r'\{(\w+)[^}]*\}', t))
+    c.eq([(k, len(v), len({tuple(fields(x)) for x in v})) for k, v in IL.M.items() if len(v) != 4 or len({tuple(fields(x)) for x in v}) != 1], [], 'every sentence of the script exists in fr, en, de, es with the same fields', what='four languages')
+    c.eq([IL.language(l) for l in ('fr', 'en', 'de', 'es', 'xx')][:4], ['fr', 'en', 'de', 'es'], '--lang is honoured', what='lang')
+    c.eq((IL.language(None, {'LANG': 'de_DE.UTF-8'}), IL.language(None, {'LC_ALL': 'es_ES', 'LANG': 'en_US'}), IL.language(None, {'LANG': 'en_US.UTF-8'})), ('de', 'es', 'en'), 'otherwise the language of the system (LC_ALL first)', what='system lang')
+    # (5) the two scripts at the root: the SAME search for Python as the launcher's, only the script of the suite is called, nothing else
+    lancer_cmd = (ROOT / 'lancer.cmd').read_text(encoding='utf-8')
+    inst_cmd = (ROOT / 'installer_bibliotheques.cmd').read_text(encoding='ascii')
+    lancer_sh = (ROOT / 'lancer.sh').read_text(encoding='utf-8')
+    inst_sh = (ROOT / 'installer_bibliotheques.sh').read_text(encoding='utf-8')
+    order = lambda t: re.findall(r'set "PY=([^"]+)"', t)
+    c.eq((order(inst_cmd), order(inst_cmd) == order(lancer_cmd)[:3], 'NoDefaultCurrentDirectoryInExePath=1' in inst_cmd, 'tools\\install_libs.py' in inst_cmd), (['py -3', 'python', 'python3'], True, True, True),
+         'installer_bibliotheques.cmd looks for Python in the order of lancer.cmd (py -3, python, python3, the PATH only, never this folder) and calls tools\\install_libs.py', what='cmd order')
+    shfind = lambda t: (re.search(r'for c in ([a-z0-9 ]+); do', t).group(1), re.search(r"-c '(import sys[^']+)'", t).group(1))
+    c.eq((shfind(inst_sh) == shfind(lancer_sh), shfind(inst_sh)[0], 'tools/install_libs.py' in inst_sh), (True, 'python3 python', True), 'installer_bibliotheques.sh looks for Python as lancer.sh does (python3, python, 3.8 at least) and calls tools/install_libs.py', what='sh order')
+    c.ok(not re.search(r'\bpip\b', re.sub(r'(?im)^(rem|#).*$', '', inst_cmd + inst_sh)), 'pip', 'the two scripts at the root do not call pip themselves: tools/install_libs.py does, with its checks')
+    r = subprocess.run(['git', 'ls-files', '-s', 'installer_bibliotheques.sh', 'installer_bibliotheques.cmd', 'tools/requirements-optional.txt'], cwd=str(ROOT), capture_output=True, text=True)
+    if r.returncode == 0 and r.stdout.strip():
+        modes = {Path(x.split('\t')[1]).name: x.split()[0] for x in r.stdout.strip().split('\n')}
+        c.eq(modes.get('installer_bibliotheques.sh'), '100755', 'the shell script is executable in the repository', what='exec bit')
+    # nothing in tools/ shadows a module of the standard library that these three files import
+    own = {'install_libs', 'optional_libs', 'pdf_guard'}
+    shadows = sorted(n for n in (Path(p).stem for p in __import__('os').listdir(ROOT / 'tools')) if n in sys.stdlib_module_names and n not in own)
+    c.eq(shadows, [], 'no file of tools/ carries the name of a standard-library module (the script runs from that folder)', what='shadows')
+    # (6) the launcher and the pages never run pip, and the sentences of failure name the script
+    bad = []
+    for path in [ROOT / 'tools' / 'launch.py', *sorted((ROOT / 'tools' / 'regen').glob('*.py')), ROOT / 'tools' / 'pdf_guard.py', ROOT / 'tools' / 'proc_pdf.py', ROOT / 'tools' / 'proc_ocr.py', ROOT / 'tools' / 'proc_sia.py']:
+        for node in ast.walk(ast.parse(path.read_text(encoding='utf-8'))):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str) and re.search(r'-m pip|pip install|\'pip\'', node.value):
+                bad.append((path.name, node.value[:60]))
+    c.eq(bad, [], 'no string of the launcher, of the PDF guard or of the builders asks to run pip: they name the script', what='no pip text')
+    docs = {p: (ROOT / p).read_text(encoding='utf-8') for p in ('docs/INSTALL.md', 'docs/MANUEL_ADMINISTRATEUR.md', 'docs/en/MANUEL_ADMINISTRATEUR.md', 'docs/de/MANUEL_ADMINISTRATEUR.md', 'docs/es/MANUEL_ADMINISTRATEUR.md')}
+    c.eq([p for p, t in docs.items() if 'installer_bibliotheques' not in t], [], 'INSTALL.md and the administrator\'s manual in four languages name the script', what='docs')
