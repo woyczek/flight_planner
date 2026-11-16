@@ -566,12 +566,14 @@ def avians(data, downloads=None, today=None):
                 present[n] = (bool(m.group(1)), m.group(2))
     except OSError:
         pass
+    partial_site = []
     pages = entry.get('pages') or {}
     complete = pages.get('read') is not None and pages.get('read') == pages.get('of')
     label = avians_eaip.SOURCE.split(' (')[0]
     if by_hand:
-        site_files = sorted(n for n, (dep, _) in present.items() if not dep)
-        if site_files:      # la date d'un dépôt est celle du dépôt : elle ne dit rien de l'édition, elle ne remplace pas une édition prise sur le site
+        partial_site = [n for n, (dep, _) in present.items() if not dep and _partial(os.path.join(folder, n))]      # SOG-0368 (audit 217) : un fichier du site PARTIEL (pages lues < attendues) ne bloque pas un dépôt complet : il est remplacé
+        site_files = sorted(n for n, (dep, _) in present.items() if not dep and n not in partial_site)
+        if site_files:      # la date d'un dépôt est celle du dépôt : elle ne dit rien de l'édition, elle ne remplace pas une édition COMPLÈTE prise sur le site
             return [], [f'{label} : une édition prise sur le site est déjà là ({site_files[-1]}) ; les pages déposées à la main ne la remplacent pas (leur date est celle du dépôt, pas celle de l’édition). Elles sont gardées dans data/local/upload/']
     elif not complete:
         better = [n for n, (dep, d) in present.items() if n != entry['name'] or _read_of(os.path.join(folder, n)) > pages.get('read', 0)]
@@ -583,12 +585,24 @@ def avians(data, downloads=None, today=None):
     entry['unchanged'] = not write(path, body)
     if by_hand or complete:
         for old, (dep, day) in present.items():      # une prise complète retire les éditions précédentes ET les dépôts ; un dépôt ne retire que les dépôts (jamais une édition du site : refusé plus haut)
-            if old != entry['name'] and (not by_hand or dep) and (by_hand or dep or day < entry['name'].rsplit('_', 1)[1][:8]):
+            if old != entry['name'] and (not by_hand or dep or old in partial_site) and (by_hand or dep or day < entry['name'].rsplit('_', 1)[1][:8]):
                 try:
                     os.remove(safe_path(folder, old, out_re))
                 except ValueError:
                     pass
     return [entry], []
+
+
+def _partial(path):
+    """Le fichier de zone Avians déjà là est-il PARTIEL (le compte écrit dit moins de pages lues que d'attendues) ? Faux s'il est illisible, trop gros ou sans compte : on ne le prend pas pour partiel."""
+    try:
+        if os.path.getsize(path) > 16 * 1024 * 1024:
+            return False
+        with open(path, encoding='utf-8') as f:
+            pg = (json.load(f) or {}).get('pages') or {}
+        return isinstance(pg.get('read'), int) and isinstance(pg.get('of'), int) and pg['read'] < pg['of']
+    except (OSError, ValueError, TypeError, AttributeError):
+        return False
 
 
 def _read_of(path):

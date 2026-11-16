@@ -3141,3 +3141,7 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done**: see INTEGRATION « Route check ». **Measured**: the capture route checked at 19c95941f: 24 s and refused (not under 15 s); now 1.1 s, refused for the one thing that is: « NATG » is not in the file of the day. The engine's own route (EGLL … DOGAL NATE 54/50 DCT NICSO N260B-N271B ALLEX Q822 ENE PARCH4 KJFK): checked 0.3 s warm, accepted.
 - **Choice of this session** (to relax if wished): the check defaults to the vertical model `adapt` (the user can still send `level_strategy: natural`) — a typed route is judged with the model of the search that would write it; the free connector only where the catalogue reads no procedure of the aerodrome.
 - **Not done**: the Fuel field reading the positions (Features SOG); the track names of the day before the refresh (a route written with a track that has since left the file is refused for it, truthfully).
+
+## 16 November 2026 — SOG-0368 touch-up: a partial site file does not block a complete deposit
+
+- **Touch-up** (Sécurisation, audit 217, relayed 16 Nov 9:19; decided by the ergonomics session): a partial file from the site (pages read < expected) does not block a complete deposit; it does not replace a complete site file. When both could exist the deposit REPLACES the partial one, so the builder reads one file. Red before: K279 (the deposit was refused « une édition prise sur le site est déjà là »).

@@ -3199,6 +3199,21 @@ def k279(c):
             with _Net(AF, site()):
                 out, err = AF.avians(str(data), today=today)
             c.ok(newer.exists(), str(err), 'a taking of an OLDER edition never removes a more recent file')
+            # a PARTIAL file from the site does not block a COMPLETE deposit (audit 217); a complete one still does
+            for f in folder.iterdir():
+                f.unlink()
+            with _Net(AF, refuse23):
+                AF.avians(str(data), today=today)
+            c.eq(sorted(os.listdir(folder)), ['avians_is_enr_20261029.geojson'], 'setup: a partial file taken from the site (1 page of 3)', what='setup partial')
+            with _Net(AF, down):
+                out, err = AF.avians(str(data), today=today)
+            c.eq((err, out[0]['datedBy'], sorted(os.listdir(folder))), ([], 'file', ['avians_is_enr_dep_20261116.geojson']),
+                 'the deposit (complete) replaces the partial file of the site: one file in the zone, so the builder reads the deposit only', what='partial site replaced')
+            with _Net(AF, site()):
+                AF.avians(str(data), today=today)
+            with _Net(AF, down):
+                out, err = AF.avians(str(data), today=today)
+            c.ok(out == [] and err and 'ne la remplacent pas' in err[0] and sorted(os.listdir(folder)) == ['avians_is_enr_20261029.geojson'], str(err), 'a COMPLETE file from the site still blocks the deposit')
             # the deposit holds 100 routes at most
             for f in up.iterdir():
                 f.unlink()
