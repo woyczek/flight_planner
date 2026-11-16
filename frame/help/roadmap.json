@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "02c7a85",
-  "fiches": 382,
+  "organisation": "1fefe15",
+  "fiches": 383,
   "untranslated": 0,
   "priorities": 374
  },
@@ -4863,6 +4863,15 @@
      "de": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
      "es": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
      "rank": 270
+    },
+    {
+     "id": "SOG-0384",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : dix secondes après l'ouverture, l'état de la base n'est toujours pas lu",
+     "en": "Data: ten seconds after opening, the state of the base is still not read",
+     "de": "Daten: zehn Sekunden nach dem Öffnen ist der Zustand der Basis noch nicht gelesen",
+     "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse"
     }
    ]
   },
