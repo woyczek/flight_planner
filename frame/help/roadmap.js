@@ -31,6 +31,14 @@
     feature: ['Fonctionnalités', 'Features', 'Funktionen', 'Funciones'],
     bug: ['Bogues', 'Bugs', 'Fehler', 'Errores'],
     all: ['Toutes', 'All', 'Alle', 'Todas'],
+    ovAll: ['Ensemble : {n} %', 'Overall: {n}%', 'Gesamt: {n} %', 'Global: {n} %'],
+    pct: ['{n} %', '{n}%', '{n} %', '{n} %'],
+    ovAria: ['Avancement par grande fonction', 'Progress by main function', 'Fortschritt je Hauptfunktion',
+      'Avance por función principal'
+    ],
+    capDone: ['Faite', 'Done', 'Erledigt', 'Hecha'],
+    capPart: ['En partie', 'Partly', 'Teilweise', 'En parte'],
+    capTodo: ['Pas faite', 'Not done', 'Nicht erledigt', 'No hecha'],
     hide: ['Masquer les livrées', 'Hide delivered', 'Gelieferte ausblenden', 'Ocultar las entregadas'],
     doneOne: ['{n} livrée', '{n} delivered', '{n} geliefert', '{n} entregada'],
     doneMany: ['{n} livrées', '{n} delivered', '{n} geliefert', '{n} entregadas'],
@@ -186,7 +194,8 @@
       // les priorités écrites par le lanceur (organisation/PRIORITES.json)
       local: saved.pri,
       // celles de cet appareil, pas encore envoyées
-      unsent: new Set(saved.unsent)
+      unsent: new Set(saved.unsent),
+      ov: new Set() // les groupes (g:…) et fonctions (f:…) ouverts de la vue d'ensemble (SOG-0386) : tout est replié à l'ouverture
     };
     const kindOf = it => it.kind === 'bug' ? 'bug' : 'feature';
     /** Les priorités en vigueur d'un élément : l'entrée de l'appareil, sinon celle du fichier du lanceur, sinon rien (le fichier généré les porte déjà quand il est régénéré). */
@@ -266,10 +275,40 @@
           return `<div class="f-rm-pcol" data-col="${esc(k)}"${FIXED.includes(k) ? ' data-fixed' : ''}${now === k ? ' data-active' : ''}><h3>${esc(colName(k))} <span class="f-muted" data-col-count>(${mine.length})</span></h3><ul>${mine.map(x => card(x[0], x[1])).join('')}</ul></div>`;
         }).join('')}</div>`;
     };
+    /** Un nombre du fichier ramené à un entier de 0 à `max` (le fichier est une donnée : jamais un nombre pris tel quel). */
+    const num = (v, max) => Number.isFinite(v) ? Math.max(0, Math.min(max, Math.round(v))) : 0;
+    const OV_ID = /^[A-Za-z0-9_-]{1,40}$/;
+    const CAP_MARK = {
+      done: ['✓', T.capDone],
+      part: ['◐', T.capPart],
+      todo: ['○', T.capTodo]
+    };
+    /** La vue d'ensemble (SOG-0386) : UNE ligne « Ensemble : N % », puis les groupes repliés ; un groupe ouvert montre ses fonctions et leur pourcentage, une fonction ouverte ses capacités (faite, en partie, pas faite). Le bloc `capabilities` du fichier est une donnée : textes échappés, nombres bornés. */
+    const overview = () => {
+      const cp = d.capabilities;
+      const groups = Array.isArray(cp?.groups) ? cp.groups.filter(g => g && OV_ID.test(g.id ?? '') && Array.isArray(g.functions)) :
+    [];
+      if (!groups.length) return '';
+      const meter = n => `<span class="f-rm-meter" aria-hidden="true"><i style="width:${num(n, 100)}%"></i></span>`;
+      const toggle = (key, open, label, p) => `<button type="button" class="f-rm-ovb" data-ov="${esc(key)}" aria-expanded="${open}"><span aria-hidden="true">${open ? '▾' : '▸'}</span> <span class="f-rm-ovl">${esc(label)}</span><b class="f-rm-ovp">${esc(t(T.pct, { n: num(p, 100) }))}</b>${meter(p)}</button>`;
+      return `<section class="f-card f-rm-over" data-overview aria-label="${esc(t(T.ovAria))}"><p class="f-rm-all" data-overall><b>${esc(t(T.ovAll, { n: num(cp.pct, 100) }))}</b>${meter(cp.pct)}</p>${groups.map(g => {
+        const gopen = ui.ov.has('g:' + g.id);
+        const fns = !gopen ? '' : `<ul class="f-rm-fns">${g.functions.filter(f => f && OV_ID.test(f.id ?? '')).map(f => {
+          const fopen = ui.ov.has('f:' + f.id);
+          const caps = !fopen ? '' : `<ul class="f-rm-caps">${(Array.isArray(f.items) ? f.items : []).map(i => {
+            const m = CAP_MARK[i?.s] || CAP_MARK.todo;
+            return `<li data-s="${esc(CAP_MARK[i?.s] ? i.s : 'todo')}"><span aria-hidden="true">${m[0]}</span> ${esc(t(row(i)))} <small class="f-muted">${esc(t(m[1]))}</small></li>`;
+          }).join('')}</ul>`;
+          return `<li data-fn="${esc(f.id)}">${toggle('f:' + f.id, fopen, t(row(f.label)), f.pct)}${caps}</li>`;
+        }).join('')}</ul>`;
+        return `<div class="f-rm-grp" data-grp="${esc(g.id)}">${toggle('g:' + g.id, gopen, t(row(g.label)), g.pct)}${fns}</div>`;
+      }).join('')}</section>`;
+    };
     const draw = focus => {
       view.innerHTML = `<div class="f-docbar"><h1>${esc(t(T.title))}</h1>${reportBtn(t)}</div>
         ${d.note ? `<p class="f-card f-rm-note">${esc(t(row(d.note)))}</p>` : ''}
         <p class="f-muted">${esc(t(T.updated, { d: d.updated || '?' }))} · <a href="#help">${esc(t(T.help))}</a></p>
+        ${overview()}
         ${frieze()}
         <div class="f-rm-bar" role="tablist" data-views>${['priorities', 'themes'].map(v => `<button type="button" class="f-rm-btn" data-view="${v}" aria-pressed="${ui.view === v}">${esc(t(v === 'priorities' ? T.vPrio : T.vThemes))}</button>`).join('')}</div>
         <div class="f-rm-bar" role="tablist">${['feature', 'bug'].map(k => `<button type="button" role="tab" class="f-rm-btn" data-kind="${k}" aria-selected="${ui.kind === k}">${esc(t(T[k]))} (${count(k)})</button>`).join('')}</div>
@@ -656,6 +695,12 @@
       if (e.pointerType !== 'touch' && e.pointerType !== 'pen') copy(li.dataset.id);
     };
     view.onclick = e => {
+      const ov = e.target.closest?.('button[data-ov]');
+      if (ov && view.contains(ov)) { // la vue d'ensemble : un groupe ou une fonction s'ouvre et se replie
+        const k = ov.dataset.ov;
+        if (/^[gf]:[A-Za-z0-9_-]{1,40}$/.test(k)) ui.ov.has(k) ? ui.ov.delete(k) : ui.ov.add(k);
+        return draw(`[data-ov="${CSS.escape(k)}"]`);
+      }
       const vw = e.target.closest?.('button[data-view]');
       if (vw && view.contains(vw)) {
         ui.view = vw.dataset.view === 'themes' ? 'themes' : 'priorities';

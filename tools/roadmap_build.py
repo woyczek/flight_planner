@@ -13,6 +13,9 @@ whose recette test still waits for his verdict (SOG-0256: « in test » is not y
 translations (``legacy: true``) and ranged by application. Translations of the fiches' titles come from
 ``<org>/roadmap_i18n.json`` (``{"SOG-0045": {"en": …, "de": …, "es": …}}``); a missing one copies the French text and is
 listed by ``--check`` so a helper translates it.
+
+SOG-0386: when ``<org>/CAPACITES.json`` exists, the document also carries a ``capabilities`` block (the overview at the head of the screen: whole, four groups, 14 functions, 116 capacities with their
+percentage); the translations of the capacities are read from the same ``roadmap_i18n.json`` under the key ``cap:<French phrase>``.
 """
 import argparse
 import datetime as dt
@@ -217,12 +220,99 @@ def git_short(path):
         return None
 
 
+# SOG-0386 (Q-0069, the user, 16 Nov 2026): the overview at the head of the roadmap — ONE line (« Ensemble : N % »), then four folded
+# groups, each opening on its functions (their percentage), a function opening on its capacities (done / not done). The source is
+# <org>/CAPACITES.json (the ergonomist's list: one capacity = one verb, a state each); the groups and the short names of the functions
+# are written here (the user chose them), the four-language text of each capacity comes from roadmap_i18n.json under the key
+# « cap:<the French phrase> » (a missing one copies the French and is listed by --check, like a fiche).
+CAP_GROUPS = [
+    ('fly', {'fr': 'Préparer et voler', 'en': 'Prepare and fly', 'de': 'Vorbereiten und fliegen', 'es': 'Preparar y volar'}, ('fuel', 'maps', 'atmosphere')),
+    ('company', {'fr': 'Missions et compagnie', 'en': 'Missions and airline', 'de': 'Missionen und Gesellschaft', 'es': 'Misiones y compañía'},
+     ('missions', 'odv', 'report', 'website')),
+    ('follow', {'fr': 'Suivre', 'en': 'Follow up', 'de': 'Nachverfolgen', 'es': 'Seguimiento'}, ('flightlog', 'stats', 'landing', 'aircraft')),
+    ('base', {'fr': 'Socle', 'en': 'Foundation', 'de': 'Grundlage', 'es': 'Base'}, ('data', 'settings', 'help')),
+]
+CAP_FUNCS = {
+    'fuel': {'fr': 'Carburant et route', 'en': 'Fuel and route', 'de': 'Treibstoff und Route', 'es': 'Combustible y ruta'},
+    'maps': {'fr': 'Carte', 'en': 'Map', 'de': 'Karte', 'es': 'Mapa'},
+    'atmosphere': {'fr': 'Météo', 'en': 'Weather', 'de': 'Wetter', 'es': 'Meteorología'},
+    'missions': {'fr': 'Missions', 'en': 'Missions', 'de': 'Missionen', 'es': 'Misiones'},
+    'odv': {'fr': 'Ordres de vol', 'en': 'Flight orders', 'de': 'Flugaufträge', 'es': 'Órdenes de vuelo'},
+    'report': {'fr': 'Compte rendu', 'en': 'Mission report', 'de': 'Missionsbericht', 'es': 'Informe de misión'},
+    'website': {'fr': 'Site', 'en': 'Website', 'de': 'Website', 'es': 'Sitio web'},
+    'flightlog': {'fr': 'Mes vols', 'en': 'My flights', 'de': 'Meine Flüge', 'es': 'Mis vuelos'},
+    'stats': {'fr': 'Statistiques', 'en': 'Statistics', 'de': 'Statistiken', 'es': 'Estadísticas'},
+    'landing': {'fr': 'Atterrissages', 'en': 'Landings', 'de': 'Landungen', 'es': 'Aterrizajes'},
+    'aircraft': {'fr': 'Aéronefs', 'en': 'Aircraft', 'de': 'Luftfahrzeuge', 'es': 'Aeronaves'},
+    'data': {'fr': 'Données', 'en': 'Data', 'de': 'Daten', 'es': 'Datos'},
+    'settings': {'fr': 'Réglages', 'en': 'Settings', 'de': 'Einstellungen', 'es': 'Ajustes'},
+    'help': {'fr': 'Aide', 'en': 'Help', 'de': 'Hilfe', 'es': 'Ayuda'},
+}
+# The state of a capacity in CAPACITES.json → what the screen shows: done (counts 1), part (counts one half), todo (counts 0).
+CAP_STATE = {'v3': 'done', 'valide': 'done', 'v3-partiel': 'part'}
+CAP_MAX = 500  # capacities kept, in all (the file lists about a hundred)
+
+
+def pct(done, part, total):
+    """The percentage of a set of capacities: those done, a partial one for one half, over the total (to the nearest integer; 0 for an empty set)."""
+    return int((100 * (done + part / 2) / total) + 0.5) if total else 0
+
+
+def capabilities(org, i18n):
+    """(block, missing) — the `capabilities` block of roadmap.json from <org>/CAPACITES.json, or (None, []) when the file is absent or unreadable;
+    `missing` lists the capacities without all three translations. A function of the file that no group names is not shown (listed in `unplaced`)."""
+    p = os.path.join(org, 'CAPACITES.json')
+    try:
+        src = json.loads(read(p))
+    except (OSError, ValueError):
+        return None, []
+    if not isinstance(src, dict):
+        return None, []
+    by_id = {f.get('id'): f for f in src.get('fonctions') or [] if isinstance(f, dict)}
+    missing, total_n = [], 0
+    groups, sum_all = [], [0, 0, 0]
+    for gid, glabel, fids in CAP_GROUPS:
+        funcs, sum_g = [], [0, 0, 0]
+        for fid in fids:
+            f = by_id.get(fid)
+            if not f:
+                continue
+            items = []
+            for c in f.get('capacites') or []:
+                phrase = (c.get('phrase') or '').strip() if isinstance(c, dict) else ''
+                if not phrase or total_n >= CAP_MAX:
+                    continue
+                total_n += 1
+                tr = i18n.get('cap:' + phrase) or {}
+                it = {'fr': phrase}
+                for l in ('en', 'de', 'es'):
+                    it[l] = (tr.get(l) or '').strip() or phrase
+                if not all((tr.get(l) or '').strip() for l in ('en', 'de', 'es')):
+                    missing.append(phrase)
+                it['s'] = CAP_STATE.get(c.get('etat'), 'todo')
+                items.append(it)
+            n = [sum(1 for i in items if i['s'] == k) for k in ('done', 'part', 'todo')]
+            for k in range(3):
+                sum_g[k] += n[k]
+            funcs.append({'id': fid, 'label': CAP_FUNCS[fid], 'pct': pct(n[0], n[1], len(items)), 'done': n[0], 'part': n[1],
+                          'total': len(items), 'items': items})
+        for k in range(3):
+            sum_all[k] += sum_g[k]
+        groups.append({'id': gid, 'label': glabel, 'pct': pct(sum_g[0], sum_g[1], sum(sum_g)), 'done': sum_g[0], 'part': sum_g[1],
+                       'total': sum(sum_g), 'functions': funcs})
+    placed = {fid for _, _, fids in CAP_GROUPS for fid in fids}
+    asof = src['fait_le'] if isinstance(src.get('fait_le'), str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', src['fait_le']) else ''
+    return {'asof': asof, 'pct': pct(sum_all[0], sum_all[1], sum(sum_all)), 'done': sum_all[0], 'part': sum_all[1], 'total': sum(sum_all),
+            'groups': groups, 'unplaced': sorted(x for x in by_id if x not in placed and isinstance(x, str))}, missing
+
+
 def build(org, previous):
     backlog = read(os.path.join(org, 'BACKLOG.md'))
     roadmap = read(os.path.join(org, 'ROADMAP.md'))
     i18n_p = os.path.join(org, 'roadmap_i18n.json')
     i18n = json.loads(read(i18n_p)) if os.path.isfile(i18n_p) else {}
     prio = read_priorities(org)
+    caps, caps_missing = capabilities(org, i18n)
     fiches = parse_fiches(backlog)
     milestones = parse_milestones(roadmap)
     by_id = {}
@@ -288,7 +378,10 @@ def build(org, previous):
         'milestones': milestones,
         'lanes': all_lanes,
     }
-    return doc, missing
+    if caps:
+        doc['capabilities'] = caps
+        doc['generated']['capabilities_untranslated'] = len(caps_missing)
+    return doc, missing + ['cap:' + x for x in caps_missing]
 
 
 def main(argv=None):

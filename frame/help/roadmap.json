@@ -7,7 +7,8 @@
   "organisation": "9eda6f6",
   "fiches": 387,
   "untranslated": 0,
-  "priorities": 374
+  "priorities": 374,
+  "capabilities_untranslated": 0
  },
  "owner": "ergonomics session (Simplification interface et ergonomie)",
  "note": {
@@ -7087,5 +7088,1097 @@
     }
    ]
   }
- ]
+ ],
+ "capabilities": {
+  "asof": "2026-11-16",
+  "pct": 67,
+  "done": 71,
+  "part": 14,
+  "total": 116,
+  "groups": [
+   {
+    "id": "fly",
+    "label": {
+     "fr": "Préparer et voler",
+     "en": "Prepare and fly",
+     "de": "Vorbereiten und fliegen",
+     "es": "Preparar y volar"
+    },
+    "pct": 77,
+    "done": 17,
+    "part": 6,
+    "total": 26,
+    "functions": [
+     {
+      "id": "fuel",
+      "label": {
+       "fr": "Carburant et route",
+       "en": "Fuel and route",
+       "de": "Treibstoff und Route",
+       "es": "Combustible y ruta"
+      },
+      "pct": 83,
+      "done": 6,
+      "part": 3,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Établir la route d'un vol : terrains, points, plan de vol OACI collé, dernier OFP SimBrief",
+        "en": "Build a flight's route: airfields, points, pasted ICAO flight plan, latest SimBrief OFP",
+        "de": "Die Route eines Fluges erstellen: Flugplätze, Punkte, eingefügter ICAO-Flugplan, letzter SimBrief-OFP",
+        "es": "Establecer la ruta de un vuelo: aeródromos, puntos, plan de vuelo OACI pegado, último OFP de SimBrief",
+        "s": "done"
+       },
+       {
+        "fr": "Calculer des itinéraires d'un terrain à l'autre et contrôler la route",
+        "en": "Compute routes from one airfield to another and check the route",
+        "de": "Routen von einem Flugplatz zum anderen berechnen und die Route prüfen",
+        "es": "Calcular rutas de un aeródromo a otro y controlar la ruta",
+        "s": "part"
+       },
+       {
+        "fr": "Choisir piste, SID, STAR et approche",
+        "en": "Choose runway, SID, STAR and approach",
+        "de": "Piste, SID, STAR und Anflug wählen",
+        "es": "Elegir pista, SID, STAR y aproximación",
+        "s": "part"
+       },
+       {
+        "fr": "Calculer le devis carburant et choisir le niveau de vol",
+        "en": "Compute the fuel plan and choose the flight level",
+        "de": "Die Kraftstoffplanung berechnen und das Flugniveau wählen",
+        "es": "Calcular el plan de combustible y elegir el nivel de vuelo",
+        "s": "done"
+       },
+       {
+        "fr": "Prendre en compte la météo du vol : vent, ISA, METAR et TAF des terrains de la route",
+        "en": "Take the flight's weather into account: wind, ISA, METAR and TAF of the route's airfields",
+        "de": "Das Wetter des Fluges berücksichtigen: Wind, ISA, METAR und TAF der Flugplätze der Route",
+        "es": "Tener en cuenta la meteorología del vuelo: viento, ISA, METAR y TAF de los aeródromos de la ruta",
+        "s": "done"
+       },
+       {
+        "fr": "Préparer un vol depuis une mission (points imposés, temps sur zone)",
+        "en": "Prepare a flight from a mission (imposed points, time on station)",
+        "de": "Einen Flug aus einer Mission vorbereiten (vorgegebene Punkte, Zeit im Gebiet)",
+        "es": "Preparar un vuelo a partir de una misión (puntos impuestos, tiempo en zona)",
+        "s": "done"
+       },
+       {
+        "fr": "Exporter le plan de vol vers le simulateur (X-Plane .fms, MSFS .pln)",
+        "en": "Export the flight plan to the simulator (X-Plane .fms, MSFS .pln)",
+        "de": "Den Flugplan in den Simulator exportieren (X-Plane .fms, MSFS .pln)",
+        "es": "Exportar el plan de vuelo al simulador (X-Plane .fms, MSFS .pln)",
+        "s": "part"
+       },
+       {
+        "fr": "Démarrer le vol, le suivre et appliquer un direct du contrôle",
+        "en": "Start the flight, follow it and apply a controller's direct",
+        "de": "Den Flug starten, verfolgen und ein Direkt der Flugsicherung anwenden",
+        "es": "Iniciar el vuelo, seguirlo y aplicar un directo del control",
+        "s": "done"
+       },
+       {
+        "fr": "Ouvrir le vol dans un service externe (SimBrief, SkyVector, Navigraph, ChartFox)",
+        "en": "Open the flight in an external service (SimBrief, SkyVector, Navigraph, ChartFox)",
+        "de": "Den Flug in einem externen Dienst öffnen (SimBrief, SkyVector, Navigraph, ChartFox)",
+        "es": "Abrir el vuelo en un servicio externo (SimBrief, SkyVector, Navigraph, ChartFox)",
+        "s": "done"
+       }
+      ]
+     },
+     {
+      "id": "maps",
+      "label": {
+       "fr": "Carte",
+       "en": "Map",
+       "de": "Karte",
+       "es": "Mapa"
+      },
+      "pct": 72,
+      "done": 6,
+      "part": 1,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Voir le vol préparé sur la carte : route, espaces aériens traversés, profil vertical",
+        "en": "See the prepared flight on the map: route, airspaces crossed, vertical profile",
+        "de": "Den vorbereiteten Flug auf der Karte sehen: Route, durchflogene Lufträume, Vertikalprofil",
+        "es": "Ver el vuelo preparado en el mapa: ruta, espacios aéreos atravesados, perfil vertical",
+        "s": "done"
+       },
+       {
+        "fr": "Modifier la route directement sur la carte",
+        "en": "Edit the route directly on the map",
+        "de": "Die Route direkt auf der Karte bearbeiten",
+        "es": "Modificar la ruta directamente en el mapa",
+        "s": "done"
+       },
+       {
+        "fr": "Choisir un terrain, une piste, une procédure ou un itinéraire proposé sur la carte",
+        "en": "Choose an airfield, runway, procedure or route suggested on the map",
+        "de": "Einen auf der Karte vorgeschlagenen Flugplatz, eine Piste, ein Verfahren oder eine Route wählen",
+        "es": "Elegir un aeródromo, una pista, un procedimiento o una ruta propuesta en el mapa",
+        "s": "done"
+       },
+       {
+        "fr": "Voir les zones et cartes d'une mission, et y reconnaître son vol",
+        "en": "See a mission's zones and charts, and recognise your flight in them",
+        "de": "Die Zonen und Karten einer Mission sehen und den eigenen Flug darin erkennen",
+        "es": "Ver las zonas y mapas de una misión y reconocer en ellos su vuelo",
+        "s": "done"
+       },
+       {
+        "fr": "Voir le sol d'un terrain, les tours de piste VFR, les aides radio, la couverture des procédures",
+        "en": "See an airfield's ground layout, VFR traffic patterns, radio aids, procedure coverage",
+        "de": "Das Vorfeld eines Flugplatzes, VFR-Platzrunden, Funknavigationshilfen und die Verfahrensabdeckung sehen",
+        "es": "Ver el suelo de un aeródromo, los circuitos de tránsito VFR, las ayudas radio, la cobertura de procedimientos",
+        "s": "done"
+       },
+       {
+        "fr": "Suivre sa position en vol (prévue, réseau, X-Plane, Little Navmap)",
+        "en": "Follow your position in flight (planned, network, X-Plane, Little Navmap)",
+        "de": "Die eigene Position im Flug verfolgen (geplant, Netzwerk, X-Plane, Little Navmap)",
+        "es": "Seguir su posición en vuelo (prevista, red, X-Plane, Little Navmap)",
+        "s": "part"
+       },
+       {
+        "fr": "Voir le vent en altitude et la météo le long de la route",
+        "en": "See the wind aloft and the weather along the route",
+        "de": "Den Höhenwind und das Wetter entlang der Route sehen",
+        "es": "Ver el viento en altitud y la meteorología a lo largo de la ruta",
+        "s": "done"
+       },
+       {
+        "fr": "Produire des cartes de vol imprimables (cheminement, approche, rendez-vous, profil) en PNG / PDF",
+        "en": "Produce printable flight charts (track, approach, rendezvous, profile) as PNG / PDF",
+        "de": "Druckbare Flugkarten (Streckenverlauf, Anflug, Treffpunkt, Profil) als PNG / PDF erstellen",
+        "es": "Producir mapas de vuelo imprimibles (itinerario, aproximación, encuentro, perfil) en PNG / PDF",
+        "s": "todo"
+       },
+       {
+        "fr": "Vérifier les positions GPS des pélicandromes",
+        "en": "Check the GPS positions of the air tanker bases (pélicandromes)",
+        "de": "Die GPS-Positionen der Löschflugzeug-Stützpunkte (Pélicandromes) prüfen",
+        "es": "Verificar las posiciones GPS de las bases de aviones cisterna (pelicandromos)",
+        "s": "todo"
+       }
+      ]
+     },
+     {
+      "id": "atmosphere",
+      "label": {
+       "fr": "Météo",
+       "en": "Weather",
+       "de": "Wetter",
+       "es": "Meteorología"
+      },
+      "pct": 75,
+      "done": 5,
+      "part": 2,
+      "total": 8,
+      "items": [
+       {
+        "fr": "Charger la prévision le long de la route du vol",
+        "en": "Load the forecast along the flight's route",
+        "de": "Die Vorhersage entlang der Flugroute laden",
+        "es": "Cargar la previsión a lo largo de la ruta del vuelo",
+        "s": "done"
+       },
+       {
+        "fr": "Lire la carte météo : isobares, isothermes, nuages, vent, courant-jet, convection",
+        "en": "Read the weather map: isobars, isotherms, clouds, wind, jet stream, convection",
+        "de": "Die Wetterkarte lesen: Isobaren, Isothermen, Wolken, Wind, Jetstream, Konvektion",
+        "es": "Leer el mapa meteorológico: isobaras, isotermas, nubes, viento, corriente en chorro, convección",
+        "s": "done"
+       },
+       {
+        "fr": "Avancer l'heure du vol jusqu'à 72 heures",
+        "en": "Advance the flight time by up to 72 hours",
+        "de": "Die Flugzeit um bis zu 72 Stunden vorstellen",
+        "es": "Adelantar la hora del vuelo hasta 72 horas",
+        "s": "done"
+       },
+       {
+        "fr": "Lire la coupe verticale de la route et la zoomer",
+        "en": "Read the route's vertical cross-section and zoom it",
+        "de": "Den Vertikalschnitt der Route lesen und zoomen",
+        "es": "Leer el corte vertical de la ruta y ampliarlo",
+        "s": "done"
+       },
+       {
+        "fr": "Voir le synoptique mondial hors de la zone du vol",
+        "en": "See the world synoptic chart outside the flight's area",
+        "de": "Die weltweite Synoptik außerhalb des Fluggebiets sehen",
+        "es": "Ver el sinóptico mundial fuera de la zona del vuelo",
+        "s": "part"
+       },
+       {
+        "fr": "Lire les METAR et TAF des terrains de la route",
+        "en": "Read the METAR and TAF of the route's airfields",
+        "de": "Die METAR und TAF der Flugplätze der Route lesen",
+        "es": "Leer los METAR y TAF de los aeródromos de la ruta",
+        "s": "done"
+       },
+       {
+        "fr": "Consulter TEMSI, SIGMET et METAR du monde",
+        "en": "Consult the world's TEMSI, SIGMET and METAR",
+        "de": "TEMSI, SIGMET und METAR der Welt abrufen",
+        "es": "Consultar TEMSI, SIGMET y METAR del mundo",
+        "s": "todo"
+       },
+       {
+        "fr": "Utiliser l'écran sans réseau",
+        "en": "Use the screen without a network",
+        "de": "Den Bildschirm ohne Netzwerk nutzen",
+        "es": "Usar la pantalla sin red",
+        "s": "part"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "company",
+    "label": {
+     "fr": "Missions et compagnie",
+     "en": "Missions and airline",
+     "de": "Missionen und Gesellschaft",
+     "es": "Misiones y compañía"
+    },
+    "pct": 52,
+    "done": 15,
+    "part": 4,
+    "total": 33,
+    "functions": [
+     {
+      "id": "missions",
+      "label": {
+       "fr": "Missions",
+       "en": "Missions",
+       "de": "Missionen",
+       "es": "Misiones"
+      },
+      "pct": 50,
+      "done": 4,
+      "part": 1,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Lire une mission : parcourir la liste, chercher, ouvrir la fiche, ou en tirer une au sort",
+        "en": "Read a mission: browse the list, search, open the sheet, or draw one at random",
+        "de": "Eine Mission lesen: Liste durchsuchen, suchen, Blatt öffnen oder zufällig eine ziehen",
+        "es": "Leer una misión: recorrer la lista, buscar, abrir la ficha o sacar una al azar",
+        "s": "done"
+       },
+       {
+        "fr": "Préparer le vol d'une mission dans Carburant",
+        "en": "Prepare a mission's flight in Fuel",
+        "de": "Den Flug einer Mission in Kraftstoff vorbereiten",
+        "es": "Preparar el vuelo de una misión en Combustible",
+        "s": "done"
+       },
+       {
+        "fr": "Modifier une mission",
+        "en": "Edit a mission",
+        "de": "Eine Mission bearbeiten",
+        "es": "Modificar una misión",
+        "s": "part"
+       },
+       {
+        "fr": "Créer une mission de zéro",
+        "en": "Create a mission from scratch",
+        "de": "Eine Mission von Grund auf neu erstellen",
+        "es": "Crear una misión desde cero",
+        "s": "done"
+       },
+       {
+        "fr": "Importer des missions depuis des fichiers YAML ou un YAML collé",
+        "en": "Import missions from YAML files or pasted YAML",
+        "de": "Missionen aus YAML-Dateien oder eingefügtem YAML importieren",
+        "es": "Importar misiones desde archivos YAML o YAML pegado",
+        "s": "done"
+       },
+       {
+        "fr": "Importer des missions depuis un PDF",
+        "en": "Import missions from a PDF",
+        "de": "Missionen aus einer PDF importieren",
+        "es": "Importar misiones desde un PDF",
+        "s": "todo"
+       },
+       {
+        "fr": "Générer une mission à partir d'un texte produit par une IA (ChatGPT)",
+        "en": "Generate a mission from text produced by an AI (ChatGPT)",
+        "de": "Eine Mission aus einem von einer KI (ChatGPT) erzeugten Text generieren",
+        "es": "Generar una misión a partir de un texto producido por una IA (ChatGPT)",
+        "s": "todo"
+       },
+       {
+        "fr": "Affecter une mission à un pilote ou à un équipage",
+        "en": "Assign a mission to a pilot or a crew",
+        "de": "Eine Mission einem Piloten oder einer Besatzung zuweisen",
+        "es": "Asignar una misión a un piloto o a una tripulación",
+        "s": "todo"
+       },
+       {
+        "fr": "Lire le dossier d'une mission page à page (enveloppe, plis scellés) ou en imprimer le brief PDF",
+        "en": "Read a mission's file page by page (envelope, sealed folds) or print its PDF brief",
+        "de": "Die Akte einer Mission Seite für Seite lesen (Umschlag, versiegelte Umschläge) oder das PDF-Briefing drucken",
+        "es": "Leer el dossier de una misión página a página (sobre, pliegos sellados) o imprimir su briefing en PDF",
+        "s": "todo"
+       }
+      ]
+     },
+     {
+      "id": "odv",
+      "label": {
+       "fr": "Ordres de vol",
+       "en": "Flight orders",
+       "de": "Flugaufträge",
+       "es": "Órdenes de vuelo"
+      },
+      "pct": 17,
+      "done": 1,
+      "part": 1,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Déclarer ses disponibilités de la semaine",
+        "en": "Declare your availability for the week",
+        "de": "Die eigene Verfügbarkeit für die Woche angeben",
+        "es": "Declarar sus disponibilidades de la semana",
+        "s": "todo"
+       },
+       {
+        "fr": "Voir ses missions affectées de la semaine",
+        "en": "See your assigned missions for the week",
+        "de": "Die eigenen zugewiesenen Missionen der Woche sehen",
+        "es": "Ver sus misiones asignadas de la semana",
+        "s": "part"
+       },
+       {
+        "fr": "Voir le rendez-vous et les canaux de l'équipage (Discord, SRS, JoinFS)",
+        "en": "See the crew's rendezvous and channels (Discord, SRS, JoinFS)",
+        "de": "Den Treffpunkt und die Kanäle der Besatzung sehen (Discord, SRS, JoinFS)",
+        "es": "Ver el encuentro y los canales de la tripulación (Discord, SRS, JoinFS)",
+        "s": "done"
+       },
+       {
+        "fr": "Éditer les ordres de vol de la semaine (bandes sur une frise, zones, contrôle, notes)",
+        "en": "Edit the week's flight orders (bands on a timeline, zones, control, notes)",
+        "de": "Die Flugaufträge der Woche bearbeiten (Bänder auf einem Zeitstrahl, Zonen, Kontrolle, Notizen)",
+        "es": "Editar las órdenes de vuelo de la semana (bandas en una cronología, zonas, control, notas)",
+        "s": "todo"
+       },
+       {
+        "fr": "Voir la grille de disponibilité et les créneaux communs des pilotes",
+        "en": "See the availability grid and the pilots' common slots",
+        "de": "Das Verfügbarkeitsraster und die gemeinsamen Zeitfenster der Piloten sehen",
+        "es": "Ver la cuadrícula de disponibilidad y las franjas comunes de los pilotos",
+        "s": "todo"
+       },
+       {
+        "fr": "Obtenir les missions probables par créneau selon les pilotes libres",
+        "en": "Get the likely missions per slot according to the free pilots",
+        "de": "Die wahrscheinlichen Missionen je Zeitfenster nach den freien Piloten erhalten",
+        "es": "Obtener las misiones probables por franja según los pilotos libres",
+        "s": "todo"
+       },
+       {
+        "fr": "Affecter les pilotes libres à des missions et à des appareils (avec convoyage)",
+        "en": "Assign the free pilots to missions and aircraft (with ferrying)",
+        "de": "Die freien Piloten Missionen und Luftfahrzeugen zuweisen (mit Überführung)",
+        "es": "Asignar los pilotos libres a misiones y aeronaves (con traslado)",
+        "s": "todo"
+       },
+       {
+        "fr": "Charger le classeur Excel ODV et exporter la grille ou le récapitulatif (CSV, JSON, texte pour Discord)",
+        "en": "Load the Excel ODV workbook and export the grid or the summary (CSV, JSON, text for Discord)",
+        "de": "Die Excel-ODV-Arbeitsmappe laden und das Raster oder die Zusammenfassung exportieren (CSV, JSON, Text für Discord)",
+        "es": "Cargar el libro Excel ODV y exportar la cuadrícula o el resumen (CSV, JSON, texto para Discord)",
+        "s": "todo"
+       },
+       {
+        "fr": "Activer les zones par réseau et gérer les sessions ATC",
+        "en": "Activate zones per network and manage ATC sessions",
+        "de": "Zonen je Netzwerk aktivieren und ATC-Sitzungen verwalten",
+        "es": "Activar las zonas por red y gestionar las sesiones ATC",
+        "s": "todo"
+       }
+      ]
+     },
+     {
+      "id": "report",
+      "label": {
+       "fr": "Compte rendu",
+       "en": "Mission report",
+       "de": "Missionsbericht",
+       "es": "Informe de misión"
+      },
+      "pct": 72,
+      "done": 6,
+      "part": 1,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Écrire un compte rendu en trois pas (Vol, Mission, Résultat) et l'enregistrer",
+        "en": "Write a flight report in three steps (Flight, Mission, Result) and save it",
+        "de": "Einen Flugbericht in drei Schritten (Flug, Mission, Ergebnis) schreiben und speichern",
+        "es": "Escribir un informe de vuelo en tres pasos (Vuelo, Misión, Resultado) y guardarlo",
+        "s": "done"
+       },
+       {
+        "fr": "Préremplir le compte rendu depuis le vol en cours, SimBrief, IVAO/VATSIM ou un texte collé",
+        "en": "Prefill the flight report from the current flight, SimBrief, IVAO/VATSIM or pasted text",
+        "de": "Den Flugbericht aus dem laufenden Flug, SimBrief, IVAO/VATSIM oder eingefügtem Text vorausfüllen",
+        "es": "Rellenar previamente el informe de vuelo desde el vuelo en curso, SimBrief, IVAO/VATSIM o un texto pegado",
+        "s": "done"
+       },
+       {
+        "fr": "Remplir les blocs propres à la famille de mission (seize familles)",
+        "en": "Fill in the blocks specific to the mission family (sixteen families)",
+        "de": "Die Blöcke der jeweiligen Missionsfamilie ausfüllen (sechzehn Familien)",
+        "es": "Rellenar los bloques propios de la familia de misión (dieciséis familias)",
+        "s": "done"
+       },
+       {
+        "fr": "Joindre les mesures de carburant du simulateur (Fuel Phase Monitor)",
+        "en": "Attach the simulator's fuel measurements (Fuel Phase Monitor)",
+        "de": "Die Kraftstoffmessungen des Simulators anhängen (Fuel Phase Monitor)",
+        "es": "Adjuntar las mediciones de combustible del simulador (Fuel Phase Monitor)",
+        "s": "done"
+       },
+       {
+        "fr": "Rouvrir et modifier un compte rendu enregistré, ou en repartir à neuf",
+        "en": "Reopen and edit a saved flight report, or start a new one from it",
+        "de": "Einen gespeicherten Flugbericht wieder öffnen und bearbeiten oder davon aus neu beginnen",
+        "es": "Reabrir y modificar un informe de vuelo guardado, o partir de él de cero",
+        "s": "done"
+       },
+       {
+        "fr": "Inscrire le vol sur le site de la compagnie",
+        "en": "Log the flight on the company's website",
+        "de": "Den Flug auf der Website der Gesellschaft eintragen",
+        "es": "Registrar el vuelo en el sitio de la compañía",
+        "s": "part"
+       },
+       {
+        "fr": "Dire pour quelle compagnie le compte rendu est écrit (ou « Personnel »)",
+        "en": "State which company the flight report is written for (or \"Personal\")",
+        "de": "Angeben, für welche Gesellschaft der Flugbericht geschrieben wird (oder \"Persönlich\")",
+        "es": "Indicar para qué compañía se escribe el informe de vuelo (o \"Personal\")",
+        "s": "done"
+       },
+       {
+        "fr": "Exporter ou imprimer un compte rendu, ou le supprimer",
+        "en": "Export or print a flight report, or delete it",
+        "de": "Einen Flugbericht exportieren oder drucken oder ihn löschen",
+        "es": "Exportar o imprimir un informe de vuelo, o eliminarlo",
+        "s": "todo"
+       },
+       {
+        "fr": "Envoyer le compte rendu au site par un web service",
+        "en": "Send the flight report to the website through a web service",
+        "de": "Den Flugbericht über einen Webservice an die Website senden",
+        "es": "Enviar el informe de vuelo al sitio mediante un servicio web",
+        "s": "todo"
+       }
+      ]
+     },
+     {
+      "id": "website",
+      "label": {
+       "fr": "Site",
+       "en": "Website",
+       "de": "Website",
+       "es": "Sitio web"
+      },
+      "pct": 75,
+      "done": 4,
+      "part": 1,
+      "total": 6,
+      "items": [
+       {
+        "fr": "Importer son journal des vols depuis la page « Log des vols » du site",
+        "en": "Import your flight log from the website's \"Flight log\" page",
+        "de": "Das eigene Flugjournal von der Seite \"Flugjournal\" der Website importieren",
+        "es": "Importar su diario de vuelos desde la página \"Log de vuelos\" del sitio",
+        "s": "done"
+       },
+       {
+        "fr": "Importer la flotte de la compagnie depuis la page « Flotte » du site",
+        "en": "Import the company's fleet from the website's \"Fleet\" page",
+        "de": "Die Flotte der Gesellschaft von der Seite \"Flotte\" der Website importieren",
+        "es": "Importar la flota de la compañía desde la página \"Flota\" del sitio",
+        "s": "done"
+       },
+       {
+        "fr": "Voir ce qui change avant d'enregistrer un import",
+        "en": "See what changes before saving an import",
+        "de": "Vor dem Speichern eines Imports sehen, was sich ändert",
+        "es": "Ver lo que cambia antes de guardar una importación",
+        "s": "done"
+       },
+       {
+        "fr": "Régler l'adresse et les pages du site de la compagnie",
+        "en": "Set the address and pages of the company's website",
+        "de": "Die Adresse und die Seiten der Website der Gesellschaft einstellen",
+        "es": "Ajustar la dirección y las páginas del sitio de la compañía",
+        "s": "done"
+       },
+       {
+        "fr": "Ouvrir le formulaire d'inscription d'un vol sur le site",
+        "en": "Open the website's flight entry form",
+        "de": "Das Eintragungsformular für Flüge auf der Website öffnen",
+        "es": "Abrir el formulario de registro de un vuelo en el sitio",
+        "s": "part"
+       },
+       {
+        "fr": "Écrire sur le site sans copier-coller (web service, connexion avec le compte du site)",
+        "en": "Write to the website without copy-paste (web service, sign-in with the website account)",
+        "de": "Ohne Kopieren und Einfügen auf die Website schreiben (Webservice, Anmeldung mit dem Website-Konto)",
+        "es": "Escribir en el sitio sin copiar y pegar (servicio web, conexión con la cuenta del sitio)",
+        "s": "todo"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "follow",
+    "label": {
+     "fr": "Suivre",
+     "en": "Follow up",
+     "de": "Nachverfolgen",
+     "es": "Seguimiento"
+    },
+    "pct": 55,
+    "done": 16,
+    "part": 2,
+    "total": 31,
+    "functions": [
+     {
+      "id": "flightlog",
+      "label": {
+       "fr": "Mes vols",
+       "en": "My flights",
+       "de": "Meine Flüge",
+       "es": "Mis vuelos"
+      },
+      "pct": 100,
+      "done": 8,
+      "part": 0,
+      "total": 8,
+      "items": [
+       {
+        "fr": "Lire la liste de ses vols (comptes rendus, journal du site, connexions IVAO/VATSIM) sans doublon",
+        "en": "Read the list of your flights (flight reports, website log, IVAO/VATSIM connections) without duplicates",
+        "de": "Die Liste der eigenen Flüge lesen (Flugberichte, Website-Journal, IVAO/VATSIM-Verbindungen) ohne Duplikate",
+        "es": "Leer la lista de sus vuelos (informes de vuelo, diario del sitio, conexiones IVAO/VATSIM) sin duplicados",
+        "s": "done"
+       },
+       {
+        "fr": "Voir ses totaux : nombre de vols, heures de bloc, vols sans compte rendu",
+        "en": "See your totals: number of flights, block hours, flights without a flight report",
+        "de": "Die eigenen Summen sehen: Anzahl Flüge, Blockstunden, Flüge ohne Flugbericht",
+        "es": "Ver sus totales: número de vuelos, horas de bloque, vuelos sin informe de vuelo",
+        "s": "done"
+       },
+       {
+        "fr": "Filtrer par période, indicatif, type ou terrain",
+        "en": "Filter by period, callsign, type or airfield",
+        "de": "Nach Zeitraum, Rufzeichen, Typ oder Flugplatz filtern",
+        "es": "Filtrar por período, indicativo, tipo o aeródromo",
+        "s": "done"
+       },
+       {
+        "fr": "Voir le détail d'un vol (origine, heures, aéronef, mission, remarques)",
+        "en": "See a flight's detail (origin, times, aircraft, mission, remarks)",
+        "de": "Die Details eines Fluges sehen (Abflugort, Zeiten, Luftfahrzeug, Mission, Bemerkungen)",
+        "es": "Ver el detalle de un vuelo (origen, horas, aeronave, misión, observaciones)",
+        "s": "done"
+       },
+       {
+        "fr": "Écrire ou rouvrir le compte rendu d'un vol",
+        "en": "Write or reopen a flight's flight report",
+        "de": "Den Flugbericht eines Fluges schreiben oder wieder öffnen",
+        "es": "Escribir o reabrir el informe de vuelo de un vuelo",
+        "s": "done"
+       },
+       {
+        "fr": "Voir le vol en cours démarré dans Carburant",
+        "en": "See the flight in progress started in Fuel",
+        "de": "Den in Kraftstoff gestarteten laufenden Flug sehen",
+        "es": "Ver el vuelo en curso iniciado en Combustible",
+        "s": "done"
+       },
+       {
+        "fr": "Exporter la liste filtrée en CSV, relire ses connexions IVAO et VATSIM",
+        "en": "Export the filtered list as CSV, re-read your IVAO and VATSIM connections",
+        "de": "Die gefilterte Liste als CSV exportieren, die eigenen IVAO- und VATSIM-Verbindungen erneut lesen",
+        "es": "Exportar la lista filtrada en CSV, releer sus conexiones IVAO y VATSIM",
+        "s": "done"
+       },
+       {
+        "fr": "Compléter son journal depuis le site de la compagnie",
+        "en": "Complete your log from the company's website",
+        "de": "Das eigene Journal von der Website der Gesellschaft ergänzen",
+        "es": "Completar su diario desde el sitio de la compañía",
+        "s": "done"
+       }
+      ]
+     },
+     {
+      "id": "stats",
+      "label": {
+       "fr": "Statistiques",
+       "en": "Statistics",
+       "de": "Statistiken",
+       "es": "Estadísticas"
+      },
+      "pct": 33,
+      "done": 1,
+      "part": 2,
+      "total": 6,
+      "items": [
+       {
+        "fr": "Voir les statistiques d'activité par famille, période, appareil et équipier",
+        "en": "See activity statistics by family, period, aircraft and crew member",
+        "de": "Aktivitätsstatistiken nach Familie, Zeitraum, Luftfahrzeug und Besatzungsmitglied sehen",
+        "es": "Ver las estadísticas de actividad por familia, período, aeronave y miembro de la tripulación",
+        "s": "todo"
+       },
+       {
+        "fr": "Voir l'activité de la semaine dans le Tableau (statistiques de l'ordre du jour)",
+        "en": "See the week's activity on the Board (statistics of the order of the day)",
+        "de": "Die Wochenaktivität auf der Tafel sehen (Statistiken der Tagesordnung)",
+        "es": "Ver la actividad de la semana en el Tablero (estadísticas del orden del día)",
+        "s": "todo"
+       },
+       {
+        "fr": "Voir ses totaux de vols et d'heures de bloc",
+        "en": "See your flight and block-hour totals",
+        "de": "Die eigenen Flug- und Blockstundensummen sehen",
+        "es": "Ver sus totales de vuelos y de horas de bloque",
+        "s": "done"
+       },
+       {
+        "fr": "Calculer des courbes de consommation par niveau à partir des journaux Fuel Phase Monitor",
+        "en": "Compute fuel-burn curves per level from the Fuel Phase Monitor logs",
+        "de": "Verbrauchskurven je Flugniveau aus den Fuel-Phase-Monitor-Protokollen berechnen",
+        "es": "Calcular curvas de consumo por nivel a partir de los registros del Fuel Phase Monitor",
+        "s": "part"
+       },
+       {
+        "fr": "Comparer les mesures du simulateur à la fiche de performances",
+        "en": "Compare the simulator's measurements with the performance sheet",
+        "de": "Die Messungen des Simulators mit dem Leistungsblatt vergleichen",
+        "es": "Comparar las mediciones del simulador con la ficha de rendimientos",
+        "s": "part"
+       },
+       {
+        "fr": "Résumer les vols par période et par flotte dans la V3",
+        "en": "Summarise flights by period and by fleet in V3",
+        "de": "Flüge nach Zeitraum und nach Flotte in der V3 zusammenfassen",
+        "es": "Resumir los vuelos por período y por flota en la V3",
+        "s": "todo"
+       }
+      ]
+     },
+     {
+      "id": "landing",
+      "label": {
+       "fr": "Atterrissages",
+       "en": "Landings",
+       "de": "Landungen",
+       "es": "Aterrizajes"
+      },
+      "pct": 0,
+      "done": 0,
+      "part": 0,
+      "total": 8,
+      "items": [
+       {
+        "fr": "Charger un ou plusieurs journaux d'atterrissage (CSV, LOG)",
+        "en": "Load one or more landing logs (CSV, LOG)",
+        "de": "Ein oder mehrere Landeprotokolle laden (CSV, LOG)",
+        "es": "Cargar uno o varios registros de aterrizaje (CSV, LOG)",
+        "s": "todo"
+       },
+       {
+        "fr": "Voir le score, le taux au toucher (FPM), la force G et le nez de chaque atterrissage",
+        "en": "See the score, touchdown rate (FPM), G-force and nose of each landing",
+        "de": "Punktzahl, Aufsetzrate (FPM), G-Kraft und Bugstellung jeder Landung sehen",
+        "es": "Ver la puntuación, la tasa de toma de contacto (FPM), la fuerza G y el morro de cada aterrizaje",
+        "s": "todo"
+       },
+       {
+        "fr": "Filtrer par appareil et par période",
+        "en": "Filter by aircraft and period",
+        "de": "Nach Luftfahrzeug und Zeitraum filtern",
+        "es": "Filtrar por aeronave y período",
+        "s": "todo"
+       },
+       {
+        "fr": "Lire la tendance de progression (méthodes, lissage)",
+        "en": "Read the progression trend (methods, smoothing)",
+        "de": "Den Fortschrittstrend lesen (Methoden, Glättung)",
+        "es": "Leer la tendencia de progresión (métodos, suavizado)",
+        "s": "todo"
+       },
+       {
+        "fr": "Comparer les appareils entre eux (tableau par appareil)",
+        "en": "Compare aircraft with each other (table per aircraft)",
+        "de": "Luftfahrzeuge miteinander vergleichen (Tabelle je Luftfahrzeug)",
+        "es": "Comparar las aeronaves entre sí (tabla por aeronave)",
+        "s": "todo"
+       },
+       {
+        "fr": "Imprimer le bilan en PDF",
+        "en": "Print the summary as a PDF",
+        "de": "Die Auswertung als PDF drucken",
+        "es": "Imprimir el balance en PDF",
+        "s": "todo"
+       },
+       {
+        "fr": "Relire automatiquement les journaux depuis le dossier X-Plane",
+        "en": "Re-read the logs automatically from the X-Plane folder",
+        "de": "Die Protokolle automatisch aus dem X-Plane-Ordner erneut lesen",
+        "es": "Releer automáticamente los registros desde la carpeta de X-Plane",
+        "s": "todo"
+       },
+       {
+        "fr": "Voir ses atterrissages dans la V3",
+        "en": "See your landings in V3",
+        "de": "Die eigenen Landungen in der V3 sehen",
+        "es": "Ver sus aterrizajes en la V3",
+        "s": "todo"
+       }
+      ]
+     },
+     {
+      "id": "aircraft",
+      "label": {
+       "fr": "Aéronefs",
+       "en": "Aircraft",
+       "de": "Luftfahrzeuge",
+       "es": "Aeronaves"
+      },
+      "pct": 78,
+      "done": 7,
+      "part": 0,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Consulter la flotte de la compagnie (ou ses propres aéronefs) et chercher un appareil",
+        "en": "Browse the company's fleet (or your own aircraft) and search for an aircraft",
+        "de": "Die Flotte der Gesellschaft (oder die eigenen Luftfahrzeuge) einsehen und ein Luftfahrzeug suchen",
+        "es": "Consultar la flota de la compañía (o sus propias aeronaves) y buscar una aeronave",
+        "s": "done"
+       },
+       {
+        "fr": "Ajouter ou modifier un aéronef",
+        "en": "Add or edit an aircraft",
+        "de": "Ein Luftfahrzeug hinzufügen oder bearbeiten",
+        "es": "Añadir o modificar una aeronave",
+        "s": "done"
+       },
+       {
+        "fr": "Retirer un aéronef de la flotte ou le mettre hors service",
+        "en": "Remove an aircraft from the fleet or take it out of service",
+        "de": "Ein Luftfahrzeug aus der Flotte entfernen oder außer Dienst stellen",
+        "es": "Retirar una aeronave de la flota o ponerla fuera de servicio",
+        "s": "done"
+       },
+       {
+        "fr": "Consulter et modifier une fiche de performances (carburant, montée, croisière, régimes)",
+        "en": "View and edit a performance sheet (fuel, climb, cruise, power settings)",
+        "de": "Ein Leistungsblatt ansehen und bearbeiten (Kraftstoff, Steigflug, Reiseflug, Leistungsstufen)",
+        "es": "Consultar y modificar una ficha de rendimientos (combustible, ascenso, crucero, regímenes)",
+        "s": "done"
+       },
+       {
+        "fr": "Importer une fiche depuis un fichier, un OFP SimBrief, un .lnmperf ou la réponse de ChatGPT",
+        "en": "Import a sheet from a file, a SimBrief OFP, a .lnmperf or ChatGPT's reply",
+        "de": "Ein Blatt aus einer Datei, einem SimBrief-OFP, einer .lnmperf oder der Antwort von ChatGPT importieren",
+        "es": "Importar una ficha desde un archivo, un OFP de SimBrief, un .lnmperf o la respuesta de ChatGPT",
+        "s": "done"
+       },
+       {
+        "fr": "Proposer des paliers de croisière depuis les journaux du simulateur",
+        "en": "Suggest cruise levels from the simulator's logs",
+        "de": "Reiseflugniveaus aus den Protokollen des Simulators vorschlagen",
+        "es": "Proponer niveles de crucero a partir de los registros del simulador",
+        "s": "done"
+       },
+       {
+        "fr": "Exporter ou supprimer une fiche de performances",
+        "en": "Export or delete a performance sheet",
+        "de": "Ein Leistungsblatt exportieren oder löschen",
+        "es": "Exportar o eliminar una ficha de rendimientos",
+        "s": "done"
+       },
+       {
+        "fr": "Importer la flotte et les données depuis SimToolkitPro",
+        "en": "Import the fleet and data from SimToolkitPro",
+        "de": "Die Flotte und die Daten aus SimToolkitPro importieren",
+        "es": "Importar la flota y los datos desde SimToolkitPro",
+        "s": "todo"
+       },
+       {
+        "fr": "Suivre la vie d'un appareil (maintenance, inspections, incidents) et les fiches d'équipage",
+        "en": "Track an aircraft's life (maintenance, inspections, incidents) and the crew sheets",
+        "de": "Das Leben eines Luftfahrzeugs verfolgen (Wartung, Inspektionen, Vorfälle) und die Besatzungsblätter",
+        "es": "Seguir la vida de una aeronave (mantenimiento, inspecciones, incidentes) y las fichas de tripulación",
+        "s": "todo"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "base",
+    "label": {
+     "fr": "Socle",
+     "en": "Foundation",
+     "de": "Grundlage",
+     "es": "Base"
+    },
+    "pct": 92,
+    "done": 23,
+    "part": 2,
+    "total": 26,
+    "functions": [
+     {
+      "id": "data",
+      "label": {
+       "fr": "Données",
+       "en": "Data",
+       "de": "Daten",
+       "es": "Datos"
+      },
+      "pct": 89,
+      "done": 7,
+      "part": 2,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Voir le cycle AIRAC en vigueur et l'état de la base par pays",
+        "en": "See the current AIRAC cycle and the state of the database by country",
+        "de": "Den aktuellen AIRAC-Zyklus und den Stand der Datenbank je Land sehen",
+        "es": "Ver el ciclo AIRAC vigente y el estado de la base por país",
+        "s": "done"
+       },
+       {
+        "fr": "Choisir les pays (couverture) que ce poste construit et suit",
+        "en": "Choose the countries (coverage) this workstation builds and tracks",
+        "de": "Die Länder (Abdeckung) wählen, die dieser Arbeitsplatz aufbaut und verfolgt",
+        "es": "Elegir los países (cobertura) que este puesto construye y sigue",
+        "s": "done"
+       },
+       {
+        "fr": "Télécharger les sources aéronautiques (openAIP, FAA, SIA, NATS…)",
+        "en": "Download the aeronautical sources (openAIP, FAA, SIA, NATS…)",
+        "de": "Die aeronautischen Quellen herunterladen (openAIP, FAA, SIA, NATS…)",
+        "es": "Descargar las fuentes aeronáuticas (openAIP, FAA, SIA, NATS…)",
+        "s": "part"
+       },
+       {
+        "fr": "Construire la base aéronautique des zones cochées",
+        "en": "Build the aeronautical database for the ticked areas",
+        "de": "Die aeronautische Datenbank der angehakten Gebiete aufbauen",
+        "es": "Construir la base aeronáutica de las zonas marcadas",
+        "s": "done"
+       },
+       {
+        "fr": "Tout mettre à jour d'un geste (base, procédures, appareils)",
+        "en": "Update everything in one go (database, procedures, aircraft)",
+        "de": "Alles mit einem Schritt aktualisieren (Datenbank, Verfahren, Luftfahrzeuge)",
+        "es": "Actualizarlo todo de una vez (base, procedimientos, aeronaves)",
+        "s": "done"
+       },
+       {
+        "fr": "Publier la base construite vers le dépôt de la compagnie",
+        "en": "Publish the built database to the company's repository",
+        "de": "Die aufgebaute Datenbank im Repository der Gesellschaft veröffentlichen",
+        "es": "Publicar la base construida en el repositorio de la compañía",
+        "s": "done"
+       },
+       {
+        "fr": "Purger les sources brutes et caches d'un poste",
+        "en": "Purge a workstation's raw sources and caches",
+        "de": "Die Rohquellen und Caches eines Arbeitsplatzes löschen",
+        "es": "Purgar las fuentes en bruto y las cachés de un puesto",
+        "s": "done"
+       },
+       {
+        "fr": "Publier les fiches d'appareils, déposer le registre français des aéronefs et les tours de piste VFR",
+        "en": "Publish the aircraft sheets, deposit the French aircraft register and the VFR traffic patterns",
+        "de": "Die Luftfahrzeugblätter veröffentlichen, das französische Luftfahrzeugregister und die VFR-Platzrunden ablegen",
+        "es": "Publicar las fichas de aeronaves, depositar el registro francés de aeronaves y los circuitos de tránsito VFR",
+        "s": "done"
+       },
+       {
+        "fr": "Lire les procédures de départ et d'arrivée de tous les États",
+        "en": "Read the departure and arrival procedures of all states",
+        "de": "Die An- und Abflugverfahren aller Staaten lesen",
+        "es": "Leer los procedimientos de salida y llegada de todos los Estados",
+        "s": "part"
+       }
+      ]
+     },
+     {
+      "id": "settings",
+      "label": {
+       "fr": "Réglages",
+       "en": "Settings",
+       "de": "Einstellungen",
+       "es": "Ajustes"
+      },
+      "pct": 100,
+      "done": 9,
+      "part": 0,
+      "total": 9,
+      "items": [
+       {
+        "fr": "Régler son identité (trigramme, VID IVAO, CID VATSIM, SimBrief), son niveau d'usage et son design",
+        "en": "Set your identity (trigram, IVAO VID, VATSIM CID, SimBrief), usage level and design",
+        "de": "Die eigene Identität (Trigramm, IVAO-VID, VATSIM-CID, SimBrief), die Nutzungsstufe und das Design einstellen",
+        "es": "Ajustar su identidad (trigrama, VID IVAO, CID VATSIM, SimBrief), su nivel de uso y su diseño",
+        "s": "done"
+       },
+       {
+        "fr": "Régler l'accès aux données (dépôt, jeton) et choisir la compagnie de l'appareil",
+        "en": "Set the data access (repository, token) and choose the device's company",
+        "de": "Den Datenzugriff (Repository, Token) einstellen und die Gesellschaft des Geräts wählen",
+        "es": "Ajustar el acceso a los datos (repositorio, token) y elegir la compañía del dispositivo",
+        "s": "done"
+       },
+       {
+        "fr": "Voir ce qui n'est pas encore parti et synchroniser",
+        "en": "See what hasn't been sent yet and synchronise",
+        "de": "Sehen, was noch nicht gesendet wurde, und synchronisieren",
+        "es": "Ver lo que aún no ha salido y sincronizar",
+        "s": "done"
+       },
+       {
+        "fr": "Sauvegarder ses données, ou repartir de zéro sur l'appareil",
+        "en": "Back up your data, or start over from scratch on the device",
+        "de": "Die eigenen Daten sichern oder auf dem Gerät ganz von vorn beginnen",
+        "es": "Hacer una copia de seguridad de sus datos, o empezar de cero en el dispositivo",
+        "s": "done"
+       },
+       {
+        "fr": "Rejoindre la compagnie par code QR, lien ou fichier de configuration",
+        "en": "Join the company by QR code, link or configuration file",
+        "de": "Der Gesellschaft per QR-Code, Link oder Konfigurationsdatei beitreten",
+        "es": "Unirse a la compañía por código QR, enlace o archivo de configuración",
+        "s": "done"
+       },
+       {
+        "fr": "Préparer la configuration d'un nouveau pilote (administrateur)",
+        "en": "Prepare a new pilot's configuration (administrator)",
+        "de": "Die Konfiguration eines neuen Piloten vorbereiten (Administrator)",
+        "es": "Preparar la configuración de un piloto nuevo (administrador)",
+        "s": "done"
+       },
+       {
+        "fr": "Créer et révoquer les jetons GitLab des pilotes",
+        "en": "Create and revoke the pilots' GitLab tokens",
+        "de": "Die GitLab-Token der Piloten erstellen und widerrufen",
+        "es": "Crear y revocar los tokens de GitLab de los pilotos",
+        "s": "done"
+       },
+       {
+        "fr": "Appairer, nommer et révoquer les appareils des pilotes (réseau local, relais)",
+        "en": "Pair, name and revoke the pilots' devices (local network, relay)",
+        "de": "Die Geräte der Piloten koppeln, benennen und widerrufen (lokales Netzwerk, Relais)",
+        "es": "Emparejar, nombrar y revocar los dispositivos de los pilotos (red local, relé)",
+        "s": "done"
+       },
+       {
+        "fr": "Créer, reprendre ou migrer une compagnie (genre, familles de missions, séries, flotte)",
+        "en": "Create, resume or migrate a company (type, mission families, series, fleet)",
+        "de": "Eine Gesellschaft erstellen, fortsetzen oder migrieren (Art, Missionsfamilien, Serien, Flotte)",
+        "es": "Crear, retomar o migrar una compañía (género, familias de misiones, series, flota)",
+        "s": "done"
+       }
+      ]
+     },
+     {
+      "id": "help",
+      "label": {
+       "fr": "Aide",
+       "en": "Help",
+       "de": "Hilfe",
+       "es": "Ayuda"
+      },
+      "pct": 88,
+      "done": 7,
+      "part": 0,
+      "total": 8,
+      "items": [
+       {
+        "fr": "Lire le manuel (pilote, compagnie, maintenance) en quatre langues",
+        "en": "Read the manual (pilot, company, maintenance) in four languages",
+        "de": "Das Handbuch (Pilot, Gesellschaft, Wartung) in vier Sprachen lesen",
+        "es": "Leer el manual (piloto, compañía, mantenimiento) en cuatro idiomas",
+        "s": "done"
+       },
+       {
+        "fr": "Ouvrir l'aide du module affiché (bouton ?, ancres de paragraphe)",
+        "en": "Open the help of the displayed module (? button, paragraph anchors)",
+        "de": "Die Hilfe des angezeigten Moduls öffnen (?-Schaltfläche, Absatzanker)",
+        "es": "Abrir la ayuda del módulo mostrado (botón ?, anclas de párrafo)",
+        "s": "done"
+       },
+       {
+        "fr": "Suivre un tutoriel pas à pas (rejoindre la compagnie, préparer un vol, écrire un compte rendu)",
+        "en": "Follow a step-by-step tutorial (join the company, prepare a flight, write a flight report)",
+        "de": "Einem Schritt-für-Schritt-Tutorial folgen (der Gesellschaft beitreten, einen Flug vorbereiten, einen Flugbericht schreiben)",
+        "es": "Seguir un tutorial paso a paso (unirse a la compañía, preparar un vuelo, escribir un informe de vuelo)",
+        "s": "done"
+       },
+       {
+        "fr": "Consulter la feuille de route : livré, en cours, prévu, plus tard",
+        "en": "Consult the Roadmap: delivered, in progress, planned, later",
+        "de": "Die Roadmap ansehen: geliefert, in Arbeit, geplant, später",
+        "es": "Consultar la Hoja de ruta: entregado, en curso, previsto, más adelante",
+        "s": "done"
+       },
+       {
+        "fr": "Valider les tests de recette (validé, avec réserves, refusé) avec un commentaire",
+        "en": "Validate the acceptance tests (validated, with reservations, rejected) with a comment",
+        "de": "Die Abnahmetests validieren (validiert, mit Vorbehalten, abgelehnt) mit einem Kommentar",
+        "es": "Validar las pruebas de aceptación (validado, con reservas, rechazado) con un comentario",
+        "s": "done"
+       },
+       {
+        "fr": "Signaler un problème ou une demande",
+        "en": "Report a problem or a request",
+        "de": "Ein Problem oder einen Wunsch melden",
+        "es": "Notificar un problema o una solicitud",
+        "s": "done"
+       },
+       {
+        "fr": "Changer les priorités de la feuille de route en glissant les cartes",
+        "en": "Change the Roadmap priorities by dragging the cards",
+        "de": "Die Prioritäten der Roadmap durch Ziehen der Karten ändern",
+        "es": "Cambiar las prioridades de la Hoja de ruta arrastrando las tarjetas",
+        "s": "done"
+       },
+       {
+        "fr": "Lire l'aide des anciennes pages",
+        "en": "Read the help of the old pages",
+        "de": "Die Hilfe der alten Seiten lesen",
+        "es": "Leer la ayuda de las páginas antiguas",
+        "s": "todo"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "unplaced": []
+ }
 }

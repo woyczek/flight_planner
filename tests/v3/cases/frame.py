@@ -4687,6 +4687,66 @@ def a247(c):
     c.check_errors()
 
 
+@case('A248', 'The roadmap opens on an overview by capability (SOG-0386, Q-0069): ONE line « Ensemble : N % », then four folded groups; a group opens on its functions and their percentage, a function on its capacities (done / partly / not done); the file is data (texts written as text, numbers bounded); no block in the file, no overview', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0386 (the user, 16 Nov 2026, Q-0069): « une ligne d’ensemble et quatre groupes repliés » — Préparer et voler, Missions et compagnie, Suivre, Socle; a group opened shows its functions and their percentage, a function opened its capacities (faite / pas faite); no fourteen bars; the source is organisation/CAPACITES.json through the `capabilities` block of frame/help/roadmap.json, in the four languages')
+def a248(c):
+    lang = c.lang
+    T = lambda k: tx('frame/help/roadmap.js', k, lang, after='const T = {')
+    L = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
+    lab = lambda fr, en: {'fr': fr, 'en': en, 'de': en + ' (de)', 'es': en + ' (es)'}
+    cap = lambda s, fr, en: {**lab(fr, en), 's': s}
+    shown = lambda fr, en: [fr, en, en + ' (de)', en + ' (es)'][L]
+    fx = _prio_fixture()
+    fx['capabilities'] = {'asof': '2026-11-16', 'pct': 67, 'done': 71, 'part': 14, 'total': 116, 'unplaced': [], 'groups': [
+        {'id': 'fly', 'label': lab('Préparer et voler', 'Prepare and fly'), 'pct': 250, 'done': 1, 'part': 1, 'total': 3, 'functions': [
+            {'id': 'fuel', 'label': lab('Carburant et route', 'Fuel and route'), 'pct': 83, 'done': 1, 'part': 1, 'total': 3, 'items': [
+                cap('done', 'Établir la route', 'Build the route'), cap('part', 'Contrôler la <b>route</b>', 'Check the <b>route</b>'), cap('todo', 'Importer un plan', 'Import a plan')]},
+            {'id': 'maps', 'label': lab('Carte', 'Map'), 'pct': 72, 'done': 0, 'part': 0, 'total': 0, 'items': []}]},
+        {'id': 'company', 'label': lab('Missions et compagnie', 'Missions and airline'), 'pct': 52, 'done': 0, 'part': 0, 'total': 1, 'functions': [
+            {'id': 'missions', 'label': lab('Missions', 'Missions'), 'pct': 50, 'done': 0, 'part': 0, 'total': 1, 'items': [cap('todo', 'Lire une mission', 'Read a mission')]}]},
+        {'id': 'follow', 'label': lab('Suivre', 'Follow up'), 'pct': 55, 'done': 0, 'part': 0, 'total': 0, 'functions': []},
+        {'id': 'base', 'label': lab('Socle', 'Foundation'), 'pct': 92, 'done': 0, 'part': 0, 'total': 0, 'functions': []}]}
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    c.open('roadmap', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-overview]')", timeout=15000, what='the overview')
+    # ---- ONE line, then four folded groups, above the milestone strip
+    c.eq(norm(c.text('[data-overall] b')), norm(T('ovAll').replace('{n}', '67')), 'the first line: the whole, worded in the language of the run', what='overall')
+    c.eq(c.count('[data-grp]'), 4, 'four groups', what='groups')
+    c.eq(c.js("[...document.querySelectorAll('[data-grp] > button')].map(b => b.getAttribute('aria-expanded'))"), ['false'] * 4, 'folded at first', what='folded')
+    c.eq(c.count('[data-fn]'), 0, 'no function shown while the groups are folded (no fourteen bars)', what='no function')
+    c.eq([norm(c.text(f'[data-grp={g}] .f-rm-ovl')) for g in ('fly', 'company', 'follow', 'base')],
+         [norm(shown(a, b)) for a, b in (('Préparer et voler', 'Prepare and fly'), ('Missions et compagnie', 'Missions and airline'), ('Suivre', 'Follow up'), ('Socle', 'Foundation'))], 'the groups in the order of the decision, in the language of the run', what='group names')
+    c.ok(c.js("!!(document.querySelector('[data-overview]').compareDocumentPosition(document.querySelector('.f-rm-time')) & 4)"), None, 'the overview is above the strip of milestones')
+    # ---- a group opens: its functions and their percentage; a number out of bounds in the file is bounded
+    c.tap('[data-ov="g:fly"]')
+    c.until("document.querySelectorAll('[data-fn]').length === 2", what='the functions of the group')
+    c.eq([norm(c.text('[data-ov="g:fly"] .f-rm-ovp')), norm(c.text('[data-fn=fuel] .f-rm-ovp'))], [norm(T('pct').replace('{n}', '100')), norm(T('pct').replace('{n}', '83'))], 'the percentages (250 in the file is shown 100)', what='pct')
+    c.eq(c.count('[data-fn] li'), 0, 'a function is folded too', what='fn folded')
+    # ---- a function opens: its capacities, done / partly / not done; the file's text is written as text
+    c.tap('[data-ov="f:fuel"]')
+    c.until("document.querySelectorAll('[data-fn=fuel] li').length === 3", what='the capacities')
+    c.eq(c.js("[...document.querySelectorAll('[data-fn=fuel] li')].map(l => l.dataset.s)"), ['done', 'part', 'todo'], 'one state each', what='states')
+    c.eq([norm(c.text(f'[data-fn=fuel] li[data-s={s}] small')) for s in ('done', 'part', 'todo')], [norm(T('capDone')), norm(T('capPart')), norm(T('capTodo'))], 'the state is said in words', what='state words')
+    c.eq(c.count('[data-fn=fuel] li b'), 0, 'a tag in a text of the file is not a tag', what='escaped')
+    c.ok(norm(shown('Contrôler la <b>route</b>', 'Check the <b>route</b>')) in norm(c.text('[data-fn=fuel] li[data-s=part]')), None, 'the capacity is worded in the language of the run, the tag shown as text')
+    c.shot(f'A248_overview_{c.width}_{c.design}_{lang}.png')
+    # ---- it folds again by the same touch
+    c.tap('[data-ov="g:fly"]')
+    c.until("document.querySelectorAll('[data-fn]').length === 0", what='the group is folded again')
+    # ---- no block in the file: no overview at all
+    del fx['capabilities']
+    # the frame's service worker serves its own files from its copy on a machine with the launcher (localhost), checked by the FINGERPRINT the server gives:
+    # here the file changed only in the test's route, the server's fingerprint did not, so the copy would be served again (the real launcher's fingerprint moves with the file).
+    # A visit without a copy is what a changed file means: the worker and its copies are dropped before the reload.
+    c.js("navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister()))).then(() => caches.keys()).then(ks => Promise.all(ks.map(k => caches.delete(k)))).then(() => true)")
+    c.page.reload()
+    # the old page still holds its lanes until the reload lands: wait for the new one (no overview, the lanes)
+    c.until("!document.querySelector('[data-overview]') && document.querySelectorAll('[data-lane] li[data-id]').length >= 5", timeout=15000, what='the screen again, without the overview')
+    c.eq(c.count('[data-overview]'), 0, 'a file without the block shows no overview', what='none')
+    c.check_errors()
+
+
 def _rc_summary(lang, todo, ok, ko, known, reserve=0):
     """The Recette summary as it must read (SOG-0329): « 2 validés (dont 1 avec réserves) · 1 refusé » — the reservations after the passed ones, the singular when there is one. Written here, per language."""
     i = ['fr', 'en', 'de', 'es'].index(lang)
