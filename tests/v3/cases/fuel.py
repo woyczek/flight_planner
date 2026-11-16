@@ -6327,6 +6327,48 @@ def f236(c):
     c.shot(f'F236_{c.design}_390_{c.lang}_unread.png')
 
 
+# SOG-0377: what a choice asks — aerodb's calls by aerodrome (`procedures`, `runways`, `coverage`, `chartOnly`: the drawing of a side), and the
+# writes of the flight in the device's store (its records keep their path); window.__s377.reset() starts a gesture
+_S0377_SPY = """(() => { const W = window.__s377 = { asks: [], puts: 0, reset() { this.asks = []; this.puts = 0 } };
+  const put = IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put = function (...a) { if (/current_flight\\.json$/.test(String(a[1] ?? a[0]?.path ?? ''))) W.puts++; return put.apply(this, a) };
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      for (const k of ['procedures', 'coverage', 'chartOnly', 'approachSummary']) if (typeof db[k] === 'function') {
+        const f = db[k]; db[k] = function (...x) { W.asks.push(k + ':' + String(x[0] ?? '').toUpperCase()); return f.apply(this, x) } }
+      return db } } } }) })()"""
+
+
+@case('F234', 'Procedures, a SID or a STAR changed: its side alone is drawn again, once (aerodb is asked nothing about the other aerodrome), the '
+      'weather that comes back does not draw the card again when the wind is the same, and the flight is written once', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0377 (the user, 9 h 16: « après avoir choisi ou modifié une star / sid sur un trajet, il y a une longue phase de refresh ») ; the '
+      'survey of 16/11 (two writes, the card drawn whole at the choice and again at 2.1 s on the weather\'s return); the ergonomist\'s yes to (a), (b), (c)')
+def f234(c):
+    route_metar(c, {'LFRS': (40, 8), 'LFML': (130, 10), 'LFMT': (130, 8)})
+    c.page.add_init_script(_S0377_SPY)
+    open_proc(c, procs=V2_PROCS)
+    wait_rows(c, 'dep')
+    c.until("(() => { const s = document.querySelector('[data-module=fuel] select[data-k=\"p-arr-rwy\"]'); return !!s && [...s.options].some(o => o.textContent.includes('kt')) })()",
+            timeout=20000, what='the METAR read (the wind on the runways)')
+    c.wait(3000)
+    for side, k, other in (('dep', 'p-dep-sid', 'LFML'), ('arr', 'p-arr-star', 'LFRS')):
+        unfold(c, side)
+        c.wait(1500)
+        opts = [v for v, _ in (sel_opts(c, k) or []) if v and v != '__none']
+        cur = c.js(f"document.querySelector('{FUEL} select[data-k=\"{k}\"]')?.value")
+        new = next((v for v in opts if v != cur), None)
+        c.ok(new, opts, f'{k}: another procedure to choose')
+        c.js("window.__s377.reset()")
+        pick_proc(c, k, new)
+        c.wait(4000)   # the whole sequence: settle (400 ms), the route read again (500 ms), the weather (1.2 s), the writes
+        got = c.js("({ asks: window.__s377.asks, puts: window.__s377.puts })")
+        mine = 'LFRS' if side == 'dep' else 'LFML'
+        c.eq([a for a in got['asks'] if a.endswith(':' + other)], [], f'{k}: aerodb asked nothing about {other}', what='other aerodrome')
+        c.eq(len([a for a in got['asks'] if a == 'coverage:' + mine]), 1, f'{k}: its side drawn once ({got["asks"]})', what='one drawing')
+        c.eq(got['puts'], 1, f'{k}: the flight written once', what='writes')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

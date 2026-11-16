@@ -2100,3 +2100,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   du 16/11, traversée tracée en direct », a letter absent → the line of before (natTrackGone). The proposals drawn on the Map (`altsPublish`)
   and « Auto » unfold the same way. F236 (red before); F230 updated. The legs after the exit (an American airway not built in the base, a
   STAR of KJFK not read) are data (SOG-0354), not this.
+- **16 Nov 2026 — SOG-0377: a SID or a STAR chosen: one drawing of its side, one write of the flight** (the user, 9 h 16: « après avoir
+  choisi ou modifié une star / sid sur un trajet, il y a une longue phase de refresh. y a-t-il un cache local ? »). Survey (test bench, LFRS →
+  LFML): screen still 2.1 to 2.4 s after the choice; no launcher, no repository read, aerodb answers from the page's memory (≤ 5 ms in all);
+  but the WHOLE card drawn at the choice (the other aerodrome asked again: procedures, coverage, chartOnly) and again at 2.1 s when the
+  weather came back, and the flight written twice (the shared profile after the procedures were read, then the route read again).
+  Decided by the ergonomist, (a) (b) (c): (c) `choose` draws its side only (`render(side)`: the other side keeps its last model,
+  `keptModels`); (b) the weather that comes back calls `P.windSync()`: the card is drawn again only when the wind of a side changed or a side
+  still waits for its METAR (SOG-0210's retries, the 15 s timer included); (a) the flight is written once per choice: `procsSettled` leaves
+  the write to the route reading it starts (`procsToText` says so), the end of that reading writes it (or `writeAfterProcs` when the
+  procedures are not read yet), and `shareProfile` does not write during a series of choices (`P.settling()`) nor during a route reading
+  (`routeReading()`, 5 s at most). F234 (red before: the other aerodrome asked, two writes).

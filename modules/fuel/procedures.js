@@ -1379,8 +1379,9 @@ export function createProcedures(host) {
   /** Clé de ce que montrent les lignes : choix, terrains, vol démarré ; changée, sync redessine. */
   const rowsKey = () => JSON.stringify([host.key(), !!host.flight().started?.at]);
   /** Dessine la carte : à Route avant le départ, à Départ une fois le vol démarré (rien n'est verrouillé : départ et arrivée restent
-   *  modifiables). Asynchrone (aerodb) ; la dernière demande seule est dessinée. */
-  async function render() {
+   *  modifiables). Asynchrone (aerodb) ; la dernière demande seule est dessinée. SOG-0377 (c) : `only` ('dep' | 'arr') — un choix sur ce
+   *  côté : l'autre reprend son dernier modèle (keptModels), sans rien redemander à aerodb sur son terrain. */
+  async function render(only = '') {
     const body = host.body();
     if (!body || !host.plan()) return;
     const mine = ++seq,
@@ -1397,6 +1398,7 @@ export function createProcedures(host) {
       delete other.dataset.struct;
     }
     key = rowsKey();
+    drawnWind = windKey(); // SOG-0377 (b) : le vent de chaque côté à ce dessin
     if (!box) return;
     // SOG-0345 (photo du 14/11 : le bloc réduit à son titre au téléphone) : chaque côté se peint dès que SON modèle est là ; ce que
     // l'appareil a déjà (le dernier modèle du terrain) d'abord ; ce qui manque dit « Lecture des procédures de LFML… », puis, à la
@@ -1426,16 +1428,17 @@ export function createProcedures(host) {
       t.forEach((x, i) => waits[i] = x);
       if (got.some(m => m === undefined)) paint(box, shown());
     }, SIDE_WAIT);
-    const models = await Promise.all(sides.map((side, i) => sideModel(side).catch(() => null).then(m => {
-      if (!live()) return m;
-      got[i] = m;
-      if (m) {
-        keptModels.set(`${side}|${m.icao}`, m);
-        keep(m);
-      }
-      if (got.some(x => x === undefined)) paint(box, shown()); // l'autre côté attend encore : celui-ci est peint tout de suite
-      return m;
-    })));
+    const models = await Promise.all(sides.map((side, i) => (only && side !== only && got[i] ? Promise.resolve(got[i]) : sideModel(side))
+      .catch(() => null).then(m => {
+        if (!live()) return m;
+        got[i] = m;
+        if (m) {
+          keptModels.set(`${side}|${m.icao}`, m);
+          keep(m);
+        }
+        if (got.some(x => x === undefined)) paint(box, shown()); // l'autre côté attend encore : celui-ci est peint tout de suite
+        return m;
+      })));
     clearTimeout(late);
     if (!live()) return;
     paint(box, models);
@@ -1443,6 +1446,18 @@ export function createProcedures(host) {
     applyFocus();
     if (proposal)
       applyProposal(); // la proposition de la Carte, une fois les fiches des terrains connues (une piste unique suit son choix)
+  }
+  /** SOG-0377 (b) : le vent du METAR de chaque côté (host.wind), tel qu'un dessin le montre ; '' avant le premier dessin. */
+  let drawnWind = '';
+  const windKey = () => JSON.stringify(['dep', 'arr'].map(side => {
+    const k = icaoOfSide(side);
+    return k ? host.wind?.(k) || null : null;
+  }));
+  /** La météo est revenue (wxFetch) : la carte n'est redessinée que si le vent d'un côté a changé, ou qu'un côté l'attend encore (SOG-0210 :
+   *  sa lecture redemandée, quatre fois au plus) ; sinon rien (SOG-0377 : un second dessin entier 2 s après chaque choix). */
+  function windSync() {
+    const k = windKey();
+    if (k !== drawnWind || JSON.parse(k).some((w, i) => !w && icaoOfSide(['dep', 'arr'][i]))) render();
   }
   /** Redessine la carte si ce qu'elle montre a changé (appelée par chaque refresh de l'écran). */
   function sync() {
@@ -1558,9 +1573,11 @@ export function createProcedures(host) {
       at: new Date().toISOString()
     };
     if (quiet) return; // plusieurs choix d'un coup (la proposition de la Carte) : un dessin et une écriture à la fin
-    render();
+    render(side); // SOG-0377 (c) : seul ce côté est relu ; l'autre garde son modèle
     settleSoon();
   }
+  /** SOG-0377 : une série de choix attend sa fin (settleSoon) : le vol sera écrit à cette fin, pas avant. */
+  const settling = () => !!timer;
   /** L'écriture différée des choix : une seule après le dernier d'une rafale (SETTLE_MS). */
   function settleSoon() {
     clearTimeout(timer);
@@ -1955,6 +1972,8 @@ export function createProcedures(host) {
     readLnm,
     sync,
     render,
+    windSync,
+    settling,
     propose,
     reset,
     choose,

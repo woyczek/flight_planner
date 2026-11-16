@@ -1777,9 +1777,12 @@ function ensureProcs() {
 /** Fin d'une série de choix de procédures (400 ms sans nouveau choix, procedures.js) : un seul devis et une seule écriture du vol.
  *  Les procédures choisies sont lues par aerodb (ensureProcs) avant le devis ; le vol est alors écrit avec lui, sinon tout de suite. */
 function procsSettled() {
-  procsToText(true); // le texte de route suit le choix (§ 10.31)
-  if (procsPending()) S.writeAfterProcs = true;
-  else saveFlight();
+  // le texte de route suit le choix (§ 10.31) ; changé, la route est relue et c'est cette relecture qui écrit le vol (SOG-0377 (a) : une
+  // écriture par choix, plus deux à 0,5 s d'écart)
+  if (!procsToText(true)) {
+    if (procsPending()) S.writeAfterProcs = true;
+    else saveFlight();
+  }
   refresh();
 }
 // ---------------------------------------------------------------- le texte de route, vue du modèle (V3 § 10.31)
@@ -1801,6 +1804,7 @@ function chosenProcNames() {
   return [nm(o.dep?.sid), nm(o.arr?.star)].filter(Boolean);
 }
 
+/** Rend vrai quand le texte a changé et que la route est relue (resolveRoute écrit alors le vol). */
 function procsToText(say) {
   const m = S?.P?.textModel?.(),
     r = S?.flight?.route,
@@ -1845,6 +1849,7 @@ function procsToText(say) {
     exit,
     next: res.next
   }), 'ok');
+  return true;
 }
 /** Relecture d'un texte de route que le pilote a édité (V3 § 10.31) : le premier nom d'une SID de route.dep pose cette SID (la fiche
  *  qui dessert la piste choisie, sinon la première), le dernier nom d'une STAR de route.arr pose cette STAR ; l'absence du nom d'une
@@ -3174,7 +3179,8 @@ async function wxFetch(loud = false) {
   await aloftFetch(loud);
   if (gone(s) || !S.body) return;
   renderWx();
-  S.P.render(); // le vent de chaque piste de la carte des procédures suit le METAR (§ 10.30)
+  S.P
+    .windSync(); // le vent de chaque piste de la carte des procédures suit le METAR (§ 10.30) ; rien de redessiné s'il n'a pas changé (SOG-0377)
   isaHint();
   if (S.flight.weather?.real) applyRealWind();
   else if (S.C) renderDa(S.C);
@@ -5524,6 +5530,7 @@ function knownPoints(r, withProcs = true) {
  *  du champ, pas pendant la frappe. Dernière demande seule retenue. */
 function resolveRoute(normalize = true) {
   const seq = S.routeSeq = (S.routeSeq || 0) + 1;
+  S.routeAskedAt = Date.now(); // SOG-0377 : une relecture en cours (routeReading), jusqu'à sa fin (routeDone)
   clearTimeout(S.routeTimer);
   S.routeTimer = setTimeout(async () => {
     // SOG-0193 L3 : à la sortie du champ, un point imposé par la mission que le texte a perdu y est remis (à sa place parmi les imposés)
@@ -5560,7 +5567,10 @@ function resolveRoute(normalize = true) {
         procs: chosenProcNames(), // SOG-0372 (c) : la SID et la STAR choisies, jamais « inconnues »
         nat // SOG-0372 : « NATx » déplié par la route du jour
       });
-    if (gone(s) || seq !== S.routeSeq || !S.body) return;
+    if (gone(s) || seq !== S.routeSeq) return;
+    S.routeDone = seq;
+    if (!S.body)
+      return saveFlight(); // écran Fiches ouvert entre-temps : le vol est écrit tout de même (un choix de procédure l'attend)
     // le vol a changé d'objet pendant la lecture (chaque enregistrement du vol, writeFlight, en fait un nouveau ; un autre écrivain
     // aussi) : la lecture vaut pour la route d'aujourd'hui quand elle a le même texte, départ et arrivée, sinon elle est refaite ;
     // jamais écrite sur l'objet d'avant (les points s'y perdaient dès qu'une lecture durait plus de 300 ms : N13 / N24 sous charge, F142) ;
@@ -5626,7 +5636,9 @@ function resolveRoute(normalize = true) {
       zoneNote(s, seq, points, ut);
       unresolvedZones(s, seq, points);
     }
-    saveFlight();
+    // SOG-0377 (a) : des procédures choisies pas encore lues, le vol est écrit avec le devis à leur lecture (ensureProcs), une seule fois
+    if (procsPending()) S.writeAfterProcs = true;
+    else saveFlight();
     refresh();
   }, 500);
 }
@@ -6377,12 +6389,15 @@ const quoteCmp = (x, lenient) => x == null ? null : JSON.stringify({
     origin: l.origin || 'route'
   })) : x.legs
 });
+/** SOG-0377 : une relecture de la route est demandée et pas finie (5 s au plus : une lecture qui n'aboutit pas ne bloque rien). */
+const routeReading = () => !!S.routeSeq && S.routeDone !== S.routeSeq && Date.now() - (S.routeAskedAt || 0) < 5000;
 /** Écrit le profil et le devis dans le vol courant quand ils changent (maps le lit pour le profil vertical). Après le départ, un
  *  devis qui change ne le fait que par ses legs et le chemin vertical quand seules les procédures changent (quoteNm garde la
  *  distance du devis) : quote.legsAt dit alors quand ils ont été réécrits. Rien n'est écrit tant que les procédures choisies ne
  *  sont pas lues (un devis passager sur la route seule). */
 function shareProfile(C) {
-  if (procsPending()) return;
+  // SOG-0377 (a) : une série de choix de procédures pas finie, ou la relecture de la route qui la suit : c'est sa fin qui écrit le vol
+  if (procsPending() || routeReading() || S.P?.settling?.()) return;
   const p = profileOf(C),
     sum = quoteSummary(C.q),
     cur = S.flight,
@@ -6838,7 +6853,8 @@ export async function mount(el, ctx) {
       const due = self.ctx.net?.online?.() === false ? 15e3 : a.at + 15e3 - Date.now();
       if (due > 0) {
         clearTimeout(a.timer);
-        a.timer = setTimeout(() => S === self && !gone(self) && self.P?.render?.(), due + 50);
+        a.timer = setTimeout(() => S === self && !gone(self) && self.P?.windSync?.(), due +
+          50); // SOG-0377 : rien de redessiné si le vent est déjà là
         return null;
       }
       a.n++;
