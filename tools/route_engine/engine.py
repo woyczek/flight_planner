@@ -1,6 +1,6 @@
 """RouteSim: local AeroDB routing and conservative RAD pre-check. Standard library only."""
 from __future__ import annotations
-import argparse, collections, datetime as dt, fnmatch, gzip, heapq, json, math, re
+import argparse, collections, datetime as dt, fnmatch, functools, gzip, heapq, json, math, re
 from pathlib import Path
 from . import flight_profile                                  # SOG-0081 : imports relatifs (le moteur est le paquet tools/route_engine), seul changement avec les chemins ci-dessous
 from . import fra as fra_module
@@ -16,6 +16,7 @@ DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE 
 RAD_FILE = None   # SOG-0081 : chemin de rad.json.gz posé par le travail du lanceur (data/route/rad.json.gz) ; None : à côté du module, comme RouteSim 2
 MONTHS = dict(zip('JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(),range(1,13)))
 
+@functools.lru_cache(maxsize=8192)      # SOG-0354 L2a : une fonction PURE (un texte → une date) appelée 620 000 fois par un calcul (les lignes du RAD relues à chaque blocage) : 1,2 s de l'analyse d'un texte déjà vu ; les dates sont immuables
 def date_in(text):
     m = re.search(r'(\d{1,2})[ /-]+([A-Z]{3})[ /-]+(\d{4})', text.upper())
     if m:

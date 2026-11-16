@@ -73,6 +73,24 @@ def orthodrome(nav,anchors,min_nm=600):
             note='direct (hors réseau)'+(' : orthodromie par '+str(len(keys))+' point(s) en coordonnées, un tous les 10° de longitude' if keys else '')))
     return (path,pieces) if used else None
 
+def usable_graph(g,nodes,blocks,fl):
+    """SOG-0354 L2a : le graphe du repli, filtré — une arête reste si sa limite basse est connue et au plus au niveau demandé et si aucun blocage du RAD ne la touche. Un blocage « point » touche l'arête dont l'un des bouts est ce point ; un blocage d'arête la touche par sa voie, son début et sa fin.
+    La liste des blocages est INDEXÉE une fois (un ensemble de points, un ensemble de triplets) : avant, chaque arête relisait toute la liste (`any(block_hit(...) for block in blocks)`), 41 millions d'appels pour un vol EIDW → KJFK, 9 à 10 s des 15 s de la réponse. Même résultat, mot pour mot (cas K287).
+    Modifie `g` en place et le rend."""
+    points={b['point'] for b in blocks if b['kind']=='point'}
+    edges={(b['via'],b['start'],b['end']) for b in blocks if b['kind']!='point'}
+    for u,es in list(g.items()):
+        a=nodes[u]['id']
+        keep=[]
+        for v,e in es:
+            if not (isinstance(e.get('lower'),(int,float)) and e['lower']<=fl*100):continue
+            b=nodes[v]['id']
+            if points and (a in points or b in points):continue
+            if edges and (e['route'],a,b) in edges:continue
+            keep.append((v,e))
+        g[u]=keep
+    return g
+
 def propose(request,nav,rad):
     begun=time.perf_counter();dep,arr=request['dep'],request['arr'];fl=int(request['fl'])
     mandatory=engine.via_points(request)
@@ -97,9 +115,7 @@ def propose(request,nav,rad):
         else:proposals.append(assess([direct(a,b) for a,b in zip(anchors,anchors[1:])],'Direct proposé — passages imposés conservés','direct',[]))
     except ValueError as e:notes.append('Direct : '+str(e))
     blocks=rad.blocks(dep,arr,None);g=nav.graph(None)
-    for u,edges in list(g.items()):
-        g[u]=[(v,e) for v,e in edges if isinstance(e.get('lower'),(int,float)) and e['lower']<=fl*100 and
-            not any(engine.block_hit(block,nav.nodes[u]['id'],nav.nodes[v]['id'],e['route']) for block in blocks)]
+    usable_graph(g,nav.nodes,blocks,fl)
     connected={u for u,es in g.items() if es}|{v for es in g.values() for v,e in es}
     fra_points={r['key'] for r in getattr(nav.fra,'records',[])}
     pool=[k for k in set(nav.nodes) if '|' not in k and nav.nodes[k]['id'] not in nav.ads and len(nav.ids.get(nav.nodes[k]['id'],[]))==1]

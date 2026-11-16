@@ -11032,3 +11032,39 @@ def k286(c):
     imports = sorted({n.names[0].name.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.Import)} | {n.module.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module})
     calls = sorted({n.func.id for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ('open', 'exec', 'eval', '__import__', 'compile')})
     c.eq((imports, calls), (['faa_nasr', 're'], []), 'tools/faa_pfr.py imports only `re` and faa_nasr (the bounded zip reader) and never opens a file, evals or runs anything: a reader and nothing else', what='reader only')
+
+
+@case('K287', 'Route engine, SOG-0354 lot L2a: the fallback proposal filters its graph with the RAD blocks INDEXED once (a set of points, a set of edge triples) instead of re-reading the whole list for every edge — the same graph, word for word, as the old formula, without the 41 million calls of block_hit that were 9 to 10 s of the 15 s of an EIDW → KJFK answer',
+      'K', static=True,
+      rule='SOG-0354 L2a (the user: « bloquant »), measured by AeroDB on the real base (L0): in the three flights that end with a fallback proposal, `recovery.propose` took 9 to 10 s of the 15 s; the profile of EIDW → KJFK: 41.6 million calls of the generator `any(block_hit(block, a, b, route) for block in blocks)` (recovery.py, every edge of the graph times every block of the RAD). The filter is now `recovery.usable_graph`: the blocks are indexed once. The result must be identical: the case compares it with the old formula (the reference written here, with engine.block_hit) on a graph of random edges and blocks of both kinds, edges without a lower limit or above the level, and counts that block_hit is no longer called.')
+def k287(c):
+    import random
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, recovery
+    rnd = random.Random(354)
+    ids = [f'P{i:03d}' for i in range(60)]
+    nodes = {i: {'id': i} for i in ids}
+    routes = ['L9', 'N14', 'UT5', 'DCT', 'Q822']
+    g = {}
+    for u in ids:
+        g[u] = [(v, {'route': rnd.choice(routes), 'nm': 10, **({} if rnd.random() < .1 else {'lower': rnd.choice([0, 5000, 24500, 36500, 40000, 'x'])})}) for v in rnd.sample(ids, 12)]
+    blocks = [{'kind': 'point', 'point': rnd.choice(ids)} for _ in range(4)] + [{'kind': 'route', 'via': rnd.choice(routes), 'start': rnd.choice(ids), 'end': rnd.choice(ids)} for _ in range(40)]
+    # the old formula, written out as the reference
+    ref = {u: [(v, e) for v, e in es if isinstance(e.get('lower'), (int, float)) and e['lower'] <= 370 * 100 and not any(engine.block_hit(b, nodes[u]['id'], nodes[v]['id'], e['route']) for b in blocks)] for u, es in g.items()}
+    calls = []
+    real = engine.block_hit
+    engine.block_hit = lambda *a: (calls.append(1), real(*a))[1]
+    try:
+        got = recovery.usable_graph({u: list(es) for u, es in g.items()}, nodes, blocks, 370)
+    finally:
+        engine.block_hit = real
+    kept = sum(len(v) for v in got.values())
+    c.eq((got == ref, len(calls), 0 < kept < sum(len(v) for v in g.values())), (True, 0, True), 'the indexed filter gives the SAME graph as the old formula (edges without a limit, above the level, touched by a point block or by an edge block are dropped) and calls block_hit no more', what='same graph')
+    c.eq(recovery.usable_graph({'A': [('B', {'route': 'L9', 'lower': 0})]}, {'A': {'id': 'A'}, 'B': {'id': 'B'}}, [], 370), {'A': [('B', {'route': 'L9', 'lower': 0})]}, 'with no block at all the graph is only filtered by its limits', what='no block')
+    c.eq(recovery.usable_graph({'A': [('B', {'route': 'L9', 'lower': 0})]}, {'A': {'id': 'A'}, 'B': {'id': 'B'}}, [{'kind': 'point', 'point': 'B'}], 370), {'A': []}, 'a point block drops the edges that end at it as well as those that start there', what='point')
+    # engine.date_in is pure and memoized (620 000 calls per computation): same answers, and a text already seen is not parsed again
+    engine.date_in.cache_clear()
+    got = [engine.date_in(t) for t in ('12 NOV 2026', 'valid from 5-JAN-2027 to 6/FEB/2027', '31 FEB 2026', 'no date here', '12 NOV 2026')]
+    info = engine.date_in.cache_info()
+    c.eq((got[0].isoformat(), got[1].isoformat(), got[2], got[3], got[4] == got[0], info.hits, info.misses), ('2026-11-12', '2027-01-05', None, None, True, 1, 4), 'date_in gives the same dates as before (the first date of the text; an impossible one or none: None) and a text seen twice is parsed once', what='date_in')
