@@ -10643,13 +10643,13 @@ def k284(c):
              'only what is MISSING or TOO OLD goes to pip (pypdf, pdfplumber, pdfminer.six); Pillow, newer than its maximum, is left as it is (a version is never lowered); the OCR libraries are fine: no second call', what='what goes to pip')
         flags = ' '.join(cmd[: cmd.index('install') + 1 + len(IL.PIP_FLAGS) + 3])
         c.ok(cmd[1:3] == ['-P', '-m'] and cmd[3:5] == ['pip', 'install'] and '--user' in cmd and '--isolated' in cmd and '--no-input' in cmd and '--only-binary' in cmd and ':all:' in cmd
-             and cmd[cmd.index('--index-url') + 1] == 'https://pypi.org/simple' and '--require-hashes' not in cmd and '-I' not in cmd and '--upgrade' not in cmd and '--force-reinstall' not in cmd, flags,
+             and cmd[cmd.index('--index-url') + 1] == 'https://pypi.org/simple' and '--require-hashes' not in cmd and '-I' not in cmd and '--upgrade' not in cmd and '--force-reinstall' not in cmd and '--no-warn-script-location' in cmd, flags,
              '`python -P -m pip install --only-binary :all: --index-url https://pypi.org/simple --no-input --isolated --user …`: no -I, no --require-hashes, no --upgrade')
         cwd = Path(kw['cwd'])
         c.eq((kw['was_dir'], kw['was_empty'], cwd.exists(), [k for k in kw['env'] if k.upper().startswith('PYTHON')], kw.get('stdin') == subprocess.DEVNULL, 'shell' in kw), (True, True, False, [], True, False),
              'the working folder is a neutral EMPTY one during the call and is ERASED after the pass, no PYTHON* variable reaches pip, the command is a list (never a shell), no keyboard is given to pip', what='sandbox')
         text = '\n'.join(map(str, said))
-        c.ok(sys.executable in text and 'https://pypi.org/simple' in text and 'Pillow' in text and 'jamais de descente' in text and 'prêt' in text and 'lancer.cmd' in text and '[o/N]' in ''.join(q for q in said if '[o/N]' in q),
+        c.ok(sys.executable in text and 'https://pypi.org/simple' in text and 'Pillow' in text and 'jamais de descente' in text and 'prêt' in text and 'lancer.cmd' in text and 'pas besoin de programmes dans le PATH' in text and '[o/N]' in ''.join(q for q in said if '[o/N]' in q),
              text[:300], 'the script says the interpreter, where the packages come from, what it will do for each (Pillow: left as it is), asks o/N, reads the versions again and says to restart the launcher')
         # the other answers, the options
         for answer in ('', 'n', 'N', 'non', 'x', None):

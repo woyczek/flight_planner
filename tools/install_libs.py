@@ -28,7 +28,7 @@ import optional_libs  # noqa: E402
 import pdf_guard  # noqa: E402
 
 INDEX = 'https://pypi.org/simple'
-PIP_FLAGS = ('--only-binary', ':all:', '--index-url', INDEX, '--no-input', '--disable-pip-version-check')
+PIP_FLAGS = ('--only-binary', ':all:', '--index-url', INDEX, '--no-input', '--disable-pip-version-check', '--no-warn-script-location')      # --no-warn-script-location : pip avertit que des PROGRAMMES (scripts) installés sont dans un dossier hors du PATH ; la suite n'en lance aucun, elle importe des bibliothèques
 TITLES = {'pdf': ('lecture des PDF', 'reading PDFs', 'Lesen von PDF', 'lectura de PDF'),
           'ocr': ('OCR des constructeurs de poste (lourd)', 'OCR for the workstation builders (heavy)', 'OCR für die Rechner-Builder (schwer)', 'OCR de los constructores del equipo (pesado)')}
 YES = {'fr': ('o', 'oui'), 'en': ('y', 'yes'), 'de': ('j', 'ja'), 'es': ('s', 'si', 'sí')}
@@ -65,6 +65,8 @@ M = {      # [fr, en, de, es]
     'after': ('Versions visibles maintenant :', 'Versions visible now:', 'Jetzt sichtbare Versionen:', 'Versiones visibles ahora:'),
     'ready': ('Groupe « {title} » : prêt.', 'Group “{title}”: ready.', 'Gruppe „{title}“: bereit.', 'Grupo «{title}»: listo.'),
     'notready': ('Groupe « {title} » : pas prêt.', 'Group “{title}”: not ready.', 'Gruppe „{title}“: nicht bereit.', 'Grupo «{title}»: no listo.'),
+    'scripts': ('Les bibliothèques sont installées ; le lanceur n’a pas besoin de programmes dans le PATH (si pip a parlé de « scripts hors du PATH », ce n’est pas une erreur).', 'The libraries are installed; the launcher does not need any program in the PATH (if pip said « scripts not on PATH », it is not an error).',
+                'Die Bibliotheken sind installiert; der Starter braucht keine Programme im PATH (wenn pip „Skripte nicht im PATH“ meldete, ist das kein Fehler).', 'Las bibliotecas están instaladas; el lanzador no necesita programas en el PATH (si pip dijo «scripts fuera del PATH», no es un error).'),
     'restart': ('Relancez maintenant le lanceur (lancer.cmd ou sh lancer.sh) : il lit les versions au démarrage de la page.', 'Now restart the launcher (lancer.cmd or sh lancer.sh): it reads the versions when the page starts.',
                 'Starten Sie jetzt den Starter neu (lancer.cmd oder sh lancer.sh): er liest die Versionen beim Start der Seite.', 'Vuelva a lanzar ahora el lanzador (lancer.cmd o sh lancer.sh): lee las versiones al abrir la página.'),
 }
@@ -216,6 +218,7 @@ def main(argv=None, *, run=subprocess.run, ask=input, out=print, have_of=None, a
             ok = all(pdf_guard.judge(p[0], after.get(p[0])) == 'ok' for p in g['packages'])      # comme `pdf/status` : une version plus récente que la borne n'est pas « prête » non plus
             say('ready' if ok else 'notready', title=title)
         out('')
+        say('scripts')
         say('restart')
     return code
 
