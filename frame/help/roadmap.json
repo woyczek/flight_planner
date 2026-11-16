@@ -5,7 +5,7 @@
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "0998211",
-  "fiches": 372,
+  "fiches": 373,
   "untranslated": 0,
   "priorities": 310
  },
@@ -272,6 +272,27 @@
   }
  ],
  "lanes": [
+  {
+   "id": "pilote-aerodb-procedures-royaume-uni",
+   "app": "pilote",
+   "label": {
+    "fr": "AeroDB ; procédures ; Royaume-Uni",
+    "en": "AeroDB ; procédures ; Royaume-Uni",
+    "de": "AeroDB ; procédures ; Royaume-Uni",
+    "es": "AeroDB ; procédures ; Royaume-Uni"
+   },
+   "items": [
+    {
+     "id": "SOG-0374",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Royaume-Uni : aucune SID lue pour EGLL (les départs ne sont publiés qu'en PDF) — les lire depuis l'eAIP déposé",
+     "en": "United Kingdom: no SID read for EGLL (departures are published as PDF only) — read them from the deposited eAIP",
+     "de": "Vereinigtes Königreich: keine SID für EGLL gelesen (Abflüge nur als PDF veröffentlicht) — aus dem abgelegten eAIP lesen",
+     "es": "Reino Unido: ninguna SID leída para EGLL (las salidas solo se publican en PDF) — leerlas del eAIP depositado"
+    }
+   ]
+  },
   {
    "id": "pilote-aide",
    "app": "pilote",
