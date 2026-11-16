@@ -71,6 +71,7 @@ export const STYLE = `
 [data-module="maps"] .mp-tip.mp-hover{max-width:min(80%,320px);padding:3px 6px;font-size:11.5px;line-height:1.3;background:color-mix(in srgb,var(--sog-chart-bg) 65%,transparent);color:var(--sog-fg);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:none}
 [data-module="maps"] .mp-tip.mp-hover>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
 [data-module="maps"] .mp-tip.mp-hover>.mp-also{color:var(--sog-muted)}
+[data-module="maps"] .mp-tip.mp-hover>.mp-row{white-space:normal;overflow:visible;text-overflow:clip}
 /* les couches : un contenu de la feuille (grille de cases sur deux colonnes d'un téléphone, comme celle d'Atmosphère) */
 [data-module="maps"] .mp-layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0 16px;font-size:.92em}
 [data-module="maps"] .mp-layers .mp-picks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;padding-top:8px;border-top:1px solid var(--sog-border);min-width:0}

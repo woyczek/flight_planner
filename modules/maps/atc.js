@@ -156,12 +156,36 @@ export function drawAtc(ctx, toC) {
   ctx.restore();
   return hits;
 }
-/** Les contrôleurs sous (x, y) : leur infobulle (deux lignes) ou null. */
+/** Rang d'une position, du sol vers le haut (SOG-0382) : ATIS, DEL, GND, TWR, APP / DEP (CTR : au-delà, quand il sera lu). */
+const RANK = {
+    ATIS: 0,
+    DEL: 1,
+    GND: 2,
+    TWR: 3,
+    APP: 4,
+    DEP: 4,
+    CTR: 5
+  },
+  /** Lignes montrées au plus ; le reste est compté (« + 3 autres »). */
+  MAX_ROWS = 8;
+/** Les contrôleurs d'un terrain, une position par ligne avec sa fréquence et son réseau (« TWR 118.800 · VATSIM »), du sol vers le haut ;
+ *  au-delà de MAX_ROWS lignes, les premières puis « + n autres ». L'indicatif et la fréquence viennent d'un réseau tiers : du texte, que
+ *  l'appelant écrit échappé. */
+export function atcRows(items) {
+  const rows = [...items].sort((a, b) => (RANK[a.kind] ?? 9) - (RANK[b.kind] ?? 9) || (a.kind === 'DEP') - (b.kind === 'DEP') || a.callsign
+    .localeCompare(b.callsign) || a.net.localeCompare(b.net)).map(c =>
+    `${c.callsign.replace(/^[A-Z]{4}_/, '')}${c.freq ? ` ${c.freq}` : ''} · ${tt(TX.atcNet[c.net])}`);
+  return rows.length > MAX_ROWS ? [...rows.slice(0, MAX_ROWS), tt(TX.atcMore, {
+    n: rows.length - MAX_ROWS
+  })] : rows;
+}
+/** Les contrôleurs sous (x, y) : leur infobulle (le titre puis une ligne par position ; `list` la dit au dessin) ou null. */
 export function atcAt(x, y) {
   const h = (S.atcHits || []).find(q => x >= q.x - 3 && x <= q.x + q.w + 3 && y >= q.y - 3 && y <= q.y + q.h + 3);
   if (!h) return null;
-  const rows = h.items.map(c => `${c.callsign.replace(/^[A-Z]{4}_/, '')}${c.freq ? ` ${c.freq}` : ''} · ${tt(TX.atcNet[c.net])}`);
-  return [tt(TX.atcTitle, {
+  return Object.assign([tt(TX.atcTitle, {
     a: h.icao
-  }), rows.slice(0, 6).join(' ; ') + (rows.length > 6 ? ` +${rows.length - 6}` : '')];
+  }), ...atcRows(h.items)], {
+    list: true
+  });
 }

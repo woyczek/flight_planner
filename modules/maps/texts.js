@@ -282,6 +282,7 @@ export const TX = {
     'Nada alrededor del vuelo en esta vista: desmarque «Solo alrededor del vuelo» para verlo todo.'
   ],
   directTo: ['Direct vers ce point', 'Direct to this point', 'Direkt zu diesem Punkt', 'Directo a este punto'],
+  atcMore: ['+ {n} autres', '+ {n} more', '+ {n} weitere', '+ {n} más'],
   atcTitle: ['{a} : contrôleurs en ligne', '{a}: online controllers', '{a}: Lotsen online', '{a}: controladores en línea'],
   atcNet: {
     ivao: ['IVAO', 'IVAO', 'IVAO', 'IVAO'],

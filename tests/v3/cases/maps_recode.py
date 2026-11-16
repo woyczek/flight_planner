@@ -8219,3 +8219,44 @@ def d244(c):
     got = ids(d)
     c.ok('·ZZA' in got and '·ZZB' in got and got.split().index('·ZZA') > 1 and got.split().index('·ZZB') > got.split().index('·ZZA'), got, 'a point inserted: the two points are still there, in their order, none dropped')
     c.ok(got.split()[-1] == 'LFML' and got.split()[-2] == '·ZZB', got, 'the one after NEPIX is still just before the arrival')
+
+
+@case('D245', 'The bubble of the online controllers of an aerodrome: one position per line with its frequency (« TWR 118.800 · VATSIM »), from the ground up (ATIS, DEL, GND, TWR, APP / DEP), never cut by an ellipsis; beyond eight lines the first eight then « + n » (SOG-0382)', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True,
+      rule='SOG-0382 (the user, 16 Nov, Metro: « on ne voit pas les fréquences lorsqu’il y en a trop »): the bubble wrote every position on ONE line « GND 118.605 · VATSIM ; STG_APP … ; TWR … » and cut the third one with an ellipsis; the callsigns and frequencies come from a third-party network: written as text, never as markup')
+def d_atc_lines(c):
+    c.open('maps', flight=True, airfields=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("""() => { const S = window.__mp.S; const ok = j => ({ ok: true, headers: { get: () => null }, json: async () => j });
+      S.ctx = { ...S.ctx, net: { ...S.ctx.net, fetch: async url => {
+        if (/ivao/.test(url)) return ok({ clients: { atcs: [{ callsign: 'LFML_N_APP', atcSession: { frequency: 119.25 } }, { callsign: 'LFML_TWR', atcSession: { frequency: 118.7 } }, { callsign: 'LFML_ATIS', atcSession: { frequency: 136.0 } }, { callsign: 'LFML_DEP', atcSession: { frequency: 120.1 } }, { callsign: 'LFML_S_APP', atcSession: { frequency: 124.9 } }] } });
+        return ok({ controllers: [{ callsign: 'LFML_TWR', frequency: '118.800' }, { callsign: 'LFML_E_APP', frequency: '124.000' }, { callsign: 'LFML_GND', frequency: '121.650' }, { callsign: 'LFML_W_APP', frequency: '125.000' }, { callsign: 'LFML_DEL', frequency: '121.700' }], atis: [] }) } } }; return true }""")
+    c.tap('[data-mp="layers"]')
+    c.until("() => window.__t.shown(document.querySelector('.mp-dbody input[data-layer=atc]'))", timeout=8000, what='the Layers content has the controllers box')
+    c.tap('.mp-dbody input[data-layer="atc"]')
+    c.until("() => (window.__mp.S.atc && window.__mp.S.atc.list.length) >= 10", timeout=12000, what='the feeds are read: ten controllers at LFML')
+    c.tap('[data-mp="layers"]')
+    c.js("() => { window.__mpMap.jumpTo({ center: [5.215, 43.4367], zoom: 10 }); return true }")
+    c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn')
+    chip = """() => { const S = window.__mp.S, q = (S.atcHits || []).find(h => h.icao === 'LFML'), r = S.box.getBoundingClientRect(); return q ? { x: r.left + q.x + q.w / 2, y: r.top + q.y + q.h / 2 } : { x: r.left + 5, y: r.top + 5 } }"""
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length > 2 }", 'the touch on the chips opens the bubble, one position per line')
+    r = c.js("""() => { const t = window.__mp.S.tipEl, d = [...t.querySelectorAll(':scope > div')];
+      return { rows: d.slice(1).map(x => x.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim()), cut: d.filter(x => x.scrollWidth > x.clientWidth + 1).length, markup: t.querySelectorAll('img,script,a').length } }""")
+    rows = r['rows']
+    c.eq(len(rows), 9, 'the title, then eight lines, then the rest counted: nine rows after the title', what=str(r))
+    c.ok(re.fullmatch(r'\+ ?2 .+', rows[-1]) or re.search(r'2', rows[-1]), str(rows), 'beyond eight lines: the count of the others (« + 2 autres »)')
+    kinds = [re.search(r'(ATIS|DEL|GND|TWR|APP|DEP)', x).group(1) if re.search(r'(ATIS|DEL|GND|TWR|APP|DEP)', x) else '?' for x in rows[:8]]
+    rank = {'ATIS': 0, 'DEL': 1, 'GND': 2, 'TWR': 3, 'APP': 4, 'DEP': 4}
+    c.ok('?' not in kinds and kinds == sorted(kinds, key=lambda k: rank[k]), str(rows[:8]), 'from the ground up: ATIS, DEL, GND, TWR, APP / DEP')
+    c.ok(all(re.search(r'\d{3}\.\d{3} · (IVAO|VATSIM)$', x) for x in rows[:8]), str(rows[:8]), 'each line says its frequency and its network, whole')
+    c.ok(r['cut'] == 0, str(r), 'no line is cut (no ellipsis on a frequency)')
+    c.eq(r['markup'], 0, 'text, never markup', what=str(r))
+    c.shot('D245_{}_delivered.png'.format('standard'))
+    # the wide screen: the same bubble, the same rows
+    c.page.set_viewport_size({'width': 1440, 'height': 900})
+    c.wait(900)
+    c.js("() => { window.__mp.S.map.resize(); window.__mpMap.jumpTo({ center: [5.215, 43.4367], zoom: 10 }); return true }")
+    c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn on the wide screen')
+    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length === 10 }", 'the bubble on the wide screen: the title, eight lines, the rest')
+    c.shot('D245_{}_wide.png'.format('standard'))

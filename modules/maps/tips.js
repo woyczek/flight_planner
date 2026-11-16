@@ -65,6 +65,8 @@ import {
 
 // ---------------------------------------------------------------- infobulle
 /** Infobulle de survol : deux lignes, plus la ligne grisée « Aussi ici : … » des espaces écartés. */
+/** L'infobulle d'un tipAt : une liste (les contrôleurs d'un terrain, une ligne par position, à la ligne plutôt que coupée) ou ses trois lignes. */
+export const tipHtml = t => t.list ? `<div><b>${esc(t[0])}</b></div>${t.slice(1).map(r => `<div class="mp-row">${esc(r)}</div>`).join('')}` : hoverHtml(t[0], t[1], t[2]);
 export const hoverHtml = (a, b, c) => `<div><b>${esc(a)}</b></div>${b ? `<div>${esc(b)}</div>` : ''}${c ? `<div class="mp-also">${esc(c)}</div>` : ''}`;
 /** Infobulle légère qui suit le pointeur : à 12 px, jamais dessous, retenue dans le cadre (carte ou profil) ; écritures
  *  seulement quand la valeur change. */
@@ -233,7 +235,7 @@ export function hoverMap(x, y) {
   if (ad) return adHover(ad, x, y);
   if (!t) return linger('map');
   stay('map');
-  followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1], t[2]));
+  followTip(S.tipEl, S.box, x, y, tipHtml(t));
 }
 /** Le bouton « Direct vers ce point » d'une fiche (SOG-0088 ; contrat de Carburant : `#fuel?direct=<ID>[&lat=&lon=]`, l'ID en majuscules ^[A-Z0-9]{2,11}$, la position à 5 décimales au plus) :
  *  jamais le vol n'est écrit ici, Carburant propose le direct (« Appliquer » / « Annuler ») ; null si le nom ou la position ne tiennent pas le contrat. */
@@ -281,7 +283,7 @@ export function mapTip(lat, lon, x, y) {
     return false;
   }
   stay('map');
-  followTip(S.tipEl, S.box, x, y, hoverHtml(t[0], t[1]));
+  followTip(S.tipEl, S.box, x, y, tipHtml(t));
   linger('map');
   return true;
 }
