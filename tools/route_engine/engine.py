@@ -400,6 +400,7 @@ class Nav:
                 self._rad_chain_cache[chain_key]=min(paths,key=lambda path:sum(e['nm'] for a,b,e in path)) if paths else []
             for a,b,e in self._rad_chain_cache[chain_key]:chain_blocks.append(dict(rule,start=self.nodes[a]['id'],end=self.nodes[b]['id']))
         for rule in [*blocks,*chain_blocks,*terminal.get('_rad_avoid',[])]:
+            if rule['kind']=='compel':continue      # SOG-0354 L5 (4) défaut 4 : « passer par X à côté de Y » : lu par la route libre (graph.rad_compel), pas un blocage du graphe
             if rule['kind']=='point':point_rules[rule['point']].append(rule)
             elif rule['kind']=='procedure':procedure_rules[rule['procedure_id']].append(rule)
             else:segment_rules[(rule['via'],rule['start'],rule['end'])].append(rule)
@@ -483,6 +484,8 @@ class Nav:
             g[u]=allowed
         g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
         graph=RoutingGraph(g)
+        graph.rad_avoid=frozenset(r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='point')      # SOG-0354 L5 (4) défaut 4 : les points qu'une règle RAD fait éviter (repli) : ni entrée ni sortie de route NAT ou de route libre
+        graph.rad_compel={r['before']:r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='compel'}      # { Y : X } : Y s'atteint (se quitte) par X (la route libre)
         if profile_options:
             graph.flight=dict(profile_options,departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
         self.graph_seconds=round(time.perf_counter()-built,3)

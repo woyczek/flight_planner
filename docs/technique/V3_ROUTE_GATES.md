@@ -328,6 +328,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4, defect 3, 16 November, case K302)**: the pairs of the free route are tried without a fixed number, until the bound of the next exceeds the best cost found or the time of the section (3 s) is used up; `sections.free.tried` says how many. CYYZ → EDDF « out » answers a route (4.4 s).
 
+**Done (L5 4, defect 4, 16 November, case K303)**: a RAD finding « X compulsory for the traffic via Y » (LF2096: ETIKI for REGHI) is corrected first by passing X next to Y (the free route reaches Y by X); Y is set aside only if that fails, and the answer says the detour with both distances; a RAD retry that imposes nothing new is never played. LEMD → KBOS: 3 267 NM by KORUL ETIKI REGHI, no error (3 219 NM via REGHI with two errors; 4 812 NM by the next entry).
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |

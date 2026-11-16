@@ -12186,3 +12186,116 @@ def k302(c):
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+
+@case('K303', 'Route engine, SOG-0354 lot L5 (4) defect 4: a RAD finding « X compulsory for the traffic via Y » whose X is absent is corrected FIRST by passing X next to Y (the free route reaches Y by X, or leaves it for X) and Y is set aside only if that retry fails — then the answer says the detour with both distances —, a RAD retry that imposes nothing new is never played; LEMD → KBOS (REGHI without ETIKI, LF2096) answers about 3 270 NM with no error of the control',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) defect 4 (matrix of 16 Nov: LEMD → KBOS, 2 proposals; ergonomics session, decision of 20:59 after the measurement: « un constat « X obligatoire pour le trafic par Y » se corrige D\'ABORD en passant par X à côté de Y (ici KORUL – ETIKI – REGHI) ; Y n\'est écarté que si cette reprise échoue, et alors la réponse DIT le détour (les deux distances). La règle « une reprise qui n\'exclut rien de neuf n\'est jamais jouée » reste »). Cause found by AeroDB: Annex 2B line 4948 LF2096 (LFRRACC, H24, UFN) says « ETIKI : COMPULSORY FOR TFC VIA REGHI » — ETIKI is compulsory for the traffic that goes via REGHI; the free route entered by REGHI without ETIKI: the infraction was found rightly, but the finding has no segment, so the RAD retries excluded nothing for it and searched the same again (three retries, 3.5 s). Measured on the real base (read only): via REGHI 3 219.3 NM with two errors; with REGHI set aside the next entry NASBA 4 812.3 NM; passing by ETIKI first 3 267.2 NM (KORUL DCT ETIKI DCT REGHI), no error, 7.4 s against 10.9 s.')
+def k303(c):
+    import datetime
+    import heapq
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, rad_flight as RF, sections as S
+    rule = {'sheet': 'Annex 2B', 'id': 'LF2096', 'row': 4948, 'change': '', 'values': ['', '20 DEC 2025 [2512]', 'UFN', 'LF2096', '', '', '', 'ETIKI', 'COMPULSORY FOR TFC\nVIA REGHI', 'H24', 'S', 'Traffic orientation', '', 'LFRRACC', 'LF', '04 DEC 2025', '']}
+    leg = lambda a, b, via='DCT', kind='ENROUTE': {'kind': kind, 'via': via, 'start': {'id': a}, 'end': {'id': b}, 'time_start_min': 0, 'time_end_min': 10}
+    when = datetime.datetime(2026, 11, 16, 13)
+    known = {'LEMD', 'KBOS', 'KORUL', 'REGHI', 'ETIKI'}
+    out = []
+    for legs in ([leg('LEMD', 'KORUL'), leg('KORUL', 'REGHI'), leg('REGHI', 'KBOS')], [leg('LEMD', 'ETIKI'), leg('ETIKI', 'REGHI'), leg('REGHI', 'KBOS')], [leg('LEMD', 'KORUL'), leg('KORUL', 'KBOS')]):
+        r = RF.evaluate(None, legs, 'LEMD', 'KBOS', when, [dict(rule)], known)
+        out.append(([f['id'] for f in r['findings']], r['search_exclusions']))
+    compel = {'kind': 'compel', 'point': 'ETIKI', 'before': 'REGHI', 'id': 'LF2096', 'sheet': 'Annex 2B', 'row': 4948}
+    fallback = {'kind': 'point', 'point': 'REGHI', 'fallback': True, 'id': 'LF2096', 'sheet': 'Annex 2B', 'row': 4948}
+    c.eq(out, [(['LF2096'], [compel, fallback]), ([], []), ([], [])],
+         'via REGHI without ETIKI: the finding, the order « pass by ETIKI next to REGHI » (`compel`) and the repli « set REGHI aside » (`fallback`); via ETIKI and REGHI: nothing; not via REGHI: nothing (red before: the finding had no exclusion, the retry searched the same again)', what='finding')
+    # the free route: an entry Y is reached BY X, an exit Y is left FOR X; the repli sets Y aside (the next is taken)
+    pos = {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'H1': (60.5, -8.0), 'H2': (44.0, -70.0), 'EB': (60.0, -15.0), 'XA': (47.0, -60.0), 'XB': (46.0, -61.0), 'EX': (59.0, -12.0), 'XC': (45.0, -66.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    for a, b in (('DEP', 'H1'), ('H2', 'ARR')):
+        g.setdefault(a, []).append((b, {'a': a, 'b': b, 'route': 'UL', 'nm': engine.nm(nodes[a], nodes[b])}))
+
+    class Fake:
+        def __init__(self, ends):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'ends': ends}, None, None
+            self.depart, self.nat_rejected, self._nat_high = None, frozenset(), {'H1', 'H2'}
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+            stack, prev, dist = [(0.0, s)], {}, {s: 0.0}
+            while stack:
+                d, u = heapq.heappop(stack)
+                if d > dist[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < dist.get(v, 1e18):
+                        dist[v], prev[v] = d + ed['nm'], (u, v, ed)
+                        heapq.heappush(stack, (dist[v], v))
+
+            def way(x):
+                legs, node = [], x
+                while node != s:
+                    legs.append(prev[node])
+                    node = prev[node][0]
+                return list(reversed(legs))
+            self.last_search = {'expanded': len(dist), 'seconds': 0.0, 'found': True}
+            if goals:
+                return {x: {'path': way(x), 'cost': dist[x], 'band': (36000, 36000)} for x in goals if x in dist}
+            if e not in dist:
+                return None
+            self.last_search.update(cost=dist[e], band=band)
+            return way(e)
+
+    def free(ends, **attrs):
+        gg = engine.RoutingGraph(g)
+        gg.__dict__.update(g.__dict__)
+        for k, v in attrs.items():
+            setattr(gg, k, v)
+        nav = Fake(ends)
+        S.solve(nav, gg, 'DEP', 'ARR')
+        return nav.sections_info['free']
+    base = {'T1': ['EB', 'XA'], 'T2': ['EB', 'XB']}
+    f0, f1, f2, f3 = free(base), free(base, rad_compel={'EB': 'EX'}), free(base, rad_compel={'XA': 'XC'}), free(base, rad_compel={'EB': 'NOPE'})
+    c.eq((f0['points'][:2], f1['points'][:3], f1['ok'], f2['points'][-2:], f3['points'][:2]), (['EB', '60/20'], ['EX', 'EB', '60/20'], True, ['XA', 'XC'], ['EB', '60/20']),
+         'the entry EB that the RAD wants reached by EX is reached by EX (the Europe search goes to EX, then a created DCT EX → EB); the exit XA that it wants left for XC goes on to XC; a point that the base does not know changes nothing (the finding stays and the repli follows)', what='compel')
+    set_aside = [free(base, rad_avoid=frozenset({'XA'})), free(base, rad_avoid=frozenset({'XA', 'XB'})), free(base, rad_avoid=frozenset({'EB'}))]
+    c.eq([(f['ok'], f.get('exit'), f.get('reason') == F.NO_AVOID) for f in set_aside], [(True, 'XB', False), (False, None, True), (False, None, True)],
+         'the repli: a point that the RAD makes avoid is neither an entry nor an exit of the free route, the next is taken (XA avoided: XB), and when every exit (or entry) is avoided the answer says so', what='avoid')
+    src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
+    c.ok("n\\'exclurait rien de neuf" in src and 'fresh = [x for x in extra' in src and "x.get('fallback')" in src and 'détour de' in src, 'plan.py', 'a RAD retry that imposes nothing new is never played; the repli (Y set aside) only after the pass by X was tried; the answer says the detour')
+    data = Path('E:/DEFA/data')
+    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    from route_engine import plan as P, view, results_cache
+    results_cache.ENABLED = False
+    try:
+        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-16T13:00', 'alternatives': False, 'proposals': True}
+        res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        p = res['primary']
+        errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
+        kinds = [x['kind'] for a in res['rad_search_attempts'] for x in a.get('excluded', [])]
+        c.ok(bool(p.get('ok')) and not errors and 3200 < p['distance_nm'] < 3350 and 'ETIKI DCT REGHI' in p['route'] and 'compel' in kinds and not any(i['text'].startswith('Point REGHI écarté') for i in p.get('issues', [])), str((errors, p.get('distance_nm'), kinds)),
+             'LEMD → KBOS on the real base: about 3 270 NM by KORUL DCT ETIKI DCT REGHI, no error of the control, REGHI not set aside (so no detour to say)')
+        # the repli: when the pass by ETIKI does not work (here the free route is made to ignore the order), REGHI is set aside and the answer says the detour with both distances
+        import re
+        solve = F.solve
+
+        def blind(nav, gr, *a, **k):
+            gr.rad_compel = {}
+            return solve(nav, gr, *a, **k)
+        F.solve = blind
+        try:
+            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        finally:
+            F.solve = solve
+        said = [i['text'] for i in res['primary'].get('issues', []) if i['text'].startswith('Point REGHI écarté')]
+        c.ok(len(said) == 1 and re.search(r'détour de \+\d+ NM \(\d+ → \d+ NM\)', said[0]) is not None and res['primary']['distance_nm'] > 4000, str(said), 'when the pass by ETIKI fails, REGHI is set aside (the next entry) and the answer says « Point REGHI écarté … détour de +n NM (head → final NM) »')
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None

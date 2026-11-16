@@ -127,6 +127,12 @@ def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None):
         if not affected:
             affected=[i for i,l in enumerate(legs) if l['kind']=='SID'] if sheet.endswith('DEP') else [i for i,l in enumerate(legs) if l['kind'] in ['STAR','APPROACH_LINK']] if sheet.endswith('ARR') else []
         phases=sorted({legs[i]['kind'] for i in affected})
+        if mode=='COMPULSORY FOR TFC' and not affected and sheet=='Annex 2B':      # SOG-0354 L5 (4) défaut 4 : « X obligatoire pour le trafic par Y » et X absent de la route : le constat n'a aucun tronçon ; il se corrige D'ABORD en passant par X à côté de Y (`compel`), Y n'est écarté (`fallback`) que si cette reprise échoue (plan.plan)
+            via=re.fullmatch(r'VIA\s+([A-Z0-9_*(), /-]+)',m[2] or '')
+            for point in sorted(names(via[1])) if via else []:
+                if re.fullmatch('[A-Z0-9]{2,8}',point) and point in ctx['points']:
+                    if re.fullmatch('[A-Z0-9]{2,8}',v[7] or ''):avoids.append(dict(kind='compel',point=v[7],before=point,id=rule['id'],sheet=sheet,row=rule['row']))
+                    avoids.append(dict(kind='point',point=point,fallback=True,id=rule['id'],sheet=sheet,row=rule['row']))
         findings.append(dict(id=rule['id'],sheet=sheet,row=rule['row'],segments=affected,phases=phases,text=f"RAD {rule['id']} ({sheet}, ligne {rule['row']}) : {mode} ; contexte départ–SID–route–STAR–arrivée pris en compte."))
         for i in affected:
             l=legs[i]

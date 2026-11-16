@@ -282,10 +282,17 @@ def plan(request, root):
     # A route-dependent RAD condition can only be decided after its SID, route and STAR are known. Retry with the implicated procedure / links excluded.
     if request.get('mode', 'calculate') == 'calculate':
         avoids = []
+        head_nm = primary.get('distance_nm')
         for attempt in range(3):
             findings = primary.get('rad_summary', {}).get('findings', [])
             extra = primary.get('rad_summary', {}).get('search_exclusions', [])
+            compelled = {(x.get('id'), x.get('before')) for x in avoids if x.get('kind') == 'compel'}
+            extra = [x for x in extra if not x.get('fallback') or (x.get('id'), x.get('point')) in compelled]      # SOG-0354 L5 (4) défaut 4 : Y n'est écarté que si le passage par X à côté de Y a déjà été tenté
             if not findings or not extra:
+                break
+            fresh = [x for x in extra if json.dumps(x, sort_keys=True) not in {json.dumps(y, sort_keys=True) for y in avoids}]
+            if not fresh:      # une reprise qui n'exclut (n'impose) rien de NEUF refait la même recherche : elle n'est JAMAIS jouée
+                rad_retries.append(dict(excluded=avoids, error='reprise RAD non faite : elle n\'exclurait rien de neuf'))
                 break
             avoids = list({json.dumps(x, sort_keys=True): x for x in [*avoids, *extra]}.values())
             if bounds['ocean'] and time.perf_counter() > started + bounds['head_s']:      # SOG-0354 L2b : un vol océanique ne reprend pas la route de tête après sa borne (chaque reprise refait un graphe et une recherche : 6 s) — le total de 20 s tient
@@ -300,6 +307,9 @@ def plan(request, root):
             except (ValueError, SearchBudget) as e:
                 rad_retries.append(dict(excluded=avoids, error=str(e)))
                 break
+    for x in avoids if request.get('mode', 'calculate') == 'calculate' else []:      # SOG-0354 L5 (4) défaut 4 : un point écarté est un DÉTOUR : la réponse le dit, avec les deux distances
+        if x.get('fallback') and primary.get('distance_nm') and head_nm:
+            primary.setdefault('issues', []).append({'level': 'REVUE', 'text': f"Point {x['point']} écarté (règle RAD {x['id']} : passer par le point obligatoire n'a pas abouti) : détour de {primary['distance_nm'] - head_nm:+.0f} NM ({head_nm:.0f} → {primary['distance_nm']:.0f} NM)."})
     first_info = getattr(nav, 'sections_info', None) if nav.sections else None      # SOG-0354 L5 (4) : les sections et le temps de la réponse sont ceux du niveau DEMANDÉ (de la route de tête et de ses reprises RAD) : les autres tentatives écrasaient `nav.sections_info`
     first_graph_s = getattr(nav, 'graph_seconds', None)
     retries = []      # les reprises à d'autres niveaux, listées à part : { fl, seconds, found }

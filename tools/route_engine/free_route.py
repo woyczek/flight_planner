@@ -20,6 +20,7 @@ LABEL = 'route libre, créée'
 NO_REACH = 'aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau'
 NO_CHAIN = 'aucune chaîne par une route libre n\'a abouti'
 NO_TIME = 'le temps de la route libre est épuisé avant qu\'une chaîne n\'aboutisse'
+NO_AVOID = 'tous les points océaniques du jour sont évités par une règle RAD'
 NO_POINT = 'aucun point d\'entrée océanique connu : aucune route du jour n\'en donne'
 
 
@@ -83,6 +84,24 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     exits = [k for k in known if (nav.nodes[k]['lon'] > WEST_LON) != start_east]
     if not entries or not exits:
         return None, NO_POINT
+    avoid = getattr(g, 'rad_avoid', frozenset())      # SOG-0354 L5 (4) défaut 4 : les points que la règle RAD fait éviter (le repli : le passage par X n'a pas abouti) ne sont ni entrée ni sortie ; l'entrée suivante est prise
+    entries = [k for k in entries if nav.nodes[k]['id'] not in avoid]
+    exits = [k for k in exits if nav.nodes[k]['id'] not in avoid]
+    if not entries or not exits:
+        return None, NO_AVOID
+    # « X obligatoire pour le trafic par Y » (LF2096 : ETIKI pour REGHI) : une entrée Y est atteinte PAR X (la recherche d'Europe va à X, puis un DCT créé X → Y), une sortie Y est quittée VERS X (Y → X, puis la recherche d'Europe part de X)
+    compel = getattr(g, 'rad_compel', {})
+    lead = {}
+    if compel:
+        by_id = {n['id']: k for k, n in nav.nodes.items()}
+        for k in entries + exits:
+            x = by_id.get(compel.get(nav.nodes[k]['id']))
+            if x is not None and x != k:
+                lead[k] = x
+    eff = lambda k: lead.get(k, k)
+    lead_nm = lambda k: engine.nm(nav.nodes[k], nav.nodes[lead[k]]) if k in lead else 0.0
+    head = lambda i: engine.nm(a, nav.nodes[eff(i)]) + lead_nm(i)
+    tail = lambda o: lead_nm(o) + engine.nm(nav.nodes[eff(o)], b)
     high = getattr(nav, '_nat_high', None)
     if high is None:
         high = nav._nat_high = nat_layer.main_network(nav)
@@ -90,7 +109,7 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     g2 = engine.RoutingGraph(g)
     g2.__dict__.update(g.__dict__)
     for k, into in [(i, True) for i in entries] + [(o, False) for o in exits]:
-        for u, v, e in _links(nav, k, high, into, band):
+        for u, v, e in _links(nav, eff(k), high, into, band):
             e['_cost'] = e['nm'] * ratio
             g2[u] = list(g2.get(u, ())) + [(v, e)]
     pts_of = {(i, o): interior(nav.nodes[i], nav.nodes[o]) for i in entries for o in exits}
@@ -101,12 +120,12 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     ocean = {(i, o): ocean_of(i, o) for i in entries for o in exits}
     # les entrées par ordre de leur meilleur minorant (distances orthodromiques) : la recherche vers TOUTES les entrées parcourt tout l'espace dès qu'une n'est pas atteignable (EIDW → KJFK : 13 portes, 31 000 états, 4,8 s, contre 260 états vers l'entrée voulue) :
     # elles sont cherchées PAR PAQUETS de CHUNK, les plus proches du chemin d'abord ; le paquet suivant seulement si le précédent n'a donné aucune route
-    rank = sorted(entries, key=lambda i: min(engine.nm(a, nav.nodes[i]) + ocean[(i, o)] + engine.nm(nav.nodes[o], b) for o in exits))
+    rank = sorted(entries, key=lambda i: min(head(i) + ocean[(i, o)] + tail(o) for o in exits))
     dead, tried, any_reached, best = set(), 0, False, None
     report = report if report is not None else {}
     report.update(tried=0, stopped='end')
     began = time.perf_counter()
-    pack_bound = lambda i: ratio * min(engine.nm(a, nav.nodes[i]) + ocean[(i, o)] + engine.nm(nav.nodes[o], b) for o in exits)      # le minorant du meilleur couple de cette entrée (la recherche d'Europe vaut au moins ratio × le grand cercle)
+    pack_bound = lambda i: ratio * min(head(i) + ocean[(i, o)] + tail(o) for o in exits)      # le minorant du meilleur couple de cette entrée (la recherche d'Europe vaut au moins ratio × le grand cercle)
 
     def out_of_time():
         now = time.perf_counter()
@@ -118,9 +137,10 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
         if out_of_time():
             report['stopped'] = 'time'
             break
-        reached = europe(g2, start, rank[start_at:start_at + CHUNK])
+        pack = rank[start_at:start_at + CHUNK]
+        reached = europe(g2, start, [eff(i) for i in pack])
         any_reached = any_reached or bool(reached)
-        pairs = sorted(((reached[i]['cost'] + ratio * (ocean[(i, o)] + engine.nm(nav.nodes[o], b)), i, o) for i in reached for o in exits), key=lambda x: x[0])
+        pairs = sorted(((reached[eff(i)]['cost'] + ratio * (lead_nm(i) + ocean[(i, o)] + tail(o)), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])
         for bound, i, o in pairs:
             if best and bound >= best['cost']:      # les couples suivants ne peuvent pas faire mieux que le meilleur trouvé
                 report['stopped'] = 'bound'
@@ -132,13 +152,13 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
                 break
             tried += 1
             report['tried'] = tried
-            keys = [i] + [nav.add({'id': n, 'lat': la, 'lon': lo}) for la, lo, n in pts_of[(i, o)]] + [o]
+            keys = [eff(i)] + ([i] if eff(i) != i else []) + [nav.add({'id': n, 'lat': la, 'lon': lo}) for la, lo, n in pts_of[(i, o)]] + [o] + ([eff(o)] if eff(o) != o else [])
             keys = [k for n, k in enumerate(keys) if n == 0 or k != keys[n - 1]]
             legs = []
             for u, v in zip(keys, keys[1:]):
                 d = engine.nm(nav.nodes[u], nav.nodes[v])
                 legs.append((u, v, dict(a=u, b=v, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, _cost=d * ratio, zone='nat', origin='random')))
-            resolved = resolve(g2, start, end, i, o, legs, reached[i])
+            resolved = resolve(g2, start, end, eff(i), eff(o), legs, reached[eff(i)])
             if resolved:
                 cost, path, sects = resolved
                 if best is None or cost < best['cost']:

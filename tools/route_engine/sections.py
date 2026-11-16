@@ -105,10 +105,15 @@ def _solve(nav, g, start, end):
     rejected = {tid: why for tid, m in meta.items() if (why := nat_layer.check(m, fl, east))}
     candidates = []
     chains = oriented_chains(nav.nodes, g, east)
+    avoid = getattr(g, 'rad_avoid', frozenset())      # SOG-0354 L5 (4) défaut 4 : un point que la règle RAD fait éviter (repli) n'est ni l'entrée ni la sortie d'une route NAT
     for tid, options in chains.items():
         if tid in rejected:
             continue
         why = None
+        options = [o for o in options if nav.nodes[o['entry']]['id'] not in avoid and nav.nodes[o['exit']]['id'] not in avoid]
+        if not options and chains[tid]:
+            rejected[tid] = ('rad', f"route NAT {tid} : son entrée ou sa sortie est un point que la règle RAD fait éviter ({', '.join(sorted(avoid))})")
+            continue
         for o in options:
             why = nat_layer.check(meta[tid], fl, east, eta_of(engine.nm(a, nav.nodes[o['entry']]))) if hour and tid in meta else None      # l'heure estimée (grand cercle) : elle écarte avant toute recherche
             if not why:
