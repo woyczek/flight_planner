@@ -6,11 +6,13 @@
                zones: [identifiants] (celles qu'elle nourrit ; omis pour les sources communes : `zoneCount`), zoneCount, personal: 'licence' | 'xplane' | '' ,
                steps: { download: { state: 'done' | 'late' | 'missing' | 'waiting' | 'unavailable' | 'n/a', cycle (le cycle détenu, pour une source datée), at (ISO UTC du plus récent fichier) },
                         build: { zones: n, upToDate: n }, publish: { published: n, unpublished: n, unknown: n } },
+               rank ('primary' | 'secondary'), rhythm ('airac' | 'editions' | 'daily' | 'none'), content [les contenus qu'elle donne] (SOG-0369 : les trois faits du catalogue ; une source sans rythme n'est JAMAIS `late` : sa ligne dit son âge, `steps.download.ageDays`),
                why (la raison quand une étape manque : 'newer-in-downloads' | 'not-downloaded' | 'older-than-cycle' | 'no-file' | 'unavailable-at-publisher'),
                unavailable: { since } (SOG-0273 : l'éditeur ne publie plus le fichier — DIRCAM, AIP militaire britannique : l'étape n'est NI « en retard » NI « à faire »),
                hand: { link, expected: [motifs de nom], inDownloads: [noms du premier niveau de Téléchargements] } (regime 'hand' seulement) } ],
     next: { cycle, items: [ { id, state: 'in-downloads' | 'to-take' | 'will-be-taken', files: [noms] } ] } (le cycle SUIVANT, à part : ce qui est déjà dans Téléchargements, ce qui reste à prendre ; une source prise seule « sera prise quand il sera en vigueur »),
     unread: [ { id, files: [noms], reason: 'no-reader' | 'format', note? } ] (ce que le poste a vu dans Téléchargements et que la suite ne lit pas encore : une ligne comme les autres, avec sa raison) }.
+Avec `zone` : `zoneView.contents` = l'état PAR CONTENU de la zone (contents_of : `done` | `late` | `waiting` | `unavailable` | `missing` d'après les sources primaires, les secondaires dites à part, `secondary-only` sans source primaire).
 `late` = pris, mais plus ancien que le cycle en vigueur (distinct de `missing` : aucun fichier). Un fichier reconnu par son NOM qui peut être d'un autre État (EK_ENR_… : le Danemark OU les Féroé) est dit tel quel (`note`) : le contenu n'est jamais ouvert ici.
 Les coches sont posées par l'outil seul, d'après l'état réel (base_state, git, les dates des fichiers) ; rien n'est supposé."""
 import datetime
@@ -108,6 +110,31 @@ def _cycle_of_name(ident, value, current_iso):
     return None
 
 
+def age_days(at, today=None):
+    """L'âge, en jours entiers, du plus récent fichier pris (`at` : secondes depuis 1970) : ce que dit une source sans rythme au lieu de « en retard »."""
+    d0 = today if isinstance(today, datetime.date) else datetime.date.today()
+    return max(0, (d0 - datetime.datetime.fromtimestamp(at, datetime.timezone.utc).date()).days)
+
+
+def contents_of(items):
+    """L'état PAR CONTENU (SOG-0369) des lignes d'une zone : [ { id (le contenu : 'airspace', 'aerodromes'…), state, by: [les sources de rang « primary » dans cet état], secondary: [les sources de rang « secondary » prises] } ].
+    `done` : une source primaire l'a pris ; `late` | `waiting` | `unavailable` : la première des primaires dit ainsi ; `missing` : aucune primaire n'a rien pris ; `secondary-only` : aucune source primaire ne donne ce contenu. Une source secondaire ne rend JAMAIS un contenu « à jour » à la place de la primaire : elle est dite à part (`secondary`).
+    Une source sans rythme (`none`) n'est jamais `late` : sa ligne est déjà `done` avec son âge."""
+    order = ('done', 'late', 'waiting', 'unavailable', 'missing')
+    by_content = {}
+    for it in items:
+        for c in it.get('content') or ():
+            by_content.setdefault(c, []).append(it)
+    out = []
+    for c in sorted(by_content):
+        prim = [it for it in by_content[c] if it.get('rank') == 'primary']
+        sec = [it['id'] for it in by_content[c] if it.get('rank') != 'primary' and it['steps']['download']['state'] == 'done']
+        states = {it['id']: it['steps']['download']['state'] for it in prim}
+        state = next((st for st in order if st in states.values()), 'missing' if prim else 'secondary-only')
+        out.append({'id': c, 'state': state, 'by': [i for i, st in states.items() if st == state], 'secondary': sec})
+    return out
+
+
 def run(job, args, ctx):
     data = ctx['data']
     today = ctx.get('today')
@@ -145,6 +172,7 @@ def run(job, args, ctx):
         ats = [t for (z, s), t in latest.items() if s == sid and (only is None or z == only)]
         at = max(ats) if ats else None
         held = (cycles.get(sid) or {}).get('cycle') if sid in aero_cycles.CYCLED else None
+        rhythm = src.get('rhythm')      # SOG-0369 : le rythme que le catalogue dit (airac | editions | daily | none) ; « none » : jamais « en retard » (elle dit son âge)
         files_in_dl = []
         hand = None
         if regime == 'hand':
@@ -159,7 +187,7 @@ def run(job, args, ctx):
             state, why = ('waiting', 'newer-in-downloads') if files_in_dl else (('n/a', None) if regime == 'local' else ('missing', 'no-file' if regime == 'hand' else 'not-downloaded'))
         elif held is not None and held < current and sid not in EDITION_SOURCES:
             state, why = 'late', 'older-than-cycle'
-        elif held is None and at is not None and at < start and regime != 'local':
+        elif held is None and at is not None and at < start and regime != 'local' and rhythm != 'none':
             state, why = 'late', 'older-than-cycle'
         else:
             state = 'done'
@@ -173,7 +201,8 @@ def run(job, args, ctx):
         if state == 'late' and current in dl_cycles.get(sid, ()) and (held is None or held < current):
             why = 'newer-in-downloads'      # un fichier du cycle en vigueur attend déjà dans Téléchargements (par son nom) : à prendre
         item = {'id': sid, 'label': list(src['label']), 'regime': regime, 'personal': src.get('personal', ''), 'zoneCount': len(zones), **({} if common else {'zones': zones}),
-                'steps': {'download': {'state': state, **({'cycle': held} if held else {}), 'at': iso(at) if at else None}, 'build': {'zones': len(mine), 'upToDate': built}, 'publish': pub}}
+                'rank': src.get('rank'), 'rhythm': rhythm, 'content': list(src.get('content') or ()),
+                'steps': {'download': {'state': state, **({'cycle': held} if held else {}), 'at': iso(at) if at else None, **({'ageDays': age_days(at, today)} if at else {})}, 'build': {'zones': len(mine), 'upToDate': built}, 'publish': pub}}
         if why:
             item['why'] = why
         if sid in UNAVAILABLE:
@@ -230,7 +259,7 @@ def run(job, args, ctx):
                 it['steps']['publish'] = {'published': 0, 'unpublished': 0, 'unknown': 0, **({zs['publish']['state']: 1} if zs and zs.get('publish') else {})}
             zone_view = {'zone': zid, 'known': True, 'inCoverage': zid in zones_all,
                          'state': {k: zs.get(k) for k in ('state', 'builtCycle', 'builtAt', 'expectedCycle', 'publish', 'notices')} | {'reasons': [r['code'] for r in zs['reasons']]} if zs else None,
-                         'sources': srcs,
+                         'sources': srcs, 'contents': contents_of(srcs),
                          'addWillAsk': {'sources': [i['id'] for i in srcs], 'auto': [i['id'] for i in srcs if i['regime'] == 'auto'],
                                         'hand': [{'id': i['id'], 'expected': (i.get('hand') or {}).get('expected', [])} for i in srcs if i['regime'] == 'hand'],
                                         'personal': [i['id'] for i in srcs if i['personal'] == 'licence'], 'noReader': [u for u, zl in NO_READER_ZONES.items() if zid in zl]}}

@@ -112,8 +112,10 @@
   // va), lic [4] (licence ou conditions, d'après LICENSE.md), how [4] (facultatif : le geste pour l'obtenir), unavailable { since, note [4] } (SOG-0273 : l'éditeur ne publie plus le fichier : la source est rangée à part, ni « en retard » ni « à faire »), steps { why [4]? (SOG-0273 : la raison SUE de la prise à la main — rien d'inventé ; absente quand elle n'est pas connue), page: { url, home }, files: [{ name, url?, gives [4] }] } (SOG-0189, facultatif : le pas-à-pas d'une source déposée à la main, lu par stepsOf), et, facultatifs, pour la page « Sources et licences » : pub (l'éditeur, texte ou [4] ; à défaut le début du nom),
   // credit [4] (le crédit obligatoire), date (la date ou l'édition : texte), localOnly (vrai : lu sur ce poste seulement) }. Données seules :
   // l'écran (sources.js) ne fait qu'afficher des liens, aucune récupération.
+  // rhythm (SOG-0369) : le rythme de publication de la source — « airac » (un fichier par cycle), « editions », « daily », « none » (aucun : jamais « périmé », elle dit son âge) ; le même que celui de shared/aero_zones.js (K280).
   const SOURCES = [{
     id: 'sia',
+    rhythm: 'airac',
     group: 'base',
     steps: {
       why: ['le SIA ne propose ce fichier que par son panier : « Ajouter au panier », puis valider le panier',
@@ -212,6 +214,7 @@
     lic: ['CC BY 4.0', 'CC BY 4.0', 'CC BY 4.0', 'CC BY 4.0']
   }, {
     id: 'mora',
+    rhythm: 'none',
     group: 'base',
     zones: '*',
     fetch: {
@@ -245,6 +248,7 @@
     ]
   }, {
     id: 'dircam',
+    rhythm: 'none',
     group: 'base',
     steps: {
       why: [
@@ -308,6 +312,7 @@
     ]
   }, {
     id: 'ukmil',
+    rhythm: 'editions',
     group: 'base',
     // SOG-0262 : l'inventaire exact : le fichier que le lanceur lit seul, et que l'utilisateur prend à la main quand le serveur coupe sa connexion (SOG-0234)
     unavailable: {
@@ -383,6 +388,7 @@
     ]
   }, {
     id: 'navcan',
+    rhythm: 'editions',
     group: 'base',
     // SOG-0262 : le DAH que le lanceur lit seul, et les fichiers de l'AIP Canada que l'utilisateur dépose et que la suite ne lit pas encore (Q-0023)
     steps: {
@@ -479,6 +485,7 @@
     ]
   }, {
     id: 'openaip',
+    rhythm: 'none',
     group: 'base',
     zones: '*',
     fetch: {
@@ -511,6 +518,7 @@
     ]
   }, {
     id: 'enaire',
+    rhythm: 'airac',
     group: 'base',
     zones: ['es'],
     fetch: {
@@ -539,6 +547,7 @@
     ]
   }, {
     id: 'dfs',
+    rhythm: 'airac',
     group: 'base',
     zones: ['de'],
     fetch: {
@@ -569,6 +578,7 @@
     lic: ['CC BY 4.0, crédit DFS', 'CC BY 4.0, credit DFS', 'CC BY 4.0, Quellenangabe DFS', 'CC BY 4.0, crédito DFS']
   }, {
     id: 'airnav',
+    rhythm: 'airac',
     group: 'base',
     zones: ['ie'],
     fetch: {
@@ -603,6 +613,7 @@
     ]
   }, {
     id: 'avians',
+    rhythm: 'airac',
     group: 'base',
     zones: ['is'],
     // SOG-0368 : le lanceur lit le site d'Avians (eAIP d'Islande) : l'édition en vigueur est LUE sur la page des éditions (la date AAAA_MM_JJ dans le lien), la liste des pages de routes de l'ENR 3.2 dans le sommaire, UNE requête à la fois avec une pause, arrêt au premier
@@ -674,6 +685,7 @@
     ]
   }, {
     id: 'navpt',
+    rhythm: 'editions',
     group: 'base',
     zones: ['pt'],
     // le lanceur lit le site de NAV Portugal ; il prend AUSSI le fichier que l'utilisateur a téléchargé (le zip qui porte l'ISO de l'eAIP, l'ISO, le dossier extrait : reconnus par leur contenu, SOG-0244) :
@@ -815,6 +827,7 @@
     lic: ['Domaine public (FAA)', 'Public domain (FAA)', 'Gemeinfrei (FAA)', 'Dominio público (FAA)']
   }, {
     id: 'nats',
+    rhythm: 'airac',
     group: 'base',
     steps: {
       page: {
@@ -909,6 +922,7 @@
     ]
   }, {
     id: 'lfv',
+    rhythm: 'airac',
     group: 'base',
     steps: {
       page: {
@@ -1246,6 +1260,7 @@
     ]
   }, {
     id: 'nat',
+    rhythm: 'daily',
     group: 'weather',
     zones: ['nat'],
     fetch: {

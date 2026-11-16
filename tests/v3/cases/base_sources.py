@@ -130,13 +130,13 @@ def k52(c):
                'zones/de/openaip-foo.json', 'zones/gb/xplane_x.txt', 'zones/gb', 'zones/', 'zones', 'base/fr/index.json', 'sia/base/fr/x.json', 'local/eaip/x.pdf', '']
     js = c.js("""(samples) => {
       const A = window.AeroZones, S = {};
-      for (const [id, v] of Object.entries(A.SOURCES)) S[id] = { kind: v.kind, personal: v.personal || '', link: v.link || '', provider: v.provider || '', args: v.args || [], label: v.label };
+      for (const [id, v] of Object.entries(A.SOURCES)) S[id] = { kind: v.kind, personal: v.personal || '', link: v.link || '', provider: v.provider || '', args: v.args || [], label: v.label, rank: v.rank, rhythm: v.rhythm, content: v.content };
       return { sources: S, zones: A.zones().map(z => [z.id, z.sources]), fileSource: samples.map(p => A.fileSource(p)), geo: Object.keys(window.AERO_ZONES_GEO) };
     }""", samples)
-    py = {k: {'kind': v['kind'], 'personal': v['personal'], 'link': v['link'], 'provider': v['provider'], 'args': list(v['args']), 'label': list(v['label'])} for k, v in BS.SOURCES.items()}
+    py = {k: {'kind': v['kind'], 'personal': v['personal'], 'link': v['link'], 'provider': v['provider'], 'args': list(v['args']), 'label': list(v['label']), 'rank': v['rank'], 'rhythm': v['rhythm'], 'content': list(v['content'])} for k, v in BS.SOURCES.items()}
     c.eq(sorted(py), sorted(js['sources']), 'the mirror holds exactly the sources of aero_zones.js', what='source ids')
     for sid, want in js['sources'].items():
-        c.eq(py[sid], want, f'source {sid}: kind, personal flag, link, provider, args and the four labels are the page\'s', what=f'source {sid}')
+        c.eq(py[sid], want, f'source {sid}: kind, personal flag, link, provider, args, the four labels, rank, rhythm and content are the page\'s', what=f'source {sid}')
     c.eq(sorted(BS.zone_ids()), sorted(js['geo']), 'the launcher reads the same zone ids as the page', what='zone ids')
     c.ok(len(js['geo']) > 200 and {'fr', 'gb', 'es', 'us', 'ca', 'nat'} <= set(js['geo']), str(len(js['geo'])), 'the zone list is the world: fr, gb, es, us, ca and nat among them')
     bad = [(z, BS.sources_of(z), s) for z, s in js['zones'] if list(BS.sources_of(z)) != s]
@@ -2536,6 +2536,45 @@ def k179(c):
     c.ok(('base', 'cycle') in RJ.READ_ONLY, 'not read-only', 'the verb is read-only for the job slot: it does not replace the last work')
 
 
+@case('K280', 'Sources: rank, rhythm and content in the catalogue (SOG-0369): a source with NO rhythm (DIRCAM, openAIP) is never « late » (its line says its age), a source with a rhythm keeps its rule, the state of a CONTENT comes from the PRIMARY sources and a secondary one never makes it « done »; the catalogue of the sources and the Data screen say the same rhythm', 'K', static=True,
+      rule='SOG-0369 (the ergonomics session, 16 Nov 2026, from the survey): « DIRCAM pas à jour » came from the date of the FILE against the start of the AIRAC cycle (DIRCAM has no cycle), and the red of openAIP the same; three fields in the catalogue — rank (primary | secondary), rhythm (airac | editions | daily | none), content — and a source with no rhythm is never « périmée »: it says its age.')
+def k280(c):
+    import datetime
+    import os
+    import re
+    import tempfile
+    from pathlib import Path
+    RJ, BS, AF, DS = _mods()
+    fn, check = RJ.REGISTRY[('base', 'cycle')]
+    c.eq({sid: (v['rank'], v['rhythm']) for sid, v in BS.SOURCES.items() if sid in ('sia', 'dircam', 'openaip', 'navpt', 'nat', 'xplane')},
+         {'sia': ('primary', 'airac'), 'dircam': ('primary', 'none'), 'openaip': ('secondary', 'none'), 'navpt': ('primary', 'editions'), 'nat': ('primary', 'daily'), 'xplane': ('secondary', 'none')},
+         'the facts of the catalogue: the official publishers are primary, openAIP and X-Plane secondary; DIRCAM and openAIP have no rhythm, the Portuguese eAIP is published by editions, the NAT tracks daily', what='facts')
+    cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
+    said = dict(re.findall(r"\n    id: '(\w+)',\r?\n    rhythm: '(\w+)',", cat))
+    c.eq(sorted(k for k, v in said.items() if BS.SOURCES.get(k, {}).get('rhythm') != v), [], 'the rhythm of every source the two catalogues share is the same (frame/aerodb/catalogue.js and the mirror of shared/aero_zones.js)', what='two catalogues')
+    c.ok({'sia', 'dircam', 'openaip', 'navpt', 'nat'} <= set(said), str(sorted(said)), 'the catalogue of the sources carries a rhythm for the sources the cycle list judges')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        data = _repo(DS, td, {})
+        old = datetime.datetime(2026, 10, 1, 12, 0).timestamp()      # midi : le même jour en UTC où que soit le poste
+        for rel in ('XML_SIA_2026-10-01.xml', 'miam-enr-5-7-tracks.xml', 'openaip/fr_apt.geojson', 'geojson/faa_class.geojson'):
+            p = data / 'sia' / rel
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text('<x/>' if rel.endswith('.xml') else '{}', encoding='utf-8')
+            os.utime(p, (old, old))
+        dl = td / 'dl'
+        dl.mkdir()
+        ctx = {**_ctx(DS, data), 'downloads': lambda: [str(dl)], 'today': datetime.date(2026, 11, 12)}
+        r = fn(RJ.Job('base', 'cycle', {}), check({'personal': [], 'zone': 'fr'}), ctx)
+        by = {i['id']: i for i in r['items']}
+        got = {k: (by[k]['steps']['download']['state'], by[k]['steps']['download'].get('ageDays'), by[k]['rank'], by[k]['rhythm']) for k in ('dircam', 'openaip', 'sia', 'faaclass')}
+        c.eq(got, {'dircam': ('done', 42, 'primary', 'none'), 'openaip': ('done', 42, 'secondary', 'none'), 'sia': ('late', 42, 'primary', 'airac'), 'faaclass': ('late', 42, 'primary', 'airac')},
+             'a file of 1 Oct against the cycle of 29 Oct: DIRCAM and openAIP (no rhythm) are `done` and say their age (42 days), the SIA (AIRAC) and the FAA layer (AIRAC) stay `late`', what='lines')
+        c.ok(by['dircam'].get('why') is None and 'airspace' in by['openaip']['content'] and by['dircam']['content'] == ['aar_tracks'], str(by['dircam']), 'a line carries its rank, rhythm and content, and no reason when it is not late')
+        ct = {x['id']: x for x in r['zoneView']['contents']}
+        c.eq((ct['aar_tracks']['state'], ct['aar_tracks']['by'], ct['airspace']['state'], ct['airspace']['by'], ct['airspace']['secondary'], ct['mora']['state']),
+             ('done', ['dircam'], 'late', ['sia'], ['openaip'], 'secondary-only'),
+             'the state of a content (France): the refuelling tracks are `done` (DIRCAM has no rhythm), the airspace is `late` because the SIA is: openAIP (secondary) is said apart and never makes it `done`; the MORA has no primary source', what='contents')
 @case('K180', 'base/status never says « personal-undeclared » for a source that does not feed the zone, and an edition in force of a State that publishes by editions is not a past cycle (SOG-0260: the screen said « 69 zones attendent un fichier » and « NAV Portugal 2610 : cycle passé » for a base all built at 29 Oct)', 'K', static=True,
       rule='SOG-0260 (the screen of 12 Nov 9:57 against the launcher: 83 zones built and published, « 4 à jour · 2 à reconstruire · 69 attendent un fichier »): (1) the record of a build keeps the personal sources DECLARED at that build (a global list: airnav, enaire, lfv, nats…), and base/status flagged `personal-undeclared` for each of them in EVERY zone, even Afghanistan, which none of them feeds: with a page that does not declare them, all the zones came back `stale`, not buildable (« attendent un fichier »); the code is now given only for a source that feeds the zone (the sources of the catalogue for that zone). (2) NAV Portugal publishes by editions (« valid from 01 OCT 2026 » stays in force until the next one), not at each AIRAC: its file dated 1 Oct was a cycle older than the cycle in force (29 Oct), so the zone was `source-old` (« cycle passé, téléchargez le cycle 2611 »); the cycle of an edition-based source is the cycle in force when its edition is already in force (aero_cycles.EDITION_SOURCES)')
 def k180(c):

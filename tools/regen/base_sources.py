@@ -160,6 +160,36 @@ SOURCES = {
             'Berechnete MORA (Relief, OSM-Gipfel, Hindernisse)',
             'MORA calculada (relieve, cumbres OSM, obstáculos)')),
 }
+
+# SOG-0369 (16 nov. 2026, décision de l'ergonome) : trois faits par source, lus par la liste du cycle (base_cycle) et miroir de shared/aero_zones.js (K52) :
+# rank « primary » (l'éditeur officiel) | « secondary » (communautaire ou dérivé : ne dit jamais « à jour » à sa place) ; rhythm « airac » (un fichier par cycle de 28 jours) | « editions » (publié par éditions : jamais en retard du seul fait du cycle) |
+# « daily » (rendu chaque jour : routes NAT) | « none » (aucun rythme connu : jamais « périmé », il dit son âge) ; content : ce que la source donne (vocabulaire CONTENTS).
+CONTENTS = ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles', 'aar_tracks', 'mil_routes', 'nat_tracks', 'mora')
+RANKS = ('primary', 'secondary')
+RHYTHMS = ('airac', 'editions', 'daily', 'none')
+SOURCE_FACTS = {
+    'sia': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles')),
+    'dircam': ('primary', 'none', ('aar_tracks',)),
+    'openaip': ('secondary', 'none', ('airspace', 'aerodromes', 'navaids', 'vfr_points')),
+    'enaire': ('primary', 'airac', ('airspace', 'navaids', 'points', 'airways')),
+    'airnav': ('primary', 'airac', ('points', 'airways')),
+    'avians': ('primary', 'airac', ('points', 'airways')),
+    'navpt': ('primary', 'editions', ('points', 'airways')),
+    'lfv': ('primary', 'airac', ('points', 'airways')),
+    'faa': ('primary', 'airac', ('airspace', 'mil_routes', 'points', 'navaids', 'airways')),
+    'faaclass': ('primary', 'airac', ('airspace',)),
+    'nats': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points')),
+    'ukmil': ('primary', 'editions', ('airspace', 'aar_tracks')),
+    'dfs': ('primary', 'airac', ('airways',)),
+    'navcan': ('primary', 'editions', ()),
+    'nat': ('primary', 'daily', ('nat_tracks',)),
+    'xplane': ('secondary', 'none', ('airspace', 'navaids', 'points', 'airways', 'mora')),
+    'mora': ('secondary', 'none', ('mora',)),
+}
+for _sid, (_rank, _rhythm, _content) in SOURCE_FACTS.items():
+    SOURCES[_sid].update(rank=_rank, rhythm=_rhythm, content=_content)
+assert set(SOURCE_FACTS) == set(SOURCES) and all(r in RANKS and h in RHYTHMS and set(c) <= set(CONTENTS) for r, h, c in SOURCE_FACTS.values())
+
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources
 EXTRA = {'fr': ('sia', 'dircam'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'pt': ('navpt',), 'is': ('avians',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
