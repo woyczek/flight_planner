@@ -168,7 +168,6 @@ SOURCES = {
 CONTENTS = ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles', 'aar_tracks', 'mil_routes', 'nat_tracks', 'mora')
 RANKS = ('primary', 'secondary')
 RHYTHMS = ('airac', 'editions', 'daily', 'none')
-HANDS = {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback', 'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'}      # SOG-0368 : « only » (le lanceur n'essaie rien : le fichier se prend à la main ; NAV Portugal aussi, SOG-0318), « fallback » (prise seule, le dépôt à la main n'est qu'un repli après un échec), « none » ; miroir de `hand` de shared/aero_zones.js (K52)
 SOURCE_FACTS = {
     'sia': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles')),
     'dircam': ('primary', 'none', ('aar_tracks',)),
@@ -189,8 +188,8 @@ SOURCE_FACTS = {
     'mora': ('secondary', 'none', ('mora',)),
 }
 for _sid, (_rank, _rhythm, _content) in SOURCE_FACTS.items():
-    SOURCES[_sid].update(rank=_rank, rhythm=_rhythm, content=_content, hand=HANDS[_sid])
-assert set(HANDS) == set(SOURCES) and set(HANDS.values()) <= {'only', 'fallback', 'none'} and set(SOURCE_FACTS) == set(SOURCES) and all(r in RANKS and h in RHYTHMS and set(c) <= set(CONTENTS) for r, h, c in SOURCE_FACTS.values())
+    SOURCES[_sid].update(rank=_rank, rhythm=_rhythm, content=_content)
+assert set(SOURCE_FACTS) == set(SOURCES) and all(r in RANKS and h in RHYTHMS and set(c) <= set(CONTENTS) for r, h, c in SOURCE_FACTS.values())
 
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources

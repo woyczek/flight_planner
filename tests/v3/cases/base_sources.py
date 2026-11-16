@@ -130,13 +130,13 @@ def k52(c):
                'zones/de/openaip-foo.json', 'zones/gb/xplane_x.txt', 'zones/gb', 'zones/', 'zones', 'base/fr/index.json', 'sia/base/fr/x.json', 'local/eaip/x.pdf', '']
     js = c.js("""(samples) => {
       const A = window.AeroZones, S = {};
-      for (const [id, v] of Object.entries(A.SOURCES)) S[id] = { kind: v.kind, personal: v.personal || '', link: v.link || '', provider: v.provider || '', args: v.args || [], label: v.label, rank: v.rank, rhythm: v.rhythm, content: v.content, hand: v.hand };
+      for (const [id, v] of Object.entries(A.SOURCES)) S[id] = { kind: v.kind, personal: v.personal || '', link: v.link || '', provider: v.provider || '', args: v.args || [], label: v.label, rank: v.rank, rhythm: v.rhythm, content: v.content };
       return { sources: S, zones: A.zones().map(z => [z.id, z.sources]), fileSource: samples.map(p => A.fileSource(p)), geo: Object.keys(window.AERO_ZONES_GEO) };
     }""", samples)
-    py = {k: {'kind': v['kind'], 'personal': v['personal'], 'link': v['link'], 'provider': v['provider'], 'args': list(v['args']), 'label': list(v['label']), 'rank': v['rank'], 'rhythm': v['rhythm'], 'content': list(v['content']), 'hand': v['hand']} for k, v in BS.SOURCES.items()}
+    py = {k: {'kind': v['kind'], 'personal': v['personal'], 'link': v['link'], 'provider': v['provider'], 'args': list(v['args']), 'label': list(v['label']), 'rank': v['rank'], 'rhythm': v['rhythm'], 'content': list(v['content'])} for k, v in BS.SOURCES.items()}
     c.eq(sorted(py), sorted(js['sources']), 'the mirror holds exactly the sources of aero_zones.js', what='source ids')
     for sid, want in js['sources'].items():
-        c.eq(py[sid], want, f'source {sid}: kind, personal flag, link, provider, args, the four labels, rank, rhythm, content and hand are the page\'s', what=f'source {sid}')
+        c.eq(py[sid], want, f'source {sid}: kind, personal flag, link, provider, args, the four labels, rank, rhythm and content are the page\'s', what=f'source {sid}')
     c.eq(sorted(BS.zone_ids()), sorted(js['geo']), 'the launcher reads the same zone ids as the page', what='zone ids')
     c.ok(len(js['geo']) > 200 and {'fr', 'gb', 'es', 'us', 'ca', 'nat'} <= set(js['geo']), str(len(js['geo'])), 'the zone list is the world: fr, gb, es, us, ca and nat among them')
     bad = [(z, BS.sources_of(z), s) for z, s in js['zones'] if list(BS.sources_of(z)) != s]
@@ -2577,8 +2577,8 @@ def k280(c):
         c.eq((ct['aar_tracks']['state'], ct['aar_tracks']['by'], ct['airspace']['state'], ct['airspace']['by'], ct['airspace']['secondary'], ct['mora']['state']),
              ('done', ['dircam'], 'late', ['sia'], ['openaip'], 'secondary-only'),
              'the state of a content (France): the refuelling tracks are `done` (DIRCAM has no rhythm), the airspace is `late` because the SIA is: openAIP (secondary) is said apart and never makes it `done`; the MORA has no primary source', what='contents')
-@case('K283', 'Catalogue and cycle list (SOG-0368): the catalogue says HOW the hand enters each source (`hand`: only | fallback | none; NAV Portugal is `only`, Iceland `fallback`) and the cycle list renders it (`handMode`); a hand deposit of Iceland (avians_is_enr_dep_AAAAMMJJ.geojson) is in the line of the cycle list (`steps.download.deposited`, `datedBy: file`), not only in the entry of base/fetch, so « déposé le … » survives a reload', 'K', static=True,
-      rule='Ergonomist 16 Nov 2026 (Réglages): the screen labels Iceland « à prendre à la main » (wrong: the launcher takes it, the deposit is a fallback) because NAV Portugal and Avians both say `fetch: { how: \'launcher\', provider, pick }`; and « déposé le …, édition non connue » vanishes after a reload because `deposited` / `datedBy` were only in the entry of base/fetch. Decision (10:02, replacing the `fetch.pick.fallback` of 10:00): the field `hand`.')
+@case('K283', 'Catalogue and cycle list (SOG-0368): only Iceland says that the hand deposit is a FALLBACK after a failed taking by the launcher (`fetch.pick.fallback: true`; NAV Portugal does not); a hand deposit of Iceland (avians_is_enr_dep_AAAAMMJJ.geojson) is in the line of the cycle list (`steps.download.deposited`, `datedBy: file`), not only in the entry of base/fetch, so « déposé le … » survives a reload', 'K', static=True,
+      rule='Ergonomist 16 Nov 2026 (Réglages): the screen labels Iceland « à prendre à la main » (wrong: the launcher takes it, the deposit is a fallback) because NAV Portugal and Avians both say `fetch: { how: \'launcher\', provider, pick }`; and « déposé le …, édition non connue » vanishes after a reload because `deposited` / `datedBy` were only in the entry of base/fetch.')
 def k283(c):
     import datetime
     import os
@@ -2586,12 +2586,13 @@ def k283(c):
     import tempfile
     from pathlib import Path
     RJ, BS, AF, DS = _mods()
-    c.eq({k: v['hand'] for k, v in BS.SOURCES.items()},
-         {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback',
-          'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'},
-         'the catalogue says how the hand enters each source: `only` (the launcher tries nothing: SIA, NATS, LFV, DIRCAM and NAV Portugal, SOG-0318), `fallback` (taken alone, the deposit is only a fallback: Iceland, UK Mil, openAIP, FAA), `none` (the others)', what='hand')
     cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
-    c.ok('fallback: true' not in cat, '', 'the first proposal (`fetch.pick.fallback`) is not in the catalogue: one field says it, `hand`')
+
+    def pick_of(sid):
+        i = cat.index(f"id: '{sid}',")
+        j = cat.index('pick: {', i)
+        return cat[j:cat.index('}', j)]
+    c.eq(('fallback: true' in pick_of('avians'), 'fallback' in pick_of('navpt'), cat.count('fallback: true')), (True, False, 1), 'only Iceland says its hand deposit is a fallback (`fetch.pick.fallback: true`); NAV Portugal\'s pick does not, and no other source does', what='catalogue')
     fn, check = RJ.REGISTRY[('base', 'cycle')]
 
     def line(files):
@@ -2605,13 +2606,6 @@ def k283(c):
             ctx = {**_ctx(DS, data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 16)}
             r = fn(RJ.Job('base', 'cycle', {}), check({'personal': ['avians']}), ctx)
             return {i['id']: i for i in r['items']}['avians']['steps']['download']
-    ctx0 = None
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
-        data = _repo(DS, Path(td), {})
-        r = fn(RJ.Job('base', 'cycle', {}), check({'personal': []}), {**_ctx(DS, data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 16)})
-        modes = {i['id']: (i['regime'], i['handMode']) for i in r['items']}
-    c.eq((modes['navpt'], modes['avians'], modes['sia'], modes['openaip'], modes['enaire']), (('auto', 'only'), ('auto', 'fallback'), ('hand', 'only'), ('auto', 'fallback'), ('auto', 'none')),
-         'the cycle list renders `handMode` on each line next to `regime`: NAV Portugal has the regime « auto » yet `only` as hand mode (its disk is taken by hand, SOG-0318), Iceland `fallback`', what='handMode')
     dep = line(['zones/is/avians_is_enr_dep_20261110.geojson'])
     c.eq((dep.get('deposited'), dep.get('datedBy')), ('2026-11-10', 'file'), 'a hand deposit of Iceland is in the LINE of the cycle list: the date of the deposit (read in the name of the file) and `datedBy: file`', what='deposit')
     site = line(['zones/is/avians_is_enr_20261029.geojson'])

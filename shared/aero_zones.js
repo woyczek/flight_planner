@@ -32,7 +32,6 @@
         'Pedido gratuito (0 €) en el sitio del SIA, a repetir en cada ciclo AIRAC: cuenta SIA, «Añadir al carrito», «Realizar pedido» aceptando la licencia, descargar el ZIP; luego «Recuperar el ZIP descargado» (el lanzador lo toma de Descargas) o «ZIP de exportación del SIA…».'
       ),
       licence: 'Licence ouverte du SIA',
-      hand: 'only',
       rank: 'primary',
       rhythm: 'airac',
       content: ['airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles'],
@@ -52,7 +51,6 @@
         'MILAIP PDF (section ENR 5.7) to download from the DIRCAM website, then track extraction (procedure: MANUEL_EXPLOITATION § 9.1) into data/sia/miam-enr-5-7-tracks.xml. Non-commercial reuse, citing the amendment.'
       ),
       licence: 'DIRCAM (non commercial)',
-      hand: 'only',
       rank: 'primary',
       rhythm: 'none',
       content: ['aar_tracks'],
@@ -68,7 +66,6 @@
         'Lufträume, Flugplätze, Funkfeuer, VFR-Punkte (Gemeinschaftsdaten)',
         'espacios, aeródromos, radioayudas, puntos VFR (datos comunitarios)'),
       licence: 'CC BY-NC 4.0 (© openAIP)',
-      hand: 'fallback',
       rank: 'secondary',
       rhythm: 'none',
       content: ['airspace', 'aerodromes', 'navaids', 'vfr_points'],
@@ -84,7 +81,6 @@
         'Lufträume, Funkfeuer, Punkte, Strecken', 'espacios, radioayudas, puntos, rutas'),
       licence: 'ENAIRE (usage personnel)',
       personal: 'licence', // licence d'usage personnel : la case dit qu'elle ne vaut que pour un dépôt à soi
-      hand: 'none',
       rank: 'primary',
       rhythm: 'airac',
       content: ['airspace', 'navaids', 'points', 'airways'],
@@ -102,7 +98,6 @@
         'benannte Punkte (ENR 4.4), RNAV-Strecken (ENR 3.3)', 'puntos designados (ENR 4.4), rutas RNAV (ENR 3.3)'),
       licence: 'AirNav Ireland (usage personnel)',
       personal: 'licence', // aucune licence de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
-      hand: 'none',
       rank: 'primary',
       rhythm: 'airac',
       content: ['points', 'airways'],
@@ -122,7 +117,6 @@
         'puntos designados (ENR 4.4), rutas RNAV (ENR 3.2, una página por ruta)'),
       licence: 'Avians (usage personnel)',
       personal: 'licence', // aucune condition de réutilisation lue : la case dit qu'elle ne vaut que pour un dépôt à soi
-      hand: 'fallback',
       rank: 'primary',
       rhythm: 'airac',
       content: ['points', 'airways'],
@@ -142,7 +136,6 @@
         'puntos designados (ENR 4.4), rutas convencionales y RNAV (ENR 3.1, 3.3)'),
       licence: 'NAV Portugal (usage personnel)',
       personal: 'licence', // reproduction et redistribution par accord préalable : la case dit qu'elle ne vaut que pour un dépôt à soi
-      hand: 'only',
       rank: 'primary',
       rhythm: 'editions',
       content: ['points', 'airways'],
@@ -171,7 +164,6 @@
       ),
       licence: 'LFV (usage personnel)',
       personal: 'licence', // aucune condition de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
-      hand: 'only',
       rank: 'primary',
       rhythm: 'airac',
       content: ['points', 'airways'],
@@ -189,7 +181,6 @@
       gives: L4('MOA, R, W, A, P ; routes MTR (IR, VR, SR) ; points, balises et voies aériennes (NASR, 28 jours)',
         'MOA, R, W, A, P; MTR routes (IR, VR, SR); fixes, navaids and airways (NASR, 28 days)'),
       licence: 'domaine public',
-      hand: 'fallback',
       rank: 'primary',
       rhythm: 'airac',
       content: ['airspace', 'mil_routes', 'points', 'navaids', 'airways'],
@@ -205,7 +196,6 @@
       gives: L4('espaces contrôlés (gros fichier)', 'controlled airspace (large file)', 'kontrollierte Lufträume (große Datei)',
         'espacios controlados (archivo grande)'),
       licence: 'domaine public',
-      hand: 'none',
       rank: 'primary',
       rhythm: 'airac',
       content: ['airspace'],
@@ -230,7 +220,6 @@
       ),
       licence: 'NATS (usage personnel)',
       personal: 'licence', // licence d'usage personnel : la case dit qu'elle ne vaut que pour un dépôt à soi
-      hand: 'only',
       rank: 'primary',
       rhythm: 'airac',
       content: ['airspace', 'aerodromes', 'navaids', 'points'],
@@ -262,7 +251,6 @@
         'PDF oficial de libre acceso (Open Government Licence v3.0), descargado y leído por el lanzador; límites descritos con palabras aproximados por segmentos rectos.'
       ),
       licence: 'OGL v3.0',
-      hand: 'fallback',
       rank: 'primary',
       rhythm: 'editions',
       content: ['airspace', 'aar_tracks'],
@@ -292,7 +280,6 @@
         'Datos de DFS de libre acceso (CC BY 4.0, crédito DFS), descargados por el lanzador; la enmienda vigente, verificada por su suma SHA-512.'
       ),
       licence: 'CC BY 4.0 (DFS)',
-      hand: 'none',
       rank: 'primary',
       rhythm: 'airac',
       content: ['airways'],
@@ -324,7 +311,6 @@
         'El DAH (PDF oficial gratuito, edición vigente cada 56 días, página de guías operativas) se descarga y se lee solo: botón Descargar, nada que depositar; se repite en cada edición. El AIP Canadá (ENR, AD, SUP; página aip-canada) NO se lee: texto corrido sin tabla legible, los datos digitales de NAV CANADA se venden bajo licencia; no hace falta descargarlo.'
       ),
       licence: 'NAV CANADA',
-      hand: 'none',
       rank: 'primary',
       rhythm: 'editions',
       content: [],
@@ -351,7 +337,6 @@
         'Mensaje NAT publicado por la FAA, descargado por el lanzador; los tracks cambian dos veces al día: volver a descargar antes de cada vuelo transatlántico. Los puntos con nombre (entradas y salidas oceánicas) se sitúan según la fuente X-Plane de la zona.'
       ),
       licence: 'FAA (domaine public)',
-      hand: 'none',
       rank: 'primary',
       rhythm: 'daily',
       content: ['nat_tracks'],
@@ -375,7 +360,6 @@
       ),
       licence: 'GPL (Laminar) / Navigraph (personnel)',
       personal: 'xplane', // données du simulateur (et Navigraph) : la case dit qu'elle ne vaut que pour un dépôt à soi
-      hand: 'none',
       rank: 'secondary',
       rhythm: 'none',
       content: ['airspace', 'navaids', 'points', 'airways', 'mora'],
@@ -389,7 +373,6 @@
       gives: L4('grille MORA de la zone (mora.csv) ; ODbL pour la part OpenStreetMap',
         'MORA grid of the zone (mora.csv); ODbL for the OpenStreetMap part'),
       licence: 'ODbL (part OSM)',
-      hand: 'none',
       rank: 'secondary',
       rhythm: 'none',
       content: ['mora'],

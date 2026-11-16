@@ -6,7 +6,7 @@
                zones: [identifiants] (celles qu'elle nourrit ; omis pour les sources communes : `zoneCount`), zoneCount, personal: 'licence' | 'xplane' | '' ,
                steps: { download: { state: 'done' | 'late' | 'missing' | 'waiting' | 'unavailable' | 'n/a', cycle (le cycle détenu, pour une source datée), at (ISO UTC du plus récent fichier) },
                         build: { zones: n, upToDate: n }, publish: { published: n, unpublished: n, unknown: n } },
-               deposited? + datedBy? ('file') dans steps.download (SOG-0368 : un dépôt à la main d'Islande, lu au NOM du fichier : sa date est celle du dépôt, pas de l'édition), handMode ('only' | 'fallback' | 'none' : le champ `hand` du catalogue — « only » : le lanceur n'essaie rien, le fichier se prend à la main ; « fallback » : prise seule, le dépôt à la main n'est qu'un repli ; SOG-0368), rank ('primary' | 'secondary'), rhythm ('airac' | 'editions' | 'daily' | 'none'), content [les contenus qu'elle donne] (SOG-0369 : les trois faits du catalogue ; une source sans rythme n'est JAMAIS `late` : sa ligne dit son âge, `steps.download.ageDays`),
+               deposited? + datedBy? ('file') dans steps.download (SOG-0368 : un dépôt à la main d'Islande, lu au NOM du fichier : sa date est celle du dépôt, pas de l'édition), rank ('primary' | 'secondary'), rhythm ('airac' | 'editions' | 'daily' | 'none'), content [les contenus qu'elle donne] (SOG-0369 : les trois faits du catalogue ; une source sans rythme n'est JAMAIS `late` : sa ligne dit son âge, `steps.download.ageDays`),
                why (la raison quand une étape manque : 'newer-in-downloads' | 'not-downloaded' | 'older-than-cycle' | 'no-file' | 'unavailable-at-publisher'),
                unavailable: { since } (SOG-0273 : l'éditeur ne publie plus le fichier — DIRCAM, AIP militaire britannique : l'étape n'est NI « en retard » NI « à faire »),
                hand: { link, expected: [motifs de nom], inDownloads: [noms du premier niveau de Téléchargements] } (regime 'hand' seulement) } ],
@@ -208,7 +208,7 @@ def run(job, args, ctx):
         if state == 'late' and current in dl_cycles.get(sid, ()) and (held is None or held < current):
             why = 'newer-in-downloads'      # un fichier du cycle en vigueur attend déjà dans Téléchargements (par son nom) : à prendre
         item = {'id': sid, 'label': list(src['label']), 'regime': regime, 'personal': src.get('personal', ''), 'zoneCount': len(zones), **({} if common else {'zones': zones}),
-                'handMode': src.get('hand'), 'rank': src.get('rank'), 'rhythm': rhythm, 'content': list(src.get('content') or ()),
+                'rank': src.get('rank'), 'rhythm': rhythm, 'content': list(src.get('content') or ()),
                 'steps': {'download': {'state': state, **({'cycle': held} if held else {}), 'at': iso(at) if at else None, **({'ageDays': age_days(at, today)} if at else {}), **({'deposited': deposits[sid], 'datedBy': 'file'} if deposits.get(sid) else {})}, 'build': {'zones': len(mine), 'upToDate': built}, 'publish': pub}}
         if why:
             item['why'] = why
