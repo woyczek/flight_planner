@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3c8c907",
+  "organisation": "33e2bcc",
   "fiches": 388,
   "untranslated": 0,
   "priorities": 374,
@@ -1144,10 +1144,10 @@
      "id": "SOG-0389",
      "kind": "feature",
      "state": "planned",
-     "fr": "Route KABQ → EGLL : la route calculée ne prend pas les routes NAT",
-     "en": "Route KABQ → EGLL: the computed route does not take the NAT tracks",
-     "de": "Route KABQ → EGLL: die berechnete Route nutzt die NAT-Tracks nicht",
-     "es": "Ruta KABQ → EGLL: la ruta calculada no toma las rutas NAT"
+     "fr": "Carburant, KABQ → EGLL : la route calculée apparaît puis disparaît, il reste un direct",
+     "en": "Fuel, KABQ → EGLL: the computed route appears then disappears, a direct is left",
+     "de": "Kraftstoff, KABQ → EGLL: die berechnete Route erscheint und verschwindet, es bleibt ein Direkt",
+     "es": "Combustible, KABQ → EGLL: la ruta calculada aparece y desaparece, queda un directo"
     }
    ]
   },

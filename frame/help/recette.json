@@ -3936,22 +3936,6 @@
    "recommended": 0
   },
   {
-   "id": "Q-0073",
-   "fiche": "SOG-0389",
-   "app": "pilote",
-   "question": "KABQ → EGLL : ton lanceur a rendu une route PAR la route NAT V. Où as-tu lu qu'elle ne la prenait pas ?",
-   "context": "J'ai lu la réponse gardée par ton lanceur (21 h 35 Z, FL350) : la route NAT V est choisie — « … TUSKY N71B-N90B RAFIN NATV ATSUR DCT OMOKO … », 1 555 NM publiés entre RAFIN et ATSUR. Mes deux hypothèses sur le niveau étaient fausses. Le défaut est donc dans ce que l'écran montre ; dis-moi où, et joins une capture par « Signaler » si tu peux.",
-   "options": [
-    "Sur la Carte : le trait de la route ne suit pas les routes NAT dessinées",
-    "Dans Carburant : le texte de la route ne montre pas la route NAT",
-    "Dans Carburant : la ligne de preuve ne dit pas la route NAT",
-    "Autre : la route NAT prise n'est pas celle que j'attendais (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
