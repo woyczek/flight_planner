@@ -3713,6 +3713,22 @@
  ],
  "decisions": [
   {
+   "id": "Q-0062",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "Canada : le lanceur peut-il lire l'AIP du Canada (PDF) pour ton usage personnel, sur ce poste seulement ?",
+   "context": "Le relevé d'AeroDB est net : aucune source libre ne donne les points ni les voies du Canada. L'AIP de NAV CANADA est un PDF gratuit mais « tous droits réservés » ; leurs données (AIXM) sont sous licence commerciale ; le manuel des espaces que la suite prend déjà n'a ni points ni voies. Or la sortie de l'océan vers Boston ou New York passe par le Canada : sans ces points, la section reste « nommée, non localisée » ou en direct. Ce que je conteste : le publier dans le dépôt du groupe, même réduit — ce serait redistribuer une publication sous droit d'auteur. Ce que je propose : la même règle que pour l'Espagne (ENAIRE) — tu déposes le PDF de l'ENR, le lanceur le lit sur ce poste sous la case d'usage personnel, rien n'est publié ; ton téléphone voit alors la section nommée, sans tracé. En attendant ta réponse, le poste se sert déjà de ton X-Plane pour localiser ces points, en mémoire. Ce lot (L4) vient après les trois autres ; ta réponse ne bloque rien aujourd'hui.",
+   "options": [
+    "Oui : lecture personnelle sur ce poste, jamais publiée (comme l'Espagne)",
+    "Non : X-Plane sur le poste suffit, les points du Canada restent nommés ailleurs",
+    "Je me renseigne sur une licence NAV CANADA d'abord",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
