@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f29e2cd",
-  "fiches": 383,
+  "organisation": "f506636",
+  "fiches": 384,
   "untranslated": 0,
   "priorities": 374
  },
@@ -475,6 +475,27 @@
      "de": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
      "es": "Aircraft: “Search” a registration outside France (rzjets.net), on request",
      "rank": 6
+    }
+   ]
+  },
+  {
+   "id": "pilote-aeronefs-fiches-de-performances",
+   "app": "pilote",
+   "label": {
+    "fr": "Aéronefs ; fiches de performances",
+    "en": "Aéronefs ; fiches de performances",
+    "de": "Aéronefs ; fiches de performances",
+    "es": "Aéronefs ; fiches de performances"
+   },
+   "items": [
+    {
+     "id": "SOG-0385",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Fiche de performances : après l'import d'une réponse de ChatGPT, la table régime / débit / altitude manque et des champs sont dits « base V2 »",
+     "en": "Performance sheet: after importing a ChatGPT answer, the power / fuel flow / altitude table is missing and fields are labelled 'V2 base'",
+     "de": "Leistungsblatt: nach dem Import einer ChatGPT-Antwort fehlt die Tabelle Leistung / Verbrauch / Höhe, und Felder heißen „V2-Basis“",
+     "es": "Ficha de prestaciones: tras importar una respuesta de ChatGPT falta la tabla régimen / consumo / altitud y hay campos marcados «base V2»"
     }
    ]
   },
