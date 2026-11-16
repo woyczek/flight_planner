@@ -3,8 +3,10 @@
 // par leurs nœuds (routing.js along) ou dites fermées, les niveaux gardés là où ils changent. Ni page, ni stockage : la base est
 // celle que l'appelant passe (ctx.aerodb dans Carburant), un objet inventé dans le banc frame/lib/test/route_model.html.
 // API :
-//   routeModel(text, { dep, arr, known, chain, base, procs }) → { points, unresolved, tokens, badAirways, homonyms, jumps, natTracks } (voir la
-//   fonction ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372).
+//   routeModel(text, { dep, arr, known, chain, base, procs, nat }) → { points, unresolved, tokens, badAirways, homonyms, jumps, natTracks,
+//   natDirect } (voir la fonction ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372 ; nat : les routes NAT du
+//   jour lues et valides, [{ id, points: [{ id, lat, lon }] }] — aerodb.natTracks() —, null si elles ne le sont pas ; natDirect : les routes
+//   NAT gardées NON dépliées, [{ l, why: 'unread' | 'gone' | 'ends' }]).
 //   NAT_TRACK : le nom d'une route NAT dans un texte (« NATG »), gardé tel qu'écrit entre deux mots de la route (SOG-0372).
 //   JUMP_NM : au-delà, un tronçon entre deux points consécutifs est dit (jumps) : un homonyme lointain, un point mal tapé (SOG-0142).
 //   far : les noms dont le seul lieu connu (ou le plus proche) est plus loin de la route que 2 × la distance directe + FAR_EXTRA_NM —
@@ -44,12 +46,14 @@ export async function routeModel(text, {
   known = new Map(),
   chain = [],
   base = null,
-  procs = []
+  procs = [],
+  nat = null
 } = {}) {
   // SOG-0372 (c), décision de l'ergonome du 16/11 à 9 h 00 : les noms de la SID et de la STAR CHOISIES (procs) sont ces procédures,
   // gardées sans alerte — par égalité avec le choix, jamais par un motif général (un mot de la forme américaine reste un point)
   const procSet = new Set((Array.isArray(procs) ? procs : []).map(x => String(x ?? '').toUpperCase()).filter(Boolean)),
-    natTracks = []; // SOG-0372 : les lettres des routes NAT gardées (« G »), que l'appelant compare aux routes du jour lues
+    natTracks = [], // SOG-0372 : les lettres des routes NAT gardées (« G »), que l'appelant compare aux routes du jour lues
+    natAt = []; // SOG-0372 : chaque route NAT gardée et le point qui la précède (son entrée), dépliée après la lecture
   const points = [],
     unresolved = [],
     tokens = [];
@@ -204,6 +208,10 @@ export async function routeModel(text, {
     // choisie est cette procédure : gardés tels qu'écrits, jamais « inconnus »
     if (t.kind === 'name' && (procSet.has(t.id) || NAT_TRACK.test(t.id) && ti > 0 && (nx?.kind === 'name' || nx?.kind === 'coord'))) {
       if (!procSet.has(t.id) && !natTracks.includes(t.id.slice(3))) natTracks.push(t.id.slice(3));
+      if (!procSet.has(t.id) && points.length) natAt.push({
+        l: t.id.slice(3),
+        entry: points.at(-1)
+      });
       tokens.push({
         keep: t.id
       });
@@ -263,6 +271,7 @@ export async function routeModel(text, {
   // une voie écrite n'est suivie que si ses deux bouts en sont des nœuds reliés le long d'elle dans le couloir du tronçon : ses nœuds
   // sont alors insérés (la distance et la carte la suivent) ; sinon le tronçon reste direct et la ligne le dit (badAirways). Les
   // nœuds déjà gardés du vol (awy) sont repris tels quels ; sans base lisible, rien n'est jugé
+  const natDirect = unfoldNat(points, natAt, nat);
   const badAirways = [];
   for (let i = 1; i < points.length; i++) {
     const p = points[i],
@@ -315,7 +324,8 @@ export async function routeModel(text, {
     homonyms,
     jumps,
     far,
-    natTracks
+    natTracks,
+    natDirect
   };
 }
 /** Au-delà de 2 × la distance directe + cette marge, un lieu n'est pas celui de la route (SOG-0142 ; la règle du moteur d'AeroDB). */
@@ -330,5 +340,65 @@ function nmOf(a, b) {
 }
 /** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
 export const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
+/** SOG-0372 (refus du 16/11 à 14 h 53, « on a toujours des tracés directs entre Dublin et JFK ») : chaque route NAT gardée (natAt :
+ *  { l, entry }) est dépliée dans `points` — les points de la route du jour entre son entrée (le point qui précède le mot) et sa sortie
+ *  (le point qui le suit), quand les deux sont sur elle, dans cet ordre (même nom, ou même position à 0,1° près). Les routes du jour sont
+ *  une entrée non sûre : une lettre, 40 points au plus, nombres finis et bornés, identifiant de 12 signes au plus. Rend les routes NON
+ *  dépliées : [{ l, why }] — 'unread' (aucune route du jour lue et valide), 'gone' (pas de route de cette lettre), 'ends' (entrée ou sortie
+ *  hors de la route). La traversée reste alors un direct, et l'appelant le dit. */
+function unfoldNat(points, natAt, nat) {
+  const out = [];
+  if (!natAt.length) return out;
+  const tracks = new Map();
+  for (const t of Array.isArray(nat) ? nat.slice(0, 60) : []) {
+    const id = String(t?.id ?? '').toUpperCase();
+    if (!/^[A-Z]$/.test(id) || !Array.isArray(t.points) || tracks.has(id)) continue;
+    tracks.set(id, t.points.slice(0, 40).filter(q => q && Number.isFinite(+q.lat) && Number.isFinite(+q.lon) && Math.abs(+q.lat) <= 90 &&
+      Math.abs(+q.lon) <= 180).map(q => ({
+      id: String(q.id ?? '').trim().toUpperCase().slice(0, 12),
+      lat: +q.lat,
+      lon: +q.lon
+    })));
+  }
+  const same = (a, b) => !!a && !!b && (a.id && a.id === String(b.id ?? '').toUpperCase() || Math.abs(a.lat - +b.lat) <= 0.1 && Math.abs(a
+    .lon - +b.lon) <= 0.1);
+  for (const n of natAt.slice().reverse()) {
+    const i = points.indexOf(n.entry),
+      exit = i >= 0 ? points[i + 1] : null,
+      tr = tracks.get(n.l);
+    if (!Array.isArray(nat) || !nat.length) {
+      out.unshift({
+        l: n.l,
+        why: 'unread'
+      });
+      continue;
+    }
+    if (!tr) {
+      out.unshift({
+        l: n.l,
+        why: 'gone'
+      });
+      continue;
+    }
+    const a = tr.findIndex(q => same(q, n.entry)),
+      b = exit ? tr.findIndex((q, k) => k > a && same(q, exit)) : -1;
+    if (a < 0 || b < 0) {
+      out.unshift({
+        l: n.l,
+        why: 'ends'
+      });
+      continue;
+    }
+    points.splice(i + 1, 0, ...tr.slice(a + 1, b).map(q => ({
+      id: q.id,
+      lat: q.lat,
+      lon: q.lon,
+      nat: n.l
+    })));
+  }
+  return out;
+}
 /** SOG-0372 : le nom d'une route NAT tel que le moteur l'écrit dans une route prise (« NATG ») : « NAT » et une lettre. */
 export const NAT_TRACK = /^NAT[A-Z]$/;
+/** SOG-0372 : un texte qui porte un nom de route NAT (« NATG ») : les routes du jour sont alors lues pour le déplier. */
+export const NAT_IN_TEXT = /(^|\s)NAT[A-Z](\s|$)/i;

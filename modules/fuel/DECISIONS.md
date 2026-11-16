@@ -2087,3 +2087,16 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   before the wait and the route of after is compared with them, the object the same or not; a change re-reads the newer route. F235
   (red before 3 times in 3: the reading held by the case, released right after « Ajouter un point »); F232 no longer waits for the end of
   the mount before « Appliquer » (8 times green in a row).
+- **16 Nov 2026 — SOG-0372, the crossing follows the NAT track of the day** (the user's refusal, 14 h 53: « les nats sont bonnes, mais on a
+  toujours des tracés directs entre Dublin et JFK »; the ergonomist at 15 h 10). « NATG » was kept as a word between its entry and its exit
+  (SOG-0372 c 1) but never unfolded: route.points went straight from the entry to the exit, and so did the Map, the distance and the quote.
+  Now `RM.routeModel(text, { nat })` unfolds each kept NAT word (`unfoldNat`): the points of the day's track of that letter between the
+  entry (the point before the word) and the exit (the point after it), when both are on the track in that order (same name, or same
+  position within 0.1°); inserted points carry `nat: <letter>`; the text keeps « NATG ». `nat` comes from `natForModel` — aerodb.natTracks()
+  when `natState` is present and not expired, kept per reading (from | validUntil) — and is asked only when the text carries a NAT word;
+  the tracks are an untrusted input (one letter, 40 points at most, finite bounded numbers, ids of 12 signs). Not unfolded, the crossing
+  stays direct and `[data-natwarn]` SAYS it: the day's tracks not read or stale → « Route NAT G : routes du jour non lues, traversée tracée
+  en direct » (F230's « stale: nothing » changed by this decision), entry or exit not on the track → « … entrée ou sortie hors de la route
+  du 16/11, traversée tracée en direct », a letter absent → the line of before (natTrackGone). The proposals drawn on the Map (`altsPublish`)
+  and « Auto » unfold the same way. F236 (red before); F230 updated. The legs after the exit (an American airway not built in the base, a
+  STAR of KJFK not read) are data (SOG-0354), not this.

@@ -288,6 +288,16 @@ const TX = {
     'Gelesen, aber die Meldung enthält keine neueren Tracks als die vom {d}.',
     'Leído, pero el mensaje no trae rutas más recientes que las del {d}.'
   ],
+  natUnread: ['Route NAT {l} : routes du jour non lues, traversée tracée en direct',
+    'NAT track {l}: the day\'s tracks not read, the crossing drawn direct',
+    'NAT-Route {l}: Tagesrouten nicht gelesen, Überquerung direkt gezeichnet',
+    'Ruta NAT {l}: rutas del día no leídas, travesía trazada en directo'
+  ],
+  natEnds: ['Route NAT {l} : entrée ou sortie hors de la route du {d}, traversée tracée en direct',
+    'NAT track {l}: entry or exit not on the track of {d}, the crossing drawn direct',
+    'NAT-Route {l}: Ein- oder Austritt nicht auf der Route vom {d}, Überquerung direkt gezeichnet',
+    'Ruta NAT {l}: entrada o salida fuera de la ruta del {d}, travesía trazada en directo'
+  ],
   natTrackGone: ['Route NAT {l} : absente des routes du {d}', 'NAT track {l}: not in the tracks of {d}',
     'NAT-Track {l}: nicht in den Tracks vom {d}',
     'Ruta NAT {l}: ausente de las rutas del {d}'
@@ -4128,21 +4138,46 @@ async function natTrackWarn(s) {
     ask = s.natWarnAsk = (s.natWarnAsk || 0) + 1;
   let text = '';
   if (letters.length) {
-    const st = await Promise.resolve().then(() => s.ctx.aerodb?.natState?.()).catch(() => null);
+    const st = await Promise.resolve().then(() => s.ctx.aerodb?.natState?.()).catch(() => null),
+      direct = Array.isArray(s.natDirect) ? s.natDirect : [];
     if (st?.present && st.expired === false) {
       const got = await Promise.resolve().then(() => s.ctx.aerodb?.nat?.()).catch(() => null),
         ids = new Set((Array.isArray(got?.tracks) ? got.tracks : []).slice(0, 60).map(t => String(t?.id ?? '').toUpperCase()).filter(x =>
           /^[A-Z]{1,2}$/.test(x)));
-      if (ids.size) text = letters.filter(l => !ids.has(l)).map(l => tt(TX.natTrackGone, {
+      if (ids.size) text = [...letters.filter(l => !ids.has(l)).map(l => tt(TX.natTrackGone, {
         l,
         d: natDay(st.from)
+      })), ...direct.filter(x => x.why === 'ends' && ids.has(x.l)).map(x => tt(TX
+        .natEnds, { // SOG-0372 : la traversée restée en direct
+          l: x.l,
+          d: natDay(st.from)
+        }))].join(' · ');
+    } else // SOG-0372 : les routes du jour non lues (ou périmées) — la traversée est un direct, et la ligne le dit (jamais en silence)
+      text = letters.map(l => tt(TX.natUnread, {
+        l
       })).join(' · ');
-    }
   }
   const box = S === s && !gone(s) && ask === s.natWarnAsk ? s.body?.querySelector('[data-natwarn]') : null;
   if (!box) return;
   box.textContent = text;
   box.hidden = !text;
+}
+/** SOG-0372 : les routes NAT du jour lues et valides, placées par aerodb (natTracks), pour déplier « NATx » dans la route ; null sans
+ *  routes valides. Gardées par lecture (la date et la fin de validité de l'état) : relues quand de nouvelles routes sont lues. */
+async function natForModel(s) {
+  const A = s?.ctx?.aerodb;
+  if (typeof A?.natState !== 'function' || typeof A?.natTracks !== 'function') return null;
+  const st = await Promise.resolve().then(() => A.natState()).catch(() => null);
+  if (!st?.present || st.expired !== false) return null;
+  const key = `${st.from || ''}|${st.validUntil || ''}`;
+  if (s.natModel?.key === key) return s.natModel.tracks;
+  const tracks = await Promise.resolve().then(() => A.natTracks()).catch(() => null);
+  if (!Array.isArray(tracks)) return null;
+  s.natModel = {
+    key,
+    tracks
+  };
+  return tracks;
 }
 /** Le jour d'un instant ISO, « JJ/MM » (la forme du `issued` des itinéraires, route_engine natOf) ; « ? » sans instant. */
 const natDay = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '?';
@@ -4393,12 +4428,15 @@ async function altsPublish(mode, plans, pts) {
   const s = S,
     r = S.flight.route || {},
     known = knownPoints(r, true),
+    // SOG-0372 : les routes NAT du jour, pour qu'une proposition par l'Atlantique Nord suive sa route NAT sur la Carte
+    nat = !pts && plans.some(p => RM.NAT_IN_TEXT.test(String(p.route || ''))) ? await natForModel(s) : null,
     got = pts || await Promise.all(plans.map(p => p.route ? Promise.resolve().then(() => RM.routeModel(p.route, {
       dep: r.dep,
       arr: r.arr,
       known,
       chain: [],
-      base: xpBase(S.ctx.aerodb)
+      base: xpBase(S.ctx.aerodb),
+      nat
     })).then(x => x.points || []).catch(() => []) : []));
   if (gone(s)) return;
   const ok = q => Number.isFinite(+q?.lat) && Number.isFinite(+q?.lon) && Math.abs(+q.lat) <= 90 && Math.abs(+q.lon) <= 180;
@@ -5498,6 +5536,8 @@ function resolveRoute(normalize = true) {
       // F235 : le texte, le départ et l'arrivée lus, en VALEURS — « Ajouter un point » et « Direct vers » changent l'objet de la route en
       // place pendant la lecture : comparé à lui-même, il passait pour inchangé et la lecture d'avant écrasait la route nouvelle
       was = [asked.text, asked.dep, asked.arr],
+      // SOG-0372 : les routes NAT du jour lues et valides, pour déplier « NATx » (seulement quand le texte en porte une)
+      nat = RM.NAT_IN_TEXT.test(String(asked.text || '')) ? await natForModel(s) : null,
       // les points déjà connus du vol, et ceux des procédures choisies (la sortie d'une SID, l'entrée d'une STAR) : un nom qu'aerodb ne
       // connaît pas mais qu'une procédure lue porte (BEPAN de la BEPA4E, SOG-0012) prend sa position ; aerodb passe toujours d'abord
       known = knownPoints(asked, true),
@@ -5509,14 +5549,16 @@ function resolveRoute(normalize = true) {
         homonyms = [],
         jumps = [],
         far = [],
-        natTracks = []
+        natTracks = [],
+        natDirect = []
       } = await RM.routeModel(asked.text, {
         dep: asked.dep,
         arr: asked.arr,
         known,
         chain: asked.points || [],
         base: xpBase(S.ctx.aerodb), // SOG-0375
-        procs: chosenProcNames() // SOG-0372 (c) : la SID et la STAR choisies, jamais « inconnues »
+        procs: chosenProcNames(), // SOG-0372 (c) : la SID et la STAR choisies, jamais « inconnues »
+        nat // SOG-0372 : « NATx » déplié par la route du jour
       });
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     // le vol a changé d'objet pendant la lecture (chaque enregistrement du vol, writeFlight, en fait un nouveau ; un autre écrivain
@@ -5578,6 +5620,7 @@ function resolveRoute(normalize = true) {
     }))].map(x => `<span data-rw>${esc(x)}</span>`).join('<br>');
     // SOG-0372 : une route NAT du texte absente des routes du jour lues, dite calmement
     S.natLetters = natTracks;
+    S.natDirect = natDirect; // SOG-0372 : les traversées restées en direct, dites par natTrackWarn
     natTrackWarn(s);
     if (unresolved.length) {
       zoneNote(s, seq, points, ut);
@@ -5738,7 +5781,8 @@ async function autoAirways() {
         known,
         chain: r.points || [],
         base: xpBase(S.ctx.aerodb), // SOG-0375
-        procs: chosenProcNames()
+        procs: chosenProcNames(),
+        nat: RM.NAT_IN_TEXT.test(String(r.text || '')) ? await natForModel(s) : null // SOG-0372
       });
     if (gone(s) || seq !== S.routeSeq) return;
     // les mots d'un Auto précédent (voies, nœuds, sortie de SID et entrée de STAR qu'il a ajoutées) sont retirés : jamais le départ

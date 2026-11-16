@@ -5982,10 +5982,11 @@ def f229(c):
 
 
 @case('F230', 'Route field, a NAT track written in the route whose letter is not in the day\'s tracks READ: a calm line « Route NAT G : absente '
-      'des routes du 16/11 », never « point inconnu »; a track of the day: nothing; tracks not read (stale): nothing', 'F', tags=('fuel',),
+      'des routes du 16/11 », never « point inconnu »; a track of the day, unfolded: nothing; tracks not read (stale): the crossing drawn '
+      'direct, said', 'F', tags=('fuel',),
       designs=('standard',), screens=False, langs4=False,
       rule='SOG-0372, the ergonomist\'s decision at 9 h 37 (the capture\'s proposal went through NAT G of 14/11; the tracks of 16/11 are A to E, '
-      'S to Z); aerodb\'s NAT state and tracks held by the case (stub)')
+      'S to Z), and at 15 h 10 (tracks not read: direct, and the line SAYS it); aerodb\'s NAT state and tracks held by the case (stub)')
 def f230(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.page.add_init_script(_NAT_STUB)
@@ -5994,7 +5995,7 @@ def f230(c):
     c.open('fuel', docs=_nat_flight())
     to_step(c, 1)
     c.js("window.__nat.st = { present: true, count: 2, from: '2026-11-16T11:30:00.000Z', validUntil: '2026-11-16T19:00:00.000Z', expired: false, current: 2 }; "
-         "window.__nat.tracks = [{ id: 'A' }, { id: 'S' }]")
+         "window.__nat.tracks = [{ id: 'A', route: ['55/15', '55/20', '54/50'] }, { id: 'S', route: ['57/15', '57/50'] }]")
 
     def typed(text):
         c.js(f"(t => {{ t.value = {text!r}; t.dispatchEvent(new Event('input', {{bubbles: true}})); t.dispatchEvent(new Event('change', {{bubbles: true}})); }})(document.querySelector('{FUEL} [data-k=rtext]'))")
@@ -6005,15 +6006,15 @@ def f230(c):
     c.ok(c.js(f"document.querySelector('{W}').classList.contains('f-muted')"), '', 'calm, not a warning colour')
     c.js(f"document.querySelector('{W}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F230_{c.design}_390_{c.lang}_delivered.png')
-    # a track of the day: nothing
-    typed('EINN MALOT NATA 54/50 CYYT')
+    # a track of the day, its entry and its exit on it (unfolded): nothing
+    typed('EINN 55/15 NATA 54/50 CYYT')
     c.until(f"document.querySelector('{W}')?.hidden === true", timeout=10000, what='a track of the day: no line')
-    # the tracks not read (stale): nothing, even for NAT G
+    # the tracks not read (stale): the crossing is a direct, and the line says it (the ergonomist at 15 h 10: never silent)
     c.js("window.__nat.st = { ...window.__nat.st, expired: true }")
     typed('EINN MALOT NATG 54/50 CYYT')
-    c.settle()
-    c.wait(800)
-    c.ok(c.js(f"document.querySelector('{W}')?.hidden === true"), c.text(W), 'tracks not read for today: nothing said')
+    c.until(f"(document.querySelector('{W}')?.textContent || '').includes('G')", timeout=10000, what='the line of the tracks not read')
+    c.eq(norm(c.text(W)), norm(tx(T, 'natUnread', c.lang).replace('{l}', 'G')), '« Route NAT G : routes du jour non lues, traversée tracée en direct »',
+         what='not read')
 
 
 # SOG-0374: aerodb.fetchProcedures(icao, { source: 'ukpkg' }) held by the case (window.__uk.go(answer)); the other sources unchanged
@@ -6255,6 +6256,75 @@ def f235(c):
     words = str((d.get('route') or {}).get('text') or '').split()
     c.ok('TSTA' in ids and 'TSTA' in words, [ids, words], 'the point added is kept, in the points and in the text written')
     c.ok('TSTA' in (c.text(f'{FUEL} [data-pts]') or ''), c.text(f'{FUEL} [data-pts]'), 'and on the screen')
+
+
+# SOG-0372 (unfolded crossing): aerodb's NAT state and placed tracks held by the case (window.__natx.st, window.__natx.tracks); an invented
+# track G (positions of the NAT message form, not of a real day)
+_NATX_STUB = """(() => { window.__natx = { st: { present: true, count: 1, from: '2026-11-16T11:30:00.000Z', validUntil: '2026-11-16T19:00:00.000Z',
+    expired: false, current: 1 }, tracks: [{ id: 'G', points: [{ id: '53/15', lat: 53, lon: -15 }, { id: '53/20', lat: 53, lon: -20 },
+    { id: '54/30', lat: 54, lon: -30 }, { id: '56/40', lat: 56, lon: -40 }, { id: '54/50', lat: 54, lon: -50 }, { id: 'XNICS', lat: 49.5, lon: -55 }] }] };
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { db.natState = async () => window.__natx.st;
+        db.nat = async () => window.__natx.st.present ? { tracks: window.__natx.tracks.map(t => ({ id: t.id })) } : null;
+        db.natTracks = async () => window.__natx.st.present ? JSON.parse(JSON.stringify(window.__natx.tracks)) : [] } catch (e) {}
+      return db } } } }) })()"""
+
+
+def _natx_docs(text):
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': text, 'dep': 'EGLL', 'arr': 'KJFK', 'manual': True,
+                             'points': [{'id': 'EGLL', 'lat': 51.47, 'lon': -0.46}, {'id': 'KJFK', 'lat': 40.64, 'lon': -73.78}]}
+    return docs
+
+
+@case('F236', 'Route field, a NAT track of the day written between its entry and its exit (« 53/15 NATG 54/50 »): its points read that day '
+      'are put in between (the Map, the distance and the quote follow the track); the day\'s tracks not read, or the entry or the exit not on '
+      'the track: the crossing stays direct and the line SAYS it', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0372 (the user\'s refusal, 14 h 53: « les nats sont bonnes, mais on a toujours des tracés directs entre Dublin et JFK »); the '
+      'ergonomist at 15 h 10: unfold by aerodb.natTracks(), bounded points, only when they frame the entry and the exit; not read: direct and '
+      'said, never silent; aerodb\'s tracks held by the case (stub), an invented track')
+def f236(c):
+    path = 'pilot/ABC/current_flight.json'
+    T = 'modules/fuel/module.js'
+    W = f'{FUEL} [data-natwarn]'
+    c.page.add_init_script(_NATX_STUB)
+    rt = f'{FUEL} [data-k="rtext"]'
+
+    def typed(text):
+        c.js(f"(t => {{ t.value = {text!r}; t.dispatchEvent(new Event('input', {{bubbles: true}})); t.dispatchEvent(new Event('change', {{bubbles: true}})); }})(document.querySelector('{rt}'))")
+
+    def pts_of(d):
+        return [(p.get('id'), p.get('lat'), p.get('lon')) for p in (d.get('route') or {}).get('points') or []]
+    c.open('fuel', docs=_natx_docs('EGLL 53/15 NATG 54/50 KJFK'))
+    to_step(c, 1)
+    # the day's track G read: its points between 53/15 and 54/50
+    typed('EGLL 53/15 NATG 54/50 KJFK')
+    d = cf_doc(c, lambda d: any(abs((p[1] or 0) - 56) < 1e-6 and abs((p[2] or 0) + 40) < 1e-6 for p in pts_of(d)), 'the track unfolded', timeout=10000)
+    ids = [p[0] for p in pts_of(d)]
+    c.eq(ids, ['EGLL', '53/15', '53/20', '54/30', '56/40', '54/50', 'KJFK'], 'the track\'s points between its entry and its exit, in order', what='unfolded')
+    unfolded_nm = float(d['route'].get('distanceNm') or 0)
+    c.ok('NATG' in str(d['route'].get('text')), d['route'].get('text'), 'the text keeps « NATG » (the points are not written in it)')
+    c.ok(c.js(f"document.querySelector('{W}')?.hidden !== false"), c.text(W), 'nothing said: the crossing follows the track')
+    # the entry not on the track: direct, said
+    typed('EGLL 52/15 NATG 54/50 KJFK')
+    d = cf_doc(c, lambda d: '52/15' in [p[0] for p in pts_of(d)], 'the route with another entry', timeout=10000)
+    c.eq([p[0] for p in pts_of(d)], ['EGLL', '52/15', '54/50', 'KJFK'], 'not unfolded: the entry is not on the track', what='ends')
+    c.until(f"!document.querySelector('{W}')?.hidden", timeout=8000, what='the line says it')
+    c.eq(norm(c.text(W)), norm(tx(T, 'natEnds', c.lang).replace('{l}', 'G').replace('{d}', '16/11')), '« … entrée ou sortie hors de la route du 16/11, traversée tracée en direct »', what='ends line')
+    # the day's tracks not read: direct, said
+    c.js("window.__natx.st = { present: false, count: 0, from: null, validUntil: null, expired: null, current: 0 }")
+    typed('EGLL 53/15 NATG 54/50 KJFK')
+    d = cf_doc(c, lambda d: '53/15' in [p[0] for p in pts_of(d)] and '56/40' not in [p[0] for p in pts_of(d)], 'the route, tracks not read', timeout=10000)
+    c.eq([p[0] for p in pts_of(d)], ['EGLL', '53/15', '54/50', 'KJFK'], 'not unfolded: the day\'s tracks not read', what='unread')
+    c.ok(unfolded_nm > float(d['route'].get('distanceNm') or 0) + 10, [unfolded_nm, d['route'].get('distanceNm')], 'the distance followed the unfolded track')
+    c.until(f"(document.querySelector('{W}')?.textContent || '').includes('G')", timeout=8000, what='the line says it')
+    c.eq(norm(c.text(W)), norm(tx(T, 'natUnread', c.lang).replace('{l}', 'G')), '« Route NAT G : routes du jour non lues, traversée tracée en direct »', what='unread line')
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.js(f"document.querySelector('{W}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F236_{c.design}_390_{c.lang}_unread.png')
 
 
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
