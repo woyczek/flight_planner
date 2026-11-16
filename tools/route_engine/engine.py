@@ -704,7 +704,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
         legs.append(dict(start=nav.nodes[a],end=nav.nodes[b],via=e['route'],kind=e.get('kind','AIRWAY' if e['route']!='DCT' else 'DCT'),
             data_gap=e.get('data_gap'),fra_area=e.get('fra_area'),from_role=e.get('from_role'),to_role=e.get('to_role'),fra_rows=e.get('fra_rows'),nm=round(e['nm'],2),
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
-            procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
+            procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_partial=bool(e.get('partial')),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
             nat=e.get('nat'),nat_link=e.get('nat_link')))   # SOG-0078 ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
@@ -773,6 +773,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
     fra_loaded=bool(getattr(nav,'fra',None) and nav.fra.book)
     if request.get('use_procedures'):
         selected_kinds={l.get('kind') for l in legs}
+        for l in legs:      # SOG-0374 : une SID lue en partie (point de sortie et niveaux) est dite : son tracé n'est pas lu
+            if l.get('procedure_partial'):issue('REVUE',f'{l["procedure_airport"]} : SID {l["procedure_name"]} lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte.')
         for ad,kind in [(dep,'SID'),(arr,'STAR')]:
             if kind not in selected_kinds:
                 stats=nav.procedures.stats.get(ad,{})

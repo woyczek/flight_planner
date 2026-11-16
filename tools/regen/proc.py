@@ -118,8 +118,79 @@ def _read_ead(env):
             'extra': {'ocr': bool(ocr and ocr.get('procedures'))}}
 
 
+UNKNOWN_CYCLE = '1970-01-01'      # le cycle d'un paquet dont le nom ne dit pas de date : une date très ancienne, jamais celle du jour (le lecteur sert ces SID « outdated »), et `cycle_unknown` sur la source
+
+
+def _read_ukpkg(env):
+    """Lit les SID d'UN aérodrome du Royaume-Uni dans le PAQUET eAIP de NATS posé à la main sous un dossier de l'utilisateur (SOG-0374 ; tools/uk_package.py, proc_uk_sid.py). Le paquet est reconnu par sa FORME dans les dossiers que le lanceur connaît (ctx['downloads'], jamais un chemin venu
+    de la page) ; seules les cartes SID de l'aérodrome sont recopiées dans data/local/upload/ (sous un nom canonique, ≤ 4 Mo chacune), puis lues par leur COUCHE TEXTE dans le sous-processus borné de pdf_guard. Chaque SID rendue est « lue en partie » : son point de sortie, sa piste, sa limite de niveau quand la carte la dit ;
+    son tracé n'est pas lu (statut `check`, champ `partial`). Rend { docs, formats, warnings, dropped, extra } ou un résultat final (aucun paquet : 'no-package' ; aucune carte SID : 'no-tables')."""
+    import pdf_guard
+    import personal_use
+    import proc_uk_sid
+    import uk_package
+    if not personal_use.certified(env.data):      # NATS : « usage personnel » (SOG-0238) : la coche est CELLE DU LANCEUR (data/local/personal_use.json) ; sans elle, rien n'est lu ni écrit : ces points iraient dans proc/manual/ et dans le commit de data/, donc au groupe
+        return {'ok': False, 'reason': 'not-personal', 'message': 'the personal-use box is not ticked on this workstation (Settings): the UK package is read for personal use only'}
+    try:
+        pdf_guard.require('text')      # la bibliothèque d'abord : rien n'est posé dans data/local/upload/ si elle manque ou est trop ancienne
+    except pdf_guard.PdfError as e:
+        return {'ok': False, 'reason': 'failed', 'message': str(e.args[1] if len(e.args) > 1 else e)}
+    downloads = env.ctx.get('downloads')
+    roots = uk_package.find(list(downloads()) if callable(downloads) else [])
+    if not roots:
+        return {'ok': False, 'reason': 'no-package', 'message': 'no UK eAIP package (NATS, « AIRAC … ») found in the download folders: unzip it under Downloads, then read again'}
+    root = roots[-1]
+    env.say(f'{env.icao}: paquet du Royaume-Uni trouvé')      # jamais le nom du dossier de l'utilisateur
+    try:
+        charts = uk_package.sid_charts(uk_package.chart_index(uk_package.aerodrome_page(root, env.icao), env.icao))
+    except ValueError as e:
+        return {'ok': False, 'reason': 'no-tables', 'message': str(e)}
+    if not charts:
+        return {'ok': False, 'reason': 'no-tables'}
+    dest = os.path.join(env.data, 'local', 'upload')
+    done, refused = uk_package.copy_charts(root, env.icao, charts, dest)
+    procedures, warnings, formats = [], list(refused), []
+    day = uk_package.package_date(root)      # la date lue dans le nom du dossier, réelle et ≤ aujourd'hui ; None sinon : cycle INCONNU, jamais la date du jour
+    for k, chart in enumerate(charts):
+        name = uk_package.canonical(env.icao, chart)
+        env.step(f'{env.icao}: {chart["label"]}', k, len(charts), 'cartes')
+        if name not in done:
+            formats.append({'file': name, 'ok': False, 'reason': 'copy'})
+            continue
+        try:
+            text = pdf_guard.read_text(env.data, os.path.join(dest, name), 0, 1)['texts'][0]
+        except pdf_guard.PdfError as e:
+            if e.args and e.args[0] in ('missing', 'version'):      # la bibliothèque optionnelle manque : un résultat final qui dit la commande (jamais une liste de cartes illisibles)
+                return {'ok': False, 'reason': 'failed', 'message': str(e.args[1] if len(e.args) > 1 else e)}
+            warnings.append(f'{chart["label"]}: {e}')
+            formats.append({'file': name, 'ok': False, 'reason': 'pdf'})
+            continue
+        found, why = proc_uk_sid.read_chart(text, chart['title'], env.icao)
+        procedures += found
+        warnings += why
+        formats.append({'file': name, 'ok': bool(found), 'procedures': len(found)})
+    if not procedures:
+        return {'docs': [], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {}}
+    for p in procedures:
+        p['source'] = {'kind': 'ukpkg', 'ref': 'ukpkg', 'file': name_of(p, charts, env.icao), 'cycle': day or UNKNOWN_CYCLE, 'at': None, **({} if day else {'cycle_unknown': True})}
+    doc = {'schema': 1, 'icao': env.icao, 'cycle': day or UNKNOWN_CYCLE, 'updated_at': None, 'procedures': procedures, 'formats': formats, 'warnings': warnings,
+           'notice': "Source : paquet eAIP du Royaume-Uni (NATS) posé à la main ; SID lues par la couche texte de leurs cartes : point de sortie et niveaux seulement, tracé non lu (voir la carte). Données NON OPÉRATIONNELLES : simulation seulement."}
+    return {'docs': [doc], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {'partial': len(procedures), 'cycleKnown': bool(day)}}
+
+
+def name_of(proc, charts, icao):
+    """Le nom canonique de la carte d'où vient une SID (son désignateur est dans le titre de la carte)."""
+    import uk_package
+    import proc_uk_sid
+    for c in charts:
+        if any(d['name'] == proc['name'] for d in proc_uk_sid.designators(c['title'])):
+            return uk_package.canonical(icao, c)
+    return None
+
+
 def _commit_message(source, icao):
     return (f":card_file_box: Procédures {icao} lues dans l'eAIP du SIA (à la demande)" if source == 'eaip' else
+            f':card_file_box: SID {icao} lues en partie dans le paquet eAIP du Royaume-Uni (à la demande, point de sortie et niveaux, tracé non lu)' if source == 'ukpkg' else
             f':card_file_box: Procédures {icao} lues dans EAD Basic (à la demande, non opérationnelles)')
 
 
@@ -146,6 +217,18 @@ SOURCES = {
         'screen': True,                # proc_manual.screen : une lecture qui échoue au contrôle de géométrie est refusée seule (voir proc_geometry)
         'replace_source': None,
         'detailed_failure': True,      # « rien de lu » : combien de documents et de pages vus, lus, et pourquoi pas
+    },
+    'ukpkg': {
+        'verb': 'ukpkg-fetch',
+        'states': 'EG',                # les aérodromes du Royaume-Uni seulement (le paquet est celui de NATS)
+        'sia': False,
+        'account': False,              # aucun identifiant : un paquet posé à la main
+        'read': _read_ukpkg,
+        'explain': None,
+        'screen': True,                # proc_manual.screen : statut check, type SID, un point (aucun tronçon : pas de contrôle de géométrie)
+        'replace_source': 'ukpkg',     # une relecture REMPLACE la précédente de la même source
+        'merge_other': True,           # le fichier de l'aérodrome porte déjà d'autres procédures (STAR, approches lues dans EAD Basic) : elles sont GARDÉES, ces SID s'y ajoutent par identifiant
+        'detailed_failure': True,
     },
 }
 MIN_GAP = {('proc', 'ead-fetch'): 30}
@@ -268,7 +351,7 @@ def fetch(name):
             env.say(f'{icao}: installation de {sum(len(d["procedures"]) for d in todo)} procédure(s)')
             for d in todo:
                 try:
-                    proc_manual.install(d, os.path.join(data, 'proc'), replace=False, replace_source=src['replace_source'])
+                    proc_manual.install(d, os.path.join(data, 'proc'), replace=bool(src.get('merge_other')), replace_source=src['replace_source'])
                     installed += len(d['procedures'])
                 except SystemExit as e:                    # procédures d'une autre source dans le fichier du terrain : rien n'est écrit
                     if not installed:

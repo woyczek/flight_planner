@@ -79,15 +79,18 @@ def foreign(doc, old):
 
 
 def merge(old, doc):
-    """Fichier du terrain : les procédures de `old` et de `doc` fusionnées par identifiant, la meilleure gardée (à statut égal, la nouvelle)."""
+    """Fichier du terrain : les procédures de `old` et de `doc` fusionnées par identifiant, la meilleure gardée (à statut égal, la nouvelle). Une procédure lue EN PARTIE (`partial` : point de sortie et niveaux, tracé non lu) ne remplace JAMAIS une procédure complète de même
+    identifiant, quelle que soit sa source ; et un document qui n'apporte que des procédures lues en partie ne touche pas à l'en-tête du fichier déjà là (`formats`, `notice`, `cycle`, pages non lues : une lecture partielle d'une autre source ne les efface pas)."""
     if not old:
         return doc
     by = {p['id']: p for p in old.get('procedures', [])}
     for p in doc['procedures']:
         q = by.get(p['id'])
-        if q is None or RANK.get(p.get('status'), 9) <= RANK.get(q.get('status'), 9):
+        if q is None or (RANK.get(p.get('status'), 9) <= RANK.get(q.get('status'), 9) and not (p.get('partial') and not q.get('partial'))):
             by[p['id']] = p
     warnings = list(dict.fromkeys([*old.get('warnings', []), *doc.get('warnings', [])]))
+    if doc['procedures'] and all(p.get('partial') for p in doc['procedures']):
+        return {**old, 'procedures': list(by.values()), 'warnings': warnings}
     return {**old, **{k: v for k, v in doc.items() if k != 'procedures'}, 'procedures': list(by.values()), 'warnings': warnings}
 
 
@@ -132,6 +135,7 @@ def install(doc, out, replace=False, replace_source=None, source_file=None):
     idx['aerodromes'][doc['icao']] = {**n, 'status': best, 'cycle': cycles[-1] if cycles else doc['cycle'],
                                       'pages_unread': sum(1 for f in full.get('formats') or [] if f.get('ok') is False),
                                       'doubt': sum(1 for p in full['procedures'] if p.get('status') == 'doubt'),
+                                      **({'partial': k} if (k := sum(1 for p in full['procedures'] if p.get('partial'))) else {}),      # SOG-0374 : les procédures « lues en partie » (point de sortie et niveaux, tracé non lu) : l'écran le dit
                                       'updated_at': full.get('updated_at') or (idx['aerodromes'].get(doc['icao']) or {}).get('updated_at')
                                       or datetime.now(timezone.utc).isoformat(timespec='seconds')}
     idx_path.write_text(json.dumps(idx, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')

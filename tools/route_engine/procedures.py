@@ -44,12 +44,12 @@ class Catalog:
                     p.update(lat=nav.nodes[keys[0]]['lat'],lon=nav.nodes[keys[0]]['lon'])
                 if not p.get('id'):valid=False;break
                 p['key']=nav.add(p);points.append(p)
-            if not valid or len(points)<2:stats[kind+'_incomplete']+=1;continue
+            if not valid or len(points)<(1 if proc.get('partial') and kind=='SID' else 2):stats[kind+'_incomplete']+=1;continue   # SOG-0374 : une SID « lue en partie » n'a que son point de sortie (le tracé n'est pas lu, jamais inventé)
             airport=dict(nav.ads[ad],id=ad,key=nav.resolve(ad),alt=None)
             sequence=([airport]+points) if kind=='SID' else (points+[airport])
             token=re.sub('[^A-Z0-9]','',proc['name'].upper())
             item=dict(proc,token=token,airport=ad,cycle=data.get('cycle'),sequence=sequence)
-            self.items.append(item);stats[kind+'_usable']+=1
+            self.items.append(item);stats[kind+('_partial' if proc.get('partial') else '_usable')]+=1      # SOG-0374 : une SID lue en partie n'est pas « utilisable » (ni libre le raccord DCT, ni dite complète)
         self.stats[ad]=dict(stats)
 
     def options(self,ad,kind,runway=''):
@@ -61,7 +61,7 @@ class Catalog:
         for i,(a,b) in enumerate(zip(seq,seq[1:])):
             lo1,hi1=bounds(a.get('alt'));lo2,hi2=bounds(b.get('alt'))
             e=dict(route=p['token'],kind=p['kind'],nm=nav_distance(self.nav,a,b),lower=0,upper=66000,procedure_id=p['id'],procedure_name=p['name'],
-                airport=p['airport'],runways=p.get('runways',[]),procedure_status=p.get('status'),source_cycle=p['cycle'],source=p.get('source'),planned_speed_kt=speed,
+                airport=p['airport'],runways=p.get('runways',[]),procedure_status=p.get('status'),partial=bool(p.get('partial')),source_cycle=p['cycle'],source=p.get('source'),planned_speed_kt=speed,
                 node_constraints=dict(start_min=lo1,start_max=hi1,end_min=lo2,end_max=hi2),speed_limit_ias=b.get('kt'))
             if p['kind']=='STAR' and i==len(seq)-2:e['kind']='APPROACH_LINK'
             result.append((a['key'],b['key'],e))
@@ -76,7 +76,7 @@ class Catalog:
                 if planning.procedure_rnav(p) is not False:continue
             edges=self.edges(p,speed);endpoint=edges[-1][1] if kind=='SID' else edges[0][0]
             if endpoint not in connected:continue
-            used+=1
+            if not p.get('partial'):used+=1      # SOG-0374 : une SID lue en partie ne remplace pas le raccord DCT de simulation (elle s'y ajoute : un tracé de plus à la recherche)
             # Independent states keep different runway/procedure paths from splicing together.
             for i,(u,v,e) in enumerate(edges):
                 su=u if i==0 else u+'|PROC|'+p['id']

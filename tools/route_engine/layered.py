@@ -58,7 +58,9 @@ def annotate(result, rad):
         for i, l in enumerate(legs):
             a, b = str(l['start']['id']).upper(), str(l['end']['id']).upper()
             layer = _layer(l)
-            if l.get('procedure_id'):
+            if l.get('procedure_id') and l.get('procedure_partial'):      # SOG-0374 : une SID lue en partie (point de sortie et niveaux) : le tracé entre la piste et le point de sortie n'est pas lu
+                control, why = 'incomplete', 'SID lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte'
+            elif l.get('procedure_id'):
                 control, why = 'controlled', 'procédure publiée'
             elif l.get('kind') == 'FRA' or l.get('fra_area'):
                 control, why = 'incomplete', 'liaison FRA candidate : rôles et niveaux contrôlés, volumes et NPZ non lus'

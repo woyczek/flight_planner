@@ -10122,6 +10122,214 @@ def k281(c):
             P.drop_contexts()
 
 
+@case('K282', 'UK eAIP package (SOG-0374): the package put by hand under Downloads is recognised by its FORM (three levels, names evoking an AIP), the chart index of an aerodrome is read (title row then link row), only its SID charts are copied (canonical names, size and PDF checks), and each SID is read PARTIALLY from the text layer of its chart — exit point, runway, level at the exit, position — never a path; the engine takes it as an option that does not replace the DCT connector and the control says « lue en partie »', 'K', static=True,
+      rule='Ergonomist 16 Nov 2026 (decision on the survey of the UK package of the user, 2 766 files, no AIXM): the SIDs of EGLL are charts only (« RNAV substitution only »), the PDFs have a text layer but no table of legs; read what the text gives — the exit point and the level limits — and say it (« point de sortie et niveaux ; tracé non lu, voir la carte »), invent no path; recognise the package by its content through the launcher\'s own way, copy only the useful PDFs into data/local/upload (pdf_guard\'s allowed root is not widened). Personal-use box, never published.')
+def k282(c):
+    import datetime
+    import json
+    import os
+    import sys
+    import tempfile
+    import types
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    RJ = _regen()
+    import proc_manual
+    import proc_uk_sid as S
+    import uk_package as U
+    page = ('<html><body><table>'
+            '<tr><td><p>ATC SURVEILLANCE MINIMUM ALTITUDE CHART - ICAO</p></td></tr><tr><td><a href="../../graphics/475297.pdf">AD\xa02.EGXX-5-1</a><span>TACLO;ACLO_SERVER_ID;694</span></td></tr>'
+            '<tr><td><p>STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L RWY 27R/L MODMI 1J 1K MAXIT 1F 1G (RNAV SUBSTITUTION ONLY) - ICAO</p></td></tr><tr><td><a href="../../graphics/475385.pdf">AD\xa02.EGXX-6-2</a></td></tr>'
+            '<tr><td><p>STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L RWY 27R/L UMLAT 1F 1G (RNAV SUBSTITUTION ONLY) - ICAO</p></td></tr><tr><td><a href="../../graphics/475391.pdf">AD\xa02.EGXX-6-4</a></td></tr>'
+            '<tr><td><p>STANDARD INSTRUMENT ARRIVAL CODING TABLES OTMET 1H</p></td></tr><tr><td><a href="../../graphics/461720.pdf">AD\xa02.EGXX-7-13</a></td></tr>'
+            '<tr><td><p>EVIL</p></td></tr><tr><td><a href="../../graphics/../../x.pdf">AD\xa02.EGXX-6-9</a></td></tr>'
+            '<tr><td><p>OTHER AERODROME</p></td></tr><tr><td><a href="../../graphics/999.pdf">AD\xa02.EGYY-6-1</a></td></tr>'
+            '</table></body></html>')
+    text = ('R160 UNL SFC 000 30W 5100N MIDHURST (Ch 87X) 233 510314N 0003730W MID 114.00 MAXIT 1F MAXIT 1G MODMI 1K LON R182.0/D15.3 MID R024.9/D12.0 511401N 0002910W MODMI LON R193.4/D14.7 '
+            '511459N 0003343W MAXIT TRACK MILEAGE 17MODMI 1K 19MAXIT 1F '
+            'OBSTACLE CLEARANCE .6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09R R025.MID VOR3.5, then turn right onto D LON R124 until LON VOR2 Straight ahead to MODMI 1J '
+            '.6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09L R025.MID VOR3.5, then turn right onto D LON Straight ahead to MODMI 1K '
+            '.6000 at MAXIT R010 and continue to cross MID VOR12 or above RWY 27R 3000 7.7 at D LON QDR 160. Straight ahead to intercept MAXIT 1F '
+            '.6000 at MAXIT R010 and continue RWY 27L Straight ahead to intercept MAXIT 1G')
+    c.eq([d['name'] for d in S.designators('STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L RWY 27R/L MODMI 1J 1K MAXIT 1F 1G (RNAV SUBSTITUTION ONLY) - ICAO')], ['MODMI 1J', 'MODMI 1K', 'MAXIT 1F', 'MAXIT 1G'],
+         'the title of a chart says its SIDs: the NAME is the exit point, the revision follows (runway words and the end of the title are not names)', what='designators')
+    got, warn = S.read_chart(text, 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L RWY 27R/L MODMI 1J 1K MAXIT 1F 1G (RNAV SUBSTITUTION ONLY)', 'EGXX')
+    by = {p['name']: p for p in got}
+    c.eq([(p['name'], p['runways'], p['points'][0]['id'], p['points'][0].get('alt'), p['status'], p['partial']['unread']) for p in got],
+         [('MODMI 1J', ['09R'], 'MODMI', {'type': 'min', 'ft': 6000}, 'check', ['path']), ('MODMI 1K', ['09L'], 'MODMI', {'type': 'min', 'ft': 6000}, 'check', ['path']),
+          ('MAXIT 1F', ['27R'], 'MAXIT', {'type': 'min', 'ft': 6000}, 'check', ['path']), ('MAXIT 1G', ['27L'], 'MAXIT', {'type': 'min', 'ft': 6000}, 'check', ['path'])],
+         'each SID: its exit point (one point, no path), its runway (the last RWY before its instructions), the level at the exit (a minimum), the status `check` and `partial.unread = [path]`', what='read')
+    c.eq((by['MODMI 1J']['points'][0]['lat'], by['MODMI 1J']['points'][0]['lon'], len(by['MODMI 1J']['points']), by['MODMI 1J']['id']), (51.233611, -0.486111, 1, 'EGXX.SID.MODMI1J.RW09R'),
+         'the position is the coordinate printed next to the name of the point; the identifier names the runway', what='position')
+    gone, warn2 = S.read_chart('nothing', 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) MODMI 1J (RNAV SUBSTITUTION ONLY)', 'EGXX')
+    c.ok(gone == [] and warn2 and 'non lue' in warn2[0], str(warn2), 'a chart whose instructions are not found gives no SID (said), never a guess')
+    # the package: recognised by its form, three levels down, only in folders whose name evokes an AIP
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        dl = td / 'Downloads'
+        pkg = dl / 'UK-AIRAC-11-26' / 'AIRAC 11-2026' / '2026-10-29-AIRAC'
+        (pkg / 'html' / 'eAIP').mkdir(parents=True)
+        (pkg / 'graphics').mkdir()
+        (pkg / 'html' / 'eAIP' / 'EG-AD-2.EGXX-en-GB.html').write_text(page, encoding='utf-8')
+        for n, body in (('475385', b'%PDF-1.4 x'), ('475391', b'%PDF-1.4 y'), ('475297', b'%PDF-1.4 z'), ('461720', b'NOT A PDF')):
+            (pkg / 'graphics' / f'{n}.pdf').write_bytes(body)
+        (dl / 'holiday photos' / 'deep' / 'er' / 'still').mkdir(parents=True)
+        (dl / 'AIP-other' / 'x').mkdir(parents=True)
+        found = U.find([str(dl)])
+        c.eq([Path(x).name for x in found], ['2026-10-29-AIRAC'], 'the package is found by its form (html/eAIP/EG-AD-2.*-en-GB.html and graphics/) under UK-AIRAC-11-26/AIRAC 11-2026/…; another folder is not one', what='find')
+        c.eq(U.find([str(dl / 'holiday photos')]), [], 'a folder with no package is no package', what='none')
+        idx = U.chart_index(U.aerodrome_page(found[0], 'EGXX'), 'EGXX')
+        c.eq([(x['label'], x['pdf'], x['title'][:30]) for x in idx], [('AD 2.EGXX-5-1', '475297', 'ATC SURVEILLANCE MINIMUM ALTIT'), ('AD 2.EGXX-6-2', '475385', 'STANDARD DEPARTURE CHART - INS'),
+                                                                        ('AD 2.EGXX-6-4', '475391', 'STANDARD DEPARTURE CHART - INS'), ('AD 2.EGXX-7-13', '461720', 'STANDARD INSTRUMENT ARRIVAL CO')],
+             'the index: the title is the row BEFORE the link row; a link that leaves graphics/, another aerodrome\'s chart and a label that is not one are not listed', what='index')
+        sids = U.sid_charts(idx)
+        c.eq([x['label'] for x in sids], ['AD 2.EGXX-6-2', 'AD 2.EGXX-6-4'], 'only the SID charts are kept', what='sids')
+        for bad in ('EGXX/../x', 'LFPG', 'egxx', None):
+            try:
+                U.aerodrome_page(found[0], bad)
+                ok = False
+            except ValueError:
+                ok = True
+            c.ok(ok, repr(bad), f'a code that is not a UK aerodrome is refused: {bad!r}')
+        up = td / 'data' / 'local' / 'upload'
+        done, refused = U.copy_charts(found[0], 'EGXX', sids + [idx[3]], str(up))
+        c.eq((done, sorted(os.listdir(up)), refused), (['ukpkg_EGXX_6-2.pdf', 'ukpkg_EGXX_6-4.pdf'], ['ukpkg_EGXX_6-2.pdf', 'ukpkg_EGXX_6-4.pdf'], ['AD 2.EGXX-7-13 : pas un PDF']),
+             'the SID charts are copied under canonical names into data/local/upload (a file that is not a PDF is refused, said)', what='copy')
+        (pkg / 'graphics' / '475391.pdf').write_bytes(b'%PDF-' + b'x' * (U.PDF_MAX + 10))
+        done2, refused2 = U.copy_charts(found[0], 'EGXX', sids, str(up))
+        c.eq((done2, refused2), (['ukpkg_EGXX_6-2.pdf'], ['AD 2.EGXX-6-4 : PDF trop gros']), 'a PDF over the bound is refused, said', what='size')
+        # the verb of the launcher: argument check; the reader (the text is given in place of the bounded child of pdf_guard)
+        fn, check = RJ.REGISTRY[('proc', 'ukpkg-fetch')]
+        c.eq([check(a) for a in ({'icao': 'egll'}, {'icao': 'LFPG'}, {'icao': 'EGLL', 'x': 1}, {'icao': 'EG*'}, None)], [{'icao': 'EGLL'}, None, None, None, None],
+             'the verb takes one UK aerodrome (EG…) and nothing else', what='check')
+        ns = types.SimpleNamespace(**fn.__globals__)
+        import pdf_guard
+        real = pdf_guard.read_text
+        pdf_guard.read_text = lambda data, path, first=0, count=1, **k: {'pages': 1, 'texts': [text if '6-2' in path else 'no instructions']}
+        logs = []
+
+        class Job:
+            def log(self, t): logs.append(t)
+            def step(self, *a): pass
+            def cancelled(self): return False
+        (pkg / 'graphics' / '475391.pdf').write_bytes(b'%PDF-1.4 y')
+        import personal_use
+        before = sorted(os.listdir(up)) if up.exists() else []
+        for f in list(up.iterdir()):
+            f.unlink()
+        nobox = ns._read_ukpkg(ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl)]}))
+        c.eq((nobox.get('ok'), nobox.get('reason'), sorted(os.listdir(up))), (False, 'not-personal', []),
+             'the personal-use box (the launcher\'s, data/local/personal_use.json) is not ticked: refused with its own reason, NOTHING read, copied or written (NATS data would reach data/ and the group)', what='personal use')
+        personal_use.write(str(td / 'data'), True, False)
+        # (3) the PDF library is checked BEFORE anything is copied
+        real_require = pdf_guard.require
+
+        def refuse(purpose, versions_of=None):
+            raise pdf_guard.PdfError('version', 'lecture de PDF impossible : pypdf 6.21.3 trop ancienne. À lancer sur le poste : pip install …')
+        pdf_guard.require = refuse
+        try:
+            late = ns._read_ukpkg(ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl)]}))
+        finally:
+            pdf_guard.require = real_require
+        c.eq((late.get('ok'), late.get('reason'), 'pypdf' in str(late.get('message')), sorted(os.listdir(up))), (False, 'failed', True, []),
+             'the PDF library is checked first: when it refuses, NO chart is copied into data/local/upload/ and the message says why', what='library first')
+        pdf_guard.require = lambda *a, **k: None
+        try:
+            env = ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl)]})
+            res = ns._read_ukpkg(env)
+        finally:
+            pdf_guard.read_text = real
+            pdf_guard.require = real_require
+        doc = res['docs'][0]
+        blob = json.dumps(res, ensure_ascii=False) + ' '.join(logs)
+        c.eq(('AIRAC' in blob, 'UK-AIRAC' in blob, 'holiday' in blob, {p['source']['ref'] for p in doc['procedures']}, sorted(res['extra'])), (False, False, False, {'ukpkg'}, ['cycleKnown', 'partial']),
+             'the NAME of the user\'s folder goes nowhere (not the journal, not the answer, not source.ref of the file that is committed and synchronised): `ref` is « ukpkg »', what='no folder name')
+        c.eq((len(doc['procedures']), sorted({p['name'] for p in doc['procedures']}), doc['cycle'], {p['source']['kind'] for p in doc['procedures']}, [f['ok'] for f in res['formats']]),
+             (4, ['MAXIT 1F', 'MAXIT 1G', 'MODMI 1J', 'MODMI 1K'], '2026-10-29', {'ukpkg'}, [True, False]), 'the reader: four SIDs from the first chart, none from the second (no instructions: said), the cycle of the package folder, the source `ukpkg`', what='reader')
+        today = datetime.date(2026, 11, 16)
+        mk = lambda *names: [(dl.joinpath(*n).mkdir(parents=True, exist_ok=True), (dl.joinpath(*n) / 'html' / 'eAIP').mkdir(parents=True, exist_ok=True), (dl.joinpath(*n) / 'graphics').mkdir(exist_ok=True),
+                              (dl.joinpath(*n) / 'html' / 'eAIP' / 'EG-AD-2.EGXX-en-GB.html').write_text(page, encoding='utf-8')) for n in names]
+        c.eq([U.package_date(n, today) for n in ('2026-10-29-AIRAC', '2099-01-01-AIRAC', 'AIRAC-latest', '2026-13-45-AIRAC', '1999-01-01-AIRAC', 'x2026-10-29y')], ['2026-10-29', None, None, None, None, '2026-10-29'],
+             'the date of a package is read in the name of its folder and is a REAL date, from 2000 to today: a future date, an impossible one, none: unknown (never the date of the day)', what='package_date')
+        mk(('Downloads2', 'AIP-old', 'z-AIRAC-undated'), ('Downloads2', 'AIP-old', '2026-09-03-AIRAC'), ('Downloads2', 'AIP-old', '2026-10-29-AIRAC'), ('Downloads2', 'AIP-old', '2099-01-01-AIRAC'))
+        found3 = [Path(x).name for x in U.find([str(dl / 'Downloads2')], today)]
+        c.eq((found3[-1], len(found3)), ('2026-10-29-AIRAC', 4),
+             'the most RECENT package is chosen by its date, not by the sort of the names (« z-AIRAC-undated » sorts last and is not chosen; a date in the future counts as no date)', what='most recent')
+        c.ok(found3.index('2026-10-29-AIRAC') > found3.index('z-AIRAC-undated') and found3.index('2026-10-29-AIRAC') > found3.index('2026-09-03-AIRAC'), str(found3), 'the order is by date, the undated first')
+        c.eq(doc['cycle'], '2026-10-29', 'a package whose folder says a real date carries it as its cycle', what='cycle read')
+        pdf_guard.require = lambda *a, **k: None
+        try:
+            nopkg = ns._read_ukpkg(ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl / 'holiday photos')]}))
+        finally:
+            pdf_guard.require = real_require
+        c.eq((nopkg['ok'], nopkg['reason']), (False, 'no-package'), 'no package under the folders: said (« no-package »), nothing copied or written', what='no package')
+        # installed into the file of the aerodrome that already holds other procedures: theirs are kept, the SIDs are added by identifier; the index counts the partial ones
+        proc_dir = td / 'data' / 'proc'
+        (proc_dir / 'manual').mkdir(parents=True)
+        (proc_dir / 'manual' / 'EGXX.json').write_text(json.dumps({'schema': 1, 'icao': 'EGXX', 'cycle': '2026-10-29', 'procedures': [
+            {'id': 'EGXX.SID.MODMI1J.RW09R', 'icao': 'EGXX', 'kind': 'SID', 'name': 'MODMI 1J', 'runways': ['09R'], 'points': [{'seq': 1, 'id': 'A', 'lat': 49.1, 'lon': 2.9}, {'seq': 2, 'id': 'B', 'lat': 52.16, 'lon': 7.19}],
+             'source': {'kind': 'ead-basic', 'cycle': '2026-10-29'}, 'status': 'check'},
+            {'id': 'EGXX.STAR.OTMET1H', 'icao': 'EGXX', 'kind': 'STAR', 'name': 'OTMET 1H', 'runways': ['27L'], 'points': [{'seq': 1, 'id': 'A', 'lat': 49.1, 'lon': 2.9}, {'seq': 2, 'id': 'B', 'lat': 52.16, 'lon': 7.19}],
+             'source': {'kind': 'ead-basic', 'cycle': '2026-10-29'}, 'status': 'check'}], 'formats': [{'file': 'x.pdf', 'ok': False}], 'notice': 'NOTICE', 'warnings': ['w0']}), encoding='utf-8')
+        kept, bad = proc_manual.screen(doc)
+        c.eq((len(kept['procedures']), bad), (4, []), 'a partial SID (one point, no leg) passes the screen of proc_manual', what='screen')
+        proc_manual.install(kept, str(proc_dir), replace=True, replace_source='ukpkg')
+        full = json.loads((proc_dir / 'manual' / 'EGXX.json').read_text(encoding='utf-8'))
+        idx_doc = json.loads((proc_dir / 'manual' / 'index.json').read_text(encoding='utf-8'))
+        c.eq((sorted(p['kind'] for p in full['procedures']), idx_doc['aerodromes']['EGXX'].get('partial'), idx_doc['aerodromes']['EGXX']['SID'], idx_doc['aerodromes']['EGXX']['STAR']), (['SID'] * 4 + ['STAR'], 3, 4, 1),
+             'the STAR already there is kept, the SIDs are added; the index entry counts the partial ones (the screen says so)', what='installed')
+        mod = next(p for p in full['procedures'] if p['id'] == 'EGXX.SID.MODMI1J.RW09R')
+        c.eq((mod['source']['kind'], mod.get('partial'), len(mod['points'])), ('ead-basic', None, 2), 'a SID read IN PART never replaces a complete procedure of the same identifier, whatever its source', what='partial never replaces')
+        c.eq((full['formats'], full['notice'], full['cycle'], full['warnings'][:1]), ([{'file': 'x.pdf', 'ok': False}], 'NOTICE', '2026-10-29', ['w0']), 'the file keeps its `formats`, `notice`, `cycle` and warnings: a partial reading of another source does not erase them', what='header kept')
+        proc_manual.install(kept, str(proc_dir), replace=True, replace_source='ukpkg')
+        c.eq(len(json.loads((proc_dir / 'manual' / 'EGXX.json').read_text(encoding='utf-8'))['procedures']), 5, 'a second reading REPLACES the first of the same source: no duplicate', what='replace')
+    # the engine: a partial SID is an option, not a replacement of the DCT connector; the control says it
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I
+    from route_engine import plan as P
+    from route_engine import view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        os.makedirs(d)
+        nodes = {'A': (49.1, 2.9), 'B': (52.16, 7.19), 'CH': (56.0, 7.5), 'D': (56.24, 12.91), 'E': (59.3, 17.2)}
+        pt = lambda k: {'id': k, 'lat': nodes[k][0], 'lon': nodes[k][1]}
+        aw = lambda r, a, b, lo, hi: {'route': r, 'a': pt(a), 'b': pt(b), 'lower': lo, 'upper': hi}
+        files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['LFPO', 'PARIS ORLY', 48.72328, 2.37958, 291, 0, 0], ['ESSA', 'STOCKHOLM ARLANDA', 59.6519, 17.9186, 137, 0, 0]]},
+                 'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in nodes.items()], 'navaids': [],
+                 'airways': [aw('H1', 'A', 'B', 6500, 66000), aw('H1', 'B', 'CH', 6500, 66000), aw('H1', 'CH', 'D', 6500, 66000), aw('H1', 'D', 'E', 6500, 66000)]}
+        for k, v in files.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        os.makedirs(os.path.join(data, 'proc', 'manual'))
+        sid = {'id': 'LFPO.SID.AXX1A.RW06', 'icao': 'LFPO', 'kind': 'SID', 'name': 'AXX 1A', 'runways': ['06'], 'transition': 'A', 'points': [{'seq': 1, 'id': 'A', 'lat': 49.1, 'lon': 2.9, 'alt': {'type': 'min', 'ft': 6000}, 'leg': 'TF'}],
+               'partial': {'read': ['exit', 'runway', 'level'], 'unread': ['path'], 'note': 'point de sortie et niveaux ; tracé non lu, voir la carte'}, 'status': 'check', 'source': {'kind': 'ukpkg', 'cycle': '2026-10-29'}}
+        with open(os.path.join(data, 'proc', 'manual', 'LFPO.json'), 'w', encoding='utf-8') as f:
+            json.dump({'schema': 1, 'icao': 'LFPO', 'cycle': '2026-10-29', 'procedures': [sid]}, f)
+        P.drop_contexts()
+        try:
+            req = V.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': False})
+            res = P.compute(req, data, rad, None)
+            p = res['primary']
+            nav = P.context(req, data)[0] if False else None
+            c.ok(p.get('ok') and ' H1 ' in f' {p["route"]} ', p.get('route'), 'with a partial SID the search still finds its route (the DCT connector is not replaced by a SID that has no path)')
+            check = V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': 'LFPO AXX1A A H1 E', 'enable_fra': False})
+            r = P.compute(check, data, rad, None)
+            legs = r['primary'].get('legs') or []
+            c.eq((r['primary'].get('ok'), [(l['via'], l.get('kind'), l.get('control'), l.get('procedure_partial')) for l in legs[:1]], str(legs[0].get('control_reason'))[:30] if legs else None),
+                 (True, [('AXX1A', 'SID', 'incomplete', True)], 'SID lue en partie : point de s'),
+                 'a route typed with the partial SID (LFPO AXX1A A H1 E) is read: its first leg is that SID, controlled as « incomplete » with the reason « SID lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte »', what='typed')
+            c.eq([i['text'] for i in r['primary']['issues'] if i['level'] == 'REVUE' and 'lue en partie' in i['text']], ['LFPO : SID AXX 1A lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte.'], 'the review says it too, once, with the name of the SID', what='review')
+        finally:
+            P.drop_contexts()
+
+
 @case('K274', 'Route engine: a fallback proposal after the search budget says so (`status: proposal`, a sentence) and does not cost the budget of every level (SOG-0161, EIDW → KBOS: 35 s)', 'K', static=True,
       rule='Ergonomist 14 Nov 2026 (rest of SOG-0161): EIDW → KBOS and EIDW → KJFK took 35 s to answer « ok » with a fallback proposal that looked like a route (12 to 17 % controlled). The head route\'s search had reached its budget (6 s / 100 000 states: « ce résultat ne prouve pas l\'absence de route »); the engine then searched other levels, each reaching the same budget (about 13 s), then the proposals (9 s). Now: when the head route is refused because its search reached the budget, the other levels are NOT searched (it says so in the failures) and the proposals come at once (real base: 35 s → 15 s); the answer of the screen carries `status` — `computed` | `proposal` | `none` — and its `message` says « Aucune route calculée : … Propositions de repli à examiner : routes partielles »; `ok` stays true (the answer is valid) and nothing is removed')
 def k274(c):

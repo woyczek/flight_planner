@@ -2228,12 +2228,12 @@
        *  l'eAIP du SIA (verbe eaip-fetch, sans compte), un État dont EAD Basic se lit (EAD_STATES, outcome 'read') par EAD Basic
        *  (verbe ead-fetch, un terrain par geste, EAD_BASIC.md § 1), tout autre État : rien à lire, 'no-tables'. Le poste installe le
        *  résultat dans proc/manual/ et le valide dans le dépôt des données (ces deux fichiers seulement, sans envoi), puis
-       *  procedures() le sert. Rend { ok: true, icao, procedures, warnings, commit, source: 'eaip' | 'ead' } ou
+       *  procedures() le sert. Rend { ok: true, icao, procedures, warnings, commit, source: 'eaip' | 'ead' | 'ukpkg' } ou
        *  { ok: false, reason, message? } — reason : 'bad-icao', 'no-launcher' (sans lanceur : l'OFP SimBrief reste la source du
        *  vol), 'paired' (appareil appairé au poste : le geste se fait sur le poste), 'no-tables' (aucune table de codage publiée
        *  pour cet État, ou la page du terrain n'en cite pas ; pour un État sans lecture, `outcome` (EAD_STATES) dit pourquoi et `lnm`
        *  vaut true quand le poste a des bases de Little Navmap : indice, leur lecture est prévue à part, § 10.21), 'no-credentials'
-       *  (EAD : secrets/ead.json absent, à régler sur le poste), 'too-soon' (EAD : une lecture il y a moins de 30 s ; `wait` dit les
+       *  (EAD : secrets/ead.json absent, à régler sur le poste), 'no-package' (SOG-0374, `source: 'ukpkg'` : aucun paquet eAIP du Royaume-Uni sous les dossiers de l'utilisateur), 'too-soon' (EAD : une lecture il y a moins de 30 s ; `wait` dit les
        *  secondes restantes), 'busy' (ce terrain est déjà en lecture, ou le lanceur fait un autre
        *  travail), 'cancelled', 'failed' (`message` : refus de connexion, page non publiée, aucune procédure lue, contrôle de
        *  géométrie, lanceur plus ancien…). `onProgress({ step, done, total, source })`, `signal` (AbortSignal). Jamais silencieux,
@@ -2241,7 +2241,8 @@
       async fetchProcedures(icao, {
         onProgress,
         signal,
-        ground
+        ground,
+        source: want
       } = {}) {
         const k = String(icao || '').trim().toUpperCase(),
           no = (reason, more = {}) => ({
@@ -2259,7 +2260,9 @@
           let source =
             'eaip'; // la France et son outre-mer : l'eAIP du SIA (proc_sia.region_of, catalogue siaRegionOf), jamais EAD_STATES
           await api.sources().catch(() => null);
-          if (!window.AeroCatalogue?.siaRegionOf?.(k) && !k.startsWith('LF')) {
+          if (want === 'ukpkg' && k.startsWith('EG')) source =
+            'ukpkg'; // SOG-0374 : le paquet eAIP du Royaume-Uni posé à la main (verbe ukpkg-fetch : SID lues en partie)
+          else if (!window.AeroCatalogue?.siaRegionOf?.(k) && !k.startsWith('LF')) {
             const st = (await api.sources().catch(() => null))?.EAD_STATES?.[k.slice(0, 2)];
             if (st?.outcome !== 'read') return no('no-tables', { // ni l'eAIP lu ici ni EAD Basic : rien à lancer
               outcome: st?.outcome ?? null,
@@ -2273,7 +2276,7 @@
           }
           const r = await launcher.job('regen/job', {
             set: 'proc',
-            verb: source === 'eaip' ? 'eaip-fetch' : 'ead-fetch',
+            verb: source === 'eaip' ? 'eaip-fetch' : source === 'ukpkg' ? 'ukpkg-fetch' : 'ead-fetch',
             args: {
               icao: k
             }
@@ -2303,15 +2306,16 @@
             if (r.status === 403) return no('paired');
             if (r.state === 'cancelled') return no('cancelled');
             const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';
-            return no(['no-credentials', 'no-tables', 'cancelled', 'failed'].includes(why) ? why : 'failed', {
-              message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
-              ...(Array.isArray(res?.warnings) ? {
-                warnings: res.warnings
-              } : {}),
-              ...(res?.stats && typeof res.stats === 'object' ? {
-                stats: res.stats
-              } : {})
-            });
+            return no(['no-credentials', 'no-tables', 'no-package', 'not-personal', 'cancelled', 'failed'].includes(why) ? why :
+              'failed', {
+                message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
+                ...(Array.isArray(res?.warnings) ? {
+                  warnings: res.warnings
+                } : {}),
+                ...(res?.stats && typeof res.stats === 'object' ? {
+                  stats: res.stats
+                } : {})
+              });
           }
           // Les fichiers viennent d'être écrits par le lanceur, hors de toute écriture de la couche de données : sa copie locale de
           // ces deux fichiers est périmée. revalidate (FD.revalidate, frame/INTEGRATION.md § 4) relit ces deux chemins seulement
