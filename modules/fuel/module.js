@@ -1465,10 +1465,10 @@ function syncPlanned(f) {
   return f;
 }
 /** Vol courant lu (enregistrement gardé ou reçu) : les champs vides du schéma complétés, la date du vol accordée. */
-const flightOf = rec => syncPlanned({
+const flightOf = rec => syncPlanned(xpRestore({
   ...emptyFlight(),
   ...rec
-});
+}));
 /** Logique des fiches (lecture des formats, fusion, ChatGPT, .lnmperf) : celle d'aerodb (AeroDBSheets). */
 const SH = () => S.A?.lib || window.AeroDBSheets;
 /** Fiches du registre d'aerodb (les plus récentes d'abord) ; aucune sans aerodb. */
@@ -1496,6 +1496,102 @@ function saveFlight() {
       altsMoreCheck())
     .catch(() => {}), 300); // SOG-0296 (c) : une entrée changée pendant la recherche des variantes
 }
+// ---------------------------------------------------------------- SOG-0375 : une position lue dans X-Plane n'est jamais écrite avec le vol
+// Le dossier X-Plane de l'utilisateur peut porter des données Navigraph ou Jeppesen (SOG-0153 : lues sur le poste, en mémoire, jamais
+// écrites ni exportées). Le vol écrit dans le dépôt du groupe garde le NOM d'un tel point (`local: 'xplane'`, sans latitude ni longitude) ;
+// sa position reste dans la mémoire de cette page. Décision de l'utilisateur (Q-0061, 16/11). Le classeur FRA d'EUROCONTROL n'est pas visé.
+/** Les positions qu'aerodb a rendues `local: true, source: 'xplane'`, et celles des procédures lues dans X-Plane ou Little Navmap sur ce
+ *  poste : clés « ID|lat|lon », en mémoire de la page (20 000 au plus). */
+const XP_SEEN = new Set();
+/** ID → { lat, lon } : la position d'un point d'X-Plane retirée à l'écriture, remise au vol relu sur ce poste (mémoire de la page). */
+const XP_KEPT = new Map();
+/** La clé d'une position : identifiant en majuscules, latitude et longitude telles quelles. */
+const xpKey = (id, lat, lon) => `${String(id ?? '').trim().toUpperCase()}|${+lat}|${+lon}`;
+/** Une réponse d'aerodb lue dans le dossier X-Plane du poste. */
+const fromXp = x => !!x && x.local === true && x.source === 'xplane';
+/** Note une position venue d'X-Plane (nombres finis seulement). */
+function xpNote(id, lat, lon) {
+  if (id && Number.isFinite(+lat) && Number.isFinite(+lon) && XP_SEEN.size < 20000) XP_SEEN.add(xpKey(id, lat, lon));
+}
+/** Les points d'une procédure lue sur ce poste (repli X-Plane, Little Navmap) : leurs positions notées. */
+function xpNoteProcs(procs) {
+  for (const rec of Object.values(procs || {}))
+    if (rec && typeof rec === 'object' && (rec.local === true || rec.status === 'xplane' || rec.status === 'lnm' || rec.lnm === true))
+      for (const q of Array.isArray(rec.points) ? rec.points.slice(0, 400) : []) xpNote(q?.id, q?.lat, q?.lon);
+}
+/** aerodb tel que Carburant le lit pour placer un point : coords et coordsAll notent ce qui vient d'X-Plane ; le reste est celui d'aerodb. */
+const XP_BASES = new WeakMap();
+
+function xpBase(base) {
+  if (!base || typeof base !== 'object') return base;
+  if (XP_BASES.has(base)) return XP_BASES.get(base);
+  const w = Object.create(base);
+  if (typeof base.coords === 'function') w.coords = async (id, o) => {
+    const c = await base.coords(id, o);
+    for (const x of c ? [c, ...(Array.isArray(c.homonyms) ? c.homonyms : [])] : [])
+      if (fromXp(x)) xpNote(id, x.lat, x.lon);
+    return c;
+  };
+  if (typeof base.coordsAll === 'function') w.coordsAll = async (id, o) => {
+    const all = await base.coordsAll(id, o);
+    for (const x of Array.isArray(all) ? all : [])
+      if (fromXp(x)) xpNote(id, x.item?.lat, x.item?.lon);
+    return all;
+  };
+  XP_BASES.set(base, w);
+  return w;
+}
+/** Un point du vol placé à une position venue d'X-Plane. */
+const isXpPoint = p => !!p?.id && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && XP_SEEN.has(xpKey(p.id, p.lat, p.lon));
+/** Le vol tel qu'il s'écrit : chaque point placé d'après X-Plane sans latitude ni longitude, marqué `local: 'xplane'` (sa position gardée
+ *  dans XP_KEPT) ; le vol lui-même n'est pas modifié. Sans tel point : le vol tel quel. */
+function xpStrip(f) {
+  const pts = f?.route?.points;
+  if (!Array.isArray(pts) || !XP_SEEN.size || !pts.some(isXpPoint)) return f;
+  return {
+    ...f,
+    route: {
+      ...f.route,
+      points: pts.map(p => {
+        if (!isXpPoint(p)) return p;
+        const {
+          lat,
+          lon,
+          ...rest
+        } = p;
+        XP_KEPT.set(String(p.id).toUpperCase(), {
+          lat: +lat,
+          lon: +lon
+        });
+        return {
+          ...rest,
+          local: 'xplane'
+        };
+      })
+    }
+  };
+}
+/** Un vol relu (dépôt, autre écrivain) : chaque point `local: 'xplane'` sans position reprend celle gardée sur ce poste ; un nouvel objet
+ *  (l'enregistrement lu n'est jamais modifié). Sans position gardée (autre appareil, page rouverte), le point reste un nom : la relecture
+ *  de la route le replace (aerodb). */
+function xpRestore(f) {
+  const pts = f?.route?.points;
+  if (!Array.isArray(pts) || !XP_KEPT.size || !pts.some(p => p?.local === 'xplane' && !Number.isFinite(+p.lat))) return f;
+  return {
+    ...f,
+    route: {
+      ...f.route,
+      points: pts.map(p => {
+        const k = p?.local === 'xplane' && !Number.isFinite(+p.lat) ? XP_KEPT.get(String(p.id ?? '').toUpperCase()) : null;
+        return k ? {
+          ...p,
+          lat: k.lat,
+          lon: k.lon
+        } : p;
+      })
+    }
+  };
+}
 /** Une écriture du vol courant (saveFlight, à la file) : voir saveFlight. */
 async function writeFlight(s) {
   const path = `pilot/${s.ctx.identity.trigram || 'ANON'}/current_flight.json`,
@@ -1506,12 +1602,14 @@ async function writeFlight(s) {
   // le cadre n'écrit que progress (R-F4) : un enregistrement qu'il a écrit en dernier n'a pas de route à faire valoir (une
   // lecture d'avant une écriture de Carburant la ramenait) ; la route et le niveau de Carburant y sont remis
   const ch = CF.changesOf(cur.by === 'frame' ? CF.routeBase(cur) : s.base, s.flight);
-  s.flight = CF.applyChanges(CF.merge(cur, s.flight, {
+  // SOG-0375 : une route reprise de l'enregistrement retrouve les positions d'X-Plane gardées sur ce poste
+  s.flight = xpRestore(CF.applyChanges(CF.merge(cur, s.flight, {
     fields: CF.FUEL_FIELDS.filter(k => k !== 'route' && k !== 'level'),
     progressKeys: CF.FUEL_PROGRESS,
     by: 'fuel'
-  }), ch);
+  }), ch));
   s.base = CF.routeBase(s.flight);
+  const out = xpStrip(s.flight); // SOG-0375 : ce qui part au dépôt, sans position venue d'X-Plane
   // SOG-0209 : une écriture dont seuls updated_at et by changeraient n'est pas faite (chaque écriture part en synchronisation : 50
   // commits « current_flight.json » en rafale, sans rien de neuf, chez l'utilisateur le 10 nov.) ; le vol reste celui de l'enregistrement
   const bare = x => JSON.stringify({
@@ -1519,12 +1617,12 @@ async function writeFlight(s) {
     updated_at: undefined,
     by: undefined
   });
-  if (cur.updated_at && bare(s.flight) === bare(cur)) {
-    s.flight = cur;
+  if (cur.updated_at && bare(out) === bare(cur)) {
+    s.flight = xpRestore(cur);
     return;
   }
   s.writing = s.flight.updated_at;
-  await s.ctx.data.put(path, s.flight);
+  await s.ctx.data.put(path, out);
 }
 // ---------------------------------------------------------------- réglages d'affichage de l'appareil (SOG-0279 (3))
 /** Les réglages d'affichage : un réglage de l'APPAREIL (cache/fuel/display.json, jamais envoyé), plus dans pilot/<tri>/fuel.json (contrat
@@ -1649,6 +1747,7 @@ function ensureProcs() {
   Promise.resolve().then(() => CF.loadProcedures(s.ctx.aerodb, s.flight)).catch(() => ({})).then(procs => {
     if (gone(s)) return;
     if (s.procsBusy === key) s.procsBusy = null;
+    xpNoteProcs(procs); // SOG-0375 : les points d'une procédure lue dans X-Plane (repli du poste) ne s'écrivent pas avec leur position
     s.procs = {
       key,
       procs: procs || {}
@@ -4299,7 +4398,7 @@ async function altsPublish(mode, plans, pts) {
       arr: r.arr,
       known,
       chain: [],
-      base: S.ctx.aerodb
+      base: xpBase(S.ctx.aerodb)
     })).then(x => x.points || []).catch(() => []) : []));
   if (gone(s)) return;
   const ok = q => Number.isFinite(+q?.lat) && Number.isFinite(+q?.lon) && Math.abs(+q.lat) <= 90 && Math.abs(+q.lon) <= 180;
@@ -4960,7 +5059,7 @@ async function pointAction(act, i) {
       c = m ? {
         lat: +m[2],
         lon: +m[3]
-      } : S.ctx.aerodb ? await S.ctx.aerodb.coords(txt).catch(() => null) : null;
+      } : S.ctx.aerodb ? await xpBase(S.ctx.aerodb).coords(txt).catch(() => null) : null; // SOG-0375
     if (gone(s)) return;
     if (!c || !Number.isFinite(+c.lat) || !Number.isFinite(+c.lon) || Math.abs(c.lat) > 90 || Math.abs(c.lon) > 180)
       return S.ctx.notify(tt(TX.ptUnknown, {
@@ -5413,7 +5512,7 @@ function resolveRoute(normalize = true) {
         arr: asked.arr,
         known,
         chain: asked.points || [],
-        base: S.ctx.aerodb,
+        base: xpBase(S.ctx.aerodb), // SOG-0375
         procs: chosenProcNames() // SOG-0372 (c) : la SID et la STAR choisies, jamais « inconnues »
       });
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
@@ -5634,7 +5733,7 @@ async function autoAirways() {
         arr: r.arr,
         known,
         chain: r.points || [],
-        base: S.ctx.aerodb,
+        base: xpBase(S.ctx.aerodb), // SOG-0375
         procs: chosenProcNames()
       });
     if (gone(s) || seq !== S.routeSeq) return;
@@ -6904,7 +7003,8 @@ export async function mount(el, ctx) {
   }));
   S.stops.push(ctx.data.watch(pilotPath('current_flight.json'), async () => {
     if (gone(self)) return;
-    const f = await ctx.data.get(pilotPath('current_flight.json'));
+    const f = xpRestore(await ctx.data.get(pilotPath(
+      'current_flight.json'))); // SOG-0375 : positions d'X-Plane gardées sur ce poste
     if (gone(self) || !f || f.updated_at === S.writing || f.updated_at === S.flight.updated_at) return;
     // écho d'une de nos écritures, arrivé après une plus récente : ignoré (il ramènerait un texte plus ancien)
     if (f.by === 'fuel' && S.writing && String(f.updated_at) < String(S.writing)) return;
@@ -7273,7 +7373,8 @@ async function directPrepare(id, given = null, resume = null) {
       coord: RT.icaoCoord
     });
   if (!plan.ok && plan.why === 'unknown') {
-    const c = given && Number.isFinite(given.lat) && Number.isFinite(given.lon) ? given : s.ctx.aerodb ? await s.ctx.aerodb.coords(name)
+    const c = given && Number.isFinite(given.lat) && Number.isFinite(given.lon) ? given : s.ctx.aerodb ? await xpBase(s.ctx.aerodb)
+      .coords(name)
       .catch(
         () => null) : null;
     if (S !== s) return;

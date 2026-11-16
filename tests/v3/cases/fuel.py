@@ -6084,9 +6084,12 @@ def f231(c):
     c.eq(got, norm(tx(T, 'procUkPersonal', c.lang)), '« Cochez l’usage personnel dans Données… »', what='not-personal')
     got = answer("{ ok: false, reason: 'no-package' }", 'no package')
     c.eq(got, norm(tx(T, 'procUkNoPkg', c.lang)), '« Aucun paquet eAIP du Royaume-Uni dans Téléchargements… »', what='no-package')
-    got = answer("{ ok: false, reason: 'failed', message: '<b>pypdf 6.21.3</b> trop ancienne : pip install -U pypdf' }", 'failure')
+    # audit 219: the format marks (Cf: U+202E reverses the text, U+200B hides itself) taken out like the control characters
+    got = answer("{ ok: false, reason: 'failed', message: '<b>pypdf\\u202e 6.21.3</b> trop ancienne : pip\\u200b install -U pypdf\\u2066' }", 'failure')
     c.ok('pypdf 6.21.3' in got and 'pip install' in got, got, 'the launcher\'s sentence said')
     c.eq(c.count(f'{L} [data-ukres] b'), 0, 'escaped, never markup', what='escaped')
+    c.eq(c.js(f"[...document.querySelector('{L} [data-ukres]').textContent].filter(ch => /\\p{{Cf}}/u.test(ch)).length"), 0,
+         'no format mark (U+202E, U+200B, U+2066) in the line', what='format marks')
     c.eq(c.js("window.__uk.asked"), ['EGLL', 'EGLL', 'EGLL'], 'aerodb asked for EGLL, source ukpkg', what='asked')
     sids = "[{ kind: 'SID', id: 'EGLL.SID.XMODA1J.RW09L.NONE', partial: {} }, { kind: 'SID', id: 'EGLL.SID.XMAXI1F.RW27R.NONE', partial: {} }, { kind: 'APP', id: 'x' }]"
     got = answer(f"{{ ok: true, icao: 'EGLL', procedures: {sids} }}", 'read')
@@ -6147,6 +6150,70 @@ def f233(c):
       return RE.request({ action: 'check', dep: 'EGLL', arr: 'LFPO', text: 'EGLL/27L MAY Y47 DRAKE LFOB/12 LFPO/02', date: '2026-11-16T14:00' }) }""")
     c.eq([got.get('route'), got.get('rwyDep'), got.get('rwyArr')], ['EGLL MAY Y47 DRAKE LFOB/12 LFPO', '27L', '02'],
          'the runways of the text to their fields, the aerodromes alone', what='request')
+
+
+# SOG-0375: aerodb answers XPLAN (unknown to the base) from the user's X-Plane folder, as aerodb.coords / coordsAll do: `local: true, source:
+# 'xplane'`; every other name unchanged. Invented point and position.
+_XP_LAT, _XP_LON = 46.3125, 0.6875
+_XP_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const c = db.coords, ca = db.coordsAll, hit = id => String(id || '').trim().toUpperCase() === 'XPLAN';
+        db.coords = async (id, o) => hit(id) ? { lat: %s, lon: %s, name: 'XPLAN', kind: 'point', local: true, source: 'xplane' } : c.call(db, id, o);
+        if (ca) db.coordsAll = async (id, o) => hit(id) ? [{ kind: 'point', item: { id: 'XPLAN', lat: %s, lon: %s, name: 'XPLAN' }, zone: 'xplane',
+          local: true, source: 'xplane' }] : ca.call(db, id, o) } catch (e) {}
+      return db } } } }) })()""" % (_XP_LAT, _XP_LON, _XP_LAT, _XP_LON)
+
+
+def _xp_written(c, d, what):
+    """The written flight names XPLAN, says where its position stays, and holds no position of it (nor its numbers anywhere)."""
+    pts = (d.get('route') or {}).get('points') or []
+    xp = [p for p in pts if p.get('id') == 'XPLAN']
+    c.ok(len(xp) == 1, [p.get('id') for p in pts], f'{what}: the point is written by its name')
+    c.ok(xp and 'lat' not in xp[0] and 'lon' not in xp[0] and xp[0].get('local') == 'xplane', xp, f'{what}: never its position, « local: xplane »')
+    raw = json.dumps(d)
+    c.ok(str(_XP_LAT) not in raw and str(_XP_LON) not in raw, '', f'{what}: its latitude and longitude nowhere in the record')
+
+
+@case('F232', 'A point placed from the user\'s X-Plane folder (aerodb: local, source xplane): the flight written with the group keeps its '
+      'name, never its position; Carburant keeps the position in memory on this device (the distance counts it). « Ajouter un point », the '
+      'route field, « Direct vers »', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0375 (the user, Q-0061: « corriger », 16/11 14 h 27; SOG-0153: data read on the device from Navigraph / Jeppesen stays in memory, '
+      'never written nor exported); aerodb\'s answer held by the case, invented point XPLAN')
+def f232(c):
+    path = 'pilot/ABC/current_flight.json'
+    c.page.add_init_script(_XP_STUB)
+    # « Ajouter un point »
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    if not c.js("document.querySelector('[data-module=fuel] details[data-fold=pts]')?.open"):
+        c.tap(f'{FUEL} details[data-fold="pts"] > summary')
+    before = c.doc(path)['route']
+    k0 = c.count(f'{FUEL} [data-pts] [data-do="ptdel"]')
+    c.page.fill(f'{FUEL} [data-k="addpt"]', 'XPLAN')
+    c.tap(f'{FUEL} [data-do="addpt"]')
+    d = cf_doc(c, lambda d: 'XPLAN' in [p.get('id') for p in (d.get('route') or {}).get('points') or []], 'the added point written', timeout=10000)
+    _xp_written(c, d, '« Ajouter un point »')
+    c.eq(c.count(f'{FUEL} [data-pts] [data-do="ptdel"]'), k0 + 1, 'listed on the screen like the others', what='listed')
+    c.ok(float(d['route'].get('distanceNm') or 0) > float(before.get('distanceNm') or 0) + 1, [before.get('distanceNm'), d['route'].get('distanceNm')],
+         'the distance counts its position, kept on this device')
+    c.wait(600)
+    _xp_written(c, c.doc(path), 'after the next writes')
+    # the route field
+    rt = f'{FUEL} [data-k="rtext"]'
+    c.page.fill(rt, 'LFRS LUGEN XPLAN NEPIX LFML')
+    c.page.locator(rt).blur()
+    d = cf_doc(c, lambda d: 'XPLAN' in str((d.get('route') or {}).get('text')) and 'XPLAN' in [p.get('id') for p in (d.get('route') or {}).get('points') or []]
+               and 'LUGEN' in [p.get('id') for p in (d.get('route') or {}).get('points') or []], 'the typed route written', timeout=10000)
+    _xp_written(c, d, 'the route field')
+    c.eq(norm(c.text(f'{FUEL} [data-unres]') or ''), '', 'never an unknown point on this device', what='known')
+    # « Direct vers », a flight under way
+    c.open('fuel?direct=XPLAN', docs=_direct_docs())
+    c.until(f"!!document.querySelector('{FUEL} [data-block=direct]:not([hidden]) [data-do=directapply]')", timeout=15000, what='the panel of the direct')
+    c.tap(f'{FUEL} [data-do="directapply"]')
+    if c.js("!!document.querySelector('.f-modal [data-ok]')"):
+        c.tap('.f-modal [data-ok]')
+    d = cf_doc(c, lambda d: 'XPLAN' in [p.get('id') for p in (d.get('route') or {}).get('points') or []], 'the direct written', timeout=10000)
+    _xp_written(c, d, '« Direct vers »')
 
 
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '

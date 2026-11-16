@@ -1932,7 +1932,7 @@ export function createProcedures(host) {
     }
     ukReading = null;
     const list = Array.isArray(res?.procedures) ? res.procedures : [],
-      msg = String(res?.message ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+      msg = String(res?.message ?? '').replace(/[\u0000-\u001f\u007f\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
     ukDone.set(k, res?.ok ? {
       k: 'ok',
       n: Math.min(999, list.filter(p => p?.kind === 'SID' && isPartial(p)).length)

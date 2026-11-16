@@ -2066,3 +2066,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   point. Now the word of the departure or the arrival is sent as the aerodrome alone and its runway goes to `rwyDep` / `rwyArr` when none is
   chosen (a chosen one stays); another aerodrome's word is not touched; the name of the SID or the STAR stays (the engine reads it as a
   procedure, AeroDB SOG-0371 b). The field keeps its text. F233 (red before, the route of the report).
+- **16 Nov 2026 — SOG-0375: the position of a point read in X-Plane is never written with the flight** (the user, Q-0061: « corriger »;
+  SOG-0153: data read on the device from Navigraph / Jeppesen stays in memory, never written nor exported). Every reading of Fuel that
+  places a point (the route field and « Auto » through route_model, « Ajouter un point », « Direct vers », the drawing of the proposals)
+  asks aerodb through `xpBase`, which notes each position answered `local: true, source: 'xplane'` (key « ID|lat|lon », page memory,
+  20 000 at most); the points of a procedure read on this device (X-Plane fallback, Little Navmap) are noted too. `writeFlight` writes
+  `xpStrip(flight)`: such a point keeps its name and other fields, loses `lat`/`lon`, gains `local: 'xplane'`; the flight in memory keeps the
+  position (distance, quote). A flight read back (the record, another writer) gets the kept position again (`xpRestore`, a new object,
+  the record read is never changed); without it (another device, the page reopened) the name stays and the route reading places it again.
+  Matching by name AND position: a published point of the same name elsewhere is written as before. Not changed: the EUROCONTROL FRA
+  workbook (another nature, decided), flights already written, `cache/fuel/route_alts.json` (device cache, never sent). F232 (red before).
+  With it, audit 219: the launcher's sentence in Procedures loses the format marks (`\p{Cf}`: U+202E, U+200B…) like the control
+  characters; F231 extended (red before).
