@@ -65,8 +65,41 @@ const HIT = 22,
 /** Retenue de l'annulation (gestes gardés en mémoire). */
 const UNDO_MAX = 20;
 
-/** Points de l'enregistrement aux longitudes continues, tous leurs champs gardés (wind, via, awy…). */
-const rawPoints = () => unwrapLons((S.route.flight?.route?.points || []).filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)));
+const placed = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon);
+/** Points de l'enregistrement aux longitudes continues, tous leurs champs gardés (wind, via, awy…). Un point nommé SANS position (lu dans
+ *  X-Plane, { id, local: 'xplane' } : sa position ne part pas avec le vol, SOG-0375) n'est pas ici : la Carte ne le dessine pas, ne le
+ *  déplace pas ; withUnplaced le remet à sa place à l'écriture. */
+const rawPoints = () => unwrapLons((S.route.flight?.route?.points || []).filter(placed));
+/** Les points posés d'un geste (pts : les points AVEC position, dans l'ordre d'après le geste) et les points sans position de l'ancien
+ *  enregistrement (old), chacun entre les mêmes voisins : après le point posé qui le précédait (même nom, le plus proche de son rang), sinon
+ *  avant celui qui le suivait (un point déplacé change de nom), sinon à son rang. Rien n'est inventé, rien n'est retiré, leur ordre est gardé. */
+function withUnplaced(old, pts) {
+  const all = (old || []).filter(Boolean);
+  if (all.every(placed)) return pts;
+  const was = all.filter(placed),
+    key = p => String(p?.id ?? '').toUpperCase(),
+    find = (p, near) => {
+      let at = -1;
+      pts.forEach((q, i) => {
+        if (key(q) === key(p) && (at < 0 || Math.abs(i - near) < Math.abs(at - near))) at = i;
+      });
+      return at;
+    },
+    gaps = pts.map(() => []).concat([
+      []
+    ]); // gaps[g] : les points sans position posés AVANT pts[g] (g = pts.length : après le dernier)
+  let rank = -1; // le rang, parmi les points posés de l'ancien enregistrement, du dernier posé rencontré
+  for (const p of all) {
+    if (placed(p)) {
+      rank++;
+      continue;
+    }
+    const before = rank >= 0 ? find(was[rank], rank) : -1,
+      after = before < 0 && rank + 1 < was.length ? find(was[rank + 1], rank + 1) : -1;
+    gaps[before >= 0 ? before + 1 : after >= 0 ? after : Math.min(Math.max(rank + 1, 0), pts.length)].push(p);
+  }
+  return gaps.flatMap((g, i) => i < pts.length ? [...g, pts[i]] : g);
+}
 /** Un point que la mission impose (rendez-vous, cible, source ; Carburant le marque lock: 'mission', SOG-0193 L3) : la Carte ne le déplace ni ne le retire, elle le garde tel quel à l'écriture. */
 const locked = p => p?.lock === 'mission';
 /** Point de la route sous (x, y) : son rang, ou null ; movable : sans le départ, l'arrivée ni un point imposé par la mission. */
@@ -163,10 +196,12 @@ function commit(points, levelFt = null) {
       lon: Math.round(outLon(+p.lon) * 1e6) / 1e6 // écrite dans [-180, 180[
     })),
     dist = pts.length >= 2 ? MapsRender.distances(unwrapLons(pts)).pop() : 0,
+    // les points nommés sans position de l'enregistrement gardent leur place (écrits, nommés dans le texte ; ni dessinés ni comptés)
+    all = withUnplaced(f.route?.points, pts),
     route = {
-      points: pts,
+      points: all,
       // texte refait depuis les points : les voies des tronçons restés intacts sont gardées
-      text: textFromPoints(pts, f.route?.text || '', f.route?.points || null),
+      text: textFromPoints(all, f.route?.text || '', f.route?.points || null),
       distanceNm: Math.round(dist * 10) / 10,
       trackDeg: pts.length >= 2 ? Math.round(MapsRender.trackOf(pts[0], pts[pts.length - 1])) : f.route?.trackDeg,
       from: 'points',

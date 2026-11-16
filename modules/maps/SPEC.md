@@ -1205,6 +1205,7 @@ Hidden for mission maps. The Edit toggle enters the mode; the mode's help (drag,
   and `removePoint` refuse it, its card says "set by the mission" instead of offering "Remove", and it is drawn as a filled
   square. The Map keeps `lock` and `mission` in what it writes (`commit` spreads the point) and never touches `route.locks`
   (Fuel's). A free point can still be added anywhere, even between two imposed points.
+- **Points without a position** (SOG-0375: a named point read in X-Plane, `{ id, local: 'xplane' }`, its position does not leave with the flight): the Map does not draw them, count them in the distances, move them nor offer them a card; `rawPoints` leaves them out, and `commit` puts them back at the write (`withUnplaced`): each between the same neighbours (after the placed point that preceded it, else before the one that followed it, else at its rank), in their order, with all their fields; the route text still names them. A gesture never removes one, never gives it a position.
 - **Adding**: the "+" button arms one insertion (pressed while armed, its hint in the fold), the next tap adds the anchor
   under the finger (else a free point) where it lengthens the route least, then disarms; a press held 500 ms without moving
   (8 px) does the same at once (the browser menu is suppressed in the mode). A simple tap never inserts: on a route point it

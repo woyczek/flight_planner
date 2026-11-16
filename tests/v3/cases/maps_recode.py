@@ -8181,3 +8181,41 @@ def d243(c):
     c.ok('sid:CPT3' in r['partialTrans'] and 'TRANSX' not in r['partialTrans'], str(r), 'a complete SID keeps its legs, its partial transition adds none')
     c.ok('sid:CPT1' in r['full'] and 'sid:RW09L' in r['full'], str(r), 'a complete SID still draws its legs from the threshold (the rule is about `partial`, not about every SID)')
     c.ok('sid:XMODA' in r['oneRead'], str(r), 'a one-point SID that is not marked `partial` keeps its leg (the marker decides, not the count of points)')
+
+
+@case('D244', 'A named point without a position (read in X-Plane, `local: "xplane"`, SOG-0375) keeps its place in the route when the Map writes it: a point moved, inserted, undone: it is neither drawn, nor invented, nor removed; the text names it', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0375 (the user: the position of a point read in X-Plane does not leave with the flight): route.points may carry { id, local } without lat or lon; the Map rewrites points and text at each gesture (commit): the unplaced point stays between the same neighbours, the others are the Map’s')
+def d244(c):
+    f = flight()
+    pts = f['route']['points']
+    za, zb = {'id': 'ZZA', 'local': 'xplane'}, {'id': 'ZZB', 'local': 'xplane', 'alt_ft': 24000}
+    f['route']['points'] = [pts[0], pts[1], za, pts[2], zb, pts[3]]
+    f['route']['text'] = 'LFRS LUGEN ZZA NEPIX ZZB LFML'
+    c.open('maps', docs=fdocs(f), flight=False)
+    c.ready('maps', sheet=True)
+    hook_map(c)
+    c.js(_STATE_JS)
+    c.eq(c.js("() => window.__mp.S.route.points.map(p => p.id).join(' ')"), 'LFRS LUGEN NEPIX LFML', 'the Map draws only what has a position', what='drawn points')
+    ids = lambda d: ' '.join(p['id'] if p.get('lat') is not None else '·' + p['id'] for p in d['route']['points'])
+    c.tap('[data-mp="edit"]')
+    c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit becomes pressed')
+    a = xy(c, 44.9, 2.4)                                   # NEPIX
+    mouse_drag(c, a, (a[0] + 45, a[1] + 35))
+    d = c.until_doc(PATH, lambda d: d and d.get('by') == 'maps' and any(COORD.match(p['id'] or '') for p in d['route']['points']), what='the moved point written', timeout=5000)
+    got = ids(d)
+    c.ok(re.fullmatch(r'LFRS LUGEN ·ZZA \d{4}[NS]\d{5}[EW] ·ZZB LFML', got) is not None, f'{got}', 'a point moved: the two named points without a position stay where they were, between the same neighbours')
+    z = [p for p in d['route']['points'] if p['id'] in ('ZZA', 'ZZB')]
+    c.ok(len(z) == 2 and all('lat' not in p and 'lon' not in p and p.get('local') == 'xplane' for p in z) and z[1].get('alt_ft') == 24000, str(z), 'they stay as they were: no position invented, `local` and their level kept')
+    c.ok('ZZA' in d['route']['text'] and 'ZZB' in d['route']['text'], d['route']['text'], 'the text of the route still names them')
+    c.until("!document.querySelector('[data-mp=undo]').disabled", what='Undo enabled after a gesture')
+    c.tap('[data-mp="undo"]')
+    d = c.until_doc(PATH, lambda d: d['route']['points'][3].get('id') == 'NEPIX' or any(p['id'] == 'NEPIX' for p in d['route']['points']), what='Undo written back', timeout=5000)
+    c.eq(ids(d), 'LFRS LUGEN ·ZZA NEPIX ·ZZB LFML', 'Undo: the route as it was, the two points in their place', what='points after Undo')
+    c.tap('[data-mp="add"]')
+    p0, p1 = xy(c, 46.5833, -1.2), xy(c, 44.9, 2.4)
+    c.page.mouse.click((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2 - 25)
+    d = c.until_doc(PATH, lambda d: len(d['route']['points']) == 7, what='a point inserted', timeout=5000)
+    got = ids(d)
+    c.ok('·ZZA' in got and '·ZZB' in got and got.split().index('·ZZA') > 1 and got.split().index('·ZZB') > got.split().index('·ZZA'), got, 'a point inserted: the two points are still there, in their order, none dropped')
+    c.ok(got.split()[-1] == 'LFML' and got.split()[-2] == '·ZZB', got, 'the one after NEPIX is still just before the arrival')
