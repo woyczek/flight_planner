@@ -241,6 +241,7 @@ class Nav:
         flight=getattr(g,'flight',None)
         low,high=initial_band or ((flight['departure'],flight['ceiling'] if flight.get('free_departure') else flight['departure']) if flight else (-1e9,1e9))   # SOG-0161 : free_departure : aucune SID lue, la montée n'est pas bornée par le raccord
         origin=(start,0,bool(fra_already),low,high)
+        ground=min(0,flight['departure'],flight['arrival']) if flight else 0      # SOG-0354 L5 (4) : le sol, 0 sauf pour un aérodrome sous le niveau de la mer
         ratios=[e.get('_cost',e['nm'])/e['nm'] for es in g.values() for _,e in es if e['nm']>.00001]
         ratio=min(ratios,default=0)
         goal_set=set(goals) if goals else None
@@ -297,9 +298,12 @@ class Nav:
                 return list(reversed(path))
             for v,e in g.get(u,[]):
                 if self.nat_rejected and e.get('nat') and e['nat']['track'] in self.nat_rejected:continue
-                a,b=self.edge_band(e,'start');a=max(a,low);b=min(b,high)
+                a,b=self.edge_band(e,'start')
+                if a==0:a=ground      # le plancher 0 est le sol (L5 4) : sous le niveau de la mer pour EHAM
+                a=max(a,low);b=min(b,high)
                 if a>b+.001:continue
                 c,d=self.edge_band(e,'end')
+                if c==0:c=ground
                 if flight:
                     ceiling=flight['ceiling'];b=min(b,ceiling);d=min(d,ceiling)
                     if a>b+.001:continue
@@ -307,7 +311,7 @@ class Nav:
                     up=0 if e.get('kind') in ['STAR','APPROACH_LINK'] else flight['climb_fps']*seconds
                     down=0 if e.get('kind')=='SID' else flight['descent_fps']*seconds
                     if v==end and not gate and flight.get('free_arrival') and e.get('connector'):down=1e9   # SOG-0161 : aucune STAR lue : la descente du raccord d'arrivée n'est pas bornée
-                    c=max(c,a-down,0);d=min(d,b+up)
+                    c=max(c,a-down,ground);d=min(d,b+up)
                     if v==end and not gate:c=max(c,flight['arrival']);d=min(d,flight['arrival'])
                 elif e['nm']<.00001:c,d=max(c,a),min(d,b)
                 if c>d+.001:continue
@@ -354,7 +358,7 @@ class Nav:
         fra=getattr(self,'fra',None)
         if not(fra and fra.book):return [],set()
         role,col='D' if isdep else 'A','dep' if isdep else 'arr'
-        speed=float(terminal.get('speed_kt',450));rate=float(terminal.get('climb_fpm' if isdep else 'descent_fpm',2000));elev=float(self.ads[ad].get('elev') or 0)
+        speed=float(terminal.get('speed_kt',450));rate=float(terminal.get('climb_fpm' if isdep else 'descent_fpm',2000));elev=flight_profile.elevation(ad,self.ads[ad].get('elev'))
         detour=lambda k:nm(self.nodes[airport],self.nodes[k])+nm(self.nodes[k],other)
         out,unreachable=[],set()
         network={x for e in self.edges for x in (e['a'],e['b'])}
@@ -480,7 +484,7 @@ class Nav:
         g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
         graph=RoutingGraph(g)
         if profile_options:
-            graph.flight=dict(profile_options,departure=self.ads[dep].get('elev') or 0,arrival=self.ads[arr].get('elev') or 0,ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
+            graph.flight=dict(profile_options,departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
         self.graph_seconds=round(time.perf_counter()-built,3)
         self._routing_cache[cache_key]=(graph,a,b)
         if len(self._routing_cache)>1:self._routing_cache.popitem(last=False)
@@ -749,6 +753,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
             nat=e.get('nat'),nat_link=e.get('nat_link'),origin=e.get('origin')))   # SOG-0078 ; SOG-0354 L5 (2) : origin='random' = route libre CRÉÉE (jamais lue) ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
+    flight_profile.elevation(dep,dep_elev); flight_profile.elevation(arr,arr_elev)      # SOG-0354 L5 (4) : une élévation hors de -1 500 à 30 000 ft est refusée, dite
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
     # SOG-0371 (aller-retour) : une route que le moteur a ÉCRITE est relue sans refus. Son raccord DCT depuis (vers) un aérodrome sans SID (STAR) lue est libre au contrôle comme à la recherche (la montée n'y est pas tenue au plancher de l'airway suivante) ;
     # un aérodrome qui a des procédures lues garde la rigueur du contrôle (une route saisie « LFPG DCT … » doit prendre sa SID)

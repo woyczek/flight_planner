@@ -2,6 +2,20 @@
 import math
 
 FREE=1e7   # ft/s : « libre » (SOG-0161)
+ELEV_MIN_FT, ELEV_MAX_FT = -1500.0, 30000.0      # SOG-0354 L5 (4) : l'élévation d'un aérodrome est comprise entre -1 500 ft (la mer Morte est à -1 400 ft) et 30 000 ft ; hors de cette borne la demande est REFUSÉE et dit pourquoi
+
+
+def elevation(icao, value):
+    """L'élévation (ft, flottant) d'un aérodrome pour le modèle vertical : une valeur NÉGATIVE est une donnée normale (EHAM -10 ft) ; absente (None) : 0 ; non numérique, infinie ou hors de -1 500 à 30 000 ft : ValueError dite (l'aérodrome est refusé)."""
+    if value is None:
+        return 0.0
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        v = float('nan')
+    if not math.isfinite(v) or not ELEV_MIN_FT <= v <= ELEV_MAX_FT:
+        raise ValueError(f'Élévation de {icao} : {value!r} ft refusée (de {ELEV_MIN_FT:,.0f} à {ELEV_MAX_FT:,.0f} ft).'.replace(',', ' '))
+    return v
 
 
 def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,descent_fps=2000/60,strategy='natural',free_departure=False,free_arrival=False):   # SOG-0161 : free_* : le raccord DCT d'un aérodrome sans SID (STAR) lue monte (descend) comme la procédure le ferait
@@ -10,6 +24,7 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
             raise ValueError(f'{name} : valeur entre {low} et {high}.')
     if strategy not in ['natural','adapt']: raise ValueError('Stratégie verticale inconnue.')
     total=sum(l['nm'] for l in legs); cruise=cruise_fl*100
+    ground=min(0,departure_ft,arrival_ft)      # le plancher « 0 » d'un tronçon est le SOL : sous le niveau de la mer pour EHAM (-10 ft), il suit l'aérodrome le plus bas (SOG-0354 L5 4) ; 0 pour tout autre vol
     speeds=[l.get('planned_speed_kt') or speed_kt for l in legs]
     if any(not 30<=v<=1500 for v in speeds):raise ValueError('Vitesse sol de segment : 30 à 1500 kt.')
     total_seconds=sum(l['nm']/v*3600 for l,v in zip(legs,speeds))
@@ -21,6 +36,7 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
         start=len(positions)-1; distance=leg['nm']; count=max(1,math.ceil(distance))
         low=leg.get('lower'); high=leg.get('upper')
         low=low if isinstance(low,(int,float)) else 0
+        if low==0:low=ground
         high=high if isinstance(high,(int,float)) else cruise
         # Preserve the published boundary exactly: 19,500 ft may be the only
         # common altitude between two adjacent bands. Never round it to 19,000.
@@ -61,6 +77,7 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
     for n,(leg,(a,b)) in enumerate(zip(legs,ranges)):
         heights=altitudes[a:b+1]; min_h=min(heights); max_h=max(heights); reasons=[]
         lower=leg.get('lower'); upper=leg.get('upper')
+        if isinstance(lower,(int,float)) and lower==0:lower=ground
         if isinstance(lower,(int,float)) and min_h<lower-.1: reasons.append(f'Profil minimum {min_h:.0f} ft sous le plancher {lower:g} ft (écart {lower-min_h:.0f} ft).')
         if isinstance(upper,(int,float)) and max_h>upper+.1: reasons.append(f'Profil maximum {max_h:.0f} ft au-dessus du plafond {upper:g} ft (écart {max_h-upper:.0f} ft).')
         if leg.get('kind')=='SID' and any(v<u-.1 for u,v in zip(heights,heights[1:])):reasons.append('Le profil redescend sur une SID : incompatible avec la phase de départ choisie.')

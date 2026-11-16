@@ -11904,3 +11904,74 @@ def k298(c):
         table = open(os.path.join(out, 'table.md'), encoding='utf-8').read()
         c.ok(recs[1]['route'] not in table and 'DCT' not in table and '| KJFK–EGLL | NA→EU |' in table and '3 demandes ; avec route : 3 ; sans route : 0 ; « proposition » : 0' in said.getvalue(), table[:300],
              'the reduced table has the pair, the direction, the hour, yes / no, seconds, NM and proofs — and NO text of route; the summary counts 3 with a route, none without, no proposal')
+
+
+@case('K299', 'Route engine, SOG-0354 lot L5 (4) defect 1: an aerodrome BELOW SEA LEVEL (EHAM, -10 ft) is normal data — the floor « 0 » of a leg is the ground of the lowest aerodrome of the flight, the search and the vertical profile accept it, no « Profil vertical impossible » — and the elevation has a bound (-1 500 to 30 000 ft): outside it the request is refused and says why',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) (the matrix of flights of 16 Nov, defect 1: the 24 requests that have EHAM as an end, of the 34 that returned only a proposal; the ergonomics session: « une altitude négative est une donnée normale ; écris la borne »). The published floor of a leg is 0 ft (the surface): the profile started at -10 ft with a floor of 0 above its ceiling (-10) and was judged impossible (ERREUR of the control, then six retries at lower levels), and the search found no edge whose band contained -10 (EGLL → EHAM: no route at all, EHAM → LFPG: a route with an ERREUR) — a flight from EHAM was concerned, not only the ocean. Now the floor 0 is the ground = min(0, departure, arrival), the same 0 for every other flight (EIDW → KJFK 3 022.7 NM unchanged on the real base), and `flight_profile.elevation` refuses an elevation that is not a finite number from -1 500 to 30 000 ft.')
+def k299(c):
+    import gzip
+    import json
+    import math
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import flight_profile as FP, import_books as I, plan as P, view, results_cache
+    # 1. the vertical profile: a floor of 0 is the ground, which is below the sea for -10 ft
+    legs = [{'nm': 300, 'lower': 0, 'upper': 66000, 'via': 'J1', 'start': {'id': 'A'}, 'end': {'id': 'B'}}]
+    low = FP.build(legs, -10.0, 13.0, 370)
+    c.eq((low['feasible'], legs[0]['vertical_errors'], legs[0]['altitude_start_ft']), (True, [], -10.0), 'a flight that leaves an aerodrome at -10 ft over a leg whose published floor is 0 is feasible, starts at -10 ft and has no vertical error (red before: infeasible, « sous le plancher 0 ft »)', what='profile')
+    legs = [{'nm': 300, 'lower': 0, 'upper': 66000, 'via': 'J1', 'start': {'id': 'A'}, 'end': {'id': 'B'}}]
+    c.eq((FP.build(legs, 83.0, 13.0, 370)['feasible'], legs[0]['vertical_errors'], legs[0]['altitude_start_ft']), (True, [], 83.0), 'the other flights are as before: positive elevations, the floor 0', what='positive')
+    # 2. the bound of the elevation
+    got = [FP.elevation('X', v) for v in (None, -10, '-10', 0, -1500, 30000)]
+    c.eq(got, [0.0, -10.0, -10.0, 0.0, -1500.0, 30000.0], 'None is 0 ft, a negative value and the two bounds are taken as numbers', what='elevation')
+    said = []
+    for v in (-1501, 30001, 'x', float('nan'), float('inf'), []):
+        try:
+            FP.elevation('EHAM', v)
+        except ValueError as e:
+            said.append(str(e))
+    c.ok(len(said) == 6 and all(x.startswith('Élévation de EHAM : ') and 'refusée' in x and '1 500' in x and '30 000' in x for x in said), str(said), 'outside -1 500 to 30 000 ft, not a number, not finite: ValueError that says the aerodrome, the value and the bound')
+    # 3. the bench of K237 with EGLL at -10 ft: the flights from and to it are answered, without an error of the control; at 40 000 ft the request is refused and says why
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    nodes = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *nodes[a]), 'b': pt(b, *nodes[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        def bench(name, elev):
+            data = os.path.join(td, name, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, elev, 0, 0]]},
+                         'points': [pt(k, *v) for k, v in nodes.items()], 'navaids': [], 'airways': ways}.items():
+                with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+            rad = os.path.join(td, name, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            fra = os.path.join(data, 'route', 'fra.json.gz')
+            with gzip.open(fra, 'wt', encoding='utf-8') as f:
+                json.dump([], f)
+            os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+            with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                json.dump({'tracks': [A]}, f)
+            return data, os.path.join(data, 'route', 'rad.json.gz'), fra
+
+        def run(bn, dep, arr, date):
+            data, rad, fra = bn
+            res = P.compute(view.to_request({'action': 'compute', 'adep': dep, 'adest': arr, 'fl': 370, 'date': date, 'alternatives': False, 'proposals': True}), data, rad, fra)
+            p = res['primary']
+            return bool(p.get('ok')), [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR'], str(p.get('error') or '')
+        results_cache.ENABLED = False
+        try:
+            below = bench('below', -10)
+            out = [run(below, 'KJFK', 'EGLL', '2026-11-10T04:30'), run(below, 'EGLL', 'KJFK', '2026-11-10T12:00')]
+            c.eq(out, [(True, [], '')] * 2, 'KJFK → EGLL (arrival at -10 ft: the search finds the way, the control has no error) and EGLL → KJFK (departure at -10 ft: a free route, no error): the aerodrome below the sea is an aerodrome like any other (red before: no route to it, an ERREUR from it)', what='below sea')
+            high = run(bench('high', 40000), 'KJFK', 'EGLL', '2026-11-10T04:30')
+            c.ok(high[0] is False and 'Élévation de EGLL : 40000 ft refusée' in high[2], str(high), 'an elevation of 40 000 ft is refused and the answer says which aerodrome, which value, which bound')
+        finally:
+            results_cache.ENABLED = True

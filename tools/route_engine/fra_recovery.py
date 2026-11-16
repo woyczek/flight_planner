@@ -90,7 +90,7 @@ def build(request,nav,rad,anchors,samples,required_area=None,prepare_only=False)
         for u,es in list(g.items()):
             g[u]=[(v,dict(e,_cost=planning.edge_cost(e,request)*(4 if e.get('kind')=='DCT_PROPOSAL' else 1))) for v,e in es if nav.nodes[u]['id'] not in points and nav.nodes[v]['id'] not in points and (e['route'],nav.nodes[u]['id'],nav.nodes[v]['id']) not in segments]
         options=engine.profile_options(request)
-        g.flight=dict(options,departure=nav.ads[dep].get('elev') or 0,arrival=nav.ads[arr].get('elev') or 0,ceiling=fl*100)
+        g.flight=dict(options,departure=engine.flight_profile.elevation(dep,nav.ads[dep].get('elev')),arrival=engine.flight_profile.elevation(arr,nav.ads[arr].get('elev')),ceiling=fl*100)
         nav._fra_recovery_graph_cache={cache_key:g}
         nav._fra_graph_cache.clear()
         del source,cached
@@ -155,7 +155,7 @@ def windowed(request,nav,rad,anchors,base_path):
         result.extend(base_path[cursor:]);return result
     def feasible(path):
         legs=[dict(start=nav.nodes[u],end=nav.nodes[v],via=e['route'],kind=e.get('kind','AIRWAY'),nm=e['nm'],lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt')) for u,v,e in path if e.get('kind')!='FRA_GATE']
-        p=engine.flight_profile.build(legs,nav.ads[request['dep']].get('elev') or 0,nav.ads[request['arr']].get('elev') or 0,fl,**engine.profile_options(request),strategy='adapt')
+        p=engine.flight_profile.build(legs,engine.flight_profile.elevation(request['dep'],nav.ads[request['dep']].get('elev')),engine.flight_profile.elevation(request['arr'],nav.ads[request['arr']].get('elev')),fl,**engine.profile_options(request),strategy='adapt')
         return p['feasible']
     for i,j,area in sorted(candidates,key=lambda c:c[1]-c[0],reverse=True):
         if time.perf_counter()-begun>3 or len(selected)>=3:break
