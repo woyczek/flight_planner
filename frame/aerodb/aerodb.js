@@ -617,6 +617,22 @@
       }).finally(() => clearTimeout(timer));
     };
 
+    /** SOG-0372 : après le travail du lanceur sur la zone « nat » (écrite hors de la couche de données) — les copies gardées de ses
+     *  fichiers et du manifeste revalidées (reader.revalidate attend les nouvelles ; un lecteur sans revalidate oublie ses copies), puis
+     *  la liste des cycles publiés et la zone ouverte jetées : la question suivante lit ce que le lanceur vient d'écrire. Ne lève jamais. */
+    async function natReread() {
+      const paths = [...((await listOf(`${PUB}nat/`)) || []).filter(x => typeof x === 'string'), `${PUB}index.json`];
+      for (const x of paths) revs.delete(x);
+      if (typeof reader.revalidate === 'function') await Promise.resolve(reader.revalidate(paths)).catch(() => null);
+      else
+        for (const x of paths) await Promise.resolve(reader.evict?.(x)).catch(() => 0);
+      listedP = null;
+      listing = false;
+      emptyAt = 0;
+      loaded.delete('nat');
+      missing.delete('nat');
+    }
+
     // ---- zones publiées : liste du lecteur (arbre du dépôt), sinon manifeste sia/base/index.json, sinon inconnues
     function published() {
       // une liste vide n'est pas une réponse sûre (réseau pas encore prêt au lancement, accès réglé depuis) : redemandée
@@ -3025,15 +3041,39 @@
       },
       /** Les routes NAT valides, reprises à la demande (SOG-0263) : si celles que l'on détient sont périmées (ou absentes) et que le lanceur est là (poste du pilote, pas de paire), il les reprend — téléchargement puis construction de la zone « nat »,
        *  UN seul travail à la fois, pas deux essais à moins de 5 minutes — puis l'état est relu. Aucun minuteur : on l'appelle quand la couche NAT est affichée ou quand la ligne est ouverte. Rend l'état de natState() avec `refreshed` (une reprise a eu lieu)
-       *  et `ok` (elle a abouti ; absent si rien n'a été demandé). */
-      async natEnsure() { // { …natState, refreshed, ok?, busy? (le lanceur fait déjà une autre opération), running? (laquelle, comme la réponse 409 la dit) }
+       *  et `ok` (elle a abouti ; absent si rien n'a été demandé).
+       *  SOG-0372 (le poste de l'utilisateur, 16/11 : « semble réussir, mais échoue silencieusement », la page rechargée disait les routes du
+       *  jour) : le lanceur écrit la zone HORS de la couche de données ; la copie gardée de ses fichiers et la liste des cycles publiés
+       *  étaient relues telles quelles. Comme fetchProcedures : ses chemins sont revalidés (reader.revalidate), la liste refaite, AVANT de
+       *  rendre. Un appel pendant un travail en cours (la couche NAT de la Carte, un autre appui) l'ATTEND (`joined`) au lieu de rendre
+       *  l'ancien état ; un essai refusé parce que le dernier a échoué il y a moins de 5 minutes porte `retryAt` (ISO) : rien de muet. */
+      async natEnsure() { // { …natState, refreshed, ok?, busy? (le lanceur fait déjà une autre opération), running? (laquelle, comme la réponse 409 la dit), joined?, retryAt? }
         const s0 = await api.natState();
-        if (s0.expired === false || typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan || natRefresh
-          .p || now() - natRefresh.failedAt < 300000)
+        if (s0.expired === false || typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan)
           return {
             ...s0,
             refreshed: false
           };
+        if (natRefresh.p) { // un travail déjà demandé : attendu, puis l'état relu (jamais l'ancien rendu tout de suite)
+          const got = await natRefresh.p;
+          return got?.busy ? {
+            ...s0,
+            refreshed: false,
+            joined: true,
+            busy: true,
+            running: got.running
+          } : {
+            ...(await api.natState()),
+            refreshed: false,
+            joined: true,
+            ok: got
+          };
+        }
+        if (now() - natRefresh.failedAt < 300000) return {
+          ...s0,
+          refreshed: false,
+          retryAt: new Date(natRefresh.failedAt + 300000).toISOString()
+        };
         natRefresh.p = (async () => {
           try {
             const r = await launcher.job('regen/job', {
@@ -3050,6 +3090,7 @@
               running: r.running || null
             }; // le lanceur fait déjà une autre opération : dite avec ce qui tourne (la carte « opération en cours »), pas un échec
             if (r?.result?.ok === false) throw new Error('nat refresh failed');
+            await natReread();
             return true;
           } catch {
             natRefresh.failedAt = now();

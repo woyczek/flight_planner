@@ -5849,6 +5849,70 @@ def f225(c):
 
 
 
+# SOG-0372: aerodb's natState / natEnsure held by the case — natEnsure answers when the case says (window.__nat.go(answer))
+_NAT_STUB = """(() => { window.__nat = { st: { present: true, count: 1, from: '2026-11-14T11:30:00.000Z', validUntil: '2026-11-14T19:00:00.000Z', expired: true, current: 0 }, go: null, asks: 0 };
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { db.natState = async () => window.__nat.st;
+        db.natEnsure = () => { window.__nat.asks++; return new Promise(res => window.__nat.go = r => { window.__nat.go = null; if (r && r.present && r.expired === false) window.__nat.st = r; res(r); }); }; } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F227', 'Route step, « Lire les routes NAT du jour »: the line is rewritten WITHOUT reloading — while reading it says only the reading, '
+      'a failure is said with its reason, success gives the date and validity; then a proposal through NAT tracks of another day is removed '
+      'and the line offers to compute again', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0372 (the user\'s workstation, 16 Nov 8 h 30: « la lecture des nats du jour semble réussir, mais échoue silencieusement » — the '
+      'line still said the tracks of 14/11 « périmées » until the page was reloaded; the ergonomist: never the old sentence left, a '
+      'proposal through tracks of another day removed as soon as newer ones are read); aerodb\'s NAT state held by the case (stub)')
+def f227(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.add_init_script(_NAT_STUB)
+    L = f'{FUEL} [data-natline]'
+    T = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_ctl_seg('EINN', 'MALOT', 'controlled', 'HIGH'), _ctl_seg('MALOT', 'CYYT', 'fallback', 'NAT', 'track NAT du jour, périmée')]
+    by_nat = dict(_alt(1, 'Via NAT G', 'EINN MALOT NATG 54/50 CYYT', 1700, 340, segs, sid=False), nat={'tracks': ['G'], 'issued': '14/11', 'stale': True})
+    other = _alt(2, 'Direct', 'EINN MALOT CYYT', 1710, 350, [_ctl_seg('EINN', 'MALOT', 'controlled', 'HIGH'), _ctl_seg('MALOT', 'CYYT', 'controlled', 'HIGH')], sid=False)
+    st['alts'] = [by_nat, other]
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{L}:not([hidden]) [data-do=natread]')", timeout=15000, what='the NAT line with its gesture')
+    old = norm(tx(T, 'natStale', c.lang).replace('{d}', '14/11'))
+    c.ok(old in norm(c.text(L)), c.text(L), 'before: the tracks of 14/11, stale')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 2", timeout=15000, what='both routes, one through NAT G')
+    c.eq(c.count(f'{FUEL} [data-alt] [data-natstale]'), 1, 'one route through the stale tracks of 14/11', what='stale route')
+    # (a) while reading: the reading only, never the old sentence beside it
+    c.tap(f'{L} [data-do="natread"]')
+    c.until("window.__nat.go !== null", timeout=8000, what='natEnsure asked')
+    c.until(f"!!document.querySelector('{L} [data-natstate=reading]')", timeout=5000, what='the line says the reading')
+    c.ok(old not in norm(c.text(L)), c.text(L), 'while reading, the old sentence is not left')
+    c.ok(norm(tx(T, 'natReading', c.lang)) in norm(c.text(L)), c.text(L), '« Lecture des routes NAT… »')
+    # a failure: said in the line, with its reason
+    c.js("window.__nat.go({ ...window.__nat.st, refreshed: true, ok: false })")
+    c.until(f"!!document.querySelector('{L} [data-natfail=fail]')", timeout=5000, what='the failure said')
+    c.ok(norm(tx(T, 'natFail', c.lang)) in norm(c.text(L)), c.text(L), '« Les routes NAT n’ont pas pu être lues. »')
+    # too soon after a failure: said with the time of the next try
+    c.tap(f'{L} [data-do="natread"]')
+    c.until("window.__nat.go !== null", timeout=8000, what='natEnsure asked again')
+    c.js("window.__nat.go({ ...window.__nat.st, refreshed: false, retryAt: '2026-11-16T08:35:00.000Z' })")
+    c.until(f"!!document.querySelector('{L} [data-natfail=retry]')", timeout=5000, what='the next try said')
+    c.ok('08:35Z' in c.text(L), c.text(L), 'with its time')
+    # success: the date and validity, without reloading; (b) the route through NAT G of 14/11 goes, the line offers to compute again
+    c.tap(f'{L} [data-do="natread"]')
+    c.until("window.__nat.go !== null", timeout=8000, what='natEnsure asked a third time')
+    c.js("window.__nat.go({ present: true, count: 1, from: '2026-11-16T11:30:00.000Z', validUntil: '2026-11-16T19:00:00.000Z', expired: false, current: 1, refreshed: true, ok: true })")
+    c.until(f"!!document.querySelector('{L} [data-natstate=ok]')", timeout=5000, what='the new tracks said')
+    c.ok(norm(tx(T, 'natValid', c.lang).replace('{d}', '16/11').replace('{t}', '19:00Z')) in norm(c.text(L)), c.text(L), '« Routes NAT du 16/11, valides jusqu’à 19:00Z »')
+    c.eq(c.count(f'{L} [data-natfail]') + c.count(f'{L} [data-do=natread]'), 0, 'no failure left, no gesture', what='clean line')
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length === 1", timeout=5000, what='the route through NAT G removed')
+    c.eq(c.count(f'{FUEL} [data-alt] [data-natstale]'), 0, 'no route through the tracks of another day left', what='removed')
+    c.ok(norm(tx(T, 'natDropped', c.lang).replace('{d}', '16/11')) in norm(c.text(f'{FUEL} [data-natdropped]') or ''), c.text(f'{FUEL} [data-routealts]'), 'said')
+    c.eq(c.count(f'{FUEL} [data-natdropped] [data-do=rcompute]'), 1, 'with « Recalculer »', what='recompute')
+    c.js(f"document.querySelector('{L}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F227_{c.design}_390_{c.lang}_delivered.png')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

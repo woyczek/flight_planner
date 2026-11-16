@@ -8174,6 +8174,72 @@ def k186(c):
     c.eq(r['busy'], {'refreshed': False, 'busy': True, 'running': {'set': 'base', 'verb': 'build'}, 'expired': True}, 'a busy launcher (409): not swallowed, not a failure: `busy` and `running` say which operation runs (the « operation in progress » card)', what='busy')
 
 
+@case('K277', 'NAT routes read again (SOG-0372): after the launcher\'s job on the nat zone, natEnsure() reads what the launcher has just written, '
+      'with a reader that KEEPS its copies (like the data layer): the kept files and the list of published cycles are revalidated before it '
+      'answers; a call during a running job waits for it (joined); a call refused within 5 minutes after a failure says when (retryAt)',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0372 (the user\'s workstation, 16 Nov 8 h 30: « Lire les routes NAT du jour » seemed to succeed and the line still said the '
+      'tracks of 14/11 « périmées »; the page reloaded said those of 16/11): the launcher writes the zone outside the data layer, so the copy kept '
+      'by the frame and the list of cycles read before were served again; fetchProcedures already revalidated its paths (« 0 procédures » of '
+      '28 Oct)')
+def k277(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const old = [{ id: 'G', route: ['54/50'], from: '2026-11-14T11:30:00Z', to: '2026-11-14T19:00:00Z' }];
+      const fresh = [{ id: 'A', route: ['55/50'], from: '2026-11-16T11:30:00Z', to: '2026-11-16T19:00:00Z' }];
+      // the source (what the launcher writes) and the reader's kept copies: read() serves the kept copy, list() the kept tree, as the
+      // data layer does; revalidate(paths) takes the source's tree and the new versions of these paths
+      const mk = (job, at) => {
+        let src = { 'sia/base/nat/2026-11-14/meta.json': { tracks: old } };
+        let tree = Object.keys(src);
+        const kept = new Map(), asked = [];
+        const reader = {
+          read: async p => { if (!kept.has(p)) { if (!src[p]) return null; kept.set(p, { value: { data: { natTracks: src[p] } }, rev: p + src[p].tracks[0].id }); } return kept.get(p); },
+          list: async pre => tree.filter(p => p.startsWith(pre)),
+          revalidate: async paths => { asked.push(...paths); tree = Object.keys(src); for (const p of paths) kept.delete(p); return { changed: paths, unchanged: [] }; },
+          watch: () => () => {}
+        };
+        const t = { v: Date.parse(at) };
+        const write = () => { src = { 'sia/base/nat/2026-11-16/meta.json': { tracks: fresh } }; };
+        const db = AeroDB.create({ reader, launcher: job(write), lnmperf: false, now: () => t.v });
+        return { db, t, asked };
+      };
+      const out = {};
+      // the launcher writes a NEW cycle folder (the day of the message): read again before natEnsure answers
+      let m = mk(write => ({ info: () => ({ launcher: true }), job: async () => { write(); return { result: { ok: true } }; } }), '2026-11-16T08:30:00Z');
+      out.before = (await m.db.natState()).from;
+      const e = await m.db.natEnsure();
+      out.after = { refreshed: e.refreshed, ok: e.ok, expired: e.expired, from: e.from, validUntil: e.validUntil };
+      out.revalidated = m.asked.includes('sia/base/nat/2026-11-14/meta.json');
+      out.state = (await m.db.natState()).from;
+      // a call while the job runs waits for it and answers the new state
+      let release;
+      m = mk(write => ({ info: () => ({ launcher: true }), job: () => new Promise(res => release = () => { write(); res({ result: { ok: true } }); }) }), '2026-11-16T08:30:00Z');
+      const p1 = m.db.natEnsure();
+      await new Promise(r => setTimeout(r, 30));
+      const p2 = m.db.natEnsure();
+      await new Promise(r => setTimeout(r, 30));
+      release();
+      const [j1, j2] = await Promise.all([p1, p2]);
+      out.joined = { first: [j1.refreshed, j1.from], second: [j2.refreshed, !!j2.joined, j2.from, j2.expired] };
+      // a failure, then a call within 5 minutes: said with the time of the next try
+      m = mk(() => ({ info: () => ({ launcher: true }), job: async () => { throw new Error('down'); } }), '2026-11-16T08:30:00Z');
+      const f1 = await m.db.natEnsure();
+      m.t.v += 60e3;
+      const f2 = await m.db.natEnsure();
+      out.fail = { first: [f1.refreshed, f1.ok], second: [f2.refreshed, f2.retryAt || null] };
+      return out;
+    }""")
+    c.eq(r['before'], '2026-11-14T11:30:00.000Z', 'before: the tracks of 14/11', what='before')
+    c.eq(r['after'], {'refreshed': True, 'ok': True, 'expired': False, 'from': '2026-11-16T11:30:00.000Z', 'validUntil': '2026-11-16T19:00:00.000Z'},
+         'after the job: natEnsure answers the tracks the launcher has just written, not the kept copy', what='after')
+    c.ok(r['revalidated'], r, 'the kept file of the nat zone was revalidated')
+    c.eq(r['state'], '2026-11-16T11:30:00.000Z', 'natState() afterwards: the new tracks', what='state')
+    c.eq(r['joined'], {'first': [True, '2026-11-16T11:30:00.000Z'], 'second': [False, True, '2026-11-16T11:30:00.000Z', False]},
+         'a call during the job waits for it and answers the new tracks (joined), never the old state at once', what='joined')
+    c.eq(r['fail'], {'first': [True, False], 'second': [False, '2026-11-16T08:35:00.000Z']}, 'a call refused within 5 minutes after a failure says when the next try is possible', what='retry')
+
+
 @case('K188', 'A zip of FRA points workbooks (the 41-workbook history of EUROCONTROL, SOG-0273) is recognised by the names of its members; only the workbooks of the cycle in force and of the next one are taken (the others stay in the archive); an archive with none of them is refused with its reason', 'K', static=True,
       rule='SOG-0273 (12 Nov 2026, the user dropped « download_11487.zip »: 41 FRA points workbooks, 12 months): the upload takes from it the workbook of the cycle in force (2611) and of the next (2612) — the ones the route computation and `base/cycle` (next) need — posts them under their own names (what route/import-rad reads) and keeps nothing else, not even the archive. A workbook alone (it carries [Content_Types].xml) is still the case of the single-workbook branch.')
 def k188(c):

@@ -279,6 +279,20 @@ const TX = {
   natFail: ['Les routes NAT n’ont pas pu être lues.', 'The NAT tracks could not be read.', 'Die NAT-Tracks konnten nicht gelesen werden.',
     'No se pudieron leer las rutas NAT.'
   ],
+  // SOG-0372 : ce que dit la ligne quand la lecture n'a pas rendu des routes valides (jamais l'ancienne phrase seule)
+  natRetry: ['La dernière lecture a échoué : nouvel essai possible à {t}.', 'The last read failed: next try possible at {t}.',
+    'Das letzte Lesen ist fehlgeschlagen: neuer Versuch ab {t} möglich.', 'La última lectura falló: nuevo intento posible a las {t}.'
+  ],
+  natSame: ['Lu, mais le message ne porte pas de routes plus récentes que celles du {d}.',
+    'Read, but the message carries no tracks newer than those of {d}.',
+    'Gelesen, aber die Meldung enthält keine neueren Tracks als die vom {d}.',
+    'Leído, pero el mensaje no trae rutas más recientes que las del {d}.'
+  ],
+  natDropped: ['Routes NAT du {d} lues : les propositions par des routes NAT d’un autre jour sont retirées.',
+    'NAT tracks of {d} read: the proposals through NAT tracks of another day are removed.',
+    'NAT-Tracks vom {d} gelesen: die Vorschläge über NAT-Tracks eines anderen Tages sind entfernt.',
+    'Rutas NAT del {d} leídas: se retiran las propuestas por rutas NAT de otro día.'
+  ],
   rNoLauncher: ['Disponible avec le lanceur du poste (il ne répond pas).',
     'Available with the workstation’s launcher (it does not answer).',
     'Mit dem Launcher des Arbeitsplatzes verfügbar (er antwortet nicht).', 'Disponible con el lanzador del puesto (no responde).'
@@ -3942,13 +3956,27 @@ async function natLine() {
     el.innerHTML = '';
     return;
   }
-  if (s.natAsking) return;
+  // SOG-0372 (a) : pendant la lecture, la ligne ne dit QUE la lecture, aussitôt (jamais l'ancienne phrase à côté)
+  if (s.natBusy) {
+    el.innerHTML = `<span class="f-muted" data-natstate="reading" aria-busy="true">${esc(tt(TX.natReading))}</span>`;
+    el.hidden = false;
+    return;
+  }
+  // une demande pendant une autre n'est pas perdue : refaite à la fin (la ligne après la lecture n'est jamais sautée)
+  if (s.natAsking) {
+    s.natAgain = true;
+    return;
+  }
   s.natAsking = true;
   const st = await Promise.resolve().then(() => s.ctx.aerodb?.natState?.()).catch(() => null);
   s.natAsking = false;
+  if (s.natAgain && S === s && !gone(s)) {
+    s.natAgain = false;
+    return natLine();
+  }
   const box = S === s && !gone(s) ? s.body?.querySelector('[data-natline]') : null;
   if (!box) return;
-  const day = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '?',
+  const day = natDay,
     hm = iso => iso ? `${iso.slice(11, 16)}Z` : '?',
     fresh = !!st?.present && st.expired === false,
     here = natHere(),
@@ -3960,8 +3988,44 @@ async function natLine() {
     }) : tt(TX.natNone) : st?.present ? tt(TX.natStaleCopy, {
       d: day(st.from)
     }) : tt(TX.natNoCopy);
-  box.innerHTML = `<span class="${fresh ? 'f-muted' : 'f-warn'}" data-natstate="${fresh ? 'ok' : st?.present ? 'old' : 'none'}">${esc(text)}</span>${here && !fresh ? ` <button type="button" class="fu-linkbtn" data-do="natread"${s.natBusy ? ' disabled aria-busy="true"' : ''}>${esc(tt(s.natBusy ? TX.natReading : TX.natRead))}</button>` : ''}`;
+  // SOG-0372 (a) : une lecture qui n'a pas rendu de routes valides le dit, avec sa raison, jusqu'à la suivante
+  const out = fresh ? null : s.natOut,
+    why = !out ? '' : out.why === 'busy' ? tt(TX.natBusyL) : out.why === 'retry' ? tt(TX.natRetry, {
+      t: hm(out.t)
+    }) : out.why === 'same' ? tt(TX.natSame, {
+      d: day(out.d)
+    }) : tt(TX.natFail);
+  if (fresh) s.natOut = null;
+  box.innerHTML = `<span class="${fresh ? 'f-muted' : 'f-warn'}" data-natstate="${fresh ? 'ok' : st?.present ? 'old' : 'none'}">${esc(text)}</span>${out ? ` <span class="f-warn" data-natfail="${esc(out.why)}">${esc(why)}</span>` : ''}${here && !fresh ? ` <button type="button" class="fu-linkbtn" data-do="natread">${esc(tt(TX.natRead))}</button>` : ''}`;
   box.hidden = false;
+  // SOG-0372 (b) : des routes valides lues : les propositions par des routes NAT d'un autre jour partent
+  s.natDay = fresh ? day(st.from) : '';
+  if (fresh) natDrop(s.natDay);
+}
+/** Le jour d'un instant ISO, « JJ/MM » (la forme du `issued` des itinéraires, route_engine natOf) ; « ? » sans instant. */
+const natDay = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '?';
+/** SOG-0372 (b) : des routes NAT du jour `d` (« JJ/MM ») sont lues — un itinéraire affiché qui passe par des routes NAT d'un autre jour
+ *  (périmées, ou émises un autre jour) est retiré de la liste, de la réponse gardée et de la Carte ; la ligne le dit et propose de
+ *  recalculer. Le choix et la ligne montrée suivent leur itinéraire. Rien si aucun n'est concerné. */
+function natDrop(d) {
+  const R = S?.ralts;
+  if (!R?.list?.length || !/^\d{2}\/\d{2}$/.test(d || '')) return;
+  const other = a => !!a?.nat?.tracks?.length && (a.nat.stale || !!a.nat.issued && a.nat.issued !== d);
+  if (!R.list.some(other)) return;
+  const keep = R.list.map((a, i) => [a, i]).filter(([a]) => !other(a)),
+    at = k => keep.findIndex(([, i]) => i === k);
+  if (R.answer) R.answer = {
+    ...R.answer,
+    alternatives: keep.map(([, i]) => R.answer.alternatives?.[i]).filter(Boolean)
+  };
+  R.chosen = R.chosen >= 0 ? at(R.chosen) : -1;
+  if (Number.isInteger(R.shown) && R.shown >= 0) R.shown = at(R.shown);
+  R.list = keep.map(([a]) => a);
+  R.natDropped = {
+    d
+  };
+  routeAltsDraw();
+  altsPublish('compute', R.list);
 }
 /** SOG-0352 : « Lire les routes NAT du jour » — le travail du lanceur (aerodb.natEnsure : base/update zones nat), puis la ligne relue ;
  *  un poste occupé ou un échec dits. */
@@ -3969,12 +4033,26 @@ async function natRead() {
   const s = S;
   if (!s || s.natBusy || !natHere()) return;
   s.natBusy = true;
+  s.natOut = null;
   natLine();
   const r = await Promise.resolve().then(() => s.ctx.aerodb?.natEnsure?.()).catch(() => null);
   s.natBusy = false;
   if (gone(s)) return;
-  if (r?.busy) s.ctx.notify(tt(TX.natBusyL), 'warn');
-  else if (!r || r.refreshed && r.ok === false) s.ctx.notify(tt(TX.natFail), 'warn');
+  // SOG-0372 (a) : la raison d'une lecture sans routes valides, dite dans la ligne (le poste occupé, l'essai trop tôt après un échec,
+  // l'échec, ou un message lu sans routes plus récentes) ; des routes valides : rien à dire
+  s.natOut = r?.present && r.expired === false ? null : !r ? {
+    why: 'fail'
+  } : r.busy ? {
+    why: 'busy'
+  } : r.retryAt ? {
+    why: 'retry',
+    t: String(r.retryAt)
+  } : r.ok === false ? {
+    why: 'fail'
+  } : {
+    why: 'same',
+    d: r.from || ''
+  };
   natLine();
 }
 // ---------------------------------------------------------------- la durée d'un calcul de route (SOG-0134)
@@ -4129,6 +4207,12 @@ function routeAltsDraw() {
     box.innerHTML = `<p class="f-muted" data-rtaken>${esc(A.taken ? tt(TX.rTakenLine, { name: A.taken }) : tt(TX.rTakenLine0))}</p>`;
     return;
   }
+  // SOG-0372 (b) : des propositions par des routes NAT d'un autre jour retirées : dit, avec « Recalculer »
+  const dropped = A.natDropped ? `<p class="f-row f-warn fu-rage" data-natdropped><span>${esc(tt(TX.natDropped, { d: A.natDropped.d }))}</span><button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button></p>` : '';
+  if (dropped && !A.list?.length) {
+    box.innerHTML = dropped;
+    return;
+  }
   const name = (a, i) => a.name || (a.proposal ? tt(TX.rProposal, {
     n: A.list.slice(0, i + 1).filter(x => x.proposal).length
   }) : a.role === 'primary' ? tt(TX.rPrimary) : tt(TX.rVariant, {
@@ -4148,7 +4232,7 @@ function routeAltsDraw() {
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
     head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}${A.cache?.hit ? ' data-cache' : ''}><span>${esc(tt(A.stale ? TX.rStale : A.cache?.hit ? TX.rCache : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
-  box.innerHTML = head + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+  box.innerHTML = head + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
@@ -4452,6 +4536,7 @@ async function altsFromDoc() {
     hovered: null
   };
   routeAltsDraw();
+  if (S.natDay) natDrop(S.natDay); // SOG-0372 (b) : relue après la lecture des routes du jour
   proposalsAge(); // SOG-0224 : relu, l'objet peut être périmé (AIRAC, base, NAT : frame/lib/route_alts.js)
 }
 /** Audit 193 : une ligne du document (écrit par tout appareil, entrée non fiable) remise à la forme que altsPublish donne à la Carte —

@@ -2020,3 +2020,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   engine's sentence, then the proposals apart (« Propositions non validées », each « Proposition n » with its controlled share); their
   button says « Prendre cette proposition ». On a narrow module the button goes under the text (the text never squeezed, as SOG-0344),
   side by side from 600 px. F226 (red before; EIDW → KBOS, a simulated answer); F125 unchanged.
+- **16 Nov 2026 — SOG-0372: « Lire les routes NAT du jour » rewrites its line without reloading; proposals through NAT tracks of another
+  day go** (the user's workstation, 8 h 30: « semble réussir, mais échoue silencieusement »; reloaded at 8 h 36, the line said the tracks of
+  16/11). Cause, in aerodb: the launcher writes the nat zone outside the data layer, and `natEnsure` re-read the frame's kept copy and the
+  list of cycles read before — the old message again; it now revalidates the zone's paths and the manifest before answering (as
+  fetchProcedures), a call during a running job waits for it (`joined`), a call refused within 5 minutes after a failure carries `retryAt`
+  (K277, red before). In Fuel: while reading, the line says only « Lecture des routes NAT… »; then the tracks, or the reason in the line
+  (busy, next try at …, failed, message without newer tracks) instead of a passing notification; a line asked during another is redone,
+  never dropped. When valid tracks of day D are read (the line, or the list read again from route_alts.json), a displayed route whose
+  `nat` is stale or issued another day is removed from the list, the kept answer and the Map, and « Routes NAT du D lues : … retirées »
+  offers « Recalculer »; a NEW computation is never pruned. F227 (red before); F225, D181, L1, L88, L94, L98 unchanged.
