@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e78250b",
-  "fiches": 385,
+  "organisation": "cd57091",
+  "fiches": 386,
   "untranslated": 0,
   "priorities": 374
  },
@@ -2089,6 +2089,15 @@
      "en": "Roadmap: an overview by main function and by capability, with a percentage",
      "de": "Roadmap: eine Übersicht nach Hauptfunktion und Fähigkeit, mit Prozentwert",
      "es": "Hoja de ruta: una vista de conjunto por gran función y por capacidad, con un porcentaje"
+    },
+    {
+     "id": "SOG-0387",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "BLOQUANT : feuille de route, pas de glisser-déposer dans la vue par thème",
+     "en": "BLOCKING: roadmap, no drag and drop in the view by theme",
+     "de": "BLOCKIEREND: Roadmap, kein Ziehen und Ablegen in der Ansicht nach Thema",
+     "es": "BLOQUEANTE: hoja de ruta, sin arrastrar y soltar en la vista por tema"
     }
    ]
   },
