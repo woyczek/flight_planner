@@ -6208,10 +6208,13 @@ def f232(c):
     c.eq(norm(c.text(f'{FUEL} [data-unres]') or ''), '', 'never an unknown point on this device', what='known')
     # « Direct vers », a flight under way
     c.open('fuel?direct=XPLAN', docs=_direct_docs())
-    c.until(f"!!document.querySelector('{FUEL} [data-block=direct]:not([hidden]) [data-do=directapply]')", timeout=15000, what='the panel of the direct')
+    c.until(f"(document.querySelector('{FUEL} [data-block=direct]:not([hidden]) [data-directsays]')?.textContent || '').includes('XPLAN')", timeout=15000,
+            what='the panel of the direct, for XPLAN')
+    c.settle()   # the mount ends (the flight read, the address taken again): the panel tapped is the one that stays
     c.tap(f'{FUEL} [data-do="directapply"]')
-    if c.js("!!document.querySelector('.f-modal [data-ok]')"):
-        c.tap('.f-modal [data-ok]')
+    # the point imposed by the mission (PT4) is skipped: the second confirmation comes after the tap (ctx.ask), waited for, never raced
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=8000, what='the second confirmation (an imposed point skipped)')
+    c.tap('.f-modal [data-ok]')
     d = cf_doc(c, lambda d: 'XPLAN' in [p.get('id') for p in (d.get('route') or {}).get('points') or []], 'the direct written', timeout=10000)
     _xp_written(c, d, '« Direct vers »')
 
