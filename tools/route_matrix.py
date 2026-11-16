@@ -181,6 +181,12 @@ def one(P, view, item, root, rad, fra_file):
     return rec
 
 
+def failed_ids(detail):
+    """Les identifiants des demandes de `detail.jsonl` qui n'ont pas rendu de route calculée (aucune, proposition, erreur) : ce que `--failed` rejoue."""
+    with open(detail, encoding='utf-8') as f:
+        return {x['id'] for x in map(json.loads, (l for l in f if l.strip())) if x.get('status') != 'computed'}
+
+
 def run(args):
     no_network()
     prio = low_priority()
@@ -198,6 +204,12 @@ def run(args):
     detail = os.path.join(out, 'detail.jsonl')
     progress = os.path.join(out, 'progress.txt')
     stop = os.path.join(out, 'STOP')
+    if getattr(args, 'failed', False):      # SOG-0354 L5 (4) (c) : ne rejouer que les demandes qui n'ont pas rendu de route à la passe de détail.jsonl ; le résultat va dans replay.jsonl (refait à chaque rejeu), la première passe n'est pas touchée
+        failed = failed_ids(detail)
+        items = [x for x in items if x['id'] in failed]
+        detail = os.path.join(out, 'replay.jsonl')
+        if os.path.isfile(detail):
+            os.remove(detail)
     done = set()
     if os.path.isfile(detail):
         with open(detail, encoding='utf-8') as f:
@@ -211,7 +223,7 @@ def run(args):
     def log(text):
         with open(progress, 'a', encoding='utf-8') as f:
             f.write(dt.datetime.now().strftime('%H:%M:%S') + ' ' + text + '\n')
-    log(f'DÉBUT {len(todo)} demandes à faire sur {len(items)} (déjà faites : {len(done)}), priorité {prio}, base {data}, une demande après l\'autre, réseau refusé, cache des résultats coupé')
+    log(('REJEU des demandes en échec : ' if getattr(args, 'failed', False) else '') + f'DÉBUT {len(todo)} demandes à faire sur {len(items)} (déjà faites : {len(done)}), priorité {prio}, base {data}, une demande après l\'autre, réseau refusé, cache des résultats coupé')
     # le chargement du contexte, mesuré à part, une fois par date de vol
     contexts = {}
     engine.DATA_DIR, engine.RAD_FILE, fra.FRA_FILE = data, rad, fra_file
@@ -243,7 +255,7 @@ def run(args):
 
 
 def summary(args):
-    detail = os.path.join(args.out, 'detail.jsonl')
+    detail = os.path.join(args.out, 'replay.jsonl' if getattr(args, 'failed', False) else 'detail.jsonl')
     recs = []
     with open(detail, encoding='utf-8') as f:
         recs = [json.loads(x) for x in f if x.strip()]
@@ -283,7 +295,7 @@ def summary(args):
     for label, group in (('au-delà de 5 s', over5), ('sans route', none), ('proposition', prop), ('en erreur', err), ('direct de plus de 200 NM sans raison hors zone FRA', direct), ('direct de plus de 200 NM dans une zone FRA', direct_fra)):
         if group:
             text.append(label + ' : ' + ', '.join(f"{r['id']} ({r['wall_s']:.1f} s{', ' + r['code'] if r.get('code') else ''})" for r in group))
-    with open(os.path.join(args.out, 'table.md'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(args.out, 'table_replay.md' if getattr(args, 'failed', False) else 'table.md'), 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines) + '\n\n' + '\n'.join(text) + '\n')
     print('\n'.join(text))
     return 0
@@ -295,6 +307,7 @@ def main():
     ap.add_argument('--out', default=None, help='dossier de sortie (défaut : <data>/local/route_matrix)')
     ap.add_argument('--limit', type=int, default=0, help='seulement les N premières demandes (essai)')
     ap.add_argument('--summary', action='store_true', help='écrit table.md et le résumé à partir de detail.jsonl')
+    ap.add_argument('--failed', action='store_true', help='rejoue SEULEMENT les demandes en échec de detail.jsonl (résultat dans replay.jsonl) ; avec --summary : le tableau de ce rejeu (table_replay.md)')
     ap.add_argument('--list', action='store_true', help='liste les demandes sans les jouer')
     args = ap.parse_args()
     args.out = args.out or os.path.join(args.data, 'local', 'route_matrix')

@@ -12074,3 +12074,24 @@ def k300(c):
                  'the track offers FL350 and FL360 only: at FL370 it is set aside for the LEVEL (said, with its level_retry), the free route is created at FL370 and answers: the sections are those of FL370, no retry, no `level_retry` of the answer (a route was found)', what='requested level')
         finally:
             results_cache.ENABLED = True
+
+
+@case('K301', 'Route matrix, SOG-0354 lot L5 (4) (c): `tools/route_matrix.py --failed` replays ONLY the requests of the first pass that did not return a computed route (none, proposal, error) — `failed_ids` reads them from detail.jsonl —, writes replay.jsonl and table_replay.md and leaves the first pass as it is',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) (c) (ergonomics session, 16 Nov 20:25): after the first two defects are pushed, replay only the requests that failed, the whole matrix once at the end. The selection is a function (`failed_ids`) so that it is tested without the real base; the files of the replay are apart from those of the first pass.')
+def k301(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_matrix as M
+    src = (ROOT / 'tools' / 'route_matrix.py').read_text(encoding='utf-8')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        f = os.path.join(td, 'detail.jsonl')
+        with open(f, 'w', encoding='utf-8') as out:
+            for i, status in (('A', 'computed'), ('B', 'proposal'), ('C', 'none'), ('D', 'computed'), ('E', 'error')):
+                out.write(json.dumps({'id': i, 'status': status}) + '\n')
+            out.write('\n')
+        c.eq(M.failed_ids(f), {'B', 'C', 'E'}, 'a proposal, a request with no route and an error are replayed; a computed route is not; an empty line is ignored', what='failed ids')
+    c.ok("'--failed'" in src and "'replay.jsonl'" in src and "'table_replay.md'" in src and "os.path.join(out, 'detail.jsonl')" in src, 'route_matrix.py', 'the option exists and the replay has its own files (replay.jsonl, table_replay.md): the first pass (detail.jsonl, table.md) is not rewritten by it')
