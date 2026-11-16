@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e3e5c79",
-  "fiches": 386,
+  "organisation": "3a98025",
+  "fiches": 387,
   "untranslated": 0,
   "priorities": 374
  },
@@ -1782,6 +1782,27 @@
      "de": "Boden: ein Rollhalt behält seinen roten Strich, wenn sein Schild entfällt; LFBD, zwei Schilder übereinander",
      "es": "Suelo: un punto de espera conserva su trazo rojo cuando se quita su etiqueta; LFBD, dos etiquetas superpuestas",
      "rank": 333
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-sol-d-un-terrain",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; sol d'un terrain",
+    "en": "Carte ; sol d'un terrain",
+    "de": "Carte ; sol d'un terrain",
+    "es": "Carte ; sol d'un terrain"
+   },
+   "items": [
+    {
+     "id": "SOG-0388",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte, sol d'un terrain : le cartouche d'une piste est dessiné sous un taxiway",
+     "en": "Map, aerodrome ground: a runway label is drawn under a taxiway",
+     "de": "Karte, Flugplatzboden: ein Pistenschild wird unter einem Rollweg gezeichnet",
+     "es": "Mapa, suelo de un aeródromo: el rótulo de una pista se dibuja bajo una calle de rodaje"
     }
    ]
   },
