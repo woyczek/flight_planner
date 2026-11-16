@@ -90,7 +90,7 @@ class _Net:
     def __init__(self, AF, routes, on_call=None):
         self.AF, self.routes, self.calls, self.on_call, self.saved = AF, routes, [], on_call, None
 
-    def __call__(self, url, since=None, absent_ok=False, copy=None):
+    def __call__(self, url, since=None, absent_ok=False, copy=None, limit=None):
         self.calls.append((url, since))
         if self.on_call:
             self.on_call(url)
@@ -2919,83 +2919,255 @@ def k217(c):
     c.ok(len(ids) == len(set(ids)), str(len(ids) - len(set(ids))), 'no geonameid twice (the refill replaced the rows of the two countries, it did not add to them)')
 
 
-@case('K243', 'Iceland (Avians eAIP, family F1, SOG-0240): the address of the edition is READ on the editions page, never guessed; a page that is missing or lacks the title « AIP for ICELAND » is said with the address tried and nothing is written; personal-use licence like Sweden', 'K', static=True,
-      rule='Ergonomist 13 Nov 2026 (SOG-0240, way B): the next State of the eAIP family is Iceland (free access, points and routes readable). Reader tested on a FAKE network (the pages are the Portuguese fixtures with the title of Iceland: no page of Avians was downloaded by the session): the profile `is` of tools/eaip_annexe15.py holds the editions page, the controlled hosts and the page names of the standard (BI-ENR-4.4/3.1/3.3-en-GB); `edition_base` takes, from the links of the editions page, the most recent edition not after today (https, a controlled host, no parameter, no « .. », a date AAAA-MM-JJ in a segment of the path); a missing page (said with its address), a page without the title (said, with its address) or an editions page without a usable link write nothing, no partial file; the source `avians` is personal-licence, cycled by the date of its file, listed in the catalogue, the zone map and the Data module')
+@case('K243', 'Iceland (Avians eAIP, SOG-0368): the edition is READ on the editions page (date AAAA_MM_JJ in an absolute link), the list of route pages is READ in menu.html (one page per route, names with spaces), requests one at a time with a pause and a size bound, stop at the first refusal of the host, a missing page is said with its address, « n pages lues sur m » is written; the pages saved by hand are the fallback; shapes of the real site, invented points', 'K', static=True,
+      rule='User report 16 Nov 2026 (SIG-2065df6937: « la récupération AVIANS échoue ») and the ergonomist\'s reading of the site the same morning: the profile `is` of SOG-0240 had GUESSED addresses (`/html/eAIP/`, `AAAA-MM-JJ`, `BI-ENR-4.4-en-GB.html`) and a title check « AIP for ICELAND » that no page has (the real pages have no <title>); the real forms: the editions page links absolutely « https://eaip.isavia.is/A_10-2026_2026_10_29/ » (the date as AAAA_MM_JJ in the segment, either host), the pages are under <edition>/eAIP/, the summary is menu.html, the names carry SPACES (« BI-ENR 4.4-en-GB.html »), ENR 3.1 / 3.3 / 3.4 are NIL and the ENR 3.2 is ONE PAGE PER ROUTE (31, named in menu.html); their tables have no Table-row-type classes (one row per point in ENR 4.4, a point row then a leg row per point in a route page). tools/avians_eaip.py reads those forms, tools/avians_site.py takes them (one request at a time, 0.5 s pause, bounds per page, stop at the first refusal, 404 said with its address, the count written), base_upload.recognise takes pages saved by hand by their CONTENT, aero_fetch.avians falls back on them. Tested on a FAKE network that serves the REAL forms of addresses with INVENTED points (no page of Avians is copied); the real network was not tried by the session: the first « Mettre à jour » of the user is the real test')
 def k243(c):
+    import datetime
+    import json
     import os
+    import sys
     import tempfile
+    import urllib.error
     from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
     RJ, BS, AF, DS = _mods()
     import aero_cycles as C
-    import eaip_annexe15 as E
-    fx = ROOT / 'frame' / 'aerodb' / 'test' / 'fixtures' / 'eaip_pt'
-    relabel = lambda t: t.replace('AIP for PORTUGAL', 'AIP for ICELAND')
-    p44, p33 = relabel((fx / 'LP-ENR-4.4-extract.html').read_text(encoding='utf-8')), relabel((fx / 'LP-ENR-3.3-extract.html').read_text(encoding='utf-8'))
-    p31 = b'<title>AIP for ICELAND valid from 01 OCT 2026</title><p>NIL</p>'
-    prof = E.PROFILES['is']
-    editions = ('<a href="/2026-09-03-AIRAC/html/index-en-GB.html">2026-09-03</a> <a href="https://eaip.avians.is/2026-10-29-AIRAC/html/index-en-GB.html?x=1">query</a>'
-                ' <a href="/2026-10-29-AIRAC/html/index-en-GB.html">current</a> <a href="/2099-01-01-AIRAC/html/index-en-GB.html">future</a> <a href="https://evil.example/2026-11-01-AIRAC/html/index.html">other host</a>'
-                ' <a href="/2026-11-02-AIRAC/../x/html/index.html">dotdot</a> <a href="http://eaip.avians.is/2026-11-01-AIRAC/html/index.html">http</a>')
-    c.eq(E.edition_base(prof, editions, '2026-11-13'), ('https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/', '2026-10-29'),
-         'the edition is the most recent link of the page not after today; a link with a query, another host, a « .. » or plain http is never taken, a future edition waits', what='edition')
-    c.eq((E.edition_base(prof, '<p>no link</p>', '2026-11-13'), E.edition_base(prof, '<a href="/about.html">x</a>', '2026-11-13')), (None, None), 'a page with no link that carries a date: none (never an address built by hand)', what='none')
-    c.eq(E.page_url(prof, prof['points'], 'https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/'), 'https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/BI-ENR-4.4-en-GB.html', 'a page of the profile is asked under the base read', what='url')
+    import avians_eaip as A
+    import avians_fixture as F
+    import avians_site as S
+    import base_upload as BU
+    today = datetime.date(2026, 11, 16)
+    found = A.editions(F.EDITIONS)
+    c.eq(found, [('2026-10-29', 'A_10-2026_2026_10_29'), ('2026-11-26', 'A_11-2026_2026_11_26')], 'the editions are the LINKS of the page (absolute, either host, the date AAAA_MM_JJ in the segment); the undated link is not an edition', what='editions')
+    c.eq((A.pick_edition(found, today), A.pick_edition(found, datetime.date(2026, 11, 26))[0], A.pick_edition(found, datetime.date(2026, 1, 1))), (('2026-10-29', F.BASE), '2026-11-26', None),
+         'the edition in force is the most recent not after today (the 26 Nov waits); its base is the link\'s segment under https://eaip.avians.is/ + « eAIP/ » (both hosts serve it); none before the first', what='pick')
+    hostile = ('<a href="https://evil.example/A_10-2026_2026_10_29/">x</a><a href="https://eaip.avians.is/A_10-2026_2026_10_29/?x=1">q</a><a href="http://eaip.avians.is/A_10-2026_2026_10_29/">h</a><a href="https://eaip.avians.is:8443/A_10-2026_2026_10_29/">p</a>'
+               '<a href="https://eaip.avians.is/A_10-2026_2026_13_29/">bad date</a><a href="https://eaip.avians.is/x/../A_10-2026_2026_10_29/">dd</a><a href="https://eaip.avians.is/A_10-2026_2026_10_29/BI.html">deeper</a><a href="https://u:p@eaip.avians.is/A_10-2026_2026_10_29/">u</a>')
+    c.eq(A.editions(hostile), [], 'another host, a parameter, http, a port, an impossible date, « .. », a deeper path or credentials are never an edition', what='hostile')
+    c.eq(A.page_url(F.BASE, 'BI-ENR 3.2 UT587-en-GB.html'), F.BASE + 'BI-ENR%203.2%20UT587-en-GB.html', 'the names have SPACES: encoded in the address', what='url')
+    c.eq(A.route_names(F.menu()), ['BI-ENR 3.2 UT587-en-GB.html', 'BI-ENR 3.2 Y23-en-GB.html', 'BI-ENR 3.2 Y25-en-GB.html'], 'the route pages are READ in the summary (English pages only, one per route, space or %20, anchors dropped, no duplicate); ENR 3.1 and the others are not routes', what='menu')
+    c.eq(len(A.route_names(F.menu(tuple(f'Y{i}' for i in range(100))))), 100, 'a summary with 100 routes is fine', what='100')
+    try:
+        A.route_names(F.menu(tuple(f'Y{i}' for i in range(101))))
+        got = None
+    except ValueError as e:
+        got = str(e)
+    c.ok(got and '100' in got, str(got), 'more than 100 route pages in the summary: refused (not the summary expected)')
+    c.eq(A.route_names(F.menu((), extra='<a href="BI-ENR 3.2 ../../x-en-GB.html">x</a><a href="BI-ENR 3.2 ut1-en-GB.html">y</a><a href="https://evil.example/BI-ENR 3.2 Y1-en-GB.html">z</a><a href="BI-ENR 3.2 Y1-en-GB.html.exe">w</a>')), [], 'a name that is not strictly « BI-ENR 3.2 <route>-en-GB.html » (a path, lower case, another host, a suffix) is never a page to take', what='strict names')
+    pts = A.parse_points(F.points_page())
+    c.eq((len(pts), pts[0]), (20, {'id': 'ABETU', 'lat': 66.319444, 'lon': -23.160556, 'remarks': 'IAF BIIS'}), 'ENR 4.4: one row per point (`<tr id="…ENR44">`, no class), the name, the coordinates « 661910N 0230938W »', what='points')
+    r, segs = A.parse_route(F.UT587)
+    c.eq((r, len(segs), segs[0]['a']['id'], segs[0]['b']['id'], segs[0]['lower'], segs[0]['upper'], segs[0]['nm'], segs[0]["trk"]), ('UT587', 3, 'ABIBA', 'LILGO', 19500, 28500, 30.5, 338),
+         'a route page: the point rows then the leg rows (nested tables flattened): the limits upper first, the true track, the distance', what='route')
+    c.eq((segs[1]['b']['id'], segs[2]['a']['id']), ('QQ', 'QQ'), 'a beacon named « NAME NDB \'QQ\' » has the code between apostrophes as its identifier', what='beacon')
+    c.eq(A.parse_route(F.Y23)[1][0]['lower'], 5000, 'a limit in feet (« 5000 ft »)', what='feet')
+    c.eq((A.recognise(F.points_page()), A.recognise(F.UT587), A.recognise('<html><body>x</body></html>')), (('points', None), ('route', 'UT587'), None), 'a page is recognised by its CONTENT, whatever its name: ENR 4.4, a route page, another page nothing', what='recognise')
+    try:
+        A.tables('<table>' * 20 + '</table>' * 20)
+        got = None
+    except ValueError as e:
+        got = str(e)
+    c.ok(got and 'profonds' in got, str(got), 'tables nested too deep: refused (an untrusted page)')
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = Path(td) / 'data'
         folder = data / 'sia' / 'zones' / 'is'
-        folder.mkdir(parents=True)
-        pages = {'BI-ENR-4.4-en-GB.html': p44.encode(), 'BI-ENR-3.1-en-GB.html': p31, 'BI-ENR-3.3-en-GB.html': p33.encode(), 'eaip.avians.is/': editions.encode()}
-        with _Net(AF, pages) as net:
-            out, err = AF.avians(str(data))
-        c.eq((err, [(f['name'], f['edition'], f['unchanged']) for f in out], sorted(os.listdir(folder))), ([], [('avians_is_enr_20261001.geojson', '2026-10-01', False)], ['avians_is_enr_20261001.geojson']),
-             'written under the date of the edition read in the title of ENR 4.4', what='written')
-        c.ok(net.calls[0][0] == 'https://eaip.avians.is/' and all(u.startswith('https://eaip.avians.is/2026-10-29-AIRAC/html/eAIP/') for u, _ in net.calls[1:]) and len(net.calls) == 4, str(net.calls), 'the editions page first, then the three pages under the edition it named, nothing else')
-        os.remove(folder / 'avians_is_enr_20261001.geojson')
-        for label, routes, want in (('no usable link', {**pages, 'eaip.avians.is/': b'<p>nothing</p>'}, 'aucune édition'),
-                                    ('a page missing', {k: v for k, v in pages.items() if k != 'BI-ENR-3.3-en-GB.html'}, 'BI-ENR-3.3-en-GB.html'),
-                                    ('a page without the title', {**pages, 'BI-ENR-3.1-en-GB.html': b'<title>AIP for FAROE valid from 01 OCT 2026</title><p>x</p>'}, 'AIP for ICELAND'),
-                                    ('ENR 4.4 refused', {**pages, 'BI-ENR-4.4-en-GB.html': ('http', 403)}, 'BI-ENR-4.4-en-GB.html')):
-            with _Net(AF, routes):
-                out, err = AF.avians(str(data))
-            c.ok(out == [] and err and want in err[0] and 'rien n’a été écrit' in err[0] and os.listdir(folder) == [], f'{label}: {err}', f'{label}: said with the address tried or the reason, nothing written (no partial file)')
-    c.eq((C.cycled('zones/is/avians_is_enr_20261029.geojson'), C.CYCLED.get('avians'), 'avians' in C.PERSONAL_CYCLED), (('avians', '2026-10-29'), 'is', True), 'the date of the file is its cycle, the source is personal-licence', what='cycle')
+        (data / 'local' / 'upload').mkdir(parents=True)
+        pauses, limits = [], []
+        ED = 'https://eaip.avians.is/'
+        # the fake network matches by « part of the address »: the specific pages first, the editions page (a prefix of every address) last, the overrides before all
+        site = lambda **over: {**{k: v for k, v in F.SITE.items() if k != ED}, ED: F.SITE[ED], **over}
+        orig_pause = AF._pause
+        AF._pause = lambda s: pauses.append(s)
+        try:
+            with _Net(AF, site()) as net:
+                real = AF.get
+                AF.get = lambda url, since=None, absent_ok=False, copy=None, limit=None: (limits.append(limit), real(url, since, absent_ok, copy))[1]
+                out, err = AF.avians(str(data), today=today)
+                AF.get = real
+            urls = [u for u, _ in net.calls]
+            c.eq((err, [(f['name'], f['edition'], f['unchanged'], f['pages']) for f in out]), ([], [('avians_is_enr_20261029.geojson', '2026-10-29', False, {'read': 3, 'of': 3})]), 'written under the date of the edition in the link, with the count « 3 pages read of 3 »', what='written')
+            c.eq(urls, [ED, F.BASE + 'menu.html', F.BASE + 'BI-ENR%204.4-en-GB.html'] + [F.BASE + f'BI-ENR%203.2%20{d}-en-GB.html' for d in ('UT587', 'Y23', 'Y25')], 'the requests: the editions page, the summary, the ENR 4.4, then each route page, ONE at a time, nothing else (no guessed address)', what='requests')
+            c.eq((limits, len(pauses), set(pauses)), ([1048576, 16 * 1048576, 4 * 1048576, 4 * 1048576, 4 * 1048576, 4 * 1048576], 4, {S.PAUSE_S}), 'a size bound per request (1 Mo, 16 Mo for the summary, 4 Mo a page) and a pause before the ENR 4.4 and each route page', what='bounds')
+            g = json.loads((folder / 'avians_is_enr_20261029.geojson').read_text(encoding='utf-8'))
+            routes = sorted({f['properties']['route'] for f in g['features'] if f['properties'].get('sog') == 'airway'})
+            c.eq((routes, sum(1 for f in g['features'] if f['properties'].get('sog') == 'airway'), g['pages'], g['issue']), (['UT587', 'Y23', 'Y25'], 6, {'read': 3, 'of': 3}, '2026-10-29'), 'the routes of the three pages (6 legs) are in the file, and the count', what='geojson')
+            # the second pass: the complete file is there: one request
+            pauses.clear()
+            with _Net(AF, site()) as net2:
+                out2, err2 = AF.avians(str(data), today=today)
+            c.eq((err2, [f['unchanged'] for f in out2], len(net2.calls)), ([], [True], 1), 'a COMPLETE edition already there is not read again: one request (the editions page)', what='unchanged')
+            # a missing page (404): said with its address, the others kept, the count written
+            os.remove(folder / 'avians_is_enr_20261029.geojson')
+            gone = site(**{F.BASE + 'BI-ENR%203.2%20Y23-en-GB.html': ('http', 404)})
+            with _Net(AF, gone) as net3:
+                out3, err3 = AF.avians(str(data), today=today)
+            c.eq((err3, out3[0]['pages']['read'], out3[0]['pages']['of'], out3[0]['pages']['missing'], len(net3.calls)), ([], 2, 3, [F.BASE + 'BI-ENR%203.2%20Y23-en-GB.html'], 6), 'a page that is missing (404) is said with its address, the other pages are kept, the host is not stopped (all six requests)', what='404')
+            c.eq(json.loads((folder / 'avians_is_enr_20261029.geojson').read_text(encoding='utf-8'))['pages'], {'read': 2, 'of': 3, 'missing': [F.BASE + 'BI-ENR%203.2%20Y23-en-GB.html']}, 'the count is written in the file', what='count written')
+            with _Net(AF, site()) as net4:
+                out4, err4 = AF.avians(str(data), today=today)
+            c.eq((out4[0]['pages'], out4[0]['unchanged'], len(net4.calls)), ({'read': 3, 'of': 3}, False, 6), 'an INCOMPLETE file does not stop the next pass: every page is read again and the file is completed', what='completed')
+            # a refusal of the host (429): stop at once, nothing more asked, what was read is kept and said
+            os.remove(folder / 'avians_is_enr_20261029.geojson')
+            refuse = site(**{F.BASE + 'BI-ENR%203.2%20Y23-en-GB.html': ('http', 429)})
+            with _Net(AF, refuse) as net5:
+                out5, err5 = AF.avians(str(data), today=today)
+            asked = [u for u, _ in net5.calls]
+            c.eq((err5, out5[0]['pages']['read'], out5[0]['pages']['of'], 'Y25' in ' '.join(asked), '429' in out5[0].get('stopped', '')), ([], 1, 3, False, True), 'the first refusal of the host (429) STOPS the taking: the last page is never asked, the page already read is kept, the refusal is said', what='429')
+            # the site does not answer at all: nothing written, the address tried is said, the hand fallback is offered
+            shutil_target = folder / 'avians_is_enr_20261029.geojson'
+            os.remove(shutil_target)
+            with _Net(AF, {'eaip.avians.is': ('os', 'timed out')}):
+                out6, err6 = AF.avians(str(data), today=today)
+            c.ok(out6 == [] and err6 and 'https://eaip.avians.is/' in err6[0] and 'rien n’a été écrit' in err6[0] and 'déposer à la main' in ' '.join(err6) and os.listdir(folder) == [], str(err6), 'the site does not answer: nothing written (no partial file), the address tried is said, the pages saved by hand are offered')
+            # the pages saved by hand: recognised by their CONTENT (the name of the file chosen does not matter), then read when the site fails
+            up = data / 'local' / 'upload'
+            names = {}
+            for label, text in (('ENR 4.4', F.points_page()), ('UT587', F.UT587), ('Y25', F.Y25), ('other', '<html><body><p>not a page of the AIP</p></body></html>')):
+                f = Path(td) / f'{label}.html'
+                f.write_text(text, encoding='utf-8')
+                try:
+                    names[label] = BU.recognise(str(f), 'whatever name I gave.html')
+                except BU.Refused as e:
+                    names[label] = e.reason
+            c.eq([(k, v['source'], v['zone'], v['name']) if isinstance(v, dict) else (k, v) for k, v in names.items()],
+                 [('ENR 4.4', 'avians', 'is', 'avians_is_enr_4.4.html'), ('UT587', 'avians', 'is', 'avians_is_enr_3.2_UT587.html'), ('Y25', 'avians', 'is', 'avians_is_enr_3.2_Y25.html'), ('other', 'unrecognised')],
+                 'the upload recognises an ENR 4.4 page and a route page by their CONTENT and gives them a canonical name; another HTML page is « unrecognised »', what='upload')
+            bom = Path(td) / 'bom.html'
+            bom.write_bytes(b'\xef\xbb\xbf' + F.UT587.encode('utf-8'))
+            c.eq(BU.recognise(str(bom), 'x.html')['name'], 'avians_is_enr_3.2_UT587.html', 'a page saved with a byte-order mark is recognised too', what='bom')
+            for n, text in (('avians_is_enr_4.4.html', F.points_page()), ('avians_is_enr_3.2_UT587.html', F.UT587), ('avians_is_enr_3.2_Y25.html', F.Y25), ('avians_is_enr_3.2_Y23.html', '<html>garbage under a canonical name</html>')):
+                (up / n).write_text(text, encoding='utf-8')
+            with _Net(AF, {'eaip.avians.is': ('os', 'timed out')}):
+                out7, err7 = AF.avians(str(data), today=today)
+            c.eq((err7, out7[0]['from'], out7[0]['datedBy'], out7[0]['pages'], out7[0].get('edition'), out7[0]['deposited'] == min(datetime.date.today(), today).isoformat(), out7[0]['name'].startswith('avians_is_enr_dep_')), ([], 'pages déposées', 'file', {'read': 2, 'of': 2}, None, True, True),
+                 'the site fails: the pages deposited by hand are read (a file under a canonical name that is not a page is ignored: re-recognised by its content); the entry has NO edition (the pages do not say theirs): `deposited` is the date of the deposit, `datedBy: file`, and the file is not named like an edition',
+                 what='hand')
+        finally:
+            AF._pause = orig_pause
+    c.eq((C.cycled('zones/is/avians_is_enr_20261029.geojson'), C.CYCLED.get('avians'), 'avians' in C.PERSONAL_CYCLED), (('avians', '2026-10-29'), 'is', True), 'the date of the file is its cycle, the source is personal-licence (the box stays required: the licence of Avians is not read)', what='cycle')
+    import eaip_annexe15 as E
+    c.eq(sorted(E.PROFILES['is']), ['host', 'hosts', 'label', 'name', 'source', 'zone'], 'the profile no longer holds the guessed addresses, the title or the page names', what='profile')
     z = (ROOT / 'shared' / 'aero_zones.js').read_text(encoding='utf-8')
     cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
     c.ok("avians: {" in z and "is: ['avians']" in z and "provider: 'avians'" in z and "personal: 'licence'" in z[z.index('avians: {'):z.index('avians: {') + 1600] and "id: 'avians'" in cat and "is: 'avians'" in (ROOT / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8'),
          'wiring', 'the page\'s catalogue, the catalogue of sources and the cycled zones all hold the source and its zone')
-def _sg():
-    """(fonction ajouter, contrôle, fonction lire, contrôle de lecture, espace de noms du module, Job) du jeu « signalement », chargé comme le lanceur le charge."""
-    RJ = _mods()[0]
-    fn, check = RJ.REGISTRY[('signalement', 'ajouter')]
-    rd, check_rd = RJ.REGISTRY[('signalement', 'lire')]
-    return fn, check, rd, check_rd, fn.__globals__, RJ.Job
+    # the size bound of a request
+    class Resp:
+        def __init__(self, n, declared=True):
+            self.headers = {'Content-Length': str(n)} if declared else {}
+            self.left = n
 
+        def read(self, k):
+            k = min(k, self.left)
+            self.left -= k
+            return b'x' * k
+    c.eq(len(AF._body(Resp(1000), 2000)), 1000, 'a response under the bound is read', what='body')
+    for declared in (True, False):
+        try:
+            AF._body(Resp(3 * 1048576, declared), 2 * 1048576)
+            got = None
+        except AF.TooLarge:
+            got = 'TooLarge'
+        c.eq(got, 'TooLarge', f'a response over the bound of the request is refused ({"declared" if declared else "counted while reading"}); the bound never goes above the general one', what=f'bound {declared}')
 
-def _png(w, h, size=0):
-    import struct
-    import zlib
-    ihdr = struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)
-    b = b'\x89PNG\r\n\x1a\n' + struct.pack('>I', 13) + b'IHDR' + ihdr + struct.pack('>I', zlib.crc32(b'IHDR' + ihdr)) + struct.pack('>I', 0) + b'IEND' + struct.pack('>I', zlib.crc32(b'IEND'))
-    return b + b'\0' * max(0, size - len(b))
+@case('K279', 'Iceland (Avians), what is written (SOG-0368, Sécurisation 16 Nov 2026): a deposit by hand has NO edition (its date is the date of the DEPOSIT, capped at today, `datedBy: file`, a file that is not named like an edition so no cycle) and never replaces an edition taken from the site; a PARTIAL taking (a refusal in the middle) is written only if nothing better is there and removes no previous edition; digits are 0-9 only; the deposit holds 100 routes at most', 'K', static=True,
+      rule='Sécurisation, review of SOG-0368 (relayed by the ergonomist, 16 Nov 2026): the date of a deposit is the date of the FILE (os.replace), so a page of 2024 deposited today became « the edition of today », dated the current cycle with no alert, and the clean-up could replace a MORE RECENT edition taken from the site; a refusal in the middle wrote a partial file then removed the previous COMPLETE edition; « UT٥٨٧ » (Arabic digits) was recognised. A deposit is never proof of freshness (ergonomist: « déposé le …, édition non connue », never « à jour »).')
+def k279(c):
+    import datetime
+    import json
+    import os
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    RJ, BS, AF, DS = _mods()
+    import aero_cycles as C
+    import avians_eaip as A
+    import avians_fixture as F
+    today = datetime.date(2026, 11, 16)
+    ED = 'https://eaip.avians.is/'
+    site = lambda **over: {**{k: v for k, v in F.SITE.items() if k != ED}, ED: F.SITE[ED], **over}
+    Y23 = F.BASE + 'BI-ENR%203.2%20Y23-en-GB.html'
+    Y25 = F.BASE + 'BI-ENR%203.2%20Y25-en-GB.html'
+    down = {'eaip.avians.is': ('os', 'timed out')}
+    # the digits are 0-9 only
+    arabic = 'UT٥٨٧'
+    c.eq((A.DESIGNATOR.fullmatch(arabic), A.DESIGNATOR.fullmatch('UT587') is not None, A.EDITION_SEG.search('A_10-2026_٢٠٢٦_10_29'), A.DEPOSIT.fullmatch(f'avians_is_enr_3.2_{arabic}.html'),
+          A.designator_of(F.UT587.replace('ENR_3_2_UT587', f'ENR_3_2_{arabic}')), A.recognise(F.UT587.replace('UT587', arabic))), (None, True, None, None, None, None),
+         'Arabic-Indic digits are not a designator, an edition segment or a deposit name (re.ASCII); a page whose designator is written with them is not recognised', what='ascii')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        folder = data / 'sia' / 'zones' / 'is'
+        up = data / 'local' / 'upload'
+        up.mkdir(parents=True)
 
-
-def _jpg(w, h):
-    return b'\xff\xd8\xff\xe0\x00\x04ab\xff\xc0\x00\x0b\x08' + h.to_bytes(2, 'big') + w.to_bytes(2, 'big') + b'\x01\x01\x11\x00\xff\xd9'
-
-
-def _webp(w, h):
-    body = b'WEBP' + b'VP8X' + (10).to_bytes(4, 'little') + b'\0\0\0\0' + (w - 1).to_bytes(3, 'little') + (h - 1).to_bytes(3, 'little')
-    return b'RIFF' + len(body).to_bytes(4, 'little') + body
-
-
-def _b64(raw):
-    import base64
-    return base64.b64encode(raw).decode()
-
-
-GOOD_SG = {'kind': 'bug', 'title': 'Le bouton ne répond pas', 'text': 'Je touche « Démarrer » et rien ne se passe.\n\tDeuxième ligne.', 'screen': 'fuel',
-           'ctx': {'version': '3.0.0-alpha.5', 'lang': 'fr', 'design': 'swiss', 'size': 'phone', 'tone': 'day'}}
-
+        def deposit(extra=()):
+            for n, text in (('avians_is_enr_4.4.html', F.points_page()), ('avians_is_enr_3.2_UT587.html', F.UT587), ('avians_is_enr_3.2_Y25.html', F.Y25), *extra):
+                (up / n).write_text(text, encoding='utf-8')
+        orig_pause = AF._pause
+        AF._pause = lambda s: None
+        try:
+            # a deposit dated in the FUTURE (clock, copy) is capped at today; no edition, no cycle
+            deposit()
+            future = datetime.datetime(2027, 6, 1).timestamp()
+            for f in up.iterdir():
+                os.utime(f, (future, future))
+            ent, err = A.from_deposit([str(up)], today)
+            c.eq((err, ent[0]['deposited'], ent[0].get('edition'), ent[0]['datedBy'], ent[0]['name']), ([], '2026-11-16', None, 'file', 'avians_is_enr_dep_20261116.geojson'),
+                 'the date of a deposit is the date of the DEPOSIT, capped at today (a file of 2027 is not the edition of 2027); no `edition` (the pages do not say theirs); the file is named « avians_is_enr_dep_… », not like an edition', what='future')
+            c.eq((C.cycled('zones/is/avians_is_enr_dep_20261116.geojson'), C.cycled('zones/is/avians_is_enr_20261029.geojson')), (None, ('avians', '2026-10-29')),
+                 'the file of a deposit has NO cycle (never « up to date »), the file of an edition taken from the site has its cycle', what='cycle')
+            # the deposit is written
+            with _Net(AF, down):
+                out, err = AF.avians(str(data), today=today)
+            c.eq((err, out[0]['datedBy'], out[0]['deposited'], sorted(os.listdir(folder))), ([], 'file', '2026-11-16', ['avians_is_enr_dep_20261116.geojson']), 'a deposit by hand is written under its own name', what='dep written')
+            # the site answers: the edition replaces the deposit (the zone holds ONE of them)
+            with _Net(AF, site()):
+                out, err = AF.avians(str(data), today=today)
+            c.eq((err, out[0]['pages'], sorted(os.listdir(folder))), ([], {'read': 3, 'of': 3}, ['avians_is_enr_20261029.geojson']), 'a complete taking from the site removes the deposit: one file, the edition', what='site over dep')
+            # a deposit NEVER replaces an edition taken from the site
+            with _Net(AF, down):
+                out, err = AF.avians(str(data), today=today)
+            c.ok(out == [] and err and 'ne la remplacent pas' in err[0] and sorted(os.listdir(folder)) == ['avians_is_enr_20261029.geojson'], str(err), 'the site fails, pages are deposited: the edition taken from the site stays (said), no deposit file is written')
+            # a PARTIAL taking: nothing better is there -> written
+            os.remove(folder / 'avians_is_enr_20261029.geojson')
+            refuse23 = site(**{Y23: ('http', 429)})
+            with _Net(AF, refuse23):
+                out, err = AF.avians(str(data), today=today)
+            c.eq((err, out[0]['pages'], os.listdir(folder)), ([], {'read': 1, 'of': 3}, ['avians_is_enr_20261029.geojson']), 'a partial taking is written when nothing better is there', what='partial alone')
+            refuse25 = site(**{Y25: ('http', 429)})
+            with _Net(AF, refuse25):
+                out, err = AF.avians(str(data), today=today)
+            c.eq((err, out[0]['pages']['read']), ([], 2), 'the same edition, more complete: the partial file is replaced', what='partial more')
+            with _Net(AF, refuse23):
+                out, err = AF.avians(str(data), today=today)
+            c.ok(out == [] and err and 'gardé' in err[0], str(err), 'the same edition, LESS complete (read 1, 2 are there): refused, said, nothing written')
+            c.eq(json.loads((folder / 'avians_is_enr_20261029.geojson').read_text(encoding='utf-8'))['pages']['read'], 2, 'the more complete file is still there', what='kept more')
+            # an older COMPLETE edition: a partial new edition removes nothing and is not written; a complete one removes it
+            old = folder / 'avians_is_enr_20260903.geojson'
+            old.write_text('{"type":"FeatureCollection","features":[],"pages":{"read":3,"of":3}}', encoding='utf-8')
+            os.remove(folder / 'avians_is_enr_20261029.geojson')
+            with _Net(AF, refuse25):
+                out, err = AF.avians(str(data), today=today)
+            c.ok(out == [] and err and sorted(os.listdir(folder)) == ['avians_is_enr_20260903.geojson'], str(err), 'a refusal in the middle with an older COMPLETE edition there: the older edition stays, the partial one is not written')
+            with _Net(AF, site()):
+                out, err = AF.avians(str(data), today=today)
+            c.eq((err, out[0]['pages'], sorted(os.listdir(folder))), ([], {'read': 3, 'of': 3}, ['avians_is_enr_20261029.geojson']), 'a COMPLETE taking removes the previous editions', what='complete removes')
+            # an edition more recent than the one taken is never removed
+            newer = folder / 'avians_is_enr_20270101.geojson'
+            newer.write_text('{"type":"FeatureCollection","features":[],"pages":{"read":3,"of":3}}', encoding='utf-8')
+            os.remove(folder / 'avians_is_enr_20261029.geojson')
+            with _Net(AF, site()):
+                out, err = AF.avians(str(data), today=today)
+            c.ok(newer.exists(), str(err), 'a taking of an OLDER edition never removes a more recent file')
+            # the deposit holds 100 routes at most
+            for f in up.iterdir():
+                f.unlink()
+            deposit([(f'avians_is_enr_3.2_Y{i}.html', F.route_page(f'Y{i}', F.pts_of('KEFLA', 'GRIMS'))) for i in range(1, 130)])
+            got, day = A.deposited([str(up)], today)
+            c.eq(len([k for k in got if k != 'points']), 100, 'more than 100 route pages deposited: 100 are kept (as the summary of the site)', what='100 routes')
+        finally:
+            AF._pause = orig_pause
 
 @case('K262', 'signalement/ajouter and signalement/lire: organisation/SIGNALEMENTS.json written by the launcher (no organisation folder said and nothing created, closed lists, a title of 80 and a text of 2000 without control characters, an unknown key refused, the identifier made here, 1000 entries, what the file already holds kept as it is, an unreadable file never replaced, a pilot report taken once) (SOG-0316)', 'K',
       static=True, rule='SOG-0316 (the user, Q-0046: his own reports go « direct chez » the ergonomist, in organisation/SIGNALEMENTS.json): a launcher verb on the existing job route, same guards as recette/verdict; Sécurisation (13 Nov): closed lists for kind and screen, no free field, identifier generated here, 1000 entries refused by code, an unreadable file refused not replaced, a pilot text is untrusted (the folder is not an identity: « signalé depuis le dossier de »)')

@@ -102,23 +102,24 @@ def _open(req, timeout, quiet):
     return op.open(req, timeout=timeout)
 
 
-def _body(r):
-    """Le corps d'une réponse, lu par morceaux et arrêté au plafond (un serveur qui ne dit pas la taille, ou ment) : TooLarge."""
+def _body(r, limit=None):
+    """Le corps d'une réponse, lu par morceaux et arrêté au plafond (un serveur qui ne dit pas la taille, ou ment) : TooLarge. `limit` : un plafond plus bas (une page d'un eAIP : quelques Mo), jamais plus haut que MAX_BYTES."""
+    cap = min(limit or MAX_BYTES, MAX_BYTES)
     size = r.headers.get('Content-Length')
-    if size and size.isdigit() and int(size) > MAX_BYTES:
-        raise TooLarge(f'réponse de {int(size) // 1048576} Mo, plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
+    if size and size.isdigit() and int(size) > cap:
+        raise TooLarge(f'réponse de {int(size) // 1048576} Mo, plus de {max(cap // 1048576, 1)} Mo : téléchargement arrêté')
     parts, n = [], 0
     while True:
         part = r.read(CHUNK)
         if not part:
             return b''.join(parts)
         n += len(part)
-        if n > MAX_BYTES:
-            raise TooLarge(f'réponse de plus de {MAX_BYTES // 1048576} Mo : téléchargement arrêté')
+        if n > cap:
+            raise TooLarge(f'réponse de plus de {max(cap // 1048576, 1)} Mo : téléchargement arrêté')
         parts.append(part)
 
 
-def get(url, since=None, absent_ok=False, copy=None):
+def get(url, since=None, absent_ok=False, copy=None, limit=None):
     """Corps de la réponse ; None si le serveur répond 304 (rien de plus récent que since, date du fichier local copy) : la copie est
     bonne, et un 304 n'est jamais écrit dans la console du lanceur. Un 304 sans copie derrière lui (aucune condition envoyée, ou copy
     disparue entre-temps) redemande une fois sans condition (Cache-Control: no-cache) au lieu d'échouer ; un second 304 est alors une
@@ -129,14 +130,14 @@ def get(url, since=None, absent_ok=False, copy=None):
     absent = (404, 410) if absent_ok else ()
     try:
         with _open(urllib.request.Request(url, headers=headers), TIMEOUT, (304, *absent)) as r:
-            return _body(r)
+            return _body(r, limit)
     except urllib.error.HTTPError as e:
         if e.code != 304:
             raise
         if since and (copy is None or os.path.exists(copy)):
             return None
     with _open(urllib.request.Request(url, headers={**UA, 'Cache-Control': 'no-cache'}), TIMEOUT, absent) as r:
-        return _body(r)
+        return _body(r, limit)
 
 
 def mtime(path):
@@ -477,24 +478,16 @@ def eaip_tables(data, key, downloads=None):
     label = prof['label'].split(' (')[0]
     folder = os.path.join(data, 'sia', 'zones', prof['zone'])
     out_re = core.out_re(prof)
-    manual, refused = ([], []) if prof.get('editions') else eaip_manual(prof, downloads)      # un profil à page des éditions (Islande) n'a pas de voie à la main : un paquet du Portugal n'y est pas « refusé »
+    manual, refused = eaip_manual(prof, downloads)
     p44, routes, issue, how = None, None, None, ''
     if manual:
         pick = eaip_pick(manual)
         issue, how, (p44, routes) = pick[0], pick[2], pick[3]
     if p44 is None:
-        base, tried = None, None
+        tried = None
         try:
-            if prof.get('editions'):      # SOG-0240 (Islande) : l'adresse de l'édition est LUE sur la page des éditions, jamais devinée
-                tried = prof['editions']
-                found = core.edition_base(prof, get(tried).decode('utf-8', 'replace'))
-                if not found:
-                    return [], [f'{label} : aucune édition en vigueur lue sur {tried} (page changée ?) ; rien n’a été écrit']
-                base = found[0]
-            tried = core.page_url(prof, prof['points'], base)
+            tried = core.page_url(prof, prof['points'])
             p44 = get(tried).decode('utf-8', 'replace')
-            if prof.get('editions') and prof['title'] not in p44:
-                return [], [f'{label} : la page {tried} n’a pas le titre « {prof["title"]} » ; rien n’a été écrit']
             issue = core.issue_of_title(p44)
             if not issue:
                 return [], [f'{label} : date d’entrée en vigueur introuvable dans le titre de l’ENR 4.4 (page changée ?)'] + [f'fichier non pris : {r}' for r in refused]
@@ -503,13 +496,11 @@ def eaip_tables(data, key, downloads=None):
                 return [{'name': name, 'bytes': os.path.getsize(os.path.join(folder, name)), 'edition': issue, 'unchanged': True}], []
             routes = []
             for n in prof['routes']:
-                tried = core.page_url(prof, n, base)
+                tried = core.page_url(prof, n)
                 routes.append(get(tried).decode('utf-8', 'replace'))
-                if prof.get('editions') and prof['title'] not in routes[-1]:
-                    return [], [f'{label} : la page {tried} n’a pas le titre « {prof["title"]} » ; rien n’a été écrit']
         except (OSError, ValueError) as e:
             hint = f' ; ou prendre le fichier à la main : le zip ou l’image ISO de l’AIP, ou son dossier extrait, dans Téléchargements ou par « Choisir le fichier… »'
-            return [], [f'{label} : {e}' + (f' (adresse essayée : {tried})' if tried and prof.get('editions') else '') + f'{hint} ; rien n’a été écrit'] + [f'fichier non pris : {r}' for r in refused]
+            return [], [f'{label} : {e}' + (f' (adresse essayée : {tried})' if tried else '') + f'{hint} ; rien n’a été écrit'] + [f'fichier non pris : {r}' for r in refused]
     name = core.out_name(prof['name'], issue)
     path = os.path.join(folder, name)
     try:
@@ -539,9 +530,76 @@ def eaip_tables(data, key, downloads=None):
     return [entry], []
 
 
-def avians(data, downloads=None):
-    """eAIP d'Islande (Avians) : ENR 4.4, ENR 3.1 et ENR 3.3 (tools/eaip_annexe15.py, profil is), l'adresse de l'édition LUE sur la page des éditions ; une page absente ou sans le titre « AIP for ICELAND » : dit avec l'adresse essayée, rien d'écrit (SOG-0240)."""
-    return eaip_tables(data, 'is', downloads)
+def _pause(seconds):
+    """La pause entre deux requêtes d'une prise sur un site tiers (avians_site) : un nom à part pour que les essais ne dorment pas."""
+    time.sleep(seconds)
+
+
+def avians(data, downloads=None, today=None):
+    """eAIP d'Islande (Avians) : l'ENR 4.4 et les pages de routes de l'ENR 3.2 (tools/avians_eaip.py, avians_site.py ; SOG-0368). L'édition est LUE sur la page des éditions, la liste des pages de routes dans le sommaire, UNE requête à la fois avec une pause, arrêt au premier refus de l'hôte ;
+    la prise qui échoue (rien d'écrit) se replie sur les pages DÉPOSÉES à la main dans data/local/upload/ (reconnues par leur contenu), ce poste seulement. Chaque entrée dit `pages: { read, of }`.
+    Règles d'écriture (Sécurisation, 16 nov. 2026) : un dépôt à la main n'a pas d'édition (sa date est celle du DÉPÔT, plafonnée à aujourd'hui : `datedBy: 'file'`, fichier avians_is_enr_dep_AAAAMMJJ.geojson, aucun cycle) et ne remplace JAMAIS une édition prise sur le site ;
+    une prise PARTIELLE (refus au milieu) n'est écrite que s'il n'y a rien de meilleur (le même fichier d'édition, plus complet, ou une autre édition, restent) ; les éditions précédentes ne sont retirées que par une prise COMPLÈTE."""
+    import avians_eaip
+    import avians_site
+    import eaip_annexe15 as core
+    prof = core.PROFILES['is']
+    folder = os.path.join(data, 'sia', 'zones', prof['zone'])
+    entries, errors = avians_site.from_site(lambda url, limit: get(url, limit=limit), folder, today=today, sleep=lambda s: _pause(s))
+    by_hand = False
+    if not entries:
+        hand, hand_errors = avians_eaip.from_deposit([os.path.join(data, 'local', 'upload')], today)
+        if hand:
+            entries, errors, by_hand = hand, [], True
+        else:
+            return [], errors + ['ou déposer à la main les pages enregistrées (l’ENR 4.4 et les pages de routes de l’ENR 3.2) : elles sont reconnues par leur contenu'] if errors else hand_errors
+    entry = entries[0]
+    if entry.get('unchanged'):
+        return entries, []
+    from proc_pdf import safe_path
+    out_re = re.compile(r'^' + re.escape(prof['name']) + r'_(dep_)?(\d{8})\.geojson\Z', re.A)      # les éditions du site et les dépôts à la main
+    present = {}
+    try:
+        for n in os.listdir(folder):
+            m = out_re.fullmatch(n)
+            if m:
+                present[n] = (bool(m.group(1)), m.group(2))
+    except OSError:
+        pass
+    pages = entry.get('pages') or {}
+    complete = pages.get('read') is not None and pages.get('read') == pages.get('of')
+    label = avians_eaip.SOURCE.split(' (')[0]
+    if by_hand:
+        site_files = sorted(n for n, (dep, _) in present.items() if not dep)
+        if site_files:      # la date d'un dépôt est celle du dépôt : elle ne dit rien de l'édition, elle ne remplace pas une édition prise sur le site
+            return [], [f'{label} : une édition prise sur le site est déjà là ({site_files[-1]}) ; les pages déposées à la main ne la remplacent pas (leur date est celle du dépôt, pas celle de l’édition). Elles sont gardées dans data/local/upload/']
+    elif not complete:
+        better = [n for n, (dep, d) in present.items() if n != entry['name'] or _read_of(os.path.join(folder, n)) > pages.get('read', 0)]
+        if better:      # rien n'est écrit : ni ce partiel, ni le retrait d'une édition complète
+            return [], [f'{label} : {pages.get("read")} page(s) de routes lue(s) sur {pages.get("of")} ; l’hôte a refusé' + (f' ({entry["stopped"]})' if entry.get('stopped') else '') + f' ; le fichier déjà là ({sorted(better)[-1]}) est gardé, rien n’a été écrit']
+    body = entry.pop('body')
+    path = os.path.join(folder, entry['name'])
+    entry['bytes'] = len(body)
+    entry['unchanged'] = not write(path, body)
+    if by_hand or complete:
+        for old, (dep, day) in present.items():      # une prise complète retire les éditions précédentes ET les dépôts ; un dépôt ne retire que les dépôts (jamais une édition du site : refusé plus haut)
+            if old != entry['name'] and (not by_hand or dep) and (by_hand or dep or day < entry['name'].rsplit('_', 1)[1][:8]):
+                try:
+                    os.remove(safe_path(folder, old, out_re))
+                except ValueError:
+                    pass
+    return [entry], []
+
+
+def _read_of(path):
+    """Le nombre de pages de routes lues d'un fichier de zone Avians déjà là (0 s'il est illisible, trop gros, ou sans compte)."""
+    try:
+        if os.path.getsize(path) > 16 * 1024 * 1024:
+            return 0
+        with open(path, encoding='utf-8') as f:
+            return int(((json.load(f) or {}).get('pages') or {}).get('read') or 0)
+    except (OSError, ValueError, TypeError, AttributeError):
+        return 0
 
 
 def navpt(data, downloads=None):

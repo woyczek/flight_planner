@@ -27,7 +27,7 @@ CHUNK = 1024 * 1024
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
 CD_MAX = 64 * 1024 * 1024               # un annuaire de plus de 64 Mo : idem (ZipFile le charge entier en mémoire avant tout autre contrôle)
 FOLDER = ('local', 'upload')
-EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt']       # les sources que base/pickup prend (dites avec `unrecognised`)
+EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt', 'avians']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
 STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
 NATS_MEMBER = re.compile(r'^EG_(AIP|OBS|UAS)_.*?(\d{8})\.xml\Z', re.I | re.A)
@@ -178,6 +178,16 @@ def recognise(path, hint='', today=None):
     import registry_fr
     if head[:4] not in (b'PK', b'%PDF') and registry_fr.sniff(open(path, 'rb').read(4096)):          # SOG-0270 : l'export du registre français des immatriculations, reconnu par son EN-TÊTE ; le fichier d'origine n'est jamais gardé : seul son dérivé à cinq colonnes l'est (data/local/registry/)
         return {'source': 'registry_fr', 'zone': '', 'name': registry_fr.OUT_NAME, 'cycle': None, 'derive': True}
+    if (first == b'<' or head.startswith(b'\xef\xbb\xbf<')) and os.path.getsize(path) <= 4 * 1024 * 1024:      # SOG-0368 : une page de l'eAIP d'Islande enregistrée à la main (l'ENR 4.4 ou une page de route de l'ENR 3.2), reconnue par son CONTENU (le repli quand la prise d'Avians échoue) ; rangée sous un nom canonique, lue par aero_fetch.avians, jamais publiée
+        import avians_eaip
+        with open(path, 'rb') as f:
+            page = f.read(4 * 1024 * 1024 + 1).decode('utf-8', 'replace')
+        try:
+            rec = avians_eaip.recognise(page)
+        except ValueError:
+            rec = None
+        if rec:
+            return {'source': 'avians', 'zone': 'is', 'name': 'avians_is_enr_4.4.html' if rec[0] == 'points' else f'avians_is_enr_3.2_{rec[1]}.html', 'cycle': None}
     if first == b'<' and os.path.getsize(path) <= 2 * 1024 * 1024:      # SOG-0253 : le XML `VfrCircuits` de l'extracteur de l'utilisateur, reconnu par sa RACINE ; gardé tel quel (data/local/upload/vfr_circuits.xml), lu par le verbe vfr/circuits, jamais publié
         with open(path, 'rb') as f:
             body = f.read(4096)

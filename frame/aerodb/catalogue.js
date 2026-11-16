@@ -605,10 +605,50 @@
     id: 'avians',
     group: 'base',
     zones: ['is'],
-    // SOG-0240 : le lanceur lit le site d'Avians (eAIP d'Islande) ; l'adresse de l'édition en vigueur est LUE sur la page des éditions, jamais devinée ; une page absente ou sans le titre « AIP for ICELAND » est dite avec l'adresse essayée et rien n'est écrit
+    // SOG-0368 : le lanceur lit le site d'Avians (eAIP d'Islande) : l'édition en vigueur est LUE sur la page des éditions (la date AAAA_MM_JJ dans le lien), la liste des pages de routes de l'ENR 3.2 dans le sommaire, UNE requête à la fois avec une pause, arrêt au premier
+    // refus de l'hôte, « n pages lues sur m » ; quand la prise échoue, les pages ENREGISTRÉES À LA MAIN (l'ENR 4.4 et les pages de routes) sont reconnues par leur contenu, sur ce poste seulement, jamais publiées : `pick` offre « Choisir le fichier… » sur la ligne de l'Islande
     fetch: {
       how: 'launcher',
-      provider: 'avians'
+      provider: 'avians',
+      pick: {
+        glob: '*.html',
+        name: 'BI-ENR 4.4-en-GB.html'
+      }
+    },
+    steps: {
+      why: [
+        'Le site d\'Avians ne répond pas, ou refuse le lanceur : les pages de l\'eAIP s\'enregistrent à la main depuis le navigateur (Enregistrer la page sous…)',
+        'The Avians site does not answer, or refuses the launcher: the pages of the eAIP are saved by hand from the browser (Save page as…)',
+        'Die Avians-Seite antwortet nicht oder lehnt den Starter ab: die Seiten des eAIP werden von Hand im Browser gespeichert (Seite speichern unter…)',
+        'El sitio de Avians no responde o rechaza al lanzador: las páginas del eAIP se guardan a mano desde el navegador (Guardar página como…)'
+      ],
+      page: {
+        url: 'https://eaip.avians.is/',
+        home: 'https://eaip.avians.is/'
+      },
+      files: [{
+        name: 'ENR 4.4 et les pages de routes de l\'ENR 3.2 (« BI-ENR 4.4-en-GB.html », « BI-ENR 3.2 <route>-en-GB.html », une page par route)',
+        url: 'https://eaip.avians.is/',
+        file: 'BI-ENR 4.4-en-GB.html',
+        what: ['les pages de l\'eAIP d\'Islande : l\'ENR 4.4 (points) et une page par route de l\'ENR 3.2',
+          'the pages of the Icelandic eAIP: ENR 4.4 (points) and one page per route of ENR 3.2',
+          'die Seiten des isländischen eAIP: ENR 4.4 (Punkte) und eine Seite je Strecke der ENR 3.2',
+          'las páginas del eAIP de Islandia: ENR 4.4 (puntos) y una página por ruta de la ENR 3.2'
+        ],
+        where: [
+          'eaip.avians.is › l\'édition en vigueur (le lien daté) › AIP › ENR 4.4 puis ENR 3.2 › chaque route (UT587 …) : Enregistrer la page sous… (le nom importe peu : la page est reconnue par son contenu)',
+          'eaip.avians.is › the edition in force (the dated link) › AIP › ENR 4.4 then ENR 3.2 › each route (UT587 …): Save page as… (the name does not matter: the page is recognised by its content)',
+          'eaip.avians.is › die gültige Ausgabe (der datierte Link) › AIP › ENR 4.4 dann ENR 3.2 › jede Strecke (UT587 …): Seite speichern unter… (der Name ist egal: die Seite wird am Inhalt erkannt)',
+          'eaip.avians.is › la edición en vigor (el enlace con fecha) › AIP › ENR 4.4 y luego ENR 3.2 › cada ruta (UT587 …): Guardar página como… (el nombre da igual: la página se reconoce por su contenido)'
+        ],
+        verified: false,
+        gives: [
+          'Les pages enregistrées de l\'eAIP d\'Islande : points désignés (ENR 4.4) et routes (ENR 3.2) ; le lanceur lit le site quand il peut, ces pages quand le site ne suffit pas ; elles restent sur ce poste, jamais publiées.',
+          'The saved pages of the Icelandic eAIP: designated points (ENR 4.4) and routes (ENR 3.2); the launcher reads the site when it can, these pages when the site is not enough; they stay on this workstation, never published.',
+          'Die gespeicherten Seiten des isländischen eAIP: benannte Punkte (ENR 4.4) und Strecken (ENR 3.2); der Starter liest die Webseite, wenn er kann, diese Seiten, wenn sie nicht reicht; sie bleiben auf diesem Rechner, nie veröffentlicht.',
+          'Las páginas guardadas del eAIP de Islandia: puntos designados (ENR 4.4) y rutas (ENR 3.2); el lanzador lee el sitio cuando puede, estas páginas cuando no basta; se quedan en este equipo, nunca se publican.'
+        ]
+      }]
     },
     build: {
       runtime: 'worker',

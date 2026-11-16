@@ -458,7 +458,7 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset(), downl
     else:
         entry = {'state': 'downloaded' if any(not f.get('unchanged') for f in files) else 'unchanged', 'files': len(files),
                  'bytes': sum(f.get('bytes', 0) for f in files)}
-    for k in ('edition', 'from', 'future', 'older_than_cycle', 'skipped', 'refused'):      # SOG-0244 : ce que l'écran dit d'un eAIP pris à la main (l'édition lue, le nom du fichier, à venir, plus ancienne que le cycle, routes sans nom, fichiers non pris)
+    for k in ('edition', 'from', 'datedBy', 'future', 'older_than_cycle', 'skipped', 'refused'):      # SOG-0244 : ce que l'écran dit d'un eAIP pris à la main (l'édition lue, le nom du fichier, à venir, plus ancienne que le cycle, routes sans nom, fichiers non pris)
         v = next((f[k] for f in files if f.get(k) not in (None, False, [], {})), None)
         if v is not None:
             entry[k] = v

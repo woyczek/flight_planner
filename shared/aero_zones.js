@@ -88,18 +88,18 @@
       personal: 'licence', // aucune licence de réutilisation trouvée : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
     },
-    // eAIP d'Islande (Avians, ex-Isavia) : ENR 4.4 (points), ENR 3.1 et 3.3 (routes) lus par le lanceur (tools/aero_fetch.py avians → tools/eaip_annexe15.py, profil is) ; l'adresse de l'édition est LUE sur la page des éditions,
-    // jamais devinée ; zones/is/avians_is_enr_AAAAMMJJ.geojson. Aucune condition de réutilisation lue : usage personnel, comme la Suède (V3, SOG-0240, 13 nov. 2026)
+    // eAIP d'Islande (Avians, ex-Isavia) : ENR 4.4 (points) et ENR 3.2 (routes, UNE PAGE PAR ROUTE, la liste lue dans le sommaire) lus par le lanceur (tools/aero_fetch.py avians → tools/avians_site.py, avians_eaip.py) ; l'adresse de l'édition est LUE sur la page
+    // des éditions, jamais devinée ; les pages enregistrées à la main sont le repli ; zones/is/avians_is_enr_AAAAMMJJ.geojson. Aucune condition de réutilisation lue : usage personnel, comme la Suède (V3, SOG-0240 puis SOG-0368, 13 et 16 nov. 2026)
     avians: {
       kind: 'download',
       readable: true,
       provider: 'avians',
       label: L4('Avians — eAIP Islande (points et routes)', 'Avians — Icelandic eAIP (points and routes)',
         'Avians — eAIP Island (Punkte und Strecken)', 'Avians — eAIP Islandia (puntos y rutas)'),
-      gives: L4('points désignés (ENR 4.4), routes conventionnelles et RNAV (ENR 3.1, 3.3)',
-        'designated points (ENR 4.4), conventional and RNAV routes (ENR 3.1, 3.3)',
-        'benannte Punkte (ENR 4.4), konventionelle und RNAV-Strecken (ENR 3.1, 3.3)',
-        'puntos designados (ENR 4.4), rutas convencionales y RNAV (ENR 3.1, 3.3)'),
+      gives: L4('points désignés (ENR 4.4), routes RNAV (ENR 3.2, une page par route)',
+        'designated points (ENR 4.4), RNAV routes (ENR 3.2, one page per route)',
+        'benannte Punkte (ENR 4.4), RNAV-Strecken (ENR 3.2, eine Seite je Strecke)',
+        'puntos designados (ENR 4.4), rutas RNAV (ENR 3.2, una página por ruta)'),
       licence: 'Avians (usage personnel)',
       personal: 'licence', // aucune condition de réutilisation lue : la case dit qu'elle ne vaut que pour un dépôt à soi
       age: 'file'
