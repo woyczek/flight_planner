@@ -10859,6 +10859,75 @@ def k285(c):
     texts['AircraftDB/update_aircraft_db.py'] = (ROOT / 'AircraftDB' / 'update_aircraft_db.py').read_text(encoding='utf-8')
     c.eq(([x for x in req.splitlines() if x.strip() and not x.lstrip().startswith('#')], [n for n, t in texts.items() if 'pip install' in t or '-m pip' in t], [n for n, t in texts.items() if 'installer_bibliotheques' not in t]), ([], [], []),
          'tools/report-vfr/requirements-vfr.txt asks for nothing (its pin pypdf==6.10.0 was below the minimum and would have lowered pypdf); the texts of report-vfr and of update_aircraft_db.py name the script and carry no pip command', what='report-vfr pin')
+    # (6) the verb falls back on the PUBLISHED file when the workstation has no export of its own, read as an UNTRUSTED input
+    RJ = _regen()
+    fn, check = RJ.REGISTRY[('aircraft', 'registry')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td2:
+        d3 = Path(td2) / 'data'
+        (d3 / 'registry').mkdir(parents=True)
+        rogue = {'schema': 1, 'source': 'FAKE SOURCE', 'date': '2026-11-16 <b>x</b>', 'columns': list(RF.WHITELIST), 'owner': canary,
+                 'rows': [['F-BHHH', 'CESSNA', '172 N', '1', 'PARIS', canary], ['F-BHHI', 'CESSNA', '172 N', 7, 'PARIS'], ['not a reg', 'X', 'T', '1', 'P'], 'junk', ['F-BHHJ', 'AMATEUR ' + canary, 'RV-7', '9', 'LFPT\x00']]}
+        (d3 / 'registry' / 'fr_immat.json').write_text(json.dumps(rogue), encoding='utf-8')
+        run3 = lambda **a: fn(RJ.Job('aircraft', 'registry', {}), check(a), {'data': str(d3)})
+        got = run3(reg='F-BHHJ')
+        c.eq((got['origin'], got['source'], got['date'], [(x['reg'], x['maker'], x['base']) for x in got['rows']], canary in json.dumps(got)), ('published', RF.CREDIT, '', [('F-BHHJ', '', 'LFPT')], False),
+             'no export on the workstation: the verb reads the PUBLISHED file, rebuilt as an untrusted input (the source is that of the code, a date that is not AAAA-MM-JJ is dropped, a sixth cell, a non-text cell, a bad registration and a non-list row are ignored, the maker of one aircraft is emptied, control characters removed)', what='published fallback')
+        c.eq(run3(reg='F-BHHI')['rows'], [], 'a row with a non-text cell is not served', what='non-text row')
+        # the workstation's own export comes first
+        (d3 / 'local' / 'registry').mkdir(parents=True)
+        (d3 / 'local' / 'registry' / 'fr_immat.json').write_text(json.dumps({'schema': 1, 'source': RF.CREDIT, 'date': '2026-11-01', 'columns': list(RF.WHITELIST), 'rows': [['F-BHHH', 'CESSNA', '172 N', '1', 'PARIS']]}), encoding='utf-8')
+        own = run3(reg='F-BHHH')
+        c.eq((own['origin'], own['date'], [x['reg'] for x in own['rows']]), ('local', '2026-11-01', ['F-BHHH']), 'its own export is read first (origin: local)', what='local first')
+        # a published file that is a link, too big, not JSON or with other columns: absent, said as such
+        for label, writer in (('not JSON', lambda p: p.write_text('{nope', encoding='utf-8')), ('other columns', lambda p: p.write_text(json.dumps({'columns': ['A'], 'rows': [['x']]}), encoding='utf-8')), ('absent', lambda p: p.unlink())):
+            shutil_path = d3 / 'registry' / 'fr_immat.json'
+            (d3 / 'local' / 'registry' / 'fr_immat.json').unlink(missing_ok=True)
+            writer(shutil_path)
+            RF._pub_cache.clear()
+            r4 = run3(reg='F-BHHJ')
+            c.eq((r4.get('absent'), r4['rows']), (True, []), f'a published file that is {label}: nothing served, said absent', what=f'published {label}')
+        # (7) Sécurisation: a published file nested on tens of thousands of levels raises RecursionError in json.load: None, never an exception (the verb must not fail for everyone); the same for the local derived file at publication
+        deep = '[' * 60000 + ']' * 60000
+        (d3 / 'local' / 'registry' / 'fr_immat.json').unlink(missing_ok=True)
+        (d3 / 'registry' / 'fr_immat.json').write_text(deep, encoding='utf-8')
+        RF._pub_cache.clear()
+        try:
+            r5 = run3(reg='F-BHHJ')
+            got = (r5.get('absent'), r5['rows'])
+        except Exception as e:      # noqa: BLE001 - what the case is about
+            got = type(e).__name__
+        c.eq(got, (True, []), 'a published file nested on 60 000 levels: said absent, no exception (RecursionError is caught)', what='nested published')
+        (d3 / 'local' / 'registry').mkdir(parents=True, exist_ok=True)
+        (d3 / 'local' / 'registry' / 'fr_immat.json').write_text(deep, encoding='utf-8')
+        try:
+            RF.publish(str(d3 / 'local' / 'registry'), str(d3))
+            got = None
+        except RF.RegistryError as e:
+            got = e.code
+        except Exception as e:      # noqa: BLE001
+            got = type(e).__name__
+        c.eq(got, 'read', 'the same nested file as the local derived file at publication: a refusal with a code (`read`), not an exception', what='nested local')
+        # the published folder is a link: refused at reading too (the check of publish)
+        (d3 / 'local' / 'registry' / 'fr_immat.json').unlink()
+        good_doc = {'schema': 1, 'source': RF.CREDIT, 'date': '2026-11-16', 'columns': list(RF.WHITELIST), 'rows': [['F-BHHH', 'CESSNA', '172 N', '1', 'PARIS']]}
+        outside = Path(td2) / 'outside'
+        outside.mkdir()
+        (outside / 'fr_immat.json').write_text(json.dumps(good_doc), encoding='utf-8')
+        shutil.rmtree(d3 / 'registry')
+        made = None
+        try:
+            os.symlink(str(outside), str(d3 / 'registry'), target_is_directory=True)
+            made = 'symlink'
+        except (OSError, NotImplementedError):
+            if sys.platform == 'win32' and subprocess.run(['cmd', '/c', 'mklink', '/J', str(d3 / 'registry'), str(outside)], capture_output=True).returncode == 0:
+                made = 'junction'
+        RF._pub_cache.clear()
+        if made:
+            r6 = run3(reg='F-BHHH')
+            c.eq((r6.get('absent'), r6['rows']), (True, []), f'data/registry is a {made} to another folder holding a good file: NOT read (absent), as publish refuses to write through it', what='folder link read')
+            os.rmdir(d3 / 'registry') if made == 'junction' else os.unlink(d3 / 'registry')
+        else:
+            c.ok(True, 'skipped', 'SKIPPED: no link can be created on this workstation: the folder-link reading counter-proof did not run')
 
 
 @case('K286', 'FAA published routes (SOG-0354, lot L1): the reader of PFR_BASE.csv (preferred routes, with the North American Routes) and CDR.csv in the full NASR subscription already deposited — a reader and nothing else (it writes nothing, takes no network), the file an UNTRUSTED input: columns by NAME and a white list, every value checked by a strict pattern, a row that does not pass counted and never corrected, bounds, a changed layout refused',

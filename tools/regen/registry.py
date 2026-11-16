@@ -1,6 +1,7 @@
 """aircraft/registry (SOG-0270, lecture seule) : le registre français des immatriculations, lu sur ce poste (tools/registry_fr.py, dérivé à cinq colonnes sous data/local/registry/).
   Arguments : { reg?: « F-BHHH » | « FBHHH » (une immatriculation), type?: « cessna 172 » (des mots du constructeur et du modèle), limit?: 1 à 200 (50 par défaut) } ; au moins reg ou type, et rien d'autre.
-  Réponse : { ok, source (« Registre français des immatriculations, DGAC »), date (celle du fichier pris), rows: [{ reg, maker, model, serial, base }], count, truncated } ; { ok: true, rows: [], absent: true } sans registre sur le poste.
+  Sans export sur ce poste, le registre PUBLIÉ dans le dépôt des données (registry/fr_immat.json, SOG-0341) est lu à sa place, comme une entrée non fiable (registry_fr.load_published : reconstruit) ; `origin` dit lequel : « local » | « published ».
+  Réponse : { ok, origin, source (« Registre français des immatriculations, DGAC »), date (celle du fichier pris), rows: [{ reg, maker, model, serial, base }], count, truncated } ; { ok: true, rows: [], absent: true } sans registre sur le poste.
   Le type du registre est un libellé (constructeur + modèle), une SUGGESTION : l'appelant le rapproche de nos types par la base locale des types, un type non reconnu se montre tel quel. Aucun nom, aucune adresse de propriétaire n'existe ici."""
 import os
 import re
@@ -32,10 +33,13 @@ def check(a):
 
 def run(job, args, ctx):
     doc = registry_fr.load(os.path.join(str(ctx['data']), 'local', 'registry'))
+    origin = 'local'
+    if doc is None:      # SOG-0341 : un poste sans son propre export lit le registre PUBLIÉ dans le dépôt des données, comme une entrée non fiable (reconstruit, jamais pris tel quel)
+        doc, origin = registry_fr.load_published(str(ctx['data'])), 'published'
     if doc is None:
         return {'ok': True, 'rows': [], 'count': 0, 'absent': True}
     rows = registry_fr.lookup(doc, args.get('reg'), args.get('type'), args['limit'] + 1)
-    return {'ok': True, 'source': doc.get('source'), 'date': doc.get('date'), 'rows': rows[:args['limit']], 'count': min(len(rows), args['limit']), 'truncated': len(rows) > args['limit']}
+    return {'ok': True, 'origin': origin, 'source': doc.get('source'), 'date': doc.get('date'), 'rows': rows[:args['limit']], 'count': min(len(rows), args['limit']), 'truncated': len(rows) > args['limit']}
 
 
 VERBS = {('aircraft', 'registry'): (run, check)}

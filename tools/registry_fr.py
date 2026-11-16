@@ -195,6 +195,34 @@ def publish(local_dir, data_dir):
     return {'published': True, 'rows': len(rows), 'makerBlanked': blanked, 'size': os.path.getsize(path)}
 
 
+_pub_cache = {}
+
+
+def load_published(data_dir):
+    """Le registre PUBLIÉ dans le dépôt des données (`data_dir`/registry/fr_immat.json, SOG-0341), lu comme une entrée NON FIABLE (tout pilote peut écrire dans ce dépôt) : ni le dossier registry ni le fichier ne sont des liens (ni des jonctions) et le dossier réel reste sous le data/ réel ; taille bornée ; JSON, puis `rebuild`
+    (cinq colonnes, cellules bornées, k-anonymat recompté) ; la source est celle du code (CREDIT), jamais celle du fichier. { source, date, columns, rows } ou None (absent, lien, trop gros, illisible, imbriqué sur trop de niveaux — RecursionError —, refusé : jamais une exception, Sécurisation). Gardé en mémoire
+    tant que le fichier ne change pas."""
+    folder = os.path.join(data_dir, REPO_FOLDER)
+    path = os.path.join(folder, OUT_NAME)
+    try:
+        if _is_link(folder) or _is_link(path) or not os.path.isdir(folder) or os.path.normcase(os.path.realpath(folder)) != os.path.join(os.path.normcase(os.path.realpath(data_dir)), REPO_FOLDER):
+            return None
+        st = os.stat(path)
+        if not os.path.isfile(path) or st.st_size > MAX_BYTES:
+            return None
+    except OSError:
+        return None
+    key = (path, st.st_mtime_ns, st.st_size)
+    if _pub_cache.get('key') != key:
+        try:
+            with open(path, encoding='utf-8') as f:
+                rows, _blanked, date = rebuild(json.load(f))
+        except (OSError, ValueError, RecursionError, MemoryError, RegistryError):
+            return None
+        _pub_cache['key'], _pub_cache['doc'] = key, {'source': CREDIT, 'date': date, 'columns': list(WHITELIST), 'rows': rows}
+    return _pub_cache['doc']
+
+
 _cache = {}
 
 
