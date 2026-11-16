@@ -341,6 +341,8 @@ export const TX = {
     neverShort: ['jamais construit', 'never built', 'nie erstellt', 'nunca construido'],
     fetchFailed: ['La prise a échoué', 'The taking failed', 'Die Übernahme ist fehlgeschlagen', 'La toma falló'],
     editionUnknown: ['Édition non connue', 'Edition not known', 'Ausgabe unbekannt', 'Edición desconocida'],
+    files: ['Des fichiers à prendre', 'Files to take', 'Dateien zu übernehmen', 'Archivos por tomar'],
+    filesShort: ['fichiers à prendre', 'files to take', 'Dateien zu übernehmen', 'archivos por tomar'],
     waitingShort: ['un fichier à prendre', 'a file to take', 'Datei zu übernehmen', 'archivo por tomar'],
     'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
     failed: ['En échec', 'Failed', 'Fehlgeschlagen', 'Fallida'],

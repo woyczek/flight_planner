@@ -44,6 +44,7 @@ import {
   nasrHint,
   refreshStatus,
   statusKnown,
+  needsFileOf,
   waitingFileOf,
   zoneMsgHtml,
   zoneReasons,
@@ -465,7 +466,7 @@ function buildFact(id, z, step = null) {
     c: M.cycleName(S.airac, z.builtCycle)
   }) : '');
   // un fichier plus récent attend (non constructible) : le pays EST construit, d'une édition (ou d'un cycle) précédente — « ✓ le 12/11 · édition précédente », pas « (à faire) » (SOG-0370)
-  if (waitingFileOf(id) && z.builtAt && z.buildable === false) return factCell('build', 'yes', word('twYes'), tt(byEdition(id) ? T
+  if (needsFileOf(id) && z.builtAt && z.buildable === false) return factCell('build', 'yes', word('twYes'), tt(byEdition(id) ? T
     .builtPrevEdition : T.builtPrevCycle, {
       d: shortDate(z.builtAt)
     }), '');
@@ -703,7 +704,8 @@ function takingStepOf(id, z, cy, avail, split) {
 /** Le mot court de la tuile d'un pays dans son groupe : l'ÉTAPE (« un fichier à prendre », « à reconstruire », « jamais construit ») quand la teinte est « à faire », sinon le mot de la teinte. */
 function tileWord(z, t) {
   const st = t === 'warn' && Object.hasOwn(S.status?.zones || {}, z) ? S.status.zones[z].state : '';
-  return st === 'stale' ? tt(waitingFileOf(z) ? TX.zst.waitingShort : TX.zst.staleShort) : st === 'never-built' ? tt(TX.zst.neverShort) :
+  return st === 'stale' ? tt(waitingFileOf(z) ? TX.zst.waitingShort : needsFileOf(z) ? TX.zst.filesShort : TX.zst.staleShort) : st ===
+    'never-built' ? tt(TX.zst.neverShort) :
     word(t);
 }
 /** Les noms des fichiers VUS dans Téléchargements pour une source à la main : ceux de la liste du cycle (`hand.inDownloads`) et celui que le statut du lanceur dit (`pickup-waiting` avec son zip) ; huit au plus. Ce sont des noms du lanceur : toujours écrits par esc (SOG-0370). */
@@ -963,8 +965,8 @@ function sheetHtml() {
     stepWord = step && step.k !== 'kept' ? tt(step.k === 'fetch-failed' ? TX.zst.fetchFailed : TX.zst.editionUnknown) :
     '', // l'étape de la prise : la pastille, la case ÉTAT et le bandeau disent la même chose (SOG-0368)
     badgeTone = off && offSt.text ? offSt.tone : stepWord ? step.k === 'fetch-failed' ? 'err' : 'warn' : tn,
-    badgeText = off ? offSt.text || tt(TX.cw.offUnread) : stepWord || (inCov && z?.state === 'stale' && waitingFileOf(id) ? tt(TX.zst
-        .waiting) : inCov && ['stale', 'never-built'].includes(z?.state) ? tt(TX.zst[z.state]) :
+    badgeText = off ? offSt.text || tt(TX.cw.offUnread) : stepWord || (inCov && z?.state === 'stale' && needsFileOf(id) ? tt(waitingFileOf(
+        id) ? TX.zst.waiting : TX.zst.files) : inCov && ['stale', 'never-built'].includes(z?.state) ? tt(TX.zst[z.state]) :
       word( // la pastille dit le mot de la case ÉTAT (SOG-0370)
         tn));
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">

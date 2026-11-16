@@ -9780,7 +9780,9 @@ def _l144_wrap(answer):
 def l144(c):
     lang = c.lang
     CW = lambda k: _trow(k, lang, after='    ageToday:')
-    _l102_open(c, wrap=_l144_wrap)
+    def gb_old(world):   # what the launcher REALLY says of a country whose hand source has no file of the cycle in force (base_state.py: reason `source-old`, not buildable) — not « source-newer »
+        world['zs']['gb'] = {**_zst('stale', {'code': 'source-old', 'source': 'nats', 'cycle': '2026-10-06', 'current': '2026-10-29'}, buildable=False), 'builtAt': '2026-10-29T10:00:00Z', 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}}
+    _l102_open(c, wrap=_l144_wrap, world_tweak=gb_old)
     kind = c.js("(e => e ? e.dataset.todoKind : null)(document.querySelector('[data-todo-item=openaip]'))")
     c.eq(kind, 'done', 'openAIP is a done line of « À faire ce mois-ci », whatever an old launcher says (never late, never to do)', what='todo kind')
     c.tap('[data-wmap] path[data-zone=gb]')
@@ -9790,6 +9792,13 @@ def l144(c):
     tk = c.js(f"(e => e ? [e.dataset.ok, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('{card} .d-cells1 li'))")
     c.ok(tk and tk[0] == 'yes' and '40' in tk[1], tk, 'the tick of openAIP is neutral-good with its date and its age (40 days), not « en retard »')
     c.eq(c.attr(card, 'data-src-tone'), 'ok', 'and the card is calm', what='tone')
+    stc = norm(c.js("(e => e ? (k => { k.querySelectorAll('[data-why-hint]').forEach(x => x.remove()); return k.textContent })(e.cloneNode(true)) : '')(document.querySelector('[data-sheet=gb] [data-sheet-state] .d-st'))"))
+    files = norm(_trow('files', lang, after='  zst: {'))
+    c.eq([norm(c.text('[data-sheet=gb] [data-sheet-badge]')).lstrip('!? '), stc], [files, files], 'the badge and the STATE cell say the step that blocks — « Des fichiers à prendre » — not « À reconstruire » (a hand source has no file of the cycle in force: nothing is rebuilt before)', what='one step')
+    if c.width >= 1000:   # on a phone the sheet covers the groups
+        c.tap('[data-group-id=europe-north] [data-act=grp-toggle]')
+        tile = norm(c.text('[data-group-body] [data-zone=gb]'))
+        c.ok(norm(_trow('filesShort', lang, after='  zst: {')) in tile, tile, 'and the tile of the country in its group says it in short')
     c.eq(c.attr('[data-sheet=gb] [data-sheet-now]', 'data-now'), 'hand', 'the line names the hand files that WAIT (NATS UK), never « Rien à déposer » above a source to take by hand', what='line')
     c.ok('NATS' in norm(c.text('[data-sheet=gb] [data-sheet-now]')) and 'SIA' not in norm(c.text('[data-sheet=gb] [data-cell-note=build]')), c.text('[data-sheet=gb] [data-sheet-now]'), 'with its name, and the reason of the United Kingdom is its own source (no « Source SIA France » on its sheet)')
     lines = [norm(x) for x in c.js("[...document.querySelectorAll('[data-sheet=gb] [data-contents] li')].map(l => l.textContent)")]
