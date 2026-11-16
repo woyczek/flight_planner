@@ -2133,3 +2133,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   reload, so the proof survives. The line of that route says, under its route, `[data-proof]`: « EIDW–DOGAL : calculée · DOGAL–54/50 :
   publiée, route NAT E du 16/11 · 54/50–KJFK : calculée » (the day is the route's nat.issued; without it « publiée, route NAT E »).
   Nothing when view.sections is null. F238 (red expected on the parent: no `sections` asked, no proof line).
+- **16 Nov 2026 — SOG-0354, the next step of the engine read: the free route created, the tracks set aside, the departure time not given**
+  (AeroDB: a section may carry the proof `created` — the FREE route created when no NAT track of the day suits, `sections.source =
+  'random'`, `sections.free = { label, ok, entry, exit, points, nm }` —, `sections.rejected = [{ track, code, text }]`, `sections.depart =
+  { time, basis: 'request' | 'none' }` — never 'now': the decision of 16/11 in the evening, to keep the user's rule of 13/11; the page
+  wrote the contract as announced by the ergonomics session). `proofOf` gives `{ list, rejected, noTime }`: `created` joins the proofs
+  read (« DOGAL–54/50 : route libre, créée »; before, left out as forged); `rejected` six at most, the letter by pattern, the sentence
+  bounded to 160 signs without control characters nor format marks, a leading « route NAT E : » removed, said in a CLOSED fold
+  `[data-proofrejs]` whose summary gives the count (« 6 routes NAT du jour écartées »; the user: « trop d'infos tue l'info »), one reason
+  each once open (`[data-proofrej]`, « Route NAT E écartée : … »), nothing without a track set aside; `depart.basis === 'none'` → « Heure de
+  départ non donnée : validité horaire des routes NAT non vérifiée » (`[data-proofnotime]`). And the mention « via NAT E » is preceded by a
+  space (the capture of F238 showed « 0 écartvia NAT E »). F239 (red on the parent: the created section left out, no fold, no line of the
+  departure time, no space).

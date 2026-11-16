@@ -210,24 +210,28 @@ function controlOf(c) {
 }
 /** SOG-0263 : les routes NAT d'un itinéraire (view.nat_of du moteur) : { tracks: ['A'], issued: 'JJ/MM' | '', stale } ; null sans
  *  track. Lettres de track seules (une ou deux capitales, six au plus), date à sa forme, périmée seulement si vrai. */
-/** SOG-0354 (L2b 3) : le découpage de la réponse (`sections` de la vue d'AeroDB : { candidates, tried, chosen, cost, sections: [{ name, from,
- *  to, nm, cost, expanded, seconds, proof }] }, null sans l'option), lu comme une entrée non sûre : propriétés propres, six sections au
- *  plus, la preuve « published » ou « computed » seulement (une autre : la section est écartée), extrémités par motif, distance bornée ;
- *  la lettre de la route NAT tirée du nom « track E » d'une section publiée. null sans section lisible. */
+/** SOG-0354 (L2b 3 et suite, AeroDB) : le découpage de la réponse (`sections` de la vue d'AeroDB : { candidates, tried, chosen, cost,
+ *  source, free, rejected, depart, sections: [{ name, from, to, nm, cost, expanded, seconds, proof }] }, null sans l'option), lu comme une
+ *  entrée non sûre — propriétés propres ; six sections au plus, la preuve « published », « computed » ou « created » (la route libre créée
+ *  quand aucune route NAT du jour ne convient) seulement (une autre : la section est écartée), extrémités par motif, distance bornée, la
+ *  lettre de la route NAT tirée du nom « track E » d'une section publiée ; les routes NAT écartées et pourquoi (`rejected` : six au plus,
+ *  lettre par motif, phrase bornée à 160 signes, sans caractère de commande ni marque de format ; un « route NAT E : » en tête retiré, la
+ *  page le dit) ; l'heure de départ absente de la demande (`depart.basis` = 'none' : la validité horaire des routes NAT n'a pas été vérifiée ;
+ *  'request' sinon). { list, rejected, noTime } ; null sans rien de lisible. */
 function proofOf(v) {
   const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
     list = own(v, 'sections');
-  if (!Array.isArray(list)) return null;
+  if (!own(v, 'sections') && !own(v, 'rejected')) return null;
   const end = x => {
       const t = text(x, 12).toUpperCase();
       return PT_ID.test(t) ? t : '';
     },
     out = [];
-  for (const x of list.slice(0, 6)) {
+  for (const x of Array.isArray(list) ? list.slice(0, 6) : []) {
     const proof = own(x, 'proof'),
       from = end(own(x, 'from')),
       to = end(own(x, 'to'));
-    if (!['published', 'computed'].includes(proof) || !from || !to) continue;
+    if (!['published', 'computed', 'created'].includes(proof) || !from || !to) continue;
     const m = /^track\s+([A-Z]{1,2})$/i.exec(text(own(x, 'name'), 20));
     out.push({
       from,
@@ -237,7 +241,21 @@ function proofOf(v) {
       track: proof === 'published' && m ? m[1].toUpperCase() : ''
     });
   }
-  return out.length ? out : null;
+  const rej = own(v, 'rejected'),
+    rejected = (Array.isArray(rej) ? rej : []).slice(0, 6).map(x => {
+      const t = text(own(x, 'track'), 4).toUpperCase(),
+        why = text(own(x, 'text'), 160).replace(/\p{Cf}/gu, '').replace(/^route\s+NAT\s+[A-Z]{1,2}\s*:\s*/i, '').trim();
+      return /^[A-Z]{1,2}$/.test(t) && why ? {
+        track: t,
+        why
+      } : null;
+    }).filter(Boolean),
+    noTime = own(own(v, 'depart'), 'basis') === 'none';
+  return out.length || rejected.length || noTime ? {
+    list: out,
+    rejected,
+    noTime
+  } : null;
 }
 
 function natOf(n) {

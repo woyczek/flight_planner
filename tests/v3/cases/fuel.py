@@ -6495,6 +6495,65 @@ def f238(c):
     c.ok(europe and all('sections' not in a for a in europe), europe, 'LFRS → LFML: no `sections` in the request')
 
 
+# the engine's answer when no NAT track of the day suits: a FREE route created between the entry and the exit (proof « created »), the
+# tracks set aside and why, no departure time in the request (basis « none »: the time validity of the tracks not checked); invented, in the
+# form AeroDB announced (basis « request » | « none », never « now »: the decision of 16/11 in the evening)
+_FREE_SECTIONS = {'source': 'random', 'chosen': None, 'cost': 2950.0, 'depart': {'time': None, 'basis': 'none'},
+                  'free': {'label': 'free', 'ok': True, 'entry': 'DOGAL', 'exit': '54/50', 'points': [], 'nm': 1510.0},
+                  'sections': [{'name': 'europe', 'from': 'EIDW', 'to': 'DOGAL', 'nm': 612.4, 'proof': 'computed'},
+                               {'name': 'free', 'from': 'DOGAL', 'to': '54/50', 'nm': 1510.0, 'proof': 'created'},
+                               {'name': 'amérique', 'from': '54/50', 'to': 'KJFK', 'nm': 905.6, 'proof': 'computed'}],
+                  'rejected': [{'track': 'E', 'code': 'time', 'text': 'route NAT E : non valide à 0341Z (valide de 1130Z à 1900Z)'},
+                               {'track': 'A', 'code': 'direction', 'text': 'sens contraire'},
+                               {'track': 'B', 'code': 'level', 'text': 'FL370 non proposé vers l\'ouest'},
+                               {'track': 'C', 'code': 'x', 'text': '<img src=x onerror="window.__pwn=1">'},
+                               {'track': 'D', 'code': 'x', 'text': 'quatre'}, {'track': 'F', 'code': 'x', 'text': 'cinq'},
+                               {'track': 'G', 'code': 'x', 'text': 'sept : au-delà de six, jamais dit'}]}
+
+
+@case('F239', 'Route step, a flight across the Atlantic that no NAT track of the day suits: the line of the computed route says the FREE route '
+      'created (« DOGAL–54/50 : route libre, créée »); the tracks set aside in a CLOSED fold « 6 routes NAT du jour écartées », one reason '
+      'each once open (six at most, escaped); without a departure time « Heure de départ non donnée : validité horaire des routes NAT non '
+      'vérifiée »; « 0 écart » and « via NAT E » are never glued', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='SOG-0354 (AeroDB, the next step of the engine: proof « created », sections.source « random », sections.free, sections.rejected '
+      '[{ track, code, text }], sections.depart { time, basis: request | none }); the ergonomist: the reasons in a closed fold (the user: « trop '
+      'd\'infos tue l\'info »), six at most, bounded and escaped; the capture of F238 showed « écartvia NAT E »; a fake launcher in the shape announced')
+def f239(c):
+    T = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': _FREE_SECTIONS}
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=_ocean_docs())
+    to_step(c, 1)
+    _compute_now(c, st)
+    R0 = f'{FUEL} [data-altlist] [data-alt="0"]'
+    c.until(f"!!document.querySelector('{R0} [data-proof]')", timeout=15000, what='the proof on the line of the route')
+    got = c.js(f"[...document.querySelectorAll('{R0} [data-proof] [data-proofsec]')].map(e => [e.dataset.proofsec, e.textContent])")
+    want = [['computed', tx(T, 'rProofComp', c.lang).replace('{a}', 'EIDW').replace('{b}', 'DOGAL')],
+            ['created', tx(T, 'rProofFree', c.lang).replace('{a}', 'DOGAL').replace('{b}', '54/50')],
+            ['computed', tx(T, 'rProofComp', c.lang).replace('{a}', '54/50').replace('{b}', 'KJFK')]]
+    c.eq([[k, norm(v)] for k, v in got], [[k, norm(v)] for k, v in want], 'the free route created said, between the computed sections', what='proof')
+    # the tracks set aside: a CLOSED fold that says how many; one reason each once open
+    F = f'{R0} [data-proofrejs]'
+    c.ok(c.js(f"document.querySelector('{F}')?.open === false"), c.js(f"document.querySelector('{F}')?.outerHTML?.slice(0, 200)"), 'the fold is closed')
+    c.eq(norm(c.text(f'{F} > summary') or ''), norm(tx(T, 'rProofRejN', c.lang).replace('{n}', '6')), '« 6 routes NAT du jour écartées »', what='fold')
+    c.js(f"document.querySelector('{F}').open = true")
+    rej = c.js(f"[...document.querySelectorAll('{R0} [data-proofrej]')].map(e => [e.dataset.proofrej, e.textContent])")
+    line = lambda t, w: norm(tx(T, 'rProofRejected', c.lang).replace('{t}', t).replace('{w}', w))
+    c.eq([r[0] for r in rej], ['E', 'A', 'B', 'C', 'D', 'F'], 'each track set aside, six at most', what='rejected')
+    c.eq(norm(rej[0][1]), line('E', 'non valide à 0341Z (valide de 1130Z à 1900Z)'), 'the reason of E, its « route NAT E : » not repeated', what='E')
+    c.eq(norm(rej[1][1]), line('A', 'sens contraire'), 'the reason of A', what='A')
+    c.eq(c.js(f"document.querySelectorAll('{R0} img').length + (window.__pwn ? 100 : 0)"), 0, 'a reason that is markup is text, never run', what='escaped')
+    c.eq(norm(c.text(f'{R0} [data-proofnotime]') or ''), norm(tx(T, 'rProofNoTime', c.lang)),
+         '« Heure de départ non donnée : validité horaire des routes NAT non vérifiée »', what='no time')
+    # « 0 écart » and « via NAT E » never glued: a space before the NAT mention
+    c.ok(c.js(f"(n => !!n && /\\s$/.test(n.previousSibling?.textContent || ''))(document.querySelector('{R0} [data-nat]'))"),
+         c.js(f"document.querySelector('{R0}').textContent"), 'a space before « via NAT E »')
+    c.js(f"document.querySelector('{R0}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F239_{c.design}_390_{c.lang}_free.png')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

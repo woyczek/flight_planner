@@ -243,6 +243,26 @@ const TX = {
     '{a}–{b}: publicada, ruta NAT {t}'
   ],
   rProofComp: ['{a}–{b} : calculée', '{a}–{b}: computed', '{a}–{b}: berechnet', '{a}–{b}: calculada'],
+  // la route libre créée quand aucune route NAT du jour ne convient ; les routes écartées ; le départ pris maintenant (suite du moteur)
+  rProofFree: ['{a}–{b} : route libre, créée', '{a}–{b}: free route, created', '{a}–{b}: freie Route, erstellt',
+    '{a}–{b}: ruta libre, creada'
+  ],
+  rProofRejected: ['Route NAT {t} écartée : {w}', 'NAT track {t} set aside: {w}', 'NAT-Route {t} verworfen: {w}',
+    'Ruta NAT {t} descartada: {w}'
+  ],
+  // un pli fermé (l'utilisateur : « trop d'infos tue l'info ») : « 6 routes NAT du jour écartées », une raison par route une fois ouvert
+  rProofRejN: ['{n} routes NAT du jour écartées', '{n} NAT tracks of the day set aside', '{n} NAT-Routen des Tages verworfen',
+    '{n} rutas NAT del día descartadas'
+  ],
+  rProofRej1: ['1 route NAT du jour écartée', '1 NAT track of the day set aside', '1 NAT-Route des Tages verworfen',
+    '1 ruta NAT del día descartada'
+  ],
+  // décision du 16/11 au soir (la règle de l'utilisateur du 13/11) : sans heure de départ, la validité horaire n'est pas vérifiée — dit
+  rProofNoTime: ['Heure de départ non donnée : validité horaire des routes NAT non vérifiée',
+    'Departure time not given: time validity of the NAT tracks not checked',
+    'Abflugzeit nicht angegeben: zeitliche Gültigkeit der NAT-Routen nicht geprüft',
+    'Hora de salida no indicada: validez horaria de las rutas NAT no comprobada'
+  ],
   rBusyOcean: ['Vol transocéanique : la recherche peut prendre jusqu’à 20 secondes',
     'Transoceanic flight: the search can take up to 20 seconds', 'Transozeanischer Flug: die Suche kann bis zu 20 Sekunden dauern',
     'Vuelo transoceánico: la búsqueda puede tardar hasta 20 segundos'
@@ -4664,7 +4684,8 @@ function altsPicked(e) {
  *  E du 16/11 », « EIDW–DOGAL : calculée » ; le jour est celui des routes NAT de l'itinéraire (nat.issued), « … route NAT E » sans jour. Rien sans
  *  découpage (option non appliquée, view.sections null). */
 function proofHtml(a) {
-  if (!Array.isArray(a?.proof) || !a.proof.length) return '';
+  const P = a?.proof;
+  if (!P || typeof P !== 'object' || !(P.list?.length || P.rejected?.length || P.noTime)) return '';
   const day = a.nat?.issued || '',
     one = x => {
       const v = {
@@ -4673,16 +4694,28 @@ function proofHtml(a) {
           t: x.track || '?',
           d: day
         },
-        t = x.proof === 'published' ? tt(day ? TX.rProofPub : TX.rProofPubNoDay, v) : tt(TX.rProofComp, v);
+        t = x.proof === 'published' ? tt(day ? TX.rProofPub : TX.rProofPubNoDay, v) : x.proof === 'created' ? tt(TX.rProofFree, v) : tt(TX
+          .rProofComp, v);
       return `<span data-proofsec="${esc(x.proof)}">${esc(t)}</span>`;
-    };
-  return `<small class="f-muted fu-rproof" data-proof>${a.proof.map(one).join(' · ')}</small>`;
+    },
+    // les routes NAT écartées et pourquoi (six au plus), dans un pli FERMÉ qui dit leur nombre ; rien sans route écartée
+    rl = P.rejected || [],
+    rej = rl.length ? `<details class="fu-rprooffold" data-proofrejs><summary class="f-muted">${esc(rl.length === 1 ? tt(TX.rProofRej1) : tt(TX
+      .rProofRejN, {
+        n: rl.length
+      }))}</summary>${rl.map(x => `<small class="f-muted fu-rproof" data-proofrej="${esc(x.track)}">${esc(tt(TX.rProofRejected, {
+      t: x.track,
+      w: x.why
+    }))}</small>`).join('')}</details>` : '',
+    // l'heure de départ absente de la demande : la validité horaire des routes NAT n'a pas été vérifiée
+    noTime = P.noTime ? `<small class="f-muted fu-rproof" data-proofnotime>${esc(tt(TX.rProofNoTime))}</small>` : '';
+  return `${P.list?.length ? `<small class="f-muted fu-rproof" data-proof>${P.list.map(one).join(' · ')}</small>` : ''}${rej}${noTime}`;
 }
 
 function natHtml(n) {
   if (!n?.tracks?.length) return '';
   const t = n.tracks.join(', ');
-  return `<small class="f-muted fu-rnat" data-nat="${esc(t)}">${esc(tt(TX.rNat, {
+  return ` <small class="f-muted fu-rnat" data-nat="${esc(t)}">${esc(tt(TX.rNat, { // l'espace : jamais « 0 écartvia NAT E »
     t
   }))}${n.stale ? ` · <span class="f-warn" data-natstale>${esc(tt(TX.rNatStale, {
     d: n.issued || '?'
