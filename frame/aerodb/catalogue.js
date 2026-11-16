@@ -652,7 +652,7 @@
           'eaip.avians.is › die gültige Ausgabe (der datierte Link) › AIP › ENR 4.4 dann ENR 3.2 › jede Strecke (UT587 …): Seite speichern unter… (der Name ist egal: die Seite wird am Inhalt erkannt)',
           'eaip.avians.is › la edición en vigor (el enlace con fecha) › AIP › ENR 4.4 y luego ENR 3.2 › cada ruta (UT587 …): Guardar página como… (el nombre da igual: la página se reconoce por su contenido)'
         ],
-        verified: false,
+        verified: true,
         gives: [
           'Les pages enregistrées de l\'eAIP d\'Islande : points désignés (ENR 4.4) et routes (ENR 3.2) ; le lanceur lit le site quand il peut, ces pages quand le site ne suffit pas ; elles restent sur ce poste, jamais publiées.',
           'The saved pages of the Icelandic eAIP: designated points (ENR 4.4) and routes (ENR 3.2); the launcher reads the site when it can, these pages when the site is not enough; they stay on this workstation, never published.',

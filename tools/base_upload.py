@@ -27,6 +27,7 @@ CHUNK = 1024 * 1024
 MAX_MEMBERS = 200000                    # un zip de plus de membres : pas une archive attendue (son annuaire n'est pas lu)
 CD_MAX = 64 * 1024 * 1024               # un annuaire de plus de 64 Mo : idem (ZipFile le charge entier en mémoire avant tout autre contrôle)
 FOLDER = ('local', 'upload')
+AVIANS_PDF = re.compile(r'BI-ENR (?:4\.4|3\.2 [A-Z]{1,2}\d{1,4}[A-Z]?)(?:-en-GB|-is-IS)?(?: \(\d+\))?\.pdf', re.I | re.A)      # le nom d'un PDF de l'eAIP d'Islande (SOG-0368)
 EXPECTED = ['sia', 'nats', 'lfv', 'openaip', 'faa', 'ukmil', 'eurocontrol_rad', 'navpt', 'avians']       # les sources que base/pickup prend (dites avec `unrecognised`)
 REASONS = ('too-large', 'empty', 'type', 'unrecognised', 'busy', 'merge-pending', 'disk', 'refused')
 STATUS = {'too-large': 413, 'empty': 400, 'type': 415, 'unrecognised': 422, 'busy': 409, 'merge-pending': 409, 'disk': 507, 'refused': 403}
@@ -197,6 +198,8 @@ def recognise(path, hint='', today=None):
         return {'source': 'dircam', 'zone': 'fr', 'name': 'MIAM_OACI_ENR 5.7.pdf', 'cycle': None}
     if head[:4] == b'%PDF' and re.fullmatch(r'ENR-5-2(?: \(\d+\))?\.pdf', hint or ''):         # l'ENR 5.2 de l'AIP militaire britannique (SOG-0234 : le serveur coupe la connexion TLS du lanceur)
         return {'source': 'ukmil', 'zone': 'gb', 'name': 'ENR-5-2.pdf', 'cycle': None}
+    if head[:4] == b'%PDF' and AVIANS_PDF.fullmatch(hint or ''):      # SOG-0368 : le PDF de l'eAIP d'Islande est refusé (pas de second lecteur pour un repli), en disant QUOI déposer
+        raise Refused('unrecognised', 'c’est le PDF ; ici c’est la PAGE de l’eAIP d’Islande qui se dépose : ouvrez-la par le lien de la carte, puis Enregistrer sous…', EXPECTED)
     if head[:4] == b'%PDF' or first == b'<':
         raise Refused('unrecognised', 'ce type de fichier (PDF, XML seul) n’est pas pris par cet envoi', EXPECTED)
     raise Refused('type', 'ni zip, ni JSON, ni PDF, ni XML')

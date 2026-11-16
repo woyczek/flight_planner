@@ -3160,3 +3160,9 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 ## 16 November 2026 — catalogue: `hand` and deposited
 
 - **Decided** (ergonomics session, 10:02, replacing the `fetch.pick.fallback` of 10:00 from Réglages' proposal): the field `hand` (`only` | `fallback` | `none`) per source; `deposited` / `datedBy` in `steps.download` of `base/cycle`. **Done**: see INTEGRATION; K283, K52. **Choices of this session**: `faaclass` is `none` (the list said « avians, ukmil, openaip, faa »: `base_upload` takes the NASR CSV of the `faa` source); the line of the cycle list calls it `handMode` (its `hand` key already holds the pick-up detail); only Iceland's deposit is recognised by name (`avians_is_enr_dep_…`).
+
+## 16 November 2026 — SOG-0368: the real summary writes apostrophes
+
+- **Report** (the user's real « Mettre à jour ce pays »): « aucune page de route (ENR 3.2) dans le sommaire ». Cause (ergonomics session, read on the real `menu.html`): the links are between apostrophes; the reader accepted double quotes only. My fault too: the case used a summary written in the form I had supposed.
+- **Done**: both forms read (route links, editions, class of the table); red before on an extract in the REAL form (apostrophes, anchors, `is-IS` pages not taken, a quote not closed by its own kind is no link). Path of the ENR 4.4 page verified in the catalogue; a PDF of the Avians eAIP deposited by hand: refused, with the sentence that says to deposit the page. No try on the real network (the user redoes the taking).
+- **Lesson**: a case for a reader of raw HTML is written on an extract of the real SOURCE (view-source), never on the page as displayed.

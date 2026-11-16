@@ -3040,6 +3040,15 @@ def k243(c):
         got = str(e)
     c.ok(got and '100' in got, str(got), 'more than 100 route pages in the summary: refused (not the summary expected)')
     c.eq(A.route_names(F.menu((), extra='<a href="BI-ENR 3.2 ../../x-en-GB.html">x</a><a href="BI-ENR 3.2 ut1-en-GB.html">y</a><a href="https://evil.example/BI-ENR 3.2 Y1-en-GB.html">z</a><a href="BI-ENR 3.2 Y1-en-GB.html.exe">w</a>')), [], 'a name that is not strictly « BI-ENR 3.2 <route>-en-GB.html » (a path, lower case, another host, a suffix) is never a page to take', what='strict names')
+    # SOG-0368 (refus de l'utilisateur, 16 nov) : le VRAI sommaire écrit ses liens entre APOSTROPHES (130 liens ENR 3.2, aucun entre guillemets) ; la page affichée n'était pas sa source
+    real = ("<html><body><div class='menu'><a href='BI-ENR 3.1-en-GB.html#ENR-3.1'>ENR 3.1</a>"
+            "<a href='BI-ENR 3.2 UT587-is-IS.html#ENR-3.2-UT587' title='x'>UT587</a><a href='BI-ENR 3.2 UT587-en-GB.html#ENR-3.2-UT587' title='x'>UT587</a><a href='BI-ENR 3.2 UT587-en-GB.html#ENR-3.2-UT587-1'>UT587</a>"
+            "<a  href = 'BI-ENR%203.2%20Y688-en-GB.html'>Y688</a><a href=\"BI-ENR 3.2 Y23-en-GB.html#ENR-3.2-Y23\">Y23</a><a href='BI-ENR 3.2 Y25-en-GB.html\">bad</a></div></body></html>")
+    c.eq(A.route_names(real), ['BI-ENR 3.2 UT587-en-GB.html', 'BI-ENR 3.2 Y23-en-GB.html', 'BI-ENR 3.2 Y688-en-GB.html'],
+         'the REAL summary writes its links between APOSTROPHES (href = « BI-ENR 3.2 UT587-en-GB.html#ENR-3.2-UT587 » between apostrophes): both forms are read, the English pages only, one per route, anchors dropped, a quote not closed by its own kind is not a link', what='apostrophes')
+    c.eq(A.editions(F.EDITIONS.replace('"', "'")), found, 'the page of the editions, with its links between apostrophes, gives the same editions', what='editions apostrophes')
+    c.eq((A.designator_of("<table class='table ENR_3_2_UT587 x'><tr/></table>"), A.designator_of('<table class="ENR_3_2_Y23"></table>'), A.designator_of("<table class='ENR_4_4'></table>")), ('UT587', 'Y23', None),
+         'a route page is recognised by the class of its table, whichever quotes the page uses', what='designator apostrophes')
     pts = A.parse_points(F.points_page())
     c.eq((len(pts), pts[0]), (20, {'id': 'ABETU', 'lat': 66.319444, 'lon': -23.160556, 'remarks': 'IAF BIIS'}), 'ENR 4.4: one row per point (`<tr id="…ENR44">`, no class), the name, the coordinates « 661910N 0230938W »', what='points')
     r, segs = A.parse_route(F.UT587)
@@ -3118,6 +3127,18 @@ def k243(c):
             c.eq([(k, v['source'], v['zone'], v['name']) if isinstance(v, dict) else (k, v) for k, v in names.items()],
                  [('ENR 4.4', 'avians', 'is', 'avians_is_enr_4.4.html'), ('UT587', 'avians', 'is', 'avians_is_enr_3.2_UT587.html'), ('Y25', 'avians', 'is', 'avians_is_enr_3.2_Y25.html'), ('other', 'unrecognised')],
                  'the upload recognises an ENR 4.4 page and a route page by their CONTENT and gives them a canonical name; another HTML page is « unrecognised »', what='upload')
+            # SOG-0368 (refus de l'utilisateur) : le PDF d'Avians (BI-ENR 4.4.pdf, BI-ENR 3.2 <route>.pdf) reste refusé (pas de second lecteur pour un repli), mais la phrase dit QUOI déposer : la PAGE
+            pdf = Path(td) / 'enr.pdf'
+            pdf.write_bytes(b'%PDF-1.4 x')
+            said = {}
+            for hint in ('BI-ENR 4.4.pdf', 'BI-ENR 3.2 UT587-en-GB.pdf', 'BI-ENR 3.2 UT587 (2).pdf', 'other.pdf'):
+                try:
+                    BU.recognise(str(pdf), hint)
+                    said[hint] = None
+                except BU.Refused as e:
+                    said[hint] = (e.reason, 'PAGE' in e.message and 'Enregistrer sous' in e.message and 'PDF' in e.message)
+            c.eq(said, {'BI-ENR 4.4.pdf': ('unrecognised', True), 'BI-ENR 3.2 UT587-en-GB.pdf': ('unrecognised', True), 'BI-ENR 3.2 UT587 (2).pdf': ('unrecognised', True), 'other.pdf': ('unrecognised', False)},
+                 'a PDF of the Avians eAIP stays refused, with a sentence that says what to deposit (the PAGE: open it by the link of the card, then Save as); any other PDF keeps the general refusal', what='avians pdf')
             bom = Path(td) / 'bom.html'
             bom.write_bytes(b'\xef\xbb\xbf' + F.UT587.encode('utf-8'))
             c.eq(BU.recognise(str(bom), 'x.html')['name'], 'avians_is_enr_3.2_UT587.html', 'a page saved with a byte-order mark is recognised too', what='bom')

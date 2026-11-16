@@ -22,7 +22,10 @@ EDITION_SEG = re.compile(r'A_\d{2}-\d{4}_(\d{4})_(\d{2})_(\d{2})', re.A)      # 
 POINTS_PAGE = 'BI-ENR 4.4-en-GB.html'
 MENU_PAGE = 'menu.html'
 ROUTE_PAGE = 'BI-ENR 3.2 {}-en-GB.html'
-_ROUTE_HREF = re.compile(r'href="BI-ENR(?:%20| )3\.2(?:%20| )([A-Z]{1,2}\d{1,4}[A-Z]?)-en-GB\.html(?:#[^"]*)?"', re.A)
+# SOG-0368 : le VRAI sommaire écrit ses liens entre APOSTROPHES (href='BI-ENR 3.2 UT587-en-GB.html#ENR-3.2-UT587') ; les deux formes sont lues, la fermeture est du même signe que l'ouverture (\1)
+_ROUTE_HREF = re.compile(r'href\s*=\s*(["\'])BI-ENR(?:%20| )3\.2(?:%20| )([A-Z]{1,2}\d{1,4}[A-Z]?)-en-GB\.html(?:#[^"\'<>]*)?\1', re.A)
+_ANY_HREF = re.compile(r'href\s*=\s*(?:"([^"]{1,300})"|\'([^\']{1,300})\')')
+_TABLE_CLASS = re.compile(r'class\s*=\s*(?:"[^"]*?|\'[^\']*?)\bENR_3_2_([A-Z]{1,2}\d{1,4}[A-Z]?)\b', re.A)
 DESIGNATOR = re.compile(r'[A-Z]{1,2}\d{1,4}[A-Z]?', re.A)
 MAX_ROUTE_PAGES = 100
 MIN_POINTS = 20                       # l'ENR 4.4 d'Islande en compte ~295 : sous ce nombre, ce n'est pas la page attendue
@@ -42,7 +45,8 @@ def editions(page):
     """[(AAAA-MM-JJ, segment)] des éditions que la page des éditions LIE : une adresse https sur l'un des deux hôtes, sans port ni paramètre, dont le chemin est exactement « /A_nn-AAAA_AAAA_MM_JJ/ » (la date dans le segment, valide) ; rien d'autre n'est pris (une adresse
     d'un autre hôte, avec un paramètre, avec « .. »). Triées par date, sans doublon."""
     out = {}
-    for href in re.findall(r'href="([^"]{1,300})"', page):
+    for dq, sq in _ANY_HREF.findall(page):
+        href = dq or sq
         try:
             u = urllib.parse.urlsplit(urllib.parse.urljoin(EDITIONS_URL, htmllib.unescape(href).strip()))
             port = u.port
@@ -78,7 +82,7 @@ def page_url(base, name):
 
 def route_names(menu):
     """Les noms des pages de routes (ENR 3.2) LUS dans le sommaire : « BI-ENR 3.2 <route>-en-GB.html », le nom strict (espace ou %20), triés, sans doublon ; ValueError au-delà de MAX_ROUTE_PAGES (un sommaire qui n'est pas celui attendu)."""
-    found = sorted(set(_ROUTE_HREF.findall(menu)))
+    found = sorted({m.group(2) for m in _ROUTE_HREF.finditer(menu)})
     if len(found) > MAX_ROUTE_PAGES:
         raise ValueError(f'plus de {MAX_ROUTE_PAGES} pages de routes dans le sommaire : ce n’est pas le sommaire attendu')
     return [ROUTE_PAGE.format(d) for d in found]
@@ -202,7 +206,7 @@ def parse_route(page):
 
 def designator_of(page):
     """Le désignateur d'une page de route par la classe de son tableau (« ENR_3_2_UT587 ») : sert à RECONNAÎTRE une page déposée par son contenu ; None si ce n'en est pas une."""
-    m = re.search(r'class="[^"]*\bENR_3_2_(' + DESIGNATOR.pattern + r')\b', page, re.A)
+    m = _TABLE_CLASS.search(page)
     return m.group(1) if m else None
 
 
