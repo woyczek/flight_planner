@@ -240,7 +240,7 @@ function warningsOf(r) {
 /** Le total d'un avertissement d'un code donné. */
 const warned = (list, code) => list.filter(w => w.code === code).reduce((a, w) => a + w.count, 0);
 /** Un texte du lanceur borné, sans caractère de commande ('' sinon). */
-const clean = (v, n) => typeof v === 'string' ? v.replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, n) : '';
+const clean = (v, n) => typeof v === 'string' ? v.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, n) : '';
 /** Ce que la ligne d'une source dit d'un fichier pris à la main (SOG-0244, K177) : [{ zone, source, edition (AAAA-MM-JJ ou null), from (le NOM du fichier, jamais un chemin), future, older (édition plus ancienne que le cycle en vigueur),
  *  routes (routes sans nom, non lues), refused ['nom : raison'] (cinq au plus) }] ; seulement les lignes qui portent une édition ou des fichiers refusés. Entrée non fiable : dates, nombres et textes bornés. */
 function handOf(zones) {

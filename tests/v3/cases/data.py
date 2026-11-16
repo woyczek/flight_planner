@@ -9721,8 +9721,8 @@ def l143(c):
     CW = lambda k: _trow(k, lang, after='  cw: {')
     CWB = lambda k: _trow(k, lang, after='  cwb: {')
     entry = _l103_entry({'ok': False, 'fetched': [], 'unchanged': [], 'manual': [],
-                         'failed': [{'zone': 'is', 'source': 'avians', 'error': 'parse', 'message': 'https://eaip.avians.is/A_10-2026_2026_10_29/eAIP/menu.html : <b>refusé</b>\u0007 429',
-                                     'pages': {'read': 29, 'of': 31, 'missing': ['x.html']}, 'stopped': 'HTTP 429 Too Many Requests'}]}, 120, zones=('is',))
+                         'failed': [{'zone': 'is', 'source': 'avians', 'error': 'parse', 'message': 'https://eaip.avians.is/A_10-2026_2026_10_29/eAIP/menu.html : <b>refusé</b>\u0007\u202e 429\u200b',
+                                     'pages': {'read': 29, 'of': 31, 'missing': ['x.html']}, 'stopped': 'HTTP\u202e 429 Too Many Requests'}]}, 120, zones=('is',))
     _l102_open(c, wrap=_l143_wrap, cover_more=('is',), extra_verbs=('base/last',), last_results=lambda a: {'ok': True, 'results': {'base/fetch': entry}})
     c.tap('[data-group-id=europe-north] [data-act=grp-toggle]')
     c.tap('[data-group-body] [data-zone=is]')
@@ -9735,8 +9735,9 @@ def l143(c):
     detail = norm(c.text(f'{card} [data-failed-detail]'))
     pre, post = CW('pagesRead').split('{n}')[1].split('{m}')[0], CW('pagesRead').split('{m}')[1]
     c.ok('29' in detail and '31' in detail and norm(pre) in detail, detail, 'the pages read are said: « 29 pages lues sur 31 »')
-    c.ok('https://eaip.avians.is/A_10-2026_2026_10_29/eAIP/menu.html' in detail and '<b>refusé</b>' in detail and 'HTTP 429 Too Many Requests' in detail, detail, 'the address tried and the sentence of the server are written, as TEXT (a tag stays a tag)')
-    c.eq([c.count(f'{card} [data-failed-detail] b'), '\u0007' in c.text(f'{card} [data-failed-detail]')], [0, False], 'nothing in it is markup, and a control character is dropped', what='escaped')
+    c.ok('https://eaip.avians.is/A_10-2026_2026_10_29/eAIP/menu.html' in detail and '<b>refusé</b>' in detail and 'Too Many Requests' in detail, detail, 'the address tried and the sentence of the server are written, as TEXT (a tag stays a tag)')
+    txt = c.text(f'{card} [data-failed-detail]')
+    c.eq([c.count(f'{card} [data-failed-detail] b'), any(ch in txt for ch in ('\u0007', '\u202e', '\u200b'))], [0, False], 'nothing in it is markup; a control character AND a format mark (U+202E, U+200B) are dropped: the page is safe alone, even before a launcher that does not clean', what='escaped')
     c.eq(c.js(f"(a => a ? [a.target, /noopener/.test(a.rel), a.href.startsWith('https://')] : null)(document.querySelector('{card} [data-failed-link] a'))"), ['_blank', True, True], 'the link to the source opens in another tab without a referrer', what='link')
     c.eq(c.count(f'{card} [data-act=zone-upload]'), 1, 'the hand deposit is on the card (« Choisir le fichier… »)', what='deposit gesture')
     tk = c.js(f"(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('{card} .d-cells1 li'))")

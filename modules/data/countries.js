@@ -713,8 +713,9 @@ function seenNamesOf(sid, z, item, cy) {
   const dl = cy.state === 'ready' ? item?.hand?.inDownloads || [] : [],
     st = (z?.reasons || []).filter(r => r.code === 'pickup-waiting' && typeof r.zip === 'string' && r.zip && (!r.source || r.source ===
       sid)).map(r => r.zip);
-  return [...new Set([...dl, ...st].filter(n => typeof n === 'string' && n).map(n => n.replace(/[\p{Cc}]/gu, ' ').slice(0, 150)))].slice(0,
-    8);
+  return [...new Set([...dl, ...st].filter(n => typeof n === 'string' && n).map(n => n.replace(/[\p{Cc}\p{Cf}]/gu, ' ').slice(0, 150)))]
+    .slice(0,
+      8);
 }
 /** Le fichier vu que la règle de nom du lanceur refuse VRAIMENT (sources à jeux : SIA, NATS, LFV ; M.pickupNameOk) : son nom, ou '' (une source prise par son contenu ne refuse jamais un nom). Sert au bandeau « renommez… » et fait disparaître le bouton (SOG-0370). */
 function renameOf(sid, z, item, cy) {
