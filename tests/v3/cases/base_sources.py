@@ -2620,6 +2620,32 @@ def k283(c):
     c.eq(('deposited' in none, 'datedBy' in none), (False, False), 'nothing there: neither', what='none')
     two = line(['zones/is/avians_is_enr_dep_20261105.geojson', 'zones/is/avians_is_enr_dep_20261110.geojson'])
     c.eq(two.get('deposited'), '2026-11-10', 'two deposits: the most recent date', what='two')
+    # base/status: the zone says that it is built on a hand deposit (the list of the countries knows it without opening the sheet)
+    ST = types.SimpleNamespace(**RJ.REGISTRY[('base', 'status')][0].__globals__)
+    status, check_s = RJ.REGISTRY[('base', 'status')]
+
+    def zone_line(files, recorded=True):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = Path(td) / 'data'
+            for rel in files:
+                p = data / 'sia' / rel
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text('{}', encoding='utf-8')
+            built = data / 'sia' / 'base' / 'is' / '2026-10-29'
+            built.mkdir(parents=True)
+            (built / 'meta.json').write_text(json.dumps({'schema': 2, 'zone': 'is', 'cycle': '2026-10-29', 'kind': 'meta', 'parserVersion': ST.parser_version(), 'data': {}}), encoding='utf-8')
+            for k in types.SimpleNamespace(**RJ.REGISTRY[('base', 'build')][0].__globals__).KINDS:
+                if k != 'meta':
+                    (built / f'{k}.json').write_text('{"data": [1]}' if k == 'points' else '{}', encoding='utf-8')
+            if recorded:
+                ST.write_record(data, 'is', cycle='2026-10-29', builtAt='2026-11-11T10:00:00Z', parserVersion=ST.parser_version(), personal=['avians'], inputs=ST.signature(ST.inputs_of(str(data), 'is', {'avians'})))
+            return status(RJ.Job('base', 'status', {}), check_s({'zones': ['is'], 'personal': ['avians']}), {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 16)})['zones']['is']
+    z1 = zone_line(['zones/is/avians_is_enr_dep_20261110.geojson'])
+    c.eq((z1.get('datedBy'), z1.get('deposited')), ('file', '2026-11-10'), 'base/status: a zone built on a hand deposit says `datedBy: file` and the date of the deposit (read in the name; no edition)', what='zone deposit')
+    z2 = zone_line(['zones/is/avians_is_enr_20261029.geojson'])
+    c.eq(('datedBy' in z2, 'deposited' in z2), (False, False), 'a zone built on an edition taken from the site has neither', what='zone site')
+    z3 = zone_line(['zones/is/avians_is_enr_dep_20261105.geojson', 'zones/is/avians_is_enr_dep_20261110.geojson'], recorded=False)
+    c.eq((z3.get('datedBy'), z3.get('deposited')), ('file', '2026-11-10'), 'with no record of the build, the files there are read: the most recent deposit', what='zone no record')
 
 
 @case('K180', 'base/status never says « personal-undeclared » for a source that does not feed the zone, and an edition in force of a State that publishes by editions is not a past cycle (SOG-0260: the screen said « 69 zones attendent un fichier » and « NAV Portugal 2610 : cycle passé » for a base all built at 29 Oct)', 'K', static=True,

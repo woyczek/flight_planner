@@ -231,8 +231,22 @@ def download_state(zone, current, personal, latest, S, absent=frozenset()):
     return {'done': bool(names) and all((zone, x) in latest and latest[(zone, x)] >= start for x in names), 'cycle': current, 'at': iso(min(ats)) if ats else None, 'sources': sources}
 
 
+def hand_deposit(zone, rec, inputs, rx):
+    """AAAA-MM-JJ du dépôt à la main (nom `avians_<pays>_enr_dep_AAAAMMJJ.geojson`, tools/regen/base_cycle.DEPOSIT_FILE) sur lequel une zone est construite — la date la plus récente —, ou '' : SOG-0368. Ce que la construction a LU (le relevé de la zone,
+    `rec['inputs']`) fait foi ; sans relevé, les fichiers présents. La date est celle du DÉPÔT, jamais d'une édition (un dépôt à la main n'en a pas)."""
+    if rx is None:
+        return ''
+    keys = rec['inputs'] if rec and isinstance(rec.get('inputs'), dict) else inputs
+    best = ''
+    for rel in keys:
+        m = rx.match(rel) if isinstance(rel, str) else None
+        if m and rel.split('/')[1] == zone:
+            best = max(best, f'{m.group(2)}-{m.group(3)}-{m.group(4)}')
+    return best
+
+
 def zone_states(data, zones, personal, ctx):
-    """L'état des zones (voir l'en-tête) : { zone: { state, reason, reasons, buildable, builtCycle, expectedCycle, parserVersion } }."""
+    """L'état des zones (voir l'en-tête) : { zone: { state, reason, reasons, buildable, builtCycle, expectedCycle, parserVersion, datedBy?, deposited? } } ; `datedBy: 'file'` et `deposited` (AAAA-MM-JJ du dépôt) : la zone est construite sur un dépôt à la main, sans édition (SOG-0368)."""
     B, S = _ns(('base', 'build')), _ns(('base', 'fetch'))
     today = ctx.get('today')
     current = aero_cycles.airac_start(today)
@@ -244,6 +258,7 @@ def zone_states(data, zones, personal, ctx):
     latest = download_times(data, inputs, S) if S else {}
     absent = S.absent_load(ctx, current) if S else frozenset()
     out = {}
+    deposit_rx = getattr(_ns(('base', 'cycle')), 'DEPOSIT_FILE', None)
     for z in zones:
         reasons, notices = [], []
         folders = built_folders(data, z)
@@ -303,6 +318,9 @@ def zone_states(data, zones, personal, ctx):
         out[z] = {'state': state, 'reason': reasons[0] if reasons else None, 'reasons': reasons, 'notices': notices, 'buildable': any(r['code'] in BUILDABLE for r in reasons), 'builtCycle': built, 'builtAt': (rec or {}).get('builtAt'),
                   'expectedCycle': own or built, 'parserVersion': _meta_version(os.path.join(data, 'sia', 'base', z, built, 'meta.json')) if built else None,
                   'download': download_state(z, current, personal, latest, S, absent) if S else None}
+        dep = hand_deposit(z, rec, inputs, deposit_rx) if folders else ''
+        if dep:          # SOG-0368 : la zone est construite sur un dépôt à la main (aucune édition) : la liste des pays le sait sans ouvrir la fiche
+            out[z].update(datedBy='file', deposited=dep)
     try:
         pub = zone_publish.states(data, list(out))      # SOG-0258 : publiée = le commit de construction est un ancêtre de la branche distante connue (quatre appels de git en tout, aucun réseau)
     except Exception:       # un état de publication qui échoue ne fait pas échouer l'état des zones
