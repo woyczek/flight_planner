@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f55cd40",
+  "organisation": "02c7a85",
   "fiches": 382,
   "untranslated": 0,
   "priorities": 374
@@ -4228,12 +4228,13 @@
     {
      "id": "SOG-0354",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Moteur de route : découper une longue route en tronçons que l'on sait valides (au-delà de la côte : traverser aussi les États-Unis)",
      "en": "Route engine: split a long route into legs known to be valid (beyond the coast: crossing the United States too)",
      "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
      "es": "Motor de ruta: dividir una ruta larga en tramos que se saben válidos (más allá de la costa: cruzar también Estados Unidos)",
-     "rank": 353
+     "rank": 353,
+     "test": true
     }
    ]
   },
