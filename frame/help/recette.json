@@ -3845,6 +3845,66 @@
  ],
  "decisions": [
   {
+   "id": "Q-0063",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Missions : « générer from scratch », c'est quoi pour toi ?",
+   "context": "La V3 sait déjà « Créer une mission » vide dans l'éditeur (au registre ; tu l'as validée, SOG-0287). Le générateur de missions complet n'existe que dans les anciennes pages.",
+   "options": [
+    "Le générateur de missions des anciennes pages, à porter en V3",
+    "Créer une mission vide dans l'éditeur : je ne l'avais pas trouvée",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0064",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Missions : quel import manque ?",
+   "context": "La V3 importe déjà des missions en YAML (« Ajouter des missions », fichiers ou texte collé ; validé, SOG-0212). L'import d'un dossier PDF n'existe qu'en ligne de commande.",
+   "options": [
+    "L'import d'un dossier PDF, à l'écran",
+    "L'import YAML : je ne l'avais pas trouvé",
+    "Les deux me vont, il ne manque rien",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0065",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Vue d'ensemble : les quatorze grandes fonctions sont-elles les bonnes ?",
+   "context": "Missions ; Carburant et route ; Carte ; Météo ; Compte rendu ; Mes vols ; Aéronefs et performances ; Statistiques ; Données aéronautiques ; Réglages, synchronisation, appareils ; Site de la compagnie ; Ordres de vol et planning ; Atterrissages X-Plane ; Aide, recette, signalements.",
+   "options": [
+    "Oui, on part de là",
+    "À changer (je le dis dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0066",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Vue d'ensemble : la mettre en tête de la feuille de route de l'appli ?",
+   "context": "Une barre par grande fonction avec son pourcentage ; on touche une fonction pour voir ses capacités, puis les fiches rangées dessous. Un lot pour V3 Frame. En attendant, le relevé est dans organisation/CAPACITES.json.",
+   "options": [
+    "Oui, maintenant",
+    "Oui, après l'alpha 5",
+    "Non : un tableau tenu à jour par l'ergonome suffit"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",

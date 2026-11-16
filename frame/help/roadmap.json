@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f506636",
-  "fiches": 384,
+  "organisation": "4b1a329",
+  "fiches": 385,
   "untranslated": 0,
   "priorities": 374
  },
@@ -2068,6 +2068,27 @@
      "es": "Exportar un PLN de MSFS 2024 EFB conforme",
      "milestone": "6.0.0-beta.1",
      "rank": 101
+    }
+   ]
+  },
+  {
+   "id": "pilote-feuille-de-route-aide",
+   "app": "pilote",
+   "label": {
+    "fr": "Feuille de route ; aide",
+    "en": "Feuille de route ; aide",
+    "de": "Feuille de route ; aide",
+    "es": "Feuille de route ; aide"
+   },
+   "items": [
+    {
+     "id": "SOG-0386",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Feuille de route : une vue d'ensemble par grande fonction et par capacité, avec un pourcentage",
+     "en": "Roadmap: an overview by main function and by capability, with a percentage",
+     "de": "Roadmap: eine Übersicht nach Hauptfunktion und Fähigkeit, mit Prozentwert",
+     "es": "Hoja de ruta: una vista de conjunto por gran función y por capacidad, con un porcentaje"
     }
    ]
   },
