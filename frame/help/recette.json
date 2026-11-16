@@ -3831,22 +3831,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0062",
-   "fiche": "SOG-0354",
-   "app": "maintenance",
-   "question": "Canada : faut-il que le lanceur lise l'AIP du Canada (PDF) pour ton usage personnel ? — fait nouveau de 15 h 37 : sans doute pas",
-   "context": "QUESTION REPOSÉE à 15 h 37 avec un fait nouveau (l'ordre des options a changé). AeroDB a lu le fichier de la FAA que tu as déjà déposé : il porte 359 points et 30 balises du Canada, et les 275 points que nomment les routes nord-américaines — celles qui relient la sortie de l'océan à l'intérieur — ont tous une position. Ce qui manque, ce sont les VOIES du Canada, pas les points. La sortie de l'océan vers Boston ou New York peut donc se tracer par ces routes publiées, sans rien lire chez NAV CANADA (dont l'AIP est un PDF gratuit mais « tous droits réservés », et les données sous licence commerciale). Ce que je conteste maintenant : ma propre recommandation de 15 h 23 — lire un document sous droit d'auteur pour un besoin que la FAA couvre peut-être déjà. Je propose d'attendre le lot qui branche ces routes ; s'il laisse un trou réel (un vol qui traverse le Canada hors de ces routes), je te reposerai la question avec le vol en exemple.",
-   "options": [
-    "Pas maintenant : on voit d'abord ce que donnent les routes de la FAA",
-    "Oui quand même : lecture personnelle sur ce poste, jamais publiée (comme l'Espagne)",
-    "Je me renseigne sur une licence NAV CANADA",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
@@ -3921,6 +3905,25 @@
    "choice": 0,
    "text": "",
    "at": "2026-11-16T13:27:30Z"
+  },
+  {
+   "id": "Q-0062",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "Canada : faut-il que le lanceur lise l'AIP du Canada (PDF) pour ton usage personnel ? — fait nouveau de 15 h 37 : sans doute pas",
+   "context": "QUESTION REPOSÉE à 15 h 37 avec un fait nouveau (l'ordre des options a changé). AeroDB a lu le fichier de la FAA que tu as déjà déposé : il porte 359 points et 30 balises du Canada, et les 275 points que nomment les routes nord-américaines — celles qui relient la sortie de l'océan à l'intérieur — ont tous une position. Ce qui manque, ce sont les VOIES du Canada, pas les points. La sortie de l'océan vers Boston ou New York peut donc se tracer par ces routes publiées, sans rien lire chez NAV CANADA (dont l'AIP est un PDF gratuit mais « tous droits réservés », et les données sous licence commerciale). Ce que je conteste maintenant : ma propre recommandation de 15 h 23 — lire un document sous droit d'auteur pour un besoin que la FAA couvre peut-être déjà. Je propose d'attendre le lot qui branche ces routes ; s'il laisse un trou réel (un vol qui traverse le Canada hors de ces routes), je te reposerai la question avec le vol en exemple.",
+   "options": [
+    "Pas maintenant : on voit d'abord ce que donnent les routes de la FAA",
+    "Oui quand même : lecture personnelle sur ce poste, jamais publiée (comme l'Espagne)",
+    "Je me renseigne sur une licence NAV CANADA",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 1,
+   "text": "",
+   "at": "2026-11-16T15:28:05Z"
   }
  ]
 }
