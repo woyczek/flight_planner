@@ -119,20 +119,9 @@ def derive(src, out_dir, today=None):
     return {'rows': len(rows), 'skipped': skipped, 'makerBlanked': blanked, 'date': date, 'size': size}
 
 
-def publish(local_dir, data_dir):
-    """Le dérivé gardé sur ce poste (`local_dir`/fr_immat.json) publié dans le dépôt des données : `data_dir`/registry/fr_immat.json (SOG-0341), atomique. Rend { published: True, rows, makerBlanked, size } ; RegistryError (code seul : 'read', 'headers', 'rows',
-    'empty', 'size') sinon, rien d'écrit. Le fichier publié n'est PAS une copie : il est reconstruit ligne à ligne depuis le dérivé — exactement les cinq colonnes, chaque cellule du texte borné et nettoyé, l'immatriculation de la forme attendue, le type
-    présent, un constructeur partagé par moins de MIN_MAKER aéronefs laissé vide (recompté ici : on ne se fie pas à l'étape précédente) — et rien d'autre n'y entre (ni date d'une autre sorte, ni champ inconnu du dérivé)."""
-    src = os.path.join(local_dir, OUT_NAME)
-    try:
-        if os.path.getsize(src) > MAX_BYTES:
-            raise RegistryError('size')
-        with open(src, encoding='utf-8') as f:
-            doc = json.load(f)
-    except RegistryError:
-        raise
-    except (OSError, ValueError):
-        raise RegistryError('read') from None
+def rebuild(doc):
+    """(lignes, constructeurs vidés, date) d'un document du registre reconstruits comme une ENTRÉE NON FIABLE (SOG-0341) : exactement cinq cellules de texte par ligne, bornées et nettoyées, une immatriculation de la forme attendue, un type présent ; le k-anonymat du constructeur
+    recompté ; la date AAAA-MM-JJ ou ''. Sert à publier (ce que le poste écrit) et à lire le fichier publié (ce que n'importe quel pilote a pu écrire). RegistryError('headers' | 'rows' | 'empty') sinon."""
     if not isinstance(doc, dict) or doc.get('columns') != list(WHITELIST) or not isinstance(doc.get('rows'), list):
         raise RegistryError('headers')
     if len(doc['rows']) > MAX_ROWS:
@@ -156,6 +145,24 @@ def publish(local_dir, data_dir):
             r[1] = ''
             blanked += 1
     date = doc.get('date') if isinstance(doc.get('date'), str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', doc['date'], re.A) else ''
+    return rows, blanked, date
+
+
+def publish(local_dir, data_dir):
+    """Le dérivé gardé sur ce poste (`local_dir`/fr_immat.json) publié dans le dépôt des données : `data_dir`/registry/fr_immat.json (SOG-0341), atomique. Rend { published: True, rows, makerBlanked, size } ; RegistryError (code seul : 'read', 'headers', 'rows',
+    'empty', 'size') sinon, rien d'écrit. Le fichier publié n'est PAS une copie : il est reconstruit ligne à ligne depuis le dérivé — exactement les cinq colonnes, chaque cellule du texte borné et nettoyé, l'immatriculation de la forme attendue, le type
+    présent, un constructeur partagé par moins de MIN_MAKER aéronefs laissé vide (recompté ici : on ne se fie pas à l'étape précédente) — et rien d'autre n'y entre (ni date d'une autre sorte, ni champ inconnu du dérivé)."""
+    src = os.path.join(local_dir, OUT_NAME)
+    try:
+        if os.path.getsize(src) > MAX_BYTES:
+            raise RegistryError('size')
+        with open(src, encoding='utf-8') as f:
+            doc = json.load(f)
+    except RegistryError:
+        raise
+    except (OSError, ValueError, RecursionError, MemoryError):      # un JSON imbriqué sur des dizaines de milliers de niveaux lève RecursionError (Sécurisation) : un refus à code, jamais une exception qui échappe
+        raise RegistryError('read') from None
+    rows, blanked, date = rebuild(doc)
     out = {'schema': 1, 'source': CREDIT, 'date': date, 'columns': list(WHITELIST), 'rows': rows}
     folder = os.path.join(data_dir, REPO_FOLDER)
     os.makedirs(folder, exist_ok=True)
