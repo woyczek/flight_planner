@@ -14,7 +14,7 @@ def elevation(icao, value):
     except (TypeError, ValueError):
         v = float('nan')
     if not math.isfinite(v) or not ELEV_MIN_FT <= v <= ELEV_MAX_FT:
-        raise ValueError(f'Élévation de {icao} : {value!r} ft refusée (de {ELEV_MIN_FT:,.0f} à {ELEV_MAX_FT:,.0f} ft).'.replace(',', ' '))
+        raise ValueError(f'Élévation de {str(icao)[:8]} : {repr(value)[:24]} ft refusée (de {ELEV_MIN_FT:,.0f} à {ELEV_MAX_FT:,.0f} ft).'.replace(',', ' '))
     return v
 
 

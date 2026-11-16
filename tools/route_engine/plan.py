@@ -194,6 +194,29 @@ def depart_of(request, now=None):
     return None, 'none'
 
 
+LEVEL_WORDS = re.compile(r'\bFL ?\d|\bRFL\b|niveau|altitude|plancher|plafond|profil', re.I)
+
+
+def level_matters(primary, info):
+    """(vrai ou faux, la raison dite) : la raison du PREMIER échec (au niveau demandé) est-elle une affaire de NIVEAU ? Une reprise à un niveau plus bas n'est tentée que si oui (SOG-0354 L5 4, défaut 2) ; sinon la réponse part tout de suite avec sa raison.
+    Oui : une ERREUR du contrôle qui parle de niveau, d'altitude, de plancher, de plafond ou de profil (un vol trop court pour son niveau, RFL NOT ABV FL275) ; sans route, une track écartée pour le NIVEAU qui serait valable à un niveau qu'elle propose (`sections.level_retry`) ; sans route et sans découpage par sections (un vol hors océan), le message « à ce niveau » du moteur.
+    Non : une ERREUR d'une autre nature (une règle RAD d'itinéraire), une track écartée par le sens, l'heure ou le réseau, une route libre qui n'a pas abouti."""
+    errors = [i['text'] for i in primary.get('issues') or [] if i.get('level') == 'ERREUR']
+    for text in errors:
+        if LEVEL_WORDS.search(text):
+            return True, 'erreur de niveau : ' + text[:120]
+    if primary.get('ok') and errors:
+        return False, 'erreur qui n\'est pas une affaire de niveau : ' + errors[0][:120]
+    if info is not None:
+        if info.get('level_retry'):
+            return True, 'une route NAT écartée pour le niveau est valable à un autre niveau : ' + ', '.join(info.get('level_tracks') or [])
+        return False, 'aucune route NAT écartée pour le seul niveau : un autre niveau ne change pas la réponse'
+    text = str(primary.get('error') or '')
+    if 'à ce niveau' in text or LEVEL_WORDS.search(text):
+        return True, 'le réseau est coupé à ce niveau'
+    return False, 'la raison du premier échec n\'est pas une affaire de niveau : ' + text[:120]
+
+
 def plan(request, root):
     """Le plan, tel que server.plan() de RouteSim 4 le fait (voir l'en-tête du module). Le mode VFR (vfr.py) n'est pas porté : la demande IFR seule est acceptée (check_request)."""
     import time
@@ -235,6 +258,7 @@ def plan(request, root):
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
     nav.nat_rejected = frozenset()
+    nav.sections_info = None      # SOG-0354 L5 (4) : rien d'une demande précédente (le contexte est gardé) ne passe dans la réponse de celle-ci
     nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ que la demande donne (sans heure : (None, 'none'), la validité horaire n'est pas vérifiée, dit)
     context_s = round(time.perf_counter() - context_began, 3)
     crossing = crosses_ocean(nav.ads.get(str(request.get('dep', '')).upper()) or {}, nav.ads.get(str(request.get('arr', '')).upper()) or {})
@@ -276,6 +300,9 @@ def plan(request, root):
             except (ValueError, SearchBudget) as e:
                 rad_retries.append(dict(excluded=avoids, error=str(e)))
                 break
+    first_info = getattr(nav, 'sections_info', None) if nav.sections else None      # SOG-0354 L5 (4) : les sections et le temps de la réponse sont ceux du niveau DEMANDÉ (de la route de tête et de ses reprises RAD) : les autres tentatives écrasaient `nav.sections_info`
+    first_graph_s = getattr(nav, 'graph_seconds', None)
+    retries = []      # les reprises à d'autres niveaux, listées à part : { fl, seconds, found }
     engine.DEADLINE = limit['until']
     rejected = not primary['ok'] or bool(primary.get('data_gaps')) or any(i['level'] == 'ERREUR' for i in primary['issues'])
     if bounds['ocean'] and rejected:      # SOG-0354 L2b : une route de tête refusée : chaque tentative de plus refait un graphe (~4 s) et une recherche ; elle ne commence pas si elle ne finirait pas dans le budget (les alternatives d'une BONNE route de tête, elles, sont peu coûteuses : inchangées)
@@ -289,6 +316,7 @@ def plan(request, root):
     # SOG-0161 : une route de tête refusée parce que sa RECHERCHE a atteint son budget (« Budget de recherche atteint ») : chercher d'autres niveaux refait la même recherche (6 s chacune : EIDW → KBOS rendait une proposition en 35 s) :
     # les propositions de repli viennent tout de suite
     budget_hit = rejected and 'Budget de recherche atteint' in str(primary.get('error') or '')
+    level_ok, level_why = level_matters(primary, first_info) if rejected and request.get('mode', 'calculate') == 'calculate' else (True, '')      # SOG-0354 L5 (4) défaut 2 : sans affaire de niveau, ni reprise à un autre niveau ni palier adapté ; la réponse part avec sa raison
     if budget_hit and not coverage_gaps:
         failures.append('Alternatives non cherchées : la recherche de la route de tête a atteint son budget (elles en auraient épuisé un autre à chaque niveau).')
     if (rejected or request.get('alternatives')) and not coverage_gaps and not budget_hit and not check_only:
@@ -358,14 +386,14 @@ def plan(request, root):
             if len(alternatives) < 3 and allow_levels and primary.get('ok') and (rejected or request.get('mode') == 'validate'):
                 consider(primary['route'], fl, 'adapt')
             # A stepped route can connect airway bands even when the target-FL graph is disconnected.
-            if allow_levels and len(alternatives) < 3 and (rejected or request.get('mode') == 'validate'):
+            if allow_levels and level_ok and len(alternatives) < 3 and (rejected or request.get('mode') == 'validate'):
                 try:
                     check_budget()
                     route, path = nav.generate(dep, arr, fl, radius, blocks, options, True, mandatory, nav_time(request), request.get('enable_fra', True), request)
                     consider(route, fl, 'adapt', path)
                 except ValueError as e:
                     failures.append(str(e))
-            if len(alternatives) < 3:
+            if len(alternatives) < 3 and (level_ok or primary.get('ok')):      # une route trouvée avec une ERREUR a des variantes par pénalisation de liens ; sans route (et sans affaire de niveau) elles ne peuvent rien
                 try:
                     routes = nav.alternate_routes(dep, arr, fl, radius, blocks, count=4, profile_options=options, allow_steps=bool(allow_levels), via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request, return_paths=True)
                     for route, path in routes:
@@ -374,16 +402,20 @@ def plan(request, root):
                             break
                 except ValueError as e:
                     failures.append(str(e))
-            if allow_levels:
+            if allow_levels and level_ok:
                 for level in levels:
                     if len(alternatives) >= 3:
                         break
+                    began = time.perf_counter()
+                    found = False
                     try:
                         check_budget()
                         route, path = nav.generate(dep, arr, level, radius, rad.blocks(dep, arr, None), options, allow_steps=True, via=mandatory, when=nav_time(request), enable_fra=request.get('enable_fra', True), terminal=request)
+                        found = True
                         consider(route, level, 'adapt', path)
                     except ValueError as e:
                         failures.append(f'FL{level}: ' + str(e))
+                    retries.append({'fl': level, 'seconds': round(time.perf_counter() - began, 3), 'found': found})
         except (ValueError, SearchBudget) as e:
             failures.append(str(e))
     wanted = (rejected or bool(request.get('alternatives'))) and not check_only
@@ -409,9 +441,10 @@ def plan(request, root):
             message = 'Calcul réseau incomplet : ' + str(len(repli['proposals'])) + ' propositions de repli, dont ' + str(repli.get('fra_pieces', 0)) + ' portion(s) FRA. Les raccords DCT restent non validés.'
     for r in [primary, *alternatives, *((repli or {}).get('proposals') or [])]:        # SOG-0161 : chaque tronçon classé (contrôlé / incomplet / repli / erreur), par couche, et le pourcentage de la distance contrôlée
         layered.annotate(r, rad)
-    info = getattr(nav, 'sections_info', None) if nav.sections else None
-    timing = {'context_s': context_s, 'tracks_s': (getattr(nav, 'nat', None) or {}).get('seconds'), 'graph_s': getattr(nav, 'graph_seconds', None), 'skeleton_s': (info or {}).get('skeleton_s'), 'sections': list((info or {}).get('steps') or []), 'total_s': round(time.perf_counter() - started, 3)}      # SOG-0354 L5 (3) : où le temps est passé, étape par étape, avec la borne de chacune
-    return dict(budget=bounds, timing=timing, sections=info, primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
+    info = first_info
+    level_retry = {'tried': bool(retries), 'matters': level_ok, 'why': level_why, 'levels': retries} if rejected and request.get('mode', 'calculate') == 'calculate' else None
+    timing = {'context_s': context_s, 'tracks_s': (getattr(nav, 'nat', None) or {}).get('seconds'), 'graph_s': first_graph_s, 'skeleton_s': (info or {}).get('skeleton_s'), 'sections': list((info or {}).get('steps') or []), 'retries': retries, 'total_s': round(time.perf_counter() - started, 3)}      # SOG-0354 L5 (3) : où le temps est passé, étape par étape, avec la borne de chacune
+    return dict(budget=bounds, timing=timing, sections=info, level_retry=level_retry, primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected and not check_only, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 

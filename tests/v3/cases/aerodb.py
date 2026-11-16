@@ -11813,7 +11813,7 @@ def k296(c):
         (rd, vd), (ro, vo) = out['default'], out['off']
         td, to = rd['timing'], ro['timing']
         c.eq((set(td), bool(td['sections']), bool(rd['sections']), to['sections'], ro['sections'], rd['primary'].get('route') == ro['primary'].get('route'), vd['timing'] == td),
-             ({'context_s', 'tracks_s', 'graph_s', 'skeleton_s', 'sections', 'total_s'}, True, True, [], None, True, True),
+             ({'context_s', 'tracks_s', 'graph_s', 'skeleton_s', 'sections', 'retries', 'total_s'}, True, True, [], None, True, True),      # `retries` (L5 4, defect 2): the retries at other levels, listed apart from the sections of the requested level
              'EIDW → KJFK on the real base, with NO `sections` key: the sections are used (the flight crosses the Atlantic) and the answer carries `timing`; with `sections: false` the whole search, the same route, `timing.sections` empty; the view carries `timing`', what='real flight')
         c.ok(all(s['bound_s'] <= 12.0 and s['hit'] is False and s['seconds'] <= s['bound_s'] for s in td['sections']) and td['total_s'] >= td['context_s'], str(td)[:300], 'every step of the real flight is inside its bound and none was cut; the total is not below the context')
     finally:
@@ -11973,5 +11973,104 @@ def k299(c):
             c.eq(out, [(True, [], '')] * 2, 'KJFK → EGLL (arrival at -10 ft: the search finds the way, the control has no error) and EGLL → KJFK (departure at -10 ft: a free route, no error): the aerodrome below the sea is an aerodrome like any other (red before: no route to it, an ERREUR from it)', what='below sea')
             high = run(bench('high', 40000), 'KJFK', 'EGLL', '2026-11-10T04:30')
             c.ok(high[0] is False and 'Élévation de EGLL : 40000 ft refusée' in high[2], str(high), 'an elevation of 40 000 ft is refused and the answer says which aerodrome, which value, which bound')
+        finally:
+            results_cache.ENABLED = True
+
+
+@case('K300', 'Route engine, SOG-0354 lot L5 (4) defect 2: a retry at a lower level is attempted ONLY when the reason of the first failure is a matter of LEVEL (`plan.level_matters`) — otherwise the answer leaves at once with its reason —, the sections and the timing of the answer are those of the REQUESTED level (the other attempts no longer overwrite them), and the retries are listed apart (`level_retry`, `timing.retries`)',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) (matrix of 16 Nov, defects 4 and 5; ergonomics session: « une reprise n\'est tentée que si la raison du premier échec est une affaire de NIVEAU ; sinon la réponse part tout de suite avec sa raison ; `sections` et `timing` décrivent le niveau DEMANDÉ ; les reprises sont listées à part ; but : une demande sans route répond en moins de 5 s »). Before: a request with no route went through the stepped route, the variants and FIVE lower levels (FL350 to FL270), each a search and the sections of the Atlantic, and the answer described the LAST attempt (FL270 for a flight at FL370, « FL270 non proposé vers l\'est ») in 10 to 14.5 s (the 34 proposals of the matrix). Now: a LEVEL matter is a control error that speaks of a level, an altitude, a floor, a ceiling or a profile (« RFL NOT ABV FL275 », « Profil vertical impossible »); without a route, a track set aside for the level alone that would be valid (direction, hour at the passage of its entry) at a level it offers (`sections.level_retry`), or, with no sections (a flight outside the ocean), the engine\'s own « à ce niveau ». Not a level matter: a RAD route rule (LF2096 « COMPULSORY FOR TFC »), a track set aside by the direction, the hour or the network, a free route that failed. Measured on the real base (read only, 16 Nov): CYYZ → EDDF « out » 14.5 → 4.2 s, KLAX → LFPG « out » 13.5 → 4.2 s.')
+def k300(c):
+    import datetime
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import engine, import_books as I, plan as PL, sections as S, view, results_cache
+    # 1. the reason of the first failure: a matter of level or not
+    issue = lambda text: {'level': 'ERREUR', 'text': text}
+    cases = [
+        ({'ok': True, 'issues': [issue('Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')]}, None),
+        ({'ok': True, 'issues': [issue('RAD EG4039 (Annex 2A, ligne 299) : RFL NOT ABV FL275')]}, None),
+        ({'ok': True, 'issues': [issue('RAD LF2096 (Annex 2B, ligne 4948) : COMPULSORY FOR TFC ; contexte départ–SID–route–STAR–arrivée pris en compte.')]}, None),
+        ({'ok': False, 'error': 'Aucune route trouvée sur le réseau disponible à ce niveau. Essayer un autre FL ou une autre paire d\'AD.', 'issues': []}, None),
+        ({'ok': False, 'error': 'Aucune route trouvée sur le réseau disponible à ce niveau.', 'issues': []}, {'level_retry': False}),
+        ({'ok': False, 'error': 'Aucune route trouvée sur le réseau disponible à ce niveau.', 'issues': []}, {'level_retry': True, 'level_tracks': ['B']}),
+        ({'ok': False, 'error': 'Calcul impossible : donnée absente', 'issues': []}, None)]
+    c.eq([PL.level_matters(p, i)[0] for p, i in cases], [True, True, False, True, False, True, False],
+         'a vertical profile and a RFL rule are a matter of level; a RAD route rule (COMPULSORY FOR TFC) is not; with no route and no sections the engine\'s « à ce niveau » is; with the sections, only a track set aside for the level that would be valid elsewhere; another reason is not', what='level matters')
+    c.ok(all(PL.level_matters(p, i)[1] for p, i in cases), str([PL.level_matters(p, i)[1] for p, i in cases]), 'and each answer carries its reason, a sentence')
+    # the refused value comes from a file of the base: it is cited bounded (24 characters) in the sentence
+    try:
+        FP = __import__('route_engine.flight_profile', fromlist=['elevation'])
+        FP.elevation('EHAM' * 50, 'y' * 500)
+        long_said = ''
+    except ValueError as e:
+        long_said = str(e)
+    c.ok(long_said.startswith('Élévation de EHAMEHAM : ') and 'y' * 20 in long_said and 'y' * 24 not in long_said and len(long_said) < 120, long_said, 'the value of a file that is refused is cited in 24 characters at most, the aerodrome in 8: the sentence stays short')
+    # 2. sections.solve says if a track set aside for the LEVEL would be valid at a level it offers
+    utc = datetime.timezone.utc
+    nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}, 'EB': {'id': 'EB', 'lat': 54.0, 'lon': -15.0}, 'XB': {'id': 'XB', 'lat': 48.0, 'lon': -60.0}}
+    mb = {'track': 'B', 'direction': 'west', 'levels': [], 'levels_east': [], 'levels_west': [350, 390], 'from': '2026-11-16T11:30:00Z', 'to': '2026-11-16T19:00:00Z', 'stale': False}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0, 'ceiling': 37000, 'speed_kt': 450}
+    g['EB'] = [('XB', {'a': 'EB', 'b': 'XB', 'route': 'NATB', 'nm': engine.nm(nodes['EB'], nodes['XB']), 'nat': dict(mb), 'dir': 'F'})]
+
+    class Fake:
+        def __init__(self, hour):
+            self.nodes, self.last_search, self.sections_info, self.nat = nodes, None, None, {'meta': {'B': mb}, 'tracks': ['B']}
+            self.depart, self.nat_rejected = (datetime.datetime(2026, 11, 16, hour, 0), 'request'), frozenset()
+
+        def search(self, *a, **k):
+            return None
+    seen = []
+    for hour in (12, 3):
+        nav = Fake(hour)
+        S.solve(nav, g, 'DEP', 'ARR')
+        seen.append((nav.sections_info['level_retry'], nav.sections_info['level_tracks'], [(r['track'], r['code']) for r in nav.sections_info['rejected']]))
+    c.eq(seen, [(True, ['B'], [('B', 'level')]), (False, [], [('B', 'level')])],
+         'B offers FL350 and FL390, the flight is at FL370: set aside for the level. At 12:00 (its window is 11:30-19:00) it WOULD be valid at FL350: a lower level can change the answer; at 03:00 it would not (the hour): a lower level cannot', what='level_retry')
+    # 3. the plan: the bench of K237 with no file of tracks — the flight has no way over the ocean, and no level changes that: no retry, the reason is said, the answer is that of FL370
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        def bench(name, tracks):
+            data = os.path.join(td, name, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                         'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+                with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+            rad = os.path.join(td, name, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            fra = os.path.join(data, 'route', 'fra.json.gz')
+            with gzip.open(fra, 'wt', encoding='utf-8') as f:
+                json.dump([], f)
+            if tracks:
+                os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+                with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'tracks': tracks}, f)
+            return data, os.path.join(data, 'route', 'rad.json.gz'), fra
+
+        def run(bn, date='2026-11-10T04:30'):
+            data, rad, fra = bn
+            return PL.compute(view.to_request({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'fl': 370, 'date': date, 'alternatives': False, 'proposals': True}), data, rad, fra)
+        results_cache.ENABLED = False
+        try:
+            res = run(bench('none', []))
+            c.eq((res['primary']['ok'], res['level_retry']['tried'], res['level_retry']['matters'], res['level_retry']['levels'], res['timing']['retries'], res['alternative_attempts']), (False, False, False, [], [], []),
+                 'no track and no point of entry to the ocean: no route, and no level changes that — no retry at FL350, no stepped route, no variant: the answer leaves with its reason (red before: five searches at lower levels)', what='no retry')
+            c.ok(bool(res['level_retry']['why']) and res['sections']['depart']['basis'] == 'request', str(res['level_retry']), 'the reason of not retrying is said, and the sections are those of the requested level')
+            res = run(bench('lev', [A]))
+            c.eq((res['primary']['ok'], res['sections']['source'], [(r['track'], r['code']) for r in res['sections']['rejected']], res['sections']['level_retry'], res['level_retry'], res['timing']['retries']), (True, 'random', [('A', 'level')], True, None, []),
+                 'the track offers FL350 and FL360 only: at FL370 it is set aside for the LEVEL (said, with its level_retry), the free route is created at FL370 and answers: the sections are those of FL370, no retry, no `level_retry` of the answer (a route was found)', what='requested level')
         finally:
             results_cache.ENABLED = True

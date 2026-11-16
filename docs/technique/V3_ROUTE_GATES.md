@@ -324,6 +324,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4, defect 1, 16 November, case K299)**: an aerodrome below the sea level (EHAM -10 ft) is normal data. The floor 0 of a published leg is the ground of the lowest aerodrome of the flight (`min(0, departure, arrival)`), in the vertical profile and in the search; the elevation of an aerodrome has a bound (-1 500 to 30 000 ft), outside it the request is refused and says which aerodrome, which value, which bound. It concerned every flight that has such an aerodrome as an end (not only the ocean).
 
+**Done (L5 4, defect 2, 16 November, case K300)**: a retry at a lower level is made only when the reason of the first failure is a matter of level (`plan.level_matters`); otherwise the answer leaves at once with its reason (`level_retry`). `sections` and `timing` describe the requested level, the retries are listed apart (`timing.retries`). A request with no route: 4.2 s on the real base (14.5 s before).
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |

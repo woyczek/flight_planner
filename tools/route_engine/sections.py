@@ -120,6 +120,18 @@ def _solve(nav, g, start, end):
             rejected[tid] = ('network', f"route NAT {tid} : ni son entrée ni sa sortie ne se relie au réseau haut à ce niveau")
     info = {'candidates': [], 'tried': [], 'chosen': None, 'sections': [], 'rejected': [], 'depart': ({'time': hour.strftime('%Y-%m-%dT%H:%MZ'), 'basis': depart[1]} if hour else {'time': None, 'basis': 'none', 'text': 'heure de départ non donnée : validité horaire des routes NAT non vérifiée'} if depart else None)}
     nav.sections_info = info
+    # SOG-0354 L5 (4) défaut 2 : un autre NIVEAU peut-il changer la réponse ? Seulement si une track écartée POUR LE NIVEAU serait valable (sens, heure au passage de son entrée) à l'un des niveaux qu'elle propose ; sinon la reprise à un niveau plus bas refait la même recherche pour rien (plan.level_matters)
+    recoverable = []
+    for tid, (code, _text) in sorted(rejected.items()):
+        mt = meta.get(tid) or {}
+        offered = mt.get('levels_' + ('east' if east else 'west')) or []
+        if code != 'level' or not offered:
+            continue
+        for o in chains.get(tid, []):
+            if nat_layer.check(mt, offered[0], east, eta_of(engine.nm(a, nav.nodes[o['entry']])) if hour else None) is None:
+                recoverable.append(tid)
+                break
+    info['level_retry'], info['level_tracks'] = bool(recoverable), recoverable
 
     nav.nat_rejected = frozenset(rejected)      # la recherche entière qui suit (si rien n'abouti ici) ne prend pas non plus une track écartée pour ce vol
 
