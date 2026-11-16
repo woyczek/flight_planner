@@ -207,7 +207,7 @@ def _free(nav, g, start, end, ratio, info):
         info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why, **report}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
         return None
-    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm'], 'tried': made.get('tried'), 'stopped': made.get('stopped')}
+    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm'], 'tried': made.get('tried'), 'stopped': made.get('stopped'), 'searches': made.get('searches')}
     info['source'], info['sections'], info['cost'] = 'random', made['sections'], round(made['cost'], 1)
     info['reason'] = (info.get('reason') or '') + ' Route libre créée : ' + ' '.join(made['points']) + '.'
     return made['path']

@@ -332,6 +332,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4, second run of the matrix, 16 November, 21:12-21:23)**: after the four fixes, the whole matrix once on the real base: 144 requests, 144 with a route, none a proposal, none in error, median 2.2 s, maximum 8.2 s, none over 20 s, 17 over 5 s (EIDW « out » free-route European search; the RAD retries of LEMD and LFPG). The acceptance of 13.3 (« none returns a proposal ») is met; the target of 5 s for a request with no route is met (there is none); the 17 requests over 5 s are in `frame/aerodb/INTEGRATION.md` with where the time goes.
 
+**Done (L5 4 d1, 16 November, case K304)**: the free route makes ONE European search to all its candidate entries (`need = 2`), not one per pack of five: a goal that cannot be reached no longer makes the search go through the whole space. EIDW « out » (6 requests of the matrix, 6.2 to 8.2 s) answers in 1.4 to 2.5 s.
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |

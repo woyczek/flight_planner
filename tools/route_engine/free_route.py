@@ -13,7 +13,6 @@ from . import engine, nat_layer
 WEST_LON = -35.0       # la limite entre les deux côtés de l'océan (celle de sections et de nat_layer.hint)
 STEP_LON = 10          # un point par 10° de longitude
 LOW_FT, HIGH_FT = 28500, 60000      # le plancher de l'espace RVSM / HLA et le plafond : une route libre est une route de croisière
-CHUNK = 5              # les entrées cherchées ensemble, les plus proches du chemin d'abord
 NEED = 2               # la recherche vers un paquet d'entrées s'arrête dès que deux sont atteintes (une entrée inatteignable fait sinon parcourir tout l'espace des états)
 FREE_S = 3.0           # le temps de la section (§ 13.4 : 3 s) : les couples (entrée, sortie) sont essayés dans l'ordre de leur minorant, SANS nombre fixe (SOG-0354 L5 4, défaut 3), jusqu'à ce que le minorant du suivant dépasse le meilleur coût trouvé, ou que ce temps (ou la borne de la phase) soit épuisé
 LABEL = 'route libre, créée'
@@ -118,28 +117,30 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
         chain = [nav.nodes[i]] + [{'lat': la, 'lon': lo} for la, lo, _n in pts_of[(i, o)]] + [nav.nodes[o]]
         return sum(engine.nm(x, y) for x, y in zip(chain, chain[1:]))
     ocean = {(i, o): ocean_of(i, o) for i in entries for o in exits}
-    # les entrées par ordre de leur meilleur minorant (distances orthodromiques) : la recherche vers TOUTES les entrées parcourt tout l'espace dès qu'une n'est pas atteignable (EIDW → KJFK : 13 portes, 31 000 états, 4,8 s, contre 260 états vers l'entrée voulue) :
-    # elles sont cherchées PAR PAQUETS de CHUNK, les plus proches du chemin d'abord ; le paquet suivant seulement si le précédent n'a donné aucune route
+    # les entrées par ordre de leur meilleur minorant (distances orthodromiques) : cet ordre ne sert qu'au CHOIX DES COUPLES et à l'arrêt par la borne ; la recherche d'Europe est UNE seule, vers toutes les entrées, avec need = NEED (L5 4 d1) :
+    # elle s'arrête dès que NEED entrées sont atteintes, quelles qu'elles soient (un but inatteignable ne fait plus parcourir tout l'espace : EIDW → KJFK 7,4 → 2,1 s) ; une autre recherche, vers les entrées restantes, seulement si aucune chaîne n'a abouti
     rank = sorted(entries, key=lambda i: min(head(i) + ocean[(i, o)] + tail(o) for o in exits))
     dead, tried, any_reached, best = set(), 0, False, None
     report = report if report is not None else {}
-    report.update(tried=0, stopped='end')
+    report.update(tried=0, searches=0, stopped='end')
     began = time.perf_counter()
     pack_bound = lambda i: ratio * min(head(i) + ocean[(i, o)] + tail(o) for o in exits)      # le minorant du meilleur couple de cette entrée (la recherche d'Europe vaut au moins ratio × le grand cercle)
 
     def out_of_time():
         now = time.perf_counter()
         return now - began > FREE_S or (engine.DEADLINE is not None and now >= engine.DEADLINE)
-    for start_at in range(0, len(rank), CHUNK):
-        if best and pack_bound(rank[start_at]) >= best['cost']:      # le paquet suivant ne peut pas faire mieux
+    remaining = list(rank)      # SOG-0354 L5 (4) d1 : UNE recherche d'Europe vers TOUTES les entrées candidates (need = NEED : elle s'arrête dès que NEED sont atteintes, quelles qu'elles soient : un but inatteignable ne fait plus parcourir tout l'espace) ; l'ordre par minorant ne sert qu'au choix des couples
+    while remaining:
+        if best and pack_bound(remaining[0]) >= best['cost']:      # les entrées qui restent ne peuvent pas faire mieux
             report['stopped'] = 'bound'
             break
         if out_of_time():
             report['stopped'] = 'time'
             break
-        pack = rank[start_at:start_at + CHUNK]
-        reached = europe(g2, start, [eff(i) for i in pack])
+        reached = europe(g2, start, [eff(i) for i in remaining])
+        report['searches'] = report.get('searches', 0) + 1
         any_reached = any_reached or bool(reached)
+        pack = [i for i in remaining if eff(i) in reached]
         pairs = sorted(((reached[eff(i)]['cost'] + ratio * (lead_nm(i) + ocean[(i, o)] + tail(o)), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])
         for bound, i, o in pairs:
             if best and bound >= best['cost']:      # les couples suivants ne peuvent pas faire mieux que le meilleur trouvé
@@ -167,8 +168,13 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
             dead.add(o)      # la section d'Amérique de cette sortie n'a pas abouti (ou la borne a coupé) : elle n'est pas reprise avec une autre entrée
         if report['stopped'] == 'time':
             break
+        if best:      # UNE recherche d'Europe suffit quand une chaîne a abouti entre les entrées atteintes (une autre recherche, vers les entrées restantes, ne vient que si aucune chaîne n'a abouti)
+            break
+        if len(reached) < NEED:      # moins de NEED atteintes : la recherche a parcouru tout l'espace atteignable, les autres entrées ne sont pas atteignables
+            break
+        remaining = [i for i in remaining if eff(i) not in reached]      # les entrées qui n'ont pas été atteintes (la recherche s'est arrêtée avant) : une recherche de plus seulement si aucune chaîne n'a abouti
     if best:
-        return dict(best, tried=tried, stopped=report['stopped']), None
+        return dict(best, tried=tried, stopped=report['stopped'], searches=report['searches']), None
     if report['stopped'] == 'time':
         return None, NO_TIME
     if not any_reached:

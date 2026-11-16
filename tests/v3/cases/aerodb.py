@@ -11711,7 +11711,7 @@ def k297(c):
     S.solve(nav2, g, 'DEP', 'ARR')
     c.ok('atteignable' in nav2.sections_info['free']['reason'], str(nav2.sections_info['free']), 'the reason is said: « aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau »')
     src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
-    c.ok('dead.add(o)' in src and 'rank[start_at:start_at + CHUNK]' in src and 'pairs[:TRIES]' not in src and 'NEED' in src, 'free_route.py', 'one search per pack of entries (the nearest to the path first, stopping at two reached), the pairs only among the entries reached, an exit that failed is not taken again, no more « the first three pairs » by great-circle bound')
+    c.ok('dead.add(o)' in src and 'remaining = list(rank)' in src and 'pairs[:TRIES]' not in src and 'NEED' in src, 'free_route.py', 'ONE search to all the candidate entries (stopping at two reached; L5 4 d1, K304: it was one search per pack of five), the pairs only among the entries reached, an exit that failed is not taken again, no more « the first three pairs » by great-circle bound')
     data = Path('E:/DEFA/data')
     if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
@@ -12299,3 +12299,79 @@ def k303(c):
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+
+
+@case('K304', 'Route engine, SOG-0354 lot L5 (4) d1: the free route makes ONE European search to ALL its candidate entries (`need = 2`: it stops as soon as two are reached, whatever they are) instead of one search per pack of five — a goal that cannot be reached no longer makes the search go through the whole space —, the order by lower bound only chooses the pairs, and another search is made only when none of the entries reached gave a chain; EIDW « out » (Dublin, 6 requests of the matrix, 6.2 to 8.2 s) answers in 1.4 to 2.5 s',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) d1 (second run of the matrix, 17 requests over 5 s: EIDW → CYYZ / KBOS / KJFK / KLAX / KORD / KSFO « out », one European search of 4.7 to 6.6 s; ergonomics session: « une recherche dont tous les buts sont inatteignables ne doit plus parcourir tout l\'espace. UNE recherche d\'Europe vers TOUTES les entrées candidates (need = 2) ; l\'ordre par proximité ne sert qu\'au choix des couples »). Before: the entries were searched by packs of five, the nearest to the path first; a pack with ONE reachable entry never met `need = 2` and made the search go through all the reachable states (4.7 to 6.6 s from Dublin). Now one search to all the candidates: it stops at two reached; when fewer than two are reached the whole reachable space has been seen, the others cannot be reached. A second search (to the entries that were not reached) is made only if no chain succeeded. Measured on the real base, read only: EIDW → KJFK « out » 7.4 → 2.1 s (one search, 13 goals, 2 reached, 1 197 states, 0.16 s; the same route DOGAL … NICSO), EIDW → CYYZ 7.5 → 2.5 s, EIDW → KLAX 7.5 → 1.4 s, LFPG → KLAX 6.3 → 3.4 s, EDDF → KSFO 5.2 → 2.3 s, KBOS → EDDF « out » 5.0 → 4.1 s.')
+def k304(c):
+    import heapq
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, sections as S
+    pos = {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'H1': (60.5, -8.0), 'H2': (44.0, -70.0), 'I1': (52.0, -16.0), 'I2': (52.2, -16.0), 'I3': (51.8, -16.0), 'XA': (47.0, -60.0),
+           'EA1': (52.0, -15.0), 'EA2': (52.1, -15.0), 'EA3': (52.2, -15.0), 'EA4': (52.3, -15.0), 'EA5': (52.4, -15.0), 'EA6': (52.5, -15.0), 'EA7': (52.6, -15.0), 'EB': (60.0, -15.0), 'EC': (60.2, -14.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    g.setdefault('DEP', []).append(('H1', {'a': 'DEP', 'b': 'H1', 'route': 'UL1', 'nm': engine.nm(nodes['DEP'], nodes['H1'])}))
+    g.setdefault('H2', []).append(('ARR', {'a': 'H2', 'b': 'ARR', 'route': 'UL2', 'nm': engine.nm(nodes['H2'], nodes['ARR'])}))
+
+    class Fake:
+        def __init__(self, ends):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'ends': ends}, None, None
+            self.depart, self.nat_rejected, self._nat_high = None, frozenset(), {'H1', 'H2', 'I1', 'I2', 'I3'}
+            self.calls = []
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+            best, q, prev = {s: 0.0}, [(0.0, s)], {}
+            while q:
+                d, u = heapq.heappop(q)
+                if not goals and u == e:
+                    break
+                if d > best[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < best.get(v, 1e18):
+                        best[v] = d + ed['nm']
+                        prev[v] = (u, v, ed)
+                        heapq.heappush(q, (best[v], v))
+
+            def way(x):
+                legs, node = [], x
+                while node != s:
+                    legs.append(prev[node])
+                    node = prev[node][0]
+                return list(reversed(legs))
+            self.last_search = {'expanded': len(best), 'seconds': 0.0, 'found': True}
+            if goals:
+                self.calls.append((tuple(goals), need))
+                found = sorted((x for x in goals if x in best), key=lambda x: best[x])[:need or len(goals)]      # the search stops at `need` goals reached
+                return {x: {'path': way(x), 'cost': best[x], 'band': (36000, 36000)} for x in found}
+            if e not in best:
+                return None
+            self.last_search.update(cost=best[e], band=band)
+            return way(e)
+    # seven entries that the departure cannot reach (their only high nodes are islands) and one that it reaches: ONE search to the eight, not two (a pack of five, a pack of three)
+    ends = {f'T{i}': [f'EA{i}', 'XA'] for i in range(1, 8)}
+    ends['T8'] = ['EB', 'XA']
+    nav = Fake(ends)
+    S.solve(nav, g, 'DEP', 'ARR')
+    free = nav.sections_info['free']
+    c.eq((len(nav.calls), sorted(nav.calls[0][0]) == sorted(['EA1', 'EA2', 'EA3', 'EA4', 'EA5', 'EA6', 'EA7', 'EB']), nav.calls[0][1], free['ok'], free['entry'], free['searches']), (1, True, F.NEED, True, 'EB', 1),
+         'EIGHT candidate entries: ONE search to all of them with need = 2 (red before: one search per pack of five, two searches), one reached (fewer than two: the whole reachable space was seen, the others cannot be reached), the free route made by it', what='one search')
+    # two entries reached by the first search: the pairs are made among them, and no other search is made
+    ends2 = dict(ends, T9=['EC', 'XA'])
+    nav2 = Fake(ends2)
+    S.solve(nav2, g, 'DEP', 'ARR')
+    f2 = nav2.sections_info['free']
+    c.eq((len(nav2.calls), f2['ok'], f2['entry'] in ('EB', 'EC'), f2['searches']), (1, True, True, 1), 'two entries reached by the first search (EB, EC): the free route is made among them and no second search is made', what='two reached')
+    # none reached: the answer says so (one search, no other)
+    nav3 = Fake({'T1': ['EA1', 'XA'], 'T2': ['EA2', 'XA'], 'T3': ['EA3', 'XA'], 'T4': ['EA4', 'XA'], 'T5': ['EA5', 'XA'], 'T6': ['EA6', 'XA'], 'T7': ['EA7', 'XA']})
+    c.eq((S.solve(nav3, g, 'DEP', 'ARR'), len(nav3.calls), nav3.sections_info['free']['reason'] == F.NO_REACH), (None, 1, True), 'no entry reached: ONE search (not one per pack), the reason is « aucune entrée océanique du jour n\'est atteignable »', what='none reached')
+    src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
+    c.ok('CHUNK' not in src and 'remaining = list(rank)' in src and 'dead.add(o)' in src, 'free_route.py', 'no more packs of five: the entries still to search are « remaining », the exit that failed is not taken again')
