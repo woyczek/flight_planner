@@ -196,7 +196,9 @@ export function sourcesWhy(list) {
     });
     return tt(TX.fetchError.srcWhy, {
       src,
-      r: fetchWhy(f.code, f.status ?? null)
+      r: fetchWhy(f.sentence ? 'failed' : f.code, f.status ??
+        null
+      ) // quand le lanceur a donné sa phrase (`sentence`), la raison est dans sa carte : « a échoué », jamais « fichier illisible » (SOG-0368)
     });
   }).join(' ; ');
 }

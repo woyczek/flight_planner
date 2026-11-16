@@ -180,6 +180,8 @@ function tone(id) {
     ), // l'opération du pays (sa fiche) et la chaîne « Tout mettre à jour » comptent aussi : entre deux verbes il n'y a pas de passage par « à faire » (SOG-0324)
     t = M.toneOf(S.status, id, inCov, running);
   if (off && !running) return 'unread';
+  if (t === 'ok' && !running && depositOnly(id))
+    return 'warn'; // construit sur un dépôt dont l'édition n'est pas connue : « à jour » serait faux, la tuile dit la fiche (SOG-0368)
   if (t) return t;
   if (inCov && S.ctx.launcher && statusKnown())
     return 'unread'; // l'état de la base n'est pas encore lu (ou la lecture a échoué) : neutre, jamais une teinte de défaut (SOG-0260)
@@ -388,7 +390,7 @@ function fetchFailHtml(sid, zone) {
     }) : ''].filter(Boolean),
     page = filesOf(sid, null).steps?.page?.url,
     a = M.isHttps(page) ? link(page, tt(T.pageLink)) : '';
-  return `<div class="d-fail" data-source-failed="${esc(sid)}"><p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy([{ source: sid, code: f.error, status: f.status ?? null }]) }))}</p>${bits.length ? `<p class="f-muted" data-failed-detail>${esc(bits.join(' · '))}</p>` : ''}${a ? `<p class="f-muted" data-failed-link>${a}</p>` : ''}</div>`;
+  return `<div class="d-fail" data-source-failed="${esc(sid)}"><p class="f-warn">${esc(f.message ? tt(TX.cwb.failedBare) : tt(TX.cwb.failedLine, { r: sourcesWhy([{ source: sid, code: f.error, status: f.status ?? null }]) }))}</p>${bits.length ? `<p class="f-muted" data-failed-detail>${esc(bits.join(' · '))}</p>` : ''}${a ? `<p class="f-muted" data-failed-link>${a}</p>` : ''}</div>`;
 }
 /** Un lien https en texte sûr (nouvel onglet, sans référent) ; sans adresse en https, le libellé seul. */
 const link = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
@@ -704,6 +706,7 @@ function takingStepOf(id, z, cy, avail, split) {
 /** Le mot court de la tuile d'un pays dans son groupe : l'ÉTAPE (« un fichier à prendre », « à reconstruire », « jamais construit ») quand la teinte est « à faire », sinon le mot de la teinte. */
 function tileWord(z, t) {
   const st = t === 'warn' && Object.hasOwn(S.status?.zones || {}, z) ? S.status.zones[z].state : '';
+  if (t === 'warn' && st === 'up-to-date' && depositOnly(z)) return tt(TX.zst.editionUnknownShort);
   return st === 'stale' ? tt(waitingFileOf(z) ? TX.zst.waitingShort : needsFileOf(z) ? TX.zst.filesShort : TX.zst.staleShort) : st ===
     'never-built' ? tt(TX.zst.neverShort) :
     word(t);
@@ -865,7 +868,7 @@ function failedHtml(id) {
   const ff = S.result?.set === 'base' && S.result.verb === 'fetch' ? (S.result.out?.failed || []).filter(f => f.zone === id) : [];
   if (!ff.length) return '';
   const nasr = ff.some(f => f.source === 'faa' || f.source === 'faaclass');
-  return `<div class="d-src" data-sheet-failed>${S.cw.thread.has(id) ? '' : `<p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy(ff.map(f => ({ source: f.source, code: f.error, status: f.status ?? null }))) }))}</p>`}${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>` : ''}${nasr || pickSource(id) ? `<p class="d-zact"><button type="button" data-act="zone-upload" data-zone="${esc(id)}" data-source=""${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${uploadOff() ? sheetGrey(uploadWhy()) : ''}</p>` : ''}</div>`;
+  return `<div class="d-src" data-sheet-failed>${S.cw.thread.has(id) ? '' : `<p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy(ff.map(f => ({ source: f.source, code: f.error, status: f.status ?? null, sentence: !!f.message }))) }))}</p>`}${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>` : ''}${nasr || pickSource(id) ? `<p class="d-zact"><button type="button" data-act="zone-upload" data-zone="${esc(id)}" data-source=""${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${uploadOff() ? sheetGrey(uploadWhy()) : ''}</p>` : ''}</div>`;
 }
 /** Le nom court d'une source (celui du catalogue, à défaut celui de la liste du cycle ou son identifiant), sans la parenthèse de ses formats. */
 const srcName = (id, cy) => String(catSource(id)?.n?.[li()] || cy.data?.items?.[id]?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
@@ -914,6 +917,31 @@ function offCopyHtml(id) {
   const b = M.baseOf(S.d?.pub?.base, [id]);
   return b.published && b.at ? `<p class="f-muted" data-off-copy>${esc(tt(TX.cw.offPublished, { d: dateOf(b.at) }))}</p>` : '';
 }
+/** Les sources d'un pays pour sa fiche : leurs identifiants, chacune avec sa ligne de la liste du cycle (si lue) et son indisponibilité, et celles qui sont disponibles chez leur éditeur (les autres sont dites à part). */
+function viewOf(id, cy, off) {
+  const ids = off ? offSources(id, cy) : M.sourcesOfZone(id, S.d.cat, S.status, cy.state === 'ready' ? cy.data : null),
+    split = ids.map(s => {
+      const item = cy.state === 'ready' ? cy.zv?.sources[s] || cy.data.items[s] || null : null;
+      return {
+        id: s,
+        item,
+        un: unavailableOf(s, item)
+      };
+    });
+  return {
+    ids,
+    split,
+    avail: split.filter(x => !x.un).map(x => x.id)
+  };
+}
+/** Le pays ouvert est construit sur un dépôt à la main dont l'édition n'est pas connue (SOG-0368) : la tuile et la carte disent ce que dit sa fiche, jamais « à jour ». Seul le pays dont la fiche est lue le sait (la liste du cycle est lue pays par pays). */
+function depositOnly(id) {
+  const cy = cycleOf(id),
+    z = Object.hasOwn(S.status?.zones || {}, id) ? S.status.zones[id] : null;
+  if (cy.state !== 'ready' || !S.d.cov.ids.includes(id) || offCountry(id) || z?.state !== 'up-to-date') return false;
+  const v = viewOf(id, cy, false);
+  return takingStepOf(id, z, cy, v.avail, v.split)?.k === 'edition-unknown';
+}
 /** La fiche d'un pays : son nom et son état ; les FAITS du pays (construit, publié : une seule fois, jamais sous chaque source) ; « Mettre à jour ce pays » ; la carte de l'opération en cours quand le geste a été refusé et la marche ; ses procédures ; ses sources avec leur « téléchargé »,
  *  l'inventaire de leurs fichiers et leurs gestes de fichier. Un « Fermer » en croix en large, « ← Retour » au téléphone (plein écran) ; '' sans pays ouvert. */
 function sheetHtml() {
@@ -927,16 +955,11 @@ function sheetHtml() {
     name = nameOf(id),
     procs = S.cw.proc?.zones?.[id],
     off = inCov && offCountry(id), // une zone hors pays (Atlantique Nord) : fiche courte (SOG-0370)
-    ids = off ? offSources(id, cy) : M.sourcesOfZone(id, S.d.cat, S.status, cy.state === 'ready' ? cy.data : null),
-    split = ids.map(s => {
-      const item = cy.state === 'ready' ? cy.zv?.sources[s] || cy.data.items[s] || null : null;
-      return {
-        id: s,
-        item,
-        un: unavailableOf(s, item)
-      };
-    }),
-    avail = split.filter(x => !x.un).map(x => x.id), // les sources indisponibles chez leur éditeur sont dites à part
+    {
+      ids,
+      split,
+      avail
+    } = viewOf(id, cy, off),
     gone = split.filter(x => x.un),
     noReader = (cy.zv?.addWillAsk.noReader || []).map(x => (catSource(x)?.n?.[li()] || x).replace(/\s*\(.*\)\s*$/, '')),
     hands = avail.filter(s => regimeOf(s, split.find(x => x.id === s)?.item) === 'hand'),

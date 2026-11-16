@@ -111,6 +111,8 @@ export function mapClickGuard(e) {
 const DRAG = 5; // pixels de la fenêtre au-delà desquels un appui devient un glisser
 /** Un appui sur la carte : la souris peut glisser, un doigt fait défiler la page, deux doigts déplacent et pincent ; ne capture le pointeur qu'au premier mouvement (un simple toucher garde sa cible et ouvre la fiche). */
 export function mapDown(e) {
+  if (!e.target?.closest?.('[data-wmap]'))
+    return; // hors de la carte la page ne capte rien : ni geste, ni rectangle, ni blocage de la sélection du texte (SOG-0378) ; mapOf retombe sur la première carte, c'est pour les boutons, pas pour un appui
   const m = mapOf(e.target);
   if (!m || !S.cw || (e.pointerType === 'mouse' && e.button !== 0)) return;
   if (rectMouseDown(e, m.svg)) return; // Maj + glisser : le rectangle de sélection (select.js), pas le déplacement de la carte
@@ -118,6 +120,8 @@ export function mapDown(e) {
     pts: new Map(),
     moved: false
   };
+  if (e.pointerType === 'mouse') g.pts
+    .clear(); // une souris n'a qu'un appui : celui d'avant, dont le relâchement n'a pas été vu, ne reste pas
   g.pts.set(e.pointerId, {
     x: e.clientX,
     y: e.clientY,
@@ -145,6 +149,12 @@ export function mapMove(e) {
   if (rectMouseMove(e)) return;
   const g = S?.cw?.mapG;
   if (!g || !g.pts.has(e.pointerId) || !g.svg?.isConnected) return;
+  // la souris n'est plus appuyée (relâchée hors de la page) : le geste finit, ce mouvement n'est pas un glisser
+  if (e.pointerType === 'mouse' && e.buttons % 2 === 0) {
+    g.pts.delete(e.pointerId);
+    if (!g.pts.size) S.cw.mapG = null;
+    return;
+  }
   const p = g.pts.get(e.pointerId),
     m = mapOf(g.svg);
   if (!m) return;

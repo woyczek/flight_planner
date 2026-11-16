@@ -9731,7 +9731,10 @@ def l143(c):
     c.wait(300)
     card = '[data-sheet=is] [data-sheet-source=avians]'
     head = norm(c.text(f'{card} [data-source-failed] .f-warn'))
-    c.ok(norm(CWB('failedLine').split('{r}')[0]) in head, head, 'the card says that the taking failed, with the reason of the launcher')
+    c.eq(head, norm(CWB('failedBare')), 'the title stops at « Le téléchargement de cette source a échoué »: the sentence of the launcher (below) says the reason, « fichier illisible » is not written above it', what='title')
+    FE = lambda k: _trow(k, lang, after='  fetchError: {')
+    op = norm(c.text('[data-sheet=is] [data-thread-step=download]'))
+    c.ok('Avians' in op and norm(FE('failed')) in op and norm(FE('parse')) not in op, op, 'the line « Dernière opération » says « … : a échoué » (the reason is in the card below), never « fichier illisible » when the launcher gave its sentence')
     detail = norm(c.text(f'{card} [data-failed-detail]'))
     pre, post = CW('pagesRead').split('{n}')[1].split('{m}')[0], CW('pagesRead').split('{m}')[1]
     c.ok('29' in detail and '31' in detail and norm(pre) in detail, detail, 'the pages read are said: « 29 pages lues sur 31 »')
@@ -9811,7 +9814,7 @@ def l144(c):
     c.check_errors()
 
 
-def _l145_open(c, zstate, deposit=False, failed=False, dl_state='done', built='2026-10-29T10:00:00Z'):
+def _l145_open(c, zstate, deposit=False, failed=False, dl_state='done', built='2026-10-29T10:00:00Z', message=True):
     """The sheet of Iceland (Avians) in one of the REAL cases of SOG-0368: the state the launcher gives the zone, the last taking (failed or not), a deposit by hand or not."""
     def world(w):
         w['zs']['is'] = {**zstate, 'builtAt': built, 'publish': {'state': 'published', 'at': '2026-10-30T12:00:00Z'}} if built else zstate
@@ -9828,7 +9831,7 @@ def _l145_open(c, zstate, deposit=False, failed=False, dl_state='done', built='2
             return res
         return go
     entry = _l103_entry({'ok': False, 'fetched': [], 'unchanged': [], 'manual': [],
-                         'failed': [{'zone': 'is', 'source': 'avians', 'error': 'parse', 'message': 'https://eaip.avians.is/x/menu.html : 429', 'pages': {'read': 29, 'of': 31}, 'stopped': 'HTTP 429'}]}, 120, zones=('is',))
+                         'failed': [{'zone': 'is', 'source': 'avians', 'error': 'parse', **({'message': 'https://eaip.avians.is/x/menu.html : 429'} if message else {}), 'pages': {'read': 29, 'of': 31}, 'stopped': 'HTTP 429'}]}, 120, zones=('is',))
     last = {'ok': True, 'results': ({'base/fetch': entry} if failed else {})}
     st = _l102_open(c, wrap=wrap, cover_more=('is',), extra_verbs=('base/last',), last_results=lambda a: last, world_tweak=world)
     c.tap('[data-group-id=europe-north] [data-act=grp-toggle]')
@@ -9882,6 +9885,11 @@ def l146(c):
     step = norm(Z('editionUnknown'))
     c.eq([sh('[data-sheet-badge]').lstrip('✓!? '), stc, c.attr('[data-sheet=is] [data-sheet-badge]', 'data-tone')], [step, step, 'warn'], 'the badge and the STATE cell say « Édition non connue », in amber — not « À jour »', what='one step')
     c.eq(c.attr('[data-sheet=is] [data-sheet-now]', 'data-now'), 'edition-unknown', 'and the line too (no « Rien à faire : ce pays est à jour »)', what='line')
+    c.js("document.querySelector('[data-group-id=europe-north]:not([data-open=true]) [data-act=grp-toggle]')?.click()")
+    c.wait(300)
+    if c.count('[data-group-body] [data-zone=is]'):
+        c.eq([c.attr('[data-group-body] [data-zone=is]', 'data-tone'), norm(_trow('editionUnknownShort', lang, after='  zst: {')) in norm(c.text('[data-group-body] [data-zone=is]'))], ['warn', True], 'the tile of the country in its group says what the sheet says (amber « édition non connue »), never « à jour »', what='tile')
+        c.shot(f'L146_tile_{c.width}_{lang}.png')
     b = c.js("(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=is] [data-sheet-facts] [data-tick=build]'))")
     suffix = CW('builtOnDeposit').split('{d}')[1]
     c.ok(b and b[0] == 'yes' and norm(suffix) in norm(b[1]) and '16' in b[1], b, 'BUILT: ✓ the date · on a deposit of 16/11, edition not known')
@@ -9938,4 +9946,68 @@ def l148(c):
     c.ok(norm(_trow('staleShort', lang, after='  zst: {')) in norm(c.text('[data-group-body] [data-zone=fr]')), c.text('[data-group-body] [data-zone=fr]'), 'and the tile of France in its group names the step in short: « à reconstruire »')
     c.js("document.querySelector('[data-sheet=fr] [data-sheet-source=dircam]').scrollIntoView({ block: 'start' })")
     c.shot(f'L148_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+_L149_PTR = """([type, id, kind, where, extra]) => { const m = document.querySelector('[data-wmap]');
+  const t = where === 'map' ? m : [...document.querySelectorAll('h2, h3, p, summary, label')].find(e => !e.closest('[data-wmap], .d-mapframe') && e.getBoundingClientRect().width > 40), r = t.getBoundingClientRect();
+  const ev = new PointerEvent(type, Object.assign({ pointerId: id, pointerType: kind, isPrimary: id === 1, button: type === 'pointermove' ? -1 : 0, buttons: type === 'pointerup' ? 0 : 1, clientX: r.left + 10 + (extra.dx || 0), clientY: r.top + 6 + (extra.dy || 0), bubbles: true, cancelable: true }, extra.init || {}));
+  return !t.dispatchEvent(ev) }"""
+
+
+@case('L149', 'Données: a click is never a drag, and outside the map the page captures nothing (SOG-0378, the user: « un clic est pris pour un glisser, même hors de la carte — il ne peut ni cliquer ni sélectionner ») — a press and a drag on the text move no map and prevent nothing (mouse and finger), Shift + press outside the map draws no rectangle, a mouse that is no longer pressed does not drag, a click without movement is never swallowed',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=True, night=False,
+      rule='SOG-0378: `mapOf` falls back to the FIRST map when the target is not in one, so every press anywhere in the page started a gesture on the map; a mouse released out of the page left the gesture alive and the next movement dragged the map with no button pressed')
+def l149(c):
+    st, _x4 = _l89_open(c, {'sia_seen': True})
+    vb = lambda: c.js("document.querySelector('[data-wmap]').getAttribute('viewBox')")
+    ptr = lambda *a, **k: c.js(_L149_PTR, [a[0], a[1], a[2], a[3], k])
+    v0 = vb()
+    # ---- 1. a mouse press and drag on the TEXT outside the map: the map does not move, nothing is prevented (the text stays selectable)
+    ptr('pointerdown', 1, 'mouse', 'out')
+    prevented = [ptr('pointermove', 1, 'mouse', 'out', dx=i * 8, dy=i * 3) for i in range(1, 9)]
+    ptr('pointerup', 1, 'mouse', 'out', dx=70, dy=24)
+    c.eq([vb() == v0, any(prevented)], [True, False], 'a drag of the mouse over the text moves no map and prevents no movement', what='mouse outside')
+    # ---- 2. Shift + press outside the map: no rectangle, the press is not prevented (a selection extends with Shift)
+    held = ptr('pointerdown', 1, 'mouse', 'out', init={'shiftKey': True})
+    ptr('pointermove', 1, 'mouse', 'out', dx=90, dy=30, init={'shiftKey': True})
+    ptr('pointerup', 1, 'mouse', 'out', dx=90, dy=30, init={'shiftKey': True})
+    c.eq([held, c.js("[...document.querySelectorAll('[data-rect]')].some(e => !e.hidden)")], [False, False], 'Shift + press on the text: not prevented, no selection rectangle', what='shift outside')
+    # ---- 3. two fingers on the text (a pinch of the page, a selection): the map stays
+    ptr('pointerdown', 1, 'touch', 'out')
+    ptr('pointerdown', 2, 'touch', 'out', dx=40)
+    for i in range(1, 6):
+        ptr('pointermove', 1, 'touch', 'out', dx=-i * 6)
+        ptr('pointermove', 2, 'touch', 'out', dx=40 + i * 6)
+    ptr('pointerup', 1, 'touch', 'out')
+    ptr('pointerup', 2, 'touch', 'out')
+    c.eq(vb(), v0, 'two fingers on the text pinch no map', what='fingers outside')
+    # ---- 4. a mouse that left the page while pressed (the release was never seen): its next movements, no button pressed, do not drag the map
+    ptr('pointerdown', 1, 'mouse', 'map')
+    ptr('pointermove', 1, 'mouse', 'map', dx=1, dy=1)
+    for i in range(1, 9):
+        c.js("([i]) => { const m = document.querySelector('[data-wmap]'), r = m.getBoundingClientRect(); m.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, pointerType: 'mouse', isPrimary: true, button: -1, buttons: 0, clientX: r.left + 10 + i * 14, clientY: r.top + 6 + i * 5, bubbles: true, cancelable: true })) }", [i])
+    c.eq(vb(), v0, 'a mouse no longer pressed does not drag the map', what='no button')
+    ptr('pointerup', 1, 'mouse', 'map')
+    # ---- 5. a click without a movement is never a drag: the click that follows opens the sheet at once (nothing swallowed)
+    gb = '[data-wmap] path[data-zone=gb]'
+    c.js("([sel]) => { const t = document.querySelector(sel), r = t.getBoundingClientRect(), o = { pointerId: 1, pointerType: 'mouse', isPrimary: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true };"
+         " t.dispatchEvent(new PointerEvent('pointerdown', Object.assign({ button: 0, buttons: 1 }, o))); t.dispatchEvent(new PointerEvent('pointerup', Object.assign({ button: 0, buttons: 0 }, o))); t.dispatchEvent(new MouseEvent('click', o)) }", [gb])
+    c.until("!!document.querySelector('[data-sheet=gb]')", timeout=4000, what='the sheet of the country opens after a plain click')
+    c.eq(vb(), v0, 'and the map did not move', what='click no move')
+    c.shot(f'L149_{c.width}.png')
+    c.check_errors()
+
+
+@case('L150', 'Données: a failed taking WITHOUT a sentence of the launcher keeps its reason in the title (« … a échoué : fichier illisible ») — only a launcher that gives `message` replaces it (SOG-0368)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=False, night=False,
+      rule='SOG-0368 (the ergonomist, 16 Nov 14 h 44): the sentence of the launcher says the reason, « fichier illisible » is written only without it')
+def l150(c):
+    lang = c.lang
+    CWB = lambda k: _trow(k, lang, after='  cwb: {')
+    _l145_open(c, _zst('never-built', {'code': 'never-built'}), failed=True, dl_state='missing', built='', message=False)
+    head = norm(c.text('[data-sheet=is] [data-sheet-source=avians] [data-source-failed] .f-warn'))
+    c.ok(norm(CWB('failedLine').split('{r}')[0]) in head and len(head) > len(norm(CWB('failedBare'))) + 2, head, 'without a sentence of the launcher the title keeps the reason of the code (« fichier illisible »)')
+    op = norm(c.text('[data-sheet=is] [data-thread-step=download]'))
+    c.ok(norm(_trow('parse', lang, after='  fetchError: {')) in op, op, 'and so does the line « Dernière opération »')
     c.check_errors()

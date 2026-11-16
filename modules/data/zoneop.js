@@ -117,7 +117,8 @@ function whyOf(key, v) {
   if (key === 'download') return v.failed?.length ? sourcesWhy(v.failed.map(f => ({
     source: f.source,
     code: f.error,
-    status: f.status ?? null
+    status: f.status ?? null,
+    sentence: !!f.message
   }))) : tt(TX.fetchError.unknown);
   if (key === 'build') return M.own(TX.zoneError, v.error) ? tt(M.own(TX.zoneError, v.error)) : tt(TX.zoneError.unknown);
   const names = [...new Set((v.missing || []).map(m => String(m.expected || '').slice(0, 120)).filter(Boolean))].slice(0, 4).join(', ');

@@ -341,6 +341,7 @@ export const TX = {
     neverShort: ['jamais construit', 'never built', 'nie erstellt', 'nunca construido'],
     fetchFailed: ['La prise a échoué', 'The taking failed', 'Die Übernahme ist fehlgeschlagen', 'La toma falló'],
     editionUnknown: ['Édition non connue', 'Edition not known', 'Ausgabe unbekannt', 'Edición desconocida'],
+    editionUnknownShort: ['édition non connue', 'edition not known', 'Ausgabe unbekannt', 'edición desconocida'],
     files: ['Des fichiers à prendre', 'Files to take', 'Dateien zu übernehmen', 'Archivos por tomar'],
     filesShort: ['fichiers à prendre', 'files to take', 'Dateien zu übernehmen', 'archivos por tomar'],
     waitingShort: ['un fichier à prendre', 'a file to take', 'Datei zu übernehmen', 'archivo por tomar'],
@@ -1174,6 +1175,7 @@ export const TX = {
       '{src}: descarga rechazada ({s})'
     ],
     srcWhy: ['{src} : {r}', '{src}: {r}', '{src}: {r}', '{src}: {r}'],
+    failed: ['a échoué', 'failed', 'fehlgeschlagen', 'falló'],
     parse: ['fichier illisible', 'unreadable file', 'Datei nicht lesbar', 'archivo ilegible'],
     personal: ['licence non déclarée', 'licence not declared', 'Lizenz nicht erklärt', 'licencia no declarada'],
     manual: ['source manuelle', 'manual source', 'manuelle Quelle', 'fuente manual'],
@@ -2237,6 +2239,9 @@ export const TX = {
     // les gestes d'un fichier pris à la main
     seenLine: ['Un fichier de cette source attend dans Téléchargements.', 'A file of this source waits in Downloads.',
       'Eine Datei dieser Quelle wartet in Downloads.', 'Un archivo de esta fuente espera en Descargas.'
+    ],
+    failedBare: ['Le téléchargement de cette source a échoué', 'The download of this source failed',
+      'Das Herunterladen dieser Quelle ist fehlgeschlagen', 'La descarga de esta fuente falló'
     ],
     failedLine: ['Le téléchargement de cette source a échoué : {r}', 'The download of this source failed: {r}',
       'Das Herunterladen dieser Quelle ist fehlgeschlagen: {r}', 'La descarga de esta fuente falló: {r}'
