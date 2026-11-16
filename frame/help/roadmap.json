@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e6feff0",
-  "fiches": 381,
+  "organisation": "8850843",
+  "fiches": 382,
   "untranslated": 0,
   "priorities": 374
  },
@@ -1609,6 +1609,27 @@
    ]
   },
   {
+   "id": "pilote-carte-meteo-le-long-du-vol",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; météo le long du vol",
+    "en": "Carte ; météo le long du vol",
+    "de": "Carte ; météo le long du vol",
+    "es": "Carte ; météo le long du vol"
+   },
+   "items": [
+    {
+     "id": "SOG-0383",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : les barbules de vent cachent le tracé de la route — les poser en quinconce de part et d'autre, et moins nombreuses",
+     "en": "Map: the wind barbs hide the route line — stagger them on either side, and fewer of them",
+     "de": "Karte: die Windfiedern verdecken die Streckenlinie — versetzt beidseitig anordnen, und weniger davon",
+     "es": "Mapa: las barbas de viento tapan el trazado de la ruta — colocarlas al tresbolillo a ambos lados, y menos"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-profil",
    "app": "pilote",
    "label": {
@@ -3128,12 +3149,13 @@
     {
      "id": "SOG-0368",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Islande : la prise d'Avians échoue (« fichier illisible ») et rien ne permet de déposer à la main ; les routes de l'ENR 3.2 sont à une page par route",
      "en": "Iceland: taking Avians fails (« unreadable file ») and nothing allows a manual drop; ENR 3.2 routes come one page per route",
      "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
      "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta",
-     "rank": 345
+     "rank": 345,
+     "test": true
     }
    ]
   },
