@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "91723d7",
+  "organisation": "80f1c00",
   "fiches": 380,
   "untranslated": 0,
   "priorities": 310
@@ -383,8 +383,7 @@
      "fr": "Recette : un troisième verdict « Accepter avec réserves (pas de retest) » ; refuser implique un retest",
      "en": "Acceptance: a third verdict « Accept with reservations (no retest) »; refusing means a retest",
      "de": "Abnahme: ein drittes Urteil « Mit Vorbehalt annehmen (kein Nachtest) »; Ablehnen heißt Nachtest",
-     "es": "Recepción: un tercer veredicto « Aceptar con reservas (sin nueva prueba) »; rechazar implica una nueva prueba",
-     "test": true
+     "es": "Recepción: un tercer veredicto « Aceptar con reservas (sin nueva prueba) »; rechazar implica una nueva prueba"
     },
     {
      "id": "SOG-0351",
@@ -719,14 +718,13 @@
     {
      "id": "SOG-0161",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Moteur de route : l'améliorer, pas seulement le recopier — la plus longue route valide IFPS en LOW, HIGH ou FRA, par itérations avec points intermédiaires (ESSB → LEMO)",
      "en": "Route engine: improve it, not only copy it — the longest IFPS-valid route in LOW, HIGH or FRA, iterating with intermediate points (ESSB → LEMO)",
      "de": "Routen-Engine: verbessern, nicht nur kopieren — die längste IFPS-gültige Route in LOW, HIGH oder FRA, iterativ mit Zwischenpunkten (ESSB → LEMO)",
      "es": "Motor de rutas: mejorarlo, no solo copiarlo: la ruta válida IFPS más larga en LOW, HIGH o FRA, iterando con puntos intermedios (ESSB → LEMO)",
      "milestone": "6.0.0-alpha.6",
-     "rank": 120,
-     "test": true
+     "rank": 120
     },
     {
      "id": "SOG-0317",
@@ -940,8 +938,7 @@
      "fr": "LFLC, ILS 26 : le lien « Carte » ouvre le tableau des données, pas la carte de l'ILS",
      "en": "LFLC, ILS 26: the « Chart » link opens the data table, not the ILS chart",
      "de": "LFLC, ILS 26: der Link « Karte » öffnet die Datentabelle, nicht die ILS-Karte",
-     "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS",
-     "test": true
+     "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS"
     }
    ]
   },
@@ -981,8 +978,7 @@
      "fr": "Route par les NAT prise dans Carburant : les points en coordonnées perdent leur fin et deviennent « points inconnus »",
      "en": "NAT route taken in Fuel: coordinate points lose their end and become « unknown points »",
      "de": "NAT-Route in Kraftstoff übernommen: Koordinatenpunkte verlieren ihr Ende und werden « unbekannte Punkte »",
-     "es": "Ruta por los NAT tomada en Combustible: los puntos en coordenadas pierden su final y pasan a « puntos desconocidos »",
-     "test": true
+     "es": "Ruta por los NAT tomada en Combustible: los puntos en coordenadas pierden su final y pasan a « puntos desconocidos »"
     }
    ]
   },
@@ -999,7 +995,7 @@
     {
      "id": "SOG-0372",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Routes NAT à l'étape Route : la lecture du jour réussit sans que l'écran le montre ; la proposition calculée sur les routes périmées reste ; la route prise donne des « points inconnus »",
      "en": "NAT tracks at the Route step: the day's read succeeds without the screen showing it; the proposal computed on outdated tracks stays; the route taken gives « unknown points »",
      "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
@@ -1447,8 +1443,7 @@
      "fr": "Itinéraires proposés, sur la Carte : toucher une ligne de la liste ne la choisit pas (seul le tracé répond)",
      "en": "Proposed routes, on the Map: tapping a line of the list does not choose it (only the drawn route answers)",
      "de": "Vorgeschlagene Routen, auf der Karte: das Antippen einer Listenzeile wählt sie nicht (nur die gezeichnete Route reagiert)",
-     "es": "Rutas propuestas, en el Mapa: tocar una línea de la lista no la elige (solo responde el trazado)",
-     "test": true
+     "es": "Rutas propuestas, en el Mapa: tocar una línea de la lista no la elige (solo responde el trazado)"
     },
     {
      "id": "SOG-0350",
@@ -2758,8 +2753,7 @@
      "en": "Duplicate missions: old numbers left in the V2 index",
      "de": "Doppelte Missionen: alte Nummern im V2-Index",
      "es": "Misiones duplicadas: números antiguos en el índice de la V2",
-     "rank": 155,
-     "test": true
+     "rank": 155
     }
    ]
   },
@@ -2826,8 +2820,7 @@
      "de": "Missionen sind gesammelt in data/ eingetroffen: Das Register folgt den Dateien nicht",
      "es": "Misiones llegadas en masa a data/: el registro no sigue los archivos",
      "milestone": "6.0.0-alpha.4",
-     "rank": 159,
-     "test": true
+     "rank": 159
     },
     {
      "id": "SOG-0084",
@@ -2896,8 +2889,7 @@
      "fr": "Missions au téléphone : le titre est écrasé dans une colonne étroite, un mot par ligne",
      "en": "Missions on the phone: the title is squeezed into a narrow column, one word per line",
      "de": "Missionen am Telefon: der Titel ist in eine schmale Spalte gequetscht, ein Wort pro Zeile",
-     "es": "Misiones en el teléfono: el título queda aplastado en una columna estrecha, una palabra por línea",
-     "test": true
+     "es": "Misiones en el teléfono: el título queda aplastado en una columna estrecha, una palabra por línea"
     }
    ]
   },
@@ -3040,8 +3032,7 @@
      "de": "Empfangsordner: 5 412 Kopien von Dateien anderer Missionen (Stapel vom 5.11.)",
      "es": "Carpetas de recibidos: 5 412 copias de ficheros de otras misiones (lote del 5/11)",
      "milestone": "6.0.0-alpha.5",
-     "rank": 40,
-     "test": true
+     "rank": 40
     }
    ]
   },
@@ -3426,8 +3417,7 @@
      "en": "Zone gb (NATS) still “ko” after dropping the files into Downloads",
      "de": "Zone gb (NATS) weiterhin „ko“ nach Ablage der Dateien in Downloads",
      "es": "Zona gb (NATS) sigue «ko» tras dejar los archivos en Descargas",
-     "rank": 190,
-     "test": true
+     "rank": 190
     },
     {
      "id": "SOG-0144",
@@ -3448,8 +3438,7 @@
      "en": "NATS: the pickup says “nothing to take” and talks about openAIP while the NATS zips are in Downloads",
      "de": "NATS: die Übernahme sagt „nichts zu nehmen“ und spricht von openAIP, obwohl die NATS-Zips in Downloads liegen",
      "es": "NATS: la recogida dice «nada que tomar» y habla de openAIP mientras los zips NATS están en Descargas",
-     "rank": 192,
-     "test": true
+     "rank": 192
     },
     {
      "id": "SOG-0108",
@@ -3544,8 +3533,7 @@
      "de": "Missionen (nach der Stabilisierung): gemeinsame Missionen des Depots für alle lesbar, eine Mission erzeugt den Flug (Abflug, Treffpunkt, Ankunft) und seine Karte, Nutzung „Besatzungsmitglied“ des Piloten, CPCO als dritte Anwendung nach dem Neubau",
      "es": "Misiones (tras la estabilización): misiones comunes del depósito leídas por todos, una misión genera el vuelo (salida, punto de encuentro, llegada) y su mapa, uso «tripulante» del Piloto, CPCO como tercera aplicación cuando se rehaga",
      "milestone": "6.0.0-alpha.6",
-     "rank": 127,
-     "test": true
+     "rank": 127
     },
     {
      "id": "SOG-0115",
@@ -3735,8 +3723,7 @@
      "fr": "Le bouton « Signaler » de la barre du haut est un interrupteur : un second appui ramène à la page d'où l'on vient",
      "en": "The « Report » button in the top bar is a toggle: a second press returns to the page you came from",
      "de": "Die Schaltfläche « Melden » in der oberen Leiste ist ein Umschalter: ein zweiter Druck führt zur Ausgangsseite zurück",
-     "es": "El botón « Señalar » de la barra superior es un conmutador: una segunda pulsación vuelve a la página de origen",
-     "test": true
+     "es": "El botón « Señalar » de la barra superior es un conmutador: una segunda pulsación vuelve a la página de origen"
     }
    ]
   },
@@ -3832,8 +3819,7 @@
      "fr": "Signaler un bug depuis le téléphone, en un geste (pour ses essais du week-end)",
      "en": "Report a bug from the phone, in one gesture (for his weekend tests)",
      "de": "Einen Fehler vom Telefon aus melden, mit einer Geste (für seine Tests am Wochenende)",
-     "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)",
-     "test": true
+     "es": "Señalar un error desde el teléfono, con un gesto (para sus pruebas del fin de semana)"
     }
    ]
   },
@@ -3865,8 +3851,7 @@
      "fr": "Design Metro : les icônes de la barre ne sont pas centrées (les actives, peut-être les autres)",
      "en": "Metro design: the bar icons are not centred (the active ones, maybe the others)",
      "de": "Design Metro: die Symbole der Leiste sind nicht zentriert (die aktiven, vielleicht auch die anderen)",
-     "es": "Diseño Metro: los iconos de la barra no están centrados (los activos, quizá los demás)",
-     "test": true
+     "es": "Diseño Metro: los iconos de la barra no están centrados (los activos, quizá los demás)"
     }
    ]
   },
@@ -3920,8 +3905,7 @@
      "fr": "BLOQUANT : GitLab répond 429 au téléphone et l'appli ne dit rien ; réduire les requêtes au minimum",
      "en": "BLOCKING: GitLab answers 429 on the phone and the app says nothing; cut the requests to the minimum",
      "de": "BLOCKIEREND: GitLab antwortet am Telefon mit 429 und die App sagt nichts; Anfragen auf das Minimum senken",
-     "es": "BLOQUEANTE: GitLab responde 429 en el teléfono y la aplicación no dice nada; reducir las peticiones al mínimo",
-     "test": true
+     "es": "BLOQUEANTE: GitLab responde 429 en el teléfono y la aplicación no dice nada; reducir las peticiones al mínimo"
     }
    ]
   },
@@ -4116,8 +4100,7 @@
      "de": "Anflugverfahren ohne Kurslinie: trotzdem wählbar, mit Frequenz der Funkhilfe und Schaltfläche « Karte »",
      "es": "Aproximaciones conocidas sin trazado: elegirlas igualmente, con la frecuencia de la ayuda y el botón « Carta »",
      "milestone": "6.0.0-alpha.5",
-     "rank": 39,
-     "test": true
+     "rank": 39
     }
    ]
   },
@@ -4138,8 +4121,7 @@
      "fr": "Routes NAT : les prendre depuis l'étape Route dès qu'un vol traverse l'Atlantique, et un rappel quotidien (pas mensuel)",
      "en": "NAT tracks: fetch them from the Route step as soon as a flight crosses the Atlantic, and a daily (not monthly) reminder",
      "de": "NAT-Routen: im Schritt Route holen, sobald ein Flug den Atlantik quert, und eine tägliche (nicht monatliche) Erinnerung",
-     "es": "Rutas NAT: tomarlas desde el paso Ruta en cuanto un vuelo cruza el Atlántico, y un recordatorio diario (no mensual)",
-     "test": true
+     "es": "Rutas NAT: tomarlas desde el paso Ruta en cuanto un vuelo cruza el Atlántico, y un recordatorio diario (no mensual)"
     }
    ]
   },
@@ -4594,8 +4576,7 @@
      "en": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
      "de": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
      "es": "BLOCKING: a file taken by hand is neither recognised nor selectable (Portugal's AIP: an ISO in a zip), and the screen does not say why",
-     "rank": 261,
-     "test": true
+     "rank": 261
     },
     {
      "id": "SOG-0258",
@@ -4664,8 +4645,7 @@
      "fr": "Données : la fiche du Portugal se contredit — « rien à déposer » et « ce pays attend un fichier »",
      "en": "Data: the Portugal sheet contradicts itself — « nothing to drop » and « this country waits for a file »",
      "de": "Daten: das Blatt Portugal widerspricht sich — « nichts abzulegen » und « dieses Land wartet auf eine Datei »",
-     "es": "Datos: la ficha de Portugal se contradice — « nada que depositar » y « este país espera un fichero »",
-     "test": true
+     "es": "Datos: la ficha de Portugal se contradice — « nada que depositar » y « este país espera un fichero »"
     },
     {
      "id": "SOG-0340",
@@ -4674,8 +4654,7 @@
      "fr": "Maintenance › Données : la molette agit sur la carte depuis toute la page",
      "en": "Maintenance › Data: the mouse wheel acts on the map from the whole page",
      "de": "Wartung › Daten: das Mausrad wirkt von der ganzen Seite aus auf die Karte",
-     "es": "Mantenimiento › Datos: la rueda del ratón actúa sobre el mapa desde toda la página",
-     "test": true
+     "es": "Mantenimiento › Datos: la rueda del ratón actúa sobre el mapa desde toda la página"
     }
    ]
   },
@@ -4786,8 +4765,7 @@
      "en": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
      "de": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
      "es": "BLOCKING: “another operation is running” — which one is not said, it can neither be seen nor stopped, a leftover lock cannot be removed",
-     "rank": 270,
-     "test": true
+     "rank": 270
     }
    ]
   },
@@ -4946,8 +4924,7 @@
      "fr": "Lanceur : une écriture refusée par Windows (fichier occupé) fait tomber la requête ; relais METAR en échec",
      "en": "Launcher: a write refused by Windows (file in use) brings the request down; METAR relay failing",
      "de": "Launcher: ein von Windows verweigerter Schreibvorgang (Datei belegt) lässt die Anfrage abstürzen; METAR-Relais schlägt fehl",
-     "es": "Lanzador: una escritura rechazada por Windows (archivo en uso) hace caer la petición; relé METAR en fallo",
-     "test": true
+     "es": "Lanzador: una escritura rechazada por Windows (archivo en uso) hace caer la petición; relé METAR en fallo"
     }
    ]
   },
@@ -5043,8 +5020,7 @@
      "en": "Launcher: the British military source (aidu.mod.uk, ENR 5.2) fails in SSL",
      "de": "Launcher: die britische Militärquelle (aidu.mod.uk, ENR 5.2) scheitert an SSL",
      "es": "Lanzador: la fuente militar británica (aidu.mod.uk, ENR 5.2) falla en SSL",
-     "rank": 285,
-     "test": true
+     "rank": 285
     }
    ]
   },
@@ -5377,8 +5353,7 @@
      "fr": "Réglages : ranger par fréquence d'usage, et ce que font le chevron et le titre d'un bloc",
      "en": "Settings: order by how often they are used, and what the chevron and the title of a block do",
      "de": "Einstellungen: nach Nutzungshäufigkeit ordnen, und was Pfeil und Titel eines Blocks tun",
-     "es": "Ajustes: ordenar por frecuencia de uso, y qué hacen la flecha y el título de un bloque",
-     "test": true
+     "es": "Ajustes: ordenar por frecuencia de uso, y qué hacen la flecha y el título de un bloque"
     },
     {
      "id": "SOG-0342",

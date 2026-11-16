@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
   "tests": 245,
-  "verdicts": 165
+  "verdicts": 188
  },
  "apps": [
   "pilote",
@@ -39,8 +39,9 @@
    },
    "test": "Recharge la page. Compagnie › Missions › Registre, « Ajouter des missions » depuis un fichier : la mission prend la série écrite dans son fichier ; un fichier sans série prend la série en cours de sa famille. Une fiche à suffixe (A à Y) est dite « vol lié » à la fiche sans suffixe ; le suffixe Z est dit « organisation ». Le mot « variante » n'apparaît plus.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-14T00:05:02Z"
+   "state": "ok",
+   "delivered": "2026-11-14T00:05:02Z",
+   "at": "2026-11-16T13:56:35Z"
   },
   {
    "id": "SOG-0041",
@@ -408,8 +409,9 @@
    },
    "test": "Recharge la page. Missions, avec une affectation à ton trigramme dans les affectations de la V2 : un groupe « Mes missions affectées » montre la mission avec son décollage, son aéronef et son indicatif, le rendez-vous et les canaux quand ils sont donnés ; « Préparer ce vol » ouvre Carburant sur ce vol. Sans affectation à ton trigramme : pas de groupe.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T00:23:12Z"
+   "state": "ok",
+   "delivered": "2026-11-14T00:23:12Z",
+   "at": "2026-11-16T13:56:32Z"
   },
   {
    "id": "SOG-0118",
@@ -466,8 +468,9 @@
    },
    "test": "Maintenance › Données : « Prendre le fichier téléchargé » avec les trois zips NATS dans Téléchargements → les trois jeux sont pris ou dits déjà pris, le cycle de gb est dit.",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T14:29:16Z"
+   "state": "ok",
+   "delivered": "2026-11-09T14:29:16Z",
+   "at": "2026-11-16T13:53:50Z"
   },
   {
    "id": "SOG-0127",
@@ -754,8 +757,9 @@
    },
    "test": "Maintenance › Données, case d'usage personnel cochée : « Prendre le fichier téléchargé » dit « n jeux NATS déjà pris » ; construire gb → la zone est verte avec ses voies.",
    "since": "2026-11-09",
-   "state": "todo",
-   "delivered": "2026-11-09T17:11:02Z"
+   "state": "ok",
+   "delivered": "2026-11-09T17:11:02Z",
+   "at": "2026-11-16T13:53:35Z"
   },
   {
    "id": "SOG-0151",
@@ -890,8 +894,7 @@
    },
    "test": "Relance le lanceur (le Python a changé), recharge la page. Carburant : EGLL → KJFK puis « Calculer la route » : une route arrive en quelques secondes, avec un tronçon NAT ; le départ est dit « montée supposée libre » (pas de SID lue à EGLL). ESSB → LEMO : une route arrive en moins de dix secondes, avec son pourcentage contrôlé.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-13T13:59:25Z"
+   "state": "known"
   },
   {
    "id": "SOG-0162",
@@ -1925,8 +1928,9 @@
    },
    "test": "Lanceur relancé. Maintenance › Données, mise à jour du Royaume-Uni : si aidu.mod.uk coupe la connexion, la ligne le dit (connexion sécurisée coupée par le serveur), donne l'adresse du PDF ENR 5.2 et propose « Choisir le fichier… » ; le fichier choisi est pris.",
    "since": "2026-11-10",
-   "state": "todo",
-   "delivered": "2026-11-10T17:28:36Z"
+   "state": "ok",
+   "delivered": "2026-11-10T17:28:36Z",
+   "at": "2026-11-16T13:53:58Z"
   },
   {
    "id": "SOG-0235",
@@ -2021,8 +2025,9 @@
    },
    "test": "Relance le lanceur. Maintenance › Données, ligne du Portugal : elle doit dire qu'un fichier est trouvé dans Téléchargements et offrir « Prendre le fichier téléchargé » (et le lien « Choisir un autre fichier… »). Touche le bouton : la ligne doit dire l'édition lue (1er octobre 2026) et le Portugal se construire. Puis « Choisir un autre fichier… » avec « EAIP ISO (1).zip » : la ligne doit dire que c'est une édition à venir (26 novembre), pas un refus muet. Essaie enfin un fichier quelconque : la raison du refus doit rester écrite sur la ligne.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T09:43:53Z"
+   "state": "ok",
+   "delivered": "2026-11-12T09:43:53Z",
+   "at": "2026-11-16T13:54:36Z"
   },
   {
    "id": "SOG-0245",
@@ -2035,8 +2040,9 @@
    },
    "test": "Relance le lanceur. Lance une mise à jour longue dans Maintenance › Données (une construction), puis tente un autre geste (prendre un fichier, une autre mise à jour) : au lieu de « une autre opération est en cours », une carte doit dire laquelle, depuis quand, son étape et son avancement, avec « Voir » et « Arrêter ». « Arrêter » doit l'arrêter. « Libérer » n'apparaît que si elle ne répond plus depuis cinq minutes.",
    "since": "2026-11-12",
-   "state": "todo",
-   "delivered": "2026-11-12T09:33:08Z"
+   "state": "ok",
+   "delivered": "2026-11-12T09:33:08Z",
+   "at": "2026-11-16T13:54:31Z"
   },
   {
    "id": "SOG-0246",
@@ -2599,8 +2605,9 @@
    },
    "test": "Recharge. Anciennes pages (V2) › registre des missions, puis relis le dossier « Missions » : « 85 » n'apparaît plus à côté de T-085 ; le nombre de missions tombe de 154 à une centaine ; une ligne compte les missions restées sous un ancien numéro sans mission renumérotée (cinq attendues). Aucun fichier n'est touché.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T08:07:50Z"
+   "state": "ok",
+   "delivered": "2026-11-13T08:07:50Z",
+   "at": "2026-11-16T13:56:44Z"
   },
   {
    "id": "SOG-0290",
@@ -2678,8 +2685,9 @@
    },
    "test": "Recharge la page. Anciennes pages (V2) › registre des missions, niveau Expert : « Ranger les copies ». La page compte d'abord, sans rien toucher (copies déjà chez leur mission, copies à déplacer, fichiers laissés, contenus conservés). Si le compte te va, « Ranger » : les copies partent, un rapport s'affiche (copiable). « Garder tout » ne change rien. C'est une suppression dans ton dépôt de données : les fichiers restent dans son historique git.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T13:28:51Z"
+   "state": "ok",
+   "delivered": "2026-11-13T13:28:51Z",
+   "at": "2026-11-16T13:56:41Z"
   },
   {
    "id": "SOG-0295",
@@ -2738,8 +2746,9 @@
    },
    "test": "Recharge la page. Carburant, arrivée sur un terrain dont une approche n'existe que par sa carte (LFST, ou LFML avec un VOR) : bloc « Procédures », « Changer » de l'approche — sous les approches codées, une partie « par leur carte seulement » ; choisis-en une : la ligne dit « par sa carte : ni tracé ni distance », le lien « Carte » ouvre la carte. Passe par la Carte et reviens : le choix est toujours là. Choisis ensuite une approche codée : elle remplace l'autre.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T21:47:55Z"
+   "state": "ok",
+   "delivered": "2026-11-13T21:47:55Z",
+   "at": "2026-11-16T13:55:41Z"
   },
   {
    "id": "SOG-0299",
@@ -3006,8 +3015,9 @@
    },
    "test": "Relance le lanceur, recharge la page. Données, Portugal : la fiche commence par UNE phrase qui dit quoi faire (« Un fichier est dans Téléchargements : prenez-le, ce pays se reconstruit ensuite. ») ; le bouton « Prendre le fichier téléchargé » est là et actif ; plus de « rien à déposer » à côté de « ce pays attend un fichier ». Après la prise et la mise à jour : « Rien à faire : à jour ».",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T14:02:52Z"
+   "state": "ok",
+   "delivered": "2026-11-13T14:02:52Z",
+   "at": "2026-11-16T13:55:35Z"
   },
   {
    "id": "SOG-0319",
@@ -3035,8 +3045,9 @@
    },
    "test": "Recharge la page. Réglages (la roue) : en haut, sans rien déplier, l'état, l'affichage (niveau, apparence, ton en pastilles) et la compagnie ; dessous, Données, Synchronisation et Appareil repliés, chacun avec sa fréquence à droite — toucher la ligne l'ouvre ; « Administration » ouvre sa page et « ← Réglages » en revient ; « Mise en route » tout en bas. Depuis Maintenance : plus de grand vide sous « Compagnie », et l'entrée « Administration » de la barre n'est surlignée que sur sa page. Au téléphone, on atteint « Données » en un écran et demi.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T18:33:11Z"
+   "state": "ok",
+   "delivered": "2026-11-13T18:33:11Z",
+   "at": "2026-11-16T13:55:30Z"
   },
   {
    "id": "SOG-0321",
@@ -3136,8 +3147,9 @@
    },
    "test": "Relance le lanceur (nouveau verbe), recharge la page. Aide › Recette : chaque test a trois boutons — « Validé », « Accepter avec réserves », « Refusé ». « Accepter avec réserves » demande un commentaire, range le test avec les validés et ne te le représente plus ; je fais de ta réserve une fiche mineure que je clos moi-même.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T17:44:32Z"
+   "state": "ok",
+   "delivered": "2026-11-13T17:44:32Z",
+   "at": "2026-11-16T13:57:54Z"
   },
   {
    "id": "SOG-0330",
@@ -3150,8 +3162,9 @@
    },
    "test": "Recharge la page. Carburant, arrivée à LFLC (Clermont-Ferrand), approche ILS 26 : « Carte » ouvre la carte dessinée de l'ILS ; un second lien « Données » ouvre le tableau. Même essai à LFLL (Lyon) sur un ILS.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T16:54:11Z"
+   "state": "ok",
+   "delivered": "2026-11-13T16:54:11Z",
+   "at": "2026-11-16T13:57:51Z"
   },
   {
    "id": "SOG-0331",
@@ -3178,8 +3191,9 @@
    },
    "test": "Recharge la page. Carburant, LFOE → KTPA, « Calculer A → B », prends l'itinéraire qui passe par une route NAT : la route garde « 51/20 », « 5030/30 »… et plus de ligne « Points inconnus : 51, 5030… » ; les distances d'un point au suivant sont plausibles.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T20:19:26Z"
+   "state": "ok",
+   "delivered": "2026-11-13T20:19:26Z",
+   "at": "2026-11-16T13:57:43Z"
   },
   {
    "id": "SOG-0334",
@@ -3192,8 +3206,9 @@
    },
    "test": "Recharge la page. Design Metro, fenêtre entre 800 et 1 090 px de large (le rail d'icônes à gauche) : chaque icône est au milieu de sa case, la courante comme les autres ; elle s'est déplacée d'environ 9 px vers la gauche. Même chose en Swiss. Si tu la veux encore plus à gauche ou centrée à droite du filet, dis-le.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-13T17:53:59Z"
+   "state": "ok",
+   "delivered": "2026-11-13T17:53:59Z",
+   "at": "2026-11-16T13:55:21Z"
   },
   {
    "id": "SOG-0335",
@@ -3206,8 +3221,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli (note « nouvelle version · Recharger », sinon ferme et rouvre deux fois). L'insecte en haut, « Photos ou captures d'écran » : choisis une capture d'écran de ta photothèque — elle doit être acceptée (plus de « Photo refusée »). Si elle est encore refusée, le message dit maintenant pourquoi (illisible avec l'erreur, ou trop lourde avec son poids) : envoie-moi ce message. « Envoyer », puis au poste : Aide › Signaler, « Signalements des pilotes », la vignette est là.",
    "since": "2026-11-13",
-   "state": "todo",
-   "delivered": "2026-11-14T10:28:47Z"
+   "state": "ok",
+   "delivered": "2026-11-14T10:28:47Z",
+   "at": "2026-11-16T13:54:42Z"
   },
   {
    "id": "SOG-0337",
@@ -3220,8 +3236,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli. Réglages › Synchronisation : « Dernière réussie » est d'aujourd'hui. Fais un changement sur le poste (un vol enregistré, par exemple), puis rouvre l'appli du téléphone : la synchronisation se fait en quelques secondes, sans la bande « GitLab limite les requêtes ». Si la bande revient à chaque ouverture, « Copier le diagnostic » (Réglages › Données) et envoie-le par « Signaler ».",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T10:26:51Z"
+   "state": "ok",
+   "delivered": "2026-11-14T10:26:51Z",
+   "at": "2026-11-16T13:56:20Z"
   },
   {
    "id": "SOG-0338",
@@ -3248,8 +3265,9 @@
    },
    "test": "Relance le lanceur. Rien à faire de particulier : dans sa fenêtre, plus de bloc « Exception occurred during processing of request … PermissionError: [WinError 32] » pendant l'usage. Si tu en revois un, colle-le dans la note.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T10:38:04Z"
+   "state": "ok",
+   "delivered": "2026-11-14T10:38:04Z",
+   "at": "2026-11-16T13:56:15Z"
   },
   {
    "id": "SOG-0340",
@@ -3262,8 +3280,9 @@
    },
    "test": "Recharge la page. Maintenance › Données : la molette, pointeur hors de la carte, fait défiler la page ; pointeur sur la carte, elle zoome la carte.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T11:56:45Z"
+   "state": "ok",
+   "delivered": "2026-11-14T11:56:45Z",
+   "at": "2026-11-16T13:56:07Z"
   },
   {
    "id": "SOG-0342",
@@ -3304,8 +3323,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli. Missions : chaque titre se lit en entier sur toute la largeur, le trajet, l'aéronef et la durée sont dessous, en petit.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T11:21:26Z"
+   "state": "ok",
+   "delivered": "2026-11-14T11:21:26Z",
+   "at": "2026-11-16T13:56:47Z"
   },
   {
    "id": "SOG-0345",
@@ -3332,8 +3352,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli. Depuis un écran défilé à mi-page, touche l'insecte : il s'allume et le formulaire s'ouvre ; écris quelques mots ; touche l'insecte de nouveau : tu reviens à l'écran d'où tu venais, au même endroit ; rouvre : ton texte est encore là.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T11:03:42Z"
+   "state": "ok",
+   "delivered": "2026-11-14T11:03:42Z",
+   "at": "2026-11-16T13:55:55Z"
   },
   {
    "id": "SOG-0348",
@@ -3346,8 +3367,9 @@
    },
    "test": "Sur le téléphone, recharge l'appli. Carburant › Route, « Calculer A → B » : touche une LIGNE de la liste des itinéraires (pas le trait sur la carte) : elle est choisie, son trait passe en avant. Si rien ne se passe, dis sur quel vol.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T11:15:43Z"
+   "state": "ok",
+   "delivered": "2026-11-14T11:15:43Z",
+   "at": "2026-11-16T13:58:34Z"
   },
   {
    "id": "SOG-0349",
@@ -3403,8 +3425,9 @@
    },
    "test": "Relance le lanceur si ce n'est pas fait, recharge la page. Carburant › Route, EGLL → KJFK (ou LFOE → KTPA) : au-dessus de « Calculer A → B », une ligne dit de quand sont les routes NAT ; si elles ne sont pas du jour, « Lire les routes NAT du jour » les lit. Sur LFPO → EIDW : pas de ligne. Maintenance › Données : les routes NAT ne sont plus dans « À faire » ; dans « Quand ça change », une ligne dit leur validité et où elles se lisent, sans bouton.",
    "since": "2026-11-14",
-   "state": "todo",
-   "delivered": "2026-11-14T12:16:49Z"
+   "state": "ok",
+   "delivered": "2026-11-14T12:16:49Z",
+   "at": "2026-11-16T13:55:51Z"
   },
   {
    "id": "SOG-0353",
@@ -3645,9 +3668,13 @@
    },
    "test": "Relance d'abord le lanceur. Carburant, un vol transatlantique (EGLL → KJFK), étape Route. Si la ligne dit les routes NAT périmées : « Lire les routes NAT du jour » — la ligne dit « Lecture… » puis la date et la validité, sans recharger la page ; une proposition calculée sur les routes d'un autre jour disparaît, avec « Recalculer ». « Calculer A → B », prends une proposition par une route NAT : aucune ligne « Points inconnus ».",
    "since": "2026-11-16",
-   "state": "ok",
-   "delivered": "2026-11-16T08:34:34Z",
-   "at": "2026-11-16T13:28:43Z"
+   "state": "known",
+   "history": [
+    {
+     "verdict": "ok",
+     "at": "2026-11-16T13:28:43Z"
+    }
+   ]
   },
   {
    "id": "SOG-0374",
