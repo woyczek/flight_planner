@@ -6554,6 +6554,53 @@ def f239(c):
     c.shot(f'F239_{c.design}_390_{c.lang}_free.png')
 
 
+@case('F241', 'Route step, the NAT message of the day read (westbound tracks valid from 16/11 at 11:30Z, eastbound ones of the night valid '
+      'from 17/11): the routes the launcher computed through the EASTBOUND tracks (issued 17/11, not stale) stay — never removed as « of '
+      'another day », never left to the direct of the flight; a route through an older message (issued 15/11) is still removed, and said; '
+      'the same after a reload', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0389 (the user, KABQ → EGLL FL350 at 21:35Z: « une route apparaît furtivement, puis disparaît. 3 variantes, qui '
+      'disparaissent également. au final, direct entre adep et adest. »; two GOOD answers of the launcher, through NAT V, R, S issued 17/11; '
+      'route_alts.json rewritten empty); the ergonomist: a route given by the launcher is never replaced by a direct without the screen '
+      'saying why; invented answers of the same form, aerodb\'s NAT state held by the case (stub)')
+def f241(c):
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.page.add_init_script(_NAT_STUB)
+    # the message of the day: its earliest validity (westbound) 16/11 at 11:30Z, its latest (eastbound of the night) 17/11 at 08:00Z
+    c.page.add_init_script("window.__nat.st = { present: true, count: 6, from: '2026-11-16T11:30:00.000Z', validUntil: "
+                           "'2026-11-17T08:00:00.000Z', expired: false, current: 3 }")
+    T = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    seg2 = lambda a, b: [_seg('EINN', a), _seg(a, b), _seg(b, 'CYYT')]
+    east = [dict(_alt(i, f'Via NAT {k}', f'EINN {a} NAT{k} {b} CYYT', 1700 + i, 350, seg2(a, b), sid=False),
+                 nat={'tracks': [k], 'issued': '17/11', 'stale': False})
+            for i, (k, a, b) in enumerate([('V', 'MALOT', '54/50'), ('R', 'LIMRI', '53/50')], 1)]
+    older = dict(_alt(3, 'Via NAT Z', 'EINN BEXET NATZ 51/50 CYYT', 1750, 350, seg2('BEXET', '51/50'), sid=False),
+                 nat={'tracks': ['Z'], 'issued': '15/11', 'stale': False})
+    st['alts'] = [east[0], older, east[1]]  # three at most: the older one among them
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    L = f'{FUEL} [data-natline]'
+    c.until(f"!!document.querySelector('{L} [data-natstate=ok]')", timeout=15000, what='the NAT line: the tracks of 16/11 valid')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    names = f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt] [data-altname]')].map(e => e.textContent)"
+    c.until(f"{names}.length >= 1", timeout=15000, what='the computed route drawn')
+    c.until(f"{names}.length === 2 && !!document.querySelector('{FUEL} [data-natdropped]')", timeout=15000,
+            what='the routes through the eastbound tracks, the older one removed')
+    c.wait(1500)  # the NAT line is redrawn at each refresh: the list must hold
+    c.eq(c.js(names), ['Via NAT V', 'Via NAT R'], 'the routes through the eastbound tracks of the message read stay',
+         what='kept')
+    c.ok(norm(tx(T, 'natDropped', c.lang).replace('{d}', '16/11')) in norm(c.text(f'{FUEL} [data-natdropped]') or ''),
+         c.text(f'{FUEL} [data-routealts]'), 'the route through the message of 15/11 removed, and said')
+    c.js(f"document.querySelector('{FUEL} [data-routealts]').scrollIntoView({{block: 'start'}})")
+    c.shot(f'F241_{c.design}_390_{c.lang}_eastbound.png')
+    # kept on the device the same: read again after a reload, the routes stay
+    c.page.reload(wait_until='load')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{L} [data-natstate=ok]') && {names}.length >= 1", timeout=15000, what='the list read again')
+    c.wait(1500)
+    c.eq(c.js(names), ['Via NAT V', 'Via NAT R'], 'after a reload, the same routes', what='kept after reload')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

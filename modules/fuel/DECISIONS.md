@@ -2145,3 +2145,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   départ non donnée : validité horaire des routes NAT non vérifiée » (`[data-proofnotime]`). And the mention « via NAT E » is preceded by a
   space (the capture of F238 showed « 0 écartvia NAT E »). F239 (red on the parent: the created section left out, no fold, no line of the
   departure time, no space).
+- **16 Nov 2026 — SOG-0389, the routes through the eastbound NAT tracks no longer removed** (the user, KABQ → EGLL FL350 at 21:35Z:
+  « une route apparaît furtivement, puis disparaît. 3 variantes, qui disparaissent également. au final, direct entre adep et adest. »;
+  the launcher had given two good answers, through NAT V, R and S; route_alts.json was rewritten empty two seconds later). The cause:
+  `natDrop` (SOG-0372 b) compared the `issued` day of a route's NAT track with the DAY of the message read; but `issued` is the start of
+  THAT track's validity (nat_layer: `t['from']`), and `natState().from` the earliest start of the message: the westbound tracks of the
+  day start on 16/11, the eastbound ones of the night on 17/11 — every eastbound route was taken for « another day » and removed at the
+  next redraw of the NAT line, leaving the flight's own direct. Now a route is of another message when it is stale or its track starts
+  BEFORE the day the message read starts (`natBefore(issued, from)`, the year of the message within six months; false without a
+  readable day: nothing removed on a doubt). F241 (red on the parent: the eastbound routes removed). Seen in passing, not in this lot:
+  the page's route pattern `^[A-Z0-9/]{1,16}$` drops a North American route token such as « N71B-N90B » from the route text.

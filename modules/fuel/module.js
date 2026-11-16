@@ -4177,7 +4177,8 @@ async function natLine() {
   box.hidden = false;
   // SOG-0372 (b) : des routes valides lues : les propositions par des routes NAT d'un autre jour partent
   s.natDay = fresh ? day(st.from) : '';
-  if (fresh) natDrop(s.natDay);
+  s.natFrom = fresh ? st.from : ''; // SOG-0389 : le début du message lu (sa route la plus tôt), ce que natDrop compare
+  if (fresh) natDrop(s.natDay, s.natFrom);
   natTrackWarn(s); // et les routes NAT du champ sont comparées aux routes lues
 }
 /** SOG-0372 (décision de 9 h 37) : une route NAT écrite dans le champ (« NATG », S.natLetters, routeModel natTracks) dont la lettre n'est
@@ -4233,13 +4234,29 @@ async function natForModel(s) {
 }
 /** Le jour d'un instant ISO, « JJ/MM » (la forme du `issued` des itinéraires, route_engine natOf) ; « ? » sans instant. */
 const natDay = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '?';
-/** SOG-0372 (b) : des routes NAT du jour `d` (« JJ/MM ») sont lues — un itinéraire affiché qui passe par des routes NAT d'un autre jour
- *  (périmées, ou émises un autre jour) est retiré de la liste, de la réponse gardée et de la Carte ; la ligne le dit et propose de
- *  recalculer. Le choix et la ligne montrée suivent leur itinéraire. Rien si aucun n'est concerné. */
-function natDrop(d) {
+/** SOG-0389 : le jour « JJ/MM » d'une route NAT (`issued`, le début de SA validité) est-il AVANT le jour où commence le message lu
+ *  (`from`, ISO : sa route la plus tôt) ? L'année est celle du message, à six mois près (un 30/12 lu le 02/01 est de l'année d'avant).
+ *  Faux sans jour lisible : rien n'est retiré sur un doute. */
+function natBefore(issued, from) {
+  const m = /^(\d{2})\/(\d{2})$/.exec(issued || ''),
+    f = Date.parse(from || '');
+  if (!m || !Number.isFinite(f)) return false;
+  const F = new Date(f),
+    y = F.getUTCFullYear(),
+    mo = +m[2] - 1,
+    yr = mo - F.getUTCMonth() > 6 ? y - 1 : F.getUTCMonth() - mo > 6 ? y + 1 : y;
+  return Date.UTC(yr, mo, +m[1]) < Date.UTC(y, F.getUTCMonth(), F.getUTCDate());
+}
+/** SOG-0372 (b) : des routes NAT du jour `d` (« JJ/MM ») sont lues — un itinéraire affiché qui passe par des routes NAT d'un autre
+ *  message (périmées, ou qui commencent avant le message lu) est retiré de la liste, de la réponse gardée et de la Carte ; la ligne le
+ *  dit et propose de recalculer. Le choix et la ligne montrée suivent leur itinéraire. Rien si aucun n'est concerné.
+ *  SOG-0389 : `issued` est le jour où commence la route NAT de l'itinéraire, pas celui du message — les routes vers l'est de la nuit
+ *  commencent le lendemain (un vol de 21 h 35Z par la route V du 17/11, message du 16/11) : jamais comparé au jour du message (cela
+ *  retirait les trois itinéraires d'un KABQ → EGLL et laissait le direct), seulement à son début `from`. */
+function natDrop(d, from) {
   const R = S?.ralts;
   if (!R?.list?.length || !/^\d{2}\/\d{2}$/.test(d || '')) return;
-  const other = a => !!a?.nat?.tracks?.length && (a.nat.stale || !!a.nat.issued && a.nat.issued !== d);
+  const other = a => !!a?.nat?.tracks?.length && (a.nat.stale || natBefore(a.nat.issued, from));
   if (!R.list.some(other)) return;
   const keep = R.list.map((a, i) => [a, i]).filter(([a]) => !other(a)),
     at = k => keep.findIndex(([, i]) => i === k);
@@ -4800,7 +4817,7 @@ async function altsFromDoc() {
     hovered: null
   };
   routeAltsDraw();
-  if (S.natDay) natDrop(S.natDay); // SOG-0372 (b) : relue après la lecture des routes du jour
+  if (S.natDay) natDrop(S.natDay, S.natFrom); // SOG-0372 (b) : relue après la lecture des routes du jour
   proposalsAge(); // SOG-0224 : relu, l'objet peut être périmé (AIRAC, base, NAT : frame/lib/route_alts.js)
 }
 /** Audit 193 : une ligne du document (écrit par tout appareil, entrée non fiable) remise à la forme que altsPublish donne à la Carte —
