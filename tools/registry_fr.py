@@ -6,6 +6,8 @@ RÈGLES (ergonome et Sécurisation, 12 nov. 2026) :
   · liste BLANCHE de cinq colonnes, retrouvées par leur NOM d'en-tête : IMMATRICULATION, CONSTRUCTEUR, MODELE, NUMERO_SERIE, AERODROME_ATTACHE ; les autres colonnes ne sont pas conservées, pas même lues dans une variable gardée ;
   · aucune ligne du fichier dans un message d'erreur, dans le journal ni dans un résultat : les refus disent la RAISON (code), jamais un contenu ;
   · des bornes : taille du fichier, nombre de lignes, longueur d'une ligne physique, longueur d'un champ gardé, forme d'une immatriculation (les lignes hors forme sont comptées, pas gardées).
+  · PUBLICATION (SOG-0341, Q-0060 : oui, le 16 nov. 2026 — la règle « jamais dans le dépôt des données » ci-dessus est levée pour CE fichier seulement) : `publish` écrit registry/fr_immat.json dans le dépôt privé du groupe, pour que le téléphone l'ait ; les
+    cinq colonnes, rien d'autre, REVALIDÉES au moment d'écrire (le fichier n'est pas recopié : il est reconstruit ligne à ligne, k-anonymat du constructeur recompté) ; jamais l'exploitant (Q-0056), jamais le fichier d'origine.
 Le type du registre est un libellé de constructeur et de modèle, pas un code OACI : la correspondance vers nos types est faite par l'appelant (la base locale des types) ; ici, rien n'est deviné. Bibliothèque standard seulement."""
 import csv
 import json
@@ -21,6 +23,7 @@ MAX_FIELD = 80
 MIN_MAKER = 10                        # k-anonymat (Sécurisation, 12 nov. 2026) : la colonne CONSTRUCTEUR de constructeurs AMATEURS porte des NOMS DE PERSONNES PHYSIQUES (« NOM PRÉNOM ») : un constructeur n'est gardé que s'il est partagé par au moins 10 aéronefs du fichier, sinon il est laissé VIDE (l'écran dit « constructeur non précisé »)
 REG = re.compile(r'[A-Z0-9]{1,2}-[A-Z0-9]{2,6}|[A-Z0-9]{4,8}')      # « F-BHHH », « HB-ABC », « N12345 »
 OUT_NAME = 'fr_immat.json'
+REPO_FOLDER = 'registry'               # sous data/ (le dépôt des données du groupe) : registry/fr_immat.json (SOG-0341)
 CREDIT = 'Registre français des immatriculations, DGAC'
 
 
@@ -114,6 +117,54 @@ def derive(src, out_dir, today=None):
         json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
     os.replace(tmp, path)
     return {'rows': len(rows), 'skipped': skipped, 'makerBlanked': blanked, 'date': date, 'size': size}
+
+
+def publish(local_dir, data_dir):
+    """Le dérivé gardé sur ce poste (`local_dir`/fr_immat.json) publié dans le dépôt des données : `data_dir`/registry/fr_immat.json (SOG-0341), atomique. Rend { published: True, rows, makerBlanked, size } ; RegistryError (code seul : 'read', 'headers', 'rows',
+    'empty', 'size') sinon, rien d'écrit. Le fichier publié n'est PAS une copie : il est reconstruit ligne à ligne depuis le dérivé — exactement les cinq colonnes, chaque cellule du texte borné et nettoyé, l'immatriculation de la forme attendue, le type
+    présent, un constructeur partagé par moins de MIN_MAKER aéronefs laissé vide (recompté ici : on ne se fie pas à l'étape précédente) — et rien d'autre n'y entre (ni date d'une autre sorte, ni champ inconnu du dérivé)."""
+    src = os.path.join(local_dir, OUT_NAME)
+    try:
+        if os.path.getsize(src) > MAX_BYTES:
+            raise RegistryError('size')
+        with open(src, encoding='utf-8') as f:
+            doc = json.load(f)
+    except RegistryError:
+        raise
+    except (OSError, ValueError):
+        raise RegistryError('read') from None
+    if not isinstance(doc, dict) or doc.get('columns') != list(WHITELIST) or not isinstance(doc.get('rows'), list):
+        raise RegistryError('headers')
+    if len(doc['rows']) > MAX_ROWS:
+        raise RegistryError('rows')
+    rows = []
+    for r in doc['rows']:
+        if not isinstance(r, list) or len(r) != len(WHITELIST) or not all(isinstance(x, str) for x in r):
+            continue
+        cells = [_clean(x) for x in r]
+        if not REG.fullmatch(cells[0]) or not cells[2]:
+            continue
+        rows.append(cells)
+    if not rows:
+        raise RegistryError('empty')
+    makers = {}
+    for r in rows:
+        makers.setdefault(r[1], set()).add(r[0])
+    blanked = 0
+    for r in rows:
+        if r[1] and len(makers[r[1]]) < MIN_MAKER:
+            r[1] = ''
+            blanked += 1
+    date = doc.get('date') if isinstance(doc.get('date'), str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', doc['date'], re.A) else ''
+    out = {'schema': 1, 'source': CREDIT, 'date': date, 'columns': list(WHITELIST), 'rows': rows}
+    folder = os.path.join(data_dir, REPO_FOLDER)
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, OUT_NAME)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
+    os.replace(tmp, path)
+    return {'published': True, 'rows': len(rows), 'makerBlanked': blanked, 'size': os.path.getsize(path)}
 
 
 _cache = {}

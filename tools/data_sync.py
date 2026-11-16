@@ -25,7 +25,8 @@ import data_guard  # .js du pool : format des fichiers de données seulement (ja
 # publiée par zone par le poste qui la reconstruit (shared/sia_base.js, publish), lue par les téléphones (mode GitHub) —
 # les fichiers du SIA eux-mêmes (sia/*.xml) restent hors du dépôt ; airline : réglages de la compagnie partagés avec
 # l'appli V3 (airline/map_profiles.json écrit par le studio des cartes ; settings.json, fleet.json écrits par l'appli)
-POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv', 'sia/base', 'airline']
+# registry : le registre français réduit à cinq colonnes (registry/fr_immat.json, SOG-0341, Q-0060), écrit par le lanceur à la reprise de l'export, jamais l'exploitant
+POOL = ['disponibilites', 'utilisateurs', 'config', 'missions', 'cr', 'atc', 'odv', 'sia/base', 'airline', 'registry']
 EXCLUDE = [':(exclude,glob)**/_index.json', ':(exclude,glob)**/_conflits/**', ':(exclude).defa_instance']
 # index des dossiers : régénérés par le lanceur (et par l'appli en mode GitHub, depuis l'arbre), jamais suivis par git ;
 # une copie suivie dans le dépôt (écrite par une version précédente de l'appli) est retirée du suivi, jamais fusionnée
@@ -33,7 +34,8 @@ INDEXES = [':(glob)**/_index.json']
 # chemins du pool que seul un geste de l'utilisateur commite (« Synchroniser » : run(gesture=True)) ; un passage de fond
 # (mise à jour au démarrage du lanceur, échange périodique du cadre) les laisse sur le poste : une zone de la base à
 # moitié écrite par une reconstruction ne part jamais d'elle-même (le travail de construction, D5, commite la sienne)
-GESTURE_ONLY = ['sia/base/']
+# registry/ : un fichier de ~3 Mo qui ne part qu'à un geste (« Synchroniser »), jamais seul en fond
+GESTURE_ONLY = ['sia/base/', 'registry/']
 BUILD_GAP = 600  # s : une écriture de sia/base plus récente dit qu'une construction est en cours (building)
 TIMEOUT = 120
 
@@ -547,6 +549,11 @@ def merge_raw(path, raw):
         vo, vt = (v if isinstance(v, int) else -1 for v in (vo, vt))
         win, lose, side = (raw[2], raw[3], 'distante') if vo >= vt else (raw[3], raw[2], 'locale')
         return win, {'how': 'registre (version la plus haute)'}, lose, side
+    # le registre réduit (SOG-0341) : un fichier REMPLACÉ en entier à chaque export ; deux postes qui l'ont repris : la date de l'export la plus récente gagne, sans copie (aucune information ne se perd : c'est une table entière)
+    if path.endswith('registry/fr_immat.json') and isinstance(ours, dict) and isinstance(theirs, dict):
+        dated = lambda d: d.get('date') if isinstance(d.get('date'), str) else ''
+        win = raw[2] if dated(ours) >= dated(theirs) else raw[3]
+        return win, {'how': 'registre réduit (export le plus récent)'}, None, ''
     # une fiche par fichier : supprimée d'un côté, modifiée de l'autre → gardée ; sinon la plus récente
     if raw[2] is None or raw[3] is None:
         return raw[2] if raw[2] is not None else raw[3], {'how': 'gardée (supprimée d’un côté seulement)'}, None, ''

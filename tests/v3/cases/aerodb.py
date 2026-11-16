@@ -7061,6 +7061,7 @@ def k146(c):
             reg = b'IMMATRICULATION;CONSTRUCTEUR;MODELE;NUMERO_SERIE;AERODROME_ATTACHE;PROPRIETAIRE\nF-BHHH;CESSNA;172 N;1;PARIS;CANARYOWNER\n'
             st, r = up(reg, 'export (1).csv')
             c.eq((st, r.get('source'), r.get('rows'), 'CANARYOWNER' in json.dumps(r)), (200, 'registry_fr', 1, False), 'the registry export (SOG-0270): recognised by its header, derived, the answer carries the row count and nothing of the file', what='registry')
+            c.eq((r.get('published'), r.get('notPublished')), (False, 'no-repo'), 'the answer of the registry upload says whether the reduced file was published to the data repository (SOG-0341); here data/ is not a git repository: no, with the reason', what='registry published')
             c.eq(((data / 'local' / 'registry' / 'fr_immat.json').is_file(), 'CANARYOWNER' in (data / 'local' / 'registry' / 'fr_immat.json').read_text(encoding='utf-8'), [p.name for p in folder.iterdir() if p.suffix.lower() == '.csv' or p.name.startswith('.recv-')]), (True, False, []),
                  'the derived file exists without the owner; the original CSV and the temporary file are NOT kept in the upload folder', what='not kept')
             c.eq(up(book, 'tableau.xlsx')[1].get('reason'), 'unrecognised', 'a workbook under another name: not taken (the pickup looks for the names above)', what='xlsx name')

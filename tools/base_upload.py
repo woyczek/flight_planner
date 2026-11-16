@@ -205,6 +205,23 @@ def recognise(path, hint='', today=None):
     raise Refused('type', 'ni zip, ni JSON, ni PDF, ni XML')
 
 
+def _publish_registry(base):
+    """SOG-0341 : le registre dérivé (cinq colonnes) écrit dans le dépôt des données, registry/fr_immat.json ; { published: True } ou { published: False, why } — 'no-repo' (data/ n'est pas un dépôt git : rien à partager), 'merge-pending' (une fusion attend : rien n'est
+    écrit dans data/), ou le code d'un refus de la revalidation. Le fichier n'est envoyé qu'à « Synchroniser » (data_sync.GESTURE_ONLY)."""
+    import data_sync
+    import registry_fr
+    try:
+        if not data_sync.is_repo(base):
+            return {'published': False, 'why': 'no-repo'}
+        if data_sync.merge_pending(base):
+            return {'published': False, 'why': 'merge-pending'}
+        return registry_fr.publish(os.path.join(base, 'local', 'registry'), base)
+    except registry_fr.RegistryError as e:
+        return {'published': False, 'why': e.code}
+    except OSError:
+        return {'published': False, 'why': 'write'}
+
+
 def _sha(path):
     h = hashlib.sha256()
     with open(path, 'rb') as f:
@@ -300,7 +317,8 @@ def receive(rfile, length, hint, data, busy=None, merge_pending=None):
                 return no('too-large' if e.code == 'size' else 'unrecognised', f'registre non lu ({e.code})', EXPECTED)
             finally:
                 _drop(tmp)
-            return 200, {'ok': True, 'source': 'registry_fr', 'zone': '', 'name': registry_fr.OUT_NAME, 'rows': res['rows'], 'skipped': res['skipped'], 'date': res['date'], 'size': got, 'replaced': True, 'sha256': h.hexdigest()}
+            pub = _publish_registry(base)      # SOG-0341 : le dérivé à cinq colonnes aussi dans le dépôt privé du groupe (le téléphone l'a ; Q-0060 : oui)
+            return 200, {'ok': True, 'source': 'registry_fr', 'zone': '', 'name': registry_fr.OUT_NAME, 'rows': res['rows'], 'skipped': res['skipped'], 'date': res['date'], 'size': got, 'replaced': True, 'sha256': h.hexdigest(), 'published': pub['published'], **({'notPublished': pub['why']} if not pub['published'] else {})}
         dest = os.path.join(folder, info['name'])
         digest = h.hexdigest()
         replaced = True
