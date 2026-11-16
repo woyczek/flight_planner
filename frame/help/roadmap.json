@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7b71e47",
+  "organisation": "a2f162d",
   "fiches": 387,
   "untranslated": 0,
   "priorities": 374
@@ -1037,8 +1037,7 @@
      "en": "NAT tracks at the Route step: the day's read succeeds without the screen showing it; the proposal computed on outdated tracks stays; the route taken gives « unknown points »",
      "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
      "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »",
-     "rank": 324,
-     "test": true
+     "rank": 324
     }
    ]
   },

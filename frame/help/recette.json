@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
   "tests": 256,
-  "verdicts": 188
+  "verdicts": 189
  },
  "apps": [
   "pilote",
@@ -3716,17 +3716,18 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli. Carburant, EIDW → KJFK, étape Route : lis les routes NAT du jour si la ligne le demande, puis prends une route proposée par une route NAT (ou écris « … MALOT NATG 54/50 … » avec une lettre du jour). Attendu : sur la Carte la traversée suit les points de la route NAT, plus un trait droit de l'entrée à la sortie ; la distance et le devis ont changé en conséquence. Si les routes du jour ne sont pas lues ou si l'entrée ou la sortie n'est pas sur la route du jour, une ligne grise le DIT (« Route NAT G : …, traversée tracée en direct »). Après la sortie de l'océan, les tronçons vers New York peuvent rester en direct et la ligne des voies le dit : c'est la zone d",
    "since": "2026-11-16",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-16T15:24:11Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "les nats sont bonnes, mais on a toujours des tracés directs entre Dubiln et JFK. j’utilise ce bug report comme container.",
-    "at": "2026-11-16T13:53:10Z"
-   },
+   "at": "2026-11-16T16:22:34Z",
    "history": [
     {
      "verdict": "ok",
      "at": "2026-11-16T13:28:43Z"
+    },
+    {
+     "verdict": "ko",
+     "comment": "les nats sont bonnes, mais on a toujours des tracés directs entre Dubiln et JFK. j’utilise ce bug report comme container.",
+     "at": "2026-11-16T13:53:10Z"
     }
    ]
   },
@@ -3859,14 +3860,15 @@
  ],
  "decisions": [
   {
-   "id": "Q-0063",
-   "fiche": "SOG-0386",
-   "app": "pilote",
-   "question": "Missions : « générer from scratch », c'est quoi pour toi ?",
-   "context": "La V3 sait déjà « Créer une mission » vide dans l'éditeur (au registre ; tu l'as validée, SOG-0287). Le générateur de missions complet n'existe que dans les anciennes pages.",
+   "id": "Q-0068",
+   "fiche": "SOG-0354",
+   "app": "maintenance",
+   "question": "L'agent d'essais (file d'attente, un seul essai à la fois) : qui ?",
+   "context": "Tu as rappelé le principe : les sessions ne jouent plus leurs essais. Aucun agent d'essais n'existe encore dans le dépôt. En attendant ta réponse, c'est moi qui joue tout, un essai à la fois : les sessions m'envoient le commit et les cas.",
    "options": [
-    "Le générateur de missions des anciennes pages, à porter en V3",
-    "Créer une mission vide dans l'éditeur : je ne l'avais pas trouvée",
+    "Une session dédiée « Essais », que tu démarres ou que je démarre sur ton mot",
+    "L'ergonome reste le seul à jouer les essais",
+    "Un verrou dans l'outil d'essais : n'importe qui lance, un seul tourne, les autres attendent",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-16",
@@ -3874,60 +3876,15 @@
    "recommended": 0
   },
   {
-   "id": "Q-0064",
+   "id": "Q-0069",
    "fiche": "SOG-0386",
    "app": "pilote",
-   "question": "Missions : quel import manque ?",
-   "context": "La V3 importe déjà des missions en YAML (« Ajouter des missions », fichiers ou texte collé ; validé, SOG-0212). L'import d'un dossier PDF n'existe qu'en ligne de commande.",
+   "question": "Vue d'ensemble en tête de la feuille de route : quelle forme ?",
+   "context": "Tu as raison, quatorze barres c'est trop. Proposition : UNE ligne (« Ensemble : 67 % ») puis quatre groupes repliés — Préparer et voler (Carburant et route, Carte, Météo) ; Missions et compagnie (Missions, Ordres de vol, Compte rendu, Site) ; Suivre (Mes vols, Statistiques, Atterrissages, Aéronefs) ; Socle (Données, Réglages, Aide). On ouvre un groupe pour voir ses fonctions.",
    "options": [
-    "L'import d'un dossier PDF, à l'écran",
-    "L'import YAML : je ne l'avais pas trouvé",
-    "Les deux me vont, il ne manque rien",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0065",
-   "fiche": "SOG-0386",
-   "app": "pilote",
-   "question": "Vue d'ensemble : les quatorze grandes fonctions sont-elles les bonnes ?",
-   "context": "Missions ; Carburant et route ; Carte ; Météo ; Compte rendu ; Mes vols ; Aéronefs et performances ; Statistiques ; Données aéronautiques ; Réglages, synchronisation, appareils ; Site de la compagnie ; Ordres de vol et planning ; Atterrissages X-Plane ; Aide, recette, signalements.",
-   "options": [
-    "Oui, on part de là",
-    "À changer (je le dis dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0066",
-   "fiche": "SOG-0386",
-   "app": "pilote",
-   "question": "Vue d'ensemble : la mettre en tête de la feuille de route de l'appli ?",
-   "context": "Une barre par grande fonction avec son pourcentage ; on touche une fonction pour voir ses capacités, puis les fiches rangées dessous. Un lot pour V3 Frame. En attendant, le relevé est dans organisation/CAPACITES.json.",
-   "options": [
-    "Oui, maintenant",
-    "Oui, après l'alpha 5",
-    "Non : un tableau tenu à jour par l'ergonome suffit"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0067",
-   "fiche": "SOG-0386",
-   "app": "pilote",
-   "question": "Après le redémarrage : combien de sessions au travail en même temps ?",
-   "context": "Six sessions travaillaient ensemble, chacune jouant ses cas dans un navigateur, plus mes propres rejeux : cause probable de la saturation. Elles sont toutes à l'arrêt ; leur travail non poussé est intact sur le disque (liste dans le LOT). Je n'en réveille aucune avant ta réponse, sauf pour ce que tu attends tout de suite.",
-   "options": [
-    "Deux au plus, et une seule passe de cas à la fois",
-    "Une seule à la fois",
-    "Comme avant : toutes ensemble",
+    "Une ligne d'ensemble et quatre groupes repliés",
+    "Une ligne d'ensemble seulement, le détail dans un écran à part",
+    "Pas dans l'appli : un tableau tenu par l'ergonome suffit",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-16",
@@ -4028,6 +3985,97 @@
    "choice": 1,
    "text": "",
    "at": "2026-11-16T15:28:05Z"
+  },
+  {
+   "id": "Q-0063",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Missions : « générer from scratch », c'est quoi pour toi ?",
+   "context": "La V3 sait déjà « Créer une mission » vide dans l'éditeur (au registre ; tu l'as validée, SOG-0287). Le générateur de missions complet n'existe que dans les anciennes pages.",
+   "options": [
+    "Le générateur de missions des anciennes pages, à porter en V3",
+    "Créer une mission vide dans l'éditeur : je ne l'avais pas trouvée",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 1,
+   "text": "créer une mission vide, et modifier les champs. par la suite, ajouter des points passage, des sous-objectifs, des objectifs timés, etc.",
+   "at": "2026-11-16T16:16:15Z"
+  },
+  {
+   "id": "Q-0064",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Missions : quel import manque ?",
+   "context": "La V3 importe déjà des missions en YAML (« Ajouter des missions », fichiers ou texte collé ; validé, SOG-0212). L'import d'un dossier PDF n'existe qu'en ligne de commande.",
+   "options": [
+    "L'import d'un dossier PDF, à l'écran",
+    "L'import YAML : je ne l'avais pas trouvé",
+    "Les deux me vont, il ne manque rien",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 3,
+   "text": "tous les imports sont bons, sauf la génération chatgpt. il génère un yaml.",
+   "at": "2026-11-16T16:17:02Z"
+  },
+  {
+   "id": "Q-0065",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Vue d'ensemble : les quatorze grandes fonctions sont-elles les bonnes ?",
+   "context": "Missions ; Carburant et route ; Carte ; Météo ; Compte rendu ; Mes vols ; Aéronefs et performances ; Statistiques ; Données aéronautiques ; Réglages, synchronisation, appareils ; Site de la compagnie ; Ordres de vol et planning ; Atterrissages X-Plane ; Aide, recette, signalements.",
+   "options": [
+    "Oui, on part de là",
+    "À changer (je le dis dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-16T16:17:11Z"
+  },
+  {
+   "id": "Q-0066",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Vue d'ensemble : la mettre en tête de la feuille de route de l'appli ?",
+   "context": "Une barre par grande fonction avec son pourcentage ; on touche une fonction pour voir ses capacités, puis les fiches rangées dessous. Un lot pour V3 Frame. En attendant, le relevé est dans organisation/CAPACITES.json.",
+   "options": [
+    "Oui, maintenant",
+    "Oui, après l'alpha 5",
+    "Non : un tableau tenu à jour par l'ergonome suffit"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": null,
+   "text": "combien de barres en tête de feuille de route !?",
+   "at": "2026-11-16T16:17:30Z"
+  },
+  {
+   "id": "Q-0067",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Après le redémarrage : combien de sessions au travail en même temps ?",
+   "context": "Six sessions travaillaient ensemble, chacune jouant ses cas dans un navigateur, plus mes propres rejeux : cause probable de la saturation. Elles sont toutes à l'arrêt ; leur travail non poussé est intact sur le disque (liste dans le LOT). Je n'en réveille aucune avant ta réponse, sauf pour ce que tu attends tout de suite.",
+   "options": [
+    "Deux au plus, et une seule passe de cas à la fois",
+    "Une seule à la fois",
+    "Comme avant : toutes ensemble",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": null,
+   "text": "le crash est lié au pilote graphique. rien à voir avec les sessions. néanmoins, les essais ne sont plus censés être faits par les sessions, mais par un agent dédié, qui gère une file d’attente, et un non recouvrement. c’est le principe.",
+   "at": "2026-11-16T16:18:12Z"
   }
  ]
 }
