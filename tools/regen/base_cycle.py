@@ -6,7 +6,7 @@
                zones: [identifiants] (celles qu'elle nourrit ; omis pour les sources communes : `zoneCount`), zoneCount, personal: 'licence' | 'xplane' | '' ,
                steps: { download: { state: 'done' | 'late' | 'missing' | 'waiting' | 'unavailable' | 'n/a', cycle (le cycle détenu, pour une source datée), at (ISO UTC du plus récent fichier) },
                         build: { zones: n, upToDate: n }, publish: { published: n, unpublished: n, unknown: n } },
-               rank ('primary' | 'secondary'), rhythm ('airac' | 'editions' | 'daily' | 'none'), content [les contenus qu'elle donne] (SOG-0369 : les trois faits du catalogue ; une source sans rythme n'est JAMAIS `late` : sa ligne dit son âge, `steps.download.ageDays`),
+               deposited? + datedBy? ('file') dans steps.download (SOG-0368 : un dépôt à la main d'Islande, lu au NOM du fichier : sa date est celle du dépôt, pas de l'édition), rank ('primary' | 'secondary'), rhythm ('airac' | 'editions' | 'daily' | 'none'), content [les contenus qu'elle donne] (SOG-0369 : les trois faits du catalogue ; une source sans rythme n'est JAMAIS `late` : sa ligne dit son âge, `steps.download.ageDays`),
                why (la raison quand une étape manque : 'newer-in-downloads' | 'not-downloaded' | 'older-than-cycle' | 'no-file' | 'unavailable-at-publisher'),
                unavailable: { since } (SOG-0273 : l'éditeur ne publie plus le fichier — DIRCAM, AIP militaire britannique : l'étape n'est NI « en retard » NI « à faire »),
                hand: { link, expected: [motifs de nom], inDownloads: [noms du premier niveau de Téléchargements] } (regime 'hand' seulement) } ],
@@ -37,6 +37,7 @@ def _bs():
     return types.SimpleNamespace(**entry[0].__globals__)
 
 MAX_NAMES = 5000
+DEPOSIT_FILE = re.compile(r'^zones/[a-z]{2,4}/(avians)_[a-z]{2}_enr_dep_(\d{4})(\d{2})(\d{2})\.geojson\Z', re.A)      # le nom d'un dépôt à la main (tools/avians_eaip.deposit_name) : la source, la date du dépôt
 UNAVAILABLE = {'ukmil': '2025-11'}      # SOG-0273 : les sources « indisponibles chez l'éditeur » (le site ne répond plus depuis environ un an, dit l'utilisateur) : le catalogue (`unavailable`) dit la même chose, K185 les compare
 NO_READER_ZONES = {'naviair': ('dk', 'fo', 'gl'), 'navcan_aip': ('ca',)}      # les États dont des fichiers se déposent à la main et ne sont pas encore lus par la suite : la fiche d'un pays le dit (`addWillAsk.noReader`)
 EDITION_SOURCES = aero_cycles.EDITION_SOURCES      # publiés par éditions : l'édition détenue n'est jamais « en retard » du seul fait du cycle
@@ -145,7 +146,13 @@ def run(job, args, ctx):
     zones_all = args.get('zones') or base_state._zones_default(data)
     states = base_state.zone_states(data, zones_all, args['personal'], ctx)
     inputs = B.list_inputs(data)
-    cycles = aero_cycles.report(S.sia_rels(data), today, root=os.path.join(data, 'sia'))
+    rels = S.sia_rels(data)
+    cycles = aero_cycles.report(rels, today, root=os.path.join(data, 'sia'))
+    deposits = {}      # SOG-0368 : un dépôt à la main d'une source dont le NOM le dit (avians_is_enr_dep_AAAAMMJJ.geojson) : « déposé le … » reste après un rechargement (la date du dépôt, jamais celle de l'édition)
+    for rel in rels:
+        m = DEPOSIT_FILE.match(rel)
+        if m:
+            deposits[m.group(1)] = max(deposits.get(m.group(1), ''), f'{m.group(2)}-{m.group(3)}-{m.group(4)}')
     latest = base_state.download_times(data, inputs, S)
     names = _names(ctx)
     start = datetime.datetime.combine(datetime.date.fromisoformat(current), datetime.time(0, 0), datetime.timezone.utc).timestamp()
@@ -202,7 +209,7 @@ def run(job, args, ctx):
             why = 'newer-in-downloads'      # un fichier du cycle en vigueur attend déjà dans Téléchargements (par son nom) : à prendre
         item = {'id': sid, 'label': list(src['label']), 'regime': regime, 'personal': src.get('personal', ''), 'zoneCount': len(zones), **({} if common else {'zones': zones}),
                 'rank': src.get('rank'), 'rhythm': rhythm, 'content': list(src.get('content') or ()),
-                'steps': {'download': {'state': state, **({'cycle': held} if held else {}), 'at': iso(at) if at else None, **({'ageDays': age_days(at, today)} if at else {})}, 'build': {'zones': len(mine), 'upToDate': built}, 'publish': pub}}
+                'steps': {'download': {'state': state, **({'cycle': held} if held else {}), 'at': iso(at) if at else None, **({'ageDays': age_days(at, today)} if at else {}), **({'deposited': deposits[sid], 'datedBy': 'file'} if deposits.get(sid) else {})}, 'build': {'zones': len(mine), 'upToDate': built}, 'publish': pub}}
         if why:
             item['why'] = why
         if sid in UNAVAILABLE:

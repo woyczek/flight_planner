@@ -3157,3 +3157,6 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Security review** (Sécurisation, relayed 16 Nov 9:44): four requests done, see INTEGRATION « Security review »: no folder name anywhere and the cycle from the name (else unknown), the personal-use box (`not-personal`), the library before the copy, a partial SID never replaces a complete one nor erases the header of the file; plus the notes (word « uk », total of entries, junctions, linear scan). Red before: K282.
 - **Not done**: the screen reading `partial` (the index entry counts it); the other aerodromes; the departure coding tables; a real run of the verb on the user's workstation (the reader was run on his package, read-only, in a scratch copy: 24 SIDs; the verb itself needs the PDF library at pypdf ≥ 6.21.4).
 
+## 16 November 2026 — catalogue: fallback and deposited
+
+- **Decided** (ergonomics session, 16 Nov 10:00, from Réglages' proposal): `fetch.pick.fallback: true` on Iceland only; `deposited` / `datedBy` in `steps.download` of `base/cycle`. **Done**: see INTEGRATION; K283. **Choice of this session**: only Iceland's deposit is recognised by name (`avians_is_enr_dep_…`); another source's hand deposit is not in the list (UK Mil keeps `at`).
