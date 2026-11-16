@@ -2030,3 +2030,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   never dropped. When valid tracks of day D are read (the line, or the list read again from route_alts.json), a displayed route whose
   `nat` is stale or issued another day is removed from the list, the kept answer and the Map, and « Routes NAT du D lues : … retirées »
   offers « Recalculer »; a NEW computation is never pruned. F227 (red before); F225, D181, L1, L88, L94, L98 unchanged.
+- **16 Nov 2026 — SOG-0372 (c), points 1 and 2: a taken route says no unknown point for its NAT track nor for the chosen STAR** (the
+  user's capture: « Points inconnus : NATG, NICSO, PARCH4 » after « Prendre cette proposition »; the survey: routeTake copies the engine's
+  text, route_text reads « NATG » as a point name and knows only the European procedure form, digit + letter). The ergonomist's decision
+  at 9 h 00: (1) `NAT` + one letter, between two words of the route, is a NAT track (`RM.NAT_TRACK`), kept as written; (2) a word EQUAL to
+  the name of the SID or STAR chosen in Procédures (`routeModel({ procs })`, Fuel's `chosenProcNames`) is that procedure — by equality,
+  never by a pattern for the American form (« ZZZZZ5 » stays a point). (3), the engine's positions for points such as NICSO, waits for
+  AeroDB. F228 (red before, on the capture's route); F8, F69, F87, F94, F114, F115, F134, F216, K14, K28, K31 unchanged.

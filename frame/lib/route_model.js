@@ -3,7 +3,8 @@
 // par leurs nœuds (routing.js along) ou dites fermées, les niveaux gardés là où ils changent. Ni page, ni stockage : la base est
 // celle que l'appelant passe (ctx.aerodb dans Carburant), un objet inventé dans le banc frame/lib/test/route_model.html.
 // API :
-//   routeModel(text, { dep, arr, known, chain, base }) → { points, unresolved, tokens, badAirways, homonyms, jumps } (voir la fonction).
+//   routeModel(text, { dep, arr, known, chain, base, procs }) → { points, unresolved, tokens, badAirways, homonyms, jumps } (voir la fonction).
+//   NAT_TRACK : le nom d'une route NAT dans un texte (« NATG »), gardé tel qu'écrit entre deux mots de la route (SOG-0372).
 //   JUMP_NM : au-delà, un tronçon entre deux points consécutifs est dit (jumps) : un homonyme lointain, un point mal tapé (SOG-0142).
 //   far : les noms dont le seul lieu connu (ou le plus proche) est plus loin de la route que 2 × la distance directe + FAR_EXTRA_NM —
 //   non placés, jamais pris en silence (SOG-0142, « LFRS PAM LFBD » : la seule PAM du cycle était aux États-Unis).
@@ -41,8 +42,12 @@ export async function routeModel(text, {
   arr = '',
   known = new Map(),
   chain = [],
-  base = null
+  base = null,
+  procs = []
 } = {}) {
+  // SOG-0372 (c), décision de l'ergonome du 16/11 à 9 h 00 : les noms de la SID et de la STAR CHOISIES (procs) sont ces procédures,
+  // gardées sans alerte — par égalité avec le choix, jamais par un motif général (un mot de la forme américaine reste un point)
+  const procSet = new Set((Array.isArray(procs) ? procs : []).map(x => String(x ?? '').toUpperCase()).filter(Boolean));
   const points = [],
     unresolved = [],
     tokens = [];
@@ -193,6 +198,14 @@ export async function routeModel(text, {
       });
       continue;
     }
+    // SOG-0372 (c) : « NAT » et une lettre, entre deux mots de la route, est le nom d'une route NAT ; le nom de la SID ou de la STAR
+    // choisie est cette procédure : gardés tels qu'écrits, jamais « inconnus »
+    if (t.kind === 'name' && (procSet.has(t.id) || NAT_TRACK.test(t.id) && ti > 0 && (nx?.kind === 'name' || nx?.kind === 'coord'))) {
+      tokens.push({
+        keep: t.id
+      });
+      continue;
+    }
     if (t.kind === 'group') { // groupe vitesse-niveau seul : niveau du dernier point
       if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
     } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
@@ -313,3 +326,5 @@ function nmOf(a, b) {
 }
 /** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
 export const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
+/** SOG-0372 : le nom d'une route NAT tel que le moteur l'écrit dans une route prise (« NATG ») : « NAT » et une lettre. */
+export const NAT_TRACK = /^NAT[A-Z]$/;

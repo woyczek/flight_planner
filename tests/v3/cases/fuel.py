@@ -5913,6 +5913,47 @@ def f227(c):
     c.shot(f'F227_{c.design}_390_{c.lang}_delivered.png')
 
 
+_NAT_TAKEN = 'EGLL DCT DIDZA L9 OKSAW N14 OKTAD DCT MALOT NATG 54/50 DCT NICSO ALLEX Q822 ENE PARCH4 KJFK'
+
+
+@case('F228', 'Route field, a route taken through the North Atlantic: the name of a NAT track (« NAT » and one letter, between two points) '
+      'and the name of the STAR chosen in Procédures are kept as written, never said « inconnus »; a word that only looks like a procedure '
+      'stays a point', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0372 (c) (the user\'s capture, 16 Nov 8 h 36: « Points inconnus : NATG, NICSO, PARCH4 » after « Prendre cette proposition »); '
+      'the ergonomist\'s decision at 9 h 00: (1) NAT + one letter between two points is a NAT track; (2) a word EQUAL to the chosen SID or '
+      'STAR is that procedure — by equality with the choice, never by a general pattern for the American form; (3) the engine\'s positions '
+      'wait for AeroDB')
+def f228(c):
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': _NAT_TAKEN, 'dep': 'EGLL', 'arr': 'KJFK', 'manual': True,
+                             'points': [{'id': 'EGLL', 'lat': 51.47, 'lon': -0.46}, {'id': 'KJFK', 'lat': 40.64, 'lon': -73.78}],
+                             'procedures': {'arr': {'star': 'KJFK.STAR.PARCH4.RWALL.NONE'}, 'by': 'fuel', 'at': '2026-11-16T08:30:00Z'}}
+    # an invented STAR of KJFK (its name only matters; nothing from an AIP or a database)
+    from fixtures.procedures import rec as _prec, file as _pfile, pt as _ppt, PROC_CYCLE as _PCY
+    star = _prec('KJFK', 'STAR', 'PARCH4', [], [_ppt(1, 'XPA01', 41.2, -72.0), _ppt(2, 'XPA02', 40.9, -73.2)])
+    docs.append([f'proc/{_PCY}/KJFK.json', _pfile('KJFK', [star]), 'reference'])
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    U = f'{FUEL} [data-unres]'
+    # the text as « Prendre cette proposition » writes it (routeTake: input then change on the field)
+    c.js(f"(t => {{ t.value = {_NAT_TAKEN!r}; t.dispatchEvent(new Event('input', {{bubbles: true}})); t.dispatchEvent(new Event('change', {{bubbles: true}})); }})(document.querySelector('{FUEL} [data-k=rtext]'))")
+    c.until(f"(document.querySelector('{U}')?.textContent || '').includes('NICSO')", timeout=15000, what='the unknown points said (NICSO: no position yet)')
+    said = c.text(U)
+    c.ok('NATG' not in said, said, '« NATG » (NAT track G, between MALOT and 54/50) is not an unknown point')
+    c.ok('PARCH4' not in said, said, '« PARCH4 » (the STAR chosen in Procédures) is not an unknown point')
+    # (2) by equality with the choice only: a word of the same American form that is not the chosen STAR stays an unknown point
+    c.js(f"(t => {{ t.value = t.value.replace('PARCH4', 'ZZZZZ5'); t.dispatchEvent(new Event('input', {{bubbles: true}})); t.dispatchEvent(new Event('change', {{bubbles: true}})); }})(document.querySelector('{FUEL} [data-k=rtext]'))")
+    c.until(f"(document.querySelector('{U}')?.textContent || '').includes('ZZZZZ5')", timeout=10000, what='a word that is not the chosen STAR')
+    c.ok('NATG' not in c.text(U), c.text(U), 'NATG still kept')
+    # (1) between two points only: « NATG » at the end, before the arrival alone, is not a track
+    c.js(f"(t => {{ t.value = 'EGLL MALOT KJFK NATG'; t.dispatchEvent(new Event('input', {{bubbles: true}})); t.dispatchEvent(new Event('change', {{bubbles: true}})); }})(document.querySelector('{FUEL} [data-k=rtext]'))")
+    c.until(f"(document.querySelector('{U}')?.textContent || '').includes('NATG')", timeout=10000, what='NATG after the arrival: not between two points')
+    c.js(f"document.querySelector('{U}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F228_{c.design}_1280_{c.lang}_delivered.png')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

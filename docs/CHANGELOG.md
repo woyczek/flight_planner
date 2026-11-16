@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel, Route field: the name of a NAT track (« NATG ») and the name of the chosen SID or STAR are kept as written, never « Points inconnus »** (fuel DECISIONS; noreg F228; SOG-0372 c).
 - **Fuel, « Lire les routes NAT du jour »: the line is rewritten without reloading (reading, tracks read, or the reason it failed); a proposal through NAT tracks of another day is removed when newer ones are read, with « Recalculer »; aerodb re-reads what the launcher has just written** (fuel DECISIONS, aerodb INTEGRATION; noreg K277, F227; SOG-0372).
 - **Map beside Fuel and whole Map: the same view** (SOG-0353, tranche a; the user's remark of 13 Nov): the provided map shown in place of the background (the selector filled) and the framing the pilot gave are kept in ONE document of the device (`cache/maps/state.json`, never sent to the repository) and found again from one mount to the next; another flight, another mission or more than 12 hours: nothing; the address comes first; read as an untrusted input (bounded numbers, a file the mission declares); D241 (red before), D242.
 - **Route computation: no search passes the bound of its phase** (SOG-0371) — the head route 5 s at most (cold), the whole calculation 15 s at most, the alternatives their 8 s, and the searches under way obey those bounds (they finished 3 to 5 s past them: EGLL → KJFK took 40 s at the launcher, 11.8 s now); what did not finish is a « proposition ». Launcher Python: restart the launcher. Case K278.

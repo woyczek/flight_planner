@@ -1679,6 +1679,15 @@ const sameRoute = (a, b) => [a, b].map(t => String(t || '').toUpperCase().split(
  *  que si aucun point de la procédure n'est déjà dans la route ; quand elle l'est et que say est vrai, une ligne dit la jonction par
  *  un direct (« NTS1A sort à NT102 : NT102 DCT LUGEN »). Rien tant que les fiches ne sont pas lues, ni pendant la frappe dans le
  *  champ, ni quand le texte est déjà le bon. */
+/** SOG-0372 (c) : les noms (indicatif compact, « PARCH4 ») de la SID et de la STAR choisies dans Procédures, pour que le champ Route
+ *  les garde comme procédures ; la fiche lue quand le modèle des procédures l'a, sinon le nom tiré de l'identifiant. [] sans choix. */
+function chosenProcNames() {
+  const o = CF.proceduresOf(S?.flight || {}),
+    recs = S?.P?.textModel?.()?.recs,
+    nm = id => typeof id === 'string' && id ? RT.compactName(PR.nameOf(recs?.get?.(id) || null, id)) : '';
+  return [nm(o.dep?.sid), nm(o.arr?.star)].filter(Boolean);
+}
+
 function procsToText(say) {
   const m = S?.P?.textModel?.(),
     r = S?.flight?.route,
@@ -5353,7 +5362,8 @@ function resolveRoute(normalize = true) {
         arr: asked.arr,
         known,
         chain: asked.points || [],
-        base: S.ctx.aerodb
+        base: S.ctx.aerodb,
+        procs: chosenProcNames() // SOG-0372 (c) : la SID et la STAR choisies, jamais « inconnues »
       });
     if (gone(s) || seq !== S.routeSeq || !S.body) return;
     // le vol a changé d'objet pendant la lecture (chaque enregistrement du vol, writeFlight, en fait un nouveau ; un autre écrivain
@@ -5570,7 +5580,8 @@ async function autoAirways() {
         arr: r.arr,
         known,
         chain: r.points || [],
-        base: S.ctx.aerodb
+        base: S.ctx.aerodb,
+        procs: chosenProcNames()
       });
     if (gone(s) || seq !== S.routeSeq) return;
     // les mots d'un Auto précédent (voies, nœuds, sortie de SID et entrée de STAR qu'il a ajoutées) sont retirés : jamais le départ
