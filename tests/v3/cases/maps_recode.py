@@ -5310,9 +5310,9 @@ def d_names(c):
     c.eq(c.js("async () => (await import('/modules/maps/ground.js')).groundIcaos().includes('LFMT')"), True, 'the alternate (LFMT) is a ground aerodrome', what='icaos')
 
 
-@case('D166', 'Wind barbs: at most 80 in the view at any zoom, never closer than 30 px to each other (thinned when too many, completed between two read winds when too few)', 'D',
+@case('D166', 'Wind barbs: at most 80 in the view at any zoom, never closer than 48 px to each other (thinned when too many, completed between two read winds when too few)', 'D',
       tags=('maps',), screens=False, designs=('standard',),
-      rule='SOG-0214 (the user): « barbules : entre 40 et 80 à l’écran à tout zoom »; the list along the trajectory (one wind each 50 NM) gave a handful at a close zoom and a crowd at a wide one; it is thinned above 80 and completed with winds interpolated between two neighbours that were read (never across a place without wind) below 40; SOG-0243 (the ergonomist, on the capture of KDEN DCT LFST): on a route that fits one straight line sixty barbs overlap and hide the line: the count is a ceiling, two barbs are at least 30 px (a shaft) from each other')
+      rule='SOG-0214 (the user): « barbules : entre 40 et 80 à l’écran à tout zoom »; the list along the trajectory (one wind each 50 NM) gave a handful at a close zoom and a crowd at a wide one; it is thinned above 80 and completed with winds interpolated between two neighbours that were read (never across a place without wind) below 40; SOG-0243 (the ergonomist, on the capture of KDEN DCT LFST): on a route that fits one straight line sixty barbs overlap and hide the line: the count is a ceiling, two barbs are at least 30 px (a shaft) from each other, 48 px since SOG-0383')
 def d_barbs(c):
     c.open('maps', flight=True, forecast=True)
     c.js(_STATE_JS)
@@ -5323,12 +5323,12 @@ def d_barbs(c):
     for z in (4.5, 6, 7.5, 9, 10.5):
         c.js("(z) => { window.__mpMap.jumpTo({ center: [1.8, 45.2], zoom: z }); return true }", z)
         c.wait(1500)
-        n = c.js("""() => { const S = window.__mp.S, r = S.box.getBoundingClientRect(), hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= r.width && h.y >= 0 && h.y <= r.height); let min = 1e9;
-          hs.forEach((a, i) => hs.forEach((b, j) => { if (i < j) min = Math.min(min, Math.hypot(a.x - b.x, a.y - b.y)) })); return [hs.length, Math.round(min)] }""")
+        n = c.js("""() => { const S = window.__mp.S, r = S.box.getBoundingClientRect(), hs = (S.windHits || []).filter(h => h.ax >= 0 && h.ax <= r.width && h.ay >= 0 && h.ay <= r.height); let min = 1e9;
+          hs.forEach((a, i) => hs.forEach((b, j) => { if (i < j) min = Math.min(min, Math.hypot(a.ax - b.ax, a.ay - b.ay)) })); return [hs.length, Math.round(min)] }""")
         seen.append((z, n[0], n[1]))
     ok = [(z, n, g) for z, n, g in seen if z >= 6 and z <= 9]
-    c.ok(all(8 <= n <= 80 for z, n, g in ok), str(seen), 'barbs in the view at the working zooms, 80 at most (the route crosses the view)')
-    c.ok(all(g >= 29.9 for z, n, g in seen), str(seen), 'no two barbs closer than 30 px, at any zoom')
+    c.ok(all(4 <= n <= 80 for z, n, g in ok), str(seen), 'barbs in the view at the working zooms (a handful: 48 px apart since SOG-0383), 80 at most (the route crosses the view)')
+    c.ok(all(g >= 47.9 for z, n, g in seen), str(seen), 'no two barbs closer than 48 px, at any zoom')
 
 
 @case('D167', 'One path for a direct leg, the rhumb line (constant heading, straight on the Mercator map): the distance marks are on the solid line (less than 2 px from it), the dotted great circle stays beside it as the comparison, on a direct route too; 5 to 12 marks in the view at any zoom, without a sudden jump', 'D',
@@ -5508,7 +5508,7 @@ def d_locked(c):
     c.ok(p['id'] == 'NEPIX' and p.get('lock') == 'mission' and p.get('mission') == 'RDV-1', f'{p}', 'the imposed point is kept with its lock and its mission name')
 
 
-@case('D174', 'Everything along a direct leg is on the same path, the rhumb line: the wind barbs and the distance marks are less than 2 px from the line at every zoom (KDEN → LFST direct, and with a point between), the great circle is dotted, the places where the wind is read and the profile’s samples are on the rhumb line', 'D',
+@case('D174', 'Everything along a direct leg is on the same path, the rhumb line: the wind barbs (their point on the line: the foot is shifted from it, SOG-0383) and the distance marks are less than 2 px from the line at every zoom (KDEN → LFST direct, and with a point between), the great circle is dotted, the places where the wind is read and the profile’s samples are on the rhumb line', 'D',
       tags=('maps',), screens=False, designs=('standard',),
       rule='SOG-0243 (the user, capture 091755: « conflit entre les barbules et le tracé; l’orthodromie est devenue la norme, ce n’est pas le cas; un direct se fait au compas »): SOG-0233 had put the line on the great circle (the wrong way) while the barbs, the places where the wind is read (modules/fuel/winds.js samples, shared by Fuel, the Weather module and the Map) and the profile were interpolated in degrees (neither path); the nominal path of a direct leg is the rhumb line, the straight line of the Mercator map; one function (frame/lib/geo.js rhumbAt) for the line, the marks, the places read, the barbs, the profile; the great circle is the dotted comparison')
 def d_barbpath(c):
@@ -5519,8 +5519,8 @@ def d_barbpath(c):
         dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
         const ms = (S.marks || []).map(k => m.project([k.lon, k.lat])).filter(q => q.x >= 0 && q.x <= box.width && q.y >= 0 && q.y <= box.height);
         let wm = 0; for (const q of ms) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist(q, line[i - 1], line[i])); wm = Math.max(wm, best) }
-        const hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= box.width && h.y >= 0 && h.y <= box.height);
-        let worst = 0; for (const h of hs) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.x, y: h.y }, line[i - 1], line[i])); worst = Math.max(worst, best) }
+        const hs = (S.windHits || []).filter(h => h.ax >= 0 && h.ax <= box.width && h.ay >= 0 && h.ay <= box.height);
+        let worst = 0; for (const h of hs) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.ax, y: h.ay }, line[i - 1], line[i])); worst = Math.max(worst, best) }
         r({ n: hs.length, worst: Math.round(worst * 10) / 10, marks: ms.length, worstMark: Math.round(wm * 10) / 10 }) }, 1800) })"""
     for name, use in (('direct', (pts[0], pts[2])), ('with a point between', pts)):
         f = flight()
@@ -5561,9 +5561,9 @@ def d_barbpath(c):
     c.ok(far['n'] >= 10 and far['worst'] < 1, f'{far}', 'the places where the wind is read are on the rhumb line (the line in degrees was up to 90 NM from it)')
 
 
-@case('D175', 'Wind barbs on a route that is one straight line: never closer than 30 px to each other, never on a distance mark or its label (the labels read 1000, 1500…), at 1 280 and 390 px', 'D',
+@case('D175', 'Wind barbs on a route that is one straight line: never closer than 48 px to each other, never on a distance mark or its label (the labels read 1000, 1500…), at 1 280 and 390 px', 'D',
       tags=('maps',), screens=False, designs=('standard',),
-      rule='SOG-0243 (the ergonomist, on the capture of KDEN DCT LFST at 1 280): the labels of the distance marks were hidden by the barbs (« \'00 », « \'50 » instead of 1000, 1500) and sixty barbs on one straight line overlapped, their shafts and flags hiding the line; the barbs are put before the labels and skip a mark or its label, two barbs are at least 30 px from each other (the count, 40 to 80 of SOG-0214, is a ceiling)')
+      rule='SOG-0243 (the ergonomist, on the capture of KDEN DCT LFST at 1 280): the labels of the distance marks were hidden by the barbs (« \'00 », « \'50 » instead of 1000, 1500) and sixty barbs on one straight line overlapped, their shafts and flags hiding the line; the barbs are put before the labels and skip a mark or its label, two barbs are at least 30 px from each other (48 px since SOG-0383) (the count, 40 to 80 of SOG-0214, is a ceiling)')
 def d_barbgap(c):
     pts = [('KDEN', 39.8617, -104.6731), ('LFST', 48.5383, 7.6282)]
     wind = {'dirDeg': 270, 'kt': 60, 'tempC': -45, 'levelFt': 35000, 'at': '2026-11-11T10:00:00Z'}
@@ -5583,16 +5583,17 @@ def d_barbgap(c):
         for z in (3.5, 4, 5, 6):
             c.js("([z, mid]) => { window.__ord = []; window.__mpMap.jumpTo({ center: [mid.lon, mid.lat], zoom: z }); return true }", [z, mid])
             c.wait(1800)
-            r = c.js("""() => { const S = window.__mp.S, box = S.box.getBoundingClientRect(), hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= box.width && h.y >= 0 && h.y <= box.height), m = window.__mpMap;
-              let min = 1e9; hs.forEach((a, i) => hs.forEach((b, j) => { if (i < j) min = Math.min(min, Math.hypot(a.x - b.x, a.y - b.y)) }));
+            r = c.js("""() => { const S = window.__mp.S, box = S.box.getBoundingClientRect(), hs = (S.windHits || []).filter(h => h.ax >= 0 && h.ax <= box.width && h.ay >= 0 && h.ay <= box.height), m = window.__mpMap;
+              let min = 1e9; hs.forEach((a, i) => hs.forEach((b, j) => { if (i < j) min = Math.min(min, Math.hypot(a.ax - b.ax, a.ay - b.ay)) }));
               const marks = (S.marks || []).map(k => m.project([k.lon, k.lat])).filter(q => q.x >= 0 && q.x <= box.width && q.y >= 0 && q.y <= box.height);
-              // no barb anchor on a distance mark’s point
-              const on = hs.filter(h => marks.some(q => Math.hypot(q.x - h.x, q.y - h.y) < 7)).length;
+              // no barb foot on a distance mark’s point (the foot is off the line, SOG-0383)
+              const sd = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
+              const on = hs.filter(h => marks.some(q => Math.hypot(q.x - h.x, q.y - h.y) < 7.9)).length;
               // the labels of the marks (« 500 », « 1000 »…) are written after the last barb stroke of the drawing, with their halo
               const o = window.__ord, lastBarb = o.map((e, i) => e[0] === 's' && (Math.abs(e[1] - 1.8) < .01 || e[1] === 5) ? i : -1).reduce((a, b) => Math.max(a, b), -1),
                 lastLabel = o.map((e, i) => e[0] === 't' && /^[0-9]{3,4}$/.test(e[1]) ? i : -1).reduce((a, b) => Math.max(a, b), -1);
               return { n: hs.length, min: Math.round(min), on, marks: marks.length, lastBarb, lastLabel } }""")
-            c.ok(r['n'] >= 3 and (r['n'] < 2 or r['min'] >= 29.9), f'{w} px, zoom {z}: {r}', 'barbs are in the view and none is closer than 30 px to another')
+            c.ok(r['n'] >= 3 and (r['n'] < 2 or r['min'] >= 47.9), f'{w} px, zoom {z}: {r}', 'barbs are in the view and none is closer than 48 px to another')
             c.eq(r['on'], 0, f'{w} px, zoom {z}: no barb on a distance mark', what=str(r))
             c.ok(r['marks'] == 0 or (r['lastLabel'] > r['lastBarb'] >= 0), f'{w} px, zoom {z}: {r}', 'the labels of the marks are written after the barbs')
         c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat + 4], zoom: z }); return true }", [3.5, mid])
@@ -5620,9 +5621,9 @@ def d_barbelbow(c):
         c.wait(1800)
         r = c.js("""() => { const S = window.__mp.S, m = window.__mpMap, box = S.box.getBoundingClientRect(), line = S.marksPts.map(p => m.project([p.lon, p.lat])),
           dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
-          const hs = (S.windHits || []).filter(h => h.x >= 0 && h.x <= box.width && h.y >= 0 && h.y <= box.height), v = line[3];
-          let worst = 0; for (const h of hs) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.x, y: h.y }, line[i - 1], line[i])); worst = Math.max(worst, best) }
-          return { n: hs.length, worst: Math.round(worst * 10) / 10, nearVepet: hs.filter(h => Math.hypot(h.x - v.x, h.y - v.y) < 90).length } }""")
+          const hs = (S.windHits || []).filter(h => h.ax >= 0 && h.ax <= box.width && h.ay >= 0 && h.ay <= box.height), v = line[3];
+          let worst = 0; for (const h of hs) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.ax, y: h.ay }, line[i - 1], line[i])); worst = Math.max(worst, best) }
+          return { n: hs.length, worst: Math.round(worst * 10) / 10, nearVepet: hs.filter(h => Math.hypot(h.ax - v.x, h.ay - v.y) < 90).length } }""")
         c.ok(r['n'] >= 3, f'zoom {z}: {r}', 'barbs are in the view')
         c.ok(r['worst'] < 2, f'zoom {z}: {r}', 'every barb is less than 2 px from the line (the route, leg by leg, through VEPET)')
     c.shot(f'D176_{c.design}_delivered.png')
@@ -6542,7 +6543,7 @@ def d_barbedge(c):
             c.wait(1500)
             r = c.js("""() => { const S = window.__mp.S, m = window.__mpMap, line = S.marksPts.map(p => m.project([p.lon, p.lat])),
               dist = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) };
-              const all = S.windHits || []; let worst = 0; for (const h of all) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.x, y: h.y }, line[i - 1], line[i])); worst = Math.max(worst, best) }
+              const all = S.windHits || []; let worst = 0; for (const h of all) { let best = 1e9; for (let i = 1; i < line.length; i++) best = Math.min(best, dist({ x: h.ax, y: h.ay }, line[i - 1], line[i])); worst = Math.max(worst, best) }
               return { n: all.length, worst: Math.round(worst * 10) / 10 } }""")
             c.ok(r['n'] >= 3 and r['worst'] < 2, f'{vw} px, zoom {z}, centre {cen}: {r}', 'every barb is less than 2 px from the line, near the edge as at the centre')
             if (z, cen) in ((8, [3.6, 50.2]), (8, [0.8, 50.8])):
@@ -8260,3 +8261,58 @@ def d_atc_lines(c):
     c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn on the wide screen')
     _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length === 10 }", 'the bubble on the wide screen: the title, eight lines, the rest')
     c.shot('D245_{}_wide.png'.format('standard'))
+
+
+_BARB_JS = """([z, mid]) => new Promise(r => { const S = window.__mp.S, m = window.__mpMap; m.jumpTo({ center: [mid.lon, mid.lat], zoom: z });
+  setTimeout(() => { const box = S.box.getBoundingClientRect(), line = S.marksPts.map(p => m.project([p.lon, p.lat])),
+    seg = q => { let best = null; for (let i = 1; i < line.length; i++) { const a = line[i - 1], b = line[i], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy,
+      t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0, d = Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy);
+      if (l2 && (!best || d < best.d)) best = { d, tx: dx / Math.sqrt(l2), ty: dy / Math.sqrt(l2) } } return best };
+    const hs = (S.windHits || []).map(h => ({ ...h, ax: h.ax ?? h.x, ay: h.ay ?? h.y })).filter(h => h.ax >= 0 && h.ax <= box.width && h.ay >= 0 && h.ay <= box.height);
+    const off = hs.map(h => seg({ x: h.x, y: h.y })).map(s => s.d), sides = (S.windHits || []).map(h => ({ ...h, ax: h.ax ?? h.x, ay: h.ay ?? h.y })).map(h => { const s = seg({ x: h.ax, y: h.ay }); return Math.sign(s.tx * (h.y - h.ay) - s.ty * (h.x - h.ax)) });
+    let gap = 1e9; hs.forEach((a, i) => hs.forEach((b, j) => { if (i < j) gap = Math.min(gap, Math.hypot(a.ax - b.ax, a.ay - b.ay)) }));
+    const keep = [...(S.marks || []), ...(S.route.points || [])].map(k => m.project([k.lon, k.lat])), sd = (q, a, b) => { const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy, t = l2 ? Math.max(0, Math.min(1, ((q.x - a.x) * dx + (q.y - a.y) * dy) / l2)) : 0; return Math.hypot(q.x - a.x - t * dx, q.y - a.y - t * dy) },
+      onKeep = hs.filter(h => keep.some(q => Math.hypot(q.x - h.x, q.y - h.y) < 7.9)).length;
+    const whole = h => { const rr = +h.w.dirDeg * Math.PI / 180, dx = Math.sin(rr), dy = -Math.cos(rr), sg = h.w.lat >= 0 ? 1 : -1, nx = -dy * sg, ny = dx * sg; let m = 1e9;
+      for (let t = 0; t <= 34; t += 2) for (const k of [0, 5.5, 11]) { const q = { x: h.x + dx * t + nx * k, y: h.y + dy * t + ny * k }; for (let i = 1; i < line.length; i++) m = Math.min(m, sd(q, line[i - 1], line[i])) } return m },
+      onLabel = hs.filter(h => { const rr = +h.w.dirDeg * Math.PI / 180, dx = Math.sin(rr), dy = -Math.cos(rr), sg = h.w.lat >= 0 ? 1 : -1, nx = -dy * sg, ny = dx * sg;
+        for (let t = 0; t <= 34; t += 3) for (const k of [0, 5.5, 11]) { const x = h.x + dx * t + nx * k, y = h.y + dy * t + ny * k; if ((S.routeLabelRects || []).some(q => x >= q.x0 && x <= q.x1 && y >= q.y0 && y <= q.y1)) return true } return false }).length,
+      clear = Math.round(Math.min(...hs.map(whole), 99) * 10) / 10, far = Math.round(Math.max(...hs.map(h => seg({ x: h.x, y: h.y }).d), 0) * 10) / 10;
+    r({ onLabel, clear, far, n: hs.length, minOff: Math.round(Math.min(...off, 99) * 10) / 10, sides, gap: Math.round(gap * 10) / 10, onKeep, marks: keep.length }) }, 1800) })"""
+
+
+@case('D246', 'Wind barbs never sit on the route line: the foot is shifted by half a body, one barb on the left of the direction of flight and the next on the right; two barbs are at least 48 px apart at any zoom; a barb whose foot would fall on a distance mark or a route point goes to the other side of the line, else is skipped (SOG-0383)', 'D',
+      tags=('maps',), screens=False, designs=('standard',),
+      rule='SOG-0383 (the user, 16 Nov, capture LFST → EIDW: « barbules : les décaler… le tracé n’est plus visible. les placer en quinconce de part et d’autre… il y en a un peu trop », the follow-up of SOG-0214): the barbs were all on the line, one every 8 NM, hiding it; the line is the first information, the barb comes after: the foot is off the line (half a shaft), alternately left and right, the shaft stays in the direction of the wind; 48 px between two barbs; a distance mark or a route point keeps its place')
+def d_barbside(c):
+    wind = {'dirDeg': 270, 'kt': 60, 'tempC': -45, 'levelFt': 35000, 'at': '2026-11-11T10:00:00Z'}
+    long_ = [('LFST', 48.5383, 7.6282), ('EIDW', 53.4213, -6.2701)]
+    short = [('LFRS', 47.1569, -1.6078), ('LUGEN', 46.5833, -1.2), ('LFML', 43.4367, 5.215)]
+    for name, use, zooms in (('long', long_, (4.5, 5.5, 6.5)), ('short', short, (6, 7, 8))):
+        f = flight()
+        f['route'] = {'text': ' '.join(i for i, _, _ in use), 'dep': use[0][0], 'arr': use[-1][0], 'points': [{'id': i, 'lat': la, 'lon': lo, 'wind': dict(wind, kt=40 + 10 * k)} for k, (i, la, lo) in enumerate(use)]}
+        f['level'] = {'ft': 35000}
+        for w, h in ((1280, 760), (390, 667)):
+            c.page.set_viewport_size({'width': w, 'height': h})
+            c.open('maps', docs=fdocs(f), flight=False, airfields=True, wait=False)
+            c.ready('maps', sheet=True)
+            c.js(_STATE_JS)
+            hook_map(c)
+            mid = c.js("() => { const S = window.__mp.S; return window.MapsRender.rhumbAt(S.marksPts[0], S.marksPts.at(-1), .5) }")
+            c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat], zoom: z }); return true }", [zooms[0], mid])
+            c.wait(2000)
+            for z in zooms:
+                r = c.js(_BARB_JS, [z, mid])
+                tag = f'{name}, {w} px, zoom {z}: {r}'
+                c.ok(r['n'] >= 2, tag, 'barbs are in the view')
+                c.ok(r['minOff'] >= 10, tag, 'no barb has its foot on the line: shifted by half a body')
+                c.ok(r['clear'] >= 5.9 and r['far'] <= 45.5, tag, 'no part of a barb (foot, shaft, feathers) touches the line: 6 px at least from it, the foot 45 px at most from it')
+                c.eq(r['onLabel'], 0, f'{name}, {w} px, zoom {z}: no part of a barb covers a label of the route (TOC, TOD, names, marks)', what=str(r))
+                pairs = list(zip(r['sides'], r['sides'][1:]))
+                c.ok(0 not in r['sides'] and sum(a != b for a, b in pairs) >= 0.8 * len(pairs), tag,
+                     'one on the left of the direction of flight, the next on the right (but where a foot would fall on a mark or a point: the other side)')
+                c.ok(r['n'] < 2 or r['gap'] >= 47.9, tag, 'two barbs are at least 48 px apart')
+                c.eq(r['onKeep'], 0, f'{name}, {w} px, zoom {z}: no barb foot on a distance mark or a route point', what=str(r))
+            c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat], zoom: z }); return true }", [zooms[1], mid])
+            c.wait(1800)
+            c.shot(f'D246_{c.design}_{name}_{w}_delivered.png')

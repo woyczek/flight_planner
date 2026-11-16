@@ -125,7 +125,8 @@ IVAO, VATSIM, X-Plane or Little Navmap. The estimated times are also shown for a
 **Winds aloft.** When Fuel has the wind forecast at the flight level, the map shows it as barbs along the route: at
 each point, and every 50 NM between two points. The staff points to where the wind comes from; a pennant is 50 kt, a
 barb 10 kt, a half barb 5 kt. Tap a barb (or move the mouse over it): the bubble gives the direction, the speed, the
-temperature, the level and the forecast hour. The “Winds aloft” layer hides them.
+temperature, the level and the forecast hour. The barbs never sit on the route line: they are shifted off it, one on the
+left of the direction of flight, the next on the right, at least 48 screen points apart. The “Winds aloft” layer hides them.
 The barbs are read from the same forecast as the weather cross-section (nothing more is asked): if the cross-section has wind, the map has. Where the chosen model does not cover the route (the middle of the route chooses it) there is no arrow: the bubble says “No wind here (outside ARPEGE)”; never the same arrow repeated. The “Route weather” gesture then reads the covering model (GFS) for those holes, and each barb says its model in the bubble. On a view more than 3,000 NM wide (a route to another continent) the barbs are hidden and the notes say so: zoom in to see them.
 
 **Steps.** If the route sets a level at some points in Fuel, the profile draws the steps: climb, level-off, new

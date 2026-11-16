@@ -130,7 +130,9 @@ IVAO, VATSIM, X-Plane o Little Navmap. Las horas estimadas también se muestran 
 **Vientos en altura.** Cuando Combustible tiene la previsión del viento al nivel del vuelo, el mapa la muestra en barbas
 a lo largo de la ruta: en cada punto, y cada 50 NM entre dos puntos. El asta señala de dónde viene el viento; un
 banderín vale 50 kt, una barba 10 kt, media barba 5 kt. Toque una barba (o pase el ratón por encima): la burbuja da la
-dirección, la fuerza, la temperatura, el nivel y la hora de la previsión. La capa «Vientos en altura» las oculta.
+dirección, la fuerza, la temperatura, el nivel y la hora de la previsión. Las barbas nunca se posan sobre el trazo de la
+ruta: se desplazan, una a la izquierda del sentido de vuelo, la siguiente a la derecha, a 48 puntos de pantalla como
+mínimo una de otra. La capa «Vientos en altura» las oculta.
 Las barbas se leen de la misma previsión que el corte meteorológico (no se pide nada más): si el corte tiene viento, el mapa también. Donde el modelo elegido no cubre la ruta (el medio de la ruta lo elige) no hay flecha: la burbuja dice «Sin viento aquí (fuera de ARPEGE)»; nunca la misma flecha repetida. El gesto «Meteo de la ruta» lee entonces el modelo que cubre (GFS) para esos huecos, y cada barba dice su modelo en la burbuja. En una vista de más de 3 000 NM de ancho (una ruta a otro continente) las barbas están ocultas y las notas lo dicen: acerque para verlas.
 
 **Escalones.** Si la ruta fija un nivel en algunos puntos en Combustible, el perfil dibuja los escalones: ascenso,

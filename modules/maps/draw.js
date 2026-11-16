@@ -842,6 +842,14 @@ function draw() {
     S.worldView = world;
     status();
   }
+  // les étiquettes de la route du vol (rectangles, du canvas à la vue) : les barbules (SOG-0383) et les itinéraires proposés ne les barrent pas et ne nomment pas un point déjà nommé
+  S.routeLabelRects = [...(got0.routeLabels || []), ...(got0.plan || []).map(p => p.r).filter(Boolean)].map(r =>
+    ({ // y compris les noms de TOC et de TOD
+      x0: r.x0 - mx - 2,
+      x1: r.x1 - mx + 2,
+      y0: r.y0 - my - 2,
+      y1: r.y1 - my + 2
+    }));
   S.windHits = !mission && !pick && !world && L.wind && zoomOn('wind') ? drawWinds(ctx, toC) : [];
   S.atcHits = !mission && !pick && L.atc ? drawAtc(ctx, toC) : []; // les contrôleurs en ligne, une teinte par réseau (SOG-0094)
   if (S.windHits
@@ -858,14 +866,6 @@ function draw() {
     for (const l of got0.routeLabelDraws || []) MapsRender.kit.halo(ctx, l.text, l.x, l.y, l.size, l.color || col, l.align);
     ctx.restore();
   }
-  // les étiquettes de la route du vol (rectangles, du canvas à la vue) : les itinéraires proposés ne les barrent pas et ne nomment pas un point déjà nommé
-  S.routeLabelRects = [...(got0.routeLabels || []), ...(got0.plan || []).map(p => p.r).filter(Boolean)].map(r =>
-    ({ // y compris les noms de TOC et de TOD
-      x0: r.x0 - mx - 2,
-      x1: r.x1 - mx + 2,
-      y0: r.y0 - my - 2,
-      y1: r.y1 - my + 2
-    }));
   S.altHits = drawAlts(ctx, toC, S.routeLabelRects); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
   if (S.alts?.list.length && S.altHits.length && S.altsSeq !== S
     .altsDrawnSeq

@@ -137,8 +137,9 @@ Navmap. Die voraussichtlichen Zeiten erscheinen auch für einen in Kraftstoff da
 **Höhenwinde.** Hat Kraftstoff die Windvorhersage in der Flughöhe, zeigt die Karte sie als Windfiedern entlang der
 Route: an jedem Punkt und alle 50 NM zwischen zwei Punkten. Der Schaft zeigt, woher der Wind kommt; ein Wimpel steht für
 50 kt, eine Fieder für 10 kt, eine halbe Fieder für 5 kt. Tippen Sie eine Fieder an (oder fahren Sie mit der Maus
-darüber): die Blase nennt Richtung, Stärke, Temperatur, Flughöhe und die Stunde der Vorhersage. Die Ebene „Höhenwinde“
-blendet sie aus.
+darüber): die Blase nennt Richtung, Stärke, Temperatur, Flughöhe und die Stunde der Vorhersage. Die Windfiedern liegen nie auf
+der Routenlinie: sie sind versetzt, eine links der Flugrichtung, die nächste rechts, mindestens 48 Bildschirmpunkte
+voneinander entfernt. Die Ebene „Höhenwinde“ blendet sie aus.
 Die Windfiedern werden aus derselben Vorhersage wie der Wetterschnitt gelesen (nichts weiter wird abgefragt): hat der Schnitt Wind, hat ihn die Karte. Wo das gewählte Modell die Route nicht abdeckt (die Streckenmitte wählt es), gibt es keinen Pfeil: die Blase sagt „Hier kein Wind (außerhalb ARPEGE)“; nie derselbe Pfeil wiederholt. Die Aktion „Streckenwetter“ liest dann das abdeckende Modell (GFS) für diese Lücken, und jede Windfieder nennt ihr Modell in der Blase. Auf einer Ansicht von mehr als 3 000 NM Breite (eine Route auf einen anderen Kontinent) sind die Windfiedern ausgeblendet und die Hinweise sagen es: zoomen Sie hinein, um sie zu sehen.
 
 **Stufen.** Legt die Route in Kraftstoff an einigen Punkten eine Flugfläche fest, zeichnet das Profil die Stufen:

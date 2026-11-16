@@ -706,8 +706,7 @@ a barb at each point that has one and every 50 NM between two such points, inter
 linearly). Staff 30 px towards where the wind comes from, feathers on the low-pressure side (left with the wind at one's
 back in the northern hemisphere, right in the southern): pennant 50 kt, barb 10 kt, half barb 5 kt, a circle under 3 kt,
 a 5 px background edge under it. Tooltip: "Wind 290° / 65 kt", then temperature, level and forecast hour.
-Two barbs are at least 30 px apart on the screen (one shaft; the 40 to 80 of the view is a ceiling of 80, SOG-0243); a barb whose point would fall on a distance mark slides along
-the line (8 to 24 px) or is skipped, and the marks' points and labels are drawn again over the barbs with their halo.
+Two barbs are at least 48 px apart on the screen, measured between their points ON the line (SOG-0383; 30 px before; the 40 to 80 of the view is a ceiling of 80, SOG-0243). **No barb sits on the line** (SOG-0383): the foot of each is shifted by half a body (`WIND_SIDE_PX` = 15 px, half the 30 px shaft) perpendicular to the line, to the left of the direction of flight for one and to the right for the next, in the order of the line (the read winds and the interpolated ones follow each other along the route); the shaft stays in the direction of the wind. **No part of a barb (foot, shaft, feathers) touches the line, nor a label of the route** (TOC, TOD, names: `S.routeLabelRects`): on the wanted side the foot moves further away perpendicularly (15 to 45 px) until the whole barb is at least 6 px from the line, else the other side, else the barb is skipped. A foot that would fall on a distance mark or a route point (8 px) goes to the other side of the line, else the barb is skipped (never slid). `windHits` carry `x, y` (the foot: what is drawn and touched) and `ax, ay` (the point on the line: what the wind is read for). The marks' points and labels are drawn again over the barbs with their halo.
 
 ### 6.5 Towns
 

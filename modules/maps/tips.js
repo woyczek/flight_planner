@@ -464,9 +464,17 @@ function drawBarb(ctx, c, w, col, lw = 1.8) {
 const WIND_MIN = 40,
   WIND_MAX = 80,
   WIND_TARGET = 60,
-  /** Écart minimal à l'écran entre deux barbules (px : une hampe) : sur une route qui tient sur un trait droit, soixante barbules se chevauchaient et cachaient le trait ; le compte
-   *  « 40 à 80 » est un plafond, l'espacement la règle (SOG-0243, retouche). */
-  WIND_GAP_PX = 30;
+  /** Écart minimal à l'écran entre deux barbules, mesuré entre leurs points SUR le trait (px) : sur une route qui tient sur un trait droit, soixante barbules se chevauchaient et cachaient le trait ;
+   *  le compte « 40 à 80 » est un plafond, l'espacement la règle (SOG-0243, retouche ; 30 px, puis 48 px : SOG-0383, « il y en a un peu trop »). */
+  WIND_GAP_PX = 48,
+  /** Décalage du pied d'une barbule hors du trait : un demi-corps (la moitié de la hampe de 30 px), une barbule à gauche du sens de vol, la suivante à droite (SOG-0383). */
+  WIND_SIDE_PX = 15,
+  /** Distance (px) en dessous de laquelle le pied d'une barbule « tombe sur » un repère de distance ou un point de route : l'autre côté du trait, sinon elle est sautée (SOG-0383). */
+  WIND_SKIP_PX = 8,
+  /** Écart le plus grand du pied au trait, et distance minimale de TOUTE la barbule (pied, hampe, plumes) au trait : la barbule ne le couvre jamais (SOG-0383, retouche de l'ergonome). WIND_NEAR_PX : la portion du trait mesurée de part et d'autre du point. */
+  WIND_SIDE_MAX = 45,
+  WIND_CLEAR_PX = 6,
+  WIND_NEAR_PX = 130;
 
 function windsPicked(list, toC, W, H) {
   const at = list.map(w => ({
@@ -594,28 +602,14 @@ function windsPicked(list, toC, W, H) {
   }
   return out;
 }
-/** Les barbules de la vue (windsPicked : de 40 à 80, éclaircies ou complétées), jamais posées sur un point de repère de distance : une barbule dont le point tomberait sur un repère se décale le long du
- *  trait (de 8 à 24 px, de part et d'autre : le trait est droit) ou saute ; deux barbules sont à WIND_GAP_PX au moins l'une de l'autre, les lues d'abord ; au plus WIND_MAX. Les points
- *  des repères et leurs libellés (« 1000 », « 1500 ») sont redessinés par-dessus les barbules (draw.js) : une hampe qui les croise ne les cache pas. Rend [{ w, c }]. */
+/** Les barbules de la vue (windsPicked : éclaircies ou complétées), jamais sur le trait (SOG-0383) : le tracé est l'information première. Chacune a son point SUR le trait (a) et son pied (c), décalé de
+ *  WIND_SIDE_PX perpendiculairement au trait, à gauche du sens de vol pour l'une, à droite pour la suivante (en quinconce), la hampe restant dans le sens du vent. Deux barbules sont à WIND_GAP_PX
+ *  au moins l'une de l'autre (points sur le trait), les lues d'abord ; celle dont le pied tomberait sur un repère de distance ou un point de route passe de l'autre côté du trait, sinon est sautée (jamais glissée) ; au plus WIND_MAX.
+ *  Les points des repères et leurs libellés (« 1000 », « 1500 ») sont redessinés par-dessus les barbules (draw.js). Rend [{ w, c, a }]. */
 function windsInView(list, toC, W, H) {
-  const blocks = (S.marks || []).map(m => {
-      const c = toC(m.lat, m.lon);
-      return {
-        x0: c.x - 7,
-        x1: c.x + 7,
-        y0: c.y - 7,
-        y1: c.y + 7
-      };
-    }),
-    boxOf = ({
-      c
-    }) => ({
-      x0: c.x - 3,
-      x1: c.x + 3,
-      y0: c.y - 3,
-      y1: c.y + 3
-    }),
-    hit = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0,
+  // les places à garder : les repères de distance et les points de la route
+  const keep = [...(S.marks || []), ...(S.route?.points || [])].filter(p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon)).map(p =>
+      toC(+p.lat, +p.lon)),
     pts = (S.marksPts || []).map(p => toC(p.lat, p.lon)),
     // la route à l'écran : abscisse curviligne de chaque point de la polyligne ; un décalage se fait LE LONG DU TRACÉ (tronçon par tronçon, le coude suivi), jamais dans la direction d'un
     // seul tronçon : près d'un coude le point décalé de la tangente quittait le trait de sin(angle) × décalage (SOG-0243, 14 à 17 px à VEPET quand le coude est près du bord)
@@ -652,23 +646,94 @@ function windsInView(list, toC, W, H) {
       };
     },
     out = [];
+  // 1. les barbules gardées : au plus WIND_MAX, à WIND_GAP_PX l'une de l'autre sur le trait, les lues d'abord (l'ordre de windsPicked)
+  const kept = [];
   for (const q of windsPicked(list, toC, W, H)) {
-    if (out.length >= WIND_MAX) break;
-    const on = pts.length > 1 ? onPoly(q.c) : null;
-    for (const sh of [0, 8, -8, 16, -16, 24, -24]) {
-      if (sh && !on) break;
-      const c = sh ? polyAt(on.s + sh) : q.c,
-        b = boxOf({
-          w: q.w,
-          c
+    if (kept.length >= WIND_MAX) break;
+    if (kept.some(o => Math.hypot(o.q.c.x - q.c.x, o.q.c.y - q.c.y) < WIND_GAP_PX)) continue;
+    kept.push({
+      q,
+      on: pts.length > 1 ? onPoly(q.c) : null
+    });
+  }
+  // 2. dans l'ordre du trait (les lues et les interpolées se suivent sur la route), le pied décalé : la normale du trait à cet endroit, à gauche du sens de vol (écran : y vers le bas) pour l'une, à droite pour la suivante.
+  // AUCUNE partie de la barbule (pied, hampe, plumes) ne touche le trait ni une étiquette de la route : du côté voulu le pied s'écarte, perpendiculairement, de WIND_SIDE_PX à WIND_SIDE_MAX, jusqu'à ce que toute la barbule soit à WIND_CLEAR_PX au
+  // moins du trait ; sinon de l'autre côté ; sinon elle est sautée. Le pied ne tombe pas non plus sur une place à garder (un repère, un point de route) ; une hampe qui en croise une ne la cache pas (draw.js la redessine
+  // par-dessus, avec son halo)
+  kept.sort((x, y) => (x.on?.s ?? 0) - (y.on?.s ?? 0));
+  // les points d'une barbule : la hampe et la bande des plumes (11 px du côté des basses pressions), échantillonnés ; hors couverture (pas de flèche) : la place seule
+  const barb = (c, w) => {
+      if (w.gap || !Number.isFinite(+w.dirDeg)) return [{
+        x: c.x,
+        y: c.y
+      }];
+      const r = +w.dirDeg * Math.PI / 180,
+        dx = Math.sin(r),
+        dy = -Math.cos(r),
+        sg = w.lat >= 0 ? 1 : -1,
+        pts = [];
+      for (let t = 0; t <= 34; t += 3)
+        for (const k of [0, 5.5, 11]) pts.push({
+          x: c.x + dx * t - dy * sg * k,
+          y: c.y + dy * t + dx * sg * k
         });
-      if (blocks.some(k => hit(b, k)) || out.some(o => Math.hypot(o.c.x - c.x, o.c.y - c.y) < WIND_GAP_PX)) continue;
-      out.push(sh ? {
-        ...q,
-        c
-      } : q);
-      break;
+      return pts;
+    },
+    // les tronçons du trait près de l'abscisse s (ceux que la barbule peut toucher : à WIND_NEAR_PX le long du trait)
+    near = sv => {
+      const o = [];
+      for (let i = 1; i < pts.length; i++)
+        if (cum[i] >= sv - WIND_NEAR_PX && cum[i - 1] <= sv + WIND_NEAR_PX) o.push([pts[i - 1], pts[i]]);
+      return o;
+    },
+    // les étiquettes de la route (TOC, TOD, noms des points…) que la barbule ne couvre pas non plus
+    labels = S.routeLabelRects || [],
+    clear = (c, w, segs) => {
+      let m = Infinity;
+      const b = barb(c, w);
+      if (b.some(p => labels.some(r => p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1))) return -1;
+      for (const p of b)
+        for (const [x, y] of segs) m = Math.min(m, segDist(p.x, p.y, x, y));
+      return m;
+    };
+  let side = 1;
+  for (const {
+      q,
+      on
     }
+    of kept) {
+    const a = q.c,
+      p0 = on ? polyAt(on.s - 2) : null,
+      p1 = on ? polyAt(on.s + 2) : null,
+      len = on ? Math.hypot(p1.x - p0.x, p1.y - p0.y) : 0,
+      segs = len > .5 ? near(on.s) : [],
+      free = c => !keep.some(k => Math.hypot(k.x - c.x, k.y - c.y) < WIND_SKIP_PX);
+    let found = null;
+    if (len > .5) {
+      for (const sd of [side, -side]) {
+        for (let d = WIND_SIDE_PX; d <= WIND_SIDE_MAX && !found; d += 3) {
+          const c = {
+            x: a.x + sd * d * (p1.y - p0.y) / len,
+            y: a.y - sd * d * (p1.x - p0.x) / len
+          };
+          if (free(c) && clear(c, q.w, segs) >= WIND_CLEAR_PX) found = {
+            sd,
+            c
+          };
+        }
+        if (found) break;
+      }
+    } else if (free(a)) found = {
+      sd: 0,
+      c: a
+    };
+    if (!found) continue;
+    out.push({
+      ...q,
+      a,
+      c: found.c
+    });
+    side = found.sd ? -found.sd : side;
   }
   return out;
 }
@@ -678,7 +743,8 @@ export function drawWinds(ctx, toC) {
     hits = [];
   for (const {
       w,
-      c
+      c,
+      a
     }
     of windsInView(windPoints(), toC, S.canvas.width / Math.max(1, window.devicePixelRatio || 1), S.canvas.height / Math.max(1, window
       .devicePixelRatio || 1))) {
@@ -689,6 +755,8 @@ export function drawWinds(ctx, toC) {
     hits.push({
       x: c.x,
       y: c.y,
+      ax: a.x, // son point sur le trait
+      ay: a.y,
       w
     });
   }
