@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "fbb53b2",
-  "fiches": 374,
+  "organisation": "43f226e",
+  "fiches": 378,
   "untranslated": 0,
   "priorities": 310
  },
@@ -365,8 +365,7 @@
      "fr": "Signaler un bug ou une demande depuis l'application",
      "en": "Report a bug or a request from within the application",
      "de": "Einen Fehler oder Wunsch direkt in der Anwendung melden",
-     "es": "Señalar un fallo o una petición desde la aplicación",
-     "test": true
+     "es": "Señalar un fallo o una petición desde la aplicación"
     },
     {
      "id": "SOG-0323",
@@ -891,6 +890,15 @@
      "de": "Kraftstoff am Telefon: der Block « Verfahren » ist leer, ohne ein Wort; Verfahren müssen aus dem privaten Repository kommen",
      "es": "Combustible en el teléfono: el bloque « Procedimientos » está vacío, sin una palabra; los procedimientos deben venir del repositorio privado",
      "test": true
+    },
+    {
+     "id": "SOG-0377",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : après le choix ou le changement d'une SID ou d'une STAR, une longue phase de rafraîchissement",
+     "en": "Fuel: a long refresh after choosing or changing a SID or a STAR",
+     "de": "Kraftstoff: lange Aktualisierung nach Wahl oder Wechsel einer SID oder STAR",
+     "es": "Combustible: una larga actualización tras elegir o cambiar una SID o una STAR"
     }
    ]
   },
@@ -974,8 +982,7 @@
      "fr": "Routes NAT à l'étape Route : la lecture du jour réussit sans que l'écran le montre ; la proposition calculée sur les routes périmées reste ; la route prise donne des « points inconnus »",
      "en": "NAT tracks at the Route step: the day's read succeeds without the screen showing it; the proposal computed on outdated tracks stays; the route taken gives « unknown points »",
      "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
-     "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »",
-     "test": true
+     "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »"
     }
    ]
   },
@@ -2875,6 +2882,27 @@
    ]
   },
   {
+   "id": "compagnie-missions-x-plane",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; X-Plane",
+    "en": "Missions ; X-Plane",
+    "de": "Missions ; X-Plane",
+    "es": "Missions ; X-Plane"
+   },
+   "items": [
+    {
+     "id": "SOG-0379",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Missions : détecter le passage d'un point et une zone de « trouvé » par la position de l'aéronef ; objet posé dans X-Plane",
+     "en": "Missions: detect the passage of a point and a 'found' zone from the aircraft position; object placed in X-Plane",
+     "de": "Missionen: Überflug eines Punkts und eine „Gefunden“-Zone aus der Position des Luftfahrzeugs erkennen; Objekt in X-Plane",
+     "es": "Misiones: detectar el paso por un punto y una zona de «encontrado» por la posición de la aeronave; objeto en X-Plane"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-telephone",
    "app": "compagnie",
    "label": {
@@ -3010,12 +3038,11 @@
     {
      "id": "SOG-0368",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Islande : la prise d'Avians échoue (« fichier illisible ») et rien ne permet de déposer à la main ; les routes de l'ENR 3.2 sont à une page par route",
      "en": "Iceland: taking Avians fails (« unreadable file ») and nothing allows a manual drop; ENR 3.2 routes come one page per route",
      "de": "Island: der Abruf von Avians scheitert (« Datei unlesbar ») und nichts erlaubt das manuelle Ablegen; die ENR-3.2-Strecken haben je eine Seite",
-     "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta",
-     "test": true
+     "es": "Islandia: la toma de Avians falla (« archivo ilegible ») y nada permite depositar a mano; las rutas ENR 3.2 van a una página por ruta"
     }
    ]
   },
@@ -4087,7 +4114,7 @@
     {
      "id": "SOG-0354",
      "kind": "feature",
-     "state": "later",
+     "state": "doing",
      "fr": "Moteur de route : découper une longue route en tronçons que l'on sait valides (au-delà de la côte : traverser aussi les États-Unis)",
      "en": "Route engine: split a long route into legs known to be valid (beyond the coast: crossing the United States too)",
      "de": "Routen-Engine: eine lange Route in als gültig bekannte Abschnitte teilen (über die Küste hinaus: auch quer durch die USA)",
@@ -4679,6 +4706,27 @@
    ]
   },
   {
+   "id": "maintenance-donnees-carte-des-pays",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; carte des pays",
+    "en": "Données ; carte des pays",
+    "de": "Données ; carte des pays",
+    "es": "Données ; carte des pays"
+   },
+   "items": [
+    {
+     "id": "SOG-0378",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : sur la page de mise à jour, un clic est pris pour un glisser, même hors de la carte",
+     "en": "Data: on the update page a click is taken for a drag, even outside the map",
+     "de": "Daten: auf der Aktualisierungsseite wird ein Klick als Ziehen gewertet, auch außerhalb der Karte",
+     "es": "Datos: en la página de actualización un clic se toma por un arrastre, incluso fuera del mapa"
+    }
+   ]
+  },
+  {
    "id": "maintenance-donnees-lanceur",
    "app": "maintenance",
    "label": {
@@ -4911,6 +4959,27 @@
      "en": "VAC workbench: the parser moves into the launcher, the workbench server goes away, the Map reads the JSON",
      "de": "VAC-Werkbank: der Parser zieht in den Launcher, der Werkbank-Server entfällt, die Karte liest das JSON",
      "es": "Taller VAC: el analizador entra en el lanzador, el servidor del taller desaparece, el Mapa lee el JSON"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-donnees-manuels",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; Données ; manuels",
+    "en": "Lanceur ; Données ; manuels",
+    "de": "Lanceur ; Données ; manuels",
+    "es": "Lanceur ; Données ; manuels"
+   },
+   "items": [
+    {
+     "id": "SOG-0376",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Installation : les bibliothèques Python en option s'installent par un script, et l'écran dit lesquelles manquent",
+     "en": "Installation: optional Python libraries are installed by a script, and the screen says which ones are missing",
+     "de": "Installation: optionale Python-Bibliotheken werden per Skript installiert, und der Bildschirm sagt, welche fehlen",
+     "es": "Instalación: las bibliotecas opcionales de Python se instalan con un script, y la pantalla dice cuáles faltan"
     }
    ]
   },
