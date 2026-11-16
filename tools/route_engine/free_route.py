@@ -15,7 +15,7 @@ STEP_LON = 10          # un point par 10° de longitude
 LOW_FT, HIGH_FT = 28500, 60000      # le plancher de l'espace RVSM / HLA et le plafond : une route libre est une route de croisière
 NEED = 2               # la recherche vers un paquet d'entrées s'arrête dès que deux sont atteintes (une entrée inatteignable fait sinon parcourir tout l'espace des états)
 FREE_S = 3.0           # le temps de la section (§ 13.4 : 3 s) : les couples (entrée, sortie) sont essayés dans l'ordre de leur minorant, SANS nombre fixe (SOG-0354 L5 4, défaut 3), jusqu'à ce que le minorant du suivant dépasse le meilleur coût trouvé, ou que ce temps (ou la borne de la phase) soit épuisé
-EXTRA_SEARCH_S = 0.15   # d1 bis : une recherche de plus (vers les entrées restantes) ne dure pas plus : quand ses buts ne sont pas atteignables elle parcourrait tout l'espace (4,5 s depuis Dublin) ; coupée, elle rend ce qu'elle a atteint
+EXTRA_STATES = 7000    # d1 bis (d) : une recherche de plus (vers les entrées restantes qui peuvent encore faire plus COURT) ne parcourt pas plus d'ÉTATS : quand ses buts ne sont pas atteignables elle parcourrait tout l'espace (14 000 états, 4,5 s depuis Dublin) ; coupée, elle rend ce qu'elle a atteint ; une borne en ÉTATS est déterministe (un temps ne l'est pas : la même demande rendrait deux routes selon la charge du poste) ; 7 000 : la plus petite valeur mesurée qui rend aux vols EDDF / EGLL « hors fenêtre » leur distance (1 500 en perdait 72 à 97 NM, 5 000 encore 76)
 LABEL = 'route libre, créée'
 NO_REACH = 'aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau'
 NO_CHAIN = 'aucune chaîne par une route libre n\'a abouti'
@@ -139,16 +139,14 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
         if out_of_time():
             report['stopped'] = 'time'
             break
-        saved_cap = engine.SEARCH_CAP_S      # SOG-0354 L5 (4) d1 bis : une recherche de plus (vers les entrées restantes, dont le minorant est sous le meilleur coût) ne dure pas plus que le temps qui reste à la section
-        if report.get('searches'):
-            engine.SEARCH_CAP_S = min(saved_cap, EXTRA_SEARCH_S, max(0.1, FREE_S - (time.perf_counter() - began)))
-        try:
-            reached = europe(g2, start, [eff(i) for i in remaining])
-        finally:
-            engine.SEARCH_CAP_S = saved_cap
+        useful = [i for i in remaining if best is None or pack_bound(i) < best['total_nm']]      # seules les entrées qui peuvent encore faire plus COURT sont des buts (les autres ne feraient que détourner la recherche)
+        if not useful:
+            report['stopped'] = 'bound'
+            break
+        reached = europe(g2, start, [eff(i) for i in useful], **({'max_states': EXTRA_STATES} if report.get('searches') else {}))      # SOG-0354 L5 (4) d1 bis : une recherche de plus (vers les entrées restantes) est bornée en ÉTATS
         report['searches'] = report.get('searches', 0) + 1
         any_reached = any_reached or bool(reached)
-        pack = [i for i in remaining if eff(i) in reached]
+        pack = [i for i in useful if eff(i) in reached]
         pairs = sorted(((nm_of(reached[eff(i)]['path']) + lead_nm(i) + ocean[(i, o)] + tail(o), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])      # le minorant en NM : la section d'Europe RÉELLE + le reste orthodromique
         for bound, i, o in pairs:
             if best and bound >= best['total_nm']:      # les couples suivants ne peuvent pas être plus courts que le meilleur trouvé
@@ -179,7 +177,7 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
             break
         if len(reached) < NEED:      # moins de NEED atteintes : la recherche a parcouru tout l'espace atteignable, les autres entrées ne sont pas atteignables
             break
-        remaining = [i for i in remaining if eff(i) not in reached]      # les entrées qui n'ont pas été atteintes (la recherche s'est arrêtée avant) : une recherche de plus seulement si aucune chaîne n'a abouti
+        remaining = [i for i in useful if eff(i) not in reached]      # les entrées qui n'ont pas été atteintes (la recherche s'est arrêtée avant) : une recherche de plus seulement si aucune chaîne n'a abouti
     if best:
         return dict(best, tried=tried, stopped=report['stopped'], searches=report['searches']), None
     if report['stopped'] == 'time':

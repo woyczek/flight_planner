@@ -11557,7 +11557,7 @@ def k294(c):
             self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
             return p['id']
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             import heapq
             best, q, prev = {s: 0.0}, [(0.0, s)], {}
             while q:
@@ -11669,7 +11669,7 @@ def k297(c):
             self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
             return p['id']
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             best, q, prev = {s: 0.0}, [(0.0, s)], {}
             while q:
                 d, u = heapq.heappop(q)
@@ -12122,7 +12122,7 @@ def k302(c):
             self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
             return p['id']
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             best, q, prev = {s: 0.0}, [(0.0, s)], {}
             while q:
                 d, u = heapq.heappop(q)
@@ -12226,7 +12226,7 @@ def k303(c):
             self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
             return p['id']
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             stack, prev, dist = [(0.0, s)], {}, {s: 0.0}
             while stack:
                 d, u = heapq.heappop(stack)
@@ -12327,7 +12327,7 @@ def k304(c):
             self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
             return p['id']
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             best, q, prev = {s: 0.0}, [(0.0, s)], {}
             while q:
                 d, u = heapq.heappop(q)
@@ -12427,7 +12427,7 @@ def k305(c):
 
 @case('K306', 'Route engine, SOG-0354 lot L5 (4) d1 bis: after the first European search (which stops at two entries reached), the free route makes ANOTHER search to the entries that remain as long as the lower bound of one of them is BELOW the best chain found (in NM: the great circle is an exact lower bound) and the time of the section lasts; the shortest chain wins; the answer says how many searches (`sections.free.searches`) — KBOS → EDDF « out » is back to 3 244.6 NM (d1 had made it 170.6 NM longer)',
       'K', static=True,
-      rule='SOG-0354 L5 (4) d1 bis (ergonomics session, 21:40: « une route plus longue qu\'avant, sans le dire, ne part pas »). d1 stopped at the first search (two entries reached, whatever they are): KBOS → EDDF « hors fenêtre » 3 244.6 → 3 415.2 NM (+5.3 %), three flights from Paris +3.1 NM. Now: while the lower bound of an entry that remains (the great circle to the entry + the free route + the great circle from the exit: an exact lower bound in NM) is below the best chain found, another search, to the entries that remain, at most EXTRA_SEARCH_S (0.15 s: a search whose goals cannot be reached would go through the whole space), the whole free route at most FREE_S (3 s) or the bound of the phase; the chains are compared by their distance in NM (what the user sees; the engine\'s cost prices the free legs at the cheapest rate and chose routes 5 % longer). Measured on the real base, read only, the 17 requests of the matrix over 5 s: all computed, the longest 4.66 s (LEMD → KORD « in » 3.97 s; KBOS → EDDF « out » 4.66 s); the distances: 13 identical to the second run, LFPG → KLAX 5 312.1 → 5 293.8 and LFPG → KORD 3 806.0 → 3 787.7 (shorter), KBOS → EDDF 3 244.6 (as before d1).')
+      rule='SOG-0354 L5 (4) d1 bis (ergonomics session, 21:40: « une route plus longue qu\'avant, sans le dire, ne part pas »). d1 stopped at the first search (two entries reached, whatever they are): KBOS → EDDF « hors fenêtre » 3 244.6 → 3 415.2 NM (+5.3 %), three flights from Paris +3.1 NM. Now: while the lower bound of an entry that remains (the great circle to the entry + the free route + the great circle from the exit: an exact lower bound in NM) is below the best chain found, another search, to the entries that remain, at most EXTRA_STATES states (7 000 since K307; first 0.15 s: a search whose goals cannot be reached would go through the whole space), the whole free route at most FREE_S (3 s) or the bound of the phase; the chains are compared by their distance in NM (what the user sees; the engine\'s cost prices the free legs at the cheapest rate and chose routes 5 % longer). Measured on the real base, read only, the 17 requests of the matrix over 5 s: all computed, the longest 4.66 s (LEMD → KORD « in » 3.97 s; KBOS → EDDF « out » 4.66 s); the distances: 13 identical to the second run, LFPG → KLAX 5 312.1 → 5 293.8 and LFPG → KORD 3 806.0 → 3 787.7 (shorter), KBOS → EDDF 3 244.6 (as before d1).')
 def k306(c):
     import heapq
     import sys
@@ -12450,7 +12450,7 @@ def k306(c):
             self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
             return p['id']
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             best, q, prev = {s: 0.0}, [(0.0, s)], {}
             while q:
                 d, u = heapq.heappop(q)
@@ -12493,4 +12493,72 @@ def k306(c):
     f2 = nav2.sections_info['free']
     c.eq((len(nav2.calls), f2['searches'], f2['entry'] in ('EB', 'EC')), (1, 1, True), 'with no entry that remains: ONE search, no other', what='no other search')
     src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
-    c.ok("total_nm" in src and 'EXTRA_SEARCH_S' in src and 'nm_of(' in src, 'free_route.py', 'the chains are compared in NM, and an extra search has its own cap')
+    c.ok("total_nm" in src and 'EXTRA_STATES' in src and 'nm_of(' in src, 'free_route.py', 'the chains are compared in NM, and an extra search has its own cap (in states since K307)')
+
+
+@case('K307', 'Route engine, SOG-0354 lot L5 (4) d1 bis (d): the bound of an extra search of the free route is a number of STATES (`EXTRA_STATES`, `Nav.search(max_states=…)`) and not a time — the same request gives the same route whatever the load of the workstation —, and only the entries that can still make the route SHORTER are the goals of that search',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) d1 bis (d) (ergonomics session, 21:54: « la borne de la recherche de plus (EXTRA_SEARCH_S, 0,15 s) est un TEMPS — la même demande peut rendre deux routes différentes selon la charge du poste. Si le moteur compte ses états, borne-la en ÉTATS »). The engine counts its states (`expanded`, the bound of 100 000 states already read by `Nav.search`): `max_states` bounds ONE search (checked every 128 states, as the bound of 100 000); an extra search that is cut returns what it reached. The first matrix run with the time of 0.15 s: 11 routes longer than the second run (EDDF and EGLL → CYYZ / KBOS / KJFK / KLAX / KORD « out », +72.5 and +97.5 NM; KBOS → EHAM « out » +32.0): the extra search did not reach the entry (DOGAL) whose chain is the shortest. Measured on the real base, read only: 1 500 states lost them (+72 to +97 NM), 5 000 still lost the EDDF ones (+76 NM), 7 000 states gave back all but KBOS → EHAM (+32 NM: it stops on the time of the section, 51 tries), the slowest of the 18 flights measured 4.9 s; the goals of an extra search are only the entries whose lower bound is below the best chain (the others only diverted the search: EIDW « out » 3.8 → 2.8-3.4 s). `FREE_S` (3 s, the whole free route) stays as a safety net and is still a time.')
+def k307(c):
+    import heapq
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, sections as S
+    pos = {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'H1': (60.5, -8.0), 'H2': (44.0, -70.0), 'H3': (51.5, -10.0), 'XA': (47.0, -60.0), 'EB': (60.0, -15.0), 'EC': (60.2, -14.0), 'ED': (50.5, -30.0), 'EF': (30.0, -20.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    for a, b in (('DEP', 'H1'), ('DEP', 'H3'), ('H2', 'ARR')):
+        g.setdefault(a, []).append((b, {'a': a, 'b': b, 'route': 'UL', 'nm': engine.nm(nodes[a], nodes[b])}))
+
+    class Fake:
+        def __init__(self, ends):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'ends': ends}, None, None
+            self.depart, self.nat_rejected, self._nat_high = None, frozenset(), {'H1', 'H2', 'H3'}
+            self.calls = []
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
+            best, q, prev = {s: 0.0}, [(0.0, s)], {}
+            while q:
+                d, u = heapq.heappop(q)
+                if not goals and u == e:
+                    break
+                if d > best[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < best.get(v, 1e18):
+                        best[v] = d + ed['nm']
+                        prev[v] = (u, v, ed)
+                        heapq.heappush(q, (best[v], v))
+
+            def way(x):
+                legs, node = [], x
+                while node != s:
+                    legs.append(prev[node])
+                    node = prev[node][0]
+                return list(reversed(legs))
+            self.last_search = {'expanded': len(best), 'seconds': 0.0, 'found': True}
+            if goals:
+                self.calls.append((tuple(goals), need, max_states))
+                found = sorted((x for x in goals if x in best), key=lambda x: best[x])[:need or len(goals)]
+                return {x: {'path': way(x), 'cost': best[x], 'band': (36000, 36000)} for x in found}
+            if e not in best:
+                return None
+            self.last_search.update(cost=best[e], band=band)
+            return way(e)
+    # the scenario of K306 (ED is the shortest and is not reached by the first search) with an entry EF far from the path: its lower bound is ABOVE the best chain, it is not a goal of the extra search
+    ends = {'T1': ['EB', 'XA'], 'T2': ['EC', 'XA'], 'T3': ['ED', 'XA'], 'T4': ['EF', 'XA']}
+    nav = Fake(ends)
+    S.solve(nav, g, 'DEP', 'ARR')
+    free = nav.sections_info['free']
+    c.eq(([(len(goals), need, cap) for goals, need, cap in nav.calls], free['entry'], free['searches']), ([(4, F.NEED, None), (1, F.NEED, F.EXTRA_STATES)], 'ED', 2),
+         'the FIRST search has no state bound beyond the engine\'s; the EXTRA search is bounded by EXTRA_STATES (a number of states, the same on any load) and its only goal is ED: EF, whose lower bound is above the best chain, is not a goal (red before: the bound was a time, the goals all the entries that remain)', what='states')
+    c.ok(isinstance(F.EXTRA_STATES, int) and F.EXTRA_STATES > 0 and not hasattr(F, 'EXTRA_SEARCH_S'), str(F.EXTRA_STATES), 'EXTRA_STATES is a number of states; the time bound of an extra search is gone')
+    src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
+    c.ok('max_states=None' in src and "(max_states or 100000)" in src, 'engine.py', '`Nav.search(max_states=…)` bounds one search in states, checked as the bound of 100 000 states is')
+    secs = (ROOT / 'tools' / 'route_engine' / 'sections.py').read_text(encoding='utf-8')
+    c.ok("'max_states': max_states" in secs, 'sections.py', '`_europe` passes the bound of states to the search')

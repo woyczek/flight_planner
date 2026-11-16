@@ -186,10 +186,10 @@ def _solve(nav, g, start, end):
     return path
 
 
-def _europe(nav, g, start, entries, info, key='europe', need=None, track=None):
+def _europe(nav, g, start, entries, info, key='europe', need=None, track=None, max_states=None):
     """{ entrée: { path, cost, band, expanded, seconds } } : UNE recherche (`Nav.search(goals=…)`) du départ vers toutes les entrées ; `info[key]` dit ce qu'elle a fait (portes, atteintes, états, secondes, coupée par le budget) ; `europe_free` et `track='libre'` pour la route libre (L5 2 bis) ; `need` : s'arrêter dès que ce nombre d'entrées est atteint."""
     bound = _bound()
-    found = nav.search(g, start, entries[0], (), False, False, None, gate=True, goals=entries, **({'need': need} if need else {})) or {}
+    found = nav.search(g, start, entries[0], (), False, False, None, gate=True, goals=entries, **({'need': need} if need else {}), **({'max_states': max_states} if max_states else {})) or {}
     ls = nav.last_search or {}
     for x in found.values():
         x['expanded'], x['seconds'] = ls.get('expanded'), ls.get('seconds')
@@ -202,7 +202,7 @@ def _free(nav, g, start, end, ratio, info):
     """SOG-0354 L5 (2) : aucune route du jour ne convient : la route libre CRÉÉE (free_route), résolue par les mêmes sections ; `info['free']` dit ce qui a été fait (ou pourquoi rien : « aucun point d'entrée océanique connu »), `info['source']` vaut 'random' ; None si rien n'a abouti (la recherche entière suit)."""
     report = {}
     made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs, first: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True, first=first),
-                                 lambda g2, s, entries: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre'), report)
+                                 lambda g2, s, entries, max_states=None: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre', max_states), report)
     if not made:
         info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why, **report}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
