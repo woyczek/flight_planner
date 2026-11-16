@@ -3623,6 +3623,22 @@
  ],
  "decisions": [
   {
+   "id": "Q-0061",
+   "fiche": "SOG-0375",
+   "app": "maintenance",
+   "question": "La position d'un point lu dans ton X-Plane part aujourd'hui dans le dépôt du groupe avec le vol : on corrige ?",
+   "context": "Constat de Sécurisation ce matin, à la lecture du code (pas essayé sur ton X-Plane). Le vol écrit dans le dépôt porte, pour chaque point de route, son nom, sa latitude et sa longitude. Quand un point n'est pas dans la base construite, Carburant va le chercher dans ton dossier X-Plane (données Navigraph / Jeppesen) ; « Ajouter un point » et « Direct vers » en font alors un point du vol, écrit dans le dépôt que lisent tous les pilotes. Ta règle (SOG-0153) dit : lu sur le poste, en mémoire, jamais écrit ni exporté. Ce chemin est ancien ; rien de ce qui a été livré aujourd'hui ne l'aggrave (le moteur de route ne lit pas X-Plane). Ce que je conteste : laisser en l'état en se disant qu'un point isolé n'est pas une base — la règle écrite ne fait pas cette exception, et c'est à toi de la faire ou non. Si on corrige : le NOM du point part avec le vol, sa position reste en mémoire sur le poste ; sur ton téléphone ce point n'aura pas de position tant qu'aucune source officielle ne le donne (aujourd'hui surtout les points du Canada). Les positions déjà écrites restent dans l'historique du dépôt quoi qu'on fasse.",
+   "options": [
+    "Corriger : le nom part, la position d'un point d'X-Plane reste sur le poste",
+    "Laisser : le point d'un vol n'est pas une base, je l'écris dans la règle",
+    "Corriger, et retirer aussi ces positions des vols déjà dans le dépôt",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",

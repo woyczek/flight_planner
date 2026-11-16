@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "468067a",
-  "fiches": 373,
+  "organisation": "257e727",
+  "fiches": 374,
   "untranslated": 0,
   "priorities": 310
  },
@@ -3903,6 +3903,27 @@
      "de": "Homonyme: „LFLL: 2 Homonyme, das nächste behalten“ — ein Flugplatz hat kein Homonym",
      "es": "Homónimos: «LFLL: 2 homónimos, se conserva el más cercano»: un aeródromo no tiene homónimo",
      "rank": 226
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-aerodb-depot-des-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; AeroDB ; dépôt des données",
+    "en": "Carburant ; AeroDB ; dépôt des données",
+    "de": "Carburant ; AeroDB ; dépôt des données",
+    "es": "Carburant ; AeroDB ; dépôt des données"
+   },
+   "items": [
+    {
+     "id": "SOG-0375",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Licence : la position d'un point lu dans X-Plane peut partir dans le dépôt du groupe avec le vol",
+     "en": "Licence: the position of a point read from X-Plane can reach the group's repository with the flight",
+     "de": "Lizenz: die Position eines aus X-Plane gelesenen Punkts kann mit dem Flug ins Repository der Gruppe gelangen",
+     "es": "Licencia: la posición de un punto leído en X-Plane puede llegar al repositorio del grupo con el vuelo"
     }
    ]
   },
