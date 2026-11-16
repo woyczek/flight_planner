@@ -19,7 +19,7 @@ import threading
 from . import engine, fra, layered, nat_layer, planning, recovery
 
 FIELDS = {
-    'proposals': bool, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
+    'proposals': bool, 'sections': bool, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
     'speed_kt': (int, float), 'terminal_speed_kt': (int, float), 'climb_fpm': (int, float), 'descent_fpm': (int, float),
     'allow_levels': bool, 'use_procedures': bool, 'alternatives': bool, 'alternatives_budget': (int, float), 'alternative_levels': (list, str), 'enable_fra': bool, 'level_strategy': str,
     'objective': str, 'traffic': str, 'require_fra': bool, 'unable_rnav': bool, 'fra_preference': (int, float), 'aircraft': str, 'fuel_climb': (int, float), 'fuel_cruise': (int, float), 'fuel_descent': (int, float),     # RouteSim 4 (planning.py)
@@ -226,6 +226,7 @@ def plan(request, root):
     if request.get('allow_levels', True):      # SOG-0371 (aller-retour) : le contrôle lit la route avec le MÊME modèle vertical que la recherche qui l'a écrite (une route du moteur n'est pas refusée au contrôle pour une montée que la recherche adaptait)
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
+    nav.sections = bool(request.get('sections'))      # SOG-0354 L2b (3) : l'option de la demande (posée à CHAQUE plan : le contexte gardé d'un calcul à l'autre ne porte jamais l'option d'une demande précédente)
     bounds = budgets(request, crosses_ocean(nav.ads.get(str(request.get('dep', '')).upper()) or {}, nav.ads.get(str(request.get('arr', '')).upper()) or {}))      # SOG-0354 L2b : un vol qui traverse l'Atlantique cherche plus longtemps
     reserve = 4.0 if bounds['ocean'] else 0.0      # SOG-0354 L2b : un vol océanique réserve la fin de ses 20 s aux propositions de repli ; les alternatives (un graphe de 4 s et une recherche chacune) s'arrêtent avant
     limit['until'], limit['what'] = started + bounds['total_s'] - reserve, f"Budget global de recherche atteint ({bounds['total_s']:g} s)"
@@ -394,7 +395,7 @@ def plan(request, root):
             message = 'Calcul réseau incomplet : ' + str(len(repli['proposals'])) + ' propositions de repli, dont ' + str(repli.get('fra_pieces', 0)) + ' portion(s) FRA. Les raccords DCT restent non validés.'
     for r in [primary, *alternatives, *((repli or {}).get('proposals') or [])]:        # SOG-0161 : chaque tronçon classé (contrôlé / incomplet / repli / erreur), par couche, et le pourcentage de la distance contrôlée
         layered.annotate(r, rad)
-    return dict(budget=bounds, primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
+    return dict(budget=bounds, sections=(getattr(nav, 'sections_info', None) if request.get('sections') else None), primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected and not check_only, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 

@@ -219,10 +219,12 @@ class Nav:
     LOW_MARGIN_FT=1000      # SOG-0161 : une voie dont le plafond est sous le niveau demandé de plus que cela est « basse » (V, T, L…)
     LOW_ALLOW=1.3           # la montée / la descente, comptées sur la distance qu'elles demandent × ce coefficient (la STAR, les virages)
     LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente ; jamais interdite (un maillon bas peut être la seule liaison), mais évitée
-    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None):
+    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False):
         """A* with ordered milestones and nondominated reachable-altitude labels.
         Heuristic is geodesic distance through remaining milestones, scaled by
         the cheapest cost/NM in this graph. It stays admissible with FRA bonus.
+        SOG-0354 L2b (3) : `gate` vrai = `end` est une PORTE (un point au milieu du vol), pas l'arrivée : ni la descente d'arrivée ni le niveau d'arrivée ne sont exigés ; la bande finale (low, high)
+        et le coût sont rendus dans `last_search` (`band`, `cost`) pour que la section suivante parte de cette bande (`initial_band`).
         """
         import time
         begun=time.perf_counter();expanded=0;fra_reachable=False
@@ -243,8 +245,8 @@ class Nav:
             return heuristics[key]
         if flight:
             cruise=flight['ceiling'];kt=flight['speed_kt']/3600
-            climb_nm=max(0,cruise-flight['departure'])/flight['climb_fps']*kt*self.LOW_ALLOW
-            descent_nm=max(0,cruise-flight['arrival'])/flight['descent_fps']*kt*self.LOW_ALLOW
+            climb_nm=0 if initial_band else max(0,cruise-flight['departure'])/flight['climb_fps']*kt*self.LOW_ALLOW      # SOG-0354 L2b (3) : une section qui part d'une porte (une bande donnée) est en croisière : pas de montée libre
+            descent_nm=0 if gate else max(0,cruise-flight['arrival'])/flight['descent_fps']*kt*self.LOW_ALLOW      # ... et une section qui finit à une porte n'a pas de descente d'arrivée
             first,last=self.nodes[start],targets[-1];from_start={};to_end={}
         def low_factor(u,v,e):
             """SOG-0161 (LFOE → KTPA : de JFK à Tampa, 700 NM en V et T à 17 500 ft pour un vol au FL370) : une voie BASSE (plafond sous le niveau demandé) ne se prend pas hors de la montée du départ et de la descente vers l'arrivée : son coût est multiplié (jamais interdite : un maillon bas peut être la seule liaison)."""
@@ -266,11 +268,11 @@ class Nav:
             expanded+=1;u,index,seen_fra,low,high=state
             fra_reachable=fra_reachable or '|FRA|' in u
             if u==end and index==len(names) and (seen_fra or not require_fra):
-                if flight and not low-.01<=flight['arrival']<=high+.01:continue
+                if flight and not gate and not low-.01<=flight['arrival']<=high+.01:continue
                 path=[]
                 while state!=origin:
                     previous,e=prev[state];path.append((previous[0],state[0],e));state=previous
-                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable)
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,band=(low,high),cost=cost)
                 return list(reversed(path))
             for v,e in g.get(u,[]):
                 a,b=self.edge_band(e,'start');a=max(a,low);b=min(b,high)
@@ -282,9 +284,9 @@ class Nav:
                     seconds=e['nm']/(e.get('planned_speed_kt') or flight['speed_kt'])*3600
                     up=0 if e.get('kind') in ['STAR','APPROACH_LINK'] else flight['climb_fps']*seconds
                     down=0 if e.get('kind')=='SID' else flight['descent_fps']*seconds
-                    if v==end and flight.get('free_arrival') and e.get('connector'):down=1e9   # SOG-0161 : aucune STAR lue : la descente du raccord d'arrivée n'est pas bornée
+                    if v==end and not gate and flight.get('free_arrival') and e.get('connector'):down=1e9   # SOG-0161 : aucune STAR lue : la descente du raccord d'arrivée n'est pas bornée
                     c=max(c,a-down,0);d=min(d,b+up)
-                    if v==end:c=max(c,flight['arrival']);d=min(d,flight['arrival'])
+                    if v==end and not gate:c=max(c,flight['arrival']);d=min(d,flight['arrival'])
                 elif e['nm']<.00001:c,d=max(c,a),min(d,b)
                 if c>d+.001:continue
                 c,d=round(c,6),round(d,6)
@@ -470,7 +472,11 @@ class Nav:
             raise ValueError('Budget de recherche atteint (0 s / limite de temps du calcul). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
         g,a,b=self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,terminal)
         mandatory=self.resolve_vias(g,a,b,via)
-        path=self.constrained_path(g,a,b,mandatory,bool((terminal or {}).get('require_fra'))) if self.connected(g,a,b) else None   # SOG-0161 : sans liaison, même sans contrainte d'altitude, la recherche de niveaux ne cherche pas 6 s dans le vide
+        path=None
+        if getattr(self,'sections',False) and not mandatory and not (terminal or {}).get('require_fra'):      # SOG-0354 L2b (3) : l'option `sections` de la demande : un vol qui traverse l'Atlantique par une track est découpé en sections (tools/route_engine/sections.py) ; None = pas applicable, la recherche entière suit
+            from . import sections
+            path=sections.solve(self,g,a,b)
+        if path is None:path=self.constrained_path(g,a,b,mandatory,bool((terminal or {}).get('require_fra'))) if self.connected(g,a,b) else None   # SOG-0161 : sans liaison, même sans contrainte d'altitude, la recherche de niveaux ne cherche pas 6 s dans le vide
         if path is None and enable_fra and getattr(self,'last_search',{}).get('fra_reachable',True) and (terminal or {}).get('search_density','normal')=='normal':
             del g
             self.release_graph_caches()

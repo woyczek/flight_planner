@@ -11181,6 +11181,95 @@ def k288(c):
     c.eq(bool(again.get('ok')), True, 'once the reads have ended a new one starts', what='cap released')
 
 
+@case('K290', 'Route engine, SOG-0354 lot L2b (3): the option `sections` cuts a flight across the Atlantic into sections joined at gates (departure → track entry, the published track, track exit → arrival), resolves them lazily from a skeleton of lower bounds, and gives the SAME route as the whole search on the real base in a quarter of the time; not applicable (None) outside the Atlantic or without a track in the direction of the flight',
+      'K', static=True,
+      rule='SOG-0354 L2b (3) (design note § 3 and § 4; the user: « fractionner un long trajet en trajets plus facilement testables »). Behind `sections: true` of the request. The skeleton: the departure, the arrival and, for every track valid in the direction of the flight, its entry and its exit; the cost of « departure → entry » is a LOWER BOUND (the smallest cost per NM of the graph × the great-circle distance), the track is exact (its published legs); the tracks are resolved in the order of their bound and the loop stops when the bound of the next one exceeds the best cost found (lazy resolution: the expensive searches are made only for the tracks that a better chain does not exclude). Each section is one `Nav.search` (the final altitude band of a section is the initial band of the next: the vertical profile stays continuous; a section that ends at a gate asks for no arrival level). Measured on the real base (cold, FL370): EIDW → KBOS 9.3 s → 2.0 s and EIDW → KJFK 8.3 s → 2.1 s with the SAME route (2 850.1 and 3 022.7 NM); LFOE → KTPA and EGLL → KDEN the same route as well (3.3 s and 2.6 s against 2.2 s: the enumeration of the tracks costs a little where the whole search was already quick). The answer says the sections: `sections: { candidates, tried, chosen, sections: [{ name, from, to, nm, cost, expanded, seconds, proof: computed | published }] }`.')
+def k290(c):
+    import sys
+    import time
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, sections as S
+    # the graph of the case: a departure W, an arrival E across the ocean, three tracks T1 (on the great circle), T2 (a little north), T3 (far north), one west-only track T4, one both-ways track T5
+    nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}}
+    mk = lambda name, lat, lon: nodes.setdefault(name, {'id': name, 'lat': lat, 'lon': lon})
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+
+    def track(tid, pts, direction, sense='F'):
+        for (n0, la0, lo0), (n1, la1, lo1) in zip(pts, pts[1:]):
+            mk(n0, la0, lo0)
+            mk(n1, la1, lo1)
+            e = {'a': n0, 'b': n1, 'route': 'NAT' + tid, 'nm': engine.nm(nodes[n0], nodes[n1]), 'nat': {'track': tid, 'direction': direction}, 'dir': sense}
+            g.setdefault(n0, []).append((n1, e))
+            if sense == 'FB':
+                g.setdefault(n1, []).append((n0, e))
+    track('T1', [('E1', 52, -15), ('M1', 51, -40), ('X1', 47, -60)], 'west')
+    track('T2', [('E2', 55, -15), ('M2', 54, -40), ('X2', 48, -60)], 'west')
+    track('T3', [('E3', 63, -15), ('M3', 62, -40), ('X3', 55, -60)], 'west')
+    track('T4', [('E4', 50, -50), ('X4', 51, -12)], 'east')
+    track('T5', [('E5', 60, -14), ('X5', 57, -58)], 'both', 'FB')
+    west = S.oriented_chains(nodes, g, False)      # the flight DEP → ARR goes WEST (from 6°W to 74°W)
+    east = S.oriented_chains(nodes, g, True)
+    c.eq((sorted(west), sorted(east), [(o['entry'], o['exit']) for o in west['T5']], [(o['entry'], o['exit']) for o in east['T5']], [len(o['legs']) for o in west['T1']]),
+         (['T1', 'T2', 'T3', 'T5'], ['T4', 'T5'], [('E5', 'X5')], [('X5', 'E5')], [2]),
+         'westbound: the tracks that go west (T1, T2, T3) and the both-ways one in the direction of the flight; eastbound: the east track (T4) and the both-ways one REVERSED; a west-only track is never taken eastbound', what='chains')
+
+    class Fake:
+        def __init__(self):
+            self.nodes, self.calls, self.last_search, self.sections_info = nodes, [], None, None
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False):
+            self.calls.append((s, e, band, gate))
+            if graph is g:      # the two end sections: a straight leg (the cost is the distance)
+                d = engine.nm(nodes[s], nodes[e])
+                self.last_search = {'cost': d * 1.2, 'band': (36000, 36000), 'expanded': 1, 'seconds': 0.0, 'found': True}      # the real section costs more than the straight line (the lower bound)
+                return [(s, e, {'nm': d, 'route': 'DCT'})]
+            legs, node = [], s
+            while node != e:
+                v, ed = graph[node][0]
+                legs.append((node, v, ed))
+                node = v
+            self.last_search = {'cost': sum(x['nm'] for _u, _v, x in legs), 'band': band, 'expanded': len(legs), 'seconds': 0.0, 'found': True}
+            return legs
+    nav = Fake()
+    path = S.solve(nav, g, 'DEP', 'ARR')
+    info = nav.sections_info
+    c.eq((info['chosen'], [t['track'] for t in info['tried']], [s['proof'] for s in info['sections']], path[0][0], path[-1][1]), ('T1', ['T1', 'T2'], ['computed', 'published', 'computed'], 'DEP', 'ARR'),
+         'the best chain (T1) is chosen; T2 is resolved because its lower bound is below the cost of T1; T3 (far north, its lower bound above the best cost) and T5 are NOT resolved: the expensive search is not made for them (lazy resolution); the sections are computed, published, computed', what='lazy')
+    c.eq([(s, e, gate) for s, e, b, gate in nav.calls[:3]], [('DEP', 'E1', True), ('E1', 'X1', True), ('X1', 'ARR', False)], 'a section that ends at a gate is a gate (no arrival level asked); the last one is not', what='gates')
+    c.eq(nav.calls[1][2], (36000, 36000), 'the final altitude band of a section is the initial band of the next', what='band')
+    nodes['EU'] = {'id': 'EU', 'lat': 48.0, 'lon': 2.0}
+    c.eq(S.solve(Fake(), g, 'DEP', 'EU'), None, 'a flight inside Europe: not applicable (the whole search is made)', what='europe')
+    nofl = engine.RoutingGraph()
+    c.eq(S.solve(Fake(), nofl, 'DEP', 'ARR'), None, 'a graph without a flight: not applicable', what='no flight')
+    gn = engine.RoutingGraph()
+    gn.flight = {'departure': 0}
+    c.eq(S.solve(Fake(), gn, 'DEP', 'ARR'), None, 'no track in the direction of the flight: not applicable', what='no track')
+    data = Path('E:/DEFA/data')
+    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    from route_engine import plan as P, view, results_cache
+    results_cache.ENABLED = False
+    saved = (P.OCEAN_HEAD_BUDGET_S, P.OCEAN_SEARCH_CAP_S, P.OCEAN_TOTAL_BUDGET_S)
+    P.OCEAN_HEAD_BUDGET_S, P.OCEAN_SEARCH_CAP_S, P.OCEAN_TOTAL_BUDGET_S = 60.0, 60.0, 80.0      # the whole search is the REFERENCE here: it must end whatever the load of the workstation (the bounds of the screen are the case of K289)
+    try:
+        out = {}
+        for on in (False, True):
+            args = {'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-16T12:00', 'alternatives': False, 'proposals': True, 'sections': on}
+            t = time.perf_counter()
+            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+            out[on] = (res['primary'].get('route'), round(res['primary'].get('distance_nm') or 0, 1), time.perf_counter() - t, view.to_view(res, view.to_request(args)).get('sections'))
+        sec = out[True][3] or {}
+        c.eq((out[True][0] == out[False][0], out[True][1] == out[False][1], out[True][2] < out[False][2], [s['proof'] for s in sec.get('sections', [])], bool(sec.get('chosen'))), (True, True, True, ['computed', 'published', 'computed'], True),
+             'EIDW → KJFK on the real base: with `sections` the SAME route (and the same distance) as the whole search, faster, in three sections whose middle one is the published track; the answer says them', what='real flight')
+    finally:
+        P.OCEAN_HEAD_BUDGET_S, P.OCEAN_SEARCH_CAP_S, P.OCEAN_TOTAL_BUDGET_S = saved
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+
+
 @case('K291', 'PDF libraries seen by the launcher (SOG-0376, the user\'s patch): the isolated children of pdf_guard (`-I`) put the GLOBAL site first, so an old copy there hid the one that the script had just installed with --user; now the user site comes first (when it is enabled) and the child puts `sys.path` back in the order of its parent — red before: a fake global site with an old version and a fake user site with the good one: versions() and pdf_child gave the old one',
       'K', static=True,
       rule='SOG-0376 (the user, 16 Nov, after the script worked): the script installed pypdf 6.21.5 and Pillow 13 with --user, the launcher still said pypdf 6.21.3 and Pillow 12.3.0. Cause: `python -I` adds the GLOBAL site-packages to `sys.path` before the user site, and `sys.path.extend(dirs)` of the children could not put the user site first. The fix is his (1a25b5311: `_dirs` puts the user site first when `site.ENABLE_USER_SITE`; the children replace `sys.path` by the entries that are not in `dirs` followed by `dirs` in the order of the parent). This case is the proof the ergonomics session asked for: a fake GLOBAL site holding an old version (a dist-info only) that is already first in the path of the child, a fake USER site holding the good one; `versions()` answers the good one; the PDF child imports the library of the user site; `_dirs` puts the user site first and honours `ENABLE_USER_SITE`. Deterministic: a package name that the workstation does not have.')

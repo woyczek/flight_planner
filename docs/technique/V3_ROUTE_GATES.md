@@ -230,6 +230,36 @@ L2b therefore goes in three steps, one at a time, each judged on this table: (1)
 Sécurisation; (3) gates, skeleton, lazy resolution and section cache, behind a request option, shown to the user on
 EIDW → KBOS and EIDW → KJFK before it becomes the default.
 
+### 12.1 L2b (3): what was built (AeroDB, 16 November)
+
+Behind `sections: true` of the request, `tools/route_engine/sections.py`. **Gates**: only the entry and the exit of the
+NAT tracks of the day (the other gates of § 3 — a FIR border on the corridor — were not needed: the European and the
+American sections are searches of 260 and 16 states). **Skeleton**: the departure, the arrival and, for each track valid
+in the direction of the flight, its entry and its exit; the cost of « departure → entry » is a lower bound (the smallest
+cost per NM of the graph times the great-circle distance), the track is exact. **Lazy resolution**: the tracks are
+resolved in the order of their bound and the loop stops when the next bound exceeds the best cost found; each section is
+one `Nav.search`, the final altitude band of a section being the initial band of the next (`initial_band`), a section
+that ends at a gate asking no arrival level (`gate`). **The answer** carries `sections: { candidates, tried, chosen, cost,
+sections: [{ name, from, to, nm, cost, expanded, seconds, proof: computed | published }] }` for the screen of § 7.
+**Not done**: the sections kept by cycle (the searches are 15 ms: it would not pay today); L4 (the Canadian gap is not yet
+a labelled « direct » section: the American section is a search to the arrival); the option is not the default.
+
+| Flight (cold, FL370, the form of the screen) | whole search | `sections` | Route |
+|---|---|---|---|
+| EIDW → KBOS | 9.3 s | **2.0 s** | the same, 2 850.1 NM (NAT E, N260B–N271B) |
+| EIDW → KJFK | 8.3 s | **2.1 s** | the same, 3 022.7 NM |
+| LFOE → KTPA | 2.2 s | 3.3 s | the same, 4 734.3 NM |
+| EGLL → KDEN | 2.2 s | 2.6 s | the same, 4 578.3 NM |
+| LFPO → KLAX | no route | no route | the base, not the engine |
+| LFPO → LIRF (Europe) | 3.2 s | 3.2 s | identical, 627.0 NM: not applicable, the whole search runs |
+| EGLL → LEMD (Europe) | 2.4 s | 3.3 s (noise: not applicable) | identical, 702.7 NM |
+
+The five routes that cross the ocean are the SAME as the whole search's; the option costs 0.4 to 1.1 s more where the
+whole search was already quick (the enumeration of the tracks), and divides by four where it was not. For EIDW → KBOS all
+five tracks of the day were resolved (the bounds, 2 626–2 661 NM, are far below the best real cost, 2 880 NM): the time
+of the flight is now the context (1 s) and the graph (1 s), not the searches. What the option is not: the best flight
+BY a track, not the best of all flights.
+
 ## 13. Lot L5 — a North Atlantic route that is reliable and bounded (the user's priority, 16 November)
 
 *"mes points clef, actuellement : sécuriser et fiabiliser le calcul des routes. je préfère passer du temps sur l'algo

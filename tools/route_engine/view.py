@@ -11,7 +11,7 @@ import math
 import re
 
 ACTIONS = ('compute', 'check')
-EXTRA = ('proposals', 'radius', 'speed_kt', 'terminal_speed_kt', 'climb_fpm', 'descent_fpm', 'allow_levels', 'use_procedures', 'enable_fra', 'level_strategy', 'alternative_levels', 'alternatives', 'alternatives_budget', 'objective', 'traffic', 'require_fra', 'unable_rnav', 'fra_preference', 'aircraft', 'fuel_climb', 'fuel_cruise', 'fuel_descent')
+EXTRA = ('proposals', 'sections', 'radius', 'speed_kt', 'terminal_speed_kt', 'climb_fpm', 'descent_fpm', 'allow_levels', 'use_procedures', 'enable_fra', 'level_strategy', 'alternative_levels', 'alternatives', 'alternatives_budget', 'objective', 'traffic', 'require_fra', 'unable_rnav', 'fra_preference', 'aircraft', 'fuel_climb', 'fuel_cruise', 'fuel_descent')
 MAX_PROFILE = 200
 DEFAULT_FL = 180                                                         # le défaut du moteur (engine.plan : request.get('fl', 180))
 
@@ -170,5 +170,5 @@ def to_view(plan_result, request, include_raw=False):
     why = str(p.get('error') or '').strip()
     message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
     return {'ok': True, 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': {'title': (p.get('rad_source') or {}).get('title'), 'start': (p.get('rad_source') or {}).get('start')} if p.get('rad_source') else None,
-            'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': message, 'status': status, 'budget': plan_result.get('budget'), 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
+            'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': message, 'status': status, 'budget': plan_result.get('budget'), 'sections': plan_result.get('sections'), 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
             **({'plan': plan_result} if include_raw else {})}

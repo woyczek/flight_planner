@@ -3234,3 +3234,20 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done**: `plan.crosses_ocean`, `plan.budgets`, `engine.SEARCH_CAP_S`, the field `budget` of the answer and of the view; EIDW → KJFK and EIDW → KBOS now return a ROUTE (K289, red before: no such function; the behaviour measured before: a proposal at 15 s).
 - **Choices of this session** (to relax if wished): the criterion is the longitude test of `nat_layer.hint` (the Atlantic), not the distance; the Pacific and the Indian Ocean keep the short bounds (no NAT layer there); the margin of the head bound is thin (1 to 1.5 s): 12 s would widen it; the RAD retries stop after the head bound for an ocean flight; an attempt of 6.5 s is not begun in the last 6.5 s of the alternatives window when the head route is refused.
 - **Not done**: the screen saying « cherche plus longtemps » (Features SOG, from `budget.ocean`); the skeleton (L2b 3), which stays the way back to 8 s.
+
+## 16 November 2026 — SOG-0354 lot L2b (2): PFR_SEG and the conditions
+
+- **Touch-up** (Sécurisation, proved): the cap of the entries of the inner zip was passed by a lying announced count; now the SIZE of the directory is bounded too (512 KiB) and a zip64 is refused (`faa_nasr._end_record`, `MAX_INNER_DIRECTORY`). K286, red before.
+
+- **Asked** (ergonomics session): the reader of PFR_SEG and of the conditions of the routes (hours, aircraft, equipment), WITH the touch-up of the exceptions (one fixed sentence) and the cap of the entries of the inner zip; a deposited file is read: diff to Sécurisation before the push.
+- **Done**: see INTEGRATION « FAA published routes, lot L2b (2) ». K286 (red before: the counts, then the sentences).
+- **Facts to the note** (§ 5, § 6): the route of a NAR COMMON is NOT in the NASR for 543 of its 765 rows (a pair and a designator): the gates of the skeleton can use the pair (coastal fix → inland fix) with the designator as a published section of unknown shape, drawn as direct and said so; the 222 that have segments and all the NON-COMMON ones give a real route.
+- **Choices of this session** (to relax if wished): the conditions are raw texts plus four flags and the hours; the engine's reading of them is for L2b (3); `navEqp` is kept as the number of the file (its meaning is the FAA's).
+- **Not done**: the verb or the file that carries this to the engine (L2b 3 decides where the published sections live).
+
+## 16 November 2026 — SOG-0354 lot L2b (3): the sections
+
+- **Asked** (ergonomics session): gates, skeleton, resolution of the sections of the best chain only, sections kept by cycle — behind an option of the request; shown to the user on EIDW → KBOS and KJFK before it becomes the default.
+- **Done**: `tools/route_engine/sections.py`, the option `sections`, `search(gate=…)`, the field `sections` of the answer. The SAME routes as the whole search on the five real flights, 4× faster on the two that were hard (9.3 → 2.0 s, 8.3 → 2.1 s). K290 (a synthetic graph: the chains, the lazy resolution, the gates, the band, the not-applicable cases; and the real flight when the base is here).
+- **Choices of this session** (to relax if wished): gates are the entry and the exit of the NAT tracks only (the other gates of the note — a FIR border on the corridor — are not needed to get the route; the Europe and America sections are searches of 260 and 16 states); the American section is a search to the arrival, so a Canadian gap is not yet a labelled « direct » section (the note § 6: L4); the published section is the track as it is in the graph (its legs are the NAT message of the day).
+- **Not done**: the sections KEPT by cycle (a cache of solved sections by their two gates: the searches are so short (15 ms) that it would not pay today); the Canada reading (L4, waits for the file); the screen showing the sections (Features SOG: `view.sections`); making it the default.
