@@ -4,8 +4,8 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8b55394",
-  "fiches": 369,
+  "organisation": "2c40ec9",
+  "fiches": 372,
   "untranslated": 0,
   "priorities": 310
  },
@@ -745,6 +745,27 @@
    ]
   },
   {
+   "id": "pilote-carburant-carte-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; Carte ; procédures",
+    "en": "Carburant ; Carte ; procédures",
+    "de": "Carburant ; Carte ; procédures",
+    "es": "Carburant ; Carte ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0373",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carburant, étape Route : montrer sur la carte la procédure survolée dans une liste déroulante",
+     "en": "Fuel, Route step: show on the map the procedure hovered in a drop-down list",
+     "de": "Kraftstoff, Schritt Route: das in einer Auswahlliste überfahrene Verfahren auf der Karte zeigen",
+     "es": "Combustible, paso Ruta: mostrar en el mapa el procedimiento señalado en una lista desplegable"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-devis",
    "app": "pilote",
    "label": {
@@ -916,6 +937,27 @@
      "de": "NAT-Route in Kraftstoff übernommen: Koordinatenpunkte verlieren ihr Ende und werden « unbekannte Punkte »",
      "es": "Ruta por los NAT tomada en Combustible: los puntos en coordenadas pierden su final y pasan a « puntos desconocidos »",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-routes-nat",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; routes NAT",
+    "en": "Carburant ; routes NAT",
+    "de": "Carburant ; routes NAT",
+    "es": "Carburant ; routes NAT"
+   },
+   "items": [
+    {
+     "id": "SOG-0372",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes NAT à l'étape Route : la lecture du jour réussit sans que l'écran le montre ; la proposition calculée sur les routes périmées reste ; la route prise donne des « points inconnus »",
+     "en": "NAT tracks at the Route step: the day's read succeeds without the screen showing it; the proposal computed on outdated tracks stays; the route taken gives « unknown points »",
+     "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
+     "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »"
     }
    ]
   },
@@ -5529,6 +5571,27 @@
      "en": "Security: a file read from the data repository has no size cap (read to the end, in memory, on the phone)",
      "de": "Sicherheit: eine aus dem Daten-Repository gelesene Datei hat keine Größengrenze (bis zum Ende gelesen, im Speicher, am Telefon)",
      "es": "Seguridad: un archivo leído del repositorio de datos no tiene tope de tamaño (leído hasta el final, en memoria, en el teléfono)"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-moteur-de-route-lanceur-carburant",
+   "app": "maintenance",
+   "label": {
+    "fr": "moteur de route ; lanceur ; Carburant",
+    "en": "moteur de route ; lanceur ; Carburant",
+    "de": "moteur de route ; lanceur ; Carburant",
+    "es": "moteur de route ; lanceur ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0371",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "« Calculer A → B » : 39,7 s passées dans le lanceur pour EGLL → KJFK, routes NAT du jour lues",
+     "en": "« Compute A → B »: 39.7 s spent in the launcher for EGLL → KJFK with the day's NAT tracks read",
+     "de": "« A → B berechnen »: 39,7 s im Launcher für EGLL → KJFK mit gelesenen NAT-Tracks des Tages",
+     "es": "« Calcular A → B »: 39,7 s en el lanzador para EGLL → KJFK con las rutas NAT del día leídas"
     }
    ]
   },
