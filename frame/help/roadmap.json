@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f1361c9",
+  "organisation": "9cedb71",
   "fiches": 382,
   "untranslated": 0,
   "priorities": 374
@@ -804,11 +804,12 @@
     {
      "id": "SOG-0380",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : au contrôle de la route, « LFPO/02 » (aérodrome et piste d'arrivée) est pris pour un point inconnu",
      "en": "Fuel: at the route check, 'LFPO/02' (arrival aerodrome and runway) is taken for an unknown point",
      "de": "Kraftstoff: bei der Streckenprüfung wird „LFPO/02“ (Zielflugplatz und Piste) als unbekannter Punkt gewertet",
-     "es": "Combustible: en el control de la ruta, «LFPO/02» (aeródromo y pista de llegada) se toma por un punto desconocido"
+     "es": "Combustible: en el control de la ruta, «LFPO/02» (aeródromo y pista de llegada) se toma por un punto desconocido",
+     "test": true
     }
    ]
   },

@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 247,
+  "tests": 248,
   "verdicts": 188
  },
  "apps": [
@@ -3709,6 +3709,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T13:57:38Z"
+  },
+  {
+   "id": "SOG-0380",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : au contrôle de la route, « LFPO/02 » (aérodrome et piste d'arrivée) est pris pour un point inconnu",
+    "en": "Fuel: at the route check, 'LFPO/02' (arrival aerodrome and runway) is taken for an unknown point",
+    "de": "Kraftstoff: bei der Streckenprüfung wird „LFPO/02“ (Zielflugplatz und Piste) als unbekannter Punkt gewertet",
+    "es": "Combustible: en el control de la ruta, «LFPO/02» (aeródromo y pista de llegada) se toma por un punto desconocido"
+   },
+   "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Carburant, ton vol EGLL → LFPO, champ Route « EGLL MAY Y47 DRAKE DCT SITET A34 LGL H20 BOBSA BOBSA9E LFPO/02 », puis « Contrôler ». Attendu : plus de « Point inconnu dans AeroDB : LFPO/02 » ; la piste 02 est prise comme piste d'arrivée si tu n'en as pas choisi d'autre ; le champ garde ton texte tel quel.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T14:38:20Z"
   },
   {
    "id": "SOG-0382",
