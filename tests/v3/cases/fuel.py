@@ -5954,6 +5954,33 @@ def f228(c):
     c.shot(f'F228_{c.design}_1280_{c.lang}_delivered.png')
 
 
+@case('F229', 'Route step, a proposal taken: the points the engine placed for it (its `points`) become known points of the Route field — a '
+      'point absent from the zones the browser reads is not « inconnu »; read as an untrusted input (a point out of bounds stays unknown)',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0372 (c) point 3 (the user\'s capture: NICSO « inconnu » after « Prendre cette proposition »; AeroDB afac50be9: each route of the '
+      'answer carries points [{id, lat, lon}], in order, 600 at most); the ergonomist at 9 h 30: bounded numbers, identifier by pattern, '
+      '600 at most, own properties; kept with the answer on the device, nothing more written to data/; a simulated answer (fake launcher)')
+def f229(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_ctl_seg('EINN', 'MALOT', 'controlled', 'HIGH'), _ctl_seg('MALOT', 'CYYT', 'controlled', 'HIGH')]
+    pts = [{'id': 'EINN', 'lat': 52.70, 'lon': -8.92}, {'id': 'MALOT', 'lat': 53.0, 'lon': -15.0}, {'id': 'XQZNA', 'lat': 50.5, 'lon': -45.25},
+           {'id': 'BADPT', 'lat': 999, 'lon': 0}, {'id': 'CYYT', 'lat': 47.62, 'lon': -52.75}]
+    st['alts'] = [dict(_alt(1, 'Via XQZNA', 'EINN MALOT XQZNA BADPT CYYT', 1700, 350, segs, sid=False), points=pts)]
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-do=rtake]')", timeout=12000, what='the route, with « Choisir »')
+    c.tap(f'{FUEL} [data-altlist] [data-do=rtake]')
+    U = f'{FUEL} [data-unres]'
+    c.until(f"(document.querySelector('{U}')?.textContent || '').includes('BADPT')", timeout=10000, what='the point out of bounds said')
+    said = c.text(U)
+    c.ok('XQZNA' not in said and 'MALOT' not in said, said, 'the points the engine placed are known: none of them « inconnu »')
+    c.ok(c.js(f"(document.querySelector('{FUEL} [data-k=rtext]')?.value || '').includes('XQZNA')"), '', 'the taken route is in the field')
+    c.js(f"document.querySelector('{U}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F229_{c.design}_1280_{c.lang}_delivered.png')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

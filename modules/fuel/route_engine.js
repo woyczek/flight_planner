@@ -206,6 +206,30 @@ function natOf(n) {
     stale: n.stale === true
   } : null;
 }
+/** SOG-0372 (c, point 3) : les points d'un itinéraire tels que le moteur les a placés (`points`, view.points_of d'AeroDB, afac50be9) — une
+ *  entrée non sûre : 600 au plus, propriétés propres seulement, identifiant par motif (nom de 2 à 12 signes, ou point NAT « 54/50 »),
+ *  latitude ±90, longitude ±180, 5 décimales, un nom une fois ; un point illisible est écarté. */
+const PT_ID = /^(?:[A-Z0-9]{2,12}|\d{2,4}\/\d{2,3})$/;
+
+function pointsOf(list) {
+  const out = [],
+    seen = new Set();
+  for (const p of (Array.isArray(list) ? list : []).slice(0, 600)) {
+    if (!p || typeof p !== 'object') continue;
+    const own = k => Object.hasOwn(p, k) ? p[k] : undefined,
+      id = text(own('id'), 12).toUpperCase(),
+      lat = num(own('lat'), -90, 90),
+      lon = num(own('lon'), -180, 180);
+    if (!PT_ID.test(id) || lat === null || lon === null || seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      id,
+      lat: Math.round(lat * 1e5) / 1e5,
+      lon: Math.round(lon * 1e5) / 1e5
+    });
+  }
+  return out;
+}
 /** Un itinéraire de la réponse, borné. */
 function altOf(a, role, errors, reviews = []) {
   const segments = (Array.isArray(a?.segments) ? a.segments : []).slice(0, 800).map(segOf).filter(s => s.from && s.to),
@@ -227,6 +251,7 @@ function altOf(a, role, errors, reviews = []) {
     star: procOf(a?.star, 'STAR'),
     control: controlOf(a?.control),
     nat: natOf(a?.nat),
+    points: pointsOf(a?.points), // SOG-0372 (c, point 3) : les positions du moteur, connues du champ Route quand l'itinéraire est pris
     segments
   };
 }

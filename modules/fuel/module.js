@@ -4580,6 +4580,13 @@ function routeTake(i) {
   const a = S.ralts?.list?.[i],
     ta = S.body?.querySelector('[data-k="rtext"]');
   if (!a?.route || !ta) return;
+  // SOG-0372 (c, point 3) : les points que le moteur a placés pour cet itinéraire (bornés par RE.normalize) deviennent des points connus du
+  // champ Route pour ce départ et cette arrivée (aerodb passe toujours d'abord) ; gardés en mémoire, rien de plus écrit dans data/
+  S.takenPts = a.points?.length ? {
+    dep: S.flight.route?.dep || '',
+    arr: S.flight.route?.arr || '',
+    map: new Map(a.points.map(p => [p.id, p]))
+  } : null;
   ta.value = a.route;
   ta.dispatchEvent(new Event('input', {
     bubbles: true
@@ -5323,7 +5330,16 @@ function adoptForeignFlight() {
  *  la laisse mot gardé, comme avant). */
 function knownPoints(r, withProcs = true) {
   const known = new Map((r.points || []).filter(p => p?.id && Number.isFinite(+p.lat)).map(p => [p.id, p])),
-    procs = withProcs && S.procs?.key === procsKey(S.flight) ? pubProcs(S.procs.procs) : null;
+    procs = withProcs && S.procs?.key === procsKey(S.flight) ? pubProcs(S.procs.procs) : null,
+    T = S.takenPts;
+  // SOG-0372 (c, point 3) : les points placés par le moteur pour l'itinéraire pris (même départ et arrivée)
+  if (T && T.dep === (r.dep || '') && T.arr === (r.arr || ''))
+    for (const [id, p] of T.map)
+      if (!known.has(id)) known.set(id, {
+        id,
+        lat: p.lat,
+        lon: p.lon
+      });
   for (const p of procs ? Object.values(PR.endsOf(procs, [], r)) : [])
     if (p && p.lat !== null && p.lon !== null && !known.has(p.id)) known.set(p.id, {
       id: p.id,

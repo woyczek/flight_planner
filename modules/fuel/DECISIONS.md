@@ -2037,3 +2037,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the name of the SID or STAR chosen in Procédures (`routeModel({ procs })`, Fuel's `chosenProcNames`) is that procedure — by equality,
   never by a pattern for the American form (« ZZZZZ5 » stays a point). (3), the engine's positions for points such as NICSO, waits for
   AeroDB. F228 (red before, on the capture's route); F8, F69, F87, F94, F114, F115, F134, F216, K14, K28, K31 unchanged.
+- **16 Nov 2026 — SOG-0372 (c), point 3: the points the engine placed for a taken route are known to the Route field** (NICSO
+  « inconnu » in the user's capture; AeroDB afac50be9: each route of the answer carries `points: [{id, lat, lon}]`). `RE.normalize` reads
+  them as an untrusted input (`pointsOf`: 600 at most, own properties, identifier by pattern — a name of 2 to 12 signs or a NAT point
+  « 54/50 » —, latitude ±90, longitude ±180, 5 decimals, one name once); they stay with the answer kept on the device
+  (cache/fuel/route_alts.json). « Prendre » keeps them in memory (`S.takenPts`, for this departure and arrival) and `knownPoints` adds them
+  after the flight's own points, aerodb always first; the field then writes the resolved points into `route.points` as for any point —
+  no new field or file in data/. A point out of bounds stays « inconnu ». F229 (red before; a simulated answer).
