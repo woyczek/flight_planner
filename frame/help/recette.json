@@ -3919,6 +3919,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0067",
+   "fiche": "SOG-0386",
+   "app": "pilote",
+   "question": "Après le redémarrage : combien de sessions au travail en même temps ?",
+   "context": "Six sessions travaillaient ensemble, chacune jouant ses cas dans un navigateur, plus mes propres rejeux : cause probable de la saturation. Elles sont toutes à l'arrêt ; leur travail non poussé est intact sur le disque (liste dans le LOT). Je n'en réveille aucune avant ta réponse, sauf pour ce que tu attends tout de suite.",
+   "options": [
+    "Deux au plus, et une seule passe de cas à la fois",
+    "Une seule à la fois",
+    "Comme avant : toutes ensemble",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
