@@ -3941,13 +3941,13 @@
    "id": "Q-0070",
    "fiche": "SOG-0354",
    "app": "maintenance",
-   "question": "De la sortie d'une route NAT à la côte ouest des États-Unis : quel algorithme ?",
-   "context": "Trois propositions, à challenger avec les tiens (écris-les dans le texte). A — L'ARBRE DES ARRIVÉES : toutes les routes publiées par la FAA qui finissent à l'aérodrome forment un arbre ; on cherche le chemin le moins cher de la sortie de l'océan jusqu'à un point de cet arbre, puis on suit la route publiée jusqu'au bout. B — LA ROUTE LIBRE À POINTS PUBLIÉS : le plus court chemin échantillonné tous les 200 à 300 NM, chaque point remplacé par le point publié le plus proche (les États-Unis ont une grille de points faite pour ça) ; aucune recherche, quelques millisecondes, 1 à 2 % de plus que le plus court. C — LA RECHERCHE SUR LES VOIES HAUTES SEULES, à niveau fixe, sans les étiquettes d'altitude qui coûtent cher aujourd'hui (elles ne servent qu'à la montée et à la descente). Ce que je ne sais pas encore : combien de routes publiées finissent à KLAX, KSFO, KSEA et d'où elles partent — AeroDB le mesure. Préalable dans tous les cas : reconstruire les États-Unis dans Données (ta base est au cycle du 1er octobre).",
+   "question": "Sortie NAT → côte ouest : la mesure dit que c'est déjà rapide. Que veux-tu challenger ?",
+   "context": "QUESTION REPOSÉE à 18 h 08 avec la mesure d'AeroDB sur ta vraie base (l'ordre des options a changé). De la sortie de l'océan à Los Angeles, le moteur trouve la route en moins d'un centième de seconde (152 états), par une route nord-américaine, des voies publiées et la STAR ; le vol entier Dublin → Los Angeles répond en 3,4 s à froid et 0,5 s à chaud (5 095 NM). Mes propositions A (arbre des arrivées) et C (voies hautes seules) sont condamnées par ces chiffres ; B existe déjà (la route libre). Ce que je conteste maintenant : chercher un nouvel algorithme là où le temps est déjà bon. Le vrai manque est la FIABILITÉ : de Paris vers la côte ouest le moteur ne rend pas de route (défaut trouvé par AeroDB, en correction), et aucune matrice de vols ne prouve encore le reste. Deux erreurs de ma part à corriger : ta base des États-Unis n'est PAS périmée (cycle du 29 octobre) ; et les PDF du Canada n'ont aucun tableau de voies ni de points — il n'y a rien à y lire.",
    "options": [
-    "A pour la fin, B pour le milieu, C en secours",
-    "B seul : route libre à points publiés, la plus simple",
-    "C seul : une vraie recherche sur les voies hautes",
-    "J'ai mon algorithme (dans le texte)"
+    "D'accord : on fiabilise (Paris → côte ouest, puis la matrice de vols)",
+    "Je veux comparer avec mon algorithme (je le décris dans le texte)",
+    "Lire aussi l'en-route du CIFP (voies des États-Unis et morceaux du Canada)",
+    "Autre (dans le texte)"
    ],
    "since": "2026-11-16",
    "state": "todo",
