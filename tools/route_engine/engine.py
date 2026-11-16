@@ -291,7 +291,12 @@ class Nav:
                 qualifies=e.get('kind')=='FRA' and (not getattr(g,'required_fra_area',None) or e.get('fra_area')==g.required_fra_area)
                 next_state=(v,next_index,seen_fra or qualifies,c,d);new=cost+e.get('_cost',e['nm'])*low_factor(u,v,e)
                 bucket=labels[next_state[:3]]
-                if any(old<=new+1e-10 and lo<=c+.001 and hi>=d-.001 for old,lo,hi,_ in bucket):continue
+                new_t,c_t,d_t=new+1e-10,c+.001,d-.001      # SOG-0354 L2b (1) : les trois seuils une fois, la boucle sans générateur (6,3 millions de tours par recherche de 6 000 états) : même test, mot pour mot
+                dominated=False
+                for old,lo,hi,_ in bucket:
+                    if old<=new_t and lo<=c_t and hi>=d_t:
+                        dominated=True;break
+                if dominated:continue
                 kept=[]
                 for old,lo,hi,key in bucket:
                     if new<=old+1e-10 and c<=lo+.001 and d>=hi-.001:costs.pop(key,None)
