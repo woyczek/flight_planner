@@ -27,7 +27,7 @@ FIELDS = {
 MAX_ROUTE = 600
 HEAD_BUDGET_S = 5.0                 # SOG-0371 : la route de TÊTE répond en 5 s au plus (à froid : le chargement du contexte compris) ; ce qui n'a pas abouti se dit « proposition »
 TOTAL_BUDGET_S = 15.0               # SOG-0371 : tout le calcul (tête, alternatives, propositions de repli) en 15 s au plus ; AUCUNE recherche ne dépasse la borne de sa phase (engine.DEADLINE)
-OCEAN_HEAD_BUDGET_S = 10.0            # SOG-0354 L2b : un vol qui traverse l'Atlantique : la route de tête 10 s, une recherche 12 s, tout 20 s (les alternatives et les propositions seulement s'il reste du temps) — la route d'EIDW → KJFK EXISTE et demande ~7 s de recherche
+OCEAN_HEAD_BUDGET_S = 12.0            # SOG-0354 L2b : un vol qui traverse l'Atlantique : la route de tête 12 s (10 s laissait 1 à 1,5 s de marge : décision de l'ergonome), une recherche 12 s, tout 20 s (les alternatives et les propositions seulement s'il reste du temps) — la route d'EIDW → KJFK EXISTE et demande ~7 s de recherche
 OCEAN_SEARCH_CAP_S = 12.0
 OCEAN_TOTAL_BUDGET_S = 20.0
 ALT_BUDGET_S = 8.0                  # SOG-0296 : la recherche des ALTERNATIVES (après la route de tête) tient le poste au plus ce temps (facultatif, `alternatives_budget`, 1 à 25 s) : 25 s pour ne rien trouver de plus n'a pas à le tenir
@@ -182,7 +182,7 @@ def crosses_ocean(a, b):
 
 
 def budgets(request, ocean):
-    """Les bornes de ce calcul : { ocean, head_s, search_s, total_s } — 5 s / 6 s / 15 s (SOG-0371), 10 s / 12 s / 20 s pour un vol qui traverse l'Atlantique en CALCUL ; un CONTRÔLE (une route saisie) garde les siennes. La réponse les rend (`budget`) : l'écran dit qu'il cherche plus longtemps."""
+    """Les bornes de ce calcul : { ocean, head_s, search_s, total_s } — 5 s / 6 s / 15 s (SOG-0371), 12 s / 12 s / 20 s pour un vol qui traverse l'Atlantique en CALCUL ; un CONTRÔLE (une route saisie) garde les siennes. La réponse les rend (`budget`) : l'écran dit qu'il cherche plus longtemps."""
     long_ = bool(ocean) and request.get('mode', 'calculate') == 'calculate'
     return {'ocean': long_, 'head_s': OCEAN_HEAD_BUDGET_S if long_ else HEAD_BUDGET_S, 'search_s': OCEAN_SEARCH_CAP_S if long_ else 6.0, 'total_s': OCEAN_TOTAL_BUDGET_S if long_ else TOTAL_BUDGET_S}
 

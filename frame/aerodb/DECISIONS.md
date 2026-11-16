@@ -3226,7 +3226,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 ## 16 November 2026 — SOG-0354: the bounds of a flight across the Atlantic
 
-- **Decided** (ergonomics session, 16:06, my question (a)): « une vraie route en dix secondes vaut mieux qu'une proposition en huit » — for a flight that crosses the ocean ONLY: the head route 10 s, a search 12 s, the alternatives and the proposals only if time remains, 20 s in all.
+- **Decided** (ergonomics session, 16:06, my question (a)): « une vraie route en dix secondes vaut mieux qu'une proposition en huit » — for a flight that crosses the ocean ONLY: the head route 10 s (then 12 s, see below), a search 12 s, the alternatives and the proposals only if time remains, 20 s in all.
+- **Margin** (my reserve, taken at the word by the ergonomics session): the head route passes to 12 s; the total stays 20 s.
 - **Done**: `plan.crosses_ocean`, `plan.budgets`, `engine.SEARCH_CAP_S`, the field `budget` of the answer and of the view; EIDW → KJFK and EIDW → KBOS now return a ROUTE (K289, red before: no such function; the behaviour measured before: a proposal at 15 s).
 - **Choices of this session** (to relax if wished): the criterion is the longitude test of `nat_layer.hint` (the Atlantic), not the distance; the Pacific and the Indian Ocean keep the short bounds (no NAT layer there); the margin of the head bound is thin (1 to 1.5 s): 12 s would widen it; the RAD retries stop after the head bound for an ocean flight; an attempt of 6.5 s is not begun in the last 6.5 s of the alternatives window when the head route is refused.
 - **Not done**: the screen saying « cherche plus longtemps » (Features SOG, from `budget.ocean`); the skeleton (L2b 3), which stays the way back to 8 s.
