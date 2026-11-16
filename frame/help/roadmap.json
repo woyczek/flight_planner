@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2c40ec9",
+  "organisation": "0998211",
   "fiches": 372,
   "untranslated": 0,
   "priorities": 310
@@ -1418,11 +1418,12 @@
     {
      "id": "SOG-0353",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Carte à côté de Carburant et Carte en grand : la même vue avec les mêmes paramètres — une spécification de ce qui survit",
      "en": "Map beside Fuel and full Map: the same view with the same parameters — a specification of what survives",
      "de": "Karte neben Kraftstoff und große Karte: dieselbe Ansicht mit denselben Parametern — eine Spezifikation dessen, was erhalten bleibt",
-     "es": "Mapa junto a Combustible y Mapa grande: la misma vista con los mismos parámetros — una especificación de lo que sobrevive"
+     "es": "Mapa junto a Combustible y Mapa grande: la misma vista con los mismos parámetros — una especificación de lo que sobrevive",
+     "test": true
     }
    ]
   },
