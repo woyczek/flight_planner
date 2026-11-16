@@ -9245,7 +9245,8 @@ def k237(c):
         r, p, v = run(bench('none', None), 'KJFK', 'EGLL', '2026-11-10T12:00')
         c.eq(p['ok'], False, 'without the file there is no way over the ocean: no plan', what='no file')
         # 2. track A, valid that day: its named entry and exit are the base\'s own nodes (shared), the flight uses it, not stale
-        r, p, v = run(bench('a', {'tracks': [A]}), 'KJFK', 'EGLL', '2026-11-10T07:00')
+        # the request leaves at 04:30 (it was 07:00 before the validity of a track existed): the flight passes the entry about 07:00, inside the window 01:30-08:00 of the message; at 07:00 it would pass it at about 09:30, after the closing: the track is set aside (K293)
+        r, p, v = run(bench('a', {'tracks': [A]}), 'KJFK', 'EGLL', '2026-11-10T04:30')
         vias = [l['via'] for l in p.get('legs') or []]
         c.ok(p['ok'] and 'NATA' in vias, str((vias, p.get('error'))), 'KJFK → EGLL goes over the ocean by NATA: its entry ENTRA and its exit EXITA are the nodes of the base (J1 before, J2 after)')
         a0 = v['alternatives'][0]
@@ -9261,7 +9262,7 @@ def k237(c):
              'two days later the track is used anyway and said « périmées »: « on essaie, on raffine après »', what='stale')
         # 4. track B: a named entry the base does not know is left out (said), its first coordinate is joined to the high network by a DCT, so is its last
         ctx = bench('b', {'tracks': [B]})
-        r, p, v = run(ctx, 'KJFK', 'EGLL', '2026-11-10T07:00')
+        r, p, v = run(ctx, 'KJFK', 'EGLL', '2026-11-10T04:30')      # same reason as the request of track A: the passage of the entry inside the window
         segs = v['alternatives'][0]['segments'] if v['alternatives'] else []
         links = [(s['from'], s['to'], s['nat']['link']) for s in segs if s.get('nat') and s['nat'].get('link')]
         c.ok(p['ok'] and [x[2] for x in links] == ['entry', 'exit'] and links[0][0] in ('CANOUT', 'MIDUS') and links[1][1] in ('UKIN1', 'UKIN2', 'EXITA'), str(links), 'track B: the entry is joined from the high network and the exit to it, by DCT segments marked entry / exit (« revue »: no route read)')
@@ -9280,7 +9281,10 @@ def k237(c):
         # 5. a track in the flow direction only: against the flow, the track is not taken
         r, p, v = run(bench('rev', {'tracks': [A]}), 'EGLL', 'KJFK', '2026-11-10T07:00')
         c.ok('NATA' not in [l['via'] for l in p.get('legs') or []], str([l['via'] for l in p.get('legs') or []]), 'an eastbound track is not flown westbound (EGLL → KJFK)')
-        c.ok(p['ok'] is False and "Aucune route NAT vers l'ouest dans le message du 10/11." in p['error'], p.get('error', ''), 'the failure says it plainly: no NAT route to the west in the message of 10/11 (instead of keeping silent)')
+        # SOG-0354 L5 (2): the old expectation (« the failure says it plainly: no NAT route to the west in the message of 10/11 ») is REPLACED: a westbound flight with a message that has only eastbound routes now gets a FREE route, created, and the answer is not silent: `sections.source` is « random », and `sections.rejected` says « sens contraire » for each route of the message
+        sec = r['plan'].get('sections') or {}
+        c.ok(p['ok'] is True and sec.get('source') == 'random' and [(x['track'], x['code']) for x in sec.get('rejected', [])] == [('A', 'direction')] and 'sens contraire' in sec['rejected'][0]['text'] and (sec.get('free') or {}).get('ok') is True, str(sec)[:300],
+             'a westbound flight with only an eastbound route in the message is NOT left without a route (L5 2, replacing « the failure says it plainly »): a free route is created (sections.source random) and the answer says why the route of the message was not taken (« sens contraire »)')
         from route_engine import nat_layer as NL
         E0 = __import__('route_engine.engine', fromlist=['Nav'])
         E0.DATA_DIR = None
@@ -11426,8 +11430,17 @@ def k293(c):
          'Nav.level: an edge of a track is refused at a level that is not in its list; an airway (no track), and a track that carries no list, are as before', what='level')
     now = datetime.datetime(2026, 11, 16, 9, 30, tzinfo=utc)
     c.eq((P.depart_of({'date': '2026-11-16T12:00'}, now), P.depart_of({'date': '2026-11-16T12:00:00Z'}, now), P.depart_of({'date': '2026-11-16'}, now)),
-         ((datetime.datetime(2026, 11, 16, 12, 0), 'request'), (datetime.datetime(2026, 11, 16, 12, 0), 'request'), (datetime.datetime(2026, 11, 16, 9, 30), 'now')),
-         'the departure is the hour of the request; a date with no hour is « now », and the basis says so', what='depart')
+         ((datetime.datetime(2026, 11, 16, 12, 0), 'request'), (datetime.datetime(2026, 11, 16, 12, 0), 'request'), (None, 'none')),
+         'the departure is the hour that the request GIVES; a date with no hour gives none (no « now » is supposed): the basis says « none »', what='depart')
+    stale = dict(meta('P', 'west', west_levels=(350, 390), a='2026-11-15T11:30:00Z', b='2026-11-15T19:00:00Z'), stale=True)
+    c.eq((N.check(stale, 390, False, at(12, 0)), N.check(stale, 390, False, at(3, 41)), N.check(dict(stale, stale=False), 390, False, at(3, 41))[0]), (None, None, 'time'),
+         'a message of a PAST day is used and said stale elsewhere (rule of 13 November, K237): its hours are not checked; the same message not stale is', what='stale')
+    w = meta('W', 'east', east_levels=(350, 370), a='2026-11-10T01:30:00Z', b='2026-11-10T08:00:00Z')
+    c.eq((N.check(w, 370, True, datetime.datetime(2026, 11, 10, 7, 2, tzinfo=utc)), N.check(w, 370, True, datetime.datetime(2026, 11, 10, 9, 32, tzinfo=utc))), (None, ('time', 'route NAT W : non valide à 0932Z (valide de 0130Z à 0800Z)')),
+         'the validity of a track is read at the PASSAGE of the entry: a flight that passes it at 07:02 (window 01:30-08:00) may take the track; a flight that leaves at 07:00 and passes it at 09:32, after the closing, is set aside, whatever its departure hour (decision of the ergonomics session, 16 November: K237 asks at 04:30)', what='passage')
+    bare = {'track': 'N', 'direction': 'east'}
+    c.eq((N.check(bare, 370, True, datetime.datetime(2026, 11, 10, 9, 32, tzinfo=utc)), N.check(bare, 370, False)[0]), (None, 'direction'),
+         'a route that was read with no levels and no window (the old shape of the file, K237) is still valid: no level list = every level, no window = every hour; only its direction can set it aside', what='bare')
     # sections.solve: the tracks that fail are set aside with their reason, the valid one is the gate, the whole search that follows does not take the others
     nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}}
     g = engine.RoutingGraph()
@@ -11452,6 +11465,7 @@ def k293(c):
             self.nodes, self.calls, self.last_search, self.sections_info, self.nat = nodes, [], None, None, {'meta': metas, 'tracks': list(metas)}
             self.depart = (datetime.datetime(2026, 11, 16, 12, 0), 'request')
             self.nat_rejected = frozenset()
+            self.stub = g      # the graph whose sections are straight legs (the two ends of the ocean)
 
         def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None):
             if goals:      # SOG-0354 L5 (1 bis): ONE search to all the entries
@@ -11459,7 +11473,7 @@ def k293(c):
                 self.last_search = {'expanded': 1, 'seconds': 0.0, 'found': True}
                 return {x: {'path': [(s, x, {'nm': engine.nm(nodes[s], nodes[x]), 'route': 'DCT'})], 'cost': engine.nm(nodes[s], nodes[x]) * 1.2, 'band': (37000, 37000)} for x in goals}
             self.calls.append((s, e))
-            if graph is g:
+            if graph is self.stub:
                 d = engine.nm(nodes[s], nodes[e])
                 self.last_search = {'cost': d * 1.2, 'band': (37000, 37000), 'expanded': 1, 'seconds': 0.0, 'found': True}
                 return [(s, e, {'nm': d, 'route': 'DCT'})]
@@ -11478,9 +11492,28 @@ def k293(c):
          'at 12:00 FL370: A is the gate; B does not offer FL370 (level), C is valid only from 14:00 (time), D goes the other way (direction); F (far north) is valid but not resolved (its bound is above the best cost); the answer lists the three with their reason and the hour of the departure; the whole search that follows is told not to take them', what='solve')
     c.ok(all(r['text'].startswith('route NAT ') for r in info['rejected']), str(info['rejected']), 'each reason is a sentence of the pilot')
     nav2 = Fake()
-    nav2.depart = (datetime.datetime(2026, 11, 16, 3, 0), 'now')
+    nav2.depart = (datetime.datetime(2026, 11, 16, 3, 0), 'request')
     c.eq((S.solve(nav2, g, 'DEP', 'ARR'), sorted(r['track'] for r in nav2.sections_info['rejected'] if r['code'] == 'time'), nav2.sections_info['chosen'], bool(nav2.sections_info.get('reason')), nav2.sections_info['depart']['basis']),
-         (None, ['A', 'C', 'F'], None, True, 'now'), 'at 03:00 (before the message is valid): no track is valid (B is still set aside for its level, D for its direction), the answer says each one and the reason (« la recherche entière suit »), the basis says « now »', what='no track')
+         (None, ['A', 'C', 'F'], None, True, 'request'), 'at 03:00 given by the request (before the message is valid): no track is valid (B is still set aside for its level, D for its direction), the answer says each one and the reason (« la recherche entière suit »)', what='no track')
+    nav3 = Fake()
+    nav3.depart = (None, 'none')
+    S.solve(nav3, g, 'DEP', 'ARR')
+    i3 = nav3.sections_info
+    c.eq((i3['chosen'], i3['depart'], sorted((r['track'], r['code']) for r in i3['rejected'])), ('A', {'time': None, 'basis': 'none', 'text': 'heure de départ non donnée : validité horaire des routes NAT non vérifiée'}, [('B', 'level'), ('D', 'direction')]),
+         'a request WITHOUT a departure hour (rule of 13 November: even without the right tracks, they are tried): the hour of the messages is NOT checked — C, valid only from 14:00, is a candidate, A is chosen —, the direction and the level still apply, and the answer says that nothing was supposed: basis « none » and the sentence « heure de départ non donnée : validité horaire des routes NAT non vérifiée »', what='no hour')
+    # a route that was READ with no level list and no window (the old shape of the file, the bench of K237) stays a candidate: nothing is « read and neither candidate nor set aside »
+    nodes['EN'], nodes['XN'] = {'id': 'EN', 'lat': 52.0, 'lon': -15.0}, {'id': 'XN', 'lat': 47.0, 'lon': -60.0}
+    g4 = engine.RoutingGraph()
+    g4.flight = dict(g.flight)
+    m4 = {'N': {'track': 'N', 'direction': 'west', 'levels': [], 'levels_east': [], 'levels_west': [], 'from': None, 'to': None, 'stale': False}}
+    g4['EN'] = [('XN', {'a': 'EN', 'b': 'XN', 'route': 'NATN', 'nm': engine.nm(nodes['EN'], nodes['XN']), 'nat': dict(m4['N']), 'dir': 'F'})]
+    nav4 = Fake()
+    nav4.nat = {'meta': m4, 'tracks': ['N']}
+    nav4.stub = g4      # the America section of this graph is a straight leg too
+    nav4.depart = (datetime.datetime(2026, 11, 16, 3, 0), 'request')
+    S.solve(nav4, g4, 'DEP', 'ARR')
+    c.eq((nav4.sections_info['chosen'], nav4.sections_info['rejected'], sorted(nav4.nat_rejected)), ('N', [], []),
+         'a route read with no levels and no window is a candidate at any hour (03:00 here) and is chosen: no level list = every level, no window = every hour; the free route is created only when ALL the routes read are set aside with a reason, or when none is read', what='bare route')
 
 
 @case('K294', 'Route engine, SOG-0354 lot L5 (2): when no track of the day is valid for the flight, a FREE route is CREATED — a point per 10 degrees of longitude, at the whole degree of latitude of the shortest path, between an entry and an exit taken from the ends of all the routes of the day (both directions) — resolved by the same sections, labelled « route libre, créée » (`origin: random`, `sections.free.source: random`), computed and never read from a text; with no known oceanic point the answer says so',
@@ -11698,3 +11731,92 @@ def k297(c):
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+
+
+@case('K296', 'Route engine, SOG-0354 lot L5 (3): the answer carries `timing` { context_s, tracks_s, graph_s, skeleton_s, sections: [{ name, seconds, bound_s, hit }], total_s } — a bound for every step and whether it cut it —, a graph build (about 4 s, not interruptible) is NOT begun when less than 5 s remain before the bound of an oceanic flight, and `sections` is the DEFAULT of a flight across the Atlantic in calculation (`sections: false` refuses it)',
+      'K', static=True,
+      rule='SOG-0354 L5 (3) (note § 13.4; the user: « s\'assurer que tout se charge en temps contraint »). `timing`: `context_s` (the navigation data and the RAD of the day, kept from a request to the next), `tracks_s` (reading and placing the tracks of the day, when the context was built), `graph_s` (the routing graph of the request, 0 when kept), `skeleton_s` (the time spent OUTSIDE the searches: choice of the tracks, skeleton, building of a free route), `sections` (every search: the European search to all the entries once, then, for each chain tried, the track and the America section, each with its `seconds`, its `bound_s` — the cap of one search, brought down to what remains before the bound of the phase — and `hit`: the bound cut it), `total_s`. `engine.GRAPH_MIN_S` (5 s for a flight across the ocean, 0 otherwise, set by every plan): a graph that is not built yet is refused with « Budget de recherche atteint : la construction du graphe n\'est pas commencée » when less than that remains before the bound (the alternatives and the RAD retries each rebuild a graph). `sections` default: `plan.plan` posts `nav.sections = crossing and calculation` when the request has no `sections` key. Measured on the real base: EIDW → KJFK 1.9 s of which context 0.84, graph 0.77, the sections 0.07; the second request 0.3 s; with `sections: false` 6.7 s / 4.9 s the same route; LFPO → KLAX (no route on this base) 13.9 s, under the 20 s.')
+def k296(c):
+    import sys
+    import time
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, sections as S
+    saved = (engine.SEARCH_CAP_S, engine.DEADLINE, engine.GRAPH_MIN_S)
+    try:
+        engine.SEARCH_CAP_S, engine.DEADLINE = 12.0, None
+        none = S._bound()
+        engine.DEADLINE = time.perf_counter() + 3.0
+        soon = S._bound()
+        engine.DEADLINE = time.perf_counter() - 1.0
+        late = S._bound()
+        c.eq((none, 2.8 <= soon <= 3.0, late), (12.0, True, 0.0), 'the bound of a search: the cap with no phase bound; what remains before the bound of the phase when it is nearer; 0 when it is passed', what='bound')
+        nav = engine.Nav.__new__(engine.Nav)
+        engine.GRAPH_MIN_S, engine.DEADLINE = 5.0, time.perf_counter() + 3.0
+        try:
+            nav.routing_graph('AAAA', 'BBBB', 370, 40)
+            said = 'no refusal'
+        except ValueError as e:
+            said = str(e)
+        c.ok('Budget de recherche atteint' in said and 'construction du graphe' in said, said, 'a graph build is NOT begun when less than 5 s remain before the bound (it takes about 4 s and cannot be interrupted): the refusal says so, in the words that the screen already reads as a budget (« Budget de recherche atteint »)')
+    finally:
+        engine.SEARCH_CAP_S, engine.DEADLINE, engine.GRAPH_MIN_S = saved
+    nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}, 'E1': {'id': 'E1', 'lat': 52.0, 'lon': -15.0}, 'X1': {'id': 'X1', 'lat': 47.0, 'lon': -60.0}}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    g.setdefault('E1', []).append(('X1', {'a': 'E1', 'b': 'X1', 'route': 'NATT1', 'nm': engine.nm(nodes['E1'], nodes['X1']), 'nat': {'track': 'T1', 'direction': 'west'}, 'dir': 'F'}))
+
+    class Fake:
+        def __init__(self, boom=False):
+            self.nodes, self.last_search, self.sections_info, self.boom = dict(nodes), None, None, boom
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None):
+            if goals:
+                self.last_search = {'expanded': 1, 'seconds': 0.01, 'found': True}
+                return {x: {'path': [(s, x, {'nm': engine.nm(nodes[s], nodes[x]), 'route': 'DCT'})], 'cost': engine.nm(nodes[s], nodes[x]), 'band': (36000, 36000)} for x in goals}
+            if graph is g:
+                if self.boom and e == 'ARR':
+                    raise ValueError('Budget de recherche atteint')
+                d = engine.nm(nodes[s], nodes[e])
+                self.last_search = {'cost': d, 'band': band, 'expanded': 1, 'seconds': 0.02, 'found': True}
+                return [(s, e, {'nm': d, 'route': 'DCT'})]
+            legs, node = [], s
+            while node != e:
+                v, ed = graph[node][0]
+                legs.append((node, v, ed))
+                node = v
+            self.last_search = {'cost': sum(x['nm'] for _u, _v, x in legs), 'band': band, 'expanded': len(legs), 'seconds': 0.0, 'found': True}
+            return legs
+    ok = Fake()
+    S.solve(ok, g, 'DEP', 'ARR')
+    info = ok.sections_info
+    c.eq(([s['name'] for s in info['steps']], [s['hit'] for s in info['steps']], all(set(s) >= {'name', 'seconds', 'bound_s', 'hit'} for s in info['steps']), info['steps'][0].get('shared'), 0 <= info['skeleton_s'] < 1.0),
+         (['europe', 'track T1', 'amérique'], [False, False, False], True, True, True),
+         'every search is a step with its name, its seconds, its bound and whether it was cut: the ONE European search (shared by all the entries), the track, the America section; `skeleton_s` is the time outside the searches', what='steps')
+    cut = Fake(boom=True)
+    c.eq((S.solve(cut, g, 'DEP', 'ARR'), cut.sections_info['steps'][-1]['name'], cut.sections_info['steps'][-1]['hit'], cut.sections_info['steps'][-1]['track']), (None, 'amérique', True, 'T1'),
+         'a search that the bound cuts is a step with hit true (and the chain is not proven: the whole search follows)', what='hit')
+    src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
+    c.ok("request['sections']) if request.get('sections') is not None else crossing" in src and "engine.GRAPH_MIN_S = 5.0 if bounds['ocean'] else 0.0" in src, 'plan.py', 'plan.plan: `sections` is the default of a flight across the Atlantic in calculation (an explicit `sections: false` refuses it) and posts the 5 s of the graph build')
+    data = Path('E:/DEFA/data')
+    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    from route_engine import plan as P, view, results_cache
+    results_cache.ENABLED = False
+    try:
+        out = {}
+        for key, extra in (('default', {}), ('off', {'sections': False})):
+            args = dict({'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-16T12:00', 'alternatives': False, 'proposals': True}, **extra)
+            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+            out[key] = (res, view.to_view(res, view.to_request(args)))
+        (rd, vd), (ro, vo) = out['default'], out['off']
+        td, to = rd['timing'], ro['timing']
+        c.eq((set(td), bool(td['sections']), bool(rd['sections']), to['sections'], ro['sections'], rd['primary'].get('route') == ro['primary'].get('route'), vd['timing'] == td),
+             ({'context_s', 'tracks_s', 'graph_s', 'skeleton_s', 'sections', 'total_s'}, True, True, [], None, True, True),
+             'EIDW → KJFK on the real base, with NO `sections` key: the sections are used (the flight crosses the Atlantic) and the answer carries `timing`; with `sections: false` the whole search, the same route, `timing.sections` empty; the view carries `timing`', what='real flight')
+        c.ok(all(s['bound_s'] <= 12.0 and s['hit'] is False and s['seconds'] <= s['bound_s'] for s in td['sections']) and td['total_s'] >= td['context_s'], str(td)[:300], 'every step of the real flight is inside its bound and none was cut; the total is not below the context')
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+        engine.GRAPH_MIN_S = 0.0

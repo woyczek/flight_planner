@@ -65,9 +65,9 @@ def check(meta, fl, east, eta=None):
     levels = meta.get('levels_' + wanted)
     if isinstance(levels, list) and levels and int(fl) not in levels:
         return 'level', f"route NAT {tid} : FL{int(fl)} non proposé vers l'{'est' if east else 'ouest'} (FL{levels[0]} à FL{levels[-1]})"
-    if eta is not None:
+    if eta is not None and not meta.get('stale'):      # un message PÉRIMÉ (d'un jour passé) est utilisé et dit périmé (règle du 13/11, K237) : ses heures ne sont pas contrôlées
         a, b = _date(meta.get('from')), _date(meta.get('to'))
-        t = eta if eta.tzinfo else eta.replace(tzinfo=dt.timezone.utc)
+        t = eta if eta.tzinfo else eta.replace(tzinfo=dt.timezone.utc)      # la validité d'une route NAT s'entend à l'heure de PASSAGE de l'entrée (décision de l'ergonomie, 16 nov.) : l'heure estimée à l'entrée est dans la fenêtre
         if (a and t < a) or (b and t > b):
             window = ' de ' + a.strftime('%H%M') + 'Z' if a else ''
             window += (' à ' + b.strftime('%H%M') + 'Z') if b else ''

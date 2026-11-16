@@ -188,10 +188,10 @@ def budgets(request, ocean):
 
 
 def depart_of(request, now=None):
-    """(l'instant de départ UTC sans fuseau, 'request' | 'now') : l'heure de la demande ; une date SANS heure (« 2026-11-16 ») est traitée pour « maintenant » et la réponse le dit (`sections.depart.basis`) : une route NAT n'est valable qu'à une heure, la demande doit en avoir une."""
+    """(l'instant de départ UTC sans fuseau, 'request') : l'heure que la demande DONNE ; (None, 'none') quand elle n'en donne pas (une date seule, « 2026-11-16 ») : on ne suppose RIEN (décision de l'ergonomie, 16 nov. : la règle du 13/11, « même si on n'a pas la bonne nat, on essaie tout de même de les utiliser »), la validité horaire des routes NAT n'est alors pas vérifiée et la réponse le dit (`sections.depart`) ; `now` n'est plus utilisé (gardé pour les appelants)."""
     if len(str(request.get('date', ''))) > 10:
         return nav_time(request), 'request'
-    return (now or dt.datetime.now(dt.timezone.utc)).replace(tzinfo=None), 'now'
+    return None, 'none'
 
 
 def plan(request, root):
@@ -208,6 +208,7 @@ def plan(request, root):
             raise SearchBudget(limit['what'] + '. Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
     request = dict(request, root=root)
     request.setdefault('date', '2026-11-09T12:00')
+    context_began = time.perf_counter()
     nav, rad = context(request, root)      # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte est refait à chaque demande et disparaît avec elle
     entered = str(request.get('route', '')).strip().upper()
     words = entered.split()
@@ -234,12 +235,16 @@ def plan(request, root):
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
     nav.nat_rejected = frozenset()
-    nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ de la demande (sans heure : « maintenant », dit)
-    nav.sections = bool(request.get('sections'))      # SOG-0354 L2b (3) : l'option de la demande (posée à CHAQUE plan : le contexte gardé d'un calcul à l'autre ne porte jamais l'option d'une demande précédente)
-    bounds = budgets(request, crosses_ocean(nav.ads.get(str(request.get('dep', '')).upper()) or {}, nav.ads.get(str(request.get('arr', '')).upper()) or {}))      # SOG-0354 L2b : un vol qui traverse l'Atlantique cherche plus longtemps
+    nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ que la demande donne (sans heure : (None, 'none'), la validité horaire n'est pas vérifiée, dit)
+    context_s = round(time.perf_counter() - context_began, 3)
+    crossing = crosses_ocean(nav.ads.get(str(request.get('dep', '')).upper()) or {}, nav.ads.get(str(request.get('arr', '')).upper()) or {})
+    # SOG-0354 L2b (3) : l'option de la demande (posée à CHAQUE plan : le contexte gardé d'un calcul à l'autre ne porte jamais l'option d'une demande précédente) ; L5 (3) : PAR DÉFAUT pour un vol qui traverse l'Atlantique en calcul (`sections: false` la refuse)
+    nav.sections = bool(request['sections']) if request.get('sections') is not None else crossing and request.get('mode', 'calculate') == 'calculate'
+    bounds = budgets(request, crossing)      # SOG-0354 L2b : un vol qui traverse l'Atlantique cherche plus longtemps
     reserve = 4.0 if bounds['ocean'] else 0.0      # SOG-0354 L2b : un vol océanique réserve la fin de ses 20 s aux propositions de repli ; les alternatives (un graphe de 4 s et une recherche chacune) s'arrêtent avant
     limit['until'], limit['what'] = started + bounds['total_s'] - reserve, f"Budget global de recherche atteint ({bounds['total_s']:g} s)"
     engine.SEARCH_CAP_S = bounds['search_s']
+    engine.GRAPH_MIN_S = 5.0 if bounds['ocean'] else 0.0      # SOG-0354 L5 (3) : un graphe (~4 s) n'est pas commencé quand il reste moins de 5 s avant la borne
     request['_deadline'] = started + bounds['head_s']
     engine.DEADLINE = started + bounds['head_s']       # SOG-0371 : la route de tête et ses reprises RAD ; la phase suivante pose la sienne
     if request.get('objective') == 'economical':
@@ -404,7 +409,9 @@ def plan(request, root):
             message = 'Calcul réseau incomplet : ' + str(len(repli['proposals'])) + ' propositions de repli, dont ' + str(repli.get('fra_pieces', 0)) + ' portion(s) FRA. Les raccords DCT restent non validés.'
     for r in [primary, *alternatives, *((repli or {}).get('proposals') or [])]:        # SOG-0161 : chaque tronçon classé (contrôlé / incomplet / repli / erreur), par couche, et le pourcentage de la distance contrôlée
         layered.annotate(r, rad)
-    return dict(budget=bounds, sections=(getattr(nav, 'sections_info', None) if request.get('sections') else None), primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
+    info = getattr(nav, 'sections_info', None) if nav.sections else None
+    timing = {'context_s': context_s, 'tracks_s': (getattr(nav, 'nat', None) or {}).get('seconds'), 'graph_s': getattr(nav, 'graph_seconds', None), 'skeleton_s': (info or {}).get('skeleton_s'), 'sections': list((info or {}).get('steps') or []), 'total_s': round(time.perf_counter() - started, 3)}      # SOG-0354 L5 (3) : où le temps est passé, étape par étape, avec la borne de chacune
+    return dict(budget=bounds, timing=timing, sections=info, primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected and not check_only, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 

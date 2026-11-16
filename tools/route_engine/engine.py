@@ -13,6 +13,7 @@ from . import nat_layer     # SOG-0263
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
 SEARCH_CAP_S = 6.0   # SOG-0354 : la borne d'UNE recherche (A*) ; plan.plan() la porte à 12 s pour un vol qui traverse l'Atlantique (plan.budgets), et la remet à 6 s à la fin du calcul
+GRAPH_MIN_S = 0.0   # SOG-0354 L5 (3) : un vol océanique ne COMMENCE pas la construction d'un graphe (~4 s, non interruptible) quand il reste moins de cela avant la borne ; posé par plan.plan (5 s pour un vol qui traverse l'Atlantique), 0 sinon
 DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
 RAD_FILE = None   # SOG-0081 : chemin de rad.json.gz posé par le travail du lanceur (data/route/rad.json.gz) ; None : à côté du module, comme RouteSim 2
 MONTHS = dict(zip('JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(),range(1,13)))
@@ -109,7 +110,8 @@ class Nav:
             self.coverage.append(dict(zone=zone.name,cycle=datasets.cycles['airways'] or self.cycles[zone.name],segments=count,
                 dataset_cycles=datasets.cycles,sources=datasets.sources['airways']))
         if not self.edges: raise ValueError('Aucun segment airway dans les cycles disponibles à cette date.')
-        try:nat_layer.add(self,nm)   # SOG-0263 : la couche NAT (les tracks du jour, même périmées, dites périmées) ; un fichier illisible ne coûte pas le calcul
+        import time as _time;_began=_time.perf_counter()      # SOG-0354 L5 (3) : le temps de la lecture des tracks (`timing.tracks_s`)
+        try:nat_layer.add(self,nm);self.nat['seconds']=round(_time.perf_counter()-_began,3)   # SOG-0263 : la couche NAT (les tracks du jour, même périmées, dites périmées) ; un fichier illisible ne coûte pas le calcul
         except (OSError,ValueError,KeyError,TypeError) as exc:self.nat={'tracks':[],'issued':None,'stale':False,'skipped':[f'error: {exc.__class__.__name__}'],'links':0}
         self.fra=fra_module.Fra(self,date,nm)
         self._fra_graph_cache={}
@@ -373,7 +375,12 @@ class Nav:
         cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,via,str(when),enable_fra,cost_fields],sort_keys=True)
         if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
         if cache_key in self._routing_cache:
+            self.graph_seconds=0.0
             return self._routing_cache[cache_key]
+        import time
+        if GRAPH_MIN_S and DEADLINE is not None and time.perf_counter()+GRAPH_MIN_S>DEADLINE:      # SOG-0354 L5 (3) : la construction (~4 s) ne commence pas si elle ne finirait pas avant la borne
+            raise ValueError(f'Budget de recherche atteint : la construction du graphe n’est pas commencée (moins de {GRAPH_MIN_S:g} s restent avant la borne). Ce résultat ne prouve pas l’absence de route.')
+        built=time.perf_counter()
         point_rules=collections.defaultdict(list);segment_rules=collections.defaultdict(list);procedure_rules=collections.defaultdict(list)
         chain_blocks=[]
         for rule in blocks:
@@ -474,6 +481,7 @@ class Nav:
         graph=RoutingGraph(g)
         if profile_options:
             graph.flight=dict(profile_options,departure=self.ads[dep].get('elev') or 0,arrival=self.ads[arr].get('elev') or 0,ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
+        self.graph_seconds=round(time.perf_counter()-built,3)
         self._routing_cache[cache_key]=(graph,a,b)
         if len(self._routing_cache)>1:self._routing_cache.popitem(last=False)
         return graph,a,b

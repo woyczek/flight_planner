@@ -9,6 +9,7 @@ il n'est pas, par construction, le meilleur de tous les vols (un vol sans track 
 
 `solve` rend le chemin (la liste des tronçons, comme Nav.search) ou None (pas applicable : pas de track dans le sens du vol, un vol hors Atlantique, rien de résolu) ; dans ce cas la recherche entière suit, comme sans l'option. Ce que la dernière résolution a fait est dans `nav.sections_info` : les sections (nom, de, à, distance, coût, états développés), la track retenue, les tracks essayées."""
 import datetime
+import time
 
 from . import engine, free_route, nat_layer
 
@@ -62,8 +63,30 @@ def _heading(nodes, chain, east):
     return b > a if east else b < a
 
 
+def _bound():
+    """La borne (secondes) de la recherche qui commence : le plafond d'une recherche, ramené à ce qui reste avant la borne de la phase."""
+    rest = engine.SEARCH_CAP_S if engine.DEADLINE is None else engine.DEADLINE - time.perf_counter()
+    return round(max(0.0, min(engine.SEARCH_CAP_S, rest)), 1)
+
+
+def _step(nav, name, seconds, bound, hit, **more):
+    """SOG-0354 L5 (3) : une étape de la réponse, `timing.sections` : { name, seconds, bound_s, hit } (hit : la borne a coupé l'étape)."""
+    info = getattr(nav, 'sections_info', None)
+    if info is not None:
+        info.setdefault('steps', []).append(dict({'name': name, 'seconds': seconds, 'bound_s': bound, 'hit': bool(hit)}, **more))
+
+
 def solve(nav, g, start, end):
-    """Le meilleur chemin PAR UNE TRACK, en sections (voir l'en-tête) ; None si l'option n'est pas applicable ou si rien n'a pu être résolu."""
+    """Le meilleur chemin PAR UNE TRACK, en sections (voir l'en-tête) ; None si l'option n'est pas applicable ou si rien n'a pu être résolu. `sections_info['skeleton_s']` : le temps passé HORS des recherches (le choix des tracks, le squelette, la route libre à construire)."""
+    began = time.perf_counter()
+    path = _solve(nav, g, start, end)
+    info = nav.sections_info
+    if info is not None:
+        info['skeleton_s'] = round(max(0.0, time.perf_counter() - began - sum(s.get('seconds') or 0 for s in info.get('steps', []))), 3)
+    return path
+
+
+def _solve(nav, g, start, end):
     nav.sections_info = None
     flight = getattr(g, 'flight', None)
     if not flight:
@@ -76,6 +99,7 @@ def solve(nav, g, start, end):
     fl = int(round((flight.get('ceiling') or 0) / 100))
     meta = (getattr(nav, 'nat', None) or {}).get('meta') or {}
     depart = getattr(nav, 'depart', None)
+    hour = depart[0] if depart else None      # None : la demande ne donne pas d'heure : la validité horaire n'est pas vérifiée (le sens et le niveau, si)
     speed = flight.get('speed_kt') or 450
     eta_of = lambda nm_: depart[0] + datetime.timedelta(hours=nm_ / speed)
     rejected = {tid: why for tid, m in meta.items() if (why := nat_layer.check(m, fl, east))}
@@ -86,7 +110,7 @@ def solve(nav, g, start, end):
             continue
         why = None
         for o in options:
-            why = nat_layer.check(meta[tid], fl, east, eta_of(engine.nm(a, nav.nodes[o['entry']]))) if depart and tid in meta else None      # l'heure estimée (grand cercle) : elle écarte avant toute recherche
+            why = nat_layer.check(meta[tid], fl, east, eta_of(engine.nm(a, nav.nodes[o['entry']]))) if hour and tid in meta else None      # l'heure estimée (grand cercle) : elle écarte avant toute recherche
             if not why:
                 candidates.append((tid, o))
         if why and not any(t == tid for t, _o in candidates):
@@ -94,7 +118,7 @@ def solve(nav, g, start, end):
     for tid in meta:
         if tid not in rejected and tid not in {c[0] for c in candidates}:
             rejected[tid] = ('network', f"route NAT {tid} : ni son entrée ni sa sortie ne se relie au réseau haut à ce niveau")
-    info = {'candidates': [], 'tried': [], 'chosen': None, 'sections': [], 'rejected': [], 'depart': ({'time': depart[0].strftime('%Y-%m-%dT%H:%MZ'), 'basis': depart[1]} if depart else None)}
+    info = {'candidates': [], 'tried': [], 'chosen': None, 'sections': [], 'rejected': [], 'depart': ({'time': hour.strftime('%Y-%m-%dT%H:%MZ'), 'basis': depart[1]} if hour else {'time': None, 'basis': 'none', 'text': 'heure de départ non donnée : validité horaire des routes NAT non vérifiée'} if depart else None)}
     nav.sections_info = info
 
     nav.nat_rejected = frozenset(rejected)      # la recherche entière qui suit (si rien n'abouti ici) ne prend pas non plus une track écartée pour ce vol
@@ -113,7 +137,7 @@ def solve(nav, g, start, end):
     for tid, o in candidates:
         found = europe.get(o['entry'])
         why = ('network', f"route NAT {tid} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
-            (nat_layer.check(meta[tid], fl, east, eta_of(sum(x['nm'] for _u, _v, x in found['path']))) if depart and tid in meta else None)      # l'heure au passage de l'entrée, avec la distance RÉELLE de la section d'Europe
+            (nat_layer.check(meta[tid], fl, east, eta_of(sum(x['nm'] for _u, _v, x in found['path']))) if hour and tid in meta else None)      # l'heure au passage de l'entrée, avec la distance RÉELLE de la section d'Europe
         if why:
             lost[tid] = why
             continue
@@ -145,12 +169,14 @@ def solve(nav, g, start, end):
     return path
 
 
-def _europe(nav, g, start, entries, info, key='europe', need=None):
-    """{ entrée: { path, cost, band, expanded, seconds } } : UNE recherche (`Nav.search(goals=…)`) du départ vers toutes les entrées ; `info[key]` dit ce qu'elle a fait (portes, atteintes, états, secondes, coupée par le budget) ; `europe_free` pour la route libre (L5 2 bis)."""
+def _europe(nav, g, start, entries, info, key='europe', need=None, track=None):
+    """{ entrée: { path, cost, band, expanded, seconds } } : UNE recherche (`Nav.search(goals=…)`) du départ vers toutes les entrées ; `info[key]` dit ce qu'elle a fait (portes, atteintes, états, secondes, coupée par le budget) ; `europe_free` et `track='libre'` pour la route libre (L5 2 bis) ; `need` : s'arrêter dès que ce nombre d'entrées est atteint."""
+    bound = _bound()
     found = nav.search(g, start, entries[0], (), False, False, None, gate=True, goals=entries, **({'need': need} if need else {})) or {}
     ls = nav.last_search or {}
     for x in found.values():
         x['expanded'], x['seconds'] = ls.get('expanded'), ls.get('seconds')
+    _step(nav, 'europe' if nav.nodes[start]['lon'] > WEST_LON else 'amérique', ls.get('seconds') or 0.0, bound, ls.get('truncated'), shared=True, goals=len(entries), reached=len(found), **({'track': track} if track else {}))
     info[key] = {'goals': len(entries), 'reached': len(found), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'), 'truncated': bool(ls.get('truncated'))}
     return found
 
@@ -158,7 +184,7 @@ def _europe(nav, g, start, entries, info, key='europe', need=None):
 def _free(nav, g, start, end, ratio, info):
     """SOG-0354 L5 (2) : aucune route du jour ne convient : la route libre CRÉÉE (free_route), résolue par les mêmes sections ; `info['free']` dit ce qui a été fait (ou pourquoi rien : « aucun point d'entrée océanique connu »), `info['source']` vaut 'random' ; None si rien n'a abouti (la recherche entière suit)."""
     made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs, first: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True, first=first),
-                                 lambda g2, s, entries: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED))
+                                 lambda g2, s, entries: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre'))
     if not made:
         info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
@@ -188,13 +214,16 @@ def _resolve(nav, g, start, end, tid, o, created=False, first=None):
         if number == 0 and first:      # la section d'Europe de cette entrée vient de la recherche vers toutes les entrées (_europe)
             part, ls = first['path'], {'band': first['band'], 'cost': first['cost'], 'expanded': first.get('expanded'), 'seconds': first.get('seconds'), 'shared': True}
         else:
+            bound = _bound()
             try:
                 part = nav.search(graph, s, e, (), False, False, band if use_band else None, gate=is_gate)
             except ValueError:
+                _step(nav, name, (nav.last_search or {}).get('seconds') or 0.0, bound, True, track=tid or 'libre')
                 return None      # le budget de cette recherche est atteint : cette chaîne n'est pas prouvée
+            ls = nav.last_search
+            _step(nav, name, ls.get('seconds') or 0.0, bound, False, track=tid or 'libre')
             if part is None:
                 return None
-            ls = nav.last_search
         band = ls.get('band')
         total += ls['cost']
         path.extend(part)
