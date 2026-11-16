@@ -205,3 +205,27 @@ What this changes:
   `recovery.propose` for a flight that crosses regions; accepted on the L0 table, no route worse. **L2b** — reader of
   `PFR_SEG` and of the conditions, then gates, skeleton, lazy resolution and section cache, behind a request option.
   L3 after L2b. L1 (the reader, wired to nothing) is reviewed by Sécurisation before its push.
+
+## 12. After L2a (252194e91), 16 November
+
+The profile corrected § 11 on one point. On EIDW → KJFK, 20 s out of 25 under the profiler were spent in
+`recovery.propose`: 41.6 million calls of `block_hit`, every edge tested against every RAD block. The blocks are now
+indexed once (`recovery.usable_graph`, the same graph word for word); the proposals were not bounded, they were made
+exact and cheap.
+
+| Flight | Before | After | Route |
+|---|---|---|---|
+| EIDW → KBOS | 15.0 s | 8.1 s | proposal |
+| EIDW → KJFK | 15.0 s | 7.9 s | proposal |
+| LFPO → KLAX | 15.6 s | 9.7 s | proposal |
+| LFOE → KTPA | 7.8 s | 6.7 s | the same, 4 734 NM |
+| EGLL → KDEN | 7.1 s | 6.9 s | the same, 4 578 NM |
+
+**The cost per state of the ocean was not reduced, and should not be the target**: a state is not slow, it is wide —
+about fifty edges relaxed per state. The lever is the number of edges, that is the corridor of § 5, point 2. The head
+searches that fail still take 3 to 4 s, their bound.
+
+L2b therefore goes in three steps, one at a time, each judged on this table: (1) the corridor; (2) the reader of
+`PFR_SEG` and of the conditions of the published routes, with fixed-sentence errors for a hostile file, reviewed by
+Sécurisation; (3) gates, skeleton, lazy resolution and section cache, behind a request option, shown to the user on
+EIDW → KBOS and EIDW → KJFK before it becomes the default.
