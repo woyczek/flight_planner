@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "03d8ea4",
+  "organisation": "df15ff0",
   "fiches": 387,
   "untranslated": 0,
   "priorities": 374
@@ -490,11 +490,12 @@
     {
      "id": "SOG-0385",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Fiche de performances : après l'import d'une réponse de ChatGPT, la table régime / débit / altitude manque et des champs sont dits « base V2 »",
      "en": "Performance sheet: after importing a ChatGPT answer, the power / fuel flow / altitude table is missing and fields are labelled 'V2 base'",
      "de": "Leistungsblatt: nach dem Import einer ChatGPT-Antwort fehlt die Tabelle Leistung / Verbrauch / Höhe, und Felder heißen „V2-Basis“",
-     "es": "Ficha de prestaciones: tras importar una respuesta de ChatGPT falta la tabla régimen / consumo / altitud y hay campos marcados «base V2»"
+     "es": "Ficha de prestaciones: tras importar una respuesta de ChatGPT falta la tabla régimen / consumo / altitud y hay campos marcados «base V2»",
+     "test": true
     }
    ]
   },

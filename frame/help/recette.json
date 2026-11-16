@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 256,
+  "tests": 257,
   "verdicts": 204
  },
  "apps": [
@@ -3874,6 +3874,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T15:31:28Z"
+  },
+  {
+   "id": "SOG-0385",
+   "app": "pilote",
+   "title": {
+    "fr": "Fiche de performances : après l'import d'une réponse de ChatGPT, la table régime / débit / altitude manque et des champs sont dits « base V2 »",
+    "en": "Performance sheet: after importing a ChatGPT answer, the power / fuel flow / altitude table is missing and fields are labelled 'V2 base'",
+    "de": "Leistungsblatt: nach dem Import einer ChatGPT-Antwort fehlt die Tabelle Leistung / Verbrauch / Höhe, und Felder heißen „V2-Basis“",
+    "es": "Ficha de prestaciones: tras importar una respuesta de ChatGPT falta la tabla régimen / consumo / altitud y hay campos marcados «base V2»"
+   },
+   "test": "Sur l'ordinateur, recharge l'appli : Aéronefs › Fiches, ta fiche de la capture de 16 h 37. Refais l'import de la réponse de ChatGPT. Attendu : chaque pli dit « ChatGPT » pour les champs que la réponse vient de donner, même égaux aux anciens (plus « base V2 ») ; le pli « Table régime / débit » dit ses sources ; si la réponse ne porte aucune ligne de table, ou une ligne illisible, l'aperçu le DIT avant d'appliquer. À vérifier par toi : la référence de régime de cette fiche parle de kg/h alors que la fiche est en livres.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T16:46:38Z"
   }
  ],
  "decisions": [
