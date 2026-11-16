@@ -47,7 +47,7 @@ export function pdfLibsHtml() {
       n: p.name
     }),
     main = ln.kind === 'bounds' ? `<p class="d-headline f-warn" data-pdf-libs data-state="bounds">${esc(`! ${tt(T.label)} : ${tt(T.bounds)}`)}</p>` :
-    `<p class="d-headline f-warn" data-pdf-libs data-state="need">${esc(`! ${tt(T.label)} : ${ln.bad.length ? ln.bad.map(why).join(' ; ') : tt(T.notReady)} — ${fix}`)}</p>`;
+    `<p class="d-headline f-warn" data-pdf-libs data-state="need">${esc(`! ${tt(T.label)} : ${ln.bad.length > 1 ? tt(T.several, { n: ln.bad.length, names: ln.bad.map(p => p.name).join(', ') }) : ln.bad.length ? why(ln.bad[0]) : tt(T.notReady)} — ${fix}`)}</p>`; // plusieurs bibliothèques : dites court (le nombre et les noms), le nom du script reste lisible
   return main;
 }
 /** Redessine la ligne « Lecture des PDF » de l'en-tête quand sa lecture arrive (renderBuild ne redessine que les panneaux, pas l'en-tête). */

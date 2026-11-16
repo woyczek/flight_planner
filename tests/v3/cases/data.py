@@ -10121,3 +10121,37 @@ def l156(c):
     c.ok(warn >= 1 and f'{warn}' in sum_() and f'{ok}' in sum_(), (warn, ok, sum_()), 'the counters of the group follow the tiles: Iceland is counted among those to do, not among the up to date')
     c.shot(f'L156_{c.width}_{lang}.png')
     c.check_errors()
+
+
+@case('L157', 'Données: the « Lecture des PDF » line is never CUT on the right — it wraps, in every design, at 740 points with three libraries at fault; with several libraries it says it short and still names the script (SOG-0376, the user\'s capture of 16 Nov 15 h 57, design Metro)',
+      'L', tags=('data',), langs4=True, screens=True, night=False,
+      rule='SOG-0376: the amber line held on ONE line and was cut (« … — lancez installer_bibl »): the script, the only thing to do, could not be read; with three libraries at fault: « 3 bibliothèques à installer ou à mettre à jour (pypdf, pdfplumber, Pillow) — lancez <script>, … »')
+def l157(c):
+    lang = c.lang
+    P = lambda k: norm(_trow(k, lang, after='  pdfl: {'))
+    pk = [{'name': 'pypdf', 'version': '6.21.3', 'minimum': '6.21.4', 'maximum': '7', 'state': 'old'}, {'name': 'pdfplumber', 'version': None, 'minimum': '0.11.10', 'maximum': '0.12', 'state': 'missing'},
+          {'name': 'Pillow', 'version': '12.3.0', 'minimum': '13.0.0', 'maximum': '14', 'state': 'old'}, {'name': 'pdfminer.six', 'version': '20260107', 'minimum': '20260107', 'maximum': None, 'state': 'ok'}]
+    ans = {'ok': True, 'packages': pk, 'groups': [{'id': 'pdf', 'packages': ['pypdf', 'pdfplumber', 'pdfminer.six', 'Pillow'], 'ready': False}], 'ready': {'text': False, 'vectors': False, 'ocr': False}, 'script': 'installer_bibliotheques.cmd', 'python': '3.14.0'}
+    _l102_open(c, extra_verbs=['pdf/status'], setstate={'pdf': ans})
+    c.until("!!document.querySelector('[data-data-head] [data-pdf-libs]')", timeout=15000, what='the line of the PDF libraries is drawn')
+    el = '[data-data-head] [data-pdf-libs]'
+    txt = norm(c.text(el))
+    names = 'pypdf, pdfplumber, Pillow'
+    want = norm(f"! {P('label')} : {P('several').replace('{n}', '3').replace('{names}', names)} — {P('fix').replace('{s}', 'installer_bibliotheques.cmd')}")
+    c.eq(txt, want, 'three libraries at fault: said short, the script still named', what='short')
+    for w in ([740] if c.width < 900 else [740, 1280]):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.wait(300)
+        cut = c.js("(e => { const r = document.createRange(); r.selectNodeContents(e); const b = r.getBoundingClientRect(), h = e.getBoundingClientRect(); return [Math.round(b.right) <= Math.round(h.right) + 1, e.scrollWidth <= e.clientWidth + 1, Math.round(h.right) <= window.innerWidth] })(document.querySelector('[data-data-head] [data-pdf-libs]'))")
+        c.eq(cut, [True, True, True], f'at {w} points the line is not cut on the right: its text stays in its box and in the window', what=f'not cut {w}')
+    c.page.set_viewport_size({'width': 740, 'height': c.height})
+    c.wait(300)
+    c.js("document.querySelector('[data-data-head] [data-pdf-libs]').scrollIntoView({ block: 'center' })")
+    c.shot(f'L157_{c.design}_{c.width}_{c.lang}.png')
+    c.js("(e => { e.textContent = e.textContent + ' ' + e.textContent + ' ' + e.textContent })(document.querySelector('[data-data-head] [data-pdf-libs]'))")   # a longer sentence than any wording: only the CSS keeps it whole
+    c.page.set_viewport_size({'width': 740, 'height': c.height})
+    c.wait(300)
+    long = c.js("(e => { const r = document.createRange(); r.selectNodeContents(e); const b = r.getBoundingClientRect(), h = e.getBoundingClientRect(); return [Math.round(b.right) <= Math.round(h.right) + 1, e.scrollWidth <= e.clientWidth + 1, h.height > 2 * parseFloat(getComputedStyle(e).lineHeight), getComputedStyle(e).whiteSpace] })(document.querySelector('[data-data-head] [data-pdf-libs]'))")
+    c.eq(long[:3], [True, True, True], 'a LONG sentence wraps over several lines, never cut', what='long wraps')
+    c.js("document.querySelector('[data-data-head] [data-pdf-libs]').scrollIntoView({ block: 'center' })")
+    c.check_errors()

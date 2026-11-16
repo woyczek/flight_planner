@@ -111,7 +111,7 @@ function pdfOf(r) {
     bounds
   };
 }
-/** Ce que la ligne « Lecture des PDF » dit : { kind ('ready' | 'need' | 'bounds'), bad: les paquets du groupe pdf qui ne sont pas bons (3 au plus), script } d'après l'état lu (pdfOf). Le groupe OCR n'y est pas : il est facultatif, la ligne ne le dit jamais. */
+/** Ce que la ligne « Lecture des PDF » dit : { kind ('ready' | 'need' | 'bounds'), bad: les paquets du groupe pdf qui ne sont pas bons (6 au plus), script } d'après l'état lu (pdfOf). Le groupe OCR n'y est pas : il est facultatif, la ligne ne le dit jamais. */
 export function pdfLine(d) {
   if (!d || d.set !== 'pdf') return null;
   if (d.bounds) return {
@@ -127,7 +127,7 @@ export function pdfLine(d) {
   const names = new Set(d.groups.find(g => g.id === 'pdf')?.packages || []);
   return {
     kind: 'need',
-    bad: d.packages.filter(p => (names.size ? names.has(p.name) : true) && p.state !== 'ok').slice(0, 3),
+    bad: d.packages.filter(p => (names.size ? names.has(p.name) : true) && p.state !== 'ok').slice(0, 6),
     script: d.script
   };
 }

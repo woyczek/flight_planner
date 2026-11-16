@@ -1681,6 +1681,10 @@ export const TX = {
     newerNoV: ['{n} est trop récente, il faut moins de {m}', '{n} is too new, below {m} is needed', '{n} ist zu neu, unter {m} nötig',
       '{n} es demasiado reciente, se necesita menos de {m}'
     ],
+    several: ['{n} bibliothèques à installer ou à mettre à jour ({names})', '{n} libraries to install or to update ({names})',
+      '{n} Bibliotheken zu installieren oder zu aktualisieren ({names})',
+      '{n} bibliotecas por instalar o actualizar ({names})'
+    ],
     unknown: ['{n} : état inconnu', '{n}: unknown state', '{n}: Zustand unbekannt', '{n}: estado desconocido'],
     notReady: ['pas prête', 'not ready', 'nicht bereit', 'no está lista'],
     fix: ['lancez {s}, dans le dossier de la suite, puis relancez le lanceur',
