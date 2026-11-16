@@ -10859,3 +10859,107 @@ def k285(c):
     texts['AircraftDB/update_aircraft_db.py'] = (ROOT / 'AircraftDB' / 'update_aircraft_db.py').read_text(encoding='utf-8')
     c.eq(([x for x in req.splitlines() if x.strip() and not x.lstrip().startswith('#')], [n for n, t in texts.items() if 'pip install' in t or '-m pip' in t], [n for n, t in texts.items() if 'installer_bibliotheques' not in t]), ([], [], []),
          'tools/report-vfr/requirements-vfr.txt asks for nothing (its pin pypdf==6.10.0 was below the minimum and would have lowered pypdf); the texts of report-vfr and of update_aircraft_db.py name the script and carry no pip command', what='report-vfr pin')
+
+
+@case('K286', 'FAA published routes (SOG-0354, lot L1): the reader of PFR_BASE.csv (preferred routes, with the North American Routes) and CDR.csv in the full NASR subscription already deposited — a reader and nothing else (it writes nothing, takes no network), the file an UNTRUSTED input: columns by NAME and a white list, every value checked by a strict pattern, a row that does not pass counted and never corrected, bounds, a changed layout refused',
+      'K', static=True,
+      rule='SOG-0354 L1 (design note V3_ROUTE_GATES.md § 9; Q-0059: now). The full subscription the user deposited carries PFR_BASE / PFR_SEG / PFR_RMT_FMT and CDR (public domain); the launcher read only FIX_BASE, AWY_SEG_ALT, NAV_BASE. `tools/faa_pfr.py` reads PFR_BASE (types NAR, TEC, H, L, SHD, HPD, SLD; NAR_TYPE COMMON = a coastal fix and an inland fix with the DESIGNATOR of the route, N503B…; NON-COMMON = an inland fix to an aerodrome with the route string) and CDR (the coded departure routes), through faa_nasr.rows (member size bounded, zip bounded by zip_guard). It reads a deposited file: reviewed by Sécurisation before the push. Nothing is written: no verb, no output file at this lot (where the published sections live is for L2).')
+def k286(c):
+    import ast
+    import csv
+    import io
+    import os
+    import sys
+    import tempfile
+    import zipfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import faa_nasr
+    import faa_pfr as F
+
+    def table(header, rows):
+        out = io.StringIO()
+        w = csv.writer(out, lineterminator='\r\n')
+        w.writerow(header)
+        w.writerows(rows)
+        return out.getvalue().encode('utf-8-sig')
+
+    PH = ['EFF_DATE', 'ORIGIN_ID', 'ORIGIN_COUNTRY_CODE', 'DSTN_ID', 'DSTN_COUNTRY_CODE', 'PFR_TYPE_CODE', 'ROUTE_NO', 'ALT_DESCRIP', 'HOURS', 'ROUTE_DIR_DESCRIP', 'DESIGNATOR', 'NAR_TYPE', 'INLAND_FAC_FIX', 'COASTAL_FIX', 'ROUTE_STRING']
+    good = [['2026/10/29', 'ALLEX', 'CA', 'ALLRY', 'CA', 'NAR', '1', '', '', 'EASTBOUND', 'N503B', 'COMMON', 'ALLEX', 'ALLRY', ''],
+            ['2026/10/29', 'ALLEX', 'CA', 'ADW', 'US', 'NAR', '1', '', '', '', '', 'NON-COMMON', 'ALLEX', '', 'LARIE Q220 RIFLE Q167 ZIZZI KNUKK ATR LAFLN SPISY2'],
+            ['2026/10/29', 'BOS', 'US', 'JFK', 'US', 'TEC', '3', 'AT OR ABOVE 5000', '1200-2000', 'NORTHBOUND', '', '', '', '', 'BOS Q818 PAYGE J95 JFK']]
+    hostile = [['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'XXX', '1', '', '', '', '', '', '', '', 'A B'],                            # a type that is not one of the list
+               ['2026/10/29', 'ABCDEFGH', 'US', 'BBBBB', 'US', 'H', '1', '', '', '', '', '', '', '', 'A B'],                         # an identifier too long
+               ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', '1', '', '', '', '', '', '', '', '=CMD|\' /C calc\'!A0'],           # a formula
+               ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', '1', '', '', '', '', '', '', '', '<script>alert(1)</script>'],      # markup
+               ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', '1', '', '', '', '', '', '', '', 'A ' * 400],                       # a route string that is too long
+               ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', '1', '', '', '', '', 'MAYBE', '', '', 'A B'],                       # a NAR_TYPE that is not one of the list
+               ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', 'x', '', '', '', '', '', '', '', 'A B'],                            # a route number that is not a number
+               ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', '1', '<img src=x>', '', '', '', '', '', '', 'A B']]                 # markup in a text
+    CH = ['RCode', 'Orig', 'Dest', 'DepFix', 'Route String', 'DCNTR', 'ACNTR', 'TCNTRs', 'CoordReq', 'Play', 'NavEqp', 'Length']
+    cdr = [['ABECLTGV', 'KABE', 'KCLT', 'LRP', 'KABE LRP EMI GVE AIROW CHSLY9 KCLT', 'ZNY', 'ZTL', 'ZDC ZNY ZTL', 'N', '', '1', '426'],
+           ['BAD', 'KABE', 'KCLT', 'LRP', 'KABE;rm -rf', 'ZNY', 'ZTL', '', 'N', '', '1', '1'],
+           ['EVIL\x01', 'KABE', 'KCLT', 'LRP', 'KABE LRP', 'ZNY', 'ZTL', '', 'N', '', '1', '1']]
+
+    def inner(pfr=None, cdr_=None, extra=()):
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as z:
+            if pfr is not None:
+                z.writestr('PFR_BASE.csv', pfr)
+            if cdr_ is not None:
+                z.writestr('CDR.csv', cdr_)
+            for name, data in extra:
+                z.writestr(name, data)
+        return buf.getvalue()
+    blob = inner(table(PH, good + hostile), table(CH, cdr), [('FIX_BASE.csv', table(['FIX_ID', 'COUNTRY_CODE'], [['ALLEX', 'CA'], ['LARIE', 'US'], ['PAYGE', 'US']])), ('NAV_BASE.csv', table(['NAV_ID', 'COUNTRY_CODE'], [['BOS', 'US'], ['YQB', 'CA']]))])
+    d = F.read(blob)
+    c.eq((len(d['pfr']), d['skipped'], d['counts']), (3, {'pfr': 8, 'cdr': 2}, {'pfr': {'NAR': 2, 'TEC': 1}, 'nar': {'COMMON': 1, 'NON-COMMON': 1}, 'cdr': 1}),
+         'three good rows kept, the eight hostile ones (a type outside the list, an identifier too long, a formula, markup, a route string cut, a NAR_TYPE outside the list, a route number that is no number, markup in a text) COUNTED and not kept; of the CDR rows, one kept, two counted (a code with a control character, a route string with « ; »)', what='rows')
+    c.eq(d['pfr'][0], {'type': 'NAR', 'origin': 'ALLEX', 'dest': 'ALLRY', 'no': 1, 'narType': 'COMMON', 'designator': 'N503B', 'inland': 'ALLEX', 'coastal': 'ALLRY', 'dir': 'EASTBOUND'}, 'a COMMON North American Route: its two fixes and its designator; empty values absent', what='common')
+    c.eq((d['pfr'][1]['narType'], d['pfr'][1]['route'], 'designator' in d['pfr'][1], d['pfr'][2]['alt'], d['pfr'][2]['hours']), ('NON-COMMON', 'LARIE Q220 RIFLE Q167 ZIZZI KNUKK ATR LAFLN SPISY2', False, 'AT OR ABOVE 5000', '1200-2000'), 'a NON-COMMON one: the route string; a preferred route: altitude and hours', what='non common')
+    c.eq(d['cdr'][0], {'code': 'ABECLTGV', 'orig': 'KABE', 'dest': 'KCLT', 'route': 'KABE LRP EMI GVE AIROW CHSLY9 KCLT', 'depfix': 'LRP', 'dcntr': 'ZNY', 'acntr': 'ZTL', 'length': 426}, 'a coded departure route', what='cdr')
+    names = F.point_names(d['pfr'])
+    every, canada = F.located(blob)
+    c.eq((sorted(names & every), sorted(names - every)[:3], sorted(canada)), (['ALLEX', 'LARIE', 'PAYGE'], ['ALLRY', 'KNUKK', 'LAFLN'], ['ALLEX', 'YQB']), 'the names are checked against the positions of FIX_BASE / NAV_BASE of the same zip, and the Canadian ones counted (COUNTRY_CODE CA)', what='located')
+    # a changed layout, a missing file, too many rows: refused, said
+    for label, bad in (('no PFR_BASE', inner(None, table(CH, cdr))), ('no CDR', inner(table(PH, good), None)), ('PFR columns renamed', inner(table(['A', 'B'], [['1', '2']]), table(CH, cdr))), ('CDR columns renamed', inner(table(PH, good), table(['A'], [['1']]))), ('not a zip', b'not a zip')):
+        try:
+            F.read(bad)
+            got = None
+        except (ValueError, zipfile.BadZipFile) as e:
+            got = type(e).__name__
+        c.ok(got, str(got), f'{label}: refused, nothing read')
+    keep = F.MAX_ROWS
+    F.MAX_ROWS = 2
+    try:
+        try:
+            F.read(blob)
+            got = None
+        except ValueError as e:
+            got = str(e)
+    finally:
+        F.MAX_ROWS = keep
+    c.ok(got and 'trop de lignes' in got, str(got), 'more rows than the bound: refused')
+    # the full subscription (the file the user deposited), read in place; nothing is written
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        sub = td / '28DaySubscription_Effective_2026-10-29.zip'
+        with zipfile.ZipFile(sub, 'w') as z:
+            z.writestr('CSV_Data/29_Oct_2026_CSV.zip', blob)
+        before = sorted(os.listdir(td))
+        got = F.from_subscription(str(sub))
+        c.eq((got['counts']['cdr'], len(got['pfr']), sorted(os.listdir(td)) == before), (1, 3, True), 'the full subscription is read in place (the inner zip of CSV sets) and nothing is written', what='subscription')
+        bad = td / 'other.zip'
+        with zipfile.ZipFile(bad, 'w') as z:
+            z.writestr('readme.txt', 'x')
+        try:
+            F.from_subscription(str(bad))
+            got = None
+        except ValueError as e:
+            got = str(e)
+        c.ok(got and 'non reconnu' in got, str(got), 'a zip that is no subscription: refused')
+    # static: a reader only — no write, no network, no process
+    tree = ast.parse((ROOT / 'tools' / 'faa_pfr.py').read_text(encoding='utf-8'))
+    imports = sorted({n.names[0].name.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.Import)} | {n.module.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module})
+    calls = sorted({n.func.id for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ('open', 'exec', 'eval', '__import__', 'compile')})
+    c.eq((imports, calls), (['faa_nasr', 're'], []), 'tools/faa_pfr.py imports only `re` and faa_nasr (the bounded zip reader) and never opens a file, evals or runs anything: a reader and nothing else', what='reader only')

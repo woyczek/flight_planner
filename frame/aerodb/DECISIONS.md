@@ -3193,3 +3193,10 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Asked** (Réglages, limit said on b740841c9; relayed by the ergonomics session 15:00): the list of the countries must know that a country is built on a hand deposit without opening the sheet.
 - **Done**: `datedBy: 'file'` + `deposited` on the zone of `base/status`, from the build record (what was READ), else from the files present. Red before: K283.
 - **Choice**: only Iceland has a hand deposit with a date in its name today; the rule is the one of `DEPOSIT_FILE` of `base/cycle` (one source of truth).
+
+## 16 November 2026 — SOG-0354, lots L0 and L1
+
+- **Asked** (ergonomics session 15:23, the user: « bloquant »): L0 the table of the note § 5 on the five flights, read only, no behaviour change; L1 the reader of PFR_* and CDR in the full subscription already deposited, what `NAR_TYPE` holds, how many Canadian points `FIX_BASE` carries; diff to Sécurisation before the push (a deposited file is read).
+- **Done**: see INTEGRATION « Route engine, lots L0 and L1 ». The reader writes nothing and takes no network; a value is never corrected (a control character or a value too long makes the row skipped and counted), the file is an untrusted input. Case K286.
+- **Facts to the note**: `recovery.propose` is 60–65 % of the 15 s of the failing flights; the ocean searches expand 1 500 states/s against 30 000 for the European ones; every point named by the published routes is located (359 Canadian fixes + 30 navaids in the NASR), the Canadian AIRWAYS are the gap (6); LFPO → KLAX is no longer a route since the base changed, not the engine (bisected on `329847a19`).
+- **Objections to the note** (five lines at most, sent to the ergonomics session): see the message of this date.
