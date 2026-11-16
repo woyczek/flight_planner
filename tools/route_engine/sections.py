@@ -207,7 +207,10 @@ def _free(nav, g, start, end, ratio, info):
         info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why, **report}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
         return None
-    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm'], 'tried': made.get('tried'), 'stopped': made.get('stopped'), 'searches': made.get('searches')}
+    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm'], 'tried': made.get('tried'), 'stopped': made.get('stopped'), 'searches': made.get('searches'), 'states': made.get('states')}
+    if made.get('stopped') in ('time', 'states'):      # d1 ter : la route libre a été COUPÉE (le temps de sécurité, ou le budget d'états) : la réponse le dit
+        info['free']['cut'] = made['stopped']
+        info['reason'] = (info.get('reason') or '') + (' Route libre coupée par le temps de sécurité' if made['stopped'] == 'time' else ' Route libre coupée par son budget d\'états') + ' : elle peut être plus longue que la meilleure.'
     info['source'], info['sections'], info['cost'] = 'random', made['sections'], round(made['cost'], 1)
     info['reason'] = (info.get('reason') or '') + ' Route libre créée : ' + ' '.join(made['points']) + '.'
     return made['path']

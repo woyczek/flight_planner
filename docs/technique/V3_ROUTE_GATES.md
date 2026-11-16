@@ -340,6 +340,8 @@ named reason; none returns a "proposal"; no direct over 200 NM without its reaso
 
 **Done (L5 4 d1 bis (d), 16 November, case K307)**: the bound of an extra search of the free route is a number of states (7 000), not a time: the same request gives the same route whatever the load of the workstation (the whole free route keeps a safety time of 3 s).
 
+**Done (L5 4 d1 ter, 16 November, case K308)**: the budget of the whole free route is 60 000 states (the same request gives the same route on any load), the time of 3 s is only a last-resort safety, and the answer says when the free route was cut (`sections.free.cut`). The real America section of an exit replaces the great circle in the estimate of the pairs: KBOS → EHAM « out » 74 tries → 15, 3 119.6 NM in 2.5 s.
+
 ### 13.4 Bounded: every step has its bound and says it
 
 | Step | Bound | When it is exceeded |

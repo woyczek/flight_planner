@@ -15,10 +15,12 @@ STEP_LON = 10          # un point par 10° de longitude
 LOW_FT, HIGH_FT = 28500, 60000      # le plancher de l'espace RVSM / HLA et le plafond : une route libre est une route de croisière
 NEED = 2               # la recherche vers un paquet d'entrées s'arrête dès que deux sont atteintes (une entrée inatteignable fait sinon parcourir tout l'espace des états)
 FREE_S = 3.0           # le temps de la section (§ 13.4 : 3 s) : les couples (entrée, sortie) sont essayés dans l'ordre de leur minorant, SANS nombre fixe (SOG-0354 L5 4, défaut 3), jusqu'à ce que le minorant du suivant dépasse le meilleur coût trouvé, ou que ce temps (ou la borne de la phase) soit épuisé
+FREE_STATES = 60000      # d1 ter : le budget de TOUTE la route libre, en ÉTATS (la somme des états de toutes ses recherches)
 EXTRA_STATES = 7000    # d1 bis (d) : une recherche de plus (vers les entrées restantes qui peuvent encore faire plus COURT) ne parcourt pas plus d'ÉTATS : quand ses buts ne sont pas atteignables elle parcourrait tout l'espace (14 000 états, 4,5 s depuis Dublin) ; coupée, elle rend ce qu'elle a atteint ; une borne en ÉTATS est déterministe (un temps ne l'est pas : la même demande rendrait deux routes selon la charge du poste) ; 7 000 : la plus petite valeur mesurée qui rend aux vols EDDF / EGLL « hors fenêtre » leur distance (1 500 en perdait 72 à 97 NM, 5 000 encore 76)
 LABEL = 'route libre, créée'
 NO_REACH = 'aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau'
 NO_CHAIN = 'aucune chaîne par une route libre n\'a abouti'
+NO_STATES = 'le budget d\'états de la route libre est épuisé avant qu\'une chaîne n\'aboutisse'
 NO_TIME = 'le temps de la route libre est épuisé avant qu\'une chaîne n\'aboutisse'
 NO_AVOID = 'tous les points océaniques du jour sont évités par une règle RAD'
 NO_POINT = 'aucun point d\'entrée océanique connu : aucune route du jour n\'en donne'
@@ -125,37 +127,54 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     report = report if report is not None else {}
     report.update(tried=0, searches=0, stopped='end')
     began = time.perf_counter()
-    pack_bound = lambda i: min(head(i) + ocean[(i, o)] + tail(o) for o in exits)      # le minorant, en NM, du meilleur couple de cette entrée : les distances orthodromiques (un minorant EXACT : aucune route n'est plus courte)
+    s0 = getattr(nav, 'states_total', None)      # d1 ter : les états déjà comptés ; un moteur sans compteur (un faux) : la somme des `expanded` des recherches vues
+    fake = {'n': 0}
+
+    def spent():
+        t = getattr(nav, 'states_total', None)
+        return (t - s0) if (t is not None and s0 is not None) else fake['n']
+
+    def note():
+        if s0 is None:
+            fake['n'] += (getattr(nav, 'last_search', None) or {}).get('expanded') or 0
+    tail_real = {}      # d1 ter : la section d'Amérique RÉELLE d'une sortie, une fois résolue (elle ne dépend presque pas de l'entrée) : elle remplace le grand cercle dans l'estimation des couples suivants
+    tail_est = lambda o: tail_real.get(o, tail(o))
+    pack_bound = lambda i: min(head(i) + ocean[(i, o)] + tail_est(o) for o in exits)      # le minorant, en NM, du meilleur couple de cette entrée : les distances orthodromiques (un minorant EXACT : aucune route n'est plus courte)
     nm_of = lambda path: sum(x['nm'] for _u, _v, x in path)
 
-    def out_of_time():
+    def out_of_time():      # d1 ter : 'states' (le budget d'états de TOUTE la route libre : déterministe) ou 'time' (FREE_S et la borne de la phase : la sécurité de dernier recours, dite quand elle coupe)
+        if spent() >= FREE_STATES:
+            return 'states'
         now = time.perf_counter()
-        return now - began > FREE_S or (engine.DEADLINE is not None and now >= engine.DEADLINE)
+        return 'time' if (now - began > FREE_S or (engine.DEADLINE is not None and now >= engine.DEADLINE)) else None
     remaining = list(rank)      # SOG-0354 L5 (4) d1 : une recherche d'Europe vers TOUTES les entrées candidates (need = NEED : elle s'arrête dès que NEED sont atteintes, quelles qu'elles soient : un but inatteignable ne fait plus parcourir tout l'espace) ; d1 bis : une recherche de plus vers les entrées restantes tant que leur minorant est SOUS le meilleur coût trouvé et qu'il reste du temps à la section
     while remaining:
         if best and pack_bound(remaining[0]) >= best['total_nm']:      # les entrées qui restent ne peuvent pas être plus COURTES
             report['stopped'] = 'bound'
             break
-        if out_of_time():
-            report['stopped'] = 'time'
+        why = out_of_time()
+        if why:
+            report['stopped'] = why
             break
         useful = [i for i in remaining if best is None or pack_bound(i) < best['total_nm']]      # seules les entrées qui peuvent encore faire plus COURT sont des buts (les autres ne feraient que détourner la recherche)
         if not useful:
             report['stopped'] = 'bound'
             break
-        reached = europe(g2, start, [eff(i) for i in useful], **({'max_states': EXTRA_STATES} if report.get('searches') else {}))      # SOG-0354 L5 (4) d1 bis : une recherche de plus (vers les entrées restantes) est bornée en ÉTATS
+        reached = europe(g2, start, [eff(i) for i in useful], **({'max_states': max(1, min(EXTRA_STATES, FREE_STATES - spent()))} if report.get('searches') else {}))      # SOG-0354 L5 (4) d1 bis : une recherche de plus (vers les entrées restantes) est bornée en ÉTATS (d1 ter : et par ce qui reste du budget de la route libre)
+        note()
         report['searches'] = report.get('searches', 0) + 1
         any_reached = any_reached or bool(reached)
         pack = [i for i in useful if eff(i) in reached]
         pairs = sorted(((nm_of(reached[eff(i)]['path']) + lead_nm(i) + ocean[(i, o)] + tail(o), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])      # le minorant en NM : la section d'Europe RÉELLE + le reste orthodromique
         for bound, i, o in pairs:
-            if best and bound >= best['total_nm']:      # les couples suivants ne peuvent pas être plus courts que le meilleur trouvé
+            if best and bound - tail(o) + tail_est(o) >= best['total_nm']:      # ce couple ne peut pas être plus court que le meilleur trouvé (la section d'Amérique de sa sortie est connue quand elle a été résolue : l'estimation est alors presque exacte)
                 report['stopped'] = 'bound'
-                break
+                continue
             if o in dead:
                 continue
-            if out_of_time():
-                report['stopped'] = 'time'
+            why = out_of_time()
+            if why:
+                report['stopped'] = why
                 break
             tried += 1
             report['tried'] = tried
@@ -166,20 +185,25 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
                 d = engine.nm(nav.nodes[u], nav.nodes[v])
                 legs.append((u, v, dict(a=u, b=v, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, _cost=d * ratio, zone='nat', origin='random')))
             resolved = resolve(g2, start, end, eff(i), eff(o), legs, reached[eff(i)])
+            note()
             if resolved:
                 cost, path, sects = resolved
                 total = nm_of(path)
+                tail_real[o] = lead_nm(o) + sects[-1]['nm']
                 if best is None or total < best['total_nm']:      # la route libre la plus COURTE en NM (la distance que l'utilisateur voit) parmi les couples essayés
                     best = {'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'points': [nav.nodes[k]['id'] for k in keys], 'nm': round(ocean[(i, o)], 1), 'cost': cost, 'total_nm': total, 'path': path, 'sections': sects}
                 continue
             dead.add(o)      # la section d'Amérique de cette sortie n'a pas abouti (ou la borne a coupé) : elle n'est pas reprise avec une autre entrée
-        if report['stopped'] == 'time':
+        if report['stopped'] in ('time', 'states'):
             break
         if len(reached) < NEED:      # moins de NEED atteintes : la recherche a parcouru tout l'espace atteignable, les autres entrées ne sont pas atteignables
             break
         remaining = [i for i in useful if eff(i) not in reached]      # les entrées qui n'ont pas été atteintes (la recherche s'est arrêtée avant) : une recherche de plus seulement si aucune chaîne n'a abouti
+    report['states'] = spent()
     if best:
-        return dict(best, tried=tried, stopped=report['stopped'], searches=report['searches']), None
+        return dict(best, tried=tried, stopped=report['stopped'], searches=report['searches'], states=report['states']), None
+    if report['stopped'] == 'states':
+        return None, NO_STATES
     if report['stopped'] == 'time':
         return None, NO_TIME
     if not any_reached:

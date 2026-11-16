@@ -225,7 +225,15 @@ class Nav:
     LOW_PENALTY=3.0         # le coût d'une voie basse hors de la montée et de la descente ; jamais interdite (un maillon bas peut être la seule liaison), mais évitée
     nat_rejected=frozenset()      # SOG-0354 L5 (1) : les tracks écartées pour CE vol (sections.solve, avec l'option `sections`) : la recherche entière qui suit ne les prend pas non plus ; remis à vide par plan.plan à chaque demande
 
-    def search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False,goals=None,need=None,max_states=None):
+    def search(self,*args,**kwargs):
+        """SOG-0354 L5 (4) d1 ter : `_search` et le TOTAL des états de toutes les recherches de ce Nav (`states_total`) : le budget de la route libre est un nombre d'ÉTATS (déterministe), mesuré par la différence de ce total."""
+        before=self.last_search if hasattr(self,'last_search') else None
+        try:return self._search(*args,**kwargs)
+        finally:
+            ls=getattr(self,'last_search',None)
+            if ls is not None and ls is not before:self.states_total=getattr(self,'states_total',0)+(ls.get('expanded') or 0)
+
+    def _search(self,g,start,end,waypoints=(),require_fra=False,fra_already=False,initial_band=None,gate=False,goals=None,need=None,max_states=None):
         """A* with ordered milestones and nondominated reachable-altitude labels.
         Heuristic is geodesic distance through remaining milestones, scaled by
         the cheapest cost/NM in this graph. It stays admissible with FRA bonus.

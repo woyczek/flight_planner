@@ -12562,3 +12562,92 @@ def k307(c):
     c.ok('max_states=None' in src and "(max_states or 100000)" in src, 'engine.py', '`Nav.search(max_states=…)` bounds one search in states, checked as the bound of 100 000 states is')
     secs = (ROOT / 'tools' / 'route_engine' / 'sections.py').read_text(encoding='utf-8')
     c.ok("'max_states': max_states" in secs, 'sections.py', '`_europe` passes the bound of states to the search')
+
+
+@case('K308', 'Route engine, SOG-0354 lot L5 (4) d1 ter: the budget of the WHOLE free route is counted in STATES (`FREE_STATES`, the sum of the states of all its searches, `Nav.states_total`) — the same request gives the same route whatever the load of the workstation —, FREE_S (3 s) stays only as a last-resort safety, and the answer SAYS when the free route was cut (`sections.free.cut`: `states` or `time`, and the reason); the real America section of an exit, once resolved, replaces the great circle in the estimate of the next pairs (KBOS → EHAM « out »: 74 tries and 96 697 states → 15 tries and 23 538 states, 3 119.6 NM as in the second run)',
+      'K', static=True,
+      rule='SOG-0354 L5 (4) d1 ter (ergonomics session, 22:12: « le budget de TOUTE la route libre est compté en ÉTATS (un total, pas un nombre d\'essais) ; FREE_S reste, mais comme sécurité de dernier recours qui ne doit pas se déclencher sur ce poste, et la réponse DIT quand elle a coupé. Choisis le total par la mesure (KBOS → EHAM revient à 3 119,6 NM, aucun vol de la matrice au-delà de 5 s) »). Measured by AeroDB on the real base: KBOS → EHAM « out » needed 96 697 states and 74 tries to reach 3 119.6 NM (5.6 s: over 5 s) — the lower bound of a pair counted the great circle for the America section of its exit, so almost every pair stayed « possibly shorter » and was resolved again, each resolve repeating the same America section. Now the real America section of an exit, once resolved, replaces the great circle in the estimate of every other pair of that exit (it hardly depends on the entry): the pairs that cannot be shorter are not resolved. KBOS → EHAM 15 tries, 23 538 states, 2.5 s, 3 119.6 NM; no flight of the 17 or of the EHAM group over 3 s of free route; the most states of the flights measured: 28 076 (LEMD → KORD). FREE_STATES = 60 000 (more than twice the most measured); the time FREE_S, 3 s, did not cut any flight measured.')
+def k308(c):
+    import heapq
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as F, sections as S
+    pos = {'DEP': (52.0, -6.0), 'ARR': (41.0, -74.0), 'H1': (60.5, -8.0), 'H2': (44.0, -70.0), 'XA': (47.0, -60.0), 'XB': (46.5, -61.0), 'XC': (46.0, -62.0), 'EB': (60.0, -15.0), 'EC': (60.2, -14.0), 'ED': (60.4, -13.0)}
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in pos.items()}
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0}
+    for a, b in (('DEP', 'H1'), ('H2', 'ARR')):
+        g.setdefault(a, []).append((b, {'a': a, 'b': b, 'route': 'UL', 'nm': engine.nm(nodes[a], nodes[b])}))
+
+    class Fake:
+        def __init__(self, ends, after=None):
+            self.nodes, self.nat, self.last_search, self.sections_info = dict(nodes), {'ends': ends}, None, None
+            self.depart, self.nat_rejected, self._nat_high = None, frozenset(), {'H1', 'H2'}
+            self.after, self.single = after, 0
+
+        def add(self, p):
+            self.nodes.setdefault(p['id'], {'id': p['id'], 'lat': p['lat'], 'lon': p['lon']})
+            return p['id']
+
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
+            best, q, prev = {s: 0.0}, [(0.0, s)], {}
+            while q:
+                d, u = heapq.heappop(q)
+                if not goals and u == e:
+                    break
+                if d > best[u]:
+                    continue
+                for v, ed in graph.get(u, ()):
+                    if d + ed['nm'] < best.get(v, 1e18):
+                        best[v] = d + ed['nm']
+                        prev[v] = (u, v, ed)
+                        heapq.heappush(q, (best[v], v))
+
+            def way(x):
+                legs, node = [], x
+                while node != s:
+                    legs.append(prev[node])
+                    node = prev[node][0]
+                return list(reversed(legs))
+            self.last_search = {'expanded': len(best), 'seconds': 0.0, 'found': True}
+            if goals:
+                found = sorted((x for x in goals if x in best), key=lambda x: best[x])[:need or len(goals)]
+                return {x: {'path': way(x), 'cost': best[x], 'band': (36000, 36000)} for x in found}
+            self.single += 1
+            if self.after and self.single == self.after:
+                F.FREE_S = -1.0      # the safety time runs out after the first pair has been resolved
+            if e not in best:
+                return None
+            self.last_search.update(cost=best[e], band=band)
+            return way(e)
+    ends = {'T1': ['EB', 'XA'], 'T2': ['EC', 'XB'], 'T3': ['ED', 'XC']}
+
+    def free(**kw):
+        nav = Fake(ends, kw.pop('after', None))
+        S.solve(nav, g, 'DEP', 'ARR')
+        return nav.sections_info
+    # 1. the real America section of an exit replaces the great circle in the estimate: three entries × three exits, the shortest chain by ED and XA is found in THREE tries, not nine
+    info = free()
+    f = info['free']
+    c.eq((f['ok'], f['entry'], f['exit'], f['tried'], f['stopped']), (True, 'ED', 'XA', 3, 'bound'), 'the pairs that cannot be shorter than the best chain are not resolved: three tries (red before: nine, every pair, each repeating the America section of its exit)', what='tries')
+    c.eq(free()['free'], f, 'the same request gives the same answer (the budget is in states: no clock in the decision)', what='determinism')
+    # 2. the budget of the whole free route in STATES: when it runs out the answer says so
+    saved = F.FREE_STATES
+    try:
+        F.FREE_STATES = 12
+        cut = free()
+        F.FREE_STATES = 1
+        none = free()
+    finally:
+        F.FREE_STATES = saved
+    c.eq((cut['free'].get('cut'), cut['free']['stopped'], 'budget d\'états' in cut['reason'], none['free']['ok'], none['free']['stopped'], none['free']['reason'] == F.NO_STATES), ('states', 'states', True, False, 'states', True),
+         'the budget of states runs out: the free route is CUT and the answer says it (`cut`, and the sentence « Route libre coupée par son budget d\'états : elle peut être plus longue que la meilleure »); when it runs out before any chain the reason says so', what='states')
+    # 3. the safety time: last resort, said when it cuts
+    try:
+        timed = free(after=2)
+    finally:
+        F.FREE_S = 3.0
+    c.eq((timed['free']['ok'], timed['free'].get('cut'), 'temps de sécurité' in timed['reason']), (True, 'time', True), 'the safety time (FREE_S) cuts after the first chain: the answer keeps it and says « Route libre coupée par le temps de sécurité »', what='time')
+    c.ok(F.FREE_STATES == 60000 and F.FREE_S == 3.0, str((F.FREE_STATES, F.FREE_S)), 'the budget: 60 000 states for the whole free route, 3 s as the last-resort safety')
+    src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
+    c.ok('states_total' in src and 'def _search(' in src, 'engine.py', '`Nav.states_total` counts the states of every search (the budget of the free route is its difference)')
