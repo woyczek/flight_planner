@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 255,
+  "tests": 256,
   "verdicts": 188
  },
  "apps": [
@@ -3283,6 +3283,20 @@
    "state": "ok",
    "delivered": "2026-11-14T11:56:45Z",
    "at": "2026-11-16T13:56:07Z"
+  },
+  {
+   "id": "SOG-0341",
+   "app": "maintenance",
+   "title": {
+    "fr": "Registre des immatriculations : comment un téléphone appairé y accède-t-il, s'il n'est pas publié ?",
+    "en": "Aircraft register: how does a paired phone reach it, if it is not published?",
+    "de": "Luftfahrzeugregister: wie erreicht ein gekoppeltes Telefon es, wenn es nicht veröffentlicht ist?",
+    "es": "Registro de matrículas: ¿cómo accede un teléfono emparejado, si no está publicado?"
+   },
+   "test": "Sur l'ordinateur d'abord : RELANCE LE LANCEUR, dépose de nouveau l'export du registre français (Maintenance › Données, « Choisir le fichier… »), puis « Synchroniser » — le fichier réduit (cinq champs, jamais l'exploitant) part dans le dépôt privé. Puis sur le TÉLÉPHONE, après synchronisation : Aéronefs › Flotte, tape une immatriculation française (« fbhhh ») : la ligne dit le type, « registre français, données du … » et l'aérodrome d'attache, et propose « Créer à l'identique ». Un constructeur amateur rare n'est pas nommé.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T15:58:04Z"
   },
   {
    "id": "SOG-0342",

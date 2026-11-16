@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3a98025",
+  "organisation": "d34ac44",
   "fiches": 387,
   "untranslated": 0,
   "priorities": 374
@@ -3319,7 +3319,8 @@
      "en": "Aircraft register: how does a paired phone reach it, if it is not published?",
      "de": "Luftfahrzeugregister: wie erreicht ein gekoppeltes Telefon es, wenn es nicht veröffentlicht ist?",
      "es": "Registro de matrículas: ¿cómo accede un teléfono emparejado, si no está publicado?",
-     "rank": 346
+     "rank": 346,
+     "test": true
     }
    ]
   },
