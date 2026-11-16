@@ -5853,7 +5853,7 @@ def f225(c):
 _NAT_STUB = """(() => { window.__nat = { st: { present: true, count: 1, from: '2026-11-14T11:30:00.000Z', validUntil: '2026-11-14T19:00:00.000Z', expired: true, current: 0 }, go: null, asks: 0 };
   let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
     real = v && { ...v, create: (...a) => { const db = v.create(...a);
-      try { db.natState = async () => window.__nat.st;
+      try { db.natState = async () => window.__nat.st; db.nat = async () => window.__nat.tracks ? { tracks: window.__nat.tracks } : null;
         db.natEnsure = () => { window.__nat.asks++; return new Promise(res => window.__nat.go = r => { window.__nat.go = null; if (r && r.present && r.expired === false) window.__nat.st = r; res(r); }); }; } catch (e) {}
       return db } } } }) })()"""
 
@@ -5979,6 +5979,41 @@ def f229(c):
     c.ok(c.js(f"(document.querySelector('{FUEL} [data-k=rtext]')?.value || '').includes('XQZNA')"), '', 'the taken route is in the field')
     c.js(f"document.querySelector('{U}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F229_{c.design}_1280_{c.lang}_delivered.png')
+
+
+@case('F230', 'Route field, a NAT track written in the route whose letter is not in the day\'s tracks READ: a calm line « Route NAT G : absente '
+      'des routes du 16/11 », never « point inconnu »; a track of the day: nothing; tracks not read (stale): nothing', 'F', tags=('fuel',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0372, the ergonomist\'s decision at 9 h 37 (the capture\'s proposal went through NAT G of 14/11; the tracks of 16/11 are A to E, '
+      'S to Z); aerodb\'s NAT state and tracks held by the case (stub)')
+def f230(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.add_init_script(_NAT_STUB)
+    T = 'modules/fuel/module.js'
+    W, U = f'{FUEL} [data-natwarn]', f'{FUEL} [data-unres]'
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    c.js("window.__nat.st = { present: true, count: 2, from: '2026-11-16T11:30:00.000Z', validUntil: '2026-11-16T19:00:00.000Z', expired: false, current: 2 }; "
+         "window.__nat.tracks = [{ id: 'A' }, { id: 'S' }]")
+
+    def typed(text):
+        c.js(f"(t => {{ t.value = {text!r}; t.dispatchEvent(new Event('input', {{bubbles: true}})); t.dispatchEvent(new Event('change', {{bubbles: true}})); }})(document.querySelector('{FUEL} [data-k=rtext]'))")
+    typed('EINN MALOT NATG 54/50 CYYT')
+    c.until(f"(e => !!e && !e.hidden)(document.querySelector('{W}'))", timeout=10000, what='the calm line')
+    c.eq(norm(c.text(W)), norm(tx(T, 'natTrackGone', c.lang).replace('{l}', 'G').replace('{d}', '16/11')), '« Route NAT G : absente des routes du 16/11 »', what='line')
+    c.ok('NATG' not in (c.text(U) or ''), c.text(U), 'never « point inconnu »')
+    c.ok(c.js(f"document.querySelector('{W}').classList.contains('f-muted')"), '', 'calm, not a warning colour')
+    c.js(f"document.querySelector('{W}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F230_{c.design}_390_{c.lang}_delivered.png')
+    # a track of the day: nothing
+    typed('EINN MALOT NATA 54/50 CYYT')
+    c.until(f"document.querySelector('{W}')?.hidden === true", timeout=10000, what='a track of the day: no line')
+    # the tracks not read (stale): nothing, even for NAT G
+    c.js("window.__nat.st = { ...window.__nat.st, expired: true }")
+    typed('EINN MALOT NATG 54/50 CYYT')
+    c.settle()
+    c.wait(800)
+    c.ok(c.js(f"document.querySelector('{W}')?.hidden === true"), c.text(W), 'tracks not read for today: nothing said')
 
 
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '

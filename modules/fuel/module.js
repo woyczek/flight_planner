@@ -288,6 +288,10 @@ const TX = {
     'Gelesen, aber die Meldung enthält keine neueren Tracks als die vom {d}.',
     'Leído, pero el mensaje no trae rutas más recientes que las del {d}.'
   ],
+  natTrackGone: ['Route NAT {l} : absente des routes du {d}', 'NAT track {l}: not in the tracks of {d}',
+    'NAT-Track {l}: nicht in den Tracks vom {d}',
+    'Ruta NAT {l}: ausente de las rutas del {d}'
+  ],
   natDropped: ['Routes NAT du {d} lues : les propositions par des routes NAT d’un autre jour sont retirées.',
     'NAT tracks of {d} read: the proposals through NAT tracks of another day are removed.',
     'NAT-Tracks vom {d} gelesen: die Vorschläge über NAT-Tracks eines anderen Tages sind entfernt.',
@@ -2337,6 +2341,7 @@ function renderPlanBody() {
       <div data-routealts></div><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
+      <p class="f-muted" data-natwarn hidden></p>
       <p class="f-warn" data-rhumb hidden></p>
       <div data-zonegaps></div>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
@@ -4010,6 +4015,33 @@ async function natLine() {
   // SOG-0372 (b) : des routes valides lues : les propositions par des routes NAT d'un autre jour partent
   s.natDay = fresh ? day(st.from) : '';
   if (fresh) natDrop(s.natDay);
+  natTrackWarn(s); // et les routes NAT du champ sont comparées aux routes lues
+}
+/** SOG-0372 (décision de 9 h 37) : une route NAT écrite dans le champ (« NATG », S.natLetters, routeModel natTracks) dont la lettre n'est
+ *  pas dans les routes du jour LUES (natState valide, puis aerodb.nat) est dite par une ligne calme « Route NAT G : absente des routes du
+ *  16/11 », jamais « point inconnu » ; routes non lues ou périmées : rien. Les lettres lues sont une entrée non sûre (60 au plus, une ou
+ *  deux capitales). La dernière demande seule écrit. */
+async function natTrackWarn(s) {
+  if (!s || gone(s)) return;
+  const letters = (s.natLetters || []).slice(0, 12),
+    ask = s.natWarnAsk = (s.natWarnAsk || 0) + 1;
+  let text = '';
+  if (letters.length) {
+    const st = await Promise.resolve().then(() => s.ctx.aerodb?.natState?.()).catch(() => null);
+    if (st?.present && st.expired === false) {
+      const got = await Promise.resolve().then(() => s.ctx.aerodb?.nat?.()).catch(() => null),
+        ids = new Set((Array.isArray(got?.tracks) ? got.tracks : []).slice(0, 60).map(t => String(t?.id ?? '').toUpperCase()).filter(x =>
+          /^[A-Z]{1,2}$/.test(x)));
+      if (ids.size) text = letters.filter(l => !ids.has(l)).map(l => tt(TX.natTrackGone, {
+        l,
+        d: natDay(st.from)
+      })).join(' · ');
+    }
+  }
+  const box = S === s && !gone(s) && ask === s.natWarnAsk ? s.body?.querySelector('[data-natwarn]') : null;
+  if (!box) return;
+  box.textContent = text;
+  box.hidden = !text;
 }
 /** Le jour d'un instant ISO, « JJ/MM » (la forme du `issued` des itinéraires, route_engine natOf) ; « ? » sans instant. */
 const natDay = iso => iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : '?';
@@ -5372,7 +5404,8 @@ function resolveRoute(normalize = true) {
         badAirways,
         homonyms = [],
         jumps = [],
-        far = []
+        far = [],
+        natTracks = []
       } = await RM.routeModel(asked.text, {
         dep: asked.dep,
         arr: asked.arr,
@@ -5438,6 +5471,9 @@ function resolveRoute(normalize = true) {
       ...j,
       nm: j.nm.toLocaleString(S.ctx.lang())
     }))].map(x => `<span data-rw>${esc(x)}</span>`).join('<br>');
+    // SOG-0372 : une route NAT du texte absente des routes du jour lues, dite calmement
+    S.natLetters = natTracks;
+    natTrackWarn(s);
     if (unresolved.length) {
       zoneNote(s, seq, points, ut);
       unresolvedZones(s, seq, points);

@@ -3,7 +3,8 @@
 // par leurs nœuds (routing.js along) ou dites fermées, les niveaux gardés là où ils changent. Ni page, ni stockage : la base est
 // celle que l'appelant passe (ctx.aerodb dans Carburant), un objet inventé dans le banc frame/lib/test/route_model.html.
 // API :
-//   routeModel(text, { dep, arr, known, chain, base, procs }) → { points, unresolved, tokens, badAirways, homonyms, jumps } (voir la fonction).
+//   routeModel(text, { dep, arr, known, chain, base, procs }) → { points, unresolved, tokens, badAirways, homonyms, jumps, natTracks } (voir la
+//   fonction ; natTracks : les lettres des routes NAT gardées, « G » pour « NATG », SOG-0372).
 //   NAT_TRACK : le nom d'une route NAT dans un texte (« NATG »), gardé tel qu'écrit entre deux mots de la route (SOG-0372).
 //   JUMP_NM : au-delà, un tronçon entre deux points consécutifs est dit (jumps) : un homonyme lointain, un point mal tapé (SOG-0142).
 //   far : les noms dont le seul lieu connu (ou le plus proche) est plus loin de la route que 2 × la distance directe + FAR_EXTRA_NM —
@@ -47,7 +48,8 @@ export async function routeModel(text, {
 } = {}) {
   // SOG-0372 (c), décision de l'ergonome du 16/11 à 9 h 00 : les noms de la SID et de la STAR CHOISIES (procs) sont ces procédures,
   // gardées sans alerte — par égalité avec le choix, jamais par un motif général (un mot de la forme américaine reste un point)
-  const procSet = new Set((Array.isArray(procs) ? procs : []).map(x => String(x ?? '').toUpperCase()).filter(Boolean));
+  const procSet = new Set((Array.isArray(procs) ? procs : []).map(x => String(x ?? '').toUpperCase()).filter(Boolean)),
+    natTracks = []; // SOG-0372 : les lettres des routes NAT gardées (« G »), que l'appelant compare aux routes du jour lues
   const points = [],
     unresolved = [],
     tokens = [];
@@ -201,6 +203,7 @@ export async function routeModel(text, {
     // SOG-0372 (c) : « NAT » et une lettre, entre deux mots de la route, est le nom d'une route NAT ; le nom de la SID ou de la STAR
     // choisie est cette procédure : gardés tels qu'écrits, jamais « inconnus »
     if (t.kind === 'name' && (procSet.has(t.id) || NAT_TRACK.test(t.id) && ti > 0 && (nx?.kind === 'name' || nx?.kind === 'coord'))) {
+      if (!procSet.has(t.id) && !natTracks.includes(t.id.slice(3))) natTracks.push(t.id.slice(3));
       tokens.push({
         keep: t.id
       });
@@ -311,7 +314,8 @@ export async function routeModel(text, {
     badAirways,
     homonyms,
     jumps,
-    far
+    far,
+    natTracks
   };
 }
 /** Au-delà de 2 × la distance directe + cette marge, un lieu n'est pas celui de la route (SOG-0142 ; la règle du moteur d'AeroDB). */

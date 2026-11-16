@@ -2044,3 +2044,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (cache/fuel/route_alts.json). « Prendre » keeps them in memory (`S.takenPts`, for this departure and arrival) and `knownPoints` adds them
   after the flight's own points, aerodb always first; the field then writes the resolved points into `route.points` as for any point —
   no new field or file in data/. A point out of bounds stays « inconnu ». F229 (red before; a simulated answer).
+- **16 Nov 2026 — SOG-0372, follow-up: a NAT track of the field absent from the day's tracks read is said calmly** (the ergonomist at
+  9 h 37: the capture's « NATG » came from the tracks of 14/11; those of 16/11 are A to E, S to Z). `routeModel` returns `natTracks` (the
+  letters kept by rule 1); `natTrackWarn` compares them with `aerodb.nat()` when `natState` says the tracks are valid — the letters read
+  are an untrusted input (60 at most, one or two capitals) — and writes « Route NAT G : absente des routes du 16/11 » on a muted line
+  (`[data-natwarn]`), never « point inconnu »; tracks not read or stale: nothing. Asked again after each route reading and after the NAT
+  line (a read of the day's tracks). F230 (red before).
