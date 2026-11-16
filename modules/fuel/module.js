@@ -234,6 +234,10 @@ const TX = {
   rCheck: ['Contrôler', 'Check', 'Prüfen', 'Comprobar'],
   rBusy: ['Calcul en cours…', 'Computing…', 'Berechnung läuft…', 'Calculando…'],
   // SOG-0134 : la durée d'un calcul de route, dite au-delà de 3 s, et où elle est passée
+  rBusyOcean: ['Vol transocéanique : la recherche peut prendre jusqu’à 20 secondes',
+    'Transoceanic flight: the search can take up to 20 seconds', 'Transozeanischer Flug: die Suche kann bis zu 20 Sekunden dauern',
+    'Vuelo transoceánico: la búsqueda puede tardar hasta 20 segundos'
+  ],
   rBusyS: ['Calcul en cours… {s} s', 'Computing… {s} s', 'Berechnung läuft… {s} s', 'Calculando… {s} s'],
   rTimeLauncher: ['Calculé en {t} s — dont {p} s chez le lanceur.', 'Computed in {t} s — {p} s of it at the launcher.',
     'Berechnet in {t} s — davon {p} s beim Starter.', 'Calculado en {t} s — de ellos {p} s en el lanzador.'
@@ -3889,7 +3893,9 @@ async function routeAsk(action) {
     if (box) box.innerHTML = `<p class="f-warn" data-rneed>${esc(tt(TX.rNeedAds))}</p>`;
     return;
   }
-  if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>`;
+  // SOG-0354 : un vol qui traverse l'océan (le critère du moteur) peut demander jusqu'à 20 s de recherche : la ligne d'attente le dit ;
+  // la réponse la remplace (rien de plus quand c'est une route)
+  if (box) box.innerHTML = `<p class="f-muted" data-rbusy>${esc(tt(TX.rBusy))}</p>${oceanCrossing(r) ? `<p class="f-muted" data-rocean>${esc(tt(TX.rBusyOcean))}</p>` : ''}`;
   routeBusy(s, true, act);
   try {
     await routeAskRun(s, act, r, o, box, retry);
@@ -4072,6 +4078,15 @@ function natCrossing(r) {
     v = [a?.lat, a?.lon, b?.lat, b?.lon].map(x => x === null || x === '' ? NaN : +x);
   if (!v.every(Number.isFinite) || v[0] < 15 || v[2] < 15) return false;
   return v[1] >= -25 && v[3] <= -50 || v[3] >= -25 && v[1] <= -50;
+}
+/** SOG-0354 : le critère du moteur pour un vol qui traverse l'océan (ses bornes de recherche plus longues) — un bout de la route à l'ouest
+ *  de 35° W, l'autre à l'est de 15° W (les deux bouts de route.points, avec leur position). */
+function oceanCrossing(r) {
+  const p = Array.isArray(r?.points) ? r.points : [],
+    a = p[0]?.lon == null ? NaN : +p[0].lon,
+    b = p.at(-1)?.lon == null ? NaN : +p.at(-1).lon;
+  if (p.length < 2 || !Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return a < -35 && b > -15 || b < -35 && a > -15;
 }
 /** Le lanceur de ce poste est là (pas une paire distante) : il peut lire le message NAT du jour (aerodb.natEnsure). */
 const natHere = () => typeof S?.ctx?.launcher?.job === 'function' && !!S.ctx.launcher.info?.() && !S.ctx.launcher.info().lan;

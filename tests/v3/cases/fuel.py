@@ -6369,6 +6369,45 @@ def f234(c):
         c.eq(got['puts'], 1, f'{k}: the flight written once', what='writes')
 
 
+@case('F237', 'Route step, « Calculer A → B » for a flight across the Atlantic (one end west of 35° W, the other east of 15° W): while the '
+      'engine searches, the waiting line also says « Vol transocéanique : la recherche peut prendre jusqu\'à 20 secondes »; nothing of it for '
+      'a flight that does not cross, nothing left once the answer is drawn', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='SOG-0354 (AeroDB: Dublin → New York now FOUND in about 16 s instead of a proposal in 8; the answer carries budget.ocean, known only '
+      'at the answer); the ergonomist: the same criterion as the engine, four languages, a capture at 390 × 667; a slow fake launcher')
+def f237(c):
+    T = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    st['delay'] = 4
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': 'EIDW KJFK', 'dep': 'EIDW', 'arr': 'KJFK', 'manual': True,
+                             'points': [{'id': 'EIDW', 'lat': 53.42, 'lon': -6.27}, {'id': 'KJFK', 'lat': 40.64, 'lon': -73.78}]}
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='« Calculer A → B »')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-rbusy]')", timeout=5000, what='the waiting line')
+    c.until(f"!!document.querySelector('{FUEL} [data-rocean]')", timeout=3000, what='the transoceanic sentence while waiting')
+    c.eq(norm(c.text(f'{FUEL} [data-rocean]')), norm(tx(T, 'rBusyOcean', c.lang)), '« Vol transocéanique : la recherche peut prendre jusqu’à 20 secondes »',
+         what='ocean')
+    c.js(f"document.querySelector('{FUEL} [data-rocean]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F237_{c.design}_390_{c.lang}_wait.png')
+    c.until(f"!document.querySelector('{FUEL} [data-rbusy]')", timeout=15000, what='the answer drawn')
+    c.eq(c.count(f'{FUEL} [data-rocean]'), 0, 'nothing more once the route is there', what='after')
+    # a flight that does not cross (LFRS → LFML): never said
+    st['delay'] = 3
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='« Calculer A → B »')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-rbusy]')", timeout=5000, what='the waiting line')
+    c.wait(1500)
+    c.eq(c.count(f'{FUEL} [data-rocean]'), 0, 'a flight over Europe: no transoceanic sentence', what='not crossing')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

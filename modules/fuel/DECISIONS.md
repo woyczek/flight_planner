@@ -2111,3 +2111,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the write to the route reading it starts (`procsToText` says so), the end of that reading writes it (or `writeAfterProcs` when the
   procedures are not read yet), and `shareProfile` does not write during a series of choices (`P.settling()`) nor during a route reading
   (`routeReading()`, 5 s at most). F234 (red before: the other aerodrome asked, two writes).
+- **16 Nov 2026 — SOG-0354: the waiting line of a transoceanic search says « jusqu'à 20 secondes »** (AeroDB: Dublin → New York now
+  found in about 16 s instead of a proposal in 8; the answer carries `budget: { ocean, head_s, search_s, total_s }`, known only at the
+  answer). `oceanCrossing(route)` is the engine's criterion — one end of route.points west of 35° W, the other east of 15° W, both with a
+  position — and while « Calculer A → B » or « Contrôler » waits, `[data-rocean]` under « Calcul en cours… » says « Vol transocéanique : la
+  recherche peut prendre jusqu'à 20 secondes »; the answer replaces the box (nothing more when it is a route). Not the NAT line's criterion
+  (natCrossing: 25° W / 50° W, north of 15° N), which says the state of the tracks. F237 (red before), capture at 390 × 667.
