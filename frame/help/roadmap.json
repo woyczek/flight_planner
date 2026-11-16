@@ -4,7 +4,7 @@
  "updated": "2026-11-16",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "928e850",
+  "organisation": "304a08d",
   "fiches": 389,
   "untranslated": 0,
   "priorities": 374,
@@ -1153,11 +1153,12 @@
     {
      "id": "SOG-0390",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : prendre un itinéraire retire du texte de la route les routes nord-américaines (N71B-N90B)",
      "en": "Fuel: taking an itinerary removes the North American routes (N71B-N90B) from the route text",
      "de": "Kraftstoff: die Übernahme einer Route entfernt die nordamerikanischen Routen (N71B-N90B) aus dem Routentext",
-     "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (N71B-N90B)"
+     "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (N71B-N90B)",
+     "test": true
     }
    ]
   },

@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 260,
+  "tests": 261,
   "verdicts": 204
  },
  "apps": [
@@ -3926,10 +3926,24 @@
     "de": "Kraftstoff, KABQ → EGLL: die berechnete Route erscheint und verschwindet, es bleibt ein Direkt",
     "es": "Combustible, KABQ → EGLL: la ruta calculada aparece y desaparece, queda un directo"
    },
-   "test": "Recharge la page (pas besoin de relancer le lanceur). Carburant, étape Route. (1) KABQ → EGLL à FL350, « Calculer A → B » : la route arrive en 2 à 4 secondes et RESTE ; elle passe par une route NAT (« … RAFIN NATV ATSUR … » ce soir) ; les variantes arrivent quelques secondes après et restent aussi. (2) Attends dix secondes, change d'étape et reviens : la route et les variantes sont toujours là. (3) La ligne orange « les propositions par des routes NAT d'un autre jour sont retirées » ne doit PAS apparaître pour ce vol. Dis-moi si la route disparaît encore, et après combien de secondes.",
+   "test": "Recharge la page (pas besoin de relancer le lanceur). Carburant, étape Route. (1) KABQ → EGLL à FL350, « Calculer A → B » : la route arrive en 2 à 4 secondes et RESTE ; elle passe par une route NAT (« … RAFIN NATV ATSUR … » ce soir) ; les variantes arrivent quelques secondes après et restent aussi. (2) Attends dix secondes, change d'étape et reviens : la route et les variantes sont toujours là. (3) La ligne orange « les propositions par des routes NAT d'un autre jour sont retirées » ne doit PAS apparaître pour ce vol. (4) Un vol SANS niveau (vide le champ Niveau à l'étape Vol), « Calculer A → B » : une ligne orange dit « Niveau non donné : route calculée à FL180 par défaut », le lien « Donne",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T22:02:27Z"
+   "delivered": "2026-11-16T22:25:46Z"
+  },
+  {
+   "id": "SOG-0390",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : prendre un itinéraire retire du texte de la route les routes nord-américaines (N71B-N90B)",
+    "en": "Fuel: taking an itinerary removes the North American routes (N71B-N90B) from the route text",
+    "de": "Kraftstoff: die Übernahme einer Route entfernt die nordamerikanischen Routen (N71B-N90B) aus dem Routentext",
+    "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (N71B-N90B)"
+   },
+   "test": "Recharge la page. Carburant, étape Route, KABQ → EGLL à FL350, « Calculer A → B ». (1) Sur la carte de l'itinéraire, le texte de la route montre la route nord-américaine entre ses deux points (« … TUSKY N71B-N90B RAFIN NATV ATSUR … » ce soir). (2) Touche « Choisir » : le champ Route garde « N71B-N90B » entre TUSKY et RAFIN — il n'y a pas « TUSKY RAFIN » tout seul. (3) Recharge la page : la route est toujours écrite avec sa voie. (4) Au téléphone, « 0 écart » tient d'un seul morceau sur la carte de l'itinéraire.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T22:24:33Z"
   }
  ],
  "decisions": [
