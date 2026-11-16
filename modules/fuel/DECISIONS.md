@@ -2122,3 +2122,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   word stays in the text and the leg is direct (route_model `badAirways`, as before); instead of a passing notification once per text,
   `[data-awywarn]`, a muted line under the NAT one, says « Voie N260B-N271B : non reliée dans la base, tronçon tracé en direct » for each
   such airway (12 at most) and follows every reading of the text (gone with the airway). F68 updated (red before: the notification only).
+- **16 Nov 2026 — SOG-0354 L2b (3): an ocean flight asks the cutting by sections and says the proof of each section** (AeroDB
+  39e81766c: route/compute `sections: true`, view.sections = { candidates, tried, chosen, cost, sections: [{ name, from, to, nm, cost,
+  expanded, seconds, proof: computed | published }] }, null when the option does not apply; the user's priority: the route computation).
+  `routeArgs` passes `sections: oceanCrossing(route)` for « Calculer A → B » (never for « Contrôler », never for a flight that does not
+  cross); `RE.request` writes `sections: true` only then. `RE.normalize` reads `res.sections` as an untrusted input (`proofOf`: own
+  properties, six sections at most, the proof « published » or « computed » only — another proof: the section is left out —, both ends by
+  the point pattern, the distance bounded; the letter of the NAT track from the name « track E » of a published section) and gives it to
+  the FIRST plan only, when it is the computed route (never a fallback proposal); the stored answer (route_alts.json) is normalized again on
+  reload, so the proof survives. The line of that route says, under its route, `[data-proof]`: « EIDW–DOGAL : calculée · DOGAL–54/50 :
+  publiée, route NAT E du 16/11 · 54/50–KJFK : calculée » (the day is the route's nat.issued; without it « publiée, route NAT E »).
+  Nothing when view.sections is null. F238 (red expected on the parent: no `sections` asked, no proof line).

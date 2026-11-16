@@ -6419,6 +6419,82 @@ def f237(c):
     c.eq(c.count(f'{FUEL} [data-rocean]'), 0, 'a flight over Europe: no transoceanic sentence', what='not crossing')
 
 
+# SOG-0354 (L2b 3): the engine's answer for an ocean flight with the option `sections` — an invented route by the NAT track E of 16/11
+_OCEAN_ALT = {'id': 'alt1', 'name': 'Via NAT E', 'route': 'EIDW DOGAL NATE 54/50 DCT NICSO KJFK', 'distanceNm': 3023, 'fl': 370,
+              'profile': [{'nm': 0, 'ft': 500}, {'nm': 3023, 'ft': 400}], 'sid': None, 'star': None, 'faults': 0,
+              'nat': {'tracks': ['E'], 'issued': '16/11', 'stale': False},
+              'segments': [_seg('EIDW', 'DOGAL'), _seg('DOGAL', '54/50'), _seg('54/50', 'NICSO'), _seg('NICSO', 'KJFK')]}
+_OCEAN_SECTIONS = {'candidates': [{'track': 'E', 'lower_bound': 2626.0}], 'tried': [{'track': 'E', 'cost': 2880.0}], 'chosen': 'E', 'cost': 2880.0,
+                   'sections': [{'name': 'europe', 'from': 'EIDW', 'to': 'DOGAL', 'nm': 612.4, 'cost': 600.0, 'expanded': 260, 'seconds': 0.015, 'proof': 'computed'},
+                                {'name': 'track E', 'from': 'DOGAL', 'to': '54/50', 'nm': 1505.0, 'cost': 1500.0, 'expanded': 5, 'seconds': 0.0, 'proof': 'published'},
+                                {'name': 'amérique', 'from': '54/50', 'to': 'KJFK', 'nm': 905.6, 'cost': 780.0, 'expanded': 16, 'seconds': 0.008, 'proof': 'computed'},
+                                {'name': 'track Z', 'from': '<b>X</b>', 'to': 'KJFK', 'nm': 1, 'proof': 'published'},
+                                {'name': 'track Y', 'from': 'AAAAA', 'to': 'BBBBB', 'nm': 1, 'proof': 'forged'}]}
+
+
+def _ocean_docs():
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': 'EIDW KJFK', 'dep': 'EIDW', 'arr': 'KJFK', 'manual': True,
+                             'points': [{'id': 'EIDW', 'lat': 53.42, 'lon': -6.27}, {'id': 'KJFK', 'lat': 40.64, 'lon': -73.78}]}
+    return docs
+
+
+def _compute_now(c, st):
+    """« Calculer A → B » tapped, then the NEW answer drawn: a new compute request posted and the waiting line gone (a list kept on the
+    device from an earlier computation is never read for this one)."""
+    n0 = len(st['posts'])
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]:not([disabled])')", timeout=10000, what='« Calculer A → B »')
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    for _ in range(75):
+        if any((p.get('args') or {}).get('action') == 'compute' for p in st['posts'][n0:]):
+            break
+        c.wait(200)
+    c.until(f"!document.querySelector('{FUEL} [data-rbusy]') && !!document.querySelector('{FUEL} [data-altlist] [data-alt]')", timeout=15000,
+            what='the new answer drawn')
+    return [p['args'] for p in st['posts'][n0:] if (p.get('args') or {}).get('action') == 'compute']
+
+
+@case('F238', 'Route step, « Calculer A → B » for a flight across the Atlantic: the request asks `sections: true`; the computed route says '
+      'the proof of each of its sections on its line — « EIDW–DOGAL : calculée · DOGAL–54/50 : publiée, route NAT E du 16/11 · 54/50–KJFK : '
+      'calculée »; a section of another proof or with an unreadable end is left out; without the option applied (sections null), nothing; '
+      'a flight over Europe never asks it', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0354 L2b (3) (AeroDB 39e81766c: route/compute `sections`, view.sections = { candidates, tried, chosen, cost, sections: [{ name, '
+      'from, to, nm, cost, expanded, seconds, proof: computed | published }] }, null when not applied); the user\'s priority: the route '
+      'computation; the ergonomist: the proof said in the existing list, a capture at 390 × 667; a fake launcher in the shape of the contract')
+def f238(c):
+    T = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': _OCEAN_SECTIONS}
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=_ocean_docs())
+    to_step(c, 1)
+    comps = _compute_now(c, st)
+    c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt=\"0\"] [data-proof]')", timeout=15000, what='the proof on the line of the route')
+    c.ok(comps and all(a.get('sections') is True for a in comps), comps, 'an ocean flight asks `sections: true`')
+    got = c.js(f"[...document.querySelectorAll('{FUEL} [data-alt=\"0\"] [data-proof] [data-proofsec]')].map(e => [e.dataset.proofsec, e.textContent])")
+    want = [['computed', tx(T, 'rProofComp', c.lang).replace('{a}', 'EIDW').replace('{b}', 'DOGAL')],
+            ['published', tx(T, 'rProofPub', c.lang).replace('{a}', 'DOGAL').replace('{b}', '54/50').replace('{t}', 'E').replace('{d}', '16/11')],
+            ['computed', tx(T, 'rProofComp', c.lang).replace('{a}', '54/50').replace('{b}', 'KJFK')]]
+    c.eq([[k, norm(v)] for k, v in got], [[k, norm(v)] for k, v in want], 'each section and its proof, in order; the forged ones left out', what='proof')
+    c.eq(c.count(f'{FUEL} [data-proof] b'), 0, 'an end that is markup is never drawn', what='escaped')
+    c.js(f"document.querySelector('{FUEL} [data-alt=\"0\"]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F238_{c.design}_390_{c.lang}_proof.png')
+    # the option not applied (sections null): nothing more on the line
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': None}
+    c.open('fuel', docs=_ocean_docs())
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.eq(c.count(f'{FUEL} [data-proof]'), 0, 'sections null: no proof line', what='null')
+    # a flight over Europe: never asked
+    st['extra'] = None
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    europe = _compute_now(c, st)
+    c.ok(europe and all('sections' not in a for a in europe), europe, 'LFRS → LFML: no `sections` in the request')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

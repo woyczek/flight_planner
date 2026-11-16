@@ -64,7 +64,8 @@ export function request({
   date,
   depRunway,
   arrRunway,
-  alternatives = true
+  alternatives = true,
+  sections = false
 }) {
   const check = action === 'check',
     out = {
@@ -92,6 +93,9 @@ export function request({
     // SOG-0296 : la première demande sans variantes (la route de tête en 1 à 3 s), la seconde avec
     if (alternatives) out.alternatives = true;
     out.proposals = true; // un plan impossible rend les propositions de repli du moteur, marquées proposal (AeroDB 9a7f1dde3, SOG-0161)
+    // SOG-0354 (L2b 3, AeroDB 39e81766c) : un vol qui traverse l'océan demande le découpage par sections (route NAT du jour publiée,
+    // sections calculées de part et d'autre) ; le moteur rend view.sections, null quand l'option ne s'applique pas
+    if (sections === true) out.sections = true;
   }
   return out;
 }
@@ -206,6 +210,36 @@ function controlOf(c) {
 }
 /** SOG-0263 : les routes NAT d'un itinéraire (view.nat_of du moteur) : { tracks: ['A'], issued: 'JJ/MM' | '', stale } ; null sans
  *  track. Lettres de track seules (une ou deux capitales, six au plus), date à sa forme, périmée seulement si vrai. */
+/** SOG-0354 (L2b 3) : le découpage de la réponse (`sections` de la vue d'AeroDB : { candidates, tried, chosen, cost, sections: [{ name, from,
+ *  to, nm, cost, expanded, seconds, proof }] }, null sans l'option), lu comme une entrée non sûre : propriétés propres, six sections au
+ *  plus, la preuve « published » ou « computed » seulement (une autre : la section est écartée), extrémités par motif, distance bornée ;
+ *  la lettre de la route NAT tirée du nom « track E » d'une section publiée. null sans section lisible. */
+function proofOf(v) {
+  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
+    list = own(v, 'sections');
+  if (!Array.isArray(list)) return null;
+  const end = x => {
+      const t = text(x, 12).toUpperCase();
+      return PT_ID.test(t) ? t : '';
+    },
+    out = [];
+  for (const x of list.slice(0, 6)) {
+    const proof = own(x, 'proof'),
+      from = end(own(x, 'from')),
+      to = end(own(x, 'to'));
+    if (!['published', 'computed'].includes(proof) || !from || !to) continue;
+    const m = /^track\s+([A-Z]{1,2})$/i.exec(text(own(x, 'name'), 20));
+    out.push({
+      from,
+      to,
+      nm: num(own(x, 'nm'), 0, 20000),
+      proof,
+      track: proof === 'published' && m ? m[1].toUpperCase() : ''
+    });
+  }
+  return out.length ? out : null;
+}
+
 function natOf(n) {
   if (!n || typeof n !== 'object') return null;
   const tracks = [...new Set((Array.isArray(n.tracks) ? n.tracks : []).map(t => String(t ?? '').toUpperCase()).filter(t =>
@@ -287,6 +321,9 @@ export function normalize(res, action = 'compute') {
     plans = (Array.isArray(res.alternatives) ? res.alternatives : []).slice(0, check ? 1 : 3)
     .map((a, i) => altOf(a, i ? 'alternative' : 'primary', check ? errors : [], check ? reviews : []))
     .filter(p => p.route);
+  // SOG-0354 (L2b 3) : le découpage est celui de l'itinéraire calculé (le premier) ; jamais pour une proposition de repli
+  const proof = check ? null : proofOf(res.sections);
+  if (proof && plans[0] && plans[0].role === 'primary' && !plans[0].proposal) plans[0].proof = proof;
   return {
     ok: true,
     reason: '',

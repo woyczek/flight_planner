@@ -234,6 +234,15 @@ const TX = {
   rCheck: ['Contrôler', 'Check', 'Prüfen', 'Comprobar'],
   rBusy: ['Calcul en cours…', 'Computing…', 'Berechnung läuft…', 'Calculando…'],
   // SOG-0134 : la durée d'un calcul de route, dite au-delà de 3 s, et où elle est passée
+  // SOG-0354 (L2b 3) : la preuve de chaque section de l'itinéraire calculé (view.sections d'AeroDB)
+  rProofPub: ['{a}–{b} : publiée, route NAT {t} du {d}', '{a}–{b}: published, NAT track {t} of {d}',
+    '{a}–{b}: veröffentlicht, NAT-Route {t} vom {d}',
+    '{a}–{b}: publicada, ruta NAT {t} del {d}'
+  ],
+  rProofPubNoDay: ['{a}–{b} : publiée, route NAT {t}', '{a}–{b}: published, NAT track {t}', '{a}–{b}: veröffentlicht, NAT-Route {t}',
+    '{a}–{b}: publicada, ruta NAT {t}'
+  ],
+  rProofComp: ['{a}–{b} : calculée', '{a}–{b}: computed', '{a}–{b}: berechnet', '{a}–{b}: calculada'],
   rBusyOcean: ['Vol transocéanique : la recherche peut prendre jusqu’à 20 secondes',
     'Transoceanic flight: the search can take up to 20 seconds', 'Transozeanischer Flug: die Suche kann bis zu 20 Sekunden dauern',
     'Vuelo transoceánico: la búsqueda puede tardar hasta 20 segundos'
@@ -2220,7 +2229,7 @@ const STYLE = `
 [data-module="fuel"] .fu-ralts .f-item[aria-current]{border-color:var(--sog-accent)}
 [data-module="fuel"] .fu-ralts .f-item.fu-raltshown{box-shadow:inset 0 0 0 2px var(--sog-accent);cursor:default} /* la ligne montrée (SOG-0134) */
 [data-module="fuel"] .fu-ralts .f-item[data-alt]{cursor:pointer}
-[data-module="fuel"] .fu-ralts .fu-raltroute{display:block;word-break:break-word}
+[data-module="fuel"] .fu-ralts .fu-raltroute,[data-module="fuel"] .fu-ralts .fu-rproof{display:block;word-break:break-word}
 [data-module="fuel"] .fu-pt.fu-pterr{border-color:var(--sog-err);flex-wrap:wrap}
 [data-module="fuel"] .fu-pt .fu-segwhy{flex-basis:100%;order:9;color:var(--sog-err)}
 [data-module="fuel"] .fu-faultlist{margin:.2em 0 .3em;padding-left:1.1em}
@@ -3981,7 +3990,8 @@ function routeArgs(act, r = S.flight.route || {}, o = CF.proceduresOf(S.flight))
     date: new Date(Number.isFinite(when) ? when : Date.now()).toISOString().slice(0, 16),
     depRunway: o.dep?.rwy,
     arrRunway: o.arr?.rwy,
-    alternatives: false
+    alternatives: false,
+    sections: act === 'compute' && oceanCrossing(r) // SOG-0354 (L2b 3) : le découpage par sections, pour un vol qui traverse l'océan
   });
 }
 /** SOG-0296 : ce qui fait la demande (pour savoir si l'entrée a changé pendant la seconde) — ses champs, sans la date tirée de
@@ -4425,7 +4435,7 @@ function routeAltsDraw() {
   // SOG-0134 : la ligne montrée (un appui sur elle ou sur son tracé dans la Carte) est marquée et son détail déplié ; « Choisir » la prend
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', a.fl !== null ? `FL${String(a.fl).padStart(3, '0')}` : '', RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
@@ -4650,6 +4660,25 @@ function altsPicked(e) {
 }
 /** SOG-0263 : « via NAT A » sous la part contrôlée d'un itinéraire, et en ambre « périmée : routes NAT du JJ/MM » quand le moteur a
  *  pris des tracks périmées ; rien sans track. */
+/** SOG-0354 (L2b 3) : la preuve de chaque section de l'itinéraire calculé, sur sa ligne (sous sa route) — « DOGAL–54/50 : publiée, route NAT
+ *  E du 16/11 », « EIDW–DOGAL : calculée » ; le jour est celui des routes NAT de l'itinéraire (nat.issued), « … route NAT E » sans jour. Rien sans
+ *  découpage (option non appliquée, view.sections null). */
+function proofHtml(a) {
+  if (!Array.isArray(a?.proof) || !a.proof.length) return '';
+  const day = a.nat?.issued || '',
+    one = x => {
+      const v = {
+          a: x.from,
+          b: x.to,
+          t: x.track || '?',
+          d: day
+        },
+        t = x.proof === 'published' ? tt(day ? TX.rProofPub : TX.rProofPubNoDay, v) : tt(TX.rProofComp, v);
+      return `<span data-proofsec="${esc(x.proof)}">${esc(t)}</span>`;
+    };
+  return `<small class="f-muted fu-rproof" data-proof>${a.proof.map(one).join(' · ')}</small>`;
+}
+
 function natHtml(n) {
   if (!n?.tracks?.length) return '';
   const t = n.tracks.join(', ');
