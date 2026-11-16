@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-16",
-  "tests": 259,
+  "tests": 260,
   "verdicts": 204
  },
  "apps": [
@@ -3487,7 +3487,7 @@
    "test": "D'abord RELANCE LE LANCEUR. Carburant, étape Route, « Calculer A → B » (les temps sont ceux mesurés par AeroDB sur ta base, dans le pire cas ; aucun vol transatlantique ne doit dépasser 5 secondes). (1) EIDW → KJFK, départ vers 12 h Z : une route en 2 secondes à froid, moins d'une seconde ensuite ; sous l'itinéraire, la preuve de chaque morceau (« calculée », « publiée, route NAT … »). (2) Le même vol, départ à 03 h Z : une ROUTE LIBRE créée (« route libre, créée »), en 1 à 2 secondes ; le pli « n routes NAT du jour écartées » dit pourquoi chacune est écartée. (3) Sans heure de départ : la route NAT est prise et une ligne dit « Heure de départ non donnée : validité horaire des routes NAT non",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T21:29:41Z"
+   "delivered": "2026-11-16T22:05:22Z"
   },
   {
    "id": "SOG-0355",
@@ -3916,6 +3916,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T16:50:37Z"
+  },
+  {
+   "id": "SOG-0389",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant, KABQ → EGLL : la route calculée apparaît puis disparaît, il reste un direct",
+    "en": "Fuel, KABQ → EGLL: the computed route appears then disappears, a direct is left",
+    "de": "Kraftstoff, KABQ → EGLL: die berechnete Route erscheint und verschwindet, es bleibt ein Direkt",
+    "es": "Combustible, KABQ → EGLL: la ruta calculada aparece y desaparece, queda un directo"
+   },
+   "test": "Recharge la page (pas besoin de relancer le lanceur). Carburant, étape Route. (1) KABQ → EGLL à FL350, « Calculer A → B » : la route arrive en 2 à 4 secondes et RESTE ; elle passe par une route NAT (« … RAFIN NATV ATSUR … » ce soir) ; les variantes arrivent quelques secondes après et restent aussi. (2) Attends dix secondes, change d'étape et reviens : la route et les variantes sont toujours là. (3) La ligne orange « les propositions par des routes NAT d'un autre jour sont retirées » ne doit PAS apparaître pour ce vol. Dis-moi si la route disparaît encore, et après combien de secondes.",
+   "since": "2026-11-16",
+   "state": "todo",
+   "delivered": "2026-11-16T22:02:27Z"
   }
  ],
  "decisions": [
