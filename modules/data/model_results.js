@@ -4,6 +4,7 @@ import {
   normView,
   num,
   own,
+  PICKUP_BY_CONTENT,
   PICKUP_DEST,
   SETS,
   SHEETS
@@ -593,6 +594,10 @@ const zipSendable = t => !!t && t.source !== OPENAIP && Object.hasOwn(PICKUP_DES
   /^[A-Za-z0-9_ .()+-]{1,150}$/.test(t
     .zip) && Number
   .isInteger(t.size) && t.size >= 0;
+/** Une entrée du plan d'une source prise par son CONTENU (NAV Portugal) : prenable telle quelle, sans zip à renvoyer ni règle de nom (SOG-0370) ; seule la zone doit être sûre. */
+const contentTakable = t => !!t && PICKUP_BY_CONTENT.includes(t.source) && typeof t.zone === 'string' && /^[a-z0-9_-]{2,12}$/.test(t.zone);
+/** Le nom d'un fichier que la règle du lanceur pour les sources à jeux (SIA, NATS, LFV) laisse passer ? Lettres, chiffres, espace, point, parenthèses, + et - : « sans espace ni accent » ne dit donc plus que ce qui est VRAIMENT refusé. */
+export const pickupNameOk = name => typeof name === 'string' && /^[A-Za-z0-9_ .()+-]{1,150}$/.test(name);
 /** Refus d'une prise qui appellent un nouveau plan : le zip a changé depuis le plan (changed), ou la source n'y figurait pas
  *  (not-shown, lanceur 8965e8c47) ; dits avec « Relancer le plan ». */
 export const REPLAN_ERRORS = Object.freeze(['changed', 'not-shown']);
@@ -601,12 +606,12 @@ export const REPLAN_ERRORS = Object.freeze(['changed', 'not-shown']);
  *  à lancer : celles qui ont une entrée prête et aucune entrée bloquée) }. */
 export function pickupSplit(taken) {
   const list = (Array.isArray(taken) ? taken : []).filter(t => t && typeof t === 'object'),
-    ready = list.filter(zipSendable),
-    // openAIP : ni envoyable par zip, ni bloqué : il se prend par `shown.openaip` (openaipShown), jamais par un nom de zip
-    blocked = list.filter(t => !zipSendable(t) && t.source !== OPENAIP),
+    ready = list.filter(t => zipSendable(t) || contentTakable(t)),
+    // openAIP : ni envoyable par zip, ni bloqué : il se prend par `shown.openaip` (openaipShown), jamais par un nom de zip ; une source prise par son contenu est prête sans zip (SOG-0370)
+    blocked = list.filter(t => !zipSendable(t) && !contentTakable(t) && t.source !== OPENAIP),
     zips = {};
   for (const t of ready)
-    if (!Object.hasOwn(zips, t.source)) zips[t.source] = {
+    if (!PICKUP_BY_CONTENT.includes(t.source) && !Object.hasOwn(zips, t.source)) zips[t.source] = {
       name: t.zip,
       size: t.size
     };

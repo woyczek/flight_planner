@@ -136,6 +136,11 @@ export function zoneReasons(id) {
 /** Les avis d'une zone (jamais une raison d'être périmée) : « Zone sans points ni voies : la source ne les porte pas (openAIP) » ; une phrase chacun. */
 export const zoneNotices = id => (S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].notices || [] : []).map(
   reasonText);
+/** La raison « un fichier attend dans Téléchargements » d'une zone quand c'est sa PREMIÈRE raison (celle qui bloque), sinon null. */
+export function waitingFileOf(id) {
+  const rs = S.status?.zones && Object.hasOwn(S.status.zones, id) ? S.status.zones[id].reasons : [];
+  return rs[0]?.code === 'pickup-waiting' ? rs[0] : null;
+}
 /** La pastille d'état d'une zone et, ouverte, ses raisons : la pastille d'une zone à reconstruire, jamais construite ou en échec est un bouton (le toucher dit pourquoi) ; vide sans état connu. */
 export function zoneStateHtml(id) {
   const st = zoneState(id);
@@ -147,7 +152,8 @@ export function zoneStateHtml(id) {
     } [st] || null,
     reasons = st === 'up-to-date' || st === 'building' ? [] : zoneReasons(id),
     open = S.whyOpen.has(id) && reasons.length,
-    label = tt(TX.zst[st]);
+    // SOG-0370 : quand la raison réelle est un fichier qui attend dans Téléchargements (non constructible), l'étape qui BLOQUE se dit — « Un fichier à prendre » — et non « À reconstruire »
+    label = tt(st === 'stale' && waitingFileOf(id) ? TX.zst.waiting : TX.zst[st]);
   const dot = `<i class="f-dot" aria-hidden="true"${kind(level)}></i>`;
   return `${reasons.length ? `<button type="button" class="d-st" data-act="zone-why" data-zone="${esc(id)}" data-zstate="${esc(st)}" aria-expanded="${open ? 'true' : 'false'}">${dot}${esc(label)}<span class="d-whyhint" data-why-hint>${esc(tt(TX.whyHint))}<i class="d-chev" aria-hidden="true"></i></span></button>` :
     `<span class="d-st" data-zstate="${esc(st)}">${dot}${esc(label)}</span>`}

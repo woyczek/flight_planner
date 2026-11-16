@@ -331,6 +331,9 @@ export const TX = {
   zst: {
     'up-to-date': ['À jour', 'Up to date', 'Aktuell', 'Al día'],
     stale: ['À reconstruire', 'To rebuild', 'Neu zu bauen', 'Por reconstruir'],
+    // SOG-0370 : la raison réelle d'un pays « périmé » est un fichier qui attend dans Téléchargements (non constructible) : l'étape qui BLOQUE se dit, pas « à reconstruire »
+    waiting: ['Un fichier à prendre', 'A file to take', 'Eine Datei zu übernehmen', 'Un archivo por tomar'],
+    waitingShort: ['un fichier à prendre', 'a file to take', 'Datei zu übernehmen', 'archivo por tomar'],
     'never-built': ['Jamais construite', 'Never built', 'Noch nie erstellt', 'Nunca construida'],
     failed: ['En échec', 'Failed', 'Fehlgeschlagen', 'Fallida'],
     building: ['En cours', 'Running', 'Läuft', 'En curso']
@@ -594,6 +597,7 @@ export const TX = {
       'ead-basic': ['EAD', 'EAD', 'EAD', 'EAD']
     },
     sourcesTitle: ['Sources de ce pays', 'Sources of this country', 'Quellen dieses Landes', 'Fuentes de este país'],
+    sourcesZone: ['Sources de cette zone', 'Sources of this zone', 'Quellen dieser Zone', 'Fuentes de esta zona'],
     noSources: ['Aucune source de fichier n’est connue pour ce pays.', 'No file source is known for this country.',
       'Für dieses Land ist keine Dateiquelle bekannt.', 'No se conoce ninguna fuente de archivos para este país.'
     ],
@@ -639,7 +643,32 @@ export const TX = {
       'not-downloaded': ['pas encore téléchargé', 'not downloaded yet', 'noch nicht heruntergeladen', 'aún no descargado']
     },
     buildNot: ['pas à jour : {r}', 'not up to date: {r}', 'nicht aktuell: {r}', 'no está al día: {r}'],
-    buildLast: ['dernière construction : {b}', 'last build: {b}', 'letzter Aufbau: {b}', 'última construcción: {b}'],
+    buildLast: ['construction précédente : {b}', 'previous build: {b}', 'vorheriger Aufbau: {b}', 'construcción anterior: {b}'],
+    // SOG-0370 : un pays construit dont un fichier plus récent attend n'est pas « à faire » : il est construit, d'une édition (ou d'un cycle) précédente
+    builtPrevEdition: ['{d} · édition précédente', '{d} · previous edition', '{d} · vorherige Ausgabe', '{d} · edición anterior'],
+    builtPrevCycle: ['{d} · cycle précédent', '{d} · previous cycle', '{d} · vorheriger Zyklus', '{d} · ciclo anterior'],
+    dlTakenEdition: ['édition prise le {d} · une plus récente attend dans Téléchargements',
+      'edition taken on {d} · a newer one waits in Downloads',
+      'Ausgabe übernommen am {d} · eine neuere wartet in Downloads',
+      'edición tomada el {d} · una más reciente espera en Descargas'
+    ],
+    dlTakenNewer: ['prise le {d} · un fichier plus récent attend dans Téléchargements',
+      'taken on {d} · a newer file waits in Downloads',
+      'übernommen am {d} · eine neuere Datei wartet in Downloads',
+      'tomada el {d} · un archivo más reciente espera en Descargas'
+    ],
+    seenName: ['vu : « {n} »', 'seen: “{n}”', 'gesehen: „{n}“', 'visto: «{n}»'],
+    // une zone hors pays (Atlantique Nord) : ce qu'elle lit, sans cases construit ni publié
+    offPublished: ['copie publiée du {d}', 'copy published on {d}', 'Kopie veröffentlicht am {d}', 'copia publicada el {d}'],
+    // l'état de ce que lit une zone hors pays (les routes NAT) : la date des routes et leur validité, jamais « état non lu »
+    offRoutes: ['routes du {d}, valides jusqu’à {t}', 'tracks of {d}, valid until {t}', 'Routen vom {d}, gültig bis {t}',
+      'rutas del {d}, válidas hasta las {t}'
+    ],
+    offRoutesOld: ['routes du {d} : périmées', 'tracks of {d}: expired', 'Routen vom {d}: abgelaufen', 'rutas del {d}: caducadas'],
+    offRoutesNone: ['routes pas lues', 'tracks not read', 'Routen nicht gelesen', 'rutas sin leer'],
+    offUnread: ['rien lu sur ce poste', 'nothing read on this workstation', 'nichts auf diesem Rechner gelesen',
+      'nada leído en este equipo'
+    ],
     pubNo: ['pas encore envoyé au dépôt des données', 'not sent to the data repository yet', 'noch nicht an das Datenarchiv gesendet',
       'aún no enviado al repositorio de datos'
     ],
@@ -2115,6 +2144,10 @@ export const TX = {
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
     legendMore: ['Autres signes de la carte', 'Other signs of the map', 'Weitere Zeichen der Karte', 'Otros signos del mapa'],
     update: ['Mettre à jour ce pays', 'Update this country', 'Dieses Land aktualisieren', 'Actualizar este país'],
+    updateZone: ['Mettre à jour cette zone', 'Update this zone', 'Diese Zone aktualisieren', 'Actualizar esta zona'],
+    updateNat: ['Lire les routes NAT du jour', 'Read the NAT tracks of the day', 'Die NAT-Routen des Tages lesen',
+      'Leer las rutas NAT del día'
+    ],
     doLine: ['Ce que fait ce bouton : {l}.', 'What this button does: {l}.', 'Was diese Schaltfläche tut: {l}.',
       'Lo que hace este botón: {l}.'
     ],
@@ -2412,7 +2445,8 @@ export const TX = {
       none: ['aucune route prise', 'no track taken', 'keine Route geholt', 'ninguna ruta tomada'],
       unknown: ['validité inconnue', 'validity unknown', 'Gültigkeit unbekannt', 'validez desconocida'],
       count: ['{n} routes', '{n} tracks', '{n} Routen', '{n} rutas'],
-      where: ['se lisent à l’étape Route d’un vol transatlantique', 'are read at the Route step of a transatlantic flight', 'werden beim Schritt Route eines Transatlantikflugs gelesen',
+      where: ['se lisent à l’étape Route d’un vol transatlantique', 'are read at the Route step of a transatlantic flight',
+        'werden beim Schritt Route eines Transatlantikflugs gelesen',
         'se leen en el paso Ruta de un vuelo transatlántico'
       ]
     },
@@ -2476,6 +2510,7 @@ export const TX = {
       '{c} está en sus países definidos.'
     ],
     removeBtn: ['Retirer ce pays', 'Remove this country', 'Land entfernen', 'Quitar este país'],
+    removeZone: ['Retirer cette zone', 'Remove this zone', 'Zone entfernen', 'Quitar esta zona'],
     removeAsk: ['Retirer {c} de vos pays définis ? Ses fichiers restent où ils sont : rien n’est purgé.',
       'Remove {c} from your defined countries? Its files stay where they are: nothing is purged.',
       '{c} aus Ihren festgelegten Ländern entfernen? Die Dateien bleiben, wo sie sind: nichts wird gelöscht.',
@@ -2502,6 +2537,7 @@ export const TX = {
     twTodo: ['à faire', 'to do', 'zu tun', 'por hacer'],
     twNo: ['en échec', 'failed', 'fehlgeschlagen', 'fallido'],
     twNa: ['sans objet', 'not applicable', 'nicht zutreffend', 'no aplicable'],
+    twTake: ['à prendre', 'to take', 'zu übernehmen', 'por tomar'],
     pubWaitBuild: ['pas encore possible : ce pays n’est pas construit', 'not possible yet: this country is not built',
       'noch nicht möglich: dieses Land ist nicht erstellt', 'aún no es posible: este país no está construido'
     ],
@@ -2809,6 +2845,16 @@ export const TX = {
   },
   // SOG-0318 : la phrase de tête de la fiche d'un pays : ce qu'il faut faire MAINTENANT (une seule), que rien dessous ne contredit
   now: {
+    pickEdition: ['Une édition plus récente attend dans Téléchargements : prenez-la, le pays se reconstruit ensuite.',
+      'A newer edition waits in Downloads: take it, then the country rebuilds.',
+      'Eine neuere Ausgabe wartet in Downloads: übernehmen Sie sie, danach wird das Land neu aufgebaut.',
+      'Una edición más reciente espera en Descargas: tómela y luego el país se reconstruye.'
+    ],
+    rename: ['Le lanceur ne prend pas le nom « {n} » : renommez-le sans espace ni accent, puis prenez-le.',
+      'The launcher does not take the name “{n}”: rename it without space or accent, then take it.',
+      'Der Starter übernimmt den Namen „{n}“ nicht: benennen Sie ihn ohne Leerzeichen und Akzent um, dann übernehmen Sie ihn.',
+      'El lanzador no toma el nombre «{n}»: renómbrelo sin espacio ni acento y luego tómelo.'
+    ],
     pick: ['Un fichier est dans Téléchargements : prenez-le, ce pays se reconstruit ensuite.',
       'A file is in Downloads: take it, then this country rebuilds.',
       'Eine Datei liegt in Downloads: übernehmen Sie sie, danach wird dieses Land neu aufgebaut.',

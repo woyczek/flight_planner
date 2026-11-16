@@ -123,18 +123,60 @@ function lastOf(cyc, data) {
 /** La phrase de la validité des routes NAT, en information seulement : en lecture, « valides jusqu'à 19:00Z », « périmées », « aucune route prise », « validité inconnue », puis OÙ elles se lisent (l'étape Route d'un vol transatlantique : la donnée est du jour, cet écran est au rythme du cycle). Rien n'est repris d'ici (SOG-0352). */
 export function natText() {
   const n = S.cw.lc.nat,
+    age = natAge();
+  return n.phase === 'idle' || n.phase === 'reading' ? age : `${age} — ${tt(TX.lc.nat.where)}`;
+}
+/** L'état de ce que lit la zone des routes NAT, en mots courts pour la pastille et la case ÉTAT de sa fiche (SOG-0370) : { tone ('ok' | 'warn' | 'unread'), text } ; « routes du 16/11, valides jusqu'à 19:00Z », « routes du 14/11 : périmées », « routes pas lues » ; text '' avant toute lecture. */
+export function natStateWord() {
+  const n = S.cw.lc.nat,
+    T = TX.cw;
+  if (n.phase === 'idle' || n.phase === 'reading') return {
+    tone: 'unread',
+    text: ''
+  };
+  const s = n.state;
+  if (!s || !s.present) return {
+    tone: 'warn',
+    text: tt(T.offRoutesNone)
+  };
+  const from = Date.parse(s.from),
+    day = Number.isFinite(from) ? new Intl.DateTimeFormat(lang() === 'en' ? 'en-GB' : String(lang()), {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: 'UTC'
+    }).format(from) : '',
+    until = s.validUntil ? fmtDateZ(s.validUntil, lang()) : '';
+  if (s.expired === true) return {
+    tone: 'warn',
+    text: tt(T.offRoutesOld, {
+      d: day || '?'
+    })
+  };
+  return s.expired === false && until ? {
+    tone: 'ok',
+    text: tt(T.offRoutes, {
+      d: day || '?',
+      t: until.split(' ').pop()
+    })
+  } : {
+    tone: 'unread',
+    text: tt(TX.lc.nat.unknown)
+  };
+}
+/** L'âge de ce que les routes NAT ont lu, SANS « où elles se lisent » (la fiche d'une zone hors pays le dit en une ligne, SOG-0370) : « valides jusqu'à 19:00Z · 5 routes », « périmées », « aucune route prise », « validité inconnue », « lecture… » ; '' avant toute lecture. */
+export function natAge() {
+  const n = S.cw.lc.nat,
     T = TX.lc.nat;
   if (n.phase === 'idle') return '';
   if (n.phase === 'reading') return tt(T.reading);
-  const s = n.state,
-    where = tt(T.where);
-  if (!s) return `${tt(T.unknown)} — ${where}`;
-  if (!s.present) return `${tt(T.none)} — ${where}`;
+  const s = n.state;
+  if (!s) return tt(T.unknown);
+  if (!s.present) return tt(T.none);
   const until = s.validUntil ? fmtDateZ(s.validUntil, lang()) : '',
     head = s.expired === null || !until ? tt(T.unknown) : tt(s.expired ? T.expired : T.valid, {
       d: until
     });
-  return `${head}${s.count ? ` · ${tt(T.count, { n: s.count })}` : ''} — ${where}`;
+  return `${head}${s.count ? ` · ${tt(T.count, { n: s.count })}` : ''}`;
 }
 /** Une ligne de « Quand ça change » : son nom, sa dernière date (ou la validité des routes NAT), la note de ce que fait son geste, le geste (gris pour sa raison, écrite une fois sous la liste). */
 function changeLine(c, data, grey) {

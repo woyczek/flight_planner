@@ -87,7 +87,7 @@ def preflight():
 DESIGNS = ('standard', 'metro', 'swiss', 'cupertino', 'material')
 LANGS = ('fr', 'en', 'de', 'es')
 LANGS4 = ('en', 'de', 'es')
-PHONE = (390, 844)
+PHONE = (390, int(os.environ.get('SOG_PHONE_H', '844')))   # SOG_PHONE_H=667: the phone of the user (captures for the ergonomist)
 SCREEN = (1280, 800)
 CASE_FILES = ('frame', 'overlay', 'sheet', 'maps', 'maps_recode', 'atmosphere', 'fuel', 'flightlog', 'designs', 'repo', 'aerodb', 'base_sources', 'data', 'aircraft', 'missions', 'journeys')
 

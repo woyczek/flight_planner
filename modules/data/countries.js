@@ -44,6 +44,7 @@ import {
   nasrHint,
   refreshStatus,
   statusKnown,
+  waitingFileOf,
   zoneMsgHtml,
   zoneReasons,
   zoneStateHtml
@@ -73,7 +74,9 @@ import {
 } from './todo.js';
 import {
   lcInit,
-  natRead
+  natAge,
+  natRead,
+  natStateWord
 } from './later.js';
 import {
   forgetSetStates,
@@ -144,6 +147,19 @@ function sheetGrey(reason) {
   if (!reason || reason === 'busy' && busyCardHtml('base', 'sheet')) return '';
   return ` <span class="f-muted" data-grey="${esc(reason)}">${esc(tt(reason === 'busy' && progressHere() ? TX.zx.greyBusy : M.own(TX.greyReason, reason) || TX.greyReason.busy))}</span>`;
 }
+/** Une zone qui n'est PAS un pays (Atlantique Nord) : toutes les sources que le catalogue lui donne sont hors du groupe « base » (les routes NAT : groupe météo) — sa fiche est courte, sans cases construit ni publié (SOG-0370). */
+export function offCountry(id) {
+  const own = (S.d?.cat?.SOURCES || []).filter(x => Array.isArray(x.zones) && x.zones.includes(id) && x.status !== 'abandoned');
+  return own.length > 0 && own.every(x => x.group !== 'base');
+}
+/** Les sources d'une zone hors pays : celles du catalogue qui la nomment (quel que soit leur groupe), puis celles que le lanceur dit (la liste du cycle). */
+function offSources(id, cy) {
+  const own = (S.d?.cat?.SOURCES || []).filter(x => Array.isArray(x.zones) && x.zones.includes(id) && x.status !== 'abandoned').map(x => x
+    .id);
+  return [...new Set([...own, ...M.sourcesOfZone(id, S.d.cat, S.status, cy.state === 'ready' ? cy.data : null)])].slice(0, 12);
+}
+/** Une source du pays est-elle publiée par ÉDITIONS (NAV Portugal) et non par cycle AIRAC ? On y écrit « édition », jamais « cycle ». */
+const byEdition = id => M.sourcesOfZone(id, S.d?.cat, S.status, null).some(s => M.EDITION_SOURCES.includes(s));
 /** Le nom d'un pays dans la langue : celui de zones() d'aerodb, à défaut celui de son contour, à défaut son identifiant. */
 export function nameOf(id) {
   const z = (S.d?.zones || []).find(x => x.id === id);
@@ -156,10 +172,13 @@ function chainHolds(id) {
 /** La teinte d'un pays : celle de l'état du lanceur ; sans état lu, celle de la publication (un cycle en vigueur, daté ou non) ; 'muted' hors de la couverture. */
 function tone(id) {
   const inCov = S.d.cov.ids.includes(id),
+    off = inCov && offCountry(id) && !Object.hasOwn(S.status?.zones || {},
+      id), // une zone hors pays sans état du lanceur : « non lu », jamais « à jour » d'après sa publication seule (SOG-0370)
     running = (!!S.run && S.run.set === 'base' && S.run.verb !== 'purge' && S.ids.includes(id)) || S.zop?.zone === id || chainHolds(
       id
     ), // l'opération du pays (sa fiche) et la chaîne « Tout mettre à jour » comptent aussi : entre deux verbes il n'y a pas de passage par « à faire » (SOG-0324)
     t = M.toneOf(S.status, id, inCov, running);
+  if (off && !running) return 'unread';
   if (t) return t;
   if (inCov && S.ctx.launcher && statusKnown())
     return 'unread'; // l'état de la base n'est pas encore lu (ou la lecture a échoué) : neutre, jamais une teinte de défaut (SOG-0260)
@@ -340,10 +359,10 @@ function groupsHtml() {
     }) => {
       const open = S.cw.grp === pack.id,
         name = pack.names[li()] || pack.names[0];
-      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-zones="${esc(state.known.filter(z => ZONE_ID.test(z)).join(','))}" data-open="${open}"${tl.inCov ? '' : ' data-nocov'}><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count('country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
+      return `<li class="d-gp" data-group-id="${esc(pack.id)}" data-zones="${esc(state.known.filter(z => ZONE_ID.test(z)).join(','))}" data-open="${open}"${tl.inCov ? '' : ' data-nocov'}><button type="button" class="d-gh" data-act="grp-toggle" data-gid="${esc(pack.id)}" aria-expanded="${open}" aria-controls="d-gb-${esc(pack.id)}"><span class="d-gname"><span class="d-gtitle"><b>${esc(name)}</b> <span class="f-muted d-gcount">${esc(count(state.known.every(offCountry) ? 'zone' : 'country', state.known.length))}</span></span> <span class="d-gsum" data-group-sum>${groupSummaryHtml(tl)}</span></span><i class="d-chev" aria-hidden="true"></i></button>${open ? `<div class="d-gb" id="d-gb-${esc(pack.id)}" data-group-body>
         <ul class="d-gc">${state.known.map(z => {
           const t = tone(z);
-          return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${S.cw.hover === z ? ' data-hover' : ''}${S.cw.sheet === z ? ' aria-current="true"' : ''}><span class="d-gcn">${esc(nameOf(z))}</span> <span class="d-gw"><b aria-hidden="true">${M.own(SIGN_OF, t) || ''}</b> ${esc(word(t))}${S.cw.proc?.zones?.[z] ? ` <span class="d-gproc" data-has-proc><i class="d-sw" data-hatch aria-hidden="true"></i>${esc(tt(TX.d2.procShort))}</span>` : ''}</span></button></li>`;
+          return `<li><button type="button" class="d-gcb" data-act="open-country" data-zone="${esc(z)}" data-hz="${esc(z)}" data-tone="${esc(t)}"${S.cw.hover === z ? ' data-hover' : ''}${S.cw.sheet === z ? ' aria-current="true"' : ''}><span class="d-gcn">${esc(nameOf(z))}</span> <span class="d-gw"><b aria-hidden="true">${M.own(SIGN_OF, t) || ''}</b> ${esc(t === 'warn' && waitingFileOf(z) ? tt(TX.zst.waitingShort) : word(t))}${S.cw.proc?.zones?.[z] ? ` <span class="d-gproc" data-has-proc><i class="d-sw" data-hatch aria-hidden="true"></i>${esc(tt(TX.d2.procShort))}</span>` : ''}</span></button></li>`;
         }).join('')}</ul>
         <p class="d-gup">${packUpdateHtml(pack, state)}</p>${opAreaHtml('base', 'group')}</div>` : ''}</li>`;
     });
@@ -355,9 +374,9 @@ const link = (url, label) => M.isHttps(url) ? `<a href="${esc(url)}" target="_bl
 export const dateOf = iso => iso ? M.dateText(String(iso).slice(0, 10), lang()) : '';
 /** Une coche posée par l'outil, UN des quatre signes (jamais la couleur ou la forme seule : le mot les accompagne) : ✓ fait (vert), ○ à faire (cercle vide, ton neutre), ✗ en échec (rouge : un vrai échec, avec sa raison, seulement), — sans objet ou pas encore possible (gris).
  *  `ok` : 'yes' | 'todo' | 'no' | 'na'. */
-export function tickHtml(key, ok, detail) {
+export function tickHtml(key, ok, detail, wordKey = '') {
   const sign = M.SIGNS.includes(ok) ? ok : 'na',
-    word = tt(TX.zx[{
+    word = tt(TX.zx[wordKey || {
       yes: 'twYes',
       todo: 'twTodo',
       no: 'twNo',
@@ -413,12 +432,17 @@ function buildFact(id, z) {
   const T = TX.cw,
     word = k => tt(TX.zx[k]);
   if (!z) return factCell('build', 'na', word('twNa'), tt(T.dlUnread), '');
-  const last = builtDetail(z);
+  const last = builtDetail(z, id);
   if (z.state === 'up-to-date') return factCell('build', 'yes', tt(TX.d4.cellOk), z.builtAt ? tt(T.on, {
     d: shortDate(z.builtAt)
-  }) : '', z.builtCycle && S.airac ? tt(T.cycleOf, {
+  }) : '', z.builtCycle && S.airac && !byEdition(id) ? tt(T.cycleOf, {
     c: M.cycleName(S.airac, z.builtCycle)
   }) : '');
+  // un fichier plus récent attend (non constructible) : le pays EST construit, d'une édition (ou d'un cycle) précédente — « ✓ le 12/11 · édition précédente », pas « (à faire) » (SOG-0370)
+  if (waitingFileOf(id) && z.builtAt && z.buildable === false) return factCell('build', 'yes', word('twYes'), tt(byEdition(id) ? T
+    .builtPrevEdition : T.builtPrevCycle, {
+      d: shortDate(z.builtAt)
+    }), '');
   return factCell('build', z.state === 'failed' ? 'no' : 'todo', word(z.state === 'failed' ? 'twNo' : 'twTodo'), '', tt(T.buildNot, {
     r: zoneReasons(id)[0] || tt(TX.zst[z.state])
   }) + (last ? ` · ${tt(T.buildLast, { b: last })}` : ''));
@@ -428,7 +452,9 @@ function publishFact(z) {
   const p = z?.publish;
   if (!p || p.state === 'unknown') return null;
   const word = k => tt(TX.zx[k]);
-  if (z.state !== 'up-to-date') return factCell('publish', 'na', word('twNa'), '', tt(TX.zx.pubWaitBuild));
+  // la publication réelle se lit toujours ; « sans objet » seulement pour un pays jamais construit (SOG-0370 : « ce pays n'est pas construit » était dit d'un pays construit le 12/11)
+  if (z.state !== 'up-to-date' && p.state !== 'published' && !z.builtAt) return factCell('publish', 'na', word('twNa'), '', tt(TX.zx
+    .pubWaitBuild));
   return p.state === 'published' ? factCell('publish', 'yes', word('twYes'), p.at ? tt(TX.cw.on, {
     d: shortDate(p.at)
   }) : '', '') : factCell('publish', 'todo', word('twTodo'), '', tt(TX.cw.pubNo));
@@ -463,9 +489,12 @@ export function downloadTick(id, item, z) {
     // l'édition déjà prise (la couche que le poste a lue : status `download.sources`) reste dite quand la suivante attend : les deux sont vraies (SOG-0318)
     const taken = d.state === 'waiting' ? z?.download?.list?.[id] : null,
       then = taken?.present && taken.at ? ` · ${tt(T.dlTaken, { d: dateOf(taken.at) })}` : '';
-    if (then) return tickHtml('download', 'todo', `${tt(T.dlWaiting)}${then}`);
+    if (then) return tickHtml('download', 'todo', tt(M.EDITION_SOURCES.includes(id) ? T.dlTakenEdition : T
+      .dlTakenNewer, { // « édition prise le 11/11/2026 · une plus récente attend dans Téléchargements » : une seule phrase (SOG-0370)
+        d: dateOf(taken.at)
+      }), 'twTake'); // un fichier est VU dans Téléchargements : « (à prendre) », pas « (à faire) »
     return tickHtml('download', d.state === 'failed' ? 'no' : 'todo', tt(d.state === 'waiting' ? T.dlWaiting : M.own(T.why, item.why) || T
-      .dlMissing));
+      .dlMissing), d.state === 'waiting' ? 'twTake' : '');
   }
   const auto = z?.download?.list?.[id];
   if (auto) return auto.present ? tickHtml('download', 'yes', auto.at ? tt(T.on, {
@@ -474,13 +503,14 @@ export function downloadTick(id, item, z) {
   return tickHtml('download', 'na', tt(T.dlUnread));
 }
 /** Le détail d'une construction : la date et le cycle (« le 5 oct. · cycle 2610 ») ; '' quand le pays n'a jamais été construit sur ce poste. */
-function builtDetail(z) {
+function builtDetail(z, id) {
   const T = TX.cw;
   return [z?.builtAt ? tt(T.on, {
     d: dateOf(z.builtAt)
-  }) : '', z?.builtCycle && S.airac ? tt(T.cycleOf, {
-    c: M.cycleName(S.airac, z.builtCycle)
-  }) : ''].filter(Boolean).join(' · ');
+  }) : '', z?.builtCycle && S.airac && !(id && byEdition(id)) ? tt(T
+    .cycleOf, { // « cycle » ne s'écrit que pour une source à cycle AIRAC (SOG-0370)
+      c: M.cycleName(S.airac, z.builtCycle)
+    }) : ''].filter(Boolean).join(' · ');
 }
 /** La lecture de la liste du cycle pour la fiche ouverte : { state ('loading' | 'ready' | 'busy' | 'unread' | 'none'), data, zv (la vue par zone du lanceur, K182) } ; la lecture d'un autre pays n'est pas la sienne. */
 function cycleOf(id) {
@@ -521,7 +551,7 @@ function filesOf(id, item) {
   };
 }
 /** L'inventaire des fichiers d'une source prise à la main, UNE fiche de trois lignes par fichier : ce que c'est en mots de pilote (le titre), « Où : … — <lien> (chemin à vérifier) », « Fichier : <nom> — vu dans Téléchargements / manquant » (le lanceur dit ce qu'il y voit). */
-function inventoryHtml(id, item, cy, zone = '') {
+function inventoryHtml(id, item, cy, zone = '', names = []) {
   const T = TX.cw,
     got = S.cw.recv.get(`${zone}/${id}`) || null, // ce que le lanceur a reçu de cette source à l'instant
     {
@@ -529,19 +559,23 @@ function inventoryHtml(id, item, cy, zone = '') {
       files
     } = filesOf(id, item),
     hand = item?.hand || null,
-    ready = cy.state === 'ready' && !!hand;
+    ready = cy.state === 'ready' && !!hand,
+    byContent = !!catSource(id)?.fetch
+    ?.pick; // une source prise par son CONTENU (le Portugal) : « vu » = un fichier est là, jamais le nom exact du catalogue (SOG-0370)
   if (!files.length) return '';
   const isGot = f => !!got && got.name === f.name,
-    nSeen = files.filter(f => isGot(f) || ready && (M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(String(f.file || f.name), hand
-      .inDownloads))).length;
-  return `<div data-inventory="${esc(id)}"><p class="d-invh d-sh d-sh2"><b>${esc(tt(T.inventory))}</b>${ready || nSeen ? ` <small data-inventory-count>${esc(tt(TX.d2.invSeen, { n: nSeen }))} · ${esc(tt(TX.d2.invMiss, { n: files.length - nSeen }))}</small>` : ''}</p>${!ready ? `<p class="f-muted" data-inventory-state="${esc(cy.state || 'none')}">${esc(tt(M.own(T.cycleState, cy.state) || T.inDlUnread))}</p>` : ''}<ul class="d-inv">${files.map(f => {
+    isSeen = f => isGot(f) || (byContent ? names.length > 0 : ready && (M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(String(f.file ||
+        f.name), hand
+      .inDownloads))),
+    nSeen = files.filter(isSeen).length;
+  return `<div data-inventory="${esc(id)}"><p class="d-invh d-sh d-sh2"><b>${esc(tt(T.inventory))}</b>${ready || nSeen ? ` <small data-inventory-count>${esc(tt(TX.d2.invSeen, { n: nSeen }))}${files.length > nSeen ? ` · ${esc(tt(TX.d2.invMiss, { n: files.length - nSeen }))}` : ''}</small>` : ''}</p>${!ready ? `<p class="f-muted" data-inventory-state="${esc(cy.state || 'none')}">${esc(tt(M.own(T.cycleState, cy.state) || T.inDlUnread))}</p>` : ''}<ul class="d-inv">${files.map(f => {
     const shown = String(f.file || f.name),
       recv = isGot(f),
-      seen = recv ? true : ready ? M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(shown, hand.inDownloads) : null,
+      seen = recv ? true : byContent ? names.length > 0 || (ready ? false : null) : ready ? M.fileSeen(f.name, hand.inDownloads) || M.fileSeen(shown, hand.inDownloads) : null,
       what = Array.isArray(f.what) ? f.what : f.gives;
     return `<li data-file="${esc(f.name)}"${seen === null ? '' : ` data-seen="${seen}"`}>${Array.isArray(what) ? `<b data-file-what>${esc(String(what[li()] ?? what[0] ?? ''))}</b>` : ''}
       ${whereHtml(f, steps, hand)}
-      <span class="d-fl" data-file-name>${esc(tt(T.name, { n: '\u0001' })).replace('\u0001', () => `<code>${esc(shown)}</code>`)}${seen === null ? '' : ` — <span class="d-fs" data-file-state="${recv ? 'received' : seen ? 'seen' : 'missing'}">${seen ? '✓' : '○'} ${esc(recv ? tt(TX.cwb.zip.recvLine, { name: got.name, b: M.fmtBytes(got.size, lang()), d: dateOf(got.at) }) : tt(seen ? T.seen : T.missing))}</span>`}</span></li>`;
+      <span class="d-fl" data-file-name>${esc(tt(T.name, { n: '\u0001' })).replace('\u0001', () => `<code>${esc(shown)}</code>`)}${seen === null ? '' : ` — <span class="d-fs" data-file-state="${recv ? 'received' : seen ? 'seen' : 'missing'}">${seen ? '✓' : '○'} ${esc(recv ? tt(TX.cwb.zip.recvLine, { name: got.name, b: M.fmtBytes(got.size, lang()), d: dateOf(got.at) }) : seen && byContent ? tt(T.seenName, { n: names[0] }) : tt(seen ? T.seen : T.missing))}</span>`}</span></li>`;
   }).join('')}</ul></div>`;
 }
 /** Le régime d'une source : celui de la liste du cycle, à défaut celui que le catalogue dit (un fichier pris à la main, lu sur ce poste, pris par le lanceur) ; '' sans. */
@@ -570,8 +604,21 @@ function unavailableHtml(id, item, un) {
 }
 /** Un fichier de cette source est-il VU dans Téléchargements ? La liste du cycle (`hand.inDownloads` non vide) ou le statut du lanceur (`pickup-waiting` avec son zip) le dit. */
 function handSeen(sid, z, item, cy) {
-  return (cy.state === 'ready' && !!item?.hand?.inDownloads?.length) || (z?.reasons || []).some(r => r.code === 'pickup-waiting' && !!r
-    .zip && (!r.source || r.source === sid));
+  return seenNamesOf(sid, z, item, cy).length > 0;
+}
+/** Les noms des fichiers VUS dans Téléchargements pour une source à la main : ceux de la liste du cycle (`hand.inDownloads`) et celui que le statut du lanceur dit (`pickup-waiting` avec son zip) ; huit au plus. Ce sont des noms du lanceur : toujours écrits par esc (SOG-0370). */
+function seenNamesOf(sid, z, item, cy) {
+  const dl = cy.state === 'ready' ? item?.hand?.inDownloads || [] : [],
+    st = (z?.reasons || []).filter(r => r.code === 'pickup-waiting' && typeof r.zip === 'string' && r.zip && (!r.source || r.source ===
+      sid)).map(r => r.zip);
+  return [...new Set([...dl, ...st].filter(n => typeof n === 'string' && n).map(n => n.replace(/[\p{Cc}]/gu, ' ').slice(0, 150)))].slice(0,
+    8);
+}
+/** Le fichier vu que la règle de nom du lanceur refuse VRAIMENT (sources à jeux : SIA, NATS, LFV ; M.pickupNameOk) : son nom, ou '' (une source prise par son contenu ne refuse jamais un nom). Sert au bandeau « renommez… » et fait disparaître le bouton (SOG-0370). */
+function renameOf(sid, z, item, cy) {
+  if (!Object.hasOwn(M.PICKUP_DEST, sid)) return '';
+  const names = seenNamesOf(sid, z, item, cy);
+  return names.length && names.every(n => !M.pickupNameOk(n)) ? names[0] : '';
 }
 /** Ce que la ligne DIRCAM dit du fichier à choisir, en mots : l'archive du SIA (son nom d'après le catalogue, `files[].file`, jamais un nom inventé), lue sur cet appareil, dont seul le PDF de l'ENR 5.7 part au lanceur ; '' pour toute autre source. */
 function chooseHintHtml(sid) {
@@ -586,7 +633,10 @@ function handHtml(sid, zone, z, item, cy, msg) {
   const busy = busyNow(),
     seen = handSeen(sid, z, item, cy),
     choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(zone)}" data-source="${esc(sid)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>${uploadOff() ? sheetGrey(uploadWhy()) : ''}`,
-    hint = chooseHintHtml(sid);
+    hint = chooseHintHtml(sid),
+    rename = seen ? renameOf(sid, z, item, cy) : '';
+  if (rename) return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="rename"><p class="f-warn" data-hand-rename>${esc(tt(TX.now.rename, { n: rename }))}</p>
+    <p class="d-zact d-zalt" data-hand-alt="${esc(sid)}">${choose(' class="d-link"', TX.up.chooseOther)}</p>${hint}${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`; // le lanceur refuse ce nom : le bouton est absent, le bandeau le dit (SOG-0370)
   if (!seen) return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="none"><p class="d-zact">${choose('', TX.up.choose)}</p>${hint}${msg ? uploadHtml(zone) + zoneMsgHtml(zone) : ''}</div>`;
   const g = gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb],
     off = busy || g.disabled,
@@ -621,13 +671,13 @@ function sourceHtml(id, zone, z, inCov, msg) {
     tone = ds === 'done' ? 'ok' : ds === 'failed' ? 'err' : !ds || ds === 'n/a' || ds === 'unavailable' ? 'muted' :
     'warn'; // la couleur du bord gauche du bloc : l'état de CETTE source
   return `<section class="d-src" data-sheet-source="${esc(id)}" data-src-tone="${tone}"${reg ? ` data-regime="${reg}"` : ''}><div class="d-srch"><h4>${esc(name)}</h4>${reg ? `<p class="f-muted d-regbadge" data-regime-line>${esc(tt(TX.cw.regime[reg]))}</p>` : ''}</div>
-    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) ? '' : handWhyHtml(id)}${reg === 'hand' ? inventoryHtml(id, item, cy, zone) : ''}${reg === 'hand' ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
+    ${inCov && !M.isComputed(reg) ? `<ul class="d-ticks d-cells d-cells1">${downloadTick(id, item, z)}</ul>` : ''}${inCov && M.isComputed(reg) ? computedHtml(name, item, z, loc) : ''}${M.isComputed(reg) ? '' : handWhyHtml(id)}${reg === 'hand' ? inventoryHtml(id, item, cy, zone, seenNamesOf(id, z, item, cy)) : ''}${reg === 'hand' ? handHtml(id, zone, z, item, cy, msg) : ''}</section>`;
 }
 /** Le geste « Mettre à jour ce pays » : le même chemin que le bouton du haut et celui d'un paquet, pour CE pays seul (il ne fait que ce qui manque : le téléchargement de ce qui n'est pas là, puis la construction du pays) ; la ligne dessous dit ce qu'il va faire ;
  *  gris, il écrit pourquoi (pas de lanceur, ce pays attend un fichier à la main ou la coche d'usage personnel, il est à jour ; l'opération en cours, la carte la dit déjà). `primary` : faux quand un fichier vu dans Téléchargements est le geste principal. */
 /** Ce qu'il faut faire MAINTENANT pour un pays, d'après l'état du lanceur : { k: 'fresh' | 'pick' | 'file' | 'tick' | 'update' } (une seule chose) ; null quand rien n'est dit (pas de lanceur, état non lu, geste grisé pour une autre raison). La phrase de tête de la fiche et le bouton « Mettre à jour ce pays » le lisent
  *  tous deux : ils ne peuvent pas se contredire (SOG-0318). `seenAny` : un fichier est vu dans Téléchargements pour une source à la main du pays. */
-function nowOf(id, seenAny) {
+function nowOf(id, seenAny, rename = '') {
   const gate = updateGate([id]),
     plan = S.status && statusKnown() ? M.downloadPlan(S.status, [id]) : null;
   if (gate.disabled || !plan) return null;
@@ -635,7 +685,7 @@ function nowOf(id, seenAny) {
     k: 'fresh'
   };
   if (plan.waiting.includes(id)) return {
-    k: seenAny ? 'pick' : 'file'
+    k: rename ? 'rename' : seenAny ? 'pick' : 'file'
   };
   if (plan.personal.includes(id)) return {
     k: 'tick'
@@ -645,9 +695,9 @@ function nowOf(id, seenAny) {
   };
 }
 /** La phrase de tête de la fiche d'un pays : UNE chose à faire maintenant (prendre le fichier vu, déposer le fichier attendu, cocher, mettre à jour, rien) ; '' sans lanceur ou sans état lu. */
-function nowHtml(id, seenAny) {
-  const n = nowOf(id, seenAny);
-  return n ? `<p class="d-now" data-sheet-now data-now="${n.k}"><b>${esc(tt(TX.now[n.k]))}</b></p>` : '';
+function nowHtml(id, seenAny, rename = '') {
+  const n = nowOf(id, seenAny, rename);
+  return n ? `<p class="d-now" data-sheet-now data-now="${n.k}"><b>${esc(tt(n.k === 'rename' ? TX.now.rename : n.k === 'pick' && byEdition(id) ? TX.now.pickEdition : TX.now[n.k], { n: rename }))}</b></p>` : '';
 }
 
 function updateBlockHtml(id, primary, seenAny = false) {
@@ -672,7 +722,7 @@ function updateBlockHtml(id, primary, seenAny = false) {
       l: [plan.fetch.includes(id) ? tt(T.doDl) : '', plan.build.includes(id) ? tt(T.doBuild) : ''].filter(Boolean).join(', ')
     });
   }
-  return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${primary ? ' class="primary"' : ''} data-act="sheet-update" data-zone="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(T.update))}</button></p>${line ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}" data-grey="${esc(why[0])}">${esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
+  return `<div class="d-upd" data-sheet-update><p class="d-verbs"><button type="button"${primary && !off ? ' class="primary"' : ''} data-act="sheet-update" data-zone="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(offCountry(id) ? id === 'nat' ? T.updateNat : T.updateZone : T.update))}</button></p>${line && !offCountry(id) ? `<p class="f-muted" data-sheet-update-plan>${esc(line)}</p>` : ''}${why ? `<p class="f-muted" data-sheet-update-reason="${esc(why[0])}" data-grey="${esc(why[0])}">${esc(why[1])}${tick ? ` <button type="button" class="d-link" data-act="zone-certify">${esc(tt(TX.toCertify))}</button>` : ''}</p>` : ''}</div>`;
 }
 /** Le téléchargement de ce pays qui vient d'échouer (la fin de « Mettre à jour » le dit) : ce que le site a répondu ; le fichier choisi à la main reste le chemin (la FAA : l'abonnement du cycle, UN fichier). '' sans échec. */
 function failedHtml(id) {
@@ -707,12 +757,26 @@ function addHtml(id, cy) {
 }
 /** « Retirer de ma couverture » au pied de la fiche d'un pays de la couverture : un lien, la question d'abord (ses fichiers ne sont jamais purgés). */
 function removeHtml(id) {
-  return `<p class="d-zact d-remove" data-sheet-remove><button type="button" class="d-link" data-act="remove-country" data-zone="${esc(id)}"${frozen() ? ' disabled' : ''}>${esc(tt(TX.lc.removeBtn))}</button>${frozen() ? sheetGrey('busy') : ''}</p>`;
+  return `<p class="d-zact d-remove" data-sheet-remove><button type="button" class="d-link" data-act="remove-country" data-zone="${esc(id)}"${frozen() ? ' disabled' : ''}>${esc(tt(offCountry(id) ? TX.lc.removeZone : TX.lc.removeBtn))}</button>${frozen() ? sheetGrey('busy') : ''}</p>`;
 }
 /** « Publier cette zone… » sur la fiche d'un pays construit et pas encore envoyé : ouvre le même plan, pour cette zone (le lanceur sait établir le plan) ; rien sinon. */
 function sheetPublishHtml(id, z) {
   if (!planKnown() || z?.publish?.state !== 'unpublished') return '';
   return `<p class="d-verbs" data-sheet-publish><button type="button" data-act="sheet-publish" data-zone="${esc(id)}"${publishGate().disabled ? ' disabled' : ''}>${esc(tt(TX.lc.sheetPublish))}</button>${publishGate().disabled ? ` <span class="f-muted" data-grey="${esc(publishGate().reason || '')}">${esc(publishReason(publishGate().reason))}</span>` : ''}</p>`;
+}
+/** Une source d'une zone hors pays : son nom et l'âge de ce qu'elle a lu (routes NAT : leur validité ; autre : la date de son fichier, ou « rien lu ») ; ni coche « téléchargé », ni inventaire (SOG-0370). */
+function offSourceHtml(sid, cy) {
+  const name = srcName(sid, cy),
+    at = cy.zv?.sources?.[sid]?.download?.at || cy.data?.items?.[sid]?.download?.at || '',
+    age = sid === 'nat' ? natAge() || tt(TX.cw.offUnread) : at ? tt(TX.cw.on, {
+      d: dateOf(at)
+    }) : tt(TX.cw.offUnread);
+  return `<section class="d-src" data-sheet-source="${esc(sid)}" data-off-source><div class="d-srch"><h4>${esc(name)}</h4></div><p class="f-muted" data-off-age>${esc(age)}</p></section>`;
+}
+/** « copie publiée du … » d'une zone hors pays : la date de ce que le dépôt des données porte (la publication), '' sans. */
+function offCopyHtml(id) {
+  const b = M.baseOf(S.d?.pub?.base, [id]);
+  return b.published && b.at ? `<p class="f-muted" data-off-copy>${esc(tt(TX.cw.offPublished, { d: dateOf(b.at) }))}</p>` : '';
 }
 /** La fiche d'un pays : son nom et son état ; les FAITS du pays (construit, publié : une seule fois, jamais sous chaque source) ; « Mettre à jour ce pays » ; la carte de l'opération en cours quand le geste a été refusé et la marche ; ses procédures ; ses sources avec leur « téléchargé »,
  *  l'inventaire de leurs fichiers et leurs gestes de fichier. Un « Fermer » en croix en large, « ← Retour » au téléphone (plein écran) ; '' sans pays ouvert. */
@@ -726,7 +790,8 @@ function sheetHtml() {
     null, // l'état du lanceur ; à défaut celui de la vue par pays
     name = nameOf(id),
     procs = S.cw.proc?.zones?.[id],
-    ids = M.sourcesOfZone(id, S.d.cat, S.status, cy.state === 'ready' ? cy.data : null),
+    off = inCov && offCountry(id), // une zone hors pays (Atlantique Nord) : fiche courte (SOG-0370)
+    ids = off ? offSources(id, cy) : M.sourcesOfZone(id, S.d.cat, S.status, cy.state === 'ready' ? cy.data : null),
     split = ids.map(s => {
       const item = cy.state === 'ready' ? cy.zv?.sources[s] || cy.data.items[s] || null : null;
       return {
@@ -742,25 +807,31 @@ function sheetHtml() {
     msgSrc = inCov && hands.length ? hands.includes(S.cw.hand.get(id)) ? S.cw.hand.get(id) : hands[0] :
     null, // la source du dernier geste de fichier garde l'avancement et le message
     seenAny = inCov && hands.some(s => handSeen(s, z, split.find(x => x.id === s)?.item, cy)),
+    rename = inCov ? hands.map(s => renameOf(s, z, split.find(x => x.id === s)?.item, cy)).find(Boolean) || '' :
+    '', // un fichier vu que la règle de nom refuse vraiment : le bandeau le dit, le bouton est absent
     op = cardAreaHtml('base', 'sheet')
     .trim(); // la carte de l'opération qui a refusé le geste de CETTE fiche ; la fiche ne montre que son pays (son fil), jamais le bilan d'une autre opération ; le fil, la carte et l'avancement de la dernière opération sont SOUS l'état, avant les sources (visibles sans parcourir les inventaires)
   const gp = packList().find(x => x.pack.zones.includes(id))?.pack,
     sub = [id.toUpperCase(), gp ? tt(TX.d2.subGroup, {
       g: gp.names[li()] || gp.names[0]
     }) : '', partsText(id)].filter(Boolean).join(' \u00b7 '),
-    facts = inCov ? [buildFact(id, z), publishFact(z)].filter(Boolean) : [],
+    facts = inCov && !off ? [buildFact(id, z), publishFact(z)].filter(Boolean) : [],
     tn = tone(id);
+  const offSt = off ? natStateWord() : null,
+    badgeTone = off && offSt.text ? offSt.tone : tn,
+    badgeText = off ? offSt.text || tt(TX.cw.offUnread) : inCov && z?.state === 'stale' && waitingFileOf(id) ? tt(TX.zst.waiting) : word(
+      tn);
   return `<section class="d-sheet" data-sheet="${esc(id)}" role="region" aria-label="${esc(tt(T.sheetLabel, { c: name }))}">
-    <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(tn)}" data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, tn) || ''}</b> ${esc(word(tn))}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
-    ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div><ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul></div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
-    ${inCov ? nowHtml(id, seenAny) : ''}
-    ${S.cw.proc?.state === 'ready' ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
+    <header class="d-sheeth"><button type="button" class="d-back" data-act="sheet-close">${esc(tt(T.back))}</button><div class="d-sheett"><h3 data-sheet-name>${esc(name)}</h3><p class="d-sheetsub f-muted" data-sheet-sub>${esc(sub)}</p></div><span class="d-sbadge" data-tone="${esc(badgeTone)}"${badgeText.length > 24 ? ' data-long' : ''} data-sheet-badge><b aria-hidden="true">${M.own(SIGN_OF, badgeTone) || ''}</b> ${esc(badgeText)}</span><button type="button" class="d-x" data-act="sheet-close" aria-label="${esc(tt(TX.cwb.close))}" title="${esc(tt(TX.cwb.close))}"><span aria-hidden="true">\u2715</span></button></header>
+    ${inCov ? `<div class="d-cells3"><div class="d-sheetst d-cell" data-sheet-state><span class="d-cl">${esc(tt(TX.d2.stateCell))}</span>${off ? `<span class="d-st" data-off-state>${esc(badgeText)}</span>` : zoneStateHtml(id) || `<span class="d-st">${esc(word(tn))}</span>`}</div>${off ? '' : `<ul class="d-ticks d-facts d-cells" data-sheet-facts>${facts.map(f => f.li).join('')}</ul>`}</div>${facts.some(f => f.note) ? `<div class="d-cellnotes" data-cell-notes>${facts.map(f => f.note).join('')}</div>` : ''}` : `<p data-sheet-out>${esc(tt(T.notInCoverage, { c: name }))}</p>`}
+    ${inCov && !off ? nowHtml(id, seenAny, rename) : ''}
+    ${S.cw.proc?.state === 'ready' && !off ? `<p class="f-muted" data-sheet-proc>${esc(procs ? tt(T.procYes, { s: procs.map(procName).join(', ') }) : tt(T.procNo))}</p>` : ''}
     ${noReader.length && inCov ? `<p class="f-warn" data-sheet-noreader>${esc(tt(T.noReader, { s: noReader.join(', ') }))}</p>` : ''}
     ${inCov ? '' : addHtml(id, cy)}
-    ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? bigHtml(id) : ''}${inCov ? failedHtml(id) : ''}${inCov && progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny) : ''}
-    <h4 class="d-sh">${esc(tt(T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
-    ${inCov ? sheetPublishHtml(id, z) : ''}
-    ${inCov && !progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny) : ''}
+    ${op ? `<div data-sheet-op>${op}</div>` : ''}${inCov ? threadHtml(id) : ''}${inCov ? bigHtml(id) : ''}${inCov ? failedHtml(id) : ''}${inCov && progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny && !rename) : ''}
+    <h4 class="d-sh">${esc(tt(off ? T.sourcesZone : T.sourcesTitle))}</h4>${ids.length ? `${avail.map(s => off ? offSourceHtml(s, cy) : sourceHtml(s, id, z, inCov, s === msgSrc)).join('')}${off ? offCopyHtml(id) : ''}${gone.length ? `<h4 data-unavailable-title>${esc(tt(T.unavailableTitle))}</h4>${gone.map(g => unavailableHtml(g.id, g.item, g.un)).join('')}` : ''}` : `<p class="f-muted" data-sheet-nosource>${esc(tt(T.noSources))}</p>`}
+    ${inCov && !off ? sheetPublishHtml(id, z) : ''}
+    ${inCov && !progressOn(id) ? updateBlockHtml(id, !seenAny, seenAny && !rename) : ''}
     ${inCov && !msgSrc ? `<div data-sheet-msg>${uploadHtml(id)}${zoneMsgHtml(id)}</div>` : ''}${inCov ? removeHtml(id) : ''}</section>`;
 }
 /** Le bloc de la base sous la barre d'état : la carte (et la fiche à sa droite quand un pays est ouvert, en large), puis « ce qui reste à faire ce mois-ci », puis les paquets. */
@@ -786,9 +857,18 @@ export function openCountry(el) {
   S.cw.opener = selectorOf(el, id);
   S.cw.sheet = id;
   wantCycle(id);
+  readNatFor(id);
   renderBuild();
   closeControl()?.focus({
     preventScroll: true
+  });
+}
+/** Une zone hors pays qui lit les routes NAT : la validité se lit à l'ouverture de sa fiche (rien demandé au réseau : aerodb.natState), puis la fiche se redessine (SOG-0370). */
+function readNatFor(id) {
+  if (id !== 'nat' || !S.d?.cov?.ids?.includes(id)) return;
+  const me = S;
+  Promise.resolve(natRead()).then(() => {
+    if (S === me && S.cw?.sheet === id) renderBuild();
   });
 }
 /** Le contrôle de fermeture visible de la fiche : la croix « Fermer » en large, « ← Retour » au téléphone (l'autre est masqué par la mise en page). */
@@ -801,6 +881,7 @@ export function openCountryById(id) {
   S.cw.opener = '';
   S.cw.sheet = id;
   wantCycle(id);
+  readNatFor(id);
 }
 /** Ferme la fiche et rend le focus à ce qui l'avait ouverte. */
 export function closeSheet() {
@@ -1229,7 +1310,9 @@ export const CW_STYLE = `
 [data-module="data"] .d-sheet{display:flex;flex-direction:column;padding:0 12px 12px}
 [data-module="data"] .d-sheetph{padding:14px;border-style:dashed;box-shadow:none;background:var(--d-soft);display:none}
 [data-module="data"] .d-sheetph p{margin:4px 0 0}
-[data-module="data"] .d-sheeth{display:flex;align-items:flex-start;gap:8px;padding:10px 0 6px}
+[data-module="data"] .d-sheeth{display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px;padding:10px 0 6px}
+[data-module="data"] .d-sheeth .d-x{order:1}
+[data-module="data"] .d-sbadge[data-long]{order:3;flex:1 0 100%;white-space:normal;line-height:1.25}
 [data-module="data"] .d-sheett{flex:1;min-width:0}
 [data-module="data"] .d-sheett h3{margin:0;font-size:1.3rem;line-height:1.2;overflow-wrap:anywhere}
 [data-module="data"] .d-sheetsub{margin:2px 0 0}

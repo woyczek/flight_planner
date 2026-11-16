@@ -215,6 +215,11 @@ export const PICKUP_DEST = {
   nats: 'data/sia/zones/gb/',
   lfv: 'data/sia/zones/se/' // SOG-0189 (4) : sans cette ligne, AIP_OFFLINE.zip était « bloqué » (zipSendable) et dit « nom de fichier à renommer » alors que son nom est permis
 };
+/** Les sources que le lanceur prend par leur CONTENU (un zip qui porte une ISO, l'ISO, le dossier extrait : NAV Portugal, SOG-0244) : leur nom de fichier n'a aucune règle, la prise ne reçoit pas leur zip (`zips` ne connaît que PICKUP_DEST : un zip de plus serait refusé, 400),
+ *  et « renommez… » ne les concerne jamais (SOG-0370 : le plan du Portugal était dit « bloqué » parce que `navpt` n'était pas dans PICKUP_DEST). */
+export const PICKUP_BY_CONTENT = Object.freeze(['navpt']);
+/** Les sources publiées par ÉDITIONS datées et non à chaque cycle AIRAC (tools/aero_cycles.py EDITION_SOURCES) : on y écrit « édition », jamais « cycle ». */
+export const EDITION_SOURCES = Object.freeze(['navpt']);
 /** Les fiches publiées de la compagnie : un seul verbe du jeu « aircraft », son propre panneau (aircraft/publish : plan à blanc, puis la copie). */
 export const SHEETS = {
   set: 'aircraft',

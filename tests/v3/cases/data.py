@@ -6591,7 +6591,7 @@ def l88(c):
     d1 = tk('sia', 'download')
     c.ok(d1[0] == 'yes' and _date_text(datetime.date(2026, 11, 2), lang) in d1[1] and 'AIRAC 2611' in d1[1], d1, 'SIA downloaded: ticked with the date and the edition the launcher gives')
     p1 = facts('publish')
-    c.ok(p1[0] == 'na' and norm(_trow('pubWaitBuild', lang, after='  zx: {')) in norm(p1[1]), p1, 'published (a fact of the country): — not yet possible, the country is not built (lot D1: the four signs)')
+    c.ok(p1[0] == 'todo' and norm(_trow('pubNo', lang, after='  cw: {')) in norm(p1[1]), p1, 'published (a fact of the country): the country IS built (05/10) and not sent: ○ to do, read from the publication — never « sans objet / pas construit » (SOG-0370)')
     o1 = tk('openaip', 'download')
     c.ok(o1[0] == 'todo' and norm(_trow('older-than-cycle', lang, after='    why: {')) in norm(o1[1]), o1, 'a file older than the cycle in force: a reason in words, not a tick')
     c.eq(c.count('[data-sheet] img'), 0, 'the launcher\'s label is escaped (no element, nothing runs)', what='escaped')
@@ -7989,10 +7989,11 @@ def _l102_cycle(world, labels):
     return answer
 
 
-def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs=(), setstate=None, world_tweak=None):
+def _l102_open(c, tweak=None, wrap=None, target='data', detail=True, extra_verbs=(), setstate=None, world_tweak=None, cover_more=()):
     """The Données screen of the capture: real outlines, real names, real packs, real catalogue; invented states."""
     labels = _l102_labels()
     geo, packs, cover = _l102_world()
+    cover = list(cover) + list(cover_more)   # SOG-0370: a zone that is no country (nat) can join the coverage
     cfg, _ = _fixture()
     cfg['realOutlines'] = True
     cfg['zones'] = [{'id': z, 'names': g['n'], 'frames': [], 'published': z in cover} for z, g in sorted(geo.items())]
@@ -8103,7 +8104,7 @@ def l102(c):
     c.eq(c.js("getComputedStyle(document.querySelector('[data-group-id=europe-south]')).borderTopColor === getComputedStyle(document.querySelector('[data-wmap] path[data-grp]')).stroke"), True, 'blue = the accent, as the border on the map', what='blue')
     t0 = c.js("(b => [getComputedStyle(b).borderLeftWidth, b.textContent.replace(/\\s+/g, ' ').trim()])(document.querySelector('[data-group-body] [data-zone=pt]'))")
     c.ok(t0[0] == '6px', t0, 'a tile has its state edge')
-    c.ok(norm(_trow('warn', lang, after='    word: {')) in norm(t0[1]), t0, 'and its state in words')
+    c.ok(norm(_trow('waitingShort', lang, after='  zst: {')) in norm(t0[1]), t0, 'and its state in words: Portugal waits for a file, the tile says the step in short (SOG-0370)')
     c.ok(c.count('[data-group-body] [data-has-proc]') >= 1 and D2('procShort') in norm(c.text('[data-group-body] [data-has-proc]')), 'proc', 'with the « proc. » badge where the country has procedures')
     # ---- 6. the sheet of Portugal: a card, sticky at the right (full screen on a phone)
     c.tap('[data-group-body] [data-zone=pt]')
@@ -8438,7 +8439,9 @@ def l110(c):
 def l111(c):
     lang = c.lang
     li = {'fr': 0, 'en': 1, 'de': 2, 'es': 3}[lang]
-    _l102_open(c)
+    def stale_pt(world):   # SOG-0370: a country that waits for a FILE is built (« édition précédente »); the long detail of this case is for a country to REBUILD
+        world['zs']['pt'] = {**_zst('stale', {'code': 'source-newer', 'source': 'navpt', 'cycle': '2026-11-26', 'built': '2026-10-05'}), 'builtAt': '2026-10-05T10:00:00Z', 'builtCycle': '2026-10-01', 'publish': {'state': 'unpublished', 'at': '2026-10-05T11:00:00Z'}}
+    _l102_open(c, world_tweak=stale_pt)
     c.tap('[data-group-id=europe-south] [data-act=grp-toggle]')
     c.until("document.querySelector('[data-group-id=europe-south]').dataset.open === 'true'", timeout=4000, what='the group opens')
     c.tap('[data-group-body] [data-zone=pt]')
@@ -9379,7 +9382,7 @@ def l132(c):
     c.until("!!document.querySelector('[data-sheet=pt] [data-sheet-source]')", timeout=10000, what='the sheet of Portugal')
     c.wait(800)
     head = c.js("(e => e ? [e.dataset.now, e.textContent.replace(/\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=pt] [data-sheet-now]'))")
-    c.eq([head[0], norm(head[1])] if head else None, ['pick', norm(N('pick'))], 'the head line says what to do now: take the file that is in Downloads', what='head line')
+    c.eq([head[0], norm(head[1])] if head else None, ['pick', norm(N('pickEdition'))], 'the head line says what to do now: take the newer edition that is in Downloads', what='head line')
     reg = c.js("document.querySelector('[data-sheet=pt] [data-sheet-source=navpt]')?.dataset.regime")
     c.eq(reg, 'hand', 'NAV Portugal is a hand-taken source on the sheet (its ISO is taken by hand), whatever the launcher calls its site reading', what='regime')
     c.eq(c.js("[...document.querySelectorAll('[data-sheet=pt] [data-sheet-source=navpt] [data-verb=pickup]')].map(b => b.disabled)"), [False], 'the gesture to take the file is there and live', what='pickup button')
@@ -9490,8 +9493,9 @@ def l137(c):
     c.wait(500)
     tick = norm(c.text('[data-sheet=pt] [data-sheet-source=navpt] .d-ticks'))
     day = c.js(f"import('/modules/data/model.js').then(M => M.dateText('2026-11-11', '{lang}'))")
-    c.ok(norm(T('dlWaiting')) in tick, tick, 'it says the file that waits in Downloads')
-    c.ok(norm(day) in tick, (day, tick), 'and the edition already taken, with its date')
+    pre, post = T('dlTakenEdition').split('{d}')
+    c.ok(norm(pre) in tick and norm(post) in tick, tick, 'it says, in ONE phrase (SOG-0370), the edition already taken and that a newer one waits in Downloads')
+    c.ok(norm(day) in tick, (day, tick), 'with the date of the edition already taken')
     c.shot(f'L137_{c.width}_{lang}_delivered.png')
     c.check_errors()
 
@@ -9578,4 +9582,119 @@ def l139(c):
     c.until("!!document.querySelector('[data-sheet=gb] [data-sheet-big]')", timeout=15000, what='the bounded line')
     n = c.js("[...document.querySelectorAll('[data-sheet=gb] [data-sheet-big]')].map(e => e.textContent.length)")
     c.ok(len(n) == 1 and n[0] <= 400, n, 'a hostile launcher: only the readable entry is said, bounded to 400 characters')
+    c.check_errors()
+
+
+@case('L140', 'Données: the plan of the pickup for NAV Portugal (taken by CONTENT) is READY with no zip to send, and « renommez… » is said only for a name the launcher’s rule really refuses (SOG-0370)',
+      'L', tags=('data',), phone=False,
+      rule='SOG-0370: `navpt` was not in PICKUP_DEST, so every Portugal entry of the plan was « blocked » and told « renommez AIP Portugal 2611 sans espace ni accent » for a name the rule allows; the launcher takes NAV Portugal by content and its check_pickup refuses a zip for a source outside PICKUP (400): the entry is ready, its zone is run, and no zip is sent for it')
+def l140(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    r = c.js(r"""async () => { const M = await import('/modules/data/model.js');
+      const pt = { zone: 'pt', source: 'navpt', zip: 'AIP Portugal 2611', size: 123456 };
+      const a = M.pickupSplit([pt]);
+      const b = M.pickupSplit([pt, { zone: 'fr', source: 'sia', zip: 'export_é.zip', size: 5 }]);
+      const e = M.pickupSplit([{ zone: 'pt', source: 'navpt', zip: 'EAIP ISO (1).zip', size: 0 }, { zone: 'se', source: 'lfv', zip: 'AIP_OFFLINE.zip', size: 9 }]);
+      const bad = M.pickupSplit([{ zone: '../x', source: 'navpt', zip: 'a', size: 1 }, { zone: 'pt', source: 'toString', zip: 'a.zip', size: 1 }]);
+      return { a: [a.ready.map(t => t.zone), a.blocked.length, a.zips, a.zones], b: [b.ready.map(t => t.zone), b.blocked.map(t => t.zone), b.zips, b.zones],
+        e: [e.ready.length, e.blocked.length, e.zips, e.zones], bad: [bad.ready.length, bad.blocked.length],
+        names: ['AIP Portugal 2611', 'export_é.zip', 'a.zip', 'x'.repeat(151), null].map(n => M.pickupNameOk ? M.pickupNameOk(n) : null) } }""")
+    c.eq(r['a'], [['pt'], 0, {}, ['pt']], 'the Portugal entry is ready, nothing blocked, NO zip for it (the launcher refuses one for a source outside its table), its zone is run', what='portugal')
+    c.eq(r['b'], [['pt'], ['fr'], {}, ['pt']], 'a name the rule refuses (accent) blocks its OWN zone only', what='mixed')
+    c.eq(r['e'], [2, 0, {'lfv': {'name': 'AIP_OFFLINE.zip', 'size': 9}}, ['pt', 'se']], 'the sources of sets keep their zip; the one taken by content has none', what='lfv')
+    c.eq(r['bad'], [0, 2], 'an unsafe zone, or a source that is no source (toString), is never ready', what='hostile')
+    c.eq(r['names'], [True, False, True, False, False], 'the name rule of the launcher: letters, digits, space, dot, parentheses, plus, minus — 150 at most', what='name rule')
+    c.check_errors()
+
+
+def _l141_wrap(answer):
+    """The launcher of the user on 16 Nov: the ISO of the next edition of NAV Portugal waits in Downloads under a name that is not the catalogue's (« AIP Portugal 2611 »)."""
+    def go(args):
+        res = answer(args)
+        for it in list(res.get('items') or []) + list((res.get('zoneView') or {}).get('sources') or []):
+            if it.get('id') == 'navpt':
+                it['hand'] = {**(it.get('hand') or {}), 'inDownloads': ['AIP Portugal 2611']}
+        return res
+    return go
+
+
+def _l141_world(world):
+    world['zs']['pt'] = {**_zst('stale', {'code': 'pickup-waiting', 'source': 'navpt', 'cycle': '2026-11-26', 'zip': 'AIP Portugal 2611'}, buildable=False), 'builtAt': '2026-11-12T10:00:00Z', 'builtCycle': '2026-10-29',
+                         'publish': {'state': 'published', 'at': '2026-11-12T11:00:00Z'}, 'download': {'done': False, 'sources': {'navpt': {'present': True, 'at': '2026-11-11T08:00:00Z'}}}}
+
+
+@case('L141', 'Données: the sheet of Portugal says ONE step, the same everywhere (SOG-0370, the user: « toujours des infos contradictoires… reprendre toutes les infos de la fiche portugal ») — a newer edition waits in Downloads: the badge, STATE and the line say « Un fichier à prendre »; BUILT is « ✓ … édition précédente », PUBLISHED reads the real publication, the file is « 1 vu », the button takes it',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0370: the badge « à faire », STATE « À reconstruire » and BUILT « (à faire) » were three copies of one state whose real reason is a file waiting (not buildable); PUBLISHED « sans objet / pas construit » ignored the publication; « manquant » compared the exact catalogue name when « un fichier attend » only looked at presence; « cycle 2611 » was written for a source published by editions')
+def l141(c):
+    lang = c.lang
+    Z = lambda k: _trow(k, lang, after='  zst: {')
+    CW = lambda k: _trow(k, lang, after='  cw: {')
+    N = lambda k: _trow(k, lang, after='  now: {')
+    _l102_open(c, wrap=_l141_wrap, world_tweak=_l141_world)
+    c.tap('[data-group-id=europe-south] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=pt]')
+    c.until("!!document.querySelector('[data-sheet=pt] [data-sheet-source=navpt] [data-file-state]') && !document.querySelector('[data-sheet=pt] [data-inventory-state]')", timeout=12000, what='the sheet of Portugal with its inventory, the view of the country read')
+    c.wait(500)
+    sh = lambda sel: norm(c.text(f'[data-sheet=pt] {sel}'))
+    step = norm(Z('waiting'))
+    stc = norm(c.js("(e => { const k = e.cloneNode(true); k.querySelectorAll('[data-why-hint]').forEach(x => x.remove()); return k.textContent })(document.querySelector('[data-sheet=pt] [data-sheet-state] .d-st'))"))
+    c.eq([sh('[data-sheet-badge]').lstrip('! '), stc], [step, step], 'the badge and the STATE cell name the SAME step (a file to take), not « à faire » and « À reconstruire »', what='one step')
+    c.eq(c.attr('[data-sheet=pt] [data-sheet-now]', 'data-now'), 'pick', 'and the line says to take it', what='line')
+    c.eq(sh('[data-sheet-now]'), norm(N('pickEdition')), 'in one sentence about the NEWER EDITION', what='sentence')
+    b = c.js("(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=pt] [data-sheet-facts] [data-tick=build]'))")
+    c.ok(b and b[0] == 'yes' and norm(CW('builtPrevEdition').split('{d}')[1]) in norm(b[1]) and '12' in b[1] and '11' in b[1], b, 'BUILT: ✓ the 12/11 · previous edition (the country IS built)')
+    p = c.js("(e => e ? [e.dataset.ok, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-sheet=pt] [data-sheet-facts] [data-tick=publish]'))")
+    c.ok(p and p[0] == 'yes', p, 'PUBLISHED reads the real publication (✓), never « sans objet » for a country that is published')
+    c.eq(c.count('[data-sheet=pt] [data-cell-notes]'), 0, 'no second line that says it again, no « cycle » for a source published by editions', what='no notes')
+    dl = sh('[data-sheet-source=navpt] .d-cells1 li')
+    pre, post = CW('dlTakenEdition').split('{d}')
+    c.ok(norm(pre) in dl and norm(post) in dl, dl, 'DOWNLOADED: « édition prise le … · une plus récente attend dans Téléchargements »')
+    inv = c.js("[...document.querySelectorAll('[data-sheet=pt] [data-sheet-source=navpt] [data-file-state]')].map(e => [e.dataset.fileState, e.textContent.replace(/\\s+/g, ' ').trim()])")
+    c.ok(len(inv) == 1 and inv[0][0] == 'seen' and 'AIP Portugal 2611' in inv[0][1] and norm(CW('seenName').split('{n}')[0]) in norm(inv[0][1]), inv, 'the file is « vu : AIP Portugal 2611 », not « manquant »: seen = a file is there, whatever its name')
+    cnt = sh('[data-inventory-count]')
+    c.eq(cnt, norm(_trow('invSeen', lang, after='    invSeen:').replace('{n}', '1')), 'the heading counts « 1 vu » and writes no « · 0 manque »: a zero is not written', what='count')
+    c.eq(c.text('[data-sheet=pt] [data-sheet-source=navpt] .d-cells1 .d-tkw').strip('() '), norm(_trow('twTake', lang, after='  zx: {')), 'the DOWNLOADED cell of a source whose file is seen says « (à prendre) », not « (à faire) »', what='take word')
+    tile = norm(c.text('[data-group-body] [data-zone=pt] .d-gw'))
+    c.ok(norm(Z('waitingShort')) in tile, tile, 'the tile of the country in its group says the step in short: « un fichier à prendre »')
+    c.eq([c.count('[data-sheet=pt] [data-file-state=missing]'), c.count('[data-sheet=pt] [data-hand-rename]'), c.js("[...document.querySelectorAll('[data-sheet=pt] [data-sheet-source=navpt] [data-verb=pickup]')].map(b => b.disabled)")], [0, 0, [False]], 'no « manquant », no « renommez », and the button to take the file is live', what='button')
+    c.js("document.querySelector('[data-sheet=pt]').scrollIntoView({ block: 'start' })")
+    c.shot(f'L141_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+@case('L142', 'Données: the sheet of an ocean zone (Atlantique Nord) is short and honest (SOG-0370) — « zone » not « pays », its sources listed (the NAT tracks), the age of what is read, no BUILT / PUBLISHED, never « à jour » without a state, an inert button is never the primary one',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='SOG-0370: the sheet of the North Atlantic said « ✓ à jour » (from the publication alone) with « (sans objet) · non lu », « Aucune source de fichier n’est connue pour ce pays » (the NAT source sits in the weather group), and a primary « Mettre à jour ce pays » that was grey')
+def l142(c):
+    lang = c.lang
+    CWB = lambda k: _trow(k, lang, after='  cwb: {')
+    CW = lambda k: _trow(k, lang, after='  cw: {')
+    NAT = lambda k: _trow(k, lang, after='    nat: {')
+    valid = {'present': True, 'count': 17, 'from': '2026-11-16T07:00:00Z', 'validUntil': '2026-11-16T19:00:00Z', 'expired': False, 'current': 12}
+
+    def tweak(cfg):
+        cfg['packs']['regions'].append({'id': 'oceans', 'names': ['Océans', 'Oceans', 'Ozeane', 'Océanos'], 'zones': ['nat']})
+        cfg['nat'] = {'state': valid}
+    _l102_open(c, tweak=tweak, cover_more=('nat',), world_tweak=lambda w: w['zs'].pop('nat', None))   # the launcher says nothing of the zone
+    c.tap('[data-group-id=oceans] [data-act=grp-toggle]')
+    c.tap('[data-group-body] [data-zone=nat]')
+    c.until("!!document.querySelector('[data-sheet=nat] [data-sheet-source=nat] [data-off-age]')", timeout=12000, what='the sheet of the zone with its NAT source')
+    c.until("!!document.querySelector('[data-sheet=nat] [data-off-age]') && !/…|\\.\\.\\./.test(document.querySelector('[data-sheet=nat] [data-off-age]').textContent)", timeout=8000, what='the NAT validity is read')
+    sh = lambda sel: norm(c.text(f'[data-sheet=nat] {sel}'))
+    c.eq([c.count('[data-sheet=nat] [data-sheet-facts]'), c.count('[data-sheet=nat] [data-tick]'), c.count('[data-sheet=nat] [data-cell-notes]')], [0, 0, 0], 'no BUILT and no PUBLISHED on a zone that is no country', what='no cells')
+    c.eq(sh('[data-sheet-source=nat] [data-off-age]'), norm(NAT('valid').replace('{d}', f"{_date_text(datetime.date(2026, 11, 16), lang)} 19:00Z") + ' · ' + NAT('count').replace('{n}', '17')), 'the NAT source says the age of what is read: valid until, number of tracks', what='age')
+    c.eq(c.count('[data-sheet=nat] [data-sheet-nosource]'), 0, 'the sources are listed (the sheet no longer says « Aucune source… »)', what='sources')
+    c.eq(sh('h4.d-sh'), norm(CW('sourcesZone')), 'and the heading says « zone »', what='heading')
+    upd = c.js("(b => b ? [b.textContent.replace(/\\s+/g, ' ').trim(), b.disabled, b.classList.contains('primary')] : null)(document.querySelector('[data-sheet=nat] [data-act=sheet-update]'))")
+    c.ok(upd and norm(upd[0]) == norm(CWB('updateNat')) and not (upd[1] and upd[2]), upd, 'the button is named after what it does: « Lire les routes NAT du jour »; and a button that is inert is never the primary one')
+    c.eq(c.count('[data-sheet=nat] [data-sheet-update-plan]'), 0, 'and there is no « Ce que fait ce bouton » line under it', what='no plan line')
+    pre, post = CW('offRoutes').split('{d}')[0], CW('offRoutes').split('{t}')[0].split('{d}')[1]
+    st = sh('[data-off-state]')
+    c.ok(norm(pre) in st and norm(post) in st and '19:00Z' in st, st, 'the STATE says what the zone reads: « routes du 16/11, valides jusqu’à 19:00Z », never « état non lu »')
+    c.eq([sh('[data-sheet-badge]').lstrip('✓!? '), c.attr('[data-sheet=nat] [data-sheet-badge]', 'data-tone')], [st, 'ok'], 'the badge says the same, in the tone of what is read', what='badge')
+    c.ok(norm(c.text('[data-group-id=oceans] .d-gcount')) == '1 ' + norm(_trow('zone', lang, after='    zone: [')), c.text('[data-group-id=oceans] .d-gcount'), 'the group counts « 1 zone », not « 1 pays »')
+    c.eq(sh('[data-sheet-remove] button'), norm(_trow('removeZone', lang, after='    removeBtn:')), '« Retirer cette zone »', what='remove')
+    c.js("document.querySelector('[data-sheet=nat]').scrollIntoView({ block: 'start' })")
+    c.shot(f'L142_{c.width}_{lang}.png')
     c.check_errors()
