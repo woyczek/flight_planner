@@ -342,7 +342,7 @@ def extract_pdf_text(path):
         proc = subprocess.run([exe, "-layout", path, "-"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return proc.stdout.decode("utf-8", "replace")
 
-    raise RuntimeError("Lecture PDF impossible. Installe pypdf: python -m pip install pypdf")
+    raise RuntimeError("Lecture PDF impossible : pypdf manque. Lance installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), a la racine de la suite.")
 
 
 def parse_icao_part2(text):

@@ -11,11 +11,8 @@ Everything it produces is **extracted from the VAC, to be checked**: never a pub
 
 ## Dependency
 
-Python 3.10 or later and **`pypdf`**, an optional dependency of this folder only (`requirements-vfr.txt`):
-
-```
-python -m pip install -r tools/report-vfr/requirements-vfr.txt
-```
+Python 3.10 or later and **`pypdf`**, an optional dependency of this folder only. Its single bound is in `tools/requirements-optional.txt` (group `pdf`); it is installed by the script at the root of the suite, run by you
+(never by the launcher): `installer_bibliotheques.cmd` on Windows, `sh installer_bibliotheques.sh` on macOS / Linux. `requirements-vfr.txt` no longer asks for anything.
 
 Nothing in the app or the launcher imports it (the launcher and the other tools keep to the standard library); without
 it, the scripts stop with a clear message.

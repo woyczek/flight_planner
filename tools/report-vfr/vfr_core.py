@@ -192,7 +192,7 @@ def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calcula
     try:
         from pypdf import PdfReader
     except ImportError:
-        raise SystemExit('pypdf manque : python -m pip install -r requirements-vfr.txt (dépendance facultative de tools/report-vfr ; voir README.md).')
+        raise SystemExit('pypdf manque : lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite (dépendance facultative de tools/report-vfr ; voir README.md).')
     source_dir = Path(source_dir)
     patches = {}
     if interpretations_dir:

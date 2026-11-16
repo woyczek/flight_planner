@@ -10715,3 +10715,93 @@ def k284(c):
     c.eq(bad, [], 'no string of the launcher, of the PDF guard or of the builders asks to run pip: they name the script', what='no pip text')
     docs = {p: (ROOT / p).read_text(encoding='utf-8') for p in ('docs/INSTALL.md', 'docs/MANUEL_ADMINISTRATEUR.md', 'docs/en/MANUEL_ADMINISTRATEUR.md', 'docs/de/MANUEL_ADMINISTRATEUR.md', 'docs/es/MANUEL_ADMINISTRATEUR.md')}
     c.eq([p for p, t in docs.items() if 'installer_bibliotheques' not in t], [], 'INSTALL.md and the administrator\'s manual in four languages name the script', what='docs')
+
+
+@case('K285', 'French aircraft registry in the private data repository (SOG-0341, Q-0060: yes): the launcher writes registry/fr_immat.json when the export is taken up — five columns, REBUILT row by row from the derived file (nothing of an owner, nothing but the five columns, the maker shared by fewer than 10 aircraft recounted and left empty), only when data/ is a git repository and no merge waits; it goes out only at « Synchroniser » (a gesture), and two workstations\' versions resolve by the date of the export',
+      'K', static=True,
+      rule='SOG-0341 (the user, 16 Nov 2026, Q-0060 « oui »: the reduced file of five fields goes to the private repository of the group so that the phone has it; the rule « nothing published » of SOG-0270 is lifted for these five fields only; the operator is neither published nor kept, Q-0056). The licence of the export is NOT confirmed (public by law, no licence of reuse): it is the user\'s decision, written in DECISIONS. Sécurisation\'s conditions on a file that goes to a shared repository: the published file is REBUILT from the local derived file (exactly the five columns, bounded and cleaned cells, a registration of the expected form, a type present; never copied byte for byte, so that a doctored local file carries nothing else), the k-anonymity of the maker recounted at the boundary (not trusted from the previous step), refusals say a code and never a content, nothing is written into data/ when a merge waits (as every write of the launcher), nothing when data/ is not a git repository; the file is in the pool but only a gesture sends it (GESTURE_ONLY: a background pass never commits 3 MB alone); when two workstations took the export, the most recent date wins, no copy (a whole table is replaced).')
+def k285(c):
+    import json
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import base_upload as BU
+    import data_sync as DS
+    import registry_fr as RF
+    canary = 'CANARYDUPONT'
+    head = 'IMMATRICULATION;CONSTRUCTEUR;MODELE;NUMERO_SERIE;AERODROME_ATTACHE;PROPRIETAIRE;ADRESSE_PROPRIETAIRE;EXPLOITANT\n'
+    big = ''.join(f'F-B{chr(65 + i // 26)}{chr(65 + i % 26)}{chr(65 + i % 7)};CESSNA;172 N;{1000 + i};PARIS;{canary} {i};{canary} RUE;{canary} OPERATOR\n' for i in range(12))      # 12 aircraft of ONE maker: kept
+    few = f'F-GAAA;AMATEUR {canary} JEAN;RV-7;9;TOUSSUS;{canary};{canary};{canary}\n'                     # one aircraft of a maker (a person): left empty
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        data = td / 'data'
+        (td / 'export.csv').write_text('﻿' + head + big + few, encoding='utf-8')
+        local = data / 'local' / 'registry'
+        res = RF.derive(str(td / 'export.csv'), str(local), today=1794000000)
+        # (1) publish: rebuilt, five columns, the maker recounted
+        out = RF.publish(str(local), str(data))
+        path = data / 'registry' / 'fr_immat.json'
+        doc = json.loads(path.read_text(encoding='utf-8'))
+        text = path.read_text(encoding='utf-8')
+        c.eq((out['published'], out['rows'], sorted(doc), doc['columns'], {len(r) for r in doc['rows']}, doc['date'], doc['source']),
+             (True, 13, ['columns', 'date', 'rows', 'schema', 'source'], list(RF.WHITELIST), {5}, res['date'], RF.CREDIT), 'the published file has the five columns and no other key; one row per aircraft; the date of the export; the credit', what='published')
+        c.eq((canary in text, 'OPERATOR' in text, 'EXPLOITANT' in text, 'PROPRIETAIRE' in text, [r[1] for r in doc['rows'] if r[0] == 'F-GAAA']), (False, False, False, False, ['']),
+             'no owner, no operator, no address, no header of a third party; the maker shared by fewer than 10 aircraft (a person who built his own) is EMPTY', what='nothing of a third party')
+        c.eq(sorted(p.name for p in (data / 'registry').iterdir()), ['fr_immat.json'], 'a single file, no temporary file left', what='one file')
+        # (2) a doctored local file carries nothing else: rebuilt, not copied
+        d = json.loads((local / 'fr_immat.json').read_text(encoding='utf-8'))
+        d['owner'] = canary
+        d['rows'] += [['F-ZZZZ', 'X', 'TYPE', '1', 'LFPT', canary], ['bad reg', 'X', 'TYPE', '1', 'LFPT'], ['F-ZZZY', 'X', '', '1', 'LFPT'], ['F-ZZZX', 'X', 'TYPE', 1, 'LFPT'], 'F-ZZZW', ['F-ZZZV', 'M' * 500, 'T' * 500, '1', 'LFPT\x00\x1f']]
+        (local / 'fr_immat.json').write_text(json.dumps(d), encoding='utf-8')
+        out2 = RF.publish(str(local), str(data))
+        doc2 = json.loads((data / 'registry' / 'fr_immat.json').read_text(encoding='utf-8'))
+        last = doc2['rows'][-1]
+        c.eq((out2['rows'], canary in (data / 'registry' / 'fr_immat.json').read_text(encoding='utf-8'), 'owner' in doc2, [r[0] for r in doc2['rows'] if r[0].startswith('F-Z')], len(last[2]), '\x00' in last[4]),
+             (14, False, False, ['F-ZZZV'], RF.MAX_FIELD, False), 'a doctored local file: the extra key, the sixth cell, a bad registration, a missing type, a non-text cell and a non-list row are dropped; long cells are bounded, control characters removed', what='rebuilt')
+        c.eq(last[1], '', 'the maker of a doctored row (one aircraft) is recounted at the boundary and left empty (not trusted from the previous step)', what='recount')
+        # (3) refusals say a code, never a content, and write nothing
+        before = (data / 'registry' / 'fr_immat.json').read_bytes()
+        codes = []
+        for label, content in (('missing', None), ('json', '{nope'), ('columns', json.dumps({'columns': ['A'], 'rows': []})), ('empty', json.dumps({'columns': list(RF.WHITELIST), 'rows': []})), ('rows type', json.dumps({'columns': list(RF.WHITELIST), 'rows': 'x'}))):
+            (local / 'fr_immat.json').unlink(missing_ok=True)
+            if content is not None:
+                (local / 'fr_immat.json').write_text(content, encoding='utf-8')
+            try:
+                RF.publish(str(local), str(data))
+                codes.append((label, None))
+            except RF.RegistryError as e:
+                codes.append((label, e.code, canary in str(e)))
+        c.eq(codes, [('missing', 'read', False), ('json', 'read', False), ('columns', 'headers', False), ('empty', 'empty', False), ('rows type', 'headers', False)], 'a local file that is missing, not JSON, with other columns, empty or malformed: refused with a CODE, nothing written', what='refusals')
+        c.eq((data / 'registry' / 'fr_immat.json').read_bytes(), before, 'a refusal leaves the published file as it was', what='untouched')
+        # (4) the gates of the launcher: not a repository, a merge waiting, then a repository
+        (local / 'fr_immat.json').write_text(json.dumps(d), encoding='utf-8')
+        data2 = td / 'data2'
+        (data2 / 'local' / 'registry').mkdir(parents=True)
+        (data2 / 'local' / 'registry' / 'fr_immat.json').write_text(json.dumps(d), encoding='utf-8')
+        c.eq((BU._publish_registry(str(data2)), (data2 / 'registry').exists()), ({'published': False, 'why': 'no-repo'}, False), 'data/ is not a git repository: nothing to share, nothing written', what='no repo')
+        if DS.git_exe():
+            subprocess.run(DS.git_cmd('init', '-q', str(data2)), capture_output=True, env=DS.git_env(), timeout=60)
+            (data2 / '.git' / 'MERGE_HEAD').write_text('0' * 40 + '\n', encoding='utf-8')
+            c.eq((BU._publish_registry(str(data2)), (data2 / 'registry').exists()), ({'published': False, 'why': 'merge-pending'}, False), 'a merge waits in data/: nothing is written (as every write of the launcher)', what='merge pending')
+            (data2 / '.git' / 'MERGE_HEAD').unlink()
+            got = BU._publish_registry(str(data2))
+            c.eq((got['published'], (data2 / 'registry' / 'fr_immat.json').is_file()), (True, True), 'in a git repository, with no merge waiting: published', what='repo')
+        # (5) the synchronisation: in the pool, a gesture only, the most recent export wins
+        c.eq(('registry' in DS.POOL, 'registry/' in DS.GESTURE_ONLY, DS.in_pool('registry/fr_immat.json'), DS.in_pool('registry/_conflits/x.json')), (True, True, True, False),
+             'registry is in the pool and only a gesture (« Synchroniser ») sends it: a background pass never commits it alone', what='pool')
+        mk = lambda date, rows: json.dumps({'schema': 1, 'source': RF.CREDIT, 'date': date, 'columns': list(RF.WHITELIST), 'rows': rows}).encode('utf-8')
+        old, new = mk('2026-11-10', [['F-AAAA', '', 'T', '1', '']]), mk('2026-11-16', [['F-BBBB', '', 'T', '1', '']])
+        win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: old, 3: new})
+        c.eq((win, lose), (new, None), 'two versions: the export with the most recent date wins (theirs here), no conflict copy (a whole table is replaced)', what='merge theirs')
+        win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: new, 3: old})
+        c.eq((win, lose), (new, None), 'and ours when ours is the more recent', what='merge ours')
+        win, info, lose, side = DS.merge_raw('registry/fr_immat.json', {1: old, 2: old, 3: old})
+        c.eq(lose, None, 'the same date: no copy either', what='merge same')
+    # the old pin of tools/report-vfr is gone: one bound only, no pip command in the texts that sent to it
+    req = (ROOT / 'tools' / 'report-vfr' / 'requirements-vfr.txt').read_text(encoding='utf-8')
+    texts = {n: (ROOT / 'tools' / 'report-vfr' / n).read_text(encoding='utf-8') for n in ('audit_vac.py', 'vfr_core.py', 'MODE-D-EMPLOI.md', 'README.md')}
+    texts['AircraftDB/update_aircraft_db.py'] = (ROOT / 'AircraftDB' / 'update_aircraft_db.py').read_text(encoding='utf-8')
+    c.eq(([x for x in req.splitlines() if x.strip() and not x.lstrip().startswith('#')], [n for n, t in texts.items() if 'pip install' in t or '-m pip' in t], [n for n, t in texts.items() if 'installer_bibliotheques' not in t]), ([], [], []),
+         'tools/report-vfr/requirements-vfr.txt asks for nothing (its pin pypdf==6.10.0 was below the minimum and would have lowered pypdf); the texts of report-vfr and of update_aircraft_db.py name the script and carry no pip command', what='report-vfr pin')

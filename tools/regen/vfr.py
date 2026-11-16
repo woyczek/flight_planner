@@ -208,7 +208,7 @@ def build(job, args, ctx):
     data, cycle = ctx['data'], args['cycle']
     view = _View(job, cycle)
     try:
-        import pypdf  # noqa: F401  (dépendance facultative de tools/report-vfr : requirements-vfr.txt)
+        import pypdf  # noqa: F401  (dépendance facultative de tools/report-vfr : installée par installer_bibliotheques.cmd ou .sh, SOG-0376)
     except ImportError:
         view.set(state='failed', error='no-pypdf')
         import pdf_guard      # le texte FIXE du remède (SOG-0376) : le nom du script, jamais une commande pip à recopier

@@ -1,1 +1,3 @@
-pypdf==6.10.0
+# Plus aucune borne écrite ici (SOG-0376) : pypdf n'a qu'UNE borne, dans tools/requirements-optional.txt (groupe « pdf »), que lit le script
+# installer_bibliotheques.cmd (Windows) / installer_bibliotheques.sh (macOS, Linux), à la racine de la suite. Ce fichier ne demande plus rien :
+# l'ancienne ligne « pypdf==6.10.0 » était SOUS le minimum de Sécurisation (6.21.4) et aurait fait descendre la version.

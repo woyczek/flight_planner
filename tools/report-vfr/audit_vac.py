@@ -2,7 +2,7 @@
 
 Usage: python audit_vac.py --source ".../Charts/VAC/VAC" --output audit.json
        [--text-dir cache] [--previous ancien-audit.json]
-Prérequis: pypdf. Ne modifie jamais les sources.
+Prérequis: pypdf (installer_bibliotheques.cmd ou .sh, à la racine de la suite). Ne modifie jamais les sources.
 """
 import argparse
 import hashlib
@@ -13,7 +13,7 @@ from pathlib import Path
 try:
     from pypdf import PdfReader
 except ImportError:
-    raise SystemExit('pypdf manque : python -m pip install -r requirements-vfr.txt (dépendance facultative de tools/report-vfr ; voir README.md).')
+    raise SystemExit('pypdf manque : lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite (dépendance facultative de tools/report-vfr ; voir README.md).')
 
 SIGNALS = {
     "reporting_points": r"points?\s+de\s+(?:compte[ -]?rendu|report)|reporting\s+points?",

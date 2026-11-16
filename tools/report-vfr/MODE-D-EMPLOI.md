@@ -5,7 +5,7 @@ Le dossier installé est `E:\DEFA\tools\report-vfr`. Les sources aéronautiques 
 ## Démarrage
 
 1. Installer Python 3.10 ou plus récent si nécessaire.
-2. Depuis ce dossier : `python -m pip install -r requirements-vfr.txt`.
+2. Installer pypdf par le script de la suite : `installer_bibliotheques.cmd` (Windows) ou `sh installer_bibliotheques.sh` (macOS / Linux), à la racine de la suite (jamais une commande pip à recopier).
 3. Ouvrir `affichage-vfr.html` et sélectionner **data\vfr-compiled.json**.
 4. Choisir un aérodrome puis une route. La sélection cadre sa géométrie et affiche ses conditions et ses sources.
 
