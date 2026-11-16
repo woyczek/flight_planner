@@ -3753,10 +3753,10 @@
     "de": "Installation: optionale Python-Bibliotheken werden per Skript installiert, und der Bildschirm sagt, welche fehlen",
     "es": "Instalación: las bibliotecas opcionales de Python se instalan con un script, y la pantalla dice cuáles faltan"
    },
-   "test": "Relance le lanceur, puis ouvre Maintenance › Données : sous la ligne du cycle, une ligne ambre doit dire « Lecture des PDF : pypdf 6.21.3, il faut 6.21.4 au moins — lancez installer_bibliotheques.cmd, dans le dossier de la suite, puis relancez le lanceur ». Ferme le lanceur. Dans E:\\DEFA, double-clique « installer_bibliotheques.cmd » : il dit quel Python il utilise, ce qu'il va installer et d'où ; attendu chez toi : pypdf et Pillow à mettre à niveau, pdfplumber et pdfminer.six à installer, l'OCR « rien à faire ». Réponds « o » à la question des PDF. À la fin il relit les versions : pypdf 6.21.4 au moins. S'il échoue, copie-moi ses dernières lignes (ton Python est le 3.14 : une bibliothèque p",
+   "test": "RELANCE LE LANCEUR. Ouvre Maintenance › Données : la ligne ambre « Lecture des PDF : … » a DISPARU (tes bibliothèques sont bonnes ; un état bon se tait). Puis essaie SOG-0374 : Carburant, un vol au départ d'EGLL, Procédures, pli « Source et cartes », « Lire les départs dans le paquet du Royaume-Uni ». Si tu relances installer_bibliotheques.cmd, il dit « rien à faire », le dossier des commandes, et qu'il manque au PATH — ce n'est pas une erreur.",
    "since": "2026-11-16",
    "state": "todo",
-   "delivered": "2026-11-16T14:51:53Z"
+   "delivered": "2026-11-16T15:54:28Z"
   },
   {
    "id": "SOG-0377",
