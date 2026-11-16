@@ -1739,9 +1739,20 @@ def f68(c):
     c.eq(ids[ids.index('MOTAL'):], ['MOTAL', 'OLZOM', 'KOTAP', 'LFPO'], 'MOTAL J18 KOTAP: the airway is followed along its node OLZOM', what='points after MOTAL')
     c.ok(ids[ids.index('GILUX') + 1] == 'MOTAL', f'{ids}', 'A3 does not join GILUX to MOTAL: the leg is direct, no node of A3 elsewhere')
     c.ok(0 < (d['route'].get('distanceNm') or 0) < 450, f"distance {d['route'].get('distanceNm')}", 'the distance stays that of the route (not 1 871 NM)')
-    line = norm(row(c, 'awyBad')).replace('{w}', 'A3').replace('{a}', 'GILUX').replace('{b}', 'MOTAL')
-    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\u00a0\u202f]+/g, ' ').trim() === w)", line, timeout=6000, what=f'the line « {line} »')
+    # SOG-0354 (the ergonomist, 16 Nov: « une notification passe, une ligne reste »): a fixed muted line under the route, like the NAT one
+    line = norm(row(c, 'awyBad')).replace('{w}', 'A3')
+    W = f'{FUEL} [data-awywarn]'
+    c.until(f"(e => !!e && !e.hidden)(document.querySelector('{W}'))", timeout=6000, what=f'the line « {line} »')
+    c.eq(norm(c.text(W)), line, '« Voie A3 : non reliée dans la base, tronçon tracé en direct »', what='line')
+    c.ok(c.js(f"document.querySelector('{W}').classList.contains('f-muted')"), '', 'muted, like the NAT line')
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.js(f"document.querySelector('{W}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F68_{c.design}_390_{c.lang}_awyline.png')
+    c.ok(not any('A3' in n for n in (c.js('window.__notes || []') or [])), c.js('window.__notes || []'), 'no passing notification any more')
     c.ok('A3' in c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value").split(), 'text', 'the word the pilot typed stays in the text')
+    c.page.fill(rt, 'LFBO LACOU7B LACOU LMG BALAN OLINO AMB GILUX MOTAL J18 KOTAP LFPO')
+    c.page.locator(rt).blur()
+    c.until(f"document.querySelector('{W}')?.hidden === true", timeout=8000, what='the line leaves with the airway')
 
 
 @case('F80', 'Fuel\'s pure benches: quote, levels, winds aloft, METAR and TAF, progress, current flight', 'F', tags=('fuel',), designs=('standard',),

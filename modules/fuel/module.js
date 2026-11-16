@@ -516,8 +516,9 @@ const TX = {
     'la ruta pasaría dos veces por un punto'
   ],
   // « A VOIE B » où la voie ne relie pas A à B dans le couloir du tronçon (§ 10.31) : le tronçon reste direct
-  awyBad: ['{w} ne relie pas {a} à {b} : tronçon direct', '{w} does not join {a} to {b}: direct leg',
-    '{w} verbindet {a} nicht mit {b}: direkter Abschnitt', '{w} no une {a} con {b}: tramo directo'
+  awyBad: ['Voie {w} : non reliée dans la base, tronçon tracé en direct', 'Airway {w}: not joined in the base, leg drawn direct',
+    'Luftstraße {w}: in der Basis nicht verbunden, Abschnitt direkt gezeichnet',
+    'Aerovía {w}: no unida en la base, tramo trazado en directo'
   ],
   // la SID choisie rejoint la route tapée par un direct depuis sa sortie (§ 10.31)
   procExitDct: ['{sid} sort à {exit} : {exit} DCT {next}', '{sid} exits at {exit}: {exit} DCT {next}',
@@ -2459,7 +2460,7 @@ function renderPlanBody() {
       <div data-routealts></div><p class="f-muted" data-rtime hidden aria-live="polite"></p>
       <p class="f-warn" data-unres></p>
       <p class="f-warn" data-rwarn></p>
-      <p class="f-muted" data-natwarn hidden></p>
+      <p class="f-muted" data-natwarn hidden></p><p class="f-muted" data-awywarn hidden></p>
       <p class="f-warn" data-rhumb hidden></p>
       <div data-zonegaps></div>
       <p class="f-row fu-rinfo"><span class="f-muted" data-rinfo></span><button type="button" class="fu-linkbtn" data-do="rmanual">${esc(tt(TX.rmanual))}</button></p>
@@ -5594,9 +5595,16 @@ function resolveRoute(normalize = true) {
     if (r.text !== was[0] || r.dep !== was[1] || r.arr !== was[2]) return resolveRoute(normalize);
     r.points = markLocks(r, points);
     // une voie écrite qui ne relie pas ses deux points : tronçon direct, dit une fois par texte (pas à chaque frappe) (§ 10.31)
-    const bad = badAirways.map(x => tt(TX.awyBad, x)).join(' · ');
-    if (normalize && bad && S.awyBadSaid !== bad) S.ctx.notify(bad, 'warn');
-    if (normalize) S.awyBadSaid = bad;
+    // SOG-0354 (l'ergonome : « une notification passe, une ligne reste ») : une voie écrite que la base ne relie pas, tronçon direct, dite
+    // par une ligne fixe en sourdine sous la route, comme celle des routes NAT ; elle suit chaque lecture du texte
+    const bad = [...new Set(badAirways.map(x => x.w))].slice(0, 12).map(w => tt(TX.awyBad, {
+        w
+      })).join(' · '),
+      awyLine = S.body.querySelector('[data-awywarn]');
+    if (awyLine) {
+      awyLine.textContent = bad;
+      awyLine.hidden = !bad;
+    }
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
     if (normalize && tokens.length && document.activeElement !== ta) {

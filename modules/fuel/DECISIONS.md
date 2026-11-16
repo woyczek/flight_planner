@@ -2117,3 +2117,8 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   position — and while « Calculer A → B » or « Contrôler » waits, `[data-rocean]` under « Calcul en cours… » says « Vol transocéanique : la
   recherche peut prendre jusqu'à 20 secondes »; the answer replaces the box (nothing more when it is a route). Not the NAT line's criterion
   (natCrossing: 25° W / 50° W, north of 15° N), which says the state of the tracks. F237 (red before), capture at 390 × 667.
+- **16 Nov 2026 — SOG-0354: a written airway the base does not join is said by a FIXED line** (the ergonomist: « une notification
+  passe, une ligne reste »; the North American word « N260B-N271B » of the engine's Dublin → New York route, the US zone not built). The
+  word stays in the text and the leg is direct (route_model `badAirways`, as before); instead of a passing notification once per text,
+  `[data-awywarn]`, a muted line under the NAT one, says « Voie N260B-N271B : non reliée dans la base, tronçon tracé en direct » for each
+  such airway (12 at most) and follows every reading of the text (gone with the airway). F68 updated (red before: the notification only).
