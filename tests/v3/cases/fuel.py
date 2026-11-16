@@ -6601,6 +6601,39 @@ def f241(c):
     c.eq(c.js(names), ['Via NAT V', 'Via NAT R'], 'after a reload, the same routes', what='kept after reload')
 
 
+@case('F242', 'Route step, a route of the launcher through a COMPOUND airway name (« N12A-N34B », the form of the North American routes): '
+      'the token is kept in the route line, after a reload, and in the route taken into the flight, airway by airway, as text; a '
+      'longer chain or a token that is markup is left out', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0390 (seen on the KABQ → EGLL answers of 16/11: « N71B-N90B » dropped by the page\'s pattern ^[A-Z0-9/]{1,16}$, the route '
+      'taken would have read « TUSKY RAFIN » without its airway); the ergonomist: the text of the route kept in the flight is the '
+      'launcher\'s, airway by airway; a compound name accepted, bounded, shown as text; invented answer, a fake launcher')
+def f242(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg('LFRS', 'LUGEN'), dict(_seg('LUGEN', 'NEPIX'), via='N12A-N34B'), _seg('NEPIX', 'LFML')]
+    st['alts'] = [_alt(1, 'Via N12A-N34B', 'LFRS NTS1A LUGEN N12A-N34B NEPIX A1-B2-C3-D4-E5 <b>X</b> MEN1A LFML', 370, 270, segs)]
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=flight_docs())
+    to_step(c, 1)
+    _compute_now(c, st)
+    R0 = f'{FUEL} [data-altlist] [data-alt="0"] .fu-raltroute'
+    want = 'LFRS NTS1A LUGEN N12A-N34B NEPIX MEN1A LFML'
+    c.eq(c.text(R0), want, 'the compound airway kept in the route line; a chain of five parts and markup left out', what='route line')
+    c.eq(c.count(f'{R0} *'), 0, 'no markup of the answer drawn: the route line is text', what='markup')
+    # « 0 écart » never cut between the number and the word (the capture of F241 at 390 px): a no-break space
+    # (the frame resolves « (s) » by the number, frame/lib/plural.js: the screen is checked, never the template)
+    row = c.js(f"document.querySelector('{FUEL} [data-altlist] [data-alt=\"0\"]').textContent") or ''
+    c.ok(re.search(r'(?:^|[\s·])0\u00a0[^\s·]', row) is not None, row, '« 0 écart » held together by a no-break space')
+    c.js(f"document.querySelector('{FUEL} [data-altlist] [data-alt=\"0\"]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F242_{c.design}_390_{c.lang}_compound.png')
+    c.page.reload(wait_until='load')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{R0}')", timeout=15000, what='the list read again from the device')
+    c.eq(c.text(R0), want, 'after a reload, the same route text', what='route line after reload')
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    d = cf_doc(c, lambda d: 'N12A-N34B' in str((d.get('route') or {}).get('text') or ''), 'the route taken into the flight')
+    c.ok(' LUGEN N12A-N34B NEPIX ' in f" {d['route']['text']} ", d['route']['text'], 'the flight keeps the launcher\'s text, airway by airway')
+
+
 @case('F226', 'Route step, an answer without a computed route (status « proposal »): never presented as a route — « Pas de route calculée », '
       'the engine\'s reason, then the proposals apart with their controlled share; their button says « Prendre cette proposition »', 'F',
       tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,

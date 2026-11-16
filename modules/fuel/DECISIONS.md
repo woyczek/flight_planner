@@ -2155,3 +2155,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   BEFORE the day the message read starts (`natBefore(issued, from)`, the year of the message within six months; false without a
   readable day: nothing removed on a doubt). F241 (red on the parent: the eastbound routes removed). Seen in passing, not in this lot:
   the page's route pattern `^[A-Z0-9/]{1,16}$` drops a North American route token such as « N71B-N90B » from the route text.
+- **16 Nov 2026 — SOG-0390, a compound airway name kept in the launcher's route** (seen on the KABQ → EGLL answers of SOG-0389: the
+  North American routes « N71B-N90B », « N264B-N275B », « N185B-N194A » between the US airways and the NAT entry; the page's pattern
+  `^[A-Z0-9/]{1,16}$` dropped them, so a route taken would have read « TUSKY RAFIN » without its airway). `RE.ROUTE_WORD` accepts an
+  identifier, a NAT point, or a compound airway name — letters and digits joined by hyphens, four parts at most, the parts in the form
+  of an airway (`[A-Z]{1,2}\d{1,4}[A-Z]?`) —, 24 signs at most; anything else is still left out. `RE.routeWords` is used by the three
+  readers of a route of the launcher (`altOf`, the list read again from route_alts.json, the list for the Map); a segment's `via` is
+  bounded at 24. The Route field already read a compound airway (route_model `AIRWAY_WORD`, kept in the text, the leg drawn by the
+  airway when the base knows it). Shown as text (`esc`). And « 0 écart » is held by a no-break space (the capture of F241 at 390 px cut
+  « 0 / écart »). F242 (red on the parent: the token dropped from the route line and from the
+  flight).

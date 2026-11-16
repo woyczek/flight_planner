@@ -443,7 +443,8 @@ const TX = {
   series: ['Série', 'Series', 'Serie', 'Serie'],
   themeNone: ['— aucune —', '— none —', '— keine —', '— ninguna —'],
   rTaken: ['pris', 'taken', 'übernommen', 'tomado'],
-  rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
+  // insécable : jamais « 0 » en fin de ligne et « écart » sur la suivante (capture F241 à 390 px)
+  rFaults: ['{n} écart(s)', '{n} deviation(s)', '{n} Abweichung(en)', '{n} desviación(es)'],
   // le genre d'un écart (SOG-0134), quand le moteur ne donne pas l'identifiant de la règle
   rKinds: {
     RAD: ['RAD', 'RAD', 'RAD', 'RAD'],
@@ -4750,7 +4751,7 @@ function raltsOfDoc(d) {
   return {
     list: d.alternatives.slice(0, 3).map(a => ({
       name: String(a?.name || '').slice(0, 60),
-      route: String(a?.route || '').toUpperCase().split(/\s+/).filter(t => /^[A-Z0-9/]{1,16}$/.test(t)).join(' ').slice(0, 800),
+      route: RE.routeWords(a?.route), // SOG-0390 : la voie composée gardée
       sid: proc(a?.sid, 'SID'),
       star: proc(a?.star, 'STAR'),
       segments: [],
@@ -4834,7 +4835,7 @@ function mapAltOfDoc(a, i) {
   return {
     index: i,
     name: String(a?.name || '').slice(0, 60),
-    route: String(a?.route || '').toUpperCase().split(/\s+/).filter(t => /^[A-Z0-9/]{1,16}$/.test(t)).join(' ').slice(0, 800),
+    route: RE.routeWords(a?.route), // SOG-0390 : la voie composée gardée
     sid: proc(a?.sid, 'SID'),
     star: proc(a?.star, 'STAR'),
     ids: (Array.isArray(a?.ids) ? a.ids : []).slice(0, pts.length).map(x => /^[A-Z0-9]{1,12}$/.test(String(x || '')) ? String(x) : ''),

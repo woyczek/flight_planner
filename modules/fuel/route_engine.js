@@ -20,6 +20,13 @@
 //     un segment fautif sans motif, puis les erreurs du moteur qu'aucun motif ne dit déjà (seg vide).
 
 export const VERB = 'route/compute';
+/** SOG-0390 : un mot du texte de route rendu par le lanceur — identifiant, point NAT (« 54/50 »), ou nom de voie COMPOSÉ, lettres et
+ *  chiffres reliés par des tirets (« N71B-N90B », les voies nord-américaines : quatre parts au plus) ; 24 signes au plus ; le reste
+ *  est écarté. Le champ Route lit la voie composée (route_model AIRWAY_WORD). */
+export const ROUTE_WORD = /^(?:[A-Z0-9/]{1,16}|[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?){1,3})$/;
+/** Le texte de route du lanceur, mot à mot (ROUTE_WORD), en majuscules, `max` signes au plus. */
+export const routeWords = (v, max = 800) => String(v ?? '').toUpperCase().split(/\s+/).filter(t => t.length <= 24 && ROUTE_WORD.test(t))
+  .join(' ').slice(0, max);
 const KINDS = ['RAD', 'FRA', 'direction', 'floor', 'ceiling', 'continuity', 'altitude'];
 export const CONTROLS = ['controlled', 'incomplete', 'fallback', 'error'];
 export const LAYERS = ['SID', 'LOW', 'HIGH', 'FRA', 'STAR', 'APP'];
@@ -136,7 +143,7 @@ function segOf(s) {
   return {
     from: ident(s?.from),
     to: ident(s?.to),
-    via: text(s?.via, 16).toUpperCase(),
+    via: text(s?.via, 24).toUpperCase(), // SOG-0390 : une voie composée tient
     state: s?.state === 'error' ? 'error' : 'ok',
     control: CONTROLS.includes(s?.control) ? s.control : '',
     layer: LAYERS.includes(s?.layer) ? s.layer : '',
@@ -299,7 +306,7 @@ function altOf(a, role, errors, reviews = []) {
   return {
     role,
     name: text(a?.name, 60),
-    route: text(a?.route, 800).toUpperCase().split(/\s+/).filter(t => /^[A-Z0-9/]{1,16}$/.test(t)).join(' '),
+    route: routeWords(text(a?.route, 800)), // SOG-0390 : la voie composée (« N71B-N90B ») gardée
     distanceNm: num(a?.distanceNm, 0, 19999),
     fl: num(a?.fl, 0, 700) !== null ? Math.round(+a.fl) : null,
     incomplete: a?.incomplete === true,
