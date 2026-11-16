@@ -3920,32 +3920,32 @@
  ],
  "decisions": [
   {
-   "id": "Q-0071",
-   "fiche": "SOG-0389",
-   "app": "pilote",
-   "question": "KABQ → EGLL sans route NAT : à quel niveau était ton vol ?",
-   "context": "Mesure sur ta base : de FL340 à FL400 le moteur prend la route NAT V (4 825 NM). En dehors (FL300 à FL330, FL410 et plus), les routes NAT vers l'est n'offrent pas ce niveau : elles sont écartées et une route libre est créée (4 635 NM, 190 NM de moins). Je n'ai pas trouvé le niveau de ton vol sur l'appareil. Si tu avais mis des points entre les deux terrains, dis-le dans le texte : un point imposé change le calcul.",
-   "options": [
-    "Entre FL340 et FL400",
-    "Au-dessus de FL400",
-    "Sous FL340",
-    "Pas de niveau donné, ou je ne sais plus (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 1
-  },
-  {
    "id": "Q-0072",
    "fiche": "SOG-0389",
    "app": "pilote",
    "question": "Quand le niveau du vol n'est offert par aucune route NAT : que doit faire Carburant ?",
-   "context": "Aujourd'hui : la route libre est créée et un pli replié dit pourquoi chaque route NAT est écartée — tu ne l'as sans doute pas vu. Ce que je conteste : changer ton niveau d'office ; le niveau est ta décision. Ma proposition : le dire en tête, en une ligne (« Aucune route NAT à FL410 : elles vont de FL340 à FL400 vers l'est »), avec un bouton « Recalculer à FL400 » ; la route libre reste affichée tant que tu n'y touches pas.",
+   "context": "Ce n'était PAS ton cas (à FL350 la route NAT V est prise), mais la question reste : aujourd'hui, quand aucune route NAT n'offre le niveau du vol, une route libre est créée et un pli replié dit pourquoi chaque route est écartée. Ce que je conteste : changer ton niveau d'office ; le niveau est ta décision. Ma proposition : le dire en tête, en une ligne (« Aucune route NAT à FL410 : elles vont de FL340 à FL400 vers l'est »), avec un bouton « Recalculer à FL400 ».",
    "options": [
     "Le dire en tête, avec un bouton pour recalculer au niveau offert le plus proche",
     "Prendre d'office la route NAT au niveau offert le plus proche, et le dire",
     "Garder comme aujourd'hui : la route libre, le pli suffit",
     "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0073",
+   "fiche": "SOG-0389",
+   "app": "pilote",
+   "question": "KABQ → EGLL : ton lanceur a rendu une route PAR la route NAT V. Où as-tu lu qu'elle ne la prenait pas ?",
+   "context": "J'ai lu la réponse gardée par ton lanceur (21 h 35 Z, FL350) : la route NAT V est choisie — « … TUSKY N71B-N90B RAFIN NATV ATSUR DCT OMOKO … », 1 555 NM publiés entre RAFIN et ATSUR. Mes deux hypothèses sur le niveau étaient fausses. Le défaut est donc dans ce que l'écran montre ; dis-moi où, et joins une capture par « Signaler » si tu peux.",
+   "options": [
+    "Sur la Carte : le trait de la route ne suit pas les routes NAT dessinées",
+    "Dans Carburant : le texte de la route ne montre pas la route NAT",
+    "Dans Carburant : la ligne de preuve ne dit pas la route NAT",
+    "Autre : la route NAT prise n'est pas celle que j'attendais (dans le texte)"
    ],
    "since": "2026-11-16",
    "state": "todo",
