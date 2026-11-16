@@ -9,7 +9,10 @@ import sys
 
 def main():
     path, out, first, last, max_chars, dirs = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]), json.loads(sys.argv[6])
-    sys.path.extend(d for d in dirs if isinstance(d, str))
+    # -I a deja ajoute le site global : le retirer avant de restaurer l'ordre
+    # explicite du parent, sinon une ancienne copie masque toujours --user.
+    dirs = [d for d in dirs if isinstance(d, str)]
+    sys.path[:] = [p for p in sys.path if p not in dirs] + dirs
     from pypdf import PdfReader
     logging.getLogger('pypdf').setLevel(logging.ERROR)
     reader = PdfReader(path)

@@ -17,6 +17,7 @@ import os
 import shutil
 import subprocess
 import sys
+import sysconfig
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -34,6 +35,11 @@ YES = {'fr': ('o', 'oui'), 'en': ('y', 'yes'), 'de': ('j', 'ja'), 'es': ('s', 's
 LANGS = ('fr', 'en', 'de', 'es')
 M = {      # [fr, en, de, es]
     'python': ('Python : {py} (version {v})', 'Python: {py} (version {v})', 'Python: {py} (Version {v})', 'Python: {py} (versión {v})'),
+    'paths': ('Dossier des commandes : {scripts}', 'Command directory: {scripts}', 'Verzeichnis der Befehle: {scripts}', 'Directorio de comandos: {scripts}'),
+    'path_warning': ('Ce dossier manque au PATH : les commandes installees ne seront pas trouvees directement. Les imports Python ne dependent pas du PATH.',
+                     'This directory is missing from PATH: installed commands cannot be found directly. Python imports do not depend on PATH.',
+                     'Dieses Verzeichnis fehlt im PATH: installierte Befehle werden nicht direkt gefunden. Python-Importe haengen nicht vom PATH ab.',
+                     'Este directorio falta en PATH: los comandos instalados no se encuentran directamente. Las importaciones de Python no dependen de PATH.'),
     'admin': ('Ce script s’utilise sans droits d’administrateur (il installe pour votre compte seulement) : fermez cette fenêtre et relancez-le comme un utilisateur ordinaire.',
               'This script is run without administrator rights (it installs for your account only): close this window and run it again as an ordinary user.',
               'Dieses Skript läuft ohne Administratorrechte (es installiert nur für Ihr Konto): Fenster schließen und als normaler Benutzer neu starten.',
@@ -125,6 +131,16 @@ def clean_env(env=None):
     return {k: v for k, v in (os.environ if env is None else env).items() if not k.upper().startswith('PYTHON') or k.upper() in KEEP_ENV}
 
 
+def scripts_directory():
+    if in_venv():
+        return sysconfig.get_path('scripts')
+    if hasattr(sysconfig, 'get_preferred_scheme'):
+        scheme = sysconfig.get_preferred_scheme('user')
+    else:      # Python 3.8 / 3.9, encore acceptes par le lanceur
+        scheme = 'osx_framework_user' if sys.platform == 'darwin' and getattr(sys, '_framework', None) else os.name + '_user'
+    return sysconfig.get_path('scripts', scheme=scheme)
+
+
 def main(argv=None, *, run=subprocess.run, ask=input, out=print, have_of=None, admin=None):
     ap = argparse.ArgumentParser(description='Installe les bibliothèques Python en option de la suite (tools/requirements-optional.txt).')
     ap.add_argument('--dry-run', action='store_true', help='affiche ce qui serait lancé, ne lance rien')
@@ -141,6 +157,12 @@ def main(argv=None, *, run=subprocess.run, ask=input, out=print, have_of=None, a
     if (is_admin() if admin is None else admin):
         say('admin')
         return 2
+    scripts = scripts_directory()
+    say('paths', scripts=scripts)
+    normalize = lambda p: os.path.normcase(os.path.abspath(p))
+    path_dirs = [normalize(p) for p in os.environ.get('PATH', '').split(os.pathsep) if p]
+    if normalize(scripts) not in path_dirs:
+        say('path_warning')
     try:
         groups = optional_libs.load()
     except ValueError as e:

@@ -58,7 +58,9 @@ def _dirs():
     """Les dossiers des paquets du lanceur (le sous-processus est `-I` : il ne voit pas les paquets « --user » sans qu'on les lui dise)."""
     out = []
     try:
-        out = list(site.getsitepackages()) + [site.getusersitepackages()]
+        # Comme Python hors -I : le site utilisateur prime sur le site global.
+        # Respecter aussi -s, PYTHONNOUSERSITE et les environnements virtuels.
+        out = ([site.getusersitepackages()] if site.ENABLE_USER_SITE else []) + list(site.getsitepackages())
     except Exception:
         pass
     return [d for d in out if isinstance(d, str) and os.path.isdir(d)]
@@ -71,7 +73,7 @@ def _env():
 def versions(names=None):
     """{ paquet: version ou None } lues par importlib.metadata dans un sous-processus isolé : la bibliothèque n'est PAS importée."""
     names = list(names or [m[0] for m in MINIMA])
-    code = ('import importlib.metadata as m, json, sys\nsys.path.extend(json.loads(sys.argv[1]))\nout = {}\nfor n in json.loads(sys.argv[2]):\n'
+    code = ('import importlib.metadata as m, json, sys\npackage_dirs = json.loads(sys.argv[1])\nsys.path[:] = [p for p in sys.path if p not in package_dirs] + package_dirs\nout = {}\nfor n in json.loads(sys.argv[2]):\n'
             '    try:\n        out[n] = m.version(n)\n    except Exception:\n        out[n] = None\nprint(json.dumps(out))\n')
     try:
         r = subprocess.run([sys.executable, '-I', '-c', code, json.dumps(_dirs()), json.dumps(names)], capture_output=True, timeout=VERSION_TIMEOUT, cwd=tempfile.gettempdir(), env=_env(),
