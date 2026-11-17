@@ -90,6 +90,7 @@ exchange happens in batches, explicitly or periodically, through a transport the
   - the state (transport, last success, last error, pending, conflicts);
   - the timings (SOG-0400): `timing.pass` (duration and reason of the last pass), `timing.longestRead` (the longest read since the load: path, ms) and `timing.jobs` (the last ten
     jobs of the launcher: waited ms before the start, started at once or bound reached) — a report says where a wait took place;
+  - the long tasks of the page (SOG-0430): `page.longTasks` = `{ count, worstMs, list }`, the tasks of 100 ms and over that the browser reports for the main thread (PerformanceObserver `longtask`: an event, no timer), each `{ at, ms, screen, page }` (instant, duration, the screen that was open — the name only, never what follows « ? » —, `now` for this page or `before` for an earlier one), the last hundred, kept in the `localStorage` of this browser (`sog-frame-longtasks`: never written into the data, never synchronised; written a second after, at once for a task of a second or more; read as an untrusted input) and copied by « Copy the diagnostic »;
   - the kept tree (head, date, number of files, compared or not in this page);
   - the reference paths known in the tree (all, `sia/base/`, `AircraftDB/`) and those cached;
   - the last read that failed.

@@ -5192,6 +5192,43 @@ _RADIUS_S_JS = """() => { const i = document.createElement('i'); i.style.borderT
   const r = getComputedStyle(i).borderTopLeftRadius; i.remove(); return r }"""
 
 
+@case('A258', 'The frame watches long tasks of the page (SOG-0430): 100 ms and over — duration, instant, screen — kept on the device only, the last hundred, kept across a reload, in the diagnostic (page.longTasks); a hostile or oversized store is read as untrusted', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0430 (the user: « la page se fige », not reproduced on the bench): the page now says itself when its main thread was busy — PerformanceObserver « longtask », no timer, nothing rewritten — in the LOCAL diagnostic (localStorage: never written into the data, never synchronised), copied by the existing button; bounded to the last 100; the stored list is untrusted (size, type, text length)')
+def a258(c):
+    BUSY = "(ms) => new Promise(r => setTimeout(() => { const t = performance.now(); while (performance.now() - t < ms); r() }, 50))"
+    c.open('fuel', docs=LEVEL3, wait=False)
+    c.until("!!window.SogFrame && typeof window.SogFrame.longTasks === 'function'", timeout=20000, what='the frame answers longTasks()')
+    n0 = c.js("() => window.SogFrame.longTasks().count")
+    c.js(f"() => ({BUSY})(350)")
+    c.js(f"() => ({BUSY})(1200)")
+    c.until(f"window.SogFrame.longTasks().count >= {n0} + 2", timeout=10000, what='the two busy moments seen')
+    st = c.js("() => window.SogFrame.longTasks()")
+    mine = [e for e in st['list'] if e['page'] == 'now' and e['ms'] >= 300]
+    c.ok(len(mine) >= 2 and all(e['screen'] == 'fuel' and re.match(r'20\d\d-\d\d-\d\dT', e['at']) for e in mine), mine, 'each is kept with its duration, its instant (ISO) and the screen that was open')
+    c.ok(st['worstMs'] >= 1200, st['worstMs'], 'the worst duration of the page is kept')
+    c.until("JSON.parse(localStorage.getItem('sog-frame-longtasks') || '[]').some(e => e.ms >= 1200)", timeout=5000, what='a task of a second or more is written to the device at once')
+    keys = c.js("() => Object.keys(window.SogFrame.longTasks().list[0]).sort().join()")
+    c.eq(keys, 'at,ms,page,screen', 'the entries say nothing else (no address, no text of the page)', what='entry keys')
+    c.page.reload(wait_until='domcontentloaded')
+    c.until("!!window.SogFrame && typeof window.SogFrame.longTasks === 'function'", timeout=20000, what='the frame after a reload')
+    before = c.js("() => window.SogFrame.longTasks().list.filter(e => e.page === 'before' && e.ms >= 300).length")
+    c.ok(before >= 2, before, 'the tasks of the page before are still there after a reload (« before »)')
+    # an untrusted store: more than a hundred, texts too long, a wrong type, then not JSON
+    c.js("() => localStorage.setItem('sog-frame-longtasks', JSON.stringify([...Array.from({ length: 150 }, (_, i) => ({ at: '2026-11-17T10:00:00.000Z', ms: 100 + i, screen: 'x'.repeat(300) })), 5, null, { at: 7, ms: 'a' }]))")
+    c.page.reload(wait_until='domcontentloaded')
+    c.until("!!window.SogFrame && typeof window.SogFrame.longTasks === 'function'", timeout=20000, what='the frame with a store of 150 entries')
+    lst = c.js("() => window.SogFrame.longTasks().list")
+    c.ok(len(lst) <= 100 and all(len(e['screen']) <= 40 and isinstance(e['ms'], int) for e in lst), (len(lst), max(len(e['screen']) for e in lst)), 'at most a hundred, texts cut, numbers only')
+    c.js("() => localStorage.setItem('sog-frame-longtasks', '{{{ not json')")
+    c.page.reload(wait_until='domcontentloaded')
+    c.until("!!window.SogFrame && typeof window.SogFrame.longTasks === 'function'", timeout=20000, what='the frame with a store that is not JSON')
+    c.eq(c.js("() => window.SogFrame.longTasks().list"), [], 'a store that is not JSON is read as empty', what='empty list')
+    src = (ROOT / 'frame/app.js').read_text(encoding='utf-8')
+    c.ok(re.search(r"longTasks:\s*longState\(\)", src) is not None, 'longTasks missing', 'the page diagnostic (page.longTasks) carries the same state: the button « Copy the diagnostic » copies it')
+    c.check_errors()
+
+
 @case('A255', 'The « Old version · Reload » cartouche is white on dark red in the five designs and both tones — the designs\' own rules for the header buttons (transparent in metro and swiss, blue text in cupertino, a pale red at night) do not take its colours; its corners are the design\'s (square where it is square); pressed, it stays readable (SOG-0407)', 'A',
       tags=('design',), screens=False, night=True, langs4=False,
       rule='SOG-0407 (the user, in recette, 17 Nov 2026: « réapparu, mais pas en blanc sur cartouche rouge »): the cartouche is a button of the header, and every design rewrites the header buttons — measured before: metro and swiss a transparent background (white text on the page), cupertino blue text on nothing, standard and material at night a pale red under white text (contrast 2.3 and 1.7); the cartouche carries its own colours (white on #b3261e: 6.5) with a selector weight that wins over the designs, and the radius of the design')

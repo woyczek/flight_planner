@@ -4881,7 +4881,9 @@
               lan: launcherHere.lan
             } : null,
             // SOG-0209 : les rechargements du cadre (dix dernières secondes), la série arrêtée avec sa cause, les dernières adresses routées
-            reloads: reloadsState()
+            reloads: reloadsState(),
+            // SOG-0430 : les tâches de 100 ms et plus du fil de la page (durée, instant, écran) : de cette page (`now`) et des précédentes (`before`), les cent dernières
+            longTasks: longState()
           },
           aerodb: a ? {
             source: a.source,
@@ -5448,6 +5450,7 @@
   }
   async function boot() {
     noteLoad();
+    watchLongTasks();
     try {
       Icons = await import(new URL('frame/lib/icons.js', ROOT).href);
     } catch (e) {
@@ -5797,6 +5800,89 @@
     recent: navLog(),
     routes: routeLog.slice(-10)
   });
+  // ---- la surveillance des tâches longues (SOG-0430, « la page se fige ») : le navigateur dit lui-même quand le fil de la page est resté occupé (PerformanceObserver « longtask », 50 ms
+  // et plus) ; on garde celles de 100 ms et plus — durée, instant, écran ouvert à ce moment — dans le diagnostic LOCAL de l'appareil (localStorage de ce navigateur : jamais écrit dans
+  // les données ni synchronisé), les cent dernières, copiées par le bouton « Copier le diagnostic » (page.longTasks). Un observateur d'événement (pas de minuteur, rien n'est réécrit) ;
+  // le stockage est écrit après coup (une seconde), et tout de suite pour une tâche d'une seconde ou plus (un onglet qui plante ne laisserait rien).
+  const LONG_KEY = 'sog-frame-longtasks',
+    LONG_MAX = 100,
+    LONG_MIN_MS = 100,
+    LONG_NOW_MS = 1000;
+  const longTasks = {
+    count: 0, // celles de cette page, vues depuis son chargement (la liste, elle, garde aussi celles des pages d'avant)
+    worstMs: 0,
+    list: [] // [{ at (ISO), ms, screen, page }] la plus récente en tête ; page : 'now' = cette page, sinon une page d'avant
+  };
+  try {
+    const kept = JSON.parse(localStorage.getItem(LONG_KEY) || '[]');
+    if (Array.isArray(kept)) longTasks.list = kept.filter(e => e && typeof e.at === 'string' && Number.isFinite(+e.ms)).slice(0, LONG_MAX)
+      .map(e => ({
+        at: e.at.slice(0, 30),
+        ms: Math.round(+e.ms),
+        screen: String(e.screen || '').slice(0, 40),
+        page: 'before'
+      }));
+  } catch {
+    /* stockage indisponible ou illisible : la liste repart vide */
+  }
+  let longSave = 0;
+  const longStore = () => {
+    clearTimeout(longSave);
+    longSave = 0;
+    try {
+      localStorage.setItem(LONG_KEY, JSON.stringify(longTasks.list.map(e => ({
+        at: e.at,
+        ms: e.ms,
+        screen: e.screen
+      }))));
+    } catch {
+      /* stockage indisponible : le diagnostic de cette page garde la liste en mémoire */
+    }
+  };
+  /** L'écran de l'instant `when` (ms epoch) : la dernière adresse routée avant lui, sinon l'adresse en cours ; le nom de l'écran seul (jamais ce qui suit « ? »). */
+  const screenAt = when => {
+    const r = [...routeLog].reverse().find(e => e.t <= when);
+    return String(r ? r.h : location.hash).slice(1).split('?')[0].slice(0, 40) || '(home)';
+  };
+  /** Ce que le diagnostic en dit (et window.SogFrame.longTasks) : une copie, jamais la liste vivante. */
+  const longState = () => ({
+    count: longTasks.count,
+    worstMs: longTasks.worstMs,
+    list: longTasks.list.map(e => ({
+      ...e
+    }))
+  });
+
+  function watchLongTasks() {
+    if (typeof PerformanceObserver !== 'function' || !PerformanceObserver.supportedEntryTypes?.includes('longtask')) return;
+    try {
+      new PerformanceObserver(list => {
+        let urgent = false;
+        for (const e of list.getEntries()) {
+          const ms = Math.round(e.duration);
+          if (ms < LONG_MIN_MS) continue;
+          const when = Date.now() - (performance.now() - e.startTime);
+          longTasks.count++;
+          longTasks.worstMs = Math.max(longTasks.worstMs, ms);
+          longTasks.list.unshift({
+            at: new Date(when).toISOString(),
+            ms,
+            screen: screenAt(when),
+            page: 'now'
+          });
+          if (ms >= LONG_NOW_MS) urgent = true;
+        }
+        longTasks.list.length = Math.min(longTasks.list.length, LONG_MAX);
+        if (urgent) longStore();
+        else if (!longSave && longTasks.count) longSave = setTimeout(longStore, 1000);
+      }).observe({
+        type: 'longtask',
+        buffered: true
+      });
+    } catch {
+      /* un navigateur sans cette mesure : pas de surveillance, jamais d'erreur */
+    }
+  }
   /** Au chargement : noté ; trois chargements en dix secondes : la série est dite (le cadre arrête alors ses rechargements sans geste). */
   function noteLoad() {
     let type = '';
@@ -5894,6 +5980,7 @@
     net,
     syncNow,
     reloads: reloadsState,
+    longTasks: longState,
     airline: () => airline,
     cutAccess,
     get aerodb() {
