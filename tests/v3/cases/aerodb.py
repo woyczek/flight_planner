@@ -15023,3 +15023,27 @@ def k337(c):
     c.eq(st, {'LF9701': 'INFRACTION : condi', 'LF9702': 'Condition simple é', 'LF9703': 'À interpréter : co', 'LF9704': 'Condition simple é'},
          'the flight SITET–KEPAD is INSIDE the segment SITET–BOYNE (a portion, never reaching BOYNE): infraction; the segment KEPAD–BOYNE is not flown: no infraction; the segment BOYNE–SITET is flown against its direction: not decided (« to be interpreted »), except when its condition is false for the flight (DEP LFXX): then no infraction whichever the reading', what='segment portion')
     c.eq([i['level'] for i in p['issues'] if 'LF9701' in i['text']], ['ERREUR'], 'the typed route keeps the infraction as an ERREUR', what='typed')
+@case('K336', 'aerodb.fetchProcedures: the failure « nothing read » of the launcher reaches the screen in CODES and INTEGERS, bounded at the reader (SOG-0433) — `code` only when it is exactly « none-read », `counts` { docs, read, pages } three integers from 0 to 9999, `reasons` at most three pairs [code, n] with the code in the closed list and n an integer from 1 to 9999, the rest thrown away; the launcher answer is an untrusted input', 'K', tags=('aerodb',), phone=False,
+      rule='SOG-0433 (Features SOG, 17 Nov: « le motif d’une lecture de procédures sans résultat s’affiche en ANGLAIS »). tools/regen/proc.py now returns { code: « none-read », counts, reasons } beside `message` and `stats`; `fetchProcedures` passed only message, warnings and stats. Bench: the page of the procedures with a launcher that answers a failure.')
+def k336(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const mk = answer => AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false, launcher: { info: () => ({ data: true, lan: false }), request: async () => null, job: async () => ({ status: 200, result: answer }) }, now: () => Date.parse('2026-11-10T12:00:00Z') });
+      const ask = async answer => { const res = await mk(Object.assign({ ok: false, reason: 'failed', message: 'no procedure could be read for this aerodrome: 9 document(s), 0 of 9 page(s) read' }, answer)).fetchProcedures('EGGW', { ground: false }); return res; };
+      const out = {};
+      out.good = await ask({ code: 'none-read', counts: { docs: 9, read: 0, pages: 9 }, reasons: [['layout', 9]], stats: { pages: 9, read: 0, rejected: 9, procedures: 0, dropped: 0, doubt: 0, reasons: [['layout', 9]] } });
+      out.noCode = await ask({ counts: { docs: 9, read: 0, pages: 9 }, reasons: [['layout', 9]] });
+      out.badCode = await ask({ code: 'other-thing', counts: { docs: 9, read: 0, pages: 9 } });
+      out.badCounts = await ask({ code: 'none-read', counts: { docs: 99999, read: -1, pages: 'x' }, reasons: [['layout', 0], ['layout', 10000], ['<script>', 3], ['timeout', 2.5], ['vector', 4], 'x', ['title', 1], ['no-legs', 2], ['counts', 3]] });
+      out.many = await ask({ code: 'none-read', counts: { docs: 3, read: 1, pages: 7 }, reasons: [['layout', 1], ['low-read', 2], ['title', 3], ['no-legs', 4], ['counts', 5]] });
+      out.noStats = await ask({ code: 'none-read', counts: { docs: 1, read: 0, pages: 1 } });
+      return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, { ok: v.ok, reason: v.reason, message: v.message, code: v.code, counts: v.counts, reasons: v.reasons, stats: v.stats }]));
+    }""")
+    c.eq((r['good']['ok'], r['good']['reason'], r['good']['code'], r['good']['counts'], r['good']['reasons'], r['good']['message'].startswith('no procedure could be read')), (False, 'failed', 'none-read', {'docs': 9, 'read': 0, 'pages': 9}, [['layout', 9]], True),
+         'the failure carries `code` « none-read », `counts` and `reasons` beside the English `message` (the fallback) (red before: none of the three)', what='good')
+    c.eq((r['noCode']['code'], r['noCode']['counts'], r['noCode']['reasons'], r['badCode']['code'], r['badCode']['counts']), (None, None, None, None, None),
+         'without `code` exactly « none-read » (absent, or another word) nothing of the three is passed: the launcher of before keeps its English sentence', what='code')
+    c.eq((r['badCounts']['code'], r['badCounts']['counts'], r['badCounts']['reasons']), ('none-read', None, [['vector', 4], ['title', 1], ['no-legs', 2]][:3]),
+         'bounded at the reader: counts of 99999, -1 or text are dropped as a whole (one bad integer, no `counts`); the pairs with n = 0, 10000, 2.5 or a code outside the list (<script>) are thrown away, a non-pair too, and at most three are kept', what='bounds')
+    c.eq(r['many']['reasons'], [['layout', 1], ['low-read', 2], ['title', 3]], 'five valid reasons: the first three', what='three')
+    c.eq((r['noStats']['code'], r['noStats']['counts'], r['noStats']['stats']), ('none-read', {'docs': 1, 'read': 0, 'pages': 1}, None), 'a failure without `stats` (an older reading) still carries the code and the counts', what='no stats')

@@ -51,6 +51,32 @@
   };
   const FRAME_GAP = 10; // degrés : deux anneaux d'une zone plus proches que cela sont du même groupe (côtes, îles d'un archipel)
   const mod360 = x => (x % 360 + 360) % 360;
+  // SOG-0433 : l'échec « rien de lu » du lanceur (tools/regen/proc.py) rendu en code et en entiers, BORNÉS ici (le résultat du lanceur est une entrée non fiable) : `code` seulement s'il vaut exactement 'none-read' ;
+  // `counts` { docs, read, pages } : trois entiers de 0 à 9999 ; `reasons` : au plus trois paires [code, n], le code dans la liste fermée de proc_geometry et n un entier de 1 à 9999 ; le reste est jeté
+  const NONE_READ_CODES = new Set(['layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout', 'unread', 'name', 'repeat',
+    'zigzag', 'unresolved', 'rf-arc', 'geometry', 'uncheckable', 'no-table', 'other'
+  ]);
+  const smallInt = (v, lo) => Number.isInteger(v) && v >= lo && v <= 9999 ? v : null;
+  const noneRead = res => {
+    if (res?.code !== 'none-read') return {};
+    const c = res.counts && typeof res.counts === 'object' ? res.counts : {},
+      counts = {
+        docs: smallInt(c.docs, 0),
+        read: smallInt(c.read, 0),
+        pages: smallInt(c.pages, 0)
+      },
+      reasons = (Array.isArray(res.reasons) ? res.reasons : []).filter(x => Array.isArray(x) && NONE_READ_CODES.has(x[0]) && smallInt(x[
+        1], 1) !== null).slice(0, 3).map(x => [x[0], x[1]]);
+    return {
+      code: 'none-read',
+      ...(Object.values(counts).every(v => v !== null) ? {
+        counts
+      } : {}),
+      ...(reasons.length ? {
+        reasons
+      } : {})
+    };
+  };
   /** Le plus petit arc de longitudes qui couvre des intervalles [w, w + len] pris sur le cercle : { w, span }. */
   function arcOf(iv) {
     let best = null;
@@ -534,7 +560,10 @@
             } : {}),
             ...(res?.stats && typeof res.stats === 'object' ? {
               stats: res.stats
-            } : {})
+            } : {}),
+            ...noneRead(
+              res
+            ) // SOG-0433 : « rien de lu » en code et en entiers, bornés ici (le résultat du lanceur est une entrée non fiable)
           });
       }
       // Les fichiers viennent d'être écrits par le lanceur, hors de toute écriture de la couche de données : sa copie locale de
