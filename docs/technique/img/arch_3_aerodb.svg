@@ -41,7 +41,7 @@
 <text class="s" x="565" y="150" text-anchor="middle">private, shared by the group</text>
 <rect class="code" x="470" y="200" width="190" height="54" rx="4"/>
 <text class="t" x="565" y="222" text-anchor="middle">aerodb reader</text>
-<text class="s" x="565" y="240" text-anchor="middle">every device, read only</text>
+<text class="s" x="565" y="240" text-anchor="middle">every device, reads the base</text>
 <rect class="loc" x="20" y="200" width="190" height="54" rx="4"/>
 <text class="t" x="115" y="222" text-anchor="middle">Local only</text>
 <text class="s" x="115" y="240" text-anchor="middle">X-Plane, EAD, never published</text>

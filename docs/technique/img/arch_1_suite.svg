@@ -27,7 +27,7 @@
 <text class="s" x="340" y="60" text-anchor="middle">Pilot, Company, Maintenance</text>
 <rect class="code" x="200" y="110" width="280" height="54" rx="4"/>
 <text class="t" x="340" y="132" text-anchor="middle">Modules</text>
-<text class="s" x="340" y="150" text-anchor="middle">fuel, maps, report, data</text>
+<text class="s" x="340" y="150" text-anchor="middle">fuel, maps, weather, report…</text>
 <rect class="code" x="200" y="200" width="280" height="54" rx="4"/>
 <text class="t" x="340" y="222" text-anchor="middle">Frame</text>
 <text class="s" x="340" y="240" text-anchor="middle">cache, sync, navigation</text>

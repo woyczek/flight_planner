@@ -11,9 +11,11 @@ The suite separates **code** from **data**. The code is one public repository; t
 the only thing shared between the pilots. Everything else on a device is a copy, a cache or a local setting.
 
 An **application** (Pilot, Company, Maintenance) is a named set of modules of the same frame, chosen by the address of
-the page (`/frame/?app=maintenance`; no `app` means Pilot). A **module** (`modules/<id>/module.js`) is loaded on demand
+the page (`/frame/?app=maintenance`; no `app` means Pilot). Pilot lists fuel, maps, atmosphere (weather), report,
+flightlog (flights) and website; Company lists missions and aircraft; data belongs to Maintenance. A **module** (`modules/<id>/module.js`) is loaded on demand
 and receives a context from the **frame**: its part of the data layer, the aeronautical service **aerodb**, texts,
-notifications, outgoing network calls. The frame reaches the data repository directly (GitHub API, on a phone or the
+notifications, outgoing network calls (controller feeds and weather go through the context; the background map tiles are
+loaded by the map library itself). The frame reaches the data repository directly (GitHub API, on a phone or the
 website) or through the **launcher**, the local server of a workstation, which also runs the jobs that only a workstation
 can run (building the navigation base, reading PDFs). A phone has no clone: it reads and writes the repository file by
 file.
@@ -50,8 +52,12 @@ with its context.
 ![aerodb: raw sources, builders, compiled base, data repository, aerodb reader, and local-only sources](img/arch_3_aerodb.svg)
 
 aerodb answers every aeronautical question (airspaces, aerodromes, navaids, points, airways, obstacles, MORA, NAT tracks,
-towns, aircraft types) from bases **published** to the data repository by a workstation with the launcher. It never reads
-the raw sources and never builds. **Compiling and using are two separate things**: compiled files are kept in the private
+towns, aircraft types, and also procedures, runways, the ground layer of an aerodrome, reporting points, refuelling tracks,
+VFR routes) from bases **published** to the data repository by a workstation with the launcher. It never reads the raw
+sources and does not build, with two exceptions the Map relies on: when the NAT layer is shown and the tracks are out of
+date, aerodb asks the **launcher** for a job that downloads the message and rebuilds the `nat` zone (the pilot's own
+workstation only, one job at a time, no second try within five minutes) — that zone is opened on demand rather than
+published with the others; and aerodb **writes** the procedures seen in a flight plan into the data layer (`proc-seen/`). **Compiling and using are two separate things**: compiled files are kept in the private
 repository (marked outdated rather than removed), raw sources never are.
 
 Compilation runs on the owner's order from the Data module. One builder per source makes a *piece*; one assembler per zone
@@ -75,8 +81,9 @@ Sources screen marks such a source "read on this workstation only".
 
 Official sources (AIP, FAA, RAD), the NAT message (re-read every day) and, as a later fallback, X-Plane on the workstation
 feed one navigation base, compiled by the launcher. That base feeds the **route engine** (Europe, ocean, America). Two callers
-use it: the Fuel screen, with one request, and the matrix, with 144. The engine returns itineraries to the screens (Fuel and
-Map) and a table of measures to the bench (routes, time, lengths).
+use it: the Fuel screen, with one request, and the matrix, with 144. The engine returns itineraries to the Fuel screen —
+the Map never calls the engine: Fuel publishes its answer on the device and the Map reads it (engine → Fuel → Map) — and
+a table of measures to the bench (routes, time, lengths).
 
 The matrix (`tools/route_matrix.py`) is a **measurement bench, not part of the app**. It replays 144 crossings (six European
 and six North American aerodromes, both directions, one departure inside the NAT window and one twelve hours away) offline,

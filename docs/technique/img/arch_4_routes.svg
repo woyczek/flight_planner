@@ -45,7 +45,7 @@
 <text class="s" x="570" y="240" text-anchor="middle">144 requests</text>
 <rect class="use" x="20" y="300" width="300" height="54" rx="4"/>
 <text class="t" x="170" y="322" text-anchor="middle">Itineraries on screen</text>
-<text class="s" x="170" y="340" text-anchor="middle">Fuel and Map</text>
+<text class="s" x="170" y="340" text-anchor="middle">Fuel, then the Map</text>
 <rect class="bench" x="360" y="300" width="300" height="54" rx="4"/>
 <text class="t" x="510" y="322" text-anchor="middle">Measurement table</text>
 <text class="s" x="510" y="340" text-anchor="middle">routes, time, lengths</text>
