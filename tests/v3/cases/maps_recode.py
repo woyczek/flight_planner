@@ -8656,6 +8656,42 @@ def d_labelclash(c):
         c.eq(g['under'], 0, f'{w} x {h}: no wind symbol under TOC or TOD ({g["barbs"]} drawn)', what=str(g))
 
 
+_PROF_SPY_JS = """(() => { const P = CanvasRenderingContext2D.prototype; if (P.__pspy) return; P.__pspy = true; const ft = P.fillText; window.__pt = [];
+  P.fillText = function (t, x, y, w) { if (this.canvas && this.canvas.classList && this.canvas.classList.contains('mp-pc')) { const fs = parseFloat((/([0-9.]+)px/.exec(this.font) || [0, 10])[1]), tw = this.measureText(String(t)).width, al = this.textAlign, bl = this.textBaseline;
+      const x0 = al === 'center' ? x - tw / 2 : al === 'right' || al === 'end' ? x - tw : x, y0 = bl === 'middle' ? y - fs / 2 : bl === 'top' || bl === 'hanging' ? y : bl === 'bottom' || bl === 'ideographic' ? y - fs : y - fs * .8;
+      window.__pt.push({ t: String(t), b: [x0, y0, x0 + tw, y0 + fs] }) }
+    return ft.call(this, t, x, y, w) } })()"""
+_PROF_PAIRS_JS = """async () => { const pv = await import('/modules/maps/profile_view.js'); window.__pt.length = 0; pv.drawProfile();
+  const T = window.__pt.filter(x => x.t.trim()), hit = (a, b) => a[0] + 1 < b[2] && b[0] + 1 < a[2] && a[1] + 1 < b[3] && b[1] + 1 < a[3], pairs = [];
+  for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) if (hit(T[i].b, T[j].b)) pairs.push(T[i].t + ' / ' + T[j].t);
+  return { n: T.length, pairs, texts: T.map(x => x.t).slice(0, 40) } }"""
+
+
+@case('D255', 'The vertical profile of the Map writes no label over another one: the boxes of all the texts of its drawing (graduations, unit, TOC and TOD, point names, levels, airspaces) do not overlap — measured at 390 and 1280 px on two flights (a forecast; airspaces)', 'D',
+      tags=('maps', 'profile'), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0418 (the ergonomist, 17 Nov: the cut of the weather had labels over labels; the vertical profile of the Map has its own placer, the single pass: MEASURE with the same check of the boxes, and give it the same rule only if pairs overlap)')
+def d_profclash(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '62', 'key': 'LFD62', 'lower': 'SFC', 'upper': 'FL195', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    for fx in ('forecast', 'airspaces'):
+        for w, h, q in ((390, 844, 'maps'), (1280, 760, 'maps?pane=1')):
+            c.page.set_viewport_size({'width': w, 'height': h})
+            c.page.add_init_script(_PROF_SPY_JS)   # once per load (the spy refuses to wrap twice)
+            if fx == 'forecast':
+                c.open(q, flight=True, forecast=True, wait=False)
+            else:
+                c.open(q, docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+            c.ready('maps', sheet=True)
+            c.page.add_style_tag(content='#fNotes{display:none!important}')
+            c.until("() => { const p = document.querySelector('.mp-prof'); return !!p && !p.hidden && p.getBoundingClientRect().height > 0 }", timeout=20000, what=f'{fx} {w} x {h}: the profile is drawn')
+            c.wait(1500)
+            g = c.js(_PROF_PAIRS_JS)
+            c.shot(f'D255_{fx}_{w}x{h}_profile.png')
+            c.ok(g['n'] > 5, str(g), f'{fx} {w} x {h}: the profile has its texts ({g["n"]})')
+            c.eq(g['pairs'], [], f'{fx} {w} x {h}: no label of the profile covers another one', what=str(g))
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
