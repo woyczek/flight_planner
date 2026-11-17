@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
   "tests": 282,
-  "verdicts": 205
+  "verdicts": 212
  },
  "apps": [
   "pilote",
@@ -3886,8 +3886,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli : Aéronefs › Fiches, ta fiche de la capture de 16 h 37. Refais l'import de la réponse de ChatGPT. Attendu : chaque pli dit « ChatGPT » pour les champs que la réponse vient de donner, même égaux aux anciens (plus « base V2 ») ; le pli « Table régime / débit » dit ses sources ; si la réponse ne porte aucune ligne de table, ou une ligne illisible, l'aperçu le DIT avant d'appliquer. À vérifier par toi : la référence de régime de cette fiche parle de kg/h alors que la fiche est en livres.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T16:46:38Z"
+   "state": "ok",
+   "delivered": "2026-11-16T16:46:38Z",
+   "at": "2026-11-17T15:20:12Z"
   },
   {
    "id": "SOG-0386",
@@ -3900,8 +3901,9 @@
    },
    "test": "Feuille de route (le bouton en haut à droite, ou Aide). (1) En tête, UNE ligne « Ensemble : 67 % » avec sa barre, puis quatre groupes repliés : Préparer et voler, Missions et compagnie, Suivre, Socle, chacun avec son pourcentage. (2) Touche un groupe : ses fonctions et leur pourcentage (Préparer et voler : Carburant et route, Carte, Météo). (3) Touche une fonction : ses capacités, chacune « Faite », « En partie » ou « Pas faite ». (4) Touche encore : tout se replie ; rien n'est gardé d'une visite à l'autre. (5) Sur le téléphone : la même chose, sans défilement horizontal. Dis-moi si une capacité est mal classée ou mal dite, et si les pourcentages te semblent justes : la liste vient d'une lec",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T20:06:24Z"
+   "state": "ok",
+   "delivered": "2026-11-16T20:06:24Z",
+   "at": "2026-11-17T15:20:04Z"
   },
   {
    "id": "SOG-0387",
@@ -3914,8 +3916,9 @@
    },
    "test": "Sur l'ordinateur, recharge l'appli (pas de relance du lanceur) : Aide › Feuille de route, vue « Par thème ». Glisse une carte non livrée sur une autre : une étiquette dit où elle va (« → Thème B, avant SOG-… »), la colonne visée est cernée ; au lâcher, son rang de priorité change et il est écrit dans organisation/PRIORITES.json comme depuis la vue Priorités. Un clic sans déplacement n'écrit rien. À savoir : c'est un rang GLOBAL — une carte lâchée dans un autre thème prend ce rang mais ne change ni de thème ni d'état ; une carte livrée ne bouge pas.",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T16:50:37Z"
+   "state": "ok",
+   "delivered": "2026-11-16T16:50:37Z",
+   "at": "2026-11-17T15:19:36Z"
   },
   {
    "id": "SOG-0389",
@@ -3928,8 +3931,9 @@
    },
    "test": "Recharge la page (pas besoin de relancer le lanceur). Carburant, étape Route. (1) KABQ → EGLL à FL350, « Calculer A → B » : la route arrive en 2 à 4 secondes et RESTE ; elle passe par une route NAT (« … RAFIN NATV ATSUR … » ce soir) ; les variantes arrivent quelques secondes après et restent aussi. (2) Attends dix secondes, change d'étape et reviens : la route et les variantes sont toujours là. (3) La ligne orange « les propositions par des routes NAT d'un autre jour sont retirées » ne doit PAS apparaître pour ce vol. (4) Un vol SANS niveau (vide le champ Niveau à l'étape Vol), « Calculer A → B » : une ligne orange dit « Niveau non donné : route calculée à FL180 par défaut », le lien « Donne",
    "since": "2026-11-16",
-   "state": "todo",
-   "delivered": "2026-11-16T22:25:46Z"
+   "state": "ok",
+   "delivered": "2026-11-16T22:25:46Z",
+   "at": "2026-11-17T15:19:41Z"
   },
   {
    "id": "SOG-0390",
@@ -4026,8 +4030,9 @@
    },
    "test": "Carburant, après avoir rechargé la page. (1) Un vol avec un terrain de dégagement ; ouvre « Détail du devis ». Avant le total « Dégagement … », trois parts en retrait : « Remise des gaz à … : 5 min au débit de montée, forfait », « Trajet … · NM · FL… · montée, croisière, descente calculées (ou « moyenne de la fiche ») · vent … », « Approche à … : 10 min au débit d'attente, forfait ». (2) Le total du dégagement est la somme des trois ; la Réserve reste une ligne à part ; le carburant bloc a augmenté par rapport à hier. (3) Dans la fiche de l'aéronef (éditeur des fiches), deux champs « Dégagement · remise des gaz (min) » et « Dégagement · approche (min) » : mets 8 et 12, reviens au devis — les",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T10:00:02Z"
+   "state": "ok",
+   "delivered": "2026-11-17T10:00:02Z",
+   "at": "2026-11-17T15:17:14Z"
   },
   {
    "id": "SOG-0400",
@@ -4096,8 +4101,9 @@
    },
    "test": "Dossier de développement. (1) Ouvre docs/technique/V3_ARCHITECTURE.md dans le dépôt (sur l'hébergeur ou dans un éditeur qui rend le Markdown) : cinq sections, chacune avec son schéma — la suite, le cadre, aerodb, le moteur de route et la matrice, le circuit d'une livraison. (2) Chaque schéma se lit en clair et en sombre, cinq à huit boîtes. (3) Le quatrième est celui du chat (Carburant et la matrice parlent au même moteur). (4) La fin du document liste ce qu'aucun document existant ne confirme. Dis ce qui manque ou ce qui est faux, et si tu veux les mêmes schémas en français dans l'aide de l'appli.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T10:17:08Z"
+   "state": "ok",
+   "delivered": "2026-11-17T10:17:08Z",
+   "at": "2026-11-17T15:17:33Z"
   },
   {
    "id": "SOG-0407",
@@ -4110,8 +4116,7 @@
    },
    "test": "Après avoir RELANCÉ le lanceur et rechargé la page une fois. (1) Laisse une page de l'appli ouverte. Quand une mise à jour arrive sur le poste (je te le dirai à la prochaine livraison), en moins d'une minute — ou dès que tu reviens sur l'onglet — un cartouche rouge « Version ancienne · Recharger » paraît dans la barre du haut ; au téléphone, « Recharger ». (2) La page ne se recharge JAMAIS seule : ce que tu es en train de taper reste. (3) Un appui recharge, la page est à jour et le cartouche disparaît. (4) Dans Recette, tu n'as plus à deviner si la page est ancienne : pas de cartouche = page à jour. Dis-le si une page reste ancienne sans cartouche.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T11:06:06Z"
+   "state": "known"
   },
   {
    "id": "SOG-0408",
@@ -4138,8 +4143,10 @@
    },
    "test": "Signaler, après avoir rechargé la page. (1) Tape vite un titre puis un texte long (une dizaine de lignes) : la frappe suit, sans à-coup, à l'ordinateur comme au téléphone. (2) Arrête de taper une seconde, recharge la page : ton brouillon est là. (3) Passe sur une autre appli ou un autre onglet au milieu d'une phrase, reviens : rien n'est perdu. (4) Envoie : le signalement part une seule fois. Dis-le si la page hésite encore, et sur quel appareil.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T11:52:28Z"
+   "state": "reserve",
+   "delivered": "2026-11-17T11:52:28Z",
+   "comment": "c’est bon. c’était quoi ?",
+   "at": "2026-11-17T15:18:57Z"
   },
   {
    "id": "SOG-0411",
@@ -4654,44 +4661,6 @@
    "choice": 2,
    "text": "je ne suis pas sûr du calcul. le tracé était le même, en tout cas.",
    "at": "2026-11-17T10:14:56Z"
-  },
-  {
-   "id": "Q-0085",
-   "fiche": "SOG-0415",
-   "app": "pilote",
-   "question": "Routes Concorde : la carte d'équipage que tu montres (Sierra Mike, November, Oscar) suffit-elle comme source ?",
-   "context": "J'ai lu ton scan : la carte porte les trois routes imprimées avec leurs points (pour SN : N 49 49.6 W020 puis N 49 41.0 W015 ; pour SO : N 48 22.0 W030, N 48 48.6 W020, N 48 40.0 W015 ; ceux de SM sont sous le surlignage). C'est une carte d'exploitation de l'époque : fiable, de première main, mais pas une publication d'État. Ce que je conteste : l'appeler « officielle », et mettre le scan dans le dépôt publié (carte d'un éditeur) — on relève les points et la référence, pas l'image. Pour relever tous les points il me faut les deux moitiés en pleine taille : dépose-les hors du dépôt publié (par exemple dans data/local/) et dis-moi où. Le 17/11 à 15 h 06, ton mot : tu n'as pas encore la seconde moitié, ni de données chiffrées. Rien ne presse : réponds quand la carte sera complète ; d'ici là AeroDB cherche un document d'avant 2003 qui donne les points.",
-   "options": [
-    "Oui : cette carte comme source, citée (« carte de route d'équipage, Concorde ») ; la recherche d'un document d'État continue sans bloquer",
-    "Non : attendre un document d'État (AIP d'avant 2003, OACI) avant tout relevé",
-    "Oui, et inutile de chercher plus loin",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "answered",
-   "recommended": 0,
-   "choice": 0,
-   "text": "",
-   "at": "2026-11-17T15:16:29Z"
-  },
-  {
-   "id": "Q-0086",
-   "fiche": "SOG-0402",
-   "app": "pilote",
-   "question": "Plan de vol : lancer maintenant le lot 2 de SOG-0402 — l'équipement réel de l'aéronef (radio HF, etc.) pris dans sa fiche ?",
-   "context": "Ton second collage est refusé, entre autres, parce que la radio HF est obligatoire dans l'espace océanique et que le plan copié écrit un équipement type (« SDGRWY/S ») sans HF. L'immatriculation exigée, elle, est traitée tout de suite (SOG-0422). Pour la HF je refuse d'inventer un équipement : en attendant, le bouton prévient. Le vrai remède est le lot 2 : l'équipement lu dans la fiche de l'aéronef. Features SOG a aussi le terrain de dégagement (SOG-0398) en attente de ton mot.",
-   "options": [
-    "Oui, le lot 2 maintenant, avant le terrain de dégagement",
-    "Plus tard : l'avertissement suffit pour l'instant, le terrain de dégagement d'abord",
-    "Plus tard : ni l'un ni l'autre aujourd'hui, les routes d'abord",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "answered",
-   "recommended": 0,
-   "choice": 1,
-   "text": "",
-   "at": "2026-11-17T15:16:52Z"
   }
  ]
 }

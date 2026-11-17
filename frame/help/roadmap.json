@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1ce1fee",
+  "organisation": "a356945",
   "fiches": 423,
   "untranslated": 0,
   "priorities": 374,
@@ -595,8 +595,7 @@
      "fr": "Fiche de performances : après l'import d'une réponse de ChatGPT, la table régime / débit / altitude manque et des champs sont dits « base V2 »",
      "en": "Performance sheet: after importing a ChatGPT answer, the power / fuel flow / altitude table is missing and fields are labelled 'V2 base'",
      "de": "Leistungsblatt: nach dem Import einer ChatGPT-Antwort fehlt die Tabelle Leistung / Verbrauch / Höhe, und Felder heißen „V2-Basis“",
-     "es": "Ficha de prestaciones: tras importar una respuesta de ChatGPT falta la tabla régimen / consumo / altitud y hay campos marcados «base V2»",
-     "test": true
+     "es": "Ficha de prestaciones: tras importar una respuesta de ChatGPT falta la tabla régimen / consumo / altitud y hay campos marcados «base V2»"
     }
    ]
   },
@@ -883,8 +882,7 @@
      "fr": "Carburant : le carburant de dégagement couvre-t-il la remise des gaz, le trajet vers le dégagement (avec le vent) et l'approche ?",
      "en": "Fuel: does the alternate fuel cover the go-around, the leg to the alternate (with wind) and the approach?",
      "de": "Kraftstoff: deckt der Ausweichkraftstoff das Durchstarten, die Strecke zum Ausweichflugplatz (mit Wind) und den Anflug?",
-     "es": "Combustible: ¿cubre el combustible de alternativo la aproximación frustrada, el tramo al alternativo (con viento) y la aproximación?",
-     "test": true
+     "es": "Combustible: ¿cubre el combustible de alternativo la aproximación frustrada, el tramo al alternativo (con viento) y la aproximación?"
     }
    ]
   },
@@ -1307,8 +1305,7 @@
      "fr": "Carburant, KABQ → EGLL : la route calculée apparaît puis disparaît, il reste un direct",
      "en": "Fuel, KABQ → EGLL: the computed route appears then disappears, a direct is left",
      "de": "Kraftstoff, KABQ → EGLL: die berechnete Route erscheint und verschwindet, es bleibt ein Direkt",
-     "es": "Combustible, KABQ → EGLL: la ruta calculada aparece y desaparece, queda un directo",
-     "test": true
+     "es": "Combustible, KABQ → EGLL: la ruta calculada aparece y desaparece, queda un directo"
     },
     {
      "id": "SOG-0390",
@@ -2343,8 +2340,7 @@
      "fr": "Dossier de développement : les schémas de fonctionnement de la suite (cadre, aerodb, moteur de route et matrice…) dans la documentation",
      "en": "Developer documentation: the diagrams of how the suite works (frame, aerodb, route engine and matrix…) in the documentation",
      "de": "Entwicklerdokumentation: die Funktionsschemata der Suite (Rahmen, aerodb, Routen-Engine und Matrix…) in der Dokumentation",
-     "es": "Documentación de desarrollo: los esquemas de funcionamiento de la suite (marco, aerodb, motor de rutas y matriz…) en la documentación",
-     "test": true
+     "es": "Documentación de desarrollo: los esquemas de funcionamiento de la suite (marco, aerodb, motor de rutas y matriz…) en la documentación"
     }
    ]
   },
@@ -2433,8 +2429,7 @@
      "fr": "Feuille de route : une vue d'ensemble par grande fonction et par capacité, avec un pourcentage",
      "en": "Roadmap: an overview by main function and by capability, with a percentage",
      "de": "Roadmap: eine Übersicht nach Hauptfunktion und Fähigkeit, mit Prozentwert",
-     "es": "Hoja de ruta: una vista de conjunto por gran función y por capacidad, con un porcentaje",
-     "test": true
+     "es": "Hoja de ruta: una vista de conjunto por gran función y por capacidad, con un porcentaje"
     },
     {
      "id": "SOG-0387",
@@ -2443,8 +2438,7 @@
      "fr": "BLOQUANT : feuille de route, pas de glisser-déposer dans la vue par thème",
      "en": "BLOCKING: roadmap, no drag and drop in the view by theme",
      "de": "BLOCKIEREND: Roadmap, kein Ziehen und Ablegen in der Ansicht nach Thema",
-     "es": "BLOQUEANTE: hoja de ruta, sin arrastrar y soltar en la vista por tema",
-     "test": true
+     "es": "BLOQUEANTE: hoja de ruta, sin arrastrar y soltar en la vista por tema"
     }
    ]
   },
@@ -2805,8 +2799,7 @@
      "fr": "Signaler : la page est lente à la frappe (le titre comme le texte)",
      "en": "Report: the page is slow while typing (title and text)",
      "de": "Melden: die Seite ist beim Tippen langsam (Titel und Text)",
-     "es": "Informar: la página es lenta al teclear (título y texto)",
-     "test": true
+     "es": "Informar: la página es lenta al teclear (título y texto)"
     }
    ]
   },
@@ -2823,12 +2816,11 @@
     {
      "id": "SOG-0407",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "RÉGRESSION : le bouton « pas à jour, rafraîchir » a disparu — une page ouverte ne dit plus qu'une version plus récente existe",
      "en": "REGRESSION: the “out of date, refresh” button has disappeared — an open page no longer says a newer version exists",
      "de": "REGRESSION: die Schaltfläche „nicht aktuell, neu laden“ ist verschwunden — eine offene Seite meldet keine neuere Version mehr",
-     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente",
-     "test": true
+     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente"
     }
    ]
   },
