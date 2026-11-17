@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a0b852a",
-  "fiches": 416,
+  "organisation": "e4e679d",
+  "fiches": 417,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2098,6 +2098,15 @@
      "de": "Karte, Telefon: ein vom Piloten geöffnetes Feld bleibt offen (das automatische Einklappen machte sein Tippen rückgängig)",
      "es": "Mapa, teléfono: un panel que el piloto abre permanece abierto (el plegado automático deshacía su toque)",
      "test": true
+    },
+    {
+     "id": "SOG-0418",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carte, coupe au téléphone : des étiquettes se chevauchent (« 350 » et « NM », « TOD » et une température, « TOC » et un vent)",
+     "en": "Map, cross-section on a phone: labels overlap (“350” and “NM”, “TOD” and a temperature, “TOC” and a wind barb)",
+     "de": "Karte, Schnitt auf dem Telefon: Beschriftungen überlappen („350“ und „NM“, „TOD“ und eine Temperatur, „TOC“ und ein Windsymbol)",
+     "es": "Mapa, corte en el teléfono: etiquetas superpuestas («350» y «NM», «TOD» y una temperatura, «TOC» y un símbolo de viento)"
     }
    ]
   },
