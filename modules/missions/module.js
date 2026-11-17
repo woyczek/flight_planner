@@ -104,24 +104,15 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-famrow{gap:0 .75em;flex-wrap:wrap} /* la famille et, choisie, son sous-type sur une ligne (SOG-0292) */
 [data-module="missions"] .ms-famrow>.f-field{flex:1 1 12em;min-width:0}
 [data-module="missions"] .ms-famrow select{max-width:100%}
-/* l'éditeur (SOG-0287, la maquette est le contrat) : téléphone, une étape à la fois, pastilles qui défilent, barre du bas ; large,
-   étapes à gauche, formulaire au centre, aperçu et « À compléter » à droite */
+/* l'éditeur (SOG-0287) : les règles que l'écran d'editor_view.js (Création de missions) emploie encore ; les siennes sont dans son
+   AT_STYLE */
 [data-module="missions"] .ms-crumb{margin:0 0 .2em}
 [data-module="missions"] .ms-ed>h2{margin:.1em 0 .3em;font-size:1.4em}
 [data-module="missions"] .ms-edpend{display:inline-block;margin:0 0 .6em}
-[data-module="missions"] .ms-steps{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;margin:0 0 4px}
-[data-module="missions"] .ms-steps>button{flex:0 0 auto;border-radius:999px;min-height:44px;white-space:nowrap}
-[data-module="missions"] .ms-steps>button[aria-current=step]{outline:2px solid var(--accent,#1a73e8)}
 [data-module="missions"] .ms-stepmark{display:inline-block;width:1.6em;height:1.6em;line-height:1.6em;border-radius:50%;text-align:center;background:color-mix(in srgb,currentColor 14%,transparent)}
 [data-module="missions"] .ms-tlabel{display:block;font-size:.85em}
 [data-module="missions"] .ms-stepmark[data-kind=ok]{color:var(--ok,#1e7e34)}
 [data-module="missions"] .ms-stepmark[data-kind=warn]{color:var(--warn,#b06f00)}
-[data-module="missions"] .ms-edform{min-width:0}
-[data-module="missions"] .ms-edform .f-row{align-items:flex-start}
-[data-module="missions"] .ms-edform .f-row>.f-field{flex:1 1 10em;min-width:0}
-[data-module="missions"] .ms-edaside{display:none}
-[data-module="missions"] .ms-edbar{position:sticky;bottom:var(--f-tab-space,0px);display:flex;gap:8px;align-items:center;padding:8px 0;background:var(--sog-bg,#fff);z-index:2} /* au-dessus de la barre d'onglets du téléphone, comme rp-dock */
-[data-module="missions"] .ms-edbar>.ms-edcancel{margin-left:auto}
 [data-module="missions"] .ms-edteam{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-edteam>.f-field{margin:0;min-width:0}
 [data-module="missions"] .ms-edthead{display:none}
@@ -138,7 +129,6 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
   [data-module="missions"] .ms-evrow{grid-template-columns:minmax(0,.6fr) minmax(0,1fr) minmax(0,2fr) auto}
   [data-module="missions"] .ms-evrow>.ms-evtext{grid-column:auto}
 }
-[data-module="missions"] .ms-edform textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
 [data-module="missions"] .ms-stload>.f-field:first-child{flex:3 1 14em}
 [data-module="missions"] [data-stcount][data-over="1"]{color:var(--sog-warn,#b06f00)} /* au-delà de 600 : la synthèse coupera (jamais l'écriture) */
 [data-module="missions"] .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2;min-width:44px;min-height:44px}
@@ -149,17 +139,8 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
   [data-module="missions"] .ms-tlabel{display:none}
 }
 @container (min-width: 850px){
-  [data-module="missions"] .ms-edgrid{display:grid;grid-template-columns:minmax(12em,16em) minmax(0,1fr) minmax(14em,20em);gap:16px;align-items:start}
-  [data-module="missions"] .ms-steps{flex-direction:column;overflow:visible}
-  [data-module="missions"] .ms-steps>button{border-radius:6px;text-align:left;border-color:transparent;background:none}
-  [data-module="missions"] .ms-steps>button[aria-current=step]{outline:none;background:var(--accent-bg,#e8f0fe)}
-  [data-module="missions"] .ms-edaside{display:block}
-  /* la barre d'actions en bas de l'écran, alignée sur le formulaire (la maquette) : l'éditeur occupe la hauteur, la barre colle en bas */
+  /* l'éditeur occupe la hauteur de l'écran (la maquette) */
   [data-module="missions"] .ms-ed{display:flex;flex-direction:column;min-height:calc(100dvh - 160px)}
-  [data-module="missions"] .ms-edbar{margin-top:auto;display:grid;grid-template-columns:minmax(12em,16em) auto auto minmax(0,1fr);column-gap:8px;border-top:1px solid var(--sog-line,#ddd)}
-  [data-module="missions"] .ms-edbar>:first-child{grid-column:2;margin-left:8px}
-  [data-module="missions"] .ms-edbar>.ms-edcancel{justify-self:end}
-  [data-module="missions"] .ms-edaside>.f-card{margin:0 0 12px}
 }
 @container (min-width: 700px){
   [data-module="missions"] .ms-rrow>summary{display:flex;gap:1em;min-height:0;padding:.1em .75em;line-height:1.3}
@@ -539,8 +520,6 @@ const TX = {
   edIdNext: ['le suivant de la famille', 'the next of the family', 'die nächste der Familie', 'el siguiente de la familia'],
   edPlaceHint: ['code OACI · nom', 'ICAO code · name', 'ICAO-Code · Name', 'código OACI · nombre'],
   edSave: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
-  edNext: ['Suivante', 'Next', 'Weiter', 'Siguiente'],
-  edPreview: ['Aperçu de la fiche', 'Preview of the sheet', 'Vorschau des Blatts', 'Vista previa de la ficha'],
   edThumb: ['Croquis des lieux de la mission', 'Sketch of the mission\'s places', 'Skizze der Orte der Mission',
     'Croquis de los lugares de la misión'
   ],
