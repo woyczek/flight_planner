@@ -3265,3 +3265,214 @@ def i45(c):
         c.eq(M.load(os.path.join(data, 'nowhere')), {}, 'no folder: a cold start', what='no folder')
     src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
     c.ok('tree_memo.load(DATA)' in src and 'tree_memo.save(DATA' in src and "^(local|weather)(/|$)" in src, '', 'the launcher reads the memory at its start, writes it, and keeps local/ out of the tree it gives to the page')
+
+
+@case('I46', 'World weather tool (SOG-0429): each forecast time is kept in a work folder as soon as it is read; a second build of the same run reads them back (as an untrusted input) and says so; a new run removes the old folder; nothing foreign is touched', 'I', static=True,
+      rule='SOG-0429 (the user, 17 Nov 2026: leaving the page during a GFS rebuild loses what was downloaded): tools/build_world_weather.py held the 25 steps in memory and wrote everything at the end — an interruption lost up to two minutes of downloads; --work keeps each step when it is read (run-<run>-<step>/), the next build of the same run takes what is there, validated (size, schema, instant, exact variables, numbers only)')
+def i46(c):
+    import contextlib
+    import importlib
+    import io
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    B = importlib.import_module('build_world_weather')
+    G = importlib.import_module('grib2_lite')
+    kept = (G.messages, B.get, B.time.sleep)
+
+    def plausible(f):
+        return 101300.0 if f in ('prmsl', 'psfc') else 0.0001 if f == 'prate' else 20000.0 if f == 'vis' else 283.15 if f == 't2' or (f[0] == 't' and f[1:].isdigit()) else 5.0
+
+    def fake_messages(buf):
+        return [{'category': k[0], 'number': k[1], 'surface': k[2], 'level': k[3], 'scan': 0x40, 'lat1': -80.0, 'lon1': 0.0, 'dj': 1.0, 'di': 1.0, 'ni': 360, 'nj': 161,
+                 'values': [plausible(f)] * (360 * 161)} for k, f in B.FIELDS.items()]
+    calls = {'n': 0, 'fail_at': 0}
+
+    def fake_get(addr, timeout=120):
+        calls['n'] += 1
+        if calls['fail_at'] and calls['n'] == calls['fail_at']:
+            raise RuntimeError('the network went away')
+        return b'GRIB0000'
+    try:
+        G.messages, B.get, B.time.sleep = fake_messages, fake_get, (lambda s: None)
+        now = 1_800_000_000
+        run = now // 21600 * 21600
+        times = [now // 10800 * 10800 + 10800 * k for k in range(4)]
+        n = len(range(-B.TOP, B.TOP + 1, 5)) * len(range(-180, 180, 5))
+        with tempfile.TemporaryDirectory() as td:
+            work = B.work_dir(td, run, 5)
+            c.eq(os.path.basename(work), f'run-{run}-5', 'the work folder is named by the run and the step', what='name')
+            calls.update(n=0, fail_at=3)   # the third request fails: the network goes away
+            try:
+                B.read(5, now, run, times, work)
+                c.ok(False, '', 'the interrupted build raised')
+            except RuntimeError:
+                pass
+            c.eq(len([f for f in os.listdir(work) if f.endswith('.json')]), 4, 'two forecast times (a file and its altitude file each) are kept after the interruption: nothing lost but the one being read', what='kept files')
+            c.eq([f for f in os.listdir(work) if f.endswith('.tmp')], [], 'no half-written file', what='no temp')
+            calls.update(n=0, fail_at=0)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                idx, steps = B.read(5, now, run, times, work)
+            lines = out.getvalue().split(chr(10))
+            c.eq((len(steps), calls['n'], '@reprise 2/4' in lines), (4, 2, True), 'the second build reads two back, asks the NOAA for the two missing only, and says it (the line the launcher reads)', what='resume')
+            calls['n'] = 0
+            with contextlib.redirect_stdout(io.StringIO()):
+                B.read(5, now, run, times, work)
+            c.eq(calls['n'], 0, 'all kept: no request at all', what='all kept')
+            # what is read back is an untrusted input: any defect = that time is read again
+            first = os.path.join(work, B.name(times[0]))
+            good = B.load_step(work, times[0], n)
+            c.ok(good is not None, '', 'control: a good kept time is taken')
+            variants = {
+                'not JSON': b'{no',
+                'nested 300 000 levels': b'[' * 300000 + b']' * 300000,
+                'another instant': json.dumps({'schema': 1, 'time': 5, 'vars': {}}).encode(),
+                'text values': json.dumps({'schema': 1, 'time': times[0], 'vars': {k: ['x'] * n for k in B.UNITS}}).encode(),
+                'short lists': json.dumps({'schema': 1, 'time': times[0], 'vars': {k: [1] * 3 for k in B.UNITS}}).encode(),
+                'booleans': json.dumps({'schema': 1, 'time': times[0], 'vars': {k: [True] * n for k in B.UNITS}}).encode(),
+                'one variable more': json.dumps({'schema': 1, 'time': times[0], 'vars': {**{k: [1] * n for k in B.UNITS}, 'evil': [1] * n}}).encode(),
+                'an absurd value (1e11 hPa)': json.dumps({**good[0], 'vars': {**good[0]['vars'], 'p': [1e11] + good[0]['vars']['p'][1:]}}).encode(),
+                'an absurd altitude value (wind 9999 kt at 300 hPa)': json.dumps({**good[1], 'vars': {**good[1]['vars'], 'ws300': [9999] + good[1]['vars']['ws300'][1:]}}).encode(),
+                'over the size bound': b'x' * (B.MAX_STEP_FILE + 5),
+            }
+            bad = []
+            goodbytes = {}
+            for alt in (False, True):
+                with open(os.path.join(work, B.name(times[0], alt)), 'rb') as f:
+                    goodbytes[alt] = f.read()
+            for label, data in variants.items():
+                alt = 'altitude' in label
+                path = os.path.join(work, B.name(times[0], alt))
+                with open(path, 'wb') as f:
+                    f.write(data)
+                if B.load_step(work, times[0], n) is not None:
+                    bad.append(label)
+                with open(path, 'wb') as f:
+                    f.write(goodbytes[alt])      # the good file back for the next variant
+            c.ok(B.load_step(work, times[0], n) is not None, '', 'control after the variants: the good time is still taken')
+            c.eq(bad, [], 'every defect of a kept file is a time read again, never taken', what='hostile')
+            # the run changes: the old folder goes, another name is never touched
+            with open(os.path.join(td, 'notmine.txt'), 'w') as f:
+                f.write('x')
+            os.makedirs(os.path.join(td, 'other_dir'))
+            B.work_dir(td, run + 21600, 5)
+            c.eq(sorted(os.listdir(td)), ['notmine.txt', 'other_dir', f'run-{run + 21600}-5'], 'a new run removes the old work folder and touches nothing else', what='new run')
+            c.eq(B.work_dir('', run, 5), None, 'without --work nothing is kept: the build goes on without a resume', what='no work')
+    finally:
+        G.messages, B.get, B.time.sleep = kept
+
+
+@case('I47', 'World weather job (SOG-0429): the work folder is kept under data/local/ (never served), an interruption keeps what was read and status says it, the next build says what it took back, publishing removes it, old temporary folders are not left; through a link nothing is written', 'I', static=True,
+      rule='SOG-0429: tools/regen/weather.py passes --work data/local/weather_work to the tool, reads « @reprise k/n » (logged at once as « reprise : k échéances sur n déjà là », result `resumed`/`of`), reports `partial` in status (names only), removes the kept folder once the publication is in place and the `.world-*` folders an abrupt stop left; a data/local that is a link is not used')
+def i47(c):
+    import importlib
+    import json
+    import os
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ = importlib.import_module('regen_jobs')
+    if ('weather', 'world') not in RJ.REGISTRY:
+        RJ.load_verbs()
+    fn, check = RJ.REGISTRY[('weather', 'world')]
+    fake = (
+        'import json, os, sys\n'
+        'out = sys.argv[1]\n'
+        'here = os.path.dirname(os.path.abspath(__file__))\n'
+        'mode = open(os.path.join(here, "mode.txt")).read().strip()\n'
+        'open(os.path.join(here, "args.txt"), "w").write(" ".join(sys.argv[2:]))\n'
+        'work = sys.argv[sys.argv.index("--work") + 1] if "--work" in sys.argv else ""\n'
+        'names = ["2027-01-15T%02d.json" % (8 + 3 * k) for k in range(3)]\n'
+        'folder = os.path.join(work, "run-1799990000-5") if work else ""\n'
+        'if mode == "interrupt":\n'
+        '    os.makedirs(folder, exist_ok=True)\n'
+        '    for n in names[:2]:\n'
+        '        for x in (n, n.replace(".json", "-alt.json")): open(os.path.join(folder, x), "w").write("{}")\n'
+        '    print("@etape 1/3", flush=True); print("@etape 2/3", flush=True); sys.exit(3)\n'
+        'if mode == "resume" and folder and os.path.isdir(folder):\n'
+        '    print("@reprise %d/3" % (len(os.listdir(folder)) // 2), flush=True)\n'
+        'os.makedirs(out)\n'
+        'for n in names + [x.replace(".json", "-alt.json") for x in names]: open(os.path.join(out, n), "w").write("{}")\n'
+        'idx = {"schema": 1, "model": "gfs", "run": 1_799_990_000, "built": 1_700_000_000, "step": 5, "times": [1_800_000_000 + 10800 * k for k in range(3)], "files": names, "altFiles": [x.replace(".json", "-alt.json") for x in names]}\n'
+        'json.dump(idx, open(os.path.join(out, "index.json"), "w"))\n'
+        'for k in range(3): print("@etape %d/3" % (k + 1), flush=True)\n')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(os.path.join(data, 'weather'))
+        script = os.path.join(td, 'fake_world.py')
+        with open(script, 'w', encoding='utf-8') as f:
+            f.write(fake)
+        ctx = {'data': data, 'script': script}
+        jobs = []
+
+        def run(mode, **a):
+            with open(os.path.join(td, 'mode.txt'), 'w') as f:
+                f.write(mode)
+            jobs.append(RJ.Job('weather', 'world', {}))
+            return fn(jobs[-1], check(a), ctx)
+        old, recent = os.path.join(data, 'weather', '.world-old'), os.path.join(data, 'weather', '.world-recent')
+        os.makedirs(old)
+        os.makedirs(recent)
+        os.utime(old, (time.time() - 3600, time.time() - 3600))
+        r = run('interrupt')
+        args = open(os.path.join(td, 'args.txt')).read()
+        c.eq((r['ok'], r['reason']), (False, 'failed'), 'the tool is interrupted: the job fails, as before', what='interrupted')
+        c.ok(args.endswith(os.path.join('local', 'weather_work').replace(chr(92), '/')) or args.split()[-1].replace(chr(92), '/').endswith('data/local/weather_work'), args, 'the job gives the tool a work folder under data/local/ (never served, never synchronised)')
+        c.eq((os.path.exists(old), os.path.exists(recent)), (False, True), 'a temporary folder an abrupt stop left is not left behind; one that is being used (recent) is not touched', what='stale temp')
+        r = run('interrupt', action='status')
+        c.eq(r.get('partial'), {'run': 1799990000, 'have': 2, 'of': 25}, 'status says what the interruption kept: two forecast times (names only, nothing opened)', what='partial')
+        r = run('resume')
+        c.eq((r['ok'], r.get('resumed'), r.get('of'), r['kept']), (True, 2, 3, False), 'the next build says what it took back (resumed 2 of 3) and does not call it a reused publication', what='resumed')
+        c.ok(any('reprise : 2' in x for x in jobs[-1].view()['log']), str(jobs[-1].view()['log']), 'the job logs the resume line at once (the page shows it while the build runs)')
+        c.eq(os.path.exists(os.path.join(data, 'local', 'weather_work')), False, 'once published, the kept folder is removed', what='cleaned')
+        c.eq(run('ok', action='status').get('partial'), None, 'status has nothing kept any more', what='no partial')
+        # a data/local that is a link: the job does not use it
+        with tempfile.TemporaryDirectory() as elsewhere:
+            os.makedirs(os.path.join(data, 'local'), exist_ok=True)
+            os.rmdir(os.path.join(data, 'local'))
+            made = False
+            try:
+                os.symlink(elsewhere, os.path.join(data, 'local'), target_is_directory=True)
+                made = True
+            except (OSError, NotImplementedError):
+                try:
+                    made = subprocess.run(['cmd', '/c', 'mklink', '/J', os.path.join(data, 'local'), elsewhere], capture_output=True).returncode == 0
+                except OSError:
+                    made = False
+            if not made:
+                c.ok(True, '', 'no link or junction can be made here: that check is not played')
+            else:
+                run('interrupt')
+                c.eq(['--work' in open(os.path.join(td, 'args.txt')).read(), os.listdir(elsewhere)], [False, []], 'a data/local that is a link or a junction: no work folder is given, nothing is written through it', what='link')
+        # the kept folder itself (data/local/weather_work) is a link or a junction: not used, and nothing behind it is read, written or removed
+        with tempfile.TemporaryDirectory() as behind:
+            os.makedirs(os.path.join(behind, 'run-1799990000-5'))
+            with open(os.path.join(behind, 'run-1799990000-5', '2027-01-15T08.json'), 'w') as f:
+                f.write('{}')
+            if os.path.lexists(os.path.join(data, 'local')):
+                try:
+                    os.unlink(os.path.join(data, 'local'))
+                except OSError:
+                    os.rmdir(os.path.join(data, 'local'))
+            os.makedirs(os.path.join(data, 'local'))
+            made = False
+            try:
+                os.symlink(behind, os.path.join(data, 'local', 'weather_work'), target_is_directory=True)
+                made = True
+            except (OSError, NotImplementedError):
+                try:
+                    made = subprocess.run(['cmd', '/c', 'mklink', '/J', os.path.join(data, 'local', 'weather_work'), behind], capture_output=True).returncode == 0
+                except OSError:
+                    made = False
+            if made:
+                st = run('interrupt', action='status')
+                run('interrupt')
+                c.eq(['--work' in open(os.path.join(td, 'args.txt')).read(), st.get('partial'), sorted(os.listdir(os.path.join(behind, 'run-1799990000-5')))], [False, None, ['2027-01-15T08.json']],
+                     'a kept folder that is a link or a junction: not given to the tool, not counted by status, nothing behind it written or removed', what='kept link')
+
+

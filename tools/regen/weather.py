@@ -26,6 +26,9 @@ import regen_jobs  # noqa: E402  (le socle : inside, child_env)
 
 SCRIPT = os.path.join(TOOLS, 'build_world_weather.py')
 DEST = ('weather', 'world')
+WORK = ('local', 'weather_work')   # SOG-0429 : les échéances déjà lues d'une construction interrompue (data/local/ : jamais servi, jamais synchronisé) ; l'outil y garde run-<run>-<pas>/
+WORK_NAME = re.compile(r'run-(\d{9,11})-(\d{1,2})\Z')
+STALE_TEMP = 120                   # un dossier de travail `.world-*` plus vieux que cela (secondes) est celui d'un arrêt brutal : retiré
 LEGACY = ('local', 'weather', 'world')      # là où les premières versions l'écrivaient (jamais servi par le lanceur)
 TIMEOUT = 900                      # secondes pour toute la lecture (le serveur de la NOAA répond par échéance)
 MAX_FILES = 2 * 25 + 1             # un index, deux fichiers par échéance, 25 échéances
@@ -85,10 +88,11 @@ def _valid(folder):
     return all(isinstance(n, str) and n in names for n in named) and sum(e.stat().st_size for e in entries) <= MAX_BYTES
 
 
+RESUME = re.compile(r'^@reprise (\d{1,3})/(\d{1,3})\s*$')      # la ligne de reprise de l'outil (SOG-0429) : des échéances déjà là n'ont pas été relues
 PROGRESS = re.compile(r'^@etape (\d{1,3})/(\d{1,3})\s*$')      # la ligne d'avancement de tools/build_world_weather.py (une par échéance lue)
 
 
-def _read_lines(proc, job, lines, seen=None):
+def _read_lines(proc, job, lines, seen=None, resumed=None):
     """Lit la sortie de l'outil ligne à ligne : « @etape k/n » devient l'avancement du travail (et `seen` en garde la trace : la NOAA a été lue), le reste est gardé (les dernières lignes servent de message)."""
     for line in proc.stdout:
         m = PROGRESS.match(line)
@@ -97,8 +101,51 @@ def _read_lines(proc, job, lines, seen=None):
                 seen.append(1)
             job.step('synoptique monde : échéance %s sur %s' % m.groups(), int(m.group(1)), int(m.group(2)), 'étapes')
         elif line.strip():
+            r = RESUME.match(line)
+            if r:
+                if resumed is not None:
+                    resumed.append((int(r.group(1)), int(r.group(2))))
+                job.log('reprise : %s échéances sur %s déjà là' % r.groups())      # dite tout de suite (la page la montre pendant la marche, en sa langue), pas seulement à la fin
+                continue
             lines.append(line.strip())
             del lines[:-50]
+
+
+def _plain(path):
+    """Un vrai dossier : ni lien, ni jonction ni point d'analyse (sous Python < 3.12 os.path.islink ne voit pas une jonction Windows)."""
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return False
+    return not os.path.islink(path) and not (hasattr(os.path, 'isjunction') and os.path.isjunction(path)) and not getattr(st, 'st_file_attributes', 0) & 0x400 and os.path.isdir(path)
+
+
+def _partial(data):
+    """Ce qu'une construction interrompue a gardé (les NOMS seulement, rien n'est ouvert) : { run (s), have (échéances dont les deux fichiers sont là), of } du dossier de travail le plus fourni, ou None."""
+    root = os.path.join(data, *WORK)
+    best = None
+    try:
+        for e in os.scandir(root):
+            m = WORK_NAME.fullmatch(e.name)
+            if not m or not _plain(e.path):
+                continue
+            names = {n for n in os.listdir(e.path) if FILE.match(n)}
+            have = sum(1 for n in names if not n.endswith('-alt.json') and n != 'index.json' and n.replace('.json', '-alt.json') in names)
+            if have and (best is None or have > best['have']):
+                best = {'run': int(m.group(1)), 'have': min(have, 25), 'of': 25}
+    except OSError:
+        return None
+    return best
+
+
+def _clean_stale(parent):
+    """Les dossiers `.world-*` que les versions d'avant (ou un arrêt brutal) ont laissés à côté de la publication sont retirés : jamais un dossier laissé."""
+    try:
+        for e in os.scandir(parent):
+            if e.name.startswith('.world-') and _plain(e.path) and time.time() - e.stat().st_mtime > STALE_TEMP:
+                shutil.rmtree(e.path, ignore_errors=True)
+    except OSError:
+        pass
 
 
 IGNORED = ('weather', 'weather/', '/weather', '/weather/')
@@ -171,24 +218,31 @@ def run(job, args, ctx):
     dest = os.path.join(data, *DEST)
     moved = _migrate(data)
     if args['action'] == 'status':
-        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {})}
+        part = _partial(data)
+        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {}), **({'partial': part} if part else {})}
     base = os.path.realpath(data)
     parent = os.path.dirname(dest)
     if not regen_jobs.inside(parent, base):
         return {'ok': False, 'reason': 'failed', 'message': 'unsafe path', 'reached': False}
     os.makedirs(parent, exist_ok=True)
+    _clean_stale(parent)
+    work_root = os.path.join(data, *WORK)
+    # le dossier gardé : data/local ET data/local/weather_work, vrais dossiers (ni lien ni jonction) dont le chemin réel reste sous data/ (absents : l'outil les crée) — sinon la construction se fait sans reprise
+    keep_work = all(not os.path.lexists(x) or _plain(x) for x in (os.path.dirname(work_root), work_root)) and regen_jobs.inside(os.path.dirname(work_root), base) and regen_jobs.inside(work_root, base)
     ignored = _ignore(data)
     t0 = time.time()
     work = tempfile.mkdtemp(prefix='.world-', dir=parent)
     out = os.path.join(work, 'world')
     cmd = [sys.executable, '-I', ctx.get('script') or SCRIPT, out]           # ctx['script'] : crochet des essais (jamais posé par le lanceur), un faux outil
     if _read_index(dest):
-        cmd += ['--keep', 'file:///' + dest.replace('\\', '/').lstrip('/') + '/']      # la publication d'avant : même run de GFS → rien n'est redemandé à la NOAA
+        cmd += ['--keep', 'file:///' + dest.replace('\\', '/').lstrip('/') + '/']
+    if keep_work:
+        cmd += ['--work', work_root]      # SOG-0429 : chaque échéance lue est gardée dès qu'elle l'est ; la construction suivante du même run la reprend      # la publication d'avant : même run de GFS → rien n'est redemandé à la NOAA
     job.step('synoptique monde : lecture de GFS (NOAA)', 0, 1, 'étapes')
     try:
         proc = job.track(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), cwd=work))      # déclaré : un travail libéré (SOG-0245) l'arrête
-        lines, seen, end = [], [], t0 + ctx.get('timeout', TIMEOUT)
-        reader = threading.Thread(target=_read_lines, args=(proc, job, lines, seen), daemon=True)      # l'avancement (« @etape k/n », une ligne par échéance) monte au fur et à mesure ; lire la sortie en continu évite aussi qu'un tube plein ne fige l'outil
+        lines, seen, resumed, end = [], [], [], t0 + ctx.get('timeout', TIMEOUT)
+        reader = threading.Thread(target=_read_lines, args=(proc, job, lines, seen, resumed), daemon=True)      # l'avancement (« @etape k/n », une ligne par échéance) monte au fur et à mesure ; lire la sortie en continu évite aussi qu'un tube plein ne fige l'outil
         reader.start()
         while proc.poll() is None:
             if job.cancelled() or time.time() > end:
@@ -213,7 +267,9 @@ def run(job, args, ctx):
             os.replace(dest, old)
         os.replace(out, dest)
         shutil.rmtree(old, ignore_errors=True)
-        return {'ok': True, 'kept': any('reprise' in x for x in lines), **_summary(dest), 'gitignore': ignored, **({'migrated': True} if moved else {}), 'seconds': round(time.time() - t0, 1)}
+        if keep_work:
+            shutil.rmtree(work_root, ignore_errors=True)      # publiée : ce qui était gardé n'a plus d'objet
+        return {'ok': True, 'kept': any('publication reprise' in x for x in lines), **({'resumed': resumed[0][0], 'of': resumed[0][1]} if resumed else {}), **_summary(dest), 'gitignore': ignored, **({'migrated': True} if moved else {}), 'seconds': round(time.time() - t0, 1)}
     except OSError as e:
         return {'ok': False, 'reason': 'failed', 'message': str(e)[:200], 'seconds': round(time.time() - t0, 1), 'reached': False}
     finally:

@@ -33,12 +33,20 @@ monde). Code de sortie 0 dans tous les cas, sauf argument erroné.
 
 Bibliothèque standard seulement (CLAUDE.md).
 
-Usage : python tools/build_world_weather.py DOSSIER [--step 5] [--keep ADRESSE_DU_DOSSIER]
+Reprise (SOG-0429, --work DOSSIER_PARENT) : chaque échéance lue est écrite dès qu'elle l'est dans un dossier de travail GARDÉ, `run-<run>-<pas>/` sous le
+dossier donné (le lanceur y met data/local/weather_work/ : jamais servi ni synchronisé) ; une construction interrompue (réseau coupé, arrêt, lanceur fermé) ne
+perd donc que l'échéance en cours, et la suivante, du même run, relit ce qui est là — RELU COMME UNE ENTRÉE NON SÛRE (taille bornée, schéma, instant, variables et
+longueurs exactes, nombres seulement : tout défaut = l'échéance est relue sur la NOAA) — et le dit (« @reprise k/n »). Un dossier d'un autre run
+ou d'un autre pas est retiré dès que le run change ; le lanceur retire le dossier quand la publication est en place. Aucun appel réseau de plus : au contraire.
+
+Usage : python tools/build_world_weather.py DOSSIER [--step 5] [--keep ADRESSE_DU_DOSSIER] [--work DOSSIER_PARENT]
 """
 import argparse
 import json
 import math
 import os
+import re
+import shutil
 import sys
 import time
 import urllib.error
@@ -179,12 +187,115 @@ def latest_run(now, last):
 PROGRESS = '@etape'  # ligne d'avancement « @etape k/n » : une par échéance lue (le lanceur la met en barre de progression)
 
 
-def read(step, now, run, times):
-    """Télécharge et décode les 9 échéances ; rend le dictionnaire du fichier, ou lève une erreur."""
+WORK_NAME = re.compile(r'run-(\d{9,11})-(\d{1,2})\Z')   # le nom d'un dossier de travail gardé : le run (s) et le pas (°)
+MAX_STEP_FILE = 2 * 1024 * 1024                         # un fichier d'échéance fait quelques centaines de Ko : au-delà, relu sur la NOAA
+FINITE = (int, float)
+
+
+def _plain(path):
+    """Un vrai dossier : ni lien, ni jonction ni point d'analyse (Windows : `st_file_attributes & 0x400` ; sous Python < 3.12 os.path.islink ne voit pas une jonction)."""
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return False
+    return not os.path.islink(path) and not (hasattr(os.path, 'isjunction') and os.path.isjunction(path)) and not getattr(st, 'st_file_attributes', 0) & 0x400 and os.path.isdir(path)
+
+
+def work_dir(parent, run, step):
+    """Le dossier gardé de ce run (PARENT/run-<run>-<pas>, créé) ; les dossiers de travail d'un AUTRE run ou d'un autre pas sont retirés (le run a changé : ils ne servent plus) ; jamais un autre nom
+    (rien d'étranger n'est touché), jamais un lien. None sans --work, ou si le dossier ne peut pas être préparé : la construction se fait alors sans reprise."""
+    if not parent:
+        return None
+    try:
+        os.makedirs(parent, exist_ok=True)
+        if not _plain(parent):
+            return None      # le dossier de travail lui-même est un lien ou une jonction : rien n'est écrit ni retiré à travers
+        mine = f'run-{run}-{step}'
+        for e in os.scandir(parent):
+            if e.name != mine and WORK_NAME.fullmatch(e.name) and _plain(e.path):
+                shutil.rmtree(e.path, ignore_errors=True)
+        d = os.path.join(parent, mine)
+        os.makedirs(d, exist_ok=True)
+        return d if _plain(d) else None
+    except OSError:
+        return None
+
+
+# SOG-0429 (Sécurisation) : un intervalle PLAUSIBLE par variable (unités de UNITS et ALT_UNITS) — un fichier gardé falsifié ne met pas de valeurs absurdes dans la publication servie à toutes les pages : hors intervalle,
+# l'échéance est relue sur la NOAA. Larges (un orage, une dépression, la tropopause), jamais serrés.
+RANGES = {'p': (300, 1100), 't': (-100, 70), 'cc': (0, 100), 'ws': (0, 400), 'wd': (0, 360), 'ccl': (0, 100), 'ccm': (0, 100), 'cch': (0, 100), 'cape': (0, 12000), 'frz': (0, 70000), 'trop': (0, 90000),
+          'js': (0, 500), 'jd': (0, 360), 'pr': (0, 600), 'vis': (0, 400000), 'ps': (300, 1100), 'zs': (-500, 9000),
+          'z': (-1000, 20000), 'rh': (0, 100)}
+LEVEL_KEY = re.compile(r'(z|t|rh|ws|wd)\d{3,4}\Z')
+
+
+def _range(key):
+    if key in RANGES:
+        return RANGES[key]
+    m = LEVEL_KEY.fullmatch(key)
+    if m:
+        return {'z': RANGES['z'], 't': (-120, 60), 'rh': RANGES['rh'], 'ws': (0, 500), 'wd': (0, 360)}[m.group(1)]
+    return (-1e12, 1e12)
+
+
+def _doc_ok(doc, t, keys, n):
+    """Un document d'échéance relu est-il conforme ? schéma 1, instant t, exactement les variables `keys`, chacune une liste de n nombres (ou null) — jamais un booléen, jamais un texte."""
+    if not isinstance(doc, dict) or doc.get('schema') != 1 or doc.get('time') != t or not isinstance(doc.get('vars'), dict) or set(doc['vars']) != set(keys):
+        return False
+    for k, v in doc['vars'].items():
+        lo, hi = _range(k)
+        if not isinstance(v, list) or len(v) != n or any(x is not None and (isinstance(x, bool) or not isinstance(x, FINITE) or x != x or not lo <= x <= hi) for x in v):
+            return False
+    return True
+
+
+def load_step(work, t, n):
+    """L'échéance t gardée dans le dossier de travail : (fichier, fichier d'altitude), ou None (absente, trop grosse, illisible, non conforme : elle sera relue sur la NOAA)."""
+    if not work:
+        return None
+    docs = []
+    for alt, keys in ((False, UNITS), (True, ALT_UNITS)):
+        p = os.path.join(work, name(t, alt))
+        try:
+            if os.path.islink(p) or not os.path.isfile(p) or os.path.getsize(p) > MAX_STEP_FILE:
+                return None
+            with open(p, 'rb') as f:
+                doc = json.loads(f.read(MAX_STEP_FILE + 1).decode('utf-8'))
+        except Exception:   # RecursionError (JSON très imbriqué), MemoryError, illisible : non conforme
+            return None
+        if not _doc_ok(doc, t, keys, n):
+            return None
+        docs.append(doc)
+    return docs[0], docs[1]
+
+
+def save_step(work, s, sa):
+    """Garde une échéance lue (fichier temporaire puis remplacement : jamais un fichier à moitié écrit) ; un échec n'arrête rien (l'échéance ne sera pas reprise)."""
+    if not work:
+        return
+    try:
+        for doc, alt in ((s, False), (sa, True)):
+            p = os.path.join(work, name(s['time'], alt))
+            with open(p + '.tmp', 'w', encoding='utf-8') as f:
+                json.dump(doc, f, ensure_ascii=False, separators=(',', ':'))
+            os.replace(p + '.tmp', p)
+    except OSError as e:
+        print(f'échéance non gardée : {e}', file=sys.stderr)
+
+
+def read(step, now, run, times, work=None):
+    """Télécharge et décode les échéances (celles déjà gardées dans `work` sont relues, pas retéléchargées) ; rend le dictionnaire du fichier, ou lève une erreur."""
     lats = list(range(-TOP, TOP + 1, step))
     lons = list(range(-180, 180, step))
     steps = []
+    kept = {t: got for t in times if (got := load_step(work, t, len(lats) * len(lons)))}
+    if kept:
+        print(f'@reprise {len(kept)}/{len(times)}', flush=True)   # lue par le job du lanceur (tools/regen/weather.py) ; ASCII comme @etape : la sortie d'un tube Windows n'est pas de l'UTF-8
     for t in times:
+        if t in kept:
+            steps.append(kept[t])
+            print(f'{PROGRESS} {len(steps)}/{len(times)}', flush=True)
+            continue
         buf = get(url(run, (t - run) // 3600))
         if not buf or buf[:4] != b'GRIB':
             raise RuntimeError(f'échéance +{(t - run) // 3600} h absente')
@@ -213,6 +324,7 @@ def read(step, now, run, times):
             if missing > 0.1 * n:
                 raise RuntimeError(f'+{(t - run) // 3600} h, {k} : {missing} valeurs manquantes sur {n}')
         steps.append(({'schema': 1, 'time': t, 'vars': rows}, {'schema': 1, 'time': t, 'vars': alt}))
+        save_step(work, *steps[-1])   # gardée tout de suite : une interruption ne perd que l'échéance en cours
         time.sleep(1)  # NOMADS : au plus quelques demandes par minute
         print(f'{PROGRESS} {len(steps)}/{len(times)}', flush=True)  # l'avancement, lu par le job du lanceur (tools/regen/weather.py)
     index = {
@@ -287,6 +399,7 @@ def main():
     ap.add_argument('out')
     ap.add_argument('--step', type=int, default=5)
     ap.add_argument('--keep', default='')
+    ap.add_argument('--work', default='')
     a = ap.parse_args()
     if a.step not in (1, 2, 5, 10):
         ap.error('step : 1, 2, 5 ou 10')
@@ -306,7 +419,7 @@ def main():
             if pub:
                 print(f'même run ({time.strftime("%Y-%m-%d %HZ", time.gmtime(run))}) : publication reprise')
         if not pub:
-            pub = read(a.step, now, run, times)
+            pub = read(a.step, now, run, times, work_dir(a.work, run, a.step))
             print(f'synoptique monde : {len(pub[0]["lats"]) * len(pub[0]["lons"])} lieux, {len(pub[1])} échéances, '
                   f'run {time.strftime("%Y-%m-%d %HZ", time.gmtime(run))}')
     except Exception as e:
