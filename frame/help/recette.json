@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 282,
+  "tests": 283,
   "verdicts": 212
  },
  "apps": [
@@ -4245,6 +4245,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T14:20:45Z"
+  },
+  {
+   "id": "SOG-0422",
+   "app": "pilote",
+   "title": {
+    "fr": "« Copier pour Eurocontrol » : un tiret dans la route (deux indicatifs de route joints) coupe le plan de vol — cinq erreurs de syntaxe",
+    "en": "“Copy for Eurocontrol”: a hyphen in the route (two joined route designators) cuts the flight plan — five syntax errors",
+    "de": "„Für Eurocontrol kopieren“: ein Bindestrich in der Route (zwei verbundene Streckenbezeichner) zerschneidet den Flugplan — fünf Syntaxfehler",
+    "es": "«Copiar para Eurocontrol»: un guion en la ruta (dos designadores de ruta unidos) corta el plan de vuelo — cinco errores de sintaxis"
+   },
+   "test": "Carburant, la traversée EGGW → KJFK que tu as collée (page rechargée), bouton « Copier pour Eurocontrol », puis colle dans la validation d'Eurocontrol. Attendu : (1) plus AUCUNE erreur de syntaxe (SYN…) : la ligne de route n'a plus de tiret — le tronçon s'écrit « NICSO N260B ALLEX », et le pli dit « Deux indicatifs pour le même tracé (N260B-N271B) : le premier est écrit » ; (2) plus de « WAL/N0403F340 » (un changement identique au niveau en vigueur n'est pas écrit) ; (3) la fin de route s'écrit « ENE PARCH4 », sans « DCT » devant l'arrivée ; (4) « REG/… » est en case 18 : l'immatriculation de la fiche de l'aéronef, ou « REG/CHECK01 » avec la mention « immatriculation neutre » si la fiche n'e",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T15:34:34Z"
   }
  ],
  "decisions": [

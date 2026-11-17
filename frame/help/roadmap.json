@@ -2543,11 +2543,12 @@
     {
      "id": "SOG-0422",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "« Copier pour Eurocontrol » : un tiret dans la route (deux indicatifs de route joints) coupe le plan de vol — cinq erreurs de syntaxe",
      "en": "“Copy for Eurocontrol”: a hyphen in the route (two joined route designators) cuts the flight plan — five syntax errors",
      "de": "„Für Eurocontrol kopieren“: ein Bindestrich in der Route (zwei verbundene Streckenbezeichner) zerschneidet den Flugplan — fünf Syntaxfehler",
-     "es": "«Copiar para Eurocontrol»: un guion en la ruta (dos designadores de ruta unidos) corta el plan de vuelo — cinco errores de sintaxis"
+     "es": "«Copiar para Eurocontrol»: un guion en la ruta (dos designadores de ruta unidos) corta el plan de vuelo — cinco errores de sintaxis",
+     "test": true
     }
    ]
   },
