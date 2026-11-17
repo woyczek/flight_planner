@@ -12,9 +12,10 @@
 //     à chaque changement de niveau — jamais deux fois le même —, jamais de tiret : SOG-0422) ; oceanic : la route passe par une route
 //     NAT, une voie nord-américaine ou des coordonnées de l'Atlantique Nord (non contrôlées par Eurocontrol) ; sid / star : un nom de
 //     procédure écrit contre le départ / l'arrivée ; bad : les éléments écrits hors de la forme OACI (le message les refuse) ;
-//     joined : les noms de voies jointes dont le premier indicatif est écrit (dit au pilote).
+//     joined : les noms de voies jointes dont le premier indicatif est écrit (dit au pilote) ; rounded : [[écrit, arrondi]] les niveaux
+//     ramenés à la dizaine inférieure (SOG-0431 : « F205 » refusé, SYN101 ; dit au pilote, la copie n'est pas bloquée).
 //   eobtOf(plannedAt, now) → { at: Date, now: bool } : l'heure du vol, sinon l'heure présente arrondie aux cinq minutes suivantes.
-//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad, joined, hf, regNeutral } } : le message
+//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad, joined, hf, regNeutral, rounded } } : le message
 //     « (FPL-…) », une case par ligne ; l'immatriculation en case 18 (REG/, exigée par Eurocontrol), neutre (NEUTRAL_ID) quand la fiche
 //     n'en donne pas (regNeutral) ; hf : route océanique sans HF dans l'équipement.
 
@@ -67,6 +68,9 @@ export function coordWord(lat, lon) {
 
 /** Le groupe vitesse-niveau : « N » et la vitesse vraie en nœuds sur quatre chiffres, « F » et le niveau en centaines de pieds. */
 export const speedLevel = (kt, ft) => `N${pad(kt, 4)}F${pad(ft / 100, 3)}`;
+/** SOG-0431 : un niveau de croisière de la case 15 va de dix en dix (Eurocontrol refuse « F205 », SYN101) : ramené à la dizaine
+ *  inférieure (pieds en entrée et en sortie ; le niveau d'abord arrondi à la centaine de pieds, comme le groupe l'écrit). */
+export const levelTens = ft => Math.floor(Math.round(+ft / 100) / 10) * 1000;
 
 /** La case 15 depuis le texte de la route du vol (voir l'en-tête). */
 export function item15(text, {
@@ -105,8 +109,19 @@ export function item15(text, {
   const isWay = (t, i) => t.kind === 'word' || (t.kind === 'name' && (t.airway || OCEANIC.test(t.id))) || (i === 0 && sid) ||
     (i === toks.length - 1 && star);
   const out = [];
+  // SOG-0431 : chaque niveau écrit va de dix en dix ; celui qui ne l'est pas est ramené à la dizaine inférieure, et dit
+  const rounded = [],
+    lvl = ft => {
+      const t = levelTens(ft);
+      if (Math.round(+ft / 100) * 100 !== t) {
+        const pair = [`F${pad(ft / 100, 3)}`, `F${pad(t / 100, 3)}`];
+        if (!rounded.some(x => x[0] === pair[0])) rounded.push(pair);
+      }
+      return t;
+    },
+    head = speedLevel(speedKt, lvl(levelFt));
   // SOG-0422 : le groupe vitesse-niveau en vigueur ; un point qui porte le même n'en écrit pas un second
-  let group = speedLevel(speedKt, levelFt);
+  let group = head;
   toks.forEach((t, i) => {
     const prev = toks[i - 1];
     if (prev && !isWay(prev, i - 1) && !isWay(t, i)) out.push('DCT');
@@ -118,18 +133,19 @@ export function item15(text, {
       return;
     }
     const word = t.kind === 'coord' ? coordWord(t.lat, t.lon) : t.id,
-      g = t.alt_ft > 0 ? speedLevel(speedKt, t.alt_ft) : group;
+      g = t.alt_ft > 0 ? speedLevel(speedKt, lvl(t.alt_ft)) : group;
     out.push(g !== group ? `${word}/${g}` : word);
     group = g;
   });
   return {
-    route: [speedLevel(speedKt, levelFt), ...out].join(' '),
+    route: [head, ...out].join(' '),
     oceanic,
     sid,
     star,
     // SOG-0422 : la garde générale : un élément hors de la forme OACI (un tiret, une ponctuation, un mot trop long) n'est jamais copié
     bad: out.filter(w => !ITEM15_WORD.test(w)),
-    joined
+    joined,
+    rounded: rounded.slice(0, 6)
   };
 }
 
@@ -204,7 +220,8 @@ export function message(o = {}) {
       joined: r.joined,
       // SOG-0422 : la HF est exigée en espace océanique (EUROEGGX1A) ; l'équipement supposé ne l'invente pas : dit
       hf: r.oceanic && !EQUIPMENT.split('/')[0].includes('H'),
-      regNeutral
+      regNeutral,
+      rounded: r.rounded
     }
   };
 }

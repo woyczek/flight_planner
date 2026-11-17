@@ -7373,6 +7373,47 @@ def f257(c):
         c.shot(f'F257_{c.design}_1280_{L}_{state}.png')
 
 
+@case('F259', 'Route step, « Copier pour Eurocontrol »: the level of a speed-level group goes in steps of ten — « F205 » is written « F200 » '
+      '(rounded DOWN), the fold says it, the copy is not blocked', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0431 (Eurocontrol refused « NOHAT/N0405F205 », SYN101: invalid level in the route; the user corrected F205 by hand: « Bingo »); '
+      'the ergonomist: rounded down, said in the fold, the copy not blocked; invented routes')
+def f259(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    c.open('fuel', docs=flight_docs())
+    wait_quote(c)
+    got = c.js("""() => import('/modules/fuel/fpl.js').then(F => {
+      const m = F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', reg: 'F-ZZAB', eobt: F.eobtOf('2026-11-18T09:30:00Z'), speedKt: 330,
+        levelFt: 20500, routeText: 'LFPO ZZONE ZZTWO/F205 ZZTRE/F270 ZZFOU/F335 LFML', eetMin: 75 });
+      return [m.text.split('\\n')[3], m.notes.rounded, m.errors, F.levelTens(20500), F.levelTens(27000), F.levelTens(9990)];
+    })""")
+    c.eq(got[0], '-N0330F200 ZZONE DCT ZZTWO DCT ZZTRE/N0330F270 DCT ZZFOU/N0330F330',
+         'every level in tens: the head F205 written F200, ZZTWO\'s F205 the same group (not repeated), F335 written F330', what='item 15')
+    c.eq(got[1], [['F205', 'F200'], ['F335', 'F330']], 'each rounding kept once, to be said', what='rounded')
+    c.eq(got[2], [], 'the copy is not blocked', what='errors')
+    c.eq(got[3:], [20000, 27000, 10000], 'rounded down to the ten below, after the hundred of feet (9 990 ft is FL100)', what='levelTens')
+    # the screen: a flight whose route carries « /F205 »: the fold says the level written
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['planned_at'] = '2026-11-18T09:30:00Z'
+            d[1]['route']['text'] = 'LFRS LUGEN/F205 NEPIX LFML'
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-fpltext]')", timeout=10000, what='the flight plan in its fold')
+    c.js(f"document.querySelector('{FUEL} details[data-fplfold]').open = true")
+    text = c.js(f"document.querySelector('{FUEL} [data-fpltext]').textContent")
+    c.ok('F205' not in text and 'LUGEN/N0' in text and 'F200' in text, text, 'the route writes LUGEN at F200, never F205')
+    want = norm(tx(T, 'fplLevelTens', L).replace('{a}', 'F205').replace('{b}', 'F200'))
+    notes = norm(c.text(f'{FUEL} [data-fplnotes]') or '')
+    c.ok(want in notes, notes, 'the fold says the level written')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-do=fplcopy]').getAttribute('aria-disabled')"), None, 'the copy not blocked', what='button')
+    c.js(f"document.querySelector('{FUEL} [data-fpl]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F259_{c.design}_390_{L}.png')
+
+
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)
 _RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review': 37, 'findings': 0, 'total': 449, 'listed': 449, 'cut': False,
              'unknown_spaces': [{'space': 'LS100A', 'rules': ['LS2815A', 'LS2816A']}, {'space': 'EDUU100E', 'rules': []}],

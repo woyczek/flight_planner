@@ -792,6 +792,11 @@ const TX = {
     'Zwei Bezeichner für dieselbe Strecke ({v}): der erste wird geschrieben.',
     'Dos designadores para el mismo trazado ({v}): se escribe el primero.'
   ],
+  fplLevelTens: ['Niveau {a} écrit {b} : un niveau de croisière va de dix en dix.',
+    'Level {a} written {b}: a cruise level goes in steps of ten.',
+    'Flugfläche {a} als {b} geschrieben: eine Reiseflugfläche geht in Zehnerschritten.',
+    'Nivel {a} escrito {b}: un nivel de crucero va de diez en diez.'
+  ],
   fplRegNeutral: ['Immatriculation neutre ({r}) : la fiche de l’aéronef n’en donne pas.',
     'Neutral registration ({r}): the aircraft sheet gives none.',
     'Neutrales Kennzeichen ({r}): das Luftfahrzeugblatt nennt keines.',
@@ -5038,7 +5043,10 @@ function fplDraw(C, textOnly = false) {
       ad: r.dep
     }), n.star ? '' : tt(TX.fplNoStar, {
       ad: r.arr
-    }), n.oceanic ? tt(TX.fplOceanic) : '', n.hf ? tt(TX.fplNoHf) : '', n.regNeutral ? tt(TX.fplRegNeutral, {
+    }), n.oceanic ? tt(TX.fplOceanic) : '', n.hf ? tt(TX.fplNoHf) : '', ...(n.rounded || []).map(([a, b]) => tt(TX.fplLevelTens, {
+      a,
+      b
+    })), n.regNeutral ? tt(TX.fplRegNeutral, {
       r: FPL.regWord(FPL.NEUTRAL_ID)
     }) : '', ...(n.joined || []).slice(0, 4).map(v => tt(TX.fplJoined, {
       v

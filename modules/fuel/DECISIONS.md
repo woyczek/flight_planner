@@ -2395,3 +2395,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   The reads of the base wait 4 s at most (ALTN_CHK_WAIT_MS), then « not checked »: a base that does not answer never leaves the line
   empty. Only numbers, categories and hours from third parties are shown; the aerodrome's code is the flight's own field, escaped. F257
   (invented aerodrome XQAL, sheet and TAF; the four states captured at 390 and 1280).
+- **17 Nov 2026 — SOG-0431, a level of item 15 goes in steps of ten** (Eurocontrol refused « NOHAT/N0405F205 », SYN101: invalid
+  level in the route; the user corrected F205 by hand — « Bingo »). Every level written in a speed-level group (the head and each point
+  that carries one) is first rounded to the hundred of feet as the group writes it, then brought DOWN to the ten below (`levelTens`:
+  F205 → F200, F335 → F330; down, not to the nearest: never above what the flight planned); a group equal to the one in force is still
+  not repeated. Each rounding is kept once (`notes.rounded`, six at most) and the fold says it — « Niveau F205 écrit F200 : un niveau
+  de croisière va de dix en dix. » —; the copy is not blocked. AeroDB's computation will stop writing the raw ceiling; this guard stays.
+  F259 (invented routes; counter-test: red on the parent, F205 in the route line).
