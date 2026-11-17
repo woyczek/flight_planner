@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7a30cad",
-  "fiches": 419,
+  "organisation": "ed1a654",
+  "fiches": 420,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -523,6 +523,15 @@
      "de": "Nordatlantik ab Spanien und Portugal: Einflug in den Ozean über die Grenzpunkte von Santa Maria",
      "es": "Atlántico Norte desde España y Portugal: entrar en el océano por los puntos del límite de Santa María",
      "test": true
+    },
+    {
+     "id": "SOG-0421",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atlantique Nord : une route NAT valide n'est prise que si elle ne rallonge pas trop — sinon la route directe, dite avec l'écart",
+     "en": "North Atlantic: a valid NAT track is taken only if it does not lengthen the flight too much — otherwise the direct route, said with the difference",
+     "de": "Nordatlantik: ein gültiger NAT-Track wird nur genommen, wenn er den Flug nicht zu sehr verlängert — sonst die direkte Route, mit der Differenz genannt",
+     "es": "Atlántico Norte: una ruta NAT válida solo se toma si no alarga demasiado el vuelo — si no, la ruta directa, dicha con la diferencia"
     }
    ]
   },
