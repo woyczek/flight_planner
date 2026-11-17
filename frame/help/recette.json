@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 280,
+  "tests": 281,
   "verdicts": 204
  },
  "apps": [
@@ -4209,6 +4209,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T13:55:22Z"
+  },
+  {
+   "id": "SOG-0418",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte, coupe au téléphone : des étiquettes se chevauchent (« 350 » et « NM », « TOD » et une température, « TOC » et un vent)",
+    "en": "Map, cross-section on a phone: labels overlap (“350” and “NM”, “TOD” and a temperature, “TOC” and a wind barb)",
+    "de": "Karte, Schnitt auf dem Telefon: Beschriftungen überlappen („350“ und „NM“, „TOD“ und eine Temperatur, „TOC“ und ein Windsymbol)",
+    "es": "Mapa, corte en el teléfono: etiquetas superpuestas («350» y «NM», «TOD» y una temperatura, «TOC» y un símbolo de viento)"
+   },
+   "test": "Carte, un vol ouvert, volet du bas ouvert sur la coupe météo (bouton nuage), sur un téléphone ou une fenêtre de 390 px de large. Attendu : (1) au bout de l'axe des distances, l'unité « NM » est seule — aucune graduation n'est écrite dessous ; (2) les étiquettes « TOC » et « TOD » se lisent en entier : aucune température ni aucun symbole de vent ne les traverse ; (3) aucun texte de la coupe n'en recouvre un autre ; (4) sur l'ordinateur (grande fenêtre), la coupe est inchangée, hors ces chevauchements.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T14:20:45Z"
   }
  ],
  "decisions": [
