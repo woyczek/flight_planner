@@ -69,7 +69,7 @@ Fichiers : `atelier.html` (autonome, rien n'est écrit ; `#a`, `#lieux`, `#b`, `
 ## En cinq lignes
 1. UN outil d'auteur : l'éditeur en six étapes DEVIENT l'atelier de la maquette de l'utilisateur — la carte de la mission, le déroulé dessous, la fiche à droite.
 2. La carte est le lieu d'édition à l'ordinateur : « Sélection · Point · Tracé · Zone · Objet » (un contour est une zone qui n'est pas ronde : un seul outil, une seule fiche, deux formes) ; un outil revient à « Sélection » après une pose (sauf « Tracé ») ; un repère d'AeroDB touché dit ce qu'il est et propose « Ajouter comme point » — rien n'est créé par accident.
-3. Le déroulé : « Au départ » (visible), puis « Tiroir 1, 2, 3… » scellés, chacun avec sa clé dite en une ligne ; « ＋ Tiroir » est une carte en fin de déroulé (plus de colonne « Bibliothèque » : le modèle se choisit à la création).
+3. Le déroulé : « Au départ » (visible), puis « Tiroir 1, 2, 3… » scellés, chacun avec sa clé dite en une ligne ; « ＋ Tiroir » est une carte en fin de déroulé, qui ouvre la bibliothèque.
 4. La fiche : pour le départ (la partie A du fichier), les six étapes de l'éditeur en six groupes repliables (Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes) ; pour un tiroir, trois groupes (la clé, les textes, la suite de route) puis « Ce que le pilote voit » — sept champs au plus par groupe, la fiche de `tiroirs.html`.
 5. Au téléphone : le déroulé et la fiche d'abord, la carte repliée ; on y relit et on y corrige un texte, on dessine à l'ordinateur. Le pied d'écran dit toujours « À compléter (n) » — touché, il déplie les points à compléter, nommés (l'ergonome, 17/11 : au téléphone aussi) — et porte « Enregistrer » et « Annuler ».
 
@@ -87,6 +87,12 @@ Fichiers : `atelier.html` (autonome, rien n'est écrit ; `#a`, `#lieux`, `#b`, `
 - Au téléphone le pied dit « À compléter (3) » seul : un bouton qui ouvre la liste nommée.
 - Le départ au téléphone : tous les groupes repliés, chacun disant son contenu en une ligne (mission neuve : « Cadre » déplié). Le profil du terrain : un bouton de la carte, lot ultérieur. « Essayer les clés » au téléphone : montré, mené au curseur de temps, la carte se déplie d'elle-même (capture atelier_essai_390.png).
 - L'écran de l'éditeur sort de module.js vers modules/missions/editor_view.js : un commit de déplacement seul, puis le lot P1.
+
+## La bibliothèque est portée (l'utilisateur, 17/11 à 19 h 26 : « je préférais l'ergonomie avec la colonne de gauche »)
+- À gauche sur un écran large : la recherche, les familles repliables, les briques ; un clic ajoute le tiroir suivant, déjà rempli. Elle se replie par sa poignée en une bande étroite « Bibliothèque » ; repliée d'office quand le module a moins de 1 500 px (le menu de la suite occupe déjà la gauche), elle s'ouvre par « ＋ Tiroir ». Au téléphone : une feuille.
+- Le choix du modèle de départ reste dans « Créer une mission ».
+- Captures : atelier_biblio_1280.png (dépliée), atelier_biblio_390.png (la feuille) ; les autres captures à 1280 montrent la bande repliée. Les briques de la maquette sont INVENTÉES : le catalogue réel sera un fichier du dépôt, jamais une copie de la maquette de l'utilisateur.
+- Le lot P1 réserve sa place sans rien y montrer ; son contenu est un lot après les tiroirs.
 
 ## Les trois questions posées (tranchées ci-dessus)
 1. Le départ au téléphone : six groupes repliés sauf le premier (maquette), ou tous repliés avec leur marque « à compléter » ?

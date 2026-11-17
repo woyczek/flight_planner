@@ -88,6 +88,7 @@ BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `m
 
 | part | wide screen (from 1 000 px of module) | phone (390 px) |
 |---|---|---|
+| the library (« Bibliothèque ») | on the left: a search, the families folded (the mission's own first), the bricks — a click adds the next drawer, already filled. It folds by its handle into a narrow band « Bibliothèque »; folded by itself when the module is under 1 500 px wide (the suite's menu already holds the left), opened by « ＋ Tiroir » | a sheet, opened by « ＋ Tiroir » |
 | the mission's map | on the left, the place where one edits | folded (« Carte de la mission »), read only |
 | the unfolding (« déroulé ») | under the map, ONE row that scrolls sideways: « Au départ » (visible), then « Tiroir 1, 2, 3… » (scellé; twelve at most), each with its key in one line; « ＋ Tiroir » is its last card | first, the same single row |
 | the sheet (« fiche ») | on the right, of what is selected (the departure, a drawer, a place) | under the unfolding |
@@ -106,7 +107,10 @@ BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `m
 - **The sheet of a drawer** (SOG-0445) is the accepted form of `maquette/tiroirs.html` in three groups — the key, the texts, the onward
   route — then « Ce que le pilote voit ».
 - **Entry**: unchanged — « Créer une mission », « Modifier », « Dupliquer » of the Registry. The breadcrumb says « Missions › Registre ›
-  Atelier ». The model (blank, or a scenario) is chosen at creation, not in a permanent column.
+  Atelier ». The starting model (blank, or a scenario) is chosen in « Créer une mission », not in the library.
+- **The library is ported** (the user, 17 Nov at 19 h 26: « je préférais l'ergonomie avec la colonne de gauche »; the ergonomist's
+  objection 6 is withdrawn): since the workshop's 1.1 it is a palette — sixty bricks in sixteen families, with a search —, not a choice
+  made once. What stays of the objection: it folds, and the map takes the width back.
 - **Saving**: unchanged — `data.put` of the mission file then of its registry line, on the device, sent with the grouped send; only what
   the author changed is written; a file that cannot be rewritten safely is refused at the opening (`shapeOf`).
 
@@ -179,10 +183,11 @@ object are references like the others — `trigger_zone`, `trigger_object`, `tri
 
 | lot | content | waits for |
 |---|---|---|
-| P1 | the screen in its new frame WITHOUT the map tools nor the drawers: the unfolding (A alone, the drawers of the file listed read-only), the sheet of part A in six groups, the foot; phone and wide; the six steps' cases replayed on the new screen | this specification read |
+| P1 | the screen in its new frame WITHOUT the map tools nor the drawers (the library's place is kept and shows nothing): the unfolding (A alone, the drawers of the file listed read-only), the sheet of part A in six groups, the foot; phone and wide; the six steps' cases replayed on the new screen | this specification read |
 | P2 | the map as the place of edition: the six tools, drag, landmarks of AeroDB, no accidental creation | SOG-0446 |
 | P3 | the drawers (SOG-0445): the card « ＋ Tiroir » (twelve at most), the sheet in three groups, the five keys, the fallback hour, « Ce que le pilote voit », « Vue du pilote : départ · 1 · 2 · 3… » on the map | P1; Q-0095 for where the file writes; Sécurisation (a deposited file is written) |
 | P4 | the trial of the keys | SOG-0447 |
+| P3 bis | the library's content: the bricks, read from a catalogue kept in the repository (never copied from the user's workshop), by family, with a search | P3 |
 | P5 | the moving target and the workshop's 1.1 keys (hold, landing, sequence, overflight, message between crews, several crews in one operation) | the user saying his contract is stable; the trial of an object placed in X-Plane |
 
 P1 is a change of screen in `module.js` (Features SOG's file). Granted by the ergonomist (17 Nov at 19 h 12): the editor's screen
@@ -197,6 +202,5 @@ départ · tiroir 1 · tiroir 2… » is the map's selector (P3).
 
 ### 8. What is NOT ported
 
-The permanent « Bibliothèque » column and its sixty bricks as a column (a model is a choice at creation; the bricks may come back as
-« ＋ Tiroir » presets); the typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
+The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
 of `coordination` (P5); the outside tile host of the standard OpenStreetMap layer.

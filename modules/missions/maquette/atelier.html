@@ -109,8 +109,23 @@ details.grp>div{padding:2px 0 8px}
 .log li{padding:6px 0;border-bottom:1px solid var(--line)}
 .log li b{color:var(--ok)}
 input[type=range]{width:100%;min-height:44px}
+/* ---- la bibliothèque */
+.lib{display:none}
+.lib .libband{display:none}
+.lib .libhead{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.brick{display:block;width:100%;text-align:left;min-height:52px;height:auto;padding:6px 10px;margin:0 0 6px;line-height:1.25}
+.brick b{display:block;font-size:15px}
+.brick span{display:block;font-size:13px;color:var(--muted)}
+[data-page].libopen .lib{display:block;position:fixed;left:0;right:0;bottom:0;top:22%;z-index:4;background:#fff;border-top:1px solid var(--line);border-radius:12px 12px 0 0;box-shadow:0 -6px 18px rgba(0,0,0,.2);padding:12px 16px;overflow:auto}
 @media (min-width:1000px){
-  .page{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0 20px;align-items:start}
+  .page{display:grid;grid-template-columns:44px minmax(0,1fr) 380px;gap:0 20px;align-items:start}
+  .page.libopen{grid-template-columns:250px minmax(0,1fr) 360px;gap:0 16px}
+  .lib,[data-page].libopen .lib{display:block;position:sticky;top:12px;inset:auto;z-index:auto;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:none;padding:0;margin-top:12px;max-height:calc(100vh - 100px);overflow:auto}
+  .lib .libband{display:grid;place-items:center;min-height:300px;color:var(--accent);text-decoration:none;font-weight:600}
+  .lib .libband span{writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.04em}
+  .lib .libbody{display:none;padding:10px 12px}
+  .page.libopen .lib .libband{display:none}
+  .page.libopen .lib .libbody{display:block}
   .head{grid-column:1/-1}
   .emap{height:430px}
   details.fold>summary{display:none}
@@ -123,14 +138,36 @@ input[type=range]{width:100%;min-height:44px}
 </style>
 </head>
 <body>
-<div class="mockbar">Maquette SOG-0444 — l'atelier de missions : l'éditeur prend la forme de la maquette de l'utilisateur (la carte, le déroulé, la fiche) ; rien n'est écrit ; mission X-301A du banc (inventée) ; la carte est un dessin d'attente. États : <a href="#a">au départ</a> · <a href="#lieux">les lieux</a> · <a href="#b">tiroir 1</a> · <a href="#repere">un repère touché</a> · <a href="#essai">l'essai des clés</a></div>
+<div class="mockbar">Maquette SOG-0444 — l'atelier de missions : l'éditeur prend la forme de la maquette de l'utilisateur (la carte, le déroulé, la fiche) ; rien n'est écrit ; mission X-301A du banc (inventée) ; la carte est un dessin d'attente. États : <a href="#a">au départ</a> · <a href="#lieux">les lieux</a> · <a href="#b">tiroir 1</a> · <a href="#repere">un repère touché</a> · <a href="#essai">l'essai des clés</a> · <a href="#biblio">la bibliothèque ouverte</a></div>
 <div class="top"><span>✈ Compagnie</span><span class="sp"></span><span class="chip">● Sur cet appareil</span></div>
-<div class="page">
+<div class="page" data-page>
   <div class="head">
     <div class="crumb">Missions › Registre › Atelier</div>
     <h1>X-301A · Mission complète</h1>
     <span class="state">modifiée sur cet appareil — pas encore envoyée</span>
   </div>
+  <!-- la bibliothèque : à gauche sur un écran large (repliée en bande sous 1 500 px de module, dépliée par « ＋ Tiroir ») ; une feuille au
+       téléphone. Un clic sur une brique ajoute le tiroir suivant. Les briques de cette maquette sont inventées. -->
+  <aside class="lib" data-lib>
+    <a class="libband" href="#biblio" title="Ouvrir la bibliothèque"><span>Bibliothèque</span></a>
+    <div class="libbody">
+      <div class="libhead"><h2>Bibliothèque</h2><a class="link" href="#b">Replier</a></div>
+      <p class="hint">Une brique ajoute le tiroir suivant, déjà rempli ; tout s'y modifie ensuite.</p>
+      <label class="f"><span>Rechercher une brique</span><input placeholder="recherche, treuillage, retour…"></label>
+      <details class="grp" open><summary>Actions de toute mission<span class="n">3</span></summary><div>
+        <button class="brick"><b>Retour au terrain</b><span>clé : arrivée au terrain, posé</span></button>
+        <button class="brick"><b>Changement de consigne</b><span>clé : heure</span></button>
+        <button class="brick"><b>Tiroir vide</b><span>clé : geste du pilote seul</span></button>
+      </div></details>
+      <details class="grp" open><summary>S · SAR · Recherche et sauvetage<span class="n">2</span></summary><div>
+        <button class="brick"><b>Recherche qui se précise</b><span>clé : zone de passage</span></button>
+        <button class="brick"><b>Personne ou radeau à trouver</b><span>clé : objet à trouver</span></button>
+      </div></details>
+      <details class="grp"><summary>M · HEMS · Secours médical<span class="n">3</span></summary><div></div></details>
+      <details class="grp"><summary>F · FIRE · Feux de forêt<span class="n">2</span></summary><div></div></details>
+      <p class="lbl">16 familles · la famille de la mission d'abord, les autres repliées</p>
+    </div>
+  </aside>
   <main>
     <!-- la carte : le lieu d'édition à l'ordinateur ; repliée au téléphone (on y relit, on y corrige un texte, on dessine à l'ordinateur) -->
     <details class="fold" data-mapfold open>
@@ -174,7 +211,7 @@ input[type=range]{width:100%;min-height:44px}
         <a class="part a" href="#a" data-part="a"><span class="h"><span class="k">●</span><span class="tag">visible</span></span><b>Au départ</b><span class="m">XTST → PT1 → Cible → XTSU · 96 NM</span></a>
         <a class="part" href="#b" data-part="b"><span class="h"><span class="k">1</span><span class="tag">tiroir scellé</span></span><b>Entrée dans le secteur nord</b><span class="m">zone de passage · repli H + 60 min</span></a>
         <a class="part" href="#b" data-part="c"><span class="h"><span class="k">2</span><span class="tag">tiroir scellé</span></span><b>Radeau en vue</b><span class="m">objet à trouver · repli H + 1 h 30</span></a>
-        <a class="part add" href="#b"><span>＋ Tiroir</span></a>
+        <a class="part add" href="#biblio"><span>＋ Tiroir</span></a>
       </div>
     </section>
   </main>
@@ -254,17 +291,21 @@ input[type=range]{width:100%;min-height:44px}
 <div class="bar"><button class="primary">Enregistrer</button><button class="todo">À compléter (3)<span class="first"> : Chronologie — aucun événement</span></button><span class="sp"></span><button class="link">Annuler</button></div>
 <script>
 // Les états de la maquette : le départ (la partie A du fichier, ses six groupes), les lieux, un tiroir, un repère d'AeroDB touché, l'essai des clés.
-const STATES = ['a', 'lieux', 'b', 'repere', 'essai'],
+const STATES = ['a', 'lieux', 'b', 'repere', 'essai', 'biblio'],
   NOTES = {
     a: 'Sélection — touchez un élément pour ouvrir sa fiche ; un outil revient à « Sélection » après une pose (sauf « Tracé »).',
     lieux: 'Sélection — touchez un élément pour ouvrir sa fiche ; un outil revient à « Sélection » après une pose (sauf « Tracé »).',
     b: 'Tiroir 1 — sa zone se déplace par son centre, son rayon se tire par la poignée ; une zone qui n\'est pas ronde se dessine par ses sommets.',
     repere: 'Un repère de la base aéronautique : touché, il dit ce qu\'il est ; « Ajouter comme point » en fait un lieu de la mission.',
-    essai: 'Essai — touchez la carte pour poser l\'avion ; la zone du tiroir 1 et la trace sont dessinées.'
+    essai: 'Essai — touchez la carte pour poser l\'avion ; la zone du tiroir 1 et la trace sont dessinées.',
+    biblio: 'Bibliothèque ouverte par « ＋ Tiroir » : une brique ajoute le tiroir suivant ; la carte lui laisse de la place.'
   };
 /** L'état de l'adresse montré. */
 function show() {
-  const cur = STATES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'a';
+  const hash = STATES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'a',
+    // la bibliothèque ouverte : le reste de l'écran est celui du tiroir sélectionné
+    cur = hash === 'biblio' ? 'b' : hash;
+  document.querySelector('[data-page]').classList.toggle('libopen', hash === 'biblio');
   for (const s of document.querySelectorAll('[data-only]')) {
     const on = s.dataset.only.split(' ').includes(cur);
     if (s instanceof SVGElement) s.style.display = on ? '' : 'none';
@@ -274,7 +315,7 @@ function show() {
   // à l'ordinateur le premier groupe est déplié ; au téléphone tous sont repliés et disent leur contenu en une ligne (une mission neuve : « Cadre » déplié)
   const wide = matchMedia('(min-width: 1000px)').matches;
   for (const g of document.querySelectorAll('[data-grp]')) g.open = cur === 'lieux' ? g.dataset.grp === 'lieux' : wide && g.dataset.grp === 'cadre';
-  document.querySelector('[data-mapnote]').textContent = NOTES[cur];
+  document.querySelector('[data-mapnote]').textContent = NOTES[hash];
   // au téléphone : la carte repliée (on y relit et on y corrige un texte ; on dessine à l'ordinateur) — elle se déplie d'elle-même pour l'essai des clés
   document.querySelector('[data-mapfold]').open = wide || cur === 'essai';
 }
