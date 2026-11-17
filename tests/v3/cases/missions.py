@@ -2800,3 +2800,136 @@ def n80(c):
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
     c.ok(r['fail'] == 0 and r['pass'] >= 49, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
          'every check of the bench passes (49 at least)')
+
+
+# ---- the session « Création de missions »: cases N70 to N79 (the editor's references, the drawers' format)
+# an invented mission whose places are cited everywhere a place can be: the route, a part (its trigger point and its onward route), a
+# map's centre, two events, the vertical profile
+_REF_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Mission complète
+summary: Une recherche inventée.
+detailed_description: Un paragraphe inventé.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+target: { id: TARGET, name: Cible d'essai, lat: 44.6, lon: 1.4 }
+turning_points:
+  - { id: PT1, name: Point un, role: entrée, lat: 44.8, lon: 1.2 }
+  - { id: PT2, name: Point deux, role: sortie, lat: 44.4, lon: 1.6 }
+rendezvous:
+  - { id: RDV-1, name: Rendez-vous d'essai, lat: 44.5, lon: 1.5, role: ralliement }
+zones:
+  - { id: ZONE-1, name: Secteur nord, kind: search, centre: { lat: 44.7, lon: 1.3 }, radius_km: 12 }
+route_order: [ORIGIN, PT1, RDV-1, TARGET, PT2, GHOST, DESTINATION]
+phases:
+  - { id: B, title: Changement, trigger_point: RDV-1, trigger_delay_min: 10, trigger: 10 min après RDV-1, message: Nouvelle DZ., route_order: [RDV-1, PT2, DESTINATION] }
+teams:
+  - { name: ALPHA1, service: Service d'essai, type: H135, role: recherche }
+risks:
+  - { hazard: Danger un, mitigation: Parade un }
+timeline:
+  events:
+    - { at: H+10mn, place: PT1, text: Passage au point un }
+    - { at: H+25mn, place: RDV-1, text: Jonction }
+maps:
+  - { id: general, filename: generalX-001A.png, type: general, description: Vue générale inventée. }
+  - { id: detail_rdv_1, filename: detail_rdvX-001A-1.png, type: detail_rdv, centre_ref: RDV-1, description: Le rendez-vous. }
+vertical_profile:
+  route: "ORIGIN, FL100, PT1/FL080, RDV-1, TARGET, PT2, DESTINATION"
+"""
+_REF_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _REF_MISSION]]
+_ED_TODO = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.dataset.todo)"
+_EV_PLACES = f"[...document.querySelectorAll('{E} [data-event] select[data-f=place]')].map(x => x.value)"
+_PLACE_AT = f"""(start) => [...document.querySelectorAll('{E} [data-edplaces] [data-place]')].findIndex(r => r.querySelector('.ms-plbody b').textContent.trim().startsWith(start))"""
+
+
+@case('N70', 'Missions › editor, the references to the places: a place renamed in the Lieux is renamed everywhere it is cited (the route, a '
+      'part\'s trigger point and onward route, a map\'s centre, an event, the vertical profile) — also in the rows of the Chronologie '
+      'already on screen; « Retirer » on a place still cited says who cites it and asks a second press (« Retirer quand même »), then '
+      'its citations go with it and « À compléter » says the drawer left without its trigger point and the map left without centre; a '
+      'reference already dead in the file is kept and said; a new place never takes an identifier of the file; nothing changed, the '
+      'same document', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0439 (the ergonomist, 17 Nov 2026: « Renommer un lieu suit partout ; retirer un lieu encore cité est DIT (lesquels le '
+      'citent) et demande un geste ; rien n\'est réécrit si rien ne change » ; « une carte laissée sans centre et une partie devenue '
+      '« geste seul » sont dites dans « À compléter » »); modules/missions/EDITOR.md')
+def n70(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    reg_open(c, _REF_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    # the Chronologie first: its rows stay on screen with the identifiers of the file (the trap of a rename made afterwards)
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
+    c.eq(c.js(_EV_PLACES), ['PT1', 'RDV-1'], 'the places of the file', what='events before')
+    c.eq([t for t in c.js(_ED_TODO) if t in ('deadRef', 'drawerNoPoint', 'mapNoCentre')], ['deadRef'],
+         '« À compléter » says the reference already dead in the file (GHOST), nothing else', what='todo at the opening')
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
+    i = c.js(_PLACE_AT, 'PT1')
+    c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+    c.page.fill(f'{E} [data-plform="{i}"] [data-f=id]', 'ALPHA')
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplaceok"]')
+    # « Retirer » the rendezvous: cited six ways — the first press removes nothing, says who cites it, and the button changes
+    i = c.js(_PLACE_AT, 'RDV-1')
+    c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+    first = c.text(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
+    c.ok(c.js(_PLACE_AT, 'RDV-1') == i, c.js(_PLACES_JS), 'a place still cited is not removed at the first press')
+    c.ok(c.text(f'{E} [data-plform="{i}"] [data-do="edplacedel"]') != first, first, 'the button now says « Retirer quand même »')
+    note = c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')")
+    c.ok('RDV-1' in note and 'detail_rdv_1' in note and ' B' in note, note, 'a floating notification names who cites it (the drawer B, the map detail_rdv_1)')
+    c.shot('N70_390_cited.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.shot('N70_1280_cited.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
+    c.eq(c.js(_PLACE_AT, 'RDV-1'), -1, 'the second press removes the place', what='the rendezvous row')
+    c.eq([t for t in c.js(_ED_TODO) if t in ('deadRef', 'drawerNoPoint', 'mapNoCentre')], ['deadRef', 'drawerNoPoint', 'mapNoCentre'],
+         '« À compléter » says the drawer left without its trigger point and the map left without centre', what='todo after the removal')
+    # a place never cited goes at the first press; a new place never takes an identifier of the file (PT1 is still the name its
+    # references carry until the file is saved)
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"!!document.querySelector('{E} [data-plform] [data-f=name]')", what='the new turning point open')
+    c.eq(c.js(f"document.querySelector('{E} [data-plform] [data-f=id]').value"), 'PT3', 'neither PT1 (renamed in this sitting) nor PT2', what='the new identifier')
+    c.page.fill(f'{E} [data-plform] [data-f=name]', 'Point trois')
+    c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.3')
+    c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.7')
+    c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
+    # the rows of the Chronologie, on screen since before the rename, show the identifier of today
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie again')
+    c.eq(c.js(_EV_PLACES), ['ALPHA', ''], 'renamed in the row already on screen; the removed place is gone from its event', what='events after')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const ED = await import('/modules/missions/editor.js');
+      const text = await (%s)(p), d = globalThis.jsyaml.load(text, { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return { route: d.route_order, part: d.phases[0], maps: d.maps.map(m => [m.id, m.centre_ref]), events: d.timeline.events.map(e => [e.place || '', e.text]),
+        profile: d.vertical_profile.route, pts: d.turning_points.map(x => x.id), rdv: 'rendezvous' in d, dead: ED.deadRefs(d).map(r => r.id) } }""" % _TEXT_OF, path)
+    c.eq(got['route'], ['ORIGIN', 'ALPHA', 'TARGET', 'PT2', 'GHOST', 'DESTINATION'], 'the route follows the rename, loses the removed place, keeps the word already dead',
+         what='route_order')
+    c.eq(got['part'], {'id': 'B', 'title': 'Changement', 'trigger_delay_min': 10, 'trigger': '10 min après RDV-1', 'message': 'Nouvelle DZ.',
+                       'route_order': ['PT2', 'DESTINATION']}, 'the part loses its trigger point (its delay stays: said in « À compléter »), its words are kept',
+         what='the part B')
+    c.eq(got['maps'], [['general', None], ['detail_rdv_1', '']], 'the map keeps its entry, its centre written empty', what='maps')
+    c.eq(got['events'], [['ALPHA', 'Passage au point un'], ['', 'Jonction']], 'the events follow; an event keeps its text', what='events')
+    c.eq(got['profile'], 'ORIGIN, FL100, ALPHA/FL080, TARGET, PT2, DESTINATION', 'the vertical profile follows, the level after « / » kept', what='profile')
+    c.eq([got['pts'], got['rdv'], got['dead']], [['ALPHA', 'PT2', 'PT3'], False, ['GHOST']], 'no reference dead by the editor\'s doing', what='places and dead references')
+    c.tap(f'{E} [data-do="edcancel"]')
+    # the pure rules: nothing changed gives the very same document; a swap of two identifiers follows the places
+    pure = c.js("""async (text) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const ED = await import('/modules/missions/editor.js');
+      const base = globalThis.jsyaml.load(text, { schema: globalThis.jsyaml.CORE_SCHEMA }), rows = ED.placesOf(base), swap = structuredClone(rows);
+      swap.find(r => r.name === 'Point un').id = 'PT2'; swap.find(r => r.name === 'Point deux').id = 'PT1';
+      const hostile = [null, 7, 'x', [], { route_order: 'PT1', phases: 'x', maps: 4, timeline: 'texte', vertical_profile: [], alert: { phases: 3 } },
+        { route_order: [null, {}, [], 3, { id: {} }], phases: [null, 3, { trigger_point: {}, route_order: {} }], maps: [null, { centre_ref: [] }], timeline: [null, 'x', { place: 3 }] }];
+      let threw = ''; for (const bad of hostile) try { ED.refsOf(bad); ED.deadRefs(bad); ED.withRefs(bad, bad, ED.placesOf(bad)); ED.citedBy(bad, ED.placesOf(bad), 0); ED.removePlace(ED.placesOf(bad), 0, bad) } catch (e) { threw = String(e) }
+      return { same: ED.withRefs(base, base, rows) === base, never: ED.withRefs(base, base, null) === base,
+        swap: ED.withRefs(ED.withPlaces(base, swap), base, swap).route_order, free: ED.removePlace(rows, rows.findIndex(r => r.id === 'ZONE-1'), base).rows.length - rows.length, threw } }""", _REF_MISSION)
+    c.eq(pure, {'same': True, 'never': True, 'swap': ['ORIGIN', 'PT2', 'RDV-1', 'TARGET', 'PT1', 'GHOST', 'DESTINATION'], 'free': -1, 'threw': ''},
+         'nothing changed (or the Lieux never opened): the same document; a swap follows the places; a place never cited goes at once; hostile documents do not throw',
+         what='the pure rules')
+    c.js(_REG_CLEAR)

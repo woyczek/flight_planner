@@ -23,6 +23,13 @@
 //     mission ou rien, ce qui se passe) ; withEvents(doc, rows) → un NOUVEAU document (les autres clés de timeline gardées).
 //   mapsOf(doc) → [{ id, type, description, ref, unplaced }] ; proposedMaps(doc) → les cartes attendues d'après les lieux et absentes
 //     (la règle de la V2) ; withMaps(doc, add) → les cartes ajoutées à la fin (des entrées : les images se font au studio de la V2).
+//   Les références aux lieux (SOG-0439) : refsOf(doc) → [{ id, where, name }] (route_order, le déclenchement et la route d'une partie,
+//     le centre d'une carte, le lieu d'un événement, le profil vertical, la route d'une alerte) ; withRefs(doc, base, rows) → le document
+//     dont les références suivent les lieux renommés ou retirés — la DERNIÈRE retouche, après toutes les étapes ; refNow(id, base, rows)
+//     → l'identifiant d'aujourd'hui d'une référence du fichier ; citedBy(doc, rows, i) → qui cite le lieu d'une ligne ; removePlace(rows,
+//     i, doc, asked) → { rows, ask, cited } : « Retirer » en deux temps quand le lieu est cité (le premier appui dit qui le cite, le second
+//     le retire) ; nextPlaceId(rows, kind, base) → un identifiant libre pour un lieu neuf (« PT3 ») ; deadRefs(doc) → les références qui ne
+//     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc) → les cartes au centre vidé, les parties au délai sans point.
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr, airline, aircraft } (textes) ; placeText(p) : « XTST · Base
 //     Test ». airline : la compagnie (airline au premier niveau, la forme de move.js ; '' = personnelle) ; aircraft : aircraft[0].type.
@@ -711,6 +718,13 @@ export function withEvents(doc, rows) {
       return o.text || o.place ? o : null;
     }).filter(o => o !== null),
     all = [...events, ...before.slice(EVENTS_MAX)];
+  storeEvents(out, home, all);
+  return out;
+}
+
+/** Range les événements `all` là où le document les porte (`home` : eventsHome) : une liste reste une liste, `events` reste sous sa
+ *  clé avec les autres clés de celle-ci ; sans événement, la liste part (et sa clé, si elle ne portait rien d'autre). */
+function storeEvents(out, home, all) {
   const cur = out[home.key];
   if (!home.sub) {
     if (all.length) out[home.key] = all;
@@ -727,7 +741,6 @@ export function withEvents(doc, rows) {
     if (Object.keys(rest).length) out[home.key] = rest;
     else delete out[home.key];
   }
-  return out;
 }
 
 /** Les cartes d'une mission (voir l'en-tête) : { id, type, description, ref, unplaced } ; unplaced quand le lieu de son centre n'a pas
@@ -816,6 +829,346 @@ export function withMaps(doc, add) {
   return out;
 }
 
+// ---------------------------------------------------------------- les références aux lieux (SOG-0439)
+// Un lieu est cité par son identifiant dans : route_order, phases[].trigger_point, phases[].route_order, maps[].centre_ref (ou
+// center_ref), le lieu d'un événement de la chronologie, vertical_profile.route, alert.phases[].route. La V2 les compare en capitales et
+// coupe un mot à « / » (shared/mission_estimate.js) : même règle ici. Les événements d'une mission d'organisation (Z) citent les lieux
+// d'AUTRES fichiers : ils ne sont pas suivis.
+
+/** Les mots d'une route qui ne sont pas des lieux de la liste (le départ, l'arrivée, le dégagement). */
+const REF_WORDS = new Set(['ORIGIN', 'DESTINATION', 'DEPART', 'DEPARTURE', 'ARRIVAL', 'ARRIVEE', 'ALTERNATE']);
+/** Un identifiant comme il se compare (sans casse, sans blancs autour). */
+const refKey = v => String(v ?? '').trim().toUpperCase();
+/** Retiré d'une liste par mapRefs (un événement qui n'a plus ni lieu ni texte). */
+const DROP = Symbol('drop');
+
+/** L'identifiant par lequel chaque ligne de lieux est citée, dans l'ordre des lignes : { key (comparé), text (écrit) } ; la cible sans
+ *  identifiant est « TARGET », une zone sans identifiant « ZONE-n » (son rang parmi les zones : la règle de la V2 et de la Carte) ; le
+ *  départ et l'arrivée ne sont jamais cités par un identifiant (ORIGIN, DESTINATION). */
+function citedIds(rows) {
+  let z = 0;
+  return (Array.isArray(rows) ? rows : []).map(r => {
+    const n = r?.kind === 'zone' ? ++z : 0,
+      text = r?.kind === 'dep' || r?.kind === 'arr' ? '' : cut(r?.id, 40) || (r?.kind === 'target' ? 'TARGET' : r?.kind === 'zone' ?
+        `ZONE-${n}` : '');
+    return {
+      key: refKey(text),
+      text
+    };
+  });
+}
+
+/** Le document dont chaque référence à un lieu est passée par `fn(mot, where, name)` → le mot gardé, un autre mot, ou null (la référence
+ *  est retirée). `where` : route | drawer | drawerRoute | map | event | profile | alert ; `name` : la partie (B), la carte, l'alerte.
+ *  Un NOUVEAU document, dont seuls les champs changés sont de nouveaux objets (audit 182) ; rien ne change, le document rendu est `doc`.
+ *  Retirer une référence : un mot sort d'une liste de route ; le point de déclenchement d'une partie part, son délai RESTE (une partie
+ *  qui porte un délai sans point : « À compléter » le dit, dans cette séance et les suivantes) ; une carte garde son entrée, son centre
+ *  écrit vide (dit de même) ; un événement garde son texte (sans texte, il part). */
+function mapRefs(doc, fn) {
+  const d = obj(doc),
+    out = {
+      ...d
+    };
+  let touched = false;
+  const put = (k, v) => {
+      if (v === d[k]) return;
+      touched = true;
+      if (v === undefined) delete out[k];
+      else out[k] = v;
+    },
+    scalar = v => typeof v === 'string' || typeof v === 'number',
+    // un mot : l'identifiant, puis ce qui suit « / » (gardé tel quel) ; les blancs autour gardés quand rien ne change
+    word = (tok, where, name) => {
+      const s = String(tok),
+        core = s.trim(),
+        i = core.indexOf('/'),
+        head = i < 0 ? core : core.slice(0, i).trim(),
+        r = head ? fn(head, where, name) : head;
+      return r === null ? null : r === head ? tok : r + (i < 0 ? '' : core.slice(i));
+    },
+    // une liste de route : des identifiants, ou des objets { id }
+    route = (arr, where, name) => {
+      if (!Array.isArray(arr)) return arr;
+      let ch = false;
+      const next = [];
+      for (const x of arr) {
+        const o = x && typeof x === 'object' && !Array.isArray(x),
+          tok = o ? x.id : x;
+        if (!scalar(tok)) {
+          next.push(x);
+          continue;
+        }
+        const r = word(tok, where, name);
+        if (r === null) ch = true;
+        else if (r !== tok) {
+          ch = true;
+          next.push(o ? {
+            ...x,
+            id: r
+          } : r);
+        } else next.push(x);
+      }
+      return ch ? next : arr;
+    },
+    // une liste d'objets, ou un objet seul (la forme tolérée du lecteur), retouchée objet par objet
+    each = (v, edit) => {
+      if (Array.isArray(v)) {
+        let ch = false;
+        const next = v.map(x => {
+          if (!x || typeof x !== 'object' || Array.isArray(x)) return x;
+          const y = edit(x);
+          if (y !== x) ch = true;
+          return y;
+        }).filter(x => x !== DROP);
+        return ch ? next : v;
+      }
+      if (v && typeof v === 'object') {
+        const y = edit(v);
+        return y === DROP ? undefined : y;
+      }
+      return v;
+    };
+  put('route_order', route(d.route_order, 'route', ''));
+  put('phases', each(d.phases, p => {
+    const name = cut(p.id, 8);
+    let q = p;
+    if (scalar(p.trigger_point)) {
+      const r = word(p.trigger_point, 'drawer', name);
+      if (r === null) {
+        q = {
+          ...q
+        };
+        delete q.trigger_point;
+      } else if (r !== p.trigger_point) q = {
+        ...q,
+        trigger_point: r
+      };
+    }
+    const ro = route(p.route_order, 'drawerRoute', name);
+    if (ro !== p.route_order) q = {
+      ...q,
+      route_order: ro
+    };
+    return q;
+  }));
+  put('maps', each(d.maps, m => {
+    const k = scalar(m.centre_ref) ? 'centre_ref' : scalar(m.center_ref) ? 'center_ref' : '';
+    if (!k) return m;
+    const r = word(m[k], 'map', cut(m.id ?? m.filename, 60));
+    if (r === m[k]) return m;
+    return {
+      ...m,
+      [k]: r === null ? '' : r
+    };
+  }));
+  const home = eventsHome(d),
+    held = home ? home.sub ? obj(d[home.key]).events : d[home.key] : null;
+  if (held && typeof held === 'object') {
+    const next = each(held, e => {
+      if (!scalar(e.place)) return e;
+      const r = word(e.place, 'event', '');
+      if (r === e.place) return e;
+      const q = {
+        ...e
+      };
+      if (r === null) delete q.place;
+      else q.place = r;
+      return r === null && !cut(q[textKey(q)], 500) ? DROP : q;
+    });
+    if (next !== held) {
+      touched = true;
+      storeEvents(out, home, arrOf(next));
+    }
+  }
+  const vp = d.vertical_profile;
+  if (vp && typeof vp === 'object' && !Array.isArray(vp)) {
+    let r = vp.route;
+    if (Array.isArray(r)) r = route(r, 'profile', '');
+    else if (typeof r === 'string' && r.trim()) {
+      const parts = r.split(/[,\n]+/),
+        next = parts.map(t => t.trim() ? word(t, 'profile', '') : t);
+      if (next.some((t, i) => t !== parts[i])) r = next.filter(t => t !== null).map(t => t.trim()).filter(Boolean).join(r.includes(',') ?
+        ', ' : '\n');
+    }
+    if (r !== vp.route) put('vertical_profile', {
+      ...vp,
+      route: r
+    });
+  }
+  const al = d.alert;
+  if (al && typeof al === 'object' && !Array.isArray(al)) {
+    const ph = each(al.phases, p => {
+      const ro = route(p.route, 'alert', cut(p.id, 8));
+      return ro === p.route ? p : {
+        ...p,
+        route: ro
+      };
+    });
+    if (ph !== al.phases) put('alert', {
+      ...al,
+      phases: ph
+    });
+  }
+  return touched ? out : d;
+}
+
+/** Les références aux lieux d'une mission : [{ id (le mot du fichier), where, name }] (voir mapRefs). */
+export function refsOf(doc) {
+  const out = [];
+  mapRefs(doc, (id, where, name) => {
+    out.push({
+      id,
+      where,
+      name
+    });
+    return id;
+  });
+  return out;
+}
+
+/** Ce que les lieux sont devenus depuis le fichier : fate (l'identifiant d'avant → { key, text } d'aujourd'hui, ou null : lieu retiré),
+ *  now (les identifiants d'aujourd'hui), deadBefore (les références déjà mortes dans le fichier). Une ligne gardée se reconnaît à sa
+ *  sorte et à sa place dans le fichier (`i`), jamais à son nom. */
+function placeFate(base, rows) {
+  const was = placesOf(base),
+    wasIds = citedIds(was),
+    nowIds = citedIds(rows),
+    at = new Map(was.map((p, n) => [`${p.kind}:${p.i}`, wasIds[n].key])),
+    seen = new Set(),
+    fate = new Map();
+  rows.forEach((r, n) => {
+    const k = `${r?.kind}:${r?.i}`;
+    if (!Number.isInteger(r?.i) || r.i < 0 || !at.has(k)) return;
+    seen.add(k);
+    // deux lieux du fichier sous le même identifiant : le premier est celui que les références désignent
+    if (at.get(k) && !fate.has(at.get(k))) fate.set(at.get(k), nowIds[n].key ? nowIds[n] : null);
+  });
+  for (const [k, id] of at)
+    if (id && !seen.has(k) && !fate.has(id)) fate.set(id, null);
+  const known = new Set(wasIds.map(x => x.key).filter(Boolean));
+  return {
+    fate,
+    now: new Set(nowIds.map(x => x.key).filter(Boolean)),
+    deadBefore: new Set(refsOf(base).map(r => refKey(r.id)).filter(k => !known.has(k) && !REF_WORDS.has(k)))
+  };
+}
+
+/** Le document dont les références suivent les lieux (SOG-0439) — la DERNIÈRE retouche de l'éditeur, après toutes les étapes : les
+ *  lignes gardées à l'écran (chronologie, cartes proposées) portent encore les identifiants du fichier. `base` : le fichier lu ; `rows` :
+ *  les lignes des Lieux (rien sans elles : l'étape jamais ouverte ne change rien). Un lieu renommé est renommé partout ; la référence à
+ *  un lieu retiré est retirée (mapRefs) ; une référence qui ne désigne plus rien et que le fichier ne portait pas (un lieu ajouté puis
+ *  retiré) aussi ; une référence DÉJÀ morte dans le fichier est gardée telle quelle (audit 182 ; deadRefs la dit). Un mot du profil
+ *  (FL100) ou le centre d'une carte (la Carte accepte un nom) qui n'est pas un lieu d'avant est gardé. Limite : un identifiant libéré
+ *  puis repris par un autre lieu dans la même séance — les références du fichier suivent LEUR lieu ; une ligne choisie à l'écran
+ *  après l'échange peut désigner l'autre. */
+export function withRefs(doc, base, rows) {
+  if (!Array.isArray(rows)) return obj(doc);
+  const {
+    fate,
+    now,
+    deadBefore
+  } = placeFate(base, rows);
+  return mapRefs(doc, (id, where) => {
+    const k = refKey(id);
+    if (REF_WORDS.has(k)) return id;
+    if (fate.has(k)) {
+      const to = fate.get(k);
+      return to === null ? null : to.key === k ? id : to.text;
+    }
+    return now.has(k) || deadBefore.has(k) || where === 'profile' || where === 'map' ? id : null;
+  });
+}
+
+/** L'identifiant d'aujourd'hui d'une référence du fichier (pour une liste à l'écran) : celui du lieu renommé, '' pour un lieu retiré,
+ *  le mot tel quel sinon. */
+export function refNow(id, base, rows) {
+  if (!Array.isArray(rows)) return String(id ?? '');
+  const to = placeFate(base, rows).fate.get(refKey(id));
+  return to === undefined ? String(id ?? '') : to === null ? '' : to.text;
+}
+
+/** Qui cite le lieu de la ligne `i` dans le document : [{ where, name, n }] (n : le nombre de fois), [] pour un lieu jamais cité. */
+export function citedBy(doc, rows, i) {
+  const k = citedIds(rows)[i]?.key,
+    out = [];
+  if (!k) return out;
+  for (const r of refsOf(doc)) {
+    if (refKey(r.id) !== k) continue;
+    const had = out.find(x => x.where === r.where && x.name === r.name);
+    if (had) had.n += 1;
+    else out.push({
+      where: r.where,
+      name: r.name,
+      n: 1
+    });
+  }
+  return out;
+}
+
+/** « Retirer » un lieu (SOG-0439) : un lieu que rien ne cite part tout de suite ; un lieu encore cité demande un second appui — le
+ *  premier rend les lignes telles quelles, `ask` (la ligne qui attend) et `cited` (qui le cite, à dire) ; le second (`asked` est cette
+ *  ligne) le retire, et withRefs retirera ses citations. → { rows, ask (-1 : rien n'attend), cited }. */
+export function removePlace(rows, i, doc, asked = -1) {
+  const list = Array.isArray(rows) ? rows : [],
+    cited = Number.isInteger(i) && list[i] ? citedBy(doc, list, i) : [];
+  if (!Number.isInteger(i) || !list[i]) return {
+    rows: list,
+    ask: -1,
+    cited
+  };
+  return cited.length && asked !== i ? {
+    rows: list,
+    ask: i,
+    cited
+  } : {
+    rows: list.filter((_, n) => n !== i),
+    ask: -1,
+    cited
+  };
+}
+
+/** Un identifiant libre pour un lieu neuf de la sorte `kind` (zone, pt, rdv, target) : « ZONE-n », « PTn », « RDV-n », « TARGET » —
+ *  le plus petit n qu'aucun lieu ne porte (compter les lignes donnait un identifiant déjà pris après un retrait : deux lieux sous le
+ *  même nom, et des références qui ne savent plus lequel elles désignent). `base` : le fichier lu. */
+export function nextPlaceId(rows, kind, base = null) {
+  if (kind === 'target') return 'TARGET';
+  // ni un identifiant d'un lieu d'aujourd'hui, ni celui d'un lieu du fichier (renommé ou retiré dans la séance : ses références le
+  // désignent encore sous ce nom jusqu'à l'enregistrement)
+  const taken = new Set([...citedIds(rows), ...citedIds(placesOf(base))].map(x => x.key)),
+    name = n => kind === 'zone' ? `ZONE-${n}` : kind === 'rdv' ? `RDV-${n}` : `PT${n}`;
+  for (let n = 1; n <= PLACES_MAX * 4; n++)
+    if (!taken.has(name(n))) return name(n);
+  return '';
+}
+
+/** Les cartes dont le centre est écrit vide (la trace d'un lieu retiré, ou un fichier écrit ainsi) : leurs noms. */
+export function mapsNoCentre(doc) {
+  return arrOf(obj(doc).maps).filter(m => m && typeof m === 'object' && ['centre_ref', 'center_ref'].some(k => k in m && (m[k] === null ||
+    String(m[k]).trim() === '')) && !['centre_ref', 'center_ref'].some(k => typeof m[k] === 'string' && m[k].trim())).map(m => cut(m.id ??
+    m.filename, 60));
+}
+
+/** Les parties qui portent un délai sans point de déclenchement (la trace d'un lieu retiré) : leurs lettres. Une partie sans délai ni
+ *  point s'ouvre au geste du pilote, à dessein : elle n'est pas dite. */
+export function drawersNoPoint(doc) {
+  const has = v => v !== undefined && v !== null && v !== '';
+  return arrOf(obj(doc).phases).filter(p => p && typeof p === 'object' && has(p.trigger_delay_min) && !has(p.trigger_point) && !has(p
+    .trigger_zone) && !has(p.trigger_object)).map(p => cut(p.id, 8));
+}
+
+/** Les références qui ne désignent aucun lieu de la mission (dites dans « À compléter ») : [{ id, where, name }], une fois par mot.
+ *  Le profil vertical (niveaux) et le centre d'une carte (un nom accepté par la Carte) ne sont pas jugés. */
+export function deadRefs(doc) {
+  const known = new Set(citedIds(placesOf(doc)).map(x => x.key).filter(Boolean)),
+    seen = new Set();
+  return refsOf(doc).filter(r => {
+    const k = refKey(r.id);
+    if (r.where === 'profile' || r.where === 'map' || !k || known.has(k) || REF_WORDS.has(k) || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
 /** Le document d'une mission neuve (voir l'en-tête). */
 export function blank() {
   return {
@@ -902,6 +1255,10 @@ export function todo(doc) {
   }
   // les lieux sans position (un polygone se place par ses points) : un seul mot pour tous
   if (placesOf(d).some(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''))) add('places', 'unplaced');
+  // SOG-0439 : une référence qui ne désigne aucun lieu ; un tiroir dont le point de déclenchement a été retiré (il ne s'ouvre plus qu'à
+  // la main)
+  if (deadRefs(d).length) add('places', 'deadRef');
+  if (drawersNoPoint(d).length) add('places', 'drawerNoPoint');
   // le récit d'une liaison est facultatif (décision du 13 nov.)
   if (!link && !String(d.summary ?? '').trim()) add('story', 'summary');
   if (!link && !String(d.detailed_description ?? '').trim()) add('story', 'description');
@@ -909,6 +1266,7 @@ export function todo(doc) {
   // la chronologie de la mission : timeline.events (shared/mission_exercise.js) ; les cartes centrées sur un lieu sans position
   if (!link && !eventsOf(d).length) add('timeline', 'timeline');
   if (mapsOf(d).some(m => m.unplaced)) add('timeline', 'mapUnplaced');
+  if (mapsNoCentre(d).length) add('timeline', 'mapNoCentre'); // SOG-0439 : une carte dont le lieu du centre a été retiré
   return out;
 }
 
