@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "89b9ea7",
-  "fiches": 429,
+  "organisation": "5d903c6",
+  "fiches": 432,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1081,6 +1081,27 @@
    ]
   },
   {
+   "id": "pilote-carburant-procedures-royaume-uni",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; procédures ; Royaume-Uni",
+    "en": "Carburant ; procédures ; Royaume-Uni",
+    "de": "Carburant ; procédures ; Royaume-Uni",
+    "es": "Carburant ; procédures ; Royaume-Uni"
+   },
+   "items": [
+    {
+     "id": "SOG-0433",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant, Procédures : lecture du paquet du Royaume-Uni impossible pour EGGW (mise en page non reconnue ×9), dite en ANGLAIS",
+     "en": "Fuel, Procedures: reading the United Kingdom package fails for EGGW (layout not recognised ×9), said in ENGLISH",
+     "de": "Kraftstoff, Verfahren: Lesen des Pakets des Vereinigten Königreichs für EGGW unmöglich (Layout nicht erkannt ×9), auf ENGLISCH gemeldet",
+     "es": "Combustible, Procedimientos: lectura del paquete del Reino Unido imposible para EGGW (maquetación no reconocida ×9), dicha en INGLÉS"
+    }
+   ]
+  },
+  {
    "id": "pilote-carburant-procedures-cartes",
    "app": "pilote",
    "label": {
@@ -1099,6 +1120,27 @@
      "de": "LFLC, ILS 26: der Link « Karte » öffnet die Datentabelle, nicht die ILS-Karte",
      "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS",
      "rank": 321
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-procedures-travaux",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; procédures ; travaux",
+    "en": "Carburant ; procédures ; travaux",
+    "de": "Carburant ; procédures ; travaux",
+    "es": "Carburant ; procédures ; travaux"
+   },
+   "items": [
+    {
+     "id": "SOG-0432",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant, Procédures : « une lecture de Little Navmap est déjà en cours » — un vieux verrou qui traîne empêche de relire",
+     "en": "Fuel, Procedures: “a Little Navmap read is already in progress” — a stale lock prevents reading again",
+     "de": "Kraftstoff, Verfahren: „ein Little-Navmap-Lesevorgang läuft bereits“ — eine alte Sperre verhindert das erneute Lesen",
+     "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer"
     }
    ]
   },
@@ -2549,6 +2591,27 @@
      "de": "„Für Eurocontrol kopieren“: ein Bindestrich in der Route (zwei verbundene Streckenbezeichner) zerschneidet den Flugplan — fünf Syntaxfehler",
      "es": "«Copiar para Eurocontrol»: un guion en la ruta (dos designadores de ruta unidos) corta el plan de vuelo — cinco errores de sintaxis",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-plan-de-vol-routes",
+   "app": "pilote",
+   "label": {
+    "fr": "Plan de vol ; routes",
+    "en": "Plan de vol ; routes",
+    "de": "Plan de vol ; routes",
+    "es": "Plan de vol ; routes"
+   },
+   "items": [
+    {
+     "id": "SOG-0431",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Plan de vol : un changement de niveau écrit « F205 » est refusé par Eurocontrol (SYN101, niveau invalide dans la route)",
+     "en": "Flight plan: a level change written “F205” is refused by Eurocontrol (SYN101, invalid level in the route)",
+     "de": "Flugplan: ein als „F205“ geschriebener Höhenwechsel wird von Eurocontrol abgelehnt (SYN101, ungültige Flugfläche in der Route)",
+     "es": "Plan de vuelo: un cambio de nivel escrito «F205» es rechazado por Eurocontrol (SYN101, nivel inválido en la ruta)"
     }
    ]
   },
