@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e0cb58e",
+  "organisation": "51fa4ad",
   "fiches": 451,
   "untranslated": 0,
   "priorities": 374,
@@ -2898,7 +2898,7 @@
     {
      "id": "SOG-0452",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Routes : le même vol ne rend pas la même route selon les vols calculés avant lui (400 NM d'écart sur Madrid)",
      "en": "Routes: the same flight does not give the same route depending on the flights computed before it (400 NM apart on Madrid)",
      "de": "Routen: derselbe Flug liefert je nach zuvor berechneten Flügen nicht dieselbe Route (400 NM Unterschied ab Madrid)",
@@ -3800,7 +3800,7 @@
     {
      "id": "SOG-0445",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Atelier de missions : les tiroirs — cinq clés, l'heure de repli, l'aperçu et la « vue du pilote » par stade",
      "en": "Mission workshop: drawers — five keys, the fallback time, the preview and the “pilot's view” per stage",
      "de": "Missionswerkstatt: Schubladen — fünf Schlüssel, die Ausweichzeit, die Vorschau und die „Pilotensicht“ je Stufe",
