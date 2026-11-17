@@ -32,3 +32,32 @@ Fichiers : `editeur.html` (autonome, rien n'est écrit ; `#cadre` ou `#lieux` ch
 2. Sous-type : liste de la famille (V2) ou champ libre ?
 3. Créer une mission sans compagnie : personnelle par défaut (règle N17) ?
 4. Dupliquer une mission : dans cet écran ou au dépli de la ligne du Registre ?
+
+# Maquette : l'étape « Tiroirs » de l'éditeur (SOG-0436, lot L2)
+
+Fichiers : `tiroirs.html` (autonome, rien n'est écrit ; `#liste`, `#zone`, `#objet`, `#heure` choisissent l'état montré), captures `tiroirs_<état>_390.png` et `tiroirs_<état>_1280.png` (page entière), sur la mission X-301A du banc (inventée). Spécification : organisation/SPEC_MISSIONS_TIROIRS.md (version 2) ; format : docs/technique/FORMAT_MISSION.md.
+
+## En cinq lignes
+1. Septième et dernière étape : « 7. Tiroirs ». Une ligne par tiroir (sa lettre, son titre, sa clé en clair), « Modifier », « + Tiroir » (trois au plus : B, C, D).
+2. Un tiroir ouvert : sept champs au plus — titre ; clé et son heure de repli ; la zone ou l'objet ; « montrer la zone au pilote » ; message ; briefing ; suite de route.
+3. La clé est une liste de quatre : zone de passage, objet à trouver, heure, geste du pilote seul. Le formulaire ne montre que ce que la clé demande (l'heure : un délai et un point de passage, sans carte).
+4. « Ce que le pilote voit » : le tiroir fermé (avant) et ouvert (après), calculés par le lecteur que l'écran du pilote emploie — à droite sur un écran large, sous le formulaire sur un téléphone.
+5. La carte est un DESSIN D'ATTENTE : elle sera confrontée à l'écran et à la carte que l'utilisateur prépare (mot du 17/11). Intention : le socle de carte partagé (modules/maps/lib/map_base.js), un toucher = le centre d'un cercle ou un sommet d'un polygone ; les champs (rayon, coordonnées) restent le repli sans tuiles.
+
+## Ce que la maquette décide, à valider
+- **La zone** : « Cercle | Polygone » sur la carte ; cercle : un toucher pose le centre, le rayon se tape (et se tire par sa poignée sur un écran large) ; polygone : touchers successifs, 3 à 100 sommets, « Retirer le dernier », « Fermer ». « Reprendre une zone de la mission » en fait une COPIE dans le tiroir (la zone du tiroir vit dans la partie, jamais dans `zones`). « Saisir les coordonnées » ouvre latitude et longitude.
+- **Le plafond et la hauteur** sont dits « altitude » (au-dessus de la mer) tant que la position en direct ne rend pas la hauteur au-dessus du sol.
+- **L'heure de repli** : « H + … min », à côté de la clé, pour une zone ou un objet seulement.
+- **Le titre** est lu par le pilote sur le tiroir fermé : pas de champ « titre caché », une phrase d'aide (« restez neutre si la suite doit surprendre »).
+- **La suite de route** : des lieux de la mission choisis dans une liste (jamais un identifiant tapé) ; pour une zone ou un objet elle part de la position de l'avion, pour une heure elle reprend au point de passage.
+- **L'objet** : son genre dans la liste fermée (épave, radeau, personne, véhicule, conteneur, navire, fumigène), posé d'un toucher, sa portée en milles marins (l'unité de l'atelier de l'utilisateur, adoptée), sa hauteur facultative.
+- **Avertissement** (notification flottante, pas montrée dans les captures) : une zone de moins de 500 m de rayon — « un avion rapide peut la franchir entre deux relevés de position ».
+- **« À compléter »** : un tiroir sans message, sans briefing, une zone ou un objet sans heure de repli — jamais bloquant.
+
+## Réponses de l'ergonome (17/11 à 18 h 42) — la maquette est ACCEPTÉE : elle devient la fiche de l'atelier et le chemin au téléphone
+1. Un tiroir retiré au milieu : les lettres se resserrent, l'ordre reste.
+2. L'heure de repli n'est dite au pilote que si elle le concerne — son appareil n'a pas de position en direct : « s'ouvrira à H + 60 min » ; sinon elle reste hors de sa vue.
+3. L'aperçu au téléphone : replié.
+4. Un contour se lit de 3 à 100 sommets (la borne de l'atelier de l'utilisateur) ; l'éditeur n'impose pas 8.
+
+La suite : la fiche entre dans l'atelier (SOG-0444 : la carte et le déroulé de la maquette de l'utilisateur + cette fiche), un seul outil d'auteur.

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missions : l'éditeur, étape « Tiroirs » (maquette SOG-0436)</title>
+<style>
+/* Les règles de editeur.html (maquette validée SOG-0287), puis ce que l'étape « Tiroirs » ajoute. */
+:root{
+  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa; --card:#fff; --bg:#f3f4f6;
+  --ok:#1e7d32; --ok-bg:#e6f6ea; --warn:#7d4e00; --warn-bg:#fff4d1; --accent:#1a6fd8; --accent-bg:#eaf2fb;
+  --key:#8a3ffc; --key-bg:#f3ecff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.top{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);font-weight:700}
+.top .sp{flex:1}
+.top .chip{font-weight:400;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--muted)}
+.page{max-width:1240px;margin:0 auto;padding:12px 16px 96px}
+.crumb{font-size:14px;color:var(--muted);margin:4px 0}
+h1{font-size:22px;line-height:1.25;margin:0 0 4px}
+.state{display:inline-block;font-size:13px;background:var(--warn-bg);color:var(--warn);border-radius:4px;padding:2px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+.steps{display:flex;gap:6px;overflow-x:auto;margin:12px -16px 0;padding:0 16px 4px;scrollbar-width:none}
+.steps a{flex:none;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:22px;background:#fff;color:var(--ink);text-decoration:none;font-size:15px}
+.steps a .n,.side a .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--soft);font-size:12px;font-weight:700}
+.steps a.done .n,.side a.done .n{background:var(--ok-bg);color:var(--ok)}
+.steps a.todo .n,.side a.todo .n{background:var(--warn-bg);color:var(--warn)}
+.steps a[aria-current]{border-color:var(--accent);background:var(--accent-bg);font-weight:600}
+h2{font-size:18px;margin:0 0 4px}
+h3{font-size:16px;margin:0}
+.hint{color:var(--muted);font-size:14px;margin:0 0 10px}
+.f{display:block;margin:0 0 12px}
+.f>span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;min-height:44px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff;color:var(--ink)}
+.f textarea{min-height:88px;resize:vertical}
+.f small{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.btn{font:inherit;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.link{border:0;background:none;color:var(--accent);text-decoration:underline;padding:0 4px}
+button[disabled]{color:var(--muted);background:var(--soft);cursor:default}
+.places{border-top:1px solid var(--line)}
+.place{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.place .k{grid-row:span 2;display:inline-grid;place-items:center;min-width:44px;height:28px;border-radius:4px;background:var(--key-bg);color:var(--key);font-size:14px;font-weight:700}
+.place b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .m{grid-column:2;color:var(--muted);font-size:14px}
+.place .act{grid-row:1/3;grid-column:3;align-self:center;min-height:44px}
+.add{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:8px 16px;display:flex;gap:8px;align-items:center;z-index:2}
+.bar .sp{flex:1}
+.side,.prev{display:none}
+.todo-list{margin:0;padding-left:1.1em;font-size:14px}
+.todo-list li{margin:.2em 0}
+.lbl{font-size:12px;color:var(--muted)}
+.mockbar{background:#fffbe6;border-bottom:1px solid #f0d78a;font-size:13px;color:#6b5200;padding:6px 16px}
+/* ---- l'étape « Tiroirs » */
+.open{border:1px solid var(--accent);border-radius:8px;padding:12px;margin:10px 0;background:#fcfdff}
+.open>h3{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.open>h3 .k{display:inline-grid;place-items:center;min-width:32px;height:28px;border-radius:4px;background:var(--key-bg);color:var(--key);font-size:14px}
+.grp{border:1px solid var(--line);border-radius:6px;padding:10px;margin:0 0 12px;background:#fff}
+.grp>.lbl{display:block;font-size:14px;margin-bottom:6px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:44px}
+.seg button[aria-pressed=true]{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.emap{position:relative;height:230px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#dfe9f0;margin-bottom:8px}
+.emap svg{position:absolute;inset:0;width:100%;height:100%}
+.emap .tools{position:absolute;left:8px;top:8px;display:flex;gap:6px}
+.emap .tools .seg{background:#fff}
+.emap .note{position:absolute;left:8px;bottom:8px;right:8px;font-size:13px;background:rgba(255,255,255,.92);border-radius:4px;padding:4px 8px;color:var(--ink)}
+.check{display:flex;gap:10px;align-items:flex-start;min-height:44px;margin:0 0 12px}
+.check input{width:22px;height:22px;margin:2px 0 0;flex:none}
+.check small{display:block;font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chips .c{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid var(--line);border-radius:18px;background:var(--soft);font-size:14px}
+.chips .arrow{color:var(--muted)}
+.fall{display:grid;grid-template-columns:auto 96px auto;gap:6px;align-items:center}
+.fall input{min-height:44px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.pilot{border:1px solid var(--line);border-radius:6px;padding:10px;margin-top:8px;background:#fff}
+.pilot .when{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.pilot .env{display:flex;gap:10px;align-items:flex-start;margin-top:6px}
+.pilot .env .ico{flex:none;display:inline-grid;place-items:center;width:40px;height:30px;border:1.5px solid var(--ink);border-radius:3px;font-size:13px;font-weight:700;background:linear-gradient(to bottom right,transparent 49%,var(--ink) 49%,var(--ink) 51%,transparent 51%),linear-gradient(to bottom left,transparent 49%,var(--ink) 49%,var(--ink) 51%,transparent 51%);background-size:50% 60%;background-position:left top,right top;background-repeat:no-repeat}
+.pilot p{margin:.3em 0;font-size:14px}
+.pilot .how{font-size:13px;color:var(--ok)}
+.pilot .msg{border-left:3px solid var(--line);padding-left:8px}
+details.pv{margin:12px 0}
+details.pv>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--accent);font-weight:600}
+.toast{position:fixed;right:16px;bottom:76px;max-width:340px;background:#1b1f24;color:#fff;border-radius:6px;padding:10px 12px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25);z-index:3}
+.toast b{color:#ffd166}
+@media (min-width:1000px){
+  .page{display:grid;grid-template-columns:220px minmax(0,1fr) 320px;gap:0 20px;align-items:start}
+  .head{grid-column:1/-1}
+  .steps{display:none}
+  .side{display:block;position:sticky;top:12px}
+  .side a{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border-radius:6px;color:var(--ink);text-decoration:none}
+  .side a[aria-current]{background:var(--accent-bg);font-weight:600}
+  .prev{display:block;position:sticky;top:12px}
+  details.pv{display:none}
+  .bar{left:0;padding-left:calc((100vw - 1240px)/2 + 16px + 240px)}
+  .emap{height:300px}
+  .keyrow{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;align-items:start}
+}
+</style>
+</head>
+<body>
+<div class="mockbar">Maquette SOG-0436 — étape « Tiroirs » de l'éditeur ; rien n'est écrit ; mission X-301A du banc (inventée) ; la carte est un dessin d'attente. États : <a href="#liste">la liste</a> · <a href="#zone">clé « zone »</a> · <a href="#objet">clé « objet »</a> · <a href="#heure">clé « heure »</a></div>
+<div class="top"><span>✈ Compagnie</span><span class="sp"></span><span class="chip">● Sur cet appareil</span></div>
+<div class="page">
+  <div class="head">
+    <div class="crumb">Missions › Registre › Modifier</div>
+    <h1>X-301A · Mission complète</h1>
+    <span class="state">modifiée sur cet appareil — pas encore envoyée</span>
+    <nav class="steps" aria-label="Étapes" data-steps></nav>
+  </div>
+  <nav class="side" aria-label="Étapes" data-side></nav>
+  <main>
+    <section class="card">
+      <h2>7. Tiroirs</h2>
+      <p class="hint">La suite que le pilote ne connaît pas au départ : trois tiroirs au plus, dans l'ordre. Chacun s'ouvre par UNE clé ; le pilote peut toujours l'ouvrir à la main.</p>
+
+      <!-- l'état « la liste » : une ligne par tiroir -->
+      <div data-state="liste">
+        <div class="places">
+          <div class="place"><span class="k">B</span><b>Entrée dans le secteur nord</b><span class="m">zone de passage · cercle 2,5 km, sous 1 500 ft · montrée · repli H + 60 min</span><a class="link act" href="#zone">Modifier</a></div>
+          <div class="place"><span class="k">C</span><b>Radeau en vue</b><span class="m">objet à trouver · radeau · portée 0,4 NM · repli H + 1 h 30</span><a class="link act" href="#objet">Modifier</a></div>
+          <div class="place"><span class="k">D</span><b>Retour par le sud</b><span class="m">heure · 10 min après RDV-1 · suite : PT2, arrivée</span><a class="link act" href="#heure">Modifier</a></div>
+        </div>
+        <div class="add"><button disabled>+ Tiroir</button><span class="lbl">trois tiroirs au plus (B, C, D) ; un tiroir retiré, les lettres se resserrent</span></div>
+      </div>
+
+      <!-- l'état « un tiroir ouvert » : sept champs au plus -->
+      <div class="open" data-state="zone objet heure" hidden>
+        <h3><span class="k" data-letter>B</span><span data-otitle>Tiroir B</span></h3>
+        <label class="f"><span>Titre</span><input data-title value="Entrée dans le secteur nord"><small>Le pilote le lit sur le tiroir fermé : restez neutre si la suite doit surprendre.</small></label>
+        <div class="keyrow">
+          <label class="f"><span>Clé — ce qui ouvre le tiroir</span>
+            <select data-key><option value="zone">Zone de passage</option><option value="objet">Objet à trouver</option><option value="heure">Heure</option><option value="geste">Geste du pilote seul</option></select></label>
+          <div class="f" data-only="zone objet"><span>Heure de repli</span>
+            <div class="fall"><span>H +</span><input data-fall value="60" inputmode="numeric" aria-label="Heure de repli, en minutes après le décollage"><span>min</span></div>
+            <small>Sans position de l'avion, le tiroir s'ouvre à cette heure ; le pilote ne la lit que dans ce cas.</small></div>
+          <div class="f" data-only="heure"><span>Délai</span>
+            <div class="fall"><input value="10" inputmode="numeric" aria-label="Délai en minutes"><span style="grid-column:2/4">min après le passage à…</span></div></div>
+        </div>
+        <label class="f" data-only="heure"><span>Point de passage</span><select><option>RDV-1 · Rendez-vous d'essai</option><option>Le décollage</option><option>PT1 · Point un</option></select><small>Heure estimée sur la route prévue : elle ne regarde pas l'avion.</small></label>
+
+        <div class="grp" data-only="zone">
+          <span class="lbl">La zone — touchez la carte pour poser son centre</span>
+          <div class="emap">
+            <svg viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect width="600" height="300" fill="#e9efe6"/>
+              <path d="M0 210 C90 190 150 240 240 228 S400 180 470 214 600 236 600 236 V300 H0Z" fill="#cfe0ee"/>
+              <path d="M40 60 C120 40 200 90 300 70 S470 30 560 80" fill="none" stroke="#c9d3c2" stroke-width="10" stroke-linecap="round"/>
+              <path d="M120 0 C140 60 110 120 150 190" fill="none" stroke="#b9cfe2" stroke-width="4"/>
+              <circle cx="300" cy="130" r="74" fill="rgba(138,63,252,.14)" stroke="#8a3ffc" stroke-width="2.5"/>
+              <circle cx="300" cy="130" r="5" fill="#8a3ffc"/><circle cx="374" cy="130" r="7" fill="#fff" stroke="#8a3ffc" stroke-width="2.5"/>
+              <circle cx="60" cy="36" r="6" fill="#1a6fd8"/><text x="72" y="41" font-size="13" fill="#1b1f24">XTST</text>
+              <circle cx="540" cy="262" r="6" fill="#1a6fd8"/><text x="492" y="252" font-size="13" fill="#1b1f24">XTSU</text>
+              <circle cx="332" cy="150" r="6" fill="#b42318"/><text x="343" y="168" font-size="13" fill="#1b1f24">Cible</text>
+              <rect x="176" y="80" width="8" height="8" fill="#59636e"/><text x="190" y="89" font-size="13" fill="#1b1f24">PT1</text>
+              <rect x="436" y="196" width="8" height="8" fill="#59636e"/><text x="450" y="205" font-size="13" fill="#1b1f24">PT2</text>
+              <path d="M60 36 L180 84 L332 150 L440 200 L540 262" fill="none" stroke="#59636e" stroke-width="1.5" stroke-dasharray="6 5"/>
+            </svg>
+            <div class="tools"><div class="seg"><button aria-pressed="true">Cercle</button><button aria-pressed="false">Polygone</button></div></div>
+            <div class="note">Centre 44°36′N 1°18′E · rayon 2,5 km</div>
+          </div>
+          <div class="two">
+            <label class="f"><span>Rayon (km)</span><input value="2,5" inputmode="decimal"></label>
+            <label class="f"><span>Plafond (ft, facultatif)</span><input value="1500" inputmode="numeric"><small>Altitude : la zone ne joue qu'en dessous.</small></label>
+          </div>
+          <div class="row"><button class="link">Reprendre une zone de la mission</button><button class="link">Saisir les coordonnées</button></div>
+        </div>
+
+        <div class="grp" data-only="objet">
+          <span class="lbl">L'objet — touchez la carte pour le poser</span>
+          <div class="emap">
+            <svg viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect width="600" height="300" fill="#e9efe6"/>
+              <path d="M0 150 C90 130 150 180 240 168 S400 120 470 154 600 176 600 176 V300 H0Z" fill="#cfe0ee"/>
+              <path d="M40 60 C120 40 200 90 300 70 S470 30 560 80" fill="none" stroke="#c9d3c2" stroke-width="10" stroke-linecap="round"/>
+              <circle cx="318" cy="222" r="34" fill="rgba(138,63,252,.14)" stroke="#8a3ffc" stroke-width="2" stroke-dasharray="5 4"/>
+              <path d="M318 208 l12 22 h-24z" fill="#8a3ffc"/>
+              <circle cx="60" cy="36" r="6" fill="#1a6fd8"/><text x="72" y="41" font-size="13" fill="#1b1f24">XTST</text>
+              <circle cx="332" cy="120" r="6" fill="#b42318"/><text x="343" y="125" font-size="13" fill="#1b1f24">Cible</text>
+              <rect x="436" y="196" width="8" height="8" fill="#59636e"/><text x="450" y="205" font-size="13" fill="#1b1f24">PT2</text>
+            </svg>
+            <div class="note">Radeau · 44°31′N 1°19′E · portée 0,4 NM</div>
+          </div>
+          <label class="f"><span>Genre</span><select><option>Radeau</option><option>Épave</option><option>Personne</option><option>Véhicule</option><option>Conteneur</option><option>Navire</option><option>Fumigène</option></select></label>
+          <div class="two">
+            <label class="f"><span>Portée (NM)</span><input value="0,4" inputmode="decimal"><small>Trouvé à cette distance, sur le geste « Objet en vue ».</small></label>
+            <label class="f"><span>Hauteur (ft, facultatif)</span><input value="1000" inputmode="numeric"><small>Altitude : trouvé seulement en dessous.</small></label>
+          </div>
+          <div class="row"><button class="link">Saisir les coordonnées</button></div>
+        </div>
+
+        <label class="check" data-only="zone"><input type="checkbox" checked><span>Montrer la zone au pilote<small>Sur sa Carte, « zone de passage ». Décochée : le tiroir dit seulement « s'ouvre en vol ».</small></span></label>
+        <label class="f"><span>Message</span><textarea data-msg rows="2" style="min-height:66px">« CROSS : écho radar dans le secteur nord, descendez voir. »</textarea></label>
+        <label class="f"><span>Briefing</span><textarea data-brief>Recherche à vue dans le secteur nord, sous 1 500 ft. Rendez compte de tout objet flottant. Carburant : 40 min sur zone au plus.</textarea></label>
+        <div class="f"><span>Suite de route (facultative)</span>
+          <div class="chips" data-route><span class="c">PT2 · Point deux</span><span class="arrow">›</span><span class="c">Arrivée</span><button class="link">+ Lieu</button></div>
+          <small data-routehint>Elle part de la position de l'avion ; le pilote la prend d'un geste, jamais d'office.</small></div>
+        <div class="row"><a class="btn" href="#liste">Terminé</a><button class="link">Retirer le tiroir</button></div>
+      </div>
+
+      <!-- l'aperçu, sur un téléphone : sous le formulaire, replié -->
+      <details class="pv"><summary>Ce que le pilote voit</summary><div data-pilot></div></details>
+    </section>
+  </main>
+  <aside class="prev">
+    <div class="card">
+      <div class="lbl">Ce que le pilote voit</div>
+      <div data-pilot></div>
+    </div>
+    <div class="card">
+      <div class="lbl">À compléter</div>
+      <ul class="todo-list"><li>Tiroirs : le tiroir C n'a pas de briefing</li><li>Chronologie : aucun événement</li></ul>
+    </div>
+  </aside>
+</div>
+<div class="toast" data-toast hidden><b>Zone petite.</b> Moins de 500 m de rayon : un avion rapide peut la franchir entre deux relevés de position.</div>
+<div class="bar"><button class="primary">Enregistrer</button><button disabled>Suivante</button><span class="sp"></span><button class="link">Annuler</button></div>
+<script>
+// Les états de la maquette : la liste des tiroirs, puis un tiroir ouvert par sa clé (zone, objet, heure). Rien n'est écrit.
+const STEPS = [['Cadre', 'done'], ['Équipes', 'done'], ['Lieux', 'done'], ['Récit', 'done'], ['Risques', 'done'], ['Chronologie et cartes', 'todo'], ['Tiroirs', 'todo']];
+const DRAWERS = {
+  zone: { letter: 'B', title: 'Entrée dans le secteur nord', closed: 's\'ouvre au passage de la zone montrée sur la Carte', nopos: 's\'ouvrira à H + 60 min', how: 'ouvert au passage de la zone, à 14 h 32 Z',
+    msg: '« CROSS : écho radar dans le secteur nord, descendez voir. »', brief: 'Recherche à vue dans le secteur nord, sous 1 500 ft. Rendez compte de tout objet flottant…', route: ['PT2 · Point deux', 'Arrivée'], hint: 'Elle part de la position de l\'avion ; le pilote la prend d\'un geste, jamais d\'office.' },
+  objet: { letter: 'C', title: 'Radeau en vue', closed: 's\'ouvre quand l\'objet est trouvé', nopos: 's\'ouvrira à H + 1 h 30', how: 'ouvert sur « Objet en vue », à 14 h 51 Z',
+    msg: '« CROSS : radeau confirmé, deux personnes. Treuillage. »', brief: '', route: [], hint: 'Elle part de la position de l\'avion ; le pilote la prend d\'un geste, jamais d\'office.' },
+  heure: { letter: 'D', title: 'Retour par le sud', closed: 's\'ouvre 10 min après RDV-1 (heure estimée)', how: 'ouvert à l\'heure, à 15 h 20 Z',
+    msg: '« Base : orage sur le nord, retour par le sud. »', brief: 'Retour par PT2, niveau inchangé. Contact Base Test Sud à 20 NM.', route: ['RDV-1 · Rendez-vous d\'essai', 'PT2 · Point deux', 'Arrivée'], hint: 'Elle reprend au point de passage ; le pilote la prend d\'un geste, jamais d\'office.' }
+};
+/** Le texte, échappé. */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+/** Ce que le pilote voit d'un tiroir : fermé (avant), ouvert (après). */
+function pilot(d) {
+  return `<div class="pilot"><span class="when">Avant</span><div class="env"><span class="ico"></span><div><b>${esc(d.letter)} · ${esc(d.title)}</b><p>${esc(d.closed)}</p>${d.nopos ? `<p class="lbl">Sans position en direct sur son appareil : « ${esc(d.nopos)} »</p>` : ''}<p><span class="link">Ouvrir le tiroir</span></p></div></div></div>
+    <div class="pilot"><span class="when">Après</span><p class="how">${esc(d.how)}</p><p class="msg">${esc(d.msg)}</p>${d.brief ? `<p>${esc(d.brief)}</p>` : '<p class="lbl">(pas de briefing)</p>'}${d.route.length ? '<p><span class="link">Prendre la suite de route</span></p>' : ''}</div>`;
+}
+/** L'état de l'adresse montré. */
+function show() {
+  const cur = ['liste', 'zone', 'objet', 'heure'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'liste',
+    d = DRAWERS[cur],
+    steps = STEPS.map(([l, st], i) => `<a href="#liste" class="${st}"${i === 6 ? ' aria-current="step"' : ''}><span class="n">${st === 'done' ? '✓' : '!'}</span>${i + 1}. ${l}</a>`).join('');
+  document.querySelector('[data-steps]').innerHTML = steps;
+  document.querySelector('[data-side]').innerHTML = steps;
+  for (const s of document.querySelectorAll('[data-state]')) s.hidden = !s.dataset.state.split(' ').includes(cur);
+  for (const s of document.querySelectorAll('[data-only]')) s.hidden = !s.dataset.only.split(' ').includes(cur);
+  document.querySelector('[data-toast]').hidden = true;
+  if (d) {
+    document.querySelector('[data-letter]').textContent = d.letter;
+    document.querySelector('[data-otitle]').textContent = `Tiroir ${d.letter}`;
+    document.querySelector('[data-title]').value = d.title;
+    document.querySelector('[data-key]').value = cur;
+    document.querySelector('[data-fall]').value = cur === 'objet' ? '90' : '60';
+    document.querySelector('[data-msg]').value = d.msg;
+    document.querySelector('[data-brief]').value = d.brief;
+    document.querySelector('[data-route]').innerHTML = `${d.route.map(r => `<span class="c">${esc(r)}</span>`).join('<span class="arrow">›</span>')}<button class="link">+ Lieu</button>`;
+    document.querySelector('[data-routehint]').textContent = d.hint;
+  }
+  const html = d ? pilot(d) : Object.values(DRAWERS).map(x => `<div class="pilot"><div class="env"><span class="ico"></span><div><b>${esc(x.letter)} · ${esc(x.title)}</b><p>${esc(x.closed)}</p></div></div></div>`).join('');
+  for (const p of document.querySelectorAll('[data-pilot]')) p.innerHTML = html;
+  if (document.querySelector('.steps a[aria-current]')) document.querySelector('.steps a[aria-current]').scrollIntoView({ inline: 'end', block: 'nearest' });
+}
+addEventListener('hashchange', show);
+show();
+</script>
+</body>
+</html>
