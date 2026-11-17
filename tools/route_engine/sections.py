@@ -406,18 +406,20 @@ def _nat_or_free(nav, g, start, end, ratio, info, path, tid, valid, meta):
     shared = nav.__dict__.setdefault('_free_shared', {}).setdefault((start, end, ratio), [])
     avoid, compel = frozenset(getattr(g, 'rad_avoid', ()) or ()), frozenset((getattr(g, 'rad_compel', None) or {}).items())
     seen = len(info.get('steps') or [])
-    same = next((x for x in shared if x[0] == avoid and x[1] == compel), None)
+    thr = nat_nm / (1 + NAT_MAX_EXTRA)      # SOG-0450 (B) : la route libre l'emporte si elle fait au plus `thr` NM : la recherche ne cherche que cela (elle ne sert qu'à répondre « oui » ou « non » : un « non » arrête les couples dont le minorant dépasse `thr`)
+    same = next((x for x in shared if x[0] == avoid and x[1] == compel and thr <= x[2]), None)      # une recherche coupée à `thr_s` répond à toute question plus étroite (thr <= thr_s)
     if same is not None:
-        free_path, alt = same[2], copy.deepcopy(same[3])
+        free_path, alt = same[3], copy.deepcopy(same[4])
         paid = False
-    elif any(x[0] <= avoid and x[1] <= compel and (not x[2] or x[3].get('source') != 'random' or nat_nm - sum(e['nm'] for _u, _v, e in x[2]) < NAT_MAX_EXTRA * sum(e['nm'] for _u, _v, e in x[2])) for x in shared):
+    elif any(x[0] <= avoid and x[1] <= compel and thr <= x[2] and (not x[3] or x[4].get('source') != 'random' or nat_nm - sum(e['nm'] for _u, _v, e in x[3]) < NAT_MAX_EXTRA * sum(e['nm'] for _u, _v, e in x[3])) for x in shared):
         # la même recherche, faite AVEC MOINS de contraintes, a déjà dit « la route NAT reste » : avec plus de points écartés ou imposés la route libre ne peut qu'être plus longue (ou absente) : la réponse « non » vaut encore, sans nouvelle recherche
         kept.add(memo)
         return None
     else:
         alt = copy.deepcopy(info)
-        free_path = _free(nav, g, start, end, ratio, alt)
-        shared.append((avoid, compel, free_path, copy.deepcopy(alt)))
+        free_path = _free(nav, g, start, end, ratio, alt, limit=thr)
+        shared[:] = [x for x in shared if not (x[0] == avoid and x[1] == compel)]
+        shared.append((avoid, compel, thr, free_path, copy.deepcopy(alt)))
         paid = True
     if not free_path or alt.get('source') != 'random':
         if paid:
@@ -468,11 +470,11 @@ def _near_nat(nav, free_path, tracks):
     return out
 
 
-def _free(nav, g, start, end, ratio, info):
+def _free(nav, g, start, end, ratio, info, limit=None):
     """SOG-0354 L5 (2) : aucune route du jour ne convient : la route libre CRÉÉE (free_route), résolue par les mêmes sections ; `info['free']` dit ce qui a été fait (ou pourquoi rien : « aucun point d'entrée océanique connu »), `info['source']` vaut 'random' ; None si rien n'a abouti (la recherche entière suit)."""
     report = {}
     made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs, first: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True, first=first),
-                                 lambda g2, s, entries, max_states=None: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre', max_states), report, skip=_opposite_ends(nav, g, start, end, info))
+                                 lambda g2, s, entries, max_states=None: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre', max_states), report, skip=_opposite_ends(nav, g, start, end, info), limit=limit)
     if not made:
         info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why, **report}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'

@@ -15164,4 +15164,5 @@ def k340(c):
     finally:
         S._free = real
     c.eq((r1, r2, r3), (None, None, None), 'a free route of 5 600 NM against NAT routes of 5 694 and 5 709 NM (less than 5 % shorter): the NAT route is kept each time', what='kept')
-    c.eq(len(calls), 1, 'ONE free search for the two NAT routes of the calculation, and none for the retry that adds an avoided point (a « no » obtained with fewer constraints stays a « no » with more)', what='shared')
+    thr = lambda nm: nm / (1 + S.NAT_MAX_EXTRA)
+    c.eq([round(x, 3) if x is not None else None for x in calls], [round(thr(5694.0), 3), round(thr(5709.0), 3)], 'the search only asks « is there a free route of at most NAT / 1.05 NM ? » (the limit is given to it); a NAT route a few NM longer has a wider limit than the search made for the first: it asks its own; the retry that adds constraints, with the limit already covered, asks nothing (one search per calculation and per limit)', what='limit')

@@ -134,7 +134,7 @@ def _links(nav, node, high, into, band):
             (node, k, dict(a=node, b=k, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, zone='nat', nat_link='exit')) for d, k in near]
 
 
-def solve(nav, g, start, end, ratio, resolve, europe, report=None, skip=frozenset()):
+def solve(nav, g, start, end, ratio, resolve, europe, report=None, skip=frozenset(), limit=None):
     """(chaîne, None) ou (None, raison) : la meilleure route libre résolue ; la chaîne : { entry, exit, points: [id], nm, cost, path, sections }.
     SOG-0354 L5 (2 bis) : UNE seule recherche du départ vers TOUTES les entrées (`europe(g2, start, entries)` → { entrée atteinte : { path, cost, band } }, celle de sections : le mécanisme de L5 1 bis), puis les couples entre entrées ATTEINTES, dans l'ordre de leur minorant (le coût RÉEL de la section d'Europe + le reste estimé) :
     les essais ne sont plus gaspillés sur des entrées que le départ n'atteint pas (LFPO / LFPG → KLAX : les entrées proches du chemin ne s'atteignent pas depuis Paris à FL370) ; une sortie dont la section d'Amérique n'a pas abouti n'est pas reprise. `resolve(g2, start, end, entry, exit, legs, first)` est celui de sections
@@ -221,16 +221,19 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None, skip=frozense
             return 'states'
         now = time.perf_counter()
         return 'time' if (now - began > FREE_S or (engine.DEADLINE is not None and now >= engine.DEADLINE)) else None
+    def cap():      # SOG-0450 (B) : la borne des couples : le meilleur trouvé ; ET, quand l'appelant ne demande que « existe-t-il une route libre d'au plus `limit` NM ? » (la comparaison avec la route NAT), `limit` : un couple dont le minorant dépasse `limit` ne peut pas répondre « oui » ; dès qu'un couple l'atteint, le meilleur trouvé le remplace : la MEILLEURE route libre reste cherchée comme avant
+        vals = [x for x in (best['total_nm'] if best else None, None if limit is None else limit + 1e-6) if x is not None]
+        return min(vals) if vals else None
     remaining = list(rank)      # SOG-0354 L5 (4) d1 : une recherche d'Europe vers TOUTES les entrées candidates (need = NEED : elle s'arrête dès que NEED sont atteintes, quelles qu'elles soient : un but inatteignable ne fait plus parcourir tout l'espace) ; d1 bis : une recherche de plus vers les entrées restantes tant que leur minorant est SOUS le meilleur coût trouvé et qu'il reste du temps à la section
     while remaining:
-        if best and pack_bound(remaining[0]) >= best['total_nm']:      # les entrées qui restent ne peuvent pas être plus COURTES
+        if cap() is not None and pack_bound(remaining[0]) >= cap():      # les entrées qui restent ne peuvent pas être plus COURTES
             report['stopped'] = 'bound'
             break
         why = out_of_time()
         if why:
             report['stopped'] = why
             break
-        useful = [i for i in remaining if best is None or pack_bound(i) < best['total_nm']]      # seules les entrées qui peuvent encore faire plus COURT sont des buts (les autres ne feraient que détourner la recherche)
+        useful = [i for i in remaining if cap() is None or pack_bound(i) < cap()]      # seules les entrées qui peuvent encore faire plus COURT sont des buts (les autres ne feraient que détourner la recherche)
         if not useful:
             report['stopped'] = 'bound'
             break
@@ -242,7 +245,7 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None, skip=frozense
         pack = [i for i in useful if eff(i) in reached]
         pairs = sorted(((nm_of(reached[eff(i)]['path']) + lead_nm(i) + ocean[(i, o)] + tail(o), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])      # le minorant en NM : la section d'Europe RÉELLE + le reste orthodromique
         for bound, i, o in pairs:
-            if best and bound - tail(o) + tail_est(o) >= best['total_nm']:      # ce couple ne peut pas être plus court que le meilleur trouvé (la section d'Amérique de sa sortie est connue quand elle a été résolue : l'estimation est alors presque exacte)
+            if cap() is not None and bound - tail(o) + tail_est(o) >= cap():      # ce couple ne peut pas être plus court que le meilleur trouvé (la section d'Amérique de sa sortie est connue quand elle a été résolue : l'estimation est alors presque exacte)
                 report['stopped'] = 'bound'
                 continue
             if o in dead:
