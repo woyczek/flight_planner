@@ -5309,6 +5309,49 @@ def a256(c):
     c.check_errors()
 
 
+@case('A260', 'Settings › About › Diagnostic: the switch of the page profile (SOG-0430 A2) — a checkbox that is on by default, off by a click and on again, disabled with its reason when the page is served without the permission of the launcher; four languages', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0430 A2 (the ergonomist: « un réglage que l\'utilisateur ne peut pas atteindre n\'en est pas un »): the switch of the profiler is in the Diagnostic block of the About card, where the diagnostic that holds the profiles is copied; it turns the profiler off and on (localStorage of this browser, nothing written in the data); without the launcher\'s permission (no <meta name="sog-js-profiling">) it is disabled and says why')
+def a260(c):
+    lang = c.lang
+    TT = lambda k: tx('frame/settings/diagnostic.js', k, lang, after='Object.assign(T, {')
+    FAKE = """(() => {
+      if (localStorage.getItem('x-no-permission')) return;
+      const q0 = Document.prototype.querySelector;
+      Document.prototype.querySelector = function (s) { return s === 'meta[name="sog-js-profiling"]' ? { content: '1' } : q0.apply(this, arguments) };
+      window.Profiler = class { constructor() { this.t0 = performance.now() } addEventListener() {} async stop() { return { resources: [], frames: [], stacks: [], samples: [] } } };
+    })()"""
+    c.page.add_init_script(FAKE)
+    c.open('settings', docs=LEVEL3, wait=False)
+    c.until("!!document.querySelector('[data-diagbox]')", timeout=20000, what='the diagnostic block')
+    open_ = lambda: c.js("() => { const d = document.querySelector('[data-diagbox]'); if (d) { d.open = true; d.closest('details.f-group')?.setAttribute('open', '') } }")
+    open_()
+    box = '[data-diagbox] [data-profiler] input[data-act="profiler"]'
+    c.until(f"!!document.querySelector('{box}')", timeout=10000, what='the profiler switch')
+    c.eq(norm(c.text('[data-diagbox] [data-profiler] label')), norm(TT('profLabel')), 'the switch says what it records, in the language of the page', what='label')
+    c.eq(norm(c.text('[data-diagbox] [data-profiler-hint]')), norm(TT('profHint')), 'and what is kept and that nothing is sent', what='hint')
+    c.eq(c.js(f"() => [document.querySelector('{box}').checked, document.querySelector('{box}').disabled]"), [True, False], 'on by default, usable', what='default')
+    c.js(f"() => document.querySelector('{box}').scrollIntoView({{ block: 'center' }})")
+    c.wait(400)
+    c.shot(f'A260_{lang}.png')
+    c.js(f"() => document.querySelector('{box}').click()")
+    c.until("window.SogFrame.profiler().state === 'off'", timeout=5000, what='the profiler turned off')
+    c.eq(c.js("() => localStorage.getItem('sog-frame-profiler')"), 'off', 'turned off: the choice is kept in this browser', what='stored off')
+    c.js(f"() => document.querySelector('{box}').click()")
+    c.until("window.SogFrame.profiler().state === 'running'", timeout=5000, what='the profiler turned on again')
+    c.eq(c.js("() => localStorage.getItem('sog-frame-profiler')"), None, 'turned on again: nothing left in the storage', what='stored on')
+    # served without the permission of the launcher (no meta): the switch is disabled and says why
+    c.js("() => localStorage.setItem('x-no-permission', '1')")
+    c.page.reload(wait_until='domcontentloaded')
+    c.until("!!document.querySelector('[data-diagbox]')", timeout=20000, what='the diagnostic block again')
+    open_()
+    c.until(f"!!document.querySelector('{box}')", timeout=10000, what='the switch again')
+    c.eq(c.js(f"() => [document.querySelector('{box}').checked, document.querySelector('{box}').disabled]"), [False, True], 'without the launcher\'s permission: disabled, not ticked', what='unavailable')
+    c.eq(norm(c.text('[data-diagbox] [data-profiler-hint]')), norm(TT('profUnavailable')), 'and it says why', what='reason')
+    c.js("() => localStorage.removeItem('x-no-permission')")
+    c.check_errors()
+
+
 @case('A259', 'The page profiles itself during a task of a second or more (SOG-0430, A2): the fifteen busiest functions, names and paths of OUR scripts only, kept on the device (five at most), never sent; stopped when the page is hidden, off by a setting, absent without the browser\'s profiler', 'A',
       designs=('standard',), screens=False, night=False,
       rule='SOG-0430 A2 (the ergonomist; Security review of 17 Nov 2026): the browser\'s JS Self-Profiling (`Profiler`, which the launcher enables with `Document-Policy: js-profiling` on the HTML pages) samples the main thread; a task of 1000 ms or more stops the profile, reduces it to the 15 functions with the most samples (name ≤ 80 characters without control characters, the path of one of OUR scripts without origin, query or fragment — « (other) » for any other origin —, line, samples), keeps it in the LOCAL diagnostic (localStorage: five at most, read back as untrusted) and starts a new profile; stopped when the page is hidden; a setting turns it off; without `Profiler` (page served without the header, old cache) nothing runs and nothing fails; NOTHING goes to the network (spy on fetch, sendBeacon, XMLHttpRequest)')

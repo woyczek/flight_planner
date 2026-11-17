@@ -277,7 +277,8 @@ After each write the frame's `reload` is called: the transport and `ctx.identity
 10. **About**: links to the help (the Settings chapter) and to the roadmap (`#roadmap`), then the **diagnostics**,
    folded inside the card: transport, status, usages, launcher, repository (never the token), aerodb state,
    storage, network, browser; the page (`d.page`: secure context, offline use active / not yet / impossible over http
-   outside the computer, the launcher's computer and whether through the local network); "Copy".
+   outside the computer, the launcher's computer and whether through the local network); under them, the **switch of the page profile** (SOG-0430 A2: « Record what the page does during a freeze », on by default,
+   a checkbox that sets `localStorage['sog-frame-profiler']` of this browser; disabled, with its reason, when the page is served without the launcher's permission — no `<meta name="sog-js-profiling">`); "Copy".
 11. **Administration** (level Full only; absent otherwise), after About: **one button per administrator page** (§ 6), each
    with its sentence under it, 44 px high: "Map threshold tuning" (`#maps?tune=1`), "Flight zone limit" (folds a panel open under
    its button: a box "Show the edge line of the flight zone limit", saved at once, for the airline, as the key `edge` of

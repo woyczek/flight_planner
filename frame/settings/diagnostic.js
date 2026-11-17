@@ -34,6 +34,22 @@
       '„Kopieren“ legt alles in die Zwischenablage: Fügen Sie es in Ihre Nachricht ein, um ein Problem zu melden.',
       '«Copiar» lo pone todo en el portapapeles: péguelo en su mensaje para señalar un problema.'
     ],
+    // SOG-0430 (A2) : l'interrupteur du profil de la page pendant un gel (exception accordée par la session ergonomie sur ce fichier)
+    profLabel: ['Enregistrer ce que fait la page pendant un gel', 'Record what the page does during a freeze',
+      'Aufzeichnen, was die Seite bei einem Einfrieren tut',
+      'Registrar lo que hace la página durante un bloqueo'
+    ],
+    profHint: [
+      'Quand la page reste figée plus d’une seconde, les quinze fonctions les plus sollicitées (leurs noms seulement) sont gardées dans ce diagnostic, sur cet appareil ; aucune valeur, rien n’est envoyé. « Copier » les emporte avec le reste : à vous de voir où vous collez le diagnostic.',
+      'When the page stays frozen for more than a second, the fifteen busiest functions (their names only) are kept in this diagnostic, on this device; no values, nothing is sent. “Copy” takes them along with the rest: mind where you paste the diagnostic.',
+      'Bleibt die Seite länger als eine Sekunde eingefroren, werden die fünfzehn am stärksten beanspruchten Funktionen (nur ihre Namen) in dieser Diagnose auf diesem Gerät gespeichert; keine Werte, nichts wird gesendet. „Kopieren“ nimmt sie mit dem Rest mit: Achten Sie darauf, wo Sie die Diagnose einfügen.',
+      'Cuando la página se queda bloqueada más de un segundo, las quince funciones más solicitadas (solo sus nombres) se guardan en este diagnóstico, en este dispositivo; ningún valor, no se envía nada. «Copiar» se las lleva con el resto: tenga cuidado de dónde pega el diagnóstico.'
+    ],
+    profUnavailable: ['Indisponible ici : cette page est servie sans l’autorisation du lanceur du poste.',
+      'Not available here: this page is served without the permission of this computer’s launcher.',
+      'Hier nicht verfügbar: Diese Seite wird ohne die Erlaubnis des Starters dieses Rechners geliefert.',
+      'No disponible aquí: esta página se sirve sin el permiso del lanzador de este equipo.'
+    ],
     // lignes du diagnostic (valeurs brutes)
     dg: {
       transport: ['Transport', 'Transport', 'Transport', 'Transporte'],
@@ -140,8 +156,10 @@
       issues = web ? `${web}/${window.SogConfig?.providerOf?.(`${web}.git`).provider === 'github' ? 'issues/new' : '-/issues/new'}` : '',
       ver = v?.version ? `<p data-version><b>${esc(v.date ? t(T.aboutVersion, { v: v.version, d: v.date }) : t(T.aboutVersionNoDate, { v: v.version }))}</b></p>` : '',
       code = web ? `<p><a href="${esc(web)}" target="_blank" rel="noopener" data-code>${esc(t(T.aboutCode))}</a> · <a href="${esc(issues)}" target="_blank" rel="noopener" data-report>${esc(t(T.aboutReport))}</a></p>` : '';
+    const prof = c.profiler?.(),
+      profile = !prof ? '' : `<p class="f-row" data-profiler><label><input type="checkbox" data-act="profiler"${prof.state === 'unavailable' ? ' disabled' : ''}${prof.state === 'off' ? '' : prof.state === 'unavailable' ? '' : ' checked'}> ${esc(t(T.profLabel))}</label></p><p class="f-muted" data-profiler-hint>${esc(t(prof.state === 'unavailable' ? T.profUnavailable : T.profHint))}</p>`;
     return `<div class="f-card" data-card="about"><h2>${esc(t(T.about))}</h2>${ver}<p><a href="#help?d=licence" data-licence>${esc(t(T.aboutLicence))}</a></p>${code}<p><a href="#roadmap">${esc(t(T.aboutRoadmap))}</a></p>
-      <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p><div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
+      <details data-diagbox><summary>${esc(t(T.diag))}</summary><dl class="f-dl" data-diag></dl><p class="f-muted">${esc(t(T.diagHint))}</p>${profile}<div class="f-row"><button type="button" data-act="copy">${esc(t(T.copy))}</button></div></details></div>`;
   }
   /** Diagnostic du cadre : lignes lisibles et JSON complet (env.diagJson) ; est : estimation du stockage, déjà lue. */
   async function live(env, est) {
@@ -188,6 +206,8 @@
       });
       c.notify(t(how === 'shown' ? T.copyShown : T.copied), how === 'shown' ? 'warn' : 'ok');
     }
+    if (act === 'profiler') c.setProfiler?.(!!b
+      .checked); // l'interrupteur : localStorage de CE navigateur, rien d'écrit dans les données
     if (act === 'diagOpen') {
       e.preventDefault(); // bouton de la carte Administration : le diagnostic replié de la carte À propos, ouvert
       const d = view.querySelector('[data-diagbox]');
@@ -200,7 +220,7 @@
   }
 
   (window.SogSettingsParts ||= {}).diagnostic = {
-    acts: ['copy', 'diagOpen'],
+    acts: ['copy', 'diagOpen', 'profiler'],
     aboutHtml,
     live,
     run
