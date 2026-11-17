@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3d48a8c",
-  "fiches": 406,
+  "organisation": "09df128",
+  "fiches": 409,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1215,6 +1215,15 @@
      "en": "Fuel: copy a complete ICAO flight plan, ready to paste into the Eurocontrol validation",
      "de": "Kraftstoff: einen vollständigen ICAO-Flugplan kopieren, bereit zum Einfügen in die Eurocontrol-Validierung",
      "es": "Combustible: copiar un plan de vuelo OACI completo, listo para pegar en la validación de Eurocontrol"
+    },
+    {
+     "id": "SOG-0408",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant, champ Route : un point de coordonnées tapé « 51/20 » est réécrit « 5100N02000W » une fois résolu",
+     "en": "Fuel, Route field: a coordinate point typed “51/20” is rewritten “5100N02000W” once resolved",
+     "de": "Kraftstoff, Feld Route: ein als „51/20“ getippter Koordinatenpunkt wird nach dem Auflösen zu „5100N02000W“ umgeschrieben",
+     "es": "Combustible, campo Ruta: un punto de coordenadas escrito «51/20» se reescribe «5100N02000W» una vez resuelto"
     }
    ]
   },
@@ -2587,6 +2596,27 @@
      "de": "Routengenerierung aus den RAD-Dateien von Eurocontrol (und dem FRA)",
      "es": "Generación de rutas a partir de los archivos RAD de Eurocontrol (y del FRA)",
      "rank": 130
+    }
+   ]
+  },
+  {
+   "id": "pilote-socle-signaler",
+   "app": "pilote",
+   "label": {
+    "fr": "Socle (Signaler)",
+    "en": "Socle (Signaler)",
+    "de": "Socle (Signaler)",
+    "es": "Socle (Signaler)"
+   },
+   "items": [
+    {
+     "id": "SOG-0409",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Signaler : la page est lente à la frappe (le titre comme le texte)",
+     "en": "Report: the page is slow while typing (title and text)",
+     "de": "Melden: die Seite ist beim Tippen langsam (Titel und Text)",
+     "es": "Informar: la página es lenta al teclear (título y texto)"
     }
    ]
   },
@@ -5924,6 +5954,27 @@
      "es": "Ajustes en el teléfono, repositorio sin sincronizar: las tarjetas de « compañía » se estiran sobre una pantalla vacía",
      "rank": 367,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-socle-signaler-roadmap-recette",
+   "app": "maintenance",
+   "label": {
+    "fr": "Socle (Signaler, Roadmap, Recette)",
+    "en": "Socle (Signaler, Roadmap, Recette)",
+    "de": "Socle (Signaler, Roadmap, Recette)",
+    "es": "Socle (Signaler, Roadmap, Recette)"
+   },
+   "items": [
+    {
+     "id": "SOG-0410",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Signalements : une liste des bugs et demandes, avec recherche, commentaires et priorité",
+     "en": "Reports: a list of bugs and requests, with search, comments and priority",
+     "de": "Meldungen: eine Liste der Fehler und Wünsche, mit Suche, Kommentaren und Priorität",
+     "es": "Informes: una lista de errores y peticiones, con búsqueda, comentarios y prioridad"
     }
    ]
   },
