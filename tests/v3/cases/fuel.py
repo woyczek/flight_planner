@@ -7160,7 +7160,8 @@ def f247(c):
       'a hyphen, « N12C-N34D », the same track, is written by its first designator and the choice said: the hyphen would open a new item '
       'of the message), never writes a speed-level group identical to the one in force, never « DCT » before a STAR at the end of the route '
       '(« ZZSTA3 », a STAR without a route letter); an element not in ICAO form is never copied: the button says which; the registration '
-      'required in item 18 (REG/), its absence said; an oceanic route without HF in the equipment said on copying', 'F', tags=('fuel',),
+      'required in item 18 (REG/), neutral and said when the sheet has none; an oceanic route without HF in the equipment said by the ONE '
+      'notification of the copy', 'F', tags=('fuel',),
       designs=('standard',),
       screens=False, langs4=True,
       rule='SOG-0422 (the user pasted the plan of a crossing to Eurocontrol: refused, five syntax errors from column 140 of the route, '
@@ -7181,7 +7182,7 @@ def f256(c):
         noreg = F.message({ type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', eobt: F.eobtOf('2026-12-31T23:55:00Z'), speedKt: 480,
           levelFt: 35000, routeText: 'EIDW ZZONE ZZTWO KJFK', eetMin: 432 });
       return [ok.text.split('\\n')[3], ok.errors, ok.notes.star, ok.notes.oceanic, bad.errors, bad.notes.bad, ok.notes.joined,
-        ok.notes.hf, ok.text.split('\\n')[5], noreg.errors];
+        ok.notes.hf, ok.text.split('\\n')[5], [noreg.errors, noreg.notes.regNeutral, noreg.text.split('\\n')[5]]];
     })""")
     c.eq(got[0], '-N0480F350 ZZONE DCT ZZTWO NATE 54N050W DCT ZZNIC N12C ZZALX DCT ZZARV ZZSTA3',
          'item 15: the joined airways by the first designator, no group repeated at ZZONE, the STAR after its point without DCT', what='item 15')
@@ -7194,7 +7195,8 @@ def f256(c):
     c.eq(got[6], ['N12C-N34D'], 'the joined name kept to be said', what='joined')
     c.eq(got[7], True, 'an oceanic route, no H in the assumed equipment: said', what='hf')
     c.eq(got[8], '-PBN/B2D2 DOF/261231 REG/EIZZD)', 'the registration in item 18, letters and digits only', what='REG')
-    c.eq(got[9], ['reg'], 'no registration: the message refuses to be copied', what='no REG')
+    c.eq(got[9], [[], True, '-PBN/B2D2 DOF/261231 REG/CHECK01)'], 'no registration: a neutral one, said; the copy not blocked',
+         what='no REG')
     # the screen: a route text with an element not in ICAO form; the button says it instead of copying
     docs = flight_docs()
     for d in docs:
@@ -7228,9 +7230,13 @@ def f256(c):
     to_step(c, 1)
     c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]')", timeout=10000, what='« Copier pour Eurocontrol »')
     c.tap(f'{FUEL} [data-do=fplcopy]')
+    once = norm(tx(T, 'fplCopiedHf', L))
+    c.until(f"(window.__notes || []).some(x => x.replace(/\\s+/g, ' ').includes({json.dumps(once[:40])}))", timeout=5000,
+            what='the copy says the missing HF itself')
+    seen = [norm(x) for x in (c.js('window.__notes || []') or [])]
+    c.ok(norm(tx(T, 'fplCopied', L)) not in seen and not any(norm(tx(T, 'fplNoHf', L))[:24] in x for x in seen), seen,
+         'ONE notification: no plain « copied », no second HF note waiting behind it')
     hf = norm(tx(T, 'fplNoHf', L))[:24]
-    c.until(f"(window.__notes || []).some(x => x.replace(/\\s+/g, ' ').includes({json.dumps(hf)}))", timeout=5000, what='the missing HF said on copying')
-    c.ok(any(norm(tx(T, 'fplCopied', L))[:11] in norm(x) for x in (c.js('window.__notes || []') or [])), 'copied', 'copied all the same')
     notes = norm(c.text(f'{FUEL} [data-fplnotes]') or '')
     c.ok(norm(tx(T, 'fplJoined', L)).split('(')[0].strip() in notes and 'N12C-N34D' in notes, notes, 'the fold says the joined airways')
     c.ok(hf in notes, notes, 'the fold says the missing HF')

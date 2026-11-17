@@ -14,8 +14,9 @@
 //     procédure écrit contre le départ / l'arrivée ; bad : les éléments écrits hors de la forme OACI (le message les refuse) ;
 //     joined : les noms de voies jointes dont le premier indicatif est écrit (dit au pilote).
 //   eobtOf(plannedAt, now) → { at: Date, now: bool } : l'heure du vol, sinon l'heure présente arrondie aux cinq minutes suivantes.
-//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad, joined, hf } } : le message « (FPL-…) », une
-//     case par ligne ; l'immatriculation en case 18 (REG/, exigée par Eurocontrol) ; hf : route océanique sans HF dans l'équipement.
+//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad, joined, hf, regNeutral } } : le message
+//     « (FPL-…) », une case par ligne ; l'immatriculation en case 18 (REG/, exigée par Eurocontrol), neutre (NEUTRAL_ID) quand la fiche
+//     n'en donne pas (regNeutral) ; hf : route océanique sans HF dans l'équipement.
 
 import {
   tokenize
@@ -163,7 +164,9 @@ export function message(o = {}) {
     speed = Math.round(+o.speedKt || 0),
     level = Math.round((+o.levelFt || 0) / 100),
     eet = Math.round(+o.eetMin || 0),
-    reg = regWord(o.reg),
+    // SOG-0422 (b) : le bouton contrôle la ROUTE, même pour un type sans immatriculation : une immatriculation neutre, dite
+    regNeutral = !regWord(o.reg),
+    reg = regNeutral ? regWord(NEUTRAL_ID) : regWord(o.reg),
     at = o.eobt?.at instanceof Date ? o.eobt.at : new Date(),
     r = item15(o.routeText, {
       dep,
@@ -181,11 +184,11 @@ export function message(o = {}) {
   if (!(level >= 10 && level <= 660)) errors.push('level');
   if (r.route.split(' ').length < 2) errors.push('route');
   if (r.bad.length) errors.push('routeword');
-  // SOG-0422 : Eurocontrol exige l'immatriculation (EUIFPS002A) : sans elle, le plan serait refusé
+  // SOG-0422 : Eurocontrol exige l'immatriculation (EUIFPS002A) ; seule une immatriculation qui casserait la forme bloque
   if (!/^[A-Z0-9]{2,7}$/.test(reg)) errors.push('reg');
   if (!(eet > 0 && eet < 100 * 60)) errors.push('eet');
   const text = ['(FPL-' + id + '-IG', `-${type || 'ZZZZ'}/${wake || 'M'}-${EQUIPMENT}`, `-${dep}${hhmm(at)}`, `-${r.route}`,
-    `-${arr}${pad(Math.floor(eet / 60), 2)}${pad(eet % 60, 2)}${altn ? ` ${altn}` : ''}`, `-PBN/${PBN} DOF/${yymmdd(at)}${reg ? ` REG/${reg}` : ''})`
+    `-${arr}${pad(Math.floor(eet / 60), 2)}${pad(eet % 60, 2)}${altn ? ` ${altn}` : ''}`, `-PBN/${PBN} DOF/${yymmdd(at)} REG/${reg})`
   ].join('\n');
   if (!ALPHABET.test(text)) errors.push('alphabet');
   return {
@@ -200,7 +203,8 @@ export function message(o = {}) {
       bad: r.bad,
       joined: r.joined,
       // SOG-0422 : la HF est exigée en espace océanique (EUROEGGX1A) ; l'équipement supposé ne l'invente pas : dit
-      hf: r.oceanic && !EQUIPMENT.split('/')[0].includes('H')
+      hf: r.oceanic && !EQUIPMENT.split('/')[0].includes('H'),
+      regNeutral
     }
   };
 }

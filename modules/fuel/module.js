@@ -652,10 +652,10 @@ const TX = {
       'nivel de crucero (FL010 a FL660)'
     ],
     route: ['route vide', 'empty route', 'leere Route', 'ruta vacía'],
-    reg: ['immatriculation absente de la fiche de l’aéronef (exigée par Eurocontrol)',
-      'registration missing from the aircraft sheet (required by Eurocontrol)',
-      'Kennzeichen fehlt im Luftfahrzeugblatt (von Eurocontrol verlangt)',
-      'matrícula ausente de la ficha de la aeronave (exigida por Eurocontrol)'
+    reg: ['immatriculation de la fiche hors de la forme OACI (2 à 7 lettres et chiffres)',
+      'registration of the sheet not in ICAO form (2 to 7 letters and digits)',
+      'Kennzeichen des Blatts nicht in ICAO-Form (2 bis 7 Buchstaben und Ziffern)',
+      'matrícula de la ficha fuera de la forma OACI (2 a 7 letras y cifras)'
     ],
     routeword: ['route : élément hors de la forme OACI « {t} »', 'route: element not in ICAO form “{t}”',
       'Route: Element nicht in ICAO-Form „{t}“', 'ruta: elemento fuera de la forma OACI «{t}»'
@@ -670,6 +670,16 @@ const TX = {
     'Two designators for the same track ({v}): the first is written.',
     'Zwei Bezeichner für dieselbe Strecke ({v}): der erste wird geschrieben.',
     'Dos designadores para el mismo trazado ({v}): se escribe el primero.'
+  ],
+  fplRegNeutral: ['Immatriculation neutre ({r}) : la fiche de l’aéronef n’en donne pas.',
+    'Neutral registration ({r}): the aircraft sheet gives none.',
+    'Neutrales Kennzeichen ({r}): das Luftfahrzeugblatt nennt keines.',
+    'Matrícula neutra ({r}): la ficha de la aeronave no da ninguna.'
+  ],
+  fplCopiedHf: ['Plan de vol copié. Attention : traversée océanique, radio HF exigée — l’équipement supposé ne la porte pas.',
+    'Flight plan copied. Caution: oceanic crossing, HF radio required — the assumed equipment does not carry it.',
+    'Flugplan kopiert. Achtung: Ozeanüberquerung, HF-Funk vorgeschrieben — die angenommene Ausrüstung hat ihn nicht.',
+    'Plan de vuelo copiado. Atención: travesía oceánica, radio HF obligatoria; el equipo supuesto no la lleva.'
   ],
   fplNoHf: ['Route océanique : la radio HF y est exigée, et l’équipement supposé ne la porte pas — Eurocontrol refusera sans elle.',
     'Oceanic route: HF radio is required there, and the assumed equipment does not carry it — Eurocontrol will refuse without it.',
@@ -4894,7 +4904,9 @@ function fplDraw(C, textOnly = false) {
       ad: r.dep
     }), n.star ? '' : tt(TX.fplNoStar, {
       ad: r.arr
-    }), n.oceanic ? tt(TX.fplOceanic) : '', n.hf ? tt(TX.fplNoHf) : '', ...(n.joined || []).slice(0, 4).map(v => tt(TX.fplJoined, {
+    }), n.oceanic ? tt(TX.fplOceanic) : '', n.hf ? tt(TX.fplNoHf) : '', n.regNeutral ? tt(TX.fplRegNeutral, {
+      r: FPL.regWord(FPL.NEUTRAL_ID)
+    }) : '', ...(n.joined || []).slice(0, 4).map(v => tt(TX.fplJoined, {
       v
     })), n.wake ? tt(TX.fplWake) : ''].filter(Boolean),
     bad = F.m.errors.length ? tt(TX.fplBad, {
@@ -4927,9 +4939,9 @@ async function fplCopy() {
   }
   await copyText(F.m.text);
   if (fold) fold.open = true;
-  S.ctx.notify(tt(TX.fplCopied), 'ok');
-  // SOG-0422 : la HF manque sur une route océanique : copié (le pilote juge), mais dit ; l'équipement n'est jamais inventé
-  if (F.m.notes.hf) S.ctx.notify(tt(TX.fplNoHf), 'warn');
+  // SOG-0422 (a) : UNE notification : sur une route océanique sans HF dans l'équipement supposé, la copie dit l'avertissement elle-même
+  // (une seconde note attendrait derrière la première sur un téléphone et ne serait pas lue) ; l'équipement n'est jamais inventé
+  S.ctx.notify(tt(F.m.notes.hf ? TX.fplCopiedHf : TX.fplCopied), F.m.notes.hf ? 'warn' : 'ok');
 }
 /** SOG-0391 (b) : une heure UTC « AAAA-MM-JJTHH:MMZ » dite à la minute, en Z (« 13 h 32 Z » en français, « 13:32Z » ailleurs) ; `bare` :
  *  sans le « Z » (le début d'une fenêtre). */

@@ -2367,3 +2367,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   identification. (6) HF is required in oceanic airspace (EUROEGGX1A); the assumed equipment (SDGRWY/S) does not carry H and is NOT
   completed (the real equipment is SOG-0402 lot 2, Q-0086, not started): on an oceanic route the fold says it and the copy, which still
   happens (the pilot judges), adds a warning. F256 extended; F247 now carries a registration and a point after its compound airway.
+- **17 Nov 2026 — SOG-0422, the ergonomist's two retouches after reading F256's captures.** (a) ONE notification when copying an
+  oceanic route without HF in the assumed equipment: « Flight plan copied. Caution: oceanic crossing, HF radio required — the assumed
+  equipment does not carry it. », in the warning tone — on a phone a second note waits behind the first (SOG-0131) and would not be
+  read. (b) No registration in the aircraft sheet no longer blocks the copy: the button checks the ROUTE, a type without registration
+  included; `REG/` then carries the neutral identification (NEUTRAL_ID, letters and digits) and the fold says « Neutral registration
+  (CHECK01): the aircraft sheet gives none. » Only what breaks the form blocks: a registration of the sheet that is not 2 to 7 letters
+  and digits once cleaned (error `reg`). F256 updated.
