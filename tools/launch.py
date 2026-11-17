@@ -870,6 +870,12 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         except Exception as e:  # jamais de réponse coupée : le fichier part tel quel
             say(f'  ⚠ Empreintes non posées ({os.path.basename(f)}) : {e} — fichier servi tel quel.')
             return False
+        # SOG-0407 : la page du cadre porte l'empreinte de tout ce que le lanceur sert au cadre au moment où il la sert (<meta name="sog-suite">) : une page restée ouverte la compare
+        # à celle du lanceur (statut, `suite`) et dit qu'elle est plus ancienne dès qu'un fichier de frame/ ou de modules/ a changé, pas seulement app.js
+        if os.path.normcase(f) == os.path.normcase(os.path.join(ROOT, 'frame', 'index.html')):
+            suite = frame_fingerprint()
+            body = body.replace(b'<head>', f'<head><meta name="sog-suite" content="{suite}">'.encode('ascii'), 1)
+            h = hashlib.sha1(f'{h}|{suite}'.encode('ascii')).hexdigest()[:8]
         etag = f'"{h}"'
         if self.headers.get('If-None-Match') == etag:
             self.send_response(304)
@@ -969,7 +975,7 @@ class Setup(http.server.SimpleHTTPRequestHandler):
             return self._json({'error': 'refusé'}, 403)
         return self._json({'server': True, 'data': has_data(), 'dataGit': os.path.isdir(os.path.join(DATA, '.git')),
                            'host': socket.gethostname(), 'lan': self._lan(), 'lnm': [] if self._lan() else lnm_db_kinds(),
-                           'version': suite_version(), 'app': app_stamp()})
+                           'version': suite_version(), 'app': app_stamp(), 'suite': frame_fingerprint()})
 
     @route('GET', '/__setup/frame-stamp')
     def _get_frame_stamp(self, path):

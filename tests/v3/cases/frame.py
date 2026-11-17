@@ -4988,6 +4988,55 @@ def a118(c):
     c.eq(c.js("document.getElementById('fStale').dataset.go"), 'update', 'a ready version: the cartouche takes it', what='ready version')
     c.eq(c.js(info)['h'], on['h'], 'the header still does not change height', what='header height with the cartouche')
 
+@case('A249', 'A page left open learns that the launcher serves a newer frame (SOG-0407): the « Old version · Reload » cartouche appears when ANY file of the frame changed (the suite fingerprint), not only app.js; a tap reloads, nothing reloads by itself', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0407 (the user, 17 Nov 2026: « plus de bouton pas à jour, rafraîchir », he tests old pages without knowing): since 3511460a7 a station with a launcher has no « new version » note and the cartouche only compared the fingerprint of frame/app.js — a changed module, recette.js, roadmap.json or data layer left an open page silent; the launcher puts the fingerprint of everything it serves to the frame (frame/, modules/) in the page it serves (<meta name="sog-suite">) and in /__setup/status (suite); the page compares them at opening, every minute and when it comes back to the foreground; never a reload by itself')
+def a249(c):
+    label = {'fr': 'Version ancienne · Recharger', 'en': 'Old version · Reload', 'de': 'Alte Version · Neu laden', 'es': 'Versión antigua · Recargar'}[c.lang]
+    short = {'fr': 'Recharger', 'en': 'Reload', 'de': 'Neu laden', 'es': 'Recargar'}[c.lang]
+    served = {'suite': 'aaaa1111bbbb2222'}   # what the launcher serves now (status, and the meta of the page it serves)
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url).path
+        body = {'server': True, 'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': [],
+                **({'suite': served['suite']} if served['suite'] else {})} if u.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    page = (ROOT / 'frame' / 'index.html').read_text(encoding='utf-8')
+    # the page the launcher serves carries the fingerprint of the moment; the service worker would answer a navigation before this route does
+    c.page.add_init_script("Object.defineProperty(navigator, 'serviceWorker', { get: () => undefined })")
+    c.context.route(re.compile(r'/frame/index\.html'), lambda r: r.fulfill(status=200, content_type='text/html', body=page.replace(
+        '<head>', f'<head><meta name="sog-suite" content="{served["suite"]}">', 1) if served['suite'] else page))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=LEVEL3, wait=False)
+    c.until("!!document.getElementById('fSync')", timeout=15000, what='the header')
+    c.wait(800)
+    c.eq(c.js("document.getElementById('fStale').hidden"), True, 'the same fingerprint as the launcher: no cartouche', what='same suite')
+    # the launcher now serves another frame (a module, the recette, the roadmap changed; app.js did not): the page left open says so at its next check
+    served['suite'] = 'cccc3333dddd4444'
+    c.js("() => { window.__survives = 1; document.dispatchEvent(new Event('visibilitychange')) }")
+    c.until("!document.getElementById('fStale').hidden", timeout=15000, what='the cartouche once the launcher serves another frame')
+    on = c.js("""() => { const e = document.getElementById('fStale'); return { go: e.dataset.go, text: e.textContent, aria: e.getAttribute('aria-label'), shown: e.getClientRects().length > 0,
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth } }""")
+    c.eq((on['go'], on['shown'], norm(on['aria'])), ('reload', True, norm(label)), 'the cartouche offers to reload, its whole label in aria-label', what='cartouche')
+    c.ok(norm(on['text']) in (norm(label), norm(short), ''), on['text'], 'its text is the whole label, shortened or a dot (the header is tight on a phone)')
+    c.ok(not on['overflow'], str(on), 'the page does not scroll sideways')
+    c.shot(f'A249_stale_{c.width}_{c.design}_{c.lang}.png')
+    c.wait(1500)
+    c.eq(c.js('window.__survives'), 1, 'nothing reloads by itself: the page is the same one', what='no reload by itself')
+    # a tap reloads, the page served is the new one: the cartouche is gone
+    c.tap('#fStale')
+    c.until("window.__survives === undefined && !!document.getElementById('fSync')", timeout=20000, what='a tap reloads the page')
+    c.wait(800)
+    c.eq(c.js("document.getElementById('fStale').hidden"), True, 'the page served now carries the new fingerprint: no cartouche', what='after reload')
+    # a launcher that gives no fingerprint (older): nothing is said
+    served['suite'] = ''
+    c.js("() => document.dispatchEvent(new Event('visibilitychange'))")
+    c.wait(1200)
+    c.eq(c.js("document.getElementById('fStale').hidden"), True, 'a launcher without fingerprint: nothing is said', what='no fingerprint')
+    c.check_errors()
+
+
 @case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')

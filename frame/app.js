@@ -135,6 +135,9 @@
   const ROOT = new URL('../', document.currentScript.src).href;
   // l'empreinte (?v=) avec laquelle cette page a chargé son app.js : celle que le lanceur posait quand sa page a été servie ; vide hors lanceur
   const OWN_STAMP = new URL(document.currentScript.src).searchParams.get('v') || '';
+  // SOG-0407 : l'empreinte de TOUT ce que le lanceur servait au cadre (frame/, modules/) quand cette page a été servie — posée par le lanceur dans la page (<meta name="sog-suite">), vide hors lanceur ;
+  // celle de app.js seule ne voyait pas un module, la recette, la feuille de route ou la couche de données changés
+  const OWN_SUITE = (m => /^[0-9a-f]{8,64}$/.test(m) ? m : '')(document.querySelector('meta[name="sog-suite"]')?.content || '');
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 
@@ -1353,7 +1356,8 @@
           state: launcherState()
         }
       }));
-    } else if (launcherDown || found.app !== was.app || found.version?.version !== was.version?.version || found.host !== was.host ||
+    } else if (launcherDown || found.app !== was.app || found.suite !== was.suite || found.version?.version !== was.version?.version ||
+      found.host !== was.host ||
       found.data !== was.data ||
       found.dataGit !== was.dataGit || found.lan !== was.lan) {
       // un lanceur relancé peut servir une autre version (le cartouche « Version ancienne · Recharger » vient de lui-même, sans Maj + F5) ou un autre état de data/ (SOG-0215)
@@ -2568,7 +2572,7 @@
     });
     // une page plus ancienne que le lanceur qui la sert (copie hors ligne gardée, onglet resté ouvert) : dit franchement, avec le moyen d'en
     // sortir ; seulement quand les deux empreintes sont connues (SOG-0168)
-    if (OWN_STAMP && launcherHere?.app && launcherHere.app !== OWN_STAMP) items.push({
+    if (pageOlder()) items.push({
       k: 'stale',
       text: t(T.info.stale),
       attn: true,
@@ -2667,13 +2671,18 @@
   /** Pastille et nom du ⚙ de l'en-tête, et les blocs d'état affichés (écrit seulement si cela change). Pastille verte : une
    *  nouvelle (data-badge, partout) ; orange : une chose demande de l'attention (data-attn, téléphone seulement : sur un
    *  écran le bouton de synchronisation et la pastille du trigramme sont dans l'en-tête). */
+  /** Cette page est-elle plus ancienne que ce que le lanceur sert maintenant (SOG-0168, SOG-0407) ? Vrai si l'empreinte de app.js OU celle de tout le cadre a changé depuis
+   *  que la page a été servie ; seulement quand les deux empreintes comparées sont connues (page hors lanceur : jamais). */
+  function pageOlder() {
+    const L = launcherHere;
+    return !!(L && (OWN_STAMP && L.app && L.app !== OWN_STAMP || OWN_SUITE && L.suite && L.suite !== OWN_SUITE));
+  }
   /** Le cartouche de l'en-tête « Version ancienne · Recharger » (SOG-0168) : seulement quand la page est plus ancienne que le lanceur, ou qu'une
    *  version suivante est prête sur un appareil sans lanceur ; absent (hidden), il n'occupe rien. Écrit seulement si l'état change. */
   function paintStale() {
     const el = $('fStale');
     if (!el) return;
-    const stale = !!(OWN_STAMP && launcherHere?.app && launcherHere.app !== OWN_STAMP),
-      next = stale ? 'reload' : update.ready ? 'update' : '';
+    const next = pageOlder() ? 'reload' : update.ready ? 'update' : '';
     if ((el.dataset.go || '') !== next) {
       el.dataset.go = next;
       el.hidden = !next;
@@ -5347,10 +5356,11 @@
       const v = JSON.parse(localStorage.getItem(LAUNCHER_SEEN) || 'null');
       if (v === null) return undefined;
       if (v && v.none === true) return null;
-      // l'empreinte du code que le lanceur sert n'est jamais reprise du passé : le cartouche « Version ancienne » (SOG-0168) ne se fonde que sur la détection du moment
+      // les empreintes du code que le lanceur sert ne sont jamais reprises du passé : le cartouche « Version ancienne » (SOG-0168, SOG-0407) ne se fonde que sur la détection du moment
       return v && typeof v === 'object' && typeof v.host === 'string' && typeof v.data === 'boolean' ? {
         ...v,
-        app: ''
+        app: '',
+        suite: ''
       } : undefined;
     } catch {
       return undefined;
@@ -5482,13 +5492,16 @@
       await bootLoadedP;
       const same = (x, y) => JSON.stringify(x && {
         ...x,
-        app: ''
+        app: '',
+        suite: ''
       }) === JSON.stringify(y && {
         ...y,
-        app: ''
+        app: '',
+        suite: ''
       });
-      const staleCheck = !!found && found.app !== launcherHere
-        ?.app; // l'empreinte du moment : le cartouche « Version ancienne » (SOG-0168) la compare à celle de la page
+      const staleCheck = !!found && (found.app !== launcherHere
+        ?.app || found.suite !== launcherHere?.suite
+      ); // les empreintes du moment : le cartouche « Version ancienne » (SOG-0168, SOG-0407) les compare à celles de la page
       if (same(found, launcherHere)) {
         if (staleCheck) {
           launcherHere = found;

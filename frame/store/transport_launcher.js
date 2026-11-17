@@ -179,7 +179,9 @@
           web: typeof j.version.web === 'string' ? j.version.web.slice(0, 200) : null
         } : null,
         // l'empreinte que le lanceur pose aujourd'hui sur frame/app.js : la page la compare à la sienne (SOG-0168)
-        app: typeof j.app === 'string' && /^[0-9a-f]{4,16}$/.test(j.app) ? j.app : ''
+        app: typeof j.app === 'string' && /^[0-9a-f]{4,16}$/.test(j.app) ? j.app : '',
+        // SOG-0407 : l'empreinte de tout ce que le lanceur sert au cadre (frame/, modules/) : la page compare celle qu'elle a reçue avec sa page
+        suite: typeof j.suite === 'string' && /^[0-9a-f]{8,64}$/.test(j.suite) ? j.suite : ''
       } : null;
     } catch {
       return null;

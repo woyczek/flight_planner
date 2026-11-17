@@ -810,6 +810,14 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   white on the dark red, and when the room is short `fitStale` shrinks it by steps — « Version ancienne · Recharger », « Recharger », a square dot — the first step
   where no rectangle of the header cuts another, no neighbour's text is cut (the application's name included) and the header does not overflow; the whole label stays in
   `aria-label`, the sentence in the tooltip (A122: a long sync state, 390, 768, 1280, 250).
+- **An open page learns that the launcher serves another frame** (17 Nov 2026, SOG-0407; the user: « plus de bouton pas à jour, rafraîchir », he tested old pages without knowing):
+  the comparison of `frame/app.js`'s fingerprint alone saw nothing when a module, `recette.js`, `roadmap.json` or the data layer changed. The launcher puts the
+  fingerprint of **everything it serves to the frame** (the one of `GET /__setup/frame-stamp`, `frame/` and `modules/`) in the page it serves (`<meta name="sog-suite">`
+  in `frame/index.html`, so a copy kept by the service worker keeps the fingerprint of its own version) and says it in `GET /__setup/status` (`suite`); the page
+  compares its own with the launcher's at opening, every minute and when it comes back to the foreground (the probe of SOG-0215), and the same cartouche (`pageOlder()`
+  in `frame/app.js`, phone included) and the same Status line appear as soon as either fingerprint (app.js or the whole frame) differs. Never a reload by itself: a tap
+  reloads, and what is written stays in the local queue. Without launcher (GitHub Pages, a phone paired through the network): unchanged, the service worker's note.
+  A249 (red before: no cartouche when the status' `suite` changes).
 - **The new version said until it is taken**: the note says the flight in progress and the pending writes are kept; set
   aside (✕), it comes back at the next calm moment — a module change, the app back to the front — at most every 5
   minutes; the Status block carries « New version available · Reload » (badge of the ⚙) meanwhile. Never an automatic
