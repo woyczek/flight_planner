@@ -29,6 +29,17 @@ export const keep = {
 export const FT_NM = 1852;
 /** Texte échappé pour du HTML. */
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+/** Ce que setHtml a écrit dans chaque élément (la dernière chaîne). */
+const WRITTEN = new WeakMap();
+/** Écrit html dans el seulement s'il diffère de ce que CETTE fonction y a écrit en dernier ; vrai si elle a écrit. Jamais comparé à el.innerHTML : le navigateur redonne un autre HTML que celui
+ *  écrit (« <line/> » d'un <svg> devient « <line></line> », une apostrophe droite écrite &#39; revient « ' »), le texte semblerait changé à chaque dessin et ses éléments seraient remplacés
+ *  sous le pointeur entre l'appui et le relâchement : le clic n'aurait pas lieu (SOG-0392). Un élément que le code remplit ailleurs par un autre chemin ne passe pas par ici. */
+export function setHtml(el, html) {
+  if (!el || WRITTEN.get(el) === html) return false;
+  WRITTEN.set(el, html);
+  el.innerHTML = html;
+  return true;
+}
 /** Texte traduit d'une ligne [fr, en, de, es] (ctx.t), avec ses valeurs. */
 export const tt = (row, v) => S.ctx.t(row, v);
 /** Chemin du vol courant du pilote. */

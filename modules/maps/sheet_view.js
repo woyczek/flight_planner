@@ -15,7 +15,8 @@ import {
   setPressed,
   setOff,
   got,
-  onMission
+  onMission,
+  setHtml
 } from './state.js';
 import {
   createSheet
@@ -265,7 +266,7 @@ export function legendSync() {
   setOff(S.legendBtn, !can);
   setPressed(S.legendBtn, on);
   show(S.legendEl, on);
-  if (S.legendEl.innerHTML !== html) S.legendEl.innerHTML = html;
+  setHtml(S.legendEl, html);
 }
 
 // ---------------------------------------------------------------- en-tête et contenus

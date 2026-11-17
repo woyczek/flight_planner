@@ -11,7 +11,8 @@ import {
   got,
   need,
   onMission,
-  level
+  level,
+  setHtml
 } from './state.js';
 import {
   svg
@@ -272,7 +273,7 @@ export function noteOnce(k, text, kind = 'warn') {
  *  changent. */
 export function writeNotes() {
   const html = [S.progHtml, S.warnHtml, S.softHtml].filter(Boolean).join('');
-  if (S.notesEl.innerHTML !== html) S.notesEl.innerHTML = html;
+  setHtml(S.notesEl, html);
 }
 /** Ligne de l'état de la base aéronautique « en lecture » (les zones lues entre parenthèses). */
 /** La lecture lente des zones (aerodb.readStatus, SOG-0349) : « Lecture de n zones… », puis « n zones n'ont pas pu être lues : nouvelle tentative dans s s » ; rien quand tout est lu. */
@@ -360,7 +361,7 @@ export async function status() {
   const html = empty.join('');
   S.warnHtml = warn.join('');
   S.softHtml = soft.join('');
-  if (S.stEl.innerHTML !== html) S.stEl.innerHTML = html;
+  setHtml(S.stEl, html);
   show(S.stEl, !!html);
   writeNotes();
 }

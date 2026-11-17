@@ -8345,3 +8345,48 @@ def d_altclick(c):
     c.page.keyboard.press('Enter')
     c.until("() => { const r = document.querySelector('.mp-al-row[data-shown=\"1\"]'); return !!r && +r.dataset.alt === 0 }", timeout=4000, what='Enter on the focused first row chooses it')
     c.shot('D248_standard_click_on_the_map_delivered.png')
+
+
+_WATCH_JS = """(sel) => { window.__mut = 0; if (window.__mo) window.__mo.disconnect(); window.__mo = new MutationObserver(m => { window.__mut += m.length });
+  window.__mo.observe(document.querySelector(sel), { childList: true, subtree: true, attributes: true, characterData: true }); return true }"""
+_BANNER_JS = """async (n) => { const M = await import('/modules/maps/mission_view.js'); for (let i = 0; i < n; i++) M.bannerFill(); return true }"""
+_NOTES_JS = """async (n) => { const M = await import('/modules/maps/screen.js'); for (let i = 0; i < n; i++) M.writeNotes(); return true }"""
+
+
+@case('D250', 'A window the Map writes again with the same text is not rewritten (setHtml): the mission banner, whose title carries a straight apostrophe (« Mission d’essai »), written again twice keeps its elements, and a click held 250 ms on its cross across two such writes still asks; a note of the sheet that carries a straight apostrophe, written again twice, keeps its elements', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0392 (the ergonomist, 17 Nov, after the measure: the test « el.innerHTML !== html » is true at every call as soon as the text carries a straight apostrophe, an & or an <svg> — the browser gives another HTML than the one written —; a French mission title almost always carries an apostrophe; the writers of the banner, the notes and the legend are called on events, not at every drawing: a call that lands between the press and the release replaces the element under the pointer and the click is lost): setHtml(el, html) compares with what it wrote last')
+def d_sethtml(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_RAW_JS, [MISSION_PATH, FIXTURE.read_text(encoding='utf-8')])
+    c.open('maps', docs=fdocs(flight(mission='ESSAI1')) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], airfields=True, wait=False)
+    c.until("() => !!document.querySelector('.mp-mbar .mp-mb-id')", timeout=15000, what='the banner of the mission')
+    c.js(_STATE_JS)
+    c.wait(2500)
+    c.ok("d'essai" in c.js("() => document.querySelector('.mp-mbar').textContent").replace('’', "'"), 'the title', 'the banner says the title, with its apostrophe')
+    c.js(_BANNER_JS, 2)
+    c.js(_WATCH_JS, '.mp-mbar')
+    c.js(_BANNER_JS, 3)
+    c.eq(c.js("() => window.__mut"), 0, 'the banner written again three times with the same text keeps its elements', what='mutations')
+    # a click held across two writes: the cross asks (a rewrite between the press and the release lost the click)
+    b = c.js("() => { const r = document.querySelector('.mp-mbar [data-mbx]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }")
+    c.page.mouse.move(*b)
+    c.page.mouse.down()
+    c.wait(100)
+    c.js(_BANNER_JS, 2)
+    c.page.mouse.up()
+    c.until("() => !!document.querySelector('.mp-mbar [data-mbyes]')", timeout=5000, what='a click held across two writes of the banner, on its cross, asks before abandoning the preparation')
+    # a note with a straight apostrophe (the validity of the NAT routes comes from AeroDB's state)
+    c.js("() => { const S = window.__mp.S; S.natAsked = true; S.natNote = 'Routes NAT du 17/11 : valables jusqu\\'à 19 h 00Z'; return true }")
+    c.tap('[data-mp="layers"]')
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=nat]'))", what='the Layers content')
+    c.js("() => { const i = document.querySelector('.mp-dbody input[data-layer=nat]'); if (!i.checked) i.click(); return true }")
+    c.until("() => !!window.__mp.S.profile && !!window.__mp.S.profile.elements.natTracks", timeout=6000, what='the NAT layer is on')
+    c.tap('.mp-dclose')
+    c.js(_NOTES_JS, 3)
+    c.until("() => (document.querySelector('.mp-notes') || {}).textContent?.includes('valables jusqu')", timeout=6000, what='the note is written')
+    c.js(_WATCH_JS, '.mp-notes')
+    c.js(_NOTES_JS, 3)
+    c.eq(c.js("() => window.__mut"), 0, 'the notes written again three times, one of them with a straight apostrophe, keep their elements', what='mutations')
+    c.shot('D250_standard_banner_and_notes_delivered.png')

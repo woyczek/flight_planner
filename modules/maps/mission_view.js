@@ -7,7 +7,8 @@ import {
   esc,
   tt,
   flightPath,
-  setData
+  setData,
+  setHtml
 } from './state.js';
 import {
   unwrapLons
@@ -557,7 +558,7 @@ export function bannerFill() {
   if (el.hidden === shown) el.hidden = !shown;
   if (S.missionBtn && S.missionBtn.hidden === (on && !!S.mbarFold)) S.missionBtn.hidden = !(on && !!S
     .mbarFold); // la fenêtre repliée se rouvre par le bouton de la colonne
-  if (el.innerHTML !== html) el.innerHTML = html;
+  setHtml(el, html);
   setData(el, 'maps', String(maps.length));
 }
 /** Ce qui change quand la Carte est sur une mission sans l'avoir demandée dans l'adresse : les cases des couches (le choix seul, comme
