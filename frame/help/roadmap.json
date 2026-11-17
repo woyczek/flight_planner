@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "02a086b",
-  "fiches": 409,
+  "organisation": "0889bf0",
+  "fiches": 410,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1258,6 +1258,15 @@
      "de": "Kraftstoff: die Übernahme einer Route entfernt die nordamerikanischen Routen (N71B-N90B) aus dem Routentext",
      "es": "Combustible: tomar un itinerario quita del texto de la ruta las rutas norteamericanas (N71B-N90B)",
      "test": true
+    },
+    {
+     "id": "SOG-0411",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route par une route NAT : « Contrôler » ne reconnaît pas la portion NAT que « Calculer » vient de prendre, et trois défauts de lecture autour",
+     "en": "Route through a NAT track: “Check” does not recognise the NAT portion that “Compute” has just taken, and three reading defects around it",
+     "de": "Route über einen NAT-Track: „Prüfen“ erkennt den NAT-Abschnitt nicht, den „Berechnen“ gerade genommen hat, und drei Lesefehler darum herum",
+     "es": "Ruta por una ruta NAT: «Controlar» no reconoce el tramo NAT que «Calcular» acaba de tomar, y tres defectos de lectura alrededor"
     }
    ]
   },
