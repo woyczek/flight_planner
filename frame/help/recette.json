@@ -4023,10 +4023,10 @@
     "de": "Vorgeschlagene Route EDDF → LFMN: bei uns „keine Unverträglichkeit erkannt“, 24 Fehler bei der Eurocontrol-Validierung",
     "es": "Itinerario propuesto EDDF → LFMN: «sin incompatibilidad detectada» por nuestra parte, 24 errores en la validación de Eurocontrol"
    },
-   "test": "Après avoir RELANCÉ le lanceur et rechargé la page. (1) Carburant, étape Route : colle ta route EDDF → LFMN de ce matin (« ULNOK L607 … BORDI »), FL350, « Contrôler » : des erreurs sur les tronçons dont le plafond est sous ton niveau (« Tronçon M858 CANNE–SRN : niveau FL350 hors de la bande FL130–FL165 de la voie »), plus de « sans incompatibilité détectée ». (2) Efface la route, garde EDDF et LFMN, « Calculer » : la route proposée ÉCRIT maintenant ses changements de niveau dans son texte (« … MOMUK/F315 … »), là où une voie impose de descendre. (3) « Choisir », puis « Copier pour Eurocontrol » : le message porte ces niveaux en groupes vitesse-niveau ; colle-le chez Eurocontrol et rapporte-m",
+   "test": "Après avoir relancé le lanceur et rechargé la page. (1) Carburant, étape Route : un vol en Europe, « Calculer ». Sous « Calculé à … », une ligne grise : « Contrôle de simulation : N conditions RAD vérifiées, M non vérifiées, K espaces inconnus — ce n'est pas une validation ». Chaque itinéraire dit « 0 écart contrôlé », plus « sans incompatibilité détectée ». (2) Le pli « Ce que le contrôle ne couvre pas » liste les espaces inconnus et les conditions non vérifiées. (3) Colle ta route EDDF → LFMN de ce matin, FL350, « Contrôler » : des erreurs sur les tronçons dont le plafond est sous ton niveau. (4) Efface la route, « Calculer » : la route proposée écrit ses changements de niveau (« … MOMUK/F",
    "since": "2026-11-17",
    "state": "todo",
-   "delivered": "2026-11-17T11:31:31Z"
+   "delivered": "2026-11-17T11:55:23Z"
   },
   {
    "id": "SOG-0402",
@@ -4121,10 +4121,10 @@
     "de": "Route über einen NAT-Track: „Prüfen“ erkennt den NAT-Abschnitt nicht, den „Berechnen“ gerade genommen hat, und drei Lesefehler darum herum",
     "es": "Ruta por una ruta NAT: «Controlar» no reconoce el tramo NAT que «Calcular» acaba de tomar, y tres defectos de lectura alrededor"
    },
-   "test": "Après avoir RELANCÉ le lanceur et rechargé la page. (1) Refais ton essai : EGGW → KJFK, « Calculer », « Choisir », puis « Contrôler ». Le contrôle ne dit plus « Portion NATF non couverte entre ces points » ; la portion par la route NAT F est reconnue, que le point soit écrit « 51/50 » ou « 5100N05000W ». (2) La remarque du cycle dit maintenant quel tronçon est en cause : « Cycle de navigation périmé pour NAT : 2026-10-01, source de N260B-N271B (NICSO → ALLEX) ; le cycle courant de la zone est 2026-10-29. » (3) Pas encore là : les tronçons « RESNO–51/50 » nommés et « à 9 min près » (en cours de push), et les autres routes NAT atteignables depuis Londres (après la mesure).",
+   "test": "Après avoir relancé le lanceur et rechargé la page. (1) EGGW → KJFK, « Calculer », « Choisir », « Contrôler » : plus de « Portion NATF non couverte ». (2) Dans « Tronçons », les lignes de l'océan disent leurs deux bouts : « HIGH · RESNO–51/50 · … », « HIGH · 51/50–NICSO · … ». (3) La remarque du cycle nomme le tronçon en cause (« … source de N260B-N271B (NICSO → ALLEX) … »). (4) Dans le pli des routes NAT écartées, une route écartée pour l'heure à moins d'une heure près finit par « — à N min près : partir au plus tôt à … Z ». (5) Pas encore là : les autres routes NAT atteignables depuis Londres (SOG-0412, en mesure).",
    "since": "2026-11-17",
    "state": "todo",
-   "delivered": "2026-11-17T11:29:22Z"
+   "delivered": "2026-11-17T11:55:23Z"
   }
  ],
  "decisions": [
