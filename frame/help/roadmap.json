@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "593b711",
-  "fiches": 397,
+  "organisation": "1254bb2",
+  "fiches": 398,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -806,6 +806,15 @@
      "de": "Kraftstoff, Schritt 1 „Flug“: die Felder Flugfläche und Flugdatum sind versetzt",
      "es": "Combustible, paso 1 «Vuelo»: los campos Nivel y Fecha del vuelo están desalineados",
      "test": true
+    },
+    {
+     "id": "SOG-0399",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carburant : le carburant de dégagement couvre-t-il la remise des gaz, le trajet vers le dégagement (avec le vent) et l'approche ?",
+     "en": "Fuel: does the alternate fuel cover the go-around, the leg to the alternate (with wind) and the approach?",
+     "de": "Kraftstoff: deckt der Ausweichkraftstoff das Durchstarten, die Strecke zum Ausweichflugplatz (mit Wind) und den Anflug?",
+     "es": "Combustible: ¿cubre el combustible de alternativo la aproximación frustrada, el tramo al alternativo (con viento) y la aproximación?"
     }
    ]
   },
