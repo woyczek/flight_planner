@@ -2787,7 +2787,8 @@ def n66(c):
 @case('N80', 'Missions bench: the drawers of a mission at the pilot\'s — the play, the reference time, the state from the pilots\' own '
       'records, another pilot\'s record read as an untrusted input', 'N', tags=('missions',), designs=('standard',), screens=False,
       rule='SPEC_MISSIONS_TIROIRS v2 (Q-0087: open for all) and SOG-0441: a drawer opens at its time or its fallback time (computed, never '
-      'written), by the pilot\'s gesture, or as soon as the record of ONE pilot of the mission says so; each pilot writes only his own record '
+      'written), by the pilot\'s gesture (for himself only, Q-0094 pending), or as soon as the record of ONE pilot of the mission says a finding '
+      '(zone, object); each pilot writes only his own record '
       '(pilot/<TRI>/missions/<ID>.json); another\'s opening is kept only when it stands (a pilot of the mission, this play, a plausible time, '
       'a leg that crosses the shape), a refused one is named; an opening once seen stays; a record is worth one play only')
 def n80(c):
@@ -2797,5 +2798,5 @@ def n80(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 47, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (47 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 48, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (48 at least)')

@@ -394,15 +394,19 @@
     read2 = D.withRead(read, ctx(T0 + 31 * MIN));
   ck('withRead : la première lecture est gardée', read.read_at === iso(T0 + 30 * MIN) && read2.read_at === iso(T0 + 30 * MIN) && read2
     .drawer_D.state === 'open', [read, read2]);
+  const leg = {
+    from: [44.52, -1.25, 2000],
+    to: [44.49, -1.15, 2000]
+  };
   s = st({
-    doc: opened,
+    doc: found,
     others: [
-      ['BBB', peer('D', T0 + 10 * MIN)]
+      ['BBB', peer('C', T0 + 50 * MIN, 'zone', leg)]
     ],
-    now: T0 + 45 * MIN
+    now: T0 + 70 * MIN
   });
-  ck('la plus ancienne ouverture retenue est « l\'ouverture » : BBB à H + 10 avant moi à H + 20 ; l\'heure passée de B reste « time »', by(
-    s, 'D').by === 'BBB' && by(s, 'D').at === T0 + 10 * MIN && !by(s, 'D').mine && by(s, 'B').how === 'time', s);
+  ck('la plus ancienne ouverture retenue est « l\'ouverture » : la zone franchie par BBB à H + 50 avant moi à H + 60 ; l\'heure passée de B reste « time »',
+    by(s, 'C').by === 'BBB' && by(s, 'C').at === T0 + 50 * MIN && !by(s, 'C').mine && by(s, 'B').how === 'time' && by(s, 'D').mine, s);
 
   // ---- resceller (outil d'auteur)
   const sealed = D.withSeal(opened, ctx(T0 + 41 * MIN), 'B');
@@ -412,40 +416,57 @@
   });
   ck('rescellé par moi : l\'heure passée ne l\'ouvre plus, « sealed » ; mes autres tiroirs ne bougent pas', sealed.drawer_B.state ===
     'sealed' && by(s, 'B').open === false && by(s, 'B').sealed === true && by(s, 'D').open, [sealed, s]);
+  const sealedC = D.withSeal(opened, ctx(T0 + 95 * MIN), 'C');
   s = st({
-    doc: sealed,
+    doc: sealedC,
     others: [
-      ['BBB', peer('B', T0 + 50 * MIN)]
+      ['BBB', peer('C', T0 + 50 * MIN, 'zone', leg)]
     ],
     now: T0 + 3 * H
   });
-  ck('rescellé par moi mais ouvert par un autre de la mission : ouvert (un tiroir ouvert pour tous le reste)', by(s, 'B').open && by(s, 'B')
-    .by === 'BBB' && by(s, 'B').sealed === false, by(s, 'B'));
+  ck('rescellé par moi mais ouvert par le constat d\'un autre de la mission : ouvert (un tiroir ouvert pour tous le reste)', by(s, 'C')
+    .open && by(s, 'C').by === 'BBB' && by(s, 'C').sealed === false && by(st({
+      doc: sealedC,
+      now: T0 + 3 * H
+    }), 'C').sealed === true, by(s, 'C'));
 
   // ---- le carnet d'un autre : une entrée non fiable
   s = st({
     others: [
-      ['BBB', peer('D', T0 + 30 * MIN)]
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
     ],
     now: T0 + 31 * MIN
   });
-  ck('ouvert pour tous : le carnet d\'un pilote de la mission le dit → ouvert ici, « par BBB »', by(s, 'D').open && by(s, 'D').by ===
-    'BBB' && by(s, 'D').how === 'hand' && !by(s, 'D').mine && by(s, 'D').refused.length === 0, by(s, 'D'));
-  /** Le refus d'une ouverture de D venue d'un autre carnet : son code, et le tiroir resté fermé. */
+  ck('ouvert pour tous : le carnet d\'un pilote de la mission dit la zone franchie → ouvert ici, « zone », par BBB', by(s, 'C').open && by(
+      s, 'C').by === 'BBB' && by(s, 'C').how === 'zone' && !by(s, 'C').mine && by(s, 'C').refused.length === 0 && by(s, 'C').hands
+    .length === 0, by(s, 'C'));
+  s = st({
+    others: [
+      ['BBB', peer('D', T0 + 30 * MIN)],
+      ['BBB', peer('C', T0 + 30 * MIN)]
+    ],
+    now: T0 + 31 * MIN
+  });
+  ck('le GESTE d\'un autre n\'ouvre que pour lui : fermé ici, et dit (« hands » : BBB, son heure), sans refus — sur un tiroir à geste comme sur un tiroir à zone',
+    ['D', 'C'].every(id => by(s, id).open === false && JSON.stringify(by(s, id).hands) === JSON.stringify([{
+      by: 'BBB',
+      at: T0 + 30 * MIN
+    }]) && by(s, id).refused.length === 0) && !D.SHARED.includes('hand'), s);
+  /** Ce que donne une ouverture de D venue d'un autre carnet : fermé ou ouvert, les refus, ceux qui l'ont ouvert pour eux seuls. */
   const refusal = (others, o = {}) => {
     const x = by(st({
       others,
       now: T0 + 31 * MIN,
       ...o
     }), o.id || 'D');
-    return `${x.open ? 'OPEN' : 'closed'}:${x.refused.map(r => `${r.by}=${r.why}`).join()}`;
+    return `${x.open ? 'OPEN' : 'closed'}:${x.refused.map(r => `${r.by}=${r.why}`).join()}:${x.hands.map(h => h.by).join()}`;
   };
   ck('refus « stranger » : un pilote qui n\'est pas de la mission (EEE), le convoyeur (CCC), une ligne annulée (DDD), moi-même', refusal([
     ['EEE', peer('D', T0)],
     ['CCC', peer('D', T0)],
     ['DDD', peer('D', T0)],
     ['AAA', peer('D', T0)]
-  ]) === 'closed:EEE=stranger,CCC=stranger,DDD=stranger,AAA=stranger', refusal([
+  ]) === 'closed:EEE=stranger,CCC=stranger,DDD=stranger,AAA=stranger:', refusal([
     ['EEE', peer('D', T0)],
     ['CCC', peer('D', T0)],
     ['DDD', peer('D', T0)],
@@ -456,42 +477,46 @@
       ...peer('D', T0),
       seance: 'A:2026-11-10'
     }]
-  ]) === 'closed:BBB=seance' && refusal([
+  ]) === 'closed:BBB=seance:' && refusal([
     ['BBB', {
       ...peer('D', T0),
       seance: undefined
     }]
-  ]) === 'closed:BBB=seance');
-  ck('refus « future » : une heure à plus de deux minutes dans le futur (une minute est tolérée)', refusal([
+  ]) === 'closed:BBB=seance:');
+  ck('refus « future » : une heure à plus de deux minutes dans le futur (une minute est tolérée) — un geste comme un constat', refusal([
     ['BBB', peer('D', T0 + 31 * MIN + 3 * MIN)]
-  ]) === 'closed:BBB=future' && refusal([
+  ]) === 'closed:BBB=future:' && refusal([
     ['BBB', peer('D', T0 + 32 * MIN)]
-  ]) === 'OPEN:');
+  ]) === 'closed::BBB' && refusal([
+    ['BBB', peer('C', T0 + 34 * MIN, 'zone', leg)]
+  ], {
+    id: 'C'
+  }) === 'closed:BBB=future:' && refusal([
+    ['BBB', peer('C', T0 + 32 * MIN, 'zone', leg)]
+  ], {
+    id: 'C'
+  }) === 'OPEN::');
   ck('refus « before » : une heure à plus de douze heures avant la référence', refusal([
     ['BBB', peer('D', T0 - 13 * H)]
-  ]) === 'closed:BBB=before');
+  ]) === 'closed:BBB=before:');
   ck('refus « key » : un constat de zone sur un tiroir sans zone, un constat d\'objet sur un tiroir à zone', refusal([
     ['BBB', peer('D', T0, 'zone')]
-  ]) === 'closed:BBB=key' && refusal([
+  ]) === 'closed:BBB=key:' && refusal([
     ['BBB', peer('C', T0, 'object')]
   ], {
     id: 'C'
-  }) === 'closed:BBB=key');
-  const leg = {
-    from: [44.52, -1.25, 2000],
-    to: [44.49, -1.15, 2000]
-  };
+  }) === 'closed:BBB=key:');
   ck('refus « shape » : avec le jugement du trajet, un constat sans trajet, ou dont le trajet ne coupe pas la zone', refusal([
     ['BBB', peer('C', T0 + 30 * MIN, 'zone')]
   ], {
     id: 'C',
     crosses: () => true
-  }) === 'closed:BBB=shape' && refusal([
+  }) === 'closed:BBB=shape:' && refusal([
     ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
   ], {
     id: 'C',
     crosses: () => false
-  }) === 'closed:BBB=shape');
+  }) === 'closed:BBB=shape:');
   let seenArgs = null;
   s = st({
     others: [
@@ -514,24 +539,25 @@
   // ---- ce que l'appareil a vu : un tiroir ouvert le reste
   s = st({
     others: [
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)],
       ['BBB', peer('D', T0 + 30 * MIN)]
     ],
     now: T0 + 31 * MIN
   });
   const seenDoc = D.seenAfter({}, s, sc);
-  ck('seenAfter : l\'ouverture d\'un autre est gardée sur l\'appareil (séance, tiroir, auteur, heure, manière) ; les miennes et l\'heure ne le sont pas',
+  ck('seenAfter : le constat d\'un autre est gardé sur l\'appareil (séance, tiroir, auteur, heure, manière) ; son geste, mes ouvertures et l\'heure ne le sont pas',
     JSON.stringify(seenDoc) === JSON.stringify({
       schema: 1,
       seance: sc.key,
       drawers: {
-        D: {
+        C: {
           by: 'BBB',
           at: iso(T0 + 30 * MIN),
-          how: 'hand'
+          how: 'zone'
         }
       }
     }) && JSON.stringify(D.seenAfter({}, st({
-      doc: opened,
+      doc: found,
       now: T0 + 2 * H
     }), sc).drawers) === '{}', seenDoc);
   const seen = D.readSeen(seenDoc, sc);
@@ -546,41 +572,47 @@
     seen,
     now: T0 + 40 * MIN
   });
-  ck('BBB retire son ouverture de son carnet : le tiroir RESTE ouvert ici, par BBB, et c\'est dit (« gone »)', by(s, 'D').open && by(s, 'D')
-    .by === 'BBB' && by(s, 'D').gone === true && by(s, 'D').at === T0 + 30 * MIN, by(s, 'D'));
+  ck('BBB retire son constat de son carnet : le tiroir RESTE ouvert ici, par BBB, et c\'est dit (« gone »)', by(s, 'C').open && by(s, 'C')
+    .by === 'BBB' && by(s, 'C').how === 'zone' && by(s, 'C').gone === true && by(s, 'C').at === T0 + 30 * MIN, by(s, 'C'));
   s = st({
     others: [
-      ['BBB', peer('D', T0 + 30 * MIN)]
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
     ],
     seen,
     now: T0 + 40 * MIN
   });
-  ck('BBB le dit toujours : rien de perdu (pas « gone ») ; le « vu » relu deux fois garde la plus ancienne ouverture', by(s, 'D').gone ===
+  ck('BBB le dit toujours : rien de perdu (pas « gone ») ; le « vu » relu deux fois garde la plus ancienne ouverture', by(s, 'C').gone ===
     false && D.seenAfter(seen, st({
       others: [
-        ['BBB', peer('D', T0 + 35 * MIN)]
+        ['BBB', peer('C', T0 + 35 * MIN, 'zone', leg)]
       ],
       now: T0 + 40 * MIN
-    }), sc).drawers.D.at === iso(T0 + 30 * MIN), by(s, 'D'));
-  ck('readSeen : le « vu » d\'une autre séance, ou illisible, ne compte pas', JSON.stringify(D.readSeen(seenDoc, {
-    key: 'A:2026-11-19'
-  })) === '{}' && JSON.stringify(D.readSeen({
+    }), sc).drawers.C.at === iso(T0 + 30 * MIN), by(s, 'C'));
+  ck('readSeen : le « vu » d\'une autre séance, ou illisible, ou un geste (qui n\'ouvre pas pour tous), ne compte pas', JSON.stringify(D
+    .readSeen(seenDoc, {
+      key: 'A:2026-11-19'
+    })) === '{}' && JSON.stringify(D.readSeen({
     seance: sc.key,
     drawers: {
       B: {
         by: 'bbbb',
         at: 'x',
-        how: 'hand'
+        how: 'zone'
       },
       E: {
         by: 'BBB',
         at: iso(T0),
-        how: 'hand'
+        how: 'zone'
       },
       C: {
         by: 'BBB',
         at: iso(T0),
         how: 'time'
+      },
+      D: {
+        by: 'BBB',
+        at: iso(T0),
+        how: 'hand'
       }
     }
   }, sc)) === '{}' && JSON.stringify(D.readSeen(null, sc)) === '{}' && D.seenAfter({}, [], {

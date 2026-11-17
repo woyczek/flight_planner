@@ -7,7 +7,9 @@
 //   · les CARNETS : un par pilote et par mission, `pilot/<TRI>/missions/<ID>.json` — chacun n'écrit que le sien (aucun conflit
 //     d'écriture) ; seuls les gestes (« Ouvrir le tiroir ») et les constats (zone franchie, objet trouvé) s'y écrivent.
 // « Ouvert pour tous » (décision de l'utilisateur, 17/11/2026, Q-0087) se CALCULE : un tiroir est ouvert dès que le carnet d'UN pilote
-// de la mission le dit. Le carnet d'un autre est une entrée NON FIABLE (tout pilote écrit dans le dépôt) : il est relu borné, son
+// de la mission dit un CONSTAT (zone franchie, objet trouvé). Le GESTE « Ouvrir le tiroir » n'ouvre que pour celui qui le fait (sur tous
+// ses appareils) : les autres le lisent (`hands` : « BBB l'a ouvert à la main ») et gardent leur tiroir fermé — en attendant la réponse
+// de l'utilisateur à Q-0094 (une ligne à changer : SHARED). Le carnet d'un autre est une entrée NON FIABLE (tout pilote écrit dans le dépôt) : il est relu borné, son
 // ouverture n'est retenue que si elle tient debout (checkOther), et une ouverture refusée est DITE avec son auteur. Un tiroir ouvert
 // le reste : l'appareil garde les ouvertures des autres qu'il a vues (`seen`, sur l'appareil seul) ; si l'un d'eux la retire de son
 // carnet, le tiroir reste ouvert ici et l'écran le dit (`gone`).
@@ -30,8 +32,8 @@
 //     { id, title, key, open, how ('time' | 'fallback' | 'hand' | 'zone' | 'object' | null), at, by (trigramme ; null pour une heure),
 //       mine, dueAt (l'heure d'ouverture prévue : la clé `time`, ou le repli ; null si inconnue), estimated (cette heure est estimée),
 //       sealed (rescellé par ce pilote, et personne d'autre ne l'a ouvert), gone (l'ouverture retenue n'est plus dans le carnet de son
-//       auteur), refused: [{ by, why }] (les ouvertures d'autres carnets non retenues : 'stranger', 'seance', 'future', 'before', 'key',
-//       'shape') }.
+//       auteur), hands: [{ by, at }] (les autres pilotes de la mission qui l'ont ouvert à la main, pour eux seuls), refused: [{ by, why }]
+//       (les ouvertures d'autres carnets non retenues : 'stranger', 'seance', 'future', 'before', 'key', 'shape') }.
 //     others : [{ pilot, book }] (les carnets des autres, déjà passés par readBook) ; seen : readSeen(…) ; passage(pointId) → minutes
 //     estimées du départ à ce lieu (un nombre, ou { min }), null si inconnu ; crosses({ from, to }, key) → vrai si ce trajet coupe la
 //     forme de la clé (le service du cadre, plus tard : sans lui, une ouverture « zone » d'un autre n'est jugée que sur le reste).
@@ -42,9 +44,9 @@
 export const LETTERS = ['B', 'C', 'D'];
 /** Ce qui s'écrit dans un carnet : un geste ou un constat. L'heure et l'heure de repli se calculent. */
 export const HOWS = ['hand', 'zone', 'object'];
-/** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici (décision de l'ergonome, 17/11 : toute ouverture d'un pilote de la mission ;
- *  question posée à l'utilisateur : le geste d'un seul ouvre-t-il à tous ? — une ligne à changer ici). */
-export const SHARED = ['hand', 'zone', 'object'];
+/** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
+ *  l'ergonome du 17/11 en attendant Q-0094 : « pour tous ou pour soi ? ») — pour l'ouvrir à tous, ajouter 'hand' ici, rien d'autre. */
+export const SHARED = ['zone', 'object'];
 const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim'];
 const TRI = /^[A-Z]{3}$/,
   MID = /^[A-Z]-\d{3}[A-Z]?$/,
@@ -247,6 +249,7 @@ export function stateOf(drawers, {
         kind: 'hand'
       },
       refused = [],
+      hands = [], // les autres pilotes qui l'ont ouvert à la main, pour eux seuls
       found = []; // les ouvertures retenues : { how, at, by, gone? }
     // l'heure, ou l'heure de repli : calculées de la référence
     let dueAt = null,
@@ -277,7 +280,7 @@ export function stateOf(drawers, {
     for (const o of peers) {
       const e = o.book.drawers?.[id];
       if (!e || e.state !== 'open') continue;
-      const why = !SHARED.includes(e.how) ? 'key' : checkOther(e, {
+      const why = checkOther(e, {
         pilot: o.pilot,
         me: tri,
         book: o.book,
@@ -290,6 +293,10 @@ export function stateOf(drawers, {
       if (why) refused.push({
         by: o.pilot,
         why
+      });
+      else if (!SHARED.includes(e.how)) hands.push({
+        by: o.pilot,
+        at: e.at
       });
       else {
         said.add(o.pilot);
@@ -323,6 +330,7 @@ export function stateOf(drawers, {
       estimated: dueAt != null && estimated,
       sealed: sealed && !w,
       gone: !!w?.gone,
+      hands,
       refused
     });
   }

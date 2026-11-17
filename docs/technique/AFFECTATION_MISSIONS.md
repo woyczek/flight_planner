@@ -282,7 +282,10 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   record of the play gives (`start_at`), else the take-off of the assignment, else none (the drawer then stays closed; the gesture
   remains). A time that rests on a planned departure or on an estimated passage is flagged `estimated` (the screen says « heure estimée »).
 - **Open for all** (the user's decision, Q-0087) is **computed**: a drawer is open as soon as the record of ONE pilot of the mission
-  says so; the earliest opening kept is « the » opening (who, when, how).
+  says a **finding** (zone entered, object found); the earliest opening kept is « the » opening (who, when, how). The **gesture**
+  « Ouvrir le tiroir » opens for the pilot who makes it only (on all his devices): the others read it (`hands`: « BBB opened it by
+  hand ») and keep their drawer closed — the ergonomist's rule of 17 Nov while the user answers Q-0094 (for all, or for oneself);
+  one line to change (`SHARED`).
 - **The play** (« séance »): a mission is played again, so a record is worth one play only — `A:<UTC day of the first take-off>` for a
   mission assigned to this pilot (`A:0` without a time; the crew = the trigrams of the mission's lines, cancelled lines and ferries
   left out), `S:<started.at>` for a mission played alone once its flight has started (none before: a record written before the
@@ -299,4 +302,7 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   himself; another pilot's opening keeps the drawer open.
 - **The limit, stated**: without accounts, a pilot of the mission who writes a false but plausible finding in his own record opens
   the drawer; it is not prevented, it is said everywhere (who, when, how).
+- **Where the state is kept is still being settled** (17 Nov, 18 h 30): this batch reads one record per pilot; the specification
+  (§ 3, version 2) describes one append-only journal per play. The rules above are the same in both forms (the same entries, the
+  same guards); only the reading and the writing of batch T2 depend on it.
 - Bench: `modules/missions/test/drawers.html` (case N80). Nothing on screen yet: the « Tiroirs » section is batch T2.
