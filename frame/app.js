@@ -4862,6 +4862,9 @@
       // carte Diagnostic : état de la couche de données et de la base aéronautique, à copier pour un rapport
       // la version de la suite ({ version, date } ou null) : la carte « À propos »
       version: () => suiteVersion,
+      // SOG-0430 (A2) : le profil de la page pendant un gel — son état et son interrupteur (Réglages › À propos › Diagnostic)
+      profiler: () => profilerState(),
+      setProfiler: on => setProfiler(on),
       async diagnostic() {
         const d = await FD.diagnostic(),
           a = await aerodb?.status?.().catch(e => ({
