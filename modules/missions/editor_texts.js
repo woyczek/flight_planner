@@ -3,7 +3,7 @@
 // accorde les marques « (s) » d'après {n}). Les textes des six premières étapes restent dans module.js (Features SOG).
 //
 // API :
-//   EDTX : les textes — pl… et ok_<sorte> (les objets à trouver dans les Lieux, SOG-0445) ; at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
+//   EDTX : les textes — dw… (la fiche d'un tiroir, SOG-0445) ; pl… et ok_<sorte> (les objets à trouver dans les Lieux, SOG-0445) ; at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
 //     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, drawerNoKey, mapNoCentre), at_<where> (le champ qui
 //     cite une référence morte).
 //   todoText(tt, t) → le mot d'une ligne de « À compléter » nommée (« le tiroir B n'a plus son point de déclenchement… ») ; ''.
@@ -103,6 +103,117 @@ export const EDTX = {
   ],
   plKeyOf: ['clé du tiroir {name}', 'key of drawer {name}', 'Schlüssel der Schublade {name}', 'llave del cajón {name}'],
   plNoDrawer: ['aucun tiroir ne le cite', 'no drawer cites it', 'keine Schublade nennt es', 'ningún cajón lo cita'],
+  // la fiche d'un tiroir (SOG-0445) : le déroulé, les trois groupes (la clé, les textes, la suite de route), « à compléter », la clé
+  // dite en clair (`trigger`, que le pilote lit sur le tiroir fermé : des mots qui ne nomment ni la zone ni l'objet)
+  dwAdd: ['＋ Tiroir', '＋ Drawer', '＋ Schublade', '＋ Cajón'],
+  dwMax: ['Douze tiroirs au plus.', 'Twelve drawers at most.', 'Höchstens zwölf Schubladen.', 'Doce cajones como máximo.'],
+  dwSheet: ['Tiroir {n} — scellé jusqu\'à ce que sa clé joue', 'Drawer {n} — sealed until its key plays',
+    'Schublade {n} — versiegelt, bis ihr Schlüssel greift',
+    'Cajón {n} — sellado hasta que su llave actúe'
+  ],
+  dwGrpKey: ['La clé', 'The key', 'Der Schlüssel', 'La llave'],
+  dwGrpTexts: ['Les textes', 'The texts', 'Die Texte', 'Los textos'],
+  dwGrpRoute: ['La suite de route', 'The onward route', 'Die Folgeroute', 'La ruta siguiente'],
+  dwKey: ['Ce qui ouvre le tiroir', 'What opens the drawer', 'Was die Schublade öffnet', 'Lo que abre el cajón'],
+  dwKey_hand: ['le geste du pilote seul', 'the pilot\'s gesture alone', 'nur die Geste des Piloten', 'solo el gesto del piloto'],
+  dwKey_time: ['une heure', 'an hour', 'eine Uhrzeit', 'una hora'],
+  dwKey_zone: ['une zone de passage', 'a passage zone', 'eine Durchflugzone', 'una zona de paso'],
+  dwKey_object: ['un objet à trouver', 'an object to find', 'ein zu findendes Objekt', 'un objeto por encontrar'],
+  dwKey_arrival: ['l\'arrivée au terrain', 'the arrival at the aerodrome', 'die Ankunft am Platz', 'la llegada al aeródromo'],
+  dwKey_kept: ['une clé gardée telle quelle', 'a key kept as it is', 'ein unverändert belassener Schlüssel',
+    'una llave conservada tal cual'
+  ],
+  dwKept: ['Cette clé ne s\'édite pas encore ici ({why}) : elle est gardée telle quelle. Choisir une autre clé la remplace.',
+    'This key cannot be edited here yet ({why}): it is kept as it is. Choosing another key replaces it.',
+    'Dieser Schlüssel lässt sich hier noch nicht bearbeiten ({why}): er bleibt unverändert. Ein anderer Schlüssel ersetzt ihn.',
+    'Esta llave aún no se modifica aquí ({why}): se conserva tal cual. Elegir otra llave la sustituye.'
+  ],
+  dwWhy_several: ['plusieurs clés écrites', 'several keys written', 'mehrere Schlüssel geschrieben', 'varias llaves escritas'],
+  dwWhy_inPart: ['zone ou objet écrits dans le tiroir', 'zone or object written inside the drawer',
+    'Zone oder Objekt in der Schublade geschrieben',
+    'zona u objeto escritos en el cajón'
+  ],
+  dwWhy_actor: ['une cible franchit la zone', 'a target crosses the zone', 'ein Ziel durchfliegt die Zone', 'un blanco cruza la zona'],
+  dwWhy_condition: ['une condition de vol', 'a flight condition', 'eine Flugbedingung', 'una condición de vuelo'],
+  dwWhy_escort: ['une arrivée après un suivi', 'an arrival after a following', 'eine Ankunft nach einer Verfolgung',
+    'una llegada tras un seguimiento'
+  ],
+  dwHandHint: ['Le pilote l\'ouvre par « Ouvrir le tiroir ».', 'The pilot opens it by « Open the drawer ».',
+    'Der Pilot öffnet sie mit „Schublade öffnen“.',
+    'El piloto lo abre con «Abrir el cajón».'
+  ],
+  dwPoint: ['Au passage de', 'When passing', 'Beim Passieren von', 'Al pasar por'],
+  dwAtTakeoff: ['le décollage', 'the take-off', 'der Start', 'el despegue'],
+  dwDelay: ['Délai (min)', 'Delay (min)', 'Verzögerung (min)', 'Retraso (min)'],
+  dwZone: ['Zone de la mission', 'Zone of the mission', 'Zone der Mission', 'Zona de la misión'],
+  dwShown: ['Montrer la zone au pilote', 'Show the zone to the pilot', 'Die Zone dem Piloten zeigen', 'Mostrar la zona al piloto'],
+  dwObject: ['Objet de la mission', 'Object of the mission', 'Objekt der Mission', 'Objeto de la misión'],
+  dwNoZone: ['Aucune zone : ajoutez-en une dans les Lieux (« Au départ »).', 'No zone: add one in the Places (« At the departure »).',
+    'Keine Zone: fügen Sie eine in den Orten hinzu („Beim Abflug“).', 'Ninguna zona: añada una en los Lugares («A la salida»).'
+  ],
+  dwNoObject: ['Aucun objet : ajoutez-en un dans les Lieux (« Au départ »).', 'No object: add one in the Places (« At the departure »).',
+    'Kein Objekt: fügen Sie eines in den Orten hinzu („Beim Abflug“).', 'Ningún objeto: añada uno en los Lugares («A la salida»).'
+  ],
+  dwChoose: ['Choisir…', 'Choose…', 'Wählen…', 'Elegir…'],
+  dwArrPoint: ['Terrain ou lieu', 'Aerodrome or place', 'Platz oder Ort', 'Aeródromo o lugar'],
+  dwDest: ['l\'arrivée', 'the arrival', 'die Ankunft', 'la llegada'],
+  dwDep: ['le départ', 'the departure', 'der Abflug', 'la salida'],
+  dwArrRadius: ['Rayon (NM)', 'Radius (NM)', 'Radius (NM)', 'Radio (NM)'],
+  dwArrSpeed: ['Vitesse maximale (kt)', 'Maximum speed (kt)', 'Höchstgeschwindigkeit (kt)', 'Velocidad máxima (kt)'],
+  dwArrGround: ['Posé au sol', 'Landed, on the ground', 'Gelandet, am Boden', 'Posado en tierra'],
+  dwStopsKept: ['Arrêts demandés avant l\'arrivée, gardés tels quels : {who}.',
+    'Stops required before the arrival, kept as they are: {who}.',
+    'Vor der Ankunft verlangte Halte, unverändert: {who}.', 'Paradas pedidas antes de la llegada, conservadas tal cual: {who}.'
+  ],
+  dwFallback: ['Heure de repli (min après le décollage)', 'Fallback time (min after take-off)', 'Ersatzzeit (min nach dem Start)',
+    'Hora de reserva (min tras el despegue)'
+  ],
+  dwFallbackHint: ['Sans position reçue de l\'avion, le tiroir s\'ouvre à cette heure.',
+    'Without a position received from the aircraft, the drawer opens at that time.',
+    'Ohne empfangene Position des Luftfahrzeugs öffnet sich die Schublade zu dieser Zeit.',
+    'Sin posición recibida de la aeronave, el cajón se abre a esa hora.'
+  ],
+  dwTitle: ['Titre', 'Title', 'Titel', 'Título'],
+  dwTitleHint: ['Le pilote le lit sur le tiroir fermé : restez neutre si la suite doit surprendre.',
+    'The pilot reads it on the closed drawer: stay neutral if what follows must surprise.',
+    'Der Pilot liest ihn auf der geschlossenen Schublade: bleiben Sie neutral, wenn das Folgende überraschen soll.',
+    'El piloto lo lee en el cajón cerrado: sea neutro si lo que sigue debe sorprender.'
+  ],
+  dwMessage: ['Message à l\'ouverture', 'Message at the opening', 'Nachricht beim Öffnen', 'Mensaje a la apertura'],
+  dwBrief: ['Briefing du tiroir', 'Briefing of the drawer', 'Briefing der Schublade', 'Briefing del cajón'],
+  dwRouteHint: ['Les lieux que le pilote rejoint après l\'ouverture, dans l\'ordre.',
+    'The places the pilot joins after the opening, in order.',
+    'Die Orte, die der Pilot nach dem Öffnen anfliegt, der Reihe nach.', 'Los lugares que el piloto alcanza tras la apertura, en orden.'
+  ],
+  dwRouteNone: ['Aucune suite : la route de la mission continue.', 'No onward route: the mission route goes on.',
+    'Keine Folgeroute: die Route der Mission geht weiter.', 'Sin ruta siguiente: la ruta de la misión continúa.'
+  ],
+  dwRouteAdd: ['Ajouter un lieu…', 'Add a place…', 'Ort hinzufügen…', 'Añadir un lugar…'],
+  dwChipDel: ['Retirer {id} de la suite', 'Remove {id} from the onward route', '{id} aus der Folgeroute entfernen',
+    'Quitar {id} de la ruta siguiente'
+  ],
+  dwRemove: ['Retirer ce tiroir', 'Remove this drawer', 'Diese Schublade entfernen', 'Quitar este cajón'],
+  dwRemoved: ['Tiroir retiré ; les suivants ont pris son rang.', 'Drawer removed; the following ones took its rank.',
+    'Schublade entfernt; die folgenden sind aufgerückt.', 'Cajón quitado; los siguientes han tomado su rango.'
+  ],
+  dwTodoOf: ['tiroir {name} : {what}', 'drawer {name}: {what}', 'Schublade {name}: {what}', 'cajón {name}: {what}'],
+  dwTodo_noMessage: ['sans message', 'no message', 'keine Nachricht', 'sin mensaje'],
+  dwTodo_noBrief: ['sans briefing', 'no briefing', 'kein Briefing', 'sin briefing'],
+  dwTodo_noFallback: ['clé sans heure de repli', 'key without a fallback time', 'Schlüssel ohne Ersatzzeit', 'llave sin hora de reserva'],
+  dwTodo_keyUnread: ['clé illisible (il ne s\'ouvre qu\'à la main)', 'unreadable key (it only opens by hand)',
+    'unlesbarer Schlüssel (sie öffnet sich nur von Hand)', 'llave ilegible (solo se abre a mano)'
+  ],
+  dwTodo_routeUnknown: ['suite de route vers un lieu absent', 'onward route to an absent place', 'Folgeroute zu einem fehlenden Ort',
+    'ruta siguiente hacia un lugar ausente'
+  ],
+  dwSaid_time: ['{n} min après {p}', '{n} min after {p}', '{n} min nach {p}', '{n} min después de {p}'],
+  dwSaid_time0: ['au passage de {p}', 'when passing {p}', 'beim Passieren von {p}', 'al pasar por {p}'],
+  dwSaid_zone: ['au passage d\'une zone', 'when crossing a zone', 'beim Durchflug einer Zone', 'al cruzar una zona'],
+  dwSaid_object: ['quand l\'objet est trouvé', 'when the object is found', 'wenn das Objekt gefunden ist',
+    'cuando se encuentra el objeto'
+  ],
+  dwSaid_arrival: ['à l\'arrivée', 'on arrival', 'bei der Ankunft', 'a la llegada'],
+  dwSaid_hand: ['au geste du pilote', 'at the pilot\'s gesture', 'auf die Geste des Piloten', 'al gesto del piloto'],
   // l'atelier (SOG-0444, lot P1) : le fil, la carte, le déroulé, la fiche du départ, le pied
   atCrumb: ['Missions › Registre › Atelier', 'Missions › Registry › Workshop', 'Missionen › Register › Werkstatt',
     'Misiones › Registro › Taller'
@@ -121,11 +232,6 @@ export const EDTX = {
   atVisible: ['visible', 'visible', 'sichtbar', 'visible'],
   atSealed: ['tiroir scellé', 'sealed drawer', 'versiegelte Schublade', 'cajón sellado'],
   atDrawer: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
-  atDrawersKept: ['Les tiroirs de ce fichier sont gardés tels quels ; ils ne se modifient pas encore ici.',
-    'The drawers of this file are kept as they are; they cannot be edited here yet.',
-    'Die Schubladen dieser Datei bleiben unverändert; sie lassen sich hier noch nicht bearbeiten.',
-    'Los cajones de este archivo se conservan tal cual; aún no se modifican aquí.'
-  ],
   atKey_time: ['clé : heure', 'key: hour', 'Schlüssel: Uhrzeit', 'llave: hora'],
   atKey_zone: ['clé : zone de passage', 'key: passage zone', 'Schlüssel: Durchflugzone', 'llave: zona de paso'],
   atKey_object: ['clé : objet à trouver', 'key: object to find', 'Schlüssel: zu findendes Objekt', 'llave: objeto por encontrar'],

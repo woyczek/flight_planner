@@ -3098,12 +3098,14 @@ def n73(c):
     c.tap(f'{E} [data-do="edmap"]')
     # the foot: « À compléter (n) » alone on a phone, a button that opens the named list
     btn = c.text(f'{E} [data-edtodobtn]')
-    c.ok('(1)' in btn and c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") == 'none', btn,
+    c.ok('(4)' in btn and c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") == 'none', btn,
          'the button says the count alone on a phone (never a cut text)')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodo]')).display") == 'none', 'shown', 'the list is closed')
     c.tap(f'{E} [data-do="edtodo"]')
     c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the named list opened by the button')
-    c.eq(c.js(_ED_TODO), ['theatre'], 'the one point to complete, named', what='the list')
+    c.eq(c.js(_ED_TODO), ['theatre'], 'the one point of the departure to complete, named', what='the list')
+    c.eq(c.js(f"[...document.querySelectorAll('{E} [data-edtodo] [data-dtodo]')].map(x => x.dataset.dtodo)"), ['1', '2', '3'],
+         'then one line per drawer that has something to complete (SOG-0445)', what='the drawers to complete')
     seen = c.js(f"""(() => {{ const l = document.querySelector('{E} [data-edtodo]').getBoundingClientRect(), b = document.querySelector('{E} [data-edtodobtn]').getBoundingClientRect();
       return [l.height > 0 && l.top >= 0 && l.bottom <= b.top + 1, b.bottom <= innerHeight] }})()""")
     c.eq(seen, [True, True], 'the list opens ON SCREEN, just above its button (never at the end of a page that scrolls)', what='the list on screen')
@@ -3663,6 +3665,9 @@ def n77(c):
          'the kinds are the reader\'s list', what='kinds')
     c.page.fill(f'{F} [data-f=range]', '0.5')
     c.tap(f'{F} [data-f=confirm]')
+    forged = c.js(f"""() => {{ const f = document.querySelector('{F} [data-f=range]'), x = f.cloneNode(); x.dataset.f = 'id'; x.value = 'FORGED'; f.parentNode.appendChild(x);
+      x.dispatchEvent(new Event('input', {{ bubbles: true }})); x.remove(); return document.querySelector('{F} [data-plid]').textContent }}""")
+    c.ok('OBJ-1' in forged and 'FORGED' not in forged and c.js(_PLACE_AT, 'OBJ-1') == i, forged, 'a forged field « id » does not rename an object')
     c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
     c.shot('N77_390_object_sheet.png')
     c.tap(f'{F} [data-do="edplaceok"]')
@@ -3711,4 +3716,140 @@ def n77(c):
                            {'id': 'OBJ-3', 'name': 'Épave', 'kind': 'wreck', 'lat': 44.5, 'lon': 1.4, 'detection_range_nm': 1, 'require_confirmation': True}],
                'part': {'id': 'E', 'title': 'Naufragé', 'fallback_delay_min': 90}},
          'the file: the moving target as it was, the new object by identifier at the top, the drawer without its key (its fallback hour kept)', what='the saved file')
+    c.js(_REG_CLEAR)
+
+
+
+_DW = f'{E} [data-drawer]'
+_DW_FIELDS = f"[...document.querySelectorAll('{_DW} [data-k=eddr]')].map(x => x.dataset.f)"
+_DW_VAL = f"""(f) => {{ const x = document.querySelector('{_DW} [data-k=eddr][data-f="' + f + '"]'); return !x ? null : x.type === 'checkbox' ? x.checked : x.value }}"""
+_DW_CARDS = f"[...document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]')].map(x => [x.dataset.sel, x.querySelector('b').textContent.trim(), (x.querySelector('[data-dkey]')?.textContent || '').trim(), (x.querySelector('[data-dmark]')?.textContent || '').trim(), x.getAttribute('aria-current')])"
+
+
+@case('N78', 'Missions › the workshop, the sheet of a drawer: a card of the unfolding is touched and its sheet takes the place of the '
+      'departure\'s — the key (the pilot\'s gesture, an hour, a passage zone, an object to find, the arrival at the aerodrome; a zone and '
+      'an object are CHOSEN among those of the mission), its fallback time, « Montrer la zone au pilote », the texts (title, message, '
+      'briefing), the onward route in chips; « ＋ Tiroir » adds the next one (the pilot\'s gesture by default); « Retirer ce tiroir » '
+      'takes two presses and the ranks close up; touching a drawer without changing anything writes nothing; typing never redraws a card '
+      '(one click after typing is enough); the drawers count in « À compléter », one line per drawer; the file is written by '
+      'identifier, the key said in plain words never names the zone nor the object', 'N', tags=('missions', 'security'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0445, lot P3 (modules/missions/EDITOR.md § 1, § 5 and § 7; the mock-up modules/missions/maquette/tiroirs_*.png accepted on '
+      '17 Nov 2026; Q-0095: by identifier, at the top; SOG-0449: what the finger is pressing is never redrawn)')
+def n78(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _OBJ_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    cards = c.js(_DW_CARDS)
+    c.eq([[x[0], norm(x[1]), norm(x[2]), x[4]] for x in cards],
+         [['B', f"{T('atDrawer', n=1)} · Changement", T('atKey_time'), None], ['C', f"{T('atDrawer', n=2)} · Entrée du secteur", T('atKey_zone'), None],
+          ['D', f"{T('atDrawer', n=3)} · Retour", T('atKey_arrival'), None], ['E', f"{T('atDrawer', n=4)} · Naufragé", T('atKey_object'), None]],
+         'the four drawers of the file, each a card that can be touched; none chosen at the opening', what='the cards')
+    c.eq(c.count(f'{E} [data-atflow] [data-dradd]'), 1, '« ＋ Tiroir » is the last card', what='the add card')
+    c.ok(c.count(f'{E} [data-drawerskept]') == 0, 'still there', 'the sentence « ils ne se modifient pas encore ici » is gone')
+    # a drawer touched: its sheet; nothing changed, nothing written
+    c.tap(f'{E} [data-atflow] [data-sel="C"]')
+    c.until(f"!!document.querySelector('{_DW}')", what='the sheet of drawer 2')
+    c.ok(c.count(f'{E} [data-steps]') == 0 and norm(c.text(f'{_DW} [data-dwhead]')) == T('dwSheet', n=2), c.text(f'{_DW} [data-dwhead]'),
+         'the sheet of the drawer takes the place of the departure\'s')
+    c.eq(c.js(_DW_FIELDS), ['key', 'zone', 'shown', 'fallback', 'title', 'message', 'brief', 'routeadd'], 'the fields of a drawer keyed by a zone', what='fields')
+    c.eq([c.js(_DW_VAL, f) for f in ('key', 'zone', 'shown', 'fallback', 'title')], ['zone', 'ZONE-1', True, '60', 'Entrée du secteur'], 'read from the file', what='values')
+    c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-f=zone] option')].map(o => o.value)"), ['', 'ZONE-1'], 'the zones of the mission, to choose from', what='zones')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(400)
+    c.eq(c.js(_TEXT_OF, path), _OBJ_MISSION, 'a drawer touched, nothing changed: the file is the same', what='the file')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    # typing never redraws a card: the title follows in place, and ONE click on another card is enough
+    c.js(f"document.querySelectorAll('{E} [data-atflow] button').forEach(b => b.__kept = true)")
+    c.page.fill(f'{_DW} [data-f=title]', 'Entrée nord')
+    c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
+    c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
+    kept = c.js(f"[...document.querySelectorAll('{E} [data-atflow] button')].map(b => !!b.__kept)")
+    c.ok(len(kept) == 6 and all(kept), kept, 'the cards are the same elements after the keystrokes (SOG-0449)')
+    cards = c.js(_DW_CARDS)
+    c.eq([norm(cards[1][1]), cards[1][3]], [f"{T('atDrawer', n=2)} · Entrée nord", '✓'], 'the card follows the typing: its title, its mark (nothing left to complete)',
+         what='the card of drawer 2')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N78_390_drawer_texts.png')
+    c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}})")
+    c.shot('N78_390_drawer_zone.png')
+    # another key: an object to find — chosen among the objects of the mission; the fallback time stays
+    c.page.select_option(f'{_DW} [data-f=key]', 'object')
+    c.until(f"!!document.querySelector('{_DW} [data-f=object]')", what='the key « object »')
+    c.eq([c.js(_DW_VAL, f) for f in ('key', 'object', 'fallback', 'shown')], ['object', 'OBJ-1', '60', None], 'the first object is proposed, the fallback time is kept', what='values')
+    c.eq(norm(c.js(_DW_CARDS)[1][2]), T('atKey_object'), 'the card says the new key', what='the key on the card')
+    # the onward route: chips
+    c.page.select_option(f'{_DW} [data-f=routeadd]', 'PT2')
+    c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 1", what='one chip')
+    c.page.select_option(f'{_DW} [data-f=routeadd]', 'DESTINATION')
+    c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 2", what='two chips')
+    c.page.select_option(f'{_DW} [data-f=routeadd]', 'PT1')
+    c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 3", what='three chips')
+    c.tap(f'{_DW} [data-chip="PT1"] [data-do="eddrchipdel"]')
+    c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-chip]')].map(x => x.dataset.chip)"), ['PT2', 'DESTINATION'], 'a chip removed; the others in order', what='the route')
+    # the arrival drawer: its fields; a key kept as it is would say so (N75) — here the hour
+    c.page.click(f'{E} [data-atflow] [data-sel="D"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", timeout=3000, what='drawer 3 by ONE click after typing')
+    c.eq(c.js(_DW_FIELDS), ['key', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'fallback', 'title', 'message', 'brief', 'routeadd'], 'the fields of an arrival', what='fields')
+    c.eq([c.js(_DW_VAL, f) for f in ('arrPoint', 'arrRadius', 'arrSpeed', 'arrGround')], ['DESTINATION', '1', '30', True], 'read from the file', what='the arrival')
+    # « ＋ Tiroir »: the fifth, by the pilot's gesture; then an hour after take-off
+    c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer open (the first free letter)')
+    c.eq([norm(c.text(f'{_DW} [data-dwhead]')), c.js(_DW_VAL, 'key'), c.js(_DW_FIELDS)], [T('dwSheet', n=5), 'hand', ['key', 'title', 'message', 'brief', 'routeadd']],
+         'a new drawer: rank 5, the pilot\'s gesture, nothing else asked', what='the new drawer')
+    c.page.fill(f'{_DW} [data-f=title]', 'Retour anticipé')
+    c.page.select_option(f'{_DW} [data-f=key]', 'time')
+    c.until(f"!!document.querySelector('{_DW} [data-f=delay]')", what='the key « hour »')
+    c.eq(c.js(_DW_VAL, 'point'), 'ORIGIN', 'after the take-off by default', what='the point')
+    c.page.fill(f'{_DW} [data-f=delay]', '20')
+    # « À compléter »: one line per drawer
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the list')
+    lines = c.js(f"[...document.querySelectorAll('{E} [data-edtodo] [data-dtodo]')].map(x => [x.dataset.dtodo, x.textContent.trim()])")
+    c.eq([x[0] for x in lines], ['1', '3', '4', '5'], 'one line per drawer that has something to complete (drawer 2 has nothing left)', what='the drawers to complete')
+    c.ok(norm(lines[0][1]) == T('dwTodoOf', name=1, what=T('dwTodo_noBrief')) and T('dwTodo_noFallback') in norm(lines[1][1]), lines,
+         'each line names the drawer by its rank and says what is missing')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N78_390_todo.png')
+    c.tap(f'{E} [data-do="edtodo"]')
+    # « Retirer ce tiroir »: two presses, the second inert for a second; the ranks close up
+    c.tap(f'{E} [data-atflow] [data-sel="B"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='drawer 1')
+    c.js(f"""() => {{ const b = document.querySelector('{_DW} [data-do=eddrdel]'); b.click(); document.querySelector('{_DW} [data-do=eddrdel]').click() }}""")
+    c.settle()
+    c.ok(c.js(f"document.querySelector('{_DW}')?.dataset.drawer") == 'B' and norm(c.text(f'{_DW} [data-do=eddrdel]')) == T('plRemoveAnyway'),
+         c.text(f'{_DW} [data-do=eddrdel]'), 'a double press removes nothing: the button now says « Retirer quand même »')
+    c.wait(1100)
+    c.tap(f'{_DW} [data-do=eddrdel]')
+    c.until(f"!document.querySelector('{_DW}')", what='the drawer removed, back to the departure')
+    c.eq([[x[0], norm(x[1])] for x in c.js(_DW_CARDS)],
+         [['C', f"{T('atDrawer', n=1)} · Entrée nord"], ['D', f"{T('atDrawer', n=2)} · Retour"], ['E', f"{T('atDrawer', n=3)} · Naufragé"],
+          ['F', f"{T('atDrawer', n=4)} · Retour anticipé"]], 'the ranks close up, the letters stay', what='the cards after the removal')
+    # a wide screen: the sheet of the drawer on the right
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-atflow] [data-sel="C"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='drawer 1 on a wide screen')
+    c.shot('N78_1280_drawer_object.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const MS = await import('/frame/lib/mission.js');
+      const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return { parts: d.phases, read: MS.readMission(d).drawers.map(x => [x.rank, x.id, x.key.kind, x.keyWhy]), zones: d.zones.map(z => z.id), objects: d.objects.map(o => o.id) } }""" % _TEXT_OF, path)
+    c.eq(got['parts'], [
+        {'id': 'C', 'title': 'Entrée nord', 'fallback_delay_min': 60, 'trigger': norm(row(c, 'dwSaid_object', EDTX_FILE)), 'message': 'Écho radar au nord.\nDescendez voir.',
+         'brief': 'Nouvelle tâche : reconnaissance du secteur.', 'trigger_object': 'OBJ-1', 'route_order': ['PT2', 'DESTINATION']},
+        {'id': 'D', 'title': 'Retour', 'trigger_condition': {'kind': 'arrival', 'point': 'DESTINATION', 'radius_nm': 1, 'speed_max_kt': 30, 'require_on_ground': True}},
+        {'id': 'E', 'title': 'Naufragé', 'trigger_object': 'OBJ-1', 'fallback_delay_min': 90},
+        {'id': 'F', 'title': 'Retour anticipé', 'trigger': norm(T('dwSaid_time', n=20, p=T('dwAtTakeoff'))), 'trigger_point': 'ORIGIN', 'trigger_delay_min': 20}],
+        'the file: drawer B removed; C keyed by the object BY IDENTIFIER (its zone key and « zone montrée » gone, its fallback time kept), its words neutral; '
+        'D and E untouched; the new F after take-off', what='phases')
+    c.eq(got['read'], [[1, 'C', 'object', ''], [2, 'D', 'arrival', ''], [3, 'E', 'object', ''], [4, 'F', 'time', '']], 'the reader reads them', what='read back')
+    c.eq([got['zones'], got['objects']], [['ZONE-1'], ['OBJ-1', 'OBJ-2']], 'the zone and the objects stay at the top of the mission (a drawer cites them, it never carries them)',
+         what='zones and objects')
     c.js(_REG_CLEAR)

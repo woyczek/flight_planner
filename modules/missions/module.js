@@ -35,7 +35,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'assigned.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'editor_drawers.js', 'assigned.js',
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/js-yaml.min.js',

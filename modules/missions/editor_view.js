@@ -12,7 +12,13 @@
 // outil dans ce lot) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
 // en six groupes repliables, un seul déplié (s.ed.step ; '' : tous repliés) ; le pied : « Enregistrer », « À compléter (n) » qui ouvre
 // la liste nommée, « Annuler ». Rien de ce qu'on peut presser n'est redessiné pendant la frappe (SOG-0449 : edRefresh).
+//
+// Les tiroirs (SOG-0445) : une carte du déroulé se touche (s.ed.sel : 'start', ou la lettre du tiroir) et la fiche du tiroir prend la
+// place de celle du départ — la clé, les textes, la suite de route ; « ＋ Tiroir » ; « Retirer ce tiroir ». Les lignes des tiroirs
+// (s.ed.drawers, editor_drawers.js) ne sont créées qu'à la première retouche et s'écrivent dans edDoc avant que les références
+// suivent les lieux ; ils comptent dans « À compléter ».
 import * as ADD from './add.js';
+import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
 import * as MS from '../../frame/lib/mission.js';
 import * as MT from '../../frame/lib/mission_themes.js';
@@ -63,6 +69,19 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atpart[aria-current]{outline:2px solid var(--accent,#1a73e8)}
 [data-module="missions"] .ms-atpart>span{display:block}
 [data-module="missions"] .ms-atpart .ms-attag{font-size:.75em;letter-spacing:.05em;text-transform:uppercase}
+[data-module="missions"] button.ms-atpart{display:block;font:inherit;color:inherit;text-align:left;border-radius:0;cursor:pointer}
+[data-module="missions"] .ms-atpart>*{pointer-events:none}
+[data-module="missions"] .ms-atpart .ms-stepmark{display:inline-block;font-size:.9em}
+[data-module="missions"] button.ms-atadd{display:flex;align-items:center;justify-content:center;border-style:dashed;font-weight:600}
+[data-module="missions"] .ms-dgrp{border-top:1px solid var(--sog-line,#ddd);padding:8px 0 4px}
+[data-module="missions"] .ms-dgrp>h4{margin:4px 0 8px}
+[data-module="missions"] .ms-dgrp .f-row{align-items:flex-start}
+[data-module="missions"] .ms-dgrp .f-row>.f-field{flex:1 1 10em;min-width:0}
+[data-module="missions"] .ms-dgrp textarea,[data-module="missions"] .ms-dgrp select,[data-module="missions"] .ms-dgrp input:not([type=checkbox]){width:100%;box-sizing:border-box;font:inherit}
+[data-module="missions"] .ms-dgrp textarea{resize:vertical}
+[data-module="missions"] .ms-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+[data-module="missions"] .ms-chip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--sog-line,#ddd);padding:0 0 0 10px;min-height:44px}
+[data-module="missions"] .ms-chip>button{min-width:44px;min-height:44px;border:0;background:none;font:inherit;color:inherit}
 [data-module="missions"] .ms-atgrp{border-top:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atgrp:last-child{border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atsum{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;width:100%;min-height:48px;text-align:left;border:0;background:none;padding:4px 0;font:inherit;color:inherit}
@@ -245,6 +264,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.risks) d = ED.withRisks(d, e.risks);
   if (e.events) d = ED.withEvents(d, e.events);
   if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
+  if (e.drawers) d = DR.withDrawerRows(d, e.drawers); // SOG-0445 : les tiroirs retouchés (une zone et un objet y sont cités, jamais écrits)
   return ED.withRefs(d, e.base, e.places); // SOG-0439 : après toutes les étapes, les références suivent les lieux renommés ou retirés
 }
 
@@ -449,14 +469,18 @@ function edSheetHtml(s, doc) {
   }).join('')}</div></section>`;
 }
 
-/** Le déroulé de la mission : « Au départ » (visible), puis les tiroirs du fichier dans l'ordre — dits par leur rang, lus par le lecteur
- *  (frame/lib/mission.js) et montrés tels quels : ils se modifieront ici dans un prochain lot (SOG-0445). */
+/** Le déroulé de la mission : « Au départ » (visible), puis les tiroirs dans l'ordre — dits par leur rang, lus par le lecteur
+ *  (frame/lib/mission.js) sur le document de la séance — et « ＋ Tiroir » (douze au plus). Une carte se touche : sa fiche s'ouvre
+ *  (SOG-0445). Les cartes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
 function edFlowHtml(s, doc) {
-  const drawers = MS.readMission(doc)?.drawers || [],
-    c = s.ed.cadre;
+  const e = s.ed,
+    drawers = MS.readMission(doc)?.drawers || [],
+    c = e.cadre,
+    todo = new Set(DR.drawersTodo(doc).map(t => t.name)),
+    sel = e.sel || 'start',
+    on = id => sel === id ? ' aria-current="true"' : '';
   return `<section class="f-card ms-atflow" data-atflow><h3>${esc(s.tt(EDTX.atFlow))}</h3><p class="f-muted">${esc(s.tt(EDTX.atFlowHint))}</p>
-    <div class="ms-atflowrow"><div class="ms-atpart" data-part="start" data-kind="start" aria-current="true"><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></div>${drawers.map(d => `<div class="ms-atpart" data-part="${d.rank}" data-kind="drawer"><span class="ms-attag f-muted">${esc(s.tt(EDTX.atSealed))}</span><b>${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></div>`).join('')}</div>
-    ${drawers.length ? `<p class="f-muted" data-drawerskept>${esc(s.tt(EDTX.atDrawersKept))}</p>` : ''}</section>`;
+    <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on('start')}><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>${drawers.map(d => `<button type="button" class="ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-attag f-muted"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span> ${esc(s.tt(EDTX.atSealed))}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="ms-atpart ms-atadd" data-do="eddradd" data-dradd>${esc(s.tt(EDTX.dwAdd))}</button>` : ''}</div></section>`;
 }
 
 /** La carte de la mission (lot P1 : le croquis des lieux, sans outil — la carte d'édition vient avec le socle de carte, SOG-0446) :
@@ -466,19 +490,174 @@ function edMapHtml(s, doc) {
   return `<div class="ms-atmap" data-atmap data-open="${s.ed.mapOpen ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!s.ed.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>`;
 }
 
-/** « À compléter » : les points à compléter, nommés (jamais bloquants) — la liste que le bouton du pied ouvre. */
+/** « À compléter » : les points à compléter, nommés (jamais bloquants) — la liste que le bouton du pied ouvre : ceux du départ, puis
+ *  une ligne par tiroir (SOG-0445). */
 function edTodoHtml(s, doc) {
   const names = edNames(),
-    todo = ED.todo(doc);
-  return todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
+    todo = ED.todo(doc),
+    drawers = edDrawerTodo(s, doc),
+    lines = [...todo.map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}">${esc(t.text)}</li>`)];
+  return lines.length ? `<ul class="ms-lines">${lines.slice(0, 7).join('')}</ul>${lines.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: lines.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
 }
 
-/** Le bouton « À compléter (n) » du pied : son compte, et sur un module large le premier point. */
+/** Le bouton « À compléter (n) » du pied : son compte (les points du départ et les tiroirs qui en ont), et sur un module large le
+ *  premier point. */
 function edTodoBtnHtml(s, doc) {
   const names = edNames(),
     todo = ED.todo(doc),
-    t = todo[0];
-  return `${esc(s.tt(EDTX.atTodo, { n: todo.length }))}${t ? `<span class="ms-attodofirst"> : ${esc(s.tt(names[t.step]))} — ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</span>` : ''}`;
+    drawers = edDrawerTodo(s, doc),
+    t = todo[0],
+    first = t ? `${s.tt(names[t.step])} — ${todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`])}` : drawers[0]?.text || '';
+  return `${esc(s.tt(EDTX.atTodo, { n: todo.length + drawers.length }))}${first ? `<span class="ms-attodofirst"> : ${esc(first)}</span>` : ''}`;
+}
+
+/** Les tiroirs de la séance en lignes (editor_drawers.js) : celles déjà retouchées, sinon celles du fichier. */
+const edDrawers = e => e.drawers || DR.drawerRowsOf(e.base);
+
+/** La ligne du tiroir choisi, prête à être retouchée (les lignes de la séance sont créées à la première retouche : choisir un tiroir
+ *  sans rien y changer n'écrit rien). → la ligne, ou null. */
+function edDrawerRow(e) {
+  if (!e.drawers) e.drawers = DR.drawerRowsOf(e.base).map(r => ({
+    ...r,
+    stops: [...r.stops],
+    route: [...r.route]
+  }));
+  return e.drawers.find(r => r.id === e.sel) || null;
+}
+
+/** La clé d'un tiroir dite en clair (`trigger`, que la V2 imprime sur le pli scellé : le pilote la lit AVANT l'ouverture) — des mots
+ *  qui ne nomment ni la zone ni l'objet ; l'heure garde la forme de la V2 (« 10 min après PT1 »). */
+function edSaid(s, r) {
+  if (r.key === 'time') {
+    const p = !r.point || r.point.toUpperCase() === 'ORIGIN' ? s.tt(EDTX.dwAtTakeoff) : r.point,
+      n = /^\d+(\.\d+)?$/.test(String(r.delay).trim()) ? +r.delay : 0;
+    return n > 0 ? s.tt(EDTX.dwSaid_time, {
+      n,
+      p
+    }) : s.tt(EDTX.dwSaid_time0, {
+      p
+    });
+  }
+  return s.tt(EDTX[`dwSaid_${r.key}`] || EDTX.dwSaid_hand);
+}
+
+/** Ce que les tiroirs ont « à compléter », une ligne par tiroir : [{ name (le rang), text }]. */
+function edDrawerTodo(s, doc) {
+  const by = new Map();
+  for (const t of DR.drawersTodo(doc)) by.set(t.name, [...(by.get(t.name) || []), s.tt(EDTX[`dwTodo_${t.key}`] || EDTX.dwTodo_keyUnread)]);
+  return [...by].map(([name, what]) => ({
+    name,
+    text: s.tt(EDTX.dwTodoOf, {
+      name,
+      what: what.join(', ')
+    })
+  }));
+}
+
+/** La fiche d'un tiroir (SOG-0445 ; la maquette : modules/missions/maquette/tiroirs_*.png) : trois groupes — la clé, les textes, la
+ *  suite de route — puis « Retirer ce tiroir ». Une zone et un objet se CHOISISSENT parmi ceux de la mission (ses Lieux) : un tiroir
+ *  les cite, il ne les porte pas. Tout texte du fichier passe par esc(). */
+function edDrawerHtml(s, doc) {
+  const e = s.ed,
+    rows = edDrawers(e),
+    at = rows.findIndex(r => r.id === e.sel),
+    r = rows[at];
+  if (!r) return edSheetHtml(s, doc);
+  const places = e.places || ED.placesOf(doc),
+    now = id => ED.refNow(id, e.base, e.places), // l'identifiant d'aujourd'hui d'un lieu cité par le fichier
+    label = p => [p.id, p.name].filter(Boolean).join(' · '),
+    of = kind => places.filter(p => p.id && p.kind === kind).map(p => [p.id, label(p)]),
+    points = places.filter(p => p.id && !['dep', 'arr', 'object'].includes(p.kind)).map(p => [p.id, label(p)]),
+    field = (f, text, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(text))}</span><input data-k="eddr" data-f="${f}" value="${esc(v ?? '')}" autocomplete="off"${extra}></label>`,
+    // une liste : la valeur du fichier y figure toujours, même quand elle ne désigne plus rien (suivie d'un « ? »)
+    select = (f, text, v, options) => {
+      const cur = now(v),
+        all = cur && !options.some(o => o[0].toUpperCase() === cur.toUpperCase()) ? [...options, [cur, `${cur} ?`]] : options;
+      return `<label class="f-field"><span>${esc(s.tt(text))}</span><select data-k="eddr" data-f="${f}"><option value="">${esc(s.tt(EDTX.dwChoose))}</option>${all.map(o => `<option value="${esc(o[0])}"${o[0].toUpperCase() === cur.toUpperCase() ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+    },
+    check = (f, text, on) => `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${f}"${on ? ' checked' : ''}><span>${esc(s.tt(text))}</span></label>`,
+    num = ' inputmode="decimal" maxlength="8"',
+    fallback = `${field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"')}<p class="f-muted">${esc(s.tt(EDTX.dwFallbackHint))}</p>`,
+    zones = of('zone'),
+    objects = of('object'),
+    keys = [...DR.KEYS, ...(r.key === 'kept' ? ['kept'] : [])],
+    body = r.key === 'time' ? `<div class="f-row">${select('point', EDTX.dwPoint, r.point || 'ORIGIN', [['ORIGIN', s.tt(EDTX.dwAtTakeoff)], ...points])}${field('delay', EDTX.dwDelay, r.delay, ' inputmode="numeric" maxlength="4"')}</div>` :
+    r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : `<p class="f-muted" data-dwnone>${esc(s.tt(EDTX.dwNoZone))}</p>`}${check('shown', EDTX.dwShown, r.shown !== false)}${fallback}` :
+    r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : `<p class="f-muted" data-dwnone>${esc(s.tt(EDTX.dwNoObject))}</p>`}${fallback}` :
+    r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
+        <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
+        ${r.stops.length ? `<p class="f-muted" data-dwstops>${esc(s.tt(EDTX.dwStopsKept, { who: r.stops.map(now).filter(Boolean).join(', ') }))}</p>` : ''}${fallback}` :
+    r.key === 'kept' ? `<p class="f-muted" data-dwkept>${esc(s.tt(EDTX.dwKept, { why: s.tt(EDTX[`dwWhy_${r.keptWhy}`] || EDTX.dwWhy_condition) }))}</p>${fallback}` :
+    `<p class="f-muted">${esc(s.tt(EDTX.dwHandHint))}</p>`,
+    route = r.route.map(now).filter(Boolean);
+  return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
+    <div class="ms-dgrp" data-dgrp="key"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
+      <label class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><select data-k="eddr" data-f="key">${keys.map(k => `<option value="${k}"${k === r.key ? ' selected' : ''}>${esc(s.tt(EDTX[`dwKey_${k}`]))}</option>`).join('')}</select></label>
+      ${body}</div>
+    <div class="ms-dgrp" data-dgrp="texts"><h4>${esc(s.tt(EDTX.dwGrpTexts))}</h4>
+      ${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}<p class="f-muted">${esc(s.tt(EDTX.dwTitleHint))}</p>
+      <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
+      <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label></div>
+    <div class="ms-dgrp" data-dgrp="route"><h4>${esc(s.tt(EDTX.dwGrpRoute))}</h4><p class="f-muted">${esc(s.tt(route.length ? EDTX.dwRouteHint : EDTX.dwRouteNone))}</p>
+      <div class="ms-chips" data-dwroute>${r.route.map((w, n) => now(w) ? `<span class="ms-chip" data-chip="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrchipdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwChipDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div>
+      ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}</div>
+    <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.plRemoveAnyway : EDTX.dwRemove))}</button></div></section>`;
+}
+
+/** Une saisie de la fiche d'un tiroir. Une liste (la clé, un lieu, la suite de route) ne joue qu'à son « change » et redessine l'écran ;
+ *  un texte, un nombre, une case suivent la frappe sans rien redessiner de pressable (SOG-0449). */
+function edDrawerInput(s, ev) {
+  const e = s.ed,
+    t = ev.target,
+    f = t.dataset.f,
+    list = t.tagName === 'SELECT';
+  if (list && ev.type !== 'change') return;
+  const r = edDrawerRow(e);
+  if (!r) return;
+  const at = e.drawers.indexOf(r),
+    put = next => {
+      e.drawers[at] = next;
+      return next;
+    };
+  if (f === 'key' && DR.KEYS.includes(t.value)) {
+    if (t.value === r.key) return;
+    const places = e.places || ED.placesOf(edDoc(e)),
+      first = kind => places.find(p => p.id && p.kind === kind)?.id || '',
+      k = DR.withKey(r, t.value),
+      // la clé neuve prend ce qui se devine : la première zone, le premier objet, l'arrivée au terrain d'arrivée, posé, à l'arrêt
+      next = put({
+        ...k,
+        ...(t.value === 'zone' ? {
+          zone: first('zone')
+        } : t.value === 'object' ? {
+          object: first('object')
+        } : t.value === 'arrival' ? {
+          arrPoint: 'DESTINATION',
+          arrRadius: '1',
+          arrSpeed: '30',
+          arrGround: true
+        } : t.value === 'time' ? {
+          point: 'ORIGIN'
+        } : {})
+      });
+    next.said = edSaid(s, next);
+    return draw(s);
+  }
+  if (['point', 'zone', 'object', 'arrPoint'].includes(f) && list) {
+    r[f] = String(t.value).slice(0, 40);
+    if (f === 'point') r.said = edSaid(s, r);
+    return draw(s);
+  }
+  if (f === 'routeadd' && list) {
+    if (t.value) r.route = [...r.route, String(t.value).slice(0, 40)].slice(0, 60);
+    return draw(s);
+  }
+  if (['shown', 'arrGround'].includes(f) && t.type === 'checkbox') r[f] = t.checked === true;
+  else if (['title', 'message', 'brief', 'delay', 'fallback', 'arrRadius', 'arrSpeed'].includes(f) && !list) {
+    r[f] = t.value;
+    if (f === 'delay') r.said = edSaid(s, r);
+  }
+  return edRefresh(s);
 }
 
 /** L'écran de l'atelier (SOG-0444, lot P1 ; la maquette : modules/missions/maquette/atelier_*.png) : la carte et le déroulé, la fiche du
@@ -489,7 +668,7 @@ export function edHtml(s) {
   return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc)}${edFlowHtml(s, doc)}</div>${edSheetHtml(s, doc)}</div>
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc)}${edFlowHtml(s, doc)}</div>${(e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}</div>
     <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div></div>`;
 }
@@ -499,6 +678,7 @@ export function edHtml(s) {
 export function edInput(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
+  if (k === 'eddr') return edDrawerInput(s, ev); // la fiche d'un tiroir
   if (k === 'edevent') { // un événement : le champ retouché en place (le lieu, une liste, aussi)
     const row = e.events?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
@@ -527,7 +707,10 @@ export function edInput(s, ev) {
   if (k === 'edplace') { // un lieu : le champ retouché en place, la ligne redessinée à « OK »
     const row = e.places?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
-    if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f)) row[f] = ev.target.value;
+    // l'identifiant d'un objet est donné par l'atelier : il ne se saisit pas, même par une page forgée (Sécurisation, 18 nov.)
+    if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f) && !(row.kind === 'object' &&
+        f ===
+        'id')) row[f] = ev.target.value;
     // un objet à trouver : son identifiant ne se saisit pas ; « trouvé sur la parole du pilote » est une case
     else if (row?.kind === 'object' && ['okind', 'range', 'height', 'alt'].includes(f)) row[f] = ev.target.value;
     else if (row?.kind === 'object' && f === 'confirm') row.confirm = ev.target.checked === true;
@@ -682,6 +865,15 @@ function edRefresh(s) {
     if (mark) mark.dataset.kind = ok ? 'ok' : 'warn';
   }
   put(q('[data-flowline]'), ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
+  const dtodo = new Set(DR.drawersTodo(doc).map(t => t.name));
+  for (const d of MS.readMission(doc)?.drawers || []) {
+    const mark = q(`[data-dmark="${d.rank}"]`),
+      bad = dtodo.has(String(d.rank));
+    put(q(`[data-dtitle="${d.rank}"]`), `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`);
+    put(q(`[data-dkey="${d.rank}"]`), s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand));
+    put(mark, bad ? '!' : '✓');
+    if (mark) mark.dataset.kind = bad ? 'warn' : 'ok';
+  }
   // le croquis et la liste « À compléter » ne portent aucun bouton : leur contenu se remplace
   const map = q('[data-atmapbody]'),
     todo = q('[data-edtodo]'),
@@ -766,6 +958,8 @@ async function edSave(s) {
       riskEdit: -1,
       events: null,
       mapsAdd: null,
+      drawers: null,
+      drawerAsk: '',
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -799,6 +993,54 @@ export function edClick(s, b) {
       return line && edOpen(s, 'dup', line);
     case 'edsave':
       return edSave(s);
+    case 'edsel': { // une carte du déroulé : la fiche du départ, ou celle d'un tiroir
+      const id = String(b.dataset.sel || '');
+      s.ed.sel = id !== 'start' && edDrawers(s.ed).some(r => r.id === id) ? id : 'start';
+      s.ed.drawerAsk = '';
+      draw(s);
+      // la carte choisie vient dans la rangée qui défile (sans faire sauter la page)
+      return s.el.querySelector('[data-atflow] [aria-current]')?.scrollIntoView?.({
+        inline: 'nearest',
+        block: 'nearest'
+      });
+    }
+    case 'eddradd': { // « ＋ Tiroir » : le suivant, au geste du pilote, sa fiche ouverte
+      const row = DR.blankDrawer(edDrawers(s.ed), s.ed.base);
+      if (!row) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');
+      edDrawerRow(s.ed);
+      row.said = edSaid(s, row);
+      s.ed.drawers = [...s.ed.drawers, row];
+      s.ed.sel = row.id;
+      s.ed.drawerAsk = '';
+      draw(s);
+      s.el.querySelector('[data-atflow] [aria-current]')?.scrollIntoView?.({
+        inline: 'nearest',
+        block: 'nearest'
+      });
+      return s.el.querySelector('[data-drawer] [data-f=title]')?.focus();
+    }
+    case 'eddrdel': { // « Retirer ce tiroir », en deux temps : le second appui est inerte une seconde (comme pour un lieu cité)
+      const e = s.ed,
+        r = edDrawerRow(e);
+      if (!r) return;
+      if (e.drawerAsk !== r.id) {
+        e.drawerAsk = r.id;
+        e.drawerAskAt = Date.now();
+        return draw(s);
+      }
+      if (Date.now() - e.drawerAskAt < ED.REMOVE_ARM_MS) return;
+      e.drawers = e.drawers.filter(x => x !== r);
+      e.sel = 'start';
+      e.drawerAsk = '';
+      s.ctx.notify(s.tt(EDTX.dwRemoved), 'ok');
+      return draw(s);
+    }
+    case 'eddrchipdel': { // un lieu retiré de la suite de route
+      const r = edDrawerRow(s.ed),
+        n = +b.dataset.n;
+      if (r && Number.isInteger(n) && n >= 0) r.route = r.route.filter((_, i) => i !== n);
+      return draw(s);
+    }
     case 'edtodo':
       s.ed.todoOpen = !s.ed.todoOpen;
       return draw(s);

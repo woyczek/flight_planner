@@ -297,8 +297,8 @@ Lieux. Not yet imported by the screen: the sheet is the next brick.
   workshop imports (no second list to keep): every text read from a mission file or a registry, and an identifier before it is
   compared (noreg N76; 112 mission files and the registry of a real repository read identically before and after). The six steps'
   own fields (`editor.js`) still fold blanks only: to align when they are next touched.
-- **Open for the sheet**: who writes `said` — proposed: the workshop generates it from the key (« au passage de ZONE-1 », « 10 min
-  après PT1 ») as long as the author has not typed his own words, since the V2's Markdown and PDF print it.
+- **`said` (`trigger`), decided with the sheet (§ 7 septies)**: the V2 prints it on the sealed fold, so the pilot reads it BEFORE the
+  opening — the workshop writes it when the key changes, in words that name neither the zone nor the object.
 
 ### 7 sexies. P3, third brick: the objects to find are rows of the Lieux (18 Nov 2026; SOG-0445; noreg N77)
 
@@ -325,6 +325,40 @@ Lieux. Not yet imported by the screen: the sheet is the next brick.
   invisible format characters are not shown nor written; a text of the file the author does not touch is kept as it is.
 - **Not done**: the object seen in X-Plane; the route and the speed of a moving target (P5); the height above the ground under an
   object (the terrain comes with the map's base, SOG-0446).
+
+### 7 septies. P3, fourth brick: the sheet of a drawer (18 Nov 2026; SOG-0445; noreg N78)
+
+The accepted form of `maquette/tiroirs.html`, in the frame of the workshop. `editor_view.js` imports `editor_drawers.js`
+(`meta.files` of `module.js` carries it: one entry, granted by its owner on 18 Nov).
+
+- **A card of the unfolding is a button** (`edsel`): `s.ed.sel` is `'start'` or the letter of a drawer; the sheet of the drawer takes
+  the place of the departure's (on the right on a wide module, under the unfolding on a phone); « Au départ » brings the six groups
+  back. « ＋ Tiroir » is the last card (twelve drawers at most): the next drawer, by the pilot's gesture, its sheet open. Each card
+  carries the mark of what the drawer has to complete (✓ or !).
+- **The sheet, three groups** — « La clé »: what opens the drawer (the pilot's gesture alone, an hour, a passage zone, an object to
+  find, the arrival at the aerodrome), then the fields of that key: the point and the delay of an hour (« le décollage » by default);
+  a zone or an object CHOSEN among those of the mission (the Lieux) — never drawn nor typed here: a drawer cites them (Q-0095) —,
+  « Montrer la zone au pilote »; the place, the radius, the maximum speed and « Posé au sol » of an arrival (its required stops are
+  shown and kept as they are); the fallback time for a key that looks at the aircraft. A key the workshop does not edit (`kept`) says
+  why and is replaced only by choosing another one. « Les textes »: the title (with its warning: the pilot reads it on the closed
+  drawer), the message, the briefing. « La suite de route »: chips, removed one by one, added from a list (the places of the mission,
+  « l'arrivée »). Then « Retirer ce tiroir », in two presses, the second inert for a second; the ranks close up, the letters stay.
+- **A new key takes what can be guessed** (the first zone, the first object, the arrival at the destination, landed, 1 NM, 30 kt,
+  after take-off) so that a key just chosen is never an unreadable one.
+- **`trigger`** is written by the workshop when the key (or the point, or the delay of an hour) changes: « 20 min après le
+  décollage », « au passage d'une zone », « quand l'objet est trouvé », « à l'arrivée », « au geste du pilote » — in the language of
+  the author's screen. The words of a drawer that is not touched are kept.
+- **Nothing is written by looking**: the rows of the drawers (`s.ed.drawers`) are created at the first change only; `edDoc` applies
+  `withDrawerRows` BEFORE `withRefs`, so a place renamed or removed in the same sitting is followed in the keys just chosen.
+- **SOG-0449 holds**: a text, a number, a box update the cards in place (`edRefresh`: title, key, mark); a list (the key, a place, the
+  route) plays at its `change` only and redraws.
+- **« À compléter »**: after the points of the departure, one line per drawer that has something to complete (« tiroir 3 : clé sans
+  heure de repli, sans message, sans briefing »); the count of the foot adds them.
+- **Security** (review asked before the push): every text of the file goes through `esc()`; a list never offers a value the mission
+  does not carry, except the file's own value, shown with « ? » when it names nothing; `edInput` no longer takes the field `id` for
+  an object, even from a forged page.
+- **Still to come in P3**: « Ce que le pilote voit » (`describe` and `stateOf` of the session « Affectation », when they are on the
+  integration branch); the stops of an arrival as chips; « Vue du pilote » on the map (with P2).
 
 ### 8. What is NOT ported
 
