@@ -6959,3 +6959,68 @@ def f244(c):
     })""")
     c.eq(got, {'at': '', 'entry': '', 'from': '', 'to': '2026-11-17T19:00Z', 'depart': None, 'cause': 1},
          'the fields read as untrusted input; no departure said when the engine took none', what='engine read')
+
+
+@case('F245', 'Route step, a FREE route created with the LEVEL in cause: the line at the head carries « Recalculer à FLxxx » if and only if a '
+      'track set aside for the level passes its entry within its window (or has no such fields), the nearest level among THEIR `levels`; a '
+      'tap sets the level of the flight and computes again, nothing else; refused when every such track passes outside its window',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0391 (b bis), Q-0072 answered by the user (choice 0); the rule of the ergonomist, 17/11 at 9 h 23 (track Z, set aside for '
+      'the level, passed outside its window: no button); AeroDB adds at / entry / from / to to the code level; a fake launcher, invented levels')
+def f245(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    st = _route_launcher(c, ['route/compute'])
+    win = {'entry': 'DOGAL', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}
+    out_ = dict(win, at='2026-11-17T09:10Z')     # its entry passed before its window opens
+    in_ = dict(win, at='2026-11-17T12:10Z')      # within its window
+
+    def level_only(*rows):
+        sec = _free_time_sections(fl=350)
+        sec['rejected'] = [r for r in sec['rejected'] if r['code'] == 'direction'] + list(rows)
+        return sec
+    # 1. button expected: D (FL360, outside its window) is left out of the choice; E has no time fields (validity not checked)
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': level_only(
+        dict({'track': 'D', 'code': 'level', 'text': 'FL350 non proposé', 'levels': [360]}, **out_),
+        {'track': 'E', 'code': 'level', 'text': 'FL350 non proposé', 'levels': [330, 340, 'x', 99999]})}
+    docs = _ocean_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['level'] = {'ft': 35000}
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    _compute_now(c, st)
+    F = f'{FUEL} [data-routealts] [data-rfree]'
+    c.until(f"document.querySelector('{F}')?.dataset.cause === 'level'", timeout=15000, what='the line, the level in cause')
+    B = f'{F} [data-do="rgofl"]'
+    c.eq(c.js(f"document.querySelector('{B}')?.dataset.fl"), '340',
+         'FL340, the nearest among the tracks that can be taken (FL360 of D, outside its window, left out — it would win the tie)', what='nearest')
+    c.eq(norm(c.text(B) or ''), norm(tx(T, 'rFreeRecalc', L).replace('{fl}', '340')), '« Recalculer à FL340 »', what='label')
+    c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F245_{c.design}_390_{L}_level.png')
+    # the tap: the level of the flight set, then a new computation at that level
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': _OCEAN_SECTIONS}
+    n0 = len(st['posts'])
+    c.tap(B)
+    cf_doc(c, lambda d: (d.get('level') or {}).get('ft') == 34000, 'the level of the flight set to FL340')
+    for _ in range(75):
+        if any((p.get('args') or {}).get('action') == 'compute' for p in st['posts'][n0:]):
+            break
+        c.wait(200)
+    sent = [p['args'] for p in st['posts'][n0:] if (p.get('args') or {}).get('action') == 'compute']
+    c.ok(sent and all(p.get('fl') == 340 for p in sent), [p.get('fl') for p in sent], 'computed again at FL340')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-k=\"fl\"]').value"), '340', 'the Level field says 340', what='field')
+    # 2. button refused: every track set aside for the level passes outside its window
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': level_only(
+        dict({'track': 'Z', 'code': 'level', 'text': 'FL340 non proposé', 'levels': [320, 360]}, **out_))}
+    _compute_now(c, st)
+    c.until(f"document.querySelector('{F}')?.dataset.cause === 'level'", timeout=15000, what='the line, the level in cause again')
+    c.eq(c.count(B), 0, 'the only track of the level passes outside its window: no « Recalculer »', what='refused')
+    # 3. the time AND the level in cause: the button still, from the track of the level within its window
+    sec = _free_time_sections(fl=370)
+    sec['rejected'].append(dict({'track': 'D', 'code': 'level', 'text': 'FL370 non proposé', 'levels': [310, 320]}, **in_))
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': sec}
+    _compute_now(c, st)
+    c.until(f"document.querySelector('{F}')?.dataset.cause === 'both'", timeout=15000, what='the line, time and level in cause')
+    c.eq(c.js(f"document.querySelector('{B}')?.dataset.fl"), '320', 'the time in cause too: « Recalculer à FL320 » all the same', what='both')

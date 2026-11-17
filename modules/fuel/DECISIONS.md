@@ -2218,3 +2218,13 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   never sent) — never the clock of the drawing; nothing when the engine took no hour (`depart.basis` « none »). The answer kept in
   route_alts.json now keeps the keys of `sections` that proofOf and levelOf read (`RE.sectionsKept`), so the proof and the line read
   the same after a reload. Hours in Z, to the minute (« 13 h 32 Z » in French, held by no-break spaces, « 13:32Z » otherwise). F244 (red on the parent: no line).
+- **17 Nov 2026 — SOG-0391 (b bis), « Recalculer à FLxxx »** (Q-0072 answered by the user, choice 0). On the free-route line, when the
+  level is in cause, the time too or not, and IF AND ONLY IF at least one track set aside for the level passes its entry within its
+  window (`at` between `from` and `to`, the fields AeroDB adds to the code `level` too) or has no such fields (a flight without time:
+  the validity is not checked) — the rule of the ergonomist, 17 Nov at 9 h 23, in place of my « level alone »: that morning track Z,
+  set aside for the level, passed outside its window, and a button would have promised a NAT track that would not have come. The
+  level offered is the nearest to the one computed among the `levels` of THESE tracks (`cause.levels`, forty tracks read at most,
+  integers FL10 to FL660, twenty at most; a tie goes to the higher level). The tap sets the level of the flight as a typed level would
+  (`setLevel`, « Auto » off) and computes again (`recomputeAt`), nothing else. F245: a button expected (a track outside its window
+  left out of the choice), a button refused (every track of the level outside its window), the time and the level in cause (red on
+  the parent: no button).

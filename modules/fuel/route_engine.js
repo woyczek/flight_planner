@@ -236,11 +236,12 @@ export function isoMinute(v) {
   return m && Number.isFinite(Date.parse(`${m[1]}Z`)) ? `${m[1]}Z` : '';
 }
 
-/** SOG-0391 (b) : les champs de l'heure d'une route NAT écartée pour l'HEURE (AeroDB 779cae699) — `at` (le passage de son entrée), `entry`
- *  (le point), `from` / `to` (la fenêtre du message) — lus comme une entrée non sûre ; rien pour un autre code. */
+/** SOG-0391 (b) : les champs de l'heure d'une route NAT écartée pour l'HEURE ou, SOG-0391 (b bis), pour le NIVEAU (AeroDB, champs de (a))
+ *  — `at` (le passage de son entrée), `entry` (le point), `from` / `to` (la fenêtre du message) — lus comme une entrée non sûre ; rien pour
+ *  un autre code. */
 function timeOf(x) {
   const own = k => x && typeof x === 'object' && !Array.isArray(x) && Object.hasOwn(x, k) ? x[k] : undefined;
-  if (own('code') !== 'time') return {};
+  if (own('code') !== 'time' && own('code') !== 'level') return {};
   const id = text(own('entry'), 12).toUpperCase();
   return {
     at: isoMinute(own('at')),
@@ -300,11 +301,18 @@ function proofOf(v) {
     // la plus tôt et la fenêtre du message, lues dans les champs des routes écartées pour l'heure, jamais dans leur phrase
     codes = raw.filter(x => /^[A-Z]{1,2}$/.test(text(own(x, 'track'), 4).toUpperCase())).map(x => own(x, 'code')),
     times = raw.filter(x => own(x, 'code') === 'time').map(timeOf),
+    // SOG-0391 (b bis) : les niveaux offerts par les routes écartées pour le NIVEAU (entiers de FL10 à FL660, uniques, triés, vingt au plus)
+    // — de CES routes seulement (règle de l'ergonome, 17/11) : le passage de son entrée dans sa fenêtre, ou sans ces champs (vol sans
+    // heure : la validité n'est pas vérifiée) ; une borne absente laisse la fenêtre ouverte de ce côté
+    inWindow = t => !t.at || (!t.from || t.at >= t.from) && (!t.to || t.at <= t.to),
+    offered = [...new Set(raw.filter(x => own(x, 'code') === 'level' && inWindow(timeOf(x))).flatMap(x => (Array.isArray(own(x, 'levels')) ?
+      own(x, 'levels') : []).slice(0, 40)).filter(n => Number.isInteger(n) && n >= 10 && n <= 660))].sort((a, b) => a - b).slice(0, 20),
     win = times.find(x => x.from && x.to) || {},
     cause = {
       time: codes.filter(c => c === 'time').length,
       level: codes.filter(c => c === 'level').length,
       direction: codes.filter(c => c === 'direction').length,
+      levels: offered,
       at: times.map(x => x.at).filter(Boolean).sort()[0] || '',
       from: win.from || '',
       to: win.to || ''

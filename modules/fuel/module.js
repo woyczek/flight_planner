@@ -530,6 +530,7 @@ const TX = {
   rFreeWin: ['{dir} : {win}', '{dir}: {win}', '{dir}: {win}', '{dir}: {win}'],
   rFreeAt: ['entrée de l’océan vers {at}', 'ocean entry about {at}', 'Ozeaneintritt gegen {at}', 'entrada al océano hacia las {at}'],
   rFreeValid: ['valables {win}', 'valid {win}', 'gültig {win}', 'válidas {win}'],
+  rFreeRecalc: ['Recalculer à FL{fl}', 'Recompute at FL{fl}', 'Neu berechnen auf FL{fl}', 'Recalcular a FL{fl}'],
   rFreeNow: ['Départ pris à {t} (maintenant).', 'Departure taken at {t} (now).', 'Abflug angenommen um {t} (jetzt).',
     'Salida tomada a las {t} (ahora).'
   ],
@@ -3130,6 +3131,8 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
   if (e.target.closest('[data-do="rclose"]')) return proposalsEnd(); // SOG-0224 : « Fermer les propositions »
   if (e.target.closest('[data-do="rgolevel"]')) return goLevel(); // SOG-0389 (b) : « Donner le niveau »
+  const gf = e.target.closest('[data-do="rgofl"]');
+  if (gf) return recomputeAt(+gf.dataset.fl); // SOG-0391 (b bis) : « Recalculer à FLxxx »
   const rb = e.target.closest('[data-do="rcompute"],[data-do="rcheck"],[data-do="rtake"]');
   if (rb) return rb.dataset.do === 'rtake' ? routeTake(+rb.dataset.i) : routeAsk(rb.dataset.do === 'rcompute' ? 'compute' : 'check');
   const ar = e.target.closest('[data-altlist] [data-alt]');
@@ -4572,8 +4575,16 @@ function freeLineHtml(A) {
     }) : tt(TX.rFree0),
     dep = A.n?.depart?.now && A.n.depart.time ? tt(TX.rFreeNow, {
       t: zTime(A.n.depart.time)
-    }) : '';
-  return `<p class="f-row f-warn fu-rage" data-rfree data-cause="${esc(kind)}"><span>${esc(dep ? `${main}. ${dep}` : main)}</span></p>`;
+    }) : '',
+    // SOG-0391 (b bis), Q-0072, règle de l'ergonome : le niveau en cause, l'heure aussi ou non — le niveau le plus proche de celui du calcul
+    // (à égalité, le plus haut) parmi ceux des routes écartées pour le niveau qui passent dans leur fenêtre (RE : cause.levels) ; aucune :
+    // pas de bouton (il promettrait une route NAT qui ne viendrait pas)
+    near = c.level && fl ? (c.levels || []).filter(x => x !== fl).sort((x, y) => Math.abs(x - fl) - Math.abs(y - fl) || y - x)[0] :
+    null,
+    go = near ? `<button type="button" class="fu-linkbtn" data-do="rgofl" data-fl="${near}">${esc(tt(TX.rFreeRecalc, {
+      fl: String(near).padStart(3, '0')
+    }))}</button>` : '';
+  return `<p class="f-row f-warn fu-rage" data-rfree data-cause="${esc(kind)}"><span>${esc(dep ? `${main}. ${dep}` : main)}</span>${go}</p>`;
 }
 /** La liste des itinéraires (le calculé, puis trois variantes au plus) : nom, longueur, FL tenu, écarts, la première erreur ; « Prendre »
  *  pour un itinéraire qui a une route ; le choisi marqué ; puis ce qui n'est pas contrôlé. */
@@ -5089,6 +5100,14 @@ function levelAuto(C) {
     t: hmm(C.q.minutes)
   }) : '';
   return false;
+}
+
+/** SOG-0391 (b bis) : « Recalculer à FLxxx » — le niveau du vol posé à ce FL (comme une saisie : « Auto » retiré), puis le calcul relancé ;
+ *  rien d'autre. Un FL hors de FL10 à FL660 est ignoré. */
+function recomputeAt(fl) {
+  if (!Number.isInteger(fl) || fl < 10 || fl > 660) return;
+  setLevel(fl * 100);
+  return routeAsk('compute');
 }
 
 function setLevel(ft) {
