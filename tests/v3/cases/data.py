@@ -5051,7 +5051,7 @@ def l62(c):
         text = unq(m.group(1))
         for q in quote.finditer(text):
             name = next(g for g in q.groups() if g).strip()
-            if name not in allowed and name not in others:
+            if name not in allowed and name not in others and not re.fullmatch(r'\{\w+\}', name):   # a token {n} that the text function resolves (« seen: « {n} » »: the name of a file between quotation marks) is not a button name (6a955c31b)
                 orphans.append(name)
     c.eq(sorted(set(orphans)), [], 'every quoted button name of a message is the name of a button of the screen', what='orphans')
 
