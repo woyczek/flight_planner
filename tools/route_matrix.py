@@ -2,7 +2,7 @@
 """Matrice de vols de l'Atlantique Nord (SOG-0354, lot L5 point 4, § 13.3 de docs/technique/V3_ROUTE_GATES.md).
 
 144 demandes (6 aérodromes d'Europe x 6 d'Amérique du Nord x 2 sens x 2 heures) sur la VRAIE base de l'utilisateur, en LECTURE SEULE :
-  - UN seul processus, les demandes l'une après l'autre, priorité basse (IDLE_PRIORITY_CLASS), par paquets de 12 (une pause et un fichier d'arrêt entre deux paquets) ;
+  - UN seul processus, les demandes l'une après l'autre, priorité basse (tools/low_priority.py), par paquets de 12 (une pause et un fichier d'arrêt entre deux paquets) ;
   - AUCUN accès au réseau (les connexions sont refusées dans ce processus) : les routes NAT sont celles DÉJÀ lues dans la base (périmées ou non, la réponse le dit) ;
   - le cache des résultats est coupé, les caches du graphe sont vidés avant chaque demande (le pire cas : c'est lui que la borne de 20 s doit tenir) ;
   - le chargement du contexte (la base, le RAD) est mesuré À PART, une fois par date de vol, avant les demandes ;
@@ -54,16 +54,9 @@ def no_network():
 
 
 def low_priority():
-    try:
-        import ctypes
-        ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x00000040)      # IDLE_PRIORITY_CLASS
-        return 'idle'
-    except Exception:
-        try:
-            os.nice(19)
-            return 'nice19'
-        except Exception:
-            return 'normale (non réglée)'
+    """SOG-0437 : la priorité n'est décidée qu'à UN endroit (tools/low_priority.py) : le processus s'abaisse par lower_self() ; seul le mot rendu (pour la ligne de départ) est d'ici."""
+    import low_priority as LP
+    return ('idle' if os.name == 'nt' else 'nice19') if LP.lower_self() else 'normale (non réglée)'
 
 
 def windows(data):
