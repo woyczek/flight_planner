@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 281,
+  "tests": 282,
   "verdicts": 204
  },
  "apps": [
@@ -4209,6 +4209,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T13:55:22Z"
+  },
+  {
+   "id": "SOG-0417",
+   "app": "pilote",
+   "title": {
+    "fr": "Atlantique Nord depuis l'Espagne et le Portugal : entrer dans l'océan par les points de la limite de Santa Maria",
+    "en": "North Atlantic from Spain and Portugal: enter the ocean through the Santa Maria boundary points",
+    "de": "Nordatlantik ab Spanien und Portugal: Einflug in den Ozean über die Grenzpunkte von Santa Maria",
+    "es": "Atlántico Norte desde España y Portugal: entrar en el océano por los puntos del límite de Santa María"
+   },
+   "test": "Sur le poste (pas besoin de relancer le lanceur). D'ABORD : Réglages › Maintenance › Données aéronautiques, ligne Portugal, bouton de mise à jour (pour que les points de la limite de Santa Maria portent leur marque). PUIS Carburant, étape Route, tant que la ligne dit « aucune vers l'est » : (1) KJFK → LEMD, « Calculer A → B » : environ 3 260 NM (3 880 avant), en moins de 5 s ; la traversée arrive par le sud, vers 42° N à 15° W, pas par l'Irlande ; (2) KMIA → LPPT : la traversée passe sous 40° N et la route dépasse le grand cercle de 3 % environ au plus ; (3) KJFK → LPPR : environ 6 % de plus que le grand cercle (36 % avant) ; (4) un vol du nord (KJFK → EGLL) rend la même route qu'avant.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T14:26:00Z"
   },
   {
    "id": "SOG-0418",

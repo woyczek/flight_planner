@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "887f9ab",
+  "organisation": "293d32c",
   "fiches": 418,
   "untranslated": 0,
   "priorities": 374,
@@ -517,11 +517,12 @@
     {
      "id": "SOG-0417",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atlantique Nord depuis l'Espagne et le Portugal : entrer dans l'océan par les points de la limite de Santa Maria",
      "en": "North Atlantic from Spain and Portugal: enter the ocean through the Santa Maria boundary points",
      "de": "Nordatlantik ab Spanien und Portugal: Einflug in den Ozean über die Grenzpunkte von Santa Maria",
-     "es": "Atlántico Norte desde España y Portugal: entrar en el océano por los puntos del límite de Santa María"
+     "es": "Atlántico Norte desde España y Portugal: entrar en el océano por los puntos del límite de Santa María",
+     "test": true
     }
    ]
   },
