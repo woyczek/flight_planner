@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "282c3a9",
-  "fiches": 433,
+  "organisation": "01e4e8a",
+  "fiches": 434,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1206,6 +1206,27 @@
      "de": "NAT-Tracks im Schritt Route: das Lesen gelingt, ohne dass der Bildschirm es zeigt; der Vorschlag auf veralteten Tracks bleibt; die übernommene Route ergibt « unbekannte Punkte »",
      "es": "Rutas NAT en el paso Ruta: la lectura del día funciona sin que la pantalla lo muestre; la propuesta calculada con rutas caducadas permanece; la ruta tomada da « puntos desconocidos »",
      "rank": 324
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-telephone",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; téléphone",
+    "en": "Carburant ; téléphone",
+    "de": "Carburant ; téléphone",
+    "es": "Carburant ; téléphone"
+   },
+   "items": [
+    {
+     "id": "SOG-0435",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : le devis entier est recalculé à chaque écriture de progression d'un vol démarré (une saccade toutes les 5 s sur téléphone)",
+     "en": "Fuel: the whole quote is recomputed at every progress write of a started flight (a stutter every 5 s on a phone)",
+     "de": "Kraftstoff: die gesamte Berechnung wird bei jedem Fortschrittseintrag eines gestarteten Flugs neu gerechnet (ein Ruckeln alle 5 s auf dem Telefon)",
+     "es": "Combustible: todo el cálculo se rehace en cada escritura de progreso de un vuelo iniciado (un tirón cada 5 s en el teléfono)"
     }
    ]
   },
