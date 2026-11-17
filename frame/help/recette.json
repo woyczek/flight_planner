@@ -3976,15 +3976,15 @@
  ],
  "decisions": [
   {
-   "id": "Q-0075",
-   "fiche": "SOG-0398",
-   "app": "maintenance",
-   "question": "Terrain de dégagement : que veulent dire le vert, l'orange et le rouge pour la météo prévue ?",
-   "context": "Tu as écrit « un warn si c'est uniquement mvfr ou vfr ». Ce que je conteste : pour un dégagement, VFR est le meilleur cas. Ma lecture : tu veux un avertissement quand le terrain n'est utilisable qu'à vue. Ma proposition lit la prévision (TAF) à l'heure d'arrivée au dégagement, une heure avant et après. J'ajoute un quatrième état, gris « non vérifié », quand il n'y a pas de TAF : une coche verte sans donnée serait un mensonge. La spécification entière est dans la fiche SOG-0398.",
+   "id": "Q-0076",
+   "fiche": "SOG-0399",
+   "app": "pilote",
+   "question": "Carburant de dégagement : quels forfaits par défaut pour la remise des gaz et l'approche au dégagement ?",
+   "context": "Ta vérification est faite : aujourd'hui la remise des gaz à la destination n'est jamais comptée, ni l'approche au dégagement ; le carburant de dégagement est donc sous-estimé. Je fais ajouter deux lignes au forfait, réglables dans la fiche de l'aéronef. Tu as écrit « 10 à 15 minutes » pour l'approche ; pour la remise des gaz je n'ai pas de valeur de toi. Ce que je conteste : une table par type de vol — une valeur par défaut et un réglage suffisent. Le total de tes devis augmentera.",
    "options": [
-    "Vert : VFR ou MVFR prévu. Orange : IFR prévu (approche aux instruments nécessaire) OU terrain sans approche aux instruments. Rouge : sous les minima (LIFR). Gris : pas de TAF",
-    "Vert : au-dessus des minima majorés, quelle que soit la catégorie. Orange : terrain utilisable à vue seulement (VFR / MVFR exigé). Rouge : sous les minima. Gris : pas de TAF",
-    "Seulement dire la catégorie prévue (VFR, MVFR, IFR, LIFR), sans couleur de verdict",
+    "Remise des gaz : 5 min au débit de montée. Approche au dégagement : 10 min au débit d'attente",
+    "Remise des gaz : 5 min au débit de montée. Approche au dégagement : 15 min au débit d'attente",
+    "Un seul forfait de 15 min au débit d'attente pour les deux",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-17",
@@ -4271,6 +4271,25 @@
    "choice": 0,
    "text": "avec message « message NAT pas encore paru — relire après sa parution » ou «  périmées — à confirmer à la parution »",
    "at": "2026-11-17T08:34:36Z"
+  },
+  {
+   "id": "Q-0075",
+   "fiche": "SOG-0398",
+   "app": "maintenance",
+   "question": "Terrain de dégagement : que veulent dire le vert, l'orange et le rouge pour la météo prévue ?",
+   "context": "Tu as écrit « un warn si c'est uniquement mvfr ou vfr ». Ce que je conteste : pour un dégagement, VFR est le meilleur cas. Ma lecture : tu veux un avertissement quand le terrain n'est utilisable qu'à vue. Ma proposition lit la prévision (TAF) à l'heure d'arrivée au dégagement, une heure avant et après. J'ajoute un quatrième état, gris « non vérifié », quand il n'y a pas de TAF : une coche verte sans donnée serait un mensonge. La spécification entière est dans la fiche SOG-0398.",
+   "options": [
+    "Vert : VFR ou MVFR prévu. Orange : IFR prévu (approche aux instruments nécessaire) OU terrain sans approche aux instruments. Rouge : sous les minima (LIFR). Gris : pas de TAF",
+    "Vert : au-dessus des minima majorés, quelle que soit la catégorie. Orange : terrain utilisable à vue seulement (VFR / MVFR exigé). Rouge : sous les minima. Gris : pas de TAF",
+    "Seulement dire la catégorie prévue (VFR, MVFR, IFR, LIFR), sans couleur de verdict",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-17T08:55:14Z"
   }
  ]
 }
