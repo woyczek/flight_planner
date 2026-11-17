@@ -313,6 +313,36 @@ const TX = {
     'NAT-Tracks: keine vom Arbeitsplatz veröffentlichte Kopie', 'Rutas NAT: ninguna copia publicada desde el puesto'
   ],
   natRead: ['Lire les routes NAT du jour', 'Read the day’s NAT tracks', 'NAT-Tracks des Tages lesen', 'Leer las rutas NAT del día'],
+  // SOG-0413 : les sens présents et leur fenêtre ; la relecture forcée et ce qu'elle a apporté
+  natReread: ['Relire les routes NAT', 'Read the NAT tracks again', 'NAT-Tracks erneut lesen', 'Releer las rutas NAT'],
+  natDirs: ['Routes NAT du {d} : {w} ; {e}', 'NAT tracks of {d}: {w}; {e}', 'NAT-Tracks vom {d}: {w}; {e}',
+    'Rutas NAT del {d}: {w}; {e}'
+  ],
+  natW: ['vers l’ouest {t}', 'westbound {t}', 'nach Westen {t}', 'hacia el oeste {t}'],
+  natE: ['vers l’est {t}', 'eastbound {t}', 'nach Osten {t}', 'hacia el este {t}'],
+  natW0: ['aucune vers l’ouest', 'none westbound', 'keine nach Westen', 'ninguna hacia el oeste'],
+  natE0: ['aucune vers l’est', 'none eastbound', 'keine nach Osten', 'ninguna hacia el este'],
+  natAddedW: ['{n} route(s) ajoutée(s) vers l’ouest', '{n} westbound track(s) added', '{n} Route(n) nach Westen hinzugefügt',
+    '{n} ruta(s) añadida(s) hacia el oeste'
+  ],
+  natAddedE: ['{n} route(s) ajoutée(s) vers l’est', '{n} eastbound track(s) added', '{n} Route(n) nach Osten hinzugefügt',
+    '{n} ruta(s) añadida(s) hacia el este'
+  ],
+  natAdded: ['Relu : {l}.', 'Read again: {l}.', 'Erneut gelesen: {l}.', 'Releído: {l}.'],
+  natNothing: ['Relu : rien de nouveau à la source.', 'Read again: nothing new at the source.',
+    'Erneut gelesen: nichts Neues an der Quelle.',
+    'Releído: nada nuevo en la fuente.'
+  ],
+  natSoon: ['Relu à {t} : nouvelle relecture possible dans une minute.', 'Read again at {t}: next reread possible in one minute.',
+    'Erneut gelesen um {t}: nächstes Lesen in einer Minute möglich.', 'Releído a las {t}: nueva relectura posible dentro de un minuto.'
+  ],
+  natUnchanged: ['Relu à {t} : message du {d} inchangé.', 'Read again at {t}: message of {d} unchanged.',
+    'Erneut gelesen um {t}: Meldung vom {d} unverändert.', 'Releído a las {t}: mensaje del {d} sin cambios.'
+  ],
+  natRenewed: ['Relu à {t} : message du {d}.', 'Read again at {t}: message of {d}.', 'Erneut gelesen um {t}: Meldung vom {d}.',
+    'Releído a las {t}: mensaje del {d}.'
+  ],
+  natReadAt: ['lues à {t}', 'read at {t}', 'gelesen um {t}', 'leídas a las {t}'],
   natReading: ['Lecture des routes NAT…', 'Reading the NAT tracks…', 'NAT-Tracks werden gelesen…', 'Leyendo las rutas NAT…'],
   natBusyL: ['Le poste fait une autre opération : réessayez dans un instant.',
     'The workstation is busy with another operation: try again in a moment.',
@@ -3255,6 +3285,7 @@ function onPlanClick(e) {
   const ar = e.target.closest('[data-altlist] [data-alt]');
   if (ar && !e.target.closest('summary, a, button, input')) return altsShow(+ar.dataset.alt);
   if (e.target.closest('[data-do="natread"]')) return natRead(); // SOG-0352
+  if (e.target.closest('[data-do="natreread"]')) return natRead(true); // SOG-0413 : relire, même des routes valides
   if (e.target.closest('[data-do="when30"]')) return setWhen(30);
   if (e.target.closest('[data-do="whennow"]')) return setWhen(0);
   const wb = e.target.closest('[data-do="wx"]');
@@ -4317,6 +4348,38 @@ function oceanCrossing(r) {
   if (p.length < 2 || !Number.isFinite(a) || !Number.isFinite(b)) return false;
   return a < -35 && b > -15 || b < -35 && a > -15;
 }
+/** SOG-0413 : à l'ouverture et au retour au premier plan, sur un poste avec lanceur, aerodb.natEnsure() — qui relit les routes NAT
+ *  périmées ou lues il y a plus d'une heure, et rien sinon ; la ligne est redessinée si elles l'ont été. Silencieux : jamais pendant une
+ *  lecture demandée, une demande à la fois. */
+async function natAuto(s) {
+  if (!s || gone(s) || s.natBusy || s.natAutoP || !natHere() || typeof s.ctx.aerodb?.natEnsure !== 'function') return;
+  s.natAutoP = Promise.resolve().then(() => s.ctx.aerodb.natEnsure()).catch(() => null);
+  const r = await s.natAutoP;
+  s.natAutoP = null;
+  if (!gone(s) && r?.refreshed) natLine();
+}
+/** SOG-0413 : les routes NAT détenues, par sens — { w: { n, from, to }, e: { n, from, to } } (une route offre des niveaux vers l'ouest ou
+ *  vers l'est : `west` / `east` du message lu ; la fenêtre, le plus tôt et le plus tard de ses routes) ; null sans message lisible. */
+async function natDirsNow(s) {
+  const m = await Promise.resolve().then(() => s.ctx.aerodb?.nat?.()).catch(() => null),
+    ts = Array.isArray(m?.tracks) ? m.tracks.slice(0, 60) : null;
+  if (!ts) return null;
+  const iso = v => Number.isFinite(Date.parse(v)) ? new Date(Date.parse(v)).toISOString() : '',
+    g = key => {
+      const xs = ts.filter(t => Array.isArray(t?.[key]) && t[key].length),
+        f = xs.map(t => iso(t.from)).filter(Boolean).sort(),
+        u = xs.map(t => iso(t.to)).filter(Boolean).sort();
+      return {
+        n: xs.length,
+        from: f[0] || '',
+        to: u.at(-1) || ''
+      };
+    };
+  return {
+    w: g('west'),
+    e: g('east')
+  };
+}
 /** Le lanceur de ce poste est là (pas une paire distante) : il peut lire le message NAT du jour (aerodb.natEnsure). */
 const natHere = () => typeof S?.ctx?.launcher?.job === 'function' && !!S.ctx.launcher.info?.() && !S.ctx.launcher.info().lan;
 /** SOG-0352 : la ligne des routes NAT de l'étape Route, avant le calcul — la date et la validité lues dans le message (aerodb.natState,
@@ -4355,7 +4418,18 @@ async function natLine() {
     hm = iso => iso ? `${iso.slice(11, 16)}Z` : '?',
     fresh = !!st?.present && st.expired === false,
     here = natHere(),
-    text = fresh ? tt(TX.natValid, {
+    // SOG-0413 : les sens présents dans le message lu et leur fenêtre (« vers l'ouest 11 h 30 – 19 h 00 Z ; aucune vers l'est »)
+    dirs = fresh ? await natDirsNow(s) : null,
+    win = g => `${zTime(g.from, true)} – ${zTime(g.to)}`,
+    text = fresh && dirs ? tt(TX.natDirs, {
+      d: day(st.from),
+      w: dirs.w.n ? tt(TX.natW, {
+        t: win(dirs.w)
+      }) : tt(TX.natW0),
+      e: dirs.e.n ? tt(TX.natE, {
+        t: win(dirs.e)
+      }) : tt(TX.natE0)
+    }) : fresh ? tt(TX.natValid, {
       d: day(st.from),
       t: hm(st.validUntil)
     }) : here ? st?.present ? tt(TX.natStale, {
@@ -4364,14 +4438,25 @@ async function natLine() {
       d: day(st.from)
     }) : tt(TX.natNoCopy);
   // SOG-0372 (a) : une lecture qui n'a pas rendu de routes valides le dit, avec sa raison, jusqu'à la suivante
-  const out = fresh ? null : s.natOut,
+  // SOG-0413 : le résultat d'une relecture forcée reste dit (ajoutées, rien de nouveau, trop tôt), même avec des routes valides
+  const out = fresh && !s.natOut?.forced ? null : s.natOut,
     why = !out ? '' : out.why === 'busy' ? tt(TX.natBusyL) : out.why === 'retry' ? tt(TX.natRetry, {
       t: hm(out.t)
-    }) : out.why === 'same' ? tt(TX.natSame, {
+    }) : out.why === 'soon' ? tt(TX.natSoon, {
+      t: zTime(out.t)
+    }) : out.why === 'unchanged' ? tt(TX.natUnchanged, {
+      t: zTime(out.t),
+      d: day(out.d)
+    }) : out.why === 'renewed' ? tt(TX.natRenewed, {
+      t: zTime(out.t),
+      d: day(out.d)
+    }) : out.why === 'added' ? tt(TX.natAdded, {
+      l: out.l
+    }) : out.why === 'nothing' ? tt(TX.natNothing) : out.why === 'same' ? tt(TX.natSame, {
       d: day(out.d)
     }) : tt(TX.natFail);
-  if (fresh) s.natOut = null;
-  box.innerHTML = `<span class="${fresh ? 'f-muted' : 'f-warn'}" data-natstate="${fresh ? 'ok' : st?.present ? 'old' : 'none'}">${esc(text)}</span>${out ? ` <span class="f-warn" data-natfail="${esc(out.why)}">${esc(why)}</span>` : ''}${here && !fresh ? ` <button type="button" class="fu-linkbtn" data-do="natread">${esc(tt(TX.natRead))}</button>` : ''}`;
+  if (fresh && !s.natOut?.forced) s.natOut = null;
+  box.innerHTML = `<span class="${fresh ? 'f-muted' : 'f-warn'}" data-natstate="${fresh ? 'ok' : st?.present ? 'old' : 'none'}">${esc(text)}</span>${st?.readAt ? ` <span class="f-muted" data-natreadat>(${esc(tt(TX.natReadAt, { t: zTime(st.readAt) }))})</span>` : ''}${out ? ` <span class="${['added', 'nothing'].includes(out.why) ? 'f-muted' : 'f-warn'}" data-natfail="${esc(out.why)}">${esc(why)}</span>` : ''}${here && !fresh ? ` <button type="button" class="fu-linkbtn" data-do="natread">${esc(tt(TX.natRead))}</button>` : here ? ` <button type="button" class="fu-linkbtn" data-do="natreread">${esc(tt(TX.natReread))}</button>` : ''}`;
   box.hidden = false;
   // SOG-0372 (b) : des routes valides lues : les propositions par des routes NAT d'un autre jour partent
   s.natDay = fresh ? day(st.from) : '';
@@ -4473,15 +4558,76 @@ function natDrop(d, from) {
 }
 /** SOG-0352 : « Lire les routes NAT du jour » — le travail du lanceur (aerodb.natEnsure : base/update zones nat), puis la ligne relue ;
  *  un poste occupé ou un échec dits. */
-async function natRead() {
+async function natRead(force = false) {
   const s = S;
   if (!s || s.natBusy || !natHere()) return;
+  // SOG-0413 (b, piège dit par AeroDB) : un lien toujours présent ne martèle pas la source — pas deux relectures réussies à moins d'une
+  // minute ; dit, sans rien demander
+  if (force && s.natOkAt && Date.now() - s.natOkAt < 60000) {
+    s.natOut = {
+      why: 'soon',
+      t: new Date(s.natOkAt).toISOString(),
+      forced: true
+    };
+    return natLine();
+  }
   s.natBusy = true;
   s.natOut = null;
+  // SOG-0413 : les routes détenues avant la relecture, par sens, pour dire ce qu'elle a apporté
+  const before = force ? await natDirsNow(s) : null;
   natLine();
-  const r = await Promise.resolve().then(() => s.ctx.aerodb?.natEnsure?.()).catch(() => null);
+  const r = await Promise.resolve().then(() => s.ctx.aerodb?.natEnsure?.(force ? {
+    force: true
+  } : undefined)).catch(() => null);
   s.natBusy = false;
   if (gone(s)) return;
+  if (force) {
+    const after = r?.refreshed ? await natDirsNow(s) : null;
+    if (gone(s)) return;
+    const add = after && before ? [
+      [after.e.n - before.e.n, TX.natAddedE],
+      [after.w.n - before.w.n, TX.natAddedW]
+    ].filter(([n]) => n > 0).map(([n, row]) => tt(row, {
+      n
+    })) : after ? [after.e.n ? tt(TX.natAddedE, {
+      n: after.e.n
+    }) : '', after.w.n ? tt(TX.natAddedW, {
+      n: after.w.n
+    }) : ''].filter(Boolean) : [];
+    s.natOut = !r ? {
+      why: 'fail',
+      forced: true
+    } : r.busy ? {
+      why: 'busy',
+      forced: true
+    } : r.retryAt ? {
+      why: 'retry',
+      t: String(r.retryAt),
+      forced: true
+    } : r.ok === false ? {
+      why: 'fail',
+      forced: true
+    } : r.unchanged ? {
+      why: 'unchanged',
+      t: new Date().toISOString(),
+      d: r.from || '',
+      forced: true
+    } : add.length ? {
+      why: 'added',
+      l: add.join(', '),
+      forced: true
+    } : r.refreshed ? {
+      why: 'renewed',
+      t: new Date().toISOString(),
+      d: r.from || '',
+      forced: true
+    } : {
+      why: 'nothing',
+      forced: true
+    };
+    if (r?.refreshed) s.natOkAt = Date.now();
+    return natLine();
+  }
   // SOG-0372 (a) : la raison d'une lecture sans routes valides, dite dans la ligne (le poste occupé, l'essai trop tôt après un échec,
   // l'échec, ou un message lu sans routes plus récentes) ; des routes valides : rien à dire
   s.natOut = r?.present && r.expired === false ? null : !r ? {
@@ -7665,6 +7811,11 @@ export async function mount(el, ctx) {
   // les Fiches s'ouvrent par leur onglet ou par l'adresse #fuel?view=sheets (le dernier écran n'est plus gardé)
   show(S.focus !== 'route' && S.focus !== 'arr' && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
   if (!S.flightPending) flightReady();
+  // SOG-0413 : les routes NAT relues quand l'écran s'ouvre ou revient au premier plan (la règle d'âge est celle d'aerodb.natEnsure :
+  // plus d'une heure, périmées) ; aucune minuterie
+  const onVis = () => document.visibilityState === 'visible' && natAuto(self);
+  document.addEventListener('visibilitychange', onVis);
+  S.stops.push(() => document.removeEventListener('visibilitychange', onVis));
   mtMark('mount'); // SOG-0400 : le premier dessin fait
   if (!S.flightPending) mtMark('flight');
   completeMount(self); // pas attendu : le cadre a son écran tout de suite
@@ -8231,6 +8382,7 @@ async function completeMount(self) {
   else keepScroll(S.body, renderSheets);
   // le vol encore attendu (flightArrives) : il reprendra le vol à son arrivée ; sinon la reprise, devis compris
   if (!S.flightPending) resumeFlight();
+  natAuto(self); // SOG-0413 : la règle d'âge des routes NAT, à l'ouverture
 }
 
 export function unmount() {

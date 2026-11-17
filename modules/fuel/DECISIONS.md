@@ -2302,3 +2302,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   job in progress joined, 409 = busy, the failure's five minutes with `retryAt` unchanged); no anti-bounce of its own after a success
   (the screen's: one minute); the job's `files[0].unchanged` is given back (`unchanged: true`: the message read is the same).
   F253 (a fake launcher; red on the parent: neither the forced read nor the age rule asks the launcher).
+- **17 Nov 2026 — SOG-0413 (part B), the NAT line says the directions and the time of the last read; « Relire les routes NAT »
+  always there; read again at the opening** (the user: « on n'a toujours pas de NATS retour … est-ce à ma main ? », « on peut donc
+  boucher les trous »). Valid tracks read: the line says the directions present and their window, from the message held
+  (`aerodb.nat()`: a track offers levels `west` or `east`) — « Routes NAT du 17/11 : vers l'ouest 11 h 30 – 19 h 00 Z ; aucune vers
+  l'est » — and the time of the last read (`natState().readAt`, « lues à 09 h 02 Z »); without a readable message, the line of before.
+  With the launcher of this workstation (never a paired phone): « Relire les routes NAT » is always offered next to valid tracks, a
+  FORCED read; the line says what it brought — « Relu : 8 routes ajoutées vers l'est. », « Relu à 13 h 41 Z : message du 17/11
+  inchangé. » (`unchanged`, never « mis à jour »), « Relu à … : message du jj/mm. », a failure or a busy workstation as before — and
+  the screen keeps one minute between two successful rereads (said, nothing asked: AeroDB's trap, a link always there must not hammer
+  the source). At the opening and back to the foreground, Fuel asks `natEnsure()` once (the age rule is aerodb's: stale, or read more
+  than an hour ago), silently, no timer; the line is redrawn when the tracks were read. Stale tracks keep « Lire les routes NAT du
+  jour ». F254 (aerodb's NAT state held by the case; red on the parent: « valides jusqu'à », no reread).

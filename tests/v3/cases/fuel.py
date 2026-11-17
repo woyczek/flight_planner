@@ -7330,3 +7330,60 @@ def f253(c):
     c.eq(got['c'], [2, True, True, True], 'forced twice: two reads (the restraint is the screen\'s), the message said unchanged', what='forced')
     c.eq(got['d'], 0, 'a paired phone never asks the launcher', what='paired')
     c.eq(got['e'], [0, False], 'valid tracks whose read time is unknown (no updated_at): nothing asked — the age rule needs a known time', what='unknown age')
+
+
+# SOG-0413: the NAT stub, its natEnsure keeping the argument it received (force)
+_NAT_STUB_ARGS = _NAT_STUB.replace('db.natEnsure = () => { window.__nat.asks++;', 'db.natEnsure = (o) => { window.__nat.asks++; window.__nat.args = o || null;')
+_NAT_W = [{'id': t, 'west': ['340', '350'], 'east': [], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'} for t in 'ABCDEF']
+_NAT_E = [{'id': t, 'east': ['350', '360'], 'west': [], 'from': '2026-11-18T01:00:00Z', 'to': '2026-11-18T08:00:00Z'} for t in 'RSTUVWXY']
+
+
+@case('F254', 'Route step, the NAT line: the directions present and their window (« Routes NAT du 17/11 : vers l\'ouest 11 h 30 – 19 h 00 Z ; '
+      'aucune vers l\'est »); « Relire les routes NAT » always there with the launcher, a FORCED read, what it brought said (« 8 routes '
+      'ajoutées vers l\'est », « rien de nouveau à la source »), five minutes between two reads said', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0413 (the user: « on n\'a toujours pas de NATS retour. le bug a été corrigé ? il faut un refresh ? est-ce à ma main ? » — the line '
+      'said « valides jusqu\'à 19:00Z » without saying only the westbound were there, and offered no reading while they were valid); '
+      'aerodb\'s NAT state held by the case (stub)')
+def f254(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.add_init_script(_NAT_STUB_ARGS)
+    c.page.add_init_script("""(() => { const t = setInterval(() => { if (!window.__nat) return; clearInterval(t);
+      window.__nat.st = { present: true, count: 6, from: '2026-11-17T11:30:00.000Z', validUntil: '2026-11-17T19:00:00.000Z', expired: false, current: 6 };
+      window.__nat.tracks = %s; }, 5) })()""" % json.dumps(_NAT_W))
+    _route_launcher(c, ['route/compute'])
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    Lx = f'{FUEL} [data-natline]'
+    c.until(f"!!document.querySelector('{Lx}:not([hidden]) [data-natstate=ok]')", timeout=15000, what='the NAT line, tracks valid')
+    want = (tx(T, 'natDirs', L).replace('{d}', '17/11').replace('{w}', tx(T, 'natW', L).replace('{t}', f'{_zt(L, "11", "30", True)} – {_zt(L, "19", "00")}'))
+            .replace('{e}', tx(T, 'natE0', L)))
+    c.eq(norm(c.text(f'{Lx} [data-natstate]') or ''), norm(want), 'the directions present and their window', what='line')
+    c.eq(norm(c.text(f'{Lx} [data-do=natreread]') or ''), norm(tx(T, 'natReread', L)), '« Relire les routes NAT » with valid tracks', what='reread')
+    # the forced read, the message unchanged: said with its time and day
+    c.tap(f'{Lx} [data-do="natreread"]')
+    c.until("window.__nat.args && window.__nat.args.force === true && window.__nat.go !== null", timeout=8000, what='a FORCED natEnsure asked')
+    c.js("window.__nat.go({ ...window.__nat.st, refreshed: true, ok: true, unchanged: true })")
+    c.until(f"document.querySelector('{Lx} [data-natfail]')?.dataset.natfail === 'unchanged'", timeout=5000, what='the message said unchanged')
+    c.ok(norm(tx(T, 'natUnchanged', L).split('{t}')[0]) in norm(c.text(f'{Lx} [data-natfail]') or '') and '17/11' in (c.text(f'{Lx} [data-natfail]') or ''),
+         c.text(Lx), '« Relu à … : message du 17/11 inchangé. »')
+    # one minute between two successful reads, on the screen: said, nothing asked of the source
+    asks = c.js("window.__nat.asks")
+    c.tap(f'{Lx} [data-do="natreread"]')
+    c.until(f"document.querySelector('{Lx} [data-natfail]')?.dataset.natfail === 'soon'", timeout=5000, what='the minute said')
+    c.eq(c.js("window.__nat.asks"), asks, 'nothing asked of the source within the minute', what='restraint')
+    # a new opening: the forced read brings the eight eastbound tracks of the night
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{Lx}:not([hidden]) [data-do=natreread]')", timeout=15000, what='the line again')
+    c.tap(f'{Lx} [data-do="natreread"]')
+    c.until("window.__nat.args && window.__nat.args.force === true && window.__nat.go !== null", timeout=8000, what='a FORCED natEnsure asked')
+    c.js("window.__nat.tracks = %s; window.__nat.go({ ...window.__nat.st, refreshed: true, ok: true })" % json.dumps(_NAT_W + _NAT_E))
+    c.until(f"document.querySelector('{Lx} [data-natfail]')?.dataset.natfail === 'added'", timeout=5000, what='what the read brought')
+    added = re.sub(r'\((s|n|es)\)', r'\1', tx(T, 'natAddedE', L)).replace('{n}', '8')
+    c.ok(norm(added) in norm(c.text(f'{Lx} [data-natfail]') or ''), c.text(Lx), '« Relu : 8 routes ajoutées vers l\'est. »')
+    c.ok(norm(tx(T, 'natE', L).split('{t}')[0]) in norm(c.text(f'{Lx} [data-natstate]') or ''), c.text(Lx), 'the line now says the eastbound ones')
+    c.js(f"document.querySelector('{Lx}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F254_{c.design}_390_{L}.png')
