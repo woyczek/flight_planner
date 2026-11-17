@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ab126c0",
+  "organisation": "bfc8f59",
   "fiches": 411,
   "untranslated": 0,
   "priorities": 374,
@@ -1273,11 +1273,12 @@
     {
      "id": "SOG-0411",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Route par une route NAT : « Contrôler » ne reconnaît pas la portion NAT que « Calculer » vient de prendre, et trois défauts de lecture autour",
      "en": "Route through a NAT track: “Check” does not recognise the NAT portion that “Compute” has just taken, and three reading defects around it",
      "de": "Route über einen NAT-Track: „Prüfen“ erkennt den NAT-Abschnitt nicht, den „Berechnen“ gerade genommen hat, und drei Lesefehler darum herum",
-     "es": "Ruta por una ruta NAT: «Controlar» no reconoce el tramo NAT que «Calcular» acaba de tomar, y tres defectos de lectura alrededor"
+     "es": "Ruta por una ruta NAT: «Controlar» no reconoce el tramo NAT que «Calcular» acaba de tomar, y tres defectos de lectura alrededor",
+     "test": true
     }
    ]
   },
