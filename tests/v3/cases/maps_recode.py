@@ -4244,8 +4244,12 @@ def d133(c):
         _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of the R opens ({w} px)')
         c.wait(700)
         g1 = c.js(_GEO_SHEET)
-        c.eq(g1['panel'], g0['panel'], 'the sheet keeps its place and its height while the sheet of the space is open', what=f'{w}: panel')
-        c.eq(g1['box'], g0['box'], 'the map keeps its place and its height', what=f'{w}: map box')
+        if w < 700:   # SOG-0364 (15 Nov, the ergonomist's second pass): on a phone the sheet takes the height of its content (half the view at most): the sheet and the map share the same page height
+            c.eq(g1['panel'][3] + g1['box'][3], g0['panel'][3] + g0['box'][3], 'the map and the sheet together keep the height of the page (the sheet takes the height of its content)', what=f'{w}: map + panel')
+            c.ok(g1['panel'][3] <= g1['doc'][1] / 2 + 1 and g1['panel'][0] == g0['panel'][0] and g1['box'][1] == g0['box'][1], f"{g1['panel']} {g1['box']} view {g1['doc'][1]}", f'{w}: the sheet is half the view at most, the map keeps its top and both their left edge')
+        else:
+            c.eq(g1['panel'], g0['panel'], 'the sheet keeps its place and its height while the sheet of the space is open', what=f'{w}: panel')
+            c.eq(g1['box'], g0['box'], 'the map keeps its place and its height', what=f'{w}: map box')
         c.ok(not g1['scrolled'] and g1['doc'][0] == 0, str(g1['scrolled']) + str(g1['doc']), 'nothing scrolls outside the body of the sheet (the page, the pane)')
         c.eq([x for x in c.js('() => window.__sIV') if 'mp-sp-card' in x], [], 'the card does not call scrollIntoView', what=f'{w}: scrollIntoView')
         pb, cd = g1['body'], g1['card']
