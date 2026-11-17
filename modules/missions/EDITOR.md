@@ -175,7 +175,9 @@ object are references like the others — `trigger_zone`, `trigger_object`, `tri
 
 ### 6. Vocabulary (four languages, the suite's words)
 
-« Atelier », « déroulé », « au départ », « tiroir 1, 2, 3… », « clé », « heure de repli », « zone de passage », « objet à trouver »,
+« Atelier », « déroulé », « au départ », « tiroir 1, 2, 3… », « clé », « heure de repli » (on screen, the words of the pilot's
+screen — `drawers_view.js`, the session « Affectation »: « fallback time », « Ersatzzeit », « hora de reserva »; the technical documents
+keep `fallback_delay_min` and « fallback hour »), « zone de passage », « objet à trouver »,
 « arrivée au terrain », « repère » (a landmark of AeroDB), « zone » and its « contour » (a zone that is not round), « essayer les clés »; famille and série as everywhere; never
 « ids », « objet logique », « phase », nor an English screen name.
 

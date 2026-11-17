@@ -26,8 +26,8 @@ export const EDTX = {
     'el cajón {name} (su punto de activación: solo se abrirá a mano)'
   ],
   ref_drawerKey: ['le tiroir {name} (sa clé : il ne s\'ouvrira plus qu\'à la main ou à son heure de repli)',
-    'drawer {name} (its key: it will only open by hand or at its fallback hour)',
-    'Schublade {name} (ihr Schlüssel: sie öffnet sich dann nur noch von Hand oder zu ihrer Ausweichzeit)',
+    'drawer {name} (its key: it will only open by hand or at its fallback time)',
+    'Schublade {name} (ihr Schlüssel: sie öffnet sich dann nur noch von Hand oder zu ihrer Ersatzzeit)',
     'el cajón {name} (su llave: solo se abrirá a mano o a su hora de reserva)'
   ],
   ref_drawerStop: ['les arrêts demandés par le tiroir {name}', 'the stops required by drawer {name}',
@@ -57,8 +57,8 @@ export const EDTX = {
     'el cajón {name} ya no tiene su punto de activación (solo se abre a mano)'
   ],
   todo_drawerNoKey: ['le tiroir {name} n\'a plus sa clé (il ne s\'ouvre qu\'à la main ou à son heure de repli)',
-    'drawer {name} no longer has its key (it only opens by hand or at its fallback hour)',
-    'Schublade {name} hat ihren Schlüssel nicht mehr (sie öffnet sich nur von Hand oder zu ihrer Ausweichzeit)',
+    'drawer {name} no longer has its key (it only opens by hand or at its fallback time)',
+    'Schublade {name} hat ihren Schlüssel nicht mehr (sie öffnet sich nur von Hand oder zu ihrer Ersatzzeit)',
     'el cajón {name} ya no tiene su llave (solo se abre a mano o a su hora de reserva)'
   ],
   todo_mapNoCentre: ['la carte {name} n\'a plus de centre', 'map {name} no longer has a centre',
