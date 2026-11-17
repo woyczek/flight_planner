@@ -363,6 +363,13 @@ export const TX = {
   procCountRead1: [' {read} page lue sur {pages}.', ' {read} page read of {pages}.', ' {read} Seite von {pages} gelesen.',
     ' {read} página leída de {pages}.'
   ],
+  // SOG-0433 : l'échec « rien de lu » d'après le code du lanceur (code 'none-read', counts { docs, read, pages }, reasons [[code, n]]),
+  // jamais sa phrase anglaise ; les motifs par AeroCatalogue.READ_REASONS
+  procNoneRead: ['{icao} : aucune procédure lue — {d} document(s), {read} page(s) lue(s) sur {pages}{why}.{wn}',
+    '{icao}: no procedure read — {d} document(s), {read} of {pages} page(s) read{why}.{wn}',
+    '{icao}: kein Verfahren gelesen — {d} Dokument(e), {read} von {pages} Seite(n) gelesen{why}.{wn}',
+    '{icao}: ningún procedimiento leído — {d} documento(s), {read} de {pages} página(s) leída(s){why}.{wn}'
+  ],
   procCountRead: [' {read} pages lues sur {pages}.', ' {read} pages read of {pages}.', ' {read} Seiten von {pages} gelesen.',
     ' {read} páginas leídas de {pages}.'
   ],

@@ -1664,6 +1664,20 @@ export function createProcedures(host) {
           d: +st.dropped
         }) : ''
       }, 'ok');
+    } else if (res?.code === 'none-read' && res.counts && typeof res.counts === 'object') {
+      // SOG-0433 : le lanceur dit l'échec « rien de lu » en code et en entiers (tools/regen/proc.py) : la phrase est écrite ici, dans la
+      // langue de l'écran ; sa phrase anglaise (`message`) ne sert plus que de repli à un lanceur plus ancien. Entrée non fiable : bornée.
+      const n = v => Math.max(0, Math.min(9999, Math.round(+v || 0))),
+        rs = (Array.isArray(res.reasons) ? res.reasons : []).slice(0, 3).filter(x => Array.isArray(x) && /^[a-z-]{1,20}$/.test(String(x[
+          0])) && +x[1] > 0).map(([c, k]) => `${why(c)} ×${n(k)}`).join(' ; ');
+      say(TX.procNoneRead, {
+        icao,
+        d: n(res.counts.docs),
+        read: n(res.counts.read),
+        pages: n(res.counts.pages),
+        why: rs ? ` (${rs})` : '',
+        wn
+      }, 'warn');
     } else {
       const none = res?.reason === 'failed' && /no procedure could be read/i.test(res.message || ''),
         row = none ? TX.procReasons['none-read'] : TX.procReasons[res?.reason] || TX.procReasons.other,

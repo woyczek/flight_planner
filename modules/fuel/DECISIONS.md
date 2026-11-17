@@ -2443,3 +2443,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   nor payload input in the quote: the closest, the fuel flow of this flight, enters through the source. F264 (another module's write
   leaving the plan: no quote computed; then, one at a time, the level, the wind direction and speed, the ISA deviation, the date, the
   alternate, taxi, reserve, contingency, the flow of this flight, the route written by the Map, the sheet: each computes again).
+- **17 Nov 2026 — SOG-0433, a reading that read nothing is said in the screen's language** (the user saw « no procedure could be read
+  for this aerodrome: 9 document(s), 0 of 9 page(s) read » in English: the launcher's sentence, appended as is when the result carried
+  no stats with pages). AeroDB (bf397af95) now gives the failure in code and integers: `{ reason: 'failed', code: 'none-read', counts:
+  { docs, read, pages }, reasons: [[code, n], …] }`, the English sentence kept in `message` as the fallback of an older launcher. Fuel
+  (procedures.js, readProc) writes `procNoneRead` from them — « LFML : aucune procédure lue — 9 document(s), 0 page(s) lue(s) sur 9
+  (mise en page non reconnue ×9). » —, the reasons by AeroCatalogue.READ_REASONS (four languages; an unknown code as itself). The result
+  of the launcher is an untrusted input: counts bounded 0 to 9999, three reasons at most, a code outside `[a-z-]{1,20}` dropped. Without
+  `code` (an older launcher), the previous path is unchanged. The fields reach Fuel only once aerodb.fetchProcedures passes them on
+  (asked to AeroDB). F258 (a fake fetchProcedures answering the coded form without stats).

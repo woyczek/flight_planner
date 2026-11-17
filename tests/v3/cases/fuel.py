@@ -1231,6 +1231,35 @@ def f38(c):
     c.ok('no procedure could be read' not in note, f'{note!r}', 'with counts, the launcher\'s English message is not repeated')
 
 
+@case('F258', 'A reading that read nothing, said in the screen\'s language from the launcher\'s code (« none-read »), counts and coded reasons — '
+      'never the launcher\'s English sentence', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0433 (the user: « no procedure could be read for this aerodrome: 9 document(s), 0 of 9 page(s) read » shown in English); '
+      'AeroDB bf397af95: { reason: failed, code: none-read, counts { docs, read, pages }, reasons [[code, n]] }, the English sentence kept in '
+      '`message` as the fallback of an older launcher; the reasons by AeroCatalogue.READ_REASONS')
+def f258(c):
+    # aerodb.fetchProcedures answers the coded failure, without stats (the form that showed the English sentence)
+    c.page.add_init_script("""(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+        real = v && { ...v, create: (...a) => { const db = v.create(...a);
+          try { db.fetchProcedures = async () => ({ ok: false, reason: 'failed', code: 'none-read', counts: { docs: 9, read: 0, pages: 9 },
+            reasons: [['layout', 9], ['<b>x</b>', 2]],
+            message: 'no procedure could be read for this aerodrome: 9 document(s), 0 of 9 page(s) read (mise en page non reconnue ×9)' }) } catch (e) {}
+          return db } } } }) })()""")
+    open_proc(c)
+    wait_rows(c, 'arr')
+    open_foot(c, 'arr')
+    c.tap(f'{FUEL} [data-proc="arr"] [data-do="procfetch"][data-again]')
+    layout = norm(tx('frame/aerodb/catalogue.js', 'layout', c.lang, after='READ_REASONS = {'))
+    # the sentence carries « (s) » plurals the frame resolves on display (« 9 documents »): its head is awaited, then its numbers and reason
+    head = norm(tx(PT, 'procNoneRead', c.lang).split('{d}')[0].replace('{icao}', 'LFML'))
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w))", head, timeout=8000,
+            what=f'the failure said « {head} … »')
+    note = next(norm(n) for n in c.note_log() if head in norm(n))
+    c.ok(note.startswith(head) and f'({layout} ×9)' in note and len(re.findall(r'\b9\b', note)) >= 3 and re.search(r'\b0\b', note) is not None,
+         note, 'in the screen\'s language: 9 documents, 0 page read of 9, the reason by the catalogue')
+    c.ok('could be read' not in note and 'for this aerodrome' not in note, note, 'never the launcher\'s English sentence')
+    c.ok('<b>' not in note, note, 'a reason code outside the form is dropped')
+
+
 @case('F39', 'Time bench: fmtDayZ and the other Z formats', 'F', tags=('fuel',), designs=('standard',), screens=False,
       rule='V3 spec 10.29 h: frame/lib/time.js gives "29/10 16:53Z" (UTC, day and month), the one writer of that format; its pure bench passes')
 def f39(c):
