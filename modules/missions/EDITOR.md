@@ -200,6 +200,20 @@ content in one line (a new mission: « Cadre » unfolded); the terrain profile i
 is shown on a phone too, driven by the time slider (the aircraft follows the route), the map unfolding by itself; « Vue du pilote : au
 départ · tiroir 1 · tiroir 2… » is the map's selector (P3).
 
+### 7 bis. The move of the screen (17 Nov 2026, done before P1)
+
+`editor_view.js` holds the editor's screen, moved from `module.js` **as it was** (one contiguous block of about 730 lines: `edOpen`
+to `edClick`, with `edInput`), by a script that checks that every line of the old file is in one of the two new ones. `module.js` keeps
+`allRows` (the rows of the list and of the registry: Features SOG's request), the texts `TX`, the style rules and the dispatch (`edHtml`,
+`edInput`, `edClick`), and gives the screen once, by `init(tools)`, what it shares with the list, the sheet and the registry: `REGISTRY`,
+`TX`, `allRows`, `coSelect`, `cut`, `draw`, `esc`, `famChoices`, `famHtml`, `famLetter`, `mapHref`, `regLoad`, `subChoices`, `yamlFile`,
+and `state()` — the module's state of the current mount, where the block read the module's own `S`. Audit 186 is untouched (a registry
+that cannot be read is never rewritten: `edRegister` moved with its guard). Checked by hand on both versions, side by side: create,
+the six steps and each of their gestures, save, modify, duplicate — same results, no page error.
+
+**Found during that check, older than the move and left as it is** (to be fixed with P1, where the screen is redone): after typing in a
+field of the Récit, the first real click on a step's pill is lost — the pills are redrawn between the press and the release.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
