@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "aeae4c7",
-  "fiches": 432,
+  "organisation": "fdec4d3",
+  "fiches": 433,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2852,6 +2852,27 @@
      "en": "Crossing from England: the proposed route is refused by Eurocontrol (twelve errors: UK RAD rules, directs, departure, flight plan fields)",
      "de": "Überquerung ab England: die vorgeschlagene Route wird von Eurocontrol abgelehnt (zwölf Fehler: britische RAD-Regeln, Direktstrecken, Abflug, Flugplanfelder)",
      "es": "Travesía desde Inglaterra: la ruta propuesta es rechazada por Eurocontrol (doce errores: reglas RAD del Reino Unido, directos, salida, campos del plan)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-fiabilite-procedures",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes, fiabilité ; procédures",
+    "en": "Routes, fiabilité ; procédures",
+    "de": "Routes, fiabilité ; procédures",
+    "es": "Routes, fiabilité ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0434",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route calculée LFRD → LFRS : un départ normalisé (BUGAV 2S) et son point BUGAV, « inconnus » chez nous ET refusés par Eurocontrol",
+     "en": "Computed route LFRD → LFRS: a standard departure (BUGAV 2S) and its point BUGAV, “unknown” to us AND refused by Eurocontrol",
+     "de": "Berechnete Route LFRD → LFRS: ein Standardabflug (BUGAV 2S) und sein Punkt BUGAV, bei uns „unbekannt“ UND von Eurocontrol abgelehnt",
+     "es": "Ruta calculada LFRD → LFRS: una salida normalizada (BUGAV 2S) y su punto BUGAV, «desconocidos» para nosotros Y rechazados por Eurocontrol"
     }
    ]
   },
