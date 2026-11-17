@@ -410,6 +410,26 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
 - Bounds: ten hours at most, 20 to 600 kt, −1 500 to 60 000 ft (out of bounds: the default, never clamped), a trail of 240 points,
   twelve drawers; no input throws.
 
+### 7 decies. P4, second brick: the trial pane (18 Nov 2026; SOG-0444 lot P4; noreg N91)
+
+- **« Essayer les clés »** is a button in the head of the unfolding; pressed, **the trial pane takes the place of the sheet** — beside
+  the map on a wide module, under the unfolding on a narrow one: never a window over the map. `s.ed.trial` = `{ on, min, max, speed,
+  alt, declares, hands }`; the computation is `trialRun` (§ 7 nonies) on the document of the sitting read by the reader.
+- **The pane**: the time on a slider (« Temps depuis le décollage — H + 10 min »; it goes to the landing or to the last fallback time,
+  ten minutes more), the altitude and the speed of the aircraft of the trial (those of the mission at first; an empty altitude is
+  UNKNOWN), the box « Le pilote dit « Objet en vue » dès qu'il est à portée », **the log in sentences** (four languages, built from the
+  facts of the pure part), « Ouvrir à la main le tiroir n » (the pilot's gesture on the first closed drawer, at the minute of the
+  slider), « Recommencer », « Fermer l'essai ».
+- **The map and the unfolding follow**: the sketch shows the aircraft and its trail (the map unfolds by itself on a phone, as the
+  ergonomist asked on 17 Nov); each card of the unfolding says « ouvert à H + 6 min » or « fermé ».
+- **SOG-0449 holds**: the slider, the fields and the box update the time, the log, the cards, the sketch and the label of the gesture
+  button IN PLACE (`edRefresh`); only a button redraws.
+- **Nothing is written**: the trial reads; « Enregistrer » after a trial writes nothing more than before (N91 checks the file byte
+  for byte).
+- `module.js`: two entries of `meta.files`, granted by its owner — `'editor_trial.js'` and `'../../frame/lib/crossing.js'` (once).
+- **Not done**: « Poser l'avion ici » by a touch on the map and the drawing of the zone and of the object during the trial (they come
+  with the map of P2, SOG-0446); a wind, a climb, a target that moves (P5).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

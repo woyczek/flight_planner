@@ -3,7 +3,7 @@
 // accorde les marques « (s) » d'après {n}). Les textes des six premières étapes restent dans module.js (Features SOG).
 //
 // API :
-//   EDTX : les textes — dw… (la fiche d'un tiroir, SOG-0445) ; pl… et ok_<sorte> (les objets à trouver dans les Lieux, SOG-0445) ; at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
+//   EDTX : les textes — tr… (l'essai des clés, SOG-0444 lot P4) ; dw… (la fiche d'un tiroir, SOG-0445) ; pl… et ok_<sorte> (les objets à trouver dans les Lieux, SOG-0445) ; at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
 //     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, drawerNoKey, mapNoCentre), at_<where> (le champ qui
 //     cite une référence morte).
 //   todoText(tt, t) → le mot d'une ligne de « À compléter » nommée (« le tiroir B n'a plus son point de déclenchement… ») ; ''.
@@ -238,6 +238,116 @@ export const EDTX = {
   ],
   dwSaid_arrival: ['à l\'arrivée', 'on arrival', 'bei der Ankunft', 'a la llegada'],
   dwSaid_hand: ['au geste du pilote', 'at the pilot\'s gesture', 'auf die Geste des Piloten', 'al gesto del piloto'],
+  // l'essai des clés (SOG-0444, lot P4) : le volet, les cartes du déroulé pendant l'essai, le journal en phrases (les faits viennent de
+  // editor_trial.js : trOpen_<how>, trUnknown_<why>, trEv_<ev>)
+  trBtn: ['Essayer les clés', 'Try the keys', 'Schlüssel ausprobieren', 'Probar las llaves'],
+  trClose: ['Fermer l\'essai', 'Close the trial', 'Versuch schließen', 'Cerrar la prueba'],
+  trTitle: ['Essai des clés', 'Trial of the keys', 'Versuch der Schlüssel', 'Prueba de las llaves'],
+  trHint: [
+    'Sans simulateur : l\'avion suit la route du départ, avancez le temps. Le même calcul que le vol ; rien n\'est écrit dans la mission.',
+    'Without a simulator: the aircraft follows the route of the departure, move the time. The same computation as the flight; nothing is written in the mission.',
+    'Ohne Simulator: das Luftfahrzeug folgt der Route des Abflugs, bewegen Sie die Zeit. Dieselbe Berechnung wie im Flug; nichts wird in die Mission geschrieben.',
+    'Sin simulador: la aeronave sigue la ruta de la salida, avance el tiempo. El mismo cálculo que el vuelo; nada se escribe en la misión.'
+  ],
+  trTime: ['Temps depuis le décollage', 'Time since take-off', 'Zeit seit dem Start', 'Tiempo desde el despegue'],
+  trAt: ['H + {m} min', 'H + {m} min', 'H + {m} min', 'H + {m} min'],
+  trAlt: ['Altitude de l\'avion (ft)', 'Altitude of the aircraft (ft)', 'Höhe des Luftfahrzeugs (ft)', 'Altitud de la aeronave (ft)'],
+  trSpeed: ['Vitesse (kt)', 'Speed (kt)', 'Geschwindigkeit (kt)', 'Velocidad (kt)'],
+  trDeclares: ['Le pilote dit « Objet en vue » dès qu\'il est à portée',
+    'The pilot says « Object in sight » as soon as he is within range',
+    'Der Pilot meldet „Objekt in Sicht“, sobald er in Reichweite ist', 'El piloto dice «Objeto a la vista» en cuanto está al alcance'
+  ],
+  trHandBtn: ['Ouvrir à la main le tiroir {n}', 'Open drawer {n} by hand', 'Schublade {n} von Hand öffnen', 'Abrir a mano el cajón {n}'],
+  trHandNone: ['Tous les tiroirs sont ouverts', 'Every drawer is open', 'Alle Schubladen sind offen', 'Todos los cajones están abiertos'],
+  trReset: ['Recommencer', 'Start again', 'Neu beginnen', 'Volver a empezar'],
+  trOpenAt: ['ouvert à H + {m} min', 'open at H + {m} min', 'offen bei H + {m} min', 'abierto a H + {m} min'],
+  trClosed: ['fermé', 'closed', 'geschlossen', 'cerrado'],
+  trNoRoute: ['Pas d\'essai : la mission n\'a pas de route à suivre (un départ et une arrivée situés).',
+    'No trial: the mission has no route to follow (a departure and an arrival with a position).',
+    'Kein Versuch: die Mission hat keine Route (Abflug und Ankunft mit Position).',
+    'Sin prueba: la misión no tiene ruta que seguir (una salida y una llegada situadas).'
+  ],
+  trStart: ['départ ; {n} tiroir(s) fermé(s)', 'departure; {n} drawer(s) closed', 'Abflug; {n} Schublade(n) geschlossen',
+    'salida; {n} cajón(es) cerrado(s)'
+  ],
+  trOpen_zone: ['entrée dans la zone : le tiroir {n} s\'ouvre', 'zone entered: drawer {n} opens',
+    'Zone erreicht: Schublade {n} öffnet sich',
+    'entrada en la zona: el cajón {n} se abre'
+  ],
+  trOpen_object: ['objet trouvé : le tiroir {n} s\'ouvre', 'object found: drawer {n} opens', 'Objekt gefunden: Schublade {n} öffnet sich',
+    'objeto encontrado: el cajón {n} se abre'
+  ],
+  trOpen_arrival: ['arrivée posée : le tiroir {n} s\'ouvre', 'landed at the arrival: drawer {n} opens',
+    'gelandet: Schublade {n} öffnet sich',
+    'llegada posada: el cajón {n} se abre'
+  ],
+  trOpen_time: ['heure atteinte : le tiroir {n} s\'ouvre', 'hour reached: drawer {n} opens',
+    'Uhrzeit erreicht: Schublade {n} öffnet sich',
+    'hora alcanzada: el cajón {n} se abre'
+  ],
+  trOpen_fallback: ['heure de repli : le tiroir {n} s\'ouvre', 'fallback time: drawer {n} opens', 'Ersatzzeit: Schublade {n} öffnet sich',
+    'hora de reserva: el cajón {n} se abre'
+  ],
+  trOpen_hand: ['ouvert à la main : le tiroir {n} s\'ouvre', 'opened by hand: drawer {n} opens',
+    'von Hand geöffnet: Schublade {n} öffnet sich',
+    'abierto a mano: el cajón {n} se abre'
+  ],
+  trEv_route: ['l\'avion prend la suite de route du tiroir {n}', 'the aircraft takes the onward route of drawer {n}',
+    'das Luftfahrzeug nimmt die Folgeroute der Schublade {n}', 'la aeronave toma la ruta siguiente del cajón {n}'
+  ],
+  trEv_near: ['à portée de l\'objet du tiroir {n} : il reste fermé tant que le pilote ne dit pas « Objet en vue »',
+    'within range of the object of drawer {n}: it stays closed until the pilot says « Object in sight »',
+    'in Reichweite des Objekts der Schublade {n}: sie bleibt geschlossen, bis der Pilot „Objekt in Sicht“ meldet',
+    'al alcance del objeto del cajón {n}: sigue cerrado hasta que el piloto diga «Objeto a la vista»'
+  ],
+  trEv_ceiling: ['dans la zone du tiroir {n}, mais au-dessus de son plafond : il reste fermé',
+    'in the zone of drawer {n}, but above its ceiling: it stays closed',
+    'in der Zone der Schublade {n}, aber über ihrer Obergrenze: sie bleibt geschlossen',
+    'en la zona del cajón {n}, pero por encima de su techo: sigue cerrado'
+  ],
+  trEv_stops: ['arrivé, mais sans les arrêts demandés : le tiroir {n} reste fermé',
+    'arrived, but without the required stops: drawer {n} stays closed',
+    'angekommen, aber ohne die verlangten Halte: Schublade {n} bleibt geschlossen',
+    'llegado, pero sin las paradas pedidas: el cajón {n} sigue cerrado'
+  ],
+  trEv_unjudged: ['tiroir {n} : sa clé n\'est pas encore jugée en vol — il s\'ouvrira à son heure de repli ou à la main',
+    'drawer {n}: its key is not judged in flight yet — it will open at its fallback time or by hand',
+    'Schublade {n}: ihr Schlüssel wird im Flug noch nicht bewertet — sie öffnet sich zu ihrer Ersatzzeit oder von Hand',
+    'cajón {n}: su llave aún no se juzga en vuelo — se abrirá a su hora de reserva o a mano'
+  ],
+  trEv_unread: ['tiroir {n} : sa clé ne se lit pas — il ne s\'ouvre qu\'à la main ou à son heure de repli',
+    'drawer {n}: its key cannot be read — it only opens by hand or at its fallback time',
+    'Schublade {n}: ihr Schlüssel ist nicht lesbar — sie öffnet sich nur von Hand oder zu ihrer Ersatzzeit',
+    'cajón {n}: su llave no se lee — solo se abre a mano o a su hora de reserva'
+  ],
+  trEv_hand: ['tiroir {n} : à ouvrir à la main', 'drawer {n}: to be opened by hand', 'Schublade {n}: von Hand zu öffnen',
+    'cajón {n}: se abre a mano'
+  ],
+  trEv_landed: ['posé à l\'arrivée', 'landed at the arrival', 'an der Ankunft gelandet', 'posado en la llegada'],
+  trUnknown_alt: ['tiroir {n} : inconnu — il manque l\'altitude de l\'avion (la zone a un plafond)',
+    'drawer {n}: unknown — the altitude of the aircraft is missing (the zone has a ceiling)',
+    'Schublade {n}: unbekannt — die Höhe des Luftfahrzeugs fehlt (die Zone hat eine Obergrenze)',
+    'cajón {n}: desconocido — falta la altitud de la aeronave (la zona tiene techo)'
+  ],
+  trUnknown_height: ['tiroir {n} : inconnu — il manque la hauteur de l\'avion au-dessus de l\'objet',
+    'drawer {n}: unknown — the height of the aircraft above the object is missing',
+    'Schublade {n}: unbekannt — die Höhe des Luftfahrzeugs über dem Objekt fehlt',
+    'cajón {n}: desconocido — falta la altura de la aeronave sobre el objeto'
+  ],
+  trUnknown_ground: ['tiroir {n} : inconnu — on ne sait pas si l\'avion est posé',
+    'drawer {n}: unknown — whether the aircraft has landed is not known',
+    'Schublade {n}: unbekannt — ob das Luftfahrzeug gelandet ist, ist nicht bekannt',
+    'cajón {n}: desconocido — no se sabe si la aeronave está posada'
+  ],
+  trUnknown_time: [
+    'tiroir {n} : heure inconnue — son point n\'est pas sur la route du départ, ou la mission n\'a pas de vitesse de croisière',
+    'drawer {n}: unknown hour — its point is not on the route of the departure, or the mission has no cruise speed',
+    'Schublade {n}: Uhrzeit unbekannt — ihr Punkt liegt nicht auf der Route des Abflugs, oder die Mission hat keine Reisegeschwindigkeit',
+    'cajón {n}: hora desconocida — su punto no está en la ruta de la salida, o la misión no tiene velocidad de crucero'
+  ],
+  trUnknown_data: ['tiroir {n} : inconnu — sa clé ne se juge pas', 'drawer {n}: unknown — its key cannot be judged',
+    'Schublade {n}: unbekannt — ihr Schlüssel lässt sich nicht bewerten', 'cajón {n}: desconocido — su llave no se puede juzgar'
+  ],
   // l'atelier (SOG-0444, lot P1) : le fil, la carte, le déroulé, la fiche du départ, le pied
   atCrumb: ['Missions › Registre › Atelier', 'Missions › Registry › Workshop', 'Missionen › Register › Werkstatt',
     'Misiones › Registro › Taller'

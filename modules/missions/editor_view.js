@@ -17,6 +17,11 @@
 // place de celle du départ — la clé, les textes, la suite de route ; « ＋ Tiroir » ; « Retirer ce tiroir ». Les lignes des tiroirs
 // (s.ed.drawers, editor_drawers.js) ne sont créées qu'à la première retouche et s'écrivent dans edDoc avant que les références
 // suivent les lieux ; ils comptent dans « À compléter ».
+//
+// L'essai des clés (SOG-0444, lot P4) : « Essayer les clés », dans l'en-tête du déroulé, met le volet de l'essai à la place de la
+// fiche (s.ed.trial : { on, min, max, speed, alt, declares, hands }) ; le calcul est celui de editor_trial.js sur le document de la
+// séance ; la carte se déplie d'elle-même et montre l'avion et sa trace ; chaque carte du déroulé dit « ouvert à H + 6 min » ou
+// « fermé » ; rien n'est écrit dans la mission.
 import * as ADD from './add.js';
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
@@ -26,6 +31,7 @@ import {
 import * as MS from '../../frame/lib/mission.js';
 import * as MT from '../../frame/lib/mission_themes.js';
 import * as RG from './registry.js';
+import * as TR from './editor_trial.js';
 import {
   EDTX,
   citedText,
@@ -92,6 +98,16 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-pilot .ms-attag{font-size:.75em;letter-spacing:.05em;text-transform:uppercase}
 [data-module="missions"] .ms-chip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--sog-line,#ddd);padding:0 0 0 10px;min-height:44px}
 [data-module="missions"] .ms-chip>button{min-width:44px;min-height:44px;border:0;background:none;font:inherit;color:inherit}
+[data-module="missions"] .ms-atflowhead{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+[data-module="missions"] .ms-atflowhead>h3{margin:0}
+[data-module="missions"] .ms-trstate{display:block;font-size:.85em;font-weight:600;color:var(--sog-muted,#666)}
+[data-module="missions"] .ms-trstate:empty{display:none}
+[data-module="missions"] .ms-trstate[data-open="1"]{color:var(--ok,#1e7e34)}
+[data-module="missions"] .ms-trrange{width:100%;min-height:44px}
+[data-module="missions"] [data-trial] .f-row{align-items:flex-start}
+[data-module="missions"] [data-trial] .f-row>.f-field{flex:1 1 8em;min-width:0}
+[data-module="missions"] [data-trial] .f-field input:not([type=checkbox]):not([type=range]){width:100%;box-sizing:border-box}
+[data-module="missions"] .ms-trlog{max-height:40dvh;overflow:auto}
 [data-module="missions"] .ms-atgrp{border-top:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atgrp:last-child{border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atsum{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;width:100%;min-height:48px;text-align:left;border:0;background:none;padding:4px 0;font:inherit;color:inherit}
@@ -501,22 +517,22 @@ function edSheetHtml(s, doc) {
 /** Le déroulé de la mission : « Au départ » (visible), puis les tiroirs dans l'ordre — dits par leur rang, lus par le lecteur
  *  (frame/lib/mission.js) sur le document de la séance — et « ＋ Tiroir » (douze au plus). Une carte se touche : sa fiche s'ouvre
  *  (SOG-0445). Les cartes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
-function edFlowHtml(s, doc) {
+function edFlowHtml(s, doc, run = null) {
   const e = s.ed,
     drawers = MS.readMission(doc)?.drawers || [],
     c = e.cadre,
     todo = new Set(DR.drawersTodo(doc).map(t => t.name)),
     sel = e.sel || 'start',
     on = id => sel === id ? ' aria-current="true"' : '';
-  return `<section class="f-card ms-atflow" data-atflow><h3>${esc(s.tt(EDTX.atFlow))}</h3><p class="f-muted">${esc(s.tt(EDTX.atFlowHint))}</p>
-    <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on('start')}><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>${drawers.map(d => `<button type="button" class="ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-attag f-muted"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span> ${esc(s.tt(EDTX.atSealed))}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="ms-atpart ms-atadd" data-do="eddradd" data-dradd>${esc(s.tt(EDTX.dwAdd))}</button>` : ''}</div></section>`;
+  return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button></div><p class="f-muted">${esc(s.tt(EDTX.atFlowHint))}</p>
+    <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on('start')}><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>${drawers.map(d => `<button type="button" class="ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-attag f-muted"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span> ${esc(s.tt(EDTX.atSealed))}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="ms-atpart ms-atadd" data-do="eddradd" data-dradd>${esc(s.tt(EDTX.dwAdd))}</button>` : ''}</div></section>`;
 }
 
 /** La carte de la mission (lot P1 : le croquis des lieux, sans outil — la carte d'édition vient avec le socle de carte, SOG-0446) :
  *  repliée derrière son bouton sur un module étroit, toujours montrée sur un module large. */
-function edMapHtml(s, doc) {
-  const thumb = thumbHtml(s, doc);
-  return `<div class="ms-atmap" data-atmap data-open="${s.ed.mapOpen ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!s.ed.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>`;
+function edMapHtml(s, doc, run = null) {
+  const thumb = thumbHtml(s, doc, run);
+  return `<div class="ms-atmap" data-atmap data-open="${s.ed.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!s.ed.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>`;
 }
 
 /** « À compléter » : les points à compléter, nommés (jamais bloquants) — la liste que le bouton du pied ouvre : ceux du départ, puis
@@ -755,15 +771,79 @@ function edDrawerInput(s, ev) {
   return edRefresh(s);
 }
 
+/** Un nombre saisi dans un champ de l'essai, ou undefined (l'essai prend alors sa valeur par défaut : une altitude inconnue). */
+const trNum = v => /^\s*-?\d+(\.\d+)?\s*$/.test(String(v ?? '')) ? +v : undefined;
+
+/** L'essai des clés en cours (SOG-0444, lot P4), calculé par editor_trial.js sur le document de la séance LU par le lecteur ; null
+ *  quand l'essai est fermé. Rien n'est écrit dans la mission. */
+function edTrialRun(s, doc) {
+  const t = s.ed.trial;
+  if (!t?.on) return null;
+  return TR.trialRun(MS.readMission(doc), {
+    untilMin: t.min,
+    speedKt: trNum(t.speed),
+    altFt: trNum(t.alt),
+    declares: t.declares !== false,
+    hands: t.hands
+  });
+}
+
+/** « H + 6 min » : une minute de l'essai. */
+const trAt = (s, min) => s.tt(EDTX.trAt, {
+  m: Math.floor(min)
+});
+
+/** Le journal de l'essai, en phrases (les faits viennent de editor_trial.js : { min, ev, rank, how, why }). */
+function edTrialLines(s, run) {
+  if (!run.ok) return [s.tt(EDTX.trNoRoute)];
+  return run.log.map(l => {
+    const row = l.ev === 'start' ? EDTX.trStart : l.ev === 'open' ? EDTX[`trOpen_${l.how}`] || EDTX.trOpen_hand : l.ev === 'unknown' ? EDTX[
+      `trUnknown_${l.why}`] || EDTX.trUnknown_data : EDTX[`trEv_${l.ev}`] || EDTX.trUnknown_data;
+    return `${trAt(s, l.min)} — ${s.tt(row, { n: l.ev === 'start' ? run.drawers.length : l.rank })}`;
+  });
+}
+
+/** Ce que l'essai dit d'un tiroir sur sa carte du déroulé : « ouvert à H + 6 min », ou « fermé ». */
+const trState = (s, d) => d.open ? s.tt(EDTX.trOpenAt, {
+  m: Math.floor(d.min)
+}) : s.tt(EDTX.trClosed);
+
+/** Le volet de l'essai des clés : à la place de la fiche, à côté de la carte (jamais une fenêtre par-dessus) — le temps au curseur,
+ *  l'altitude et la vitesse de l'avion de l'essai, « le pilote dit Objet en vue », le journal, « Ouvrir à la main », « Recommencer »,
+ *  « Fermer l'essai ». Le curseur et les champs ne redessinent rien de pressable (SOG-0449 : edRefresh). */
+function edTrialHtml(s, run) {
+  const t = s.ed.trial,
+    first = run.ok ? run.drawers.find(d => !d.open) : null;
+  return `<section class="f-card ms-atsheet" data-atsheet data-trial><h3>${esc(s.tt(EDTX.trTitle))}</h3><p class="f-muted">${esc(s.tt(EDTX.trHint))}</p>
+    <label class="f-field"><span>${esc(s.tt(EDTX.trTime))} — <b data-trlabel>${esc(trAt(s, t.min))}</b></span><input type="range" class="ms-trrange" data-k="edtr" data-f="min" min="0" max="${t.max}" step="0.25" value="${t.min}"></label>
+    <div class="f-row"><label class="f-field"><span>${esc(s.tt(EDTX.trAlt))}</span><input data-k="edtr" data-f="alt" value="${esc(t.alt)}" inputmode="numeric" maxlength="6" autocomplete="off"></label><label class="f-field"><span>${esc(s.tt(EDTX.trSpeed))}</span><input data-k="edtr" data-f="speed" value="${esc(t.speed)}" inputmode="numeric" maxlength="4" autocomplete="off"></label></div>
+    <label class="ms-plcheck"><input type="checkbox" data-k="edtr" data-f="declares"${t.declares !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.trDeclares))}</span></label>
+    <ul class="ms-lines ms-trlog" data-trlog>${edTrialLines(s, run).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    <div class="f-row"><button type="button" data-do="edtrhand" data-trhand${first ? '' : ' disabled'}>${esc(first ? s.tt(EDTX.trHandBtn, { n: first.rank }) : s.tt(EDTX.trHandNone))}</button><button type="button" data-do="edtrreset">${esc(s.tt(EDTX.trReset))}</button><button type="button" class="f-linkbtn" data-do="edtrialoff">${esc(s.tt(EDTX.trClose))}</button></div></section>`;
+}
+
+/** Une saisie du volet de l'essai : le temps, l'altitude, la vitesse, « Objet en vue » — tout se met à jour sur place. */
+function edTrialInput(s, ev) {
+  const t = s.ed.trial,
+    el = ev.target,
+    f = el.dataset.f;
+  if (!t?.on) return;
+  if (f === 'min') t.min = Math.min(t.max, Math.max(0, Number.isFinite(+el.value) ? +el.value : 0));
+  else if (f === 'alt' || f === 'speed') t[f] = String(el.value).slice(0, 6);
+  else if (f === 'declares' && el.type === 'checkbox') t.declares = el.checked === true;
+  return edRefresh(s);
+}
+
 /** L'écran de l'atelier (SOG-0444, lot P1 ; la maquette : modules/missions/maquette/atelier_*.png) : la carte et le déroulé, la fiche du
  *  départ en six groupes, le pied (« Enregistrer », « À compléter (n) », « Annuler »). */
 export function edHtml(s) {
   const e = s.ed,
-    doc = edDoc(e);
+    doc = edDoc(e),
+    run = edTrialRun(s, doc); // l'essai des clés en cours, ou null
   return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc)}${edFlowHtml(s, doc)}</div>${(e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}</div>
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edFlowHtml(s, doc, run)}</div>${run ? edTrialHtml(s, run) : (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}</div>
     <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div></div>`;
 }
@@ -793,6 +873,7 @@ function edInputDo(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return edDrawerInput(s, ev); // la fiche d'un tiroir
+  if (k === 'edtr') return edTrialInput(s, ev); // le volet de l'essai des clés
   if (k === 'edevent') { // un événement : le champ retouché en place (le lieu, une liste, aussi)
     const row = e.events?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
@@ -910,7 +991,7 @@ function adPosOf(s, icao) {
  *  (bleu ; la position du fichier, sinon celle de la base), la cible (rouge), les zones à cercle (pointillé, leur rayon), une zone sans
  *  rayon (un carré pointillé), les points tournants et le rendez-vous ; projection équirectangulaire autour de la latitude moyenne. Rien
  *  sans au moins un lieu placé. */
-function thumbHtml(s, doc) {
+function thumbHtml(s, doc, run = null) {
   const pts = [];
   for (const p of ED.placesOf(doc)) {
     let lat = p.lat === '' ? NaN : +p.lat,
@@ -928,6 +1009,13 @@ function thumbHtml(s, doc) {
     });
   }
   if (!pts.length) return '';
+  // l'essai des clés : la trace de l'avion de l'essai entre dans le cadre du croquis
+  const extra = run?.ok ? run.trail.map(([lat, lon]) => ({
+      lat,
+      lon,
+      r: 0
+    })) : [],
+    all = [...pts, ...extra];
   const W = 200,
     H = 120,
     P = 12,
@@ -935,10 +1023,10 @@ function thumbHtml(s, doc) {
     kx = Math.max(0.1, Math.cos(lat0 * Math.PI / 180)),
     X = p => p.lon * kx,
     Y = p => -p.lat,
-    x0 = Math.min(...pts.map(p => X(p) - p.r)),
-    x1 = Math.max(...pts.map(p => X(p) + p.r)),
-    y0 = Math.min(...pts.map(p => Y(p) - p.r)),
-    y1 = Math.max(...pts.map(p => Y(p) + p.r)),
+    x0 = Math.min(...all.map(p => X(p) - p.r)),
+    x1 = Math.max(...all.map(p => X(p) + p.r)),
+    y0 = Math.min(...all.map(p => Y(p) - p.r)),
+    y1 = Math.max(...all.map(p => Y(p) + p.r)),
     dx = Math.max(x1 - x0, 0.05),
     dy = Math.max(y1 - y0, 0.05),
     k = Math.min((W - 2 * P) / dx, (H - 2 * P) / dy),
@@ -958,7 +1046,7 @@ function thumbHtml(s, doc) {
     p.k === 'object' ? `<path data-thobject d="M${sx(p)} ${(sy(p) - 5).toFixed(1)}l5 5l-5 5l-5 -5z" fill="var(--sog-text, #222)"/>` :
     `<circle cx="${sx(p)}" cy="${sy(p)}" r="${p.k === 'pt' ? 3 : 4}" fill="${COL[p.k] || 'var(--sog-muted)'}"/>`;
   // les zones dessous, les points dessus
-  return `<svg class="ms-thumb" data-edthumb viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.tt(TX.edThumb))}">${[...pts.filter(p => p.k === 'zone'), ...pts.filter(p => p.k !== 'zone')].map(shape).join('')}</svg>`;
+  return `<svg class="ms-thumb" data-edthumb viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.tt(TX.edThumb))}">${[...pts.filter(p => p.k === 'zone'), ...pts.filter(p => p.k !== 'zone')].map(shape).join('')}${extra.length ? `<polyline data-trtrail points="${extra.map(p => `${sx(p)},${sy(p)}`).join(' ')}" fill="none" stroke="var(--sog-accent)" stroke-width="1.5"/><circle data-trplane cx="${sx(extra[extra.length - 1])}" cy="${sy(extra[extra.length - 1])}" r="4.5" fill="var(--sog-accent)" stroke="#fff" stroke-width="1.5"/>` : ''}</svg>`;
 }
 /** Ce qui suit la frappe, mis à jour SUR PLACE (SOG-0449 : on ne redessine pas ce que le doigt est en train de presser — les pastilles
  *  d'étape, remplacées à chaque saisie et à chaque sortie de champ, perdaient le clic qui suivait) : le titre, la ligne et la marque de
@@ -1000,10 +1088,31 @@ function edRefresh(s) {
   const map = q('[data-atmapbody]'),
     todo = q('[data-edtodo]'),
     btn = q('[data-edtodobtn]'),
-    thumb = thumbHtml(s, doc) || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`,
+    run = edTrialRun(s, doc),
+    thumb = thumbHtml(s, doc, run) || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`,
     list = edTodoHtml(s, doc),
     label = edTodoBtnHtml(s, doc);
   if (map && e.lastThumb !== thumb) map.innerHTML = e.lastThumb = thumb;
+  if (run) {
+    // l'essai : l'heure, le journal (des textes), l'état de chaque carte, le bouton « Ouvrir à la main » (le même élément)
+    const log = q('[data-trlog]'),
+      lines = edTrialLines(s, run).map(x => `<li>${esc(x)}</li>`).join(''),
+      hand = q('[data-trhand]'),
+      first = run.ok ? run.drawers.find(d => !d.open) : null;
+    put(q('[data-trlabel]'), trAt(s, e.trial.min));
+    if (log && e.lastLog !== lines) log.innerHTML = e.lastLog = lines;
+    for (const d of run.ok ? run.drawers : []) {
+      const st = q(`[data-trstate="${d.rank}"]`);
+      put(st, trState(s, d));
+      if (st) st.dataset.open = d.open ? '1' : '';
+    }
+    if (hand) {
+      put(hand, first ? s.tt(EDTX.trHandBtn, {
+        n: first.rank
+      }) : s.tt(EDTX.trHandNone));
+      hand.disabled = !first;
+    }
+  }
   if (todo && e.lastTodo !== list) todo.innerHTML = e.lastTodo = list;
   // le libellé du bouton : ses nœuds de texte seulement (le bouton reste le même élément)
   if (btn && e.lastTodoBtn !== label) btn.innerHTML = e.lastTodoBtn = label;
@@ -1124,6 +1233,44 @@ function edClickDo(s, b) {
       return line && edOpen(s, 'dup', line);
     case 'edsave':
       return edSave(s);
+    case 'edtrial': { // « Essayer les clés » : le volet de l'essai prend la place de la fiche ; rien n'est écrit dans la mission
+      const e = s.ed,
+        m = MS.readMission(edDoc(e)),
+        full = TR.trialRun(m, {
+          untilMin: TR.TRIAL.maxMin
+        }),
+        // le curseur va jusqu'au posé (ou à la dernière heure de repli), dix minutes de plus
+        last = Math.max(full.landedMin ?? 120, ...(m?.drawers || []).map(d => Number.isFinite(d.key?.fallbackMin) ? d.key.fallbackMin : 0));
+      e.trial = {
+        on: true,
+        min: 0,
+        max: Math.min(TR.TRIAL.maxMin, Math.ceil(last) + 10),
+        speed: m?.cruiseSpeedKt != null ? String(m.cruiseSpeedKt) : '',
+        alt: m?.cruiseLevelFt != null ? String(m.cruiseLevelFt) : '',
+        declares: true,
+        hands: {}
+      };
+      return draw(s);
+    }
+    case 'edtrialoff':
+      s.ed.trial = null;
+      return draw(s);
+    case 'edtrreset':
+      if (s.ed.trial) Object.assign(s.ed.trial, {
+        min: 0,
+        hands: {}
+      });
+      return draw(s);
+    case 'edtrhand': { // « Ouvrir à la main » : le premier tiroir encore fermé, à la minute du curseur (le geste du pilote, dans l'essai)
+      const e = s.ed,
+        run = edTrialRun(s, edDoc(e)),
+        d = run?.ok ? run.drawers.find(x => !x.open) : null;
+      if (d && MS.DRAWER_IDS.includes(d.id)) e.trial.hands = {
+        ...e.trial.hands,
+        [d.id]: e.trial.min
+      };
+      return draw(s);
+    }
     case 'edsel': { // une carte du déroulé : la fiche du départ, ou celle d'un tiroir
       const id = String(b.dataset.sel || '');
       s.ed.sel = id !== 'start' && edDrawers(s.ed).some(r => r.id === id) ? id : 'start';

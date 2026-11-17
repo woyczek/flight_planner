@@ -3794,7 +3794,7 @@ def n78(c):
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
     c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
     kept = c.js(f"[...document.querySelectorAll('{E} [data-atflow] button, {_DW} [data-do=eddrgrp]')].map(b => !!b.__kept)")
-    c.ok(len(kept) == 9 and all(kept), kept, 'the cards and the three group titles are the same elements after the keystrokes (SOG-0449)')
+    c.ok(len(kept) == 10 and all(kept), kept, 'the cards, « Essayer les clés » and the three group titles are the same elements after the keystrokes (SOG-0449)')
     c.eq(norm(c.text(f'{_DW} [data-dline="texts"]')), norm(' · '.join(['Entrée nord', T('dwLineMsg', n=35).replace('(s)', 's'), T('dwLineBrief', n=43).replace('(s)', 's')])),
          'the line of « Les textes » follows the typing', what='the line of the texts')
     cards = c.js(_DW_CARDS)
@@ -4039,3 +4039,115 @@ def n90(c):
          'a mission without a route to follow: no trial, said; no hostile input throws; the mission read is not touched')
     c.eq(r['trapped'], ['data', True], 'a « mission » that is not the reader\'s: a key that throws when read gives « no trial » (never an exception); null stops of '
          'an arrival are skipped', what='inputs that are not the reader\'s')
+
+
+
+# an invented mission for the trial: XTST (45N 1E) → PT1 → TARGET → XTSU (44N 2E) at 120 kt and 2 000 ft; a zone around PT1 under 3 000 ft,
+# an object near the target (the same as the pure case N90, as a file)
+_TRIAL_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Mission d'essai
+summary: Une recherche inventée.
+cruise_speed_kt: 120
+cruise_level: 2000 ft
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+target: { id: TARGET, name: Cible d'essai, lat: 44.6, lon: 1.4 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.2 }
+  - { id: PT2, name: Point deux, lat: 44.4, lon: 1.6 }
+zones:
+  - { id: ZONE-1, name: Secteur nord, kind: search, centre: { lat: 44.8, lon: 1.2 }, radius_km: 5, ceiling_ft: 3000 }
+objects:
+  - { id: OBJ-1, kind: person, name: Naufragé, lat: 44.6, lon: 1.42, detection_range_nm: 1, altitude_ft: 0, detection_height_ft: 2500 }
+route_order: [ORIGIN, PT1, TARGET, DESTINATION]
+phases:
+  - { id: B, title: Zone, trigger_zone: ZONE-1, fallback_delay_min: 60 }
+  - { id: C, title: Objet, trigger_object: OBJ-1, fallback_delay_min: 90, route_order: [PT2] }
+  - { id: D, title: Retour, trigger_condition: { kind: arrival, point: DESTINATION, radius_nm: 1, speed_max_kt: 30, require_on_ground: true, required_points: [PT2] } }
+  - { id: E, title: Geste }
+teams:
+  - { name: ALPHA1, service: Service d'essai, type: H135, role: recherche }
+"""
+_TRIAL_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _TRIAL_MISSION]]
+_TR = f'{E} [data-trial]'
+_TR_SET = f"""(v) => {{ const r = document.querySelector('{_TR} [data-f=min]'); r.value = String(v); r.dispatchEvent(new Event('input', {{ bubbles: true }})); return r.value }}"""
+_TR_STATES = f"[...document.querySelectorAll('{E} [data-atflow] [data-trstate]')].map(x => [x.dataset.trstate, x.dataset.open, x.textContent.trim()])"
+_TR_LOG = f"[...document.querySelectorAll('{_TR} [data-trlog] li')].map(x => x.textContent.trim())"
+
+
+@case('N91', 'Missions › the workshop, « Essayer les clés »: a button of the unfolding puts the trial pane in the place of the sheet, beside '
+      'the map (never a window over it) — the time on a slider, the altitude and the speed of the aircraft of the trial, « le pilote dit '
+      'Objet en vue », a log in plain sentences; the sketch shows the aircraft and its trail, each card of the unfolding says « ouvert à '
+      'H + 6 min » or « fermé »; the slider updates everything in place (no button is redrawn); « Ouvrir à la main » plays the pilot\'s '
+      'gesture; on a phone the map unfolds by itself; closing the trial brings the sheet back and nothing was written in the mission',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P4 (modules/missions/EDITOR.md § 4 and § 7 decies; the mock-up modules/missions/maquette/atelier_essai_*.png; '
+      'the same judgement as the flight: modules/missions/editor_trial.js on frame/lib/crossing.js, pure case N90; SOG-0449)')
+def n91(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    c.ok(c.count(_TR) == 0 and norm(c.text(f'{E} [data-atflow] [data-trbtn]')) == T('trBtn'), c.text(f'{E} [data-atflow] [data-trbtn]'),
+         '« Essayer les clés » is a button of the unfolding; no trial at the opening')
+    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
+    c.ok(c.count(f'{E} [data-steps]') == 0 and c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid', 'not beside',
+         'the pane takes the place of the sheet, beside the map and the unfolding')
+    c.eq(c.js(f"[...document.querySelectorAll('{_TR} [data-k=edtr]')].map(x => [x.dataset.f, x.type === 'checkbox' ? x.checked : x.value])"),
+         [['min', '0'], ['alt', '2000'], ['speed', '120'], ['declares', True]], 'the time at zero, the altitude and the speed of the mission, the pilot declares', what='the fields')
+    c.eq([norm(x) for x in c.js(_TR_LOG)], [norm(f"{T('trAt', m=0)} — {T('trStart', n=4).replace('(s)', 's')}")], 'the log starts at the departure', what='the log at zero')
+    c.eq(c.js(_TR_STATES), [[str(n), '', T('trClosed')] for n in (1, 2, 3, 4)], 'every card says « fermé »', what='the cards at zero')
+    # the slider: everything follows in place, no button is redrawn
+    c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    c.eq(c.js(_TR_SET, 10), '10', 'the slider at ten minutes', what='the slider')
+    kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
+    c.ok(len(kept) >= 10 and all(kept), kept, 'no button was redrawn by the slider (SOG-0449)')
+    c.eq([norm(c.text(f'{_TR} [data-trlabel]')), c.js(_TR_STATES)[0], norm(c.js(_TR_LOG)[1])],
+         [T('trAt', m=10), ['1', '1', T('trOpenAt', m=6)], norm(f"{T('trAt', m=6)} — {T('trOpen_zone', n=1)}")],
+         'ten minutes later: the zone was entered at H + 6 min, the card of drawer 1 says so, the log too', what='minute 10')
+    c.ok(c.count(f'{E} [data-atmapbody] [data-trplane]') == 1 and c.count(f'{E} [data-atmapbody] [data-trtrail]') == 1, 'no aircraft', 'the sketch shows the aircraft and its trail')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N91_1280_trial.png')
+    # the whole flight: the object (the aircraft takes the onward route), the arrival landed after its stop; the last drawer is the pilot's
+    c.js(_TR_SET, 40)
+    log = c.js(_TR_LOG)
+    c.eq([x[1:] for x in c.js(_TR_STATES)], [['1', T('trOpenAt', m=6)], ['1', T('trOpenAt', m=14)], ['1', T('trOpenAt', m=37)], ['', T('trClosed')]],
+         'at forty minutes: three drawers open, the fourth is the pilot\'s gesture', what='the cards at minute 40')
+    c.ok(all(any(norm(t) in norm(x) for x in log) for t in (T('trOpen_object', n=2), T('trEv_route', n=2), T('trEv_landed'), T('trOpen_arrival', n=3), T('trEv_hand', n=4))), log,
+         'the log in sentences: the object found, the onward route taken, landed, the arrival, « à ouvrir à la main »')
+    c.eq(norm(c.text(f'{_TR} [data-trhand]')), T('trHandBtn', n=4), '« Ouvrir à la main le tiroir 4 »', what='the gesture button')
+    c.tap(f'{_TR} [data-trhand]')
+    c.until(f"document.querySelector('{_TR} [data-trhand]').disabled", what='every drawer open')
+    c.eq(c.js(_TR_STATES)[3][1:], ['1', T('trOpenAt', m=40)], 'the gesture opens it at the minute of the slider', what='drawer 4')
+    # a datum that is missing never satisfies a key; an object not declared stays closed
+    c.tap(f'{_TR} [data-do="edtrreset"]')
+    c.page.fill(f'{_TR} [data-f=alt]', '')
+    c.tap(f'{_TR} [data-f=declares]')
+    c.js(_TR_SET, 20)
+    log = c.js(_TR_LOG)
+    c.ok(any(norm(T('trUnknown_alt', n=1)) in norm(x) for x in log) and c.js(_TR_STATES)[0][1] == '', log,
+         'without an altitude the zone under a ceiling is UNKNOWN: said, and the drawer stays closed')
+    c.page.fill(f'{_TR} [data-f=alt]', '2000')
+    c.js(_TR_SET, 20)
+    c.ok(any(norm(T('trEv_near', n=2)) in norm(x) for x in c.js(_TR_LOG)) and c.js(_TR_STATES)[1][1] == '', c.js(_TR_LOG),
+         'within range but not declared: « il reste fermé tant que le pilote ne dit pas Objet en vue »')
+    # on a phone: the map unfolds by itself, the pane is under the unfolding
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display") != 'none', 'folded', 'on a phone the map unfolds by itself during the trial')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_TR}').scrollIntoView({{block: 'start'}})")
+    c.shot('N91_390_trial.png')
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N91_390_trial_map.png')
+    # closing the trial: the sheet is back, nothing was written
+    c.tap(f'{_TR} [data-do="edtrialoff"]')
+    c.until(f"!document.querySelector('{_TR}') && !!document.querySelector('{E} [data-steps]')", what='the sheet back')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(400)
+    c.eq(c.js(_TEXT_OF, path), _TRIAL_MISSION, 'the trial wrote nothing in the mission: the file is the same', what='the file')
+    c.js(_REG_CLEAR)
