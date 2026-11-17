@@ -2832,7 +2832,7 @@ def k30(c):
     block = js[js.index('const READ_REASONS = {'):]
     block = block[:block.index('};')]
     keys = re.findall(r"^    '?([a-z-]+)'?: \[", block, re.M)
-    c.eq(sorted(keys), sorted(codes), 'AeroCatalogue.READ_REASONS has exactly the page codes and the doubt codes of proc_geometry (the test page checks the four languages)', what='READ_REASONS keys')
+    c.eq(sorted(keys), sorted(codes + ['other', 'uncheckable']), 'AeroCatalogue.READ_REASONS has exactly the page codes and the doubt codes of proc_geometry, plus « other » (the fallback of a doubt without a code) and « uncheckable » (the warning: never a doubt, served so that it does not reach the screen raw); the test page checks the four languages', what='READ_REASONS keys')
 
 
 @case('K31', 'Geometry tolerance falls back to the layout; a point missing from a Belgian list is a doubt, not a refusal', 'K', static=True,

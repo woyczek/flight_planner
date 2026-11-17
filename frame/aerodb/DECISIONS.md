@@ -3541,3 +3541,7 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Measured**: on the three reference routes EDLO1003 is the only rule that changes decision (EGGW → LQSA: ERREUR count 4 → 5 on the typed route); EGGW → KJFK and EDDF → LFMN unchanged (the same 3 infractions decided on EDDF → LFMN). Segment rules with an airway, from and to: 2 131 of the 6 947 active rows of annex 2B; on the route of EGGW → LQSA, 14 apply, 30 are on the airway outside their segment, 11 are uncertain (decided only if both readings agree), 188 are on other airways.
 - **Left**: the search blocks (`_blocks`, kind `segment`) stay exact-leg; the retries repair it. The direction of an airway whose file gives none is read both ways: against-direction legs stay « to be interpreted ».
 
+## 17 November 2026 — SOG-0433 follow-up: the two codes of the closed list that had no phrase
+
+- **Asked** (Features SOG): `NONE_READ_CODES` of `aerodb.js` serves `uncheckable`, `no-table` and `other`, and `READ_REASONS` had no phrase for them: the page showed `(no-table ×2)`. `no-table` came with the lot of Procedures (`4475c43d6`); this entry adds `other` (`proc_geometry` gives `other` to a procedure in doubt without a code) and `uncheckable` (a warning, never a doubt: it should not leave `reasons`, covered anyway) in the four languages, one source for every page; the bench lists them (the 8 page codes, the 8 doubt codes, the warning).
+

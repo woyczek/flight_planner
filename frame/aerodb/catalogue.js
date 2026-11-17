@@ -1945,7 +1945,13 @@
     unread: ['lignes de la table non lues', 'table rows not read', 'Tabellenzeilen nicht gelesen', 'filas de la tabla sin leer'],
     'rf-arc': ['branche en arc RF : tracé en cours', 'RF arc leg: drawing in progress', 'RF-Bogen: Darstellung in Arbeit',
       'tramo en arco RF: trazado en curso'
-    ]
+    ],
+    other: ['autre motif', 'other reason', 'anderer Grund',
+      'otro motivo'
+    ], // SOG-0433 : le repli d'une procédure douteuse sans code (proc_geometry)
+    uncheckable: ['géométrie non contrôlable', 'geometry not checkable', 'Geometrie nicht prüfbar',
+      'geometría no comprobable'
+    ] // un AVERTISSEMENT (jamais un doute), servi pour qu'un résultat qui le porte ne sorte pas brut
   };
   /** Version du format de la base publiée que les constructeurs écrivent (`parserVersion` des meta.json) : la valeur de `VERSION` de
    *  shared/sia_base.js, DOIT la suivre (le cas K21 lit les deux fichiers et compare). Le module Données la montre à côté de celle d'une zone
