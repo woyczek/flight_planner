@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 266,
+  "tests": 267,
   "verdicts": 204
  },
  "apps": [
@@ -4013,6 +4013,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T10:13:37Z"
+  },
+  {
+   "id": "SOG-0405",
+   "app": "pilote",
+   "title": {
+    "fr": "Dossier de développement : les schémas de fonctionnement de la suite (cadre, aerodb, moteur de route et matrice…) dans la documentation",
+    "en": "Developer documentation: the diagrams of how the suite works (frame, aerodb, route engine and matrix…) in the documentation",
+    "de": "Entwicklerdokumentation: die Funktionsschemata der Suite (Rahmen, aerodb, Routen-Engine und Matrix…) in der Dokumentation",
+    "es": "Documentación de desarrollo: los esquemas de funcionamiento de la suite (marco, aerodb, motor de rutas y matriz…) en la documentación"
+   },
+   "test": "Dossier de développement. (1) Ouvre docs/technique/V3_ARCHITECTURE.md dans le dépôt (sur l'hébergeur ou dans un éditeur qui rend le Markdown) : cinq sections, chacune avec son schéma — la suite, le cadre, aerodb, le moteur de route et la matrice, le circuit d'une livraison. (2) Chaque schéma se lit en clair et en sombre, cinq à huit boîtes. (3) Le quatrième est celui du chat (Carburant et la matrice parlent au même moteur). (4) La fin du document liste ce qu'aucun document existant ne confirme. Dis ce qui manque ou ce qui est faux, et si tu veux les mêmes schémas en français dans l'aide de l'appli.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T10:17:08Z"
   }
  ],
  "decisions": [
