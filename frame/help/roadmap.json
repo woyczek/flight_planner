@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6a70d69",
+  "organisation": "188599f",
   "fiches": 396,
   "untranslated": 0,
   "priorities": 374,
@@ -1604,11 +1604,12 @@
     {
      "id": "SOG-0392",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Itinéraires proposés, en vue carte : la liste ne répond toujours pas au clic, seul le tracé répond (retour de SOG-0348)",
      "en": "Proposed itineraries, map view: the list still does not answer a click, only the drawn route does (SOG-0348 again)",
      "de": "Vorgeschlagene Routen, Kartenansicht: die Liste reagiert weiterhin nicht auf Klick, nur die gezeichnete Route (erneut SOG-0348)",
-     "es": "Itinerarios propuestos, vista de mapa: la lista sigue sin responder al clic, solo el trazado responde (de nuevo SOG-0348)"
+     "es": "Itinerarios propuestos, vista de mapa: la lista sigue sin responder al clic, solo el trazado responde (de nuevo SOG-0348)",
+     "test": true
     }
    ]
   },
