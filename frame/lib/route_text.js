@@ -186,10 +186,20 @@ export function icaoCoord(lat, lon) {
 }
 
 /** Écriture d'un point dans le texte : son identifiant (coordonnées OACI s'il n'en a pas d'utilisable), « /Fnnn » s'il
- *  porte un niveau. */
+ *  porte un niveau. SOG-0408 : un point NAT écrit comme dans le message (« 51/20 », « 5030/30 », dans les bornes de l'Atlantique nord de
+ *  tokenize) garde son écriture une fois la route résolue ; avec un niveau, ses coordonnées OACI (« 51/20/F280 » ne se relirait pas). */
+const natSlashKept = (id, p) => {
+  const m = NAT_SLASH.exec(id);
+  if (!m || p?.alt_ft > 0 || (m[2] && +m[2] >= 60)) return false;
+  const lat = +m[1] + (m[2] ? +m[2] / 60 : 0),
+    lon = +m[3];
+  return lat >= 20 && lat <= 75 && lon >= 5 && lon <= 80;
+};
 const pointWord = p => {
   const id = String(p?.id || '').toUpperCase(),
-    name = NAME.test(id) || ICAO_LL.test(id) ? id : Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon) ? icaoCoord(+p.lat, +p.lon) : id;
+    name = NAME.test(id) || ICAO_LL.test(id) || natSlashKept(id, p) ? id : Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon) ?
+    icaoCoord(+p
+      .lat, +p.lon) : id;
   return `${name}${p?.alt_ft > 0 ? `/F${String(Math.round(p.alt_ft / 100)).padStart(3, '0')}` : ''}`;
 };
 

@@ -5462,8 +5462,11 @@ def f216(c):
     c.page.keyboard.press('Tab')
     c.settle()
     c.eq(c.js(f"[...document.querySelectorAll('{FUEL} [data-unres-pt]')].map(e => e.dataset.unresPt)"), [], 'no unknown point', what='unknown points')
-    c.ok('51/20' in (c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"),
-         'the text keeps « 51/20 »')
+    # SOG-0408: read AFTER the resolution — the text written again from the resolved points (its « DCT » set between the two points); read
+    # before it, the case passed alone and failed under load
+    c.until(f"(document.querySelector('{FUEL} [data-k=rtext]')?.value || '').includes(' DCT ')", timeout=12000, what='the text normalised')
+    v = c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''
+    c.ok('51/20' in v and '5030/30' in v and '5100N' not in v, v, 'once resolved, the text keeps « 51/20 » and « 5030/30 »')
 
 
 _BPS_JS = r"""() => { const out = new Set(); const walk = rules => { for (const r of rules) { if (r.conditionText && /min-width/.test(r.conditionText) && r.constructor.name.includes('Container')) { const m = /min-width:\s*(\d+)px/.exec(r.conditionText); if (m) out.add(+m[1]); } if (r.cssRules) walk(r.cssRules); } };

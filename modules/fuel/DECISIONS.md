@@ -2234,3 +2234,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   write of the flight then finds no request to check (`altsMoreCheck`) and asks nothing. A changed input typed by hand during the
   search still cancels and asks the head route again (SOG-0296 c, F218). F248 (red on the parent: a second « compute » posted after
   the take).
+- **17 Nov 2026 — SOG-0408, « 51/20 » kept once the route is resolved** (my reading of F216, unstable under load: it read the Route
+  field just after Tab; the text written again from the resolved points — `textFromPoints` → `pointWord` — wrote a NAT point « 51/20 »
+  as « 5100N02000W », its name failing both `NAME` and `ICAO_LL`; read before that rewrite the case passed alone, after it under load).
+  `pointWord` keeps the writing of the NAT message for a point inside tokenize's North Atlantic bounds without a level; with a level,
+  its ICAO coordinates (« 51/20/F280 » would not read back). F216 now waits for the normalised text (its « DCT ») before reading: red
+  on the parent, deterministic.
