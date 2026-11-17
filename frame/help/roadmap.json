@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "26ddd15",
-  "fiches": 403,
+  "organisation": "7d164d2",
+  "fiches": 404,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2189,6 +2189,27 @@
      "de": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
      "es": "Swiss and Metro designs: the title's plane in red, the contrast colour taken for the accent colour",
      "rank": 92
+    }
+   ]
+  },
+  {
+   "id": "pilote-documentation-technique",
+   "app": "pilote",
+   "label": {
+    "fr": "Documentation technique",
+    "en": "Documentation technique",
+    "de": "Documentation technique",
+    "es": "Documentation technique"
+   },
+   "items": [
+    {
+     "id": "SOG-0405",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Dossier de développement : les schémas de fonctionnement de la suite (cadre, aerodb, moteur de route et matrice…) dans la documentation",
+     "en": "Developer documentation: the diagrams of how the suite works (frame, aerodb, route engine and matrix…) in the documentation",
+     "de": "Entwicklerdokumentation: die Funktionsschemata der Suite (Rahmen, aerodb, Routen-Engine und Matrix…) in der Dokumentation",
+     "es": "Documentación de desarrollo: los esquemas de funcionamiento de la suite (marco, aerodb, motor de rutas y matriz…) en la documentación"
     }
    ]
   },
