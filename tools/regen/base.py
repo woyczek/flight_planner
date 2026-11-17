@@ -52,6 +52,7 @@ ROOT = os.path.dirname(TOOLS)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import regen_jobs  # noqa: E402  (le socle : commit_outputs, Job)
+import low_priority  # noqa: E402  (la priorité BASSE des sous-processus lourds, décidée en un seul endroit : SOG-0437)
 import aero_cycles  # noqa: E402  (le cycle AIRAC de chaque source datée, et d'une zone par sa source)
 import upload_cleanup  # noqa: E402  (les dépôts à la main devenus inutiles, retirés à la fin d'une construction réussie de leur zone : SOG-0239)
 
@@ -209,10 +210,10 @@ def launch_browser(cmd, **kw):
     kw.setdefault('stdin', subprocess.DEVNULL)
     kw.setdefault('env', regen_jobs.child_env())
     if sys.platform.startswith('win'):
-        proc = subprocess.Popen(cmd, creationflags=0x08000000 | 0x00000004, **kw)       # CREATE_NO_WINDOW | CREATE_SUSPENDED
+        proc = subprocess.Popen(cmd, **low_priority.popen_args({**kw, 'creationflags': 0x08000000 | 0x00000004}))       # CREATE_NO_WINDOW | CREATE_SUSPENDED, et la priorité BASSE (SOG-0437)
         proc.job = _bind_to_launcher(proc)
     else:
-        proc = subprocess.Popen(cmd, start_new_session=True, **kw)
+        proc = subprocess.Popen(cmd, **low_priority.popen_args({**kw, 'start_new_session': True}))
         proc.job = 0
     return proc
 

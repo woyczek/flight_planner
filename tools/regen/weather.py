@@ -23,6 +23,7 @@ TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import regen_jobs  # noqa: E402  (le socle : inside, child_env)
+import low_priority  # noqa: E402  (la priorité BASSE des sous-processus lourds, décidée en un seul endroit : SOG-0437)
 
 SCRIPT = os.path.join(TOOLS, 'build_world_weather.py')
 DEST = ('weather', 'world')
@@ -240,7 +241,7 @@ def run(job, args, ctx):
         cmd += ['--work', work_root]      # SOG-0429 : chaque échéance lue est gardée dès qu'elle l'est ; la construction suivante du même run la reprend      # la publication d'avant : même run de GFS → rien n'est redemandé à la NOAA
     job.step('synoptique monde : lecture de GFS (NOAA)', 0, 1, 'étapes')
     try:
-        proc = job.track(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), cwd=work))      # déclaré : un travail libéré (SOG-0245) l'arrête
+        proc = job.track(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace', env=regen_jobs.child_env(), cwd=work, **low_priority.popen_args()))      # déclaré : un travail libéré (SOG-0245) l'arrête ; priorité BASSE (SOG-0437)
         lines, seen, resumed, end = [], [], [], t0 + ctx.get('timeout', TIMEOUT)
         reader = threading.Thread(target=_read_lines, args=(proc, job, lines, seen, resumed), daemon=True)      # l'avancement (« @etape k/n », une ligne par échéance) monte au fur et à mesure ; lire la sortie en continu évite aussi qu'un tube plein ne fige l'outil
         reader.start()

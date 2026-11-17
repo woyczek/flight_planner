@@ -14677,3 +14677,59 @@ def k427(c):
     c.ok(not any(0x80 <= ord(ch) <= 0x9f for ch in core.normalise(' '.join(f'/MT{n}' for n in range(32, 256)))), 'no control character 0x80-0x9F comes out of the whole range 32-255', 'no C1')
     src = (ROOT / 'tools' / 'regen' / 'vfr.py').read_text(encoding='utf-8')
     c.eq(('import pypdf' in src, 'from pypdf' in src, 'pdf_guard.read_many' in src), (False, False, True), 'the verb vfr/build no longer imports pypdf: it only reads through pdf_guard (by packs)', what='no import')
+
+
+@case('K437', 'Launcher, SOG-0437: every HEAVY child of the launcher runs at LOW priority, decided in ONE place (tools/low_priority.py): Windows IDLE_PRIORITY_CLASS at creation, nice 19 elsewhere; the OCR is bounded to half the cores (cpu_budget, threads_env); no other file of tools/ sets a priority',
+      'K', static=True,
+      rule='SOG-0437 (the ergonomics session, 17 Nov 2026: the heavy children of the launcher (pypdf, the headless browser of the builds, the world weather, the aircraft scripts) ran at NORMAL priority and the OCR takes every core, on a workstation shared with X-Plane and the browser). '
+           'Measured (24 cores): a job on every core made the timer of a normal-priority probe late by 32 ms (p95) and 71 ms (max) at normal priority, 0.5 ms and 6 ms at low priority; the same job took 10.6 s against 10.3 s; on an idle machine 11.3 s against 10.8 s; beside a half-busy machine 16.3 s against 17.1 s')
+def k437(c):
+    import importlib
+    import json
+    import os
+    import re
+    import subprocess
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    LP = importlib.import_module('low_priority')
+    G = importlib.import_module('pdf_guard')
+    # the arguments: what is given is kept (copied), the priority is added; a preexec_fn already there is called first (POSIX)
+    given = {'cwd': 'x', 'creationflags': 0x08000000, 'stdin': None}
+    got = LP.popen_args(given)
+    c.ok(given == {'cwd': 'x', 'creationflags': 0x08000000, 'stdin': None} and got['cwd'] == 'x' and got['stdin'] is None, str(got), 'popen_args copies what it is given and keeps it')
+    if os.name == 'nt':
+        c.eq((got['creationflags'] & 0x08000000, got['creationflags'] & 0x40, 'preexec_fn' in got), (0x08000000, 0x40, False), 'Windows: the creation flags it was given are kept and IDLE_PRIORITY_CLASS (0x40) is added', what='flags')
+        c.eq(LP.popen_args()['creationflags'], 0x40, 'with nothing given: only the low priority', what='alone')
+    else:
+        order = []
+        mine = LP.popen_args({'preexec_fn': lambda: order.append('before')})
+        c.ok(callable(mine['preexec_fn']) and 'creationflags' not in mine, str(mine), 'elsewhere: a preexec_fn that lowers `nice` and calls the one already there first')
+    # a REAL child: it reports its own priority (Windows: the priority class of the process; elsewhere: its nice), asked through the reader of pdf_guard (the same Popen) and by a plain Popen
+    script = Path(tempfile.mkdtemp(prefix='k437-')) / 'who.py'
+    script.write_text("import json, os, sys\nif os.name == 'nt':\n    import ctypes\n    k = ctypes.windll.kernel32\n    k.GetCurrentProcess.restype = ctypes.c_void_p\n    k.GetPriorityClass.argtypes = [ctypes.c_void_p]\n    p = int(k.GetPriorityClass(k.GetCurrentProcess()))\nelse:\n    p = os.nice(0)\njson.dump({'prio': p}, open(sys.argv[1], 'w'))\n", encoding='utf-8')
+    try:
+        low = G._run_child(lambda out: [out], 60, G.MEMORY_LIMIT, str(script))['prio']
+        plain_out = script.parent / 'plain.json'
+        subprocess.run([sys.executable, '-I', str(script), str(plain_out)], check=True, timeout=60)
+        plain = json.loads(plain_out.read_text(encoding='utf-8'))['prio']
+    finally:
+        for f in script.parent.glob('*'):
+            f.unlink()
+        script.parent.rmdir()
+    if os.name == 'nt':
+        c.eq((low, plain), (0x40, 0x20), 'the child of pdf_guard runs at IDLE_PRIORITY_CLASS (0x40), an ordinary child at NORMAL (0x20)', what='real child')
+    else:
+        c.ok(low == 19 and plain < 19, f'{low} {plain}', 'the child of pdf_guard runs at nice 19, an ordinary child does not')
+    # the OCR: half the cores, at least one; the libraries are told
+    cores = os.cpu_count() or 2
+    env = LP.threads_env({'PATH': 'p'})
+    c.eq((LP.cpu_budget(), LP.cpu_budget() <= max(1, cores // 2), sorted({env[k] for k in LP.THREAD_VARS}), env['PATH']), (max(1, cores // 2), True, [str(max(1, cores // 2))], 'p'), 'the OCR budget is the half of the cores (one at least), and OpenMP, OpenBLAS, MKL, ONNX Runtime are told; the environment given is not changed', what='budget')
+    # ONE decision: no other file of tools/ sets a priority; every heavy site goes through popen_args
+    tools = ROOT / 'tools'
+    others = sorted(str(p.relative_to(tools)) for p in tools.rglob('*.py') if p.name not in ('low_priority.py', 'route_matrix.py') and '__pycache__' not in p.parts
+                    and re.search(r'IDLE_PRIORITY_CLASS|BELOW_NORMAL_PRIORITY|SetPriorityClass|os\.nice\(|0x00004000|0x00000040', p.read_text(encoding='utf-8', errors='replace')))
+    c.eq(others, [], 'no other file of tools/ sets a priority of its own: the decision is in tools/low_priority.py only (route_matrix.py, a stand-alone tool of AeroDB that lowers itself, is the one exception to migrate to low_priority.lower_self)', what='one place')
+    sites = {s: 'low_priority.popen_args' in (tools / s).read_text(encoding='utf-8') for s in ('pdf_guard.py', 'regen/base.py', 'regen/aircraft.py', 'regen/weather.py')}
+    c.eq(sites, {'pdf_guard.py': True, 'regen/base.py': True, 'regen/aircraft.py': True, 'regen/weather.py': True}, 'the four heavy sites (the PDF reader, the headless browser of the builds, the aircraft scripts, the world weather) start their child by popen_args', what='sites')

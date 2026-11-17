@@ -27,6 +27,7 @@ ROOT = os.path.dirname(TOOLS)
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import regen_jobs  # noqa: E402  (le socle : environnement réduit des sous-processus, règle commune des purges)
+import low_priority  # noqa: E402  (la priorité BASSE des sous-processus lourds, décidée en un seul endroit : SOG-0437)
 ADB = os.path.join(ROOT, 'AircraftDB')
 SCRIPT = os.path.join(ADB, 'update_aircraft_db.py')
 OUTPUTS = ('aircraft_db.js', 'aircraft_perf.js')
@@ -81,7 +82,7 @@ def _run(job, cmd):
     """Le script en sous-processus, dans AircraftDB/ ; chaque ligne au journal ; l'annulation l'arrête. Rend le code de sortie (None : annulé)."""
     # environnement réduit (regen_jobs.child_env) : le script ne voit pas les identifiants du lanceur
     p = subprocess.Popen(cmd, cwd=ADB, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=regen_jobs.child_env(), text=True, encoding='utf-8',
-                         errors='replace')
+                         errors='replace', **low_priority.popen_args())      # priorité BASSE (SOG-0437)
     try:
         for line in p.stdout:
             job.log(line.rstrip())

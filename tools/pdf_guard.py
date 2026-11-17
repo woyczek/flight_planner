@@ -21,6 +21,7 @@ import sys
 import tempfile
 import time
 
+import low_priority
 import optional_libs
 
 try:
@@ -245,6 +246,7 @@ def _run_child(argv_of, timeout, memory, child=None, max_out=MAX_OUT_BYTES):
             def limit():
                 resource.setrlimit(resource.RLIMIT_AS, (int(memory), int(memory)))
             kw['preexec_fn'] = limit
+        kw = low_priority.popen_args(kw)      # SOG-0437 : un travail de fond ne prend jamais le pas sur le simulateur ni sur l'écran : priorité BASSE, décidée dans tools/low_priority.py
         proc = subprocess.Popen([sys.executable, '-I', child or _CHILD, *argv_of(out)], cwd=tmp, env=_env(),
                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kw)
         job = _jobify(proc, memory)
