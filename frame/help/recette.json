@@ -4417,7 +4417,7 @@
    "fiche": "SOG-0434",
    "app": "pilote",
    "question": "Procédures : autoriser la lecture d'une page réelle de l'eAIP du SIA pour trouver la date d'effet d'un amendement ?",
-   "context": "Le départ BUGAV 2S de Dinard vient d'une page de l'eAIP qui ne porte qu'un numéro d'amendement (06/26), sans date ; Eurocontrol ne le connaît pas, sans doute parce qu'il n'est pas encore en vigueur. Aucune des 52 982 procédures de la base ne porte de date d'effet. Pour le SIA, la date se lit dans l'index de l'eAIP : il faut une lecture sur le réseau réel (site public officiel, par le verbe que le lanceur a déjà), que je n'accorde pas sans toi.",
+   "context": "Le départ BUGAV 2S de Dinard vient d'une page de l'eAIP qui ne porte qu'un numéro d'amendement (06/26), sans date ; Eurocontrol ne le connaît pas, sans doute parce qu'il n'est pas encore en vigueur. (Correction du 17/11 à 17 h 46 : la plupart des procédures portent une date, mais celle d'une page du SIA est la date de son dernier amendement, pas une date d'effet.) Pour le SIA, la date se lit dans l'index de l'eAIP : il faut une lecture sur le réseau réel (site public officiel, par le verbe que le lanceur a déjà), que je n'accorde pas sans toi.",
    "options": [
     "Oui : une lecture de l'index de l'eAIP du SIA, par la session Procédures, pour établir la règle",
     "Non : pas de lecture réseau ; le SIA reste sans date d'effet pour l'instant",
