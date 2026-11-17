@@ -20,6 +20,10 @@ import {
   load
 } from './screen.js';
 import {
+  worldEnd,
+  worldView
+} from './world.js';
+import {
   forgetReads
 } from './countries.js';
 import {
@@ -86,6 +90,8 @@ export function onView(me, v, ctrl) {
   if (S !== me || !v) return;
   if (S.busy && v.id === S.busy.running.id) S.busy.running = M.mergeRunning(S.busy.running, M.runningOf(
     v)); // la carte de l'opération en cours suit ses signes de vie
+  if (M.isWorldView(v)) return worldView(me,
+    v); // SOG-0429 : le synoptique monde est retrouvé par SA ligne, pas pris pour « une autre opération »
   const op = M.viewOp(v);
   if (!op) {
     S.other = v;
@@ -437,6 +443,8 @@ export async function settle(me, r, live = true) {
       job: r.job
     }, live);
   }
+  if (r.state && r.state !== 'running' && M.isWorldView(r)) return worldEnd(me,
+    r); // SOG-0429 : la fin du synoptique monde, retrouvée au retour de la page
   if (r.state && r.state !== 'running') {
     if (M.viewOp(r) || S.run) return endRun(me, r, live);
     S.other = null; // la fin d'une autre opération : le bouton redevient actif

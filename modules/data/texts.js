@@ -861,6 +861,13 @@ export const TX = {
     kept: ['Le run était déjà publié : réutilisé.', 'The run was already published: reused.',
       'Der Lauf war schon veröffentlicht: wiederverwendet.', 'La pasada ya estaba publicada: reutilizada.'
     ],
+    // SOG-0429 : une construction interrompue garde ce qu'elle a lu ; la suivante, du même run, le reprend et le dit
+    resumed: ['Reprise : {k} échéances sur {n} déjà là, pas relues.', 'Resumed: {k} forecast times of {n} were already here, not read again.',
+      'Fortgesetzt: {k} von {n} Zeitpunkten waren schon da, nicht erneut gelesen.', 'Reanudado: {k} de {n} instantes ya estaban, no se leen de nuevo.'
+    ],
+    partial: ['interrompue : {k} échéances sur {n} gardées, la prochaine construction les reprend', 'interrupted: {k} forecast times of {n} kept, the next build resumes them',
+      'unterbrochen: {k} von {n} Zeitpunkten gespeichert, der nächste Aufbau setzt fort', 'interrumpida: {k} de {n} instantes guardados, la próxima construcción los reanuda'
+    ],
     why: {
       'no-run': ['Aucun run publié ou NOAA injoignable : l’ancienne publication reste.',
         'No run published or NOAA unreachable: the old publication stays.',

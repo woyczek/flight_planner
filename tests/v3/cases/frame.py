@@ -5266,6 +5266,49 @@ def a255(c):
     c.check_errors()
 
 
+@case('A256', 'Data: the world synoptic (GFS) build that the launcher keeps running is found again when the page comes back — progress, what the launcher took back, its end; an interruption says what it kept (SOG-0429); four languages', 'A',
+      tags=('data',), designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0429 (the user, 17 Nov 2026: « si on quitte la page pendant une reconstruction météo GFS, tout s\'arrête ? »): measured, the launcher\'s job goes on when the page leaves (the follow detaches, nothing cancels it) but the Data page never found it again — only `status` was read, the button was refused, no progress, no end; the row now follows the running weather/world job at the mount (launcher.resume) like the other sets, shows the resume the launcher said (« reprise : 14 échéances sur 25 déjà là ») and the end, and an interrupted build says what it kept')
+def a256(c):
+    import datetime
+    import importlib
+    D = importlib.import_module('cases.data')
+    lang = c.lang
+    WT = lambda key: D._trow(key, lang, after='  world: {')
+    sentence = lambda key, k, n: WT(key).replace('{k}', str(k)).replace('{n}', str(n))
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    run = now.replace(hour=6, minute=0, second=0).isoformat().replace('+00:00', 'Z')
+    world = {'set': 'weather', 'verb': 'world'}
+    running = {**D._view('running', step='synoptique monde : échéance 15 sur 25', done=15, total=25, jid='jw', unit='étapes'), **world, 'log': ['reprise : 14 échéances sur 25 déjà là']}
+    done = {**D._view('done', step='Terminé', jid='jw', result={'ok': True, 'exists': True, 'run': run, 'built': now.isoformat().replace('+00:00', 'Z'), 'steps': 25, 'files': 51, 'bytes': 17100000, 'resumed': 14, 'of': 25, 'seconds': 41}), **world}
+    # the launcher goes on with a build the page does not know: the running job is what GET regen/job answers
+    st = D._launcher(c, [running] * 6 + [done], last=running, verbs=D._VERBS + ['weather/world'])
+    cfg, _ = D._fixture()
+    D._open(c, cfg)
+    D._all_open(c)
+    c.until("!!document.querySelector('[data-set=world][data-phase=running]')", timeout=15000, what='the row finds the running build')
+    c.js("document.querySelector('[data-set=world]').open = true")
+    c.until("!!document.querySelector('[data-world-running] [data-world-resumed]')", timeout=8000, what='the resume the launcher said')
+    c.eq(norm(c.text('[data-world-resumed]')), norm(sentence('resumed', 14, 25)), 'what the launcher took back, in the language of the run', what='resumed running')
+    c.ok('15' in c.text('[data-world-running] > span'), c.text('[data-world-running] > span'), 'the progress of the build that went on (step 15 of 25)')
+    c.eq(c.js("document.querySelector('[data-verb=world-build]').disabled"), True, 'the button stays grey while it runs (one build at a time)', what='grey')
+    c.until('!!document.querySelector("[data-world-result][data-result=done]")', timeout=30000, what='the end of the build the page found again')
+    end = norm(c.text('[data-world-result]'))
+    c.ok(norm(sentence('resumed', 14, 25)) in end and '25' in end, end, 'the end is said, with what was taken back')
+    c.eq(len([p for p in D._posts(st, 'world') if (p.get('args') or {}).get('action') == 'build']), 0, 'the page started nothing: it only followed the launcher', what='no build started')
+    c.eq(c.attr('[data-set=world]', 'data-state'), 'ok', 'the row is up to date', what='state')
+    # an interrupted build: the next reading says what was kept
+    partial = D._view('done', step='Terminé', jid='j9', result={'ok': True, 'exists': False, 'partial': {'run': 1799990000, 'have': 14, 'of': 25}})
+    st['current'] = None
+    st['views'] = [partial]
+    st['i'] = 0
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-set=world]')", timeout=20000, what='the row after a reload')
+    c.until("(document.querySelector('[data-world-meta]') || { textContent: '' }).textContent.includes('14')", timeout=15000, what='the sentence about what the interruption kept')
+    c.ok(norm(sentence('partial', 14, 25)) in norm(c.text('[data-world-meta]')), c.text('[data-world-meta]'), 'an interrupted build says what it kept: the next build resumes it')
+    c.check_errors()
+
+
 @case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')

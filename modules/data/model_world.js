@@ -7,6 +7,19 @@ export const WORLD_JOB = Object.freeze({
   verb: 'world',
   key: 'weather/world'
 });
+/** Ce travail du lanceur est-il le synoptique monde (une vue de travail ou sa fin) ? */
+export const isWorldView = v => !!v && typeof v === 'object' && v.set === WORLD_JOB.set && v.verb === WORLD_JOB.verb;
+/** SOG-0429 : la reprise que le lanceur a dite pendant la marche (« reprise : 14 échéances sur 25 déjà là », dans le journal de la vue) : { have, of } ou null. */
+export function worldResumed(v) {
+  for (const l of Array.isArray(v?.log) ? v.log.slice(-8) : []) {
+    const m = typeof l === 'string' ? /^reprise : (\d{1,3}) échéances? sur (\d{1,3}) déjà là\s*$/.exec(l) : null;
+    if (m && +m[1] <= +m[2] && +m[2] <= 100) return {
+      have: +m[1],
+      of: +m[2]
+    };
+  }
+  return null;
+}
 /** Au-delà de cet âge (heures) la publication est dite ancienne : un run GFS paraît toutes les six heures, la prévision couvre trois jours. */
 export const WORLD_OLD_HOURS = 12;
 const ISO = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
@@ -21,6 +34,13 @@ export function worldOf(final) {
     ok: r.ok === true,
     exists: r.exists === true || (r.ok === true && r.exists !== false),
     kept: r.kept === true,
+    // SOG-0429 : les échéances reprises d'une construction interrompue (la fin), et ce qu'une interruption a gardé (l'état)
+    resumed: num(r.resumed, 100),
+    of: num(r.of, 100),
+    partial: r.partial !== null && typeof r.partial === 'object' && num(r.partial.have, 100) !== null && num(r.partial.of, 100) ? {
+      have: num(r.partial.have, 100),
+      of: num(r.partial.of, 100)
+    } : null,
     run: iso(r.run),
     built: iso(r.built),
     times: [times[0] || '', times[1] || ''],

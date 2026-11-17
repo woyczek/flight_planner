@@ -48,6 +48,7 @@ function runJob(action, ctrl) {
   }, {
     onProgress: v => {
       S.world.step = typeof v?.step === 'string' ? v.step.replace(/[\p{Cc}]/gu, ' ').slice(0, 120) : '';
+      S.world.resumedNow = M.worldResumed(v);
       renderWorld();
     },
     signal: ctrl.signal
@@ -61,7 +62,7 @@ export async function readWorld() {
   renderWorld(); // le bouton est gris pendant la lecture
   const final = await runJob('status', new AbortController());
   if (S !== me) return;
-  S.world.phase = null;
+  if (S.world.phase === 'reading') S.world.phase = null; // la marche retrouvée (worldView) pendant la lecture n'est pas effacée
   const w = M.worldOf(final);
   if (w) S.world.status = w;
   renderWorld();
@@ -71,7 +72,7 @@ const runText = iso => !iso ? '' : M.dateText(iso.slice(0, 10), lang()) + ` ${is
 /** Ce que dit le résumé de la ligne : « run 10 nov. 06:00Z · 25 étapes · 17,1 Mo · construit il y a 3 h ». */
 function metaText() {
   const w = S.world.status;
-  if (!w || !w.exists) return tt(TX.world.none);
+  if (!w || !w.exists) return w?.partial ? `${tt(TX.world.none)} · ${tt(TX.world.partial, { k: w.partial.have, n: w.partial.of })}` : tt(TX.world.none);
   const parts = [tt(TX.world.run, {
     r: runText(w.run) || '?'
   })];
@@ -82,6 +83,10 @@ function metaText() {
   const h = M.worldAgeHours(w, S.now ?? Date.now());
   if (h !== null) parts.push(tt(h === 0 ? TX.world.ageNow : TX.world.age, {
     n: h
+  }));
+  if (w.partial) parts.push(tt(TX.world.partial, {
+    k: w.partial.have,
+    n: w.partial.of
   }));
   return parts.join(' · ');
 }
@@ -94,7 +99,7 @@ function resultHtml() {
     n: r.steps ?? '?',
     s: r.bytes !== null ? M.fmtBytes(r.bytes, lang()) : '?',
     t: r.seconds ?? '?'
-  }) + (r.kept ? ` ${tt(TX.world.kept)}` : '') : r.kind === 'refused' ? tt(TX.refused[r.key] || TX.refused.failed, {
+  }) + (r.kept ? ` ${tt(TX.world.kept)}` : '') + (r.resumed ? ` ${tt(TX.world.resumed, { k: r.resumed, n: r.of ?? r.steps ?? '?' })}` : '') : r.kind === 'refused' ? tt(TX.refused[r.key] || TX.refused.failed, {
     n: r.wait
   }) : tt(M.own(TX.world.why, r.reason) || TX.world.why.failed);
   return `<div data-world-result data-result="${esc(r.kind)}"><p${r.kind === 'done' ? '' : ' class="f-warn"'}><b>${esc(head)}</b></p></div>`;
@@ -106,7 +111,7 @@ function bodyHtml() {
   return `<p class="f-muted" data-world-hint>${esc(tt(TX.world.hint))}</p><p class="f-muted" data-world-local>${esc(tt(TX.world.local))}</p>
     <p><button type="button" data-verb="world-build"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.world.build))}</button></p>
     ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
-    ${r.phase === 'running' ? `<div data-world-running><span>${esc(r.step || tt(TX.world.running))}</span><div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>` : resultHtml()}`;
+    ${r.phase === 'running' ? `<div data-world-running><span>${esc(r.step || tt(TX.world.running))}</span>${r.resumedNow ? `<span class="f-muted" data-world-resumed>${esc(tt(TX.world.resumed, { k: r.resumedNow.have, n: r.resumedNow.of }))}</span>` : ''}<div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>` : resultHtml()}`;
 }
 /** La ligne : le même gabarit que les autres jeux. */
 export function worldRowHtml() {
@@ -144,8 +149,23 @@ export async function startWorld() {
   renderBuild();
   renderWorld();
   const final = await runJob('build', new AbortController());
-  if (S !== me) return;
+  return worldEnd(me, final);
+}
+/** SOG-0429 : le travail du lanceur est le synoptique monde et il tourne (la page est revenue, ou rechargée) : la ligne le retrouve — la marche, son avancement, la reprise dite — comme les autres jeux. */
+export function worldView(me, v) {
+  if (S !== me || !S.world || !M.isWorldView(v)) return;
+  S.world.phase = 'running';
+  S.world.result = null;
+  S.world.step = typeof v.step === 'string' ? v.step.replace(/[\p{Cc}]/gu, ' ').slice(0, 120) : '';
+  S.world.resumedNow = M.worldResumed(v);
+  renderBuild();
+  renderWorld();
+}
+/** La fin du travail (la construction lancée ici, ou celle que la page a retrouvée en revenant) : ce qui est publié, ou pourquoi rien ne l'est. Un suivi détaché (la page est partie) ne dit rien : le travail continue. */
+export async function worldEnd(me, final) {
+  if (S !== me || final?.detached) return;
   S.world.step = '';
+  S.world.resumedNow = null;
   S.world.phase = null;
   const w = M.worldOf(final);
   if (!final?.state) {
@@ -179,4 +199,5 @@ export async function startWorld() {
   }
   renderBuild();
   renderWorld();
+  if (!w?.ok) readWorld(); // une interruption a gardé ses échéances : la ligne le dit (« interrompue : 14 échéances sur 25 gardées »)
 }
