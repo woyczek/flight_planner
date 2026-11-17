@@ -126,6 +126,25 @@ export function barb(x, y, dir, kt, len = 20) {
     (fill ? `<path d="${fill}" fill="currentColor"/>` : '');
 }
 
+/** Le rectangle [x0, y0, x1, y1] que dessine barb(x, y, dir, kt, len) : la hampe et le bout des plumes (un cercle de 3 px au calme). Sert à ne pas dessiner une barbule là où une étiquette passe devant (SOG-0418). */
+export function barbBox(x, y, dir, kt, len = 20) {
+  if (kt == null || dir == null) return null;
+  if (kt < 2.5) return [x - 4, y - 4, x + 4, y + 4];
+  const a = dir * R,
+    ux = Math.sin(a),
+    uy = -Math.cos(a),
+    px = Math.sin(a + Math.PI / 2),
+    py = -Math.cos(a + Math.PI / 2),
+    ex = x + ux * len,
+    ey = y + uy * len,
+    fl = len * 0.45,
+    xs = [x, ex, ex + px * fl, ex - ux * 8 + px * fl],
+    ys = [y, ey, ey + py * fl, ey - uy * 8 + py * fl];
+  return [Math.min(...xs) - 1, Math.min(...ys) - 1, Math.max(...xs) + 1, Math.max(...ys) + 1];
+}
+/** Deux rectangles [x0, y0, x1, y1] se recouvrent-ils ? */
+const overlap = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+
 /** Texte avec un liseré de la couleur du fond (lisible sur les champs). */
 const label = (x, y, text, {
     color = 'var(--sog-fg)',
@@ -427,6 +446,21 @@ export function sectionSvg(M, o) {
   if (L.inv) out.push(`<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="url(#${id}-p-inv)" mask="url(#${id}-inv)"/>`);
   if (L.ice) out.push(`<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="url(#${id}-p-ice1)" mask="url(#${id}-ice1)"/>`,
     `<rect x="${l}" y="${t}" width="${n1(pw)}" height="${n1(ph)}" fill="url(#${id}-p-ice2)" mask="url(#${id}-ice2)"/>`);
+  // TOC et TOD passent DEVANT (SOG-0418, règle : une étiquette n'en recouvre jamais une autre) : leur place est connue d'avance, ce qu'elle recouvrirait (une étiquette de température, une barbule de vent) n'est pas dessiné
+  const front = [];
+  for (const [nm, lab] of [
+      [M.traj.toc, 'TOC'],
+      [M.traj.tod, 'TOD']
+    ])
+    if (nm != null && inWin(nm)) {
+      const x = xOf(nm),
+        y = yOf(M.traj.computed(nm)),
+        hw = textW(lab, 10) / 2 + 3;
+      front.push([x - hw, y - 17, x + hw, y -
+        3
+      ]); // l'étiquette (centrée à 10 px au-dessus du point, 10 px de police, liseré de 3 px) et le point
+    }
+  const free = box => !front.some(f => overlap(f, box));
   // isothermes tous les 5 °C, 0 °C appuyé, étiquettes décalées par niveau
   if (L.iso) {
     const iso = A.contours(F.tC.map((v, n) => F.below[n] ? null : v), F.NX, F.NY, A.thresholdsOf(F.tC, 5)),
@@ -453,10 +487,16 @@ export function sectionSvg(M, o) {
           best = s;
         }
       }
-      if (best) labs.push(label(X((best[0] + best[2]) / 2), Y((best[1] + best[3]) / 2), `${c.level < 0 ? '−' : ''}${Math.abs(c.level)}°`, {
-        color: zero ? '#1c5cab' : 'var(--sog-muted)',
-        size: 10
-      }));
+      if (best) {
+        const lx = X((best[0] + best[2]) / 2),
+          ly = Y((best[1] + best[3]) / 2),
+          txt = `${c.level < 0 ? '−' : ''}${Math.abs(c.level)}°`,
+          hw = textW(txt, 10) / 2 + 3;
+        if (free([lx - hw, ly - 8, lx + hw, ly + 8])) labs.push(label(lx, ly, txt, {
+          color: zero ? '#1c5cab' : 'var(--sog-muted)',
+          size: 10
+        }));
+      }
     }
     out.push(...labs);
   }
@@ -480,7 +520,11 @@ export function sectionSvg(M, o) {
       if (i % every || !inWin(s.nm)) return;
       for (let ft = dy; ft < top; ft += dy) {
         const x = A.at(M.cols[i], ft);
-        if (x && !x.below && x.dirDeg != null) g += barb(xOf(s.nm), yOf(ft), x.dirDeg, x.kt, ph < 200 ? 15 : 19);
+        if (x && !x.below && x.dirDeg != null) {
+          const bl = ph < 200 ? 15 : 19,
+            bb = barbBox(xOf(s.nm), yOf(ft), x.dirDeg, x.kt, bl);
+          if (!bb || free(bb)) g += barb(xOf(s.nm), yOf(ft), x.dirDeg, x.kt, bl); // sous TOC ou TOD : pas dessinée
+        }
       }
     });
     out.push(`<g color="var(--sog-muted)" clip-path="url(#${id}-clip)">${g}</g>`);
@@ -540,7 +584,14 @@ export function sectionSvg(M, o) {
   }
   // graduations des distances : un pas rond, 46 px au moins entre deux, seulement dans la fenêtre
   const nmStep = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500].find(s => pw / ((nm1 - nm0) / s) > 46) || 500;
-  for (let nm = Math.ceil(nm0 / nmStep - 1e-9) * nmStep; nm <= nm1 + 1e-9; nm += nmStep) out.push(`<text x="${n1(xOf(nm))}" y="${n1(t + ph + 4)}" text-anchor="middle" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">${nm}</text>`);
+  // l'unité « NM » est écrite au bout de l'axe : une graduation qui tomberait dessous n'est pas écrite (SOG-0418, règle : une étiquette n'en recouvre jamais une autre)
+  const unit = [l + pw - textW('NM', 10) - 2, l + pw + 1];
+  for (let nm = Math.ceil(nm0 / nmStep - 1e-9) * nmStep; nm <= nm1 + 1e-9; nm += nmStep) {
+    const gx = xOf(nm),
+      gw = textW(String(nm), 10) / 2 + 2;
+    if (gx + gw > unit[0] && gx - gw < unit[1]) continue;
+    out.push(`<text x="${n1(gx)}" y="${n1(t + ph + 4)}" text-anchor="middle" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">${nm}</text>`);
+  }
   out.push(`<text x="${n1(l + pw)}" y="${n1(t + ph + 4)}" text-anchor="end" dominant-baseline="hanging" font-size="10" fill="var(--sog-muted)">NM</text>`,
     `<rect x="${l + 0.5}" y="${t + 0.5}" width="${n1(pw)}" height="${n1(ph)}" fill="none" stroke="var(--sog-border)"/>`);
   // bandes de surface : nébulosité basse, moyenne, haute, précipitations, visibilité < 8 km

@@ -8623,6 +8623,39 @@ def d_sheetgesture(c):
     c.until(posx + " === 'collapsed'", timeout=6000, what='a real reduction of 180 px: the room rule folds the sheet again')
 
 
+_CUT_CLASH_JS = """() => { const svg = document.querySelector('.mp-dbody svg'); if (!svg) return null;
+  const rc = e => { const b = e.getBoundingClientRect(); return [b.left + 1, b.top + 1, b.right - 1, b.bottom - 1] }, hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const T = [...svg.querySelectorAll('text')].map(e => ({ t: e.textContent.trim(), b: rc(e), w: e.getBoundingClientRect().width })).filter(x => x.t && x.w > 0);
+  const pairs = [];
+  for (let i = 0; i < T.length; i++) for (let j = i + 1; j < T.length; j++) if (hit(T[i].b, T[j].b)) pairs.push(T[i].t + ' / ' + T[j].t);
+  const front = T.filter(x => x.t === 'TOC' || x.t === 'TOD'), barbs = [...svg.querySelectorAll('g[color] > path')].map(rc);
+  const under = barbs.filter(b => front.some(f => hit(f.b, b))).length;
+  return { n: T.length, pairs, front: front.map(x => x.t), barbs: barbs.length, under, unit: T.some(x => x.t === 'NM'), grads: T.filter(x => /^[0-9]+$/.test(x.t)).map(x => x.t) } }"""
+
+
+@case('D254', 'The weather cut never writes a label over another: the graduation that would fall under the unit « NM » is not written, TOC and TOD are in front and what they would cover (a temperature, a wind symbol) is not drawn — at 390 px (the window of a phone, short and tall) and at 1280', 'D',
+      tags=('maps', 'weather'), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0418 (the ergonomist, 17 Nov, on the capture of D4 at 390 × 520: the graduation « 350 » written under the unit « NM », « TOD » over a temperature, « TOC » crossed by a wind symbol): a label never covers another')
+def d_labelclash(c):
+    for w, h, q in ((390, 520, 'maps'), (390, 844, 'maps'), (1280, 760, 'maps?pane=1')):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.open(q, flight=True, forecast=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.page.add_style_tag(content='#fNotes{display:none!important}')
+        c.until("() => { const b = document.querySelector('.mp-chip[data-view=weather]'); return !!b && !b.disabled }", timeout=20000, what=f'{w} x {h}: the weather chip is enabled (the seeded forecast)')
+        c.tap('.mp-chip[data-view="weather"]')
+        c.until("() => { const s = document.querySelector('.mp-dbody svg'); return !!s && s.getBoundingClientRect().height > 0 }", what=f'{w} x {h}: the cut is drawn')
+        if c.js("() => document.querySelector('[data-module=\"maps\"]').dataset.sheet") == 'collapsed':
+            c.tap('.f-sheet-grip')
+            c.until("() => document.querySelector('[data-module=\"maps\"]').dataset.sheet !== 'collapsed'", what=f'{w} x {h}: the sheet is opened by a tap on the handle')
+        c.wait(1500)
+        g = c.js(_CUT_CLASH_JS)
+        c.ok(g is not None and g['n'] > 6 and g['unit'], str(g), f'{w} x {h}: the cut has its labels and its unit « NM »')
+        c.shot(f'D254_{w}x{h}_weather_cut.png')
+        c.eq(g['pairs'], [], f'{w} x {h}: no label covers another one (graduation and unit, TOC / TOD and temperatures, point names)', what=str(g))
+        c.eq(g['under'], 0, f'{w} x {h}: no wind symbol under TOC or TOD ({g["barbs"]} drawn)', what=str(g))
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
