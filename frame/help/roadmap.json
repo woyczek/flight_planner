@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0889bf0",
-  "fiches": 410,
+  "organisation": "2569bc6",
+  "fiches": 411,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -493,6 +493,15 @@
      "de": "NAT-Tracks: EGGW → KJFK fliegt eine freie Route neben Track F statt ihn zu nehmen — das Zeitfenster wird am Eintritt statt bei 30° West geprüft",
      "es": "Rutas NAT: EGGW → KJFK vuela una ruta libre junto a la ruta F en vez de tomarla — la ventana se juzga en la entrada, no en 30° oeste",
      "test": true
+    },
+    {
+     "id": "SOG-0412",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes NAT : depuis l'Europe, le calcul ne peut rejoindre qu'UNE route sur six — les raccords partent de voies trop basses",
+     "en": "NAT tracks: from Europe the engine can only join ONE track in six — the links start from airways that are too low",
+     "de": "NAT-Tracks: von Europa aus erreicht die Berechnung nur EINEN von sechs Tracks — die Anschlüsse beginnen an zu niedrigen Luftstraßen",
+     "es": "Rutas NAT: desde Europa el cálculo solo alcanza UNA ruta de seis — los enlaces parten de aerovías demasiado bajas"
     }
    ]
   },
