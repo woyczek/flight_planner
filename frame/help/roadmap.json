@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "38130f7",
+  "organisation": "6b671ae",
   "fiches": 452,
   "untranslated": 0,
   "priorities": 374,
@@ -2042,7 +2042,7 @@
     {
      "id": "SOG-0420",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Carte : après rechargement, un point placé d'après X-Plane n'est pas dessiné et le tracé va droit, sans le dire",
      "en": "Map: after a reload, a point placed from X-Plane is not drawn and the track goes straight, without saying so",
      "de": "Karte: nach dem Neuladen wird ein aus X-Plane platzierter Punkt nicht gezeichnet und die Strecke verläuft gerade, ohne Hinweis",
