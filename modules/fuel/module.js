@@ -1784,6 +1784,25 @@ function xpBase(base) {
   XP_BASES.set(base, w);
   return w;
 }
+/** SOG-0397 (Q-0079, repli X-Plane du moteur de route) : la réponse d'un calcul marque `local: 'xplane'` (chaîne, vocabulaire fermé) chaque
+ *  point dont la POSITION vient du X-Plane du poste — alternatives[].points, sections.taken.points, primary.legs[].start / .end ; ces
+ *  positions sont notées AVANT toute écriture, telles quelles et arrondies comme RE.normalize les garde (cinq décimales), pour que xpStrip
+ *  les retire du vol écrit. Une réponse est une entrée non sûre : 600 points au plus par liste, nombres finis seulement (xpNote). */
+function xpNoteAnswer(res) {
+  const r5 = v => Math.round(+v * 1e5) / 1e5,
+    list = x => Array.isArray(x) ? x.slice(0, 600) : [],
+    note = p => {
+      if (!p || typeof p !== 'object' || p.local !== 'xplane') return;
+      xpNote(p.id, p.lat, p.lon);
+      xpNote(p.id, r5(p.lat), r5(p.lon));
+    };
+  for (const a of list(res?.alternatives).slice(0, 8)) list(a?.points).forEach(note);
+  list(res?.sections?.taken?.points).forEach(note);
+  for (const l of list(res?.primary?.legs)) {
+    note(l?.start);
+    note(l?.end);
+  }
+}
 /** Un point du vol placé à une position venue d'X-Plane. */
 const isXpPoint = p => !!p?.id && Number.isFinite(+p.lat) && Number.isFinite(+p.lon) && XP_SEEN.has(xpKey(p.id, p.lat, p.lon));
 /** Le vol tel qu'il s'écrit : chaque point placé d'après X-Plane sans latitude ni longitude, marqué `local: 'xplane'` (sa position gardée
@@ -4170,6 +4189,7 @@ async function routeAskRun(s, act, r, o, box, retry) {
   const args = routeArgs(act, r, o);
   s.rtime.t1 = performance.now();
   const res = await RE.run(S.ctx.launcher, args);
+  xpNoteAnswer(res); // SOG-0397 : les positions venues d'X-Plane notées avant toute écriture
   s.rtime.t2 = performance.now();
   if (gone(s) || !S.body) return;
   if (!res) { // le lanceur a répondu à l'appui puis pas au calcul : dit en place, avec « Réessayer »
@@ -4270,6 +4290,7 @@ async function altsMore(s, args) {
     run
   };
   const res = await run;
+  xpNoteAnswer(res); // SOG-0397 : les variantes aussi
   if (S?.raltsMore?.ctl === ctl) S.raltsMore = null;
   if (gone(s) || !S.body || S.ralts !== R) return;
   if (ctl.signal.aborted) { // arrêtée pour une nouvelle demande : celle-ci dessine
@@ -5263,6 +5284,7 @@ function natHtml(n) {
 /** Les itinéraires du document (cache/fuel/route_alts.json) pour la liste de Carburant : null s'il n'en porte pas pour ce vol (un calcul,
  *  le même couple). Le document est relu comme une entrée : textes bornés, procédures à leur forme, trois lignes au plus. */
 function raltsOfDoc(d) {
+  xpNoteAnswer(d?.answer); // SOG-0397 : une réponse gardée sur l'appareil, relue : ses positions venues d'X-Plane notées
   const r = S?.flight?.route || {};
   if (!d || d.mode !== 'compute' || !Array.isArray(d.alternatives) || !d.alternatives.length) return null;
   if (String(d.dep || '') !== String(r.dep || '') || String(d.arr || '') !== String(r.arr || '')) return null;

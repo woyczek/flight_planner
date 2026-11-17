@@ -7395,3 +7395,31 @@ def f254(c):
     c.ok(norm(tx(T, 'natE', L).split('{t}')[0]) in norm(c.text(f'{Lx} [data-natstate]') or ''), c.text(Lx), 'the line now says the eastbound ones')
     c.js(f"document.querySelector('{Lx}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F254_{c.design}_390_{L}.png')
+
+
+@case('F255', 'Route step, a computed route through a point whose POSITION comes from the X-Plane of the workstation (`local: \'xplane\'` in '
+      'the answer): « Prendre » it, and current_flight.json — written to the group\'s repository — carries the point\'s NAME without '
+      'latitude nor longitude (marked local: xplane); the other points keep theirs', 'F', tags=('fuel', 'aerodb', 'security'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0397, Q-0079 (the X-Plane fallback of the route engine, Navigraph data: never written to the group\'s repository, SOG-0375 / '
+      'Q-0061); Sécurisation: Fuel would have written the position; a fake launcher in the form of AeroDB\'s K330 (invented names and '
+      'positions); counter-test: red on the parent (the position written)')
+def f255(c):
+    st = _route_launcher(c, ['route/compute'])
+    pts = [{'id': 'EIDW', 'lat': 53.42, 'lon': -6.27}, {'id': 'ZZENA', 'lat': 54.0, 'lon': -10.0},
+           {'id': 'ZZEXA', 'lat': 55.512345, 'lon': -15.123456, 'local': 'xplane'}, {'id': 'KJFK', 'lat': 40.64, 'lon': -73.78}]
+    segs = [_seg('EIDW', 'ZZENA'), _seg('ZZENA', 'ZZEXA'), _seg('ZZEXA', 'KJFK')]
+    alt = dict(_alt(1, 'Via ZZEXA', 'EIDW ZZENA ZZEXA KJFK', 2900, 350, segs, sid=False), points=pts)
+    st['extra'] = {'alternatives': [alt], 'sections': {'taken': {'points': pts}}}
+    c.open('fuel', docs=_ocean_docs())
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    d = cf_doc(c, lambda d: any(p.get('id') == 'ZZEXA' for p in (d.get('route') or {}).get('points') or []), 'the route taken, written', timeout=12000)
+    pts_w = {p.get('id'): p for p in (d.get('route') or {}).get('points') or []}
+    z = pts_w.get('ZZEXA') or {}
+    c.ok('lat' not in z and 'lon' not in z and z.get('local') == 'xplane', z, 'ZZEXA written by name only, marked local: xplane — no position from X-Plane')
+    c.ok(isinstance((pts_w.get('ZZENA') or {}).get('lat'), (int, float)), pts_w.get('ZZENA'), 'a point of the base keeps its position')
+    c.ok('15.12' not in json.dumps(d) and '55.51' not in json.dumps(d), 'position text', 'no trace of the X-Plane position anywhere in the record')
+    # on this workstation, the page keeps it: the route still drawn from the position held in memory
+    c.ok('ZZEXA' in (c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), 'route text', 'the route keeps the point by name')

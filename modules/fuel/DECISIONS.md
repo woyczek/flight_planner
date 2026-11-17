@@ -2318,3 +2318,18 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (« Relu à 14 h 05 Z : 8 routes ajoutées vers l'est. », `.fu-natout` a block); the time of the last read outside any reread
   (« lues à 08 h 02 Z ») captured in that state; in German « Tracks », the word of the rest of the screen (not « Routen »).
   F254 grows the three checks.
+- **17 Nov 2026 — SOG-0397 (Q-0079), the security half: a position the route engine took from X-Plane never leaves with the flight**
+  (the engine will place points from the workstation's X-Plane — Navigraph data, fallback off by default — and mark each `local:
+  'xplane'` in its answer; Sécurisation saw that Fuel would write their position in current_flight.json, which goes to the group's
+  repository: forbidden, SOG-0375 / Q-0061). `xpNoteAnswer(res)` notes in XP_SEEN, BEFORE any write, the position of every point marked
+  `local: 'xplane'` in `alternatives[].points`, `sections.taken.points` and `primary.legs[].start / .end` — as given and rounded to five
+  decimals as RE.normalize keeps them (the key `id|lat|lon` is exact) — at the three places an answer is read: the computation
+  (routeAskRun), the search of the variants (altsMore), and an answer kept on the device read again (raltsOfDoc, route_alts.json). The
+  point taken is then written by xpStrip as `{ id, local: 'xplane' }` without latitude nor longitude; its position stays in the page's
+  memory (XP_KEPT). Documents Fuel writes, checked: `pilot/<tri>/current_flight.json` (synchronised: route.points through xpStrip; the
+  quote's legs carry id / minutes / origin, the profile's path nm / ft, `ofp` a count, `arr_info` the arrival aerodrome — no position
+  of a route point), `pilot/<tri>/fuel.json` (synchronised: settings only); and under `cache/fuel/` (policy `cache`: this device only,
+  never synchronised, frame INTEGRATION) route_alts.json, last_ofp.json, ui.json, last_aircraft.json, display.json, route_timing.json,
+  mount_timing.json. Fuel writes no report. After a reload the Map draws such a point not at all (modules/maps/data.js keeps the points
+  with a position; edit.js says it for `local: 'xplane'`): the leg goes straight from its neighbours. F255 (a fake launcher in the form
+  of AeroDB's K330; counter-test: red on the parent, the position written).
