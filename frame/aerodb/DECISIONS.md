@@ -3545,3 +3545,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Asked** (Features SOG): `NONE_READ_CODES` of `aerodb.js` serves `uncheckable`, `no-table` and `other`, and `READ_REASONS` had no phrase for them: the page showed `(no-table ×2)`. `no-table` came with the lot of Procedures (`4475c43d6`); this entry adds `other` (`proc_geometry` gives `other` to a procedure in doubt without a code) and `uncheckable` (a warning, never a doubt: it should not leave `reasons`, covered anyway) in the four languages, one source for every page; the bench lists them (the 8 page codes, the 8 doubt codes, the warning).
 
+## 17 November 2026 — SOG-0450: the cost of the comparison NAT route / free route
+
+- **Asked** (ergonomics session): the comparison of SOG-0421 costs 1.2 to 1.7 s per free search, made twice per calculation; make it cheaper, routes unchanged; criteria: no route above 5 s, the routes of the lot before identical on the 72, San Francisco within 0.5 s of the reference.
+- **A** (this commit): ONE free search per calculation (see INTEGRATION). Measured: the cost was the number of searches (one per NAT route compared, one per RAD retry), not each search.
+

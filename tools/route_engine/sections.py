@@ -402,17 +402,33 @@ def _nat_or_free(nav, g, start, end, ratio, info, path, tid, valid, meta):
     memo = (start, end, tid, round(nat_nm))
     if memo in kept:
         return None
-    alt = copy.deepcopy(info)
+    # SOG-0450 (A) : la route libre ne dépend PAS de la route NAT comparée : UNE recherche par calcul (même départ, même arrivée, mêmes points écartés ou imposés), partagée par toutes les routes NAT candidates (le même calcul en faisait une par route : 1,2 à 1,7 s chacune)
+    shared = nav.__dict__.setdefault('_free_shared', {}).setdefault((start, end, ratio), [])
+    avoid, compel = frozenset(getattr(g, 'rad_avoid', ()) or ()), frozenset((getattr(g, 'rad_compel', None) or {}).items())
     seen = len(info.get('steps') or [])
-    free_path = _free(nav, g, start, end, ratio, alt)
+    same = next((x for x in shared if x[0] == avoid and x[1] == compel), None)
+    if same is not None:
+        free_path, alt = same[2], copy.deepcopy(same[3])
+        paid = False
+    elif any(x[0] <= avoid and x[1] <= compel and (not x[2] or x[3].get('source') != 'random' or nat_nm - sum(e['nm'] for _u, _v, e in x[2]) < NAT_MAX_EXTRA * sum(e['nm'] for _u, _v, e in x[2])) for x in shared):
+        # la même recherche, faite AVEC MOINS de contraintes, a déjà dit « la route NAT reste » : avec plus de points écartés ou imposés la route libre ne peut qu'être plus longue (ou absente) : la réponse « non » vaut encore, sans nouvelle recherche
+        kept.add(memo)
+        return None
+    else:
+        alt = copy.deepcopy(info)
+        free_path = _free(nav, g, start, end, ratio, alt)
+        shared.append((avoid, compel, free_path, copy.deepcopy(alt)))
+        paid = True
     if not free_path or alt.get('source') != 'random':
-        info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])      # la recherche de la route libre a coûté : elle est dans le temps dit
+        if paid:
+            info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])      # la recherche de la route libre a coûté : elle est dans le temps dit
         kept.add(memo)
         return None
     free_nm = sum(e['nm'] for _u, _v, e in free_path)
     extra = nat_nm - free_nm
     if free_nm <= 0 or extra < NAT_MAX_EXTRA * free_nm:
-        info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])
+        if paid:
+            info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])
         kept.add(memo)
         return None
     label = (meta.get(tid) or {}).get('label') or tid

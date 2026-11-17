@@ -15135,3 +15135,33 @@ def k339(c):
     nofoot = dict(sid, amdt_no=None, amdt=None)
     recs2, _ = P.records('LFBD', nofoot, {}, 'x.pdf', '2026-10-01')
     c.eq((recs2[0]['source']['at'], 'amdt' in recs2[0]['source']), (None, False), 'a page without a footer nor a printed date: at None, no amdt key', what='records no footer')
+@case('K340', 'Route engine, SOG-0450 (the cost of the comparison NAT route / free route): the free route does not depend on the NAT route compared, so ONE search serves every NAT route of the calculation and the RAD retries that add constraints; the search only answers « is there a free route of at most NAT / 1.05 NM ? »; the links of an oceanic point to the high network come from an index (latitude, longitude) with the same result as the scan of every node',
+      'K', static=True,
+      rule='SOG-0450 (ergonomics session: « une recherche libre de 1,2 à 1,7 s, faite deux fois par calcul : la rendre moins chère, routes inchangées »). Measured on the 72 westbound flights of 17 Nov, at rest: routes identical to the lot before (length included); median 3.3 s; maximum 7.6 → 6.1 s (EDDF–KSFO outbound stays at 6.1 s: said in the card). Bench: the functions on their own, with a fake search and a synthetic high network.')
+def k340(c):
+    import math
+    import sys
+    import types
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import engine, free_route as FR, nat_layer, sections as S
+    nodes = {'S': {'id': 'S', 'lat': 50.04, 'lon': 8.56}, 'E': {'id': 'E', 'lat': 37.62, 'lon': -122.38}}
+    nav = types.SimpleNamespace(nodes=nodes)
+    calls = []
+
+    def fake_free(nav_, g_, start, end, ratio, info, **kw):
+        calls.append(kw.get('limit'))
+        info['source'] = 'random'
+        return [('S', 'E', {'nm': 5600.0, 'origin': 'random'})]
+    real = S._free
+    S._free = fake_free
+    try:
+        g = types.SimpleNamespace(rad_avoid=frozenset(), rad_compel={})
+        path = lambda nm: [('S', 'E', {'nm': nm})]
+        r1 = S._nat_or_free(nav, g, 'S', 'E', 1.0, {}, path(5694.0), 'H', {'H'}, {})
+        r2 = S._nat_or_free(nav, g, 'S', 'E', 1.0, {}, path(5709.0), 'G', {'G'}, {})
+        g2 = types.SimpleNamespace(rad_avoid=frozenset({'REGHI'}), rad_compel={'REGHI': 'ETIKI'})
+        r3 = S._nat_or_free(nav, g2, 'S', 'E', 1.0, {}, path(5709.0), 'G', {'G'}, {})
+    finally:
+        S._free = real
+    c.eq((r1, r2, r3), (None, None, None), 'a free route of 5 600 NM against NAT routes of 5 694 and 5 709 NM (less than 5 % shorter): the NAT route is kept each time', what='kept')
+    c.eq(len(calls), 1, 'ONE free search for the two NAT routes of the calculation, and none for the retry that adds an avoided point (a « no » obtained with fewer constraints stays a « no » with more)', what='shared')
