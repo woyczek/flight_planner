@@ -2332,4 +2332,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   never synchronised, frame INTEGRATION) route_alts.json, last_ofp.json, ui.json, last_aircraft.json, display.json, route_timing.json,
   mount_timing.json. Fuel writes no report. After a reload the Map draws such a point not at all (modules/maps/data.js keeps the points
   with a position; edit.js says it for `local: 'xplane'`): the leg goes straight from its neighbours. F255 (a fake launcher in the form
-  of AeroDB's K330; counter-test: red on the parent, the position written).
+  of AeroDB's K330; counter-test: red on the parent, the position written). Limits (Sécurisation): 600 points read per list (eight
+  alternatives at most) — the same bound as RE.normalize's pointsOf, so a point beyond it never enters the route and its position is
+  never written either; XP_SEEN is the page's memory, capped at 20 000 positions: beyond, xpNote stops noting IN SILENCE — a failure on
+  the side of the leak, without realistic consequence (a page would need 20 000 X-Plane positions), said here. F255 also covers the path
+  « page reloaded, the route taken from route_alts.json ».
+

@@ -7423,3 +7423,18 @@ def f255(c):
     c.ok('15.12' not in json.dumps(d) and '55.51' not in json.dumps(d), 'position text', 'no trace of the X-Plane position anywhere in the record')
     # on this workstation, the page keeps it: the route still drawn from the position held in memory
     c.ok('ZZEXA' in (c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), 'route text', 'the route keeps the point by name')
+    # the path « page reloaded »: XP_SEEN empty, the route taken from the answer kept on the device (route_alts.json, raltsOfDoc) —
+    # still without the position (Sécurisation's request)
+    c.open('fuel', docs=_ocean_docs())
+    to_step(c, 1)
+    _compute_now(c, st)
+    # the answer kept on the device first (route_alts.json is written after the drawing): a reload before it would find nothing to read
+    c.until_doc('cache/fuel/route_alts.json', lambda d: bool(d) and 'ZZEXA' in json.dumps((d.get('answer') or {}).get('alternatives') or []),
+                'the answer kept on the device', timeout=12000)
+    c.page.reload(wait_until='load')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt=\"0\"] [data-do=rtake]')", timeout=15000, what='the list read again from the device')
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    d = cf_doc(c, lambda d: any(p.get('id') == 'ZZEXA' for p in (d.get('route') or {}).get('points') or []), 'the route taken after a reload', timeout=12000)
+    z = {p.get('id'): p for p in (d.get('route') or {}).get('points') or []}.get('ZZEXA') or {}
+    c.ok('lat' not in z and 'lon' not in z and '15.12' not in json.dumps(d), z, 'after a reload too: ZZEXA by name only')
