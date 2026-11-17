@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "4e2d1f5",
+  "organisation": "b440817",
   "fiches": 447,
   "untranslated": 0,
   "priorities": 374,
@@ -6189,7 +6189,7 @@
     {
      "id": "SOG-0437",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Lanceur : ses travaux lourds (lecture de PDF, reconnaissance de caractères, constructions) tournent à priorité basse et ne prennent pas tous les cœurs",
      "en": "Launcher: its heavy jobs (PDF reading, character recognition, builds) run at low priority and do not take every core",
      "de": "Starter: seine schweren Aufgaben (PDF-Lesen, Zeichenerkennung, Aufbauten) laufen mit niedriger Priorität und belegen nicht alle Kerne",
