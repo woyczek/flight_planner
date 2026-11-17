@@ -8072,7 +8072,7 @@ def d240(c):
 
 
 _MOUNT_JS = "() => !!window.__mp && !!window.__mp.S && !!window.__mp.S.vs && !!window.__mp.S.map"
-_VIEW_JS = """() => { const S = window.__mp.S, m = S.map.getCenter(), sel = document.querySelector('.mp-mbar .mp-mb-sel');
+_MBAR_VIEW_JS = """() => { const S = window.__mp.S, m = S.map.getCenter(), sel = document.querySelector('.mp-mbar .mp-mb-sel');
   return { id: S.missionId, file: S.mapDef ? S.mapDef.file : '', sel: sel ? sel.value : null, c: [m.lng, m.lat], z: S.map.getZoom(), key: S.vs.key } }"""
 
 
@@ -8083,7 +8083,7 @@ def _remount(c, hash_='#maps'):
     c.js(_STATE_JS)
     c.until(_MOUNT_JS, timeout=20000, what='the Map mounted again')
     c.wait(900)
-    return c.js(_VIEW_JS)
+    return c.js(_MBAR_VIEW_JS)
 
 
 @case('D241', 'The view of the Map is found again from one mount to the next (SOG-0353, tranche a): the provided map shown beside Fuel is the one the whole Map shows, its selector filled; the camera the pilot gave comes back; for another flight, nothing', 'D',
@@ -8359,7 +8359,7 @@ def d_altclick(c):
 
 _WATCH_JS = """(sel) => { window.__mut = 0; if (window.__mo) window.__mo.disconnect(); window.__mo = new MutationObserver(m => { window.__mut += m.length });
   window.__mo.observe(document.querySelector(sel), { childList: true, subtree: true, attributes: true, characterData: true }); return true }"""
-_BANNER_JS = """async (n) => { const M = await import('/modules/maps/mission_view.js'); for (let i = 0; i < n; i++) M.bannerFill(); return true }"""
+_BANNERFILL_JS = """async (n) => { const M = await import('/modules/maps/mission_view.js'); for (let i = 0; i < n; i++) M.bannerFill(); return true }"""
 _NOTES_JS = """async (n) => { const M = await import('/modules/maps/screen.js'); for (let i = 0; i < n; i++) M.writeNotes(); return true }"""
 
 
@@ -8375,16 +8375,16 @@ def d_sethtml(c):
     c.js(_STATE_JS)
     c.wait(2500)
     c.ok("d'essai" in c.js("() => document.querySelector('.mp-mbar').textContent").replace('’', "'"), 'the title', 'the banner says the title, with its apostrophe')
-    c.js(_BANNER_JS, 2)
+    c.js(_BANNERFILL_JS, 2)
     c.js(_WATCH_JS, '.mp-mbar')
-    c.js(_BANNER_JS, 3)
+    c.js(_BANNERFILL_JS, 3)
     c.eq(c.js("() => window.__mut"), 0, 'the banner written again three times with the same text keeps its elements', what='mutations')
     # a click held across two writes: the cross asks (a rewrite between the press and the release lost the click)
     b = c.js("() => { const r = document.querySelector('.mp-mbar [data-mbx]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }")
     c.page.mouse.move(*b)
     c.page.mouse.down()
     c.wait(100)
-    c.js(_BANNER_JS, 2)
+    c.js(_BANNERFILL_JS, 2)
     c.page.mouse.up()
     c.until("() => !!document.querySelector('.mp-mbar [data-mbyes]')", timeout=5000, what='a click held across two writes of the banner, on its cross, asks before abandoning the preparation')
     # a note with a straight apostrophe (the validity of the NAT routes comes from AeroDB's state)
@@ -8492,3 +8492,20 @@ def d_natfade(c):
     c.eq((r['none'], r['other'], r['same'], r['off'], r['otherNoWin'], r['sameNoWin'], r['noTime'], r['noDir'], r['followed']), (False, True, False, True, True, False, False, False, False),
          'no flight: nothing; other sense: withdrawn (window or not); same sense inside the window: kept; outside: withdrawn; no window, no time, no sense: kept; a route the flight follows: kept', what=str(r))
     c.eq((r['asked'], r['west']), (-50, -20), 'the time is asked at the west end for a flight to the east, at the east end for a flight to the west', what=str(r))
+
+
+def _no_duplicate_names():
+    """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
+    import ast
+    seen, dup = {}, []
+    for n in ast.parse(open(__file__, encoding='utf-8').read()).body:
+        names = [n.name] if isinstance(n, (ast.FunctionDef, ast.ClassDef)) else [t.id for t in getattr(n, 'targets', []) if isinstance(t, ast.Name)]
+        for nm in names:
+            if nm in seen:
+                dup.append(f'{nm} (lines {seen[nm]} and {n.lineno})')
+            seen[nm] = n.lineno
+    if dup:
+        raise RuntimeError('maps_recode.py defines a name twice: ' + ', '.join(dup))
+
+
+_no_duplicate_names()
