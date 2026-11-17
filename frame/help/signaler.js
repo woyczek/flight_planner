@@ -301,6 +301,9 @@
   const multi = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').replace(/\r\n?/g, '\n').trim()
     .slice(0, n) : '';
   const now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  let FLUSH =
+    null; // SOG-0409 : écrit tout de suite le brouillon en attente du montage en cours (un nouveau montage, avant de lire le brouillon)
+  const DRAFT_MS = 800; // SOG-0409 : le brouillon s'écrit 800 ms après la dernière frappe, jamais à chaque signe
   let MOUNTED =
     null; // le montage en cours : un nouveau montage retire les écouteurs du précédent, quel que soit l'élément où il les avait posés
   let SENDING =
@@ -401,6 +404,7 @@
     } = c;
     // l'écran est monté de nouveau (une page qui se redessine, un retour, un autre élément de vue) : les écouteurs du montage précédent sont retirés, où qu'ils aient été posés — sinon chaque appui sur
     // « Envoyer » les faisait tous partir, chacun avec son état et son identifiant, et chaque saisie réécrivait le brouillon de l'ancien montage (SOG-0366 : un signalement en double ou en triple, même texte, même seconde, identifiants différents)
+    await FLUSH?.(); // le brouillon du montage précédent est écrit AVANT de relire le brouillon (SOG-0409)
     MOUNTED?.abort();
     const mount = new AbortController();
     MOUNTED = mount;
@@ -496,6 +500,32 @@
           .paddingBottom)) / lh);
       x.rows = Math.max(ROWS_MIN, Math.min(ROWS_MAX, need));
     };
+    let dirty = false,
+      saveTimer = 0,
+      fitRaf = 0;
+    /** Écrit le brouillon en attente (s'il y en a un) ; rend la promesse de l'écriture. */
+    const flushDraft = () => {
+      clearTimeout(saveTimer);
+      saveTimer = 0;
+      if (!dirty) return;
+      dirty = false;
+      st.draft = withId(draft());
+      return saveStore(c, st);
+    };
+    const queueDraft = () => {
+      dirty = true;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(flushDraft, DRAFT_MS);
+    };
+    FLUSH = flushDraft;
+    /** La hauteur du champ suit le texte une fois par image, pas à chaque signe (deux mises en page forcées à chaque fois). */
+    const fitSoon = () => {
+      if (fitRaf) return;
+      fitRaf = requestAnimationFrame(() => {
+        fitRaf = 0;
+        if (!mount.signal.aborted) fitText();
+      });
+    };
     const on = (type, fn) => view.addEventListener(type, fn, {
       signal: mount.signal
     }); // les écouteurs de CE montage : retirés quand l'écran est monté de nouveau
@@ -509,6 +539,24 @@
       ...d,
       id: SG_ID.test(st.draft?.id) ? st.draft.id : d.title.trim() || d.text.trim() ? rid() : ''
     });
+    /** Ce que la frappe fait de l'écran (SOG-0409) : les deux compteurs et l'état du bouton Envoyer, écrits seulement s'ils changent ; rien d'autre n'est redessiné à la frappe. */
+    const paintTyping = () => {
+      if (mount.signal.aborted) return;
+      const chk = ui.ch === null,
+        d = draft(),
+        tc = `${d.title.length} / ${MAX_TITLE}`,
+        tn = $('[data-tcount]');
+      if (tn.textContent !== tc) tn.textContent = tc;
+      const xc = $('[data-xcount]'),
+        xt = t(T.count, {
+          n: d.text.length,
+          max: MAX_TEXT
+        });
+      if (xc.hidden !== d.text.length < COUNT_FROM) xc.hidden = d.text.length < COUNT_FROM;
+      if (xc.textContent !== xt) xc.textContent = xt;
+      const can = !chk && ui.ch !== 'old' && !ui.sending && !ui.reducing && d.title.trim() && d.text.trim();
+      if ($('[data-send]').disabled !== !can) $('[data-send]').disabled = !can;
+    };
     const paint = () => {
       if (mount.signal.aborted) return; // un montage plus récent a pris la place : celui-ci n'écrit plus rien
       const chk = ui.ch === null;
@@ -537,16 +585,7 @@
       if (ns.textContent !== nsText) ns.textContent = nsText;
       const sl = $('[data-shotslist]');
       sl.textContent = ui.ch === 'pilote' ? ui.pshots.map(f => `${f.name} (${f.w}×${f.h}, ${Math.max(1, Math.round(f.bytes.length / 1024))} Ko)`).join(' · ') : ui.shots.map(f => f.name).join(' · ');
-      const d = draft();
-      $('[data-tcount]').textContent = `${d.title.length} / ${MAX_TITLE}`;
-      const xc = $('[data-xcount]');
-      xc.hidden = d.text.length < COUNT_FROM;
-      xc.textContent = t(T.count, {
-        n: d.text.length,
-        max: MAX_TEXT
-      });
-      const can = !chk && ui.ch !== 'old' && !ui.sending && !ui.reducing && d.title.trim() && d.text.trim();
-      $('[data-send]').disabled = !can;
+      paintTyping();
       const sendTxt = t(ui.sending || ui.reducing ? T.sendingLbl : T
         .send); // le bouton est « occupé » pendant l'envoi : un second appui n'a rien à faire
       if ($('[data-send]').textContent !== sendTxt) $('[data-send]').textContent = sendTxt;
@@ -844,6 +883,9 @@
     };
     const submit = async () => {
       if (ui.sending || SENDING || mount.signal.aborted) return;
+      clearTimeout(saveTimer); // le brouillon en attente ne se réécrit pas après l'envoi (il serait celui qui vient de partir)
+      saveTimer = 0;
+      dirty = false;
       const d = withId(draft());
       const r = reportOf({
         ...d,
@@ -1038,12 +1080,14 @@
       ui.reducing = false;
       paint();
     };
+    // SOG-0409 : la frappe ne touche que la mémoire (le brouillon, les compteurs, la hauteur du champ à la cadence de l'image) ; le brouillon s'écrit 800 ms après la dernière frappe, au départ
+    // de l'écran (nouveau montage), au passage en arrière-plan et à l'envoi — avant, chaque signe écrivait device/signaler.json, ce qui relançait tout le chargement de l'appareil
     on('input', e => {
       if (e.target.matches('[data-title],[data-text]')) {
-        fitText();
+        fitSoon();
         st.draft = withId(draft());
-        paint();
-        saveStore(c, st);
+        paintTyping();
+        queueDraft();
       }
     });
     on('change', e => {
@@ -1080,6 +1124,12 @@
     on('click', e => {
       const b = e.target.closest('[data-take]');
       if (b) take(b.dataset.take);
+    });
+    document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && void flushDraft(), {
+      signal: mount.signal
+    });
+    addEventListener('pagehide', () => void flushDraft(), {
+      signal: mount.signal
     });
     fitText();
     paint();

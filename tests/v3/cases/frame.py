@@ -5096,6 +5096,50 @@ def a252(c):
     c.check_errors()
 
 
+@case('A253', 'The Signaler page: typing touches only memory — no reload of the device, no write per character, the list is not redrawn; the draft is written 800 ms after the last key, at departure, and found again after a reload (SOG-0409); phone too', 'A',
+      tags=('signaler',), designs=('standard',), screens=True, night=False, langs4=False,
+      rule='SOG-0409 (the user, 14 Nov 2026: « que fait la page bugs pour être aussi peu réactive ? un refresh à chaque caractère ?? »; measured: 200 characters = 3 800 IndexedDB reads, 200 writes of device/signaler.json — the draft lives under device/ and the watcher of app.js ran loadDevice() at each character; 531 ms long task on a phone-speed CPU): a key press changes the memory, the two counters and the Send button, nothing else')
+def a253(c):
+    c.open('signaler', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-form]')", timeout=20000, what='the form')
+    c.wait(800)
+    c.js("""() => { window.__sg = { reads: 0, puts: 0, mine: 0 };
+      for (const m of ['get', 'getAll', 'openCursor']) { const o = IDBObjectStore.prototype[m]; IDBObjectStore.prototype[m] = function (...a) { window.__sg.reads++; return o.apply(this, a) } }
+      const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (...a) { window.__sg.puts++; return put.apply(this, a) };
+      new MutationObserver(m => { window.__sg.mine += m.length }).observe(document.querySelector('[data-mine]'), { subtree: true, childList: true, characterData: true, attributes: true });
+      return true }""")
+    c.page.focus('[data-title]')
+    c.page.keyboard.type('T' * 40, delay=0)
+    c.page.focus('[data-text]')
+    c.page.keyboard.type('abcdefghij' * 20, delay=0)
+    sent = c.js("({ title: document.querySelector('[data-title]').value.length, text: document.querySelector('[data-text]').value.length, off: document.querySelector('[data-send]').disabled, tcount: document.querySelector('[data-tcount]').textContent })")
+    c.eq((sent['title'], sent['text'], sent['off']), (40, 200, False), 'no character lost, the Send button on', what='typed')
+    c.eq(norm(sent['tcount']), '40 / 80', 'the counter follows the typing', what='counter')
+    c.wait(1500)   # the draft is written 800 ms after the last key
+    n = c.js('window.__sg')
+    c.ok(n['reads'] < 8, str(n), '240 characters typed: fewer than 8 reads of the device store (before: about 4 500, the whole device reloaded at each one; ONE device reload is about 20, so the draft written once must not cause one)')
+    c.ok(n['puts'] <= 3, str(n), 'the draft is written once or twice, not at each character')
+    c.eq(n['mine'], 0, 'the list « my reports » is not redrawn by the typing', what='list')
+    # the watcher alone: a document of device/ that the device load does not read changes — nothing reloads (before: a reload of about 20 reads at each write of any document of device/)
+    c.js("() => { window.__sg.reads = 0 }")
+    c.js("""() => { const a = FrameData.adapter({ id: 'a253probe', writes: [{ prefix: 'device/', policy: 'cache' }] }); return a.put('device/a253_probe.json', { at: Date.now() }) }""")
+    c.wait(600)
+    n2 = c.js('window.__sg')
+    c.ok(n2['reads'] < 8, str(n2), 'a write of a document of device/ the device load does not read reloads nothing (a reload is about 20 reads)')
+    d = c.doc('device/signaler.json')
+    c.eq(((d or {}).get('draft') or {}).get('text', '')[:10] + str(len(((d or {}).get('draft') or {}).get('text', ''))), 'abcdefghij200', 'the draft is on the device after the pause', what='draft kept')
+    # at departure (the page goes to the background) the draft goes at once, not 800 ms later
+    c.page.focus('[data-text]')
+    c.page.keyboard.type('Q', delay=0)
+    c.js("() => { Object.defineProperty(document, 'visibilityState', { get: () => 'hidden', configurable: true }); document.dispatchEvent(new Event('visibilitychange')) }")
+    c.until_doc('device/signaler.json', lambda x: x and str(((x.get('draft') or {}).get('text', '')))[-1:] == 'Q', 'the draft written at the passage to the background, before the 800 ms', timeout=500)
+    # found again after a reload
+    c.page.reload(wait_until='load')
+    c.until("!!document.querySelector('[data-form]')", timeout=20000, what='the form again')
+    c.eq(c.js("document.querySelector('[data-text]').value.length"), 201, 'the draft comes back after a reload', what='draft back')
+    c.check_errors()
+
+
 @case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')

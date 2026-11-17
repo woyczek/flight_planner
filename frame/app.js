@@ -1847,6 +1847,10 @@
     paintFavicon();
   }
   /** Relit l'identité et les usages de l'appareil, puis branche le transport qui leur correspond. */
+  /** Les documents de l'appareil que loadDevice lit (liste fermée) : un autre document de device/ ne le relance pas. */
+  const DEVICE_DOCS = new Set([KEYS, 'device/identity.json', 'device/usages.json', 'device/level.json', 'device/design.json',
+    'device/live.json', 'device/layout.json'
+  ]);
   async function loadDevice() {
     paintHost();
     await loadKeys();
@@ -5575,7 +5579,8 @@
         reason: 'local'
       });
     });
-    own.watch('device/', () => loadDevice());
+    // SOG-0409 : seulement un document que loadDevice lit le relance — avant, tout document écrit sous device/ (le brouillon du Signaler à chaque signe, la trace d'un vol) refaisait tout le chargement de l'appareil
+    own.watch('device/', paths => paths.some(p => DEVICE_DOCS.has(p)) && loadDevice());
     airlineP = loadAirline(); // en fond : le premier module ne l'attend pas
     airlineData.watch('airline/', () => loadAirline(1e4));
     window.addEventListener('frame-data-airline', () =>
