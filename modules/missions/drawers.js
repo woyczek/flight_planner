@@ -3,7 +3,9 @@
 // Un tiroir (B, C, D : les « phases » d'un fichier de mission, lues et bornées par frame/lib/mission.js — `drawers`, chacun
 // { id, title, message, brief, key, route }) est fermé tant que sa clé n'a pas joué. Ce fichier dit, pour UN pilote à UN instant, l'état
 // de chaque tiroir, d'après :
-//   · l'heure (clé `time`) et l'heure de repli (clés `zone` et `object`, `key.fallbackMin`) : CALCULÉES, jamais écrites ;
+//   · l'heure (clé `time`) et l'heure de repli (`key.fallbackMin` d'une clé jugée en vol : `zone`, `object`, et toute clé que ce fichier
+//     ne sait pas encore juger — « arrivée », cible mobile : elle n'est pas refusée, le tiroir reste fermé et s'ouvre au geste ou à son
+//     heure de repli) : CALCULÉES, jamais écrites ;
 //   · les CARNETS : un par pilote et par mission, `pilot/<TRI>/missions/<ID>.json` — chacun n'écrit que le sien (aucun conflit
 //     d'écriture) ; seuls les gestes (« Ouvrir le tiroir ») et les constats (zone franchie, objet trouvé) s'y écrivent.
 // « Ouvert pour tous » (décision de l'utilisateur, 17/11/2026, Q-0087) se CALCULE : un tiroir est ouvert dès que le carnet d'UN pilote
@@ -259,7 +261,8 @@ export function stateOf(drawers, {
         delay = Number.isFinite(key.delayMin) ? Math.min(1440, Math.max(0, key.delayMin)) : 0;
       if (ref != null && m != null) dueAt = ref + (m + delay) * 60e3;
       estimated = !real || m !== 0; // un départ prévu, ou un passage estimé sur la route prévue : « heure estimée »
-    } else if ((key.kind === 'zone' || key.kind === 'object') && Number.isFinite(key.fallbackMin) && ref != null) {
+    } else if (key.kind !== 'hand' && Number.isFinite(key.fallbackMin) && ref != null) {
+      // toute clé jugée en vol (zone, objet — et celles que ce fichier ne sait pas encore juger : « arrivée », cible mobile) a son repli
       dueAt = ref + Math.min(1440, Math.max(0, key.fallbackMin)) * 60e3;
       estimated = !real;
     }

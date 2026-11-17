@@ -341,6 +341,41 @@
   ck('sans heure de repli dans le fichier : jamais ouvert par l\'heure', by(s, 'C').open === false && by(s, 'C').dueAt === null, by(s,
     'C'));
 
+  const arrival = [{
+    id: 'B',
+    title: 'Au terrain',
+    key: {
+      kind: 'arrival',
+      point: 'LFXX',
+      fallbackMin: 120
+    }
+  }, {
+    id: 'C',
+    key: {
+      kind: 'actor'
+    }
+  }];
+  s = st({
+    drawers: arrival,
+    others: [
+      ['BBB', peer('B', T0 + 30 * MIN, 'zone')]
+    ],
+    now: T0 + 119 * MIN
+  });
+  const s3 = st({
+    drawers: arrival,
+    now: T0 + 30 * H
+  });
+  ck('une clé que le calcul ne sait pas juger (« arrivée », cible mobile) n\'est pas refusée : fermé, sa clé gardée ; le repli l\'ouvre s\'il existe, sinon le geste seul ; un constat de zone d\'un autre n\'y vaut rien',
+    by(s, 'B').open === false && by(s, 'B').key.kind === 'arrival' && by(s, 'B').dueAt === T0 + 120 * MIN && by(s, 'B').refused[0]
+    ?.why === 'key' && by(s3, 'B').how === 'fallback' && by(s3, 'C').open === false && by(s3, 'C').dueAt === null && by(D.stateOf(
+      arrival, {
+        me: 'AAA',
+        seance: sc,
+        book: D.readBook(D.withOpen(null, ctx(T0), 'C'), ID),
+        now: T0 + MIN
+      }), 'C').how === 'hand', [s, s3]);
+
   // ---- le geste du pilote, et le carnet écrit
   const opened = D.withOpen(null, ctx(T0 + 20 * MIN), 'D');
   ck('withOpen : le carnet à écrire — une clé de premier niveau par tiroir, la séance, l\'auteur, la date', JSON.stringify(opened) === JSON

@@ -302,7 +302,12 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   himself; another pilot's opening keeps the drawer open.
 - **The limit, stated**: without accounts, a pilot of the mission who writes a false but plausible finding in his own record opens
   the drawer; it is not prevented, it is said everywhere (who, when, how).
-- **Where the state is kept is still being settled** (17 Nov, 18 h 30): this batch reads one record per pilot; the specification
-  (§ 3, version 2) describes one append-only journal per play. The rules above are the same in both forms (the same entries, the
-  same guards); only the reading and the writing of batch T2 depend on it.
+- **One record per pilot, settled** (the ergonomist, 17 Nov, 18 h 30): the shared append-only journal per play considered the same
+  day is dropped — a file written by several workstations at once would rest on a merge at every stage of the synchronisation.
+- **What the Centre must know**: the play of an assigned mission is the UTC day of its first take-off, so **moving an assignment to
+  another day starts a new play — the drawers are closed again** for every pilot (the old records no longer count); moving it within
+  the same day keeps them.
+- **A key this batch cannot judge yet** (the « arrivée » key and the moving target of the mission editor's format,
+  `organisation/SPEC_MISSIONS_TIROIRS.md` § 10.3) is not refused: the drawer stays closed and opens by the gesture, or at its fallback
+  time when the file gives one; a finding written for it in another pilot's record is refused (`key`).
 - Bench: `modules/missions/test/drawers.html` (case N80). Nothing on screen yet: the « Tiroirs » section is batch T2.
