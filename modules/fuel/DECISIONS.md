@@ -2314,3 +2314,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the source). At the opening and back to the foreground, Fuel asks `natEnsure()` once (the age rule is aerodb's: stale, or read more
   than an hour ago), silently, no timer; the line is redrawn when the tracks were read. Stale tracks keep « Lire les routes NAT du
   jour ». F254 (aerodb's NAT state held by the case; red on the parent: « valides jusqu'à », no reread).
+- **17 Nov 2026 — SOG-0413, the ergonomist's reading of the capture F254**: the result of a reread on ITS line, with its time
+  (« Relu à 14 h 05 Z : 8 routes ajoutées vers l'est. », `.fu-natout` a block); the time of the last read outside any reread
+  (« lues à 08 h 02 Z ») captured in that state; in German « Tracks », the word of the rest of the screen (not « Routen »).
+  F254 grows the three checks.

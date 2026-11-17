@@ -322,13 +322,13 @@ const TX = {
   natE: ['vers l’est {t}', 'eastbound {t}', 'nach Osten {t}', 'hacia el este {t}'],
   natW0: ['aucune vers l’ouest', 'none westbound', 'keine nach Westen', 'ninguna hacia el oeste'],
   natE0: ['aucune vers l’est', 'none eastbound', 'keine nach Osten', 'ninguna hacia el este'],
-  natAddedW: ['{n} route(s) ajoutée(s) vers l’ouest', '{n} westbound track(s) added', '{n} Route(n) nach Westen hinzugefügt',
+  natAddedW: ['{n} route(s) ajoutée(s) vers l’ouest', '{n} westbound track(s) added', '{n} Track(s) nach Westen hinzugefügt',
     '{n} ruta(s) añadida(s) hacia el oeste'
   ],
-  natAddedE: ['{n} route(s) ajoutée(s) vers l’est', '{n} eastbound track(s) added', '{n} Route(n) nach Osten hinzugefügt',
+  natAddedE: ['{n} route(s) ajoutée(s) vers l’est', '{n} eastbound track(s) added', '{n} Track(s) nach Osten hinzugefügt',
     '{n} ruta(s) añadida(s) hacia el este'
   ],
-  natAdded: ['Relu : {l}.', 'Read again: {l}.', 'Erneut gelesen: {l}.', 'Releído: {l}.'],
+  natAdded: ['Relu à {t} : {l}.', 'Read again at {t}: {l}.', 'Erneut gelesen um {t}: {l}.', 'Releído a las {t}: {l}.'],
   natNothing: ['Relu : rien de nouveau à la source.', 'Read again: nothing new at the source.',
     'Erneut gelesen: nichts Neues an der Quelle.',
     'Releído: nada nuevo en la fuente.'
@@ -2559,6 +2559,7 @@ const STYLE = `
 [data-module="fuel"] .fu-step[hidden]{display:none}
 [data-module="fuel"] .fu-startnote:empty{display:none}
 [data-module="fuel"] .fu-flightstate{font-weight:700;color:var(--sog-accent)}
+[data-module="fuel"] .fu-natout{display:block} /* SOG-0413 : le résultat d'une lecture des routes NAT sur sa ligne, jamais collé à la phrase */
 [data-module="fuel"] .fu-fpltext{white-space:pre-wrap;word-break:break-all;font-family:var(--sog-mono, ui-monospace, monospace);font-size:var(--sog-size-s);margin:6px 0;user-select:all} /* SOG-0402 : le message à relire */
 [data-module="fuel"] .fu-fplnotes{margin:4px 0;padding-left:1.2em}
 [data-module="fuel"] tr[data-altnpart]>td:first-child{padding-left:1.2em;color:var(--sog-muted)} /* SOG-0399 : les parts du dégagement, en retrait */
@@ -4451,12 +4452,13 @@ async function natLine() {
       t: zTime(out.t),
       d: day(out.d)
     }) : out.why === 'added' ? tt(TX.natAdded, {
+      t: zTime(out.t),
       l: out.l
     }) : out.why === 'nothing' ? tt(TX.natNothing) : out.why === 'same' ? tt(TX.natSame, {
       d: day(out.d)
     }) : tt(TX.natFail);
   if (fresh && !s.natOut?.forced) s.natOut = null;
-  box.innerHTML = `<span class="${fresh ? 'f-muted' : 'f-warn'}" data-natstate="${fresh ? 'ok' : st?.present ? 'old' : 'none'}">${esc(text)}</span>${st?.readAt ? ` <span class="f-muted" data-natreadat>(${esc(tt(TX.natReadAt, { t: zTime(st.readAt) }))})</span>` : ''}${out ? ` <span class="${['added', 'nothing'].includes(out.why) ? 'f-muted' : 'f-warn'}" data-natfail="${esc(out.why)}">${esc(why)}</span>` : ''}${here && !fresh ? ` <button type="button" class="fu-linkbtn" data-do="natread">${esc(tt(TX.natRead))}</button>` : here ? ` <button type="button" class="fu-linkbtn" data-do="natreread">${esc(tt(TX.natReread))}</button>` : ''}`;
+  box.innerHTML = `<span class="${fresh ? 'f-muted' : 'f-warn'}" data-natstate="${fresh ? 'ok' : st?.present ? 'old' : 'none'}">${esc(text)}</span>${st?.readAt ? ` <span class="f-muted" data-natreadat>(${esc(tt(TX.natReadAt, { t: zTime(st.readAt) }))})</span>` : ''}${out ? ` <span class="fu-natout ${['added', 'nothing', 'unchanged', 'renewed'].includes(out.why) ? 'f-muted' : 'f-warn'}" data-natfail="${esc(out.why)}">${esc(why)}</span>` : ''}${here && !fresh ? ` <button type="button" class="fu-linkbtn" data-do="natread">${esc(tt(TX.natRead))}</button>` : here ? ` <button type="button" class="fu-linkbtn" data-do="natreread">${esc(tt(TX.natReread))}</button>` : ''}`;
   box.hidden = false;
   // SOG-0372 (b) : des routes valides lues : les propositions par des routes NAT d'un autre jour partent
   s.natDay = fresh ? day(st.from) : '';
@@ -4614,6 +4616,7 @@ async function natRead(force = false) {
       forced: true
     } : add.length ? {
       why: 'added',
+      t: new Date().toISOString(),
       l: add.join(', '),
       forced: true
     } : r.refreshed ? {

@@ -7351,7 +7351,7 @@ def f254(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.page.add_init_script(_NAT_STUB_ARGS)
     c.page.add_init_script("""(() => { const t = setInterval(() => { if (!window.__nat) return; clearInterval(t);
-      window.__nat.st = { present: true, count: 6, from: '2026-11-17T11:30:00.000Z', validUntil: '2026-11-17T19:00:00.000Z', expired: false, current: 6 };
+      window.__nat.st = { present: true, readAt: '2026-11-17T08:02:00.000Z', count: 6, from: '2026-11-17T11:30:00.000Z', validUntil: '2026-11-17T19:00:00.000Z', expired: false, current: 6 };
       window.__nat.tracks = %s; }, 5) })()""" % json.dumps(_NAT_W))
     _route_launcher(c, ['route/compute'])
     c.open('fuel', docs=_nat_flight())
@@ -7362,6 +7362,11 @@ def f254(c):
             .replace('{e}', tx(T, 'natE0', L)))
     c.eq(norm(c.text(f'{Lx} [data-natstate]') or ''), norm(want), 'the directions present and their window', what='line')
     c.eq(norm(c.text(f'{Lx} [data-do=natreread]') or ''), norm(tx(T, 'natReread', L)), '« Relire les routes NAT » with valid tracks', what='reread')
+    # the time of the last read, outside any reread (the ergonomist's reading of the capture: not shown)
+    c.ok(norm(tx(T, 'natReadAt', L).replace('{t}', _zt(L, '08', '02'))) in norm(c.text(f'{Lx} [data-natreadat]') or ''), c.text(Lx),
+         '« lues à 08 h 02 Z »')
+    c.js(f"document.querySelector('{Lx}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F254_{c.design}_390_{L}_readat.png')
     # the forced read, the message unchanged: said with its time and day
     c.tap(f'{Lx} [data-do="natreread"]')
     c.until("window.__nat.args && window.__nat.args.force === true && window.__nat.go !== null", timeout=8000, what='a FORCED natEnsure asked')
@@ -7384,6 +7389,9 @@ def f254(c):
     c.until(f"document.querySelector('{Lx} [data-natfail]')?.dataset.natfail === 'added'", timeout=5000, what='what the read brought')
     added = re.sub(r'\((s|n|es)\)', r'\1', tx(T, 'natAddedE', L)).replace('{n}', '8')
     c.ok(norm(added) in norm(c.text(f'{Lx} [data-natfail]') or ''), c.text(Lx), '« Relu : 8 routes ajoutées vers l\'est. »')
+    # on ITS line, with its time (the ergonomist: it was glued to the sentence)
+    c.ok(norm(tx(T, 'natAdded', L).split('{t}')[0]) in norm(c.text(f'{Lx} [data-natfail]') or ''), c.text(Lx), 'with the time of the read')
+    c.eq(c.js(f"getComputedStyle(document.querySelector('{Lx} [data-natfail]')).display"), 'block', 'on its own line', what='own line')
     c.ok(norm(tx(T, 'natE', L).split('{t}')[0]) in norm(c.text(f'{Lx} [data-natstate]') or ''), c.text(Lx), 'the line now says the eastbound ones')
     c.js(f"document.querySelector('{Lx}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F254_{c.design}_390_{L}.png')
