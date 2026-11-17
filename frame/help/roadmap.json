@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f368b0e",
-  "fiches": 442,
+  "organisation": "1616c4a",
+  "fiches": 444,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1136,12 +1136,11 @@
     {
      "id": "SOG-0432",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Carburant, Procédures : « une lecture de Little Navmap est déjà en cours » — un vieux verrou qui traîne empêche de relire",
      "en": "Fuel, Procedures: “a Little Navmap read is already in progress” — a stale lock prevents reading again",
      "de": "Kraftstoff, Verfahren: „ein Little-Navmap-Lesevorgang läuft bereits“ — eine alte Sperre verhindert das erneute Lesen",
-     "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer",
-     "test": true
+     "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer"
     },
     {
      "id": "SOG-0438",
@@ -2639,12 +2638,11 @@
     {
      "id": "SOG-0431",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Plan de vol : un changement de niveau écrit « F205 » est refusé par Eurocontrol (SYN101, niveau invalide dans la route)",
      "en": "Flight plan: a level change written “F205” is refused by Eurocontrol (SYN101, invalid level in the route)",
      "de": "Flugplan: ein als „F205“ geschriebener Höhenwechsel wird von Eurocontrol abgelehnt (SYN101, ungültige Flugfläche in der Route)",
-     "es": "Plan de vuelo: un cambio de nivel escrito «F205» es rechazado por Eurocontrol (SYN101, nivel inválido en la ruta)",
-     "test": true
+     "es": "Plan de vuelo: un cambio de nivel escrito «F205» es rechazado por Eurocontrol (SYN101, nivel inválido en la ruta)"
     }
    ]
   },
@@ -3718,6 +3716,24 @@
      "en": "Drawer missions: the drawer format and its reading (V2 parts and the new keys), no screen",
      "de": "Schubladen-Missionen: das Format der Schubladen und sein Lesen (V2-Teile und die neuen Schlüssel), ohne Bildschirm",
      "es": "Misiones de cajones: el formato de los cajones y su lectura (las partes de la V2 y las claves nuevas), sin pantalla"
+    },
+    {
+     "id": "SOG-0444",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : l'éditeur de la V3 prend la forme de la maquette (la carte, le déroulé, la fiche) — un seul outil d'auteur",
+     "en": "Mission workshop: the V3 editor takes the shape of the mock-up (map, sequence, sheet) — one author tool",
+     "de": "Missionswerkstatt: der V3-Editor nimmt die Form des Entwurfs an (Karte, Ablauf, Blatt) — ein einziges Autorenwerkzeug",
+     "es": "Taller de misiones: el editor de la V3 toma la forma de la maqueta (mapa, secuencia, ficha) — una sola herramienta de autor"
+    },
+    {
+     "id": "SOG-0445",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : les tiroirs — cinq clés, l'heure de repli, l'aperçu et la « vue du pilote » par stade",
+     "en": "Mission workshop: drawers — five keys, the fallback time, the preview and the “pilot's view” per stage",
+     "de": "Missionswerkstatt: Schubladen — fünf Schlüssel, die Ausweichzeit, die Vorschau und die „Pilotensicht“ je Stufe",
+     "es": "Taller de misiones: cajones — cinco claves, la hora de respaldo, la vista previa y la «vista del piloto» por etapa"
     }
    ]
   },
@@ -5723,7 +5739,7 @@
     {
      "id": "SOG-0428",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Données, Procédures : « à faire — LF : téléchargé, pas construit » — un code au lieu d'un nom, et la carte dit le contraire (France en vert)",
      "en": "Data, Procedures: “to do — LF: downloaded, not built” — a code instead of a name, and the map says the opposite (France in green)",
      "de": "Daten, Verfahren: „zu erledigen — LF: heruntergeladen, nicht aufgebaut“ — ein Code statt eines Namens, und die Karte sagt das Gegenteil (Frankreich grün)",

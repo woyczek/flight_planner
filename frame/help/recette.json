@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 291,
+  "tests": 292,
   "verdicts": 212
  },
  "apps": [
@@ -4309,6 +4309,19 @@
    "delivered": "2026-11-17T16:38:42Z"
   },
   {
+   "id": "SOG-0428",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, Procédures : « à faire — LF : téléchargé, pas construit » — un code au lieu d'un nom, et la carte dit le contraire (France en vert)",
+    "en": "Data, Procedures: “to do — LF: downloaded, not built” — a code instead of a name, and the map says the opposite (France in green)",
+    "de": "Daten, Verfahren: „zu erledigen — LF: heruntergeladen, nicht aufgebaut“ — ein Code statt eines Namens, und die Karte sagt das Gegenteil (Frankreich grün)",
+    "es": "Datos, Procedimientos: «por hacer — LF: descargado, sin construir» — un código en vez de un nombre, y el mapa dice lo contrario (Francia en verde)"
+   },
+   "test": "Lanceur relancé, page rechargée. Données, Procédures. Attendu : (1) en tête, une ligne « France : 14 terrains lus à la main, à jour… » — plus « Procédures à faire — LF : téléchargé, pas construit » ; (2) sur la carte, la France hachurée (lue à la main, pas construite en entier) ; (3) nulle part un code de pays seul (« LF ») là où l'écran peut dire « France ».",
+   "since": "2026-11-17",
+   "state": "known"
+  },
+  {
    "id": "SOG-0429",
    "app": "maintenance",
    "title": {
@@ -4347,8 +4360,7 @@
    },
    "test": "Carburant, ton vol EGGW → LQSA (page rechargée), « Copier pour Eurocontrol ». Attendu : (1) le groupe au point NOHAT s'écrit « NOHAT/N0405F200 » et non plus « …F205 » ; (2) le pli dit « Niveau F205 écrit F200 : un niveau de croisière va de dix en dix. » ; (3) la copie n'est pas bloquée ; (4) collé à Eurocontrol : plus d'erreur SYN101 (les erreurs de route restent, suivies en SOG-0423).",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T16:22:02Z"
+   "state": "known"
   },
   {
    "id": "SOG-0432",
@@ -4359,10 +4371,9 @@
     "de": "Kraftstoff, Verfahren: „ein Little-Navmap-Lesevorgang läuft bereits“ — eine alte Sperre verhindert das erneute Lesen",
     "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer"
    },
-   "test": "Carburant, Procédures, sur le poste. (1) Lance « Lire depuis Little Navmap » pour un terrain, puis clique de nouveau pendant la lecture : la note dit « Cette page lit déjà XXXX dans Little Navmap depuis n s. » (elle nomme le terrain et dit depuis quand) ; (2) une lecture qui ne répond pas est abandonnée au bout de deux minutes et le dit ; le lien redevient utilisable ; (3) si le lanceur refuse parce que six lectures sont en cours, la note le dit à part : « le lanceur a déjà six lectures en cours ; réessayez quand l'une aura fini. » — dans ce cas seulement, relancer le lanceur lève le blocage (le correctif du lanceur vient ensuite).",
+   "test": "Carburant, Procédures, sur le poste. (1) Lance « Lire depuis Little Navmap » pour un terrain, puis clique de nouveau pendant la lecture : la note dit « Cette page lit déjà XXXX dans Little Navmap depuis n s. » (elle nomme le terrain et dit depuis quand) ; (2) une lecture qui ne répond pas est abandonnée au bout de deux minutes et le dit ; le lien redevient utilisable ; (3) si le lanceur refuse parce que six lectures sont en cours, la note le dit à part : « le lanceur a déjà six lectures en cours ; réessayez quand l'une aura fini. » — dans ce cas seulement, relancer le lanceur lève le blocage (le correctif du lanceur vient ensuite). Lanceur relancé le 17/11 au soir — (c) une lecture restée sa",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T16:22:03Z"
+   "state": "known"
   },
   {
    "id": "SOG-0435",
@@ -4406,38 +4417,6 @@
     "Pour lui seul : les autres lisent « RBR l'a ouvert à la main » et gardent leur tiroir fermé",
     "Pour tous, comme la zone",
     "Supprimer le geste manuel : seules la zone, l'objet, l'heure et l'heure de repli ouvrent",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0095",
-   "fiche": "SOG-0436",
-   "app": "compagnie",
-   "question": "Missions à tiroir : ta maquette écrit la zone, l'objet et la cible en tête du fichier. Comment garde-t-on le secret d'un tiroir fermé ?",
-   "context": "J'ai lu ta maquette : ma recommandation CHANGE. La zone et l'objet cités par leur identifiant servent à plusieurs choses (deux tiroirs, la route de la cible, l'édition sur la carte) : les écrire dans le tiroir casserait ton contrat. Reste le défaut : la fiche de la mission, la Carte et la V2 montrent dès le départ tout ce qui est en tête — dans l'exemple « glacier », la position du randonneur se lit trois fois avant le décollage. Ma proposition : ton format ne bouge pas, c'est le LECTEUR de la V3 qui ne montre un lieu, une zone ou un objet que s'il est cité par la partie A ou par un tiroir déjà ouvert (et une zone « montrée » par son auteur). La V2, elle, continuera de tout montrer.",
-   "options": [
-    "Le format de ta maquette ne bouge pas ; la V3 ne montre que ce que cite la partie A ou un tiroir ouvert ; la V2 montre tout, c'est accepté",
-    "Comme le choix 1, et ta maquette range en plus ce qui est scellé dans des listes que la V2 ne lit pas (rien ne fuit en V2 non plus)",
-    "Dans le tiroir : la zone, l'objet et les lieux d'un tiroir n'existent qu'en lui (ta maquette change son contrat)",
-    "Ce n'est pas un secret : tout reste visible dès le départ"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0096",
-   "fiche": "SOG-0436",
-   "app": "compagnie",
-   "question": "Le générateur porté en V3 : un seul outil d'auteur, ou deux ?",
-   "context": "La V3 a déjà un éditeur de mission en six étapes (un formulaire ; les positions s'y tapent en degrés). Ta maquette est un atelier : la carte, le déroulé A-B-C-D dessous, la fiche à droite. Deux outils pour écrire le même fichier, c'est deux fois les défauts et un auteur qui ne sait pas lequel ouvrir. Lecture complète : organisation/SPEC_MISSIONS_TIROIRS.md, § 10.",
-   "options": [
-    "Un seul : l'atelier devient l'éditeur de la V3 à l'ordinateur ; les six étapes deviennent les groupes de sa fiche, et restent le chemin au téléphone",
-    "Deux : l'éditeur en six étapes reste tel quel ; l'atelier s'ajoute, sous le nom « Générateur »",
-    "L'atelier ne remplace que la carte et l'étape « Tiroirs » de l'éditeur actuel ; les autres étapes restent des formulaires",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-17",
