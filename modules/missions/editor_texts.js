@@ -69,10 +69,10 @@ export const EDTX = {
   atVisible: ['visible', 'visible', 'sichtbar', 'visible'],
   atSealed: ['tiroir scellé', 'sealed drawer', 'versiegelte Schublade', 'cajón sellado'],
   atDrawer: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
-  atDrawersKept: ['Les tiroirs de ce fichier sont gardés tels quels ; ils se modifieront ici dans un prochain lot.',
-    'The drawers of this file are kept as they are; they will be edited here in a coming batch.',
-    'Die Schubladen dieser Datei bleiben unverändert; sie werden in einem kommenden Los hier bearbeitet.',
-    'Los cajones de este archivo se conservan tal cual; se modificarán aquí en un próximo lote.'
+  atDrawersKept: ['Les tiroirs de ce fichier sont gardés tels quels ; ils ne se modifient pas encore ici.',
+    'The drawers of this file are kept as they are; they cannot be edited here yet.',
+    'Die Schubladen dieser Datei bleiben unverändert; sie lassen sich hier noch nicht bearbeiten.',
+    'Los cajones de este archivo se conservan tal cual; aún no se modifican aquí.'
   ],
   atKey_time: ['clé : heure', 'key: hour', 'Schlüssel: Uhrzeit', 'llave: hora'],
   atKey_zone: ['clé : zone de passage', 'key: passage zone', 'Schlüssel: Durchflugzone', 'llave: zona de paso'],
