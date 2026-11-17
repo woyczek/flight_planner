@@ -63,3 +63,4 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Performances : mesures du 8 octobre](perf/RAPPORT_2026-10-08.md) | Planning et Cartes de vol dans Chrome (onglet visible) : requêtes, DOM, tâches longues, base SIA ; trois lots de correction |
 
 - [V3_SPECIFICATION.md](V3_SPECIFICATION.md) — V3: three applications (Pilot, CPCO, SOG client), one frame, modules; specification in progress, decisions log.
+- [V3_ARCHITECTURE.md](V3_ARCHITECTURE.md) — V3 architecture at a glance: five diagrams (suite, frame, aerodb, route engine and matrix, delivery) with links to the detailed documents.

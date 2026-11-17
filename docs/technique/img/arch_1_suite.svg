@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 376" role="img" aria-labelledby="t1 d1" font-family="sans-serif">
+<title id="t1">The suite at a glance</title>
+<desc id="d1">Applications are sets of modules; modules stand on the frame; the frame mounts aerodb and reaches the private data repository directly or through the launcher on the workstation.</desc>
+<style>
+.t{font:600 14px sans-serif;fill:#1a1a1a}
+.s,.k{font:12px sans-serif;fill:#4a4a4a}
+.code{fill:#e3eefb;stroke:#3b78c4;stroke-width:1.5}
+.ws{fill:#e6f3e3;stroke:#4f8a3f;stroke-width:1.5}
+.data{fill:#eeeeee;stroke:#888888;stroke-width:1.5}
+.ar{stroke:#555555;stroke-width:1.5;fill:none}
+.mk{fill:#555555}
+@media (prefers-color-scheme: dark){
+.t{fill:#f2f2f2}
+.s,.k{fill:#c4c4c4}
+.code{fill:#1f3552;stroke:#6aa3e8}
+.ws{fill:#243b21;stroke:#7cc06a}
+.data{fill:#333333;stroke:#9a9a9a}
+.ar{stroke:#bbbbbb}
+.mk{fill:#bbbbbb}
+}
+</style>
+<defs>
+<marker id="m1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0 0L10 5L0 10z"/></marker>
+</defs>
+<rect class="code" x="200" y="20" width="280" height="54" rx="4"/>
+<text class="t" x="340" y="42" text-anchor="middle">Applications</text>
+<text class="s" x="340" y="60" text-anchor="middle">Pilot, Company, Maintenance</text>
+<rect class="code" x="200" y="110" width="280" height="54" rx="4"/>
+<text class="t" x="340" y="132" text-anchor="middle">Modules</text>
+<text class="s" x="340" y="150" text-anchor="middle">fuel, maps, report, data</text>
+<rect class="code" x="200" y="200" width="280" height="54" rx="4"/>
+<text class="t" x="340" y="222" text-anchor="middle">Frame</text>
+<text class="s" x="340" y="240" text-anchor="middle">cache, sync, navigation</text>
+<rect class="code" x="20" y="200" width="150" height="54" rx="4"/>
+<text class="t" x="95" y="222" text-anchor="middle">aerodb</text>
+<text class="s" x="95" y="240" text-anchor="middle">aeronautical service</text>
+<rect class="ws" x="510" y="200" width="150" height="54" rx="4"/>
+<text class="t" x="585" y="222" text-anchor="middle">Launcher</text>
+<text class="s" x="585" y="240" text-anchor="middle">workstation server</text>
+<rect class="data" x="200" y="290" width="460" height="54" rx="4"/>
+<text class="t" x="430" y="312" text-anchor="middle">Data repository</text>
+<text class="s" x="430" y="330" text-anchor="middle">private git, shared by the group</text>
+<path class="ar" d="M340 74V108" marker-end="url(#m1)"/>
+<path class="ar" d="M340 164V198" marker-end="url(#m1)"/>
+<path class="ar" d="M200 227H172" marker-end="url(#m1)"/>
+<path class="ar" d="M482 227H508" marker-start="url(#m1)" marker-end="url(#m1)"/>
+<path class="ar" d="M340 254V288" marker-start="url(#m1)" marker-end="url(#m1)"/>
+<path class="ar" d="M585 254V288" marker-start="url(#m1)" marker-end="url(#m1)"/>
+<rect class="code" x="20" y="358" width="12" height="12"/>
+<text class="k" x="38" y="368">code of the suite</text>
+<rect class="ws" x="170" y="358" width="12" height="12"/>
+<text class="k" x="188" y="368">workstation only</text>
+<rect class="data" x="320" y="358" width="12" height="12"/>
+<text class="k" x="338" y="368">data</text>
+</svg>

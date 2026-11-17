@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 404" role="img" aria-labelledby="t4 d4" font-family="sans-serif">
+<title id="t4">The route engine and the matrix</title>
+<desc id="d4">Official sources, the daily NAT message and X-Plane on the workstation feed the navigation base compiled by the launcher. The base feeds the route engine. The fuel screen and the matrix call the engine. The engine returns itineraries to the screens and a measurement table to the bench.</desc>
+<style>
+.t{font:600 14px sans-serif;fill:#1a1a1a}
+.s,.k{font:12px sans-serif;fill:#4a4a4a}
+.data{fill:#eeeeee;stroke:#888888;stroke-width:1.5}
+.use{fill:#e3eefb;stroke:#3b78c4;stroke-width:1.5}
+.bench{fill:#fdebd9;stroke:#c46a1a;stroke-width:1.5}
+.ar{stroke:#555555;stroke-width:1.5;fill:none}
+.mk{fill:#555555}
+@media (prefers-color-scheme: dark){
+.t{fill:#f2f2f2}
+.s,.k{fill:#c4c4c4}
+.data{fill:#333333;stroke:#9a9a9a}
+.use{fill:#1f3552;stroke:#6aa3e8}
+.bench{fill:#4a2e14;stroke:#e8954a}
+.ar{stroke:#bbbbbb}
+.mk{fill:#bbbbbb}
+}
+</style>
+<defs>
+<marker id="m4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0 0L10 5L0 10z"/></marker>
+</defs>
+<rect class="data" x="20" y="20" width="200" height="54" rx="4"/>
+<text class="t" x="120" y="42" text-anchor="middle">Official sources</text>
+<text class="s" x="120" y="60" text-anchor="middle">AIP, FAA, RAD</text>
+<rect class="data" x="240" y="20" width="200" height="54" rx="4"/>
+<text class="t" x="340" y="42" text-anchor="middle">NAT message</text>
+<text class="s" x="340" y="60" text-anchor="middle">re-read every day</text>
+<rect class="data" x="460" y="20" width="200" height="54" rx="4"/>
+<text class="t" x="560" y="42" text-anchor="middle">X-Plane on the workstation</text>
+<text class="s" x="560" y="60" text-anchor="middle">fallback, later</text>
+<rect class="data" x="20" y="110" width="640" height="54" rx="4"/>
+<text class="t" x="340" y="132" text-anchor="middle">Navigation base on the workstation (aerodb)</text>
+<text class="s" x="340" y="150" text-anchor="middle">compiled by the launcher</text>
+<rect class="use" x="240" y="200" width="200" height="54" rx="4"/>
+<text class="t" x="340" y="222" text-anchor="middle">Route engine</text>
+<text class="s" x="340" y="240" text-anchor="middle">Europe, ocean, America</text>
+<rect class="use" x="20" y="200" width="180" height="54" rx="4"/>
+<text class="t" x="110" y="222" text-anchor="middle">Fuel screen</text>
+<text class="s" x="110" y="240" text-anchor="middle">one request</text>
+<rect class="bench" x="480" y="200" width="180" height="54" rx="4"/>
+<text class="t" x="570" y="222" text-anchor="middle">Matrix</text>
+<text class="s" x="570" y="240" text-anchor="middle">144 requests</text>
+<rect class="use" x="20" y="300" width="300" height="54" rx="4"/>
+<text class="t" x="170" y="322" text-anchor="middle">Itineraries on screen</text>
+<text class="s" x="170" y="340" text-anchor="middle">Fuel and Map</text>
+<rect class="bench" x="360" y="300" width="300" height="54" rx="4"/>
+<text class="t" x="510" y="322" text-anchor="middle">Measurement table</text>
+<text class="s" x="510" y="340" text-anchor="middle">routes, time, lengths</text>
+<path class="ar" d="M120 74V108" marker-end="url(#m4)"/>
+<path class="ar" d="M340 74V108" marker-end="url(#m4)"/>
+<path class="ar" d="M560 74V108" marker-end="url(#m4)"/>
+<path class="ar" d="M340 164V198" marker-end="url(#m4)"/>
+<path class="ar" d="M202 227H238" marker-end="url(#m4)"/>
+<path class="ar" d="M478 227H442" marker-end="url(#m4)"/>
+<path class="ar" d="M300 254L170 298" marker-end="url(#m4)"/>
+<path class="ar" d="M380 254L510 298" marker-end="url(#m4)"/>
+<rect class="data" x="20" y="382" width="12" height="12"/>
+<text class="k" x="38" y="392">data</text>
+<rect class="use" x="100" y="382" width="12" height="12"/>
+<text class="k" x="118" y="392">what the pilot uses</text>
+<rect class="bench" x="270" y="382" width="12" height="12"/>
+<text class="k" x="288" y="392">measurement bench, outside the app</text>
+</svg>

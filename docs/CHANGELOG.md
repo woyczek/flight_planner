@@ -11,6 +11,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Developer documentation: the V3 architecture at a glance** (SOG-0405; the user, 17 Nov) — a new overview, `docs/technique/V3_ARCHITECTURE.md`, with five small diagrams (the suite, the frame, aerodb, the route engine and the matrix, how a change is delivered), each drawn from the existing documents of its zone and linked to them; what no document states is listed under « To confirm » for the owner of the zone. No code change.
 - **Map: a NAT route with a single level is labelled « NAT A FL370 »**, not « FL370–370 » (the ergonomist, 17 Nov); D249 (red before: « NAT E4 FL370–370 »).
 
 - **Aircraft, sheets: two fields « Dégagement · remise des gaz (min) » and « Dégagement · approche (min) » (0 to 60) set the flat allowances Fuel adds to the alternate** (aircraft DECISIONS; noreg M51; SOG-0399).

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 300" role="img" aria-labelledby="t5 d5" font-family="sans-serif">
+<title id="t5">How a change is delivered</title>
+<desc id="d5">A session commits a lot locally. The Essais session replays the cases. The integrator combines the ready lots into a candidate. The user tests the cards in Recette and gives a verdict. A refused card returns to a session.</desc>
+<style>
+.t{font:600 14px sans-serif;fill:#1a1a1a}
+.s,.k{font:12px sans-serif;fill:#4a4a4a}
+.code{fill:#e3eefb;stroke:#3b78c4;stroke-width:1.5}
+.test{fill:#fdebd9;stroke:#c46a1a;stroke-width:1.5}
+.user{fill:#e6f3e3;stroke:#4f8a3f;stroke-width:1.5}
+.ar{stroke:#555555;stroke-width:1.5;fill:none}
+.ard{stroke:#555555;stroke-width:1.5;fill:none;stroke-dasharray:5 4}
+.mk{fill:#555555}
+@media (prefers-color-scheme: dark){
+.t{fill:#f2f2f2}
+.s,.k{fill:#c4c4c4}
+.code{fill:#1f3552;stroke:#6aa3e8}
+.test{fill:#4a2e14;stroke:#e8954a}
+.user{fill:#243b21;stroke:#7cc06a}
+.ar,.ard{stroke:#bbbbbb}
+.mk{fill:#bbbbbb}
+}
+</style>
+<defs>
+<marker id="m5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk" d="M0 0L10 5L0 10z"/></marker>
+</defs>
+<rect class="code" x="20" y="20" width="190" height="54" rx="4"/>
+<text class="t" x="115" y="42" text-anchor="middle">Session</text>
+<text class="s" x="115" y="60" text-anchor="middle">commits a lot locally</text>
+<rect class="test" x="245" y="20" width="190" height="54" rx="4"/>
+<text class="t" x="340" y="42" text-anchor="middle">Essais session</text>
+<text class="s" x="340" y="60" text-anchor="middle">replays the cases</text>
+<rect class="code" x="470" y="20" width="190" height="54" rx="4"/>
+<text class="t" x="565" y="42" text-anchor="middle">Integrator</text>
+<text class="s" x="565" y="60" text-anchor="middle">combines the ready lots</text>
+<rect class="code" x="470" y="110" width="190" height="54" rx="4"/>
+<text class="t" x="565" y="132" text-anchor="middle">Candidate</text>
+<text class="s" x="565" y="150" text-anchor="middle">frozen commit, evening pass</text>
+<rect class="user" x="245" y="110" width="190" height="54" rx="4"/>
+<text class="t" x="340" y="132" text-anchor="middle">Recette</text>
+<text class="s" x="340" y="150" text-anchor="middle">the user tests each card</text>
+<rect class="user" x="20" y="110" width="190" height="54" rx="4"/>
+<text class="t" x="115" y="132" text-anchor="middle">Verdict</text>
+<text class="s" x="115" y="150" text-anchor="middle">validated, reserves, refused</text>
+<path class="ar" d="M212 47H243" marker-end="url(#m5)"/>
+<path class="ar" d="M437 47H468" marker-end="url(#m5)"/>
+<path class="ar" d="M565 74V108" marker-end="url(#m5)"/>
+<path class="ar" d="M468 137H437" marker-end="url(#m5)"/>
+<path class="ar" d="M243 137H212" marker-end="url(#m5)"/>
+<path class="ard" d="M115 110V76" marker-end="url(#m5)"/>
+<rect class="code" x="20" y="214" width="12" height="12"/>
+<text class="k" x="38" y="224">development</text>
+<rect class="test" x="140" y="214" width="12" height="12"/>
+<text class="k" x="158" y="224">tests</text>
+<rect class="user" x="220" y="214" width="12" height="12"/>
+<text class="k" x="238" y="224">the user</text>
+<text class="k" x="20" y="256">Dashed arrow: a refused card goes back to a session for a new lot.</text>
+</svg>
