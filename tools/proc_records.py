@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 import proc_arc
 import proc_geometry as G
-from proc_layouts import BY_NAME, detect_layout, ei_names, fingerprint, KNOWN_FINGERPRINTS, page_date, PARSERS, read_page
+from proc_layouts import amdt_date,BY_NAME, detect_layout, ei_names, fingerprint, KNOWN_FINGERPRINTS, page_date, PARSERS, read_page
 from proc_pdf import PdfTimeout, waypoint_coords
 
 
@@ -297,7 +297,10 @@ def final_only_record(icao, runway, ils, coords, source, cycle):
 def records(icao, table, coords, source, cycle, ils=None):
     """Procédures du schéma commun d'une table lue (parse_code_table), statut « check »."""
     out, warnings = [], list(table['warnings'])
-    src = {'kind': 'eaip', 'ref': source, 'file': source, 'cycle': cycle, 'at': table.get('amdt')}      # `file` : la page de codage (son PDF), ce que le lien « Source » ouvre (V3 § 10.25)
+    # `file` : la page de codage (son PDF), ce que le lien « Source » ouvre (V3 § 10.25) ; `at` : la date à laquelle la page a été MODIFIÉE (celle de l'amendement AIRAC « nn/aa » du pied de
+    # page, calculée par amdt_date, sinon la date imprimée), jamais une validité : la procédure vaut pour `cycle` (SOG-0434) ; `amdt` : le numéro imprimé, quand il l'est
+    no = table.get('amdt_no')
+    src = {'kind': 'eaip', 'ref': source, 'file': source, 'cycle': cycle, 'at': amdt_date(no) or table.get('amdt'), **({'amdt': no} if no else {})}
     if table['kind'] in ('SID', 'STAR'):
         for g in table['groups']:
             name = g['label'] or None

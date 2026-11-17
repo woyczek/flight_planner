@@ -62,6 +62,40 @@ def page_date(rows):
     return None
 
 
+AMDT_NO = re.compile(r'\bAMDT\s+(\d{2})/(\d{2})\b', re.A)      # re.A : chiffres ASCII seulement (une autre écriture n'est pas un numéro, note de Sécurisation)
+AIRAC_ORIGIN = datetime.date(2024, 1, 25)      # un cycle AIRAC connu (2401) ; 28 jours entre deux
+
+
+def amdt_number(rows):
+    """« nn/aa » de l'amendement AIRAC imprimé sur une page du SIA (« AMDT 06/26 © Service de l'Information Aéronautique », en pied de page), ou None : le DERNIER amendement qui a
+    modifié la page (SOG-0434, lecture de l'index de l'eAIP du 17 nov. 2026 : l'index n'écrit aucune date d'effet, mais « nn/aa » est le nn-ième cycle AIRAC de l'année aa)."""
+    for r in reversed(rows):
+        m = AMDT_NO.search(r)
+        if m:
+            return f'{m.group(1)}/{m.group(2)}'
+    return None
+
+
+def amdt_date(no):
+    """Date d'effet « AAAA-MM-JJ » de l'amendement AIRAC « nn/aa » du SIA : le nn-ième cycle AIRAC de l'année 20aa (« 06/26 » → 2026-06-11, « 11/26 » → 2026-10-29) ; None si nn
+    n'est pas un cycle de cette année (« 14/26 » : treize cycles au plus, « 00/26 ») ou si le texte n'a pas cette forme. C'est la date à laquelle la page a été modifiée, jamais une
+    validité : une procédure vaut pour le cycle de son fichier."""
+    m = re.fullmatch(r'(\d{2})/(\d{2})', str(no or ''), re.A)
+    if not m:
+        return None
+    nn, year = int(m.group(1)), 2000 + int(m.group(2))
+    d = AIRAC_ORIGIN
+    while d.year < year:
+        d += datetime.timedelta(days=28)
+    while d.year > year:
+        d -= datetime.timedelta(days=28)
+    cycles = []
+    while d.year == year:
+        cycles.append(d)
+        d += datetime.timedelta(days=28)
+    return cycles[nn - 1].isoformat() if 1 <= nn <= len(cycles) else None
+
+
 def _valid_date(y, m, d):
     """« AAAA-MM-JJ » si (y, m, d) est une date du calendrier, None sinon (« 99 Jan 2026 », « 00 Jan 2026 » ne donnent pas une date : Sécurisation)."""
     try:

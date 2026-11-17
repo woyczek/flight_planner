@@ -26,7 +26,7 @@ from pathlib import Path
 
 import outbound  # le User-Agent du lanceur, chaque échec dit en console
 import proc_geometry as G
-from proc_layouts import BY_NAME, alt_constraint, alt_ft, DASHES, detect_layout, dms, fingerprint, FIXLESS, _is_leg_row, KNOWN_FINGERPRINTS, MONTHS, page_date, PATH_TERMINATORS
+from proc_layouts import BY_NAME, alt_constraint, alt_ft, amdt_number, DASHES, detect_layout, dms, fingerprint, FIXLESS, _is_leg_row, KNOWN_FINGERPRINTS, MONTHS, page_date, PATH_TERMINATORS
 from proc_pdf import PDF_NAME, all_pages_rows, first_page_rows, safe_path, pdf_pages, PdfTimeout, scan_pdf, show_page
 from proc_records import build_pdf_dir, final_only_record, page_reason, records
 
@@ -860,7 +860,7 @@ def parse_code_table(rows):
             warnings.append('point de piste (RWnn) introuvable: approche finale non reconnue')
     pm = split_point_merge(groups, warnings) if kind == 'STAR' else []
     return {'kind': kind, 'runways': runways, 'title': title, 'groups': groups, 'warnings': warnings,
-            'amdt': page_date(rows), 'rows': seen, 'read': read, 'point_merge': pm}
+            'amdt': page_date(rows), 'amdt_no': amdt_number(rows), 'rows': seen, 'read': read, 'point_merge': pm}      # amdt_no : « nn/aa » du pied de page (SOG-0434)
 
 
 def verify_page(rows, table=None):

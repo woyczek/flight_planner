@@ -618,7 +618,7 @@ both ways.
   `python tools/proc_sia.py LFBD LFAV --eaip <…/FRANCE/AIRAC-AAAA-MM-JJ> --out data/proc [--base-dir <SIA base of the cycle>]`
   reads the aerodrome page, downloads its `…_DATA_01/02` (coordinates of the procedure fixes) and `…_CODE` pages (ARINC coding
   tables: SID and STAR "RNAV", approaches "RNP"), and writes `proc/<cycle>/<ICAO>.json` + `index.json`, status `check`, source
-  `eaip` (`ref` = page, `at` = amendment date of the page). SID / STAR: one procedure per name of the table; approach: one per
+  `eaip` (`ref` = page, `at` = the date the page was last MODIFIED: the AIRAC amendment « AMDT nn/aa » printed in its footer is the nn-th cycle of year aa, computed by `proc_layouts.amdt_date`, else the date printed; `amdt` = that number; `at` is never a validity: a procedure is valid for its file's `cycle` — SOG-0434). SID / STAR: one procedure per name of the table; approach: one per
   initial-approach transition (named by its initial fix, joined to the final approach, the shared fix once) or one without
   transition. **Layouts read** (Toulouse and Orly pages, AIRAC 2610): the extractor's spelled cells (`Y e s`, `1 . 0`, `D F P O 2 0 4`), glued dashes and a split name (`PB 096`) are put back; a decimal comma is read;
   a row that lost an empty cell is rebuilt only when ONE placement fits the type of every column; a CA row whose cells the extractor scrambled is read by its content. **Departures for several runways** (`SID RNAV RWY 14L / 14R`):

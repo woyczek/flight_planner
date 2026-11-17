@@ -15114,3 +15114,24 @@ def k338(c):
     G = _geometry()
     c.ok('no-table' in G.PAGE_CODES and 'vector' in G.PAGE_CODES and G.phrase('no-table') == 'carte sans table' and G.phrase('layout') == 'table non reconnue', str(G.PAGE_CODES),
          'both codes are page codes with their French phrase (vector stays as the old name of no-table)')
+
+
+@case('K339', 'SIA procedures, SOG-0434: « AMDT nn/aa » printed on a page is the nn-th AIRAC cycle of year aa — source.at (the date the page was modified) and source.amdt', 'K', static=True,
+      rule='owner Q-0092 (17 Nov 2026): the eAIP index writes no effective date; the amendment number gives the date; a procedure is valid for its cycle, source.at is « modified on », never a validity')
+def k339(c):
+    P, fx, rows = _eaip(c)
+    c.eq((P.amdt_date('06/26'), P.amdt_date('11/26'), P.amdt_date('13/26'), P.amdt_date('01/25'), P.amdt_date('05/24')), ('2026-06-11', '2026-10-29', '2026-12-24', '2025-01-23', '2024-05-16'),
+         'the nn-th cycle of the year: 06/26 is 11 June 2026, 11/26 the 29 October 2026 cycle (the eAIP home page says init(…, 2026, 10, 29, 11)), 13/26 the last one of 2026', what='amdt_date')
+    c.eq((P.amdt_date('14/26'), P.amdt_date('00/26'), P.amdt_date('6/26'), P.amdt_date(None), P.amdt_date('AMDT'), P.amdt_date('٠٦/٢٦'), P.amdt_number(['AMDT ٠٦/٢٦'])), (None, None, None, None, None, None, None), 'past the cycles of the year, zero, a malformed number, digits of another script (ASCII only, re.A): no date, no number', what='amdt_date none')
+    foot = ['SID RNAV RWY 17', 'invented page', 'TF TESTA Yes 071 071.6 14.2 - FL150 - - 1.0', 'AMDT 06/26© Service de l\'Information Aéronautique, France']
+    c.eq((P.amdt_number(foot), P.amdt_number(foot[:-1]), P.amdt_number(['AMDT 05/24 SIA', '© 16 MAY 24'])), ('06/26', None, '05/24'), 'the number is read in the footer, the last line first', what='amdt_number')
+    # the LFBD fixture (AIRAC 2610) ends with « AMDT 05/24 SIA » and « © 16 MAY 24 »: the computed date and the printed one agree
+    sid = P.parse_code_table(rows('AD_2_LFBD_DATA_SID_RWY23_RNAV_CODE_01'))
+    c.eq((sid['amdt_no'], P.amdt_date(sid['amdt_no']), P.page_date(['© 16 MAY 24'])), ('05/24', '2024-05-16', '2024-05-16'),
+         'parse_code_table carries the number; its cycle date is the date printed beside it (page_date reads only the header: the footer date is not in sid[amdt])', what='fixture footer')
+    recs, _ = P.records('LFBD', sid, {}, 'AD_2_LFBD_DATA_SID_RWY23_RNAV_CODE_01.pdf', '2026-10-01')
+    c.eq((recs[0]['source']['at'], recs[0]['source']['amdt'], recs[0]['source']['cycle']), ('2024-05-16', '05/24', '2026-10-01'),
+         'source.at is the amendment date, source.amdt its number, the cycle stays that of the file (the validity)', what='records source')
+    nofoot = dict(sid, amdt_no=None, amdt=None)
+    recs2, _ = P.records('LFBD', nofoot, {}, 'x.pdf', '2026-10-01')
+    c.eq((recs2[0]['source']['at'], 'amdt' in recs2[0]['source']), (None, False), 'a page without a footer nor a printed date: at None, no amdt key', what='records no footer')
