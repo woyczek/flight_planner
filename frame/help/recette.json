@@ -4009,10 +4009,10 @@
     "de": "Auf der Karte gewählte Route: zurück im Kraftstoff erscheint sie erst viel später, wenn eine Synchronisierung läuft",
     "es": "Itinerario elegido en el mapa: de vuelta en Combustible solo aparece mucho después cuando hay una sincronización en curso"
    },
-   "test": "Après avoir rechargé la page. (1) Pendant qu'une synchronisation est en cours (le bouton du haut dit « Synchronisation… »), lance « Calculer » dans Carburant : le calcul part tout de suite, il n'attend plus la fin de la synchronisation. (2) Calcule, puis prends un itinéraire pendant « Variantes en recherche… », sur la Carte ou dans la liste : le champ Route change tout de suite, la route prise reste, aucun calcul ne repart. (3) Ouvre Carburant : le devis se dessine en 3 s au plus, même si les fiches tardent. (4) Si un autre travail du lanceur attend plus de 4 s l'envoi de tes données, une notification le dit. Dis-moi si quelque chose attend encore sans le dire.",
+   "test": "Après avoir RELANCÉ le lanceur (une dernière fois) et rechargé la page. (1) La PREMIÈRE fois après la relance, le lanceur met ses données en ordre (jusqu'à 30 à 45 s) : une bande en haut dit « Mise en ordre des données de ce poste : n / N fichiers. Les écrans qui lisent le dépôt attendent ; le reste fonctionne. » — ce que tu as sur l'appareil se lit et s'écrit pendant ce temps. (2) Arrête et relance le lanceur une seconde fois : plus d'attente (moins d'une seconde), plus de bande. (3) Pendant une synchronisation (« Synchronisation… »), « Calculer » part tout de suite. (4) Prendre un itinéraire pendant « Variantes en recherche… » ne relance pas de calcul. (5) Carburant s'ouvre avec son devis ",
    "since": "2026-11-17",
    "state": "todo",
-   "delivered": "2026-11-17T11:07:05Z"
+   "delivered": "2026-11-17T11:56:33Z"
   },
   {
    "id": "SOG-0401",
