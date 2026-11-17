@@ -2409,3 +2409,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   asked to cancel the job (launcher.js follow on an aborted signal), `lnmBusy` is released and the reason is `timeout`; a cancel of the
   caller's own signal stays `cancelled`. F261 (a fake launcher whose job ends only when aborted; counter-test: the call hangs on the
   parent).
+- **17 Nov 2026 — SOG-0432 (a), the reading mark of Little Navmap has an owner and an age** (the user: « LQSA : une lecture de
+  Little Navmap est déjà en cours » while nothing ran). The same sentence came from three locks: the page's `lnmReading`, aerodb's
+  `lnmBusy` (both die with the page) and the launcher's refusal of a seventh parallel reading (tools/regen_jobs.py MAX_READS = 6, no
+  release of a stuck reading: part (c), V3 Frame). Fuel now keeps `{ icao, at }`: a second gesture says « Cette page lit déjà LFML dans
+  Little Navmap depuis 12 s. »; the mark is released at the end and on failure (only if it is still the same mark), and by itself past
+  LNM_PAGE_MAX_MS (150 s: aerodb's bound is 120 s, its answer has come or will not); the launcher's « busy » is said apart — « le lanceur
+  a déjà six lectures en cours » — and aerodb's `timeout` has its sentence. « La plus ancienne depuis … » is not said yet: the refusal of
+  the launcher does not carry the age of its readings (part (c)). F260 (a stubbed fetchLnm, Date.now shifted to age the mark).

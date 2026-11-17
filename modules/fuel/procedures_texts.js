@@ -137,6 +137,13 @@ export const TX = {
   procRwyTake: ['Prendre la piste probable', 'Take the probable runway', 'Wahrscheinliche Piste übernehmen', 'Tomar la pista probable'],
   // SOG-0210 : « Lire depuis Little Navmap » (la base de Little Navmap de CE poste, par le lanceur ; en mémoire de la page seulement)
   procLnmRead: ['Lire depuis Little Navmap', 'Read from Little Navmap', 'Aus Little Navmap lesen', 'Leer desde Little Navmap'],
+  // SOG-0432 : la lecture de Little Navmap de CETTE page, rencontrée par un second geste : le terrain en cours et depuis quand
+  procLnmBusyPage: ['Cette page lit déjà {icao} dans Little Navmap depuis {t}.',
+    'This page is already reading {icao} in Little Navmap, for {t}.',
+    'Diese Seite liest {icao} bereits seit {t} in Little Navmap.', 'Esta página ya está leyendo {icao} en Little Navmap desde hace {t}.'
+  ],
+  procAgeS: ['{n} s', '{n} s', '{n} s', '{n} s'],
+  procAgeMin: ['{n} min', '{n} min', '{n} Min.', '{n} min'],
   procLnmReading: ['Lecture Little Navmap…', 'Reading Little Navmap…', 'Little Navmap wird gelesen…', 'Leyendo Little Navmap…'],
   procLnmPersonal: ['Little Navmap : cochez d\'abord l\'usage personnel dans Données › Sources sous licence personnelle.',
     'Little Navmap: first tick personal use in Data › Personal-licence sources.',
@@ -164,8 +171,17 @@ export const TX = {
       '{icao}: Ein gekoppeltes Gerät liest Little Navmap nicht; lesen Sie es am Arbeitsplatz.',
       '{icao}: un equipo emparejado no lee Little Navmap; léalo en el puesto.'
     ],
-    busy: ['{icao} : une lecture de Little Navmap est déjà en cours.', '{icao}: a Little Navmap reading is already running.',
-      '{icao}: Eine Little-Navmap-Lesung läuft bereits.', '{icao}: ya hay una lectura de Little Navmap en curso.'
+    // SOG-0432 : le refus « occupé » vient du lanceur (au plus six lectures à la fois, tools/regen_jobs.py MAX_READS) : celui de CETTE
+    // page est dit à part (procLnmBusyPage)
+    busy: ['{icao} : le lanceur a déjà six lectures en cours ; réessayez quand l’une aura fini.',
+      '{icao}: the launcher already has six readings running; try again when one has finished.',
+      '{icao}: Der Starter hat bereits sechs Lesungen laufen; versuchen Sie es erneut, wenn eine beendet ist.',
+      '{icao}: el lanzador ya tiene seis lecturas en curso; inténtelo de nuevo cuando una haya terminado.'
+    ],
+    timeout: ['{icao} : Little Navmap n’a pas répondu à temps ; la lecture est abandonnée et le lanceur prié de l’arrêter.',
+      '{icao}: Little Navmap did not answer in time; the reading is abandoned and the launcher asked to stop it.',
+      '{icao}: Little Navmap hat nicht rechtzeitig geantwortet; die Lesung wird abgebrochen und der Starter gebeten, sie zu beenden.',
+      '{icao}: Little Navmap no respondió a tiempo; la lectura se abandona y se pide al lanzador que la detenga.'
     ],
     'no-lnm': ['{icao} : aucune base de Little Navmap trouvée sur ce poste.', '{icao}: no Little Navmap database found on this device.',
       '{icao}: keine Little-Navmap-Datenbank auf diesem Gerät gefunden.', '{icao}: ninguna base de Little Navmap en este equipo.'

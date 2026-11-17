@@ -79,8 +79,11 @@ const keep = x => x === null ? null : cleanSide(x);
 /** Lecture de procédures à la demande en cours, hors de l'instance : elle survit au démontage (le travail du poste continue, sa
  *  fin est dite quand même) ; { icao, text (texte du bouton, avancement compris) }. */
 let reading = null;
-/** Lecture de Little Navmap en cours (SOG-0210), hors de l'instance comme `reading` : l'OACI lu, null sinon. */
+/** Lecture de Little Navmap en cours (SOG-0210), hors de l'instance comme `reading` : { icao, at (début, ms) }, null sinon. SOG-0432 :
+ *  la marque a un âge, dit quand un second geste la rencontre, et une borne (LNM_PAGE_MAX_MS) au-delà de laquelle elle est rendue d'office
+ *  (aerodb.fetchLnm est borné à 120 s : sa réponse est alors venue ou ne viendra plus). */
 let lnmReading = null;
+const LNM_PAGE_MAX_MS = 150000;
 /** SOG-0374 : lecture du paquet du Royaume-Uni en cours (l'OACI, null sinon) et la dernière réponse de chaque terrain, dite dans sa ligne
  *  ({ k: 'ok' | 'not-personal' | 'no-package' | 'fail', n, m }), hors de l'instance comme `reading`. */
 let ukReading = null;
@@ -751,7 +754,7 @@ export function createProcedures(host) {
   };
   /** « Lire depuis Little Navmap » (SOG-0210) : occupé tant que la lecture de ce terrain est en cours. */
   const lnmButton = icao => {
-    const busy = lnmReading === icao;
+    const busy = lnmReading?.icao === icao;
     return `<button type="button" class="fu-linkbtn" data-do="proclnm" data-icao="${esc(icao)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procLnmReading : TX.procLnmRead))}</button>`;
   };
   /** Date de la dernière lecture d'un terrain (aerodb coverage(icao).read_at), « lu le 28/10 18:01Z », ⌛ quand ce qu'il détient est une
@@ -1884,6 +1887,15 @@ export function createProcedures(host) {
     if (live === api) live = null;
   }
 
+  /** SOG-0432 : un âge dit court, « 12 s » sous une minute et demie, sinon « 3 min ». */
+  const ageText = ms => {
+    const s = Math.max(0, Math.round(ms / 1000));
+    return s < 90 ? ctx.t(TX.procAgeS, {
+      n: s
+    }) : ctx.t(TX.procAgeMin, {
+      n: Math.round(s / 60)
+    });
+  };
   /** « Lire depuis Little Navmap » (SOG-0210) : la coche « usage personnel » d'abord (cache/data/personal.json, celle du module Données) ;
    *  sans elle, une ligne dit où la cocher et rien n'est lancé ; avec elle, AeroDb.fetchLnm(icao, { personal: true }) : les fiches
    *  restent en mémoire de la page (jamais écrites ; Carburant n'en garde que la référence, N2) et la carte se redessine. */
@@ -1891,12 +1903,18 @@ export function createProcedures(host) {
     const k = String(icao || '').toUpperCase(),
       say = (row, v, level) => ctx.notify(ctx.t(row, v), level);
     if (!/^[A-Z0-9]{4}$/.test(k) || typeof ctx.aerodb?.fetchLnm !== 'function') return;
-    if (lnmReading) return say(TX.procLnmWhy.busy, {
-      icao: lnmReading
+    // SOG-0432 : une marque plus vieille que la borne n'est plus une lecture en cours (page gelée, réponse perdue) : rendue d'office
+    if (lnmReading && !(Date.now() - lnmReading.at < LNM_PAGE_MAX_MS)) lnmReading = null;
+    if (lnmReading) return say(TX.procLnmBusyPage, {
+      icao: lnmReading.icao,
+      t: ageText(Date.now() - lnmReading.at)
     }, 'warn');
     const doc = await Promise.resolve().then(() => ctx.data.get(PERSONAL_DOC)).catch(() => null);
     if (!keptPersonal(doc)) return say(TX.procLnmPersonal, {}, 'warn');
-    lnmReading = k;
+    const mine = lnmReading = {
+      icao: k,
+      at: Date.now()
+    };
     if (!host.gone()) render();
     let res;
     try {
@@ -1909,7 +1927,7 @@ export function createProcedures(host) {
         reason: 'failed'
       };
     }
-    lnmReading = null;
+    if (lnmReading === mine) lnmReading = null; // rendue à la fin, à l'échec ; une marque rendue d'office entre-temps n'est pas touchée
     if (res?.ok) say(TX.procLnmDone, {
       icao: k,
       n: Math.max(0, Math.min(9999, +res.count || 0))

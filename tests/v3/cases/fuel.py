@@ -7414,6 +7414,60 @@ def f259(c):
     c.shot(f'F259_{c.design}_390_{L}.png')
 
 
+# SOG-0432: the gesture's stub (as _LNM_GESTURE_STUB) whose fetchLnm hangs, or answers the launcher's « busy » when window.__lnmMode is
+# 'busy'; Date.now shifted by window.__skew (ms) to age the page's mark without waiting
+_LNM_LOCK_STUB = """(() => { window.__lnm = []; window.__skew = 0; const now = Date.now.bind(Date); Date.now = () => now() + (window.__skew || 0);
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { const ps = db.procedures;
+        db.procedures = async (icao, q) => String(icao).toUpperCase() === 'LFML' ? [] : ps.call(db, icao, q);
+        const rw = db.runways; db.runways = async (icao, ...q) => String(icao).toUpperCase() === 'LFML' ? [] : rw.call(db, icao, ...q);
+        db.fetchProcedures = async icao => ({ ok: false, reason: 'no-tables', lnm: true, icao });
+        db.lnmAvailable = () => true;
+        db.fetchLnm = async (...x) => { window.__lnm.push(x[0]);
+          if (window.__lnmMode === 'busy') return { ok: false, reason: 'busy' };
+          await new Promise(() => {}) } } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F260', 'Little Navmap: the page\'s reading mark has an owner and an age — a second gesture says « this page is already reading LFML '
+      'for 3 s »; a mark older than its bound is released by itself and the gesture reads again; the launcher\'s refusal (« busy ») is said '
+      'apart: « the launcher already has six readings running »', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=True,
+      rule='SOG-0432 (the user: « LQSA : une lecture de Little Navmap est déjà en cours » while nothing ran, « un vieux lock qui traîne »); '
+      'the rule of the fiche: a lock has an owner and an age, released at the end, on failure, and by itself when its work is gone; the '
+      'note says since when; two sentences (the page / the launcher); fetchLnm stubbed (no launcher job)')
+def f260(c):
+    PTX = 'modules/fuel/procedures_texts.js'
+    c.page.add_init_script(_LNM_LOCK_STUB)
+    open_proc(c)
+    c.js(_PERSONAL_PUT)
+    btn = f'{FUEL} [data-proc="arr"] [data-do="proclnm"]'
+    c.until(f"!!document.querySelector('{btn}')", timeout=15000, what='« Lire depuis Little Navmap » offered')
+    c.tap(btn)
+    c.until('window.__lnm.length === 1', timeout=5000, what='the reading asked')
+    # a second gesture during the reading: this page, its aerodrome and since when
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{btn}').disabled = false; document.querySelector('{btn}').click()")
+    page = norm(tx(PTX, 'procLnmBusyPage', c.lang)).split('{t}')[0].replace('{icao}', 'LFML').strip()
+    c.until(_NOTE, page, timeout=5000, what='the page says its own reading')
+    note = next(norm(n) for n in c.note_log() if page in norm(n))
+    age = norm(tx(PTX, 'procAgeS', c.lang)).split('{n}')[1].strip()
+    c.ok(re.search(r'\d+ ' + re.escape(age), note) is not None, note, 'with its age')
+    c.eq(c.js('window.__lnm.length'), 1, 'nothing asked again', what='calls')
+    # the mark older than its bound (150 s): released by itself, the gesture reads again
+    c.js('window.__skew = 200000')
+    c.js(f"document.querySelector('{btn}').disabled = false; document.querySelector('{btn}').click()")
+    c.until('window.__lnm.length === 2', timeout=5000, what='a stale mark released: the reading asked again')
+    # the launcher's refusal, said apart (a fresh page: no mark)
+    c.js("window.__lnmMode = 'busy'")
+    c.js('window.__skew = 400000')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{btn}').disabled = false; document.querySelector('{btn}').click()")
+    launcher = norm(tx(PTX, 'busy', c.lang, after='procLnmWhy')).replace('{icao}', 'LFML')[:40]
+    c.until(_NOTE, launcher, timeout=5000, what='the launcher\'s refusal said apart')
+
+
 @case('F261', 'aerodb.fetchLnm is bounded in time: a reading that never ends at the launcher answers « timeout » (its job asked to stop), '
       'releases its aerodrome, and a reading of the caller cancelled stays « cancelled »', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
       screens=False, langs4=False,
