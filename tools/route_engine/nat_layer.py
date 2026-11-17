@@ -75,6 +75,12 @@ def check(meta, fl, east, eta=None):
     return None
 
 
+def time_fields(meta, eta, entry=None):
+    """SOG-0391 (a) : une track écartée pour l'HEURE dit, en CHAMPS, l'heure du passage de son entrée (`at`, « 2026-11-17T13:32Z »), le point d'entrée (`entry`) et la fenêtre du message (`from`, `to`, « 2026-11-17T01:30:00Z » ; None si le message n'en donne pas) : l'écran ne lit aucun mot."""
+    t = eta if eta.tzinfo else eta.replace(tzinfo=dt.timezone.utc)
+    return {'at': t.strftime('%Y-%m-%dT%H:%MZ'), 'entry': entry, 'from': meta.get('from'), 'to': meta.get('to')}
+
+
 def coordinate(token):
     """(lat, lon) d'une coordonnée NAT (« 5530/20 », « 57/30 ») : nord, ouest ; None sinon."""
     m = COORD.fullmatch(token)

@@ -105,6 +105,11 @@ def _solve(nav, g, start, end):
     rejected = {tid: why for tid, m in meta.items() if (why := nat_layer.check(m, fl, east))}
     candidates = []
     chains = oriented_chains(nav.nodes, g, east)
+    when = {}      # SOG-0391 (a) : track écartée pour l'HEURE (ou le NIVEAU : l'heure n'y est pas jugée, seulement dite) → (heure du passage de son entrée, point d'entrée)
+    for tid, (code, _text) in rejected.items():
+        if code == 'level' and hour and chains.get(tid):
+            o = min(chains[tid], key=lambda o: engine.nm(a, nav.nodes[o['entry']]))      # l'entrée la plus proche du départ
+            when[tid] = (eta_of(engine.nm(a, nav.nodes[o['entry']])), nav.nodes[o['entry']]['id'])
     avoid = getattr(g, 'rad_avoid', frozenset())      # SOG-0354 L5 (4) défaut 4 : un point que la règle RAD fait éviter (repli) n'est ni l'entrée ni la sortie d'une route NAT
     for tid, options in chains.items():
         if tid in rejected:
@@ -115,11 +120,16 @@ def _solve(nav, g, start, end):
             rejected[tid] = ('rad', f"route NAT {tid} : son entrée ou sa sortie est un point que la règle RAD fait éviter ({', '.join(sorted(avoid))})")
             continue
         for o in options:
-            why = nat_layer.check(meta[tid], fl, east, eta_of(engine.nm(a, nav.nodes[o['entry']]))) if hour and tid in meta else None      # l'heure estimée (grand cercle) : elle écarte avant toute recherche
+            eta = eta_of(engine.nm(a, nav.nodes[o['entry']])) if hour and tid in meta else None
+            why = nat_layer.check(meta[tid], fl, east, eta) if eta else None      # l'heure estimée (grand cercle) : elle écarte avant toute recherche
             if not why:
                 candidates.append((tid, o))
+            elif why[0] == 'time':
+                seen = (eta, nav.nodes[o['entry']]['id'])      # SOG-0391 (a) : l'heure du passage de l'entrée dont la track est écartée, dite en champs
         if why and not any(t == tid for t, _o in candidates):
             rejected[tid] = why
+            if why[0] == 'time':
+                when[tid] = seen
     for tid in meta:
         if tid not in rejected and tid not in {c[0] for c in candidates}:
             rejected[tid] = ('network', f"route NAT {tid} : ni son entrée ni sa sortie ne se relie au réseau haut à ce niveau")
@@ -140,10 +150,12 @@ def _solve(nav, g, start, end):
 
     nav.nat_rejected = frozenset(rejected)      # la recherche entière qui suit (si rien n'abouti ici) ne prend pas non plus une track écartée pour ce vol
 
+    if meta:
+        info['direction'] = 'east' if east else 'west'      # SOG-0391 (a) : le sens du vol tel que le moteur l'a pris pour écarter les routes de l'autre sens (absent quand aucune route NAT n'entre en jeu)
     info['fl'], info['fl_basis'] = fl, getattr(nav, 'fl_basis', 'request')      # SOG-0389 : le niveau PRIS et d'où il vient (`request` ou `default` : FL180 quand la demande n'en donne pas)
 
     def said():
-        info['rejected'] = [dict({'track': tid, 'code': code, 'text': text}, **({'levels': [int(x) for x in ((meta.get(tid) or {}).get('levels_' + ('east' if east else 'west')) or [])]} if code == 'level' else {}))      # SOG-0389 : une track écartée pour le NIVEAU dit les niveaux qu'elle offre dans ce sens (des champs, plus seulement la phrase)
+        info['rejected'] = [dict({'track': tid, 'code': code, 'text': text}, **({'levels': [int(x) for x in ((meta.get(tid) or {}).get('levels_' + ('east' if east else 'west')) or [])]} if code == 'level' else {}), **(nat_layer.time_fields(meta[tid], *when[tid]) if code in ('time', 'level') and tid in when else {'from': (meta.get(tid) or {}).get('from'), 'to': (meta.get(tid) or {}).get('to')} if code == 'level' else {}))      # SOG-0389 : une track écartée pour le NIVEAU dit les niveaux qu'elle offre dans ce sens ; SOG-0391 (a) : pour l'HEURE, l'heure du passage de son entrée et la fenêtre du message (des champs, plus seulement la phrase)
                             for tid, (code, text) in sorted(rejected.items())]
     ratio = min((e.get('_cost', e['nm']) / e['nm'] for es in g.values() for _v, e in es if e['nm'] > .00001), default=0)
     if not candidates:
@@ -153,18 +165,23 @@ def _solve(nav, g, start, end):
     # SOG-0354 L5 (1 bis) : UNE seule recherche du départ vers TOUTES les entrées à la fois (au lieu d'une recherche par track : 5 recherches d'Europe de ~8 600 états pour EGLL → KDEN, une de ~13 000 pour la recherche entière) : le coût RÉEL de la section d'Europe de chaque entrée
     # (et sa bande d'altitude) est connu avant de choisir ; l'heure au passage de l'entrée est refaite avec la distance RÉELLE ; une entrée que la recherche n'atteint pas (réseau, budget) écarte sa track, dite
     europe = _europe(nav, g, start, sorted({o['entry'] for _t, o in candidates}), info)
-    skeleton, lost = [], {}
+    skeleton, lost, lost_when = [], {}, {}
     for tid, o in candidates:
         found = europe.get(o['entry'])
+        eta = eta_of(sum(x['nm'] for _u, _v, x in found['path'])) if found and hour and tid in meta else None      # l'heure au passage de l'entrée, avec la distance RÉELLE de la section d'Europe
         why = ('network', f"route NAT {tid} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
-            (nat_layer.check(meta[tid], fl, east, eta_of(sum(x['nm'] for _u, _v, x in found['path']))) if hour and tid in meta else None)      # l'heure au passage de l'entrée, avec la distance RÉELLE de la section d'Europe
+            (nat_layer.check(meta[tid], fl, east, eta) if eta else None)
         if why:
             lost[tid] = why
+            if why[0] == 'time':
+                lost_when[tid] = (eta, nav.nodes[o['entry']]['id'])
             continue
         skeleton.append((found['cost'] + ratio * engine.nm(nav.nodes[o['exit']], b) + o['cost'], tid, o))
     for tid, why in lost.items():
         if not any(t == tid for _lb, t, _o in skeleton):
             rejected[tid] = why
+            if tid in lost_when:
+                when[tid] = lost_when[tid]
     skeleton.sort(key=lambda x: x[0])
     nav.nat_rejected = frozenset(rejected)
     if not skeleton:
@@ -186,6 +203,7 @@ def _solve(nav, g, start, end):
         return _free(nav, g, start, end, ratio, info)
     cost, path, sections, tid = best
     info['chosen'], info['sections'], info['cost'] = tid, sections, round(cost, 1)
+    _entry(nav, g, info)
     return path
 
 
@@ -199,6 +217,16 @@ def _europe(nav, g, start, entries, info, key='europe', need=None, track=None, m
     _step(nav, 'europe' if nav.nodes[start]['lon'] > WEST_LON else 'amérique', ls.get('seconds') or 0.0, bound, ls.get('truncated'), shared=True, goals=len(entries), reached=len(found), **({'track': track} if track else {}))
     info[key] = {'goals': len(entries), 'reached': len(found), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'), 'truncated': bool(ls.get('truncated'))}
     return found
+
+
+def _entry(nav, g, info):
+    """SOG-0391 (a) : `sections.entry` dit l'heure estimée du passage de l'entrée de l'océan de la route PRISE (une route du jour ou la route libre créée) : { point, time (« 2026-11-17T13:32Z »), nm (la section d'extrémité, au sens de sa distance réelle), speed_kt } ; rien quand la demande ne donne pas d'heure de départ (alors `depart.time` est None) et la validité horaire n'est pas vérifiée."""
+    depart, secs = getattr(nav, 'depart', None), info.get('sections') or []
+    if not depart or depart[0] is None or not secs:      # sans heure de départ (`depart` = (None, 'none')) : pas d'heure d'entrée
+        return
+    speed = (getattr(g, 'flight', None) or {}).get('speed_kt') or 450      # la même vitesse que l'heure au passage des routes écartées
+    first = secs[0]
+    info['entry'] = {'point': first['to'], 'time': (depart[0] + datetime.timedelta(hours=first['nm'] / speed)).strftime('%Y-%m-%dT%H:%MZ'), 'nm': first['nm'], 'speed_kt': speed}
 
 
 def _free(nav, g, start, end, ratio, info):
@@ -215,6 +243,7 @@ def _free(nav, g, start, end, ratio, info):
         info['free']['cut'] = made['stopped']
         info['reason'] = (info.get('reason') or '') + (' Route libre coupée par le temps de sécurité' if made['stopped'] == 'time' else ' Route libre coupée par son budget d\'états') + ' : elle peut être plus longue que la meilleure.'
     info['source'], info['sections'], info['cost'] = 'random', made['sections'], round(made['cost'], 1)
+    _entry(nav, g, info)
     info['reason'] = (info.get('reason') or '') + ' Route libre créée : ' + ' '.join(made['points']) + '.'
     return made['path']
 

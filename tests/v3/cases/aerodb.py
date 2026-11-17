@@ -12702,7 +12702,7 @@ def k309(c):
         nav = Fake(basis)
         S.solve(nav, g, 'DEP', 'ARR')
         out.append((nav.sections_info['fl'], nav.sections_info['fl_basis'], nav.sections_info['rejected']))
-    expected_rejected = [{'track': 'B', 'code': 'level', 'text': 'route NAT B : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390]}, {'track': 'C', 'code': 'direction', 'text': 'route NAT C : sens contraire (la track va vers l\'est, le vol vers l\'ouest)'}]
+    expected_rejected = [{'track': 'B', 'code': 'level', 'text': 'route NAT B : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390], 'at': '2026-11-16T12:46Z', 'entry': 'EB', 'from': '2026-11-16T11:30:00Z', 'to': '2026-11-16T19:00:00Z'}, {'track': 'C', 'code': 'direction', 'text': 'route NAT C : sens contraire (la track va vers l\'est, le vol vers l\'ouest)'}]
     c.eq(out, [(370, 'request', expected_rejected), (370, 'default', expected_rejected)],
          'the track B offers FL350 and FL390 westbound: set aside for the LEVEL at FL370, it says `levels: [350, 390]`; C is set aside for the direction and has NO `levels`; `fl` is the level taken and `fl_basis` where it comes from (red before: neither field)', what='fields')
     # 3. the engine, on the bench of K237: a flight with no level is at FL180 and says it; at FL370 the track is taken
@@ -12742,3 +12742,85 @@ def k309(c):
             results_cache.ENABLED = True
         c.eq((nolevel, level), ((180, 'default', [('A', 'level', [350, 360, 370])]), (370, 'request', [])),
              'KJFK → EGLL with NO level: FL180, said `default`, the track A (levels 350-370) set aside for the level with its levels; at FL370: the level is `request`, the track is taken and nothing is set aside', what='engine')
+
+
+@case('K310', 'Route engine, SOG-0391 (a): a NAT track set aside for the HOUR says it as FIELDS — the hour of the passage of its entry (`at`), the entry point (`entry`) and the window of the message (`from`, `to`) in `sections.rejected[]`, as `levels` does for the level; and `sections.entry` says the hour taken at the entry of the ocean of the route TAKEN (a track of the day or the free route created); no hour of departure, no `entry`; nothing else changes',
+      'K', static=True,
+      rule='SOG-0391 (the user, KABQ → EGLL at FL350, departure at 07:57Z: the engine follows the rule — the eastbound tracks R to Y are set aside for the HOUR (01:30-08:00Z), Z for the level, A to E for the direction, a free route is created — and the user is surprised because nothing says so at the head of the answer; ergonomics session 17 Nov 09:05). Before, the hour of the passage and the window were only in the sentence of the rejection (« route NAT R : non valide à 1332Z (valide de 0130Z à 0800Z) »). Now `sections.rejected[]` of code `time` carries `at` (« 2026-11-17T13:32Z »), `entry` (the point whose passage is meant) and `from` / `to` (the window of the message, ISO UTC), and `sections.entry` the hour estimated at the entry of the ocean of the route taken: { point, time, nm, speed_kt }. The screen reads no word. Nothing else changes.')
+def k310(c):
+    import datetime
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import engine, import_books as I, plan as PL, sections as S, view, results_cache
+    # 1. the sections: a track set aside for the HOUR says the hour of the passage of its entry and its window; another reason does not
+    nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}, 'EB': {'id': 'EB', 'lat': 54.0, 'lon': -15.0}, 'XB': {'id': 'XB', 'lat': 48.0, 'lon': -60.0},
+             'EC': {'id': 'EC', 'lat': 56.0, 'lon': -15.0}, 'XC': {'id': 'XC', 'lat': 50.0, 'lon': -60.0}, 'EL': {'id': 'EL', 'lat': 58.0, 'lon': -15.0}, 'XL': {'id': 'XL', 'lat': 52.0, 'lon': -60.0}}
+    meta = lambda tid, direction, west=(), east=(), a='2026-11-16T02:00:00Z', b='2026-11-16T08:00:00Z': {'track': tid, 'direction': direction, 'levels': [], 'levels_east': list(east), 'levels_west': list(west), 'from': a, 'to': b, 'stale': False}
+    mb, mc, ml = meta('B', 'west', west=(350, 370)), meta('C', 'east', east=(350, 370)), meta('L', 'west', west=(350, 390), a='2026-11-16T11:00:00Z', b='2026-11-16T19:00:00Z')
+    g = engine.RoutingGraph()
+    g.flight = {'departure': 0, 'ceiling': 37000, 'speed_kt': 450}
+    for tid, (a, b), m in (('B', ('EB', 'XB'), mb), ('C', ('EC', 'XC'), mc), ('L', ('EL', 'XL'), ml)):
+        g[a] = [(b, {'a': a, 'b': b, 'route': 'NAT' + tid, 'nm': engine.nm(nodes[a], nodes[b]), 'nat': dict(m), 'dir': 'F'})]
+
+    class Fake:
+        def __init__(self):
+            self.nodes, self.last_search, self.sections_info, self.nat = nodes, None, None, {'meta': {'B': mb, 'C': mc, 'L': ml}, 'tracks': ['B', 'C', 'L']}
+            self.depart, self.nat_rejected = (datetime.datetime(2026, 11, 16, 12, 0), 'request'), frozenset()
+
+        def search(self, *a, **k):
+            return None
+    nav = Fake()
+    S.solve(nav, g, 'DEP', 'ARR')
+    at = lambda n: (datetime.datetime(2026, 11, 16, 12, 0) + datetime.timedelta(hours=engine.nm(nodes['DEP'], nodes[n]) / 450)).strftime('%Y-%m-%dT%H:%MZ')
+    c.eq((at('EB'), nav.sections_info['rejected'], nav.sections_info.get('entry'), nav.sections_info.get('direction')),
+         (at('EB'), [{'track': 'B', 'code': 'time', 'text': 'route NAT B : non valide à ' + at('EB')[11:13] + at('EB')[14:16] + 'Z (valide de 0200Z à 0800Z)', 'at': at('EB'), 'entry': 'EB', 'from': '2026-11-16T02:00:00Z', 'to': '2026-11-16T08:00:00Z'},
+                     {'track': 'C', 'code': 'direction', 'text': 'route NAT C : sens contraire (la track va vers l\'est, le vol vers l\'ouest)'},
+                     {'track': 'L', 'code': 'level', 'text': 'route NAT L : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390], 'at': at('EL'), 'entry': 'EL', 'from': '2026-11-16T11:00:00Z', 'to': '2026-11-16T19:00:00Z'}], None, 'west'),
+         'the track B (levels 350-370 westbound, valid 02:00-08:00Z) is set aside for the HOUR: `at` is the passage of its entry EB (estimated), `from` / `to` its window; C is set aside for the direction and has NO such fields; L is set aside for the LEVEL (it offers FL350 and FL390) and says the hour of the passage of its entry and its window too (the hour is not judged there, only said); `direction` is the direction of the flight as the engine took it; no route taken: no `sections.entry` (red before: none of these fields)', what='fields')
+    nothing = Fake()
+    nothing.nat = {'meta': {}, 'tracks': []}
+    bare = engine.RoutingGraph()
+    bare.flight = g.flight
+    S.solve(nothing, bare, 'DEP', 'ARR')
+    c.eq(('direction' in nothing.sections_info, nothing.sections_info.get('rejected')), (False, []), 'no NAT track in play: no `direction`', what='no track')
+    # 2. the engine, on the bench of K237: the track A is valid 01:30-08:00Z; at 04:30Z it is taken and the entry hour is said; at 10:30Z it is set aside for the HOUR and the free route says its own entry hour
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+        with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [A]}, f)
+        results_cache.ENABLED = False
+        try:
+            def run(hour):
+                args = {'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T' + hour if hour else '2026-11-10', 'alternatives': False, 'proposals': True, 'fl': 370}
+                sec = PL.compute(view.to_request(args), data, radz, fra).get('sections') or {}
+                return sec.get('chosen'), sec.get('entry'), [{k: r.get(k) for k in ('track', 'code', 'at', 'entry', 'from', 'to')} for r in sec.get('rejected', [])], (sec.get('free') or {}).get('entry'), sec.get('direction')
+            inside, outside, nohour = run('04:30'), run('10:30'), run('')
+        finally:
+            results_cache.ENABLED = True
+        c.eq(nohour, ('A', None, [], None, 'east'), 'a request with a date and NO hour (the validity of the hours is not checked): the track A is taken and there is no `sections.entry` (red at the first draft: the entry hour crashed on the missing hour)', what='no hour')
+        c.eq((inside, outside), (('A', {'point': 'ENTRA', 'time': '2026-11-10T07:05Z', 'nm': 1164.0, 'speed_kt': 450}, [], None, 'east'),
+                                      (None, {'point': 'ENTRA', 'time': '2026-11-10T13:05Z', 'nm': 1164.0, 'speed_kt': 450}, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T13:02Z', 'entry': 'ENTRA', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}], 'ENTRA', 'east')), 'KJFK → EGLL at FL370: at 04:30Z the track A is taken and `sections.entry` says its entry (ENTRA) and the hour; at 10:30Z A is set aside for the HOUR with its fields, and the route taken (free) says its own entry', what='engine')
