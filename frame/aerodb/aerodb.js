@@ -503,6 +503,65 @@
     // plus la page : au-delà, son suivi est arrêté (le lanceur est prié de l'annuler), lnmBusy est rendu et la raison est 'timeout'
     const LNM_MAX_MS = 120000;
     const eadBusy = new Map(); // OACI → lecture EAD Basic en cours (fetchProcedures : une seule à la fois par terrain)
+    /** SOG-0438 : la fin d'une lecture de procédures (proc/eaip-fetch, ead-fetch, ukpkg-fetch), commune à fetchProcedures et à adoptProcRead :
+     *  la réponse du travail suivi `r` lue, les fichiers du terrain revalidés, sa couverture et sa liste oubliées, le changement annoncé ;
+     *  la même que celle d'une lecture lancée par la page. */
+    async function procJobEnd(k, r, source) {
+      const no = (reason, more = {}) => ({
+        ok: false,
+        reason,
+        ...more
+      });
+      if (!r) return no('no-launcher');
+      const res = r.result;
+      if (r.cancelled) return no('cancelled');
+      // SOG-0438 (contrat de V3 Frame, SOG-0432 c) : un travail libéré par le lanceur revient annulé, raison « released » : ces
+      // verbes écrivent, rien n'est relancé — « à relire »
+      if (r.state === 'cancelled' && r.result?.reason === 'released') return no('released');
+      if (res?.ok !== true) { // un travail annulé trop tard pour l'être (fichiers déjà installés) vaut sa réussite
+        if (r.status === 409) return no('busy');
+        if (r.status === 429 || r.reason === 'too-soon') return no('too-soon', { // EAD Basic : 30 s entre deux lectures
+          wait: Number.isFinite(r.wait) ? r.wait : null
+        });
+        if (r.status === 403) return no('paired');
+        if (r.state === 'cancelled') return no('cancelled');
+        const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';
+        return no(['no-credentials', 'no-tables', 'no-package', 'not-personal', 'cancelled', 'failed'].includes(why) ? why :
+          'failed', {
+            message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
+            ...(Array.isArray(res?.warnings) ? {
+              warnings: res.warnings
+            } : {}),
+            ...(res?.stats && typeof res.stats === 'object' ? {
+              stats: res.stats
+            } : {})
+          });
+      }
+      // Les fichiers viennent d'être écrits par le lanceur, hors de toute écriture de la couche de données : sa copie locale de
+      // ces deux fichiers est périmée. revalidate (FD.revalidate, frame/INTEGRATION.md § 4) relit ces deux chemins seulement
+      // et attend la nouvelle copie avant de rendre : la réponse est bâtie sur le fichier installé (« 0 procédures » du
+      // 28 octobre). Un lecteur sans revalidate (bancs, lecteur provisoire) oublie seulement ses copies.
+      const paths = [`proc/manual/${k}.json`, 'proc/manual/index.json'];
+      for (const path of paths) revs.delete(path);
+      if (typeof reader.revalidate === 'function') await Promise.resolve(reader.revalidate(paths)).catch(() => null);
+      else
+        for (const path of paths) await Promise.resolve(reader.evict?.(path)).catch(() => 0);
+      dropCoverage(); // le terrain lu est désormais détenu (proc/manual/index.json)
+      dropProc(k); // le fichier du terrain a changé : sa liste est à refaire
+      emit({
+        procedures: k,
+        coverage: true
+      });
+      return {
+        ok: true,
+        icao: k,
+        procedures: await api.procedures(k),
+        warnings: Array.isArray(res.warnings) ? res.warnings : [],
+        commit: res.commit ?? null,
+        source,
+        stats: res.stats && typeof res.stats === 'object' ? res.stats : null
+      };
+    }
     // chemins que CETTE instance est en train de lire : la couche de données annonce aux observateurs, pendant la lecture, l'arrivée dans son
     // cache du fichier qu'on lui demande ; ce n'est pas un changement (procWatch l'ignore)
     const reading = new Map();
@@ -2302,52 +2361,7 @@
             },
             signal
           });
-          if (!r) return no('no-launcher');
-          const res = r.result;
-          if (r.cancelled) return no('cancelled');
-          if (res?.ok !== true) { // un travail annulé trop tard pour l'être (fichiers déjà installés) vaut sa réussite
-            if (r.status === 409) return no('busy');
-            if (r.status === 429 || r.reason === 'too-soon') return no('too-soon', { // EAD Basic : 30 s entre deux lectures
-              wait: Number.isFinite(r.wait) ? r.wait : null
-            });
-            if (r.status === 403) return no('paired');
-            if (r.state === 'cancelled') return no('cancelled');
-            const why = res?.ok === false && typeof res.reason === 'string' ? res.reason : 'failed';
-            return no(['no-credentials', 'no-tables', 'no-package', 'not-personal', 'cancelled', 'failed'].includes(why) ? why :
-              'failed', {
-                message: String(res?.message || r.message || (r.offline ? 'launcher unreachable' : '')),
-                ...(Array.isArray(res?.warnings) ? {
-                  warnings: res.warnings
-                } : {}),
-                ...(res?.stats && typeof res.stats === 'object' ? {
-                  stats: res.stats
-                } : {})
-              });
-          }
-          // Les fichiers viennent d'être écrits par le lanceur, hors de toute écriture de la couche de données : sa copie locale de
-          // ces deux fichiers est périmée. revalidate (FD.revalidate, frame/INTEGRATION.md § 4) relit ces deux chemins seulement
-          // et attend la nouvelle copie avant de rendre : la réponse est bâtie sur le fichier installé (« 0 procédures » du
-          // 28 octobre). Un lecteur sans revalidate (bancs, lecteur provisoire) oublie seulement ses copies.
-          const paths = [`proc/manual/${k}.json`, 'proc/manual/index.json'];
-          for (const path of paths) revs.delete(path);
-          if (typeof reader.revalidate === 'function') await Promise.resolve(reader.revalidate(paths)).catch(() => null);
-          else
-            for (const path of paths) await Promise.resolve(reader.evict?.(path)).catch(() => 0);
-          dropCoverage(); // le terrain lu est désormais détenu (proc/manual/index.json)
-          dropProc(k); // le fichier du terrain a changé : sa liste est à refaire
-          emit({
-            procedures: k,
-            coverage: true
-          });
-          return {
-            ok: true,
-            icao: k,
-            procedures: await api.procedures(k),
-            warnings: Array.isArray(res.warnings) ? res.warnings : [],
-            commit: res.commit ?? null,
-            source,
-            stats: res.stats && typeof res.stats === 'object' ? res.stats : null
-          };
+          return procJobEnd(k, r, source);
         })();
         eadBusy.set(k, run);
         try {
@@ -2358,6 +2372,71 @@
         } finally {
           eadBusy.delete(k);
         }
+      },
+      /** SOG-0438 : une page rouverte retrouve la lecture de procédures que le lanceur fait encore pour `icao` (lancée par une page fermée
+       *  depuis) : launcher.current('regen/job') dit le travail en cours sans le suivre ; s'il est une lecture de procédures (set proc,
+       *  verbe eaip-fetch, ead-fetch ou ukpkg-fetch) de CE terrain, il est suivi (launcher.resume) et sa fin traitée comme celle d'une lecture
+       *  lancée ici (procJobEnd, puis le sol lu à la suite). Rend aussitôt { icao, source, step, done, total, result (promesse de la réponse,
+       *  la forme de fetchProcedures) }, ou null : rien à reprendre (autre travail, autre terrain, autre verbe : on n'y touche pas), pas de
+       *  lanceur, appareil appairé, lanceur sans `current`, ou terrain déjà suivi par cette page. */
+      async adoptProcRead(icao, {
+        onProgress,
+        signal
+      } = {}) {
+        const k = String(icao || '').trim().toUpperCase(),
+          VERBS = {
+            'eaip-fetch': 'eaip',
+            'ead-fetch': 'ead',
+            'ukpkg-fetch': 'ukpkg'
+          };
+        if (!/^[A-Z0-9]{4}$/.test(k) || eadBusy.has(k) || typeof launcher?.current !== 'function' || typeof launcher?.resume !==
+          'function' || !launcher.info?.() || launcher.info().lan) return null;
+        const cur = await Promise.resolve(launcher.current('regen/job')).catch(() => null),
+          source = cur && cur.set === 'proc' && Object.prototype.hasOwnProperty.call(VERBS, cur.verb) ? VERBS[cur.verb] : null;
+        if (!source || String(cur.args?.icao ?? '').trim().toUpperCase() !== k || eadBusy.has(k)) return null;
+        const num = v => Number.isFinite(+v) ? Math.max(0, Math.min(1e6, Math.round(+v))) : null,
+          run = (async () => {
+            const r = await launcher.resume('regen/job', {
+              onProgress: st => {
+                try {
+                  onProgress?.({
+                    step: st.step,
+                    done: st.done,
+                    total: st.total,
+                    source
+                  });
+                } catch {
+                  /* écouteur du module en échec : le suivi continue */
+                }
+              },
+              signal
+            });
+            // fini et oublié entre current et resume : rien à lire de sa fin — « à relire », comme un travail libéré. Sécurisation :
+            // resume suit le travail COURANT de la route (commune à tous les verbes) — un autre travail démarré ou fini entre current et
+            // resume n'est jamais pris pour cette lecture : son identifiant et son verbe doivent être ceux que current a vus
+            const jid = r ? String(r.job ?? r.id ?? '') : '';
+            if (!r || (cur.id != null && jid !== String(cur.id)) || (r.verb != null && r.verb !== cur.verb)) return {
+              ok: false,
+              reason: 'released'
+            };
+            return procJobEnd(k, r, source);
+          })();
+        eadBusy.set(k, run);
+        const result = run.then(out => {
+          if (out?.ok === true) readGroundAfter(k); // comme fetchProcedures : le sol lu à la suite, sans changer la réponse
+          return out;
+        }, () => ({
+          ok: false,
+          reason: 'failed'
+        })).finally(() => eadBusy.delete(k));
+        return {
+          icao: k,
+          source,
+          step: String(cur.step ?? '').slice(0, 80),
+          done: num(cur.done),
+          total: num(cur.total),
+          result
+        };
       },
       /** Ce poste peut-il lire Little Navmap ? Vrai seulement si le lanceur est là, n'est pas celui d'un appareil appairé (`lan` faux) et déclare au moins une base `little_navmap_<genre>.sqlite` (`info().lnm` non vide). Un booléen,
        *  jamais un chemin ni un nom de base ; synchrone, aucun travail, aucune lecture. La coche « usage personnel » reste à l'appelant (fetchLnm répond `not-personal`). Sert à n'offrir le geste « Lire depuis Little Navmap » que là où il peut aboutir. */

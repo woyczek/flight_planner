@@ -1260,6 +1260,112 @@ def f258(c):
     c.ok('<b>' not in note, note, 'a reason code outside the form is dropped')
 
 
+@case('F265', 'aerodb.adoptProcRead: a reopened page finds the procedures reading the launcher is still running for ITS aerodrome (eaip, '
+      'EAD, UK package), follows it and ends it like a reading started here (files revalidated, a second reading « busy » meanwhile); '
+      'another aerodrome, another verb or a launcher without `current` is left alone; a job released by the launcher says « released »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0438 (SOG-0430: a page closed in the middle of proc/ukpkg-fetch left the job running, the reopened page read again or was '
+      'refused « busy », never got the result); V3 Frame 137c85453: launcher.current(route); the exception the ergonomist granted Features '
+      'SOG in frame/aerodb/aerodb.js for this resume only')
+def f265(c):
+    c.open('fuel', docs=flight_docs())
+    got = c.js("""async () => {
+      const mk = (cur, end) => {
+        const seen = { resumed: 0, revalidated: [] };
+        let release;
+        const gate = new Promise(r => { release = r });
+        const launcher = { info: () => ({ lnm: [] }), job: async () => ({ ok: false, status: 409 }), current: async () => seen.ended ? null : cur,
+          resume: async (route, o = {}) => { seen.resumed++; o.onProgress?.({ step: 'cartes', done: 5, total: 9 }); await gate; seen.ended = true; return end } };
+        const reader = { read: async () => null, list: async () => [], watch: () => () => {}, revalidate: async paths => { seen.revalidated.push(...paths) } };
+        return { db: AeroDB.create({ reader, lnmperf: false, launcher }), seen, release };
+      };
+      const ok = { job: 'j1', state: 'done', ok: true, result: { ok: true, warnings: [], stats: { pages: 9, read: 9 } } };
+      const out = {};
+      // the same aerodrome, the UK package verb: adopted, followed, ended like a reading started here
+      let m = mk({ id: 'j1', set: 'proc', verb: 'ukpkg-fetch', args: { icao: 'EGZZ' }, step: 'cartes', done: 2, total: 9 }, ok);
+      const prog = [], a = await m.db.adoptProcRead('egzz', { onProgress: p => prog.push(p) });
+      out.adopted = a && [a.icao, a.source, a.done, a.total];
+      out.busy = (await m.db.fetchProcedures('EGZZ', { source: 'ukpkg' })).reason;
+      m.release();
+      const r = await a.result;
+      out.result = [r.ok, r.source, m.seen.revalidated.sort()];
+      out.progress = prog.map(p => [p.done, p.total, p.source]);
+      out.again = await m.db.adoptProcRead('EGZZ');
+      // another aerodrome, another verb, nothing running: left alone, nothing followed
+      m = mk({ id: 'j2', set: 'proc', verb: 'eaip-fetch', args: { icao: 'LFAA' } }, ok);
+      out.otherAd = [await m.db.adoptProcRead('LFZZ'), m.seen.resumed];
+      m = mk({ id: 'j3', set: 'base', verb: 'build', args: { icao: 'LFZZ' } }, ok);
+      out.otherVerb = [await m.db.adoptProcRead('LFZZ'), m.seen.resumed];
+      m = mk(null, ok);
+      out.none = await m.db.adoptProcRead('LFZZ');
+      // a job released by the launcher (SOG-0432 c): « released », nothing read again
+      m = mk({ id: 'j4', set: 'proc', verb: 'ead-fetch', args: { icao: 'EDZZ' } }, { state: 'cancelled', result: { reason: 'released' } });
+      const b = await m.db.adoptProcRead('EDZZ');
+      m.release();
+      out.released = [b.source, (await b.result).reason];
+      // Sécurisation: resume follows ANOTHER job (started or ended between current and resume): « released », nothing of it shown
+      m = mk({ id: 'j5', set: 'proc', verb: 'eaip-fetch', args: { icao: 'LFRS' } },
+        { job: 'j9', verb: 'base-fetch', state: 'done', ok: true, result: { ok: true, warnings: ['OTHER'], stats: { pages: 1 }, commit: 'zz' } });
+      const d = await m.db.adoptProcRead('LFRS');
+      m.release();
+      const dr = await d.result;
+      out.otherJob = [dr.ok, dr.reason, JSON.stringify(dr).includes('OTHER'), m.seen.revalidated.length];
+      // a launcher without current (before V3 Frame 137c85453): nothing
+      const old = AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false,
+        launcher: { info: () => ({}), job: async () => null } });
+      out.oldLauncher = await old.adoptProcRead('EGZZ');
+      return out;
+    }""")
+    c.eq(got['adopted'], ['EGZZ', 'ukpkg', 2, 9], 'the running reading of THIS aerodrome found: its source and its progress', what='adopted')
+    c.eq(got['busy'], 'busy', 'while it is followed, a second reading of the aerodrome is « busy » (never a second job)', what='busy')
+    c.eq(got['result'], [True, 'ukpkg', ['proc/manual/EGZZ.json', 'proc/manual/index.json']],
+         'its end like a reading started here: ok, the two files revalidated', what='end')
+    c.eq(got['progress'], [[5, 9, 'ukpkg']], 'its progress passed on', what='progress')
+    c.eq(got['again'], None, 'ended: nothing left to adopt', what='again')
+    c.eq(got['otherAd'], [None, 0], 'another aerodrome\'s reading: not touched, not followed', what='other aerodrome')
+    c.eq(got['otherVerb'], [None, 0], 'another job: not touched', what='other verb')
+    c.eq(got['none'], None, 'nothing running: nothing', what='nothing')
+    c.eq(got['released'], ['ead', 'released'], 'a job released by the launcher: « released », not read again', what='released')
+    c.eq(got['otherJob'], [False, 'released', False, 0], 'resume followed another job: « released », nothing of it shown, no file '
+         'revalidated (Sécurisation)', what='other job')
+    c.eq(got['oldLauncher'], None, 'a launcher without current: nothing (and nothing breaks)', what='old launcher')
+
+
+# SOG-0438: the procedures card of a reopened page — aerodb.adoptProcRead stubbed: LFML's reading is found running (eaip, 3/12), its end
+# given by window.__adoptEnd(res)
+_ADOPT_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try { db.adoptProcRead = async (icao, o = {}) => { if (String(icao).toUpperCase() !== 'LFML') return null;
+          window.__adoptProgress = o.onProgress;
+          return { icao: 'LFML', source: 'eaip', step: 'pages', done: 3, total: 12, result: new Promise(r => { window.__adoptEnd = r }) } } } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F266', 'Procedures card of a reopened page: the reading the launcher is still running for the arrival is found again — « reading … '
+      '3/12 » on its button, said found again, its progress followed — and its end said like a reading started here; released by the '
+      'launcher: « à relire »', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0438; aerodb.adoptProcRead stubbed (the aerodb part is F265)')
+def f266(c):
+    PTX = 'modules/fuel/procedures_texts.js'
+    c.page.add_init_script(_ADOPT_STUB)
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    open_proc(c)
+    c.until('typeof window.__adoptEnd === "function"', timeout=15000, what='the running reading of LFML found at mount')
+    open_foot(c, 'arr')   # the reading line is under the foot « Source et cartes » (SOG-0308)
+    found = norm(tx(PTX, 'procResumed', c.lang)).split('{icao}')[0].strip()
+    c.until(_NOTE, found, timeout=5000, what='said found again')
+    btn = f'{FUEL} [data-do="procfetch"][data-icao="LFML"]'
+    c.until(f"/3\\/12/.test(document.querySelector('{btn}')?.textContent || '')", timeout=8000, what='its button: the reading and 3/12')
+    c.js("window.__adoptProgress({ source: 'eaip', done: 7, total: 12 })")
+    c.until(f"/7\\/12/.test(document.querySelector('{btn}')?.textContent || '')", timeout=5000, what='its progress followed: 7/12')
+    c.js(f"document.querySelector('{btn}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F266_{c.design}_390_{c.lang}_found.png')   # the line and its notification « … retrouvée », for the ergonomist
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js("window.__adoptEnd({ ok: false, reason: 'released' })")
+    rel = norm(tx(PTX, 'released', c.lang, after='procReasons')).replace('{icao}', 'LFML')[:30]
+    c.until(_NOTE, rel, timeout=5000, what='released by the launcher: « à relire »')
+
+
 @case('F39', 'Time bench: fmtDayZ and the other Z formats', 'F', tags=('fuel',), designs=('standard',), screens=False,
       rule='V3 spec 10.29 h: frame/lib/time.js gives "29/10 16:53Z" (UTC, day and month), the one writer of that format; its pure bench passes')
 def f39(c):

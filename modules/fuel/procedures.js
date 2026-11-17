@@ -739,7 +739,8 @@ export function createProcedures(host) {
       d = busy ? null : ukDone.get(k),
       said = !d ? '' : d.k === 'ok' ? tt(TX.procUkOk, {
         n: d.n
-      }) : d.k === 'not-personal' ? tt(TX.procUkPersonal) : d.k === 'no-package' ? tt(TX.procUkNoPkg) : d.m ? tt(TX.procUkFail, {
+      }) : d.k === 'not-personal' ? tt(TX.procUkPersonal) : d.k === 'no-package' ? tt(TX.procUkNoPkg) : d.k === 'released' ? tt(TX
+        .procUkReleased) : d.m ? tt(TX.procUkFail, {
         m: d.m
       }) : tt(TX.procUkFail0);
     return `<span class="fu-ukline" data-ukline><button type="button" class="fu-linkbtn" data-do="procukpkg" data-icao="${esc(k)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procUkReading : TX.procUkRead))}</button>${said ? ` <span class="${d.k === 'ok' ? 'f-muted' : 'f-warn'}" data-ukres="${esc(d.k)}">${esc(said)}</span>` : ''}</span>`;
@@ -1464,7 +1465,39 @@ export function createProcedures(host) {
   }
   /** Redessine la carte si ce qu'elle montre a changé (appelée par chaque refresh de l'écran). */
   function sync() {
+    adoptOnce();
     if (key !== rowsKey()) render();
+  }
+  /** SOG-0438 : une fois par couple de terrains du vol (la page rouverte), la lecture de procédures que le lanceur fait encore pour le
+   *  départ ou l'arrivée est retrouvée (aerodb.adoptProcRead) et suivie comme une lecture lancée ici : le paquet du Royaume-Uni par
+   *  readUk, l'eAIP et EAD Basic par read. Rien quand une lecture est déjà suivie par cette page, ni quand aerodb ne sait pas reprendre. */
+  let adoptKey = '';
+
+  function adoptOnce() {
+    const r = host.flight()?.route || {},
+      ids = [...new Set([r.dep, r.arr].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z0-9]{4}$/.test(x)))],
+      k = ids.join('>');
+    if (!k || k === adoptKey || typeof ctx.aerodb?.adoptProcRead !== 'function') return;
+    adoptKey = k;
+    (async () => {
+      for (const icao of ids) {
+        if (reading || ukReading || host.gone()) return;
+        const sink = {
+            fn: null
+          },
+          a = await Promise.resolve(ctx.aerodb.adoptProcRead(icao, {
+            onProgress: p => sink.fn?.(p)
+          })).catch(() => null);
+        if (!a?.result) continue;
+        return a.source === 'ukpkg' ? readUk(icao, {
+          a,
+          sink
+        }) : read(icao, {
+          a,
+          sink
+        });
+      }
+    })();
   }
   /** La carte est à refaire au prochain sync (le corps de l'écran est neuf). */
   function reset() {
@@ -1595,7 +1628,7 @@ export function createProcedures(host) {
    *  un refus montre sa raison (reason, wait, message : la forme unique d'un refus du lanceur) dans une notification flottante (sans
    *  lanceur : la lecture se fait sur le poste, l'OFP SimBrief reste la source du vol). Un échec qui a vu des pages dit ses comptes
    *  (stats) après la raison. */
-  async function read(icao) {
+  async function read(icao, adopted = null) {
     const say = (row, v, level) => ctx.notify(ctx.t(row, v), level); // ctx du montage de départ : dit même après le démontage
     if (reading) return say(TX.procReasons.busy, {
       icao: reading.icao
@@ -1617,16 +1650,24 @@ export function createProcedures(host) {
       const b = !host.gone() && host.body()?.querySelector(`[data-do="procfetch"][data-icao="${CSS.escape(String(icao))}"]`); // code venu du groupe : échappé
       if (b) b.textContent = reading.text;
     };
-    say(TX.procStarted, {
+    say(adopted ? TX.procResumed : TX.procStarted, {
       icao
     }, 'info');
+    if (adopted) { // SOG-0438 : la lecture retrouvée — sa source, son avancement, puis ceux que le suivi dira
+      src = adopted.a.source;
+      label(adopted.a.total ? ` ${adopted.a.done || 0}/${adopted.a.total}` : '');
+      adopted.sink.fn = p => {
+        if (p?.source) src = p.source;
+        label(p && p.total ? ` ${p.done || 0}/${p.total}` : '');
+      };
+    }
     if (!host.gone()) {
       key = null;
       render();
     }
     let res;
     try {
-      res = ctx.aerodb?.fetchProcedures ? await ctx.aerodb.fetchProcedures(icao, {
+      res = adopted ? await adopted.a.result : ctx.aerodb?.fetchProcedures ? await ctx.aerodb.fetchProcedures(icao, {
         onProgress: p => {
           if (p?.source) src = p.source;
           label(p && p.total ? ` ${p.done || 0}/${p.total}` : '');
@@ -1958,9 +1999,12 @@ export function createProcedures(host) {
   /** SOG-0374 : « Lire les départs dans le paquet du Royaume-Uni » — aerodb.fetchProcedures(icao, { source: 'ukpkg' }) (le lanceur lit le
    *  paquet eAIP de NATS décompressé dans ses Téléchargements) ; la réponse est gardée pour la ligne du terrain : le nombre de SID lues en
    *  partie, l'usage personnel à cocher, l'absence du paquet, ou la phrase du lanceur (texte borné, échappé au dessin). Un geste à la fois. */
-  async function readUk(icao) {
+  async function readUk(icao, adopted = null) {
     const k = String(icao || '').toUpperCase();
     if (!/^EG[A-Z]{2}$/.test(k) || ukReading || typeof ctx.aerodb?.fetchProcedures !== 'function') return;
+    if (adopted) ctx.notify(ctx.t(TX.procResumed, {
+      icao: k
+    }), 'info'); // SOG-0438 : la lecture du paquet retrouvée
     ukReading = k;
     ukDone.delete(k);
     if (!host.gone()) {
@@ -1969,7 +2013,7 @@ export function createProcedures(host) {
     }
     let res;
     try {
-      res = await ctx.aerodb.fetchProcedures(k, {
+      res = adopted ? await adopted.a.result : await ctx.aerodb.fetchProcedures(k, {
         source: 'ukpkg'
       });
     } catch (e) {
@@ -1985,7 +2029,7 @@ export function createProcedures(host) {
     ukDone.set(k, res?.ok ? {
       k: 'ok',
       n: Math.min(999, list.filter(p => p?.kind === 'SID' && isPartial(p)).length)
-    } : ['not-personal', 'no-package'].includes(res?.reason) ? {
+    } : ['not-personal', 'no-package', 'released'].includes(res?.reason) ? {
       k: res.reason
     } : {
       k: 'fail',

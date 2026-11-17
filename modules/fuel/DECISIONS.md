@@ -2469,3 +2469,17 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   amount never cut (white-space: nowrap); a message that prevents a proposal keeps the gesture to try again. The Map's touch (`maps-altn-pick` { icao }, or `#fuel?altn=` read back for the same
   arrival and aircraft key) PROPOSES the aerodrome — « Proposé : XQPF — Prendre » — and reads its weather; a code outside the proposal is
   ignored. Names from the base are third-party text: cleaned and escaped. F262 (invented aerodromes, each one a rule of the selection).
+- **17 Nov 2026 — SOG-0438, a reopened page finds the procedures reading the launcher is still running** (SOG-0430, measured by V3
+  Frame: a page closed in the middle of proc/ukpkg-fetch — or eaip-fetch, ead-fetch — left the job running; the reopened page read again
+  or was refused « busy » — eadBusy and ukReading live in the page's memory — and never got the result: proc/manual/<ICAO>.json and its
+  index were not revalidated). The frame's part: `launcher.current(route)` (V3 Frame 137c85453). Ours, with the exception the
+  ergonomist granted in frame/aerodb/aerodb.js for this resume only: `aerodb.adoptProcRead(icao, { onProgress, signal })` asks
+  `launcher.current('regen/job')`; a job of set `proc`, verb eaip-fetch / ead-fetch / ukpkg-fetch, for THIS aerodrome is followed
+  (`launcher.resume`) and ended by `procJobEnd` — the end of fetchProcedures taken out of it unchanged (files revalidated, coverage and
+  list dropped, the change announced), then the ground read after, as before; it answers at once `{ icao, source, step, done, total,
+  result }`; another job, another aerodrome or verb is not touched; a launcher without `current` gives null. A job released by the
+  launcher (SOG-0432 c: `cancelled`, `result.reason` `released`), or ended and forgotten between current and resume, says `released`:
+  these verbs write, nothing is read again — « à relire ». Fuel (procedures.js): at the first sync of each pair of aerodromes, the
+  reading of the departure or the arrival is looked for; found, it is followed by read() (eAIP, EAD: the button « Lecture… n/m ») or
+  readUk() (the UK package line), said found again (« Lecture de LFML retrouvée … »), and its end said like a reading started here.
+  F265 (aerodb, a fake launcher), F266 (the card, adoptProcRead stubbed).

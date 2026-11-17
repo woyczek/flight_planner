@@ -35,6 +35,10 @@ export const TX = {
     'Ningún paquete eAIP del Reino Unido en Descargas: descárguelo de NATS y descomprímalo'
   ],
   procUkFail: ['Lecture impossible : {m}', 'Could not read: {m}', 'Lesen nicht möglich: {m}', 'Lectura imposible: {m}'],
+  // SOG-0438 : la lecture du paquet arrêtée par le lanceur (libérée) : rien n'est relancé
+  procUkReleased: ['Lecture arrêtée par le lanceur : à relire', 'Reading stopped by the launcher: read it again',
+    'Lesen vom Starter beendet: erneut lesen', 'Lectura detenida por el lanzador: vuelva a leer'
+  ],
   procUkFail0: ['Lecture impossible', 'Could not read', 'Lesen nicht möglich', 'Lectura imposible'],
   procPartial: ['lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte',
     'read in part: exit point and levels; path not read, see the chart',
@@ -232,6 +236,12 @@ export const TX = {
     'Viento cruzado {kt} kt, por encima del límite de la ficha ({max} kt)'
   ],
   // une lecture peut durer plusieurs minutes : son départ est dit, sa fin le sera aussi (même hors de Carburant)
+  // SOG-0438 : une page rouverte retrouve la lecture que le lanceur fait encore pour ce terrain
+  procResumed: ['Lecture de {icao} retrouvée : le lanceur la faisait encore ; une notification dira la fin.',
+    'Reading of {icao} found again: the launcher was still running it; a notification will say when it ends.',
+    'Lesen von {icao} wiedergefunden: der Starter lief noch; eine Meldung sagt das Ende.',
+    'Lectura de {icao} recuperada: el lanzador aún la hacía; una notificación dirá el final.'
+  ],
   procStarted: ['Lecture de {icao} lancée : une notification dira la fin.',
     'Reading {icao} started: a notification will say when it ends.',
     'Lesen von {icao} gestartet: eine Meldung sagt, wann es endet.', 'Lectura de {icao} iniciada: una notificación dirá cuándo termina.'
@@ -303,6 +313,11 @@ export const TX = {
     'No sirve a ninguna pista de {app}'
   ],
   procReasons: {
+    // SOG-0438 : un travail arrêté par le lanceur (libéré) ou fini sans que sa fin puisse être lue : rien n'est relancé
+    released: ['{icao} : la lecture a été arrêtée par le lanceur ; à relire.',
+      '{icao}: the reading was stopped by the launcher; read it again.',
+      '{icao}: das Lesen wurde vom Starter beendet; erneut lesen.', '{icao}: el lanzador detuvo la lectura; vuelva a leer.'
+    ],
     'bad-icao': ['Code OACI invalide : {icao}.', 'Invalid ICAO code: {icao}.', 'Ungültiger ICAO-Code: {icao}.',
       'Código OACI no válido: {icao}.'
     ],
