@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "aae4339",
-  "fiches": 411,
+  "organisation": "420e2bc",
+  "fiches": 412,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1279,6 +1279,15 @@
      "de": "Route über einen NAT-Track: „Prüfen“ erkennt den NAT-Abschnitt nicht, den „Berechnen“ gerade genommen hat, und drei Lesefehler darum herum",
      "es": "Ruta por una ruta NAT: «Controlar» no reconoce el tramo NAT que «Calcular» acaba de tomar, y tres defectos de lectura alrededor",
      "test": true
+    },
+    {
+     "id": "SOG-0413",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : relire les routes NAT à la main à tout moment, et dire quels sens le message porte",
+     "en": "Fuel: re-read the NAT tracks by hand at any time, and say which directions the message carries",
+     "de": "Kraftstoff: die NAT-Tracks jederzeit von Hand neu lesen und sagen, welche Richtungen die Meldung enthält",
+     "es": "Combustible: releer las rutas NAT a mano en cualquier momento, y decir qué sentidos lleva el mensaje"
     }
    ]
   },
