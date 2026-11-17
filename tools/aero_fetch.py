@@ -731,7 +731,7 @@ def nat_parse(messages):
         cur = None
         for raw in str(m.get('condition_message') or '').replace('\r', '').split('\n'):
             line = raw.strip().rstrip('-').strip()
-            t = re.fullmatch(r'([A-Z]) ((?:[A-Z0-9]{2,5}|\d{2,4}/\d{2,3})(?: (?:[A-Z0-9]{2,5}|\d{2,4}/\d{2,3}))+)', line)
+            t = re.fullmatch(r'([A-Z]) ((?:[A-Z0-9]{2,5}|\d{2,4}/\d{2,3})(?: (?:[A-Z0-9]{2,5}|\d{2,4}/\d{2,3}))+)', line, re.A)
             if t:
                 cur = tracks[t.group(1)] = {'id': t.group(1), 'route': t.group(2).split(), 'east': [], 'west': [], 'nar': [],
                                             'by': m.get('icao_id') or '', 'from': m.get('start_datetime') or '',
@@ -743,6 +743,101 @@ def nat_parse(messages):
                 if line.startswith(label):
                     cur[key] = [x for x in line[len(label):].split() if x != 'NIL']
     return [tracks[k] for k in sorted(tracks)]
+
+
+NAT_PAST = 'nat_past.json'      # SOG-0394 : les routes qui sortent de nat_tracks.json à une relecture, gardées à côté (le moteur seul les lit)
+NAT_PAST_DAYS = 3               # une route gardée est retirée trois jours après la FIN de sa validité (pas après son début : les routes à venir sont gardées aussi)
+NAT_PAST_MAX = 120              # au plus 120 routes gardées ; les plus anciennes (fin de validité) partent d'abord
+NAT_PAST_BYTES = 1_000_000      # un fichier plus gros n'est pas lu (il est refait)
+_NAT_ID = re.compile(r'[A-Z]{1,2}', re.A)      # re.A : jamais de chiffres ou de lettres d'une autre écriture (`int()` les accepte, le moteur ne les attend pas)
+_NAT_POINT = re.compile(r'[A-Z][A-Z0-9]{1,6}|\d{2}(?:\d{2})?/\d{2,3}', re.A)      # un repère nommé ou une coordonnée NAT (« 5530/20 », « 57/30 ») : la forme que lit le moteur (nat_layer)
+_NAT_DATE = re.compile(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', re.A)
+
+
+def _utc():
+    return datetime.datetime.now(datetime.timezone.utc)
+
+
+def _nat_date(text):
+    """Un instant « 2026-11-17T11:30:00Z » → datetime UTC ; None sinon."""
+    if not isinstance(text, str) or not _NAT_DATE.fullmatch(text):
+        return None
+    try:
+        return datetime.datetime.strptime(text, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=datetime.timezone.utc)
+    except ValueError:
+        return None
+
+
+def nat_clean(t):
+    """Une route lue dans un fichier (ENTRÉE NON FIABLE : le fichier peut venir d'un autre poste) → la route nettoyée { id, route, east, west, nar, by, from, to }, ou None : une lettre, des repères, des niveaux entiers de 100 à 600 et des dates de la forme exacte ;
+    aucun nom, aucun chemin, aucun autre champ n'est repris tel quel."""
+    if not isinstance(t, dict) or not isinstance(t.get('id'), str) or not _NAT_ID.fullmatch(t['id']):
+        return None
+    route = t.get('route')
+    if not isinstance(route, list) or not 2 <= len(route) <= 40 or not all(isinstance(p, str) and _NAT_POINT.fullmatch(p) for p in route):
+        return None
+
+    def levels(raw):
+        out = []
+        for x in raw if isinstance(raw, list) else []:
+            if isinstance(x, (str, int)) and not isinstance(x, bool) and re.fullmatch(r'\d{3}', str(x), re.A) and 100 <= int(x) <= 600:
+                out.append(str(int(x)))
+        return sorted(set(out))
+    east, west = levels(t.get('east')), levels(t.get('west'))
+    if not (east or west):
+        return None
+    nar = [x for x in (t.get('nar') if isinstance(t.get('nar'), list) else [])[:12] if isinstance(x, str) and re.fullmatch(r'[A-Z0-9]{2,8}', x, re.A)]
+    by = t.get('by') if isinstance(t.get('by'), str) and re.fullmatch(r'[A-Z]{4}', t['by'], re.A) else ''
+    frm, to = (t.get(k) if _nat_date(t.get(k)) else '' for k in ('from', 'to'))
+    if not (frm or to):
+        return None      # sans aucune date, une route gardée ne se purge jamais : écartée
+    return {'id': t['id'], 'route': list(route), 'east': east, 'west': west, 'nar': nar, 'by': by, 'from': frm, 'to': to}
+
+
+def nat_key(t):
+    """La clé d'une route : (lettre, début de validité, sens)."""
+    d = _nat_date(t.get('from'))      # la date est canonique : la publication de la source (dates brutes) et le fichier relu (dates nettoyées) ont la MÊME clé
+    return (t['id'], d.strftime('%Y-%m-%dT%H:%M:%SZ') if d else '', 'east' if t['east'] and not t['west'] else 'west' if t['west'] and not t['east'] else 'both')
+
+
+def nat_read(path):
+    """Les routes d'un fichier de routes NAT, nettoyées (nat_clean) ; [] si le fichier manque, est trop gros ou illisible. Au plus 400 routes lues."""
+    try:
+        if os.path.getsize(path) > NAT_PAST_BYTES:
+            return []
+        with open(path, encoding='utf-8-sig') as f:
+            doc = json.load(f)
+    except (OSError, ValueError, RecursionError, MemoryError):      # un fichier à imbrication profonde ou énorme est un fichier illisible (le moteur ne s'arrête pas)
+        return []
+    rows = doc.get('tracks') if isinstance(doc, dict) else None
+    return [x for x in (nat_clean(t) for t in (rows[:400] if isinstance(rows, list) else [])) if x]
+
+
+def nat_keep(old, new, past, now):
+    """Les routes à GARDER : celles de `past` (déjà gardées) et de `old` (le fichier qui va être remplacé) qui ne sont pas dans `new` (la nouvelle publication), SANS doublon de clé (lettre, début, sens), purgées trois jours après la fin de leur validité
+    (à défaut de fin, après leur début), au plus NAT_PAST_MAX (les plus anciennes par fin de validité partent d'abord) ; triées par début puis lettre."""
+    here = {nat_key(t) for t in new}
+    kept = {}
+    for t in [*past, *old]:      # le fichier remplacé est le plus récent : il l'emporte sur une copie gardée de même clé
+        k = nat_key(t)
+        if k not in here:
+            kept[k] = t
+    limit = now - datetime.timedelta(days=NAT_PAST_DAYS)
+    live = [t for t in kept.values() if (_nat_date(t['to']) or _nat_date(t['from'])) >= limit]
+    live.sort(key=lambda t: (t['to'] or t['from'], t['from'], t['id']), reverse=True)
+    return sorted(live[:NAT_PAST_MAX], key=lambda t: (t['from'], t['id']))
+
+
+def nat_past(folder, new):
+    """SOG-0394 : AVANT l'écrasement de nat_tracks.json par la publication `new`, les routes qui en sortent (ou qui y étaient déjà gardées) sont rangées dans nat_past.json à côté (écriture atomique) ; rend le nombre de routes gardées."""
+    old = nat_read(os.path.join(folder, 'nat_tracks.json'))
+    past = nat_read(os.path.join(folder, NAT_PAST))
+    keep = nat_keep(old, new, past, _utc())      # la publication est lue telle que la source la donne : la clé de chaque route y est la même
+    if not keep and not os.path.isfile(os.path.join(folder, NAT_PAST)):
+        return 0
+    body = json.dumps({'source': 'routes retirées de nat_tracks.json (tools/aero_fetch.py nat), gardées pour le moteur de route', 'tracks': keep}, ensure_ascii=False, indent=1).encode('utf-8')
+    write(os.path.join(folder, NAT_PAST), body)
+    return len(keep)
 
 
 def nat(data):
@@ -759,7 +854,12 @@ def nat(data):
            'messages': [{'by': m.get('icao_id') or '', 'id': m.get('notam_number_formatted') or '', 'part': m.get('part_no'),
                          'from': m.get('start_datetime') or '', 'to': m.get('end_datetime') or ''} for m in msgs]}
     body = json.dumps(doc, ensure_ascii=False, indent=1).encode('utf-8')
-    changed = write(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), body)
+    folder = os.path.join(data, 'sia', 'zones', 'nat')
+    try:
+        nat_past(folder, tracks)      # SOG-0394 : AVANT l'écrasement
+    except OSError as e:
+        return [], [f'NAT (FAA) : les routes retirées n\'ont pas pu être gardées ({e})']      # rien n'est écrasé sans avoir gardé ce qui sort
+    changed = write(os.path.join(folder, 'nat_tracks.json'), body)
     return [{'name': 'nat_tracks.json', 'bytes': len(body), 'features': len(tracks), 'unchanged': not changed}], []
 
 

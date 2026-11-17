@@ -13025,3 +13025,105 @@ def k317(c):
     c.eq((sorted(req), len(req['route']), len(req['via']), req['fl']), (['arr', 'date', 'dep', 'fl', 'route', 'via'], 600, 60, 350), 'the request kept in the answer is bounded (600 signs a text, 60 items a list) and has no internal field « _… »', what='request')
     src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
     c.ok('sans incompatibilité détectée. Le niveau' not in src and "message = ('' if alternatives" in src, 'plan.py', 'the phrase « N alternative(s) sans incompatibilité détectée » is no longer built: an answer with alternatives has an empty `alternative_message`')
+
+
+@case('K312', 'NAT messages kept (SOG-0394, lot B): before nat_tracks.json is overwritten by a new reading of the source, the routes that leave it — the night routes when the message of the day replaces them, the routes of the day before — go to a second file `nat_past.json` next to it (key letter + start of validity + direction, removed three days after the END of their validity, 120 at most, atomic write, nothing taken as it is from a file that may come from another workstation); nat_tracks.json is still the last publication, as before; the source is a FAKE here (no network)',
+      'K', static=True,
+      rule='SOG-0394 (17 Nov 2026, the user: « il faut donc être capable de lire deux fichiers nats, celui de la veille, et celui de « quand on va en sortir » »; ergonomics session, 9:14 order). nat_tracks.json was overwritten at each reading: at 08:57 it held the eastbound routes of the night, at 09:02 only A to F westbound; the night routes were lost (and with them the entries of the free routes of the flights that need them: LFPG, EDDF, LEMD toward America had no route left on the matrix of the morning). Now `aero_fetch.nat` calls `nat_past(folder, tracks)` BEFORE the replacement: the routes of the old file and of the old nat_past.json that are not in the new publication are kept (key: letter, start, direction; a route of the same key that is still published is NOT kept twice), the ones whose end of validity is more than three days old are dropped, 120 routes at most (the oldest end first), every route is CLEANED (letter, points, levels 100-600, exact dates: nothing else is taken, no name or path) and the file is written atomically; if it cannot be written nothing is replaced and the failure is said. The engine reads it (lot A); the page and the other readers do not change.')
+def k312(c):
+    import datetime
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import aero_fetch as AF
+    utc = datetime.timezone.utc
+    msg = lambda ident, start, end, rows, by='EGGX': [{'transaction_type': 'NAT_TRACK', 'icao_id': by, 'notam_number_formatted': ident, 'part_no': 1, 'start_datetime': start, 'end_datetime': end, 'condition_message': ''.join(rows)}]
+    night = msg('CZQX1117/26', '2026-11-17T01:00:00Z', '2026-11-17T08:00:00Z', ['R JANJO 50/50 50/40 5030/30 50/20 RESNO\nEAST LVLS 340 350 360\nWEST LVLS NIL\nNAR NIL\n', 'S ALLRY 51/50 51/40 51/30 51/20 TUDEP\nEAST LVLS 340 350\nWEST LVLS NIL\nNAR NIL\n'], 'CZQX')
+    day = msg('EGGX1117/26', '2026-11-17T11:30:00Z', '2026-11-17T19:00:00Z', ['A BALIX 60/20 60/30 58/40 56/50 JANJO\nEAST LVLS NIL\nWEST LVLS 340 350 360\nNAR NIL\n', 'B GOMUP 59/20 59/30 57/40 55/50 LOMSI\nEAST LVLS NIL\nWEST LVLS 350 360\nNAR NIL\n'])
+    night2 = msg('CZQX1118/26', '2026-11-18T01:00:00Z', '2026-11-18T08:00:00Z', ['R JANJO 50/50 50/40 5030/30 50/20 RESNO\nEAST LVLS 340 350 360\nWEST LVLS NIL\nNAR NIL\n'], 'CZQX')
+    real_get, real_utc = AF.get, AF._utc
+    at = {}
+    AF._utc = lambda: at['now']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        folder = os.path.join(td, 'sia', 'zones', 'nat')
+        past_file = os.path.join(folder, 'nat_past.json')
+        letters = lambda p: sorted((t['id'], t['from'][:10] + t['from'][10:16]) for t in json.load(open(p, encoding='utf-8'))['tracks'])
+
+        def read(body, now):
+            at['now'] = now
+            AF.get = lambda url, *a, **k: json.dumps(body).encode()
+            return AF.nat(td)
+        try:
+            # 1. the night message is read, then the message of the day replaces it: R and S are kept
+            r1 = read(night, datetime.datetime(2026, 11, 17, 1, 5, tzinfo=utc))
+            c.eq((r1[1], os.path.isfile(past_file)), ([], False), 'the first reading keeps nothing (nothing leaves the file): no nat_past.json', what='first')
+            r2 = read(day, datetime.datetime(2026, 11, 17, 9, 2, tzinfo=utc))
+            c.eq((r2[1], [t['id'] for t in json.load(open(os.path.join(folder, 'nat_tracks.json'), encoding='utf-8'))['tracks']], letters(past_file)), ([], ['A', 'B'], [('R', '2026-11-17T01:00'), ('S', '2026-11-17T01:00')]),
+                 'the message of the day replaces the night one: nat_tracks.json holds A and B (the last publication, as before) and nat_past.json holds the night routes R and S', what='kept')
+            first = open(past_file, 'rb').read()
+            read(day, datetime.datetime(2026, 11, 17, 9, 30, tzinfo=utc))
+            c.eq(open(past_file, 'rb').read() == first, True, 'the same publication read again changes nothing (no duplicate, the file is not rewritten)', what='same')
+            # 2. the night message of the next night: A and B (valid until 19:00Z) are kept with R and S; the route R of the 18th is a DIFFERENT key from the one of the 17th
+            read(night2, datetime.datetime(2026, 11, 17, 21, 0, tzinfo=utc))
+            c.eq(letters(past_file), [('A', '2026-11-17T11:30'), ('B', '2026-11-17T11:30'), ('R', '2026-11-17T01:00'), ('S', '2026-11-17T01:00')], 'the routes of the day are kept when the next night message replaces them (R of the 18th is published: not kept)', what='next')
+            # 3. the purge: three days after the END of the validity (R, S end on the 17th at 08:00Z, A and B at 19:00Z)
+            read(night2, datetime.datetime(2026, 11, 20, 12, 0, tzinfo=utc))
+            c.eq(letters(past_file), [('A', '2026-11-17T11:30'), ('B', '2026-11-17T11:30')], 'on the 20th at 12:00Z R and S (ended 17th 08:00Z + 3 days) are removed, A and B (ended 17th 19:00Z + 3 days) stay', what='purge')
+        finally:
+            AF.get, AF._utc = real_get, real_utc
+    # 4. the cap, the key and the untrusted file, on the functions themselves
+    now = datetime.datetime(2026, 11, 17, 12, 0, tzinfo=utc)
+    mk = lambda i, day_, d='west': {'id': chr(65 + i % 26) + chr(65 + i // 26), 'route': ['BALIX', '60/20'], 'east': [] if d == 'west' else ['350'], 'west': ['350'] if d == 'west' else [], 'nar': [], 'by': 'EGGX', 'from': f'2026-11-{day_:02d}T11:30:00Z', 'to': f'2026-11-{day_:02d}T19:00:00Z'}
+    many = [mk(i, 16 + i % 2) for i in range(130)]
+    kept = AF.nat_keep(many, [], [], now)
+    c.eq((len(kept), min(t['from'] for t in kept)[:10] if kept else None), (120, '2026-11-16'), 'at most 120 routes are kept (the 10 with the oldest end of validity go first)', what='cap')
+    a_w, a_e = mk(0, 17, 'west'), mk(0, 17, 'east')
+    c.eq(len(AF.nat_keep([a_w, a_e], [], [], now)), 2, 'the same letter with the same start in two directions is two routes (the key has the direction)', what='key')
+    c.eq(len(AF.nat_keep([a_w], [dict(a_w)], [dict(a_w)], now)), 0, 'a route that the new publication still carries is not kept (neither from the old file nor from nat_past.json)', what='published')
+    hostile = {'tracks': [
+        {'id': 'abc', 'route': ['BALIX', '60/20'], 'west': ['350'], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'},
+        {'id': 'Q', 'route': ['../../etc/passwd', '60/20'], 'west': ['350'], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'},
+        {'id': 'Q', 'route': ['BALIX', '60/20'], 'west': ['9999', '350', True, 'x'], 'from': 'yesterday', 'to': 'tomorrow', 'path': 'C:/x', 'name': '../x'},
+        {'id': 'Q', 'route': ['BALIX'] * 41, 'west': ['350'], 'from': '2026-11-17T11:30:00Z'},
+        {'id': 'Z', 'route': ['BALIX', '60/20'], 'east': ['350', '99', '700'], 'nar': ['N714B', '<script>'], 'by': 'EGGX', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z', 'path': 'C:/x', 'name': '../x', 'extra': 1}]}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        p = os.path.join(td, 'nat_past.json')
+        with open(p, 'w', encoding='utf-8') as f:
+            json.dump(hostile, f)
+        got = AF.nat_read(p)
+        c.eq(got, [{'id': 'Z', 'route': ['BALIX', '60/20'], 'east': ['350'], 'west': [], 'nar': ['N714B'], 'by': 'EGGX', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}],
+             'a file that may come from another workstation is read as an UNTRUSTED input: only the route with a good letter, good points, levels 100-600 (the level 99 and 700 dropped), exact dates is taken, and ONLY its known fields (no name, no path, no other field)', what='untrusted')
+        with open(p, 'w', encoding='utf-8') as f:
+            f.write('{' + ' ' * (AF.NAT_PAST_BYTES + 10) + '}')
+        c.eq(AF.nat_read(p), [], 'a file over 1 MB is not read', what='big')
+        with open(p, 'w', encoding='utf-8') as f:
+            f.write('{"tracks": ' + '[' * 100000 + ']' * 100000 + '}')      # Sécurisation (17 Nov): a deeply nested file (200 KB, under the size bound) raises RecursionError in json, not ValueError
+        c.eq(AF.nat_read(p), [], 'a file with a deep nesting is an unreadable file (RecursionError is caught like ValueError): nothing is read, nothing stops', what='deep')
+        with open(p, 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [
+                {'id': 'Q', 'route': ['BALIX', '\u0666\u0660/\u0662\u0660'], 'west': ['350'], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'},
+                {'id': 'Q', 'route': ['BALIX', '60/20'], 'west': ['\u0663\u0665\u0660', '360'], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'},
+                {'id': 'Q', 'route': ['BALIX', '60/20'], 'west': ['350'], 'from': '\u0662\u0660\u0662\u0666-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}]}, f)
+        got = AF.nat_read(p)
+        c.eq([(t['route'][-1], t['west'], t['from']) for t in got], [('60/20', ['360'], '2026-11-17T11:30:00Z'), ('60/20', ['350'], '')], 'digits of another script (Arabic-Indic) are not digits here: the point and the level that carry them are dropped, the date that carries them is dropped (`int()` and `\\d` accept them, the engine does not expect them)', what='ascii')
+        # the key is the same for the publication as the source gives it (raw dates) and for the file read back (clean dates): a date that is not exact is no date on both sides
+        raw = {'id': 'A', 'route': ['BALIX', '60/20'], 'east': [], 'west': ['350'], 'nar': [], 'by': 'EGGX', 'from': '2026-11-17T11:30Z', 'to': '2026-11-17T19:00:00Z'}
+        c.eq(len(AF.nat_keep([AF.nat_clean(raw)], [raw], [], now)), 0, 'a route that the source still publishes with a date that is not exact is not kept as if it had left (the key date is canonical on both sides)', what='key date')
+    # 5. what cannot be kept stops the replacement (the contre-épreuve of the guard: without it the night routes are lost again)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        folder = os.path.join(td, 'sia', 'zones', 'nat')
+        try:
+            at['now'] = datetime.datetime(2026, 11, 17, 1, 5, tzinfo=utc)
+            AF._utc = lambda: at['now']
+            AF.get = lambda url, *a, **k: json.dumps(night).encode()
+            AF.nat(td)
+            before = open(os.path.join(folder, 'nat_tracks.json'), 'rb').read()
+            os.mkdir(os.path.join(folder, 'nat_past.json'))      # nat_past.json cannot be written (a folder is in the way)
+            AF.get = lambda url, *a, **k: json.dumps(day).encode()
+            files, errors = AF.nat(td)
+            c.eq((files, len(errors), 'gardées' in errors[0] if errors else False, open(os.path.join(folder, 'nat_tracks.json'), 'rb').read() == before), ([], 1, True, True),
+                 'when the routes that leave cannot be kept, nat_tracks.json is NOT replaced and the failure is said (nothing is lost silently)', what='guard')
+        finally:
+            AF.get, AF._utc = real_get, real_utc
