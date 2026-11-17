@@ -4085,11 +4085,27 @@ _SPACE_CLICK_JS = """(ft) => { const S = window.__mp.S, g = S.geo, cr = S.prof.c
   const y = r.top + g.padT + (g.H - g.padT - g.padB) * (1 - (ft - g.bottom) / (g.top - g.bottom)); return { x, y } }"""
 
 
+def _still_point(c, point, quiet=500, timeout=6000):
+    """The target, measured when it has stood still: the same place (1 px) for `quiet` ms, at most `timeout` ms of waiting, else the case fails SAYING that it never settled. A target measured
+    while the page is still laying itself out (a sheet closing, a map resizing: the chip of D245 moved 152 px between the measure and the click) is not a click lost, nor a defect of the Map:
+    it is a measure taken too early. One bounded wait, then ONE click: never a second try."""
+    t0, last, since = time.time(), point(), time.time()
+    while True:
+        c.wait(100)
+        now_ = point()
+        if abs(now_[0] - last[0]) > 1 or abs(now_[1] - last[1]) > 1:
+            last, since = now_, time.time()
+        elif time.time() - since >= quiet / 1000:
+            return last
+        if time.time() - t0 > timeout / 1000:
+            raise Fail(f'the target never stood still for {quiet} ms in {timeout} ms: measured ({last[0]:.0f}, {last[1]:.0f}), then ({now_[0]:.0f}, {now_[1]:.0f})', 'a target at rest before the click', 'a held click, one try')
+
+
 def _held_click(c, point, cond, what):
     """A click held 250 ms on the target measured just before, once: no second try, no longer wait. The retry it replaces (« a click that a loaded machine may lose ») hid a real defect, the
     windows rewritten at every drawing (SOG-0392): a click that is lost now fails the case. A failure SAYS which it was: the point measured before and the same measure after (a target that
     moved: a redraw placed it elsewhere), and the events the click produced (pointerdown, pointerup, click: none = lost; all three and no effect = the Map answered nothing)."""
-    pt = point()
+    pt = _still_point(c, point)
     c.js("""() => { window.__hc = []; if (window.__hcOff) window.__hcOff(); const l = e => window.__hc.push(e.type), ks = ['pointerdown', 'pointerup', 'click'];
       ks.forEach(k => document.addEventListener(k, l, true)); window.__hcOff = () => ks.forEach(k => document.removeEventListener(k, l, true)); return true }""")
     c.page.mouse.move(*pt)
@@ -8244,6 +8260,7 @@ def d_atc_lines(c):
     c.tap('.mp-dbody input[data-layer="atc"]')
     c.until("() => (window.__mp.S.atc && window.__mp.S.atc.list.length) >= 10", timeout=12000, what='the feeds are read: ten controllers at LFML')
     c.tap('[data-mp="layers"]')
+    c.settle()   # the sheet has finished closing, the map has its final size: a chip measured before moves with the resize (D245: 152 px)
     c.js("() => { window.__mpMap.jumpTo({ center: [5.215, 43.4367], zoom: 10 }); return true }")
     c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn')
     chip = """() => { const S = window.__mp.S, q = (S.atcHits || []).find(h => h.icao === 'LFML'), r = S.box.getBoundingClientRect(); return q ? { x: r.left + q.x + q.w / 2, y: r.top + q.y + q.h / 2 } : { x: r.left + 5, y: r.top + 5 } }"""
