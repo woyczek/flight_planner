@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a356945",
-  "fiches": 423,
+  "organisation": "048a385",
+  "fiches": 425,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2758,6 +2758,15 @@
      "en": "Europe: a cold route calculation exceeds 5 s on a busy workstation (4.2 to 7.3 s)",
      "de": "Europa: eine kalte Routenberechnung überschreitet 5 s auf einem ausgelasteten Rechner (4,2 bis 7,3 s)",
      "es": "Europa: un cálculo de ruta en frío supera los 5 s en un puesto cargado (4,2 a 7,3 s)"
+    },
+    {
+     "id": "SOG-0425",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Route libre en Suisse et en Italie : le calcul ne sait pas proposer de directs entre points de route libre (il vole des voies qui n'existent plus à ce niveau)",
+     "en": "Free route in Switzerland and Italy: the engine cannot propose directs between free-route points (it flies airways that no longer exist at that level)",
+     "de": "Free Route in der Schweiz und in Italien: die Berechnung kann keine Direktstrecken zwischen Free-Route-Punkten vorschlagen (sie fliegt Luftstraßen, die auf dieser Höhe nicht mehr existieren)",
+     "es": "Ruta libre en Suiza e Italia: el cálculo no sabe proponer directos entre puntos de ruta libre (vuela aerovías que ya no existen a ese nivel)"
     }
    ]
   },
@@ -5455,6 +5464,27 @@
      "de": "Daten: zehn Sekunden nach dem Öffnen ist der Zustand der Basis noch nicht gelesen",
      "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-aeronautiques-routes",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données aéronautiques ; routes",
+    "en": "Données aéronautiques ; routes",
+    "de": "Données aéronautiques ; routes",
+    "es": "Données aéronautiques ; routes"
+   },
+   "items": [
+    {
+     "id": "SOG-0426",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Départs et arrivées normalisés absents de la base pour de grands terrains (EDDF, EGGW, arrivées de LFMN) : la limite du raccord (ROUTE135) reste indécidable",
+     "en": "Standard departures and arrivals missing from the base for large aerodromes (EDDF, EGGW, LFMN arrivals): the connection limit (ROUTE135) cannot be decided",
+     "de": "Standardabflüge und -anflüge fehlen in der Basis für große Flugplätze (EDDF, EGGW, Anflüge LFMN): die Anschlussgrenze (ROUTE135) bleibt unentscheidbar",
+     "es": "Salidas y llegadas normalizadas ausentes de la base para grandes aeródromos (EDDF, EGGW, llegadas de LFMN): el límite de enlace (ROUTE135) sigue sin poder decidirse"
     }
    ]
   },
