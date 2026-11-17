@@ -1914,7 +1914,7 @@
    *  procédure douteuse (`doubt`), et le libellé court [fr, en, de, es] que Carburant (« N non lues ») et la Carte en montrent. aerodb ne produit
    *  jamais de phrase : `stats.reasons` ([code, nombre]) et ces codes se traduisent ici. Pages : layout (mise en page inconnue), low-read (moins
    *  de 85 % des lignes lues), title (titre non reconnu), no-legs (aucun tronçon), counts (comptes du bloc incohérents), vector (page dessinée,
-   *  sans texte), timeout (lecture abandonnée). Procédures : geometry, unresolved, name, repeat, zigzag, unread. Même exception que COVERAGE à
+   *  sans texte ; ancien nom de no-table : carte sans table de codage), timeout (lecture abandonnée). Procédures : geometry, unresolved, name, repeat, zigzag, unread. Même exception que COVERAGE à
    *  l'invariant 4 de la SPEC ; français : espace fine insécable (U+202F) avant : ; ! ? % et dans « ». */
   const READ_REASONS = {
     layout: ['mise en page non reconnue', 'layout not recognised', 'Seitenaufbau nicht erkannt', 'formato de página no reconocido'],
@@ -1925,6 +1925,9 @@
     'no-legs': ['aucun tronçon lisible', 'no readable leg', 'kein lesbarer Abschnitt', 'ningún tramo legible'],
     counts: ['comptes du bloc incohérents', 'block counts do not agree', 'Zählung des Blocks widersprüchlich',
       'recuentos del bloque incoherentes'
+    ],
+    'no-table': ['carte sans table de codage', 'chart without a coding table', 'Karte ohne Kodierungstabelle',
+      'carta sin tabla de codificación'
     ],
     vector: ['page dessinée, sans texte', 'drawn page, no text layer', 'gezeichnete Seite ohne Textebene',
       'página dibujada, sin capa de texto'
