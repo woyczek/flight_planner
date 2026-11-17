@@ -84,19 +84,20 @@ def changes_of(legs, ranges, altitudes, nominals, positions, window):
     return out
 
 
-def band_findings(legs, cruise_fl, window):
+def band_findings(legs, cruise_fl, window, levels=None):
     """SOG-0401 (4) : les tronçons de CROISIÈRE dont la bande [plancher, plafond] de la voie ne contient pas le niveau déposé. Le profil adapté les ramène au plafond sans rien dire (`vertical_errors` vide) : ici ils sont DITS.
     Un tronçon est de croisière s'il a une bande numérique, n'est ni une SID, ni une STAR, ni un raccord d'approche, n'a pas déjà un motif vertical et recouvre la partie de croisière du profil (`window`, en NM : de la fin de la montée au début de la descente) ; la suite de la même voie et de la même bande qui prolonge un tronçon dit (jusque dans la descente) l'est aussi.
-    Rend une liste de suites { legs, text, short } : une suite = des tronçons consécutifs d'une même voie, de même bande, même zone, même cycle."""
+    `levels` (SOG-0401, retouche j) : le niveau déposé à chaque tronçon quand la route porte des groupes de niveau « POINT/Fnnn » (centaines de pieds ; None : le niveau de la demande) ; sans lui, le niveau de la demande pour toute la route.
+    Rend une liste de suites { legs, text, short } : une suite = des tronçons consécutifs d'une même voie, de même bande, même niveau, même zone, même cycle."""
     if not window:
         return []
-    cruise = cruise_fl * 100
     found = []
     for n, leg in enumerate(legs):
+        cruise = (levels[n] if levels and levels[n] else cruise_fl) * 100
         low, high = leg.get('lower'), leg.get('upper')
         if not isinstance(low, (int, float)) or not isinstance(high, (int, float)) or leg.get('kind') in TERMINAL_KINDS or leg.get('data_gap') or leg.get('vertical_errors') or low <= cruise <= high:
             continue
-        key = (leg['via'], low, high, leg.get('source_zone'), leg.get('source_cycle'))
+        key = (leg['via'], low, high, leg.get('source_zone'), leg.get('source_cycle'), cruise)
         follows = bool(found) and found[-1]['key'] == key and found[-1]['index'][-1] == n - 1       # la suite de la même voie, de la même bande, après un tronçon dit : la descente ordinaire ne l'excuse pas (le palier est déjà ramené depuis le premier)
         if not follows and (leg.get('distance_end_nm', 0) <= window[0] + .01 or leg.get('distance_start_nm', 0) >= window[1] - .01):
             continue
@@ -106,7 +107,7 @@ def band_findings(legs, cruise_fl, window):
             found.append(dict(key=key, index=[n]))
     out = []
     for run in found:
-        via, low, high, zone, cycle = run['key']
+        via, low, high, zone, cycle, cruise = run['key']
         members = [legs[n] for n in run['index']]
         chain = [members[0]['start']['id']] + [m['end']['id'] for m in members]
         if len(chain) > 8:

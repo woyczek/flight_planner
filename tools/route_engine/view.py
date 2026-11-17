@@ -6,6 +6,7 @@ Réponse : { ok, alternatives: [alt], segments: [seg], issues: [{ level: 'error'
   alt = { id, name, route, distanceNm, fl, profile: [{ nm, ft }], sid: { id, name, runway } | null, star: idem, faults, segments: [seg] } — jusqu'à 3 pour compute, une seule (la route saisie) pour check ;
   seg = { from, to, via, state: 'ok' | 'error', reasons: [{ kind: 'RAD' | 'FRA' | 'direction' | 'floor' | 'ceiling' | 'altitude' | 'continuity', text, ruleId?, deltaFt? }] } ;
   `profile_changes` (SOG-0401) : [{ point, end_point, from_ft, to_ft, via, kind: 'ceiling' | 'release' | 'profile', reason, limit: { via, from, to, ft } | null }] — les changements de palier que le profil vertical impose en croisière à la route de tête (au plus 60 ; `profile_changes_total` dit le total) ; [] pour une route dans ses bandes.
+  `route` de chaque alternative (SOG-0401, retouche j) : le texte de la route ; celui d'une route de la RECHERCHE porte les changements de palier de `profile_changes`, un groupe « POINT/Fnnn » (le nouveau niveau en centaines de pieds) sur le point où chacun COMMENCE ; sans changement, le texte d'avant.
   `segments` du niveau supérieur = ceux de la première alternative (la proposée, ou la route saisie). Le texte des motifs est celui du moteur ; le genre est reconnu d'après lui (rien n'est inventé : un motif inconnu est « altitude »).
 """
 import math

@@ -62,6 +62,44 @@ def tokens(s): return set(re.findall(r'[A-Z][A-Z0-9_*]{1,30}',s.upper()))
 def route_connector(word,nav,airways=(),procedures=()):
     return word=='DCT' or word in airways or word in procedures or (word not in nav.ids and re.fullmatch(r'U?[A-Z]\d{1,4}[A-Z]?',word) is not None)
 
+def split_level(word):
+    """SOG-0401 : « POINT/F165 » → ('POINT', 165) ; un mot sans groupe de niveau → (mot, None). Le groupe est celui du texte de Carburant (`PT2/F280`, frame/lib/route_text.js) : le niveau en centaines de pieds, trois chiffres ; sa valeur n'est pas jugée ici (l'appelant refuse hors de 10 à 660)."""
+    m=re.fullmatch(r'(.+)/F(\d{3})',word)
+    return (m.group(1),int(m.group(2))) if m else (word,None)
+
+def written_route(dep,legs,via=(),marks=None):
+    """SOG-0401 : le texte de la route depuis ses tronçons, écrit comme `Nav.format_path` l'écrit (une voie, puis le point où elle se termine ; les tronçons qui se suivent sur la même voie ne font qu'un mot), avec, en plus, un groupe de niveau « POINT/Fnnn »
+    sur le point de DÉPART des tronçons que `marks` désigne ({ indice du tronçon : niveau en centaines de pieds }) : ce point reste dans le texte, la voie est répétée après lui (« B1 SITET/F195 B1 KEPAD »). Le départ (indice 0) et l'arrivée n'en portent jamais."""
+    marks=marks or {}; words=[[dep,None]]; last=None
+    for n,leg in enumerate(legs):
+        name=leg['via']; end=leg['end']['id']
+        if n>0 and n in marks:words[-1][1]=marks[n]
+        if last==name and last!='DCT' and words[-1][0] not in via and words[-1][1] is None:words[-1][0]=end
+        else:words.extend([[name,None],[end,None]])
+        last=name
+    return ' '.join(w+(f'/F{l:03d}' if l else '') for w,l in words)
+
+def level_marks(legs,changes):
+    """SOG-0401 : les changements de palier du profil (`profile.changes`, dans l'ordre de la route) → { indice du tronçon où le changement COMMENCE : nouveau niveau en centaines de pieds } ; un changement qui commence au départ, ou dont le point n'est le départ d'aucun tronçon, n'a pas de groupe ; deux changements au même point : le dernier."""
+    marks={}; cursor=0
+    for change in changes:
+        k=next((j for j in range(cursor,len(legs)) if legs[j]['start']['id']==change['point']),None)
+        level=round(change['to_ft']/100)
+        if k is None or k==0 or not 10<=level<=660:continue
+        marks[k]=level; cursor=k
+    return marks
+
+def leg_levels(legs,words,marks):
+    """SOG-0401 : le niveau déposé à chaque tronçon d'une route lue avec des groupes de niveau (`marks` : { indice du mot : niveau }) : le niveau du dernier groupe posé sur un point au plus tard au départ du tronçon, None (le niveau de la demande) tant qu'aucun n'a été posé ; None sans groupe."""
+    if not marks:return None
+    levels=[None]*len(legs); cursor=0
+    for n in sorted(marks):
+        k=next((j for j in range(cursor,len(legs)) if legs[j]['start']['id']==words[n]),None)
+        if k is None:continue
+        for j in range(k,len(legs)):levels[j]=marks[n]
+        cursor=k
+    return levels
+
 def profile_options(request):
     return dict(speed_kt=float(request.get('speed_kt',450)),climb_fps=float(request.get('climb_fpm',2000))/60,descent_fps=float(request.get('descent_fpm',2000))/60)
 
@@ -695,12 +733,23 @@ def assess(request,_nav=None,_rad=None,_path=None):
         route_fl=int(words[0][-3:])
         if route_fl!=fl: issue('ERREUR',f'Le préfixe annonce FL{route_fl:03d}, mais le champ niveau vaut FL{fl:03d}.')
         words=words[1:]
-    if not words or words[0]!=dep: words.insert(0,dep)
+    marks={}      # SOG-0401 : les groupes de niveau « POINT/Fnnn » de la route lue : { indice du mot : niveau en centaines de pieds } ; le mot ne garde que son identifiant (la résolution des points est inchangée) ; le niveau ne sert qu'à juger la bande des voies (`leg_levels`)
+    for n,w in enumerate(words):
+        ident,level=split_level(w)
+        if level is None:continue
+        words[n]=ident
+        if 10<=level<=660:marks[n]=level
+        else:issue('ERREUR',f'Groupe de niveau {w} : le niveau doit être compris entre F010 et F660.')
+    if not words or words[0]!=dep:
+        words.insert(0,dep); marks={n+1:l for n,l in marks.items()}
     if words[-1]!=arr: words.append(arr)
-    route=' '.join(words)
+    marks={n:l for n,l in marks.items() if 0<n<len(words)-1}      # le départ et l'arrivée ne portent jamais de groupe (le niveau déposé est celui du champ niveau)
     if dep not in nav.ads: issue('ERREUR','AD de départ inconnu : '+dep)
     if arr not in nav.ads: issue('ERREUR','AD d’arrivée inconnu : '+arr)
     airways={e['route'] for e in nav.edges}; procedure_names={p['token'] for p in nav.procedures.items}; connectors=airways|procedure_names|{w for w in words if route_connector(w,nav,airways,procedure_names)}; parsed=[]; active_fra=set()
+    for n in [n for n in marks if words[n] in connectors]:
+        issue('ERREUR',f'Groupe de niveau sur une voie : {words[n]}/F{marks[n]:03d} (il se pose sur un point).'); del marks[n]
+    route=' '.join(w+(f'/F{marks[n]:03d}' if n in marks else '') for n,w in enumerate(words))      # la route lue est rendue avec ses groupes
     resolved_by_word={}
     if not path:
         point_indices=[i for i,w in enumerate(words) if w not in connectors]
@@ -785,10 +834,20 @@ def assess(request,_nav=None,_rad=None,_path=None):
         issue('ERREUR','Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')
     # SOG-0401 (4) : le profil adapté ramène en silence au plafond d'une voie un tronçon de croisière dont la bande est sous le niveau déposé : c'est DIT. Une route SAISIE (ni générée, ni relue d'un chemin de la recherche) : ERREUR par suite de tronçons (au plus MAX_BAND_ISSUES,
     # puis une phrase de total) ; une route de la RECHERCHE (palier adapté voulu, `Nav.generate` en `adapt`) : une REVUE, la recherche ne change pas (une ERREUR la ferait refuser) ; les changements de palier sont rendus dans tous les cas (`profile_changes`)
-    band_runs=flight_profile.band_findings(legs,fl,profile.get('cruise_nm'))
+    # SOG-0401 (retouche j) : le texte d'une route de la RECHERCHE porte les changements de palier (`profile_changes`) : « POINT/Fnnn » (le nouveau niveau, en centaines de pieds) sur le point où chaque changement COMMENCE ; une route sans changement garde son texte,
+    # une route SAISIE garde le sien (ses groupes, s'il en a, sont ceux de l'utilisateur). Le texte est refait depuis les tronçons seulement s'il se retrouve à l'identique sans groupe (sinon une REVUE le dit : jamais un texte réécrit sans preuve)
+    written=False
+    if (generated or _path is not None) and not marks:
+        level_changes=level_marks(legs,profile.get('changes') or [])
+        if level_changes:
+            if written_route(dep,legs,mandatory)==route:
+                route=written_route(dep,legs,mandatory,level_changes); written=True
+            else:issue('REVUE','Les changements de palier du profil ne sont pas écrits dans le texte de la route : ce texte n’est pas celui que ses tronçons donnent.')
+            if profile.get('changes_total',0)>len(profile.get('changes') or []):issue('REVUE',f'Le texte de la route ne porte que les {len(profile["changes"])} premiers des {profile["changes_total"]} changements de niveau.')
+    band_runs=flight_profile.band_findings(legs,fl,profile.get('cruise_nm'),leg_levels(legs,words,marks))
     if band_runs and (generated or _path is not None):
         count=sum(len(r['legs']) for r in band_runs)
-        issue('REVUE',f'Profil adapté aux plafonds : {count} tronçon{"s" if count>1 else ""} de croisière hors de la bande du niveau FL{fl:03d} (voie{"s" if len({r["legs"][0]["via"] for r in band_runs})>1 else ""} {", ".join(list(dict.fromkeys(r["legs"][0]["via"] for r in band_runs))[:6])}) : le palier y est ramené, voir `profile_changes`.')
+        issue('REVUE',f'Profil adapté aux plafonds : {count} tronçon{"s" if count>1 else ""} de croisière hors de la bande du niveau FL{fl:03d} (voie{"s" if len({r["legs"][0]["via"] for r in band_runs})>1 else ""} {", ".join(list(dict.fromkeys(r["legs"][0]["via"] for r in band_runs))[:6])}) : le palier y est ramené, voir `profile_changes`'+(' ; la route porte les changements de niveau (POINT/Fnnn).' if written else '.'))
     elif band_runs:
         for r in band_runs[:MAX_BAND_ISSUES]:
             issue('ERREUR',r['text'])

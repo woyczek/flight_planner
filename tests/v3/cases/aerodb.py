@@ -13347,3 +13347,99 @@ def k322(c):
          "the track A typed with the points of the NAT message (« 5230/10 NATA 5230/50 »), with the coordinates of the flight plan (« 5230N01000W NATA 5230N05000W ») and with one of each: the four legs of the track in all three, no « Portion NATA non couverte » (red before: the coordinate point was ANOTHER node and the portion was one unresolved leg)", what='portion')
     c.eq(coords[2], ["Cycle de navigation périmé pour NAT : 2026-10-01, source de N260B (NICSO → ALLEX)."],
          "the remark on an old cycle says what comes from it (the airway N260B and its points) and the zone, not the zone alone; the zone has no other cycle, so no « cycle courant »", what='cycle')
+
+
+@case('K321', 'Route engine, SOG-0401 point 4 (lot j): the TEXT of a route written by the search carries the level changes of its vertical profile as level groups `POINT/Fnnn` (the new planned level in hundreds of feet, three digits, the form the fuel page writes: `NTS/F280`) on the point where each change STARTS, so the single-level route the user filed is no longer what the search hands back; the REVUE says it; a route without change keeps its text; a route read with such groups is accepted and gives back the same text, its groups setting the filed level of the legs for the band check',
+      'K', static=True,
+      rule='SOG-0401 (the user: the route of the search, filed at a single level, was refused by Eurocontrol where the profile changes level along the route; ergonomics session 17 Nov, lot j after point 4). Before: `primary.route` and the `route` of every alternative had ONE level for the whole flight while `profile_changes` said the flight goes down to the ceiling of an airway and back up after it. Now `engine.assess` rewrites the text of a route that the SEARCH wrote (generated, or checked with its path: the alternatives) from its legs, exactly as `Nav.format_path` writes it, and puts `/Fnnn` on the point where each change of `profile_changes` begins (kinds ceiling, release and profile; the new level `to_ft` / 100): a point inside an airway portion stays in the text and the airway is repeated after it (`B1 SITET/F195 B1 KEPAD`); two changes at one point keep the last; a change that starts at the departure (or whose point starts no leg) gets no group, and the departure and the arrival never carry one; the text is rewritten only when it is found identical without groups (else a REVUE says the groups are not written). A route with no change has exactly its former text; a TYPED route keeps its own text. The parser accepts `POINT/Fnnn` (level 10 to 660, on a point, not on an airway or a DCT; on the departure or the arrival the group is ignored) and returns the text as read; the groups only set the level used by the band check of the legs from that point (a route filed FL195 on a ceiling FL195 is not an ERREUR any more), the vertical profile is still planned from the level and the strategy of the request. The REVUE « Profil adapté aux plafonds » adds « la route porte les changements de niveau (POINT/Fnnn) ». The view carries the text in the `route` of each alternative; `profile_changes` is unchanged.')
+def k321(c):
+    import json
+    import os
+    import tempfile
+    _regen()
+    import route_fixture as RF
+    from route_engine import engine as E, import_books as I, plan as PL, view as V
+    nodes = {'OLZOM': (48.15, 2.26), 'SITET': (50.2, 0.2), 'KEPAD': (52.0, -3.0), 'MIDPT': (52.8, -4.2), 'BOYNE': (53.62, -5.35)}
+
+    def seg(route, a, b, lower, upper):
+        return {'route': route, 'a': {'id': a, 'lat': nodes[a][0], 'lon': nodes[a][1]}, 'b': {'id': b, 'lat': nodes[b][0], 'lon': nodes[b][1]}, 'lower': lower, 'upper': upper}
+
+    def run(**req):
+        """The bench: LFPO → OLZOM, then B1 (6 500–66 000 ft) OLZOM–SITET–KEPAD, A1 (9 000–19 500 ft) KEPAD–MIDPT, B2 (6 500–66 000 ft) MIDPT–BOYNE, BOYNE → EIDW: a low band between two high ones."""
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+                doc = json.load(f)
+            doc['data'].append({'id': 'MIDPT', 'type': 'ICAO', 'lat': nodes['MIDPT'][0], 'lon': nodes['MIDPT'][1]})
+            with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+            with open(os.path.join(d, 'airways.json'), encoding='utf-8') as f:
+                doc = json.load(f)
+            doc['data'] = [seg('B1', 'OLZOM', 'SITET', 6500, 66000), seg('B1', 'SITET', 'KEPAD', 6500, 66000), seg('A1', 'KEPAD', 'MIDPT', 9000, 19500), seg('B2', 'MIDPT', 'BOYNE', 6500, 66000)]
+            with open(os.path.join(d, 'airways.json'), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **req)
+            request = V.to_request(args)
+            res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+            return res, V.to_view(res, request)
+    short = lambda p: [{k: x[k] for k in ('point', 'end_point', 'from_ft', 'to_ft', 'via', 'kind')} for x in p['profile_changes']]
+    plain = 'LFPO DCT OLZOM B1 KEPAD A1 MIDPT B2 BOYNE DCT EIDW'
+    written = 'LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD A1 MIDPT/F350 B2 BOYNE DCT EIDW'
+    # the search: the text carries the two changes
+    res, view = run(action='compute', via=[])
+    p = res['primary']
+    c.eq((p['route'], view['alternatives'][0]['route']), (written, written),
+         'the route the SEARCH writes carries the level changes: SITET/F195 (the descent to the ceiling FL195 of A1 begins at SITET, inside the portion of B1, which stays in the text and is repeated) and MIDPT/F350 (the climb back after A1); the view has the same text (red before: `' + plain + '`, one level for the whole flight)', what='search text')
+    c.eq(short(p), [{'point': 'SITET', 'end_point': 'KEPAD', 'from_ft': 35000, 'to_ft': 19500, 'via': 'B1', 'kind': 'ceiling'}, {'point': 'MIDPT', 'end_point': 'BOYNE', 'from_ft': 19500, 'to_ft': 35000, 'via': 'B2', 'kind': 'release'}],
+         '`profile_changes` is what it was (the groups are written FROM it): the descent at SITET, the release at MIDPT', what='changes')
+    c.eq(view['profile_changes'], p['profile_changes'], 'the view carries the same `profile_changes`', what='view changes')
+    revue = [i['text'] for i in p['issues'] if 'Profil adapté aux plafonds' in i['text']]
+    c.eq((len(revue), revue[0].endswith('voir `profile_changes` ; la route porte les changements de niveau (POINT/Fnnn).') if revue else None, [i['text'] for i in p['issues'] if i['level'] == 'ERREUR']), (1, True, []),
+         'the REVUE « Profil adapté aux plafonds » says that the route carries the changes; no ERREUR (the search is unchanged)', what='revue')
+    # the round trip: the generated text is read back without a parse error, the same legs, the same changes, the same text
+    res2, view2 = run(action='check', route=written)
+    q = res2['primary']
+    ids = lambda r: [(l['via'], l['start']['id'], l['end']['id']) for l in r['legs']]
+    c.eq((q['ok'], q['route'], ids(q) == ids(p), short(q) == short(p), [i['text'] for i in q['issues'] if i['level'] == 'ERREUR'], view2['alternatives'][0]['route']), (True, written, True, True, [], written),
+         'checked back, the text with its groups is accepted: the same legs, the same `profile_changes`, the text returned as read, no ERREUR (the filed levels FL195 then FL350 are inside the bands of the legs)', what='round trip')
+    # the same route typed at ONE level: still refused, its text is the typed one
+    res3, _ = run(action='check', route=plain)
+    q3 = res3['primary']
+    c.eq((q3['route'], [i['text'][:40] for i in q3['issues'] if i['level'] == 'ERREUR'], q3['status']), (plain, ['Tronçon A1 KEPAD–MIDPT : niveau FL350 ho'], 'ERREURS DÉTECTÉES'),
+         'a TYPED route keeps its own text (no group is added to what the user typed) and its single level FL350 on the ceiling FL195 of A1 is still an ERREUR (point 4 is unchanged)', what='typed')
+    # a group that puts a leg out of its band is judged at ITS level
+    res4, _ = run(action='check', route='LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD/F350 A1 MIDPT B2 BOYNE DCT EIDW')
+    q4 = res4['primary']
+    c.eq(([i['text'].split(' de la voie')[0] for i in q4['issues'] if i['level'] == 'ERREUR'], q4['route']), (['Tronçon A1 KEPAD–MIDPT : niveau FL350 hors de la bande FL090–FL195'], 'LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD/F350 A1 MIDPT B2 BOYNE DCT EIDW'),
+         'a group FL350 on KEPAD (the start of A1, ceiling FL195) is an ERREUR at the level of the GROUP, and the text comes back as typed', what='group out of band')
+    # groups on the departure and the arrival are ignored, on an airway or out of range refused
+    res5, _ = run(action='check', route='LFPO/F350 DCT OLZOM B1 SITET/F195 B1 KEPAD A1 MIDPT B2 BOYNE DCT EIDW/F100')
+    c.eq((res5['primary']['route'], [i['text'] for i in res5['primary']['issues'] if i['level'] == 'ERREUR']), ('LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD A1 MIDPT B2 BOYNE DCT EIDW', []),
+         'the departure and the arrival carry no group: a group typed there is ignored (the filed level is the level field)', what='ends')
+    res6, _ = run(action='check', route='LFPO DCT OLZOM B1/F195 SITET B1 KEPAD A1 MIDPT B2 BOYNE/F999 DCT EIDW')
+    errs = [i['text'] for i in res6['primary']['issues'] if i['level'] == 'ERREUR']
+    c.eq([e for e in errs if e.startswith('Groupe de niveau')], ['Groupe de niveau BOYNE/F999 : le niveau doit être compris entre F010 et F660.', 'Groupe de niveau sur une voie : B1/F195 (il se pose sur un point).'],
+         'a group out of F010–F660 and a group on an airway are refused with a sentence', what='refused')
+    # a route with no change keeps exactly its text: at FL190 the bands contain the level
+    res7, view7 = run(action='compute', via=[], fl=190)
+    c.eq((res7['primary']['route'], res7['primary']['profile_changes'], view7['alternatives'][0]['route'], [i['text'] for i in res7['primary']['issues'] if 'palier' in i['text']]), (plain, [], plain, []),
+         'filed at FL190 (inside every band): no change, no group, the former text, no REVUE about the profile', what='no change')
+    # the alternatives carry their own groups, at their own level
+    res8, _ = run(action='compute', via=[], alternatives=True)
+    alts = [a['route'] for a in res8['alternatives']]
+    c.ok(alts and all('SITET/F195 B1 KEPAD A1 MIDPT/F' in r for r in alts) and len(set(alts)) == len(alts), str(alts), 'each alternative (the same route at FL330, FL310, FL290) carries its own groups: F195 down, then its own level back up')
+    # the helpers
+    legs = [{'via': v, 'start': {'id': a}, 'end': {'id': b}} for v, a, b in (('DCT', 'LFPO', 'A'), ('B1', 'A', 'B'), ('B1', 'B', 'C'), ('DCT', 'C', 'EIDW'))]
+    c.eq((E.written_route('LFPO', legs), E.written_route('LFPO', legs, (), {0: 300, 2: 195, 3: 150}), E.written_route('LFPO', legs, ('B',))), ('LFPO DCT A B1 C DCT EIDW', 'LFPO DCT A B1 B/F195 B1 C/F150 DCT EIDW', 'LFPO DCT A B1 B B1 C DCT EIDW'),
+         'the text rebuilt from the legs is `Nav.format_path`’s; a group sits on the START point of the leg that `marks` names (never the departure: index 0), a mandatory point stays', what='written_route')
+    chg = lambda point, ft: {'point': point, 'to_ft': ft}
+    c.eq((E.level_marks(legs, [chg('B', 19500), chg('B', 25000)]), E.level_marks(legs, [chg('LFPO', 19500), chg('NOWHERE', 19500)]), E.level_marks(legs, [chg('A', 500), chg('C', 70000)])), ({2: 250}, {}, {}),
+         'two changes at the same point: the last; a change at the departure or at a point that starts no leg: no group; a level out of F010–F660: none', what='level_marks')
+    c.eq((E.split_level('KELIP/F165'), E.split_level('LFPO/07'), E.split_level('UN460'), E.split_level('SRN/F195')), (('KELIP', 165), ('LFPO/07', None), ('UN460', None), ('SRN', 195)),
+         'a level group is `POINT/Fnnn` (three digits); a runway suffix and a plain word are not', what='split_level')

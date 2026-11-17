@@ -237,7 +237,7 @@ def plan(request, root):
     context_began = time.perf_counter()
     nav, rad = context(request, root)      # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte est refait à chaque demande et disparaît avec elle
     entered = str(request.get('route', '')).strip().upper()
-    words = entered.split()
+    words = [engine.split_level(w)[0] for w in entered.split()]      # SOG-0401 : « POINT/Fnnn » est le point POINT (le groupe de niveau se lit dans engine.assess)
     airways = {e['route'] for e in nav.edges}
     if words and re.fullmatch(r'[NK]\d{4}F\d{3}', words[0]):
         words = words[1:]
