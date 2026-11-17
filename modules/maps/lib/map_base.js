@@ -348,6 +348,7 @@ export function zonesLayer(map, features, {
     fill = `${src}-fill`,
     line = `${src}-line`,
     dash = `${src}-dash`,
+    hatch = `${src}-hatch`, // SOG-0428 : les hachures d'une entité `partial` (même teinte, un motif : « à jour, lu à la main seulement »)
     empty = {
       type: 'FeatureCollection',
       features: []
@@ -356,6 +357,7 @@ export function zonesLayer(map, features, {
     cols = colors || {};
   const picked = ['boolean', ['get', 'picked'], false],
     approx = ['boolean', ['get', 'approx'], false],
+    partial = ['boolean', ['get', 'partial'], false],
     // la teinte du ton de l'entité (celle du trait pour un ton inconnu, transparente sans elle)
     tone = () => ['match', ['get', 'tone'], ...['ok', 'warn', 'err', 'muted'].flatMap(k => [k, cols[k] || cols.line || 'rgba(0,0,0,0)']),
       cols.line || 'rgba(0,0,0,0)'
@@ -371,6 +373,25 @@ export function zonesLayer(map, features, {
       /* style pas encore chargé */
     }
   };
+  /** Le motif des hachures : 8 × 8 px, une bande oblique de la teinte `ok` (celle de « à jour »), le reste transparent. */
+  const hatchImage = () => {
+    const [r, g, b] = (String(cols.ok || cols.line || '').match(/[\d.]+/g) || [26, 127, 55]).slice(0, 3).map(Number),
+      S = 8,
+      px = new Uint8Array(S * S * 4);
+    for (let y = 0; y < S; y++)
+      for (let x = 0; x < S; x++) {
+        const i = (y * S + x) * 4;
+        px[i] = r;
+        px[i + 1] = g;
+        px[i + 2] = b;
+        px[i + 3] = (x + y) % S < 3 ? 200 : 0;
+      }
+    return {
+      width: S,
+      height: S,
+      data: px
+    };
+  };
   const put = () => {
     if (!map.getSource(src)) map.addSource(src, {
       type: 'geojson',
@@ -382,7 +403,18 @@ export function zonesLayer(map, features, {
       source: src,
       paint: {
         'fill-color': tone(),
-        'fill-opacity': ['case', picked, .45, .25]
+        'fill-opacity': ['case', picked, .45, partial, .06, .25]
+      }
+    });
+    // l'image d'abord : addImage déclenche « styledata » (add reprend de façon réentrante) ; la couche n'est posée que si elle manque encore
+    if (!map.hasImage(hatch)) map.addImage(hatch, hatchImage());
+    if (!map.getLayer(hatch)) map.addLayer({
+      id: hatch,
+      type: 'fill',
+      source: src,
+      filter: partial,
+      paint: {
+        'fill-pattern': hatch
       }
     });
     if (!map.getLayer(line)) map.addLayer({
@@ -430,6 +462,10 @@ export function zonesLayer(map, features, {
       cols = nextColors;
       for (const id of [fill, line, dash])
         if (map.getLayer(id)) map.setPaintProperty(id, id === fill ? 'fill-color' : 'line-color', tone());
+      if (map.hasImage?.(hatch)) { // la teinte `ok` a changé (le design) : le motif est refait
+        map.removeImage(hatch);
+        map.addImage(hatch, hatchImage());
+      }
     },
     fit(padding = 24, bounds = null) {
       const b = bounds || mainBox(data);
@@ -445,8 +481,9 @@ export function zonesLayer(map, features, {
       map.off('style.load', add);
       map.off('styledata', add);
       map.off('click', tap);
-      for (const id of [dash, line, fill])
+      for (const id of [dash, line, hatch, fill])
         if (map.getLayer(id)) map.removeLayer(id);
+      if (map.hasImage?.(hatch)) map.removeImage(hatch);
       if (map.getSource(src)) map.removeSource(src);
     }
   };
