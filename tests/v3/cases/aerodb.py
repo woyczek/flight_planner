@@ -15245,6 +15245,25 @@ def k341(c):
         c.eq(('BEFORE' in seen and 'AFTER' not in seen, linked), (True, '{"p": 1}'), 'the copy keeps the message of the start whatever the launcher rewrites next, and the other folders are read through links', what='snapshot')
         RM.release(os.path.dirname(dest))
         c.ok(os.path.isfile(os.path.join(td, 'proc', 'x', 'p.json')) and not os.path.exists(os.path.dirname(dest)), 'released: the copy is gone, the real data behind the links is untouched', 'release')
+        # the names come from a folder WRITTEN BY ANY PILOT: no shell, no process (a folder « x&calc » made cmd run « calc »); the link of the name is made by the system and the NAT copy does not follow a link
+        import subprocess
+        os.makedirs(os.path.join(td, 'sia', 'x&calc'))
+        with open(os.path.join(td, 'sia', 'x&calc', 'f.json'), 'w', encoding='utf-8') as f:
+            f.write('{"k": 1}')
+        spawned = []
+        real_run, real_popen = subprocess.run, subprocess.Popen
+        subprocess.run = lambda *a, **k: spawned.append(a) or (_ for _ in ()).throw(AssertionError('a process was started'))
+        subprocess.Popen = lambda *a, **k: spawned.append(a) or (_ for _ in ()).throw(AssertionError('a process was started'))
+        try:
+            dest2 = os.path.join(td, 'copy2', 'data')
+            RM.snapshot(td, dest2)
+        finally:
+            subprocess.run, subprocess.Popen = real_run, real_popen
+        with open(os.path.join(dest2, 'sia', 'x&calc', 'f.json'), encoding='utf-8') as f:
+            readable = f.read()
+        c.eq((spawned, readable), ([], '{"k": 1}'), 'a data folder named « x&calc »: no process is started (no interpreter of commands), the folder is linked and read through the link', what='no shell')
+        RM.release(os.path.dirname(dest2))
+        c.ok(os.path.isfile(os.path.join(td, 'sia', 'x&calc', 'f.json')), 'released: the folder behind the link is untouched', 'release2')
 
 
 @case('K342', 'Route engine, SOG-0452 (a GUARD, not a fix): the same flight calculated alone, then after ten other calculations, gives the same route and the same length: nothing of one calculation reaches the next',

@@ -84,11 +84,12 @@ NAT_PATHS = ('sia/zones/nat', 'sia/base/nat')      # SOG-0452 : les fichiers NAT
 def snapshot(data, dest):
     """SOG-0452 : un dossier de données TEMPORAIRE (`dest`, à créer) qui est celui du poste SAUF les dossiers NAT, COPIÉS : tout le reste est une JONCTION (un lien, en lecture seule : jamais une copie de la base). La passe lit ce dossier : le message NAT du début est celui de toute la passe, quoi que fasse le lanceur pendant ce temps. `release(dest)` le retire sans toucher aux données derrière les liens."""
     import shutil
-    import subprocess
 
     def link(src, dst):
+        # les noms viennent d'un dossier ÉCRIT PAR TOUT PILOTE (data/) : jamais par un interpréteur de commandes (un dossier « x&calc » ferait exécuter « calc » à cmd) ; Windows : la jonction se crée par l'API du système (`_winapi.CreateJunction`), ailleurs un lien symbolique
         if os.name == 'nt':
-            subprocess.run(['cmd', '/c', 'mklink', '/J', dst, src], check=True, capture_output=True)
+            import _winapi
+            _winapi.CreateJunction(src, dst)
         else:
             os.symlink(src, dst)
 
@@ -99,7 +100,7 @@ def snapshot(data, dest):
             src = os.path.join(data, *sub.split('/'))
             dst = os.path.join(dest, *sub.split('/'))
             if sub in NAT_PATHS:
-                shutil.copytree(src, dst)
+                shutil.copytree(src, dst, symlinks=True)      # un lien dans un dossier NAT est copié comme lien, jamais suivi vers sa cible
             elif any(p.startswith(sub + '/') for p in NAT_PATHS) and os.path.isdir(src):
                 mirror(sub)
             elif os.path.isdir(src):
