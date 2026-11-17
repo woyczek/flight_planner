@@ -17,6 +17,10 @@ NEED = 2               # la recherche vers un paquet d'entrées s'arrête dès q
 FREE_S = 3.0           # le temps de la section (§ 13.4 : 3 s) : les couples (entrée, sortie) sont essayés dans l'ordre de leur minorant, SANS nombre fixe (SOG-0354 L5 4, défaut 3), jusqu'à ce que le minorant du suivant dépasse le meilleur coût trouvé, ou que ce temps (ou la borne de la phase) soit épuisé
 FREE_STATES = 60000      # d1 ter : le budget de TOUTE la route libre, en ÉTATS (la somme des états de toutes ses recherches)
 EXTRA_STATES = 7000    # d1 bis (d) : une recherche de plus (vers les entrées restantes qui peuvent encore faire plus COURT) ne parcourt pas plus d'ÉTATS : quand ses buts ne sont pas atteignables elle parcourrait tout l'espace (14 000 états, 4,5 s depuis Dublin) ; coupée, elle rend ce qu'elle a atteint ; une borne en ÉTATS est déterministe (un temps ne l'est pas : la même demande rendrait deux routes selon la charge du poste) ; 7 000 : la plus petite valeur mesurée qui rend aux vols EDDF / EGLL « hors fenêtre » leur distance (1 500 en perdait 72 à 97 NM, 5 000 encore 76)
+GATE_EAST = ((42.0, 62.0, -15.6, -14.4), (43.0, 48.5, -9.6, -7.9))      # SOG-0396 : les repères nommés près de la limite des régions océaniques (la ligne de 15°W) et de l'entrée du golfe de Gascogne : (lat min, lat max, lon min, lon max)
+GATE_EAST_COORD = (-15.0, range(44, 61))      # SOG-0396 (mesure) : la base n'a que 2 ou 3 repères nommés sur le réseau haut près de 15°W : des coordonnées NAT à degrés entiers le long de 15°W (44-60°N), comme côté Amérique
+GATE_WEST = (-50.0, range(40, 59))      # SOG-0396 : des coordonnées NAT à degrés entiers le long de 50°W (NAT Doc 007, § 4.1.2), raccordées par les DCT de simulation
+MAX_GATES = 40      # au plus quarante entrées / sorties permanentes
 LABEL = 'route libre, créée'
 NO_REACH = 'aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau'
 NO_CHAIN = 'aucune chaîne par une route libre n\'a abouti'
@@ -62,6 +66,28 @@ def ends(nav):
     return out
 
 
+def _levelled(nav, level_ft):
+    """Les nœuds qui touchent une voie (hors routes NAT) dont la bande contient le niveau : un repère de la base qui n'est que sur des voies basses n'est pas une entrée à ce niveau."""
+    key = ('_gate_nodes', level_ft)
+    if key not in nav.__dict__:
+        nodes = set()
+        for e in getattr(nav, 'edges', ()):
+            if not e.get('nat') and not e.get('nat_link') and isinstance(e.get('lower'), (int, float)) and isinstance(e.get('upper'), (int, float)) and e['lower'] <= level_ft <= e['upper']:
+                nodes.update((e['a'], e['b']))
+        nav.__dict__[key] = nodes
+    return nav.__dict__[key]
+
+
+def gates(nav, high, level_ft):
+    """SOG-0396 : les entrées / sorties océaniques PERMANENTES : [(nœud, 'point' | 'coordinate')], au plus MAX_GATES ; 'point' : un repère nommé de la base, dans une des bandes GATE_EAST, sur le réseau haut ET sur une voie qui porte le niveau du vol ; 'coordinate' : une coordonnée NAT (« 47/50 ») le long de GATE_WEST, créée dans le graphe.
+    Fixes : le même vol rend les mêmes portes, quel que soit le message NAT, l'heure ou l'horloge."""
+    ok = _levelled(nav, level_ft)
+    named = sorted((nav.nodes[k]['id'], k) for k in high if k in ok and any(la0 <= nav.nodes[k]['lat'] <= la1 and lo0 <= nav.nodes[k]['lon'] <= lo1 for la0, la1, lo0, lo1 in GATE_EAST))
+    coords = [nav.add({'id': f'{lat}/{int(-lon)}', 'lat': float(lat), 'lon': lon}) for lon, lats in (GATE_WEST, GATE_EAST_COORD) for lat in lats]
+    out = [(k, 'coordinate') for k in coords] + [(k, 'point') for _n, k in named]
+    return out[:MAX_GATES]
+
+
 def _links(nav, node, high, into, band):
     """Les raccords DCT de simulation d'un point océanique au réseau haut : les LINK_NODES nœuds les plus proches à moins de LINK_NM NM (comme nat_layer.add) ; [] si le point touche déjà le réseau."""
     if node in high:
@@ -73,7 +99,7 @@ def _links(nav, node, high, into, band):
             (node, k, dict(a=node, b=k, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, zone='nat', nat_link='exit')) for d, k in near]
 
 
-def solve(nav, g, start, end, ratio, resolve, europe, report=None):
+def solve(nav, g, start, end, ratio, resolve, europe, report=None, skip=frozenset()):
     """(chaîne, None) ou (None, raison) : la meilleure route libre résolue ; la chaîne : { entry, exit, points: [id], nm, cost, path, sections }.
     SOG-0354 L5 (2 bis) : UNE seule recherche du départ vers TOUTES les entrées (`europe(g2, start, entries)` → { entrée atteinte : { path, cost, band } }, celle de sections : le mécanisme de L5 1 bis), puis les couples entre entrées ATTEINTES, dans l'ordre de leur minorant (le coût RÉEL de la section d'Europe + le reste estimé) :
     les essais ne sont plus gaspillés sur des entrées que le départ n'atteint pas (LFPO / LFPG → KLAX : les entrées proches du chemin ne s'atteignent pas depuis Paris à FL370) ; une sortie dont la section d'Amérique n'a pas abouti n'est pas reprise. `resolve(g2, start, end, entry, exit, legs, first)` est celui de sections
@@ -81,7 +107,14 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     (même recherche par sections qu'une route NAT) ; le graphe `g2` est celui de `g` avec les raccords de TOUTES les entrées et sorties (des arêtes DCT de simulation, comme nat_layer.add)."""
     a, b = nav.nodes[start], nav.nodes[end]
     start_east = a['lon'] > WEST_LON
-    known = ends(nav)
+    kinds = {k: 'track' for k in ends(nav)}
+    if hasattr(nav, 'edges'):      # un graphe réel (un faux de cas n'a pas de base : il n'a que les extrémités qu'il donne)
+        high = getattr(nav, '_nat_high', None)
+        if high is None:
+            high = nav._nat_high = nat_layer.main_network(nav)
+        for k, kind in gates(nav, high, int((getattr(g, 'flight', None) or {}).get('ceiling') or 0)):      # SOG-0396 : les portes PERMANENTES s'ajoutent aux extrémités des routes du message
+            kinds.setdefault(k, kind)
+    known = [k for k in kinds if nav.nodes[k]['id'] not in skip and k not in skip]      # SOG-0396 : le bout d'une route du sens contraire EN VIGUEUR n'est ni entrée ni sortie (`skip`, posé par sections)
     entries = [k for k in known if (nav.nodes[k]['lon'] > WEST_LON) == start_east]
     exits = [k for k in known if (nav.nodes[k]['lon'] > WEST_LON) != start_east]
     if not entries or not exits:
@@ -108,10 +141,16 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     if high is None:
         high = nav._nat_high = nat_layer.main_network(nav)
     band = (LOW_FT, HIGH_FT)
+    high_band = getattr(nav, '_nat_high_band', None)
+    if high_band is None:
+        high_band = nav._nat_high_band = nat_layer.main_network(nav, LOW_FT) if hasattr(nav, 'edges') else frozenset()      # un faux de cas n'a pas de base
     g2 = engine.RoutingGraph(g)
     g2.__dict__.update(g.__dict__)
     for k, into in [(i, True) for i in entries] + [(o, False) for o in exits]:
-        for u, v, e in _links(nav, eff(k), high, into, band):
+        got = _links(nav, eff(k), high, into, band)      # SOG-0396 (selection) : les trois nœuds les plus proches du réseau « haut » (voies au plafond FL245) ET les trois du réseau qui ATTEINT la bande de la route libre (FL285) : un nœud de voie plafonnée à FL255 n'est atteint que de bas, jamais à la bande du raccord ; sans les seconds, la porte n'avait aucun raccord utilisable (KORD → EIDW : 6 085 NM au lieu de 3 508)
+        seen_links = {(x[0], x[1]) for x in got}
+        got = got + [x for x in _links(nav, eff(k), high_band, into, band) if (x[0], x[1]) not in seen_links]
+        for u, v, e in got:
             e['_cost'] = e['nm'] * ratio
             g2[u] = list(g2.get(u, ())) + [(v, e)]
     pts_of = {(i, o): interior(nav.nodes[i], nav.nodes[o]) for i in entries for o in exits}
@@ -125,7 +164,7 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
     rank = sorted(entries, key=lambda i: min(head(i) + ocean[(i, o)] + tail(o) for o in exits))
     dead, tried, any_reached, best = set(), 0, False, None
     report = report if report is not None else {}
-    report.update(tried=0, searches=0, stopped='end')
+    report.update(tried=0, searches=0, stopped='end', entries=len(entries), exits=len(exits), reached=[], pairs=[])      # SOG-0396 : le DIAGNOSTIC PAR PAIRE : combien d'entrées et de sorties, quelles entrées la recherche d'Europe a atteintes, chaque couple essayé et son résultat
     began = time.perf_counter()
     s0 = getattr(nav, 'states_total', None)      # d1 ter : les états déjà comptés ; un moteur sans compteur (un faux) : la somme des `expanded` des recherches vues
     fake = {'n': 0}
@@ -164,6 +203,7 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
         note()
         report['searches'] = report.get('searches', 0) + 1
         any_reached = any_reached or bool(reached)
+        report['reached'] = sorted(set(report['reached']) | {nav.nodes[k]['id'] for k in reached})[:80]
         pack = [i for i in useful if eff(i) in reached]
         pairs = sorted(((nm_of(reached[eff(i)]['path']) + lead_nm(i) + ocean[(i, o)] + tail(o), i, o) for i in pack if eff(i) in reached for o in exits), key=lambda x: x[0])      # le minorant en NM : la section d'Europe RÉELLE + le reste orthodromique
         for bound, i, o in pairs:
@@ -186,12 +226,14 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None):
                 legs.append((u, v, dict(a=u, b=v, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, _cost=d * ratio, zone='nat', origin='random')))
             resolved = resolve(g2, start, end, eff(i), eff(o), legs, reached[eff(i)])
             note()
+            if len(report['pairs']) < 60:
+                report['pairs'].append({'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'ok': bool(resolved)})      # SOG-0396 : `ok` faux : la section de la route libre ou celle d'Amérique de ce couple n'a pas abouti
             if resolved:
                 cost, path, sects = resolved
                 total = nm_of(path)
                 tail_real[o] = lead_nm(o) + sects[-1]['nm']
                 if best is None or total < best['total_nm']:      # la route libre la plus COURTE en NM (la distance que l'utilisateur voit) parmi les couples essayés
-                    best = {'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'points': [nav.nodes[k]['id'] for k in keys], 'nm': round(ocean[(i, o)], 1), 'cost': cost, 'total_nm': total, 'path': path, 'sections': sects}
+                    best = {'gates': {'entry': kinds.get(i), 'exit': kinds.get(o)}, 'entry': nav.nodes[i]['id'], 'exit': nav.nodes[o]['id'], 'points': [nav.nodes[k]['id'] for k in keys], 'nm': round(ocean[(i, o)], 1), 'cost': cost, 'total_nm': total, 'path': path, 'sections': sects}
                 continue
             dead.add(o)      # la section d'Amérique de cette sortie n'a pas abouti (ou la borne a coupé) : elle n'est pas reprise avec une autre entrée
         if report['stopped'] in ('time', 'states'):

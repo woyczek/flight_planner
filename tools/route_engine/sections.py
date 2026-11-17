@@ -360,16 +360,41 @@ def _entry(nav, g, info):
     info['entry'] = {'point': first['to'], 'time': (depart[0] + datetime.timedelta(hours=first['nm'] / speed)).strftime('%Y-%m-%dT%H:%MZ'), 'nm': first['nm'], 'speed_kt': speed}
 
 
+def _opposite_ends(nav, g, start, end, info):
+    """SOG-0396 : les extrémités des routes du SENS CONTRAIRE EN VIGUEUR (à l'heure estimée du passage, au niveau du vol, dans leur liste) : le vol ne s'y glisse pas (NAT Doc 007, § 11.6.8 et 11.6.12) : elles ne sont ni entrée ni sortie de la route libre. Sans heure de départ, rien n'est exclu (la validité n'est pas vérifiable)."""
+    depart = getattr(nav, 'depart', None)
+    if not depart or depart[0] is None:
+        return frozenset()
+    flight = getattr(g, 'flight', None) or {}
+    speed, fl = flight.get('speed_kt') or 450, int(round((flight.get('ceiling') or 0) / 100))
+    east = nav.nodes[start]['lon'] < nav.nodes[end]['lon']
+    wanted = 'west' if east else 'east'
+    out = set()
+    for tid, m in ((getattr(nav, 'nat', None) or {}).get('meta') or {}).items():
+        if m.get('direction') != wanted or fl not in (m.get('levels_' + wanted) or []) or (m.get('stale') and m.get('source') != 'kept'):
+            continue
+        a, b = nat_layer._date(m.get('from')), nat_layer._date(m.get('to'))
+        for k in ((getattr(nav, 'nat', None) or {}).get('ends') or {}).get(tid, []):
+            t = depart[0] + datetime.timedelta(hours=engine.nm(nav.nodes[start], nav.nodes[k]) / speed)
+            t = t if t.tzinfo else t.replace(tzinfo=datetime.timezone.utc)
+            if (not a or t >= a) and (not b or t <= b):
+                out.add(k)
+    return frozenset(out)
+
+
 def _free(nav, g, start, end, ratio, info):
     """SOG-0354 L5 (2) : aucune route du jour ne convient : la route libre CRÉÉE (free_route), résolue par les mêmes sections ; `info['free']` dit ce qui a été fait (ou pourquoi rien : « aucun point d'entrée océanique connu »), `info['source']` vaut 'random' ; None si rien n'a abouti (la recherche entière suit)."""
     report = {}
     made, why = free_route.solve(nav, g, start, end, ratio, lambda g2, s, e, entry, exit_, legs, first: _resolve(nav, g2, s, e, None, {'entry': entry, 'exit': exit_, 'legs': legs}, True, first=first),
-                                 lambda g2, s, entries, max_states=None: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre', max_states), report)
+                                 lambda g2, s, entries, max_states=None: _europe(nav, g2, s, entries, info, 'europe_free', free_route.NEED, 'libre', max_states), report, skip=_opposite_ends(nav, g, start, end, info))
     if not made:
         info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': False, 'reason': why, **report}
         info['reason'] = (info.get('reason') or '') + ' Route libre : ' + why + ' ; la recherche entière suit.'
         return None
-    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'nm': made['nm'], 'tried': made.get('tried'), 'stopped': made.get('stopped'), 'searches': made.get('searches'), 'states': made.get('states')}
+    for s in made['sections']:
+        if s.get('proof') == 'created':
+            s['gates'] = made.get('gates')      # SOG-0396 : la nature de l'entrée et de la sortie dite dans la preuve de la section (`track` : le bout d'une route du message ; `point` : un repère permanent ; `coordinate` : une coordonnée NAT)
+    info['free'] = {'source': 'random', 'label': free_route.LABEL, 'ok': True, 'entry': made['entry'], 'exit': made['exit'], 'points': made['points'], 'gates': made.get('gates'), 'nm': made['nm'], 'tried': made.get('tried'), 'stopped': made.get('stopped'), 'searches': made.get('searches'), 'states': made.get('states'), 'diagnostic': {k: report.get(k) for k in ('entries', 'exits', 'reached', 'pairs')}}
     if made.get('stopped') in ('time', 'states'):      # d1 ter : la route libre a été COUPÉE (le temps de sécurité, ou le budget d'états) : la réponse le dit
         info['free']['cut'] = made['stopped']
         info['reason'] = (info.get('reason') or '') + (' Route libre coupée par le temps de sécurité' if made['stopped'] == 'time' else ' Route libre coupée par son budget d\'états') + ' : elle peut être plus longue que la meilleure.'

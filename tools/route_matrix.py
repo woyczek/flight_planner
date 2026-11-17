@@ -167,7 +167,7 @@ def one(P, view, item, root, rad, fra_file):
     legs = p.get('legs') or []
     proofs = [(s.get('name'), s.get('proof'), s.get('nm')) for s in sec.get('sections') or []]
     steps = tim.get('sections') or []
-    directs = [{'from': (l.get('start') or {}).get('id'), 'to': (l.get('end') or {}).get('id'), 'nm': l.get('nm'), 'nat_link': bool(l.get('nat_link')), 'nat_out': bool((l.get('nat') or {}).get('out_of_window')), 'origin': l.get('origin'), 'fra': bool(l.get('fra_area'))}
+    directs = [{'from': (l.get('start') or {}).get('id'), 'to': (l.get('end') or {}).get('id'), 'nm': l.get('nm'), 'nat_link': bool(l.get('nat_link')), 'nat_out': bool((l.get('nat') or {}).get('out_of_window') or (l.get('nat') or {}).get('partial')), 'origin': l.get('origin'), 'fra': bool(l.get('fra_area'))}
                for l in legs if l.get('via') == 'DCT' and (l.get('nm') or 0) > 200]
     rec.update(
         status=v.get('status'), ok=bool(p.get('ok')), nm=p.get('distance_nm'), route=p.get('route'), error=p.get('error'), message=v.get('message'),
@@ -177,7 +177,7 @@ def one(P, view, item, root, rad, fra_file):
         timing={k: tim.get(k) for k in ('context_s', 'tracks_s', 'graph_s', 'skeleton_s', 'total_s')}, steps=steps,
         hit=[s.get('name') for s in steps if s.get('hit')], budget=res.get('budget'),
         proposals=len((res.get('recovery') or {}).get('proposals') or []), directs=directs,
-        directs_unexplained=[d for d in directs if not d['nat_link'] and d['origin'] != 'random' and not d.get('nat_out')],      # SOG-0403 R2 : un tronçon d'une route NAT prise HORS de sa fenêtre s'écrit point par point (DCT) : il est expliqué
+        directs_unexplained=[d for d in directs if not d['nat_link'] and d['origin'] != 'random' and not d.get('nat_out')],      # SOG-0403 R2 / SOG-0414 : un tronçon d'une route NAT prise HORS de sa fenêtre, ou dont la base ne place pas tous les points, s'écrit point par point (DCT) : il est expliqué
         code=('' if v.get('status') == 'computed' else code_of(res, v)))
     return rec
 
@@ -297,6 +297,14 @@ def summary(args):
         if r.get('code'):
             codes[r['code']] = codes.get(r['code'], 0) + 1
     text.append('raisons : ' + (', '.join(f'{k} {v}' for k, v in sorted(codes.items())) or 'aucune'))
+    failed = [r for r in recs if r.get('status') != 'computed' and isinstance(r.get('free'), dict) and r['free'].get('ok') is False]      # SOG-0396 : le diagnostic PAR PAIRE des routes libres en échec
+    kinds = {}
+    for r in failed:
+        d = r['free']
+        kind = 'aucune porte' if not d.get('entries') or not d.get('exits') else "aucune entrée atteinte par la recherche d'Europe" if not d.get('reached') else 'entrées atteintes, aucun couple essayé' if not d.get('pairs') else 'aucun couple résolu (' + str(len(d['pairs'])) + ' essayés)' if not any(p['ok'] for p in d['pairs']) else 'autre'
+        kinds.setdefault(kind, []).append(r['id'])
+    if failed:
+        text.append('routes libres en échec, par paire : ' + ' ; '.join(f'{k} : {len(v)} ({", ".join(v[:6])}{"…" if len(v) > 6 else ""})' for k, v in sorted(kinds.items())))
     for label, group in (('au-delà de 5 s', over5), ('sans route', none), ('proposition', prop), ('en erreur', err), ('direct de plus de 200 NM sans raison hors zone FRA', direct), ('direct de plus de 200 NM dans une zone FRA', direct_fra)):
         if group:
             text.append(label + ' : ' + ', '.join(f"{r['id']} ({r['wall_s']:.1f} s{', ' + r['code'] if r.get('code') else ''})" for r in group))

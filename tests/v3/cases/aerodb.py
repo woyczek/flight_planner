@@ -9319,7 +9319,7 @@ def k237(c):
             return r, p, view.to_view(r['plan'], {'fl': 370, 'mode': 'calculate'})
         # 1. no file: no way over the ocean (the bench has no other)
         r, p, v = run(bench('none', None), 'KJFK', 'EGLL', '2026-11-10T12:00')
-        c.eq(p['ok'], False, 'without the file there is no way over the ocean: no plan', what='no file')
+        c.eq(p['ok'], True, 'without the file the flight crosses by the PERMANENT gates of the free route (SOG-0396; before: no way over the ocean, no plan)', what='no file')
         # 2. track A, valid that day: its named entry and exit are the base\'s own nodes (shared), the flight uses it, not stale
         # the request leaves at 04:30 (it was 07:00 before the validity of a track existed): the flight passes the entry about 07:00, inside the window 01:30-08:00 of the message; at 07:00 it would pass it at about 09:30, after the closing: the track is set aside (K293)
         r, p, v = run(bench('a', {'tracks': [A]}), 'KJFK', 'EGLL', '2026-11-10T04:30')
@@ -9557,7 +9557,7 @@ def k241(c):
         I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
         with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
             json.dump([], f)
-        r = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'KJFK', 'arr': 'EGLL', 'fl': 370, 'date': '2026-11-10T12:00', 'enable_fra': False}, {'data': data, 'secrets': td})
+        r = fn(RJ.Job('route', 'compute', {}, author='TST'), {'dep': 'KJFK', 'arr': 'EGLL', 'fl': 370, 'date': '2026-11-10T12:00', 'enable_fra': False, 'sections': False}, {'data': data, 'secrets': td})      # SOG-0396: the subject is the connectors of a whole search; with the sections the permanent gates would make a free route over the ocean (the bench has J1 across it)
         p = r['plan']['primary']
         legs = p.get('legs') or []
         c.ok(p['ok'] and [l['via'] for l in legs][1:-1] == ['J1'] * 6, str((p.get('error'), [l['via'] for l in legs])), 'KJFK → EGLL is found: the first airway node (28 NM) is above the reach of a real climb to 18 000 ft, the connector is free of it (no SID read)')
@@ -12244,9 +12244,8 @@ def k300(c):
         results_cache.ENABLED = False
         try:
             res = run(bench('none', []))
-            c.eq((res['primary']['ok'], res['level_retry']['tried'], res['level_retry']['matters'], res['level_retry']['levels'], res['timing']['retries'], res['alternative_attempts']), (False, False, False, [], [], []),
-                 'no track and no point of entry to the ocean: no route, and no level changes that — no retry at FL350, no stepped route, no variant: the answer leaves with its reason (red before: five searches at lower levels)', what='no retry')
-            c.ok(bool(res['level_retry']['why']) and res['sections']['depart']['basis'] == 'request', str(res['level_retry']), 'the reason of not retrying is said, and the sections are those of the requested level')
+            c.eq((res['primary']['ok'], res['sections']['source'], res['sections']['free']['gates'], res['level_retry'], res['timing']['retries'], res['alternative_attempts']), (True, 'random', {'entry': 'coordinate', 'exit': 'coordinate'}, None, [], []),
+                 'no track at all: the flight crosses by the PERMANENT gates of the free route (SOG-0396; before: no point of entry to the ocean, no route, and no level that changes that — no retry at FL350, no stepped route, no variant, five searches at lower levels before the first fix): a route, no retry, no `level_retry`', what='no retry')
             res = run(bench('lev', [A]))
             c.eq((res['primary']['ok'], res['sections']['source'], [(r['track'], r['code']) for r in res['sections']['rejected']], res['sections']['level_retry'], res['level_retry'], res['timing']['retries']), (True, 'random', [('A', 'level')], True, None, []),
                  'the track offers FL350 and FL360 only: at FL370 it is set aside for the LEVEL (said, with its level_retry), the free route is created at FL370 and answers: the sections are those of FL370, no retry, no `level_retry` of the answer (a route was found)', what='requested level')
@@ -12452,6 +12451,8 @@ def k303(c):
         return
     from route_engine import plan as P, view, results_cache
     results_cache.ENABLED = False
+    saved_gates = F.MAX_GATES
+    F.MAX_GATES = 0      # SOG-0396: with the permanent gates LEMD → KBOS needs no entry at REGHI (a shorter route by the gates): the proof of the RAD rule LF2096 on the real base is made WITHOUT them
     try:
         args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
@@ -12476,6 +12477,7 @@ def k303(c):
         m = re.search(r'détour de \+(\d+) NM \((\d+) → (\d+) NM\)', said[0]) if said else None
         c.ok(len(said) == 1 and m is not None and int(m.group(3)) > int(m.group(2)) and abs(int(m.group(3)) - res['primary']['distance_nm']) <= 1, str(said), 'when the pass by ETIKI fails, REGHI is set aside (the next entry) and the answer says « Point REGHI écarté … détour de +n NM (head → final NM) »')
     finally:
+        F.MAX_GATES = saved_gates
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
 
@@ -12590,8 +12592,10 @@ def k305(c):
     if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
-    from route_engine import engine, plan as P, view, results_cache
+    from route_engine import engine, free_route as F, plan as P, view, results_cache
     results_cache.ENABLED = False
+    saved_gates = F.MAX_GATES
+    F.MAX_GATES = 0      # SOG-0396: with the permanent gates LEMD → KBOS needs no entry at DELOG / ETIKI: the proof of the RAD retry of the entries on the real base is made WITHOUT them
     try:
         args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
@@ -12600,6 +12604,7 @@ def k305(c):
         points = [x['point'] for a in res['rad_search_attempts'] for x in a.get('excluded', []) if x.get('kind') == 'point']
         c.ok(bool(p.get('ok')) and not errors and len(res['rad_search_attempts']) == 1 and 'DELOG' in points, str((errors, len(res['rad_search_attempts']), points)), 'LEMD → KBOS on the real base: a route with no error of the control after ONE RAD retry, which excluded the point DELOG (and passed by ETIKI)')
     finally:
+        F.MAX_GATES = saved_gates
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
 
@@ -13982,3 +13987,168 @@ console.log(JSON.stringify({ points: r.aero.points, merged: base.aero.points }))
     c.eq(({k: pts.get(k, {}).get('lim') for k in ('NESTD', 'OBJCT', 'FARAWAY')}, len(pts)), ({'NESTD': None, 'OBJCT': None, 'FARAWAY': None}, 7),
          'a remark that is not a text (a deeply nested array, an object) is ignored and never converted (the read of the source goes on: all the points are read), and only the first 400 signs are looked at (Sécurisation; red before: the nested array stopped the read with a stack overflow)', what='untrusted')
     c.eq([x.get('lim') for x in out.get('merged', [])], ['fir'], 'two sources give the same point: the flag of the one that says it passes to the twin that is already in the base', what='merge')
+
+
+@case('K316', 'Route engine, SOG-0396: the free route has PERMANENT oceanic gates — at most 40: the named points of the base near 15°W and the entry of the Bay of Biscay that are on a route carrying the level of the flight, and NAT coordinates at whole degrees along 50°W — besides the ends of the routes of the message; the end of a route of the OPPOSITE direction in force is neither an entry nor an exit; a flight crosses with no message at all; the gate used is said (`sections.free.gates` and the section of the free route); nothing depends on the clock',
+      'K', static=True,
+      rule='SOG-0396 (ergonomics session, 17 Nov: « la route libre prend ses entrées aux extrémités des routes du message, donc 72 demandes sur 144 n’ont plus de route avec le seul message de ce matin » ; the proposal accepted at 10:23). Before: `free_route.ends` = the two ends of each route of the message read, nothing else: with no message `NO_POINT`, with only the day message (westbound routes in the north) no entry in the south, and the ends of the routes of the OPPOSITE direction in force were used as entries and exits (SOG-0395: 69 free routes of 85 at 0 NM of a route against the flow). Now `free_route.gates(nav, high, level)` adds the permanent gates (the same for the same flight whatever the message, the hour or the clock); `sections._opposite_ends` takes out the ends of the routes of the opposite direction in force at the estimated passage, at the level of the flight and in their list of levels (with no hour of departure nothing can be checked and nothing is taken out); the answer says the kind of each gate (`track` | `point` | `coordinate`).')
+def k316(c):
+    import types
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    kept = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    today = {'id': 'A', 'route': ['5230/10', '5230/20', '5230/30', '5230/40', '5230/50'], 'east': [], 'west': ['350', '370'], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T11:30:00Z', 'to': '2026-11-10T19:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        natfile = os.path.join(folder, 'nat_tracks.json')
+        results_cache.ENABLED = False
+        try:
+            def run(rows, date='2026-11-10T10:30'):
+                if rows is None:
+                    if os.path.exists(natfile):
+                        os.remove(natfile)
+                else:
+                    with open(natfile, 'w', encoding='utf-8') as f:
+                        json.dump({'tracks': rows}, f)
+                res = PL.compute(view.to_request({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': date, 'alternatives': False, 'proposals': True, 'fl': 370}), data, radz, fra)
+                sec = res.get('sections') or {}
+                free = sec.get('free') or {}
+                return res, free
+            north = {'id': 'N', 'route': ['6030/10', '6030/20', '6030/30', '6030/40', '6030/50'], 'east': [], 'west': ['350', '370'], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T09:00:00Z', 'to': '2026-11-10T20:00:00Z'}
+            near = {'id': 'W', 'route': ['5230/10', '5230/20', '5230/30', '5230/40', '5230/50'], 'east': [], 'west': ['350', '370'], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T09:00:00Z', 'to': '2026-11-10T20:00:00Z'}
+            r0, f0 = run(None)
+            r0b, f0b = run(None, date='2026-11-10T03:00')
+            r1, f1 = run([north])
+            r2, f2 = run([near])
+            r3, f3 = run([near], date='2026-11-10')
+        finally:
+            results_cache.ENABLED = True
+    gates = {'entry': 'coordinate', 'exit': 'coordinate'}
+    proof = lambda res: [s.get('gates') for s in (res.get('sections') or {}).get('sections', []) if s.get('name') == 'route libre']
+    c.eq((r0['primary'].get('route'), r0b['primary'].get('route') == r0['primary'].get('route'), f0.get('ok'), f0.get('gates'), proof(r0), f0.get('entry'), f0.get('exit')),
+         ('KJFK DCT PTLUS J1 MIDUS DCT 49/50 DCT 51/40 DCT 52/30 DCT 52/20 DCT 52/15 DCT UKIN2 J2 UKIN3 DCT EGLL', True, True, gates, [gates], '49/50', '52/15'),
+         'NO message at all: the flight crosses by the permanent gates (entry « 49/50 », a coordinate along 50°W; exit « 52/15 », a coordinate along 15°W: the base has only 2 or 3 named points on the high network near 15°W); the same route at 10:30 and at 03:00 (nothing depends on the hour); the kind of each gate is said in `sections.free.gates` and in the proof of the section of the free route (red before: no free route, no `gates`)', what='no message')
+    d0 = f0.get('diagnostic') or {}
+    c.eq((sorted(d0), d0.get('entries', 0) > 0 and d0.get('exits', 0) > 0, bool(d0.get('reached')), [p['ok'] for p in d0.get('pairs', [])][-1:]), (['entries', 'exits', 'pairs', 'reached'], True, True, [True]),
+         'the free route gives its DIAGNOSTIC per pair (`sections.free.diagnostic`: the number of entries and exits, the entries that the search of the departure side reached, each pair tried with its result): the last pair tried is the one that gave the route', what='diagnostic')
+    c.eq((r1['primary'].get('route') == r0['primary'].get('route'), f1.get('gates'), f1.get('entry')), (True, gates, '49/50'),
+         'with only a message of the day whose routes are far north (60°N) the crossing is the same: the gates give the entry and the exit in the south, the ends of the north route are not taken', what='message of the north')
+    ends = {'5230/10', '5230/50'}
+    c.eq((r2['primary'].get('route') == r0['primary'].get('route'), f2.get('gates'), bool({f2.get('entry'), f2.get('exit')} & ends), r2['primary'].get('distance_nm')), (True, gates, False, r0['primary'].get('distance_nm')),
+         'a route of the OPPOSITE direction in force at the passage (the westbound W, 09:00-20:00Z, FL370 in its list) is neither entry nor exit: its ends 52°30N 10°W and 50°W are not taken (red before: the free route went out by 52°30N 10°W)', what='opposite in force')
+    import datetime
+    from route_engine import sections as S
+    nodes = {'DEP': {'id': 'DEP', 'lat': 40.0, 'lon': -73.0}, 'ARR': {'id': 'ARR', 'lat': 51.0, 'lon': -1.0}, 'WE': {'id': 'WE', 'lat': 52.5, 'lon': -10.0}}
+    meta = {'W': {'track': 'W', 'direction': 'west', 'levels_west': [350, 370], 'levels_east': [], 'from': '2026-11-10T09:00:00Z', 'to': '2026-11-10T20:00:00Z', 'stale': False}}
+    class FakeNav:
+        pass
+    fn = FakeNav()
+    fn.nodes, fn.nat = nodes, {'meta': meta, 'ends': {'W': ['WE']}}
+    gf = types.SimpleNamespace(flight={'ceiling': 37000, 'speed_kt': 450})
+    fn.depart = (None, 'none')
+    nohour = S._opposite_ends(fn, gf, 'DEP', 'ARR', {})
+    fn.depart = (datetime.datetime(2026, 11, 10, 10, 30), 'request')
+    withhour = S._opposite_ends(fn, gf, 'DEP', 'ARR', {})
+    c.eq((nohour, withhour), (frozenset(), frozenset({'WE'})), 'with a date and NO hour nothing can be checked, so nothing is taken out (the end of the route against the flow stays); with an hour its end is taken out', what='no hour')
+
+
+@case('K326', 'Route engine, SOG-0396 (selection): the links of the entries and exits of the free route start from the nodes of airways that reach the BAND of the free route (FL285 and above), not from the three nearest nodes of the « high network » (ceiling FL245): in the matrix of 17 Nov six eastbound flights (KORD, KLAX, KSFO → EIDW, EHAM, EGLL) were made 40 to 72 % longer (KORD → EIDW 6 085 NM instead of 3 508) because the gates at 15°W were linked to nodes of airways with a ceiling of FL255 that the flight never reaches at FL370, so the only exit that worked was a point of the Bay of Biscay',
+      'K', static=True,
+      rule='SOG-0396 (the matrix pass of 17 Nov, 14:24: 144 routes of 144, none over 5 s, but KORD → EIDW « in » 3 532 → 6 085 NM, KLAX → EIDW +51 %, KSFO → EIDW +50 %, KSFO → EHAM +41 %, KLAX → EHAM +42 %, KSFO → EGLL +41 %). The same defect as SOG-0412 for the NAT routes: `free_route` linked a gate to the three nearest nodes of `nat_layer.main_network(nav)` whose floor is `HIGH_FT` = FL245; nodes of airways with a ceiling of FL255 are reached at 19 500-25 500 ft and never at the band (FL285-FL600) of the link: no state takes the link, the gates near them are dead and the exit that is left is the one that has a node on a real high airway, far from the flight. Now `main_network(nav, LOW_FT)`. Bench: no message of NAT routes, three nodes LOW1-LOW3 of a low airway L1 (ceiling FL255) at 150-300 NM of the gates of 50°W, a node HI1 of the high airway J1 farther: before, every gate of 50°W was linked to LOW1-LOW3 and the free route found no chain; now it goes by MIDUS (3 012 NM instead of 3 409 by HI1 and a gate at 40°N).')
+def k326(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'HI1': (46.0, -58.0), 'LOW1': (48.5, -51.0), 'LOW2': (48.0, -52.0), 'LOW3': (47.5, -53.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids, upper=66000: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': upper} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'HI1']) + air('L1', ['MIDUS', 'LOW1', 'LOW2', 'LOW3'], 25500) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        results_cache.ENABLED = False
+        try:
+            args = {'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T12:00', 'alternatives': False, 'proposals': False, 'fl': 370}
+            res = PL.compute(view.to_request(args), data, radz, fra)
+        finally:
+            results_cache.ENABLED = True
+    p = res.get('primary') or {}
+    sec = res.get('sections') or {}
+    free = sec.get('free') or {}
+    legs = p.get('legs') or []
+    c.eq((bool(p.get('ok')), sec.get('source')), (True, 'random'), 'no route of the NAT message: the free route is made by the gates of 50°W and 15°W', what='free')
+    c.ok(bool(p.get('ok')) and (p.get('distance_nm') or 1e9) < 3100, p.get('distance_nm'), 'the free route goes by the gate that its nearest REAL high node reaches (MIDUS: 3 012 NM, a gate at 49°N); red before: the gates were linked to LOW1-LOW3 (an airway that stops at FL255, not reached at FL370) or from the farther node HI1 to a gate at 40°N: 3 409 NM, +13 % (the same defect made KORD → EIDW 6 085 NM instead of 3 508 on the real base)')
+
+
+@case('K327', 'Route engine, SOG-0396 (selection, real base): KORD → EIDW at FL370 when the message offers only westbound routes (the free route by the permanent gates): the route leaves the ocean at 15°W and is NOT more than 15 % longer than the great circle (3 508 NM; it was 6 085 NM, by the Bay of Biscay and back through Spain, when the links of the gates came from nodes of airways that stop at FL255); a guard of the CASE, not a rule of the engine (if no pair held it the engine would give the shortest and say it)',
+      'K', static=True,
+      rule='SOG-0396 (the matrix pass of 17 Nov: six « in » flights towards Europe 40 to 72 % longer; the ergonomics session: KORD → EIDW must leave at 15°W, not by the Bay of Biscay; the guard of +15 % on the great circle is a guard of the case). The real base of the workstation and the dated test NAT message (the westbound routes A to F only, like the message of the day); skipped when the base is not here.')
+def k327(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from pathlib import Path
+    real = Path('E:/DEFA/data')
+    if not (real / 'sia' / 'base' / 'us').is_dir() or not (real / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    doc = _nat_test(())      # a dated test NAT message; ONLY the westbound routes A to F, like the message of the day (an eastbound system, even out of its window, would be taken by SOG-0403 R2 instead of the free route)
+    doc = {'tracks': [t for t in doc['tracks'] if t['west']], 'messages': doc['messages'][:1]}
+    data, clean = _hybrid_data(real, doc)
+    from route_engine import engine, plan as P, view, results_cache
+    results_cache.ENABLED = False
+    try:
+        args = {'action': 'compute', 'adep': 'KORD', 'adest': 'EIDW', 'fl': 370, 'date': '2026-11-17T12:00', 'alternatives': False, 'proposals': False}
+        res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+        p = res['primary']
+        free = (res.get('sections') or {}).get('free') or {}
+        legs = p.get('legs') or []
+        a, b = legs[0]['start'], legs[-1]['end']
+        circle = engine.nm(a, b)
+        c.ok(bool(p.get('ok')) and free.get('exit') != 'EKROL' and (p.get('distance_nm') or 1e9) <= 1.15 * circle, (p.get('distance_nm'), round(circle), free.get('entry'), free.get('exit')),
+             'KORD → EIDW: a route, leaving the ocean at 15°W (not by the point EKROL of the Bay of Biscay) and at most 15 % longer than the great circle (red before: 6 085 NM, exit EKROL)')
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+        clean()
