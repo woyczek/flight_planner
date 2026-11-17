@@ -808,6 +808,10 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         path = raw.split('?', 1)[0].lower()
         sandbox = path.startswith('/data/') and path.endswith(SANDBOXED)
         self.send_header('Content-Security-Policy', strict or ("sandbox; " if sandbox else '') + csp_policy(path if path in cspmod.PAGES else ''))
+        # SOG-0430 (A2) : le profileur du navigateur (JS Self-Profiling, `Profiler`) n'existe que pour un document servi avec cet en-tête ; il ne décrit que le code de la MÊME origine (noms de fonctions et lignes,
+        # jamais un argument ni une valeur) et n'ouvre aucune autre porte. Posé sur les SEULES pages HTML du cadre servies ici : jamais un script, un fichier de data/, un JSON, ni une page avec sa propre politique (strict).
+        if not strict and not sandbox and not path.startswith('/data/') and (path in ('', '/') or path.endswith('.html')):
+            self.send_header('Document-Policy', 'js-profiling')
         # fichier versionné par son empreinte (?v=…, tools/bump_versions.py : elle change avec le contenu) : gardé tel
         # quel, sans revalidation — une quarantaine d'allers-retours de moins par page, qui retardaient la fin de
         # l'analyse et laissaient voir la page à moitié construite ; le reste (pages, données) : revalidé à chaque fois,
@@ -875,7 +879,9 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         # à celle du lanceur (statut, `suite`) et dit qu'elle est plus ancienne dès qu'un fichier de frame/ ou de modules/ a changé, pas seulement app.js
         if os.path.normcase(f) == os.path.normcase(os.path.join(ROOT, 'frame', 'index.html')):
             suite = frame_fingerprint()
-            body = body.replace(b'<head>', f'<head><meta name="sog-suite" content="{suite}">'.encode('ascii'), 1)
+            # SOG-0430 (A2) : la même réponse qui porte `Document-Policy: js-profiling` le dit dans la page (<meta name="sog-js-profiling">) : une copie du service worker garde l'en-tête ET la balise, une page servie sans
+            # l'en-tête (vieux cache, autre serveur) n'a pas la balise et n'essaie même pas de créer le profileur (le navigateur écrirait une erreur dans la console)
+            body = body.replace(b'<head>', f'<head><meta name="sog-suite" content="{suite}"><meta name="sog-js-profiling" content="1">'.encode('ascii'), 1)
             h = hashlib.sha1(f'{h}|{suite}'.encode('ascii')).hexdigest()[:8]
         etag = f'"{h}"'
         if self.headers.get('If-None-Match') == etag:

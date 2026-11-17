@@ -3476,3 +3476,47 @@ def i47(c):
                      'a kept folder that is a link or a junction: not given to the tool, not counted by status, nothing behind it written or removed', what='kept link')
 
 
+@case('I50', 'Launcher (SOG-0430 A2): `Document-Policy: js-profiling` on the HTML pages it serves and nowhere else — no script, stylesheet, JSON or file of data/ —, and the page of the frame says so with <meta name="sog-js-profiling">, so that a page served without the header never tries the profiler', 'I', static=True,
+      rule="SOG-0430 A2 (Security review, 17 Nov 2026): the browser's JS Self-Profiling needs the header on the DOCUMENT; it only describes the code of the same origin and opens no other door; the header goes on HTML documents only (never on a script, a data file, a JSON answer, a page with its own strict policy). The same answer carries the meta: a copy of the service worker keeps both, an old copy has neither, and the page then does not even try (the browser would write an error in the console)")
+def i50(c):
+    import os
+    import shutil
+    import socket
+    import subprocess
+    import sys
+    import tempfile
+    import time
+    import urllib.request
+    td = tempfile.mkdtemp(prefix='sog0430h-')
+    open(os.path.join(td, 'data_tree.js'), 'w').write('window.DATA_TREE = {}\n')
+    s = socket.socket()
+    s.bind(('127.0.0.1', 0))
+    port = s.getsockname()[1]
+    s.close()
+    lp = subprocess.Popen([sys.executable, str(c.root / 'tools' / 'launch.py'), '--port', str(port), '--no-browser', '--data', td], cwd=str(c.root), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    base = f'http://127.0.0.1:{port}'
+    got = {}
+
+    def get(path):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(base + path, headers={'X-SOG-Setup': '1'}), timeout=5) as r:
+                return r.headers.get('Document-Policy'), r.read(60000).decode('utf-8', 'replace')
+        except Exception as e:
+            return f'ERR {getattr(e, "code", e)}', ''
+    try:
+        for _ in range(100):
+            if not str(get('/__setup/status')[0]).startswith('ERR'):
+                break
+            time.sleep(0.3)
+        for path in ('/frame/index.html', '/', '/frame/app.js', '/frame/frame.css', '/frame/manifest.webmanifest', '/__setup/status', '/data/data_tree.js'):
+            got[path] = get(path)
+    finally:
+        lp.terminate()
+        time.sleep(0.5)
+        shutil.rmtree(td, ignore_errors=True)
+    c.eq({k: v[0] for k, v in got.items() if k in ('/frame/index.html', '/')}, {'/frame/index.html': 'js-profiling', '/': 'js-profiling'}, 'the HTML pages of the frame carry Document-Policy: js-profiling', what='html header')
+    c.eq({k: v[0] for k, v in got.items() if k not in ('/frame/index.html', '/')}, {'/frame/app.js': None, '/frame/frame.css': None, '/frame/manifest.webmanifest': None, '/__setup/status': None, '/data/data_tree.js': 'ERR 403'}, 'no script, stylesheet, manifest, JSON answer or file of data/ carries it', what='nowhere else')
+    c.ok('<meta name="sog-js-profiling" content="1">' in got['/frame/index.html'][1], got['/frame/index.html'][1][:200], 'the page of the frame says it (meta), in the same answer as the header')
+    c.ok('sog-js-profiling' not in got['/frame/app.js'][1], '', 'only the page carries the meta')
+    src = (c.root / 'frame' / 'app.js').read_text(encoding='utf-8')
+    c.ok('meta[name="sog-js-profiling"]' in src and 'profilerAble()' in src, 'frame/app.js', 'the page creates the profiler only when the meta is there')
