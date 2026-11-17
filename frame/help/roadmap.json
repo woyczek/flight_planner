@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5d46808",
-  "fiches": 413,
+  "organisation": "630c799",
+  "fiches": 414,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -502,6 +502,15 @@
      "en": "NAT tracks: from Europe the engine can only join ONE track in six — the links start from airways that are too low",
      "de": "NAT-Tracks: von Europa aus erreicht die Berechnung nur EINEN von sechs Tracks — die Anschlüsse beginnen an zu niedrigen Luftstraßen",
      "es": "Rutas NAT: desde Europa el cálculo solo alcanza UNA ruta de seis — los enlaces parten de aerovías demasiado bajas"
+    },
+    {
+     "id": "SOG-0415",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Routes Concorde de l'Atlantique Nord (SM, SN, SO, SP) : des routes fixes, toujours disponibles, pour un vol supersonique",
+     "en": "North Atlantic Concorde tracks (SM, SN, SO, SP): fixed tracks, always available, for a supersonic flight",
+     "de": "Concorde-Tracks über dem Nordatlantik (SM, SN, SO, SP): feste, immer verfügbare Tracks für einen Überschallflug",
+     "es": "Rutas Concorde del Atlántico Norte (SM, SN, SO, SP): rutas fijas, siempre disponibles, para un vuelo supersónico"
     }
    ]
   },
