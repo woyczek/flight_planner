@@ -8494,6 +8494,57 @@ def d_natfade(c):
     c.eq((r['asked'], r['west']), (-50, -20), 'the time is asked at the west end for a flight to the east, at the east end for a flight to the west', what=str(r))
 
 
+@case('D251', 'NAT routes and the calculation: when the proposals carry the routes the calculation DROPPED (answer.sections.rejected, by their letters) the Map withdraws exactly those, whatever the code, and keeps the others crisp — it does not judge again; without that list (a flight with no calculation) it judges itself, with the departure the calculation took (answer.sections.depart.time) before the flight’s own time before the sense alone', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0391 (c), the user’s return (17 Nov, EGGW → KJFK computed at the clock: « les six routes NAT écartées par le calcul pour l’heure restent nettes sur la Carte »; the ergonomist: the Map withdraws EXACTLY the routes of answer.sections.rejected — one truth for Carburant and the Map, whatever the judgement point of the engine becomes —, and judges itself, with the departure the calculation took, only without that list): a flight with no time of its own was judged by the sense alone and the Map never read what the calculation had dropped')
+def d_natdepart(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    t0 = now()
+    at = lambda h: iso(t0 + datetime.timedelta(hours=h))
+    for mode in ('list', 'own'):
+        f = _nat_flight(False)
+        f['quote'] = {'minutes': 420, 'block': 9000, 'unit': 'kg'}          # a quote, no planned time: the flight has no hour of its own
+        d = {'schema': 2, 'updated_at': iso(now()), 'dep': 'KJFK', 'arr': 'EGLL', 'mode': 'compute', 'chosen': 0, 'hovered': None, 'open': None, 'computed_at': iso(now()), 'aircraft': 'F-RAJA', 'base': '',
+             'alternatives': [{'index': 0, 'name': 'Via NAT', 'route': 'KJFK EGLL', 'ids': [], 'points': [[40.64, -73.78], [51.47, -0.45]], 'faulty': []}],
+             'answer': {'ok': True, 'alternatives': [{'name': 'Via NAT', 'route': 'KJFK EGLL', 'distanceNm': 3000, 'fl': 350, 'faults': 0}],
+                        'sections': {'depart': {'time': at(1), 'basis': 'request'}}}}
+        if mode == 'list':      # the calculation dropped EIN (a route the Map would keep) and none of the others; junk entries are ignored
+            d['answer']['sections']['rejected'] = [{'track': 'EIN', 'code': 'time', 'text': 'window', 'levels': [370], 'at': at(3), 'entry': '49/50', 'from': at(0), 'to': at(2)}] + [{'track': 'x' * 9}, {'track': None}, 7]
+        c.open('maps', docs=fdocs(f) + [['cache/fuel/route_alts.json', d, 'cache'], ['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {'nat': True}}, 'cache']], flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!window.__mp.S.alts && window.__mp.S.alts.list.length === 1", timeout=15000, what=f'{mode}: the proposals are read')
+        c.tap('[data-mp="layers"]')
+        c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=nat]'))", what='the Layers content')
+        c.js("() => { const i = document.querySelector('.mp-dbody input[data-layer=nat]'); if (!i.checked) i.click(); return true }")
+        c.until("() => !!window.__mp.S.profile && !!window.__mp.S.profile.elements.natTracks", timeout=6000, what='the NAT layer is on')
+        c.tap('.mp-dclose')
+        c.wait(500)
+        entry = {'lat': _line_lat(-50) + 5, 'lon': -50}
+        te = c.js(_NAT_AT_JS, entry)
+        c.ok(te is not None, str(te), f'{mode}: the Map has a time for the flight (the departure the calculation took)')
+        c.eq(c.js("() => { const r = window.__mp.S.alts.rejected; return r ? [...r].sort() : null }"), ['EIN'] if mode == 'list' else None, f'{mode}: the letters read from the answer (bounded, upper case, junk dropped), or no list', what='rejected')
+        pts = lambda la: [{'id': 'a', 'lat': la, 'lon': -50}, {'id': 'b', 'lat': la + 1, 'lon': -40}, {'id': 'c', 'lat': la + 1.5, 'lon': -30}, {'id': 'd', 'lat': la + 1, 'lon': -20}]
+        nats = [{'id': 'Eold', 'points': pts(47), 'west': [], 'east': [340, 350], 'from': at(-10), 'to': at(-3)},                       # east, its window ended before the departure
+                {'id': 'W1', 'points': pts(55.5), 'west': [340, 350, 360], 'east': [], 'from': at(-1), 'to': at(12)},                   # the other sense
+                {'id': 'Ein', 'points': [{'id': 'a', 'lat': entry['lat'], 'lon': -50}, {'id': 'b', 'lat': _line_lat(-40) + 3.3, 'lon': -40}, {'id': 'c', 'lat': _line_lat(-30) + 1.6, 'lon': -30}, {'id': 'd', 'lat': _line_lat(-20), 'lon': -20}],
+                 'west': [], 'east': [370], 'from': iso(datetime.datetime.fromtimestamp(te / 1000 - 3600, datetime.timezone.utc)), 'to': iso(datetime.datetime.fromtimestamp(te / 1000 + 3600, datetime.timezone.utc))}]   # east, the window holds the passage
+        c.js(_TEXTS_JS)
+        c.js(_NAT_TRACKS_JS, nats)
+        c.until("() => (window.__mpTexts || []).some(t => /^NAT /.test(t))", timeout=10000, what='the NAT labels are drawn')
+        c.wait(1200)
+        labels = sorted({t for t in c.js("() => window.__mpTexts") if re.match(r'NAT ', t)})
+        lv = lambda i: [x for x in labels if x.startswith(f'NAT {i} FL')]
+        if mode == 'list':
+            c.ok('NAT Ein' in labels and not lv('Ein'), str(labels), 'the route the calculation dropped is withdrawn (no levels), though its window holds the passage')
+            c.ok(bool(lv('Eold')) and bool(lv('W1')), str(labels), 'the routes that are not in the list stay crisp, though the Map would have judged them out (a window ended, the other sense): it does not judge again')
+        else:
+            c.ok('NAT Eold' in labels and not lv('Eold'), str(labels), 'no list: the Map judges with the departure the calculation took: the east route whose window ended before it is withdrawn')
+            c.ok(bool(lv('Ein')), str(labels), 'no list: the east route whose window holds the passage keeps its levels')
+            c.ok('NAT W1' in labels and not lv('W1'), str(labels), 'no list: the westbound route is withdrawn')
+        c.shot(f'D251_standard_nat_{mode}_delivered.png')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

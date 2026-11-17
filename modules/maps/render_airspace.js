@@ -544,7 +544,8 @@
     }
     ctx.restore();
   }
-  /** Une route NAT que le vol ne peut pas prendre (SOG-0391 c) : jamais une route que le vol SUIT (flight.follows(points) : l'itinéraire passe par elle) ; sinon d'un autre SENS que le vol
+  /** Une route NAT que le vol ne peut pas prendre (SOG-0391 c) : quand l'itinéraire affiché porte la liste des routes que le calcul a écartées (flight.rejected : leurs lettres), EXACTEMENT celles-là,
+   *  sans rejuger (une seule vérité pour Carburant et la Carte) ; sinon, jamais une route que le vol SUIT (flight.follows(points) : l'itinéraire passe par elle) ; sinon d'un autre SENS que le vol
    *  (la liste de niveaux non vide de la route, east ou west, contre le sens du vol : en retrait même sans fenêtre lisible), ou dont la FENÊTRE (fromMs, toMs, lus et bornés par data.js) ne
    *  contient pas l'heure estimée du vol à l'ENTRÉE de la route pour ce sens (le bout ouest de sa liste de points pour un vol vers l'est, le bout est vers l'ouest : la règle du moteur,
    *  son champ `at`), 400 NM au plus. flight : { dir (1 est, -1 ouest, 0 incertain), at(points) → ms ou null, follows(points) } ou rien. Sans vol, rien ; sans heure de vol, le sens
@@ -555,6 +556,9 @@
 
   function natFaded(tr, flight, pts) {
     if (!flight || flight.follows?.(pts)) return false;
+    if (flight.rejected) return flight.rejected.has(String(tr.id)
+      .toUpperCase()
+    ); // le calcul a écarté ces routes, et elles seules : une seule vérité pour Carburant et la Carte, la Carte ne rejuge pas
     const sense = tr.east?.length && !tr.west?.length ? 1 : tr.west?.length && !tr.east?.length ? -1 : 0;
     if (sense && flight.dir && sense !== flight.dir) return true;
     if (!(tr.fromMs < tr.toMs) || !flight.at) return false;

@@ -706,8 +706,8 @@ less: no sense), even with no readable window, or (2) its **window** (`from`, `t
 **entry** of the route for the flight's sense (the west end of its list of points for a flight to the east, the east end for a flight
 to the west: the engine's rule, its field `at`): the estimated time (`etaOf` on the flown path, interpolated along each leg) at the
 closest approach of the flight to that point, within 400 NM, else no time. **A route the flight follows is never withdrawn** (its
-route goes through at least two points of the route, within 15 NM). A flight with no time: the sense alone. A window that cannot be
-read drops the time criterion only. No flight: nothing changes. The values of the file are untrusted: `cleanNat` (data.js) keeps 40 routes
+route goes through at least two points of the route, within 15 NM). The flight's time is, in this order, **the departure the calculation took** (the proposed routes keep the sections of the answer: `answer.sections.depart.time`, read by `altsSanitize`, set as the departure of the estimate), else the flight's own planned time (a started flight keeps its real time), else none: the sense alone. A window that cannot be
+read drops the time criterion only. No flight: nothing changes. **The calculation's own list comes first**: when the itinerary shown carries `answer.sections.rejected` (the routes the calculation dropped, by their letter, 40 at most, read by `altsSanitize` into `S.alts.rejected`), the Map withdraws EXACTLY those routes, whatever their code, keeps the others crisp and judges nothing itself (one truth for Carburant and the Map; a route the flight follows is never withdrawn); the rule above applies only without that list (a flight with no calculation). The values of the file are untrusted: `cleanNat` (data.js) keeps 40 routes
 of 60 placed points, four signs of identifier, whole levels from 0 to 999 (30 per sense), and a window (`fromMs`, `toMs`)
 only when both dates are ISO UTC, `to` after `from` by 48 h at most. The drawing reads the flight in `env.natFlight`
 (`{ dir, at(points), follows(points) }`, `natFlightOf` of flight_time.js).

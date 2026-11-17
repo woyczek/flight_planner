@@ -330,7 +330,14 @@ function haloText(ctx, t, x, y, col) {
  *  sur le chemin volé, interpolée le long de chaque tronçon ; null sans heure de référence ni devis, ou quand le vol ne passe pas à moins de 400 NM. follows(points) : vrai quand
  *  l'itinéraire passe par au moins deux de ces points (à 15 NM près : il SUIT la route). */
 export function natFlightOf() {
-  const f = S.route?.flight,
+  const f0 = S.route?.flight,
+    dep = S.alts
+    ?.depart, // le départ que le CALCUL a pris, rendu avec l'itinéraire affiché (Carburant le garde dans les sections de la réponse) : il passe avant l'heure du vol, qui passe avant le sens seul
+    // un vol démarré garde son heure réelle ; sinon le départ du calcul remplace l'heure prévue
+    f = dep && f0 && !isStarted(f0) ? {
+      ...f0,
+      planned_at: new Date(dep.ms).toISOString()
+    } : f0,
     ok = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon),
     pts = (S.route?.points || []).filter(ok);
   if (S.missionId || !f || pts.length < 2) return null;
@@ -364,6 +371,8 @@ export function natFlightOf() {
   };
   return {
     dir,
+    rejected: S.alts?.rejected ||
+      null, // les routes que le calcul a écartées (leurs lettres), quand l'itinéraire affiché les porte : la Carte ne rejuge pas
     follows(points) {
       samples ||= build();
       return (points || []).filter(q => samples.some(s => rhumbNm(s, {

@@ -77,6 +77,19 @@ function detailHtml(A) {
     z = ag ? new Date(ag.t).toISOString().slice(11, 16) + 'Z' : '';
   return `${bits.length ? `<p class="mp-al-det f-muted" data-altdetail>${esc(bits.join(' · '))}</p>` : ''}${ag ? ag.stale ? `<p class="mp-al-det" data-altstale>${esc(tt(TX.altStale))} <button type="button" class="f-btn" data-altredo>${esc(tt(TX.altRedo))}</button></p>` : `<p class="mp-al-det f-muted" data-altage>${esc(tt(TX.altAge, { t: z }))}</p>` : ''}`;
 }
+/** Les routes NAT écartées par le calcul, lues dans les sections de la réponse (answer.sections.rejected : [{ track, code, text, levels, at, entry, from, to }], 40 au plus) : l'ensemble de leurs
+ *  lettres (majuscules, 1 à 4 signes), ou null quand la réponse ne porte pas cette liste (vol sans calcul : la Carte juge elle-même). Le document est une entrée non fiable. */
+const rejectedOf = a => Array.isArray(a?.sections?.rejected) ? new Set(a.sections.rejected.slice(0, 40).map(r => String(r?.track ?? '')
+  .toUpperCase()).filter(t => /^[A-Z0-9]{1,4}$/.test(t))) : null;
+/** Le départ que le calcul a pris, lu dans les sections de la réponse (answer.sections.depart : { time, basis }) : { ms, basis } ou null ; l'heure doit être une date ISO UTC en Z, la base est bornée (le document est une entrée non fiable). */
+const departOf = a => {
+  const d = a?.sections?.depart,
+    t = typeof d?.time === 'string' ? d.time.slice(0, 32) : '';
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?Z$/.test(t) && Number.isFinite(Date.parse(t)) ? {
+    ms: Date.parse(t),
+    basis: clean(d.basis, 12)
+  } : null;
+};
 /** Le document ou l'événement de Carburant, nettoyé : { mode, dep, arr, chosen, hovered, list: [{ index, name, faulty (Set), points }] } ou null.
  *  Schéma 1 ou 2 : le schéma 2 (SOG-0224, Carburant garde le détail) porte tout le schéma 1 ; ce qu'il ajoute n'est pas lu ici. */
 export function altsSanitize(raw) {
@@ -123,6 +136,10 @@ export function altsSanitize(raw) {
     open: raw.schema === 2 && ixs.includes(raw.open) ? raw.open : null,
     base: raw.schema === 2 ? clean(raw.base, 16) : '',
     nat: raw.schema === 2 && RA.natRoute(raw.answer), // une route par les NAT : périmée le lendemain (UTC)
+    rejected: raw.schema === 2 ? rejectedOf(raw.answer) :
+    null, // les routes NAT que le calcul a écartées (answer.sections.rejected) : la Carte met en retrait exactement celles-là
+    depart: raw.schema === 2 ? departOf(raw.answer) :
+    null, // le départ que le calcul a pris (answer.sections.depart : { time, basis }), pour juger les routes NAT (SOG-0391 c)
     hovered: ixs.includes(raw.hovered) ? raw.hovered : null,
     list
   };
