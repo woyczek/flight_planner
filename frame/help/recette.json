@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 283,
+  "tests": 284,
   "verdicts": 212
  },
  "apps": [
@@ -4018,6 +4018,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T14:07:43Z"
+  },
+  {
+   "id": "SOG-0398",
+   "app": "maintenance",
+   "title": {
+    "fr": "Carburant : vérifier le terrain de dégagement (piste et moyens, météo prévue, distance au départ) et en proposer un",
+    "en": "Fuel: check the alternate aerodrome (runway and aids, forecast weather, distance from departure) and propose one",
+    "de": "Kraftstoff: den Ausweichflugplatz prüfen (Piste und Anflughilfen, Wettervorhersage, Entfernung vom Abflug) und einen vorschlagen",
+    "es": "Combustible: comprobar el aeródromo alternativo (pista y ayudas, meteorología prevista, distancia a la salida) y proponer uno"
+   },
+   "test": "Carburant, étape Vol, page rechargée. Saisis un terrain de dégagement. Attendu : (1) sous les trois champs, UNE ligne : un signe (✓ bon, ! réserve, ✕ échec, ? non vérifié), une phrase (« Dégagement XXXX : utilisable, avec réserve (moyens) ») et, quand tout n'est pas vert, le compte (« 2 bons, 1 non vérifié ») ; (2) le pli « Critères du dégagement » ouvre trois lignes : PISTE (la plus longue piste en dur contre la longueur de piste mini de ta fiche ; sans ce champ dans la fiche : « non vérifiée », jamais vert), MOYENS (le nombre d'approches aux instruments de la base ; aucune : « à vue seulement » ; terrain hors de ce que la base couvre : non vérifié), MÉTÉO (la catégorie du TAF une heure ava",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T15:54:44Z"
   },
   {
    "id": "SOG-0399",

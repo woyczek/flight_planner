@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3886dc6",
+  "organisation": "0938559",
   "fiches": 432,
   "untranslated": 0,
   "priorities": 374,
@@ -4762,11 +4762,12 @@
     {
      "id": "SOG-0398",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Carburant : vérifier le terrain de dégagement (piste et moyens, météo prévue, distance au départ) et en proposer un",
      "en": "Fuel: check the alternate aerodrome (runway and aids, forecast weather, distance from departure) and propose one",
      "de": "Kraftstoff: den Ausweichflugplatz prüfen (Piste und Anflughilfen, Wettervorhersage, Entfernung vom Abflug) und einen vorschlagen",
-     "es": "Combustible: comprobar el aeródromo alternativo (pista y ayudas, meteorología prevista, distancia a la salida) y proponer uno"
+     "es": "Combustible: comprobar el aeródromo alternativo (pista y ayudas, meteorología prevista, distancia a la salida) y proponer uno",
+     "test": true
     }
    ]
   },
