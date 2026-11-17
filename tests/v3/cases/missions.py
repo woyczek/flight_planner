@@ -3255,3 +3255,87 @@ def n74(c):
                                                                              'require_on_ground': True}}], 'zones': False},
          'the file: the key of the part is gone with its zone, its fallback hour is kept; the other part is untouched', what='the saved file')
     c.js(_REG_CLEAR)
+
+
+
+_DROWS_JS = """async () => { const ED = await import('/modules/missions/editor_drawers.js'), MS = await import('/frame/lib/mission.js'); const J = x => JSON.stringify(x);
+  const base = { mission: { id: 'X-001A', type: 'REG' }, title: 'Tiroirs', cruise_speed_kt: 120,
+    origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }, { id: 'PT2', name: 'Deux', lat: 44.4, lon: 1.6 }],
+    zones: [{ id: 'ZONE-1', name: 'Secteur', kind: 'search', centre: { lat: 44.7, lon: 1.3 }, radius_km: 12 }],
+    objects: [{ id: 'OBJ-1', kind: 'person', name: 'Naufragé', lat: 44.61, lon: 1.31, detection_range_nm: 0.3 }],
+    route_order: ['ORIGIN', 'PT1', 'PT2', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Heure', trigger: '10 min après PT1', trigger_point: 'PT1', trigger_delay_min: 10, message: 'Un message.', brief: 'Ligne un.\\nLigne deux.',
+        route_order: ['PT1', { id: 'PT2', hold: 5 }, 'DESTINATION'] },
+      'une valeur nue',
+      { id: 'C', title: 'Zone', trigger_zone: 'ZONE-1', zone_shown: false, fallback_delay_min: 60, x_mission_editor: { a: 1 } },
+      { id: 'C', title: 'Doublon' },
+      { id: 'D', title: 'Objet', trigger_object: 'OBJ-1' },
+      { id: 'E', title: 'Arrivée', trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: 1, speed_max_kt: 30, require_on_ground: true, required_points: ['PT2'], extra: 'gardé' } },
+      { id: 'F', title: 'Dans la partie', trigger_zone: { centre: { lat: 44.7, lon: 1.3 }, radius_km: 3 } },
+      { id: 'G', title: 'Tenue', trigger_condition: { kind: 'hover', point: 'PT1' } },
+      { id: 'H', title: 'Geste' }] };
+  const rows = ED.drawerRowsOf(base), on = (id, f) => rows.map(r => r.id === id ? f(r) : r), w = r => ED.withDrawerRows(base, r);
+  const d1 = w(on('C', r => ({ ...r, title: 'Zone retouchée' }))), added = ED.blankDrawer(rows, base);
+  const d8 = w([...rows.filter(r => r.id !== 'D'), { ...added, title: 'Neuf', message: 'Message.', key: 'zone', zone: 'ZONE-1', shown: true, fallback: '45', route: ['PT2'] }]);
+  const d6 = w(rows.map(r => r.id === 'B' ? { ...r, delay: '5000' } : r.id === 'C' ? { ...r, fallback: '-3' } : r));
+  let many = [], threw = '';
+  for (let n = 0; n < 14; n++) { const b = ED.blankDrawer(many, {}); if (b) many.push(b) }
+  for (const bad of [null, 7, 'x', [], { phases: 7 }, { phases: [null, 3, [], { id: '__proto__' }, { id: 'constructor' }] }])
+    try { ED.drawerRowsOf(bad); ED.withDrawerRows(bad, [{ i: -1, id: '__proto__' }, null, 5]); ED.drawersTodo(bad) } catch (e) { threw += J(bad) + ' ' + e + ' | ' }
+  return { rows: rows.map(r => [r.i, r.id, r.key, r.keptWhy]), ranks: J(rows.map(r => r.id)) === J(MS.readMission(base).drawers.map(d => d.id)),
+    slots: MS.drawerSlots(base).map(x => x.i + x.id).join(' '),
+    time: [rows[0].point, rows[0].delay, rows[0].said, rows[0].brief, rows[0].route], zone: [rows[1].zone, rows[1].shown, rows[1].fallback],
+    arrival: [rows[3].arrPoint, rows[3].arrRadius, rows[3].arrSpeed, rows[3].arrGround, rows[3].stops],
+    same: J(w(rows)) === J(base), one: J(d1.phases[2]) === J({ ...base.phases[2], title: 'Zone retouchée' }) && [0, 1, 3, 4, 5, 6, 7, 8].every(i => J(d1.phases[i]) === J(base.phases[i])),
+    route: w(on('B', r => ({ ...r, route: ['PT2', 'DESTINATION'] }))).phases[0].route_order,
+    toHand: w(on('C', r => ED.withKey(r, 'hand'))).phases[2],
+    toArrival: w(on('H', r => ({ ...ED.withKey(r, 'arrival'), arrPoint: 'DESTINATION', arrRadius: '2', arrSpeed: '40', arrGround: true, fallback: '90' }))).phases[8],
+    arrivalKept: w(on('E', r => ({ ...r, arrRadius: '3', stops: [] }))).phases[5].trigger_condition,
+    bounds: ['trigger_delay_min' in d6.phases[0], 'fallback_delay_min' in d6.phases[2]],
+    kept: J(w(on('F', r => ({ ...r, title: 'Autre' }))).phases[6]) === J({ id: 'F', title: 'Autre', trigger_zone: base.phases[6].trigger_zone }),
+    added: [added.id, added.i, added.key], order: d8.phases.map(p => typeof p === 'string' ? 'nue' : p.id + (p.title === 'Doublon' ? '*' : '')), fresh: d8.phases[8],
+    next: ED.nextDrawerId(rows.filter(r => r.id !== 'D'), base), read: MS.readMission(d8).drawers.map(d => [d.rank, d.id, d.key.kind]),
+    twelve: [many.length, many.map(r => r.id).join(''), ED.withDrawerRows({}, [...many, { i: -1, id: 'B', title: 'en trop' }]).phases.length],
+    none: 'phases' in ED.withDrawerRows({ phases: [{ id: 'B' }] }, []), hostile: J(ED.withDrawerRows({}, [{ i: -1, id: '__proto__', title: 'x' }])), threw,
+    todo: ED.drawersTodo(base).map(t => t.name + ':' + t.key).join(' ') } }"""
+
+
+@case('N75', 'Missions › the workshop, the drawers as rows (pure part, no screen): each part of the file the reader accepts is one row '
+      '(its place, its letter, its texts, its key in fields — hour, passage zone, object, arrival, the pilot\'s gesture — its fallback '
+      'hour, its onward route); a key the workshop does not edit is shown and kept as it is; nothing touched, the same document; one field '
+      'changed, that field alone; another key removes the fields of the former one; a number out of its bounds is never written; a new '
+      'drawer takes the first free letter (never one the file still carries), twelve at most; the parts the reader refuses stay in place',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0445, lot P3 (modules/missions/EDITOR.md § 7 quater; docs/technique/FORMAT_MISSION.md § 2 to § 5; audit 182: only what the '
+      'author changed is written): modules/missions/editor_drawers.js, and drawerSlots of frame/lib/mission.js — the one rule of '
+      'acceptance of the parts, shared by the reader and the workshop')
+def n75(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_DROWS_JS)
+    c.eq(r['rows'], [[0, 'B', 'time', ''], [2, 'C', 'zone', ''], [4, 'D', 'object', ''], [5, 'E', 'arrival', ''], [6, 'F', 'kept', 'inPart'],
+                     [7, 'G', 'kept', 'condition'], [8, 'H', 'hand', '']], 'seven drawers; the bare value and the duplicate are not rows', what='the rows')
+    c.ok(r['ranks'] is True and r['slots'] == '0B 2C 4D 5E 6F 7G 8H', [r['ranks'], r['slots']], 'the rows are the reader\'s drawers, in its order (drawerSlots)')
+    c.eq(r['time'], ['PT1', '10', '10 min après PT1', 'Ligne un.\nLigne deux.', ['PT1', 'PT2', 'DESTINATION']], 'the hour: its point, its delay, its words; the briefing keeps its lines',
+         what='the row of the hour')
+    c.eq([r['zone'], r['arrival']], [['ZONE-1', False, '60'], ['DESTINATION', '1', '30', True, ['PT2']]], 'the zone and the arrival, in fields', what='zone, arrival')
+    c.ok(r['same'] is True and r['one'] is True, [r['same'], r['one']], 'nothing touched: the same document; one title changed: that field alone, every other part identical')
+    c.eq(r['route'], [{'id': 'PT2', 'hold': 5}, 'DESTINATION'], 'the onward route rewritten from its words: an entry kept keeps its other keys', what='route_order')
+    c.eq(r['toHand'], {'id': 'C', 'title': 'Zone', 'x_mission_editor': {'a': 1}}, 'zone → gesture: the key and the fallback hour go, the rest stays', what='another key')
+    c.eq(r['toArrival'], {'id': 'H', 'title': 'Geste', 'trigger_condition': {'kind': 'arrival', 'point': 'DESTINATION', 'radius_nm': 2, 'speed_max_kt': 40,
+                                                                           'require_on_ground': True}, 'fallback_delay_min': 90}, 'gesture → arrival', what='a new key')
+    c.eq(r['arrivalKept'], {'kind': 'arrival', 'point': 'DESTINATION', 'radius_nm': 3, 'speed_max_kt': 30, 'require_on_ground': True, 'extra': 'gardé'},
+         'an arrival changed keeps its other keys; its stops emptied leave the file', what='the condition')
+    c.eq(r['bounds'], [False, False], 'a delay of 5 000 min and a fallback of −3 are not written (never brought back into the bounds)', what='out of bounds')
+    c.ok(r['kept'] is True, r['kept'], 'a key kept as it is (a zone written inside the part) stays when the title changes')
+    c.eq([r['added'], r['next']], [['I', -1, 'hand'], 'I'], 'a new drawer: the first free letter; a letter removed in this sitting is not taken again', what='the new letter')
+    c.eq(r['order'], ['B', 'nue', 'C', 'C*', 'E', 'F', 'G', 'H', 'I'], 'D removed, one added: the letters stay, the new one last, the refused parts in place', what='phases')
+    c.eq(r['fresh'], {'id': 'I', 'title': 'Neuf', 'message': 'Message.', 'trigger_zone': 'ZONE-1', 'zone_shown': True, 'fallback_delay_min': 45, 'route_order': ['PT2']},
+         'the new part, by identifier (never a zone written inside it)', what='the new part')
+    c.eq(r['read'], [[1, 'B', 'time'], [2, 'C', 'zone'], [3, 'E', 'arrival'], [4, 'F', 'zone'], [5, 'G', 'hand'], [6, 'H', 'hand'], [7, 'I', 'zone']],
+         'the reader reads the result: the ranks close up', what='read back')
+    c.eq(r['twelve'], [12, 'BCDEFGHIJKLM', 12], 'twelve drawers at most, B to M', what='twelve')
+    c.ok(r['none'] is False and r['hostile'] == '{}' and r['threw'] == '', [r['none'], r['hostile'], r['threw']],
+         'every drawer removed: `phases` leaves the file; a hostile letter writes nothing; no hostile input throws')
+    c.eq(r['todo'], '2:noMessage 2:noBrief 3:noFallback 3:noMessage 3:noBrief 4:noFallback 4:noMessage 4:noBrief 5:noFallback 5:noMessage 5:noBrief '
+         '6:keyUnread 6:noMessage 6:noBrief 7:noMessage 7:noBrief', 'what each drawer has to complete, by rank', what='drawersTodo')

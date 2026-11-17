@@ -261,6 +261,34 @@ tiroir 2 (sa clé…) » before the second press, and a dead key is named in « 
   (imported from the session « Affectation »: `describe` of `drawers_view.js`), the objects in the Lieux, and « À compléter » for a
   drawer (no message, no briefing, a key that looks at the aircraft without a fallback hour, a key the reader cannot read).
 
+### 7 quinquies. P3, second brick: the drawers as rows — the pure part (17 Nov 2026; SOG-0445; no screen; noreg N75)
+
+`modules/missions/editor_drawers.js` (pure: no page, no storage) is to the sheet of a drawer what `placesOf` / `withPlaces` are to the
+Lieux. Not yet imported by the screen: the sheet is the next brick.
+
+- **One row per drawer the reader accepts** — `drawerSlots(doc)` of `frame/lib/mission.js` is now THE rule of acceptance, used by
+  the reader itself and by the workshop: the place of the part in `phases` and its letter. A part the reader refuses (a bare value, a
+  letter out of B to M, a duplicate, beyond twelve) is not a row and stays in place, as it is.
+- **A row**: `title`, `said` (`trigger`, the key in plain words — the V2 prints it), `message`, `brief` (their lines kept), the key in
+  fields, `fallback`, `route` (the words of `route_order`). Numbers are texts, for the fields.
+- **Five keys are edited**: `hand`, `time` (`point`, `delay`), `zone` (`zone` — an identifier of the mission's zones —, `shown`),
+  `object` (an identifier of `objects`), `arrival` (`arrPoint`, `arrRadius`, `arrSpeed`, `arrGround`, `stops`). The workshop writes a
+  zone or an object BY IDENTIFIER only (Q-0095).
+- **A key the workshop does not edit is `kept`**, shown and never rewritten: several keys in one part, a zone or an object written
+  inside the part, a zone crossed by a target (`trigger_actor`), a 1.1 condition, an arrival after a following. Choosing another key
+  (`withKey`) replaces it: every field of the former key leaves the part, and the fallback hour falls for a key that does not look
+  at the aircraft.
+- **Writing** (`withDrawerRows`): the rule of audit 182 — nothing touched, the same document; a field changed, that field alone (an
+  arrival keeps the other keys of its condition; an entry of a route that stays keeps its object); a number out of its bounds is not
+  written, never brought back into them; a removed row removes its part (the ranks close up, the letters stay); a new row is added
+  last, with the first letter of B to M that neither the rows nor the FILE carry — the pilots' records cite the letters — and twelve
+  drawers at most. `phases` leaves the file with its last drawer.
+- **« À compléter » of a drawer** (`drawersTodo`, read by the reader the pilot's screen uses): no message, no briefing, a key that
+  looks at the aircraft without a fallback hour, a key the reader cannot read, an onward route that cites an absent place. It joins
+  the foot's list with the sheet.
+- **Open for the sheet**: who writes `said` — proposed: the workshop generates it from the key (« au passage de ZONE-1 », « 10 min
+  après PT1 ») as long as the author has not typed his own words, since the V2's Markdown and PDF print it.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

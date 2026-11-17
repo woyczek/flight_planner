@@ -118,7 +118,7 @@ phases:
 | `condition` | the kind of `trigger_condition` written (`arrival`, `hover`…), to say it; `''` without one |
 | `emits` | `{ id, to: [recipient, …] }`: the message the drawer sends to the other crews when it opens (`emit_event`, 16 recipients at most); null without one |
 | `route` | the rest of the route as resolved points, in the form of `missionFlight` (`{ id, lat, lon, name, lock, hold }`); `[]` without one |
-| `routeUnknown` | the ids of `route_order` that name no place of the mission |
+| `routeUnknown` | the number of ids of `route_order` that name no place of the mission |
 
 - **The geometry is always resolved**, whichever way the file writes it: the pilot's screen and the frame's detection
   service read `key.shape`, `key.object`, `key.at`, never the file.
@@ -135,6 +135,9 @@ phases:
 - **Not judged in flight yet** — `notJudgedYet(key)` says it, for the pilot's screen (« pas encore jugé en vol — s'ouvre à
   l'heure de repli ou au geste »): a 1.1 condition, a zone crossed by a target (`key.actor`), an object that moves
   (`key.object.moving`), a required following (`key.escortMinSec > 0`).
+- `drawerSlots(doc)` → `[{ i, id }]`: which entries of `phases` are drawers (their place in the list, their id) — the one rule of
+  acceptance, shared by the reader and by the workshop (`modules/missions/editor_drawers.js`), which keeps the other entries as
+  they are.
 - `OBJECT_KINDS` is the one closed list of kinds (exported; to extend it, add a word there). A kind the list does not
   know is read `''`: the object is still played.
 - `passageMin(mission, pointId)` → `{ nm, min }`: the distance (as `routeNm`) and the estimated minutes from the

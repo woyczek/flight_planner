@@ -15,6 +15,8 @@
 //     participants, role }] et turns [{ id, name, role, lat, lon }] (60 points), maps [{ id, file (motif strict, un nom de fichier du
 //     dossier de la mission), type, description, centreRef }] (20), objectives { primary, secondary }, payload { description, massKg,
 //     passengers }, details [paragraphe] (2 000 caractères chacun), hasCoords (un lieu, un point ou une zone situé).
+//     drawerSlots(doc) → [{ i, id }] : les parties de `phases` qui sont des tiroirs (leur place, leur lettre) — la règle
+//     d'acceptation, partagée avec l'atelier (modules/missions/editor_drawers.js).
 //     Les tiroirs (SOG-0440) : drawers [{ id (B à M), rank (1 à 12 : ce que l'écran dit), title, trigger, message, brief, key, keyWhy,
 //     condition, emits, route, routeUnknown }] (douze au plus) et drawersRefused (les parties écartées : identifiant hors liste ou en
 //     double, au-delà de douze). key, la géométrie
@@ -389,6 +391,26 @@ function emitOf(v) {
   } : null;
 }
 
+/** Les parties d'une mission qui sont des tiroirs : [{ i (la place dans `phases`), id (B à M) }], douze au plus, dans l'ordre du
+ *  fichier — LA règle d'acceptation, partagée par le lecteur (drawersOf) et par l'atelier (modules/missions/editor_drawers.js : une
+ *  ligne par tiroir, les autres parties gardées telles quelles). Écartées : une valeur nue, un identifiant hors de B à M, un doublon,
+ *  au-delà de douze, au-delà des entrées lues. Sans identifiant : la lettre de sa place (la V2 ne contrôle rien, un fichier écrit à
+ *  la main doit se lire). */
+export function drawerSlots(doc) {
+  const d = plain(doc) || {},
+    all = Array.isArray(d.phases) ? d.phases : plain(d.phases) ? [d.phases] : [],
+    out = [];
+  all.slice(0, DRAWER_BOUNDS.scanned).forEach((raw, i) => {
+    const p = plain(raw),
+      id = p ? cut(p.id, 8).toUpperCase() || DRAWER_IDS[i] || '' : '';
+    if (p && DRAWER_IDS.includes(id) && !out.some(x => x.id === id) && out.length < DRAWER_IDS.length) out.push({
+      i,
+      id
+    });
+  });
+  return out;
+}
+
 /** Vrai pour une clé que le vol ne sait pas encore juger (à dire à l'écran : « pas encore jugé en vol — s'ouvre à l'heure de repli ou au
  *  geste ») : une condition de la version 1.1, une zone franchie par une cible, un objet qui se déplace, un suivi exigé. */
 export const notJudgedYet = key => !!key && (key.kind === 'condition' || !!key.actor || !!key.object?.moving || key.escortMinSec > 0);
@@ -401,6 +423,7 @@ export const notJudgedYet = key => !!key && (key.kind === 'condition' || !!key.a
 function drawersOf(d, points) {
   const B = DRAWER_BOUNDS,
     all = Array.isArray(d.phases) ? d.phases : plain(d.phases) ? [d.phases] : [],
+    slots = drawerSlots(d),
     byKey = new Map(Object.entries(points).map(([id, p]) => [id.toUpperCase(), p])),
     spot = p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null ? {
       lat: latOf(p.lat),
@@ -423,16 +446,14 @@ function drawersOf(d, points) {
     kind: 'target',
     role: ''
   });
-  let refused = Math.max(0, all.length - B.scanned);
-  all.slice(0, B.scanned).forEach((raw, rank) => {
-    const p = plain(raw),
-      // sans identifiant : la lettre de son rang (la V2 ne contrôle rien, un fichier écrit à la main doit se lire)
-      id = p ? cut(p.id, 8).toUpperCase() || DRAWER_IDS[rank] || '' : '';
-    if (!p || !DRAWER_IDS.includes(id) || drawers.some(x => x.id === id) || drawers.length >= DRAWER_IDS.length) {
-      refused += 1;
-      return;
-    }
-    const has = k => p[k] !== undefined && p[k] !== null && p[k] !== '',
+  // les parties écartées : toutes celles que drawerSlots ne retient pas (au-delà des entrées lues comprises)
+  const refused = all.length - slots.length;
+  slots.forEach(({
+    i,
+    id
+  }) => {
+    const p = all[i],
+      has = k => p[k] !== undefined && p[k] !== null && p[k] !== '',
       keys = ['trigger_zone', 'trigger_object', 'trigger_condition', 'trigger_point'].filter(has),
       fb = within(p.fallback_delay_min, 0, B.delayMin),
       fallbackMin = fb === null ? null : Math.round(fb),
