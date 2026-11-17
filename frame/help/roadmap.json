@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0215c0e",
-  "fiches": 418,
+  "organisation": "506de5f",
+  "fiches": 419,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1949,6 +1949,27 @@
      "de": "Topografische Ansicht: echte Höhenlinien, keine Warteschleifen; Warteschleifen und RTBA in eigener Ansicht",
      "es": "Vista topográfica: curvas de nivel reales, sin hipódromos; hipódromos y RTBA en una vista aparte",
      "rank": 84
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-repli-x-plane",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; repli X-Plane",
+    "en": "Carte ; repli X-Plane",
+    "de": "Carte ; repli X-Plane",
+    "es": "Carte ; repli X-Plane"
+   },
+   "items": [
+    {
+     "id": "SOG-0420",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : après rechargement, un point placé d'après X-Plane n'est pas dessiné et le tracé va droit, sans le dire",
+     "en": "Map: after a reload, a point placed from X-Plane is not drawn and the track goes straight, without saying so",
+     "de": "Karte: nach dem Neuladen wird ein aus X-Plane platzierter Punkt nicht gezeichnet und die Strecke verläuft gerade, ohne Hinweis",
+     "es": "Mapa: tras recargar, un punto situado según X-Plane no se dibuja y el trazado va recto, sin decirlo"
     }
    ]
   },
