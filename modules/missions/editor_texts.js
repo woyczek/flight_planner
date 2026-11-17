@@ -4,7 +4,7 @@
 //
 // API :
 //   EDTX : les textes — at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
-//     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, mapNoCentre), at_<where> (le champ qui
+//     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, drawerNoKey, mapNoCentre), at_<where> (le champ qui
 //     cite une référence morte).
 //   todoText(tt, t) → le mot d'une ligne de « À compléter » nommée (« le tiroir B n'a plus son point de déclenchement… ») ; ''.
 //   removedText(tt, row) → « RDV-1 retiré, avec ses citations. »
@@ -24,6 +24,14 @@ export const EDTX = {
     'drawer {name} (its trigger point: it will only open by hand)',
     'Schublade {name} (ihr Auslösepunkt: sie öffnet sich dann nur noch von Hand)',
     'el cajón {name} (su punto de activación: solo se abrirá a mano)'
+  ],
+  ref_drawerKey: ['le tiroir {name} (sa clé : il ne s\'ouvrira plus qu\'à la main ou à son heure de repli)',
+    'drawer {name} (its key: it will only open by hand or at its fallback hour)',
+    'Schublade {name} (ihr Schlüssel: sie öffnet sich dann nur noch von Hand oder zu ihrer Ausweichzeit)',
+    'el cajón {name} (su llave: solo se abrirá a mano o a su hora de reserva)'
+  ],
+  ref_drawerStop: ['les arrêts demandés par le tiroir {name}', 'the stops required by drawer {name}',
+    'die von Schublade {name} verlangten Halte', 'las paradas que pide el cajón {name}'
   ],
   ref_drawerRoute: ['la suite de route du tiroir {name}', 'the onward route of drawer {name}', 'die Folgeroute der Schublade {name}',
     'la ruta siguiente del cajón {name}'
@@ -47,6 +55,11 @@ export const EDTX = {
     'drawer {name} no longer has its trigger point (it only opens by hand)',
     'Schublade {name} hat ihren Auslösepunkt nicht mehr (sie öffnet sich nur noch von Hand)',
     'el cajón {name} ya no tiene su punto de activación (solo se abre a mano)'
+  ],
+  todo_drawerNoKey: ['le tiroir {name} n\'a plus sa clé (il ne s\'ouvre qu\'à la main ou à son heure de repli)',
+    'drawer {name} no longer has its key (it only opens by hand or at its fallback hour)',
+    'Schublade {name} hat ihren Schlüssel nicht mehr (sie öffnet sich nur von Hand oder zu ihrer Ausweichzeit)',
+    'el cajón {name} ya no tiene su llave (solo se abre a mano o a su hora de reserva)'
   ],
   todo_mapNoCentre: ['la carte {name} n\'a plus de centre', 'map {name} no longer has a centre',
     'die Karte {name} hat keinen Mittelpunkt mehr', 'el mapa {name} ya no tiene centro'
@@ -105,6 +118,12 @@ export const EDTX = {
   at_route: ['la route de la mission', 'the mission route', 'die Route der Mission', 'la ruta de la misión'],
   at_drawer: ['le point de déclenchement du tiroir {name}', 'the trigger point of drawer {name}', 'der Auslösepunkt der Schublade {name}',
     'el punto de activación del cajón {name}'
+  ],
+  at_drawerKey: ['la clé du tiroir {name}', 'the key of drawer {name}', 'der Schlüssel der Schublade {name}',
+    'la llave del cajón {name}'
+  ],
+  at_drawerStop: ['un arrêt demandé par le tiroir {name}', 'a stop required by drawer {name}', 'ein von Schublade {name} verlangter Halt',
+    'una parada que pide el cajón {name}'
   ],
   at_drawerRoute: ['la suite de route du tiroir {name}', 'the onward route of drawer {name}', 'die Folgeroute der Schublade {name}',
     'la ruta siguiente del cajón {name}'

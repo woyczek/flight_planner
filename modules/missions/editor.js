@@ -24,12 +24,14 @@
 //   mapsOf(doc) → [{ id, type, description, ref, unplaced }] ; proposedMaps(doc) → les cartes attendues d'après les lieux et absentes
 //     (la règle de la V2) ; withMaps(doc, add) → les cartes ajoutées à la fin (des entrées : les images se font au studio de la V2).
 //   Les références aux lieux (SOG-0439) : refsOf(doc) → [{ id, where, name }] (route_order, le déclenchement et la route d'une partie,
+//     sa clé écrite par identifiant — la zone de passage, le point d'une arrivée ou d'une condition, ses arrêts : SOG-0445 —,
 //     le centre d'une carte, le lieu d'un événement, le profil vertical, la route d'une alerte) ; withRefs(doc, base, rows) → le document
 //     dont les références suivent les lieux renommés ou retirés — la DERNIÈRE retouche, après toutes les étapes ; refNow(id, base, rows)
 //     → l'identifiant d'aujourd'hui d'une référence du fichier ; citedBy(doc, rows, i) → qui cite le lieu d'une ligne ; removePlace(rows,
 //     i, doc, asked, sinceMs) → { rows, ask, cited, wait } : « Retirer » en deux temps quand le lieu est cité (le premier appui dit qui le
 //     cite, le second le retire, inerte pendant REMOVE_ARM_MS) ; nextPlaceId(rows, kind, base) → un identifiant libre pour un lieu neuf (« PT3 ») ; deadRefs(doc) → les références qui ne
-//     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc) → les cartes au centre vidé, les parties au délai sans point.
+//     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc), drawersNoKey(doc) → les cartes au centre vidé, les parties au délai
+//     sans point, les parties restées sans clé (leur zone ou le point de leur arrivée retirés).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr, airline, aircraft } (textes) ; placeText(p) : « XTST · Base
 //     Test ». airline : la compagnie (airline au premier niveau, la forme de move.js ; '' = personnelle) ; aircraft : aircraft[0].type.
@@ -859,11 +861,15 @@ function citedIds(rows) {
 }
 
 /** Le document dont chaque référence à un lieu est passée par `fn(mot, where, name)` → le mot gardé, un autre mot, ou null (la référence
- *  est retirée). `where` : route | drawer | drawerRoute | map | event | profile | alert ; `name` : le rang du tiroir (« 1 »), la carte,
- *  l'alerte.
+ *  est retirée). `where` : route | drawer | drawerKey | drawerStop | drawerRoute | map | event | profile | alert ; `name` : le rang du
+ *  tiroir (« 1 »), la carte, l'alerte.
+ *  La clé d'un tiroir (SOG-0445 ; docs/technique/FORMAT_MISSION.md § 3) : `trigger_zone` écrit par identifiant, le `point` de
+ *  `trigger_condition` (et de chaque étape d'une suite), ses `required_points` (drawerStop). Une zone ou un objet écrits DANS la partie
+ *  ne citent rien ; un objet (`trigger_object`, `trigger_actor`) n'est pas un lieu des Lieux : il n'est pas suivi ici.
  *  Un NOUVEAU document, dont seuls les champs changés sont de nouveaux objets (audit 182) ; rien ne change, le document rendu est `doc`.
  *  Retirer une référence : un mot sort d'une liste de route ; le point de déclenchement d'une partie part, son délai RESTE (une partie
- *  qui porte un délai sans point : « À compléter » le dit, dans cette séance et les suivantes) ; une carte garde son entrée, son centre
+ *  qui porte un délai sans point : « À compléter » le dit, dans cette séance et les suivantes) ; la zone de sa clé part, son heure de
+ *  repli et « zone montrée » RESTENT ; le point de sa condition part, la condition RESTE (drawersNoKey les dit de même) ; une carte garde son entrée, son centre
  *  écrit vide (dit de même) ; un événement garde son texte (sans texte, il part). */
 function mapRefs(doc, fn) {
   const d = obj(doc),
@@ -944,6 +950,54 @@ function mapRefs(doc, fn) {
       } else if (r !== p.trigger_point) q = {
         ...q,
         trigger_point: r
+      };
+    }
+    // sa clé écrite par identifiant (SOG-0445) : la zone de passage ; une zone écrite dans la partie (un objet) ne cite rien
+    if (scalar(p.trigger_zone)) {
+      const r = word(p.trigger_zone, 'drawerKey', name);
+      if (r === null) {
+        q = {
+          ...q
+        };
+        delete q.trigger_zone;
+      } else if (r !== p.trigger_zone) q = {
+        ...q,
+        trigger_zone: r
+      };
+    }
+    // le point de sa condition (une arrivée, une tenue, un posé, un survol ; chaque étape d'une suite) et ses arrêts demandés
+    const tc = p.trigger_condition;
+    if (tc && typeof tc === 'object' && !Array.isArray(tc)) {
+      const rule = c => {
+          let k = c;
+          if (scalar(c.point)) {
+            const r = word(c.point, 'drawerKey', name);
+            if (r === null) {
+              k = {
+                ...k
+              };
+              delete k.point;
+            } else if (r !== c.point) k = {
+              ...k,
+              point: r
+            };
+          }
+          const rq = route(c.required_points, 'drawerStop', name);
+          if (rq !== c.required_points) k = {
+            ...k,
+            required_points: rq
+          };
+          return k;
+        },
+        top = rule(tc),
+        steps = Array.isArray(tc.steps) ? each(tc.steps, rule) : tc.steps,
+        next = steps === tc.steps ? top : {
+          ...top,
+          steps
+        };
+      if (next !== tc) q = {
+        ...q,
+        trigger_condition: next
       };
     }
     const ro = route(p.route_order, 'drawerRoute', name);
@@ -1168,6 +1222,22 @@ export function drawersNoPoint(doc) {
     .trigger_point) && !has(p.trigger_zone) && !has(p.trigger_object) && !has(p.trigger_condition) ? String(n + 1) : '').filter(Boolean);
 }
 
+/** Les parties restées sans clé (SOG-0445) : leurs rangs. La trace d'une zone de passage retirée — plus aucune clé, et l'heure de
+ *  repli ou « zone montrée » sont restées — ou du point d'une arrivée retiré (la condition est restée, sans son point). Une partie
+ *  au délai sans point est dite par drawersNoPoint, jamais deux fois. */
+export function drawersNoKey(doc) {
+  const has = v => v !== undefined && v !== null && v !== '';
+  return arrOf(obj(doc).phases).map((p, n) => {
+    if (!p || typeof p !== 'object' || Array.isArray(p)) return '';
+    const c = p.trigger_condition,
+      noPoint = c && typeof c === 'object' && !Array.isArray(c) && String(c.kind ?? '').trim().toLowerCase() === 'arrival' && !has(c
+        .point),
+      bare = !has(p.trigger_point) && !has(p.trigger_zone) && !has(p.trigger_object) && !has(c) && !has(p.trigger_delay_min) && (has(p
+        .fallback_delay_min) || has(p.zone_shown));
+    return noPoint || bare ? String(n + 1) : '';
+  }).filter(Boolean);
+}
+
 /** Les références qui ne désignent aucun lieu de la mission (dites dans « À compléter ») : [{ id, where, name }], une fois par mot.
  *  Le profil vertical (niveaux) et le centre d'une carte (un nom accepté par la Carte) ne sont pas jugés. */
 export function deadRefs(doc) {
@@ -1281,6 +1351,10 @@ export function todo(doc) {
     name: cut(r.name, 60)
   });
   for (const name of drawersNoPoint(d).slice(0, 3)) add('places', 'drawerNoPoint', {
+    name
+  });
+  // SOG-0445 : un tiroir dont la zone de passage, ou le point de l'arrivée, a été retiré
+  for (const name of drawersNoKey(d).slice(0, 3)) add('places', 'drawerNoKey', {
     name
   });
   // le récit d'une liaison est facultatif (décision du 13 nov.)

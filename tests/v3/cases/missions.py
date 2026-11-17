@@ -3158,3 +3158,100 @@ def n73(c):
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission opens on its Cadre, on a phone too')
     c.eq([c.count(f'{E} [data-atflow] [data-part]'), c.count(f'{E} [data-drawerskept]')], [1, 0], 'a new mission has its departure alone', what='the unfolding of a new mission')
     c.js(_REG_CLEAR)
+
+
+
+_KEYREF_JS = """async () => { const ED = await import('/modules/missions/editor.js'), MS = await import('/frame/lib/mission.js'); const J = x => JSON.stringify(x);
+  const base = { mission: { id: 'X-001A', type: 'REG' }, title: 'Clés',
+    origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }, { id: 'PT2', name: 'Deux', lat: 44.4, lon: 1.6 }],
+    zones: [{ id: 'ZONE-1', name: 'Secteur', kind: 'search', centre: { lat: 44.7, lon: 1.3 }, radius_km: 12 }],
+    route_order: ['ORIGIN', 'PT1', 'PT2', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Zone', trigger_zone: 'ZONE-1', zone_shown: false, fallback_delay_min: 60 },
+      { id: 'C', title: 'Arrivée', trigger_condition: { kind: 'arrival', point: 'PT2', radius_nm: 1, speed_max_kt: 30, required_points: ['PT1', 'PT2'] } },
+      { id: 'D', title: 'Dans la partie', trigger_zone: { centre: { lat: 44.7, lon: 1.3 }, radius_km: 3 } },
+      { id: 'E', title: 'Suite', trigger_condition: { kind: 'sequence', steps: [{ kind: 'hover', point: 'PT1', radius_m: 50, duration_sec: 10, max_gap_sec: 2, speed_tolerance_kt: 5, height_min_ft: 0, height_max_ft: 50 },
+        { kind: 'landing', point: 'PT2', radius_m: 30, duration_sec: 5, max_gap_sec: 2 }] } },
+      { id: 'F', title: 'Retour', trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: 1, speed_max_kt: 30 } }] };
+  const rows = ED.placesOf(base), at = id => rows.findIndex(r => r.id === id), kinds = d => MS.readMission(d).drawers.map(x => [x.rank, x.key.kind, x.keyWhy]);
+  const ren = rows.map(r => r.id === 'ZONE-1' ? { ...r, id: 'SECTEUR' } : r.id === 'PT2' ? { ...r, id: 'BRAVO' } : r), d1 = ED.withRefs(ED.withPlaces(base, ren), base, ren);
+  const gone = rows.filter(r => r.id !== 'ZONE-1' && r.id !== 'PT2'), d2 = ED.withRefs(ED.withPlaces(base, gone), base, gone);
+  return { refs: ED.refsOf(base).filter(r => r.where.startsWith('drawer')).map(r => [r.where, r.name, r.id]),
+    same: ED.withRefs(base, base, rows) === base,
+    renamed: { zone: d1.phases[0].trigger_zone, point: d1.phases[1].trigger_condition.point, stops: d1.phases[1].trigger_condition.required_points,
+      steps: d1.phases[3].trigger_condition.steps.map(x => x.point), inPart: J(d1.phases[2]) === J(base.phases[2]), word: J(d1.phases[4]) === J(base.phases[4]),
+      read: J(kinds(d1)) === J(kinds(base)), keys: kinds(base).map(x => x[1]) },
+    citedZone: ED.citedBy(base, rows, at('ZONE-1')).map(c => [c.where, c.name, c.n]), citedPoint: ED.citedBy(base, rows, at('PT2')).map(c => [c.where, c.name, c.n]),
+    removed: { b: d2.phases[0], c: d2.phases[1], steps: d2.phases[3].trigger_condition.steps, f: J(d2.phases[4]) === J(base.phases[4]), read: kinds(d2).slice(0, 2) },
+    noKey: ED.drawersNoKey ? [ED.drawersNoKey(base), ED.drawersNoKey(d2)] : null, todo: ED.todo(d2).filter(t => t.key === 'drawerNoKey').map(t => [t.step, t.vars.name]),
+    dead: ED.deadRefs({ ...base, phases: [{ id: 'B', trigger_zone: 'ZONE-9' }] }).map(r => [r.where, r.name, r.id]) } }"""
+
+
+@case('N74', 'Missions › editor: the key of a drawer written by identifier follows the places — a renamed zone or point is renamed in '
+      '`trigger_zone`, in the point of an arrival or of a condition (each step of a sequence) and in its required stops; « Retirer » a zone '
+      'that a drawer\'s key cites first says so (« le tiroir 2 (sa clé…) »), then removes the key and keeps the fallback hour, and '
+      '« À compléter » names the drawer left without its key; a zone written inside the part and the words DESTINATION / ORIGIN are never '
+      'touched; nothing touched, the document is the same object', 'N', tags=('missions', 'security'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0445, lot P3, first brick (modules/missions/EDITOR.md § 5: « a drawer\'s zone and object are references like the others »; '
+      'docs/technique/FORMAT_MISSION.md § 3: by identifier, at the top — Q-0095): since the reader reads a key by identifier (SOG-0440), '
+      'renaming or removing its zone in the Lieux left the drawer with a dead key, silently')
+def n74(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_KEYREF_JS)
+    c.eq(r['refs'], [['drawerKey', '1', 'ZONE-1'], ['drawerKey', '2', 'PT2'], ['drawerStop', '2', 'PT1'], ['drawerStop', '2', 'PT2'],
+                     ['drawerKey', '4', 'PT1'], ['drawerKey', '4', 'PT2'], ['drawerKey', '5', 'DESTINATION']],
+         'the references of the drawers\' keys, by rank (a zone written inside the part cites nothing)', what='refsOf')
+    c.ok(r['same'] is True, r['same'], 'nothing touched: the document is the same object (audit 182)')
+    c.eq(r['renamed'], {'zone': 'SECTEUR', 'point': 'BRAVO', 'stops': ['PT1', 'BRAVO'], 'steps': ['PT1', 'BRAVO'], 'inPart': True, 'word': True, 'read': True,
+                        'keys': ['zone', 'arrival', 'zone', 'condition', 'arrival']},
+         'a rename is followed by the zone of a key, the point of an arrival, its stops, the steps of a sequence; the reader reads the same keys', what='after a rename')
+    c.eq(r['citedZone'], [['drawerKey', '1', 1]], 'the zone is cited by the key of drawer 1', what='citedBy the zone')
+    c.eq(r['citedPoint'], [['route', '', 1], ['drawerKey', '2', 1], ['drawerStop', '2', 1], ['drawerKey', '4', 1]], 'the point: the route, a key, a stop, a step',
+         what='citedBy the point')
+    c.eq(r['removed'], {'b': {'id': 'B', 'title': 'Zone', 'zone_shown': False, 'fallback_delay_min': 60},
+                        'c': {'id': 'C', 'title': 'Arrivée', 'trigger_condition': {'kind': 'arrival', 'radius_nm': 1, 'speed_max_kt': 30, 'required_points': ['PT1']}},
+                        'steps': [{'kind': 'hover', 'point': 'PT1', 'radius_m': 50, 'duration_sec': 10, 'max_gap_sec': 2, 'speed_tolerance_kt': 5, 'height_min_ft': 0,
+                                   'height_max_ft': 50}, {'kind': 'landing', 'radius_m': 30, 'duration_sec': 5, 'max_gap_sec': 2}], 'f': True,
+                        'read': [[1, 'hand', ''], [2, 'hand', 'condition']]},
+         'a removed zone: the key goes, the fallback hour and « zone montrée » stay; a removed point: the condition stays without it (the reader: by hand)',
+         what='after a removal')
+    c.eq(r['noKey'], [[], ['1', '2']], 'the drawers left without their key, by rank', what='drawersNoKey')
+    c.eq(r['todo'], [['places', '1'], ['places', '2']], '« À compléter » names them', what='todo')
+    c.eq(r['dead'], [['drawerKey', '1', 'ZONE-9']], 'a key that cites a zone the mission does not have is a dead reference, named', what='deadRefs')
+    # on screen: « Retirer » the zone of drawer 2's key
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _AT_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
+    i = c.js(_PLACE_AT, 'ZONE-1')
+    c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
+    c.settle()
+    c.ok(c.js(_PLACE_AT, 'ZONE-1') == i, c.js(_PLACES_JS), 'a zone cited by a drawer\'s key is not removed at the first press')
+    note = norm(c.js(_NOTES))
+    c.ok('ZONE-1' in note and norm(row(c, 'ref_drawerKey', EDTX_FILE).replace('{name}', '2')) in note, note,
+         'the notification says who cites it: the drawer 2, its key')
+    c.shot('N74_390_cited.png')
+    c.wait(1100)
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
+    c.eq(c.js(_PLACE_AT, 'ZONE-1'), -1, 'the second press removes the zone', what='the zone row')
+    c.ok('drawerNoKey' in c.js(_ED_TODO) and ' 2 ' in c.js(_ED_TODO_TEXT), c.js(_ED_TODO_TEXT), '« À compléter » names the drawer 2, left without its key')
+    key2 = c.js(f"document.querySelector('{E} [data-atflow] [data-part=\"2\"]').textContent")
+    c.ok(norm(row(c, 'atKey_hand', EDTX_FILE)) in norm(key2), key2, 'the unfolding says the key of drawer 2 as it is now: the pilot\'s gesture')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
+      const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return { parts: d.phases.slice(1), zones: 'zones' in d } }""" % _TEXT_OF, path)
+    c.eq(got, {'parts': [{'id': 'C', 'title': 'Entrée du secteur', 'fallback_delay_min': 60},
+                         {'id': 'D', 'title': 'Retour', 'trigger_condition': {'kind': 'arrival', 'point': 'DESTINATION', 'radius_nm': 1, 'speed_max_kt': 30,
+                                                                             'require_on_ground': True}}], 'zones': False},
+         'the file: the key of the part is gone with its zone, its fallback hour is kept; the other part is untouched', what='the saved file')
+    c.js(_REG_CLEAR)

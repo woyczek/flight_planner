@@ -242,6 +242,25 @@ the button itself). The rule holds for every later lot of the workshop: a redraw
 **Left in `module.js`** (Features SOG's file; a follow-up for its owner, nothing breaks): the style rules `.ms-steps`, `.ms-edaside`
 and the texts `edNext`, `edPreview`, which the screen no longer uses.
 
+### 7 quater. P3, first brick: the key of a drawer is a reference like the others (17 Nov 2026; SOG-0445; noreg N74)
+
+Since the reader reads a key written by identifier (SOG-0440), renaming or removing its zone in the Lieux left the drawer with a dead
+key, silently — the defect of SOG-0439, for the files of the user's workshop. The walker of the references (`mapRefs` in `editor.js`)
+now also walks, in each part: `trigger_zone` when it is an identifier, the `point` of `trigger_condition` (and of each step of a
+sequence) — `where: 'drawerKey'` — and its `required_points` — `where: 'drawerStop'`. So a rename is followed, « Retirer » says « le
+tiroir 2 (sa clé…) » before the second press, and a dead key is named in « À compléter ».
+
+- **What a removal leaves**: the zone's key goes, `fallback_delay_min` and `zone_shown` STAY; the point of a condition goes, the
+  condition STAYS (the reader then says it unreadable: the drawer opens by hand). `drawersNoKey(doc)` reads those traces and
+  « À compléter » names the drawer (« le tiroir 2 n'a plus sa clé »), in this sitting and the next ones. A required stop removed simply
+  leaves the list.
+- **Not walked**: a zone or an object written INSIDE the part (they cite nothing); `trigger_object`, `trigger_actor` and the `object`
+  of a rule — an object is not a place of the Lieux yet; it joins them with the sheet of a drawer (the objects become rows of the
+  Lieux, « caché au pilote »), its identifier given by the workshop and never edited.
+- **Still to come in P3**: the sheet of a drawer (the key, the texts, the onward route), « ＋ Tiroir », « Ce que le pilote voit »
+  (imported from the session « Affectation »: `describe` of `drawers_view.js`), the objects in the Lieux, and « À compléter » for a
+  drawer (no message, no briefing, a key that looks at the aircraft without a fallback hour, a key the reader cannot read).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
