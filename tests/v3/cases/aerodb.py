@@ -11045,6 +11045,16 @@ def k286(c):
                ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', '1', '', '', '', '', 'MAYBE', '', '', 'A B'],                       # a NAR_TYPE that is not one of the list
                ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', 'x', '', '', '', '', '', '', '', 'A B'],                            # a route number that is not a number
                ['2026/10/29', 'AAAAA', 'US', 'BBBBB', 'US', 'H', '1', '<img src=x>', '', '', '', '', '', '', 'A B']]                 # markup in a text
+    PH = PH + ['AIRCRAFT']
+    good = [r + [''] for r in good]
+    good[2][-1] = 'JETS ONLY, RNAV 1 - DME/DME/IRU OR GPS'
+    good[2][PH.index('HOURS')] = '1200-2000'
+    hostile = [r + [''] for r in hostile]
+    SH = ['ORIGIN_ID', 'DSTN_ID', 'PFR_TYPE_CODE', 'ROUTE_NO', 'SEGMENT_SEQ', 'SEG_VALUE', 'SEG_TYPE', 'COUNTRY_CODE']
+    seg_rows = [['ALLEX', 'ADW', 'NAR', '1', '10', 'Q220', 'AIRWAY', ''], ['ALLEX', 'ADW', 'NAR', '1', '5', 'LARIE', 'FIX', 'US'], ['ALLEX', 'ADW', 'NAR', '1', '15', 'RIFLE', 'FIX', 'US'],
+                ['BOS', 'JFK', 'TEC', '3', '5', 'BOS', 'NAVAID', 'US'], ['BOS', 'JFK', 'TEC', '3', '10', 'Q818', 'AIRWAY', ''], ['BOS', 'JFK', 'TEC', '3', '15', 'PAYGE', 'FIX', 'US'],
+                ['ZZZ', 'YYY', 'H', '1', '5', 'AAAAA', 'FIX', 'US'],                                       # a route that PFR_BASE does not list: read, attached to nothing
+                ['BOS', 'JFK', 'TEC', '3', '20', 'X', 'XXX', 'US'], ['BOS', 'JFK', 'TEC', '3', '25', '<b>', 'FIX', 'US'], ['BOS', 'JFK', 'TEC', '3', 'x', 'BBBBB', 'FIX', 'US']]      # a type outside the list, markup, a sequence that is no number
     CH = ['RCode', 'Orig', 'Dest', 'DepFix', 'Route String', 'DCNTR', 'ACNTR', 'TCNTRs', 'CoordReq', 'Play', 'NavEqp', 'Length']
     cdr = [['ABECLTGV', 'KABE', 'KCLT', 'LRP', 'KABE LRP EMI GVE AIROW CHSLY9 KCLT', 'ZNY', 'ZTL', 'ZDC ZNY ZTL', 'N', '', '1', '426'],
            ['BAD', 'KABE', 'KCLT', 'LRP', 'KABE;rm -rf', 'ZNY', 'ZTL', '', 'N', '', '1', '1'],
@@ -11060,13 +11070,13 @@ def k286(c):
             for name, data in extra:
                 z.writestr(name, data)
         return buf.getvalue()
-    blob = inner(table(PH, good + hostile), table(CH, cdr), [('FIX_BASE.csv', table(['FIX_ID', 'COUNTRY_CODE'], [['ALLEX', 'CA'], ['LARIE', 'US'], ['PAYGE', 'US']])), ('NAV_BASE.csv', table(['NAV_ID', 'COUNTRY_CODE'], [['BOS', 'US'], ['YQB', 'CA']]))])
+    blob = inner(table(PH, good + hostile), table(CH, cdr), [('FIX_BASE.csv', table(['FIX_ID', 'COUNTRY_CODE'], [['ALLEX', 'CA'], ['LARIE', 'US'], ['PAYGE', 'US']])), ('NAV_BASE.csv', table(['NAV_ID', 'COUNTRY_CODE'], [['BOS', 'US'], ['YQB', 'CA']])), ('PFR_SEG.csv', table(SH, seg_rows))])
     d = F.read(blob)
-    c.eq((len(d['pfr']), d['skipped'], d['counts']), (3, {'pfr': 8, 'cdr': 2}, {'pfr': {'NAR': 2, 'TEC': 1}, 'nar': {'COMMON': 1, 'NON-COMMON': 1}, 'cdr': 1}),
+    c.eq((len(d['pfr']), d['skipped'], d['counts']), (3, {'pfr': 8, 'cdr': 2, 'seg': 3}, {'pfr': {'NAR': 2, 'TEC': 1}, 'nar': {'COMMON': 1, 'NON-COMMON': 1}, 'cdr': 1, 'withSegments': 2}),
          'three good rows kept, the eight hostile ones (a type outside the list, an identifier too long, a formula, markup, a route string cut, a NAR_TYPE outside the list, a route number that is no number, markup in a text) COUNTED and not kept; of the CDR rows, one kept, two counted (a code with a control character, a route string with « ; »)', what='rows')
     c.eq(d['pfr'][0], {'type': 'NAR', 'origin': 'ALLEX', 'dest': 'ALLRY', 'no': 1, 'narType': 'COMMON', 'designator': 'N503B', 'inland': 'ALLEX', 'coastal': 'ALLRY', 'dir': 'EASTBOUND'}, 'a COMMON North American Route: its two fixes and its designator; empty values absent', what='common')
     c.eq((d['pfr'][1]['narType'], d['pfr'][1]['route'], 'designator' in d['pfr'][1], d['pfr'][2]['alt'], d['pfr'][2]['hours']), ('NON-COMMON', 'LARIE Q220 RIFLE Q167 ZIZZI KNUKK ATR LAFLN SPISY2', False, 'AT OR ABOVE 5000', '1200-2000'), 'a NON-COMMON one: the route string; a preferred route: altitude and hours', what='non common')
-    c.eq(d['cdr'][0], {'code': 'ABECLTGV', 'orig': 'KABE', 'dest': 'KCLT', 'route': 'KABE LRP EMI GVE AIROW CHSLY9 KCLT', 'depfix': 'LRP', 'dcntr': 'ZNY', 'acntr': 'ZTL', 'length': 426}, 'a coded departure route', what='cdr')
+    c.eq(d['cdr'][0], {'code': 'ABECLTGV', 'orig': 'KABE', 'dest': 'KCLT', 'route': 'KABE LRP EMI GVE AIROW CHSLY9 KCLT', 'depfix': 'LRP', 'dcntr': 'ZNY', 'acntr': 'ZTL', 'length': 426, 'navEqp': 1, 'coordReq': False}, 'a coded departure route', what='cdr')
     names = F.point_names(d['pfr'])
     every, canada = F.located(blob)
     c.eq((sorted(names & every), sorted(names - every)[:3], sorted(canada)), (['ALLEX', 'LARIE', 'PAYGE'], ['ALLRY', 'KNUKK', 'LAFLN'], ['ALLEX', 'YQB']), 'the names are checked against the positions of FIX_BASE / NAV_BASE of the same zip, and the Canadian ones counted (COUNTRY_CODE CA)', what='located')
@@ -11111,7 +11121,99 @@ def k286(c):
     tree = ast.parse((ROOT / 'tools' / 'faa_pfr.py').read_text(encoding='utf-8'))
     imports = sorted({n.names[0].name.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.Import)} | {n.module.split('.')[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module})
     calls = sorted({n.func.id for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id in ('open', 'exec', 'eval', '__import__', 'compile')})
-    c.eq((imports, calls), (['faa_nasr', 're'], []), 'tools/faa_pfr.py imports only `re` and faa_nasr (the bounded zip reader) and never opens a file, evals or runs anything: a reader and nothing else', what='reader only')
+    c.eq((imports, calls), (['csv', 'faa_nasr', 're', 'zipfile', 'zlib'], []), 'tools/faa_pfr.py imports only `re`, `csv`, `zipfile`, `zlib` (to name the exceptions it turns into a fixed sentence) and faa_nasr (the bounded zip reader) and never opens a file, evals or runs anything: a reader and nothing else', what='reader only')
+    # L2b (2): the route of each published route (PFR_SEG), its conditions, the equipment of a CDR
+    tec = next(r for r in d['pfr'] if r['type'] == 'TEC')
+    non = d['pfr'][1]
+    c.eq(([(x['seq'], x['value'], x['type'], x.get('country')) for x in non['segments']], [x['value'] for x in tec['segments']], 'segments' in d['pfr'][0]),
+         ([(5, 'LARIE', 'FIX', 'US'), (10, 'Q220', 'AIRWAY', None), (15, 'RIFLE', 'FIX', 'US')], ['BOS', 'Q818', 'PAYGE'], False),
+         'each published route carries its route, the segments in the order of their sequence number (given out of order in the file); the three bad rows (a type outside the list, markup, a sequence that is no number) are counted and not kept; a COMMON route without segments has none', what='segments')
+    c.eq((tec['conditions'], 'conditions' in d['pfr'][0], tec['hours'], tec['aircraft']), ({'hoursUtc': ['1200', '2000'], 'jet': True, 'rnav1': True}, False, '1200-2000', 'JETS ONLY, RNAV 1 - DME/DME/IRU OR GPS'),
+         'the conditions: the hours (UTC) and the flags the aircraft text says (jets only, RNAV 1); the raw texts stay on the route (a condition the reader cannot say is never taken for absent); a route with none has none', what='conditions')
+    c.eq(F.conditions({'aircraft': 'PROPS ONLY', 'hours': 'SUNRISE-SUNSET'}), {'prop': True}, 'an hours text that is not HHMM-HHMM gives no `hoursUtc` (the raw text stays); PROPS ONLY gives `prop`', what='conditions other')
+    # a PFR_SEG that is missing or whose layout changed: refused
+    for label, bad in (('no PFR_SEG', inner(table(PH, good), table(CH, cdr))), ('PFR_SEG columns renamed', inner(table(PH, good), table(CH, cdr), [('PFR_SEG.csv', table(['A'], [['1']]))]))):
+        try:
+            F.read(bad)
+            got = None
+        except ValueError as e:
+            got = str(e)
+        c.ok(got, str(got), f'{label}: refused')
+    # Sécurisation: everything that does not read is ONE fixed sentence, never the text of the exception
+    big = inner(table(PH, good) + b'\r\n' + b'1' * 140000, table(CH, cdr), [('PFR_SEG.csv', table(SH, seg_rows))])
+    sentences = {}
+    for label, bad in (('a field of 140 000 signs', big), ('not a zip', b'this is not a zip at all'), ('a truncated zip', blob[:len(blob) // 2]), ('an empty blob', b'')):
+        try:
+            F.read(bad)
+            sentences[label] = None
+        except ValueError as e:
+            sentences[label] = str(e)
+        except Exception as e:      # noqa: BLE001 - what the case is about
+            sentences[label] = 'LEAK ' + type(e).__name__
+    c.eq(sentences['a field of 140 000 signs'], 'PFR_BASE.csv : fichier illisible', 'a field longer than the csv limit (131 072 signs): the fixed sentence, no text of the csv error', what='long field')
+    c.eq((sentences['not a zip'], sentences['an empty blob']), ('PFR_BASE.csv : fichier illisible', 'PFR_BASE.csv : fichier illisible'), 'a blob that is no zip, or is empty: the same fixed sentence', what='not a zip')
+    c.ok(sentences['a truncated zip'] and 'LEAK' not in sentences['a truncated zip'] and 'Traceback' not in sentences['a truncated zip'], str(sentences['a truncated zip']), 'a truncated zip: a ValueError with a fixed sentence, never another exception')
+    corrupt = bytearray(blob)
+    for i in range(40, min(len(corrupt), 400)):
+        corrupt[i] ^= 0xFF
+    try:
+        F.read(bytes(corrupt))
+        got = None
+    except ValueError as e:
+        got = str(e)
+    except Exception as e:      # noqa: BLE001
+        got = 'LEAK ' + type(e).__name__
+    c.ok(got and 'LEAK' not in got and got.endswith('fichier illisible'), str(got), 'a zip whose first members are damaged (zlib error, bad CRC): the fixed sentence')
+    # an encrypted zip (RuntimeError) and an OSError: the same sentence
+    real_rows = faa_nasr.rows
+    try:
+        for exc in (RuntimeError('File is encrypted, password required for extraction'), EOFError('x'), OSError('secret-path')):
+            faa_nasr.rows = lambda b, m, e=exc: (_ for _ in ()).throw(e)
+            try:
+                F.read(blob)
+                got = None
+            except ValueError as e:
+                got = str(e)
+            c.eq(got, 'PFR_BASE.csv : fichier illisible', f'{type(exc).__name__}: the fixed sentence, without « {str(exc)[:20]} »', what=type(exc).__name__)
+    finally:
+        faa_nasr.rows = real_rows
+    # the entries of the inner zip are bounded BEFORE the directory is parsed
+    many = io.BytesIO()
+    with zipfile.ZipFile(many, 'w') as z:
+        for i in range(faa_nasr.MAX_INNER_ENTRIES + 10):
+            z.writestr(f'f{i}.txt', '')
+    try:
+        F.read(many.getvalue())
+        got = None
+    except ValueError as e:
+        got = str(e)
+    c.ok(got and 'trop de fichiers' in got, str(got), 'a zip whose directory announces more than 500 entries: refused before the directory is parsed')
+    c.eq((faa_nasr.inner_entries(blob), faa_nasr.inner_entries(b'x'), faa_nasr.inner_entries(many.getvalue())), (5, None, faa_nasr.MAX_INNER_ENTRIES + 10), 'the number of entries is read from the end-of-directory record', what='entries')
+    # Sécurisation: the NUMBER announced is not what zipfile follows (it parses the directory by its SIZE): a lying count, an enormous directory, a zip64
+    big_zip = io.BytesIO()
+    with zipfile.ZipFile(big_zip, 'w') as z:
+        for i in range(20000):
+            z.writestr(f'f{i:05d}.txt', '')
+    raw = bytearray(big_zip.getvalue())
+    end = bytes(raw).rfind(b'PK\x05\x06')
+    raw[end + 8:end + 12] = (1).to_bytes(2, 'little') * 2      # entries on this disk and in all: announced as 1 (the directory still holds 20 000)
+    try:
+        F.read(bytes(raw))
+        got = None
+    except ValueError as e:
+        got = str(e)
+    c.ok(got and 'trop de fichiers' in got and 'annuaire' in got, str(got), 'a zip that announces ONE entry whose directory holds 20 000 (about 1 MB): refused on the SIZE of the directory, before zipfile parses it (red before: only the announced count was read)')
+    z64 = bytearray(blob)
+    end = bytes(z64).rfind(b'PK\x05\x06')
+    z64[end + 10:end + 12] = (0xFFFF).to_bytes(2, 'little')
+    try:
+        F.read(bytes(z64))
+        got = None
+    except ValueError as e:
+        got = str(e)
+    c.ok(got and 'zip64' in got, str(got), 'a zip64 (the count 0xFFFF): refused at once')
+    c.eq((faa_nasr._end_record(blob)[0], faa_nasr._end_record(blob)[1] < 4096, faa_nasr._end_record(blob)[2], faa_nasr.MAX_INNER_DIRECTORY), (5, True, False, 512 * 1024), 'the real zip: five entries here (114 in the subscription), a directory of a few KB, no zip64; the bound is 512 KiB', what='end record')
+
 
 
 @case('K287', 'Route engine, SOG-0354 lot L2a: the fallback proposal filters its graph with the RAD blocks INDEXED once (a set of points, a set of edge triples) instead of re-reading the whole list for every edge — the same graph, word for word, as the old formula, without the 41 million calls of block_hit that were 9 to 10 s of the 15 s of an EIDW → KJFK answer',

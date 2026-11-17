@@ -137,8 +137,32 @@ def url(kind, iso):
     return f'https://{HOST}/webContent/28DaySub/extra/{d.day:02d}_{MONTHS[d.month - 1]}_{d.year}_{kind}_CSV.zip'
 
 
+MAX_INNER_DIRECTORY = 512 * 1024      # SOG-0354 L2b (Sécurisation) : la TAILLE de l'annuaire (octets 12 à 16 de l'enregistrement de fin), que zipfile suit pour l'analyser, pas le compte annoncé (un compte mis à 1 devant 60 002 entrées passait) : le vrai (114 entrées) en fait une dizaine de Kio
+MAX_INNER_ENTRIES = 500      # SOG-0354 L2b (Sécurisation) : le zip intérieur des jeux CSV porte 114 entrées au 29 octobre 2026 (les CSV, leurs structures et leurs mises en page) ; plus de 500 : pas le zip attendu
+
+
+def inner_entries(blob):
+    """Le nombre d'entrées que l'ANNUAIRE d'un zip donné en octets annonce (l'enregistrement de fin d'annuaire, lu dans la queue) ; None s'il ne se trouve pas. Lu AVANT zipfile : l'annuaire n'est pas analysé (ni mis en mémoire) quand il en annonce trop."""
+    found = _end_record(blob)
+    return None if found is None else found[0]
+
+
+def _end_record(blob):
+    """(entrées annoncées, taille de l'annuaire en octets, zip64) de l'enregistrement de fin d'annuaire d'un zip donné en octets ; None s'il ne se trouve pas. `zip64` : le compte est 0xFFFF, la taille 0xFFFFFFFF ou un localisateur zip64 précède l'enregistrement : un zip qui n'est pas celui d'un abonnement."""
+    tail = bytes(blob[-(65535 + 22):])
+    i = tail.rfind(b'PK\x05\x06')
+    if i < 0 or len(tail) - i < 22:
+        return None
+    count = int.from_bytes(tail[i + 10:i + 12], 'little')
+    size = int.from_bytes(tail[i + 12:i + 16], 'little')
+    return count, size, count == 0xFFFF or size == 0xFFFFFFFF or tail[max(0, i - 20):i - 16] == b'PK\x06\x07'
+
+
 def rows(blob, member):
-    """Les lignes (dictionnaires) d'un CSV d'un zip donné en octets ; ValueError si le fichier manque ou est trop gros."""
+    """Les lignes (dictionnaires) d'un CSV d'un zip donné en octets ; ValueError si le fichier manque ou est trop gros, ou si l'annuaire annonce plus de MAX_INNER_ENTRIES entrées."""
+    found = _end_record(blob)
+    if found is not None and (found[0] > MAX_INNER_ENTRIES or found[1] > MAX_INNER_DIRECTORY or found[2]):
+        raise ValueError(f'{member} : le zip des jeux CSV porte trop de fichiers (annuaire de {found[1]} octets, {found[0]} entrées annoncées)' if not found[2] else f'{member} : le zip des jeux CSV est un zip64, que ce relevé ne lit pas')
     with zipfile.ZipFile(io.BytesIO(blob)) as z:
         try:
             info = z.getinfo(member)
