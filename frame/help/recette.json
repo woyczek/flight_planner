@@ -4007,6 +4007,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0079",
+   "fiche": "SOG-0397",
+   "app": "maintenance",
+   "question": "Routes du Canada : le moteur de route peut-il lire en local la base de navigation de ton X-Plane ?",
+   "context": "Réponse à « parser de routes canada, on a une piste ? » : oui, une seule sérieuse. La base de X-Plane de ton poste a les douze routes nord-américaines du message du jour et près de 13 000 repères au Canada, là où notre base n'a aucun point. Mesuré : les voies du Canada ne changeraient presque rien (2,7 % des directs) ; ce qui vaut, ce sont les points d'entrée NOMMÉS de l'océan et le tracé des routes nord-américaines. Ce serait lu sur ton poste, sous la case d'usage personnel, jamais compilé ni publié au groupe ; les autres pilotes garderaient des points de coordonnées. Ce que je conteste : le faire avant SOG-0396, qui doit marcher pour tous sans X-Plane.",
+   "options": [
+    "Oui, après SOG-0396 : points d'entrée nommés et routes nord-américaines seulement",
+    "Oui, après SOG-0396 : avec les voies du Canada aussi",
+    "Non : on reste aux sources publiables et aux points de coordonnées",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",

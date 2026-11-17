@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "bd54b81",
-  "fiches": 399,
+  "organisation": "7d59d37",
+  "fiches": 400,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1229,6 +1229,27 @@
      "en": "Free route over the North Atlantic: the screen does not say why no NAT track is taken, and the map draws every NAT track the same way",
      "de": "Freie Route über den Nordatlantik: der Bildschirm sagt nicht, warum kein NAT-Track genommen wird, und die Karte zeichnet alle NAT-Tracks gleich",
      "es": "Ruta libre sobre el Atlántico Norte: la pantalla no dice por qué no se toma ninguna ruta NAT, y el mapa dibuja todas las rutas NAT igual"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-et-route-europe-rad-espaces-de-route-libre",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant et route ; Europe ; RAD ; espaces de route libre",
+    "en": "Carburant et route ; Europe ; RAD ; espaces de route libre",
+    "de": "Carburant et route ; Europe ; RAD ; espaces de route libre",
+    "es": "Carburant et route ; Europe ; RAD ; espaces de route libre"
+   },
+   "items": [
+    {
+     "id": "SOG-0401",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Itinéraire proposé EDDF → LFMN : « sans incompatibilité détectée » chez nous, 24 erreurs à la validation d'Eurocontrol",
+     "en": "Proposed itinerary EDDF → LFMN: “no incompatibility detected” on our side, 24 errors at the Eurocontrol validation",
+     "de": "Vorgeschlagene Route EDDF → LFMN: bei uns „keine Unverträglichkeit erkannt“, 24 Fehler bei der Eurocontrol-Validierung",
+     "es": "Itinerario propuesto EDDF → LFMN: «sin incompatibilidad detectada» por nuestra parte, 24 errores en la validación de Eurocontrol"
     }
    ]
   },
