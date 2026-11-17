@@ -4413,6 +4413,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0095",
+   "fiche": "SOG-0436",
+   "app": "compagnie",
+   "question": "Format d'une mission à tiroir : où ton éditeur écrit-il la zone qui ouvre un tiroir et l'objet à trouver ?",
+   "context": "Ton aperçu les range en tête de mission (« zones », « objects », « target ») et le tiroir les cite par leur nom. Conséquence : la position de l'objet à trouver est lisible dès le départ, trois fois (la cible, le centre de la zone « Secteur objectif », l'objet) — la fiche de la mission, la Carte et la fiche technique de la V2 les montrent. L'autre forme : la zone et l'objet s'écrivent DANS le tiroir, et n'apparaissent qu'à son ouverture. Dans les deux cas notre lecteur lira les deux formes.",
+   "options": [
+    "Dans le tiroir : la zone, l'objet et les lieux propres à un tiroir n'existent qu'en lui (rien ne fuit, aucune référence morte)",
+    "En tête, comme dans ton aperçu, avec une marque « caché jusqu'au tiroir X » que la V3 respecte (la V2 les montrera quand même)",
+    "En tête, sans marque : ce n'est pas un secret",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
