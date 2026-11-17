@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "132fe37",
+  "organisation": "a0b852a",
   "fiches": 416,
   "untranslated": 0,
   "priorities": 374,
@@ -2096,7 +2096,8 @@
      "fr": "Carte, téléphone : un volet que le pilote ouvre reste ouvert (le repli automatique défaisait son toucher)",
      "en": "Map, phone: a pane the pilot opens stays open (the automatic fold undid their tap)",
      "de": "Karte, Telefon: ein vom Piloten geöffnetes Feld bleibt offen (das automatische Einklappen machte sein Tippen rückgängig)",
-     "es": "Mapa, teléfono: un panel que el piloto abre permanece abierto (el plegado automático deshacía su toque)"
+     "es": "Mapa, teléfono: un panel que el piloto abre permanece abierto (el plegado automático deshacía su toque)",
+     "test": true
     }
    ]
   },

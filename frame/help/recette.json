@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 278,
+  "tests": 279,
   "verdicts": 204
  },
  "apps": [
@@ -4181,6 +4181,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T13:07:54Z"
+  },
+  {
+   "id": "SOG-0416",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte, téléphone : un volet que le pilote ouvre reste ouvert (le repli automatique défaisait son toucher)",
+    "en": "Map, phone: a pane the pilot opens stays open (the automatic fold undid their tap)",
+    "de": "Karte, Telefon: ein vom Piloten geöffnetes Feld bleibt offen (das automatische Einklappen machte sein Tippen rückgängig)",
+    "es": "Mapa, teléfono: un panel que el piloto abre permanece abierto (el plegado automático deshacía su toque)"
+   },
+   "test": "Sur un téléphone, de préférence tenu de façon que l'écran soit peu haut (ou une fenêtre de 390 × 520). Carte, un vol ouvert. (1) Touche la poignée du volet du bas : il s'ouvre et RESTE ouvert — il ne se replie plus tout seul une seconde et demie plus tard, ni quand des données arrivent ; (2) fais défiler la page pour que la barre d'adresse du navigateur se cache ou revienne : le volet reste ouvert ; (3) replie-le toi-même : il reste replié ; (4) tourne le téléphone : la règle de place s'applique de nouveau (le volet peut se replier), et un nouveau toucher le rouvre pour de bon ; (5) toucher une puce d'espaces dans l'en-tête du volet ne compte pas comme une ouverture.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T13:55:22Z"
   }
  ],
  "decisions": [
