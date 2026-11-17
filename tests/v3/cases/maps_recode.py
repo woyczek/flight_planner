@@ -3221,7 +3221,10 @@ def _ground_flight():
 
 
 def _ground_open(c, aerodb=True):
-    c.open('maps', docs=fdocs(_ground_flight()), flight=False, airfields=True, wait=False)
+    # SOG-0353 (16 Nov): the Map keeps the view it was left in (cache/maps/state.json) and takes it back at the next mounting; a programmatic jumpTo of a case counts as the user's move, so a case that
+    # opens the Map twice would start its second opening on the view of the first — at the ground zoom, asking the ground (and saying « no ground data ») BEFORE the case has set its stand-ins.
+    # Every opening starts without a kept view: an empty document replaces the one of the previous opening.
+    c.open('maps', docs=fdocs(_ground_flight()) + [['cache/maps/state.json', {}, 'cache']], flight=False, airfields=True, wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     hook_map(c)
