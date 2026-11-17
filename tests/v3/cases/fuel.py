@@ -7244,6 +7244,126 @@ def f256(c):
     c.shot(f'F256_{c.design}_390_{L}_ocean.png')
 
 
+# SOG-0398 lot 1: an invented alternate (XQAL, ~70 NM west of the seeded arrival), its record, its procedures' coverage, its TAF
+_ALT_ID = 'XQAL'
+
+
+def _altn_taf(cat, now):
+    """An invented TAF of XQAL (aviationweather's JSON) valid from an hour ago for a day, one base group of the given category."""
+    vis = {'VFR': '6+', 'IFR': '2', 'LIFR': '0.5'}[cat]
+    cl = {'VFR': [{'cover': 'FEW', 'base': 4000}], 'IFR': [{'cover': 'OVC', 'base': 800}], 'LIFR': [{'cover': 'OVC', 'base': 200}]}[cat]
+    lo, hi = now - 3600, now + 30 * 3600
+    return {'icaoId': _ALT_ID, 'validTimeFrom': lo, 'validTimeTo': hi, 'rawTAF': f'TAF {_ALT_ID} TEST',
+            'fcsts': [{'timeFrom': lo, 'timeTo': hi, 'fcstChange': None, 'wdir': 270, 'wspd': 8, 'visib': vis, 'clouds': cl}]}
+
+
+def _altn_open(c, hard_m, app, cat, min_ft=5000):
+    """The seeded flight with XQAL as alternate, a C30J sheet (minimum runway `min_ft`, none if None), XQAL's hard runway `hard_m` (m),
+    `app` instrument approaches held in proc/manual/ beside one SID and one STAR (an index entry without any procedure is not « held »:
+    aerodb's coverage table), its TAF of category `cat` kept fresh in the weather store (the test server has no
+    launcher: the store asks a TAF of avwx.rest only with a key; a kept one is read first, cache/weather/taf/); the weather read by the gesture."""
+    import time as _t
+    now = int(_t.time())
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
+             'cruise': {'tasKt': 330, 'fuelFlowPerHour': 7300}, 'runwayType': 'HARD'}
+    if min_ft is not None:
+        sheet['minRunwayLengthFt'] = min_ft
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+            d[1]['route']['altn'] = _ALT_ID
+            d[1]['planned_at'] = _t.strftime('%Y-%m-%dT%H:00:00Z', _t.gmtime(now + 2 * 3600))
+    docs += [['aircraft/sheets/C30J.json', sheet, 'document'],
+             ['proc/manual/index.json', {'schema': 1, 'aerodromes': {_ALT_ID: {'SID': 1, 'STAR': 1, 'APP': app, 'cycle': '2026-10-01',
+                                                                               'updated_at': '2026-11-01T09:00:00Z'}}}, 'reference']]
+    docs.append([f'cache/weather/taf/{_ALT_ID}.json', {'at': 4102444800000, 'source': 'launcher', 'data': _altn_taf(cat, now)}, 'cache'])
+    route_metar(c, {'LFRS': (270, 10), 'LFML': (300, 12), _ALT_ID: (270, 8)})
+    c.open('fuel', docs=docs, airfields=True, aero_extra={'aerodromes': [{'icao': _ALT_ID, 'name': 'XQAL TEST', 'lat': 43.45, 'lon': 3.62,
+                                                                           'elev': 50, 'hardLen': hard_m}]})
+    wait_quote(c)
+    to_step(c, 0)
+    c.js(f"document.querySelector('{FUEL} [data-do=wx]').click()")
+
+
+@case('F257', 'Flight step, under the aerodromes: the line of the alternate — a sign, a sentence (the worst criterion, the good and the '
+      'unchecked counted), the three criteria in a fold: RUNWAY (the sheet\'s minimum runway length against the longest runway of the right '
+      'surface), AIDS (« visual only » when the base holds the aerodrome\'s procedures without an approach; not held: not checked), WEATHER '
+      '(the worst category of the TAF an hour before and after the arrival at the alternate, an INDICATOR); four states: green, orange, red, '
+      'grey « not checked » with what is missing — never a green check on what could not be checked', 'F', tags=('fuel', 'weather'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0398 lot 1 (the user, 17/11: « vérifier les critères … une check verte si c\'est ok, un warn …, une croix rouge »; the '
+      'ergonomist\'s specification version 2; Q-0075: green VFR or MVFR, orange IFR or no instrument approach, red LIFR, grey no TAF; Q-0086: '
+      '« le terrain de dégagement d\'abord »); invented aerodrome, sheet and TAF')
+def f257(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    # 1. the criteria, computed (modules/fuel/altn_check.js)
+    c.open('fuel', docs=flight_docs())
+    got = c.js("""() => import('/modules/fuel/altn_check.js').then(A => {
+      const taf = (fc, from = 0, to = 86400) => ({ validTimeFrom: from, validTimeTo: to, fcsts: fc }),
+        g = (from, to, vis, base, change = null) => ({ timeFrom: from, timeTo: to, fcstChange: change, visib: vis, clouds: base == null ? [] :
+          [{ cover: 'BKN', base }] });
+      return [
+        A.runwayOf({ hardLen: 2500 }, 5000, 'HARD').state, A.runwayOf({ hardLen: 1000 }, 5000, 'HARD').code,
+        A.runwayOf({ hardLen: 0 }, 5000, 'HARD').code, A.runwayOf({ hardLen: 2500 }, null, 'HARD').code, A.runwayOf({}, 5000, 'HARD').code,
+        A.runwayOf({ hardLen: 2500 }, 5000, 'WATER').state, A.runwayOf(null, 5000).code,
+        A.aidsOf({ level: 'green', counts: { APP: 3 } }).state, A.aidsOf({ level: 'green', counts: { APP: 0 } }).code,
+        A.aidsOf({ level: 'orange', reason: 'sia' }).code, A.aidsOf({ level: 'orange', partial: { pages: 2 }, counts: { APP: 0 } }).code,
+        A.weatherOf(taf([g(0, 86400, '6+', 4000)]), 36000).v.c,
+        A.weatherOf(taf([g(0, 86400, '6+', 4000), g(39000, 43200, '2', 800, 'TEMPO')]), 36000).v.c,
+        A.weatherOf(taf([g(0, 86400, '6+', 4000), g(41000, 43200, '0.5', 200, 'TEMPO')]), 36000).v.c,
+        A.weatherOf(taf([g(0, 86400, '0.5', 200)]), 36000).state, A.weatherOf(taf([g(0, 3600, '6+', 4000)], 0, 3600), 36000).code,
+        A.weatherOf(null, 36000).code, A.weatherOf(null, 36000, { noTaf: true }).code, A.weatherOf(null, 36000, { read: false }).code,
+        A.weatherOf(taf([]), null).code,
+        A.judge([{ state: 'ok' }, { state: 'grey' }, { state: 'ok' }]), A.judge([{ state: 'grey' }, { state: 'warn' }]).state,
+        A.judge([{ state: 'err' }, { state: 'warn' }]).state ];
+    })""")
+    c.eq(got[:7], ['ok', 'rwyShort', 'rwyNoHard', 'rwyNoSheet', 'rwyNoData', 'grey', 'rwyNoAd'],
+         'runway: long enough, short, no hard runway, no minimum in the sheet, no length in the base, a surface not read, no aerodrome',
+         what='runway')
+    c.eq(got[7:11], ['ok', 'aidsVisual', 'aidsNoBase', 'aidsPartial'],
+         'aids: approaches held, none held (visual only), procedures not held, partly read without approach', what='aids')
+    c.eq(got[11:14], ['VFR', 'IFR', 'VFR'], 'weather: the worst group within an hour around the arrival, a TEMPO beyond the hour left out',
+         what='window')
+    c.eq(got[14:20], ['err', 'wxOutside', 'wxNoTaf', 'wxNoKey', 'wxNotRead', 'wxNoTime'],
+         'weather: LIFR red; outside the TAF, no TAF, no TAF on this device, not read, no time: not checked', what='weather')
+    c.eq(got[20], {'state': 'grey', 'ok': 2, 'grey': 1}, 'one criterion not checked: never green, counted apart', what='judge')
+    c.eq(got[21:], ['warn', 'err'], 'the worst state gives the sign', what='worst')
+    # 2. the screen: the four states, at 390 and 1280
+    head = lambda k, w=None: norm(tx(T, k, L, after='altnChk: {')).replace('{id}', _ALT_ID).replace('{w}', w or '')
+    K = lambda k: norm(tx(T, k, L, after='altnK: {'))
+    states = [('ok', 2500, 2, 'VFR', 5000, head('ok')), ('warn', 2500, 0, 'VFR', 5000, head('warn', K('aids'))),
+              ('err', 1000, 2, 'VFR', 5000, head('err', K('rwy'))), ('grey', 2500, 2, 'VFR', None, head('grey', K('rwy')))]
+    for state, hard, app, cat, min_ft, want in states:
+        c.page.set_viewport_size({'width': 390, 'height': 844})
+        _altn_open(c, hard, app, cat, min_ft)
+        line = f'{FUEL} [data-altnchk] .fu-altnline'
+        c.until(f"document.querySelector('{line}')?.dataset.state === {json.dumps(state)} && "
+                f"!!document.querySelector('{FUEL} [data-altnchk] li[data-crit=wx][data-state=ok]')", timeout=20000,
+                what=f'the line in state {state}, the weather read')
+        got_head = norm(c.text(f'{FUEL} [data-altnchk] [data-altnhead]') or '')
+        c.ok(got_head.startswith(want), got_head, f'the sentence of the state {state}')
+        if state == 'ok':
+            c.eq(c.count(f'{FUEL} [data-altnchk] [data-altncount]'), 0, 'all good: no count', what='count')
+        else:
+            c.ok(c.count(f'{FUEL} [data-altnchk] [data-altncount]') == 1, 'count', 'the good and the unchecked counted')
+        crit = c.js(f"[...document.querySelectorAll('{FUEL} [data-altnchk] li[data-crit]')].map(li => [li.dataset.crit, li.dataset.state])")
+        c.eq([k for k, _ in crit], ['rwy', 'aids', 'wx'], 'three criteria in the fold, in order', what='criteria')
+        c.ok(c.count(f'{FUEL} [data-altnchk] li') <= 7, 'fold', 'seven elements at most in the fold')
+        wx = norm(c.text(f'{FUEL} [data-altnchk] li[data-crit=wx]') or '')
+        c.ok(norm(tx(T, 'wxCat', L)).split('{')[0].strip() in wx and 'VFR' in wx, wx, 'the weather said an indicator, with its category')
+        c.ok(norm(tx(T, 'altnWxNote', L))[:30] in norm(c.text(f'{FUEL} [data-altnchk] [data-altnnote]') or ''), 'note',
+             'never « compliant »: the indicator note')
+        c.js(f"document.querySelector('{FUEL} [data-altnchk] details[data-altnfold]').open = true")
+        c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F257_{c.design}_390_{L}_{state}.png')
+        c.page.set_viewport_size({'width': 1280, 'height': 900})
+        c.settle()
+        c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F257_{c.design}_1280_{L}_{state}.png')
+
+
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)
 _RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review': 37, 'findings': 0, 'total': 449, 'listed': 449, 'cut': False,
              'unknown_spaces': [{'space': 'LS100A', 'rules': ['LS2815A', 'LS2816A']}, {'space': 'EDUU100E', 'rules': []}],

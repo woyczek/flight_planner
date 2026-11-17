@@ -2374,3 +2374,24 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   included; `REG/` then carries the neutral identification (NEUTRAL_ID, letters and digits) and the fold says « Neutral registration
   (CHECK01): the aircraft sheet gives none. » Only what breaks the form blocks: a registration of the sheet that is not 2 to 7 letters
   and digits once cleaned (error `reg`). F256 updated.
+- **17 Nov 2026 — SOG-0398 lot 1, the line of the alternate** (the user, 17/11: check the alternate — runway and aids, forecast
+  weather — « une check verte si c'est ok, un warn …, une croix rouge »; the ergonomist's specification version 2, my seven objections
+  accepted; Q-0075 for the colours; Q-0086: « le terrain de dégagement d'abord »). Under the aerodromes of the Flight step, one line — a
+  sign, a sentence — and the detail in a fold; nothing without an alternate. Pure computation in `altn_check.js` (runwayOf, aidsOf,
+  weatherOf, judge), drawn by `altnChkDraw` at each refresh and after the weather read. Four states: ok, warn (usable, with a
+  reservation), err (not suitable), grey (not checked, with what is missing); the sign is the worst — err, then warn, then GREY: a
+  criterion not checked never leaves the green (objection 2: a green check on what could not be checked is a lie); the good and the
+  unchecked are counted apart. RUNWAY: the sheet's `minRunwayLengthFt` against the longest runway of the sheet's `runwayType` (HARD by
+  default: `hardLen`, else the hard `runways[]`; SOFT: any runway but water; any other: not checked); no minimum in the sheet, no
+  length in the base, no aerodrome: not checked; `hardLen` 0 with HARD asked: red. The full record is read by code; on a split zone
+  `aerodromes({ icao })` may give the light index item (no runway), so the full one is read by a small box around it (aerodromes.json of
+  the zone, kept by aerodb) — asked to AeroDB. AIDS: `aerodb.coverage(icao)`, which does not load the base: procedures held (green) or
+  partly read (orange + partial) with their counts — an approach: green; held and complete without approach: orange « à vue seulement »;
+  partly read without approach, or not held (« the base does not cover »): not checked. WEATHER: the TAF Weather already read
+  (`S.wx.taf`, no network call of its own), every group overlapping [arrival − 1 h, arrival + 1 h] where arrival = the flight's date +
+  the trip's minutes + the alternate's minutes; its worst FAA category, TEMPO and PROB INCLUDED (conservative; a group without ceiling
+  nor visibility is not counted); VFR / MVFR green, IFR orange, LIFR red; said an INDICATOR, never « compliant ». Not checked: no date
+  or no duration, weather not read yet, no TAF, no TAF on this device, the arrival outside the TAF's validity, no category in the window.
+  The reads of the base wait 4 s at most (ALTN_CHK_WAIT_MS), then « not checked »: a base that does not answer never leaves the line
+  empty. Only numbers, categories and hours from third parties are shown; the aerodrome's code is the flight's own field, escaped. F257
+  (invented aerodrome XQAL, sheet and TAF; the four states captured at 390 and 1280).

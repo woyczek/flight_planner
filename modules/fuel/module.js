@@ -10,6 +10,7 @@
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
 import * as FPL from './fpl.js'; // SOG-0402 : le message de plan de vol OACI pour la validation d'Eurocontrol
+import * as AC from './altn_check.js'; // SOG-0398 : la vérification du terrain de dégagement (piste, moyens, météo)
 import * as WIND from '../../frame/lib/wind.js'; // le vent sur une piste : une règle pour Carburant et la Carte (refonte § 10.33 R-F1)
 import * as WD from './winds.js';
 import * as PG from './progress.js';
@@ -106,7 +107,7 @@ export const meta = {
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
-    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js', 'fpl.js',
+    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js', 'fpl.js', 'altn_check.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/route_alts.js',
@@ -666,6 +667,125 @@ const TX = {
       'carácter fuera del alfabeto del mensaje'
     ]
   },
+  // SOG-0398 : la ligne sous les terrains — l'état du dégagement, ses critères dans un pli
+  altnChk: {
+    ok: ['Dégagement {id} : piste, moyens et météo bons', 'Alternate {id}: runway, aids and weather good',
+      'Ausweichflugplatz {id}: Piste, Navigationshilfen und Wetter gut', 'Alternativo {id}: pista, medios y meteorología buenos'
+    ],
+    warn: ['Dégagement {id} : utilisable, avec réserve ({w})', 'Alternate {id}: usable, with a reservation ({w})',
+      'Ausweichflugplatz {id}: nutzbar, mit Vorbehalt ({w})', 'Alternativo {id}: utilizable, con reserva ({w})'
+    ],
+    err: ['Dégagement {id} : ne convient pas ({w})', 'Alternate {id}: not suitable ({w})', 'Ausweichflugplatz {id}: nicht geeignet ({w})',
+      'Alternativo {id}: no conviene ({w})'
+    ],
+    grey: ['Dégagement {id} : non vérifié ({w})', 'Alternate {id}: not checked ({w})', 'Ausweichflugplatz {id}: nicht geprüft ({w})',
+      'Alternativo {id}: no comprobado ({w})'
+    ]
+  },
+  altnCount: ['{ok} bon(s), {g} non vérifié(s)', '{ok} good, {g} not checked', '{ok} gut, {g} nicht geprüft',
+    '{ok} bueno(s), {g} no comprobado(s)'
+  ],
+  altnK: {
+    rwy: ['piste', 'runway', 'Piste', 'pista'],
+    aids: ['moyens', 'aids', 'Navigationshilfen', 'medios'],
+    wx: ['météo', 'weather', 'Wetter', 'meteorología']
+  },
+  altnFold: ['Critères du dégagement', 'Alternate criteria', 'Kriterien des Ausweichflugplatzes', 'Criterios del alternativo'],
+  altnHard: ['en dur', 'hard', 'befestigte', 'pavimentada'],
+  altnAny: ['hors plan d’eau', 'other than water', 'außer Wasser', 'fuera de lámina de agua'],
+  altnWhy: {
+    rwyOk: ['Piste : la plus longue piste {s} fait {l} ft ; la fiche demande {m} ft.',
+      'Runway: the longest {s} runway is {l} ft; the sheet asks for {m} ft.',
+      'Piste: die längste {s} Piste misst {l} ft; das Blatt verlangt {m} ft.',
+      'Pista: la pista {s} más larga mide {l} ft; la ficha pide {m} ft.'
+    ],
+    rwyShort: ['Piste : la plus longue piste {s} fait {l} ft, sous les {m} ft de la fiche.',
+      'Runway: the longest {s} runway is {l} ft, below the sheet’s {m} ft.',
+      'Piste: die längste {s} Piste misst {l} ft, unter den {m} ft des Blatts.',
+      'Pista: la pista {s} más larga mide {l} ft, por debajo de los {m} ft de la ficha.'
+    ],
+    rwyNoHard: ['Piste : aucune piste en dur ; la fiche en demande une de {m} ft.',
+      'Runway: no hard runway; the sheet asks for one of {m} ft.',
+      'Piste: keine befestigte Piste; das Blatt verlangt eine von {m} ft.',
+      'Pista: ninguna pista pavimentada; la ficha pide una de {m} ft.'
+    ],
+    rwyNoSheet: ['Piste : non vérifiée — la fiche de l’aéronef ne donne pas de longueur de piste mini.',
+      'Runway: not checked — the aircraft sheet gives no minimum runway length.',
+      'Piste: nicht geprüft — das Luftfahrzeugblatt nennt keine Mindestpistenlänge.',
+      'Pista: no comprobada — la ficha de la aeronave no da longitud mínima de pista.'
+    ],
+    rwyNoAd: ['Piste : non vérifiée — terrain inconnu de la base.', 'Runway: not checked — aerodrome unknown to the base.',
+      'Piste: nicht geprüft — Flugplatz der Datenbank unbekannt.', 'Pista: no comprobada — aeródromo desconocido en la base.'
+    ],
+    rwyNoData: ['Piste : non vérifiée — la base ne donne pas la longueur des pistes de ce terrain.',
+      'Runway: not checked — the base does not give this aerodrome’s runway lengths.',
+      'Piste: nicht geprüft — die Datenbank nennt die Pistenlängen dieses Flugplatzes nicht.',
+      'Pista: no comprobada — la base no da la longitud de las pistas de este aeródromo.'
+    ],
+    rwyType: ['Piste : non vérifiée — revêtement de la fiche ({t}) non lu dans la base.',
+      'Runway: not checked — the sheet’s surface ({t}) is not read from the base.',
+      'Piste: nicht geprüft — der Belag des Blatts ({t}) wird aus der Datenbank nicht gelesen.',
+      'Pista: no comprobada — la superficie de la ficha ({t}) no se lee en la base.'
+    ],
+    aidsApp: ['Moyens : {n} approche(s) aux instruments dans la base.', 'Aids: {n} instrument approach(es) in the base.',
+      'Navigationshilfen: {n} Instrumentenanflug/-anflüge in der Datenbank.',
+      'Medios: {n} aproximación(es) instrumental(es) en la base.'
+    ],
+    aidsVisual: ['Moyens : aucune approche aux instruments dans la base — à vue seulement.',
+      'Aids: no instrument approach in the base — visual only.',
+      'Navigationshilfen: kein Instrumentenanflug in der Datenbank — nur Sichtanflug.',
+      'Medios: ninguna aproximación instrumental en la base — solo visual.'
+    ],
+    aidsPartial: ['Moyens : non vérifiés — procédures du terrain lues en partie, sans approche parmi les pages lues.',
+      'Aids: not checked — the aerodrome’s procedures partly read, no approach among the pages read.',
+      'Navigationshilfen: nicht geprüft — Verfahren des Flugplatzes teilweise gelesen, kein Anflug in den gelesenen Seiten.',
+      'Medios: no comprobados — procedimientos del aeródromo leídos en parte, sin aproximación en las páginas leídas.'
+    ],
+    aidsNoBase: ['Moyens : non vérifiés — la base ne tient pas les procédures de ce terrain.',
+      'Aids: not checked — the base does not hold this aerodrome’s procedures.',
+      'Navigationshilfen: nicht geprüft — die Datenbank hat die Verfahren dieses Flugplatzes nicht.',
+      'Medios: no comprobados — la base no tiene los procedimientos de este aeródromo.'
+    ],
+    wxCat: ['Météo (indicateur) : {c} au pire entre {a} et {b}, d’après le TAF (TEMPO et PROB compris).',
+      'Weather (indicator): {c} at worst between {a} and {b}, from the TAF (TEMPO and PROB included).',
+      'Wetter (Indikator): schlimmstenfalls {c} zwischen {a} und {b}, laut TAF (TEMPO und PROB eingeschlossen).',
+      'Meteorología (indicador): {c} en el peor caso entre {a} y {b}, según el TAF (TEMPO y PROB incluidos).'
+    ],
+    wxNoTime: ['Météo : non vérifiée — la date du vol ou sa durée manque (l’heure d’arrivée au dégagement est inconnue).',
+      'Weather: not checked — the flight’s date or duration is missing (the time of arrival at the alternate is unknown).',
+      'Wetter: nicht geprüft — Datum oder Dauer des Flugs fehlt (Ankunftszeit am Ausweichflugplatz unbekannt).',
+      'Meteorología: no comprobada — falta la fecha o la duración del vuelo (hora de llegada al alternativo desconocida).'
+    ],
+    wxNotRead: ['Météo : non vérifiée — la météo des terrains n’est pas encore lue (étape Météo).',
+      'Weather: not checked — the aerodromes’ weather is not read yet (Weather step).',
+      'Wetter: nicht geprüft — das Flugplatzwetter ist noch nicht gelesen (Schritt Wetter).',
+      'Meteorología: no comprobada — la meteorología de los aeródromos aún no se ha leído (paso Meteorología).'
+    ],
+    wxNoTaf: ['Météo : non vérifiée — aucun TAF lu pour ce terrain.', 'Weather: not checked — no TAF read for this aerodrome.',
+      'Wetter: nicht geprüft — kein TAF für diesen Flugplatz gelesen.',
+      'Meteorología: no comprobada — ningún TAF leído para este aeródromo.'
+    ],
+    wxNoKey: ['Météo : non vérifiée — TAF indisponible sur cet appareil (ni lanceur ni clé météo).',
+      'Weather: not checked — TAF unavailable on this device (no launcher nor weather key).',
+      'Wetter: nicht geprüft — TAF auf diesem Gerät nicht verfügbar (weder Starter noch Wetterschlüssel).',
+      'Meteorología: no comprobada — TAF no disponible en este dispositivo (ni lanzador ni clave meteorológica).'
+    ],
+    wxOutside: ['Météo : non vérifiée — l’arrivée au dégagement ({at}) sort de la validité du TAF.',
+      'Weather: not checked — the arrival at the alternate ({at}) is outside the TAF’s validity.',
+      'Wetter: nicht geprüft — die Ankunft am Ausweichflugplatz ({at}) liegt außerhalb der Gültigkeit des TAF.',
+      'Meteorología: no comprobada — la llegada al alternativo ({at}) queda fuera de la validez del TAF.'
+    ],
+    wxNoCat: ['Météo : non vérifiée — le TAF ne donne ni plafond ni visibilité entre {a} et {b}.',
+      'Weather: not checked — the TAF gives neither ceiling nor visibility between {a} and {b}.',
+      'Wetter: nicht geprüft — das TAF nennt weder Wolkenuntergrenze noch Sicht zwischen {a} und {b}.',
+      'Meteorología: no comprobada — el TAF no da techo ni visibilidad entre {a} y {b}.'
+    ]
+  },
+  altnWxNote: ['La météo est un indicateur (catégories VFR, MVFR, IFR, LIFR de la FAA), jamais une conformité aux minima du terrain.',
+    'The weather is an indicator (the FAA’s VFR, MVFR, IFR, LIFR categories), never compliance with the aerodrome’s minima.',
+    'Das Wetter ist ein Indikator (FAA-Kategorien VFR, MVFR, IFR, LIFR), nie die Einhaltung der Minima des Flugplatzes.',
+    'La meteorología es un indicador (categorías VFR, MVFR, IFR, LIFR de la FAA), nunca la conformidad con los mínimos del aeródromo.'
+  ],
   fplJoined: ['Deux indicatifs pour le même tracé ({v}) : le premier est écrit.',
     'Two designators for the same track ({v}): the first is written.',
     'Zwei Bezeichner für dieselbe Strecke ({v}): der erste wird geschrieben.',
@@ -2544,6 +2664,17 @@ const STYLE = `
 [data-module="fuel"] .fu-ads button.fu-adswap:hover,[data-module="fuel"] .fu-ads button.fu-adswap:focus-visible{color:var(--sog-fg)}
 [data-module="fuel"] .fu-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="fuel"] .fu-adname[data-state="unknown"]{font-style:italic}
+/* SOG-0398 : la ligne du dégagement sous les terrains — un signe coloré, une phrase ; le détail des critères dans un pli */
+[data-module="fuel"] .fu-altnchk:empty{display:none}
+[data-module="fuel"] .fu-altnchk{margin:-4px 0 8px}
+[data-module="fuel"] .fu-altnline{display:flex;gap:6px;align-items:baseline;margin:0}
+[data-module="fuel"] .fu-altnsign{flex:0 0 1.1em;text-align:center;font-weight:700}
+[data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="ok"]>.fu-altnsign{color:var(--sog-ok)}
+[data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="warn"]>.fu-altnsign{color:var(--sog-warn)}
+[data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="err"]>.fu-altnsign{color:var(--sog-err)}
+[data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="grey"]>.fu-altnsign{color:var(--sog-muted)}
+[data-module="fuel"] .fu-altnfold ul{list-style:none;margin:4px 0 0;padding:0}
+[data-module="fuel"] .fu-altnfold li{display:flex;gap:6px;align-items:baseline;margin:2px 0}
 [data-module="fuel"] .fu-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)} /* par-dessus la page, jamais dans la mise en page */
 [data-module="fuel"] .fu-sug[hidden]{display:none}
 [data-module="fuel"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
@@ -2737,6 +2868,7 @@ function renderPlanBody() {
       <p class="f-muted" data-src></p>
       </div>
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
+      <div class="fu-altnchk" data-altnchk aria-live="polite"></div>
       <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(wxDateParts()[0])}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span><small class="f-muted" data-datenote>${esc(wxDateParts()[1])}</small></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div class="f-grid fu-themes" data-themes></div>
@@ -3483,6 +3615,7 @@ async function wxFetch(loud = false) {
   await aloftFetch(loud);
   if (gone(s) || !S.body) return;
   renderWx();
+  altnChkDraw(S.C); // SOG-0398 : la météo lue : le critère météo du dégagement
   S.P
     .windSync(); // le vent de chaque piste de la carte des procédures suit le METAR (§ 10.30) ; rien de redessiné s'il n'a pas changé (SOG-0377)
   isaHint();
@@ -4942,6 +5075,87 @@ async function fplCopy() {
   // SOG-0422 (a) : UNE notification : sur une route océanique sans HF dans l'équipement supposé, la copie dit l'avertissement elle-même
   // (une seconde note attendrait derrière la première sur un téléphone et ne serait pas lue) ; l'équipement n'est jamais inventé
   S.ctx.notify(tt(F.m.notes.hf ? TX.fplCopiedHf : TX.fplCopied), F.m.notes.hf ? 'warn' : 'ok');
+}
+/** SOG-0398 : l'attente au plus des lectures de la base pour la ligne du dégagement (terrain, couverture). */
+const ALTN_CHK_WAIT_MS = 4000;
+/** SOG-0398 : l'enregistrement COMPLET d'un terrain (hardLen, runways) ; sur une zone découpée, aerodromes({ icao }) peut rendre l'élément
+ *  léger de l'index (sans piste) : l'enregistrement complet est alors lu par une petite boîte autour du terrain (aerodromes.json de la
+ *  zone, lu une fois et gardé par aerodb). Aucun appel hors de la base. */
+async function altnAdOf(id) {
+  const A = S.ctx.aerodb,
+    one = ((await A?.aerodromes?.({
+      icao: id
+    }).catch(() => null)) || [])[0] || null;
+  if (!one || one.hardLen != null || Array.isArray(one.runways) || !one.lite || !Number.isFinite(+one.lat) || !Number.isFinite(+one
+      .lon)) return one;
+  const d = 0.05,
+    rows = await A.aerodromes({
+      bbox: [+one.lon - d, +one.lat - d, +one.lon + d, +one.lat + d]
+    }).catch(() => null);
+  return (rows || []).find(x => String(x?.icao || x?.id || '').toUpperCase() === id) || one;
+}
+/** SOG-0398 lot 1 : sous les terrains, la ligne du dégagement — un signe, une phrase (le pire critère ; les bons et les non vérifiés
+ *  comptés), et le détail des trois critères dans un pli (modules/fuel/altn_check.js) : PISTE (longueur mini de la fiche contre la plus
+ *  longue piste du bon revêtement), MOYENS (la couverture des procédures, aerodb.coverage), MÉTÉO (le TAF déjà lu par l'étape Météo, une
+ *  heure avant et après l'arrivée au dégagement : départ du vol + durée du vol + trajet du dégagement). Rien sans dégagement. Le terrain
+ *  et sa couverture lus une fois par code ; aucun appel au réseau de plus que ceux de Météo. */
+async function altnChkDraw(C) {
+  const box = S?.body?.querySelector('[data-altnchk]');
+  if (!box) return;
+  const s = S,
+    id = String(S.flight.route?.altn || '').toUpperCase().trim();
+  if (!/^[A-Z0-9]{4}$/.test(id)) {
+    box.innerHTML = '';
+    return;
+  }
+  if (S.altnData?.id !== id) {
+    S.altnData = {
+      id,
+      pending: true
+    };
+    // une base qui ne répond pas (non réglée, lente) ne laisse jamais la ligne vide : au-delà d'ALTN_CHK_WAIT_MS, « non vérifié »
+    const late = () => new Promise(r => setTimeout(() => r(null), ALTN_CHK_WAIT_MS)),
+      [ad, cov] = await Promise.all([Promise.race([altnAdOf(id).catch(() => null), late()]), Promise.race([Promise.resolve(S.ctx.aerodb
+        ?.coverage?.(id)).catch(() => null), late()])]);
+    if (gone(s) || S.altnData?.id !== id) return;
+    S.altnData = {
+      id,
+      ad,
+      cov
+    };
+    return altnChkDraw(S.C);
+  }
+  if (S.altnData.pending) return;
+  const sheet = C?.sheet || null,
+    q = C?.q,
+    dep = Date.parse(S.flight.planned_at || ''),
+    min = Number.isFinite(+q?.minutes) ? +q.minutes + (Number.isFinite(+q?.alternate?.min) ? +q.alternate.min : 0) : NaN,
+    t = Number.isFinite(dep) && Number.isFinite(min) ? Math.round(dep / 1000 + min * 60) : null,
+    crits = [AC.runwayOf(S.altnData.ad, sheet?.minRunwayLengthFt, sheet?.runwayType), AC.aidsOf(S.altnData.cov),
+      AC.weatherOf(S.wx?.taf?.[id] || null, t, {
+        read: !!S.wx,
+        noTaf: !!S.wx?.noTaf
+      })
+    ],
+    J = AC.judge(crits),
+    SIGN = {
+      ok: '✓',
+      warn: '!',
+      err: '✕',
+      grey: '?'
+    },
+    w = crits.filter(c => c.state === J.state).map(c => tt(TX.altnK[c.k])).join(', '),
+    fmt = n => Number(n).toLocaleString(S.ctx.lang()),
+    why = c => tt(TX.altnWhy[c.code], {
+      ...c.v,
+      l: c.v.l != null ? fmt(c.v.l) : '',
+      m: c.v.m != null ? fmt(c.v.m) : '',
+      s: tt(c.v.hard === false ? TX.altnAny : TX.altnHard),
+      t: String(sheet?.runwayType || '').slice(0, 12)
+    }),
+    open = !!box.querySelector('details[data-altnfold]')?.open,
+    count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(TX.altnCount, { ok: J.ok, g: J.grey }))}</span>`;
+  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p><details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(why(c))}</span></li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>`;
 }
 /** SOG-0391 (b) : une heure UTC « AAAA-MM-JJTHH:MMZ » dite à la minute, en Z (« 13 h 32 Z » en français, « 13:32Z » ailleurs) ; `bare` :
  *  sans le « Z » (le début d'une fenêtre). */
@@ -7219,6 +7433,7 @@ function refresh() {
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
   fplDraw(C);
+  altnChkDraw(C); // SOG-0398 : la ligne du dégagement suit le terrain, la fiche, la durée du vol
   fmsState();
   acSelected();
   renderSummary(C);
