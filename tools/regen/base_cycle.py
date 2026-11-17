@@ -297,6 +297,18 @@ def datasets(data, current, now):
     cifp = len((_json(os.path.join(str(data), 'proc', cycles[0], 'index.json')) or {}).get('aerodromes') or {}) if cycles else 0
     at = max([t for t in (mt('proc', 'manual', 'index.json'), mt('proc', cycles[0], 'index.json') if cycles else None) if t] or [0]) or None
     state, why = ('todo', 'absent') if not (cycles or held) else ('todo', 'older-than-cycle') if cycles and cycles[0] < current and not held else ('up-to-date', None)
+    # SOG-0428 : UNE vérité — la ligne du jeu dit ce que proc/status dit de CHAQUE État (tools/regen/proc.py, state_records) : à faire quand un État qui a quelque chose (construit, lu à la main, téléchargé) est périmé ou téléchargé sans être construit ;
+    # un État qui n'a que des terrains lus à la main, du cycle en vigueur, est à jour (rien n'est attendu) ; une ligne qui ne se lit pas garde le calcul d'avant
+    try:
+        import importlib
+        P = importlib.import_module('regen.proc')
+        _cy, recs = P.state_records(str(data), sorted(P.STATES))
+        used = [r for r in recs.values() if r['built'] or r['held'] or (r['cached'] or {}).get('state') == 'present']
+        if used:
+            bad = [r for r in used if r['state'] in ('stale', 'missing')]
+            state, why = ('todo', 'older-than-cycle' if any(r['state'] == 'stale' for r in bad) else 'absent') if bad else ('up-to-date', None)
+    except Exception:
+        pass
     out.append({'id': 'procedures', 'label': L('Procédures', 'Procedures', 'Verfahren', 'Procedimientos'), 'state': state, **({'why': why} if why else {}), 'at': iso(at) if at else None, 'cycle': cycles[0] if cycles else None, 'counts': {'cifp': cifp, 'eaip': held}})
     # météo du monde (synoptique GFS) : l'index de data/weather/world/
     w = _json(os.path.join(str(data), 'weather', 'world', 'index.json'))

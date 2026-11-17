@@ -765,26 +765,44 @@ def _cached_of(data, s, cycle):
     return {'state': 'present' if n else 'missing', 'files': n}
 
 
-def states_status(job, args, ctx):
-    """Verbe proc/status (SOG-0119) : LECTURE SEULE (ni réseau, ni écriture ; les noms du cache et l'index de chaque cycle seulement). Rend
-    { ok, cycle (en vigueur), states: { <préfixe>: { state: 'up-to-date' | 'stale' | 'missing' | 'n/a', cached: { state, files }, built: { cycle, aerodromes } | null,
-    reasons: [{ code }] } }, counts } ; codes : 'older-than-cycle' (construit pour un cycle passé : `cycle`), 'not-fetched' (rien dans le cache), 'not-built' (le cache est là,
-    rien de construit), 'ead-per-aerodrome' (un État d'EAD Basic : un terrain par geste, jamais en masse), 'no-source' (aucune source en masse). Construit : les terrains de l'index du
-    cycle (LF : les LF… ; K : ceux qu'aucun autre État en masse ne réclame)."""
-    data, cycle = ctx['data'], _cycle(ctx['data'])
+DAY = re.compile(r'\d{4}-\d{2}-\d{2}\Z')
+
+
+def _manual_held(data):
+    """Les terrains LUS À LA MAIN (data/proc/manual/index.json) : { identifiant OACI: cycle (AAAA-MM-JJ, '' s'il n'est pas lisible) } ; vide sans index lisible ou trop gros. L'index est relu comme une entrée non sûre."""
+    path = os.path.join(data, 'proc', 'manual', 'index.json')
+    try:
+        if os.path.getsize(path) > MAX_INDEX:
+            return {}
+        with open(path, encoding='utf-8') as f:
+            doc = json.load(f)
+    except Exception:       # illisible (RecursionError comprise) : aucun terrain à la main
+        return {}
+    ad = doc.get('aerodromes') if isinstance(doc, dict) else None
+    if not isinstance(ad, dict):
+        return {}
+    return {k: (v.get('cycle') if isinstance(v, dict) and isinstance(v.get('cycle'), str) and DAY.match(v['cycle']) else '') for k, v in ad.items() if isinstance(k, str) and re.fullmatch(r'[A-Z0-9]{3,4}', k)}
+
+
+def state_records(data, states):
+    """L'enregistrement de chaque État (UNE vérité, SOG-0428) : { <préfixe>: { state: 'up-to-date' | 'stale' | 'missing' | 'n/a', cached: { state, files }, built: { cycle, aerodromes } | null,
+    held: { aerodromes, cycle (le plus récent), older (ceux d'un cycle passé) } | null, reasons } }, avec le cycle en vigueur. Construit EN ENTIER (un dossier de cycle) ou, à défaut, des terrains lus à la main :
+    à jour quand tous sont du cycle en vigueur (rien n'est attendu de l'utilisateur), périmé (`held-older`) sinon ; ni l'un ni l'autre : manquant (téléchargé sans construire : `not-built`, rien : `not-fetched`)."""
+    cycle = _cycle(data)
     ead, out = set(_ead_states()), {}
     proc = os.path.join(data, 'proc')
     try:
         folders = sorted((n for n in os.listdir(proc) if re.fullmatch(r'\d{4}-\d{2}-\d{2}', n) and n <= cycle), reverse=True)
     except OSError:
         folders = []
-    others = tuple(x for x in STATES if STATES[x] == 'eaip')      # les États en masse qui ont leurs préfixes à eux (le CIFP prend le reste)
+    others = tuple(x for x in STATES if STATES[x] == 'eaip')      # les États en bloc qui ont leurs préfixes à eux (le CIFP prend le reste)
+    manual = _manual_held(data)
 
     def mine(s, ids):
         return {i for i in ids if i.startswith(s)} if STATES.get(s) == 'eaip' else {i for i in ids if not i.startswith(others)}
-    for s in args['states']:
+    for s in states:
         if s not in STATES:
-            out[s] = {'state': 'n/a', 'cached': None, 'built': None, 'reasons': [{'code': 'ead-per-aerodrome' if s in ead else 'no-source'}]}
+            out[s] = {'state': 'n/a', 'cached': None, 'built': None, 'held': None, 'reasons': [{'code': 'ead-per-aerodrome' if s in ead else 'no-source'}]}
             continue
         cached, built = _cached_of(data, s, cycle), None
         for f in folders:       # le cycle le plus récent qui porte au moins un terrain de cet État (jamais un cycle à venir)
@@ -792,13 +810,27 @@ def states_status(job, args, ctx):
             if n:
                 built = {'cycle': f, 'aerodromes': n}
                 break
+        mm = {i: c for i, c in manual.items() if i in mine(s, manual)}
+        held = {'aerodromes': len(mm), 'cycle': max((c for c in mm.values() if c), default=None), 'older': sum(1 for c in mm.values() if c < cycle)} if mm else None
         if built and built['cycle'] == cycle:
             state, reasons = 'up-to-date', []
         elif built:
             state, reasons = 'stale', [{'code': 'older-than-cycle', 'cycle': built['cycle']}]
+        elif held:
+            state, reasons = ('stale', [{'code': 'held-older', 'count': held['older'], 'cycle': min(c for c in mm.values() if c < cycle) or None}]) if held['older'] else ('up-to-date', [])
         else:
             state, reasons = 'missing', [{'code': 'not-built' if cached['state'] == 'present' else 'not-fetched'}]
-        out[s] = {'state': state, 'cached': cached, 'built': built, 'reasons': reasons}
+        out[s] = {'state': state, 'cached': cached, 'built': built, 'held': held, 'reasons': reasons}
+    return cycle, out
+
+
+def states_status(job, args, ctx):
+    """Verbe proc/status (SOG-0119) : LECTURE SEULE (ni réseau, ni écriture ; les noms du cache et l'index de chaque cycle seulement). Rend
+    { ok, cycle (en vigueur), states: { <préfixe>: { state: 'up-to-date' | 'stale' | 'missing' | 'n/a', cached: { state, files }, built: { cycle, aerodromes } | null,
+    reasons: [{ code }] } }, counts } ; codes : 'older-than-cycle' (construit pour un cycle passé : `cycle`), 'not-fetched' (rien dans le cache), 'not-built' (le cache est là,
+    rien de construit), 'ead-per-aerodrome' (un État d'EAD Basic : un terrain par geste, jamais en masse), 'no-source' (aucune source en masse). Construit : les terrains de l'index du
+    cycle (LF : les LF… ; K : ceux qu'aucun autre État en masse ne réclame)."""
+    cycle, out = state_records(ctx['data'], args['states'])
     counts = {}
     for v in out.values():
         counts[v['state']] = counts.get(v['state'], 0) + 1

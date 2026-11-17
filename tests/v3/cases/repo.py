@@ -3520,3 +3520,64 @@ def i50(c):
     c.ok('sog-js-profiling' not in got['/frame/app.js'][1], '', 'only the page carries the meta')
     src = (c.root / 'frame' / 'app.js').read_text(encoding='utf-8')
     c.ok('meta[name="sog-js-profiling"]' in src and 'profilerAble()' in src, 'frame/app.js', 'the page creates the profiler only when the meta is there')
+
+
+@case('I48', 'Launcher, procedures (SOG-0428): ONE record per State — built, or read by hand (up to date when every aerodrome is of the cycle in force: nothing is expected of the user), stale or missing otherwise — and the « procedures » row of base/cycle derived from the same records', 'I', static=True,
+      rule='SOG-0428 (the user, 17 Nov 2026: « LF ? » — the folded line said « à faire — LF : téléchargé, pas construit » while the list said « France — 14 terrains, cycle 2611 » and the map was green): proc/status looked for the State built whole in a cycle folder and ignored the 14 aerodromes read by hand; base/cycle said « à jour » for the whole set because the US CIFP was current; the page read a third source for the map. proc/status now carries `held` (aerodromes read by hand: count, newest cycle, those of a past cycle) and decides; datasets() derives from it')
+def i48(c):
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    import time
+    sys.path.insert(0, str(c.root / 'tools'))
+    P = importlib.import_module('regen.proc')
+    B = importlib.import_module('regen.base_cycle')
+    saved = (P._cycle, P._ead_states)
+    try:
+        P._cycle = lambda data: '2026-10-29'
+        P._ead_states = lambda: ['EB']
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+
+            def put(rel, doc):
+                p = os.path.join(data, *rel.split('/'))
+                os.makedirs(os.path.dirname(p), exist_ok=True)
+                with open(p, 'w', encoding='utf-8') as f:
+                    json.dump(doc, f)
+            recs = lambda *s: P.state_records(data, list(s) or ['LF', 'K'])[1]
+            rows = lambda r: {k: (v['state'], [x['code'] for x in v['reasons']]) for k, v in r.items()}
+            c.eq(rows(recs()), {'LF': ('missing', ['not-fetched']), 'K': ('missing', ['not-fetched'])}, 'nothing on the workstation: missing, not fetched', what='empty')
+            put('proc/manual/index.json', {'schema': 1, 'folder': 'manual', 'aerodromes': {'LFBD': {'cycle': '2026-10-29'}, 'LFPO': {'cycle': '2026-10-29'}, 'EGLL': {'cycle': '2026-10-01'}}})
+            r = recs()
+            c.eq((rows(r)['LF'], r['LF']['held'], r['LF']['built']), (('up-to-date', []), {'aerodromes': 2, 'cycle': '2026-10-29', 'older': 0}, None),
+                 'two LF aerodromes read by hand, both of the cycle in force: the State is UP TO DATE (nothing is expected of the user), `held` says how many', what='held current')
+            put('proc/manual/index.json', {'schema': 1, 'folder': 'manual', 'aerodromes': {'LFBD': {'cycle': '2026-10-29'}, 'LFPO': {'cycle': '2026-10-01'}, 'LFBO': {'cycle': '2026-10-01'}}})
+            r = recs()
+            c.eq((r['LF']['state'], r['LF']['reasons'], r['LF']['held']), ('stale', [{'code': 'held-older', 'count': 2, 'cycle': '2026-10-01'}], {'aerodromes': 3, 'cycle': '2026-10-29', 'older': 2}),
+                 'two of three read for a past cycle: stale, « held-older » with the count and the oldest cycle', what='held older')
+            put('proc/2026-10-29/index.json', {'schema': 1, 'cycle': '2026-10-29', 'aerodromes': {'LFBD': {}, 'LFPO': {}, 'KSEA': {}}})
+            c.eq(rows(recs()), {'LF': ('up-to-date', []), 'K': ('up-to-date', [])}, 'built whole for the cycle in force: up to date (what is read by hand does not matter then)', what='built')
+            c.eq(recs()['K']['built'], {'cycle': '2026-10-29', 'aerodromes': 1}, 'K counts what no other bulk State claims', what='K built')
+            # a hostile index of hand-read aerodromes is read as nothing
+            with open(os.path.join(data, 'proc', 'manual', 'index.json'), 'wb') as f:
+                f.write(b'[' * 200000 + b']' * 200000)
+            c.eq(P._manual_held(data), {}, 'an unreadable (deeply nested) index of hand-read aerodromes is no aerodrome, never an exception', what='hostile')
+            # the dataset row of base/cycle follows the same records
+            os.remove(os.path.join(data, 'proc', '2026-10-29', 'index.json'))
+            put('proc/manual/index.json', {'schema': 1, 'folder': 'manual', 'aerodromes': {'LFBD': {'cycle': '2026-10-29'}}})
+            row = lambda: next(d for d in B.datasets(data, '2026-10-29', time.time()) if d['id'] == 'procedures')
+            c.eq((row()['state'], row().get('why')), ('up-to-date', None), 'France read by hand and current, nothing else: the set is up to date', what='ds held')
+            os.makedirs(os.path.join(data, 'local', 'cifp', '2026-10-29'))
+            with open(os.path.join(data, 'local', 'cifp', '2026-10-29', 'CIFP_261029.zip'), 'wb') as f:
+                f.write(b'x')
+            c.eq((row()['state'], row().get('why')), ('todo', 'absent'), 'the US CIFP downloaded and not built: to do — one State that has something and is not built makes the set to do', what='ds downloaded')
+            put('proc/2026-10-29/index.json', {'schema': 1, 'cycle': '2026-10-29', 'aerodromes': {'KSEA': {}, 'LFBD': {}}})
+            c.eq((row()['state'], row().get('why')), ('up-to-date', None), 'built for the cycle in force: up to date again', what='ds built')
+            put('proc/manual/index.json', {'schema': 1, 'folder': 'manual', 'aerodromes': {'LFBD': {'cycle': '2026-10-01'}}})
+            os.remove(os.path.join(data, 'proc', '2026-10-29', 'index.json'))
+            put('proc/2026-10-01/index.json', {'schema': 1, 'cycle': '2026-10-01', 'aerodromes': {'KSEA': {}}})
+            c.eq((row()['state'], row().get('why')), ('todo', 'older-than-cycle'), 'built for a past cycle only: to do, older than the cycle', what='ds stale')
+    finally:
+        P._cycle, P._ead_states = saved
