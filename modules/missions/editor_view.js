@@ -96,6 +96,8 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-plcheck{display:flex;gap:8px;align-items:center;min-height:44px;margin:4px 0}
 [data-module="missions"] .ms-atbody .ms-plbody>.f-muted{white-space:normal;overflow:visible} /* le détail d'un lieu n'est jamais coupé */
 [data-module="missions"] .ms-plcheck>input{flex:0 0 auto;width:20px;height:20px}
+[data-module="missions"] .ms-plfold{margin:4px 0 8px}
+[data-module="missions"] .ms-plfold>summary{min-height:44px;display:flex;align-items:center;cursor:pointer}
 [data-module="missions"] .ms-atbody .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-atbody .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2}
 [data-module="missions"] .ms-atbody .ms-edthead{display:none}
@@ -298,6 +300,9 @@ function dms(s, lat, lon) {
   return `${f(lat, 'N', 'S')} ${f(lon, 'E', 'W')}`;
 }
 
+/** Un nombre écrit dans une phrase (« portée 0,3 NM ») : la virgule décimale, sauf en anglais ; le champ, lui, garde sa saisie. */
+const dec = (s, v) => (s.ctx.lang?.() || 'fr') === 'en' ? String(v ?? '') : String(v ?? '').replace('.', ',');
+
 /** L'étape Lieux (la maquette editeur_lieux_*.png) : une ligne par lieu, « Modifier » en ouvre les champs sur place ; « + Zone »,
  *  « + Point tournant », « + Rendez-vous » (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte. */
 function edPlacesHtml(s) {
@@ -322,13 +327,13 @@ function edPlacesHtml(s) {
     // un objet à trouver : sa sorte, sa portée, « caché au pilote », le tiroir dont il est la clé (ou aucun), sa position
     objectDetail = (r, i) => [ok(r.okind), s.tt(EDTX.plHidden), ...(usedBy(i).length ? usedBy(i) : [s.tt(EDTX.plNoDrawer)]), r.range ? s.tt(
       EDTX.plRangeIs, {
-        r: r.range
+        r: dec(s, r.range)
       }) : '', r.moving ? s.tt(EDTX.plMoving) : '', dms(s, r.lat, r.lon)].filter(Boolean).join(' · '),
     detail = (r, i) => r.kind === 'object' ? objectDetail(r, i) : [r.kind === 'zone' ? zk(r.zkind) : '', r.role, ...(r.kind === 'zone' ?
       usedBy(i) : []), r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
       n: r.poly
     }) : r.kind === 'zone' && r.radius ? s.tt(TX.plCircle, {
-      r: r.radius
+      r: dec(s, r.radius)
     }) : '', r.kind === 'zone' && r.tot ? s.tt(TX.plTot, {
       n: r.tot
     }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, r.lat, r.lon)].filter(Boolean).join(' · '),
@@ -337,14 +342,24 @@ function edPlacesHtml(s) {
       const fixed = r.kind === 'dep' || r.kind === 'arr',
         num = ' inputmode="decimal" maxlength="12"';
       // un objet à trouver : son identifiant est donné par l'atelier (jamais saisi) ; sept champs
-      if (r.kind === 'object') return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc(r.id)} — ${esc(s.tt(EDTX.plObjectHint))}</p>
+      if (r.kind === 'object') {
+        // la règle des sept : le nom, la sorte, la latitude, la longitude, la portée, « trouvé sur la parole du pilote », et UN repli
+        // « Hauteur — facultatif » (la hauteur de détection et l'altitude de l'objet), fermé d'office, qui dit son contenu quand il est rempli
+        const heights = [r.height ? s.tt(EDTX.plHeightIs, {
+          h: dec(s, r.height)
+        }) : '', r.alt ? s.tt(EDTX.plAltIs, {
+          a: dec(s, r.alt)
+        }) : ''].filter(Boolean).join(' · ');
+        return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc(r.id)} — ${esc(s.tt(EDTX.plObjectHint))}</p>
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
         <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
-        <div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}${field(i, 'height', EDTX.plHeight, r.height, num)}</div>
-        <div class="f-row">${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div>
+        <div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
+        <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
+          <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>
         ${r.moving ? `<p class="f-muted" data-plmoving>${esc(s.tt(EDTX.plMoving))}</p>` : ''}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
+      }
       return `<div class="ms-plform" data-plform="${i}">${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
         ${r.kind === 'zone' && r.poly ? `<p class="f-muted">${esc(s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}

@@ -3644,9 +3644,10 @@ def n77(c):
     i = c.js(_PLACE_AT, 'OBJ-1')
     line = c.js(_PLACE_LINE, i)
     c.ok(line[0] == 'object' and line[1] == row(c, 'plObject', EDTX_FILE) and line[2] == 'OBJ-1 · Naufragé' and
-         all(norm(x) in norm(line[3]) for x in (row(c, 'ok_person', EDTX_FILE), row(c, 'plRangeIs', EDTX_FILE).replace('{r}', '0.3'), row(c, 'plHidden', EDTX_FILE),
+         all(norm(x) in norm(line[3]) for x in (row(c, 'ok_person', EDTX_FILE), row(c, 'plRangeIs', EDTX_FILE).replace('{r}', '0,3'), row(c, 'plHidden', EDTX_FILE),
                                                 row(c, 'plKeyOf', EDTX_FILE).replace('{name}', '4'))), line,
-         'the row of an object: « OBJ », its identifier and its name, its kind, its range, « caché au pilote », « clé du tiroir 4 »')
+         'the row of an object: « OBJ », its identifier and its name, its kind, its range (a decimal comma in a French sentence), « caché au pilote », '
+         '« clé du tiroir 4 »')
     moving = c.js(_PLACE_LINE, c.js(_PLACE_AT, 'OBJ-2'))
     c.ok(norm(row(c, 'plNoDrawer', EDTX_FILE)) in norm(moving[3]) and norm(row(c, 'plMoving', EDTX_FILE)) in norm(moving[3]), moving,
          'the moving target: « aucun tiroir ne le cite », « cible mobile, gardée telle quelle »')
@@ -3659,22 +3660,28 @@ def n77(c):
     c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
     F = f'{E} [data-plform="{i}"]'
     c.ok(c.count(f'{F} [data-f=id]') == 0 and 'OBJ-1' in c.text(f'{F} [data-plid]'), c.text(f'{F} [data-plid]'), 'the identifier is said, never typed')
-    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f]')].map(x => x.dataset.f)"), ['name', 'okind', 'lat', 'lon', 'range', 'height', 'alt', 'confirm'],
+    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f]')].map(x => x.dataset.f)"), ['name', 'okind', 'lat', 'lon', 'range', 'confirm', 'height', 'alt'],
          'the fields of an object', what='fields')
+    fold = c.js(f"(() => {{ const d = document.querySelector('{F} [data-plheights]'); return [d.open, d.querySelector('summary').textContent.trim(), d.querySelectorAll('[data-f]').length] }})()")
+    c.eq(fold, [False, norm(row(c, 'plHeights', EDTX_FILE)), 2], 'the rule of seven: the two heights are in ONE fold « Hauteur — facultatif », closed at first',
+         what='the fold of the heights')
+    c.eq(c.js(f"document.querySelector('{F} [data-f=confirm]').checked"), True, '« trouvé seulement quand le pilote le déclare » is checked (the default of the format)',
+         what='the box')
     c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f=okind] option')].map(o => o.value)"), ['', 'wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft'],
          'the kinds are the reader\'s list', what='kinds')
     c.page.fill(f'{F} [data-f=range]', '0.5')
-    c.tap(f'{F} [data-f=confirm]')
     forged = c.js(f"""() => {{ const f = document.querySelector('{F} [data-f=range]'), x = f.cloneNode(); x.dataset.f = 'id'; x.value = 'FORGED'; f.parentNode.appendChild(x);
       x.dispatchEvent(new Event('input', {{ bubbles: true }})); x.remove(); return document.querySelector('{F} [data-plid]').textContent }}""")
     c.ok('OBJ-1' in forged and 'FORGED' not in forged and c.js(_PLACE_AT, 'OBJ-1') == i, forged, 'a forged field « id » does not rename an object')
     c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
     c.shot('N77_390_object_sheet.png')
+    c.tap(f'{F} [data-f=confirm]')
     c.tap(f'{F} [data-do="edplaceok"]')
     # « + Objet à trouver »: the workshop gives the identifier
     c.tap(f'{E} [data-do="edplaceadd"][data-kind="object"]')
     c.until(f"!!document.querySelector('{E} [data-plform] [data-plid]')", what='the new object open')
-    c.ok('OBJ-3' in c.text(f'{E} [data-plform] [data-plid]'), c.text(f'{E} [data-plform] [data-plid]'), 'the new object is OBJ-3')
+    c.ok('OBJ-3' in c.text(f'{E} [data-plform] [data-plid]') and c.js(f"document.querySelector('{E} [data-plform] [data-f=confirm]').checked") is True,
+         c.text(f'{E} [data-plform] [data-plid]'), 'the new object is OBJ-3, and its box « trouvé seulement quand le pilote le déclare » is checked from the start')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'Épave')
     c.page.select_option(f'{E} [data-plform] [data-f=okind]', 'wreck')
     c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.5')

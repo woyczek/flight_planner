@@ -317,9 +317,12 @@ Lieux. Not yet imported by the screen: the sheet is the next brick.
   and the `route_order` of a moving target (`objectRoute`: a place renamed is renamed there, a place removed leaves it).
 - **On screen** (`editor_view.js`): the row « OBJ » says its kind, « caché au pilote », the drawer whose key it is (« clé du tiroir
   4 ») or « aucun tiroir ne le cite », its range, « cible mobile, gardée telle quelle », its position — and a ZONE says the drawer
-  that uses it too; the detail of a row wraps instead of being cut. The sheet: name, kind, latitude, longitude, range, detection
-  height, altitude, and the box « Trouvé seulement quand le pilote le déclare (« Objet en vue ») ». « + Objet à trouver » joins the
-  other « + » buttons. The sketch draws an object as a diamond: the map is the author's. **An event of the timeline is never placed
+  that uses it too; the detail of a row wraps instead of being cut. The sheet follows the rule of seven (the ergonomist's reading
+  of 17 Nov): name, kind, latitude, longitude, range, the box « Trouvé seulement quand le pilote le déclare (« Objet en vue ») » —
+  checked from the start for a new object (the user's decision: within range AND declared) — and ONE fold « Hauteur — facultatif »
+  (the detection height and the altitude of the object), closed at first, which says its content when it is filled. A number written
+  in a sentence takes the decimal comma outside English (« portée 0,3 NM », « cercle 12,5 km »); a field keeps what was typed.
+  « + Objet à trouver » joins the other « + » buttons. The sketch draws an object as a diamond: the map is the author's. **An event of the timeline is never placed
   on an object** (the timeline is read by the pilot before the drawer opens).
 - **The six steps read their texts through `visible`** of the reader (`cut`, `para` of `editor.js`; Security review of 18 Nov): the
   invisible format characters are not shown nor written; a text of the file the author does not touch is kept as it is.

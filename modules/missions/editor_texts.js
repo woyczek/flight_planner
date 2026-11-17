@@ -92,6 +92,10 @@ export const EDTX = {
   plRange: ['Portée de détection (NM)', 'Detection range (NM)', 'Erfassungsreichweite (NM)', 'Alcance de detección (NM)'],
   plHeight: ['Hauteur de détection (ft)', 'Detection height (ft)', 'Erfassungshöhe (ft)', 'Altura de detección (ft)'],
   plAlt: ['Altitude de l\'objet (ft)', 'Altitude of the object (ft)', 'Höhe des Objekts (ft)', 'Altitud del objeto (ft)'],
+  plHeights: ['Hauteur — facultatif', 'Height — optional', 'Höhe — optional', 'Altura — opcional'],
+  plHeightsOf: ['Hauteur', 'Height', 'Höhe', 'Altura'],
+  plHeightIs: ['détection à {h} ft près', 'detection within {h} ft', 'Erfassung innerhalb von {h} ft', 'detección a menos de {h} ft'],
+  plAltIs: ['objet à {a} ft', 'object at {a} ft', 'Objekt auf {a} ft', 'objeto a {a} ft'],
   plConfirm: ['Trouvé seulement quand le pilote le déclare (« Objet en vue »)',
     'Found only when the pilot declares it (« Object in sight »)',
     'Erst gefunden, wenn der Pilot es meldet („Objekt in Sicht“)', 'Encontrado solo cuando el piloto lo declara («Objeto a la vista»)'
