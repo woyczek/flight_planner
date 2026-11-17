@@ -7679,6 +7679,11 @@ def f262(c):
          'its distance and its alternate fuel')
     more = norm(c.text(f'{B} [data-altnmore]') or '')
     c.ok(more.startswith('1 '), more, 'the fourth (weather not read) said on the Map')
+    # the ergonomist: a fold with a chevron (the component of « Critères du dégagement »), closed by its heading; no « Fermer »
+    c.eq(c.js(f"[document.querySelector('{B} details[data-altnprop]')?.open, !!document.querySelector('{B} details[data-altnprop] > summary'), "
+              f"document.querySelectorAll('{B} [data-do=altnpropclose]').length]"), [True, True, 0], 'a fold, open, no « Fermer »', what='fold')
+    c.eq(c.js(f"getComputedStyle(document.querySelector('{B} li[data-cand=XQPC] .fu-nowrap:last-child')).whiteSpace"), 'nowrap',
+         '« visual only » never cut', what='nowrap')
     # the document for the Map: seven at most, ok before warn, the LIFR one left out, codes only, the name a cleaned text
     d = c.until_doc('cache/fuel/altn_candidates.json', lambda d: bool(d) and len(d.get('list') or []) > 0, 'the document of the Map',
                     timeout=10000)
@@ -7691,9 +7696,13 @@ def f262(c):
     c.eq(c.doc('pilot/ABC/current_flight.json')['route']['altn'], 'LFMT', 'nothing taken: the field unchanged', what='field')
     c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
     c.shot(f'F262_{c.design}_390_{L}_list.png')
-    # a touch on the Map beside (maps-altn-pick): PROPOSED, its weather read, nothing taken
+    c.tap(f'{B} details[data-altnprop] > summary')
+    c.until(f"document.querySelector('{B} details[data-altnprop]')?.open === false", timeout=3000, what='closed by its heading')
+    c.eq(len((c.doc('cache/fuel/altn_candidates.json') or {}).get('list') or []), 3, 'closed, the Map keeps the proposal', what='closed')
+    # a touch on the Map beside (maps-altn-pick): PROPOSED, its weather read, nothing taken; the fold reopened
     c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPF' } }))")
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
+    c.eq(c.js(f"document.querySelector('{B} details[data-altnprop]')?.open"), True, 'reopened on the aerodrome touched', what='reopened')
     prop = norm(c.text(f'{B} li[data-proposed] > span:nth-child(2)') or '')   # the line without its sign (« ✓ ») and its button
     # the name of the base (« XQPF <b>TEST</b> », invented) shown as TEXT: escaped, read as it is, no <b> element made of it
     c.ok(prop.startswith(norm(tx(T, 'altnProposed', L)).replace('{icao}', 'XQPF')) and 'XQPF <b>TEST</b>' in prop

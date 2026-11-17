@@ -2462,7 +2462,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   leg, approach, the sheet's flats). The weather is read (ctx.weather.taf, the frame's 30-minute store) for the three closest only, and
   for the one touched on the Map; the others are « weather not read ». Fuel lists the three closest by distance, with sign, distance,
   alternate fuel, reservations and « Prendre » (none on a red one: LIFR); the Map gets up to seven, `ok` before `warn`, the LIFR one
-  left out (`state` null). « Prendre » is the only gesture that writes the field (setAd, as a typed code); taken, closed or with another
-  arrival, the document is written with `list: []`. The Map's touch (`maps-altn-pick` { icao }, or `#fuel?altn=` read back for the same
+  left out (`state` null). « Prendre » is the only gesture that writes the field (setAd, as a typed code); taken or with another
+  arrival, the document is written with `list: []`. The ergonomist, after reading F262: the list is a FOLD with a chevron, the component
+  of « Critères du dégagement » — closed by its heading, no « Fermer » link; folding keeps the proposal and the Map's layer; a touch on
+  the Map reopens it; the space around its heading reduced (the 44 px targets of « Prendre » kept); a reservation, a distance or an
+  amount never cut (white-space: nowrap); a message that prevents a proposal keeps the gesture to try again. The Map's touch (`maps-altn-pick` { icao }, or `#fuel?altn=` read back for the same
   arrival and aircraft key) PROPOSES the aerodrome — « Proposé : XQPF — Prendre » — and reads its weather; a code outside the proposal is
   ignored. Names from the base are third-party text: cleaned and escaped. F262 (invented aerodromes, each one a rule of the selection).

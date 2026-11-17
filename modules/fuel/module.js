@@ -802,8 +802,8 @@ const TX = {
       'Ningún aeródromo entre 30 y 300 NM de la llegada cumple pista y medios.'
     ]
   },
-  altnPropHead: ['Les plus proches de {arr} (piste et moyens bons) :', 'Closest to {arr} (runway and aids good):',
-    'Am nächsten zu {arr} (Piste und Navigationshilfen gut):', 'Los más cercanos a {arr} (pista y medios buenos):'
+  altnPropHead: ['Les plus proches de {arr} (piste et moyens bons)', 'Closest to {arr} (runway and aids good)',
+    'Am nächsten zu {arr} (Piste und Navigationshilfen gut)', 'Los más cercanos a {arr} (pista y medios buenos)'
   ],
   altnPropWhy: {
     'aids-visual': ['à vue seulement', 'visual only', 'nur Sichtanflug', 'solo visual'],
@@ -814,7 +814,6 @@ const TX = {
   altnPropMore: ['{n} autre(s) sur la Carte.', '{n} more on the Map.', '{n} weitere auf der Karte.', '{n} más en el mapa.'],
   altnProposed: ['Proposé : {icao}', 'Suggested: {icao}', 'Vorgeschlagen: {icao}', 'Propuesto: {icao}'],
   altnTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
-  altnPropClose: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
   altnWxNote: ['La météo est un indicateur (catégories VFR, MVFR, IFR, LIFR de la FAA), jamais une conformité aux minima du terrain.',
     'The weather is an indicator (the FAA’s VFR, MVFR, IFR, LIFR categories), never compliance with the aerodrome’s minima.',
     'Das Wetter ist ein Indikator (FAA-Kategorien VFR, MVFR, IFR, LIFR), nie die Einhaltung der Minima des Flugplatzes.',
@@ -2740,9 +2739,13 @@ const STYLE = `
 [data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="grey"]>.fu-altnsign{color:var(--sog-muted)}
 [data-module="fuel"] .fu-altnfold ul{list-style:none;margin:4px 0 0;padding:0}
 [data-module="fuel"] .fu-altnfold li{display:flex;gap:6px;align-items:baseline;margin:2px 0}
-/* SOG-0398 lot 2 : la proposition — le bouton, puis les trois plus proches, chacun avec « Prendre » à droite */
+/* SOG-0398 lot 2 : la proposition — le bouton, puis les trois plus proches dans un repli, chacun avec « Prendre » à droite (cible de 44 px) ;
+   l'en-tête du repli serré contre la liste ; une réserve (« à vue seulement »), une distance, un carburant ne se coupent pas */
 [data-module="fuel"] .fu-altnprop{margin:4px 0 0}
-[data-module="fuel"] .fu-altnprop ul{list-style:none;margin:2px 0 0;padding:0}
+[data-module="fuel"] details.fu-altnprop>summary{margin:0;padding:2px 0}
+[data-module="fuel"] .fu-altnprop ul{list-style:none;margin:0;padding:0}
+[data-module="fuel"] .fu-altnprop [data-altnmore]{margin:2px 0 0}
+[data-module="fuel"] .fu-nowrap{white-space:nowrap}
 [data-module="fuel"] .fu-altnprop li{display:flex;gap:6px;align-items:baseline;margin:4px 0}
 [data-module="fuel"] .fu-altnprop li>span:nth-child(2){flex:1;min-width:0}
 [data-module="fuel"] .fu-altnprop li[data-state="ok"]>.fu-altnsign{color:var(--sog-ok)}
@@ -3552,14 +3555,9 @@ function onPlanClick(e) {
   if (b?.dataset.do === 'level') return setLevel(+b.dataset.ft);
   if (b?.dataset.do === 'levelauto') return levelAutoOn();
   if (b?.dataset.do === 'adswap') return swapAds();
-  // SOG-0398 lot 2 : « Proposer un dégagement », « Prendre », « Fermer »
+  // SOG-0398 lot 2 : « Proposer un dégagement », « Prendre »
   if (b?.dataset.do === 'altnpropose') return altnProposeRun();
   if (b?.dataset.do === 'altntake') return altnTake(String(b.dataset.icao || ''));
-  if (b?.dataset.do === 'altnpropclose') {
-    S.altnProp = null;
-    altnDocWrite();
-    return altnChkDraw(S.C);
-  }
   if (b?.dataset.do === 'alignlvl') return alignLevels();
   if (pick && S.C?.D) {
     const svg = pick.ownerSVGElement,
@@ -5441,20 +5439,26 @@ function altnPropHtml() {
   if (!/^[A-Z0-9]{4}$/.test(String(r.arr || ''))) return '';
   if (!P) return `<p class="fu-altnprop"><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.altnPropose))}</button></p>`;
   if (P.pending) return `<p class="fu-altnprop f-muted" data-altnprop role="status">${esc(tt(TX.altnPropBusy))}</p>`;
-  const close = `<button type="button" class="fu-linkbtn" data-do="altnpropclose">${esc(tt(TX.altnPropClose))}</button>`;
-  if (P.msg) return `<p class="fu-altnprop f-muted" data-altnprop data-msg="${esc(P.msg)}">${esc(tt(TX.altnPropMsg[P.msg]))} ${close}</p>`;
+  // ce qui empêche de proposer, dit ; le geste reste là pour réessayer
+  if (P.msg) return `<p class="fu-altnprop f-muted" data-altnprop data-msg="${esc(P.msg)}">${esc(tt(TX.altnPropMsg[P.msg]))}</p><p class="fu-altnprop"><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.altnPropose))}</button></p>`;
   const unit = S.C?.sheet?.unit || 'kg',
     row = (x, proposed) => {
       const p = altnPropCrits(x),
-        why = [...p.why.filter(w => w !== 'wx-unread' || proposed), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].map(w => tt(TX
-          .altnPropWhy[w])),
-        bits = [`${Math.round(x.nm)} NM`, x.cost ? fuelTxt(x.cost.fuel, unit) : '', ...why].filter(Boolean).join(' · ');
-      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}<span class="f-muted">${esc([x.name, bits].filter(Boolean).join(' · '))}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}</li>`;
+        why = [...p.why.filter(w => w !== 'wx-unread' || proposed), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].map(w =>
+          `<span class="fu-nowrap">${esc(tt(TX.altnPropWhy[w]))}</span>`),
+        bits = [esc(x.name), `<span class="fu-nowrap">${Math.round(x.nm)} NM</span>`, x.cost ? `<span class="fu-nowrap">${esc(fuelTxt(x.cost.fuel, unit))}</span>` : '', ...why]
+        .filter(Boolean).join(' · ');
+      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}<span class="f-muted">${bits}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}</li>`;
     },
     near = P.list.slice(0, AC.CAND_LIST),
     touched = P.touched ? P.list.find(x => x.icao === P.touched) : null,
-    more = Math.max(0, P.list.length - near.length);
-  return `<div class="fu-altnprop" data-altnprop><p class="f-row"><span class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</span>${close}</p><ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</div>`;
+    more = Math.max(0, P.list.length - near.length),
+    // l'ergonome : un repli à chevron, le composant de « Critères du dégagement » ; on le ferme en touchant son en-tête (la proposition
+    // et la Carte restent) ; ouvert d'abord, et rouvert quand un terrain est touché sur la Carte
+    was = S.body?.querySelector('[data-altnchk] details[data-altnprop]'),
+    open = P.reopen || !was || was.open;
+  P.reopen = false;
+  return `<details class="fu-altnfold fu-altnprop" data-altnprop${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</summary><ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</details>`;
 }
 /** « Prendre » : le terrain écrit dans le champ Dégagement (le seul geste qui l'écrit), la proposition fermée, la Carte prévenue. */
 function altnTake(icao) {
@@ -5474,6 +5478,7 @@ async function altnTouched(icao) {
   // l'adresse et l'événement viennent de dehors (un lien peut porter #fuel?altn=) : le code revalidé, et seulement un terrain proposé
   if (!/^[A-Z0-9]{4}$/.test(k) || !P || P.pending || !P.list.some(x => x.icao === k)) return;
   P.touched = k;
+  P.reopen = true; // le repli fermé : rouvert sur le terrain touché
   altnChkDraw(S.C);
   if (!P.wxRead.has(k)) {
     await altnPropWx([k]);
