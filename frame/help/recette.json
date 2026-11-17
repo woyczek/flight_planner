@@ -4488,7 +4488,7 @@
     "de": "Missionswerkstatt: Schubladen — fünf Schlüssel, die Ausweichzeit, die Vorschau und die „Pilotensicht“ je Stufe",
     "es": "Taller de misiones: cajones — cinco claves, la hora de respaldo, la vista previa y la «vista del piloto» por etapa"
    },
-   "test": "Missions, Registre, « Modifier » une mission (page rechargée). (1) Lieux, « + Objet à trouver » : l'identifiant OBJ-n est donné (pas saisi), la case « Trouvé seulement quand le pilote le déclare » est cochée, la ligne dit « caché au pilote · aucun tiroir ne le cite ». (2) Dans le déroulé, « ＋ Tiroir » : choisis « un objet à trouver » (ou « une zone de passage »), donne une heure de repli, un titre, un message ; Enregistrer ; rouvre la mission : le tiroir est là, sa carte dit sa clé, et la ligne de l'objet ou de la zone dit « clé du tiroir n ». (3) Retire cette zone ou cet objet : la notification dit que le tiroir n ne s'ouvrira plus qu'à la main ou à son heure de repli. Pas encore là : dessi",
+   "test": "Missions, Registre, « Modifier » une mission (page rechargée). (1) Lieux, « + Objet à trouver » : l'identifiant OBJ-n est donné (pas saisi), la case « Trouvé seulement quand le pilote le déclare » est cochée, la ligne dit « caché au pilote · aucun tiroir ne le cite ». (2) Dans le déroulé, « ＋ Tiroir » : choisis « un objet à trouver » (ou « une zone de passage »), donne une heure de repli, un titre, un message ; Enregistrer ; rouvre la mission : le tiroir est là, sa carte dit sa clé, et la ligne de l'objet ou de la zone dit « clé du tiroir n ». (3) Retire cette zone ou cet objet : la notification dit que le tiroir n ne s'ouvrira plus qu'à la main ou à son heure de repli. (4) Dans la fiche d'u",
    "since": "2026-11-17",
    "state": "known"
   },
