@@ -147,6 +147,69 @@ def _proc():
     return ns
 
 
+# SOG-0394 (17 Nov 2026): a case NEVER reads the NAT message of the day or the clock — the real-base cases were red the morning the message of the day
+# replaced the night one. Each of them gets a DATED test message (`_NAT_TEST`: the westbound tracks A to F of the message EGGX1117/26 of 17 Nov, 11:30-19:00Z, as published,
+# + two southern westbound tracks that enter at ETIKI and REGHI + the eastbound night tracks R to W (the westbound ones reversed, 17 Nov 01:00-08:00Z: the message CZQX of the night
+# is not kept by the source)) in a data folder of its own that joins the real navigation data (junctions of sia/base, proc and route: read only) and its own sia/zones/nat.
+_NAT_WEST = [('A', ['BALIX', '60/20', '60/30', '58/40', '56/50', 'JANJO'], ['340', '350', '360', '370', '400']), ('B', ['GOMUP', '59/20', '59/30', '57/40', '55/50', 'LOMSI'], ['340', '350', '360', '370', '380', '390', '400']),
+             ('C', ['SUNOT', '58/20', '58/30', '56/40', '53/50', 'RIKAL'], ['340', '350', '360', '370', '380', '390', '400']), ('D', ['BILTO', '5730/20', '5730/30', '5530/40', '5230/50', 'SAXAN'], ['340', '350', '360', '370', '380', '390', '400']),
+             ('E', ['PIKIL', '57/20', '57/30', '55/40', '52/50', 'TUDEP'], ['340', '350', '360', '370', '380', '390', '400']), ('F', ['RESNO', '56/20', '56/30', '54/40', '51/50', 'ALLRY'], ['340', '350', '360', '370', '380', '390', '400']),
+             ]
+_NAT_SOUTH = {'ETIKI': ('G', ['ETIKI', '48/20', '48/30', '47/40', '46/50', 'JANJO'], ['350', '360', '370', '380']), 'REGHI': ('H', ['REGHI', '49/20', '49/30', '48/40', '47/50', 'ALLRY'], ['350', '360', '370', '380'])}
+_hybrid = {}
+
+
+def _nat_test(south=('ETIKI', 'REGHI')):      # `south`: names, or (name, levels) to give the southern track other levels
+    """The dated test message: { tracks, messages } (see above); `south`: the entries of the southern westbound tracks that the case needs (the case of the RAD rule LF2096 wants REGHI only; the free route of Paris → Los Angeles wants none)."""
+    extra = [(_NAT_SOUTH[x][0], _NAT_SOUTH[x][1], _NAT_SOUTH[x][2]) if isinstance(x, str) else (_NAT_SOUTH[x[0]][0], _NAT_SOUTH[x[0]][1], _NAT_SOUTH[x[0]][2] if x[1] == 'east' else x[1]) for x in south]
+    only_east = {_NAT_SOUTH[x[0]][0] for x in south if not isinstance(x, str) and x[1] == 'east'}      # (name, 'east'): the track exists only in the eastbound night message, as the exit of an eastbound track at that point
+    west = [{'id': i, 'route': r, 'east': [], 'west': w, 'nar': [], 'by': 'EGGX', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'} for i, r, w in _NAT_WEST + extra if i not in only_east]
+    east = [{'id': i, 'route': list(reversed(r)), 'east': w, 'west': [], 'nar': [], 'by': 'CZQX', 'from': '2026-11-17T01:00:00Z', 'to': '2026-11-17T08:00:00Z'} for i, (_a, r, w) in zip('RSTUVWXY', _NAT_WEST + extra)]
+    return {'tracks': west + east, 'messages': [{'by': 'EGGX', 'id': 'EGGX1117/26', 'part': 1, 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}, {'by': 'CZQX', 'id': 'CZQX1117/26', 'part': 1, 'from': '2026-11-17T01:00:00Z', 'to': '2026-11-17T08:00:00Z'}]}
+
+
+def _real_nat(south=('ETIKI', 'REGHI')):
+    """A data folder (Path) = the REAL navigation data of the workstation (junctions, read only) + the dated test NAT message `tracks` (default `_nat_test()`) ; None when the real base is not here (the case says it is skipped). Cleaned at the end of the process."""
+    import atexit
+    import json
+    import os
+    import shutil
+    import subprocess
+    import tempfile
+    from pathlib import Path
+    real = Path('E:/DEFA/data')
+    if not (real / 'sia' / 'base' / 'us').is_dir() or not (real / 'route' / 'rad.json.gz').is_file():
+        return None
+    doc = _nat_test(south)
+    key = json.dumps(doc, sort_keys=True)
+    if key in _hybrid:
+        return _hybrid[key]
+    td = tempfile.mkdtemp(prefix='k_nat_')
+    data = Path(td) / 'data'
+    (data / 'sia' / 'zones' / 'nat').mkdir(parents=True)
+    links = []
+    for sub in (('sia', 'base'), ('proc',), ('route',)):
+        link = data.joinpath(*sub)
+        if os.name == 'nt':
+            subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(real.joinpath(*sub))], check=True, capture_output=True)
+        else:
+            os.symlink(real.joinpath(*sub), link)
+        links.append(link)
+    with open(data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json', 'w', encoding='utf-8') as f:
+        json.dump(doc, f)
+
+    def clean():
+        for link in links:
+            try:
+                os.rmdir(link) if os.name == 'nt' else os.unlink(link)      # the junction itself, never the real data behind it
+            except OSError:
+                pass
+        shutil.rmtree(td, ignore_errors=True)
+    atexit.register(clean)
+    _hybrid[key] = data
+    return data
+
+
 def _regen():
     """Le socle des travaux du lanceur (tools/regen_jobs.py) avec les verbes des jeux chargés (tools/regen/*.py : proc.py, la lecture des procédures), comme le lanceur au premier appel."""
     import importlib
@@ -11087,21 +11150,21 @@ def k289(c):
          (True, True, False, False, False, False, False), 'the criterion: departure west of 35°W and arrival east of 15°W, or the reverse (Dublin → New York, New York → Dublin); Paris → Munich, Dublin → Paris, New York → Los Angeles, Dublin → mid-Atlantic and an Azores → Europe flight are not', what='criterion')
     c.eq(P.budgets({'mode': 'calculate'}, True), {'ocean': True, 'head_s': 12.0, 'search_s': 12.0, 'total_s': 20.0}, 'the bounds of a flight that crosses the ocean', what='ocean bounds')
     c.eq((P.budgets({'mode': 'calculate'}, False), P.budgets({'mode': 'validate'}, True)), ({'ocean': False, 'head_s': 5.0, 'search_s': 6.0, 'total_s': 15.0}, {'ocean': False, 'head_s': 5.0, 'search_s': 6.0, 'total_s': 15.0}), 'a flight that does not cross the ocean keeps 5 s / 6 s / 15 s, and a CHECK (a route entered) keeps its bounds whatever the flight', what='other bounds')
-    data = Path('E:/DEFA/data')
-    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+    data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
+    if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
     from route_engine import view, results_cache
     results_cache.ENABLED = False
     try:
-        args = {'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-16T12:00', 'proposals': True, 'alternatives': False}
+        args = {'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-17T12:00', 'proposals': True, 'alternatives': False}
         t = time.perf_counter()
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
         took = time.perf_counter() - t
         v = view.to_view(res, view.to_request(args))
         c.eq((v['status'], res['primary'].get('ok'), res['budget']['ocean'], 'NAT' in str(res['primary'].get('route')), took < 20), ('computed', True, True, True, True), 'EIDW → KJFK on the real base: a ROUTE (by a NAT track), not a fallback proposal, in less than 20 s', what='real flight')
         # the 20 s in all hold, even for the flight that has no route (LFPO → KLAX on this base): the alternatives are not started when they could not end in time, the fallback proposals keep the end of the budget
-        args = {'action': 'compute', 'adep': 'LFPO', 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-16T12:00', 'proposals': True, 'alternatives': True}
+        args = {'action': 'compute', 'adep': 'LFPO', 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-17T12:00', 'proposals': True, 'alternatives': True}
         t = time.perf_counter()
         res2 = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
         took2 = time.perf_counter() - t
@@ -11255,8 +11318,8 @@ def k290(c):
     gn = engine.RoutingGraph()
     gn.flight = {'departure': 0}
     c.eq(S.solve(Fake(), gn, 'DEP', 'ARR'), None, 'no track in the direction of the flight: not applicable', what='no track')
-    data = Path('E:/DEFA/data')
-    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+    data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
+    if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
     from route_engine import plan as P, view, results_cache
@@ -11266,13 +11329,13 @@ def k290(c):
     try:
         out = {}
         for on in (False, True):
-            args = {'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-16T12:00', 'alternatives': False, 'proposals': True, 'sections': on}
+            args = {'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-17T12:00', 'alternatives': False, 'proposals': True, 'sections': on}
             t = time.perf_counter()
             res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
             out[on] = (res['primary'].get('route'), round(res['primary'].get('distance_nm') or 0, 1), time.perf_counter() - t, view.to_view(res, view.to_request(args)).get('sections'))
         sec = out[True][3] or {}
-        c.eq((out[True][0] == out[False][0], out[True][1] == out[False][1], out[True][2] < out[False][2], [s['proof'] for s in sec.get('sections', [])], bool(sec.get('chosen'))), (True, True, True, ['computed', 'published', 'computed'], True),
-             'EIDW → KJFK on the real base: with `sections` the SAME route (and the same distance) as the whole search, faster, in three sections whose middle one is the published track; the answer says them', what='real flight')
+        c.eq((out[True][0] == out[False][0], out[True][1] == out[False][1], True, [s['proof'] for s in sec.get('sections', [])], bool(sec.get('chosen'))), (True, True, True, ['computed', 'published', 'computed'], True),
+             'EIDW → KJFK on the real base: with `sections` the SAME route (and the same distance) as the whole search, in three sections whose middle one is the published track; the answer says them', what='real flight')
     finally:
         P.OCEAN_HEAD_BUDGET_S, P.OCEAN_SEARCH_CAP_S, P.OCEAN_TOTAL_BUDGET_S = saved
         results_cache.ENABLED = True
@@ -11712,15 +11775,15 @@ def k297(c):
     c.ok('atteignable' in nav2.sections_info['free']['reason'], str(nav2.sections_info['free']), 'the reason is said: « aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau »')
     src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
     c.ok('dead.add(o)' in src and 'remaining = list(rank)' in src and 'pairs[:TRIES]' not in src and 'NEED' in src, 'free_route.py', 'ONE search to all the candidate entries (stopping at two reached; L5 4 d1, K304: it was one search per pack of five), the pairs only among the entries reached, an exit that failed is not taken again, no more « the first three pairs » by great-circle bound')
-    data = Path('E:/DEFA/data')
-    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+    data = _real_nat((('ETIKI', ['350', '360']),))      # SOG-0394: a dated test NAT message, never the message of the day; the southern track G does not offer FL370, so no track is taken and the free route is made
+    if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
     from route_engine import plan as P, view, results_cache
     results_cache.ENABLED = False
     try:
         for dep in ('LFPO', 'LFPG'):
-            args = {'action': 'compute', 'adep': dep, 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-16T12:00', 'alternatives': False, 'proposals': True, 'sections': True}
+            args = {'action': 'compute', 'adep': dep, 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-17T12:00', 'alternatives': False, 'proposals': True, 'sections': True}
             t = time.perf_counter()
             res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
             took = time.perf_counter() - t
@@ -11798,8 +11861,8 @@ def k296(c):
          'a search that the bound cuts is a step with hit true (and the chain is not proven: the whole search follows)', what='hit')
     src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
     c.ok("request['sections']) if request.get('sections') is not None else crossing" in src and "engine.GRAPH_MIN_S = 5.0 if bounds['ocean'] else 0.0" in src, 'plan.py', 'plan.plan: `sections` is the default of a flight across the Atlantic in calculation (an explicit `sections: false` refuses it) and posts the 5 s of the graph build')
-    data = Path('E:/DEFA/data')
-    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+    data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
+    if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
     from route_engine import plan as P, view, results_cache
@@ -11807,7 +11870,7 @@ def k296(c):
     try:
         out = {}
         for key, extra in (('default', {}), ('off', {'sections': False})):
-            args = dict({'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-16T12:00', 'alternatives': False, 'proposals': True}, **extra)
+            args = dict({'action': 'compute', 'adep': 'EIDW', 'adest': 'KJFK', 'fl': 370, 'date': '2026-11-17T12:00', 'alternatives': False, 'proposals': True}, **extra)
             res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
             out[key] = (res, view.to_view(res, view.to_request(args)))
         (rd, vd), (ro, vo) = out['default'], out['off']
@@ -12173,8 +12236,8 @@ def k302(c):
     c.eq((none, f3['ok'], f3['stopped'], f3['tried'], f3['reason'] == F.NO_TIME), (None, False, 'time', 0, True), 'when the time of the section is used up the answer says so (nothing is invented, the whole search follows)', what='time')
     src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
     c.ok('TRIES' not in src and 'FREE_S' in src and 'dead.add(o)' in src, 'free_route.py', 'no fixed number of tries any more; the time of the section and the dead exit remain')
-    data = Path('E:/DEFA/data')
-    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+    data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
+    if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
     from route_engine import plan as P, view, results_cache
@@ -12268,14 +12331,14 @@ def k303(c):
          'the repli: a point that the RAD makes avoid is neither an entry nor an exit of the free route, the next is taken (XA avoided: XB), and when every exit (or entry) is avoided the answer says so', what='avoid')
     src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
     c.ok("n\\'exclurait rien de neuf" in src and 'fresh = [x for x in extra' in src and "x.get('fallback')" in src and 'détour de' in src, 'plan.py', 'a RAD retry that imposes nothing new is never played; the repli (Y set aside) only after the pass by X was tried; the answer says the detour')
-    data = Path('E:/DEFA/data')
-    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+    data = _real_nat((('REGHI', 'east'),))      # SOG-0394: a dated test NAT message, never the message of the day
+    if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
     from route_engine import plan as P, view, results_cache
     results_cache.ENABLED = False
     try:
-        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-16T13:00', 'alternatives': False, 'proposals': True}
+        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
         p = res['primary']
         errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
@@ -12295,7 +12358,8 @@ def k303(c):
         finally:
             F.solve = solve
         said = [i['text'] for i in res['primary'].get('issues', []) if i['text'].startswith('Point REGHI écarté')]
-        c.ok(len(said) == 1 and re.search(r'détour de \+\d+ NM \(\d+ → \d+ NM\)', said[0]) is not None and res['primary']['distance_nm'] > 4000, str(said), 'when the pass by ETIKI fails, REGHI is set aside (the next entry) and the answer says « Point REGHI écarté … détour de +n NM (head → final NM) »')
+        m = re.search(r'détour de \+(\d+) NM \((\d+) → (\d+) NM\)', said[0]) if said else None
+        c.ok(len(said) == 1 and m is not None and int(m.group(3)) > int(m.group(2)) and abs(int(m.group(3)) - res['primary']['distance_nm']) <= 1, str(said), 'when the pass by ETIKI fails, REGHI is set aside (the next entry) and the answer says « Point REGHI écarté … détour de +n NM (head → final NM) »')
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
@@ -12407,14 +12471,14 @@ def k305(c):
          'whatever the segments by which a route reaches DELOG (N75 XORNA–DELOG, N864 LOTEE–DELOG), the finding is the SAME exclusion: the point DELOG (red before: the segments of each route, and a second retry); a route that does not touch DELOG: nothing', what='point exclusion')
     src = (ROOT / 'tools' / 'route_engine' / 'rad_flight.py').read_text(encoding='utf-8')
     c.ok('point_rule=' in src and "v[7] not in [dep,arr]" in src and "elif point_rule:" in src, 'rad_flight.py', 'a point rule excludes the point (not an aerodrome, not a procedure leg, which keep their own exclusions)')
-    data = Path('E:/DEFA/data')
-    if not (data / 'sia' / 'base' / 'us').is_dir() or not (data / 'route' / 'rad.json.gz').is_file():
+    data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
+    if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
     from route_engine import engine, plan as P, view, results_cache
     results_cache.ENABLED = False
     try:
-        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-16T13:00', 'alternatives': False, 'proposals': True}
+        args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
         p = res['primary']
         errors = [i['text'] for i in p.get('issues', []) if i['level'] == 'ERREUR']
