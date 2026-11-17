@@ -58,7 +58,10 @@ def coordinate(ident):
 def load(path):
     return json.loads(Path(path).read_text(encoding='utf-8-sig'))
 
-def tokens(s): return set(re.findall(r'[A-Z][A-Z0-9_*]{1,30}',s.upper()))
+@functools.lru_cache(maxsize=65536)
+def _tokens(s): return frozenset(re.findall(r'[A-Z][A-Z0-9_*]{1,30}',s.upper()))      # SOG-0424 : le même texte de règle est lu à chaque évaluation d'une route (192 000 lectures pour une demande) : lu UNE fois (un ensemble figé : les appelants ne font que des intersections et des tests)
+
+def tokens(s): return _tokens(s)
 
 def route_connector(word,nav,airways=(),procedures=()):
     return word=='DCT' or word in airways or word in procedures or (word not in nav.ids and re.fullmatch(r'U?[A-Z]\d{1,4}[A-Z]?',word) is not None)
@@ -612,12 +615,19 @@ class Rad:
         with gzip.open(RAD_FILE or HERE/'rad.json.gz','rt',encoding='utf-8') as f: books=json.load(f)   # SOG-0081 : RAD_FILE
         self.book=next((b for b in books if b['start']<=str(date)<b['end_exclusive']),None)
         self.date=date; self.groups={}
+        self._match={}; self._cand=None; self._blk={}      # SOG-0424 : ce qui ne dépend que du classeur et du couple de terrains est calculé une fois par contexte (les évaluations d'une demande : la route, les variantes, les reprises RAD)
         if self.book:
             for r in self.book['sheets']['Annex 1']:
                 self.groups[r['v'][3].strip()]=r['v'][4]
 
     def match(self,expr,ad,seen=None):
-        seen=set() if seen is None else seen
+        if seen is None:
+            key=(expr,ad)
+            if key not in self._match:self._match[key]=self._match_of(expr,ad,set())
+            return self._match[key]
+        return self._match_of(expr,ad,seen)
+
+    def _match_of(self,expr,ad,seen):
         for t in tokens(expr):
             if t in self.groups and t not in seen:
                 if self.match(self.groups[t],ad,seen|{t}): return True
@@ -634,6 +644,11 @@ class Rad:
     def blocks(self,dep,arr,fl):
         """Only unambiguous, all-day atomic prohibitions; no general RAD grammar inference."""
         if not self.book: return []
+        key=(dep,arr,fl)      # SOG-0424 : les mêmes interdictions pour le même couple (et le même niveau) : calculées une fois
+        if key not in self._blk:self._blk[key]=self._blocks(dep,arr,fl)
+        return [dict(b) for b in self._blk[key]]
+
+    def _blocks(self,dep,arr,fl):
         blocks=[]
         for sheet in ['Annex 2B','Annex 3B DCT']:
             active=[r for r in self.book['sheets'][sheet] if self.active(r)]
@@ -662,28 +677,37 @@ class Rad:
         blocks.extend(rad_flight.static_blocks(self,dep,arr))
         return list({json.dumps(b,sort_keys=True):b for b in blocks}.values())
 
-    def candidates(self,dep,arr,ids,routes):
-        if not self.book: return []
-        found=[]; search=(ids|routes)-{'DCT'}
+    CANDIDATE_COLUMNS={'Annex 2B':[4,5,6,7,8], 'Annex 2C':[4,5,7], 'Annex 3B DCT':[4,5], 'Annex 3B FRA LIM':[4], 'Annex 3A Conditions':[4,5]}
+
+    def _candidate_index(self):
+        """SOG-0424 : les lignes ACTIVES du classeur et leurs mots (lus une fois) : (feuille, ligne, valeurs, mots) dans l'ordre des feuilles et des lignes ; ce qui ne dépend ni de la route ni des terrains."""
+        out=[]
         for sheet,rows in self.book['sheets'].items():
             if sheet=='Annex 1': continue
+            cols=self.CANDIDATE_COLUMNS.get(sheet,[])
             for r in rows:
                 if not self.active(r): continue
-                v=r['v']; reason=[]
+                v=r['v'];out.append((sheet,r,v,tokens(' '.join(v[i] for i in cols))))
+        return out
+
+    def candidates(self,dep,arr,ids,routes):
+        if not self.book: return []
+        if self._cand is None:self._cand=self._candidate_index()
+        found=[]; search=(ids|routes)-{'DCT'}
+        for sheet,r,v,ts in self._cand:
+            if True:
+                reason=[]
                 if sheet=='Annex 3A DEP' and self.match(v[4],dep): reason.append('AD de départ')
                 elif sheet=='Annex 3A ARR' and self.match(v[4],arr): reason.append('AD d’arrivée')
                 elif sheet=='Annex 2A' and (self.match(v[4],dep) or self.match(v[6],arr)):
                     reason.append('ADEP/ADES ou groupe à examiner')
                 else:
-                    cols={'Annex 2B':[4,5,6,7,8], 'Annex 2C':[4,5,7], 'Annex 3B DCT':[4,5],
-                          'Annex 3B FRA LIM':[4], 'Annex 3A Conditions':[4,5]}.get(sheet,[])
-                    ts=tokens(' '.join(v[i] for i in cols))
                     hit=search & ts
                     if hit: reason.append('Mention de '+', '.join(sorted(hit)))
                     # Capture airport-specific rules even without an explicit matching route token.
                     if sheet in ['Annex 2B','Annex 2C','Annex 3A Conditions']:
                         if dep in ts or arr in ts: reason.append('Mention de l’AD')
-                        for group in ts & self.groups.keys():
+                        for group in sorted(ts & self.groups.keys()):      # SOG-0424 : triés (l'ordre d'un ensemble change d'un processus à l'autre : la même route donnait deux textes)
                             if self.match(group,dep) or self.match(group,arr):
                                 reason.append('Groupe '+group)
                 if reason:

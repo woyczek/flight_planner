@@ -14351,3 +14351,95 @@ def k331(c):
     p2 = res2['primary']
     c.eq(([i['text'] for i in p2['issues'] if i['level'] == 'ERREUR' and 'Raccord' in i['text']], sum('au-delà de la limite de 10 NM' in i['text'] for i in p2['issues'] if i['level'] == 'REVUE')), ([], 1),
          'the CALCULATED route (the search writes it, no SID in the base): no ERREUR, one REVUE that says the direct is above the limit', what='e2e calculated')
+
+
+@case('K334', 'Route engine, SOG-0424 (the time of the RAD control): what depends only on the workbook and on the pair of aerodromes is computed ONCE per context — the readings of the words of a rule (`tokens`), the matching of a group and an aerodrome (`Rad.match`), the active rows and their words (`Rad._candidate_index`), the atomic prohibitions of a pair (`Rad.blocks`, `rad_flight.static_blocks`: once per (departure, arrival, level), not once per evaluation of a route) — and the answer is the SAME: the mentions, their reasons (the groups of a mention are sorted: the order of a set changed from one process to the next), the blocks; cold EDDF → LFMN 4.5 s → 3.4 s, EDDF → LEMD 11.4 s (loaded workstation) → 3.7 s, the same routes and the same findings',
+      'K', static=True,
+      rule='SOG-0424 (ergonomics session: « les règles RAD statiques appariées une fois par calcul — mêmes routes, mêmes constats, 4 s au plus à froid sur un poste libre »). Profile of EDDF → LFMN (17 Nov, cold): five evaluations of the route (the route, three variants, a retry) each read the 23 000 active rows of the workbook again — 192 000 readings of the same texts (`tokens`: 0.4 s), 86 000 group matchings (0.76 s), 11 calls of `static_blocks` (0.78 s, 11 times the same answer) — about 1 s of the 4. Now: `tokens` is memorised (a frozen set), `Rad.match` keeps its answers, `Rad._candidate_index` lists the active rows and their words once, `Rad.blocks` keeps its answer per (departure, arrival, level) and hands out copies. The groups of a mention are sorted (the order of a set of words changes with the process: the same flight gave two texts). Checked on five real flights (EDDF → LFMN, LFPG → LEMD, EGLL → KJFK, EDDM → LIRF, LEMD → EDDF): the same route, the same distance, the same mentions, the same findings and exclusions, before and after (the signature of every alternative is equal), twice in two processes. Bench: a fixture RAD with two groups and rules that cite them.')
+def k334(c):
+    import datetime
+    import json
+    import os
+    import sys
+    import tempfile
+    _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import engine, import_books as I, rad_flight as RFL
+    pad = lambda row: row + [''] * (17 - len(row))
+    sheets = RF.rad_sheets()
+    out = []
+    for n, rows in sheets:
+        if n == 'Annex 1':
+            rows = rows + [pad(['', '', '', 'GA', '(LFPO, LFPG)']), pad(['', '', '', 'GB', '(LFPO, EIDW)'])]
+        if n == 'Annex 2B':
+            rows = rows + [pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9301', '', '', '', 'SITET', 'NOT AVBL FOR TFC\nDEP GB & ARR GA', 'H24', 'C', 'two groups']),
+                           pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9302', 'A1', 'SITET', 'KEPAD', '', 'ONLY AVBL FOR TFC\nARR (EIDW)', 'H24', 'C', 'a segment rule']),
+                           pad(['DEL', '29 OCT 2026 [2611]', 'UFN', 'LF9303', '', '', '', 'KEPAD', 'NOT AVBL FOR TFC', 'H24', 'C', 'a deleted rule'])]
+        out.append((n, rows))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        path = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(path, out)
+        gz = os.path.join(td, 'rad.json.gz')
+        I.write(gz, I.merge([], [I.read_book(path)[1]]))
+        saved = engine.RAD_FILE
+        engine.RAD_FILE = gz
+        try:
+            rad = engine.Rad(datetime.date(2026, 11, 9))
+        finally:
+            engine.RAD_FILE = saved
+    ids, routes = {'SITET', 'KEPAD', 'LFPO', 'EIDW'}, {'A1'}
+
+    def reference(dep, arr):
+        """The reading of before: every row, every time (the groups sorted, as now)."""
+        found, search = [], (ids | routes) - {'DCT'}
+        for sheet, rows in rad.book['sheets'].items():
+            if sheet == 'Annex 1':
+                continue
+            for r in rows:
+                if not rad.active(r):
+                    continue
+                v, reason = r['v'], []
+                if sheet == 'Annex 3A DEP' and rad.match(v[4], dep):
+                    reason.append('AD de départ')
+                elif sheet == 'Annex 3A ARR' and rad.match(v[4], arr):
+                    reason.append('AD d’arrivée')
+                elif sheet == 'Annex 2A' and (rad.match(v[4], dep) or rad.match(v[6], arr)):
+                    reason.append('ADEP/ADES ou groupe à examiner')
+                else:
+                    cols = {'Annex 2B': [4, 5, 6, 7, 8], 'Annex 2C': [4, 5, 7], 'Annex 3B DCT': [4, 5], 'Annex 3B FRA LIM': [4], 'Annex 3A Conditions': [4, 5]}.get(sheet, [])
+                    ts = engine.tokens(' '.join(v[i] for i in cols))
+                    hit = search & ts
+                    if hit:
+                        reason.append('Mention de ' + ', '.join(sorted(hit)))
+                    if sheet in ['Annex 2B', 'Annex 2C', 'Annex 3A Conditions']:
+                        if dep in ts or arr in ts:
+                            reason.append('Mention de l’AD')
+                        for group in sorted(ts & rad.groups.keys()):
+                            if rad.match(group, dep) or rad.match(group, arr):
+                                reason.append('Groupe ' + group)
+                if reason:
+                    found.append((sheet, r['row'], v[3], '; '.join(reason)))
+        return found
+    got = [(m['sheet'], m['row'], m['id'], m['reason']) for m in rad.candidates('LFPO', 'EIDW', ids, routes)]
+    c.eq(got, reference('LFPO', 'EIDW'), 'the mentions of the cached index are those of a full reading of the workbook: the same rows, the same order, the same reasons (the deleted rule and the inactive rows included or left out in the same way)', what='candidates')
+    twice = [(m['sheet'], m['row'], m['id'], m['reason']) for m in rad.candidates('LFPO', 'EIDW', ids, routes)]
+    other = [(m['sheet'], m['row'], m['id'], m['reason']) for m in rad.candidates('LFPG', 'EIDW', ids, routes)]
+    c.eq((twice == got, other == reference('LFPG', 'EIDW'), any('Groupe GA; Groupe GB' in x[3] for x in got)), (True, True, True), 'a second call gives the same list; another pair gives its own list; the groups of a mention are SORTED (GA before GB)', what='sorted')
+    # the atomic prohibitions: once per (departure, arrival, level)
+    calls = []
+    real = RFL.static_blocks
+    RFL.static_blocks = lambda *a, **k: (calls.append(a[1:]), real(*a, **k))[1]
+    try:
+        first = rad.blocks('LFPO', 'EIDW', 350)
+        again = rad.blocks('LFPO', 'EIDW', 350)
+        first[0]['id'] = 'CHANGED' if first else None
+        third = rad.blocks('LFPO', 'EIDW', 350)
+        rad.blocks('LFPO', 'EIDW', 300)
+        rad.blocks('LFPG', 'EIDW', 350)
+    finally:
+        RFL.static_blocks = real
+    c.eq((len(calls), again == third, bool(first), [b['id'] for b in third][:1] != ['CHANGED']), (3, True, True, True),
+         '`static_blocks` is computed once per (departure, arrival, level): five calls for three pairs = three computations (red before: five); the blocks are handed out as COPIES (a caller that changes one does not change the next answer)', what='blocks')
+    c.eq((engine.tokens('NOT AVBL FOR TFC VIA ABCD') is engine.tokens('NOT AVBL FOR TFC VIA ABCD'), isinstance(engine.tokens('A1 B2'), frozenset), sorted(engine.tokens('abc def')), rad.match('GA', 'LFPO'), rad.match('GA', 'EIDW'), rad.match('(GA, GB)', 'EIDW')),
+         (True, True, ['ABC', 'DEF'], True, False, True), 'the words of a text are read once (the same frozen set), a group matches its aerodromes (and a list of groups)', what='tokens and match')
