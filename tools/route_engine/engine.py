@@ -68,7 +68,7 @@ def route_connector(word,nav,airways=(),procedures=()):
 
 def split_level(word):
     """SOG-0401 : « POINT/F165 » → ('POINT', 165) ; un mot sans groupe de niveau → (mot, None). Le groupe est celui du texte de Carburant (`PT2/F280`, frame/lib/route_text.js) : le niveau en centaines de pieds, trois chiffres ; sa valeur n'est pas jugée ici (l'appelant refuse hors de 10 à 660)."""
-    m=re.fullmatch(r'(.+)/F(\d{3})',word)
+    m=re.fullmatch(r'(.+)/(?:[NK]\d{4}|M\d{3})?F(\d{3})',word)      # SOG-0431 : aussi « POINT/N0405F200 » (vitesse et niveau, le groupe que le plan de vol écrit : la vitesse n'est pas lue ici)
     return (m.group(1),int(m.group(2))) if m else (word,None)
 
 def written_route(dep,legs,via=(),marks=None):
@@ -83,13 +83,14 @@ def written_route(dep,legs,via=(),marks=None):
         last=name
     return ' '.join(w+(f'/F{l:03d}' if l else '') for w,l in words)
 
-def level_marks(legs,changes):
+def level_marks(legs,changes,lowered=None):
     """SOG-0401 : les changements de palier du profil (`profile.changes`, dans l'ordre de la route) → { indice du tronçon où le changement COMMENCE : nouveau niveau en centaines de pieds } ; un changement qui commence au départ, ou dont le point n'est le départ d'aucun tronçon, n'a pas de groupe ; deux changements au même point : le dernier."""
     marks={}; cursor=0
     for change in changes:
         k=next((j for j in range(cursor,len(legs)) if legs[j]['start']['id']==change['point']),None)
-        level=round(change['to_ft']/100)
+        level=int(change['to_ft']//1000)*10      # SOG-0431 : un niveau écrit dans une route est un niveau de CROISIÈRE utilisable : un multiple de dix, au plus égal à l'altitude (le plafond de la voie : 20 500 ft s'écrit F200, jamais F205 : « SYN101: INVALID LEVEL DESIGNATOR (ROUTE) » d'Eurocontrol)
         if k is None or k==0 or not 10<=level<=660:continue
+        if lowered is not None and level*100!=round(change['to_ft']/100)*100:lowered.append((change['point'],round(change['to_ft']/100),level))
         marks[k]=level; cursor=k
     return marks
 
@@ -864,12 +865,14 @@ def assess(request,_nav=None,_rad=None,_path=None):
     # une route SAISIE garde le sien (ses groupes, s'il en a, sont ceux de l'utilisateur). Le texte est refait depuis les tronçons seulement s'il se retrouve à l'identique sans groupe (sinon une REVUE le dit : jamais un texte réécrit sans preuve)
     written=False
     if (generated or _path is not None) and not marks:
-        level_changes=level_marks(legs,profile.get('changes') or [])
+        lowered=[]
+        level_changes=level_marks(legs,profile.get('changes') or [],lowered)
         if level_changes:
             if written_route(dep,legs,mandatory)==route:
                 route=written_route(dep,legs,mandatory,level_changes); written=True
             else:issue('REVUE','Les changements de palier du profil ne sont pas écrits dans le texte de la route : ce texte n’est pas celui que ses tronçons donnent.')
             if profile.get('changes_total',0)>len(profile.get('changes') or []):issue('REVUE',f'Le texte de la route ne porte que les {len(profile["changes"])} premiers des {profile["changes_total"]} changements de niveau.')
+            if lowered and written:issue('REVUE','Niveau écrit ramené à un niveau de croisière : '+', '.join(f'{pt}/F{lv:03d} (le plafond de la voie est F{raw:03d})' for pt,raw,lv in lowered[:6])+(f' et {len(lowered)-6} autre(s)' if len(lowered)>6 else '')+' : un niveau écrit dans une route est un multiple de dix, au plus égal au plafond (Eurocontrol refuse F205 : SYN101) ; le profil du vol garde l’altitude du plafond.')
     band_runs=flight_profile.band_findings(legs,fl,profile.get('cruise_nm'),leg_levels(legs,words,marks))
     if band_runs and (generated or _path is not None):
         count=sum(len(r['legs']) for r in band_runs)

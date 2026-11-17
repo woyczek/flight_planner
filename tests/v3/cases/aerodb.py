@@ -13490,8 +13490,8 @@ def k321(c):
     def seg(route, a, b, lower, upper):
         return {'route': route, 'a': {'id': a, 'lat': nodes[a][0], 'lon': nodes[a][1]}, 'b': {'id': b, 'lat': nodes[b][0], 'lon': nodes[b][1]}, 'lower': lower, 'upper': upper}
 
-    def run(**req):
-        """The bench: LFPO → OLZOM, then B1 (6 500–66 000 ft) OLZOM–SITET–KEPAD, A1 (9 000–19 500 ft) KEPAD–MIDPT, B2 (6 500–66 000 ft) MIDPT–BOYNE, BOYNE → EIDW: a low band between two high ones."""
+    def run(a1=19500, **req):
+        """The bench: LFPO → OLZOM, then B1 (6 500–66 000 ft) OLZOM–SITET–KEPAD, A1 (9 000–19 500 ft, `a1`) KEPAD–MIDPT, B2 (6 500–66 000 ft) MIDPT–BOYNE, BOYNE → EIDW: a low band between two high ones."""
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
             data = os.path.join(td, 'data')
             os.makedirs(data)
@@ -13504,7 +13504,7 @@ def k321(c):
                 json.dump(doc, f)
             with open(os.path.join(d, 'airways.json'), encoding='utf-8') as f:
                 doc = json.load(f)
-            doc['data'] = [seg('B1', 'OLZOM', 'SITET', 6500, 66000), seg('B1', 'SITET', 'KEPAD', 6500, 66000), seg('A1', 'KEPAD', 'MIDPT', 9000, 19500), seg('B2', 'MIDPT', 'BOYNE', 6500, 66000)]
+            doc['data'] = [seg('B1', 'OLZOM', 'SITET', 6500, 66000), seg('B1', 'SITET', 'KEPAD', 6500, 66000), seg('A1', 'KEPAD', 'MIDPT', 9000, a1), seg('B2', 'MIDPT', 'BOYNE', 6500, 66000)]
             with open(os.path.join(d, 'airways.json'), 'w', encoding='utf-8') as f:
                 json.dump(doc, f)
             rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
@@ -13516,12 +13516,12 @@ def k321(c):
             return res, V.to_view(res, request)
     short = lambda p: [{k: x[k] for k in ('point', 'end_point', 'from_ft', 'to_ft', 'via', 'kind')} for x in p['profile_changes']]
     plain = 'LFPO DCT OLZOM B1 KEPAD A1 MIDPT B2 BOYNE DCT EIDW'
-    written = 'LFPO DCT OLZOM B1 SITET/F195 B1 KEPAD A1 MIDPT/F350 B2 BOYNE DCT EIDW'
+    written = 'LFPO DCT OLZOM B1 SITET/F190 B1 KEPAD A1 MIDPT/F350 B2 BOYNE DCT EIDW'      # SOG-0431: the ceiling FL195 is written F190 (a level written in a route is a multiple of ten)
     # the search: the text carries the two changes
     res, view = run(action='compute', via=[])
     p = res['primary']
     c.eq((p['route'], view['alternatives'][0]['route']), (written, written),
-         'the route the SEARCH writes carries the level changes: SITET/F195 (the descent to the ceiling FL195 of A1 begins at SITET, inside the portion of B1, which stays in the text and is repeated) and MIDPT/F350 (the climb back after A1); the view has the same text (red before: `' + plain + '`, one level for the whole flight)', what='search text')
+         'the route the SEARCH writes carries the level changes: SITET/F190 (the descent to the ceiling FL195 of A1, written as the cruise level F190 below it, begins at SITET, inside the portion of B1, which stays in the text and is repeated) and MIDPT/F350 (the climb back after A1); the view has the same text (red before: `' + plain + '`, one level for the whole flight)', what='search text')
     c.eq(short(p), [{'point': 'SITET', 'end_point': 'KEPAD', 'from_ft': 35000, 'to_ft': 19500, 'via': 'B1', 'kind': 'ceiling'}, {'point': 'MIDPT', 'end_point': 'BOYNE', 'from_ft': 19500, 'to_ft': 35000, 'via': 'B2', 'kind': 'release'}],
          '`profile_changes` is what it was (the groups are written FROM it): the descent at SITET, the release at MIDPT', what='changes')
     c.eq(view['profile_changes'], p['profile_changes'], 'the view carries the same `profile_changes`', what='view changes')
@@ -13559,7 +13559,7 @@ def k321(c):
     # the alternatives carry their own groups, at their own level
     res8, _ = run(action='compute', via=[], alternatives=True)
     alts = [a['route'] for a in res8['alternatives']]
-    c.ok(alts and all('SITET/F195 B1 KEPAD A1 MIDPT/F' in r for r in alts) and len(set(alts)) == len(alts), str(alts), 'each alternative (the same route at FL330, FL310, FL290) carries its own groups: F195 down, then its own level back up')
+    c.ok(alts and all('SITET/F190 B1 KEPAD A1 MIDPT/F' in r for r in alts) and len(set(alts)) == len(alts), str(alts), 'each alternative (the same route at FL330, FL310, FL290) carries its own groups: F190 down, then its own level back up')
     # the helpers
     legs = [{'via': v, 'start': {'id': a}, 'end': {'id': b}} for v, a, b in (('DCT', 'LFPO', 'A'), ('B1', 'A', 'B'), ('B1', 'B', 'C'), ('DCT', 'C', 'EIDW'))]
     c.eq((E.written_route('LFPO', legs), E.written_route('LFPO', legs, (), {0: 300, 2: 195, 3: 150}), E.written_route('LFPO', legs, ('B',))), ('LFPO DCT A B1 C DCT EIDW', 'LFPO DCT A B1 B/F195 B1 C/F150 DCT EIDW', 'LFPO DCT A B1 B B1 C DCT EIDW'),
@@ -13567,9 +13567,15 @@ def k321(c):
     chg = lambda point, ft: {'point': point, 'to_ft': ft}
     c.eq((E.level_marks(legs, [chg('B', 19500), chg('B', 25000)]), E.level_marks(legs, [chg('LFPO', 19500), chg('NOWHERE', 19500)]), E.level_marks(legs, [chg('A', 500), chg('C', 70000)])), ({2: 250}, {}, {}),
          'two changes at the same point: the last; a change at the departure or at a point that starts no leg: no group; a level out of F010–F660: none', what='level_marks')
-    c.eq((E.split_level('KELIP/F165'), E.split_level('LFPO/07'), E.split_level('UN460'), E.split_level('SRN/F195')), (('KELIP', 165), ('LFPO/07', None), ('UN460', None), ('SRN', 195)),
-         'a level group is `POINT/Fnnn` (three digits); a runway suffix and a plain word are not', what='split_level')
-
+    c.eq((E.split_level('KELIP/F165'), E.split_level('LFPO/07'), E.split_level('UN460'), E.split_level('SRN/F195'), E.split_level('NOHAT/N0405F200'), E.split_level('PIDON/K0750F340'), E.split_level('X/M082F350')), (('KELIP', 165), ('LFPO/07', None), ('UN460', None), ('SRN', 195), ('NOHAT', 200), ('PIDON', 340), ('X', 350)),
+         'a level group is `POINT/Fnnn` (three digits) or, as the flight plan writes it, `POINT/N0405F200` (speed then level: the speed is not read); a runway suffix and a plain word are not', what='split_level')
+    # SOG-0431 (the user, 17 Nov: « NOHAT/N0405F205 » was refused by Eurocontrol: SYN101 INVALID LEVEL DESIGNATOR (ROUTE); F200 passes): a level written in a route is a CRUISE level that can be used — a multiple of ten, at most the ceiling of the airway — and the review says why it is lowered
+    res_b, _ = run(a1=20500, action='compute', via=[])
+    p_b = res_b['primary']
+    said = [i['text'] for i in p_b['issues'] if 'Niveau écrit ramené' in i['text']]
+    c.eq((p_b['route'], [x['to_ft'] for x in short(p_b)][:1], len(said), 'SITET/F200 (le plafond de la voie est F205)' in said[0] if said else None, 'multiple de dix' in said[0] if said else None), ('LFPO DCT OLZOM B1 SITET/F200 B1 KEPAD A1 MIDPT/F350 B2 BOYNE DCT EIDW', [20500], 1, True, True),
+         'a ceiling of 20 500 ft is written F200 (not F205: a multiple of ten at most equal to the ceiling), the profile keeps its altitude of 20 500 ft, and ONE REVUE says the written level, the ceiling and the rule (red before: F205)', what='written level')
+    c.eq(sum('Niveau écrit ramené' in i['text'] for i in p['issues']), 1, 'the ceiling FL195 of the bench (a half level) is lowered to F190 and said as well', what='half level')
 
 @case('K323', 'Route engine, SOG-0412: the links of a NAT route (the DCT that join its entry and its exit to the network) start from the nodes of airways that REACH THE LOWEST LEVEL OF THE ROUTE, not from the three nearest nodes of the « high network » (ceiling FL245): an entry whose three nearest nodes are on airways too low for the route is reached; the route is taken, the reason « son entrée n\'est pas atteignable » stays for a real impossibility',
       'K', static=True,
