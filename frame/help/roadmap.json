@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ed1a654",
-  "fiches": 420,
+  "organisation": "8fa59c9",
+  "fiches": 421,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2534,6 +2534,27 @@
      "de": "GFS: noch immer keine synoptische Karte; und eine sichtbare Antwort, nicht zwischen Tür und Angel",
      "es": "GFS: sigue sin haber mapa sinóptico; y una respuesta visible, no entre dos puertas",
      "rank": 106
+    }
+   ]
+  },
+  {
+   "id": "pilote-plan-de-vol-atlantique-nord",
+   "app": "pilote",
+   "label": {
+    "fr": "Plan de vol ; Atlantique Nord",
+    "en": "Plan de vol ; Atlantique Nord",
+    "de": "Plan de vol ; Atlantique Nord",
+    "es": "Plan de vol ; Atlantique Nord"
+   },
+   "items": [
+    {
+     "id": "SOG-0422",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "« Copier pour Eurocontrol » : un tiret dans la route (deux indicatifs de route joints) coupe le plan de vol — cinq erreurs de syntaxe",
+     "en": "“Copy for Eurocontrol”: a hyphen in the route (two joined route designators) cuts the flight plan — five syntax errors",
+     "de": "„Für Eurocontrol kopieren“: ein Bindestrich in der Route (zwei verbundene Streckenbezeichner) zerschneidet den Flugplan — fünf Syntaxfehler",
+     "es": "«Copiar para Eurocontrol»: un guion en la ruta (dos designadores de ruta unidos) corta el plan de vuelo — cinco errores de sintaxis"
     }
    ]
   },
