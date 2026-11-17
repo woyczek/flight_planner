@@ -67,10 +67,19 @@ export const launcherSetState = set => {
 /** Les arguments du verbe d'un jeu : les États cochés (à défaut, ceux de la liste) pour les procédures, rien pour les autres. */
 function argsOf(set) {
   if (set !== 'proc') return {};
-  const picked = [...(S.picked || [])];
+  // SOG-0428 : TOUS les États de la liste (la carte, la liste et la ligne repliée disent chacun le leur : le lanceur dit l'état de chaque État, pas seulement des cochés ; c'est une lecture des noms)
   return {
-    states: procArgs(picked.length ? picked : procList().map(i => i.id))
+    states: procArgs(procList().map(i => i.id))
   };
+}
+/** Les États que le lanceur dit « à faire » sont cochés d'office, une fois chacun (l'utilisateur n'a pas à deviner quoi cocher ; ce qu'il décoche ensuite reste décoché). */
+function autoPick(data) {
+  S.autoPicked ||= new Set();
+  for (const [prefix, x] of Object.entries(data?.states || {}))
+    if ((x.state === 'stale' || x.state === 'missing') && !S.autoPicked.has(prefix)) {
+      S.autoPicked.add(prefix);
+      S.picked?.add(prefix);
+    }
 }
 /** Un travail de lecture du lanceur pour un jeu, passé à la file de l'écran ; refusé (`{ status: 409 }`, sans appel) quand une opération tourne ; null sans réponse. */
 async function readSetJob(set, args) {
@@ -123,6 +132,7 @@ async function wantOne(set) {
   const final = await readSetJob(set, args);
   if (S !== me || S.cw.ss[set] !== mine) return;
   const data = setStateOf(set, final);
+  if (set === 'proc' && data) autoPick(data);
   S.cw.ss[set] = data ? {
     state: 'ready',
     data

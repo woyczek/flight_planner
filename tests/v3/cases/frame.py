@@ -5388,6 +5388,65 @@ def a259(c):
     c.js("() => localStorage.removeItem('x-prof-throw')")
     src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
     c.ok(re.search(r"profiler:\s*profilerState\(\)", src) is not None, 'profiler missing', 'the page diagnostic (page.profiler) carries the profiles: « Copy the diagnostic » copies them')
+@case('A257', 'Data, Procedures: ONE truth per State, in words (SOG-0428) — the folded line, the list and the map say the same thing, with the NAME of the State, never its code; a State read by hand and current is up to date (and says what is not built); a State to do is ticked; four languages', 'A',
+      tags=('data',), designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0428 (the user, 17 Nov 2026, with a capture): the folded line said « à faire — LF : téléchargé, pas construit », the list « France — 14 terrains, cycle 2611 », the map showed France green, and « Construire » was highlighted with nothing ticked: three sources, a code instead of a name, no gesture; proc/status now says the record of each State (built or `held`), the page reads it for the line, the list and the map, names the State, and ticks the State that is to do')
+def a257(c):
+    import importlib
+    D = importlib.import_module('cases.data')
+    lang = c.lang
+    D5 = lambda k: D._trow(k, lang, after='  d5: {')
+    SS = lambda k: D._trow(k, lang, after='  ss: {')
+    names = {s: tx('modules/data/model_sets.js', s, lang, after='export const BULK_NAMES') for s in ('LF', 'K')}
+    hand = {'state': 'up-to-date', 'cached': {'state': 'present', 'files': 14}, 'built': None, 'held': {'aerodromes': 14, 'cycle': '2026-10-29', 'older': 0}, 'reasons': []}
+    us = {'state': 'up-to-date', 'cached': {'state': 'present', 'files': 1}, 'built': {'cycle': '2026-10-29', 'aerodromes': 3069}, 'held': None, 'reasons': []}
+    scen = {'proc': {'ok': True, 'cycle': '2026-10-29', 'states': {'LF': hand, 'K': us}, 'counts': {'up-to-date': 2}}}
+    st = D._l102_open(c, extra_verbs=['proc/status', 'proc/fetch', 'proc/build', 'proc/purge'], setstate={'proc': lambda args: scen['proc']})
+    line = lambda: c.js("(e => e ? [e.dataset.foldState, e.textContent.replace(/\\s+/g, ' ').trim()] : null)(document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate'))")
+    tone = lambda i='LF': c.js("(m => m ? (Object.fromEntries(m.dataset.tones.split(',').map(x => x.split(':')))[%s] || '') : '')(document.querySelector('[data-zone-map=proc]'))" % json.dumps(i))
+    partial = lambda: c.js("(m => m ? m.dataset.partial : null)(document.querySelector('[data-zone-map=proc]'))")
+    legend = lambda: norm(c.js("(m => m ? m.textContent.replace(/\\s+/g, ' ').trim() : '')(document.querySelector('[data-zone-map=proc]'))"))
+    ticked = lambda: c.js("[...document.querySelectorAll('[data-items] input[data-item]')].filter(i => i.checked).map(i => i.dataset.item).sort()")
+    # 1. read by hand and current: UP TO DATE, said with the name, the rest said too
+    c.until("(() => { const e = document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate'); return !!e && e.textContent.includes('14') })()", timeout=20000, what='the folded line of the procedures says the hand-read aerodromes')
+    f = line()
+    tail = norm(D5('heldOnly').split('—')[1])
+    c.eq(f[0], 'ok', 'a State read by hand and current is up to date: nothing is expected of the user', what='fold state ok')
+    c.ok(names['LF'] in f[1] and tail in norm(f[1]) and '2611' in f[1] and not re.search(r'\bLF\b', f[1]), f[1], 'the line names France, says it is read by hand and that the whole State is not built — never the code LF')
+    held = norm(c.text('[data-held=LF]'))
+    c.ok('14' in held and '2611' in held and norm(D5('heldHand').split('{c}')[0].split('{n}')[1]) in held, held, 'the list says the same: read by hand, up to date, cycle 2611')
+    c.eq(tone(), 'ok', 'the map shows France green: the same truth as the line (up to date)', what='map ok')
+    c.eq(partial(), 'LF', 'the map HATCHES France (up to date, read by hand only: the whole State is not built); the United States, built whole, is plain', what='map hatch')
+    c.ok(norm(tx('modules/data/texts.js', 'partial', lang, after='  mapTone: {')) in legend(), legend()[-200:], 'the legend says what the hatch means, in the language of the page')
+    c.eq(ticked(), [], 'nothing is to do: nothing is ticked', what='nothing ticked')
+    fold = c.page.locator('[data-body] > details.f-group[data-group=proc] > summary')   # the capture shows what the case says: the folded line (its own picture), then the list and the map of the procedures
+    try:
+        fold.scroll_into_view_if_needed()
+        fold.screenshot(path=str(ROOT / 'tests' / 'v3' / 'shots' / f'A257_fold_{lang}.png'))
+    except Exception:
+        pass
+    c.js("() => { const g = document.querySelector('[data-body] > details.f-group[data-group=proc]'); if (g) { g.open = true; g.scrollIntoView({ block: 'start' }) } }")
+    c.wait(900)
+    c.shot(f'A257_hand_{lang}.png')
+    # 2. a State to do (read by hand, some of a past cycle): named, with the reason, ticked, the map in amber
+    scen['proc'] = {'ok': True, 'cycle': '2026-10-29', 'states': {'LF': {**hand, 'state': 'stale', 'held': {'aerodromes': 14, 'cycle': '2026-10-29', 'older': 3}, 'reasons': [{'code': 'held-older', 'count': 3, 'cycle': '2026-10-01'}]}, 'K': us}}
+    c.page.reload(wait_until='load')
+    c.until("(() => { const e = document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate'); return !!e && e.dataset.foldState === 'todo' })()", timeout=30000, what='the folded line says to do')
+    f = line()
+    c.ok(names['LF'] in f[1] and norm(SS('held-older').split('{n}')[1]) in norm(f[1]) and not re.search(r'\bLF\b', f[1]), f[1], 'to do: France named, with the reason (aerodromes read by hand from an older cycle)')
+    c.until("(m => !!m && /(^|,)LF:warn(,|$)/.test(m.dataset.tones))(document.querySelector('[data-zone-map=proc]'))", timeout=15000, what='the map shows France amber')
+    c.eq(partial(), '', 'a State to do is not hatched (the hatch is for « up to date, read by hand only » alone)', what='no hatch when to do')
+    c.eq(ticked(), ['LF'], 'the State to do is ticked: no need to guess what to tick', what='ticked')
+    # 3. downloaded and not built, nothing read by hand: to do, named
+    scen['proc'] = {'ok': True, 'cycle': '2026-10-29', 'states': {'LF': {'state': 'missing', 'cached': {'state': 'present', 'files': 14}, 'built': None, 'held': None, 'reasons': [{'code': 'not-built'}]}, 'K': us}}
+    c.page.reload(wait_until='load')
+    c.until("(() => { const e = document.querySelector('[data-body] > details.f-group[data-group=proc] .d-fstate'); return !!e && e.dataset.foldState === 'todo' })()", timeout=30000, what='the line says to do (downloaded, not built)')
+    f = line()
+    c.eq(norm(f[1]), norm(D5('dsTodo').replace('{w}', f'{names["LF"]} : {SS("not-built")}')), 'France : downloaded, not built — the NAME, not « LF », and the reason', what='line to do')
+    c.eq((tone(), ticked()), ('warn', ['LF']), 'the map is amber and the State is ticked', what='map and tick')
+    c.js("() => { const g = document.querySelector('[data-body] > details.f-group[data-group=proc]'); if (g) { g.open = true; (g.querySelector('summary') || g).scrollIntoView({ block: 'start' }) } }")
+    c.wait(900)
+    c.shot(f'A257_todo_{lang}.png')
     c.check_errors()
 
 

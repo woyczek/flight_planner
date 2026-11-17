@@ -11,7 +11,7 @@ export const SET_STATE_VERBS = Object.freeze({
 const STATES = ['up-to-date', 'stale', 'missing', 'n/a'];
 /** Les codes de raison que la page sait dire, par jeu (liste fermée du contrat) ; un autre code est écarté. */
 const CODES = Object.freeze({
-  proc: ['older-than-cycle', 'not-fetched', 'not-built', 'ead-per-aerodrome', 'no-source'],
+  proc: ['older-than-cycle', 'not-fetched', 'not-built', 'ead-per-aerodrome', 'no-source', 'held-older'],
   vfr: ['partial', 'older-than-cycle', 'unknown-cycle', 'no-base', 'not-fetched', 'not-built'],
   aircraft: ['no-db', 'fleet-types-missing']
 });
@@ -43,11 +43,20 @@ export function setStateOf(set, final) {
   if (set === 'proc') {
     const per = r.states !== null && typeof r.states === 'object' && !Array.isArray(r.states) ? r.states : null;
     if (!per) return null;
+    // SOG-0428 : l'enregistrement de chaque État est la vérité de la ligne, de la liste et de la carte : construit en entier (`built`), ou des terrains lus à la main (`held`, avec ceux d'un cycle passé : `older`)
+    const counted = (o, key) => o !== null && typeof o === 'object' && !Array.isArray(o) && int(o[key]) > 0 ? {
+      n: int(o[key]),
+      cycle: day(o.cycle),
+      older: int(o.older)
+    } : null;
     const rows = Object.entries(per).filter(([k, v]) => PREFIX.test(k) && v !== null && typeof v === 'object' && STATES.includes(v.state))
       .slice(0, 80).map(([k, v]) => ({
         prefix: k,
         state: v.state,
-        reasons: reasonsOf('proc', v.reasons)
+        reasons: reasonsOf('proc', v.reasons),
+        built: counted(v.built, 'aerodromes'),
+        held: counted(v.held, 'aerodromes'),
+        cached: v.cached !== null && typeof v.cached === 'object' && v.cached.state === 'present'
       }));
     const todo = rows.filter(x => x.state === 'stale' || x.state === 'missing'),
       real = rows.filter(x => x.state !== 'n/a');
@@ -59,7 +68,8 @@ export function setStateOf(set, final) {
         ...q,
         prefix: x.prefix
       }))).slice(0, 6),
-      cycle: day(r.cycle)
+      cycle: day(r.cycle),
+      states: Object.fromEntries(rows.map(x => [x.prefix, x]))
     };
   }
   if (!STATES.includes(r.state)) return null;

@@ -862,11 +862,15 @@ export const TX = {
       'Der Lauf war schon veröffentlicht: wiederverwendet.', 'La pasada ya estaba publicada: reutilizada.'
     ],
     // SOG-0429 : une construction interrompue garde ce qu'elle a lu ; la suivante, du même run, le reprend et le dit
-    resumed: ['Reprise : {k} échéances sur {n} déjà là, pas relues.', 'Resumed: {k} forecast times of {n} were already here, not read again.',
-      'Fortgesetzt: {k} von {n} Zeitpunkten waren schon da, nicht erneut gelesen.', 'Reanudado: {k} de {n} instantes ya estaban, no se leen de nuevo.'
+    resumed: ['Reprise : {k} échéances sur {n} déjà là, pas relues.',
+      'Resumed: {k} forecast times of {n} were already here, not read again.',
+      'Fortgesetzt: {k} von {n} Zeitpunkten waren schon da, nicht erneut gelesen.',
+      'Reanudado: {k} de {n} instantes ya estaban, no se leen de nuevo.'
     ],
-    partial: ['interrompue : {k} échéances sur {n} gardées, la prochaine construction les reprend', 'interrupted: {k} forecast times of {n} kept, the next build resumes them',
-      'unterbrochen: {k} von {n} Zeitpunkten gespeichert, der nächste Aufbau setzt fort', 'interrumpida: {k} de {n} instantes guardados, la próxima construcción los reanuda'
+    partial: ['interrompue : {k} échéances sur {n} gardées, la prochaine construction les reprend',
+      'interrupted: {k} forecast times of {n} kept, the next build resumes them',
+      'unterbrochen: {k} von {n} Zeitpunkten gespeichert, der nächste Aufbau setzt fort',
+      'interrumpida: {k} de {n} instantes guardados, la próxima construcción los reanuda'
     ],
     why: {
       'no-run': ['Aucun run publié ou NOAA injoignable : l’ancienne publication reste.',
@@ -1723,6 +1727,10 @@ export const TX = {
     accent: ['en cours', 'running', 'läuft', 'en curso'],
     muted: ['non définie ou jamais construite', 'not defined or never built', 'nicht festgelegt oder nie gebaut',
       'no definida o nunca construida'
+    ],
+    // SOG-0428 : la même teinte « à jour », hachurée — l'État n'a que des terrains lus à la main (l'État entier n'est pas construit)
+    partial: ['à jour, lu à la main seulement', 'up to date, read by hand only', 'aktuell, nur von Hand gelesen',
+      'al día, solo leído a mano'
     ]
   },
   // la ligne d'un État des procédures : ses terrains détenus (LF : avec le cycle publié ; les autres États : relus), et un point de la carte
@@ -2851,6 +2859,15 @@ export const TX = {
   d5: {
     dsTodo: ['à faire — {w}', 'to do — {w}', 'zu tun — {w}', 'por hacer — {w}'],
     dsTodoPlain: ['à faire', 'to do', 'zu tun', 'por hacer'],
+    // SOG-0428 : un État qui n'a que des terrains lus à la main, du cycle en vigueur, est à jour ; la ligne le dit avec le NOM de l'État, jamais son code
+    heldOnly: ['{s} : {n} lus à la main, à jour (cycle {c}) — l’État entier n’est pas construit',
+      '{s}: {n} read by hand, up to date (cycle {c}) — the whole State is not built',
+      '{s}: {n} von Hand gelesen, aktuell (Zyklus {c}) — der ganze Staat ist nicht aufgebaut',
+      '{s}: {n} leídos a mano, al día (ciclo {c}) — el Estado entero no está construido'
+    ],
+    heldHand: ['{n} lus à la main, à jour (cycle {c})', '{n} read by hand, up to date (cycle {c})',
+      '{n} von Hand gelesen, aktuell (Zyklus {c})', '{n} leídos a mano, al día (ciclo {c})'
+    ],
     dsNa: ['sans échéance', 'no due date', 'ohne Fälligkeit', 'sin vencimiento'],
     dsWhyAbsent: ['absent', 'missing', 'fehlt', 'ausente'],
     dsWhyOlder: ['plus ancien que le cycle', 'older than the cycle', 'älter als der Zyklus', 'más antiguo que el ciclo'],
@@ -2947,6 +2964,11 @@ export const TX = {
     'older-count': ['{n} plus anciens que le cycle', '{n} older than the cycle', '{n} älter als der Zyklus', '{n} anteriores al ciclo'],
     'not-fetched': ['pas encore téléchargé', 'not downloaded yet', 'noch nicht heruntergeladen', 'aún sin descargar'],
     'not-built': ['téléchargé, pas construit', 'downloaded, not built', 'heruntergeladen, nicht aufgebaut', 'descargado, sin construir'],
+    // SOG-0428 : des terrains lus à la main d'un cycle passé (l'État n'est pas construit en entier)
+    'held-older': ['{n} terrains lus à la main sont d’un cycle plus ancien', '{n} aerodromes read by hand are from an older cycle',
+      '{n} von Hand gelesene Flugplätze stammen aus einem älteren Zyklus',
+      '{n} aeródromos leídos a mano son de un ciclo anterior'
+    ],
     'ead-per-aerodrome': ['un terrain à la fois (EAD)', 'one aerodrome at a time (EAD)', 'ein Flugplatz nach dem anderen (EAD)',
       'un aeródromo a la vez (EAD)'
     ],

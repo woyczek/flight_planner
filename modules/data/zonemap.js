@@ -16,6 +16,9 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  launcherSetState
+} from './setstate.js';
+import {
   mapSize,
   startTiles,
   styleFor,
@@ -58,9 +61,24 @@ function mapEntries(kind) {
   return procList().map(i => outlineOf(kind, i.id)).filter(Boolean);
 }
 /** La teinte d'un élément : hors couverture, à reconstruire (rien de publié ou cycle dépassé), à jour, d'après le cycle de procédures en vigueur. */
+/** L'État est-il « à jour, lu à la main seulement » (rien de construit en entier, des terrains à la main du cycle en vigueur) ? Vrai : la carte le hachure, de la même teinte (SOG-0428). */
+function mapPartialOf(kind, id) {
+  const mine = kind === 'proc' ? launcherSetState('proc')?.states?.[id] : null;
+  return !!mine && mine.state === 'up-to-date' && !!mine.held && !mine.built;
+}
+
 function mapToneOf(kind, id) {
   const zone = M.PROC_ZONES[id]?.[0],
-    cycle = S.d.pub?.proc?.inForce || null;
+    cycle = S.d.pub?.proc?.inForce || null,
+    mine = launcherSetState('proc')?.states?.[
+      id
+    ]; // SOG-0428 : l'enregistrement de l'État que dit le lanceur — la MÊME vérité que la ligne repliée et la liste
+  if (mine && kind === 'proc') {
+    if (!S.d.cov.ids.includes(zone)) return 'muted';
+    if (!!S.run && S.run.set === kind && S.ids.includes(id)) return 'accent';
+    return mine.state === 'up-to-date' ? 'ok' : mine.state === 'n/a' || (mine.state === 'missing' && !mine.cached && !mine.held) ? 'muted' :
+      'warn';
+  }
   return M.mapTone({
     inCoverage: S.d.cov.ids.includes(zone),
     running: !!S.run && S.run.set === kind && S.ids.includes(id),
@@ -75,12 +93,13 @@ function featureEntries(kind) {
   return mapEntries(kind).map(e => ({
     ...e,
     tone: mapToneOf(kind, e.id),
+    partial: mapPartialOf(kind, e.id),
     picked: !!sel?.has(e.id)
   }));
 }
 /** Ce qui fait changer le dessin d'une carte : l'identité, la teinte, la case, le contour approximatif et le nombre d'anneaux de chaque élément (les contours eux-mêmes ne
  *  changent pas tant que les éléments sont les mêmes). */
-const signature = entries => JSON.stringify(entries.map(e => [e.id, e.tone, e.picked, e.approx, e.rings.length]));
+const signature = entries => JSON.stringify(entries.map(e => [e.id, e.tone, e.picked, e.approx, e.partial, e.rings.length]));
 /** La carte d'un panneau (`kind` : base ou proc) : seulement son cadre — un emplacement pour la carte MapLibre (attachMaps y pose l'hôte), « Recentrer » et la légende d'une
  *  ligne (le nom ET l'état en toutes lettres : la teinte seule ne dit rien). Rien (la liste seule) sans contours, sans zone à dessiner, ou si le socle n'a pas pu démarrer
  *  pour ce panneau (S.mapFail). */
@@ -89,9 +108,10 @@ export function zoneMapHtml(kind) {
   if (!S.outlines || S.outlines === 'loading' || !S.airac || S.mapFail[kind]) return '';
   const entries = mapEntries(kind);
   if (!entries.length) return '';
-  return `<div class="d-map" data-zone-map="${kind}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>${kind === 'proc' ? '<p class="f-muted" data-point-info role="status"></p>' : ''}
+  // `data-tones` : la teinte de chaque État tel que la carte le dessine (« LF:ok,K:warn ») — lisible sans le canevas (les essais, les lecteurs d'écran qui lisent l'attribut)
+  return `<div class="d-map" data-zone-map="${kind}" data-tones="${esc(procList().map(i => `${i.id}:${mapToneOf(kind, i.id)}`).join(','))}" data-partial="${esc(procList().filter(i => mapPartialOf(kind, i.id)).map(i => i.id).join(','))}" role="group" aria-label="${esc(tt(TX.zoneMap[kind]))}"><div data-zone-slot></div>${kind === 'proc' ? '<p class="f-muted" data-point-info role="status"></p>' : ''}
     <p class="d-map-row"><button type="button" data-act="map-recenter">${esc(tt(TX.mapRecenter))}</button></p>
-    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'err', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
+    <p class="f-muted" data-zone-legend>${esc(tt(TX.mapLegend))} :${['ok', 'warn', 'err', 'accent', 'muted'].map(t => `<span class="d-sw" data-tone="${t}"></span>${esc(tt(TX.mapTone[t]))}`).join(' · ')}${procList().some(i => mapPartialOf(kind, i.id)) ? ` · <span class="d-sw" data-tone="partial"></span>${esc(tt(TX.mapTone.partial))}` : ''}${entries.some(e => e.approx) ? ` · ${esc(tt(TX.mapLegendApprox))}` : ''}. ${esc(tt(TX.mapLegendNote))}</p></div>`;
 }
 /** Une couleur du design (un jeton --sog-…) résolue en rgb(), la seule forme que MapLibre lit (il ne lit pas les variables CSS). */
 function token(name) {

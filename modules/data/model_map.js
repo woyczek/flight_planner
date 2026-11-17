@@ -64,7 +64,8 @@ export function zoneFeatures(entries) {
           id: e.id,
           tone: e.tone || 'muted',
           picked: e.picked === true,
-          approx: e.approx === true || isApproxOutline(e)
+          approx: e.approx === true || isApproxOutline(e),
+          partial: e.partial === true // SOG-0428 : à jour, mais lu à la main seulement (l'État entier n'est pas construit) : hachuré
         },
         geometry: {
           type: 'MultiPolygon',

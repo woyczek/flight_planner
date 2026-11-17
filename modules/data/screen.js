@@ -236,6 +236,7 @@ export const STYLE = `
 [data-module="data"] .d-sw[data-tone=busy]{background:var(--sog-accent);border-color:var(--sog-accent)}
 [data-module="data"] .d-sw[data-tone=unread]{background:color-mix(in srgb,var(--sog-muted) 12%,transparent);border:1px dashed var(--sog-muted)}
 [data-module="data"] .d-sw[data-tone=accent]{background:var(--sog-accent);border-color:var(--sog-accent)}
+[data-module="data"] .d-sw[data-tone=partial]{background:repeating-linear-gradient(135deg,var(--sog-ok) 0 2px,color-mix(in srgb,var(--sog-ok) 12%,transparent) 2px 5px);border-color:var(--sog-ok)}
 [data-module="data"] .d-sw[data-tone=muted]{background:var(--sog-muted);border-color:var(--sog-muted)}
 [data-module="data"] .d-journal{margin-top:var(--sog-gap-s)}
 [data-module="data"] .d-journal summary{min-height:var(--sog-touch);display:flex;align-items:center}
@@ -594,11 +595,17 @@ const DS_WHY_KEY = Object.freeze({
 function reasonWord(r) {
   const row = M.own(TX.ss, r.code === 'older-than-cycle' && !r.cycle ? 'older-count' : r
     .code); // les points VFR disent combien, les procédures disent quel cycle
-  return row ? `${r.prefix ? `${r.prefix} : ` : ''}${tt(row, {
+  // SOG-0428 : le NOM de l'État (celui de la liste), jamais son code (« LF : … » devient « France : … ») ; le code seul quand aucun nom n'est connu
+  return row ? `${r.prefix ? `${M.bulkName(S.d?.byState, r.prefix, li())} : ` : ''}${tt(row, {
     n: r.n,
     of: r.of,
     cycle: r.cycle ? shortDate(r.cycle) : ''
   })}` : '';
+}
+/** « 14 terrains » : le nombre de terrains lus à la main d'un État et son unité, dans la langue. */
+function heldCount(x) {
+  const n = x.held?.n ?? 0;
+  return `${n.toLocaleString(lang())} ${tt(TX.unit[x.prefix === 'LF' ? 'aerodrome' : 'aerodromeRead'][n === 1 ? 0 : 1])}`;
 }
 /** Ce que dit la ligne repliée d'un jeu : { k ('ok' | 'todo' | 'unknown' | 'none'), word, why } — le mot d'état et la raison en mots (« à faire — plus ancien que le cycle · le 05/10 ») quand le lanceur dit le jeu (`datasets` de base/cycle) ; sinon l'état tiré de la publication (foldWord). Un jeu à faire dit sa raison ;
  *  la publication à regarder (« n à faire ») reste dite quand le jeu est à jour ; plusieurs jeux à faire sous un pli : leur nombre. */
@@ -606,6 +613,13 @@ function foldView(id, st) {
   const ls = launcherSetState(id); // le lanceur dit l'état du jeu (SOG-0119) : sa phrase prime sur ce que la page déduit de la publication
   if (ls && ls.state !== 'n/a') {
     const w = ls.reasons.map(reasonWord).filter(Boolean).slice(0, 3).join(' ; ');
+    // SOG-0428 : un État qui n'a que des terrains lus à la main (à jour) le dit avec son nom : « France : 14 lus à la main, à jour (cycle 2611) — l'État entier n'est pas construit »
+    const held = Object.values(ls.states || {}).filter(x => x.held && !x.built && x.state === 'up-to-date').slice(0, 3).map(x => tt(TX.d5
+      .heldOnly, {
+        s: M.bulkName(S.d?.byState, x.prefix, li()),
+        n: heldCount(x),
+        c: S.airac && x.held.cycle ? M.cycleName(S.airac, x.held.cycle) : ''
+      })).join(' ; ');
     return ls.state === 'todo' ? {
       k: 'todo',
       word: tt(w ? TX.d5.dsTodo : TX.d5.dsTodoPlain, {
@@ -614,7 +628,7 @@ function foldView(id, st) {
       why: ls.reasons[0]?.code || ''
     } : {
       k: 'ok',
-      word: tt(TX.d4.stOk),
+      word: held ? `${tt(TX.d4.stOk)} · ${held}` : tt(TX.d4.stOk),
       why: ''
     };
   }

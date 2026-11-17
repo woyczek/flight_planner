@@ -25,6 +25,9 @@ import {
   zoneMapHtml
 } from './zonemap.js';
 import {
+  launcherSetState
+} from './setstate.js';
+import {
   publishHtml,
   renderPublish
 } from './publish.js';
@@ -104,7 +107,13 @@ function heldLine(id) {
   const n = M.own(S.d?.byState, id)?.held;
   if (!Number.isFinite(n)) return '';
   const num = `${n.toLocaleString(lang())} ${tt(TX.unit[id === 'LF' ? 'aerodrome' : 'aerodromeRead'][n === 1 ? 0 : 1])}`,
-    inForce = id === 'LF' && S.airac ? S.d.pub?.proc?.inForce : null,
+    mine = launcherSetState('proc')?.states?.[id];
+  // SOG-0428 : un État qui n'a que des terrains lus à la main (le lanceur : rien de construit en entier) le dit — la liste, la ligne repliée et la carte disent la même chose
+  if (mine?.held && !mine.built && mine.state === 'up-to-date') return ` <span class="f-muted" data-held="${esc(id)}">— ${esc(tt(TX.d5.heldHand, {
+    n: Number.isFinite(mine.held.n) ? `${mine.held.n.toLocaleString(lang())} ${tt(TX.unit.aerodrome[mine.held.n === 1 ? 0 : 1])}` : num, // le nombre du lanceur (la même vérité que la ligne repliée), à défaut celui de la couverture
+    c: S.airac && mine.held.cycle ? M.cycleName(S.airac, mine.held.cycle) : ''
+  }))}</span>`;
+  const inForce = id === 'LF' && S.airac ? S.d.pub?.proc?.inForce : null,
     cycle = inForce ? M.cycleName(S.airac, inForce) : '';
   return ` <span class="f-muted" data-held="${esc(id)}">— ${esc(cycle ? tt(TX.heldCycle, {
     n: num,

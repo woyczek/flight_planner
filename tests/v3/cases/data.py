@@ -9347,7 +9347,8 @@ def l131(c):
     todo = _trow('dsTodo', lang, after='    dsTodo:')
     ok_w = _trow('stOk', lang, after='    stOk:')
     pr, vf, ac = line('proc'), line('vfr'), line('aircraft')
-    c.eq([pr[0], pr[1], norm(pr[2])], ['todo', 'not-built', norm(todo.replace('{w}', 'LF : ' + SS('not-built')))], 'Procédures: the one State the workstation has not built is named, with its reason; K (up to date) and LO (one aerodrome at a time) are not', what='proc line')
+    lf = tx('modules/data/model_sets.js', 'LF', lang, after='export const BULK_NAMES')   # SOG-0428: the NAME of the State, never its code
+    c.eq([pr[0], pr[1], norm(pr[2])], ['todo', 'not-built', norm(todo.replace('{w}', f'{lf} : ' + SS('not-built')))], 'Procédures: the one State the workstation has not built is named, with its reason; K (up to date) and LO (one aerodrome at a time) are not', what='proc line')
     c.eq([vf[0], vf[1], norm(vf[2])], ['todo', 'partial', norm(todo.replace('{w}', SS('partial').replace('{n}', '28').replace('{of}', '454')))], 'Points VFR: incomplete, 28 of 454', what='vfr line')
     c.eq([ac[0], norm(ac[2])], ['ok', norm(ok_w)], 'Aéronefs: up to date', what='aircraft line')
     reads = sorted(r[0] for r in st.get('setstate_reads', []))
