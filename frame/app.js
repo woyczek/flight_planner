@@ -4883,7 +4883,9 @@
             // SOG-0209 : les rechargements du cadre (dix dernières secondes), la série arrêtée avec sa cause, les dernières adresses routées
             reloads: reloadsState(),
             // SOG-0430 : les tâches de 100 ms et plus du fil de la page (durée, instant, écran) : de cette page (`now`) et des précédentes (`before`), les cent dernières
-            longTasks: longState()
+            longTasks: longState(),
+            // SOG-0430 (A2) : le profil de la page pendant une tâche d'une seconde et plus (les quinze fonctions les plus chargées), ou la raison pour laquelle il n'y en a pas
+            profiler: profilerState()
           },
           aerodb: a ? {
             source: a.source,
@@ -5451,6 +5453,7 @@
   async function boot() {
     noteLoad();
     watchLongTasks();
+    watchProfiler();
     try {
       Icons = await import(new URL('frame/lib/icons.js', ROOT).href);
     } catch (e) {
@@ -5853,11 +5856,183 @@
     }))
   });
 
+  // ---- le profil de la page pendant une tâche très longue (SOG-0430, A2) : l'API de profilage du navigateur (JS Self-Profiling : `Profiler`, qui exige l'en-tête `Document-Policy: js-profiling` sur le document,
+  // posé par le lanceur sur les seules pages HTML) échantillonne le fil de la page à 10 ms dans un tampon borné ; une tâche de LONG_PROFILE_MS et plus (l'observateur ci-dessus) arrête le profil, le RÉDUIT aux quinze
+  // fonctions où le fil a passé le plus de temps (nom ≤ 80 signes, chemin de NOS scripts sans origine ni requête ni fragment, ligne, nombre d'échantillons : jamais un argument ni une valeur, le profileur n'en donne
+  // pas) et le garde dans le diagnostic LOCAL (localStorage, cinq au plus, jamais envoyé : aucun appel réseau n'en dépend). Sans `Profiler` (page servie sans l'en-tête, vieux cache, autre navigateur) ou avec le
+  // réglage éteint (localStorage `sog-frame-profiler` = « off ») : rien ne tourne, la page ne s'en aperçoit pas. Arrêté quand la page est cachée (ni batterie ni tampon rempli de rien).
+  const PROFILE_KEY = 'sog-frame-profiles',
+    PROFILE_SWITCH = 'sog-frame-profiler',
+    PROFILE_MAX = 5,
+    PROFILE_TOP = 15,
+    PROFILE_EVERY_MS = 10,
+    PROFILE_BUFFER = 6000,
+    LONG_PROFILE_MS = 1000;
+  const profiles = {
+    state: 'unavailable', // 'running' | 'idle' (page cachée) | 'off' (réglage) | 'unavailable' (pas de Profiler, ou l'en-tête manque)
+    list: [] // [{ at, ms, screen, samples, top: [{ fn, file, line, n }] }], la plus récente en tête
+  };
+  try {
+    const kept = JSON.parse(localStorage.getItem(PROFILE_KEY) || '[]');
+    if (Array.isArray(kept)) profiles.list = kept.filter(e => e && typeof e.at === 'string' && Array.isArray(e.top)).slice(0, PROFILE_MAX)
+      .map(e => ({
+        at: e.at.slice(0, 30),
+        ms: Math.round(+e.ms) || 0,
+        screen: String(e.screen || '').slice(0, 40),
+        samples: Math.round(+e.samples) || 0,
+        top: e.top.slice(0, PROFILE_TOP).map(f => ({
+          fn: String(f?.fn ?? '').slice(0, 80),
+          file: String(f?.file ?? '').slice(0, 80),
+          line: Math.round(+f?.line) || 0,
+          n: Math.round(+f?.n) || 0
+        }))
+      }));
+  } catch {
+    /* stockage indisponible ou illisible : aucune trace gardée */
+  }
+  let profiler = null;
+  const profilerOff = () => {
+    try {
+      return localStorage.getItem(PROFILE_SWITCH) === 'off';
+    } catch {
+      return false;
+    }
+  };
+  /** Un nom de fonction ou de fichier du profil : texte sans caractère de contrôle, court. */
+  const profText = (s, n) => String(s ?? '').replace(/[\u0000-\u001f\u007f\p{Cf}]/gu, ' ').trim().slice(0, n);
+  /** Le chemin d'un de NOS scripts (même origine) sans origine, requête ni fragment ; « (other) » pour tout autre. */
+  const profPath = url => {
+    try {
+      const u = new URL(String(url), location.href);
+      return u.origin === location.origin ? profText(u.pathname, 80) : '(other)';
+    } catch {
+      return '(other)';
+    }
+  };
+  /** Les quinze fonctions où le fil a passé le plus de temps entre `from` et `to` (ms de la page) : { samples, top }. */
+  function reduceProfile(trace, from, to) {
+    const stacks = Array.isArray(trace?.stacks) ? trace.stacks : [],
+      frames = Array.isArray(trace?.frames) ? trace.frames : [],
+      resources = Array.isArray(trace?.resources) ? trace.resources : [],
+      counts = new Map();
+    let samples = 0;
+    for (const s of Array.isArray(trace?.samples) ? trace.samples : []) {
+      if (!(s?.timestamp >= from && s.timestamp <= to)) continue;
+      const frame = frames[stacks[s.stackId]?.frameId];
+      samples++;
+      const key = frame ? `${frame.name}\u0000${frame.resourceId}\u0000${frame.line}` : '\u0000';
+      const c = counts.get(key);
+      if (c) c.n++;
+      else counts.set(key, {
+        frame,
+        n: 1
+      });
+    }
+    const top = [...counts.values()].sort((a, b) => b.n - a.n).slice(0, PROFILE_TOP).map(({
+      frame,
+      n
+    }) => ({
+      fn: profText(frame?.name || '(anonymous)', 80),
+      file: frame && Number.isInteger(frame.resourceId) && resources[frame.resourceId] != null ? profPath(resources[frame
+        .resourceId]) : '(native)',
+      line: Math.max(0, Math.round(+frame?.line) || 0),
+      n
+    }));
+    return {
+      samples,
+      top
+    };
+  }
+
+  /** Le profileur est-il permis ? Le navigateur en a un ET la page porte la balise que le lanceur pose avec l'en-tête `Document-Policy: js-profiling` (sans elle, créer le profileur écrirait une erreur dans la console) ; une copie du service worker garde l'en-tête et la balise ensemble. */
+  const profilerAble = () => typeof Profiler === 'function' && !!document.querySelector('meta[name="sog-js-profiling"]');
+
+  function profilerStart() {
+    if (profiler || profilerOff() || document.hidden) return;
+    if (!profilerAble()) return void(profiles.state = 'unavailable');
+    try {
+      const p = new Profiler({
+        sampleInterval: PROFILE_EVERY_MS,
+        maxBufferSize: PROFILE_BUFFER
+      });
+      p.addEventListener?.('samplebufferfull', () => {
+        if (profiler !== p) return;
+        profiler = null; // le tampon est plein : ses plus vieux échantillons sont jetés, un nouveau profil repart
+        p.stop().catch(() => {});
+        profilerStart();
+      });
+      profiler = p;
+      profiles.state = 'running';
+    } catch {
+      profiler = null; // l'en-tête manque (NotSupportedError) : la page marche sans
+      profiles.state = 'unavailable';
+    }
+  }
+
+  function profilerStop() {
+    const p = profiler;
+    profiler = null;
+    profiles.state = profilerOff() ? 'off' : profilerAble() ? 'idle' : 'unavailable';
+    return p ? p.stop().catch(() => null) : Promise.resolve(null);
+  }
+  /** Une tâche de LONG_PROFILE_MS et plus vient de finir (début `e.startTime`, durée `e.duration`) : le profil est arrêté, réduit et gardé, un nouveau repart. */
+  async function profileTake(e, at, screen) {
+    if (!profiler) return;
+    const trace = await profilerStop();
+    profilerStart();
+    if (!trace) return;
+    const r = reduceProfile(trace, e.startTime, e.startTime + e.duration);
+    if (!r.samples) return;
+    profiles.list.unshift({
+      at,
+      ms: Math.round(e.duration),
+      screen,
+      ...r
+    });
+    profiles.list.length = Math.min(profiles.list.length, PROFILE_MAX);
+    try {
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(profiles.list));
+    } catch {
+      /* stockage indisponible : le diagnostic de cette page garde la liste en mémoire */
+    }
+  }
+  /** Allume ou éteint le profil (le réglage « Diagnostic » : localStorage de CE navigateur, jamais synchronisé). */
+  function setProfiler(on) {
+    try {
+      if (on) localStorage.removeItem(PROFILE_SWITCH);
+      else localStorage.setItem(PROFILE_SWITCH, 'off');
+    } catch {
+      /* stockage indisponible */
+    }
+    if (on) profilerStart();
+    else void profilerStop();
+    return profiles.state;
+  }
+  const profilerState = () => ({
+    state: profiles.state,
+    everyMs: PROFILE_EVERY_MS,
+    list: profiles.list.map(e => ({
+      ...e,
+      top: e.top.map(f => ({
+        ...f
+      }))
+    }))
+  });
+
+  function watchProfiler() {
+    profilerStart();
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) void profilerStop();
+      else profilerStart();
+    });
+  }
+
   function watchLongTasks() {
     if (typeof PerformanceObserver !== 'function' || !PerformanceObserver.supportedEntryTypes?.includes('longtask')) return;
     try {
       new PerformanceObserver(list => {
-        let urgent = false;
+        let urgent = false,
+          deep = null;
         for (const e of list.getEntries()) {
           const ms = Math.round(e.duration);
           if (ms < LONG_MIN_MS) continue;
@@ -5871,7 +6046,13 @@
             page: 'now'
           });
           if (ms >= LONG_NOW_MS) urgent = true;
+          if (ms >= LONG_PROFILE_MS) deep = {
+            e,
+            at: new Date(when).toISOString(),
+            screen: screenAt(when)
+          };
         }
+        if (deep) void profileTake(deep.e, deep.at, deep.screen); // le plus récent des profils longs de ce lot
         longTasks.list.length = Math.min(longTasks.list.length, LONG_MAX);
         if (urgent) longStore();
         else if (!longSave && longTasks.count) longSave = setTimeout(longStore, 1000);
@@ -5981,6 +6162,8 @@
     syncNow,
     reloads: reloadsState,
     longTasks: longState,
+    profiler: profilerState,
+    setProfiler,
     airline: () => airline,
     cutAccess,
     get aerodb() {

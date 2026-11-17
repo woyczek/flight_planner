@@ -5309,6 +5309,88 @@ def a256(c):
     c.check_errors()
 
 
+@case('A259', 'The page profiles itself during a task of a second or more (SOG-0430, A2): the fifteen busiest functions, names and paths of OUR scripts only, kept on the device (five at most), never sent; stopped when the page is hidden, off by a setting, absent without the browser\'s profiler', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0430 A2 (the ergonomist; Security review of 17 Nov 2026): the browser\'s JS Self-Profiling (`Profiler`, which the launcher enables with `Document-Policy: js-profiling` on the HTML pages) samples the main thread; a task of 1000 ms or more stops the profile, reduces it to the 15 functions with the most samples (name ≤ 80 characters without control characters, the path of one of OUR scripts without origin, query or fragment — « (other) » for any other origin —, line, samples), keeps it in the LOCAL diagnostic (localStorage: five at most, read back as untrusted) and starts a new profile; stopped when the page is hidden; a setting turns it off; without `Profiler` (page served without the header, old cache) nothing runs and nothing fails; NOTHING goes to the network (spy on fetch, sendBeacon, XMLHttpRequest)')
+def a259(c):
+    FAKE = """(() => {
+      window.__fp = { made: 0, stopped: 0, opts: null };
+      const q0 = Document.prototype.querySelector;   // the page that the launcher serves with the header carries <meta name="sog-js-profiling">: this test server does not, so the question is answered here
+      Document.prototype.querySelector = function (s) { return s === 'meta[name="sog-js-profiling"]' ? { content: '1' } : q0.apply(this, arguments) };
+      if (localStorage.getItem('x-prof-throw')) { window.Profiler = class { constructor() { throw new DOMException('no policy', 'NotSupportedError') } }; return }
+      window.Profiler = class {
+        constructor(o) { window.__fp.made++; window.__fp.opts = o; this.t0 = performance.now(); this.l = {} }
+        addEventListener(n, f) { this.l[n] = f }
+        async stop() {
+          window.__fp.stopped++;
+          const now = performance.now(), resources = [location.origin + '/frame/app.js?v=abc123#frag', 'https://evil.example/x.js?token=SECRET'];
+          const frames = [{ name: 'hot' + 'x'.repeat(200), resourceId: 0, line: 12 }, { name: 'PROFMARK_two', resourceId: 1, line: 5 }, { name: 'ctl\\u0001name', resourceId: 0, line: 7 }]
+            .concat(Array.from({ length: 30 }, (_, i) => ({ name: 'f' + i, resourceId: 0, line: i + 1 })));
+          const stacks = frames.map((f, i) => ({ frameId: i })), samples = [];
+          for (let ts = this.t0, k = 0; ts < now; ts += 10, k++) samples.push({ timestamp: ts, stackId: k % 3 === 0 ? 0 : k % frames.length });
+          return { resources, frames, stacks, samples };
+        }
+      };
+      // nothing of the profile may leave the page: every request is noted (address and body), sendBeacon too
+      window.__net = [];
+      const f0 = window.fetch; window.fetch = function (u, o) { window.__net.push(String(u && u.url || u) + ' ' + String(o && o.body || '')); return f0.apply(this, arguments) };
+      const b0 = navigator.sendBeacon; navigator.sendBeacon = function (u, d) { window.__net.push('BEACON ' + u); return b0 ? b0.apply(this, arguments) : false };
+      const x0 = XMLHttpRequest.prototype.send, o0 = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function (m, u) { this.__u = u; return o0.apply(this, arguments) };
+      XMLHttpRequest.prototype.send = function (d) { window.__net.push('XHR ' + this.__u + ' ' + String(d || '')); return x0.apply(this, arguments) };
+    })()"""
+    BUSY = "(ms) => new Promise(r => setTimeout(() => { const t = performance.now(); while (performance.now() - t < ms); r() }, 50))"
+    up = lambda: c.until("!!window.SogFrame && typeof window.SogFrame.profiler === 'function'", timeout=20000, what='the frame answers profiler()')
+    c.page.add_init_script(FAKE)
+    # five old traces and three more kept by an earlier page, one of them hostile: read back as untrusted, at most five
+    old = [{'at': '2026-11-01T10:00:0%dZ' % i, 'ms': 1500, 'screen': 'fuel', 'samples': 9, 'top': [{'fn': 'old' + 'y' * 300, 'file': 'https://evil.example/' + 'z' * 300, 'line': 4, 'n': 9}]} for i in range(8)]
+    c.open('fuel', docs=LEVEL3, wait=False)
+    up()
+    c.js("(v) => localStorage.setItem('sog-frame-profiles', JSON.stringify(v))", old + [None, 5, {'at': 7}])
+    c.page.reload(wait_until='domcontentloaded')
+    up()
+    st = c.js("() => window.SogFrame.profiler()")
+    c.eq((st['state'], len(st['list']), max(len(f['fn']) for e in st['list'] for f in e['top']) <= 80, max(len(f['file']) for e in st['list'] for f in e['top']) <= 80), ('running', 5, True, True), 'a store of eight (and hostile) traces is read back as five, with short names; the profiler runs', what='untrusted store')
+    c.eq(c.js("() => window.__fp.opts"), {'sampleInterval': 10, 'maxBufferSize': 6000}, 'the profiler is started with a 10 ms interval and a bounded buffer (6000 samples)', what='options')
+    c.js(f"() => ({BUSY})(1300)")
+    c.until("window.SogFrame.profiler().list[0].ms >= 1000 && window.SogFrame.profiler().list[0].at > '2026-11-02'", timeout=10000, what='a profile of the long task is kept')
+    st = c.js("() => window.SogFrame.profiler()")
+    top = st['list'][0]['top']
+    c.eq((len(st['list']), len(top), top[0]['fn'][:3], len(top[0]['fn'])), (5, 15, 'hot', 80), 'five at most, the fifteen busiest functions, the busiest first, names cut to 80 characters', what='reduced')
+    files = {f['file'] for f in top}
+    c.ok(files <= {'/frame/app.js', '(other)'}, str(files), 'the path of one of OUR scripts without origin, query or fragment; any other origin is « (other) », never its address')
+    c.ok(all(not re.search(r'[\x00-\x1f]', f['fn']) for f in top) and all(isinstance(f['line'], int) and isinstance(f['n'], int) for f in top), str(top[:3]), 'no control character in a name; the line and the count are numbers')
+    c.eq(c.js("() => JSON.parse(localStorage.getItem('sog-frame-profiles')).length"), 5, 'kept in the localStorage of this browser, five at most', what='stored')
+    c.ok(c.js("() => window.__fp.made") >= 2 and c.js("() => window.SogFrame.profiler().state") == 'running', c.js("() => window.__fp.made"), 'a new profile starts after the one that was read')
+    # nothing leaves the page
+    net = c.js("() => window.__net")
+    bad = [x for x in net if 'PROFMARK' in x or 'hot' in x.lower() and 'xxxx' in x or x.startswith('BEACON')]
+    c.eq(bad, [], 'no request, no beacon carries anything of the profile (spy on fetch, sendBeacon, XMLHttpRequest during the long task)', what='no network')
+    # hidden: stopped; visible again: started
+    stopped = c.js("() => window.__fp.stopped")
+    c.js("() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')) }")
+    c.until(f"window.SogFrame.profiler().state === 'idle' && window.__fp.stopped > {stopped}", timeout=5000, what='the profile stopped when the page is hidden')
+    c.js("() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange')) }")
+    c.until("window.SogFrame.profiler().state === 'running'", timeout=5000, what='the profile started again when the page is shown')
+    # the setting: off, no profile of the next long task; on again
+    c.js("() => window.SogFrame.setProfiler(false)")
+    c.eq(c.js("() => window.SogFrame.profiler().state"), 'off', 'the setting turns the profiler off', what='off')
+    before = c.js("() => window.SogFrame.profiler().list[0].at")
+    c.js(f"() => ({BUSY})(1200)")
+    c.wait(600)
+    c.eq(c.js("() => window.SogFrame.profiler().list[0].at"), before, 'off: a long task keeps nothing', what='nothing kept')
+    c.eq(c.js("() => window.SogFrame.setProfiler(true)"), 'running', 'and the setting turns it on again', what='on')
+    # the browser refuses the profiler (the header is missing: an old cache): nothing runs, nothing fails
+    c.js("() => localStorage.setItem('x-prof-throw', '1')")
+    c.page.reload(wait_until='domcontentloaded')
+    up()
+    c.eq(c.js("() => window.SogFrame.profiler().state"), 'unavailable', 'a profiler that cannot be created (no Document-Policy header): « unavailable », the page works', what='unavailable')
+    c.js("() => localStorage.removeItem('x-prof-throw')")
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8')
+    c.ok(re.search(r"profiler:\s*profilerState\(\)", src) is not None, 'profiler missing', 'the page diagnostic (page.profiler) carries the profiles: « Copy the diagnostic » copies them')
+    c.check_errors()
+
+
 @case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')
