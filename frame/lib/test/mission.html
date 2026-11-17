@@ -31,7 +31,10 @@
     levelFt,
     missionFlight,
     ownerOf,
-    missionsFor
+    missionsFor,
+    passageMin,
+    routeNm,
+    OBJECT_KINDS
   } from '../mission.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -283,6 +286,933 @@
     'B,C' &&
     missionsFor(owned, 'itf').map(r => r.id).join() === 'D' && missionsFor(null, 'itf').length === 0, missionsFor(owned, 'perso').map(r =>
       r.id).join());
+
+  // ---- les tiroirs (SOG-0440 ; organisation/SPEC_MISSIONS_TIROIRS.md § 7 et § 10.3) : une mission inventée, ses parties lues comme des
+  // tiroirs — la forme écrite dans la partie (l'éditeur de la V3) ET la forme par identifiant (zones et objets en tête)
+  /** Une vérification par comparaison (JSON). */
+  const same = (name, got, want) => ck(name, JSON.stringify(got) === JSON.stringify(want), JSON.stringify(got));
+  const drawerBase = {
+      mission: {
+        id: 'X-401A',
+        type: 'SAR'
+      },
+      title: 'Tiroirs',
+      origin: {
+        name: 'Base Test (XTST)',
+        lat: 44.5,
+        lon: 1.0
+      },
+      destination: {
+        name: 'Base Test Sud (XTSU)',
+        lat: 44.0,
+        lon: 1.2
+      },
+      target: {
+        id: 'TARGET',
+        name: 'Cible',
+        lat: 44.6,
+        lon: 1.3
+      },
+      turning_points: [{
+        id: 'PT1',
+        name: 'Un',
+        lat: 44.8,
+        lon: 1.2,
+        time_on_task_min: 10
+      }, {
+        id: 'PT2',
+        name: 'Deux',
+        lat: 44.7,
+        lon: 1.4
+      }],
+      rendezvous: [{
+        id: 'RDV-1',
+        name: 'Rdv',
+        lat: 44.65,
+        lon: 1.25
+      }],
+      zones: [{
+        id: 'ZONE-1',
+        name: 'Vallée',
+        kind: 'search',
+        centre: {
+          lat: 44.62,
+          lon: 1.28
+        },
+        radius_km: 4,
+        ceiling_ft: 3000
+      }],
+      objects: [{
+        id: 'OBJ-1',
+        kind: 'person',
+        name: 'Randonneur',
+        lat: 44.61,
+        lon: 1.31,
+        altitude_ft: 2500,
+        detection_range_nm: 0.3,
+        detection_height_ft: 800,
+        require_confirmation: true
+      }, {
+        id: 'OBJ-2',
+        kind: 'aircraft',
+        name: 'Cible',
+        control: 'ai',
+        callsign: 'XTEST',
+        lat: 44.8,
+        lon: 1.2,
+        route_order: ['PT1', 'TARGET', 'GHOST', 'DESTINATION'],
+        speed_kt: 110,
+        altitude_ft: 4500,
+        start_delay_min: 5,
+        detection_range_nm: 0.8,
+        detection_height_ft: 1000
+      }, {
+        id: 'SHIP-1',
+        kind: 'ship',
+        lat: 44.1,
+        lon: 1.1,
+        motion: 'axis',
+        course_deg: 65,
+        speed_kt: 8,
+        detection_range_nm: 0.5,
+        require_confirmation: 'non'
+      }],
+      route_order: ['ORIGIN', 'PT1', 'RDV-1', 'TARGET', 'DESTINATION'],
+      cruise_speed_kt: 120,
+      x_mission_editor: {
+        version: '1.0',
+        scenario: 'rescue'
+      }
+    },
+    withPhases = (phases, more = {}) => readMission({
+      ...drawerBase,
+      ...more,
+      phases
+    }),
+    circle = {
+      centre: {
+        lat: 44.6,
+        lon: 1.3
+      },
+      radius_km: 2.5
+    },
+    hand = {
+      kind: 'hand',
+      fallbackMin: null
+    };
+  let dm = withPhases([{
+    id: 'B',
+    title: 'Changement',
+    trigger_point: 'RDV-1',
+    trigger_delay_min: 10,
+    trigger: '10 min après RDV-1',
+    message: '« Nouvelle DZ. »',
+    brief: 'Ligne un.\r\nLigne deux.  \n',
+    route_order: ['RDV-1', 'PT2', 'TARGET', 'DESTINATION']
+  }, {
+    id: 'C',
+    trigger_point: 'ORIGIN',
+    trigger_delay_min: 40
+  }, {
+    id: 'D',
+    trigger_point: 'pt1'
+  }]);
+  same('tiroirs : une mission de la V2, trois parties par l\'heure (un point, ORIGIN, une autre casse, sans délai = 0)', dm.drawers.map(
+      d => [d.id, d.key, d.keyWhy]),
+    [
+      ['B', {
+        kind: 'time',
+        point: 'RDV-1',
+        delayMin: 10
+      }, ''],
+      ['C', {
+        kind: 'time',
+        point: 'ORIGIN',
+        delayMin: 40
+      }, ''],
+      ['D', {
+        kind: 'time',
+        point: 'PT1',
+        delayMin: 0
+      }, '']
+    ]);
+  same('tiroirs : les textes, les fins de ligne ramenées', [dm.drawers[0].title, dm.drawers[0].trigger, dm.drawers[0].message, dm.drawers[0]
+      .brief
+    ],
+    ['Changement', '10 min après RDV-1', '« Nouvelle DZ. »', 'Ligne un.\nLigne deux.']);
+  same('tiroirs : la suite de route telle qu\'écrite (le premier point est le raccord), DESTINATION n\'est pas un point', dm.drawers[0]
+    .route.map(p => [p.id, p.lock || '']),
+    [
+      ['RDV-1', 'mission'],
+      ['PT2', ''],
+      ['TARGET', 'mission']
+    ]);
+  same('tiroirs : la suite d\'un tiroir n\'entre ni dans la route, ni dans missionFlight, ni dans routeNm',
+    [dm.drawersRefused, dm.routeOrder, missionFlight(dm).route.points.map(p => p.id), routeNm(dm)],
+    [0, drawerBase.route_order, ['PT1', 'RDV-1', 'TARGET'], routeNm(readMission(drawerBase))]);
+  dm = withPhases([{
+    title: 'Sans clé ni identifiant'
+  }, {
+    title: 'Deuxième',
+    fallback_delay_min: 30
+  }]);
+  same('tiroirs : sans clé, le geste seul ; sans identifiant, la lettre du rang', dm.drawers.map(d => [d.id, d.key, d.keyWhy]),
+    [
+      ['B', hand, ''],
+      ['C', {
+        kind: 'hand',
+        fallbackMin: 30
+      }, '']
+    ]);
+  same('tiroirs : une partie écrite comme un objet seul ; aucune partie', [withPhases({
+    id: 'B'
+  }).drawers.length, readMission(drawerBase).drawers], [1, []]);
+  // la zone écrite DANS la partie
+  dm = withPhases([{
+    id: 'B',
+    trigger_zone: {
+      ...circle,
+      ceiling_ft: 1500
+    },
+    fallback_delay_min: 60
+  }, {
+    id: 'C',
+    trigger_zone: {
+      points: [{
+        lat: 44.1,
+        lon: 1.1
+      }, {
+        lat: 44.2,
+        lon: 1.1
+      }, {
+        lat: 44.2,
+        lon: 1.3
+      }],
+      centre: {
+        lat: 44.15,
+        lon: 1.2
+      },
+      radius_km: 9
+    },
+    zone_shown: false
+  }, {
+    id: 'D',
+    trigger_zone: {
+      lat: 44.3,
+      lon: 1.5,
+      radius_km: '0.5'
+    },
+    zone_shown: 'non',
+    fallback_delay_min: '90'
+  }]);
+  same(
+    'tiroirs : la zone dans la partie — un cercle, son plafond, son repli ; un polygone (les sommets priment), cachée ; un centre à plat',
+    dm.drawers.map(d => d.key), [{
+      kind: 'zone',
+      shape: {
+        circle: {
+          lat: 44.6,
+          lon: 1.3,
+          radiusM: 2500
+        }
+      },
+      ceilingFt: 1500,
+      zoneId: null,
+      shown: true,
+      actor: null,
+      fallbackMin: 60
+    }, {
+      kind: 'zone',
+      shape: {
+        polygon: [
+          [44.1, 1.1],
+          [44.2, 1.1],
+          [44.2, 1.3]
+        ]
+      },
+      ceilingFt: null,
+      zoneId: null,
+      shown: false,
+      actor: null,
+      fallbackMin: null
+    }, {
+      kind: 'zone',
+      shape: {
+        circle: {
+          lat: 44.3,
+          lon: 1.5,
+          radiusM: 500
+        }
+      },
+      ceilingFt: null,
+      zoneId: null,
+      shown: false,
+      actor: null,
+      fallbackMin: 90
+    }]);
+  // la zone et l'objet cités PAR IDENTIFIANT (l'atelier de l'utilisateur) : la géométrie est résolue dans la clé
+  dm = withPhases([{
+    id: 'B',
+    trigger_zone: 'zone-1',
+    trigger_actor: 'OBJ-2',
+    zone_shown: true
+  }, {
+    id: 'C',
+    trigger_object: 'OBJ-1'
+  }, {
+    id: 'D',
+    trigger_object: 'ship-1',
+    fallback_delay_min: 120
+  }]);
+  same('tiroirs : la zone par identifiant, franchie par une cible mobile (trigger_actor) — sa route résolue, un point inconnu sauté', dm
+    .drawers[0].key, {
+      kind: 'zone',
+      shape: {
+        circle: {
+          lat: 44.62,
+          lon: 1.28,
+          radiusM: 4000
+        }
+      },
+      ceilingFt: 3000,
+      zoneId: 'zone-1',
+      shown: true,
+      actor: {
+        id: 'OBJ-2',
+        kind: 'aircraft',
+        name: 'Cible',
+        lat: 44.8,
+        lon: 1.2,
+        rangeNm: 0.8,
+        heightFt: 1000,
+        altitudeFt: 4500,
+        confirm: true,
+        moving: true,
+        motion: {
+          kind: 'route',
+          route: dm.drawers[0].key.actor?.motion?.route,
+          speedKt: 110,
+          startDelayMin: 5
+        }
+      },
+      fallbackMin: null
+    });
+  same('tiroirs : la route de la cible mobile, en points de la mission', dm.drawers[0].key.actor.motion.route.map(p => p.id), ['PT1',
+    'TARGET'
+  ]);
+  same(
+    'tiroirs : l\'objet par identifiant — portée en NM, hauteur en ft, altitude, « à portée ET déclaré » par défaut ; un navire sur son axe, proximité seule',
+    dm.drawers.slice(1).map(d => d.key), [{
+      kind: 'object',
+      object: {
+        id: 'OBJ-1',
+        kind: 'person',
+        name: 'Randonneur',
+        lat: 44.61,
+        lon: 1.31,
+        rangeNm: 0.3,
+        heightFt: 800,
+        altitudeFt: 2500,
+        confirm: true,
+        moving: false,
+        motion: null
+      },
+      fallbackMin: null
+    }, {
+      kind: 'object',
+      object: {
+        id: 'SHIP-1',
+        kind: 'ship',
+        name: '',
+        lat: 44.1,
+        lon: 1.1,
+        rangeNm: 0.5,
+        heightFt: null,
+        altitudeFt: null,
+        confirm: false,
+        moving: true,
+        motion: {
+          kind: 'axis',
+          courseDeg: 65,
+          speedKt: 8,
+          startDelayMin: 0
+        }
+      },
+      fallbackMin: 120
+    }]);
+  // l'objet écrit DANS la partie : les mêmes champs
+  dm = withPhases([{
+    id: 'B',
+    trigger_object: {
+      kind: 'Raft',
+      lat: 44.62,
+      lon: 1.31,
+      detection_range_nm: 0.4,
+      detection_height_ft: 1000
+    },
+    fallback_delay_min: 45
+  }, {
+    id: 'C',
+    trigger_object: {
+      kind: 'dragon',
+      centre: {
+        lat: 44,
+        lon: 1
+      },
+      detection_range_nm: 0.3,
+      speed_kt: 1e9,
+      course_deg: 90
+    }
+  }]);
+  same('tiroirs : l\'objet dans la partie ; un genre inconnu est dit vide, l\'objet reste ; une vitesse hors bornes : pas de mouvement lu',
+    dm.drawers.map(d => d.key), [{
+      kind: 'object',
+      object: {
+        id: '',
+        kind: 'raft',
+        name: '',
+        lat: 44.62,
+        lon: 1.31,
+        rangeNm: 0.4,
+        heightFt: 1000,
+        altitudeFt: null,
+        confirm: true,
+        moving: false,
+        motion: null
+      },
+      fallbackMin: 45
+    }, {
+      kind: 'object',
+      object: {
+        id: '',
+        kind: '',
+        name: '',
+        lat: 44,
+        lon: 1,
+        rangeNm: 0.3,
+        heightFt: null,
+        altitudeFt: null,
+        confirm: true,
+        moving: false,
+        motion: null
+      },
+      fallbackMin: null
+    }]);
+  ck('tiroirs : OBJECT_KINDS, la liste fermée', Object.isFrozen(OBJECT_KINDS) && OBJECT_KINDS.join() ===
+    'wreck,raft,person,vehicle,container,ship,smoke,aircraft', OBJECT_KINDS.join());
+  // la cinquième clé : l'arrivée
+  dm = withPhases([{
+    id: 'B',
+    trigger_condition: {
+      kind: 'arrival',
+      point: 'DESTINATION',
+      radius_nm: 1,
+      speed_max_kt: 30,
+      require_on_ground: true,
+      required_points: ['pt2'],
+      escort_min_sec: 30
+    },
+    fallback_delay_min: 180
+  }, {
+    id: 'C',
+    trigger_condition: {
+      kind: 'arrival',
+      point: 'TARGET',
+      radius_nm: 0.5,
+      speed_max_kt: 0
+    }
+  }, {
+    id: 'D',
+    trigger_condition: {
+      kind: 'hover',
+      object: 'SHIP-1',
+      duration_sec: 60,
+      radius_m: 5
+    },
+    fallback_delay_min: 200
+  }]);
+  same(
+    'tiroirs : la clé « arrivée » — au terrain, posé, lent, après une escale, un suivi ; à un point de la mission ; un genre de condition que ce lecteur ne lit pas : le geste, dit, avec son repli',
+    dm.drawers.map(d => [d.key, d.keyWhy, d.condition]), [
+      [{
+        kind: 'arrival',
+        point: 'DESTINATION',
+        at: {
+          lat: 44.0,
+          lon: 1.2
+        },
+        radiusNm: 1,
+        speedMaxKt: 30,
+        onGround: true,
+        required: [{
+          id: 'PT2',
+          lat: 44.7,
+          lon: 1.4
+        }],
+        escortMinSec: 30,
+        fallbackMin: 180
+      }, '', 'arrival'],
+      [{
+        kind: 'arrival',
+        point: 'TARGET',
+        at: {
+          lat: 44.6,
+          lon: 1.3
+        },
+        radiusNm: 0.5,
+        speedMaxKt: 0,
+        onGround: false,
+        required: [],
+        escortMinSec: 0,
+        fallbackMin: null
+      }, '', 'arrival'],
+      [{
+        kind: 'hand',
+        fallbackMin: 200
+      }, 'condition', 'hover']
+    ]);
+  dm = withPhases([{
+    id: 'B',
+    trigger_zone: circle,
+    trigger_object: 'OBJ-1',
+    trigger_condition: {
+      kind: 'arrival'
+    },
+    trigger_point: 'PT1'
+  }, {
+    id: 'C',
+    trigger_object: 'OBJ-1',
+    trigger_condition: {
+      kind: 'arrival'
+    },
+    trigger_point: 'PT1'
+  }, {
+    id: 'D',
+    trigger_condition: {
+      kind: 'arrival',
+      point: 'ORIGIN',
+      radius_nm: 2,
+      speed_max_kt: 40
+    },
+    trigger_point: 'PT1'
+  }]);
+  same('tiroirs : plusieurs clés dans un fichier écrit à la main — zone, puis objet, puis condition, puis heure, et c\'est dit', dm.drawers
+    .map(d => [d.key.kind, d.keyWhy]),
+    [
+      ['zone', 'several'],
+      ['object', 'several'],
+      ['arrival', 'several']
+    ]);
+  // une clé illisible : le geste seul, avec la raison ; une valeur hors bornes n'est jamais ramenée dans ses bornes
+  const unreadable = [
+      [{
+        trigger_zone: 'ZONE-9'
+      }, 'zone'],
+      [{
+        trigger_zone: {
+          ...circle,
+          radius_km: 0
+        }
+      }, 'zone'],
+      [{
+        trigger_zone: {
+          ...circle,
+          radius_km: 1e9
+        }
+      }, 'zone'],
+      [{
+        trigger_zone: {
+          centre: {
+            lat: 91,
+            lon: 1
+          },
+          radius_km: 2
+        }
+      }, 'zone'],
+      [{
+        trigger_zone: {
+          centre: {
+            lat: true,
+            lon: 1
+          },
+          radius_km: 2
+        }
+      }, 'zone'],
+      [{
+        trigger_zone: {
+          points: [{
+            lat: 44,
+            lon: 1
+          }, {
+            lat: 44,
+            lon: 2
+          }]
+        }
+      }, 'zone'],
+      [{
+        trigger_zone: {
+          points: Array.from({
+            length: 101
+          }, (_, i) => ({
+            lat: 44,
+            lon: i / 100
+          }))
+        }
+      }, 'zone'],
+      [{
+        trigger_zone: {
+          points: [{
+            lat: 44,
+            lon: 1
+          }, {
+            lat: 'x',
+            lon: 2
+          }, {
+            lat: 44,
+            lon: 3
+          }]
+        }
+      }, 'zone'],
+      [{
+        trigger_zone: [1, 2]
+      }, 'zone'],
+      [{
+        trigger_zone: 'ZONE-1',
+        trigger_actor: 'OBJ-9'
+      }, 'actor'],
+      [{
+        trigger_zone: 'ZONE-1',
+        trigger_actor: {
+          id: 'OBJ-2'
+        }
+      }, 'actor'],
+      [{
+        trigger_object: {
+          kind: 'raft',
+          lat: 44,
+          lon: 1
+        }
+      }, 'object'],
+      [{
+        trigger_object: {
+          lat: 44,
+          lon: 1,
+          detection_range_nm: 1e9
+        }
+      }, 'object'],
+      [{
+        trigger_object: {
+          lat: 44,
+          lon: 1,
+          detection_range_nm: 0
+        }
+      }, 'object'],
+      [{
+        trigger_object: 'OBJ-9'
+      }, 'object'],
+      [{
+        trigger_object: 'constructor'
+      }, 'object'],
+      [{
+        trigger_condition: 'arrival'
+      }, 'condition'],
+      [{
+        trigger_condition: {
+          kind: 'arrival',
+          point: 'NOWHERE',
+          radius_nm: 1,
+          speed_max_kt: 30
+        }
+      }, 'condition'],
+      [{
+        trigger_condition: {
+          kind: 'arrival',
+          point: 'DESTINATION',
+          radius_nm: 0,
+          speed_max_kt: 30
+        }
+      }, 'condition'],
+      [{
+        trigger_condition: {
+          kind: 'arrival',
+          point: 'DESTINATION',
+          radius_nm: 1,
+          speed_max_kt: -1
+        }
+      }, 'condition'],
+      [{
+        trigger_condition: {
+          kind: 'arrival',
+          point: 'DESTINATION',
+          radius_nm: 1,
+          speed_max_kt: 30,
+          required_points: ['GHOST']
+        }
+      }, 'condition'],
+      [{
+        trigger_condition: {
+          kind: 'arrival',
+          point: 'DESTINATION',
+          radius_nm: 1,
+          speed_max_kt: 30,
+          required_points: 'PT2'
+        }
+      }, 'condition'],
+      [{
+        trigger_condition: {
+          kind: 'arrival',
+          point: 'DESTINATION',
+          radius_nm: 1,
+          speed_max_kt: 30,
+          escort_min_sec: 1e9
+        }
+      }, 'condition'],
+      [{
+        trigger_condition: {
+          kind: '<img src=x onerror=alert(1)> '.repeat(50),
+          point: 'DESTINATION'
+        }
+      }, 'condition'],
+      [{
+        trigger_point: 'NOWHERE'
+      }, 'point'],
+      [{
+        trigger_point: 'DESTINATION'
+      }, 'point'],
+      [{
+        trigger_point: 'constructor'
+      }, 'point'],
+      [{
+        trigger_point: {
+          id: 'PT1'
+        }
+      }, 'point'],
+      [{
+        trigger_delay_min: 10
+      }, 'point'],
+      [{
+        trigger_point: 'PT1',
+        trigger_delay_min: 1e9
+      }, 'delay'],
+      [{
+        trigger_point: 'PT1',
+        trigger_delay_min: -5
+      }, 'delay'],
+      [{
+        trigger_point: 'PT1',
+        trigger_delay_min: 'bientôt'
+      }, 'delay']
+    ],
+    wrong = unreadable.map(([p, why]) => {
+      const d = withPhases([{
+        id: 'B',
+        ...p
+      }]).drawers[0];
+      return JSON.stringify([d.key, d.keyWhy]) === JSON.stringify([hand, why]) && /^[a-z0-9_]*$/.test(d.condition) ? '' : `${JSON.stringify(p).slice(0, 60)} → ${JSON.stringify([d.key, d.keyWhy, d.condition])}`;
+    }).filter(Boolean);
+  ck(`tiroirs : ${unreadable.length} clés illisibles (zone, cible, objet, condition, point absent, délai) → le geste seul, la raison dite ; le genre d'une condition n'est jamais un texte libre`, !wrong.length, wrong.join(' ; '));
+  dm = withPhases([{
+    id: 'B',
+    trigger_zone: {
+      ...circle,
+      ceiling_ft: 1e9
+    },
+    fallback_delay_min: 99999
+  }, {
+    id: 'C',
+    trigger_object: {
+      lat: 44,
+      lon: 1,
+      detection_range_nm: 1,
+      detection_height_ft: 1e9,
+      altitude_ft: 1e9
+    }
+  }]);
+  same('tiroirs : un plafond, un repli, une hauteur ou une altitude hors bornes ne sont pas lus (null), jamais ramenés dans leurs bornes',
+    [dm.drawers[0].key.ceilingFt, dm.drawers[0].key.fallbackMin, dm.drawers[0].key.kind, dm.drawers[1].key.object.heightFt, dm.drawers[1]
+      .key.object.altitudeFt
+    ], [null, null, 'zone', null, null]);
+  // des listes hostiles en tête de mission : rien n'y est trouvé, rien ne casse
+  same('tiroirs : « zones » et « objects » qui ne sont pas des listes d\'objets', [
+    [withPhases([{
+      id: 'B',
+      trigger_zone: 'ZONE-1'
+    }], {
+      zones: 7
+    }).drawers[0].keyWhy, withPhases([{
+      id: 'B',
+      trigger_zone: 'ZONE-1'
+    }], {
+      zones: ['ZONE-1', null, [{
+        id: 'ZONE-1'
+      }]]
+    }).drawers[0].keyWhy],
+    [withPhases([{
+      id: 'B',
+      trigger_object: 'OBJ-1'
+    }], {
+      objects: 'x'
+    }).drawers[0].keyWhy, withPhases([{
+      id: 'B',
+      trigger_object: 'OBJ-1'
+    }], {
+      objects: {
+        id: 'OBJ-1',
+        lat: 44,
+        lon: 1,
+        detection_range_nm: 1
+      }
+    }).drawers[0].key.kind]
+  ], [
+    ['zone', 'zone'],
+    ['object', 'object']
+  ]);
+  // des listes de lieux hostiles : la mission se lit quand même (ces valeurs faisaient échouer toute la lecture)
+  dm = readMission({
+    ...drawerBase,
+    zones: 7,
+    turning_points: {
+      id: 'SEUL',
+      lat: 44.8,
+      lon: 1.2
+    },
+    rendezvous: 'x',
+    target: 'x'
+  });
+  const dz = readMission({
+    ...drawerBase,
+    zones: [null, 'x', {
+      id: 'Z-BAD',
+      points: 5
+    }, {
+      id: 'Z-OK',
+      points: [{
+        lat: 44,
+        lon: 1
+      }, {
+        lat: 44,
+        lon: 2
+      }, {
+        lat: 45,
+        lon: 1
+      }]
+    }]
+  });
+  same(
+    'readMission : des lieux qui ne sont pas des listes (zones: 7, un point tournant seul, des sommets « 5 ») ne font pas échouer la lecture',
+    [Object
+      .keys(dm.points), Object.keys(dz.points).filter(k => k.startsWith('Z-'))
+    ], [
+      ['SEUL'],
+      ['Z-OK']
+    ]);
+  // le fichier hostile : plus de trois tiroirs, un identifiant hors liste, en double, des valeurs nues, des textes de 1 Mo
+  dm = withPhases([{
+    id: 'B'
+  }, {
+    id: 'B'
+  }, {
+    id: 'E'
+  }, 'texte', null, {
+    id: 'C'
+  }, {
+    id: 'D'
+  }, {
+    id: {
+      x: 1
+    }
+  }, {}, ...Array.from({
+    length: 40
+  }, () => ({
+    id: 'D'
+  }))]);
+  same('tiroirs : trois au plus, B / C / D ; un double, un identifiant hors liste, une valeur nue et le surplus sont écartés et comptés',
+    [dm.drawers.map(d => d.id), dm.drawersRefused], [
+      ['B', 'C', 'D'], 46
+    ]);
+  same('tiroirs : « phases » qui n\'est pas une liste de parties', ['texte', 7, true, null, [
+      []
+    ]].map(ph => [withPhases(ph).drawers.length, withPhases(ph).drawersRefused]),
+    [
+      [0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 0],
+      [0, 1]
+    ]);
+  const big = 'x'.repeat(1000000);
+  dm = withPhases([{
+    id: 'B',
+    title: big,
+    trigger: big,
+    message: big,
+    brief: big,
+    route_order: Array.from({
+      length: 5000
+    }, () => 'PT1'),
+    trigger_object: {
+      name: big,
+      lat: 44,
+      lon: 1,
+      detection_range_nm: 1,
+      route_order: Array.from({
+        length: 5000
+      }, () => 'PT1'),
+      speed_kt: 100
+    }
+  }]);
+  same('tiroirs : des textes de 1 Mo et des routes de 5 000 points, bornés',
+    [dm.drawers[0].title.length, dm.drawers[0].trigger.length, dm.drawers[0].message.length, dm.drawers[0].brief.length, dm.drawers[0]
+      .route.length, dm.drawers[0].key.object.name.length, dm.drawers[0].key.object.motion.route.length
+    ],
+    [120, 200, 2000, 20000, 60, 120, 60]);
+  dm = withPhases([{
+    id: 'B',
+    route_order: ['PT1/FL080', 'GHOST', {
+      id: 'pt2'
+    }, {}, null, 'constructor', '__proto__', 'TARGET']
+  }], {
+    target: {
+      name: 'Cible sans identifiant',
+      lat: 44.6,
+      lon: 1.3
+    }
+  });
+  same('tiroirs : un mot coupé à « / », un objet { id }, la cible sans identifiant (« TARGET ») ; les identifiants inconnus sont comptés', [
+    dm.drawers[0].route.map(p => p.id), dm.drawers[0].routeUnknown
+  ], [
+    ['PT1', 'PT2', 'TARGET'], 5
+  ]);
+  dm = readMission({
+    ...drawerBase,
+    route_order: ['constructor', '__proto__', 'PT1', 'toString'],
+    turning_points: [...drawerBase.turning_points, {
+      id: '__proto__',
+      lat: 1,
+      lon: 1
+    }]
+  });
+  same('missionFlight : un identifiant du fichier n\'est lu que parmi les points (« constructor » n\'en est pas un)', missionFlight(dm)
+    .route.points.map(p => p.id), ['PT1']);
+  dm = readMission(drawerBase);
+  const pa = passageMin(dm, 'PT1'),
+    pb = passageMin(dm, 'rdv-1');
+  same('passageMin : le départ ; un point (distance / vitesse) ; le temps sur zone des points d\'AVANT (PT1 : 10 min)',
+    [passageMin(dm, 'ORIGIN'), pa, pb.nm > pa.nm, pb.min - Math.round((pb.nm - pa.nm) / 120 * 60) - pa.min], [{
+      nm: 0,
+      min: 0
+    }, {
+      nm: 20,
+      min: 10
+    }, true, 10]);
+  same('passageMin : null hors de la partie A ; sans vitesse, pas de minutes',
+    [passageMin(dm, 'PT2'), passageMin(dm, ''), passageMin(null, 'PT1'), passageMin(readMission({
+      ...drawerBase,
+      cruise_speed_kt: undefined
+    }), 'PT1')], [null, null, null, {
+      nm: 20,
+      min: null
+    }]);
 
   window.__bench = {
     done: true,

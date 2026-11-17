@@ -22,6 +22,7 @@ ou maintient la suite. Les manuels et guides d'utilisation sont au [premier nive
 | [Affectation des missions](AFFECTATION_MISSIONS.md) | conception de l'affectation des missions aux pilotes et de « Mes missions » |
 | [Comptes et données signés](COMPTES_SIGNES.md) | modes standalone et groupe, clés de poste, registre signé, enrôlement, clé de secours, affectations signées (conception) |
 | [Disponibilités et réorganisation](DISPOS_ET_REORGANISATION.md) | catégories de disponibilité, paramètres en quatre pages, utilisateurs et droits (décisions du 5 octobre 2026) |
+| [Mission file format — the drawers](FORMAT_MISSION.md) | what a mission file carries for its drawers (`phases`): the five keys, zones and objects by identifier or inside the part, what `frame/lib/mission.js` gives, the bounds of an untrusted file |
 | [Prompt du générateur de missions](PROMPT_GENERATEUR_MISSIONS.md) | prompt de génération des missions (source de `apps/cpco/mission_prompt.js`) |
 | [Prompt du profil de performances](PROMPT_PROFIL_PERFORMANCES.md) | prompt « Demander à ChatGPT » de Carburant, 4 langues et schéma de la réponse (source de `modules/fuel/perf_prompt.js`) |
 | [V2 : niveaux d'utilisation](V2_NIVEAUX.md) | refonte v2 : quatre niveaux, pages et blocs rangés par niveau d'usage |

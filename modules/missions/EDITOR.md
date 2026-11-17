@@ -39,3 +39,24 @@ drawers is in [docs/technique/FORMAT_MISSION.md](../../docs/technique/FORMAT_MIS
     routes, 308 map centres, 293 profile words), none is dead, and `withRefs` gives every document back unchanged.
   - The editor's own texts written by this session live in `editor_texts.js` (four languages); those of the six first
     steps stay in module.js. N70 (red before: the route kept « PT1 », « Retirer » removed a cited place at once).
+- **17 Nov 2026 — the reader of the drawers** (SOG-0440; `frame/lib/mission.js`, no screen; the format and what the reader gives:
+  [FORMAT_MISSION.md](../../docs/technique/FORMAT_MISSION.md)). The contract is the one of the user's authoring workshop (« Mission
+  Editor 1.0 », read on 17 Nov; SPEC_MISSIONS_TIROIRS § 10.3), which the ergonomist made the reference at 18 h 27.
+  - **Two ways of writing a zone and an object, both read; one shape given.** By identifier (`zones`, `objects` at the top: the
+    workshop) or inside the part (this editor will write there: the V2's technical sheet shows every unknown top-level key, only
+    `phases` is hidden). The key always carries the resolved geometry, so the pilot's screen and the frame's detection never depend
+    on where the file puts it — nor on the user's answer to Q-0095.
+  - **Never clamp.** A mandatory number out of its bounds makes the key unreadable (`keyWhy`), and the drawer opens by hand or at
+    its fallback hour: a zone shrunk into its bounds would be another zone. An optional one (ceiling, heights, fallback) is not
+    read. The bounds are the workshop's (3 to 100 vertices, 500 km, 100 NM, 60 000 ft).
+  - **`fallbackMin` sits in the key**, on every kind but the hour — also on `hand`, so that a key this reader cannot read (the
+    workshop's 1.1 conditions: hold, landing, sequence, overflight, event) still opens at the hour the author gave.
+  - **A condition is named, never interpreted**: `condition` keeps the kind as a short word (`[a-z0-9_]`, 24 signs), never as free
+    text; only `arrival` is read. The 1.1 conditions are a moving contract: not modelled before the user says it is stable.
+  - **A moving target is read and bounded, not judged** (`key.actor`, `key.object.moving`, `key.escortMinSec`): the screen says so.
+  - **Units of the workshop adopted**: range in NM (`detection_range_nm`), heights in ft; `require_confirmation` per object
+    (default true: within range AND on the pilot's word).
+  - **Found while writing the bench**: `readMission` threw on `zones: 7`, on a single-object `turning_points`, on a zone whose
+    `points` is a number — a whole mission said unreadable for one odd list. Read as nothing now. And `missionFlight` looked a route
+    identifier up with `points[id]`: « constructor » was a point. Own keys only.
+  - N71 (red before: no `drawers`; `zones: 7` threw).

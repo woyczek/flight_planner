@@ -1,4 +1,5 @@
-// V3 frame/lib (propriétaire : Features SOG ; modules/missions et Carburant s'en servent) — les missions V2 lues telles qu'elles sont
+// V3 frame/lib (propriétaire : la session « Création de missions » depuis le 17 nov. 2026, avant : Features SOG ; modules/missions et
+// Carburant s'en servent) — les missions V2 lues telles qu'elles sont
 // (modules/missions/SPEC.md § 2, § 4), en calcul pur : un fichier mission<ID>.yaml déjà lu (objet de js-yaml), une ligne du registre
 // missions/mission_registry.yaml, le vol qu'une mission donne à Carburant. Ni page, ni stockage, ni réseau : l'appelant lit les
 // fichiers (ctx.data) et le YAML (frame/lib/js-yaml.min.js, le lecteur du cadre).
@@ -14,6 +15,22 @@
 //     participants, role }] et turns [{ id, name, role, lat, lon }] (60 points), maps [{ id, file (motif strict, un nom de fichier du
 //     dossier de la mission), type, description, centreRef }] (20), objectives { primary, secondary }, payload { description, massKg,
 //     passengers }, details [paragraphe] (2 000 caractères chacun), hasCoords (un lieu, un point ou une zone situé).
+//     Les tiroirs (SOG-0440) : drawers [{ id (B, C, D), title, trigger, message, brief, key, keyWhy, condition, route, routeUnknown }]
+//     (trois au plus) et drawersRefused (les parties écartées : identifiant hors liste ou en double, au-delà de trois). key, la géométrie
+//     toujours RÉSOLUE (que le fichier l'écrive dans la partie ou la cite par identifiant) :
+//       { kind: 'time', point (un point de la mission ou 'ORIGIN'), delayMin }
+//       { kind: 'zone', shape: { circle: { lat, lon, radiusM } } | { polygon: [[lat, lon]…] }, ceilingFt | null, zoneId | null, shown,
+//         actor (la cible qui franchit la zone à la place du pilote : un objet, ou null), fallbackMin | null }
+//       { kind: 'object', object: { id, kind, name, lat, lon, rangeNm, heightFt | null, altitudeFt | null, confirm, moving, motion },
+//         fallbackMin | null }
+//       { kind: 'arrival', point, at: { lat, lon }, radiusNm, speedMaxKt, onGround, required: [{ id, lat, lon }], escortMinSec,
+//         fallbackMin | null }
+//       { kind: 'hand', fallbackMin | null }
+//     keyWhy : '' | 'several' | 'zone' | 'object' | 'actor' | 'condition' | 'point' | 'delay' ; condition : le genre de trigger_condition
+//     écrit ; route : la suite de route en points résolus (la forme de missionFlight) — jamais dans turns, routeNm ni missionFlight.
+//   OBJECT_KINDS, DRAWER_IDS, DRAWER_BOUNDS : les genres d'objet (liste fermée), les identifiants des tiroirs, les bornes de lecture.
+//   passageMin(mission, pointId) → { nm, min | null } : la distance et le temps estimé du départ au passage d'un point de la partie A
+//     ('ORIGIN' : 0) ; null si le point n'est pas dans la route de la partie A.
 //   readRegistry(doc) → [ligne { id, family, title, operation, types, origin, destination, originIcao, destinationIcao, blockMin,
 //     folder, file, organisation, kind, subtype, callsigns, words, category }] : les lignes du registre, les organisations (…Z) marquées ; folder et file vides quand le
 //     registre en donne un qui n'est pas sûr (le chemin n'est jamais pris tel quel : un pilote peut écrire le registre).
@@ -87,7 +104,8 @@ const centreOf = z => {
   const c = z?.centre || z?.center;
   if (c && num(c.lat) !== null) return [num(c.lat), num(c.lon)];
   if (num(z?.lat) !== null) return [num(z.lat), num(z.lon)];
-  const pts = (z?.points || z?.polygon || z?.vertices || []).filter(p => num(p?.lat) !== null && num(p?.lon) !== null);
+  // les sommets : la première des trois clés qui est une liste (un « points: 5 » faisait échouer toute la lecture)
+  const pts = ([z?.points, z?.polygon, z?.vertices].find(Array.isArray) || []).filter(p => num(p?.lat) !== null && num(p?.lon) !== null);
   return pts.length ? [pts.reduce((a, p) => a + +p.lat, 0) / pts.length, pts.reduce((a, p) => a + +p.lon, 0) / pts.length] : null;
 };
 
@@ -160,6 +178,304 @@ function sheetOf(d) {
   };
 }
 
+// ---------------------------------------------------------------- les tiroirs (SOG-0440 ; organisation/SPEC_MISSIONS_TIROIRS.md § 7, § 10.3)
+// Un tiroir est une partie de la V2 (`phases`, jusqu'à trois : B, C, D) ; il a UNE clé. Deux formes d'écriture, lues toutes les deux :
+//   · PAR IDENTIFIANT (l'atelier de l'utilisateur, « Mission Editor ») : `trigger_zone: ZONE-1` désigne une zone de `zones`,
+//     `trigger_object: OBJ-1` un objet de `objects`, en tête de mission ;
+//   · DANS LA PARTIE (l'éditeur de la V3) : `trigger_zone: { centre, radius_km | points, ceiling_ft }`, `trigger_object: { kind, lat, lon,
+//     detection_range_nm, detection_height_ft, … }` — la fiche technique de la V2 affiche toute clé inconnue du premier niveau (seul
+//     `phases` y est masqué) : une zone cachée ou un objet à trouver écrits en tête s'y lisent avant le départ.
+// Les clés : trigger_zone (+ zone_shown, + trigger_actor : c'est la cible, pas le pilote, qui franchit la zone) ; trigger_object ;
+// trigger_condition { kind: arrival, point, radius_nm, speed_max_kt, require_on_ground, required_points, escort_min_sec } ; trigger_point +
+// trigger_delay_min (l'heure de la V2) ; rien : le geste du pilote seul. fallback_delay_min : l'heure de repli (minutes après le
+// décollage) de toute clé qui regarde l'avion. Le format entier : docs/technique/FORMAT_MISSION.md.
+// Le fichier est une entrée non fiable : une valeur hors bornes n'est jamais ramenée dans ses bornes (une zone rétrécie serait une autre
+// zone) — la clé est dite illisible et le tiroir ne s'ouvre plus qu'à la main ou à son heure de repli. Le bloc privé `x_mission_editor`,
+// `coordination` et `emit_event` ne sont pas lus (gardés tels quels par qui réécrit).
+
+/** Les genres d'un objet à trouver : la liste fermée, à allonger ICI seulement (l'éditeur et l'écran du pilote la lisent) ; `aircraft` :
+ *  une cible mobile. */
+export const OBJECT_KINDS = Object.freeze(['wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft']);
+/** Les identifiants des tiroirs, dans l'ordre (la partie A est le reste de la mission). */
+export const DRAWER_IDS = Object.freeze(['B', 'C', 'D']);
+/** Les bornes d'un tiroir lu (celles de l'atelier de l'utilisateur, FORMAT.md « Mission Editor 1.0 ») : textes (signes), délais
+ *  (minutes), rayon d'une zone (km, 0 exclu), sommets, pieds (plafond, hauteur de détection), altitude d'un objet (ft), portée et rayon
+ *  d'arrivée (NM, 0 exclu), vitesses (kt), suivi (s), longueurs de listes. */
+export const DRAWER_BOUNDS = Object.freeze({
+  title: 120,
+  trigger: 200,
+  message: 2000,
+  brief: 20000,
+  delayMin: 1440,
+  radiusKm: 500,
+  vertices: Object.freeze([3, 100]),
+  feet: 60000,
+  altitudeFt: Object.freeze([-1500, 60000]),
+  rangeNm: 100,
+  speedKt: 1000,
+  escortSec: 3600,
+  route: 60,
+  required: 20,
+  scanned: 20,
+  listed: 60
+});
+/** Les mots d'une route qui disent le départ ou l'arrivée (jamais un point de la liste). */
+const ROUTE_START = new Set(['ORIGIN', 'DEPART', 'DEPARTURE']),
+  ROUTE_END = new Set(['DESTINATION', 'ARRIVAL', 'ARRIVEE']);
+/** Un texte de plusieurs lignes, ses fins de ligne ramenées à « \n », borné. */
+const para = (v, n) => typeof v === 'string' || typeof v === 'number' ? String(v).replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').trim()
+  .slice(0, n) : '';
+/** Un nombre du fichier dans [lo, hi] ; null sinon (un texte qui n'est pas un nombre, un booléen, hors bornes). */
+const within = (v, lo, hi) => (typeof v === 'number' || typeof v === 'string' && /^\s*-?\d+(\.\d+)?\s*$/.test(v)) && +v >= lo && +v <= hi ?
+  +v : null;
+/** Un nombre du fichier dans ]0, hi] ; null sinon. */
+const positive = (v, hi) => {
+  const n = within(v, 0, hi);
+  return n !== null && n > 0 ? n : null;
+};
+/** Un objet du fichier (ni liste, ni valeur nue), ou null. */
+const plain = v => v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+/** Un identifiant écrit (un texte ou un nombre), comme il se compare : sans blancs autour, en capitales ; '' sinon. */
+const idWord = v => typeof v === 'string' || typeof v === 'number' ? clean(v).toUpperCase() : '';
+/** Oui ou non écrit dans le fichier (false, 0, « non », « no », « false » : non) ; `dflt` quand rien n'est écrit. */
+const yes = (v, dflt) => v === undefined || v === null || v === '' ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v)
+  .trim()));
+/** L'entrée d'une liste du fichier (ou d'un objet seul) qui porte cet identifiant, parmi les `max` premières ; null sinon. */
+const byId = (v, id, max) => id ? (Array.isArray(v) ? v : plain(v) ? [v] : []).slice(0, max).find(x => plain(x) && idWord(x.id) === id) ||
+  null : null;
+
+/** Une zone de passage (écrite dans la partie, ou une zone de `zones`) → { shape: { circle: { lat, lon, radiusM } } | { polygon: [[lat,
+ *  lon]…] }, ceilingFt } ; null quand elle est illisible. Des sommets font un polygone, sinon le centre et le rayon un cercle. */
+function zoneKey(z) {
+  const o = plain(z);
+  if (!o) return null;
+  const B = DRAWER_BOUNDS,
+    pts = [o.points, o.polygon, o.vertices].find(a => Array.isArray(a) && a.length),
+    ceil = within(o.ceiling_ft, 0, B.feet),
+    ceilingFt = ceil === null ? null : Math.round(ceil);
+  if (pts) {
+    if (pts.length < B.vertices[0] || pts.length > B.vertices[1]) return null;
+    const poly = pts.map(p => [within(plain(p)?.lat, -90, 90), within(plain(p)?.lon, -180, 180)]);
+    return poly.some(p => p[0] === null || p[1] === null) ? null : {
+      shape: {
+        polygon: poly
+      },
+      ceilingFt
+    };
+  }
+  const c = plain(o.centre) || plain(o.center) || o,
+    lat = within(c.lat, -90, 90),
+    lon = within(c.lon, -180, 180),
+    r = positive(o.radius_km, B.radiusKm);
+  return lat === null || lon === null || r === null ? null : {
+    shape: {
+      circle: {
+        lat,
+        lon,
+        radiusM: Math.max(1, Math.round(r * 1000))
+      }
+    },
+    ceilingFt
+  };
+}
+
+/** Un objet à trouver (écrit dans la partie, ou un objet de `objects`) → { id, kind, name, lat, lon, rangeNm, heightFt, altitudeFt,
+ *  confirm, moving, motion } ; null quand il est illisible (sans position ou sans portée dans leurs bornes). Un genre que OBJECT_KINDS
+ *  ne connaît pas : '' (l'objet reste jouable). confirm : trouvé à portée ET sur le mot du pilote (vrai par défaut). motion : null pour
+ *  un objet fixe ; { kind: 'route', route (points résolus), speedKt, startDelayMin } ou { kind: 'axis', courseDeg, speedKt,
+ *  startDelayMin } pour une cible mobile — lue et bornée, pas encore jugée en vol. `resolve` : un identifiant → un point de la mission. */
+function objectKey(v, resolve) {
+  const o = plain(v);
+  if (!o) return null;
+  const B = DRAWER_BOUNDS,
+    c = plain(o.centre) || plain(o.center) || o,
+    lat = within(c.lat, -90, 90),
+    lon = within(c.lon, -180, 180),
+    range = positive(o.detection_range_nm, B.rangeNm),
+    h = within(o.detection_height_ft, 0, B.feet),
+    alt = within(o.altitude_ft, B.altitudeFt[0], B.altitudeFt[1]),
+    kind = cut(o.kind, 40).toLowerCase(),
+    speed = positive(o.speed_kt, B.speedKt),
+    delay = within(o.start_delay_min, 0, B.delayMin),
+    course = within(o.course_deg, 0, 360),
+    route = (Array.isArray(o.route_order) ? o.route_order : []).slice(0, B.route).map(resolve).filter(Boolean),
+    axis = cut(o.motion, 20).toLowerCase() === 'axis' || !route.length && course !== null && speed !== null;
+  if (lat === null || lon === null || range === null) return null;
+  return {
+    id: cut(o.id, 40),
+    kind: OBJECT_KINDS.includes(kind) ? kind : '',
+    name: cut(o.name, 120),
+    lat,
+    lon,
+    rangeNm: range,
+    heightFt: h === null ? null : Math.round(h),
+    altitudeFt: alt === null ? null : Math.round(alt),
+    confirm: yes(o.require_confirmation, true),
+    moving: !!(speed !== null && (axis ? course !== null : route.length)),
+    motion: speed === null ? null : axis ? course === null ? null : {
+      kind: 'axis',
+      courseDeg: course,
+      speedKt: speed,
+      startDelayMin: delay === null ? 0 : Math.round(delay)
+    } : route.length ? {
+      kind: 'route',
+      route,
+      speedKt: speed,
+      startDelayMin: delay === null ? 0 : Math.round(delay)
+    } : null
+  };
+}
+
+/** Les tiroirs d'une mission (voir l'en-tête) : { drawers, drawersRefused }. `d` : le document ; `points` : les points de la mission
+ *  (readMission). Une partie de la V2 se lit telle quelle : avec un point de déclenchement, la clé « heure » ; sans, le geste seul.
+ *  Plusieurs clés dans un fichier écrit à la main : la zone, puis l'objet, puis la condition, puis l'heure (keyWhy 'several'). Une clé
+ *  illisible → { kind: 'hand' } et keyWhy : 'zone', 'object', 'actor', 'condition' (illisible, ou d'un genre que ce lecteur ne lit pas :
+ *  `condition` le nomme), 'point' (le lieu n'existe pas), 'delay'. key.fallbackMin : l'heure de repli, sur toute clé sauf l'heure. */
+function drawersOf(d, points) {
+  const B = DRAWER_BOUNDS,
+    all = Array.isArray(d.phases) ? d.phases : plain(d.phases) ? [d.phases] : [],
+    byKey = new Map(Object.entries(points).map(([id, p]) => [id.toUpperCase(), p])),
+    spot = p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null ? {
+      lat: latOf(p.lat),
+      lon: lonOf(p.lon)
+    } : null,
+    // un identifiant de route → un point de la mission, dans la forme de missionFlight ; null pour le départ, l'arrivée ou un inconnu
+    resolve = x => {
+      const word = idWord(plain(x) ? x.id : x).split('/')[0].trim(),
+        pt = byKey.get(word);
+      return pt ? flightPoint(pt) : null;
+    },
+    // la position d'un lieu nommé par une condition : l'arrivée, le départ, un point ou une zone de la mission
+    placeAt = id => ROUTE_END.has(id) ? spot(d.destination) || spot(d.origin) : ROUTE_START.has(id) ? spot(d.origin) : spot(byKey.get(id)),
+    drawers = [];
+  // la cible sans identifiant est « TARGET » (la règle de la V2 et de l'atelier)
+  if (!byKey.has('TARGET') && spot(d.target)) byKey.set('TARGET', {
+    id: 'TARGET',
+    name: clean(d.target.name),
+    ...spot(d.target),
+    kind: 'target',
+    role: ''
+  });
+  let refused = Math.max(0, all.length - B.scanned);
+  all.slice(0, B.scanned).forEach((raw, rank) => {
+    const p = plain(raw),
+      // sans identifiant : la lettre de son rang (la V2 ne contrôle rien, un fichier écrit à la main doit se lire)
+      id = p ? cut(p.id, 8).toUpperCase() || DRAWER_IDS[rank] || '' : '';
+    if (!p || !DRAWER_IDS.includes(id) || drawers.some(x => x.id === id) || drawers.length >= DRAWER_IDS.length) {
+      refused += 1;
+      return;
+    }
+    const has = k => p[k] !== undefined && p[k] !== null && p[k] !== '',
+      keys = ['trigger_zone', 'trigger_object', 'trigger_condition', 'trigger_point'].filter(has),
+      fb = within(p.fallback_delay_min, 0, B.delayMin),
+      fallbackMin = fb === null ? null : Math.round(fb),
+      hand = {
+        kind: 'hand',
+        fallbackMin
+      };
+    let key = hand,
+      // un délai sans point : la trace d'un lieu retiré (l'éditeur, SOG-0439) — dit « point »
+      keyWhy = keys.length > 1 ? 'several' : !keys.length && has('trigger_delay_min') ? 'point' : '',
+      condition = '';
+    if (keys[0] === 'trigger_zone') {
+      const zid = idWord(p.trigger_zone),
+        z = zoneKey(zid ? byId(d.zones, zid, 40) : p.trigger_zone),
+        aid = idWord(p.trigger_actor),
+        actor = aid ? objectKey(byId(d.objects, aid, B.listed), resolve) : null;
+      if (!z) keyWhy = 'zone';
+      else if (has('trigger_actor') && !actor) keyWhy = 'actor';
+      else key = {
+        kind: 'zone',
+        ...z,
+        zoneId: zid ? cut(p.trigger_zone, 40) : null,
+        shown: yes(p.zone_shown, true),
+        actor, // la cible qui franchit la zone à la place du pilote ; null : le pilote
+        fallbackMin
+      };
+    } else if (keys[0] === 'trigger_object') {
+      const oid = idWord(p.trigger_object),
+        o = objectKey(oid ? byId(d.objects, oid, B.listed) : p.trigger_object, resolve);
+      if (o) key = {
+        kind: 'object',
+        object: o,
+        fallbackMin
+      };
+      else keyWhy = 'object';
+    } else if (keys[0] === 'trigger_condition') {
+      const c = plain(p.trigger_condition) || {},
+        kind = cut(c.kind, 24).toLowerCase(),
+        at = placeAt(idWord(c.point)),
+        radius = positive(c.radius_nm, B.rangeNm),
+        speed = within(c.speed_max_kt, 0, B.speedKt),
+        escort = c.escort_min_sec === undefined || c.escort_min_sec === null ? 0 : within(c.escort_min_sec, 0, B.escortSec),
+        req = (Array.isArray(c.required_points) ? c.required_points : c.required_points === undefined || c.required_points === null ?
+        [] : [
+            null
+          ]).slice(0, B.required).map(x => {
+          const w = idWord(x),
+            q = placeAt(w);
+          return q ? {
+            id: ROUTE_END.has(w) ? 'DESTINATION' : ROUTE_START.has(w) ? 'ORIGIN' : byKey.get(w).id,
+            ...q
+          } : null;
+        });
+      condition = /^[a-z][a-z0-9_]{0,23}$/.test(kind) ? kind : '';
+      if (kind !== 'arrival' || !at || radius === null || speed === null || escort === null || req.includes(null)) keyWhy = 'condition';
+      else key = {
+        kind: 'arrival',
+        point: ROUTE_END.has(idWord(c.point)) ? 'DESTINATION' : ROUTE_START.has(idWord(c.point)) ? 'ORIGIN' : byKey.get(idWord(c
+          .point)).id,
+        at,
+        radiusNm: radius,
+        speedMaxKt: speed,
+        onGround: yes(c.require_on_ground, false),
+        required: req, // les escales posées exigées avant l'arrivée
+        escortMinSec: Math.round(escort), // le suivi d'une cible exigé (secondes) ; 0 : aucun
+        fallbackMin
+      };
+    } else if (keys[0] === 'trigger_point') {
+      const word = idWord(p.trigger_point),
+        at = ROUTE_START.has(word) ? 'ORIGIN' : byKey.get(word)?.id || '',
+        delay = has('trigger_delay_min') ? within(p.trigger_delay_min, 0, B.delayMin) : 0;
+      if (!at) keyWhy = 'point';
+      else if (delay === null) keyWhy = 'delay';
+      else key = {
+        kind: 'time',
+        point: at,
+        delayMin: Math.round(delay)
+      };
+    }
+    // la suite de route : les points résolus (la forme des points de missionFlight), telle qu'écrite — son premier point est le raccord
+    // (le point de déclenchement en V2, le dernier point de la partie d'avant dans l'atelier) ; le départ et l'arrivée n'en sont pas ;
+    // un identifiant inconnu est compté
+    const route = [];
+    let routeUnknown = 0;
+    for (const x of (Array.isArray(p.route_order) ? p.route_order : []).slice(0, B.route)) {
+      const word = idWord(plain(x) ? x.id : x).split('/')[0].trim();
+      if (ROUTE_START.has(word) || ROUTE_END.has(word)) continue;
+      const pt = resolve(x);
+      if (pt) route.push(pt);
+      else routeUnknown += 1;
+    }
+    drawers.push({
+      id,
+      title: cut(p.title, B.title),
+      trigger: cut(p.trigger, B.trigger), // la clé dite en clair par l'auteur (la V2 l'imprime : « À ouvrir : … »)
+      message: para(p.message, B.message),
+      brief: para(p.brief, B.brief),
+      key,
+      keyWhy,
+      condition, // le genre de trigger_condition écrit (« arrival », « hover »…), pour le dire ; '' sans condition
+      route,
+      routeUnknown
+    });
+  });
+  return {
+    drawers,
+    drawersRefused: refused
+  };
+}
+
 /** Une liste de textes (une chaîne, une liste, ou rien). */
 const texts = v => (Array.isArray(v) ? v : v ? [v] : []).map(x => typeof x === 'string' ? clean(x) : clean(x?.text || x?.description || ''))
   .filter(Boolean);
@@ -197,7 +513,7 @@ export function readMission(doc) {
     unread = [], // les clés de durée non reconnues, dites à la préparation (« non lue : time_window_min sur PT2 »)
     add = (p, kind) => {
       const pid = clean(p?.id);
-      if (!pid || num(p?.lat) === null || num(p?.lon) === null) return;
+      if (!pid || pid === '__proto__' || num(p?.lat) === null || num(p?.lon) === null) return;
       points[pid] = {
         id: pid,
         name: clean(p.name),
@@ -208,10 +524,13 @@ export function readMission(doc) {
         ...holdOf(p, pid, unread) // le temps sur zone du point (§ 1 ter) : { hold: { min, max }, holdKey }
       };
     };
-  (d.turning_points || []).forEach(p => add(p, 'turn'));
-  (Array.isArray(d.rendezvous) ? d.rendezvous : d.rendezvous ? [d.rendezvous] : []).forEach(p => add(p, 'rdv'));
-  (d.zones || []).forEach(z => {
-    const c = centreOf(z);
+  // une liste du fichier : un tableau, un objet seul = une entrée (la forme tolérée de la fiche), toute autre valeur = rien — un
+  // « zones: 7 » ou un « turning_points: { … } » faisait échouer toute la lecture (SOG-0440, le banc)
+  const many = v => Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : [];
+  many(d.turning_points).forEach(p => add(p, 'turn'));
+  many(d.rendezvous).forEach(p => add(p, 'rdv'));
+  many(d.zones).forEach(z => {
+    const c = z && typeof z === 'object' ? centreOf(z) : null;
     if (c) add({
       id: z.id,
       name: z.name,
@@ -220,7 +539,7 @@ export function readMission(doc) {
       role: z.role
     }, 'zone');
   });
-  if (d.target) add(d.target, 'target');
+  if (d.target && typeof d.target === 'object') add(d.target, 'target');
   // l'appareil : le bloc aircraft ; sinon (forme minimale, comme M-001) les équipes dont le type a la forme d'un indicatif OACI (« H135 »)
   let ac = (Array.isArray(d.aircraft) ? d.aircraft : d.aircraft ? [d.aircraft] : []).filter(a => a && typeof a === 'object');
   if (!ac.length) ac = (Array.isArray(d.teams) ? d.teams : []).filter(t => /^[A-Z][A-Z0-9]{1,3}$/.test(clean(t?.type).split(' ')[0])).map(
@@ -268,7 +587,8 @@ export function readMission(doc) {
       mitigation: cut(r?.mitigation)
     }).filter(r => r.hazard),
     category: categoryOf(m.category ?? d.category),
-    ...sheetOf(d)
+    ...sheetOf(d),
+    ...drawersOf(d, points)
   };
 }
 
@@ -397,18 +717,44 @@ export function rowOfMission(doc, path) {
 export function routeNm(mission) {
   const f = missionFlight(mission);
   if (!f) return null;
-  const pts = [mission.origin, ...f.route.points, mission.destination].filter(p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null),
-    rad = Math.PI / 180;
+  const pts = [mission.origin, ...f.route.points, mission.destination].filter(p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null);
   if (pts.length < 2) return null;
   let nm = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1],
-      b = pts[i],
-      h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) **
-      2;
-    nm += 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
-  }
+  for (let i = 1; i < pts.length; i++) nm += legNm(pts[i - 1], pts[i]);
   return Math.round(nm);
+}
+
+/** La distance en NM entre deux lieux situés (le calcul de routeNm). */
+function legNm(a, b) {
+  const rad = Math.PI / 180,
+    h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) ** 2;
+  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** La distance et le temps estimé du départ au passage d'un point de la partie A (voir l'en-tête ; la clé « heure » d'un tiroir, que la
+ *  V2 estime sur la route prévue). La distance : celle de routeNm, de l'origine (si elle est située) au point ; les minutes : la distance
+ *  à la vitesse de croisière, plus le temps sur zone des points d'AVANT (le milieu d'une fourchette) ; min null sans vitesse. */
+export function passageMin(mission, pointId) {
+  const f = missionFlight(mission);
+  if (!f) return null;
+  const word = clean(pointId).toUpperCase();
+  if (ROUTE_START.has(word)) return {
+    nm: 0,
+    min: 0
+  };
+  const at = f.route.points.findIndex(p => String(p.id).toUpperCase() === word);
+  if (!word || at < 0) return null;
+  const pts = [mission.origin, ...f.route.points.slice(0, at + 1)].filter(p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null),
+    kt = num(mission.cruiseSpeedKt);
+  let nm = 0,
+    held = 0;
+  for (let i = 1; i < pts.length; i++) nm += legNm(pts[i - 1], pts[i]);
+  for (const p of f.route.points.slice(0, at))
+    if (p.hold) held += (p.hold.min + p.hold.max) / 2;
+  return {
+    nm: Math.round(nm),
+    min: kt !== null && kt > 0 ? Math.round(nm / kt * 60 + held) : null
+  };
 }
 
 // ---------------------------------------------------------------- le temps sur zone d'un point (CONCEPTION 11/11 § 1 bis, § 1 ter)
@@ -474,6 +820,27 @@ export function lockedPoint(p) {
 }
 const SOURCE_ROLE = /(^|[^a-zà-ÿ])(source|sources|[ée]copage|[ée]coper|scoop|scooping|plan d'eau|pélicandage|pelicandage)([^a-zà-ÿ]|$)/i;
 
+/** Un point de la mission comme le vol le porte (missionFlight, la suite de route d'un tiroir) : { id, lat, lon, name, lock, hold,
+ *  holdKey }. */
+function flightPoint(p) {
+  return {
+    id: p.id,
+    lat: p.lat,
+    lon: p.lon,
+    name: p.name,
+    // SOG-0193 L3 (§ 10.47 c) : un point que la mission impose — rendez-vous, cible, source — est verrouillé dans le vol
+    ...(lockedPoint(p) ? {
+      lock: 'mission'
+    } : {}),
+    ...(p.hold ? { // le temps sur zone du point (§ 1 bis) : une durée ou une fourchette, en minutes
+      hold: {
+        ...p.hold
+      },
+      holdKey: p.holdKey
+    } : {})
+  };
+}
+
 /** Le vol qu'une mission donne à Carburant (voir l'en-tête). */
 export function missionFlight(mission, assignment = null) {
   if (!mission) return null;
@@ -481,22 +848,8 @@ export function missionFlight(mission, assignment = null) {
     dep = mission.origin?.icao || clean(a.departure).toUpperCase() || '',
     arr = mission.destination?.icao || mission.origin?.icao || '',
     order = mission.routeOrder.length ? mission.routeOrder : Object.keys(mission.points),
-    points = order.map(id => mission.points[id]).filter(Boolean).map(p => ({
-      id: p.id,
-      lat: p.lat,
-      lon: p.lon,
-      name: p.name,
-      // SOG-0193 L3 (§ 10.47 c) : un point que la mission impose — rendez-vous, cible, source — est verrouillé dans le vol
-      ...(lockedPoint(p) ? {
-        lock: 'mission'
-      } : {}),
-      ...(p.hold ? { // le temps sur zone du point (§ 1 bis) : une durée ou une fourchette, en minutes
-        hold: {
-          ...p.hold
-        },
-        holdKey: p.holdKey
-      } : {})
-    }));
+    // un identifiant du fichier n'est lu que s'il est une clé propre des points (« constructor » n'est pas un point)
+    points = order.map(id => Object.hasOwn(mission.points, id) ? mission.points[id] : null).filter(Boolean).map(flightPoint);
   // SOG-0193 : la position de l'origine et de la destination (celle de l'origine pour un aller-retour), pour qu'un terrain que la base
   // ne connaît pas (une base d'opérations, un terrain non publié) reste dans le plan et dans sa distance
   const at = p => p && latOf(p.lat) !== null && lonOf(p.lon) !== null ? {

@@ -2933,3 +2933,66 @@ def n70(c):
          'nothing changed (or the Lieux never opened): the same document; a swap follows the places; a place never cited goes at once; hostile documents do not throw',
          what='the pure rules')
     c.js(_REG_CLEAR)
+
+
+
+# an invented mission written the way the user's workshop writes it (zones and objects at the top, cited by identifier), then the same
+# keys written inside the parts (the V3 editor's way), a V2 part by the hour, and what a hostile file does
+_DRAWERS_JS = """async () => { const MS = await import('/frame/lib/mission.js');
+  const base = { mission: { id: 'X-401A', type: 'SAR' }, title: 'Tiroirs', cruise_speed_kt: 120,
+    origin: { name: 'Base Test (XTST)', lat: 44.5, lon: 1.0 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44.0, lon: 1.2 },
+    target: { id: 'TARGET', name: 'Cible', lat: 44.6, lon: 1.3 },
+    turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }, { id: 'PT2', name: 'Deux', lat: 44.7, lon: 1.4 }],
+    zones: [{ id: 'ZONE-1', name: 'Secteur', kind: 'search', centre: { lat: 44.62, lon: 1.28 }, radius_km: 4, ceiling_ft: 3000 }],
+    objects: [{ id: 'OBJ-1', kind: 'person', name: 'Naufragé', lat: 44.61, lon: 1.31, altitude_ft: 2500, detection_range_nm: 0.3, detection_height_ft: 800 },
+      { id: 'OBJ-2', kind: 'aircraft', lat: 44.8, lon: 1.2, route_order: ['PT1', 'TARGET'], speed_kt: 110, detection_range_nm: 0.8 }],
+    route_order: ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'], x_mission_editor: { version: '1.0' } };
+  const read = (phases, more = {}) => { try { return MS.readMission({ ...base, ...more, phases }) } catch (e) { return { threw: String(e) } } };
+  const keys = m => m.threw ? m.threw : (m.drawers || []).map(d => [d.id, d.key && d.key.kind, d.keyWhy, d.condition]);
+  const byId = read([{ id: 'B', title: 'Zone', trigger_zone: 'ZONE-1', trigger_actor: 'OBJ-2', fallback_delay_min: 60, route_order: ['PT1', 'TARGET'] },
+    { id: 'C', trigger_object: 'OBJ-1' },
+    { id: 'D', trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: 1, speed_max_kt: 30, require_on_ground: true, required_points: ['PT2'] } }]);
+  const inPart = read([{ id: 'B', trigger_zone: { centre: { lat: 44.62, lon: 1.28 }, radius_km: 4 }, zone_shown: false },
+    { id: 'C', trigger_object: { kind: 'raft', lat: 44.61, lon: 1.31, detection_range_nm: 0.3, require_confirmation: false } },
+    { id: 'D', trigger_point: 'PT1', trigger_delay_min: 10 }]);
+  const odd = read([{ id: 'B', trigger_condition: { kind: 'hover', object: 'OBJ-1' }, fallback_delay_min: 90 }, { id: 'C', trigger_zone: 'ZONE-9' },
+    { id: 'D', trigger_zone: { centre: { lat: 44, lon: 1 }, radius_km: 1e9 } }, { id: 'E' }, { id: 'B' }]);
+  const b = byId.threw ? {} : byId.drawers[0].key, c = byId.threw ? {} : byId.drawers[1].key, dd = byId.threw ? {} : byId.drawers[2].key;
+  return { byId: keys(byId), zone: [b.shape, b.ceilingFt, b.shown, b.fallbackMin, b.actor && [b.actor.id, b.actor.moving, b.actor.motion.route.map(p => p.id)]],
+    object: c.object && [c.object.rangeNm, c.object.heightFt, c.object.altitudeFt, c.object.confirm, c.object.moving],
+    arrival: [dd.point, dd.at, dd.radiusNm, dd.speedMaxKt, dd.onGround, dd.required],
+    route: byId.threw ? null : [byId.drawers[0].route.map(p => p.id), MS.missionFlight(byId).route.points.map(p => p.id)],
+    inPart: keys(inPart), inPartKeys: inPart.threw ? null : [inPart.drawers[0].key.shape, inPart.drawers[0].key.shown, inPart.drawers[1].key.object.confirm, inPart.drawers[2].key],
+    odd: keys(odd), oddRefused: odd.drawersRefused, oddFallback: odd.threw ? null : odd.drawers[0].key.fallbackMin,
+    hostile: [keys(read([{ id: 'B', trigger_zone: 'ZONE-1' }], { zones: 7 })), keys(read([{ id: 'B', trigger_object: 'OBJ-1' }], { objects: 'x', turning_points: { id: 'SEUL', lat: 1, lon: 1 } })),
+      keys(read('texte')), keys(read([{ id: 'B', trigger_point: 'constructor' }]))],
+    kinds: MS.OBJECT_KINDS, passage: MS.passageMin ? MS.passageMin(MS.readMission(base), 'PT1') : null } }"""
+
+
+@case('N71', 'Mission reader, the drawers: the parts of a mission (`phases`) are read as drawers — the zone and the object cited by identifier '
+      '(zones and objects at the top, the user\'s workshop) or written inside the part (the V3 editor), the geometry always resolved in the '
+      'key; a zone crossed by a moving target; the arrival key (at the aerodrome, on the ground, slow, after a stop); a V2 part by the hour; '
+      'a condition the reader does not read, a zone it cannot find or out of its bounds: the gesture alone, said, with its fallback hour; '
+      'three drawers at most; a mission whose `zones` is not a list is read all the same', 'N', tags=('missions',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0440 (the ergonomist, 17 Nov 2026: « le lecteur doit lire LES DEUX formes […] Tu résous l\'identifiant en géométrie dans '
+      '`key` […] un genre inconnu de condition = « geste seul », dit »); docs/technique/FORMAT_MISSION.md; the bench frame/lib/test/mission.html')
+def n71(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js(_DRAWERS_JS)
+    c.eq(got['byId'], [['B', 'zone', '', ''], ['C', 'object', '', ''], ['D', 'arrival', '', 'arrival']], 'the three keys cited by identifier are read', what='keys by identifier')
+    c.eq(got['zone'], [{'circle': {'lat': 44.62, 'lon': 1.28, 'radiusM': 4000}}, 3000, True, 60, ['OBJ-2', True, ['PT1', 'TARGET']]],
+         'the zone of `zones` resolved in the key: its circle, its ceiling, shown by default, its fallback hour, the moving target that crosses it', what='the zone')
+    c.eq(got['object'], [0.3, 800, 2500, True, False], 'the object of `objects`: range in NM, height and altitude in ft, « within range AND declared » by default', what='the object')
+    c.eq(got['arrival'], ['DESTINATION', {'lat': 44.0, 'lon': 1.2}, 1, 30, True, [{'id': 'PT2', 'lat': 44.7, 'lon': 1.4}]], 'the arrival key, its place and its stop resolved', what='the arrival')
+    c.eq(got['route'], [['PT1', 'TARGET'], ['PT1', 'TARGET']], 'the onward route of a drawer is resolved and never enters the mission\'s own route', what='routes')
+    c.eq(got['inPart'], [['B', 'zone', '', ''], ['C', 'object', '', ''], ['D', 'time', '', '']], 'the same keys written inside the part, and a V2 part by the hour', what='keys in the part')
+    c.eq(got['inPartKeys'], [{'circle': {'lat': 44.62, 'lon': 1.28, 'radiusM': 4000}}, False, False, {'kind': 'time', 'point': 'PT1', 'delayMin': 10}],
+         'a hidden zone; an object found by range alone; the hour', what='the keys in the part')
+    c.eq([got['odd'], got['oddRefused'], got['oddFallback']], [[['B', 'hand', 'condition', 'hover'], ['C', 'hand', 'zone', ''], ['D', 'hand', 'zone', '']], 2, 90],
+         'a condition the reader does not read, a zone that does not exist, a radius out of bounds: the gesture alone, said; an id out of B / C / D '
+         'and a duplicate are refused and counted; the fallback hour is kept', what='unreadable keys')
+    c.eq(got['hostile'], [[['B', 'hand', 'zone', '']], [['B', 'hand', 'object', '']], [], [['B', 'hand', 'point', '']]],
+         'a mission whose zones, objects or phases are not lists is read all the same; « constructor » is not a point', what='hostile lists')
+    c.ok('aircraft' in (got['kinds'] or []) and 'raft' in got['kinds'] and got['passage'] == {'nm': 20, 'min': 10}, [got['kinds'], got['passage']],
+         'the closed list of kinds; passageMin gives the distance and the estimated minutes to a point of part A')
