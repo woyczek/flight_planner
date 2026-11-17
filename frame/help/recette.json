@@ -4060,7 +4060,7 @@
    "test": "Après avoir relancé le lanceur et rechargé la page. (1) Carburant, étape Route : un vol en Europe, « Calculer ». Sous « Calculé à … », une ligne grise : « Contrôle de simulation : N conditions RAD vérifiées, M non vérifiées, K espaces inconnus — ce n'est pas une validation ». Chaque itinéraire dit « 0 écart contrôlé », plus « sans incompatibilité détectée ». (2) Le pli « Ce que le contrôle ne couvre pas » liste les espaces inconnus et les conditions non vérifiées. (3) Colle ta route EDDF → LFMN de ce matin, FL350, « Contrôler » : des erreurs sur les tronçons dont le plafond est sous ton niveau. (4) Efface la route, « Calculer » : la route proposée écrit ses changements de niveau (« … MOMUK/F",
    "since": "2026-11-17",
    "state": "todo",
-   "delivered": "2026-11-17T11:55:23Z"
+   "delivered": "2026-11-17T15:43:35Z"
   },
   {
    "id": "SOG-0402",
