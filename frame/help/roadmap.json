@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "99fb330",
+  "organisation": "20cf096",
   "fiches": 419,
   "untranslated": 0,
   "priorities": 374,
@@ -539,7 +539,7 @@
     {
      "id": "SOG-0419",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Route libre de l'Atlantique : la bonne paire de portes est essayée presque en dernier — la marge de temps est trop mince",
      "en": "Atlantic free route: the right pair of gates is tried almost last — the time margin is too thin",
      "de": "Freie Route über den Atlantik: das richtige Torpaar wird fast zuletzt versucht — die Zeitreserve ist zu knapp",
