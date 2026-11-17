@@ -3565,3 +3565,9 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Found** (Security, after the push): `route_matrix.snapshot` passed the names of `data/` (written by every pilot, § 10.36) to `cmd /c mklink`; Windows does not quote an argument without a blank: `x&calc` is a command. The tools of `tools/` go through Security BEFORE the push: this one did not (the word of the ergonomics session was taken for the whole).
 - **Done**: `_winapi.CreateJunction` (standard library, no shell); `copytree(..., symlinks=True)`; case K341 (no process started for such a name, the link is read). Checked by hand on the real data (a pass of one flight: the copy is made then removed, the data untouched).
 
+## 18 November 2026 — SOG-0453: K103 and K106 were out of date, not the engine
+
+- **Found** (Essais, bisect): both cases red since the lot of Europe, green before. Cause: the rule of the ergonomics session « never a route lost to a decided rule » (`plan._rad_fallback`): a CALCULATED route that no search can make legal is returned with its infractions in REVUE instead of « CALCUL IMPOSSIBLE ». K103 and K106 were not in the list replayed for the lot (a lot of the same area: the cases of the job route/compute must be added to it).
+- **Done**: the two cases expect the returned route (K103: status, route, first REVUE, rule LF9003 said; K106: one alternative, first issue `review`). K103 « unknown aerodrome »: it passed only because the forbidding rule was still in the base; it now uses the ordinary RAD and a request without a typed route.
+- **Said**: with a typed `route` the engine does not check `arr` against the aerodrome (same at 9a208ba1f): a request whose `route` ends elsewhere than `arr` is answered for the route. Not changed here.
+

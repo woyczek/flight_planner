@@ -5074,10 +5074,13 @@ def k103(c):
         pp = r3['plan']['primary']
         c.eq((r3['plan']['coverage_gaps'], r3['plan']['rad_search_attempts'], sorted(k for k in r3['plan'] if k in ('recovery', 'coverage_gaps', 'rad_search_attempts'))), ([], [], ['coverage_gaps', 'rad_search_attempts', 'recovery']),
              'RouteSim of 9 Nov 16 h: the plan carries the gaps of coverage, the RAD retries and the fallback (recovery, null when not needed), bounded', what='plan keys')
-        c.eq((r3['ok'], pp['ok'], pp['status'], pp['error'].startswith('Aucune route trouvée')), (True, False, 'CALCUL IMPOSSIBLE', True), 'a RAD rule that forbids A1 between SITET and KEPAD: the calculation is impossible (no route, no DCT invented: the imposed passage is not removed)', what='block')
-        c.ok(r3['plan']['automatic_alternatives'] is True and isinstance(r3['plan']['alternative_failures'], list) and len(r3['plan']['alternatives']) <= 3, str(r3['plan']['alternative_message']), 'the alternatives are searched (three at most), their failures listed')
-        # an unknown aerodrome and a bad level are said, never an exception
-        r4 = run(dict(req, arr='ZZZZ'))
+        c.eq((r3['ok'], pp['ok'], pp['status'], pp['route'], pp['issues'][0]['text'].startswith('Aucune route sans infraction'), any('LF9003' in i['text'] for i in pp['issues'])), (True, True, 'CONTRÔLE PARTIEL — À VÉRIFIER', 'LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW', True, True),
+             'a RAD rule that forbids A1 between SITET and KEPAD (SOG-0401: never a route lost to a decided rule): no route without infraction exists, the best is RETURNED (no DCT invented, the imposed passage is not removed), the rule it breaks is said in a REVUE and the status is a partial control', what='block')
+        c.ok(isinstance(r3['plan']['alternative_failures'], list) and len(r3['plan']['alternatives']) <= 3, str(r3['plan']['alternative_message']), 'the answer carries the list of the alternatives (three at most) and of their failures (a route that is returned with a REVUE does not search the automatic alternatives)')
+        # an unknown aerodrome and a bad level are said, never an exception (with the ordinary RAD again: the forbidding rule above would now return the best route with a REVUE, SOG-0401)
+        RF.write_xlsx(rad, RF.rad_sheets())
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+        r4 = run({k: v for k, v in dict(req, arr='ZZZZ').items() if k != 'route'})
         c.eq((r4['ok'], r4['plan']['primary']['ok']), (True, False), 'an aerodrome that is not in the base: the plan says so (CALCUL IMPOSSIBLE)', what='unknown ad')
         r5 = run(dict(req, fl=5))
         c.eq((r5['ok'], r5['plan']['primary']['ok'], 'FL010' in r5['plan']['primary']['error']), (True, False, True), 'a level out of FL010-FL660: said', what='bad level')
@@ -5213,7 +5216,8 @@ def k106(c):
         c.ok('plan' in r and r['plan']['primary']['route'] == 'LFPO DCT OLZOM A1 BOYNE DCT EIDW', '', 'the engine\'s own plan is given only on request (raw: true)')
         I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
         r = run(base)                                   # SITET to KEPAD forbidden by the RAD: no plan, the imposed passages are not removed
-        c.eq((r['ok'], r['alternatives'], [i['level'] for i in r['issues']][:1], r['issues'][0]['text'].startswith('Aucune route trouvée')), (True, [], ['error'], True), 'compute with a RAD rule on an imposed passage: no alternative, one error that says the passage was not removed', what='impossible')
+        c.eq((r['ok'], len(r['alternatives']), r['alternatives'][0]['route'], [i['level'] for i in r['issues']][:1], r['issues'][0]['text'].startswith('Aucune route sans infraction')), (True, 1, 'LFPO DCT OLZOM A1 SITET A1 KEPAD A1 BOYNE DCT EIDW', ['review'], True),
+             'compute with a RAD rule on an imposed passage (SOG-0401: never a route lost to a decided rule): the best route is RETURNED, the imposed passage is not removed, and the first issue (a REVUE) says that no route without infraction exists', what='impossible')
     c.eq(len(V.thin([{'distance_nm': i, 'altitude_ft': i} for i in range(1000)])) <= 201, True, 'the profile is thinned to about 200 points', what='thin')
 
 
