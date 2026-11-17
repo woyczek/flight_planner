@@ -38,7 +38,7 @@ Usage (racine du dépôt) :
 Appelé aussi par le lanceur (POST /__setup/aero-fetch) pour les boutons de Paramètres › Maintenance › Données
 aéronautiques.
 """
-import datetime, email.utils, http.client, json, os, re, ssl, sys, time, urllib.error, urllib.parse, urllib.request
+import datetime, email.utils, http.client, json, os, re, ssl, sys, threading, time, urllib.error, urllib.parse, urllib.request
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import outbound  # noqa: E402 (le User-Agent du lanceur, chaque échec dit en console)
@@ -131,7 +131,7 @@ def _body(r, limit=None):
         parts.append(part)
 
 
-def get(url, since=None, absent_ok=False, copy=None, limit=None):
+def get(url, since=None, absent_ok=False, copy=None, limit=None, timeout=None):
     """Corps de la réponse ; None si le serveur répond 304 (rien de plus récent que since, date du fichier local copy) : la copie est
     bonne, et un 304 n'est jamais écrit dans la console du lanceur. Un 304 sans copie derrière lui (aucune condition envoyée, ou copy
     disparue entre-temps) redemande une fois sans condition (Cache-Control: no-cache) au lieu d'échouer ; un second 304 est alors une
@@ -141,14 +141,14 @@ def get(url, since=None, absent_ok=False, copy=None, limit=None):
         headers['If-Modified-Since'] = email.utils.formatdate(since, usegmt=True)
     absent = (404, 410) if absent_ok else ()
     try:
-        with _open(urllib.request.Request(url, headers=headers), TIMEOUT, (304, *absent)) as r:
+        with _open(urllib.request.Request(url, headers=headers), TIMEOUT if timeout is None else timeout, (304, *absent)) as r:      # `timeout` : une relecture bornée (SOG-0394 lot C : la connexion et chaque lecture de la socket)
             return _body(r, limit)
     except urllib.error.HTTPError as e:
         if e.code != 304:
             raise
         if since and (copy is None or os.path.exists(copy)):
             return None
-    with _open(urllib.request.Request(url, headers={**UA, 'Cache-Control': 'no-cache'}), TIMEOUT, absent) as r:
+    with _open(urllib.request.Request(url, headers={**UA, 'Cache-Control': 'no-cache'}), TIMEOUT if timeout is None else timeout, absent) as r:
         return _body(r, limit)
 
 
@@ -840,10 +840,13 @@ def nat_past(folder, new):
     return len(keep)
 
 
-def nat(data):
+_NAT_LOCK = threading.Lock()
+
+
+def nat(data, timeout=None):
     """Tracks NAT en vigueur (FAA) → zones/nat/nat_tracks.json ; le fichier n'est réécrit que si les tracks changent."""
     try:
-        msgs = json.loads(get(NAT_URL))
+        msgs = json.loads(get(NAT_URL, **({'timeout': timeout} if timeout else {})))      # sans borne demandée : l'appel est celui d'avant le lot C (un faux réseau n'a pas à connaître `timeout`)
     except (OSError, ValueError) as e:
         return [], [f'NAT (FAA) : {e}']
     msgs = [m for m in msgs if isinstance(m, dict) and m.get('transaction_type', 'NAT_TRACK') == 'NAT_TRACK']
@@ -855,11 +858,12 @@ def nat(data):
                          'from': m.get('start_datetime') or '', 'to': m.get('end_datetime') or ''} for m in msgs]}
     body = json.dumps(doc, ensure_ascii=False, indent=1).encode('utf-8')
     folder = os.path.join(data, 'sia', 'zones', 'nat')
-    try:
-        nat_past(folder, tracks)      # SOG-0394 : AVANT l'écrasement
-    except OSError as e:
-        return [], [f'NAT (FAA) : les routes retirées n\'ont pas pu être gardées ({e})']      # rien n'est écrasé sans avoir gardé ce qui sort
-    changed = write(os.path.join(folder, 'nat_tracks.json'), body)
+    with _NAT_LOCK:      # SOG-0394 (lot C) : une seule écriture à la fois (la relecture du calcul, dépassée à 4 s, peut encore courir quand le verbe `nat` de la page écrit) : jamais deux nat_past.json qui se croisent
+        try:
+            nat_past(folder, tracks)      # SOG-0394 : AVANT l'écrasement
+        except OSError as e:
+            return [], [f'NAT (FAA) : les routes retirées n\'ont pas pu être gardées ({e})']      # rien n'est écrasé sans avoir gardé ce qui sort
+        changed = write(os.path.join(folder, 'nat_tracks.json'), body)
     return [{'name': 'nat_tracks.json', 'bytes': len(body), 'features': len(tracks), 'unchanged': not changed}], []
 
 

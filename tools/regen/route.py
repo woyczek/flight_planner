@@ -51,6 +51,7 @@ def compute(job, args, ctx):
     from route_engine import results_cache as RC
     data = ctx['data']
     rad_file, fra_file = _paths(data)
+    info, req = _nat_before(args, data, ctx)      # SOG-0394 lot C : la source des routes NAT est relue AVANT la réponse (et avant la clé du cache : l'empreinte change à l'écriture) quand rien ne couvre le passage du vol
     k = sig = None
     if os.path.isfile(rad_file) and not regen_jobs.merge_pending(ctx):
         try:
@@ -61,13 +62,48 @@ def compute(job, args, ctx):
         hit = RC.load(data, k, sig)
         if hit:
             job.step('route : résultat gardé', 1, 1, 'cache')
-            return {**hit[0], 'cache': {'hit': True, **hit[1]}}
+            return _nat_attach({**hit[0], 'cache': {'hit': True, **hit[1]}}, info, req, data)
     res = _compute_fresh(job, args, ctx)
     if k and isinstance(res, dict) and res.get('ok') is True:
         meta = RC.store(data, k, sig, res)
         if meta:
             res = {**res, 'cache': {'hit': False, **meta}}
-    return res
+    return _nat_attach(res, info, req, data)
+
+
+def _nat_before(args, data, ctx):
+    """(info, demande) : le contrôle des fichiers NAT et, au besoin, la relecture bornée de la source (route_engine/nat_refresh.py) ; (None, None) pour une demande qui ne se contrôle pas : jamais une panne ici."""
+    try:
+        from route_engine import nat_refresh, view
+        req = view.to_request(args) if 'action' in args else args
+        if not isinstance(req, dict) or req.get('mode', 'calculate') != 'calculate':
+            return None, None
+        return nat_refresh.before(data, req, ctx), req
+    except Exception:
+        return None, None
+
+
+def _nat_attach(res, info, req, data):
+    """`sections.nat` (l'âge du message, la relecture, ce qui couvre le passage) et `timing.nat_refresh` (les secondes de la relecture, comptées à part de la recherche) sur une copie de la réponse (celle du cache n'est jamais modifiée)."""
+    if not info or not isinstance(res, dict):
+        return res
+    try:
+        from route_engine import nat_refresh
+        st = nat_refresh.state(data, req, info)
+        if not st:
+            return res
+        box = dict(res['plan']) if isinstance(res.get('plan'), dict) else dict(res)
+        if isinstance(box.get('sections'), dict):
+            sec = dict(box['sections'], nat=st)
+            if st.get('text'):
+                sec['reason'] = ((sec.get('reason') or '') + ' ' + st['text']).strip()
+            box['sections'] = sec
+        sec_ref = (info.get('refresh') or {}).get('seconds')
+        if sec_ref is not None and isinstance(box.get('timing'), dict):
+            box['timing'] = dict(box['timing'], nat_refresh=sec_ref)
+        return {**res, 'plan': box} if isinstance(res.get('plan'), dict) else box
+    except Exception:
+        return res
 
 
 def _compute_fresh(job, args, ctx):

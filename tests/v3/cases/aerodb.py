@@ -13128,6 +13128,24 @@ def k312(c):
                  'when the routes that leave cannot be kept, nat_tracks.json is NOT replaced and the failure is said (nothing is lost silently)', what='guard')
         finally:
             AF.get, AF._utc = real_get, real_utc
+    # 6. SOG-0394 (lot C, Sécurisation): one write at a time (the reading of the calculation, cut at 4 s, may still run when the verb `nat` of the page writes): while the lock is held the write waits
+    import threading
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        try:
+            AF.get = lambda url, *a, **k: json.dumps(night).encode()
+            AF._utc = lambda: datetime.datetime(2026, 11, 17, 1, 5, tzinfo=utc)
+            done = []
+            AF._NAT_LOCK.acquire()
+            th = threading.Thread(target=lambda: done.append(AF.nat(td)), daemon=True)
+            th.start()
+            th.join(0.4)
+            waiting = (th.is_alive(), os.path.isfile(os.path.join(td, 'sia', 'zones', 'nat', 'nat_tracks.json')))
+            AF._NAT_LOCK.release()
+            th.join(5)
+            c.eq((waiting, bool(done) and done[0][1] == [], os.path.isfile(os.path.join(td, 'sia', 'zones', 'nat', 'nat_tracks.json'))), ((True, False), True, True),
+                 'while another write holds the lock the second one waits and writes nothing, then it writes (red before: no lock, two writes of nat_past.json could cross)', what='lock')
+        finally:
+            AF.get, AF._utc = real_get, real_utc
 
 
 @case('K313', 'Route engine, SOG-0394 lot A: the engine reads the NAT routes KEPT by the launcher (`nat_past.json`, an UNTRUSTED input with the bounds of nat_tracks.json) and takes one only if the hour of the passage of its entry is inside ITS dated window and the level is in its list — never as a « stale one taken anyway »; set aside it says its reason with the fields of SOG-0391 and its letter and source; closed to every search that `sections.solve` has not judged; the answer says the route taken (`sections.taken`: letter, source, window, points); K237 (the stale rule of the message of the day) is not changed',
@@ -13618,3 +13636,146 @@ def k324(c):
     c.ok(bool(out['ok'][4]) and 'non essayée' in out['ok'][4][0] and 'inatteignable' not in out['ok'][4][0], out['ok'][4], 'a sentence that says « non essayée », not « inatteignable »')
     c.ok(out['dead'][0] in ('D', 'E') and out['dead'][1] == 5 and out['dead'][2] is False and not [r for r in out['dead'][3] if r[1] == 'bound'], out['dead'],
          'no chain comes out of the three near routes (their exit has no link: nothing joins it to EGLL): the full search is made (five entries reached, not stopped), a far route is taken and no route is said `bound`')
+
+
+@case('K314', 'Route engine, SOG-0394 lot C: when NO route of the direction of the flight, of the day or kept, has its dated window over the passage of the flight (but the message of the day may still be « valid now »), the NAT source is read again BEFORE the answer — bounded (4 s, 2 s to connect), counted apart (`timing.nat_refresh`), once per five minutes and per direction (a failure counts), never outside the workstation —, and the answer says the age of the message and what the reading did (`sections.nat`); the source is a FAKE (no network call)',
+      'K', static=True,
+      rule='SOG-0394 (17 Nov 2026; the user, answering Q-0072: « pas recalculer, mais récupérer les nouvelles routes quand c\'est l\'heure qui pose souci. si les routes sont dispo, évidement. » ; ergonomics session, 9:16, lot C). Before: only the page read the source again (AeroDb.natEnsure, when NO route is valid NOW); the route computation (`route/compute`) never did: a message valid now but that will not cover the passage (KABQ → EGLL, eastbound at 13:32Z, message of 11:30-19:00Z westbound only) triggered nothing. Now `nat_refresh.before` (called by `route/compute` before the cache) checks the files alone (the flight crosses the Atlantic, the request gives an hour, no route of its direction — of the day or kept — whose window meets [departure, departure + great-circle time]) and reads the source again through `aero_fetch.nat` (which keeps what leaves the file: lot B); the bounds, the delay between two readings and the « not outside the workstation » rule are the ones of the order of the ergonomics session; `sections.nat` = { sense, messages, fetched_at, age_s, refresh (`done` | `nothing-new` | `failed` | `skipped`), why, seconds, tracks_in_sense, valid_at_passage, text }.')
+def k314(c):
+    import datetime
+    import gzip
+    import json
+    import os
+    import tempfile
+    import time
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, nat_refresh as NR, results_cache
+    compute = RJ.REGISTRY[('route', 'compute')][0]
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    track = lambda tid, route, west, east, a, b: {'id': tid, 'route': route, 'east': east, 'west': west, 'nar': [], 'by': 'EGGX', 'from': a, 'to': b}
+    westday = track('W', ['5230/10', '5230/20', '5230/30', '5230/40', '5230/50'], ['350', '370'], [], '2026-11-10T11:30:00Z', '2026-11-10T19:00:00Z')
+    eastday = track('A', ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], [], ['350', '360', '370'], '2026-11-10T12:00:00Z', '2026-11-10T20:00:00Z')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        with gzip.open(os.path.join(data, 'route', 'fra.json.gz'), 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        natfile = os.path.join(folder, 'nat_tracks.json')
+
+        def put(tracks, ident):
+            with open(natfile, 'w', encoding='utf-8') as f:
+                json.dump({'tracks': tracks, 'messages': [{'by': 'EGGX', 'id': ident, 'part': 1, 'from': tracks[0]['from'], 'to': tracks[0]['to']}]}, f)
+        put([westday], 'EGGX1110/26')
+        calls = []
+
+        def fake(rows, ident, unchanged=False, error=None, sleep=0.0):
+            def f(data_, timeout):
+                calls.append(timeout)
+                time.sleep(sleep)
+                if error:
+                    raise OSError(error)
+                if not unchanged:
+                    put(rows, ident)
+                return [{'name': 'nat_tracks.json', 'unchanged': unchanged}], []
+            return f
+
+        def ask(date='2026-11-10T10:30', lan=False, off=False):
+            job = RJ.Job('route', 'compute', {})
+            res = compute(job, {'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': date, 'alternatives': False, 'proposals': True, 'fl': 370}, {'data': data, 'lan': lan, **({} if off else {'nat_refresh': True})})
+            sec = res.get('sections') or {}
+            return res, sec, (sec.get('nat') or {})
+        results_cache.ENABLED = False
+        saved = (NR.FETCH, NR.BOUND_S, dict(NR._last))
+        try:
+            NR._last.clear()
+            # 1. nothing of the direction covers the passage (13:02Z; the message of the day is the WESTBOUND one, valid now): the source is read again, finds the eastbound routes: the answer goes by the new track
+            NR.FETCH = fake([eastday], 'CZQX1110/26')
+            r1, s1, n1 = ask()
+            c.eq((len(calls), n1.get('refresh'), n1.get('sense'), n1.get('messages'), n1.get('tracks_in_sense'), n1.get('valid_at_passage'), s1.get('chosen'), isinstance(r1['timing'].get('nat_refresh'), float), isinstance(n1.get('age_s'), int) and n1['age_s'] < 600, 'text' in n1),
+                 (1, 'done', 'east', ['CZQX1110/26'], 1, 1, 'A', True, True, False),
+                 'no eastbound route covers the passage: the source is read again BEFORE the answer, the eastbound track A is found and taken; `sections.nat` says the reading (`done`), the message, its age; `timing.nat_refresh` counts the reading apart', what='refresh')
+            # 2. the same flight again at once: nothing covers... no: the track now covers it: no reading at all; a flight that is not covered again within five minutes is not read again
+            r2, s2, n2 = ask()
+            c.eq((len(calls), n2.get('refresh'), n2.get('why'), 'nat_refresh' in r2['timing']), (1, 'skipped', 'has-routes', False), 'a route covers the passage now: the source is not asked again, and the answer says it (`skipped`, `has-routes`)', what='covered')
+            put([westday], 'EGGX1110/26')      # the file as it was: nothing covers the eastbound passage again
+            r3, s3, n3 = ask()
+            c.eq((len(calls), n3.get('refresh'), n3.get('why'), isinstance(n3.get('text'), str) and 'moins de cinq minutes' in n3['text']), (1, 'skipped', 'delay', True), 'at most one reading per five minutes and per direction: the second one is refused, and the answer says why (and that nothing covers the passage)', what='delay')
+            # 3. a failure counts as a try, is said, and the answer goes out all the same
+            NR._last.clear()
+            NR.FETCH = fake([], '', error="Permission denied: 'C:\\Users\\pilote\\data\\sia\\zones\\nat\\nat_tracks.json.part'")      # an OSError that carries a LOCAL PATH (Sécurisation, 17 Nov)
+            logged = []
+            NR.LOG = logged.append
+            r4, s4, n4 = ask()
+            blob = json.dumps([n4, r4['sections'].get('nat')], ensure_ascii=False)
+            c.eq((len(calls), n4.get('refresh'), n4.get('why'), NR.WHY['source'] in n4.get('text', ''), 'Relecture de la source impossible' in n4.get('text', ''), s4.get('source'), r4.get('status') == 'computed'), (2, 'failed', 'source', True, True, 'random', True),
+                 'the source cannot be read: `failed` with a CODE of a closed vocabulary (`source`), a fixed sentence, the message that is held; the answer is made all the same (a free route)', what='failed')
+            c.eq(('Users' in blob, 'nat_tracks' in blob, 'Permission' in blob, any('Permission denied' in x for x in logged)), (False, False, False, True),
+                 'the answer never carries a path nor the text of an exception (the detail goes to the console log of the launcher only): red before: the text of the OSError, with the path of the file, was in `why` and in the sentence', what='no path')
+            NR._last.clear()
+            NR.FETCH = lambda d, t: ([], ["NAT (FAA) : les routes retirées n'ont pas pu être gardées (PermissionError: 'C:\\Users\\pilote\\nat_past.json')"])
+            r4b, s4b, n4b = ask()
+            c.eq((n4b.get('why'), 'Users' in json.dumps(n4b, ensure_ascii=False), NR.WHY['keep'] in n4b.get('text', '')), ('keep', False, True), 'the guard of the lot B that fails is the code `keep`, with its fixed sentence and no path', what='keep')
+            NR.LOG = None
+            # 4. nothing new
+            NR._last.clear()
+            NR.FETCH = fake([], '', unchanged=True)
+            r5, s5, n5 = ask()
+            c.eq((n5.get('refresh'), "n'en publie pas encore" in n5.get('text', '')), ('nothing-new', True), 'the source has nothing new: `nothing-new` and « la source n\'en publie pas encore »', what='nothing-new')
+            # 5. the bound: a source that does not answer is cut at BOUND_S and the answer goes out
+            NR._last.clear()
+            NR.BOUND_S = 0.3
+            NR.FETCH = fake([], '', sleep=3.0)
+            began = time.perf_counter()
+            r6, s6, n6 = ask()
+            c.eq((n6.get('refresh'), n6.get('why'), n6.get('seconds') < 1.0, time.perf_counter() - began < 8.0), ('failed', 'timeout', True, True), 'a source that does not answer is cut at its bound (here 0.3 s instead of 4 s): `failed`, `timeout`, and the answer goes out', what='bound')
+            NR.BOUND_S = 4.0
+            # 6. never outside the workstation; no hour: nothing is asked and nothing is checked
+            NR._last.clear()
+            n0 = len(calls)
+            NR.FETCH = fake([eastday], 'CZQX1110/26')
+            r7, s7, n7 = ask(lan=True)
+            r8, s8, n8 = ask(date='2026-11-10')
+            r9, s9, n9 = ask(off=True)
+            c.eq((len(calls) - n0, n7.get('refresh'), n7.get('why'), n8.get('refresh'), n8.get('why'), n9.get('refresh'), n9.get('why')), (0, 'skipped', 'lan', 'skipped', 'no-hour', 'skipped', 'off'), 'outside the workstation the source is not read (and the answer says it); with no hour of departure nothing is checked and nothing is read (`no-hour`); a caller that is not the launcher (no `nat_refresh` in its context: a case, a tool) never reads the source (`off`)', what='lan / no hour')
+            # 7. the files read by the check are bounded (aeroindex.json can be written by a pilot): too big, too deeply nested: no position, and the failure is remembered with the date of the file
+            big = os.path.join(td, 'aeroindex_big.json')
+            with open(big, 'w', encoding='utf-8') as f:
+                f.write('{"data": ' + '[' * 100000 + ']' * 100000 + '}')
+            c.eq((NR._positions(big), big in NR._pos), ({}, True), 'a deeply nested aeroindex.json (RecursionError) gives no position and is remembered (not parsed again at each request)', what='nested')
+            with open(big, 'w', encoding='utf-8') as f:
+                f.write('{"data": ' + ' ' * 200 + '{}}')
+            saved_max = NR.MAX_POS_BYTES
+            NR.MAX_POS_BYTES = 100
+            try:
+                NR._pos.clear()
+                c.eq(NR._positions(big), {}, 'a file over the size bound is not read', what='big')
+            finally:
+                NR.MAX_POS_BYTES = saved_max
+            # 8. SOG-0403 (R1): the validity of a system is judged at the passage of the 30°W, not on the duration of the flight: EGLL → KJFK leaving at 09:00Z passes the 30°W at about 11:24Z, BEFORE the window of the day (11:30-19:00Z) although the flight ends inside it; at 09:30Z it passes inside
+            put([westday], 'EGGX1110/26')
+            early = NR.decide(data, {'dep': 'EGLL', 'arr': 'KJFK', 'date': '2026-11-10T09:00', 'speed_kt': 450})
+            inside = NR.decide(data, {'dep': 'EGLL', 'arr': 'KJFK', 'date': '2026-11-10T09:30', 'speed_kt': 450})
+            c.eq((early['check'], early['valid_at_passage'], early['passage'].strftime('%H:%M'), inside['check'], inside['valid_at_passage']), ('needed', 0, '11:24', 'skipped', 1),
+                 'the check on the files judges the window at the passage of the 30°W (53°N): a departure at 09:00Z passes at 11:24Z, before the window: the source is read; at 09:30Z it passes at 11:53Z, inside: nothing is read (red before: the window was compared with the duration of the flight)', what='passage')
+        finally:
+            NR.FETCH, NR.BOUND_S = saved[0], saved[1]
+            NR._last.clear()
+            NR._last.update(saved[2])
+            results_cache.ENABLED = True
+    c.ok("{'data': DATA, 'nat_refresh': True," in (ROOT / 'tools' / 'launch.py').read_text(encoding='utf-8'), 'tools/launch.py', 'the launcher gives its jobs the right to read the source again (`nat_refresh` in the context of the jobs); nobody else has it')
