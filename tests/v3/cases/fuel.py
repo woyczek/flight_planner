@@ -7347,7 +7347,10 @@ def f257(c):
         if state == 'ok':
             c.eq(c.count(f'{FUEL} [data-altnchk] [data-altncount]'), 0, 'all good: no count', what='count')
         else:
-            c.ok(c.count(f'{FUEL} [data-altnchk] [data-altncount]') == 1, 'count', 'the good and the unchecked counted')
+            cnt = norm(c.text(f'{FUEL} [data-altnchk] [data-altncount]') or '')
+            unchecked = norm(tx(T, 'altnCount', L)).split('{g}')[1].split('(')[0].strip()
+            # the unchecked counted only when there are some (the ergonomist: « 2 bons », never « 0 non vérifié »)
+            c.ok((unchecked in cnt) == (state == 'grey') and cnt.startswith('2'), cnt, 'the good counted, the unchecked only when not zero')
         crit = c.js(f"[...document.querySelectorAll('{FUEL} [data-altnchk] li[data-crit]')].map(li => [li.dataset.crit, li.dataset.state])")
         c.eq([k for k, _ in crit], ['rwy', 'aids', 'wx'], 'three criteria in the fold, in order', what='criteria')
         c.ok(c.count(f'{FUEL} [data-altnchk] li') <= 7, 'fold', 'seven elements at most in the fold')
@@ -7357,10 +7360,16 @@ def f257(c):
              'never « compliant »: the indicator note')
         c.js(f"document.querySelector('{FUEL} [data-altnchk] details[data-altnfold]').open = true")
         c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        # the chevron of the opened fold turned (its transition is 0.15 s: a capture taken before showed « > » on an open fold)
+        c.until(f"(() => {{ const m = /matrix\\(([^,]+), ([^,]+)/.exec(getComputedStyle(document.querySelector('{FUEL} [data-altnchk] details[data-altnfold] > summary'), '::before').transform); return !!m && +m[2] > 0.5 }})()",
+                timeout=3000, what='the chevron says the fold is open')
         c.shot(f'F257_{c.design}_390_{L}_{state}.png')
         c.page.set_viewport_size({'width': 1280, 'height': 900})
         c.settle()
         c.js(f"document.querySelector('{FUEL} [data-altnchk]').scrollIntoView({{block: 'center'}})")
+        # the chevron of the opened fold turned (its transition is 0.15 s: a capture taken before showed « > » on an open fold)
+        c.until(f"(() => {{ const m = /matrix\\(([^,]+), ([^,]+)/.exec(getComputedStyle(document.querySelector('{FUEL} [data-altnchk] details[data-altnfold] > summary'), '::before').transform); return !!m && +m[2] > 0.5 }})()",
+                timeout=3000, what='the chevron says the fold is open')
         c.shot(f'F257_{c.design}_1280_{L}_{state}.png')
 
 

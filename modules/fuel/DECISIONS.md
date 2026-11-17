@@ -2381,7 +2381,7 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   weatherOf, judge), drawn by `altnChkDraw` at each refresh and after the weather read. Four states: ok, warn (usable, with a
   reservation), err (not suitable), grey (not checked, with what is missing); the sign is the worst — err, then warn, then GREY: a
   criterion not checked never leaves the green (objection 2: a green check on what could not be checked is a lie); the good and the
-  unchecked are counted apart. RUNWAY: the sheet's `minRunwayLengthFt` against the longest runway of the sheet's `runwayType` (HARD by
+  unchecked are counted apart, the unchecked only when there are some (« 2 bons », never « 0 non vérifié »: the ergonomist). RUNWAY: the sheet's `minRunwayLengthFt` against the longest runway of the sheet's `runwayType` (HARD by
   default: `hardLen`, else the hard `runways[]`; SOFT: any runway but water; any other: not checked); no minimum in the sheet, no
   length in the base, no aerodrome: not checked; `hardLen` 0 with HARD asked: red. The full record is read by code; on a split zone
   `aerodromes({ icao })` may give the light index item (no runway), so the full one is read by a small box around it (aerodromes.json of

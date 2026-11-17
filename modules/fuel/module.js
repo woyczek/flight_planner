@@ -685,6 +685,7 @@ const TX = {
   altnCount: ['{ok} bon(s), {g} non vérifié(s)', '{ok} good, {g} not checked', '{ok} gut, {g} nicht geprüft',
     '{ok} bueno(s), {g} no comprobado(s)'
   ],
+  altnCountOk: ['{ok} bon(s)', '{ok} good', '{ok} gut', '{ok} bueno(s)'],
   altnK: {
     rwy: ['piste', 'runway', 'Piste', 'pista'],
     aids: ['moyens', 'aids', 'Navigationshilfen', 'medios'],
@@ -5154,7 +5155,7 @@ async function altnChkDraw(C) {
       t: String(sheet?.runwayType || '').slice(0, 12)
     }),
     open = !!box.querySelector('details[data-altnfold]')?.open,
-    count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(TX.altnCount, { ok: J.ok, g: J.grey }))}</span>`;
+    count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
   box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p><details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(why(c))}</span></li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>`;
 }
 /** SOG-0391 (b) : une heure UTC « AAAA-MM-JJTHH:MMZ » dite à la minute, en Z (« 13 h 32 Z » en français, « 13:32Z » ailleurs) ; `bare` :
