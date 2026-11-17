@@ -5140,6 +5140,54 @@ def a253(c):
     c.check_errors()
 
 
+@case('A254', 'The launcher puts data/ in order without leaving the page blind (SOG-0400): a device that knows no tree yet sees the waiting screen with the progress; a device that knows one sees ONE line in the band; both go when the tree is ready; four languages, phone too', 'A',
+      tags=('launcher', 'data'), designs=('standard',), screens=True, night=False, langs4=True,
+      rule="SOG-0400 (the user, 17 Nov 2026: a waiting screen while all this is brought up to date if nothing better, and he hopes for better; measured: the first GET /__setup/changes of a cold launcher took 30 to 46 s for 9 000 files and the page said nothing): the launcher builds the tree of data/ in a thread, keeps its memory on the workstation (data/local/frame_tree.json) and answers { building, done, todo, total } meanwhile; the frame says where it is in the band that exists for the repository limit, and shows a full waiting screen only on a device that has no tree at all")
+def a254(c):
+    lang = c.lang
+    Tt = lambda k: tx('frame/app.js', k, lang, after='SOG-0400 : le lanceur met data/ en ordre')
+    state = {'phase': 'building', 'done': 1200, 'todo': 9000}
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url)
+        if u.path.endswith('/__setup/changes'):
+            since = urllib.parse.parse_qs(u.query).get('since', [''])[0]
+            if state['phase'] == 'building':
+                body = {'building': True, 'done': state['done'], 'todo': state['todo'], 'total': state['todo']}
+            else:
+                body = {'same': True, 'head': 'h1'} if since == 'h1' else {'head': 'h1', 'tree': {'airline/settings.json': 'r1'}}
+        elif u.path.endswith('/__setup/status'):
+            body = {'server': True, 'data': True, 'dataGit': True, 'host': 'TEST', 'lan': False, 'lnm': []}
+        else:
+            body = {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    # 1. a device that knows no tree (nothing was ever read here) in front of a launcher that is not ready: the waiting screen, with the progress
+    c.open('flightlog', flight=False, wait=False)
+    c.until("!!document.getElementById('fBuildWait')", timeout=20000, what='the waiting screen of a device without any tree')
+    c.eq(norm(c.text('#fBuildWait h2')), norm(Tt('buildTitle')), 'the title, in the language of the run', what='title')
+    c.eq(norm(c.text('#fBuildWait p')), norm(Tt('buildLine').replace('{done}', '1200').replace('{todo}', '9000')), 'the progress line', what='line')
+    c.shot(f'A254_wait_{c.width}_{c.design}_{lang}.png')
+    state['done'] = 4500
+    c.until("document.querySelector('#fBuildWait progress') && document.querySelector('#fBuildWait progress').value === 50", timeout=15000, what='the progress bar follows (4 500 of 9 000)')
+    c.eq(c.js("document.documentElement.scrollWidth > document.documentElement.clientWidth"), False, 'the waiting screen does not scroll sideways', what='no overflow')
+    # 2. the launcher is ready: the screen goes, the device knows a tree now
+    state['phase'] = 'ready'
+    c.until("!document.getElementById('fBuildWait')", timeout=20000, what='the waiting screen goes when the tree is ready')
+    c.until("FrameData.status().then(s => s.treeKnown)", timeout=15000, what='the tree is known')
+    # 3. a device that knows a tree, a launcher that is not ready (restarted cold): ONE line in the band, never the full screen
+    state.update(phase='building', done=2000, todo=9000)
+    c.page.reload(wait_until='load')
+    c.until("(() => { const b = document.getElementById('fLimit'); return !!b && !b.hidden && /2000/.test(b.textContent) })()", timeout=25000, what='the line in the band')
+    c.eq(c.count('#fBuildWait'), 0, 'a device that knows a tree never gets the waiting screen', what='no screen')
+    c.eq(norm(c.text('#fLimit')), norm(Tt('building').replace('{done}', '2000').replace('{todo}', '9000')), 'the band says where the launcher is, and that only the screens reading the repository wait', what='band')
+    c.shot(f'A254_band_{c.width}_{c.design}_{lang}.png')
+    state['phase'] = 'ready'
+    c.until("(() => { const b = document.getElementById('fLimit'); return !b || b.hidden })()", timeout=25000, what='the band goes when the tree is ready')
+    c.check_errors()
+
+
 @case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')

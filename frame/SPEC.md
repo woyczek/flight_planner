@@ -225,6 +225,16 @@ The transports:
   repository, served by `tools/launch.py`. Every route requires the `X-SOG-Setup` header.
   - `GET /__setup/changes?since=<head>`: the head (a hash of the tree), and the tree `{ path: git blob sha }` when the
     head differs from `since`.
+    - **The launcher puts `data/` in order, and says so** (17 Nov 2026, SOG-0400): the fingerprint of each file costs a read of the file (30 to 46 s measured for 9 000 files
+      on a cold launcher, 25 ms when warm). The launcher keeps its memory `{ path: [size, date ns, sha] }` in **`data/local/frame_tree.json`** (the workstation's local folder: outside the tree it gives to the page,
+      never served, never synchronised; it is the launcher's alone, `tools/tree_memo.py`, written whole through a temporary file) and builds the tree in a **thread** from it at its start: only the
+      files whose size or date changed are read. The file is read again as an **unsafe input**: size bound before the read, version, shape and every entry checked (a path with `..`, a separator,
+      a control character, a long one; a size or date that is not an integer; a fingerprint that is not 40 hex digits), any defect = a cold start, nothing half taken (I45). While the tree is not
+      ready (more than 1.5 s), `changes` answers `{ building: true, done, todo, total }` instead of waiting without a word; a batch written meanwhile makes the result of the
+      thread not kept (it would say the state of before). The transport waits as before (nothing is read before the tree) but knows where the launcher is (`building()`), the data layer says it in
+      its status (`building`, `treeKnown`) and the frame shows it: **one line in the band under the header** (the one of the repository limit; four languages) on a device that knows a
+      tree — the screens that read the repository wait, the rest works — and a **full waiting screen only on a device that knows no tree at all** (`#fBuildWait`, progress bar), which goes when the
+      tree is ready (A254).
     - **Read once per load, not again when unchanged** (SOG-0063, 9 Nov 2026): the tree is some 950 KB on the real `data/`. All the
       transports of a page share one reading (`shared.last`) and one request in flight; `head(hint)` sends as `since` the head the data
       layer kept with its tree at the last pass (meta `remote`), so an unchanged `data/` answers `same` and the layer keeps its tree

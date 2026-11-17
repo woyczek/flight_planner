@@ -2336,6 +2336,31 @@ html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
 .f-limit[hidden] {
   display: none
 }
+/* l'écran d'attente de la première mise en ordre de data/ par le lanceur (SOG-0400), en dernier recours : un appareil qui ne connaît encore aucun arbre, un lanceur à froid */
+.f-buildwait {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: var(--sog-bg);
+  color: var(--sog-fg)
+}
+.f-buildwait h2 {
+  margin: 0;
+  font-size: 1.2rem
+}
+.f-buildwait p {
+  margin: 0;
+  color: var(--sog-muted)
+}
+.f-buildwait progress {
+  width: min(24rem, 80vw)
+}
 /* la piste quand la limite dure (SOG-0360) : sur sa ligne, avec un lien assez haut pour un doigt */
 .f-limit [data-limit-hint] {
   display: block

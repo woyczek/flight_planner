@@ -15,7 +15,7 @@
 Usage : python tools/launch.py [--port 8000] [--page apps/…] [--no-browser] [--no-data]
 Arrêt : fermer la fenêtre, ou Ctrl+C.
 """
-import argparse, base64, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
+import atexit, argparse, base64, datetime, fnmatch, glob, hashlib, http.server, io, json, math, os, re, secrets, shutil, socket, subprocess, sys, tempfile, threading, time
 import http.client, http.cookies, ipaddress, posixpath, ssl, urllib.parse, urllib.request, webbrowser, zipfile
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_sync  # synchronisation git du pool de données (bouton « Synchroniser ») ; git durci (data_sync.git_cmd)
@@ -32,6 +32,7 @@ import vfr_import  # compilation VFR des cartes VAC (tools/report-vfr) importée
 import console_log
 import zip_guard
 import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit en console (hôte, chemin, code)
+import tree_memo  # mémoire des empreintes de data/ gardée dans data/local/frame_tree.json : un démarrage ne recalcule que les fichiers changés (SOG-0400)
 import suite_update  # mise à jour de la suite par canal (stable, early, suivi) : plan d'abord, avance rapide seulement
 import base_upload  # envoi d'un fichier choisi à la main : reconnu par son contenu (SOG-0199)
 import personal_use  # la coche « usage personnel » tenue par le lanceur (data/local/personal_use.json, SOG-0238)
@@ -1082,15 +1083,28 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if not self._allowed():
             return self._json({'error': 'refusé'}, 403)
         since = (urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get('since') or [''])[0]
-        with FRAME_LOCK:
-            # l'arbre calculé il y a moins d'une seconde (deux secondes pour un appareil du réseau local) sert de nouveau : deux
-            # appels à la suite (SOG-0164) ne parcourent data/ qu'une fois ; un lot l'efface
-            fresh = _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < (2 if self._lan() else 1)
-            if fresh:
-                head, tree = _tree_memo['v']
-            else:
-                head, tree = frame_tree()
-                _tree_memo.update(at=time.monotonic(), v=(head, tree))
+        ttl = 2 if self._lan() else 1
+        v = None
+        for _ in range(3):
+            with FRAME_LOCK:
+                # l'arbre calculé il y a moins d'une seconde (deux secondes pour un appareil du réseau local) sert de nouveau : deux
+                # appels à la suite (SOG-0164) ne parcourent data/ qu'une fois ; un lot l'efface
+                if _tree_memo['v'] and time.monotonic() - _tree_memo['at'] < ttl:
+                    v = _tree_memo['v']
+                    break
+            # SOG-0400 : le calcul tourne dans son fil ; au-delà de 1,5 s la page reçoit l'avancement (« building ») au lieu d'attendre sans rien savoir
+            job = tree_job_start()
+            job.join(1.5)
+            if job.is_alive():
+                prog = dict(_tree_job['prog'])
+                return self._json({'building': True, 'done': prog['done'], 'todo': prog['todo'], 'total': prog['total']})
+            with FRAME_LOCK:
+                if _tree_memo['v']:
+                    v = _tree_memo['v']
+                    break
+        if v is None:   # un lot écrit sans cesse pendant le calcul : l'avancement dit seulement que cela continue
+            return self._json({'building': True, 'done': 0, 'todo': 0, 'total': 0})
+        head, tree = v
         return self._json({'head': head, 'same': True} if since == head else {'head': head, 'tree': tree})
 
     @route('GET', '/__setup/mission-folders', public='poste')
@@ -3198,13 +3212,16 @@ FRAME_LOCK = threading.Lock()
 _frame_memo = {}  # chemin → ((taille, date), empreinte)
 
 
-def frame_tree():
+def frame_tree(progress=None):
     """(tête, arbre) de data/ : empreinte git de chaque fichier (relue seulement si sa taille ou sa date change) ; ni
     lien ni jonction suivis (un dossier relié ailleurs ferait sortir l'arbre de data/, ou le ferait boucler).
     Le parcours se fait par os.scandir : sous Windows la taille, la date et l'attribut de point d'analyse (lien,
     jonction) viennent avec la liste du dossier, sans un appel système de plus par fichier (SOG-0164 : ~350 ms
-    pour 10 000 fichiers avec os.walk et os.stat, ~25 ms ainsi)."""
-    out = {}
+    pour 10 000 fichiers avec os.walk et os.stat, ~25 ms ainsi).
+    SOG-0400 : la liste des fichiers est dressée d'abord (bon marché), puis seuls ceux dont la taille ou la date a changé sont lus ;
+    `progress` (un dict) reçoit total, todo (à lire) et done (lus) : la page dit où en est la mise en ordre. La mémoire est gardée sur
+    le poste (tools/tree_memo.py) : un démarrage ne repart pas à froid."""
+    ents = []
     REPARSE = 0x400  # FILE_ATTRIBUTE_REPARSE_POINT : lien symbolique ou jonction
 
     def walk(rel_d, d):
@@ -3228,19 +3245,76 @@ def frame_tree():
                     if not FRAME_SKIP.search(rel + '/'):
                         walk(rel + '/', e.path)
                 elif not FRAME_SKIP.search(rel):
-                    key = (st.st_size, st.st_mtime_ns)
-                    m = _frame_memo.get(rel)
-                    if not m or m[0] != key:
-                        try:
-                            with open(e.path, 'rb') as fh:
-                                b = fh.read()
-                        except OSError:
-                            continue
-                        m = (key, hashlib.sha1(b'blob %d\0' % len(b) + b).hexdigest())
-                        _frame_memo[rel] = m
-                    out[rel] = m[1]
+                    ents.append((rel, e.path, (st.st_size, st.st_mtime_ns)))
     walk('', DATA)
+    todo = sum(1 for rel, _, key in ents if (_frame_memo.get(rel) or ((),))[0] != key)
+    if progress is not None:
+        progress.update(total=len(ents), todo=todo, done=0)
+    out = {}
+    for rel, full, key in ents:
+        m = _frame_memo.get(rel)
+        if not m or m[0] != key:
+            try:
+                with open(full, 'rb') as fh:
+                    b = fh.read()
+            except OSError:
+                continue
+            m = (key, hashlib.sha1(b'blob %d\0' % len(b) + b).hexdigest())
+            _frame_memo[rel] = m
+            if progress is not None:
+                progress['done'] += 1
+        out[rel] = m[1]
+    for gone in [k for k in list(_frame_memo) if k not in out]:   # un fichier retiré ne reste pas dans la mémoire gardée
+        _frame_memo.pop(gone, None)
     return hashlib.sha1(json.dumps(sorted(out.items())).encode()).hexdigest(), out
+
+
+_tree_gen = 0   # change à chaque lot écrit dans data/ : un calcul de l'arbre commencé avant n'est pas gardé (il dirait l'état d'avant)
+_tree_job = {'thread': None, 'prog': {'total': 0, 'todo': 0, 'done': 0}}
+_tree_job_lock = threading.Lock()
+_tree_saved = {'at': 0.0}
+
+
+def _tree_forget():
+    """Un lot vient d'écrire dans data/ (ou va le faire) : l'arbre gardé n'est plus le bon."""
+    global _tree_gen
+    _tree_gen += 1
+    _tree_memo['v'] = None
+
+
+def tree_save(force=False):
+    """Écrit la mémoire des empreintes dans data/local/frame_tree.json (au plus toutes les 5 s, sauf à l'arrêt)."""
+    if force or time.monotonic() - _tree_saved['at'] > 5:
+        _tree_saved['at'] = time.monotonic()
+        tree_memo.save(DATA, _frame_memo)
+
+
+def tree_job_start():
+    """Le fil qui dresse l'arbre de data/ (un seul à la fois ; celui qui tourne est rendu) : il met le résultat dans `_tree_memo` sauf si un lot a écrit
+    entre-temps, garde la mémoire sur le poste quand il a lu des fichiers, et dit son avancement (`_tree_job['prog']`). Il ne tient PAS FRAME_LOCK
+    pendant qu'il lit : un lot, une requête de la page n'attendent pas la mise en ordre (SOG-0400)."""
+    with _tree_job_lock:
+        th = _tree_job['thread']
+        if th is not None and th.is_alive():
+            return th
+        gen0 = _tree_gen
+        prog = {'total': 0, 'todo': 0, 'done': 0}
+        _tree_job['prog'] = prog
+
+        def run():
+            try:
+                head, tree = frame_tree(prog)
+                with FRAME_LOCK:
+                    if gen0 == _tree_gen:
+                        _tree_memo.update(at=time.monotonic(), v=(head, tree))
+                if prog['todo']:
+                    tree_save()
+            except Exception as e:   # jamais un fil qui meurt sans le dire : la page recevra « building » puis un nouvel essai
+                say(f'  ⚠ Mise en ordre de data/ interrompue : {e}')
+        th = threading.Thread(target=run, daemon=True)
+        _tree_job['thread'] = th
+        th.start()
+        return th
 
 
 BATCH_MAX = 5000  # changements par lot
@@ -3278,7 +3352,7 @@ def frame_batch(a):
     if not re.fullmatch(r'[A-Z0-9]{2,5}', author) or author == 'ANON':
         return {'ok': False, 'message': 'trigramme de l’auteur manquant : rien n’est écrit sans lui'}, 400
     with FRAME_LOCK:
-        _tree_memo['v'] = None
+        _tree_forget()
         head, _ = frame_tree()
         if str(a.get('parent') or '') != head:
             return {'ok': False, 'conflict': True, 'head': head, 'message': 'data/ a changé depuis la dernière lecture'}, 409
@@ -3324,7 +3398,7 @@ def frame_batch(a):
             data_sync.git(DATA, '-c', f'user.name={author}', '-c', f'user.email={author.lower()}@defa.local', 'commit', '-q', '-m',
                           str(a.get('message') or f'{author} : lot du frame')[:500], '--', *paths, env=env)
         head, _ = frame_tree()
-        _tree_memo['v'] = None
+        _tree_forget()
     if any(r.startswith('disponibilites/') for r, _ in todo):
         with INDEX_LOCK:
             index_availability()
@@ -4702,14 +4776,14 @@ def main():
     # tutoriel d'installation : dans l'Aide (version de la langue de la suite), ou hors ligne en HTML
     say(f'  Tutoriel d’installation, pas à pas : http://127.0.0.1:{port}/apps/aide/aide.html?doc=tutorial/installation.fr.md')
     say('  (hors ligne : docs/tutorial/installation.fr.html ; English: docs/tutorial/installation.en.html)')
-    def warm_tree():
-        # les empreintes des fichiers de data/ sont lues une fois au démarrage, pas à l'ouverture de la première page (SOG-0164)
-        try:
-            with FRAME_LOCK:
-                frame_tree()
-        except Exception:
-            pass
-    threading.Thread(target=warm_tree, daemon=True).start()
+    # les empreintes des fichiers de data/ sont dressées au démarrage, pas à l'ouverture de la première page (SOG-0164), à partir de la mémoire
+    # gardée dans data/local/frame_tree.json (SOG-0400) : seuls les fichiers changés depuis sont relus ; la mémoire est réécrite à l'arrêt
+    try:
+        _frame_memo.update(tree_memo.load(DATA))   # load ne lève jamais ; la garde est là pour que le démarrage ne dépende de rien du fichier gardé
+    except Exception:
+        pass
+    tree_job_start()
+    atexit.register(lambda: tree_save(force=True))
     if not a.no_browser:
         threading.Thread(target=lambda: (time.sleep(0.8), webbrowser.open(url)), daemon=True).start()
     say('')

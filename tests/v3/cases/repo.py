@@ -3179,3 +3179,89 @@ def i44(c):
         except SyntaxError as e:
             bad.append(f'{p.relative_to(c.root).as_posix()}: does not parse ({e.msg})')
     c.eq(bad, [], 'no tool of the launcher calls a standard module it did not import', what='unbound standard names')
+
+
+@case('I45', 'Launcher: the kept memory of the fingerprints of data/ (data/local/frame_tree.json) is written whole and read back as an untrusted input — any defect is a cold start, nothing is half taken (SOG-0400)', 'I', static=True,
+      rule='SOG-0400 (the ergonomist, 17 Nov 2026: the file is read again as an unsafe input, bounded size, shape checked, every defect = cold start; it stays in the local folder, never served or synchronised): tools/tree_memo.py')
+def i45(c):
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    M = importlib.import_module('tree_memo')
+    sha = 'a' * 40
+    with tempfile.TemporaryDirectory() as data:
+        memo = {'proc/g0/f1.json': ((120, 1700000000000000000), sha), 'airline/settings.json': ((9, 5), 'b' * 40)}
+        c.ok(M.save(data, memo), '', 'the memory is written')
+        c.eq(M.load(data), memo, 'what was written is read back, entry for entry', what='round trip')
+        p = M.path_of(data)
+        c.ok(os.path.dirname(p) == os.path.join(data, 'local'), p, 'the file is in the local folder of the workstation (outside the tree given to the page)')
+        c.eq([f for f in os.listdir(os.path.dirname(p)) if f.endswith('.tmp')], [], 'no temporary file is left behind', what='temp')
+
+        def put(doc):
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write(doc if isinstance(doc, str) else json.dumps(doc))
+        good = {'v': 1, 'files': {'a/b.json': [1, 2, sha]}}
+        hostile = {
+            'not JSON': '{nope',
+            'a list': [],
+            'another version': {**good, 'v': 2},
+            'files is a list': {'v': 1, 'files': []},
+            'a parent path': {'v': 1, 'files': {'../x.json': [1, 2, sha]}},
+            'an absolute path': {'v': 1, 'files': {'/x.json': [1, 2, sha]}},
+            'a backslash': {'v': 1, 'files': {'a' + chr(92) + 'b.json': [1, 2, sha]}},
+            'a control character': {'v': 1, 'files': {'a\u0000b.json': [1, 2, sha]}},
+            'an empty path': {'v': 1, 'files': {'': [1, 2, sha]}},
+            'a long path': {'v': 1, 'files': {'a' * 700: [1, 2, sha]}},
+            'a short list': {'v': 1, 'files': {'a.json': [1, 2]}},
+            'a negative size': {'v': 1, 'files': {'a.json': [-1, 2, sha]}},
+            'a boolean as a number': {'v': 1, 'files': {'a.json': [True, 2, sha]}},
+            'a text as a number': {'v': 1, 'files': {'a.json': ['1', 2, sha]}},
+            'a fingerprint that is not 40 hex': {'v': 1, 'files': {'a.json': [1, 2, 'xyz']}},
+            'forty hex and a line feed': {'v': 1, 'files': {'a.json': [1, 2, sha + chr(10)]}},
+            'an upper-case fingerprint': {'v': 1, 'files': {'a.json': [1, 2, 'A' * 40]}},
+            'one bad entry among good ones': {'v': 1, 'files': {'a.json': [1, 2, sha], 'b.json': [1, 2, 'bad']}},
+        }
+        put(good)
+        c.eq(M.load(data), {'a/b.json': ((1, 2), sha)}, 'control: a well-formed file is taken', what='control')
+        bad = [k for k, doc in hostile.items() if (put(doc), M.load(data))[1] != {}]
+        c.eq(bad, [], 'every defect is a cold start (an empty memory): nothing of a hostile file is half taken', what='hostile files')
+        for depth in (100000, 400000):
+            with open(p, 'wb') as f:
+                f.write(b'[' * depth + b']' * depth)   # a deeply nested file: RecursionError, not a ValueError
+            try:
+                got = M.load(data)
+            except BaseException as e:   # the launcher must start whatever the file holds
+                got = f'raised {type(e).__name__}'
+            c.eq(got, {}, f'a file nested {depth} levels deep is unreadable: a cold start, never an exception', what='nested')
+        with open(p, 'wb') as f:
+            f.write(b'x' * (M.MAX_BYTES + 10))
+        c.eq(M.load(data), {}, 'a file over the size bound is not even read', what='oversize')
+        os.remove(p)
+        c.eq(M.load(data), {}, 'no file: a cold start', what='absent')
+        # the local folder is a link or a junction: nothing is read through it, nothing is written through it
+        with tempfile.TemporaryDirectory() as elsewhere, tempfile.TemporaryDirectory() as data2:
+            M.save(data2, memo)
+            os.replace(M.path_of(data2), os.path.join(elsewhere, 'frame_tree.json'))   # a valid memory, elsewhere
+            os.rmdir(os.path.join(data2, 'local'))
+            made = False
+            try:
+                os.symlink(elsewhere, os.path.join(data2, 'local'), target_is_directory=True)
+                made = True
+            except (OSError, NotImplementedError):
+                try:   # Windows without the symlink right: a junction needs none
+                    import subprocess
+                    made = subprocess.run(['cmd', '/c', 'mklink', '/J', os.path.join(data2, 'local'), elsewhere], capture_output=True).returncode == 0
+                except OSError:
+                    made = False
+            if not made:
+                c.ok(True, '', 'no link or junction can be made on this machine: the check of the local folder is not played here')
+            else:
+                c.eq(M.load(data2), {}, 'a local folder that is a link or a junction: the memory behind it is not read', what='link read')
+                c.eq(M.save(data2, memo), False, 'nor written through: save refuses', what='link write')
+                c.eq(sorted(os.listdir(elsewhere)), ['frame_tree.json'], 'nothing was written outside data/ (no temporary file, no new file)', what='outside')
+        c.eq(M.load(os.path.join(data, 'nowhere')), {}, 'no folder: a cold start', what='no folder')
+    src = (c.root / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    c.ok('tree_memo.load(DATA)' in src and 'tree_memo.save(DATA' in src and "^(local|weather)(/|$)" in src, '', 'the launcher reads the memory at its start, writes it, and keeps local/ out of the tree it gives to the page')

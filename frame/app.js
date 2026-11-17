@@ -449,6 +449,21 @@
       ],
       syncing: ['Synchronisation…', 'Syncing…', 'Synchronisiere…', 'Sincronizando…'],
       // SOG-0337 : le dépôt limite les requêtes ; la couche attend et reprend toute seule — jamais un silence
+      // SOG-0400 : le lanceur met data/ en ordre (son arbre n'est pas prêt) : l'avancement dit LÀ OÙ L'ON EST, dans la bande de la limite ; les écrans qui lisent le dépôt attendent, le reste marche
+      building: [
+        'Mise en ordre des données du poste : {done} / {todo} fichiers. Les écrans qui lisent le dépôt attendent, le reste marche.',
+        'Putting this workstation’s data in order: {done} / {todo} files. Screens that read the repository wait; the rest works.',
+        'Die Daten dieses Rechners werden geordnet: {done} / {todo} Dateien. Bildschirme, die das Repository lesen, warten; der Rest funktioniert.',
+        'Ordenando los datos de este equipo: {done} / {todo} archivos. Las pantallas que leen el repositorio esperan; el resto funciona.'
+      ],
+      // la première fois (cet appareil ne connaît encore aucun arbre : rien n'est lisible avant la fin) : l'écran d'attente, en dernier recours
+      buildTitle: ['Mise en ordre des données du poste', 'Putting this workstation’s data in order',
+        'Die Daten dieses Rechners werden geordnet', 'Ordenando los datos de este equipo'
+      ],
+      buildLine: ['{done} / {todo} fichiers — c’est long la première fois seulement.',
+        '{done} / {todo} files — slow the first time only.',
+        '{done} / {todo} Dateien — nur beim ersten Mal langsam.', '{done} / {todo} archivos — lento solo la primera vez.'
+      ],
       limited: ['{who} limite les requêtes : reprise dans {n} s', '{who} is limiting requests: resuming in {n} s',
         '{who} begrenzt die Anfragen: Fortsetzung in {n} s', '{who} limita las solicitudes: se reanuda en {n} s'
       ],
@@ -3092,7 +3107,40 @@
     }
   };
 
+  /** L'écran d'attente (SOG-0400), seulement en dernier recours : un appareil qui ne connaît aucun arbre devant un lanceur qui met data/ en ordre (rien n'est lisible avant la fin). Écrit seulement si le texte change. */
+  function paintBuildWait(s) {
+    const need = !!(s.building && !s.treeKnown);
+    let el = $('fBuildWait');
+    if (!need) {
+      if (el) el.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'fBuildWait';
+      el.className = 'f-buildwait';
+      el.setAttribute('role', 'status');
+      const h = document.createElement('h2'),
+        p = document.createElement('p'),
+        m = document.createElement('progress');
+      m.max = 100;
+      el.append(h, p, m);
+      document.body.append(el);
+    }
+    const [h, p, m] = el.children,
+      title = t(T.sync.buildTitle),
+      line = t(T.sync.buildLine, {
+        done: s.building.done,
+        todo: s.building.todo
+      }),
+      pct = s.building.todo ? Math.min(100, Math.round(100 * s.building.done / s.building.todo)) : 0;
+    if (h.textContent !== title) h.textContent = title;
+    if (p.textContent !== line) p.textContent = line;
+    if (m.value !== pct) m.value = pct;
+  }
+
   function paintLimit(s) {
+    paintBuildWait(s);
     const bar = $('fLimit');
     if (!bar) return;
     const expired = !s.rateLimit && TOKEN_EXP && TOKEN_EXP.stateOf(TOKEN_EXP.readCache().own?.expiresAt)?.level === 'expired' ? t(
@@ -3100,6 +3148,9 @@
       text = s.rateLimit ? t(T.sync.limited, {
         who: s.rateLimit.who,
         n: s.rateLimit.secs
+      }) : s.building && s.treeKnown ? t(T.sync.building, {
+        done: s.building.done,
+        todo: s.building.todo
       }) : expired;
     // la bande a deux parties posées par ce code : la phrase (son compte à rebours est écrit en place) et, quand la limite DURE, la piste avec son lien (SOG-0360) ; rien n'est réécrit que si sa valeur change
     let tx = bar.querySelector('[data-limit-t]');

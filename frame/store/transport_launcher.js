@@ -63,14 +63,49 @@
     },
     HEAD_FRESH = 3000;
   const changes = path => {
-    if (!shared.flying.has(path)) shared.flying.set(path, call(path).finally(() => shared.flying.delete(path)));
+    if (!shared.flying.has(path)) shared.flying.set(path, ready(path).finally(() => shared.flying.delete(path)));
     return shared.flying.get(path);
   };
+  // SOG-0400 : le lanceur dresse l'arbre de data/ dans un fil (sa mémoire est gardée sur le poste) ; tant qu'il n'est pas prêt il répond { building, done, todo, total }
+  // au lieu de faire attendre sans rien dire : la page attend de même (rien n'est lu avant l'arbre) mais SAIT où en est la mise en ordre (building() → la bande du cadre)
+  const num = v => Number.isFinite(+v) ? Math.max(0, Math.min(1e7, Math.round(+v))) : 0,
+    transports = new Set();
+  const setBuild = b => {
+    const was = shared.build;
+    if (JSON.stringify(was || null) === JSON.stringify(b)) return;
+    shared.build = b;
+    for (const t of transports) try {
+      t.onBuilding?.();
+    } catch {
+      /* l'observateur du cadre en échec : l'attente continue */
+    }
+  };
+  async function ready(path) {
+    for (let i = 0; i <
+      1800; i++) { // 15 min au plus à 0,5 s près : un lanceur qui ne finit jamais sa mise en ordre n'attend pas pour toujours
+      const j = await call(path);
+      if (!j.building) {
+        setBuild(null);
+        return j;
+      }
+      setBuild({
+        done: num(j.done),
+        todo: num(j.todo),
+        total: num(j.total)
+      });
+      await new Promise(r => setTimeout(r, 300)); // le lanceur a déjà attendu 1,5 s avant de répondre « building »
+    }
+    setBuild(null);
+    throw new Error('launcher: data/ is still being prepared');
+  }
 
   function launcher(o = {}) {
-    return {
+    const t = {
       id: 'launcher',
       kind: 'remote',
+      /** SOG-0400 : { done, todo, total } tant que le lanceur met data/ en ordre (arbre pas prêt), null sinon. */
+      building: () => shared.build || null,
+      onBuilding: null, // posé par la couche de données : l'état change
       quick: true, // data/ du poste : un passage est local et rapide, la couche envoie une écriture aussitôt (2 s)
       /** hint : la tête que l'appelant connaît déjà avec son arbre (la couche : meta « remote ») ; le lanceur répond « same » sans
        *  l'arbre, qui n'est alors pas relu. */
@@ -142,6 +177,8 @@
         })
       } : {})
     };
+    transports.add(t);
+    return t;
   }
   /** Réponse du lanceur pour un fichier de data/ ; erreur réseau → err.offline, refus → erreur. */
   async function fileOf(path) {

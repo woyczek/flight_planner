@@ -434,6 +434,8 @@
     };
     // SOG-0337 : l'attente d'une limite de requêtes du dépôt change l'état (la phrase « reprise dans n s » suit)
     if (cfg.transport?.limit && !cfg.transport.limit.onLimit) cfg.transport.limit.onLimit = () => emitStatus(false);
+    // SOG-0400 : le lanceur met data/ en ordre (arbre pas prêt) : l'avancement change l'état
+    if (cfg.transport && 'building' in cfg.transport && !cfg.transport.onBuilding) cfg.transport.onBuilding = () => emitStatus(false);
     return cfg;
   }
 
@@ -587,7 +589,14 @@
         deletion: p.text === null,
         held: isHeld(p.path)
       })).sort((a, b) => String(b.at).localeCompare(String(a.at))),
-      conflicts: (await idb('conflicts', 'getAll').catch(() => [])).filter(c => !c.seen).length
+      conflicts: (await idb('conflicts', 'getAll').catch(() => [])).filter(c => !c.seen).length,
+      // SOG-0400 : le lanceur met data/ en ordre — { done, todo, total } — et cet appareil connaît-il déjà un arbre (sinon rien n'est lisible avant la fin : l'écran d'attente du cadre)
+      building: (b => b ? {
+        done: b.done,
+        todo: b.todo,
+        total: b.total
+      } : null)(cfg.transport?.building?.()),
+      treeKnown: !!(await getMeta('remote').catch(() => null))?.tree
     };
   }
   /** La file d'attente pour la carte Synchronisation (Réglages, 1er nov. 2026) : [{ path, module, at, deletion, error }],
@@ -630,7 +639,9 @@
       rateLimit: s.rateLimit ? {
         who: s.rateLimit.who,
         lasting: s.rateLimit.lasting
-      } : null
+      } : null,
+      // l'avancement de la mise en ordre n'est un nouvel état que par vingtièmes (SOG-0359 : pas un événement par fichier)
+      building: s.building ? Math.floor(20 * s.building.done / Math.max(1, s.building.todo)) : null
     });
     if (nature === lastEmitted) return;
     lastEmitted = nature;
