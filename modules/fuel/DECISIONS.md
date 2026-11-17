@@ -2240,3 +2240,12 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `pointWord` keeps the writing of the NAT message for a point inside tokenize's North Atlantic bounds without a level; with a level,
   its ICAO coordinates (« 51/20/F280 » would not read back). F216 now waits for the normalised text (its « DCT ») before reading: red
   on the parent, deterministic.
+- **17 Nov 2026 — SOG-0400, the part of Fuel at the opening: the register wait at 3 s, the times of the opening** (measured by V3
+  Frame: the result said « Chargement des aéronefs et fiches… » for 8.3 s when aerodb's aircraft register did not answer —
+  `REFS_WAIT_MS` was 8 000). (1) `REFS_WAIT_MS` = 3 000: past it, the opening goes on and the quote is drawn with what exists (no sheet
+  if need be, said as before); the register arriving later is read (the sheets too) and the screen drawn again, as a change of aerodb
+  already did. (2) The times of the opening — `mount` (first drawing), `flight` (current flight read or its wait over), `choice` (register
+  and sheets set, the aircraft applied), `result` (first result drawn), and `registry` (ms of a late register) — in the device document
+  cache/fuel/mount_timing.json `{ schema: 1, at, ms, registry: ok | late | arrived }`, as route_timing.json for a route computation;
+  written once the result is drawn, again when a late register arrives. No help change: nothing new to read on the screen, only less
+  waiting. F249 (the register's script held back by the network; red on the parent: the result waits about 8 s, no document).

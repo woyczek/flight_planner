@@ -6870,6 +6870,11 @@ function refresh() {
       shown = Number.isFinite(+kg) && kg !== '' && kg !== null ? Math.round(FU.fromKg(+kg, eu) * 10) / 10 : '';
     eb.innerHTML = `<label class="f-field">${esc(tt(TX.entry, { u: `${eu}/h` }))}<input data-k="entry" inputmode="decimal" value="${esc(shown)}"></label>`;
   }
+  // SOG-0400 : le premier résultat dessiné après le montage : son repère, puis les repères écrits
+  if (S.mtime && S.mtime.result == null) {
+    mtMark('result');
+    mountTiming();
+  }
 }
 
 // ---------------------------------------------------------------- écran Fiches (lecture seule)
@@ -7100,7 +7105,13 @@ export async function mount(el, ctx) {
     ctx,
     sheets: [],
     stops: [],
-    view: 'plan'
+    view: 'plan',
+    // SOG-0400 : les repères de temps du montage (ms depuis t0), écrits une fois le résultat dessiné (mountTiming)
+    mtime: {
+      t0: performance.now(),
+      at: new Date().toISOString(),
+      registry: 'ok'
+    }
   };
   // la carte « Procédures » (modules/fuel/procedures.js) : ce qu'elle demande à l'écran, rien d'autre
   S.P = createProcedures({
@@ -7437,6 +7448,8 @@ export async function mount(el, ctx) {
   // les Fiches s'ouvrent par leur onglet ou par l'adresse #fuel?view=sheets (le dernier écran n'est plus gardé)
   show(S.focus !== 'route' && S.focus !== 'arr' && ctx.query?.view === 'sheets' ? 'sheets' : 'plan');
   if (!S.flightPending) flightReady();
+  mtMark('mount'); // SOG-0400 : le premier dessin fait
+  if (!S.flightPending) mtMark('flight');
   completeMount(self); // pas attendu : le cadre a son écran tout de suite
 }
 /** Vol courant connu : un vol sans appareil reprend le dernier choisi sur cet appareil (plus de première fiche par
@@ -7478,9 +7491,36 @@ function resumeFlight() {
 // 2026 restait bloqué sur l'étape Route (« aucun bouton ne fonctionne ») : le premier arbre d'un dépôt GitLab qui tarde laissait le
 // corps inerte sans fin, et « Chargement du vol… » n'était écrit que dans le Résultat, invisible à l'étape 2.
 const FLIGHT_WAIT_MS = 4000,
-  // le registre des aéronefs d'aerodb (aircraft()) attend lui aussi le réseau sans borne : au-delà, « Base des aéronefs
-  // indisponible » et la suite du montage (le devis reste en attente d'une fiche) ; un changement d'aerodb le relit ensuite
-  REFS_WAIT_MS = 8000;
+  // le registre des aéronefs d'aerodb (aircraft()) attend lui aussi le réseau sans borne : au-delà, la suite du montage et le devis
+  // dessiné avec ce qui existe (sans fiche s'il le faut) ; le registre arrivé plus tard est relu (completeMount) et un changement
+  // d'aerodb le relit aussi. SOG-0400 (mesure de V3 Frame : 8,3 s de « Chargement des aéronefs et fiches… » quand le registre ne
+  // répond pas) : 3 s (8 s avant)
+  REFS_WAIT_MS = 3000,
+  // SOG-0400 : les repères de temps du montage, dans le document de l'appareil (comme route_timing.json)
+  MOUNT_TIMING = 'cache/fuel/mount_timing.json';
+/** SOG-0400 : pose un repère du montage (ms depuis son début), une seule fois. */
+function mtMark(k) {
+  const T = S?.mtime;
+  if (T && T[k] == null) T[k] = Math.round(performance.now() - T.t0);
+}
+/** SOG-0400 : écrit les repères du montage dans le document de l'appareil — une fois le résultat dessiné, puis de nouveau si le registre
+ *  arrive après son attente (registry : 'ok' | 'late' (pas arrivé dans l'attente) | 'arrived' (arrivé ensuite, à ms.registry)). */
+function mountTiming() {
+  const T = S?.mtime;
+  if (!T || T.result == null) return;
+  S.ctx.data.put(MOUNT_TIMING, {
+    schema: 1,
+    at: T.at,
+    ms: {
+      mount: T.mount ?? null,
+      flight: T.flight ?? null,
+      choice: T.choice ?? null,
+      result: T.result,
+      registry: T.registryMs ?? null
+    },
+    registry: T.registry
+  })?.catch?.(() => {});
+}
 
 /** La ligne d'attente au-dessus du pas : le vol courant pas encore lu (les commandes attendent), ou lu en retard (vol vide, lien
  *  vers la synchronisation) ; masquée sinon. */
@@ -7906,6 +7946,7 @@ async function flightArrives(self, job) {
   }
   flightDefaults(kept || {});
   S.flightPending = false;
+  mtMark('flight'); // SOG-0400 : le vol courant lu (ou l'attente finie)
   S.flightLate = late && !S.flightSeen;
   if (S.view === 'plan') renderPlan();
   waitLine();
@@ -7922,11 +7963,24 @@ async function completeMount(self) {
       wait: true
     })).then(r => r?.value ?? null).catch(() => null);
   if (self.flightPending) flightArrives(self, get(pilotPath('current_flight.json')));
-  const [A, fs1] = await Promise.all([ctx.aerodb?.aircraft ? bounded(ctx.aerodb.aircraft().catch(() => null), REFS_WAIT_MS) : null,
-    self.settingsPending ? bounded(get(pilotPath('fuel.json')), FLIGHT_WAIT_MS) : null
-  ]);
+  const aJob = ctx.aerodb?.aircraft ? ctx.aerodb.aircraft().catch(() => null) : null,
+    [A, fs1] = await Promise.all([aJob ? bounded(aJob, REFS_WAIT_MS, () => self.mtime && (self.mtime.registry = 'late')) : null,
+      self.settingsPending ? bounded(get(pilotPath('fuel.json')), FLIGHT_WAIT_MS) : null
+    ]);
   if (gone(self)) return;
   S.A = A;
+  // SOG-0400 : le registre arrivé après son attente — relu, les fiches aussi, l'écran redessiné (comme un changement d'aerodb)
+  if (!A && aJob) aJob.then(async a => {
+    if (gone(self) || !a || S.A) return;
+    S.A = a;
+    self.mtime.registry = 'arrived';
+    self.mtime.registryMs = Math.round(performance.now() - self.mtime.t0);
+    await readSheets();
+    if (gone(self)) return;
+    mountTiming();
+    if (S.view === 'sheets') keepScroll(S.body, renderSheets);
+    else if (S.view === 'plan') refresh();
+  });
   // logique des fiches d'aerodb : types, fiches et flotte réglés par aerodb ; ici la fiche active, la langue, les textes
   SH()?.configure({
     profiles: () => Object.fromEntries(S.sheets.map(p => [p.id, p])),
@@ -7948,6 +8002,7 @@ async function completeMount(self) {
     S.settingsPending = false;
   }
   S.refsPending = false;
+  mtMark('choice'); // SOG-0400 : registre et fiches posés (ou leur attente finie) : l'aéronef choisi s'applique
   themesLoad(); // les thèmes de la compagnie, pour l'étape Vol (SOG-0202 T2)
   if (S.step === 1) atisRead(); // SOG-0090 : l'écran rouvert sur l'étape des procédures lit l'ATIS une fois
   if (S.directAsk) { // SOG-0088 : le direct demandé par l'adresse de la Carte, une fois le vol lu

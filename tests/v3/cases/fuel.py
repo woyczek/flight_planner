@@ -7051,3 +7051,37 @@ def f248(c):
     c.ok(len(st.get('cancels') or []) >= 1, st.get('cancels'), 'the search of the variants is cancelled')
     c.ok('NEPIX' in (c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"),
          'the route taken stays in the field')
+
+
+
+@case('F249', 'Quote at the opening, the aircraft register held back by the network: the result leaves « Chargement des aéronefs et des '
+      'fiches… » after 3 s (not 8) and is drawn with what exists; the times of the opening (mount, flight read, choice applied, result drawn) '
+      'are written in the device document; the register arriving later is read and said', 'F', tags=('fuel',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0400, the part of Fuel (measured by V3 Frame: the result said « Chargement des aéronefs et fiches… » for 8.3 s when the '
+      'register did not answer); the ergonomist, 17/11: the wait brought to 3 s, the quote drawn without it, the markers as routeTiming')
+def f249(c):
+    held = []
+    c.context.route(re.compile(r'/frame/aerodb/registry\.js'), lambda route: held.append(route))   # never answered until released
+    t0 = time.time()
+    c.open('fuel', docs=flight_docs(), wait=False)
+    c.page.wait_for_function("() => !!document.querySelector('[data-module=fuel] [data-block=result]')", timeout=20000)
+    c.until(f"(() => {{ const r = document.querySelector('{FUEL} [data-block=result]'); return !!r && !r.hasAttribute('data-loading') }})()",
+            timeout=15000, what='the result out of its waiting line')
+    waited = time.time() - t0
+    c.ok(held, len(held), 'the register is indeed held back (its script asked, not answered)')
+    c.ok(waited < 6.5, round(waited, 1), 'the result drawn after about 3 s, not 8 (the register wait is 3 s)')
+    d = c.until_doc('cache/fuel/mount_timing.json', lambda d: bool(d) and (d.get('ms') or {}).get('result') is not None,
+                    'the times of the opening written')
+    ms = d['ms']
+    c.eq(d.get('registry'), 'late', 'the register said late', what='registry')
+    c.ok(all(isinstance(ms.get(k), int) for k in ('mount', 'flight', 'choice', 'result')) and ms['mount'] <= ms['result']
+         and 2800 <= ms['choice'] < 6500, ms, 'mount, flight read, choice applied (after the 3 s wait), result drawn')
+    # the register released: read, said in the document
+    for r in held:
+        try:
+            r.continue_()
+        except Exception:
+            pass
+    c.until_doc('cache/fuel/mount_timing.json', lambda d: bool(d) and d.get('registry') == 'arrived' and (d.get('ms') or {}).get('registry'),
+                'the register arrived later, read and said')
