@@ -1,0 +1,454 @@
+<!doctype html>
+<!-- Banc du service de franchissement (frame/lib/crossing.js, SOG-0447) : relevés lus bornés, formes lues (3 à 100 sommets), le trajet entre deux relevés contre un cercle et un contour (entré, dedans, sorti,
+     traversé sans relevé dedans), le plafond (les deux relevés, altitude absente = inconnu), la portée et la hauteur d'un objet (jugées sur le trajet), l'arrivée posée, le rattrapage sur la trace,
+     l'antiméridien, et des entrées hostiles (jamais d'exception). Page nue ; window.__crossingBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>crossing — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    fixOf,
+    shapeOf,
+    crossed,
+    reach,
+    arrived,
+    replay,
+    BOUNDS
+  } from '../crossing.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__crossingBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__crossingBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const J = v => JSON.stringify(v);
+  // un relevé à (dx, dy) milles marins du centre (45°N, 2°E) ; t en secondes
+  const C = {
+    lat: 45,
+    lon: 2
+  };
+  const P = (dx, dy, extra = {}) => ({
+    lat: C.lat + dy / 60,
+    lon: C.lon + dx / (60 * Math.cos(C.lat * Math.PI / 180)),
+    ...extra
+  });
+  const circle = (nm, extra = {}) => ({
+    shape: {
+      circle: {
+        lat: C.lat,
+        lon: C.lon,
+        radiusM: nm * 1852
+      }
+    },
+    ...extra
+  });
+  const square = (h, extra = {}) => ({
+    shape: {
+      polygon: [P(-h, -h), P(h, -h), P(h, h), P(-h, h)].map(p => [p.lat, p.lon])
+    },
+    ...extra
+  });
+  const near = (a, b, e) => Math.abs(a - b) <= e;
+  (async () => {
+    // 1. le relevé : tout ce qui est absent ou hors bornes est INCONNU (null), jamais 0 ni faux
+    const f = fixOf({
+      at: '2026-11-17T10:00:00Z',
+      lat: 45,
+      lon: 2,
+      altFt: 3000,
+      gsKt: 100
+    });
+    ck('fixOf : un champ absent est null (jamais 0 ni « en vol »)', f && f.aglFt === null && f.onGround === null && f.headingDeg ===
+      null && f.trackDeg === null && f.altFt === 3000 && f.t === Date.parse('2026-11-17T10:00:00Z'), J(f));
+    ck('fixOf : une position illisible rend null (texte, NaN, hors bornes, sans lat)', [{
+      lat: '45',
+      lon: 2
+    }, {
+      lat: NaN,
+      lon: 2
+    }, {
+      lat: 91,
+      lon: 2
+    }, {
+      lon: 2
+    }, null, 5, []].every(x => fixOf(x) === null));
+    ck('fixOf : une altitude hors bornes ou un booléen mal formé est null', (g => g.altFt === null && g.onGround === null && g.gsKt ===
+      null)(fixOf({
+      lat: 1,
+      lon: 1,
+      altFt: 1e9,
+      onGround: 'yes',
+      gsKt: -3
+    })));
+    // 2. les formes
+    ck('shapeOf : un cercle du lecteur de missions', J(shapeOf({
+      circle: {
+        lat: 45,
+        lon: 2,
+        radiusM: 4000
+      }
+    })) === J({
+      kind: 'circle',
+      lat: 45,
+      lon: 2,
+      radiusM: 4000
+    }));
+    ck('shapeOf : un contour de 3 et de 100 sommets est lu, de 2 et de 101 refusé', [3, 100].every(n => shapeOf({
+      polygon: Array.from({
+        length: n
+      }, (_, i) => [45 + i / 1000, 2])
+    })?.kind === 'polygon') && [2, 101, 0].every(n => shapeOf({
+      polygon: Array.from({
+        length: n
+      }, (_, i) => [45 + i / 1000, 2])
+    }) === null), String(BOUNDS.vertices));
+    ck('shapeOf : un rayon à 0 ou démesuré, un sommet mal formé, des valeurs non finies : refusés (jamais ramenés dans leurs bornes)',
+      [{
+        circle: {
+          lat: 45,
+          lon: 2,
+          radiusM: 0
+        }
+      }, {
+        circle: {
+          lat: 45,
+          lon: 2,
+          radiusM: 1e9
+        }
+      }, {
+        circle: {
+          lat: NaN,
+          lon: 2,
+          radiusM: 100
+        }
+      }, {
+        circle: {
+          lat: 45,
+          lon: 2,
+          radiusM: Infinity
+        }
+      }, {
+        polygon: [
+          [45, 2],
+          [45.1, 2],
+          [45, 'x']
+        ]
+      }, {
+        polygon: [
+          [45, 2],
+          [45.1, 2],
+          [45, 999]
+        ]
+      }, null, 'zone', {}].every(x => shapeOf(x) === null));
+    // 3. le trajet contre un cercle de 1 NM
+    const z = circle(1);
+    const out1 = crossed(P(-5, 3), P(-4, 3), z);
+    ck('crossed : dehors aux deux relevés, trajet loin : outside, non touchée', out1.state === 'outside' && out1.touched === false &&
+      out1.at === null, J(out1));
+    const ent = crossed(P(-3, 0, {
+      t: 0
+    }), P(0, 0, {
+      t: 9000
+    }), z);
+    ck('crossed : de dehors à dedans : entered, touchée, instant interpolé au bord (à 2/3 du trajet)', ent.state === 'entered' && ent
+      .touched === true && near(ent.at, 6000, 15), J(ent));
+    ck('crossed : dedans aux deux relevés : inside', crossed(P(0.2, 0), P(-0.3, 0.2), z).state === 'inside');
+    const left = crossed(P(0, 0, {
+      t: 0
+    }), P(3, 0, {
+      t: 5000
+    }), z);
+    ck('crossed : de dedans à dehors : left, touchée', left.state === 'left' && left.touched === true, J(left));
+    ck('crossed : « crossing » (un franchissement) = entered et through seulement ; inside, left et outside : faux ; inconnu : null ; touched dit la présence',
+      ent.crossing === true && left.crossing === false && crossed(P(0.2, 0), P(-0.3, 0.2), z).crossing === false && crossed(P(-3, 0),
+        P(3, 0), z).crossing === true && crossed(P(-5, 3), P(-4, 3), z).crossing === false && crossed(P(-3, 0), P(0, 0), circle(1, {
+        ceilingFt: 3000
+      })).crossing === null);
+    // sans état : la même entrée donne la même réponse (le rejeu d'un segment du carnet par un autre appareil), un relevé lu d'un fichier passe par fixOf
+    const seg = [{
+      at: '2026-11-17T10:00:00Z',
+      lat: P(-3, 0).lat,
+      lon: P(-3, 0).lon,
+      altFt: 2500
+    }, {
+      at: '2026-11-17T10:00:10Z',
+      lat: P(3, 0).lat,
+      lon: P(3, 0).lon,
+      altFt: 2600
+    }];
+    const zc3 = circle(1, {
+        ceilingFt: 3000
+      }),
+      r1 = crossed(seg[0], seg[1], zc3),
+      r2 = crossed(JSON.parse(JSON.stringify(seg[0])), JSON.parse(JSON.stringify(seg[1])), zc3);
+    ck('crossed : sans état — la même entrée (relue d’un fichier) donne la même réponse', J(r1) === J(r2) && r1.state === 'through' &&
+      r1.crossing === true && near(r1.at, Date.parse('2026-11-17T10:00:00Z') + 3333, 5), J(r1));
+    const thr = crossed(P(-3, 0, {
+      t: 0
+    }), P(3, 0, {
+      t: 6000
+    }), z);
+    ck('crossed : le trajet traverse la zone sans qu’aucun relevé soit dedans : through, touchée, instant au bord d’entrée (1/3)', thr
+      .state === 'through' && thr.touched === true && near(thr.at, 2000, 15), J(thr));
+    ck('crossed : un trajet qui rase à 1,5 NM d’un cercle de 1 NM ne le touche pas', crossed(P(-3, 1.5), P(3, 1.5), z).touched ===
+      false);
+    ck('crossed : sans relevé précédent, le point seul est jugé', crossed(null, P(0.1, 0), z).state === 'inside' && crossed(null, P(5,
+      0), z).state === 'outside');
+    // le contour
+    const sq = square(1);
+    ck('crossed : un contour (carré de 2 NM) : entered, through, outside', crossed(P(-3, 0), P(0, 0), sq).state === 'entered' &&
+      crossed(P(-3, 0.5), P(3, 0.5), sq).state === 'through' && crossed(P(-3, 2), P(3, 2), sq).state === 'outside');
+    const L = {
+      shape: {
+        polygon: [P(-2, -2), P(2, -2), P(2, 2), P(1, 2), P(1, -1), P(-2, -1)].map(p => [p.lat, p.lon])
+      }
+    };
+    ck('crossed : un contour concave (en L) : le creux n’est pas la zone', crossed(P(-1, 1), P(-1, 1.5), L).touched === false &&
+      crossed(P(0, 0), P(0, -1.5), L).touched === true && crossed(P(1.5, 0), P(1.5, 1), L).state === 'inside');
+    // l'antiméridien
+    const am = {
+      shape: {
+        circle: {
+          lat: 0,
+          lon: 179.99,
+          radiusM: 5000
+        }
+      }
+    };
+    ck('crossed : de part et d’autre de la ligne de changement de date', crossed({
+      lat: 0,
+      lon: -179.99
+    }, {
+      lat: 0,
+      lon: 179.995
+    }, am).touched === true);
+    // 4. le plafond : les DEUX relevés sous le plafond, l'altitude absente = inconnu
+    const zc = circle(1, {
+      ceilingFt: 3000
+    });
+    ck('crossed + plafond : les deux relevés sous le plafond : la zone joue', crossed(P(-3, 0, {
+      altFt: 2500
+    }), P(0, 0, {
+      altFt: 2800
+    }), zc).state === 'entered');
+    const hi = crossed(P(-3, 0, {
+      altFt: 2500
+    }), P(0, 0, {
+      altFt: 3200
+    }), zc);
+    ck('crossed + plafond : un relevé au-dessus du plafond : outside (reason ceiling), non touchée', hi.state === 'outside' && hi
+      .touched === false && hi.reason === 'ceiling', J(hi));
+    const noAlt = crossed(P(-3, 0, {
+      altFt: 2500
+    }), P(0, 0), zc);
+    ck('crossed + plafond : une altitude absente ne satisfait jamais le plafond : unknown, touched null', noAlt.state === 'unknown' &&
+      noAlt.touched === null, J(noAlt));
+    ck('crossed + plafond : sans plafond demandé, l’altitude absente est sans effet', crossed(P(-3, 0), P(0, 0), z).state ===
+      'entered');
+    ck('crossed + plafond : alt agl juge la hauteur sol ; sans aglFt : unknown', crossed(P(-3, 0, {
+      aglFt: 100
+    }), P(0, 0, {
+      aglFt: 200
+    }), circle(1, {
+      ceilingFt: 300
+    }), {
+      alt: 'agl'
+    }).state === 'entered' && crossed(P(-3, 0, {
+      altFt: 100
+    }), P(0, 0, {
+      altFt: 100
+    }), circle(1, {
+      ceilingFt: 300
+    }), {
+      alt: 'agl'
+    }).state === 'unknown');
+    ck('crossed : un plafond illisible (négatif, texte) : unknown, jamais ignoré', crossed(P(-3, 0), P(0, 0), circle(1, {
+      ceilingFt: -5
+    })).state === 'unknown' && crossed(P(-3, 0), P(0, 0), circle(1, {
+      ceilingFt: '3000'
+    })).state === 'unknown');
+    // 5. la portée et la hauteur
+    const o = {
+      lat: C.lat,
+      lon: C.lon,
+      rangeNm: 0.3,
+      heightFt: null,
+      altitudeFt: null
+    };
+    const fast = reach(P(-0.5, 0.2, {
+      t: 0
+    }), P(0.5, 0.2, {
+      t: 5000
+    }), o);
+    ck('reach : à 350 kt, un passage à 0,2 NM entre deux relevés à plus de 0,3 NM chacun est vu (le trajet, pas les points)', fast
+      .ok === true && near(fast.distNm, 0.2, 0.01) && near(fast.at, 2500, 20), J(fast));
+    ck('reach : un passage à 0,5 NM est manqué', reach(P(-1, 0.5), P(1, 0.5), o).ok === false);
+    ck('reach : sans hauteur demandée, l’altitude absente ne gêne pas', reach(P(-0.5, 0.1), P(0.5, 0.1), o).ok === true);
+    const oa = {
+      ...o,
+      heightFt: 800,
+      altitudeFt: 2500
+    };
+    ck('reach : par rapport à l’altitude de l’objet (connue) : 500 ft au-dessus : vu ; 1 000 ft : manqué', reach(P(-0.5, 0.1, {
+      altFt: 3000
+    }), P(0.5, 0.1, {
+      altFt: 3000
+    }), oa).ok === true && reach(P(-0.5, 0.1, {
+      altFt: 3500
+    }), P(0.5, 0.1, {
+      altFt: 3500
+    }), oa).ok === false);
+    ck('reach : l’altitude du relevé absente, l’objet veut une hauteur : inconnu (jamais vu)', reach(P(-0.5, 0.1), P(0.5, 0.1), oa)
+      .ok === null);
+    const og = {
+      ...o,
+      heightFt: 800
+    };
+    ck('reach : objet au sol (sans altitude) : la hauteur sol du relevé ; 300 ft : vu, 1 200 ft : manqué, absente : inconnu', reach(P(-
+      0.5, 0.1, {
+        aglFt: 300
+      }), P(0.5, 0.1, {
+      aglFt: 300
+    }), og).ok === true && reach(P(-0.5, 0.1, {
+      aglFt: 1200
+    }), P(0.5, 0.1, {
+      aglFt: 1200
+    }), og).ok === false && reach(P(-0.5, 0.1), P(0.5, 0.1), og).ok === null);
+    ck('reach : la portée manquée rend faux même sans altitude (le faux certain l’emporte sur l’inconnu)', reach(P(-1, 0.9), P(1, 0.9),
+      oa).ok === false);
+    ck('reach : un objet illisible (portée 0, hauteur négative, texte) : null', [{
+      ...o,
+      rangeNm: 0
+    }, {
+      ...o,
+      heightFt: -4
+    }, {
+      ...o,
+      lat: 'x'
+    }, null].every(t => reach(P(0, 0), P(0.1, 0), t).ok === null));
+    // 6. l'arrivée posée
+    const ar = {
+      at: C,
+      radiusNm: 0.5,
+      speedMaxKt: 30,
+      onGround: true
+    };
+    ck('arrived : dans le rayon, sous la vitesse, au sol : posée', arrived(P(0.1, 0, {
+      gsKt: 20,
+      onGround: true
+    }), ar).ok === true);
+    ck('arrived : « au sol » inconnu : inconnu (jamais posée par défaut) ; en vol : faux', arrived(P(0.1, 0, {
+      gsKt: 20
+    }), ar).ok === null && arrived(P(0.1, 0, {
+      gsKt: 20,
+      onGround: false
+    }), ar).ok === false);
+    ck('arrived : vitesse trop forte : faux ; vitesse inconnue : inconnu ; hors du rayon : faux même si le reste est inconnu', arrived(
+      P(0.1, 0, {
+        gsKt: 50,
+        onGround: true
+      }), ar).ok === false && arrived(P(0.1, 0, {
+      onGround: true
+    }), ar).ok === null && arrived(P(2, 0), ar).ok === false);
+    ck('arrived : une arrivée qui n’exige ni vitesse ni sol se juge sur le rayon', arrived(P(0.1, 0), {
+      at: C,
+      radiusNm: 0.5,
+      speedMaxKt: null,
+      onGround: false
+    }).ok === true);
+    // 7. le rattrapage sur la trace
+    const start = Date.parse('2026-11-17T10:00:00Z');
+    const pt = (dx, dy, s, alt = 2000, agl, g) => {
+      const p = P(dx, dy);
+      return agl === undefined ? [p.lat, p.lon, alt, s] : [p.lat, p.lon, alt, s, agl, g];
+    };
+    const trail = [pt(-6, 0, 0), pt(-4, 0, 60), pt(-2, 0, 120), pt(2, 0, 180), pt(4, 0, 240)];
+    const rz = replay(trail, 'zone', z, {
+      startMs: start
+    });
+    ck('replay zone : le franchissement manqué est retrouvé sur la trace (traversée entre deux points, instant interpolé)', rz.found ===
+      true && rz.state === 'through' && rz.index === 3 && near(rz.at, start + 120000 + 60000 * (1 / 4), 1500), J(rz));
+    ck('replay zone : une trace qui reste loin : faux', replay([pt(-6, 5, 0), pt(6, 5, 60)], 'zone', z, {
+      startMs: start
+    }).found === false);
+    ck('replay zone + plafond : des points sans altitude : null (le rattrapage ne dit pas)', replay(trail.map(p => [p[0], p[1], null, p[
+      3]]), 'zone', circle(1, {
+      ceilingFt: 3000
+    }), {
+      startMs: start
+    }).found === null);
+    ck('replay object : un passage à portée est retrouvé ; hauteur sol sur d’anciens points (sans aglFt) : null', replay([pt(-1, 0.1,
+      0), pt(1, 0.1, 30)], 'object', o, {
+      startMs: start
+    }).found === true && replay([pt(-1, 0.1, 0), pt(1, 0.1, 30)], 'object', og, {
+      startMs: start
+    }).found === null);
+    ck('replay object : les points étendus (aglFt) jugent la hauteur', replay([pt(-1, 0.1, 0, 2000, 300, 0), pt(1, 0.1, 30, 2000, 320,
+      0)], 'object', og, {
+      startMs: start
+    }).found === true);
+    ck('replay arrival : posée sur la trace (point étendu au sol, lent)', replay([pt(2, 0, 0, 500, 10, 0), pt(0.1, 0, 60, 20, 0, 1)],
+      'arrival', {
+        ...ar,
+        speedMaxKt: null
+      }, {
+        startMs: start
+      }).found === true);
+    ck('replay : une trace vide, hostile ou démesurée ne lève pas', [replay(null, 'zone', z), replay([
+      [1], 'x', null, [NaN, NaN, 0, 0]
+    ], 'zone', z), replay(Array.from({
+      length: 5000
+    }, () => pt(0, 0, 1)), 'zone', z)].every(r => r && 'found' in r));
+    // 8. jamais d'exception
+    const hostile = [undefined, null, NaN, Infinity, 'x', 5, [], {}, () => 1, {
+      get lat() {
+        throw new Error('boom');
+      }
+    }];
+    let thrown = 0;
+    for (const a of hostile)
+      for (const b of hostile) {
+        try {
+          crossed(a, b, a);
+          crossed(a, b, circle(1));
+          reach(a, b, a);
+          arrived(a, b);
+          replay(a, 'zone', b);
+          fixOf(a);
+          shapeOf(a);
+        } catch {
+          thrown++;
+        }
+      }
+    ck('des entrées hostiles ne lèvent jamais d’exception', thrown === 0, String(thrown));
+    // 9. un contour de 100 sommets : coût borné
+    const big = {
+      shape: {
+        polygon: Array.from({
+          length: 100
+        }, (_, i) => [C.lat + 0.2 * Math.sin(i / 100 * 2 * Math.PI), C.lon + 0.2 * Math.cos(i / 100 * 2 * Math.PI)])
+      }
+    };
+    const t0 = performance.now();
+    let hits = 0;
+    for (let i = 0; i < 5000; i++) hits += crossed(P(-30 + i / 100, 0), P(-29.9 + i / 100, 0), big).touched ? 1 : 0;
+    ck('un contour de 100 sommets : 5 000 trajets jugés en moins d’une seconde', performance.now() - t0 < 1000 && hits > 0, `${Math.round(performance.now() - t0)} ms, ${hits}`);
+    window.__crossingBench.done = true;
+  })().catch(e => {
+    ck('le banc va au bout', false, String(e && e.stack || e));
+    window.__crossingBench.done = true;
+  });
+</script>
+</body>
+</html>

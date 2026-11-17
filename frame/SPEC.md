@@ -649,8 +649,11 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
   - **Sources, in order**:
     0. **This computer's flight simulator**, when a launcher serves the page: `GET /__setup/sim/position` every 5 s.
        - The launcher (`tools/sim_position.py`) asks X-Plane 12's web API (port 8086), then Little Navmap's web
-         API (port 8965, `/api/sim/info`). It answers `{ lat, lon, altFt, trackDeg, gsKt, source: 'xplane' | 'lnm',
-         at }`, or 204 when no simulator gives a position.
+         API (port 8965, `/api/sim/info`). It answers `{ lat, lon, altFt, aglFt, onGround, headingDeg, trackDeg, gsKt,
+         source: 'xplane' | 'lnm', at }` (SOG-0447: `aglFt` the height above the ground in feet, `onGround`, `headingDeg` the TRUE heading; each is null — UNKNOWN, never 0 nor « in flight » — when the source does not give it: X-Plane gives
+         the three (`y_agl`, `onground_any`, `true_psi`), Little Navmap the height and the ground state only when its API carries them and never the true heading), or 204 when no simulator gives a position. **Cadence (not
+         changed)**: the page asks every 5 s (`LIVE_SIM`), the launcher answers at most once a second, `ctx.live.last` follows each fix, and `progress.actual` is written at most every 10 s (`LIVE_WRITE`), only when the
+         aircraft moved more than 30 m or changed altitude by 50 ft or more.
        - The two ports can be changed in `tools/.sim.json` (`{ "xplane": 8086, "lnm": 8965 }`, local, never
          versioned). The host is always the local machine, and the launcher makes at most one pass a second.
        - X-Plane: the datarefs' ids are resolved once by name and again after a restart. Altitude comes from
@@ -668,7 +671,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
        - A position at 0° / 0° (a pilot still connecting) is ignored.
     3. Nothing.
   - **Offline**: the GPS only.
-  - **Writing**: only `progress.actual = { at, lat, lon, altFt, gsKt, trackDeg, source }` in the current flight (the
+  - **Writing**: only `progress.actual = { at, lat, lon, altFt, aglFt, onGround, headingDeg, gsKt, trackDeg, source }` in the current flight (the
     record, `by: 'frame'`), never fuel's or maps' fields.
     - **Cleared** (`actual: null`) when the service stops, whatever stopped it: report saved, departure cancelled, flight
       older than 24 h, here or on another device.

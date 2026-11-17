@@ -209,8 +209,9 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
 - **In a pane** (dual view, wide screen), your module gets `ctx.query.pane === '1'` and half the width. Draw for the
   width you are given. Never reach the other module: react to the shared records with `watch`.
 - `ctx.live` (read): the actual position during a started flight, from the device's GPS or the pilot's IVAO / VATSIM
-  session: `status`, `source`, `last` `{ at, lat, lon, altFt, gsKt, trackDeg, source }`, `trail()` (the device's flown
-  track, below). A module that wants the GPS
+  session: `status`, `source`, `last` `{ at, lat, lon, altFt, aglFt, onGround, headingDeg, gsKt, trackDeg, source }`, `trail()` (the device's flown
+  track, below), and (SOG-0447) `watch(fn)`: `fn(fix)` is called at each valid fix as the frame receives it (every 5 s from the simulator; a frozen copy, never a value that another subscriber can change),
+  it returns the function that unsubscribes, a subscriber that throws is isolated, fifty at most, and the unmounting of the module unsubscribes by itself — one subscription of the frame instead of a timer per module. Two limits to know: a subscriber that is `async` and whose promise rejects is not caught (an unhandled rejection, no effect on the frame — catch inside); and a subscription made outside a module's `life` (the global `SogFrame.live.watch`) stays until the function it returned is called — a caller that forgets it keeps its slot among the fifty. A module that wants the GPS
   offers a button that calls `ctx.live.enable()` (the permission needs a gesture). The frame writes
   `progress.actual` in the current flight; read it there with `watch`, never write it. Its shape is fixed (28 Oct 2026):
 
@@ -221,6 +222,9 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
   | `altFt` | feet (integer) or null | altitude above sea level as the source gives it (GPS: converted from metres) |
   | `gsKt` | knots (integer) or null | ground speed |
   | `trackDeg` | degrees (integer, 0–359) or null | the source's heading or track (GPS: course over ground) |
+  | `aglFt` | feet (integer) or null | (SOG-0447) the height above the ground — X-Plane (`y_agl`) and, when its API carries it, Little Navmap; GPS, IVAO and VATSIM: null |
+  | `onGround` | `true` \| `false` \| null | (SOG-0447) on the ground — X-Plane (`onground_any`), Little Navmap when its API carries a boolean, IVAO's own flag; otherwise null |
+  | `headingDeg` | degrees (integer, 0–359) or null | (SOG-0447) the TRUE heading — X-Plane only (`true_psi`); Little Navmap's heading is magnetic, so null here |
   | `source` | `'xplane'` \| `'lnm'` \| `'gps'` \| `'ivao'` \| `'vatsim'` | where it comes from |
 
   - **The flown track** (`trail`, `frame/lib/trail.js`, `next(trail, fix, startedAt)`): a point is added when the aircraft
@@ -970,6 +974,29 @@ copies on. Distances by the haversine formula are already periodic and need noth
 `modules/atmosphere/atmo.js` has the same three functions (its own copy, kept identical so that the weather cache cells are the same);
 the module switches to this helper in its next lot. Bench: `frame/lib/test/geo.html`. A module that loads it from another
 folder lists it in its `meta.files` (`'../../frame/lib/geo.js?v=0'`).
+
+## 12b. The crossing service (`frame/lib/crossing.js`, SOG-0447)
+
+A pure module (no screen, DOM, clock, storage or network; it never throws) that judges what a drawer key asks of the live position — a zone crossed, an object in range, an arrival landed. **The same file judges the flight
+(« Affectation », `modules/missions/drawers.js`) and the author's trial (« Création »)**: neither rewrites the geometry. Every input is untrusted (a mission file, a position source) and read bounded; an absent datum is
+UNKNOWN (`null` / `'unknown'`) and **never satisfies a key** — except when another datum already makes the answer a certain false.
+
+**Forms** (those of the mission reader, `frame/lib/mission.js`; the units are converted ONCE there: kilometres → metres for a zone radius, nautical miles for a range or an arrival radius, feet for altitudes, ceilings
+and heights): a **fix** `{ at | t, lat, lon, altFt, aglFt, onGround, headingDeg, trackDeg, gsKt, source }` (§ 6, `ctx.live.last`); a **zone** `{ shape: { circle: { lat, lon, radiusM } } | { polygon: [[lat, lon]…] }, ceilingFt | null }`
+(3 to 100 vertices, 1 m to 500 km, ceiling 0 to 60 000 ft above sea level); an **object** `{ lat, lon, rangeNm, heightFt | null, altitudeFt | null }`; an **arrival** `{ at: { lat, lon }, radiusNm, speedMaxKt | null, onGround }`.
+
+| Call | Gives |
+| --- | --- |
+| `fixOf(raw)`, `shapeOf(raw)` | the fix / the shape read bounded; null when unreadable (a value out of its bounds is never brought back into them: that would be another zone) |
+| `crossed(prev, next, zone, { alt: 'msl' \| 'agl' })` | `{ state, touched, at, altFt, reason? }` — the PATH between two fixes against the zone. `state`: `outside`, `entered`, `inside`, `left`, `through` (both fixes outside but the path crosses the zone), `unknown`; `touched`: PRESENCE — true for entered, inside, left, through; false for outside; null for unknown; `crossing`: a CROSSING — true for entered and through only (the aircraft entered the zone during the path), false for the other states, null for unknown (the caller picks the word its key wants: a take-off inside the zone is `inside`, touched, not a crossing); the function has no state — the same inputs give the same answer on two devices, so a second device can judge again a segment of a notebook (pass the two fixes as the frame gave them, at full precision, through `fixOf`); `at`: the instant (ms) of the first contact, interpolated on the segment. The ceiling is the workshop's contract: BOTH fixes of the segment must be at or under it (`reason: 'ceiling'` above); an absent altitude with a ceiling asked: `unknown`. `prev` may be null: the point alone |
+| `reach(prev, next, object, { heightOf: 'auto' \| 'target' \| 'agl' })` | `{ ok, distNm, heightFt, at }` — the closest point of the PATH to the object (at 350 kt, 5 s are 0.5 NM: the points alone would miss a pass at 0.3 NM); `ok` true / false / null. Height rule (`auto`, the default): against the object's altitude when known, else the fix's height above the ground (a ground object), else unknown; the vertical values are interpolated at the closest point |
+| `arrived(fix, arrival)` | `{ ok, distNm, gsKt, onGround }` — in the radius, at or under the maximum speed (if asked) and, if the arrival must be landed, ON THE GROUND (`onGround` null: unknown, never landed by default) |
+| `replay(trail, kind, key, { startMs, alt, heightOf })` | the catch-up: replays the kept trace (§ 6, `ctx.live.trail()`) with the same calls; `kind`: `zone`, `object`, `arrival`; `{ found: true \| false \| null, at, state, index, points }`. The trace keeps one point per nautical mile (a coarser path than the fixes) and its old points have no height above the ground or ground state: those keys come back `null` |
+
+**Reading another pilot's position** (a `progress.actual` read from a file of data/) goes through `fixOf` — never the raw value (Security review, 17 Nov 2026): a file is an untrusted input.
+
+Geometry: a local plane (equirectangular) around the zone or the object, true to ± 1 % up to 500 km; a side of a contour is a straight line of that plane; the date line is handled. Not in this service (other lots, or the caller's): X-Plane's
+traffic table, the holds (hover, landing held), the opening notification, and what stays with the caller — « Affectation » in flight, « Création » in the trial: the arrival's `required` points and `escortMinSec`, an object's `confirm` (in range AND on the pilot's word), a zone's `actor` (the target crosses, not the pilot) and a moving object (`motion`: the caller gives the object's position at the instant of the fix). The keys of the mission reader can be passed as they are: the service reads only the fields it names (a zone: `shape`, `ceilingFt`; an object: `lat`, `lon`, `rangeNm`, `heightFt`, `altitudeFt`; an arrival: `at`, `radiusNm`, `speedMaxKt`, `onGround`), `altitudeFt` null being « not written », which the `auto` height rule reads as a ground object.
 
 ## 13. Service screens (`APP.screens`)
 

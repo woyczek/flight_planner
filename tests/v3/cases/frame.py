@@ -5309,6 +5309,89 @@ def a256(c):
     c.check_errors()
 
 
+@case('A263', 'ctx.live.watch(fn) (SOG-0447): every valid fix is given to each subscriber (a frozen copy), a subscriber that throws disturbs nothing, at most fifty subscribers, the unmounting of the module unsubscribes', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0447 (the ergonomist: one subscription of the frame is worth more than a timer per module — « Affectation » judges its keys at each fix): ctx.live.watch(fn) calls fn(fix) at each valid fix as the frame receives it (a copy frozen: a subscriber cannot change what the others see), returns the function that unsubscribes, a subscriber that throws is isolated, fifty subscribers at most, and the module\'s life (its unmounting) unsubscribes by itself')
+def a263(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    fix = {'lat': 47.1, 'lon': -1.6, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 123, 'trackDeg': 120, 'gsKt': 140, 'source': 'xplane', 'at': '2026-11-17T10:00:00Z'}
+    c.context.route(re.compile(r'/__setup/sim/position'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fix)))
+    # the example module, with one line more at its mount: it subscribes through ctx.live.watch (its own life)
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    head = 'export async function mount(el, ctx) {'
+    assert src.count(head) == 1
+    patched = src.replace(head, head + "\n  window.__hw = { n: 0, last: null, frozen: false }; ctx.live.watch(f => { window.__hw.n++; window.__hw.last = f; try { 'use strict'; f.lat = 0 } catch (e) { window.__hw.frozen = true } });")
+    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
+    c.open('hello', flight=True, started=True, wait=False)
+    c.until("!!document.querySelector('[data-module=hello]') && window.SogFrame.live.watchers() === 1", timeout=20000, what='the module subscribed')
+    c.until("window.__hw.n >= 1", timeout=20000, what='the module received a fix')
+    c.eq(c.js("() => [window.__hw.last.aglFt, window.__hw.last.onGround, window.__hw.last.headingDeg, Object.isFrozen(window.__hw.last)]"), [1500, False, 123, True], 'the subscriber gets the fix with the three new fields, as a frozen copy', what='fix given')
+    # a subscriber that throws does not disturb the module's; an unsubscribed one stops being called
+    c.js("() => { window.__bad = 0; window.__off = window.SogFrame.live.watch(() => { window.__bad++; throw new Error('boom') }) }")
+    n0 = c.js("() => window.__hw.n")
+    c.until(f"window.__hw.n > {n0} && window.__bad >= 1", timeout=20000, what='both subscribers called at the next fix, the failing one included')
+    c.eq(c.js("() => window.SogFrame.live.watchers()"), 2, 'two subscribers: the module and the failing one', what='two')
+    c.js("() => window.__off()")
+    c.eq(c.js("() => window.SogFrame.live.watchers()"), 1, 'the returned function unsubscribes', what='unsubscribed')
+    # the unmounting of the module unsubscribes by itself
+    c.js("() => { location.hash = '#fuel' }")
+    c.until("!document.querySelector('[data-module=hello]') && window.SogFrame.live.watchers() === 0", timeout=20000, what='the module unmounted and unsubscribed')
+    # at most fifty
+    c.js("() => { window.__offs = Array.from({ length: 60 }, () => window.SogFrame.live.watch(() => {})) }")
+    c.eq(c.js("() => window.SogFrame.live.watchers()"), 50, 'fifty subscribers at most', what='cap')
+    c.js("() => window.__offs.forEach(o => o())")
+    c.eq((c.js("() => window.SogFrame.live.watchers()"), c.js("() => window.SogFrame.live.watch(5) instanceof Function")), (0, True), 'a value that is not a function subscribes nothing and gives back a harmless function', what='guards')
+    c.check_errors()
+
+
+@case('A262', 'The live position says « on the ground », the height above the ground and the true heading (SOG-0447): what the source gives, null (unknown) for what it does not — never 0 nor « in flight » by default; the kept track carries them as optional fields, old points stay valid', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0447 (the ergonomist: a drawer key — a zone crossed, an object in range, an arrival landed — needs « on the ground », the height above the ground and the true heading): the fix of the live position (ctx.live.last, progress.actual) carries aglFt, onGround and headingDeg; a source that does not give one says null (unknown), never 0, never « in flight »; the kept track (frame/lib/trail.js) adds two optional fields to a point (aglFt | null, ground 1 | 0 | null), a point without them stays valid and unknown')
+def a262(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    now = {'fix': {'lat': 47.1, 'lon': -1.6, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 123, 'trackDeg': 120, 'gsKt': 140, 'source': 'xplane', 'at': '2026-11-17T10:00:00Z'}}
+    c.context.route(re.compile(r'/__setup/sim/position'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(now['fix'])))
+    c.open('fuel', flight=True, started=True, wait=False)
+    last = lambda: c.js("() => window.SogFrame.live.last")
+    c.until("window.SogFrame.live.status === 'tracking' && window.SogFrame.live.last && window.SogFrame.live.last.aglFt === 1500", timeout=20000, what='the first fix with its height above the ground')
+    f = last()
+    c.eq((f['aglFt'], f['onGround'], f['headingDeg'], f['trackDeg']), (1500, False, 123, 120), 'X-Plane: the height above the ground, « in flight » (false, said), the true heading and the track', what='full fix')
+    # a source that gives none of them: unknown, never 0 and never « in flight »
+    now['fix'] = {'lat': 47.2, 'lon': -1.5, 'altFt': 2100, 'trackDeg': 121, 'gsKt': 141, 'source': 'lnm', 'at': '2026-11-17T10:00:05Z'}
+    c.until("window.SogFrame.live.last && window.SogFrame.live.last.source === 'lnm'", timeout=20000, what='the next fix, without the three fields')
+    f = last()
+    c.eq((f['aglFt'], f['onGround'], f['headingDeg'], f['altFt']), (None, None, None, 2100), 'a source that does not give them: null for the three (unknown), not 0 and not false', what='unknown fix')
+    # hostile values from a source: unknown
+    now['fix'] = {'lat': 47.3, 'lon': -1.4, 'altFt': 2200, 'aglFt': 'x', 'onGround': 'yes', 'headingDeg': 'north', 'source': 'xplane', 'at': '2026-11-17T10:00:10Z'}
+    c.until("window.SogFrame.live.last && window.SogFrame.live.last.altFt === 2200", timeout=20000, what='the next fix, with malformed values')
+    f = last()
+    c.eq((f['aglFt'], f['onGround'], f['headingDeg']), (None, None, None), 'a malformed value (text) is unknown, never kept as it is', what='hostile fix')
+    # the kept track
+    r = c.js("""() => import('/frame/lib/trail.js').then(T => {
+      const S = '2026-11-17T10:00:00Z', t0 = Date.parse(S);
+      const fix = (s, extra) => ({ at: new Date(t0 + s * 1000).toISOString(), lat: 48, lon: 2, altFt: 100, ...extra });
+      const full = T.next([], fix(0, { aglFt: 49.6, onGround: true }), S), part = T.next([], fix(0, { aglFt: 30 }), S), none = T.next([], fix(0, {}), S);
+      const old = [[48, 2, 100, 0]], mix = T.next(old, fix(120, { aglFt: 800, onGround: false }), S);
+      const junk = T.next([[48, 2, 100, 0, 'x', 5], [48, 2, 100, 1, 3, 7], [48, 2, 100, 2, null, 1]], fix(300, {}), S);
+      return { full: full[0], part: part[0], none: none[0], mixLen: mix.map(p => p.length), junk: junk.map(p => p.length) };
+    })""")
+    c.eq((r['full'], r['part'], r['none']), ([48, 2, 100, 0, 50, 1], [48, 2, 100, 0, 30, None], [48, 2, 100, 0]), 'a track point: [lat, lon, altFt, s] and, when the source gives them, aglFt and ground (1 on the ground, 0 in flight, null unknown); none: four elements', what='trail points')
+    c.eq((r['mixLen'], r['junk']), ([4, 6], [6, 4]), 'an old point (four elements) stays valid beside the extended ones; a malformed extended point (text, ground 7) is dropped', what='trail compatibility')
+    src = (ROOT / 'frame' / 'app.js').read_text(encoding='utf-8').replace('\r\n', '\n')
+    c.ok("actual: {\n          ...a\n        }" in src and 'aglFt: Number.isFinite(p.aglFt) ? p.aglFt : null' in src, '', 'the position written with progress.actual is the fix as the frame holds it: the three fields go with it')
+    c.check_errors()
+
+
+@case('A261', 'The crossing service (SOG-0447, frame/lib/crossing.js): the path between two fixes against a circle or a contour (entered, inside, left, through), the ceiling, range and height of an object judged on the path, the landed arrival, the replay on the kept trace; an absent datum never satisfies a key; hostile inputs never throw', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0447 (the ergonomist; the same service judges the flight in « Affectation » and the author\'s trial in « Création »): frame/lib/test/crossing.html (window.__crossingBench) — the fix read bounded (unknown = null, never 0 or « in flight »), the shapes of the mission reader (3 to 100 vertices), a path that crosses a zone with no fix inside it (« through »), the ceiling that both fixes of the segment must respect, an object\'s range and height judged on the path (350 kt: 5 s are 0.5 NM), the ground object judged by the height above the ground, the arrival (radius, maximum speed, on the ground), the replay on the trace, the date line, the hostile inputs')
+def a261(c):
+    _bench(c, 'frame/lib/test/crossing.html', '__crossingBench')
+
+
 @case('A260', 'Settings › About › Diagnostic: the switch of the page profile (SOG-0430 A2) — a checkbox that is on by default, off by a click and on again, disabled with its reason when the page is served without the permission of the launcher; four languages', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0430 A2 (the ergonomist: « un réglage que l\'utilisateur ne peut pas atteindre n\'en est pas un »): the switch of the profiler is in the Diagnostic block of the About card, where the diagnostic that holds the profiles is copied; it turns the profiler off and on (localStorage of this browser, nothing written in the data); without the launcher\'s permission (no <meta name="sog-js-profiling">) it is disabled and says why')

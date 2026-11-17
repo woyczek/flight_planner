@@ -1,7 +1,8 @@
 // V3 frame/lib (propriétaire : le cadre) — trace volée du vol courant (progress.actual.trail), en calcul pur : ni page,
 // ni stockage, ni réseau. Le cadre l'écrit avec progress.actual (frame/app.js, onFix) ; la Carte la dessine.
 //
-// Un point : [lat, lon, altFt | null, s] — degrés à 3 décimales (environ 100 m : la trace est partagée avec le groupe et
+// Un point : [lat, lon, altFt | null, s] (SOG-0447 : suivi, quand la source les donne, de aglFt | null — la hauteur au-dessus du sol, pieds entiers — et de ground : 1 au sol, 0 en vol, null inconnu ; un point
+// d'avant, ou d'une source qui ne les donne pas, n'a que quatre éléments : les champs absents sont INCONNUS, jamais 0) — degrés à 3 décimales (environ 100 m : la trace est partagée avec le groupe et
 // reste dans l'historique du dépôt, elle n'a pas à dire la position au mètre ; 29 oct. 2026), pieds entiers, s = secondes
 // entières depuis started.at du vol. Un point est ajouté à la trace quand l'avion a avancé d'au moins TRAIL_NM depuis le dernier point,
 // ou TRAIL_S secondes ont passé, ou la route a tourné d'au moins TRAIL_TURN degrés (virage gardé : le coin reste dans la
@@ -48,16 +49,20 @@ function pointOf(fix, startedAt) {
   const t0 = Date.parse(startedAt),
     t = Date.parse(fix?.at);
   if (!Number.isFinite(t0) || !Number.isFinite(t) || t < t0 || !Number.isFinite(fix.lat) || !Number.isFinite(fix.lon)) return null;
-  return [Math.round(fix.lat * 1e3) / 1e3, Math.round(fix.lon * 1e3) / 1e3, Number.isFinite(fix.altFt) ? Math.round(fix.altFt) : null,
+  const p = [Math.round(fix.lat * 1e3) / 1e3, Math.round(fix.lon * 1e3) / 1e3, Number.isFinite(fix.altFt) ? Math.round(fix.altFt) : null,
     Math.round((t - t0) / 1000)
   ];
+  if (Number.isFinite(fix.aglFt) || typeof fix.onGround === 'boolean') p.push(Number.isFinite(fix.aglFt) ? Math.round(fix.aglFt) : null,
+    typeof fix.onGround === 'boolean' ? (fix.onGround ? 1 : 0) : null);
+  return p;
 }
 /** Trace lue d'un enregistrement : seulement des points bien formés, dans l'ordre du temps. */
 function clean(trail) {
   if (!Array.isArray(trail)) return [];
   const out = [];
   for (const p of trail)
-    if (Array.isArray(p) && p.length === 4 && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[3]) && p[3] >= 0 &&
+    if (Array.isArray(p) && (p.length === 4 || p.length === 6 && (p[4] === null || Number.isFinite(p[4])) && (p[5] === null || p[5] === 0 ||
+        p[5] === 1)) && Number.isFinite(p[0]) && Number.isFinite(p[1]) && Number.isFinite(p[3]) && p[3] >= 0 &&
       (!out.length || p[3] >= out[out.length - 1][3])) out.push(p);
   return out;
 }

@@ -4545,7 +4545,7 @@
         paintCo();
       },
       get live() {
-        return liveApi();
+        return liveApi(life);
       },
       // niveau d'usage de l'appareil (1 Découverte, 2 Courant, 3 Complet), en lecture : un module y réserve ce qui engage la
       // compagnie
@@ -5143,6 +5143,9 @@
         lat: c.latitude,
         lon: c.longitude,
         altFt: c.altitude == null ? null : Math.round(c.altitude * 3.28084),
+        aglFt: null, // SOG-0447 : le GPS du navigateur ne donne ni la hauteur sol, ni « au sol », ni le cap vrai : inconnus
+        onGround: null,
+        headingDeg: null,
         gsKt: c.speed == null ? null : Math.round(c.speed * 1.943844),
         trackDeg: Number.isFinite(c.heading) ? Math.round(c.heading) : null
       });
@@ -5190,6 +5193,10 @@
           lat: p.lat,
           lon: p.lon,
           altFt: p.altFt ?? null,
+          // SOG-0447 : hauteur au-dessus du sol, « au sol » et cap vrai tels que la source les donne ; null = inconnu (jamais 0 ni « en vol » par défaut)
+          aglFt: Number.isFinite(p.aglFt) ? p.aglFt : null,
+          onGround: typeof p.onGround === 'boolean' ? p.onGround : null,
+          headingDeg: Number.isFinite(p.headingDeg) ? p.headingDeg : null,
           gsKt: p.gsKt ?? null,
           trackDeg: p.trackDeg ?? null
         });
@@ -5216,6 +5223,9 @@
           lat: k.latitude,
           lon: k.longitude,
           altFt: Math.round(k.altitude),
+          aglFt: null, // SOG-0447 : le réseau ne donne pas la hauteur sol ni le cap vrai ; « au sol » : seulement ce qu'IVAO écrit
+          onGround: typeof k.onGround === 'boolean' ? k.onGround : null,
+          headingDeg: null,
           gsKt: Math.round(k.groundSpeed),
           trackDeg: Math.round(k.heading)
         }];
@@ -5227,6 +5237,9 @@
           lat: p.latitude,
           lon: p.longitude,
           altFt: Math.round(p.altitude),
+          aglFt: null, // SOG-0447 : VATSIM ne donne ni la hauteur sol, ni « au sol », ni le cap vrai : inconnus
+          onGround: null,
+          headingDeg: null,
           gsKt: Math.round(p.groundspeed),
           trackDeg: Math.round(p.heading)
         }];
@@ -5243,6 +5256,23 @@
       s = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
     return 2 * 6371e3 * Math.asin(Math.sqrt(s));
   };
+  // SOG-0447 : l'abonnement aux relevés (ctx.live.watch) — UN abonnement du cadre vaut mieux qu'une minuterie par module : chaque relevé valide, au rythme où le cadre le reçoit (toutes les 5 s du simulateur), est
+  // remis à chaque abonné (une copie gelée) ; un abonné qui lève ne gêne ni les autres ni le cadre ; au plus WATCH_MAX abonnés ; le démontage du module (life) désabonne.
+  const WATCH_MAX = 50,
+    fixWatchers = new Set();
+
+  function watchFixes(fn, life) {
+    if (typeof fn !== 'function' || fixWatchers.size >= WATCH_MAX || life?.aborted) return () => {};
+    const w = {
+      fn
+    };
+    fixWatchers.add(w);
+    const off = () => fixWatchers.delete(w);
+    life?.addEventListener?.('abort', off, {
+      once: true
+    });
+    return off;
+  }
   /** Nouvelle position : gardée, montrée, écrite au plus une fois par 10 s si elle a bougé. */
   async function onFix(source, pos) {
     // position nulle (0°, 0° : pilote en cours de connexion) ou illisible : ignorée
@@ -5256,6 +5286,16 @@
     live.source = source;
     live.last = a;
     paintLive();
+    if (fixWatchers.size) {
+      const frozen = Object.freeze({
+        ...a
+      });
+      for (const w of [...fixWatchers]) try {
+        w.fn(frozen);
+      } catch (e) {
+        console.warn('live.watch', e); // un abonné en échec ne gêne ni les autres ni le suivi
+      }
+    }
     const moved = !lastWrite || metres(lastWrite, a) > 30 || Math.abs((a.altFt ?? 0) - (lastWrite.altFt ?? 0)) >= 50;
     if (!moved) return;
     // au plus une écriture par 10 s : une position venue trop tôt est écrite à la fin du délai (la plus récente)
@@ -5307,8 +5347,11 @@
   }
   /** ctx.live : état, source, dernière position, trace volée de l'appareil, et le GPS de l'appareil (activé par un geste,
    *  gardé sur l'appareil). */
-  function liveApi() {
+  function liveApi(life = null) {
     return {
+      /** (SOG-0447) Appelle fn(relevé) à chaque relevé valide (une copie gelée) ; rend la fonction qui désabonne ; le démontage du module désabonne de lui-même. */
+      watch: fn => watchFixes(fn, life),
+      watchers: () => fixWatchers.size,
       status: !live.active ? 'off' : live.source ? 'tracking' : 'waiting',
       source: live.source,
       last: live.last,
