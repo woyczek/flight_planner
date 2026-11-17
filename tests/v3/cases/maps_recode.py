@@ -3912,8 +3912,8 @@ def d126(c):
     # a tap on the second route takes it: a Map alone goes to Fuel with the index
     c.wait(500)   # the last drawing settles (a loaded machine redraws after the event): the touch targets are those of the image
     c.js("() => { window.__hs = []; window.addEventListener('hashchange', () => window.__hs.push(location.hash)); return true }")   # Fuel consumes `ralt` at mount: the address is read when it changes, not afterwards
-    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
-                 "() => window.__mp.S.altShow === 1", 'a tap on a route SHOWS it (SOG-0134: it does not take it)', tries=6)
+    _held_click(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
+                 "() => window.__mp.S.altShow === 1", 'a tap on a route SHOWS it (SOG-0134: it does not take it)')
     c.wait(300)
     c.ok(not c.js("() => window.__hs.some(h => h.includes('ralt=')) || location.hash.includes('ralt=')"), 'the address changed', 'a tap on a route does not go to Fuel')
     c.until("() => !!document.querySelector('.mp-alts [data-alttake]:not([disabled])')", timeout=4000, what='a Map alone offers « Choose this route » for the shown one')
@@ -3928,8 +3928,8 @@ def d126(c):
     c.until("() => (window.__mp.S.altHits || []).length === 2", timeout=8000, what='drawn in the pane')
     c.wait(500)
     c.eq(c.js("() => !!document.querySelector('.mp-alts') && !document.querySelector('.mp-alts').hidden"), False, 'beside Fuel the list is Fuel’s: not repeated over the map', what='list in a pane')
-    _click_until(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
-                 "() => window.__shown.length >= 1", 'the tap is maps-route-alt-show', tries=6)
+    _held_click(c, lambda: (lambda p: (p['x'], p['y']))(c.js("""() => { const S = window.__mp.S; if (!S) return { x: 1, y: 1 }; const h = S.altHits.find(x => x.index === 1), m = h.q[1], n = h.q[2], r = S.box.getBoundingClientRect(), card = document.querySelector('.mp-alts'), cr = card && !card.hidden ? card.getBoundingClientRect() : null; const at = f => ({ x: r.left + m.x + (n.x - m.x) * f, y: r.top + m.y + (n.y - m.y) * f }); const free = [.5, .35, .65, .25, .75, .15, .85].map(at).find(p => !cr || p.x < cr.left - 6 || p.x > cr.right + 6 || p.y < cr.top - 6 || p.y > cr.bottom + 6); return free || at(.5) }""")),
+                 "() => window.__shown.length >= 1", 'the tap is maps-route-alt-show')
     c.eq(c.js("() => window.__shown[0]"), {'index': 1}, 'with the index, nothing else', what='detail')
     c.eq(c.js("() => window.__picked.length"), 0, 'a tap never takes a route (Fuel’s own button does): no maps-route-alt', what='taken')
     # a Map opened afterwards reads the document
@@ -4085,23 +4085,33 @@ _SPACE_CLICK_JS = """(ft) => { const S = window.__mp.S, g = S.geo, cr = S.prof.c
   const y = r.top + g.padT + (g.H - g.padT - g.padB) * (1 - (ft - g.bottom) / (g.top - g.bottom)); return { x, y } }"""
 
 
-def _click_until(c, point, cond, what, tries=3):
-    """A click that a loaded machine may lose (a redraw between the target’s measure and the click): measured and clicked again, up to three times."""
-    for k in range(tries):
-        pt = point()
-        c.page.mouse.click(*pt)
-        try:
-            c.until(cond, timeout=4000, what=what)
-            return
-        except Exception:
-            if k == tries - 1:
-                raise
+def _held_click(c, point, cond, what):
+    """A click held 250 ms on the target measured just before, once: no second try, no longer wait. The retry it replaces (« a click that a loaded machine may lose ») hid a real defect, the
+    windows rewritten at every drawing (SOG-0392): a click that is lost now fails the case. A failure SAYS which it was: the point measured before and the same measure after (a target that
+    moved: a redraw placed it elsewhere), and the events the click produced (pointerdown, pointerup, click: none = lost; all three and no effect = the Map answered nothing)."""
+    pt = point()
+    c.js("""() => { window.__hc = []; if (window.__hcOff) window.__hcOff(); const l = e => window.__hc.push(e.type), ks = ['pointerdown', 'pointerup', 'click'];
+      ks.forEach(k => document.addEventListener(k, l, true)); window.__hcOff = () => ks.forEach(k => document.removeEventListener(k, l, true)); return true }""")
+    c.page.mouse.move(*pt)
+    c.page.mouse.down()
+    c.wait(250)
+    c.page.mouse.up()
+    try:
+        c.until(cond, timeout=4000, what=what)
+    except Exception as e:
+        after = point()
+        ev = c.js("() => window.__hc")
+        moved = max(abs(after[0] - pt[0]), abs(after[1] - pt[1]))
+        raise Fail(f'held click at ({pt[0]:.0f}, {pt[1]:.0f}); the target measured again after: ({after[0]:.0f}, {after[1]:.0f}) — '
+                   f'{"MOVED by " + str(round(moved)) + " px" if moved > 2 else "same place"}; events: {ev}; {e}', what, 'a held click, one try') from None
+    finally:
+        c.js("() => { if (window.__hcOff) window.__hcOff(); return true }")
 
 
 def _open_space_from_profile(c, cond, what):
     """The gesture of the sheet of a space on the profile (SOG-0163, ergonomics 10 Nov): a tap on the block chooses it (the strip under the profile names it and offers « Sheet »),
     a second tap on the chosen block (or the button) opens the sheet."""
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!document.querySelector('.mp-spsel [data-spfiche]')", f'{what}: the block is chosen')
+    _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!document.querySelector('.mp-spsel [data-spfiche]')", f'{what}: the block is chosen')
     c.eq(c.js("() => !!document.querySelector('.mp-sp-card') && !document.querySelector('.mp-sp-card').hidden"), False, 'the first tap does not open the sheet', what=f'{what}: sheet before the button')
     c.tap('.mp-spsel [data-spfiche]')
     c.until(cond, timeout=6000, what=what)
@@ -4135,7 +4145,7 @@ def d131(c):
     c.wait(400)
     # the same sheet from the map: on a phone (the only width of this case) a point with ONE space opens its card at once, full width, the list hidden (SOG-0364); with several spaces
     # the list comes first (D240, D245)
-    _click_until(c, lambda: xy(c, 44.65, .8), "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /R 61/.test(k.textContent) }", 'a tap on the map at a point with one space opens its sheet at once')
+    _held_click(c, lambda: xy(c, 44.65, .8), "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /R 61/.test(k.textContent) }", 'a tap on the map at a point with one space opens its sheet at once')
     c.eq(c.js("() => { const l = document.querySelector('.mp-lv-list'); return l ? getComputedStyle(l).display : 'none' }"), 'none', 'the list of one space is hidden on a phone: the card is the content', what='list display')
     # a P says « prohibited »
     c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
@@ -4260,7 +4270,7 @@ def d134(c):
     g0 = c.js(_GEO_SHEET)
     c.js("() => { window.__want = 'R'; return true }")
     # first tap on the block: chosen, not opened
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!document.querySelector('.mp-spsel [data-spfiche]')", 'the block is chosen')
+    _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!document.querySelector('.mp-spsel [data-spfiche]')", 'the block is chosen')
     st = c.js("() => ({ dpanel: window.__mp.S.dpanel, sel: !!window.__mp.S.selSpace, strip: document.querySelector('.mp-spsel').textContent, card: !!document.querySelector('.mp-sp-card') && !document.querySelector('.mp-sp-card').hidden })")
     c.ok(st['dpanel'] is None and st['sel'] and not st['card'], str(st), 'one tap chooses the block: the profile stays, nothing opens')
     c.ok('R 61' in st['strip'], st['strip'], 'the label over the profile names it, with its limits, and offers the button')
@@ -4270,7 +4280,7 @@ def d134(c):
     c.page.mouse.click(pt['x'], pt['y'])
     c.until("() => !window.__mp.S.selSpace && !document.querySelector('.mp-spsel [data-spfiche]')", timeout=5000, what='a tap outside any block chooses nothing')
     # choose again, then a second tap on the chosen block opens the sheet
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!window.__mp.S.selSpace", 'chosen again')
+    _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), "() => !!window.__mp.S.selSpace", 'chosen again')
     pt = c.js(_SPACE_CLICK_JS, 5000)
     c.page.mouse.click(pt['x'], pt['y'])
     c.until("() => window.__mp.S.dpanel === 'lv' && !!document.querySelector('.mp-sp-card') && !document.querySelector('.mp-sp-card').hidden", timeout=6000, what='the second tap on the chosen block opens the sheet')
@@ -5224,7 +5234,7 @@ def d_sel(c):
     gone = "() => !window.__mp.S.selSpace && (!document.querySelector('.mp-spsel [data-spfiche]') || document.querySelector('.mp-spsel').hidden)"
     for what, tap, undo in (('the legend', '.mp-chip[data-legend]', '.mp-chip[data-legend]'), ('the weather chip', '.mp-chip[data-view="weather"]', '.mp-chip[data-view="profile"]'),
                             ('the Layers tab', '[data-mp="layers"]', '[data-mp="layers"]'), ('the modes panel', '[data-mp="mode"]', '[data-mp="mode"]')):
-        _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), chosen, f'{what}: the block is chosen')
+        _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(_SPACE_CLICK_JS, 5000)), chosen, f'{what}: the block is chosen')
         c.tap(tap)
         c.until(gone, timeout=3000, what=f'{what} opens: the strip of the chosen space is gone')
         c.tap(undo)
@@ -5927,7 +5937,7 @@ def d_atc(c):
     c.eq(h['nets'], ['ivao', 'vatsim'], 'LFML has controllers of both networks', what=str(h))
     # a TOUCH on the chips (a phone has no hover): the bubble says the positions, the frequencies and the networks; clicked again if a redraw moved the chip meanwhile
     chip = """() => { const S = window.__mp.S, q = (S.atcHits || []).find(h => h.icao === 'LFML'), r = S.box.getBoundingClientRect(); return q ? { x: r.left + q.x + q.w / 2, y: r.top + q.y + q.h / 2 } : { x: r.left + 5, y: r.top + 5 } }"""
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && /VATSIM/.test(t.textContent) && /IVAO/.test(t.textContent) && /118[.]700/.test(t.textContent) }", 'the touch on the chips opens the bubble: the positions, the frequencies and the networks')
+    _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && /VATSIM/.test(t.textContent) && /IVAO/.test(t.textContent) && /118[.]700/.test(t.textContent) }", 'the touch on the chips opens the bubble: the positions, the frequencies and the networks')
     c.js("() => { window.__mp.S.map.panBy([2, 2], { duration: 0 }); return true }")
     c.wait(1200)
     cols = c.js("() => [...window.__fc]")
@@ -6918,7 +6928,7 @@ def d207(c):
         c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what=f'{w}: the Layers sheet is open')
         c.wait(1500)
         mark = c.js("() => { const m = Math.round(performance.now() - window.__sh.t0); window.__sh.mark = m; return m }")
-        _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", f'{w}: the list of the spaces at this point')
+        _held_click(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", f'{w}: the list of the spaces at this point')
         c.wait(3000)
         z = c.js("() => { clearInterval(window.__sh.iv); return { n: window.__sh.n, ev: window.__sh.ev, h: window.__sh.h } }")
         after = [r for r in z['h'] if r[0] >= mark and r[2] == 'lv']
@@ -7646,7 +7656,7 @@ def d227(c):
         c.until("() => window.__mp.S.dpanel === 'layers'", timeout=6000, what=f'{w}: the Layers sheet is open')
         c.wait(1200)
         mark = c.js("() => Math.round(performance.now() - window.__sh.t0)")
-        _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", f'{w}: the list of the spaces at this point')
+        _held_click(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", f'{w}: the list of the spaces at this point')
         c.wait(2500)
         z = c.js("() => { clearInterval(window.__sh.iv); return { ev: window.__sh.ev, h: window.__sh.h } }")
         g = c.js(_LV_GEO)
@@ -8035,7 +8045,7 @@ def d240(c):
         hook_map(c)
         c.until("() => !!(window.__mp.S && window.__mp.S.prof)", timeout=15000, what='the profile')
         c.wait(1200)
-        _click_until(c, lambda: xy(c, 44.65, .8), f"() => window.__mp.S.lvList && window.__mp.S.lvList.length >= {n} && !!document.querySelector('.mp-lv-list li[data-i]')", f'{name}: the list of the spaces at this point')
+        _held_click(c, lambda: xy(c, 44.65, .8), f"() => window.__mp.S.lvList && window.__mp.S.lvList.length >= {n} && !!document.querySelector('.mp-lv-list li[data-i]')", f'{name}: the list of the spaces at this point')
         c.wait(1500)
         g = c.js(geo)
         c.ok(g['data'] <= g['root'] / 2 + 3, f"sheet {g['data']} of {g['root']}", f'{name}: the sheet is at most half of the view')
@@ -8233,7 +8243,7 @@ def d_atc_lines(c):
     c.js("() => { window.__mpMap.jumpTo({ center: [5.215, 43.4367], zoom: 10 }); return true }")
     c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn')
     chip = """() => { const S = window.__mp.S, q = (S.atcHits || []).find(h => h.icao === 'LFML'), r = S.box.getBoundingClientRect(); return q ? { x: r.left + q.x + q.w / 2, y: r.top + q.y + q.h / 2 } : { x: r.left + 5, y: r.top + 5 } }"""
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length > 2 }", 'the touch on the chips opens the bubble, one position per line')
+    _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length > 2 }", 'the touch on the chips opens the bubble, one position per line')
     r = c.js("""() => { const t = window.__mp.S.tipEl, d = [...t.querySelectorAll(':scope > div')];
       return { rows: d.slice(1).map(x => x.textContent.replace(/[\s\u00a0\u202f]+/g, ' ').trim()), cut: d.filter(x => x.scrollWidth > x.clientWidth + 1).length, markup: t.querySelectorAll('img,script,a').length } }""")
     rows = r['rows']
@@ -8251,7 +8261,7 @@ def d_atc_lines(c):
     c.wait(900)
     c.js("() => { window.__mp.S.map.resize(); window.__mpMap.jumpTo({ center: [5.215, 43.4367], zoom: 10 }); return true }")
     c.until("() => (window.__mp.S.atcHits || []).some(h => h.icao === 'LFML')", timeout=10000, what='the chips of LFML are drawn on the wide screen')
-    _click_until(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length === 10 }", 'the bubble on the wide screen: the title, eight lines, the rest')
+    _held_click(c, lambda: (lambda pt: (pt['x'], pt['y']))(c.js(chip)), "() => { const t = window.__mp.S.tipEl; return !!t && !t.hidden && /LFML/.test(t.textContent) && t.querySelectorAll(':scope > div').length === 10 }", 'the bubble on the wide screen: the title, eight lines, the rest')
     c.shot('D245_{}_wide.png'.format('standard'))
 
 
