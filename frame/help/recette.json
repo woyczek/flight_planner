@@ -3956,8 +3956,7 @@
    },
    "test": "Carte, depuis l'ordinateur, à la SOURIS, après avoir rechargé la page. (1) Dans Carburant, calcule un vol qui rend plusieurs itinéraires (KABQ → EGLL), puis ouvre la Carte. (2) Dans la fenêtre « Itinéraires proposés », clique UNE fois sur une ligne qui n'est pas choisie : elle est prise (marquée « prise »), son tracé passe en avant, comme en cliquant le tracé. (3) Clique une autre ligne, puis reviens : chaque clic répond, du premier coup. (4) Au clavier : Tab jusqu'à une ligne, Entrée la choisit. (5) Au téléphone : toucher une ligne la choisit. Si un clic ne répond pas, dis sur quelle ligne et après quel geste.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T08:43:48Z"
+   "state": "known"
   },
   {
    "id": "SOG-0393",

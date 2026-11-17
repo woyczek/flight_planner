@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7bb4f90",
-  "fiches": 398,
+  "organisation": "c4def23",
+  "fiches": 399,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1613,12 +1613,11 @@
     {
      "id": "SOG-0392",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Itinéraires proposés, en vue carte : la liste ne répond toujours pas au clic, seul le tracé répond (retour de SOG-0348)",
      "en": "Proposed itineraries, map view: the list still does not answer a click, only the drawn route does (SOG-0348 again)",
      "de": "Vorgeschlagene Routen, Kartenansicht: die Liste reagiert weiterhin nicht auf Klick, nur die gezeichnete Route (erneut SOG-0348)",
-     "es": "Itinerarios propuestos, vista de mapa: la lista sigue sin responder al clic, solo el trazado responde (de nuevo SOG-0348)",
-     "test": true
+     "es": "Itinerarios propuestos, vista de mapa: la lista sigue sin responder al clic, solo el trazado responde (de nuevo SOG-0348)"
     }
    ]
   },
@@ -5801,6 +5800,27 @@
      "es": "Ajustes en el teléfono, repositorio sin sincronizar: las tarjetas de « compañía » se estiran sobre una pantalla vacía",
      "rank": 367,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-socle-cache-local-et-synchronisation-carburant-carte",
+   "app": "maintenance",
+   "label": {
+    "fr": "Socle (cache local et synchronisation) ; Carburant ; Carte",
+    "en": "Socle (cache local et synchronisation) ; Carburant ; Carte",
+    "de": "Socle (cache local et synchronisation) ; Carburant ; Carte",
+    "es": "Socle (cache local et synchronisation) ; Carburant ; Carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0400",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Itinéraire choisi sur la Carte : de retour dans Carburant il n'apparaît que très longtemps après, quand une synchronisation est en cours",
+     "en": "Itinerary chosen on the map: back in Fuel it only shows much later when a synchronisation is running",
+     "de": "Auf der Karte gewählte Route: zurück im Kraftstoff erscheint sie erst viel später, wenn eine Synchronisierung läuft",
+     "es": "Itinerario elegido en el mapa: de vuelta en Combustible solo aparece mucho después cuando hay una sincronización en curso"
     }
    ]
   },
