@@ -4437,6 +4437,21 @@
    "recommended": 0
   },
   {
+   "id": "Q-0097",
+   "fiche": "SOG-0441",
+   "app": "compagnie",
+   "question": "Tiroirs ouverts pour tous : faut-il mesurer une fois, sur le vrai dépôt, le délai entre deux appareils ?",
+   "context": "Au banc (deux postes d'essai, un dépôt local, aucun réseau), l'ouverture d'un tiroir par un pilote s'affiche chez l'autre 47 secondes après. Sur le vrai dépôt, chaque échange prend en plus le temps du réseau : non mesuré, et je ne le mesure pas sans ton accord (ce serait quelques écritures d'essai dans le dépôt des données). L'écran ne promet aucun délai : il dira l'écart réel quand il dépasse une minute (« ouvert par BBB à 20:14Z — reçu ici à 20:16Z »).",
+   "options": [
+    "Pas de mesure dédiée : l'écran dit l'écart réel, on le lira à ton premier vol à deux",
+    "Une mesure dédiée sur le vrai dépôt, avec une mission d'essai que je te prépare et que tu retires ensuite",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
