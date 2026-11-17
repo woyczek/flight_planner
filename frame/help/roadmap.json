@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "57b0f20",
-  "fiches": 446,
+  "organisation": "a9d8e0c",
+  "fiches": 447,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3755,6 +3755,27 @@
      "en": "Mission workshop: drawers — five keys, the fallback time, the preview and the “pilot's view” per stage",
      "de": "Missionswerkstatt: Schubladen — fünf Schlüssel, die Ausweichzeit, die Vorschau und die „Pilotensicht“ je Stufe",
      "es": "Taller de misiones: cajones — cinco claves, la hora de respaldo, la vista previa y la «vista del piloto» por etapa"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-lecture",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; lecture",
+    "en": "Missions ; lecture",
+    "de": "Missions ; lecture",
+    "es": "Missions ; lecture"
+   },
+   "items": [
+    {
+     "id": "SOG-0448",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Le secret d'un tiroir fermé : la fiche, le Détail et la Carte ne montrent que ce que cite la partie visible ou un tiroir ouvert",
+     "en": "The secret of a closed drawer: the sheet, the Detail and the Map only show what the visible part or an opened drawer cites",
+     "de": "Das Geheimnis einer geschlossenen Schublade: Blatt, Detail und Karte zeigen nur, was der sichtbare Teil oder eine geöffnete Schublade nennt",
+     "es": "El secreto de un cajón cerrado: la ficha, el Detalle y el Mapa solo muestran lo que cita la parte visible o un cajón abierto"
     }
    ]
   },
