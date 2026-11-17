@@ -4819,8 +4819,9 @@ def d145(c):
 
 
 _FLICK_JS = """() => { const q = s => document.querySelector(s), t0 = performance.now(), log = { body: [], map: 0, node: null }, ms = () => Math.round(performance.now() - t0);
-  const o = CanvasRenderingContext2D.prototype.clearRect; CanvasRenderingContext2D.prototype.clearRect = function () { if (this.canvas.classList.contains('mp-over')) { log.map++; (log.st ||= []).push([ms(), (new Error().stack || '').split(String.fromCharCode(10)).slice(2, 6).map(x => x.trim().replace('/modules/maps/', '').slice(-60)).join(' < ')]) } return o.apply(this, arguments) };
+  const o = CanvasRenderingContext2D.prototype.clearRect; CanvasRenderingContext2D.prototype.clearRect = function () { if (this.canvas.classList.contains('mp-over')) { log.map++; (log.st ||= []).push([ms(), (new Error().stack || '').split(String.fromCharCode(10)).slice(2, 6).map(x => x.trim().replace('/modules/maps/', '').slice(-60)).join(' < '), window.__mp && window.__mp.S && window.__mp.S.map ? window.__mp.S.map.getCanvas().clientHeight : null, window.__mp && window.__mp.S && window.__mp.S.data && window.__mp.S.data.box ? [window.__mp.S.data.box.s, window.__mp.S.data.box.n].map(v => Math.round(v * 100) / 100) : null, window.__mp && window.__mp.S ? [Math.round(performance.now() - (window.__mp.S.sheetBusyAt || 0)), window.__mp.S.dataEl ? window.__mp.S.dataEl.getAnimations().length : -1, window.__mp.S.data ? (window.__mp.S.data.gen || 0) + '/' + (window.__mp.S.dataGen || 0) : null] : null]) } return o.apply(this, arguments) };
   new MutationObserver(m => { const s = q('.mp-dbody svg.mp-lv'); if (s && !log.node) log.node = s; log.body.push([ms(), m.length, s === log.node]) }).observe(q('.mp-dbody'), { childList: true, subtree: true });
+  const raf = window.requestAnimationFrame; window.requestAnimationFrame = function (cb) { if (/sched[.]raf/.test(String(cb))) (log.req ||= []).push([ms(), (new Error().stack || '').split(String.fromCharCode(10)).slice(2, 9).map(x => x.trim().replace('/modules/maps/', '').replace(/^at /, '').slice(-48)).join(' < ')]); return raf.apply(this, arguments) };
   window.__fl = log; return true }"""
 
 
@@ -4846,13 +4847,33 @@ def d146(c):
         c.js(_FLICK_JS)
         c.js("async () => { const S = window.__mp.S; (await import('/modules/maps/profile_view.js')).setCursor(S.prof.total * .33); window.__want = 'R'; return true }")
         c.wait(600)
-        c.js("() => { window.__fl.map = 0; window.__fl.body = []; return true }")   # from the first tap
+        c.js("() => { window.__fl.map = 0; window.__fl.body = []; window.__fl.req = []; window.__fl.st = []; return true }")   # from the first tap
         _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.length > 20 }", f'the sheet of an R opens ({w} px)')
         c.wait(2200)
         fl = c.js("() => window.__fl")
         t0 = fl['body'][0][0] if fl['body'] else 0
+        # a count of drawings does not say that the LAST drawing is at the right size (the ergonomist, SOG-0364): at rest, with the sheet at the height of the card, the drawing of the layers sits on the map
+        # (same left, top and width as the map element: nothing shifted) and is not smaller than it; the frame (.mp-box) has a border of 1 px above and below, which the drawing's box (sized from the frame) counts
+        # and the map's does not: the drawing may exceed the map by those 2 px at the bottom, clipped by the frame (measured by Essais: over [0, 58, 390, 365], map [390, 363], frame [0, 57, 390, 365])
+        g = c.js("""() => { const S = window.__mp.S, r = e => { const b = e.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)] }, m = S.map && S.map.getCanvas();
+          return { box: r(S.box), over: r(S.canvas), mapEl: S.mapEl ? r(S.mapEl) : null, map: m ? [m.clientWidth, m.clientHeight] : null, el: S.mapEl ? [S.mapEl.clientWidth, S.mapEl.clientHeight] : null,
+                   bmp: [S.canvas.width, S.canvas.height], css: [S.canvas.clientWidth, S.canvas.clientHeight], dpr: window.devicePixelRatio || 1 } }""")
+        c.eq(g['over'][:3], g['mapEl'][:3], f"{w}: at rest the drawing of the layers has the left, the top and the width of the map (nothing shifted)", what=str(g))
+        c.ok(0 <= g['over'][3] - g['mapEl'][3] <= 2, str(g), f"{w}: the drawing is not smaller than the map and exceeds it by the 2 px of the frame's borders at most")
+        if g['map'] and g['el']:
+            c.eq(g['map'], g['el'], f"{w}: at rest the map canvas has the size of its container", what=str(g))
+        c.ok(abs(g['bmp'][0] - g['css'][0] * g['dpr']) <= 2 and abs(g['bmp'][1] - g['css'][1] * g['dpr']) <= 2, str(g), f"{w}: the bitmap of the drawing has the size of its box times the pixel ratio (not stretched)")
         c.ok(fl['body'] and all(b[2] for b in fl['body']), str(fl), f'{w}: the graph of the sheet is built once: the same node from the first drawing to the rest (never replaced)')
-        c.ok(fl['map'] <= 4, str(fl['map']), f'{w}: the map is redrawn four times at most between the tap and the rest')
+        # the contract, written in causes (the ergonomist, 17 Nov, SOG-0364): the cursor of the tap at most two drawings (the asks within 40 ms are one), the end of the glide of the sheet one at the rest, and NO re-read of the
+        # data for a change of size that leaves the view inside the area already read (SOG-0185 / SOG-0364; the failure line gives who asked each drawing)
+        asks = fl.get('req') or []
+        reads = [a for a in asks if 'data.js' in a[1]]
+        c.eq(reads, [], f'{w}: no re-read of the data between the tap and the rest (the view stays inside the area read; a change of the map’s height is not a new area)', what=str(asks))
+        cur = sorted(a[0] for a in asks if 'profile_view' in a[1])
+        groups = sum(1 for k, t in enumerate(cur) if k == 0 or t - cur[k - 1] > 40)
+        c.le(groups, 2, f'{w}: the cursor of the tap asks two drawings at most ({groups}; asked at {cur})')
+        c.le(len([a for a in asks if 'sheet_view' in a[1]]), 1, f'{w}: the end of the glide of the sheet asks one drawing at the rest')
+        c.ok(fl['map'] <= 4, f"{fl['map']} drawings; at (ms, caller): {fl.get('st')}; each drawing was ASKED (ms, who asked, nearest first): {fl.get('req')}", f'{w}: the map is redrawn four times at most between the tap and the rest')   # SOG-0185; the failure says WHEN and FROM WHERE each drawing came
         g = c.js(_LV_HEAD_JS)
         c.eq([g['panel'], g['layers']], ['lv', 'false'], f'{w}: the Layers icon is not the sheet’s: it is not pressed', what=str(g))
         c.ok(('profile', 'true', True) in [tuple(x) for x in g['chips']] and g['close'] and g['title'], str(g), f'{w}: the sheet is a view of the profile tab: its chip is pressed, its title and its cross are shown')
@@ -8690,6 +8711,36 @@ def d_profclash(c):
             c.shot(f'D255_{fx}_{w}x{h}_profile.png')
             c.ok(g['n'] > 5, str(g), f'{fx} {w} x {h}: the profile has its texts ({g["n"]})')
             c.eq(g['pairs'], [], f'{fx} {w} x {h}: no label of the profile covers another one', what=str(g))
+
+
+_READS_JS = """() => { const S = window.__mp.S; let v = S.data; window.__rd = []; Object.defineProperty(S, 'data', { configurable: true, enumerable: true, get: () => v, set: x => { window.__rd.push([Math.round(performance.now()), x && x.box ? { ...x.box } : null]); v = x } }); return true }"""
+
+
+@case('D256', 'The data of the view are read again only when the view leaves what was read: a map dragged INSIDE the margin (the 15 % around the view) reads nothing; dragged BEYOND it, ONE reading is made and the area read covers the new view (nothing empty at the edge)', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0364 / D146 (the ergonomist, 17 Nov: a fault of design, no hysteresis): the area to read was compared WANTED (view + 15 %) to READ (itself a view + 15 % of an instant), so any growth of the view, even 4 px, read again; the VIEW is now compared to the area read, the margin of 15 % is kept for the area to read')
+def d_readmove(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '61', 'key': 'LFR61', 'lower': 'SFC', 'upper': 'FL115', 'azba': True, 'act': 'AZBA', 'src': 'sia', 'rings': [ring(44.6, 45.4, 0.4, 1.2)]}]
+    c.open('maps?view=-1.5,42.2,3.5,45.2', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, airspaces=zones, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.data && window.__mp.S.data.box && window.__mp.S.map)", timeout=15000, what='the first reading')
+    c.wait(2500)
+    c.js(_READS_JS)
+    h = c.js("() => window.__mp.S.map.getCanvas().clientHeight")
+    # inside the margin: 6 % of the height (the margin is 15 % of the view on each side)
+    c.js("(dy) => { window.__mp.S.map.panBy([0, dy], { animate: false }); return true }", round(h * .06))
+    c.wait(1800)
+    c.eq(c.js("() => window.__rd.length"), 0, f'a drag of 6 % of the height ({round(h * .06)} px) stays inside the margin: nothing is read', what=str(c.js("() => window.__rd")))
+    # beyond: 60 % of the height
+    c.js("(dy) => { window.__mp.S.map.panBy([0, dy], { animate: false }); return true }", round(h * .6))
+    c.until("() => window.__rd.length >= 1", timeout=8000, what='a drag of 60 % of the height leaves what was read: a reading is made')
+    c.wait(1800)
+    g = c.js("""() => { const S = window.__mp.S, b = S.map.getBounds(), x = S.data.box; return { reads: window.__rd.length, covers: x.s <= b.getSouth() && x.n >= b.getNorth() && x.w <= b.getWest() && x.e >= b.getEast(), box: x, view: [b.getSouth(), b.getNorth(), b.getWest(), b.getEast()], fresh: (S.data.gen || 0) === (S.dataGen || 0) } }""")
+    c.eq(g['reads'], 1, 'beyond the margin: ONE reading', what=str(g))
+    c.ok(g['covers'] and g['fresh'], str(g), 'the area read covers the new view, its data are the last ones (nothing empty at the edge)')
 
 
 def _no_duplicate_names():

@@ -101,6 +101,8 @@ export function makeSheet(el) {
       if (byUser) S.sheetUser = p !== 'collapsed' ? userSize() :
         null; // la fenêtre où il l'a ouverte : son geste vaut pour cette fenêtre, pas pour une autre (le téléphone qui tourne, une vraie réduction)
       else if (p === 'collapsed') S.sheetUser = null;
+      S.sheetBusyAt = performance
+        .now(); // la taille de la feuille (et de la carte) va changer en plusieurs temps : draw() ne relit pas les données pour chacun (SOG-0185, D146)
       dataHead(); // nue sur un dessin à la position par défaut seulement
       S.onSheetPos?.(p); // le suivi du vol se replie quand le volet s'ouvre (SOG-0363)
     },
@@ -148,7 +150,11 @@ export function sheetFit() {
   if (!root || !S.sh) return;
   const st = root.style,
     put = (k, v) => {
-      if (st.getPropertyValue(k) !== v) v ? st.setProperty(k, v) : st.removeProperty(k);
+      if (st.getPropertyValue(k) !== v) {
+        v ? st.setProperty(k, v) : st.removeProperty(k);
+        S.sheetBusyAt = performance
+          .now(); // un jeton de hauteur change : la feuille, et la carte avec elle, vont changer de taille (D146 : la marque venait trop tard, à la fin du premier changement)
+      }
     };
   if (document.documentElement.classList.contains('f-land') || root.classList.contains('mp-tuning')) {
     for (const k of FIT_KEYS) put(k, '');
@@ -219,6 +225,7 @@ export function bodyRoom() {
  *  rien si les tailles sont celles du dernier passage. */
 function onSheetSettled() {
   if (!S) return;
+  S.sheetBusyAt = 0; // la taille est arrêtée : le prochain dessin relit si la vue sort de ce qui est lu
   sheetFit(); // une vue d'une autre taille : la moitié change (un jeton changé relance la feuille, puis ce passage)
   S.onSheetPos?.(S.sh.pos); // le volet ouvert (par un geste ou par le code) : le suivi du vol se replie (SOG-0363)
   const key = [S.box, S.dbodyEl, S.profBox].map(e => `${e.clientWidth}x${e.clientHeight}`).join(' ') +

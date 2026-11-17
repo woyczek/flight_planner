@@ -550,8 +550,15 @@ export async function startTiles() {
       mapSize();
       frameFlight(false);
       relief();
-      map.on('move', moving); // pendant le geste l'image suit (draw.js), le dessin complet au repos
-      map.on('moveend', settle); // repos : le dessin complet
+      // pendant le geste l'image suit (draw.js), le dessin complet au repos ; pas pour le redimensionnement du module lui-même (mapSize, lancé PAR un dessin : il peint déjà à la nouvelle taille) : il redemandait un
+      // dessin pour chaque redimensionnement (D146 : deux dessins de plus quand le volet change de hauteur)
+      map.on('move', () => {
+        if (!isOwnResize(map)) moving();
+      });
+      map.on('moveend', () => {
+        if (!isOwnResize(map))
+          settle(); // repos : le dessin complet — le resize du module lance 'move' puis 'moveend' de lui-même, l'un après l'autre : les deux sont à écarter (D146 : le second redessinait encore)
+      });
       map.on('moveend', keepCam);
       map.on('click', e => S && tapAt(e.point.x, e.point.y, e.lngLat.lat, e.lngLat.lng));
       // survol à la souris seulement (les événements souris qui suivent un toucher sont ignorés)

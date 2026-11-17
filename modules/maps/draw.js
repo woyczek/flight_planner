@@ -115,6 +115,9 @@ const REST_MS = 150,
   LIGHT_MAX_MS = 8;
 /** L'état de l'ordonnanceur : state, la case du tour d'animation (raf, kind : 'full' l'emporte sur 'move'), la minuterie du repos,
  *  le dernier dessin léger et s'il reste permis pour ce geste. */
+/** Combien de temps (ms) après un changement de position de la feuille ses changements de taille sont attendus, sans qu'une lecture des données soit demandée pour chacun (S.sheetBusyAt, posé par sheet_view.js, remis à zéro à l'arrêt) : la borne
+ *  garde la lecture si l'arrêt ne vient jamais. */
+const SHEET_BUSY_MS = 600;
 const sched = {
   state: 'rest',
   raf: 0,
@@ -893,8 +896,16 @@ function draw() {
   const corr = corridorFor(shown, W),
     want = wantBox(wide);
   // une couche changée ou une lecture arrivée alors que la vue tient dans ce qui est lu : la MÊME emprise est relue (ses lectures déjà gardées par couche ne sont pas redemandées, SOG-0349)
-  if (!within(want, S.data?.box) || corr !== S.data?.corridor || !fresh()) refresh(within(want, S.data?.box) && corr === S.data?.corridor ?
-    S.data.box : want, corr);
+  // la feuille glisse : la carte change de taille à chaque image du glissement (mapSize, plus haut) et chaque dessin relirait pour l'emprise de CETTE image (D146 : 509, 436, 363 px en 135 ms, deux lectures et
+  // deux dessins de plus) ; les données déjà lues restent montrées, la lecture se fait à l'arrêt (onSheetSettled redessine)
+  const gliding = !!S.data && (performance.now() - (S.sheetBusyAt || 0) < SHEET_BUSY_MS || !!S.dataEl?.getAnimations?.().some(a => a
+    .playState === 'running'));
+  // la VUE (avec son débordement) est-elle dans ce qui est lu ? La marge de 15 % de `want` est l'hystérésis : elle ne sert qu'à l'emprise À LIRE (SOG-0364 : comparée à une emprise lue qui était elle-même une vue + 15 %, toute croissance de la vue, de 4 px même, relisait)
+  const inside = within(wide, S.data?.box),
+    sameCorr = corr === S.data?.corridor;
+  if (!gliding && (!inside || !sameCorr || !fresh())) {
+    refresh(inside && sameCorr ? S.data.box : want, corr);
+  }
   // la lecture limitée au couloir du vol masque des espaces : la Carte le dit (SOG-0169), écrit seulement quand cela change
   const forced = corr > 0 && !(+S.profile?.corridorNm > 0) && !
     mission; // la case décochée, mais la vue est à l'échelle du monde : le dernier garde-fou la force (SOG-0246)

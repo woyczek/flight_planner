@@ -477,7 +477,14 @@ export function invalidate() {
 }
 /** Vrai si les données montrées sont de la dernière génération (invalidate). */
 export const fresh = () => !!S?.data && (S.data.gen || 0) === (S.dataGen || 0);
-export const within = (inner, outer) => !!outer && inner.w >= outer.w && inner.e <= outer.e && inner.s >= outer.s && inner.n <= outer.n;
+/** inner est dans outer, à un millionième de la taille de outer près : une emprise voulue et celle déjà lue qui ne diffèrent que du bruit des flottants (la vue d'une carte redimensionnée garde ses bords de longitude au 1e-13 près) ne
+ *  font pas relire (D146 : chaque changement de hauteur de la carte relisait, une vue plus petite étant pourtant dans l'emprise lue). */
+export const within = (inner, outer) => {
+  if (!outer) return false;
+  const ex = (outer.e - outer.w) * 1e-6,
+    ey = (outer.n - outer.s) * 1e-6;
+  return inner.w >= outer.w - ex && inner.e <= outer.e + ex && inner.s >= outer.s - ey && inner.n <= outer.n + ey;
+};
 /** Emprise box ramenée au même tour du monde que la route (la vue peut être sur une autre copie du monde). */
 function alignBox(box, route) {
   if (!route?.length) return box;
