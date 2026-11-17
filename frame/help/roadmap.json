@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "67d964e",
-  "fiches": 435,
+  "organisation": "e837bb2",
+  "fiches": 437,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1142,6 +1142,15 @@
      "de": "Kraftstoff, Verfahren: „ein Little-Navmap-Lesevorgang läuft bereits“ — eine alte Sperre verhindert das erneute Lesen",
      "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer",
      "test": true
+    },
+    {
+     "id": "SOG-0438",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carburant, Procédures : une lecture en cours au lanceur (EAD Basic : des minutes) n'est pas retrouvée par la page rouverte",
+     "en": "Fuel, Procedures: a read in progress in the launcher (EAD Basic: minutes) is not found again by the reopened page",
+     "de": "Kraftstoff, Verfahren: ein im Starter laufender Lesevorgang (EAD Basic: Minuten) wird von der wieder geöffneten Seite nicht wiedergefunden",
+     "es": "Combustible, Procedimientos: una lectura en curso en el lanzador (EAD Basic: minutos) no es recuperada por la página reabierta"
     }
    ]
   },
@@ -6014,6 +6023,27 @@
      "de": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening",
      "es": "Security review of 12 Nov (audit line 165): two proven defects in the hand-taken files path, one hardening",
      "rank": 286
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-temps-contraint",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; temps contraint",
+    "en": "Lanceur ; temps contraint",
+    "de": "Lanceur ; temps contraint",
+    "es": "Lanceur ; temps contraint"
+   },
+   "items": [
+    {
+     "id": "SOG-0437",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Lanceur : ses travaux lourds (lecture de PDF, reconnaissance de caractères, constructions) tournent à priorité basse et ne prennent pas tous les cœurs",
+     "en": "Launcher: its heavy jobs (PDF reading, character recognition, builds) run at low priority and do not take every core",
+     "de": "Starter: seine schweren Aufgaben (PDF-Lesen, Zeichenerkennung, Aufbauten) laufen mit niedriger Priorität und belegen nicht alle Kerne",
+     "es": "Lanzador: sus trabajos pesados (lectura de PDF, reconocimiento de caracteres, construcciones) corren con prioridad baja y no ocupan todos los núcleos"
     }
    ]
   },
