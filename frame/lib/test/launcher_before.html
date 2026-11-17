@@ -178,6 +178,74 @@
       // 5. le travail se termine normalement dans tous les cas
       ck('le travail rend son résultat dans les quatre cas', [a, b, c, d].every(x => x.r?.state === 'done' || x.r?.ok === true), JSON
         .stringify([a, b, c, d].map(x => x.r)));
+      // 6. SOG-0432 (c) : le lanceur libère une lecture qui ne donnait plus signe de vie (cancelled, reason released) : une lecture pure est redemandée UNE fois, sans erreur ; un travail qui écrit ne l'est jamais
+      const released = (verb, again) => {
+        const starts = [];
+        return {
+          starts,
+          fetch: async (url, init = {}) => {
+            const u = new URL(url);
+            if (u.pathname.endsWith('/regen/job') && (init.method || 'GET') === 'POST') {
+              starts.push(JSON.parse(init.body || '{}'));
+              return json({
+                ok: true,
+                job: 'j' + starts.length
+              });
+            }
+            const first = starts.length === 1 && !again;
+            return json(first || again ? {
+              state: 'cancelled',
+              result: {
+                ok: false,
+                reason: 'released'
+              }
+            } : {
+              state: 'done',
+              result: {
+                ok: true
+              }
+            });
+          }
+        };
+      };
+      const mk = f => launcherClient({
+        root: ROOT,
+        info: {
+          host: 'pc',
+          data: true,
+          dataGit: true,
+          lan: false
+        },
+        fetch: f,
+        poll: 5
+      }).forModule(DECL);
+      const e1 = released('status');
+      const re = await mk(e1.fetch).job('regen/job', {
+        set: 'base',
+        verb: 'status'
+      });
+      ck('une lecture pure libérée par le lanceur est redemandée une fois : deux départs, résultat « done », pas d’erreur', e1.starts.length === 2 && re.ok === true && !re.released, JSON.stringify({
+        starts: e1.starts.length,
+        re
+      }));
+      const e2 = released('status', true);
+      const re2 = await mk(e2.fetch).job('regen/job', {
+        set: 'base',
+        verb: 'status'
+      });
+      ck('libérée deux fois : une seule redemande, puis le client le dit (released), sans boucle', e2.starts.length === 2 && re2.ok === false && re2.released === true, JSON.stringify({
+        starts: e2.starts.length,
+        re2
+      }));
+      const e3 = released('build');
+      const re3 = await mk(e3.fetch).job('regen/job', {
+        set: 'base',
+        verb: 'build'
+      });
+      ck('un travail qui écrit libéré n’est jamais relancé de lui-même', e3.starts.length === 1 && re3.ok === false && re3.released === true, JSON.stringify({
+        starts: e3.starts.length,
+        re3
+      }));
       window.__beforeBench.done = true;
     })().catch(e => {
       ck('le banc va au bout', false, String(e));

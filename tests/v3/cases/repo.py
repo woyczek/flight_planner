@@ -3581,3 +3581,51 @@ def i48(c):
             c.eq((row()['state'], row().get('why')), ('todo', 'older-than-cycle'), 'built for a past cycle only: to do, older than the cycle', what='ds stale')
     finally:
         P._cycle, P._ead_states = saved
+
+
+@case('I49', 'Launcher, read jobs (SOG-0432 c): a read that nobody follows any more is cancelled, one that ignores it or is silent is released by the launcher itself, the place comes back; the refusal says the age of the oldest read; a writer is never touched', 'I', static=True,
+      rule='SOG-0432 (c): the launcher holds at most six parallel reads (MAX_READS) and nothing released them: a read that hung (a verb that waits on a source), or whose page had gone, kept its place for good and every later read got « busy ». Now the page follows a read by asking about it (view: `polled`); without a question for read_orphan_s the read is asked to stop; if it does not stop within read_grace_s, or gives no sign of life (stuck / gone), it is released like release_job does; the refusal carries oldest_read (age, signs of life); release_job also frees a read that is stuck')
+def i49(c):
+    import sys
+    import threading
+    import time
+    sys.path.insert(0, str(c.root / 'tools'))
+    import regen_jobs as RJ
+    gate = threading.Event()
+    hold = lambda job, args, ctx: (gate.wait(30), {'ok': True})[1]
+    reg = {('base', 'build'): (hold, lambda a: {}), ('base', 'status'): (hold, lambda a: {})}
+    jobs = RJ.Jobs(reg, {}, read_orphan_s=0.6, read_grace_s=0.6, quiet_s=100, stale_s=100)
+    try:
+        c.ok(jobs.start('base', 'build', {}).get('ok'), '', 'a job that writes holds the place; the reads run beside it')
+        ids = [jobs.start('base', 'status', {})['job'] for _ in range(RJ.Jobs.MAX_READS)]
+        r = jobs.start('base', 'status', {})
+        old = r.get('oldest_read') or {}
+        c.eq((r.get('status'), r.get('reason'), sorted(k for k in ('id', 'set', 'verb', 'age', 'alive', 'silent') if k in old)), (409, 'busy', ['age', 'alive', 'id', 'set', 'silent', 'verb']), 'the seventh read is refused « busy » and the refusal says which read is the oldest, its age and its signs of life', what='refusal')
+        c.ok(isinstance(old.get('age'), int) and old.get('alive') == 'alive' and old.get('id') in ids, str(old), 'the oldest read is one of the six, alive')
+        t0 = time.time()
+        while time.time() - t0 < 1.0:                   # the page follows ONE read only (the other five: the page is gone)
+            jobs.view(ids[0])
+            time.sleep(0.1)
+        r = jobs.start('base', 'status', {})
+        c.eq((r.get('status'), [bool(jobs.view(i).get('cancelling')) for i in ids]), (409, [False] + [True] * 5), 'the five reads nobody asks about are asked to stop; the one that is followed is left alone; the place is not freed yet (the read may still obey)', what='orphans cancelled')
+        time.sleep(0.8)
+        jobs.view(ids[0])
+        r = jobs.start('base', 'status', {})
+        states = [jobs.view(i).get('state') for i in ids]
+        c.eq((bool(r.get('ok')), states), (True, ['running'] + ['cancelled'] * 5), 'a read that ignores the stop is released after the grace: five places come back, a new read starts, the followed read still runs', what='released')
+        res = jobs.view(ids[1]).get('result') or {}
+        c.eq((res.get('reason'), res.get('why')), ('released', 'cancel-ignored'), 'the released read says why', what='reason')
+        c.eq(jobs.view(jobs.cur.id)['state'], 'running', 'the job that writes is never touched by the sweep', what='writer')
+        # a silent read (no sign of life for stale_s) is released at once, followed or not
+        jobs2 = RJ.Jobs(reg, {}, read_orphan_s=100, read_grace_s=100, quiet_s=0.2, stale_s=0.4)
+        jobs2.start('base', 'build', {})
+        first = jobs2.start('base', 'status', {})['job']
+        time.sleep(0.6)
+        jobs2.start('base', 'status', {})
+        c.eq((jobs2.view(first).get('state'), (jobs2.view(first).get('result') or {}).get('why')), ('cancelled', 'silent'), 'a read that gives no sign of life is released by the launcher at the next start', what='silent')
+        # release_job frees a stuck read by its id (it only knew the job that holds the place)
+        third = jobs2.start('base', 'status', {})['job']
+        time.sleep(0.6)
+        c.eq(jobs2.release_job(third).get('released'), True, 'release_job frees a stuck read by its identifier', what='release_job')
+    finally:
+        gate.set()

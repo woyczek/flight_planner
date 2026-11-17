@@ -236,6 +236,10 @@ export function launcherClient({
         if (st.state && st.state !== 'running') return {
           ...st,
           ok: st.state === 'done',
+          // SOG-0432 (c) : le lanceur a libéré ce travail (une lecture qui ne donnait plus signe de vie : reason `released`) — ce n'est pas une erreur à montrer, c'est « à redemander »
+          ...(st.state === 'cancelled' && st.result?.reason === 'released' ? {
+            released: true
+          } : {}),
           job: id
         };
       }
@@ -282,7 +286,13 @@ export function launcherClient({
         route: r,
         message: String(s.message || s.error || 'no job started')
       };
-      return follow(r, s.job, opts);
+      const done = await follow(r, s.job, opts);
+      // SOG-0432 (c) : une lecture pure que le lanceur a libérée (elle ne donnait plus signe de vie) est redemandée UNE fois, sans rien dire : un état qu'on relit ne coûte rien
+      if (done?.released && !opts.again && readOnlyJob(r, body)) return job(route, body, {
+        ...opts,
+        again: true
+      });
+      return done;
     }
     /** Reprend le suivi du travail en cours de cette route (page rechargée) ; null sans travail en cours. */
     async function resume(route, opts = {}) {

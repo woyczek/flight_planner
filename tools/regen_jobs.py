@@ -154,6 +154,7 @@ class Job:
         self.procs = []           # les processus que le verbe a lancés et déclarés (track) : un travail libéré les arrête
         self.released = False     # libéré par le lanceur (Jobs.release_job) : ce que le fil abandonné écrira ensuite est perdu
         self.cancel_at = None     # l'heure de la demande d'arrêt, si elle a été faite
+        self.polled = time.time() # la dernière fois que la page a demandé où il en est (Jobs.view) : une lecture que plus personne ne suit est arrêtée (Jobs._sweep, SOG-0432)
 
     def offer(self, payload=None):
         """Le verbe ouvre la réclamation du jeton par sa page sans fenêtre (POST /__setup/regen/job/claim), avec ce qu'elle
@@ -226,6 +227,10 @@ class Job:
 
 
 QUIET_S = 120    # secondes sans signe de vie avant qu'un travail soit dit silencieux (SOG-0245)
+# SOG-0432 : une LECTURE (un verbe de PARALLEL, brève par nature) ne garde pas sa place indéfiniment. La page la suit en l'interrogeant (toutes les secondes) : sans question depuis READ_ORPHAN_S, la page est partie (onglet fermé,
+# écran quitté) et la lecture est arrêtée (cancel) ; si elle ne s'arrête pas dans READ_GRACE_S, ou si elle ne donne plus signe de vie (« stuck », « gone »), le lanceur la libère et la place revient (comme release_job, de lui-même).
+READ_ORPHAN_S = 120
+READ_GRACE_S = 30
 STALE_S = 300    # secondes sans signe de vie avant qu'il soit dit « ne répond plus » : le lanceur peut alors le libérer (Jobs.release_job)
 # délai minimal entre deux départs d'un même verbe, en secondes : chaque jeu exporte le sien (tools/regen/<jeu>.py, MIN_GAP ; load_verbs les réunit ici) ; celui d'EAD Basic
 # (30 s, tools/regen/proc.py) fait partie de ses conditions : un terrain par geste, jamais en masse (EAD_BASIC.md § 1)
@@ -268,9 +273,11 @@ class Jobs:
     """Un travail à la fois ; REGISTRY : (jeu, verbe) → (fonction(job, args, ctx) → résultat, contrôle(args) → args | None) ;
     MIN_GAP : délai minimal entre deux départs d'un verbe (refus 'too-soon', 429, avec `wait` en secondes)."""
 
-    def __init__(self, registry, ctx=None, min_gap=None, store=None, quiet_s=None, stale_s=None):
+    def __init__(self, registry, ctx=None, min_gap=None, store=None, quiet_s=None, stale_s=None, read_orphan_s=None, read_grace_s=None):
         self.quiet_s = QUIET_S if quiet_s is None else quiet_s      # sans signe de vie depuis tant de secondes : « silencieux »
         self.stale_s = STALE_S if stale_s is None else stale_s      # depuis tant de secondes : « ne répond plus » (libérable)
+        self.read_orphan_s = READ_ORPHAN_S if read_orphan_s is None else read_orphan_s    # une lecture que la page n'interroge plus depuis tant de secondes : arrêtée
+        self.read_grace_s = READ_GRACE_S if read_grace_s is None else read_grace_s        # arrêt demandé et pas obéi depuis tant de secondes : libérée
         self.registry = dict(registry)
         self.ctx = ctx or {}
         self.lock = threading.Lock()
@@ -335,7 +342,8 @@ class Jobs:
         with self.lock:
             running = sum(1 for r in self.reads.values() if r.data['state'] == 'running')
             if running >= self.MAX_READS:
-                return {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running', **({'job': self.cur.id, 'running': self._summary(self.cur)} if self.cur and self.cur.data['state'] == 'running' else {}), 'reads': running, 'max_reads': self.MAX_READS}      # le refus habituel « occupé », avec le travail qui tient la place
+                oldest = min((r for r in self.reads.values() if r.data['state'] == 'running'), key=lambda r: r.data['started'])      # SOG-0432 : la plus ancienne des lectures qui tiennent les places : son âge, ses signes de vie (la page dit « la plus ancienne tourne depuis n s »)
+                return {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running', **({'job': self.cur.id, 'running': self._summary(self.cur)} if self.cur and self.cur.data['state'] == 'running' else {}), 'reads': running, 'max_reads': self.MAX_READS, 'oldest_read': self._summary(oldest)}      # le refus habituel « occupé », avec le travail qui tient la place
             self.reads[job.id] = job
             while len(self.reads) > self.READS_KEPT:
                 old = next(iter(self.reads))
@@ -350,9 +358,13 @@ class Jobs:
         try:
             try:
                 res = fn(job, a, self.ctx)
+                if job.released:       # SOG-0432 : libérée (Jobs._sweep) pendant qu'elle tournait : ce qu'elle rend maintenant est perdu
+                    return
                 job.data['state'] = 'cancelled' if job.cancelled() else 'done'
                 job.data['result'] = res
             except Exception as e:      # la lecture échoue : l'erreur est dite à la page, nettoyée ; le lanceur continue
+                if job.released:
+                    return
                 msg = clean_error(e, self.ctx)
                 job.log(f'error: {msg}')
                 job.data['state'] = 'error'
@@ -378,6 +390,9 @@ class Jobs:
             except Exception:       # la raison est un plus : un refus reste un refus
                 why = None
             return {'ok': False, 'status': 400, **(why if isinstance(why, dict) and why.get('message') else {'message': 'invalid arguments'})}
+        with self.lock:
+            procs = self._sweep()      # SOG-0432 : les lectures que plus personne ne suit ou qui ne répondent plus rendent leur place avant que celle-ci soit comptée
+        self._kill(procs)
         if key in PARALLEL:
             with self.lock:
                 held, running = self.held, bool(self.cur and self.cur.data['state'] == 'running')
@@ -516,6 +531,8 @@ class Jobs:
         """Le travail id_ ({ ok: False, status: 410 } s'il n'est plus là) ; sans id_, le courant ou le dernier."""
         with self.lock:
             j, s = self.cur, self.side
+        if j and id_ and j.id == id_:
+            j.polled = time.time()      # SOG-0432 : la page suit encore ce travail (une lecture qui tient la place seule)
         v = j.view() if j else self.kept  # sans travail dans ce lancement : celui du précédent (« interrupted » s'il courait)
         if j and v and v.get('state') == 'running':
             v = {**v, **self.vitals(j)}      # SOG-0245 : le travail en cours dit s'il est vivant (seen, silent, alive, cancelling)
@@ -523,6 +540,7 @@ class Jobs:
             with self.lock:
                 r = self.reads.get(id_)
             if r is not None:      # SOG-0384 : une lecture parallèle
+                r.polled = time.time()      # SOG-0432 : la page la suit encore
                 return {**r.view(), **(self.vitals(r) if r.data['state'] == 'running' else {})}
             if s and s.id == id_ and not (v and v.get('id') == id_):
                 return {**s.view(), **(self.vitals(s) if s.data['state'] == 'running' else {})}
@@ -556,7 +574,7 @@ class Jobs:
         args = j.data.get('args') if isinstance(j.data.get('args'), dict) else {}
         keep = {k: (v[:12] if isinstance(v, list) else v) for k, v in args.items() if k in ('zones', 'icao', 'action') and isinstance(v, (list, str, bool))}
         d = j.data
-        return {'id': j.id, 'set': d['set'], 'verb': d['verb'], 'args': keep, 'started': d['started'], 'step': d['step'], 'done': d['done'], 'total': d['total'], 'unit': d['unit'], **self.vitals(j)}
+        return {'id': j.id, 'set': d['set'], 'verb': d['verb'], 'args': keep, 'started': d['started'], 'age': max(0, int(time.time() - d['started'])), 'step': d['step'], 'done': d['done'], 'total': d['total'], 'unit': d['unit'], **self.vitals(j)}
 
     def running(self):
         """Le travail qui tient la place (voir _summary), ou None."""
@@ -571,6 +589,8 @@ class Jobs:
             j = self.cur
             if self.side and self.side.id == id_:
                 j = self.side
+            if id_ in self.reads:      # SOG-0432 : une lecture parallèle qui ne répond plus se libère comme un travail (le lanceur le fait de lui-même au prochain départ)
+                j = self.reads[id_]
             if not j or j.id != id_:
                 return {'ok': False, 'status': 410, 'message': 'no such job'}
             if j.data['state'] != 'running':
@@ -578,20 +598,49 @@ class Jobs:
             v = self.vitals(j)
             if v['alive'] not in ('stuck', 'gone'):
                 return {'ok': False, 'status': 409, 'reason': 'alive', 'message': 'the job gave a sign of life: cancel it first', 'silent': v['silent']}
-            j.released = True
-            j._cancel.set()
-            procs = list(j.procs)
-            j.data['state'] = 'cancelled'
-            j.data['result'] = {'ok': False, 'reason': 'released', 'silent': v['silent']}
-            j.data['ended'] = int(time.time())
+            procs = self._mark_released(j, v['silent'])
             self._save()
+        self._kill(procs)
+        return {'ok': True, 'job': j.id, 'released': True}
+
+    def _mark_released(self, j, silent, why=None):
+        """Sous le verrou : le travail est libéré (état « cancelled », raison `released`) ; ce que son fil abandonné écrira plus tard est perdu. Rend les processus qu'il a déclarés, à arrêter HORS du verrou (_kill)."""
+        j.released = True
+        j._cancel.set()
+        procs = list(j.procs)
+        j.data['state'] = 'cancelled'
+        j.data['result'] = {'ok': False, 'reason': 'released', 'silent': silent, **({'why': why} if why else {})}
+        j.data['ended'] = int(time.time())
+        return procs
+
+    @staticmethod
+    def _kill(procs):
         for p in procs:        # hors verrou : un processus de plus que le travail a lancé et que le lanceur arrête
             try:
                 if p.poll() is None:
                     p.kill()
             except (OSError, ValueError, AttributeError):
                 pass
-        return {'ok': True, 'job': j.id, 'released': True}
+
+    def _sweep(self, now=None):
+        """SOG-0432, sous le verrou : une LECTURE (un verbe de PARALLEL, parallèle ou seule à tenir la place) ne garde pas sa place indéfiniment. Sans signe de vie (« stuck », « gone ») ou, un arrêt demandé, sans obéir depuis
+        read_grace_s : libérée, de la même manière que release_job. Que la page n'interroge plus depuis read_orphan_s (elle est partie) : arrêt demandé (cancel), journal compris. Un travail qui écrit n'est jamais touché ici
+        (release_job, à la demande de la page). Rend les processus à arrêter hors du verrou."""
+        now = now or time.time()
+        procs = []
+        for j in list(self.reads.values()) + ([self.cur] if self.cur and (self.cur.data.get('set'), self.cur.data.get('verb')) in PARALLEL else []):
+            if j.data['state'] != 'running' or j.released:
+                continue
+            v = self.vitals(j, now)
+            if v['alive'] in ('stuck', 'gone'):
+                procs += self._mark_released(j, v['silent'], 'silent')
+            elif j.cancel_at is not None and now - j.cancel_at >= self.read_grace_s:
+                procs += self._mark_released(j, v['silent'], 'cancel-ignored')
+            elif j.cancel_at is None and now - j.polled >= self.read_orphan_s:
+                j.log('cancelled: the page no longer asks')
+                j._cancel.set()
+                j.cancel_at = now
+        return procs
 
     def claim(self, id_):
         """Le jeton du travail en cours et ce que son verbe a offert, remis UNE fois : 409 si ce n'est pas le travail qui
