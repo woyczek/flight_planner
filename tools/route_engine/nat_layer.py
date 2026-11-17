@@ -185,8 +185,8 @@ def hint(nav, dep, arr):
     return f"Aucune route NAT vers {'l' + chr(39) + 'est' if east else 'l' + chr(39) + 'ouest'} dans le message du {info.get('issued') or '?'}."
 
 
-def main_network(nav):
-    """Les nœuds du réseau HAUT (airways dont le plafond atteint HIGH_FT) qui sont dans une composante CONNEXE d'au moins MIN_COMPONENT nœuds : un nœud d'airway isolé (un îlot de quelques points, sans lien avec le réseau d'un pays) n'est pas
+def main_network(nav, floor_ft=HIGH_FT):
+    """Les nœuds du réseau HAUT (airways dont le plafond atteint `floor_ft`, HIGH_FT par défaut ; SOG-0412 : `add` le demande au plus bas niveau de chaque track) qui sont dans une composante CONNEXE d'au moins MIN_COMPONENT nœuds : un nœud d'airway isolé (un îlot de quelques points, sans lien avec le réseau d'un pays) n'est pas
     un raccord : une track qui s'y raccorde ne mène nulle part (mesuré le 13/11 : trois nœuds irlandais voisins de l'entrée d'une track, sans aucune voie vers le Royaume-Uni). Composantes par union-find sur les arêtes hautes, sans tenir compte du sens."""
     parent = {}
 
@@ -196,7 +196,7 @@ def main_network(nav):
             x = parent[x]
         return x
     for e in nav.edges:
-        if isinstance(e.get('upper'), (int, float)) and e['upper'] >= HIGH_FT and not e.get('nat'):
+        if isinstance(e.get('upper'), (int, float)) and e['upper'] >= floor_ft and not e.get('nat'):
             ra, rb = find(e['a']), find(e['b'])
             if ra != rb:
                 parent[ra] = rb
@@ -228,7 +228,13 @@ def add(nav, nm):
             day = dt.date.fromisoformat(str(nav.date)[:10])
         except ValueError:
             day = None
-    high = main_network(nav)
+    networks = {}      # SOG-0412 : le réseau où une track se raccorde dépend de SON plus bas niveau (un raccord DCT n'est pris qu'à la bande de la track : depuis un nœud de voie plafonnée à FL255 le vol n'y est jamais)
+
+    def network_for(lower_ft):
+        floor_ft = max(HIGH_FT, lower_ft)
+        if floor_ft not in networks:
+            networks[floor_ft] = main_network(nav, floor_ft)
+        return networks[floor_ft]
     issued = [t['from'] for t in tracks if t['from'] and not t.get('kept')]
     nav.nat['issued'] = min(issued).strftime('%d/%m') if issued else None
     for t in tracks:
@@ -264,6 +270,7 @@ def add(nav, nm):
         for a, b in zip(keys, keys[1:]):
             nav.edges.append(dict(a=a, b=b, route='NAT' + t['id'], lower=lower, upper=upper, dir=sense, nm=nm(nav.nodes[a], nav.nodes[b]), zone='nat',
                                   source_cycle=(t['from'].strftime('%Y-%m-%d') if t['from'] else None), nat=meta))
+        high = network_for(lower)      # SOG-0412 : les nœuds de voies qui atteignent le plus bas niveau de la track (au moins le réseau haut d'avant)
         for end, node, into in (('entry', keys[0], True), ('exit', keys[-1], False)):
             if node in high:
                 continue

@@ -159,12 +159,12 @@ _NAT_SOUTH = {'ETIKI': ('G', ['ETIKI', '48/20', '48/30', '47/40', '46/50', 'JANJ
 _hybrid = {}
 
 
-def _nat_test(south=('ETIKI', 'REGHI')):      # `south`: names, or (name, levels) to give the southern track other levels
+def _nat_test(south=('ETIKI', 'REGHI'), north=True):      # `south`: names, or (name, levels) to give the southern track other levels
     """The dated test message: { tracks, messages } (see above); `south`: the entries of the southern westbound tracks that the case needs (the case of the RAD rule LF2096 wants REGHI only; the free route of Paris → Los Angeles wants none)."""
     extra = [(_NAT_SOUTH[x][0], _NAT_SOUTH[x][1], _NAT_SOUTH[x][2]) if isinstance(x, str) else (_NAT_SOUTH[x[0]][0], _NAT_SOUTH[x[0]][1], _NAT_SOUTH[x[0]][2] if x[1] == 'east' else x[1]) for x in south]
     only_east = {_NAT_SOUTH[x[0]][0] for x in south if not isinstance(x, str) and x[1] == 'east'}      # (name, 'east'): the track exists only in the eastbound night message, as the exit of an eastbound track at that point
-    west = [{'id': i, 'route': r, 'east': [], 'west': w, 'nar': [], 'by': 'EGGX', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'} for i, r, w in _NAT_WEST + extra if i not in only_east]
-    east = [{'id': i, 'route': list(reversed(r)), 'east': w, 'west': [], 'nar': [], 'by': 'CZQX', 'from': '2026-11-17T01:00:00Z', 'to': '2026-11-17T08:00:00Z'} for i, (_a, r, w) in zip('RSTUVWXY', _NAT_WEST + extra)]
+    west = [{'id': i, 'route': r, 'east': [], 'west': w, 'nar': [], 'by': 'EGGX', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'} for i, r, w in (_NAT_WEST if north else []) + extra if i not in only_east]
+    east = [{'id': i, 'route': list(reversed(r)), 'east': w, 'west': [], 'nar': [], 'by': 'CZQX', 'from': '2026-11-17T01:00:00Z', 'to': '2026-11-17T08:00:00Z'} for i, (_a, r, w) in zip('RSTUVWXY', (_NAT_WEST if north else []) + extra)]
     return {'tracks': west + east, 'messages': [{'by': 'EGGX', 'id': 'EGGX1117/26', 'part': 1, 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}, {'by': 'CZQX', 'id': 'CZQX1117/26', 'part': 1, 'from': '2026-11-17T01:00:00Z', 'to': '2026-11-17T08:00:00Z'}]}
 
 
@@ -205,7 +205,7 @@ def _hybrid_data(real, doc, subs=(('sia', 'base'), ('proc',), ('route',))):
     return data, clean
 
 
-def _real_nat(south=('ETIKI', 'REGHI')):
+def _real_nat(south=('ETIKI', 'REGHI'), north=True):
     """A data folder (Path) = the REAL navigation data of the workstation (junctions, read only) + the dated test NAT message `south` (default `_nat_test()`) ; None when the real base is not here (the case says it is skipped). Cleaned at the end of the process (`_hybrid_data`)."""
     import atexit
     import json
@@ -213,7 +213,7 @@ def _real_nat(south=('ETIKI', 'REGHI')):
     real = Path('E:/DEFA/data')
     if not (real / 'sia' / 'base' / 'us').is_dir() or not (real / 'route' / 'rad.json.gz').is_file():
         return None
-    doc = _nat_test(south)
+    doc = _nat_test(south, north)
     key = json.dumps(doc, sort_keys=True)
     if key in _hybrid:
         return _hybrid[key]
@@ -11788,7 +11788,7 @@ def k297(c):
     c.ok('atteignable' in nav2.sections_info['free']['reason'], str(nav2.sections_info['free']), 'the reason is said: « aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau »')
     src = (ROOT / 'tools' / 'route_engine' / 'free_route.py').read_text(encoding='utf-8')
     c.ok('dead.add(o)' in src and 'remaining = list(rank)' in src and 'pairs[:TRIES]' not in src and 'NEED' in src, 'free_route.py', 'ONE search to all the candidate entries (stopping at two reached; L5 4 d1, K304: it was one search per pack of five), the pairs only among the entries reached, an exit that failed is not taken again, no more « the first three pairs » by great-circle bound')
-    data = _real_nat((('ETIKI', ['350', '360']),))      # SOG-0394: a dated test NAT message, never the message of the day; the southern track G does not offer FL370, so no track is taken and the free route is made
+    data = _real_nat((('ETIKI', ['350', '360']),), north=False)      # SOG-0412: no northern track (A-F reach FL370 from Paris now: the case is about the FREE route, so the message has none); SOG-0394: a dated test NAT message, never the message of the day; the southern track G does not offer FL370, so no track is taken and the free route is made
     if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
@@ -12344,7 +12344,7 @@ def k303(c):
          'the repli: a point that the RAD makes avoid is neither an entry nor an exit of the free route, the next is taken (XA avoided: XB), and when every exit (or entry) is avoided the answer says so', what='avoid')
     src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
     c.ok("n\\'exclurait rien de neuf" in src and 'fresh = [x for x in extra' in src and "x.get('fallback')" in src and 'détour de' in src, 'plan.py', 'a RAD retry that imposes nothing new is never played; the repli (Y set aside) only after the pass by X was tried; the answer says the detour')
-    data = _real_nat((('REGHI', 'east'),))      # SOG-0394: a dated test NAT message, never the message of the day
+    data = _real_nat((('REGHI', 'east'),), north=False)      # SOG-0412: no northern track (they are reached now, the case is about the free route); SOG-0394: a dated test NAT message, never the message of the day
     if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
@@ -12484,7 +12484,7 @@ def k305(c):
          'whatever the segments by which a route reaches DELOG (N75 XORNA–DELOG, N864 LOTEE–DELOG), the finding is the SAME exclusion: the point DELOG (red before: the segments of each route, and a second retry); a route that does not touch DELOG: nothing', what='point exclusion')
     src = (ROOT / 'tools' / 'route_engine' / 'rad_flight.py').read_text(encoding='utf-8')
     c.ok('point_rule=' in src and "v[7] not in [dep,arr]" in src and "elif point_rule:" in src, 'rad_flight.py', 'a point rule excludes the point (not an aerodrome, not a procedure leg, which keep their own exclusions)')
-    data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
+    data = _real_nat(north=False)      # SOG-0412: no northern track (they are reached now, the case is about the RAD retry of the southern entries); SOG-0394: a dated test NAT message, never the message of the day
     if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
         return
@@ -13443,3 +13443,54 @@ def k321(c):
          'two changes at the same point: the last; a change at the departure or at a point that starts no leg: no group; a level out of F010–F660: none', what='level_marks')
     c.eq((E.split_level('KELIP/F165'), E.split_level('LFPO/07'), E.split_level('UN460'), E.split_level('SRN/F195')), (('KELIP', 165), ('LFPO/07', None), ('UN460', None), ('SRN', 195)),
          'a level group is `POINT/Fnnn` (three digits); a runway suffix and a plain word are not', what='split_level')
+
+
+@case('K323', 'Route engine, SOG-0412: the links of a NAT route (the DCT that join its entry and its exit to the network) start from the nodes of airways that REACH THE LOWEST LEVEL OF THE ROUTE, not from the three nearest nodes of the « high network » (ceiling FL245): an entry whose three nearest nodes are on airways too low for the route is reached; the route is taken, the reason « son entrée n\'est pas atteignable » stays for a real impossibility',
+      'K', static=True,
+      rule='SOG-0412 (the ergonomics session, 17 Nov, from the measure of SOG-0411 (C): EGGW → KJFK at FL340, five routes of six refused « son entrée n\'est pas atteignable depuis le départ à ce niveau »). `nat_layer.add` joined each end of a route to the three nearest nodes (at most 900 NM) of the network whose airways have a ceiling of at least `HIGH_FT` = FL245; for five of the six entries these were nodes of airways with a ceiling of FL255, reached at 19 500-25 500 ft and never at the band of the link (the levels of the route: 34 000-40 000 ft): no state took the link, the search was exhausted (32 364 states, not cut), the five routes were refused whatever the hour. Now `main_network(nav, floor_ft)` is asked for each route with its lowest level (never under FL245): the nodes of airways that reach it, in a connected component. Bench: an eastbound route A from ENTRA, three nodes LOW1-LOW3 of a low airway L1 (ceiling FL255) at 60-200 NM of the entry, a node HI1 of the high airway J1 farther (400 NM): before, the three links were from LOW1-LOW3 and the flight (FL370) reached none of them; now the links are from HI1 and MIDUS and the route is taken.')
+def k323(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'HI1': (46.0, -58.0), 'LOW1': (49.5, -51.0), 'LOW2': (49.0, -52.0), 'LOW3': (48.5, -53.0), 'ENTRA': (50.0, -50.0),
+           'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids, upper=66000: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': upper} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'HI1']) + air('L1', ['MIDUS', 'LOW1', 'LOW2', 'LOW3'], 25500) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    today = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T19:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [today]}, f)
+        results_cache.ENABLED = False
+        try:
+            args = {'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T04:30', 'alternatives': False, 'proposals': True, 'fl': 370}
+            res = PL.compute(view.to_request(args), data, radz, fra)
+        finally:
+            results_cache.ENABLED = True
+    sec = res.get('sections') or {}
+    legs = (res.get('primary') or {}).get('legs') or []
+    links = [(l['start']['id'], l['end']['id']) for l in legs if l.get('nat_link')]
+    c.eq((sec.get('chosen'), [(r['track'], r['code']) for r in sec.get('rejected', [])], 'NATA' in str((res.get('primary') or {}).get('route')), links and links[0][1]), ('A', [], True, 'ENTRA'),
+         "the route A is taken: its entry ENTRA is reached by a link from a node of a high airway (the three nearest nodes, LOW1-LOW3, are on the airway L1 that stops at FL255 and are no longer the links); no « son entrée n'est pas atteignable » (red before: the flight got a free route)", what='reached')
+    c.ok(bool(links) and links[0][0] in ('HI1', 'MIDUS'), 'the link into the entry starts from HI1 or MIDUS (the nodes of J1, ceiling FL660), never from LOW1-LOW3 (L1, FL255)', repr(links[:2]))
