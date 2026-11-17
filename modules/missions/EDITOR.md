@@ -367,8 +367,23 @@ The accepted form of `maquette/tiroirs.html`, in the frame of the workshop. `edi
 - **Security** (review asked before the push): every text of the file goes through `esc()`; a list never offers a value the mission
   does not carry, except the file's own value, shown with « ? » when it names nothing; `edInput` no longer takes the field `id` for
   an object, even from a forged page.
-- **Still to come in P3**: « Ce que le pilote voit » (`describe` and `stateOf` of the session « Affectation », when they are on the
-  integration branch); the stops of an arrival as chips; « Vue du pilote » on the map (with P2).
+- **Done since (§ 7 octies)**: « Ce que le pilote voit », the stops of an arrival as chips. **Still to come**: « Vue du pilote » on
+  the map (with P2).
+
+### 7 octies. P3, end: « Ce que le pilote voit », the stops of an arrival (17 Nov 2026; SOG-0445; noreg N79)
+
+- **« Ce que le pilote voit »** is the fourth group of the sheet of a drawer (folded on a narrow module, with its line): **Avant —
+  tiroir fermé** — « Tiroir 2 · Entrée nord », the sentence of its key and the note the pilot reads without a live position;
+  **Après — tiroir ouvert** — its message, the beginning of its briefing (600 signs), « Suite de route proposée : … » by the names
+  of the places. The sentences are the pilot's screen's own: `edPilotView` calls `describe` of `modules/missions/drawers_view.js`
+  (the session « Affectation ») with `{ key, dueAt: null }` — ONE function, so that the workshop can never say something else than
+  the pilot will read (a zone not shown: « s'ouvre en vol »; what the device does not judge yet: said as the pilot's screen says it).
+- **It reads the document, never the rows**: the drawer comes from `readMission(edDoc(e))` — bounded, its invisible format
+  characters removed — and not from `s.ed.drawers`, whose typed texts are raw until they are written (Security review of 18 Nov).
+  It follows the typing in place (`edRefresh`: `textContent` only).
+- **The stops of an arrival are chips** (`required_points`): added from a list of the places of the mission, removed one by one,
+  twenty at most; written by identifier, followed by the references of SOG-0439 (`drawerStop`).
+- With this, lot P3 (SOG-0445) is delivered but for « Vue du pilote » on the map, which comes with the map of P2.
 
 ### 8. What is NOT ported
 

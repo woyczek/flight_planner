@@ -20,6 +20,9 @@
 import * as ADD from './add.js';
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
+import {
+  describe as pilotSays
+} from './drawers_view.js';
 import * as MS from '../../frame/lib/mission.js';
 import * as MT from '../../frame/lib/mission_themes.js';
 import * as RG from './registry.js';
@@ -82,6 +85,11 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:none}
 [data-module="missions"] .ms-dsum{grid-template-columns:auto minmax(0,1fr)}
 [data-module="missions"] .ms-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+[data-module="missions"] .ms-pilot{border:1px solid var(--sog-line,#ddd);padding:8px 10px;margin:0 0 8px;background:var(--sog-bg,#fff)}
+[data-module="missions"] .ms-pilot p{margin:.3em 0}
+[data-module="missions"] .ms-pilot p:empty{display:none}
+[data-module="missions"] .ms-pilot .ms-pre{white-space:pre-wrap;overflow-wrap:anywhere}
+[data-module="missions"] .ms-pilot .ms-attag{font-size:.75em;letter-spacing:.05em;text-transform:uppercase}
 [data-module="missions"] .ms-chip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--sog-line,#ddd);padding:0 0 0 10px;min-height:44px}
 [data-module="missions"] .ms-chip>button{min-width:44px;min-height:44px;border:0;background:none;font:inherit;color:inherit}
 [data-module="missions"] .ms-atgrp{border-top:1px solid var(--sog-line,#ddd)}
@@ -585,12 +593,46 @@ function edDrawerLines(s, r, now) {
     }) : s.tt(EDTX.dwTodo_noMessage), r.brief.trim() ? s.tt(EDTX.dwLineBrief, {
       n: r.brief.trim().length
     }) : s.tt(EDTX.dwTodo_noBrief)].join(' · '),
-    route: route.length ? route.join(', ') : s.tt(EDTX.dwLineNoRoute)
+    route: route.length ? route.join(', ') : s.tt(EDTX.dwLineNoRoute),
+    pilot: s.tt(EDTX.dwPilotLine)
+  };
+}
+
+/** Ce que le pilote voit d'un tiroir (SOG-0445) : fermé — son nom, la phrase de sa clé et la note que l'écran du pilote dit lui-même
+ *  (describe de drawers_view.js, la session « Affectation » : les mêmes mots), sans position en direct ; ouvert — son message, le début
+ *  de son briefing, sa suite de route. Lu du DOCUMENT de la séance par le lecteur (bornes, caractères invisibles retirés), jamais des
+ *  lignes en mémoire (Sécurisation, 18 nov.). → { name, key, note, msg, brief, route } (des textes). */
+function edPilotView(s, doc, id) {
+  const d = (MS.readMission(doc)?.drawers || []).find(x => x.id === id);
+  if (!d) return {
+    name: '',
+    key: '',
+    note: '',
+    msg: '',
+    brief: '',
+    route: ''
+  };
+  const says = pilotSays(s.tt, {
+    key: d.key,
+    dueAt: null
+  }, d, {
+    live: false,
+    notJudged: MS.notJudgedYet
+  });
+  return {
+    name: `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`,
+    key: says.key,
+    note: says.note,
+    msg: d.message || s.tt(EDTX.dwPilotNoMsg),
+    brief: d.brief.length > 600 ? `${d.brief.slice(0, 600)}…` : d.brief,
+    route: d.route.length ? s.tt(EDTX.dwPilotRoute, {
+      r: d.route.map(p => p.name || p.id).join(' → ')
+    }) : ''
   };
 }
 
 /** La fiche d'un tiroir (SOG-0445 ; la maquette : modules/missions/maquette/tiroirs_*.png) : trois groupes — la clé, les textes, la
- *  suite de route — puis « Retirer ce tiroir ». Sur un module étroit, « La clé » est dépliée, « Les textes » et « La suite de route »
+ *  suite de route —, « Ce que le pilote voit » (le tiroir fermé, puis ouvert : edPilotView), puis « Retirer ce tiroir ». Sur un module étroit, « La clé » est dépliée, « Les textes » et « La suite de route »
  *  sont repliés et disent leur contenu en une ligne (l'ergonome, 17 nov.) ; sur un module large, tout est déplié. Une zone et un
  *  objet se CHOISISSENT parmi ceux de la mission (ses Lieux) : un tiroir les cite, il ne les porte pas ; sans zone ni objet à
  *  choisir, la fiche le dit et mène aux Lieux. Tout texte du fichier passe par esc(). */
@@ -625,11 +667,13 @@ function edDrawerHtml(s, doc) {
     r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${fallback}` :
     r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
         <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
-        ${r.stops.length ? `<p class="f-muted" data-dwstops>${esc(s.tt(EDTX.dwStopsKept, { who: r.stops.map(now).filter(Boolean).join(', ') }))}</p>` : ''}${fallback}` :
+        <div class="f-field"><span>${esc(s.tt(EDTX.dwStops))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
+        ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}${fallback}` :
     r.key === 'kept' ? `<p class="f-muted" data-dwkept>${esc(s.tt(EDTX.dwKept, { why: s.tt(EDTX[`dwWhy_${r.keptWhy}`] || EDTX.dwWhy_condition) }))}</p>${fallback}` :
     `<p class="f-muted">${esc(s.tt(EDTX.dwHandHint))}</p>`,
     route = r.route.map(now).filter(Boolean),
     lines = edDrawerLines(s, r, now),
+    pv = edPilotView(s, doc, r.id),
     open = e.dopen || {},
     // un groupe repliable : son titre est un bouton qui dit son contenu en une ligne (replié sur un module étroit seulement)
     group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
@@ -643,6 +687,8 @@ function edDrawerHtml(s, doc) {
     ${group('route', EDTX.dwGrpRoute, `<p class="f-muted">${esc(s.tt(route.length ? EDTX.dwRouteHint : EDTX.dwRouteNone))}</p>
       <div class="ms-chips" data-dwroute>${r.route.map((w, n) => now(w) ? `<span class="ms-chip" data-chip="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrchipdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwChipDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div>
       ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}`)}
+    ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p data-pvkey>${esc(pv.key)}</p><p class="f-muted" data-pvnote>${esc(pv.note)}</p></div>
+      <div class="ms-pilot" data-pvafter><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotAfter))}</span><p class="ms-pre" data-pvmsg>${esc(pv.msg)}</p><p class="ms-pre f-muted" data-pvbrief>${esc(pv.brief)}</p><p class="f-muted" data-pvroute>${esc(pv.route)}</p></div>`)}
     <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.plRemoveAnyway : EDTX.dwRemove))}</button></div></section>`;
 }
 
@@ -692,6 +738,10 @@ function edDrawerInput(s, ev) {
   }
   if (f === 'routeadd' && list) {
     if (t.value) r.route = [...r.route, String(t.value).slice(0, 40)].slice(0, 60);
+    return draw(s);
+  }
+  if (f === 'stopadd' && list) {
+    if (t.value) r.stops = [...r.stops, String(t.value).slice(0, 40)].slice(0, 20);
     return draw(s);
   }
   if (['shown', 'arrGround'].includes(f) && t.type === 'checkbox') r[f] = t.checked === true;
@@ -931,6 +981,8 @@ function edRefresh(s) {
     const lines = edDrawerLines(s, drow, id => ED.refNow(id, e.base, e.places));
     put(q('[data-dline="texts"]'), lines.texts);
     put(q('[data-dline="route"]'), lines.route);
+    const pv = edPilotView(s, doc, drow.id);
+    for (const k of ['name', 'key', 'note', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
   }
   const dtodo = new Set(DR.drawersTodo(doc).map(t => t.name));
   for (const d of MS.readMission(doc)?.drawers || []) {
@@ -1107,7 +1159,7 @@ function edClickDo(s, b) {
       return draw(s);
     }
     case 'eddrgrp': { // « Les textes », « La suite de route » : un groupe de la fiche d'un tiroir se déplie et se replie
-      const k = b.dataset.grp === 'route' ? 'route' : 'texts';
+      const k = ['route', 'pilot'].includes(b.dataset.grp) ? b.dataset.grp : 'texts';
       s.ed.dopen = {
         ...(s.ed.dopen || {}),
         [k]: !s.ed.dopen?.[k]
@@ -1124,6 +1176,12 @@ function edClickDo(s, b) {
         inline: 'nearest',
         block: 'nearest'
       });
+    }
+    case 'eddrstopdel': { // un arrêt retiré de ceux qu'une arrivée demande
+      const r = edDrawerRow(s.ed),
+        n = +b.dataset.n;
+      if (r && Number.isInteger(n) && n >= 0) r.stops = r.stops.filter((_, i) => i !== n);
+      return draw(s);
     }
     case 'eddrchipdel': { // un lieu retiré de la suite de route
       const r = edDrawerRow(s.ed),

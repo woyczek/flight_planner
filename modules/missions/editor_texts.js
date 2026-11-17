@@ -170,9 +170,20 @@ export const EDTX = {
   dwArrRadius: ['Rayon (NM)', 'Radius (NM)', 'Radius (NM)', 'Radio (NM)'],
   dwArrSpeed: ['Vitesse maximale (kt)', 'Maximum speed (kt)', 'Höchstgeschwindigkeit (kt)', 'Velocidad máxima (kt)'],
   dwArrGround: ['Posé au sol', 'Landed, on the ground', 'Gelandet, am Boden', 'Posado en tierra'],
-  dwStopsKept: ['Arrêts demandés avant l\'arrivée, gardés tels quels : {who}.',
-    'Stops required before the arrival, kept as they are: {who}.',
-    'Vor der Ankunft verlangte Halte, unverändert: {who}.', 'Paradas pedidas antes de la llegada, conservadas tal cual: {who}.'
+  dwStops: ['Arrêts à faire avant l\'arrivée', 'Stops to make before the arrival', 'Halte vor der Ankunft',
+    'Paradas antes de la llegada'
+  ],
+  dwStopAdd: ['Ajouter un arrêt…', 'Add a stop…', 'Halt hinzufügen…', 'Añadir una parada…'],
+  dwStopDel: ['Retirer l\'arrêt {id}', 'Remove the stop {id}', 'Halt {id} entfernen', 'Quitar la parada {id}'],
+  dwGrpPilot: ['Ce que le pilote voit', 'What the pilot sees', 'Was der Pilot sieht', 'Lo que ve el piloto'],
+  dwPilotLine: ['tiroir fermé, puis ouvert', 'drawer closed, then open', 'Schublade geschlossen, dann offen',
+    'cajón cerrado, luego abierto'
+  ],
+  dwPilotBefore: ['Avant — tiroir fermé', 'Before — drawer closed', 'Vorher — Schublade geschlossen', 'Antes — cajón cerrado'],
+  dwPilotAfter: ['Après — tiroir ouvert', 'After — drawer open', 'Nachher — Schublade offen', 'Después — cajón abierto'],
+  dwPilotNoMsg: ['(aucun message)', '(no message)', '(keine Nachricht)', '(ningún mensaje)'],
+  dwPilotRoute: ['Suite de route proposée : {r}', 'Onward route proposed: {r}', 'Vorgeschlagene Folgeroute: {r}',
+    'Ruta siguiente propuesta: {r}'
   ],
   dwFallback: ['Heure de repli (min après le décollage)', 'Fallback time (min after take-off)', 'Ersatzzeit (min nach dem Start)',
     'Hora de reserva (min tras el despegue)'

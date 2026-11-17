@@ -3778,8 +3778,10 @@ def n78(c):
     c.eq([c.js(_DW_VAL, f) for f in ('key', 'zone', 'shown', 'fallback', 'title')], ['zone', 'ZONE-1', True, '60', 'Entrée du secteur'], 'read from the file', what='values')
     c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-f=zone] option')].map(o => o.value)"), ['', 'ZONE-1'], 'the zones of the mission, to choose from', what='zones')
     folds = c.js(f"[...document.querySelectorAll('{_DW} [data-dgrp]')].map(g => [g.dataset.dgrp, g.querySelector('.ms-dbody') ? getComputedStyle(g.querySelector('.ms-dbody')).display !== 'none' : true, (g.querySelector('[data-dline]')?.textContent || '').trim()])")
-    c.eq(folds, [['key', True, ''], ['texts', False, norm(' · '.join(['Entrée du secteur', T('dwTodo_noMessage'), T('dwTodo_noBrief')]))], ['route', False, T('dwLineNoRoute')]],
-         'on a phone: « La clé » unfolded; « Les textes » and « La suite de route » folded, each saying its content in one line', what='the groups of the sheet')
+    c.eq(folds, [['key', True, ''], ['texts', False, norm(' · '.join(['Entrée du secteur', T('dwTodo_noMessage'), T('dwTodo_noBrief')]))], ['route', False, T('dwLineNoRoute')],
+                ['pilot', False, T('dwPilotLine')]],
+         'on a phone: « La clé » unfolded; « Les textes », « La suite de route » and « Ce que le pilote voit » folded, each saying its content in one line',
+         what='the groups of the sheet')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(400)
     c.eq(c.js(_TEXT_OF, path), _OBJ_MISSION, 'a drawer touched, nothing changed: the file is the same', what='the file')
@@ -3792,7 +3794,7 @@ def n78(c):
     c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.\nDescendez voir.')
     c.page.fill(f'{_DW} [data-f=brief]', 'Nouvelle tâche : reconnaissance du secteur.')
     kept = c.js(f"[...document.querySelectorAll('{E} [data-atflow] button, {_DW} [data-do=eddrgrp]')].map(b => !!b.__kept)")
-    c.ok(len(kept) == 8 and all(kept), kept, 'the cards and the two group titles are the same elements after the keystrokes (SOG-0449)')
+    c.ok(len(kept) == 9 and all(kept), kept, 'the cards and the three group titles are the same elements after the keystrokes (SOG-0449)')
     c.eq(norm(c.text(f'{_DW} [data-dline="texts"]')), norm(' · '.join(['Entrée nord', T('dwLineMsg', n=35).replace('(s)', 's'), T('dwLineBrief', n=43).replace('(s)', 's')])),
          'the line of « Les textes » follows the typing', what='the line of the texts')
     cards = c.js(_DW_CARDS)
@@ -3821,7 +3823,7 @@ def n78(c):
     # the arrival drawer: its fields; a key kept as it is would say so (N75) — here the hour
     c.page.click(f'{E} [data-atflow] [data-sel="D"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", timeout=3000, what='drawer 3 by ONE click after typing')
-    c.eq(c.js(_DW_FIELDS), ['key', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'fallback', 'title', 'message', 'brief', 'routeadd'], 'the fields of an arrival', what='fields')
+    c.eq(c.js(_DW_FIELDS), ['key', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stopadd', 'fallback', 'title', 'message', 'brief', 'routeadd'], 'the fields of an arrival', what='fields')
     c.eq([c.js(_DW_VAL, f) for f in ('arrPoint', 'arrRadius', 'arrSpeed', 'arrGround')], ['DESTINATION', '1', '30', True], 'read from the file', what='the arrival')
     # « ＋ Tiroir »: the fifth, by the pilot's gesture; then an hour after take-off
     c.tap(f'{E} [data-atflow] [data-dradd]')
@@ -3863,7 +3865,7 @@ def n78(c):
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='drawer 1 on a wide screen')
     wide = c.js(f"[...document.querySelectorAll('{_DW} .ms-dbody')].map(x => getComputedStyle(x).display !== 'none').concat([...document.querySelectorAll('{_DW} [data-dline]')].map(x => getComputedStyle(x).display === 'none'))")
-    c.eq(wide, [True, True, True, True], 'on a wide screen the three groups are unfolded and say no line', what='the groups on a wide screen')
+    c.eq(wide, [True, True, True, True, True, True], 'on a wide screen the groups are unfolded and say no line', what='the groups on a wide screen')
     c.shot('N78_1280_drawer_object.png')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -3881,4 +3883,81 @@ def n78(c):
     c.eq(got['read'], [[1, 'C', 'object', ''], [2, 'D', 'arrival', ''], [3, 'E', 'object', ''], [4, 'F', 'time', '']], 'the reader reads them', what='read back')
     c.eq([got['zones'], got['objects']], [['ZONE-1'], ['OBJ-1', 'OBJ-2']], 'the zone and the objects stay at the top of the mission (a drawer cites them, it never carries them)',
          what='zones and objects')
+    c.js(_REG_CLEAR)
+
+
+
+DV_FILE = 'modules/missions/drawers_view.js'
+_PV = f"Object.fromEntries(['name', 'key', 'note', 'msg', 'brief', 'route'].map(k => [k, (document.querySelector('{_DW} [data-pv' + k + ']')?.textContent || '').trim()]))"
+
+
+@case('N79', 'Missions › the workshop, « Ce que le pilote voit » and the stops of an arrival: the sheet of a drawer shows the drawer as the '
+      'pilot will see it — closed: its name, the sentence of its key and the note, in the very words of the pilot\'s screen (the same '
+      'function); open: its message, its briefing, its onward route — read from the document of the sitting by the reader, and it '
+      'follows the typing in place; a zone that is not shown says « s\'ouvre en vol »; the stops an arrival requires are chips, added '
+      'from the places of the mission and removed one by one', 'N', tags=('missions', 'security'), designs=('standard',), screens=False,
+      langs4=False,
+      rule='SOG-0445, end of lot P3 (modules/missions/EDITOR.md § 7 octies; the mock-up tiroirs.html « Ce que le pilote voit »; '
+      '`describe` of modules/missions/drawers_view.js, the session « Affectation »: one function, so that the workshop never says '
+      'something else than the pilot\'s screen; Security review of 18 Nov: the preview reads the document through the reader, never '
+      'the rows in memory)')
+def n79(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda k, f=EDTX_FILE, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, f)))  # noqa: E731
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _OBJ_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    c.tap(f'{E} [data-atflow] [data-sel="C"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
+    pv = c.js(_PV)
+    c.eq([norm(pv['name']), norm(pv['key'])], [f"{T('atDrawer', n=2)} · Entrée du secteur", T('keyZone', DV_FILE)],
+         'closed: its name and the sentence of its key — the words of the pilot\'s screen (a zone shown on the Map)', what='the closed drawer')
+    c.ok(T('willOpen', DV_FILE).split('{t}')[0].strip() in norm(pv['note']), pv['note'], 'and the note the pilot reads without a live position: the fallback time')
+    c.eq([norm(pv['msg']), pv['brief'], pv['route']], [T('dwPilotNoMsg'), '', ''], 'open: no message yet, no briefing, no onward route', what='the open drawer')
+    # it follows the typing and the boxes, in place
+    c.js(f"document.querySelectorAll('{_DW} [data-pvbefore], {_DW} [data-pvafter]').forEach(x => x.__kept = true)")
+    c.tap(f'{_DW} [data-f=shown]')
+    c.page.fill(f'{_DW} [data-f=title]', 'Entrée nord')
+    c.page.fill(f'{_DW} [data-f=message]', 'Écho radar au nord.')
+    c.page.select_option(f'{_DW} [data-f=routeadd]', 'PT2')
+    c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 1", what='one place in the onward route')
+    pv = c.js(_PV)
+    c.eq([norm(pv['name']), norm(pv['key']), pv['msg'], norm(pv['route'])],
+         [f"{T('atDrawer', n=2)} · Entrée nord", T('keyHidden', DV_FILE), 'Écho radar au nord.', T('dwPilotRoute', r='Point deux')],
+         'the title, the message and the route follow; a zone that is not shown: « s\'ouvre en vol »', what='after typing')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_DW} [data-dgrp=pilot]').scrollIntoView({{block: 'center'}})")
+    c.shot('N79_1280_pilot.png')
+    # the stops of an arrival: chips
+    c.tap(f'{E} [data-atflow] [data-sel="D"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", what='the sheet of drawer 3')
+    c.eq(norm(c.js(_PV)['key']), T('keyArrival', DV_FILE, p='DESTINATION'), 'an arrival: the sentence of the pilot\'s screen', what='the key of an arrival')
+    c.page.select_option(f'{_DW} [data-f=stopadd]', 'PT2')
+    c.until(f"document.querySelectorAll('{_DW} [data-stop]').length === 1", what='one stop')
+    c.page.select_option(f'{_DW} [data-f=stopadd]', 'PT1')
+    c.until(f"document.querySelectorAll('{_DW} [data-stop]').length === 2", what='two stops')
+    c.tap(f'{_DW} [data-stop="PT1"] [data-do="eddrstopdel"]')
+    c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-stop]')].map(x => x.dataset.stop)"), ['PT2'], 'a stop removed; the other stays', what='the stops')
+    # on a phone: the group is folded and says what it holds
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-atflow] [data-sel="C"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='drawer 2 on a phone')
+    c.eq([c.js(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=pilot] .ms-dbody')).display"), norm(c.text(f'{_DW} [data-dline="pilot"]'))], ['none', T('dwPilotLine')],
+         'folded on a phone, with its line', what='the group on a phone')
+    c.tap(f'{_DW} [data-do="eddrgrp"][data-grp="pilot"]')
+    c.until(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=pilot] .ms-dbody')).display !== 'none'", what='« Ce que le pilote voit » unfolded')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_DW} [data-dgrp=pilot]').scrollIntoView({{block: 'start'}})")
+    c.shot('N79_390_pilot.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
+      const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return { c: d.phases[1], stops: d.phases[2].trigger_condition.required_points } }""" % _TEXT_OF, path)
+    c.eq(got, {'c': {'id': 'C', 'title': 'Entrée nord', 'trigger_zone': 'ZONE-1', 'zone_shown': False, 'fallback_delay_min': 60, 'message': 'Écho radar au nord.',
+                     'route_order': ['PT2']}, 'stops': ['PT2']},
+         'the file: what was typed, « zone montrée » written false, the stop of the arrival by identifier', what='the saved file')
     c.js(_REG_CLEAR)
