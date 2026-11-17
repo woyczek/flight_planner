@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "dbd5c2a",
+  "organisation": "c406e51",
   "fiches": 435,
   "untranslated": 0,
   "priorities": 374,
@@ -2840,11 +2840,12 @@
     {
      "id": "SOG-0424",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Europe : un calcul de route à froid dépasse 5 s sur un poste chargé (4,2 à 7,3 s)",
      "en": "Europe: a cold route calculation exceeds 5 s on a busy workstation (4.2 to 7.3 s)",
      "de": "Europa: eine kalte Routenberechnung überschreitet 5 s auf einem ausgelasteten Rechner (4,2 bis 7,3 s)",
-     "es": "Europa: un cálculo de ruta en frío supera los 5 s en un puesto cargado (4,2 a 7,3 s)"
+     "es": "Europa: un cálculo de ruta en frío supera los 5 s en un puesto cargado (4,2 a 7,3 s)",
+     "test": true
     },
     {
      "id": "SOG-0425",

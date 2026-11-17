@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 286,
+  "tests": 287,
   "verdicts": 212
  },
  "apps": [
@@ -4273,6 +4273,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T15:34:34Z"
+  },
+  {
+   "id": "SOG-0424",
+   "app": "pilote",
+   "title": {
+    "fr": "Europe : un calcul de route à froid dépasse 5 s sur un poste chargé (4,2 à 7,3 s)",
+    "en": "Europe: a cold route calculation exceeds 5 s on a busy workstation (4.2 to 7.3 s)",
+    "de": "Europa: eine kalte Routenberechnung überschreitet 5 s auf einem ausgelasteten Rechner (4,2 bis 7,3 s)",
+    "es": "Europa: un cálculo de ruta en frío supera los 5 s en un puesto cargado (4,2 a 7,3 s)"
+   },
+   "test": "Sur le poste (le moteur est relu à chaque calcul : pas besoin de relancer le lanceur). Carburant, étape Route : EDDF → LFMN, FL350, « Calculer A → B ». Attendu : (1) la même route et les mêmes remarques qu'avant ; (2) une réponse plus rapide — environ une seconde de moins au premier calcul (de l'ordre de 3 à 4 s au lieu de 4 à 5 s, selon la charge du poste) ; (3) un second calcul du même vol reste rapide (environ 2 s).",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T16:29:58Z"
   },
   {
    "id": "SOG-0431",
