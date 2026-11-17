@@ -3989,47 +3989,15 @@
  ],
  "decisions": [
   {
-   "id": "Q-0077",
-   "fiche": "SOG-0396",
+   "id": "Q-0080",
+   "fiche": "SOG-0401",
    "app": "pilote",
-   "question": "Route libre dépendante du message NAT : rejouer la matrice des 144 traversées pour la mesurer (trois passes, environ 11 min chacune) ?",
-   "context": "AeroDB a trouvé qu'avec le seul message NAT de ce matin, la moitié des traversées n'a plus de route (SOG-0396). Pour proposer un correctif, il lui faut rejouer la matrice avec trois jeux de messages (le jour seul, le 16/11, aucun). La matrice charge ton poste et fausse les essais joués en même temps ; elle ne part que sur ton mot. Une passe est déjà partie sans mon mot ce matin : je l'ai arrêtée après celle en cours.",
+   "question": "Moteur de route : après la phrase honnête, on corrige d'abord l'Atlantique Nord ou l'Europe ?",
+   "context": "Deux défauts du jour, un seul AeroDB. (1) Atlantique Nord, SOG-0396 : avec le seul message NAT du matin, la moitié des traversées n'a AUCUNE route. (2) Europe, SOG-0401 : nos routes sortent, mais le contrôle RAD ne décide que 94 conditions sur 531 pour EDDF → LFMN, et Eurocontrol refuse la route (22 erreurs). Dans les deux cas, je fais d'abord dire la vérité à l'écran (nombre de conditions vérifiées et non vérifiées) et corriger un défaut net (les règles qui visent un espace). Ce que je conteste : mener les deux de front — AeroDB a déjà cinq commits en attente. Ma recommandation : l'océan d'abord (pas de route du tout est pire qu'une route à corriger), puis l'Europe par familles de règles, en commençant par celles qu'Eurocontrol t'a citées.",
    "options": [
-    "Oui, maintenant, une passe à la fois, pendant que la session Essais ne joue rien",
-    "Oui, mais ce soir, avec la passe complète de non-régression",
-    "Non : qu'AeroDB propose le correctif sans ces passes, on mesurera après",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0078",
-   "fiche": "SOG-0392",
-   "app": "pilote",
-   "question": "Passe complète de non-régression : quand la jouer ?",
-   "context": "Elle n'a pas été jouée depuis le 12/11. Ce matin, la session Essais a trouvé deux cas rouges HÉRITÉS sur la tête du dépôt (D131 depuis le 15/11, K60 depuis SOG-0368) : deux défauts de cas, pas de l'appli, mais restés invisibles plusieurs jours. Ce que je conteste : attendre la fin des routes — chaque jour sans elle laisse passer des rouges. Elle dure longtemps et charge ton poste ; elle ne part que sur ton mot, et c'est moi qui la joue.",
-   "options": [
-    "Ce soir, quand tu ne travailles plus sur le poste",
-    "Maintenant",
-    "Pas avant la fin du lot des routes",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0079",
-   "fiche": "SOG-0397",
-   "app": "maintenance",
-   "question": "Routes du Canada : le moteur de route peut-il lire en local la base de navigation de ton X-Plane ?",
-   "context": "Réponse à « parser de routes canada, on a une piste ? » : oui, une seule sérieuse. La base de X-Plane de ton poste a les douze routes nord-américaines du message du jour et près de 13 000 repères au Canada, là où notre base n'a aucun point. Mesuré : les voies du Canada ne changeraient presque rien (2,7 % des directs) ; ce qui vaut, ce sont les points d'entrée NOMMÉS de l'océan et le tracé des routes nord-américaines. Ce serait lu sur ton poste, sous la case d'usage personnel, jamais compilé ni publié au groupe ; les autres pilotes garderaient des points de coordonnées. Ce que je conteste : le faire avant SOG-0396, qui doit marcher pour tous sans X-Plane.",
-   "options": [
-    "Oui, après SOG-0396 : points d'entrée nommés et routes nord-américaines seulement",
-    "Oui, après SOG-0396 : avec les voies du Canada aussi",
-    "Non : on reste aux sources publiables et aux points de coordonnées",
+    "L'Atlantique Nord d'abord (SOG-0396), puis l'Europe (SOG-0401) par familles de règles",
+    "L'Europe d'abord (SOG-0401), puis l'Atlantique Nord",
+    "Alterner : un petit lot de l'un, un petit lot de l'autre",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-17",
@@ -4354,6 +4322,63 @@
    "choice": 0,
    "text": "",
    "at": "2026-11-17T09:02:30Z"
+  },
+  {
+   "id": "Q-0077",
+   "fiche": "SOG-0396",
+   "app": "pilote",
+   "question": "Route libre dépendante du message NAT : rejouer la matrice des 144 traversées pour la mesurer (trois passes, environ 11 min chacune) ?",
+   "context": "AeroDB a trouvé qu'avec le seul message NAT de ce matin, la moitié des traversées n'a plus de route (SOG-0396). Pour proposer un correctif, il lui faut rejouer la matrice avec trois jeux de messages (le jour seul, le 16/11, aucun). La matrice charge ton poste et fausse les essais joués en même temps ; elle ne part que sur ton mot. Une passe est déjà partie sans mon mot ce matin : je l'ai arrêtée après celle en cours.",
+   "options": [
+    "Oui, maintenant, une passe à la fois, pendant que la session Essais ne joue rien",
+    "Oui, mais ce soir, avec la passe complète de non-régression",
+    "Non : qu'AeroDB propose le correctif sans ces passes, on mesurera après",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "la matrice est à jouer à chaque fois que… ? qu’on change de nats ? qu’on change d’airac ? une seule fois ? c’est juste pour tests ? À quoi sert-elle exactement en fait ? j’ai du mal comprendre. Un schema de fonctionnement d’aerodb, avec cette matrice serait bienvenu.",
+   "at": "2026-11-17T09:31:02Z"
+  },
+  {
+   "id": "Q-0078",
+   "fiche": "SOG-0392",
+   "app": "pilote",
+   "question": "Passe complète de non-régression : quand la jouer ?",
+   "context": "Elle n'a pas été jouée depuis le 12/11. Ce matin, la session Essais a trouvé deux cas rouges HÉRITÉS sur la tête du dépôt (D131 depuis le 15/11, K60 depuis SOG-0368) : deux défauts de cas, pas de l'appli, mais restés invisibles plusieurs jours. Ce que je conteste : attendre la fin des routes — chaque jour sans elle laisse passer des rouges. Elle dure longtemps et charge ton poste ; elle ne part que sur ton mot, et c'est moi qui la joue.",
+   "options": [
+    "Ce soir, quand tu ne travailles plus sur le poste",
+    "Maintenant",
+    "Pas avant la fin du lot des routes",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-17T09:28:04Z"
+  },
+  {
+   "id": "Q-0079",
+   "fiche": "SOG-0397",
+   "app": "maintenance",
+   "question": "Routes du Canada : le moteur de route peut-il lire en local la base de navigation de ton X-Plane ?",
+   "context": "Réponse à « parser de routes canada, on a une piste ? » : oui, une seule sérieuse. La base de X-Plane de ton poste a les douze routes nord-américaines du message du jour et près de 13 000 repères au Canada, là où notre base n'a aucun point. Mesuré : les voies du Canada ne changeraient presque rien (2,7 % des directs) ; ce qui vaut, ce sont les points d'entrée NOMMÉS de l'océan et le tracé des routes nord-américaines. Ce serait lu sur ton poste, sous la case d'usage personnel, jamais compilé ni publié au groupe ; les autres pilotes garderaient des points de coordonnées. Ce que je conteste : le faire avant SOG-0396, qui doit marcher pour tous sans X-Plane.",
+   "options": [
+    "Oui, après SOG-0396 : points d'entrée nommés et routes nord-américaines seulement",
+    "Oui, après SOG-0396 : avec les voies du Canada aussi",
+    "Non : on reste aux sources publiables et aux points de coordonnées",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "je voudrais que x-plane soit vraiment un fallback, voire que ce soit débrayable. on se souvient que xplane, c’est navigraph. si on n’a plus d’abonnement navigraph, on n’a plus de routes à jour.",
+   "at": "2026-11-17T09:29:26Z"
   }
  ]
 }
