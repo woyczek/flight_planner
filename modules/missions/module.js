@@ -16,6 +16,8 @@ import {
   edInput
 } from './editor_view.js'; // l'éditeur de missions (SOG-0287) : son écran, sorti de ce fichier le 17 nov. 2026 (le calcul pur : editor.js)
 import * as AS from './assigned.js'; // « Mes missions affectées » (SOG-0114 (A)) : le calcul pur
+import *
+as DW from './drawers_view.js'; // la section « Tiroirs » de la fiche (SOG-0441) : l'écran et ses gestes, à la session « Affectation des missions »
 import {
   copyText
 } from '../../frame/lib/clipboard.js';
@@ -34,14 +36,15 @@ export const meta = {
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'assigned.js',
-    '../../frame/lib/clipboard.js',
+    'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
   reads: ['missions/', 'cr/',
-    'airline/'
+    'airline/', 'pilot/',
+    'cache/missions/' // SOG-0441 : les carnets des pilotes de la mission, le vol courant ; ce que l'appareil a vu ouvert
   ], // les missions et leur registre ; les comptes rendus (« volée le … ») ; les catégories de la compagnie
   // titre lisible d'un fichier de mission en attente de synchronisation (la carte Synchronisation des Réglages, Simplification 1er nov.
   // 2026) : « A-001A Titre » (le titre lu dans le texte YAML, sans le lire en entier) ; [fr, en, de, es], ou null ; pur, sans lecture
@@ -57,6 +60,12 @@ export const meta = {
   writes: [{
     prefix: 'missions/',
     merge: 'record'
+  }, {
+    prefix: 'pilot/', // SOG-0441 : le carnet de CE pilote (pilot/<TRI>/missions/<ID>.json), écrit par drawers_view.js seulement
+    merge: 'record'
+  }, {
+    prefix: 'cache/missions/', // sur l'appareil seul : les ouvertures des autres déjà vues
+    policy: 'cache'
   }]
 };
 
@@ -933,6 +942,7 @@ export function unmount() {
   if (S?.onAirline) window.removeEventListener('frame-data-airline', S.onAirline);
   if (S?.onPop) window.removeEventListener('popstate', S.onPop);
   for (const u of S?.urls || []) URL.revokeObjectURL(u);
+  DW.stop(); // SOG-0441 : les minuteurs et l'écoute de la section « Tiroirs »
   S = null;
 }
 
@@ -1021,6 +1031,16 @@ function draw(s) {
   s.urls = [];
   s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.ed ? edHtml(s) : s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
+  // SOG-0441 : la section « Tiroirs » de la fiche ouverte (repeinte dans l'élément neuf à chaque dessin), arrêtée hors de la fiche
+  const dw = !s.ed && s.open?.mission ? s.el.querySelector('[data-drawers]') : null;
+  if (dw) DW.show(dw, {
+    ctx: s.ctx,
+    id: s.open.row.id,
+    mission: s.open.mission,
+    passage: p => MS.passageMin?.(s.open?.mission, p),
+    notJudged: k => !!MS.notJudgedYet?.(k) // la règle du lecteur (frame/lib/mission.js) : une clé que le vol ne sait pas encore juger
+  });
+  else DW.stop();
 }
 
 /** La date d'un compte rendu en « jj/mm/aaaa ». */
@@ -1249,6 +1269,7 @@ function firstHtml(s, r, m, drawn, why) {
     `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p></div>` : ''}
     ${teams.length ? `<div data-teams><h3>${esc(s.tt(TX.teams))}</h3><ul class="ms-lines">${seven(s, teams.map(t => `<li data-team>${esc(t.name)}${t.role ? ` <span class="f-muted">${esc(t.role)}</span>` : ''}</li>`))}</ul></div>` : ''}
     ${zones.length ? `<p data-zones>${esc(s.tt(TX.zonesCount, { n: zones.length }))} : ${esc(zones.slice(0, 7).map(z => [z.id, z.name].filter(Boolean).join(' ')).join(', '))}${zones.length > 7 ? '…' : ''}</p>` : ''}
+    ${m?.drawers?.length ? '<section class="ms-drawers" data-drawers hidden></section>' : '' /* SOG-0441 : la section « Tiroirs », peinte par drawers_view.js */}
     ${why}
     <div class="f-row ms-actions"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(TX.back))}</button></div>`;
 }
