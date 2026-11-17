@@ -7,6 +7,9 @@ import {
   altsHover
 } from './alts.js';
 import {
+  altnTap
+} from './altn.js';
+import {
   S,
   keep,
   esc,
@@ -304,6 +307,7 @@ export function tapAt(x, y, lat, lon) {
   const end = onMission() ? null : endAt(x, y);
   if (end) return pinAd(end);
   if (!onMission() && vrpTap(x, y)) return;
+  if (altnTap(x, y)) return; // un terrain de dégagement proposé par Carburant : sa fiche, « Proposer à Carburant » (SOG-0398, lot 2)
   if (altsTap(x, y)) return; // un tracé proposé par Carburant touché : « Prendre » (SOG-0134 a)
   if (!onMission() && navTap(x, y)) return; // une balise ou un point de voie : sa fiche, avec « Direct vers ce point » (SOG-0088)
   if (!onMission() && groundTap(x, y)) return; // un trait ou un point du sol touché : sa ligne dans le panneau (§ 10.40)

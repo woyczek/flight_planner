@@ -33,6 +33,11 @@ import {
   hideTips
 } from './tips.js';
 import {
+  altnSet,
+  altnOn,
+  altnAvail
+} from './altn.js';
+import {
   openData,
   endData,
   dataHead
@@ -278,7 +283,7 @@ const AS_GROUPS = {
 };
 /** Cases du contenu Couches, dans l'ordre de la SPEC § 6.7 (« Autour de la route seulement » en dernier). */
 const LAYER_KEYS = ['asTma', 'asDrp', 'asFir', 'asOther', 'zoneLabels', 'awLow', 'awHigh', 'awLabels', 'navaids', 'fixes', 'vrp',
-  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'aar', 'nat', 'wind', 'atc', 'contours', 'relief', 'cov', 'corridor'
+  'obstacles', 'mora', 'cities', 'graticule', 'altn', 'altnProp', 'aar', 'nat', 'wind', 'atc', 'contours', 'relief', 'cov', 'corridor'
 ];
 /** Couche du contenu Couches qui commande chaque ligne de la page de réglage (une famille d'espaces : une seule case). */
 export const LAYER_OF = {
@@ -422,12 +427,20 @@ export function reprofile() {
 export function setLayer(key, value, keep = false) {
   const all = S.layers ||= {};
   if (keep);
-  else if (key == null) delete all[modeKey()];
-  else {
+  else if (key == null) {
+    delete all[modeKey()];
+    altnSet(true); // « Tout remettre » : la couche proposée revient aussi
+  } else {
     const own = all[modeKey()] ||= {};
     if (baseLayers()[key] === value) delete own[key];
     else own[key] = value;
     if (!Object.keys(own).length) delete all[modeKey()];
+  }
+  if (key ===
+    'altnProp'
+  ) { // les terrains de dégagement que Carburant propose (SOG-0398) : masquée par le pilote jusqu'à la proposition suivante ; ni gardée sur l'appareil ni dans le profil d'affichage
+    altnSet(!!value);
+    return;
   }
   if (key === 'contours' && value) { // la case vient d'être cochée : si la vue est trop loin, l'écran le dit (une fois par coche)
     S.contoursAsked = true;
@@ -485,6 +498,14 @@ export function fillLayers() {
       const out = S.layersEl.querySelector('[data-detail-v]'),
         t = +v > 0 ? `+${v}` : v;
       if (out && out.textContent !== t) out.textContent = t;
+      continue;
+    }
+    if (c.dataset.layer ===
+      'altnProp'
+    ) { // cochée quand une proposition existe pour l'arrivée du vol et que le pilote ne l'a pas masquée ; sans proposition : décochée et grisée
+      const on = altnOn();
+      if (c.checked !== on) c.checked = on;
+      if (c.disabled !== !altnAvail()) c.disabled = !altnAvail();
       continue;
     }
     const v = c.dataset.layer === 'cov' ? covShown() : c.dataset.layer === 'corridor' && S.corrForced ? true : !!L[c.dataset

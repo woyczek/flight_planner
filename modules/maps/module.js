@@ -121,6 +121,9 @@ import {
   altsHover
 } from './alts.js';
 import {
+  altnStart
+} from './altn.js';
+import {
   followStart
 } from './follow.js';
 
@@ -412,6 +415,7 @@ export async function mount(el, ctx) {
     watchFlight()
   ); // la fenêtre d'un vol suit le vol même quand une carte fournie y est déjà montrée (le choix peut venir avant la fin du montage, SOG-0251)
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
+  S.stops.push(altnStart()); // les terrains de dégagement que Carburant propose (SOG-0398, lot 2)
   S.stops.push(atcStart()); // les contrôleurs en ligne IVAO / VATSIM, lus tant que leur couche est allumée (SOG-0094)
   S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
   S.stops.push(followStart()); // le suivi du vol (SOG-0304) : sous la carte au téléphone, une colonne de 340 px dès 1 000 px

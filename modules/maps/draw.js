@@ -7,6 +7,9 @@ import {
   drawAlts
 } from './alts.js';
 import {
+  drawProposedAltn
+} from './altn.js';
+import {
   canvasDpr
 } from './canvas_scale.js';
 import {
@@ -872,6 +875,10 @@ function draw() {
     ctx.restore();
   }
   S.altHits = drawAlts(ctx, toC, S.routeLabelRects); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
+  S.altnHits = drawProposedAltn(ctx, toC, S.routeLabelRects, altn && !pick ? altn :
+    null); // les terrains de dégagement proposés (SOG-0398, lot 2)
+  if (altn && !pick && S.altnHits.length) drawAltn(ctx, toC, altn, true, !S.adHits.some(h => h.a.icao === altn
+    .id)); // le dégagement actuel reste AU-DESSUS de la couche proposée, avec son code : c'est lui que le pilote compare
   if (S.alts?.list.length && S.altHits.length && S.altsSeq !== S
     .altsDrawnSeq
   ) { // les tracés d'une publication non vide sont DESSINÉS : une fois par publication, Carburant en mesure le délai (SOG-0134)

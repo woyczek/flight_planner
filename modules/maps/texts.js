@@ -184,6 +184,26 @@ export const TX = {
   progNoPos: ['GPS ou réseau non activés : pas de position réelle.', 'GPS or network not enabled: no actual position.',
     'GPS oder Netz nicht aktiviert: keine tatsächliche Position.', 'GPS o red no activados: sin posición real.'
   ],
+  altnOk: ['Adapté', 'Suitable', 'Geeignet', 'Adecuado'],
+  altnWarn: ['À vérifier', 'To check', 'Zu prüfen', 'A comprobar'],
+  altnDist: ['à {n} NM de l’arrivée', '{n} NM from the arrival', '{n} NM vom Ziel', 'a {n} NM del destino'],
+  altnWhy: {
+    'aids-visual': ['approche à vue seulement', 'visual approach only', 'nur Sichtanflug', 'solo aproximación visual'],
+    'wx-ifr': ['TAF en IFR autour de l’arrivée', 'TAF in IFR around the arrival', 'TAF in IFR um die Ankunft',
+      'TAF en IFR en torno a la llegada'
+    ],
+    'wx-unread': ['météo non lue', 'weather not read', 'Wetter nicht gelesen', 'meteorología no leída']
+  },
+  altnFuel: ['Carburant de dégagement : {a} {u} · {m} min', 'Alternate fuel: {a} {u} · {m} min', 'Ausweichkraftstoff: {a} {u} · {m} min',
+    'Combustible de alternativa: {a} {u} · {m} min'
+  ],
+  altnPick: ['Proposer à Carburant', 'Propose to Fuel', 'Kraftstoff vorschlagen', 'Proponer a Combustible'],
+  altnLgOk: ['Dégagement proposé : adapté', 'Proposed alternate: suitable', 'Vorgeschlagenes Ausweichziel: geeignet',
+    'Alternativa propuesta: adecuada'
+  ],
+  altnLgWarn: ['Dégagement proposé : à vérifier', 'Proposed alternate: to check', 'Vorgeschlagenes Ausweichziel: zu prüfen',
+    'Alternativa propuesta: a comprobar'
+  ],
   progFrom: ['source : {s}', 'source: {s}', 'Quelle: {s}', 'fuente: {s}'],
   progSources: {
     gps: ['GPS', 'GPS', 'GPS', 'GPS'],
@@ -333,6 +353,7 @@ export const TX = {
     cities: ['Villes', 'Towns', 'Städte', 'Ciudades'],
     graticule: ['Canevas', 'Graticule', 'Gradnetz', 'Retícula'],
     altn: ['Dégagement', 'Alternate', 'Ausweichflugplatz', 'Alternativo'],
+    altnProp: ['Terrains de dégagement proposés', 'Proposed alternates', 'Vorgeschlagene Ausweichziele', 'Alternativas propuestas'],
     aar: ['Axes de ravitaillement (AAR)', 'Air refuelling tracks (AAR)', 'Luftbetankungsstrecken (AAR)',
       'Pistas de reabastecimiento (AAR)'
     ],

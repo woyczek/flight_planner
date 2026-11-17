@@ -61,6 +61,9 @@ import {
   followMission,
   gainMission
 } from './mission_view.js';
+import {
+  altnPoints
+} from './altn.js';
 
 // ---------------------------------------------------------------- vol
 /** Le vol courant lu : { flight, points, altn, levelFt, updated }. Le dégagement vient d'aerodb, sans être attendu : sa
@@ -252,13 +255,21 @@ function afterPath() {
 /** L'emprise du vol que la carte cadre (SPEC § 5, retour cadré) : imposée (viewOf), sinon le chemin déployé — la route et ses
  *  procédures choisies — et le dégagement, à 25 NM ; sinon l'Europe de l'Ouest. */
 function fitOf() {
-  const pts = S.route.path?.length ? S.route.path : S.route.points;
-  return viewOf() || MapsRender.bboxOf([...pts, ...(S.route.altn ? [S.route.altn] : [])], 25) || {
+  const pts = S.route.path?.length ? S.route.path : S.route.points,
+    prop =
+    altnPoints(); // les terrains de dégagement proposés par Carburant, quand ils sont dessinés (SOG-0398, lot 2) : la vue les garde avec l'arrivée, une marge de 40 NM
+  return viewOf() || MapsRender.bboxOf([...pts, ...(S.route.altn ? [S.route.altn] : []), ...prop], prop.length ? 40 : 25) || {
     w: -5,
     s: 41,
     e: 10,
     n: 51.5
   };
+}
+/** Recadre la vue quand les terrains proposés arrivent ou sont retirés (altn.js) : l'emprise du vol les prend, ou les rend ; la caméra ne bouge pas si l'utilisateur a déplacé la carte ou en mode choix / mission. */
+export function refit() {
+  if (!S?.route?.points?.length) return;
+  S.fit = fitOf();
+  if (S.map && !S.userMoved && !S.choose && !S.missionId) frameFlight(true);
 }
 /** Les directs sur instruction du contrôle du vol (SOG-0326) : [{ lost, from, to }] — lost : le trajet abandonné, de l'ancre du direct
  *  (`from`) par les points sautés jusqu'à celui où la route reprenait ; from → to : le direct (to : le point demandé, retrouvé dans les

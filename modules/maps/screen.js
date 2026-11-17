@@ -26,6 +26,9 @@ import {
   isOwnResize
 } from './lib/map_base.js';
 import {
+  altnPoints
+} from './altn.js';
+import {
   schedule,
   moving,
   settle,
@@ -466,6 +469,13 @@ function keepCam() {
   };
   viewSave(); // le cadrage de l'utilisateur se retrouve au montage suivant (SOG-0353)
 }
+/** La marge du cadrage : 12 px ; avec les terrains proposés dessinés (SOG-0398, lot 2) plus à droite (la colonne de boutons, les indicatifs) et en bas (le bouton d'information et les crédits). */
+const fitPad = () => altnPoints().length ? {
+  top: 12,
+  left: 12,
+  right: 72,
+  bottom: 44
+} : 12;
 /** Cadre la carte sur le vol (S.fit) : le seul mouvement de caméra du module avec « Suivre », marqué pour ne pas passer pour
  *  celui de l'utilisateur ; appelé par frameFlight. */
 function fitMap(animate) {
@@ -474,7 +484,7 @@ function fitMap(animate) {
     [S.fit.w, S.fit.s],
     [S.fit.e, S.fit.n]
   ], {
-    padding: 12
+    padding: fitPad()
   });
   if (want && sameCam(want.center.toArray ? want.center.toArray() : [want.center.lng, want.center.lat], want.zoom)) return; // déjà cadrée
   S.selfMove = true;
@@ -485,7 +495,7 @@ function fitMap(animate) {
     [S.fit.w, S.fit.s],
     [S.fit.e, S.fit.n]
   ], {
-    padding: 12,
+    padding: fitPad(),
     animate
   });
   if (!animate) S.selfMove = false;
@@ -503,7 +513,7 @@ export async function startTiles() {
       [S.fit.w, S.fit.s],
       [S.fit.e, S.fit.n]
     ],
-    padding: 12,
+    padding: fitPad(),
     ...(cam ? {
       center: cam.center,
       zoom: cam.zoom

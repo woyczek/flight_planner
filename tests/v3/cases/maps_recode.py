@@ -8743,6 +8743,91 @@ def d_readmove(c):
     c.ok(g['covers'] and g['fresh'], str(g), 'the area read covers the new view, its data are the last ones (nothing empty at the edge)')
 
 
+_ALTN_DOC = lambda arr, n: {'schema': 1, 'updated_at': iso(now()), 'arr': arr, 'key': 'LFRS>LFML>C30J',
+    'list': [{'icao': 'LFZA', 'name': 'Sans position', 'lat': None, 'lon': None, 'state': 'ok'}]      # a JSON null is not a position (0, 0): dropped
+            + [{'icao': f'LF{chr(65 + i)}A', 'name': f'Terrain {i} \u202e<b>x</b>', 'lat': 43.0 + i * .18, 'lon': 4.4 + i * .1, 'nm': 40 + i * 10, 'state': 'warn' if i % 3 == 1 else 'ok',
+              'why': ['wx-ifr', 'bogus'] if i % 2 else [], 'fuel': {'amount': 1200 + i, 'unit': 'kg', 'min': 30} if i % 3 else None} for i in range(n)]
+            + [{'icao': 'bad', 'lat': 1, 'lon': 1, 'state': 'ok'}, {'icao': 'LFXA', 'lat': 44, 'lon': 6, 'state': 'red'}]}
+_ALTN_SPY_JS = """(() => { const P = CanvasRenderingContext2D.prototype; if (P.__aspy) return; P.__aspy = true; window.__ar = []; const ar = P.arc;
+  window.__sq = 0; window.__a5 = []; window.__dots = []; P.arc = function (x, y, r) { if (r === 9) window.__ar.push([Math.round(x), Math.round(y), ++window.__sq]); if (r === 5) window.__a5.push([x, y, ++window.__sq]); if (r === 1.4) window.__dots.push([Math.round(x), Math.round(y)]); return ar.apply(this, arguments) } })()"""
+
+
+@case('D259', 'The Map puts forward the alternates Fuel proposes (SOG-0398, lot 2): read in the LOCAL document of Fuel, seven at most, green or orange (never red or grey), only for the arrival of the flight shown; a touch opens the sheet of the aerodrome with « Propose to Fuel », which hands it back (the event beside Fuel, the address alone) and writes nothing', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0398 lot 2 (the ergonomist, 17 Nov; contract of Features SOG: cache/fuel/altn_candidates.json, event fuel-altn-candidates, maps-altn-pick { icao } or #fuel?altn=<ICAO>): beyond seven the map cannot be read; nothing is taken by itself, Fuel PROPOSES')
+def d_altnlayer(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    for mode, q, arr in (('dual', 'maps?pane=1', 'LFML'), ('alone', 'maps', 'LFML'), ('other', 'maps', 'LFMT')):
+        f = flight()
+        c.page.add_init_script(_ALTN_SPY_JS)
+        c.open(q, docs=fdocs(f) + [['cache/fuel/altn_candidates.json', _ALTN_DOC(arr, 8), 'cache'], ['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.wait(2000)
+        c.js(_TEXTS_JS)
+        g = c.js("""async () => { const S = window.__mp.S, m = await import('/modules/maps/draw.js'); window.__ar = []; window.__a5 = []; window.__dots = []; window.__mpTexts = []; m.settle(); await new Promise(r => setTimeout(r, 900));
+          const r = S.box.getBoundingClientRect(), at = S.altn ? [...S.altn.list, S.route.points.at(-1)] : [], inside = at.every(t => { const q = S.toC(t.lat, t.lon); return q.x >= 12 && q.x <= r.width - 72 && q.y >= 12 && q.y <= r.height - 44 });
+          return { inside, dots: window.__dots.length, texts: [...new Set(window.__mpTexts)].filter(t => /^LF[A-G]A$|^Terrain/.test(t)), n: S.altn ? S.altn.list.length : 0, ids: S.altn ? S.altn.list.map(t => t.icao) : [], hits: (S.altnHits || []).length, rings: window.__ar.length, names: S.altn ? S.altn.list.map(t => t.name) : [],
+                   states: S.altn ? [...new Set(S.altn.list.map(t => t.state))].sort() : [], why: S.altn ? S.altn.list.flatMap(t => t.why) : [] } }""")
+        if mode == 'other':
+            c.ok(g['hits'] == 0 and g['rings'] == 0, str(g), f'{mode}: the proposals are for another arrival than the flight shown: nothing is drawn')
+            c.shot('D259_other.png')
+            continue
+        c.eq(g['n'], 7, f'{mode}: nine entries given (two badly formed, one red): seven at most are kept, the badly formed and the red one dropped', what=str(g))
+        c.ok(g['hits'] == 7 and g['rings'] >= 7, str(g), f'{mode}: seven aerodromes are drawn (a ring each)')
+        c.eq(g['states'], ['ok', 'warn'], f'{mode}: only green and orange states', what=str(g))
+        # the CURRENT alternate of the flight (the grey ring) stays ABOVE the proposed layer: it is what the pilot compares the proposals to (the ergonomist, 17 Nov)
+        z = c.js("() => { const S = window.__mp.S, q = S.toC(S.route.altn.lat, S.route.altn.lon), own = window.__a5.filter(a => Math.hypot(a[0] - q.x, a[1] - q.y) < 1).map(a => a[2]), last9 = Math.max(0, ...window.__ar.map(a => a[2])); return { own: own.length, above: own.length > 0 && Math.max(...own) > last9, id: S.route.altn.id } }")
+        c.ok(z['own'] > 0 and z['above'], str(z), f'{mode}: the grey ring of the current alternate is drawn after the proposed rings, above them')
+        c.ok(not any(t.startswith('Terrain') for t in g['texts']) and len([t for t in g['texts'] if re.match(r'LF[A-G]A$', t)]) == 7, str(g), f'{mode}: the seven aerodromes are written by their code alone (the name is in the sheet): never an anonymous ring — a code with no free place near is set further away with a leader line to its ring')
+        c.ok(g['dots'] * 7 == g['rings'] * 2 and g['dots'] > 0, str(g), f'{mode}: the sign in the ring: two of the seven terrains are « to check » and carry the ! (its dot), the others the tick (the layer may be drawn more than once per redraw: the ratio, not the count)')
+        c.ok(g['inside'], str(g), f'{mode}: the view keeps the arrival and the seven aerodromes in the sheet with a margin (12 px, 72 px right for the buttons, 44 px below)')
+        c.ok(all('<' not in n and '\u202e' not in n for n in g['names']) and set(g['why']) <= {'wx-ifr'} and 'LFZA' not in g['ids'], str(g), f'{mode}: the names are plain text without direction marks, the unknown motive codes are dropped, a terrain whose position is null is dropped')
+        c.js(_CH_HASH)
+        c.js("() => { window.__pick = []; window.addEventListener('maps-altn-pick', e => window.__pick.push(e.detail)); return true }")
+        p = c.js("() => { const S = window.__mp.S, t = S.altn.list[1], q = S.toC(t.lat, t.lon), r = S.box.getBoundingClientRect(); return [r.left + q.x, r.top + q.y, t.icao] }")
+        c.shot(f'D259_{mode}.png')
+        # the pilot may hide the layer: the box « Proposed alternates » of the Layers panel is ticked while a proposal exists, unticked it stays so until the next proposal (a rewrite with the same aerodromes is not a next one)
+        c.js("async () => { (await import('/modules/maps/layers.js')).toggleLayers(true); return true }")
+        c.until("() => !!document.querySelector('.mp-layer-set input[data-layer=altnProp]')", what=f'{mode}: the Layers content has the box of the proposed alternates')
+        b = c.js("() => { const i = document.querySelector('.mp-layer-set input[data-layer=altnProp]'); return { checked: i.checked, disabled: i.disabled, label: i.closest('label').textContent.trim() } }")
+        c.ok(b['checked'] and not b['disabled'] and norm(tx(M, 'altnProp', c.lang, after='layerNames: {')) in norm(b['label']), str(b), f'{mode}: the box is there, ticked and usable while a proposal exists')
+        c.js("() => { document.querySelector('.mp-layer-set input[data-layer=altnProp]').click(); return true }")
+        c.wait(400)
+        w = c.js("""async () => { const S = window.__mp.S, m = await import('/modules/maps/draw.js'); window.__ar = []; m.settle(); await new Promise(r => setTimeout(r, 900)); return { off: !!S.altnOff, hits: (S.altnHits || []).length, rings: window.__ar.length } }""")
+        c.ok(w['off'] and w['hits'] == 0 and w['rings'] == 0, str(w), f'{mode}: unticked: the layer is hidden')
+        c.js("(d) => { d.updated_at = new Date(Date.now() + 3000).toISOString(); window.dispatchEvent(new CustomEvent('fuel-altn-candidates', { detail: d })); return true }", _ALTN_DOC(arr, 8))
+        c.wait(500)
+        w = c.js("() => ({ off: !!window.__mp.S.altnOff, on: document.querySelector('.mp-layer-set input[data-layer=altnProp]').checked })")
+        c.ok(w['off'] and not w['on'], str(w), f'{mode}: Fuel rewrites the same proposal: the layer stays hidden, the box unticked')
+        c.js("() => { document.querySelector('.mp-layer-set input[data-layer=altnProp]').click(); return true }")
+        c.wait(400)
+        c.eq(c.js("() => !!window.__mp.S.altnOff"), False, f'{mode}: ticked again: the layer is back', what='altnOff')
+        c.js("async () => { (await import('/modules/maps/layers.js')).toggleLayers(false); return true }")
+        # Fuel withdraws its proposal (an aerodrome taken, « Propose » closed: list [] with the event): the layer goes away without leaving the screen; then Fuel proposes again (the Map may not write the document
+        # itself: only Fuel does) — done BEFORE the touch: alone, the touch goes back to Fuel by the address and the Map is left
+        c.js("() => { window.dispatchEvent(new CustomEvent('fuel-altn-candidates', { detail: { schema: 1, updated_at: new Date(Date.now() + 5000).toISOString(), arr: 'LFML', key: 'k', list: [] } })); return true }")
+        c.wait(500)
+        w = c.js("""async () => { const S = window.__mp.S, m = await import('/modules/maps/draw.js'); window.__ar = []; m.settle(); await new Promise(r => setTimeout(r, 900)); return { has: !!S.altn, hits: (S.altnHits || []).length, rings: window.__ar.length } }""")
+        c.ok(not w['has'] and w['hits'] == 0 and w['rings'] == 0, str(w), f'{mode}: Fuel withdrew its proposal: the layer is gone, nothing is drawn, without leaving the screen')
+        c.js("(d) => { d.updated_at = new Date(Date.now() + 9000).toISOString(); window.dispatchEvent(new CustomEvent('fuel-altn-candidates', { detail: d })); return true }", _ALTN_DOC(arr, 8))
+        c.wait(500)
+        w = c.js("""async () => { const S = window.__mp.S, m = await import('/modules/maps/draw.js'); window.__ar = []; m.settle(); await new Promise(r => setTimeout(r, 900)); return { has: !!S.altn, hits: (S.altnHits || []).length, rings: window.__ar.length } }""")
+        c.ok(w['has'] and w['hits'] == 7 and w['rings'] >= 7, str(w), f'{mode}: Fuel proposes again: the seven aerodromes are back')
+        c.page.mouse.click(p[0], p[1])
+        c.until("() => { const e = window.__mp.S.cardEl; return !!e && !e.hidden && !!e.querySelector('[data-altn]') }", what=f'{mode}: the sheet of the aerodrome opens on a touch')
+        card = c.js("() => window.__mp.S.cardEl.textContent")
+        c.ok(p[2] in card and norm(tx(M, 'altnPick', c.lang)) in norm(card), card, f'{mode}: the card names the aerodrome and offers « Propose to Fuel »')
+        c.tap('.mp-altn-pick')
+        if mode == 'dual':
+            c.until("() => window.__pick.length > 0", what='dual: the event maps-altn-pick is sent')
+            c.eq(c.js("() => window.__pick"), [{'icao': p[2]}], 'dual: the event carries the ICAO and nothing else', what='event')
+        else:
+            c.until("() => (window.__hc || []).length > 0", what='alone: the address changes')
+            c.eq(c.js("() => window.__hc")[0].split('#', 1)[1], f'fuel?altn={p[2]}', 'alone: back to Fuel by #fuel?altn=<ICAO>', what='address')
+        c.eq(c.js("() => window.__wr.filter(w => !String(w[1]).startsWith('cache/maps/'))"), [], f'{mode}: the Map writes nothing of the flight or of Fuel (its own view and layers state under cache/maps/ aside): Fuel proposes, nothing is taken by itself', what='writes')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
