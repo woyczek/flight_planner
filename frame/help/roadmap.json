@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d94e62d",
+  "organisation": "8cef386",
   "fiches": 415,
   "untranslated": 0,
   "priorities": 374,
@@ -3608,11 +3608,12 @@
     {
      "id": "SOG-0414",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes NAT : le calcul écrit « NATF » pour une route NAT qu'il quitte avant sa fin",
      "en": "NAT tracks: the engine writes “NATF” for a NAT track it leaves before its end",
      "de": "NAT-Tracks: die Berechnung schreibt „NATF“ für einen NAT-Track, den sie vor seinem Ende verlässt",
-     "es": "Rutas NAT: el cálculo escribe «NATF» para una ruta NAT que abandona antes de su final"
+     "es": "Rutas NAT: el cálculo escribe «NATF» para una ruta NAT que abandona antes de su final",
+     "test": true
     }
    ]
   },

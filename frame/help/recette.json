@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 276,
+  "tests": 277,
   "verdicts": 204
  },
  "apps": [
@@ -4153,6 +4153,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T12:36:46Z"
+  },
+  {
+   "id": "SOG-0414",
+   "app": "maintenance",
+   "title": {
+    "fr": "Routes NAT : le calcul écrit « NATF » pour une route NAT qu'il quitte avant sa fin",
+    "en": "NAT tracks: the engine writes “NATF” for a NAT track it leaves before its end",
+    "de": "NAT-Tracks: die Berechnung schreibt „NATF“ für einen NAT-Track, den sie vor seinem Ende verlässt",
+    "es": "Rutas NAT: el cálculo escribe «NATF» para una ruta NAT que abandona antes de su final"
+   },
+   "test": "Sur le poste (pas besoin de relancer le lanceur). Carburant, étape Route : EGGW → KJFK, départ aujourd'hui à 12 h 00 Z, « Calculer A → B ». Attendu : (1) la route ne porte plus « NATF » ; la portion océanique est écrite point par point (« … RESNO DCT 56/20 DCT 56/30 DCT 54/40 DCT 51/50 DCT NICSO … ») ; (2) la remarque dit : « Route NAT F suivie de RESNO à 51/50 seulement : sa sortie ALLRY n'est pas dans la base ; les routes nord-américaines N484E / N468A du message ne sont pas suivies ; écrite point par point, jamais sous son nom. » ; (3) « Contrôler » sur cette route ne dit plus « portion NATF non couverte ».",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T13:07:54Z"
   }
  ],
  "decisions": [
