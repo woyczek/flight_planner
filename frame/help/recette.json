@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 263,
+  "tests": 264,
   "verdicts": 204
  },
  "apps": [
@@ -3944,6 +3944,20 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T22:24:33Z"
+  },
+  {
+   "id": "SOG-0391",
+   "app": "pilote",
+   "title": {
+    "fr": "Route libre sur l'Atlantique Nord : l'écran ne dit pas pourquoi aucune route NAT n'est prise, et la Carte dessine toutes les routes NAT de la même façon",
+    "en": "Free route over the North Atlantic: the screen does not say why no NAT track is taken, and the map draws every NAT track the same way",
+    "de": "Freie Route über den Nordatlantik: der Bildschirm sagt nicht, warum kein NAT-Track genommen wird, und die Karte zeichnet alle NAT-Tracks gleich",
+    "es": "Ruta libre sobre el Atlántico Norte: la pantalla no dice por qué no se toma ninguna ruta NAT, y el mapa dibuja todas las rutas NAT igual"
+   },
+   "test": "PARTIE CARTE seulement (la ligne « Route libre » de Carburant viendra ensuite), après avoir rechargé la page. (1) Dans Carburant, un vol qui traverse l'Atlantique Nord avec une heure de départ (KABQ → EGLL) ; ouvre la Carte, couche des routes NAT cochée. (2) Les routes NAT de l'AUTRE sens que ton vol sont plus pâles et leur étiquette n'a plus de niveaux. (3) Les routes de ton sens dont la fenêtre ne contient pas ton heure de passage sont pâles aussi ; celles que tu peux prendre gardent le trait et les niveaux. (4) Si ton itinéraire SUIT une route NAT, elle reste nette. (5) Vol sans heure : seul le sens compte. (6) Sans vol : rien ne change. Dis si une route pâlit à tort.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T09:26:26Z"
   },
   {
    "id": "SOG-0392",

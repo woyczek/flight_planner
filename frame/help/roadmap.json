@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7d59d37",
+  "organisation": "49e19db",
   "fiches": 400,
   "untranslated": 0,
   "priorities": 374,
@@ -1224,11 +1224,12 @@
     {
      "id": "SOG-0391",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Route libre sur l'Atlantique Nord : l'écran ne dit pas pourquoi aucune route NAT n'est prise, et la Carte dessine toutes les routes NAT de la même façon",
      "en": "Free route over the North Atlantic: the screen does not say why no NAT track is taken, and the map draws every NAT track the same way",
      "de": "Freie Route über den Nordatlantik: der Bildschirm sagt nicht, warum kein NAT-Track genommen wird, und die Karte zeichnet alle NAT-Tracks gleich",
-     "es": "Ruta libre sobre el Atlántico Norte: la pantalla no dice por qué no se toma ninguna ruta NAT, y el mapa dibuja todas las rutas NAT igual"
+     "es": "Ruta libre sobre el Atlántico Norte: la pantalla no dice por qué no se toma ninguna ruta NAT, y el mapa dibuja todas las rutas NAT igual",
+     "test": true
     }
    ]
   },
