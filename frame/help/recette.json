@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 264,
+  "tests": 265,
   "verdicts": 204
  },
  "apps": [
@@ -3954,10 +3954,10 @@
     "de": "Freie Route über den Nordatlantik: der Bildschirm sagt nicht, warum kein NAT-Track genommen wird, und die Karte zeichnet alle NAT-Tracks gleich",
     "es": "Ruta libre sobre el Atlántico Norte: la pantalla no dice por qué no se toma ninguna ruta NAT, y el mapa dibuja todas las rutas NAT igual"
    },
-   "test": "PARTIE CARTE seulement (la ligne « Route libre » de Carburant viendra ensuite), après avoir rechargé la page. (1) Dans Carburant, un vol qui traverse l'Atlantique Nord avec une heure de départ (KABQ → EGLL) ; ouvre la Carte, couche des routes NAT cochée. (2) Les routes NAT de l'AUTRE sens que ton vol sont plus pâles et leur étiquette n'a plus de niveaux. (3) Les routes de ton sens dont la fenêtre ne contient pas ton heure de passage sont pâles aussi ; celles que tu peux prendre gardent le trait et les niveaux. (4) Si ton itinéraire SUIT une route NAT, elle reste nette. (5) Vol sans heure : seul le sens compte. (6) Sans vol : rien ne change. Dis si une route pâlit à tort.",
+   "test": "Après avoir RELANCÉ le lanceur et rechargé la page. CARBURANT, étape Route : (1) un vol qui traverse l'Atlantique Nord à une heure où aucune route NAT de son sens n'est valable (KABQ → EGLL à FL350 en journée) ; « Calculer ». Sous « Calculé à … », une ligne orange : « Route libre : aucune route NAT valable à l'entrée de l'océan vers … Z (routes vers l'est : 01 h 00 – 08 h 00 Z) » ; si ton vol n'a pas d'heure, elle finit par « Départ pris à … Z (maintenant). ». (2) Recharge la page : la ligne, la preuve de chaque section et le pli des routes écartées sont toujours là. (3) Un vol à un niveau qu'aucune route NAT n'offre, dans leur fenêtre : la ligne dit « aucune route NAT n'offre le FL… » et un",
    "since": "2026-11-17",
    "state": "todo",
-   "delivered": "2026-11-17T09:26:26Z"
+   "delivered": "2026-11-17T10:02:30Z"
   },
   {
    "id": "SOG-0392",
@@ -3985,6 +3985,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T08:35:42Z"
+  },
+  {
+   "id": "SOG-0399",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : le carburant de dégagement couvre-t-il la remise des gaz, le trajet vers le dégagement (avec le vent) et l'approche ?",
+    "en": "Fuel: does the alternate fuel cover the go-around, the leg to the alternate (with wind) and the approach?",
+    "de": "Kraftstoff: deckt der Ausweichkraftstoff das Durchstarten, die Strecke zum Ausweichflugplatz (mit Wind) und den Anflug?",
+    "es": "Combustible: ¿cubre el combustible de alternativo la aproximación frustrada, el tramo al alternativo (con viento) y la aproximación?"
+   },
+   "test": "Carburant, après avoir rechargé la page. (1) Un vol avec un terrain de dégagement ; ouvre « Détail du devis ». Avant le total « Dégagement … », trois parts en retrait : « Remise des gaz à … : 5 min au débit de montée, forfait », « Trajet … · NM · FL… · montée, croisière, descente calculées (ou « moyenne de la fiche ») · vent … », « Approche à … : 10 min au débit d'attente, forfait ». (2) Le total du dégagement est la somme des trois ; la Réserve reste une ligne à part ; le carburant bloc a augmenté par rapport à hier. (3) Dans la fiche de l'aéronef (éditeur des fiches), deux champs « Dégagement · remise des gaz (min) » et « Dégagement · approche (min) » : mets 8 et 12, reviens au devis — les",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T10:00:02Z"
   }
  ],
  "decisions": [

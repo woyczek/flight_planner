@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "09df128",
+  "organisation": "ada022f",
   "fiches": 409,
   "untranslated": 0,
   "priorities": 374,
@@ -819,11 +819,12 @@
     {
      "id": "SOG-0399",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : le carburant de dégagement couvre-t-il la remise des gaz, le trajet vers le dégagement (avec le vent) et l'approche ?",
      "en": "Fuel: does the alternate fuel cover the go-around, the leg to the alternate (with wind) and the approach?",
      "de": "Kraftstoff: deckt der Ausweichkraftstoff das Durchstarten, die Strecke zum Ausweichflugplatz (mit Wind) und den Anflug?",
-     "es": "Combustible: ¿cubre el combustible de alternativo la aproximación frustrada, el tramo al alternativo (con viento) y la aproximación?"
+     "es": "Combustible: ¿cubre el combustible de alternativo la aproximación frustrada, el tramo al alternativo (con viento) y la aproximación?",
+     "test": true
     }
    ]
   },
