@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 289,
+  "tests": 290,
   "verdicts": 212
  },
  "apps": [
@@ -4349,6 +4349,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T16:22:03Z"
+  },
+  {
+   "id": "SOG-0435",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : le devis entier est recalculé à chaque écriture de progression d'un vol démarré (une saccade toutes les 5 s sur téléphone)",
+    "en": "Fuel: the whole quote is recomputed at every progress write of a started flight (a stutter every 5 s on a phone)",
+    "de": "Kraftstoff: die gesamte Berechnung wird bei jedem Fortschrittseintrag eines gestarteten Flugs neu gerechnet (ein Ruckeln alle 5 s auf dem Telefon)",
+    "es": "Combustible: todo el cálculo se rehace en cada escritura de progreso de un vuelo iniciado (un tirón cada 5 s en el teléfono)"
+   },
+   "test": "Carburant, page rechargée, un vol DÉMARRÉ (en cours de progression), de préférence sur le téléphone. Attendu : (1) plus de saccade toutes les quelques secondes : faire défiler l'écran, ouvrir un pli, taper dans un champ restent fluides pendant que le vol avance ; (2) la carte « Progression prévue » continue de se mettre à jour ; (3) le devis ne change pas tout seul ; (4) dès que tu changes une entrée — le niveau, le vent, la réserve, le terrain de dégagement, la route — le devis est bien recalculé aussitôt.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T16:53:37Z"
   }
  ],
  "decisions": [

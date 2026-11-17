@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e837bb2",
+  "organisation": "cee7103",
   "fiches": 437,
   "untranslated": 0,
   "priorities": 374,
@@ -1231,11 +1231,12 @@
     {
      "id": "SOG-0435",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : le devis entier est recalculé à chaque écriture de progression d'un vol démarré (une saccade toutes les 5 s sur téléphone)",
      "en": "Fuel: the whole quote is recomputed at every progress write of a started flight (a stutter every 5 s on a phone)",
      "de": "Kraftstoff: die gesamte Berechnung wird bei jedem Fortschrittseintrag eines gestarteten Flugs neu gerechnet (ein Ruckeln alle 5 s auf dem Telefon)",
-     "es": "Combustible: todo el cálculo se rehace en cada escritura de progreso de un vuelo iniciado (un tirón cada 5 s en el teléfono)"
+     "es": "Combustible: todo el cálculo se rehace en cada escritura de progreso de un vuelo iniciado (un tirón cada 5 s en el teléfono)",
+     "test": true
     }
    ]
   },
