@@ -14670,4 +14670,4 @@ def k427(c):
          'a typographic apostrophe, quotation marks and a dash are read right (cp1252: /MT146 /MT147 /MT148 /MT150); the Latin-1 letters and capitals as before; a code that cp1252 does not define (/MT129), above 255 or below 32 stays as it came', what='cp1252')
     c.ok(not any(0x80 <= ord(ch) <= 0x9f for ch in core.normalise(' '.join(f'/MT{n}' for n in range(32, 256)))), 'no control character 0x80-0x9F comes out of the whole range 32-255', 'no C1')
     src = (ROOT / 'tools' / 'regen' / 'vfr.py').read_text(encoding='utf-8')
-    c.eq(('import pypdf' in src, 'from pypdf' in src, 'pdf_guard.read_text' in src), (False, False, True), 'the verb vfr/build no longer imports pypdf: it only reads through pdf_guard', what='no import')
+    c.eq(('import pypdf' in src, 'from pypdf' in src, 'pdf_guard.read_many' in src), (False, False, True), 'the verb vfr/build no longer imports pypdf: it only reads through pdf_guard (by packs)', what='no import')
