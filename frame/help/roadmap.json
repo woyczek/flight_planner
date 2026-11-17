@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f55478f",
+  "organisation": "5e8c069",
   "fiches": 449,
   "untranslated": 0,
   "priorities": 374,
@@ -527,7 +527,7 @@
     {
      "id": "SOG-0421",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Atlantique Nord : une route NAT valide n'est prise que si elle ne rallonge pas trop — sinon la route directe, dite avec l'écart",
      "en": "North Atlantic: a valid NAT track is taken only if it does not lengthen the flight too much — otherwise the direct route, said with the difference",
      "de": "Nordatlantik: ein gültiger NAT-Track wird nur genommen, wenn er den Flug nicht zu sehr verlängert — sonst die direkte Route, mit der Differenz genannt",
@@ -1447,12 +1447,11 @@
     {
      "id": "SOG-0401",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Itinéraire proposé EDDF → LFMN : « sans incompatibilité détectée » chez nous, 24 erreurs à la validation d'Eurocontrol",
      "en": "Proposed itinerary EDDF → LFMN: “no incompatibility detected” on our side, 24 errors at the Eurocontrol validation",
      "de": "Vorgeschlagene Route EDDF → LFMN: bei uns „keine Unverträglichkeit erkannt“, 24 Fehler bei der Eurocontrol-Validierung",
-     "es": "Itinerario propuesto EDDF → LFMN: «sin incompatibilidad detectada» por nuestra parte, 24 errores en la validación de Eurocontrol",
-     "test": true
+     "es": "Itinerario propuesto EDDF → LFMN: «sin incompatibilidad detectada» por nuestra parte, 24 errores en la validación de Eurocontrol"
     }
    ]
   },

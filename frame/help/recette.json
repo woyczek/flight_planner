@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 297,
+  "tests": 298,
   "verdicts": 212
  },
  "apps": [
@@ -4073,8 +4073,7 @@
    },
    "test": "Après avoir relancé le lanceur et rechargé la page. (1) Carburant, étape Route : un vol en Europe, « Calculer ». Sous « Calculé à … », une ligne grise : « Contrôle de simulation : N conditions RAD vérifiées, M non vérifiées, K espaces inconnus — ce n'est pas une validation ». Chaque itinéraire dit « 0 écart contrôlé », plus « sans incompatibilité détectée ». (2) Le pli « Ce que le contrôle ne couvre pas » liste les espaces inconnus et les conditions non vérifiées. (3) Colle ta route EDDF → LFMN de ce matin, FL350, « Contrôler » : des erreurs sur les tronçons dont le plafond est sous ton niveau. (4) Efface la route, « Calculer » : la route proposée écrit ses changements de niveau (« … MOMUK/F",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T15:43:35Z"
+   "state": "known"
   },
   {
    "id": "SOG-0402",
@@ -4265,6 +4264,19 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T14:20:45Z"
+  },
+  {
+   "id": "SOG-0421",
+   "app": "pilote",
+   "title": {
+    "fr": "Atlantique Nord : une route NAT valide n'est prise que si elle ne rallonge pas trop — sinon la route directe, dite avec l'écart",
+    "en": "North Atlantic: a valid NAT track is taken only if it does not lengthen the flight too much — otherwise the direct route, said with the difference",
+    "de": "Nordatlantik: ein gültiger NAT-Track wird nur genommen, wenn er den Flug nicht zu sehr verlängert — sonst die direkte Route, mit der Differenz genannt",
+    "es": "Atlántico Norte: una ruta NAT válida solo se toma si no alarga demasiado el vuelo — si no, la ruta directa, dicha con la diferencia"
+   },
+   "test": "Lanceur relancé. Carburant, calcule une route de Madrid vers l'Amérique du Nord (LEMD → KJFK, ou ton vol). Attendu : la route ne remonte plus chercher un système NAT au nord — elle part en route libre par le sud (LEMD → KJFK : environ 3 170 NM au lieu de 3 870) et le pli dit pourquoi (la route NAT allongeait de plus de 5 %). Un vol qui reste bien servi par un système NAT (Londres, Paris, Francfort vers New York) garde sa route NAT. À savoir : trois vols d'Europe du Nord vers San Francisco se calculent une à trois secondes plus lentement (jusqu'à 8 s) le temps d'un correctif en cours (SOG-0450).",
+   "since": "2026-11-17",
+   "state": "known"
   },
   {
    "id": "SOG-0422",
