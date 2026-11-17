@@ -119,6 +119,16 @@
     ["Piste et alternat", "Vent de travers max (kt)", "maxCrosswindKt", "number", false],
     ["Piste et alternat", "Alternat · fuel flow", "alternate.fuelFlowPerHour", "number"],
     ["Piste et alternat", "Alternat · TAS (kt)", "alternate.tasKt", "number"],
+    // SOG-0399 (Features SOG, ces deux lignes accordées par l'ergonome le 17/11) : les forfaits du dégagement lus par Carburant (remise des
+    // gaz à la destination, approche au dégagement), en minutes ; vides : les valeurs par défaut de Carburant
+    ["Piste et alternat", "Dégagement · remise des gaz (min)", "alternate.goAroundMin", "number", false, {
+      min: 0,
+      max: 60
+    }],
+    ["Piste et alternat", "Dégagement · approche (min)", "alternate.approachMin", "number", false, {
+      min: 0,
+      max: 60
+    }],
     ["Montée", "Badin / IAS (kt)", "climb.iasKt", "number", false],
     ["Montée", "Régime nominal (RPM / N1)", "climb.rpmNominal", "number", false],
     ["Montée", "Fuel flow", "climb.fuelFlowPerHour", "number"],

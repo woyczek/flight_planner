@@ -1534,3 +1534,34 @@ def m50(c):
         c.tap(f'{M} {SHEETS} [data-do="cancel"]')
         c.until(f"!!document.querySelector('{M} {SHEETS} [data-do=save]')", what='the editor again')
 
+
+@case('M51', 'Sheets: the two flat allowances of the alternate (go-around, approach, in minutes) are fields of the editor, labelled in the '
+      'language of the run, bounded 0 to 60 min; a value out of range is refused and nothing is written; a value in range is written',
+      'M', tags=('aircraft', 'fuel'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0399 (the ergonomist, 17/11 at 10 h 00: two lines of the schema, « Dégagement · remise des gaz (min) » and « Dégagement · '
+      'approche (min) », optional numbers bounded 0 to 60, four languages); Fuel reads alternate.goAroundMin / approachMin (F246)')
+def m51(c):
+    open_sheets(c)
+    edit_sheet(c, 'EC25')
+    paths = c.js("window.AeroDBSheets.PROFILE_FIELDS.map(f => f[2])")
+    c.ok('alternate.goAroundMin' in paths and 'alternate.approachMin' in paths, f'{len(paths)} paths', 'the schema carries the two allowances')
+    want = c.pick({'fr': ['remise des gaz (min)', 'approche (min)'], 'en': ['go-around (min)', 'approach (min)'],
+                   'de': ['Durchstarten (min)', 'Anflug (min)'], 'es': ['motor y al aire (min)', 'aproximación (min)']})
+    alt = c.pick({'fr': 'Dégagement', 'en': 'Alternate', 'de': 'Ausweich', 'es': 'Alternativo'})
+    for path, w in zip(('alternate.goAroundMin', 'alternate.approachMin'), want):
+        lab = c.js(f"((document.querySelector('{M} {SHEETS} input[data-path=\"{path}\"]') || {{}}).closest('label') || {{}}).textContent || ''")
+        c.ok(alt in lab and w in lab, lab, f'« {alt} · {w} » in the language of the run')
+    # out of range: refused, nothing written
+    open_group(c, 'alternate.approachMin')
+    c.page.fill(f'{M} {SHEETS} input[data-path="alternate.approachMin"]', '90')
+    clear_notes(c)
+    c.tap(f'{M} {SHEETS} [data-do="save"]')
+    c.wait(400)
+    c.eq(c.count(f'{M} {SHEETS} [data-review] [data-do=apply]'), 0, '90 min is out of 0–60: no review, nothing written', what='refused')
+    c.ok('approachMin' not in ((sheet_of(c, 'EC25') or {}).get('alternate') or {}), sheet_of(c, 'EC25').get('alternate'), 'the file unchanged')
+    # in range: written
+    c.page.fill(f'{M} {SHEETS} input[data-path="alternate.approachMin"]', '12')
+    c.tap(f'{M} {SHEETS} [data-do="save"]')
+    c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review is shown')
+    c.tap(f'{M} {SHEETS} [data-do="apply"]')
+    c.until_doc('aircraft/sheets/EC25.json', lambda d: d and (d.get('alternate') or {}).get('approachMin') == 12, '12 min written')

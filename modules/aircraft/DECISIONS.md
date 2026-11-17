@@ -216,3 +216,9 @@
   reply the reader refused (« Ligne 1 de la table refusée : régime ou débit illisible (—) »), from a bounded reading of the reply's raw rows
   (`gptRawRows`: the JSON of the code block, a key « rpmFuelCurve » four levels deep, 200 rows; never used to fill the sheet). M50 (red
   before: three values equal to the V2's not stamped; no note).
+- **17 Nov 2026 — SOG-0399, the two flat allowances of the alternate are fields of the sheet** (the ergonomist, 17/11 at 10 h 00: two
+  lines of the schema granted to Features SOG in frame/aerodb/sheets.js, these two only, in a commit of their own). « Dégagement ·
+  remise des gaz (min) » (`alternate.goAroundMin`) and « Dégagement · approche (min) » (`alternate.approachMin`), group « Piste et
+  alternat » unchanged, optional numbers bounded 0 to 60 (the 6th element of PROFILE_FIELDS: out of range, said, nothing written);
+  the word of the screen is « dégagement »; labels in four languages (sheets_texts.js FIELD_TX). Fuel reads them (F246); empty, its
+  defaults. M51 (red on the parent: no field).
