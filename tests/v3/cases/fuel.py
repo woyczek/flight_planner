@@ -7951,11 +7951,14 @@ _STEPS_ROUTE = 'LFPO DCT ABCDE B1 FGHIJ/F195 B1 KLMNO A1 PQRST/F350 B2 UVWXY DCT
 
 
 @case('F252', 'Route step, « Prendre » a computed route that writes its level changes (« FGHIJ/F195 … PQRST/F350 »): the Route field keeps '
-      'them, the flight carries them as level steps of its points, and « Copier pour Eurocontrol » writes them as speed-level groups '
-      '(« FGHIJ/N0nnnF195 »)', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      'them, the flight carries them as level steps of its points, and « Copier pour Eurocontrol » writes them as speed-level groups — '
+      'the half level FL195 as « FGHIJ/N0nnnF190 », the usable level below, said in the fold (SOG-0431)', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False, langs4=False,
       rule='AeroDB 0e62754dc (not yet pushed when written): the level changes imposed by the ceilings of the airways written in the route '
       'text; the ergonomist, 17/11: check that « Prendre » keeps them, that the quote reads them as steps, that the SOG-0402 writer gives '
-      'them speed-level groups; a fake launcher, invented names')
+      'them speed-level groups; then SOG-0431 (3558a13d8, Eurocontrol refused « NOHAT/N0405F205 », SYN101): a level of item 15 goes in '
+      'steps of ten, rounded DOWN — FL195 is written F190, the flight keeps 19 500 ft (SOG-0451: this case followed the decision); the '
+      'fake launcher keeps « FGHIJ/F195 » on purpose, the route text of a launcher before AeroDB da1ead3f7; a fake launcher, invented names')
 def f252(c):
     st = _route_launcher(c, ['route/compute'])
     segs = [_seg(a, b) for a, b in zip(['LFPO'] + [x[0] for x in _STEPS_PTS], [x[0] for x in _STEPS_PTS] + ['EIDW'])]
@@ -7980,11 +7983,14 @@ def f252(c):
     alts = {p.get('id'): p.get('alt_ft') for p in (d.get('route') or {}).get('points') or []}
     c.eq([alts.get('FGHIJ'), alts.get('PQRST')], [19500, 35000], 'the two level steps on their points', what='steps')
     c.js(f"document.querySelector('{FUEL} details[data-fplfold]').open = true")
-    c.until(f"/FGHIJ\\/N0\\d{{3}}F195/.test(document.querySelector('{FUEL} [data-fpltext]')?.textContent || '')", timeout=8000,
-            what='the flight plan writes the speed-level group at FGHIJ')
+    c.until(f"/FGHIJ\\/N0\\d{{3}}F190/.test(document.querySelector('{FUEL} [data-fpltext]')?.textContent || '')", timeout=8000,
+            what='the flight plan writes the speed-level group at FGHIJ, FL195 at the usable level below (SOG-0431)')
     item = (c.js(f"document.querySelector('{FUEL} [data-fpltext]').textContent") or '').split('\n')[3]
-    c.ok(re.search(r'ABCDE B1 FGHIJ/N0\d{3}F195 B1 KLMNO A1 PQRST/N0\d{3}F350 B2 UVWXY$', item) is not None, item,
-         'item 15: the airways kept, a speed-level group at each change, no DCT between a point and its airway')
+    c.ok(re.search(r'ABCDE B1 FGHIJ/N0\d{3}F190 B1 KLMNO A1 PQRST/N0\d{3}F350 B2 UVWXY$', item) is not None, item,
+         'item 15: the airways kept, a speed-level group at each change (FL195 written F190), no DCT between a point and its airway')
+    note = c.js(f"[...document.querySelectorAll('{FUEL} [data-fplnotes] li')].map(x => x.textContent).find(t => /F195/.test(t) && /F190/.test(t)) || ''")
+    c.ok(bool(note), note, 'the fold says F195 written F190 (SOG-0431), the copy not blocked')
+    c.eq(c.js(f"document.querySelectorAll('{FUEL} [data-fplbad]').length"), 0, 'no error: the rounding never blocks the copy', what='no error')
 
 
 @case('F253', 'aerodb.natEnsure: NAT tracks read again when stale, when FORCED, or when their last read is more than an hour old (readAt: '
