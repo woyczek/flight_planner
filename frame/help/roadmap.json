@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6af9829",
-  "fiches": 417,
+  "organisation": "61534ab",
+  "fiches": 418,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -522,6 +522,27 @@
      "en": "North Atlantic from Spain and Portugal: enter the ocean through the Santa Maria boundary points",
      "de": "Nordatlantik ab Spanien und Portugal: Einflug in den Ozean über die Grenzpunkte von Santa Maria",
      "es": "Atlántico Norte desde España y Portugal: entrar en el océano por los puntos del límite de Santa María"
+    }
+   ]
+  },
+  {
+   "id": "pilote-atlantique-nord-moteur-de-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Atlantique Nord ; moteur de route",
+    "en": "Atlantique Nord ; moteur de route",
+    "de": "Atlantique Nord ; moteur de route",
+    "es": "Atlantique Nord ; moteur de route"
+   },
+   "items": [
+    {
+     "id": "SOG-0419",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route libre de l'Atlantique : la bonne paire de portes est essayée presque en dernier — la marge de temps est trop mince",
+     "en": "Atlantic free route: the right pair of gates is tried almost last — the time margin is too thin",
+     "de": "Freie Route über den Atlantik: das richtige Torpaar wird fast zuletzt versucht — die Zeitreserve ist zu knapp",
+     "es": "Ruta libre del Atlántico: el buen par de puertas se prueba casi al final — el margen de tiempo es demasiado estrecho"
     }
    ]
   },
