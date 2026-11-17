@@ -622,7 +622,7 @@ def k60(c):
             with _Net(AF, {**routes, 'kh_asp': ('http', 503)}) as net:
                 view, res = _run(RJ, BS, 'fetch', {'zones': ['kh']}, ctx)
             c.eq(sorted(u.rsplit('/', 1)[-1] for u, _ in net.calls), ['kh_apt.geojson', 'kh_asp.geojson', 'kh_nav.geojson', 'kh_rpp.geojson'], 'another cycle: asked again', what='new cycle')
-            c.eq((res['failed'], view['zones']['kh']['state'], res['absent']), ([{'zone': 'kh', 'source': 'openaip', 'error': 'http', 'status': 503}], 'failed', ['kh_nav', 'kh_rpp']),
+            c.eq((res['failed'], view['zones']['kh']['state'], res['absent']), ([{'zone': 'kh', 'source': 'openaip', 'error': 'http', 'status': 503, 'message': 'kh_asp : HTTP 503'}], 'failed', ['kh_nav', 'kh_rpp']),
                  'a 503 is a failure (http 503); the 404s still absent', what='5xx')
             c.ok(any('kh: openaip échec (http 503)' in x for x in view['log']), str(view['log']), 'the failure is said in the job log, per file')
         finally:
