@@ -188,9 +188,13 @@ def finish_graph(ad):
                                         "conditions": r.get("conditions"), "instructionRefs": r.get("instructionRefs", [])})
     ad["relationsStatus"] = "available" if ad["relations"] else ("confirmed_none" if ad["status"] == "sans relations" else "not_extracted")
 
-def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calculation_airac=None, source_airac=None):
+def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calculation_airac=None, source_airac=None, reader=None):
+    """`reader` (SOG-0427) : une fonction `reader(chemin du PDF) → [{ pdfPage, text }]` qui lit le PDF HORS de ce processus (le lanceur : tools/pdf_guard.read_text, un sous-processus borné, où le journal de
+    pypdf est réglé une fois) ; sans elle (la ligne de commande de tools/report-vfr) le PDF est lu ici par pypdf, comme avant."""
+    PdfReader = None
     try:
-        from pypdf import PdfReader
+        if reader is None:
+            from pypdf import PdfReader
     except ImportError:
         raise SystemExit('pypdf manque : lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite (dépendance facultative de tools/report-vfr ; voir README.md).')
     source_dir = Path(source_dir)
@@ -218,8 +222,11 @@ def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calcula
                 if isinstance(saved, dict) and saved.get("sha256") == fp:
                     pages = saved["pages"]
             if pages is None:
-                pdf = PdfReader(file)
-                pages = [{"pdfPage": i, "text": p.extract_text() or ""} for i, p in enumerate(pdf.pages, 1)]
+                if reader is not None:
+                    pages = reader(file)
+                else:
+                    pdf = PdfReader(file)
+                    pages = [{"pdfPage": i, "text": p.extract_text() or ""} for i, p in enumerate(pdf.pages, 1)]
                 if cache:
                     cache.parent.mkdir(parents=True, exist_ok=True)
                     cache.write_text(json.dumps({"sha256": fp, "pages": pages}, ensure_ascii=False), encoding="utf-8")

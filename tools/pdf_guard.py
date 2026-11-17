@@ -138,7 +138,7 @@ def require(purpose, versions_of=None):
 
 # ----------------------------------------------------------------------------------------------------------------------- le chemin du PDF
 def safe_pdf(data, path):
-    """Le chemin réel d'un PDF sous data/local/upload/ ou data/sia/zones/<zone>/ ; PdfError('path') sinon (nom par motif, aucun lien, un fichier, ≤ MAX_PDF_BYTES)."""
+    """Le chemin réel d'un PDF sous data/local/upload/, data/sia/zones/<zone>/ ou data/local/vac/<AAAA-MM-JJ>/ (les cartes VAC de la reconstruction VFR, SOG-0427) ; PdfError('path') sinon (nom par motif, aucun lien, un fichier, ≤ MAX_PDF_BYTES)."""
     try:
         root = os.path.realpath(str(data))
         p = os.path.abspath(str(path))
@@ -147,9 +147,10 @@ def safe_pdf(data, path):
             raise PdfError('path', 'nom de fichier refusé')
         rel_path = os.path.relpath(p, os.path.abspath(str(data)))
         rel = rel_path.replace('\\', '/').split('/')
-        okfolder = (rel[:2] == ['local', 'upload'] and len(rel) == 3) or (rel[:2] == ['sia', 'zones'] and len(rel) == 4 and bool(ZONE.fullmatch(rel[2])))
+        okfolder = ((rel[:2] == ['local', 'upload'] and len(rel) == 3) or (rel[:2] == ['sia', 'zones'] and len(rel) == 4 and bool(ZONE.fullmatch(rel[2])))
+                    or (rel[:2] == ['local', 'vac'] and len(rel) == 4 and bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}', rel[2], re.A))))
         if rel[0] == '..' or not okfolder:
-            raise PdfError('path', 'le PDF doit être sous data/local/upload/ ou data/sia/zones/<zone>/')
+            raise PdfError('path', 'le PDF doit être sous data/local/upload/, data/sia/zones/<zone>/ ou data/local/vac/<cycle>/')
         if os.path.normcase(os.path.realpath(p)) != os.path.normcase(os.path.join(root, rel_path)):
             raise PdfError('path', 'un lien n’est pas suivi')
         if not os.path.isfile(p) or os.path.getsize(p) > MAX_PDF_BYTES:
@@ -217,11 +218,13 @@ def _kill(proc, job):
 
 
 def _clean(res):
-    """Le résultat du sous-processus (entrée non fiable) → { pages, texts } fermé, ou PdfError('output')."""
-    if not isinstance(res, dict) or set(res) != {'pages', 'texts'} or not isinstance(res['pages'], int) or isinstance(res['pages'], bool) or not 0 <= res['pages'] <= 100000 or not isinstance(res['texts'], list) \
-            or len(res['texts']) > MAX_PAGES or any(not isinstance(t, str) for t in res['texts']):
+    """Le résultat du sous-processus (entrée non fiable) → { pages, texts, fonts } fermé, ou PdfError('output') ; `fonts` (le nombre d'avertissements « fontTools absent » de pypdf, SOG-0427) est
+    facultatif dans la réponse (un entier de 0 à 1 000 000) et vaut 0 sans lui."""
+    if not isinstance(res, dict) or not {'pages', 'texts'} <= set(res) <= {'pages', 'texts', 'fonts'} or not isinstance(res['pages'], int) or isinstance(res['pages'], bool) or not 0 <= res['pages'] <= 100000 \
+            or not isinstance(res['texts'], list) or len(res['texts']) > MAX_PAGES or any(not isinstance(t, str) for t in res['texts']) \
+            or ('fonts' in res and (not isinstance(res['fonts'], int) or isinstance(res['fonts'], bool) or not 0 <= res['fonts'] <= 1_000_000)):
         raise PdfError('output', 'la réponse du lecteur de PDF n’a pas la forme attendue')
-    return {'pages': res['pages'], 'texts': [re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', ' ', t)[:MAX_CHARS_PAGE] for t in res['texts']]}
+    return {'pages': res['pages'], 'texts': [re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', ' ', t)[:MAX_CHARS_PAGE] for t in res['texts']], 'fonts': res.get('fonts', 0)}
 
 
 def _refuse(name):

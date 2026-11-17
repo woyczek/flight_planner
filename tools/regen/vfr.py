@@ -10,7 +10,8 @@ celui en vigueur par défaut, calendrier de 28 jours) :
   · `vfr/build` { cycle } : la compilation de tools/report-vfr (vfr_core.compile_corpus : points, séquences, consignes, interprétations
     persistantes) sur ce cache, le contrôle strict de tools/vfr_import.py, l'écriture de sia/vfr/ et UN commit (regen_jobs.commit_outputs, au
     nom de l'auteur) — ce que faisait la route V2 vfr-import, à partir du cache et non d'un fichier choisi dans la page ; pypdf absent :
-    « no-pypdf » ; une erreur de compilation ou de contrôle : rien n'est écrit ;
+    « no-pypdf » ; une erreur de compilation ou de contrôle : rien n'est écrit ; chaque carte est lue par le sous-processus BORNÉ de tools/pdf_guard
+    (jamais par pypdf dans ce processus : SOG-0427) et le journal dit UNE ligne : « n documents lus ; dans m des polices n'ont pas pu être décodées entièrement (fontTools absent) » ;
   · `vfr/purge` { cycle?, dry } : le cache (les cartes et leur texte extrait) de ce cycle, ou de tous ; le plan d'abord (dry) ; jamais sia/vfr/
     ni un fichier suivi.
 Vue : job.data['cycles'] = { <cycle>: { state, done, total, error? } } ; résultats : fetch { ok, cycle, fetched, unchanged, notPublished,
@@ -203,16 +204,25 @@ def fetch(job, args, ctx):
     return res
 
 
+def fonts_line(read, fonts):
+    """UNE ligne par travail (SOG-0427) à la place d'une ligne d'avertissement par police et par page : combien de documents ont été lus et dans combien d'entre eux des polices n'ont pas pu être décodées
+    entièrement (fontTools absent de pypdf ; le texte reste juste : tools/report-vfr/vfr_core.normalise décode les noms de glyphes /MTnnn). Des nombres seulement."""
+    read, fonts = int(read), int(fonts)
+    if fonts:
+        return f'{read} documents lus ; dans {fonts} des polices n’ont pas pu être décodées entièrement (fontTools absent)'
+    return f'{read} document(s) lu(s)'
+
+
 def build(job, args, ctx):
     """Verbe vfr/build (voir l'en-tête du module)."""
     data, cycle = ctx['data'], args['cycle']
     view = _View(job, cycle)
+    import pdf_guard
     try:
-        import pypdf  # noqa: F401  (dépendance facultative de tools/report-vfr : installée par installer_bibliotheques.cmd ou .sh, SOG-0376)
-    except ImportError:
+        pdf_guard.require('text')      # pypdf absent ou trop ancien : SANS l'importer ici (SOG-0427 : le lanceur ne lit aucun PDF dans son processus) ; le texte est FIXE : le nom du script, jamais une commande pip
+    except pdf_guard.PdfError as e:
         view.set(state='failed', error='no-pypdf')
-        import pdf_guard      # le texte FIXE du remède (SOG-0376) : le nom du script, jamais une commande pip à recopier
-        return {'ok': False, 'cycle': cycle, 'reason': 'no-pypdf', 'message': 'pypdf manque. ' + pdf_guard.HOW_TO}
+        return {'ok': False, 'cycle': cycle, 'reason': 'no-pypdf', 'message': str(e)}
     folder = cache_dir(data, cycle)
     if not os.path.isdir(folder) or not any(n.startswith('AD-2.') for n in os.listdir(folder)):
         view.set(state='failed', error='no-cache')
@@ -223,7 +233,16 @@ def build(job, args, ctx):
     import vfr_import
     view.set(state='building', total=3)
     job.step('compilation', 0, 3, 'steps')
-    compiled = vfr_core.compile_corpus(folder, text_dir(data, cycle), os.path.join(REPORT_VFR, 'interpretations'), source_airac=cycle)
+    stats = {'read': 0, 'fonts': 0}
+
+    def reader(path):
+        """Une carte VAC lue par le sous-processus borné de tools/pdf_guard (SOG-0427), pas dans ce processus : le journal de pypdf y est réglé une fois, ses avertissements « fontTools absent » y sont comptés."""
+        res = pdf_guard.read_text(data, path)
+        stats['read'] += 1
+        stats['fonts'] += 1 if res.get('fonts') else 0
+        return [{'pdfPage': i, 'text': t} for i, t in enumerate(res['texts'], 1)]
+    compiled = vfr_core.compile_corpus(folder, text_dir(data, cycle), os.path.join(REPORT_VFR, 'interpretations'), source_airac=cycle, reader=reader)
+    job.log(fonts_line(stats['read'], stats['fonts']))
     if job.cancelled():
         view.set(state='cancelled')
         return {'ok': False, 'cycle': cycle, 'reason': 'cancelled'}

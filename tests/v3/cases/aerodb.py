@@ -14443,3 +14443,169 @@ def k334(c):
          '`static_blocks` is computed once per (departure, arrival, level): five calls for three pairs = three computations (red before: five); the blocks are handed out as COPIES (a caller that changes one does not change the next answer)', what='blocks')
     c.eq((engine.tokens('NOT AVBL FOR TFC VIA ABCD') is engine.tokens('NOT AVBL FOR TFC VIA ABCD'), isinstance(engine.tokens('A1 B2'), frozenset), sorted(engine.tokens('abc def')), rad.match('GA', 'LFPO'), rad.match('GA', 'EIDW'), rad.match('(GA, GB)', 'EIDW')),
          (True, True, ['ABC', 'DEF'], True, False, True), 'the words of a text are read once (the same frozen set), a group matches its aerodromes (and a list of groups)', what='tokens and match')
+
+
+
+@case('K427', 'VFR rebuild, SOG-0427: the VAC charts are read by the BOUNDED child of pdf_guard, never by pypdf in the launcher; the child sets the journal of pypdf ONCE and COUNTS the « fontTools is required » warnings (nothing is printed); the build says ONE line per job; data/local/vac/<cycle>/ is a folder safe_pdf accepts, and nothing else',
+      'K', static=True,
+      rule='SOG-0427 (the user pasted a console drowned by the pypdf warning « fontTools is required to fully parse the encoding of a CFF Type1 font », one line per font and per page, during the VFR rebuild; BUGS SOG read in the code that vfr/build imported pypdf in the launcher: against the rule « pypdf in a bounded child only »). '
+           'Measured, nothing installed, on the 420 VAC of the 29 Oct 2026 cycle: 409 raise the warning; the chart pages come out as glyph names /MTnnn that vfr_core.normalise decodes (every code is in 32-255, three control codes aside): the text is right, pypdf may be silent')
+def k427(c):
+    import contextlib
+    import importlib
+    import io
+    import json
+    import logging
+    import os
+    import sys
+    import tempfile
+    import types
+    from pathlib import Path
+    RJ = _regen()
+    sys.path.insert(0, str(ROOT / 'tools' / 'report-vfr'))
+    G = importlib.import_module('pdf_guard')
+    V = importlib.import_module('regen.vfr')
+    core = importlib.import_module('vfr_core')
+    child = importlib.import_module('pdf_child')
+    ok = lambda: {'pypdf': '6.21.4', 'pdfplumber': '0.11.10', 'Pillow': '13.0.0', 'pdfminer.six': '20260107', 'pypdfium2': '5.14.0', 'rapidocr-onnxruntime': '1.2.3'}
+
+    def tiny(text):      # a PDF written by hand: one page, Helvetica
+        body = f'BT /F1 18 Tf 20 100 Td ({text}) Tj ET'.encode()
+        objs = [b'<< /Type /Catalog /Pages 2 0 R >>', b'<< /Type /Pages /Kids [3 0 R] /Count 1 >>', b'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+                b'<< /Length ' + str(len(body)).encode() + b' >>\nstream\n' + body + b'\nendstream', b'<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>']
+        out, offs = b'%PDF-1.4\n', []
+        for i, o in enumerate(objs, 1):
+            offs.append(len(out))
+            out += f'{i} 0 obj\n'.encode() + o + b'\nendobj\n'
+        x = len(out)
+        out += f'xref\n0 {len(objs) + 1}\n0000000000 65535 f \n'.encode() + b''.join(f'{o:010d} 00000 n \n'.encode() for o in offs)
+        return out + f'trailer\n<< /Size {len(objs) + 1} /Root 1 0 R >>\nstartxref\n{x}\n%%EOF\n'.encode()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = Path(td) / 'data'
+        vac = data / 'local' / 'vac' / '2026-10-29'
+        vac.mkdir(parents=True)
+        for rel in ('local/vac/2026-10-29/sub', 'local/vac/zz', 'local/vac/2026-10-29/x'):
+            (data / rel).mkdir(parents=True, exist_ok=True)
+        (vac / 'AD-2.LFAB.pdf').write_bytes(tiny('HELLO VAC'))
+        (vac / 'sub' / 'AD-2.LFAC.pdf').write_bytes(tiny('x'))
+        (data / 'local' / 'vac' / 'zz' / 'AD-2.LFAD.pdf').write_bytes(tiny('x'))
+        (data / 'local' / 'vac' / 'AD-2.LFAE.pdf').write_bytes(tiny('x'))
+
+        def path_ok(p):
+            try:
+                G.safe_pdf(data, p)
+                return True
+            except G.PdfError:
+                return False
+        got = {'vac': path_ok(vac / 'AD-2.LFAB.pdf'), 'deeper': path_ok(vac / 'sub' / 'AD-2.LFAC.pdf'), 'cycle': path_ok(data / 'local' / 'vac' / 'zz' / 'AD-2.LFAD.pdf'), 'no cycle': path_ok(data / 'local' / 'vac' / 'AD-2.LFAE.pdf'),
+               'unicode digits': path_ok(data / 'local' / 'vac' / '\u0662\u0660\u0662\u0666-10-29' / 'AD-2.LFAB.pdf'), 'name': path_ok(vac / 'bad$name.pdf'), 'upload': path_ok(data / 'local' / 'upload' / 'a.pdf')}
+        c.eq(got, {'vac': True, 'deeper': False, 'cycle': False, 'no cycle': False, 'unicode digits': False, 'name': False, 'upload': False},
+             'the cache of the VAC (data/local/vac/<AAAA-MM-JJ>/<name>.pdf) is read by the bounded child; a deeper file, a folder that is not a cycle, a digit of another script, a bad name: refused (the upload folder is not widened: this file does not exist there)', what='safe_pdf')
+        res = G.read_text(data, vac / 'AD-2.LFAB.pdf', versions_of=ok)
+        c.ok(res['pages'] == 1 and 'HELLO VAC' in res['texts'][0] and res['fonts'] == 0, str(res), 'a real PDF of the cache is read by the child: its text, and no font warning counted (a PDF with a standard font)')
+        # the answer of the child is an untrusted input: `fonts` is optional, a whole number from 0 to 1 000 000
+        bad = {}
+        for label, body in (('absent', {'pages': 1, 'texts': ['x']}), ('count', {'pages': 1, 'texts': ['x'], 'fonts': 3}), ('bool', {'pages': 1, 'texts': ['x'], 'fonts': True}), ('negative', {'pages': 1, 'texts': ['x'], 'fonts': -1}),
+                            ('huge', {'pages': 1, 'texts': ['x'], 'fonts': 10 ** 7}), ('text', {'pages': 1, 'texts': ['x'], 'fonts': '3'}), ('other key', {'pages': 1, 'texts': ['x'], 'path': 'C:/x'})):
+            try:
+                bad[label] = G._clean(dict(body))['fonts']
+            except G.PdfError as e:
+                bad[label] = e.reason
+        c.eq(bad, {'absent': 0, 'count': 3, 'bool': 'output', 'negative': 'output', 'huge': 'output', 'text': 'output', 'other key': 'output'}, 'the answer of the child: `fonts` is optional (0 without it), a whole number from 0 to 1 000 000; any other key or form is refused', what='clean')
+        # the child itself, in this process with a pypdf that raises the warning: it is counted, nothing is printed, nothing reaches the root journal
+        warn = 'fontTools is required to fully parse the encoding of a CFF Type1 font'
+
+        class Page:
+            def extract_text(self):
+                logging.getLogger('pypdf._cmap').warning(warn)
+                return 'page text'
+
+        class Reader:
+            def __init__(self, path):
+                logging.getLogger('pypdf._cmap').warning(warn)
+                self.pages = [Page(), Page()]
+        fake = types.ModuleType('pypdf')
+        fake.PdfReader = Reader
+        out = Path(td) / 'out.json'
+        root_seen = []
+
+        class Root(logging.Handler):
+            def emit(self, record):
+                root_seen.append(record.getMessage())
+        root, mine, was = logging.getLogger(), Root(logging.WARNING), sys.modules.get('pypdf')
+        plog = logging.getLogger('pypdf')
+        keep = (plog.level, plog.propagate, list(plog.handlers))
+        argv, err = sys.argv, io.StringIO()
+        root.addHandler(mine)
+        sys.modules['pypdf'] = fake
+        sys.argv = ['pdf_child.py', str(vac / 'AD-2.LFAB.pdf'), str(out), '0', '5', '1000', '[]']
+        try:
+            with contextlib.redirect_stderr(err):
+                child.main()
+        finally:
+            sys.argv = argv
+            root.removeHandler(mine)
+            plog.handlers[:] = keep[2]
+            plog.setLevel(keep[0])
+            plog.propagate = keep[1]
+            if was is None:
+                sys.modules.pop('pypdf', None)
+            else:
+                sys.modules['pypdf'] = was
+        written = json.loads(out.read_text(encoding='utf-8'))
+        c.eq((written, root_seen, err.getvalue()), ({'pages': 2, 'texts': ['page text', 'page text'], 'fonts': 3}, [], ''),
+             'the child counts the three warnings (one at the opening, one per page), prints none, and none reaches the journal of the launcher', what='child')
+        # compile_corpus with a reader never imports pypdf (a pypdf that cannot be imported changes nothing); without a reader it still stops with the sentence
+        ads = Path(td) / 'ads'
+        ads.mkdir()
+        (ads / 'AD-2.LFAB.pdf').write_bytes(tiny('x'))
+        was = sys.modules.get('pypdf')
+        sys.modules['pypdf'] = None
+        try:
+            seen = []
+            comp = core.compile_corpus(ads, None, None, source_airac='2026-10-29', reader=lambda p: seen.append(Path(p).name) or [{'pdfPage': 1, 'text': ''}])
+            try:
+                core.compile_corpus(ads, None, None, source_airac='2026-10-29')
+                stopped = None
+            except SystemExit as e:
+                stopped = 'installer_bibliotheques' in str(e)
+        finally:
+            if was is None:
+                sys.modules.pop('pypdf', None)
+            else:
+                sys.modules['pypdf'] = was
+        c.eq((seen, len(comp['aerodromes']) + len(comp['errors']), stopped), (['AD-2.LFAB.pdf'], 1, True), 'with a reader the compilation does not import pypdf (the reader gets each PDF); without it, the command line of tools/report-vfr still says the script to run', what='corpus')
+        # the build: ONE line per job, from the counts of the reader; pypdf missing: « no-pypdf » with the sentence of the script, nothing read
+        real_req, real_read, real_comp = G.require, G.read_text, core.compile_corpus
+        ctx = {'data': str(data), 'secrets': str(Path(td) / 's'), 'git_cmd': None, 'git_env': dict}
+        calls = []
+
+        def fake_read(d, path, *a, **k):
+            calls.append(Path(path).name)
+            return {'pages': 1, 'texts': ['t'], 'fonts': 2 if len(calls) < 3 else 0}
+
+        def fake_comp(folder, *a, **k):
+            for f in sorted(Path(folder).glob('AD-2.*.pdf')):
+                k['reader'](f)
+            return {'errors': [{'icao': 'LFAB', 'error': 'stop here'}], 'summary': {}}
+        for n in ('AD-2.LFAB.pdf', 'AD-2.LFAG.pdf', 'AD-2.LFAI.pdf'):
+            (vac / n).write_bytes(tiny('x'))
+        G.read_text, core.compile_corpus, G.require = fake_read, fake_comp, lambda *a, **k: None
+        try:
+            job = RJ.Job('vfr', 'build', {})
+            r = V.build(job, {'cycle': '2026-10-29'}, ctx)
+            lines = [x for x in job.data['log'] if 'documents lus' in x or 'document(s) lu(s)' in x]
+            c.eq((r.get('reason'), calls, lines), ('failed', ['AD-2.LFAB.pdf', 'AD-2.LFAG.pdf', 'AD-2.LFAI.pdf'], ['3 documents lus ; dans 2 des polices n’ont pas pu être décodées entièrement (fontTools absent)']),
+                 'the build reads each chart through the bounded reader and says ONE line: how many documents were read and in how many of them fonts could not be decoded entirely', what='line')
+            c.eq((V.fonts_line(0, 0), V.fonts_line(12, 0), V.fonts_line(409, 409)), ('0 document(s) lu(s)', '12 document(s) lu(s)', '409 documents lus ; dans 409 des polices n’ont pas pu être décodées entièrement (fontTools absent)'), 'the line holds numbers only', what='words')
+
+            def missing(*a, **k):
+                raise G.PdfError('missing', 'lecture de PDF impossible : pypdf absent. ' + G.HOW_TO)
+            calls.clear()
+            G.require = missing
+            r = V.build(RJ.Job('vfr', 'build', {}), {'cycle': '2026-10-29'}, ctx)
+            c.eq((r.get('reason'), r.get('ok'), calls, G.SCRIPT in str(r.get('message')), 'pip' in str(r.get('message'))), ('no-pypdf', False, [], True, False), 'pypdf missing: « no-pypdf » with the name of the script and no pip command, and no chart is read', what='no-pypdf')
+        finally:
+            G.require, G.read_text, core.compile_corpus = real_req, real_read, real_comp
+    src = (ROOT / 'tools' / 'regen' / 'vfr.py').read_text(encoding='utf-8')
+    c.eq(('import pypdf' in src, 'from pypdf' in src, 'pdf_guard.read_text' in src), (False, False, True), 'the verb vfr/build no longer imports pypdf: it only reads through pdf_guard', what='no import')
