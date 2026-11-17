@@ -3,7 +3,7 @@
 // d'aerodb) s'en sert avec toutes ses routes ; un module reçoit ctx.launcher, réduit à ce que son meta.launcher déclare.
 //   · request(route, { method, json, text, signal }) → { status, body } (corps JSON lu, {} s'il ne l'est pas) ou null
 //     (pas de réponse : réseau, lanceur arrêté, appel abandonné) ; jamais d'exception ;
-//   · forModule(decl, { life }) → { info(), call, job, resume, read } : routes et préfixes de lecture déclarés seulement,
+//   · forModule(decl, { life }) → { info(), call, job, resume, current, read } : routes et préfixes de lecture déclarés seulement,
 //     tout le reste refusé sans appel ({ ok: false, status: 403, refused: true, route }) ; life (AbortSignal) : le
 //     démontage du module arrête les suivis de travaux en cours (le travail, lui, continue sur le lanceur : resume) ;
 //   · upload(route, fichier, { name, onProgress, signal }) : envoi d'un fichier (octets en corps) avec avancement et annulation (SOG-0199) ;
@@ -309,6 +309,33 @@ export function launcherClient({
       };
       return follow(r, cur.id, opts);
     }
+    /** Le travail en cours de cette route, SANS le suivre (SOG-0438 : une page rouverte retrouve ce que le lanceur fait encore) : { id, set, verb, args, step, done, total, unit, started } ou null sans travail en cours.
+     *  Les arguments sont ceux que la page a donnés (valeurs simples seulement, 20 clés au plus) ; `resume` le suit ensuite jusqu'à sa fin. */
+    async function current(route) {
+      const r = routeOf(route);
+      if (!r || !under(r, routes)) return refuse(route);
+      const s = await call(r);
+      if (s.ok === false && !s.state) return s;
+      const cur = s.job && typeof s.job === 'object' ? s.job : s.state ? s : null;
+      if (!cur?.id || cur.state !== 'running') return null;
+      const args = {};
+      if (cur.args && typeof cur.args === 'object' && !Array.isArray(cur.args))
+        for (const [k, v] of Object.entries(cur.args).slice(0, 20))
+          if (/^[A-Za-z0-9_-]{1,40}$/.test(k) && (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')) args[k] =
+            typeof v === 'string' ? v.slice(0, 120) : v;
+      const n = x => Number.isFinite(+x) ? +x : 0;
+      return {
+        id: String(cur.id).slice(0, 40),
+        set: String(cur.set || '').slice(0, 30),
+        verb: String(cur.verb || '').slice(0, 30),
+        args,
+        step: String(cur.step || '').slice(0, 200),
+        done: n(cur.done),
+        total: n(cur.total),
+        unit: String(cur.unit || '').slice(0, 20),
+        started: n(cur.started)
+      };
+    }
     /** Fichier de data/ en flux, même origine : { ok, stream, size } ou { ok: false, … } ; onBytes(n) au fil de la lecture. */
     async function read(path, {
       signal,
@@ -462,6 +489,7 @@ export function launcherClient({
       call,
       job,
       resume,
+      current,
       read,
       upload
     });

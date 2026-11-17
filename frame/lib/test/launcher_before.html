@@ -246,6 +246,43 @@
         starts: e3.starts.length,
         re3
       }));
+      // 7. SOG-0438 : `current` dit le travail en cours d'une route sans le suivre (une page rouverte le retrouve) : set, verbe, arguments simples, avancement ; null sans travail en cours ou fini
+      const cur = view => mk(async (url, init = {}) => json(view)).current('regen/job');
+      const c1 = await cur({
+        job: {
+          id: 'j9',
+          state: 'running',
+          set: 'proc',
+          verb: 'ead-fetch',
+          args: {
+            icao: 'EGGW',
+            deep: {
+              x: 1
+            },
+            'bad key': 1
+          },
+          step: 'EGGW: 5/10',
+          done: 5,
+          total: 10,
+          unit: 'documents',
+          started: 1700000000
+        }
+      });
+      ck('current : le travail en cours, sans le suivre (set, verbe, arguments simples seulement, avancement)', c1?.id === 'j9' && c1.set === 'proc' && c1.verb === 'ead-fetch' && c1.args?.icao === 'EGGW' && !('deep' in c1.args) && !('bad key' in c1.args) && c1.done === 5 && c1.total === 10, JSON.stringify(c1));
+      const c2 = await cur({
+        job: {
+          id: 'j8',
+          state: 'done',
+          set: 'proc',
+          verb: 'ead-fetch'
+        }
+      });
+      const c3 = await cur({
+        job: null
+      });
+      ck('current : null pour un travail fini et pour l’absence de travail', c2 === null && c3 === null, JSON.stringify([c2, c3]));
+      const c4 = await mk(async () => json({}, 404)).current('regen/other');
+      ck('current : une route non déclarée est refusée sans appel', c4?.ok === false && c4.refused === true, JSON.stringify(c4));
       window.__beforeBench.done = true;
     })().catch(e => {
       ck('le banc va au bout', false, String(e));
