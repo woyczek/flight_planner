@@ -13290,3 +13290,60 @@ def k319(c):
          'one run per airway (45 airways: 45 runs); the engine details the first 40 (`MAX_BAND_ISSUES`) and says the rest in ONE sentence', what='runs')
     src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
     c.ok('MAX_BAND_ISSUES=40' in src and 'autres tronçons de croisière hors de la bande du niveau' in src and FP.MAX_CHANGES == 60, 'engine.py', 'the bounds: 40 issues then the sentence of the total, 60 level changes')
+
+
+@case('K322', 'Route control, SOG-0411 (A, B): a typed route « X NATF Y » is read as the calculation writes it, the two writings of the same point (« 51/50 » of the NAT message and « 5100N05000W » of the flight plan) are ONE point so the NAT portion is covered, and the remark on an old navigation cycle says WHAT is old (the route and its points) instead of the zone alone',
+      'K', static=True,
+      rule='SOG-0411 (the ergonomics session, 17 Nov: the route that the calculation has just returned by the track F, chosen then checked, said « Portion NATF non couverte entre ces points : RESNO → 5100N05000W. Tracé géométrique indicatif » and « Cycle de navigation périmé pour NAT : 2026-10-01 (source des segments utilisés) » although the NAT routes are of the day). (A) `Nav.keys_of`: a point written by its coordinates (« 5100N05000W », « 5230N01000W ») is the point that the NAT message names « 51/50 », « 5230/10 » when it is the same position (within 0.15 NM): the same node, otherwise the portion of the track does not reach it. (B) the remark on an old cycle (`engine.assess`) says the legs that come from it, one per route from its first to its last point, and the current cycle of the zone when it is another one (here: the airway N260B of the zone NAT, cycle 2026-10-01).')
+def k322(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'NICSO': (51.0, -50.0), 'ALLEX': (49.0, -60.0)}
+    today = {'id': 'A', 'route': ['5230/10', '5230/20', '5230/30', '5230/40', '5230/50'], 'east': [], 'west': ['350', '370'], 'nar': [], 'by': 'EGGX', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        for zone, cycle, rows in (('xx', '2026-10-29', {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]}, 'points': [], 'navaids': [], 'airways': []}),
+                                  ('nat', '2026-10-01', {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': []}, 'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [],
+                                                         'airways': [{'route': 'N260B', 'a': pt('NICSO', *pos['NICSO']), 'b': pt('ALLEX', *pos['ALLEX']), 'lower': 0, 'upper': 66000}]})):
+            d = os.path.join(data, 'sia', 'base', zone, cycle)
+            os.makedirs(d, exist_ok=True)
+            for k, v in rows.items():
+                with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': zone, 'cycle': cycle, 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [today]}, f)
+        results_cache.ENABLED = False
+        try:
+            def check(first, last):
+                args = {'action': 'check', 'adep': 'EGLL', 'adest': 'KJFK', 'fl': 350, 'date': '2026-11-17T12:00', 'route': f'EGLL DCT {first} NATA {last} DCT NICSO N260B ALLEX DCT KJFK'}
+                res = PL.compute(view.to_request(args), data, radz, fra)
+                p = res.get('primary') or {}
+                texts = [i['text'] for i in (p.get('issues') or res.get('issues') or [])]
+                return [(l['start']['id'], l['end']['id']) for l in p.get('legs') or [] if l['via'] == 'NATA'], [t for t in texts if 'non couverte' in t], [t for t in texts if 'Cycle de navigation' in t]
+            named = check('5230/10', '5230/50')
+            coords = check('5230N01000W', '5230N05000W')
+            mixed = check('5230N01000W', '5230/50')
+        finally:
+            results_cache.ENABLED = True
+    track = [('5230/10', '5230/20'), ('5230/20', '5230/30'), ('5230/30', '5230/40'), ('5230/40', '5230/50')]
+    c.eq((named[0], named[1], coords[0], coords[1], mixed[0], mixed[1]), (track, [], track, [], track, []),
+         "the track A typed with the points of the NAT message (« 5230/10 NATA 5230/50 »), with the coordinates of the flight plan (« 5230N01000W NATA 5230N05000W ») and with one of each: the four legs of the track in all three, no « Portion NATA non couverte » (red before: the coordinate point was ANOTHER node and the portion was one unresolved leg)", what='portion')
+    c.eq(coords[2], ["Cycle de navigation périmé pour NAT : 2026-10-01, source de N260B (NICSO → ALLEX)."],
+         "the remark on an old cycle says what comes from it (the airway N260B and its points) and the zone, not the zone alone; the zone has no other cycle, so no « cycle courant »", what='cycle')

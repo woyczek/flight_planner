@@ -142,7 +142,11 @@ class Nav:
         keys=self.ids.get(ident,[])
         if keys: return keys
         p=coordinate(ident)
-        return [self.add(dict(id=ident,lat=p[0],lon=p[1]))] if p else []
+        if not p: return []
+        for named in [i for i in self.ids if '/' in i]:      # SOG-0411 : « 5100N05000W » est le point que la route NAT nomme « 51/50 » (les deux écritures d'une même coordonnée) : le même nœud, sinon la portion « NATF » ne le rejoint pas
+            for key in self.ids[named]:
+                if nm(dict(lat=p[0],lon=p[1]),self.nodes[key])<0.15: return [key]
+        return [self.add(dict(id=ident,lat=p[0],lon=p[1]))]
 
     def resolve(self,ident):
         candidates=self.keys_of(ident)
@@ -860,9 +864,17 @@ def assess(request,_nav=None,_rad=None,_path=None):
           dict(name='RAD complet',reason='Le vol entier, SID/STAR développées comprises, est le périmètre du contrôle. Seules les formes de conditions explicitement prises en charge sont décidées. Conditions complexes, doublons ambigus, plafonnements conditionnels et géométrie des espaces restent à interpréter.'),
           dict(name='Procédures et environnement',reason='SID/STAR complètes sélectionnées depuis AeroDB, selon la piste. Tracé entre points codés, sans modèle de virage ni certification ARINC. Approche finale, IAS, parité, QNH, vent, performances, relief, NOTAM et activations EAUP/EUUP non évalués.')]
     if not rad.book: issue('REVUE','Aucun RAD fourni ne couvre cette date : contrôle RAD indisponible.')
-    usedcycles={(e.get('zone'),e.get('source_cycle') or nav.cycles.get(e.get('zone'))) for _,_,e in parsed if e.get('zone')}
-    for zone,cycle in sorted(usedcycles):
-        if cycle and (when.date()-dt.date.fromisoformat(cycle)).days>=28:issue('REVUE',f'Cycle de navigation périmé pour {zone.upper()} : {cycle} (source des segments utilisés).')
+    usedcycles={}      # SOG-0411 : (zone, cycle) → les tronçons qui en viennent (la remarque dit CE qui est périmé, pas seulement la zone)
+    for u,v,e in parsed:
+        if e.get('zone'):usedcycles.setdefault((e['zone'],e.get('source_cycle') or nav.cycles.get(e['zone'])),[]).append((e.get('route') or '?',nav.nodes[u]['id'],nav.nodes[v]['id']))
+    for (zone,cycle),legs_of in sorted(usedcycles.items(),key=lambda x:(x[0][0],x[0][1] or '')):
+        if cycle and (when.date()-dt.date.fromisoformat(cycle)).days>=28:
+            named=[]      # un tronçon par voie : de son premier point au dernier (« N260B-N271B (NICSO → ALLEX) »)
+            for via,a_,b_ in legs_of:
+                if named and named[-1][0]==via:named[-1][2]=b_
+                else:named.append([via,a_,b_])
+            seen_cycle=nav.cycles.get(zone)
+            issue('REVUE',f'Cycle de navigation périmé pour {zone.upper()} : {cycle}, source de '+', '.join(f'{v} ({a_} → {b_})' for v,a_,b_ in named[:4])+(f' et {len(named)-4} autre(s)' if len(named)>4 else '')+(f' ; le cycle courant de la zone est {seen_cycle}' if seen_cycle and seen_cycle!=cycle else '')+'.')
     errors=[x for x in issues if x['level']=='ERREUR']
     data_gaps=[dict(start=l['start']['id'],end=l['end']['id'],via=l['via'],reason=l['data_gap']) for l in legs if l.get('data_gap')]
     status='ERREURS DÉTECTÉES' if errors else 'CONTRÔLE INCOMPLET — DONNÉES MANQUANTES' if data_gaps else 'CONTRÔLE PARTIEL — À VÉRIFIER'
