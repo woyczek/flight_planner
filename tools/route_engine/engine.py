@@ -961,6 +961,10 @@ def assess(request,_nav=None,_rad=None,_path=None):
               +('Prises quand même (le message en vigueur au moment du vol n\'est pas lu) ; ' if stale else "Route gardée d'un message précédent, valable à l'heure de son passage ; " if kept else 'Message du jour ; ')+'autorisation océanique non vérifiée.')
     random_legs=[l for l in legs if l.get('origin')=='random']
     if random_legs:issue('REVUE','Route libre océanique, créée : '+' '.join(dict.fromkeys(l['start']['id'] for l in random_legs))+' '+random_legs[-1]['end']['id']+' (un point par 10° de longitude, à la latitude entière du chemin le plus court). Non publiée : autorisation océanique non vérifiée.')
+    sec=getattr(nav,'sections_info',None) or {}
+    nd=sec.get('nat_discarded') if random_legs else None      # SOG-0421 : la route NAT valable écartée au profit de la route libre (+5 % ou plus) : dite avec l'écart, et la proximité d'une route NAT valable
+    if nd:issue('REVUE',f"Route NAT {nd['track']} écartée : {nd['nm']:g} NM contre {nd['free_nm']:g} NM pour la route libre, {nd['extra_nm']:g} NM de plus (+{nd['extra_pct']:g} %, seuil {nd['max_pct']:g} %) ; la route libre est prise (« direct, pas forcément par le nord »).")
+    for x in (sec.get('nat_near') or []) if nd else []:issue('REVUE',f"La route libre passe à moins d'un degré de latitude de la route NAT {x['track']} (à {x['min_deg']:g}°, entre {x['from_lon']:g}° et {x['to_lon']:g}°) : à contrôler.")
     if not nat_legs and legs and getattr(nav,'nat',None):   # SOG-0263 : un vol qui traverse sans track dans son sens le dit, au lieu de se taire
         hint=nat_layer.hint(nav,dep,arr)
         if hint:issue('REVUE',hint)

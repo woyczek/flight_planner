@@ -8,12 +8,17 @@ résolues dans l'ordre de leur minorant ; une chaîne résolue remplace ses esti
 il n'est pas, par construction, le meilleur de tous les vols (un vol sans track n'y est pas) : l'option est une demande, pas le défaut.
 
 `solve` rend le chemin (la liste des tronçons, comme Nav.search) ou None (pas applicable : pas de track dans le sens du vol, un vol hors Atlantique, rien de résolu) ; dans ce cas la recherche entière suit, comme sans l'option. Ce que la dernière résolution a fait est dans `nav.sections_info` : les sections (nom, de, à, distance, coût, états développés), la track retenue, les tracks essayées."""
+import copy
 import datetime
 import time
 
 from . import engine, free_route, nat_layer
 
 EUROPE_NEED = 3      # SOG-0412 (le temps) : la recherche d'Europe vers les entrées des routes NAT s'arrête dès que EUROPE_NEED entrées sont atteintes (les moins chères d'abord : elles sortent de la file dans l'ordre de leur coût) ; les autres ne sont cherchées que si aucune des trois n'a donné de route valable ni de chaîne (EIDW → KJFK : 15 020 états, 7 s, pour les six entrées ; 738 états, 0,05 s, pour trois : la même route)
+
+NAT_MAX_EXTRA = 0.05      # SOG-0421 (Q-0082, la réponse de l'utilisateur : « direct, pas forcément par le nord ») : une route NAT valable est prise tant qu'elle rallonge de MOINS de 5 % la route libre ; au-delà, la route libre, et la réponse dit la route écartée et l'écart
+NAT_COMPARE_MIN = 1.15      # SOG-0421 (le temps) : la route libre n'est cherchée que si la route NAT dépasse le grand cercle de plus de 15 % (la recherche de la route libre coûte 3 à 8 s : sur les 72 traversées vers l'ouest du 17/11 elle ne change que les vols de Madrid, dont la route NAT est à 1,17 à 1,25 fois le grand cercle ; sous 1,15 elle gaspillait 3 à 8 s par vol sans rien changer) ; une route NAT entre 5 et 15 % au-dessus du grand cercle n'est pas comparée
+NAT_NEAR_DEG = 1.0      # SOG-0421 : une route libre prise à la place d'une route NAT qui passe à moins d'un degré de latitude d'une route NAT valable le dit
 
 WEST_LON, EAST_LON = -35.0, -15.0      # les mêmes limites que plan.crosses_ocean et nat_layer.hint
 
@@ -248,6 +253,9 @@ def _solve(nav, g, start, end):
         info['reason'] = 'Aucune chaîne par une route NAT valable n\'a abouti.'
         return _free(nav, g, start, end, ratio, info)
     cost, path, sections, tid = best
+    swapped = _nat_or_free(nav, g, start, end, ratio, info, path, tid, {t for _l, t, _o in skeleton} | {tid}, meta)      # SOG-0421
+    if swapped is not None:
+        return swapped
     info['chosen'], info['sections'], info['cost'] = tid, sections, round(cost, 1)
     _taken(nav, info, tid, outwin.get(tid))
     _entry(nav, g, info)
@@ -380,6 +388,68 @@ def _opposite_ends(nav, g, start, end, info):
             if (not a or t >= a) and (not b or t <= b):
                 out.add(k)
     return frozenset(out)
+
+
+def _nat_or_free(nav, g, start, end, ratio, info, path, tid, valid, meta):
+    """SOG-0421 : la route NAT choisie (`path`) rallonge-t-elle de 5 % ou plus la route libre ? Alors la route libre est prise à sa place, et la réponse dit la route écartée et l'écart (`sections.nat_discarded` : { track, nm, free_nm, extra_nm, extra_pct, max_pct } et une phrase de `reason`),
+    et dit si la route libre passe à moins d'un degré de latitude d'une route NAT valable (`sections.nat_near`). Rend le chemin de la route libre, ou None (la route NAT reste).
+    Le temps : la route libre n'est cherchée que si la route NAT dépasse le grand cercle de plus de 15 % (NAT_COMPARE_MIN) : au-dessous, la comparaison coûte 3 à 8 s et change rarement la route."""
+    a, b = nav.nodes[start], nav.nodes[end]
+    nat_nm = sum(e['nm'] for _u, _v, e in path)
+    if nat_nm <= engine.nm(a, b) * NAT_COMPARE_MIN:
+        return None
+    kept = nav.__dict__.setdefault('_nat_kept', set())      # le temps : la comparaison déjà faite pour cette route NAT et gardée ne se refait pas aux reprises RAD du même calcul (chaque reprise relance la recherche : 3 à 4 s de plus à chaque fois sur un vol dont la route NAT reste)
+    memo = (start, end, tid, round(nat_nm))
+    if memo in kept:
+        return None
+    alt = copy.deepcopy(info)
+    seen = len(info.get('steps') or [])
+    free_path = _free(nav, g, start, end, ratio, alt)
+    if not free_path or alt.get('source') != 'random':
+        info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])      # la recherche de la route libre a coûté : elle est dans le temps dit
+        kept.add(memo)
+        return None
+    free_nm = sum(e['nm'] for _u, _v, e in free_path)
+    extra = nat_nm - free_nm
+    if free_nm <= 0 or extra < NAT_MAX_EXTRA * free_nm:
+        info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])
+        kept.add(memo)
+        return None
+    label = (meta.get(tid) or {}).get('label') or tid
+    alt['nat_discarded'] = {'track': label, 'key': tid, 'nm': round(nat_nm, 1), 'free_nm': round(free_nm, 1), 'extra_nm': round(extra, 1), 'extra_pct': round(100 * extra / free_nm, 1), 'max_pct': round(100 * NAT_MAX_EXTRA, 1)}
+    near = _near_nat(nav, free_path, [t for t in sorted(valid) if t in ((getattr(nav, 'nat', None) or {}).get('points') or {})])
+    if near:
+        alt['nat_near'] = near
+    alt['reason'] = (alt.get('reason') or '') + f" Route NAT {label} écartée : {alt['nat_discarded']['nm']:g} NM contre {alt['nat_discarded']['free_nm']:g} NM pour la route libre, {alt['nat_discarded']['extra_nm']:g} NM de plus (+{alt['nat_discarded']['extra_pct']:g} %, seuil {alt['nat_discarded']['max_pct']:g} %)." +         ''.join(f" La route libre passe à moins de {NAT_NEAR_DEG:g}° de latitude de la route NAT {x['track']} (à {x['min_deg']:g}°, entre {x['from_lon']:g}° et {x['to_lon']:g}°) : à contrôler." for x in near)
+    nav.sections_info = alt
+    return free_path
+
+
+def _near_nat(nav, free_path, tracks):
+    """SOG-0421 : les routes NAT valables dont une longitude est à moins de NAT_NEAR_DEG de latitude de la route libre créée : [{ track, min_deg, from_lon, to_lon }] (le tracé de la route libre est échantillonné chaque degré de longitude ; celui d'une route NAT, ses points)."""
+    created = [(nav.nodes[u], nav.nodes[v]) for u, v, e in free_path if e.get('origin') == 'random']
+    pts = ((getattr(nav, 'nat', None) or {}).get('points') or {})
+    out = []
+    for tid in tracks:
+        poly = sorted(((p['lon'], p['lat']) for p in pts.get(tid) or []), key=lambda x: x[0])
+        if len(poly) < 2:
+            continue
+        lat_of = lambda lon, poly=poly: next((la0 + (la1 - la0) * (lon - lo0) / (lo1 - lo0) for (lo0, la0), (lo1, la1) in zip(poly, poly[1:]) if lo0 <= lon <= lo1 and lo1 > lo0), None)
+        close = []
+        for p, q in created:
+            lo0, lo1 = sorted((p['lon'], q['lon']))
+            if lo1 - lo0 < 0.01:
+                continue
+            lon = lo0
+            while lon <= lo1 + 1e-9:
+                t = (lon - p['lon']) / (q['lon'] - p['lon'])
+                lat, other = p['lat'] + t * (q['lat'] - p['lat']), lat_of(lon)
+                if other is not None and abs(lat - other) < NAT_NEAR_DEG:
+                    close.append((abs(lat - other), lon))
+                lon += 1.0
+        if close:
+            out.append({'track': (nav.nat.get('meta') or {}).get(tid, {}).get('label') or tid, 'min_deg': round(min(d for d, _l in close), 2), 'from_lon': round(min(l for _d, l in close), 1), 'to_lon': round(max(l for _d, l in close), 1)})
+    return out
 
 
 def _free(nav, g, start, end, ratio, info):

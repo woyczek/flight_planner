@@ -14856,6 +14856,77 @@ def k332(c):
          'the rule of the ergonomics session: a CALCULATED route is never lost to a rule that is decided — with the rule LF9201 (form A, SITET, not satisfied by this flight) the only link of the bench goes through SITET: the search without the blocks gives the best route, the answer says « aucune route sans infraction », names the rule LF9201 in a REVUE (never an ERREUR) and the status is `computed` (red before: no route, a proposal)', what='calculated form A')
     big = 'DEP (' + 'AAAA, ' * 1000 + 'BBBB)'
     c.eq((RFL.condition(big, ctx('XXXX', 'YYYY'), G()), RFL.condition('DEP (AAAA, XXXX)', ctx('XXXX', 'YYYY'), G())), (None, True), 'a cell of more than 4 000 signs is not decided (the cost of the reading stays bounded); a short one is', what='bounded')
+
+
+@case('K333', 'Route engine, SOG-0421 (Q-0082, the answer of the user: « direct, pas forcément par le nord »): a valid NAT route is taken as long as it lengthens the FREE route by LESS than 5 % (`sections.NAT_MAX_EXTRA`); beyond, the free route is taken and the answer says the discarded route and the gap — `sections.nat_discarded` { track, nm, free_nm, extra_nm, extra_pct, max_pct } and a REVUE with the two lengths in NM and the percentage; the free route is searched only when the NAT route exceeds the great circle by more than 15 % (`NAT_COMPARE_MIN`, the time); a free route within one degree of latitude of a valid NAT route says it (`sections.nat_near`)',
+      'K', static=True,
+      rule='SOG-0421 (ergonomics session, 17 Nov; Q-0082 answered by the user: « direct, pas forcément par le nord »). Measured on the real base (17 Nov, the message of the day, FL370, departure at 12:00Z): LEMD → KBOS took the route F by the north (3 694 NM) when the free route by the south (43/15 → 47/50, then the NAR OMSAT) is 2 997 NM: +23 %; LEMD → KJFK +22 %, LEMD → KMIA +23 %, LPPT → KBOS +38 %, LFPG → KMIA +6.4 %. The other flights of London, Dublin, Amsterdam, Frankfurt and Paris keep their route (their NAT route is within 15 % of the great circle: the search of the free route is not even made — made for every flight above 1.07 of the great circle it cost 3 to 8 s on 30 of the 72 westbound flights for no change). Bench: the fixture of K330 (KJFK → EGLL, a day system with ONE track whose points are written for the case: a straight one and a detour by 60°N).')
+def k333(c):
+    import gzip
+    import json
+    import os
+    import sys
+    import tempfile
+    _regen()
+    import route_fixture as RF
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import import_books as I, plan as PL, view, results_cache, sections as S
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    straight = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T19:00:00Z'}
+    detour = dict(straight, route=['ENTRA', '60/40', '60/30', '60/20', 'EXITA'])
+
+    def run(track):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                         'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+                with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            radz = os.path.join(data, 'route', 'rad.json.gz')
+            I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+            fra = os.path.join(data, 'route', 'fra.json.gz')
+            with gzip.open(fra, 'wt', encoding='utf-8') as f:
+                json.dump([], f)
+            os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+            with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                json.dump({'tracks': [track]}, f)
+            results_cache.ENABLED = False
+            try:
+                args = {'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T04:30', 'alternatives': False, 'proposals': False, 'fl': 370}
+                req = view.to_request(args)
+                res = PL.compute(req, data, radz, fra)
+                return res, view.to_view(res, req)
+            finally:
+                results_cache.ENABLED = True
+    res_s, view_s = run(straight)
+    res_d, view_d = run(detour)
+    sec_s, sec_d = res_s['sections'], res_d['sections']
+    c.eq((sec_s.get('chosen'), sec_s.get('nat_discarded'), sec_s.get('source')), ('A', None, None), 'a straight track: taken, nothing discarded (red before and after: the behaviour of before)', what='straight')
+    nd = sec_d.get('nat_discarded') or {}
+    c.eq((sec_d.get('source'), sec_d.get('chosen'), nd.get('track'), nd.get('max_pct'), nd.get('extra_pct', 0) >= 5.0, abs(nd.get('nm', 0) - nd.get('free_nm', 0) - nd.get('extra_nm', 0)) < 0.11), ('random', None, 'A', 5.0, True, True),
+         'a track that lengthens the free route by 5 % or more (a detour by 60°N): the FREE route is taken (`source: random`), the answer carries `nat_discarded` with the lengths, the gap in NM and in % and the threshold (red before: the route A is taken whatever its length)', what='detour')
+    texts = [i['text'] for i in res_d['primary']['issues'] if 'écartée' in i['text']]
+    c.eq((len(texts), 'Route NAT A écartée' in texts[0], f"{nd['nm']:g} NM contre {nd['free_nm']:g} NM" in texts[0], f"+{nd['extra_pct']:g} %" in texts[0], 'seuil 5 %' in texts[0]), (1, True, True, True, True), 'and ONE sentence (a REVUE) says the route, the two lengths in NM, the gap in NM and in %, and the threshold', what='sentence')
+    c.eq((res_d['primary']['ok'], view_d['sections'].get('nat_discarded') == nd), (True, True), 'the route is computed and the view carries the field', what='view')
+    # the named constants and the time: a route that does not exceed 1.15 × the great circle is not compared
+    c.ok(S.NAT_MAX_EXTRA == 0.05 and S.NAT_COMPARE_MIN == 1.15 and S.NAT_NEAR_DEG == 1.0, str((S.NAT_MAX_EXTRA, S.NAT_COMPARE_MIN, S.NAT_NEAR_DEG)), 'the threshold 5 %, the threshold of the comparison over the great circle (1.15) and the proximity of one degree are named constants')
+
+    class Fake:
+        def __init__(self):
+            self.nodes = {'F1': {'id': 'F1', 'lat': 50.0, 'lon': -50.0}, 'F2': {'id': 'F2', 'lat': 52.0, 'lon': -20.0}}
+            self.nat = {'points': {'N': [{'id': 'a', 'lat': 50.5, 'lon': -50.0}, {'id': 'b', 'lat': 52.6, 'lon': -20.0}], 'FAR': [{'id': 'c', 'lat': 56.0, 'lon': -50.0}, {'id': 'd', 'lat': 56.0, 'lon': -20.0}]}, 'meta': {'N': {'label': 'N'}, 'FAR': {'label': 'FAR'}}}
+    path = [('F1', 'F2', {'nm': 1000.0, 'origin': 'random'})]
+    near = S._near_nat(Fake(), path, ['N', 'FAR'])
+    c.eq([(x['track'], x['min_deg'] < 1.0) for x in near], [('N', True)], 'a free route (50°N → 52°N) that runs at 0.5 to 0.6° of latitude of a valid NAT route (50.5 → 52.6) says it, with the track and the longitudes; a track 4° away says nothing', what='near')
+    c.ok(near and near[0]['from_lon'] <= -49 and near[0]['to_lon'] >= -21, str(near), 'the longitudes of the proximity are given (from -50 to -20)')
 @case('K335', 'Route engine, SOG-0401 (the requested LEVEL in the RAD rules): the conditions « RFL ABV FL105 », « RFL BLW FL295 », « RFL BTN FL105-FL195 » are decided with the level FILED, and « ABV / BLW FL245 AT point » with the altitude the PROFILE gives at that point (a point that is not on the route: false); a level EXACTLY on a limit (the source does not say whether « ABV FL105 » includes FL105) or an unknown level is not decided; a CALCULATED route keeps the rules it still breaks as REVUE lines (the best route is returned: never a route lost to a decided rule)',
       'K', static=True,
       rule='SOG-0401 (the ergonomics session: « le lot RAD niveau demandé : lire RFL ABV / BLW / BTN FLnnn (et AT point, IN pays quand c\'est simple) — le plus rentable, 2 674 règles »). Measured on the RAD 2611 of the workstation (8 179 active rows of the annex 2B): the rules that need a level are 2 674 (32.7 %), but only 24 need nothing else than RFL; 151 more are a simple « ABV / BLW FLnnn AT point »; the mass (about 2 000) is « ABV FLnnn AT point » inside nested lists and exceptions (form B: « 1. DEP (…) & BLW FL265 AT (UPALA Z109 BAMAS) EXC ARR (…) A. RFL ABV FL265 AT … »): decidable shape 17.0 % → 18.8 %; on the exact route of the user (EDDF → LFMN FL350): 95 conditions decided before the lot of Europe, 110 after it, 123 with the levels. Bench: the conditions on their own and a fixture RAD.')
