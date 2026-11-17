@@ -2189,3 +2189,16 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   the inner grid of its field and the field by 2.3 px — the inner column of an aerodrome field is now bounded to its cell). No change
   of behaviour. F243, five designs at 390, 630 and 1 280 px (red on the parent at 630: the two fields at
   different tops, « Auto » on the date, no note under the field); F6 reads the label and the note.
+- **17 Nov 2026 — SOG-0399 (lot 1), the alternate fuel counts the go-around and the approach** (the user: « vérifier que l'emport
+  supplémentaire couvre bien la remise des gaz, la montée et la croisière, la descente et l'approche »; my reading of 17/11: the
+  go-around at the destination and the approach at the alternate were never counted, and with the sheet's alternate flow and TAS the
+  leg was one average cruise — a DEFECT of the quote, the alternate under-estimated). Three parts, shown above the alternate total in
+  the quote's detail: the go-around (flat minutes at the climb flow of the quote, `q.climb.ff`, else the cruise flow), the leg (as
+  before, its nature said: « moyenne de la fiche » or « montée, croisière, descente calculées »), the approach (flat minutes at the
+  holding flow, the final reserve's: `reserveFuelFlowPerHour`, else 65 % of the cruise flow). Flat minutes: the sheet's
+  `alternate.goAroundMin` / `alternate.approachMin` (a number 0 to 60), else the named constants `ALTN_GOAROUND_MIN` = 5 and
+  `ALTN_APPROACH_MIN` = 10, values pending Q-0076; said « forfait » or « forfait de la fiche ». The leg's distance and course are now
+  the straight line (rhumb line: the rule of a direct), no longer the great circle. The final reserve stays its own line (never counted
+  twice). The quote's total rises by the two allowances. The two sheet fields are read as soon as a sheet carries them; their entry
+  in the sheet editor is a line of the schema in frame/aerodb/sheets.js (AeroDB's file: asked, not done here). F246 (red on the parent:
+  no part); F138 follows the rhumb line and reads the leg in its part.

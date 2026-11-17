@@ -420,10 +420,19 @@ const TX = {
   ],
   aidsLeg: ['{a} → {b}', '{a} → {b}', '{a} → {b}', '{a} → {b}'],
   // le carburant de dégagement (SOG-0225)
-  altnLine: ['Dégagement {id} · {nm} NM{fl} · {src} · {w}', 'Alternate {id} · {nm} NM{fl} · {src} · {w}',
-    'Ausweich {id} · {nm} NM{fl} · {src} · {w}',
-    'Alternativo {id} · {nm} NM{fl} · {src} · {w}'
+  // SOG-0399 : le total du dégagement, puis ses trois parts au-dessus de lui (remise des gaz, trajet, approche)
+  altnLine: ['Dégagement {id}', 'Alternate {id}', 'Ausweich {id}', 'Alternativo {id}'],
+  altnLeg: ['Trajet {a} → {id} · {nm} NM{fl} · {src} · {w}', 'Leg {a} → {id} · {nm} NM{fl} · {src} · {w}',
+    'Strecke {a} → {id} · {nm} NM{fl} · {src} · {w}', 'Trayecto {a} → {id} · {nm} NM{fl} · {src} · {w}'
   ],
+  altnGoAround: ['Remise des gaz à {a} : {m} min au débit de montée, {k}', 'Go-around at {a}: {m} min at the climb flow, {k}',
+    'Durchstarten in {a}: {m} min mit dem Steigflugverbrauch, {k}', 'Motor y al aire en {a}: {m} min al consumo de subida, {k}'
+  ],
+  altnApproach: ['Approche à {id} : {m} min au débit d’attente, {k}', 'Approach at {id}: {m} min at the holding flow, {k}',
+    'Anflug in {id}: {m} min mit dem Warteverbrauch, {k}', 'Aproximación en {id}: {m} min al consumo de espera, {k}'
+  ],
+  altnFlat: ['forfait', 'flat allowance', 'Pauschale', 'tanto alzado'],
+  altnFlatSheet: ['forfait de la fiche', 'flat allowance of the sheet', 'Pauschale des Datenblatts', 'tanto alzado de la ficha'],
   altnNone: ['Dégagement : aucun terrain saisi', 'Alternate: no aerodrome entered', 'Ausweich: kein Flugplatz eingegeben',
     'Alternativo: ningún aeródromo introducido'
   ],
@@ -434,8 +443,10 @@ const TX = {
   altnPending: ['Dégagement {id} : position en lecture…', 'Alternate {id}: reading its position…',
     'Ausweich {id}: Position wird gelesen…', 'Alternativo {id}: leyendo su posición…'
   ],
-  altnSheet: ['débit de la fiche', 'flow of the sheet', 'Verbrauch des Datenblatts', 'consumo de la ficha'],
-  altnModel: ['modèle de l’étape', 'model of the trip', 'Modell der Strecke', 'modelo del trayecto'],
+  altnSheet: ['moyenne de la fiche', 'average of the sheet', 'Mittelwert des Datenblatts', 'media de la ficha'],
+  altnModel: ['montée, croisière, descente calculées', 'climb, cruise, descent computed', 'Steigflug, Reiseflug, Sinkflug berechnet',
+    'subida, crucero, descenso calculados'
+  ],
   altnWind: ['vent {d}/{s} kt', 'wind {d}/{s} kt', 'Wind {d}/{s} kt', 'viento {d}/{s} kt'],
   altnNoWind: ['vent inconnu', 'wind unknown', 'Wind unbekannt', 'viento desconocido'],
   // la famille et la série du vol (SOG-0202 T2) ; les mots du compte rendu (l'utilisateur, 10 nov. : « famille / série »)
@@ -2373,6 +2384,7 @@ const STYLE = `
 [data-module="fuel"] .fu-step[hidden]{display:none}
 [data-module="fuel"] .fu-startnote:empty{display:none}
 [data-module="fuel"] .fu-flightstate{font-weight:700;color:var(--sog-accent)}
+[data-module="fuel"] tr[data-altnpart]>td:first-child{padding-left:1.2em;color:var(--sog-muted)} /* SOG-0399 : les parts du dégagement, en retrait */
 [data-module="fuel"] .fu-eta{grid-template-columns:1fr auto}
 [data-module="fuel"] .fu-next-pt{border-color:var(--sog-accent);box-shadow:inset 3px 0 0 var(--sog-accent)}
 [data-module="fuel"] .fu-steps>button{flex:1 1 0;min-width:44px;padding-inline:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -7906,13 +7918,33 @@ function themeSet(k, v) {
   saveFlight();
 }
 
-// ---------------------------------------------------------------- carburant de dégagement (SOG-0225, règle validée le 10 nov.)
-// Distance : l'orthodromie arrivée → dégagement (positions aerodb). La fiche a alternate.fuelFlowPerHour et alternate.tasKt : temps =
-// distance / (TAS + composante du vent sur l'axe), carburant = temps × ce débit (« débit de la fiche ») ; sinon le modèle de l'étape sur
-// cette distance (« modèle de l'étape ») au niveau min(croisière, plafond, distance × 100 ft au FL semi-circulaire du cap, FL050 au moins),
-// sans roulage, contingence ni réserve. Vent : le dernier lu de la route (le profil prévu près de l'arrivée, au niveau du dégagement),
+// ---------------------------------------------------------------- carburant de dégagement (SOG-0225, règle validée le 10 nov. ; SOG-0399)
+// Trois parts (SOG-0399 : le dégagement était sous-estimé) : (1) la REMISE DES GAZ à la destination, un forfait en minutes au débit de
+// montée ; (2) le TRAJET, le trait droit (loxodromie, la règle d'un direct) arrivée → dégagement (positions aerodb) : la fiche a
+// alternate.fuelFlowPerHour et alternate.tasKt : temps = distance / (TAS + composante du vent sur l'axe), carburant = temps × ce débit
+// (« moyenne de la fiche ») ; sinon le modèle de l'étape sur cette distance (« montée, croisière, descente calculées ») au niveau
+// min(croisière, plafond, distance × 100 ft au FL semi-circulaire du cap, FL050 au moins) ; (3) l'APPROCHE au dégagement, un forfait en
+// minutes au débit d'attente (celui de la réserve finale du modèle). Les forfaits : alternate.goAroundMin et alternate.approachMin de la
+// fiche, sinon ALTN_GOAROUND_MIN et ALTN_APPROACH_MIN, dits « forfait ». Sans roulage, contingence ni réserve (la réserve finale reste
+// à part). Vent : le dernier lu de la route (le profil prévu près de l'arrivée, au niveau du dégagement),
 // sinon le vent du vol, sinon nul et dit « vent inconnu ». Bloc = roulage + étape + contingence + DÉGAGEMENT + réserve finale. Sans
 // terrain : dit, rien ajouté ; sans position : dit, non compté. Jamais le silence.
+/** SOG-0399 : les forfaits par défaut (minutes), en attendant les valeurs de Q-0076 — la remise des gaz à la destination et l'approche au
+ *  dégagement. */
+const ALTN_GOAROUND_MIN = 5,
+  ALTN_APPROACH_MIN = 10;
+/** SOG-0399 : un forfait du dégagement (minutes) — celui de la fiche (`alternate[k]`, nombre de 0 à 60) sinon `dflt` ; { min, src }. */
+function altnFlatOf(sheet, k, dflt) {
+  const v = sheet?.alternate?.[k],
+    n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? +v : NaN;
+  return Number.isFinite(n) && n >= 0 && n <= 60 ? {
+    min: n,
+    src: 'sheet'
+  } : {
+    min: dflt,
+    src: 'default'
+  };
+}
 /** Les positions de l'arrivée et du dégagement, lues une fois par couple (aerodb), puis le devis redessiné. */
 function altnGeo(r) {
   const key = `${r.arr || ''}>${r.altn || ''}`,
@@ -7966,8 +7998,9 @@ function altnAdd(q, qIn, sheet, cruiseFt) {
     }
   });
   const M = window.FuelModel,
-    nm = gcNm(g.arr, g.alt),
-    brg = bearing(g.arr, g.alt),
+    // SOG-0399 : le trait droit (loxodromie), la règle d'un direct
+    nm = rhumbNm(g.arr, g.alt),
+    brg = rhumbCourse(g.arr, g.alt),
     // le niveau : distance × 100 ft, au FL semi-circulaire du cap (impair vers l'est, pair vers l'ouest), FL050 au moins, sous la croisière et le plafond
     fl = (() => {
       let k = Math.max(5, Math.round(nm / 10));
@@ -8019,21 +8052,37 @@ function altnAdd(q, qIn, sheet, cruiseFt) {
       id
     }
   });
+  // SOG-0399 : la remise des gaz au débit de montée du devis, l'approche au débit d'attente (celui de la réserve finale du modèle)
+  const cff = +q.cruise?.ff > 0 ? +q.cruise.ff : 0,
+    climbFf = +q.climb?.ff > 0 ? +q.climb.ff : cff,
+    holdFf = +sheet?.reserveFuelFlowPerHour > 0 ? +sheet.reserveFuelFlowPerHour : cff * .65,
+    ga = altnFlatOf(sheet, 'goAroundMin', ALTN_GOAROUND_MIN),
+    ap = altnFlatOf(sheet, 'approachMin', ALTN_APPROACH_MIN);
+  ga.fuel = ga.min / 60 * climbFf;
+  ap.fuel = ap.min / 60 * holdFf;
+  const total = fuel + ga.fuel + ap.fuel;
   q.alternate = {
     state: 'ok',
     id,
+    from: String(r.arr || '').toUpperCase(),
     nm,
     fl: src === 'model' ? fl : null,
-    min,
-    fuel,
+    min: min + ga.min + ap.min,
+    fuel: total,
     src,
     wind: wind ? {
       dirDeg: Math.round(+wind.dirDeg),
       speedKt: Math.round(+wind.speedKt)
-    } : null
+    } : null,
+    leg: {
+      min,
+      fuel
+    },
+    goAround: ga,
+    approach: ap
   };
   for (const k of ['block', 'blockLow', 'blockHigh'])
-    if (Number.isFinite(+q[k])) q[k] = +q[k] + fuel;
+    if (Number.isFinite(+q[k])) q[k] = +q[k] + total;
   return q;
 }
 /** La ligne du dégagement au détail du devis : toujours dite (aucun terrain, position inconnue, ou son carburant et d'où il vient). */
@@ -8049,7 +8098,15 @@ function altnRow(q, unit) {
   if (a.state !== 'ok') return row(tt(TX.altnUnknown, {
     id: a.id
   }));
-  return row(tt(TX.altnLine, {
+  // SOG-0399 : ses trois parts (remise des gaz, trajet, approche), puis le total, comme l'étape au-dessus
+  const part = (k, label, p) => `<tr data-altnpart="${k}"><td>${esc(label)}</td><td class="f-num">${p?.min != null ? hmm(p.min) : ''}</td><td></td><td class="f-num">${p ? esc(fuelTxt(p.fuel, unit)) : ''}</td></tr>`,
+    flat = p => tt(p.src === 'sheet' ? TX.altnFlatSheet : TX.altnFlat);
+  return part('goaround', tt(TX.altnGoAround, {
+    a: a.from || '—',
+    m: Math.round(a.goAround.min),
+    k: flat(a.goAround)
+  }), a.goAround) + part('leg', tt(TX.altnLeg, {
+    a: a.from || '—',
     id: a.id,
     nm: Math.round(a.nm),
     fl: a.fl ? ` · ${flTxt(a.fl)}` : '',
@@ -8058,6 +8115,12 @@ function altnRow(q, unit) {
       d: String(a.wind.dirDeg).padStart(3, '0'),
       s: a.wind.speedKt
     }) : tt(TX.altnNoWind)
+  }), a.leg) + part('approach', tt(TX.altnApproach, {
+    id: a.id,
+    m: Math.round(a.approach.min),
+    k: flat(a.approach)
+  }), a.approach) + row(tt(TX.altnLine, {
+    id: a.id
   }), a.min != null ? hmm(a.min) : '', esc(fuelTxt(a.fuel, unit)));
 }
 

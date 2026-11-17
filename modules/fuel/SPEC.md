@@ -45,14 +45,19 @@ with a sticky result (§ 9; F1, F2, F4).
 All checked by the quote and levels benches (F80) unless said.
 
 - **Alternate fuel** (SOG-0225, 10 Nov 2026; user: « OUI »; rule validated by the ergonomist): the block is taxi + trip + contingency +
-  **alternate** + final reserve. Distance: the great circle arrival → alternate (aerodb's positions, read once per pair). The sheet's
+  **alternate** + final reserve. SOG-0399 (17 Nov 2026): the alternate is three parts — the GO-AROUND at the destination (flat
+  minutes at the climb flow of the quote), the LEG, the APPROACH at the alternate (flat minutes at the holding flow, the final
+  reserve's: `reserveFuelFlowPerHour`, else 65 % of the cruise flow); the flat minutes are the sheet's `alternate.goAroundMin` and
+  `alternate.approachMin` (0 to 60), else `ALTN_GOAROUND_MIN` = 5 and `ALTN_APPROACH_MIN` = 10 (Q-0076 pending), said « forfait ».
+  Leg distance: the straight line (rhumb line, the rule of a direct) arrival → alternate (aerodb's positions, read once per pair). The sheet's
   `alternate.fuelFlowPerHour` and `alternate.tasKt`: time = distance / (TAS + wind component on the axis), fuel = time × that flow
-  (« débit de la fiche »); else the model of the trip on that distance (« modèle de l'étape ») at min(cruise level, ceiling, distance ×
+  (« moyenne de la fiche »); else the model of the trip on that distance (« montée, croisière, descente calculées ») at min(cruise level, ceiling, distance ×
   100 ft on the semicircular FL of the course — odd eastbound, even westbound —, FL050 at least), without taxi, contingency nor reserve.
   Wind: the last one read on the route (the forecast profile nearest the arrival, at the alternate's level), else the flight's, else
-  nil, said « vent inconnu ». A line of the quote's detail says it (« Dégagement LFRN · 372 NM · FL270 · modèle de l'étape · vent
-  inconnu »); no alternate entered: « Dégagement : aucun terrain saisi », nothing added; no position: « … position inconnue, non
-  compté ». F138.
+  nil, said « vent inconnu ». The quote's detail says the three parts, then the total « Dégagement LFRN » (« Remise des gaz à LFST :
+  5 min au débit de montée, forfait », « Trajet LFST → LFRN · 372 NM · FL270 · montée, croisière, descente calculées · vent
+  inconnu », « Approche à LFRN : 10 min au débit d'attente, forfait »); no alternate entered: « Dégagement : aucun terrain saisi »,
+  nothing added; no position: « … position inconnue, non compté ». F138, F246.
 
 - **Cruise fuel flow and TAS** (`cruiseSource`): the entry for this flight (« Débit de croisière de ce vol », typed in the unit of
   the quote and labelled with it, « lb/h »; kept in kg/h in `pilot/<trigram>/fuel.json` `entries`, converted by

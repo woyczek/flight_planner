@@ -4018,8 +4018,20 @@ def f137(c):
 # SOG-0225: the named flight of the ergonomist (LFPO → LFST, alternate LFRN), at invented test positions (no AIP content)
 _ALT_PTS = {'LFPO': (48.70, 2.40), 'LFST': (48.50, 7.60), 'LFRN': (48.10, -1.70)}
 _ALT_EXTRA = {'aerodromes': [{'icao': k, 'name': k + ' TEST', 'lat': v[0], 'lon': v[1], 'elev': 100} for k, v in _ALT_PTS.items()]}
-_ROWS_JS = f"""[...document.querySelectorAll('{FUEL} [data-details] table tr, {FUEL} [data-fold=details] table tr')].map(tr => [tr.dataset.altnrow || '',
+# (SOG-0399: the parts of the alternate, tr[data-altnpart], are left out — the rows of the totals only)
+_ROWS_JS = f"""[...document.querySelectorAll('{FUEL} [data-details] table tr:not([data-altnpart]), {FUEL} [data-fold=details] table tr:not([data-altnpart])')].map(tr => [tr.dataset.altnrow || '',
   tr.children[0]?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() || '', (tr.children[3]?.textContent || '').replace(/[^0-9]/g, '')])"""
+
+
+def _rhumb_nm(a, b):
+    """The rhumb-line distance (NM) between two (lat, lon), as frame/lib/geo.js rhumbNm."""
+    import math
+    r = math.pi / 180
+    dphi = (b[0] - a[0]) * r
+    dpsi = math.log(math.tan(math.pi / 4 + b[0] * r / 2) / math.tan(math.pi / 4 + a[0] * r / 2))
+    q = dphi / dpsi if abs(dpsi) > 1e-12 else math.cos(a[0] * r)
+    dl = ((b[1] - a[1] + 540) % 360 - 180) * r
+    return math.hypot(dphi, q * dl) * 3440.065
 
 
 def _alt_flight(altn):
@@ -4038,11 +4050,7 @@ def _alt_flight(altn):
       'model of the trip at min(cruise, ceiling, distance × 100 ft on the semicircular FL, FL050 at least); the wind at the arrival end, else nil, said; '
       'LFPO → LFST, alternate LFRN at invented positions; capture 390')
 def f138(c):
-    import math
-    r = math.pi / 180
-    a, b = _ALT_PTS['LFST'], _ALT_PTS['LFRN']
-    d = math.sin((b[0] - a[0]) * r / 2) ** 2 + math.cos(a[0] * r) * math.cos(b[0] * r) * math.sin((b[1] - a[1]) * r / 2) ** 2
-    nm = round(2 * 3440.065 * math.asin(math.sqrt(d)))
+    nm = round(_rhumb_nm(_ALT_PTS['LFST'], _ALT_PTS['LFRN']))   # SOG-0399: the straight line (rhumb line), the rule of a direct
     for w in (390, 1280):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         c.open('fuel', docs=_alt_flight('LFRN'), airfields=True, aero_extra=_ALT_EXTRA)
@@ -4051,8 +4059,9 @@ def f138(c):
         c.until(f"!!document.querySelector('{FUEL} [data-altnrow=ok]')", timeout=12000, what=f'{w} px: the alternate line, computed')
         rows = c.js(_ROWS_JS)
         alt = [x for x in rows if x[0] == 'ok'][0]
-        c.ok('LFRN' in alt[1] and f'{nm} NM' in alt[1], alt, f'{w} px: « Dégagement LFRN · {nm} NM … »')
-        c.ok(norm(row(c, 'altnModel')) in alt[1] and norm(row(c, 'altnNoWind')) in alt[1], alt[1], 'it says the model of the trip and « vent inconnu »')
+        leg = norm(c.text(f'{FUEL} tr[data-altnpart="leg"] > td') or '')
+        c.ok('LFRN' in alt[1] and 'LFRN' in leg and f'{nm} NM' in leg, [alt, leg], f'{w} px: « Dégagement LFRN », its leg « … {nm} NM … »')
+        c.ok(norm(row(c, 'altnModel')) in leg and norm(row(c, 'altnNoWind')) in leg, leg, 'the leg says climb, cruise, descent computed and « vent inconnu »')
         nums = [int(x[2]) for x in rows if x[2]]
         # the rows with a fuel: taxi, climb, cruise, descent, trip, contingency, alternate, reserve, block
         taxi, trip, cont, altn, res, block = nums[0], nums[-5], nums[-4], nums[-3], nums[-2], nums[-1]
@@ -6784,3 +6793,62 @@ def f243(c):
         c.le(m['sw'], m['iw'], f'{w} px: no horizontal scroll', what='scrollWidth')
         c.page.evaluate(f"document.querySelector('{FUEL} .fu-ads').scrollIntoView({{block: 'center'}})")
         c.shot(f'F243_{c.design}_{w}_{c.lang}.png')
+
+
+_PARTS_JS = f"""[...document.querySelectorAll('{FUEL} tr[data-altnpart], {FUEL} tr[data-altnrow]')].map(tr => [tr.dataset.altnpart || 'total:' + tr.dataset.altnrow,
+  tr.children[0]?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() || '', (tr.children[1]?.textContent || '').trim(),
+  +(tr.children[3]?.textContent || '').replace(/[^0-9]/g, '') || 0])"""
+
+
+@case('F246', 'Quote: the alternate fuel counts the GO-AROUND at the destination (flat minutes at the climb flow) and the APPROACH at the '
+      'alternate (flat minutes at the holding flow), each said « forfait », around the leg that says its nature; the total is their sum; '
+      'the sheet sets the two allowances', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0399 (user: « vérifier que l\'emport supplémentaire couvre bien la remise des gaz, la montée et la croisière, la descente '
+      'et l\'approche »; reading of 17/11: the go-around and the approach were never counted — a defect of the quote); the ergonomist, 17/11 '
+      'at 9 h 56: 5 and 10 min by default (named constants, Q-0076 pending), settable in the sheet; LFPO → LFST, alternate LFRN, invented positions')
+def f246(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    # 1. the default allowances: 5 min of go-around, 10 min of approach, said « forfait »
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=_alt_flight('LFRN'), airfields=True, aero_extra=_ALT_EXTRA)
+    wait_quote(c)
+    to_step(c, 3)
+    c.until(f"!!document.querySelector('{FUEL} tr[data-altnpart=goaround]')", timeout=12000, what='the parts of the alternate')
+    rows = c.js(_PARTS_JS)
+    c.eq([r[0] for r in rows], ['goaround', 'leg', 'approach', 'total:ok'], 'go-around, leg, approach, then the alternate total', what='rows')
+    flat = tx(T, 'altnFlat', L)
+    want_ga = tx(T, 'altnGoAround', L).replace('{a}', 'LFST').replace('{m}', '5').replace('{k}', flat)
+    want_ap = tx(T, 'altnApproach', L).replace('{id}', 'LFRN').replace('{m}', '10').replace('{k}', flat)
+    c.eq(norm(rows[0][1]), norm(want_ga), '« Remise des gaz à LFST : 5 min au débit de montée, forfait »', what='go-around')
+    c.eq(norm(rows[2][1]), norm(want_ap), '« Approche à LFRN : 10 min au débit d’attente, forfait »', what='approach')
+    c.ok(norm(tx(T, 'altnModel', L)) in norm(rows[1][1]), rows[1][1], 'the leg says its nature: climb, cruise, descent computed')
+    ga, leg, ap, tot = (r[3] for r in rows)
+    c.ok(ga > 0 and ap > 0 and leg > 0 and abs(tot - (ga + leg + ap)) <= 3, rows, 'the alternate total is the sum of its three parts')
+    c.js(f"document.querySelector('{FUEL} tr[data-altnpart=goaround]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F246_{c.design}_390_{L}_default.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})   # the same detail on a computer
+    c.js(f"document.querySelector('{FUEL} tr[data-altnpart=goaround]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F246_{c.design}_1280_{L}_default.png')
+    # 2. the sheet sets them: 3 min of go-around, 15 min of approach, said « forfait de la fiche »; the approach at the holding flow
+    #    (no holding flow in the sheet: 65 % of the cruise flow, the final reserve's) — 15 min × 1 300 kg/h = 325 kg
+    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+          'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}, 'alternate': {'goAroundMin': 3, 'approachMin': 15}}
+    docs = _alt_flight('LFRN')
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document']], airfields=True, aero_extra=_ALT_EXTRA)
+    wait_quote(c)
+    to_step(c, 3)
+    fs = tx(T, 'altnFlatSheet', L)
+    c.until(f"(document.querySelector('{FUEL} tr[data-altnpart=approach]')?.textContent || '').includes(' 15 ')", timeout=12000,
+            what='the approach of the sheet')
+    rows = c.js(_PARTS_JS)
+    c.eq(norm(rows[0][1]), norm(tx(T, 'altnGoAround', L).replace('{a}', 'LFST').replace('{m}', '3').replace('{k}', fs)),
+         '« Remise des gaz à LFST : 3 min …, forfait de la fiche »', what='go-around sheet')
+    c.eq(norm(rows[2][1]), norm(tx(T, 'altnApproach', L).replace('{id}', 'LFRN').replace('{m}', '15').replace('{k}', fs)),
+         '« Approche à LFRN : 15 min …, forfait de la fiche »', what='approach sheet')
+    c.ok(abs(rows[2][3] - 325) <= 2, rows[2], 'the approach at the holding flow: 15 min × 1 300 kg/h ≈ 325 kg')
+    ga, leg, ap, tot = (r[3] for r in rows)
+    c.ok(abs(tot - (ga + leg + ap)) <= 3, rows, 'the total, the sum of the three parts')
