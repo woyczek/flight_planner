@@ -2202,3 +2202,19 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   twice). The quote's total rises by the two allowances. The two sheet fields are read as soon as a sheet carries them; their entry
   in the sheet editor is a line of the schema in frame/aerodb/sheets.js (AeroDB's file: asked, not done here). F246 (red on the parent:
   no part); F138 follows the rhumb line and reads the leg in its part.
+- **17 Nov 2026 — SOG-0391 (b), the free route said at the head** (the user: « surpris par le trajet, à cheval entre NAT echo et NAT
+  romeo »; the engine followed the rule — departure taken at the clock, the ocean entry long after the eastbound window — and nothing
+  said it without opening a fold). AeroDB 779cae699 gives the hour as FIELDS: each track set aside for the time carries `at`, `entry`,
+  `from`, `to`; `sections.entry` the ocean entry of the route taken. `proofOf` reads them as untrusted input (`isoMinute`: an ISO UTC
+  hour to the minute, an offset refused; the entry by pattern) and counts the causes over forty tracks at most (`cause`: time, level,
+  direction; the earliest passage; the window of the message) — never the words of a reason. One line per computation, from the HEAD
+  route only (proof « created »; a variant alone through a free route keeps its fold), under « Calculé à … », above « Niveau non
+  donné » (both stay when the level is in cause and the flight has none), no button (Q-0072): the time (« Route libre : aucune route
+  NAT valable à l'entrée de l'océan vers 13 h 32 Z (routes vers l'est : 01 h 00 – 08 h 00 Z) »), the level (« aucune route NAT
+  n'offre le FL350 »), or both with their number; the direction said by the engine (`sections.direction`, east | west, asked of
+  AeroDB for (a)), never guessed from the departure and arrival: absent, the parenthesis is omitted. A flight without time ends
+  it with « Départ pris à 07 h 57 Z (maintenant). »: the hour the engine says it took (`sections.depart.time`), else the hour of the
+  request, kept with the answer (`depart: { time, now }`, `now` set on the request when `planned_at` is empty, read by the page only,
+  never sent) — never the clock of the drawing; nothing when the engine took no hour (`depart.basis` « none »). The answer kept in
+  route_alts.json now keeps the keys of `sections` that proofOf and levelOf read (`RE.sectionsKept`), so the proof and the line read
+  the same after a reload. Hours in Z, to the minute (« 13 h 32 Z » in French, held by no-break spaces, « 13:32Z » otherwise). F244 (red on the parent: no line).

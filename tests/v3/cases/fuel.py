@@ -6852,3 +6852,110 @@ def f246(c):
     c.ok(abs(rows[2][3] - 325) <= 2, rows[2], 'the approach at the holding flow: 15 min × 1 300 kg/h ≈ 325 kg')
     ga, leg, ap, tot = (r[3] for r in rows)
     c.ok(abs(tot - (ga + leg + ap)) <= 3, rows, 'the total, the sum of the three parts')
+
+
+# SOG-0391 (b): a FREE route created because no track of the flight's direction is valid at the ocean entry — invented, in the form of
+# AeroDB 779cae699: each track set aside for the TIME carries `at`, `entry`, `from`, `to`; `sections.entry` the ocean entry of the route
+# taken; the departure the engine took (`depart.time`, never the clock of the page). A westbound flight (EIDW → KJFK).
+def _free_time_sections(level=False, fl=None, basis='request', direction='west'):
+    win = {'entry': 'DOGAL', 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}
+    rej = [dict({'track': t, 'code': 'time', 'text': f'route NAT {t} : non valide', 'at': f'2026-11-17T09:1{i}Z'}, **win)
+           for i, t in enumerate('ABC')]
+    rej += [{'track': t, 'code': 'direction', 'text': 'sens contraire'} for t in 'VW']
+    if level:
+        rej.append({'track': 'D', 'code': 'level', 'text': 'FL370 non proposé', 'levels': [310, 320]})
+    return dict({'source': 'random', 'chosen': None, 'depart': {'time': '2026-11-17T07:57Z', 'basis': 'request'},
+                 'entry': {'point': 'DOGAL', 'time': '2026-11-17T09:21Z', 'nm': 612.4, 'speed_kt': 450},
+                 'sections': [{'name': 'europe', 'from': 'EIDW', 'to': 'DOGAL', 'nm': 612.4, 'proof': 'computed'},
+                              {'name': 'free', 'from': 'DOGAL', 'to': '54/50', 'nm': 1510.0, 'proof': 'created'},
+                              {'name': 'amérique', 'from': '54/50', 'to': 'KJFK', 'nm': 905.6, 'proof': 'computed'}],
+                 'rejected': rej}, **({'fl': fl, 'fl_basis': basis} if fl else {}), **({'direction': direction} if direction else {}))
+
+
+def _zt(lang, hh, mm, bare=False):
+    """An hour as the screen says it: « 09 h 21 Z » in French, « 09:21Z » otherwise."""
+    return (f'{hh} h {mm}' if lang == 'fr' else f'{hh}:{mm}') + ('' if bare else ' Z' if lang == 'fr' else 'Z')
+
+
+@case('F244', 'Route step, a FREE route created because no NAT track of the flight\'s direction suits: one line at the head, without a fold, '
+      'says why from the FIELDS of the answer — the time (« Route libre : aucune route NAT valable à l\'entrée de l\'océan vers 09 h 21 Z '
+      '(routes vers l\'ouest : 11 h 30 – 19 h 00 Z) »), the level, or both with their number; a flight without time ends it with « Départ '
+      'pris à 07 h 57 Z (maintenant). », the hour of the REQUEST kept with the answer; under « Calculé à … », above « Niveau non donné »; '
+      'kept on reload; no line for a route through a track of the day', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='SOG-0391 (b) (the user, 17 Nov: « surpris par le trajet, à cheval entre NAT echo et NAT romeo »: the free route followed the rule, '
+      'nothing said it without opening a fold); the ergonomist, 17/11 at 9 h 08: the place, one line per computation from the head route, '
+      'the departure taken « (maintenant) » for a flight without time; AeroDB 779cae699: at, entry, from, to, sections.entry; a fake launcher')
+def f244(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    t = lambda k: tx(T, k, L)
+    west = tx(T, 'west', L, after='rFreeDir:')
+    win = f'{_zt(L, "11", "30", True)} – {_zt(L, "19", "00")}'
+    st = _route_launcher(c, ['route/compute'])
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': _free_time_sections(fl=180, basis='default')}
+    # 1. a flight without time nor level: the cause is the time; the departure taken « now »; the line « Niveau non donné » stays, below
+    docs = _ocean_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['level'] = {'ft': None}
+            d[1].pop('planned_at', None)
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    _compute_now(c, st)
+    F = f'{FUEL} [data-routealts] [data-rfree]'
+    c.until(f"!!document.querySelector('{F}')", timeout=15000, what='the line « Route libre … » at the head')
+    want = (t('rFreeTime').replace('{at}', _zt(L, '09', '21')).replace('{dw}', ' (' + t('rFreeWin').replace('{dir}', west).replace('{win}', win) + ')')
+            + '. ' + t('rFreeNow').replace('{t}', _zt(L, '07', '57')))
+    c.eq(norm(c.text(f'{F} > span') or ''), norm(want), 'the time said from the fields, the departure taken « now »', what='time')
+    if L == 'fr':   # an hour never cut at the end of a line (the capture at 390 px cut « 11 h / 30 »)
+        raw = c.text(f'{F} > span') or ''
+        c.ok(all(x in raw for x in ('09\u00a0h\u00a021\u00a0Z', '11\u00a0h\u00a030', '19\u00a0h\u00a000\u00a0Z')), raw,
+             'each hour held together by no-break spaces')
+    c.eq(c.js(f"document.querySelector('{F}').dataset.cause"), 'time', 'the cause: the time', what='cause')
+    c.eq(c.count(f'{F} button'), 0, 'no button on the line (Q-0072: only for the level)', what='button')
+    order = c.js(f"[...document.querySelector('{FUEL} [data-routealts]').children].map(e => e.hasAttribute('data-rage') ? 'age' : "
+                 f"e.hasAttribute('data-rfree') ? 'free' : e.hasAttribute('data-rnolevel') ? 'nolevel' : '').filter(Boolean)")
+    c.eq(order[:3], ['age', 'free', 'nolevel'], 'under « Calculé à … », above « Niveau non donné »', what='place')
+    c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F244_{c.design}_390_{L}_time.png')
+    # kept: read again from the device, the same words — the hour of the request kept with the answer, never the clock of the drawing
+    c.page.reload(wait_until='load')
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{F}')", timeout=15000, what='the line, after a reload')
+    c.eq(norm(c.text(f'{F} > span') or ''), norm(want), 'the same line after a reload', what='reload')
+    # 2. a flight WITH its time and level: the time AND the level, with their number; no departure said; the engine says no direction:
+    # nothing guessed (« routes NAT »)
+    docs = _ocean_docs()
+    when = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)).strftime('%Y-%m-%dT06:00:00Z')
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['planned_at'] = when
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': _free_time_sections(level=True, fl=370, direction=None)}
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.until(f"document.querySelector('{F}')?.dataset.cause === 'both'", timeout=15000, what='the line with both causes')
+    tp = f" ({t('rFreeAt').replace('{at}', _zt(L, '09', '21'))}, {t('rFreeValid').replace('{win}', win)})"
+    want = (t('rFreeBoth').replace('{dir}', tx(T, 'none', L, after='rFreeDir:')).replace('{nt}', '3').replace('{tp}', tp).replace('{nl}', '1').replace('{fl}', '370'))
+    c.eq(norm(c.text(f'{F} > span') or ''), norm(want), 'the time and the level with their number; the departure not said (the flight has its time)',
+         what='both')
+    c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F244_{c.design}_390_{L}_both.png')
+    # 3. the head route through a track of the day: no line (the fold of a variant keeps the rest)
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': _OCEAN_SECTIONS}
+    _compute_now(c, st)
+    c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt=\"0\"] [data-proof]')", timeout=15000, what='the proof of the track')
+    c.eq(c.count(F), 0, 'a route through a track of the day: no line', what='published')
+    # the engine read: the fields of the time bounded, a foreign offset refused, the departure not said when the engine took no time
+    got = c.js("""() => import('/modules/fuel/route_engine.js').then(m => {
+      const alt = { name: 'x', route: 'EIDW DCT KJFK', distanceNm: 3000, fl: 370, segments: [{ from: 'EIDW', to: 'KJFK' }] },
+        sec = { depart: { time: null, basis: 'none' }, sections: [{ name: 'free', from: 'DOGAL', to: '54/50', nm: 1, proof: 'created' }],
+          rejected: [{ track: 'A', code: 'time', text: 'x', at: '2026-11-17T09:10+02:00', entry: '<b>', from: 'hier', to: '2026-11-17T19:00:00.000Z' }] },
+        n = m.normalize({ ok: true, alternatives: [alt], issues: [], sections: sec }, 'compute', { date: '2026-11-17T07:57', now: true });
+      const r = n.plans[0].proof.rejected[0];
+      return { at: r.at, entry: r.entry, from: r.from, to: r.to, depart: n.depart, cause: n.plans[0].proof.cause.time };
+    })""")
+    c.eq(got, {'at': '', 'entry': '', 'from': '', 'to': '2026-11-17T19:00Z', 'depart': None, 'cause': 1},
+         'the fields read as untrusted input; no departure said when the engine took none', what='engine read')

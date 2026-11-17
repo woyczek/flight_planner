@@ -496,6 +496,43 @@ const TX = {
     'Nivel no indicado: ruta calculada al nivel por defecto del motor'
   ],
   rNoLevelGo: ['Donner le niveau', 'Give the level', 'Flugfläche angeben', 'Indicar el nivel'],
+  // SOG-0391 (b) : la route libre créée, dite en tête avec sa cause (celle des routes NAT du sens du vol : l'heure, le niveau, les deux)
+  rFreeTime: ['Route libre : aucune route NAT valable à l’entrée de l’océan vers {at}{dw}',
+    'Free route: no NAT track valid at the ocean entry about {at}{dw}',
+    'Freie Route: keine NAT-Route gültig am Ozeaneintritt gegen {at}{dw}',
+    'Ruta libre: ninguna ruta NAT válida en la entrada al océano hacia las {at}{dw}'
+  ],
+  rFreeTime0: ['Route libre : aucune route NAT valable à l’heure du passage{dw}',
+    'Free route: no NAT track valid at the time of passage{dw}',
+    'Freie Route: keine NAT-Route gültig zur Durchflugzeit{dw}', 'Ruta libre: ninguna ruta NAT válida a la hora del paso{dw}'
+  ],
+  rFreeLevel: ['Route libre : aucune route NAT n’offre le FL{fl}{dir}', 'Free route: no NAT track offers FL{fl}{dir}',
+    'Freie Route: keine NAT-Route bietet FL{fl}{dir}', 'Ruta libre: ninguna ruta NAT ofrece el FL{fl}{dir}'
+  ],
+  rFreeLevel0: ['Route libre : aucune route NAT n’offre le niveau du calcul{dir}',
+    'Free route: no NAT track offers the level computed{dir}',
+    'Freie Route: keine NAT-Route bietet die berechnete Flugfläche{dir}',
+    'Ruta libre: ninguna ruta NAT ofrece el nivel calculado{dir}'
+  ],
+  rFreeBoth: ['Route libre : {dir} écartées, {nt} pour l’heure{tp}, {nl} pour le niveau (FL{fl} non offert)',
+    'Free route: {dir} set aside, {nt} for the time{tp}, {nl} for the level (FL{fl} not offered)',
+    'Freie Route: {dir} verworfen, {nt} wegen der Zeit{tp}, {nl} wegen der Flugfläche (FL{fl} nicht angeboten)',
+    'Ruta libre: {dir} descartadas, {nt} por la hora{tp}, {nl} por el nivel (FL{fl} no ofrecido)'
+  ],
+  rFree0: ['Route libre : aucune route NAT du jour ne convient', 'Free route: no NAT track of the day suits',
+    'Freie Route: keine NAT-Route des Tages passt', 'Ruta libre: ninguna ruta NAT del día conviene'
+  ],
+  rFreeDir: {
+    east: ['routes vers l’est', 'eastbound tracks', 'Routen nach Osten', 'rutas hacia el este'],
+    west: ['routes vers l’ouest', 'westbound tracks', 'Routen nach Westen', 'rutas hacia el oeste'],
+    none: ['routes NAT', 'NAT tracks', 'NAT-Routen', 'rutas NAT'] // le sens non dit par le moteur : rien n'est deviné
+  },
+  rFreeWin: ['{dir} : {win}', '{dir}: {win}', '{dir}: {win}', '{dir}: {win}'],
+  rFreeAt: ['entrée de l’océan vers {at}', 'ocean entry about {at}', 'Ozeaneintritt gegen {at}', 'entrada al océano hacia las {at}'],
+  rFreeValid: ['valables {win}', 'valid {win}', 'gültig {win}', 'válidas {win}'],
+  rFreeNow: ['Départ pris à {t} (maintenant).', 'Departure taken at {t} (now).', 'Abflug angenommen um {t} (jetzt).',
+    'Salida tomada a las {t} (ahora).'
+  ],
   // le FL gris de la ligne de route, quand c'est le niveau par défaut du moteur (jamais pris pour celui du vol)
   rFlDefault: ['FL{fl} par défaut', 'FL{fl} by default', 'FL{fl} (Standard)', 'FL{fl} por defecto'],
   rClose: ['Fermer les propositions', 'Close the proposals', 'Vorschläge schließen', 'Cerrar las propuestas'],
@@ -3987,7 +4024,12 @@ async function routeAskRun(s, act, r, o, box, retry) {
     if (box) box.innerHTML = `<p class="f-warn" data-rfail>${esc(tt(TX.rFail))} ${retry}</p>`;
     return;
   }
-  const n = RE.normalize(res, act, args); // la demande : sans `fl`, le niveau du calcul est celui du moteur (SOG-0389)
+  // la demande : sans `fl`, le niveau du calcul est celui du moteur (SOG-0389) ; sans heure du vol, l'heure présente (SOG-0391 b : « now »,
+  // pour la lecture de la réponse seulement, jamais envoyé au lanceur)
+  const n = RE.normalize(res, act, {
+    ...args,
+    now: !Number.isFinite(Date.parse(S.flight.planned_at || ''))
+  });
   if (!n.ok) {
     // SOG-0125 : sans RAD, la phrase et le lien vers sa ligne de Données (l'import se fait là, jamais depuis Carburant) ; le message du
     // lanceur, qui nomme un travail, n'est pas montré au pilote
@@ -4479,6 +4521,60 @@ const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 /** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
  *  du moteur et ses domaines hors contrôle, repliés. */
 const limitsHtml = n => n.limitation || n.gaps.length ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}</details>` : '';
+/** SOG-0391 (b) : une heure UTC « AAAA-MM-JJTHH:MMZ » dite à la minute, en Z (« 13 h 32 Z » en français, « 13:32Z » ailleurs) ; `bare` :
+ *  sans le « Z » (le début d'une fenêtre). */
+function zTime(iso, bare = false) {
+  const d = new Date(Date.parse(iso)),
+    h = String(d.getUTCHours()).padStart(2, '0'),
+    m = String(d.getUTCMinutes()).padStart(2, '0'),
+    fr = S.ctx.lang() === 'fr';
+  // insécables : jamais « 11 h » en fin de ligne et « 30 » sur la suivante (capture F244 à 390 px)
+  return (fr ? `${h}\u00a0h\u00a0${m}` : `${h}:${m}`) + (bare ? '' : fr ? '\u00a0Z' : 'Z');
+}
+/** SOG-0391 (b) : la ligne en tête, sans pli, quand l'itinéraire de TÊTE passe par une route libre créée (preuve « created ») : sa cause,
+ *  celle des routes NAT du sens du vol, lue dans les champs (RE.normalize, proof.cause) — l'heure (le passage à l'entrée de l'océan de
+ *  la route prise, sinon le plus tôt des routes écartées, et la fenêtre du message), le niveau (celui du calcul), ou les deux avec leur
+ *  nombre ; le sens dit par le moteur (`sections.direction`), la parenthèse omise sans lui. Vol sans heure : « Départ pris à 07 h 57 Z (maintenant). », l'heure de la
+ *  demande gardée avec la réponse. Une variante seule en route libre garde son pli ; pas de bouton (Q-0072). '' sinon. */
+function freeLineHtml(A) {
+  const top = (A.list || []).find(a => a.role === 'primary' && !a.proposal),
+    P = top?.proof;
+  if (!P?.list?.some(x => x.proof === 'created')) return '';
+  // le sens, dit par le moteur (`sections.direction`) ; absent, la parenthèse est omise (sujet « routes NAT » quand il en faut un)
+  const c = P.cause || {},
+    dir = P.direction ? tt(TX.rFreeDir[P.direction]) : '',
+    win = c.from && c.to ? `${zTime(c.from, true)} – ${zTime(c.to)}` : '',
+    dw = dir ? ` (${win ? tt(TX.rFreeWin, {
+      dir,
+      win
+    }) : dir})` : '',
+    at = P.entry?.time || c.at || '',
+    fl = A.n?.level?.fl ?? top.fl ?? null,
+    flT = fl ? String(fl).padStart(3, '0') : '',
+    tp = [at ? tt(TX.rFreeAt, {
+      at: zTime(at)
+    }) : '', win ? tt(TX.rFreeValid, {
+      win
+    }) : ''].filter(Boolean).join(', '),
+    kind = c.time && c.level ? 'both' : c.time ? 'time' : c.level ? 'level' : '',
+    main = kind === 'both' ? tt(TX.rFreeBoth, {
+      dir: dir || tt(TX.rFreeDir.none),
+      nt: c.time,
+      nl: c.level,
+      tp: tp ? ` (${tp})` : '',
+      fl: flT || '—'
+    }) : kind === 'time' ? tt(at ? TX.rFreeTime : TX.rFreeTime0, {
+      at: at ? zTime(at) : '',
+      dw
+    }) : kind === 'level' ? tt(flT ? TX.rFreeLevel : TX.rFreeLevel0, {
+      fl: flT,
+      dir: dir ? ` (${dir})` : ''
+    }) : tt(TX.rFree0),
+    dep = A.n?.depart?.now && A.n.depart.time ? tt(TX.rFreeNow, {
+      t: zTime(A.n.depart.time)
+    }) : '';
+  return `<p class="f-row f-warn fu-rage" data-rfree data-cause="${esc(kind)}"><span>${esc(dep ? `${main}. ${dep}` : main)}</span></p>`;
+}
 /** La liste des itinéraires (le calculé, puis trois variantes au plus) : nom, longueur, FL tenu, écarts, la première erreur ; « Prendre »
  *  pour un itinéraire qui a une route ; le choisi marqué ; puis ce qui n'est pas contrôlé. */
 function routeAltsDraw() {
@@ -4525,7 +4621,7 @@ function routeAltsDraw() {
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
     head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}${A.cache?.hit ? ' data-cache' : ''}><span>${esc(tt(A.stale ? TX.rStale : A.cache?.hit ? TX.rCache : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
-  box.innerHTML = head + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+  box.innerHTML = head + freeLineHtml(A) + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
@@ -4667,6 +4763,8 @@ function answerOf(res, n = null) {
   return {
     ok: true,
     level: n?.level || null, // SOG-0389 (b) : le niveau du calcul et sa base, relus par RE.normalize
+    depart: n?.depart || null, // SOG-0391 (b) : l'heure de départ de la DEMANDE (et « maintenant »), jamais l'horloge au dessin
+    sections: RE.sectionsKept(res?.sections), // SOG-0391 (b) : la preuve, la route libre et sa cause se relisent après un rechargement
     alternatives: (Array.isArray(res?.alternatives) ? res.alternatives : []).slice(0, 3),
     issues: (Array.isArray(res?.issues) ? res.issues : []).slice(0, 300),
     message: String(res?.message ?? '').slice(0, 300),

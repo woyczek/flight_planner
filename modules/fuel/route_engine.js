@@ -229,6 +229,26 @@ function controlOf(c) {
  *  'request' sinon). Chaque route écartée garde son code (`direction`, `level`, `time`, `rad`, `network` ; '' sinon) et les niveaux
  *  qu'elle offre (SOG-0389 : `levels`, entiers de FL10 à FL660, vingt au plus, triés). { list, rejected, noTime } ; null sans rien. */
 const REJ_CODES = ['direction', 'level', 'time', 'rad', 'network'];
+/** SOG-0391 (b) : une heure UTC du moteur (« 2026-11-17T13:32Z », secondes et fraction admises) ou de la demande (« 2026-11-17T07:57 »,
+ *  l'heure UTC de toISOString) ramenée à la minute, « AAAA-MM-JJTHH:MMZ » ; '' pour toute autre forme (un décalage horaire compris). */
+export function isoMinute(v) {
+  const m = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2}(?:\.\d{1,6})?)?Z?$/.exec(text(v, 32));
+  return m && Number.isFinite(Date.parse(`${m[1]}Z`)) ? `${m[1]}Z` : '';
+}
+
+/** SOG-0391 (b) : les champs de l'heure d'une route NAT écartée pour l'HEURE (AeroDB 779cae699) — `at` (le passage de son entrée), `entry`
+ *  (le point), `from` / `to` (la fenêtre du message) — lus comme une entrée non sûre ; rien pour un autre code. */
+function timeOf(x) {
+  const own = k => x && typeof x === 'object' && !Array.isArray(x) && Object.hasOwn(x, k) ? x[k] : undefined;
+  if (own('code') !== 'time') return {};
+  const id = text(own('entry'), 12).toUpperCase();
+  return {
+    at: isoMinute(own('at')),
+    entry: PT_ID.test(id) ? id : '',
+    from: isoMinute(own('from')),
+    to: isoMinute(own('to'))
+  };
+}
 
 function proofOf(v) {
   const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
@@ -254,7 +274,8 @@ function proofOf(v) {
     });
   }
   const rej = own(v, 'rejected'),
-    rejected = (Array.isArray(rej) ? rej : []).slice(0, 6).map(x => {
+    raw = (Array.isArray(rej) ? rej : []).slice(0, 40),
+    rejected = raw.slice(0, 6).map(x => {
       const t = text(own(x, 'track'), 4).toUpperCase(),
         why = text(own(x, 'text'), 160).replace(/\p{Cf}/gu, '').replace(/^route\s+NAT\s+[A-Z]{1,2}\s*:\s*/i, '').trim();
       const code = own(x, 'code'),
@@ -264,14 +285,38 @@ function proofOf(v) {
         why,
         code: REJ_CODES.includes(code) ? code : '',
         levels: [...new Set((Array.isArray(lv) ? lv : []).slice(0, 40).filter(n => Number.isInteger(n) && n >= 10 && n <= 660))]
-          .sort((a, b) => a - b).slice(0, 20)
+          .sort((a, b) => a - b).slice(0, 20),
+        ...timeOf(x)
       } : null;
     }).filter(Boolean),
-    noTime = own(own(v, 'depart'), 'basis') === 'none';
-  return out.length || rejected.length || noTime ? {
+    noTime = own(own(v, 'depart'), 'basis') === 'none',
+    // SOG-0391 (b) : l'entrée de l'océan de la route PRISE (`sections.entry` : point et heure estimée ; rien sans heure de départ)
+    en = own(v, 'entry'),
+    entry = isoMinute(own(en, 'time')) ? {
+      point: end(own(en, 'point')),
+      time: isoMinute(own(en, 'time'))
+    } : null,
+    // SOG-0391 (b) : la cause, comptée sur toutes les routes écartées (quarante au plus) — l'heure, le niveau, le sens ; l'heure de passage
+    // la plus tôt et la fenêtre du message, lues dans les champs des routes écartées pour l'heure, jamais dans leur phrase
+    codes = raw.filter(x => /^[A-Z]{1,2}$/.test(text(own(x, 'track'), 4).toUpperCase())).map(x => own(x, 'code')),
+    times = raw.filter(x => own(x, 'code') === 'time').map(timeOf),
+    win = times.find(x => x.from && x.to) || {},
+    cause = {
+      time: codes.filter(c => c === 'time').length,
+      level: codes.filter(c => c === 'level').length,
+      direction: codes.filter(c => c === 'direction').length,
+      at: times.map(x => x.at).filter(Boolean).sort()[0] || '',
+      from: win.from || '',
+      to: win.to || ''
+    };
+  return out.length || rejected.length || noTime || entry ? {
     list: out,
     rejected,
-    noTime
+    noTime,
+    entry,
+    cause,
+    // SOG-0391 (b) : le sens du vol dit par le moteur (« east » | « west ») ; '' sinon (rien n'est deviné)
+    direction: ['east', 'west'].includes(own(v, 'direction')) ? own(v, 'direction') : ''
   } : null;
 }
 
@@ -353,6 +398,36 @@ function levelOf(res, asked, plans) {
   } : null;
 }
 
+/** SOG-0391 (b) : l'heure de départ du calcul — celle que le moteur dit avoir prise (`sections.depart.time`), sinon celle d'une réponse
+ *  gardée sur l'appareil (`depart`), sinon celle de la demande (`date`) — et si elle était l'heure présente faute d'heure du vol
+ *  (`now` : posé par la page sur la demande, gardé avec la réponse). { time: « AAAA-MM-JJTHH:MMZ », now } ; null sans heure lisible. */
+function departOf(res, asked) {
+  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
+    kept = own(res, 'depart');
+  // le moteur dit n'avoir pris aucune heure (`depart.basis` = 'none') : aucune heure de départ n'est dite
+  if (own(own(own(res, 'sections'), 'depart'), 'basis') === 'none') return null;
+  const time = isoMinute(own(own(own(res, 'sections'), 'depart'), 'time')) || isoMinute(own(kept, 'time')) || isoMinute(own(asked, 'date'));
+  return time ? {
+    time,
+    now: own(kept, 'now') === true || own(asked, 'now') === true
+  } : null;
+}
+/** SOG-0391 (b) : ce que la page garde de `sections` avec la réponse (route_alts.json), pour que la preuve, la route libre et sa cause se
+ *  relisent après un rechargement : les seules clés que proofOf et levelOf lisent, bornées comme ils les bornent ; relu par eux. */
+export function sectionsKept(v) {
+  const own = k => v && typeof v === 'object' && !Array.isArray(v) && Object.hasOwn(v, k) ? v[k] : undefined;
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  return {
+    sections: Array.isArray(own('sections')) ? own('sections').slice(0, 6) : [],
+    rejected: Array.isArray(own('rejected')) ? own('rejected').slice(0, 40) : [],
+    depart: own('depart') ?? null,
+    entry: own('entry') ?? null,
+    direction: own('direction') ?? null,
+    fl: own('fl') ?? null,
+    fl_basis: own('fl_basis') ?? null
+  };
+}
+
 export function normalize(res, action = 'compute', asked = null) {
   if (!res || res.ok !== true) return {
     ok: false,
@@ -382,6 +457,7 @@ export function normalize(res, action = 'compute', asked = null) {
     errors,
     plans,
     level: check ? null : levelOf(res, asked, plans),
+    depart: check ? null : departOf(res, asked),
     limitation: text(res.limitation, 400),
     // SOG-0161 (AeroDB 329847a19) : ce que la réponse est — une route calculée, des propositions de repli, rien ; déduit des itinéraires
     // pour une réponse plus ancienne
