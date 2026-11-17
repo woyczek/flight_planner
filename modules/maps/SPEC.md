@@ -697,7 +697,7 @@ Layers "Air refuelling tracks (AAR)" and "NAT tracks" (`aarTracks`, `natTracks` 
 on mission maps whose profile asks for them; read after the zones of the view from `aerodb.aarTracks()` and
 `aerodb.natTracks()` (INTEGRATION § 3). Racetrack dashed dark green with a light tint, outbound leg IP → CP as an arrow,
 the track's name beside it; heavy tracks as their two arrowed legs; NAT tracks dashed slate through their points,
-"NAT A FL350–400" at the first point.
+"NAT A FL350–400" at the first point (a route with one level only: "NAT A FL370", never "FL370–370").
 
 **NAT routes the flight cannot take** (SOG-0391 c). With a flight (a Map that is not a mission map, the NAT layer on) a NAT route is drawn
 withdrawn — 30 % opacity, its label at 45 % and without levels — when (1) it has the other **sense**: its non-empty list of levels

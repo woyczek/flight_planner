@@ -586,7 +586,7 @@
       ctx.stroke();
       ctx.setLineDash([]);
       const lv = faded ? [] : [...(tr.west || []), ...(tr.east || [])].map(Number).filter(Number.isFinite),
-        text = `NAT ${tr.id}${lv.length ? ` FL${Math.min(...lv)}–${Math.max(...lv)}` : ''}`,
+        text = `NAT ${tr.id}${lv.length ? ` FL${Math.min(...lv)}${Math.min(...lv) === Math.max(...lv) ? '' : `–${Math.max(...lv)}`}` : ''}`, // un seul niveau : « FL370 », pas « FL370–370 »
         q = toC(pts[0].lat, pts[0].lon),
         w = text.length * f * .62;
       ask(pl, {

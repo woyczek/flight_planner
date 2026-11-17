@@ -8472,6 +8472,7 @@ def d_natfade(c):
         c.ok(not lv('W2'), str(labels), f'{mode}: the westbound route with no window is withdrawn all the same (only the time criterion is skipped)')
         if mode == 'timed':
             c.ok(bool(bare('E2')) and not lv('E2'), str(labels), 'with a planned time: the east route of an ended window is withdrawn (no levels)')
+            c.ok('NAT E4 FL370' in labels, str(labels), 'a route with ONE level is labelled « FL370 », not « FL370–370 »')
             c.ok(bool(lv('E4')), str(labels), 'the time judged is the one at the ENTRY of the route (its west end), not the closest approach (its east end, 3 h later)')
         if mode == 'untimed':
             c.ok(bool(lv('E2')), str(labels), 'without a time: the east route keeps its levels (the sense alone counts)')
