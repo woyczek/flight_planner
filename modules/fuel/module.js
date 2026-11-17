@@ -782,6 +782,39 @@ const TX = {
       'Meteorología: no comprobada — el TAF no da techo ni visibilidad entre {a} y {b}.'
     ]
   },
+  // SOG-0398 lot 2 : « Proposer un dégagement »
+  altnPropose: ['Proposer un dégagement', 'Suggest an alternate', 'Ausweichflugplatz vorschlagen', 'Proponer un alternativo'],
+  altnPropBusy: ['Recherche des terrains de dégagement…', 'Looking for alternates…', 'Suche nach Ausweichflugplätzen…',
+    'Buscando aeródromos alternativos…'
+  ],
+  altnPropMsg: {
+    noSheet: ['Pas de proposition : la fiche de l’aéronef ne donne pas de longueur de piste mini.',
+      'No suggestion: the aircraft sheet gives no minimum runway length.',
+      'Kein Vorschlag: das Luftfahrzeugblatt nennt keine Mindestpistenlänge.',
+      'Sin propuesta: la ficha de la aeronave no da longitud mínima de pista.'
+    ],
+    noArr: ['Pas de proposition : la position de l’arrivée est inconnue.', 'No suggestion: the arrival’s position is unknown.',
+      'Kein Vorschlag: die Position des Zielflugplatzes ist unbekannt.', 'Sin propuesta: la posición de la llegada es desconocida.'
+    ],
+    none: ['Aucun terrain entre 30 et 300 NM de l’arrivée ne passe la piste et les moyens.',
+      'No aerodrome between 30 and 300 NM from the arrival passes the runway and the aids.',
+      'Kein Flugplatz zwischen 30 und 300 NM vom Ziel erfüllt Piste und Navigationshilfen.',
+      'Ningún aeródromo entre 30 y 300 NM de la llegada cumple pista y medios.'
+    ]
+  },
+  altnPropHead: ['Les plus proches de {arr} (piste et moyens bons) :', 'Closest to {arr} (runway and aids good):',
+    'Am nächsten zu {arr} (Piste und Navigationshilfen gut):', 'Los más cercanos a {arr} (pista y medios buenos):'
+  ],
+  altnPropWhy: {
+    'aids-visual': ['à vue seulement', 'visual only', 'nur Sichtanflug', 'solo visual'],
+    'wx-ifr': ['météo IFR', 'IFR weather', 'IFR-Wetter', 'meteorología IFR'],
+    'wx-lifr': ['météo LIFR', 'LIFR weather', 'LIFR-Wetter', 'meteorología LIFR'],
+    'wx-unread': ['météo non lue', 'weather not read', 'Wetter nicht gelesen', 'meteorología no leída']
+  },
+  altnPropMore: ['{n} autre(s) sur la Carte.', '{n} more on the Map.', '{n} weitere auf der Karte.', '{n} más en el mapa.'],
+  altnProposed: ['Proposé : {icao}', 'Suggested: {icao}', 'Vorgeschlagen: {icao}', 'Propuesto: {icao}'],
+  altnTake: ['Prendre', 'Take', 'Übernehmen', 'Tomar'],
+  altnPropClose: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
   altnWxNote: ['La météo est un indicateur (catégories VFR, MVFR, IFR, LIFR de la FAA), jamais une conformité aux minima du terrain.',
     'The weather is an indicator (the FAA’s VFR, MVFR, IFR, LIFR categories), never compliance with the aerodrome’s minima.',
     'Das Wetter ist ein Indikator (FAA-Kategorien VFR, MVFR, IFR, LIFR), nie die Einhaltung der Minima des Flugplatzes.',
@@ -2494,7 +2527,8 @@ function compute() {
         // (classe de motorisation), la description du type donnée à perfModel, et la clé des vents prévus d'aujourd'hui (aloftKey :
         // les points de la route et l'heure du vol, ou l'heure présente sans date) contre laquelle altnAdd et aloftMeanAt les acceptent
         return JSON.stringify([qIn, goal, o, +f.isaDev || 0, r0.arr || '', r0.altn || '', S.altnGeo?.key || '', S.altnGeo?.state || '',
-          f.weather?.real || false, f.windSource?.kind || '', A0?.key || '', A0?.profiles?.length || 0, A0?.at || '', aloftKey(), S.ctx.lang(),
+          f.weather?.real || false, f.windSource?.kind || '', A0?.key || '', A0?.profiles?.length || 0, A0?.at || '', aloftKey(), S
+          .ctx.lang(),
           !!window.AircraftCatalog?.classify, A?.record?.(code)?.description || ''
         ]);
       } catch {
@@ -2706,6 +2740,15 @@ const STYLE = `
 [data-module="fuel"] :is(.fu-altnline,.fu-altnfold li)[data-state="grey"]>.fu-altnsign{color:var(--sog-muted)}
 [data-module="fuel"] .fu-altnfold ul{list-style:none;margin:4px 0 0;padding:0}
 [data-module="fuel"] .fu-altnfold li{display:flex;gap:6px;align-items:baseline;margin:2px 0}
+/* SOG-0398 lot 2 : la proposition — le bouton, puis les trois plus proches, chacun avec « Prendre » à droite */
+[data-module="fuel"] .fu-altnprop{margin:4px 0 0}
+[data-module="fuel"] .fu-altnprop ul{list-style:none;margin:2px 0 0;padding:0}
+[data-module="fuel"] .fu-altnprop li{display:flex;gap:6px;align-items:baseline;margin:4px 0}
+[data-module="fuel"] .fu-altnprop li>span:nth-child(2){flex:1;min-width:0}
+[data-module="fuel"] .fu-altnprop li[data-state="ok"]>.fu-altnsign{color:var(--sog-ok)}
+[data-module="fuel"] .fu-altnprop li[data-state="warn"]>.fu-altnsign{color:var(--sog-warn)}
+[data-module="fuel"] .fu-altnprop li[data-state="err"]>.fu-altnsign{color:var(--sog-err)}
+[data-module="fuel"] .fu-altnprop li[data-state="grey"]>.fu-altnsign{color:var(--sog-muted)}
 [data-module="fuel"] .fu-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)} /* par-dessus la page, jamais dans la mise en page */
 [data-module="fuel"] .fu-sug[hidden]{display:none}
 [data-module="fuel"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
@@ -3509,6 +3552,14 @@ function onPlanClick(e) {
   if (b?.dataset.do === 'level') return setLevel(+b.dataset.ft);
   if (b?.dataset.do === 'levelauto') return levelAutoOn();
   if (b?.dataset.do === 'adswap') return swapAds();
+  // SOG-0398 lot 2 : « Proposer un dégagement », « Prendre », « Fermer »
+  if (b?.dataset.do === 'altnpropose') return altnProposeRun();
+  if (b?.dataset.do === 'altntake') return altnTake(String(b.dataset.icao || ''));
+  if (b?.dataset.do === 'altnpropclose') {
+    S.altnProp = null;
+    altnDocWrite();
+    return altnChkDraw(S.C);
+  }
   if (b?.dataset.do === 'alignlvl') return alignLevels();
   if (pick && S.C?.D) {
     const svg = pick.ownerSVGElement,
@@ -5138,8 +5189,9 @@ async function altnChkDraw(C) {
   if (!box) return;
   const s = S,
     id = String(S.flight.route?.altn || '').toUpperCase().trim();
+  altnPropStale();
   if (!/^[A-Z0-9]{4}$/.test(id)) {
-    box.innerHTML = '';
+    box.innerHTML = altnPropHtml();
     return;
   }
   if (S.altnData?.id !== id) {
@@ -5189,7 +5241,283 @@ async function altnChkDraw(C) {
     }),
     open = !!box.querySelector('details[data-altnfold]')?.open,
     count = J.state === 'ok' ? '' : ` <span class="f-muted" data-altncount>${esc(tt(J.grey ? TX.altnCount : TX.altnCountOk, { ok: J.ok, g: J.grey }))}</span>`;
-  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p><details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(why(c))}</span></li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>`;
+  box.innerHTML = `<p class="fu-altnline" data-state="${J.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[J.state]}</span><span data-altnhead>${esc(tt(TX.altnChk[J.state], { id, w }))}${count}</span></p><details class="fu-altnfold" data-altnfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.altnFold))}</summary><ul>${crits.map(c => `<li data-crit="${c.k}" data-state="${c.state}"><span class="fu-altnsign" aria-hidden="true">${SIGN[c.state]}</span><span>${esc(why(c))}</span></li>`).join('')}<li class="f-muted" data-altnnote><span class="fu-altnsign" aria-hidden="true"></span><span>${esc(tt(TX.altnWxNote))}</span></li></ul></details>${altnPropHtml()}`;
+}
+/** SOG-0398 lot 2 : le document local des terrains proposés, pour la Carte (INTEGRATION § 3 ter) : cet appareil seulement (politique
+ *  cache), jamais data/, écrit par Carburant seul, avec l'événement fuel-altn-candidates. */
+const ALTN_DOC = 'cache/fuel/altn_candidates.json',
+  // la lecture des terrains autour de l'arrivée (aerodromes.json des zones) attend au plus tant
+  ALTN_PROP_WAIT_MS = 8000;
+const ALTN_SIGN = {
+  ok: '✓',
+  warn: '!',
+  err: '✕',
+  grey: '?'
+};
+/** Un nom de terrain venu de la base (texte tiers) : sans caractère de contrôle ni de format, espaces réduits, 60 signes au plus. */
+const altnName = v => String(v ?? '').replace(/[\u0000-\u001f\u007f\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+/** La clé du vol d'une proposition : départ, arrivée, aéronef (la Carte et Carburant la tiennent pour périmée quand elle change). */
+const altnPropKey = () => {
+  const r = S.flight.route || {},
+    a = S.flight.aircraft || {};
+  return `${String(r.dep || '').toUpperCase()}>${String(r.arr || '').toUpperCase()}>${String(a.sheetId || a.registration || a.type || '').slice(0, 24)}`;
+};
+/** La position de l'arrivée : le dernier point de la route quand c'est elle, sinon aerodb. */
+async function altnArrPos(r) {
+  const last = (r.points || []).at(-1);
+  if (last && last.id === r.arr && Number.isFinite(+last.lat) && Number.isFinite(+last.lon)) return {
+    lat: +last.lat,
+    lon: +last.lon
+  };
+  const c = await Promise.resolve(S.ctx.aerodb?.coords?.(r.arr)).catch(() => null);
+  return c && Number.isFinite(+c.lat) && Number.isFinite(+c.lon) ? {
+    lat: +c.lat,
+    lon: +c.lon
+  } : null;
+}
+/** Les critères et l'état d'un terrain proposé : piste et moyens de la recherche, météo du TAF lu (une heure autour de son arrivée :
+ *  départ du vol + durée de l'étape + son dégagement), « météo non lue » sinon. */
+function altnPropCrits(x) {
+  const P = S.altnProp,
+    dep = Date.parse(S.flight.planned_at || ''),
+    q = S.altnIn?.q,
+    min = Number.isFinite(+q?.minutes) && Number.isFinite(+x.cost?.min) ? +q.minutes + +x.cost.min : NaN,
+    t = Number.isFinite(dep) && Number.isFinite(min) ? Math.round(dep / 1000 + min * 60) : null,
+    wx = AC.weatherOf(P?.taf?.[x.icao] || null, t, {
+      read: !!P?.wxRead?.has(x.icao),
+      noTaf: !!P?.noTaf
+    }),
+    crits = [x.rwy, x.aids, wx];
+  return {
+    crits,
+    ...AC.proposalOf(crits)
+  };
+}
+/** La météo (TAF) des terrains `ids`, par la couche météo du cadre (une lecture de plus que Météo, pour ces terrains seulement : les trois
+ *  plus proches, puis celui qu'on touche sur la Carte). */
+async function altnPropWx(ids) {
+  const s = S,
+    P = S.altnProp,
+    W = S.ctx.weather;
+  if (!P || !ids.length || !W?.taf) return;
+  const t = await Promise.resolve(W.taf(ids, {
+    cacheOnly: S.ctx.net?.online?.() === false
+  })).catch(() => null);
+  if (gone(s) || S.altnProp !== P) return;
+  P.taf = {
+    ...(P.taf || {}),
+    ...(t?.items || {})
+  };
+  P.noTaf = !!t?.noTaf;
+  for (const id of ids) P.wxRead.add(id);
+}
+/** « Proposer un dégagement » : les terrains de 30 à 300 NM de l'arrivée (aerodb, enregistrements complets), retenus sur la PISTE et les
+ *  MOYENS (altn_check.js), les sept plus proches chiffrés (altnCost) ; la météo des trois premiers ; le document de la Carte écrit. Le
+ *  champ Dégagement n'est jamais écrit ici. */
+async function altnProposeRun() {
+  const s = S,
+    r = S.flight.route || {},
+    arr = String(r.arr || '').toUpperCase(),
+    I = S.altnIn,
+    sheet = I?.sheet;
+  if (!/^[A-Z0-9]{4}$/.test(arr)) return;
+  const P = S.altnProp = {
+      arr,
+      key: altnPropKey(),
+      pending: true,
+      msg: null,
+      list: [],
+      taf: {},
+      wxRead: new Set(),
+      noTaf: false,
+      touched: null
+    },
+    late = ms => new Promise(res => setTimeout(() => res(null), ms)),
+    done = msg => {
+      if (gone(s) || S.altnProp !== P) return;
+      P.pending = false;
+      P.msg = msg;
+      altnDocWrite();
+      altnChkDraw(S.C);
+    };
+  altnChkDraw(S.C);
+  if (!(+sheet?.minRunwayLengthFt > 0)) return done('noSheet');
+  const from = await Promise.race([altnArrPos(r), late(ALTN_CHK_WAIT_MS)]);
+  if (gone(s) || S.altnProp !== P) return;
+  if (!from) return done('noArr');
+  const dLat = AC.CAND_MAX_NM / 60,
+    dLon = dLat / Math.max(0.2, Math.cos(from.lat * Math.PI / 180)),
+    ads = await Promise.race([Promise.resolve(S.ctx.aerodb?.aerodromes?.({
+      bbox: [from.lon - dLon, from.lat - dLat, from.lon + dLon, from.lat + dLat]
+    })).catch(() => null), late(ALTN_PROP_WAIT_MS)]);
+  if (gone(s) || S.altnProp !== P) return;
+  const cands = AC.candidates(ads || [], {
+    from,
+    minFt: sheet.minRunwayLengthFt,
+    type: sheet.runwayType,
+    exclude: [arr, r.dep],
+    dist: rhumbNm
+  });
+  for (const c of cands) {
+    if (P.list.length >= AC.CAND_DOC) break;
+    const cov = await Promise.race([Promise.resolve(S.ctx.aerodb?.coverage?.(c.icao)).catch(() => null), late(ALTN_CHK_WAIT_MS)]);
+    if (gone(s) || S.altnProp !== P) return;
+    const aids = AC.aidsOf(cov);
+    if (!AC.aidsKept(aids)) continue;
+    const pos = {
+        lat: +c.ad.lat,
+        lon: +c.ad.lon
+      },
+      cost = I?.q ? altnCost(from, pos, I.q, I.qIn, sheet, I.cruiseFt) : null;
+    P.list.push({
+      icao: c.icao,
+      name: altnName(c.ad.name),
+      ...pos,
+      nm: Math.round(c.nm * 10) / 10,
+      rwy: c.rwy,
+      aids,
+      cost: cost ? {
+        fuel: cost.fuel,
+        min: cost.min
+      } : null
+    });
+  }
+  if (!P.list.length) return done('none');
+  await altnPropWx(P.list.slice(0, AC.CAND_LIST).map(x => x.icao));
+  done(null);
+}
+/** Le document de la Carte : les terrains de la proposition ('ok' avant 'warn', puis par distance ; un terrain à écarter, météo LIFR, n'y
+ *  est pas), sept au plus ; une liste vide quand il n'y a pas de proposition (la Carte efface sa couche). */
+function altnDocWrite() {
+  const P = S.altnProp,
+    unit = S.C?.sheet?.unit === 'lb' ? 'lb' : 'kg',
+    list = P && !P.pending ? P.list.map(x => ({
+      x,
+      p: altnPropCrits(x)
+    })).filter(o => o.p.state).sort((a, b) => (a.p.state === 'ok' ? 0 : 1) - (b.p.state === 'ok' ? 0 : 1) || a.x.nm - b.x.nm).slice(0,
+      AC.CAND_DOC).map(({
+      x,
+      p
+    }) => ({
+      icao: x.icao,
+      name: x.name,
+      lat: x.lat,
+      lon: x.lon,
+      nm: x.nm,
+      state: p.state,
+      why: p.why,
+      fuel: x.cost ? {
+        amount: Math.round(x.cost.fuel),
+        unit,
+        min: Math.round(x.cost.min)
+      } : null
+    })) : [],
+    doc = {
+      schema: 1,
+      updated_at: new Date().toISOString(),
+      arr: P?.arr || String(S.flight.route?.arr || '').toUpperCase(),
+      key: P?.key || altnPropKey(),
+      list
+    };
+  window.dispatchEvent(new CustomEvent('fuel-altn-candidates', {
+    detail: doc
+  }));
+  Promise.resolve(S.ctx.data.put(ALTN_DOC, doc)).catch(() => {});
+}
+/** Une proposition dont l'arrivée n'est plus celle du vol est retirée, et la Carte prévenue (liste vide). */
+function altnPropStale() {
+  const P = S.altnProp;
+  if (P && P.arr !== String(S.flight.route?.arr || '').toUpperCase()) {
+    S.altnProp = null;
+    altnDocWrite();
+  }
+}
+/** Le bloc de la proposition, sous la ligne du dégagement : le bouton ; la recherche en cours ; ce qui empêche ; les trois plus proches
+ *  (signe, code, nom, distance, carburant de dégagement, réserves) avec « Prendre » ; « Proposé : … — Prendre » pour le terrain touché sur
+ *  la Carte. Rien sans arrivée. */
+function altnPropHtml() {
+  const r = S.flight.route || {},
+    P = S.altnProp;
+  if (!/^[A-Z0-9]{4}$/.test(String(r.arr || ''))) return '';
+  if (!P) return `<p class="fu-altnprop"><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.altnPropose))}</button></p>`;
+  if (P.pending) return `<p class="fu-altnprop f-muted" data-altnprop role="status">${esc(tt(TX.altnPropBusy))}</p>`;
+  const close = `<button type="button" class="fu-linkbtn" data-do="altnpropclose">${esc(tt(TX.altnPropClose))}</button>`;
+  if (P.msg) return `<p class="fu-altnprop f-muted" data-altnprop data-msg="${esc(P.msg)}">${esc(tt(TX.altnPropMsg[P.msg]))} ${close}</p>`;
+  const unit = S.C?.sheet?.unit || 'kg',
+    row = (x, proposed) => {
+      const p = altnPropCrits(x),
+        why = [...p.why.filter(w => w !== 'wx-unread' || proposed), ...(p.crits[2].state === 'err' ? ['wx-lifr'] : [])].map(w => tt(TX
+          .altnPropWhy[w])),
+        bits = [`${Math.round(x.nm)} NM`, x.cost ? fuelTxt(x.cost.fuel, unit) : '', ...why].filter(Boolean).join(' · ');
+      return `<li data-cand="${esc(x.icao)}" data-state="${esc(p.sign)}"${proposed ? ' data-proposed' : ''}><span class="fu-altnsign" aria-hidden="true">${ALTN_SIGN[p.sign]}</span><span>${proposed ? `${esc(tt(TX.altnProposed, { icao: x.icao }))} ` : `<b>${esc(x.icao)}</b> `}<span class="f-muted">${esc([x.name, bits].filter(Boolean).join(' · '))}</span></span>${p.sign === 'err' ? '' : `<button type="button" class="fu-linkbtn" data-do="altntake" data-icao="${esc(x.icao)}">${esc(tt(TX.altnTake))}</button>`}</li>`;
+    },
+    near = P.list.slice(0, AC.CAND_LIST),
+    touched = P.touched ? P.list.find(x => x.icao === P.touched) : null,
+    more = Math.max(0, P.list.length - near.length);
+  return `<div class="fu-altnprop" data-altnprop><p class="f-row"><span class="f-muted">${esc(tt(TX.altnPropHead, { arr: P.arr }))}</span>${close}</p><ul>${touched ? row(touched, true) : ''}${near.map(x => row(x, false)).join('')}</ul>${more ? `<p class="f-muted" data-altnmore>${esc(tt(TX.altnPropMore, { n: more }))}</p>` : ''}</div>`;
+}
+/** « Prendre » : le terrain écrit dans le champ Dégagement (le seul geste qui l'écrit), la proposition fermée, la Carte prévenue. */
+function altnTake(icao) {
+  const P = S.altnProp;
+  if (!P || !P.list.some(x => x.icao === icao)) return;
+  const el = S.body?.querySelector('input[data-k="altn"]');
+  if (el) el.value = icao;
+  S.altnProp = null;
+  altnDocWrite();
+  setAd('altn', icao);
+}
+/** Le terrain touché sur la Carte (maps-altn-pick en vue double, #fuel?altn= sinon) : seulement un terrain de la proposition en cours ;
+ *  il est PROPOSÉ (« Proposé : … — Prendre »), sa météo lue, rien n'est pris. */
+async function altnTouched(icao) {
+  const P = S?.altnProp,
+    k = String(icao ?? '').toUpperCase();
+  // l'adresse et l'événement viennent de dehors (un lien peut porter #fuel?altn=) : le code revalidé, et seulement un terrain proposé
+  if (!/^[A-Z0-9]{4}$/.test(k) || !P || P.pending || !P.list.some(x => x.icao === k)) return;
+  P.touched = k;
+  altnChkDraw(S.C);
+  if (!P.wxRead.has(k)) {
+    await altnPropWx([k]);
+    if (S?.altnProp === P) altnChkDraw(S.C);
+  }
+}
+/** #fuel?altn=<ICAO> (Carte seule) : la proposition relue du document quand elle est celle de l'arrivée et de l'aéronef du vol, puis le
+ *  terrain proposé. */
+async function altnFromAddress(icao) {
+  const s = S,
+    d = await Promise.resolve(S.ctx.data.get(ALTN_DOC)).catch(() => null),
+    v = d?.value ?? d;
+  if (gone(s) || !v || v.schema !== 1 || v.arr !== String(S.flight.route?.arr || '').toUpperCase() || v.key !== altnPropKey()) return;
+  const list = (Array.isArray(v.list) ? v.list : []).slice(0, AC.CAND_DOC).filter(x => /^[A-Z]{4}$/.test(String(x?.icao || '')) &&
+    Number.isFinite(+x.lat) && Number.isFinite(+x.lon) && Number.isFinite(+x.nm));
+  if (!list.length) return;
+  S.altnProp = {
+    arr: v.arr,
+    key: v.key,
+    pending: false,
+    msg: null,
+    taf: {},
+    wxRead: new Set(),
+    noTaf: false,
+    touched: null,
+    list: list.map(x => ({
+      icao: x.icao,
+      name: altnName(x.name),
+      lat: +x.lat,
+      lon: +x.lon,
+      nm: Math.max(0, Math.min(9999, +x.nm)),
+      rwy: {
+        state: 'ok'
+      },
+      aids: {
+        state: (x.why || []).includes('aids-visual') ? 'warn' : 'ok'
+      },
+      cost: x.fuel && Number.isFinite(+x.fuel.amount) && Number.isFinite(+x.fuel.min) ? {
+        fuel: Math.max(0, Math.min(1e6, +x.fuel.amount)),
+        min: Math.max(0, Math.min(9999, +x.fuel.min))
+      } : null
+    }))
+  };
+  altnTouched(icao);
 }
 /** SOG-0391 (b) : une heure UTC « AAAA-MM-JJTHH:MMZ » dite à la minute, en Z (« 13 h 32 Z » en français, « 13:32Z » ailleurs) ; `bare` :
  *  sans le « Z » (le début d'une fenêtre). */
@@ -7947,7 +8275,8 @@ export async function mount(el, ctx) {
   // « Aucune », une clé absente laisse sa famille ; § 10.23 puis § 10.30 : rwy sid star app apptrans, pas de transition SID / STAR) :
   // prises une fois, ensemble, et retirées de l'adresse (frame/INTEGRATION.md § 6.1)
   const PROPOSAL_KEYS = ['rwy', 'sid', 'star', 'app', 'apptrans'],
-    q = ctx.consume ? ctx.consume('focus', 'mission', 'new', 'ralt', 'direct', 'lat', 'lon', ...PROPOSAL_KEYS) : ctx.query || {},
+    // SOG-0398 lot 2 : « altn », un terrain proposé touché sur la Carte seule (INTEGRATION § 3 ter)
+    q = ctx.consume ? ctx.consume('focus', 'mission', 'new', 'ralt', 'altn', 'direct', 'lat', 'lon', ...PROPOSAL_KEYS) : ctx.query || {},
     asked = q.focus;
   if (q.direct) S.directAsk = { // SOG-0088 : #fuel?direct=<ID>[&lat=&lon=], traité une fois le vol lu (completeMount)
     direct: q.direct,
@@ -7969,6 +8298,7 @@ export async function mount(el, ctx) {
   S.missionAsked = String(q.mission || '').trim();
   S.newAsked = q.new === '1'; // #fuel?new=1 : « Nouveau vol » demandé par l'adresse (sa question comprise)
   S.raltAsked = q.ralt ?? ''; // #fuel?ralt=<index> : un itinéraire choisi sur la Carte seule (INTEGRATION § 3 bis)
+  S.altnAsked = /^[A-Z]{4}$/i.test(String(q.altn || '')) ? String(q.altn).toUpperCase() : ''; // SOG-0398 : #fuel?altn=<ICAO> (§ 3 ter)
   if (S.focus === 'arr') S.P.focus('arr'); // la première liste de l'arrivée prend le focus dès qu'elle est dessinée
   S.step = S.focus === 'route' ? 1 : S.focus ? (kept.started?.at ? 4 : 1) : Math.max(0, Math.min(4, +S.ui.step || 0));
   el.innerHTML = `<style>${STYLE}</style><h1>${esc(ctx.t(meta.title))}</h1>
@@ -8002,6 +8332,9 @@ export async function mount(el, ctx) {
   S.stops.push(() => ptHover(null, true));
   S.onAltPick = e => altsPicked(e);
   window.addEventListener('maps-route-alt-show', S.onAltPick);
+  // SOG-0398 lot 2 : un terrain proposé touché sur la Carte à côté (maps-altn-pick { icao }) : proposé ici, jamais pris
+  S.onAltnPick = e => altnTouched(e?.detail?.icao);
+  window.addEventListener('maps-altn-pick', S.onAltnPick);
   // SOG-0134 : la Carte à côté dit quand elle a dessiné les tracés publiés : la dernière part du calcul
   S.onAltsDrawn = () => {
     if (gone(self) || !self.rtime?.t2 || self.rtime.t4) return;
@@ -8176,6 +8509,8 @@ function flightReady() {
   else if (S.newAsked) newFlight();
   else if (S.raltAsked !== '') altsFromAddress(S.raltAsked);
   else altsFromDoc(); // SOG-0224 : de retour sans choix, les propositions du document
+  if (S.altnAsked) altnFromAddress(S.altnAsked); // SOG-0398 lot 2 : un terrain touché sur la Carte seule
+  S.altnAsked = '';
   S.raltAsked = '';
   S.missionAsked = '';
   S.newAsked = false;
@@ -8727,6 +9062,7 @@ export function unmount() {
   // et sa fin est dite (procedures.js)
   S.P.stop();
   window.removeEventListener('maps-route-alt-show', S.onAltPick);
+  window.removeEventListener('maps-altn-pick', S.onAltnPick);
   window.removeEventListener('maps-route-alts-drawn', S.onAltsDrawn);
   clearInterval(S.rbusyTimer);
   window.removeEventListener('frame-airline', S.onCoThemes);
@@ -8856,27 +9192,15 @@ function altnGeo(r) {
   });
   return S.altnGeo;
 }
-/** Le dégagement ajouté au devis `q` (q.alternate ; bloc, fourchette comprise) ; `q` rendu tel quel. */
-function altnAdd(q, qIn, sheet, cruiseFt) {
-  if (!q) return q;
-  const r = S.flight.route || {},
-    id = String(r.altn || '').toUpperCase();
-  if (!id) return Object.assign(q, {
-    alternate: {
-      state: 'none'
-    }
-  });
-  const g = altnGeo(r);
-  if (g.state !== 'ok') return Object.assign(q, {
-    alternate: {
-      state: g.state,
-      id
-    }
-  });
+/** SOG-0398 lot 2 : le coût d'un dégagement de `from` (l'arrivée) à `to` (un terrain) — la même arithmétique pour le dégagement du vol
+ *  (altnAdd) et pour chaque terrain proposé (altnProposeRun) : { nm, fl, src, wind, legMin, legFuel, ga, ap, min, fuel } (min et fuel :
+ *  remise des gaz, trajet et approche), null quand le carburant n'est pas connu. q : le devis de l'étape (ses débits de montée, de
+ *  croisière), qIn : ses entrées, sheet : la fiche, cruiseFt : le niveau de croisière. */
+function altnCost(from, to, q, qIn, sheet, cruiseFt) {
   const M = window.FuelModel,
     // SOG-0399 : le trait droit (loxodromie), la règle d'un direct
-    nm = rhumbNm(g.arr, g.alt),
-    brg = rhumbCourse(g.arr, g.alt),
+    nm = rhumbNm(from, to),
+    brg = rhumbCourse(from, to),
     // le niveau : distance × 100 ft, au FL semi-circulaire du cap (impair vers l'est, pair vers l'ouest), FL050 au moins, sous la croisière et le plafond
     fl = (() => {
       let k = Math.max(5, Math.round(nm / 10));
@@ -8922,12 +9246,7 @@ function altnAdd(q, qIn, sheet, cruiseFt) {
     fuel = aq?.hasFuel ? +aq.trip : null;
     min = aq ? +aq.minutes : null;
   }
-  if (!(fuel > 0)) return Object.assign(q, {
-    alternate: {
-      state: 'unknown',
-      id
-    }
-  });
+  if (!(fuel > 0)) return null;
   // SOG-0399 : la remise des gaz au débit de montée du devis, l'approche au débit d'attente (celui de la réserve finale du modèle)
   const cff = +q.cruise?.ff > 0 ? +q.cruise.ff : 0,
     climbFf = +q.climb?.ff > 0 ? +q.climb.ff : cff,
@@ -8936,29 +9255,72 @@ function altnAdd(q, qIn, sheet, cruiseFt) {
     ap = altnFlatOf(sheet, 'approachMin', ALTN_APPROACH_MIN);
   ga.fuel = ga.min / 60 * climbFf;
   ap.fuel = ap.min / 60 * holdFf;
-  const total = fuel + ga.fuel + ap.fuel;
+  return {
+    nm,
+    fl,
+    src,
+    wind,
+    legMin: min,
+    legFuel: fuel,
+    ga,
+    ap,
+    min: min + ga.min + ap.min,
+    fuel: fuel + ga.fuel + ap.fuel
+  };
+}
+/** Le dégagement ajouté au devis `q` (q.alternate ; bloc, fourchette comprise) ; `q` rendu tel quel. */
+function altnAdd(q, qIn, sheet, cruiseFt) {
+  if (!q) return q;
+  // SOG-0398 lot 2 : les entrées du devis gardées pour chiffrer les terrains proposés (altnCost)
+  S.altnIn = {
+    q,
+    qIn,
+    sheet,
+    cruiseFt
+  };
+  const r = S.flight.route || {},
+    id = String(r.altn || '').toUpperCase();
+  if (!id) return Object.assign(q, {
+    alternate: {
+      state: 'none'
+    }
+  });
+  const g = altnGeo(r);
+  if (g.state !== 'ok') return Object.assign(q, {
+    alternate: {
+      state: g.state,
+      id
+    }
+  });
+  const c = altnCost(g.arr, g.alt, q, qIn, sheet, cruiseFt);
+  if (!c) return Object.assign(q, {
+    alternate: {
+      state: 'unknown',
+      id
+    }
+  });
   q.alternate = {
     state: 'ok',
     id,
     from: String(r.arr || '').toUpperCase(),
-    nm,
-    fl: src === 'model' ? fl : null,
-    min: min + ga.min + ap.min,
-    fuel: total,
-    src,
-    wind: wind ? {
-      dirDeg: Math.round(+wind.dirDeg),
-      speedKt: Math.round(+wind.speedKt)
+    nm: c.nm,
+    fl: c.src === 'model' ? c.fl : null,
+    min: c.min,
+    fuel: c.fuel,
+    src: c.src,
+    wind: c.wind ? {
+      dirDeg: Math.round(+c.wind.dirDeg),
+      speedKt: Math.round(+c.wind.speedKt)
     } : null,
     leg: {
-      min,
-      fuel
+      min: c.legMin,
+      fuel: c.legFuel
     },
-    goAround: ga,
-    approach: ap
+    goAround: c.ga,
+    approach: c.ap
   };
   for (const k of ['block', 'blockLow', 'blockHigh'])
-    if (Number.isFinite(+q[k])) q[k] = +q[k] + total;
+    if (Number.isFinite(+q[k])) q[k] = +q[k] + c.fuel;
   return q;
 }
 /** La ligne du dégagement au détail du devis : toujours dite (aucun terrain, position inconnue, ou son carburant et d'où il vient). */

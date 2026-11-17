@@ -13,6 +13,16 @@
 //     orange, LIFR rouge (Q-0075). o : { read (la météo a été lue), noTaf (TAF indisponible sur cet appareil) }.
 //   judge(criteria) → { state, ok, grey } : le pire état — err, puis warn, puis grey (un critère non vérifié ne laisse jamais le vert),
 //     sinon ok ; ok et grey : les nombres de critères bons et non vérifiés.
+//   SOG-0398 lot 2, « Proposer un dégagement » :
+//   candidates(ads, { from, minFt, type, exclude, dist, max }) → [{ ad, icao, nm, rwy }] : les terrains de `ads` (enregistrements complets
+//     d'aerodb) à CAND_MIN_NM au moins et CAND_MAX_NM au plus de `from` (dist(from, ad) en NM : le trait droit), d'un code OACI de
+//     quatre lettres, ouverts au public, ni hélistation ni plan d'eau, hors `exclude` (l'arrivée, le départ), dont la PISTE passe
+//     (runwayOf : ok) ; triés par distance, `max` au plus. Sans longueur mini dans la fiche : [] (rien ne peut être retenu sur la piste).
+//   aidsKept(aids) : les MOYENS retiennent le terrain — une approche (ok) ou « à vue seulement » (warn) dans une base qui le couvre ; non
+//     couvert (grey) : écarté (rien n'est dit d'un terrain dont la base ne sait rien).
+//   proposalOf(crits) → { sign, state, why } : sign, l'état des trois critères (judge) pour la liste de Carburant ; state, celui du
+//     document de la Carte ('ok' | 'warn', null pour un terrain à écarter : météo LIFR) ; why, ses codes en liste fermée ('aids-visual',
+//     'wx-ifr', 'wx-unread').
 // Chaque critère : { k: 'rwy' | 'aids' | 'wx', state, code, v } — code : la phrase à dire (textes du module), v : ses valeurs (nombres,
 // catégories et heures seulement : aucun texte tiers).
 
@@ -114,6 +124,64 @@ export function weatherOf(taf, t, {
     a,
     b
   });
+}
+
+/** SOG-0398 lot 2 : les bornes de la proposition — distance à l'arrivée (NM), terrains de la liste de Carburant, terrains du document de la
+ *  Carte. */
+export const CAND_MIN_NM = 30,
+  CAND_MAX_NM = 300,
+  CAND_LIST = 3,
+  CAND_DOC = 7;
+
+/** Les terrains candidats (voir l'en-tête). */
+export function candidates(ads, {
+  from,
+  minFt,
+  type,
+  exclude = [],
+  dist,
+  max = 60
+} = {}) {
+  if (!(num(minFt) && +minFt > 0) || !from || typeof dist !== 'function') return [];
+  const out = [],
+    skip = new Set(exclude.map(x => String(x || '').toUpperCase()));
+  for (const ad of (Array.isArray(ads) ? ads : []).slice(0, 5000)) {
+    const icao = String(ad?.icao || '').toUpperCase();
+    if (!/^[A-Z]{4}$/.test(icao) || skip.has(icao) || ad.type === 'HP' || ad.water === true || ad.public === false || !num(ad.lat) ||
+      !num(ad.lon)) continue;
+    const nm = dist(from, {
+      lat: +ad.lat,
+      lon: +ad.lon
+    });
+    if (!(nm >= CAND_MIN_NM && nm <= CAND_MAX_NM)) continue;
+    const rwy = runwayOf(ad, minFt, type);
+    if (rwy.state !== 'ok') continue;
+    skip.add(icao);
+    out.push({
+      ad,
+      icao,
+      nm,
+      rwy
+    });
+  }
+  return out.sort((a, b) => a.nm - b.nm).slice(0, max);
+}
+
+/** Les MOYENS retiennent-ils le terrain (voir l'en-tête) ? */
+export const aidsKept = aids => aids?.state === 'ok' || aids?.state === 'warn';
+
+/** L'état d'un terrain proposé, pour la liste et pour la Carte (voir l'en-tête). crits : [rwy, aids, wx]. */
+export function proposalOf(crits) {
+  const [, aids, wx] = crits || [],
+    why = [];
+  if (aids?.state === 'warn') why.push('aids-visual');
+  if (wx?.state === 'warn') why.push('wx-ifr');
+  if (!wx || wx.state === 'grey') why.push('wx-unread');
+  return {
+    sign: judge(crits).state,
+    state: wx?.state === 'err' ? null : why.some(w => w !== 'wx-unread') ? 'warn' : 'ok',
+    why
+  };
 }
 
 /** Le signe de la ligne et les comptes (voir l'en-tête). */

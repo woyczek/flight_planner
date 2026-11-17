@@ -354,6 +354,31 @@ document written twice for one computation, the second a longer list with the sa
 the first time stay valid. `computed_at` is the time of the computation, which for a result from the workstation's cache is its
 `cache.computedAt`.
 
+## 3 ter. The proposed alternates for the Map — `cache/fuel/altn_candidates.json` and the event `fuel-altn-candidates` (SOG-0398 lot 2, 17 Nov 2026)
+
+« Proposer un dégagement » (Flight step, under the line of the alternate) looks for the aerodromes 30 to 300 NM from the arrival
+(aerodb, full records) kept on the RUNWAY and the AIDS (modules/fuel/altn_check.js), lists the three closest in Fuel and offers up to
+seven to the Map. Contract agreed with BUGS SOG (the Map's layer) on 17/11:
+
+- the window event **`fuel-altn-candidates`** (`CustomEvent`, `detail` = the object), for a Map mounted beside Fuel;
+- the document **`cache/fuel/altn_candidates.json`** (cache policy: this device only, never synchronised, never `data/`; written by
+  Fuel alone), for a Map opened afterwards.
+
+```
+{ schema: 1, updated_at: ISO, arr: 'LFML', key: '<dep>><arr>><aircraft key>',
+  list: [ { icao, name, lat, lon, nm, state: 'ok' | 'warn', why: ['aids-visual' | 'wx-ifr' | 'wx-unread'], fuel: { amount, unit: 'kg' | 'lb', min } | null } ] }
+```
+
+- `list`: seven at most, in priority order (`ok` before `warn`, then by distance); an aerodrome whose TAF is LIFR around its arrival is
+  not offered; `name` is a cleaned text (no control nor format character, 60 signs), shown as text; `nm` the rhumb-line distance from
+  the arrival; `fuel` the alternate fuel (go-around, leg and approach) in the sheet's unit; `why` codes from a closed list the Map
+  translates.
+- staleness: the Map draws the list only while `arr` is the flight's arrival; Fuel writes `list: []` when the proposal is closed, taken,
+  or its arrival changes.
+- the return: `maps-altn-pick` `{ icao }` beside Fuel, `#fuel?altn=<ICAO>` otherwise (read back only for the same `arr` and `key`); Fuel
+  PROPOSES the aerodrome (« Proposé : XQPB — Prendre ») and reads its weather; the field is written only by « Prendre ». A code outside
+  the proposal is ignored.
+
 ## 4. Quote settings — `pilot/<trigram>/fuel.json`
 
 `{ "schema": 1, "updated_at", "taxiMin": 10, "reserveMin": 30, "contingencyPct": 5, "displayUnit": "kg",

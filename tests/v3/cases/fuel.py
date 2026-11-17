@@ -7610,6 +7610,121 @@ def f264(c):
     c.until('window.__q > 0', timeout=8000, what='the sheet changed: the quote computed again')
 
 
+# SOG-0398 lot 2: invented aerodromes around the seeded arrival (LFML 43.44N 5.22E), each one testing a rule of the selection
+_PROP_ADS = [
+    {'icao': 'XQPA', 'name': 'XQPA TEST', 'lat': 43.90, 'lon': 5.20, 'elev': 50, 'hardLen': 2500},    # 28 NM: too near
+    {'icao': 'XQPB', 'name': 'XQPB TEST', 'lat': 44.10, 'lon': 5.10, 'elev': 50, 'hardLen': 2500},    # 40 NM, approaches: green
+    {'icao': 'XQPC', 'name': 'XQPC TEST', 'lat': 43.60, 'lon': 4.30, 'elev': 50, 'hardLen': 2600},    # 41 NM, no approach: visual only
+    {'icao': 'XQPD', 'name': 'XQPD TEST', 'lat': 44.30, 'lon': 5.60, 'elev': 50, 'hardLen': 900},     # 55 NM, runway too short
+    {'icao': 'XQPE', 'name': 'XQPE TEST', 'lat': 44.50, 'lon': 4.90, 'elev': 50, 'hardLen': 2400},    # 65 NM, TAF LIFR
+    {'icao': 'XQPF', 'name': 'XQPF <b>TEST</b>', 'lat': 44.80, 'lon': 5.50, 'elev': 50, 'hardLen': 3000},  # 83 NM, weather not read
+    {'icao': 'XQPG', 'name': 'XQPG TEST', 'lat': 44.00, 'lon': 5.40, 'elev': 50, 'hardLen': 2500, 'type': 'HP'},  # a heliport
+    {'icao': 'XQPH', 'name': 'XQPH TEST', 'lat': 45.00, 'lon': 6.00, 'elev': 50, 'hardLen': 2500},    # 100 NM, procedures not held
+]
+_PROP_HELD = {'XQPB': {'SID': 1, 'STAR': 1, 'APP': 2}, 'XQPC': {'SID': 1, 'STAR': 1, 'APP': 0}, 'XQPE': {'SID': 1, 'APP': 1},
+              'XQPF': {'SID': 1, 'APP': 1}}
+
+
+def _prop_open(c, target='fuel', more=()):
+    """The seeded flight (alternate LFMT) with a C30J sheet asking 5000 ft, the aerodromes above, their coverage, TAFs kept fresh (XQPE LIFR)."""
+    import time as _t
+    now = int(_t.time())
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
+             'cruise': {'tasKt': 330, 'fuelFlowPerHour': 7300}, 'runwayType': 'HARD', 'minRunwayLengthFt': 5000}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+            d[1]['planned_at'] = _t.strftime('%Y-%m-%dT%H:00:00Z', _t.gmtime(now + 2 * 3600))
+    docs += [['aircraft/sheets/C30J.json', sheet, 'document'],
+             ['proc/manual/index.json', {'schema': 1, 'aerodromes': {k: {**v, 'cycle': '2026-10-01', 'updated_at': '2026-11-01T09:00:00Z'}
+                                                                       for k, v in _PROP_HELD.items()}}, 'reference']]
+    for icao, cat in (('XQPB', 'VFR'), ('XQPC', 'VFR'), ('XQPE', 'LIFR'), ('XQPF', 'VFR')):
+        t = _altn_taf(cat, now)
+        t['icaoId'] = icao
+        docs.append([f'cache/weather/taf/{icao}.json', {'at': 4102444800000, 'source': 'launcher', 'data': t}, 'cache'])
+    c.open(target, docs=docs + list(more), airfields=True,
+           aero_extra={'aerodromes': _PROP_ADS, 'cells': {str(y): [[-2, 7]] for y in range(43, 47)}})
+    wait_quote(c)
+    to_step(c, 0)
+
+
+@case('F262', 'Flight step, « Proposer un dégagement »: the aerodromes 30 to 300 NM from the arrival kept on the RUNWAY and the AIDS, the '
+      'three closest listed with distance and alternate fuel, their weather read (an indicator: LIFR red, without « Prendre »), the others '
+      '« weather not read »; the local document of the Map (seven at most, ok before warn, never data/); a touch on the Map PROPOSES '
+      '(« Proposé : … — Prendre »); the field is written only by « Prendre »', 'F', tags=('fuel', 'weather'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='SOG-0398 lot 2 (the ergonomist\'s specification version 2, part D; Features SOG\'s contract of 17/11 with BUGS SOG: '
+      'cache/fuel/altn_candidates.json, fuel-altn-candidates, maps-altn-pick { icao }, #fuel?altn=<ICAO>); invented aerodromes and TAFs')
+def f262(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    _prop_open(c)
+    c.js("window.__altnDocs = []; window.addEventListener('fuel-altn-candidates', e => window.__altnDocs.push(e.detail))")
+    B = f'{FUEL} [data-altnchk]'
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.eq(norm(c.text(f'{B} [data-do=altnpropose]') or ''), norm(tx(T, 'altnPropose', L)), 'the gesture named', what='button')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
+    rows = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state, "
+                f"!!li.querySelector('[data-do=altntake]'), li.textContent])")
+    c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the three closest kept: XQPA too near, XQPD too short, the heliport, XQPH not '
+         'covered and LFMT without runway length left out', what='list')
+    c.eq([r[1] for r in rows], ['ok', 'warn', 'err'], 'green; visual only orange; LIFR red', what='signs')
+    c.eq([r[2] for r in rows], [True, True, False], '« Prendre » except on the red one', what='take')
+    c.ok(norm(tx(T, "aids-visual'", L, after='altnPropWhy')) in norm(rows[1][3]), rows[1][3], 'the reservation said: visual only')
+    row0 = norm(rows[0][3])   # « 1 490 kg » (fr), « 1.490 kg » (de), « 1,490 kg » (en) ; « Prendre » collé après l'unité dans le texte
+    c.ok(re.search(r'\b\d+ NM\b', row0) is not None and re.search(r'\d (lb|kg)', row0) is not None, row0,
+         'its distance and its alternate fuel')
+    more = norm(c.text(f'{B} [data-altnmore]') or '')
+    c.ok(more.startswith('1 '), more, 'the fourth (weather not read) said on the Map')
+    # the document for the Map: seven at most, ok before warn, the LIFR one left out, codes only, the name a cleaned text
+    d = c.until_doc('cache/fuel/altn_candidates.json', lambda d: bool(d) and len(d.get('list') or []) > 0, 'the document of the Map',
+                    timeout=10000)
+    c.eq([(x['icao'], x['state'], x['why']) for x in d['list']],
+         [('XQPB', 'ok', []), ('XQPF', 'ok', ['wx-unread']), ('XQPC', 'warn', ['aids-visual'])],
+         'ok before warn, then by distance; XQPE (LIFR) not offered to the Map', what='document')
+    c.eq([d['schema'], d['arr']], [1, 'LFML'], 'schema 1, the arrival', what='head')
+    c.ok(all(x['fuel'] and x['fuel']['unit'] == 'lb' and x['fuel']['amount'] > 0 for x in d['list']), d['list'], 'the alternate fuel of each')
+    c.ok(c.js('window.__altnDocs.length') >= 1, 'event', 'the event fuel-altn-candidates sent')
+    c.eq(c.doc('pilot/ABC/current_flight.json')['route']['altn'], 'LFMT', 'nothing taken: the field unchanged', what='field')
+    c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F262_{c.design}_390_{L}_list.png')
+    # a touch on the Map beside (maps-altn-pick): PROPOSED, its weather read, nothing taken
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPF' } }))")
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
+    prop = norm(c.text(f'{B} li[data-proposed] > span:nth-child(2)') or '')   # the line without its sign (« ✓ ») and its button
+    # the name of the base (« XQPF <b>TEST</b> », invented) shown as TEXT: escaped, read as it is, no <b> element made of it
+    c.ok(prop.startswith(norm(tx(T, 'altnProposed', L)).replace('{icao}', 'XQPF')) and 'XQPF <b>TEST</b>' in prop
+         and c.count(f'{B} li[data-proposed] b') == 0, prop, 'proposed, the name as text')
+    c.until(f"document.querySelector('{B} li[data-proposed]')?.dataset.state === 'ok'", timeout=8000, what='its weather read: green')
+    c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'ZZZZ' } }))")
+    c.wait(300)
+    c.eq(c.count(f'{B} li[data-proposed][data-cand=ZZZZ]'), 0, 'a code outside the proposal ignored', what='foreign code')
+    c.eq(c.doc('pilot/ABC/current_flight.json')['route']['altn'], 'LFMT', 'still nothing taken', what='field')
+    c.page.set_viewport_size({'width': 1280, 'height': 900})
+    c.settle()
+    c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F262_{c.design}_1280_{L}_proposed.png')
+    c.page.set_viewport_size({'width': 390, 'height': 844})
+    c.settle()
+    c.js(f"document.querySelector('{B}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F262_{c.design}_390_{L}_proposed.png')
+    # « Prendre »: the field written, the proposal closed, the Map told (an empty list)
+    c.tap(f'{B} li[data-proposed] [data-do=altntake]')
+    cf_doc(c, lambda d: d['route'].get('altn') == 'XQPF', 'the alternate taken: XQPF', timeout=10000)
+    c.until_doc('cache/fuel/altn_candidates.json', lambda d: bool(d) and d.get('list') == [], 'the Map told: an empty list', timeout=10000)
+    c.eq(c.js(f"document.querySelector('{FUEL} input[data-k=altn]').value"), 'XQPF', 'the field shows it', what='input')
+    # a Map alone: #fuel?altn=<ICAO> proposes from the document of the same arrival and aircraft
+    keep = {'schema': 1, 'updated_at': '2026-11-17T17:00:00Z', 'arr': 'LFML', 'key': 'LFRS>LFML>C30J',
+            'list': [{'icao': 'XQPB', 'name': 'XQPB TEST', 'lat': 44.1, 'lon': 5.1, 'nm': 40.1, 'state': 'ok', 'why': [],
+                      'fuel': {'amount': 2100, 'unit': 'lb', 'min': 28}}]}
+    _prop_open(c, target='fuel?altn=XQPB', more=[['cache/fuel/altn_candidates.json', keep, 'cache']])
+    c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPB]')", timeout=15000, what='« Proposé : XQPB » from the address')
+    c.eq(c.doc('pilot/ABC/current_flight.json')['route']['altn'], 'LFMT', 'proposed, not taken', what='field')
+
+
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)
 _RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review': 37, 'findings': 0, 'total': 449, 'listed': 449, 'cut': False,
              'unknown_spaces': [{'space': 'LS100A', 'rules': ['LS2815A', 'LS2816A']}, {'space': 'EDUU100E', 'rules': []}],

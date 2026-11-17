@@ -2452,3 +2452,17 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   of the launcher is an untrusted input: counts bounded 0 to 9999, three reasons at most, a code outside `[a-z-]{1,20}` dropped. Without
   `code` (an older launcher), the previous path is unchanged. The fields reach Fuel only once aerodb.fetchProcedures passes them on
   (asked to AeroDB). F258 (a fake fetchProcedures answering the coded form without stats).
+- **17 Nov 2026 — SOG-0398 lot 2, « Proposer un dégagement »** (the ergonomist's specification version 2, part D; my contract of
+  17/11 for the Map, with BUGS SOG: fuel INTEGRATION § 3 ter). A gesture under the line of the alternate. The aerodromes around the
+  arrival are read from aerodb as FULL records (`aerodromes({ bbox })` without `lite`, ± 300 NM, 8 s at most); `candidates` keeps those
+  30 to 300 NM away (rhumb line), with a four-letter ICAO code, public, neither heliport nor water, not the arrival nor the departure,
+  whose RUNWAY passes (the sheet's minimum length: without it, nothing can be kept, said); then, closest first, those whose AIDS pass:
+  an approach, or « visual only » in a base that covers the aerodrome — an aerodrome the base does not cover is left out (nothing is
+  said of what is unknown). Seven at most are costed with `altnCost` (the arithmetic of altnAdd, taken out of it unchanged: go-around,
+  leg, approach, the sheet's flats). The weather is read (ctx.weather.taf, the frame's 30-minute store) for the three closest only, and
+  for the one touched on the Map; the others are « weather not read ». Fuel lists the three closest by distance, with sign, distance,
+  alternate fuel, reservations and « Prendre » (none on a red one: LIFR); the Map gets up to seven, `ok` before `warn`, the LIFR one
+  left out (`state` null). « Prendre » is the only gesture that writes the field (setAd, as a typed code); taken, closed or with another
+  arrival, the document is written with `list: []`. The Map's touch (`maps-altn-pick` { icao }, or `#fuel?altn=` read back for the same
+  arrival and aircraft key) PROPOSES the aerodrome — « Proposé : XQPF — Prendre » — and reads its weather; a code outside the proposal is
+  ignored. Names from the base are third-party text: cleaned and escaped. F262 (invented aerodromes, each one a rule of the selection).
