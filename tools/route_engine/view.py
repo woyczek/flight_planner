@@ -152,11 +152,11 @@ def bounded_request(request):
 
 
 def rad_view(p):
-    """SOG-0401 : la RAD de la réponse : { title, start, decided (conditions décidées), review (à examiner), findings (constats), total (mentions), listed, cut (la borne a coupé : dit), unknown_spaces, items } ; la liste ENTIÈRE jusqu'à plan.MAX_RAD, chaque mention sans ses en-têtes ; None sans RAD."""
+    """SOG-0401 : la RAD de la réponse : { title, start, decided (conditions décidées), review (à examiner), findings (constats), total (mentions), listed, cut (la borne a coupé : dit), unknown_spaces, items } ; la liste ENTIÈRE jusqu'à plan.MAX_RAD, chaque mention sans ses en-têtes NI ses valeurs (feuille, ligne, identifiant, raison, évaluation, validité) ; None sans RAD."""
     if not p.get('rad_source'):
         return None
     summary = p.get('rad_summary') or {}
-    items = [{k: m.get(k) for k in ('sheet', 'row', 'id', 'reason', 'assessment', 'validity', 'values')} for m in p.get('rad') or []]
+    items = [{k: m.get(k) for k in ('sheet', 'row', 'id', 'reason', 'assessment', 'validity')} for m in p.get('rad') or []]      # sans `values` (578 Ko → la liste entière reste légère : le texte de la règle se lit au classeur, par sa feuille et sa ligne)
     total = p.get('rad_count') or len(items)
     return {'title': p['rad_source'].get('title'), 'start': p['rad_source'].get('start'), 'decided': summary.get('evaluated_conditions'), 'review': summary.get('review_conditions'), 'findings': len(summary.get('findings') or []),
             'total': total, 'listed': len(items), 'cut': total > len(items), 'unknown_spaces': summary.get('unknown_spaces') or [], 'items': items}
