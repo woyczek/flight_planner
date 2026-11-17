@@ -334,3 +334,4 @@
   line); only a line WITHOUT a file leaves them, and is not counted « non lue » either (`unreadHtml` counts the playable rows); the
   Registry shows it « sans fichier ». N48 back to X-503A found (its file in the tree, empty here: out of the index), plus the counterpart:
   X-504A, a line without a file, not offered.
+- **17 Nov 2026 — the editor's decisions written by the session « Création de missions » are in [EDITOR.md](EDITOR.md)** (from SOG-0439, the references to the places; this file keeps the earlier ones).

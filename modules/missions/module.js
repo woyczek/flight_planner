@@ -10,6 +10,10 @@ import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
 import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
 import * as ED from './editor.js'; // l'éditeur de missions (SOG-0287) : le calcul pur
+import {
+  EDTX,
+  citedText
+} from './editor_texts.js'; // les textes de l'éditeur écrits par la session « Création de missions » (SOG-0439)
 import * as AS from './assigned.js'; // « Mes missions affectées » (SOG-0114 (A)) : le calcul pur
 import {
   copyText
@@ -28,7 +32,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'assigned.js', '../../frame/lib/clipboard.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'editor_texts.js', 'assigned.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
@@ -2111,7 +2115,7 @@ function edAsideHtml(s, doc) {
       <p class="f-muted">${c.family ? famHtml(s, c.family) : ''}${c.series !== '' ? ` · ${esc(s.tt(TX.edSeriesN, { n: c.series }))}` : ''}</p>
       ${sum ? `<p>${esc(sum.length > 160 ? `${sum.slice(0, 159)}…` : sum)}</p>` : ''}
       ${m?.risks.length ? `<ul class="ms-lines">${m.risks.slice(0, 3).map(x => `<li>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>` : ''}${thumbHtml(s, doc)}</div>
-    <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
+    <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(s.tt(TX[`todo_${t.key}`] || EDTX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
 }
 
 /** Le document en cours d'édition : le fichier lu, puis le cadre, les équipes et les lieux retouchés (une étape jamais ouverte ne
@@ -2124,7 +2128,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.risks) d = ED.withRisks(d, e.risks);
   if (e.events) d = ED.withEvents(d, e.events);
   if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
-  return d;
+  return ED.withRefs(d, e.base, e.places); // SOG-0439 : après toutes les étapes, les références suivent les lieux renommés ou retirés
 }
 
 /** L'étape Équipes : une ligne par équipe (indicatif, service, type OACI, rôle), « Retirer » ; « + Équipe » ajoute une ligne. */
@@ -2187,7 +2191,7 @@ function edPlacesHtml(s) {
         ${r.kind === 'zone' && r.poly ? `<p class="f-muted">${esc(s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
-        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(TX.plRemove))}</button>`}</div></div>`;
+        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
     },
     id = e.cadre.id.trim().toUpperCase();
   return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
@@ -2222,7 +2226,10 @@ function edRisksHtml(s) {
  *  et « Proposer les cartes depuis les lieux » (des entrées : les images se font au studio de la V2). */
 function edTimelineHtml(s) {
   const e = s.ed,
-    rows = e.events || [],
+    rows = (e.events || []).map(r => ({
+      ...r,
+      place: ED.refNow(r.place, e.base, e.places).toUpperCase()
+    })), // SOG-0439
     doc = edDoc(e),
     places = ED.placesOf(doc).filter(p => p.id && !['dep', 'arr'].includes(p.kind)),
     maps = ED.mapsOf(doc),
@@ -2549,6 +2556,7 @@ function edClick(s, b) {
         block: 'nearest'
       });
     case 'edplace':
+      s.ed.placeAsk = -1;
       s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
       return draw(s);
     case 'edeventadd':
@@ -2588,12 +2596,18 @@ function edClick(s, b) {
       draw(s);
       return s.el.querySelector(`[data-rkform="${s.ed.riskEdit}"] input`)?.focus();
     case 'edplaceok':
-      s.ed.placeEdit = -1;
+      s.ed.placeEdit = s.ed.placeAsk = -1;
       return draw(s);
-    case 'edplacedel':
-      s.ed.places = (s.ed.places || []).filter((_, i) => i !== +b.dataset.i);
-      s.ed.placeEdit = -1;
+    case 'edplacedel': {
+      // SOG-0439 : un lieu encore cité se retire en deux temps (editor.js removePlace) ; le premier appui dit qui le cite
+      const i = +b.dataset.i,
+        r = ED.removePlace(s.ed.places, i, edDoc(s.ed), s.ed.placeAsk ?? -1);
+      if (r.ask >= 0) s.ctx.notify(citedText(s.tt, r.rows[i], r.cited), 'warn');
+      else s.ed.placeEdit = -1;
+      s.ed.places = r.rows;
+      s.ed.placeAsk = r.ask;
       return draw(s);
+    }
     case 'edplaceadd': {
       const kind = ['target', 'zone', 'pt', 'rdv'].includes(b.dataset.kind) ? b.dataset.kind : 'pt',
         list = s.ed.places || [],
@@ -2602,7 +2616,7 @@ function edClick(s, b) {
       const row = {
         kind,
         i: -1,
-        id: kind === 'zone' ? `ZONE-${n}` : kind === 'pt' ? `PT${n}` : kind === 'rdv' ? `RDV-${n}` : 'TARGET',
+        id: ED.nextPlaceId(list, kind, s.ed.base), // SOG-0439 : un identifiant libre
         name: '',
         role: '',
         lat: '',
