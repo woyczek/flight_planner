@@ -3951,12 +3951,12 @@
    "id": "Q-0074",
    "fiche": "SOG-0394",
    "app": "maintenance",
-   "question": "Vol de nuit vers l'est préparé avant la parution de son message NAT : que fait le calcul ?",
-   "context": "D'accord pour garder les messages datés (celui de la veille, celui du passage) : le moteur choisit par l'heure du passage. Ce que je conteste : faire voler la route de la veille hors de sa fenêtre — une route NAT périmée n'est prise ni en entier ni en partie. Pour ton vol de ce matin, deux messages n'auraient rien changé : aucune route vers l'est n'existe à 13 h 32 Z. Reste le vol du soir calculé avant que le message de la nuit soit paru.",
+   "question": "Vol dont le passage ne tombe dans aucun message NAT gardé (celui de la nuit pas encore paru) : routes de la veille, ou route libre ?",
+   "context": "Je corrige ma question : j'avais oublié TA règle du 13/11 (« même si on n'a pas la bonne nats, on essaie tout de même de les utiliser ») — aujourd'hui un message d'un jour passé est déjà utilisé et dit périmé. Avec les messages gardés (SOG-0394), une route de la veille servira d'abord dans SA fenêtre (vol avancé, heure du simulateur). Reste le vol dont le message n'existe pas encore. Ce que je contestais : faire passer pour valable une route d'un autre jour ; ta règle y répond si l'écran le dit en clair. Je me range à ta règle.",
    "options": [
-    "Route libre, et une ligne le dit : « message NAT de la nuit pas encore paru — recalculer après sa parution »",
-    "Route libre, et en plus la route de la veille montrée comme PRÉVISION, marquée « non valable », jamais comptée comme route du vol",
-    "Prendre la route de la veille comme route du vol tant que le message n'est pas paru, et le dire",
+    "Les routes de la veille du même sens, aux mêmes heures, dites « périmées — à confirmer à la parution » (ta règle du 13/11)",
+    "Route libre, et une ligne le dit : « message NAT pas encore paru — relire après sa parution »",
+    "Route libre, et la route de la veille montrée seulement comme prévision, jamais comptée comme route du vol",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-17",
