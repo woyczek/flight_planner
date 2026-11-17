@@ -486,6 +486,7 @@ def sheet_body_checks(c):
     # user has just opened — the measure that tells a cut that is not drawn from a panel that was folded again
     pos = c.js("() => [document.querySelector('[data-module=\"maps\"]').dataset.sheet, document.querySelector('.mp-data').getBoundingClientRect().height, (document.querySelector('.mp-dbody svg') || { getBoundingClientRect: () => ({ height: -1 }) }).getBoundingClientRect().height]")
     c.ok(pos[0] == 'default' and pos[2] > 0, f'sheet {pos[0]}, panel {pos[1]:.0f} px, cut {pos[2]:.0f} px high (-1: no cut) 1.5 s after the tap on the handle', 'the panel opened by the handle stays open and the cut is drawn in it')
+    c.shot(f'D4_{c.design}_{c.lang}_390x520_sheet_opened_by_tap.png')   # the sheet opened by the pilot's tap at 390 x 520, the cut drawn in the room that is left (the ergonomist reads it, SOG-0416)
     drawing_fits(c, 'weather short window 390 x 520', True)
     c.tap('.mp-chip[data-view="profile"]')
     c.wait(500)
