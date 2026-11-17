@@ -2694,7 +2694,9 @@ def d94(c):
     except Exception:
         raise Fail('the bench never drew its map', 'a map with its zones', 'modules/maps/lib/test/zones_layer.html') from None
     c.ok(not c.js('window.__zl.failed'), 'no map', 'the base’s map is created (local style, no network)')
-    c.eq(len(c.js('window.__zl.layers()')), 3, 'one fill and two line layers (solid, dashed)', what='layers')
+    # SOG-0428 (e1e138c27): the fourth layer is the hatch of the entities `partial` (same source, filtered on `partial`; no entity has it here: nothing is drawn)
+    c.eq(len(c.js('window.__zl.layers()')), 4, 'one fill, one hatch (the entities « partial ») and two line layers (solid, dashed)', what='layers')
+    c.ok(any(i.endswith('-hatch') for i in c.js('window.__zl.layers()')), c.js('window.__zl.layers()'), 'the hatch layer is one of them')
     m = c.page.mouse
 
     def tap_at(lon, lat):
@@ -2720,9 +2722,9 @@ def d94(c):
     # update: other data and colours, the layers kept; a change of style: the layers come back
     c.js("""() => { const Z = window.__zl; Z.layer.update(Z.fc('err'), { ...Z.colors, err: '#ff0000' }); return true }""")
     c.wait(300)
-    c.eq(len(c.js('window.__zl.layers()')), 3, 'update keeps the layers', what='layers after update')
+    c.eq(len(c.js('window.__zl.layers()')), 4, 'update keeps the layers', what='layers after update')
     c.js("""() => { const Z = window.__zl; Z.map.setStyle(JSON.parse(JSON.stringify(Z.style))); return true }""")
-    c.until("() => window.__zl.map.isStyleLoaded() && window.__zl.layers().length === 3", timeout=8000, what='the layers back after setStyle')
+    c.until("() => window.__zl.map.isStyleLoaded() && window.__zl.layers().length === 4", timeout=8000, what='the layers back after setStyle')
     tap_at(5, 45)
     c.eq(c.js('window.__zl.taps.at(-1)'), 'A', 'after the change of style a tap still gives the zone', what='tap after setStyle')
     # fit on a zone across the antimeridian with far islands (the 48 states and the Aleutians): its main ring, never the world
