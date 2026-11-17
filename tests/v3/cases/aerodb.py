@@ -15184,3 +15184,116 @@ def k340(c):
         if got != ref:
             bad.append((k, got, ref))
     c.eq(bad, [], 'the links of an oceanic point (50°N 20°W, either side of the antimeridian, 74°N, 89°N...) to the nodes of the high network: the index (latitude, longitude) gives EXACTLY the nodes, in the same order, as the scan of every node of the latitude band', what='links')
+@case('K341', 'Route matrix, SOG-0452: a pass says when the LIVE NAT files changed under it (the launcher rewrites them; the dates of the flights come from the message of the day): the fingerprint of the NAT files is taken at the start and compared at the end, and the table says « unchanged » or « CHANGED during the pass: the routes cannot be compared with another pass »',
+      'K', static=True,
+      rule='SOG-0452 (ergonomics session): the same flight gave 400 NM more or less according to when the pass ran; no state leaks from one calculation to the next (10 flights alone = the full pass; the 54 first flights in sequence = alone): the NAT message of the data directory was rewritten by the launcher in the middle of the day (22:35). The bench now says it.')
+def k341(c):
+    import contextlib
+    import io
+    import json
+    import os
+    import sys
+    import tempfile
+    import types
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_matrix as RM
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        nat = os.path.join(td, 'sia', 'zones', 'nat')
+        os.makedirs(nat)
+        os.makedirs(os.path.join(td, 'sia', 'base', 'nat', '2026-10-29'))
+        for p, t in ((os.path.join(nat, 'nat_tracks.json'), '{"tracks": []}'), (os.path.join(td, 'sia', 'base', 'nat', '2026-10-29', 'meta.json'), '{"v": 1}'), (os.path.join(td, 'sia', 'base', 'nat', '2026-10-29', 'notes.txt'), 'not json')):
+            with open(p, 'w', encoding='utf-8') as f:
+                f.write(t)
+        a = RM.fingerprint(td)
+        c.eq(sorted(a), ['sia/base/nat/2026-10-29/meta.json', 'sia/zones/nat/nat_tracks.json'], 'the fingerprint covers the NAT files (json) of the zones and of the base, nothing else', what='files')
+        c.ok(RM.fingerprint(td) == a, 'the same files: the same fingerprint', 'stable')
+        with open(os.path.join(nat, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            f.write('{"tracks": [{"id": "A"}]}')
+        b = RM.fingerprint(td)
+        c.eq([k for k in b if a.get(k) != b.get(k)], ['sia/zones/nat/nat_tracks.json'], 'a rewritten file changes its entry (and only its entry)', what='changed')
+        out = os.path.join(td, 'out')
+        os.makedirs(out)
+        rec = {'id': 'X-Y-W-in', 'dep': 'X', 'arr': 'Y', 'sense': 'W', 'date': '2026-11-17T12:00', 'slot': 'in', 'wall_s': 1.0, 'status': 'computed', 'nm': 1.0, 'route': 'X DCT Y', 'proofs': []}
+        with open(os.path.join(out, 'detail.jsonl'), 'w', encoding='utf-8') as f:
+            f.write(json.dumps(rec) + '\n')
+        args = types.SimpleNamespace(out=out, failed=False)
+        with contextlib.redirect_stdout(io.StringIO()) as buf:
+            RM.summary(args)
+        c.ok('fichiers NAT : inchangés pendant la passe' in buf.getvalue(), buf.getvalue()[-200:], 'no change recorded: the summary says « unchanged »')
+        with open(os.path.join(out, 'data_changed.json'), 'w', encoding='utf-8') as f:
+            json.dump(['sia/zones/nat/nat_tracks.json'], f)
+        with contextlib.redirect_stdout(io.StringIO()) as buf:
+            RM.summary(args)
+        c.ok('fichiers NAT RÉÉCRITS pendant la passe (sia/zones/nat/nat_tracks.json)' in buf.getvalue(), buf.getvalue()[-300:], 'a change recorded: the summary names the file and says what the routes are (the copy of the start)')
+        # the copy: the NAT folders are COPIED, everything else is a link to the real folder, and what the launcher rewrites afterwards does not reach the copy
+        os.makedirs(os.path.join(td, 'proc', 'x'))
+        with open(os.path.join(td, 'proc', 'x', 'p.json'), 'w', encoding='utf-8') as f:
+            f.write('{"p": 1}')
+        with open(os.path.join(nat, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            f.write('{"tracks": [{"id": "BEFORE"}]}')
+        dest = os.path.join(td, 'copy', 'data')
+        RM.snapshot(td, dest)
+        with open(os.path.join(nat, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            f.write('{"tracks": [{"id": "AFTER"}]}')
+        with open(os.path.join(dest, 'sia', 'zones', 'nat', 'nat_tracks.json'), encoding='utf-8') as f:
+            seen = f.read()
+        with open(os.path.join(dest, 'proc', 'x', 'p.json'), encoding='utf-8') as f:
+            linked = f.read()
+        c.eq(('BEFORE' in seen and 'AFTER' not in seen, linked), (True, '{"p": 1}'), 'the copy keeps the message of the start whatever the launcher rewrites next, and the other folders are read through links', what='snapshot')
+        RM.release(os.path.dirname(dest))
+        c.ok(os.path.isfile(os.path.join(td, 'proc', 'x', 'p.json')) and not os.path.exists(os.path.dirname(dest)), 'released: the copy is gone, the real data behind the links is untouched', 'release')
+
+
+@case('K342', 'Route engine, SOG-0452 (a GUARD, not a fix): the same flight calculated alone, then after ten other calculations, gives the same route and the same length: nothing of one calculation reaches the next',
+      'K', static=True,
+      rule='SOG-0452 (ergonomics session: « le même vol seul puis après dix autres rend la même route »). A PROPERTY, green everywhere, with no red before (no state leaks: verified on the real base, 10 flights alone = the full pass): it stays to say so if one day something does. On the NAT message of the bench (the track of K333), never the real one.')
+def k342(c):
+    import gzip
+    import json
+    import os
+    import sys
+    import tempfile
+    _regen()
+    import route_fixture as RF
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    track = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        os.makedirs(os.path.join(data, 'sia', 'zones', 'nat'))
+        with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [track]}, f)
+        results_cache.ENABLED = False
+
+        def run(adep, adest, date, fl):
+            req = view.to_request({'action': 'compute', 'adep': adep, 'adest': adest, 'date': date, 'alternatives': False, 'proposals': False, 'fl': fl})
+            res = PL.compute(req, data, radz, fra)
+            p = res['primary']
+            return (p.get('route'), round(p.get('distance_nm') or 0, 1), p.get('ok'))
+        try:
+            alone = run('KJFK', 'EGLL', '2026-11-10T04:30', 370)
+            others = [run(a, b, f'2026-11-10T0{h}:30', fl) for h, (a, b, fl) in enumerate([('EGLL', 'KJFK', 350), ('KJFK', 'EGLL', 330), ('EGLL', 'KJFK', 370), ('KJFK', 'EGLL', 390), ('EGLL', 'KJFK', 310), ('KJFK', 'EGLL', 350), ('EGLL', 'KJFK', 330), ('KJFK', 'EGLL', 370), ('EGLL', 'KJFK', 390), ('KJFK', 'EGLL', 310)])]
+            after = run('KJFK', 'EGLL', '2026-11-10T04:30', 370)
+        finally:
+            results_cache.ENABLED = True
+    c.ok(alone[2] and alone[0], str(alone), 'the flight is computed (the guard is not vacuous)')
+    c.eq(after, alone, 'the same flight, calculated again after ten others (both directions, other levels and times), gives the same route and the same length', what='same route')
+    c.ok(len(others) == 10, str(len(others)), 'ten other calculations were made in between')

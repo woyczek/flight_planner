@@ -59,6 +59,78 @@ def low_priority():
     return ('idle' if os.name == 'nt' else 'nice19') if LP.lower_self() else 'normale (non réglée)'
 
 
+def fingerprint(data):
+    """SOG-0452 : l'empreinte des fichiers NAT VIVANTS que la passe lit (le lanceur les réécrit de temps en temps : la fenêtre de dates des vols vient du message NAT du jour) : { chemin relatif : [taille, sha1] }. Une passe dont l'empreinte change entre son début et sa fin n'est pas comparable à une autre."""
+    import hashlib
+    out = {}
+    for sub in ('sia/zones/nat', 'sia/base/nat'):
+        top = os.path.join(data, *sub.split('/'))
+        for root, _dirs, files in os.walk(top):
+            for name in sorted(files):
+                if name.endswith('.json'):
+                    p = os.path.join(root, name)
+                    try:
+                        with open(p, 'rb') as f:
+                            blob = f.read()
+                    except OSError:
+                        continue
+                    out[os.path.relpath(p, data).replace(os.sep, '/')] = [len(blob), hashlib.sha1(blob).hexdigest()[:12]]
+    return out
+
+
+NAT_PATHS = ('sia/zones/nat', 'sia/base/nat')      # SOG-0452 : les fichiers NAT que le lanceur réécrit de temps en temps
+
+
+def snapshot(data, dest):
+    """SOG-0452 : un dossier de données TEMPORAIRE (`dest`, à créer) qui est celui du poste SAUF les dossiers NAT, COPIÉS : tout le reste est une JONCTION (un lien, en lecture seule : jamais une copie de la base). La passe lit ce dossier : le message NAT du début est celui de toute la passe, quoi que fasse le lanceur pendant ce temps. `release(dest)` le retire sans toucher aux données derrière les liens."""
+    import shutil
+    import subprocess
+
+    def link(src, dst):
+        if os.name == 'nt':
+            subprocess.run(['cmd', '/c', 'mklink', '/J', dst, src], check=True, capture_output=True)
+        else:
+            os.symlink(src, dst)
+
+    def mirror(rel):
+        os.makedirs(os.path.join(dest, *rel.split('/')) if rel else dest, exist_ok=True)
+        for name in sorted(os.listdir(os.path.join(data, *rel.split('/')) if rel else data)):
+            sub = (rel + '/' + name) if rel else name
+            src = os.path.join(data, *sub.split('/'))
+            dst = os.path.join(dest, *sub.split('/'))
+            if sub in NAT_PATHS:
+                shutil.copytree(src, dst)
+            elif any(p.startswith(sub + '/') for p in NAT_PATHS) and os.path.isdir(src):
+                mirror(sub)
+            elif os.path.isdir(src):
+                link(src, dst)
+            else:
+                shutil.copy2(src, dst)
+    mirror('')
+    return dest
+
+
+def release(dest):
+    """Retire le dossier de `snapshot` : d'abord les LIENS eux-mêmes (jamais les données derrière), puis le reste ; rien n'est supprimé sous un lien qui ne part pas."""
+    import shutil
+    links = []
+    for root, dirs, _files in os.walk(dest):
+        for d in list(dirs):
+            p = os.path.join(root, d)
+            if os.path.islink(p) or (os.name == 'nt' and os.path.isdir(p) and bool(os.lstat(p).st_file_attributes & 0x400)):
+                links.append(p)
+                dirs.remove(d)
+    for p in links:
+        try:
+            os.unlink(p) if os.path.islink(p) else os.rmdir(p)
+        except OSError:
+            return False
+    if any(os.path.lexists(p) for p in links):
+        return False
+    shutil.rmtree(dest, ignore_errors=True)
+    return True
+
+
 def windows(data):
     """{ 'W': (de, à), 'E': (de, à) } : la fenêtre des messages de la base pour chaque sens (W = Europe → Amérique : les routes qui vont vers l'ouest)."""
     with open(os.path.join(data, 'sia', 'zones', 'nat', 'nat_tracks.json'), encoding='utf-8') as f:
@@ -184,9 +256,15 @@ def failed_ids(detail):
 def run(args):
     no_network()
     prio = low_priority()
-    data = os.path.abspath(args.data)
+    live = os.path.abspath(args.data)
+    data = live
     out = os.path.abspath(args.out)
     os.makedirs(out, exist_ok=True)
+    import tempfile
+    snap = None
+    if not getattr(args, 'live', False):      # SOG-0452 : la passe lit une COPIE des fichiers NAT prise à son début (le lanceur les réécrit de temps en temps : la fenêtre de dates des vols en vient) ; `--live` lit les fichiers vivants
+        snap = snapshot(live, os.path.join(tempfile.mkdtemp(prefix='route_matrix_'), 'data'))
+        data = snap
     from route_engine import plan as P, view, engine, results_cache, fra
     results_cache.ENABLED = False
     root = data
@@ -231,9 +309,15 @@ def run(args):
         engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = None
     with open(os.path.join(out, 'contexts.json'), 'w', encoding='utf-8') as f:
         json.dump(contexts, f)
+    fp_file = os.path.join(out, 'data_fingerprint.json')
+    if not os.path.isfile(fp_file):      # SOG-0452 : l'empreinte du DÉBUT de la passe (une passe reprise garde celle de son début)
+        with open(fp_file, 'w', encoding='utf-8') as f:
+            json.dump(fingerprint(live), f)
     for n, item in enumerate(todo, 1):
         if os.path.exists(stop):
             log('ARRÊT demandé (fichier STOP) : la passe s\'arrête ici, on peut la reprendre')
+            if snap:
+                release(os.path.dirname(snap))
             return 2
         rec = one(P, view, item, root, rad, fra_file)
         with open(detail, 'a', encoding='utf-8') as f:
@@ -244,6 +328,18 @@ def run(args):
         if n % PACK == 0 and n < len(todo):
             log(f'paquet de {PACK} fini, pause de {PAUSE_S:.0f} s')
             time.sleep(PAUSE_S)
+    now = fingerprint(live)
+    try:
+        with open(fp_file, encoding='utf-8') as f:
+            began = json.load(f)
+    except (OSError, ValueError):
+        began = now
+    if now != began:      # SOG-0452 : le lanceur a réécrit un fichier NAT pendant la passe : les routes sont celles du message du DÉBUT (la copie), pas celles d'une passe faite après
+        with open(os.path.join(out, 'data_changed.json'), 'w', encoding='utf-8') as f:
+            json.dump(sorted(k for k in set(began) | set(now) if began.get(k) != now.get(k)), f)
+        log('FICHIERS NAT RÉÉCRITS PENDANT LA PASSE : les routes sont celles du message du début (copie)' if snap else 'FICHIERS NAT RÉÉCRITS PENDANT LA PASSE (lecture vivante) : routes non comparables à une autre passe')
+    if snap:
+        release(os.path.dirname(snap))
     log('FIN')
     return 0
 
@@ -290,6 +386,12 @@ def summary(args):
         if r.get('code'):
             codes[r['code']] = codes.get(r['code'], 0) + 1
     text.append('raisons : ' + (', '.join(f'{k} {v}' for k, v in sorted(codes.items())) or 'aucune'))
+    try:      # SOG-0452 : les fichiers NAT vivants ont-ils changé pendant la passe ?
+        with open(os.path.join(args.out, 'data_changed.json'), encoding='utf-8') as f:
+            changed = json.load(f)
+        text.append('fichiers NAT RÉÉCRITS pendant la passe (' + ', '.join(changed) + ') : avec la copie du début (défaut) les routes sont celles du message du début ; en lecture vivante (--live) elles ne sont pas comparables à celles d’une autre passe')
+    except OSError:
+        text.append('fichiers NAT : inchangés pendant la passe')
     failed = [r for r in recs if r.get('status') != 'computed' and isinstance(r.get('free'), dict) and r['free'].get('ok') is False]      # SOG-0396 : le diagnostic PAR PAIRE des routes libres en échec
     kinds = {}
     for r in failed:
@@ -312,6 +414,7 @@ def main():
     ap.add_argument('--data', default=os.environ.get('SOG_DATA', os.path.join(os.path.dirname(HERE), 'data')), help='dossier des données (lecture seule)')
     ap.add_argument('--out', default=None, help='dossier de sortie (défaut : <data>/local/route_matrix)')
     ap.add_argument('--limit', type=int, default=0, help='seulement les N premières demandes (essai)')
+    ap.add_argument('--live', action='store_true', help='lit les fichiers NAT VIVANTS du dossier (défaut : une copie prise au début de la passe)')
     ap.add_argument('--summary', action='store_true', help='écrit table.md et le résumé à partir de detail.jsonl')
     ap.add_argument('--failed', action='store_true', help='rejoue SEULEMENT les demandes en échec de detail.jsonl (résultat dans replay.jsonl) ; avec --summary : le tableau de ce rejeu (table_replay.md)')
     ap.add_argument('--list', action='store_true', help='liste les demandes sans les jouer')
