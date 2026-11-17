@@ -7175,7 +7175,8 @@ def k146(c):
             sg.getresponse().read()
             c.eq(sorted(x.name for x in folder.iterdir()), ['29_Oct_2026_FIX_CSV.zip', 'AIP_OFFLINE.zip', 'EG_AIP_DS_20261029_XML.zip', 'ENR-5-2.pdf', 'RAD_2611_v1_0.xlsx', 'de_apt.geojson', 'eurocontrol-airac-2611-fra-points-29-oct-2026.xlsx', 'export_xml_bd_SIA_2026-10-29.zip'],
                  'only the recognised files are in data/local/upload/: no temporary file left, nothing refused kept', what='folder')
-            stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance', 'fr_immat.json')]
+            # SOG-0400: the launcher keeps its own memo of fingerprints in data/local/frame_tree.json (never served, never synchronised) — exempt by its exact path, as its other own files by name
+            stray = [str(x) for x in data.rglob('*') if x.is_file() and 'upload' not in x.parts and x.name not in ('data_tree.js', '.defa_instance', 'fr_immat.json') and x.relative_to(data).as_posix() != 'local/frame_tree.json']
             c.ok(not stray, str(stray[:6]), 'nothing is written elsewhere in data/')
         finally:
             p.terminate()
@@ -7289,7 +7290,8 @@ def k147(c):
             c.eq(job({'icao': 'ZZZZ', 'personal': True})[1].get('reason'), 'not-found', 'a terrain in no base: not-found', what='not found')
             after = (db.stat().st_size, db.stat().st_mtime_ns, sorted(x.name for x in lnm.iterdir()))
             c.eq(before, after, 'the database is untouched: same size and date, no -wal / -shm / copy created beside it (opened read-only, immutable)', what='untouched')
-            stray = [str(x) for x in data.rglob('*') if x.is_file() and x.name not in ('data_tree.js', '.defa_instance', 'personal_use.json')]
+            # SOG-0400: the launcher's own memo of fingerprints (data/local/frame_tree.json, exact path) is not a write of the reading
+            stray = [str(x) for x in data.rglob('*') if x.is_file() and x.name not in ('data_tree.js', '.defa_instance', 'personal_use.json') and x.relative_to(data).as_posix() != 'local/frame_tree.json']
             c.ok(not stray, str(stray[:5]), 'nothing is written in data/ by the reading (only the tick of the user, data/local/personal_use.json, is there)')
             last = root / 'tools' / '.regen_last.json'
             c.ok(not last.exists() or 'BAYLR6' not in last.read_text(encoding='utf-8'), 'kept', 'the records are for the page only: never kept in tools/.regen_last.json')
