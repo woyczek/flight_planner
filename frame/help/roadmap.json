@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b17ffbd",
-  "fiches": 428,
+  "organisation": "89b9ea7",
+  "fiches": 429,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -4511,6 +4511,27 @@
      "de": "Design Metro: die Symbole der Leiste sind nicht zentriert (die aktiven, vielleicht auch die anderen)",
      "es": "Diseño Metro: los iconos de la barra no están centrados (los activos, quizá los demás)",
      "rank": 349
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-donnees-temps-contraint",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; données ; temps contraint",
+    "en": "Cadre ; données ; temps contraint",
+    "de": "Cadre ; données ; temps contraint",
+    "es": "Cadre ; données ; temps contraint"
+   },
+   "items": [
+    {
+     "id": "SOG-0430",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "BLOQUANT : la page gèle pendant des minutes, même fermée et rouverte, après une construction qui réécrit des milliers de fichiers",
+     "en": "BLOCKING: the page freezes for minutes, even closed and reopened, after a build that rewrites thousands of files",
+     "de": "BLOCKIEREND: die Seite friert minutenlang ein, auch nach Schließen und erneutem Öffnen, nach einem Aufbau, der Tausende Dateien neu schreibt",
+     "es": "BLOQUEANTE: la página se congela durante minutos, incluso cerrada y reabierta, tras una construcción que reescribe miles de archivos"
     }
    ]
   },
