@@ -259,7 +259,7 @@ def plan(request, root):
     if request.get('allow_levels', True):      # SOG-0371 (aller-retour) : le contrôle lit la route avec le MÊME modèle vertical que la recherche qui l'a écrite (une route du moteur n'est pas refusée au contrôle pour une montée que la recherche adaptait)
         request.setdefault('level_strategy', 'adapt')
     request = planning.normalize(request, root)
-    nav.nat_rejected = frozenset()
+    nav.nat_rejected = frozenset((getattr(nav, 'nat', None) or {}).get('kept') or ())      # SOG-0394 : une route GARDÉE d'un message précédent est fermée à toute recherche tant que `sections.solve` ne l'a pas jugée valable à l'heure de son passage
     nav.fl_basis = request.get('fl_basis', 'request')      # SOG-0389 : d'où vient le niveau : `request` (la demande le donne) ou `default` (le défaut du moteur, FL180 : sans niveau) ; dit dans `sections.fl_basis`
     nav.sections_info = None      # SOG-0354 L5 (4) : rien d'une demande précédente (le contexte est gardé) ne passe dans la réponse de celle-ci
     nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ que la demande donne (sans heure : (None, 'none'), la validité horaire n'est pas vérifiée, dit)

@@ -19,17 +19,28 @@ import re
 MAX_BYTES = 2_000_000
 MAX_TRACKS = 60
 MAX_POINTS = 40
+PAST_NAME = 'nat_past.json'          # SOG-0394 : les routes qui sont sorties de nat_tracks.json à une relecture (écrites à côté par tools/aero_fetch.py nat) : lues comme une entrée NON FIABLE, prises seulement si elles sont valables à l'heure du passage
+MAX_PAST = 120
 LINK_NM = 900                         # un raccord DCT de simulation : jusqu'à 900 NM (la côte est loin du premier repère océanique, et le Canada n'a pas de points dans la base) ; le plus proche est le moins cher
 LINK_NODES = 3
 MIN_COMPONENT = 200                  # un réseau d'au moins 200 nœuds connexes : celui d'un pays, pas un îlot
 HIGH_FT = 24500                      # un airway « haut » : son plafond atteint au moins cette altitude
-NAME = re.compile(r'[A-Z][A-Z0-9]{1,6}')
-TRACK = re.compile(r'[A-Z]{1,2}')
-COORD = re.compile(r'(\d{2})(\d{2})?/(\d{2,3})')
+NAME = re.compile(r'[A-Z][A-Z0-9]{1,6}', re.A)      # re.A : jamais de chiffres ou de lettres d'une autre écriture
+TRACK = re.compile(r'[A-Z]{1,2}', re.A)
+COORD = re.compile(r'(\d{2})(\d{2})?/(\d{2,3})', re.A)
 
 
 def path_of(nav):
     return nav.data_dir / 'sia' / 'zones' / 'nat' / 'nat_tracks.json'
+
+
+def path_past(nav):
+    return nav.data_dir / 'sia' / 'zones' / 'nat' / PAST_NAME
+
+
+def key_of(t):
+    """La clé d'une route : (lettre, début de validité, sens), comme tools/aero_fetch.py (nat_key)."""
+    return (t['id'], t['from'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['from'] else '', 'east' if t['east'] and not t['west'] else 'west' if t['west'] and not t['east'] else 'both')
 
 
 def _date(text):
@@ -47,7 +58,8 @@ def _levels(raw):
     out = []
     for x in raw if isinstance(raw, list) else []:
         try:
-            v = int(str(x).strip())
+            s = str(x).strip()
+            v = int(s) if s.isascii() else 0      # chiffres d'une autre écriture : pas un niveau (comme `re.A` pour les repères)
         except ValueError:
             continue
         if 100 <= v <= 600:
@@ -58,14 +70,15 @@ def _levels(raw):
 def check(meta, fl, east, eta=None):
     """SOG-0354 L5 (1) : une track est-elle valable POUR CE VOL ? None si oui, sinon (code, phrase) : `direction` (le sens de la track n'est pas celui du vol), `level` (le niveau demandé n'est pas dans la LISTE des niveaux de la track pour ce sens), `time` (l'heure estimée au passage de l'entrée, `eta`, un datetime UTC, n'est pas dans la
     validité du message : `from` / `to`). Chaque track écartée est dite avec sa raison, une fois : jamais une omission silencieuse. `meta` : la méta d'une track (nav.nat['meta'][id])."""
-    tid, direction = meta['track'], meta.get('direction')
+    kept = meta.get('source') == 'kept'      # SOG-0394 : une route GARDÉE d'un message précédent n'est prise que si l'heure du passage de son entrée est dans SA fenêtre : jamais « périmée prise quand même », et sans heure elle ne peut pas être prise
+    tid, direction = meta.get('label') or meta['track'], meta.get('direction')
     wanted = 'east' if east else 'west'
     if direction not in (wanted, 'both'):
         return 'direction', f"route NAT {tid} : sens contraire (la track va vers l'{'ouest' if direction == 'west' else 'est'}, le vol vers l'{'est' if east else 'ouest'})"
     levels = meta.get('levels_' + wanted)
     if isinstance(levels, list) and levels and int(fl) not in levels:
         return 'level', f"route NAT {tid} : FL{int(fl)} non proposé vers l'{'est' if east else 'ouest'} (FL{levels[0]} à FL{levels[-1]})"
-    if eta is not None and not meta.get('stale'):      # un message PÉRIMÉ (d'un jour passé) est utilisé et dit périmé (règle du 13/11, K237) : ses heures ne sont pas contrôlées
+    if eta is not None and (kept or not meta.get('stale')):      # un message PÉRIMÉ (d'un jour passé) est utilisé et dit périmé (règle du 13/11, K237) : ses heures ne sont pas contrôlées
         a, b = _date(meta.get('from')), _date(meta.get('to'))
         t = eta if eta.tzinfo else eta.replace(tzinfo=dt.timezone.utc)      # la validité d'une route NAT s'entend à l'heure de PASSAGE de l'entrée (décision de l'ergonomie, 16 nov.) : l'heure estimée à l'entrée est dans la fenêtre
         if (a and t < a) or (b and t > b):
@@ -95,6 +108,11 @@ def time_fields(meta, eta, entry=None, point=None, hour=None):
     return out
 
 
+def unknown_hour(meta):
+    """SOG-0394 : une route GARDÉE ne se prend pas sans heure de passage : (code, phrase) de son écart."""
+    return 'time', f"route NAT {meta.get('label') or meta['track']} : l'heure de passage n'est pas connue : la validité d'une route gardée ne peut pas être vérifiée"
+
+
 def coordinate(token):
     """(lat, lon) d'une coordonnée NAT (« 5530/20 », « 57/30 ») : nord, ouest ; None sinon."""
     m = COORD.fullmatch(token)
@@ -107,20 +125,20 @@ def coordinate(token):
     return (la, -float(lo))
 
 
-def read(path):
+def read(path, limit=MAX_TRACKS):
     """Le fichier en entrée lue : ({ tracks: [track nettoyées] }, [raisons de ce qui est laissé]) ; ({}, [raison]) sans fichier lisible."""
     skipped = []
     try:
         if path.stat().st_size > MAX_BYTES:
             return [], ['file-too-big']
         doc = json.loads(path.read_text(encoding='utf-8-sig'))
-    except (OSError, ValueError):
+    except (OSError, ValueError, RecursionError, MemoryError):      # une imbrication profonde ou un fichier énorme : « illisible », comme un fichier absent
         return [], ['no-file']
     rows = doc.get('tracks') if isinstance(doc, dict) else None
     if not isinstance(rows, list):
         return [], ['no-tracks']
     out = []
-    for t in rows[:MAX_TRACKS]:
+    for t in rows[:limit]:
         if not isinstance(t, dict) or not isinstance(t.get('id'), str) or not TRACK.fullmatch(t['id'].strip().upper()):
             skipped.append('bad-track')
             continue
@@ -195,8 +213,15 @@ def add(nav, nm):
     nav.nat = {'tracks': [], 'issued': None, 'stale': False, 'skipped': [], 'links': 0, 'directions': []}
     tracks, skipped = read(path_of(nav))
     nav.nat['skipped'] = skipped
-    if not tracks:
+    past, past_skipped = read(path_past(nav), MAX_PAST)      # SOG-0394 : les routes gardées (entrée non fiable : mêmes bornes que le fichier du jour)
+    here = {key_of(t) for t in tracks}
+    kept = [dict(t, kept=True) for t in past if key_of(t) not in here]
+    nav.nat['kept'] = []
+    if past_skipped and past_skipped != ['no-file']:
+        nav.nat['skipped'].append('nat_past: ' + ', '.join(sorted(set(past_skipped))[:3]))
+    if not tracks and not kept:
         return nav.nat
+    tracks = tracks + kept
     day = nav.date if isinstance(nav.date, dt.date) else None
     if day is None:
         try:
@@ -204,7 +229,7 @@ def add(nav, nm):
         except ValueError:
             day = None
     high = main_network(nav)
-    issued = [t['from'] for t in tracks if t['from']]
+    issued = [t['from'] for t in tracks if t['from'] and not t.get('kept')]
     nav.nat['issued'] = min(issued).strftime('%d/%m') if issued else None
     for t in tracks:
         # les repères : placés (clé du nœud) ou laissés de côté
@@ -225,12 +250,16 @@ def add(nav, nm):
         if len(keys) < 2:
             nav.nat['skipped'].append(f'{t["id"]}: moins de deux repères placés')
             continue
+        isk = bool(t.get('kept'))
+        tid = t['id'] + '~' + t['from'].strftime('%Y%m%d%H%M') if isk and t['from'] else t['id'] + '~' + t['to'].strftime('%Y%m%d%H%M') if isk else t['id']      # une route gardée porte une clé qui ne se confond pas avec la lettre du jour
         levels = t['east'] + t['west']
         lower, upper = min(levels) * 100, max(levels) * 100
         direction = 'west' if t['west'] and not t['east'] else 'east' if t['east'] and not t['west'] else 'both'
         stale = bool(t['to'] and day and t['to'].date() < day)
-        meta = {'track': t['id'], 'direction': direction, 'levels': sorted(set(levels)), 'levels_east': list(t['east']), 'levels_west': list(t['west']), 'from': t['from'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['from'] else None,
+        meta = {'track': tid, 'direction': direction, 'levels': sorted(set(levels)), 'levels_east': list(t['east']), 'levels_west': list(t['west']), 'from': t['from'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['from'] else None,
                 'to': t['to'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['to'] else None, 'stale': stale, 'issued': t['from'].strftime('%d/%m') if t['from'] else None}
+        if isk:      # SOG-0394 : la lettre, la source et le nom dit (« R gardée du 17/11 ») d'une route gardée
+            meta.update(letter=t['id'], source='kept', label=f"{t['id']} (gardée du {meta['issued'] or '?'})")
         sense = 'FB' if direction == 'both' else 'F'
         for a, b in zip(keys, keys[1:]):
             nav.edges.append(dict(a=a, b=b, route='NAT' + t['id'], lower=lower, upper=upper, dir=sense, nm=nm(nav.nodes[a], nav.nodes[b]), zone='nat',
@@ -246,9 +275,13 @@ def add(nav, nm):
                 nav.nat['links'] += 1
             if not near:
                 nav.nat['skipped'].append(f'{t["id"]}: {end} sans réseau haut à moins de {LINK_NM} NM')
-        nav.nat['tracks'].append(t['id'])
-        nav.nat.setdefault('ends', {})[t['id']] = [keys[0], keys[-1]]      # SOG-0354 L5 (2) : les deux extrémités de chaque route du jour : les entrées et les sorties d'une route libre créée (free_route)
-        nav.nat.setdefault('meta', {})[t['id']] = meta      # SOG-0354 L5 : la méta de chaque track, pour dire pourquoi l'une est écartée (check)
-        nav.nat['directions'] = sorted(set(nav.nat['directions']) | ({'east', 'west'} if direction == 'both' else {direction}))
-        nav.nat['stale'] = nav.nat['stale'] or stale
+        nav.nat['tracks'].append(tid)
+        if isk:
+            nav.nat['kept'].append(tid)
+        nav.nat.setdefault('points', {})[tid] = [{'id': nav.nodes[k]['id'], 'lat': nav.nodes[k]['lat'], 'lon': nav.nodes[k]['lon']} for k in keys]      # SOG-0394 : les points de la route, pour que l'écran n'ait pas à lire le fichier
+        nav.nat.setdefault('ends', {})[tid] = [keys[0], keys[-1]]      # SOG-0354 L5 (2) : les deux extrémités de chaque route du jour : les entrées et les sorties d'une route libre créée (free_route)
+        nav.nat.setdefault('meta', {})[tid] = meta      # SOG-0354 L5 : la méta de chaque track, pour dire pourquoi l'une est écartée (check)
+        if not isk:      # la phrase « aucune route NAT vers l'est dans le message du… » et l'état périmé ne parlent que de la dernière publication
+            nav.nat['directions'] = sorted(set(nav.nat['directions']) | ({'east', 'west'} if direction == 'both' else {direction}))
+            nav.nat['stale'] = nav.nat['stale'] or stale
     return nav.nat

@@ -78,7 +78,7 @@ def nat_of(segs):
     used = [s['nat'] for s in segs if s.get('nat') and s['via'].startswith('NAT')]
     if not used:
         return None
-    return {'tracks': list(dict.fromkeys(n['track'] for n in used)), 'issued': next((n['issued'] for n in used if n.get('issued')), None), 'stale': any(n['stale'] for n in used)}
+    return {'tracks': list(dict.fromkeys(n.get('letter') or n['track'] for n in used)), 'issued': next((n['issued'] for n in used if n.get('issued')), None), 'stale': any(n['stale'] for n in used)}
 
 
 def issue_kind(text):

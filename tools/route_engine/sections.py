@@ -113,8 +113,13 @@ def _solve(nav, g, start, end):
             along += e['nm']
         return to_entry, 'entry'
     rejected = {tid: why for tid, m in meta.items() if (why := nat_layer.check(m, fl, east))}
+    if hour is None:      # SOG-0394 : une route gardée d'un message précédent ne se prend pas sans heure de passage
+        for tid, m in meta.items():
+            if m.get('source') == 'kept' and tid not in rejected:
+                rejected[tid] = nat_layer.unknown_hour(m)
     candidates = []
     chains = oriented_chains(nav.nodes, g, east)
+    lab = lambda t: (meta.get(t) or {}).get('label') or t      # SOG-0394 : le nom dit d'une route (« R gardée du 17/11 » pour une route gardée d'un message précédent)
     when = {}      # SOG-0391 (a) : track écartée pour l'HEURE (ou le NIVEAU : l'heure n'y est pas jugée, seulement dite) → (heure du passage de son entrée, point d'entrée)
     for tid, (code, _text) in rejected.items():
         if code == 'level' and hour and chains.get(tid):
@@ -128,7 +133,7 @@ def _solve(nav, g, start, end):
         why = None
         options = [o for o in options if nav.nodes[o['entry']]['id'] not in avoid and nav.nodes[o['exit']]['id'] not in avoid]
         if not options and chains[tid]:
-            rejected[tid] = ('rad', f"route NAT {tid} : son entrée ou sa sortie est un point que la règle RAD fait éviter ({', '.join(sorted(avoid))})")
+            rejected[tid] = ('rad', f"route NAT {lab(tid)} : son entrée ou sa sortie est un point que la règle RAD fait éviter ({', '.join(sorted(avoid))})")
             continue
         for o in options:
             pt = 'entry'
@@ -147,7 +152,7 @@ def _solve(nav, g, start, end):
                 when[tid] = seen
     for tid in meta:
         if tid not in rejected and tid not in {c[0] for c in candidates}:
-            rejected[tid] = ('network', f"route NAT {tid} : ni son entrée ni sa sortie ne se relie au réseau haut à ce niveau")
+            rejected[tid] = ('network', f"route NAT {lab(tid)} : ni son entrée ni sa sortie ne se relie au réseau haut à ce niveau")
     info = {'candidates': [], 'tried': [], 'chosen': None, 'sections': [], 'rejected': [], 'depart': ({'time': hour.strftime('%Y-%m-%dT%H:%MZ'), 'basis': depart[1]} if hour else {'time': None, 'basis': 'none', 'text': 'heure de départ non donnée : validité horaire des routes NAT non vérifiée'} if depart else None)}
     nav.sections_info = info
     # SOG-0354 L5 (4) défaut 2 : un autre NIVEAU peut-il changer la réponse ? Seulement si une track écartée POUR LE NIVEAU serait valable (sens, heure au passage de son entrée) à l'un des niveaux qu'elle propose ; sinon la reprise à un niveau plus bas refait la même recherche pour rien (plan.level_matters)
@@ -170,7 +175,7 @@ def _solve(nav, g, start, end):
     info['fl'], info['fl_basis'] = fl, getattr(nav, 'fl_basis', 'request')      # SOG-0389 : le niveau PRIS et d'où il vient (`request` ou `default` : FL180 quand la demande n'en donne pas)
 
     def said():
-        info['rejected'] = [dict({'track': tid, 'code': code, 'text': text}, **({'levels': [int(x) for x in ((meta.get(tid) or {}).get('levels_' + ('east' if east else 'west')) or [])]} if code == 'level' else {}), **(nat_layer.time_fields(meta[tid], *when[tid]) if code in ('time', 'level') and tid in when else {'from': (meta.get(tid) or {}).get('from'), 'to': (meta.get(tid) or {}).get('to')} if code == 'level' else {}))      # SOG-0389 : une track écartée pour le NIVEAU dit les niveaux qu'elle offre dans ce sens ; SOG-0391 (a) : pour l'HEURE, l'heure du passage de son entrée et la fenêtre du message (des champs, plus seulement la phrase)
+        info['rejected'] = [dict({'track': tid, 'code': code, 'text': text}, **({'levels': [int(x) for x in ((meta.get(tid) or {}).get('levels_' + ('east' if east else 'west')) or [])]} if code == 'level' else {}), **(nat_layer.time_fields(meta[tid], *when[tid]) if code in ('time', 'level') and tid in when else {'from': (meta.get(tid) or {}).get('from'), 'to': (meta.get(tid) or {}).get('to')} if code in ('time', 'level') else {}), **({'letter': meta[tid]['letter'], 'source': 'kept'} if (meta.get(tid) or {}).get('source') == 'kept' else {}))      # SOG-0389 : une track écartée pour le NIVEAU dit les niveaux qu'elle offre dans ce sens ; SOG-0391 (a) : pour l'HEURE, l'heure du passage de son entrée et la fenêtre du message (des champs, plus seulement la phrase)
                             for tid, (code, text) in sorted(rejected.items())]
     ratio = min((e.get('_cost', e['nm']) / e['nm'] for es in g.values() for _v, e in es if e['nm'] > .00001), default=0)
     if not candidates:
@@ -188,7 +193,7 @@ def _solve(nav, g, start, end):
         if found and hour and tid in meta:
             d, pt = passage(o, sum(x['nm'] for _u, _v, x in found['path']))      # l'heure au passage du 30°W, avec la distance RÉELLE de la section d'Europe (SOG-0403)
             eta = eta_of(d)
-        why = ('network', f"route NAT {tid} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
+        why = ('network', f"route NAT {lab(tid)} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
             (nat_layer.check(meta[tid], fl, east, eta) if eta else None)
         if why:
             lost[tid] = why
@@ -222,6 +227,7 @@ def _solve(nav, g, start, end):
         return _free(nav, g, start, end, ratio, info)
     cost, path, sections, tid = best
     info['chosen'], info['sections'], info['cost'] = tid, sections, round(cost, 1)
+    _taken(nav, info, tid)
     _entry(nav, g, info)
     return path
 
@@ -236,6 +242,13 @@ def _europe(nav, g, start, entries, info, key='europe', need=None, track=None, m
     _step(nav, 'europe' if nav.nodes[start]['lon'] > WEST_LON else 'amérique', ls.get('seconds') or 0.0, bound, ls.get('truncated'), shared=True, goals=len(entries), reached=len(found), **({'track': track} if track else {}))
     info[key] = {'goals': len(entries), 'reached': len(found), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'), 'truncated': bool(ls.get('truncated'))}
     return found
+
+
+def _taken(nav, info, tid):
+    """SOG-0394 : `sections.taken` = la route NAT PRISE : { track (la lettre), key, source ('last' : la dernière publication ; 'kept' : une route gardée d'un message précédent), from, to, issued, points: [{ id, lat, lon }] } : l'écran n'a pas à lire le second fichier."""
+    m = ((getattr(nav, 'nat', None) or {}).get('meta') or {}).get(tid) or {}
+    info['taken'] = {'track': m.get('letter') or tid, 'key': tid, 'source': 'kept' if m.get('source') == 'kept' else 'last', 'from': m.get('from'), 'to': m.get('to'), 'issued': m.get('issued'),
+                     'points': list(((getattr(nav, 'nat', None) or {}).get('points') or {}).get(tid) or [])}
 
 
 def _entry(nav, g, info):

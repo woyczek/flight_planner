@@ -13127,3 +13127,87 @@ def k312(c):
                  'when the routes that leave cannot be kept, nat_tracks.json is NOT replaced and the failure is said (nothing is lost silently)', what='guard')
         finally:
             AF.get, AF._utc = real_get, real_utc
+
+
+@case('K313', 'Route engine, SOG-0394 lot A: the engine reads the NAT routes KEPT by the launcher (`nat_past.json`, an UNTRUSTED input with the bounds of nat_tracks.json) and takes one only if the hour of the passage of its entry is inside ITS dated window and the level is in its list — never as a « stale one taken anyway »; set aside it says its reason with the fields of SOG-0391 and its letter and source; closed to every search that `sections.solve` has not judged; the answer says the route taken (`sections.taken`: letter, source, window, points); K237 (the stale rule of the message of the day) is not changed',
+      'K', static=True,
+      rule='SOG-0394 (17 Nov 2026; the user: « conserver les routes « en cours » et les routes futures (on peut décider d\'avancer un vol, il faut avoir encore les informations de la veille) »; ergonomics session, 9:14, lot A). The rule of 13 Nov for the message of the day (K237: a stale message is used and said stale) is NOT touched. A route kept from an earlier message (`source: kept`) is different: it is taken only if the hour of the passage of its entry is inside its window (`from` / `to`) and the level of the flight in its list; with no hour of departure it cannot be checked and it is not taken; it has its own key (letter + start) so that it never mixes with the letter of the day (`sections.rejected[].letter`, `source`); the phrase « no NAT route eastbound in the message of the day » and `issued` speak of the last publication only; every search (the whole search too) is closed to a kept route until `sections.solve` has judged it valid. The answer carries `sections.taken` = { track (letter), key, source (`last` | `kept`), from, to, issued, points } so that the screen does not read the second file. Bench of K237: the kept eastbound track A (01:30-08:00Z on 10 Nov) with a message of the day that has only a westbound track A (11:30-19:00Z).')
+def k313(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache, nat_layer
+    import pathlib
+    # Sécurisation (17 Nov): the engine reads nat_tracks.json and nat_past.json with the same function; a deep nesting (RecursionError) or non-ASCII digits are an unreadable file / no digits, never a stop
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tdr:
+        f = pathlib.Path(tdr) / 'nat_tracks.json'
+        f.write_text('{"tracks": ' + '[' * 100000 + ']' * 100000 + '}', encoding='utf-8')
+        c.eq(nat_layer.read(f), ([], ['no-file']), 'a deeply nested nat_tracks.json / nat_past.json (200 KB, under the size bound) is an unreadable file: RecursionError is caught like ValueError, the engine goes on without it', what='deep')
+        f.write_text(json.dumps({'tracks': [
+            {'id': 'Q', 'route': ['BALIX', '\u0666\u0660/\u0662\u0660'], 'west': ['350'], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'},
+            {'id': 'R', 'route': ['BALIX', '60/20'], 'west': ['\u0663\u0665\u0660'], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'},
+            {'id': 'S', 'route': ['BALIX', '60/20'], 'west': ['350'], 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}]}), encoding='utf-8')
+        c.eq([t['id'] for t in nat_layer.read(f)[0]], ['S'], 'digits of another script (Arabic-Indic) are not digits for the engine either: the point and the level that carry them are dropped (the route Q has no good point, R no level)', what='ascii')
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    kept = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
+    today = {'id': 'A', 'route': ['5230/10', '5230/20', '5230/30', '5230/40', '5230/50'], 'east': [], 'west': ['350', '370'], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T11:30:00Z', 'to': '2026-11-10T19:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [today]}, f)
+        with open(os.path.join(folder, 'nat_past.json'), 'w', encoding='utf-8') as f:
+            json.dump({'tracks': [kept]}, f)
+        results_cache.ENABLED = False
+        try:
+            def run(date, **extra):
+                args = dict({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': date, 'alternatives': False, 'proposals': True, 'fl': 370}, **extra)
+                res = PL.compute(view.to_request(args), data, radz, fra)
+                sec = res.get('sections') or {}
+                return res, sec, [{k: r.get(k) for k in ('track', 'code', 'letter', 'source', 'at', 'entry', 'from', 'to')} for r in sec.get('rejected', [])]
+            inside, sin, rin = run('2026-11-10T04:30')
+            outside, sout, rout = run('2026-11-10T10:30')
+            nohour, snh, rnh = run('2026-11-10')
+            whole, swh, rwh = run('2026-11-10T10:30', sections=False)
+            with open(os.path.join(folder, 'nat_past.json'), 'w', encoding='utf-8') as f:
+                f.write('{"tracks": [{"id": "abc", "route": ["../x"]}, 12, null], "extra": ' + '1' * 10 + '}')
+            hostile, shost, rhost = run('2026-11-10T10:30')
+        finally:
+            results_cache.ENABLED = True
+    key = 'A~202611100130'
+    keyed = lambda rej: [r for r in rej if r['track'] == key]
+    c.eq((sin.get('chosen'), sin['taken']['track'], sin['taken']['source'], sin['taken']['from'], sin['taken']['to'], sin['taken']['issued'], [x['id'] for x in sin['taken']['points']], 'NATA' in str(inside['primary'].get('route')), [(r['track'], r['code']) for r in rin]),
+         (key, 'A', 'kept', '2026-11-10T01:30:00Z', '2026-11-10T10:00:00Z', '10/11', ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], True, [('A', 'direction')]),
+         "at 04:30Z the passage of the entry ENTRA is at 07:05Z, inside the window of the KEPT track A (01:30-08:00Z) and FL370 is in its list: it is taken; the answer says it (`sections.taken`: the letter, `kept`, the window, the points); the westbound A of the message of the day (the same letter) is set aside for its direction and does not mix with it", what='kept taken')
+    c.ok(any("Route gardée" in i['text'] for i in inside['primary'].get('issues', [])), [i['text'][:60] for i in inside['primary'].get('issues', [])], 'a remark that says it is a kept route (« Route gardée »), not « le message du jour »')
+    c.eq((sout.get('chosen'), sout.get('source'), keyed(rout), "A (gardée du 10/11)" in ' '.join(r['text'] for r in sout['rejected'] if r['track'] == key), sout.get('taken')),
+         (None, 'random', [{'track': key, 'code': 'time', 'letter': 'A', 'source': 'kept', 'at': '2026-11-10T14:44Z', 'entry': 'ENTRA', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}], True, None),
+         "at 10:30Z the passage at the 30°W (14:44Z) is after the end of the window of the kept track: it is NOT taken (never « stale taken anyway ») and it says why with the fields of SOG-0391 and its letter and source; a free route is made", what='kept set aside')
+    c.ok("Aucune route NAT vers l'est dans le message du 10/11." in [i['text'] for i in outside['primary'].get('issues', [])], [i['text'][:60] for i in outside['primary'].get('issues', [])], 'the phrase « Aucune route NAT vers l\'est dans le message du 10/11. » is there: it speaks of the LAST publication only, a kept eastbound route does not hide that it has no eastbound route')
+    c.eq((snh.get('chosen'), [(r['track'], r['code'], r['at'], r['from'], r['to']) for r in keyed(rnh)], "heure de passage n'est pas connue" in ' '.join(r['text'] for r in snh['rejected'] if r['track'] == key)),
+         (None, [(key, 'time', None, '2026-11-10T01:30:00Z', '2026-11-10T10:00:00Z')], True), "with a date and no hour of departure a kept route cannot be checked: it is not taken and says so (its window is said)", what='kept no hour')
+    c.eq(('NATA' in str(whole['primary'].get('route')), whole['primary'].get('ok')), (False, False),
+         "the whole search (`sections: false`) is closed to the kept route too: without it the route of 10:30Z would go by the kept track A, ended at 08:00Z (3 029.5 NM, red without the guard)", what='guard')
+    c.eq((shost.get('source'), [(r['track'], r['code']) for r in rhost], 'NATA' in str(hostile['primary'].get('route'))), ('random', [('A', 'direction')], False),
+         "a nat_past.json that is not a list of routes (a letter of three signs, a point « ../x », a number, null) is read as an untrusted input: nothing is taken, nothing breaks", what='untrusted')
