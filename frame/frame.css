@@ -273,6 +273,32 @@ html.f-fixed .f-view:not(.f-split):not(.f-over) {
   white-space: nowrap;
   cursor: pointer
 }
+/* SOG-0407 (l'utilisateur, en recette : « réapparu, mais pas en blanc sur cartouche rouge ») : le cartouche est un bouton de l'en-tête, et les designs réécrivent TOUS les boutons de l'en-tête (metro et
+   swiss : fond transparent ; cupertino : texte bleu ; la nuit : le rouge d'alerte du design devient un rose clair sous le texte blanc, contraste 2,3 puis 1,7). Il porte donc ses couleurs à lui, rouge
+   foncé et blanc, les mêmes dans les cinq designs et les deux tons (blanc sur #b3261e : 6,5 ; le rouge enfoncé : 9), avec un poids de sélecteur qui l'emporte sur les règles des designs ; le seul
+   rayon est celui du design (--sog-radius-s : carré où le design est carré) ; la taille, elle, reste dans la règle de base (le palier « pastille » la change) */
+html .f-head button.f-stale {
+  --f-stale-bg: #b3261e;
+  --f-stale-bg-press: #8c1d18;
+  background: var(--f-stale-bg);
+  color: #fff;
+  border: 0;
+  border-radius: var(--sog-radius-s, 0);
+  font-family: var(--sog-font, inherit);
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 28px;
+  letter-spacing: .02em;
+  text-transform: none
+}
+html .f-head button.f-stale:is(:hover, :active, :focus-visible) {
+  background: var(--f-stale-bg-press);
+  color: #fff
+}
+html .f-head button.f-stale:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -4px
+}
 .f-stale[data-tier="2"] {
   width: 16px;
   height: 16px;

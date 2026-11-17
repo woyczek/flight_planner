@@ -4966,8 +4966,8 @@ def a118(c):
     c.until("document.getElementById('fStale') && !document.getElementById('fStale').hidden", timeout=15000, what='the cartouche')
     on = c.js(info)
     short = {'fr': 'Recharger', 'en': 'Reload', 'de': 'Neu laden', 'es': 'Recargar'}[c.lang]
-    c.eq((on['shown'], norm(on['text']) in (norm(label), norm(short), ''), on['radius'], on['color']), (True, True, '0px', 'rgb(255, 255, 255)'),
-         'a square cartouche, its label (whole, or shortened when the header is tight: A122), white text', what='cartouche')
+    c.eq((on['shown'], norm(on['text']) in (norm(label), norm(short), ''), on['radius'], on['color']), (True, True, c.js(_RADIUS_S_JS), 'rgb(255, 255, 255)'),
+         'a cartouche with the radius of the design (SOG-0407: square where the design is square), its label (whole, or shortened when the header is tight: A122), white text', what='cartouche')
     c.eq(norm(c.js("document.getElementById('fStale').getAttribute('aria-label')")), norm(label), 'the whole label stays in aria-label', what='aria-label')
     c.ok(on['contrast'] >= 4.5, str(on['contrast']), 'white on the alert red: contrast AA (4.5)')
     c.ok(on['tall'] <= 40 and not on['overflow'], str(on), 'small, and the page does not scroll sideways')
@@ -5188,6 +5188,47 @@ def a254(c):
     c.check_errors()
 
 
+_RADIUS_S_JS = """() => { const i = document.createElement('i'); i.style.borderTopLeftRadius = getComputedStyle(document.documentElement).getPropertyValue('--sog-radius-s').trim() || '0'; document.body.append(i);
+  const r = getComputedStyle(i).borderTopLeftRadius; i.remove(); return r }"""
+
+
+@case('A255', 'The « Old version · Reload » cartouche is white on dark red in the five designs and both tones — the designs\' own rules for the header buttons (transparent in metro and swiss, blue text in cupertino, a pale red at night) do not take its colours; its corners are the design\'s (square where it is square); pressed, it stays readable (SOG-0407)', 'A',
+      tags=('design',), screens=False, night=True, langs4=False,
+      rule='SOG-0407 (the user, in recette, 17 Nov 2026: « réapparu, mais pas en blanc sur cartouche rouge »): the cartouche is a button of the header, and every design rewrites the header buttons — measured before: metro and swiss a transparent background (white text on the page), cupertino blue text on nothing, standard and material at night a pale red under white text (contrast 2.3 and 1.7); the cartouche carries its own colours (white on #b3261e: 6.5) with a selector weight that wins over the designs, and the radius of the design')
+def a255(c):
+    state = {'app': 'abcd1234'}
+
+    def launcher(route):
+        u = urllib.parse.urlparse(route.request.url).path
+        body = {'server': True, 'data': False, 'dataGit': False, 'host': 'TEST', 'lan': False, 'lnm': [], **({'app': state['app']} if state['app'] else {})} if u.endswith('/__setup/status') else {}
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(body))
+    c.context.unroute(re.compile(r'/__setup/'))
+    c.context.route(re.compile(r'/__setup/'), launcher)
+    c.open('settings', docs=LEVEL3, wait=False)
+    c.until("document.getElementById('fStale') && !document.getElementById('fStale').hidden", timeout=15000, what='the cartouche')
+    c.wait(500)
+    look = """() => { const e = document.getElementById('fStale'), cs = getComputedStyle(e), rgba = x => (x.match(/[\\d.]+/g) || []).map(Number);
+      const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b) };
+      const fg = rgba(cs.color), bg = rgba(cs.backgroundColor), a = lum(fg), b = lum(bg);
+      return { fg, bg, alpha: bg.length > 3 ? bg[3] : 1, radius: cs.borderTopLeftRadius, size: parseFloat(cs.fontSize), tall: Math.round(e.getBoundingClientRect().height),
+        contrast: +((Math.max(a, b) + .05) / (Math.min(a, b) + .05)).toFixed(2) } }"""
+    want = c.js(_RADIUS_S_JS)
+    c.shot(f'A255_stale_{c.width}_{c.design}_{c.tone}.png')
+    for state_name in ('at rest', 'pressed'):
+        if state_name == 'pressed':
+            c.page.hover('#fStale')
+            c.wait(150)
+        v = c.js(look)
+        ctx = f'{state_name}, {c.design}, {c.tone}'
+        c.eq(v['fg'][:3], [255, 255, 255], f'white text ({ctx})', what='text colour')
+        c.ok(v['alpha'] >= 0.99, str(v), f'a solid background, never the transparent one of the designs ({ctx})')
+        c.ok(v['bg'][0] >= 120 and v['bg'][1] <= 60 and v['bg'][2] <= 60, str(v['bg']), f'a dark red background ({ctx}): the colour the user asked for')
+        c.ok(v['contrast'] >= 4.5, str(v), f'the label is readable: contrast AA computed from the real colours ({ctx})')
+        c.eq(v['radius'], want, f'the corners are the design\'s own ({ctx}): 0 where the design is square', what='radius')
+        c.ok(v['size'] <= 13 and v['tall'] <= 40, str(v), f'it stays a small label ({ctx})')
+    c.check_errors()
+
+
 @case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')
@@ -5316,7 +5357,7 @@ def a122(c):
         c.eq((r['cut'], r['nameCut']), ([], False), f'at {width}: no neighbour has its text cut, the application name is whole', what=f'cut texts at {width}')
         c.ok(not r['clipped'] and not r['overflow'], str(r), f'at {width}: the cartouche is not cut and the header does not overflow')
         c.ok(r['tier'] in ('0', '1', '2') and r['text'] == [full, short, ''][int(r['tier'])], str(r), f'at {width}: the cartouche shows its whole label, « {short} », or a dot')
-        c.eq((r['radius'], r['color'], r['nowrap']), ('0px', 'rgb(255, 255, 255)', 'nowrap'), 'square corners, white text, one line', what=f'look at {width}')
+        c.eq((r['radius'], r['color'], r['nowrap']), (c.js(_RADIUS_S_JS), 'rgb(255, 255, 255)', 'nowrap'), 'the corners of the design (SOG-0407: square where the design is square), white text, one line', what=f'look at {width}')
         c.ok(bool(r['label']) and full in r['label'], str(r['label']), 'the label stays in aria-label whatever the step')
     # the steps themselves: a narrow header takes the dot, a wide one the whole label
     c.page.set_viewport_size({'width': 250, 'height': 900})
