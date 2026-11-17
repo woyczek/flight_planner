@@ -283,6 +283,13 @@ def _nothing_read(formats, stats):
     return f'no procedure could be read for this aerodrome: {docs} document(s), {stats.get("read", 0)} of {stats.get("pages", 0)} page(s) read' + (f' ({why})' if why else '')
 
 
+def _none_read_fields(formats, stats):
+    """SOG-0433 : l'échec « rien de lu » en codes : { code: 'none-read', counts: { docs, read, pages }, reasons: [[code, n], …] } — des ENTIERS et des CODES (une liste fermée : proc_geometry.PAGE_CODES pour une page non lue, proc_geometry.CODES pour une procédure à vérifier ou retirée, 'other' sinon), jamais une phrase ;
+    `reasons` : les trois motifs les plus fréquents (ceux de `stats.reasons`)."""
+    docs = len({f.get('file') for f in formats if f.get('file')})
+    return {'code': 'none-read', 'counts': {'docs': docs, 'read': int(stats.get('read', 0)), 'pages': int(stats.get('pages', 0))}, 'reasons': [[str(k), int(n)] for k, n in stats.get('reasons', [])[:3]]}
+
+
 def fetch(name):
     """Le travail de la source `name` (une clé de SOURCES) : fn(job, args, ctx)."""
     src = SOURCES[name]
@@ -327,6 +334,7 @@ def fetch(name):
                 if kept:
                     job.log(f'{icao}: aucune procédure lue ; les pistes de l’AIP sont gardées dans le fichier du terrain')
                 res = env.failed(_nothing_read(formats, stats) if src['detailed_failure'] else 'no procedure could be read for this aerodrome', warnings, stats)
+                res.update(_none_read_fields(formats, stats))      # SOG-0433 : le même échec en CODES et en nombres (l'écran l'écrit dans la langue de l'utilisateur ; `message` reste la phrase anglaise de repli)
                 return {**res, 'runwaysKept': True} if kept else res
             if src['screen']:
                 refused = []

@@ -1788,6 +1788,8 @@ def k22(c):
                  'a failure carries stats: 31 pages seen, none read, the reason counted', what='failure stats')
             c.eq(r['message'], 'no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (mise en page non reconnue ×31)',
                  'the message says how many documents and pages were seen, how many were read, and why not', what='failure message')
+            c.eq((r['code'], r['counts'], r['reasons']), ('none-read', {'docs': 31, 'read': 0, 'pages': 31}, [['layout', 31]]),
+                 'SOG-0433: the same failure in CODES and INTEGERS — `code` « none-read », `counts` { docs, read, pages }, `reasons` [[code, n]] (a closed list: the page codes layout, low-read, title, no-legs, counts, vector, timeout; the doubt codes unread, name, repeat, zigzag, unresolved, rf-arc, geometry, uncheckable; other) — the screen writes it in the language of the user, `message` stays the English fallback (red before: no `code`)', what='failure codes')
             c.ok(any('0 procédure(s) installée(s)' in x and '31 non lue(s)' in x for x in job.view()['log']), str(job.view()['log'][-2:]), 'the job log ends with the summary, failure or not')
             bad = doc_of()
             bad['procedures'][0]['points'][2]['nm'] += 2.0
