@@ -66,10 +66,12 @@ const HIT = 22,
 const UNDO_MAX = 20;
 
 const placed = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon);
+/** Le vol tel que la Carte l'a lu : ce que l'édition modifie et écrit. S.route.flight porte en plus les positions que ce poste connaît des points d'X-Plane (SOG-0420), qui ne partent jamais au dépôt (SOG-0375). */
+const rawFlight = () => S.route.raw || S.route.flight;
 /** Points de l'enregistrement aux longitudes continues, tous leurs champs gardés (wind, via, awy…). Un point nommé SANS position (lu dans
  *  X-Plane, { id, local: 'xplane' } : sa position ne part pas avec le vol, SOG-0375) n'est pas ici : la Carte ne le dessine pas, ne le
  *  déplace pas ; withUnplaced le remet à sa place à l'écriture. */
-const rawPoints = () => unwrapLons((S.route.flight?.route?.points || []).filter(placed));
+const rawPoints = () => unwrapLons((rawFlight()?.route?.points || []).filter(placed));
 /** Les points posés d'un geste (pts : les points AVEC position, dans l'ordre d'après le geste) et les points sans position de l'ancien
  *  enregistrement (old), chacun entre les mêmes voisins : après le point posé qui le précédait (même nom, le plus proche de son rang), sinon
  *  avant celui qui le suivait (un point déplacé change de nom), sinon à son rang. Rien n'est inventé, rien n'est retiré, leur ordre est gardé. */
@@ -189,7 +191,7 @@ export function setAdding(on) {
 // ---------------------------------------------------------------- les gestes appliqués
 /** Geste appliqué : points (et niveau du premier tronçon) montrés tout de suite, écrits 400 ms après le dernier geste. */
 function commit(points, levelFt = null) {
-  const f = S.route.flight || {},
+  const f = rawFlight() || {},
     pts = points.map(p => ({
       ...p,
       lat: Math.round(+p.lat * 1e6) / 1e6,
@@ -272,7 +274,7 @@ async function saveRoute(ctx, path, base, mine) {
 function remember() {
   S.edit.undo.push({
     points: structuredClone(rawPoints()),
-    level: +S.route.flight?.level?.ft || 0
+    level: +rawFlight()?.level?.ft || 0
   });
   if (S.edit.undo.length > UNDO_MAX) S.edit.undo.shift();
 }
@@ -340,7 +342,7 @@ export function undoEdit() {
 /** Niveau tenu sur le tronçon qui part du point i : celui du point s'il en porte un, sinon le précédent, sinon level.ft. */
 function heldLevel(i) {
   const pts = rawPoints();
-  let l = +S.route.flight?.level?.ft || 0;
+  let l = +rawFlight()?.level?.ft || 0;
   for (let k = 1; k <= i && k < pts.length - 1; k++)
     if (+pts[k].alt_ft > 0) l = +pts[k].alt_ft;
   return l;

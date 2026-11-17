@@ -25,7 +25,8 @@ import {
   TX
 } from './texts.js';
 import {
-  WORLD_NM
+  WORLD_NM,
+  xpNames
 } from './data.js';
 import {
   openData
@@ -239,6 +240,10 @@ const weatherBuild = key => (w, h, el) => {
 /** Montre la coupe dans la feuille (la prévision est lue si elle ne l'est pas encore pour ce vol ; force : relue même si elle
  *  manquait, Atmosphère ayant pu la charger depuis). Même clé : seulement redessinée. */
 export async function showWeather(force = false) {
+  // un point dont la position est inconnue sur cet appareil (SOG-0420) : pas de coupe à travers le trou, la feuille le dit
+  if (S.route.unknown?.length) return openData('weather', 'wxgap', wxName(), () => `<p class="f-muted mp-gapnote" role="status">${esc(tt(TX.gapProfile, {
+    id: xpNames(S.route.unknown)
+  }))}</p>`, tt(TX.wxLabel));
   const key = wxKey(),
     open = () => openData('weather', key, wxName(), weatherBuild(key), tt(TX.wxLabel));
   if (S.wxRun?.key === key)

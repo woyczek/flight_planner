@@ -165,6 +165,14 @@ export const TX = {
   ptArr: ['arrivée', 'arrival', 'Ankunft', 'llegada'],
   ptLevel: ['{l} à partir de ce point', '{l} from this point', '{l} ab diesem Punkt', '{l} desde este punto'],
   ptSame: ['niveau précédent conservé', 'previous level kept', 'vorherige Flughöhe bleibt', 'se mantiene el nivel anterior'],
+  gapPoint: ['Position de {id} inconnue sur cet appareil : le tronçon qui y mène est en pointillé gris',
+    'Position of {id} unknown on this device: the leg that leads to it is dotted grey',
+    'Position von {id} auf diesem Gerät unbekannt: der Abschnitt dorthin ist grau gepunktet',
+    'Posición de {id} desconocida en este dispositivo: el tramo que lleva a él va en punteado gris'
+  ],
+  gapProfile: ['Indisponible sur cet appareil : position de {id} inconnue', 'Unavailable on this device: position of {id} unknown',
+    'Auf diesem Gerät nicht verfügbar: Position von {id} unbekannt', 'No disponible en este dispositivo: posición de {id} desconocida'
+  ],
   saveFailed: ['Route non enregistrée : {m}', 'Route not saved: {m}', 'Route nicht gespeichert: {m}', 'Ruta no guardada: {m}'],
   layers: ['Couches', 'Layers', 'Ebenen', 'Capas'],
   follow: ['Suivre', 'Follow', 'Folgen', 'Seguir'],

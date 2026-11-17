@@ -36,7 +36,8 @@ import {
 import {
   corridorBoxes,
   readOnce,
-  FAILED
+  FAILED,
+  xpNames
 } from './data.js';
 import {
   groupOf,
@@ -92,7 +93,8 @@ export async function buildProfile() {
     pts = S.route.profilePoints || (flown ? flownProfilePoints(flown, f) : S.route.points),
     A = S.ctx.aerodb;
   // la coupe montrée reste pendant qu'elle est refaite (showProf la remplace) : la feuille ne disparaît pas, sa hauteur ne bouge pas
-  if (pts.length < 2) {
+  // un point dont la position est inconnue sur cet appareil (SOG-0420) : pas de coupe à travers le trou, la feuille le dit (drawProfile)
+  if (pts.length < 2 || S.route.unknown?.length) {
     S.prof = null;
     S.geo = null;
     return drawProfile();
@@ -207,6 +209,12 @@ export const windowNm = () => S.axw?.zoomed ? {
 export function drawProfile() {
   if (!S?.pc) return;
   if (S.profBox.hidden === !!S.prof) S.profBox.hidden = !S.prof;
+  // le profil indisponible parce qu'une position est inconnue ici (SOG-0420) : le dit, sans rien tracer
+  const gap = S.route.unknown?.length && !S.prof ? tt(TX.gapProfile, {
+    id: xpNames(S.route.unknown)
+  }) : '';
+  if (S.gapEl && S.gapEl.textContent !== gap) S.gapEl.textContent = gap;
+  if (S.gapEl && S.gapEl.hidden === !!gap) S.gapEl.hidden = !gap;
   dataHead();
   if (!S.prof || S.dpanel) return; // un contenu ouvert : le profil est redessiné à sa fermeture
   const {

@@ -21,6 +21,9 @@ import {
 import {
   colOf
 } from './procs.js';
+import {
+  xpAltsRetry
+} from './data.js';
 import * as RA from '../../frame/lib/route_alts.js'; // la règle de péremption, celle de Carburant (une seule fonction)
 import *
 as RL from '../../frame/lib/route_legend.js'; // la légende commune avec Carburant : les natures, leurs mots et leurs motifs (une seule source)
@@ -492,6 +495,7 @@ const routeKey = () => {
 function put(raw) {
   if (!S) return;
   S.alts = altsSanitize(raw);
+  xpAltsRetry(); // un point d'X-Plane resté de position inconnue est peut-être dans ces itinéraires (SOG-0420)
   S.altsSeq = (S.altsSeq || 0) + 1; // une publication de plus : le dessin le dira une fois (maps-route-alts-drawn)
   S.altsRoute = routeKey();
   S.altsAt = Date.now();

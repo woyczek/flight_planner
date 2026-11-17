@@ -242,15 +242,20 @@
     // un tronçon direct (DCT : entre deux points de la route, sans voie aérienne qui y mène) en pointillé, un tronçon de voie aérienne en trait plein (son cartouche est écrit sur lui) ;
     // ce qui vient d'une procédure reste plein (SOG-0095)
     const direct = (a, b) => (a.origin || 'route') === 'route' && (b.origin || 'route') === 'route' && !b.via,
+      // un tronçon qui mène à un point dont la position est inconnue sur cet appareil (b.gapBefore, SOG-0420) : en pointillé GRIS, à part du direct ; la Carte ne le trace jamais comme la route
+      gapLeg = (a, b) => (b.origin || 'route') === 'route' && Array.isArray(b.gapBefore) && b.gapBefore.length > 0,
+      kindOf = (a, b) => gapLeg(a, b) ? 'gap' : direct(a, b) ? 'dct' : 'full',
       dash = [Math.max(9, 11 * scale), Math.max(7, 8 * scale)],
-      line = () => {
+      gapDash = [Math.max(3, 4 * scale), Math.max(6, 7 * scale)],
+      line = second => {
         for (const run of lines || [pts]) {
           let seg = [],
-            dotted = null;
+            kind = null;
           const flush = () => {
             if (seg.length < 2) return;
-            ctx.setLineDash(dotted ? dash : []);
-            ctx.lineCap = dotted ? 'butt' : 'round';
+            ctx.setLineDash(kind === 'gap' ? gapDash : kind === 'dct' ? dash : []);
+            ctx.lineCap = kind === 'full' ? 'round' : 'butt';
+            if (second) ctx.strokeStyle = kind === 'gap' ? env.pal.altn : color;
             ctx.beginPath();
             seg.forEach((p, i) => {
               const q = toC(p.lat, p.lon);
@@ -260,12 +265,12 @@
           };
           run.forEach((p, i) => {
             if (!i) return void(seg = [p]);
-            const d = direct(run[i - 1], p);
-            if (dotted === null) dotted = d;
-            if (d !== dotted) {
+            const d = kindOf(run[i - 1], p);
+            if (kind === null) kind = d;
+            if (d !== kind) {
               flush();
               seg = [run[i - 1]];
-              dotted = d;
+              kind = d;
             }
             seg.push(p);
           });
@@ -280,7 +285,7 @@
     line();
     ctx.strokeStyle = color;
     ctx.lineWidth = Math.max(2.5, 4 * scale);
-    line();
+    line(true);
     // marques NM : point plein sur la route
     ctx.lineWidth = Math.max(1, 1.5 * scale);
     for (const m of mk) {

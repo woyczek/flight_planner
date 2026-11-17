@@ -169,6 +169,10 @@ export function tipAt(x, y, lat = null, lon = null, tap = false) {
   if (w) return windLines(w);
   const at = atcAt(x, y);
   if (at) return at; // les contrôleurs d'un terrain : positions, fréquences, réseaux (SOG-0094)
+  // un point de la route dont la position vient du X-Plane de ce poste (SOG-0420) : son nom, et d'où elle vient
+  const xp = S.toC ? (S.route?.points || []).find(p => p.xp === true && Math.hypot(S.toC(+p.lat, +p.lon).x - x, S.toC(+p.lat, +p.lon).y -
+    y) <= 12) : null;
+  if (xp) return [xp.id, tt(TX.procX)];
   const vp = (S.vfrHits || []).find(h => Math.hypot(h.x - x, h.y - y) <= 9)?.p;
   if (vp) return [
     [vp.code, vp.name].filter(Boolean).join(' '), [vp.vacCode && vp.vacCode !== vp.code ? tt(TX.vfrVacCode, {

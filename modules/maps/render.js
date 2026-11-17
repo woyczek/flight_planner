@@ -476,12 +476,15 @@
   /** Marques de distance tous les stepNm (défaut : 10 NM sous 150 NM, 50 NM au-delà) : [{ lat, lon, nm }] ; posées sur la loxodromie de leur tronçon (le trait). */
   function marks(points, stepNm = 0) {
     if (points.length < 2) return [];
-    const d = distances(points),
+    // un tronçon qui mène à un point de position inconnue sur cet appareil (gapBefore, SOG-0420) n'a ni marque ni distance connue : ses marques ne sont pas posées, et la distance du vol (devis : gapShift du point qui le suit) reprend après
+    let shift = 0;
+    const d = distances(points).map((v, k) => v + (shift += +points[k].gapShift > 0 ? +points[k].gapShift : 0)),
       total = d[d.length - 1],
       step = stepNm || (total > 150 ? 50 : 10),
       out = [];
     for (let nm = step, i = 1; nm < total; nm += step) {
       while (i < d.length - 1 && d[i] < nm) i++;
+      if (points[i].gapBefore?.length) continue;
       const a = points[i - 1],
         b = points[i],
         k = d[i] > d[i - 1] ? (nm - d[i - 1]) / (d[i] - d[i - 1]) : 0;

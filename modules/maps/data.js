@@ -71,7 +71,9 @@ import {
 async function readFlight() {
   const f = (await S.ctx.data.get(flightPath()).catch(() => null)) || null;
   if (!S) return null; // la Carte a été quittée pendant la lecture
-  const pts = pointsOf(f);
+  const xp = xpResolve(f), // les points { id, local: 'xplane' } sans position : retrouvés sur ce poste, ou inconnus (SOG-0420)
+    pts = pointsOf(xp.geo);
+  xpLook(f);
   let altn = null;
   if (f?.route?.altn && pts.length && S.ctx.aerodb) {
     const id = f.route.altn,
@@ -93,13 +95,149 @@ async function readFlight() {
     };
   }
   return {
-    flight: f,
+    flight: xp.geo, // la route avec les positions retrouvées sur ce poste : pour le dessin ; jamais écrite
+    raw: f, // l'enregistrement tel que lu : ce que l'édition écrit (edit.js), sans position pour les points d'X-Plane (SOG-0375)
+    unknown: xp.unknown, // les noms des points d'X-Plane dont la position est inconnue sur cet appareil
     points: pts,
     altn,
     levelFt: +f?.level?.ft || 0,
     updated: f?.updated_at || '',
     base: routeBase(f) // la route et le niveau tels que la Carte les a lus : ce qu'elle écrit, c'est ce qu'elle en a changé (SOG-0013)
   };
+}
+// ---------------------------------------------------------------- SOG-0420 : un point lu dans X-Plane n'a pas de position dans le vol déposé
+/** Un point de la route lu dans X-Plane : { id, local: 'xplane' }, sans latitude ni longitude (sa position ne part jamais au dépôt, SOG-0375). */
+const xpPoint = p => p?.local === 'xplane' && !(Number.isFinite(+p.lat) && Number.isFinite(+p.lon));
+/** Bornes sur un enregistrement écrit par tout pilote (Sécurisation) : au plus 600 points cherchés, un identifiant de la forme [A-Z0-9]{1,12} ; le reste est un point sans position, dit inconnu en groupe (« ? »). */
+const XP_MAX = 600,
+  XP_LOOKUPS = 50;
+const xpIdOf = p => /^[A-Z0-9]{1,12}$/i.test(String(p?.id ?? '')) ? String(p.id).toUpperCase() : null;
+/** Les noms inconnus tels qu'on les écrit : trois au plus, puis « +n ». */
+export const xpNames = list => {
+  const l = [...new Set(list || [])];
+  return l.slice(0, 3).join(', ') + (l.length > 3 ? ` +${l.length - 3}` : '');
+};
+/** La route avec les positions que CE poste connaît des points d'X-Plane (S.xpPos : en mémoire de la Carte, jamais écrites ; l'enregistrement lu n'est pas
+ *  modifié) ; chaque point placé qui suit un point inconnu porte `gapBefore` (les noms inconnus) : le tronçon qui y mène n'est pas tracé comme la route.
+ *  → { geo (le vol, route.points complétée), unknown (les noms restés inconnus) }. */
+export function xpResolve(f) {
+  const pts = f?.route?.points;
+  if (!Array.isArray(pts) || !pts.some(xpPoint)) return {
+    geo: f,
+    unknown: []
+  };
+  xpFromAlts(f);
+  const known = S.xpPos ||= new Map(),
+    unknown = [];
+  let pend = [];
+  const mapped = pts.map((p, i) => {
+    if (xpPoint(p)) {
+      const id = i < XP_MAX ? xpIdOf(p) : null,
+        k = id && known.get(id);
+      if (!k) {
+        pend.push(id || '?');
+        unknown.push(id || '?');
+        return p;
+      }
+      p = {
+        ...p,
+        lat: k.lat,
+        lon: k.lon,
+        xp: true // trouvée dans le X-Plane de ce poste : l'infobulle du point le dit (SOG-0420)
+      };
+    }
+    if (Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon) && pend.length) {
+      const r = {
+        ...p,
+        gapBefore: pend
+      };
+      pend = [];
+      return r;
+    }
+    return p;
+  });
+  return {
+    geo: {
+      ...f,
+      route: {
+        ...f.route,
+        points: mapped
+      }
+    },
+    unknown: [...new Set(unknown)]
+  };
+}
+/** (a) La position d'un point d'X-Plane dans le cache de l'appareil (cache/fuel/route_alts.json, lu par la Carte : S.alts) : l'itinéraire dont les identifiants contiennent TOUS les noms de la route,
+ *  sinon ce n'est pas la route de ce vol. */
+function xpFromAlts(f) {
+  const pts = (f.route.points || []).slice(0, XP_MAX),
+    names = pts.map(p => String(p?.id ?? '').toUpperCase()).filter(Boolean),
+    known = S.xpPos ||= new Map();
+  for (const a of S.alts?.list || []) {
+    if (!a.ids?.length || !names.every(n => a.ids.includes(n))) continue;
+    for (const p of pts)
+      if (xpPoint(p) && xpIdOf(p)) {
+        const id = xpIdOf(p),
+          i = a.ids.indexOf(id);
+        if (i >= 0 && a.points[i] && !known.has(id)) known.set(id, {
+          lat: a.points[i].lat,
+          lon: a.points[i].lon
+        });
+      }
+    return;
+  }
+}
+/** La note « Position de ALLRY inconnue sur cet appareil » (floue : notification flottante), seulement pour les noms restés inconnus APRÈS les recherches de position (aerodb, itinéraires de Carburant : une réponse qui arrive juste
+ *  après rend la position, la note aurait été fausse) : attendue 1,2 s après le dernier vol lu, et jamais tant qu'une recherche aerodb est en cours. Une fois par nom et par montage, trois notes au plus (les noms suivants regroupés : « +n »). */
+function xpSay() {
+  clearTimeout(S.xpSayT);
+  const me = S;
+  S.xpSayT = setTimeout(() => {
+    if (S !== me || S.xpPending || S.missionId) return;
+    const said = S.xpSaid ||= new Set(),
+      fresh = (S.route?.unknown || []).filter(id => !said.has(id));
+    for (const id of fresh) said.add(id);
+    if (fresh.length && (S.xpNotes || 0) < 3) {
+      S.xpNotes = (S.xpNotes || 0) + 1;
+      S.ctx.notify?.(tt(TX.gapPoint, {
+        id: xpNames(fresh)
+      }), 'warn');
+    }
+  }, 1200);
+}
+/** Les itinéraires de Carburant viennent d'arriver (alts.js put) : un point resté inconnu y est peut-être ; le vol n'est relu que si une position est trouvée. */
+export function xpAltsRetry() {
+  if (!S?.route?.unknown?.length || !S.route.raw) return;
+  const n = S.xpPos?.size || 0;
+  xpFromAlts(S.route.raw);
+  if ((S.xpPos?.size || 0) > n) applyFlight(true);
+}
+/** (b) Sur le poste du repli, aerodb rend la position lue dans X-Plane (`local: true, source: 'xplane'`) : une position publiée du même nom n'est pas celle du point. Une fois par nom ; la Carte est redessinée
+ *  quand une position arrive. */
+function xpLook(f) {
+  const A = S.ctx.aerodb,
+    known = S.xpPos ||= new Map(),
+    tried = S.xpTried ||= new Set();
+  if (!A?.coords) return;
+  for (const p of (f?.route?.points || []).slice(0, XP_MAX)) {
+    const id = xpPoint(p) ? xpIdOf(p) : null;
+    if (!id || known.has(id) || tried.has(id) || tried.size >= XP_LOOKUPS) continue;
+    tried.add(id);
+    const me = S;
+    S.xpPending = (S.xpPending || 0) + 1;
+    A.coords(p.id).catch(() => null).then(c => {
+      if (!S || S !== me || !c || c.local !== true || c.source !== 'xplane' || !Number.isFinite(+c.lat) || !Number.isFinite(+c.lon))
+        return;
+      known.set(id, {
+        lat: +c.lat,
+        lon: +c.lon
+      });
+    }).finally(() => {
+      if (S !== me) return;
+      S.xpPending--;
+      if (!S.xpPending) applyFlight(true); // toutes les réponses sont là : le vol est relu une fois, avec ce qui a été trouvé
+    });
+  }
 }
 /** Points de la carte et du profil d'après l'enregistrement du vol : longitudes continues (une route Sibérie → Alaska va de
  *  177° à 195°) ; alt_ft (niveau tenu à partir du point, jamais au premier ni au dernier) devient lvl, le premier point prend
@@ -117,6 +255,12 @@ export function pointsOf(f) {
           .trim()) ? {
           holdName: f.route.holds[p.id].name.trim() // le nom du point dans la mission (« PT1 »)
         } : {})
+      } : {}),
+      ...(p.xp === true ? {
+        xp: true
+      } : {}),
+      ...(Array.isArray(p.gapBefore) && p.gapBefore.length ? {
+        gapBefore: p.gapBefore // le tronçon qui mène à ce point passe par un point dont la position est inconnue ici (SOG-0420)
       } : {}),
       ...(i > 0 && typeof p.via === 'string' && /^[A-Z]{1,2}\d{1,4}[A-Z]?$/i.test(p.via) ? {
         via: p.via
@@ -144,6 +288,13 @@ export function buildPath() {
     path = expandedPath(f, S.procs || {});
   S.route.path = unwrapLons(path);
   S.route.flown = unwrapLons(flownPath(path));
+  // un seul point de position inconnue : la distance du vol qu'il cache vient du devis de Carburant (quote.distanceNm : calculée sur le poste avec les vraies positions, déposée avec le vol), pas d'un calcul de la Carte à
+  // travers le trou ; les marques NM reprennent après lui à la distance du vol (gapShift, lu par render.js marks)
+  const gapAt = S.route.flown.findIndex(p => p.gapBefore?.length),
+    last = S.route.flown.at(-1)?.nm || 0,
+    dq = +f?.quote?.distanceNm, // borné à 25 000 NM : une valeur falsifiée ne donne pas des repères absurdes
+    extra = dq > 0 && dq <= 25000 ? dq - last : 0;
+  if (gapAt > 0 && S.route.flown.filter(p => p.gapBefore?.length).length === 1 && extra > 0) S.route.flown[gapAt].gapShift = extra;
   S.marksPts = flownPts(); // les marques NM sont refaites au dessin, au pas rond de ce qui est visible (viewMarks)
   S.marks = MapsRender.marks(S.marksPts);
 }
@@ -351,6 +502,7 @@ export async function applyFlight(live = false) {
     route = await readFlight();
   if (S !== me || !route) return; // quittée pendant la lecture : rien n'est posé sur un état démonté
   S.route = route;
+  xpSay(); // un point lu dans X-Plane dont la position reste inconnue ici : dit, une fois les recherches terminées (SOG-0420)
   if (S.procs && !isChosen(S.route.flight)) S.procs = null; // le choix est vidé : le chemin redevient la route tout de suite
   buildPath();
   loadProcs();
@@ -404,7 +556,10 @@ export function watchFlight() {
         .missionWanted) gainMission();
       if (!S || !((f?.updated_at || '') > (S.route.updated || ''))) return;
       performance.mark('maps:live');
-      if (sameRoute(f, S.route.flight)) return progressOnly(f);
+      if (sameRoute(f, S.route.raw || S.route.flight)) {
+        S.route.raw = f;
+        return progressOnly(xpResolve(f).geo);
+      }
       await applyFlight(true);
     }, ms);
   };

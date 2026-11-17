@@ -99,6 +99,24 @@ const actualOf = f => {
   return a && !(Number.isFinite(t0) && Date.parse(a.at || '') < t0) ? a : null;
 };
 
+/** Le chemin volé pour les heures (SOG-0420) : quand UN point est de position inconnue sur cet appareil, la distance du vol que le trou cache (gapShift : quote.distanceNm moins ce que les tronçons connus totalisent) est ajoutée aux distances
+ *  des points qui le suivent, à la vitesse du vol ; une heure calculée sur le direct serait trop tôt, donc fausse. Sans trou, flownPts() tel quel. */
+function timedPath() {
+  const pts = flownPts();
+  let shift = 0;
+  return pts.map(p => {
+    shift += +p.gapShift > 0 ? +p.gapShift : 0;
+    return shift && Number.isFinite(+p.nm) ? {
+      ...p,
+      nm: +p.nm + shift
+    } : p;
+  });
+}
+/** Les minutes du devis couvrent-elles tous les points du chemin (quote.legs, par leur nom) : alors les heures sont celles que Carburant a calculées avec les vraies positions, trou ou pas. */
+function legsCover() {
+  const legs = S.route.flight?.quote?.legs;
+  return Array.isArray(legs) && legs.length > 0 && flownPts().every(p => legs.some(l => l?.id === p.id && Number.isFinite(+l.min)));
+}
 /** Progression relue seule (même route) : enregistrement, trace, notes, carte, profil et caméra. */
 export function progressOnly(f) {
   S.route = {
@@ -194,9 +212,11 @@ function alongRoute(p) {
  *  péremption. */
 export function progressState() {
   const f = S.route.flight,
-    pl = plannedPositionAt(f, Date.now(), {
-      path: flownPts()
+    pl0 = plannedPositionAt(f, Date.now(), {
+      path: timedPath()
     }),
+    // l'avion prévu est dans le trou (le tronçon qui mène à un point de position inconnue ici) : sa position n'est pas connue, elle n'est pas dessinée
+    pl = pl0 && !flownPts()[pl0.legIndex + 1]?.gapBefore?.length ? pl0 : null,
     planned = pl ? {
       ...pl,
       altFt: pl.phase === 'taxi' ? 0 : null
@@ -347,7 +367,7 @@ export function natFlightOf() {
   const build = () => {
     const path = flownPts().filter(ok),
       eta = etaOf(f, Date.now(), {
-        path: flownPts()
+        path: timedPath()
       });
     const timed = !!eta && eta.length === flownPts().length && path.length === eta
       .length, // sans heure, les positions restent (follows) et t est null
@@ -404,11 +424,16 @@ export function natFlightOf() {
 export function withEta(route, pxDeg) {
   if (S.missionId || pxDeg < 300) return route;
   const eta = etaOf(S.route.flight, Date.now(), {
-    path: flownPts()
+    path: timedPath()
   });
   if (!eta) return route;
-  const last = route.length - 1;
+  const last = route.length - 1,
+    // après un point de position inconnue (SOG-0420) : une heure seulement si elle est exacte (les minutes du devis couvrent tout le chemin) ou décalée de la durée du trou (un seul point inconnu, distance du vol déposée) ; sinon aucune, jamais une heure fausse
+    exact = legsCover() || flownPts().some(p => +p.gapShift > 0);
+  let hole = false;
   return route.map((p, i) => {
+    if (p.gapBefore?.length) hole = true;
+    if (hole && !exact) return p;
     const at = (eta[i]?.id === p.id ? eta[i] : eta.find(e => e.id === p.id))?.at;
     return at ? {
       ...p,

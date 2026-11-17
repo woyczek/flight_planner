@@ -148,6 +148,7 @@ export const STYLE = `
    hauteurs --f-sheet-*, glisser, positions) ; ici seulement ce qu'elle contient : en-tête de 44 px (la poignée : titre de ce qu'elle
    montre ; la bascule Profil · Météo ; le ✕ d'un contenu à droite), puis le profil vertical (sa bande dessous) ou le contenu ouvert
    à sa place, puis les notes ; le contenu défile dedans */
+[data-module="maps"] .mp-gapnote{margin:10px 6px;font-size:13px;line-height:1.35;color:var(--sog-muted)}[data-module="maps"] .mp-gapnote[hidden]{display:none}
 [data-module="maps"] .mp-dprof{flex:1 1 0;min-height:0;display:flex;flex-direction:column;padding:0 4px}
 [data-module="maps"] .mp-notes{flex:none;max-height:5.5em;overflow:auto;padding:0 8px 6px;font-size:var(--sog-size-xs);font-variant-numeric:tabular-nums}
 [data-module="maps"] .mp-notes p{margin:0 0 2px}

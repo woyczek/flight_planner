@@ -8828,6 +8828,114 @@ def d_altnlayer(c):
             c.until("() => (window.__hc || []).length > 0", what='alone: the address changes')
             c.eq(c.js("() => window.__hc")[0].split('#', 1)[1], f'fuel?altn={p[2]}', 'alone: back to Fuel by #fuel?altn=<ICAO>', what='address')
         c.eq(c.js("() => window.__wr.filter(w => !String(w[1]).startsWith('cache/maps/'))"), [], f'{mode}: the Map writes nothing of the flight or of Fuel (its own view and layers state under cache/maps/ aside): Fuel proposes, nothing is taken by itself', what='writes')
+_GAP_SPY_JS = """(() => { const P = CanvasRenderingContext2D.prototype; if (P.__gspy) return; P.__gspy = true; window.__gs = { cur: [], strokes: [] };
+  const bp = P.beginPath, mt = P.moveTo, lt = P.lineTo, st = P.stroke;
+  P.beginPath = function () { window.__gs.cur = []; return bp.apply(this, arguments) };
+  P.moveTo = function (x, y) { window.__gs.cur.push([x, y]); return mt.apply(this, arguments) };
+  P.lineTo = function (x, y) { window.__gs.cur.push([x, y]); return lt.apply(this, arguments) };
+  P.stroke = function () { window.__gs.strokes.push({ n: window.__gs.cur.length, color: String(this.strokeStyle), dash: this.getLineDash() }); return st.apply(this, arguments) } })()"""
+_XP_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => { real = v && { ...v, create: (...a) => { const db = v.create(...a), o = db.coords && db.coords.bind(db);
+  db.coords = async (id, ...r) => String(id).toUpperCase() === 'ALLRY' ? { id: 'ALLRY', lat: 45.1, lon: 0.9, local: true, source: 'xplane' } : o ? o(id, ...r) : null; return db } } } }) })()"""
+
+
+@case('D257', 'A point read in X-Plane has no position in the deposited flight: on the fallback workstation the Map finds it again (the answer of aerodb marked local / xplane, or the cache of the calculation whose names hold the whole route) and draws it like the others; elsewhere it traces the leg that leads to it in grey dots, never as the route, says « position of ALLRY unknown on this device » (a floating note) and the profile and the cut say they are unavailable — and the position is never written', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0420 (the ergonomist, 17 Nov: the fallback of SOG-0397 places points from the X-Plane of the workstation, the deposited flight keeps { id, local: xplane } without latitude or longitude; the Map kept the placed points only and drew STRAIGHT as if it were the route): the Map never draws as certain what it does not know')
+def d_xpgap(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    for mode in ('unknown', 'aerodb', 'cache'):
+        f = _awy_flight()
+        f['route']['points'][1] = {'id': 'ALLRY', 'local': 'xplane'}
+        f['quote'] = {'distanceNm': 190, 'minutes': 50, 'block': 9000, 'unit': 'kg'}
+        f['planned_at'] = iso(now() + datetime.timedelta(hours=2))      # a flight not started, its arrival in the future: the times of passage are drawn
+        docs = fdocs(f) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']]
+        if mode == 'aerodb':
+            c.page.add_init_script(_XP_STUB)
+        if mode == 'cache':
+            ids = ['P1', 'ALLRY', 'P3', 'P4']
+            d = {'schema': 2, 'updated_at': iso(now()), 'dep': 'P1', 'arr': 'P4', 'mode': 'compute', 'chosen': 0, 'hovered': None, 'open': None, 'computed_at': iso(now()), 'aircraft': 'F-RAJA', 'base': '',
+                 'alternatives': [{'index': 0, 'name': 'Via XP', 'route': 'P1 ALLRY P3 P4', 'ids': ids, 'points': [[45.0, -0.5], [45.1, 0.9], [45.0, 2.166], [45.0, 3.5]], 'faulty': []}],
+                 'answer': {'ok': True, 'alternatives': [{'name': 'Via XP', 'route': 'P1 ALLRY P3 P4', 'distanceNm': 190, 'fl': 80, 'faults': 0}]}}
+            docs = docs + [['cache/fuel/route_alts.json', d, 'cache']]
+        c.page.add_init_script(_GAP_SPY_JS)
+        c.open('maps', docs=docs, flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.until("() => !!(window.__mp.S && window.__mp.S.route && window.__mp.S.route.points && window.__mp.S.route.points.length >= 3)", timeout=15000, what=f'{mode}: the flight is read')
+        if mode != 'unknown':
+            c.until("() => window.__mp.S.route.unknown.length === 0", timeout=8000, what=f'{mode}: the position of ALLRY is found on this workstation')
+        c.wait(1500)
+        g = c.js("""async () => { const S = window.__mp.S; const m = await import('/modules/maps/draw.js'); window.__gs.strokes = []; m.settle(); await new Promise(r => setTimeout(r, 900));
+          const doc = await S.ctx.data.get('pilot/' + (S.ctx.identity.trigram || 'ANON') + '/current_flight.json');
+          const sk = window.__gs.strokes, violet = sk.filter(s => s.color === '#8e24aa'), grey = sk.filter(s => s.n >= 2 && s.dash.length === 2 && s.dash[0] <= 6 && s.dash[1] > s.dash[0]); // the grey dots of a hole: short dashes (the colour is remapped by the theme layer, the dashes are not)
+          return { unknown: S.route.unknown, placed: S.route.points.map(p => [p.id, !!p.gapBefore]), rawPos: doc.route.points.map(p => [p.id, Number.isFinite(+p.lat) || Number.isFinite(+p.lon)]),
+                   violet: violet.map(s => s.n), grey: grey.length, gapText: S.gapEl ? [S.gapEl.hidden, S.gapEl.textContent] : null, prof: !!S.prof } }""")
+        c.eq([x for x in g['rawPos'] if x[0] == 'ALLRY'], [['ALLRY', False]], f'{mode}: the position is never written in the deposited flight (no latitude, no longitude)', what=str(g))
+        if mode == 'unknown':
+            c.eq(g['unknown'], ['ALLRY'], f'{mode}: the Map says which point it does not know', what=str(g))
+            c.ok(g['grey'] >= 1, str(g), f'{mode}: the leg that leads to the unknown point is drawn in short grey dots')
+            c.ok(all(n < 3 for n in g['violet']), str(g), f'{mode}: nothing in the route colour joins the neighbours of the unknown point (no stroke of three points or more)')
+            want = tx(M, 'gapProfile', c.lang).replace('{id}', 'ALLRY')
+            c.ok(g['gapText'] and not g['gapText'][0] and norm(g['gapText'][1]) == norm(want), str(g), f'{mode}: the sheet says the profile is unavailable on this device and names the point')
+            c.ok(not g['prof'], str(g), f'{mode}: no profile is drawn across the hole')
+            c.until("() => !!window.__mp.S.xpSaid && window.__mp.S.xpSaid.has('ALLRY')", what=f'{mode}: the unknown position was said once (floating note)')
+            # the times of passage after the hole (the ergonomist: never a time we know to be wrong): one unknown point and the distance of the flight deposited: shifted by the duration of the hole; without that distance, none after the hole
+            e = c.js("""async () => { const S = window.__mp.S, m = await import('/modules/maps/flight_time.js'), run = () => m.withEta(S.route.points, 400).map(p => [p.id, p.eta || null]);
+              const a = run(), g = S.route.flown.find(p => p.gapShift), sh = g ? g.gapShift : 0; if (g) g.gapShift = 0; const b = run(); if (g) g.gapShift = sh; return { a, b, sh } }""")
+            c.ok(e['sh'] > 0 and all(x[1] for x in e['a']), str(e), f'{mode}: one unknown point and the distance of the flight: every point has a time, the ones after the hole shifted by its duration')
+            c.ok(len(e['b']) == 3 and e['b'][0][1] and not e['b'][1][1] and not e['b'][2][1], str(e), f'{mode}: without the distance of the flight: the times stop at the hole (none after it)')
+        else:
+            c.eq(g['unknown'], [], f'{mode}: the position was found: nothing unknown', what=str(g))
+            c.ok((g['grey'] == 0 or mode == 'cache') and any(n >= 4 for n in g['violet']), str(g), f'{mode}: the point is drawn like the others: no grey leg of the hole, the route colour goes through the four points')   # (the proposals of the cache may use grey)
+            c.ok(not g['placed'][1][1] and g['gapText'] and g['gapText'][0], str(g), f'{mode}: no mark of a hole, no message')
+        if mode != 'unknown':
+            c.wait(2200)      # the note, if there were one, comes 1.2 s after the last reading of the flight
+            n = c.js("() => [window.__mp.S.xpNotes || 0, window.__mp.S.xpSaid ? window.__mp.S.xpSaid.size : 0]")
+            c.eq(n, [0, 0], f'{mode}: the position was found: no note « position unknown » is said (it would be false)', what=str(n))
+            tip = c.js("""async () => { const S = window.__mp.S, T = await import('/modules/maps/tips.js'), q = S.toC(45.1, 0.9); return T.tipAt(q.x, q.y) }""")
+            c.eq([tip[0], norm(tip[1])] if tip else tip, ['ALLRY', norm(tx(M, 'procX', c.lang))], f'{mode}: the tip of the point found here says its name and where it comes from (X-Plane)', what=str(tip))
+        c.shot(f'D257_{mode}.png')
+        if mode == 'aerodb':
+            # the editing writes the flight, and what the workstation found must not come with it (Sécurisation): a point inserted with « + », the flight written by the Map keeps ALLRY as it was deposited
+            hook_map(c)
+            c.tap('[data-mp="edit"]')
+            c.until("document.querySelector('[data-mp=edit]').getAttribute('aria-pressed') === 'true'", what='Edit becomes pressed')
+            c.tap('[data-mp="add"]')
+            p0, p1 = xy(c, 45.0, 2.166), xy(c, 45.0, 3.5)
+            c.page.mouse.click((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2 - 25)
+            d2 = c.until_doc(PATH, lambda d: d and d.get('by') == 'maps' and len(d['route']['points']) == 5, what='the Map wrote the flight with a point inserted', timeout=6000)
+            allry = [p for p in d2['route']['points'] if p.get('id') == 'ALLRY']
+            c.eq(allry, [{'id': 'ALLRY', 'local': 'xplane'}], f'{mode}: after an edit, ALLRY is still written without position (the position found here never goes into the flight)', what=str(d2['route']['points']))
+
+
+@case('D258', 'Choosing a procedure on the Map with a point found in X-Plane on this workstation: the Map writes nothing (it hands the choice back to Fuel by the address), and the flight kept by the data layer still has the point without latitude or longitude', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0420 (Sécurisation, 17 Nov: choose.js reads the completed copy of the flight as an input of its model; prove that nothing built from it is written with the position found here)')
+def d_xpchoose(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    f = flight()
+    pts = f['route']['points']
+    k = 1 if len(pts) > 2 else 0
+    f['route']['points'][k] = {'id': 'ALLRY', 'local': 'xplane'}
+    f['route']['procedures'] = {'dep': {}, 'arr': {'rwy': '31'}, 'by': 'fuel', 'at': '2026-10-29T10:00:00Z'}
+    docs = [['proc/manual/LFML.json', _CH_FILE, 'reference'], ['proc/manual/LFRS.json', _LFRS_FILE, 'reference']]
+    c.page.add_init_script(_XP_STUB)
+    c.open('maps?choose=arr&icao=LFML', docs=fdocs(f) + docs, flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!(window.__mp.S && window.__mp.S.choose && window.__mp.S.choose.ready && window.__mp.S.toC)", timeout=12000, what='the choose mode is ready')
+    c.until("() => document.querySelectorAll('.mp-ch-grp').length >= 2 && !!document.querySelector('.mp-ch-sums')", timeout=12000, what='the pane is drawn')
+    c.until("() => window.__mp.S.route && window.__mp.S.route.unknown && window.__mp.S.route.unknown.length === 0", timeout=8000, what='the position of ALLRY is found on this workstation (the stub of aerodb)')
+    c.js(_CH_HASH)
+    c.tap('.mp-ch-row[data-fam="star"][data-id="none"]')
+    c.wait(500)
+    q = _back(c, 'done')
+    c.ok(q is not None, str(q), 'the choice goes back to Fuel by the address')
+    w = c.js("() => window.__wr")
+    c.eq(w, [], 'the Map wrote nothing when the choice was made (it hands it back to Fuel by the address)', what=str(w))
+    g = c.js("""async () => { const S = window.__mp.S, d = await S.ctx.data.get('pilot/' + (S.ctx.identity.trigram || 'ANON') + '/current_flight.json'); return { points: d.route.points } }""")
+    allry = [p for p in g['points'] if p.get('id') == 'ALLRY']
+    c.eq(allry, [{'id': 'ALLRY', 'local': 'xplane'}], 'after the choice, ALLRY is still without position in the flight kept by the data layer', what=str(g))
 
 
 def _no_duplicate_names():
