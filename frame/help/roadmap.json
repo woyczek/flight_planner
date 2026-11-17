@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2cba4be",
+  "organisation": "db354f2",
   "fiches": 409,
   "untranslated": 0,
   "priorities": 374,
@@ -487,11 +487,12 @@
     {
      "id": "SOG-0403",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes NAT : EGGW → KJFK part en route libre LE LONG de la route F au lieu de la prendre — la fenêtre est jugée à l'entrée, pas au 30° ouest",
      "en": "NAT tracks: EGGW → KJFK flies a free route alongside track F instead of taking it — the window is judged at entry, not at 30° west",
      "de": "NAT-Tracks: EGGW → KJFK fliegt eine freie Route neben Track F statt ihn zu nehmen — das Zeitfenster wird am Eintritt statt bei 30° West geprüft",
-     "es": "Rutas NAT: EGGW → KJFK vuela una ruta libre junto a la ruta F en vez de tomarla — la ventana se juzga en la entrada, no en 30° oeste"
+     "es": "Rutas NAT: EGGW → KJFK vuela una ruta libre junto a la ruta F en vez de tomarla — la ventana se juzga en la entrada, no en 30° oeste",
+     "test": true
     }
    ]
   },
