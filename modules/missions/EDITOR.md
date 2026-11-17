@@ -289,6 +289,13 @@ Lieux. Not yet imported by the screen: the sheet is the next brick.
 - **« À compléter » of a drawer** (`drawersTodo`, read by the reader the pilot's screen uses): no message, no briefing, a key that
   looks at the aircraft without a fallback hour, a key the reader cannot read, an onward route that cites an absent place. It joins
   the foot's list with the sheet.
+- **After the Security review of the pure part (17 Nov)**: « nothing touched » gives back a COPY of equal content (a
+  `structuredClone`), never the object received — the rule is judged on the content; the invisible format characters that deceive the
+  eye (direction overrides and isolates, zero-width space, word joiner, byte-order mark) are removed from what the workshop reads into
+  its rows and from what it writes — the joiner and non-joiner (scripts and emoji need them) and the narrow no-break space stay; a text
+  of the file the author does not touch is kept as it is; a blank text in a number of the file is not zero. **Not done, to decide**:
+  the reader (`frame/lib/mission.js`, `clean`) folds blanks only, so the pilot's screen still shows such a character of a title — the
+  same removal there changes every reading and wants its own commit, its regression measure and its review.
 - **Open for the sheet**: who writes `said` — proposed: the workshop generates it from the key (« au passage de ZONE-1 », « 10 min
   après PT1 ») as long as the author has not typed his own words, since the V2's Markdown and PDF print it.
 

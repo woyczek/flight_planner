@@ -3298,7 +3298,12 @@ _DROWS_JS = """async () => { const ED = await import('/modules/missions/editor_d
     next: ED.nextDrawerId(rows.filter(r => r.id !== 'D'), base), read: MS.readMission(d8).drawers.map(d => [d.rank, d.id, d.key.kind]),
     twelve: [many.length, many.map(r => r.id).join(''), ED.withDrawerRows({}, [...many, { i: -1, id: 'B', title: 'en trop' }]).phases.length],
     none: 'phases' in ED.withDrawerRows({ phases: [{ id: 'B' }] }, []), hostile: J(ED.withDrawerRows({}, [{ i: -1, id: '__proto__', title: 'x' }])), threw,
-    todo: ED.drawersTodo(base).map(t => t.name + ':' + t.key).join(' ') } }"""
+    todo: ED.drawersTodo(base).map(t => t.name + ':' + t.key).join(' '),
+    blank: ED.drawerRowsOf({ phases: [{ id: 'B', trigger_delay_min: ' ', fallback_delay_min: '  ' }] }).map(r => [r.delay, r.fallback]),
+    hidden: (() => { const doc = { phases: [{ id: 'B', title: 'Ti\u202Etre\u200B', message: 'a\u2066b\u200Dc fin\u202F!' }] }, rows = ED.drawerRowsOf(doc),
+      d = ED.withDrawerRows(doc, [{ ...rows[0], message: 'x\u202Ey' }]);
+      return [rows[0].title, rows[0].message, J(ED.withDrawerRows(doc, rows)) === J(doc), d.phases[0].message, d.phases[0].title === doc.phases[0].title] })(),
+    clone: ED.withDrawerRows(base, rows) !== base } }"""
 
 
 @case('N75', 'Missions › the workshop, the drawers as rows (pure part, no screen): each part of the file the reader accepts is one row '
@@ -3337,6 +3342,11 @@ def n75(c):
     c.eq(r['twelve'], [12, 'BCDEFGHIJKLM', 12], 'twelve drawers at most, B to M', what='twelve')
     c.ok(r['none'] is False and r['hostile'] == '{}' and r['threw'] == '', [r['none'], r['hostile'], r['threw']],
          'every drawer removed: `phases` leaves the file; a hostile letter writes nothing; no hostile input throws')
+    c.eq(r['blank'], [['', '']], 'a blank text in a number of the file is not zero', what='blank numbers')
+    c.eq(r['hidden'], ['Titre', 'ab\u200dc fin\u202f!', True, 'xy', True],
+         'the invisible format characters (direction overrides, zero-width space) leave what the workshop shows and writes — the joiner and the '
+         'narrow no-break space stay; a text of the file the author does not touch is kept as it is', what='format characters')
+    c.ok(r['clone'] is True, r['clone'], 'nothing touched: a COPY of equal content (never the object received)')
     c.eq(r['todo'], '2:noMessage 2:noBrief 3:noFallback 3:noMessage 3:noBrief 4:noFallback 4:noMessage 4:noBrief 5:noFallback 5:noMessage 5:noBrief '
          '6:keyUnread 6:noMessage 6:noBrief 7:noMessage 7:noBrief', 'what each drawer has to complete, by rank', what='drawersTodo')
 

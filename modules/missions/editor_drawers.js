@@ -2,7 +2,10 @@
 // fiche d'un tiroir, et réécrite. Ni page, ni stockage, ni réseau. Le fichier lu est une entrée non fiable (docs/technique/
 // FORMAT_MISSION.md § 5) : textes bornés, nombres bornés jamais ramenés dans leurs bornes (un nombre hors bornes n'est pas écrit), un
 // identifiant n'est jamais une clé d'objet. Règle des with… de editor.js (audit 182) : seul ce que l'auteur a changé est écrit ; une
-// partie inchangée reste l'objet du fichier ; rien de changé, rien d'écrit.
+// partie inchangée reste l'objet du fichier ; rien de changé, rien d'écrit — withDrawerRows rend alors une COPIE de contenu identique
+// (un structuredClone), jamais l'objet reçu : la règle se juge au contenu (Sécurisation, relecture du 17 nov. 2026).
+// Les caractères de format invisibles qui trompent l'œil (contrôles de sens d'écriture, espaces de largeur nulle, marque d'ordre) sont
+// retirés de ce que l'atelier lit dans ses lignes et de ce qu'il écrit ; un texte du fichier que l'auteur ne touche pas reste tel quel.
 //
 // Le format (FORMAT_MISSION.md § 2, § 3 ; décision du 17 nov. 2026 sur Q-0095) : un tiroir CITE une zone ou un objet de la mission par
 // son identifiant — l'atelier n'écrit jamais une zone ou un objet dans la partie. Les parties que le lecteur refuse (identifiant hors
@@ -38,10 +41,15 @@ const KEY_FIELDS = ['trigger_zone', 'zone_shown', 'trigger_actor', 'trigger_obje
   'trigger_delay_min'
 ];
 
+/** Les caractères de format invisibles retirés (U+061C, U+200B, U+200E, U+200F, U+202A à U+202E, U+2060 à U+2064, U+2066 à U+2069,
+ *  U+FEFF) ; le liant et l'anti-liant (U+200C, U+200D : des écritures et des émojis en ont besoin) et l'espace fine insécable (U+202F,
+ *  la typographie française) sont gardés. */
+const HIDDEN = /[\u061C\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
 /** Un texte d'une ligne, borné. */
-const cut = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+const cut = (v, n) => String(v ?? '').replace(HIDDEN, '').replace(/\s+/g, ' ').trim().slice(0, n);
 /** Un texte de plusieurs lignes (le message, le briefing), comme le lecteur le lit : ses sauts de ligne gardés, borné. */
-const lines = (v, n) => typeof v === 'string' || typeof v === 'number' ? String(v).replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').trim()
+const lines = (v, n) => typeof v === 'string' || typeof v === 'number' ? String(v).replace(HIDDEN, '').replace(/\r\n?/g, '\n').replace(
+    /[ \t]+\n/g, '\n').trim()
   .slice(0, n) : '';
 /** Un objet du fichier (ni liste, ni valeur nue). */
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -49,8 +57,8 @@ const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
 const has = v => v !== undefined && v !== null && v !== '';
 /** Un identifiant ou un nombre écrit nu (jamais un objet). */
 const scalar = v => typeof v === 'string' || typeof v === 'number';
-/** Un nombre lu du fichier, en texte pour un champ ('' sinon). */
-const numText = v => has(v) && scalar(v) && Number.isFinite(+v) ? String(+v) : '';
+/** Un nombre lu du fichier, en texte pour un champ ('' sinon ; un texte blanc n'est pas zéro). */
+const numText = v => has(v) && scalar(v) && String(v).trim() !== '' && Number.isFinite(+v) ? String(+v) : '';
 /** Un nombre saisi dans [lo, hi] ; null sinon (jamais ramené dans les bornes). */
 const within = (v, lo, hi) => /^\s*-?\d+(\.\d+)?\s*$/.test(String(v ?? '')) && +v >= lo && +v <= hi ? +v : null;
 /** Oui ou non écrit dans le fichier, comme le lecteur le lit. */
