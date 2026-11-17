@@ -152,12 +152,17 @@ export const EDTX = {
   dwZone: ['Zone de la mission', 'Zone of the mission', 'Zone der Mission', 'Zona de la misión'],
   dwShown: ['Montrer la zone au pilote', 'Show the zone to the pilot', 'Die Zone dem Piloten zeigen', 'Mostrar la zona al piloto'],
   dwObject: ['Objet de la mission', 'Object of the mission', 'Objekt der Mission', 'Objeto de la misión'],
-  dwNoZone: ['Aucune zone : ajoutez-en une dans les Lieux (« Au départ »).', 'No zone: add one in the Places (« At the departure »).',
-    'Keine Zone: fügen Sie eine in den Orten hinzu („Beim Abflug“).', 'Ninguna zona: añada una en los Lugares («A la salida»).'
+  dwNoZone: ['Aucune zone dans cette mission — créez-la dans les Lieux.', 'No zone in this mission — create it in the Places.',
+    'Keine Zone in dieser Mission — legen Sie sie in den Orten an.', 'Ninguna zona en esta misión — créela en los Lugares.'
   ],
-  dwNoObject: ['Aucun objet : ajoutez-en un dans les Lieux (« Au départ »).', 'No object: add one in the Places (« At the departure »).',
-    'Kein Objekt: fügen Sie eines in den Orten hinzu („Beim Abflug“).', 'Ningún objeto: añada uno en los Lugares («A la salida»).'
+  dwNoObject: ['Aucun objet dans cette mission — créez-le dans les Lieux.', 'No object in this mission — create it in the Places.',
+    'Kein Objekt in dieser Mission — legen Sie es in den Orten an.', 'Ningún objeto en esta misión — créelo en los Lugares.'
   ],
+  dwToPlaces: ['Ouvrir les Lieux', 'Open the Places', 'Orte öffnen', 'Abrir los Lugares'],
+  dwLineNoTitle: ['sans titre', 'no title', 'kein Titel', 'sin título'],
+  dwLineMsg: ['message de {n} signe(s)', 'message of {n} sign(s)', 'Nachricht mit {n} Zeichen', 'mensaje de {n} signo(s)'],
+  dwLineBrief: ['briefing de {n} signe(s)', 'briefing of {n} sign(s)', 'Briefing mit {n} Zeichen', 'briefing de {n} signo(s)'],
+  dwLineNoRoute: ['aucune suite', 'no onward route', 'keine Folgeroute', 'sin ruta siguiente'],
   dwChoose: ['Choisir…', 'Choose…', 'Wählen…', 'Elegir…'],
   dwArrPoint: ['Terrain ou lieu', 'Aerodrome or place', 'Platz oder Ort', 'Aeródromo o lugar'],
   dwDest: ['l\'arrivée', 'the arrival', 'die Ankunft', 'la llegada'],
@@ -200,7 +205,7 @@ export const EDTX = {
   dwRemoved: ['Tiroir retiré ; les suivants ont pris son rang.', 'Drawer removed; the following ones took its rank.',
     'Schublade entfernt; die folgenden sind aufgerückt.', 'Cajón quitado; los siguientes han tomado su rango.'
   ],
-  dwTodoOf: ['tiroir {name} : {what}', 'drawer {name}: {what}', 'Schublade {name}: {what}', 'cajón {name}: {what}'],
+  dwTodoOf: ['Tiroir {name} : {what}', 'Drawer {name}: {what}', 'Schublade {name}: {what}', 'Cajón {name}: {what}'],
   dwTodo_noMessage: ['sans message', 'no message', 'keine Nachricht', 'sin mensaje'],
   dwTodo_noBrief: ['sans briefing', 'no briefing', 'kein Briefing', 'sin briefing'],
   dwTodo_noFallback: ['clé sans heure de repli', 'key without a fallback time', 'Schlüssel ohne Ersatzzeit', 'llave sin hora de reserva'],

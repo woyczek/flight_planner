@@ -79,6 +79,8 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-dgrp .f-row>.f-field{flex:1 1 10em;min-width:0}
 [data-module="missions"] .ms-dgrp textarea,[data-module="missions"] .ms-dgrp select,[data-module="missions"] .ms-dgrp input:not([type=checkbox]){width:100%;box-sizing:border-box;font:inherit}
 [data-module="missions"] .ms-dgrp textarea{resize:vertical}
+[data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:none}
+[data-module="missions"] .ms-dsum{grid-template-columns:auto minmax(0,1fr)}
 [data-module="missions"] .ms-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
 [data-module="missions"] .ms-chip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--sog-line,#ddd);padding:0 0 0 10px;min-height:44px}
 [data-module="missions"] .ms-chip>button{min-width:44px;min-height:44px;border:0;background:none;font:inherit;color:inherit}
@@ -117,6 +119,10 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
   [data-module="missions"] .ms-atmapbody{display:block;margin-top:0}
   [data-module="missions"] .ms-atpart{flex-basis:220px}
   [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:inline}
+  /* la fiche d'un tiroir sur un module large : ses trois groupes dépliés, leurs titres ne se touchent pas */
+  [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:block}
+  [data-module="missions"] .ms-dsum{pointer-events:none;min-height:0;padding:4px 0 8px}
+  [data-module="missions"] .ms-dsum>.ms-atline{display:none}
 }`;
 
 /** La lettre d'une famille pour l'éditeur (famLetter, les identifiants des lignes de la famille). */
@@ -569,9 +575,25 @@ function edDrawerTodo(s, doc) {
   }));
 }
 
+/** Ce que « Les textes » et « La suite de route » d'un tiroir contiennent, dit en une ligne (un groupe replié ne cache pas ce qu'il
+ *  porte) : { texts, route }. */
+function edDrawerLines(s, r, now) {
+  const route = r.route.map(now).filter(Boolean);
+  return {
+    texts: [r.title.trim() || s.tt(EDTX.dwLineNoTitle), r.message.trim() ? s.tt(EDTX.dwLineMsg, {
+      n: r.message.trim().length
+    }) : s.tt(EDTX.dwTodo_noMessage), r.brief.trim() ? s.tt(EDTX.dwLineBrief, {
+      n: r.brief.trim().length
+    }) : s.tt(EDTX.dwTodo_noBrief)].join(' · '),
+    route: route.length ? route.join(', ') : s.tt(EDTX.dwLineNoRoute)
+  };
+}
+
 /** La fiche d'un tiroir (SOG-0445 ; la maquette : modules/missions/maquette/tiroirs_*.png) : trois groupes — la clé, les textes, la
- *  suite de route — puis « Retirer ce tiroir ». Une zone et un objet se CHOISISSENT parmi ceux de la mission (ses Lieux) : un tiroir
- *  les cite, il ne les porte pas. Tout texte du fichier passe par esc(). */
+ *  suite de route — puis « Retirer ce tiroir ». Sur un module étroit, « La clé » est dépliée, « Les textes » et « La suite de route »
+ *  sont repliés et disent leur contenu en une ligne (l'ergonome, 17 nov.) ; sur un module large, tout est déplié. Une zone et un
+ *  objet se CHOISISSENT parmi ceux de la mission (ses Lieux) : un tiroir les cite, il ne les porte pas ; sans zone ni objet à
+ *  choisir, la fiche le dit et mène aux Lieux. Tout texte du fichier passe par esc(). */
 function edDrawerHtml(s, doc) {
   const e = s.ed,
     rows = edDrawers(e),
@@ -591,31 +613,36 @@ function edDrawerHtml(s, doc) {
       return `<label class="f-field"><span>${esc(s.tt(text))}</span><select data-k="eddr" data-f="${f}"><option value="">${esc(s.tt(EDTX.dwChoose))}</option>${all.map(o => `<option value="${esc(o[0])}"${o[0].toUpperCase() === cur.toUpperCase() ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
     },
     check = (f, text, on) => `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${f}"${on ? ' checked' : ''}><span>${esc(s.tt(text))}</span></label>`,
+    // rien à choisir : la fiche le dit et mène aux Lieux, où la zone ou l'objet se crée
+    none = text => `<p class="f-muted" data-dwnone>${esc(s.tt(text))} <button type="button" class="f-linkbtn" data-do="eddrplaces">${esc(s.tt(EDTX.dwToPlaces))}</button></p>`,
     num = ' inputmode="decimal" maxlength="8"',
     fallback = `${field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"')}<p class="f-muted">${esc(s.tt(EDTX.dwFallbackHint))}</p>`,
     zones = of('zone'),
     objects = of('object'),
     keys = [...DR.KEYS, ...(r.key === 'kept' ? ['kept'] : [])],
     body = r.key === 'time' ? `<div class="f-row">${select('point', EDTX.dwPoint, r.point || 'ORIGIN', [['ORIGIN', s.tt(EDTX.dwAtTakeoff)], ...points])}${field('delay', EDTX.dwDelay, r.delay, ' inputmode="numeric" maxlength="4"')}</div>` :
-    r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : `<p class="f-muted" data-dwnone>${esc(s.tt(EDTX.dwNoZone))}</p>`}${check('shown', EDTX.dwShown, r.shown !== false)}${fallback}` :
-    r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : `<p class="f-muted" data-dwnone>${esc(s.tt(EDTX.dwNoObject))}</p>`}${fallback}` :
+    r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${check('shown', EDTX.dwShown, r.shown !== false)}${fallback}` :
+    r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${fallback}` :
     r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
         <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
         ${r.stops.length ? `<p class="f-muted" data-dwstops>${esc(s.tt(EDTX.dwStopsKept, { who: r.stops.map(now).filter(Boolean).join(', ') }))}</p>` : ''}${fallback}` :
     r.key === 'kept' ? `<p class="f-muted" data-dwkept>${esc(s.tt(EDTX.dwKept, { why: s.tt(EDTX[`dwWhy_${r.keptWhy}`] || EDTX.dwWhy_condition) }))}</p>${fallback}` :
     `<p class="f-muted">${esc(s.tt(EDTX.dwHandHint))}</p>`,
-    route = r.route.map(now).filter(Boolean);
+    route = r.route.map(now).filter(Boolean),
+    lines = edDrawerLines(s, r, now),
+    open = e.dopen || {},
+    // un groupe repliable : son titre est un bouton qui dit son contenu en une ligne (replié sur un module étroit seulement)
+    group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
   return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
-    <div class="ms-dgrp" data-dgrp="key"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
+    <div class="ms-dgrp" data-dgrp="key" data-open="1"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
       <label class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><select data-k="eddr" data-f="key">${keys.map(k => `<option value="${k}"${k === r.key ? ' selected' : ''}>${esc(s.tt(EDTX[`dwKey_${k}`]))}</option>`).join('')}</select></label>
       ${body}</div>
-    <div class="ms-dgrp" data-dgrp="texts"><h4>${esc(s.tt(EDTX.dwGrpTexts))}</h4>
-      ${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}<p class="f-muted">${esc(s.tt(EDTX.dwTitleHint))}</p>
+    ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}<p class="f-muted">${esc(s.tt(EDTX.dwTitleHint))}</p>
       <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
-      <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label></div>
-    <div class="ms-dgrp" data-dgrp="route"><h4>${esc(s.tt(EDTX.dwGrpRoute))}</h4><p class="f-muted">${esc(s.tt(route.length ? EDTX.dwRouteHint : EDTX.dwRouteNone))}</p>
+      <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label>`)}
+    ${group('route', EDTX.dwGrpRoute, `<p class="f-muted">${esc(s.tt(route.length ? EDTX.dwRouteHint : EDTX.dwRouteNone))}</p>
       <div class="ms-chips" data-dwroute>${r.route.map((w, n) => now(w) ? `<span class="ms-chip" data-chip="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrchipdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwChipDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div>
-      ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}</div>
+      ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}`)}
     <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.plRemoveAnyway : EDTX.dwRemove))}</button></div></section>`;
 }
 
@@ -691,6 +718,25 @@ export function edHtml(s) {
 /** Une saisie de l'éditeur : un texte met à jour l'aperçu, les pastilles et l'en-tête seuls (le champ garde son curseur) ; une liste
  *  redessine l'écran (la famille propose son identifiant suivant et sa série à une mission neuve ou dupliquée). */
 export function edInput(s, ev) {
+  const out = edInputDo(s, ev);
+  edShowSel(s);
+  return out;
+}
+
+/** La carte choisie du déroulé reste en vue : la rangée défile en largeur seulement (jamais la page), après un geste ou une saisie
+ *  qui a redessiné l'écran. */
+function edShowSel(s) {
+  const row = s.ed && s.el?.querySelector?.('.ms-atflowrow'),
+    cur = row?.querySelector('[aria-current]');
+  if (!row || !cur) return;
+  const a = cur.offsetLeft - row.offsetLeft,
+    b = a + cur.offsetWidth;
+  if (a < row.scrollLeft) row.scrollLeft = a;
+  else if (b > row.scrollLeft + row.clientWidth) row.scrollLeft = b - row.clientWidth;
+}
+
+/** Une saisie de l'éditeur (voir edInput). */
+function edInputDo(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return edDrawerInput(s, ev); // la fiche d'un tiroir
@@ -880,6 +926,12 @@ function edRefresh(s) {
     if (mark) mark.dataset.kind = ok ? 'ok' : 'warn';
   }
   put(q('[data-flowline]'), ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
+  const drow = (e.sel || 'start') === 'start' ? null : edDrawers(e).find(r => r.id === e.sel);
+  if (drow) {
+    const lines = edDrawerLines(s, drow, id => ED.refNow(id, e.base, e.places));
+    put(q('[data-dline="texts"]'), lines.texts);
+    put(q('[data-dline="route"]'), lines.route);
+  }
   const dtodo = new Set(DR.drawersTodo(doc).map(t => t.name));
   for (const d of MS.readMission(doc)?.drawers || []) {
     const mark = q(`[data-dmark="${d.rank}"]`),
@@ -996,6 +1048,15 @@ async function edSave(s) {
 
 /** Les gestes de l'éditeur et ses entrées depuis le Registre. */
 export function edClick(s, b) {
+  const out = edClickDo(s, b);
+  // un geste qui attend (lire un fichier, enregistrer) redessine plus tard : la carte choisie revient en vue alors aussi
+  Promise.resolve(out).then(() => edShowSel(s), () => {});
+  edShowSel(s);
+  return out;
+}
+
+/** Les gestes de l'éditeur (voir edClick). */
+function edClickDo(s, b) {
   const r = s.reg,
     idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
     line = r?.lines.find(x => x.idx === idx);
@@ -1012,12 +1073,8 @@ export function edClick(s, b) {
       const id = String(b.dataset.sel || '');
       s.ed.sel = id !== 'start' && edDrawers(s.ed).some(r => r.id === id) ? id : 'start';
       s.ed.drawerAsk = '';
-      draw(s);
-      // la carte choisie vient dans la rangée qui défile (sans faire sauter la page)
-      return s.el.querySelector('[data-atflow] [aria-current]')?.scrollIntoView?.({
-        inline: 'nearest',
-        block: 'nearest'
-      });
+      s.ed.dopen = {};
+      return draw(s);
     }
     case 'eddradd': { // « ＋ Tiroir » : le suivant, au geste du pilote, sa fiche ouverte
       const row = DR.blankDrawer(edDrawers(s.ed), s.ed.base);
@@ -1027,11 +1084,10 @@ export function edClick(s, b) {
       s.ed.drawers = [...s.ed.drawers, row];
       s.ed.sel = row.id;
       s.ed.drawerAsk = '';
+      s.ed.dopen = {
+        texts: true
+      };
       draw(s);
-      s.el.querySelector('[data-atflow] [aria-current]')?.scrollIntoView?.({
-        inline: 'nearest',
-        block: 'nearest'
-      });
       return s.el.querySelector('[data-drawer] [data-f=title]')?.focus();
     }
     case 'eddrdel': { // « Retirer ce tiroir », en deux temps : le second appui est inerte une seconde (comme pour un lieu cité)
@@ -1049,6 +1105,25 @@ export function edClick(s, b) {
       e.drawerAsk = '';
       s.ctx.notify(s.tt(EDTX.dwRemoved), 'ok');
       return draw(s);
+    }
+    case 'eddrgrp': { // « Les textes », « La suite de route » : un groupe de la fiche d'un tiroir se déplie et se replie
+      const k = b.dataset.grp === 'route' ? 'route' : 'texts';
+      s.ed.dopen = {
+        ...(s.ed.dopen || {}),
+        [k]: !s.ed.dopen?.[k]
+      };
+      return draw(s);
+    }
+    case 'eddrplaces': { // rien à choisir : la fiche du départ, ses Lieux dépliés (une zone ou un objet s'y crée)
+      const e = s.ed;
+      e.sel = 'start';
+      e.step = 'places';
+      if (!e.places) e.places = ED.placesOf(edDoc(e));
+      draw(s);
+      return s.el.querySelector('[data-steps] [aria-current]')?.scrollIntoView?.({
+        inline: 'nearest',
+        block: 'nearest'
+      });
     }
     case 'eddrchipdel': { // un lieu retiré de la suite de route
       const r = edDrawerRow(s.ed),

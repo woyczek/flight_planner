@@ -346,6 +346,13 @@ The accepted form of `maquette/tiroirs.html`, in the frame of the workshop. `edi
   why and is replaced only by choosing another one. « Les textes »: the title (with its warning: the pilot reads it on the closed
   drawer), the message, the briefing. « La suite de route »: chips, removed one by one, added from a list (the places of the mission,
   « l'arrivée »). Then « Retirer ce tiroir », in two presses, the second inert for a second; the ranks close up, the letters stay.
+- **The ergonomist's reading (17 Nov at 21 h 59), applied**: on a narrow module « La clé » is unfolded, « Les textes » and « La
+  suite de route » are folded and each says its content in one line (« Entrée nord · message de 35 signes · sans briefing »,
+  « PT2, DESTINATION » or « aucune suite »); on a wide module the three groups are unfolded and their titles are not buttons. A new
+  drawer opens with its texts unfolded (its title is to be given). When the mission has no zone or no object to choose, the sheet
+  says « Aucune zone dans cette mission — créez-la dans les Lieux » with the link « Ouvrir les Lieux », which brings back the sheet
+  of the departure with its Lieux unfolded — never an empty list. « À compléter » writes « Tiroir 1 : … », capitalised like
+  « Cadre : … ». The chosen card stays in view in the row after any gesture that redraws (the row scrolls sideways, never the page).
 - **A new key takes what can be guessed** (the first zone, the first object, the arrival at the destination, landed, 1 NM, 30 kt,
   after take-off) so that a key just chosen is never an unreadable one.
 - **`trigger`** is written by the workshop when the key (or the point, or the delay of an hour) changes: « 20 min après le
