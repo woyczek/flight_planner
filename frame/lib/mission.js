@@ -15,8 +15,9 @@
 //     participants, role }] et turns [{ id, name, role, lat, lon }] (60 points), maps [{ id, file (motif strict, un nom de fichier du
 //     dossier de la mission), type, description, centreRef }] (20), objectives { primary, secondary }, payload { description, massKg,
 //     passengers }, details [paragraphe] (2 000 caractères chacun), hasCoords (un lieu, un point ou une zone situé).
-//     Les tiroirs (SOG-0440) : drawers [{ id (B, C, D), title, trigger, message, brief, key, keyWhy, condition, route, routeUnknown }]
-//     (trois au plus) et drawersRefused (les parties écartées : identifiant hors liste ou en double, au-delà de trois). key, la géométrie
+//     Les tiroirs (SOG-0440) : drawers [{ id (B à M), rank (1 à 12 : ce que l'écran dit), title, trigger, message, brief, key, keyWhy,
+//     condition, emits, route, routeUnknown }] (douze au plus) et drawersRefused (les parties écartées : identifiant hors liste ou en
+//     double, au-delà de douze). key, la géométrie
 //     toujours RÉSOLUE (que le fichier l'écrive dans la partie ou la cite par identifiant) :
 //       { kind: 'time', point (un point de la mission ou 'ORIGIN'), delayMin }
 //       { kind: 'zone', shape: { circle: { lat, lon, radiusM } } | { polygon: [[lat, lon]…] }, ceilingFt | null, zoneId | null, shown,
@@ -182,7 +183,7 @@ function sheetOf(d) {
 }
 
 // ---------------------------------------------------------------- les tiroirs (SOG-0440 ; organisation/SPEC_MISSIONS_TIROIRS.md § 7, § 10.3)
-// Un tiroir est une partie de la V2 (`phases`, jusqu'à trois : B, C, D) ; il a UNE clé. Deux formes d'écriture, lues toutes les deux :
+// Un tiroir est une partie de la V2 (`phases` ; douze au plus, identifiants B à M) ; il a UNE clé. Deux formes d'écriture, lues toutes les deux :
 //   · PAR IDENTIFIANT (l'atelier de l'utilisateur, « Mission Editor ») : `trigger_zone: ZONE-1` désigne une zone de `zones`,
 //     `trigger_object: OBJ-1` un objet de `objects`, en tête de mission ;
 //   · DANS LA PARTIE (l'éditeur de la V3) : `trigger_zone: { centre, radius_km | points, ceiling_ft }`, `trigger_object: { kind, lat, lon,
@@ -199,8 +200,10 @@ function sheetOf(d) {
 /** Les genres d'un objet à trouver : la liste fermée, à allonger ICI seulement (l'éditeur et l'écran du pilote la lisent) ; `aircraft` :
  *  une cible mobile. */
 export const OBJECT_KINDS = Object.freeze(['wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft']);
-/** Les identifiants des tiroirs, dans l'ordre (la partie A est le reste de la mission). */
-export const DRAWER_IDS = Object.freeze(['B', 'C', 'D']);
+/** Les identifiants des tiroirs dans le fichier, dans l'ordre (la partie A est le reste de la mission) : douze au plus, la borne de
+ *  sécurité de la lecture (l'utilisateur, 17 nov. : « pourquoi limiter à 3 tiroirs ? » — la limite à B, C, D venait du générateur de la
+ *  V2). À l'écran un tiroir se dit par son RANG (« Tiroir 1 ») : les lettres désignent déjà les équipages d'une opération. */
+export const DRAWER_IDS = Object.freeze(['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M']);
 /** Les bornes d'un tiroir lu (celles de l'atelier de l'utilisateur, FORMAT.md « Mission Editor 1.0 ») : textes (signes), délais
  *  (minutes), rayon d'une zone (km, 0 exclu), sommets, pieds (plafond, hauteur de détection), altitude d'un objet (ft), portée et rayon
  *  d'arrivée (NM, 0 exclu), vitesses (kt), suivi (s), longueurs de listes. */
@@ -489,13 +492,14 @@ function drawersOf(d, points) {
         steps = kind === 'sequence' && Array.isArray(c.steps) && c.steps.length >= 1 && c.steps.length <= B.steps ? c.steps.map(x =>
           rule(
             plain(x) || {})) : null,
+        one = HOLD_KINDS.includes(kind) ? rule(c) : null,
         later = kind === 'sequence' ? steps && !steps.includes(null) ? {
           steps
         } : null : kind === 'event' ? EVENT_ID.test(String(c.event ?? '')) ? {
           event: String(c.event)
-        } : null : HOLD_KINDS.includes(kind) ? rule(c) && {
-          rule: rule(c)
-        } : null;
+        } : null : one && {
+          rule: one
+        };
       if (later) key = {
         kind: 'condition',
         condition: kind,
@@ -542,6 +546,7 @@ function drawersOf(d, points) {
     }
     drawers.push({
       id,
+      rank: drawers.length + 1, // le rang du tiroir, celui que l'écran dit (« Tiroir 1 »)
       title: cut(p.title, B.title),
       trigger: cut(p.trigger, B.trigger), // la clé dite en clair par l'auteur (la V2 l'imprime : « À ouvrir : … »)
       message: para(p.message, B.message),

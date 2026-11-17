@@ -859,7 +859,8 @@ function citedIds(rows) {
 }
 
 /** Le document dont chaque référence à un lieu est passée par `fn(mot, where, name)` → le mot gardé, un autre mot, ou null (la référence
- *  est retirée). `where` : route | drawer | drawerRoute | map | event | profile | alert ; `name` : la partie (B), la carte, l'alerte.
+ *  est retirée). `where` : route | drawer | drawerRoute | map | event | profile | alert ; `name` : le rang du tiroir (« 1 »), la carte,
+ *  l'alerte.
  *  Un NOUVEAU document, dont seuls les champs changés sont de nouveaux objets (audit 182) ; rien ne change, le document rendu est `doc`.
  *  Retirer une référence : un mot sort d'une liste de route ; le point de déclenchement d'une partie part, son délai RESTE (une partie
  *  qui porte un délai sans point : « À compléter » le dit, dans cette séance et les suivantes) ; une carte garde son entrée, son centre
@@ -914,23 +915,24 @@ function mapRefs(doc, fn) {
     each = (v, edit) => {
       if (Array.isArray(v)) {
         let ch = false;
-        const next = v.map(x => {
+        const next = v.map((x, n) => {
           if (!x || typeof x !== 'object' || Array.isArray(x)) return x;
-          const y = edit(x);
+          const y = edit(x, n);
           if (y !== x) ch = true;
           return y;
         }).filter(x => x !== DROP);
         return ch ? next : v;
       }
       if (v && typeof v === 'object') {
-        const y = edit(v);
+        const y = edit(v, 0);
         return y === DROP ? undefined : y;
       }
       return v;
     };
   put('route_order', route(d.route_order, 'route', ''));
-  put('phases', each(d.phases, p => {
-    const name = cut(p.id, 8);
+  put('phases', each(d.phases, (p, n) => {
+    // un tiroir se dit par son RANG (« le tiroir 1 » : décision du 17 nov., les lettres désignent les équipages d'une opération)
+    const name = String(n + 1);
     let q = p;
     if (scalar(p.trigger_point)) {
       const r = word(p.trigger_point, 'drawer', name);
@@ -1158,12 +1160,12 @@ export function mapsNoCentre(doc) {
     m.filename, 60));
 }
 
-/** Les parties qui portent un délai sans point de déclenchement (la trace d'un lieu retiré) : leurs lettres. Une partie sans délai ni
- *  point s'ouvre au geste du pilote, à dessein : elle n'est pas dite. */
+/** Les parties qui portent un délai sans point de déclenchement (la trace d'un lieu retiré) : leurs rangs (« 1 » : le premier tiroir).
+ *  Une partie sans délai ni point s'ouvre au geste du pilote, à dessein : elle n'est pas dite. */
 export function drawersNoPoint(doc) {
   const has = v => v !== undefined && v !== null && v !== '';
-  return arrOf(obj(doc).phases).filter(p => p && typeof p === 'object' && has(p.trigger_delay_min) && !has(p.trigger_point) && !has(p
-    .trigger_zone) && !has(p.trigger_object)).map(p => cut(p.id, 8));
+  return arrOf(obj(doc).phases).map((p, n) => p && typeof p === 'object' && !Array.isArray(p) && has(p.trigger_delay_min) && !has(p
+    .trigger_point) && !has(p.trigger_zone) && !has(p.trigger_object) && !has(p.trigger_condition) ? String(n + 1) : '').filter(Boolean);
 }
 
 /** Les références qui ne désignent aucun lieu de la mission (dites dans « À compléter ») : [{ id, where, name }], une fois par mot.

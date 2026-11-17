@@ -71,7 +71,10 @@ drawers is in [docs/technique/FORMAT_MISSION.md](../../docs/technique/FORMAT_MIS
   - **Found while writing the bench**: `readMission` threw on `zones: 7`, on a single-object `turning_points`, on a zone whose
     `points` is a number — a whole mission said unreadable for one odd list. Read as nothing now. And `missionFlight` looked a route
     identifier up with `points[id]`: « constructor » was a point. Own keys only.
-  - N71 (red before: no `drawers`; `zones: 7` threw). The bench: 45 rows, among them 31 unreadable keys, 14 unreadable 1.1
+  - **No limit of three** (the user, 17 Nov at 19 h 06: « pourquoi limiter à 3 tiroirs ? »): from none to twelve drawers, ids B to
+    M in the file, `rank` 1 to 12 for the screen (« Tiroir 1 » — letters already name the crews of an operation). The editor's texts
+    say a drawer by its rank too (« le tiroir 1 n'a plus son point de déclenchement »).
+  - N71 (red before: no `drawers`; `zones: 7` threw). The bench: 46 rows, among them 31 unreadable keys, 14 unreadable 1.1
     conditions and the hostile file.
 
 ## Porting the workshop (SOG-0444) — specification, to be read by the ergonomist before any product code
@@ -86,11 +89,17 @@ BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `m
 | part | wide screen (from 1 000 px of module) | phone (390 px) |
 |---|---|---|
 | the mission's map | on the left, the place where one edits | folded (« Carte de la mission »), read only |
-| the unfolding (« déroulé ») | under the map: A « visible », then B, C, D « scellé », each with its key in one line; « ＋ Tiroir » is its last card | first, two cards per row |
-| the sheet (« fiche ») | on the right, of what is selected (a part, a drawer, a place) | under the unfolding |
-| the foot | « Enregistrer », « À compléter (n) » always visible, « Annuler » | the same |
+| the unfolding (« déroulé ») | under the map: « Au départ » (visible), then « Tiroir 1, 2, 3… » (scellé; twelve at most), each with its key in one line; « ＋ Tiroir » is its last card | first, two cards per row |
+| the sheet (« fiche ») | on the right, of what is selected (the departure, a drawer, a place) | under the unfolding |
+| the foot | « Enregistrer », « À compléter (n) » always visible, « Annuler » | the same; touched, « À compléter (n) » unfolds the points to complete, named |
 
-- **The sheet of part A is the six steps of the editor, as six foldable groups** — Cadre, Équipes, Lieux, Récit, Risques, Chronologie et
+- **A drawer is said by its rank** (« Tiroir 1 »), never by a letter: letters name the crews of an operation (the user, 17 Nov). In the
+  file the ids stay B to M; the visible part (part A of the file) is « Au départ ». A drawer removed in the middle: the ranks close up.
+- **« À compléter » on a phone** (the ergonomist, 17 Nov at 19 h 10): the six-step editor shows it only beside the form on a wide
+  screen; the workshop says it on a phone too — one foldable line, « n points à compléter », which names them (the named lines of
+  SOG-0439).
+
+- **The sheet of the departure (part A) is the six steps of the editor, as six foldable groups** — Cadre, Équipes, Lieux, Récit, Risques, Chronologie et
   cartes — with the same fields and the same pure functions (`cadreOf` / `withCadre` … `eventsOf` / `withEvents`, `withRefs` last). Seven
   fields at most per group. A group to complete says so on its line. Nothing of the six steps is rewritten: the screen changes, the
   rules of audits 182 to 194 and of SOG-0439 stay.
@@ -101,14 +110,31 @@ BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `m
 - **Saving**: unchanged — `data.put` of the mission file then of its registry line, on the device, sent with the grouped send; only what
   the author changed is written; a file that cannot be rewritten safely is refused at the opening (`shapeOf`).
 
-### 2. The map (needs SOG-0446, the map base: to be asked, never modified from here)
+### 2. The map (on SOG-0446, the map's editing base — its file, never modified from here)
 
-- Six tools: Sélection, Point, Tracé, Cercle, Contour, Objet. **After a pose the tool goes back to Sélection** (except Tracé, which
-  adds places to the selected route until it is left): no creation by accident.
+The V3 map is MapLibre. The workshop goes through the entries the Map's owner extracts from the Map's own Edit mode
+(`modules/maps/lib/map_edit.js` and `lib/terrain.js`, contract in modules/maps/INTEGRATION.md § 7 bis; distances in metres, positions
+`{ lat, lon }`): it writes no gesture and no geometry of its own.
+
+| the workshop's need | the entry |
+|---|---|
+| a touch on the bare map gives a position (pose a point, an object, the centre of a zone, a vertex) | `tapPosition` |
+| move a place, an object, a vertex, the handle of a radius, with its return during the gesture | `dragHandles` (kinds `point`, `vertex`, `object`, `radius`), `previewLayer` |
+| the outline in progress (a zone that is not round, a route) | `sketch` (`polygon`, `line`), closed by « Fermer » or by touching its first vertex |
+| the author's elements on their own layers (places, drawer zones, objects, a target's axis) | `authorLayers` |
+| the landmarks of AeroDB in the bounding box, touchable | `referenceLayer` (`onPick`), `anchorsOf` / `snapTo` |
+| « Annuler » | `createUndo` |
+| the altitude of the terrain under an object, the profile | `elevationAt` (metres; null for a gap, never 0) |
+
+- **Five tools: Sélection, Point, Tracé, Zone, Objet.** A contour is a zone that is not round (the user, 17 Nov): one tool, one sheet,
+  two shapes — a zone is posed round (one touch, its radius typed or pulled by its handle), and « Dessiner un contour » turns it into
+  its vertices. **After a pose the tool goes back to Sélection** (except Tracé, which adds places to the selected route until it is
+  left): no creation by accident.
 - **A landmark of AeroDB touched says what it is** and offers « Ajouter comme point » (and « Radiale et distance… » for a beacon):
   touching it creates nothing.
-- A place, an object, a vertex, the handle of a radius are moved by dragging; a circle is posed by one touch (its centre) and its radius
-  typed or pulled; a contour by successive touches, « Retirer le dernier », « Fermer » (3 to 100 vertices read, SOG-0440).
+- A selected zone shows its handles, as the workshop's 1.2 does: the centre moves the whole zone, the edge handle sets the radius, a
+  square handle moves a vertex, a small one between two vertices inserts one, a vertex touched offers « Retirer ce sommet » (three at
+  least). 3 to 100 vertices (SOG-0440).
 - The fields stay (latitude, longitude, radius): the fallback without tiles, the phone's way, and what the cases play.
 - **No new host**: the suite's map base and its day background (OpenTopoMap is already in the page's policy); the terrain is the one
   the Map's profile already reads (same host path, already allowed), asked as a shared function (SOG-0446).
@@ -125,8 +151,11 @@ BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `m
 ### 4. The trial of the keys (« Essayer les clés »)
 
 A pane beside the map, never a window over it: « Poser l'avion ici » by a touch, the time on a slider, the aircraft, its trail, the zone
-and the object drawn, a log in plain words. It runs **the same pure judgement as the flight** (`frame/lib`, SOG-0447: path against shape,
-range, ceiling) — else the trial lies. It writes nothing in the mission. Not before SOG-0447.
+and the object drawn, a log in plain words. It runs **the same pure judgement as the flight** — `frame/lib/crossing.js` (SOG-0447:
+`crossed`, `reach`, `arrived`, `replay`), which takes the reader's keys as they are — else the trial lies. A datum that is missing
+never satisfies a key: the log says « inconnu : il manque l'altitude », never a « oui » by default. What the service does not judge
+(stops required before an arrival, a following, « within range AND declared », a target that moves) is the trial's to say. It writes
+nothing in the mission. Not before SOG-0447 is on the integration branch.
 
 ### 5. What the file is
 
@@ -137,8 +166,8 @@ identifier — or inside the part) is the user's open question Q-0095; the reade
 
 ### 6. Vocabulary (four languages, the suite's words)
 
-« Atelier », « déroulé », « partie A », « tiroir », « clé », « heure de repli », « zone de passage », « objet à trouver », « arrivée au
-terrain », « repère » (a landmark of AeroDB), « contour » (a polygon), « essayer les clés »; famille and série as everywhere; never
+« Atelier », « déroulé », « au départ », « tiroir 1, 2, 3… », « clé », « heure de repli », « zone de passage », « objet à trouver »,
+« arrivée au terrain », « repère » (a landmark of AeroDB), « zone » and its « contour » (a zone that is not round), « essayer les clés »; famille and série as everywhere; never
 « ids », « objet logique », « phase », nor an English screen name.
 
 ### 7. Lots, in order — each one read on its captures before the push
@@ -147,7 +176,7 @@ terrain », « repère » (a landmark of AeroDB), « contour » (a polygon), « 
 |---|---|---|
 | P1 | the screen in its new frame WITHOUT the map tools nor the drawers: the unfolding (A alone, the drawers of the file listed read-only), the sheet of part A in six groups, the foot; phone and wide; the six steps' cases replayed on the new screen | this specification read |
 | P2 | the map as the place of edition: the six tools, drag, landmarks of AeroDB, no accidental creation | SOG-0446 |
-| P3 | the drawers (SOG-0445): the card « ＋ Tiroir », the sheet in three groups, the five keys, the fallback hour, « Ce que le pilote voit », « Vue du pilote : A · B · C · D » on the map | P1; Q-0095 for where the file writes; Sécurisation (a deposited file is written) |
+| P3 | the drawers (SOG-0445): the card « ＋ Tiroir » (twelve at most), the sheet in three groups, the five keys, the fallback hour, « Ce que le pilote voit », « Vue du pilote : départ · 1 · 2 · 3… » on the map | P1; Q-0095 for where the file writes; Sécurisation (a deposited file is written) |
 | P4 | the trial of the keys | SOG-0447 |
 | P5 | the moving target and the workshop's 1.1 keys (hold, landing, sequence, overflight, message between crews, several crews in one operation) | the user saying his contract is stable; the trial of an object placed in X-Plane |
 

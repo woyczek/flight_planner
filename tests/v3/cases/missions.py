@@ -2886,7 +2886,7 @@ def n70(c):
     c.ok(c.js(_PLACE_AT, 'RDV-1') == i, c.js(_PLACES_JS), 'a place still cited is not removed at the first press, nor by a double press')
     c.ok(c.text(f'{E} [data-plform="{i}"] [data-do="edplacedel"]') != first, first, 'the button now says « Retirer quand même »')
     note = c.js(_NOTES)
-    c.ok('RDV-1' in note and 'detail_rdv_1' in note and ' B' in note, note, 'a floating notification names who cites it (the drawer B, the map detail_rdv_1)')
+    c.ok('RDV-1' in note and 'detail_rdv_1' in note and ' 1 (' in note, note, 'a floating notification names who cites it (the drawer 1, by its rank; the map detail_rdv_1)')
     c.shot('N70_390_cited.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
@@ -2903,7 +2903,7 @@ def n70(c):
     c.eq([t for t in c.js(_ED_TODO) if t in ('deadRef', 'drawerNoPoint', 'mapNoCentre')], ['deadRef', 'drawerNoPoint', 'mapNoCentre'],
          '« À compléter » says the drawer left without its trigger point and the map left without centre', what='todo after the removal')
     todo = c.js(_ED_TODO_TEXT)
-    c.ok(' B ' in todo and 'detail_rdv_1' in todo and 'GHOST' in todo, todo, '… and NAMES them: the drawer B, the map detail_rdv_1, the dead word GHOST')
+    c.ok(' 1 ' in todo and 'detail_rdv_1' in todo and 'GHOST' in todo, todo, '… and NAMES them: the drawer 1 (its rank, never its letter), the map detail_rdv_1, the dead word GHOST')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N70_390_after.png')
     # a place never cited goes at the first press; a new place never takes an identifier of the file (PT1 is still the name its
@@ -2971,7 +2971,8 @@ _DRAWERS_JS = """async () => { const MS = await import('/frame/lib/mission.js');
     { id: 'C', trigger_object: { kind: 'raft', lat: 44.61, lon: 1.31, detection_range_nm: 0.3, require_confirmation: false } },
     { id: 'D', trigger_point: 'PT1', trigger_delay_min: 10 }]);
   const odd = read([{ id: 'B', trigger_condition: { kind: 'hover', object: 'OBJ-1' }, fallback_delay_min: 90 }, { id: 'C', trigger_zone: 'ZONE-9' },
-    { id: 'D', trigger_zone: { centre: { lat: 44, lon: 1 }, radius_km: 1e9 } }, { id: 'E' }, { id: 'B' }]);
+    { id: 'D', trigger_zone: { centre: { lat: 44, lon: 1 }, radius_km: 1e9 } }, { id: 'E' }, { id: 'B' }, { id: 'Z' }]);
+  const many = read(Array.from({ length: 14 }, (_, i) => ({ title: 'T' + (i + 1) })));
   const b = byId.threw ? {} : byId.drawers[0].key, c = byId.threw ? {} : byId.drawers[1].key, dd = byId.threw ? {} : byId.drawers[2].key;
   return { byId: keys(byId), zone: [b.shape, b.ceilingFt, b.shown, b.fallbackMin, b.actor && [b.actor.id, b.actor.moving, b.actor.motion.route.map(p => p.id)]],
     object: c.object && [c.object.rangeNm, c.object.heightFt, c.object.altitudeFt, c.object.confirm, c.object.moving],
@@ -2979,6 +2980,7 @@ _DRAWERS_JS = """async () => { const MS = await import('/frame/lib/mission.js');
     route: byId.threw ? null : [byId.drawers[0].route.map(p => p.id), MS.missionFlight(byId).route.points.map(p => p.id)],
     inPart: keys(inPart), inPartKeys: inPart.threw ? null : [inPart.drawers[0].key.shape, inPart.drawers[0].key.shown, inPart.drawers[1].key.object.confirm, inPart.drawers[2].key],
     odd: keys(odd), oddRefused: odd.drawersRefused, oddFallback: odd.threw ? null : odd.drawers[0].key.fallbackMin,
+    many: many.threw ? null : [many.drawers.map(d => d.id).join(''), many.drawers.map(d => d.rank), many.drawersRefused],
     hostile: [keys(read([{ id: 'B', trigger_zone: 'ZONE-1' }], { zones: 7 })), keys(read([{ id: 'B', trigger_object: 'OBJ-1' }], { objects: 'x', turning_points: { id: 'SEUL', lat: 1, lon: 1 } })),
       keys(read('texte')), keys(read([{ id: 'B', trigger_point: 'constructor' }]))],
     kinds: MS.OBJECT_KINDS, passage: MS.passageMin ? MS.passageMin(MS.readMission(base), 'PT1') : null } }"""
@@ -2988,7 +2990,8 @@ _DRAWERS_JS = """async () => { const MS = await import('/frame/lib/mission.js');
       '(zones and objects at the top, the user\'s workshop) or written inside the part (the V3 editor), the geometry always resolved in the '
       'key; a zone crossed by a moving target; the arrival key (at the aerodrome, on the ground, slow, after a stop); a V2 part by the hour; '
       'a condition the reader does not read, a zone it cannot find or out of its bounds: the gesture alone, said, with its fallback hour; '
-      'three drawers at most; a mission whose `zones` is not a list is read all the same', 'N', tags=('missions',), designs=('standard',),
+      'twelve drawers at most (B to M), each with its rank; a mission whose `zones` is not a list is read all the same', 'N', tags=('missions',),
+      designs=('standard',),
       screens=False, langs4=False,
       rule='SOG-0440 (the ergonomist, 17 Nov 2026: « le lecteur doit lire LES DEUX formes […] Tu résous l\'identifiant en géométrie dans '
       '`key` […] un genre inconnu de condition = « geste seul », dit »); docs/technique/FORMAT_MISSION.md; the bench frame/lib/test/mission.html')
@@ -3004,9 +3007,12 @@ def n71(c):
     c.eq(got['inPart'], [['B', 'zone', '', ''], ['C', 'object', '', ''], ['D', 'time', '', '']], 'the same keys written inside the part, and a V2 part by the hour', what='keys in the part')
     c.eq(got['inPartKeys'], [{'circle': {'lat': 44.62, 'lon': 1.28, 'radiusM': 4000}}, False, False, {'kind': 'time', 'point': 'PT1', 'delayMin': 10}],
          'a hidden zone; an object found by range alone; the hour', what='the keys in the part')
-    c.eq([got['odd'], got['oddRefused'], got['oddFallback']], [[['B', 'hand', 'condition', 'hover'], ['C', 'hand', 'zone', ''], ['D', 'hand', 'zone', '']], 2, 90],
-         'a condition the reader does not read, a zone that does not exist, a radius out of bounds: the gesture alone, said; an id out of B / C / D '
-         'and a duplicate are refused and counted; the fallback hour is kept', what='unreadable keys')
+    c.eq([got['odd'], got['oddRefused'], got['oddFallback']],
+         [[['B', 'hand', 'condition', 'hover'], ['C', 'hand', 'zone', ''], ['D', 'hand', 'zone', ''], ['E', 'hand', '', '']], 2, 90],
+         'a condition the reader cannot read, a zone that does not exist, a radius out of bounds: the gesture alone, said; a fourth drawer (E) is '
+         'read; a duplicate and an id out of B to M are refused and counted; the fallback hour is kept', what='unreadable keys')
+    c.eq(got['many'], ['BCDEFGHIJKLM', list(range(1, 13)), 2], 'twelve drawers at most, B to M, each with its rank (1 to 12: what the screen says); '
+         'the thirteenth and the fourteenth are refused and counted', what='twelve drawers')
     c.eq(got['hostile'], [[['B', 'hand', 'zone', '']], [['B', 'hand', 'object', '']], [], [['B', 'hand', 'point', '']]],
          'a mission whose zones, objects or phases are not lists is read all the same; « constructor » is not a point', what='hostile lists')
     c.ok('aircraft' in (got['kinds'] or []) and 'raft' in got['kinds'] and got['passage'] == {'nm': 20, 'min': 10}, [got['kinds'], got['passage']],

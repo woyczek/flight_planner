@@ -1407,10 +1407,22 @@
   }, () => ({
     id: 'D'
   }))]);
-  same('tiroirs : trois au plus, B / C / D ; un double, un identifiant hors liste, une valeur nue et le surplus sont écartés et comptés',
-    [dm.drawers.map(d => d.id), dm.drawersRefused], [
-      ['B', 'C', 'D'], 46
+  same(
+    'tiroirs : un double, un identifiant hors de B à M, une valeur nue et ce qui dépasse les vingt parties lues sont écartés et comptés ; une partie sans identifiant prend la lettre de son rang',
+    [dm.drawers.map(d => d.id), dm.drawers.map(d => d.rank), dm.drawersRefused], [
+      ['B', 'E', 'C', 'D', 'J'],
+      [1, 2, 3, 4, 5], 44
     ]);
+  dm = withPhases(Array.from({
+    length: 14
+  }, (_, i) => ({
+    title: `T${i + 1}`
+  })));
+  same(
+    'tiroirs : douze au plus, B à M, chacun avec son rang (ce que l\'écran dit : « Tiroir 1 ») ; le treizième et le quatorzième sont écartés',
+    [dm.drawers.map(d => d.id).join(''), dm.drawers.map(d => d.rank), dm.drawers[11].title, dm.drawersRefused], ['BCDEFGHIJKLM', [1, 2, 3,
+      4, 5, 6, 7, 8, 9, 10, 11, 12
+    ], 'T12', 2]);
   same('tiroirs : « phases » qui n\'est pas une liste de parties', ['texte', 7, true, null, [
       []
     ]].map(ph => [withPhases(ph).drawers.length, withPhases(ph).drawersRefused]),

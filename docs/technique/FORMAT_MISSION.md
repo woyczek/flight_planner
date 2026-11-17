@@ -11,8 +11,10 @@ document, read on 17 Nov 2026): this reader reads it as it is, with its bounds.
 
 ## 1. What a drawer is
 
-A mission has a visible part (A: the rest of the file) and up to three **drawers**, B, C and D, in that order. A drawer
-is one entry of `phases` — the V2 key, kept: **a V2 mission is read as it is, nothing is converted or rewritten**. A
+A mission has a visible part (A: the rest of the file) and from none to twelve **drawers**, in the order of the file (the
+limit of three came from the V2's generator and has no reason of use: the user, 17 Nov 2026). In the file their ids go on
+B, C, D … M; **on screen a drawer is said by its rank, « Tiroir 1, 2, 3… »** — letters already name the crews of an
+operation. A drawer is one entry of `phases` — the V2 key, kept: **a V2 mission is read as it is, nothing is converted or rewritten**. A
 closed drawer opens by its **key**; open, it gives a message, a briefing and, when it has one, the rest of the route.
 On screen the word is « tiroir »; `phases` is only the name in the file.
 
@@ -20,7 +22,7 @@ On screen the word is « tiroir »; `phases` is only the name in the file.
 
 ```yaml
 phases:
-  - id: B                          # B, C or D; without id, the letter of its rank
+  - id: B                          # B to M; without id, the letter of its rank
     title: "Changement de secteur"
     trigger: "au passage du secteur nord"     # the key said in plain words by the author (the V2 prints it)
     message: "« Écho radar dans le secteur nord, descendez voir. »"
@@ -103,8 +105,8 @@ phases:
 
 | field | value |
 |---|---|
-| `drawers` | three at most, in the order of the file: `{ id, title, trigger, message, brief, key, keyWhy, condition, route, routeUnknown }` |
-| `drawersRefused` | the parts left out: an id out of B / C / D, a duplicate, a bare value, beyond three (or beyond the 20 entries read) |
+| `drawers` | twelve at most, in the order of the file: `{ id, rank, title, trigger, message, brief, key, keyWhy, condition, emits, route, routeUnknown }` — `rank` is 1 to 12, what the screen says (« Tiroir 1 ») |
+| `drawersRefused` | the parts left out: an id out of B to M, a duplicate, a bare value, beyond twelve (or beyond the 20 entries read) |
 | `key` | `{ kind: 'time', point, delayMin }` — `point` is a point of the mission or `'ORIGIN'` |
 | | `{ kind: 'zone', shape, ceilingFt, zoneId, shown, actor, fallbackMin }` — `shape` is `{ circle: { lat, lon, radiusM } }` or `{ polygon: [[lat, lon], …] }`; `actor` is the moving target that crosses the zone (an object, as below), or null: the pilot |
 | | `{ kind: 'object', object, fallbackMin }` — `object` is `{ id, kind, name, lat, lon, rangeNm, heightFt, altitudeFt, confirm, hiddenUntil, moving, motion }`; `motion` is null, `{ kind: 'route', route, speedKt, startDelayMin }` or `{ kind: 'axis', courseDeg, speedKt, startDelayMin }` |
