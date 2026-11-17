@@ -18,7 +18,7 @@
   //   declaration() → préfixes lus et écrits par aerodb (à donner à FrameData.adapter) }.
   // Service : status(), state() (loading, ready, noaccess, offline, unpublished, idle : sans lire), refresh(), ready(q),
   //   on('change' | 'state', fn), airspaces(q), aerodromes(q), navaids(q), points(q), airways(q), vrp(q),
-  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), natState(), natEnsure(), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedure(id), runways(oaci), procedureStats(), procedureIndex(), coverage(oaci), coverageByState(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
+  //   obstacles(q), mora(lat, lon), moraCells(q), aar(), nat(), natState(), natEnsure({ force }), aarTracks(), natTracks(), vfrRoutes(oaci), vfrIndex(), procedures(oaci, q), procedure(id), runways(oaci), procedureStats(), procedureIndex(), coverage(oaci), coverageByState(), procedureFromOfp(ofp), rememberOfp(ofp), cities(q),
   //   find(texte, n), coords(ident),
   //   coordsAll(ident), aircraft() → registre des aéronefs (types : frame/aerodb/aircraft.js ; fiches, flotte, référence,
   //   recherche unique : registry.js ; logique des fiches : sheets.js, AeroDBSheets), stats(),
@@ -454,6 +454,8 @@
     // une promesse sans fin (31 oct. 2026 : une part lue sous charge pouvait rester pendante, aléa D86 / D87)
     readWait = 10e3
   } = {}) {
+    // SOG-0413 : l'âge au-delà duquel les routes NAT sont relues, même valides (la source ne porte que le message en cours)
+    const NAT_MAX_AGE_MS = 3600000;
     const natRefresh = {
         p: null,
         failedAt: -Infinity
@@ -1256,6 +1258,8 @@
                 base
               });
               z.parts.set('meta', Promise.resolve(valueOf(r)?.data || {}));
+              z.metaAt = valueOf(r)?.updated_at ||
+                null; // SOG-0413 : l'heure de la méta (pour nat : la dernière lecture du message)
               z.reads.push({
                 kind: 'meta',
                 bytes: sizeOf(r),
@@ -3018,7 +3022,10 @@
       /** Validité des tracks NAT prises (SOG-0263), sans rien demander au réseau : { present, count, from, validUntil (ISO UTC, la fin de validité la plus tardive), expired (vrai : aucune n'est plus valide ; null : validité inconnue),
        *  current (nombre de tracks valides maintenant) } : la ligne des routes NAT dit « valides jusqu'à 19 h 00Z » ou « périmées ». */
       async natState() {
-        const ts = (await api.nat())?.tracks || [],
+        // SOG-0413 : readAt, l'heure de la dernière lecture du message (updated_at du meta.json de la zone nat) ; null sans zone lisible
+        const zn = await loadZone('nat'),
+          readAt = zn?.metaAt && Number.isFinite(Date.parse(zn.metaAt)) ? new Date(Date.parse(zn.metaAt)).toISOString() : null,
+          ts = (await api.nat())?.tracks || [],
           t = now(),
           ms = x => {
             const v = Date.parse(x);
@@ -3026,6 +3033,7 @@
           };
         if (!ts.length) return {
           present: false,
+          readAt,
           count: 0,
           from: null,
           validUntil: null,
@@ -3036,6 +3044,7 @@
           starts = ts.map(x => ms(x.from)).filter(v => v !== null);
         return {
           present: true,
+          readAt,
           count: ts.length,
           from: starts.length ? new Date(Math.min(...starts)).toISOString() : null,
           validUntil: ends.length ? new Date(Math.max(...ends)).toISOString() : null,
@@ -3051,9 +3060,19 @@
        *  étaient relues telles quelles. Comme fetchProcedures : ses chemins sont revalidés (reader.revalidate), la liste refaite, AVANT de
        *  rendre. Un appel pendant un travail en cours (la couche NAT de la Carte, un autre appui) l'ATTEND (`joined`) au lieu de rendre
        *  l'ancien état ; un essai refusé parce que le dernier a échoué il y a moins de 5 minutes porte `retryAt` (ISO) : rien de muet. */
-      async natEnsure() { // { …natState, refreshed, ok?, busy? (le lanceur fait déjà une autre opération), running? (laquelle, comme la réponse 409 la dit), joined?, retryAt? }
-        const s0 = await api.natState();
-        if (s0.expired === false || typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info().lan)
+      async natEnsure(
+        o = {}
+      ) { // { …natState, refreshed, ok?, busy? (le lanceur fait déjà une autre opération), running? (laquelle, comme la réponse 409 la dit), joined?, retryAt?, spaced? }
+        // SOG-0413 (Features SOG, accord de l'ergonome du 17/11 : l'option et la règle d'âge, rien d'autre) : le travail est demandé si les
+        // routes sont périmées, OU `force` (relire même des routes valides : la source ne porte que le message EN COURS), OU leur dernière
+        // lecture a plus de NAT_MAX_AGE_MS (une heure ; règle de tous les appelants) ; `force` ne saute que ce test, jamais les gardes
+        // suivantes (lanceur, paire, travail en cours rejoint, échec récent) ; le même travail du lanceur
+        const force = o?.force === true,
+          s0 = await api.natState(),
+          // une heure de lecture inconnue (méta sans updated_at) n'est pas « vieille » : seule la validité décide alors (K186)
+          old = !!s0.readAt && now() - Date.parse(s0.readAt) > NAT_MAX_AGE_MS;
+        if ((s0.expired === false && !force && !old) || typeof launcher?.job !== 'function' || !launcher.info?.() || launcher.info()
+          .lan)
           return {
             ...s0,
             refreshed: false
@@ -3070,7 +3089,8 @@
             ...(await api.natState()),
             refreshed: false,
             joined: true,
-            ok: got
+            ok: !!got,
+            unchanged: got?.unchanged === true
           };
         }
         if (now() - natRefresh.failedAt < 300000) return {
@@ -3078,6 +3098,7 @@
           refreshed: false,
           retryAt: new Date(natRefresh.failedAt + 300000).toISOString()
         };
+
         natRefresh.p = (async () => {
           try {
             const r = await launcher.job('regen/job', {
@@ -3095,7 +3116,10 @@
             }; // le lanceur fait déjà une autre opération : dite avec ce qui tourne (la carte « opération en cours »), pas un échec
             if (r?.result?.ok === false) throw new Error('nat refresh failed');
             await natReread();
-            return true;
+            // SOG-0413 (c) : le message relu est-il le même ? (files[0].unchanged du travail : nat_tracks.json non réécrit)
+            return r?.result?.files?.[0]?.unchanged === true ? {
+              unchanged: true
+            } : true;
           } catch {
             natRefresh.failedAt = now();
             return false;
@@ -3115,7 +3139,8 @@
         return {
           ...(await api.natState()),
           refreshed: true,
-          ok
+          ok: !!ok,
+          unchanged: ok?.unchanged === true
         };
       },
       /** Axes AAR prêts à dessiner (aar.js : hippodromes, branches des axes lourds) des zones ouvertes ; refaits seulement

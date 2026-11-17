@@ -2291,3 +2291,14 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   unknown word, then the flight's arrival was added at the end — twice in the text. The departure and the arrival of the flight
   written in the text are those aerodromes: they are looked up without the bound (as when they are added at the ends). F216's guard
   (red on the parent: « arrival once: 2 »).
+- **17 Nov 2026 — SOG-0413 (part A), `aerodb.natEnsure`: forced, and the age rule** (the user: « on n'a toujours pas de NATS retour …
+  est-ce à ma main ? », then « on a pourtant une source … on peut donc boucher les trous » — the source carries the message IN FORCE
+  only: six westbound tracks at 09 h 02, the night's eastbound ones never read). In frame/aerodb/aerodb.js, AeroDB's file, granted by
+  the ergonomist for the option and the age rule only, in a commit of its own. `natState` also gives `readAt`, the `updated_at` of the
+  zone's meta.json (the time of the launcher's job; kept on the zone by loadZone, `z.metaAt`). `natEnsure` asks the SAME job
+  (`regen/job` base/update zones nat) when the tracks are stale, OR `force: true`, OR their last read is more than `NAT_MAX_AGE_MS`
+  (one hour) old — the rule of every caller, in one place; an UNKNOWN read time (a meta.json without `updated_at`) is not « old »:
+  the validity alone decides then (AeroDB's K186). AeroDB's traps: `force` skips that one test only (launcher, paired phone,
+  job in progress joined, 409 = busy, the failure's five minutes with `retryAt` unchanged); no anti-bounce of its own after a success
+  (the screen's: one minute); the job's `files[0].unchanged` is given back (`unchanged: true`: the message read is the same).
+  F253 (a fake launcher; red on the parent: neither the forced read nor the age rule asks the launcher).

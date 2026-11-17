@@ -7301,3 +7301,32 @@ def f252(c):
     item = (c.js(f"document.querySelector('{FUEL} [data-fpltext]').textContent") or '').split('\n')[3]
     c.ok(re.search(r'ABCDE B1 FGHIJ/N0\d{3}F195 B1 KLMNO A1 PQRST/N0\d{3}F350 B2 UVWXY$', item) is not None, item,
          'item 15: the airways kept, a speed-level group at each change, no DCT between a point and its airway')
+
+
+@case('F253', 'aerodb.natEnsure: NAT tracks read again when stale, when FORCED, or when their last read is more than an hour old (readAt: '
+      'the meta.json of the zone) — the same job of the launcher; the job\'s `unchanged` given back; never from a paired phone', 'F',
+      tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0413 (the user: « on n\'a toujours pas de NATS retour … est-ce à ma main ? », then « on a pourtant une source … on peut donc '
+      'boucher les trous »: the source carries the message IN FORCE only); the option and the age rule granted by the ergonomist in '
+      'frame/aerodb/aerodb.js; AeroDB\'s three traps (force skips the « valid » test only; the anti-bounce is the failure\'s; unchanged said); '
+      'a fake launcher')
+def f253(c):
+    c.open('fuel', docs=flight_docs())
+    got = c.js("""async () => {
+      const mk = (info, ageMin, unchanged) => { let jobs = 0;
+        const launcher = { job: async () => { jobs++; return { result: { ok: true, files: [{ unchanged }] } } }, info: () => info, request: async () => null },
+          db = window.AeroDB.create({ launcher });
+        db.natState = async () => ({ present: true, readAt: ageMin === null ? null : new Date(Date.now() - ageMin * 60000).toISOString(), count: 6,
+          from: '2026-11-17T11:30:00Z', validUntil: '2026-11-17T19:00:00Z', expired: false, current: 6 });
+        return { db, jobs: () => jobs } };
+      const A = mk({}, 10, false), a = await A.db.natEnsure(), B = mk({}, 120, false), b = await B.db.natEnsure(),
+        C = mk({}, 10, true), c1 = await C.db.natEnsure({ force: true }), c2 = await C.db.natEnsure({ force: true }),
+        D = mk({ lan: true }, 120, false), E = mk({}, null, false), e = await E.db.natEnsure();
+      await D.db.natEnsure({ force: true });
+      return { a: [A.jobs(), a.refreshed], b: [B.jobs(), b.refreshed, b.unchanged], c: [C.jobs(), c1.refreshed, c1.unchanged, c2.refreshed], d: D.jobs(),
+        e: [E.jobs(), e.refreshed] } }""")
+    c.eq(got['a'], [0, False], 'valid tracks read 10 min ago, not forced: nothing asked of the launcher', what='recent')
+    c.eq(got['b'], [1, True, False], 'valid tracks read 2 h ago: read again (the age rule), changed', what='old')
+    c.eq(got['c'], [2, True, True, True], 'forced twice: two reads (the restraint is the screen\'s), the message said unchanged', what='forced')
+    c.eq(got['d'], 0, 'a paired phone never asks the launcher', what='paired')
+    c.eq(got['e'], [0, False], 'valid tracks whose read time is unknown (no updated_at): nothing asked — the age rule needs a known time', what='unknown age')
