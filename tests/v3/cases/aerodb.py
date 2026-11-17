@@ -168,32 +168,26 @@ def _nat_test(south=('ETIKI', 'REGHI')):      # `south`: names, or (name, levels
     return {'tracks': west + east, 'messages': [{'by': 'EGGX', 'id': 'EGGX1117/26', 'part': 1, 'from': '2026-11-17T11:30:00Z', 'to': '2026-11-17T19:00:00Z'}, {'by': 'CZQX', 'id': 'CZQX1117/26', 'part': 1, 'from': '2026-11-17T01:00:00Z', 'to': '2026-11-17T08:00:00Z'}]}
 
 
-def _real_nat(south=('ETIKI', 'REGHI')):
-    """A data folder (Path) = the REAL navigation data of the workstation (junctions, read only) + the dated test NAT message `tracks` (default `_nat_test()`) ; None when the real base is not here (the case says it is skipped). Cleaned at the end of the process."""
-    import atexit
+def _hybrid_data(real, doc, subs=(('sia', 'base'), ('proc',), ('route',))):
+    """A temporary data folder: the folders `subs` of `real` are JUNCTIONS (symbolic links elsewhere), read only, and `sia/zones/nat/nat_tracks.json` is `doc`. Returns (data folder, clean): `clean()` removes each junction ITSELF (os.rmdir on the link: never its content) and removes the temporary folder
+    only if every junction is gone — if one cannot be removed nothing is deleted below it (the real data behind a link is never reached)."""
     import json
     import os
     import shutil
     import subprocess
     import tempfile
     from pathlib import Path
-    real = Path('E:/DEFA/data')
-    if not (real / 'sia' / 'base' / 'us').is_dir() or not (real / 'route' / 'rad.json.gz').is_file():
-        return None
-    doc = _nat_test(south)
-    key = json.dumps(doc, sort_keys=True)
-    if key in _hybrid:
-        return _hybrid[key]
     td = tempfile.mkdtemp(prefix='k_nat_')
     data = Path(td) / 'data'
     (data / 'sia' / 'zones' / 'nat').mkdir(parents=True)
     links = []
-    for sub in (('sia', 'base'), ('proc',), ('route',)):
+    for sub in subs:
         link = data.joinpath(*sub)
+        link.parent.mkdir(parents=True, exist_ok=True)
         if os.name == 'nt':
-            subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(real.joinpath(*sub))], check=True, capture_output=True)
+            subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(Path(real).joinpath(*sub))], check=True, capture_output=True)
         else:
-            os.symlink(real.joinpath(*sub), link)
+            os.symlink(Path(real).joinpath(*sub), link)
         links.append(link)
     with open(data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json', 'w', encoding='utf-8') as f:
         json.dump(doc, f)
@@ -204,7 +198,26 @@ def _real_nat(south=('ETIKI', 'REGHI')):
                 os.rmdir(link) if os.name == 'nt' else os.unlink(link)      # the junction itself, never the real data behind it
             except OSError:
                 pass
+        if any(os.path.lexists(link) for link in links):
+            return False      # a link is still there: nothing is removed below it
         shutil.rmtree(td, ignore_errors=True)
+        return True
+    return data, clean
+
+
+def _real_nat(south=('ETIKI', 'REGHI')):
+    """A data folder (Path) = the REAL navigation data of the workstation (junctions, read only) + the dated test NAT message `south` (default `_nat_test()`) ; None when the real base is not here (the case says it is skipped). Cleaned at the end of the process (`_hybrid_data`)."""
+    import atexit
+    import json
+    from pathlib import Path
+    real = Path('E:/DEFA/data')
+    if not (real / 'sia' / 'base' / 'us').is_dir() or not (real / 'route' / 'rad.json.gz').is_file():
+        return None
+    doc = _nat_test(south)
+    key = json.dumps(doc, sort_keys=True)
+    if key in _hybrid:
+        return _hybrid[key]
+    data, clean = _hybrid_data(real, doc)
     atexit.register(clean)
     _hybrid[key] = data
     return data
@@ -11138,8 +11151,8 @@ def k287(c):
 
 
 @case('K289', 'Route engine, SOG-0354: a flight that crosses the ATLANTIC has longer bounds (12 s for the head route, 12 s for a search, 20 s in all) so that the route that EXISTS is found instead of a fallback proposal; the flights of Europe keep their 5 s / 15 s; a CHECK keeps its 5 s; the answer says it (`budget`: { ocean, head_s, search_s, total_s })',
-      'K', static=True,
-      rule='Ergonomics session 16:06 (decision on the question (a) of AeroDB, L2b 1): measured on the real base, EIDW → KJFK and EIDW → KBOS DO have a route (the NAT E track and the North American Route N260B–N271B, already in the base) that the search finds in about 7 s of search; the head bound of 5 s (SOG-0371) cut it at 6 000 states of the 15 000 it needs and the screen got a fallback proposal. « A real route in ten seconds is worth more than a proposal in eight. » For a flight that crosses the Atlantic ONLY: the head route 10 s, a search 12 s, the alternatives and the fallback proposals only if time remains, 20 s in all. The criterion is decided BEFORE the search (no route known yet): the departure west of 35°W and the arrival east of 15°W, or the reverse (the very test of `nat_layer.hint`); the direct distance alone is not used (a flight of Europe of 1 500 NM keeps its 5 s). The answer carries `budget` so that the screen can say that it searches longer. The case is on the real base when it is there (skipped otherwise).')
+      'K', tags=('alone',), static=True,
+      rule='TO PLAY ALONE (tag `alone`: `run.py --grep K289`; in a pass of many cases the machine is loaded and the bounds of 12 / 20 s of the engine cut the route short: « proposal », green alone 3 times of 3, 17 Nov 2026; the duration of a route is judged in the matrix, not here). Ergonomics session 16:06 (decision on the question (a) of AeroDB, L2b 1): measured on the real base, EIDW → KJFK and EIDW → KBOS DO have a route (the NAT E track and the North American Route N260B–N271B, already in the base) that the search finds in about 7 s of search; the head bound of 5 s (SOG-0371) cut it at 6 000 states of the 15 000 it needs and the screen got a fallback proposal. « A real route in ten seconds is worth more than a proposal in eight. » For a flight that crosses the Atlantic ONLY: the head route 10 s, a search 12 s, the alternatives and the fallback proposals only if time remains, 20 s in all. The criterion is decided BEFORE the search (no route known yet): the departure west of 35°W and the arrival east of 15°W, or the reverse (the very test of `nat_layer.hint`); the direct distance alone is not used (a flight of Europe of 1 500 NM keeps its 5 s). The answer carries `budget` so that the screen can say that it searches longer. The case is on the real base when it is there (skipped otherwise).')
 def k289(c):
     import sys
     import time
@@ -12888,3 +12901,34 @@ def k310(c):
         c.eq(nohour, ('A', None, [], None, 'east'), 'a request with a date and NO hour (the validity of the hours is not checked): the track A is taken and there is no `sections.entry` (red at the first draft: the entry hour crashed on the missing hour)', what='no hour')
         c.eq((inside, outside), (('A', {'point': 'ENTRA', 'time': '2026-11-10T07:05Z', 'nm': 1164.0, 'speed_kt': 450}, [], None, 'east'),
                                       (None, {'point': 'ENTRA', 'time': '2026-11-10T13:05Z', 'nm': 1164.0, 'speed_kt': 450}, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T13:02Z', 'entry': 'ENTRA', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}], 'ENTRA', 'east')), 'KJFK → EGLL at FL370: at 04:30Z the track A is taken and `sections.entry` says its entry (ENTRA) and the hour; at 10:30Z A is set aside for the HOUR with its fields, and the route taken (free) says its own entry', what='engine')
+
+
+@case('K315', 'The temporary data folder of the real-base cases (`_hybrid_data`) removes its junctions ITSELF and never the navigation behind them: the target and its content survive the cleaning; if a junction cannot be removed nothing is deleted below it',
+      'K', static=True,
+      rule='Ergonomics session, 17 Nov 9:44 (before the push of the cases K289, K290, K296, K297, K302, K303, K305 that read the real navigation of the workstation through junctions): the cleaning of the temporary folder must NEVER erase the real data. `clean()` calls `os.rmdir` on each junction (it removes the link, not the folder it points to; `os.unlink` for a symbolic link elsewhere) and removes the temporary folder with `shutil.rmtree` ONLY when every junction is gone; if one cannot be removed the folder is left (a few kilobytes) rather than walked. Proof on a DUMMY target: a folder with files stands for the real navigation.')
+def k315(c):
+    import os
+    import tempfile
+    from pathlib import Path
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        real = Path(td) / 'real'
+        for sub, name in ((('sia', 'base', 'us'), 'a.json'), (('proc',), 'p.json'), (('route',), 'rad.json.gz')):
+            (real.joinpath(*sub)).mkdir(parents=True)
+            (real.joinpath(*sub) / name).write_text('keep me', encoding='utf-8')
+        files = [real / 'sia' / 'base' / 'us' / 'a.json', real / 'proc' / 'p.json', real / 'route' / 'rad.json.gz']
+        data, clean = _hybrid_data(real, {'tracks': []})
+        temp = data.parent
+        c.eq(((data / 'sia' / 'base' / 'us' / 'a.json').read_text(encoding='utf-8'), (data / 'route' / 'rad.json.gz').is_file(), (data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json').is_file()), ('keep me', True, True),
+             'the temporary folder sees the dummy navigation through the junctions and has its own NAT file', what='seen')
+        real_rmdir = os.rmdir
+
+        def refuse(path, *a, **k):
+            raise OSError('refused')
+        os.rmdir = refuse
+        try:
+            went = clean()
+        finally:
+            os.rmdir = real_rmdir
+        c.eq((went, temp.exists(), all(f.read_text(encoding='utf-8') == 'keep me' for f in files)), (False, True, True), 'if a junction cannot be removed NOTHING is deleted: the temporary folder stays and the target is untouched', what='refused')
+        went = clean()
+        c.eq((went, temp.exists(), all(f.read_text(encoding='utf-8') == 'keep me' for f in files), (real / 'sia' / 'base' / 'us').is_dir()), (True, False, True, True), 'the cleaning removes the links and the temporary folder; the target and its content survive', what='cleaned')
