@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "cfc81d7",
-  "fiches": 448,
+  "organisation": "7289626",
+  "fiches": 449,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2853,6 +2853,27 @@
      "de": "Routengenerierung aus den RAD-Dateien von Eurocontrol (und dem FRA)",
      "es": "Generación de rutas a partir de los archivos RAD de Eurocontrol (y del FRA)",
      "rank": 130
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-atlantique",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; Atlantique",
+    "en": "Routes ; Atlantique",
+    "de": "Routes ; Atlantique",
+    "es": "Routes ; Atlantique"
+   },
+   "items": [
+    {
+     "id": "SOG-0450",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes de l'Atlantique : la comparaison « route NAT ou route libre » coûte trois à quatre secondes, même quand elle ne change rien",
+     "en": "Atlantic routes: the “NAT track or free route” comparison costs three to four seconds, even when it changes nothing",
+     "de": "Atlantikrouten: der Vergleich „NAT-Track oder freie Route“ kostet drei bis vier Sekunden, auch wenn er nichts ändert",
+     "es": "Rutas del Atlántico: la comparación «ruta NAT o ruta libre» cuesta de tres a cuatro segundos, aunque no cambie nada"
     }
    ]
   },
