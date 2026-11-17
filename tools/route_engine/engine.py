@@ -9,6 +9,7 @@ from . import planning
 from . import rad_flight
 from . import nav_data
 from . import nat_layer     # SOG-0263
+from . import fra_floor      # SOG-0401 (lot 3) : les voies volées au-dessus du plancher de route libre (RAD, annexe 3B « FRA LIM »)
 from . import dct_limits    # SOG-0401 (lot 3) : la limite des directs au raccord d'un terrain (RAD, annexe 3A « Conditions »)
 
 HERE = Path(__file__).resolve().parent
@@ -432,7 +433,7 @@ class Nav:
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         terminal=terminal or {}
         cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','_fuel_model','search_density','_rad_avoid']}
-        cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,via,str(when),enable_fra,cost_fields],sort_keys=True)
+        cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,via,str(when),enable_fra,cost_fields,sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)
         if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
         if cache_key in self._routing_cache:
             self.graph_seconds=0.0
@@ -485,6 +486,16 @@ class Nav:
                     else:unknown+=1
                 g[u]=permitted
             if not any(g.values()):raise ValueError(f'Unable RNAV : aucun segment IFR conventionnel confirmé dans ce réseau. {rejected} sens de segments exigent RNAV ; {unknown} ont une exigence inconnue. Aucun DCT de substitution n’a été inventé.')
+        floors=getattr(self,'fra_floors',None)      # SOG-0401 (lot 3) : une voie de la Suisse ou de l'Italie n'existe pas au-dessus du plancher de la route libre (RAD, annexe 3B) : son plafond est ramené à ce plancher (une voie « basse » : évitée, jamais interdite) ; la recherche ne la vole plus à FL350
+        if floors:
+            for u in list(g):
+                capped=None
+                for k,(other,e) in enumerate(g[u]):
+                    f=floors.get(e.get('zone'))
+                    if f and e.get('route')!='DCT' and not e.get('procedure_id') and e.get('kind') not in ('FRA','FRA_GATE') and isinstance(e.get('upper'),(int,float)) and e['upper']>f*100:
+                        if capped is None:capped=list(g[u])
+                        capped[k]=(other,dict(e,upper=f*100,fra_floor_cap=f))
+                if capped is not None:g[u]=capped
         for key in list(g):
             g[key]=[(other,e) for other,e in g[key] if isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100 and e['upper']>=e['lower']]
             if not g[key]: del g[key]
@@ -744,7 +755,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
     if getattr(nav,'procedures',None):
         for ad in [dep,arr]:
             if ad in nav.ads:nav.procedures.prepare(ad)
-    generated=request.get('mode','calculate')=='calculate'; blocks=rad.blocks(dep,arr,None)
+    generated=request.get('mode','calculate')=='calculate'; fallback=bool(request.get('_rad_fallback'))      # SOG-0401 (règle de l'ergonome) : le calcul ne perd jamais une route à cause d'une règle qu'il sait décider : sans route sans infraction, la MEILLEURE route est rendue (`_rad_fallback`) et les règles qu'elle enfreint sont DITES (une REVUE, jamais un refus)
+    blocks=[] if fallback else rad.blocks(dep,arr,None)
     route=str(request.get('route','')).strip().upper(); issues=[]; legs=[]
     def issue(level,text): issues.append(dict(level=level,text=text))
     if generated:
@@ -842,7 +854,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
         legs.append(dict(start=nav.nodes[a],end=nav.nodes[b],via=e['route'],kind=e.get('kind','AIRWAY' if e['route']!='DCT' else 'DCT'),
             data_gap=e.get('data_gap'),fra_area=e.get('fra_area'),from_role=e.get('from_role'),to_role=e.get('to_role'),fra_rows=e.get('fra_rows'),nm=round(e['nm'],2),
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
-            procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_partial=bool(e.get('partial')),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
+            fra_floor_cap=e.get('fra_floor_cap'),procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_partial=bool(e.get('partial')),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
             nat=e.get('nat'),nat_link=e.get('nat_link'),origin=e.get('origin')))   # SOG-0078 ; SOG-0354 L5 (2) : origin='random' = route libre CRÉÉE (jamais lue) ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
@@ -886,6 +898,19 @@ def assess(request,_nav=None,_rad=None,_path=None):
         for r in band_runs:
             for l in r['legs']:
                 l['alerts'].append(r['short']); l['compatible']=False
+    floor_of=fra_floor.floors(rad)      # SOG-0401 (lot 3) : PROF407 d'Eurocontrol : une voie de la Suisse ou de l'Italie que le PROFIL met au-dessus du plancher de la route libre n'existe pas ; ERREUR pour une route SAISIE, REVUE pour une route de la recherche (qui garde la route la plus courte et le dit : à remplacer par des directs entre points de route libre, non calculé)
+    floor_runs=fra_floor.findings(legs,floor_of)
+    floor_unknown=fra_floor.unknown(legs,floor_of)
+    if floor_runs and (generated or _path is not None):
+        issue('REVUE',f'Voies au-dessus du plancher de la route libre : {sum(len(r["legs"]) for r in floor_runs)} tronçon(s) de voie ({", ".join(list(dict.fromkeys(r["legs"][0]["via"] for r in floor_runs))[:6])}) dans un espace de route libre (RAD, annexe 3B FRA LIM) : la voie n’y existe pas, Eurocontrol répondrait PROF407 ; à remplacer par des directs entre points de route libre (non calculé).')
+    elif floor_runs:
+        for r in floor_runs[:fra_floor.MAX_ISSUES]:issue('ERREUR',r['text'])
+        if len(floor_runs)>fra_floor.MAX_ISSUES:issue('ERREUR',f'{sum(len(r["legs"]) for r in floor_runs[fra_floor.MAX_ISSUES:])} autres tronçons de voie volés dans un espace de route libre, non détaillés.')
+    if floor_unknown:issue('REVUE',f'{floor_unknown} tronçon(s) de voie d’un pays à plancher de route libre dont le profil ne donne pas l’altitude : à examiner.')
+    for r in floor_runs:
+        for l in r['legs']:
+            l['alerts'].append(r['short'])
+            if not (generated or _path is not None):l['compatible']=False
     nat_legs=[l['nat'] for l in legs if l.get('nat') and not l.get('nat_link') and (l['via'].startswith('NAT') or l['nat'].get('out_of_window') or l['nat'].get('partial'))]   # SOG-0263 : les tracks du jour sont prises même périmées, et dites
     seen_partial=set()
     if nat_legs:
@@ -935,7 +960,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
         hit=bool(affected)
         if hit:
             violations.append(block)
-            issue('ERREUR',f'Interdiction RAD explicite {block["id"]} ({block["sheet"]}, ligne {block["row"]}).')
+            issue('REVUE' if fallback else 'ERREUR',f'Interdiction RAD explicite {block["id"]} ({block["sheet"]}, ligne {block["row"]}){" enfreinte : aucune route sans infraction, la meilleure est rendue" if fallback else ""}.')
             for l in affected: l['alerts'].append('Interdiction RAD '+block['id'])
     # Full-flight conditions see the expanded SID/STAR, not only filed endpoints.
     elapsed=0.
@@ -944,7 +969,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes)
     atomic_ids={(b['sheet'],b['row']) for b in violations}
     for finding in rad_summary['findings']:
-        if (finding['sheet'],finding['row']) not in atomic_ids:issue('ERREUR',finding['text'])
+        if (finding['sheet'],finding['row']) not in atomic_ids:issue('REVUE' if fallback else 'ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'])
         for index in finding['segments']:
             leg=legs[index];leg['alerts'].append('RAD '+finding['id']+' : '+', '.join(finding['phases']));leg['compatible']=False
     for c in candidates:
@@ -982,7 +1007,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     result=dict(ok=True,status=status,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,data_gaps=data_gaps,coverage_complete=not data_gaps,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
-        coverage=nav.coverage,rad_summary=rad_summary,dct_limits=dct_summary,rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
+        coverage=nav.coverage,rad_summary=rad_summary,dct_limits=dct_summary,fra_floors=dict(applied=floor_of,not_read=[fra_floor.NOT_READ[z] for z in sorted(fra_floor.NOT_READ)],runs=len(floor_runs),unknown=floor_unknown),rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
         fra_source=dict(file=nav.fra.book['file'],start=nav.fra.book['start'],sha256=nav.fra.book['sha256'],points=len(nav.fra.records)) if fra_loaded else None,
         procedures_used=list({l['procedure_id']:dict(id=l['procedure_id'],name=l['procedure_name'],airport=l['procedure_airport'],runways=l['runways'],cycle=l['source_cycle']) for l in legs if l.get('procedure_id')}.values()),
         procedure_coverage={ad:nav.procedures.stats.get(ad,{}) for ad in [dep,arr]},

@@ -193,7 +193,7 @@ def to_view(plan_result, request, include_raw=False):
     why = str(p.get('error') or '').strip()
     message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
     changes = (p.get('profile_changes') or [])[:MAX_CHANGES] if p.get('ok') else []
-    return {'ok': True, 'request': bounded_request(request), 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': rad_view(p), 'dct_limits': p.get('dct_limits') if p.get('ok') else None,
+    return {'ok': True, 'request': bounded_request(request), 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': rad_view(p), 'dct_limits': p.get('dct_limits') if p.get('ok') else None, 'fra_floors': p.get('fra_floors') if p.get('ok') else None,
             'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': message, 'status': status, 'budget': plan_result.get('budget'), 'timing': plan_result.get('timing'), 'sections': plan_result.get('sections'), 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
             'profile_changes': changes, 'profile_changes_total': p.get('profile_changes_total', len(changes)) if p.get('ok') else 0,       # SOG-0401 : de la route de tête seulement
             **({'plan': plan_result} if include_raw else {})}

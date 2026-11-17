@@ -16,7 +16,7 @@ import time
 import json
 import threading
 
-from . import engine, fra, layered, nat_layer, planning, recovery
+from . import engine, fra, fra_floor, layered, nat_layer, planning, recovery
 
 FIELDS = {
     'proposals': bool, 'sections': bool, 'fl_basis': str, 'dep': str, 'arr': str, 'route': str, 'via': (list, str), 'fl': int, 'date': str, 'mode': str, 'radius': (int, float), 'dep_runway': str, 'arr_runway': str,
@@ -235,7 +235,9 @@ def plan(request, root):
     request = dict(request, root=root)
     request.setdefault('date', '2026-11-09T12:00')
     context_began = time.perf_counter()
-    nav, rad = context(request, root)      # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte est refait à chaque demande et disparaît avec elle
+    nav, rad = context(request, root)
+    nav.fra_floors = fra_floor.floors(rad) if fra_floor.CAP_SEARCH else {}      # SOG-0401 (lot 3) : les planchers de route libre de la Suisse et de l'Italie (RAD, annexe 3B) : le graphe de la recherche y ramène le plafond des voies SEULEMENT si CAP_SEARCH (faux par défaut : la route la plus courte est gardée)
+    # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte est refait à chaque demande et disparaît avec elle
     entered = str(request.get('route', '')).strip().upper()
     words = [engine.split_level(w)[0] for w in entered.split()]      # SOG-0401 : « POINT/Fnnn » est le point POINT (le groupe de niveau se lit dans engine.assess)
     airways = {e['route'] for e in nav.edges}
@@ -311,6 +313,17 @@ def plan(request, root):
             except (ValueError, SearchBudget) as e:
                 rad_retries.append(dict(excluded=avoids, error=str(e)))
                 break
+    if request.get('mode', 'calculate') == 'calculate' and not primary.get('ok') and not request.get('_rad_fallback') and 'Budget de recherche atteint' not in str(primary.get('error') or '') and rad.blocks(str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper(), None):
+        # SOG-0401 (règle de l'ergonome, 17 nov.) : « le calcul ne perd jamais une route à cause d'une règle qu'il sait décider » : aucune route n'a été trouvée avec les interdictions décidées comme blocs : la recherche est refaite SANS ces blocs, la meilleure route est rendue et les règles qu'elle enfreint sont dites (REVUE) ; « proposition » seulement quand rien ne relie les deux terrains
+        try:
+            check_budget()
+            fallback = engine.assess(dict(request, _rad_fallback=True), nav, rad)
+            if fallback.get('ok'):
+                primary = fallback
+                request['_rad_fallback'] = True
+                primary.setdefault('issues', []).insert(0, {'level': 'REVUE', 'text': 'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue et les règles qu’elle enfreint sont dites ci-dessous (à examiner).'})
+        except (ValueError, SearchBudget):
+            pass
     for x in avoids if request.get('mode', 'calculate') == 'calculate' else []:      # SOG-0354 L5 (4) défaut 4 : un point écarté est un DÉTOUR : la réponse le dit, avec les deux distances
         if x.get('fallback') and primary.get('distance_nm') and head_nm:
             primary.setdefault('issues', []).append({'level': 'REVUE', 'text': f"Point {x['point']} écarté (règle RAD {x['id']} : passer par le point obligatoire n'a pas abouti) : détour de {primary['distance_nm'] - head_nm:+.0f} NM ({head_nm:.0f} → {primary['distance_nm']:.0f} NM)."})

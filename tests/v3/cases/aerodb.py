@@ -14733,3 +14733,126 @@ def k437(c):
     c.eq(others, [], 'no other file of tools/ sets a priority of its own: the decision is in tools/low_priority.py only (route_matrix.py, a stand-alone tool of AeroDB that lowers itself, is the one exception to migrate to low_priority.lower_self)', what='one place')
     sites = {s: 'low_priority.popen_args' in (tools / s).read_text(encoding='utf-8') for s in ('pdf_guard.py', 'regen/base.py', 'regen/aircraft.py', 'regen/weather.py')}
     c.eq(sites, {'pdf_guard.py': True, 'regen/base.py': True, 'regen/aircraft.py': True, 'regen/weather.py': True}, 'the four heavy sites (the PDF reader, the headless browser of the builds, the aircraft scripts, the world weather) start their child by popen_args', what='sites')
+@case('K332', 'Route engine, SOG-0401 lot 3 (forms of the RAD): (A) a rule « ONLY AVBL FOR TFC » with NUMBERED alternatives of DEP / ARR lists (« 1. ARR (LSGC, LSZH) 2. DEP (LSZA) ») is DECIDED on the flight alone — the alternatives are an OR, a rule of several parts « ---------- » is judged part by part, a time « 05:00-23:00 (03:00-23:00) » is read when both writings say the same —, an ERREUR for a typed route, a block of the search for a calculated one; and the airways of Switzerland and Italy above the FLOOR of the free route (RAD, annex 3B « FRA LIM », « ABV FL195 », « FRA ») are flown at that floor at most: a typed route whose PROFILE puts them above is an ERREUR (PROF407 of Eurocontrol), the search keeps the shortest route and says it (the switch `CAP_SEARCH`, false, would cap their ceiling at the floor); a damaged cell gives no floor; the other countries are not read (said)',
+      'K', static=True,
+      rule='SOG-0401 lot 3 (ergonomics session, 17 Nov: « règles RAD de forme A, ONLY AVBL FOR TFC à listes DEP/ARR, décidées sur le seul vol » and « planchers de route libre de l\'annexe 3B pour la Suisse et l\'Italie ; l\'Allemagne en trois tranches reste à examiner, dite »). Measured on the exact route of the user (EDDF → LFMN, FL350): of the 11 RAD rules of PROF204/205 present in the RAD of the day, 4 were of the form A and none was decided (« numbered list: not decided »); three now are (LSLI1008, ED3518, LI2088), the fourth carries a FLT-TYPE (not form A). The eight PROF407: three were already said by the band control (SOG-0401, point 4), the five others are airways of Switzerland (T103, Z138, Z651) and Italy (M858, Q712, Z185) that the base gives up to FL660 while the RAD makes the space free route from FL195: they are now said (an ERREUR per run of legs, whatever the descent of the end of the route: Eurocontrol judges the level FILED). On the 18 flights EDDF, EDDM, LFPG ↔ LFMN, LIRF, LEMD the search flew those airways at FL350 9 times (T125, Z651, Z119, N850, Z424): it now says it (a REVUE); capping their ceiling made the route descend to FL195 over the Alps (up to +14 %: legal, absurd, refused by the ergonomics session) and stays a switch. Bench: the fixture RAD with rules written for it (never the text of the workbook) and the fixture base moved to the zone `ch`.')
+def k332(c):
+    import json
+    import os
+    import shutil
+    import sys
+    import tempfile
+    _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import fra_floor as FF, import_books as I, plan as PL, rad_flight as RFL, view as V
+    pad = lambda row: row + [''] * (17 - len(row))
+    # 1. the grammar of form A (unit)
+    c.eq((RFL.alternatives('1. ARR (AAAA, BBBB) 2. DEP (CCCC)'), RFL.alternatives('1. VIA X EXC a. VIA Y'), RFL.alternatives('1. DEP AAAA'), RFL.alternatives('1. DEP AAAA 3. DEP BBBB'), RFL.alternatives('DEP AAAA')),
+         (['ARR (AAAA, BBBB)', 'DEP (CCCC)'], None, None, None, None),
+         'the alternatives: a numbered list of at least two (1., 2., …) in order; a sub-list « a. », an exception, a single item, a gap in the numbers, no number: not decided here', what='alternatives')
+
+    class G:
+        groups = {}
+
+        def match(self, spec, ad):
+            import fnmatch
+            return any(fnmatch.fnmatchcase(ad, t) for t in RFL.names(spec))
+    ctx = lambda dep, arr: dict(dep=dep, arr=arr, all=set(), points=set())
+    cond = lambda text, dep, arr: RFL.condition(text, ctx(dep, arr), G())
+    c.eq([cond('1. ARR (AAAA, BBBB) 2. DEP (CCCC)', 'XXXX', 'AAAA'), cond('1. ARR (AAAA, BBBB) 2. DEP (CCCC)', 'CCCC', 'XXXX'), cond('1. ARR (AAAA, BBBB) 2. DEP (CCCC)', 'XXXX', 'YYYY'), cond('1. DEP EDDM & ARR LS** 2. ARR EDTM', 'EDDM', 'LSZH'), cond('1. DEP EDDM & ARR LS** 2. ARR EDTM', 'EDDF', 'EDTM'), cond('1. DEP EDDM & ARR LS** 2. ARR EDTM', 'EDDF', 'LFMN')],
+         [True, True, False, True, True, False], 'the condition is an OR of the alternatives, each one a conjunction (a pattern LS** is read)', what='condition')
+    c.eq(RFL.split_parts('ONLY AVBL FOR TFC\n1. A\n2. B\n----------\nCOMPULSORY FOR TFC\nDEP X', 'H24\n----------\n04:00-22:30'), [('ONLY AVBL FOR TFC 1. A 2. B', 'H24'), ('COMPULSORY FOR TFC DEP X', '04:00-22:30')],
+         'a rule of several parts: one text and one time per part', what='parts')
+    import datetime as dt
+    t0, t1 = dt.datetime(2026, 11, 9, 12, 0), dt.datetime(2026, 11, 9, 12, 30)
+    c.eq([RFL.clock_active(x, t0, t1) for x in ('H24', '05:00-23:00', '05:00-23:00 (03:00-23:00)', '13:00-14:00 (11:00-14:00)', '13:00-14:00 (15:00-16:00)', 'sunrise')], [True, True, True, None, False, None],
+         'a time « winter (summer) » is read when both say the same (active, or not); when they disagree the season is not decided: none', what='clock')
+    # 2. the typed route against the fixture RAD: the rules of form A
+    rules = [pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9201', '', '', '', 'SITET', 'ONLY AVBL FOR TFC\n1. ARR (ZZZZ, QQQQ)\n2. DEP (YYYY)', 'H24', 'C', 'form A, not satisfied']),
+             pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9202', '', '', '', 'KEPAD', 'ONLY AVBL FOR TFC\n1. ARR (EIDW)\n2. DEP (YYYY)', 'H24', 'C', 'form A, satisfied']),
+             pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9203', '', '', '', 'BOYNE', 'ONLY AVBL FOR TFC\n1. DEP (LFPO)\n2. DEP (YYYY)\n----------\nCOMPULSORY FOR TFC\nDEP (LFPO) & ARR (EIDW)', 'H24\n----------\nH24', 'C', 'two parts, satisfied']),
+             pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9204', '', '', '', 'OLZOM', 'NOT AVBL FOR TFC\n1. DEP (LFPO)\n2. DEP (YYYY)', '05:00-23:00 (03:00-23:00)', 'C', 'form A with a winter (summer) time, violated'])]
+    floor_rows = [RF.RAD_HEAD, pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'ZQ_FRA', 'ZQAAACC', 'ABV FL195', 'H24', 'FRA', 'ALW']), pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'ZQ_LOW', 'ZQAAACC', 'BLW FL195', 'H24', '0NM', 'NOT ALW'])]
+
+    def run(zone, floor_prefix, rules_on=True, **req):
+        sheets = RF.rad_sheets()
+        out = []
+        for n, rows in sheets:
+            if n == 'Annex 2B' and rules_on:
+                rows = rows + rules
+            if n == 'Annex 3B FRA LIM':
+                rows = [RF.RAD_HEAD] + [pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'X_FRA', floor_prefix + 'AAACC', 'ABV FL195', 'H24', 'FRA', 'ALW']), pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'X_LOW', floor_prefix + 'AAACC', 'BLW FL195', 'H24', '0NM', 'NOT ALW'])]
+            out.append((n, rows))
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            old = os.path.join(data, 'sia', 'base', 'xx')
+            if zone != 'xx':
+                new = os.path.join(data, 'sia', 'base', zone)
+                shutil.move(old, new)
+                d = os.path.join(new, '2026-10-29')
+                for f in os.listdir(d):
+                    p = os.path.join(d, f)
+                    with open(p, encoding='utf-8') as fh:
+                        doc = json.load(fh)
+                    doc['zone'] = zone
+                    with open(p, 'w', encoding='utf-8') as fh:
+                        json.dump(doc, fh)
+            rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad_file, out)
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad_file)[1]]))
+            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **req)
+            request = V.to_request(args)
+            res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+            return res, V.to_view(res, request)
+    typed = {'action': 'check', 'route': 'LFPO DCT OLZOM B1 SITET A1 KEPAD A1 BOYNE DCT EIDW'}
+    res, view = run('xx', 'ZQ', **typed)
+    p = res['primary']
+    states = {(m['sheet'], m['id']): m['assessment'] for m in p['rad'] if m['id'] in ('LF9201', 'LF9202', 'LF9203', 'LF9204')}
+    c.eq({k[1]: v[:26] for k, v in states.items()}, {'LF9201': 'INFRACTION : interdiction ', 'LF9202': 'Condition simple évaluée s', 'LF9203': 'Condition simple évaluée s', 'LF9204': 'INFRACTION : condition RAD'},
+         'the four rules of the bench: LF9201 (not satisfied: neither ARR in the list nor DEP) violated, LF9202 (ARR EIDW) satisfied, LF9203 (two parts, each satisfied) satisfied, LF9204 (a winter (summer) time, DEP LFPO) violated: decided, none « to interpret »', what='states')
+    errs = [i['text'] for i in p['issues'] if i['level'] == 'ERREUR' and 'LF92' in i['text']]
+    c.eq([x[:33] for x in errs if 'LF9201' in x] + [x[:20] for x in errs if 'LF9204' in x], ['Interdiction RAD explicite LF9201', 'RAD LF9204 (Annex 2B'], 'the two violated rules are an ERREUR of the typed route: the explicit prohibition of the point (the rule has an H24 time: the search knows it too) and the finding of the whole flight (a time « winter (summer) »)', what='errors')
+    c.eq(p['status'], 'ERREURS DÉTECTÉES', 'and the status says it', what='status')
+    # 3. the floor of the free route: the cells, the limits of the reading (Sécurisation), the judgement by the PROFILE
+    book = lambda rows, key='unit': type('R', (), {'book': {'sha256': key, 'sheets': {'Annex 3B FRA LIM': [{'v': pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'X', 'LSAAACC'] + r)} for r in rows]}}, 'active': lambda self, r: True})()
+    ok = lambda cell: FF.floors(book([[cell, 'H24', 'FRA', 'ALW']], key=None))
+    c.eq((ok('ABV FL195'), ok('ABV FL10'), ok('ABV FL900'), ok('ABV FL195' + ' ' * 5000), FF.CACHE.get(None), FF.floors(book([['ABV FL195', 'H24', 'FRA', 'ALW'], ['BTN FL195-FL245', 'H24', 'FRA', 'ALW']], key='k1')), FF.floors(book([['ABV FL195', 'H24', 'FRA', 'ALW'], ['ABV FL245', 'H24', 'FRA', 'ALW']], key='k2'))),
+         ({'ch': 195}, {}, {}, {}, None, {'ch': 195}, {}),
+         'the floor of a country: FL195 from « ABV FL195 »; a cell « ABV FL10 » or « ABV FL900 » (damaged or falsified: not a level of a free route, FL100 to FL500) or a cell of more than 4 000 signs gives NO floor (the country stays to examine); a workbook with no digest is not cached; two rows that agree (ABV FL195, BTN FL195-FL245) give the floor, two that disagree none', what='floors')
+    legs = lambda *alts: [dict(via='T1', kind='AIRWAY', source_zone='ch', start={'id': f'P{n}'}, end={'id': f'P{n + 1}'}, altitude_start_ft=a, altitude_end_ft=b) for n, (a, b) in enumerate(alts)]
+    fl = {'ch': 195}
+    c.eq([len(FF.findings(legs((5000, 12000)), fl)), len(FF.findings(legs((12000, 30000)), fl)), len(FF.findings(legs((35000, 35000)), fl)), len(FF.findings(legs((35000, 9000)), fl)), len(FF.findings(legs((5000, 12000), (12000, 18000)), fl)),
+          len(FF.findings(legs((None, None)), fl)), FF.unknown(legs((None, None), (30000, 35000)), fl), len(FF.findings(legs((35000, 35000)), {}))],
+         [0, 1, 1, 1, 0, 0, 1, 0],
+         'a leg is judged at the altitude the PROFILE gives it: a climb that stays under the floor (5 000 → 12 000 ft): no error; a climb through it, a cruise, a descent from above: an error; an unknown profile: none and counted « to examine »; a country with no floor: nothing', what='profile')
+    runs = FF.findings(legs((12000, 30000), (35000, 35000), (35000, 9000)), fl)
+    c.eq((len(runs), len(runs[0]['legs']), 'Tronçons T1 P0–P1–P2–P3' in runs[0]['text'], 'FL350' in runs[0]['text'], 'plancher FL195' in runs[0]['text']), (1, 3, True, True, True), 'the consecutive legs of an airway make ONE run: the airway, the points, the highest level of the run and the floor', what='run')
+    res2, view2 = run('ch', 'LS', **typed)
+    p2 = res2['primary']
+    fl_err = [i['text'] for i in p2['issues'] if i['level'] == 'ERREUR' and 'route libre' in i['text']]
+    c.eq((len(fl_err) >= 1, 'LS**, plancher FL195' in ' '.join(fl_err), p2['fra_floors']['applied'], 'Allemagne' in ' '.join(p2['fra_floors']['not_read'])), (True, True, {'ch': 195}, True),
+         'the airways of the zone ch that the profile puts above the floor FL195 (RAD annex 3B, LS rows with « FRA »): an ERREUR per run of legs of the TYPED route (the airway, the points, the floor, the level, PROF407), the floor is in `fra_floors.applied`, the countries not read are said', what='typed floor')
+    res3, view3 = run('xx', 'LS', **typed)
+    c.eq([i['text'] for i in res3['primary']['issues'] if 'route libre' in i['text']], [], 'the same route in a zone that is not Switzerland nor Italy (xx): nothing is said (the other countries are not read)', what='other zone')
+    # the SEARCH keeps the shortest route and says it (the ergonomics session: a route that descends to FL195 over the Alps is legal and absurd)
+    res4, view4 = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': []})
+    p4 = res4['primary']
+    c.eq((p4['ok'], [l for l in p4['legs'] if l.get('fra_floor_cap')], [i['text'] for i in p4['issues'] if i['level'] == 'ERREUR' and 'route libre' in i['text']], sum('Voies au-dessus du plancher de la route libre' in i['text'] for i in p4['issues'] if i['level'] == 'REVUE'), FF.CAP_SEARCH),
+         (True, [], [], 1, False), 'the CALCULATED route (CAP_SEARCH false): found, the airways are NOT capped, no ERREUR, ONE REVUE says that those legs are in a free-route space (to be replaced by directs between points of the free route: not calculated)', what='calculated floor')
+    FF.CAP_SEARCH = True
+    try:
+        res6, _ = run('ch', 'LS', rules_on=False, **{'action': 'compute', 'via': []})
+    finally:
+        FF.CAP_SEARCH = False
+    capped = [l for l in res6['primary']['legs'] if l.get('fra_floor_cap')]
+    c.eq((res6['primary']['ok'], len(capped) >= 1, all(l['upper'] <= 19500 for l in capped)), (True, True, True), 'the switch CAP_SEARCH true: the ceiling of those airways is the floor in the graph of the search (`fra_floor_cap` FL195 on the leg), never above it', what='cap')
+    res5, view5 = run('xx', 'ZQ', **{'action': 'compute', 'via': []})
+    p5 = res5['primary']
+    said5 = [i for i in p5['issues'] if 'LF9201' in i['text']]
+    c.eq((p5['ok'], any('SITET' in (l['start']['id'], l['end']['id']) for l in p5['legs']), [i['level'] for i in said5], 'aucune route sans infraction' in ' '.join(i['text'] for i in p5['issues']), [i['level'] for i in p5['issues'] if i['level'] == 'ERREUR'], view5['status']), (True, True, ['REVUE'], True, [], 'computed'),
+         'the rule of the ergonomics session: a CALCULATED route is never lost to a rule that is decided — with the rule LF9201 (form A, SITET, not satisfied by this flight) the only link of the bench goes through SITET: the search without the blocks gives the best route, the answer says « aucune route sans infraction », names the rule LF9201 in a REVUE (never an ERREUR) and the status is `computed` (red before: no route, a proposal)', what='calculated form A')
+    big = 'DEP (' + 'AAAA, ' * 1000 + 'BBBB)'
+    c.eq((RFL.condition(big, ctx('XXXX', 'YYYY'), G()), RFL.condition('DEP (AAAA, XXXX)', ctx('XXXX', 'YYYY'), G())), (None, True), 'a cell of more than 4 000 signs is not decided (the cost of the reading stays bounded); a short one is', what='bounded')
