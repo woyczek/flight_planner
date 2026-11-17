@@ -11299,7 +11299,7 @@ def k290(c):
         def __init__(self):
             self.nodes, self.calls, self.last_search, self.sections_info = nodes, [], None, None
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             if goals:      # SOG-0354 L5 (1 bis): ONE search to all the entries: { entry: { path, cost, band } }
                 self.calls.append((s, tuple(sorted(goals)), band, gate))
                 self.last_search = {'expanded': 5, 'seconds': 0.0, 'found': True}
@@ -11543,7 +11543,7 @@ def k293(c):
             self.nat_rejected = frozenset()
             self.stub = g      # the graph whose sections are straight legs (the two ends of the ocean)
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             if goals:      # SOG-0354 L5 (1 bis): ONE search to all the entries
                 self.calls.append((s, tuple(sorted(goals))))
                 self.last_search = {'expanded': 1, 'seconds': 0.0, 'found': True}
@@ -11846,7 +11846,7 @@ def k296(c):
         def __init__(self, boom=False):
             self.nodes, self.last_search, self.sections_info, self.boom = dict(nodes), None, None, boom
 
-        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None):
+        def search(self, graph, s, e, waypoints=(), rf=False, fa=False, band=None, gate=False, goals=None, need=None, max_states=None):
             if goals:
                 self.last_search = {'expanded': 1, 'seconds': 0.01, 'found': True}
                 return {x: {'path': [(s, x, {'nm': engine.nm(nodes[s], nodes[x]), 'route': 'DCT'})], 'cost': engine.nm(nodes[s], nodes[x]), 'band': (36000, 36000)} for x in goals}
@@ -13494,3 +13494,64 @@ def k323(c):
     c.eq((sec.get('chosen'), [(r['track'], r['code']) for r in sec.get('rejected', [])], 'NATA' in str((res.get('primary') or {}).get('route')), links and links[0][1]), ('A', [], True, 'ENTRA'),
          "the route A is taken: its entry ENTRA is reached by a link from a node of a high airway (the three nearest nodes, LOW1-LOW3, are on the airway L1 that stops at FL255 and are no longer the links); no « son entrée n'est pas atteignable » (red before: the flight got a free route)", what='reached')
     c.ok(bool(links) and links[0][0] in ('HI1', 'MIDUS'), 'the link into the entry starts from HI1 or MIDUS (the nodes of J1, ceiling FL660), never from LOW1-LOW3 (L1, FL255)', repr(links[:2]))
+
+
+@case('K324', 'Route engine, SOG-0412 (time): the search from the departure to the entries of the NAT routes stops as soon as the three cheapest entries are reached (`sections.EUROPE_NEED`), the others are said « non essayée » (code `bound`, never « inatteignable »); the full search is only made when no chain came out of the three (the routes of the three nearest entries are not usable) — measured on the real base, EIDW → KJFK at FL370: 15 020 states and 7 s for the six entries, 738 states and 0.05 s for three, the same route',
+      'K', static=True,
+      rule='SOG-0412 (the ergonomics session, 17 Nov: the matrix of the stack gave 72 routes of 72 towards the west with six entries reached, but EIDW → the six American airports « in » answered in 6.5 to 7.0 s, the criterion being 5 s; per step: the search of Europe, 5.7 s, 15 020 states for the six entries). `sections._solve` asks `_europe(..., need=EUROPE_NEED)`: the A* takes the entries out of its queue in the order of their cost, so the first three are the three cheapest; `info.europe.stopped` says the search was stopped by that bound. The routes of the entries not reached are `bound` (not tried), not `network`. When no route came out of the three (no skeleton, or no chain) the full search is made. Bench: five routes of one day for a flight KJFK → EGLL at FL370, three entries near the node HI1 of J1 and two farther. (1) all the routes have their exit on the network: the route of a near entry is taken, three entries reached, `stopped`, the two others `bound`; (2) the exit of the three near routes is far from every node of the network (no link, no way to EGLL): no chain by them, the full search is made, five entries reached, one of the far routes is taken.')
+def k324(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'HI1': (46.0, -58.0), 'ENT1': (47.0, -55.0), 'ENT2': (47.5, -54.0), 'ENT3': (48.0, -53.0), 'ENT4': (54.0, -45.0), 'ENT5': (55.0, -44.0),
+           'EXITA': (52.0, -15.0), 'DEADX': (68.0, -40.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids, upper=66000: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': upper} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'HI1']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+
+    def track(tid, entry, mid, exit_):
+        return {'id': tid, 'route': [entry, *mid, exit_], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T19:00:00Z'}
+
+    def day(near_exit):
+        return [track('A', 'ENT1', ['47/45', '48/35'], near_exit), track('B', 'ENT2', ['48/45', '49/35'], near_exit), track('C', 'ENT3', ['49/45', '50/35'], near_exit),
+                track('D', 'ENT4', ['54/40', '53/30'], 'EXITA'), track('E', 'ENT5', ['55/40', '54/30'], 'EXITA')]
+    out = {}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        results_cache.ENABLED = False
+        try:
+            for name, near_exit in (('ok', 'EXITA'), ('dead', 'DEADX')):
+                data = os.path.join(td, name)
+                os.makedirs(data)
+                RF.make_base(data)
+                d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+                for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                             'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+                    with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                        json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+                rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+                RF.write_xlsx(rad, RF.rad_sheets())
+                radz = os.path.join(data, 'route', 'rad.json.gz')
+                I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+                fra = os.path.join(data, 'route', 'fra.json.gz')
+                with gzip.open(fra, 'wt', encoding='utf-8') as f:
+                    json.dump([], f)
+                folder = os.path.join(data, 'sia', 'zones', 'nat')
+                os.makedirs(folder)
+                with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'tracks': day(near_exit)}, f)
+                args = {'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T04:30', 'alternatives': False, 'proposals': False, 'fl': 370}
+                res = PL.compute(view.to_request(args), data, radz, fra)
+                sec = res.get('sections') or {}
+                out[name] = (sec.get('chosen'), (sec.get('europe') or {}).get('reached'), (sec.get('europe') or {}).get('stopped'), sorted((r['track'], r['code']) for r in sec.get('rejected', [])),
+                             [r['text'] for r in sec.get('rejected', []) if r['code'] == 'bound'][:1])
+        finally:
+            results_cache.ENABLED = True
+    c.eq((out['ok'][0] in ('A', 'B', 'C'),) + out['ok'][1:4], (True, 3, True, [('D', 'bound'), ('E', 'bound')]),
+         'the three cheapest entries (ENT1-3, near the node HI1) are reached and the search stops: a route of a near entry is taken, the routes D and E (far entries) are « not tried » (code `bound`), not « unreachable » (red before: five entries reached, no `bound`)', what='stopped')
+    c.ok(bool(out['ok'][4]) and 'non essayée' in out['ok'][4][0] and 'inatteignable' not in out['ok'][4][0], out['ok'][4], 'a sentence that says « non essayée », not « inatteignable »')
+    c.ok(out['dead'][0] in ('D', 'E') and out['dead'][1] == 5 and out['dead'][2] is False and not [r for r in out['dead'][3] if r[1] == 'bound'], out['dead'],
+         'no chain comes out of the three near routes (their exit has no link: nothing joins it to EGLL): the full search is made (five entries reached, not stopped), a far route is taken and no route is said `bound`')

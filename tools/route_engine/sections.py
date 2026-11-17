@@ -13,6 +13,8 @@ import time
 
 from . import engine, free_route, nat_layer
 
+EUROPE_NEED = 3      # SOG-0412 (le temps) : la recherche d'Europe vers les entrées des routes NAT s'arrête dès que EUROPE_NEED entrées sont atteintes (les moins chères d'abord : elles sortent de la file dans l'ordre de leur coût) ; les autres ne sont cherchées que si aucune des trois n'a donné de route valable ni de chaîne (EIDW → KJFK : 15 020 états, 7 s, pour les six entrées ; 738 états, 0,05 s, pour trois : la même route)
+
 WEST_LON, EAST_LON = -35.0, -15.0      # les mêmes limites que plan.crosses_ocean et nat_layer.hint
 
 
@@ -184,43 +186,60 @@ def _solve(nav, g, start, end):
         return _free(nav, g, start, end, ratio, info)
     # SOG-0354 L5 (1 bis) : UNE seule recherche du départ vers TOUTES les entrées à la fois (au lieu d'une recherche par track : 5 recherches d'Europe de ~8 600 états pour EGLL → KDEN, une de ~13 000 pour la recherche entière) : le coût RÉEL de la section d'Europe de chaque entrée
     # (et sa bande d'altitude) est connu avant de choisir ; l'heure au passage de l'entrée est refaite avec la distance RÉELLE ; une entrée que la recherche n'atteint pas (réseau, budget) écarte sa track, dite
-    europe = _europe(nav, g, start, sorted({o['entry'] for _t, o in candidates}), info)
-    skeleton, lost, lost_when = [], {}, {}
-    for tid, o in candidates:
-        found = europe.get(o['entry'])
-        pt = 'entry'
-        eta = None
-        if found and hour and tid in meta:
-            d, pt = passage(o, sum(x['nm'] for _u, _v, x in found['path']))      # l'heure au passage du 30°W, avec la distance RÉELLE de la section d'Europe (SOG-0403)
-            eta = eta_of(d)
-        why = ('network', f"route NAT {lab(tid)} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
-            (nat_layer.check(meta[tid], fl, east, eta) if eta else None)
-        if why:
-            lost[tid] = why
-            if why[0] == 'time':
-                lost_when[tid] = (eta, nav.nodes[o['entry']]['id'], pt, hour)
+    entries = sorted({o['entry'] for _t, o in candidates})
+    europe = _europe(nav, g, start, entries, info, need=EUROPE_NEED if len(entries) > EUROPE_NEED else None)
+    while True:
+        stopped = bool(info['europe'].get('stopped'))      # la recherche s'est arrêtée à EUROPE_NEED entrées : les autres ne sont pas « inatteignables », elles ne sont pas cherchées (encore)
+        skeleton, lost, lost_when, untried = [], {}, {}, []
+        info['tried'] = []
+        for tid, o in candidates:
+            found = europe.get(o['entry'])
+            if not found and stopped:
+                untried.append((tid, o))
+                continue
+            pt = 'entry'
+            eta = None
+            if found and hour and tid in meta:
+                d, pt = passage(o, sum(x['nm'] for _u, _v, x in found['path']))      # l'heure au passage du 30°W, avec la distance RÉELLE de la section d'Europe (SOG-0403)
+                eta = eta_of(d)
+            why = ('network', f"route NAT {lab(tid)} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
+                (nat_layer.check(meta[tid], fl, east, eta) if eta else None)
+            if why:
+                lost[tid] = why
+                if why[0] == 'time':
+                    lost_when[tid] = (eta, nav.nodes[o['entry']]['id'], pt, hour)
+                continue
+            skeleton.append((found['cost'] + ratio * engine.nm(nav.nodes[o['exit']], b) + o['cost'], tid, o))
+        for tid, why in lost.items():
+            if not any(t == tid for _lb, t, _o in skeleton):
+                rejected[tid] = why
+                if tid in lost_when:
+                    when[tid] = lost_when[tid]
+        skeleton.sort(key=lambda x: x[0])
+        nav.nat_rejected = frozenset(rejected)
+        if not skeleton:
+            if stopped:      # aucune des entrées les moins chères ne donne de route valable : les autres sont cherchées
+                europe = _europe(nav, g, start, entries, info)
+                continue
+            said()
+            info['reason'] = 'Aucune route NAT valable pour ce vol.'
+            return _free(nav, g, start, end, ratio, info)
+        info['candidates'] = [{'track': tid, 'lower_bound': round(lb, 1)} for lb, tid, _o in skeleton]
+        best = None
+        for lb, tid, o in skeleton:
+            if best is not None and lb >= best[0]:
+                break      # le minorant des suivantes dépasse déjà le meilleur coût trouvé : leur recherche chère n'est pas faite
+            resolved = _resolve(nav, g, start, end, tid, o, first=europe[o['entry']])
+            info['tried'].append({'track': tid, 'cost': round(resolved[0], 1) if resolved else None})
+            if resolved and (best is None or resolved[0] < best[0]):
+                best = resolved + (tid,)
+        if untried and best is None:
+            europe = _europe(nav, g, start, entries, info)      # aucune chaîne n'a abouti par les entrées les moins chères : la recherche complète
             continue
-        skeleton.append((found['cost'] + ratio * engine.nm(nav.nodes[o['exit']], b) + o['cost'], tid, o))
-    for tid, why in lost.items():
-        if not any(t == tid for _lb, t, _o in skeleton):
-            rejected[tid] = why
-            if tid in lost_when:
-                when[tid] = lost_when[tid]
-    skeleton.sort(key=lambda x: x[0])
-    nav.nat_rejected = frozenset(rejected)
-    if not skeleton:
-        said()
-        info['reason'] = 'Aucune route NAT valable pour ce vol.'
-        return _free(nav, g, start, end, ratio, info)
-    info['candidates'] = [{'track': tid, 'lower_bound': round(lb, 1)} for lb, tid, _o in skeleton]
-    best = None
-    for lb, tid, o in skeleton:
-        if best is not None and lb >= best[0]:
-            break      # le minorant des suivantes dépasse déjà le meilleur coût trouvé : leur recherche chère n'est pas faite
-        resolved = _resolve(nav, g, start, end, tid, o, first=europe[o['entry']])
-        info['tried'].append({'track': tid, 'cost': round(resolved[0], 1) if resolved else None})
-        if resolved and (best is None or resolved[0] < best[0]):
-            best = resolved + (tid,)
+        for tid, _o in untried:
+            rejected[tid] = ('bound', f"route NAT {lab(tid)} : non essayée, la recherche d'Europe s'est arrêtée aux {len(europe)} entrées atteintes les moins chères (une route a abouti par l'une d'elles)")
+        nav.nat_rejected = frozenset(rejected)
+        break
     said()
     if best is None:
         info['reason'] = 'Aucune chaîne par une route NAT valable n\'a abouti.'
@@ -240,7 +259,7 @@ def _europe(nav, g, start, entries, info, key='europe', need=None, track=None, m
     for x in found.values():
         x['expanded'], x['seconds'] = ls.get('expanded'), ls.get('seconds')
     _step(nav, 'europe' if nav.nodes[start]['lon'] > WEST_LON else 'amérique', ls.get('seconds') or 0.0, bound, ls.get('truncated'), shared=True, goals=len(entries), reached=len(found), **({'track': track} if track else {}))
-    info[key] = {'goals': len(entries), 'reached': len(found), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'), 'truncated': bool(ls.get('truncated'))}
+    info[key] = {'goals': len(entries), 'reached': len(found), 'expanded': ls.get('expanded'), 'seconds': ls.get('seconds'), 'truncated': bool(ls.get('truncated')), 'stopped': bool(need and len(found) >= need and len(found) < len(entries))}
     return found
 
 
