@@ -6733,7 +6733,8 @@ def f226(c):
     c.shot(f'F226_{c.design}_390_{c.lang}_delivered.png')
 
 
-_ROWS_JS = f"""(() => {{ const q = s => document.querySelector('{FUEL} ' + s), r = e => e.getBoundingClientRect(), R = e => {{ const b = r(e);
+# (its own name: a second _ROWS_JS here replaced the one of F138 for the whole module — F138 then failed on every run)
+_FLIGHT_ROWS_JS = f"""(() => {{ const q = s => document.querySelector('{FUEL} ' + s), r = e => e.getBoundingClientRect(), R = e => {{ const b = r(e);
     return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)] }};
   const fl = q('input[data-k="fl"]'), dt = q('input[data-k="wxdate"]'), labs = [...q('.fu-flight').querySelectorAll(':scope > .f-field')],
     heads = labs.map(l => {{ const t = document.createRange(); t.setStart(l, 0); t.setEnd(l, 1); return t.getBoundingClientRect() }}),
@@ -6767,7 +6768,7 @@ def f243(c):
         wait_quote(c)
         to_step(c, 0)
         c.until(f"(document.querySelector('{FUEL} [data-lvlauto]')?.textContent || '').includes('auto')", timeout=10000, what='the auto help line')
-        m = c.js(_ROWS_JS)
+        m = c.js(_FLIGHT_ROWS_JS)
         c.ok(abs(m['headTops'][0] - m['headTops'][1]) <= 1 and max(m['headH']) < 2 * min(m['headH']), m,
              f'{w} px: the two labels on one line, at the same top')
         c.ok(abs(m['fl'][1] - m['dt'][1]) <= 1, m, f'{w} px: the level field and the date field start at the same top')
