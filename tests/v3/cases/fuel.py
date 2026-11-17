@@ -7256,3 +7256,46 @@ def f251(c):
     c.eq(c.count(f'{R0} [data-proofrej="B"] [data-proofnear]'), 0, 'a track set aside by more than an hour says nothing of it', what='far')
     c.js(f"document.querySelector('{R0} [data-proofrej=\"A\"]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F251_{c.design}_390_{L}.png')
+
+
+# a route COMPUTED whose profile imposes level changes (the ceilings of the airways), written in its text the way the screen writes them
+# (AeroDB 0e62754dc) — invented names and positions
+_STEPS_PTS = [('ABCDE', 49.0, 1.0), ('FGHIJ', 50.0, -1.0), ('KLMNO', 51.0, -3.0), ('PQRST', 52.0, -4.5), ('UVWXY', 53.0, -5.5)]
+_STEPS_ROUTE = 'LFPO DCT ABCDE B1 FGHIJ/F195 B1 KLMNO A1 PQRST/F350 B2 UVWXY DCT EIDW'
+
+
+@case('F252', 'Route step, « Prendre » a computed route that writes its level changes (« FGHIJ/F195 … PQRST/F350 »): the Route field keeps '
+      'them, the flight carries them as level steps of its points, and « Copier pour Eurocontrol » writes them as speed-level groups '
+      '(« FGHIJ/N0nnnF195 »)', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='AeroDB 0e62754dc (not yet pushed when written): the level changes imposed by the ceilings of the airways written in the route '
+      'text; the ergonomist, 17/11: check that « Prendre » keeps them, that the quote reads them as steps, that the SOG-0402 writer gives '
+      'them speed-level groups; a fake launcher, invented names')
+def f252(c):
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_seg(a, b) for a, b in zip(['LFPO'] + [x[0] for x in _STEPS_PTS], [x[0] for x in _STEPS_PTS] + ['EIDW'])]
+    alt = dict(_alt(1, 'Via B1', _STEPS_ROUTE, 380, 350, segs, sid=False),
+               points=[{'id': 'LFPO', 'lat': 48.72, 'lon': 2.38}] + [{'id': n, 'lat': la, 'lon': lo} for n, la, lo in _STEPS_PTS]
+               + [{'id': 'EIDW', 'lat': 53.42, 'lon': -6.27}])
+    st['extra'] = {'alternatives': [alt]}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': 'LFPO EIDW', 'dep': 'LFPO', 'arr': 'EIDW', 'manual': True,
+                             'points': [{'id': 'LFPO', 'lat': 48.72, 'lon': 2.38}, {'id': 'EIDW', 'lat': 53.42, 'lon': -6.27}]}
+            d[1]['level'] = {'ft': 35000}
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    c.until(f"/FGHIJ\\/F195/.test(document.querySelector('{FUEL} [data-k=rtext]')?.value || '') && "
+            f"/PQRST\\/F350/.test(document.querySelector('{FUEL} [data-k=rtext]')?.value || '')", timeout=10000, what='the level changes kept in the field')
+    d = cf_doc(c, lambda d: any(p.get('id') == 'FGHIJ' and p.get('alt_ft') == 19500 for p in (d.get('route') or {}).get('points') or []),
+               'the flight carries FGHIJ at FL195', timeout=10000)
+    alts = {p.get('id'): p.get('alt_ft') for p in (d.get('route') or {}).get('points') or []}
+    c.eq([alts.get('FGHIJ'), alts.get('PQRST')], [19500, 35000], 'the two level steps on their points', what='steps')
+    c.js(f"document.querySelector('{FUEL} details[data-fplfold]').open = true")
+    c.until(f"/FGHIJ\\/N0\\d{{3}}F195/.test(document.querySelector('{FUEL} [data-fpltext]')?.textContent || '')", timeout=8000,
+            what='the flight plan writes the speed-level group at FGHIJ')
+    item = (c.js(f"document.querySelector('{FUEL} [data-fpltext]').textContent") or '').split('\n')[3]
+    c.ok(re.search(r'ABCDE B1 FGHIJ/N0\d{3}F195 B1 KLMNO A1 PQRST/N0\d{3}F350 B2 UVWXY$', item) is not None, item,
+         'item 15: the airways kept, a speed-level group at each change, no DCT between a point and its airway')
