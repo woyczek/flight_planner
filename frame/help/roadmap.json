@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "969f6ef",
-  "fiches": 415,
+  "organisation": "ef61a90",
+  "fiches": 416,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -512,6 +512,15 @@
      "en": "North Atlantic Concorde tracks (SM, SN, SO, SP): fixed tracks, always available, for a supersonic flight",
      "de": "Concorde-Tracks über dem Nordatlantik (SM, SN, SO, SP): feste, immer verfügbare Tracks für einen Überschallflug",
      "es": "Rutas Concorde del Atlántico Norte (SM, SN, SO, SP): rutas fijas, siempre disponibles, para un vuelo supersónico"
+    },
+    {
+     "id": "SOG-0417",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atlantique Nord depuis l'Espagne et le Portugal : entrer dans l'océan par les points de la limite de Santa Maria",
+     "en": "North Atlantic from Spain and Portugal: enter the ocean through the Santa Maria boundary points",
+     "de": "Nordatlantik ab Spanien und Portugal: Einflug in den Ozean über die Grenzpunkte von Santa Maria",
+     "es": "Atlántico Norte desde España y Portugal: entrar en el océano por los puntos del límite de Santa María"
     }
    ]
   },
