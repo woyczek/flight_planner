@@ -25,7 +25,7 @@ def oriented_chains(nodes, g, east):
     for u, es in g.items():
         for v, e in es:
             meta = e.get('nat')
-            if meta and not e.get('nat_link') and str(e.get('route', '')).startswith('NAT'):
+            if meta and not e.get('nat_link') and (str(e.get('route', '')).startswith('NAT') or meta.get('out_of_window')):      # SOG-0403 (R2) : une route hors de sa fenêtre s'écrit point par point (`DCT`), son méta le dit
                 by.setdefault(meta['track'], {'direction': meta.get('direction'), 'legs': []})['legs'].append((u, v, e))
     out = {}
     for tid, t in by.items():
@@ -152,6 +152,9 @@ def _solve(nav, g, start, end):
             rejected[tid] = why
             if why[0] == 'time':
                 when[tid] = seen
+    outwin = {}      # SOG-0403 (R2) : les routes prises HORS de leur fenêtre : { clé : { relation, from, to } }
+    if not candidates and hour:
+        candidates, g, outwin = _previous_system(nav, g, meta, east, a, hour, eta_of, passage, chains, rejected, when, avoid)
     for tid in meta:
         if tid not in rejected and tid not in {c[0] for c in candidates}:
             rejected[tid] = ('network', f"route NAT {lab(tid)} : ni son entrée ni sa sortie ne se relie au réseau haut à ce niveau")
@@ -203,7 +206,7 @@ def _solve(nav, g, start, end):
                 d, pt = passage(o, sum(x['nm'] for _u, _v, x in found['path']))      # l'heure au passage du 30°W, avec la distance RÉELLE de la section d'Europe (SOG-0403)
                 eta = eta_of(d)
             why = ('network', f"route NAT {lab(tid)} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
-                (nat_layer.check(meta[tid], fl, east, eta) if eta else None)
+                (None if tid in outwin else nat_layer.check(meta[tid], fl, east, eta) if eta else None)      # une route hors de sa fenêtre est prise TELLE QUELLE (R2)
             if why:
                 lost[tid] = why
                 if why[0] == 'time':
@@ -246,7 +249,7 @@ def _solve(nav, g, start, end):
         return _free(nav, g, start, end, ratio, info)
     cost, path, sections, tid = best
     info['chosen'], info['sections'], info['cost'] = tid, sections, round(cost, 1)
-    _taken(nav, info, tid)
+    _taken(nav, info, tid, outwin.get(tid))
     _entry(nav, g, info)
     return path
 
@@ -263,10 +266,86 @@ def _europe(nav, g, start, entries, info, key='europe', need=None, track=None, m
     return found
 
 
-def _taken(nav, info, tid):
+def _previous_system(nav, g, meta, east, a, hour, eta_of, passage, chains, rejected, when, avoid):
+    """SOG-0403 (R2 ; règle de l'utilisateur : « il y a TOUJOURS une fenêtre NAT ouverte avec des routes valides : si ce n'est l'active, c'est la précédente ») : aucune route du sens du vol n'a sa fenêtre sur le passage du 30°W : on prend le SYSTÈME PRÉCÉDENT du même sens — le groupe de routes de même fenêtre (from, to) dont la fin est la plus
+    récente avant le passage — ; à défaut de précédent, le système À VENIR le plus proche. La route est prise HORS de sa fenêtre, DITE : sa liste de niveaux ne lie plus (R6), elle s'écrit POINT PAR POINT (`DCT`, jamais « NATx », R5). Pas de borne d'âge à l'usage (le fichier gardé est borné à 3 jours et 120 routes).
+    Rend (candidats, graphe, { clé : { relation, from, to } }) ; le graphe porte les arêtes de ces routes (copies : bande ouverte, route `DCT`, méta `out_of_window`)."""
+    wanted = 'east' if east else 'west'
+    tids = {t for t, m in meta.items() if m.get('direction') in (wanted, 'both')}
+    body, links = [], []
+    for e in getattr(nav, 'edges', ()):
+        m = e.get('nat')
+        if not m or m['track'] not in tids:
+            continue
+        ne = dict(e, lower=0, upper=66000, nat=dict(m, out_of_window=True))
+        if not e.get('nat_link'):
+            ne['route'] = 'DCT'
+        (links if e.get('nat_link') else body).append(ne)
+
+    def directed(ne):
+        out = []
+        if ne.get('dir') != 'B':
+            out.append((ne['a'], ne['b'], ne))
+        if ne.get('dir') != 'F':
+            out.append((ne['b'], ne['a'], ne))
+        return out
+    pool = {}
+    for ne in body:
+        for u, v, e in directed(ne):
+            pool.setdefault(u, []).append((v, e))
+    chains_ow = oriented_chains(nav.nodes, pool, east)
+    systems = {}
+    for tid, options in chains_ow.items():
+        options = [o for o in options if nav.nodes[o['entry']]['id'] not in avoid and nav.nodes[o['exit']]['id'] not in avoid]
+        if not options:
+            continue
+        m = meta[tid]
+        o = min(options, key=lambda o: engine.nm(a, nav.nodes[o['entry']]))
+        d, _pt = passage(o, engine.nm(a, nav.nodes[o['entry']]))
+        t = eta_of(d)
+        t = t if t.tzinfo else t.replace(tzinfo=datetime.timezone.utc)
+        systems.setdefault((m.get('from'), m.get('to')), []).append((tid, options, t))
+    if not systems:
+        return [], g, {}
+    for (frm, to), v in systems.items():      # un système dont la fenêtre est SUR le passage n'est pas « hors fenêtre » : ses routes sont écartées pour le niveau, le réseau ou la règle RAD : la règle R2 ne joue pas (la reprise à un autre niveau, ou la route libre, suivent)
+        t0 = min(x[2] for x in v)
+        a0, b0 = nat_layer._date(frm), nat_layer._date(to)
+        if (a0 is None or a0 <= t0) and (b0 is None or t0 <= b0) and (a0 or b0):
+            return [], g, {}
+    previous = [(nat_layer._date(k[1]), k) for k, v in systems.items() if nat_layer._date(k[1]) and nat_layer._date(k[1]) <= min(x[2] for x in v)]
+    upcoming = [(nat_layer._date(k[0]), k) for k, v in systems.items() if nat_layer._date(k[0]) and nat_layer._date(k[0]) >= min(x[2] for x in v)]
+    if previous:
+        key, relation = max(previous)[1], 'previous'
+    elif upcoming:
+        key, relation = min(upcoming)[1], 'next'
+    else:
+        key, relation = sorted(systems)[0], 'previous'
+    candidates, outwin = [], {}
+    chosen = set()
+    for tid, options, _t in systems[key]:
+        chosen.add(tid)
+        for o in options:
+            candidates.append((tid, o))
+        chains[tid] = options
+        rejected.pop(tid, None)
+        when.pop(tid, None)
+        t_first = min(x[2] for x in systems[key] if x[0] == tid)
+        o_first = min(options, key=lambda o: engine.nm(a, nav.nodes[o['entry']]))
+        outwin[tid] = {'relation': relation, 'from': key[0], 'to': key[1], 'fields': nat_layer.time_fields(meta[tid], t_first, nav.nodes[o_first['entry']]['id'], passage(o_first, engine.nm(a, nav.nodes[o_first['entry']]))[1], hour)}      # l'heure au passage, le point et la marge (`near`) : dits dans `taken.out`
+    g2 = engine.RoutingGraph(g)
+    g2.__dict__.update(g.__dict__)
+    for ne in body + links:
+        if ne['nat']['track'] in chosen:
+            for u, v, e in directed(ne):
+                g2.setdefault(u, []).append((v, e))
+    return candidates, g2, outwin
+
+
+def _taken(nav, info, tid, outwin=None):
     """SOG-0394 : `sections.taken` = la route NAT PRISE : { track (la lettre), key, source ('last' : la dernière publication ; 'kept' : une route gardée d'un message précédent), from, to, issued, points: [{ id, lat, lon }] } : l'écran n'a pas à lire le second fichier."""
     m = ((getattr(nav, 'nat', None) or {}).get('meta') or {}).get(tid) or {}
     info['taken'] = {'track': m.get('letter') or tid, 'key': tid, 'source': 'kept' if m.get('source') == 'kept' else 'last', 'from': m.get('from'), 'to': m.get('to'), 'issued': m.get('issued'),
+                     'window': 'out' if outwin else 'in', 'levels_binding': not outwin, **({'system': {'sense': 'east' if (m.get('direction') == 'east') else 'west' if m.get('direction') == 'west' else m.get('direction'), 'from': outwin['from'], 'to': outwin['to'], 'relation': outwin['relation']}, 'out': {k: outwin['fields'][k] for k in ('at', 'point', 'near') if k in outwin['fields']}} if outwin else {}),
                      'points': list(((getattr(nav, 'nat', None) or {}).get('points') or {}).get(tid) or [])}
 
 

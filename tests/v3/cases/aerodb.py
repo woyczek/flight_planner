@@ -11966,8 +11966,8 @@ def k298(c):
             results_cache.ENABLED = True
         c.eq([(r['status'], r['code'], r['directs_unexplained'], r['hit']) for r in recs], [('computed', '', [], [])] * 3,
              'each request of the bench is answered by a route — no proposal, no reason code, no direct of more than 200 NM without a reason (the legs of a free route are labelled `random`), no search cut by its bound', what='answers')
-        c.eq([(r['source'], [p[1] for p in r['proofs']]) for r in recs], [('track A', ['computed', 'published', 'computed']), ('random', ['computed', 'created', 'computed']), ('random', ['computed', 'created', 'computed'])],
-             'inside its window the flight takes the track (proofs computed / published / computed); outside the window and in the direction that no track goes, a free route made of created points (proof `created`, said)', what='proofs')
+        c.eq([(r['source'], [p[1] for p in r['proofs']]) for r in recs], [('track A', ['computed', 'published', 'computed']), ('track A', ['computed', 'published', 'computed']), ('random', ['computed', 'created', 'computed'])],
+             'inside its window the flight takes the track (proofs computed / published / computed); outside its window the PREVIOUS system is taken all the same (SOG-0403 R2: the proofs of the section are the same, the route is written point by point); in the direction that no track goes, a free route made of created points (proof `created`, said)', what='proofs')
         c.ok(all(r.get('nm') and r['wall_s'] >= 0 and set(r['timing']) >= {'context_s', 'graph_s', 'total_s'} and r.get('route') for r in recs), str(recs[0].get('timing')), 'the record carries the NM, the seconds, the route text (for the detail file), and the timing of the answer')
         # 3. the reduced table: no route text
         out = os.path.join(td, 'out')
@@ -12258,7 +12258,7 @@ def k302(c):
     try:
         args = {'action': 'compute', 'adep': 'CYYZ', 'adest': 'EDDF', 'fl': 370, 'date': '2026-11-17T13:40', 'alternatives': False, 'proposals': True}
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
-        c.ok(bool(res['primary'].get('ok')) and res['sections']['free'].get('ok') is True, str((res['primary'].get('error'), res['sections'].get('free'))), 'CYYZ → EDDF on the real base, a departure outside the window of the east tracks: a route by a free route (it had none before: three tries, all on exits joined to low airways)')
+        c.ok(bool(res['primary'].get('ok')) and (res['sections'].get('taken') or {}).get('window') == 'out', str((res['primary'].get('error'), res['sections'].get('taken'))), 'CYYZ → EDDF on the real base, a departure outside the window of the east tracks: a route by a free route (it had none before: three tries, all on exits joined to low airways)')
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
@@ -12900,7 +12900,7 @@ def k310(c):
             results_cache.ENABLED = True
         c.eq(nohour, ('A', None, [], None, 'east'), 'a request with a date and NO hour (the validity of the hours is not checked): the track A is taken and there is no `sections.entry` (red at the first draft: the entry hour crashed on the missing hour)', what='no hour')
         c.eq((inside, outside), (('A', {'point': 'ENTRA', 'time': '2026-11-10T07:05Z', 'nm': 1164.0, 'speed_kt': 450}, [], None, 'east'),
-                                      (None, {'point': 'ENTRA', 'time': '2026-11-10T13:05Z', 'nm': 1164.0, 'speed_kt': 450}, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T14:44Z', 'entry': 'ENTRA', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}], 'ENTRA', 'east')), 'KJFK → EGLL at FL370: at 04:30Z the track A is taken and `sections.entry` says its entry (ENTRA) and the hour; at 10:30Z A is set aside for the HOUR with its fields, and the route taken (free) says its own entry', what='engine')
+                                      ('A', {'point': 'ENTRA', 'time': '2026-11-10T13:05Z', 'nm': 1164.0, 'speed_kt': 450}, [], None, 'east')), 'KJFK → EGLL at FL370: at 04:30Z the track A is taken and `sections.entry` says its entry (ENTRA) and the hour; at 10:30Z A is out of its window (the passage at the 30°W after 10:00Z): the PREVIOUS system is taken all the same (SOG-0403 R2) and `sections.entry` says its entry', what='engine')
 
 
 @case('K315', 'The temporary data folder of the real-base cases (`_hybrid_data`) removes its junctions ITSELF and never the navigation behind them: the target and its content survive the cleaning; if a junction cannot be removed nothing is deleted below it',
@@ -12934,7 +12934,7 @@ def k315(c):
         c.eq((went, temp.exists(), all(f.read_text(encoding='utf-8') == 'keep me' for f in files), (real / 'sia' / 'base' / 'us').is_dir()), (True, False, True, True), 'the cleaning removes the links and the temporary folder; the target and its content survive', what='cleaned')
 
 
-@case('K318', 'Route engine, SOG-0403: the window of a NAT route is judged at the passage of the 30°W of THAT route (NAT Doc 007, § 2.1.1 and 2.1.3: « Day-time OTS 1130 UTC to 1900 UTC at 30°W »), not at its entry; `at` is the hour estimated at that point and the field `point` says it (`30W`; `entry` when the route does not cross it); a route of the direction of the flight set aside for the hour by less than an hour says by how many minutes and from / until which hour of departure it would be taken (`near`)',
+@case('K318', 'Route engine, SOG-0403: the window of a NAT route is judged at the passage of the 30°W of THAT route (NAT Doc 007, § 2.1.1 and 2.1.3: « Day-time OTS 1130 UTC to 1900 UTC at 30°W »), not at its entry; `at` is the hour estimated at that point and the field `point` says it (`30W`; `entry` when the route does not cross it); a route of the direction of the flight out of its window by less than an hour says by how many minutes and from / until which hour of departure it would be IN it (`taken.out.near`; SOG-0403 R2: out of its window it is taken all the same)',
       'K', static=True,
       rule='SOG-0403 (the user: « nats : pas convaincu […] le tracé ne suit pas la nats », a westbound flight leaving in the morning: the six westbound routes of the day, valid 11:30-19:00Z, were set aside for the hour and a free route was made 1° south of the route F; ergonomics session 17 Nov 10:50: « la fenêtre se juge au 30° ouest »). NAT Doc 007 V.2026-1, § 2.1.1: « peak westbound traffic crossing the 30W longitude between 1130 UTC and 1900 UTC and peak eastbound traffic crossing the 30W longitude between 0100 UTC and 0800 UTC »; § 2.1.3: « The hours of validity of the two Organised Track Systems (OTS) are as follows: (Westbound) Day-time OTS 1130 UTC to 1900 UTC at 30°W; (Eastbound) Night-time OTS 0100 UTC to 0800 UTC at 30°W ». Before: the hour was estimated at the ENTRY of the route (the decision of 16 Nov, wrong): a flight entering at 10:40Z and crossing the 30°W after 11:30Z was refused the route. Now `sections.passage` adds to the distance to the entry the distance along the route to its crossing of the 30°W (the real section of the departure side when the search has been made), with the speed of the flight; a route that does not cross it keeps the entry. Said: `rejected[].at` (the hour at the point), `rejected[].point`, and for a refusal by less than 60 minutes `rejected[].near` = { minutes, side (`early` | `late`), depart_from | depart_until }.')
 def k318(c):
@@ -12976,7 +12976,8 @@ def k318(c):
                     json.dump({'tracks': [track]}, f)
                 res = PL.compute(view.to_request({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T' + hour, 'alternatives': False, 'proposals': True, 'fl': 370}), data, radz, fra)
                 sec = res.get('sections') or {}
-                return sec.get('chosen'), [{k: r.get(k) for k in ('track', 'code', 'at', 'point', 'near')} for r in sec.get('rejected', [])]
+                taken = sec.get('taken') or {}
+                return sec.get('chosen'), taken.get('window'), taken.get('out')      # R2 : hors de sa fenêtre la route est PRISE (le système précédent ou à venir) et `taken.out` dit l'heure au 30°W, le point et la marge
             inside = run(('2026-11-10T08:00:00Z', '2026-11-10T20:00:00Z'), '04:30')
             late = run(('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z'), '04:30')
             late_ok = run(('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z'), '03:40')
@@ -12985,12 +12986,12 @@ def k318(c):
             far = run(('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z'), '10:30')
         finally:
             results_cache.ENABLED = True
-    c.eq(inside, ('A', []), 'the track A valid 08:00-20:00Z, a departure at 04:30Z: the entry ENTRA is passed at 07:05Z (before the window) but the 30°W at 08:44Z (inside): the route is TAKEN (red before: refused for the hour, judged at the entry)', what='30W inside')
-    c.eq(late, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T08:44Z', 'point': '30W', 'near': {'minutes': 44, 'side': 'late', 'depart_until': '2026-11-10T03:45Z'}}]),
-         'the same track valid 01:30-08:00Z: the entry at 07:05Z is inside, the 30°W at 08:44Z is 44 minutes after the end: refused, `at` is the hour at the 30°W, `point` says `30W`, `near` says 44 minutes late and « depart until 03:45Z »', what='late')
-    c.eq((late_ok, early_ok), (('A', []), ('A', [])), 'the departure the field gives is right: at 03:40Z (before 03:45Z) and at 05:20Z (after 05:15Z) the track is taken', what='advice')
-    c.eq(early, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T08:44Z', 'point': '30W', 'near': {'minutes': 46, 'side': 'early', 'depart_from': '2026-11-10T05:15Z'}}]), 'a window that opens at 09:30Z: 46 minutes early, « depart from 05:15Z »', what='early')
-    c.eq(far, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T14:44Z', 'point': '30W', 'near': None}]), 'six hours late: refused, no `near` (more than an hour)', what='far')
+    c.eq(inside, ('A', 'in', None), 'the track A valid 08:00-20:00Z, a departure at 04:30Z: the entry ENTRA is passed at 07:05Z (before the window) but the 30°W at 08:44Z (inside): the route is TAKEN, in its window (red before: refused for the hour, judged at the entry)', what='30W inside')
+    c.eq(late, ('A', 'out', {'at': '2026-11-10T08:44Z', 'point': '30W', 'near': {'minutes': 44, 'side': 'late', 'depart_until': '2026-11-10T03:45Z'}}),
+         'the same track valid 01:30-08:00Z: the entry at 07:05Z is inside, the 30°W at 08:44Z is 44 minutes after the end: taken OUT of its window (R2: the previous system), `taken.out` says the hour at the 30°W, `point` `30W`, `near`: 44 minutes late and « depart until 03:45Z »', what='late')
+    c.eq((late_ok, early_ok), (('A', 'in', None), ('A', 'in', None)), 'the departure the field gives is right: at 03:40Z (before 03:45Z) and at 05:20Z (after 05:15Z) the track is taken IN its window', what='advice')
+    c.eq(early, ('A', 'out', {'at': '2026-11-10T08:44Z', 'point': '30W', 'near': {'minutes': 46, 'side': 'early', 'depart_from': '2026-11-10T05:15Z'}}), 'a window that opens at 09:30Z: out of it by 46 minutes (the next system), « depart from 05:15Z »', what='early')
+    c.eq(far, ('A', 'out', {'at': '2026-11-10T14:44Z', 'point': '30W'}), 'six hours late: taken out of its window, no `near` (more than an hour)', what='far')
 
 
 @case('K317', 'Route engine, SOG-0401 lot 1: the answer says how many RAD conditions were DECIDED and how many are left to EXAMINE (`rad.decided`, `rad.review`, `rad.findings`), carries the WHOLE list of the mentions (1 500 at most; if the bound cuts, `rad.cut` and the total say it), the phrase « sans incompatibilité détectée » is no longer rendered, a rule whose target is a SPACE that the base does not know is « to examine » and said with the space (`rad.unknown_spaces`), and the answer KEEPS its request (`request`, bounded)',
@@ -13201,10 +13202,10 @@ def k313(c):
          (key, 'A', 'kept', '2026-11-10T01:30:00Z', '2026-11-10T10:00:00Z', '10/11', ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], True, [('A', 'direction')]),
          "at 04:30Z the passage of the entry ENTRA is at 07:05Z, inside the window of the KEPT track A (01:30-08:00Z) and FL370 is in its list: it is taken; the answer says it (`sections.taken`: the letter, `kept`, the window, the points); the westbound A of the message of the day (the same letter) is set aside for its direction and does not mix with it", what='kept taken')
     c.ok(any("Route gardée" in i['text'] for i in inside['primary'].get('issues', [])), [i['text'][:60] for i in inside['primary'].get('issues', [])], 'a remark that says it is a kept route (« Route gardée »), not « le message du jour »')
-    c.eq((sout.get('chosen'), sout.get('source'), keyed(rout), "A (gardée du 10/11)" in ' '.join(r['text'] for r in sout['rejected'] if r['track'] == key), sout.get('taken')),
-         (None, 'random', [{'track': key, 'code': 'time', 'letter': 'A', 'source': 'kept', 'at': '2026-11-10T14:44Z', 'entry': 'ENTRA', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}], True, None),
-         "at 10:30Z the passage at the 30°W (14:44Z) is after the end of the window of the kept track: it is NOT taken (never « stale taken anyway ») and it says why with the fields of SOG-0391 and its letter and source; a free route is made", what='kept set aside')
-    c.ok("Aucune route NAT vers l'est dans le message du 10/11." in [i['text'] for i in outside['primary'].get('issues', [])], [i['text'][:60] for i in outside['primary'].get('issues', [])], 'the phrase « Aucune route NAT vers l\'est dans le message du 10/11. » is there: it speaks of the LAST publication only, a kept eastbound route does not hide that it has no eastbound route')
+    c.eq((sout.get('chosen'), sout.get('source'), keyed(rout), (sout.get('taken') or {}).get('window'), (sout.get('taken') or {}).get('source'), ((sout.get('taken') or {}).get('system') or {}).get('relation')),
+         (key, None, [], 'out', 'kept', 'previous'),
+         "at 10:30Z the passage at the 30°W (14:44Z) is after the end of the window of the kept track, which is the only system of the direction: R2 (SOG-0403) takes it as the PREVIOUS system, OUT of its window, said (`taken.window` out, `source` kept); it is no longer set aside", what='kept previous system')
+    c.ok(any('hors de sa fenêtre' in i['text'] for i in outside['primary'].get('issues', [])) and "Aucune route NAT vers l'est dans le message du 10/11." not in [i['text'] for i in outside['primary'].get('issues', [])], [i['text'][:60] for i in outside['primary'].get('issues', [])], 'the remark says the route is out of its window, and the phrase « no NAT route eastbound in the message of the day » is not said (a route of that direction is taken)')
     c.eq((snh.get('chosen'), [(r['track'], r['code'], r['at'], r['from'], r['to']) for r in keyed(rnh)], "heure de passage n'est pas connue" in ' '.join(r['text'] for r in snh['rejected'] if r['track'] == key)),
          (None, [(key, 'time', None, '2026-11-10T01:30:00Z', '2026-11-10T10:00:00Z')], True), "with a date and no hour of departure a kept route cannot be checked: it is not taken and says so (its window is said)", what='kept no hour')
     c.eq(('NATA' in str(whole['primary'].get('route')), whole['primary'].get('ok')), (False, False),
@@ -13494,6 +13495,68 @@ def k323(c):
     c.eq((sec.get('chosen'), [(r['track'], r['code']) for r in sec.get('rejected', [])], 'NATA' in str((res.get('primary') or {}).get('route')), links and links[0][1]), ('A', [], True, 'ENTRA'),
          "the route A is taken: its entry ENTRA is reached by a link from a node of a high airway (the three nearest nodes, LOW1-LOW3, are on the airway L1 that stops at FL255 and are no longer the links); no « son entrée n'est pas atteignable » (red before: the flight got a free route)", what='reached')
     c.ok(bool(links) and links[0][0] in ('HI1', 'MIDUS'), 'the link into the entry starts from HI1 or MIDUS (the nodes of J1, ceiling FL660), never from LOW1-LOW3 (L1, FL255)', repr(links[:2]))
+
+
+@case('K320', 'Route engine, SOG-0403 (R2): there is ALWAYS a NAT system to follow (the user: « il y a toujours une fenêtre nats ouverte avec des routes valides : si ce n’est l’active, c’est la précédente ») — when no route of the direction of the flight has its window over the passage of the 30°W, the PREVIOUS system of the same direction (else the next one) is taken OUT of its window, said, written POINT BY POINT (never « NATx »), its list of levels not binding; the free route only serves with NO route of the direction at all',
+      'K', static=True,
+      rule='SOG-0403 R2 (the user, 17 Nov: « il faut toujours qu’on couvre la période d’entrée, et de sortie » ; ergonomics session: R2 previous system of the same direction, R5 point by point, R6 levels do not bind out of the window, R7 free route only without any route of the direction). Bench of K318 (KJFK → EGLL, the track A eastbound through 51/40 and 5130/30). `sections._previous_system` groups the routes of the direction by window (from, to), takes the system whose end is the latest before the passage (else the nearest to come), copies its edges with the band open, the route `DCT` and the meta `out_of_window`; the route taken says `sections.taken.window` = `out`, `levels_binding` false and `system` { sense, from, to, relation (`previous` | `next`) }; no age limit (the kept file keeps 3 days and 120 routes).')
+def k320(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        results_cache.ENABLED = False
+        try:
+            def run(rows, hour, fl=370):
+                with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'tracks': rows}, f)
+                res = PL.compute(view.to_request({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T' + hour, 'alternatives': False, 'proposals': True, 'fl': fl}), data, radz, fra)
+                sec = res.get('sections') or {}
+                return res, sec
+            win = lambda a, b: dict(A, **{'from': a, 'to': b})
+            west = dict(A, id='W', route=['5230/10', '5230/20', '5230/30', '5230/40', '5230/50'], east=[], west=['350', '370'])
+            r1 = run([win('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z')], '10:30')
+            r2 = run([win('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z')], '10:30', 330)
+            r3 = run([win('2026-11-10T09:30:00Z', '2026-11-10T20:00:00Z')], '04:30')
+            r4 = run([win('2026-11-10T01:30:00Z', '2026-11-10T10:00:00Z')], '04:30')
+            r5 = run([west], '10:30')
+        finally:
+            results_cache.ENABLED = True
+    route = 'KJFK DCT PTLUS J1 ENTRA DCT 51/40 DCT 5130/30 DCT 52/20 DCT EXITA J2 UKIN3 DCT EGLL'
+    note = lambda res: [i['text'] for i in res['primary'].get('issues', []) if i['level'] == 'REVUE' and 'hors de sa fenêtre' in i['text']]
+    c.eq((r1[1].get('chosen'), r1[0]['primary'].get('route'), 'NATA' in r1[0]['primary'].get('route'), r1[1]['taken']['window'], r1[1]['taken']['levels_binding'], r1[1]['taken']['system'], len(note(r1[0])), r1[1].get('rejected')),
+         ('A', route, False, 'out', False, {'sense': 'east', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z', 'relation': 'previous'}, 1, []),
+         'at 10:30Z (the 30°W at 14:44Z) the only system of the direction ended at 08:00Z: it is the PREVIOUS system, taken OUT of its window: the route follows its points and is written POINT BY POINT (DCT 51/40 DCT 5130/30 DCT 52/20, never « NATA »), `sections.taken` says `window: out`, `levels_binding: false` and the system with its relation, a remark says it (red before: no route of the day, a free route)', what='previous system')
+    c.eq((r2[1].get('chosen'), r2[0]['primary'].get('route'), r2[1]['taken']['window']), ('A', route, 'out'), 'FL330 is not in the list of levels of A (350-370): out of its window the list does not bind (R6): the same route is taken', what='levels')
+    c.eq((r3[1].get('chosen'), r3[0]['primary'].get('route'), r3[1]['taken']['system']['relation'], r3[1]['taken']['window']), ('A', route, 'next', 'out'), 'when the passage is BEFORE every window (A opens at 09:30Z, the 30°W at 08:44Z) and there is no previous system, the nearest system to come is taken, said `next`', what='next system')
+    c.eq((r4[1].get('chosen'), 'NATA' in r4[0]['primary'].get('route'), r4[1]['taken']['window'], r4[1]['taken']['levels_binding'], 'system' in r4[1]['taken'], note(r4[0])), ('A', True, 'in', True, False, []), 'a route whose window is over the passage is written « NATA », `window: in`, its levels bind, nothing is said out of window', what='in window')
+    c.eq((r5[1].get('chosen'), r5[1].get('source'), [(r['track'], r['code']) for r in r5[1].get('rejected', [])]), (None, 'random', [('W', 'direction')]), 'with NO route of the direction of the flight at all (only a westbound track for an eastbound flight) the free route by the permanent gates... is the answer (R7): a free route, nothing out of window', what='free route')
 
 
 @case('K324', 'Route engine, SOG-0412 (time): the search from the departure to the entries of the NAT routes stops as soon as the three cheapest entries are reached (`sections.EUROPE_NEED`), the others are said « non essayée » (code `bound`, never « inatteignable »); the full search is only made when no chain came out of the three (the routes of the three nearest entries are not usable) — measured on the real base, EIDW → KJFK at FL370: 15 020 states and 7 s for the six entries, 738 states and 0.05 s for three, the same route',

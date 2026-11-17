@@ -167,16 +167,17 @@ def one(P, view, item, root, rad, fra_file):
     legs = p.get('legs') or []
     proofs = [(s.get('name'), s.get('proof'), s.get('nm')) for s in sec.get('sections') or []]
     steps = tim.get('sections') or []
-    directs = [{'from': (l.get('start') or {}).get('id'), 'to': (l.get('end') or {}).get('id'), 'nm': l.get('nm'), 'nat_link': bool(l.get('nat_link')), 'origin': l.get('origin'), 'fra': bool(l.get('fra_area'))}
+    directs = [{'from': (l.get('start') or {}).get('id'), 'to': (l.get('end') or {}).get('id'), 'nm': l.get('nm'), 'nat_link': bool(l.get('nat_link')), 'nat_out': bool((l.get('nat') or {}).get('out_of_window')), 'origin': l.get('origin'), 'fra': bool(l.get('fra_area'))}
                for l in legs if l.get('via') == 'DCT' and (l.get('nm') or 0) > 200]
     rec.update(
         status=v.get('status'), ok=bool(p.get('ok')), nm=p.get('distance_nm'), route=p.get('route'), error=p.get('error'), message=v.get('message'),
         source=sec.get('source') or (('track ' + str(sec.get('chosen'))) if sec.get('chosen') else None), chosen=sec.get('chosen'), proofs=proofs, free=sec.get('free'), depart=sec.get('depart'),
         rejected=[(r.get('track'), r.get('code')) for r in sec.get('rejected') or []],
+        europe={k: (sec.get('europe') or {}).get(k) for k in ('goals', 'reached', 'expanded', 'truncated')} if sec.get('europe') else None,      # SOG-0412 : combien d'entrées de routes NAT la recherche d'Europe a essayées et atteintes
         timing={k: tim.get(k) for k in ('context_s', 'tracks_s', 'graph_s', 'skeleton_s', 'total_s')}, steps=steps,
         hit=[s.get('name') for s in steps if s.get('hit')], budget=res.get('budget'),
         proposals=len((res.get('recovery') or {}).get('proposals') or []), directs=directs,
-        directs_unexplained=[d for d in directs if not d['nat_link'] and d['origin'] != 'random'],
+        directs_unexplained=[d for d in directs if not d['nat_link'] and d['origin'] != 'random' and not d.get('nat_out')],      # SOG-0403 R2 : un tronçon d'une route NAT prise HORS de sa fenêtre s'écrit point par point (DCT) : il est expliqué
         code=('' if v.get('status') == 'computed' else code_of(res, v)))
     return rec
 
@@ -283,6 +284,10 @@ def summary(args):
     p = lambda q: walls[min(len(walls) - 1, int(q * len(walls)))] if walls else 0
     text = [f'{n} demandes ; avec route : {len(ok)} ; sans route : {len(none)} ; « proposition » : {len(prop)} ; en erreur : {len(err)} ; au-delà de {LIMIT_S:.0f} s : {len(over5)} ; au-delà de {HARD_S:.0f} s : {len(over20)} ; borne atteinte (étape coupée) : {len(hit)} ; direct de plus de 200 NM sans raison hors zone FRA : {len(direct)} (dans une zone FRA, où le direct est publié : {len(direct_fra)})',
             f'temps (s) : médiane {p(0.5):.1f}, 90e centile {p(0.9):.1f}, maximum {walls[-1] if walls else 0:.1f} ; chargement du contexte (à part) : ' + ', '.join(f'{k} {v} s' for k, v in sorted(ctx.items()))]
+    tried = [r['europe'] for r in recs if r.get('europe') and r['europe'].get('goals')]      # SOG-0412 : les routes NAT atteintes par demande (les demandes qui ont fait la recherche d'Europe vers les entrées)
+    if tried:
+        ratio = sorted(x['reached'] / x['goals'] for x in tried)
+        text.append(f"entrées de routes NAT atteintes par demande ({len(tried)} demandes ont cherché) : {sum(x['reached'] for x in tried)} atteintes sur {sum(x['goals'] for x in tried)} essayées ; part atteinte par demande : médiane {ratio[len(ratio) // 2]:.2f}, minimum {ratio[0]:.2f} ; aucune atteinte : {sum(1 for x in tried if not x['reached'])} ; recherche coupée par le budget : {sum(1 for x in tried if x.get('truncated'))}")
     srcs = {}
     for r in ok:
         srcs[r.get('source')] = srcs.get(r.get('source'), 0) + 1
