@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 277,
+  "tests": 278,
   "verdicts": 204
  },
  "apps": [
@@ -4153,6 +4153,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T12:36:46Z"
+  },
+  {
+   "id": "SOG-0413",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : relire les routes NAT à la main à tout moment, et dire quels sens le message porte",
+    "en": "Fuel: re-read the NAT tracks by hand at any time, and say which directions the message carries",
+    "de": "Kraftstoff: die NAT-Tracks jederzeit von Hand neu lesen und sagen, welche Richtungen die Meldung enthält",
+    "es": "Combustible: releer las rutas NAT a mano en cualquier momento, y decir qué sentidos lleva el mensaje"
+   },
+   "test": "Sur le poste, appli à jour. Carburant, étape Route. Attendu : (1) sous la route, la ligne dit les sens et leurs fenêtres : « Routes NAT du 17/11 : vers l'ouest 11 h 30 – 19 h 00 Z ; aucune vers l'est » (ou les deux sens si le message vers l'est est paru) ; (2) à l'ouverture, si la dernière lecture a plus d'une heure, les routes sont relues sans rien demander ; (3) le lien « Relire les routes NAT » est toujours là ; un clic relit la source et dit ce qui a changé (« 8 routes ajoutées vers l'est » ou message inchangé) ; (4) deux clics à moins d'une minute : le second ne relit pas et le dit ; (5) sur un téléphone appairé : pas de lien. Après la retouche (à venir) : le résultat de la relecture es",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T13:12:34Z"
   },
   {
    "id": "SOG-0414",

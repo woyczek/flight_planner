@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8cef386",
+  "organisation": "dfedeae",
   "fiches": 415,
   "untranslated": 0,
   "priorities": 374,
@@ -1293,11 +1293,12 @@
     {
      "id": "SOG-0413",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : relire les routes NAT à la main à tout moment, et dire quels sens le message porte",
      "en": "Fuel: re-read the NAT tracks by hand at any time, and say which directions the message carries",
      "de": "Kraftstoff: die NAT-Tracks jederzeit von Hand neu lesen und sagen, welche Richtungen die Meldung enthält",
-     "es": "Combustible: releer las rutas NAT a mano en cualquier momento, y decir qué sentidos lleva el mensaje"
+     "es": "Combustible: releer las rutas NAT a mano en cualquier momento, y decir qué sentidos lleva el mensaje",
+     "test": true
     }
    ]
   },
