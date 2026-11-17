@@ -9406,7 +9406,11 @@ def a214(c):
     c.until("!!document.querySelector('[data-form]') && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the report screen')
     c.page.fill('[data-title]', 'Le bouton reste gris')
     c.page.fill('[data-text]', 'Sous limite, en triple.')
-    c.wait(600)
+    # SOG-0409: the typing touches the memory only, the draft is written 800 ms after the last key — the case waits for the written draft, not for a time
+    for _ in range(40):
+        if sid_re.match(((c.js(store_js) or {}).get('draft') or {}).get('id', '')):
+            break
+        c.wait(250)
     d0 = (c.js(store_js) or {}).get('draft', {})
     c.ok(sid_re.match(d0.get('id', '')), d0, 'the identifier is made when the typing begins and kept with the draft')
     # the screen is mounted again (a redraw): the same draft, the same identifier
@@ -9429,7 +9433,10 @@ def a214(c):
     # the screen mounted again left no listener behind: the next draft is written by the current screen only, with its own identifier
     c.page.fill('[data-title]', 'Autre')
     c.page.fill('[data-text]', 'Un autre texte.')
-    c.wait(600)
+    for _ in range(40):
+        if sid_re.match(((c.js(store_js) or {}).get('draft') or {}).get('id', '')):
+            break
+        c.wait(250)
     d1 = (c.js(store_js) or {}).get('draft', {})
     c.ok(sid_re.match(d1.get('id', '')) and d1['id'] != d0['id'], [d0, d1], 'a new draft has its own identifier')
 
