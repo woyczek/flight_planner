@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 268,
+  "tests": 270,
   "verdicts": 204
  },
  "apps": [
@@ -4001,6 +4001,20 @@
    "delivered": "2026-11-17T10:00:02Z"
   },
   {
+   "id": "SOG-0400",
+   "app": "maintenance",
+   "title": {
+    "fr": "Itinéraire choisi sur la Carte : de retour dans Carburant il n'apparaît que très longtemps après, quand une synchronisation est en cours",
+    "en": "Itinerary chosen on the map: back in Fuel it only shows much later when a synchronisation is running",
+    "de": "Auf der Karte gewählte Route: zurück im Kraftstoff erscheint sie erst viel später, wenn eine Synchronisierung läuft",
+    "es": "Itinerario elegido en el mapa: de vuelta en Combustible solo aparece mucho después cuando hay una sincronización en curso"
+   },
+   "test": "Après avoir rechargé la page. (1) Pendant qu'une synchronisation est en cours (le bouton du haut dit « Synchronisation… »), lance « Calculer » dans Carburant : le calcul part tout de suite, il n'attend plus la fin de la synchronisation. (2) Calcule, puis prends un itinéraire pendant « Variantes en recherche… », sur la Carte ou dans la liste : le champ Route change tout de suite, la route prise reste, aucun calcul ne repart. (3) Ouvre Carburant : le devis se dessine en 3 s au plus, même si les fiches tardent. (4) Si un autre travail du lanceur attend plus de 4 s l'envoi de tes données, une notification le dit. Dis-moi si quelque chose attend encore sans le dire.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T11:07:05Z"
+  },
+  {
    "id": "SOG-0403",
    "app": "pilote",
    "title": {
@@ -4027,6 +4041,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T10:17:08Z"
+  },
+  {
+   "id": "SOG-0407",
+   "app": "pilote",
+   "title": {
+    "fr": "RÉGRESSION : le bouton « pas à jour, rafraîchir » a disparu — une page ouverte ne dit plus qu'une version plus récente existe",
+    "en": "REGRESSION: the “out of date, refresh” button has disappeared — an open page no longer says a newer version exists",
+    "de": "REGRESSION: die Schaltfläche „nicht aktuell, neu laden“ ist verschwunden — eine offene Seite meldet keine neuere Version mehr",
+    "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente"
+   },
+   "test": "Après avoir RELANCÉ le lanceur et rechargé la page une fois. (1) Laisse une page de l'appli ouverte. Quand une mise à jour arrive sur le poste (je te le dirai à la prochaine livraison), en moins d'une minute — ou dès que tu reviens sur l'onglet — un cartouche rouge « Version ancienne · Recharger » paraît dans la barre du haut ; au téléphone, « Recharger ». (2) La page ne se recharge JAMAIS seule : ce que tu es en train de taper reste. (3) Un appui recharge, la page est à jour et le cartouche disparaît. (4) Dans Recette, tu n'as plus à deviner si la page est ancienne : pas de cartouche = page à jour. Dis-le si une page reste ancienne sans cartouche.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T11:06:06Z"
   },
   {
    "id": "SOG-0408",
