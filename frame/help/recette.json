@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 298,
+  "tests": 299,
   "verdicts": 212
  },
  "apps": [
@@ -4437,6 +4437,19 @@
     "es": "Editor de misiones: renombrar o quitar un lugar deja referencias muertas (continuación de ruta, disparadores, mapas, cronología)"
    },
    "test": "Missions, Registre, « Modifier » une mission (page rechargée), groupe Lieux. (1) Retire un lieu que la route ou un tiroir cite : « Retirer » devient « Retirer quand même » et une notification dit QUI le cite (la route, le tiroir, la carte, la chronologie) ; un double appui ne retire rien ; le second appui le retire avec ses citations. (2) « À compléter » nomme alors ce qui reste à voir (« le tiroir 1 n'a plus son point de déclenchement… », « la carte … n'a plus de centre »). (3) Renomme un lieu : son nouvel identifiant suit partout où il était cité.",
+   "since": "2026-11-17",
+   "state": "known"
+  },
+  {
+   "id": "SOG-0441",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions à tiroir chez le pilote : lire les tiroirs de sa mission, les ouvrir (heure, geste), le carnet, l'enveloppe et la liseuse",
+    "en": "Drawer missions for the pilot: read the drawers of their mission, open them (time, gesture), the notebook, the envelope and the reader",
+    "de": "Schubladen-Missionen beim Piloten: die Schubladen seiner Mission lesen, öffnen (Zeit, Geste), das Heft, der Umschlag und der Leser",
+    "es": "Misiones de cajones para el piloto: leer los cajones de su misión, abrirlos (hora, gesto), el cuaderno, el sobre y el lector"
+   },
+   "test": "Il te faut une mission à tiroirs : exporte-en une de ton atelier (« Exporter YAML », par exemple « Recherche sur glacier »), puis Missions, « Ajouter des missions » avec ce fichier, et prends-la comme TA mission. Page rechargée, ouvre sa fiche. Attendu : (1) « Tiroirs » à la place de la ligne des zones — « Tiroir 1 · titre », sa clé en clair ; (2) seul le premier tiroir fermé porte « Ouvrir le tiroir » (geste en deux temps), les suivants disent « après le tiroir n » ; (3) un tiroir à heure s'ouvre tout seul à son heure ; (4) ouvert, il montre son message puis son briefing ; (5) pour une zone, un objet ou une arrivée, la ligne dit « Cet appareil ne suit pas encore ce passage : le tiroir s'ouv",
    "since": "2026-11-17",
    "state": "known"
   },

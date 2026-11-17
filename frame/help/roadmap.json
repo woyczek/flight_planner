@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3e70848",
+  "organisation": "d5ddb82",
   "fiches": 450,
   "untranslated": 0,
   "priorities": 374,
@@ -3725,7 +3725,7 @@
     {
      "id": "SOG-0441",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Missions à tiroir chez le pilote : lire les tiroirs de sa mission, les ouvrir (heure, geste), le carnet, l'enveloppe et la liseuse",
      "en": "Drawer missions for the pilot: read the drawers of their mission, open them (time, gesture), the notebook, the envelope and the reader",
      "de": "Schubladen-Missionen beim Piloten: die Schubladen seiner Mission lesen, öffnen (Zeit, Geste), das Heft, der Umschlag und der Leser",
