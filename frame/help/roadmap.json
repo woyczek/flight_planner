@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9e3802f",
-  "fiches": 421,
+  "organisation": "5d84aef",
+  "fiches": 422,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2744,6 +2744,27 @@
      "de": "Routengenerierung aus den RAD-Dateien von Eurocontrol (und dem FRA)",
      "es": "Generación de rutas a partir de los archivos RAD de Eurocontrol (y del FRA)",
      "rank": 130
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-fiabilite-europe-royaume-uni-atlantique-nord",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes, fiabilité ; Europe (Royaume-Uni) ; Atlantique Nord",
+    "en": "Routes, fiabilité ; Europe (Royaume-Uni) ; Atlantique Nord",
+    "de": "Routes, fiabilité ; Europe (Royaume-Uni) ; Atlantique Nord",
+    "es": "Routes, fiabilité ; Europe (Royaume-Uni) ; Atlantique Nord"
+   },
+   "items": [
+    {
+     "id": "SOG-0423",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Traversée au départ de l'Angleterre : la route proposée est refusée par Eurocontrol (douze erreurs : règles RAD du Royaume-Uni, directs, départ, champs du plan)",
+     "en": "Crossing from England: the proposed route is refused by Eurocontrol (twelve errors: UK RAD rules, directs, departure, flight plan fields)",
+     "de": "Überquerung ab England: die vorgeschlagene Route wird von Eurocontrol abgelehnt (zwölf Fehler: britische RAD-Regeln, Direktstrecken, Abflug, Flugplanfelder)",
+     "es": "Travesía desde Inglaterra: la ruta propuesta es rechazada por Eurocontrol (doce errores: reglas RAD del Reino Unido, directos, salida, campos del plan)"
     }
    ]
   },

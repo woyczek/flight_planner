@@ -4257,6 +4257,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0086",
+   "fiche": "SOG-0402",
+   "app": "pilote",
+   "question": "Plan de vol : lancer maintenant le lot 2 de SOG-0402 — l'équipement réel de l'aéronef (radio HF, etc.) pris dans sa fiche ?",
+   "context": "Ton second collage est refusé, entre autres, parce que la radio HF est obligatoire dans l'espace océanique et que le plan copié écrit un équipement type (« SDGRWY/S ») sans HF. L'immatriculation exigée, elle, est traitée tout de suite (SOG-0422). Pour la HF je refuse d'inventer un équipement : en attendant, le bouton prévient. Le vrai remède est le lot 2 : l'équipement lu dans la fiche de l'aéronef. Features SOG a aussi le terrain de dégagement (SOG-0398) en attente de ton mot.",
+   "options": [
+    "Oui, le lot 2 maintenant, avant le terrain de dégagement",
+    "Plus tard : l'avertissement suffit pour l'instant, le terrain de dégagement d'abord",
+    "Plus tard : ni l'un ni l'autre aujourd'hui, les routes d'abord",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
