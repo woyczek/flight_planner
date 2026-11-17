@@ -5310,7 +5310,7 @@ def a256(c):
 
 
 @case('A260', 'Settings › About › Diagnostic: the switch of the page profile (SOG-0430 A2) — a checkbox that is on by default, off by a click and on again, disabled with its reason when the page is served without the permission of the launcher; four languages', 'A',
-      designs=('standard',), screens=False, night=False, langs4=True,
+      designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0430 A2 (the ergonomist: « un réglage que l\'utilisateur ne peut pas atteindre n\'en est pas un »): the switch of the profiler is in the Diagnostic block of the About card, where the diagnostic that holds the profiles is copied; it turns the profiler off and on (localStorage of this browser, nothing written in the data); without the launcher\'s permission (no <meta name="sog-js-profiling">) it is disabled and says why')
 def a260(c):
     lang = c.lang
@@ -5333,7 +5333,7 @@ def a260(c):
     c.eq(c.js(f"() => [document.querySelector('{box}').checked, document.querySelector('{box}').disabled]"), [True, False], 'on by default, usable', what='default')
     c.js(f"() => document.querySelector('{box}').scrollIntoView({{ block: 'center' }})")
     c.wait(400)
-    c.shot(f'A260_{lang}.png')
+    c.shot(f'A260_{c.width}_{lang}.png')   # the picture is framed on the switch itself (scrolled to the middle of the screen), at 390 and at 1280
     c.js(f"() => document.querySelector('{box}').click()")
     c.until("window.SogFrame.profiler().state === 'off'", timeout=5000, what='the profiler turned off')
     c.eq(c.js("() => localStorage.getItem('sog-frame-profiler')"), 'off', 'turned off: the choice is kept in this browser', what='stored off')
