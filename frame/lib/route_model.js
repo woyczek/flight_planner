@@ -221,7 +221,10 @@ export async function routeModel(text, {
       if (t.alt_ft && points.length) points.at(-1).alt_ft = t.alt_ft;
     } else if (t.kind === 'coord') add(t.id, t, t.alt_ft);
     else if (t.kind === 'name') {
-      const c = await find(t.id, points.at(-1) || mid);
+      // le départ et l'arrivée du vol écrits dans le texte sont ces terrains : jamais jugés « trop loin » du point qui les précède (une
+      // arrivée écrite après un point de l'Atlantique était écartée, gardée en mot, puis l'arrivée ajoutée : « … LFML LFML », garde F216)
+      const own = t.id === dep || t.id === arr,
+        c = await find(t.id, own ? null : points.at(-1) || mid);
       if (c) add(t.id, c, t.alt_ft);
       else {
         if (!t.airway) unresolved.push(t.id); // voie aérienne ou procédure : gardée dans le texte, sans alerte

@@ -5467,6 +5467,8 @@ def f216(c):
     c.until(f"(document.querySelector('{FUEL} [data-k=rtext]')?.value || '').includes(' DCT ')", timeout=12000, what='the text normalised')
     v = c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''
     c.ok('51/20' in v and '5030/30' in v and '5100N' not in v, v, 'once resolved, the text keeps « 51/20 » and « 5030/30 »')
+    # the red run of 72a59c9d0's parent read « … 5030N03000W LFML LFML »: the arrival written twice — a guard
+    c.eq(v.split().count('LFML'), 1, 'the arrival once in the resolved text', what='arrival once')
 
 
 _BPS_JS = r"""() => { const out = new Set(); const walk = rules => { for (const r of rules) { if (r.conditionText && /min-width/.test(r.conditionText) && r.constructor.name.includes('Container')) { const m = /min-width:\s*(\d+)px/.exec(r.conditionText); if (m) out.add(+m[1]); } if (r.cssRules) walk(r.cssRules); } };

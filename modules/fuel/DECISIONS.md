@@ -2285,3 +2285,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   depart_until | depart_from } on a track set aside for the time by at most an hour: `nearOf` reads it as untrusted input (minutes 0
   to 60, side one of two, an ISO hour to the minute) and the reason in the fold ends with « — à 9 min près : partir au plus tôt à
   07 h 31 Z » (« au plus tard » when late). F251 (red on the parent: « RESNO– », no near).
+- **17 Nov 2026 — the arrival written twice in a resolved text** (the guard added to F216, red on Essais: « … 5030N03000W LFML LFML »,
+  still there after SOG-0408). `RM.routeModel` looks each name up « near » the point before it, bounded by FAR (2 × the direct
+  distance + 400 NM, SOG-0142): after « 5030/30 », 1 700 NM from LFML, the arrival written in the text was set aside, kept as an
+  unknown word, then the flight's arrival was added at the end — twice in the text. The departure and the arrival of the flight
+  written in the text are those aerodromes: they are looked up without the bound (as when they are added at the ends). F216's guard
+  (red on the parent: « arrival once: 2 »).
