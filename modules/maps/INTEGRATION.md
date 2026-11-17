@@ -341,6 +341,59 @@ onLoad: map => { … } })` (its handlers are unchanged; its own `movestart` hand
 Differences to know: errors before `load` always give up (atmosphere's copy gave up only if `!map.loaded()`); Mercator is set
 at each `style.load` (a no-op for the default style).
 
+## 7 bis. Map editing for other modules — `lib/map_edit.js`, `lib/terrain.js` (SOG-0446, 17–18 Nov 2026)
+
+What a module that **edits** on a map needs, extracted from the Map's own Edit mode (`edit.js`) rather than copied: the Map goes through these
+entries and keeps exactly its behaviour (the Edit cases D are replayed before and after). Same rule as § 7: pure of module state (every function
+takes the map, the box and options and returns a handle with `stop()`; nothing is read from the page; no host is added), owned by maps. **A new file,
+`lib/map_edit.js`, which imports nothing** (it needs no export of `lib/map_base.js`): a page that only displays a map does not load it. The
+signatures below are the contract that « Mission creation » ports against; they were written before the code and change only by a note here (the
+notes are at the end of this section).
+
+```js
+import { tapPosition, dragHandles, previewLayer, sketch, authorLayers, referenceLayer, anchorsOf, snapTo, createUndo, hitTest }
+  from '../maps/lib/map_edit.js';
+import { elevationAt } from '../maps/lib/terrain.js';
+// declare in the module's meta: files '../maps/lib/map_edit.js?v=0', '../maps/lib/terrain.js?v=0' (and map_base.js, § 7)
+```
+
+Conventions: positions are `{ lat, lon }` in degrees (longitude in [-180, 180[, rounded to a millionth of a degree when it comes from a pixel);
+`x, y` are pixels in the `box`; distances are **metres** (the base does not know the units of a mission file — a zone is in km, an arrival in NM, a
+hover in m: the caller converts); `project(lat, lon) → { x, y }` is `map.project` of the same map.
+
+| Entry | Contract |
+|---|---|
+| `tapPosition(map, box, { onTap({ lat, lon, x, y }), onLongPress?({ lat, lon, x, y }), longPressMs = 500, ignore? })` → `{ stop }` | a touch on the **bare** map gives a position; not a drag of the map, not a touch on a handle or on a control (`ignore`: a selector or a function of the event); a long press (less than 8 px of movement) is `onLongPress` and the touch that ends it is not an `onTap` |
+| `dragHandles(map, box, { handles(), hit = 22, snap?(x, y), onStart?(h), onMove(m), onEnd(m), onTap?(h), onCancel? })` → `{ refresh(), cancel(), dragging(), stop() }` | `handles()` → `[{ id, lat, lon, kind: 'point' \| 'vertex' \| 'object' \| 'radius', movable = true, center? }]`, read at each touch (positions follow the map); a press within `hit` px on a movable handle captures the pointer, stops MapLibre's own drag, and gives the return **at each frame**: `onMove({ id, kind, lat, lon, x, y, moved, snap })` (`snap`: what `snap(x, y)` answered — `{ lat, lon, id? }` or `null` —, the gesture's own guard: under 6 px it is a touch, `onTap(h)`); `onEnd` has the same fields; a handle of kind `'radius'` carries its `center` and `onMove` / `onEnd` add `meters` (the distance to the centre); `cancel()` drops the gesture in progress (`onCancel`); `dragging()` → `{ id } \| null` |
+| `previewLayer(map, id, { tokens })` → `{ set({ ghost?, rubber?, circle?, snap? }), clear(), remove() }` | the return during a gesture as a MapLibre layer, without any screen: `ghost` `{ lat, lon }` (the element where it would land), `rubber` `[{ lat, lon }, …]` (the rubber band of a line in progress), `circle` `{ lat, lon, meters }` (a radius), `snap` `{ lat, lon }` (the point it would snap to); `tokens` the colours (`{ accent, bg, snap }`, defaults for day) |
+| `sketch(map, box, { mode: 'line' \| 'polygon', points?, min, snap?, onChange(points), onTap?(vertex), onDone?(points, closed) })` → `{ add(p), insert(i, p), move(id, p), remove(id) → boolean, undo(), closeShape(), points(), stop() }` | the shape in progress (an open outline, a route): a touch on the bare map adds a vertex (snapped if `snap` answers), the vertices are handles of `dragHandles` (movable), the rubber band is `previewLayer`'s; `min` defaults to 3 for a `polygon` and 2 for a `line`: `remove(id)` answers `false` and does nothing below it, `closeShape()` below it too; a vertex touched calls `onTap({ id, index, lat, lon })` — **the screen** shows « Remove this vertex » and calls `remove(id)` (a long press may exist as a shortcut, never as the only path); `onChange` at each add / move / remove / undo; `onDone(points, closed)` at `closeShape()` or when the caller says so |
+| `authorLayers(map, { id, tokens, onTap })` → `{ setFeatures({ points, lines, polygons }), setVisible(on), at(x, y), remove() }` | **separate layers** for the elements of an author (the Map's own layers, § 7's `zonesLayer` / `pointsLayer`, are untouched), above the reference marks: `points` `[{ id, lat, lon, label?, kind? }]`, `lines` `[{ id, points: [{ lat, lon }…], dash? }]`, `polygons` `[{ id, rings: [[{ lat, lon }…]…] }]`; `onTap(feature)` and `at(x, y)` → the feature under a pixel or `null`; `tokens` per `kind` |
+| `referenceLayer(map, { data, kinds = ['aerodrome', 'navaid', 'fix', 'vrp'], minzoom, onPick(ref) })` → `{ update(data), setVisible(on), stop() }` | the aerodb reference marks of the bounding box (`data`: what `aerodb` returned for it — the Map's `S.data.data` form) as a **touchable layer**: `onPick({ id, lat, lon, kind })`; they are also the anchors for `snap` |
+| `anchorsOf(data)` → `[{ id, lat, lon, kind }]`; `snapTo(anchors, project, x, y, px = 20)` → anchor or `null` | pure: the Edit mode's `anchors()` / `snapAt()` (navaids, aerodromes, airway ends, points, VRP), the nearest within `px` pixels |
+| `createUndo(max = 20)` → `{ push(state), undo() → state \| null, size(), clear() }` | the Edit mode's `remember()` / `undoEdit()`: states are the caller's (cloned on `push`) |
+| `hitTest(items, project, x, y, px)` → index or `null` | the nearest of `items` (`{ lat, lon }`) within `px` pixels (the Edit mode's `pointAt`) |
+| `elevationAt(points, { load, z = 9 })` (`lib/terrain.js`) → `Promise<(number \| null)[]>` | the **terrain elevation, in metres**, at each `{ lat, lon }` (the Terrarium tiles the Map's profile already reads: `SiaProfile.terrainSampler`), `null` for a gap (a tile that does not come, a place without data) — **never 0**; `load(url) → Promise<ImageBitmap \| null>` is the caller's loader (the Map: `tileLoader(ctx)` in `state.js`): the hosts are the caller's, none is added here |
+
+As built (18 Nov), the notes on the contract above:
+
+- `map` is a MapLibre map **or** any `{ toXY(lat, lon) → { x, y }, toLL(x, y) → { lat, lon } }`: the Map's Edit mode, which also runs on its plain
+  background without MapLibre, gives its canvas this way (`project` in the table is then `toXY`).
+- `ignore` (a selector or a function of the event) is an option of `dragHandles` as well as of `tapPosition`; `onTap` of `tapPosition` is optional;
+  `onStart(h)` of `dragHandles` receives the handle with the pixel `x`, `y` of the press; `refresh()` drops a gesture whose handle has disappeared.
+- `hitTest`: an entry that is `null` or has no position is skipped and **keeps its rank** (the Edit mode puts `null` for the departure, the arrival
+  and the points a mission imposes); on a tie the last one wins (the Edit mode's behaviour). `snapTo` is `hitTest` on the anchors.
+- `elevationAt`: `load(url)` may give an `ImageBitmap`, a `Blob`, an `ArrayBuffer` or `null` (the Map's `tileLoader` gives a `Blob`). The URL is the Terrarium
+  tile the Map's profile already reads (`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`): the page's `meta.net` already allows it
+  and no other host is named. A tile that does not come, throws or is unreadable is a gap (`null`) and is asked again at the next reading; the tiles read are kept
+  (96 per loader). Elevations are rounded to a tenth of a metre; a transparent pixel is a gap; beyond ±85.0511° is a gap.
+- Layer order, whatever the order of creation: the reference marks, then the author's elements, then the gesture's return (`previewLayer`). Layer ids are
+  `me-ref-…`, `me-auth-…`, `me-prev-…` (unique per call), the base adds nothing else to the style.
+- `sketch` keeps its states for `undo()` (50), a vertex touched is `onTap({ id, index, lat, lon })` — the screen offers « Remove this vertex » —, a polygon is
+  closed by `closeShape()` only at its minimum.
+- Bench: `modules/maps/lib/test/map_edit.html` (MapLibre alone on a local style, no network, no module screen), driven by noreg **D260** (the pure functions, the relief)
+  and **D261** (the gestures and the layers). The Map's Edit mode goes through `hitTest`, `anchorsOf`, `snapTo`, `createUndo`, `dragHandles` and `tapPosition`
+  (`edit.js`; the Edit cases D30, D153, D154 are replayed unchanged); `lib/map_edit.js` is in the module's `lazy` list with `edit.js`.
+
 ## 8. The weather cross-section: what maps reads from the frame and atmosphere
 
 The sheet's "Weather" content (SPEC § 9) calls atmosphere's pure renderer with data read through the frame's weather layer.

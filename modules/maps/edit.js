@@ -52,6 +52,14 @@ import {
   altAtY
 } from './profile_view.js';
 import {
+  hitTest,
+  anchorsOf,
+  snapTo,
+  createUndo,
+  dragHandles,
+  tapPosition
+} from './lib/map_edit.js';
+import {
   hideTips,
   showTip,
   directHtml,
@@ -62,7 +70,7 @@ import {
 /** Rayon d'appui sur un point de la route (px) et rayon d'accroche d'un point où se poser (px). */
 const HIT = 22,
   SNAP = 20;
-/** Retenue de l'annulation (gestes gardés en mémoire). */
+/** Retenue de l'annulation (gestes gardés en mémoire, lib/map_edit.js createUndo). */
 const UNDO_MAX = 20;
 
 const placed = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon);
@@ -107,41 +115,15 @@ const locked = p => p?.lock === 'mission';
 /** Point de la route sous (x, y) : son rang, ou null ; movable : sans le départ, l'arrivée ni un point imposé par la mission. */
 function pointAt(x, y, movable = false) {
   const pts = rawPoints();
-  let best = null,
-    bd = HIT;
-  pts.forEach((p, i) => {
-    if (movable && (i === 0 || i === pts.length - 1 || locked(p))) return;
-    const q = S.toC(+p.lat, +p.lon),
-      d = Math.hypot(q.x - x, q.y - y);
-    if (d <= bd) {
-      bd = d;
-      best = i;
-    }
-  });
-  return best;
+  return hitTest(movable ? pts.map((p, i) => i === 0 || i === pts.length - 1 || locked(p) ? null : p) : pts, S.toC, x, y, HIT);
 }
 /** Points où se poser : balises, terrains, points des voies, points RNAV et de report des données lues (gardés par lecture). */
 function anchors() {
   const d = S.data?.data;
   if (!d) return [];
   if (S.edit.anchorsFor === d) return S.edit.anchors;
-  const out = [],
-    add = (id, lat, lon, kind) => {
-      if (id && Number.isFinite(+lat) && Number.isFinite(+lon)) out.push({
-        id: String(id),
-        lat: +lat,
-        lon: +lon,
-        kind
-      });
-    };
-  for (const n of d.navaids || []) add(n.id, n.lat, n.lon, 'navaid');
-  for (const a of d.aerodromes || []) add(a.icao || a.id, a.lat, a.lon, 'aerodrome');
-  for (const w of d.airways || [])
-    for (const e of [w.a, w.b]) add(e?.id, e?.lat, e?.lon, 'fix');
-  for (const p of d.points || []) add(p.id, p.lat, p.lon, 'fix');
-  for (const v of d.vrp || []) add(v.id || v.name, v.lat, v.lon, 'vrp');
   S.edit.anchorsFor = d;
-  return S.edit.anchors = out;
+  return S.edit.anchors = anchorsOf(d);
 }
 /** Position sous (x, y) arrondie au millionième de degré, longitude dans [-180, 180[ ; null sans carte. */
 function llAt(x, y) {
@@ -153,17 +135,7 @@ function llAt(x, y) {
 }
 /** Point où se poser le plus proche de (x, y), à moins de SNAP px ; null sinon. */
 function snapAt(x, y) {
-  let best = null,
-    bd = SNAP;
-  for (const a of anchors()) {
-    const q = S.toC(a.lat, a.lon),
-      d = Math.hypot(q.x - x, q.y - y);
-    if (d <= bd) {
-      bd = d;
-      best = a;
-    }
-  }
-  return best;
+  return snapTo(anchors(), S.toC, x, y, SNAP);
 }
 
 // ---------------------------------------------------------------- le mode
@@ -177,7 +149,7 @@ export function setEdit(on) {
   setLabel(S.editBtn, tt(on ? TX.editDone : TX.editHelp));
   setAdding(false);
   if (S.el.classList.contains('mp-editing') !== on) S.el.classList.toggle('mp-editing', on);
-  S.undoBtn.disabled = !S.edit.undo.length;
+  S.undoBtn.disabled = !S.edit.undo.size();
   syncButtons();
   hideTips();
   schedule();
@@ -234,7 +206,7 @@ function commit(points, levelFt = null) {
     updated: rec.updated_at
   };
   buildPath(); // le chemin « route + procédures » et les marques NM suivent les nouveaux points
-  S.undoBtn.disabled = !S.edit.undo.length;
+  S.undoBtn.disabled = !S.edit.undo.size();
   header();
   schedule();
   buildProfile();
@@ -273,10 +245,9 @@ async function saveRoute(ctx, path, base, mine) {
 /** L'état d'avant le geste gardé pour « Annuler ». */
 function remember() {
   S.edit.undo.push({
-    points: structuredClone(rawPoints()),
+    points: rawPoints(),
     level: +rawFlight()?.level?.ft || 0
   });
-  if (S.edit.undo.length > UNDO_MAX) S.edit.undo.shift();
 }
 /** Point i posé sur a : son nom et sa position, son palier gardé ; son vent et sa voie d'arrivée tombent (il a bougé). */
 function movePoint(i, a) {
@@ -334,7 +305,7 @@ function removePoint(i) {
 }
 /** Dernier geste repris : points et niveau du vol d'avant. */
 export function undoEdit() {
-  const prev = S.edit.undo.pop();
+  const prev = S.edit.undo.undo();
   if (!prev) return;
   hideTips();
   commit(prev.points, prev.level);
@@ -520,6 +491,7 @@ let installed = null;
 function install() {
   if (installed === S) return;
   installed = S;
+  S.edit.undo = createUndo(UNDO_MAX); // la retenue de l'annulation, une par montage
   // l'aide du mode : un pli « Comment faire » dans l'écran (fermé), montré tant que le mode est ouvert (classe mp-editing) ; plus de note flottante (l'utilisateur, 11 nov. 2026)
   const how = document.createElement('details');
   how.className = 'mp-howto';
@@ -529,102 +501,88 @@ function install() {
   mapGestures();
   levelGestures();
 }
-/** Gestes du mode sur la carte : appui sur un point tournant (capture, avant MapLibre), glisser, lâcher ; appui long. */
+/** Gestes du mode sur la carte (lib/map_edit.js) : appui sur un point tournant (poignée à 22 px, prise avant MapLibre), glisser, lâcher ; appui
+ *  long hors d'un point de la route : ajout là où le doigt reste. */
 function mapGestures() {
   const box = S.box,
-    pos = e => {
-      const r = box.getBoundingClientRect();
-      return [e.clientX - r.left, e.clientY - r.top];
+    ui = e => e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers, .f-ov-btn'),
+    // le cadre de la carte sans fond MapLibre (fond uni) : le canevas de la Carte donne les deux sens
+    view = {
+      toXY: (lat, lon) => S.toC(lat, lon),
+      toLL: (x, y) => llOf(x, y)
     },
-    ui = e => e.target.closest('.mp-mode-opts, .mp-tip, .mp-layers, .f-ov-btn');
-  box.addEventListener('pointerdown', e => {
-    if (!S?.edit.on || e.button > 0 || !S.toC || ui(e)) return;
-    const [x, y] = pos(e),
-      i = pointAt(x, y, true);
-    if (i == null) return;
-    e.stopPropagation();
-    e.preventDefault();
-    S.edit.drag = {
-      i,
-      id: e.pointerId,
-      x0: x,
-      y0: y,
-      x,
-      y,
-      moved: false,
-      snap: null
-    };
-    hideTips();
-    try {
-      box.setPointerCapture(e.pointerId);
-    } catch {
-      /* capture refusée : le glisser suit tant que le doigt reste sur la carte */
-    }
-  }, true);
-  // le geste commencé sur un point n'est pas un déplacement de la carte (MapLibre écoute mousedown et touchstart)
-  for (const t of ['mousedown', 'touchstart', 'touchmove']) box.addEventListener(t, e => {
-    if (!S?.edit.drag) return;
-    e.stopPropagation();
-    if (e.cancelable) e.preventDefault();
-  }, {
-    capture: true,
-    passive: false
-  });
-  box.addEventListener('pointermove', e => {
-    const d = S?.edit.drag;
-    if (!d || e.pointerId !== d.id) return;
-    e.stopPropagation();
-    [d.x, d.y] = pos(e);
-    if (!d.moved && Math.hypot(d.x - d.x0, d.y - d.y0) > 6) d.moved = true;
-    d.snap = d.moved ? snapAt(d.x, d.y) : null;
-    schedule();
-  }, true);
-  const end = e => {
-    const d = S?.edit.drag;
-    if (!d || e.pointerId !== d.id) return;
-    e.stopPropagation();
-    S.edit.drag = null;
-    S.edit.tapGuard = performance.now();
-    if (e.type === 'pointercancel') return schedule();
-    if (!d.moved) openCard(d.i);
-    else if (d.snap) movePoint(d.i, d.snap);
-    else {
-      const ll = llAt(d.x, d.y); // loin de tout point où se poser : point libre (VFR, hélicoptère)
-      if (ll) movePoint(d.i, {
-        id: icaoCoord(ll.lat, ll.lon),
-        lat: ll.lat,
-        lon: ll.lon
-      });
-    }
-    schedule();
-  };
-  box.addEventListener('pointerup', end, true);
-  box.addEventListener('pointercancel', end, true);
-  // appui long (500 ms, moins de 8 px) hors d'un point de la route : ajout là où le doigt reste
-  let longT = 0,
-    longAt = null;
-  box.addEventListener('pointerdown', e => {
-    clearTimeout(longT);
-    if (!S?.edit.on || S.edit.drag || e.button > 0 || ui(e)) return;
-    longAt = pos(e);
-    longT = setTimeout(() => {
-      if (!S || !longAt || S.edit.drag) return;
-      S.edit.tapGuard = performance.now() + 300; // le toucher qui finit l'appui long n'est pas un toucher simple
-      addAt(...longAt);
-      longAt = null;
-    }, 500);
-  });
-  box.addEventListener('pointermove', e => {
-    if (!longAt) return;
-    const [x, y] = pos(e);
-    if (Math.hypot(x - longAt[0], y - longAt[1]) > 8) {
-      clearTimeout(longT);
-      longAt = null;
-    }
-  });
-  for (const t of ['pointerup', 'pointercancel']) box.addEventListener(t, () => {
-    clearTimeout(longT);
-    longAt = null;
+    drag = dragHandles(view, box, {
+      hit: HIT,
+      ignore: e => !S?.edit.on || !S.toC || !!ui(e),
+      handles: () => S?.edit.on && S.toC ? rawPoints().map((p, i, a) => ({
+        id: i,
+        lat: +p.lat,
+        lon: +p.lon,
+        kind: 'point',
+        movable: !(i === 0 || i === a.length - 1 || locked(p))
+      })) : [],
+      snap: snapAt,
+      onStart: h => {
+        S.edit.drag = {
+          i: h.id,
+          x0: h.x,
+          y0: h.y,
+          x: h.x,
+          y: h.y,
+          moved: false,
+          snap: null
+        };
+        hideTips();
+      },
+      onMove: m => {
+        const d = S?.edit.drag;
+        if (!d) return;
+        d.x = m.x;
+        d.y = m.y;
+        d.moved = m.moved;
+        d.snap = m.snap;
+        schedule();
+      },
+      onEnd: m => {
+        const i = S.edit.drag?.i;
+        S.edit.drag = null;
+        S.edit.tapGuard = performance.now();
+        if (i != null) {
+          if (m.snap) movePoint(i, m.snap);
+          else {
+            const ll = llAt(m.x, m.y); // loin de tout point où se poser : point libre (VFR, hélicoptère)
+            if (ll) movePoint(i, {
+              id: icaoCoord(ll.lat, ll.lon),
+              lat: ll.lat,
+              lon: ll.lon
+            });
+          }
+        }
+        schedule();
+      },
+      onTap: h => {
+        S.edit.drag = null;
+        S.edit.tapGuard = performance.now();
+        openCard(h.id);
+        schedule();
+      },
+      onCancel: () => {
+        S.edit.drag = null;
+        S.edit.tapGuard = performance.now();
+        schedule();
+      }
+    }),
+    tap = tapPosition(view, box, {
+      ignore: e => !S?.edit.on || !!S.edit.drag || !!ui(e),
+      onLongPress: p => {
+        if (!S) return;
+        S.edit.tapGuard = performance.now() + 300; // le toucher qui finit l'appui long n'est pas un toucher simple
+        addAt(p.x, p.y);
+      }
+    });
+  S.stops.push(() => {
+    drag.stop();
+    tap.stop();
   });
   // l'appui long n'ouvre pas le menu du navigateur pendant le mode
   box.addEventListener('contextmenu', e => {

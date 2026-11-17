@@ -8938,6 +8938,231 @@ def d_xpchoose(c):
     c.eq(allry, [{'id': 'ALLRY', 'local': 'xplane'}], 'after the choice, ALLRY is still without position in the flight kept by the data layer', what=str(g))
 
 
+# ------------------------------------------------------------------------------------------------------ D260 / D261
+# the editing base of the maps (lib/map_edit.js, lib/terrain.js, INTEGRATION.md § 7 bis, SOG-0446): its bench is a bare page, no module screen
+_ME_URL = '/modules/maps/lib/test/map_edit.html'
+
+
+def _me_open(c):
+    c.page.goto(f'{c.base}{_ME_URL}', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__me && (window.__me.ready || window.__me.failed)', timeout=30000)
+    except Exception:
+        raise Fail('the bench never drew its map', 'a map with the editing entries', _ME_URL) from None
+    c.ok(not c.js('window.__me.failed'), 'no map', 'the base’s map is created (local style, no network)')
+
+
+_ME_IDLE = "() => new Promise(r => { const m = window.__me.map; m.once('idle', r); m.triggerRepaint() })"
+_ME_REL = "(q) => { const r = window.__me.map.getContainer().getBoundingClientRect(); return window.__me.author.at(q[0] - r.left, q[1] - r.top) }"
+
+
+@case('D260', 'The editing base, pure parts (lib/map_edit.js, lib/terrain.js): hitTest, anchorsOf, snapTo, createUndo; elevationAt gives metres, null for a gap and never 0', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0446 (INTEGRATION.md § 7 bis, the contract « Mission creation » ports against): hitTest(items, project, x, y, px) → rank or null (an empty entry keeps its rank); anchorsOf(data); snapTo(anchors, project, x, y, px = 20); createUndo(max = 20) clones on push; elevationAt(points, { load, z }) → metres, null for a gap, never 0, no host added (the caller loads)')
+def d260(c):
+    _me_open(c)
+    r = c.js("""async () => { const M = window.__me, E = M.E, pr = (lat, lon) => M.map.project([lon, lat]), p0 = pr(45, 5), items = [{ lat: 45, lon: 5 }, null, { lat: 45.5, lon: 5.5 }];
+      const hit = (x, y, it = items, px = 22) => E.hitTest(it, pr, x, y, px);
+      const data = { navaids: [{ id: 'VOR', lat: 44, lon: 3 }, { id: '', lat: 1, lon: 1 }], aerodromes: [{ icao: 'LFAA', lat: 45, lon: 4 }, { id: 'LFBB', lat: 46, lon: 4 }], airways: [{ a: { id: 'WP1', lat: 43, lon: 2 }, b: { id: 'WP2', lat: 'x', lon: 2 } }],
+        points: [{ id: 'RNAV', lat: 44.5, lon: 3.5 }], vrp: [{ name: 'VRP N', lat: 45.5, lon: 3.5 }] };
+      const a = E.anchorsOf(data), u = E.createUndo(2), st = { pts: [1, 2] }, s1 = pr(47, 2);
+      u.push(st); st.pts.push(3); u.push({ n: 2 }); u.push({ n: 3 });
+      const first = u.undo(), second = u.undo(), third = u.undo();
+      return { hitOn: hit(p0.x, p0.y), hitNear: hit(p0.x + 3, p0.y - 3), hitFar: hit(p0.x + 60, p0.y), hitNullRank: E.hitTest([null, { lat: 45, lon: 5 }], pr, p0.x, p0.y, 22), hitNone: E.hitTest(null, pr, 0, 0, 10),
+        anchors: a.map(x => x.id + ':' + x.kind), snapHit: (E.snapTo(M.anchors, pr, s1.x + 5, s1.y) || {}).id, snapMiss: E.snapTo(M.anchors, pr, s1.x + 60, s1.y), snapPx: (E.snapTo(M.anchors, pr, s1.x + 30, s1.y, 40) || {}).id,
+        undo: { first, second, third, size: u.size() } } }""")
+    c.eq([r['hitOn'], r['hitNear'], r['hitFar'], r['hitNullRank'], r['hitNone']], [0, 0, None, 1, None], 'hitTest gives the rank of the item within the radius, null beyond it; an empty entry keeps its rank; no items, no hit', what=str(r))
+    c.eq(r['anchors'], ['VOR:navaid', 'LFAA:aerodrome', 'LFBB:aerodrome', 'WP1:fix', 'RNAV:fix', 'VRP N:vrp'], 'anchorsOf lists navaids, aerodromes, the ends of airways, points and VRP, and drops what has no id or no position', what=str(r['anchors']))
+    c.eq([r['snapHit'], r['snapMiss'], r['snapPx']], ['ANC1', None, 'ANC1'], 'snapTo gives the nearest anchor within 20 px (or the radius given), null beyond', what=str([r['snapHit'], r['snapMiss'], r['snapPx']]))
+    c.eq(r['undo'], {'first': {'n': 3}, 'second': {'n': 2}, 'third': None, 'size': 0}, 'createUndo(2) keeps the last two states, gives them back newest first, then null', what=str(r['undo']))
+    c.eq(c.js("() => { const E = window.__me.E, u = E.createUndo(), s = { a: [1] }; u.push(s); s.a.push(2); return u.undo() }"), {'a': [1]}, 'a state is cloned on push: changing it afterwards changes nothing', what='clone')
+    t = c.js("""async () => { const M = window.__me, pts = [{ lat: 46, lon: 3 }, { lat: 45, lon: 5 }, { lat: 43, lon: 8 }, { lat: 41.5, lon: 1 }, { lat: 41.5, lon: 4 }, { lat: NaN, lon: 3 }, { lat: 89, lon: 3 }, null];
+      M.loaded = []; const a = await M.elevationAt(pts, { load: M.load, z: 7 }), n1 = M.loaded.length;
+      const b = await M.elevationAt(pts.slice(0, 3), { load: M.load, z: 7 }), n2 = M.loaded.length;
+      const none = await M.elevationAt(pts.slice(0, 2), {}), hosts = [...new Set(M.loaded.map(u => new URL(u).host))];
+      return { a, b, n1, n2, none, hosts } }""")
+    c.eq(t['a'], [1234.5, 1234.5, 1234.5, None, None, None, None, None], 'elevationAt gives metres where the tile comes, null for a tile that is null, that fails, for a bad position, never 0', what=str(t['a']))
+    c.ok(0 not in t['a'] and t['b'] == [1234.5, 1234.5, 1234.5], str(t), 'no gap is ever read as 0, and the tiles already read are kept')
+    c.eq(t['n2'], t['n1'], 'the tiles of the first reading are not asked again', what=f"{t['n1']} → {t['n2']}")
+    c.eq(t['none'], [None, None], 'without a loader no elevation is invented', what=str(t['none']))
+    c.eq(t['hosts'], ['s3.amazonaws.com'], 'the only host named is the Terrarium one, asked through the caller’s loader (none is added)', what=str(t['hosts']))
+
+
+def _me_drag(c, a, b, steps=10):
+    m = c.page.mouse
+    m.move(*a)
+    m.down()
+    for i in range(1, steps + 1):
+        m.move(a[0] + (b[0] - a[0]) * i / steps, a[1] + (b[1] - a[1]) * i / steps)
+        c.wait(15)
+    m.up()
+    c.wait(80)
+
+
+@case('D261', 'The editing base, gestures and layers (lib/map_edit.js): dragHandles (movable, snap, tap, radius in metres, cancel), tapPosition (tap, long press, not on a handle), previewLayer, sketch (minimum, remove, undo, close), authorLayers and referenceLayer', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0446 (INTEGRATION.md § 7 bis): a press on a movable handle stops the map’s own drag and gives the return at each frame; under 6 px it is a touch; a radius handle gives metres; a touch on the bare map gives a position, a long press is its own gesture; a shape keeps its minimum (3 for a polygon, 2 for a line) and a vertex is removable by a visible path; the author’s layers are separate and above the reference marks')
+def d261(c):
+    c.page.set_viewport_size({'width': 1000, 'height': 700})
+    _me_open(c)
+    m = c.page.mouse
+    at = lambda lon, lat: c.js('(q) => window.__me.at(q[0], q[1])', [lon, lat])
+    center = lambda: c.js('() => { const k = window.__me.map.getCenter(); return [k.lng, k.lat] }')
+    home = lambda: (c.js('() => window.__me.map.jumpTo({ center: [5, 45], zoom: window.__me.map.getZoom() })'), c.wait(300))
+    c0 = center()
+    # --- dragHandles: a movable handle follows the finger and the map does not move
+    A = at(5, 45)
+    _me_drag(c, (A['x'], A['y']), (A['x'] + 70, A['y'] + 40))
+    g = c.js('() => { const M = window.__me; return { starts: M.starts, moves: M.moves.length, ends: M.ends, taps: M.taps.length } }')
+    c.eq(g['starts'], ['A'], 'a press on the movable handle A takes it', what=str(g))
+    c.ok(g['moves'] >= 5 and len(g['ends']) == 1 and g['ends'][0]['id'] == 'A' and g['ends'][0]['moved'] and g['ends'][0]['snap'] is None, str(g), 'the return comes at each frame, then the end with its fields (id, kind, lat, lon, x, y, moved, snap)')
+    e = g['ends'][0]
+    want = c.js('(q) => { const k = window.__me.map.unproject([q[0], q[1]]); return [k.lat, k.lng] }', [e['x'], e['y']])
+    c.ok(abs(e['lat'] - want[0]) < 2e-6 and abs(e['lon'] - want[1]) < 2e-6 and e['lat'] == round(e['lat'], 6), str([e, want]), 'the position is the pixel’s, rounded to a millionth of a degree')
+    c.eq(center(), c0, 'the map did not move: the press was taken before MapLibre’s own drag', what='center')
+    c.eq(g['taps'], 0, 'a touch that began on a handle is not a touch on the bare map (tapPosition)', what='taps')
+    c.js('() => { const M = window.__me; M.ends.length = 0; M.moves.length = 0; M.htaps.length = 0 }')
+    S1 = at(2, 47)
+    _me_drag(c, (A['x'], A['y']), (S1['x'] + 6, S1['y'] + 5))
+    g = c.js('() => ({ ends: window.__me.ends, last: window.__me.moves[window.__me.moves.length - 1] })')
+    c.ok(g['ends'] and g['ends'][0]['snap'] and g['ends'][0]['snap']['id'] == 'ANC1' and g['last']['snap'] and g['last']['snap']['id'] == 'ANC1', str(g), 'near an anchor, the answer of snap(x, y) rides on each frame and on the end')
+    c.js('() => { const M = window.__me; M.ends.length = 0; M.moves.length = 0 }')
+    m.move(A['x'], A['y'])
+    m.down()
+    m.move(A['x'] + 2, A['y'] + 1)
+    m.up()
+    c.wait(100)
+    g = c.js('() => ({ ends: window.__me.ends.length, htaps: window.__me.htaps })')
+    c.eq(g, {'ends': 0, 'htaps': ['A']}, 'under 6 px of movement it is a touch on the handle (onTap), not a move', what=str(g))
+    B = at(3, 43)
+    s0 = c.js('() => window.__me.starts.length')
+    _me_drag(c, (B['x'], B['y']), (B['x'] + 60, B['y'] + 30))
+    c.ok(c.js('() => window.__me.starts.length') == s0 and center() != c0, str([s0, center(), c0]), 'a handle that is not movable is not taken: the map pans under the finger')
+    home()
+    c.js('() => { const M = window.__me; M.ends.length = 0; M.moves.length = 0 }')
+    R = at(8, 46)
+    _me_drag(c, (R['x'], R['y']), (R['x'] + 50, R['y'] - 20))
+    e = c.js('() => window.__me.ends[0]')
+    hav = c.js('(q) => { const r = d => d * Math.PI / 180, dl = r(q[0] - 46), dn = r(q[1] - 7), h = Math.sin(dl / 2) ** 2 + Math.cos(r(46)) * Math.cos(r(q[0])) * Math.sin(dn / 2) ** 2; return 2 * 6371008.8 * Math.asin(Math.sqrt(h)) }', [e['lat'], e['lon']])
+    c.ok(e['kind'] == 'radius' and abs(e['meters'] - hav) < 1 and e['meters'] > 80000, str([e, hav]), 'a handle of kind radius gives the distance to its centre in METRES')
+    home()
+    A = at(5, 45)
+    c.js('() => { const M = window.__me; M.ends.length = 0; M.cancels.length = 0 }')
+    m.move(A['x'], A['y'])
+    m.down()
+    m.move(A['x'] + 30, A['y'] + 30)
+    mid = c.js('() => window.__me.drag.dragging()')
+    c.js('() => window.__me.drag.cancel()')
+    m.up()
+    c.wait(100)
+    g = c.js('() => ({ ends: window.__me.ends.length, cancels: window.__me.cancels, dragging: window.__me.drag.dragging() })')
+    c.ok(mid == {'id': 'A'} and g == {'ends': 0, 'cancels': ['A'], 'dragging': None}, str([mid, g]), 'cancel() drops the gesture in progress (onCancel) and nothing is ended')
+    # --- tapPosition: a bare touch, not a drag, a long press of its own
+    home()
+    c.js('() => { const M = window.__me; M.taps.length = 0; M.longs.length = 0 }')
+    P = at(7, 48)
+    m.click(P['x'], P['y'])
+    c.wait(100)
+    t = c.js('() => window.__me.taps')
+    c.ok(len(t) == 1 and abs(t[0]['lat'] - 48) < .1 and abs(t[0]['lon'] - 7) < .1 and 'x' in t[0] and 'y' in t[0], str(t), 'a touch on the bare map gives { lat, lon, x, y }')
+    _me_drag(c, (P['x'], P['y']), (P['x'] + 60, P['y'] + 20))
+    c.eq(c.js('() => window.__me.taps.length'), 1, 'a drag of the map is not a touch', what='taps after a drag')
+    home()
+    P = at(7, 48)
+    m.move(P['x'], P['y'])
+    m.down()
+    c.wait(700)
+    m.up()
+    c.wait(100)
+    g = c.js('() => ({ taps: window.__me.taps.length, longs: window.__me.longs })')
+    c.ok(g['taps'] == 1 and len(g['longs']) == 1 and abs(g['longs'][0]['lat'] - 48) < .1, str(g), 'a long press is onLongPress and the touch that ends it is not an onTap')
+    m.move(P['x'], P['y'])
+    m.down()
+    m.move(P['x'] + 20, P['y'])
+    c.wait(700)
+    m.up()
+    c.wait(100)
+    c.eq(c.js('() => window.__me.longs.length'), 1, 'a press that moves more than 8 px is not a long press', what='longs')
+    home()
+    # --- previewLayer
+    pv = c.js("""async () => { const M = window.__me, id = Object.keys(M.map.getStyle().sources).find(k => k.startsWith('me-prev-')), feat = () => (M.map.getSource(id).serialize().data.features || []);
+      M.preview.set({ ghost: { lat: 45, lon: 5 }, snap: { lat: 46, lon: 6 }, rubber: [{ lat: 44, lon: 4 }, { lat: 45, lon: 5 }, { lat: 46, lon: 6 }], circle: { lat: 46, lon: 7, meters: 100000 } });
+      const f = feat(), ring = f.find(x => x.properties.part === 'circle').geometry.coordinates[0], r = d => d * Math.PI / 180;
+      const dist = q => { const dl = r(q[1] - 46), dn = r(q[0] - 7), h = Math.sin(dl / 2) ** 2 + Math.cos(r(46)) * Math.cos(r(q[1])) * Math.sin(dn / 2) ** 2; return 2 * 6371008.8 * Math.asin(Math.sqrt(h)) };
+      const parts = f.map(x => x.properties.part).sort(), dd = ring.map(dist), layers = M.layerIds().filter(i => i.startsWith(id)).length;
+      M.preview.clear(); const empty = feat().length; M.preview.set({ circle: { lat: 46, lon: 7, meters: 0 }, ghost: { lat: 'x', lon: 1 } }); const bad = feat().length;
+      return { parts, min: Math.min(...dd), max: Math.max(...dd), layers, empty, bad } }""")
+    c.eq(pv['parts'], ['circle', 'ghost', 'rubber', 'snap'], 'previewLayer draws the ghost, the rubber band, the circle and the snap', what=str(pv))
+    c.ok(abs(pv['min'] - 100000) < 100 and abs(pv['max'] - 100000) < 100 and pv['layers'] == 5 and pv['empty'] == 0 and pv['bad'] == 0, str(pv), 'the circle is 100 km of radius, five layers, clear() empties them, a null radius or a bad position draws nothing')
+    # --- sketch
+    sk = c.js("""async () => { const M = window.__me; M.startSketch('polygon', [{ lat: 44, lon: 4 }, { lat: 44, lon: 6 }]); const s = M.sketch, r = {};
+      r.closeShort = s.closeShape(); r.doneShort = M.done || null; r.removeShort = s.remove(s.points()[0].id);
+      const v = s.add({ lat: 46, lon: 5 }); r.n3 = s.points().length; r.closeOk = s.closeShape(); r.done = M.done;
+      r.removeAtMin = s.remove(v.id); r.n3b = s.points().length; const w = s.add({ lat: 47, lon: 5 }); r.removeOver = s.remove(w.id); r.n3c = s.points().length;
+      M.startSketch('line', [{ lat: 44, lon: 4 }, { lat: 45, lon: 4 }]); r.lineMin = M.sketch.remove(M.sketch.points()[0].id); r.lineN = M.sketch.points().length; const ins = M.sketch.insert(1, { lat: 44.5, lon: 4 });
+      r.order = M.sketch.points().map(p => p.lat); r.move = M.sketch.move(ins.id, { lat: 44.6, lon: 4.1 }); r.moved = M.sketch.points()[1].lat; r.moveBad = M.sketch.move('nope', { lat: 1, lon: 1 }); return r }""")
+    c.ok(sk['closeShort'] is False and sk['doneShort'] is None and sk['removeShort'] is False, str(sk), 'a polygon of two vertices cannot be closed and no vertex is removed below the minimum (3)')
+    c.ok(sk['n3'] == 3 and sk['closeOk'] is True and sk['done'] == {'n': 3, 'closed': True}, str(sk), 'at the minimum the shape closes: onDone(points, closed)')
+    c.ok(sk['removeAtMin'] is False and sk['n3b'] == 3 and sk['removeOver'] is True and sk['n3c'] == 3, str(sk), 'remove(id) answers false at the minimum and does nothing; above it, it removes')
+    c.ok(sk['lineMin'] is False and sk['lineN'] == 2 and sk['order'] == [44, 44.5, 45] and sk['move'] is True and sk['moved'] == 44.6 and sk['moveBad'] is False, str(sk), 'a line keeps 2 vertices; insert puts the vertex at its rank; move(id) moves it, an unknown id answers false')
+    c.js("() => window.__me.startSketch('polygon', [{ lat: 44, lon: 4 }, { lat: 44, lon: 6 }])")
+    T = at(5, 47.5)
+    m.click(T['x'], T['y'])
+    c.wait(100)
+    c.eq(c.js('() => window.__me.sketch.points().length'), 3, 'a touch on the bare map adds a vertex to the shape', what='points')
+    c.js('() => { window.__me.sketchTaps.length = 0; window.__me.startSketch("polygon", [{ lat: 44, lon: 4 }, { lat: 44, lon: 6 }, { lat: 46, lon: 5 }]) }')
+    V = at(6, 44)
+    m.click(V['x'], V['y'])
+    c.wait(100)
+    st = c.js('() => window.__me.sketchTaps')
+    c.ok(len(st) == 1 and st[0]['index'] == 1 and st[0]['id'] and abs(st[0]['lon'] - 6) < 1e-6, str(st), 'a vertex touched calls onTap({ id, index, lat, lon }): the screen offers « Remove this vertex » and calls remove(id)')
+    _me_drag(c, (V['x'], V['y']), (V['x'] + 40, V['y'] + 30))
+    p = c.js('() => window.__me.sketch.points()')
+    c.ok(p[1]['lat'] != 44 and p[1]['lon'] != 6 and len(p) == 3, str(p), 'a vertex is a handle: dragged, it moves')
+    c.eq(c.js('() => window.__me.sketch.undo() && window.__me.sketch.points()[1].lat'), 44, 'undo() takes the drag back', what='undo')
+    c.js('() => window.__me.sketch.stop()')
+    # --- authorLayers above the reference marks, separate, touchable
+    c.js("""() => { const M = window.__me; M.author.setFeatures({ points: [{ id: 'P1', lat: 44, lon: 5.5, label: 'one', kind: 'drone' }, { id: 'P2', lat: 47, lon: 6, kind: 'x' }], lines: [{ id: 'L1', points: [{ lat: 43, lon: 4 }, { lat: 43, lon: 7 }], dash: true }],
+      polygons: [{ id: 'G1', rings: [[{ lat: 48, lon: 3 }, { lat: 48, lon: 4 }, { lat: 49, lon: 4 }, { lat: 48, lon: 3 }]] }] }) }""")
+    c.js(_ME_IDLE)
+    ids = c.js('() => window.__me.layerIds()')
+    ia = [i for i, x in enumerate(ids) if x.startswith('me-auth-')]
+    ir = [i for i, x in enumerate(ids) if x.startswith('me-ref-')]
+    c.ok(ia and ir and min(ia) > max(ir), str(ids), 'the author’s layers are their own and come after (above) the reference marks')
+    P1 = at(5.5, 44)
+    c.js('() => { window.__me.authorTaps.length = 0 }')
+    m.click(P1['x'], P1['y'])
+    c.wait(150)
+    f = c.js(_ME_REL, [P1['x'], P1['y']])
+    taps = c.js('() => window.__me.authorTaps')
+    c.ok(f == {'part': 'point', 'id': 'P1', 'label': 'one', 'kind': 'drone'} and taps == [f], str([f, taps]), 'at(x, y) and onTap give the element under the finger, with its label and its kind')
+    c.js('() => window.__me.author.setVisible(false)')
+    c.js(_ME_IDLE)
+    c.eq(c.js(_ME_REL, [P1['x'], P1['y']]), None, 'hidden, the author’s elements are not found', what='at')
+    c.js('() => { window.__me.author.setVisible(true); window.__me.author.remove() }')
+    c.eq([i for i in c.js('() => window.__me.layerIds()') if i.startswith('me-auth-')], [], 'remove() takes the author’s layers away', what='layers')
+    # --- referenceLayer
+    c.js('() => { window.__me.picks.length = 0 }')
+    c.js("() => window.__me.map.jumpTo({ center: [3, 45], zoom: 4.2 })")
+    c.js(_ME_IDLE)
+    L = at(1, 41)
+    m.click(L['x'], L['y'])
+    c.wait(150)
+    pk = c.js('() => window.__me.picks')
+    c.ok(len(pk) == 1 and pk[0]['id'] == 'LFXX' and pk[0]['kind'] == 'aerodrome', str(pk), 'a reference mark touched gives onPick({ id, lat, lon, kind })')
+    c.js('() => window.__me.ref.setVisible(false)')
+    m.click(L['x'], L['y'])
+    c.wait(150)
+    c.eq(c.js('() => window.__me.picks.length'), 1, 'hidden, the marks are not touchable', what='picks')
+    c.js("() => { window.__me.ref.setVisible(true); window.__me.ref.update({ navaids: [{ id: 'ZZZ', lat: 41, lon: 1 }] }) }")
+    c.js(_ME_IDLE)
+    m.click(L['x'], L['y'])
+    c.wait(150)
+    c.eq(c.js('() => window.__me.picks.map(p => p.id)'), ['LFXX', 'ZZZ'], 'update(data) replaces the marks', what='picks')
+    c.js('() => window.__me.ref.stop()')
+    c.eq([i for i in c.js('() => window.__me.layerIds()') if i.startswith('me-ref-')], [], 'stop() takes the reference layer away', what='layers')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

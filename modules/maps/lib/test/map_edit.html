@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc map_edit</title>
+<!-- Banc de lib/map_edit.js et lib/terrain.js (modules/maps/INTEGRATION.md § 7 bis, SOG-0446) : une carte du socle sur un style local (un fond
+     seul, aucun réseau, aucun écran de module), les entrées d'édition branchées sur elle, et ce qu'elles rendent dans window.__me. Les cas D260
+     (fonctions pures, relief) et D261 (gestes, couches) de tests/v3/cases/maps_recode.py y touchent, glissent et lisent ; la page ne juge rien. -->
+<style>
+body {
+  margin: 0;
+  font: 13px system-ui, sans-serif
+}
+#map {
+  position: absolute;
+  inset: 0
+}
+</style>
+</head><body><div id="map"></div>
+<script type="module">
+import {
+  startTiles
+} from '../map_base.js?v=0';
+import * as E from '../map_edit.js?v=0';
+import {
+  elevationAt
+} from '../terrain.js?v=0';
+const style = {
+  version: 8,
+  sources: {},
+  layers: [{
+    id: 'bg',
+    type: 'background',
+    paint: {
+      'background-color': '#eef2f5'
+    }
+  }]
+};
+const M = window.__me = {
+  E,
+  elevationAt,
+  taps: [],
+  longs: [],
+  moves: [],
+  ends: [],
+  htaps: [],
+  starts: [],
+  cancels: [],
+  picks: [],
+  authorTaps: [],
+  sketchTaps: [],
+  sketchChanges: [],
+  ready: false
+};
+const map = await startTiles(document.getElementById('map'), {
+  style,
+  bounds: [
+    [0, 40],
+    [10, 50]
+  ],
+  padding: 10
+});
+if (!map) M.failed = true;
+else {
+  M.map = map;
+  const box = map.getContainer();
+  M.at = (lon, lat) => {
+    const p = map.project([lon, lat]),
+      r = box.getBoundingClientRect();
+    return {
+      x: r.left + p.x,
+      y: r.top + p.y
+    }
+  };
+  // les trois poignées : une mobile, une immobile, le centre et le bord d'un rayon
+  M.handleList = [{
+    id: 'A',
+    lat: 45,
+    lon: 5,
+    kind: 'point'
+  }, {
+    id: 'B',
+    lat: 43,
+    lon: 3,
+    kind: 'point',
+    movable: false
+  }, {
+    id: 'R',
+    lat: 46,
+    lon: 8,
+    kind: 'radius',
+    center: {
+      lat: 46,
+      lon: 7
+    }
+  }];
+  M.anchors = [{
+    id: 'ANC1',
+    lat: 47,
+    lon: 2,
+    kind: 'navaid'
+  }, {
+    id: 'ANC2',
+    lat: 41,
+    lon: 9,
+    kind: 'aerodrome'
+  }];
+  const project = (lat, lon) => map.project([lon, lat]);
+  M.drag = E.dragHandles(map, box, {
+    handles: () => M.handleList,
+    snap: (x, y) => E.snapTo(M.anchors, project, x, y, 20),
+    onStart: h => M.starts.push(h.id),
+    onMove: m => M.moves.push(m),
+    onEnd: m => M.ends.push(m),
+    onTap: h => M.htaps.push(h.id),
+    onCancel: h => M.cancels.push(h.id)
+  });
+  M.tap = E.tapPosition(map, box, {
+    onTap: p => M.taps.push(p),
+    onLongPress: p => M.longs.push(p),
+    longPressMs: 400
+  });
+  M.preview = E.previewLayer(map, 'bench', {});
+  M.author = E.authorLayers(map, {
+    id: 'bench',
+    tokens: {
+      drone: '#b00020'
+    },
+    onTap: f => M.authorTaps.push(f)
+  });
+  M.ref = E.referenceLayer(map, {
+    data: {
+      aerodromes: [{
+        icao: 'LFXX',
+        lat: 41,
+        lon: 1
+      }],
+      navaids: [{
+        id: 'NAV',
+        lat: 49,
+        lon: 9
+      }]
+    },
+    minzoom: 0,
+    onPick: r => M.picks.push(r)
+  });
+  M.layerIds = () => (map.getStyle().layers || []).map(l => l.id).filter(id => id.startsWith('me-'));
+  M.sketch = null;
+  M.startSketch = (mode, points) => {
+    M.sketch?.stop();
+    M.sketch = E.sketch(map, box, {
+      mode,
+      points,
+      onChange: p => M.sketchChanges.push(p.length),
+      onTap: v => M.sketchTaps.push(v),
+      onDone: (p, closed) => M.done = {
+        n: p.length,
+        closed
+      }
+    });
+    return true;
+  };
+  // une tuile Terrarium synthétique : l'altitude vaut 1234,5 m partout, sauf la tuile 7/64/47 (rend null) et la 7/65/47 (échoue)
+  M.loaded = [];
+  M.load = async url => {
+    M.loaded.push(url);
+    if (url.endsWith('/7/64/47.png')) return null;
+    if (url.endsWith('/7/65/47.png')) throw new Error('HTTP 500');
+    const c = new OffscreenCanvas(256, 256),
+      g = c.getContext('2d'),
+      v = Math.round((1234.5 + 32768) * 256),
+      r = (v >> 16) & 255,
+      gg = (v >> 8) & 255,
+      b = v & 255;
+    g.fillStyle = `rgb(${r},${gg},${b})`;
+    g.fillRect(0, 0, 256, 256);
+    return createImageBitmap(c);
+  };
+  map.once('idle', () => {
+    M.ready = true
+  });
+}
+</script>
+</body></html>
