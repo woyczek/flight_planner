@@ -3948,22 +3948,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0072",
-   "fiche": "SOG-0389",
-   "app": "pilote",
-   "question": "Route libre parce qu'aucune route NAT ne convient (niveau ou heure) : faut-il un bouton pour recalculer ?",
-   "context": "Ta surprise du 17/11 (KABQ → EGLL « à cheval » entre deux groupes de routes NAT) tranche le début : la raison sera dite en tête, en une ligne, sans ouvrir de pli (SOG-0391) — ce matin c'était l'HEURE : entrée de l'océan vers 13 h 32 Z, routes vers l'est valables de 01 h à 08 h Z. Reste le bouton. Ce que je conteste : changer d'office ton niveau ou ton heure ; ce sont tes décisions. Ma proposition : un bouton « Recalculer à FL360 » quand c'est le niveau ; rien quand c'est l'heure (l'heure du vol se change dans le vol).",
-   "options": [
-    "Un bouton quand c'est le niveau ; rien quand c'est l'heure",
-    "Pas de bouton : la ligne suffit",
-    "Prendre d'office la route NAT au niveau offert le plus proche, et le dire",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-16",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0074",
    "fiche": "SOG-0394",
    "app": "maintenance",
@@ -4221,6 +4205,25 @@
    "choice": 0,
    "text": "on ajoute cifp si on a des possibilités supplémentaires.",
    "at": "2026-11-16T19:38:21Z"
+  },
+  {
+   "id": "Q-0072",
+   "fiche": "SOG-0389",
+   "app": "pilote",
+   "question": "Route libre parce qu'aucune route NAT ne convient (niveau ou heure) : faut-il un bouton pour recalculer ?",
+   "context": "Ta surprise du 17/11 (KABQ → EGLL « à cheval » entre deux groupes de routes NAT) tranche le début : la raison sera dite en tête, en une ligne, sans ouvrir de pli (SOG-0391) — ce matin c'était l'HEURE : entrée de l'océan vers 13 h 32 Z, routes vers l'est valables de 01 h à 08 h Z. Reste le bouton. Ce que je conteste : changer d'office ton niveau ou ton heure ; ce sont tes décisions. Ma proposition : un bouton « Recalculer à FL360 » quand c'est le niveau ; rien quand c'est l'heure (l'heure du vol se change dans le vol).",
+   "options": [
+    "Un bouton quand c'est le niveau ; rien quand c'est l'heure",
+    "Pas de bouton : la ligne suffit",
+    "Prendre d'office la route NAT au niveau offert le plus proche, et le dire",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-16",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "pas recalculer, mais récupérer les nouvelles routes quand c’est l’heure qui pose souci. si les routes sont dispo, évidement. conserver les routes « en cours » et les routes futures (on peut décider d’avancer un vol, il faut avoir encore les informations de la veille).",
+   "at": "2026-11-17T08:10:27Z"
   }
  ]
 }

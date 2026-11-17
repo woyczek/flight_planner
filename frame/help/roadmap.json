@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "bcca4c5",
-  "fiches": 393,
+  "organisation": "bf4ea78",
+  "fiches": 394,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -453,6 +453,27 @@
      "de": "Wo rechnen, Seite oder Launcher? Zahlen, Aufgabe mit Vorher/Nachher, Launcher-Zwänge und die kommende Apple/Android-App",
      "es": "¿Dónde calcular, la página o el lanzador? Cifras, tarea con antes / después, restricciones del lanzador y la futura app Apple / Android",
      "rank": 5
+    }
+   ]
+  },
+  {
+   "id": "pilote-atlantique-nord",
+   "app": "pilote",
+   "label": {
+    "fr": "Atlantique Nord",
+    "en": "Atlantique Nord",
+    "de": "Atlantique Nord",
+    "es": "Atlantique Nord"
+   },
+   "items": [
+    {
+     "id": "SOG-0395",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route libre sur l'Atlantique Nord : le dire quand elle passe à moins de 1° d'une route NAT du sens contraire en vigueur",
+     "en": "Free route over the North Atlantic: say so when it passes within 1° of an opposite-direction NAT track in force",
+     "de": "Freie Route über den Nordatlantik: melden, wenn sie näher als 1° an einem gültigen NAT-Track der Gegenrichtung verläuft",
+     "es": "Ruta libre sobre el Atlántico Norte: decirlo cuando pasa a menos de 1° de una ruta NAT de sentido contrario en vigor"
     }
    ]
   },
