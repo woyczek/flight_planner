@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5db0434",
+  "organisation": "18c7610",
   "fiches": 433,
   "untranslated": 0,
   "priorities": 374,
@@ -1136,11 +1136,12 @@
     {
      "id": "SOG-0432",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant, Procédures : « une lecture de Little Navmap est déjà en cours » — un vieux verrou qui traîne empêche de relire",
      "en": "Fuel, Procedures: “a Little Navmap read is already in progress” — a stale lock prevents reading again",
      "de": "Kraftstoff, Verfahren: „ein Little-Navmap-Lesevorgang läuft bereits“ — eine alte Sperre verhindert das erneute Lesen",
-     "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer"
+     "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer",
+     "test": true
     }
    ]
   },
@@ -2607,11 +2608,12 @@
     {
      "id": "SOG-0431",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Plan de vol : un changement de niveau écrit « F205 » est refusé par Eurocontrol (SYN101, niveau invalide dans la route)",
      "en": "Flight plan: a level change written “F205” is refused by Eurocontrol (SYN101, invalid level in the route)",
      "de": "Flugplan: ein als „F205“ geschriebener Höhenwechsel wird von Eurocontrol abgelehnt (SYN101, ungültige Flugfläche in der Route)",
-     "es": "Plan de vuelo: un cambio de nivel escrito «F205» es rechazado por Eurocontrol (SYN101, nivel inválido en la ruta)"
+     "es": "Plan de vuelo: un cambio de nivel escrito «F205» es rechazado por Eurocontrol (SYN101, nivel inválido en la ruta)",
+     "test": true
     }
    ]
   },
