@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d5ddb82",
+  "organisation": "49801b3",
   "fiches": 450,
   "untranslated": 0,
   "priorities": 374,
@@ -1093,7 +1093,7 @@
     {
      "id": "SOG-0433",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Carburant, Procédures : lecture du paquet du Royaume-Uni impossible pour EGGW (mise en page non reconnue ×9), dite en ANGLAIS",
      "en": "Fuel, Procedures: reading the United Kingdom package fails for EGGW (layout not recognised ×9), said in ENGLISH",
      "de": "Kraftstoff, Verfahren: Lesen des Pakets des Vereinigten Königreichs für EGGW unmöglich (Layout nicht erkannt ×9), auf ENGLISCH gemeldet",

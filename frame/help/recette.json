@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 299,
+  "tests": 300,
   "verdicts": 212
  },
  "apps": [
@@ -4384,6 +4384,19 @@
     "es": "Combustible, Procedimientos: «ya hay una lectura de Little Navmap en curso» — un bloqueo antiguo impide volver a leer"
    },
    "test": "Carburant, Procédures, sur le poste. (1) Lance « Lire depuis Little Navmap » pour un terrain, puis clique de nouveau pendant la lecture : la note dit « Cette page lit déjà XXXX dans Little Navmap depuis n s. » (elle nomme le terrain et dit depuis quand) ; (2) une lecture qui ne répond pas est abandonnée au bout de deux minutes et le dit ; le lien redevient utilisable ; (3) si le lanceur refuse parce que six lectures sont en cours, la note le dit à part : « le lanceur a déjà six lectures en cours ; réessayez quand l'une aura fini. » — dans ce cas seulement, relancer le lanceur lève le blocage (le correctif du lanceur vient ensuite). Lanceur relancé le 17/11 au soir — (c) une lecture restée sa",
+   "since": "2026-11-17",
+   "state": "known"
+  },
+  {
+   "id": "SOG-0433",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant, Procédures : lecture du paquet du Royaume-Uni impossible pour EGGW (mise en page non reconnue ×9), dite en ANGLAIS",
+    "en": "Fuel, Procedures: reading the United Kingdom package fails for EGGW (layout not recognised ×9), said in ENGLISH",
+    "de": "Kraftstoff, Verfahren: Lesen des Pakets des Vereinigten Königreichs für EGGW unmöglich (Layout nicht erkannt ×9), auf ENGLISCH gemeldet",
+    "es": "Combustible, Procedimientos: lectura del paquete del Reino Unido imposible para EGGW (maquetación no reconocida ×9), dicha en INGLÉS"
+   },
+   "test": "Lanceur relancé, page rechargée. Carburant, un terrain du Royaume-Uni (EGGW), « Lire les départs dans le paquet du Royaume-Uni ». Attendu : si rien ne peut être lu, la page le dit en français et dit POURQUOI (par exemple « 9 documents, aucune page lue : mise en page non reconnue ») — plus la phrase brute en anglais du lanceur (« no procedure could be read for this aerodrome… »).",
    "since": "2026-11-17",
    "state": "known"
   },
