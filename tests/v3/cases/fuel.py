@@ -7528,6 +7528,27 @@ def f263(c):
     c.ok(c.count(f'{FUEL} [data-progcard]:not(.fu-hide) [data-prog] p') == 1, 'card', 'the progress card is still there')
 
 
+@case('F264', 'The quote is computed once per signature of its inputs: a refresh that changes none of them (another module\'s write that '
+      'leaves the plan as it is) computes no quote, no level series, no climb; a change of level computes again', 'F', tags=('fuel',),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0435, second part (V3 Frame\'s profile: compute() 89 % of a refresh, the level series a full trip per flight level, the climb '
+      'solved at each call; the user\'s design: a signature of the inputs before compute())')
+def f264(c):
+    c.open('fuel', docs=flight_docs())
+    wait_quote(c)
+    c.js("""() => { window.__q = 0; const M = window.FuelModel, q = M.quote; M.quote = (...a) => (window.__q++, q.apply(M, a)) }""")
+    # another module writes the flight without touching the plan: Fuel refreshes (its echo), nothing of the quote changed
+    c.js("""async () => { const d = FrameData.adapter({ id: 'maps', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+      const cur = (await d.get('pilot/ABC/current_flight.json')) || {};
+      await d.put('pilot/ABC/current_flight.json', { ...cur, view: { zoom: 7 }, by: 'maps', updated_at: new Date().toISOString() }); return true }""")
+    c.wait(1500)
+    c.eq(c.js('window.__q'), 0, 'a refresh with the same inputs: no quote computed', what='same signature')
+    # the level changed: the quote is computed again
+    c.page.fill(f'{FUEL} input[data-k="fl"]', '250')
+    c.page.dispatch_event(f'{FUEL} input[data-k="fl"]', 'change')
+    c.until('window.__q > 0', timeout=8000, what='a new level: the quote computed again')
+
+
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)
 _RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review': 37, 'findings': 0, 'total': 449, 'listed': 449, 'cut': False,
              'unknown_spaces': [{'space': 'LS100A', 'rules': ['LS2815A', 'LS2816A']}, {'space': 'EDUU100E', 'rules': []}],

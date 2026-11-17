@@ -2482,7 +2482,23 @@ function compute() {
       holds: holdsOf(f.route, levelFt), // le temps sur zone par point (§ 1 bis)
       legs: quoteLegs(distanceNm) // SOG-0281 : le vent tronçon par tronçon
     },
-    q = distanceNm > 0 ? altnAdd(M.quote(qIn), qIn, sheet, levelFt) : null,
+    // SOG-0435 : la signature des entrées de la suite (toutes des fonctions pures de ces données) : le devis, la série des niveaux et
+    // le guide de montée — l'intégrale de la montée à chaque niveau, 85 % d'un refresh mesuré par V3 Frame — ne sont refaits que si
+    // elle change. Elle porte tout ce que lisent quote, altnAdd (dégagement : terrain, position, vent), decisionSeries / requoteSeries
+    // (le vent prévu par niveau : aloftMeanAt) et climbGuide ; les fonctions des objets (lois) viennent de ces données.
+    A0 = S.aloft,
+    r0 = f.route || {},
+    sig = (() => {
+      try {
+        return JSON.stringify([qIn, goal, o, +f.isaDev || 0, r0.arr || '', r0.altn || '', S.altnGeo?.key || '', S.altnGeo?.state || '',
+          f.weather?.real || false, f.windSource?.kind || '', A0?.key || '', A0?.profiles?.length || 0, A0?.at || ''
+        ]);
+      } catch {
+        return null; // une entrée non sérialisable : pas de signature, le calcul est refait (jamais un devis gardé à tort)
+      }
+    })();
+  if (sig && S.computeMemo?.sig === sig) return S.computeMemo.out;
+  const q = distanceNm > 0 ? altnAdd(M.quote(qIn), qIn, sheet, levelFt) : null,
     D = perf && q ? L.requoteSeries(L.decisionSeries(perf, {
       distanceNm,
       wc: q.windKnown ? q.wc : 0
@@ -2499,7 +2515,7 @@ function compute() {
       quote: q
     }) : null,
     G = perf && levelFt > 0 ? L.climbGuide(perf, levelFt, goal, o) : null;
-  return {
+  const out = {
     sheet,
     source,
     perf,
@@ -2510,6 +2526,11 @@ function compute() {
     levelFt,
     nm: distanceNm // la distance du devis (quote.distanceNm)
   };
+  S.computeMemo = {
+    sig,
+    out
+  };
+  return out;
 }
 
 // ---------------------------------------------------------------- dessins SVG

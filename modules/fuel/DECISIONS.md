@@ -2424,4 +2424,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   `progressOnly()`: the « Progression prévue » card from the quote already computed (time-based), rewritten only when its HTML changes
   (kept in memory with its box), and updateProgress (at most once a minute, as before). Nothing else of the screen reads `progress`
   between gestures (the direct reads `progress.actual` when it is asked). F263 (counts FuelModel.quote and the layout measurements during
-  the echo against a quiet window; counter-test: the parent recomputes the quote).
+  the echo against a quiet window; counter-test: the parent recomputes the quote). Second part (V3 Frame's profile: compute() was 89 %
+  of a refresh — the level series computing a full trip at each flight level, the quote, the climb solved at each call by a search of
+  the best regime): compute() is kept by a SIGNATURE of its inputs — `qIn` (sheet, source, perf, APD, distance, level, track, wind,
+  taxi, reserve, contingency, climb law, steps, holds, legs), the goal and the climb options, ISA deviation, the alternate (code,
+  position state), and the forecast winds by level (real weather, wind source, the aloft key, profiles, time). All the work after it is
+  pure functions of these data; the same signature returns the same result (only altnAdd, inside compute, writes in it). An input that
+  cannot be serialised gives no signature: computed again, never a quote kept wrongly. F264 (another module's write leaving the plan:
+  no quote computed; a new level: computed).
