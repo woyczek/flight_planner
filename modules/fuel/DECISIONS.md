@@ -2417,3 +2417,11 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   LNM_PAGE_MAX_MS (150 s: aerodb's bound is 120 s, its answer has come or will not); the launcher's « busy » is said apart — « le lanceur
   a déjà six lectures en cours » — and aerodb's `timeout` has its sentence. « La plus ancienne depuis … » is not said yet: the refusal of
   the launcher does not carry the age of its readings (part (c)). F260 (a stubbed fetchLnm, Date.now shifted to age the mark).
+- **17 Nov 2026 — SOG-0435, the frame's progression no longer recomputes the quote** (V3 Frame measured it: for a started flight the
+  frame writes `progress.actual` every 5 s, and Fuel answered each echo with refresh() — the whole quote, ISA, turboprop, rate of climb,
+  TAS, and layout measurements: 35 ms on the workstation, about 300 ms on a modest phone, a jolt every 5 s). The user's rule: the quote
+  depends only on the route, the level, the aircraft and the departure. An echo `by: 'frame'` now keeps the progression and calls
+  `progressOnly()`: the « Progression prévue » card from the quote already computed (time-based), rewritten only when its HTML changes
+  (kept in memory with its box), and updateProgress (at most once a minute, as before). Nothing else of the screen reads `progress`
+  between gestures (the direct reads `progress.actual` when it is asked). F263 (counts FuelModel.quote and the layout measurements during
+  the echo against a quiet window; counter-test: the parent recomputes the quote).

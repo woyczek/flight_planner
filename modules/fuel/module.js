@@ -6343,8 +6343,15 @@ function updateProgress(force = false) {
   } : null;
   saveFlight();
 }
+/** SOG-0435 : l'écho d'une écriture de progression du cadre — la carte « Progression prévue » d'après le devis déjà fait, réécrite
+ *  seulement si son texte change (renderProgress), et la progression de Carburant (updateProgress, au plus une fois par minute) ; ni
+ *  devis, ni mesure de mise en page. */
+function progressOnly() {
+  renderProgress(S.C);
+  updateProgress();
+}
 /** Carte « Progression prévue » du pas Départ : la ligne de l'instant et la liste des points avec leur heure prévue, le
- *  tronçon en cours surligné. */
+ *  tronçon en cours surligné. SOG-0435 : la carte n'est réécrite que si son contenu change (les noms des terrains repeints alors). */
 function renderProgress(C) {
   const card = S.body?.querySelector('[data-progcard]'),
     box = S.body?.querySelector('[data-prog]');
@@ -6368,7 +6375,12 @@ function renderProgress(C) {
       r: distTxt(c.st.remainingNm),
       f: rem
     });
-  box.innerHTML = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b>${[f0.route?.dep, f0.route?.arr].includes(pts[e.i]?.id) && pts[e.i]?.id ? ` <small class="f-muted" data-adtext data-code="${esc(pts[e.i].id)}"></small>` : ''}</span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+  const html = `<p>${esc(line)}</p><div class="f-list">${c.etas.map(e => `<div class="f-item fu-eta${c.st.phase !== 'arrived' && e.i === c.pos.legIndex + 1 ? ' fu-next-pt' : ''}"${e.i === c.pos.legIndex + 1 && c.st.phase !== 'arrived' ? ' aria-current="step"' : ''}><span><b>${esc(pts[e.i]?.id || '')}</b>${[f0.route?.dep, f0.route?.arr].includes(pts[e.i]?.id) && pts[e.i]?.id ? ` <small class="f-muted" data-adtext data-code="${esc(pts[e.i].id)}"></small>` : ''}</span><span class="f-num">${esc((e === c.etas[0] || e === c.etas.at(-1) ? hhmmLocal : hhmmOf)(new Date(e.at).toISOString()))}</span></div>`).join('')}</div>`;
+  if (S.progBox === box && S.progHtml === html) return; // le même contenu dans la même carte : rien n'est touché
+  S.progBox = box;
+  S.progHtml = html;
+  box.innerHTML = html;
+  S.AD.paint();
 }
 /** Un terrain du récapitulatif : son code puis son nom (rempli par S.AD.paint, d'après aerodb) ; `none` sans code. */
 function adSum(code, none) {
@@ -8030,7 +8042,10 @@ export async function mount(el, ctx) {
     // une écriture de Carburant
     if (f.by === 'frame') {
       S.flight.progress = f.progress ?? null;
-      return S.flightPending || S.refsPending || S.view !== 'plan' ? undefined : refresh();
+      // SOG-0435 : le devis ne dépend que de la route, du niveau, de l'aéronef et du départ — une écriture de progression seule (toutes
+      // les 5 s pour un vol démarré) ne recalcule rien : la carte « Progression prévue » seule, d'après le devis déjà fait (refresh
+      // coûtait 35 ms au poste, 300 ms sur un téléphone modeste : une saccade toutes les 5 s)
+      return S.flightPending || S.refsPending || S.view !== 'plan' || !S.C ? undefined : progressOnly();
     }
     const oldPlanned = S.flight.planned_at ?? null,
       // ce que Carburant a changé et pas encore écrit (un niveau tapé dans les 300 ms) : remis par-dessus le vol repris (R-F4, F88)

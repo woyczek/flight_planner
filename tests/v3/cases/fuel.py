@@ -7498,6 +7498,36 @@ def f261(c):
     c.eq(got[4], 'cancelled', 'the caller\'s own cancel stays « cancelled »', what='cancel')
 
 
+@case('F263', 'A started flight: the frame\'s write of its progression (every 5 s) recomputes nothing — no quote, no layout measurement; '
+      'the « Progression prévue » card stays, rewritten only when its text changes', 'F', tags=('fuel',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0435 (V3 Frame\'s measure: Fuel redid the whole quote on each echo, 35 ms on the workstation, about 300 ms on a modest phone: '
+      'a jolt every 5 s); the user\'s rule: the quote depends only on the route, the level, the aircraft and the departure')
+def f263(c):
+    c.open('fuel', flight=True, started=True)
+    wait_quote(c)
+    to_step(c, 4)
+    c.until(f"!!document.querySelector('{FUEL} [data-progcard]:not(.fu-hide) [data-prog] p')", timeout=10000, what='the progress card')
+    # counters: the quotes computed (FuelModel.quote) and the layout measurements (getBoundingClientRect, offset sizes)
+    c.js("""() => { window.__q = 0; window.__lay = 0; const M = window.FuelModel, q = M.quote; M.quote = (...a) => (window.__q++, q.apply(M, a));
+      const g = Element.prototype.getBoundingClientRect; Element.prototype.getBoundingClientRect = function () { window.__lay++; return g.call(this) };
+      for (const k of ['offsetWidth', 'offsetHeight']) { const d = Object.getOwnPropertyDescriptor(HTMLElement.prototype, k);
+        Object.defineProperty(HTMLElement.prototype, k, { configurable: true, get() { window.__lay++; return d.get.call(this) } }) } }""")
+    c.wait(1500)
+    quiet = c.js('[window.__q, window.__lay]')
+    c.js('window.__q = 0; window.__lay = 0')
+    # the frame writes the progression (its own key progress.actual, by: frame), as it does every 5 s
+    c.js("""async () => { const d = FrameData.adapter({ id: 'frame-test', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+      const cur = (await d.get('pilot/ABC/current_flight.json')) || {};
+      await d.put('pilot/ABC/current_flight.json', { ...cur, progress: { ...(cur.progress || {}), actual: { lat: 46.0, lon: 0.5, at: new Date().toISOString() } },
+        by: 'frame', updated_at: new Date().toISOString() }); return true }""")
+    c.wait(1500)
+    echo = c.js('[window.__q, window.__lay]')
+    c.eq(echo[0], 0, f'no quote recomputed on the echo (a quiet window of the same length: {quiet[0]})', what='quotes')
+    c.ok(echo[1] <= quiet[1], f'echo {echo[1]} / quiet {quiet[1]}', 'no more layout measurement than a quiet window')
+    c.ok(c.count(f'{FUEL} [data-progcard]:not(.fu-hide) [data-prog] p') == 1, 'card', 'the progress card is still there')
+
+
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)
 _RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review': 37, 'findings': 0, 'total': 449, 'listed': 449, 'cut': False,
              'unknown_spaces': [{'space': 'LS100A', 'rules': ['LS2815A', 'LS2816A']}, {'space': 'EDUU100E', 'rules': []}],
