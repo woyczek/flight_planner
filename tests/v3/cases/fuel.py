@@ -7414,6 +7414,36 @@ def f259(c):
     c.shot(f'F259_{c.design}_390_{L}.png')
 
 
+@case('F261', 'aerodb.fetchLnm is bounded in time: a reading that never ends at the launcher answers « timeout » (its job asked to stop), '
+      'releases its aerodrome, and a reading of the caller cancelled stays « cancelled »', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0432 (b): the exception the ergonomist granted Features SOG in frame/aerodb/aerodb.js for this bound only (120 s, `maxMs` '
+      'shorter for a test, 1 s at least); a fake launcher whose job ends only when aborted')
+def f261(c):
+    c.open('fuel', docs=flight_docs())
+    got = c.js("""async () => {
+      let calls = 0;
+      const launcher = { info: () => ({ lnm: ['x'] }), job: (route, body, o = {}) => new Promise(res => { calls++;
+          o.signal?.addEventListener('abort', () => res({ ok: false, cancelled: true }), { once: true }) }) },
+        db = AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false, launcher }),
+        cap = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r({ reason: 'hung' }), ms))]),
+        t0 = Date.now(),
+        first = await cap(db.fetchLnm('ZZLN', { personal: true, maxMs: 1000 }), 6000),
+        took = Date.now() - t0,
+        again = await cap(db.fetchLnm('ZZLN', { personal: true, maxMs: 1000 }), 6000),
+        asked = calls,
+        ctl = new AbortController(),
+        p = db.fetchLnm('ZZLM', { personal: true, signal: ctl.signal });
+      setTimeout(() => ctl.abort(), 200);
+      const user = await cap(p, 6000);
+      return [first.reason, took < 4000, again.reason, asked, user.reason];
+    }""")
+    c.eq(got[0], 'timeout', 'a reading that never ends: « timeout »', what='bound')
+    c.ok(got[1], got, 'within its bound (1 s asked)')
+    c.eq(got[2:4], ['timeout', 2], 'the aerodrome released: a second reading is asked (not « busy »)', what='released')
+    c.eq(got[4], 'cancelled', 'the caller\'s own cancel stays « cancelled »', what='cancel')
+
+
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)
 _RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review': 37, 'findings': 0, 'total': 449, 'listed': 449, 'cut': False,
              'unknown_spaces': [{'space': 'LS100A', 'rules': ['LS2815A', 'LS2816A']}, {'space': 'EDUU100E', 'rules': []}],

@@ -2402,3 +2402,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   not repeated. Each rounding is kept once (`notes.rounded`, six at most) and the fold says it — « Niveau F205 écrit F200 : un niveau
   de croisière va de dix en dix. » —; the copy is not blocked. AeroDB's computation will stop writing the raw ceiling; this guard stays.
   F259 (invented routes; counter-test: red on the parent, F205 in the route line).
+- **17 Nov 2026 — SOG-0432 (b), aerodb.fetchLnm bounded in time** (the exception the ergonomist granted Features SOG in
+  frame/aerodb/aerodb.js, for this bound only; AeroDB told in the LOT). A reading of Little Navmap whose job never ends at the launcher
+  kept two marks of the page for good: aerodb's `lnmBusy` and Fuel's `lnmReading` (launcher.job follows a job until it stops running,
+  without a bound). Now `fetchLnm` stops following after LNM_MAX_MS (120 s; `maxMs` shorter, from 1 s, for a test): the launcher is
+  asked to cancel the job (launcher.js follow on an aborted signal), `lnmBusy` is released and the reason is `timeout`; a cancel of the
+  caller's own signal stays `cancelled`. F261 (a fake launcher whose job ends only when aborted; counter-test: the call hangs on the
+  parent).

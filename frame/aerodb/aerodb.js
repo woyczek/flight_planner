@@ -499,6 +499,9 @@
     // observateurs (zones, types d'aéronefs, proc/) ne compte pas
     const revs = new Map();
     const lnmBusy = new Map(); // OACI → lecture Little Navmap en cours (fetchLnm)
+    // SOG-0432 (Features SOG, exception accordée pour cette borne) : une lecture de Little Navmap qui ne finit pas au lanceur ne garde
+    // plus la page : au-delà, son suivi est arrêté (le lanceur est prié de l'annuler), lnmBusy est rendu et la raison est 'timeout'
+    const LNM_MAX_MS = 120000;
     const eadBusy = new Map(); // OACI → lecture EAD Basic en cours (fetchProcedures : une seule à la fois par terrain)
     // chemins que CETTE instance est en train de lire : la couche de données annonce aux observateurs, pendant la lecture, l'arrivée dans son
     // cache du fichier qu'on lui demande ; ce n'est pas un changement (procWatch l'ignore)
@@ -2364,13 +2367,15 @@
       },
       /** Les procédures d'UN terrain lues dans la base de Little Navmap de CE poste (SOG-0210 ; travail proc/lnm du lanceur, lecture seule) : { ok: true, icao, count, notice, base } ou { ok: false, reason } avec
        *  reason ∈ not-personal (sans `personal: true` : la coche « usage personnel » de l'utilisateur, cache/data/personal.json { certified }, que l'appelant lit : aucun travail n'est lancé), no-launcher, paired, busy,
-       *  bad-icao, cancelled, no-lnm, not-found, no-procedures, unreadable, failed. Les fiches (`status: 'lnm'`, `lnm: true`, `local: true`) sont gardées EN MÉMOIRE de la page seulement (jamais écrites, jamais exportées,
+       *  bad-icao, cancelled, timeout (SOG-0432 : pas de fin en LNM_MAX_MS, ou `maxMs` plus court, de 1 s au plus LNM_MAX_MS), no-lnm, not-found,
+       *  no-procedures, unreadable, failed. Les fiches (`status: 'lnm'`, `lnm: true`, `local: true`) sont gardées EN MÉMOIRE de la page seulement (jamais écrites, jamais exportées,
        *  jamais commitées) et servies par procedures(icao) / procedure(id) / runways comme les autres : rang `lnm` (après les lectures officielles, de l'OFP et d'X-Plane : une procédure publiée garde sa place), la Carte et
        *  Carburant les voient donc toutes deux ; on('change') annonce { procedures: icao, lnm: true }. forgetLnm(icao) les oublie. */
       async fetchLnm(icao, {
         personal,
         signal,
-        onProgress
+        onProgress,
+        maxMs
       } = {}) {
         const k = String(icao || '').trim().toUpperCase(),
           no = (reason, more = {}) => ({
@@ -2384,6 +2389,14 @@
         if (typeof launcher?.job !== 'function' || !launcher.info?.()) return no('no-launcher');
         if (launcher.info().lan) return no('paired');
         if (lnmBusy.has(k)) return no('busy');
+        // SOG-0432 : la borne de temps ; le signal de l'appelant reste servi (son annulation dit 'cancelled', la borne 'timeout')
+        const bound = new AbortController(),
+          limit = Number.isFinite(+maxMs) ? Math.max(1000, Math.min(LNM_MAX_MS, +maxMs)) : LNM_MAX_MS,
+          timer = setTimeout(() => bound.abort(), limit),
+          sig = signal ? AbortSignal.any ? AbortSignal.any([signal, bound.signal]) : signal : bound.signal;
+        if (signal && !AbortSignal.any) signal.addEventListener?.('abort', () => bound.abort(), {
+          once: true
+        });
         const run = (async () => {
           const r = await launcher.job('regen/job', {
             set: 'proc',
@@ -2404,10 +2417,10 @@
                 /* écouteur du module en échec : la lecture continue */
               }
             },
-            signal
+            signal: sig
           });
           if (!r) return no('no-launcher');
-          if (r.cancelled) return no('cancelled');
+          if (r.cancelled) return no(bound.signal.aborted && !signal?.aborted ? 'timeout' : 'cancelled');
           if (r.status === 409) return no('busy');
           if (r.status === 403) return no('paired');
           const res = r.result;
@@ -2453,6 +2466,7 @@
         try {
           return await run;
         } finally {
+          clearTimeout(timer);
           lnmBusy.delete(k);
         }
       },
