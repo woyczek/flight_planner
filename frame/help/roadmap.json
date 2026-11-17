@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "60e3864",
-  "fiches": 394,
+  "organisation": "6a70d69",
+  "fiches": 396,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -474,6 +474,15 @@
      "en": "Free route over the North Atlantic: say so when it passes within 1° of an opposite-direction NAT track in force",
      "de": "Freie Route über den Nordatlantik: melden, wenn sie näher als 1° an einem gültigen NAT-Track der Gegenrichtung verläuft",
      "es": "Ruta libre sobre el Atlántico Norte: decirlo cuando pasa a menos de 1° de una ruta NAT de sentido contrario en vigor"
+    },
+    {
+     "id": "SOG-0396",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route libre sur l'Atlantique Nord : ses entrées et sorties de l'océan dépendent du message NAT du jour — la moitié des traversées n'a plus de route",
+     "en": "Free route over the North Atlantic: its ocean entries and exits depend on the day's NAT message — half of the crossings get no route",
+     "de": "Freie Route über den Nordatlantik: Ein- und Ausflugpunkte hängen von der NAT-Meldung des Tages ab — die Hälfte der Überquerungen erhält keine Route",
+     "es": "Ruta libre sobre el Atlántico Norte: sus entradas y salidas del océano dependen del mensaje NAT del día — la mitad de los cruces se queda sin ruta"
     }
    ]
   },
@@ -3365,6 +3374,27 @@
      "de": "Fahrplan: bereits vorhandene Bahnen einklappen",
      "es": "Hoja de ruta: contraer los carriles ya existentes",
      "rank": 172
+    }
+   ]
+  },
+  {
+   "id": "maintenance-atlantique-nord-donnees-de-navigation",
+   "app": "maintenance",
+   "label": {
+    "fr": "Atlantique Nord ; données de navigation",
+    "en": "Atlantique Nord ; données de navigation",
+    "de": "Atlantique Nord ; données de navigation",
+    "es": "Atlantique Nord ; données de navigation"
+   },
+   "items": [
+    {
+     "id": "SOG-0397",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Canada : des voies et des points pour traverser le pays autrement que par des directs — quelle source lire ?",
+     "en": "Canada: airways and points to cross the country other than by directs — which source to read?",
+     "de": "Kanada: Luftstraßen und Punkte, um das Land anders als mit Direktverbindungen zu überqueren — welche Quelle lesen?",
+     "es": "Canadá: aerovías y puntos para cruzar el país sin directos — ¿qué fuente leer?"
     }
    ]
   },
