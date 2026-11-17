@@ -59,6 +59,7 @@ import {
 } from './screen.js';
 import {
   withEta,
+  natFlightOf,
   drawProgress,
   isStarted
 } from './flight_time.js';
@@ -784,6 +785,7 @@ function draw() {
     reserve: pick ? pl => pick.reserve(viewPlacer(pl, mx, my)) : procs ? pl => procs.reserve(viewPlacer(pl, mx, my)) : null,
     legs: mission || pick ? null : S.route?.path || null,
     dim: pick ? DIM : 0,
+    natFlight: mission || pick || !S.profile?.elements?.natTracks ? null : natFlightOf(),
     overRoute: screen(pick ? (c, pl) => pick.paint(c, pl) : procs || gnd ? (c, pl) => {
       gnd?.paint(c, pl); // la couche sol (§ 10.40) sous les procédures
       if (procs) drawProcs(c, procs);

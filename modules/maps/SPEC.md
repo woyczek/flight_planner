@@ -699,6 +699,19 @@ on mission maps whose profile asks for them; read after the zones of the view fr
 the track's name beside it; heavy tracks as their two arrowed legs; NAT tracks dashed slate through their points,
 "NAT A FL350–400" at the first point.
 
+**NAT routes the flight cannot take** (SOG-0391 c). With a flight (a Map that is not a mission map, the NAT layer on) a NAT route is drawn
+withdrawn — 30 % opacity, its label at 45 % and without levels — when (1) it has the other **sense**: its non-empty list of levels
+(`east` or `west`) against the flight's sense (the longitude difference between its first and its last point, 10° or more;
+less: no sense), even with no readable window, or (2) its **window** (`from`, `to`) does not hold the time the flight reaches the
+**entry** of the route for the flight's sense (the west end of its list of points for a flight to the east, the east end for a flight
+to the west: the engine's rule, its field `at`): the estimated time (`etaOf` on the flown path, interpolated along each leg) at the
+closest approach of the flight to that point, within 400 NM, else no time. **A route the flight follows is never withdrawn** (its
+route goes through at least two points of the route, within 15 NM). A flight with no time: the sense alone. A window that cannot be
+read drops the time criterion only. No flight: nothing changes. The values of the file are untrusted: `cleanNat` (data.js) keeps 40 routes
+of 60 placed points, four signs of identifier, whole levels from 0 to 999 (30 per sense), and a window (`fromMs`, `toMs`)
+only when both dates are ISO UTC, `to` after `from` by 48 h at most. The drawing reads the flight in `env.natFlight`
+(`{ dir, at(points), follows(points) }`, `natFlightOf` of flight_time.js).
+
 ### 6.4 Winds aloft
 
 Layer "Winds aloft", on by default, not on mission maps: from `route.points[].wind` (`{ dirDeg, kt, tempC, levelFt, at }`),

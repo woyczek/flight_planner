@@ -14,7 +14,9 @@ import {
   keep
 } from './state.js';
 import {
-  nearLon
+  nearLon,
+  rhumbAt,
+  rhumbNm
 } from '../../frame/lib/geo.js';
 import {
   isStarted,
@@ -322,6 +324,71 @@ function haloText(ctx, t, x, y, col) {
   ctx.fillStyle = col;
   ctx.fillText(t, x, y);
   ctx.restore();
+}
+/** Le vol vu des routes NAT (SOG-0391 c) : { dir, at(points), follows(points) } ou null sans vol (moins de deux points placés). dir : 1 vers l'est, -1 vers l'ouest, 0 quand le vol change de
+ *  moins de 10° de longitude (pas de sens). at(points) : l'heure (ms UTC) à laquelle le vol passe au plus près de ces points (la Carte donne l'entrée d'une route NAT), estimée par etaOf
+ *  sur le chemin volé, interpolée le long de chaque tronçon ; null sans heure de référence ni devis, ou quand le vol ne passe pas à moins de 400 NM. follows(points) : vrai quand
+ *  l'itinéraire passe par au moins deux de ces points (à 15 NM près : il SUIT la route). */
+export function natFlightOf() {
+  const f = S.route?.flight,
+    ok = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon),
+    pts = (S.route?.points || []).filter(ok);
+  if (S.missionId || !f || pts.length < 2) return null;
+  const d = nearLon(+pts.at(-1).lon, +pts[0].lon) - +pts[0].lon,
+    dir = Math.abs(d) < 10 ? 0 : d > 0 ? 1 : -1;
+  let samples = null;
+  const build = () => {
+    const path = flownPts().filter(ok),
+      eta = etaOf(f, Date.now(), {
+        path: flownPts()
+      });
+    const timed = !!eta && eta.length === flownPts().length && path.length === eta
+      .length, // sans heure, les positions restent (follows) et t est null
+      out = [];
+    for (let i = 0; i < path.length - 1; i++) {
+      const a = path[i],
+        b = path[i + 1],
+        t0 = timed ? Date.parse(eta[i].at) : NaN,
+        t1 = timed ? Date.parse(eta[i + 1].at) : NaN,
+        n = Math.max(2, Math.min(400, Math.ceil(rhumbNm(a, b) / 25)));
+      for (let k = 0; k <= n; k++) {
+        const g = rhumbAt(a, b, k / n);
+        out.push({
+          lat: g.lat,
+          lon: g.lon,
+          t: Number.isFinite(t0) && Number.isFinite(t1) ? t0 + (t1 - t0) * k / n : null
+        });
+      }
+    }
+    return out;
+  };
+  return {
+    dir,
+    follows(points) {
+      samples ||= build();
+      return (points || []).filter(q => samples.some(s => rhumbNm(s, {
+        lat: q.lat,
+        lon: nearLon(q.lon, s.lon)
+      }) <= 15)).length >= 2;
+    },
+    at(points) {
+      samples ||= build();
+      let best = null,
+        bd = 400;
+      for (const q of points || [])
+        for (const s of samples) {
+          const nm = rhumbNm(s, {
+            lat: q.lat,
+            lon: nearLon(q.lon, s.lon)
+          });
+          if (nm < bd && s.t != null) {
+            bd = nm;
+            best = s.t;
+          }
+        }
+      return best;
+    }
+  };
 }
 /** Points de la route pour le dessin, avec leur heure estimée de près (300 px par degré et plus) : « ETA 14:52Z », l'heure
  *  locale de l'appareil en plus au départ et à l'arrivée ; placées par render.js avec les libellés de la route (SPEC § 13.2). */

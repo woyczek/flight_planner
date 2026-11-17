@@ -8400,3 +8400,94 @@ def d_sethtml(c):
     c.js(_NOTES_JS, 3)
     c.eq(c.js("() => window.__mut"), 0, 'the notes written again three times, one of them with a straight apostrophe, keep their elements', what='mutations')
     c.shot('D250_standard_banner_and_notes_delivered.png')
+
+
+_NAT_TRACKS_JS = """async (nats) => { const S = window.__mp.S; S.ctx.aerodb.natTracks = async () => nats; S.data = null;
+  const D = await import('/modules/maps/draw.js'); D.schedule(); return true }"""
+_NAT_AT_JS = """async (p) => { const F = await import('/modules/maps/flight_time.js'), n = F.natFlightOf(); return n && n.at ? n.at([p]) : null }"""
+
+
+def _line_lat(lon):
+    """The latitude of the rhumb line KJFK → EGLL (the line of the Map) at a longitude."""
+    psi = lambda la: math.log(math.tan(math.pi / 4 + math.radians(la) / 2))
+    la0, lo0, la1, lo1 = 40.64, -73.78, 51.47, -0.45
+    p = psi(la0) + (psi(la1) - psi(la0)) * (lon - lo0) / (lo1 - lo0)
+    return math.degrees(2 * math.atan(math.exp(p)) - math.pi / 2)
+
+
+def _nat_flight(timed, follow=None):
+    """KJFK → EGLL, towards the east; with `timed` a planned time and a quote (so the Map can tell when it passes the ocean); `follow`: the points the route goes through."""
+    pts = [{'id': 'KJFK', 'lat': 40.64, 'lon': -73.78}] + (follow or []) + [{'id': 'EGLL', 'lat': 51.47, 'lon': -0.45}]
+    f = flight(route={'text': ' '.join(p['id'] for p in pts), 'dep': 'KJFK', 'arr': 'EGLL', 'points': pts, 'distanceNm': 3000, 'trackDeg': 60}, level={'ft': 35000},
+               aircraft={'type': 'A320', 'registration': 'F-RAJA'})
+    if timed:
+        f['planned_at'] = iso(now() + datetime.timedelta(hours=2))
+        f['quote'] = {'minutes': 420, 'block': 9000, 'unit': 'kg'}
+    return f
+
+
+@case('D249', 'NAT routes the flight cannot take are drawn withdrawn on the Map (paler, label without levels): a route of the other sense than the flight (its non-empty list of levels, east or west), even with no readable window, or whose window (from, to) does not hold the time the flight passes the ENTRY of the route for the flight’s sense (the west end of its points for a flight to the east); a route the flight FOLLOWS is never withdrawn; a flight with no time: the sense alone; without a flight nothing changes; the values of the file are bounded and cleaned', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0391 (c) (the user, 17 Nov, a free route towards the east at FL350 passing 13:30–16:30 Z, the NAT of the day all westbound 11:30–19:00 Z: « les routes NAT que le vol ne peut pas prendre : en retrait »; the ergonomist: data/sia/zones/nat/nat_tracks.json already carries from and to PER route, the sense is the non-empty list of levels; then, on the first delivery: the time judged is the one at the ENTRY of the route (the engine’s `at`), a route the flight follows is never withdrawn, a route of the other sense is withdrawn even with no readable window): the Map drew every NAT route of the day alike, with its levels')
+def d_natfade(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    t0 = now()
+    at = lambda h: iso(t0 + datetime.timedelta(hours=h))
+    follow = [{'id': 'a', 'lat': 53.0, 'lon': -50}, {'id': 'b', 'lat': 54.0, 'lon': -40}, {'id': 'c', 'lat': 54.5, 'lon': -30}, {'id': 'd', 'lat': 54.0, 'lon': -20}]   # the points of E1
+    tr = lambda i, la, east, west, **w: {'id': i, 'points': [{'id': 'a', 'lat': la, 'lon': -50}, {'id': 'b', 'lat': la + 1, 'lon': -40}, {'id': 'c', 'lat': la + 1.5, 'lon': -30}, {'id': 'd', 'lat': la + 1, 'lon': -20}],
+                                         'west': west, 'east': east, **w}
+    for mode in ('timed', 'untimed', 'followed'):
+        c.open('maps', docs=fdocs(_nat_flight(mode != 'untimed', follow if mode == 'followed' else None)) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {'nat': True}}, 'cache']], flight=False, airfields=True, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        c.tap('[data-mp="layers"]')
+        c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=nat]'))", what='the Layers content')
+        c.js("() => { const i = document.querySelector('.mp-dbody input[data-layer=nat]'); if (!i.checked) i.click(); return true }")
+        c.until("() => !!window.__mp.S.profile && !!window.__mp.S.profile.elements.natTracks", timeout=6000, what='the NAT layer is on')
+        c.tap('.mp-dclose')
+        c.wait(500)
+        entry = {'lat': _line_lat(-50) + 5, 'lon': -50}      # 300 NM north of the line at the west end, ON the line at the east end: the closest approach is the east end, the entry is the west end
+        te = c.js(_NAT_AT_JS, entry) if mode != 'untimed' else None
+        c.ok(mode == 'untimed' or te, str(te), f'{mode}: the Map estimates the time the flight passes the west end of a route')
+        e4 = {'id': 'E4', 'points': [{'id': 'a', 'lat': entry['lat'], 'lon': -50}, {'id': 'b', 'lat': _line_lat(-40) + 3.3, 'lon': -40}, {'id': 'c', 'lat': _line_lat(-30) + 1.6, 'lon': -30}, {'id': 'd', 'lat': _line_lat(-20), 'lon': -20}],
+              'west': [], 'east': [370]}
+        if te:
+            e4['from'] = iso(datetime.datetime.fromtimestamp(te / 1000 - 3600, datetime.timezone.utc))
+            e4['to'] = iso(datetime.datetime.fromtimestamp(te / 1000 + 3600, datetime.timezone.utc))
+        e1w = {'from': at(-10), 'to': at(-3)} if mode == 'followed' else {'from': at(1), 'to': at(12)}
+        nats = [tr('E1', 53, [350, 360, 370], [], **e1w),                              # east; the window holds the passage (or, followed: it ended before the flight leaves)
+                tr('E2', 47, [340, 350], [], **{'from': at(-10), 'to': at(-3)}),       # east, the window ended before the flight leaves
+                tr('W1', 55.5, [], [340, 350, 360], **{'from': at(1), 'to': at(12)}),    # the other sense
+                tr('W2', 58, [], [330, 340]),                                          # the other sense, no window at all: withdrawn all the same
+                e4]                                                                    # east; the window holds the time at the ENTRY (west end), not the one of the closest approach
+        c.js(_TEXTS_JS)
+        c.js(_NAT_TRACKS_JS, nats)
+        c.until("() => (window.__mpTexts || []).some(t => /^NAT /.test(t))", timeout=10000, what='the NAT labels are drawn')
+        c.wait(1200)
+        labels = sorted({t for t in c.js("() => window.__mpTexts") if re.match(r'NAT ', t)})
+        lv = lambda i: [x for x in labels if x.startswith(f'NAT {i} FL')]
+        bare = lambda i: [x for x in labels if x == f'NAT {i}']
+        c.ok(bool(lv('E1')), str(labels), f'{mode}: the east route keeps its levels' + (' (the flight follows it: its window ended, it is flown)' if mode == 'followed' else ' (its window holds the passage)'))
+        c.ok(bool(bare('W1')) and not lv('W1'), str(labels), f'{mode}: the westbound route is withdrawn (no levels)')
+        c.ok(not lv('W2'), str(labels), f'{mode}: the westbound route with no window is withdrawn all the same (only the time criterion is skipped)')
+        if mode == 'timed':
+            c.ok(bool(bare('E2')) and not lv('E2'), str(labels), 'with a planned time: the east route of an ended window is withdrawn (no levels)')
+            c.ok(bool(lv('E4')), str(labels), 'the time judged is the one at the ENTRY of the route (its west end), not the closest approach (its east end, 3 h later)')
+        if mode == 'untimed':
+            c.ok(bool(lv('E2')), str(labels), 'without a time: the east route keeps its levels (the sense alone counts)')
+        c.shot(f'D249_standard_nat_{mode}_delivered.png')
+    # the pure parts: the values of the file are bounded and cleaned, the rule is the one written above
+    r = c.js("""async () => { const D = await import('/modules/maps/data.js'), A = window.MapsRender.parts.airspace;
+      const bad = D.cleanNat([{ id: 'ABCDEFG<script>', points: [{ id: 'x'.repeat(40), lat: 91, lon: 0 }, { id: 'ok', lat: 50, lon: -30 }], east: ['350', 'x', 99999, 360.5], west: null, from: 'yesterday', to: '2026-11-17T19:00:00Z' },
+                              { id: 'B', points: [], east: [350], west: [], from: '2026-11-17T19:00:00Z', to: '2026-11-17T11:30:00Z' },
+                              { id: 'C', points: [], east: [350], west: [], from: '2026-11-17T11:30:00Z', to: '2026-11-17T19:00:00Z' }, null, 'x']);
+      const tr = (e, w, f, t) => ({ east: e, west: w, fromMs: f, toMs: t }), pts = [{ lat: 50, lon: -50 }, { lat: 51, lon: -20 }], asked = [], flight = { dir: 1, at: p => { asked.push(p[0].lon); return 5 } };
+      return { n: bad.length, id: bad[0].id, pts: bad[0].points.map(p => p.id), east: bad[0].east, hasWin: bad.map(t => !!t.fromMs), none: A.natFaded(tr([350], [], 0, 10), null, pts),
+        other: A.natFaded(tr([], [350], 0, 10), flight, pts), same: A.natFaded(tr([350], [], 0, 10), flight, pts), off: A.natFaded(tr([350], [], 6, 10), flight, pts), asked: asked.slice(-1)[0],
+        otherNoWin: A.natFaded({ east: [], west: [350] }, flight, pts), sameNoWin: A.natFaded({ east: [350], west: [] }, flight, pts), noTime: A.natFaded(tr([350], [], 6, 10), { dir: 1, at: () => null }, pts),
+        noDir: A.natFaded(tr([], [350], 0, 10), { dir: 0, at: () => 5 }, pts), followed: A.natFaded(tr([], [350], 6, 10), { ...flight, follows: () => true }, pts),
+        west: (() => { const a = []; A.natFaded(tr([], [350], 6, 10), { dir: -1, at: p => { a.push(p[0].lon); return 5 } }, pts); return a[0] })() } }""")
+    c.eq((r['n'], r['id'], r['pts'], r['east'], r['hasWin']), (3, 'ABCD', ['ok'], [350], [False, False, True]), 'cleaned: at most four signs, points placed and bounded, whole levels, a window only when readable and ordered', what=str(r))
+    c.eq((r['none'], r['other'], r['same'], r['off'], r['otherNoWin'], r['sameNoWin'], r['noTime'], r['noDir'], r['followed']), (False, True, False, True, True, False, False, False, False),
+         'no flight: nothing; other sense: withdrawn (window or not); same sense inside the window: kept; outside: withdrawn; no window, no time, no sense: kept; a route the flight follows: kept', what=str(r))
+    c.eq((r['asked'], r['west']), (-50, -20), 'the time is asked at the west end for a flight to the east, at the east end for a flight to the west', what=str(r))

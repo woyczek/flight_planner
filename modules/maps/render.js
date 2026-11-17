@@ -1463,6 +1463,8 @@
     runwayLabels = null,
     // dim (0 à 1) : la part dont les couches de la Carte, de la route comprise, sont éteintes avant ce que l'écran peint au niveau de
     // la route (mode « choisir sur la carte », V3 § 10.23) ; 0 : aucune
+    // natFlight : { dir (1 vers l'est, -1 vers l'ouest, 0), at(points) → ms } ou null (sans vol, une carte de mission) ; les routes NAT que ce vol ne peut pas prendre sont en retrait (SOG-0391 c)
+    natFlight = null,
     dim = 0,
     // plan : [{ name, q, w, along(d) }] — TOC et TOD de la coupe à leur place sur la carte ; along(d) : le point de la trace à d px
     // (signé) de q, null hors de la trace ; leur nom est une demande de la passe (rang route), l'écran peint losange et nom
@@ -1545,7 +1547,8 @@
         theme: T,
         placer: pl,
         pal,
-        zoom: zv
+        zoom: zv,
+        natFlight // le vol vu des routes NAT (flight_time.js natFlightOf) : { dir, at } ou null
       });
       let labels = [],
         towns = [],

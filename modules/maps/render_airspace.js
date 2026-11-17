@@ -544,8 +544,26 @@
     }
     ctx.restore();
   }
+  /** Une route NAT que le vol ne peut pas prendre (SOG-0391 c) : jamais une route que le vol SUIT (flight.follows(points) : l'itinéraire passe par elle) ; sinon d'un autre SENS que le vol
+   *  (la liste de niveaux non vide de la route, east ou west, contre le sens du vol : en retrait même sans fenêtre lisible), ou dont la FENÊTRE (fromMs, toMs, lus et bornés par data.js) ne
+   *  contient pas l'heure estimée du vol à l'ENTRÉE de la route pour ce sens (le bout ouest de sa liste de points pour un vol vers l'est, le bout est vers l'ouest : la règle du moteur,
+   *  son champ `at`), 400 NM au plus. flight : { dir (1 est, -1 ouest, 0 incertain), at(points) → ms ou null, follows(points) } ou rien. Sans vol, rien ; sans heure de vol, le sens
+   *  seul ; une fenêtre illisible ne saute que le critère de l'heure. */
+  function natEntry(pts, dir) {
+    return dir ? pts.reduce((a, p) => (dir > 0 ? p.lon < a.lon : p.lon > a.lon) ? p : a) : null;
+  }
+
+  function natFaded(tr, flight, pts) {
+    if (!flight || flight.follows?.(pts)) return false;
+    const sense = tr.east?.length && !tr.west?.length ? 1 : tr.west?.length && !tr.east?.length ? -1 : 0;
+    if (sense && flight.dir && sense !== flight.dir) return true;
+    if (!(tr.fromMs < tr.toMs) || !flight.at) return false;
+    const entry = natEntry(pts, flight.dir || sense),
+      t = entry ? flight.at([entry]) : null;
+    return Number.isFinite(t) && (t < tr.fromMs || t > tr.toMs);
+  }
   /** Tracks NAT du jour (aerodb.natTracks) : tireté ardoise par les points de la track, « NAT A FL350–400 » au premier
-   *  point. */
+   *  point ; en retrait (plus pâle, sans niveaux) quand le vol ne peut pas la prendre (natFaded). */
   function drawNat(ctx, tracks, toC, scale, b, pl, env) {
     if (!tracks?.length) return;
     const col = env.pal.nat,
@@ -557,6 +575,8 @@
     for (const tr of tracks) {
       const pts = (tr.points || []).filter(p => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
       if (pts.length < 2) continue;
+      const faded = natFaded(tr, env.natFlight, pts);
+      ctx.globalAlpha = faded ? .3 : 1;
       ctx.setLineDash([8 * scale, 4 * scale]);
       ctx.beginPath();
       pts.forEach((p, i) => {
@@ -565,7 +585,7 @@
       });
       ctx.stroke();
       ctx.setLineDash([]);
-      const lv = [...(tr.west || []), ...(tr.east || [])].map(Number).filter(Number.isFinite),
+      const lv = faded ? [] : [...(tr.west || []), ...(tr.east || [])].map(Number).filter(Number.isFinite),
         text = `NAT ${tr.id}${lv.length ? ` FL${Math.min(...lv)}–${Math.max(...lv)}` : ''}`,
         q = toC(pts[0].lat, pts[0].lon),
         w = text.length * f * .62;
@@ -580,7 +600,7 @@
           x1: q.x + 6 * scale + w,
           y1: q.y - f * .2
         }],
-        paint: () => halo(ctx, text, q.x + 5 * scale, q.y - f * .9, f, col, 'left')
+        paint: () => halo(ctx, text, q.x + 5 * scale, q.y - f * .9, f, col, 'left', faded ? .45 : 1)
       });
     }
     ctx.restore();
@@ -690,7 +710,8 @@
       drawZones,
       drawAirways,
       drawAar,
-      drawNat
+      drawNat,
+      natFaded
     }),
     enumerable: true
   });

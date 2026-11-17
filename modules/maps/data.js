@@ -144,6 +144,37 @@ export function buildPath() {
   S.marksPts = flownPts(); // les marques NM sont refaites au dessin, au pas rond de ce qui est visible (viewMarks)
   S.marks = MapsRender.marks(S.marksPts);
 }
+/** Les routes NAT du jour telles qu'AeroDB les donne (fichier du réseau : entrée non fiable), bornées et nettoyées : au plus 40 routes de 60 points placés, un code de quatre signes au
+ *  plus, des niveaux entiers de 0 à 999 (30 au plus par sens), et la fenêtre de validité (fromMs, toMs : ms UTC) seulement quand `from` et `to` sont deux dates ISO en Z lisibles, `to`
+ *  après `from` d'au plus 48 h ; sans fenêtre lisible la route n'a pas fromMs ni toMs (elle garde son trait, SOG-0391 c). */
+export function cleanNat(raw) {
+  const lv = a => (Array.isArray(a) ? a : []).slice(0, 30).map(Number).filter(v => Number.isInteger(v) && v >= 0 && v <= 999),
+    iso = v => {
+      const t = String(v ?? '').slice(0, 32);
+      return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{1,3})?)?Z$/.test(t) ? Date.parse(t) : NaN;
+    };
+  return (Array.isArray(raw) ? raw : []).slice(0, 40).filter(t => t && typeof t === 'object').map(t => {
+    const fromMs = iso(t.from),
+      toMs = iso(t.to),
+      win = Number.isFinite(fromMs) && Number.isFinite(toMs) && toMs > fromMs && toMs - fromMs <= 48 * 3600e3;
+    return {
+      id: String(t.id ?? '').replace(/[^A-Za-z0-9]/g, '').slice(0, 4),
+      points: (Array.isArray(t.points) ? t.points : []).slice(0, 60).filter(p => p && Number.isFinite(+p.lat) && Math.abs(+p.lat) <=
+          90 && Number.isFinite(+p.lon) && Math.abs(+p.lon) <= 180)
+        .map(p => ({
+          id: String(p.id ?? '').slice(0, 12),
+          lat: +p.lat,
+          lon: +p.lon
+        })),
+      west: lv(t.west),
+      east: lv(t.east),
+      ...(win ? {
+        fromMs,
+        toMs
+      } : {})
+    };
+  });
+}
 /** La couche des routes NAT est affichée : leur validité est lue (aerodb natState : rien n'est demandé au réseau) et dite dans les notes ; périmées, le lanceur du poste est prié de les relire
  *  (natEnsure : une fois, jamais de minuterie), puis les tracés sont relus (SOG-0266 ; contrat frame/aerodb/INTEGRATION.md, SOG-0263). Une fois par montage de la Carte. */
 export async function natCheck() {
@@ -678,7 +709,7 @@ async function loadData(box, corridor = 0) {
       vrp,
       points,
       aar,
-      nat
+      nat: cleanNat(nat)
     },
     empty: !airspaces.length && !aerodromes.length && !navaids.length,
     failed
