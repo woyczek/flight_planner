@@ -3962,3 +3962,74 @@ def n79(c):
                      'route_order': ['PT2']}, 'stops': ['PT2']},
          'the file: what was typed, « zone montrée » written false, the stop of the arrival by identifier', what='the saved file')
     c.js(_REG_CLEAR)
+
+
+
+# ---- the session « Création de missions », second range: cases N90 to N109 (the trial of the keys, and what follows)
+_TRIAL_JS = """async () => { const TR = await import('/modules/missions/editor_trial.js'), MS = await import('/frame/lib/mission.js'); const J = x => JSON.stringify(x);
+  // an invented mission: XTST (45N 1E) → PT1 → TARGET → XTSU (44N 2E) at 120 kt; a zone around PT1 under 3 000 ft, an object near the target
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'Essai', cruise_speed_kt: 120,
+    origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    target: { id: 'TARGET', name: 'Cible', lat: 44.6, lon: 1.4 },
+    turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }, { id: 'PT2', name: 'Deux', lat: 44.4, lon: 1.6 }],
+    zones: [{ id: 'ZONE-1', name: 'Secteur', kind: 'search', centre: { lat: 44.8, lon: 1.2 }, radius_km: 5, ceiling_ft: 3000 }],
+    objects: [{ id: 'OBJ-1', kind: 'person', name: 'Naufragé', lat: 44.6, lon: 1.42, detection_range_nm: 1, altitude_ft: 0, detection_height_ft: 2500 }],
+    route_order: ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Zone', trigger_zone: 'ZONE-1', fallback_delay_min: 60 },
+      { id: 'C', title: 'Objet', trigger_object: 'OBJ-1', fallback_delay_min: 90, route_order: ['PT2'] },
+      { id: 'D', title: 'Retour', trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: 1, speed_max_kt: 30, require_on_ground: true, required_points: ['PT2'] } },
+      { id: 'E', title: 'Heure', trigger_point: 'ORIGIN', trigger_delay_min: 5 }, { id: 'F', title: 'Geste' }] };
+  const other = { mission: { id: 'X-001A', type: 'REG' }, title: 'E', cruise_speed_kt: 120, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }], route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Tenue', trigger_condition: { kind: 'hover', point: 'PT1', radius_m: 50, duration_sec: 10, max_gap_sec: 2, speed_tolerance_kt: 5, height_min_ft: 0, height_max_ft: 50 },
+      fallback_delay_min: 20 }, { id: 'C', title: 'Heure', trigger_point: 'GHOST', trigger_delay_min: 5 }] };
+  const m = MS.readMission(doc), r3 = x => Math.round(x * 1000) / 1000;
+  const said = r => r.log.map(l => l.min + ':' + l.ev + (l.rank ? ' ' + l.rank : '') + (l.how ? ' ' + l.how : '') + (l.why ? ' ' + l.why : '')).join(' | ');
+  const sum = r => ({ ok: r.ok, fix: r.fix && [r3(r.fix.lat), r3(r.fix.lon), r.fix.altFt, r.fix.onGround, r.fix.gsKt], landed: r.landedMin, drawers: r.drawers.map(d => [d.rank, d.open, d.how, d.min]), log: said(r) });
+  let threw = '';
+  for (const bad of [null, 7, {}, { drawers: 5 }, { drawers: [null, { id: '__proto__' }] }]) try { TR.trialRun(bad, { untilMin: 'x', hands: 3 }) } catch (e) { threw += J(bad) + ' ' + e + ' | ' }
+  const before = J(m), full = TR.trialRun(m, { untilMin: 120, altFt: 2000 });
+  return { start: sum(TR.trialRun(m, { untilMin: 0, altFt: 2000 })), ten: sum(TR.trialRun(m, { untilMin: 10, altFt: 2000 })), full: sum(full), trail: [full.trail.length <= TR.TRIAL.trail, full.trail[0]],
+    ceiling: sum(TR.trialRun(m, { untilMin: 30, altFt: 5000 })).log, noAlt: sum(TR.trialRun(m, { untilMin: 30 })).log,
+    silent: sum(TR.trialRun(m, { untilMin: 120, altFt: 2000, declares: false })), hand: sum(TR.trialRun(m, { untilMin: 12, altFt: 2000, hands: { B: 3 } })).drawers[0],
+    unjudged: sum(TR.trialRun(MS.readMission(other), { untilMin: 40, altFt: 1000 })), noRoute: [TR.trialRun(MS.readMission({ mission: { id: 'X-001A' }, title: 'x' }), { untilMin: 10 }).ok,
+      TR.trialRun(null, { untilMin: 10 }).why], threw, untouched: J(m) === before } }"""
+
+
+@case('N90', 'Missions › the workshop, the trial of the keys (pure part, no screen): the aircraft of the trial leaves the departure, follows '
+      'the route of the departure at a constant speed, takes the onward route of a drawer that opens and lands at the arrival; each key '
+      'is judged by the frame\'s crossing service on the path between two fixes — a zone crossed (under its ceiling), an object within '
+      'range (and declared), an arrival landed after its required stops — and an hour by the reader\'s estimate; the order of the flight '
+      '(only the first closed drawer can open; what is due plays as soon as the one before opens); a datum that is missing never '
+      'satisfies a key: the log says « unknown » and why; a key the flight does not judge yet opens at its fallback time only; nothing '
+      'is written in the mission, no input throws', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P4 (modules/missions/EDITOR.md § 4: « It runs the same pure judgement as the flight — frame/lib/crossing.js — '
+      'else the trial lies. A datum that is missing never satisfies a key »; frame/INTEGRATION.md § 12b; the order: '
+      'modules/missions/drawers.js): modules/missions/editor_trial.js')
+def n90(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_TRIAL_JS)
+    none = [[1, False, None, None], [2, False, None, None], [3, False, None, None], [4, False, None, None], [5, False, None, None]]
+    c.eq(r['start'], {'ok': True, 'fix': [45, 1, 2000, True, 0], 'landed': None, 'drawers': none, 'log': '0:start'},
+         'at the departure: on the ground, every drawer closed', what='minute 0')
+    c.eq([r['ten']['fix'], r['ten']['drawers'][0], r['ten']['log']], [[44.728, 1.272, 2000, False, 120], [1, True, 'zone', 6.25], '0:start | 6.25:open 1 zone'],
+         'ten minutes later: 20 NM along the route, the zone around PT1 entered at 6 min 15 s', what='minute 10')
+    c.eq(r['full'], {'ok': True, 'fix': [44, 2, 2000, True, 0], 'landed': 37,
+                     'drawers': [[1, True, 'zone', 6.25], [2, True, 'object', 14.75], [3, True, 'arrival', 37], [4, True, 'time', 37], [5, False, None, None]],
+                     'log': '0:start | 6.25:open 1 zone | 14.75:open 2 object | 14.75:route 2 | 37:landed | 37:open 3 arrival | 37:open 4 time | 37:hand 5'},
+         'the whole flight: the zone, the object within range (the aircraft then takes the onward route of that drawer, through PT2), the arrival landed after its '
+         'required stop, the hour — due since minute 5 — as soon as the drawer before opens; the last one is to be opened by hand', what='the whole flight')
+    c.eq(r['trail'], [True, [45, 1]], 'the trail starts at the departure and is bounded', what='the trail')
+    c.eq([r['ceiling'], r['noAlt']], ['0:start | 6.25:ceiling 1', '0:start | 6.25:unknown 1 alt'],
+         'above the ceiling of the zone: said, nothing opens; without an altitude: UNKNOWN, said when the aircraft is in the zone — a missing datum never satisfies a key',
+         what='the ceiling and a missing altitude')
+    c.eq([r['silent']['drawers'][:3], r['silent']['log']], [[[1, True, 'zone', 6.25], [2, True, 'fallback', 90], [3, False, None, None]],
+                                                             '0:start | 6.25:open 1 zone | 14.75:near 2 | 37:landed | 90:open 2 fallback | 90:stops 3'],
+         'an object within range but not declared: « à portée » is said, the drawer opens at its fallback time; the arrival then says the stop was not made',
+         what='within range AND declared')
+    c.eq(r['hand'], [1, True, 'hand', 3], 'the pilot\'s gesture at minute 3 opens the first drawer', what='by hand')
+    c.eq([r['unjudged']['drawers'], r['unjudged']['log']], [[[1, True, 'fallback', 20], [2, False, None, None]], '0:start | 0:unjudged 1 | 20:open 1 fallback | 20:unread 2 | 37:landed'],
+         'a key the flight does not judge yet (a hover) opens at its fallback time only, and says so; a key the reader cannot read stays closed, and says so',
+         what='not judged, not read')
+    c.ok(r['noRoute'] == [False, 'route'] and r['threw'] == '' and r['untouched'] is True, [r['noRoute'], r['threw'], r['untouched']],
+         'a mission without a route to follow: no trial, said; no hostile input throws; the mission read is not touched')

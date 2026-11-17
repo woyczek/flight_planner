@@ -386,6 +386,30 @@ The accepted form of `maquette/tiroirs.html`, in the frame of the workshop. `edi
   twenty at most; written by identifier, followed by the references of SOG-0439 (`drawerStop`).
 - With this, lot P3 (SOG-0445) is delivered but for « Vue du pilote » on the map, which comes with the map of P2.
 
+### 7 nonies. P4, first brick: the trial of the keys — the pure part (18 Nov 2026; SOG-0444 lot P4; no screen; noreg N90)
+
+`modules/missions/editor_trial.js` — `trialRun(mission, { untilMin, speedKt, altFt, declares, hands })`, pure (no page, no clock, no
+storage): the mission READ by the reader, a time, a speed, an altitude → where the aircraft of the trial is, which drawers are open,
+by what, and a log of facts. Nothing is written in the mission. Not yet imported by the screen: the pane is the next brick.
+
+- **The aircraft of the trial** leaves the departure, follows the route of the departure at a constant speed (the mission's cruise
+  speed by default), **takes the onward route of a drawer that opens** (« Prendre la suite de route »), then joins the arrival and
+  lands. Its altitude is the one the author gives (none: unknown); its height above the ground is not known here (no terrain).
+- **The same judgement as the flight**: `crossed`, `reach` and `arrived` of `frame/lib/crossing.js` on the PATH between two fixes
+  (a step of 15 s), with the keys of the reader as they are; an hour by `passageMin` of the reader (the estimate the flight uses);
+  **the order of the flight** (`modules/missions/drawers.js`): only the first closed drawer can open, and what is due plays as soon
+  as the one before opens.
+- **A datum that is missing never satisfies a key**: the log says `unknown` and why — `alt` (a ceiling, no altitude), `height` (a
+  detection height, no height), `ground` (« on the ground » unknown), `time` (the point of an hour is not on the route, or the
+  mission has no speed). Said when it matters (the aircraft is in the zone, within range, in the radius), once per drawer.
+- **What the service does not judge is the trial's to say**: the stops an arrival requires (judged on the trail of the trial: `stops`
+  when the aircraft arrives without them), « within range AND declared » (`near`, unless `declares`), the pilot's gesture (`hands`),
+  and what the flight does not judge yet — a 1.1 condition, a target that crosses or moves, a following (`notJudgedYet`): `unjudged`,
+  and the drawer opens at its fallback time or by hand only, as in flight. A key the reader cannot read: `unread`.
+- **The log is facts, not sentences** (`{ min, ev, rank, how, why }`): the pane writes them in the four languages.
+- Bounds: ten hours at most, 20 to 600 kt, −1 500 to 60 000 ft (out of bounds: the default, never clamped), a trail of 240 points,
+  twelve drawers; no input throws.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
