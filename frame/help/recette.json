@@ -4397,6 +4397,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0094",
+   "fiche": "SOG-0441",
+   "app": "compagnie",
+   "question": "Missions à tiroir : le geste « Ouvrir le tiroir » d'un pilote (à la main, sans la zone) ouvre-t-il pour TOUS, ou pour lui seul ?",
+   "context": "Tu as décidé qu'un tiroir ouvert par le passage dans la zone l'est pour tous les appareils de la mission. Reste le geste manuel hérité de la V2. Ce que conteste la session « Affectation des missions », et moi avec elle : si le geste d'un seul ouvre pour tous, l'impatience d'un pilote donne la suite à tout l'équipage, et les contrôles sur la zone ne servent plus à rien.",
+   "options": [
+    "Pour lui seul : les autres lisent « RBR l'a ouvert à la main » et gardent leur tiroir fermé",
+    "Pour tous, comme la zone",
+    "Supprimer le geste manuel : seules la zone, l'objet, l'heure et l'heure de repli ouvrent",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
