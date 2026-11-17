@@ -3,7 +3,7 @@
 // accorde les marques « (s) » d'après {n}). Les textes des six premières étapes restent dans module.js (Features SOG).
 //
 // API :
-//   EDTX : les textes — at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
+//   EDTX : les textes — pl… et ok_<sorte> (les objets à trouver dans les Lieux, SOG-0445) ; at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
 //     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, drawerNoKey, mapNoCentre), at_<where> (le champ qui
 //     cite une référence morte).
 //   todoText(tt, t) → le mot d'une ligne de « À compléter » nommée (« le tiroir B n'a plus son point de déclenchement… ») ; ''.
@@ -29,6 +29,14 @@ export const EDTX = {
     'drawer {name} (its key: it will only open by hand or at its fallback time)',
     'Schublade {name} (ihr Schlüssel: sie öffnet sich dann nur noch von Hand oder zu ihrer Ersatzzeit)',
     'el cajón {name} (su llave: solo se abrirá a mano o a su hora de reserva)'
+  ],
+  ref_drawerActor: ['le tiroir {name} (la cible qui franchit sa zone : ce sera le pilote)',
+    'drawer {name} (the target that crosses its zone: it will be the pilot)',
+    'Schublade {name} (das Ziel, das ihre Zone durchfliegt: es wird der Pilot sein)',
+    'el cajón {name} (el blanco que cruza su zona: será el piloto)'
+  ],
+  ref_objectRoute: ['la route de la cible {name}', 'the route of target {name}', 'die Route des Ziels {name}',
+    'la ruta del blanco {name}'
   ],
   ref_drawerStop: ['les arrêts demandés par le tiroir {name}', 'the stops required by drawer {name}',
     'die von Schublade {name} verlangten Halte', 'las paradas que pide el cajón {name}'
@@ -64,6 +72,37 @@ export const EDTX = {
   todo_mapNoCentre: ['la carte {name} n\'a plus de centre', 'map {name} no longer has a centre',
     'die Karte {name} hat keinen Mittelpunkt mehr', 'el mapa {name} ya no tiene centro'
   ],
+  // les objets à trouver dans les Lieux (SOG-0445) : la pastille, la fiche, « caché au pilote », « clé du tiroir n »
+  plObject: ['OBJ', 'OBJ', 'OBJ', 'OBJ'],
+  plAddObject: ['+ Objet à trouver', '+ Object to find', '+ Zu findendes Objekt', '+ Objeto por encontrar'],
+  plObjectHint: ['identifiant donné par l\'atelier ; un tiroir le cite comme clé.',
+    'identifier given by the workshop; a drawer cites it as its key.',
+    'Kennung von der Werkstatt vergeben; eine Schublade nennt sie als Schlüssel.',
+    'identificador dado por el taller; un cajón lo cita como llave.'
+  ],
+  plOKind: ['Sorte d\'objet', 'Kind of object', 'Art des Objekts', 'Tipo de objeto'],
+  ok_wreck: ['épave', 'wreck', 'Wrack', 'restos'],
+  ok_raft: ['radeau', 'raft', 'Rettungsinsel', 'balsa'],
+  ok_person: ['personne', 'person', 'Person', 'persona'],
+  ok_vehicle: ['véhicule', 'vehicle', 'Fahrzeug', 'vehículo'],
+  ok_container: ['conteneur', 'container', 'Container', 'contenedor'],
+  ok_ship: ['navire', 'ship', 'Schiff', 'buque'],
+  ok_smoke: ['fumée', 'smoke', 'Rauch', 'humo'],
+  ok_aircraft: ['aéronef', 'aircraft', 'Luftfahrzeug', 'aeronave'],
+  plRange: ['Portée de détection (NM)', 'Detection range (NM)', 'Erfassungsreichweite (NM)', 'Alcance de detección (NM)'],
+  plHeight: ['Hauteur de détection (ft)', 'Detection height (ft)', 'Erfassungshöhe (ft)', 'Altura de detección (ft)'],
+  plAlt: ['Altitude de l\'objet (ft)', 'Altitude of the object (ft)', 'Höhe des Objekts (ft)', 'Altitud del objeto (ft)'],
+  plConfirm: ['Trouvé seulement quand le pilote le déclare (« Objet en vue »)',
+    'Found only when the pilot declares it (« Object in sight »)',
+    'Erst gefunden, wenn der Pilot es meldet („Objekt in Sicht“)', 'Encontrado solo cuando el piloto lo declara («Objeto a la vista»)'
+  ],
+  plHidden: ['caché au pilote', 'hidden from the pilot', 'für den Piloten verborgen', 'oculto al piloto'],
+  plRangeIs: ['portée {r} NM', 'range {r} NM', 'Reichweite {r} NM', 'alcance {r} NM'],
+  plMoving: ['cible mobile, gardée telle quelle', 'moving target, kept as it is', 'bewegliches Ziel, unverändert',
+    'blanco móvil, conservado tal cual'
+  ],
+  plKeyOf: ['clé du tiroir {name}', 'key of drawer {name}', 'Schlüssel der Schublade {name}', 'llave del cajón {name}'],
+  plNoDrawer: ['aucun tiroir ne le cite', 'no drawer cites it', 'keine Schublade nennt es', 'ningún cajón lo cita'],
   // l'atelier (SOG-0444, lot P1) : le fil, la carte, le déroulé, la fiche du départ, le pied
   atCrumb: ['Missions › Registre › Atelier', 'Missions › Registry › Workshop', 'Missionen › Register › Werkstatt',
     'Misiones › Registro › Taller'
@@ -121,6 +160,12 @@ export const EDTX = {
   ],
   at_drawerKey: ['la clé du tiroir {name}', 'the key of drawer {name}', 'der Schlüssel der Schublade {name}',
     'la llave del cajón {name}'
+  ],
+  at_drawerActor: ['la cible du tiroir {name}', 'the target of drawer {name}', 'das Ziel der Schublade {name}',
+    'el blanco del cajón {name}'
+  ],
+  at_objectRoute: ['la route de la cible {name}', 'the route of target {name}', 'die Route des Ziels {name}',
+    'la ruta del blanco {name}'
   ],
   at_drawerStop: ['un arrêt demandé par le tiroir {name}', 'a stop required by drawer {name}', 'ein von Schublade {name} verlangter Halt',
     'una parada que pide el cajón {name}'

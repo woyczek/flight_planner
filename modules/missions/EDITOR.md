@@ -257,9 +257,8 @@ tiroir 2 (sa clé…) » before the second press, and a dead key is named in « 
   condition STAYS (the reader then says it unreadable: the drawer opens by hand). `drawersNoKey(doc)` reads those traces and
   « À compléter » names the drawer (« le tiroir 2 n'a plus sa clé »), in this sitting and the next ones. A required stop removed simply
   leaves the list.
-- **Not walked**: a zone or an object written INSIDE the part (they cite nothing); `trigger_object`, `trigger_actor` and the `object`
-  of a rule — an object is not a place of the Lieux yet; it joins them with the sheet of a drawer (the objects become rows of the
-  Lieux, « caché au pilote »), its identifier given by the workshop and never edited.
+- **Not walked**: a zone or an object written INSIDE the part (they cite nothing). `trigger_object`, `trigger_actor` and the `object`
+  of a rule are walked since the objects are rows of the Lieux (§ 7 sexies).
 - **Still to come in P3**: the sheet of a drawer (the key, the texts, the onward route), « ＋ Tiroir », « Ce que le pilote voit »
   (imported from the session « Affectation »: `describe` of `drawers_view.js`), the objects in the Lieux, and « À compléter » for a
   drawer (no message, no briefing, a key that looks at the aircraft without a fallback hour, a key the reader cannot read).
@@ -300,6 +299,32 @@ Lieux. Not yet imported by the screen: the sheet is the next brick.
   own fields (`editor.js`) still fold blanks only: to align when they are next touched.
 - **Open for the sheet**: who writes `said` — proposed: the workshop generates it from the key (« au passage de ZONE-1 », « 10 min
   après PT1 ») as long as the author has not typed his own words, since the V2's Markdown and PDF print it.
+
+### 7 sexies. P3, third brick: the objects to find are rows of the Lieux (18 Nov 2026; SOG-0445; noreg N77)
+
+« Les lieux : sur la carte ET dans le groupe Lieux (la même liste) ; un objet de tiroir y est dit caché au pilote » (the mock-up).
+
+- **`placesOf` gives a row `object` per entry of `objects`** (after the rendezvous): `id`, `name`, `okind` (the kind), `lat`, `lon`,
+  `range` (`detection_range_nm`), `height` (`detection_height_ft`), `alt` (`altitude_ft`), `confirm` (`require_confirmation`, true
+  by default: found within range AND on the pilot's word), `moving` (a target with a route, a speed or a motion). `withPlaces`
+  rewrites them with the rule of the Lieux: a field changed, that field alone; the other keys of the object (a target's route, its
+  speed, its callsign) kept; a kind out of the reader's list (`OBJECT_KINDS`), a range of 0 or above 100 NM, a height above
+  60 000 ft, an altitude out of −1 500 to 60 000 ft are not written.
+- **The identifier of an object is given by the workshop** (`nextPlaceId(rows, 'object', base)` → « OBJ-3 », never one the file still
+  carries) and is not a field of its sheet: a drawer cites it, a rename would only make dead keys.
+- **Its references** (the walker of SOG-0439): `trigger_object` and the `object` of a condition (`drawerKey`), `trigger_actor` — the
+  target that crosses a zone instead of the pilot (`drawerActor`; removed, « ce sera le pilote » is said before the second press) —,
+  and the `route_order` of a moving target (`objectRoute`: a place renamed is renamed there, a place removed leaves it).
+- **On screen** (`editor_view.js`): the row « OBJ » says its kind, « caché au pilote », the drawer whose key it is (« clé du tiroir
+  4 ») or « aucun tiroir ne le cite », its range, « cible mobile, gardée telle quelle », its position — and a ZONE says the drawer
+  that uses it too; the detail of a row wraps instead of being cut. The sheet: name, kind, latitude, longitude, range, detection
+  height, altitude, and the box « Trouvé seulement quand le pilote le déclare (« Objet en vue ») ». « + Objet à trouver » joins the
+  other « + » buttons. The sketch draws an object as a diamond: the map is the author's. **An event of the timeline is never placed
+  on an object** (the timeline is read by the pilot before the drawer opens).
+- **The six steps read their texts through `visible`** of the reader (`cut`, `para` of `editor.js`; Security review of 18 Nov): the
+  invisible format characters are not shown nor written; a text of the file the author does not touch is kept as it is.
+- **Not done**: the object seen in X-Plane; the route and the speed of a moving target (P5); the height above the ground under an
+  object (the terrain comes with the map's base, SOG-0446).
 
 ### 8. What is NOT ported
 

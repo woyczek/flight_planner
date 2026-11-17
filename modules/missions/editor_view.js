@@ -74,6 +74,9 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atbody .f-row{align-items:flex-start}
 [data-module="missions"] .ms-atbody .f-row>.f-field{flex:1 1 10em;min-width:0}
 [data-module="missions"] .ms-atbody textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
+[data-module="missions"] .ms-plcheck{display:flex;gap:8px;align-items:center;min-height:44px;margin:4px 0}
+[data-module="missions"] .ms-atbody .ms-plbody>.f-muted{white-space:normal;overflow:visible} /* le détail d'un lieu n'est jamais coupé */
+[data-module="missions"] .ms-plcheck>input{flex:0 0 auto;width:20px;height:20px}
 [data-module="missions"] .ms-atbody .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-atbody .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2}
 [data-module="missions"] .ms-atbody .ms-edthead{display:none}
@@ -286,10 +289,23 @@ function edPlacesHtml(s) {
       target: TX.plTarget,
       zone: TX.plZone,
       pt: TX.plPt,
-      rdv: TX.plRdv
+      rdv: TX.plRdv,
+      object: EDTX.plObject
     },
     zk = v => TX[`zk_${v}`] ? s.tt(TX[`zk_${v}`]) : v,
-    detail = r => [r.kind === 'zone' ? zk(r.zkind) : '', r.role, r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
+    ok = v => EDTX[`ok_${v}`] ? s.tt(EDTX[`ok_${v}`]) : v,
+    doc = edDoc(e),
+    // qui emploie une zone ou un objet comme clé : « clé du tiroir 2 » (SOG-0445 : un tiroir CITE une zone ou un objet de la mission)
+    usedBy = i => ED.citedBy(doc, rows, i).filter(c => c.where === 'drawerKey' || c.where === 'drawerActor').map(c => s.tt(EDTX.plKeyOf, {
+      name: c.name
+    })),
+    // un objet à trouver : sa sorte, sa portée, « caché au pilote », le tiroir dont il est la clé (ou aucun), sa position
+    objectDetail = (r, i) => [ok(r.okind), s.tt(EDTX.plHidden), ...(usedBy(i).length ? usedBy(i) : [s.tt(EDTX.plNoDrawer)]), r.range ? s.tt(
+      EDTX.plRangeIs, {
+        r: r.range
+      }) : '', r.moving ? s.tt(EDTX.plMoving) : '', dms(s, r.lat, r.lon)].filter(Boolean).join(' · '),
+    detail = (r, i) => r.kind === 'object' ? objectDetail(r, i) : [r.kind === 'zone' ? zk(r.zkind) : '', r.role, ...(r.kind === 'zone' ?
+      usedBy(i) : []), r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
       n: r.poly
     }) : r.kind === 'zone' && r.radius ? s.tt(TX.plCircle, {
       r: r.radius
@@ -300,6 +316,15 @@ function edPlacesHtml(s) {
     form = (r, i) => {
       const fixed = r.kind === 'dep' || r.kind === 'arr',
         num = ' inputmode="decimal" maxlength="12"';
+      // un objet à trouver : son identifiant est donné par l'atelier (jamais saisi) ; sept champs
+      if (r.kind === 'object') return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc(r.id)} — ${esc(s.tt(EDTX.plObjectHint))}</p>
+        <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
+        <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
+        <div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}${field(i, 'height', EDTX.plHeight, r.height, num)}</div>
+        <div class="f-row">${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div>
+        <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
+        ${r.moving ? `<p class="f-muted" data-plmoving>${esc(s.tt(EDTX.plMoving))}</p>` : ''}
+        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
       return `<div class="ms-plform" data-plform="${i}">${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
         ${r.kind === 'zone' && r.poly ? `<p class="f-muted">${esc(s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
@@ -309,8 +334,8 @@ function edPlacesHtml(s) {
     },
     id = e.cadre.id.trim().toUpperCase();
   return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
-    <div class="f-list" data-edplaces>${rows.map((r, i) => `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('')}</div>
-    <div class="f-row ms-pladd">${rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>`;
+    <div class="f-list" data-edplaces>${rows.map((r, i) => `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('')}</div>
+    <div class="f-row ms-pladd">${rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>`;
 }
 
 /** L'étape Récit (cinq éléments : résumé, description, objectif principal, objectifs secondaires, charge). */
@@ -345,7 +370,7 @@ function edTimelineHtml(s) {
       place: ED.refNow(r.place, e.base, e.places).toUpperCase()
     })), // SOG-0439
     doc = edDoc(e),
-    places = ED.placesOf(doc).filter(p => p.id && !['dep', 'arr'].includes(p.kind)),
+    places = ED.placesOf(doc).filter(p => p.id && !['dep', 'arr', 'object'].includes(p.kind)), // jamais un objet caché au pilote
     maps = ED.mapsOf(doc),
     missing = ED.proposedMaps(doc),
     opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`,
@@ -503,6 +528,9 @@ export function edInput(s, ev) {
     const row = e.places?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
     if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f)) row[f] = ev.target.value;
+    // un objet à trouver : son identifiant ne se saisit pas ; « trouvé sur la parole du pilote » est une case
+    else if (row?.kind === 'object' && ['okind', 'range', 'height', 'alt'].includes(f)) row[f] = ev.target.value;
+    else if (row?.kind === 'object' && f === 'confirm') row.confirm = ev.target.checked === true;
     return edRefresh(s);
   }
   if (k === 'edteam') { // une équipe : la ligne retouchée en place (le champ garde son curseur)
@@ -630,6 +658,7 @@ function thumbHtml(s, doc) {
     },
     shape = p => p.k === 'zone' ? p.r ? `<circle cx="${sx(p)}" cy="${sy(p)}" r="${Math.max(3, p.r * k).toFixed(1)}" fill="none" stroke="var(--sog-ok)" stroke-width="1.5" stroke-dasharray="4 3"/>` :
     `<rect x="${(sx(p) - 6).toFixed(1)}" y="${(sy(p) - 6).toFixed(1)}" width="12" height="12" fill="none" stroke="var(--sog-ok)" stroke-width="1.5" stroke-dasharray="3 2"/>` :
+    p.k === 'object' ? `<path data-thobject d="M${sx(p)} ${(sy(p) - 5).toFixed(1)}l5 5l-5 5l-5 -5z" fill="var(--sog-text, #222)"/>` :
     `<circle cx="${sx(p)}" cy="${sy(p)}" r="${p.k === 'pt' ? 3 : 4}" fill="${COL[p.k] || 'var(--sog-muted)'}"/>`;
   // les zones dessous, les points dessus
   return `<svg class="ms-thumb" data-edthumb viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.tt(TX.edThumb))}">${[...pts.filter(p => p.k === 'zone'), ...pts.filter(p => p.k !== 'zone')].map(shape).join('')}</svg>`;
@@ -861,7 +890,7 @@ export function edClick(s, b) {
       return draw(s);
     }
     case 'edplaceadd': {
-      const kind = ['target', 'zone', 'pt', 'rdv'].includes(b.dataset.kind) ? b.dataset.kind : 'pt',
+      const kind = ['target', 'zone', 'pt', 'rdv', 'object'].includes(b.dataset.kind) ? b.dataset.kind : 'pt',
         list = s.ed.places || [],
         n = list.filter(r => r.kind === kind).length + 1;
       if (n > ED.PLACES_MAX || (kind === 'target' && n > 1)) return;
@@ -880,10 +909,17 @@ export function edClick(s, b) {
           poly: 0
         } : kind === 'rdv' ? {
           participants: ''
+        } : kind === 'object' ? {
+          okind: '',
+          range: '',
+          height: '',
+          alt: '',
+          confirm: true, // trouvé à portée ET sur la parole du pilote : le défaut du format
+          moving: false
         } : {})
       };
-      // la nouvelle ligne rejoint les lieux de sa sorte (l'ordre du fichier : cible, zones, points, rendez-vous)
-      const order = ['dep', 'arr', 'target', 'zone', 'pt', 'rdv'],
+      // la nouvelle ligne rejoint les lieux de sa sorte (l'ordre du fichier : cible, zones, points, rendez-vous, objets)
+      const order = ['dep', 'arr', 'target', 'zone', 'pt', 'rdv', 'object'],
         at = list.findIndex(r => order.indexOf(r.kind) > order.indexOf(kind));
       s.ed.places = at < 0 ? [...list, row] : [...list.slice(0, at), row, ...list.slice(at)];
       s.ed.placeEdit = at < 0 ? s.ed.places.length - 1 : at;

@@ -8,8 +8,10 @@
 //     déjà (les autres suivent, une par push).
 //   teamsOf(doc) → [{ i, name, service, type, role }] (i : la place dans doc.teams, -1 pour une ligne ajoutée) ; withTeams(doc, rows) →
 //     un NOUVEAU document : chaque équipe gardée garde ses autres clés, une ligne vide est retirée ; TEAMS_MAX lignes au plus.
-//   placesOf(doc) → [{ kind: dep|arr|target|zone|pt|rdv, i, id, name, role, lat, lon, (zone) zkind, radius, tot, poly, (rdv)
-//     participants }] : les nombres en texte, pour les champs ; withPlaces(doc, rows) → un NOUVEAU document : la cible, les zones, les
+//   placesOf(doc) → [{ kind: dep|arr|target|zone|pt|rdv|object, i, id, name, role, lat, lon, (zone) zkind, radius, tot, poly, (rdv)
+//     participants, (object : un objet à trouver de `objects`, SOG-0445) okind, range, height, alt, confirm, moving }] : les nombres
+//     en texte, pour les champs ; un objet est caché au pilote tant qu'un tiroir qui le cite est fermé (la lecture le cache) ; une
+//     cible mobile (`moving`) garde sa route et sa vitesse telles quelles ; withPlaces(doc, rows) → un NOUVEAU document : la cible, les zones, les
 //     points tournants et les rendez-vous réécrits depuis les lignes (chaque lieu gardé garde ses autres clés, un polygone ses points),
 //     la position seule du départ et de l'arrivée ; une coordonnée vide ou hors bornes s'écrit null (« à placer », la forme de la V2).
 //   storyOf(doc) → { summary, description, primary, secondary (une ligne par objectif), payload, mass, pax } ; withStory(doc, story) →
@@ -76,8 +78,8 @@ export const THEATRES = ['métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion'
 const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
   FAMILY = /^[A-Z][A-Z0-9_]{1,23}$/;
 
-/** Un texte nettoyé et borné. */
-const cut = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+/** Un texte nettoyé (sans caractère de format invisible : `visible` du lecteur, blancs repliés) et borné. */
+const cut = (v, n) => MS.visible(v).replace(/\s+/g, ' ').trim().slice(0, n);
 /** Un objet du document, ou {}. */
 const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
 /** Une liste du document comme le lecteur la lit (frame/lib/mission.js list) : un tableau, un objet seul = une entrée, sinon rien
@@ -282,8 +284,12 @@ const positive = (v, max) => {
   const n = coord(v, max);
   return n !== null && n >= 0 ? n : null;
 };
-/** Un nombre lu du fichier, en texte pour un champ ('' sinon). */
-const numText = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? '' : String(+v);
+/** Un nombre lu du fichier, en texte pour un champ ('' sinon ; un texte blanc n'est pas zéro). */
+const numText = v => v === null || v === undefined || String(v).trim() === '' || !Number.isFinite(+v) ? '' : String(+v);
+/** Une valeur écrite (ni absente, ni vide). */
+const written = v => v !== undefined && v !== null && v !== '';
+/** Oui ou non écrit dans le fichier, comme le lecteur le lit (false, 0, « non », « no », « false » : non). */
+const yes = (v, dflt) => !written(v) ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v).trim()));
 
 /** Les lieux d'une mission (voir l'en-tête). */
 export function placesOf(doc) {
@@ -353,6 +359,25 @@ export function placesOf(doc) {
       .slice(0, 20).map(x => cut(x, 60)).filter(Boolean)
       .join(', ')
   }));
+  // les objets à trouver (SOG-0445) : des lieux que seul l'auteur voit ; une cible mobile est gardée telle quelle
+  arr(d.objects).forEach((p, i) => {
+    const o = obj(p);
+    out.push({
+      kind: 'object',
+      i,
+      id: cut(o.id, 40),
+      name: cut(o.name, 120),
+      role: '',
+      okind: cut(o.kind, 24).toLowerCase(),
+      lat: numText(o.lat),
+      lon: numText(o.lon),
+      range: numText(o.detection_range_nm),
+      height: numText(o.detection_height_ft),
+      alt: numText(o.altitude_ft),
+      confirm: yes(o.require_confirmation, true),
+      moving: written(o.route_order) || written(o.speed_kt) || written(o.motion)
+    });
+  });
   return out;
 }
 
@@ -469,11 +494,31 @@ export function withPlaces(doc, rows) {
       .slice(0,
         20);
   });
+  // un objet à trouver : sa sorte (une de celles du lecteur), sa position, sa portée (au-dessus de 0), sa hauteur de détection, son
+  // altitude, « trouvé sur la parole du pilote » ; un nombre hors bornes n'est pas écrit ; ses autres clés (la route d'une cible, sa
+  // vitesse, son indicatif) sont gardées
+  rebuild('object', 'objects', ['id', 'name', 'okind', 'lat', 'lon', 'range', 'height', 'alt', 'confirm'], (o, r, diff) => {
+    if (diff.includes('okind')) {
+      const k = cut(r.okind, 24).toLowerCase();
+      if (MS.OBJECT_KINDS.includes(k)) o.kind = k;
+      else delete o.kind;
+    }
+    at(o, r, diff);
+    const num = (f, key, v) => {
+      if (!diff.includes(f)) return;
+      if (v !== null) o[key] = v;
+      else delete o[key];
+    };
+    num('range', 'detection_range_nm', positive(r.range, 100) || null);
+    num('height', 'detection_height_ft', positive(r.height, 60000));
+    num('alt', 'altitude_ft', (v => v !== null && v >= -1500 ? v : null)(coord(r.alt, 60000)));
+    if (diff.includes('confirm')) o.require_confirmation = r.confirm === true;
+  });
   return out;
 }
 
 /** Un texte de plusieurs lignes, borné, ses fins de ligne ramenées à « \n ». */
-const para = (v, n) => String(v ?? '').replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').trim().slice(0, n);
+const para = (v, n) => MS.visible(v).replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').trim().slice(0, n);
 
 /** Le récit d'une mission (voir l'en-tête). */
 export function storyOf(doc) {
@@ -865,8 +910,11 @@ function citedIds(rows) {
  *  tiroir (« 1 »), la carte, l'alerte.
  *  La clé d'un tiroir (SOG-0445 ; docs/technique/FORMAT_MISSION.md § 3) : `trigger_zone` écrit par identifiant, le `point` de
  *  `trigger_condition` (et de chaque étape d'une suite), ses `required_points` (drawerStop). Une zone ou un objet écrits DANS la partie
- *  ne citent rien ; un objet (`trigger_object`, `trigger_actor`) n'est pas un lieu des Lieux : il n'est pas suivi ici.
+ *  ne citent rien.
  *  Un NOUVEAU document, dont seuls les champs changés sont de nouveaux objets (audit 182) ; rien ne change, le document rendu est `doc`.
+ *  Les objets (SOG-0445, depuis qu'ils sont des lignes des Lieux) : `trigger_object` et l'`object` d'une condition (drawerKey),
+ *  `trigger_actor` — la cible qui franchit la zone à la place du pilote (drawerActor) —, la route d'une cible mobile, `route_order` d'un
+ *  objet (objectRoute, `name` : l'identifiant de la cible).
  *  Retirer une référence : un mot sort d'une liste de route ; le point de déclenchement d'une partie part, son délai RESTE (une partie
  *  qui porte un délai sans point : « À compléter » le dit, dans cette séance et les suivantes) ; la zone de sa clé part, son heure de
  *  repli et « zone montrée » RESTENT ; le point de sa condition part, la condition RESTE (drawersNoKey les dit de même) ; une carte garde son entrée, son centre
@@ -965,6 +1013,23 @@ function mapRefs(doc, fn) {
         trigger_zone: r
       };
     }
+    // l'objet à trouver de sa clé, et la cible qui franchit sa zone à la place du pilote : des objets de la mission, par identifiant
+    for (const [k, where] of [
+        ['trigger_object', 'drawerKey'],
+        ['trigger_actor', 'drawerActor']
+      ])
+      if (scalar(p[k])) {
+        const r = word(p[k], where, name);
+        if (r === null) {
+          q = {
+            ...q
+          };
+          delete q[k];
+        } else if (r !== p[k]) q = {
+          ...q,
+          [k]: r
+        };
+      }
     // le point de sa condition (une arrivée, une tenue, un posé, un survol ; chaque étape d'une suite) et ses arrêts demandés
     const tc = p.trigger_condition;
     if (tc && typeof tc === 'object' && !Array.isArray(tc)) {
@@ -980,6 +1045,19 @@ function mapRefs(doc, fn) {
             } else if (r !== c.point) k = {
               ...k,
               point: r
+            };
+          }
+          // … ou l'objet qu'elle suit
+          if (scalar(c.object)) {
+            const r = word(c.object, 'drawerKey', name);
+            if (r === null) {
+              k = {
+                ...k
+              };
+              delete k.object;
+            } else if (r !== c.object) k = {
+              ...k,
+              object: r
             };
           }
           const rq = route(c.required_points, 'drawerStop', name);
@@ -1006,6 +1084,14 @@ function mapRefs(doc, fn) {
       route_order: ro
     };
     return q;
+  }));
+  // la route d'une cible mobile : des lieux de la mission
+  put('objects', each(d.objects, o => {
+    const ro = route(o.route_order, 'objectRoute', cut(o.id, 40));
+    return ro === o.route_order ? o : {
+      ...o,
+      route_order: ro
+    };
   }));
   put('maps', each(d.maps, m => {
     const k = scalar(m.centre_ref) ? 'centre_ref' : scalar(m.center_ref) ? 'center_ref' : '';
@@ -1193,7 +1279,7 @@ export function removePlace(rows, i, doc, asked = -1, sinceMs = Infinity) {
   };
 }
 
-/** Un identifiant libre pour un lieu neuf de la sorte `kind` (zone, pt, rdv, target) : « ZONE-n », « PTn », « RDV-n », « TARGET » —
+/** Un identifiant libre pour un lieu neuf de la sorte `kind` (zone, pt, rdv, object, target) : « ZONE-n », « PTn », « RDV-n », « OBJ-n », « TARGET » —
  *  le plus petit n qu'aucun lieu ne porte (compter les lignes donnait un identifiant déjà pris après un retrait : deux lieux sous le
  *  même nom, et des références qui ne savent plus lequel elles désignent). `base` : le fichier lu. */
 export function nextPlaceId(rows, kind, base = null) {
@@ -1201,7 +1287,7 @@ export function nextPlaceId(rows, kind, base = null) {
   // ni un identifiant d'un lieu d'aujourd'hui, ni celui d'un lieu du fichier (renommé ou retiré dans la séance : ses références le
   // désignent encore sous ce nom jusqu'à l'enregistrement)
   const taken = new Set([...citedIds(rows), ...citedIds(placesOf(base))].map(x => x.key)),
-    name = n => kind === 'zone' ? `ZONE-${n}` : kind === 'rdv' ? `RDV-${n}` : `PT${n}`;
+    name = n => kind === 'zone' ? `ZONE-${n}` : kind === 'rdv' ? `RDV-${n}` : kind === 'object' ? `OBJ-${n}` : `PT${n}`;
   for (let n = 1; n <= PLACES_MAX * 4; n++)
     if (!taken.has(name(n))) return name(n);
   return '';

@@ -3553,3 +3553,162 @@ def n76(c):
          what='the drawer')
     c.eq(r['registry'], ['Registre'], 'a title of the registry too', what='the registry')
     c.eq(r['visible'], ['abcdef', 'g\u200ch\u200di\u202fj', '', '7'], 'the one function: what it removes, what it keeps, nothing for nothing', what='visible')
+
+
+
+_OBJ_JS = """async () => { const ED = await import('/modules/missions/editor.js'); const J = x => JSON.stringify(x);
+  const base = { mission: { id: 'X-001A', type: 'REG' }, title: 'Objets',
+    origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    target: { id: 'TARGET', name: 'Cible', lat: 44.6, lon: 1.4 }, turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }],
+    zones: [{ id: 'ZONE-1', name: 'Secteur', kind: 'search', centre: { lat: 44.7, lon: 1.3 }, radius_km: 12 }],
+    objects: [{ id: 'OBJ-1', kind: 'person', name: 'Naufragé', lat: 44.61, lon: 1.31, detection_range_nm: 0.3, callsign: 'gardé' },
+      { id: 'OBJ-2', kind: 'aircraft', name: 'Cible mobile', lat: 44.8, lon: 1.2, route_order: ['PT1', 'TARGET'], speed_kt: 110, detection_range_nm: 0.8 }],
+    route_order: ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Objet', trigger_object: 'OBJ-1', fallback_delay_min: 90 }, { id: 'C', title: 'Zone', trigger_zone: 'ZONE-1', trigger_actor: 'OBJ-2' },
+      { id: 'D', title: 'Suivi', trigger_condition: { kind: 'hover', object: 'OBJ-1', radius_m: 50 } }] };
+  const rows = ED.placesOf(base), at = id => rows.findIndex(r => r.id === id), on = (id, f) => rows.map(r => r.id === id ? f(r) : r);
+  const w = r => ED.withRefs(ED.withPlaces(base, r), base, r);
+  const fresh = { kind: 'object', i: -1, id: ED.nextPlaceId(rows, 'object', base), name: 'Épave', role: '', okind: 'wreck', lat: '44.5', lon: '1.4', range: '1', height: '', alt: '',
+    confirm: true, moving: false };
+  const gone = w(rows.filter(r => r.id !== 'OBJ-1'));
+  return { rows: rows.filter(r => r.kind === 'object').map(r => [r.i, r.id, r.name, r.okind, r.lat, r.lon, r.range, r.height, r.alt, r.confirm, r.moving]),
+    same: J(ED.withPlaces(base, rows)) === J(base) && ED.withRefs(base, base, rows) === base,
+    edited: w(on('OBJ-1', r => ({ ...r, range: '0.5', confirm: false, alt: '2500', height: '800' }))).objects,
+    bounds: [w(on('OBJ-1', r => ({ ...r, range: '0' }))).objects[0], w(on('OBJ-1', r => ({ ...r, range: '500', okind: 'bomb', alt: '-2000' }))).objects[0]],
+    added: [fresh.id, w([...rows, fresh]).objects[2]],
+    refs: ED.refsOf(base).filter(r => r.where !== 'route').map(r => [r.where, r.name, r.id]),
+    cited: [ED.citedBy(base, rows, at('OBJ-1')).map(c => [c.where, c.name, c.n]), ED.citedBy(base, rows, at('OBJ-2')).map(c => [c.where, c.name, c.n])],
+    gone: { phases: gone.phases, objects: gone.objects.map(o => o.id), noKey: ED.drawersNoKey(gone) }, actor: w(rows.filter(r => r.id !== 'OBJ-2')).phases[1],
+    renamed: w(on('PT1', r => ({ ...r, id: 'ALPHA' }))).objects[1].route_order,
+    dead: [ED.deadRefs(base).length, ED.deadRefs({ ...base, objects: [] }).map(r => [r.where, r.name, r.id])],
+    hidden: [ED.storyOf({ summary: 'Ré\\u200Bsumé \\u202Ecaché' }).summary, ED.placesOf({ target: { id: 'TARGET', name: 'Ci\\u2066ble', lat: 1, lon: 1 } })[0].name,
+      J(ED.withStory({ summary: 'Ré\\u200Bsumé' }, ED.storyOf({ summary: 'Ré\\u200Bsumé' }))) === J({ summary: 'Ré\\u200Bsumé' })],
+    todo: ED.todo({ ...base, phases: [], objects: [{ id: 'OBJ-1', kind: 'person' }] }).filter(t => t.step === 'places').map(t => t.key) } }"""
+
+_OBJ_MISSION = _AT_MISSION.replace('teams:\n', "  - { id: E, title: Naufragé, trigger_object: OBJ-1, fallback_delay_min: 90 }\nteams:\n", 1).replace(
+    'route_order: [ORIGIN', "objects:\n  - { id: OBJ-1, kind: person, name: Naufragé, lat: 44.61, lon: 1.31, detection_range_nm: 0.3 }\n"
+    "  - { id: OBJ-2, kind: aircraft, name: Cible mobile, lat: 44.8, lon: 1.2, route_order: [PT1, TARGET], speed_kt: 110, detection_range_nm: 0.8 }\n"
+    "route_order: [ORIGIN", 1)
+_OBJ_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _OBJ_MISSION]]
+_PLACE_LINE = f"""(i) => {{ const r = document.querySelector('{E} [data-edplaces] [data-place="' + i + '"]'); return r ? [r.dataset.kind, r.querySelector('.ms-plbadge').textContent.trim(), r.querySelector('.ms-plbody b').textContent.trim(), r.querySelector('.ms-plbody .f-muted').textContent.trim()] : null }}"""
+
+
+@case('N77', 'Missions › the workshop, the objects to find are rows of the Lieux: one row « OBJ » per object of the mission (its kind, its '
+      'range, « caché au pilote », the drawer whose key it is — « clé du tiroir 4 » — or « aucun tiroir ne le cite »), a zone says the drawer '
+      'that uses it too; its sheet has no identifier to type (the workshop gives it: OBJ-3), a kind from the reader\'s list, its position, '
+      'its range, its heights and « trouvé seulement quand le pilote le déclare »; a moving target keeps its route and its speed; « Retirer » '
+      'an object that a drawer cites says so first; an event of the timeline is never placed on an object; the sketch draws it; the '
+      'references follow (the key and the target of a drawer, the object of a condition, the route of a target)', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0445, lot P3 (modules/missions/EDITOR.md § 5 and § 7; docs/technique/FORMAT_MISSION.md § 3: an object is written by '
+      'identifier, at the top — Q-0095; the reading hides it from the pilot while the drawer that cites it is closed). Security review of '
+      '18 Nov: the texts of the six steps go through `visible` of the reader too')
+def n77(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_OBJ_JS)
+    c.eq(r['rows'], [[0, 'OBJ-1', 'Naufragé', 'person', '44.61', '1.31', '0.3', '', '', True, False],
+                     [1, 'OBJ-2', 'Cible mobile', 'aircraft', '44.8', '1.2', '0.8', '', '', True, True]], 'the objects of the mission, as rows of the Lieux', what='rows')
+    c.ok(r['same'] is True, r['same'], 'nothing touched: the same content, and the references give back the same object')
+    c.eq(r['edited'], [{'id': 'OBJ-1', 'kind': 'person', 'name': 'Naufragé', 'lat': 44.61, 'lon': 1.31, 'detection_range_nm': 0.5, 'callsign': 'gardé',
+                        'detection_height_ft': 800, 'altitude_ft': 2500, 'require_confirmation': False},
+                       {'id': 'OBJ-2', 'kind': 'aircraft', 'name': 'Cible mobile', 'lat': 44.8, 'lon': 1.2, 'route_order': ['PT1', 'TARGET'], 'speed_kt': 110,
+                        'detection_range_nm': 0.8}], 'an object changed: its fields alone, its other keys kept; the moving target untouched', what='objects after an edit')
+    c.eq(r['bounds'], [{'id': 'OBJ-1', 'kind': 'person', 'name': 'Naufragé', 'lat': 44.61, 'lon': 1.31, 'callsign': 'gardé'},
+                       {'id': 'OBJ-1', 'name': 'Naufragé', 'lat': 44.61, 'lon': 1.31, 'callsign': 'gardé'}],
+         'a range of 0 or of 500 NM, an altitude of −2 000 ft, a kind out of the list are not written (never brought back into the bounds)', what='out of bounds')
+    c.eq(r['added'], ['OBJ-3', {'id': 'OBJ-3', 'name': 'Épave', 'kind': 'wreck', 'lat': 44.5, 'lon': 1.4, 'detection_range_nm': 1, 'require_confirmation': True}],
+         'a new object: an identifier the file does not carry, found within range AND on the pilot\'s word by default', what='a new object')
+    c.eq(r['refs'], [['drawerKey', '1', 'OBJ-1'], ['drawerKey', '2', 'ZONE-1'], ['drawerActor', '2', 'OBJ-2'], ['drawerKey', '3', 'OBJ-1'],
+                     ['objectRoute', 'OBJ-2', 'PT1'], ['objectRoute', 'OBJ-2', 'TARGET']], 'the references to and from the objects', what='refsOf')
+    c.eq(r['cited'], [[['drawerKey', '1', 1], ['drawerKey', '3', 1]], [['drawerActor', '2', 1]]], 'who cites each object', what='citedBy')
+    c.eq(r['gone'], {'phases': [{'id': 'B', 'title': 'Objet', 'fallback_delay_min': 90}, {'id': 'C', 'title': 'Zone', 'trigger_zone': 'ZONE-1', 'trigger_actor': 'OBJ-2'},
+                                {'id': 'D', 'title': 'Suivi', 'trigger_condition': {'kind': 'hover', 'radius_m': 50}}], 'objects': ['OBJ-2'], 'noKey': ['1']},
+         'an object removed: the key of the drawer goes (its fallback hour stays), the condition loses its object; the drawer left without key is named', what='after a removal')
+    c.eq([r['actor'], r['renamed']], [{'id': 'C', 'title': 'Zone', 'trigger_zone': 'ZONE-1'}, ['ALPHA', 'TARGET']],
+         'the target removed: the pilot crosses the zone; a place renamed is renamed in the route of a target', what='the target of a zone, the route of a target')
+    c.eq(r['dead'], [0, [['drawerKey', '1', 'OBJ-1'], ['drawerActor', '2', 'OBJ-2']]], 'an object the mission has is no dead reference; one it has not is named', what='deadRefs')
+    c.eq(r['hidden'], ['Résumé caché', 'Cible', True], 'the six steps read their texts without the invisible format characters; a text not touched is kept as it is',
+         what='format characters in the editor')
+    c.eq(r['todo'], ['unplaced'], 'an object without position is « à placer »', what='todo')
+    # on screen
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _OBJ_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
+    i = c.js(_PLACE_AT, 'OBJ-1')
+    line = c.js(_PLACE_LINE, i)
+    c.ok(line[0] == 'object' and line[1] == row(c, 'plObject', EDTX_FILE) and line[2] == 'OBJ-1 · Naufragé' and
+         all(norm(x) in norm(line[3]) for x in (row(c, 'ok_person', EDTX_FILE), row(c, 'plRangeIs', EDTX_FILE).replace('{r}', '0.3'), row(c, 'plHidden', EDTX_FILE),
+                                                row(c, 'plKeyOf', EDTX_FILE).replace('{name}', '4'))), line,
+         'the row of an object: « OBJ », its identifier and its name, its kind, its range, « caché au pilote », « clé du tiroir 4 »')
+    moving = c.js(_PLACE_LINE, c.js(_PLACE_AT, 'OBJ-2'))
+    c.ok(norm(row(c, 'plNoDrawer', EDTX_FILE)) in norm(moving[3]) and norm(row(c, 'plMoving', EDTX_FILE)) in norm(moving[3]), moving,
+         'the moving target: « aucun tiroir ne le cite », « cible mobile, gardée telle quelle »')
+    zone = c.js(_PLACE_LINE, c.js(_PLACE_AT, 'ZONE-1'))
+    c.ok(norm(row(c, 'plKeyOf', EDTX_FILE).replace('{name}', '2')) in norm(zone[3]), zone, 'a zone says the drawer that uses it: « clé du tiroir 2 »')
+    c.js(f"document.querySelector('{E} [data-place=\"{i}\"]').scrollIntoView({{block: 'center'}})")
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N77_390_objects.png')
+    # the sheet of an object: no identifier to type, seven fields
+    c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+    F = f'{E} [data-plform="{i}"]'
+    c.ok(c.count(f'{F} [data-f=id]') == 0 and 'OBJ-1' in c.text(f'{F} [data-plid]'), c.text(f'{F} [data-plid]'), 'the identifier is said, never typed')
+    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f]')].map(x => x.dataset.f)"), ['name', 'okind', 'lat', 'lon', 'range', 'height', 'alt', 'confirm'],
+         'the fields of an object', what='fields')
+    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f=okind] option')].map(o => o.value)"), ['', 'wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft'],
+         'the kinds are the reader\'s list', what='kinds')
+    c.page.fill(f'{F} [data-f=range]', '0.5')
+    c.tap(f'{F} [data-f=confirm]')
+    c.js(f"document.querySelector('{F}').scrollIntoView({{block: 'center'}})")
+    c.shot('N77_390_object_sheet.png')
+    c.tap(f'{F} [data-do="edplaceok"]')
+    # « + Objet à trouver »: the workshop gives the identifier
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="object"]')
+    c.until(f"!!document.querySelector('{E} [data-plform] [data-plid]')", what='the new object open')
+    c.ok('OBJ-3' in c.text(f'{E} [data-plform] [data-plid]'), c.text(f'{E} [data-plform] [data-plid]'), 'the new object is OBJ-3')
+    c.page.fill(f'{E} [data-plform] [data-f=name]', 'Épave')
+    c.page.select_option(f'{E} [data-plform] [data-f=okind]', 'wreck')
+    c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.5')
+    c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.4')
+    c.page.fill(f'{E} [data-plform] [data-f=range]', '1')
+    c.tap(f'{E} [data-plform] [data-do="edplaceok"]')
+    c.eq(c.count(f'{E} [data-atmapbody] [data-thobject]'), 3, 'the sketch draws the three objects (the map is the author\'s)', what='objects on the sketch')
+    # « Retirer » an object that a drawer cites
+    i = c.js(_PLACE_AT, 'OBJ-1')
+    c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
+    c.settle()
+    note = norm(c.js(_NOTES))
+    c.ok(c.js(_PLACE_AT, 'OBJ-1') == i and 'OBJ-1' in note and norm(row(c, 'ref_drawerKey', EDTX_FILE).replace('{name}', '4')) in note, note,
+         'the first press removes nothing and says who cites it: the drawer 4, its key')
+    c.wait(1100)
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
+    c.eq(c.js(_PLACE_AT, 'OBJ-1'), -1, 'the second press removes the object', what='the object row')
+    # an event of the timeline is never placed on an object
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
+    opts = c.js(f"[...document.querySelectorAll('{E} [data-event] select[data-f=place] option')].map(o => o.value)")
+    c.ok(opts and not any(o.startswith('OBJ') for o in opts), opts, 'no object among the places of an event (the timeline is read by the pilot)')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux on a wide screen')
+    c.js(f"document.querySelector('{E} [data-edplaces] [data-kind=object]').scrollIntoView({{block: 'center'}})")
+    c.shot('N77_1280_objects.png')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
+      const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return { objects: d.objects, part: d.phases[3] } }""" % _TEXT_OF, path)
+    c.eq(got, {'objects': [{'id': 'OBJ-2', 'kind': 'aircraft', 'name': 'Cible mobile', 'lat': 44.8, 'lon': 1.2, 'route_order': ['PT1', 'TARGET'], 'speed_kt': 110,
+                            'detection_range_nm': 0.8},
+                           {'id': 'OBJ-3', 'name': 'Épave', 'kind': 'wreck', 'lat': 44.5, 'lon': 1.4, 'detection_range_nm': 1, 'require_confirmation': True}],
+               'part': {'id': 'E', 'title': 'Naufragé', 'fallback_delay_min': 90}},
+         'the file: the moving target as it was, the new object by identifier at the top, the drawer without its key (its fallback hour kept)', what='the saved file')
+    c.js(_REG_CLEAR)
