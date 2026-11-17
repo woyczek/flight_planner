@@ -1,11 +1,11 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-16",
+ "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "304a08d",
-  "fiches": 389,
+  "organisation": "861023b",
+  "fiches": 391,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1163,6 +1163,27 @@
    ]
   },
   {
+   "id": "pilote-carburant-et-route-carte-atlantique-nord",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant et route ; Carte ; Atlantique Nord",
+    "en": "Carburant et route ; Carte ; Atlantique Nord",
+    "de": "Carburant et route ; Carte ; Atlantique Nord",
+    "es": "Carburant et route ; Carte ; Atlantique Nord"
+   },
+   "items": [
+    {
+     "id": "SOG-0391",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Route libre sur l'Atlantique Nord : l'écran ne dit pas pourquoi aucune route NAT n'est prise, et la Carte dessine toutes les routes NAT de la même façon",
+     "en": "Free route over the North Atlantic: the screen does not say why no NAT track is taken, and the map draws every NAT track the same way",
+     "de": "Freie Route über den Nordatlantik: der Bildschirm sagt nicht, warum kein NAT-Track genommen wird, und die Karte zeichnet alle NAT-Tracks gleich",
+     "es": "Ruta libre sobre el Atlántico Norte: la pantalla no dice por qué no se toma ninguna ruta NAT, y el mapa dibuja todas las rutas NAT igual"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte",
    "app": "pilote",
    "label": {
@@ -1539,6 +1560,15 @@
      "de": "Karte neben Kraftstoff und große Karte: dieselbe Ansicht mit denselben Parametern — eine Spezifikation dessen, was erhalten bleibt",
      "es": "Mapa junto a Combustible y Mapa grande: la misma vista con los mismos parámetros — una especificación de lo que sobrevive",
      "rank": 330
+    },
+    {
+     "id": "SOG-0392",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Itinéraires proposés, en vue carte : la liste ne répond toujours pas au clic, seul le tracé répond (retour de SOG-0348)",
+     "en": "Proposed itineraries, map view: the list still does not answer a click, only the drawn route does (SOG-0348 again)",
+     "de": "Vorgeschlagene Routen, Kartenansicht: die Liste reagiert weiterhin nicht auf Klick, nur die gezeichnete Route (erneut SOG-0348)",
+     "es": "Itinerarios propuestos, vista de mapa: la lista sigue sin responder al clic, solo el trazado responde (de nuevo SOG-0348)"
     }
    ]
   },

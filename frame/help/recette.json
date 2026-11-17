@@ -2,7 +2,7 @@
  "schema": "sog-recette/1",
  "generated": {
   "tool": "tools/recette_build.py",
-  "at": "2026-11-16",
+  "at": "2026-11-17",
   "tests": 261,
   "verdicts": 204
  },
@@ -3951,12 +3951,12 @@
    "id": "Q-0072",
    "fiche": "SOG-0389",
    "app": "pilote",
-   "question": "Quand le niveau du vol n'est offert par aucune route NAT : que doit faire Carburant ?",
-   "context": "Ce n'était PAS ton cas (à FL350 la route NAT V est prise), mais la question reste : aujourd'hui, quand aucune route NAT n'offre le niveau du vol, une route libre est créée et un pli replié dit pourquoi chaque route est écartée. Ce que je conteste : changer ton niveau d'office ; le niveau est ta décision. Ma proposition : le dire en tête, en une ligne (« Aucune route NAT à FL410 : elles vont de FL340 à FL400 vers l'est »), avec un bouton « Recalculer à FL400 ».",
+   "question": "Route libre parce qu'aucune route NAT ne convient (niveau ou heure) : faut-il un bouton pour recalculer ?",
+   "context": "Ta surprise du 17/11 (KABQ → EGLL « à cheval » entre deux groupes de routes NAT) tranche le début : la raison sera dite en tête, en une ligne, sans ouvrir de pli (SOG-0391) — ce matin c'était l'HEURE : entrée de l'océan vers 13 h 32 Z, routes vers l'est valables de 01 h à 08 h Z. Reste le bouton. Ce que je conteste : changer d'office ton niveau ou ton heure ; ce sont tes décisions. Ma proposition : un bouton « Recalculer à FL360 » quand c'est le niveau ; rien quand c'est l'heure (l'heure du vol se change dans le vol).",
    "options": [
-    "Le dire en tête, avec un bouton pour recalculer au niveau offert le plus proche",
+    "Un bouton quand c'est le niveau ; rien quand c'est l'heure",
+    "Pas de bouton : la ligne suffit",
     "Prendre d'office la route NAT au niveau offert le plus proche, et le dire",
-    "Garder comme aujourd'hui : la route libre, le pli suffit",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-16",
