@@ -728,7 +728,7 @@ def k12(c):
         with tempfile.TemporaryDirectory() as td:
             O = importlib.import_module('proc_ocr')
             real_backend, said = O.backend, []
-            O.backend = lambda: None                      # sans moteur d'OCR : le message d'installation, et on continue
+            O.backend = lambda: None                      # the case itself imposes "no OCR engine", whatever the workstation has installed
             steps = []
             try:
                 out = E.fetch_ad(lib, 'EGLL', td, said.append, step=lambda *a: steps.append(a))
@@ -737,8 +737,8 @@ def k12(c):
             got = [(x[1:]) for x in steps]
             c.ok(got[:4] == [(0, 4, 'recherches'), (1, 4, 'recherches'), (2, 4, 'recherches'), (3, 4, 'recherches')] and (0, 1, 'documents') in got and sum(x[3] == 'documents' for x in steps) >= 3,
                  str(steps), 'fetch: the steps carry numbers (4 searches, then the documents downloaded, read and analysed, i of n) for the progress bar')
-            c.ok(any('OCR absent' in x and 'rapidocr-onnxruntime' in x for x in said) and not (Path(td) / 'EGLL.ocr.json').exists(), '\n'.join(said),
-                 'fetch: an unreadable (vector or image) document with no OCR engine prints the install message and goes on; no .ocr.json is written')
+            c.ok(any('OCR absent' in x and 'Tesseract' in x and 'installer_bibliotheques' in x for x in said) and not (Path(td) / 'EGLL.ocr.json').exists(), '\n'.join(said),
+                 'fetch: an unreadable (vector or image) document with no OCR engine prints the install message (Tesseract or the install script, SOG-0376) and goes on; no .ocr.json is written')
             f = json.loads((Path(td) / 'EGLL.json').read_text(encoding='utf-8'))
             c.ok(f['procedures'] == [] and f['formats'] and not f['formats'][0]['ok'] and f['documents'], json.dumps(f)[:300], 'fetch: an unreadable document yields no procedure, a format problem, and the list of documents; nothing is guessed')
             c.ok((Path(td) / 'cache' / 'EGLL' / 'EG_AD_2_EGLL_7-13_en.pdf').is_file(), 'cache', 'the document is kept in the local cache')
@@ -1264,7 +1264,7 @@ def k14(c):
     unk = O.document_from_rows('XXXX', 'u.pdf', ['Some', 'unrelated text', 'on a page'], '2026-10-01')
     c.ok(unk['procedures'] == [] and unk['formats'][0]['ok'] is False and unk['formats'][0]['layout'] is None, str(unk['formats']), 'a page of unknown layout gives no procedure and nothing is guessed')
     which, mods = shutil.which, dict(sys.modules)
-    try:
+    try:                                                           # the case imposes "no engine": tesseract hidden, both rapidocr modules unimportable
         shutil.which = lambda *a, **k: None
         sys.modules['rapidocr_onnxruntime'] = None
         sys.modules['rapidocr'] = None
@@ -1274,7 +1274,7 @@ def k14(c):
             msg = ''
         except SystemExit as e:
             msg = str(e)
-        c.ok('Tesseract' in msg and 'rapidocr-onnxruntime' in msg, msg, 'without any engine, ocr_words stops with a message naming both options')
+        c.ok('Tesseract' in msg and 'installer_bibliotheques' in msg, msg, 'without any engine, ocr_words stops with a message naming Tesseract and the install script (SOG-0376)')
     finally:
         shutil.which = which
         if 'rapidocr_onnxruntime' in mods:
