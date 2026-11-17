@@ -3637,3 +3637,55 @@ def i49(c):
         c.eq(jobs2.release_job(third).get('released'), True, 'release_job frees a stuck read by its identifier', what='release_job')
     finally:
         gate.set()
+
+
+@case('I51', 'Launcher, simulator position (SOG-0447): X-Plane gives the height above the ground, « on the ground » and the true heading; what a source does not give is None (unknown), never 0 nor « in flight »; Little Navmap only what its API carries and never the true heading', 'I', static=True,
+      rule='SOG-0447 (the ergonomist): tools/sim_position.py reads, in addition to the position, sim/flightmodel/position/y_agl (m → ft), sim/flightmodel/failures/onground_any (0 or 1 → false / true) and the true heading (true_psi); a dataref that this X-Plane does not know, or a value it does not give, is None — the position is still given; Little Navmap: altitude_above_ground and on_ground only when its API carries them (on_ground only if a boolean), headingDeg always None (its heading is magnetic); the cadence is not changed (one pass per second at most, the page asks every 5 s)')
+def i51(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    import sim_position as S
+    names = S.DATAREFS
+    assert 'agl' in names and 'ground' in names, 'the two datarefs are asked'
+    saved = S._get
+
+    def fake(values, known=None):
+        ids = {n: i for i, n in enumerate(names.values(), 1) if known is None or n in known}
+        byid = {i: v for v, i in ((values.get(k), ids.get(n)) for k, n in names.items()) if i is not None}
+
+        def get(port, path):
+            if path.startswith('/api/v2/datarefs?'):
+                return {'data': [{'name': n, 'id': i} for n, i in ids.items()]}
+            i = int(path.split('/')[-2])
+            return {'data': byid.get(i)}
+        return get
+    try:
+        base = {'lat': 47.1, 'lon': -1.6, 'elev': 609.6, 'hpath': 120.0, 'psi': 123.4, 'gs': 72.0}
+        S._ids.clear()
+        S._get = fake({**base, 'agl': 457.2, 'ground': 0.0})
+        r = S.xplane(8086)
+        c.eq((r['altFt'], r['aglFt'], r['onGround'], r['headingDeg'], r['trackDeg']), (2000, 1500, False, 123, 120), 'X-Plane in flight: altitude, height above the ground (m → ft), on the ground false, the true heading, the track', what='x-plane flight')
+        S._ids.clear()
+        S._get = fake({**base, 'agl': 0.3, 'ground': 1.0, 'gs': 0.2})
+        r = S.xplane(8086)
+        c.eq((r['aglFt'], r['onGround'], r['headingDeg'], r['trackDeg']), (1, True, 123, 123), 'X-Plane on the ground: on the ground true; at a stop the track is the true heading (as before)', what='x-plane ground')
+        S._ids.clear()
+        S._get = fake({**base, 'agl': 457.2, 'ground': 0.0}, known=[n for k, n in names.items() if k not in ('agl', 'ground')])
+        r = S.xplane(8086)
+        c.eq((r['lat'], r['aglFt'], r['onGround']), (47.1, None, None), 'an X-Plane that does not know the two datarefs: the position is still given, the two are None (unknown, not 0, not false)', what='unknown datarefs')
+        S._ids.clear()
+        S._get = fake({**base, 'agl': None, 'ground': None, 'psi': None})
+        r = S.xplane(8086)
+        c.eq((r['aglFt'], r['onGround'], r['headingDeg']), (None, None, None), 'a dataref without a value: None', what='no value')
+        # Little Navmap
+        S._get = lambda port, path: {'active': True, 'position': {'lat': 47.1, 'lon': -1.6}, 'indicated_altitude': 2000, 'ground_speed': 140, 'heading': 90, 'altitude_above_ground': 1480, 'on_ground': False}
+        r = S.lnm(8965)
+        c.eq((r['aglFt'], r['onGround'], r['headingDeg']), (1480, False, None), 'Little Navmap: the height above the ground and « on the ground » when its API carries them; the true heading is never given (its heading is magnetic)', what='lnm full')
+        S._get = lambda port, path: {'active': True, 'position': {'lat': 47.1, 'lon': -1.6}, 'indicated_altitude': 2000, 'ground_speed': 140, 'heading': 90, 'on_ground': 'maybe'}
+        r = S.lnm(8965)
+        c.eq((r['aglFt'], r['onGround'], r['headingDeg']), (None, None, None), 'Little Navmap without them (or with a value that is not a boolean): None', what='lnm none')
+    finally:
+        S._get = saved
+        S._ids.clear()
+    src = (c.root / 'tools' / 'sim_position.py').read_text(encoding='utf-8')
+    c.ok('MIN_GAP = 1.0' in src, '', 'the cadence is not changed: one pass per second at most')

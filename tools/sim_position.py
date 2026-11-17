@@ -6,7 +6,9 @@ Route du lanceur GET /__setup/sim/position ; interroge, dans l'ordre :
      (/api/v2/datarefs/<id>/value) ; liste vide ou position 0° / 0° tant qu'aucun vol n'est chargé : pas de position ;
   2. l'API web de Little Navmap (son serveur web lancé ; port 8965 par défaut) : /api/sim/info, « active » faux sans
      simulateur relié.
-Rend { lat, lon, altFt, trackDeg, gsKt, source: 'xplane' | 'lnm', at } ou None (aucun simulateur).
+Rend { lat, lon, altFt, aglFt, onGround, headingDeg, trackDeg, gsKt, source: 'xplane' | 'lnm', at } ou None (aucun simulateur). SOG-0447 : aglFt (hauteur au-dessus du sol, pieds), onGround (vrai/faux) et
+headingDeg (cap VRAI) valent None — INCONNU, jamais 0 ni « en vol » — quand la source ne les donne pas : X-Plane les donne (datarefs y_agl, onground_any, true_psi ; un dataref que cette version
+ne connaît pas = None), Little Navmap : la hauteur sol et « au sol » seulement si son API les porte (sinon None), jamais le cap vrai (son cap est magnétique).
   · jamais d'appel hors de ce poste : l'hôte est la boucle locale, seuls les ports se règlent (tools/.sim.json, local,
     jamais versionné : { "xplane": 8086, "lnm": 8965 }) ;
   · au plus un passage par seconde : un appel plus rapproché reçoit le résultat du précédent ;
@@ -30,6 +32,9 @@ DATAREFS = {
     'hpath': 'sim/flightmodel/position/hpath',
     'psi': 'sim/flightmodel/position/true_psi',
     'gs': 'sim/flightmodel/position/groundspeed',
+    # SOG-0447 : la hauteur au-dessus du sol (m) et « une roue au moins au sol » (0 ou 1) ; facultatifs : un X-Plane qui ne les connaît pas rend None, la position reste rendue
+    'agl': 'sim/flightmodel/position/y_agl',
+    'ground': 'sim/flightmodel/failures/onground_any',
 }
 
 _lock = threading.Lock()
@@ -105,9 +110,13 @@ def xplane(port):
         gs = v.get('gs')
         # route vraie en mouvement ; à l'arrêt (moins de 1 m/s) elle n'a pas de sens : le cap vrai
         track = v.get('hpath') if gs is not None and gs >= 1 and v.get('hpath') is not None else v.get('psi')
+        agl, ground, psi = v.get('agl'), v.get('ground'), v.get('psi')
         return {
             'lat': lat, 'lon': lon,
             'altFt': None if v.get('elev') is None else round(v['elev'] / 0.3048),
+            'aglFt': None if agl is None else round(agl / 0.3048),
+            'onGround': None if ground is None else ground >= 0.5,
+            'headingDeg': None if psi is None else round(psi) % 360,
             'trackDeg': None if track is None else round(track) % 360,
             'gsKt': None if gs is None else round(gs * 1.943844),
             'source': 'xplane',
@@ -126,9 +135,14 @@ def lnm(port):
     if lat is None or lon is None or (abs(lat) < .01 and abs(lon) < .01):
         return None
     alt, gs, hdg = _num(d.get('indicated_altitude')), _num(d.get('ground_speed')), _num(d.get('heading'))
+    agl = _num(d.get('altitude_above_ground'))      # pieds, si l'API de cette version la porte
+    ground = d.get('on_ground')
     return {
         'lat': lat, 'lon': lon,
         'altFt': None if alt is None else round(alt),
+        'aglFt': None if agl is None else round(agl),
+        'onGround': ground if isinstance(ground, bool) else None,
+        'headingDeg': None,      # son cap est magnétique : le cap vrai est inconnu
         'trackDeg': None if hdg is None else round(hdg) % 360,  # cap magnétique : Little Navmap ne donne pas la route
         'gsKt': None if gs is None else round(gs),
         'source': 'lnm',
