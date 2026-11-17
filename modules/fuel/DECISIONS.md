@@ -2177,3 +2177,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   level, time, rad, network; '' otherwise) and its `levels` (integers FL10 to FL660, twenty at most, sorted) — not shown yet: the line
   « Aucune route NAT à FLxxx » and « Recalculer à FLxxx » wait for Q-0072. F240 (red on the parent: no line, the FL plain, no code nor
   levels kept).
+- **17 Nov 2026 — SOG-0393, the rows of the Flight step aligned** (the user, metro on a computer: « arranger les champs décalés »;
+  measured on the capture and at 630 px: « (heure locale de l'appareil) » wrapped under « Date du vol » and pushed the date field 24 px
+  below the level field; « Auto » overflowed the 7.5 em column of the level and touched the date field; « auto · 1:49 » touched
+  « Famille », no space between the rows). The precision passes UNDER the date field, one line of reserved height as « auto · 1:49 »
+  under the level (`wxDateParts()`: the label and the precision, cut at « ( » of the same translation row; `[data-datenote]`); it is
+  now said on the phone too, where it was hidden. The level column takes the width of its field (3.5 em) and « Auto »; 8 px between the
+  rows (aerodromes, level and date, family and series). Measured, not changed: the three aerodrome fields already had ONE width (162 px
+  each on the capture) — what reads as « narrower » is the gap: the ⇄ column between departure and arrival, 8 px between arrival and
+  alternate (one exception, found by Essais at 390 px in cupertino, French: the label « Dégagement », wider than its column, widened
+  the inner grid of its field and the field by 2.3 px — the inner column of an aerodrome field is now bounded to its cell). No change
+  of behaviour. F243, five designs at 390, 630 and 1 280 px (red on the parent at 630: the two fields at
+  different tops, « Auto » on the date, no note under the field); F6 reads the label and the note.

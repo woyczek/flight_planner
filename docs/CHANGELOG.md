@@ -12,6 +12,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 
 ### V3
 
+- **Fuel, Flight step: the level and date fields start at the same height, « device's local time » under the date field, « Auto » clear of the date, a space between the rows** (fuel DECISIONS; noreg F243; SOG-0393).
 - **Fuel, Route: a compound airway name of the launcher's route (« N71B-N90B », the North American routes) is kept in the route line and in the route taken into the flight** (fuel DECISIONS; noreg F242; SOG-0390).
 - **Fuel, Route: the routes computed through the eastbound NAT tracks of the night (valid the next day) are no longer removed as « of another day » once the tracks of the day are read; only a route through an older message is** (fuel DECISIONS; noreg F241; SOG-0389).
 - **Fuel, Route: a flight without level says that the route was computed at the engine's default level (« Niveau non donné : route calculée à FL180 par défaut », with « Donner le niveau »); the grey FL of the route line reads « par défaut »; the engine read keeps the code and the levels of each NAT track set aside** (fuel DECISIONS; noreg F240; SOG-0389).

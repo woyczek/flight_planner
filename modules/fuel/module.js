@@ -2300,6 +2300,9 @@ const STYLE = `
 [data-module="fuel"] .fu-pairs>label.f-field{display:grid;grid-template-columns:minmax(0,11em) minmax(0,1fr);align-items:center;column-gap:8px;margin:0}
 [data-module="fuel"] .fu-pairs>label.f-field>:is(input,select){min-width:0;width:100%}
 [data-module="fuel"] .fu-ads{grid-template-columns:minmax(0,12em) 44px minmax(0,12em) minmax(0,12em);position:relative} /* départ, ⇄, arrivée, dégagement ; position:relative : la liste de propositions s'y pose */
+/* SOG-0393 : la colonne intérieure d'un champ bornée à sa cellule — une étiquette plus large que la colonne (« Dégagement » à 390 px en
+   cupertino) élargissait le champ de 2 px ; l'étiquette déborde dans l'espace entre les colonnes, le champ garde la largeur des autres */
+[data-module="fuel"] .fu-ads>.f-field{grid-template-columns:minmax(0,1fr);min-width:0}
 /* ⇄ (SOG-0127, allégé SOG-0140 : « tellement trop gros ») : un bouton icône de la taille du texte, 24 px dessinés, sans bordure ni fond,
    teinte atténuée ; la cible reste de 44 px par un pseudo-élément, dans sa colonne de 44 px (rien d'autre ne bouge dans la rangée) */
 [data-module="fuel"] .fu-ads button.fu-adswap{position:relative;align-self:center;justify-self:center;width:24px;height:24px;min-width:0;min-height:0;padding:0;margin:0;border:0;border-radius:0;background:none;box-shadow:none;color:var(--sog-muted);font-size:1.05em;line-height:1}
@@ -2317,17 +2320,21 @@ const STYLE = `
    par le haut (les deux libellés sur la même ligne de base), « Auto » collé à droite du champ Niveau dans sa rangée, sous lui une seule
    ligne d'aide comme le nom d'un terrain sous son champ ; la date garde sa place même à 390 px */
 [data-module="fuel"] .fu-flight{display:flex;flex-wrap:wrap;align-items:flex-start}
-[data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 7.5em;min-width:0}
+[data-module="fuel"] .fu-flight>.f-field:first-child{flex:0 0 auto;min-width:0} /* SOG-0393 : la largeur du champ et de « Auto » (une colonne de 7,5 em : « Auto » débordait sur la date, sans espace) */
 [data-module="fuel"] .fu-flight>.f-field:first-child .fu-when button{padding:0 8px}
 [data-module="fuel"] .fu-flight>.f-field:first-child .fu-when{flex-wrap:nowrap}
-[data-module="fuel"] .fu-flight>.f-field:first-child .fu-when input{flex:1 1 3.5em;min-width:3.5em}
+[data-module="fuel"] .fu-flight>.f-field:first-child .fu-when input{flex:0 0 3.5em;width:3.5em;min-width:3.5em}
 [data-module="fuel"] .fu-flight>.f-field:last-child{flex:1 1 11em;max-width:26em;min-width:0} /* min-width:0 : la date ne pousse pas la ligne au-delà de l'écran */
 /* F4 à 360 px (SOG-0056 retouché) : la largeur naturelle du champ date-heure (≈ 190 px) poussait la rangée de 3 px ; le conteneur et le
    champ rétrécissent à la cellule */
 [data-module="fuel"] .fu-flight>.f-field:last-child .fu-when{min-width:0;max-width:100%}
 [data-module="fuel"] .fu-flight>.f-field:last-child .fu-when input{width:0;min-width:0}
-@container (max-width: 559px){[data-module="fuel"] .fu-lblnote{display:none}} /* le libellé de la date tient sur une ligne au téléphone */
-[data-module="fuel"] .fu-flight [data-lvlauto]{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* une ligne, hauteur réservée */
+/* SOG-0393 (l'utilisateur, metro, ordinateur : « arranger les champs décalés ») : sous chaque champ de la rangée, une seule ligne d'aide
+   de hauteur réservée — « auto · 1:49 » sous le niveau, « heure locale de l'appareil » sous la date (elle passait sous l'étiquette et
+   poussait le champ) ; les deux étiquettes sur une ligne, les deux champs à la même hauteur */
+[data-module="fuel"] .fu-flight :is([data-lvlauto],[data-datenote]){display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* une ligne, hauteur réservée */
+/* un espace entre les rangées de l'étape (terrains, niveau et date, famille et série) : « auto · 1:49 » ne colle plus à « Famille » */
+[data-module="fuel"] :is(.fu-ads,.fu-flight){margin-bottom:8px}
 [data-module="fuel"] .fu-when{display:flex;flex-wrap:wrap;gap:4px;align-items:stretch} /* champ d'abord, les deux boutons passent dessous quand la place manque */
 [data-module="fuel"] .fu-when input{flex:1 1 11em;min-width:0}
 [data-module="fuel"] .fu-when button{flex:none;min-width:44px;min-height:44px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;gap:2px}
@@ -2492,7 +2499,7 @@ function renderPlanBody() {
       <p class="f-muted" data-src></p>
       </div>
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
-      <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${wxDateLabel()}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span></label></div>
+      <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(wxDateParts()[0])}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span><small class="f-muted" data-datenote>${esc(wxDateParts()[1])}</small></label></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div class="f-grid fu-themes" data-themes></div>
     </div>`)}
@@ -3772,10 +3779,13 @@ function acSelected() {
 
 /** Le libellé de la date du vol : « Date du vol » et sa précision « (heure locale de l'appareil) » dans un span que le module étroit ne
  *  montre pas (SOG-0056 : à 390 px le libellé sur deux lignes décalait le champ ; le title du champ garde l'explication). */
-function wxDateLabel() {
+/** SOG-0393 : le libellé de la date du vol en deux parts — [l'étiquette, la précision] (« Date du vol », « heure locale de l'appareil ») :
+ *  l'étiquette tient sur une ligne, à la hauteur de celle du niveau, et la précision passe sous le champ, comme « auto · 1:49 » sous
+ *  le niveau ; sans parenthèse dans le texte, la précision est vide. */
+function wxDateParts() {
   const t = tt(TX.wxDate),
     k = t.indexOf(' (');
-  return k > 0 ? `${esc(t.slice(0, k))}<span class="fu-lblnote">${esc(t.slice(k))}</span>` : esc(t);
+  return k > 0 ? [t.slice(0, k), t.slice(k + 2).replace(/\)\s*$/, '')] : [t, ''];
 }
 // ---------------------------------------------------------------- écart ISA et altitude-densité
 /** Altitude-densité (ft) d'une altitude pression h (ft) à ISA + dT : l'altitude standard de même densité

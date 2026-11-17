@@ -149,7 +149,10 @@ def f6(c):
     wait_quote(c)
     path = 'pilot/ABC/current_flight.json'
     label = c.text(f'{FUEL} .fu-flight .f-field:last-child') or ''
-    c.ok(norm(label).startswith(norm(row(c, 'wxDate'))), f'field label {label!r}', 'the field is called "Flight date" in the language of the run')
+    head, _, note = row(c, 'wxDate').partition(' (')
+    c.ok(norm(label).startswith(norm(head)), f'field label {label!r}', 'the field is called "Flight date" in the language of the run')
+    # SOG-0393: « device's local time » under the field, no longer in the label
+    c.eq(norm(c.text(f'{FUEL} .fu-flight [data-datenote]')), norm(note.rstrip(')')), 'the time zone said under the field', what='date note')
 
     def waited(pred, what):
         for _ in range(40):
@@ -6728,3 +6731,55 @@ def f226(c):
     c.ok(share > 0.8, share, 'on a phone the text of the proposal takes the width of its row, its button under it')
     c.js(f"document.querySelector('{FUEL} [data-rnoroute]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F226_{c.design}_390_{c.lang}_delivered.png')
+
+
+_ROWS_JS = f"""(() => {{ const q = s => document.querySelector('{FUEL} ' + s), r = e => e.getBoundingClientRect(), R = e => {{ const b = r(e);
+    return [Math.round(b.left), Math.round(b.top), Math.round(b.width), Math.round(b.height)] }};
+  const fl = q('input[data-k="fl"]'), dt = q('input[data-k="wxdate"]'), labs = [...q('.fu-flight').querySelectorAll(':scope > .f-field')],
+    heads = labs.map(l => {{ const t = document.createRange(); t.setStart(l, 0); t.setEnd(l, 1); return t.getBoundingClientRect() }}),
+    lv = q('[data-lvlauto]'), nt = q('[data-datenote]'), ads = ['dep', 'arr', 'altn'].map(k => q(`input[data-k="${{k}}"]`)),
+    names = ['dep', 'arr', 'altn'].map(k => q(`[data-adline="${{k}}"]`)), th = q('[data-themes]');
+  return {{ headTops: heads.map(h => Math.round(h.top)), headH: heads.map(h => Math.round(h.height)), fl: R(fl), dt: R(dt),
+    auto: R(q('[data-do="levelauto"]')), b30: R(q('[data-do="when30"]')), bnow: R(q('[data-do="whennow"]')),
+    note: nt ? [R(nt), nt.textContent.trim(), nt.scrollHeight <= nt.clientHeight + 1] : null, lvl: R(lv),
+    ads: ads.map(e => Math.round(r(e).width * 10) / 10), adsBottom: Math.round(Math.max(...names.map(e => r(e).bottom))),
+    flightTop: Math.round(r(q('.fu-flight')).top), rowBottom: Math.round(Math.max(r(lv).bottom, nt ? r(nt).bottom : 0)),
+    themesTop: Math.round(r(th).top), sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()"""
+
+
+@case('F243', 'Step Flight, rows aligned (SOG-0393): « Level (FL) » and « Flight date » labels on ONE line at the same top, the two fields from '
+      'the same top, « device\'s local time » UNDER the date field, the buttons as high as the fields, « Auto » clear of the date, the three '
+      'aerodrome fields of one width, a space between the rows', 'F', tags=('fuel', 'layout'),
+      designs=('standard', 'metro', 'swiss', 'cupertino', 'material'), screens=False, langs4=True,
+      rule='SOG-0393 (user, 17 Nov, metro on a computer: « arranger les champs décalés »): the date note wrapped under its label and pushed '
+      'the field down; « auto · 1:49 » touched « Famille »; the row may fold at 390 px, never shift')
+def f243(c):
+    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+            d[1]['level'] = {'ft': 27000, 'auto': True}
+    note = row(c, 'wxDate').partition(' (')[2].rstrip(')')
+    for w in (390, 630, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document']])
+        wait_quote(c)
+        to_step(c, 0)
+        c.until(f"(document.querySelector('{FUEL} [data-lvlauto]')?.textContent || '').includes('auto')", timeout=10000, what='the auto help line')
+        m = c.js(_ROWS_JS)
+        c.ok(abs(m['headTops'][0] - m['headTops'][1]) <= 1 and max(m['headH']) < 2 * min(m['headH']), m,
+             f'{w} px: the two labels on one line, at the same top')
+        c.ok(abs(m['fl'][1] - m['dt'][1]) <= 1, m, f'{w} px: the level field and the date field start at the same top')
+        c.ok(m['note'] is not None and norm(m['note'][1]) == norm(note) and m['note'][2] and m['note'][0][1] >= m['dt'][1] + m['dt'][3], m,
+             f'{w} px: « {note} » on one line UNDER the date field')
+        hs = [m[k][3] for k in ('fl', 'auto', 'dt', 'b30', 'bnow')]
+        c.ok(max(hs) - min(hs) <= 1, m, f'{w} px: the buttons of the row as high as its fields')
+        c.ok(abs(m['auto'][1] - m['fl'][1]) <= 1, m, f'{w} px: « Auto » in the line of the level field')
+        c.ok(m['auto'][0] + m['auto'][2] + 4 <= m['dt'][0], m, f'{w} px: « Auto » clear of the date field')
+        c.ok(max(m['ads']) - min(m['ads']) <= 1, m, f'{w} px: departure, arrival and alternate of one width')
+        c.ok(m['flightTop'] - m['adsBottom'] >= 6, m, f'{w} px: a space between the aerodromes and the level row')
+        c.ok(m['themesTop'] - m['rowBottom'] >= 6, m, f'{w} px: a space between the level row and Family / Series')
+        c.le(m['sw'], m['iw'], f'{w} px: no horizontal scroll', what='scrollWidth')
+        c.page.evaluate(f"document.querySelector('{FUEL} .fu-ads').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F243_{c.design}_{w}_{c.lang}.png')
