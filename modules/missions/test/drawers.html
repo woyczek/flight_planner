@@ -26,6 +26,9 @@
 <pre id="out"></pre>
 <script type="module">
   import * as D from '../drawers.js?v=0';
+  import {
+    DRAWER_IDS
+  } from '../../../frame/lib/mission.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
   /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
@@ -119,19 +122,25 @@
       now
     }),
     /** L'état des tiroirs pour AAA. */
-    st = (o = {}) => D.stateOf(o.drawers || drawers, {
-      me: 'AAA',
-      seance: o.seance || sc,
-      book: D.readBook(o.doc, ID),
-      others: (o.others || []).map(([pilot, doc]) => ({
-        pilot,
-        book: D.readBook(doc, ID)
-      })),
-      seen: o.seen,
-      now: o.now ?? T0,
-      passage: o.passage,
-      crosses: o.crosses
-    }),
+    /** L'état des tiroirs pour AAA. Sans `chain`, chaque tiroir est jugé À PART (une liste d'un seul) : la vérification porte sur sa
+     *  clé, pas sur l'ordre ; `chain: true` juge la liste entière, dans l'ordre. */
+    st = (o = {}) => {
+      const opts = {
+          me: 'AAA',
+          seance: o.seance || sc,
+          book: D.readBook(o.doc, ID),
+          others: (o.others || []).map(([pilot, doc]) => ({
+            pilot,
+            book: D.readBook(doc, ID)
+          })),
+          seen: o.seen,
+          now: o.now ?? T0,
+          passage: o.passage,
+          crosses: o.crosses
+        },
+        list = o.drawers || drawers;
+      return o.chain ? D.stateOf(list, opts) : list.flatMap(d => D.stateOf([d], opts));
+    },
     by = (list, id) => list.find(x => x.id === id),
     /** Le carnet d'un autre pilote, ce tiroir ouvert. */
     peer = (id, at, how = 'hand', more = {}) => ({
@@ -354,7 +363,21 @@
     key: {
       kind: 'actor'
     }
+  }, {
+    id: 'D',
+    key: {
+      kind: 'hand',
+      fallbackMin: 30
+    }
   }];
+  ck('le geste seul avec une heure de repli (une condition de l\'auteur que le lecteur ne lit pas) : fermé avant, ouvert « fallback » à H + 30 min',
+    (x => x.open === false && x.dueAt === T0 + 30 * MIN)(by(st({
+      drawers: arrival,
+      now: T0 + 29 * MIN
+    }), 'D')) && by(st({
+      drawers: arrival,
+      now: T0 + 30 * MIN
+    }), 'D').how === 'fallback');
   s = st({
     drawers: arrival,
     others: [
@@ -368,13 +391,14 @@
   });
   ck('une clé que le calcul ne sait pas juger (« arrivée », cible mobile) n\'est pas refusée : fermé, sa clé gardée ; le repli l\'ouvre s\'il existe, sinon le geste seul ; un constat de zone d\'un autre n\'y vaut rien',
     by(s, 'B').open === false && by(s, 'B').key.kind === 'arrival' && by(s, 'B').dueAt === T0 + 120 * MIN && by(s, 'B').refused[0]
-    ?.why === 'key' && by(s3, 'B').how === 'fallback' && by(s3, 'C').open === false && by(s3, 'C').dueAt === null && by(D.stateOf(
-      arrival, {
-        me: 'AAA',
-        seance: sc,
-        book: D.readBook(D.withOpen(null, ctx(T0), 'C'), ID),
-        now: T0 + MIN
-      }), 'C').how === 'hand', [s, s3]);
+    ?.why === 'key' && by(s3, 'B').how === 'fallback' && by(s3, 'C').open === false && by(s3, 'C').dueAt === null && by(D.stateOf([
+      arrival[1]
+    ], {
+      me: 'AAA',
+      seance: sc,
+      book: D.readBook(D.withOpen(null, ctx(T0), 'C'), ID),
+      now: T0 + MIN
+    }), 'C').how === 'hand', [s, s3]);
 
   // ---- le geste du pilote, et le carnet écrit
   const opened = D.withOpen(null, ctx(T0 + 20 * MIN), 'D');
@@ -417,8 +441,8 @@
       to: [44.498, -1.171, 2350],
       source: 'xplane'
     }) && found.drawer_D.at === iso(T0 + 20 * MIN), found);
-  ck('withOpen : un tiroir hors de B, C, D, une manière inconnue, un pilote ou une mission illisibles : rien à écrire', [D.withOpen(null,
-    ctx(T0), 'E'), D.withOpen(null, ctx(T0), 'B', 'time'), D.withOpen(null, {
+  ck('withOpen : un tiroir hors de B à M, une manière inconnue, un pilote ou une mission illisibles : rien à écrire', [D.withOpen(null,
+    ctx(T0), 'N'), D.withOpen(null, ctx(T0), 'B', 'time'), D.withOpen(null, {
     ...ctx(T0),
     me: 'x'
   }, 'B'), D.withOpen(null, {
@@ -579,8 +603,8 @@
     ],
     now: T0 + 31 * MIN
   });
-  const seenDoc = D.seenAfter({}, s, sc);
-  ck('seenAfter : le constat d\'un autre est gardé sur l\'appareil (séance, tiroir, auteur, heure, manière) ; son geste, mes ouvertures et l\'heure ne le sont pas',
+  const seenDoc = D.seenAfter({}, s, sc, T0 + 31 * MIN);
+  ck('seenAfter : le constat d\'un autre est gardé sur l\'appareil (séance, tiroir, auteur, heure, manière, et l\'heure où l\'appareil l\'a reçu) ; son geste, mes ouvertures et l\'heure ne le sont pas',
     JSON.stringify(seenDoc) === JSON.stringify({
       schema: 1,
       seance: sc.key,
@@ -588,13 +612,22 @@
         C: {
           by: 'BBB',
           at: iso(T0 + 30 * MIN),
-          how: 'zone'
+          how: 'zone',
+          got: iso(T0 + 31 * MIN)
         }
       }
     }) && JSON.stringify(D.seenAfter({}, st({
       doc: found,
       now: T0 + 2 * H
     }), sc).drawers) === '{}', seenDoc);
+  ck('l\'heure de réception est gardée au calcul suivant, et rendue avec l\'ouverture (« reçu ici à … »)', D.seenAfter(D.readSeen(seenDoc,
+    sc), s, sc, T0 + 50 * MIN).drawers.C.got === iso(T0 + 31 * MIN) && by(st({
+    others: [
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+    ],
+    seen: D.readSeen(seenDoc, sc),
+    now: T0 + 40 * MIN
+  }), 'C').gotAt === T0 + 31 * MIN && by(s, 'C').gotAt === null);
   const seen = D.readSeen(seenDoc, sc);
   s = st({
     others: [
@@ -634,7 +667,7 @@
         at: 'x',
         how: 'zone'
       },
-      E: {
+      Z: {
         by: 'BBB',
         at: iso(T0),
         how: 'zone'
@@ -672,7 +705,7 @@
       seance: solo0,
       now: T0
     }, 'D'),
-    S = (seance, doc, now = T0 + H) => by(D.stateOf(drawers, {
+    S = (seance, doc, now = T0 + H) => by(D.stateOf([drawers[2]], {
       me: 'ZZZ',
       seance,
       book: D.readBook(doc, ID),
@@ -714,9 +747,9 @@
       "__proto__":{"drawer_B":{"state":"open","at":"2026-11-18T19:50:00Z"}},
       "drawer_B":{"state":"ajar","at":"2026-11-18T19:50:00Z"},
       "drawer_C":{"state":"open","at":"2026-11-18T19:50:00Z","how":"nuke","from":[0,0],"to":[91,0,5],"source":"${big}"},
-      "drawer_D":{"state":"open","at":"jamais"},"drawer_E":{"state":"open","at":"2026-11-18T19:50:00Z"},"constructor":{"prototype":{}}}`),
+      "drawer_D":{"state":"open","at":"jamais"},"drawer_Z":{"state":"open","at":"2026-11-18T19:50:00Z"},"constructor":{"prototype":{}}}`),
     hb = D.readBook(hostile, ID);
-  ck('carnet hostile : état hors liste, heure illisible, tiroir E, clé héritée → rien ; manière inconnue → « hand » ; positions hors bornes → aucune ; textes d\'un mégaoctet → rien',
+  ck('carnet hostile : état hors liste, heure illisible, tiroir Z, clé héritée → rien ; manière inconnue → « hand » ; positions hors bornes → aucune ; textes d\'un mégaoctet → rien',
     JSON.stringify(hb) === JSON.stringify({
       mission: ID,
       seance: null,
@@ -753,7 +786,7 @@
       kind: 'hand'
     }
   }, {
-    id: 'E',
+    id: 'Z',
     key: {
       kind: 'hand'
     }
@@ -773,9 +806,72 @@
     seance: sc,
     now: T0 + MIN
   });
-  ck('liste de tiroirs hostile : trois au plus, B / C / D une fois chacun, un délai borné à 1 440 min, un repli négatif à 0, une clé absente = le geste seul',
-    s.map(x => x.id).join() === 'B,C,D' && by(s, 'B').dueAt === T0 + 1440 * MIN && by(s, 'B').title === '' && by(s, 'C').open && by(s,
-      'C').at === T0 && by(s, 'D').key.kind === 'hand' && !by(s, 'D').open, s);
+  ck('liste de tiroirs hostile : B à M une fois chacun, un identifiant hors liste écarté, un délai borné à 1 440 min, un repli négatif à 0, une clé absente = le geste seul',
+    s.map(x => x.id).join() === 'B,C,D' && by(s, 'B').dueAt === T0 + 1440 * MIN && by(s, 'B').title === '' && by(s, 'C').dueAt === T0 &&
+    by(s, 'C').locked === true && by(s, 'C').after === 'B' && by(s, 'D').key.kind === 'hand' && !by(s, 'D').open, s);
+  s = D.stateOf('BCDEFGHIJKLMNO'.split('').map(id => ({
+    id,
+    key: {
+      kind: 'hand'
+    }
+  })), {
+    me: 'AAA',
+    seance: sc,
+    book: D.readBook(['M', 'E', 'B', 'C'].reduce((doc, id, i) => D.withOpen(doc, ctx(T0 + i * 1000), id), null), ID),
+    now: T0 + 2 * MIN
+  });
+  ck('plus de limite à trois (l\'utilisateur, 17/11) : douze tiroirs au plus, B à M dans l\'ordre du fichier ; au-delà (N, O) écartés ; le carnet porte B, C, E et M : B et C ouverts, D est le premier fermé, E et M attendent leur tour',
+    s.length === 12 && s.map(x => x.id).join('') === 'BCDEFGHIJKLM' && s.filter(x => x.open).map(x => x.id).join() === 'B,C' && by(s, 'D')
+    .locked === false && by(s, 'E').locked === true && by(s, 'E').after === 'D' && by(s, 'M').after === 'L' && D.LETTERS.length === 12, s
+    .map(x => x.id + (x.open ? '*' : x.locked ? '-' : '')).join());
+
+  // ---- l'ORDRE : une clé, l'heure de repli ou le geste n'ouvrent que le premier tiroir encore fermé
+  s = st({
+    chain: true,
+    doc: opened,
+    now: T0 + 39 * MIN
+  });
+  ck('l\'ordre : B (heure, pas encore due) est le premier fermé ; C et D sont verrouillés (« après » B, C) — mon geste sur D, écrit au carnet, n\'ouvre rien',
+    s.map(x => `${x.id}${x.open ? '*' : x.locked ? '-' : ''}${x.after || ''}`).join() === 'B,C-B,D-C' && by(s, 'D').mine === false && by(s, 'B').sealed === false);
+  s = st({
+    chain: true,
+    doc: opened,
+    now: T0 + 100 * MIN
+  });
+  ck('chacun à son tour : B à son heure (H + 40), C à son heure de repli (H + 90), puis D — mon geste de H + 20 joue à l\'ouverture de C : ouvert à H + 90, le fait à H + 20',
+    s.every(x => x.open && !x.locked) && by(s, 'B').at === T0 + 40 * MIN && by(s, 'C').at === T0 + 90 * MIN && by(s, 'D').at === T0 + 90 *
+    MIN && by(s, 'D').srcAt === T0 + 20 * MIN && by(s, 'D').how === 'hand', s.map(x => [x.id, x.at - T0, x.srcAt - T0]));
+  s = st({
+    chain: true,
+    doc: D.withSeal(opened, ctx(T0 + 41 * MIN), 'B'),
+    now: T0 + 3 * H
+  });
+  ck('une heure passée pendant qu\'un tiroir d\'avant est fermé ne joue pas : B rescellé, C (repli passé) et D restent verrouillés', by(s,
+    'B').sealed === true && by(s, 'C').locked === true && by(s, 'C').open === false && by(s, 'D').locked === true);
+  const under = st({
+    chain: true,
+    others: [
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+    ],
+    now: T0 + 35 * MIN
+  });
+  ck('le constat d\'un autre sous verrou (B encore fermé) : C reste fermé, le constat est retenu (« other ») et gardé par l\'appareil', by(
+    under, 'C').open === false && by(under, 'C').locked === true && by(under, 'C').other?.by === 'BBB' && D.seenAfter({}, under, sc,
+    T0 + 35 * MIN).drawers.C?.by === 'BBB', by(under, 'C'));
+  s = st({
+    chain: true,
+    others: [
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+    ],
+    now: T0 + 41 * MIN
+  });
+  ck('… et il joue dès que B s\'ouvre : C ouvert « zone » par BBB à l\'heure de B (H + 40), le fait à H + 30 ; D devient le premier fermé',
+    by(s, 'B').how === 'time' && by(s, 'C').open && by(s, 'C').by === 'BBB' && by(s, 'C').how === 'zone' && by(s, 'C').at === T0 + 40 *
+    MIN && by(s, 'C').srcAt === T0 + 30 * MIN && by(s, 'D').open === false && by(s, 'D').locked === false, s.map(x => [x.id, x.open, x
+      .locked
+    ]));
+  ck('les identifiants de tiroir sont ceux du lecteur (DRAWER_IDS de frame/lib/mission.js) : un tiroir lu a toujours sa place dans le carnet',
+    D.LETTERS.join() === DRAWER_IDS.join() && D.LETTERS.length === 12 && D.LETTERS !== DRAWER_IDS);
   ck('stateOf sans rien (ni tiroirs, ni options) : une liste vide, aucune exception', JSON.stringify(D.stateOf()) === '[]' && JSON
     .stringify(D.stateOf(null, {})) === '[]' && D.stateOf(drawers).length === 3);
 

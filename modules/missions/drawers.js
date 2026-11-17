@@ -1,11 +1,12 @@
 // V3 missions — les tiroirs d'une mission chez le pilote (SOG-0441, lot T1) : le calcul pur. Ni page, ni stockage, ni réseau.
 //
-// Un tiroir (B, C, D : les « phases » d'un fichier de mission, lues et bornées par frame/lib/mission.js — `drawers`, chacun
+// Un tiroir (douze au plus, identifiants B à M dans l'ordre du fichier — à l'écran « Tiroir 1, 2, 3… » : les lettres désignent les
+// équipages d'une opération ; décision de l'utilisateur du 17/11 : plus de limite à trois ; les « phases » d'un fichier de mission, lues et bornées par frame/lib/mission.js — `drawers`, chacun
 // { id, title, message, brief, key, route }) est fermé tant que sa clé n'a pas joué. Ce fichier dit, pour UN pilote à UN instant, l'état
 // de chaque tiroir, d'après :
-//   · l'heure (clé `time`) et l'heure de repli (`key.fallbackMin` d'une clé jugée en vol : `zone`, `object`, et toute clé que ce fichier
-//     ne sait pas encore juger — « arrivée », cible mobile : elle n'est pas refusée, le tiroir reste fermé et s'ouvre au geste ou à son
-//     heure de repli) : CALCULÉES, jamais écrites ;
+//   · l'heure (clé `time`) et l'heure de repli (`key.fallbackMin` de toute autre clé : `zone`, `object`, `hand` quand le lecteur n'a pas
+//     lu la condition de l'auteur, et toute clé que ce fichier ne sait pas encore juger — « arrivée », cible mobile : elle n'est pas
+//     refusée, le tiroir reste fermé et s'ouvre au geste ou à son heure de repli) : CALCULÉES, jamais écrites ;
 //   · les CARNETS : un par pilote et par mission, `pilot/<TRI>/missions/<ID>.json` — chacun n'écrit que le sien (aucun conflit
 //     d'écriture) ; seuls les gestes (« Ouvrir le tiroir ») et les constats (zone franchie, objet trouvé) s'y écrivent.
 // « Ouvert pour tous » (décision de l'utilisateur, 17/11/2026, Q-0087) se CALCULE : un tiroir est ouvert dès que le carnet d'UN pilote
@@ -15,6 +16,11 @@
 // ouverture n'est retenue que si elle tient debout (checkOther), et une ouverture refusée est DITE avec son auteur. Un tiroir ouvert
 // le reste : l'appareil garde les ouvertures des autres qu'il a vues (`seen`, sur l'appareil seul) ; si l'un d'eux la retire de son
 // carnet, le tiroir reste ouvert ici et l'écran le dit (`gone`).
+//
+// L'ORDRE (décision de l'ergonome, 17/11/2026, comme le moteur de référence de l'atelier de l'utilisateur) : une clé, l'heure de repli ou
+// le geste n'ouvrent que le PREMIER tiroir encore fermé ; les suivants sont verrouillés (`locked`, `after` : le tiroir d'avant) ; ce qui
+// est arrivé pendant qu'un tiroir d'avant était fermé (une heure passée, le constat d'un autre) joue dès que celui-ci s'ouvre — l'heure
+// d'ouverture (`at`) est alors celle de cette ouverture, `srcAt` gardant l'heure du fait.
 //
 // La SÉANCE : une mission se rejoue (réaffectée un autre jour, tirée au sort de nouveau) ; un carnet ne vaut que pour une séance.
 //   · mission affectée à ce pilote : `A:<AAAA-MM-JJ>` (jour UTC du premier décollage de ses lignes ; `A:0` sans heure) ; l'équipage =
@@ -33,17 +39,26 @@
 //   stateOf(drawers, { me, seance, book, others, seen, now, passage, crosses }) → un état par tiroir :
 //     { id, title, key, open, how ('time' | 'fallback' | 'hand' | 'zone' | 'object' | null), at, by (trigramme ; null pour une heure),
 //       mine, dueAt (l'heure d'ouverture prévue : la clé `time`, ou le repli ; null si inconnue), estimated (cette heure est estimée),
+//       locked (un tiroir d'avant est encore fermé : rien ne l'ouvre), after (l'identifiant du tiroir d'avant), srcAt (l'heure du fait
+//       qui l'a ouvert, `at` étant celle où il a joué), gotAt (l'heure où cet appareil a reçu l'ouverture d'un autre, ou null), other
+//       (le constat d'un autre le plus ancien retenu, même sous verrou),
 //       sealed (rescellé par ce pilote, et personne d'autre ne l'a ouvert), gone (l'ouverture retenue n'est plus dans le carnet de son
 //       auteur), hands: [{ by, at }] (les autres pilotes de la mission qui l'ont ouvert à la main, pour eux seuls), refused: [{ by, why }]
 //       (les ouvertures d'autres carnets non retenues : 'stranger', 'seance', 'future', 'before', 'key', 'shape') }.
 //     others : [{ pilot, book }] (les carnets des autres, déjà passés par readBook) ; seen : readSeen(…) ; passage(pointId) → minutes
 //     estimées du départ à ce lieu (un nombre, ou { min }), null si inconnu ; crosses({ from, to }, key) → vrai si ce trajet coupe la
 //     forme de la clé (le service du cadre, plus tard : sans lui, une ouverture « zone » d'un autre n'est jugée que sur le reste).
-//   seenAfter(seen, states, seance) → ce que l'appareil garde après ce calcul ; readSeen(doc, seance) → { B: { by, at, how } } borné.
+//   seenAfter(seen, states, seance, now) → ce que l'appareil garde après ce calcul ; readSeen(doc, seance) → { B: { by, at, how, got } }
+//     borné (got : l'heure où l'appareil l'a reçue).
 //   withOpen(doc, ctx, id, how, fix?), withSeal(doc, ctx, id), withRead(doc, ctx), withStart(doc, ctx, startAt) → le carnet à écrire
 //     (ctx : { mission, me, seance, now }) ; null si rien n'est à écrire (identifiants refusés).
 
-export const LETTERS = ['B', 'C', 'D'];
+import {
+  DRAWER_IDS
+} from '../../frame/lib/mission.js'; // la liste fermée du lecteur (B à M) : une seule liste, jamais recopiée
+
+/** Les identifiants de tiroir : ceux du lecteur de mission (un tiroir lu a toujours sa place dans le carnet). */
+export const LETTERS = [...DRAWER_IDS];
 /** Ce qui s'écrit dans un carnet : un geste ou un constat. L'heure et l'heure de repli se calculent. */
 export const HOWS = ['hand', 'zone', 'object'];
 /** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
@@ -243,6 +258,10 @@ export function stateOf(drawers, {
   const seenOf = seen && typeof seen === 'object' ? seen : {},
     done = new Set(),
     out = [];
+  // l'ORDRE (voir l'en-tête) : le tiroir d'avant (son identifiant, l'heure de son ouverture) ; un tiroir d'avant encore fermé verrouille
+  let prev = null,
+    prevAt = -Infinity,
+    locked = false;
   for (const d of (Array.isArray(drawers) ? drawers : [])) {
     const id = d?.id;
     if (!LETTERS.includes(id) || done.has(id) || done.size >= LETTERS.length) continue;
@@ -261,8 +280,9 @@ export function stateOf(drawers, {
         delay = Number.isFinite(key.delayMin) ? Math.min(1440, Math.max(0, key.delayMin)) : 0;
       if (ref != null && m != null) dueAt = ref + (m + delay) * 60e3;
       estimated = !real || m !== 0; // un départ prévu, ou un passage estimé sur la route prévue : « heure estimée »
-    } else if (key.kind !== 'hand' && Number.isFinite(key.fallbackMin) && ref != null) {
-      // toute clé jugée en vol (zone, objet — et celles que ce fichier ne sait pas encore juger : « arrivée », cible mobile) a son repli
+    } else if (Number.isFinite(key.fallbackMin) && ref != null) {
+      // toute clé sauf l'heure a son repli (docs/technique/FORMAT_MISSION.md § 4) : zone, objet, celles que ce fichier ne sait pas encore
+      // juger (« arrivée », cible mobile), et le geste seul que le lecteur rend quand il ne lit pas la condition écrite par l'auteur
       dueAt = ref + Math.min(1440, Math.max(0, key.fallbackMin)) * 60e3;
       estimated = !real;
     }
@@ -319,7 +339,16 @@ export function stateOf(drawers, {
       gone: true
     });
     found.sort((a, b) => a.at - b.at);
-    const w = found[0] || null;
+    // l'ordre : rien n'ouvre ce tiroir tant qu'un tiroir d'avant est fermé ; ce qui était arrivé joue à l'ouverture de celui d'avant
+    const first = found[0] || null,
+      w = first && !locked ? {
+        ...first,
+        srcAt: first.at,
+        at: Math.max(first.at, prevAt)
+      } : null,
+      // le constat d'un autre le plus ancien, retenu même sous verrou : l'appareil le garde (seenAfter), il jouera à son tour
+      other = found.find(c => c.by && c.by !== tri) || null,
+      got = own(seenOf, id);
     out.push({
       id,
       title: typeof d.title === 'string' ? d.title : '',
@@ -327,15 +356,27 @@ export function stateOf(drawers, {
       open: !!w,
       how: w ? w.how : null,
       at: w ? w.at : null,
+      srcAt: w ? w.srcAt : null,
       by: w ? w.by : null,
       mine: !!w && !!tri && w.by === tri,
       dueAt,
       estimated: dueAt != null && estimated,
-      sealed: sealed && !w,
+      locked: locked && !w,
+      after: locked ? prev : null,
+      sealed: sealed && !w && !locked,
       gone: !!w?.gone,
+      gotAt: w && w.by && w.by !== tri && got && got.by === w.by && Number.isFinite(got.got) ? got.got : null,
+      other: other ? {
+        by: other.by,
+        at: other.at,
+        how: other.how
+      } : null,
       hands,
       refused
     });
+    prev = id;
+    if (w) prevAt = w.at;
+    else locked = true;
   }
   return out;
 }
@@ -353,29 +394,28 @@ export function readSeen(doc, seance) {
     if (by && at != null && SHARED.includes(how)) out[l] = {
       by,
       at,
-      how
+      how,
+      got: msOf(own(v, 'got')) // l'heure à laquelle cet appareil l'a reçue (« reçu ici à … ») ; null pour un « vu » d'avant
     };
   }
   return out;
 }
 
 /** Le document « vu » à garder sur l'appareil après un calcul : la plus ancienne ouverture d'un AUTRE par tiroir ; null sans séance. */
-export function seenAfter(seen, states, seance) {
+export function seenAfter(seen, states, seance, now = Date.now()) {
   if (!seance?.key) return null;
   const drawers = {};
   for (const l of LETTERS) {
     const old = own(seen, l),
       s = (Array.isArray(states) ? states : []).find(x => x.id === l),
-      cur = s && s.open && s.by && !s.mine && SHARED.includes(s.how) ? {
-        by: s.by,
-        at: s.at,
-        how: s.how
-      } : null,
+      cur = s?.other && SHARED.includes(s.other.how) ? s.other : null,
       keep = old && cur ? (cur.at < old.at ? cur : old) : old || cur;
     if (keep) drawers[l] = {
       by: keep.by,
       at: isoOf(keep.at),
-      how: keep.how
+      how: keep.how,
+      // reçue ici : la première fois que l'appareil l'a vue (gardée ensuite, même si l'ouverture retenue devient plus ancienne)
+      got: isoOf(old && Number.isFinite(old.got) ? old.got : now)
     };
   }
   return {
