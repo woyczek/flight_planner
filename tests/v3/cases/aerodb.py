@@ -1376,7 +1376,7 @@ def k16(c):
     pts = [('ALFAB', 51.30, -0.60), ('BRAVO', 51.35, -0.40), ('CHARL', 51.42, -0.25), ('DELTA', 51.50, -0.20)]          # points fictifs
 
     def page(bump=0.0, drop_lon=False, no_seq=False, letter_o=False):
-        """Lignes INVENTÉES d'une page uk-star dans l'ordre vu par l'OCR : latitude [cap magnétique] / tronçon / longitude [(cap vrai)] ; `bump` falsifie un cap vrai,
+        """Lignes INVENTÉES d'une page uk-coding dans l'ordre vu par l'OCR : latitude [cap magnétique] / tronçon / longitude [(cap vrai)] ; `bump` falsifie un cap vrai,
         `drop_lon` supprime la longitude d'un tronçon, `no_seq` efface un numéro de séquence, `letter_o` met un « O » à la place d'un zéro dans une coordonnée."""
         rows = ['UNITED KINGDOM AIP AD 2.EGXX-7-13', '1 Jan 2026', 'Standard Instrument Arrival Coding Tables', 'LONDON TEST ALFAB 1H', 'Path Course/',
                 'Sequence Waypoint Fly- Magnetic| Distance Turn Level Speed Navigation', 'Designator Term- Co-ordinates Track', 'Number Name over Variation (NM) Direction Constraint|Constraint| Performance',
@@ -1396,12 +1396,12 @@ def k16(c):
                 rows.append(f'{lon} ({brg + (bump if i == 2 else 0):05.1f}°)')
         return rows + ['CHANGE (1/26): TEST.', 'CIVIL AVIATION AUTHORITY AMDT 1/2026']
     rows = page()
-    c.eq(P.detect_layout(rows), 'uk-star', 'the arrival coding tables header is recognised, before uk-app', what='detect_layout')
+    c.eq(P.detect_layout(rows), 'uk-coding', 'the arrival coding tables header is recognised, before uk-app', what='detect_layout')
     c.eq(P.detect_layout(_uk_page(P, [('TESTA', 51.4762, -0.7516), ('TESTB', 51.4767, -0.6711), ('RW09L', 51.4775, -0.4850)])), 'uk-app', 'an approach page is still uk-app', what='detect_layout')
-    parsed = P.parse_uk_star(rows)
+    parsed = P.parse_uk_coding(rows)
     t = parsed['tables'][0]
     lg = t['legs']
-    c.eq((parsed['kind'], len(parsed['tables']), t['name'], t['kind'], t['transition'], [x['id'] for x in lg]), ('STAR', 1, 'ALFAB 1H', 'STAR', None, ['ALFAB', 'BRAVO', 'CHARL', 'DELTA']), 'one STAR, name from its title, legs in order', what='parse_uk_star')
+    c.eq((parsed['kind'], len(parsed['tables']), t['name'], t['kind'], t['transition'], [x['id'] for x in lg]), ('STAR', 1, 'ALFAB 1H', 'STAR', None, ['ALFAB', 'BRAVO', 'CHARL', 'DELTA']), 'one STAR, name from its title, legs in order', what='parse_uk_coding')
     c.eq((lg[0]['alt'], lg[1]['turn'], lg[2]['turn'], lg[3]['alt'], lg[3]['kt'], lg[1]['over']), ({'type': 'at', 'ft': 10000}, None, 'L', {'type': 'min', 'ft': 3000}, 250, None),
          'FL100 level, turn LEFT read as L, level and speed constraints, fly-over unread (None)', what='cells')
     c.ok(lg[1]['nm'] and abs(lg[1]['lat'] - 51.35) < 1e-4 and abs(lg[1]['lon'] + 0.40) < 1e-4 and lg[1]['crs'] and lg[1]['true'], str(lg[1]),
@@ -1412,12 +1412,12 @@ def k16(c):
     c.eq((len(recs), recs[0]['status'], recs[0]['kind'], recs[0]['id'], recs[0]['points'][2].get('turn')), (1, 'check', 'STAR', 'EGXX.STAR.ALFAB1H.RWALL', 'L'), 'common schema: status check, kind STAR kept', what='records_uk_app')
     doc = O.document_from_rows('EGXX', 'p.pdf', rows, '2026-10-01')
     f = doc['formats'][0]
-    c.eq((len(doc['procedures']), f['layout'], f['ok'], M.verify(doc)), (1, 'uk-star', True, []), 'document_from_rows: table kept, ok True, proc_manual.verify finds nothing to refuse', what='document_from_rows')
+    c.eq((len(doc['procedures']), f['layout'], f['ok'], M.verify(doc)), (1, 'uk-coding', True, []), 'document_from_rows: table kept, ok True, proc_manual.verify finds nothing to refuse', what='document_from_rows')
     fixed = O.document_from_rows('EGXX', 'p.pdf', page(no_seq=True, letter_o=True), '2026-10-01')
     c.ok(len(fixed['procedures']) == 1 and fixed['formats'][0]['ok'], str(fixed['formats']), 'a missing sequence number and a letter O read for a zero in a co-ordinate are repaired by the normaliser')
-    cut = P.parse_uk_star(page(drop_lon=True))
+    cut = P.parse_uk_coding(page(drop_lon=True))
     c.ok(cut['tables'] == [] and any('NON retenue' in x for x in cut['warnings']), str(cut['warnings']), 'a leg without its longitude: the table is rejected, never completed')
-    badp = P.parse_uk_star(page(bump=5.0))
+    badp = P.parse_uk_coding(page(bump=5.0))
     c.ok(_gaps(badp['tables'][0]['legs']), 'geometry check', 'a printed true course 5 degrees off is caught by the geometry check')
     r2, w2 = P.records_uk_app('EGXX', badp, 'x.pdf', '2026-10-01')
     c.ok([(x['status'], x['doubt']) for x in r2] == [('doubt', 'geometry')] and not any('NON retenue' in x for x in w2), str(w2), 'and that table is kept as a doubt (code geometry), not dropped')
@@ -1786,7 +1786,7 @@ def k22(c):
             r = run(ctx, job=job)
             c.eq((r['ok'], r['reason'], r['stats']), (False, 'failed', {'pages': 31, 'read': 0, 'rejected': 31, 'procedures': 0, 'dropped': 0, 'doubt': 0, 'reasons': [['layout', 31]]}),
                  'a failure carries stats: 31 pages seen, none read, the reason counted', what='failure stats')
-            c.eq(r['message'], 'no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (mise en page non reconnue ×31)',
+            c.eq(r['message'], 'no procedure could be read for this aerodrome: 31 document(s), 0 of 31 page(s) read (table non reconnue ×31)',
                  'the message says how many documents and pages were seen, how many were read, and why not', what='failure message')
             c.eq((r['code'], r['counts'], r['reasons']), ('none-read', {'docs': 31, 'read': 0, 'pages': 31}, [['layout', 31]]),
                  'SOG-0433: the same failure in CODES and INTEGERS — `code` « none-read », `counts` { docs, read, pages }, `reasons` [[code, n]] (a closed list: the page codes layout, low-read, title, no-legs, counts, vector, timeout; the doubt codes unread, name, repeat, zigzag, unresolved, rf-arc, geometry, uncheckable; other) — the screen writes it in the language of the user, `message` stays the English fallback (red before: no `code`)', what='failure codes')
@@ -2771,7 +2771,7 @@ def k28(c):
 
 
 @case('K29', 'proc_layouts: the page layouts are one ordered list, the readers derive from it', 'K', static=True,
-      rule='V3 § 10.29 (b): detection order matters (uk-star before uk-app, at/be-coding before sia-code, icao-tab before de-route); each layout carries its fingerprints, OCR normaliser, OCR flag and tolerance')
+      rule='V3 § 10.29 (b): detection order matters (uk-coding before uk-app, at/be-coding before sia-code, icao-tab before de-route); each layout carries its fingerprints, OCR normaliser, OCR flag and tolerance')
 def k29(c):
     import importlib
     G = _geometry()
@@ -2779,12 +2779,12 @@ def k29(c):
     names = [e.name for e in L.LAYOUTS]
     c.ok(isinstance(L.LAYOUTS, list) and len(names) == len(set(names)), str(names), 'LAYOUTS is a list, one entry per layout')
     pos = {n: i for i, n in enumerate(names)}
-    c.ok(pos['uk-star'] < pos['uk-app'] and pos['at-coding'] < pos['sia-code'] and pos['be-coding'] < pos['sia-code'] and pos['icao-tab'] < pos['de-route'], str(names), 'the detection order that matters is kept')
+    c.ok(pos['uk-coding'] < pos['uk-app'] and pos['at-coding'] < pos['sia-code'] and pos['be-coding'] < pos['sia-code'] and pos['icao-tab'] < pos['de-route'], str(names), 'the detection order that matters is kept')
     c.ok(all(callable(e.detect) and e.tolerances in G.TOLERANCES and (e.read is None) == (e.name == 'sia-code') for e in L.LAYOUTS), str(names),
          'every entry detects, names a tolerance of proc_geometry, and only sia-code has no parser here (proc_sia reads it)')
     c.eq((sorted(L.PARSERS), sorted(L.OCR_LAYOUTS), sorted(L.NORMALIZERS), sorted(k for k, v in L.KNOWN_FINGERPRINTS.items() if v)),
-         (['am-coding', 'at-coding', 'be-coding', 'de-route', 'ei-coding', 'ge-coding', 'icao-tab', 'uk-app', 'uk-star'],
-          ['am-coding', 'at-coding', 'be-coding', 'ei-coding', 'ge-coding', 'uk-app', 'uk-star'], ['at-coding', 'be-coding', 'ge-coding', 'uk-app', 'uk-star'], ['sia-code', 'uk-app']),
+         (['am-coding', 'at-coding', 'be-coding', 'de-route', 'ei-coding', 'ge-coding', 'icao-tab', 'uk-app', 'uk-coding'],
+          ['am-coding', 'at-coding', 'be-coding', 'ei-coding', 'ge-coding', 'uk-app', 'uk-coding'], ['at-coding', 'be-coding', 'ge-coding', 'uk-app', 'uk-coding'], ['sia-code', 'uk-app']),
          'PARSERS, OCR_LAYOUTS, NORMALIZERS and KNOWN_FINGERPRINTS are derived from the list', what='derived tables')
     c.eq(([e.name for e in L.LAYOUTS if e.kind_hint], [e.name for e in L.LAYOUTS if e.known_names], L.BY_NAME['de-route'].tolerances, L.BY_NAME['uk-app'].tolerances),
          (['icao-tab'], ['ei-coding'], 'magnetic', 'true'), 'what a reader takes from the other pages, and the tolerance of what it prints', what='entry fields')
@@ -2792,13 +2792,13 @@ def k29(c):
 
 
 @case('K30', 'Page reasons are codes: formats[].reason, stats.reasons, the console phrase, the catalogue labels', 'K', static=True,
-      rule='V3 § 10.29 (c): a page not read carries one reason code (layout, low-read, title, no-legs, counts, vector, timeout); stats.reasons is [code, count]; the text stays in the console; AeroCatalogue.READ_REASONS translates')
+      rule='V3 § 10.29 (c): a page not read carries one reason code (layout, low-read, title, no-legs, counts, no-table, timeout; vector is the old name of no-table); stats.reasons is [code, count]; the text stays in the console; AeroCatalogue.READ_REASONS translates')
 def k30(c):
     import re
     P = _proc()
     G = _geometry()
     problems = {'3 tronçon(s) lu(s) sur 9 lignes de tronçon: moins de 85 %': 'low-read', 'disposition non reconnue (x)': 'layout',
-                'disposition non reconnue (très peu de texte: tableau dessiné en vecteurs ou image ? 3 ligne(s))': 'vector', 'titre de la page non reconnu (SID / STAR / RNP)': 'title',
+                'disposition non reconnue (très peu de texte: tableau dessiné en vecteurs ou image ? 3 ligne(s))': 'no-table', 'carte sans table': 'no-table', 'titre de la page non reconnu (SID / STAR / RNP)': 'title',
                 'aucun groupe de tronçons lu': 'no-legs', 'aucune table lue': 'no-legs', 'T (table 1): 2 tronçon(s) lu(s), table NON retenue': 'counts',
                 "3 ligne(s) de tronçon hors d'un bloc titré, NON retenue(s)": 'title', 'x.pdf: lecture abandonnée après 60 s': 'timeout'}
     c.eq({k: P.reason_of(k) for k in problems}, problems, 'each French problem of a page maps to its code', what='reason_of')
@@ -2809,14 +2809,14 @@ def k30(c):
     def rows_of(name):
         if name == 'timeout.pdf':
             raise P.PdfTimeout('timeout.pdf: lecture abandonnée après 60 s')
-        return {'drawn.pdf': [['AIP', 'chart']], 'text.pdf': [[f'line {i} of a page no reader knows' for i in range(30)]], 'empty.pdf': [uk_empty]}[name]
+        return {'drawn.pdf': [['AIP', 'chart']], 'text.pdf': [['Coding Tables', 'Designator Terminator'] + [f'line {i} of a page no reader knows' for i in range(30)]], 'empty.pdf': [uk_empty]}[name]
     d = P.build_pdf_dir('EGXX', ['drawn.pdf', 'empty.pdf', 'text.pdf', 'timeout.pdf'], rows_of, '2026-10-01')
     c.eq({f['file']: (f['ok'], f['reason']) for f in d['formats']},
-         {'drawn.pdf': (False, 'vector'), 'empty.pdf': (False, 'no-legs'), 'text.pdf': (False, 'layout'), 'timeout.pdf': (False, 'timeout')},
-         'a drawn page, a known layout with no table, an unknown layout and an abandoned reading each carry their code, beside the French problems', what='build_pdf_dir')
+         {'drawn.pdf': (False, 'no-table'), 'empty.pdf': (False, 'no-legs'), 'text.pdf': (False, 'layout'), 'timeout.pdf': (False, 'timeout')},
+         'a chart without a table, a known layout with no table, an unknown table header and an abandoned reading each carry their code, beside the French problems', what='build_pdf_dir')
     c.ok(all(f['problems'] for f in d['formats']), str(d['formats']), 'the French detail stays in problems')
     st = P.stats_of(d['formats'], 0)
-    c.eq((st['reasons'], st['rejected']), ([['layout', 1], ['no-legs', 1], ['timeout', 1]], 4), 'stats.reasons is [code, count], codes only', what='stats_of')
+    c.eq((st['reasons'], st['rejected']), ([['layout', 1], ['no-legs', 1], ['no-table', 1]], 4), 'stats.reasons is [code, count], codes only', what='stats_of')
     # a SIA page: the 85 % rule
     rows = _eaip(c)[2]
     widened = [re.sub(r'^((?:INA \S+ )?(?:IF|TF|DF|CF) \S+) ', r'\1 NEW ', r) for r in rows('AD_2_LFAV_DATA_RWY29_RNP_CODE')]
@@ -2826,7 +2826,7 @@ def k30(c):
     c.ok(notread and all(f['reason'] in ('low-read', 'layout') for f in notread), str(sia['formats']), 'a SIA page that is not read carries a reason code too')
     # the console says the phrase, one table for every code; the catalogue translates the same codes
     codes = list(G.PAGE_CODES) + list(G.DOUBT_CODES)
-    c.ok(all(k in G.PHRASES for k in codes) and G.phrase('layout') == 'mise en page non reconnue' and G.phrase('geometry') == 'géométrie incohérente', str([G.phrase(k) for k in codes]),
+    c.ok(all(k in G.PHRASES for k in codes) and G.phrase('layout') == 'table non reconnue' and G.phrase('geometry') == 'géométrie incohérente', str([G.phrase(k) for k in codes]),
          'every page code and doubt code has a phrase for the console')
     js = (c.root / 'frame/aerodb/catalogue.js').read_text(encoding='utf-8')
     block = js[js.index('const READ_REASONS = {'):]
@@ -15047,3 +15047,70 @@ def k336(c):
          'bounded at the reader: counts of 99999, -1 or text are dropped as a whole (one bad integer, no `counts`); the pairs with n = 0, 10000, 2.5 or a code outside the list (<script>) are thrown away, a non-pair too, and at most three are kept', what='bounds')
     c.eq(r['many']['reasons'], [['layout', 1], ['low-read', 2], ['title', 3]], 'five valid reasons: the first three', what='three')
     c.eq((r['noStats']['code'], r['noStats']['counts'], r['noStats']['stats']), ('none-read', {'docs': 1, 'read': 0, 'pages': 1}, None), 'a failure without `stats` (an older reading) still carries the code and the counts', what='no stats')
+@case('K338', 'UK coding tables, SOG-0433: the SID pages (text layer) and the STAR pages are ONE layout « uk-coding »; the SID kind, the leg without a point, the fly-over cell, the date « 22 Jan 2026 » and the two page codes « no-table » / « layout »', 'K', static=True,
+      rule='SOG-0433: the UK AIP prints « Standard Instrument Departure Coding Tables » (AD 2.<ICAO>-6-x, a text layer) in the table of the arrival ones; the designator carries a space (« TESTA 3Y »), the first leg of a SID may have no point (CA), the fly-over cell is read (N / Y) where the OCR gives None; a page without a table is « no-table » (a chart), a page with a table header nobody knows is « layout »')
+def k338(c):
+    P = _proc()
+    pts = [('TXS01', 51.2000, -0.3000), ('TXS06', 51.1000, -0.4500), ('TXS07', 51.0000, -0.7000)]          # points fictifs
+    b = [P.bearing_nm((pts[i - 1][1], pts[i - 1][2]), (pts[i][1], pts[i][2])) for i in (1, 2)]
+    dms = lambda i, lon: _dms_compact(pts[i][2 if lon else 1], lon, False)
+
+    def page(kind='departure', date='22 Jan 2026'):
+        """Page INVENTÉE de la couche de texte : latitude + cap magnétique avant, ligne du tronçon, longitude + cap vrai après ; le tronçon CA n'a ni latitude ni longitude."""
+        what = 'Departure' if kind == 'departure' else 'Arrival'
+        head = ['AD 2.EGXX-6-10 UNITED KINGDOM AIP', date, f'Standard Instrument {what} Coding Tables', 'London Testville Runway 25 TESTA 3Y', 'Course/ Speed',
+                'Waypoint Fly- Magnetic Distance Turn Level Navigation', 'Designator SequenceNumber PathTerm-inator WaypointName Track Constraint',
+                'Co-ordinates over Variation (NM) Direction Constraint Performance', '°M (°T) (KT)']
+        if kind == 'departure':
+            body = ['253°', 'TESTA 3Y 001 CA - - +1030 - 1.2 - LEFT - RNAV1', '(254.4°)', dms(0, False), 'TESTA 3Y 002 DF TXS01 N - - - - - -220 RNAV1', dms(0, True)]
+        else:
+            body = [dms(0, False), 'TESTA 3Y 001 IF TXS01 N - - - - FL100 -220 RNAV1', dms(0, True)]
+        for i in (1, 2):
+            brg, nm = b[i - 1]
+            body += [f'{dms(i, False)} {round(brg) - 1:03d}°', f'TESTA 3Y {i + 2 if kind == "departure" else i + 1:03d} TF {pts[i][0]} N 1.2 {nm:.1f} LEFT +3000 -220 RNAV1', f'{dms(i, True)} ({brg:05.1f}°)']
+        return head + body + ['AMDT 01/2026 CIVIL AVIATION AUTHORITY']
+    rows = page()
+    c.eq((P.detect_layout(rows), P.detect_layout(page('arrival')), P.detect_layout(['Instrument Approach Procedure Coding Tables', 'Designator', 'Sequence', 'Co-ordinates'])),
+         ('uk-coding', 'uk-coding', 'uk-app'), 'a departure and an arrival coding-tables header are uk-coding, an approach one stays uk-app', what='detect_layout')
+    parsed = P.parse_uk_coding(rows)
+    t = parsed['tables'][0]
+    lg = t['legs']
+    c.eq((parsed['kind'], t['kind'], t['name'], t['runways'], [x['leg'] for x in lg], [x['id'] for x in lg]), ('SID', 'SID', 'TESTA 3Y', ['25'], ['CA', 'DF', 'TF', 'TF'], [None, 'TXS01', 'TXS06', 'TXS07']),
+         'a SID: name with its space, runway, the CA leg kept without a point, the others in order', what='parse_uk_coding')
+    c.eq((lg[0]['lat'], lg[0]['lon'], lg[0]['crs'], lg[0]['true'], lg[0]['alt'], lg[0]['turn']), (None, None, 253, 254.4, {'type': 'min', 'ft': 1030}, 'L'),
+         'the CA leg: no co-ordinates, magnetic course read above, true course below, level +1030 (at least)', what='CA leg')
+    c.eq(([x['over'] for x in lg], lg[1]['kt'], lg[2]['alt'], lg[2]['nm']), ([None, False, False, False], 220, {'type': 'min', 'ft': 3000}, round(b[0][1], 1)),
+         'the fly-over cell is read (N gives False), the speed -220 and the level +3000 as before', what='cells')
+    c.ok(not any('survol non lu' in w for w in parsed['warnings']) and not any('NON retenue' in w for w in parsed['warnings']), str(parsed['warnings']), 'no "fly-over unread" warning when the cell is read')
+    c.eq(_gaps([x for x in lg if x['id']]), [], 'the geometry check passes on the invented coherent SID', what='check_geometry')
+    star = P.parse_uk_coding(page('arrival'))
+    c.eq((star['kind'], star['tables'][0]['kind'], star['tables'][0]['legs'][0]['leg']), ('STAR', 'STAR', 'IF'), 'an arrival header gives STAR, whose first leg is IF', what='kind')
+    bad = P.parse_uk_coding([r.replace(' CA ', ' RF ') for r in rows])
+    c.ok(bad['tables'] == [] and any('NON retenue' in w for w in bad['warnings']), str(bad['warnings']), 'a SID whose first leg is none of the allowed ones is rejected')
+    ocr = P.parse_uk_coding([r.replace(' N ', ' ', 1) if r.startswith('TESTA 3Y 002') else r for r in rows])
+    c.ok(any('survol non lu' in w for w in ocr['warnings']) and ocr['tables'][0]['legs'][1]['over'] is None, str(ocr['warnings']), 'a leg without the fly-over cell (OCR) has over None and the table says so')
+    # the text layer sometimes cuts a leg line in two (the right-hand cells a little lower): « … DF TXS01 N - - » then « - - - -220 RNAV1 »
+    split = P.parse_uk_coding([x for r in rows for x in ((r[:r.index(' N - -') + 6], r[r.index(' N - -') + 7:]) if r.startswith('TESTA 3Y 002') else (r,))])
+    c.ok(bool(split['tables']) and [x['id'] for x in split['tables'][0]['legs']] == [None, 'TXS01', 'TXS06', 'TXS07'] and split['tables'][0]['legs'][1]['kt'] == 220
+         and not any('NON retenue' in w for w in split['warnings']), str(split['warnings']), 'a leg line cut in two by the text layer is joined back: the leg keeps its longitude and its cells')
+    # security review of 17 Nov 2026: a point identifier goes to the data repository, so it has the shape of a point or the table is refused; a day outside the calendar is no date
+    for evil in ('../x', 'A' * 300, 'txs01'):
+        ill = P.parse_uk_coding([r.replace(' DF TXS01 ', f' DF {evil} ') if r.startswith('TESTA 3Y 002') else r for r in rows])
+        c.ok(ill['tables'] == [] and any('identifiant de point mal formé' in w and 'NON retenue' in w for w in ill['warnings']), str(ill['warnings'])[:200],
+             f'a leg whose point identifier is {evil[:12]!r} makes the table refused, nothing installed')
+    c.eq((P.page_date(['x', '99 Jan 2026']), P.page_date(['x', '00 Jan 2026']), P.page_date(['x', '31 FEB 24']), P.page_date(['x', '29 Feb 2024'])), (None, None, None, '2024-02-29'),
+         'page_date: a day outside the calendar gives None, a leap day is kept', what='page_date validity')
+    c.eq((P.page_date(rows), P.page_date(['x', '5 MAY 24']), P.page_date(['x', '3 dec 2025']), P.page_date(['x', '31 Foo 2026'])), ('2026-01-22', '2024-05-05', '2025-12-03', None),
+         'page_date: « 22 Jan 2026 », the old « 16 MAY 24 », any case of the month, an unknown month is None', what='page_date')
+    d = P.build_pdf_dir('EGXX', ['sid.pdf'], lambda n: [rows], '2026-10-01')
+    c.eq((len(d['procedures']), d['procedures'][0]['kind'], d['procedures'][0]['source']['at'], d['formats'][0]['ok'], d['procedures'][0]['points'][0]['id']),
+         (1, 'SID', '2026-01-22', True, None), 'build_pdf_dir: the SID is installed, source.at is the date of the page, its first point has no id', what='build_pdf_dir')
+    # the two codes of an unread page
+    unknown = ['Standard Instrument Departure Coding Tables of a layout no reader knows', 'Designator Terminator', 'Co-ordinates'] + [f'line {i} of an unknown table' for i in range(12)]
+    pages = {'chart.pdf': [['AD 2.EGXX-6-1', 'SID chart', '22 Jan 2026']], 'many.pdf': [[f'label {i} of a chart' for i in range(40)]], 'table.pdf': [unknown]}
+    d2 = P.build_pdf_dir('EGXX', sorted(pages), lambda n: pages[n], '2026-10-01')
+    c.eq({f['file']: (f['ok'], f['reason']) for f in d2['formats']}, {'chart.pdf': (False, 'no-table'), 'many.pdf': (False, 'no-table'), 'table.pdf': (False, 'layout')},
+         'three header lines alone, and many labels without a table header, are « no-table »; a page with an unknown table header is « layout »', what='codes')
+    G = _geometry()
+    c.ok('no-table' in G.PAGE_CODES and 'vector' in G.PAGE_CODES and G.phrase('no-table') == 'carte sans table' and G.phrase('layout') == 'table non reconnue', str(G.PAGE_CODES),
+         'both codes are page codes with their French phrase (vector stays as the old name of no-table)')

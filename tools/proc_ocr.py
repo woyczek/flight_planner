@@ -204,6 +204,10 @@ def document_from_rows(icao, file, rows, cycle, state=None):
         ok = False
         problems.append('disposition sia-code lue par le constructeur eAIP, pas par OCR')
         warnings.append(f'{file}: page NON lue, disposition sia-code lue par le constructeur eAIP, pas par OCR')
+    elif not proc_records.has_table_header(rows):      # une carte lue par OCR : des étiquettes, aucun en-tête de table (code « no-table », SOG-0433)
+        ok = False
+        problems.append('carte sans table (rien de deviné)')
+        warnings.append(f'{file}: page NON lue, carte sans table')
     else:
         ok = False
         problems.append('disposition non reconnue (rien de deviné)')

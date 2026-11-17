@@ -1,11 +1,12 @@
 """Les dispositions de pages « CODE » des AIP : UNE liste ordonnée (`LAYOUTS`), un analyseur par disposition, les mots que partagent les analyseurs (V3 § 10.29 (b)).
 
-Une page de table de codage est reconnue par `detect_layout(rows)` : la première entrée de `LAYOUTS` qui la reconnaît (l'ordre compte : uk-star avant uk-app, at-coding et be-coding avant
+Une page de table de codage est reconnue par `detect_layout(rows)` : la première entrée de `LAYOUTS` qui la reconnaît (l'ordre compte : uk-coding avant uk-app, at-coding et be-coding avant
 sia-code, icao-tab avant de-route). Chaque entrée dit tout de sa disposition : `detect` (sa reconnaissance), `read` (son analyseur : lignes → { kind, tables, warnings }), `fingerprints`
 (empreintes d'en-tête vues), `ocr_normaliser` et `ocr_readable` (ce que l'OCR corrige et si elle sait la lire), `tolerances` (ce que la source imprime : cap vrai ou magnétique, voir
 proc_geometry) et ce que l'analyseur reprend des autres pages du document (`kind_hint`, `known_names`). `read` vaut None pour sia-code : la table du SIA est lue par proc_sia.
 Ajouter une disposition, c'est écrire son analyseur et UNE entrée ; ce module n'importe aucun autre module de proc_*. Bibliothèque standard seulement.
 """
+import datetime
 import hashlib
 import re
 from collections import namedtuple
@@ -49,12 +50,24 @@ def dms(text):
 
 
 def page_date(rows):
-    """Date de la page (« 16 MAY 24 » en en-tête) en AAAA-MM-JJ, ou None."""
+    """Date de la page en AAAA-MM-JJ, ou None : « 16 MAY 24 » (année sur 2 chiffres, mois en capitales) ou « 22 Jan 2026 » (jour sur 1 ou 2 chiffres, mois en trois lettres de
+    casse quelconque, année sur 4 chiffres : les pages britanniques à couche de texte), cherchée dans les six premières lignes."""
     for r in rows[:6]:
         m = re.search(r'\b(\d{1,2}) ([A-Z]{3}) (\d{2})\b', r)
         if m and m.group(2) in MONTHS:
-            return f'20{m.group(3)}-{MONTHS[m.group(2)]:02d}-{int(m.group(1)):02d}'
+            return _valid_date(2000 + int(m.group(3)), MONTHS[m.group(2)], int(m.group(1)))
+        m = re.search(r'\b(\d{1,2}) ([A-Za-z]{3}) (\d{4})\b', r)
+        if m and m.group(2).upper() in MONTHS:
+            return _valid_date(int(m.group(3)), MONTHS[m.group(2).upper()], int(m.group(1)))
     return None
+
+
+def _valid_date(y, m, d):
+    """« AAAA-MM-JJ » si (y, m, d) est une date du calendrier, None sinon (« 99 Jan 2026 », « 00 Jan 2026 » ne donnent pas une date : Sécurisation)."""
+    try:
+        return datetime.date(y, m, d).isoformat()
+    except ValueError:
+        return None
 
 
 FIXLESS = {'CA', 'VA', 'VI', 'VM', 'VR', 'FM', 'CI'}       # tronçons sans point : un cap jusqu'à une altitude ou à un vecteur (id null, SPEC § 5 quinquies)
@@ -144,62 +157,93 @@ def parse_uk_app(rows):
     return {'kind': 'APP', 'tables': [t for t in tables if t['legs']], 'warnings': warnings}
 
 
-UK_STAR_LEG = re.compile(r'^([A-Z]{3,5}\d[A-Z])\s+(\d{3})\s+([A-Z]{2})\s+(\S+)\s*(.*)$')
-UK_STAR_TITLE = re.compile(r'\b([A-Z]{3,5})\s*(\d[A-Z])\s*$')
+UK_CODING_LEG = re.compile(r'^([A-Z]{3,5})\s?(\d[A-Z])\s+(\d{3})\s+([A-Z]{2})\s+(\S+)\s*(.*)$')      # le désignateur est collé par l'OCR (« OTMET1H »), espacé par la couche de texte (« TESTA 3Y »)
+UK_CODING_TITLE = re.compile(r'\b([A-Z]{3,5})\s*(\d[A-Z])\s*$')
+UK_POINT_ID = re.compile(r'[A-Z0-9]{2,8}')      # identifiant de point admis (2 à 8 lettres ou chiffres : « BPK », « GWS01 », « RW25 »)
+UK_CODING_CELLS = re.compile(r'^(?:-|[+-]?\d{3,5}|[+-]?FL\d{2,3}|\d{1,3}\.\d|LEFT|RIGHT|RNAV\d|RNP\d|[NY])(?:\s+(?:-|[+-]?\d{3,5}|[+-]?FL\d{2,3}|\d{1,3}\.\d|LEFT|RIGHT|RNAV\d|RNP\d|[NY]))*$')
 
 
-def parse_uk_star(rows):
-    """Page « Standard Instrument Arrival Coding Tables » du Royaume-Uni (AD 2.<OACI>-7-13 à -7-17, texte dessiné en vecteurs : lue par OCR seulement, voir tools/proc_ocr.py)
-    → { kind: 'STAR', tables: [{ title, kind, name, runways, transition, legs }], warnings }. Chaque tronçon tient sur trois lignes : la latitude et le cap magnétique
-    (« 512834.45N 088° ») avant, la ligne du tronçon (« OTMET1H 002 TF SOKDU 1.2 12.3 LEFT +3000 -250 RNAV1 » : désignateur, séquence, type, point, variation magnétique, distance, sens
-    de virage en toutes lettres, niveau, vitesse, performance), la longitude et le cap vrai (« 0004505.67W (089.46°) ») après. Une ligne de tronçon sans latitude avant, sans longitude
-    après, ou un tronçon TF sans cap vrai fait rejeter la table (« NON retenue ») : rien n'est complété. Le survol n'est pas lisible par OCR : `over` vaut None (un avertissement par table)."""
+def _join_split_legs(rows):
+    """Lignes d'une page uk-coding avec les lignes de tronçon RECOLLÉES : la couche de texte coupe parfois une ligne de tronçon en deux (« DET 3Y 002 DF GWS01 N - - » puis
+    « - - - -220 RNAV1 » : les cellules de droite un peu plus bas), ce qui laissait le tronçon sans sa longitude « après ». Une ligne faite de cellules seules (tirets, niveaux, vitesses,
+    sens de virage, performance), sans coordonnée ni cap, qui suit une ligne de tronçon lui est rendue. Les lignes OCR (une ligne par tronçon) ne sont pas touchées."""
+    out = []
+    for r in rows:
+        if out and UK_CODING_LEG.match(out[-1]) and UK_CODING_CELLS.match(r.strip()):
+            out[-1] = out[-1].rstrip() + ' ' + r.strip()
+        else:
+            out.append(r)
+    return out
+
+
+def parse_uk_coding(rows):
+    """Page « Standard Instrument Arrival / Departure Coding Tables » du Royaume-Uni (AD 2.<OACI>-7-13 à -7-17 pour les STAR, texte dessiné en vecteurs : lues par OCR ; AD 2.<OACI>-6-x
+    pour les SID, couche de texte) → { kind: 'SID' | 'STAR', tables: [{ title, kind, name, runways, transition, legs }], warnings }. Le type est SID quand l'en-tête dit « departure »,
+    STAR sinon. Chaque tronçon tient sur trois lignes : la latitude et le cap magnétique (« 512834.45N 088° ») avant, la ligne du tronçon (« OTMET1H 002 TF SOKDU 1.2 12.3 LEFT +3000 -250 RNAV1 » :
+    désignateur, séquence, type, point, survol (couche de texte seulement), variation magnétique, distance, sens de virage en toutes lettres, niveau, vitesse, performance), la longitude et
+    le cap vrai (« 0004505.67W (089.46°) ») après. Un tronçon sans point (CA, VA… : `FIXLESS`) n'a ni latitude ni longitude : id None, le cap magnétique est lu avant, le cap vrai après.
+    Une ligne de tronçon sans latitude avant, sans longitude après, ou un tronçon TF sans cap vrai fait rejeter la table (« NON retenue ») : rien n'est complété. Premier tronçon : IF pour une
+    STAR ; pour une SID, un tronçon sans point ou IF / DF / TF. Survol : « N » / « Y » quand la cellule est lue (couche de texte), None sinon (OCR : un avertissement par table)."""
+    rows = _join_split_legs(rows)
     warnings, tables, cur = [], [], None
+    sid = bool(re.search(r'departure coding tables?|standard instrument departure', ' '.join(rows).lower()))
+    kind = 'SID' if sid else 'STAR'
     for i, r in enumerate(rows):
-        lg = UK_STAR_LEG.match(r)
-        if lg and lg.group(3) in PATH_TERMINATORS:
-            if cur is None or cur['des'] != lg.group(1):
-                cur = {'title': next((x for x in reversed(rows[max(0, i - 12):i]) if UK_STAR_TITLE.search(x) and 'designator' not in x.lower() and not UK_STAR_LEG.match(x)), lg.group(1)),
-                       'des': lg.group(1), 'legs': [], 'bad': [], 'rest': []}
+        lg = UK_CODING_LEG.match(r)
+        if lg and lg.group(4) in PATH_TERMINATORS:
+            des = lg.group(1) + lg.group(2)
+            if cur is None or cur['des'] != des:
+                cur = {'title': next((x for x in reversed(rows[max(0, i - 12):i]) if UK_CODING_TITLE.search(x) and 'designator' not in x.lower() and not UK_CODING_LEG.match(x)), f'{lg.group(1)} {lg.group(2)}'),
+                       'des': des, 'legs': [], 'bad': [], 'rest': []}
                 tables.append(cur)
             cur['rest'].append((i, lg))
     out = []
     for t in tables:
         name = t['des']
-        m = UK_STAR_TITLE.search(t['title'])
+        m = UK_CODING_TITLE.search(t['title'])
         if m:
             name = f'{m.group(1)} {m.group(2)}'
         elif re.fullmatch(r'[A-Z]{3,5}\d[A-Z]', name):
             name = f'{name[:-2]} {name[-2:]}'
-        rwy = re.findall(r'\bRWY\s*(\d{2}[LRC]?)', t['title'])
+        rwy = re.findall(r'\b(?:RWY|Runway)\s*(\d{2}[LRC]?)', t['title'], re.I)
         legs, bad = [], []
         for n, (i, lg) in enumerate(t['rest']):
             before = rows[i - 1] if i else ''
             after = rows[i + 1] if i + 1 < len(rows) else ''
-            lat, lon = uk_dms(before), uk_dms(after, True)
-            mag = re.search(r'(?<![\d.])(\d{3})\D*$', UK_LAT.sub(' ', before)) if lat is not None else None
+            term = lg.group(4)
+            fixless = term in FIXLESS
+            lat, lon = (None, None) if fixless else (uk_dms(before), uk_dms(after, True))
+            mag = re.search(r'(?<![\d.])(\d{3})\D*$', UK_LAT.sub(' ', before)) if (lat is not None or fixless) else None
             true = re.search(r'\(\s*(\d{3}(?:\.\d+)?)', after)
-            toks = lg.group(5).split()
+            toks = lg.group(6).split()
             decs = [float(x) for x in toks if re.fullmatch(r'\d{1,3}\.\d', x)]
             turn = next(({'LEFT': 'L', 'RIGHT': 'R'}[x.upper()] for x in toks if x.upper() in ('LEFT', 'RIGHT')), None)
             speed = next((int(x.lstrip('+-')) for x in toks if re.fullmatch(r'[+-]?\d{3}', x)), None)
             level = next((uk_constraint(x) for x in toks if re.fullmatch(r'[+-]?(?:FL\d{2,3}|\d{4,5})', x)), None)
-            tf = lg.group(3) == 'TF'
-            if lat is None or lon is None:
-                bad.append(f'{lg.group(1)} {lg.group(2)}: latitude avant ou longitude après absente')
+            over = None if fixless else {'Y': True, 'N': False}.get(toks[0] if toks else '')           # la cellule « survol » n'existe qu'en couche de texte
+            tf = term == 'TF'
+            if not fixless and not UK_POINT_ID.fullmatch(lg.group(5)):      # l'identifiant part dans le dépôt de données : une forme de point, jamais une suite de signes quelconque (Sécurisation)
+                bad.append(f'{lg.group(1)} {lg.group(2)} {lg.group(3)}: identifiant de point mal formé')
+            elif not fixless and (lat is None or lon is None):
+                bad.append(f'{lg.group(1)} {lg.group(2)} {lg.group(3)}: latitude avant ou longitude après absente')
             elif tf and (true is None or not decs):
-                bad.append(f'{lg.group(1)} {lg.group(2)}: tronçon TF sans cap vrai ou sans distance')
-            legs.append({'id': lg.group(4), 'leg': lg.group(3), 'over': None, 'alt': level, 'kt': speed, 'lat': lat, 'lon': lon, 'crs': int(mag.group(1)) if mag else None,
-                         'true': float(true.group(1)) if true else None, 'nm': decs[-1] if tf and decs else None, 'turn': turn, 'seq': int(lg.group(2)), 'remark': ''})
+                bad.append(f'{lg.group(1)} {lg.group(2)} {lg.group(3)}: tronçon TF sans cap vrai ou sans distance')
+            legs.append({'id': None if fixless else lg.group(5), 'leg': term, 'over': over, 'alt': level, 'kt': speed, 'lat': lat, 'lon': lon, 'crs': int(mag.group(1)) if mag else None,
+                         'true': float(true.group(1)) if true else None, 'nm': decs[-1] if tf and decs else None, 'turn': turn, 'seq': int(lg.group(3)), 'remark': ''})
         if bad:
             warnings.append(f'{t["title"][:60]}: {len(bad)} tronçon(s) incomplet(s) ({"; ".join(bad[:3])}), table NON retenue')
             continue
-        if len(legs) < 2 or legs[0]['leg'] != 'IF':
-            warnings.append(f'{t["title"][:60]}: {len(legs)} tronçon(s) lu(s), premier tronçon {legs[0]["leg"] if legs else "absent"} (IF attendu), table NON retenue')
+        first = legs[0]['leg'] if legs else None
+        if len(legs) < 2 or (first != 'IF' if kind == 'STAR' else not (first in FIXLESS or first in ('IF', 'DF', 'TF'))):
+            warnings.append(f'{t["title"][:60]}: {len(legs)} tronçon(s) lu(s), premier tronçon {first or "absent"} ({"IF" if kind == "STAR" else "tronçon sans point, IF, DF ou TF"} attendu), table NON retenue')
             continue
-        warnings.append(f'{t["title"][:60]}: survol non lu (OCR)')
-        out.append({'title': t['title'], 'kind': 'STAR', 'name': name, 'runways': sorted(set(rwy)), 'transition': None, 'legs': legs})
-    return {'kind': 'STAR', 'tables': out, 'warnings': warnings}
+        if any(x['over'] is None and x['id'] is not None for x in legs):
+            warnings.append(f'{t["title"][:60]}: survol non lu (OCR)')
+        out.append({'title': t['title'], 'kind': kind, 'name': name, 'runways': sorted(set(rwy)), 'transition': None, 'legs': legs})
+    return {'kind': kind, 'tables': out, 'warnings': warnings}
+
+
+parse_uk_star = parse_uk_coding        # ancien nom (la disposition s'appelait « uk-star » : STAR seulement)
 
 
 AM_TERMINATORS = {'IF', 'TF', 'CF', 'DF', 'RF', 'AF', 'FA', 'FC', 'FD', 'FM', 'HA', 'HF', 'HM', 'PI', 'CA', 'CD', 'CI', 'CR', 'VA', 'VD', 'VI', 'VM', 'VR'}
@@ -1166,17 +1210,18 @@ def fix_numeric_cells(rows):
     return [' '.join(fix(t) for t in r.split()) for r in rows]
 
 
-def normalize_uk_star(rows):
-    """Lignes OCR d'une page « uk-star » (tables de codage des STAR du Royaume-Uni) remises dans la forme que lit parse_uk_star : coordonnées corrigées (fix_numeric_cells), numéro
+def normalize_uk_coding(rows):
+    """Lignes OCR d'une page « uk-coding » (tables de codage des STAR du Royaume-Uni) remises dans la forme que lit parse_uk_coding : coordonnées corrigées (fix_numeric_cells), numéro
     de séquence manquant d'une ligne de tronçon rétabli (celui du tronçon précédent du même désignateur plus 1). L'OCR garde ici les trois lignes par tronçon (latitude, tronçon,
     longitude) : rien d'autre à réordonner."""
-    leg = re.compile(r'^([A-Z]{3,5}\d[A-Z])\s+(?:(\d{3})\s+)?([A-Z]{2})\s+(\S.*)$')
+    leg = re.compile(r'^([A-Z]{3,5}\s?\d[A-Z])\s+(?:(\d{3})\s+)?([A-Z]{2})\s+(\S.*)$')
     out, last = [], {}
     for r in fix_numeric_cells(rows):
         m = leg.match(r)
         if m and m.group(3) in PATH_TERMINATORS:
-            seq = int(m.group(2)) if m.group(2) else last.get(m.group(1), 0) + 1
-            last[m.group(1)] = seq
+            des = m.group(1).replace(' ', '')
+            seq = int(m.group(2)) if m.group(2) else last.get(des, 0) + 1
+            last[des] = seq
             r = f'{m.group(1)} {seq:03d} {m.group(3)} {m.group(4)}'
         out.append(r)
     return out
@@ -1205,7 +1250,7 @@ def normalize_ge_coding(rows):
 
 
 # ---------------------------------------------------------------------------------------------------------- les dispositions : UNE liste ordonnée
-# Une page « CODE » est reconnue par sa disposition, dans CET ordre (le premier qui reconnaît la page gagne) : uk-star avant uk-app, at-coding et be-coding avant sia-code, icao-tab avant
+# Une page « CODE » est reconnue par sa disposition, dans CET ordre (le premier qui reconnaît la page gagne) : uk-coding avant uk-app, at-coding et be-coding avant sia-code, icao-tab avant
 # de-route. Chaque entrée porte tout ce que la disposition demande : sa reconnaissance (`detect`), son analyseur (`read`), les empreintes d'en-tête déjà vues (`fingerprints` :
 # une autre est signalée « en-tête inconnu », pas bloquante), ce que l'OCR doit corriger avant de la lire (`ocr_normaliser`), si l'OCR sait la lire (`ocr_readable` : chaque tronçon porte ou
 # retrouve ses coordonnées dans la page), ce que la source imprime pour le contrôle de géométrie (`tolerances` : clé de proc_geometry.TOLERANCES, « true » ou « magnetic ») et ce que
@@ -1223,10 +1268,11 @@ def _view(rows):
     return text, text.lower()
 
 
-def _detect_uk_star(rows):
+def _detect_uk_coding(rows):
     low = _view(rows)[1]
-    # Royaume-Uni : tables de codage des STAR (dessinées en vecteurs, lues par OCR)
-    return ('arrival coding tables' in low or 'standard instrument arrival' in low and 'coding' in low) and 'designator' in low and 'sequence' in low and 'co-ordinates' in low
+    # Royaume-Uni : tables de codage des STAR (dessinées en vecteurs, lues par OCR) et des SID (couche de texte) : « Arrival / Departure Coding Tables »
+    named = 'arrival coding tables' in low or 'departure coding tables' in low or ('standard instrument arrival' in low or 'standard instrument departure' in low) and 'coding' in low
+    return named and 'designator' in low and 'sequence' in low and 'co-ordinates' in low
 
 
 def _detect_at_coding(rows):
@@ -1290,7 +1336,7 @@ def _detect_uk_app(rows):
 
 
 LAYOUTS = [
-    Layout('uk-star', _detect_uk_star, parse_uk_star, frozenset(), normalize_uk_star, True),
+    Layout('uk-coding', _detect_uk_coding, parse_uk_coding, frozenset(), normalize_uk_coding, True),
     Layout('at-coding', _detect_at_coding, parse_at_coding, frozenset(), normalize_at_coding, True),
     Layout('be-coding', _detect_be_coding, parse_be_coding, frozenset(), normalize_be_coding, True, positions='required'),
     Layout('ge-coding', _detect_ge_coding, parse_ge_coding, frozenset(), normalize_ge_coding, True),

@@ -119,10 +119,11 @@ def build_pdf_dir(icao, pdfs, rows_of, cycle):
             continue
         if not known:
             most = max(len(r) for r in pages_of[f])
+            drawn = most < 8 or not any(has_table_header(r) for r in pages_of[f])           # « no-table » : une carte ; « layout » : du texte et un en-tête de table que personne ne reconnaît
             first = pages_of[f][0]
-            formats.append({'file': f, 'pages': len(pages_of[f]), 'layout': detect_layout(first), 'fingerprint': fingerprint(first), 'ok': False, 'reason': 'vector' if most < 8 else 'layout',
-                            'problems': ['disposition non reconnue' + (' (très peu de texte: tableau dessiné en vecteurs ou image ? ' + str(most) + ' ligne(s))' if most < 8 else '')]})
-            warnings.append(f'{f}: {len(pages_of[f])} page(s) NON lue(s), disposition non reconnue' + (' (texte absent: tables dessinées sans couche de texte)' if most < 8 else ''))
+            formats.append({'file': f, 'pages': len(pages_of[f]), 'layout': detect_layout(first), 'fingerprint': fingerprint(first), 'ok': False, 'reason': 'no-table' if drawn else 'layout',
+                            'problems': ['disposition non reconnue' + (' (très peu de texte ou aucun en-tête de table de codage: carte sans table, tableau dessiné en vecteurs ou image ? ' + str(most) + ' ligne(s))' if drawn else '')]})
+            warnings.append(f'{f}: {len(pages_of[f])} page(s) NON lue(s), disposition non reconnue' + (' (carte sans table: aucun en-tête de table de codage lisible)' if drawn else ''))
     return {'schema': 1, 'icao': icao, 'cycle': cycle, 'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'procedures': procs, 'formats': formats,
             'warnings': warnings, 'notice': ead_notice(icao)}
 
@@ -325,16 +326,23 @@ def records(icao, table, coords, source, cycle, ils=None):
     return out, warnings
 
 
+def has_table_header(rows):
+    """Vrai si la page porte l'en-tête d'une table de codage (« Coding Table(s) », ou « Designator » avec « Terminator » ou « Sequence », ou « Path Terminator ») : elle a une table, même qu'aucun
+    lecteur ne connaît ; fausse pour une carte, dont la couche de texte n'est faite que d'étiquettes."""
+    low = ' '.join(rows).lower()
+    return 'coding table' in low or 'path terminator' in low or 'path-terminator' in low or ('designator' in low and ('terminator' in low or 'sequence' in low))
+
+
 def reason_of(problem):
-    """Code de page (proc_geometry.PAGE_CODES) d'un problème de page, texte français de `formats[].problems` : layout, low-read, title, no-legs, counts, vector ou timeout. Un texte qu'on ne
-    reconnaît pas est une disposition non lue (« layout »)."""
+    """Code de page (proc_geometry.PAGE_CODES) d'un problème de page, texte français de `formats[].problems` : layout (table non reconnue), low-read, title, no-legs, counts, no-table (carte sans
+    table) ou timeout. Un texte qu'on ne reconnaît pas est une disposition non lue (« layout »)."""
     t = problem or ''
     if 'moins de 85' in t:
         return 'low-read'
     if 'lecture abandonnée' in t or 'processus de lecture' in t:
         return 'timeout'
-    if 'vecteurs' in t or 'très peu de texte' in t:
-        return 'vector'
+    if 'vecteurs' in t or 'très peu de texte' in t or 'carte sans table' in t:
+        return 'no-table'
     if 'disposition non reconnue' in t:
         return 'layout'
     if 'titre de la page non reconnu' in t or 'titre non reconnu' in t or "hors d'un bloc titré" in t:

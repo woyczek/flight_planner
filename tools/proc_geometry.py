@@ -22,8 +22,10 @@ TOLERANCES = {
 }
 
 # raisons pour lesquelles une PAGE n'est pas lue (`formats[].reason`, V3 § 10.29 (c)) : la disposition n'est pas reconnue, moins de 85 % des lignes de tronçon lues, le titre n'est pas reconnu, aucune
-# ligne de tronçon, les comptes d'un bloc ne tiennent pas, page dessinée sans couche de texte, lecture abandonnée (délai). Le texte français détaillé reste dans `formats[].problems` et la console.
-PAGE_CODES = ('layout', 'low-read', 'title', 'no-legs', 'counts', 'vector', 'timeout')
+# ligne de tronçon, les comptes d'un bloc ne tiennent pas, carte sans table, lecture abandonnée (délai). Le texte français détaillé reste dans `formats[].problems` et la console.
+# DEUX codes distincts pour une page sans lecture : « no-table » (une carte : peu ou pas de lignes de texte et aucun en-tête de table de codage, rien à lire) et « layout » (une page avec du texte
+# ET un en-tête de table que personne ne reconnaît : une table à apprendre). « vector » est l'ancien nom de « no-table » : il n'est plus produit, mais les fichiers déjà écrits le portent.
+PAGE_CODES = ('layout', 'low-read', 'title', 'no-legs', 'counts', 'no-table', 'vector', 'timeout')
 
 # raisons d'une procédure douteuse, dans l'ordre où les lecteurs les posent ; « uncheckable » est un avertissement, jamais un doute
 CODES = ('unread', 'name', 'repeat', 'zigzag', 'unresolved', 'rf-arc', 'geometry', 'uncheckable')
@@ -40,12 +42,13 @@ PHRASES = {
     'zigzag': 'zigzag',
     'unread': 'lignes de la table non lues',
     # les pages non lues
-    'layout': 'mise en page non reconnue',
+    'layout': 'table non reconnue',
+    'no-table': 'carte sans table',
     'low-read': 'lignes de tronçon illisibles (moins de 85 % lues)',
     'title': 'titre de la page non reconnu',
     'no-legs': 'aucun tronçon lisible',
     'counts': 'comptes du bloc incohérents (table non retenue)',
-    'vector': 'page dessinée, sans couche de texte',
+    'vector': 'carte sans table',
     'timeout': 'lecture abandonnée (délai dépassé)',
 }
 
