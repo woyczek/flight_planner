@@ -193,7 +193,9 @@ export async function natCheck() {
     let st = await A.natState();
     if (S !== me) return;
     say(st);
-    if (A.natEnsure && st?.expired !== false) {
+    if (A
+      .natEnsure
+    ) { // la règle de relecture est dans natEnsure (périmées, ou dernière lecture de plus d'une heure, poste avec lanceur) : la Carte le demande, sans garde (SOG-0413)
       const r = await A.natEnsure();
       if (S !== me) return;
       say(r);

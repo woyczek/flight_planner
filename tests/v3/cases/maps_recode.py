@@ -8569,6 +8569,33 @@ def d_natdepart(c):
         c.shot(f'D251_standard_nat_{mode}_delivered.png')
 
 
+_NAT_READER_STUB = """(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => { real = v && { ...v, create: (...a) => { const db = v.create(...a);
+  const st = { present: true, count: 6, from: new Date(Date.now() - 3 * 3600e3).toISOString(), validUntil: new Date(Date.now() + 6 * 3600e3).toISOString(), expired: false, current: 6 };
+  db.natState = async () => ({ ...st });
+  db.natEnsure = async () => { (window.__ens ||= []).push(Date.now()); return { ...st, refreshed: false } };
+  return db } } } }) })()"""
+
+
+@case('D252', 'The NAT routes layer asks the reader for a re-reading whatever the state of the routes: with routes still valid (a message read three hours ago), showing the layer calls aerodb.natEnsure once — the rule (expired, or last reading older than an hour, on a workstation with a launcher) is the reader’s, the Map no longer holds its own guard; once per mounting of the Map', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0413 (the user, 17 Nov, « on n’a toujours pas de NATs retour… » ; the ergonomist: the source gives only the message in progress, so it must be read again WHILE it is active; the rule of re-reading is put in ONE place, aerodb.natEnsure): the Map called natEnsure only when the routes were expired (`st.expired !== false`), so a valid message was never read again from the Map')
+def d_natensure(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    c.page.add_init_script(_NAT_READER_STUB)
+    c.open('maps', docs=fdocs(flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.wait(1500)
+    c.eq(c.js("() => (window.__ens || []).length"), 0, 'the layer is not shown: the Map does not ask for a re-reading', what='calls before')
+    c.tap('[data-mp="layers"]')
+    c.until("window.__t.shown(document.querySelector('.mp-dbody input[data-layer=nat]'))", what='the Layers content')
+    c.js("() => { const i = document.querySelector('.mp-dbody input[data-layer=nat]'); if (!i.checked) i.click(); return true }")
+    c.until("() => !!window.__mp.S.profile && !!window.__mp.S.profile.elements.natTracks", timeout=6000, what='the NAT layer is on')
+    c.until("() => (window.__ens || []).length >= 1", timeout=8000, what='the Map asked the reader for a re-reading, though the routes are valid')
+    c.wait(1500)
+    c.eq(c.js("() => (window.__ens || []).length"), 1, 'once for this mounting of the Map (not at each drawing)', what='calls after')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
