@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "cee7103",
+  "organisation": "639da5d",
   "fiches": 437,
   "untranslated": 0,
   "priorities": 374,
@@ -5632,11 +5632,12 @@
     {
      "id": "SOG-0429",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Météo GFS : quitter la page pendant la reconstruction arrête tout — reprendre où on en était, sans retélécharger",
      "en": "GFS weather: leaving the page during the rebuild stops everything — resume where it was, without downloading again",
      "de": "GFS-Wetter: das Verlassen der Seite während des Neuaufbaus stoppt alles — dort fortsetzen, wo es war, ohne erneut herunterzuladen",
-     "es": "Meteorología GFS: salir de la página durante la reconstrucción lo detiene todo — reanudar donde estaba, sin volver a descargar"
+     "es": "Meteorología GFS: salir de la página durante la reconstrucción lo detiene todo — reanudar donde estaba, sin volver a descargar",
+     "test": true
     }
    ]
   },

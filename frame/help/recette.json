@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 290,
+  "tests": 291,
   "verdicts": 212
  },
  "apps": [
@@ -4307,6 +4307,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T16:38:42Z"
+  },
+  {
+   "id": "SOG-0429",
+   "app": "maintenance",
+   "title": {
+    "fr": "Météo GFS : quitter la page pendant la reconstruction arrête tout — reprendre où on en était, sans retélécharger",
+    "en": "GFS weather: leaving the page during the rebuild stops everything — resume where it was, without downloading again",
+    "de": "GFS-Wetter: das Verlassen der Seite während des Neuaufbaus stoppt alles — dort fortsetzen, wo es war, ohne erneut herunterzuladen",
+    "es": "Meteorología GFS: salir de la página durante la reconstrucción lo detiene todo — reanudar donde estaba, sin volver a descargar"
+   },
+   "test": "Sur le poste, APRÈS avoir relancé le lanceur et rechargé la page. Données, ligne « Synoptique monde (GFS) », « Construire ». (1) Pendant la construction, QUITTE l'écran Données (va dans Carburant) puis reviens : la ligne montre toujours le travail en cours et son avancement — elle ne dit plus « une autre opération est en cours » ; (2) à la fin, la ligne dit le résultat même si tu étais ailleurs ; (3) INTERROMPS une construction en route (ferme le lanceur au milieu, ou « Arrêter »), relance le lanceur, puis « Construire » de nouveau : la ligne dit « Reprise : n échéances sur 25 déjà là » et ne retélécharge que le reste ; (4) une construction déjà complète pour le même calcul du modèle ne reté",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T16:54:58Z"
   },
   {
    "id": "SOG-0430",
