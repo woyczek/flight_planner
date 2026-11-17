@@ -4201,27 +4201,11 @@
    "recommended": 0
   },
   {
-   "id": "Q-0083",
-   "fiche": "SOG-0413",
-   "app": "pilote",
-   "question": "Routes NAT : faut-il que le lanceur lise aussi ganderoceanic.ca, en plus de la source de la FAA ?",
-   "context": "J'ai lu la page que tu donnes : à cette heure elle porte les mêmes six routes vers l'ouest que la FAA, aucune vers l'est. Elle ne comble donc pas le trou d'aujourd'hui ; ce qui le comble, c'est de relire la source toutes les heures et de garder (en cours). C'est le site du centre océanique virtuel de VATSIM : associatif, pas officiel, mais c'est la référence des contrôleurs du réseau. Ce que je conteste : ajouter un hôte au lanceur sans besoin prouvé — c'est un accès réseau de plus, et il faudrait d'abord lire ses conditions d'usage.",
-   "options": [
-    "Pas maintenant : la FAA relue toutes les heures et gardée suffit ; on y revient si elle fait défaut",
-    "Oui, en secours seulement, quand la source de la FAA ne répond pas",
-    "Oui, comme source principale pour mes vols sur VATSIM",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0084",
    "fiche": "SOG-0415",
    "app": "pilote",
    "question": "Routes Concorde (SM, SN, SO, SP) : les veux-tu dans le calcul des routes ?",
-   "context": "J'ai lu la page : quatre routes fixes, toujours disponibles, hors de tout message du jour, réservées au vol supersonique de FL470 à FL600. Ce que je conteste : s'en servir pour remplacer les routes vers l'est qui manquent — un vol ordinaire n'y a pas sa place. Elles n'ont de sens que pour un aéronef supersonique à ces niveaux. Il faudra la position de leurs points d'une source officielle ou historique.",
+   "context": "J'ai lu la page : quatre routes fixes, toujours disponibles, hors de tout message du jour, réservées au vol supersonique de FL470 à FL600. Ce que je conteste : s'en servir pour remplacer les routes vers l'est qui manquent — un vol ordinaire n'y a pas sa place. Elles n'ont de sens que pour un aéronef supersonique à ces niveaux. Il faudra la position de leurs points d'une source officielle ou historique. (Le 17/11 : la page lue est du même site que Gander Oceanic, celui d'un centre virtuel de VATSIM — raison de plus pour chercher la position des points ailleurs.)",
    "options": [
     "Oui, plus tard : pour un vol supersonique de FL470 à FL600 seulement, après les routes du jour",
     "Non : c'était pour information",
