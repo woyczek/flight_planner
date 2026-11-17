@@ -117,7 +117,7 @@ class Nav:
     def __init__(self,root,date):
         self.root=Path(root); self.date=date; self.nodes={}; self.ids=collections.defaultdict(list)
         self.data_dir=Path(DATA_DIR) if DATA_DIR else self.root/'data'   # SOG-0081 : DATA_DIR
-        self.ads={}; self.edges=[]; self.cycles={}; self.coverage=[];self.vrp_keys=set();self.navaid_keys=set()
+        self.ads={}; self.edges=[]; self.cycles={}; self.coverage=[];self.vrp_keys=set();self.navaid_keys=set();self.fir_keys=set()      # SOG-0417 : les points que la source dit à la limite d'une FIR (drapeau `lim: 'fir'` de la base : une donnée NON FIABLE, lue à la porte des portes seulement)
         base=self.data_dir/'sia/base'   # SOG-0081 : data_dir
         if not base.is_dir(): raise ValueError('Base introuvable : '+str(base))
         for zone in sorted(base.iterdir()):
@@ -134,6 +134,7 @@ class Nav:
                 for point in datasets.dataset(kind):
                     if self.valid(point) and point.get('id'):
                         key=self.add(point)
+                        if kind=='points' and point.get('lim')=='fir':self.fir_keys.add(key)
                         if kind=='vrp':self.vrp_keys.add(key)
                         if kind=='navaids':self.navaid_keys.add(key)
             ways=datasets.dataset('airways');seen_edges=set();count=0

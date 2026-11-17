@@ -14152,3 +14152,91 @@ def k327(c):
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
         clean()
+
+
+@case('K329', 'Route engine, SOG-0417 (b): the permanent gates of the free route are kept by their NEARNESS to the great circle of the flight (twenty each side of the ocean), the exits at 50°W go down to 34°N and the gates at 15°W to 38°N, and a point that the source says is on the limit of a FIR (`lim: \'fir\'`, an UNTRUSTED flag) is a gate only inside the oceanic band east (20-62°N, 35-8°W), at most 120 of them examined; real base, no message: LPPT → KMIA leaves under 40°N and is at most 3 % over the great circle (6.0 % before), KJFK → LPPR 8 % (36.5 % before)',
+      'K', static=True,
+      rule='SOG-0417 (b) (the ergonomics session, 17 Nov; measured: from Iberia to Miami the bands of the gates (15°W: 42-62°N; 50°W: 40-58°N) were north of the great circle, LPPT → KMIA +6.0 %, and the flights towards Iberia were 11 to 37 % longer than the great circle because the exits stopped at 44°N). `free_route.gates(nav, high, level_ft, a, b)`: the candidates are the coordinates of 50°W (34-58°N) and of 15°W (38-60°N), the named points of the bands, and the points flagged on the limit of a FIR (`nav.fir_keys`, set from `lim: \'fir\'` of the base) inside `FIR_BOUNDS`; they are kept by their distance to the great circle (`MAX_GATES` // 2 on each side of 35°W). The flag is an untrusted datum (a file of a zone can be written by a pilot): a flagged point outside the bounds is ignored, and a forged flag can only add a gate, never break the calculation nor open a closed route. Unit part on a fake `nav`; real part on the real base of the workstation (skipped when it is not here).')
+def k329(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import free_route as F, engine
+
+    class Nav:
+        """A fake graph: nodes, an `add` like the real one, no airway (the gates of coordinates need none), a set of flagged points."""
+        def __init__(self, flagged):
+            self.nodes, self.ids, self.edges, self.fir_keys = {}, {}, [], set()
+            for i, (lat, lon) in flagged.items():
+                self.fir_keys.add(self.add({'id': i, 'lat': lat, 'lon': lon}))
+
+        def add(self, p):
+            ident = p['id'].strip().upper()
+            for key in self.ids.get(ident, []):
+                if engine.nm(p, self.nodes[key]) < 0.15:
+                    return key
+            key = f'{ident}@{p["lat"]:.5f},{p["lon"]:.5f}'
+            self.nodes[key] = dict(id=ident, lat=p['lat'], lon=p['lon'])
+            self.ids.setdefault(ident, []).append(key)
+            return key
+    lptt, kmia = {'lat': 38.77, 'lon': -9.13}, {'lat': 25.79, 'lon': -80.29}
+    flagged = {'INBND': (39.0, -15.0), 'FARNE': (80.0, -20.0), 'ZEROL': (39.0, 0.0), 'WESTX': (30.0, -40.0), 'NEARC': (38.5, -12.0)}
+    nav = Nav(flagged)
+    got = F.gates(nav, set(), 37000, lptt, kmia)
+    ids = [nav.nodes[k]['id'] for k, _kind in got]
+    east = [i for i, (k, _kind) in zip(ids, got) if nav.nodes[k]['lon'] >= -35]
+    west = [i for i, (k, _kind) in zip(ids, got) if nav.nodes[k]['lon'] < -35]
+    c.eq((len(got) <= F.MAX_GATES, len(east) <= F.MAX_GATES // 2, len(west) <= F.MAX_GATES // 2, 'INBND' in ids, 'NEARC' in ids, 'FARNE' in ids, 'ZEROL' in ids, 'WESTX' in ids),
+         (True, True, True, True, True, False, False, False),
+         'the gates are at most forty, twenty each side; the flagged points inside the oceanic band east (INBND at 15°W, NEARC at 12°W) are gates, those outside the bounds (80°N, 0°E, a point of 40°W that is neither on the band) are not: an untrusted flag cannot place a gate where the source has no business', what='flag')
+    c.eq(ids, [nav.nodes[k]['id'] for k, _kind in F.gates(Nav(flagged), set(), 37000, lptt, kmia)], 'the same flight gives the same gates (no clock, no order of a dictionary)', what='same')
+    lats = [nav.nodes[k]['lat'] for k, _kind in got if nav.nodes[k]['lon'] < -35]
+    c.ok(min(lats) <= 35 and max(lats) < 58, (min(lats), max(lats)), 'the gates of 50°W kept for LPPT → KMIA are the ones near its great circle (down to 34°N, the farthest ones, 58°N, are left)')
+    many = Nav({f'F{i:03d}': (30 + (i % 30) * 1.0, -30 + (i % 20) * 1.0) for i in range(500)})
+    kept = F.gates(many, set(), 37000, lptt, kmia)
+    c.ok(len(kept) <= F.MAX_GATES, len(kept), 'a flag set on 500 points of a file does not give more than forty gates')
+    # Sécurisation (17 Nov): a falsified file that flags 500 points ON the great circle of the flight, inside the band, must not chase the permanent gates: they keep their places, the flagged ones kept are at most MAX_FIR_KEPT per side
+    import math
+    vec = lambda p_: (math.cos(math.radians(p_['lat'])) * math.cos(math.radians(p_['lon'])), math.cos(math.radians(p_['lat'])) * math.sin(math.radians(p_['lon'])), math.sin(math.radians(p_['lat'])))
+    va, vb = vec(lptt), vec(kmia)
+    omega = math.acos(sum(x * y for x, y in zip(va, vb)))
+    on_circle = {}
+    for n_ in range(500):
+        t = 0.0005 + n_ * 0.00022      # the first tenth of the circle from Lisbon: the band 35°W to 8°W and a bit more
+        v = [(math.sin((1 - t) * omega) * x + math.sin(t * omega) * y) / math.sin(omega) for x, y in zip(va, vb)]
+        lat, lon = math.degrees(math.asin(v[2])), math.degrees(math.atan2(v[1], v[0]))
+        if 20 <= lat <= 62 and -35 <= lon <= -8:
+            on_circle[f'G{n_:03d}'] = (lat, lon)
+    clean_nav = Nav({})
+    near_clean = [clean_nav.nodes[k]['id'] for k, _kind in F.gates(clean_nav, set(), 37000, lptt, kmia) if clean_nav.nodes[k]['lon'] >= -35]
+    forged = Nav(on_circle)
+    got2 = F.gates(forged, set(), 37000, lptt, kmia)
+    ids2 = [forged.nodes[k]['id'] for k, _kind in got2]
+    marked = [i for i in ids2 if i.startswith('G')]
+    c.ok(len(on_circle) >= 100 and len(marked) <= 2 * F.MAX_FIR_KEPT and len(got2) <= F.MAX_GATES, (len(on_circle), len(marked), len(got2)), 'a file that flags more than a hundred points ON the great circle of the flight keeps at most MAX_FIR_KEPT of them each side and at most forty gates')
+    c.ok(all(i in ids2 for i in near_clean[:14]), [i for i in near_clean[:14] if i not in ids2], 'the 14 permanent gates nearest to the great circle on the east side are still kept when the points flagged are on it (a falsified file does not chase the permanent gates; red before: all of them were chased)')
+    from pathlib import Path
+    real = Path('E:/DEFA/data')
+    if not (real / 'sia' / 'base' / 'us').is_dir() or not (real / 'route' / 'rad.json.gz').is_file():
+        c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
+        return
+    import os
+    from route_engine import plan as P, view, results_cache
+    data, clean = _hybrid_data(real, {'tracks': [], 'messages': []})
+    os.remove(os.path.join(str(data), 'sia', 'zones', 'nat', 'nat_tracks.json'))      # no message: the free route by the gates
+    results_cache.ENABLED = False
+    try:
+        out = {}
+        for dep, arr in (('LPPT', 'KMIA'), ('KJFK', 'LPPR')):
+            args = {'action': 'compute', 'adep': dep, 'adest': arr, 'fl': 370, 'date': '2026-11-17T12:00', 'alternatives': False, 'proposals': False}
+            res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
+            p = res['primary']
+            legs = p.get('legs') or []
+            circle = engine.nm(legs[0]['start'], legs[-1]['end'])
+            free = (res.get('sections') or {}).get('free') or {}
+            out[dep + arr] = (bool(p.get('ok')), round(100 * ((p.get('distance_nm') or 1e9) - circle) / circle, 1), free.get('entry'), free.get('exit'))
+        c.ok(out['LPPTKMIA'][0] and out['LPPTKMIA'][1] <= 3.0 and out['LPPTKMIA'][2] != '44/15', out['LPPTKMIA'], 'LPPT → KMIA: a route at most 3 % over the great circle, by a gate under 40°N at 15°W (6.0 % before: the gate was at 44°N)')
+        c.ok(out['KJFKLPPR'][0] and out['KJFKLPPR'][1] <= 8.0, out['KJFKLPPR'], 'KJFK → LPPR: a route at most 8 % over the great circle (36.5 % before: the exits stopped at 44°N)')
+    finally:
+        results_cache.ENABLED = True
+        engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
+        clean()

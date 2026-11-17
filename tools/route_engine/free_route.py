@@ -18,9 +18,12 @@ FREE_S = 3.0           # le temps de la section (§ 13.4 : 3 s) : les couples (e
 FREE_STATES = 60000      # d1 ter : le budget de TOUTE la route libre, en ÉTATS (la somme des états de toutes ses recherches)
 EXTRA_STATES = 7000    # d1 bis (d) : une recherche de plus (vers les entrées restantes qui peuvent encore faire plus COURT) ne parcourt pas plus d'ÉTATS : quand ses buts ne sont pas atteignables elle parcourrait tout l'espace (14 000 états, 4,5 s depuis Dublin) ; coupée, elle rend ce qu'elle a atteint ; une borne en ÉTATS est déterministe (un temps ne l'est pas : la même demande rendrait deux routes selon la charge du poste) ; 7 000 : la plus petite valeur mesurée qui rend aux vols EDDF / EGLL « hors fenêtre » leur distance (1 500 en perdait 72 à 97 NM, 5 000 encore 76)
 GATE_EAST = ((42.0, 62.0, -15.6, -14.4), (43.0, 48.5, -9.6, -7.9))      # SOG-0396 : les repères nommés près de la limite des régions océaniques (la ligne de 15°W) et de l'entrée du golfe de Gascogne : (lat min, lat max, lon min, lon max)
-GATE_EAST_COORD = (-15.0, range(44, 61))      # SOG-0396 (mesure) : la base n'a que 2 ou 3 repères nommés sur le réseau haut près de 15°W : des coordonnées NAT à degrés entiers le long de 15°W (44-60°N), comme côté Amérique
-GATE_WEST = (-50.0, range(40, 59))      # SOG-0396 : des coordonnées NAT à degrés entiers le long de 50°W (NAT Doc 007, § 4.1.2), raccordées par les DCT de simulation
-MAX_GATES = 40      # au plus quarante entrées / sorties permanentes
+GATE_EAST_COORD = (-15.0, range(38, 61))      # SOG-0396 (mesure) : la base n'a que 2 ou 3 repères nommés sur le réseau haut près de 15°W : des coordonnées NAT à degrés entiers le long de 15°W (44-60°N), comme côté Amérique
+GATE_WEST = (-50.0, range(34, 59))      # SOG-0396 : des coordonnées NAT à degrés entiers le long de 50°W (NAT Doc 007, § 4.1.2), raccordées par les DCT de simulation
+MAX_GATES = 40      # au plus quarante entrées / sorties permanentes ; SOG-0417 : retenues par leur PROXIMITÉ du grand cercle du vol (vingt de chaque côté), pas par leur rang
+FIR_BOUNDS = (20.0, 62.0, -35.0, -8.0)      # SOG-0417 : un point marqué « limite de FIR » (drapeau d'une donnée NON FIABLE) n'est une porte que dans la bande océanique est : (lat min, lat max, lon min, lon max) ; hors d'elle le drapeau est ignoré
+MAX_FIR_POINTS = 120      # au plus autant de points marqués examinés (un drapeau mis sur tout un fichier ne coûte pas plus)
+MAX_FIR_KEPT = 6      # au plus six points marqués RETENUS de chaque côté : les portes permanentes les plus proches gardent leurs places (Sécurisation : un fichier falsifié ne chasse pas les permanentes)
 LABEL = 'route libre, créée'
 NO_REACH = 'aucune entrée océanique du jour n\'est atteignable depuis le départ à ce niveau'
 NO_CHAIN = 'aucune chaîne par une route libre n\'a abouti'
@@ -78,14 +81,46 @@ def _levelled(nav, level_ft):
     return nav.__dict__[key]
 
 
-def gates(nav, high, level_ft):
+def _cross(a, p):
+    """SOG-0417 : l'écart (NM) du point `p` au grand cercle de `a` (un triplet (x, y, z) unitaire de la normale) : asin(|p · n|)."""
+    return math.degrees(math.asin(min(1.0, abs(p[0] * a[0] + p[1] * a[1] + p[2] * a[2])))) * 60
+
+
+def _vec(n):
+    la, lo = math.radians(n['lat']), math.radians(n['lon'])
+    return (math.cos(la) * math.cos(lo), math.cos(la) * math.sin(lo), math.sin(la))
+
+
+def gates(nav, high, level_ft, a=None, b=None):
     """SOG-0396 : les entrées / sorties océaniques PERMANENTES : [(nœud, 'point' | 'coordinate')], au plus MAX_GATES ; 'point' : un repère nommé de la base, dans une des bandes GATE_EAST, sur le réseau haut ET sur une voie qui porte le niveau du vol ; 'coordinate' : une coordonnée NAT (« 47/50 ») le long de GATE_WEST, créée dans le graphe.
     Fixes : le même vol rend les mêmes portes, quel que soit le message NAT, l'heure ou l'horloge."""
     ok = _levelled(nav, level_ft)
     named = sorted((nav.nodes[k]['id'], k) for k in high if k in ok and any(la0 <= nav.nodes[k]['lat'] <= la1 and lo0 <= nav.nodes[k]['lon'] <= lo1 for la0, la1, lo0, lo1 in GATE_EAST))
     coords = [nav.add({'id': f'{lat}/{int(-lon)}', 'lat': float(lat), 'lon': lon}) for lon, lats in (GATE_WEST, GATE_EAST_COORD) for lat in lats]
     out = [(k, 'coordinate') for k in coords] + [(k, 'point') for _n, k in named]
-    return out[:MAX_GATES]
+    if a is None or b is None:
+        return out[:MAX_GATES]
+    # SOG-0417 : les points que la source dit à la limite d'une FIR s'ajoutent (une donnée NON FIABLE : dans la bande océanique est seulement, au plus MAX_FIR_POINTS, jamais un nœud qui n'a pas de position valide), puis les portes sont retenues par leur PROXIMITÉ du grand cercle du vol : vingt de chaque côté de l'océan, les plus proches
+    seen = {k for k, _kind in out}
+    la0, la1, lo0, lo1 = FIR_BOUNDS
+    flagged = sorted((nav.nodes[k]['id'], k) for k in getattr(nav, 'fir_keys', ()) if k in nav.nodes and k not in seen and la0 <= nav.nodes[k]['lat'] <= la1 and lo0 <= nav.nodes[k]['lon'] <= lo1)[:MAX_FIR_POINTS]
+    va, vb = _vec(a), _vec(b)
+    normal = (va[1] * vb[2] - va[2] * vb[1], va[2] * vb[0] - va[0] * vb[2], va[0] * vb[1] - va[1] * vb[0])
+    size = math.sqrt(sum(x * x for x in normal))
+    if size < 1e-9:
+        return out[:MAX_GATES]
+    normal = tuple(x / size for x in normal)
+    side = lambda k: 'west' if nav.nodes[k]['lon'] < WEST_LON else 'east'
+    near = lambda k: (round(_cross(normal, _vec(nav.nodes[k])), 1), nav.nodes[k]['id'], k)
+    kept = []
+    for which in ('west', 'east'):
+        marked = [near(k) for _n, k in flagged if side(k) == which][:]
+        marked.sort()
+        marked = marked[:MAX_FIR_KEPT]      # les marqués : les plus proches, six au plus
+        room = MAX_GATES // 2 - len(marked)      # les permanentes d'abord : elles gardent au moins toutes les places que les marqués ne prennent pas
+        mine = sorted(near(k) + (kind,) for k, kind in out if side(k) == which)
+        kept += [(k, kind) for _x, _i, k, kind in mine[:room]] + [(k, 'point') for _x, _i, k in marked]
+    return kept
 
 
 def _links(nav, node, high, into, band):
@@ -112,7 +147,7 @@ def solve(nav, g, start, end, ratio, resolve, europe, report=None, skip=frozense
         high = getattr(nav, '_nat_high', None)
         if high is None:
             high = nav._nat_high = nat_layer.main_network(nav)
-        for k, kind in gates(nav, high, int((getattr(g, 'flight', None) or {}).get('ceiling') or 0)):      # SOG-0396 : les portes PERMANENTES s'ajoutent aux extrémités des routes du message
+        for k, kind in gates(nav, high, int((getattr(g, 'flight', None) or {}).get('ceiling') or 0), a, b):      # SOG-0396 : les portes PERMANENTES s'ajoutent aux extrémités des routes du message
             kinds.setdefault(k, kind)
     known = [k for k in kinds if nav.nodes[k]['id'] not in skip and k not in skip]      # SOG-0396 : le bout d'une route du sens contraire EN VIGUEUR n'est ni entrée ni sortie (`skip`, posé par sections)
     entries = [k for k in known if (nav.nodes[k]['lon'] > WEST_LON) == start_east]
