@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d4d5a3b",
+  "organisation": "3e70848",
   "fiches": 450,
   "untranslated": 0,
   "priorities": 374,
@@ -4854,7 +4854,7 @@
     {
      "id": "SOG-0447",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Cadre : un relevé de position qui dit « au sol », la hauteur au-dessus du sol et le cap vrai, et un service de franchissement pur — le même en vol et à l'essai",
      "en": "Frame: a position fix that says “on ground”, height above ground and true heading, and one pure crossing service — the same in flight and in the author's test",
      "de": "Rahmen: eine Positionsmeldung mit „am Boden“, Höhe über Grund und rechtweisendem Steuerkurs, und ein reiner Durchflugsdienst — derselbe im Flug und im Autorentest",
