@@ -32,9 +32,20 @@ def current_airac(day=None):
     return {"id": f"{effective.year % 100:02d}{cycle:02d}", "effectiveFrom": effective.isoformat(),
             "effectiveUntil": (effective + timedelta(days=27)).isoformat()}
 
+def glyph_char(m):
+    """Le caractère d'un nom de glyphe /MTnnn (nnn = le code du signe, en cp1252 : l'encodage WinAnsi de ces PDF). Les codes 0x80 à 0x9F y sont l'apostrophe typographique (0x92), les guillemets, les tirets… : lus en Latin-1 ils
+    sortaient en caractères de commande (le code 0x92 de « l'Erdre », SOG-0427). Un code que cp1252 ne définit pas (0x81, 0x8D, 0x8F, 0x90, 0x9D) ou hors de 32 à 255 : le nom reste tel quel."""
+    n = int(m[1])
+    if 128 <= n <= 159:
+        try:
+            return bytes([n]).decode("cp1252")
+        except UnicodeDecodeError:
+            return m[0]
+    return chr(n) if 32 <= n <= 255 else m[0]
+
 def normalise(text):
     # Certains PDF exposent les noms de glyphes /MT65 au lieu de leur caractère.
-    return re.sub(r"/MT(\d{1,3})(?!\d)", lambda m: chr(int(m[1])) if 32 <= int(m[1]) <= 255 else m[0], text)
+    return re.sub(r"/MT(\d{1,3})(?!\d)", glyph_char, text)
 
 def coordinates(m):
     d1, n1, s1, d2, n2, s2 = [float(m[k].replace(",", ".")) for k in ("d1", "m1", "s1", "d2", "m2", "s2")]

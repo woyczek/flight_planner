@@ -11,7 +11,7 @@ celui en vigueur par défaut, calendrier de 28 jours) :
     persistantes) sur ce cache, le contrôle strict de tools/vfr_import.py, l'écriture de sia/vfr/ et UN commit (regen_jobs.commit_outputs, au
     nom de l'auteur) — ce que faisait la route V2 vfr-import, à partir du cache et non d'un fichier choisi dans la page ; pypdf absent :
     « no-pypdf » ; une erreur de compilation ou de contrôle : rien n'est écrit ; chaque carte est lue par le sous-processus BORNÉ de tools/pdf_guard
-    (jamais par pypdf dans ce processus : SOG-0427) et le journal dit UNE ligne : « n documents lus ; dans m des polices n'ont pas pu être décodées entièrement (fontTools absent) » ;
+    (jamais par pypdf dans ce processus : SOG-0427) et le journal dit UNE ligne : « n documents lus ; dans m des polices n'ont pas pu être décodées entièrement — contournement appliqué » ;
   · `vfr/purge` { cycle?, dry } : le cache (les cartes et leur texte extrait) de ce cycle, ou de tous ; le plan d'abord (dry) ; jamais sia/vfr/
     ni un fichier suivi.
 Vue : job.data['cycles'] = { <cycle>: { state, done, total, error? } } ; résultats : fetch { ok, cycle, fetched, unchanged, notPublished,
@@ -206,10 +206,10 @@ def fetch(job, args, ctx):
 
 def fonts_line(read, fonts):
     """UNE ligne par travail (SOG-0427) à la place d'une ligne d'avertissement par police et par page : combien de documents ont été lus et dans combien d'entre eux des polices n'ont pas pu être décodées
-    entièrement (fontTools absent de pypdf ; le texte reste juste : tools/report-vfr/vfr_core.normalise décode les noms de glyphes /MTnnn). Des nombres seulement."""
+    entièrement (fontTools absent de pypdf : le texte brut porte alors des noms de glyphes /MTnnn, que tools/report-vfr/vfr_core.normalise décode : le contournement). Des nombres seulement."""
     read, fonts = int(read), int(fonts)
     if fonts:
-        return f'{read} documents lus ; dans {fonts} des polices n’ont pas pu être décodées entièrement (fontTools absent)'
+        return f'{read} documents lus ; dans {fonts} des polices n’ont pas pu être décodées entièrement — contournement appliqué'
     return f'{read} document(s) lu(s)'
 
 
