@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2569bc6",
+  "organisation": "13935d4",
   "fiches": 411,
   "untranslated": 0,
   "priorities": 374,
@@ -1230,11 +1230,12 @@
     {
      "id": "SOG-0408",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant, champ Route : un point de coordonnées tapé « 51/20 » est réécrit « 5100N02000W » une fois résolu",
      "en": "Fuel, Route field: a coordinate point typed “51/20” is rewritten “5100N02000W” once resolved",
      "de": "Kraftstoff, Feld Route: ein als „51/20“ getippter Koordinatenpunkt wird nach dem Auflösen zu „5100N02000W“ umgeschrieben",
-     "es": "Combustible, campo Ruta: un punto de coordenadas escrito «51/20» se reescribe «5100N02000W» una vez resuelto"
+     "es": "Combustible, campo Ruta: un punto de coordenadas escrito «51/20» se reescribe «5100N02000W» una vez resuelto",
+     "test": true
     }
    ]
   },
