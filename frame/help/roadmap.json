@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8d313fa",
-  "fiches": 401,
+  "organisation": "26ddd15",
+  "fiches": 403,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -483,6 +483,15 @@
      "en": "Free route over the North Atlantic: its ocean entries and exits depend on the day's NAT message — half of the crossings get no route",
      "de": "Freie Route über den Nordatlantik: Ein- und Ausflugpunkte hängen von der NAT-Meldung des Tages ab — die Hälfte der Überquerungen erhält keine Route",
      "es": "Ruta libre sobre el Atlántico Norte: sus entradas y salidas del océano dependen del mensaje NAT del día — la mitad de los cruces se queda sin ruta"
+    },
+    {
+     "id": "SOG-0403",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes NAT : EGGW → KJFK part en route libre LE LONG de la route F au lieu de la prendre — la fenêtre est jugée à l'entrée, pas au 30° ouest",
+     "en": "NAT tracks: EGGW → KJFK flies a free route alongside track F instead of taking it — the window is judged at entry, not at 30° west",
+     "de": "NAT-Tracks: EGGW → KJFK fliegt eine freie Route neben Track F statt ihn zu nehmen — das Zeitfenster wird am Eintritt statt bei 30° West geprüft",
+     "es": "Rutas NAT: EGGW → KJFK vuela una ruta libre junto a la ruta F en vez de tomarla — la ventana se juzga en la entrada, no en 30° oeste"
     }
    ]
   },
@@ -837,6 +846,15 @@
      "de": "A mission stays active after “New flight”, and even after its cross on the map",
      "es": "A mission stays active after “New flight”, and even after its cross on the map",
      "rank": 30
+    },
+    {
+     "id": "SOG-0404",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carburant avec la carte à côté : une barre pour régler la largeur des deux volets",
+     "en": "Fuel with the map alongside: a bar to set the width of the two panes",
+     "de": "Kraftstoff mit Karte daneben: eine Leiste zum Einstellen der Breite der beiden Bereiche",
+     "es": "Combustible con el mapa al lado: una barra para ajustar el ancho de los dos paneles"
     }
    ]
   },
