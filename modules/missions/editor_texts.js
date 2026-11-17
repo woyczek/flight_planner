@@ -292,8 +292,10 @@ export const EDTX = {
     'von Hand geöffnet: Schublade {n} öffnet sich',
     'abierto a mano: el cajón {n} se abre'
   ],
-  trEv_route: ['l\'avion prend la suite de route du tiroir {n}', 'the aircraft takes the onward route of drawer {n}',
-    'das Luftfahrzeug nimmt die Folgeroute der Schublade {n}', 'la aeronave toma la ruta siguiente del cajón {n}'
+  trEv_route: ['la suite de route du tiroir {n} est prise — en vol, le pilote la prend d\'un geste',
+    'the onward route of drawer {n} is taken — in flight, the pilot takes it by a gesture',
+    'die Folgeroute der Schublade {n} wird genommen — im Flug nimmt der Pilot sie mit einer Geste',
+    'se toma la ruta siguiente del cajón {n} — en vuelo, el piloto la toma con un gesto'
   ],
   trEv_near: ['à portée de l\'objet du tiroir {n} : il reste fermé tant que le pilote ne dit pas « Objet en vue »',
     'within range of the object of drawer {n}: it stays closed until the pilot says « Object in sight »',

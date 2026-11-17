@@ -420,6 +420,8 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
   UNKNOWN), the box « Le pilote dit « Objet en vue » dès qu'il est à portée », **the log in sentences** (four languages, built from the
   facts of the pure part), « Ouvrir à la main le tiroir n » (the pilot's gesture on the first closed drawer, at the minute of the
   slider), « Recommencer », « Fermer l'essai ».
+- **The onward route taken by the aircraft of the trial is said** (the ergonomist's reading of 18 Nov): « la suite de route du tiroir 1
+  est prise — en vol, le pilote la prend d'un geste »: the trial takes it without asking, the flight does not.
 - **The map and the unfolding follow**: the sketch shows the aircraft and its trail (the map unfolds by itself on a phone, as the
   ergonomist asked on 17 Nov); each card of the unfolding says « ouvert à H + 6 min » or « fermé ».
 - **SOG-0449 holds**: the slider, the fields and the box update the time, the log, the cards, the sketch and the label of the gesture
