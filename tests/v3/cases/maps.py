@@ -476,6 +476,16 @@ def sheet_body_checks(c):
     # a short phone window (a small screen, the keyboard up): the default panel keeps its 170 px floor, so the body is 142 px: the cut fits it
     c.page.set_viewport_size({'width': 390, 'height': 520})
     c.settle()
+    # SOG-0363 (15 Nov, the ergonomist, a phone report): on a portrait phone the drawing keeps 180 readable px or does not open: the room above the map's half is too small at 520 px, the
+    # sheet stays FOLDED (nothing is drawn under its title) and a tap on the handle gives the default panel, whose 170 px floor holds a body of 142 px: the cut fits it
+    c.until("document.querySelector('[data-module=\"maps\"]').dataset.sheet === 'collapsed'", what='a short phone window: the sheet does not open by itself (the drawing would have less than 180 px)')
+    c.tap('.f-sheet-grip')
+    c.until("document.querySelector('[data-module=\"maps\"]').dataset.sheet === 'default'", what='a tap on the handle opens the default panel')
+    c.wait(1500)
+    # the panel opened by the handle STAYS open: the room rule (sheetFit: the drawing keeps 180 px or the sheet folds) runs again with each resize, each content, each data arrival, and must not fold what the
+    # user has just opened — the measure that tells a cut that is not drawn from a panel that was folded again
+    pos = c.js("() => [document.querySelector('[data-module=\"maps\"]').dataset.sheet, document.querySelector('.mp-data').getBoundingClientRect().height, (document.querySelector('.mp-dbody svg') || { getBoundingClientRect: () => ({ height: -1 }) }).getBoundingClientRect().height]")
+    c.ok(pos[0] == 'default' and pos[2] > 0, f'sheet {pos[0]}, panel {pos[1]:.0f} px, cut {pos[2]:.0f} px high (-1: no cut) 1.5 s after the tap on the handle', 'the panel opened by the handle stays open and the cut is drawn in it')
     drawing_fits(c, 'weather short window 390 x 520', True)
     c.tap('.mp-chip[data-view="profile"]')
     c.wait(500)

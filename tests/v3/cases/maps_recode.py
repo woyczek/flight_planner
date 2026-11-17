@@ -8596,6 +8596,33 @@ def d_natensure(c):
     c.eq(c.js("() => (window.__ens || []).length"), 1, 'once for this mounting of the Map (not at each drawing)', what='calls after')
 
 
+@case('D253', 'The sheet a pilot opens stays open when the browser bar of a phone shows or hides (the height changes by 60 px, width and orientation unchanged), and is folded again by the room rule when the window really shrinks (180 px, the keyboard) or turns: the gesture is for the window it was made in, with the height allowed to move by one browser bar (100 px)', 'D',
+      tags=('maps', 'sheet'), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0416 contested by the ergonomist (17 Nov): the indicator tied to the EXACT size of the window would fold the pilot’s sheet again when the address bar of a phone browser shows or hides — the very defect of the card; the gesture must survive a change of height of the order of a browser bar (width and orientation unchanged), and be forgotten at a change of width, of orientation or a real reduction')
+def d_sheetgesture(c):
+    c.page.set_viewport_size({'width': 390, 'height': 580})
+    c.open('maps', flight=True, aero=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.wait(1500)
+    posx = "document.querySelector('[data-module=\"maps\"]').dataset.sheet"
+    pos = '() => ' + posx
+    c.eq(c.js(pos), 'default', '580 px: the sheet is open by itself (the drawing keeps its 180 px)', what='sheet at the start')
+    c.tap('.f-sheet-grip')
+    c.until(posx + " === 'collapsed'", what='the pilot folds the sheet')
+    c.tap('.f-sheet-grip')
+    c.until(posx + " === 'default'", what='the pilot opens the sheet again (his gesture)')
+    c.wait(600)
+    # the address bar of the phone shows: 60 px less, nothing else: the sheet stays open
+    c.page.set_viewport_size({'width': 390, 'height': 520})
+    c.settle()
+    c.wait(1200)
+    c.eq(c.js(pos), 'default', 'the height changed by 60 px (a browser bar): the pilot’s sheet stays open', what='sheet after -60 px')
+    # a real reduction (the keyboard, 180 px) or a turn: the room rule applies again
+    c.page.set_viewport_size({'width': 390, 'height': 400})
+    c.settle()
+    c.until(posx + " === 'collapsed'", timeout=6000, what='a real reduction of 180 px: the room rule folds the sheet again')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

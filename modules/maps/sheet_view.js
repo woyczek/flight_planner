@@ -83,6 +83,7 @@ const gripLabel = p => `${S?.bare ? [S.bare, S.sum].filter(Boolean).join(' · ')
  *  réglage, en-tête refait à chaque position atteinte, taille arrêtée (onSettle). */
 export function makeSheet(el) {
   el.classList.add('f-sheet');
+  sheetGestures();
   return createSheet({
     root: el,
     panel: S.dataEl,
@@ -94,11 +95,41 @@ export function makeSheet(el) {
     locked: () => el.classList.contains('mp-tuning'),
     onChange: p => {
       keep.sheet = p;
+      // le geste du pilote l'emporte sur le repli de place (SOG-0363) : une position prise par son geste (toucher ou glissé de la poignée, clavier) n'est plus repliée par sheetFit ; elle est
+      // oubliée quand il replie lui-même la feuille, ou quand le code la replie (le suivi du vol qui se déplie)
+      const byUser = performance.now() - (S.sheetGestureAt || 0) < 400;
+      if (byUser) S.sheetUser = p !== 'collapsed' ? userSize() :
+        null; // la fenêtre où il l'a ouverte : son geste vaut pour cette fenêtre, pas pour une autre (le téléphone qui tourne, une vraie réduction)
+      else if (p === 'collapsed') S.sheetUser = null;
       dataHead(); // nue sur un dessin à la position par défaut seulement
       S.onSheetPos?.(p); // le suivi du vol se replie quand le volet s'ouvre (SOG-0363)
     },
     onSettle: onSheetSettled
   });
+}
+/** De combien la hauteur de la fenêtre peut changer, sans geste du pilote, sans que son geste sur la feuille cesse de valoir : la barre d'adresse (et la barre d'outils) d'un navigateur de téléphone qui se montre ou se
+ *  cache change la hauteur de 50 à 100 px environ sans que le pilote ait rien fait (SOG-0416 : son volet se serait replié de nouveau) ; une vraie réduction (le clavier : 250 px et plus) est un autre cas. */
+const BROWSER_BAR_PX = 100;
+/** La fenêtre telle que le geste du pilote la voit : largeur et hauteur (l'orientation en découle). */
+const userSize = () => ({
+  w: innerWidth,
+  h: innerHeight
+});
+/** Le pilote a-t-il ouvert la feuille dans une fenêtre qui est encore la même ? Même largeur, même orientation et une hauteur qui n'a changé que de BROWSER_BAR_PX au plus ; sinon son geste ne vaut plus : la
+ *  règle de place s'applique de nouveau (SOG-0416). */
+const userKept = () => {
+  const u = S.sheetUser;
+  return !!u && u.w === innerWidth && (u.h > u.w) === (innerHeight > innerWidth) && Math.abs(u.h - innerHeight) <= BROWSER_BAR_PX;
+};
+/** Le moment du dernier geste du pilote sur la poignée ou l'en-tête de la feuille (relâcher, clic, clavier), pris AVANT que la feuille ne change de position (SOG-0363). Posé par makeSheet, une fois par montage. */
+function sheetGestures() {
+  const mark = e => {
+    // les puces d'espaces et la croix sont dans l'en-tête mais ne sont pas la feuille (le `ignore` de createSheet) : leur clic n'est pas un geste sur elle — sinon, juste avant un changement de fenêtre,
+    // la position que le code prend d'elle-même passait pour celle du pilote (D4 : la puce « météo », puis 390 × 520)
+    if (S && !e.target.closest?.('[data-dclose], .mp-chips')) S.sheetGestureAt = performance.now();
+  };
+  for (const el of [S.dheadEl, S.gripEl])
+    for (const t of ['pointerup', 'click', 'keydown']) el?.addEventListener(t, mark, true);
 }
 /** Jetons de hauteur de la feuille que sheetFit pose sur la racine. */
 const FIT_KEYS = ['--f-sheet-default', '--f-sheet-default-min', '--f-sheet-expanded', '--f-sheet-expanded-min'];
@@ -150,7 +181,8 @@ export function sheetFit() {
   if (innerWidth < 1000 && innerHeight > innerWidth && drawingShown()) { // un téléphone en portrait (en paysage la feuille est une colonne)
     const need = S.dheadEl.offsetHeight + 184; // 180 px de dessin, et les bordures
     if (exp >= need) def = Math.max(def, need);
-    else if (S.sh.pos !== 'collapsed') queueMicrotask(() => S?.sh.pos !== 'collapsed' && S.sh.set('collapsed', true));
+    else if (S.sh.pos !== 'collapsed' && !userKept()) queueMicrotask(() => S?.sh.pos !== 'collapsed' && !userKept() && S.sh.set(
+      'collapsed', true)); // le geste du pilote l'emporte
   }
   if (
     lvOnPhone()
