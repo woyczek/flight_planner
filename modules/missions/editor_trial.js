@@ -17,7 +17,7 @@
 // API :
 //   TRIAL : les bornes (pas de calcul en minutes, durée, vitesse, altitude).
 //   trialRun(mission, { untilMin, speedKt, altFt, declares, hands }) → { ok, why?, min, fix, trail, landedMin, drawers, log } :
-//     ok faux quand la mission n'a pas de route à suivre (why : 'route') ; fix : le relevé de l'avion à `untilMin` ({ lat, lon, altFt,
+//     ok faux quand la mission n'a pas de route à suivre (why : 'route') ou n'est pas lisible (why : 'data') ; ne lève jamais ; fix : le relevé de l'avion à `untilMin` ({ lat, lon, altFt,
 //     onGround, gsKt }) ; trail : sa trace ([[lat, lon]…], 240 points au plus) ; landedMin : la minute où il se pose (null : en vol) ;
 //     drawers : [{ id, rank, open, how ('time' | 'zone' | 'object' | 'arrival' | 'fallback' | 'hand' | null), min }] ;
 //     log : [{ min, ev, rank?, how?, why? }] dans l'ordre — ev : 'start', 'open' (how), 'route' (l'avion prend la suite de route du
@@ -69,8 +69,27 @@ function pathOf(mission) {
   return out;
 }
 
-/** L'essai (voir l'en-tête). */
+/** L'essai (voir l'en-tête). Ne lève jamais : une « mission » qui n'est pas celle du lecteur (un arrêt nul, une clé piégée) rend « pas
+ *  d'essai » (ok faux, why 'data') — Sécurisation, relecture du 18 nov. 2026. */
 export function trialRun(mission, opts = {}) {
+  try {
+    return run(mission, opts);
+  } catch {
+    return {
+      ok: false,
+      why: 'data',
+      min: 0,
+      fix: null,
+      trail: [],
+      landedMin: null,
+      drawers: [],
+      log: []
+    };
+  }
+}
+
+/** L'essai, sans sa garde. */
+function run(mission, opts) {
   const m = mission && typeof mission === 'object' ? mission : {},
     o = opts && typeof opts === 'object' ? opts : {},
     drawers = (Array.isArray(m.drawers) ? m.drawers : []).filter(d => d && typeof d === 'object').slice(0, MS.DRAWER_IDS
@@ -225,7 +244,7 @@ export function trialRun(mission, opts = {}) {
       return fallback();
     }
     if (key.kind === 'arrival') {
-      const stops = Array.isArray(key.required) ? key.required : [];
+      const stops = (Array.isArray(key.required) ? key.required : []).filter(s => s && typeof s === 'object').slice(0, 20);
       for (const s of stops)
         if (!visited.has(s.id) && CR.reach(prev, fix, {
             lat: s.lat,

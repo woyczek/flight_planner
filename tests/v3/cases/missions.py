@@ -3987,13 +3987,17 @@ _TRIAL_JS = """async () => { const TR = await import('/modules/missions/editor_t
   const said = r => r.log.map(l => l.min + ':' + l.ev + (l.rank ? ' ' + l.rank : '') + (l.how ? ' ' + l.how : '') + (l.why ? ' ' + l.why : '')).join(' | ');
   const sum = r => ({ ok: r.ok, fix: r.fix && [r3(r.fix.lat), r3(r.fix.lon), r.fix.altFt, r.fix.onGround, r.fix.gsKt], landed: r.landedMin, drawers: r.drawers.map(d => [d.rank, d.open, d.how, d.min]), log: said(r) });
   let threw = '';
-  for (const bad of [null, 7, {}, { drawers: 5 }, { drawers: [null, { id: '__proto__' }] }]) try { TR.trialRun(bad, { untilMin: 'x', hands: 3 }) } catch (e) { threw += J(bad) + ' ' + e + ' | ' }
+  // des « missions » qui ne viennent pas du lecteur : un arrêt nul, une clé qui lève quand on la lit, des points qui ne sont pas des objets
+  const trap = { ...m, drawers: [{ id: 'B', rank: 1, route: [null, 5], get key() { throw new Error('piège') } }] },
+    stops = { ...m, drawers: [{ id: 'B', rank: 1, route: [], key: { kind: 'arrival', at: { lat: 44, lon: 2 }, radiusNm: 1, required: [null, 7, { id: 'X' }] } }] };
+  for (const bad of [null, 7, {}, { drawers: 5 }, { drawers: [null, { id: '__proto__' }] }, trap, stops, { ...m, points: 5, routeOrder: 7 }])
+    try { TR.trialRun(bad, { untilMin: 'x', hands: 3 }); TR.trialRun(bad, { untilMin: 60, altFt: 1000 }) } catch (e) { threw += e + ' | ' }
   const before = J(m), full = TR.trialRun(m, { untilMin: 120, altFt: 2000 });
   return { start: sum(TR.trialRun(m, { untilMin: 0, altFt: 2000 })), ten: sum(TR.trialRun(m, { untilMin: 10, altFt: 2000 })), full: sum(full), trail: [full.trail.length <= TR.TRIAL.trail, full.trail[0]],
     ceiling: sum(TR.trialRun(m, { untilMin: 30, altFt: 5000 })).log, noAlt: sum(TR.trialRun(m, { untilMin: 30 })).log,
     silent: sum(TR.trialRun(m, { untilMin: 120, altFt: 2000, declares: false })), hand: sum(TR.trialRun(m, { untilMin: 12, altFt: 2000, hands: { B: 3 } })).drawers[0],
     unjudged: sum(TR.trialRun(MS.readMission(other), { untilMin: 40, altFt: 1000 })), noRoute: [TR.trialRun(MS.readMission({ mission: { id: 'X-001A' }, title: 'x' }), { untilMin: 10 }).ok,
-      TR.trialRun(null, { untilMin: 10 }).why], threw, untouched: J(m) === before } }"""
+      TR.trialRun(null, { untilMin: 10 }).why], threw, trapped: [TR.trialRun(trap, { untilMin: 60 }).why, TR.trialRun(stops, { untilMin: 60, altFt: 1000 }).ok], untouched: J(m) === before } }"""
 
 
 @case('N90', 'Missions › the workshop, the trial of the keys (pure part, no screen): the aircraft of the trial leaves the departure, follows '
@@ -4033,3 +4037,5 @@ def n90(c):
          what='not judged, not read')
     c.ok(r['noRoute'] == [False, 'route'] and r['threw'] == '' and r['untouched'] is True, [r['noRoute'], r['threw'], r['untouched']],
          'a mission without a route to follow: no trial, said; no hostile input throws; the mission read is not touched')
+    c.eq(r['trapped'], ['data', True], 'a « mission » that is not the reader\'s: a key that throws when read gives « no trial » (never an exception); null stops of '
+         'an arrival are skipped', what='inputs that are not the reader\'s')
