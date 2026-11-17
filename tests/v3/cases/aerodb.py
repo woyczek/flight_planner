@@ -15166,3 +15166,21 @@ def k340(c):
     c.eq((r1, r2, r3), (None, None, None), 'a free route of 5 600 NM against NAT routes of 5 694 and 5 709 NM (less than 5 % shorter): the NAT route is kept each time', what='kept')
     thr = lambda nm: nm / (1 + S.NAT_MAX_EXTRA)
     c.eq([round(x, 3) if x is not None else None for x in calls], [round(thr(5694.0), 3), round(thr(5709.0), 3)], 'the search only asks « is there a free route of at most NAT / 1.05 NM ? » (the limit is given to it); a NAT route a few NM longer has a wider limit than the search made for the first: it asks its own; the retry that adds constraints, with the limit already covered, asks nothing (one search per calculation and per limit)', what='limit')
+    # C : the index of the links gives the same nodes as the scan of every node
+    pts = {}
+    for i, la in enumerate(range(30, 76, 1)):
+        for j, lo in enumerate(range(-180, 180, 3)):
+            pts[f'N{i}_{j}'] = {'id': f'N{i}_{j}', 'lat': la + 0.37 * (j % 3), 'lon': lo + 0.41 * (i % 4)}
+    queries = {'Q1': (50.0, -20.0), 'Q2': (50.0, 179.9), 'Q3': (50.0, -179.9), 'Q4': (74.0, 0.0), 'Q5': (35.0, -40.0), 'Q6': (62.5, 30.0), 'Q7': (89.0, 10.0)}
+    for k, (la, lo) in queries.items():
+        pts[k] = {'id': k, 'lat': la, 'lon': lo}
+    fake = types.SimpleNamespace(nodes=pts)
+    high = frozenset(k for k in pts if k not in queries)
+    bad = []
+    for k in queries:
+        got = [u for u, v, e in FR._links(fake, k, high, True, (100, 500))]
+        ref = sorted((engine.nm(pts[k], pts[x]), x) for x in high if abs(pts[x]['lat'] - pts[k]['lat']) < nat_layer.LINK_NM / 60 + .1)
+        ref = [x for d, x in ref if d <= nat_layer.LINK_NM][:nat_layer.LINK_NODES]
+        if got != ref:
+            bad.append((k, got, ref))
+    c.eq(bad, [], 'the links of an oceanic point (50°N 20°W, either side of the antimeridian, 74°N, 89°N...) to the nodes of the high network: the index (latitude, longitude) gives EXACTLY the nodes, in the same order, as the scan of every node of the latitude band', what='links')

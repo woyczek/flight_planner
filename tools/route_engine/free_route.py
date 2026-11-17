@@ -5,6 +5,7 @@ entre un point d'ENTRÉE et un point de SORTIE océaniques.
 
 Les entrées et les sorties sont celles de TOUTES les routes du jour (les deux extrémités de chaque route du message lu, dans les deux sens) : le message du jour est tout ce que le lanceur garde ; aucune mémoire de la saison n'est lue ni écrite. Le couple (entrée, sortie) est celui dont le coût estimé (minorant) de la chaîne est le plus petit ; l'Europe (ou l'Amérique) est ensuite cherchée par `Nav.search`, comme pour une route NAT.
 Une route libre est CALCULÉE, jamais lue dans un texte : ses tronçons portent `origin: 'random'` (la réponse : `sections.free.source`), le contrôle la dit « route libre, créée » (aucune autorisation océanique vérifiée). Quand aucune route du jour ne donne un point océanique connu, on le dit (« aucun point d'entrée océanique connu ») ; on n'en invente pas."""
+import bisect
 import math
 import time
 
@@ -128,7 +129,18 @@ def _links(nav, node, high, into, band):
     if node in high:
         return []
     p = nav.nodes[node]
-    near = sorted((engine.nm(p, nav.nodes[k]), k) for k in high if k != node and abs(nav.nodes[k]['lat'] - p['lat']) < nat_layer.LINK_NM / 60 + .1)
+    by_lat = nav.__dict__.setdefault('_high_by_lat', {})
+    index = by_lat.get(id(high))
+    if index is None:      # SOG-0450 (C) : le réseau haut classé UNE fois par latitude, avec la longitude : chaque point océanique ne calcule la distance que des nœuds de la bande de latitude ET de longitude utiles (la bande de latitude seule en tenait ~5 000, la distance de chacun coûtait 0,5 à 0,8 s en tout)
+        index = by_lat[id(high)] = (sorted((nav.nodes[k]['lat'], nav.nodes[k]['lon'], k) for k in high), high)
+    lats = index[0]
+    width = nat_layer.LINK_NM / 60 + .1
+    lo = bisect.bisect_left(lats, (p['lat'] - width,))
+    hi = bisect.bisect_left(lats, (p['lat'] + width,))
+    cos_min = math.cos(math.radians(min(89.0, abs(p['lat']) + width)))      # la plus petite des deux latitudes (cosinus) : sin²(d/2) >= cos φ1 cos φ2 sin²(Δλ/2) : un nœud plus loin en longitude que `reach` est à plus de LINK_NM (marge de 2 %)
+    reach = 180.0 if cos_min <= 0.05 else min(180.0, 2 * math.degrees(math.asin(min(1.0, math.sin(min(math.pi, nat_layer.LINK_NM * 1.02 / 3437.7468) / 2) / math.sqrt(math.cos(math.radians(abs(p['lat']))) * cos_min)))))
+    plon = p['lon']
+    near = sorted((engine.nm(p, nav.nodes[k]), k) for la, lon, k in lats[lo:hi] if k != node and abs(la - p['lat']) < width and min(abs(lon - plon), 360 - abs(lon - plon)) <= reach)
     near = [(d, k) for d, k in near if d <= nat_layer.LINK_NM][:nat_layer.LINK_NODES]
     return [(k, node, dict(a=k, b=node, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, zone='nat', nat_link='entry')) if into else
             (node, k, dict(a=node, b=k, route='DCT', lower=band[0], upper=band[1], dir='F', nm=d, zone='nat', nat_link='exit')) for d, k in near]
