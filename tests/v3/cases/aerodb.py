@@ -14240,3 +14240,114 @@ def k329(c):
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
         clean()
+
+
+@case('K331', 'Route engine, SOG-0401 lot 3: the limit of the DIRECT at the connection of an aerodrome is read in the RAD of the workstation (annex 3A « Conditions », the lines `XX_LIM_AD`: « ED** DEP DCT 10NM EXC (EDDF…) DEP DCT 0NM ») and said — an ERREUR for a TYPED route whose direct at the departure (or at the arrival) is longer than the limit, a REVUE for a calculated one, « to examine » when the limit has a level or an hour, or when a limit of 0 NM meets an aerodrome whose SIDs the base does not read — never a refusal that the source does not give; the limit of the direct EN ROUTE by airspace (annex 3B « FRA LIM ») is said not applied (no contours of the spaces in the base)',
+      'K', static=True,
+      rule='SOG-0401 lot 3 (ergonomics session, 17 Nov: ROUTE135 of Eurocontrol on EDDF → ULNOK, « la limite de raccord au départ est dépassée »; « chaque direct d\'une route TAPÉE qui dépasse sa limite = ERREUR dite comme Eurocontrol (tronçon, espace ou terrain, limite) ; une limite absente de la source reste à examiner, jamais un refus inventé »). Source measured by AeroDB: the RAD 2611 of the workstation carries 39 lines `XX_LIM_AD` in the sheet « Annex 3A Conditions » (ED: arrivals 30 NM and departures 10 NM, 0 NM for the large aerodromes — EDDF, EDDM… —; LI, LS, LE: 0 NM; LF: 50 NM, 0 NM « SID/STAR » for the large ones, a cell whose struck text was removed at the import; EH: 30 NM « except where a SID/STAR is available, RFL above FL055 »; EG: « except below FL105 »). A 0 NM limit means: the route starts at the last point of a SID and ends at the first point of a STAR; the base reads no SID or STAR for EDDF or LFMN (0 procedures), so the engine cannot tell whether ULNOK is such a point: it says « to examine » (the ERREUR would be invented: BORDI, the first point of a STAR of LFMN, is a legal end). With the procedures of the aerodrome READ, a 0 NM connection whose point is not an end of a SID (a start of a STAR) is an ERREUR for a typed route. Bench: three aerodromes with limits of 10, 40 and 0 NM written in the fixture RAD, and the shapes of the real lines with invented prefixes.')
+def k331(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import dct_limits as D, import_books as I, plan as PL, view as V
+    # 1. the grammar of the lines: the shapes of the real ones, invented prefixes (ZZ, ZY, ZX, ZW)
+    pad = lambda row: row + [''] * (17 - len(row))
+
+    class Rad:
+        book = {'sha256': 'unit', 'sheets': {'Annex 3A Conditions': [
+            {'v': pad(['', '29 OCT 2026 [2611]', 'UFN', 'ZZ_LIM_AD', 'Limits', '1. ZZ** ARR DCT 30NM EXC (ZZAA, ZZBB) ARR DCT 0NM\n\n2. ZZ** DEP DCT 10NM EXC (ZZAA, ZZCC) DEP DCT 0NM\n\n3. ZY** ARR/DEP DCT 40NM EXC\n   a. ZYNL ARR DCT 0NM\n   b. ZYNS ARR/DEP DCT 0NM', 'H24', 'ZZ'])},
+            {'v': pad(['', '29 OCT 2026 [2611]', 'UFN', 'ZX_LIM_AD', 'Limits', 'Departures/Arrivals DCT =  0NM\nZXAO / ZXBT Departures/Arrivals = 50NM\nZXGB = 0 NM', 'H24', 'ZX'])},
+            {'v': pad(['', '29 OCT 2026 [2611]', 'UFN', 'ZW_LIM_AD', 'Limits', "(ZWBD, ZWEH) ARR/DEP DCT  = 0NM\nOther AD's:  Departure/Arrivals DCT  = 30NM (Except 1. where SID/STAR is available \n2. RFL above FL055)", 'H24', 'ZW'])},
+            {'v': pad(['', '29 OCT 2026 [2611]', 'UFN', 'ZV_LIM_AD', 'Limits', '1. ZV** ARR/DEP DCT = 50NM EXC\n    a. (ZVAA, ZVBB) ARR/DEP DCT = 0NM (SID/STAR)', 'H24', 'ZV']), 'strike_removed': True},
+            {'v': pad(['', '29 OCT 2026 [2611]', 'UFN', 'ZZ_TP', 'SID / STAR Requirements', 'ZZ** DCT 99NM', 'H24', 'ZZ'])}]}}
+
+        def active(self, r):
+            return True
+    rad = Rad()
+    lim = lambda ad, end: (D.limit_of(rad, ad, end)['state'], D.limit_of(rad, ad, end)['nm'])
+    got = {k: (lim(k, 'dep'), lim(k, 'arr')) for k in ('ZZAA', 'ZZBB', 'ZZCC', 'ZZDD', 'ZYNL', 'ZYNS', 'ZYAB', 'ZXAA', 'ZXAO', 'ZXGB', 'ZWBD', 'ZWAA', 'ZVAA', 'ZVCC', 'QQQQ')}
+    c.eq(got, {'ZZAA': (('known', 0), ('known', 0)), 'ZZBB': (('known', 10), ('known', 0)), 'ZZCC': (('known', 0), ('known', 30)), 'ZZDD': (('known', 10), ('known', 30)),
+               'ZYNL': (('known', 40), ('known', 0)), 'ZYNS': (('known', 0), ('known', 0)), 'ZYAB': (('known', 40), ('known', 40)),
+               'ZXAA': (('known', 0), ('known', 0)), 'ZXAO': (('known', 50), ('known', 50)), 'ZXGB': (('known', 0), ('known', 0)),
+               'ZWBD': (('known', 0), ('known', 0)), 'ZWAA': (('complex', None), ('complex', None)), 'ZVAA': (('complex', None), ('complex', None)), 'ZVCC': (('complex', None), ('complex', None)),
+               'QQQQ': (('unknown', None), ('unknown', None))},
+         'the grammar: a general limit of the country, an exception that replaces it (a list, a single aerodrome, a direction: ARR, DEP, ARR/DEP, « Departures/Arrivals »), the order of the text; a clause that carries « except … SID/STAR … FL » or a cell whose struck text was removed is NOT decided (`complex`); a country with no line: unknown; the lines that are not `XX_LIM_AD` are not read', what='grammar')
+    # 2. the check on legs (no engine): the cases of the decision
+    leg = lambda a, b, nm, **kw: dict({'start': {'id': a}, 'end': {'id': b}, 'via': 'DCT', 'kind': 'DCT', 'nm': nm, 'alerts': [], 'compatible': True}, **kw)
+
+    class Procs:
+        def __init__(self, sids=(), stars=()):
+            self.items = {('ZZBB', 'SID'): [{'sequence': [{'id': 'ZZBB'}, {'id': x}]} for x in sids], ('ZZBB', 'STAR'): [{'sequence': [{'id': x}, {'id': 'ZZBB'}]} for x in stars]}
+
+        def options(self, ad, kind, runway=''):
+            return self.items.get((ad, kind), [])
+    summ, iss = D.check(rad, [leg('ZZBB', 'P1', 25.0), leg('P1', 'P2', 100.0), leg('P2', 'ZZCC', 12.0)], 'ZZBB', 'ZZCC', True, Procs())
+    c.eq([i[0] for i in iss], ['ERREUR'], 'a TYPED route whose direct at the departure (25 NM) is longer than the limit (10 NM): an ERREUR; the arrival ZZCC (0 NM departures… 30 NM arrivals, a direct of 12 NM) is within', what='typed')
+    c.ok(iss[0][1] == 'Raccord ZZBB → P1 : direct de 25 NM au départ, au-delà de la limite de 10 NM du RAD (ZZ_LIM_AD)', iss[0][1], 'the text says the link, the length, the end, the limit and the line of the RAD')
+    c.eq([(r['end'], r['state'], r['limit_nm'], r['leg_nm']) for r in summ['checked']], [('dep', 'exceeded', 10, 25.0), ('arr', 'within', 30, 12.0)], 'the fields of the answer: one record per end', what='record')
+    summ2, iss2 = D.check(rad, [leg('ZZBB', 'P1', 25.0), leg('P1', 'ZZCC', 12.0)], 'ZZBB', 'ZZCC', False, Procs())
+    c.eq([(i[0], 'ne peut pas s’y conformer' in i[1]) for i in iss2], [('REVUE', True)], 'a CALCULATED route (the base reads no SID): a REVUE that says the route cannot conform, never an ERREUR (the proposals would all be refused)', what='calculated')
+    # 0 NM: the SIDs unknown → to examine; the SIDs read → the end of one is within, another point is an ERREUR (typed) / a REVUE (calculated)
+    zero = lambda procs, typed, far='P1': D.check(rad, [leg('ZZAA', far, 40.0), leg(far, 'ZZAA', 40.0)], 'ZZAA', 'ZZAA', typed, procs)
+    s_unknown, i_unknown = zero(Procs(), True)
+    c.eq([(i[0], 'à examiner' in i[1]) for i in i_unknown], [('REVUE', True)] * 2, 'a limit of 0 NM and an aerodrome whose SIDs and STARs the base does not read: « to examine » (never an ERREUR: the first point may be the last of a SID), at both ends', what='zero unknown')
+
+    class Procs0(Procs):
+        def __init__(self):
+            self.items = {('ZZAA', 'SID'): [{'sequence': [{'id': 'ZZAA'}, {'id': 'EXITA'}]}], ('ZZAA', 'STAR'): [{'sequence': [{'id': 'ENTRA'}, {'id': 'ZZAA'}]}]}
+    s_in, i_in = D.check(rad, [leg('ZZAA', 'EXITA', 40.0), leg('ENTRA', 'ZZAA', 40.0)], 'ZZAA', 'ZZAA', True, Procs0())
+    s_out, i_out = D.check(rad, [leg('ZZAA', 'P1', 40.0), leg('P2', 'ZZAA', 40.0)], 'ZZAA', 'ZZAA', True, Procs0())
+    s_calc, i_calc = D.check(rad, [leg('ZZAA', 'P1', 40.0), leg('P2', 'ZZAA', 40.0)], 'ZZAA', 'ZZAA', False, Procs0())
+    c.eq(([i[0] for i in i_in], [r['state'] for r in s_in['checked']], [i[0] for i in i_out], [r['state'] for r in s_out['checked']], [i[0] for i in i_calc]), ([], ['within'] * 2, ['ERREUR'] * 2, ['exceeded'] * 2, ['REVUE'] * 2),
+         'the SIDs and STARs READ: a route that starts at the last point of a SID and ends at the first of a STAR is within; another point is an ERREUR for a typed route (the link, the length, 0 NM, the line, « n’est le dernier point d’aucune SID »), a REVUE for a calculated one', what='zero read')
+    c.eq(sorted(D.check(rad, [leg('ZZAA', 'X', 5.0, procedure_id='P'), leg('X', 'ZZAA', 5.0, via='STAR', kind='STAR')], 'ZZAA', 'ZZAA', True, Procs())[0]), ['checked', 'not_applied'],
+         'a SID or a STAR read (a leg of procedure) is not a direct: nothing is checked at that end', what='procedure')
+    c.ok(any('3B' in x and 'FRA LIM' in x for x in summ['not_applied']), str(summ['not_applied']), 'the limit of the direct EN ROUTE (annex 3B FRA LIM, by airspace) is said not applied: the base has no contours of those spaces')
+    # a damaged or falsified cell (Sécurisation): 5 000 digits then « NM » is not a limit of NM (four digits at most): no exception, the line stays « to examine »
+    class Bad:
+        book = {'sha256': None, 'file': None, 'sheets': {'Annex 3A Conditions': [{'v': pad(['', '29 OCT 2026 [2611]', 'UFN', 'ZB_LIM_AD', 'Limits', '9' * 5000 + ' NM', 'H24', 'ZB'])}]}}
+
+        def active(self, r):
+            return True
+    try:
+        bad = D.limit_of(Bad(), 'ZBAA', 'dep')
+        again = D.limit_of(Bad(), 'ZBAA', 'dep')
+    except Exception as e:
+        bad = again = repr(e)
+    c.ok(isinstance(bad, dict) and isinstance(again, dict) and bad['state'] in ('known', 'complex', 'unknown') and None not in D.CACHE and D.parse('ZB_LIM_AD', '9' * 5000 + ' NM')[0]['nm'] <= 9999, str(bad)[:120],
+         'a cell of 5 000 digits then NM raises nothing (the limit is read in four digits at most) and a workbook with neither digest nor name is not cached (two workbooks never share an entry)')
+    # 3. end to end: the fixture RAD with three lines, a TYPED route and a CALCULATED one
+    sheets = RF.rad_sheets()
+    cond = [RF.RAD_HEAD,
+            pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF_LIM_AD', 'Limits', '1. LF** ARR/DEP DCT = 50NM EXC\n    a. LFPO ARR/DEP DCT = 10NM', 'H24', 'LF']),
+            pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'EI_LIM_AD', 'Limits', 'EI** ARR/DEP DCT = 40NM EXC EIDW ARR DCT 0NM', 'H24', 'EI'])]
+    sheets = [(n, cond if n == 'Annex 3A Conditions' else rows) for n, rows in sheets]
+
+    def run(**req):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad_file, sheets)
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad_file)[1]]))
+            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **req)
+            request = V.to_request(args)
+            res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+            return res, V.to_view(res, request)
+    res, view = run(action='check', route='LFPO DCT OLZOM B1 SITET A1 BOYNE DCT EIDW')
+    p = res['primary']
+    errs = [i['text'] for i in p['issues'] if i['level'] == 'ERREUR' and 'Raccord' in i['text']]
+    c.eq(len(errs), 1, 'the typed route LFPO DCT OLZOM…: the direct LFPO → OLZOM (about 35 NM) is above the 10 NM that the line of LF gives to LFPO: ONE ERREUR « Raccord LFPO → OLZOM »', what='e2e typed')
+    c.ok(errs and errs[0].startswith('Raccord LFPO → OLZOM : direct de ') and 'limite de 10 NM du RAD (LF_LIM_AD)' in errs[0], str(errs), 'the text of the ERREUR')
+    rec = {(r['ad'], r['end']): r['state'] for r in p['dct_limits']['checked']}
+    c.eq(rec, {('LFPO', 'dep'): 'exceeded', ('EIDW', 'arr'): 'unknown'}, 'the record: LFPO exceeded (10 NM), EIDW at 0 NM with no STAR read: unknown (« to examine », not an error)', what='e2e record')
+    c.ok(view['dct_limits'] == p['dct_limits'] and view['alternatives'][0]['faults'] >= 1, str(view['dct_limits'])[:120], 'the view carries `dct_limits`, the alternative counts the fault')
+    res2, view2 = run(action='compute', via=[])
+    p2 = res2['primary']
+    c.eq(([i['text'] for i in p2['issues'] if i['level'] == 'ERREUR' and 'Raccord' in i['text']], sum('au-delà de la limite de 10 NM' in i['text'] for i in p2['issues'] if i['level'] == 'REVUE')), ([], 1),
+         'the CALCULATED route (the search writes it, no SID in the base): no ERREUR, one REVUE that says the direct is above the limit', what='e2e calculated')

@@ -1,0 +1,178 @@
+"""SOG-0401 (lot 3) : les LIMITES DES DIRECTS au raccord d'un terrain, lues dans le classeur RAD déjà déposé sur le poste (annexe 3A, feuille « Conditions », lignes `XX_LIM_AD`).
+
+Le RAD borne, par pays, le direct (DCT) que le plan de vol peut tracer depuis le terrain de départ (ou vers le terrain d'arrivée) : « ED** DEP DCT 10 NM, sauf (EDDF, EDDM…) 0 NM » veut dire qu'à Francfort la route doit commencer au dernier
+point de la SID (un direct de 0 NM) ; Eurocontrol répond ROUTE135 à un « EDDF DCT ULNOK ». Cette limite est décidable : un nombre, un terrain, un sens. Le moteur la lit, comme le fait le contrôle des plafonds de voies (SOG-0401, point 4),
+et la dit.
+
+Ce que ce module lit : le texte de chaque ligne `XX_LIM_AD` en CLAUSES « sujet — sens — limite en NM » (sujet : le pays entier `ED**`, une liste `(EDAC, EDDF…)`, un terrain seul ; sens : ARR, DEP ou les deux, « Departures/Arrivals » compris),
+dans l'ordre du texte (une exception vient après la règle générale et la remplace). Une clause qui porte un niveau, une heure ou « sauf en dessous de FL… » n'est PAS décidée (`complex`) : le terrain qu'elle nomme reste « à examiner », jamais
+un refus inventé. Un terrain qu'aucune clause ne nomme et dont le pays n'a pas de feuille : limite inconnue, « à examiner » aussi.
+
+Ce que ce module NE lit PAS : la limite des directs EN ROUTE par espace (annexe 3B, « FRA LIM ») : elle dépend du contour des espaces (EDUUFRAE, LFFFACC…) que la base n'a pas ; elle est dite « non appliquée » dans la réponse.
+Python : bibliothèque standard."""
+import re
+
+SHEET = 'Annex 3A Conditions'
+ID = re.compile(r'^([A-Z]{2})_LIM_AD$')
+NM = re.compile(r'(\d{1,4})\s*NM', re.I)      # une limite de NM s'écrit en quatre chiffres au plus (jamais un entier non borné : un texte falsifié ne lève rien)
+ICAO = re.compile(r'\b[A-Z]{2}[A-Z0-9]{2}\b')
+STOP = {'STAR', 'EXC', 'NOTE', 'ONLY', 'FROM', 'THEN', 'WITH', 'DEPA', 'ARRI'}      # des mots de quatre signes qui ne sont pas des terrains
+COMPLEX = re.compile(r'\bFL\s*\d|\bBELOW\b|\bABOVE\b|\bABV\b|\bBLW\b|\bDURING\b|\bNIGHT\b|\bH\d\d\b|\d\d:\d\d', re.I)
+MAX_TEXT = 8000
+CACHE = {}
+
+
+def _kinds(seg):
+    s = seg.upper()
+    found = None
+    for m in re.finditer(r'ARR\s*/\s*DEP|DEP\s*/\s*ARR|DEPARTURES?\s*/\s*ARRIVALS?|ARRIVALS?\s*/\s*DEPARTURES?|\bARR\b|\bDEP\b|\bARRIVALS?\b|\bDEPARTURES?\b', s):
+        t = m.group(0)
+        found = {'arr', 'dep'} if '/' in t else {'arr'} if t.startswith('ARR') else {'dep'}
+    return found or {'arr', 'dep'}
+
+
+def _subject(seg):
+    """(préfixe, ensemble de terrains) du sujet d'une clause ; (None, None) : le pays de la feuille tout entier."""
+    lists = [m.group(1) for m in re.finditer(r'\(([^()]*)\)', seg)]
+    for body in reversed(lists):
+        codes = {x for x in ICAO.findall(body.upper()) if x not in STOP}
+        if codes:
+            return None, codes
+    pref = re.findall(r'\b([A-Z]{2})\*\*', seg.upper())
+    if pref:
+        return pref[-1], None
+    codes = {x for x in ICAO.findall(seg.upper()) if x not in STOP}
+    return (None, codes) if codes else (None, None)
+
+
+def parse(sheet_id, text, struck=False):
+    """Les clauses d'une ligne `XX_LIM_AD` : [{ prefix, codes, kinds, nm, complex }] dans l'ordre du texte ; [] si rien n'est lisible. `struck` : une partie barrée de la cellule a été retirée à l'import : le texte n'est pas sûr, toutes ses clauses sont `complex`."""
+    flat = ' '.join(str(text or '')[:MAX_TEXT].replace('\r', '\n').split())
+    out, last = [], 0
+    ms = list(NM.finditer(flat))
+    for n, m in enumerate(ms):
+        seg = flat[last:m.end()]
+        last = m.end()
+        after = flat[m.end():(ms[n + 1].start() if n + 1 < len(ms) else len(flat))][:200]      # ce qui suit la limite, jusqu'à la clause suivante : « (sauf là où une SID existe, RFL au-dessus de FL055) » la rend non décidée
+        pref, codes = _subject(seg)
+        out.append({'prefix': pref, 'codes': sorted(codes) if codes else None, 'kinds': sorted(_kinds(seg)), 'nm': int(m.group(1)), 'other': bool(re.search(r'\bOTHERS?\b', seg, re.I)),
+                    'complex': bool(struck or COMPLEX.search(seg) or COMPLEX.search(after) or re.search(r'\bEXCEPT\b', after, re.I))})
+    return out
+
+
+def rules(rad):
+    """{ identifiant de feuille : [clauses] } du classeur en vigueur ; gardé par classeur. Vide sans RAD."""
+    book = getattr(rad, 'book', None)
+    if not book:
+        return {}
+    key = book.get('sha256') or book.get('file')      # sans empreinte ni nom : pas de cache (deux classeurs ne partagent jamais une entrée)
+    if key and key in CACHE:
+        return CACHE[key]
+    out = {}
+    for r in (book.get('sheets') or {}).get(SHEET, []):
+        v = r.get('v') or []
+        if len(v) < 6 or v[0] == 'DEL' or not ID.match(str(v[3]).strip()):
+            continue
+        try:
+            if not rad.active(r):
+                continue
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+        try:
+            clauses = parse(str(v[3]).strip(), v[5], bool(r.get('strike_removed')))
+        except (ValueError, TypeError, RecursionError):      # un texte abîmé ou falsifié : aucune clause, la ligne reste « à examiner »
+            clauses = []
+        out.setdefault(str(v[3]).strip(), []).extend(clauses)
+    if key:
+        if len(CACHE) > 8:
+            CACHE.clear()
+        CACHE[key] = out
+    return out
+
+
+def limit_of(rad, icao, end):
+    """La limite du direct au raccord de `icao` (`end` : 'dep' ou 'arr') : { state: known | complex | unknown, nm, rule } ; `rule` : la feuille qui la porte.
+    known : un nombre de NM ; complex : une clause qui nomme ce terrain porte un niveau ou une heure (non décidée) ; unknown : aucune clause."""
+    icao = str(icao or '').upper()
+    state, nm, rule = 'unknown', None, None
+    for sid, clauses in rules(rad).items():
+        named = set()      # les terrains que les clauses d'avant de la feuille nomment : « Other AD's » veut dire tous les autres
+        for cl in clauses:
+            if cl['codes']:
+                named |= set(cl['codes'])
+            if end not in cl['kinds'] or (cl.get('other') and icao in named):
+                continue
+            general = cl['prefix'] is None and cl['codes'] is None and icao.startswith(sid[:2])
+            hit = general or (cl['prefix'] and icao.startswith(cl['prefix'])) or (cl['codes'] and icao in cl['codes'])
+            if not hit:
+                continue
+            rule = sid
+            if cl['complex']:
+                state, nm = 'complex', None
+            else:
+                state, nm = 'known', cl['nm']
+    return {'state': state, 'nm': nm, 'rule': rule}
+
+
+def connection_points(procedures, ad, end):
+    """Les points par lesquels une route peut quitter (SID : son dernier point) ou rejoindre (STAR : son premier point) le terrain d'après les procédures LUES ; None quand la base n'en lit aucune pour ce terrain (alors on ne sait pas)."""
+    try:
+        items = procedures.options(ad, 'SID' if end == 'dep' else 'STAR')
+    except Exception:
+        return None
+    pts = {str(x['sequence'][-1 if end == 'dep' else 0].get('id', '')).upper() for x in items if x.get('sequence')}
+    return pts or None
+
+
+def check(rad, legs, dep, arr, typed, procedures=None):
+    """Le contrôle des raccords d'un résultat : ({ checked: [...], not_applied: [...] }, [(niveau, texte)]). Un raccord est le PREMIER tronçon depuis le terrain de départ (le DERNIER vers celui d'arrivée) quand c'est un direct sans
+    SID ni STAR lue. Trois cas : (1) limite de N > 0 NM dépassée : ERREUR pour une route TAPÉE (comme Eurocontrol), REVUE pour une route calculée (la base n'a pas la SID que le RAD exige : la route le dit) ; (2) limite de 0 NM : la route doit
+    commencer au dernier point d'une SID (finir au premier d'une STAR) : ERREUR pour une route tapée si les procédures du terrain sont LUES et que le point n'en est pas un ; sans procédure lue, « à examiner » (on ne sait pas si le point en est un) ;
+    (3) limite non décidée ou inconnue : « à examiner », jamais un refus inventé."""
+    checked, issues = [], []
+    note = ['limite des directs par espace (annexe 3B FRA LIM) : contours des espaces absents de la base']
+    if not legs or not getattr(rad, 'book', None):
+        return {'checked': checked, 'not_applied': note}, issues
+    for end, ad, leg in (('dep', dep, legs[0]), ('arr', arr, legs[-1])):
+        if not ad or leg.get('procedure_id') or leg.get('via') != 'DCT' or leg.get('kind') in ('SID', 'STAR', 'APPROACH_LINK'):
+            continue
+        a, b = str((leg.get('start') or {}).get('id', '')).upper(), str((leg.get('end') or {}).get('id', '')).upper()
+        if (a if end == 'dep' else b) != str(ad).upper():
+            continue
+        far = b if end == 'dep' else a
+        nm = round(float(leg.get('nm') or 0), 1)
+        lim = limit_of(rad, ad, end)
+        rec = {'ad': ad, 'end': end, 'point': far, 'leg_nm': nm, 'state': lim['state'], 'limit_nm': lim['nm'], 'rule': lim['rule']}
+        what = 'départ' if end == 'dep' else 'arrivée'
+        link = f'{ad} → {far}' if end == 'dep' else f'{far} → {ad}'
+        proc = 'SID' if end == 'dep' else 'STAR'
+        flag = lambda: (leg.setdefault('alerts', []).append('Limite du direct au raccord (RAD ' + str(lim['rule']) + ')'), leg.__setitem__('compatible', False))
+        if lim['state'] == 'known' and lim['nm'] > 0:
+            if nm > lim['nm']:
+                rec['state'] = 'exceeded'
+                if typed:
+                    issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, au-delà de la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]})'))
+                    flag()
+                else:
+                    issues.append(('REVUE', f'{ad} : raccord direct de {nm:g} NM au {what}, au-delà de la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]}) ; la route ne peut pas s’y conformer sans {proc} lue'))
+            else:
+                rec['state'] = 'within'
+        elif lim['state'] == 'known':      # 0 NM : le raccord est la SID / la STAR elle-même
+            pts = connection_points(procedures, ad, end)
+            if pts is None:
+                rec['state'] = 'unknown'
+                issues.append(('REVUE', f'{ad} : limite du direct au raccord de 0 NM (RAD {lim["rule"]}) : la route doit {"commencer au dernier point d’une SID" if end == "dep" else "finir au premier point d’une STAR"} ; la base ne lit aucune {proc} pour {ad}, on ne peut pas dire si {far} en est un (à examiner)'))
+            elif far in pts:
+                rec['state'] = 'within'
+            else:
+                rec['state'] = 'exceeded'
+                if typed:
+                    issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, la limite du RAD est de 0 NM ({lim["rule"]}) et {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} de {ad}'))
+                    flag()
+                else:
+                    issues.append(('REVUE', f'{ad} : raccord direct de {nm:g} NM au {what}, limite de 0 NM du RAD ({lim["rule"]}) : {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} lue'))
+        else:
+            why = 'limite avec niveau ou horaire, non décidée' if lim['state'] == 'complex' else 'aucune limite lue pour ce terrain'
+            issues.append(('REVUE', f'{ad} : limite du direct au raccord à examiner ({why}) ; direct de {nm:g} NM'))
+        checked.append(rec)
+    return {'checked': checked, 'not_applied': note}, issues
