@@ -11175,7 +11175,7 @@ def k289(c):
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
         took = time.perf_counter() - t
         v = view.to_view(res, view.to_request(args))
-        c.eq((v['status'], res['primary'].get('ok'), res['budget']['ocean'], 'NAT' in str(res['primary'].get('route')), took < 20), ('computed', True, True, True, True), 'EIDW → KJFK on the real base: a ROUTE (by a NAT track), not a fallback proposal, in less than 20 s', what='real flight')
+        c.eq((v['status'], res['primary'].get('ok'), res['budget']['ocean'], bool((res.get('sections') or {}).get('chosen')), took < 20), ('computed', True, True, True, True), 'EIDW → KJFK on the real base: a ROUTE (by a NAT track: `sections.chosen`; SOG-0414: written point by point, the exit of the track being unknown to the base), not a fallback proposal, in less than 20 s', what='real flight')
         # the 20 s in all hold, even for the flight that has no route (LFPO → KLAX on this base): the alternatives are not started when they could not end in time, the fallback proposals keep the end of the budget
         args = {'action': 'compute', 'adep': 'LFPO', 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-17T12:00', 'proposals': True, 'alternatives': True}
         t = time.perf_counter()
@@ -13779,3 +13779,62 @@ def k314(c):
             NR._last.update(saved[2])
             results_cache.ENABLED = True
     c.ok("{'data': DATA, 'nat_refresh': True," in (ROOT / 'tools' / 'launch.py').read_text(encoding='utf-8'), 'tools/launch.py', 'the launcher gives its jobs the right to read the source again (`nat_refresh` in the context of the jobs); nobody else has it')
+
+
+@case('K325', 'Route engine, SOG-0414: « NATx » is written only for a route followed from its FIRST to its LAST published point; a route whose end (its exit, a Canadian fix) the base cannot place is written point by point, never under its name, and a review says why, with the points that are missing and the North American routes of the message that are not followed (`sections.taken.partial` = { from, to, missing, exit_missing, nar }, `written` = points | name)',
+      'K', static=True,
+      rule='SOG-0414 (the ergonomics session, 17 Nov, from the page of the source: « OPERATORS ARE REMINDED TO ONLY USE NAT TRACK DESIGNATORS IN FLIGHT PLANS WHEN FLYING THE WHOLE LENGTH OF THE NAT TRACK »; measured: the six exits of the day (JANJO, LOMSI, RIKAL, SAXAN, TUDEP, ALLRY) are unknown to the base, the route F is cut at 51/50 and the calculation wrote « RESNO NATF 51/50 DCT NICSO N260B-N271B ALLEX »: the route NAT left at 51/50, did not go by ALLRY, took another North American route, and was called NATF). `nat_layer.add` notes the published points that it cannot place (`partial`: the first and last placed, the missing ones, whether the exit is missing, the NAR of the message that `read` keeps); the body of such a route has the route `DCT` (like a route out of its window, R2), the legs carry `nat.partial`, `engine.assess` says « Route NAT F suivie de RESNO à 51/50 seulement : sa sortie ALLRY n\'est pas dans la base ; les routes nord-américaines N484E / N468A du message ne sont pas suivies ; écrite point par point, jamais sous son nom. », `sections.taken` carries `written` and `partial`. A route whose points are all placed is still written under its name.')
+def k325(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'HI1': (46.0, -58.0), 'ENTRA': (50.0, -50.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'HI1']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    track = lambda exit_: {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', exit_], 'east': ['350', '360', '370'], 'west': [], 'nar': ['N484E', 'N468A'], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T19:00:00Z'}
+    out = {}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        results_cache.ENABLED = False
+        try:
+            for name, exit_ in (('complete', 'EXITA'), ('partial', 'NOEXIT')):
+                data = os.path.join(td, name)
+                os.makedirs(data)
+                RF.make_base(data)
+                d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+                for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                             'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+                    with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                        json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+                rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+                RF.write_xlsx(rad, RF.rad_sheets())
+                radz = os.path.join(data, 'route', 'rad.json.gz')
+                I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+                fra = os.path.join(data, 'route', 'fra.json.gz')
+                with gzip.open(fra, 'wt', encoding='utf-8') as f:
+                    json.dump([], f)
+                folder = os.path.join(data, 'sia', 'zones', 'nat')
+                os.makedirs(folder)
+                with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'tracks': [track(exit_)]}, f)
+                args = {'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T04:30', 'alternatives': False, 'proposals': False, 'fl': 370}
+                res = PL.compute(view.to_request(args), data, radz, fra)
+                sec = res.get('sections') or {}
+                taken = sec.get('taken') or {}
+                out[name] = (str((res.get('primary') or {}).get('route')), sec.get('chosen'), taken.get('written'), taken.get('partial'),
+                             [i['text'] for i in (res.get('primary') or {}).get('issues', []) if i['text'].startswith('Route NAT ')],
+                             [l.get('control') for l in (res.get('primary') or {}).get('legs', []) if l.get('nat') and not l.get('nat_link')])
+        finally:
+            results_cache.ENABLED = True
+    c.eq(('NATA' in out['complete'][0], out['complete'][2], out['complete'][3], out['complete'][4]), (True, 'name', None, []),
+         'a route whose points are all placed is written under its name (« NATA ») and says nothing', what='complete')
+    c.eq((out['partial'][1], 'NATA' in out['partial'][0], 'DCT 51/40 DCT 5130/30 DCT 52/20' in out['partial'][0], out['partial'][2], out['partial'][3]),
+         ('A', False, True, 'points', {'from': 'ENTRA', 'to': '52/20', 'missing': ['NOEXIT'], 'exit_missing': True, 'nar': ['N484E', 'N468A']}),
+         'the exit of the route is unknown to the base: the route A is still taken (the entry, the points, the exit link) but written point by point, never « NATA » (red before: « ENTRA NATA 52/20 »); `sections.taken` says `points` and the missing exit and the NAR of the message', what='partial')
+    c.eq(out['partial'][5], ['incomplete'] * 3, 'the legs written point by point keep the control of a NAT track (« incomplete »: the oceanic clearance is not read), not « DCT hors liste du RAD : non contrôlé »', what='control')
+    c.eq(out['partial'][4], ["Route NAT A suivie de ENTRA à 52/20 seulement : sa sortie NOEXIT n'est pas dans la base ; les routes nord-américaines N484E / N468A du message ne sont pas suivies ; écrite point par point, jamais sous son nom."],
+         'a review says why: the last point placed, the missing exit, the North American routes of the message that are not followed', what='review')

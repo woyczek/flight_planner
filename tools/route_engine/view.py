@@ -77,14 +77,14 @@ def segment(leg):
 
 def nat_of(segs):
     """Le résumé NAT d'une alternative (SOG-0263) : { tracks: ['A'], issued: 'JJ/MM' | None, stale: bool } d'après les tronçons des tracks ; None sans track."""
-    used = [s['nat'] for s in segs if s.get('nat') and not s.get('nat_link') and (s['via'].startswith('NAT') or s['nat'].get('out_of_window'))]
+    used = [s['nat'] for s in segs if s.get('nat') and not s.get('nat_link') and (s['via'].startswith('NAT') or s['nat'].get('out_of_window') or s['nat'].get('partial'))]
     if not used:
         return None
     return {'tracks': list(dict.fromkeys(n.get('letter') or n['track'] for n in used)), 'issued': next((n['issued'] for n in used if n.get('issued')), None), 'stale': any(n['stale'] for n in used)}
 
 
 def issue_kind(text):
-    if text.startswith(('Routes NAT', 'Raccord NAT')):
+    if text.startswith(('Routes NAT', 'Raccord NAT', 'Route NAT')):
         return 'NAT'
     return reason_of(text)['kind'] if re.search(r'[Ss]ens interdit|[Cc]ontinuité|RAD|plancher|plafond|FRA', text) else None
 

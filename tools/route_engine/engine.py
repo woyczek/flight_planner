@@ -857,12 +857,21 @@ def assess(request,_nav=None,_rad=None,_path=None):
         for r in band_runs:
             for l in r['legs']:
                 l['alerts'].append(r['short']); l['compatible']=False
-    nat_legs=[l['nat'] for l in legs if l.get('nat') and not l.get('nat_link') and (l['via'].startswith('NAT') or l['nat'].get('out_of_window'))]   # SOG-0263 : les tracks du jour sont prises même périmées, et dites
+    nat_legs=[l['nat'] for l in legs if l.get('nat') and not l.get('nat_link') and (l['via'].startswith('NAT') or l['nat'].get('out_of_window') or l['nat'].get('partial'))]   # SOG-0263 : les tracks du jour sont prises même périmées, et dites
+    seen_partial=set()
     if nat_legs:
         used=list(dict.fromkeys(n.get('letter') or n['track'] for n in nat_legs)); issued=next((n['issued'] for n in nat_legs if n.get('issued')),None); stale=any(n['stale'] for n in nat_legs if n.get('source')!='kept');kept=any(n.get('source')=='kept' for n in nat_legs)      # SOG-0394 : une route GARDÉE d'un message précédent n'est jamais « prise quand même » : elle n'est là que valable à l'heure de son passage
         outw=next((n for n in nat_legs if n.get('out_of_window')),None)      # SOG-0403 (R2) : une route prise HORS de sa fenêtre est dite, écrite point par point (jamais « NATx »)
         if outw:issue('REVUE',f'Route NAT hors de sa fenêtre : système du {issued or "?"} (de {(outw.get("from") or "?")[:16]} à {(outw.get("to") or "?")[:16]}), route {" ".join(used)} suivie point par point, sa liste de niveaux ne lie pas ; autorisation océanique non vérifiée.')
-        else:issue('REVUE',f'Routes NAT du {issued or "?"}'+(', périmées' if stale else '')+f' : {" ".join("NAT"+t for t in used)}. '
+        for n in nat_legs:      # SOG-0414 : une route NAT que la base ne sait pas suivre d'un bout à l'autre est écrite point par point, et la raison est dite (jamais « NATx » pour une portion)
+            pa=n.get('partial')
+            if pa and n['track'] not in seen_partial:
+                seen_partial.add(n['track'])
+                many=len(pa['missing'])>1
+                gone=f'sa sortie {pa["missing"][-1]} n\'est pas dans la base' if pa.get('exit_missing') and not many else (", ".join(pa["missing"])+(" ne sont" if many else " n\'est")+" pas dans la base")
+                issue('REVUE',f'Route NAT {n.get("letter") or n["track"]} suivie de {pa["from"]} à {pa["to"]} seulement : {gone}'+(f' ; les routes nord-américaines {" / ".join(pa["nar"])} du message ne sont pas suivies' if pa.get('nar') else '')+' ; écrite point par point, jamais sous son nom.')
+        if all(n.get('partial') for n in nat_legs) and not outw:pass
+        elif not outw:issue('REVUE',f'Routes NAT du {issued or "?"}'+(', périmées' if stale else '')+f' : {" ".join("NAT"+t for t in used)}. '
               +('Prises quand même (le message en vigueur au moment du vol n\'est pas lu) ; ' if stale else "Route gardée d'un message précédent, valable à l'heure de son passage ; " if kept else 'Message du jour ; ')+'autorisation océanique non vérifiée.')
     random_legs=[l for l in legs if l.get('origin')=='random']
     if random_legs:issue('REVUE','Route libre océanique, créée : '+' '.join(dict.fromkeys(l['start']['id'] for l in random_legs))+' '+random_legs[-1]['end']['id']+' (un point par 10° de longitude, à la latitude entière du chemin le plus court). Non publiée : autorisation océanique non vérifiée.')

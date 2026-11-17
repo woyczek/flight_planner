@@ -25,7 +25,7 @@ def oriented_chains(nodes, g, east):
     for u, es in g.items():
         for v, e in es:
             meta = e.get('nat')
-            if meta and not e.get('nat_link') and (str(e.get('route', '')).startswith('NAT') or meta.get('out_of_window')):      # SOG-0403 (R2) : une route hors de sa fenêtre s'écrit point par point (`DCT`), son méta le dit
+            if meta and not e.get('nat_link') and (str(e.get('route', '')).startswith('NAT') or meta.get('out_of_window') or meta.get('partial')):      # SOG-0403 (R2) : une route hors de sa fenêtre s'écrit point par point (`DCT`), son méta le dit
                 by.setdefault(meta['track'], {'direction': meta.get('direction'), 'legs': []})['legs'].append((u, v, e))
     out = {}
     for tid, t in by.items():
@@ -346,7 +346,8 @@ def _taken(nav, info, tid, outwin=None):
     m = ((getattr(nav, 'nat', None) or {}).get('meta') or {}).get(tid) or {}
     info['taken'] = {'track': m.get('letter') or tid, 'key': tid, 'source': 'kept' if m.get('source') == 'kept' else 'last', 'from': m.get('from'), 'to': m.get('to'), 'issued': m.get('issued'),
                      'window': 'out' if outwin else 'in', 'levels_binding': not outwin, **({'system': {'sense': 'east' if (m.get('direction') == 'east') else 'west' if m.get('direction') == 'west' else m.get('direction'), 'from': outwin['from'], 'to': outwin['to'], 'relation': outwin['relation']}, 'out': {k: outwin['fields'][k] for k in ('at', 'point', 'near') if k in outwin['fields']}} if outwin else {}),
-                     'points': list(((getattr(nav, 'nat', None) or {}).get('points') or {}).get(tid) or [])}
+                     'points': list(((getattr(nav, 'nat', None) or {}).get('points') or {}).get(tid) or []),
+                     'written': 'points' if m.get('partial') or outwin else 'name', **({'partial': m['partial']} if m.get('partial') else {})}      # SOG-0414 : « NATx » n'est écrit que d'un bout à l'autre ; `partial` = { from, to, missing, exit_missing, nar } dit pourquoi les points sont écrits un à un
 
 
 def _entry(nav, g, info):

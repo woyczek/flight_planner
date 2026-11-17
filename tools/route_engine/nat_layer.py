@@ -163,7 +163,8 @@ def read(path, limit=MAX_TRACKS):
         if len(pts) < 2:
             skipped.append(f'{tid}: points')
             continue
-        out.append({'id': tid, 'points': pts, 'east': east, 'west': west, 'from': _date(t.get('from')), 'to': _date(t.get('to'))})
+        nar = [x.strip().upper() for x in (t.get('nar') if isinstance(t.get('nar'), list) else [])[:12] if isinstance(x, str) and NAME.fullmatch(x.strip().upper())]      # SOG-0414 : les routes nord-américaines du message (« NAR N484E N468A »), dites quand la route n'est pas suivie jusqu'à leur départ
+        out.append({'id': tid, 'points': pts, 'east': east, 'west': west, 'nar': nar, 'from': _date(t.get('from')), 'to': _date(t.get('to'))})
     return out, skipped
 
 
@@ -241,6 +242,7 @@ def add(nav, nm):
         # les repères : placés (clé du nœud) ou laissés de côté
         anchor = next((p for p in t['points'] if 'lat' in p), None)
         keys = []
+        missing = []      # SOG-0414 : les points publiés que la base ne sait pas placer (le plus souvent la SORTIE : un repère canadien)
         for p in t['points']:
             if 'lat' in p:
                 keys.append(nav.add({'id': p['id'], 'lat': p['lat'], 'lon': p['lon']}))
@@ -248,6 +250,7 @@ def add(nav, nm):
             cands = [k for k in nav.ids.get(p['id'], []) if k in nav.nodes]
             if not cands:
                 nav.nat['skipped'].append(f'{t["id"]}: {p["id"]} inconnu')
+                missing.append(p['id'])
                 continue
             if anchor and len(cands) > 1:
                 cands.sort(key=lambda k: nm(nav.nodes[k], anchor))
@@ -262,13 +265,16 @@ def add(nav, nm):
         lower, upper = min(levels) * 100, max(levels) * 100
         direction = 'west' if t['west'] and not t['east'] else 'east' if t['east'] and not t['west'] else 'both'
         stale = bool(t['to'] and day and t['to'].date() < day)
+        partial = {'from': nav.nodes[keys[0]]['id'], 'to': nav.nodes[keys[-1]]['id'], 'missing': missing, 'exit_missing': t['points'][-1]['id'] in missing, 'nar': list(t.get('nar') or [])} if missing else None      # SOG-0414 : la route n'est pas suivie d'un bout à l'autre : « NATx » ne s'écrit pas, les points un à un
         meta = {'track': tid, 'direction': direction, 'levels': sorted(set(levels)), 'levels_east': list(t['east']), 'levels_west': list(t['west']), 'from': t['from'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['from'] else None,
                 'to': t['to'].strftime('%Y-%m-%dT%H:%M:%SZ') if t['to'] else None, 'stale': stale, 'issued': t['from'].strftime('%d/%m') if t['from'] else None}
         if isk:      # SOG-0394 : la lettre, la source et le nom dit (« R gardée du 17/11 ») d'une route gardée
             meta.update(letter=t['id'], source='kept', label=f"{t['id']} (gardée du {meta['issued'] or '?'})")
         sense = 'FB' if direction == 'both' else 'F'
+        if partial:
+            meta['partial'] = partial
         for a, b in zip(keys, keys[1:]):
-            nav.edges.append(dict(a=a, b=b, route='NAT' + t['id'], lower=lower, upper=upper, dir=sense, nm=nm(nav.nodes[a], nav.nodes[b]), zone='nat',
+            nav.edges.append(dict(a=a, b=b, route='DCT' if partial else 'NAT' + t['id'], lower=lower, upper=upper, dir=sense, nm=nm(nav.nodes[a], nav.nodes[b]), zone='nat',
                                   source_cycle=(t['from'].strftime('%Y-%m-%d') if t['from'] else None), nat=meta))
         high = network_for(lower)      # SOG-0412 : les nœuds de voies qui atteignent le plus bas niveau de la track (au moins le réseau haut d'avant)
         for end, node, into in (('entry', keys[0], True), ('exit', keys[-1], False)):

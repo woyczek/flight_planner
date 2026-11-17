@@ -66,7 +66,7 @@ def annotate(result, rad):
                 control, why = 'incomplete', 'liaison FRA candidate : rôles et niveaux contrôlés, volumes et NPZ non lus'
             elif l.get('nat_link'):      # SOG-0263 : le raccord DCT du réseau à une track NAT (ou de la track au réseau) est une simulation : jamais « contrôlé », même si le RAD publiait la paire
                 control, why = 'fallback', 'raccord NAT : DCT de simulation'
-            elif str(l.get('via') or '').startswith('NAT') and l.get('nat'):      # une track NAT du jour n'est pas un segment d'airway publié : l'autorisation océanique n'est pas lue
+            elif l.get('nat') and (str(l.get('via') or '').startswith('NAT') or l['nat'].get('partial') or l['nat'].get('out_of_window')):      # SOG-0414 / SOG-0403 (R2) : une route NAT écrite point par point (DCT) reste une track du jour      # une track NAT du jour n'est pas un segment d'airway publié : l'autorisation océanique n'est pas lue
                 control, why = 'incomplete', 'track NAT du jour' + (', périmée' if l['nat'].get('stale') else '') + ' : autorisation océanique non vérifiée'
             elif l.get('via') != 'DCT':
                 control, why = ('controlled', 'segment d’airway publié') if not l.get('data_gap') else ('incomplete', str(l.get('data_gap'))[:160])
