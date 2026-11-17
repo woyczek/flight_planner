@@ -54,6 +54,12 @@ const ident = v => {
   const x = text(v, 12).toUpperCase();
   return /^[A-Z0-9]{1,12}$/.test(x) ? x : '';
 };
+/** SOG-0411 (D) : l'extrémité d'un tronçon — un identifiant, ou un point de coordonnées écrit comme dans le message NAT (« 51/50 »,
+ *  « 5130/30 ») ; '' sinon (avant : « 51/50 » était refusé, la ligne lisait « RESNO– »). */
+const endId = v => {
+  const x = text(v, 12).toUpperCase();
+  return /^(?:[A-Z0-9]{1,12}|\d{2,4}\/\d{2,3})$/.test(x) ? x : '';
+};
 /** SOG-0296 : ce que la réponse dit de son cache (AeroDB, `cache: { hit, computedAt, until }`) — { hit: true, at: ISO } quand le résultat
  *  vient du cache du poste, null sinon (une entrée non fiable : seule une date lisible passe). */
 const cacheOf = c => c && typeof c === 'object' && c.hit === true && Number.isFinite(Date.parse(c.computedAt)) ? {
@@ -143,8 +149,8 @@ export async function run(launcher, args, {
 /** Un tronçon de la réponse, borné : sa sorte prise dans la liste du contrat (sinon « altitude », comme le lanceur). */
 function segOf(s) {
   return {
-    from: ident(s?.from),
-    to: ident(s?.to),
+    from: endId(s?.from),
+    to: endId(s?.to),
     via: text(s?.via, 24).toUpperCase(), // SOG-0390 : une voie composée tient
     state: s?.state === 'error' ? 'error' : 'ok',
     control: CONTROLS.includes(s?.control) ? s.control : '',
@@ -210,8 +216,8 @@ function controlOf(c) {
     sections: (Array.isArray(c.sections) ? c.sections : []).slice(0, 50).map(x => ({
       layer: LAYERS.includes(x?.layer) ? x.layer : '',
       control: CONTROLS.includes(x?.control) ? x.control : '',
-      from: ident(x?.from),
-      to: ident(x?.to),
+      from: endId(x?.from),
+      to: endId(x?.to),
       nm: num(x?.nm, 0, 20000) !== null ? Math.round(+x.nm) : null,
       reason: text(x?.reason, 200)
     })).filter(x => x.control)
@@ -236,6 +242,19 @@ export function isoMinute(v) {
   return m && Number.isFinite(Date.parse(`${m[1]}Z`)) ? `${m[1]}Z` : '';
 }
 
+/** SOG-0411 (E) : une route écartée pour l'heure à une heure près (AeroDB 733af8fbf, `near`) — { minutes (1 à 60), side ('late' : partir
+ *  au plus tard à `depart` ; 'early' : au plus tôt), depart (« AAAA-MM-JJTHH:MMZ ») } ; null pour toute autre forme. */
+function nearOf(v) {
+  const own = k => v && typeof v === 'object' && !Array.isArray(v) && Object.hasOwn(v, k) ? v[k] : undefined,
+    m = own('minutes'),
+    side = own('side'),
+    depart = isoMinute(own(side === 'late' ? 'depart_until' : 'depart_from'));
+  return Number.isInteger(m) && m >= 0 && m <= 60 && ['late', 'early'].includes(side) && depart ? {
+    minutes: m,
+    side,
+    depart
+  } : null;
+}
 /** SOG-0391 (b) : les champs de l'heure d'une route NAT écartée pour l'HEURE ou, SOG-0391 (b bis), pour le NIVEAU (AeroDB, champs de (a))
  *  — `at` (le passage de son entrée), `entry` (le point), `from` / `to` (la fenêtre du message) — lus comme une entrée non sûre ; rien pour
  *  un autre code. */
@@ -247,6 +266,7 @@ function timeOf(x) {
     at: isoMinute(own('at')),
     // SOG-0403 R1 (AeroDB 733af8fbf) : où l'heure a été jugée — au 30° ouest (« 30W ») ou à l'entrée de la route (« entry ») ; '' sinon
     point: ['30W', 'entry'].includes(own('point')) ? own('point') : '',
+    near: nearOf(own('near')),
     entry: PT_ID.test(id) ? id : '',
     from: isoMinute(own('from')),
     to: isoMinute(own('to'))

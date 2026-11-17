@@ -7218,3 +7218,41 @@ def f250(c):
     win = f'{_zt(L, "11", "30", True)} – {_zt(L, "19", "00")}'
     want = tx(T, 'rFreeTime30', L).replace('{at}', _zt(L, '09', '10')).replace('{dw}', ' (' + tx(T, 'rFreeWin', L).replace('{dir}', west).replace('{win}', win) + ')')
     c.ok(norm(c.text(f'{Fr} > span') or '').startswith(norm(want)), c.text(f'{Fr} > span'), '« … au 30° ouest vers 09 h 10 Z (routes vers l\'ouest : …) »')
+
+
+@case('F251', 'Route step, a route through a coordinate point (« 51/50 »): the list of its sections names the point at both ends '
+      '(« RESNO–51/50 », « 51/50–NICSO », never « RESNO– »); a NAT track set aside for the time by less than an hour says by how much and '
+      'the departure limit (« à 9 min près : partir au plus tôt à 07 h 31 Z »)', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='SOG-0411 (the user tried R1, NAT track F taken: the sections read « HIGH · RESNO– · incomplet » and a track set aside for nine '
+      'minutes said nothing of it); AeroDB 733af8fbf: `near` = { minutes, side, depart_until | depart_from }; a fake launcher')
+def f251(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    st = _route_launcher(c, ['route/compute'])
+    segs = [_ctl_seg('EIDW', 'RESNO', 'controlled', 'HIGH'), _ctl_seg('RESNO', '51/50', 'incomplete', 'HIGH'), _ctl_seg('51/50', 'NICSO', 'fallback', 'HIGH'),
+            _ctl_seg('NICSO', 'KJFK', 'controlled', 'HIGH')]
+    alt = dict(_alt(1, 'Via 51/50', 'EIDW RESNO 51/50 NICSO KJFK', 3000, 350, segs, sid=False),
+               control={'controlledPct': 40, 'incompletePct': 45, 'fallbackPct': 15, 'errorPct': 0,
+                        'sections': [{'layer': g['layer'], 'control': g['control'], 'from': g['from'], 'to': g['to'], 'nm': 300, 'reason': ''} for g in segs]})
+    sec = _free_time_sections()
+    sec['rejected'][0]['near'] = {'minutes': 9, 'side': 'early', 'depart_from': '2026-11-17T07:31Z'}
+    st['extra'] = {'alternatives': [alt], 'sections': sec}
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=_ocean_docs())
+    to_step(c, 1)
+    _compute_now(c, st)
+    R0 = f'{FUEL} [data-altlist] [data-alt="0"]'
+    c.until(f"!!document.querySelector('{R0} [data-sections]')", timeout=15000, what='the sections of the route')
+    c.js(f"document.querySelector('{R0} [data-sections]').open = true")
+    rows = c.js(f"[...document.querySelectorAll('{R0} [data-sections] [data-section]')].map(e => e.textContent)")
+    c.ok(any('RESNO–51/50' in r for r in rows) and any('51/50–NICSO' in r for r in rows) and not any(re.search(r'–\s*·|·\s*–', r) for r in rows),
+         rows, 'the coordinate point named at both ends of its sections')
+    # the track set aside by nine minutes: by how much, and the departure limit
+    c.js(f"document.querySelector('{R0} [data-proofrejs]').open = true")
+    near = c.text(f'{R0} [data-proofrej="A"] [data-proofnear]') or ''
+    want = tx(T, 'early', L, after='rProofNear:').replace('{m}', '9').replace('{t}', _zt(L, '07', '31'))
+    c.ok(norm(want) in norm(near), near, '« à 9 min près : partir au plus tôt à 07 h 31 Z »')
+    c.eq(c.count(f'{R0} [data-proofrej="B"] [data-proofnear]'), 0, 'a track set aside by more than an hour says nothing of it', what='far')
+    c.js(f"document.querySelector('{R0} [data-proofrej=\"A\"]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F251_{c.design}_390_{L}.png')

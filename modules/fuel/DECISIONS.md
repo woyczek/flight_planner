@@ -2278,3 +2278,10 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (NAT Doc 007 § 2.1.3) and says where (`point`: 30W | entry): when the earliest passage of the tracks set aside was judged at 30°W, the
   free-route line says « au 30° ouest vers 13 h 10 Z » with that hour, else as before the ocean entry of the route taken. F250 (red on
   the parent: no line, « 0 écart », no list, « entrée de l'océan »).
+- **17 Nov 2026 — SOG-0411, a coordinate point named in the sections; a track set aside by less than an hour says so** (the user tried
+  R1, NAT track F taken). (D) The ends of a segment and of a control section were read by `ident` (letters and digits only): a point
+  « 51/50 » became '' and the line read « HIGH · RESNO– · incomplet ». `endId` also takes a point written as in the NAT message
+  (« 51/50 », « 5130/30 »), read by pattern, shown as text. (E) AeroDB 733af8fbf gives `near` = { minutes, side: late | early,
+  depart_until | depart_from } on a track set aside for the time by at most an hour: `nearOf` reads it as untrusted input (minutes 0
+  to 60, side one of two, an ISO hour to the minute) and the reason in the fold ends with « — à 9 min près : partir au plus tôt à
+  07 h 31 Z » (« au plus tard » when late). F251 (red on the parent: « RESNO– », no near).

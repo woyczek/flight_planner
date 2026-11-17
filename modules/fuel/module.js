@@ -251,6 +251,15 @@ const TX = {
   rProofRejected: ['Route NAT {t} écartée : {w}', 'NAT track {t} set aside: {w}', 'NAT-Route {t} verworfen: {w}',
     'Ruta NAT {t} descartada: {w}'
   ],
+  // SOG-0411 (E) : écartée pour l'heure à une heure près — de combien, et l'heure de départ limite
+  rProofNear: {
+    late: ['à {m} min près : partir au plus tard à {t}', 'by {m} min: leave at or before {t}', 'um {m} min: spätestens um {t} abfliegen',
+      'por {m} min: salir a más tardar a las {t}'
+    ],
+    early: ['à {m} min près : partir au plus tôt à {t}', 'by {m} min: leave at or after {t}', 'um {m} min: frühestens um {t} abfliegen',
+      'por {m} min: salir no antes de las {t}'
+    ]
+  },
   // un pli fermé (l'utilisateur : « trop d'infos tue l'info ») : « 6 routes NAT du jour écartées », une raison par route une fois ouvert
   rProofRejN: ['{n} routes NAT du jour écartées', '{n} NAT tracks of the day set aside', '{n} NAT-Routen des Tages verworfen',
     '{n} rutas NAT del día descartadas'
@@ -5084,7 +5093,10 @@ function proofHtml(a) {
       }))}</summary>${rl.map(x => `<small class="f-muted fu-rproof" data-proofrej="${esc(x.track)}">${esc(tt(TX.rProofRejected, {
       t: x.track,
       w: x.why
-    }))}</small>`).join('')}</details>` : '',
+    }))}${x.near ? ` <span data-proofnear="${esc(x.near.side)}">— ${esc(tt(TX.rProofNear[x.near.side], {
+      m: x.near.minutes,
+      t: zTime(x.near.depart)
+    }))}</span>` : ''}</small>`).join('')}</details>` : '',
     // l'heure de départ absente de la demande : la validité horaire des routes NAT n'a pas été vérifiée
     noTime = P.noTime ? `<small class="f-muted fu-rproof" data-proofnotime>${esc(tt(TX.rProofNoTime))}</small>` : '';
   return `${P.list?.length ? `<small class="f-muted fu-rproof" data-proof>${P.list.map(one).join(' · ')}</small>` : ''}${rej}${noTime}`;
