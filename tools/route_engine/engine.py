@@ -245,6 +245,38 @@ class Nav:
         if not candidates: raise ValueError('Aucune position de '+ident+' reliée à l’airway indiquée')
         raise ValueError('Identifiant géographiquement ambigu : '+ident+' ('+str(len(candidates))+' positions encore possibles).')
 
+    def airway_portion(self,alias,p,q):
+        """SOG-0401 : la portion de la voie `alias` entre les points p et q (identifiants), cherchée dans les tronçons chargés : le plus court chemin (en tronçons) de p à q en suivant les sens de la voie ; renvoie (tronçons dans le sens de p vers q, tronçons du chemin pris à l'envers) ou None si aucun chemin ne relie p à q (donnée manquante : la règle n'est alors pas décidée)."""
+        cache=self.__dict__.setdefault('_portions',{})
+        key=(alias,p,q)
+        if key in cache:return cache[key]
+        adj=self.__dict__.setdefault('_way_adj',{}).get(alias)
+        if adj is None:      # le graphe de la voie, fait UNE fois par voie (le calcul le demande pour chaque règle de segment : un parcours de tous les tronçons chargés à chaque fois coûtait plus d'une seconde par vol)
+            by_route=self.__dict__.get('_by_route')
+            if by_route is None:
+                by_route=self._by_route=collections.defaultdict(list)
+                for e in self.edges:by_route[e['route']].append(e)
+            adj=collections.defaultdict(set)
+            for name,edges in by_route.items():
+                if alias not in rad_flight.aliases(name):continue
+                for e in edges:
+                    a,b=self.nodes[e['a']]['id'],self.nodes[e['b']]['id']
+                    if e.get('dir')!='B':adj[a].add(b)
+                    if e.get('dir')!='F':adj[b].add(a)
+            self._way_adj[alias]=adj
+        prev={p:None};queue=collections.deque([p]);result=None
+        while queue:
+            x=queue.popleft()
+            if x==q:break
+            for y in sorted(adj[x]):
+                if y not in prev:prev[y]=x;queue.append(y)
+        if q in prev:
+            forward=set();x=q
+            while prev[x] is not None:forward.add((prev[x],x));x=prev[x]
+            result=(forward,{(b,a) for a,b in forward})
+        cache[key]=result
+        return result
+
     def graph(self,fl=None,airway=None,directed=True):
         g=collections.defaultdict(list)
         for e in self.edges:
@@ -966,7 +998,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     elapsed=0.
     for leg in legs:
         leg['time_start_min']=elapsed;elapsed+=leg['nm']/(leg.get('planned_speed_kt') or options['speed_kt'])*60;leg['time_end_min']=elapsed
-    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl)
+    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl,nav.airway_portion)
     atomic_ids={(b['sheet'],b['row']) for b in violations}
     for finding in rad_summary['findings']:
         if (finding['sheet'],finding['row']) not in atomic_ids:issue('REVUE' if fallback else 'ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'])

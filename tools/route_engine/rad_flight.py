@@ -144,6 +144,8 @@ def condition(text,ctx,rad):
     if len(parts)==1:return main
     exc=conjunction(parts[1]);return None if exc is None else main and not exc
 
+UNSURE='?'      # SOG-0401 : « le vol est sur la voie du segment, mais on ne sait pas s'il vole une portion DU segment » : ni applicable ni sans objet
+
 def target(rule,ctx,legs,rad):
     v=rule['values'];sheet=rule['sheet'];ids=[]
     if sheet in ['Annex 3A DEP','Annex 3A ARR']:
@@ -171,11 +173,22 @@ def target(rule,ctx,legs,rad):
             for j in range(i,len(legs)):
                 if v[4] not in aliases(legs[j]['via']):break
                 if legs[j]['end']['id']==v[6]:ids.extend(range(i,j+1));break
-        return bool(ids),sorted(set(ids))
+        if ids:return True,sorted(set(ids))
+        # SOG-0401 (EDLO1003) : le vol qui n'enchaîne pas EXACTEMENT « de v[5] à v[6] » sur la voie peut quand même voler une PARTIE du segment (TIVDA T703 BEPAS pour le segment ARBAX–DEXIT : ARBAX–BARIX–BEPAS est dedans) ; Eurocontrol applique la règle à toute portion. « Sans objet » n'est donc dit que si le vol n'est jamais sur la voie ; sinon on cherche les tronçons du segment dans la voie, et sans ordre de la voie (ou dans le sens inverse) la règle n'est PAS décidée
+        used=[i for i,l in enumerate(legs) if v[4] in aliases(l['via'])]
+        if not used:return False,[]
+        path=(ctx.get('airway') or (lambda *a:None))(v[4],v[5],v[6])
+        if path is None:return UNSURE,used      # l'ordre de la voie manque : la règle n'est décidée que si la conclusion est la même qu'elle s'applique ou non (voir evaluate)
+        forward,reverse=path
+        ids=[i for i in used if (legs[i]['start']['id'],legs[i]['end']['id']) in forward]
+        if ids:return True,sorted(set(ids))
+        if any((legs[i]['start']['id'],legs[i]['end']['id']) in reverse for i in used):return UNSURE,used
+        return False,[]
     return None,[]
 
-def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None):
+def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None):
     ctx=context(legs,dep,arr);findings=[];avoids=[];decided=0
+    ctx['airway']=airway      # SOG-0401 : airway(alias,p,q) -> (tronçons de p à q dans le sens de la voie, tronçons en sens inverse) ou None si la voie ne relie pas p et q
     ctx['known']=known_ids;ctx['fl']=int(fl) if isinstance(fl,(int,float)) else None      # SOG-0401 : le niveau demandé (déposé), pour les conditions « RFL ABV FLnnn »
     duplicates=collections.Counter((c['sheet'],c['id']) for c in candidates if c.get('change')!='DEL')
     for rule in candidates:
@@ -191,18 +204,26 @@ def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None):
         # beginning during a segment, rather than only the departure clock.
         import datetime as dt
         timed=affected or ([i for i,l in enumerate(legs) if l['kind']=='SID'] if sheet.endswith('DEP') else [i for i,l in enumerate(legs) if l['kind'] in ['STAR','APPROACH_LINK']] if sheet.endswith('ARR') else list(range(len(legs))))
-        outcomes=[]
-        for util,clock in plist:
-            if not clock_ok(clock):outcomes=None;break
-            seen=[clock_active(clock,when+dt.timedelta(minutes=legs[i].get('time_start_min',0)),when+dt.timedelta(minutes=legs[i].get('time_end_min',legs[i].get('time_start_min',0)))) for i in timed]
-            if None in seen:outcomes=None;break      # « hiver (été) » qui ne dit pas la même chose : à examiner
-            if not any(seen):
-                outcomes.append((False,False,None,None));continue
-            m=re.fullmatch(r'(NOT AVBL FOR TFC|ONLY AVBL FOR TFC|COMPULSORY FOR TFC)(?:\s+(.*))?',util)
-            if not m:outcomes=None;break
-            test=condition(m[2] or '',ctx,rad)
-            if test is None:outcomes=None;break
-            mode=m[1];outcomes.append((True,(applicability and test) if mode=='NOT AVBL FOR TFC' else (applicability and not test) if mode=='ONLY AVBL FOR TFC' else (test and not applicability),mode,m[2]))
+        def run(applicability):
+            outcomes=[]
+            for util,clock in plist:
+                if not clock_ok(clock):return None
+                seen=[clock_active(clock,when+dt.timedelta(minutes=legs[i].get('time_start_min',0)),when+dt.timedelta(minutes=legs[i].get('time_end_min',legs[i].get('time_start_min',0)))) for i in timed]
+                if None in seen:return None      # « hiver (été) » qui ne dit pas la même chose : à examiner
+                if not any(seen):
+                    outcomes.append((False,False,None,None));continue
+                m=re.fullmatch(r'(NOT AVBL FOR TFC|ONLY AVBL FOR TFC|COMPULSORY FOR TFC)(?:\s+(.*))?',util)
+                if not m:return None
+                test=condition(m[2] or '',ctx,rad)
+                if test is None:return None
+                mode=m[1];outcomes.append((True,(applicability and test) if mode=='NOT AVBL FOR TFC' else (applicability and not test) if mode=='ONLY AVBL FOR TFC' else (test and not applicability),mode,m[2]))
+            return outcomes
+        if applicability==UNSURE:
+            # SOG-0401 : applicable ou non, on ne sait pas : décidée seulement si les deux hypothèses donnent la même réponse (alors, toujours « sans infraction » : sans objet = jamais d'infraction pour « NOT / ONLY », et la condition fausse = jamais pour « COMPULSORY ») ; sinon laissée à examiner
+            first,second=run(True),run(False)
+            if first is None or second is None or [o[1] for o in first]!=[o[1] for o in second]:continue
+            outcomes=first
+        else:outcomes=run(applicability)
         if outcomes is None:continue
         if not any(o[0] for o in outcomes):
             rule['assessment']='Hors horaire au passage estimé (UTC)';decided+=1;continue

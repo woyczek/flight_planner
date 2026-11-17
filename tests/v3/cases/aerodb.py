@@ -14918,3 +14918,35 @@ def k335(c):
     p3 = res3['primary']
     c.eq((p3['ok'], [i['level'] for i in p3['issues'] if 'LF9401' in i['text']], [i['level'] for i in p3['issues'] if i['level'] == 'ERREUR'], 'aucune route sans infraction' in ' '.join(i['text'] for i in p3['issues']), view3['status']), (True, ['REVUE'], [], True, 'computed'),
          'a CALCULATED route that still breaks the decided level rule is RETURNED with a REVUE that says it (never an ERREUR that would lose the route)', what='calculated')
+@case('K337', 'Route engine, SOG-0401 (a segment rule applies to ANY portion of the segment, EDLO1003): « T703 from ARBAX to DEXIT, ONLY AVBL FOR TFC ARR (…) » was decided « no infraction » for a flight on TIVDA T703 BEPAS because the flight did not reach DEXIT; the rule now applies to every leg of the airway that lies inside the segment, the legs that lie against the direction of the segment (or an airway order that cannot be read) leave it « to be interpreted » unless both readings agree',
+      'K', static=True,
+      rule='SOG-0401 (the ergonomics session: « une règle décidée à tort est pire qu\'une règle à examiner » — EDLO1003 refused by Eurocontrol on EGGW → LQSA, decided « sans infraction » here). Cause: `target` applied a segment rule (airway, from, to) only if the flight started the segment at `from` AND reached `to` on the same airway; a flight on a PORTION (ARBAX–BARIX–BEPAS inside ARBAX–DEXIT) was « not concerned » and the rule was recorded as evaluated without infraction. Measured with the reference routes: 1 rule wrong (EDLO1003), 3 more that became undecided before the two-hypothesis reading (ED3202, EDLO1021, LS2529: decided again, their conclusion is the same applicable or not). Bench: a fixture network (A1: OLZOM–SITET–KEPAD–BOYNE) and three segment rules.')
+def k337(c):
+    import os
+    import sys
+    import tempfile
+    _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view as V
+    pad = lambda row: row + [''] * (17 - len(row))
+    mk = lambda i, a, b, c2: pad(['NEW', '29 OCT 2026 [2611]', 'UFN', i, 'A1', a, b, '', c2, 'H24', 'C', 'segment rule'])
+    rules = [mk('LF9701', 'SITET', 'BOYNE', 'NOT AVBL FOR TFC\nDEP LFPO'), mk('LF9702', 'KEPAD', 'BOYNE', 'NOT AVBL FOR TFC\nDEP LFPO'), mk('LF9703', 'BOYNE', 'SITET', 'NOT AVBL FOR TFC\nDEP LFPO'), mk('LF9704', 'BOYNE', 'SITET', 'NOT AVBL FOR TFC\nDEP LFXX')]
+    out = []
+    for n, rows in RF.rad_sheets():
+        out.append((n, rows + rules if n == 'Annex 2B' else rows))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad_file, out)
+        I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad_file)[1]]))
+        args = {'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False, 'action': 'check', 'route': 'LFPO DCT OLZOM B1 SITET A1 KEPAD DCT EIDW'}
+        request = V.to_request(args)
+        res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+    p = res['primary']
+    st = {m['id']: m['assessment'][:18] for m in p['rad'] if m['id'].startswith('LF970')}
+    c.eq(st, {'LF9701': 'INFRACTION : condi', 'LF9702': 'Condition simple é', 'LF9703': 'À interpréter : co', 'LF9704': 'Condition simple é'},
+         'the flight SITET–KEPAD is INSIDE the segment SITET–BOYNE (a portion, never reaching BOYNE): infraction; the segment KEPAD–BOYNE is not flown: no infraction; the segment BOYNE–SITET is flown against its direction: not decided (« to be interpreted »), except when its condition is false for the flight (DEP LFXX): then no infraction whichever the reading', what='segment portion')
+    c.eq([i['level'] for i in p['issues'] if 'LF9701' in i['text']], ['ERREUR'], 'the typed route keeps the infraction as an ERREUR', what='typed')
