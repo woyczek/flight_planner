@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9f45030",
-  "fiches": 449,
+  "organisation": "d4d5a3b",
+  "fiches": 450,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2830,6 +2830,27 @@
      "es": "Mostrar el vpath en el perfil",
      "milestone": "6.0.0-alpha.3",
      "rank": 119
+    }
+   ]
+  },
+  {
+   "id": "pilote-qualite-cas",
+   "app": "pilote",
+   "label": {
+    "fr": "Qualité ; cas",
+    "en": "Qualité ; cas",
+    "de": "Qualité ; cas",
+    "es": "Qualité ; cas"
+   },
+   "items": [
+    {
+     "id": "SOG-0451",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Quatre cas rouges sur la tête du distant, sans lien avec le lot qui les a fait jouer (A39, A214, D94, F252)",
+     "en": "Four red cases on the remote head, unrelated to the lot that made them run (A39, A214, D94, F252)",
+     "de": "Vier rote Fälle auf dem entfernten Stand, ohne Bezug zu dem Los, das sie laufen ließ (A39, A214, D94, F252)",
+     "es": "Cuatro casos en rojo en la cabeza remota, sin relación con el lote que los hizo ejecutar (A39, A214, D94, F252)"
     }
    ]
   },
