@@ -11933,11 +11933,13 @@ def k296(c):
     try:
         engine.SEARCH_CAP_S, engine.DEADLINE = 12.0, None
         none = S._bound()
-        engine.DEADLINE = time.perf_counter() + 3.0
+        t0 = time.perf_counter()
+        engine.DEADLINE = t0 + 3.0
         soon = S._bound()
+        t1 = time.perf_counter()      # the window of the check is what the machine took between the two clocks (a loaded run took more than 0.2 s: the case was red under load and green alone)
         engine.DEADLINE = time.perf_counter() - 1.0
         late = S._bound()
-        c.eq((none, 2.8 <= soon <= 3.0, late), (12.0, True, 0.0), 'the bound of a search: the cap with no phase bound; what remains before the bound of the phase when it is nearer; 0 when it is passed', what='bound')
+        c.eq((none, 3.0 - (t1 - t0) - 0.01 <= soon <= 3.0, late), (12.0, True, 0.0), 'the bound of a search: the cap with no phase bound; what remains before the bound of the phase when it is nearer; 0 when it is passed', what='bound')
         nav = engine.Nav.__new__(engine.Nav)
         engine.GRAPH_MIN_S, engine.DEADLINE = 5.0, time.perf_counter() + 3.0
         try:
