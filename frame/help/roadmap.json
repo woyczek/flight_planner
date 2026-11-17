@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6d29084",
+  "organisation": "67d964e",
   "fiches": 435,
   "untranslated": 0,
   "priorities": 374,
@@ -2934,11 +2934,12 @@
     {
      "id": "SOG-0407",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "RÉGRESSION : le bouton « pas à jour, rafraîchir » a disparu — une page ouverte ne dit plus qu'une version plus récente existe",
      "en": "REGRESSION: the “out of date, refresh” button has disappeared — an open page no longer says a newer version exists",
      "de": "REGRESSION: die Schaltfläche „nicht aktuell, neu laden“ ist verschwunden — eine offene Seite meldet keine neuere Version mehr",
-     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente"
+     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente",
+     "test": true
     }
    ]
   },
@@ -4644,11 +4645,12 @@
     {
      "id": "SOG-0430",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "BLOQUANT : la page gèle pendant des minutes, même fermée et rouverte, après une construction qui réécrit des milliers de fichiers",
      "en": "BLOCKING: the page freezes for minutes, even closed and reopened, after a build that rewrites thousands of files",
      "de": "BLOCKIEREND: die Seite friert minutenlang ein, auch nach Schließen und erneutem Öffnen, nach einem Aufbau, der Tausende Dateien neu schreibt",
-     "es": "BLOQUEANTE: la página se congela durante minutos, incluso cerrada y reabierta, tras una construcción que reescribe miles de archivos"
+     "es": "BLOQUEANTE: la página se congela durante minutos, incluso cerrada y reabierta, tras una construcción que reescribe miles de archivos",
+     "test": true
     }
    ]
   },

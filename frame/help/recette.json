@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 288,
+  "tests": 289,
   "verdicts": 212
  },
  "apps": [
@@ -4128,9 +4128,15 @@
     "de": "REGRESSION: die Schaltfläche „nicht aktuell, neu laden“ ist verschwunden — eine offene Seite meldet keine neuere Version mehr",
     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente"
    },
-   "test": "Après avoir RELANCÉ le lanceur et rechargé la page une fois. (1) Laisse une page de l'appli ouverte. Quand une mise à jour arrive sur le poste (je te le dirai à la prochaine livraison), en moins d'une minute — ou dès que tu reviens sur l'onglet — un cartouche rouge « Version ancienne · Recharger » paraît dans la barre du haut ; au téléphone, « Recharger ». (2) La page ne se recharge JAMAIS seule : ce que tu es en train de taper reste. (3) Un appui recharge, la page est à jour et le cartouche disparaît. (4) Dans Recette, tu n'as plus à deviner si la page est ancienne : pas de cartouche = page à jour. Dis-le si une page reste ancienne sans cartouche.",
+   "test": "Page rechargée (pas besoin de relancer le lanceur pour cette retouche). Quand une version plus récente est servie, le cartouche de l'en-tête — « Version ancienne · Recharger » sur ordinateur, « Recharger » sur téléphone — s'affiche en BLANC SUR ROUGE FONCÉ dans les cinq designs, de jour comme de nuit ; carré là où le design est carré (metro, swiss), légèrement arrondi ailleurs. Un appui recharge la page ; rien ne se recharge d'office.",
    "since": "2026-11-17",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-17T16:47:57Z",
+   "previous": {
+    "verdict": "reserve",
+    "comment": "réapparu, mais pas en blanc sur cartouche rouge",
+    "at": "2026-11-17T15:17:53Z"
+   }
   },
   {
    "id": "SOG-0408",
@@ -4301,6 +4307,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T16:38:42Z"
+  },
+  {
+   "id": "SOG-0430",
+   "app": "maintenance",
+   "title": {
+    "fr": "BLOQUANT : la page gèle pendant des minutes, même fermée et rouverte, après une construction qui réécrit des milliers de fichiers",
+    "en": "BLOCKING: the page freezes for minutes, even closed and reopened, after a build that rewrites thousands of files",
+    "de": "BLOCKIEREND: die Seite friert minutenlang ein, auch nach Schließen und erneutem Öffnen, nach einem Aufbau, der Tausende Dateien neu schreibt",
+    "es": "BLOQUEANTE: la página se congela durante minutos, incluso cerrada y reabierta, tras una construcción que reescribe miles de archivos"
+   },
+   "test": "Rien à faire tant que la page ne gèle pas. SI LA PAGE GÈLE DE NOUVEAU (page rechargée depuis cette livraison) : quand elle répond de nouveau, ouvre le signalement (le bouton à l'insecte) et copie le diagnostic comme d'habitude — il porte maintenant la liste des tâches longues (heure, durée, écran ouvert). Colle-le dans le chat ou joins-le à un signalement : c'est ce qui dira ce qui occupait la page.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T16:45:18Z"
   },
   {
    "id": "SOG-0431",
