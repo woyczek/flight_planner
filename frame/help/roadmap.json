@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "49e19db",
-  "fiches": 400,
+  "organisation": "f9024a9",
+  "fiches": 401,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1176,6 +1176,27 @@
      "es": "Fichas: varias curvas de RPM / consumo por altitud, en crucero",
      "milestone": "6.0.0-alpha.5",
      "rank": 51
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-et-route",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant et route",
+    "en": "Carburant et route",
+    "de": "Carburant et route",
+    "es": "Carburant et route"
+   },
+   "items": [
+    {
+     "id": "SOG-0402",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : copier un plan de vol OACI complet, prêt à coller dans la validation d'Eurocontrol",
+     "en": "Fuel: copy a complete ICAO flight plan, ready to paste into the Eurocontrol validation",
+     "de": "Kraftstoff: einen vollständigen ICAO-Flugplan kopieren, bereit zum Einfügen in die Eurocontrol-Validierung",
+     "es": "Combustible: copiar un plan de vuelo OACI completo, listo para pegar en la validación de Eurocontrol"
     }
    ]
   },
