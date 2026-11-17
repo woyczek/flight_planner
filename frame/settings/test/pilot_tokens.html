@@ -38,6 +38,10 @@
       out.insertAdjacentHTML('beforeend', `<span class="${ok ? 'PASS' : 'FAIL'}">${ok ? 'PASS' : 'FAIL'}</span> ${name}${ok ? '' : ' — ' + String(info).replace(/</g, '&lt;')}\n`);
     };
     const tick = (ms = 30) => new Promise(r => setTimeout(r, ms));
+    // des dates RELATIVES à aujourd'hui : un cas n'a pas de date de péremption (SOG-0451) ; FAR (200 jours) et FAR2 (365 jours) : loin de toute alerte (J-5)
+    const plus = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10),
+      FAR = plus(200),
+      FAR2 = plus(365);
     const t = (row, v = {}) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
     try {
       const S = window.SogScreens['pilot-tokens'],
@@ -53,7 +57,7 @@
           username: 'chef',
           bot: false,
           scopes: ['api'],
-          expires: '2027-06-30',
+          expires: FAR,
           level: 40,
           problems: []
         };
@@ -120,7 +124,7 @@
               active: true,
               revoked: false,
               created: '2026-11-01T09:00:00Z',
-              expires: '2027-10-29',
+              expires: FAR2,
               used: null
             };
             tokens = [...tokens, x];
@@ -128,7 +132,7 @@
               ok: true,
               id: x.id,
               name: x.name,
-              expires: '2027-10-29',
+              expires: FAR2,
               token: 'glpat-ONCE'
             };
           }
@@ -194,7 +198,7 @@
       const r1 = view.querySelector('[data-admin-result]');
       ck('Tester : compte, rôle, portées, expiration, et qu’il peut créer les jetons', r1?.dataset.adminResult === 'ok' && /chef/.test(
           r1
-          .textContent) && /Maintainer/.test(r1.textContent) && /api/.test(r1.textContent) && /2027-06-30/.test(r1.textContent), r1
+          .textContent) && /Maintainer/.test(r1.textContent) && /api/.test(r1.textContent) && r1.textContent.includes(FAR), r1
         ?.textContent);
       admin = {
         ...admin,
@@ -284,7 +288,7 @@
         .querySelector(
           'input[data-token-value][readonly]') && card.querySelector('[data-act=copy]') &&
         /Copiez-le maintenant : il ne sera plus affiché/
-        .test(card.textContent) && /2027-10-29/.test(card.textContent) && /Réglages › Accès aux données, avec l’adresse du projet/
+        .test(card.textContent) && card.textContent.includes(FAR2) && /Réglages › Accès aux données, avec l’adresse du projet/
         .test(card
           .textContent) && card.querySelector('a[data-tokens-message]')?.getAttribute('href') ===
         '#settings?card=admin&panel=addPilot',
@@ -298,7 +302,7 @@
       const fresh = view.querySelector('[data-token-fresh]');
       ck('la ligne du nouveau : le trigramme d’abord, créé le, l’expiration, « créé à l’instant » — jamais « jamais utilisé »', !!
         fresh &&
-        /^ABC\s+créé le 2026-11-01 · expire le 2027-10-29 · dans \d+ jours? · créé à l’instant/.test(fresh.textContent.trim().replace(
+        new RegExp('^ABC\\s+créé le 2026-11-01 · expire le ' + FAR2 + ' · dans \\d+ jours? · créé à l’instant').test(fresh.textContent.trim().replace(
           /\s+/g, ' ')) && !
         /jamais utilisé/.test(fresh.textContent), fresh?.textContent.trim().replace(/\s+/g, ' '));
       view.querySelector('[data-act=another]').click();
@@ -336,7 +340,7 @@
         username: 'chef',
         bot: false,
         scopes: ['api'],
-        expires: '2027-06-30',
+        expires: FAR,
         level: 40,
         problems: [],
         branch: {
@@ -434,7 +438,7 @@
         username: 'chef',
         bot: false,
         scopes: ['api'],
-        expires: '2027-06-30',
+        expires: FAR,
         level: 40,
         problems: [],
         branch: {
@@ -479,7 +483,6 @@
         .test(n[0])), JSON.stringify(notes));
       // SOG-0277 : l'expiration dite sur chaque ligne (« expire le … · dans 12 jours »), orange sous 30 jours, rouge sous 7, « a expiré le … » ;
       // la liste relue à chaque ouverture, et la puce du mainteneur gardée sur l'appareil (des nombres et une date, jamais un nom ni un jeton)
-      const plus = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
       try {
         localStorage.removeItem('sogFrame:tokenExpiry');
       } catch {}
