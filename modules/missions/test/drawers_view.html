@@ -1,0 +1,746 @@
+<!doctype html>
+<!-- Banc de la section « Tiroirs » (modules/missions/drawers_view.js, SOG-0441 lot T2) : la vue montée dans une page nue avec un FAUX
+     cadre (données en mémoire, traduction, notifications) — mission feuilletée ou jouée, l'ORDRE (seul le premier tiroir fermé s'ouvre,
+     les suivants disent « après le tiroir n »), la clé en clair, « Ouvrir le tiroir » en deux temps, l'ouverture à l'heure et sa
+     notification, le carnet d'un autre (constat, geste, refus, « reçu ici à … »), le départ réel écrit, « Resceller », la fiche
+     redessinée, le passage de synchronisation à la minute, douze tiroirs. Missions, trigrammes et positions inventés.
+     window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>drawers view — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+  #stage {
+    max-width: 390px;
+    border: 1px dashed #999;
+    padding: 8px;
+    margin: 8px 0
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">drawers_view.js — bench</h1>
+<div id="stage"></div>
+<pre id="out"></pre>
+<script type="module">
+  import * as DV from '../drawers_view.js?v=0';
+  const out = document.getElementById('out'),
+    stage = document.getElementById('stage'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail: ok ? '' : typeof got === 'string' ? got : JSON.stringify(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + rows[rows.length - 1].detail}`;
+    out.append(l);
+  }
+  const MIN = 60e3,
+    ID = 'X-701A',
+    iso = ms => new Date(ms).toISOString(),
+    sleep = ms => new Promise(r => setTimeout(r, ms)),
+    /** Attend qu'une condition soit vraie (4 s au plus). */
+    until = async (fn, ms = 4000) => {
+        const end = Date.now() + ms;
+        while (Date.now() < end) {
+          if (fn()) return true;
+          await sleep(40);
+        }
+        return !!fn();
+      },
+      z = ms => `${String(new Date(ms).getUTCHours()).padStart(2, '0')}:${String(new Date(ms).getUTCMinutes()).padStart(2, '0')}Z`;
+
+  /** Un faux cadre : les documents en mémoire, les écritures annoncées aux écoutes, les notifications gardées. */
+  function fakeCtx({
+    trigram = 'AAA',
+    level = 1,
+    docs = {}
+  } = {}) {
+    const store = new Map(Object.entries(docs)),
+      watchers = new Set(),
+      c = {
+        identity: {
+          trigram
+        },
+        level,
+        notes: [],
+        asked: [], // les chemins demandés au cadre
+        synced: 0,
+        store,
+        t: (row, v) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''),
+        notify: (text, kind) => c.notes.push([kind, text]),
+        data: {
+          get: async p => (c.asked.push(p), store.has(p) ? structuredClone(store.get(p)) : null),
+          put: async (p, v) => {
+            store.set(p, structuredClone(v));
+            for (const w of watchers)
+              if (p.startsWith(w.prefix)) w.fn([p]);
+          },
+          watch: (prefix, fn) => {
+            const w = {
+              prefix,
+              fn
+            };
+            watchers.add(w);
+            return () => watchers.delete(w);
+          },
+          sync: async () => {
+            c.synced++;
+          }
+        }
+      };
+    return c;
+  }
+  /** L'index des affectations : AAA et BBB sur la mission, décollage à cet instant. */
+  const index = takeoff => ({
+    assignments: [{
+      mission: ID,
+      pilot: 'AAA',
+      takeoff: iso(takeoff),
+      role: 'mission'
+    }, {
+      mission: ID,
+      pilot: 'BBB',
+      takeoff: iso(takeoff),
+      role: 'mission'
+    }]
+  });
+  // les tiroirs, à la forme rendue par frame/lib/mission.js
+  const HAND = {
+      title: 'Retour <img src=x onerror="window.__xss=1">',
+      message: 'Fin de mission.',
+      brief: 'Retour au terrain.',
+      key: {
+        kind: 'hand'
+      }
+    },
+    TIME = {
+      title: 'Nouvel ordre',
+      message: 'CYRANO : cap au nord.',
+      brief: 'Rejoindre le point N.\nAltitude 2 000 ft.',
+      key: {
+        kind: 'time',
+        point: 'ORIGIN',
+        delayMin: 40
+      }
+    },
+    ZONE = {
+      title: 'Recherche',
+      message: 'Zone atteinte.',
+      brief: '',
+      key: {
+        kind: 'zone',
+        shape: {
+          circle: {
+            lat: 44.5,
+            lon: -1.2,
+            radiusM: 3000
+          }
+        },
+        ceilingFt: null,
+        shown: true,
+        fallbackMin: 90
+      }
+    },
+    LETTERS = 'BCDEFGHIJKLM',
+    /** Une mission faite de ces tiroirs, dans cet ordre (identifiants B, C, D… par la place). */
+    missionOf = (...list) => ({
+      id: ID,
+      drawers: list.map((d, i) => ({
+        ...d,
+        id: LETTERS[i]
+      }))
+    }),
+    mission = missionOf(HAND, TIME, ZONE); // 1 : le geste ; 2 : l'heure (H + 40) ; 3 : la zone (repli H + 90)
+  /** Un élément [data-drawers] neuf dans la scène (la fiche redessinée). */
+  const host = () => {
+    stage.innerHTML = '<section data-drawers></section>';
+    return stage.firstChild;
+  };
+  const q = sel => stage.querySelector(sel),
+    qa = sel => [...stage.querySelectorAll(sel)],
+    text = sel => (q(sel)?.textContent || '').replace(/\s+/g, ' ').trim(),
+    BOOK = 'pilot/AAA/missions/X-701A.json',
+    PEER = 'pilot/BBB/missions/X-701A.json',
+    SEEN = 'cache/missions/seen_X-701A.json',
+    /** Monte la section sur une mission et attend ses lignes. */
+    mount = async (c, m, n, more = {}) => {
+        DV.show(host(), {
+          ctx: c,
+          id: ID,
+          mission: m,
+          ...more
+        });
+        if (n) await until(() => qa('[data-dw]').length === n);
+      },
+      /** Le geste en deux temps sur ce tiroir. */
+      twice = async id => {
+          q(`[data-dw-open="${id}"]`).click();
+          q(`[data-dw-open="${id}"]`).click();
+          await until(() => !!q(`[data-dw="${id}"][data-open]`));
+        },
+        gestures = () => qa('[data-dw-open]').map(b => b.dataset.dwOpen).join();
+
+  // ---- 1. une mission qu'on feuillette : une ligne, rien d'autre
+  let ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': {
+        assignments: [{
+          mission: ID,
+          pilot: 'BBB',
+          takeoff: iso(Date.now())
+        }]
+      }
+    }
+  });
+  await mount(ctx, mission, 0);
+  await sleep(150);
+  ck('mission feuilletée (ni affectée à moi, ni celle de mon vol) : une seule ligne « Tiroirs : 3 », ni titre, ni clé, ni geste, sans « data-mine »',
+    text('[data-dw-count]').startsWith('Tiroirs : 3') && !q('[data-dw]') && !q('button') && !text('[data-drawers]').includes(
+      'Recherche') && !q('[data-drawers]').hasAttribute('data-mine'), text('[data-drawers]'));
+  await mount(ctx, {
+    id: ID,
+    drawers: []
+  }, 0);
+  ck('mission sans tiroir : la section est cachée et vide', q('[data-drawers]').hidden === true && q('[data-drawers]').innerHTML === '');
+
+  // ---- 2. MA mission : l'ordre — seul le premier tiroir fermé a son geste
+  const T0 = Date.now() - 40 * MIN + 3000; // le décollage affecté : l'heure du tiroir 2 passe dans 3 s
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T0)
+    }
+  });
+  DV.show(host(), {
+    ctx,
+    id: ID,
+    mission
+  });
+  ck('avant la lecture des affectations : la ligne « Tiroirs : 3 », jamais un tiroir montré trop tôt', !!q('[data-dw-count]') && !q(
+    '[data-dw]'));
+  await until(() => qa('[data-dw]').length === 3);
+  ck('mission affectée : trois tiroirs fermés, dits par leur rang (« Tiroir 1, 2, 3 », jamais une lettre), une enveloppe chacun ; la section porte « data-mine »',
+    qa('[data-dw]').map(e => e.dataset.dw).join() === 'B,C,D' && !q('[data-open]') && text('h3') === 'Tiroirs' && text(
+      '[data-dw="C"] .dw-top') === 'Tiroir 2 · Nouvel ordre' && text('[data-dw="D"] [data-dw-n]') === 'Tiroir 3' && qa(
+      '[data-dw] .dw-ico').length === 3 && q('[data-drawers]').hasAttribute('data-mine'), text('[data-drawers]'));
+  ck('l\'ordre : « Ouvrir le tiroir » n\'est proposé que sur le premier tiroir fermé ; les suivants disent « après le tiroir n », sans clé ni geste',
+    gestures() === 'B' && text('[data-dw="B"] [data-dw-key]') === 'à ouvrir à la main' && text('[data-dw="C"] [data-dw-after]') ===
+    'après le tiroir 1' && text('[data-dw="D"] [data-dw-after]') === 'après le tiroir 2' && !q('[data-dw="C"] [data-dw-key]') && !q(
+      '[data-dw-note]') && qa('[data-locked]').length === 2, text('[data-drawers]'));
+  ck('un titre hostile est affiché comme du texte, jamais interprété', !window.__xss && !q('[data-drawers] img') && text('[data-dw="B"]')
+    .includes('<img src=x'), text('[data-dw="B"]'));
+  ck('fermé : ni message ni briefing dans la page', !q('[data-dw-text]') && !text('[data-drawers]').includes('CYRANO') && !text(
+    '[data-drawers]').includes('Fin de mission'));
+
+  // ---- 3. « Ouvrir le tiroir » en deux temps ; l'heure du tiroir 2 passée pendant que le 1 est fermé
+  q('[data-dw-open="B"]').click();
+  ck('premier temps : « Confirmer : ouvrir maintenant », rien d\'écrit', text('[data-dw-open="B"]') === 'Confirmer : ouvrir maintenant' &&
+    q('[data-dw-open="B"]').hasAttribute('data-armed') && !ctx.store.has(BOOK), text('[data-dw-open="B"]'));
+  await sleep(5300);
+  ck('sans second temps dans les cinq secondes : désarmé, rien d\'écrit ; l\'heure du tiroir 2, passée entre-temps, n\'a rien ouvert (le tiroir 1 est fermé)',
+    text('[data-dw-open="B"]') === 'Ouvrir le tiroir' && !ctx.store.has(BOOK) && !q('[data-open]') && ctx.notes.length === 0, [text(
+      '[data-drawers]'), ctx.notes]);
+  await twice('B');
+  const book = ctx.store.get(BOOK);
+  ck('second temps : le carnet de CE pilote est écrit (le tiroir, « hand », la séance, l\'auteur), et lui seul', book?.drawer_B?.state ===
+    'open' && book.drawer_B.how === 'hand' && book.seance === `A:${iso(T0).slice(0, 10)}` && book.by === 'AAA' && book.mission === ID && !book.drawer_C && !
+    book.drawer_D && [...ctx.store.keys()].filter(k => k.startsWith('pilot/')).join() === BOOK, [book, [...ctx.store.keys()]]);
+  ck('le tiroir 1 est ouvert « à la main », son message (détaché) et son briefing sont là, plus de bouton ; un passage de synchronisation est demandé',
+    q('[data-dw="B"]').dataset.open === 'hand' && /^ouvert à la main, à \d\d:\d\dZ$/.test(text('[data-dw="B"] [data-dw-how]')) && text(
+      '[data-dw="B"] [data-dw-msg]') === 'Fin de mission.' && text('[data-dw="B"] [data-dw-brief]') === 'Retour au terrain.' && !q(
+      '[data-dw-open="B"]') && ctx.synced === 1, [text('[data-dw="B"]'), ctx.synced]);
+  await until(() => !!q('[data-dw="C"][data-open]'));
+  ck('l\'heure passée du tiroir 2 joue dès que le 1 s\'ouvre : « ouvert à l\'heure », à l\'heure de cette ouverture ; une notification le dit (« Tiroir 2 ouvert »), mon geste n\'en a pas',
+    q('[data-dw="C"]')?.dataset.open === 'time' && /^ouvert à l'heure, à \d\d:\d\dZ$/.test(text('[data-dw="C"] [data-dw-how]')) && text(
+      '[data-dw="C"] [data-dw-text]').includes('CYRANO') && ctx.notes.length === 1 && ctx.notes[0][0] === 'ok' && ctx.notes[0][1]
+    .startsWith('Tiroir 2 ouvert'), [text('[data-dw="C"]'), ctx.notes]);
+  ck('le tiroir 3 devient le premier fermé : sa clé en clair (« montrée sur la Carte »), son geste, et la phrase du pilote — l\'heure d\'abord, une seule fois',
+    text('[data-dw="D"] [data-dw-key]') === 's\'ouvre au passage de la zone montrée sur la Carte' && text(
+      '[data-dw="D"] [data-dw-note]') === `Cet appareil ne suit pas encore ce passage : le tiroir s'ouvrira à ${z(T0 + 90 * MIN)} (heure estimée), ou à la main` && gestures() === 'D' && !q('[data-locked]'), [text('[data-dw="D"]')]);
+
+  // ---- 4. la fiche redessinée : le même état dans un élément neuf
+  DV.show(host(), {
+    ctx,
+    id: ID,
+    mission
+  });
+  ck('la fiche redessinée : les trois tiroirs sont repeints tout de suite dans l\'élément neuf, dans leur état', qa('[data-dw]').length ===
+    3 && qa('[data-open]').length === 2 && !!q('[data-dw-open="D"]'));
+  q('[data-dw-open="D"]').click();
+  ck('un toucher sur l\'élément neuf arme une fois (une seule écoute)', text('[data-dw-open="D"]') === 'Confirmer : ouvrir maintenant' && !
+    ctx.store.get(BOOK).drawer_D);
+
+  // ---- 5. le carnet d'un autre pilote de la mission, sur le premier tiroir fermé
+  const peer = (entry, at = T0) => ({
+    schema: 1,
+    mission: ID,
+    seance: `A:${iso(at).slice(0, 10)}`,
+    ...entry
+  });
+  await ctx.data.put(PEER, peer({
+    drawer_D: {
+      state: 'open',
+      at: iso(Date.now() + 10 * MIN),
+      how: 'zone'
+    }
+  }));
+  await until(() => ctx.notes.some(n => n[0] === 'warn'));
+  ck('une ouverture d\'un autre datée dans le futur : refusée, le tiroir reste fermé, et c\'est dit avec son auteur et le rang du tiroir', !
+    q('[data-dw="D"][data-open]') && ctx.notes.some(n => n[0] === 'warn' && n[1].includes('BBB') && n[1].includes('Tiroir 3') && n[1]
+      .includes('futur')), ctx.notes);
+  await ctx.data.put(PEER, peer({
+    drawer_D: {
+      state: 'open',
+      at: iso(Date.now() - 1000),
+      how: 'hand'
+    }
+  }));
+  await until(() => !!q('[data-dw-hand="BBB"]'));
+  ck('le GESTE d\'un autre : le tiroir reste fermé ici, et la ligne dit « BBB l\'a ouvert à la main … pour lui seul »', !q(
+    '[data-dw="D"][data-open]') && /^BBB l'a ouvert à la main à \d\d:\d\dZ, pour lui seul$/.test(text('[data-dw-hand="BBB"]')) && !!q(
+    '[data-dw-open="D"]'), text('[data-dw="D"]'));
+  const notesBefore = ctx.notes.length;
+  await ctx.data.put(PEER, peer({
+    drawer_D: {
+      state: 'open',
+      at: iso(Date.now() - 1000),
+      how: 'zone',
+      from: [44.52, -1.25, 2000],
+      to: [44.49, -1.15, 2000],
+      source: 'xplane'
+    }
+  }));
+  await until(() => !!q('[data-dw="D"][data-open]'));
+  ck('le CONSTAT d\'un autre (zone franchie) : ouvert pour tous — « ouvert au passage de la zone par BBB, à … », une notification ; reçu dans la minute : pas de « reçu ici »',
+    q('[data-dw="D"]')?.dataset.open === 'zone' && /^ouvert au passage de la zone par BBB, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="D"] [data-dw-how]')) && text('[data-dw="D"] [data-dw-text]').includes('Zone atteinte.') && ctx.notes.length ===
+    notesBefore + 1 && ctx.notes.at(-1)[1].startsWith('Tiroir 3 ouvert'), [text('[data-dw="D"]'), ctx.notes.slice(notesBefore)]);
+  await until(() => ctx.store.has(SEEN));
+  ck('l\'appareil garde ce qu\'il a vu, avec l\'heure où il l\'a reçu (cache/missions/seen_<ID>.json) ; mon carnet n\'est pas touché par l\'ouverture d\'un autre',
+    ctx.store.get(SEEN)?.drawers?.D?.by === 'BBB' && !!ctx.store.get(SEEN).drawers.D.got && !ctx.store.get(BOOK).drawer_D, ctx.store.get(
+      SEEN));
+  await ctx.data.put(PEER, peer({}));
+  await sleep(300);
+  ck('BBB retire son constat de son carnet : le tiroir RESTE ouvert ici, et la ligne le dit', q('[data-dw="D"]')?.dataset.open === 'zone' &&
+    text('[data-dw="D"] [data-dw-how]').includes('BBB a retiré cette ouverture de son carnet'), text('[data-dw="D"]'));
+  DV.stop();
+
+  // ---- 6. « reçu ici à … » ; le constat d'un autre SOUS VERROU
+  const T3 = Date.now() - 30 * MIN,
+    leg = {
+      from: [44.52, -1.25, 2000],
+      to: [44.49, -1.15, 2000]
+    };
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T3),
+      [PEER]: peer({
+        drawer_B: {
+          state: 'open',
+          at: iso(Date.now() - 5 * MIN),
+          how: 'zone',
+          ...leg
+        }
+      }, T3)
+    }
+  });
+  await mount(ctx, missionOf(ZONE, HAND), 2);
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  ck('un constat reçu plus d\'une minute après le fait : « ouvert au passage de la zone par BBB, à … — reçu ici à … » ; aucune notification pour ce qui était déjà ouvert à l\'arrivée',
+    /^ouvert au passage de la zone par BBB, à \d\d:\d\dZ — reçu ici à \d\d:\d\dZ$/.test(text('[data-dw="B"] [data-dw-how]')) && ctx.notes
+    .length === 0 && gestures() === 'C', [text('[data-dw="B"] [data-dw-how]'), ctx.notes]);
+  DV.stop();
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T3),
+      [PEER]: peer({
+        drawer_D: {
+          state: 'open',
+          at: iso(Date.now() - 2000),
+          how: 'zone',
+          ...leg
+        }
+      }, T3)
+    }
+  });
+  await mount(ctx, mission, 3);
+  await until(() => ctx.store.has(SEEN));
+  ck('le constat d\'un autre sur un tiroir verrouillé (les tiroirs 1 et 2 sont fermés) : rien ne s\'ouvre, le tiroir 3 dit « après le tiroir 2 » ; l\'appareil le garde pour son tour',
+    !q('[data-open]') && text('[data-dw="D"] [data-dw-after]') === 'après le tiroir 2' && ctx.store.get(SEEN)?.drawers?.D?.by === 'BBB' &&
+    ctx.notes.length === 0, [text('[data-drawers]'), ctx.store.get(SEEN)]);
+  DV.stop();
+
+  // ---- 7. l'ouverture à l'heure pendant que la fiche est à l'écran ; le départ réel ; « Resceller »
+  const T4 = Date.now() - 40 * MIN + 2500; // le tiroir 1 (l'heure) s'ouvre dans 2,5 s
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T4)
+    }
+  });
+  await mount(ctx, missionOf(TIME, HAND), 2);
+  ck('le premier tiroir a une heure : dite « estimée » tant que le départ est celui de l\'affectation ; le second attend', text(
+    '[data-dw="B"] [data-dw-key]') === `s'ouvre à ${z(T4 + 40 * MIN)} (heure estimée)` && text('[data-dw="C"] [data-dw-after]') === 'après le tiroir 1', text(
+    '[data-drawers]'));
+  await until(() => !!q('[data-dw="B"][data-open]'), 6000);
+  ck('à l\'heure : le tiroir s\'ouvre de lui-même (« ouvert à l\'heure, à … »), une notification le dit une fois, le suivant reçoit son geste',
+    q('[data-dw="B"]')?.dataset.open === 'time' && text('[data-dw="B"] [data-dw-how]') === `ouvert à l'heure, à ${z(T4 + 40 * MIN)}` && ctx.notes.filter(n => n[0] ===
+      'ok' && n[1].startsWith('Tiroir 1 ouvert')).length === 1 && ctx.notes.length === 1 && gestures() === 'C', [text('[data-dw="B"]'),
+      ctx.notes
+    ]);
+  DV.stop();
+  const T1 = Date.now() - 10 * MIN;
+  ctx = fakeCtx({
+    level: 3,
+    docs: {
+      'missions/affectations.json': index(T1),
+      'pilot/AAA/current_flight.json': {
+        mission: ID,
+        started: {
+          at: iso(T1 + 2 * MIN)
+        }
+      }
+    }
+  });
+  await mount(ctx, missionOf(TIME, HAND), 2);
+  await until(() => !!ctx.store.get(BOOK)?.start_at);
+  await sleep(150);
+  ck('le vol de cette mission est démarré : son départ réel est écrit une fois au carnet, l\'heure n\'est plus « estimée »', ctx.store.get(
+    BOOK)?.start_at === iso(T1 + 2 * MIN) && text('[data-dw="B"] [data-dw-key]') === `s'ouvre à ${z(T1 + 42 * MIN)}`, [ctx.store.get(BOOK), text(
+    '[data-dw="B"] [data-dw-key]')]);
+  await twice('B');
+  await until(() => !!q('[data-dw-seal="B"]'));
+  ck('niveau Complet : « Resceller » sur un tiroir que j\'ai ouvert (avant son heure) ; le suivant a reçu son geste', !!q(
+    '[data-dw-seal="B"]') && q('[data-dw="B"]').dataset.open === 'hand' && gestures() === 'C');
+  q('[data-dw-seal="B"]').click();
+  await until(() => !q('[data-dw="B"][data-open]'));
+  ck('rescellé : le tiroir est refermé pour moi, dit « rescellé », le carnet le porte ; le suivant est de nouveau verrouillé', !q(
+      '[data-open]') && text('[data-dw="B"] [data-dw-key]').includes('rescellé') && ctx.store.get(BOOK).drawer_B.state === 'sealed' &&
+    gestures() === 'B' && text('[data-dw="C"] [data-dw-after]') === 'après le tiroir 1', text('[data-drawers]'));
+  DV.stop();
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T1),
+      [BOOK]: {
+        schema: 1,
+        mission: ID,
+        seance: `A:${iso(T1).slice(0, 10)}`,
+        drawer_B: {
+          state: 'open',
+          at: iso(T1),
+          how: 'hand'
+        }
+      }
+    }
+  });
+  await mount(ctx, mission, 3);
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  ck('niveau Courant : aucun « Resceller » ; un tiroir déjà ouvert à l\'arrivée n\'est pas annoncé', !q('[data-dw-seal]') && ctx.notes
+    .length === 0, ctx.notes);
+
+  // ---- 8. sans trigramme ; un trigramme mal formé ; jouée seul
+  DV.stop();
+  ctx = fakeCtx({
+    trigram: '',
+    docs: {
+      'missions/affectations.json': index(T1)
+    }
+  });
+  await mount(ctx, mission, 0);
+  await sleep(200);
+  ck('sans trigramme sur l\'appareil : la ligne « Tiroirs : 3 » seulement, rien d\'écrit', !!q('[data-dw-count]') && !q('[data-dw]') && [...
+    ctx.store.keys()
+  ].length === 1);
+  DV.stop();
+  ctx = fakeCtx({
+    trigram: ' zzz\t',
+    docs: {
+      'pilot/ZZZ/current_flight.json': {
+        mission: ID
+      }
+    }
+  });
+  await mount(ctx, mission, 3);
+  await twice('B');
+  ck('un trigramme de l\'identité avec des blancs et en minuscules : tous les chemins partent du trigramme validé (aucun blanc, « ZZZ »), le vol est lu, le carnet écrit à sa place',
+    qa('[data-dw]').length === 3 && ctx.asked.length > 0 && ctx.asked.every(p => !/\s/.test(p)) && ctx.asked.includes(
+      'pilot/ZZZ/current_flight.json') && ctx.store.get('pilot/ZZZ/missions/X-701A.json')?.by === 'ZZZ' && [...ctx.store.keys()].every(
+      k => !/\s/.test(k)), [ctx.asked, [...ctx.store.keys()]]);
+  DV.stop();
+  ctx = fakeCtx({
+    trigram: 'ZZZ',
+    docs: {
+      'pilot/ZZZ/current_flight.json': {
+        mission: ID
+      }
+    }
+  });
+  await mount(ctx, missionOf(TIME, ZONE), 2);
+  ck('jouée seul, vol préparé mais pas démarré : l\'heure sans échéance (« 40 min après le départ ») ; le tiroir suivant attend', text(
+      '[data-dw="B"] [data-dw-key]') === 's\'ouvre 40 min après le départ' && text('[data-dw="C"] [data-dw-after]') ===
+    'après le tiroir 1', text('[data-drawers]'));
+  DV.stop();
+  await mount(ctx, missionOf(ZONE), 1);
+  ck('… et une zone sans heure connue : « H + 1 h 30 », une seule fois', text('[data-dw="B"] [data-dw-note]') ===
+    'Cet appareil ne suit pas encore ce passage : le tiroir s\'ouvrira à H + 1 h 30, ou à la main', text('[data-dw="B"] [data-dw-note]'));
+
+  // ---- 9. l'heure de repli n'est dite que si elle concerne le pilote (décision de l'ergonome) ; le briefing long ; describe()
+  DV.stop();
+  DV.JUDGED.push('zone'); // comme si l'appareil savait juger une zone en vol (le lot de la zone)
+  const T2 = Date.now() - 5 * MIN,
+    long = 'Consigne. '.repeat(400); // 4 000 signes
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T2),
+      [BOOK]: {
+        schema: 1,
+        mission: ID,
+        seance: `A:${iso(T2).slice(0, 10)}`,
+        drawer_B: {
+          state: 'open',
+          at: iso(T2),
+          how: 'hand'
+        }
+      }
+    }
+  });
+  const longMission = missionOf({
+    ...HAND,
+    brief: long
+  }, ZONE);
+  await mount(ctx, longMission, 2);
+  ck('une zone que l\'appareil jugerait, SANS position en direct : « Sans position en direct sur cet appareil : le tiroir s\'ouvrira à … », sans « ou à la main »',
+    text('[data-dw="C"] [data-dw-note]') === `Sans position en direct sur cet appareil : le tiroir s'ouvrira à ${z(T2 + 90 * MIN)} (heure estimée)`, text('[data-dw="C"] [data-dw-note]'));
+  ck('un briefing long (4 000 signes) : le début à l\'écran, la suite repliée sous « Lire la suite », rien de perdu', (b => b.length <=
+      1201 && b.endsWith('…'))(text('[data-dw="B"] [data-dw-brief]')) && text('[data-dw="B"] [data-dw-more] summary') ===
+    'Lire la suite' && (text('[data-dw="B"] [data-dw-brief]').slice(0, -1) + ' ' + (q('[data-dw="B"] [data-dw-more] p').textContent ||
+      '')).replace(/\s+/g, ' ').trim() === long.trim(), text('[data-dw="B"] [data-dw-brief]').length);
+  DV.stop();
+  ctx.live = {
+    status: 'tracking'
+  };
+  await mount(ctx, longMission, 2, {
+    notJudged: k => !!k.actor
+  });
+  ck('la même zone AVEC une position en direct : l\'heure de repli reste hors de la vue du pilote (aucune note)', !q(
+      '[data-dw="C"] [data-dw-note]') && text('[data-dw="C"] [data-dw-key]') === 's\'ouvre au passage de la zone montrée sur la Carte',
+    text('[data-dw="C"]'));
+  DV.JUDGED.pop();
+  DV.stop();
+  const tt = (row, v) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''),
+    /** Les phrases d'un tiroir, espaces normalisés (« H + 1 h 30 » porte des espaces insécables). */
+    say = (key, o = {}, st = {}) => Object.fromEntries(Object.entries(DV.describe(tt, {
+      key,
+      dueAt: null,
+      ...st
+    }, {}, o)).map(([k, v]) => [k, v.replace(/\s+/g, ' ')])),
+    AT = Date.UTC(2026, 10, 18, 19, 20);
+  ck('« H + 1 h 30 » ne se coupe pas en fin de ligne (espaces insécables)', DV.describe(tt, {
+    key: {
+      kind: 'zone',
+      fallbackMin: 90
+    },
+    dueAt: null
+  }, {}).note.includes('H\u00a0+\u00a01\u00a0h\u00a030'));
+  ck('describe (pur, pour l\'aperçu de l\'éditeur) : la phrase du pilote dit l\'heure UNE fois quand elle est connue (« à 19:20Z (heure estimée) », sans « H + »), sinon « H + … »',
+    say({
+      kind: 'zone',
+      fallbackMin: 90
+    }, {}, {
+      dueAt: AT,
+      estimated: true
+    }).note === 'Cet appareil ne suit pas encore ce passage : le tiroir s\'ouvrira à 19:20Z (heure estimée), ou à la main' && say({
+      kind: 'object',
+      fallbackMin: 45
+    }).note === 'Cet appareil ne suit pas encore ce passage : le tiroir s\'ouvrira à H + 45 min, ou à la main' && say({
+      kind: 'zone',
+      shown: false,
+      fallbackMin: 60
+    }).note.includes('H + 60 min') && say({
+      kind: 'arrival',
+      point: 'DESTINATION',
+      fallbackMin: 120
+    }).note.includes('H + 2 h,'), [say({
+      kind: 'zone',
+      fallbackMin: 90
+    }, {}, {
+      dueAt: AT,
+      estimated: true
+    }), say({
+      kind: 'object',
+      fallbackMin: 45
+    })]);
+  ck('describe : les clés en clair — l\'objet, la zone cachée, l\'arrivée ; une condition non lue (à la main) ; le geste seul avec un repli ; « ouvert sur « Objet en vue » »',
+    say({
+      kind: 'object',
+      fallbackMin: 45
+    }).key === 's\'ouvre quand l\'objet est trouvé' && say({
+      kind: 'zone',
+      shown: false,
+      fallbackMin: 60
+    }).key === 's\'ouvre en vol' && say({
+      kind: 'arrival',
+      point: 'DESTINATION',
+      fallbackMin: 120
+    }).key === 's\'ouvre à l\'arrivée à DESTINATION' && say({
+      kind: 'condition',
+      condition: 'hover'
+    }).note === 'Cet appareil ne suit pas encore ce passage : le tiroir est à ouvrir à la main' && say({
+      kind: 'hand',
+      fallbackMin: 30
+    }).note === 'le tiroir s\'ouvrira à H + 30 min' && say({
+      kind: 'hand'
+    }).note === '' && say({
+      kind: 'object'
+    }, {}, {
+      open: true,
+      how: 'object',
+      mine: true,
+      at: Date.UTC(2026, 10, 18, 14, 51)
+    }).how === 'ouvert sur « Objet en vue », à 14:51Z', [say({
+      kind: 'condition',
+      condition: 'hover'
+    }), say({
+      kind: 'hand',
+      fallbackMin: 30
+    })]);
+
+  // ---- 10. le passage de synchronisation à la minute : seulement pendant que le premier tiroir fermé est attendu
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T2)
+    }
+  });
+  await mount(ctx, missionOf(ZONE, HAND), 2, {
+    pollMs: 150
+  });
+  await sleep(700);
+  const polled = ctx.synced;
+  ck('le premier tiroir fermé est à zone, un autre pilote est sur la mission : un passage de synchronisation à chaque période (les carnets des autres arrivent par lui)',
+    polled >= 2, polled);
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    get: () => 'hidden'
+  });
+  await sleep(200);
+  const hiddenAt = ctx.synced;
+  await sleep(600);
+  const hiddenAfter = ctx.synced;
+  delete document.visibilityState; // la valeur du navigateur revient
+  document.dispatchEvent(new Event('visibilitychange'));
+  await sleep(60);
+  ck('page cachée (onglet caché, appareil en veille) : la relecture est en PAUSE, aucun passage ; au retour, un passage tout de suite',
+    hiddenAfter === hiddenAt && ctx.synced === hiddenAfter + 1, [hiddenAt, hiddenAfter, ctx.synced, document.visibilityState]);
+  await ctx.data.put(PEER, peer({
+    drawer_B: {
+      state: 'open',
+      at: iso(Date.now() - 1000),
+      how: 'zone',
+      ...leg
+    }
+  }, T2));
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  await sleep(200);
+  const after = ctx.synced;
+  await sleep(700);
+  ck('le tiroir attendu est ouvert : plus aucun passage demandé (le suivant, à geste, n\'en demande pas)', ctx.synced === after &&
+    gestures() === 'C', [after, ctx.synced]);
+  DV.stop();
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': {
+        assignments: [index(T2).assignments[0]]
+      }
+    }
+  });
+  await mount(ctx, missionOf(ZONE, HAND), 2, {
+    pollMs: 150
+  });
+  await sleep(600);
+  ck('seul sur la mission : aucun passage demandé, même avec un tiroir à zone fermé', ctx.synced === 0, ctx.synced);
+  DV.stop();
+
+  // ---- 11. plus de limite à trois : douze tiroirs, sept à l'écran puis les suivants repliés
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(T2)
+    }
+  });
+  const twelve = {
+    id: ID,
+    drawers: 'BCDEFGHIJKLMNO'.split('').map((id, i) => ({
+      id,
+      rank: i + 1,
+      title: `Titre ${i + 1}`,
+      message: `Message ${i + 1}`,
+      key: {
+        kind: 'hand'
+      }
+    }))
+  };
+  await mount(ctx, twelve, 12);
+  ck('douze tiroirs (B à M ; N et O écartés) : « Tiroir 1 » à « Tiroir 12 », sept à l\'écran, les cinq suivants repliés sous « Tiroirs suivants : 5 » ; un seul geste, sur le premier',
+    qa('[data-dw]').length === 12 && qa('[data-dw-list] > [data-dw]').length === 7 && qa('[data-dw-rest] [data-dw]').length === 5 && q(
+      '[data-dw-rest]').open === false && text('[data-dw-rest] summary') === 'Tiroirs suivants : 5' && text(
+      '[data-dw="B"] [data-dw-n]') === 'Tiroir 1' && text('[data-dw="M"] [data-dw-n]') === 'Tiroir 12' && text(
+      '[data-dw="M"] [data-dw-after]') === 'après le tiroir 11' && !text('[data-drawers]').includes('Titre 13') && gestures() === 'B',
+    text('[data-dw-rest] summary'));
+  q('[data-dw-rest]').open = true;
+  await sleep(50);
+  await twice('B');
+  ck('le premier s\'ouvre au geste : le carnet porte drawer_B, le geste passe au tiroir 2, le pli des suivants reste ouvert au dessin suivant',
+    ctx.store.get(BOOK)?.drawer_B?.state === 'open' && gestures() === 'C' && q('[data-dw-rest]').open === true, ctx.store.get(BOOK));
+  DV.stop();
+  await mount(ctx, {
+    id: ID,
+    drawers: [{
+      id: 'D',
+      rank: 3,
+      title: 'Seul lu',
+      key: {
+        kind: 'hand'
+      }
+    }]
+  }, 1);
+  ck('le rang est celui que le lecteur rend (un tiroir d\'avant écarté par lui ne décale pas les numéros)', text(
+    '[data-dw="D"] [data-dw-n]') === 'Tiroir 3');
+  DV.stop();
+  ctx = fakeCtx({
+    trigram: 'QQQ',
+    docs: {
+      'missions/affectations.json': index(T2)
+    }
+  });
+  await mount(ctx, twelve, 0);
+  await sleep(200);
+  ck('mission feuilletée à douze tiroirs : « Tiroirs : 12 », sans « data-mine »', text('[data-dw-count]').startsWith('Tiroirs : 12') && !q(
+    '[data-drawers]').hasAttribute('data-mine') && !q('[data-dw]'));
+  DV.stop();
+  stage.innerHTML = '';
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows: rows.filter(r => !r.ok)
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

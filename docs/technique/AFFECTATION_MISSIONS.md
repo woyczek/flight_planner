@@ -262,7 +262,9 @@ the reference of the Centre's side). Functional specification of the drawers: `o
 
 ### 11.1 Batch T1 — the pure part (`modules/missions/drawers.js`)
 
-A **drawer** (« tiroir »; B, C, D — the `phases` of a mission file, read and bounded by `frame/lib/mission.js` as `drawers`) is closed
+A **drawer** (« tiroir »; twelve at most, ids B to M in the order of the file — the reader's own closed list, `DRAWER_IDS` of
+`frame/lib/mission.js`, imported and never copied: a drawer the reader gives always has its place in the record — the user, 17 Nov: no limit of three; on screen
+« Tiroir 1, 2, 3… », never a letter: letters name the crews of an operation — the `phases` of a mission file, read and bounded by `frame/lib/mission.js` as `drawers`) is closed
 until its **key** has played: a time (`time`: the departure, or the estimated passage of a place, plus a delay), a zone or an object
 (`zone`, `object`, each with an optional **fallback time** `fallbackMin`), or the pilot's gesture alone (`hand`).
 
@@ -281,6 +283,11 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   written. The time and the fallback time are **computed** by every device from the same reference: the earliest real departure a
   record of the play gives (`start_at`), else the take-off of the assignment, else none (the drawer then stays closed; the gesture
   remains). A time that rests on a planned departure or on an estimated passage is flagged `estimated` (the screen says « heure estimée »).
+- **The order** (the ergonomist, 17 Nov, 19 h 22, as the reference engine of the user's mission workshop does): a key, a fallback
+  time or the gesture opens **only the first drawer still closed**; the next ones are locked (`locked`, `after`: the drawer before)
+  and say « après le tiroir n ». What happened while a drawer before was closed — a time that passed, another pilot's finding — plays
+  **as soon as that one opens**: the drawer then opens at that instant (`at`), `srcAt` keeping the time of the fact. A finding of
+  another pilot under lock is kept by the device (`other`, the « seen » document) for its turn.
 - **Open for all** (the user's decision, Q-0087) is **computed**: a drawer is open as soon as the record of ONE pilot of the mission
   says a **finding** (zone entered, object found); the earliest opening kept is « the » opening (who, when, how). The **gesture**
   « Ouvrir le tiroir » opens for the pilot who makes it only (on all his devices): the others read it (`hands`: « BBB opened it by
@@ -309,5 +316,72 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   the same day keeps them.
 - **A key this batch cannot judge yet** (the « arrivée » key and the moving target of the mission editor's format,
   `organisation/SPEC_MISSIONS_TIROIRS.md` § 10.3) is not refused: the drawer stays closed and opens by the gesture, or at its fallback
-  time when the file gives one; a finding written for it in another pilot's record is refused (`key`).
+  time when the file gives one; a finding written for it in another pilot's record is refused (`key`). The fallback time holds for
+  **every key but the time key** (`docs/technique/FORMAT_MISSION.md` § 4) — also for the gesture alone, which is what the reader
+  gives when it could not read the author's condition.
 - Bench: `modules/missions/test/drawers.html` (case N80). Nothing on screen yet: the « Tiroirs » section is batch T2.
+
+### 11.2 Batch T2 — the « Tiroirs » section of the mission sheet (`modules/missions/drawers_view.js`)
+
+- **Where**: on the first page of the sheet, **in the place of the zones line for MY mission** (the ergonomist, 17 Nov, 19 h 06: the
+  first page keeps its seven elements; the zones stay in « Détail »; a browsed mission keeps its zones line and gets one line
+  « Tiroirs : n »), a section `[data-drawers]` the module only places (`module.js`: the import, `meta.files`,
+  `meta.reads` / `writes`, one mount point, one call after each drawing, `stop()` at unmount); the view paints it and owns its gestures.
+- **Whole only for MY mission** — it is assigned to me (a line of `missions/affectations.json` carries my trigram), or it is the
+  mission of my current flight (`flight.mission`). A mission I only browse says « Tiroirs : n » and nothing else: no title, no key, no
+  gesture (one does not open the drawer of a mission one does not play).
+- **The screen follows the accepted mock-up** (`modules/missions/maquette/tiroirs.html`, « Ce que le pilote voit », accepted by the
+  ergonomist on 17 Nov): the author's preview and the pilot's screen say the same thing — `describe(tt, state, drawer, { live,
+  notJudged })` of the view is pure and gives the three sentences (the key, the note, how it opened) to whoever needs them.
+- **Seven drawers on screen**, the next ones folded under « Tiroirs suivants : n » (the rule of seven elements); a folded drawer
+  opens and is touched like the others.
+- **A closed drawer**: an envelope, « Tiroir 1 · Title » (its rank, the one the reader gives), its key in words — « s'ouvre à 20:20Z (heure estimée) », « s'ouvre au passage de la
+  zone montrée sur la Carte », « s'ouvre en vol » for a hidden zone or a condition, « s'ouvre quand l'objet est trouvé », « s'ouvre à
+  l'arrivée à … », « à ouvrir à la main » — and « Ouvrir le tiroir ». Neither its message nor its briefing is in the page.
+- **Only the first closed drawer has « Ouvrir le tiroir »**; a locked one shows its envelope, its name and « après le tiroir n ».
+- **The fallback time is said only when it concerns the pilot** (the ergonomist, 17 Nov, 18 h 42) — otherwise it stays out of his
+  sight: when the key is **not followed in flight** on this device (`JUDGED`, empty until the frame's detection service is wired: the
+  zone, the object, the arrival; and the reader's own rule `notJudgedYet`: a moving target, a required following, a condition of the
+  workshop) — the pilot's sentence, the hour first and once: « Cet appareil ne suit pas encore ce passage : le tiroir s'ouvrira à
+  19:20Z (heure estimée), ou à la main » (« H + 1 h 30 » only while no hour is known) —, or when the device has **no live position**
+  (`ctx.live.status` is not `tracking`) — « Sans position en direct sur cet appareil : le tiroir s'ouvrira à 19:20Z ».
+- **Wide screen**: the first column of the sheet widens for MY mission (up to 40 em) and a drawer is 64 characters wide at most.
+  Another pilot's gesture is said under the key (« BBB l'a ouvert à la main à 20:31Z, pour lui seul »).
+- **« Ouvrir le tiroir » takes two touches** (the second within five seconds, as in the V2): the first writes nothing; the second
+  writes the pilot's own record, then asks the frame for a synchronisation pass at once, so that the other devices read it without
+  waiting for the background pass.
+- **An open drawer**: how and when (« ouvert à l'heure, à … », « ouvert à l'heure de repli », « ouvert à la main », « ouvert au passage
+  de la zone par BBB », « ouvert sur « Objet en vue » »), its message (set off by a rule) and its briefing as text; a long briefing
+  shows its first 1 200 signs, the rest under « Lire la suite » (the page-by-page reader is batch T3). Every text of the file goes
+  through `esc`. A drawer that opens while the
+  sheet is shown is announced once by a floating notification; so is an opening of another record that is not kept, with its author
+  and the reason. « Resceller » shows at the Full level only.
+- **What it reads and writes** (through `ctx.data` only): reads `missions/affectations.json`, `pilot/<me>/current_flight.json`, the
+  records of the pilots of the mission (twelve at most) and `cache/missions/seen_<ID>.json`; writes **only** the pilot's own record
+  (the gesture; the real departure `start_at` of the flight of this mission, once) and the device-only « seen » document.
+- **The others' records arrive by a synchronisation pass asked once a minute, bounded** (the ergonomist, 17 Nov): only while the first
+  closed drawer is awaited (a key judged in flight) AND the section is on screen AND the mission has other pilots; it stops when the
+  drawer opens; it is **paused while the page is hidden** (a hidden tab, a sleeping device) and resumes with a pass at once when the
+  page comes back. The pass is the module's background pass (`ctx.data.sync()` without `gesture`, never a gesture on a timer); its
+  cost is one pass a minute per waiting device — on a device without launcher, one request to the repository's API per pass.
+- **« reçu ici à … »**: an opening of another pilot received more than a minute after the fact says so — « ouvert au passage de la
+  zone par BBB, à 20:14Z — reçu ici à 20:16Z » (the device keeps the time it first saw it, `got` in the « seen » document). No delay
+  is promised in figures on screen (the ergonomist, 17 Nov, 19 h 32).
+- **The delay, measured on a bench with two devices** (17 Nov 2026: two trial launchers, each on its own clone of an invented data
+  repository, a local bare git repository as the remote, no network): the gesture on device A is committed and pushed **about one
+  second** later (the view asks for a pass right after the write); on device B a pass takes **about half a second** and brings the
+  record, which the section shows at once. With only a re-reading of the files (`data.revalidate`) device B had **nothing after 90
+  seconds**: on a workstation with a launcher, re-reading does not exchange with the repository, and the opening would have come
+  with the background pass (every ten minutes) — hence the pass. End to end with the pass asked every minute: **47 seconds** in the
+  trial; the bound is one period (60 s) plus the exchange. **Not measured**: a real remote over the network (each exchange then takes
+  the time of a git fetch and push), a device without launcher, the load beside the simulator (one short git exchange a minute). A
+  measure on the real repository is the user's to grant (Q-0097).
+- Help: `modules/missions/help/<lang>.md`, « Les tiroirs » (`missions-drawers`), four languages; the two documents of the section
+  are listed in `modules/missions/INTEGRATION.md`.
+- Cases: N81 (the view in a bare page with a fake frame), N82 (the sheet, 390 and 1280 px, four languages).
+- **Security review** (« Sécurisation », 17 Nov, accepted with one touch-up): every path the view builds — the pilot's record, his
+  current flight — starts from the trigram **validated** by `bookPath` (trimmed, three letters), never from the identity as it is
+  (« ABC » followed by a blank gave `pilot/ABC /current_flight.json`). Counter-test: without it the bench of N81 stops on its case
+  « un trigramme de l'identité avec des blancs » (red). The module declares the whole `pilot/` prefix (as Fuel does) and writes only
+  `bookPath`: not to be widened. The minute re-reading costs up to twelve repository reads a minute on a device without launcher: it
+  runs only while a drawer is awaited and the page is visible, and stops at the opening.
