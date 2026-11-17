@@ -235,13 +235,23 @@ def build(job, args, ctx):
     job.step('compilation', 0, 3, 'steps')
     stats = {'read': 0, 'fonts': 0}
 
-    def reader(path):
-        """Une carte VAC lue par le sous-processus borné de tools/pdf_guard (SOG-0427), pas dans ce processus : le journal de pypdf y est réglé une fois, ses avertissements « fontTools absent » y sont comptés."""
-        res = pdf_guard.read_text(data, path)
-        stats['read'] += 1
-        stats['fonts'] += 1 if res.get('fonts') else 0
-        return [{'pdfPage': i, 'text': t} for i, t in enumerate(res['texts'], 1)]
-    compiled = vfr_core.compile_corpus(folder, text_dir(data, cycle), os.path.join(REPORT_VFR, 'interpretations'), source_airac=cycle, reader=reader)
+    def prefetch(paths):
+        """Les cartes VAC dont le texte n'est pas encore gardé, lues PAR PAQUETS de 25 par le sous-processus borné de tools/pdf_guard (SOG-0427), pas dans ce processus et pas un sous-processus par carte : le journal de pypdf y est
+        réglé une fois, ses avertissements « fontTools absent » y sont comptés. → { chemin : les pages | l'erreur de ce terrain } ; une carte illisible n'emporte pas son paquet."""
+        def alive(done, total):      # un signe de vie avant chaque paquet ; faux : l'arrêt demandé, la suite n'est pas lue
+            job.beat()
+            job.step('lecture des cartes', done, total, 'documents')
+            return not job.cancelled()
+        out = {}
+        for path, res in zip(paths, pdf_guard.read_many(data, paths, on_pack=alive)):
+            if 'error' in res:
+                out[path] = RuntimeError('PDF illisible (' + str(res['error']) + ')')      # un code fermé, jamais le texte d'une exception
+                continue
+            stats['read'] += 1
+            stats['fonts'] += 1 if res.get('fonts') else 0
+            out[path] = [{'pdfPage': n, 'text': t} for n, t in enumerate(res['texts'], 1)]
+        return out
+    compiled = vfr_core.compile_corpus(folder, text_dir(data, cycle), os.path.join(REPORT_VFR, 'interpretations'), source_airac=cycle, prefetch=prefetch)
     job.log(fonts_line(stats['read'], stats['fonts']))
     if job.cancelled():
         view.set(state='cancelled')

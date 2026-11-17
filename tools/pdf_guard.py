@@ -231,12 +231,9 @@ def _refuse(name):
     raise ValueError('nombre non fini : ' + name)
 
 
-def read_text(data, path, first=0, count=MAX_PAGES, timeout=TIMEOUT, memory=MEMORY_LIMIT, versions_of=None, child=None):
-    """Le texte des pages [first, first + count) d'un PDF déposé : { pages (le total), texts [un texte par page lue] }, lu par pypdf dans un SOUS-PROCESSUS (voir l'en-tête). PdfError : manque / version / path / timeout /
-    failed / output. `child` : le script du sous-processus (les essais seulement)."""
-    path = safe_pdf(data, path)
-    require('text', versions_of)
-    first, count = max(0, int(first)), max(1, min(int(count), MAX_PAGES))
+def _run_child(argv_of, timeout, memory, child=None, max_out=MAX_OUT_BYTES):
+    """Lance le sous-processus borné (python -I, dossier courant temporaire vide, environnement nettoyé, mémoire et délai bornés, tout l'arbre arrêté) avec les arguments `argv_of(fichier de sortie)` et rend l'objet JSON
+    qu'il a écrit (une ENTRÉE NON FIABLE : à valider par l'appelant) ; PdfError timeout / failed / output. Le dossier temporaire est effacé à chaque fois (succès, échec, délai)."""
     tmp = tempfile.mkdtemp(prefix='pdfread-')
     out = os.path.join(tmp, 'out.json')
     proc = job = None
@@ -248,7 +245,7 @@ def read_text(data, path, first=0, count=MAX_PAGES, timeout=TIMEOUT, memory=MEMO
             def limit():
                 resource.setrlimit(resource.RLIMIT_AS, (int(memory), int(memory)))
             kw['preexec_fn'] = limit
-        proc = subprocess.Popen([sys.executable, '-I', child or _CHILD, path, out, str(first), str(first + count), str(MAX_CHARS_PAGE), json.dumps(_dirs())], cwd=tmp, env=_env(),
+        proc = subprocess.Popen([sys.executable, '-I', child or _CHILD, *argv_of(out)], cwd=tmp, env=_env(),
                                 stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kw)
         job = _jobify(proc, memory)
         if os.name == 'nt' and job is None:                     # sans objet Job : NI limite de mémoire NI arrêt de l'arbre : la lecture est refusée, jamais faite sans limite
@@ -261,14 +258,13 @@ def read_text(data, path, first=0, count=MAX_PAGES, timeout=TIMEOUT, memory=MEMO
             raise PdfError('timeout', f'lecture abandonnée après {timeout} s') from None
         if proc.returncode != 0 or not os.path.isfile(out):
             raise PdfError('failed', f'le lecteur de PDF s’est arrêté (code {proc.returncode}) : PDF illisible, ou mémoire au-delà de {int(memory) // 1024 ** 2} Mo')
-        if os.path.getsize(out) > MAX_OUT_BYTES:
+        if os.path.getsize(out) > max_out:
             raise PdfError('output', 'la réponse du lecteur de PDF est trop grosse')
         try:
             with open(out, encoding='utf-8') as f:
-                res = json.load(f, parse_constant=_refuse)
+                return json.load(f, parse_constant=_refuse)
         except (OSError, ValueError, RecursionError):
             raise PdfError('output', 'la réponse du lecteur de PDF est illisible') from None
-        return _clean(res)
     finally:
         if proc is not None and proc.poll() is None:
             _kill(proc, job)
@@ -291,3 +287,65 @@ def read_text(data, path, first=0, count=MAX_PAGES, timeout=TIMEOUT, memory=MEMO
                 break
             except OSError:
                 time.sleep(0.2)
+
+
+def read_text(data, path, first=0, count=MAX_PAGES, timeout=TIMEOUT, memory=MEMORY_LIMIT, versions_of=None, child=None):
+    """Le texte des pages [first, first + count) d'un PDF déposé : { pages (le total), texts [un texte par page lue], fonts }, lu par pypdf dans un SOUS-PROCESSUS (voir l'en-tête). PdfError : manque / version / path / timeout /
+    failed / output. `child` : le script du sous-processus (les essais seulement)."""
+    path = safe_pdf(data, path)
+    require('text', versions_of)
+    first, count = max(0, int(first)), max(1, min(int(count), MAX_PAGES))
+    return _clean(_run_child(lambda out: [path, out, str(first), str(first + count), str(MAX_CHARS_PAGE), json.dumps(_dirs())], timeout, memory, child))
+
+
+# ----------------------------------------------------------------------------------------------------------------------- la lecture par paquets (SOG-0427)
+PACK = 25                                 # des PDF lus par un même sous-processus : le démarrage de Python et de pypdf se paie une fois par paquet, pas une fois par carte
+MAX_PACK_CHARS = 16_000_000               # le texte d'un paquet, tout compris : au-delà, le reste du paquet n'est pas gardé (dit « output »)
+MAX_PACK_OUT = 40_000_000                 # la réponse d'un paquet, en octets
+
+
+def _clean_item(item):
+    """Un élément de la réponse d'un paquet (entrée non fiable) → { pages, texts, fonts } fermé, ou { error: 'failed' } : `{ ok: false }` (le fichier n'a pas pu être lu : il est dit, les autres sont lus), ou une forme que `_clean` refuse."""
+    if isinstance(item, dict) and item.get('ok') is True:
+        try:
+            return _clean({k: v for k, v in item.items() if k != 'ok'})
+        except PdfError:
+            return {'error': 'output'}
+    return {'error': 'failed'}
+
+
+def read_many(data, paths, pack=PACK, timeout=TIMEOUT, memory=MEMORY_LIMIT, versions_of=None, child=None, on_pack=None):
+    """Le texte de PLUSIEURS PDF (SOG-0427 : les cartes VAC d'un cycle, 420 d'un coup), par PAQUETS : un sous-processus borné par paquet de `pack` PDF (mêmes bornes de mémoire et de temps que read_text, posées par paquet), au lieu d'un par PDF.
+    Rend une liste alignée sur `paths` : { pages, texts, fonts } pour un PDF lu, { error: 'path' | 'failed' | 'timeout' | 'output' | 'cancelled' } sinon : UN fichier illisible n'emporte pas son paquet (le sous-processus le dit, lit les autres) ; un
+    paquet qui s'arrête (mémoire, délai, plantage) est relu FICHIER PAR FICHIER, pour que seul le fautif soit dit en échec. PdfError seulement si une bibliothèque manque ou est trop ancienne (require, une fois). `on_pack(fait, total)` est
+    appelé avant chaque paquet (un signe de vie ; faux : la suite n'est pas lue, « cancelled »)."""
+    require('text', versions_of)
+    pack = max(1, min(int(pack), 100))
+    results = [None] * len(paths)
+    todo = []
+    for i, p in enumerate(paths):
+        try:
+            todo.append((i, safe_pdf(data, p)))
+        except PdfError as e:
+            results[i] = {'error': e.reason}
+    for k in range(0, len(todo), pack):
+        chunk = todo[k:k + pack]
+        if on_pack is not None and on_pack(k, len(todo)) is False:
+            for i, _ in chunk:
+                results[i] = {'error': 'cancelled'}
+            continue
+        names = [sp for _, sp in chunk]
+        try:
+            res = _run_child(lambda out: ['--many', out, str(MAX_CHARS_PAGE), str(MAX_PAGES), str(MAX_PACK_CHARS), json.dumps(_dirs()), *names], timeout, memory, child, MAX_PACK_OUT)
+            items = res.get('items') if isinstance(res, dict) and set(res) == {'items'} else None
+            if not isinstance(items, list) or len(items) != len(chunk):
+                raise PdfError('output', 'la réponse du lecteur de PDF n’a pas la forme attendue')
+            for (i, _), item in zip(chunk, items):
+                results[i] = _clean_item(item)
+        except PdfError:
+            for i, sp in chunk:                # le paquet s'est arrêté : chaque PDF est relu seul, pour que seul le fautif soit dit
+                try:
+                    results[i] = _clean(_run_child(lambda out, sp=sp: [sp, out, '0', str(MAX_PAGES), str(MAX_CHARS_PAGE), json.dumps(_dirs())], timeout, memory, child))
+                except PdfError as e:
+                    results[i] = {'error': e.reason}
+    return results

@@ -199,12 +199,13 @@ def finish_graph(ad):
                                         "conditions": r.get("conditions"), "instructionRefs": r.get("instructionRefs", [])})
     ad["relationsStatus"] = "available" if ad["relations"] else ("confirmed_none" if ad["status"] == "sans relations" else "not_extracted")
 
-def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calculation_airac=None, source_airac=None, reader=None):
-    """`reader` (SOG-0427) : une fonction `reader(chemin du PDF) → [{ pdfPage, text }]` qui lit le PDF HORS de ce processus (le lanceur : tools/pdf_guard.read_text, un sous-processus borné, où le journal de
-    pypdf est réglé une fois) ; sans elle (la ligne de commande de tools/report-vfr) le PDF est lu ici par pypdf, comme avant."""
+def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calculation_airac=None, source_airac=None, reader=None, prefetch=None):
+    """`reader` (SOG-0427) : une fonction `reader(chemin du PDF) → [{ pdfPage, text }]` qui lit le PDF HORS de ce processus (le lanceur : tools/pdf_guard, un sous-processus borné, où le journal de pypdf est réglé une fois) ;
+    `prefetch(chemins) → { chemin: [{ pdfPage, text }] | une exception }` lit PAR PAQUETS tous les PDF dont le texte n'est pas déjà gardé (le démarrage d'un sous-processus se paie par paquet, pas par carte) : une exception
+    donnée pour un chemin est celle de ce terrain (dite dans `errors`), les autres sont compilés ; sans l'un ni l'autre (la ligne de commande de tools/report-vfr) le PDF est lu ici par pypdf, comme avant."""
     PdfReader = None
     try:
-        if reader is None:
+        if reader is None and prefetch is None:
             from pypdf import PdfReader
     except ImportError:
         raise SystemExit('pypdf manque : lancez installer_bibliotheques.cmd (Windows) ou sh installer_bibliotheques.sh (macOS / Linux), dans le dossier de la suite (dépendance facultative de tools/report-vfr ; voir README.md).')
@@ -222,6 +223,19 @@ def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calcula
     files = sorted(p for p in source_dir.glob("AD-2.*.pdf") if re.fullmatch(r"AD-2\.[A-Z]{4}", p.stem))
     if not files:
         raise ValueError("Aucun PDF AD-2.OACI.pdf trouvé")
+    prefetched = {}
+    if prefetch is not None:
+        need = []      # les cartes dont le texte n'est pas déjà gardé (même empreinte) : lues d'un coup, par paquets
+        for file in files:
+            try:
+                cached = Path(cache_dir) / f"{file.stem.removeprefix('AD-2.')}.json" if cache_dir else None
+                saved = json.loads(cached.read_text(encoding="utf-8")) if cached and cached.exists() else None
+                if isinstance(saved, dict) and saved.get("sha256") == digest(file):
+                    continue
+            except Exception:
+                pass      # illisible : la boucle ci-dessous le dit pour ce terrain
+            need.append(file)
+        prefetched = prefetch(need) if need else {}
     for file in files:
         icao = file.stem.removeprefix("AD-2.")
         try:
@@ -233,9 +247,15 @@ def compile_corpus(source_dir, cache_dir=None, interpretations_dir=None, calcula
                 if isinstance(saved, dict) and saved.get("sha256") == fp:
                     pages = saved["pages"]
             if pages is None:
-                if reader is not None:
+                if file in prefetched:
+                    pages = prefetched[file]
+                    if isinstance(pages, BaseException):
+                        raise pages
+                elif reader is not None:
                     pages = reader(file)
                 else:
+                    if PdfReader is None:
+                        raise RuntimeError("PDF non lu : aucun lecteur")
                     pdf = PdfReader(file)
                     pages = [{"pdfPage": i, "text": p.extract_text() or ""} for i, p in enumerate(pdf.pages, 1)]
                 if cache:

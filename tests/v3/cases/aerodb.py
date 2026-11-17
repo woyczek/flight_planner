@@ -14576,27 +14576,62 @@ def k427(c):
                 sys.modules['pypdf'] = was
         c.eq((seen, len(comp['aerodromes']) + len(comp['errors']), stopped), (['AD-2.LFAB.pdf'], 1, True), 'with a reader the compilation does not import pypdf (the reader gets each PDF); without it, the command line of tools/report-vfr still says the script to run', what='corpus')
         # the build: ONE line per job, from the counts of the reader; pypdf missing: « no-pypdf » with the sentence of the script, nothing read
-        real_req, real_read, real_comp = G.require, G.read_text, core.compile_corpus
+        # the reading BY PACKS (the user: two minutes more for 420 charts is not acceptable): one bounded child per pack of PDF, a PDF that cannot be read does not take its pack away
+        packs = Path(td) / 'packs'
+        (data / 'local' / 'vac' / '2026-11-12').mkdir(parents=True)
+        pv = data / 'local' / 'vac' / '2026-11-12'
+        goods = []
+        for k in range(5):
+            f = pv / f'AD-2.LFA{chr(65 + k)}.pdf'
+            f.write_bytes(tiny(f'CARD {k}'))
+            goods.append(f)
+        broken = pv / 'AD-2.LFAX.pdf'
+        broken.write_bytes(b'this is not a PDF at all')
+        missing_pdf = pv / 'AD-2.LFAZ.pdf'
+        seen = []
+        got = G.read_many(data, [*goods, broken, missing_pdf], pack=2, versions_of=ok, on_pack=lambda k, t: seen.append((k, t)))
+        c.eq(([bool(r.get('texts')) and f'CARD {n}' in r['texts'][0] for n, r in enumerate(got[:5])], got[5], got[6], seen), ([True] * 5, {'error': 'failed'}, {'error': 'path'}, [(0, 6), (2, 6), (4, 6)]),
+             'six PDF in packs of two: the five good ones are read, the broken one is said « failed » (it does not take its pack away), the one that is not there « path »; the reader is told before each pack (a sign of life)', what='packs')
+        cancelled = G.read_many(data, goods[:3], pack=2, versions_of=ok, on_pack=lambda k, t: k == 0)
+        c.eq([bool(r.get('texts')) or r.get('error') for r in cancelled], [True, True, 'cancelled'], 'the callback answering false stops the next packs (« cancelled »), the first one was read', what='cancel')
+
+        def script(name, src):
+            f = Path(td) / name
+            f.write_text(src, encoding='utf-8')
+            return str(f)
+        # a pack that stops (memory, time, crash) is read again FILE BY FILE: only the guilty one is said
+        stop = script('stop.py', "import json, sys\nif sys.argv[1] == '--many':\n    sys.exit(3)\njson.dump({'pages': 1, 'texts': ['single ' + sys.argv[1][-12:]], 'fonts': 0}, open(sys.argv[2], 'w'))\n")
+        again = G.read_many(data, goods[:2], pack=2, versions_of=ok, child=stop)
+        c.eq([r.get('texts', [''])[0].startswith('single ') for r in again], [True, True], 'a pack whose child stops is read again file by file: each PDF is read alone', what='fallback')
+        # the answer of a pack is an untrusted input: a `fonts` that is a boolean, a wrong length, an item that is not an object
+        hostile = script('hostile.py', "import json, sys\nif sys.argv[1] == '--many':\n    json.dump({'items': [{'ok': True, 'pages': 1, 'texts': ['x'], 'fonts': True}, {'ok': False}, 'x']}, open(sys.argv[2], 'w'))\nelse:\n    json.dump({'pages': 1, 'texts': ['alone'], 'fonts': 0}, open(sys.argv[2], 'w'))\n")
+        three = G.read_many(data, goods[:3], pack=3, versions_of=ok, child=hostile)
+        c.eq(three, [{'error': 'output'}, {'error': 'failed'}, {'error': 'failed'}], 'the items of a pack are checked one by one: a boolean `fonts` is « output », { ok: false } or anything else is « failed »', what='hostile items')
+        short = script('short.py', "import json, sys\nif sys.argv[1] == '--many':\n    json.dump({'items': []}, open(sys.argv[2], 'w'))\nelse:\n    json.dump({'pages': 1, 'texts': ['alone'], 'fonts': 0}, open(sys.argv[2], 'w'))\n")
+        c.eq([r.get('texts') for r in G.read_many(data, goods[:2], pack=2, versions_of=ok, child=short)], [['alone'], ['alone']], 'a pack answer of the wrong length is not trusted: each PDF is read alone', what='short')
+        # the build: ONE line per job, from the counts of the pack reader, the error of a chart carried to ITS aerodrome; pypdf missing: « no-pypdf » with the sentence of the script, nothing read
+        real_req, real_many, real_comp = G.require, G.read_many, core.compile_corpus
         ctx = {'data': str(data), 'secrets': str(Path(td) / 's'), 'git_cmd': None, 'git_env': dict}
         calls = []
 
-        def fake_read(d, path, *a, **k):
-            calls.append(Path(path).name)
-            return {'pages': 1, 'texts': ['t'], 'fonts': 2 if len(calls) < 3 else 0}
+        def fake_many(d, paths, **k):
+            calls.append([Path(p).name for p in paths])
+            if k.get('on_pack'):
+                k['on_pack'](0, len(paths))
+            return [{'error': 'failed'} if Path(p).name == 'AD-2.LFAI.pdf' else {'pages': 1, 'texts': ['t'], 'fonts': 2} for p in paths]
 
         def fake_comp(folder, *a, **k):
-            for f in sorted(Path(folder).glob('AD-2.*.pdf')):
-                k['reader'](f)
-            return {'errors': [{'icao': 'LFAB', 'error': 'stop here'}], 'summary': {}}
+            got = k['prefetch'](sorted(Path(folder).glob('AD-2.*.pdf')))
+            return {'errors': [{'icao': f.stem[5:], 'error': str(v)} for f, v in got.items() if isinstance(v, BaseException)], 'summary': {}}
         for n in ('AD-2.LFAB.pdf', 'AD-2.LFAG.pdf', 'AD-2.LFAI.pdf'):
             (vac / n).write_bytes(tiny('x'))
-        G.read_text, core.compile_corpus, G.require = fake_read, fake_comp, lambda *a, **k: None
+        G.read_many, core.compile_corpus, G.require = fake_many, fake_comp, lambda *a, **k: None
         try:
             job = RJ.Job('vfr', 'build', {})
             r = V.build(job, {'cycle': '2026-10-29'}, ctx)
             lines = [x for x in job.data['log'] if 'documents lus' in x or 'document(s) lu(s)' in x]
-            c.eq((r.get('reason'), calls, lines), ('failed', ['AD-2.LFAB.pdf', 'AD-2.LFAG.pdf', 'AD-2.LFAI.pdf'], ['3 documents lus ; dans 2 des polices n’ont pas pu être décodées entièrement — contournement appliqué']),
-                 'the build reads each chart through the bounded reader and says ONE line: how many documents were read and in how many of them fonts could not be decoded entirely', what='line')
+            c.eq((r.get('reason'), calls, r.get('failed'), lines), ('failed', [['AD-2.LFAB.pdf', 'AD-2.LFAG.pdf', 'AD-2.LFAI.pdf']], [{'item': 'LFAI', 'error': 'PDF illisible (failed)'}], ['2 documents lus ; dans 2 des polices n’ont pas pu être décodées entièrement — contournement appliqué']),
+                 'the build reads the charts in ONE call by packs and says ONE line (how many documents were read, in how many fonts could not be decoded entirely); a chart that cannot be read is said for ITS aerodrome, with a closed word, never the text of an exception', what='line')
             c.eq((V.fonts_line(0, 0), V.fonts_line(12, 0), V.fonts_line(409, 409)), ('0 document(s) lu(s)', '12 document(s) lu(s)', '409 documents lus ; dans 409 des polices n’ont pas pu être décodées entièrement — contournement appliqué'), 'the line holds numbers only', what='words')
 
             def missing(*a, **k):
@@ -14606,7 +14641,30 @@ def k427(c):
             r = V.build(RJ.Job('vfr', 'build', {}), {'cycle': '2026-10-29'}, ctx)
             c.eq((r.get('reason'), r.get('ok'), calls, G.SCRIPT in str(r.get('message')), 'pip' in str(r.get('message'))), ('no-pypdf', False, [], True, False), 'pypdf missing: « no-pypdf » with the name of the script and no pip command, and no chart is read', what='no-pypdf')
         finally:
-            G.require, G.read_text, core.compile_corpus = real_req, real_read, real_comp
+            G.require, G.read_many, core.compile_corpus = real_req, real_many, real_comp
+        # compile_corpus with a prefetch: only the charts whose text is not kept are asked for, in one call; the error of one does not stop the others
+        pf = Path(td) / 'pf'
+        pf.mkdir()
+        keep = Path(td) / 'keep'
+        for n in ('AD-2.LFAB.pdf', 'AD-2.LFAG.pdf', 'AD-2.LFAI.pdf'):
+            (pf / n).write_bytes(tiny(n))
+        asked = []
+
+        def prefetch(files):
+            asked.append(sorted(f.name for f in files))
+            return {f: (RuntimeError('PDF illisible (failed)') if f.name == 'AD-2.LFAG.pdf' else [{'pdfPage': 1, 'text': ''}]) for f in files}
+        was = sys.modules.get('pypdf')
+        sys.modules['pypdf'] = None
+        try:
+            first = core.compile_corpus(pf, keep, None, source_airac='2026-10-29', prefetch=prefetch)
+            second = core.compile_corpus(pf, keep, None, source_airac='2026-10-29', prefetch=prefetch)
+        finally:
+            if was is None:
+                sys.modules.pop('pypdf', None)
+            else:
+                sys.modules['pypdf'] = was
+        c.eq((asked, sorted(e['icao'] for e in first['errors']), sorted(e['icao'] for e in second['errors'])), ([['AD-2.LFAB.pdf', 'AD-2.LFAG.pdf', 'AD-2.LFAI.pdf'], ['AD-2.LFAG.pdf']], ['LFAG'], ['LFAG']),
+             'compile_corpus asks for the charts whose text is not kept in ONE call (the second pass only for the one that failed: the others are in the kept text), the error of one chart is said for that aerodrome and the others are compiled; pypdf is never imported', what='prefetch')
     # the workaround of vfr_core.normalise: the glyph name /MTnnn is the CODE of the sign in cp1252 (WinAnsi): 0x80-0x9F are the typographic apostrophe, the quotation marks, the dashes (read as Latin-1 they came out as control characters: « l\x92Erdre »)
     c.eq(core.normalise('l/MT146Erdre /MT147ok/MT148 /MT150 /MT233t/MT233 /MT65/MT66 /MT129 /MT300 /MT20'), 'l\u2019Erdre \u201cok\u201d \u2013 \u00e9t\u00e9 AB /MT129 /MT300 /MT20',
          'a typographic apostrophe, quotation marks and a dash are read right (cp1252: /MT146 /MT147 /MT148 /MT150); the Latin-1 letters and capitals as before; a code that cp1252 does not define (/MT129), above 255 or below 32 stays as it came', what='cp1252')
