@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b440817",
-  "fiches": 447,
+  "organisation": "cfc81d7",
+  "fiches": 448,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3755,6 +3755,15 @@
      "en": "Mission workshop: drawers — five keys, the fallback time, the preview and the “pilot's view” per stage",
      "de": "Missionswerkstatt: Schubladen — fünf Schlüssel, die Ausweichzeit, die Vorschau und die „Pilotensicht“ je Stufe",
      "es": "Taller de misiones: cajones — cinco claves, la hora de respaldo, la vista previa y la «vista del piloto» por etapa"
+    },
+    {
+     "id": "SOG-0449",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Éditeur de mission : après une saisie, le premier clic sur une pastille d'étape est perdu",
+     "en": "Mission editor: after typing, the first click on a step pill is lost",
+     "de": "Missionseditor: nach einer Eingabe geht der erste Klick auf eine Schritt-Schaltfläche verloren",
+     "es": "Editor de misiones: tras escribir, el primer clic en una pastilla de etapa se pierde"
     }
    ]
   },
