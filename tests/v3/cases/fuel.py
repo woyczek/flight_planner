@@ -7531,10 +7531,15 @@ def f263(c):
 @case('F264', 'The quote is computed once per signature of its inputs: a refresh that changes none of them (another module\'s write that '
       'leaves the plan as it is) computes no quote, no level series, no climb; a change of level computes again', 'F', tags=('fuel',),
       designs=('standard',), screens=False, langs4=False,
-      rule='SOG-0435, second part (V3 Frame\'s profile: compute() 89 % of a refresh, the level series a full trip per flight level, the climb '
+      rule='SOG-0435, second part; the ergonomist: each family of inputs computes again when it changes, one by one (V3 Frame\'s profile: compute() 89 % of a refresh, the level series a full trip per flight level, the climb '
       'solved at each call; the user\'s design: a signature of the inputs before compute())')
 def f264(c):
-    c.open('fuel', docs=flight_docs())
+    sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000, 'cruise': {'tasKt': 330, 'fuelFlowPerHour': 7300}}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['aircraft']['sheetId'] = 'C30J'
+    c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', sheet, 'document']], airfields=True)
     wait_quote(c)
     c.js("""() => { window.__q = 0; const M = window.FuelModel, q = M.quote; M.quote = (...a) => (window.__q++, q.apply(M, a)) }""")
     # another module writes the flight without touching the plan: Fuel refreshes (its echo), nothing of the quote changed
@@ -7543,10 +7548,37 @@ def f264(c):
       await d.put('pilot/ABC/current_flight.json', { ...cur, view: { zoom: 7 }, by: 'maps', updated_at: new Date().toISOString() }); return true }""")
     c.wait(1500)
     c.eq(c.js('window.__q'), 0, 'a refresh with the same inputs: no quote computed', what='same signature')
-    # the level changed: the quote is computed again
-    c.page.fill(f'{FUEL} input[data-k="fl"]', '250')
-    c.page.dispatch_event(f'{FUEL} input[data-k="fl"]', 'change')
-    c.until('window.__q > 0', timeout=8000, what='a new level: the quote computed again')
+    # each family of inputs, one at a time, computes again (the ergonomist: a quote kept wrongly would be worse than the jolt)
+    def field(k, v, what):   # set by the page (the field may sit in another step or a closed fold), as typed: input then change
+        c.js('window.__q = 0')
+        c.js("([k, v]) => { const i = document.querySelector(`[data-module=fuel] input[data-k=\"${k}\"]`); i.focus(); i.value = v; "
+             "i.dispatchEvent(new Event('input', { bubbles: true })); i.dispatchEvent(new Event('change', { bubbles: true })); i.blur() }", [k, v])
+        c.until('window.__q > 0', timeout=8000, what=f'{what}: the quote computed again')
+    to_step(c, 0)
+    field('fl', '250', 'the level')
+    field('wdir', '270', 'the wind direction')
+    field('wkt', '40', 'the wind speed')
+    field('isa', '10', 'the ISA deviation')
+    field('wxdate', '2026-12-01T10:00', 'the date of the flight')
+    field('altn', 'LFRS', 'the alternate')
+    field('taxiMin', '25', 'the taxi time')
+    field('reserveMin', '45', 'the final reserve')
+    field('contPct', '7', 'the contingency')
+    field('entry', '3000', 'the fuel flow of this flight (the sheet\'s load: there is no mass input in the quote)')
+    # the route, written by another module (its points): computed again
+    c.js('window.__q = 0')
+    c.js("""async () => { const d = FrameData.adapter({ id: 'maps', reads: ['pilot/'], writes: [{ prefix: 'pilot/', merge: 'record' }] });
+      const cur = (await d.get('pilot/ABC/current_flight.json')) || {}, pts = (cur.route?.points || []).slice();
+      pts.splice(1, 0, { id: 'ZZMID', lat: 46.0, lon: 0.0 });
+      await d.put('pilot/ABC/current_flight.json', { ...cur, route: { ...cur.route, points: pts, text: pts.map(p => p.id).join(' ') }, by: 'maps',
+        updated_at: new Date().toISOString() }); return true }""")
+    c.until('window.__q > 0', timeout=8000, what='the route changed by the Map: the quote computed again')
+    # the sheet of the aircraft changed (its cruise flow): computed again
+    c.js('window.__q = 0')
+    c.js("""async () => { const d = FrameData.adapter({ id: 'aircraft', reads: ['aircraft/'], writes: [{ prefix: 'aircraft/', merge: 'record' }] });
+      const cur = (await d.get('aircraft/sheets/C30J.json')) || {};
+      await d.put('aircraft/sheets/C30J.json', { ...cur, cruise: { ...(cur.cruise || {}), fuelFlowPerHour: 8100 } }); return true }""")
+    c.until('window.__q > 0', timeout=8000, what='the sheet changed: the quote computed again')
 
 
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)

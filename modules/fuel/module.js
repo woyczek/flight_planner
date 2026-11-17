@@ -2490,8 +2490,12 @@ function compute() {
     r0 = f.route || {},
     sig = (() => {
       try {
+        // hors de qIn, lus par la suite : la langue (textes du modèle de performances), le catalogue des aéronefs une fois chargé
+        // (classe de motorisation), la description du type donnée à perfModel, et la clé des vents prévus d'aujourd'hui (aloftKey :
+        // les points de la route et l'heure du vol, ou l'heure présente sans date) contre laquelle altnAdd et aloftMeanAt les acceptent
         return JSON.stringify([qIn, goal, o, +f.isaDev || 0, r0.arr || '', r0.altn || '', S.altnGeo?.key || '', S.altnGeo?.state || '',
-          f.weather?.real || false, f.windSource?.kind || '', A0?.key || '', A0?.profiles?.length || 0, A0?.at || ''
+          f.weather?.real || false, f.windSource?.kind || '', A0?.key || '', A0?.profiles?.length || 0, A0?.at || '', aloftKey(), S.ctx.lang(),
+          !!window.AircraftCatalog?.classify, A?.record?.(code)?.description || ''
         ]);
       } catch {
         return null; // une entrée non sérialisable : pas de signature, le calcul est refait (jamais un devis gardé à tort)

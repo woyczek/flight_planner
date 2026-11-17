@@ -2430,5 +2430,16 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   taxi, reserve, contingency, climb law, steps, holds, legs), the goal and the climb options, ISA deviation, the alternate (code,
   position state), and the forecast winds by level (real weather, wind source, the aloft key, profiles, time). All the work after it is
   pure functions of these data; the same signature returns the same result (only altnAdd, inside compute, writes in it). An input that
-  cannot be serialised gives no signature: computed again, never a quote kept wrongly. F264 (another module's write leaving the plan:
-  no quote computed; a new level: computed).
+  cannot be serialised gives no signature: computed again, never a quote kept wrongly. The inventory of what compute() and its callees
+  read (the ergonomist's requirement): through `qIn`, by value — the sheet (currentSheet: S.sheets, flight.aircraft), the cruise
+  source (the flow of this flight `settings.entries`, the APD and the estimate of the registry S.A), the performance model, the
+  distance (quoteNm: route, procedures read, S.froze for a started flight), the level, the track, the wind, taxi / reserve /
+  contingency, the climb law, the steps, the holds and the legs (their winds included); beside it — the goal, the climb options
+  (S.manual, S.manualIn), the ISA deviation (also given to perfModel), the alternate (code, aerodb position state), the forecast winds
+  (S.aloft: key, profiles, time; weather real, wind source) and FOUR reads found outside, now in the signature: aloftKey() (the route's
+  points and the flight's hour, or the present hour without a date — altnAdd and aloftMeanAt accept the forecast only for it), the
+  language (texts of performance_model.js), the aircraft catalogue once loaded (window.AircraftCatalog: the engine class), and the type's
+  description given to perfModel. The models (model.js, levels.js, performance_model.js) read nothing else of the page. There is no mass
+  nor payload input in the quote: the closest, the fuel flow of this flight, enters through the source. F264 (another module's write
+  leaving the plan: no quote computed; then, one at a time, the level, the wind direction and speed, the ISA deviation, the date, the
+  alternate, taxi, reserve, contingency, the flow of this flight, the route written by the Map, the sheet: each computes again).
