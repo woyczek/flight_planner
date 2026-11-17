@@ -4319,6 +4319,86 @@
  ],
  "decisions": [
   {
+   "id": "Q-0087",
+   "fiche": "SOG-0436",
+   "app": "compagnie",
+   "question": "Missions à tiroir : un tiroir ouvert par un appareil s'ouvre-t-il pour lui seul, ou pour tous ceux de la mission ?",
+   "context": "En V2, l'état d'un pli vit dans un seul navigateur. Je propose de l'écrire dans le vol du pilote (il le suit sur ses appareils). Reste l'équipage : si deux appareils jouent la même mission et que l'un franchit la zone. Spécification : organisation/SPEC_MISSIONS_TIROIRS.md.",
+   "options": [
+    "Pour lui seul : chaque appareil ouvre ses tiroirs ; l'organisation voit l'état de chacun (le partage viendra avec le lot Équipage)",
+    "Pour tous : le premier qui franchit la zone ouvre le tiroir à tous les appareils de la mission",
+    "Au choix de l'auteur, tiroir par tiroir",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0088",
+   "fiche": "SOG-0436",
+   "app": "compagnie",
+   "question": "Missions à tiroir : la zone de passage est-elle montrée au pilote sur la Carte ?",
+   "context": "Montrée, le pilote sait où aller (une zone de recherche) ; cachée, le tiroir s'ouvre par surprise. Spécification : organisation/SPEC_MISSIONS_TIROIRS.md.",
+   "options": [
+    "Au choix de l'auteur, tiroir par tiroir ; montrée par défaut",
+    "Toujours montrée",
+    "Toujours cachée",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0089",
+   "fiche": "SOG-0436",
+   "app": "compagnie",
+   "question": "Missions à tiroir : sans position en direct (téléphone seul, pas de simulateur), que fait un tiroir à zone ?",
+   "context": "La zone ne peut pas jouer sans la position de l'avion. Ce que je conteste : une mission bloquée par une panne de position. Spécification : organisation/SPEC_MISSIONS_TIROIRS.md.",
+   "options": [
+    "Le pilote dispose du geste « J'y suis » ; le tiroir est dit « ouvert sur déclaration »",
+    "Rien : le tiroir ne s'ouvre qu'avec une position réelle (le geste « Ouvrir le tiroir » en deux temps reste)",
+    "Le tiroir s'ouvre à une heure de repli fixée par l'auteur",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0090",
+   "fiche": "SOG-0436",
+   "app": "compagnie",
+   "question": "Objet à trouver : quand est-il « trouvé » ?",
+   "context": "L'avion doit passer à portée de l'objet (distance et hauteur fixées par l'auteur). Reste à savoir si cela suffit. Spécification : organisation/SPEC_MISSIONS_TIROIRS.md.",
+   "options": [
+    "À portée ET le pilote déclare « Objet en vue » (le geste est refusé hors de portée) : il faut l'avoir vu",
+    "La proximité seule : dès que l'avion passe à portée",
+    "Au choix de l'auteur, objet par objet",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0091",
+   "fiche": "SOG-0436",
+   "app": "compagnie",
+   "question": "Objet à trouver : le rendre VISIBLE dans X-Plane demandera sans doute un petit script à installer une fois dans X-Plane. D'accord pour une mesure de faisabilité ?",
+   "context": "Aujourd'hui le lanceur lit la position de l'avion ; il ne pose rien dans la scène. Je ne sais pas encore si un objet peut y être placé proprement. D'abord l'objet « logique » (position cachée, trouvée par la proximité), jouable sans rien installer ; l'objet visible ensuite. Le lanceur n'installe jamais rien de lui-même dans X-Plane. Spécification : organisation/SPEC_MISSIONS_TIROIRS.md.",
+   "options": [
+    "Oui : la mesure de faisabilité d'abord, sans rien promettre ; l'objet logique en attendant",
+    "Oui, et l'objet visible passe avant le reste",
+    "Non : l'objet logique suffit",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
