@@ -34,7 +34,8 @@
     missionsFor,
     passageMin,
     routeNm,
-    OBJECT_KINDS
+    OBJECT_KINDS,
+    notJudgedYet
   } from '../mission.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -371,11 +372,13 @@
         kind: 'ship',
         lat: 44.1,
         lon: 1.1,
+        altitude_ft: 0,
         motion: 'axis',
         course_deg: 65,
         speed_kt: 8,
         detection_range_nm: 0.5,
-        require_confirmation: 'non'
+        require_confirmation: 'non',
+        hidden_until_event: 'SHIP_SPOTTED'
       }],
       route_order: ['ORIGIN', 'PT1', 'RDV-1', 'TARGET', 'DESTINATION'],
       cruise_speed_kt: 120,
@@ -587,6 +590,7 @@
         heightFt: 1000,
         altitudeFt: 4500,
         confirm: true,
+        hiddenUntil: '',
         moving: true,
         motion: {
           kind: 'route',
@@ -614,6 +618,7 @@
         heightFt: 800,
         altitudeFt: 2500,
         confirm: true,
+        hiddenUntil: '',
         moving: false,
         motion: null
       },
@@ -628,8 +633,9 @@
         lon: 1.1,
         rangeNm: 0.5,
         heightFt: null,
-        altitudeFt: null,
+        altitudeFt: 0,
         confirm: false,
+        hiddenUntil: 'SHIP_SPOTTED',
         moving: true,
         motion: {
           kind: 'axis',
@@ -677,6 +683,7 @@
         heightFt: 1000,
         altitudeFt: null,
         confirm: true,
+        hiddenUntil: '',
         moving: false,
         motion: null
       },
@@ -693,6 +700,7 @@
         heightFt: null,
         altitudeFt: null,
         confirm: true,
+        hiddenUntil: '',
         moving: false,
         motion: null
       },
@@ -770,6 +778,276 @@
         kind: 'hand',
         fallbackMin: 200
       }, 'condition', 'hover']
+    ]);
+  // les conditions de la version 1.1 de l'atelier : lues bornées, pas encore jugées en vol
+  const hover = {
+      kind: 'hover',
+      label: 'Descente',
+      object: 'SHIP-1',
+      duration_sec: 60,
+      radius_m: 5,
+      max_gap_sec: 10,
+      speed_tolerance_kt: 2,
+      height_min_ft: 10,
+      height_max_ft: 100,
+      confirmation: 'deploy'
+    },
+    ship = withPhases([{
+      id: 'B',
+      trigger_object: 'SHIP-1'
+    }]).drawers[0].key.object,
+    hoverRead = {
+      kind: 'hover',
+      label: 'Descente',
+      point: null,
+      at: null,
+      object: ship,
+      radiusM: 5,
+      radiusNm: null,
+      durationSec: 60,
+      maxGapSec: 10,
+      speedMaxKt: null,
+      speedToleranceKt: 2,
+      heightMinFt: 10,
+      heightMaxFt: 100,
+      confirmation: 'deploy',
+      confirm: false
+    };
+  dm = withPhases([{
+    id: 'B',
+    trigger_condition: {
+      kind: 'overflight',
+      object: 'SHIP-1',
+      radius_nm: 0.5,
+      height_min_ft: 100,
+      height_max_ft: 2000
+    },
+    emit_event: {
+      id: 'SHIP_SPOTTED',
+      to: ['HELO']
+    },
+    fallback_delay_min: 90
+  }, {
+    id: 'C',
+    trigger_condition: {
+      kind: 'sequence',
+      steps: [hover, {
+        ...hover,
+        label: 'Remontée',
+        confirmation: 'recover'
+      }]
+    }
+  }, {
+    id: 'D',
+    trigger_condition: {
+      kind: 'landing',
+      point: 'DESTINATION',
+      duration_sec: 60,
+      radius_m: 5,
+      max_gap_sec: 10
+    }
+  }]);
+  same(
+    'tiroirs : les conditions 1.1 — un survol (et le message émis), une séquence de deux stationnaires relatifs, un poser (3 kt par défaut)',
+    dm.drawers.map(d => [d.key, d.keyWhy, d.condition, d.emits]), [
+      [{
+        kind: 'condition',
+        condition: 'overflight',
+        rule: {
+          kind: 'overflight',
+          label: '',
+          point: null,
+          at: null,
+          object: ship,
+          radiusM: null,
+          radiusNm: 0.5,
+          durationSec: null,
+          maxGapSec: null,
+          speedMaxKt: null,
+          speedToleranceKt: null,
+          heightMinFt: 100,
+          heightMaxFt: 2000,
+          confirmation: '',
+          confirm: true
+        },
+        fallbackMin: 90
+      }, '', 'overflight', {
+        id: 'SHIP_SPOTTED',
+        to: ['HELO']
+      }],
+      [{
+        kind: 'condition',
+        condition: 'sequence',
+        steps: [hoverRead, {
+          ...hoverRead,
+          label: 'Remontée',
+          confirmation: 'recover'
+        }],
+        fallbackMin: null
+      }, '', 'sequence', null],
+      [{
+        kind: 'condition',
+        condition: 'landing',
+        rule: {
+          kind: 'landing',
+          label: '',
+          point: 'DESTINATION',
+          at: {
+            lat: 44.0,
+            lon: 1.2
+          },
+          object: null,
+          radiusM: 5,
+          radiusNm: null,
+          durationSec: 60,
+          maxGapSec: 10,
+          speedMaxKt: 3,
+          speedToleranceKt: null,
+          heightMinFt: null,
+          heightMaxFt: null,
+          confirmation: '',
+          confirm: false
+        },
+        fallbackMin: null
+      }, '', 'landing', null]
+    ]);
+  same('tiroirs : un message entre équipages attendu (event) ; un genre de condition inconnu n\'est pas une erreur : le geste seul, dit',
+    withPhases([{
+      id: 'B',
+      trigger_condition: {
+        kind: 'event',
+        event: 'HELI_CLEAR'
+      }
+    }, {
+      id: 'C',
+      trigger_condition: {
+        kind: 'teleport',
+        point: 'PT1'
+      },
+      fallback_delay_min: 30
+    }]).drawers.map(d => [d.key, d.keyWhy, d.condition]),
+    [
+      [{
+        kind: 'condition',
+        condition: 'event',
+        event: 'HELI_CLEAR',
+        fallbackMin: null
+      }, '', 'event'],
+      [{
+        kind: 'hand',
+        fallbackMin: 30
+      }, 'condition', 'teleport']
+    ]);
+  const badRules = [{
+      kind: 'hover',
+      ...hover,
+      point: 'PT1'
+    }, {
+      ...hover,
+      object: 'SHIP-9'
+    }, {
+      ...hover,
+      radius_m: 1e9
+    }, {
+      ...hover,
+      height_min_ft: 500
+    }, {
+      ...hover,
+      duration_sec: undefined
+    }, {
+      kind: 'landing',
+      point: 'NOWHERE',
+      duration_sec: 60,
+      radius_m: 5,
+      max_gap_sec: 10
+    }, {
+      kind: 'landing',
+      point: 'PT1',
+      duration_sec: 60,
+      radius_m: 5,
+      max_gap_sec: 10,
+      speed_max_kt: 400
+    }, {
+      kind: 'overflight',
+      object: 'SHIP-1',
+      radius_nm: 0,
+      height_min_ft: 0,
+      height_max_ft: 100
+    }, {
+      kind: 'sequence',
+      steps: []
+    }, {
+      kind: 'sequence',
+      steps: Array.from({
+        length: 11
+      }, () => hover)
+    }, {
+      kind: 'sequence',
+      steps: [hover, {
+        kind: 'sequence',
+        steps: [hover]
+      }]
+    }, {
+      kind: 'sequence',
+      steps: 'hover'
+    }, {
+      kind: 'event',
+      event: 'un texte libre <b>'
+    }, {
+      kind: 'event'
+    }],
+    badRead = badRules.map(c => withPhases([{
+      id: 'B',
+      trigger_condition: c
+    }]).drawers[0]).filter(d => d.key.kind !== 'hand' || d.keyWhy !== 'condition');
+  ck(`tiroirs : ${badRules.length} conditions 1.1 illisibles (un point ET un objet, un objet absent, un nombre hors bornes ou manquant, une séquence vide, trop longue ou imbriquée, un événement en texte libre) → le geste seul, dit`, !badRead.length, JSON.stringify(badRead.map(d => [d.key.kind, d.keyWhy])));
+  same(
+    'tiroirs : le message émis illisible n\'est pas lu ; notJudgedYet — une condition 1.1, une cible qui franchit, un objet mobile, un suivi exigé',
+    [
+      [{
+        id: 'X',
+        to: []
+      }, {
+        id: 'un texte',
+        to: ['A']
+      }, {
+        id: 'X',
+        to: ['<b>']
+      }, 'X', {
+        id: 'X',
+        to: Array.from({
+          length: 40
+        }, (_, i) => `A${i}`)
+      }].map(e => withPhases([{
+        id: 'B',
+        emit_event: e
+      }]).drawers[0].emits?.to.length ?? null),
+      [dm.drawers[0].key, {
+        kind: 'zone',
+        actor: ship
+      }, {
+        kind: 'zone',
+        actor: null
+      }, {
+        kind: 'object',
+        object: ship
+      }, {
+        kind: 'object',
+        object: {
+          moving: false
+        }
+      }, {
+        kind: 'arrival',
+        escortMinSec: 30
+      }, {
+        kind: 'arrival',
+        escortMinSec: 0
+      }, {
+        kind: 'time'
+      }, hand, null].map(notJudgedYet)
+    ], [
+      [null, null, null, null, 16],
+      [true, true, false, true, false, true, false, false, false, false]
     ]);
   dm = withPhases([{
     id: 'B',
@@ -988,9 +1266,6 @@
         }
       }, 'point'],
       [{
-        trigger_delay_min: 10
-      }, 'point'],
-      [{
         trigger_point: 'PT1',
         trigger_delay_min: 1e9
       }, 'delay'],
@@ -1011,6 +1286,14 @@
       return JSON.stringify([d.key, d.keyWhy]) === JSON.stringify([hand, why]) && /^[a-z0-9_]*$/.test(d.condition) ? '' : `${JSON.stringify(p).slice(0, 60)} → ${JSON.stringify([d.key, d.keyWhy, d.condition])}`;
     }).filter(Boolean);
   ck(`tiroirs : ${unreadable.length} clés illisibles (zone, cible, objet, condition, point absent, délai) → le geste seul, la raison dite ; le genre d'une condition n'est jamais un texte libre`, !wrong.length, wrong.join(' ; '));
+  same('tiroirs : un délai sans point (la trace d\'un lieu retiré par l\'éditeur) est le geste seul, jamais une clé illisible', [withPhases(
+    [{
+      id: 'B',
+      trigger_delay_min: 10
+    }]).drawers[0].key, withPhases([{
+    id: 'B',
+    trigger_delay_min: 10
+  }]).drawers[0].keyWhy], [hand, '']);
   dm = withPhases([{
     id: 'B',
     trigger_zone: {
@@ -1100,9 +1383,7 @@
   });
   same(
     'readMission : des lieux qui ne sont pas des listes (zones: 7, un point tournant seul, des sommets « 5 ») ne font pas échouer la lecture',
-    [Object
-      .keys(dm.points), Object.keys(dz.points).filter(k => k.startsWith('Z-'))
-    ], [
+    [Object.keys(dm.points), Object.keys(dz.points).filter(k => k.startsWith('Z-'))], [
       ['SEUL'],
       ['Z-OK']
     ]);

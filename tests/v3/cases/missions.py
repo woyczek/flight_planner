@@ -2838,6 +2838,8 @@ vertical_profile:
 """
 _REF_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _REF_MISSION]]
 _ED_TODO = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.dataset.todo)"
+_ED_TODO_TEXT = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo]')].map(x => x.textContent).join(' | ')"
+_NOTES = "[...document.querySelectorAll('#fNotes .f-note')].map(n => n.dataset.kind + ':' + n.textContent).join(' | ')"
 _EV_PLACES = f"[...document.querySelectorAll('{E} [data-event] select[data-f=place]')].map(x => x.value)"
 _PLACE_AT = f"""(start) => [...document.querySelectorAll('{E} [data-edplaces] [data-place]')].findIndex(r => r.querySelector('.ms-plbody b').textContent.trim().startsWith(start))"""
 
@@ -2845,7 +2847,8 @@ _PLACE_AT = f"""(start) => [...document.querySelectorAll('{E} [data-edplaces] [d
 @case('N70', 'Missions › editor, the references to the places: a place renamed in the Lieux is renamed everywhere it is cited (the route, a '
       'part\'s trigger point and onward route, a map\'s centre, an event, the vertical profile) — also in the rows of the Chronologie '
       'already on screen; « Retirer » on a place still cited says who cites it and asks a second press (« Retirer quand même »), then '
-      'its citations go with it and « À compléter » says the drawer left without its trigger point and the map left without centre; a '
+      'its citations go with it and « À compléter » NAMES the drawer left without its trigger point and the map left without centre; the '
+      'second press is inert for a second and the notification stays until then; a '
       'reference already dead in the file is kept and said; a new place never takes an identifier of the file; nothing changed, the '
       'same document', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0439 (the ergonomist, 17 Nov 2026: « Renommer un lieu suit partout ; retirer un lieu encore cité est DIT (lesquels le '
@@ -2864,6 +2867,7 @@ def n70(c):
     c.eq(c.js(_EV_PLACES), ['PT1', 'RDV-1'], 'the places of the file', what='events before')
     c.eq([t for t in c.js(_ED_TODO) if t in ('deadRef', 'drawerNoPoint', 'mapNoCentre')], ['deadRef'],
          '« À compléter » says the reference already dead in the file (GHOST), nothing else', what='todo at the opening')
+    c.ok('GHOST' in c.js(_ED_TODO_TEXT), c.js(_ED_TODO_TEXT), '… and NAMES it: the field that cites it and the absent identifier')
     c.tap(f'{E} [data-steps] [data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
     i = c.js(_PLACE_AT, 'PT1')
@@ -2875,10 +2879,13 @@ def n70(c):
     c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
     first = c.text(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
-    c.ok(c.js(_PLACE_AT, 'RDV-1') == i, c.js(_PLACES_JS), 'a place still cited is not removed at the first press')
+    # a DOUBLE press, two clicks in a row: « Retirer quand même » sits exactly where « Retirer » was and is inert for a second, so
+    # that nothing is removed unread
+    c.js(f"""() => {{ const sel = '{E} [data-plform="{i}"] [data-do="edplacedel"]'; document.querySelector(sel).click(); document.querySelector(sel).click() }}""")
+    c.settle()
+    c.ok(c.js(_PLACE_AT, 'RDV-1') == i, c.js(_PLACES_JS), 'a place still cited is not removed at the first press, nor by a double press')
     c.ok(c.text(f'{E} [data-plform="{i}"] [data-do="edplacedel"]') != first, first, 'the button now says « Retirer quand même »')
-    note = c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ')")
+    note = c.js(_NOTES)
     c.ok('RDV-1' in note and 'detail_rdv_1' in note and ' B' in note, note, 'a floating notification names who cites it (the drawer B, the map detail_rdv_1)')
     c.shot('N70_390_cited.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
@@ -2886,11 +2893,19 @@ def n70(c):
     c.shot('N70_1280_cited.png')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
-    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    # the notification stays until its cross or the second press (a plain note leaves by itself after 6 s)
+    c.page.wait_for_timeout(6500)
+    c.ok('RDV-1' in c.js(_NOTES), c.js(_NOTES), 'the notification is still there after more than 6 s')
     c.tap(f'{E} [data-plform="{i}"] [data-do="edplacedel"]')
     c.eq(c.js(_PLACE_AT, 'RDV-1'), -1, 'the second press removes the place', what='the rendezvous row')
+    note = c.js(_NOTES)
+    c.ok(note.startswith('ok:') and 'detail_rdv_1' not in note and 'RDV-1' in note, note, 'the second press replaces the notification by a short « retiré, avec ses citations »')
     c.eq([t for t in c.js(_ED_TODO) if t in ('deadRef', 'drawerNoPoint', 'mapNoCentre')], ['deadRef', 'drawerNoPoint', 'mapNoCentre'],
          '« À compléter » says the drawer left without its trigger point and the map left without centre', what='todo after the removal')
+    todo = c.js(_ED_TODO_TEXT)
+    c.ok(' B ' in todo and 'detail_rdv_1' in todo and 'GHOST' in todo, todo, '… and NAMES them: the drawer B, the map detail_rdv_1, the dead word GHOST')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N70_390_after.png')
     # a place never cited goes at the first press; a new place never takes an identifier of the file (PT1 is still the name its
     # references carry until the file is saved)
     c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')

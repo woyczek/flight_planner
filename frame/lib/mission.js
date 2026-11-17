@@ -25,10 +25,13 @@
 //         fallbackMin | null }
 //       { kind: 'arrival', point, at: { lat, lon }, radiusNm, speedMaxKt, onGround, required: [{ id, lat, lon }], escortMinSec,
 //         fallbackMin | null }
+//       { kind: 'condition', condition: 'hover' | 'landing' | 'overflight' | 'sequence' | 'event', rule | steps | event, fallbackMin } (les
+//         conditions de la version 1.1 de l'atelier : lues bornées, pas encore jugées en vol)
 //       { kind: 'hand', fallbackMin | null }
 //     keyWhy : '' | 'several' | 'zone' | 'object' | 'actor' | 'condition' | 'point' | 'delay' ; condition : le genre de trigger_condition
-//     écrit ; route : la suite de route en points résolus (la forme de missionFlight) — jamais dans turns, routeNm ni missionFlight.
+//     écrit ; emits : { id, to } (le message envoyé aux autres équipages à l'ouverture) ou null ; route : la suite de route en points résolus (la forme de missionFlight) — jamais dans turns, routeNm ni missionFlight.
 //   OBJECT_KINDS, DRAWER_IDS, DRAWER_BOUNDS : les genres d'objet (liste fermée), les identifiants des tiroirs, les bornes de lecture.
+//   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1, cible qui franchit, objet mobile, suivi).
 //   passageMin(mission, pointId) → { nm, min | null } : la distance et le temps estimé du départ au passage d'un point de la partie A
 //     ('ORIGIN' : 0) ; null si le point n'est pas dans la route de la partie A.
 //   readRegistry(doc) → [ligne { id, family, title, operation, types, origin, destination, originIcao, destinationIcao, blockMin,
@@ -216,6 +219,7 @@ export const DRAWER_BOUNDS = Object.freeze({
   escortSec: 3600,
   route: 60,
   required: 20,
+  steps: 10,
   scanned: 20,
   listed: 60
 });
@@ -311,6 +315,8 @@ function objectKey(v, resolve) {
     heightFt: h === null ? null : Math.round(h),
     altitudeFt: alt === null ? null : Math.round(alt),
     confirm: yes(o.require_confirmation, true),
+    hiddenUntil: EVENT_ID.test(String(o.hidden_until_event ?? '')) ? String(o.hidden_until_event) :
+    '', // caché au pilote jusqu'à cet événement
     moving: !!(speed !== null && (axis ? course !== null : route.length)),
     motion: speed === null ? null : axis ? course === null ? null : {
       kind: 'axis',
@@ -325,6 +331,64 @@ function objectKey(v, resolve) {
     } : null
   };
 }
+
+/** Les conditions de maintien et de survol de l'atelier (version 1.1). */
+const HOLD_KINDS = Object.freeze(['hover', 'landing', 'overflight']);
+/** L'identifiant d'un événement entre équipages, d'un destinataire : un mot court, jamais un texte libre. */
+const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/;
+
+/** Une règle de maintien (hover : stationnaire ; landing : poser) ou de survol (overflight) de l'atelier → { kind, label, point, at,
+ *  object, radiusM, radiusNm, durationSec, maxGapSec, speedMaxKt, speedToleranceKt, heightMinFt, heightMaxFt, confirmation, confirm } —
+ *  les champs de son genre, null pour les autres ; null quand elle est illisible (un point ET un objet, ou aucun ; un nombre exigé
+ *  absent ou hors bornes ; une hauteur minimale au-dessus de la maximale). `place` : un identifiant → { lat, lon } ; `object` : un
+ *  identifiant → l'objet résolu. Lue et bornée : le vol ne juge encore aucune de ces règles. */
+function holdRule(c, place, object) {
+  const kind = cut(c.kind, 24).toLowerCase(),
+    pid = idWord(c.point),
+    oid = idWord(c.object);
+  if (!HOLD_KINDS.includes(kind) || !pid === !oid) return null;
+  const at = pid ? place(pid) : null,
+    obj = oid ? object(oid) : null,
+    opt = (v, lo, hi, dflt) => v === undefined || v === null ? dflt : within(v, lo, hi),
+    over = kind === 'overflight',
+    hover = kind === 'hover',
+    r = {
+      kind,
+      label: cut(c.label, 120),
+      point: pid ? ROUTE_END.has(pid) ? 'DESTINATION' : ROUTE_START.has(pid) ? 'ORIGIN' : pid : null,
+      at,
+      object: obj,
+      radiusM: over ? null : within(c.radius_m, 0.1, 10000),
+      radiusNm: over ? within(c.radius_nm, 0.001, DRAWER_BOUNDS.rangeNm) : null,
+      durationSec: over ? null : within(c.duration_sec, 1, 3600),
+      maxGapSec: over ? null : within(c.max_gap_sec, 0.1, 60),
+      speedMaxKt: kind === 'landing' ? opt(c.speed_max_kt, 0, 50, 3) : null,
+      speedToleranceKt: hover ? within(c.speed_tolerance_kt, 0, 100) : null,
+      heightMinFt: kind === 'landing' ? null : within(c.height_min_ft, 0, DRAWER_BOUNDS.feet),
+      heightMaxFt: kind === 'landing' ? null : within(c.height_max_ft, 0, DRAWER_BOUNDS.feet),
+      confirmation: /^[a-z][a-z0-9_]{0,23}$/.test(String(c.confirmation ?? '')) ? String(c.confirmation) : '',
+      confirm: over ? yes(c.require_confirmation, true) : false
+    },
+    need = over ? ['radiusNm', 'heightMinFt', 'heightMaxFt'] : hover ? ['radiusM', 'durationSec', 'maxGapSec', 'speedToleranceKt',
+      'heightMinFt', 'heightMaxFt'
+    ] : ['radiusM', 'durationSec', 'maxGapSec', 'speedMaxKt'];
+  return (pid ? !at : !obj) || need.some(k => r[k] === null) || r.heightMinFt !== null && r.heightMinFt > r.heightMaxFt ? null : r;
+}
+
+/** Le message qu'un tiroir envoie en s'ouvrant (emit_event de l'atelier, version 1.1) → { id, to: [destinataire…] } ; null sans
+ *  message ou quand il est illisible (seize destinataires au plus). */
+function emitOf(v) {
+  const e = plain(v),
+    to = e && Array.isArray(e.to) ? e.to.slice(0, 16).map(x => String(x ?? '')) : [];
+  return e && EVENT_ID.test(String(e.id ?? '')) && to.length && to.every(x => EVENT_ID.test(x)) ? {
+    id: String(e.id),
+    to
+  } : null;
+}
+
+/** Vrai pour une clé que le vol ne sait pas encore juger (à dire à l'écran : « pas encore jugé en vol — s'ouvre à l'heure de repli ou au
+ *  geste ») : une condition de la version 1.1, une zone franchie par une cible, un objet qui se déplace, un suivi exigé. */
+export const notJudgedYet = key => !!key && (key.kind === 'condition' || !!key.actor || !!key.object?.moving || key.escortMinSec > 0);
 
 /** Les tiroirs d'une mission (voir l'en-tête) : { drawers, drawersRefused }. `d` : le document ; `points` : les points de la mission
  *  (readMission). Une partie de la V2 se lit telle quelle : avec un point de déclenchement, la clé « heure » ; sans, le geste seul.
@@ -373,9 +437,9 @@ function drawersOf(d, points) {
         kind: 'hand',
         fallbackMin
       };
+    // un délai sans point (la trace d'un lieu retiré par l'éditeur, SOG-0439) est le geste seul : jamais une clé illisible
     let key = hand,
-      // un délai sans point : la trace d'un lieu retiré (l'éditeur, SOG-0439) — dit « point »
-      keyWhy = keys.length > 1 ? 'several' : !keys.length && has('trigger_delay_min') ? 'point' : '',
+      keyWhy = keys.length > 1 ? 'several' : '',
       condition = '';
     if (keys[0] === 'trigger_zone') {
       const zid = idWord(p.trigger_zone),
@@ -420,7 +484,26 @@ function drawersOf(d, points) {
           } : null;
         });
       condition = /^[a-z][a-z0-9_]{0,23}$/.test(kind) ? kind : '';
-      if (kind !== 'arrival' || !at || radius === null || speed === null || escort === null || req.includes(null)) keyWhy = 'condition';
+      // les conditions de la version 1.1 de l'atelier : lues bornées, pas encore jugées en vol (notJudgedYet)
+      const rule = k => holdRule(k, placeAt, id => objectKey(byId(d.objects, id, B.listed), resolve)),
+        steps = kind === 'sequence' && Array.isArray(c.steps) && c.steps.length >= 1 && c.steps.length <= B.steps ? c.steps.map(x =>
+          rule(
+            plain(x) || {})) : null,
+        later = kind === 'sequence' ? steps && !steps.includes(null) ? {
+          steps
+        } : null : kind === 'event' ? EVENT_ID.test(String(c.event ?? '')) ? {
+          event: String(c.event)
+        } : null : HOLD_KINDS.includes(kind) ? rule(c) && {
+          rule: rule(c)
+        } : null;
+      if (later) key = {
+        kind: 'condition',
+        condition: kind,
+        ...later,
+        fallbackMin
+      };
+      else if (kind !== 'arrival' || !at || radius === null || speed === null || escort === null || req.includes(null)) keyWhy =
+        'condition';
       else key = {
         kind: 'arrival',
         point: ROUTE_END.has(idWord(c.point)) ? 'DESTINATION' : ROUTE_START.has(idWord(c.point)) ? 'ORIGIN' : byKey.get(idWord(c
@@ -466,6 +549,7 @@ function drawersOf(d, points) {
       key,
       keyWhy,
       condition, // le genre de trigger_condition écrit (« arrival », « hover »…), pour le dire ; '' sans condition
+      emits: emitOf(p.emit_event), // le message que le tiroir envoie aux autres équipages en s'ouvrant (version 1.1), ou null
       route,
       routeUnknown
     });

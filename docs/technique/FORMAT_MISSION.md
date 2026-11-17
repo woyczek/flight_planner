@@ -33,7 +33,7 @@ phases:
     zone_shown: true               #    shown to the pilot on the Map (default), or hidden
     trigger_actor: OBJ-2           #    optional: this object (a moving target) crosses the zone, not the pilot
     trigger_object: OBJ-1          # 2. an object to find — an id of `objects`, OR the object itself (see § 3)
-    trigger_condition:             # 3. a condition; this reader reads « arrival »
+    trigger_condition:             # 3. a condition: « arrival », or one of the workshop's 1.1 conditions (§ 4)
       kind: arrival
       point: DESTINATION           #    DESTINATION, ORIGIN, or a place of the mission
       radius_nm: 1
@@ -107,23 +107,31 @@ phases:
 | `drawersRefused` | the parts left out: an id out of B / C / D, a duplicate, a bare value, beyond three (or beyond the 20 entries read) |
 | `key` | `{ kind: 'time', point, delayMin }` — `point` is a point of the mission or `'ORIGIN'` |
 | | `{ kind: 'zone', shape, ceilingFt, zoneId, shown, actor, fallbackMin }` — `shape` is `{ circle: { lat, lon, radiusM } }` or `{ polygon: [[lat, lon], …] }`; `actor` is the moving target that crosses the zone (an object, as below), or null: the pilot |
-| | `{ kind: 'object', object, fallbackMin }` — `object` is `{ id, kind, name, lat, lon, rangeNm, heightFt, altitudeFt, confirm, moving, motion }`; `motion` is null, `{ kind: 'route', route, speedKt, startDelayMin }` or `{ kind: 'axis', courseDeg, speedKt, startDelayMin }` |
+| | `{ kind: 'object', object, fallbackMin }` — `object` is `{ id, kind, name, lat, lon, rangeNm, heightFt, altitudeFt, confirm, hiddenUntil, moving, motion }`; `motion` is null, `{ kind: 'route', route, speedKt, startDelayMin }` or `{ kind: 'axis', courseDeg, speedKt, startDelayMin }` |
 | | `{ kind: 'arrival', point, at: { lat, lon }, radiusNm, speedMaxKt, onGround, required: [{ id, lat, lon }], escortMinSec, fallbackMin }` |
+| | `{ kind: 'condition', condition, rule \| steps \| event, fallbackMin }` — the workshop's 1.1 conditions: `hover`, `landing`, `overflight` (a `rule`), `sequence` (1 to 10 `steps`, each a rule), `event` (the id of a message between crews) |
 | | `{ kind: 'hand', fallbackMin }` |
 | `keyWhy` | `''`; `'several'` (several keys written: one is kept, see below); `'zone'`, `'object'`, `'actor'`, `'condition'`, `'point'`, `'delay'` (the key could not be read: the drawer opens by hand, or at its fallback hour) |
 | `condition` | the kind of `trigger_condition` written (`arrival`, `hover`…), to say it; `''` without one |
+| `emits` | `{ id, to: [recipient, …] }`: the message the drawer sends to the other crews when it opens (`emit_event`, 16 recipients at most); null without one |
 | `route` | the rest of the route as resolved points, in the form of `missionFlight` (`{ id, lat, lon, name, lock, hold }`); `[]` without one |
 | `routeUnknown` | the ids of `route_order` that name no place of the mission |
 
 - **The geometry is always resolved**, whichever way the file writes it: the pilot's screen and the frame's detection
   service read `key.shape`, `key.object`, `key.at`, never the file.
-- **A V2 part**: with a `trigger_point`, the key is `time`; without, `hand`.
+- **A V2 part**: with a `trigger_point`, the key is `time`; without, `hand`. A part that carries a delay and no point
+  (the trace the V3 editor leaves when the place of the trigger point is removed) is `hand` too, with no `keyWhy`: it is
+  the pilot's gesture, not an unreadable key.
 - **Several keys in a hand-written file**: zone, then object, then condition, then hour — and `keyWhy` says `'several'`.
-- **A condition this reader does not read** (the workshop's 1.1 `hover`, `landing`, `sequence`, `overflight`, `event`, or
-  any other word): `{ kind: 'hand' }`, `keyWhy: 'condition'`, and `condition` names it — the drawer stays closed and opens
-  by the gesture or at its fallback hour. The kind is kept only as a short word (`[a-z0-9_]`), never as free text.
-- **Not judged in flight yet**, to be said on the pilot's screen: a zone crossed by a target (`key.actor`), an object that
-  moves (`key.object.moving`), a required following (`key.escortMinSec > 0`).
+- **The workshop's 1.1 conditions are read and bounded, not judged**: a rule is `{ kind, label, point, at, object, radiusM,
+  radiusNm, durationSec, maxGapSec, speedMaxKt, speedToleranceKt, heightMinFt, heightMaxFt, confirmation, confirm }` — the
+  fields of its kind, null for the others; it holds on a point (`at`) OR follows an object (resolved). The drawer stays
+  closed and opens by the gesture or at its fallback hour.
+- **A kind of condition this reader does not know is never an error**: `{ kind: 'hand' }`, `keyWhy: 'condition'`, and
+  `condition` names it. The kind is kept only as a short word (`[a-z0-9_]`), never as free text.
+- **Not judged in flight yet** — `notJudgedYet(key)` says it, for the pilot's screen (« pas encore jugé en vol — s'ouvre à
+  l'heure de repli ou au geste »): a 1.1 condition, a zone crossed by a target (`key.actor`), an object that moves
+  (`key.object.moving`), a required following (`key.escortMinSec > 0`).
 - `OBJECT_KINDS` is the one closed list of kinds (exported; to extend it, add a word there). A kind the list does not
   know is read `''`: the object is still played.
 - `passageMin(mission, pointId)` → `{ nm, min }`: the distance (as `routeNm`) and the estimated minutes from the
@@ -150,6 +158,11 @@ unreadable and the drawer opens by hand:
 | `escort_min_sec` | 0 to 3 600 |
 | `trigger_delay_min` | 0 to 1 440 |
 
+The 1.1 rules: `radius_m` 0.1 to 10 000, `duration_sec` 1 to 3 600, `max_gap_sec` 0.1 to 60, `speed_max_kt` of a landing 0 to
+50 (3 when absent), `speed_tolerance_kt` 0 to 100, `height_min_ft` ≤ `height_max_ft` within 0 to 60 000, `radius_nm` of an
+overflight 0.001 to 100; a point AND an object, or neither, is unreadable; a sequence has 1 to 10 steps, never nested; the
+id of an event and a recipient are short words (80 signs, `[A-Za-z0-9_.-]`).
+
 An optional value out of its bounds is simply not read (`null`): `ceiling_ft` and `detection_height_ft` (0 to 60 000),
 `altitude_ft` (−1 500 to 60 000), `fallback_delay_min` (0 to 1 440); a target whose `speed_kt` (above 0, up to 1 000) or
 `course_deg` is out of bounds is read as not moving.
@@ -162,7 +175,9 @@ An optional value out of its bounds is simply not read (`null`): `ceiling_ft` an
 - **The object seen in X-Plane**: a feasibility measure is running; the file needs nothing more for the « logical »
   object (a hidden position, found within range and on the pilot's word).
 - **Where the workshop writes zones and objects** (Q-0095) and **one authoring tool or two** (Q-0096): the user's.
-- **The workshop's 1.1 conditions** (hold, landing, sequence, overflight, event between crews): named, not read yet.
+- **The workshop's 1.1 contract is still moving** (hold, landing, sequence, overflight, event between crews,
+  `coordination`): the reader follows its document of 17 Nov; `coordination` (the other crews' missions kept in one file)
+  is not read.
 
 ## 7. The V2 and these files
 

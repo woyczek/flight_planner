@@ -39,6 +39,13 @@ drawers is in [docs/technique/FORMAT_MISSION.md](../../docs/technique/FORMAT_MIS
     routes, 308 map centres, 293 profile words), none is dead, and `withRefs` gives every document back unchanged.
   - The editor's own texts written by this session live in `editor_texts.js` (four languages); those of the six first
     steps stay in module.js. N70 (red before: the route kept « PT1 », « Retirer » removed a cited place at once).
+  - **The ergonomist's three retouches on the captures** (17 Nov at 18 h 45): (a) « À compléter » NAMES — « le tiroir B n'a plus son
+    point de déclenchement (il ne s'ouvre plus qu'à la main) », « la carte detail_rdv_1 n'a plus de centre », « la route de la mission
+    cite GHOST, un lieu qui n'existe pas » — `todo` gives `vars`, `editor_texts.js` `todoText` writes the line, three at most per kind;
+    (b) « Retirer quand même » sits exactly where « Retirer » was, so it is inert for a second (`REMOVE_ARM_MS`, in `removePlace`): a
+    double press removes nothing unread; (c) the notification stays until its cross or the second press, which replaces it (one
+    `key`) by « RDV-1 retiré, avec ses citations ». On a phone « À compléter » is not on screen (the validated mock-up): the marks of
+    the steps carry it.
 - **17 Nov 2026 — the reader of the drawers** (SOG-0440; `frame/lib/mission.js`, no screen; the format and what the reader gives:
   [FORMAT_MISSION.md](../../docs/technique/FORMAT_MISSION.md)). The contract is the one of the user's authoring workshop (« Mission
   Editor 1.0 », read on 17 Nov; SPEC_MISSIONS_TIROIRS § 10.3), which the ergonomist made the reference at 18 h 27.
@@ -51,12 +58,18 @@ drawers is in [docs/technique/FORMAT_MISSION.md](../../docs/technique/FORMAT_MIS
     read. The bounds are the workshop's (3 to 100 vertices, 500 km, 100 NM, 60 000 ft).
   - **`fallbackMin` sits in the key**, on every kind but the hour — also on `hand`, so that a key this reader cannot read (the
     workshop's 1.1 conditions: hold, landing, sequence, overflight, event) still opens at the hour the author gave.
-  - **A condition is named, never interpreted**: `condition` keeps the kind as a short word (`[a-z0-9_]`, 24 signs), never as free
-    text; only `arrival` is read. The 1.1 conditions are a moving contract: not modelled before the user says it is stable.
+  - **The workshop's 1.1 conditions are read bounded, never judged** (the ergonomist, 17 Nov at 18 h 42: « lues bornées, gardées,
+    dites « pas encore jugées en vol » ; une sorte inconnue n'est jamais une erreur »): `hover`, `landing`, `overflight`, `sequence`,
+    `event` give `{ kind: 'condition', condition, rule | steps | event }`; `emit_event` gives `emits`; an unknown kind is `hand` with
+    `keyWhy: 'condition'`, its word kept as `[a-z0-9_]` (24 signs), never as free text. First written « named, not read »: changed on
+    that word. `notJudgedYet(key)` is the one rule the pilot's screen asks. `coordination` is not read.
+  - **A delay without a point is the gesture alone, never an unreadable key** (the ergonomist, 18 h 45): it is the trace the
+    editor leaves (SOG-0439), and « À compléter » already says it to the author.
   - **A moving target is read and bounded, not judged** (`key.actor`, `key.object.moving`, `key.escortMinSec`): the screen says so.
   - **Units of the workshop adopted**: range in NM (`detection_range_nm`), heights in ft; `require_confirmation` per object
     (default true: within range AND on the pilot's word).
   - **Found while writing the bench**: `readMission` threw on `zones: 7`, on a single-object `turning_points`, on a zone whose
     `points` is a number — a whole mission said unreadable for one odd list. Read as nothing now. And `missionFlight` looked a route
     identifier up with `points[id]`: « constructor » was a point. Own keys only.
-  - N71 (red before: no `drawers`; `zones: 7` threw).
+  - N71 (red before: no `drawers`; `zones: 7` threw). The bench: 45 rows, among them 31 unreadable keys, 14 unreadable 1.1
+    conditions and the hostile file.

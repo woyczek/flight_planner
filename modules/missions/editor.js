@@ -27,8 +27,8 @@
 //     le centre d'une carte, le lieu d'un événement, le profil vertical, la route d'une alerte) ; withRefs(doc, base, rows) → le document
 //     dont les références suivent les lieux renommés ou retirés — la DERNIÈRE retouche, après toutes les étapes ; refNow(id, base, rows)
 //     → l'identifiant d'aujourd'hui d'une référence du fichier ; citedBy(doc, rows, i) → qui cite le lieu d'une ligne ; removePlace(rows,
-//     i, doc, asked) → { rows, ask, cited } : « Retirer » en deux temps quand le lieu est cité (le premier appui dit qui le cite, le second
-//     le retire) ; nextPlaceId(rows, kind, base) → un identifiant libre pour un lieu neuf (« PT3 ») ; deadRefs(doc) → les références qui ne
+//     i, doc, asked, sinceMs) → { rows, ask, cited, wait } : « Retirer » en deux temps quand le lieu est cité (le premier appui dit qui le
+//     cite, le second le retire, inerte pendant REMOVE_ARM_MS) ; nextPlaceId(rows, kind, base) → un identifiant libre pour un lieu neuf (« PT3 ») ; deadRefs(doc) → les références qui ne
 //     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc) → les cartes au centre vidé, les parties au délai sans point.
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr, airline, aircraft } (textes) ; placeText(p) : « XTST · Base
@@ -44,7 +44,7 @@
 //   pathFor(letter, family, id) → 'missions/<lettre>_<FAMILLE>/<ID>/mission<ID>.yaml' ; '' si l'un n'a pas sa forme.
 //   blocking(cadre, { rows, letter, own }) → [clé] : ce qui empêche d'enregistrer (famille, format de l'identifiant, lettre de la
 //     famille, identifiant déjà pris par une autre ligne) ; le reste n'est jamais bloquant.
-//   todo(doc) → [{ step, key }] : « À compléter » (jamais bloquant).
+//   todo(doc) → [{ step, key, vars? }] : « À compléter » (jamais bloquant) ; vars : ce que le mot nomme (SOG-0439).
 //   stepState(doc, step) → 'ok' | 'todo'.
 //   regAdd(regDoc, entry) → { doc } | { error: 'taken' } ; regEdit(regDoc, idx, regId, cadre, path, now) → { doc } | { error: 'stale' }.
 //   yamlText(doc, Y, now) : le texte du fichier (en-tête daté, puis le document).
@@ -1105,16 +1105,26 @@ export function citedBy(doc, rows, i) {
   return out;
 }
 
+/** Le temps pendant lequel « Retirer quand même » reste inerte après le premier appui (un double appui ne retire pas sans lecture). */
+export const REMOVE_ARM_MS = 1000;
+
 /** « Retirer » un lieu (SOG-0439) : un lieu que rien ne cite part tout de suite ; un lieu encore cité demande un second appui — le
  *  premier rend les lignes telles quelles, `ask` (la ligne qui attend) et `cited` (qui le cite, à dire) ; le second (`asked` est cette
- *  ligne) le retire, et withRefs retirera ses citations. → { rows, ask (-1 : rien n'attend), cited }. */
-export function removePlace(rows, i, doc, asked = -1) {
+ *  ligne) le retire, et withRefs retirera ses citations — sauf dans la seconde qui suit le premier (`sinceMs` : le temps écoulé depuis
+ *  lui) : rien ne se passe (`wait`). → { rows, ask (-1 : rien n'attend), cited, wait? }. */
+export function removePlace(rows, i, doc, asked = -1, sinceMs = Infinity) {
   const list = Array.isArray(rows) ? rows : [],
     cited = Number.isInteger(i) && list[i] ? citedBy(doc, list, i) : [];
   if (!Number.isInteger(i) || !list[i]) return {
     rows: list,
     ask: -1,
     cited
+  };
+  if (cited.length && asked === i && !(sinceMs >= REMOVE_ARM_MS)) return {
+    rows: list,
+    ask: i,
+    cited,
+    wait: true
   };
   return cited.length && asked !== i ? {
     rows: list,
@@ -1235,7 +1245,12 @@ export function todo(doc) {
     m = obj(d.mission),
     arr = v => Array.isArray(v) ? v : [],
     out = [],
-    add = (step, key) => out.push({
+    // `vars` : ce que le mot nomme (le tiroir, la carte, la référence), pour les textes de editor_texts.js
+    add = (step, key, vars) => out.push(vars ? {
+      step,
+      key,
+      vars
+    } : {
       step,
       key
     });
@@ -1257,8 +1272,15 @@ export function todo(doc) {
   if (placesOf(d).some(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''))) add('places', 'unplaced');
   // SOG-0439 : une référence qui ne désigne aucun lieu ; un tiroir dont le point de déclenchement a été retiré (il ne s'ouvre plus qu'à
   // la main)
-  if (deadRefs(d).length) add('places', 'deadRef');
-  if (drawersNoPoint(d).length) add('places', 'drawerNoPoint');
+  // chacun est NOMMÉ (l'ergonome, 17 nov.) : le champ qui cite et l'identifiant absent, la lettre du tiroir — trois au plus par sorte
+  for (const r of deadRefs(d).slice(0, 3)) add('places', 'deadRef', {
+    id: cut(r.id, 40),
+    where: r.where,
+    name: cut(r.name, 60)
+  });
+  for (const name of drawersNoPoint(d).slice(0, 3)) add('places', 'drawerNoPoint', {
+    name
+  });
   // le récit d'une liaison est facultatif (décision du 13 nov.)
   if (!link && !String(d.summary ?? '').trim()) add('story', 'summary');
   if (!link && !String(d.detailed_description ?? '').trim()) add('story', 'description');
@@ -1266,7 +1288,10 @@ export function todo(doc) {
   // la chronologie de la mission : timeline.events (shared/mission_exercise.js) ; les cartes centrées sur un lieu sans position
   if (!link && !eventsOf(d).length) add('timeline', 'timeline');
   if (mapsOf(d).some(m => m.unplaced)) add('timeline', 'mapUnplaced');
-  if (mapsNoCentre(d).length) add('timeline', 'mapNoCentre'); // SOG-0439 : une carte dont le lieu du centre a été retiré
+  // SOG-0439 : une carte dont le lieu du centre a été retiré, nommée
+  for (const name of mapsNoCentre(d).slice(0, 3)) add('timeline', 'mapNoCentre', {
+    name
+  });
   return out;
 }
 
