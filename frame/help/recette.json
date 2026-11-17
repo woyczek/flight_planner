@@ -3975,6 +3975,38 @@
  ],
  "decisions": [
   {
+   "id": "Q-0077",
+   "fiche": "SOG-0396",
+   "app": "pilote",
+   "question": "Route libre dépendante du message NAT : rejouer la matrice des 144 traversées pour la mesurer (trois passes, environ 11 min chacune) ?",
+   "context": "AeroDB a trouvé qu'avec le seul message NAT de ce matin, la moitié des traversées n'a plus de route (SOG-0396). Pour proposer un correctif, il lui faut rejouer la matrice avec trois jeux de messages (le jour seul, le 16/11, aucun). La matrice charge ton poste et fausse les essais joués en même temps ; elle ne part que sur ton mot. Une passe est déjà partie sans mon mot ce matin : je l'ai arrêtée après celle en cours.",
+   "options": [
+    "Oui, maintenant, une passe à la fois, pendant que la session Essais ne joue rien",
+    "Oui, mais ce soir, avec la passe complète de non-régression",
+    "Non : qu'AeroDB propose le correctif sans ces passes, on mesurera après",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0078",
+   "fiche": "SOG-0392",
+   "app": "pilote",
+   "question": "Passe complète de non-régression : quand la jouer ?",
+   "context": "Elle n'a pas été jouée depuis le 12/11. Ce matin, la session Essais a trouvé deux cas rouges HÉRITÉS sur la tête du dépôt (D131 depuis le 15/11, K60 depuis SOG-0368) : deux défauts de cas, pas de l'appli, mais restés invisibles plusieurs jours. Ce que je conteste : attendre la fin des routes — chaque jour sans elle laisse passer des rouges. Elle dure longtemps et charge ton poste ; elle ne part que sur ton mot, et c'est moi qui la joue.",
+   "options": [
+    "Ce soir, quand tu ne travailles plus sur le poste",
+    "Maintenant",
+    "Pas avant la fin du lot des routes",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
