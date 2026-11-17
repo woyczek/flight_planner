@@ -302,7 +302,7 @@ def datasets(data, current, now):
     try:
         import importlib
         P = importlib.import_module('regen.proc')
-        _cy, recs = P.state_records(str(data), sorted(P.STATES))
+        _cy, recs = P.state_records(str(data), sorted(P.STATES), current)
         used = [r for r in recs.values() if r['built'] or r['held'] or (r['cached'] or {}).get('state') == 'present']
         if used:
             bad = [r for r in used if r['state'] in ('stale', 'missing')]

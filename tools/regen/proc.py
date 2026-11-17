@@ -792,11 +792,11 @@ def _manual_held(data):
     return {k: (v.get('cycle') if isinstance(v, dict) and isinstance(v.get('cycle'), str) and DAY.match(v['cycle']) else '') for k, v in ad.items() if isinstance(k, str) and re.fullmatch(r'[A-Z0-9]{3,4}', k)}
 
 
-def state_records(data, states):
+def state_records(data, states, cycle=None):
     """L'enregistrement de chaque État (UNE vérité, SOG-0428) : { <préfixe>: { state: 'up-to-date' | 'stale' | 'missing' | 'n/a', cached: { state, files }, built: { cycle, aerodromes } | null,
     held: { aerodromes, cycle (le plus récent), older (ceux d'un cycle passé) } | null, reasons } }, avec le cycle en vigueur. Construit EN ENTIER (un dossier de cycle) ou, à défaut, des terrains lus à la main :
     à jour quand tous sont du cycle en vigueur (rien n'est attendu de l'utilisateur), périmé (`held-older`) sinon ; ni l'un ni l'autre : manquant (téléchargé sans construire : `not-built`, rien : `not-fetched`)."""
-    cycle = _cycle(data)
+    cycle = cycle or _cycle(data)      # le cycle en vigueur que l'appelant donne (base/cycle : le sien), à défaut celui du calendrier du jour
     ead, out = set(_ead_states()), {}
     proc = os.path.join(data, 'proc')
     try:

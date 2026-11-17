@@ -2975,7 +2975,8 @@ def k207(c):
         c.eq(({k: (v['state'], v.get('why')) for k, v in empty.items()}, [len(v['label']) for v in empty.values()]), ({k: ('todo', 'absent') for k in ('procedures', 'weather', 'nat', 'vfr', 'aircraft', 'sheets')}, [4] * 6), 'nothing on the workstation: every set is todo / absent, with its four-language label', what='empty')
         w = lambda rel, obj: (rel.parent.mkdir(parents=True, exist_ok=True), rel.write_text(json.dumps(obj), encoding='utf-8'))
         w(data / 'proc' / '2026-10-29' / 'index.json', {'schema': 1, 'aerodromes': {'KATL': {}, 'KJFK': {}}})
-        w(data / 'proc' / 'manual' / 'index.json', {'schema': 1, 'aerodromes': {'LFBO': {}}})
+        # SOG-0428 (8dc6c032c): a terrain read by hand is up to date when its record says the cycle in force — one of unknown cycle is not
+        w(data / 'proc' / 'manual' / 'index.json', {'schema': 1, 'aerodromes': {'LFBO': {'cycle': '2026-10-29'}}})
         w(data / 'weather' / 'world' / 'index.json', {'schema': 1, 'run': int(now) - 7200, 'built': int(now) - 3600})
         end = datetime.datetime.fromtimestamp(now - 86400, datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         w(data / 'sia' / 'zones' / 'nat' / 'nat_tracks.json', {'tracks': [], 'messages': [{'to': end}]})
