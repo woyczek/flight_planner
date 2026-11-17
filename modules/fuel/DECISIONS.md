@@ -2249,3 +2249,20 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   cache/fuel/mount_timing.json `{ schema: 1, at, ms, registry: ok | late | arrived }`, as route_timing.json for a route computation;
   written once the result is drawn, again when a late register arrives. No help change: nothing new to read on the screen, only less
   waiting. F249 (the register's script held back by the network; red on the parent: the result waits about 8 s, no document).
+- **17 Nov 2026 — SOG-0402, « Copier pour Eurocontrol »** (the user, after Eurocontrol refused a route: « tu pourrait génerer un copy
+  paste vers eurocontrol, au bon format »; the ergonomist's version 2 after my five objections). A pure writer, modules/fuel/fpl.js
+  (`message`, `item15`, `coordWord`, `speedLevel`, `eobtOf`), built on route_text's `tokenize`: the ICAO message (Doc 4444,
+  appendix 2) one item per line — item 7 the identification (neutral `CHECK01` by default, a field of the fold changes it, kept for
+  the page only, never written to the flight), item 8 `IG` (said), item 9 the ICAO type and its wake category (aerodb's catalogue;
+  unknown: « M » assumed and SAID, the ICAO catalogue being outside the repository), item 10 `SDGRWY/S` (the shortest set that
+  passes: standard, DME, GNSS, PBN, RVSM, 8.33; mode S) WITHOUT data link nor invented address (a CPDLC error may remain, said),
+  item 13 the flight's time (no taxi taken off), else now rounded up to the next five minutes (said), item 15 converted from the
+  flight's route text (aerodromes removed, DCT between two points off an airway, coordinates « 54N050W » in whole degrees else
+  degrees and minutes, the speed-level group at the head and at each level change, SID and STAR only as written in the route — never
+  invented, their absence said), item 16 the arrival, the estimated time (the quote's airborne minutes) and the alternate, item 18
+  `PBN/B2D2 DOF/yymmdd`. NAT tracks, North American compound routes and North Atlantic coordinates are said « non contrôlés par
+  Eurocontrol ». The form rules (identification, type, aerodromes, speed, level FL010–FL660, route not empty, estimated time,
+  alphabet) are checked before copying: a failing message is not copied, the fold says why. No network call: the pilot pastes it.
+  A second writer of « (FPL-…) » exists in frame/lib/last_flight.js (`fplText`, not exported, another owner): debt noted, not
+  touched. F247 (character by character on two invented flights, one through a NAT track and coordinates, one with a level change;
+  the screen; red on the parent: no module, no button).

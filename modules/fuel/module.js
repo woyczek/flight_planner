@@ -9,6 +9,7 @@
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
+import * as FPL from './fpl.js'; // SOG-0402 : le message de plan de vol OACI pour la validation d'Eurocontrol
 import * as WIND from '../../frame/lib/wind.js'; // le vent sur une piste : une règle pour Carburant et la Carte (refonte § 10.33 R-F1)
 import * as WD from './winds.js';
 import * as PG from './progress.js';
@@ -105,7 +106,7 @@ export const meta = {
   files: ['performance_model.js', 'model.js', 'levels.js', 'weather.js', 'winds.js', 'progress.js', 'procedures.js',
     'procedures_texts.js', 'atis.js', 'direct.js', '../data/model_sets.js', '../data/model_kit.js', 'adnames.js', 'routecomplete.js',
     'suggest.js',
-    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js',
+    '../../frame/lib/weather_store.js', '../../frame/lib/fuel_units.js', 'route_engine.js', 'zone_gap.js', 'fpl.js',
     '../../frame/lib/route_text.js', '../../frame/lib/current_flight.js', '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js', '../../frame/lib/procedures.js', '../../frame/lib/routing.js', '../../frame/lib/fms.js',
     '../../frame/lib/route_alts.js',
@@ -530,6 +531,76 @@ const TX = {
   rFreeWin: ['{dir} : {win}', '{dir}: {win}', '{dir}: {win}', '{dir}: {win}'],
   rFreeAt: ['entrée de l’océan vers {at}', 'ocean entry about {at}', 'Ozeaneintritt gegen {at}', 'entrada al océano hacia las {at}'],
   rFreeValid: ['valables {win}', 'valid {win}', 'gültig {win}', 'válidas {win}'],
+  // SOG-0402 : « Copier pour Eurocontrol » et son pli de relecture
+  fplCopy: ['Copier pour Eurocontrol', 'Copy for Eurocontrol', 'Für Eurocontrol kopieren', 'Copiar para Eurocontrol'],
+  fplFold: ['Plan de vol OACI (relecture)', 'ICAO flight plan (review)', 'ICAO-Flugplan (Durchsicht)', 'Plan de vuelo OACI (revisión)'],
+  fplId: ['Identifiant', 'Identification', 'Kennung', 'Identificación'],
+  fplNeutral: ['Identifiant neutre par défaut ({id}) : votre immatriculation ne part pas sans votre geste.',
+    'Neutral identification by default ({id}): your registration does not leave without your gesture.',
+    'Standardmäßig neutrale Kennung ({id}): Ihr Kennzeichen geht nicht ohne Ihr Zutun hinaus.',
+    'Identificación neutra por defecto ({id}): su matrícula no sale sin su gesto.'
+  ],
+  fplEquip: [
+    'Équipement supposé, pour ne contrôler que la route : {e} et PBN/{p} ; sans liaison de données, une erreur CPDLC peut rester.',
+    'Equipment assumed, to check the route only: {e} and PBN/{p}; without data link, a CPDLC error may remain.',
+    'Angenommene Ausrüstung, nur um die Route zu prüfen: {e} und PBN/{p}; ohne Datenlink kann ein CPDLC-Fehler bleiben.',
+    'Equipo supuesto, para comprobar solo la ruta: {e} y PBN/{p}; sin enlace de datos, puede quedar un error CPDLC.'
+  ],
+  fplNow: ['Départ : maintenant, arrondi aux cinq minutes suivantes ({t}).', 'Departure: now, rounded up to the next five minutes ({t}).',
+    'Abflug: jetzt, auf die nächsten fünf Minuten aufgerundet ({t}).', 'Salida: ahora, redondeada a los cinco minutos siguientes ({t}).'
+  ],
+  fplAt: ['Départ : l’heure du vol ({t}).', 'Departure: the flight’s time ({t}).', 'Abflug: die Zeit des Flugs ({t}).',
+    'Salida: la hora del vuelo ({t}).'
+  ],
+  fplNoSid: ['Aucune SID écrite : le raccord direct depuis {ad} est jugé par Eurocontrol.',
+    'No SID written: the direct connection from {ad} is judged by Eurocontrol.',
+    'Keine SID geschrieben: die Direktverbindung ab {ad} beurteilt Eurocontrol.',
+    'Ninguna SID escrita: la conexión directa desde {ad} la juzga Eurocontrol.'
+  ],
+  fplNoStar: ['Aucune STAR écrite : le raccord direct vers {ad} est jugé par Eurocontrol.',
+    'No STAR written: the direct connection to {ad} is judged by Eurocontrol.',
+    'Keine STAR geschrieben: die Direktverbindung nach {ad} beurteilt Eurocontrol.',
+    'Ninguna STAR escrita: la conexión directa hacia {ad} la juzga Eurocontrol.'
+  ],
+  fplOceanic: ['Routes NAT, voies nord-américaines et points de l’Atlantique Nord : non contrôlés par Eurocontrol.',
+    'NAT tracks, North American routes and North Atlantic points: not checked by Eurocontrol.',
+    'NAT-Routen, nordamerikanische Strecken und Punkte des Nordatlantiks: von Eurocontrol nicht geprüft.',
+    'Rutas NAT, rutas norteamericanas y puntos del Atlántico Norte: no comprobados por Eurocontrol.'
+  ],
+  fplBad: ['Le message ne peut pas être copié : {l}.', 'The message cannot be copied: {l}.',
+    'Die Nachricht kann nicht kopiert werden: {l}.',
+    'El mensaje no puede copiarse: {l}.'
+  ],
+  fplErr: {
+    id: ['identifiant (une lettre puis 6 lettres ou chiffres au plus)', 'identification (a letter then 6 letters or digits at most)',
+      'Kennung (ein Buchstabe, dann höchstens 6 Buchstaben oder Ziffern)',
+      'identificación (una letra y luego 6 letras o cifras como máximo)'
+    ],
+    type: ['type OACI de l’aéronef', 'ICAO aircraft type', 'ICAO-Luftfahrzeugmuster', 'tipo OACI de la aeronave'],
+    dep: ['départ (quatre lettres)', 'departure (four letters)', 'Abflug (vier Buchstaben)', 'salida (cuatro letras)'],
+    arr: ['arrivée (quatre lettres)', 'arrival (four letters)', 'Ankunft (vier Buchstaben)', 'llegada (cuatro letras)'],
+    altn: ['dégagement (quatre lettres)', 'alternate (four letters)', 'Ausweich (vier Buchstaben)', 'alternativo (cuatro letras)'],
+    speed: ['vitesse de croisière', 'cruise speed', 'Reisegeschwindigkeit', 'velocidad de crucero'],
+    level: ['niveau de croisière (FL010 à FL660)', 'cruise level (FL010 to FL660)', 'Reiseflugfläche (FL010 bis FL660)',
+      'nivel de crucero (FL010 a FL660)'
+    ],
+    route: ['route vide', 'empty route', 'leere Route', 'ruta vacía'],
+    eet: ['durée estimée', 'estimated time', 'geschätzte Dauer', 'duración estimada'],
+    alphabet: ['caractère hors de l’alphabet du message', 'character outside the message alphabet',
+      'Zeichen außerhalb des Nachrichtenalphabets',
+      'carácter fuera del alfabeto del mensaje'
+    ]
+  },
+  fplWake: ['Catégorie de turbulence de sillage inconnue du catalogue : « M » supposée.',
+    'Wake turbulence category unknown to the catalogue: « M » assumed.',
+    'Wirbelschleppenkategorie im Katalog unbekannt: „M“ angenommen.',
+    'Categoría de estela turbulenta desconocida en el catálogo: «M» supuesta.'
+  ],
+  fplCopied: ['Plan de vol copié : collez-le dans la validation d’Eurocontrol.',
+    'Flight plan copied: paste it into Eurocontrol’s validation.',
+    'Flugplan kopiert: fügen Sie ihn in die Validierung von Eurocontrol ein.',
+    'Plan de vuelo copiado: péguelo en la validación de Eurocontrol.'
+  ],
   rFreeRecalc: ['Recalculer à FL{fl}', 'Recompute at FL{fl}', 'Neu berechnen auf FL{fl}', 'Recalcular a FL{fl}'],
   rFreeNow: ['Départ pris à {t} (maintenant).', 'Departure taken at {t} (now).', 'Abflug angenommen um {t} (jetzt).',
     'Salida tomada a las {t} (ahora).'
@@ -2422,6 +2493,8 @@ const STYLE = `
 [data-module="fuel"] .fu-step[hidden]{display:none}
 [data-module="fuel"] .fu-startnote:empty{display:none}
 [data-module="fuel"] .fu-flightstate{font-weight:700;color:var(--sog-accent)}
+[data-module="fuel"] .fu-fpltext{white-space:pre-wrap;word-break:break-all;font-family:var(--sog-mono, ui-monospace, monospace);font-size:var(--sog-size-s);margin:6px 0;user-select:all} /* SOG-0402 : le message à relire */
+[data-module="fuel"] .fu-fplnotes{margin:4px 0;padding-left:1.2em}
 [data-module="fuel"] tr[data-altnpart]>td:first-child{padding-left:1.2em;color:var(--sog-muted)} /* SOG-0399 : les parts du dégagement, en retrait */
 [data-module="fuel"] .fu-eta{grid-template-columns:1fr auto}
 [data-module="fuel"] .fu-next-pt{border-color:var(--sog-accent);box-shadow:inset 3px 0 0 var(--sog-accent)}
@@ -2568,6 +2641,7 @@ function renderPlanBody() {
       <div class="f-list fu-pts" data-pts></div>
       <div class="f-row fu-addpt"><input data-k="addpt" autocapitalize="characters" autocomplete="off" placeholder="${esc(tt(TX.addPt))}" aria-label="${esc(tt(TX.addPt))}"><button type="button" data-do="addpt" aria-label="${esc(tt(TX.add))}">${svg('plus')}</button></div>
       <p class="f-muted">${esc(tt(TX.ptsHint))}</p></details>
+      <div data-fpl></div>
       <div class="f-row">${S.ctx.identity.simbrief ? `<button type="button" data-do="simbrief">${esc(tt(TX.simbrief))}</button>` : `<span class="f-muted">${esc(tt(TX.noSimbrief))}</span>`}<button type="button" data-do="showmap"${S.ctx.layout?.with === 'maps' ? ' class="fu-hide"' : ''}>${svg('map')} ${esc(tt(TX.showMap))}</button></div>
     </div>
     <div class="f-card" data-block="procrows"><h2>${esc(tt(TX.procTitle))}</h2><div class="fu-procbox" data-procbox="route"></div></div>`)}
@@ -2708,6 +2782,10 @@ function onPlanInput(e) {
       break;
     case 'addpt':
       return; // ajouté par « Ajouter » ou Entrée
+    case 'fplid': // SOG-0402 : l'identifiant du message, le temps de la page seulement (rien de personnel n'est gardé)
+      S.fplId = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7);
+      fplDraw(S.C, true);
+      return;
     case 'pcon': { // un niveau imposé sur un point de procédure (SOG-0003), posé à la sortie du champ
       if (e.type !== 'change') return;
       return setConstraint(e.target);
@@ -3131,6 +3209,7 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
   if (e.target.closest('[data-do="rclose"]')) return proposalsEnd(); // SOG-0224 : « Fermer les propositions »
   if (e.target.closest('[data-do="rgolevel"]')) return goLevel(); // SOG-0389 (b) : « Donner le niveau »
+  if (e.target.closest('[data-do="fplcopy"]')) return fplCopy(); // SOG-0402 : « Copier pour Eurocontrol »
   const gf = e.target.closest('[data-do="rgofl"]');
   if (gf) return recomputeAt(+gf.dataset.fl); // SOG-0391 (b bis) : « Recalculer à FLxxx »
   const rb = e.target.closest('[data-do="rcompute"],[data-do="rcheck"],[data-do="rtake"]');
@@ -4524,6 +4603,85 @@ const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 /** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
  *  du moteur et ses domaines hors contrôle, repliés. */
 const limitsHtml = n => n.limitation || n.gaps.length ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}</details>` : '';
+/** SOG-0402 : le message de plan de vol du vol courant (modules/fuel/fpl.js) — identifiant de la page (neutre par défaut), type OACI et
+ *  sillage (catalogue d'aerodb), départ à l'heure du vol (sinon maintenant, arrondi), vitesse vraie et niveau du devis, route du
+ *  vol, durée estimée (en vol), dégagement ; null sans départ, arrivée ni route. */
+function fplOf(C) {
+  const f = S.flight,
+    r = f.route || {},
+    q = C?.q;
+  if (!r.dep || !r.arr || !String(r.text || '').trim()) return null;
+  const type = String(f.aircraft?.type || C?.sheet?.icao || '').toUpperCase(),
+    eobt = FPL.eobtOf(f.planned_at);
+  return {
+    eobt,
+    m: FPL.message({
+      id: S.fplId || FPL.NEUTRAL_ID,
+      type,
+      wake: S.A?.classify?.(type)?.wtc || '',
+      dep: r.dep,
+      arr: r.arr,
+      altn: r.altn,
+      eobt,
+      speedKt: +q?.cruise?.tas || +C?.sheet?.cruise?.tasKt || 0,
+      levelFt: +C?.levelFt || 0,
+      routeText: r.text,
+      eetMin: +q?.minutes || 0
+    })
+  };
+}
+/** SOG-0402 : « Copier pour Eurocontrol » et son pli : le texte à relire, l'identifiant à changer, ce qui est supposé (équipement,
+ *  identifiant, heure), ce qui n'est pas contrôlé (procédures absentes, routes océaniques), et les règles de forme qui échouent.
+ *  `textOnly` : le texte et les notes seulement (la saisie de l'identifiant garde son champ et son curseur). */
+function fplDraw(C, textOnly = false) {
+  const box = S.body?.querySelector('[data-fpl]');
+  if (!box) return;
+  const F = fplOf(C);
+  if (!F) {
+    box.innerHTML = '';
+    return;
+  }
+  const r = S.flight.route || {},
+    n = F.m.notes,
+    when = zTime(F.eobt.at.toISOString().slice(0, 16) + 'Z'),
+    notes = [tt(TX.fplNeutral, {
+      id: FPL.NEUTRAL_ID
+    }), tt(TX.fplEquip, {
+      e: FPL.EQUIPMENT,
+      p: FPL.PBN
+    }), tt(n.now ? TX.fplNow : TX.fplAt, {
+      t: when
+    }), n.sid ? '' : tt(TX.fplNoSid, {
+      ad: r.dep
+    }), n.star ? '' : tt(TX.fplNoStar, {
+      ad: r.arr
+    }), n.oceanic ? tt(TX.fplOceanic) : '', n.wake ? tt(TX.fplWake) : ''].filter(Boolean),
+    bad = F.m.errors.length ? tt(TX.fplBad, {
+      l: F.m.errors.map(k => tt(TX.fplErr[k])).join(', ')
+    }) : '',
+    inner = `<pre class="fu-fpltext" data-fpltext>${esc(F.m.text)}</pre>${bad ? `<p class="f-warn" data-fplbad>${esc(bad)}</p>` : ''}<ul class="fu-fplnotes" data-fplnotes>${notes.map(x => `<li class="f-muted">${esc(x)}</li>`).join('')}</ul>`;
+  if (textOnly && box.querySelector('[data-fplbody]')) {
+    box.querySelector('[data-fplbody]').innerHTML = inner;
+    return;
+  }
+  const open = !!box.querySelector('details[data-fplfold]')?.open;
+  box.innerHTML = `<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
+}
+/** SOG-0402 : copie le message, seulement quand ses règles de forme passent ; sinon le pli s'ouvre sur ce qui échoue. */
+async function fplCopy() {
+  const F = fplOf(S.C),
+    fold = S.body?.querySelector('details[data-fplfold]');
+  if (!F) return;
+  if (F.m.errors.length) {
+    if (fold) fold.open = true;
+    return S.ctx.notify(tt(TX.fplBad, {
+      l: F.m.errors.map(k => tt(TX.fplErr[k])).join(', ')
+    }), 'warn');
+  }
+  await copyText(F.m.text);
+  if (fold) fold.open = true;
+  S.ctx.notify(tt(TX.fplCopied), 'ok');
+}
 /** SOG-0391 (b) : une heure UTC « AAAA-MM-JJTHH:MMZ » dite à la minute, en Z (« 13 h 32 Z » en français, « 13:32Z » ailleurs) ; `bare` :
  *  sans le « Z » (le début d'une fenêtre). */
 function zTime(iso, bare = false) {
@@ -6789,6 +6947,7 @@ function refresh() {
   lvlMix(C);
   S.P.sync(); // choix, terrains, vol démarré : la carte des procédures est redessinée (sur place quand seules les listes changent)
   openInLinks(C);
+  fplDraw(C);
   fmsState();
   acSelected();
   renderSummary(C);

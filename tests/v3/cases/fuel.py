@@ -7085,3 +7085,70 @@ def f249(c):
             pass
     c.until_doc('cache/fuel/mount_timing.json', lambda d: bool(d) and d.get('registry') == 'arrived' and (d.get('ms') or {}).get('registry'),
                 'the register arrived later, read and said')
+
+
+# SOG-0402: the ICAO flight plan expected, character by character (Doc 4444, appendix 2) — two invented flights: a European one with a
+# SID and a level change, an Atlantic one through a NAT track and coordinates « 54/50 »
+_FPL_EU = ('(FPL-CHECK01-IG\n-C30J/M-SDGRWY/S\n-LFPO0930\n-N0330F270 OPAL2E OPALE UN491 NEPIX DCT LUGEN/N0330F250 DCT TOU\n'
+           '-LFML0115 LFMT\n-PBN/B2D2 DOF/261118)')
+_FPL_NAT = ('(FPL-ABC123-IG\n-B744/H-SDGRWY/S\n-EIDW2355\n-N0480F350 DOGAL NATE 54N050W DCT NICSO N71B-N90B\n'
+            '-KJFK0712\n-PBN/B2D2 DOF/261231)')
+
+
+@case('F247', 'Route step, « Copier pour Eurocontrol »: the ICAO flight plan of the flight (Doc 4444, appendix 2) — a neutral identification '
+      'that can be changed, item 15 converted (no aerodromes, DCT between two points off an airway, « 54/50 » as « 54N050W », a speed-level '
+      'group at the head and at each level change), the assumed equipment and what is not checked said in a fold; the form rules checked '
+      'before copying', 'F', tags=('fuel',), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0402 (user, 17 Nov: « tu pourrait génerer un copy paste vers eurocontrol, au bon format »); the ergonomist\'s version 2: IG, '
+      'the flight\'s time else now rounded up to five minutes, neutral identification, the shortest equipment that passes (no data link, '
+      'no invented address), never an invented SID or STAR, NAT and North American routes said unchecked; invented flights')
+def f247(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    # 1. the writer, character by character
+    c.open('fuel', docs=flight_docs())
+    wait_quote(c)
+    got = c.js("""() => import('/modules/fuel/fpl.js').then(F => [
+      F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', altn: 'LFMT', eobt: F.eobtOf('2026-11-18T09:30:00Z'), speedKt: 330,
+        levelFt: 27000, routeText: 'LFPO OPAL2E OPALE UN491 NEPIX LUGEN/F250 TOU LFML', eetMin: 75 }).text,
+      F.message({ id: 'abc123', type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', eobt: F.eobtOf('2026-12-31T23:55:00Z'), speedKt: 480,
+        levelFt: 35000, routeText: 'EIDW DOGAL NATE 54/50 DCT NICSO N71B-N90B KJFK', eetMin: 432 }).text,
+      F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', eobt: F.eobtOf('2026-11-18T09:30:00Z'), speedKt: 330, levelFt: 27000,
+        routeText: 'LFPO LFML', eetMin: 75 }).errors,
+      F.eobtOf(null, Date.parse('2026-11-17T10:51:10Z')).at.toISOString(),
+      F.item15('EIDW DOGAL 54/20 55/30 KJFK', { dep: 'EIDW', arr: 'KJFK', speedKt: 470, levelFt: 37000 }).oceanic ])""")
+    c.eq(got[0], _FPL_EU, 'a European flight: SID kept, DCT between points, the level change with its speed-level group', what='EU')
+    c.eq(got[1], _FPL_NAT, 'an Atlantic flight: the NAT track, « 54/50 » as « 54N050W », the compound airway, the identification in capitals', what='NAT')
+    c.eq(got[2], ['route'], 'a route of the two aerodromes only: refused (« route vide »)', what='empty route')
+    c.eq(got[3], '2026-11-17T10:55:00.000Z', 'no time in the flight: now, rounded up to the next five minutes', what='now')
+    c.eq(got[4], True, 'North Atlantic coordinates: said unchecked by Eurocontrol', what='oceanic')
+    # 2. the screen: the button, the fold, the identification that can be changed
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['planned_at'] = '2026-11-18T09:30:00Z'
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]')", timeout=10000, what='« Copier pour Eurocontrol »')
+    c.eq(norm(c.text(f'{FUEL} [data-fpl] [data-do=fplcopy]') or ''), norm(tx(T, 'fplCopy', L)), '« Copier pour Eurocontrol »', what='button')
+    c.js(f"document.querySelector('{FUEL} details[data-fplfold]').open = true")
+    text = c.js(f"document.querySelector('{FUEL} [data-fpltext]').textContent")
+    lines = text.split('\n')
+    c.eq(lines[0], '(FPL-CHECK01-IG', 'the neutral identification by default, IG', what='item 7-8')
+    c.ok(re.fullmatch(r'-C30J/[LMH]-SDGRWY/S', lines[1] or '') is not None, lines[1], 'the type, its wake category, the assumed equipment')
+    c.eq(lines[2], '-LFRS0930', 'the departure at the flight\'s time', what='item 13')
+    c.ok(re.fullmatch(r'-N0\d{3}F270 LUGEN DCT NEPIX', lines[3] or '') is not None, lines[3], 'item 15: no aerodromes, DCT between the two points')
+    c.ok(re.fullmatch(r'-LFML\d{4} LFMT', lines[4] or '') is not None, lines[4], 'the arrival, the estimated time, the alternate')
+    c.eq(lines[5], '-PBN/B2D2 DOF/261118)', 'the PBN mention and the date of flight', what='item 18')
+    notes = norm(c.text(f'{FUEL} [data-fplnotes]') or '')
+    for k in ('fplEquip', 'fplNoSid', 'fplNoStar'):
+        c.ok(norm(tx(T, k, L)).split('{')[0].strip() in notes, notes, f'the fold says {k}')
+    c.page.fill(f'{FUEL} input[data-k="fplid"]', 'f-raja')
+    c.until(f"document.querySelector('{FUEL} [data-fpltext]').textContent.startsWith('(FPL-FRAJA-IG')", timeout=5000, what='the identification changed')
+    c.js(f"document.querySelector('{FUEL} [data-fpl]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F247_{c.design}_390_{L}.png')
+    c.tap(f'{FUEL} [data-do=fplcopy]')
+    c.until(f"(window.__notes || []).some(x => x.includes({json.dumps(norm(tx(T, 'fplCopied', L))[:11])}))", timeout=5000,
+            what='« Plan de vol copié »')
