@@ -4107,7 +4107,7 @@ def _open_space_from_profile(c, cond, what):
     c.until(cond, timeout=6000, what=what)
 
 
-@case('D131', 'The sheet of an R or D space: a tap on its block in the profile (or on its row of the list on the map) opens its published data, and says frankly that the real activity is not known', 'D',
+@case('D131', 'The sheet of an R or D space: a tap on its block in the profile (on a phone, a tap on the map at a point with ONE space) opens its published data, and says frankly that the real activity is not known', 'D',
       tags=('maps', 'sheet'), designs=('standard',), night=False, screens=False, langs4=True,
       rule='V3 (SOG-0163, ergonomics 10 Nov): a click or a tap, not a hover (no hover with a finger, conditions run to several lines): name and type, limits, the activation published (AZBA, NOTAM), the hours and the AIP conditions and remarks as published, unit and frequency, source and date, and « actual activity not known: published hours only »; a P says « prohibited »; seven lines then « n more »')
 def d131(c):
@@ -4131,20 +4131,12 @@ def d131(c):
     c.ok('AZBA' in t, t, 'the activation published by the AZBA')
     c.ok('NOTAM' in t and re.search(r'(not known|non connue|unbekannt|no conocida)', t), t, 'and a frank line: the real activity is not known (neither NOTAM nor AZBA read)')
     c.ok(re.search(r'(SIA)', t), t, 'the source')
-    # the same sheet from the map: the list of the spaces at a point, a row opened
-    c.js("() => { window.__mp.S.dpanel && 0; return true }")
     c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
     c.wait(400)
-    _click_until(c, lambda: xy(c, 44.65, .8), "() => document.querySelectorAll('.mp-lv-list li[data-i]').length >= 1", 'the list of the spaces at this point on the map')
-    for k in range(3):   # a tap a redraw may lose: again, up to three times
-        c.tap('.mp-lv-list li[data-i]')
-        try:
-            c.until("() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /R 61/.test(k.textContent) }", timeout=3000, what='a row of the list opens the sheet')
-            break
-        except Exception:
-            if k == 2:
-                raise
-            c.wait(300)
+    # the same sheet from the map: on a phone (the only width of this case) a point with ONE space opens its card at once, full width, the list hidden (SOG-0364); with several spaces
+    # the list comes first (D240, D245)
+    _click_until(c, lambda: xy(c, 44.65, .8), "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /R 61/.test(k.textContent) }", 'a tap on the map at a point with one space opens its sheet at once')
+    c.eq(c.js("() => { const l = document.querySelector('.mp-lv-list'); return l ? getComputedStyle(l).display : 'none' }"), 'none', 'the list of one space is hidden on a phone: the card is the content', what='list display')
     # a P says « prohibited »
     c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
     c.wait(400)
