@@ -3888,7 +3888,7 @@ def n78(c):
 
 
 DV_FILE = 'modules/missions/drawers_view.js'
-_PV = f"Object.fromEntries(['name', 'key', 'note', 'msg', 'brief', 'route'].map(k => [k, (document.querySelector('{_DW} [data-pv' + k + ']')?.textContent || '').trim()]))"
+_PV = f"Object.fromEntries(['name', 'key', 'case', 'note', 'msg', 'brief', 'route'].map(k => [k, (document.querySelector('{_DW} [data-pv' + k + ']')?.textContent || '').trim()]))"
 
 
 @case('N79', 'Missions › the workshop, « Ce que le pilote voit » and the stops of an arrival: the sheet of a drawer shows the drawer as the '
@@ -3914,7 +3914,8 @@ def n79(c):
     pv = c.js(_PV)
     c.eq([norm(pv['name']), norm(pv['key'])], [f"{T('atDrawer', n=2)} · Entrée du secteur", T('keyZone', DV_FILE)],
          'closed: its name and the sentence of its key — the words of the pilot\'s screen (a zone shown on the Map)', what='the closed drawer')
-    c.ok(T('willOpen', DV_FILE).split('{t}')[0].strip() in norm(pv['note']), pv['note'], 'and the note the pilot reads without a live position: the fallback time')
+    c.ok(T('willOpen', DV_FILE).split('{t}')[0].strip() in norm(pv['note']) and norm(pv['case']) == T('dwPilotCase'), [pv['case'], pv['note']],
+         'and the note the pilot reads without a live position (the fallback time), under the line that says which case it is')
     c.eq([norm(pv['msg']), pv['brief'], pv['route']], [T('dwPilotNoMsg'), '', ''], 'open: no message yet, no briefing, no onward route', what='the open drawer')
     # it follows the typing and the boxes, in place
     c.js(f"document.querySelectorAll('{_DW} [data-pvbefore], {_DW} [data-pvafter]').forEach(x => x.__kept = true)")

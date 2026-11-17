@@ -373,7 +373,8 @@ The accepted form of `maquette/tiroirs.html`, in the frame of the workshop. `edi
 ### 7 octies. P3, end: « Ce que le pilote voit », the stops of an arrival (17 Nov 2026; SOG-0445; noreg N79)
 
 - **« Ce que le pilote voit »** is the fourth group of the sheet of a drawer (folded on a narrow module, with its line): **Avant —
-  tiroir fermé** — « Tiroir 2 · Entrée nord », the sentence of its key and the note the pilot reads without a live position;
+  tiroir fermé** — « Tiroir 2 · Entrée nord », the sentence of its key and the note the pilot reads without a live position, under
+  the line « Sur un appareil sans position en direct : » (the ergonomist's reading: else « Cet appareil… » reads as the author's own);
   **Après — tiroir ouvert** — its message, the beginning of its briefing (600 signs), « Suite de route proposée : … » by the names
   of the places. The sentences are the pilot's screen's own: `edPilotView` calls `describe` of `modules/missions/drawers_view.js`
   (the session « Affectation ») with `{ key, dueAt: null }` — ONE function, so that the workshop can never say something else than

@@ -601,12 +601,13 @@ function edDrawerLines(s, r, now) {
 /** Ce que le pilote voit d'un tiroir (SOG-0445) : fermé — son nom, la phrase de sa clé et la note que l'écran du pilote dit lui-même
  *  (describe de drawers_view.js, la session « Affectation » : les mêmes mots), sans position en direct ; ouvert — son message, le début
  *  de son briefing, sa suite de route. Lu du DOCUMENT de la séance par le lecteur (bornes, caractères invisibles retirés), jamais des
- *  lignes en mémoire (Sécurisation, 18 nov.). → { name, key, note, msg, brief, route } (des textes). */
+ *  lignes en mémoire (Sécurisation, 18 nov.). → { name, key, case, note, msg, brief, route } (des textes). */
 function edPilotView(s, doc, id) {
   const d = (MS.readMission(doc)?.drawers || []).find(x => x.id === id);
   if (!d) return {
     name: '',
     key: '',
+    case: '',
     note: '',
     msg: '',
     brief: '',
@@ -622,6 +623,8 @@ function edPilotView(s, doc, id) {
   return {
     name: `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`,
     key: says.key,
+    // la note vaut pour un appareil sans position en direct : le dire, sinon « Cet appareil… » se lit comme l'ordinateur de l'auteur
+    case: says.note ? s.tt(EDTX.dwPilotCase) : '',
     note: says.note,
     msg: d.message || s.tt(EDTX.dwPilotNoMsg),
     brief: d.brief.length > 600 ? `${d.brief.slice(0, 600)}…` : d.brief,
@@ -687,7 +690,7 @@ function edDrawerHtml(s, doc) {
     ${group('route', EDTX.dwGrpRoute, `<p class="f-muted">${esc(s.tt(route.length ? EDTX.dwRouteHint : EDTX.dwRouteNone))}</p>
       <div class="ms-chips" data-dwroute>${r.route.map((w, n) => now(w) ? `<span class="ms-chip" data-chip="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrchipdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwChipDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div>
       ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}`)}
-    ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p data-pvkey>${esc(pv.key)}</p><p class="f-muted" data-pvnote>${esc(pv.note)}</p></div>
+    ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p data-pvkey>${esc(pv.key)}</p><p class="f-muted ms-attag" data-pvcase>${esc(pv.case)}</p><p class="f-muted" data-pvnote>${esc(pv.note)}</p></div>
       <div class="ms-pilot" data-pvafter><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotAfter))}</span><p class="ms-pre" data-pvmsg>${esc(pv.msg)}</p><p class="ms-pre f-muted" data-pvbrief>${esc(pv.brief)}</p><p class="f-muted" data-pvroute>${esc(pv.route)}</p></div>`)}
     <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.plRemoveAnyway : EDTX.dwRemove))}</button></div></section>`;
 }
@@ -982,7 +985,7 @@ function edRefresh(s) {
     put(q('[data-dline="texts"]'), lines.texts);
     put(q('[data-dline="route"]'), lines.route);
     const pv = edPilotView(s, doc, drow.id);
-    for (const k of ['name', 'key', 'note', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
+    for (const k of ['name', 'key', 'case', 'note', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
   }
   const dtodo = new Set(DR.drawersTodo(doc).map(t => t.name));
   for (const d of MS.readMission(doc)?.drawers || []) {
