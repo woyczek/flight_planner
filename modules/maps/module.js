@@ -157,7 +157,7 @@ export const meta = {
     merge: 'record'
   }],
   // gardés à l'installation (hors ligne dès la première visite)
-  files: ['atc.js?v=0', 'state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'alts.js?v=0',
+  files: ['atc.js?v=0', 'state.js?v=0', 'texts.js?v=0', 'style.js?v=0', 'screen.js?v=0', 'draw.js?v=0', 'alts.js?v=0', 'altn.js?v=0',
     'canvas_scale.js?v=0',
     'data.js?v=0',
     'layers.js?v=0',
