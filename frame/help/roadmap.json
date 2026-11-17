@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b5609b7",
+  "organisation": "75b1fd1",
   "fiches": 414,
   "untranslated": 0,
   "priorities": 374,
@@ -497,11 +497,12 @@
     {
      "id": "SOG-0412",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes NAT : depuis l'Europe, le calcul ne peut rejoindre qu'UNE route sur six — les raccords partent de voies trop basses",
      "en": "NAT tracks: from Europe the engine can only join ONE track in six — the links start from airways that are too low",
      "de": "NAT-Tracks: von Europa aus erreicht die Berechnung nur EINEN von sechs Tracks — die Anschlüsse beginnen an zu niedrigen Luftstraßen",
-     "es": "Rutas NAT: desde Europa el cálculo solo alcanza UNA ruta de seis — los enlaces parten de aerovías demasiado bajas"
+     "es": "Rutas NAT: desde Europa el cálculo solo alcanza UNA ruta de seis — los enlaces parten de aerovías demasiado bajas",
+     "test": true
     },
     {
      "id": "SOG-0415",

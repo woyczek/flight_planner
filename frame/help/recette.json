@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 274,
+  "tests": 275,
   "verdicts": 204
  },
  "apps": [
@@ -4051,10 +4051,10 @@
     "de": "NAT-Tracks: EGGW → KJFK fliegt eine freie Route neben Track F statt ihn zu nehmen — das Zeitfenster wird am Eintritt statt bei 30° West geprüft",
     "es": "Rutas NAT: EGGW → KJFK vuela una ruta libre junto a la ruta F en vez de tomarla — la ventana se juzga en la entrada, no en 30° oeste"
    },
-   "test": "Après avoir RELANCÉ le lanceur et rechargé la page. (1) Carburant, un vol vers l'ouest qui part d'Europe AVANT l'ouverture des routes NAT du jour mais passe le 30° ouest APRÈS (EGGW → KJFK, départ vers 09 h 30 Z, FL340) : « Calculer ». La route passe PAR une route NAT du jour (« … RESNO NATF … ») ; plus de route libre le long d'elle. (2) Dans le pli des routes écartées, une route écartée pour l'heure dit l'heure au 30° ouest. (3) Un vol qui passe le 30° ouest hors de toute fenêtre : pour l'instant encore une route libre, dite en tête — le suivi du système précédent vient ensuite. Dis ce qui te surprend.",
+   "test": "Carburant, après avoir rechargé la page. (1) Un vol vers l'ouest qui passe le 30° ouest DANS la fenêtre du jour (EGGW → KJFK, départ vers 09 h 30 Z) : route par une route NAT du jour. (2) Le même vol à une heure qui passe le 30° ouest HORS de la fenêtre (départ vers 21 h Z) : la route suit quand même le système de routes, écrite POINT PAR POINT (« … RESNO DCT 56/20 DCT 56/30 … »), sans « NATx », et la preuve dit « hors de sa fenêtre » avec le système suivi. (3) Un vol vers l'EST aujourd'hui : pas encore de route NAT (le message de la nuit n'est pas paru et rien n'est gardé) — route libre depuis Londres, Dublin, Amsterdam ; rien depuis Francfort, Madrid, Paris, c'est la suite. Dis ce qui te s",
    "since": "2026-11-17",
    "state": "todo",
-   "delivered": "2026-11-17T10:13:37Z"
+   "delivered": "2026-11-17T12:39:05Z"
   },
   {
    "id": "SOG-0405",
@@ -4125,6 +4125,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T11:55:23Z"
+  },
+  {
+   "id": "SOG-0412",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes NAT : depuis l'Europe, le calcul ne peut rejoindre qu'UNE route sur six — les raccords partent de voies trop basses",
+    "en": "NAT tracks: from Europe the engine can only join ONE track in six — the links start from airways that are too low",
+    "de": "NAT-Tracks: von Europa aus erreicht die Berechnung nur EINEN von sechs Tracks — die Anschlüsse beginnen an zu niedrigen Luftstraßen",
+    "es": "Rutas NAT: desde Europa el cálculo solo alcanza UNA ruta de seis — los enlaces parten de aerovías demasiado bajas"
+   },
+   "test": "Carburant, après avoir rechargé la page. (1) EGGW → KJFK (ou un autre départ d'Europe vers l'Amérique) dans la fenêtre des routes NAT du jour, « Calculer » : la réponse arrive en 2 à 3 s. (2) Dans le pli des routes NAT écartées, plus de « son entrée n'est pas atteignable depuis le départ à ce niveau » ; une route non examinée dit « non essayée ». (3) La route prise est la moins chère des routes NAT du jour pour ton vol — dis-le si une autre te paraissait meilleure. (4) Depuis Madrid, la route NAT prise peut rallonger nettement le vol : c'est la question Q-0082.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T12:36:46Z"
   }
  ],
  "decisions": [
