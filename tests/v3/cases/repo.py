@@ -3564,6 +3564,14 @@ def i48(c):
             with open(os.path.join(data, 'proc', 'manual', 'index.json'), 'wb') as f:
                 f.write(b'[' * 200000 + b']' * 200000)
             c.eq(P._manual_held(data), {}, 'an unreadable (deeply nested) index of hand-read aerodromes is no aerodrome, never an exception', what='hostile')
+            # a cycle written with digits of another script is no cycle (the pattern is ASCII: Security review)
+            with open(os.path.join(data, 'proc', 'manual', 'index.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 1, 'folder': 'manual', 'aerodromes': {'LFBD': {'cycle': '\u0662\u0660\u0662\u0666-\u0661\u0660-\u0662\u0669'}, 'LFPO': {'cycle': '2026-10-29'}}}, f)
+            c.eq(P._manual_held(data), {'LFBD': '', 'LFPO': '2026-10-29'}, 'a cycle in Arabic-Indic digits is read as no cycle, never as a date', what='non-ASCII digits')
+            # a cycle written with digits of another script is no cycle (the pattern is ASCII: Security review)
+            with open(os.path.join(data, 'proc', 'manual', 'index.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 1, 'folder': 'manual', 'aerodromes': {'LFBD': {'cycle': '\u0662\u0660\u0662\u0666-\u0661\u0660-\u0662\u0669'}, 'LFPO': {'cycle': '2026-10-29'}}}, f)
+            c.eq(P._manual_held(data), {'LFBD': '', 'LFPO': '2026-10-29'}, 'a cycle in Arabic-Indic digits is read as no cycle, never as a date', what='non-ASCII digits')
             # the dataset row of base/cycle follows the same records
             os.remove(os.path.join(data, 'proc', '2026-10-29', 'index.json'))
             put('proc/manual/index.json', {'schema': 1, 'folder': 'manual', 'aerodromes': {'LFBD': {'cycle': '2026-10-29'}}})

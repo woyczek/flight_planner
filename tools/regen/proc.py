@@ -765,7 +765,7 @@ def _cached_of(data, s, cycle):
     return {'state': 'present' if n else 'missing', 'files': n}
 
 
-DAY = re.compile(r'\d{4}-\d{2}-\d{2}\Z')
+DAY = re.compile(r'\d{4}-\d{2}-\d{2}\Z', re.A)      # ASCII seulement : un chiffre d'une autre écriture ne passe pas pour un cycle (relecture de Sécurisation)
 
 
 def _manual_held(data):
