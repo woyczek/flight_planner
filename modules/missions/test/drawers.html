@@ -1,0 +1,726 @@
+<!doctype html>
+<!-- Banc des tiroirs chez le pilote (modules/missions/drawers.js, SOG-0441 lot T1) : la séance, la référence d'heure, l'état de chaque
+     tiroir d'après les carnets (le sien, ceux des autres : une entrée non fiable), l'heure et l'heure de repli calculées, le geste, le
+     rescellement, ce que l'appareil a vu. Missions, trigrammes et positions inventés. Fonctions pures ; page nue ;
+     window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>drawers — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">drawers.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import * as D from '../drawers.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail: ok ? '' : typeof got === 'string' ? got : JSON.stringify(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + rows[rows.length - 1].detail}`;
+    out.append(l);
+  }
+  const MIN = 60e3,
+    H = 3600e3,
+    ID = 'X-701A',
+    T0 = Date.parse('2026-11-18T19:40:00Z'), // le décollage affecté
+    iso = ms => new Date(ms).toISOString();
+  // l'index des affectations, tel qu'un pilote quelconque peut l'avoir écrit
+  const lines = [{
+    mission: ID,
+    pilot: 'AAA',
+    takeoff: '2026-11-18T19:40:00Z',
+    status: 'affectée',
+    role: 'mission'
+  }, {
+    mission: ID,
+    pilot: 'bbb',
+    takeoff: '2026-11-18T19:41:00Z',
+    role: 'mission'
+  }, {
+    mission: ID,
+    pilot: 'CCC',
+    takeoff: '2026-11-18T18:00:00Z',
+    role: 'convoyage'
+  }, {
+    mission: ID,
+    pilot: 'DDD',
+    takeoff: '2026-11-18T19:00:00Z',
+    status: 'annulée'
+  }, {
+    mission: 'X-702A',
+    pilot: 'EEE',
+    takeoff: '2026-11-18T10:00:00Z'
+  }, null, 'x', {
+    mission: ID,
+    pilot: '../AAA'
+  }];
+  // les tiroirs, à la forme convenue avec frame/lib/mission.js
+  const drawers = [{
+    id: 'B',
+    title: 'Nouvel ordre',
+    key: {
+      kind: 'time',
+      point: 'ORIGIN',
+      delayMin: 40
+    }
+  }, {
+    id: 'C',
+    title: 'Recherche',
+    key: {
+      kind: 'zone',
+      shape: {
+        circle: {
+          lat: 44.5,
+          lon: -1.2,
+          radiusM: 3000
+        }
+      },
+      ceilingFt: null,
+      shown: true,
+      fallbackMin: 90
+    }
+  }, {
+    id: 'D',
+    title: 'Retour',
+    key: {
+      kind: 'hand'
+    }
+  }];
+  const sc = D.seanceOf({
+      mission: ID,
+      me: 'AAA',
+      lines
+    }),
+    ctx = now => ({
+      mission: ID,
+      me: 'AAA',
+      seance: sc,
+      now
+    }),
+    /** L'état des tiroirs pour AAA. */
+    st = (o = {}) => D.stateOf(o.drawers || drawers, {
+      me: 'AAA',
+      seance: o.seance || sc,
+      book: D.readBook(o.doc, ID),
+      others: (o.others || []).map(([pilot, doc]) => ({
+        pilot,
+        book: D.readBook(doc, ID)
+      })),
+      seen: o.seen,
+      now: o.now ?? T0,
+      passage: o.passage,
+      crosses: o.crosses
+    }),
+    by = (list, id) => list.find(x => x.id === id),
+    /** Le carnet d'un autre pilote, ce tiroir ouvert. */
+    peer = (id, at, how = 'hand', more = {}) => ({
+      schema: 1,
+      mission: ID,
+      seance: sc.key,
+      [`drawer_${id}`]: {
+        state: 'open',
+        at: iso(at),
+        how,
+        ...more
+      }
+    });
+
+  // ---- le chemin du carnet
+  ck('bookPath : pilot/<TRI>/missions/<ID>.json, trigramme et identifiant en majuscules', D.bookPath('aaa', 'x-701a') ===
+    'pilot/AAA/missions/X-701A.json', D.bookPath('aaa', 'x-701a'));
+  ck('bookPath : jamais un chemin pris tel quel (« ../ », un trigramme de quatre lettres, rien)', [D.bookPath('AAA', '../../etc'), D
+    .bookPath('AAAA', ID), D.bookPath('', ID), D.bookPath('AAA', null), D.bookPath('A/A', ID)
+  ].every(x => x === null));
+
+  // ---- la séance
+  ck('séance affectée : A:<jour UTC du premier décollage>, l\'équipage sans le convoyeur ni la ligne annulée, la référence = ce décollage',
+    sc.key === 'A:2026-11-18' && sc.ref === T0 && sc.crew.join() === 'AAA,BBB' && sc.assigned === true, sc);
+  const noTime = D.seanceOf({
+    mission: ID,
+    me: 'AAA',
+    lines: [{
+      mission: ID,
+      pilot: 'AAA'
+    }]
+  });
+  ck('séance affectée sans heure (astreinte) : A:0, aucune référence', noTime.key === 'A:0' && noTime.ref === null && noTime.assigned,
+    noTime);
+  const solo0 = D.seanceOf({
+      mission: ID,
+      me: 'ZZZ',
+      lines
+    }),
+    FL = {
+      mission: ID,
+      started: {
+        at: '2026-11-19T08:00:00Z'
+      }
+    },
+    solo = D.seanceOf({
+      mission: ID,
+      me: 'ZZZ',
+      lines,
+      flight: FL
+    }),
+    soloOther = D.seanceOf({
+      mission: ID,
+      me: 'ZZZ',
+      lines,
+      flight: {
+        mission: 'X-702A',
+        started: FL.started
+      }
+    });
+  ck('séance jouée seul : aucune avant le départ, S:<started.at> ensuite, l\'équipage = le pilote ; le vol d\'une autre mission ne compte pas',
+    solo0.key === null && solo0.crew.join() === 'ZZZ' && !solo0.assigned && solo.key === 'S:2026-11-19T08:00:00.000Z' && solo.ref === Date
+    .parse(FL.started.at) && soloOther.key === null, [solo0, solo, soloOther]);
+  ck('séance : douze trigrammes au plus, un index qui n\'est pas une liste ne casse rien', D.seanceOf({
+    mission: ID,
+    me: 'AAA',
+    lines: Array.from({
+      length: 40
+    }, (_, i) => ({
+      mission: ID,
+      pilot: 'A' + String.fromCharCode(65 + (i % 26)) + String.fromCharCode(65 + Math.floor(i / 26))
+    })).concat([{
+      mission: ID,
+      pilot: 'AAA'
+    }])
+  }).crew.length === 12 && D.seanceOf({
+    mission: ID,
+    me: 'AAA',
+    lines: {
+      length: 3
+    }
+  }).key === null);
+
+  // ---- l'heure : calculée, jamais écrite
+  let s = st({
+    now: T0 + 39 * MIN
+  });
+  ck('clé « heure » : fermé avant H + 40 min, son échéance dite, « estimée » tant que le départ est celui de l\'affectation', by(s, 'B')
+    .open === false && by(s, 'B').dueAt === T0 + 40 * MIN && by(s, 'B').estimated === true, by(s, 'B'));
+  s = st({
+    now: T0 + 40 * MIN
+  });
+  ck('clé « heure » : ouvert à l\'échéance, « time », sans auteur, à l\'heure de l\'échéance', by(s, 'B').open && by(s, 'B').how ===
+    'time' && by(s, 'B').by === null && by(s, 'B').at === T0 + 40 * MIN && !by(s, 'B').mine, by(s, 'B'));
+  const started = D.withStart(null, ctx(T0 + 10 * MIN), T0 + 10 * MIN);
+  s = st({
+    doc: started,
+    now: T0 + 45 * MIN
+  });
+  ck('départ réel écrit au carnet : la référence devient ce départ (H + 50 min), l\'heure n\'est plus « estimée »', started.start_at ===
+    iso(T0 + 10 * MIN) && by(s, 'B').open === false && by(s, 'B').dueAt === T0 + 50 * MIN && by(s, 'B').estimated === false, [started, by(
+      s, 'B')]);
+  s = st({
+    others: [
+      ['BBB', {
+        schema: 1,
+        mission: ID,
+        seance: sc.key,
+        start_at: iso(T0 + 5 * MIN)
+      }]
+    ],
+    doc: started,
+    now: T0 + 20 * MIN
+  });
+  ck('le départ réel le plus ancien de l\'équipage fait la référence (BBB parti à H + 5)', by(s, 'B').dueAt === T0 + 45 * MIN, by(s, 'B')
+    .dueAt);
+  s = st({
+    others: [
+      ['BBB', {
+        schema: 1,
+        mission: ID,
+        seance: sc.key,
+        start_at: iso(T0 - 13 * H)
+      }],
+      ['EEE', {
+        schema: 1,
+        mission: ID,
+        seance: sc.key,
+        start_at: iso(T0 - 1 * H)
+      }]
+    ],
+    now: T0
+  });
+  ck('un départ à plus de douze heures du décollage affecté, ou d\'un pilote hors de la mission, ne déplace pas la référence', by(s, 'B')
+    .dueAt === T0 + 40 * MIN, by(s, 'B').dueAt);
+  s = st({
+    doc: started,
+    now: T0
+  });
+  ck('un départ écrit dans le futur (horloge fausse) ne déplace pas la référence', by(s, 'B').dueAt === T0 + 40 * MIN && by(s, 'B')
+    .estimated === true, by(s, 'B'));
+  const byPoint = [{
+    id: 'B',
+    title: 't',
+    key: {
+      kind: 'time',
+      point: 'PT2',
+      delayMin: 10
+    }
+  }];
+  s = st({
+    drawers: byPoint,
+    doc: started,
+    passage: p => p === 'PT2' ? {
+      nm: 60,
+      min: 25
+    } : null,
+    now: T0 + 20 * MIN
+  });
+  ck('clé « heure » au passage d\'un lieu : départ + temps estimé + délai, toujours « estimée » ; un nombre ou { min } sont lus', by(s, 'B')
+    .dueAt === T0 + 45 * MIN && by(s, 'B').estimated === true && by(st({
+      drawers: byPoint,
+      passage: () => 25,
+      now: T0
+    }), 'B').dueAt === T0 + 35 * MIN, by(s, 'B'));
+  s = st({
+    drawers: byPoint,
+    passage: () => null,
+    now: T0 + 20 * H
+  });
+  ck('temps de passage inconnu : aucune échéance, le tiroir reste fermé (le geste reste)', by(s, 'B').open === false && by(s, 'B').dueAt ===
+    null && by(s, 'B').estimated === false, by(s, 'B'));
+  s = D.stateOf(drawers, {
+    me: 'AAA',
+    seance: noTime,
+    now: T0 + 20 * H
+  });
+  ck('sans heure de référence (astreinte, mission pas encore démarrée) : ni l\'heure ni le repli n\'ouvrent', s.every(x => !x.open && x
+    .dueAt === null), s);
+
+  // ---- l'heure de repli d'un tiroir à zone ou à objet
+  s = st({
+    now: T0 + 89 * MIN
+  });
+  const s2 = st({
+    now: T0 + 90 * MIN
+  });
+  ck('heure de repli : la zone non franchie, le tiroir s\'ouvre à H + 90 min, « fallback »', by(s, 'C').open === false && by(s, 'C')
+    .dueAt === T0 + 90 * MIN && by(s2, 'C').open && by(s2, 'C').how === 'fallback' && by(s2, 'C').by === null, [by(s, 'C'), by(s2, 'C')]);
+  s = st({
+    drawers: [{
+      id: 'C',
+      key: {
+        kind: 'object',
+        object: {
+          kind: '',
+          lat: 44,
+          lon: -1,
+          rangeM: 500,
+          heightFt: null
+        },
+        fallbackMin: null
+      }
+    }],
+    now: T0 + 30 * H
+  });
+  ck('sans heure de repli dans le fichier : jamais ouvert par l\'heure', by(s, 'C').open === false && by(s, 'C').dueAt === null, by(s,
+    'C'));
+
+  // ---- le geste du pilote, et le carnet écrit
+  const opened = D.withOpen(null, ctx(T0 + 20 * MIN), 'D');
+  ck('withOpen : le carnet à écrire — une clé de premier niveau par tiroir, la séance, l\'auteur, la date', JSON.stringify(opened) === JSON
+    .stringify({
+      schema: 1,
+      mission: ID,
+      seance: 'A:2026-11-18',
+      read_at: null,
+      start_at: null,
+      drawer_D: {
+        state: 'open',
+        at: iso(T0 + 20 * MIN),
+        how: 'hand'
+      },
+      updated_at: iso(T0 + 20 * MIN),
+      by: 'AAA'
+    }), opened);
+  s = st({
+    doc: opened,
+    now: T0 + 21 * MIN
+  });
+  ck('le geste : ouvert « à la main », par moi, à l\'heure du geste', by(s, 'D').open && by(s, 'D').how === 'hand' && by(s, 'D').by ===
+    'AAA' && by(s, 'D').mine && by(s, 'D').at === T0 + 20 * MIN, by(s, 'D'));
+  const again = D.withOpen(opened, ctx(T0 + 50 * MIN), 'D', 'zone');
+  ck('un tiroir déjà ouvert par moi garde sa première ouverture (heure, manière)', again.drawer_D.at === iso(T0 + 20 * MIN) && again
+    .drawer_D.how === 'hand' && again.updated_at === iso(T0 + 50 * MIN), again);
+  const found = D.withOpen(opened, ctx(T0 + 60 * MIN), 'C', 'zone', {
+    from: [44.512345678, -1.204, 2400.4],
+    to: [44.498, -1.171, 2350],
+    source: 'xplane',
+    extra: 'x'
+  });
+  ck('un constat (zone) porte son trajet borné et sa source ; les autres tiroirs du carnet sont gardés', JSON.stringify(found.drawer_C) ===
+    JSON.stringify({
+      state: 'open',
+      at: iso(T0 + 60 * MIN),
+      how: 'zone',
+      from: [44.51235, -1.204, 2400],
+      to: [44.498, -1.171, 2350],
+      source: 'xplane'
+    }) && found.drawer_D.at === iso(T0 + 20 * MIN), found);
+  ck('withOpen : un tiroir hors de B, C, D, une manière inconnue, un pilote ou une mission illisibles : rien à écrire', [D.withOpen(null,
+    ctx(T0), 'E'), D.withOpen(null, ctx(T0), 'B', 'time'), D.withOpen(null, {
+    ...ctx(T0),
+    me: 'x'
+  }, 'B'), D.withOpen(null, {
+    ...ctx(T0),
+    mission: '../x'
+  }, 'B')].every(x => x === null));
+  const read = D.withRead(opened, ctx(T0 + 30 * MIN)),
+    read2 = D.withRead(read, ctx(T0 + 31 * MIN));
+  ck('withRead : la première lecture est gardée', read.read_at === iso(T0 + 30 * MIN) && read2.read_at === iso(T0 + 30 * MIN) && read2
+    .drawer_D.state === 'open', [read, read2]);
+  s = st({
+    doc: opened,
+    others: [
+      ['BBB', peer('D', T0 + 10 * MIN)]
+    ],
+    now: T0 + 45 * MIN
+  });
+  ck('la plus ancienne ouverture retenue est « l\'ouverture » : BBB à H + 10 avant moi à H + 20 ; l\'heure passée de B reste « time »', by(
+    s, 'D').by === 'BBB' && by(s, 'D').at === T0 + 10 * MIN && !by(s, 'D').mine && by(s, 'B').how === 'time', s);
+
+  // ---- resceller (outil d'auteur)
+  const sealed = D.withSeal(opened, ctx(T0 + 41 * MIN), 'B');
+  s = st({
+    doc: sealed,
+    now: T0 + 3 * H
+  });
+  ck('rescellé par moi : l\'heure passée ne l\'ouvre plus, « sealed » ; mes autres tiroirs ne bougent pas', sealed.drawer_B.state ===
+    'sealed' && by(s, 'B').open === false && by(s, 'B').sealed === true && by(s, 'D').open, [sealed, s]);
+  s = st({
+    doc: sealed,
+    others: [
+      ['BBB', peer('B', T0 + 50 * MIN)]
+    ],
+    now: T0 + 3 * H
+  });
+  ck('rescellé par moi mais ouvert par un autre de la mission : ouvert (un tiroir ouvert pour tous le reste)', by(s, 'B').open && by(s, 'B')
+    .by === 'BBB' && by(s, 'B').sealed === false, by(s, 'B'));
+
+  // ---- le carnet d'un autre : une entrée non fiable
+  s = st({
+    others: [
+      ['BBB', peer('D', T0 + 30 * MIN)]
+    ],
+    now: T0 + 31 * MIN
+  });
+  ck('ouvert pour tous : le carnet d\'un pilote de la mission le dit → ouvert ici, « par BBB »', by(s, 'D').open && by(s, 'D').by ===
+    'BBB' && by(s, 'D').how === 'hand' && !by(s, 'D').mine && by(s, 'D').refused.length === 0, by(s, 'D'));
+  /** Le refus d'une ouverture de D venue d'un autre carnet : son code, et le tiroir resté fermé. */
+  const refusal = (others, o = {}) => {
+    const x = by(st({
+      others,
+      now: T0 + 31 * MIN,
+      ...o
+    }), o.id || 'D');
+    return `${x.open ? 'OPEN' : 'closed'}:${x.refused.map(r => `${r.by}=${r.why}`).join()}`;
+  };
+  ck('refus « stranger » : un pilote qui n\'est pas de la mission (EEE), le convoyeur (CCC), une ligne annulée (DDD), moi-même', refusal([
+    ['EEE', peer('D', T0)],
+    ['CCC', peer('D', T0)],
+    ['DDD', peer('D', T0)],
+    ['AAA', peer('D', T0)]
+  ]) === 'closed:EEE=stranger,CCC=stranger,DDD=stranger,AAA=stranger', refusal([
+    ['EEE', peer('D', T0)],
+    ['CCC', peer('D', T0)],
+    ['DDD', peer('D', T0)],
+    ['AAA', peer('D', T0)]
+  ]));
+  ck('refus « seance » : le carnet d\'une autre séance (la mission rejouée), ou sans séance', refusal([
+    ['BBB', {
+      ...peer('D', T0),
+      seance: 'A:2026-11-10'
+    }]
+  ]) === 'closed:BBB=seance' && refusal([
+    ['BBB', {
+      ...peer('D', T0),
+      seance: undefined
+    }]
+  ]) === 'closed:BBB=seance');
+  ck('refus « future » : une heure à plus de deux minutes dans le futur (une minute est tolérée)', refusal([
+    ['BBB', peer('D', T0 + 31 * MIN + 3 * MIN)]
+  ]) === 'closed:BBB=future' && refusal([
+    ['BBB', peer('D', T0 + 32 * MIN)]
+  ]) === 'OPEN:');
+  ck('refus « before » : une heure à plus de douze heures avant la référence', refusal([
+    ['BBB', peer('D', T0 - 13 * H)]
+  ]) === 'closed:BBB=before');
+  ck('refus « key » : un constat de zone sur un tiroir sans zone, un constat d\'objet sur un tiroir à zone', refusal([
+    ['BBB', peer('D', T0, 'zone')]
+  ]) === 'closed:BBB=key' && refusal([
+    ['BBB', peer('C', T0, 'object')]
+  ], {
+    id: 'C'
+  }) === 'closed:BBB=key');
+  const leg = {
+    from: [44.52, -1.25, 2000],
+    to: [44.49, -1.15, 2000]
+  };
+  ck('refus « shape » : avec le jugement du trajet, un constat sans trajet, ou dont le trajet ne coupe pas la zone', refusal([
+    ['BBB', peer('C', T0 + 30 * MIN, 'zone')]
+  ], {
+    id: 'C',
+    crosses: () => true
+  }) === 'closed:BBB=shape' && refusal([
+    ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+  ], {
+    id: 'C',
+    crosses: () => false
+  }) === 'closed:BBB=shape');
+  let seenArgs = null;
+  s = st({
+    others: [
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+    ],
+    crosses: (l, k) => (seenArgs = [l, k], true),
+    now: T0 + 31 * MIN
+  });
+  ck('constat de zone retenu : le trajet du carnet et la clé de MON fichier sont donnés au jugement → ouvert « zone » par BBB', by(s, 'C')
+    .open && by(s, 'C').how === 'zone' && by(s, 'C').by === 'BBB' && JSON.stringify(seenArgs[0]) === JSON.stringify(leg) && seenArgs[
+      1] === drawers[1].key, [by(s, 'C'), seenArgs]);
+  ck('une ouverture refusée n\'empêche pas l\'heure de repli d\'ouvrir, et reste dite', (x => x.open && x.how === 'fallback' && x.refused[0]
+    ?.why === 'future')(by(st({
+    others: [
+      ['BBB', peer('C', T0 + 10 * H, 'zone')]
+    ],
+    now: T0 + 2 * H
+  }), 'C')));
+
+  // ---- ce que l'appareil a vu : un tiroir ouvert le reste
+  s = st({
+    others: [
+      ['BBB', peer('D', T0 + 30 * MIN)]
+    ],
+    now: T0 + 31 * MIN
+  });
+  const seenDoc = D.seenAfter({}, s, sc);
+  ck('seenAfter : l\'ouverture d\'un autre est gardée sur l\'appareil (séance, tiroir, auteur, heure, manière) ; les miennes et l\'heure ne le sont pas',
+    JSON.stringify(seenDoc) === JSON.stringify({
+      schema: 1,
+      seance: sc.key,
+      drawers: {
+        D: {
+          by: 'BBB',
+          at: iso(T0 + 30 * MIN),
+          how: 'hand'
+        }
+      }
+    }) && JSON.stringify(D.seenAfter({}, st({
+      doc: opened,
+      now: T0 + 2 * H
+    }), sc).drawers) === '{}', seenDoc);
+  const seen = D.readSeen(seenDoc, sc);
+  s = st({
+    others: [
+      ['BBB', {
+        schema: 1,
+        mission: ID,
+        seance: sc.key
+      }]
+    ],
+    seen,
+    now: T0 + 40 * MIN
+  });
+  ck('BBB retire son ouverture de son carnet : le tiroir RESTE ouvert ici, par BBB, et c\'est dit (« gone »)', by(s, 'D').open && by(s, 'D')
+    .by === 'BBB' && by(s, 'D').gone === true && by(s, 'D').at === T0 + 30 * MIN, by(s, 'D'));
+  s = st({
+    others: [
+      ['BBB', peer('D', T0 + 30 * MIN)]
+    ],
+    seen,
+    now: T0 + 40 * MIN
+  });
+  ck('BBB le dit toujours : rien de perdu (pas « gone ») ; le « vu » relu deux fois garde la plus ancienne ouverture', by(s, 'D').gone ===
+    false && D.seenAfter(seen, st({
+      others: [
+        ['BBB', peer('D', T0 + 35 * MIN)]
+      ],
+      now: T0 + 40 * MIN
+    }), sc).drawers.D.at === iso(T0 + 30 * MIN), by(s, 'D'));
+  ck('readSeen : le « vu » d\'une autre séance, ou illisible, ne compte pas', JSON.stringify(D.readSeen(seenDoc, {
+    key: 'A:2026-11-19'
+  })) === '{}' && JSON.stringify(D.readSeen({
+    seance: sc.key,
+    drawers: {
+      B: {
+        by: 'bbbb',
+        at: 'x',
+        how: 'hand'
+      },
+      E: {
+        by: 'BBB',
+        at: iso(T0),
+        how: 'hand'
+      },
+      C: {
+        by: 'BBB',
+        at: iso(T0),
+        how: 'time'
+      }
+    }
+  }, sc)) === '{}' && JSON.stringify(D.readSeen(null, sc)) === '{}' && D.seenAfter({}, [], {
+    key: null
+  }) === null);
+
+  // ---- la mission rejouée : un carnet ne vaut que pour sa séance
+  const old = {
+    ...opened,
+    seance: 'A:2026-11-10'
+  };
+  s = st({
+    doc: old,
+    now: T0 + 21 * MIN
+  });
+  const fresh = D.withOpen(old, ctx(T0 + 22 * MIN), 'B');
+  ck('mon carnet d\'une autre séance ne compte pas (D fermé) ; la première écriture le remplace par un carnet neuf', by(s, 'D').open ===
+    false && fresh.seance === 'A:2026-11-18' && fresh.drawer_D === undefined && fresh.drawer_B.state === 'open', [by(s, 'D'), fresh]);
+  const before = D.withOpen(null, {
+      mission: ID,
+      me: 'ZZZ',
+      seance: solo0,
+      now: T0
+    }, 'D'),
+    S = (seance, doc, now = T0 + H) => by(D.stateOf(drawers, {
+      me: 'ZZZ',
+      seance,
+      book: D.readBook(doc, ID),
+      now
+    }), 'D'),
+    anchored = D.withStart(before, {
+      mission: ID,
+      me: 'ZZZ',
+      seance: solo,
+      now: solo.ref
+    }, solo.ref),
+    later = D.seanceOf({
+      mission: ID,
+      me: 'ZZZ',
+      flight: {
+        mission: ID,
+        started: {
+          at: '2026-11-25T08:00:00Z'
+        }
+      }
+    });
+  ck('jouée seul : un carnet écrit avant le départ (sans séance) vaut, et se rattache à la séance du départ', before.seance === null && S(
+      solo0, before).open && S(solo, before, solo.ref + MIN).open && anchored.seance === solo.key && anchored.drawer_D.state === 'open' &&
+    anchored.start_at === iso(solo.ref), [before, anchored]);
+  ck('jouée seul : un autre départ plus tard = une autre séance, et sans vol en cours la séance passée ne vaut plus : les tiroirs sont refermés',
+    S(later, anchored, later.ref + MIN).open === false && S(solo0, anchored).open === false && S(solo, anchored, solo.ref + MIN).open);
+  s = D.stateOf(drawers, {
+    me: 'ZZZ',
+    seance: solo,
+    book: D.readBook(anchored, ID),
+    now: solo.ref + 41 * MIN
+  });
+  ck('jouée seul : la référence est le départ du vol, l\'heure n\'est pas « estimée »', by(s, 'B').open && by(s, 'B').at === solo.ref + 40 *
+    MIN && by(s, 'B').estimated === false, by(s, 'B'));
+
+  // ---- un carnet hostile
+  const big = 'x'.repeat(1e6),
+    hostile = JSON.parse(`{"schema":1,"mission":"x-701a","seance":"${big}","read_at":"${big}","start_at":12,
+      "__proto__":{"drawer_B":{"state":"open","at":"2026-11-18T19:50:00Z"}},
+      "drawer_B":{"state":"ajar","at":"2026-11-18T19:50:00Z"},
+      "drawer_C":{"state":"open","at":"2026-11-18T19:50:00Z","how":"nuke","from":[0,0],"to":[91,0,5],"source":"${big}"},
+      "drawer_D":{"state":"open","at":"jamais"},"drawer_E":{"state":"open","at":"2026-11-18T19:50:00Z"},"constructor":{"prototype":{}}}`),
+    hb = D.readBook(hostile, ID);
+  ck('carnet hostile : état hors liste, heure illisible, tiroir E, clé héritée → rien ; manière inconnue → « hand » ; positions hors bornes → aucune ; textes d\'un mégaoctet → rien',
+    JSON.stringify(hb) === JSON.stringify({
+      mission: ID,
+      seance: null,
+      readAt: null,
+      startAt: null,
+      drawers: {
+        C: {
+          state: 'open',
+          at: Date.parse('2026-11-18T19:50:00Z'),
+          how: 'hand',
+          from: null,
+          to: null,
+          source: ''
+        }
+      }
+    }), hb);
+  ck('readBook : ce qui n\'est pas un carnet de cette mission → null (rien, une liste, un texte, une autre mission, un identifiant illisible)',
+    [D.readBook(null, ID), D.readBook([], ID), D.readBook('x', ID), D.readBook({
+      mission: 'X-702A'
+    }, ID), D.readBook({
+      mission: ID
+    }, '../x'), D.readBook({}, ID)].every(x => x === null));
+  s = D.stateOf([{
+    id: 'B',
+    title: 5,
+    key: {
+      kind: 'time',
+      point: 'ORIGIN',
+      delayMin: 1e9
+    }
+  }, {
+    id: 'B',
+    key: {
+      kind: 'hand'
+    }
+  }, {
+    id: 'E',
+    key: {
+      kind: 'hand'
+    }
+  }, null, {
+    id: 'C',
+    key: {
+      kind: 'zone',
+      fallbackMin: -5
+    }
+  }, {
+    id: 'D'
+  }, {
+    id: 'D',
+    key: null
+  }], {
+    me: 'AAA',
+    seance: sc,
+    now: T0 + MIN
+  });
+  ck('liste de tiroirs hostile : trois au plus, B / C / D une fois chacun, un délai borné à 1 440 min, un repli négatif à 0, une clé absente = le geste seul',
+    s.map(x => x.id).join() === 'B,C,D' && by(s, 'B').dueAt === T0 + 1440 * MIN && by(s, 'B').title === '' && by(s, 'C').open && by(s,
+      'C').at === T0 && by(s, 'D').key.kind === 'hand' && !by(s, 'D').open, s);
+  ck('stateOf sans rien (ni tiroirs, ni options) : une liste vide, aucune exception', JSON.stringify(D.stateOf()) === '[]' && JSON
+    .stringify(D.stateOf(null, {})) === '[]' && D.stateOf(drawers).length === 3);
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows: rows.filter(r => !r.ok)
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

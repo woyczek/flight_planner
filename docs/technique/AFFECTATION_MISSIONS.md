@@ -254,3 +254,49 @@ elsewhere. Click → “My missions”; opening the mission marks the assignment
   kept); the old “standard week” grid (`grid`) applies as long as no week has been entered. “My missions”:
   week bar (‹, date, ›, ⟲ current week) shared by the list and the grid; “⧉ S-1” copies the previous
   week; drawing by rectangle (days × hours). The Centre and the ODV read the grid of the week concerned.
+
+## 11. V3 — the pilot's side: the drawers of a mission and the pilot's record (SOG-0441)
+
+From 17 November 2026 the V3 work on assignments and on the mission read by its pilot is described here (the V2 design above stays
+the reference of the Centre's side). Functional specification of the drawers: `organisation/SPEC_MISSIONS_TIROIRS.md` (version 2).
+
+### 11.1 Batch T1 — the pure part (`modules/missions/drawers.js`)
+
+A **drawer** (« tiroir »; B, C, D — the `phases` of a mission file, read and bounded by `frame/lib/mission.js` as `drawers`) is closed
+until its **key** has played: a time (`time`: the departure, or the estimated passage of a place, plus a delay), a zone or an object
+(`zone`, `object`, each with an optional **fallback time** `fallbackMin`), or the pilot's gesture alone (`hand`).
+
+- **The pilot's record** (« carnet »): one per pilot and per mission, `pilot/<TRI>/missions/<ID>.json`; **each pilot writes only his
+  own** (no write conflict), never the current flight (`current_flight.json` is merged as a whole file and rewritten every ten seconds
+  by the live position). One top-level key per drawer, so that the frame's `record` merge joins two devices of the same pilot:
+
+  ```json
+  { "schema": 1, "mission": "X-701A", "seance": "A:2026-11-18", "read_at": null, "start_at": "2026-11-18T19:50:00.000Z",
+    "drawer_D": { "state": "open", "at": "2026-11-18T20:00:00.000Z", "how": "hand" },
+    "drawer_C": { "state": "open", "at": "…", "how": "zone", "from": [44.51235, -1.204, 2400], "to": [44.498, -1.171, 2350], "source": "xplane" },
+    "updated_at": "…", "by": "AAA" }
+  ```
+
+- **What is written and what is computed.** Only gestures (`hand`) and findings (`zone`, `object`, with the leg that made them) are
+  written. The time and the fallback time are **computed** by every device from the same reference: the earliest real departure a
+  record of the play gives (`start_at`), else the take-off of the assignment, else none (the drawer then stays closed; the gesture
+  remains). A time that rests on a planned departure or on an estimated passage is flagged `estimated` (the screen says « heure estimée »).
+- **Open for all** (the user's decision, Q-0087) is **computed**: a drawer is open as soon as the record of ONE pilot of the mission
+  says so; the earliest opening kept is « the » opening (who, when, how).
+- **The play** (« séance »): a mission is played again, so a record is worth one play only — `A:<UTC day of the first take-off>` for a
+  mission assigned to this pilot (`A:0` without a time; the crew = the trigrams of the mission's lines, cancelled lines and ferries
+  left out), `S:<started.at>` for a mission played alone once its flight has started (none before: a record written before the
+  departure has no play and is attached to the one of the departure). A record of another play does not count and is replaced at the
+  first write.
+- **Another pilot's record is an untrusted input** (any pilot writes in the repository). It is read bounded (`readBook`: own keys
+  only, closed lists, bounded numbers and positions) and its opening is kept only when it stands; otherwise it opens nothing and is
+  **named** in `refused` with its author: `stranger` (not a pilot of the mission), `seance` (another play), `future` (more than two
+  minutes ahead), `before` (more than twelve hours before the reference), `key` (a zone finding on a drawer without a zone), `shape`
+  (the leg it carries does not cross the shape of the reader's own mission file — judged by the frame's service, later).
+- **An open drawer stays open.** No one can close another's drawer; the device keeps the openings of others it has seen
+  (`readSeen` / `seenAfter`, a device-only document): if the author removes it from his record, the drawer stays open here and the
+  state says so (`gone`). « Resceller » (the author's tool, Full level) only withdraws the pilot's own opening and the time for
+  himself; another pilot's opening keeps the drawer open.
+- **The limit, stated**: without accounts, a pilot of the mission who writes a false but plausible finding in his own record opens
+  the drawer; it is not prevented, it is said everywhere (who, when, how).
+- Bench: `modules/missions/test/drawers.html` (case N80). Nothing on screen yet: the « Tiroirs » section is batch T2.
