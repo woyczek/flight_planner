@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a520a5c",
-  "fiches": 392,
+  "organisation": "bcca4c5",
+  "fiches": 393,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3343,6 +3343,27 @@
      "de": "Fahrplan: bereits vorhandene Bahnen einklappen",
      "es": "Hoja de ruta: contraer los carriles ya existentes",
      "rank": 172
+    }
+   ]
+  },
+  {
+   "id": "maintenance-atlantique-nord-lanceur-carte",
+   "app": "maintenance",
+   "label": {
+    "fr": "Atlantique Nord ; lanceur ; Carte",
+    "en": "Atlantique Nord ; lanceur ; Carte",
+    "de": "Atlantique Nord ; lanceur ; Carte",
+    "es": "Atlantique Nord ; lanceur ; Carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0394",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes NAT : garder les messages datés (celui de la veille, celui du passage) au lieu d'un seul fichier écrasé à chaque lecture",
+     "en": "NAT tracks: keep the dated messages (the previous day's, the one of the crossing) instead of one file overwritten at each read",
+     "de": "NAT-Tracks: die datierten Meldungen behalten (Vortag, Zeitpunkt der Überquerung) statt einer bei jedem Lesen überschriebenen Datei",
+     "es": "Rutas NAT: conservar los mensajes fechados (el de la víspera, el del cruce) en lugar de un solo archivo sobrescrito en cada lectura"
     }
    ]
   },

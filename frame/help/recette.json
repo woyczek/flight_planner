@@ -3964,6 +3964,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0074",
+   "fiche": "SOG-0394",
+   "app": "maintenance",
+   "question": "Vol de nuit vers l'est préparé avant la parution de son message NAT : que fait le calcul ?",
+   "context": "D'accord pour garder les messages datés (celui de la veille, celui du passage) : le moteur choisit par l'heure du passage. Ce que je conteste : faire voler la route de la veille hors de sa fenêtre — une route NAT périmée n'est prise ni en entier ni en partie. Pour ton vol de ce matin, deux messages n'auraient rien changé : aucune route vers l'est n'existe à 13 h 32 Z. Reste le vol du soir calculé avant que le message de la nuit soit paru.",
+   "options": [
+    "Route libre, et une ligne le dit : « message NAT de la nuit pas encore paru — recalculer après sa parution »",
+    "Route libre, et en plus la route de la veille montrée comme PRÉVISION, marquée « non valable », jamais comptée comme route du vol",
+    "Prendre la route de la veille comme route du vol tant que le message n'est pas paru, et le dire",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
