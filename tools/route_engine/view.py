@@ -5,6 +5,7 @@ compute : `via: [identifiants]` (passages imposés, dans l'ordre), check : `rout
 Réponse : { ok, alternatives: [alt], segments: [seg], issues: [{ level: 'error' | 'review', text, kind? }], rad, fra, report } ;
   alt = { id, name, route, distanceNm, fl, profile: [{ nm, ft }], sid: { id, name, runway } | null, star: idem, faults, segments: [seg] } — jusqu'à 3 pour compute, une seule (la route saisie) pour check ;
   seg = { from, to, via, state: 'ok' | 'error', reasons: [{ kind: 'RAD' | 'FRA' | 'direction' | 'floor' | 'ceiling' | 'altitude' | 'continuity', text, ruleId?, deltaFt? }] } ;
+  `profile_changes` (SOG-0401) : [{ point, end_point, from_ft, to_ft, via, kind: 'ceiling' | 'release' | 'profile', reason, limit: { via, from, to, ft } | null }] — les changements de palier que le profil vertical impose en croisière à la route de tête (au plus 60 ; `profile_changes_total` dit le total) ; [] pour une route dans ses bandes.
   `segments` du niveau supérieur = ceux de la première alternative (la proposée, ou la route saisie). Le texte des motifs est celui du moteur ; le genre est reconnu d'après lui (rien n'est inventé : un motif inconnu est « altitude »).
 """
 import math
@@ -114,6 +115,7 @@ def name_of(r, requested_fl):
 
 
 MAX_POINTS = 600
+MAX_CHANGES = 60
 
 
 def points_of(r):
@@ -189,6 +191,8 @@ def to_view(plan_result, request, include_raw=False):
     status = 'none' if not alts else 'proposal' if alts[0].get('proposal') else 'computed'
     why = str(p.get('error') or '').strip()
     message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
+    changes = (p.get('profile_changes') or [])[:MAX_CHANGES] if p.get('ok') else []
     return {'ok': True, 'request': bounded_request(request), 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': rad_view(p),
             'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': message, 'status': status, 'budget': plan_result.get('budget'), 'timing': plan_result.get('timing'), 'sections': plan_result.get('sections'), 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
+            'profile_changes': changes, 'profile_changes_total': p.get('profile_changes_total', len(changes)) if p.get('ok') else 0,       # SOG-0401 : de la route de tête seulement
             **({'plan': plan_result} if include_raw else {})}

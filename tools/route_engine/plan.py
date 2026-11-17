@@ -34,6 +34,7 @@ ALT_BUDGET_S = 8.0                  # SOG-0296 : la recherche des ALTERNATIVES (
 MAX_ALTERNATIVES = 3
 MAX_LEGS = 800
 MAX_ISSUES = 300
+MAX_PROFILE_CHANGES = 60
 MAX_TEXT = 4000
 MAX_RAD = 1500                       # SOG-0401 : les mentions RAD de la réponse : la liste ENTIÈRE jusqu'à cette borne (531 pour EDDF → LFMN) ; au-delà, `rad_count` dit le total et `truncated` contient « rad » : jamais une coupe muette
 MAX_REPORT = 120000
@@ -480,6 +481,8 @@ def _bound_one(r):
         r['rad'] = r['rad'][:MAX_RAD]
         cut.append('rad')
     r['rad'] = [{k: v for k, v in m.items() if k != 'headers'} for m in r.get('rad', [])]
+    if len(r.get('profile_changes') or []) > MAX_PROFILE_CHANGES:      # SOG-0401 : les changements de palier du profil ; `profile_changes_total` dit le total
+        r['profile_changes'] = r['profile_changes'][:MAX_PROFILE_CHANGES]
     if isinstance(r.get('report'), str):
         r['report'] = r['report'][:MAX_REPORT]
     for k in ('route', 'status', 'error', 'limitation'):

@@ -1,4 +1,5 @@
 """Continuous simulation altitude profile with exact segment-boundary constraints."""
+import bisect
 import math
 
 FREE=1e7   # ft/s : « libre » (SOG-0161)
@@ -16,6 +17,108 @@ def elevation(icao, value):
     if not math.isfinite(v) or not ELEV_MIN_FT <= v <= ELEV_MAX_FT:
         raise ValueError(f'Élévation de {str(icao)[:8]} : {repr(value)[:24]} ft refusée (de {ELEV_MIN_FT:,.0f} à {ELEV_MAX_FT:,.0f} ft).'.replace(',', ' '))
     return v
+
+MAX_CHANGES = 60                                   # SOG-0401 (4) : les changements de palier rendus (le total dit `changes_total`)
+TERMINAL_KINDS = ('SID', 'STAR', 'APPROACH_LINK')  # les tronçons de procédure ne sont pas de la croisière
+
+
+def fl_text(feet):
+    """Une altitude en pieds, dite en niveau : 16500 → « FL165 »."""
+    return f'FL{feet / 100:03.0f}'
+
+
+def _nm_at(seconds, elapsed, positions):
+    """La distance (NM) atteinte à l'instant `seconds` (interpolation sur les échantillons du profil)."""
+    if seconds <= elapsed[0]:
+        return positions[0]
+    if seconds >= elapsed[-1]:
+        return positions[-1]
+    i = bisect.bisect_right(elapsed, seconds)
+    t0, t1 = elapsed[i - 1], elapsed[i]
+    return positions[i - 1] if t1 <= t0 else positions[i - 1] + (positions[i] - positions[i - 1]) * (seconds - t0) / (t1 - t0)
+
+
+def _limit_leg(legs, first, last, down, to_ft, from_ft):
+    """Le tronçon dont le plafond explique un changement de palier : en descente, le premier tronçon (à partir du dernier de la suite) dont le plafond vaut le palier atteint ; en remontée, le dernier tronçon (avant la suite) dont le plafond vaut le palier quitté."""
+    order = range(last, len(legs)) if down else range(first - 1, -1, -1)
+    target = to_ft if down else from_ft
+    for m in order:
+        upper = legs[m].get('upper')
+        if isinstance(upper, (int, float)) and abs(upper - target) <= 1:
+            return legs[m]
+    return None
+
+
+def changes_of(legs, ranges, altitudes, nominals, positions, window):
+    """SOG-0401 (4) : les changements de palier que le profil IMPOSE en croisière, rendus au lieu d'être écrasés en silence. Un changement est un tronçon (de la partie de croisière, hors SID / STAR) dont l'altitude prévue change de plus d'un pied
+    ET qui passe sous l'altitude naturelle du niveau demandé (le plafond d'une voie ramène le palier) ; les tronçons qui se suivent dans le même sens ne font qu'UN changement. { point, end_point, from_ft, to_ft, via, kind, reason, limit }.
+    Un profil sans voie à plafond bas (la montée et la descente ordinaires, un raccord libre) ne change rien : []."""
+    if not window:
+        return []
+    runs = []
+    for n, (leg, (a, b)) in enumerate(zip(legs, ranges)):
+        low, high = positions[a], positions[b]
+        moved = altitudes[b] - altitudes[a]
+        if (leg.get('kind') in TERMINAL_KINDS or high <= window[0] + .01 or low >= window[1] - .01 or abs(moved) <= 1
+                or not any(altitudes[j] < nominals[j] - 1 for j in range(a, b + 1))):
+            continue
+        direction = moved < 0
+        if runs and runs[-1]['last'] == n - 1 and runs[-1]['down'] == direction:
+            runs[-1]['last'] = n
+        else:
+            runs.append(dict(first=n, last=n, down=direction))
+    out = []
+    for run in runs:
+        first, last, down = run['first'], run['last'], run['down']
+        from_ft, to_ft = round(altitudes[ranges[first][0]]), round(altitudes[ranges[last][1]])
+        bound = _limit_leg(legs, first, last, down, to_ft, from_ft)
+        limit = dict(via=bound['via'], **{'from': bound['start']['id'], 'to': bound['end']['id']}, ft=round(bound['upper'])) if bound else None
+        if limit:
+            where = f'{limit["via"]} {limit["from"]}–{limit["to"]}'
+            reason = (f'Le plafond {fl_text(limit["ft"])} de {where} impose de descendre de {fl_text(from_ft)} à {fl_text(to_ft)}.' if down
+                      else f'Après le plafond {fl_text(limit["ft"])} de {where} : retour de {fl_text(from_ft)} à {fl_text(to_ft)}.')
+        else:
+            reason = f'Le profil vertical change de palier : de {fl_text(from_ft)} à {fl_text(to_ft)}.'
+        out.append(dict(point=legs[first]['start']['id'], end_point=legs[last]['end']['id'], from_ft=from_ft, to_ft=to_ft, via=' '.join(dict.fromkeys(l['via'] for l in legs[first:last + 1])),
+                        kind=('ceiling' if down else 'release') if limit else 'profile', reason=reason, limit=limit))
+    return out
+
+
+def band_findings(legs, cruise_fl, window):
+    """SOG-0401 (4) : les tronçons de CROISIÈRE dont la bande [plancher, plafond] de la voie ne contient pas le niveau déposé. Le profil adapté les ramène au plafond sans rien dire (`vertical_errors` vide) : ici ils sont DITS.
+    Un tronçon est de croisière s'il a une bande numérique, n'est ni une SID, ni une STAR, ni un raccord d'approche, n'a pas déjà un motif vertical et recouvre la partie de croisière du profil (`window`, en NM : de la fin de la montée au début de la descente) ; la suite de la même voie et de la même bande qui prolonge un tronçon dit (jusque dans la descente) l'est aussi.
+    Rend une liste de suites { legs, text, short } : une suite = des tronçons consécutifs d'une même voie, de même bande, même zone, même cycle."""
+    if not window:
+        return []
+    cruise = cruise_fl * 100
+    found = []
+    for n, leg in enumerate(legs):
+        low, high = leg.get('lower'), leg.get('upper')
+        if not isinstance(low, (int, float)) or not isinstance(high, (int, float)) or leg.get('kind') in TERMINAL_KINDS or leg.get('data_gap') or leg.get('vertical_errors') or low <= cruise <= high:
+            continue
+        key = (leg['via'], low, high, leg.get('source_zone'), leg.get('source_cycle'))
+        follows = bool(found) and found[-1]['key'] == key and found[-1]['index'][-1] == n - 1       # la suite de la même voie, de la même bande, après un tronçon dit : la descente ordinaire ne l'excuse pas (le palier est déjà ramené depuis le premier)
+        if not follows and (leg.get('distance_end_nm', 0) <= window[0] + .01 or leg.get('distance_start_nm', 0) >= window[1] - .01):
+            continue
+        if follows:
+            found[-1]['index'].append(n)
+        else:
+            found.append(dict(key=key, index=[n]))
+    out = []
+    for run in found:
+        via, low, high, zone, cycle = run['key']
+        members = [legs[n] for n in run['index']]
+        chain = [members[0]['start']['id']] + [m['end']['id'] for m in members]
+        if len(chain) > 8:
+            chain = chain[:3] + ['…'] + chain[-2:]
+        above = cruise > high
+        gap = round(cruise - high if above else low - cruise)
+        verdict = f'au-dessus du plafond {fl_text(high)}' if above else f'sous le plancher {fl_text(low)}'
+        source = ', '.join(x for x in [f'cycle {cycle}' if cycle else '', f'zone {zone}' if zone else ''] if x)
+        label = (f'Tronçon {via} {chain[0]}–{chain[-1]}' if len(members) == 1 else f'Tronçons {via} {"–".join(chain)}')
+        out.append(dict(legs=members, text=f'{label} : niveau {fl_text(cruise)} hors de la bande {fl_text(low)}–{fl_text(high)} de la voie, {verdict}' + (f' ({source})' if source else ''),
+                        short=f'Niveau {fl_text(cruise)} {verdict} de la voie (bande {fl_text(low)}–{fl_text(high)}, écart {gap} ft).'))
+    return out
 
 
 def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,descent_fps=2000/60,strategy='natural',free_departure=False,free_arrival=False):   # SOG-0161 : free_* : le raccord DCT d'un aérodrome sans SID (STAR) lue monte (descend) comme la procédure le ferait
@@ -65,6 +168,9 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
         for i in range(1,len(positions)): altitudes[i]=min(altitudes[i],altitudes[i-1]+rates_up[i]*(elapsed[i]-elapsed[i-1]))
         for i in range(len(positions)-2,-1,-1): altitudes[i]=min(altitudes[i],altitudes[i+1]+rates_down[i+1]*(elapsed[i+1]-elapsed[i]))
     feasible=all(l-1e-5<=h<=u+1e-5 for l,h,u in zip(lowers,altitudes,uppers))
+    toc=(cruise-departure_ft)/climb_fps; tod=total_seconds-(cruise-arrival_ft)/descent_fps      # SOG-0401 (4) : la partie de croisière (NM) du profil naturel, quand le niveau est atteint ; les changements de palier que le profil impose se lisent contre ce profil
+    window=[_nm_at(toc,elapsed,positions),_nm_at(tod,elapsed,positions)] if toc<tod-1e-6 else None
+    changes=changes_of(legs,ranges,altitudes,[nominal(t) for t in elapsed],positions,window)
     points=[dict(distance_nm=round(s,6),altitude_ft=round(h,4),time_min=round(t/60,8)) for s,h,t in zip(positions,altitudes,elapsed)]
     holds=[]; current=None
     for i in range(len(positions)-1):
@@ -98,5 +204,6 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
     holds=[h for h in holds if h['end_nm']-h['start_nm']>.5 and abs(h['altitude_ft']/100-round(h['altitude_ft']/100))<.001]
     return dict(strategy=strategy,points=points,holds=holds,feasible=feasible,duration_min=round(total_seconds/60,2),max_altitude_ft=round(max(altitudes),1),
         speed_kt=speed_kt,climb_fps=climb_fps,descent_fps=descent_fps,climb_fpm=climb_fps*60,descent_fpm=descent_fps*60,departure_ft=departure_ft,arrival_ft=arrival_ft,
+        cruise_nm=[round(window[0],3),round(window[1],3)] if window else None,changes=changes[:MAX_CHANGES],changes_total=len(changes),
         climb_nm=round(max(0,cruise-departure_ft)/up,2),descent_nm=round(max(0,cruise-arrival_ft)/down,2),
         note='Modèle de simulation en pieds / FL×100, GS en route et GS terminale réglables. Contraintes d’altitude SID/STAR aux points codés ; IAS, QNH, vent et performances avion non modélisés.')

@@ -13211,3 +13211,82 @@ def k313(c):
          "the whole search (`sections: false`) is closed to the kept route too: without it the route of 10:30Z would go by the kept track A, ended at 08:00Z (3 029.5 NM, red without the guard)", what='guard')
     c.eq((shost.get('source'), [(r['track'], r['code']) for r in rhost], 'NATA' in str(hostile['primary'].get('route'))), ('random', [('A', 'direction')], False),
          "a nat_past.json that is not a list of routes (a letter of three signs, a point « ../x », a number, null) is read as an untrusted input: nothing is taken, nothing breaks", what='untrusted')
+
+
+@case('K319', 'Route engine, SOG-0401 point 4: a CRUISE leg whose band [floor, ceiling] does not contain the level the flight is filed at is SAID (an ERREUR per run of legs, with the airway, the points, the levels, the cycle and the zone) instead of being clamped to the ceiling in silence, the check is no longer « ok », and the level changes the vertical profile imposes are rendered as fields (`profile_changes`, plan and view); a route inside its bands has none',
+      'K', static=True,
+      rule='SOG-0401 (the user: EDDF → LFMN validated by Eurocontrol where we said nothing; ergonomics session 17 Nov, point 4). Measured on the real base (the exact route, FL350 and FL320, speed 200 kt): 10 legs (M858, Q712, Z185, Y112) whose band is far BELOW the cruise level (13 000–16 500, 9 000–19 500, 6 000–31 500 ft) were CLAMPED to their ceiling by the adapted profile (`altitude_start_ft` 16 500 then 19 500 ft), `compatible: true`, `vertical_errors: []`, no ERREUR. Now: for a route that is TYPED (not written by the search) every cruise leg (not SID / STAR / approach, a numeric band, no vertical reason of its own, overlapping the cruise part of the profile, or following a said leg of the same airway and band) whose band excludes the filed level gives an ERREUR per run of consecutive legs of one airway and one band (at most 40, then one sentence with the total), the legs carry the alert and are not compatible, and `status` says « ERREURS DÉTECTÉES »; a route of the SEARCH (the search chose its steps itself with the adapted profile) only gets a REVUE and keeps being found. `profile_changes` = [{ point, end_point, from_ft, to_ft, via, kind: ceiling | release | profile, reason, limit }]: the changes of planned altitude between legs in the cruise part, a descent forced by a ceiling AHEAD and the climb back after it; [] for a route inside its bands. Plan: `primary.profile_changes`; view: `profile_changes` at the top level (the head route only).')
+def k319(c):
+    import json
+    import os
+    import tempfile
+    _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view as V
+    nodes = {'OLZOM': (48.15, 2.26), 'SITET': (50.2, 0.2), 'KEPAD': (52.0, -3.0), 'MIDPT': (52.8, -4.2), 'BOYNE': (53.62, -5.35)}
+
+    def seg(route, a, b, lower, upper):
+        return {'route': route, 'a': {'id': a, 'lat': nodes[a][0], 'lon': nodes[a][1]}, 'b': {'id': b, 'lat': nodes[b][0], 'lon': nodes[b][1]}, 'lower': lower, 'upper': upper}
+
+    def run(low_airway_only, **req):
+        """The bench: LFPO → OLZOM, B1 (6 500–66 000 ft) OLZOM–SITET, then A1 (9 000–19 500 ft) in THREE legs SITET–KEPAD–MIDPT–BOYNE, and, unless `low_airway_only`, C1 on the same points (6 500–66 000 ft); BOYNE → EIDW."""
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+            with open(os.path.join(d, 'points.json'), encoding='utf-8') as f:
+                doc = json.load(f)
+            doc['data'].append({'id': 'MIDPT', 'type': 'ICAO', 'lat': nodes['MIDPT'][0], 'lon': nodes['MIDPT'][1]})
+            with open(os.path.join(d, 'points.json'), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+            with open(os.path.join(d, 'airways.json'), encoding='utf-8') as f:
+                doc = json.load(f)
+            chain = (('SITET', 'KEPAD'), ('KEPAD', 'MIDPT'), ('MIDPT', 'BOYNE'))
+            doc['data'] = [seg('B1', 'OLZOM', 'SITET', 6500, 66000)] + [seg('A1', a, b, 9000, 19500) for a, b in chain] + ([] if low_airway_only else [seg('C1', a, b, 6500, 66000) for a, b in chain])
+            with open(os.path.join(d, 'airways.json'), 'w', encoding='utf-8') as f:
+                json.dump(doc, f)
+            rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad, RF.rad_sheets())
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad)[1]]))
+            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **req)
+            request = V.to_request(args)
+            res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+            return res, V.to_view(res, request)
+    typed = lambda airway: {'action': 'check', 'route': f'LFPO DCT OLZOM B1 SITET {airway} BOYNE DCT EIDW'}
+    res, view = run(False, **typed('A1'))
+    p = res['primary']
+    errors = [i['text'] for i in p['issues'] if i['level'] == 'ERREUR']
+    c.eq(errors, ['Tronçons A1 SITET–KEPAD–MIDPT–BOYNE : niveau FL350 hors de la bande FL090–FL195 de la voie, au-dessus du plafond FL195 (cycle 2026-10-29, zone xx)'],
+         'the three legs of A1 (band 9 000–19 500 ft) in a route filed at FL350 give ONE ERREUR for the run: the airway, the points, the filed level, the band, the ceiling, the cycle and the zone (red before: no issue, the profile clamped the legs to 19 500 ft in silence)', what='issue')
+    a1 = [l for l in p['legs'] if l['via'] == 'A1']
+    c.eq((p['status'], len(a1), [l['compatible'] for l in a1], [l['vertical_errors'] for l in a1], all(any('FL350' in x and 'FL195' in x for x in l['alerts']) for l in a1)), ('ERREURS DÉTECTÉES', 3, [False] * 3, [[]] * 3, True),
+         'the check says « ERREURS DÉTECTÉES »; the three legs are not compatible and carry the alert with the levels (their own vertical reasons stay empty: the profile does not fail, the BAND does)', what='legs')
+    c.eq([{k: x[k] for k in ('point', 'end_point', 'from_ft', 'to_ft', 'via', 'kind')} for x in p['profile_changes']] + [p['profile_changes'][0]['limit']], [{'point': 'OLZOM', 'end_point': 'SITET', 'from_ft': 35000, 'to_ft': 19500, 'via': 'B1', 'kind': 'ceiling'}, {'via': 'A1', 'from': 'SITET', 'to': 'KEPAD', 'ft': 19500}],
+         'the profile goes down from FL350 to FL195 on B1 (the leg that ends where the ceiling begins): `profile_changes` says the point, the levels, the airway and the ceiling that forces it', what='changes')
+    c.eq((view['profile_changes'] == p['profile_changes'], view['profile_changes_total'], view['alternatives'][0]['faults'] >= 1, [s['state'] for s in view['segments'] if s['via'] == 'A1'], [r['kind'] for r in next(s for s in view['segments'] if s['via'] == 'A1')['reasons']]),
+         (True, 1, True, ['error'] * 3, ['ceiling']), 'the view carries `profile_changes` at the top level, the three legs of A1 are segments in error with a ceiling reason, and the alternative counts its faults', what='view')
+    c.eq([(i['level'], i.get('kind')) for i in view['issues'] if 'FL350' in i['text']], [('error', 'ceiling')], 'the issue of the view is an error of the kind « ceiling »', what='view issue')
+    # a route inside its bands: nothing said, no change
+    res2, view2 = run(False, **typed('C1'))
+    p2 = res2['primary']
+    c.eq(([i['text'] for i in p2['issues'] if i['level'] == 'ERREUR'], p2['profile_changes'], view2['profile_changes'], p2['status'], [l['compatible'] for l in p2['legs'] if l['via'] == 'C1']), ([], [], [], 'CONTRÔLE PARTIEL — À VÉRIFIER', [True] * 3),
+         'the same route on C1 (band 6 500–66 000 ft): no ERREUR, no level change, the legs compatible: the behaviour of a route inside its bands is unchanged', what='inside')
+    # the same route at a level the band contains: nothing said either
+    res3, _ = run(False, **dict(typed('A1'), fl=190))
+    p3 = res3['primary']
+    c.eq(([i['text'] for i in p3['issues'] if i['level'] == 'ERREUR'], p3['profile_changes']), ([], []), 'filed at FL190 (inside 9 000–19 500 ft) the A1 route has no ERREUR and no level change', what='level inside')
+    # the SEARCH keeps its way: the route it writes with its own steps (the adapted profile) is found and accepted, with a REVUE instead of an ERREUR
+    res4, view4 = run(True, **{'action': 'compute', 'via': []})
+    p4 = res4['primary']
+    c.eq((p4['ok'], [i['text'] for i in p4['issues'] if i['level'] == 'ERREUR'], 'A1' in p4['route'], sum('Profil adapté aux plafonds' in i['text'] for i in p4['issues'] if i['level'] == 'REVUE')), (True, [], True, 1),
+         'a route WRITTEN by the search (A1 is the only link there, the adapted profile is the search’s own choice) is still found and accepted: one REVUE says the cruise legs outside the band, no ERREUR (the search is unchanged)', what='search')
+    c.ok(p4['profile_changes'] and view4['profile_changes'] == p4['profile_changes'], str(p4['profile_changes']), 'and its level changes are rendered all the same (`profile_changes`), in the plan and in the view')
+    # bounds: 40 detailed issues then a sentence with the total; 60 changes at most
+    from route_engine import flight_profile as FP
+    legs = [{'via': f'W{i}', 'kind': 'AIRWAY', 'lower': 9000, 'upper': 19500, 'start': {'id': f'P{i}'}, 'end': {'id': f'P{i + 1}'}, 'distance_start_nm': 100 + i * 10, 'distance_end_nm': 110 + i * 10, 'vertical_errors': [], 'source_zone': 'xx', 'source_cycle': '2026-10-29'} for i in range(45)]
+    runs = FP.band_findings(legs, 350, [50, 1000])
+    c.eq((len(runs), runs[0]['text'], runs[-1]['text'][:41]), (45, 'Tronçon W0 P0–P1 : niveau FL350 hors de la bande FL090–FL195 de la voie, au-dessus du plafond FL195 (cycle 2026-10-29, zone xx)', 'Tronçon W44 P44–P45 : niveau FL350 hors d'),
+         'one run per airway (45 airways: 45 runs); the engine details the first 40 (`MAX_BAND_ISSUES`) and says the rest in ONE sentence', what='runs')
+    src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
+    c.ok('MAX_BAND_ISSUES=40' in src and 'autres tronçons de croisière hors de la bande du niveau' in src and FP.MAX_CHANGES == 60, 'engine.py', 'the bounds: 40 issues then the sentence of the total, 60 level changes')

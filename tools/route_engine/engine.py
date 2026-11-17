@@ -653,6 +653,8 @@ def block_hit(block,a,b,via):
     if block['kind']=='point': return block['point'] in [a,b]
     return block['via']==via and block['start']==a and block['end']==b
 
+MAX_BAND_ISSUES=40      # SOG-0401 (4) : les suites de tronçons hors de la bande du niveau détaillées une à une ; le reste en une phrase
+
 def assess(request,_nav=None,_rad=None,_path=None):
     dep=str(request.get('dep','')).strip().upper(); arr=str(request.get('arr','')).strip().upper()
     for ad in [dep,arr]:
@@ -777,6 +779,21 @@ def assess(request,_nav=None,_rad=None,_path=None):
             issue('ERREUR',f'{l["via"]} {l["start"]["id"]}–{l["end"]["id"]} : {text}')
     if legs and not profile['feasible'] and not any(l['vertical_errors'] for l in legs):
         issue('ERREUR','Profil vertical impossible avec les altitudes AD et les taux de montée/descente saisis.')
+    # SOG-0401 (4) : le profil adapté ramène en silence au plafond d'une voie un tronçon de croisière dont la bande est sous le niveau déposé : c'est DIT. Une route SAISIE (ni générée, ni relue d'un chemin de la recherche) : ERREUR par suite de tronçons (au plus MAX_BAND_ISSUES,
+    # puis une phrase de total) ; une route de la RECHERCHE (palier adapté voulu, `Nav.generate` en `adapt`) : une REVUE, la recherche ne change pas (une ERREUR la ferait refuser) ; les changements de palier sont rendus dans tous les cas (`profile_changes`)
+    band_runs=flight_profile.band_findings(legs,fl,profile.get('cruise_nm'))
+    if band_runs and (generated or _path is not None):
+        count=sum(len(r['legs']) for r in band_runs)
+        issue('REVUE',f'Profil adapté aux plafonds : {count} tronçon{"s" if count>1 else ""} de croisière hors de la bande du niveau FL{fl:03d} (voie{"s" if len({r["legs"][0]["via"] for r in band_runs})>1 else ""} {", ".join(list(dict.fromkeys(r["legs"][0]["via"] for r in band_runs))[:6])}) : le palier y est ramené, voir `profile_changes`.')
+    elif band_runs:
+        for r in band_runs[:MAX_BAND_ISSUES]:
+            issue('ERREUR',r['text'])
+        if len(band_runs)>MAX_BAND_ISSUES:
+            more=band_runs[MAX_BAND_ISSUES:]
+            issue('ERREUR',f'{sum(len(r["legs"]) for r in more)} autres tronçons de croisière hors de la bande du niveau FL{fl:03d} ({len(more)} suites, voies {", ".join(list(dict.fromkeys(r["legs"][0]["via"] for r in more))[:8])}), non détaillés.')
+        for r in band_runs:
+            for l in r['legs']:
+                l['alerts'].append(r['short']); l['compatible']=False
     nat_legs=[l['nat'] for l in legs if l.get('nat') and l['via'].startswith('NAT')]   # SOG-0263 : les tracks du jour sont prises même périmées, et dites
     if nat_legs:
         used=list(dict.fromkeys(n.get('letter') or n['track'] for n in nat_legs)); issued=next((n['issued'] for n in nat_legs if n.get('issued')),None); stale=any(n['stale'] for n in nat_legs if n.get('source')!='kept');kept=any(n.get('source')=='kept' for n in nat_legs)      # SOG-0394 : une route GARDÉE d'un message précédent n'est jamais « prise quand même » : elle n'est là que valable à l'heure de son passage
@@ -852,7 +869,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     result=dict(ok=True,status=status,generated=generated,route=route,fl=fl,date=when.isoformat(timespec='minutes')+'Z',
         dep=dep,arr=arr,data_gaps=data_gaps,coverage_complete=not data_gaps,distance_nm=round(sum(l['nm'] for l in legs),1),legs=legs,issues=issues,rad=candidates,
         rad_source={k:rad.book[k] for k in ['file','title','start','end_exclusive','sha256']} if rad.book else None,
-        coverage=nav.coverage,rad_summary=rad_summary,rad_atomic_rules=len(blocks),profile=profile,gaps=gaps,via=mandatory,via_checks=via_checks,
+        coverage=nav.coverage,rad_summary=rad_summary,rad_atomic_rules=len(blocks),profile=profile,profile_changes=profile.get('changes',[]),profile_changes_total=profile.get('changes_total',0),gaps=gaps,via=mandatory,via_checks=via_checks,
         fra_source=dict(file=nav.fra.book['file'],start=nav.fra.book['start'],sha256=nav.fra.book['sha256'],points=len(nav.fra.records)) if fra_loaded else None,
         procedures_used=list({l['procedure_id']:dict(id=l['procedure_id'],name=l['procedure_name'],airport=l['procedure_airport'],runways=l['runways'],cycle=l['source_cycle']) for l in legs if l.get('procedure_id')}.values()),
         procedure_coverage={ad:nav.procedures.stats.get(ad,{}) for ad in [dep,arr]},
