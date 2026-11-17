@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5cd0fb9",
+  "organisation": "e20b488",
   "fiches": 411,
   "untranslated": 0,
   "priorities": 374,
@@ -2637,11 +2637,12 @@
     {
      "id": "SOG-0409",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Signaler : la page est lente à la frappe (le titre comme le texte)",
      "en": "Report: the page is slow while typing (title and text)",
      "de": "Melden: die Seite ist beim Tippen langsam (Titel und Text)",
-     "es": "Informar: la página es lenta al teclear (título y texto)"
+     "es": "Informar: la página es lenta al teclear (título y texto)",
+     "test": true
     }
    ]
   },

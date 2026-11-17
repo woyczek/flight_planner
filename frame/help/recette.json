@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 273,
+  "tests": 274,
   "verdicts": 204
  },
  "apps": [
@@ -4097,6 +4097,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T10:39:32Z"
+  },
+  {
+   "id": "SOG-0409",
+   "app": "pilote",
+   "title": {
+    "fr": "Signaler : la page est lente à la frappe (le titre comme le texte)",
+    "en": "Report: the page is slow while typing (title and text)",
+    "de": "Melden: die Seite ist beim Tippen langsam (Titel und Text)",
+    "es": "Informar: la página es lenta al teclear (título y texto)"
+   },
+   "test": "Signaler, après avoir rechargé la page. (1) Tape vite un titre puis un texte long (une dizaine de lignes) : la frappe suit, sans à-coup, à l'ordinateur comme au téléphone. (2) Arrête de taper une seconde, recharge la page : ton brouillon est là. (3) Passe sur une autre appli ou un autre onglet au milieu d'une phrase, reviens : rien n'est perdu. (4) Envoie : le signalement part une seule fois. Dis-le si la page hésite encore, et sur quel appareil.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T11:52:28Z"
   },
   {
    "id": "SOG-0411",
