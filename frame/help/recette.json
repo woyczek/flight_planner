@@ -4201,22 +4201,6 @@
    "recommended": 0
   },
   {
-   "id": "Q-0084",
-   "fiche": "SOG-0415",
-   "app": "pilote",
-   "question": "Routes Concorde (SM, SN, SO, SP) : les veux-tu dans le calcul des routes ?",
-   "context": "J'ai lu la page : quatre routes fixes, toujours disponibles, hors de tout message du jour, réservées au vol supersonique de FL470 à FL600. Ce que je conteste : s'en servir pour remplacer les routes vers l'est qui manquent — un vol ordinaire n'y a pas sa place. Elles n'ont de sens que pour un aéronef supersonique à ces niveaux. Il faudra la position de leurs points d'une source officielle ou historique. (Le 17/11 : la page lue est du même site que Gander Oceanic, celui d'un centre virtuel de VATSIM — raison de plus pour chercher la position des points ailleurs.)",
-   "options": [
-    "Oui, plus tard : pour un vol supersonique de FL470 à FL600 seulement, après les routes du jour",
-    "Non : c'était pour information",
-    "Oui, et aussi comme repli pour un vol ordinaire sans route NAT (dis pourquoi dans le texte)",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
