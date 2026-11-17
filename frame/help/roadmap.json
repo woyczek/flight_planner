@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "bf71c92",
-  "fiches": 437,
+  "organisation": "16a5bfc",
+  "fiches": 442,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3649,6 +3649,75 @@
      "en": "Missions: detect the passage of a point and a 'found' zone from the aircraft position; object placed in X-Plane",
      "de": "Missionen: Überflug eines Punkts und eine „Gefunden“-Zone aus der Position des Luftfahrzeugs erkennen; Objekt in X-Plane",
      "es": "Misiones: detectar el paso por un punto y una zona de «encontrado» por la posición de la aeronave; objeto en X-Plane"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-affectation",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; affectation",
+    "en": "Missions ; affectation",
+    "de": "Missions ; affectation",
+    "es": "Missions ; affectation"
+   },
+   "items": [
+    {
+     "id": "SOG-0441",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions à tiroir chez le pilote : lire les tiroirs de sa mission, les ouvrir (heure, geste), le carnet, l'enveloppe et la liseuse",
+     "en": "Drawer missions for the pilot: read the drawers of their mission, open them (time, gesture), the notebook, the envelope and the reader",
+     "de": "Schubladen-Missionen beim Piloten: die Schubladen seiner Mission lesen, öffnen (Zeit, Geste), das Heft, der Umschlag und der Leser",
+     "es": "Misiones de cajones para el piloto: leer los cajones de su misión, abrirlos (hora, gesto), el cuaderno, el sobre y el lector"
+    },
+    {
+     "id": "SOG-0442",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Mission affectée en V3 : la lire en entier (astreinte, équipiers, convoyage, « lu ») et la transmettre à Carburant",
+     "en": "Assigned mission in V3: read it in full (standby, crew mates, ferry, “read”) and pass it on to Fuel",
+     "de": "Zugewiesene Mission in V3: vollständig lesen (Bereitschaft, Besatzung, Überführung, „gelesen“) und an Kraftstoff übergeben",
+     "es": "Misión asignada en V3: leerla entera (guardia, compañeros, traslado, «leída») y transmitirla a Combustible"
+    },
+    {
+     "id": "SOG-0443",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Affecter une mission depuis la V3 (geste minimal, ligne lisible par la V2)",
+     "en": "Assign a mission from V3 (minimal gesture, a line V2 can read)",
+     "de": "Eine Mission aus V3 zuweisen (minimale Geste, eine von V2 lesbare Zeile)",
+     "es": "Asignar una misión desde la V3 (gesto mínimo, línea legible por la V2)"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-creation",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; création",
+    "en": "Missions ; création",
+    "de": "Missions ; création",
+    "es": "Missions ; création"
+   },
+   "items": [
+    {
+     "id": "SOG-0439",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Éditeur de mission : renommer ou retirer un lieu laisse des références mortes (suite de route, déclencheurs, cartes, chronologie)",
+     "en": "Mission editor: renaming or removing a place leaves dead references (route continuation, triggers, maps, timeline)",
+     "de": "Missionseditor: Umbenennen oder Entfernen eines Ortes hinterlässt tote Verweise (Routenfortsetzung, Auslöser, Karten, Zeitablauf)",
+     "es": "Editor de misiones: renombrar o quitar un lugar deja referencias muertas (continuación de ruta, disparadores, mapas, cronología)"
+    },
+    {
+     "id": "SOG-0440",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions à tiroir : le format des tiroirs et sa lecture (les parties de la V2 et les clés nouvelles), sans écran",
+     "en": "Drawer missions: the drawer format and its reading (V2 parts and the new keys), no screen",
+     "de": "Schubladen-Missionen: das Format der Schubladen und sein Lesen (V2-Teile und die neuen Schlüssel), ohne Bildschirm",
+     "es": "Misiones de cajones: el formato de los cajones y su lectura (las partes de la V2 y las claves nuevas), sin pantalla"
     }
    ]
   },

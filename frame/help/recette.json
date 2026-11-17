@@ -4381,6 +4381,22 @@
  ],
  "decisions": [
   {
+   "id": "Q-0093",
+   "fiche": "SOG-0443",
+   "app": "compagnie",
+   "question": "Affectation : veux-tu pouvoir AFFECTER une mission depuis la V3 dès maintenant, ou cela reste-t-il au CPCO de la V2 ?",
+   "context": "Le 30/10 tu avais dit : le CPCO reste en V2 le temps de le refaire. La session « Affectation des missions » peut soit seulement LIRE les affectations écrites par la V2 (et les faire vivre chez le pilote : tiroirs, équipiers, transmission à Carburant), soit ajouter en V3 un geste minimal pour affecter (un pilote, un indicatif, une heure, un aéronef), sans droits ni contrôle de disponibilité, dont la ligne reste lisible par la V2. Ce que je conteste : refaire un morceau du CPCO en V3 sans l'avoir décidé.",
+   "options": [
+    "Oui : un geste minimal pour affecter en V3, compatible avec la V2 ; le reste (contrôles, convoyages) reste au CPCO",
+    "Non : la V3 lit seulement ; on affecte dans le CPCO de la V2 jusqu'à sa refonte",
+    "Oui, et c'est le début de la refonte du CPCO en V3 (dis ce que tu veux en premier, dans le texte)",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
