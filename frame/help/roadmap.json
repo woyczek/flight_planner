@@ -1,11 +1,11 @@
 {
  "schema": "sog-roadmap/1",
  "version": 2,
- "updated": "2026-11-17",
+ "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b201a83",
-  "fiches": 451,
+  "organisation": "8560737",
+  "fiches": 452,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2851,6 +2851,15 @@
      "en": "Four red cases on the remote head, unrelated to the lot that made them run (A39, A214, D94, F252)",
      "de": "Vier rote Fälle auf dem entfernten Stand, ohne Bezug zu dem Los, das sie laufen ließ (A39, A214, D94, F252)",
      "es": "Cuatro casos en rojo en la cabeza remota, sin relación con el lote que los hizo ejecutar (A39, A214, D94, F252)"
+    },
+    {
+     "id": "SOG-0453",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Noreg complète du 17/11 au soir : neuf cas rouges sur 1 397 (D183, I39, K103, K106, K146, K147, K206, K207, K296)",
+     "en": "Full regression run of 17 Nov evening: nine red cases out of 1,397 (D183, I39, K103, K106, K146, K147, K206, K207, K296)",
+     "de": "Vollständiger Regressionslauf vom 17.11. abends: neun rote Fälle von 1 397 (D183, I39, K103, K106, K146, K147, K206, K207, K296)",
+     "es": "Pasada completa de no regresión del 17/11 por la noche: nueve casos en rojo de 1 397 (D183, I39, K103, K106, K146, K147, K206, K207, K296)"
     }
    ]
   },
