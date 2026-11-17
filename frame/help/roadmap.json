@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "414a07d",
-  "fiches": 426,
+  "organisation": "3246894",
+  "fiches": 428,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -5464,6 +5464,48 @@
      "de": "Daten: zehn Sekunden nach dem Öffnen ist der Zustand der Basis noch nicht gelesen",
      "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-meteo",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; météo",
+    "en": "Données ; météo",
+    "de": "Données ; météo",
+    "es": "Données ; météo"
+   },
+   "items": [
+    {
+     "id": "SOG-0429",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Météo GFS : quitter la page pendant la reconstruction arrête tout — reprendre où on en était, sans retélécharger",
+     "en": "GFS weather: leaving the page during the rebuild stops everything — resume where it was, without downloading again",
+     "de": "GFS-Wetter: das Verlassen der Seite während des Neuaufbaus stoppt alles — dort fortsetzen, wo es war, ohne erneut herunterzuladen",
+     "es": "Meteorología GFS: salir de la página durante la reconstrucción lo detiene todo — reanudar donde estaba, sin volver a descargar"
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-procedures",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données ; procédures",
+    "en": "Données ; procédures",
+    "de": "Données ; procédures",
+    "es": "Données ; procédures"
+   },
+   "items": [
+    {
+     "id": "SOG-0428",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données, Procédures : « à faire — LF : téléchargé, pas construit » — un code au lieu d'un nom, et la carte dit le contraire (France en vert)",
+     "en": "Data, Procedures: “to do — LF: downloaded, not built” — a code instead of a name, and the map says the opposite (France in green)",
+     "de": "Daten, Verfahren: „zu erledigen — LF: heruntergeladen, nicht aufgebaut“ — ein Code statt eines Namens, und die Karte sagt das Gegenteil (Frankreich grün)",
+     "es": "Datos, Procedimientos: «por hacer — LF: descargado, sin construir» — un código en vez de un nombre, y el mapa dice lo contrario (Francia en verde)"
     }
    ]
   },
