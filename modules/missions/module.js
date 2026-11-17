@@ -12,7 +12,9 @@ import * as SE from './search.js'; // la recherche dans le contenu des missions 
 import * as ED from './editor.js'; // l'éditeur de missions (SOG-0287) : le calcul pur
 import {
   EDTX,
-  citedText
+  citedText,
+  removedText,
+  todoText
 } from './editor_texts.js'; // les textes de l'éditeur écrits par la session « Création de missions » (SOG-0439)
 import * as AS from './assigned.js'; // « Mes missions affectées » (SOG-0114 (A)) : le calcul pur
 import {
@@ -2115,7 +2117,7 @@ function edAsideHtml(s, doc) {
       <p class="f-muted">${c.family ? famHtml(s, c.family) : ''}${c.series !== '' ? ` · ${esc(s.tt(TX.edSeriesN, { n: c.series }))}` : ''}</p>
       ${sum ? `<p>${esc(sum.length > 160 ? `${sum.slice(0, 159)}…` : sum)}</p>` : ''}
       ${m?.risks.length ? `<ul class="ms-lines">${m.risks.slice(0, 3).map(x => `<li>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>` : ''}${thumbHtml(s, doc)}</div>
-    <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(s.tt(TX[`todo_${t.key}`] || EDTX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
+    <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
 }
 
 /** Le document en cours d'édition : le fichier lu, puis le cadre, les équipes et les lieux retouchés (une étape jamais ouverte ne
@@ -2600,10 +2602,24 @@ function edClick(s, b) {
       return draw(s);
     case 'edplacedel': {
       // SOG-0439 : un lieu encore cité se retire en deux temps (editor.js removePlace) ; le premier appui dit qui le cite
+      // (le second, inerte une seconde ; la notification reste jusqu'à sa croix ou au second appui, qui la remplace)
       const i = +b.dataset.i,
-        r = ED.removePlace(s.ed.places, i, edDoc(s.ed), s.ed.placeAsk ?? -1);
-      if (r.ask >= 0) s.ctx.notify(citedText(s.tt, r.rows[i], r.cited), 'warn');
-      else s.ed.placeEdit = -1;
+        row = s.ed.places?.[i],
+        note = {
+          key: 'missions-place-cited',
+          ms: 3600e3
+        },
+        r = ED.removePlace(s.ed.places, i, edDoc(s.ed), s.ed.placeAsk ?? -1, Date.now() - (s.ed.placeAskAt || 0));
+      if (r.wait) return;
+      if (r.ask >= 0) {
+        s.ed.placeAskAt = Date.now();
+        s.ctx.notify(citedText(s.tt, row, r.cited), 'warn', note);
+      } else {
+        s.ed.placeEdit = -1;
+        if (r.cited.length) s.ctx.notify(removedText(s.tt, row), 'ok', {
+          key: note.key
+        });
+      }
       s.ed.places = r.rows;
       s.ed.placeAsk = r.ask;
       return draw(s);
