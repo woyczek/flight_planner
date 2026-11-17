@@ -89,9 +89,9 @@ BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `m
 | part | wide screen (from 1 000 px of module) | phone (390 px) |
 |---|---|---|
 | the mission's map | on the left, the place where one edits | folded (« Carte de la mission »), read only |
-| the unfolding (« déroulé ») | under the map: « Au départ » (visible), then « Tiroir 1, 2, 3… » (scellé; twelve at most), each with its key in one line; « ＋ Tiroir » is its last card | first, two cards per row |
+| the unfolding (« déroulé ») | under the map, ONE row that scrolls sideways: « Au départ » (visible), then « Tiroir 1, 2, 3… » (scellé; twelve at most), each with its key in one line; « ＋ Tiroir » is its last card | first, the same single row |
 | the sheet (« fiche ») | on the right, of what is selected (the departure, a drawer, a place) | under the unfolding |
-| the foot | « Enregistrer », « À compléter (n) » always visible, « Annuler » | the same; touched, « À compléter (n) » unfolds the points to complete, named |
+| the foot | « Enregistrer », « À compléter (n) » and its first point, « Annuler » | « À compléter (n) » alone: a button that opens the named list (never a cut text) |
 
 - **A drawer is said by its rank** (« Tiroir 1 »), never by a letter: letters name the crews of an operation (the user, 17 Nov). In the
   file the ids stay B to M; the visible part (part A of the file) is « Au départ ». A drawer removed in the middle: the ranks close up.
@@ -127,8 +127,8 @@ The V3 map is MapLibre. The workshop goes through the entries the Map's owner ex
 | the altitude of the terrain under an object, the profile | `elevationAt` (metres; null for a gap, never 0) |
 
 - **Five tools: Sélection, Point, Tracé, Zone, Objet.** A contour is a zone that is not round (the user, 17 Nov): one tool, one sheet,
-  two shapes — a zone is posed round (one touch, its radius typed or pulled by its handle), and « Dessiner un contour » turns it into
-  its vertices. **After a pose the tool goes back to Sélection** (except Tracé, which adds places to the selected route until it is
+  two shapes — « Zone » poses a round zone (one touch, its radius typed or pulled by its handle); its shape (« Ronde | Contour ») is
+  chosen in its sheet, and a contour is drawn by its vertices. **After a pose the tool goes back to Sélection** (except Tracé, which adds places to the selected route until it is
   left): no creation by accident.
 - **A landmark of AeroDB touched says what it is** and offers « Ajouter comme point » (and « Radiale et distance… » for a beacon):
   touching it creates nothing.
@@ -160,9 +160,14 @@ nothing in the mission. Not before SOG-0447 is on the integration branch.
 ### 5. What the file is
 
 The contract of the user's workshop, read by `frame/lib/mission.js` (docs/technique/FORMAT_MISSION.md): `phases` and its keys, `zones`,
-`objects`, the private block `x_mission_editor` kept as it is. **Where the workshop writes a hidden zone and an object** (at the top, by
-identifier — or inside the part) is the user's open question Q-0095; the reader reads both, and the ported screen follows the answer
-(SOG-0445 says: by identifier, the workshop's contract).
+`objects`, the private block `x_mission_editor` kept as it is. **Q-0095 is decided (17 Nov): by identifier, at the top — the workshop's
+contract.** So a drawer REFERENCES a zone or an object of the mission: « Choisir une zone de la mission » (never « Reprendre… »: it is
+not a copy); « Dessiner sur la carte » creates a zone of the mission, with a generated identifier, that this drawer cites; the group
+« Lieux » says « utilisée par le tiroir 2 ». **It is the READING that hides it from the pilot** while the drawer is closed (the pilot's
+sheet, the Map, the session « Affectation »), not the place where the file writes it. The reader still reads a zone or an object
+written inside a part (a hand-written file); the workshop does not write that form. Consequences for SOG-0439: a drawer's zone and
+object are references like the others — `trigger_zone`, `trigger_object`, `trigger_actor`, a condition's `point`, `object` and
+`required_points` join the walker of the references when P3 writes them.
 
 ### 6. Vocabulary (four languages, the suite's words)
 
@@ -180,8 +185,15 @@ identifier — or inside the part) is the user's open question Q-0095; the reade
 | P4 | the trial of the keys | SOG-0447 |
 | P5 | the moving target and the workshop's 1.1 keys (hold, landing, sequence, overflight, message between crews, several crews in one operation) | the user saying his contract is stable; the trial of an object placed in X-Plane |
 
-P1 is a change of screen in `module.js` (Features SOG's file): the editor's screen moves out of it into a file of this session
-(`editor_view.js`), `module.js` keeping one line of dispatch — to be granted by the ergonomist before P1 starts.
+P1 is a change of screen in `module.js` (Features SOG's file). Granted by the ergonomist (17 Nov at 19 h 12): the editor's screen
+moves out of it into a file of this session, `modules/missions/editor_view.js`, `module.js` keeping the dispatch — **first ONE commit
+of move, with no change of behaviour** (the cases N50 to N70 green), then P1. Features SOG and « Affectation » (its own hook in
+`module.js`) are told before the move starts; SOG-0439 and SOG-0440 are pushed first.
+
+**The ergonomist's answers (17 Nov at 19 h 12), which P1 follows**: on a phone every group of the departure is folded and says its
+content in one line (a new mission: « Cadre » unfolded); the terrain profile is a button of the map, a later lot; « Essayer les clés »
+is shown on a phone too, driven by the time slider (the aircraft follows the route), the map unfolding by itself; « Vue du pilote : au
+départ · tiroir 1 · tiroir 2… » is the map's selector (P3).
 
 ### 8. What is NOT ported
 

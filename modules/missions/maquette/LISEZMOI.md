@@ -45,7 +45,7 @@ Fichiers : `tiroirs.html` (autonome, rien n'est écrit ; `#liste`, `#zone`, `#ob
 5. La carte est un DESSIN D'ATTENTE : elle sera confrontée à l'écran et à la carte que l'utilisateur prépare (mot du 17/11). Intention : le socle de carte partagé (modules/maps/lib/map_base.js), un toucher = le centre d'un cercle ou un sommet d'un polygone ; les champs (rayon, coordonnées) restent le repli sans tuiles.
 
 ## Ce que la maquette décide, à valider
-- **La zone** : « Cercle | Polygone » sur la carte ; cercle : un toucher pose le centre, le rayon se tape (et se tire par sa poignée sur un écran large) ; polygone : touchers successifs, 3 à 100 sommets, « Retirer le dernier », « Fermer ». « Reprendre une zone de la mission » en fait une COPIE dans le tiroir (la zone du tiroir vit dans la partie, jamais dans `zones`). « Saisir les coordonnées » ouvre latitude et longitude.
+- **La zone** : « Ronde | Contour » (une zone, deux formes) ; cercle : un toucher pose le centre, le rayon se tape (et se tire par sa poignée sur un écran large) ; polygone : touchers successifs, 3 à 100 sommets, « Retirer le dernier », « Fermer ». « Choisir une zone de la mission » : le tiroir CITE une zone de la mission par son identifiant (décision du 17/11 sur Q-0095 : le contrat de l'atelier de l'utilisateur ; ce n'est pas une copie) ; « Dessiner sur la carte » crée une zone de la mission que ce tiroir cite ; c'est la règle de LECTURE qui la cache au pilote tant que le tiroir est fermé. « Saisir les coordonnées » ouvre latitude et longitude.
 - **Le plafond et la hauteur** sont dits « altitude » (au-dessus de la mer) tant que la position en direct ne rend pas la hauteur au-dessus du sol.
 - **L'heure de repli** : « H + … min », à côté de la clé, pour une zone ou un objet seulement.
 - **Le titre** est lu par le pilote sur le tiroir fermé : pas de champ « titre caché », une phrase d'aide (« restez neutre si la suite doit surprendre »).
@@ -80,7 +80,15 @@ Fichiers : `atelier.html` (autonome, rien n'est écrit ; `#a`, `#lieux`, `#b`, `
 - **Le vocabulaire** : « Atelier » dans le fil d'Ariane (Missions › Registre › Atelier), « tiroir », « clé », « heure de repli », « repère », « contour », « essayer les clés » ; famille et série comme ailleurs.
 - **Hors de cette maquette** : le sélecteur « Vue du pilote : départ · 1 · 2 · 3… » de la carte (SOG-0445), la cible mobile et les clés de la version 1.1 de l'atelier de l'utilisateur, les équipages d'une opération, l'arbre YAML.
 
-## Questions à l'ergonome
+## Réponses de l'ergonome (17/11 à 19 h 12) — spécification et maquette ACCEPTÉES, six corrections portées ici
+- Cinq outils (Sélection, Point, Tracé, Zone, Objet) : « Zone » pose une zone ronde, sa forme (Ronde | Contour) se choisit dans sa fiche.
+- Le déroulé est UNE rangée qui défile en largeur, à 1280 comme à 390 ; « ＋ Tiroir » en dernière carte ; « Vue du pilote : au départ · tiroir 1 · tiroir 2… » sur la carte.
+- Un tiroir CITE une zone ou un objet de la mission (identifiant généré) ; le groupe « Lieux » dit « utilisée par le tiroir 2 » ; la lecture le cache au pilote.
+- Au téléphone le pied dit « À compléter (3) » seul : un bouton qui ouvre la liste nommée.
+- Le départ au téléphone : tous les groupes repliés, chacun disant son contenu en une ligne (mission neuve : « Cadre » déplié). Le profil du terrain : un bouton de la carte, lot ultérieur. « Essayer les clés » au téléphone : montré, mené au curseur de temps, la carte se déplie d'elle-même (capture atelier_essai_390.png).
+- L'écran de l'éditeur sort de module.js vers modules/missions/editor_view.js : un commit de déplacement seul, puis le lot P1.
+
+## Les trois questions posées (tranchées ci-dessus)
 1. Le départ au téléphone : six groupes repliés sauf le premier (maquette), ou tous repliés avec leur marque « à compléter » ?
 2. « Profil du terrain » de la maquette de l'utilisateur : un septième groupe du départ, ou un bouton de la carte ? (Proposé : un bouton de la carte, à l'ordinateur seulement ; il attend SOG-0446.)
 3. « Essayer les clés » au téléphone : montré (le journal seul, sans carte), ou réservé à l'ordinateur ? (Proposé : réservé.)

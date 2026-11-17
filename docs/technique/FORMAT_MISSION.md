@@ -82,7 +82,7 @@ phases:
   - { id: B, trigger_zone: ZONE-1 }
   - { id: C, trigger_object: OBJ-1 }
 
-# (b) IN THE PART — the V3 editor: the same fields, written inside the part
+# (b) IN THE PART — a hand-written file: the same fields, written inside the part
 phases:
   - id: B
     trigger_zone: { centre: { lat: 44.62, lon: 1.28 }, radius_km: 4, ceiling_ft: 3000 }
@@ -90,11 +90,12 @@ phases:
     trigger_object: { kind: person, lat: 44.61, lon: 1.31, detection_range_nm: 0.3, detection_height_ft: 800 }
 ```
 
-- **Why the V3 editor writes in the part** (decision of 17 Nov 2026): the V2's « Mes missions » shows every unknown
-  top-level key of a mission on its technical sheet (`apps/pilot/mes_missions.html`: only `phases` is hidden there), and
-  the mission's `zones` are shown by the sheet, the Map and the proposed maps. A hidden zone in `zones`, or an `objects`
-  list at the top, shows before take-off the very thing the drawer hides. Where the workshop should write them is the
-  user's open question (Q-0095); the reader does not depend on the answer.
+- **Which one is written** (decision of 17 Nov 2026 on Q-0095): by identifier, at the top — the contract of the user's
+  workshop, which the V3 workshop writes too. A drawer references a zone or an object of the mission. **It is the reading
+  that keeps the secret of a closed drawer**: the pilot's sheet and the Map show a zone or an object only when the visible
+  part cites it, when a drawer that cites it is open, or when the zone is « shown ». Known limit, said: the V2's « Mes
+  missions » shows every unknown top-level key on its technical sheet (`apps/pilot/mes_missions.html`: only `phases` is
+  hidden there) and draws every zone — a mission with drawers is meant for the V3.
 - **A moving target**: an object with `route_order` (ids of the mission's places) and `speed_kt`, or with `motion: axis`,
   `course_deg` and `speed_kt`; `start_delay_min`, `control: ai | user`, `callsign`, `aircraft_type`. It is read and
   bounded; the flight does not follow a target yet.
@@ -176,7 +177,7 @@ An optional value out of its bounds is simply not read (`null`): `ceiling_ft` an
   which the live position does not give yet (asked to the frame, with « on the ground » for the arrival key).
 - **The object seen in X-Plane**: a feasibility measure is running; the file needs nothing more for the « logical »
   object (a hidden position, found within range and on the pilot's word).
-- **Where the workshop writes zones and objects** (Q-0095) and **one authoring tool or two** (Q-0096): the user's.
+- Decided on 17 Nov: zones and objects by identifier, at the top (Q-0095); one authoring tool (Q-0096).
 - **The workshop's 1.1 contract is still moving** (hold, landing, sequence, overflight, event between crews,
   `coordination`): the reader follows its document of 17 Nov; `coordination` (the other crews' missions kept in one file)
   is not read.
