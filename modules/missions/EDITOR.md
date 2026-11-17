@@ -73,3 +73,89 @@ drawers is in [docs/technique/FORMAT_MISSION.md](../../docs/technique/FORMAT_MIS
     identifier up with `points[id]`: « constructor » was a point. Own keys only.
   - N71 (red before: no `drawers`; `zones: 7` threw). The bench: 45 rows, among them 31 unreadable keys, 14 unreadable 1.1
     conditions and the hostile file.
+
+## Porting the workshop (SOG-0444) — specification, to be read by the ergonomist before any product code
+
+**What is ported.** The user's authoring mock-up (« Mission Editor », a workshop kept outside the repository and still moving; read on
+17 Nov 2026, never copied) becomes the shape of the V3 editor. The user accepted the ergonomist's thirteen objections (organisation
+SPEC_MISSIONS_TIROIRS § 10.2) and gave free rein for the port. **One authoring tool**: the six-step editor does not stay beside it, it
+BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `maquette/atelier.html` and its captures.
+
+### 1. The screen
+
+| part | wide screen (from 1 000 px of module) | phone (390 px) |
+|---|---|---|
+| the mission's map | on the left, the place where one edits | folded (« Carte de la mission »), read only |
+| the unfolding (« déroulé ») | under the map: A « visible », then B, C, D « scellé », each with its key in one line; « ＋ Tiroir » is its last card | first, two cards per row |
+| the sheet (« fiche ») | on the right, of what is selected (a part, a drawer, a place) | under the unfolding |
+| the foot | « Enregistrer », « À compléter (n) » always visible, « Annuler » | the same |
+
+- **The sheet of part A is the six steps of the editor, as six foldable groups** — Cadre, Équipes, Lieux, Récit, Risques, Chronologie et
+  cartes — with the same fields and the same pure functions (`cadreOf` / `withCadre` … `eventsOf` / `withEvents`, `withRefs` last). Seven
+  fields at most per group. A group to complete says so on its line. Nothing of the six steps is rewritten: the screen changes, the
+  rules of audits 182 to 194 and of SOG-0439 stay.
+- **The sheet of a drawer** (SOG-0445) is the accepted form of `maquette/tiroirs.html` in three groups — the key, the texts, the onward
+  route — then « Ce que le pilote voit ».
+- **Entry**: unchanged — « Créer une mission », « Modifier », « Dupliquer » of the Registry. The breadcrumb says « Missions › Registre ›
+  Atelier ». The model (blank, or a scenario) is chosen at creation, not in a permanent column.
+- **Saving**: unchanged — `data.put` of the mission file then of its registry line, on the device, sent with the grouped send; only what
+  the author changed is written; a file that cannot be rewritten safely is refused at the opening (`shapeOf`).
+
+### 2. The map (needs SOG-0446, the map base: to be asked, never modified from here)
+
+- Six tools: Sélection, Point, Tracé, Cercle, Contour, Objet. **After a pose the tool goes back to Sélection** (except Tracé, which
+  adds places to the selected route until it is left): no creation by accident.
+- **A landmark of AeroDB touched says what it is** and offers « Ajouter comme point » (and « Radiale et distance… » for a beacon):
+  touching it creates nothing.
+- A place, an object, a vertex, the handle of a radius are moved by dragging; a circle is posed by one touch (its centre) and its radius
+  typed or pulled; a contour by successive touches, « Retirer le dernier », « Fermer » (3 to 100 vertices read, SOG-0440).
+- The fields stay (latitude, longitude, radius): the fallback without tiles, the phone's way, and what the cases play.
+- **No new host**: the suite's map base and its day background (OpenTopoMap is already in the page's policy); the terrain is the one
+  the Map's profile already reads (same host path, already allowed), asked as a shared function (SOG-0446).
+
+### 3. What is never typed, what is generated
+
+- **Identifiers are given by the workshop and cannot be edited** (PT1, ZONE-1, OBJ-1; `nextPlaceId` never reuses one the file still
+  carries); names are free. For a new file, renaming can no longer leave a dead reference; for an old one, SOG-0439 keeps following.
+- **A route is a list of chips**, filled by touching the map in Tracé, reordered and emptied chip by chip — the onward route of a
+  drawer, the stops of an arrival key, the route of a target. Never « ids séparés par des virgules ».
+- **Removing an element still cited says who cites it** and asks a second press (`removePlace`, SOG-0439), for a drawer's zone and
+  object too.
+
+### 4. The trial of the keys (« Essayer les clés »)
+
+A pane beside the map, never a window over it: « Poser l'avion ici » by a touch, the time on a slider, the aircraft, its trail, the zone
+and the object drawn, a log in plain words. It runs **the same pure judgement as the flight** (`frame/lib`, SOG-0447: path against shape,
+range, ceiling) — else the trial lies. It writes nothing in the mission. Not before SOG-0447.
+
+### 5. What the file is
+
+The contract of the user's workshop, read by `frame/lib/mission.js` (docs/technique/FORMAT_MISSION.md): `phases` and its keys, `zones`,
+`objects`, the private block `x_mission_editor` kept as it is. **Where the workshop writes a hidden zone and an object** (at the top, by
+identifier — or inside the part) is the user's open question Q-0095; the reader reads both, and the ported screen follows the answer
+(SOG-0445 says: by identifier, the workshop's contract).
+
+### 6. Vocabulary (four languages, the suite's words)
+
+« Atelier », « déroulé », « partie A », « tiroir », « clé », « heure de repli », « zone de passage », « objet à trouver », « arrivée au
+terrain », « repère » (a landmark of AeroDB), « contour » (a polygon), « essayer les clés »; famille and série as everywhere; never
+« ids », « objet logique », « phase », nor an English screen name.
+
+### 7. Lots, in order — each one read on its captures before the push
+
+| lot | content | waits for |
+|---|---|---|
+| P1 | the screen in its new frame WITHOUT the map tools nor the drawers: the unfolding (A alone, the drawers of the file listed read-only), the sheet of part A in six groups, the foot; phone and wide; the six steps' cases replayed on the new screen | this specification read |
+| P2 | the map as the place of edition: the six tools, drag, landmarks of AeroDB, no accidental creation | SOG-0446 |
+| P3 | the drawers (SOG-0445): the card « ＋ Tiroir », the sheet in three groups, the five keys, the fallback hour, « Ce que le pilote voit », « Vue du pilote : A · B · C · D » on the map | P1; Q-0095 for where the file writes; Sécurisation (a deposited file is written) |
+| P4 | the trial of the keys | SOG-0447 |
+| P5 | the moving target and the workshop's 1.1 keys (hold, landing, sequence, overflight, message between crews, several crews in one operation) | the user saying his contract is stable; the trial of an object placed in X-Plane |
+
+P1 is a change of screen in `module.js` (Features SOG's file): the editor's screen moves out of it into a file of this session
+(`editor_view.js`), `module.js` keeping one line of dispatch — to be granted by the ergonomist before P1 starts.
+
+### 8. What is NOT ported
+
+The permanent « Bibliothèque » column and its sixty bricks as a column (a model is a choice at creation; the bricks may come back as
+« ＋ Tiroir » presets); the typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
+of `coordination` (P5); the outside tile host of the standard OpenStreetMap layer.

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Missions : l'atelier (maquette SOG-0444)</title>
+<style>
+/* Les règles des maquettes validées de l'éditeur (editeur.html, tiroirs.html), puis ce que l'atelier ajoute : la carte, le déroulé, la
+   fiche en groupes repliables, le volet d'essai. */
+:root{
+  --ink:#1b1f24; --muted:#59636e; --line:#d0d7de; --soft:#f6f8fa; --card:#fff; --bg:#f3f4f6;
+  --ok:#1e7d32; --ok-bg:#e6f6ea; --warn:#7d4e00; --warn-bg:#fff4d1; --accent:#1a6fd8; --accent-bg:#eaf2fb;
+  --key:#8a3ffc; --key-bg:#f3ecff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.top{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;background:#fff;border-bottom:1px solid var(--line);font-weight:700}
+.top .sp{flex:1}
+.top .chip{font-weight:400;font-size:14px;border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--muted)}
+.page{max-width:1280px;margin:0 auto;padding:12px 16px 96px}
+.crumb{font-size:14px;color:var(--muted);margin:4px 0}
+h1{font-size:22px;line-height:1.25;margin:0 0 4px}
+.state{display:inline-block;font-size:13px;background:var(--warn-bg);color:var(--warn);border-radius:4px;padding:2px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:12px 0}
+h2{font-size:18px;margin:0 0 4px}
+h3{font-size:16px;margin:0}
+.hint{color:var(--muted);font-size:14px;margin:0 0 10px}
+.f{display:block;margin:0 0 12px}
+.f>span{display:block;font-size:14px;color:var(--muted);margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;min-height:44px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:#fff;color:var(--ink)}
+.f textarea{min-height:70px;resize:vertical}
+.f small{display:block;font-size:13px;color:var(--muted);margin-top:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.btn{font:inherit;min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.link{border:0;background:none;color:var(--accent);text-decoration:underline;padding:0 4px}
+button[disabled]{color:var(--muted);background:var(--soft);cursor:default}
+.lbl{font-size:12px;color:var(--muted)}
+.mockbar{background:#fffbe6;border-bottom:1px solid #f0d78a;font-size:13px;color:#6b5200;padding:6px 16px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:8px 16px;display:flex;gap:8px;align-items:center;z-index:2}
+.bar .sp{flex:1}
+.bar .todo{font-size:14px;color:var(--warn);background:var(--warn-bg);border-radius:4px;padding:4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* ---- la carte */
+.emap{position:relative;height:250px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#dfe9f0}
+.emap svg{position:absolute;inset:0;width:100%;height:100%}
+.tools{position:absolute;left:8px;top:8px;display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100% - 16px)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#fff}
+.seg button{border:0;border-radius:0;min-height:44px;padding:0 12px}
+.seg button[aria-pressed=true]{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.layers{position:absolute;right:8px;top:8px;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:13px}
+.mapnote{position:absolute;left:8px;bottom:8px;right:8px;font-size:13px;background:rgba(255,255,255,.92);border-radius:4px;padding:4px 8px}
+.pop{position:absolute;left:54%;top:16%;width:250px;background:#fff;border:1px solid var(--accent);border-radius:8px;padding:10px 12px;box-shadow:0 4px 14px rgba(0,0,0,.2);font-size:14px}
+.pop b{display:block;font-size:15px}
+.pop .row{margin-top:8px}
+.pop button{min-height:40px;padding:0 10px}
+details.fold{margin:12px 0}
+details.fold>summary{min-height:44px;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--accent);font-weight:600}
+/* ---- le déroulé */
+.flow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.part{display:block;text-align:left;border:1px solid var(--line);border-top:4px solid #9aa4ae;border-radius:8px;background:#fff;padding:8px 10px;min-height:92px;color:var(--ink);text-decoration:none}
+.part .h{display:flex;align-items:center;gap:8px}
+.part .k{display:inline-grid;place-items:center;min-width:28px;height:26px;border-radius:4px;background:var(--key-bg);color:var(--key);font-weight:700;font-size:14px}
+.part .tag{margin-left:auto;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.part b{display:block;margin-top:4px;font-size:15px;line-height:1.25}
+.part .m{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.part.a{border-top-color:var(--ok)}
+.part.a .k{background:var(--ok-bg);color:var(--ok)}
+.part[aria-current]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
+.part.add{border-style:dashed;border-top-width:1px;display:grid;place-items:center;color:var(--accent);font-weight:600}
+.flowhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.flowhead .sp{flex:1}
+/* ---- la fiche : des groupes repliables, sept champs au plus par groupe */
+.sheet>h2{display:flex;align-items:center;gap:8px}
+.sheet>h2 .k{display:inline-grid;place-items:center;min-width:32px;height:28px;border-radius:4px;background:var(--key-bg);color:var(--key);font-size:14px}
+.sheet>h2 .k.a{background:var(--ok-bg);color:var(--ok)}
+details.grp{border-top:1px solid var(--line)}
+details.grp:last-of-type{border-bottom:1px solid var(--line)}
+details.grp>summary{min-height:48px;display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;list-style:none}
+details.grp>summary::-webkit-details-marker{display:none}
+details.grp>summary::before{content:"▸";color:var(--muted);width:14px}
+details.grp[open]>summary::before{content:"▾"}
+details.grp>summary .n{margin-left:auto;font-weight:400;font-size:13px;color:var(--muted)}
+details.grp>summary .n.todo{color:var(--warn);background:var(--warn-bg);border-radius:4px;padding:1px 6px}
+details.grp>div{padding:2px 0 8px}
+.plrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.plrow:last-of-type{border-bottom:0}
+.plrow .t{grid-row:span 2;display:inline-grid;place-items:center;min-width:44px;height:26px;border-radius:4px;background:var(--soft);font-size:11px;font-weight:700}
+.plrow b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.plrow .m{grid-column:2;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plrow .act{grid-row:1/3;grid-column:3;min-height:44px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chips .c{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px;border:1px solid var(--line);border-radius:18px;background:var(--soft);font-size:14px}
+.chips .c .x{color:var(--muted)}
+.chips .arrow{color:var(--muted)}
+.fall{display:grid;grid-template-columns:auto 96px auto;gap:6px;align-items:center}
+.fall input{min-height:44px;font:inherit;border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.check{display:flex;gap:10px;align-items:flex-start;min-height:44px;margin:0 0 12px}
+.check input{width:22px;height:22px;margin:2px 0 0;flex:none}
+.check small{display:block;font-size:13px;color:var(--muted)}
+.zsum{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--soft);font-size:14px;margin-bottom:8px}
+.pilot{border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin-top:8px;background:#fff;font-size:14px}
+.pilot .when{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.pilot p{margin:.3em 0}
+.pilot .how{color:var(--ok);font-size:13px}
+.log{margin:8px 0 0;padding:0;list-style:none;font-size:14px}
+.log li{padding:6px 0;border-bottom:1px solid var(--line)}
+.log li b{color:var(--ok)}
+input[type=range]{width:100%;min-height:44px}
+@media (min-width:1000px){
+  .page{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0 20px;align-items:start}
+  .head{grid-column:1/-1}
+  .emap{height:430px}
+  details.fold>summary{display:none}
+  .flow{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .sheet{position:sticky;top:12px;max-height:calc(100vh - 100px);overflow:auto;margin-top:0}
+  .bar{padding-left:calc((100vw - 1280px)/2 + 16px)}
+}
+@media (min-width:1000px) and (max-width:1300px){.bar{padding-left:16px}}
+</style>
+</head>
+<body>
+<div class="mockbar">Maquette SOG-0444 — l'atelier de missions : l'éditeur prend la forme de la maquette de l'utilisateur (la carte, le déroulé, la fiche) ; rien n'est écrit ; mission X-301A du banc (inventée) ; la carte est un dessin d'attente. États : <a href="#a">partie A</a> · <a href="#lieux">les lieux</a> · <a href="#b">tiroir B</a> · <a href="#repere">un repère touché</a> · <a href="#essai">l'essai des clés</a></div>
+<div class="top"><span>✈ Compagnie</span><span class="sp"></span><span class="chip">● Sur cet appareil</span></div>
+<div class="page">
+  <div class="head">
+    <div class="crumb">Missions › Registre › Atelier</div>
+    <h1>X-301A · Mission complète</h1>
+    <span class="state">modifiée sur cet appareil — pas encore envoyée</span>
+  </div>
+  <main>
+    <!-- la carte : le lieu d'édition à l'ordinateur ; repliée au téléphone (on y relit, on y corrige un texte, on dessine à l'ordinateur) -->
+    <details class="fold" data-mapfold open>
+      <summary>Carte de la mission</summary>
+      <div class="emap">
+        <svg viewBox="0 0 820 430" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <rect width="820" height="430" fill="#e9efe6"/>
+          <path d="M0 300 C120 270 210 340 330 322 S560 250 650 300 820 330 820 330 V430 H0Z" fill="#cfe0ee"/>
+          <path d="M50 90 C170 60 280 130 420 100 S650 40 780 110" fill="none" stroke="#c9d3c2" stroke-width="12" stroke-linecap="round"/>
+          <path d="M170 0 C200 90 150 170 210 270" fill="none" stroke="#b9cfe2" stroke-width="5"/>
+          <path d="M84 52 L250 120 L458 214 L610 286 L748 372" fill="none" stroke="#59636e" stroke-width="1.8" stroke-dasharray="7 6"/>
+          <g data-only="b essai"><circle cx="420" cy="186" r="100" fill="rgba(138,63,252,.14)" stroke="#8a3ffc" stroke-width="2.5"/><circle cx="420" cy="186" r="5" fill="#8a3ffc"/><circle cx="520" cy="186" r="8" fill="#fff" stroke="#8a3ffc" stroke-width="2.5"/><text x="366" y="262" font-size="14" fill="#8a3ffc" font-weight="700">zone du tiroir B</text></g>
+          <g data-only="a lieux repere"><circle cx="420" cy="186" r="100" fill="none" stroke="#8a3ffc" stroke-width="1.5" stroke-dasharray="5 5"/></g>
+          <circle cx="330" cy="150" r="60" fill="none" stroke="#1e7d32" stroke-width="2" stroke-dasharray="6 5"/><text x="286" y="84" font-size="13" fill="#1e7d32">ZONE-1 · Secteur nord</text>
+          <path d="M470 318 l14 26 h-28z" fill="#8a3ffc"/><text x="490" y="340" font-size="13" fill="#8a3ffc">OBJ-1 · radeau</text>
+          <circle cx="84" cy="52" r="7" fill="#1a6fd8"/><text x="98" y="57" font-size="14" fill="#1b1f24">XTST</text>
+          <circle cx="748" cy="372" r="7" fill="#1a6fd8"/><text x="690" y="362" font-size="14" fill="#1b1f24">XTSU</text>
+          <circle cx="458" cy="214" r="7" fill="#b42318"/><text x="472" y="234" font-size="14" fill="#1b1f24">Cible</text>
+          <rect x="245" y="115" width="10" height="10" fill="#59636e"/><text x="262" y="126" font-size="14" fill="#1b1f24">PT1</text>
+          <rect x="605" y="281" width="10" height="10" fill="#59636e"/><text x="622" y="292" font-size="14" fill="#1b1f24">PT2</text>
+          <!-- les repères d'AeroDB : cliquables, jamais ajoutés par accident -->
+          <g fill="#fff" stroke="#59636e" font-size="12"><rect x="560" y="96" width="46" height="20" rx="3"/><rect x="120" y="230" width="46" height="20" rx="3"/><rect x="668" y="196" width="46" height="20" rx="3"/></g>
+          <g font-size="12" fill="#59636e"><text x="568" y="110">XRY</text><text x="128" y="244">XTSV</text><text x="676" y="210">TANGO</text></g>
+          <g data-only="essai"><path d="M84 52 L210 104 L318 150" fill="none" stroke="#1a6fd8" stroke-width="3"/><path d="M318 150 l-16 -2 6 -12z" fill="#1a6fd8"/><circle cx="318" cy="150" r="14" fill="none" stroke="#1a6fd8" stroke-width="2"/></g>
+        </svg>
+        <div class="tools">
+          <div class="seg" data-only="a lieux b repere"><button aria-pressed="true">Sélection</button><button aria-pressed="false">Point</button><button aria-pressed="false">Tracé</button><button aria-pressed="false">Cercle</button><button aria-pressed="false">Contour</button><button aria-pressed="false">Objet</button></div>
+          <div class="seg" data-only="essai"><button aria-pressed="true">Poser l'avion ici</button></div>
+        </div>
+        <div class="layers"><label><input type="checkbox" checked> Repères d'AeroDB</label> · <span class="link">Tout voir</span></div>
+        <div class="pop" data-only="repere"><b>XRY · balise VOR</b>113,45 MHz — repère de la base aéronautique. Rien n'est ajouté tant que vous ne le demandez pas.<div class="row"><button class="primary">Ajouter comme point</button><button>Radiale et distance…</button><button class="link">Fermer</button></div></div>
+        <div class="mapnote" data-mapnote>Sélection — touchez un élément pour ouvrir sa fiche ; un outil revient à « Sélection » après une pose (sauf « Tracé »).</div>
+      </div>
+    </details>
+
+    <!-- le déroulé : A visible, puis les tiroirs scellés, chacun avec sa clé dite en une ligne -->
+    <section class="card">
+      <div class="flowhead"><h2>Déroulé de la mission</h2><span class="sp"></span><a class="btn" href="#essai">Essayer les clés</a></div>
+      <p class="hint">Une partie visible au départ, puis trois tiroirs au plus. Touchez une carte pour ouvrir sa fiche.</p>
+      <div class="flow">
+        <a class="part a" href="#a" data-part="a"><span class="h"><span class="k">A</span><span class="tag">visible</span></span><b>Préparer le départ</b><span class="m">XTST → PT1 → Cible → XTSU · 96 NM</span></a>
+        <a class="part" href="#b" data-part="b"><span class="h"><span class="k">B</span><span class="tag">scellé</span></span><b>Entrée dans le secteur nord</b><span class="m">zone de passage · repli H + 60 min</span></a>
+        <a class="part" href="#b" data-part="c"><span class="h"><span class="k">C</span><span class="tag">scellé</span></span><b>Radeau en vue</b><span class="m">objet à trouver · repli H + 1 h 30</span></a>
+        <a class="part add" href="#b"><span>＋ Tiroir D</span></a>
+      </div>
+    </section>
+  </main>
+
+  <aside>
+    <!-- la fiche de la partie A : les six étapes de l'éditeur, en groupes repliables -->
+    <section class="card sheet" data-only="a lieux repere">
+      <h2><span class="k a">A</span>Partie A — visible dès le départ</h2>
+      <p class="hint">Ce que le pilote lit avant de partir. Six groupes ; un groupe à compléter le dit.</p>
+      <details class="grp" data-grp="cadre"><summary>Cadre<span class="n">SAR · série 1</span></summary><div>
+        <label class="f"><span>Famille</span><select><option>S · SAR · Recherche et sauvetage</option></select></label>
+        <div class="two"><label class="f"><span>Série</span><input value="1" inputmode="numeric"></label><label class="f"><span>Identifiant</span><input value="X-301A"></label></div>
+        <label class="f"><span>Titre</span><input value="Mission complète"></label>
+        <label class="f"><span>Théâtre</span><select><option>métropole</option></select></label>
+        <div class="two"><label class="f"><span>Départ</span><input value="XTST · Base Test"></label><label class="f"><span>Arrivée</span><input value="XTSU · Base Test Sud"></label></div>
+      </div></details>
+      <details class="grp"><summary>Équipes<span class="n">3</span></summary><div><p class="hint">Une ligne par équipe : indicatif, type, service, rôle.</p></div></details>
+      <details class="grp" data-grp="lieux"><summary>Lieux<span class="n">7</span></summary><div>
+        <p class="hint">Les mêmes que sur la carte. Leur identifiant est donné par l'atelier et ne change pas ; le nom est libre.</p>
+        <div class="plrow"><span class="t">CIBLE</span><b>TARGET · Cible d'essai</b><span class="m">44°36′N 1°24′E</span><span class="link act">Modifier</span></div>
+        <div class="plrow"><span class="t">ZONE</span><b>ZONE-1 · Secteur nord</b><span class="m">recherche · cercle 12 km</span><span class="link act">Modifier</span></div>
+        <div class="plrow"><span class="t">PT</span><b>PT1 · Point un</b><span class="m">entrée · 44°48′N 1°12′E</span><span class="link act">Modifier</span></div>
+        <div class="plrow"><span class="t">PT</span><b>PT2 · Point deux</b><span class="m">sortie · 44°24′N 1°36′E</span><span class="link act">Modifier</span></div>
+        <div class="plrow"><span class="t">RDV</span><b>RDV-1 · Rendez-vous d'essai</b><span class="m">ralliement · ALPHA1, BRAVO2</span><span class="link act">Modifier</span></div>
+        <div class="plrow"><span class="t">OBJET</span><b>OBJ-1 · Radeau</b><span class="m">du tiroir C · caché au pilote</span><span class="link act">Modifier</span></div>
+        <p class="lbl">+ 1 autre · à l'ordinateur, un lieu se pose et se déplace sur la carte ; ici, « Modifier » ouvre ses champs.</p>
+      </div></details>
+      <details class="grp"><summary>Récit<span class="n">résumé, description, objectifs</span></summary><div><p class="hint">Résumé (600 signes conseillés), description, objectif principal, objectifs secondaires, charge.</p></div></details>
+      <details class="grp"><summary>Risques<span class="n">5</span></summary><div><p class="hint">Une ligne « danger → parade » par risque.</p></div></details>
+      <details class="grp"><summary>Chronologie et cartes<span class="n todo">à compléter</span></summary><div><p class="hint">Les événements de la mission, puis les cartes proposées depuis les lieux.</p></div></details>
+    </section>
+
+    <!-- la fiche d'un tiroir : trois groupes — la clé, les textes, la suite de route — puis ce que le pilote voit -->
+    <section class="card sheet" data-only="b">
+      <h2><span class="k">B</span>Tiroir B — scellé</h2>
+      <p class="hint">S'ouvre par UNE clé ; le pilote peut toujours l'ouvrir à la main.</p>
+      <details class="grp" open><summary>La clé<span class="n">zone de passage</span></summary><div>
+        <label class="f"><span>Ce qui ouvre le tiroir</span><select><option>Zone de passage</option><option>Objet à trouver</option><option>Arrivée au terrain</option><option>Heure</option><option>Geste du pilote seul</option></select></label>
+        <div class="f"><span>Heure de repli</span><div class="fall"><span>H +</span><input value="60" inputmode="numeric" aria-label="Heure de repli, en minutes après le décollage"><span>min</span></div><small>Sans position de l'avion, le tiroir s'ouvre à cette heure ; le pilote ne la lit que dans ce cas.</small></div>
+        <div class="zsum">Cercle · centre 44°36′N 1°18′E · rayon 2,5 km<br><span class="link">Dessiner sur la carte</span> · <span class="link">Reprendre une zone de la mission</span></div>
+        <div class="two"><label class="f"><span>Rayon (km)</span><input value="2,5" inputmode="decimal"></label><label class="f"><span>Plafond (ft, facultatif)</span><input value="1500" inputmode="numeric"></label></div>
+        <label class="check"><input type="checkbox" checked><span>Montrer la zone au pilote<small>Décochée : le tiroir dit seulement « s'ouvre en vol ».</small></span></label>
+      </div></details>
+      <details class="grp"><summary>Les textes<span class="n">titre, message, briefing</span></summary><div>
+        <label class="f"><span>Titre</span><input value="Entrée dans le secteur nord"></label>
+        <label class="f"><span>Message</span><textarea>« CROSS : écho radar dans le secteur nord, descendez voir. »</textarea></label>
+        <label class="f"><span>Briefing</span><textarea>Recherche à vue dans le secteur nord, sous 1 500 ft.</textarea></label>
+      </div></details>
+      <details class="grp"><summary>La suite de route<span class="n">2 lieux</span></summary><div>
+        <div class="chips"><span class="c">PT2 · Point deux <span class="x">✕</span></span><span class="arrow">›</span><span class="c">Arrivée <span class="x">✕</span></span></div>
+        <p class="hint" style="margin-top:8px">« Tracé » sur la carte ajoute un lieu en le touchant ; une pastille se déplace et se retire. Jamais un identifiant à taper.</p>
+      </div></details>
+      <details class="grp"><summary>Ce que le pilote voit<span class="n">avant · après</span></summary><div>
+        <div class="pilot"><span class="when">Avant</span><p><b>B · Entrée dans le secteur nord</b></p><p>s'ouvre au passage de la zone montrée sur la Carte</p></div>
+        <div class="pilot"><span class="when">Après</span><p class="how">ouvert au passage de la zone, à 14 h 32 Z</p><p>« CROSS : écho radar dans le secteur nord, descendez voir. »</p></div>
+      </div></details>
+      <div class="row" style="margin-top:10px"><button class="link">Retirer le tiroir</button></div>
+    </section>
+
+    <!-- l'essai des clés : un volet à côté de la carte, jamais une fenêtre par-dessus -->
+    <section class="card sheet" data-only="essai">
+      <h2>Essai des clés</h2>
+      <p class="hint">Sans simulateur : posez l'avion sur la carte, avancez le temps. Le même calcul que le vol ; rien n'est écrit dans la mission.</p>
+      <label class="f"><span>Temps depuis le décollage</span><input type="range" min="0" max="120" value="18"><small>H + 18 min · l'avion suit la route de la partie A à 120 kt</small></label>
+      <div class="two"><label class="f"><span>Altitude (ft)</span><input value="1200" inputmode="numeric"></label><label class="f"><span>Vitesse (kt)</span><input value="120" inputmode="numeric"></label></div>
+      <ul class="log">
+        <li>H + 00 — départ de XTST ; tiroirs B et C fermés</li>
+        <li><b>H + 18 — entrée dans la zone du tiroir B, à 1 200 ft : le tiroir B s'ouvre</b></li>
+        <li>le pilote se voit proposer « Prendre la suite de route »</li>
+      </ul>
+      <div class="row" style="margin-top:10px"><button>Recommencer</button><a class="btn" href="#b">Fermer l'essai</a></div>
+    </section>
+  </aside>
+</div>
+<div class="bar"><button class="primary">Enregistrer</button><span class="todo">À compléter (3) : Chronologie — aucun événement</span><span class="sp"></span><button class="link">Annuler</button></div>
+<script>
+// Les états de la maquette : la partie A (ses six groupes), les lieux, un tiroir, un repère d'AeroDB touché, l'essai des clés.
+const STATES = ['a', 'lieux', 'b', 'repere', 'essai'],
+  NOTES = {
+    a: 'Sélection — touchez un élément pour ouvrir sa fiche ; un outil revient à « Sélection » après une pose (sauf « Tracé »).',
+    lieux: 'Sélection — touchez un élément pour ouvrir sa fiche ; un outil revient à « Sélection » après une pose (sauf « Tracé »).',
+    b: 'Tiroir B — sa zone se déplace par son centre, son rayon se tire par la poignée.',
+    repere: 'Un repère de la base aéronautique : touché, il dit ce qu\'il est ; « Ajouter comme point » en fait un lieu de la mission.',
+    essai: 'Essai — touchez la carte pour poser l\'avion ; la zone du tiroir B et la trace sont dessinées.'
+  };
+/** L'état de l'adresse montré. */
+function show() {
+  const cur = STATES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'a';
+  for (const s of document.querySelectorAll('[data-only]')) {
+    const on = s.dataset.only.split(' ').includes(cur);
+    if (s instanceof SVGElement) s.style.display = on ? '' : 'none';
+    else s.hidden = !on;
+  }
+  for (const p of document.querySelectorAll('[data-part]')) p.toggleAttribute('aria-current', p.dataset.part === (cur === 'b' || cur === 'essai' ? 'b' : 'a'));
+  for (const g of document.querySelectorAll('[data-grp]')) g.open = g.dataset.grp === (cur === 'lieux' ? 'lieux' : 'cadre');
+  document.querySelector('[data-mapnote]').textContent = NOTES[cur];
+  // au téléphone : la carte repliée (on y relit et on y corrige un texte ; on dessine à l'ordinateur)
+  document.querySelector('[data-mapfold]').open = matchMedia('(min-width: 1000px)').matches;
+}
+addEventListener('hashchange', show);
+show();
+</script>
+</body>
+</html>

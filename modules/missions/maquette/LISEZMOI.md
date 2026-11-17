@@ -61,3 +61,26 @@ Fichiers : `tiroirs.html` (autonome, rien n'est écrit ; `#liste`, `#zone`, `#ob
 4. Un contour se lit de 3 à 100 sommets (la borne de l'atelier de l'utilisateur) ; l'éditeur n'impose pas 8.
 
 La suite : la fiche entre dans l'atelier (SOG-0444 : la carte et le déroulé de la maquette de l'utilisateur + cette fiche), un seul outil d'auteur.
+
+# Maquette : l'atelier de missions (SOG-0444)
+
+Fichiers : `atelier.html` (autonome, rien n'est écrit ; `#a`, `#lieux`, `#b`, `#repere`, `#essai` choisissent l'état montré), captures `atelier_<état>_1280.png` (les cinq états) et `atelier_<état>_390.png` (`a`, `lieux`, `b`), sur la mission X-301A du banc (inventée). Spécification de portage : `modules/missions/EDITOR.md` (« Porting the workshop »).
+
+## En cinq lignes
+1. UN outil d'auteur : l'éditeur en six étapes DEVIENT l'atelier de la maquette de l'utilisateur — la carte de la mission, le déroulé dessous, la fiche à droite.
+2. La carte est le lieu d'édition à l'ordinateur : « Sélection · Point · Tracé · Cercle · Contour · Objet » ; un outil revient à « Sélection » après une pose (sauf « Tracé ») ; un repère d'AeroDB touché dit ce qu'il est et propose « Ajouter comme point » — rien n'est créé par accident.
+3. Le déroulé : A « visible », puis B, C, D « scellés », chacun avec sa clé dite en une ligne ; « ＋ Tiroir » est une carte en fin de déroulé (plus de colonne « Bibliothèque » : le modèle se choisit à la création).
+4. La fiche : pour la partie A, les six étapes de l'éditeur en six groupes repliables (Cadre, Équipes, Lieux, Récit, Risques, Chronologie et cartes) ; pour un tiroir, trois groupes (la clé, les textes, la suite de route) puis « Ce que le pilote voit » — sept champs au plus par groupe, la fiche de `tiroirs.html`.
+5. Au téléphone : le déroulé et la fiche d'abord, la carte repliée ; on y relit et on y corrige un texte, on dessine à l'ordinateur. Le pied d'écran dit toujours « À compléter (n) » et porte « Enregistrer » et « Annuler ».
+
+## Ce que la maquette décide, à valider
+- **L'essai des clés** est un volet à côté de la carte (jamais une fenêtre par-dessus) : « Poser l'avion ici » d'un toucher, le temps au curseur, l'avion, sa trace et la zone dessinés, un journal en clair. Le même calcul que le vol (SOG-0447).
+- **Aucun identifiant à taper** : la suite de route est une liste de pastilles remplie en touchant la carte (« Tracé »), qu'on réordonne et dont on retire un élément ; les identifiants des lieux sont donnés par l'atelier (PT1, ZONE-1, OBJ-1) et ne changent pas.
+- **Les lieux** : sur la carte ET dans le groupe « Lieux » de la fiche (la même liste) ; un objet de tiroir y est dit « caché au pilote ».
+- **Le vocabulaire** : « Atelier » dans le fil d'Ariane (Missions › Registre › Atelier), « tiroir », « clé », « heure de repli », « repère », « contour », « essayer les clés » ; famille et série comme ailleurs.
+- **Hors de cette maquette** : le sélecteur « Vue du pilote : A · B · C · D » de la carte (SOG-0445), la cible mobile et les clés de la version 1.1 de l'atelier de l'utilisateur, les équipages d'une opération, l'arbre YAML.
+
+## Questions à l'ergonome
+1. La partie A au téléphone : six groupes repliés sauf le premier (maquette), ou tous repliés avec leur marque « à compléter » ?
+2. « Profil du terrain » de la maquette de l'utilisateur : un septième groupe de la partie A, ou un bouton de la carte ? (Proposé : un bouton de la carte, à l'ordinateur seulement ; il attend SOG-0446.)
+3. « Essayer les clés » au téléphone : montré (le journal seul, sans carte), ou réservé à l'ordinateur ? (Proposé : réservé.)
