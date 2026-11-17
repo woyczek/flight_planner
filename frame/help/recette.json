@@ -3976,22 +3976,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0076",
-   "fiche": "SOG-0399",
-   "app": "pilote",
-   "question": "Carburant de dégagement : quels forfaits par défaut pour la remise des gaz et l'approche au dégagement ?",
-   "context": "Ta vérification est faite : aujourd'hui la remise des gaz à la destination n'est jamais comptée, ni l'approche au dégagement ; le carburant de dégagement est donc sous-estimé. Je fais ajouter deux lignes au forfait, réglables dans la fiche de l'aéronef. Tu as écrit « 10 à 15 minutes » pour l'approche ; pour la remise des gaz je n'ai pas de valeur de toi. Ce que je conteste : une table par type de vol — une valeur par défaut et un réglage suffisent. Le total de tes devis augmentera.",
-   "options": [
-    "Remise des gaz : 5 min au débit de montée. Approche au dégagement : 10 min au débit d'attente",
-    "Remise des gaz : 5 min au débit de montée. Approche au dégagement : 15 min au débit d'attente",
-    "Un seul forfait de 15 min au débit d'attente pour les deux",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
@@ -4290,6 +4274,25 @@
    "choice": 0,
    "text": "",
    "at": "2026-11-17T08:55:14Z"
+  },
+  {
+   "id": "Q-0076",
+   "fiche": "SOG-0399",
+   "app": "pilote",
+   "question": "Carburant de dégagement : quels forfaits par défaut pour la remise des gaz et l'approche au dégagement ?",
+   "context": "Ta vérification est faite : aujourd'hui la remise des gaz à la destination n'est jamais comptée, ni l'approche au dégagement ; le carburant de dégagement est donc sous-estimé. Je fais ajouter deux lignes au forfait, réglables dans la fiche de l'aéronef. Tu as écrit « 10 à 15 minutes » pour l'approche ; pour la remise des gaz je n'ai pas de valeur de toi. Ce que je conteste : une table par type de vol — une valeur par défaut et un réglage suffisent. Le total de tes devis augmentera.",
+   "options": [
+    "Remise des gaz : 5 min au débit de montée. Approche au dégagement : 10 min au débit d'attente",
+    "Remise des gaz : 5 min au débit de montée. Approche au dégagement : 15 min au débit d'attente",
+    "Un seul forfait de 15 min au débit d'attente pour les deux",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-17T09:02:30Z"
   }
  ]
 }
