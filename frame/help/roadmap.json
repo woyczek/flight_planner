@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "048a385",
-  "fiches": 425,
+  "organisation": "761c684",
+  "fiches": 426,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -5763,6 +5763,27 @@
      "de": "Launcher: die britische Militärquelle (aidu.mod.uk, ENR 5.2) scheitert an SSL",
      "es": "Lanzador: la fuente militar británica (aidu.mod.uk, ENR 5.2) falla en SSL",
      "rank": 285
+    }
+   ]
+  },
+  {
+   "id": "maintenance-lanceur-lecture-des-pdf",
+   "app": "maintenance",
+   "label": {
+    "fr": "Lanceur ; lecture des PDF",
+    "en": "Lanceur ; lecture des PDF",
+    "de": "Lanceur ; lecture des PDF",
+    "es": "Lanceur ; lecture des PDF"
+   },
+   "items": [
+    {
+     "id": "SOG-0427",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Lanceur : la console est noyée sous un avertissement de lecture de PDF répété (« fontTools is required… »)",
+     "en": "Launcher: the console is flooded by a repeated PDF-reading warning (“fontTools is required…”)",
+     "de": "Starter: die Konsole wird von einer wiederholten PDF-Lesewarnung überflutet („fontTools is required…“)",
+     "es": "Lanzador: la consola se inunda con un aviso repetido de lectura de PDF («fontTools is required…»)"
     }
    ]
   },
