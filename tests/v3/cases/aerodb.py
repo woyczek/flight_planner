@@ -13940,3 +13940,45 @@ def k325(c):
     c.eq(out['partial'][5], ['incomplete'] * 3, 'the legs written point by point keep the control of a NAT track (« incomplete »: the oceanic clearance is not read), not « DCT hors liste du RAD : non contrôlé »', what='control')
     c.eq(out['partial'][4], ["Route NAT A suivie de ENTRA à 52/20 seulement : sa sortie NOEXIT n'est pas dans la base ; les routes nord-américaines N484E / N468A du message ne sont pas suivies ; écrite point par point, jamais sous son nom."],
          'a review says why: the last point placed, the missing exit, the North American routes of the message that are not followed', what='review')
+
+
+@case('K328', 'Aeronautical data, SOG-0417 (a): a point that the source says is on the limit of a FIR (« LISBOA / SANTA MARIA FIR BDRY » in the remark of the eAIP of Portugal) carries the flag `lim: \'fir\'` in the base — a flag of a CLOSED vocabulary, never the text of the remark; the flag of the source that says it passes to the twin already there when two sources give the same point (`AeroSources.merge`); a point whose remark says nothing of the sort has no flag (the engine keeps the band of today for it)',
+      'K', static=True,
+      rule='SOG-0417 (the user: from Spain and Portugal the crossing goes by the points of the limit of the FIR of Santa Maria; measured: 43 points of the eAIP of Portugal say « SANTA MARIA FIR BDRY », 39 of them are reached at FL370 from LEMD, LEBL, LPPT and LPPR, the permanent gates of SOG-0396 are a band along 15°W from 42°N to 62°N and nothing to the south). The remark lives only in the file of the source (`zones/pt/navpt_pt_enr_*.geojson`, property `remarks`); the points of the base have only id, lat, lon and the engine reads no dropped file: `AeroSources.geojson` (shared/aero_sources.js) sets `lim: \'fir\'` on a point whose remark says « FIR BDRY » (`/\\bFIR\\s*BDRY\\b/i`), `AeroSources.merge` keeps the flag when the twin of the point is already in the base. Run in Node on the real script (a stub of `window`): skipped when Node is not here.')
+def k328(c):
+    import json
+    import shutil
+    import subprocess
+    node = shutil.which('node')
+    if not node:
+        c.ok(True, 'skipped', 'SKIPPED: Node is not here: the flag was not run')
+        return
+    script = r"""
+const fs = require('fs'), vm = require('vm');
+const code = fs.readFileSync('shared/aero_sources.js', 'utf8');
+const window = {}; window.window = window;
+const ctx = vm.createContext({ window, document: { currentScript: null, createElement: () => ({}), head: { append() {} } }, console, location: { href: 'http://x/' }, TextDecoder, URL, navigator: {}, localStorage: {} });
+vm.runInContext(code, ctx);
+const A = window.AeroSources;
+let deep = ['FIR BDRY']; for (let i = 0; i < 200000; i++) deep = [deep];      // a nested array: String() of it overflows the stack
+const fc = { type: 'FeatureCollection', features: [
+  { type: 'Feature', geometry: { type: 'Point', coordinates: [-15, 41] }, properties: { sog: 'point', id: 'DETOX', remarks: 'FRA (EX): ODD / EVEN FL , LISBOA / SANTA MARIA FIR BDRY' } },
+  { type: 'Feature', geometry: { type: 'Point', coordinates: [-8, 40] }, properties: { sog: 'point', id: 'ABCDE', remarks: 'NIL / SANTA MARIA TMA, EXIT SID LPAZ' } },
+  { type: 'Feature', geometry: { type: 'Point', coordinates: [-9, 39] }, properties: { sog: 'point', id: 'NOREM' } },
+  { type: 'Feature', geometry: { type: 'Point', coordinates: [-13, 44.5] }, properties: { sog: 'point', id: 'HIDRA', remarks: 'NIL / MADRID / SANTA MARIA FIR  BDRY' } },
+  { type: 'Feature', geometry: { type: 'Point', coordinates: [-12, 44] }, properties: { sog: 'point', id: 'NESTD', remarks: deep } },
+  { type: 'Feature', geometry: { type: 'Point', coordinates: [-12, 43] }, properties: { sog: 'point', id: 'OBJCT', remarks: { x: 'FIR BDRY' } } },
+  { type: 'Feature', geometry: { type: 'Point', coordinates: [-12, 42] }, properties: { sog: 'point', id: 'FARAWAY', remarks: ' '.repeat(5000) + 'FIR BDRY' } } ] };
+const r = A.geojson(fc, 'zz.geojson');
+const mk = lim => ({ airspaces: [], aero: { aerodromes: [], navaids: [], points: [Object.assign({ id: 'DETOX', type: 'ICAO', lat: 41, lon: -15 }, lim ? { lim: 'fir' } : {})], vrp: [], airways: [], obstacles: [] }, obstacleMax: {}, moraCells: [] });
+const base = mk(false); A.merge(base, mk(true));
+console.log(JSON.stringify({ points: r.aero.points, merged: base.aero.points }));
+"""
+    r = subprocess.run([node, '-e', script], cwd=str(ROOT), capture_output=True, text=True, timeout=60)
+    out = json.loads(r.stdout.strip().splitlines()[-1]) if r.returncode == 0 and r.stdout.strip() else {'error': (r.stderr or '')[:300]}
+    pts = {x['id']: x for x in out.get('points', [])}
+    c.eq(({k: pts[k].get('lim') for k in ('DETOX', 'ABCDE', 'NOREM', 'HIDRA')}, any('remarks' in x for x in pts.values())), ({'DETOX': 'fir', 'ABCDE': None, 'NOREM': None, 'HIDRA': 'fir'}, False),
+         'the points whose remark says « FIR BDRY » (also with two spaces) carry `lim: fir`, the others have none, and no point carries the text of the remark', what='flag')
+    c.eq(({k: pts.get(k, {}).get('lim') for k in ('NESTD', 'OBJCT', 'FARAWAY')}, len(pts)), ({'NESTD': None, 'OBJCT': None, 'FARAWAY': None}, 7),
+         'a remark that is not a text (a deeply nested array, an object) is ignored and never converted (the read of the source goes on: all the points are read), and only the first 400 signs are looked at (Sécurisation; red before: the nested array stopped the read with a stack overflow)', what='untrusted')
+    c.eq([x.get('lim') for x in out.get('merged', [])], ['fir'], 'two sources give the same point: the flag of the one that says it passes to the twin that is already in the base', what='merge')

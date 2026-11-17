@@ -859,7 +859,11 @@
           id: p.id,
           type: 'ICAO',
           lat,
-          lon
+          lon,
+          // SOG-0417 : (un `remarks` qui n'est pas un texte est ignoré, jamais converti ; 400 signes suffisent : les lecteurs Python bornent à 200) un point que la source dit à la limite d'une FIR (« LISBOA / SANTA MARIA FIR BDRY ») porte `lim: 'fir'` : un drapeau d'un vocabulaire fermé, JAMAIS le texte de la remarque ; le moteur de route en fait une porte de la traversée de l'océan
+          ...(typeof p.remarks === 'string' && /\bFIR\s*BDRY\b/i.test(p.remarks.slice(0, 400)) ? {
+            lim: 'fir'
+          } : {})
         });
         continue;
       }
@@ -1402,7 +1406,13 @@
           }
         for (const x of part.aero[k] || []) {
           const same = by.get(x.id) || [];
-          if (near(same, x)) continue;
+          if (near(same, x)) {
+            // SOG-0417 : le drapeau « limite de FIR » de la source qui le dit passe au jumeau déjà là
+            if (x.lim)
+              for (const y of same)
+                if (near([y], x)) y.lim ||= x.lim;
+            continue;
+          }
           if (k === 'vrp' && (byCode.get(vrpCode(x.id)) || []).some(y => within(y, x, VRP_TWIN_NM))) continue;
           list.push(x);
           (by.get(x.id) || by.set(x.id, []).get(x.id)).push(x);
