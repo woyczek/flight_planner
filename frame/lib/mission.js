@@ -186,7 +186,7 @@ function sheetOf(d) {
 // Un tiroir est une partie de la V2 (`phases` ; douze au plus, identifiants B à M) ; il a UNE clé. Deux formes d'écriture, lues toutes les deux :
 //   · PAR IDENTIFIANT (l'atelier de l'utilisateur, « Mission Editor ») : `trigger_zone: ZONE-1` désigne une zone de `zones`,
 //     `trigger_object: OBJ-1` un objet de `objects`, en tête de mission ;
-//   · DANS LA PARTIE (l'éditeur de la V3) : `trigger_zone: { centre, radius_km | points, ceiling_ft }`, `trigger_object: { kind, lat, lon,
+//   · DANS LA PARTIE (lue, jamais écrite par l'atelier de la V3, qui écrit par identifiant — Q-0095) : `trigger_zone: { centre, radius_km | points, ceiling_ft }`, `trigger_object: { kind, lat, lon,
 //     detection_range_nm, detection_height_ft, … }` — la fiche technique de la V2 affiche toute clé inconnue du premier niveau (seul
 //     `phases` y est masqué) : une zone cachée ou un objet à trouver écrits en tête s'y lisent avant le départ.
 // Les clés : trigger_zone (+ zone_shown, + trigger_actor : c'est la cible, pas le pilote, qui franchit la zone) ; trigger_object ;

@@ -183,7 +183,7 @@ object are references like the others — `trigger_zone`, `trigger_object`, `tri
 
 | lot | content | waits for |
 |---|---|---|
-| P1 | the screen in its new frame WITHOUT the map tools nor the drawers (the library's place is kept and shows nothing): the unfolding (A alone, the drawers of the file listed read-only), the sheet of part A in six groups, the foot; phone and wide; the six steps' cases replayed on the new screen | this specification read |
+| P1 (delivered, § 7 ter) | the screen in its new frame WITHOUT the map tools nor the drawers (the library's place is kept and shows nothing): the unfolding (A alone, the drawers of the file listed read-only), the sheet of part A in six groups, the foot; phone and wide; the six steps' cases replayed on the new screen | this specification read |
 | P2 | the map as the place of edition: the six tools, drag, landmarks of AeroDB, no accidental creation | SOG-0446 |
 | P3 | the drawers (SOG-0445): the card « ＋ Tiroir » (twelve at most), the sheet in three groups, the five keys, the fallback hour, « Ce que le pilote voit », « Vue du pilote : départ · 1 · 2 · 3… » on the map | P1; Q-0095 for where the file writes; Sécurisation (a deposited file is written) |
 | P4 | the trial of the keys | SOG-0447 |
@@ -213,6 +213,34 @@ the six steps and each of their gestures, save, modify, duplicate — same resul
 
 **Found during that check, older than the move and left as it is** (to be fixed with P1, where the screen is redone): after typing in a
 field of the Récit, the first real click on a step's pill is lost — the pills are redrawn between the press and the release.
+
+### 7 ter. P1 as delivered (17 Nov 2026; SOG-0444 lot P1, SOG-0449; noreg N72, N73, and N50 to N70 replayed on the new screen)
+
+The screen of `editor_view.js` (its rules in `AT_STYLE`, its texts `at…` in `editor_texts.js`):
+
+- **the map** (`edMapHtml`): the sketch of the places as it was (`thumbHtml`, bounded to 320 px of height), no tool — folded behind
+  the button « Carte de la mission » when the module is narrower than 850 px, always shown beyond;
+- **the unfolding** (`edFlowHtml`): « Au départ », then the drawers of the file read by `readMission` (`frame/lib/mission.js`), said
+  by their rank and their title with the word of their key — shown, never written: the file's `phases` are kept as they are (the rule
+  of audit 182 already does it), and one line says so. One row that scrolls sideways, never wrapped;
+- **the sheet of the departure** (`edSheetHtml`): the six steps as six groups, each a button with its mark (✓ or !), its name and its
+  content in one line (`edLine`); the form of the open group (the step's form, unchanged) under its button; `s.ed.step` names the open
+  group, `''` when all are folded — a mission being modified on a narrow module opens folded, a new mission and a copy open on the Cadre
+  (a copy must be given its identifier: this session's choice, to be confirmed by the ergonomist), a wide module opens the Cadre;
+- **the foot** (`.ms-atfoot`, sticky above the tab bar): « Enregistrer », « À compléter (n) » — on a wide module with its first point
+  — and « Annuler »; the button opens the named list INSIDE the foot, just above itself (opened at the end of the page, it was off the
+  screen of a phone). « Suivante » is gone: a group is opened by its name.
+- **the library** has its place kept in the specification and shows nothing in this lot.
+
+**SOG-0449 — what the finger is pressing is never redrawn.** The pills were replaced at every `input` AND at every `change` (leaving
+a field by pressing a pill fires `change` between the press and the release: the pressed element was gone, the click lost). `edRefresh`
+now updates IN PLACE what follows the typing — the title, each group's line and mark, the unfolding's first line, the sketch, the list
+and the label of « À compléter » — by `textContent` and attributes; no button is replaced (the label of « À compléter » is the only
+inner HTML set in a button, and the children of the foot's and the groups' buttons take no pointer event: the finger always presses
+the button itself). The rule holds for every later lot of the workshop: a redraw (`draw`) answers a click or a list, never a keystroke.
+
+**Left in `module.js`** (Features SOG's file; a follow-up for its owner, nothing breaks): the style rules `.ms-steps`, `.ms-edaside`
+and the texts `edNext`, `edPreview`, which the screen no longer uses.
 
 ### 8. What is NOT ported
 

@@ -3,7 +3,7 @@
 // accorde les marques « (s) » d'après {n}). Les textes des six premières étapes restent dans module.js (Features SOG).
 //
 // API :
-//   EDTX : les textes — plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
+//   EDTX : les textes — at… (l'atelier, SOG-0444 : le fil, la carte, le déroulé, la fiche du départ, le pied) ; plRemoveAnyway, plCited, plRemoved, ref_<where> (qui cite un lieu : les `where` de editor.js refsOf), todo_<key>
 //     (les mots de « À compléter » des clés que editor.js todo ajoute : deadRef, drawerNoPoint, mapNoCentre), at_<where> (le champ qui
 //     cite une référence morte).
 //   todoText(tt, t) → le mot d'une ligne de « À compléter » nommée (« le tiroir B n'a plus son point de déclenchement… ») ; ''.
@@ -51,6 +51,56 @@ export const EDTX = {
   todo_mapNoCentre: ['la carte {name} n\'a plus de centre', 'map {name} no longer has a centre',
     'die Karte {name} hat keinen Mittelpunkt mehr', 'el mapa {name} ya no tiene centro'
   ],
+  // l'atelier (SOG-0444, lot P1) : le fil, la carte, le déroulé, la fiche du départ, le pied
+  atCrumb: ['Missions › Registre › Atelier', 'Missions › Registry › Workshop', 'Missionen › Register › Werkstatt',
+    'Misiones › Registro › Taller'
+  ],
+  atMap: ['Carte de la mission', 'Map of the mission', 'Karte der Mission', 'Mapa de la misión'],
+  atMapNone: ['Aucun lieu placé : la carte est vide.', 'No place set: the map is empty.', 'Kein Ort gesetzt: die Karte ist leer.',
+    'Ningún lugar situado: el mapa está vacío.'
+  ],
+  atFlow: ['Déroulé de la mission', 'Unfolding of the mission', 'Ablauf der Mission', 'Desarrollo de la misión'],
+  atFlowHint: ['Ce que le pilote lit au départ, puis les tiroirs, dans l\'ordre.',
+    'What the pilot reads at the departure, then the drawers, in order.',
+    'Was der Pilot beim Abflug liest, dann die Schubladen, der Reihe nach.',
+    'Lo que el piloto lee a la salida, luego los cajones, en orden.'
+  ],
+  atStart: ['Au départ', 'At the departure', 'Beim Abflug', 'A la salida'],
+  atVisible: ['visible', 'visible', 'sichtbar', 'visible'],
+  atSealed: ['tiroir scellé', 'sealed drawer', 'versiegelte Schublade', 'cajón sellado'],
+  atDrawer: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
+  atDrawersKept: ['Les tiroirs de ce fichier sont gardés tels quels ; ils se modifieront ici dans un prochain lot.',
+    'The drawers of this file are kept as they are; they will be edited here in a coming batch.',
+    'Die Schubladen dieser Datei bleiben unverändert; sie werden in einem kommenden Los hier bearbeitet.',
+    'Los cajones de este archivo se conservan tal cual; se modificarán aquí en un próximo lote.'
+  ],
+  atKey_time: ['clé : heure', 'key: hour', 'Schlüssel: Uhrzeit', 'llave: hora'],
+  atKey_zone: ['clé : zone de passage', 'key: passage zone', 'Schlüssel: Durchflugzone', 'llave: zona de paso'],
+  atKey_object: ['clé : objet à trouver', 'key: object to find', 'Schlüssel: zu findendes Objekt', 'llave: objeto por encontrar'],
+  atKey_arrival: ['clé : arrivée au terrain', 'key: arrival at the aerodrome', 'Schlüssel: Ankunft am Platz',
+    'llave: llegada al aeródromo'
+  ],
+  atKey_condition: ['clé : pas encore jugée en vol', 'key: not judged in flight yet', 'Schlüssel: im Flug noch nicht bewertet',
+    'llave: aún no juzgada en vuelo'
+  ],
+  atKey_hand: ['clé : geste du pilote', 'key: the pilot\'s gesture', 'Schlüssel: Geste des Piloten', 'llave: gesto del piloto'],
+  atSheet: ['Au départ — visible par le pilote', 'At the departure — visible to the pilot', 'Beim Abflug — für den Piloten sichtbar',
+    'A la salida — visible para el piloto'
+  ],
+  atSheetHint: ['Ce que le pilote lit avant de partir. Six groupes ; chacun dit son contenu en une ligne.',
+    'What the pilot reads before leaving. Six groups; each says its content in one line.',
+    'Was der Pilot vor dem Abflug liest. Sechs Gruppen; jede nennt ihren Inhalt in einer Zeile.',
+    'Lo que el piloto lee antes de salir. Seis grupos; cada uno dice su contenido en una línea.'
+  ],
+  atLine_none: ['à remplir', 'to fill in', 'auszufüllen', 'por rellenar'],
+  atLine_teams: ['{n} équipe(s)', '{n} team(s)', '{n} Team(s)', '{n} equipo(s)'],
+  atLine_places: ['{n} lieu(x)', '{n} place(s)', '{n} Ort(e)', '{n} lugar(es)'],
+  atLine_story: ['résumé de {n} signe(s)', 'summary of {n} sign(s)', 'Kurzbeschreibung mit {n} Zeichen', 'resumen de {n} signo(s)'],
+  atLine_risks: ['{n} risque(s)', '{n} risk(s)', '{n} Risiko(en)', '{n} riesgo(s)'],
+  atLine_timeline: ['{n} événement(s) · {m} carte(s)', '{n} event(s) · {m} map(s)', '{n} Ereignis(se) · {m} Karte(n)',
+    '{n} evento(s) · {m} mapa(s)'
+  ],
+  atTodo: ['À compléter ({n})', 'To complete ({n})', 'Zu ergänzen ({n})', 'Por completar ({n})'],
   // le champ qui cite une référence morte (les `where` de editor.js refsOf, hors profil et carte, jamais jugés)
   at_route: ['la route de la mission', 'the mission route', 'die Route der Mission', 'la ruta de la misión'],
   at_drawer: ['le point de déclenchement du tiroir {name}', 'the trigger point of drawer {name}', 'der Auslösepunkt der Schublade {name}',

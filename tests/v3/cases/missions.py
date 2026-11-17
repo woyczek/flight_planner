@@ -2089,16 +2089,19 @@ def n50(c):
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === 'Mission complète'", timeout=10000, what='X-001A in the editor')
+    c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('Mission complète')", timeout=10000, what='X-001A in the editor')
+    c.eq(c.js(f"document.querySelector('{E}').dataset.step"), '', 'on a phone, a mission being modified opens with every group folded', what='the open group')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the captures without the toasts of the steps before
     bar = c.js(f"""(() => {{ const b = document.querySelector('{E} [data-do=edsave]').getBoundingClientRect();
       return document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest('[data-do=edsave]') ? b.bottom <= innerHeight : false }})()""")
-    c.ok(bar, 'covered or off screen', 'at 390, « Enregistrer · Suivante · Annuler » stays on screen above the tab bar')
+    c.ok(bar, 'covered or off screen', 'at 390, « Enregistrer · À compléter · Annuler » stays on screen above the tab bar')
     c.shot('N50_390_cadre.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
     c.shot('N50_1280_cadre.png')
-    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edaside]')).display") != 'none', 'hidden', 'wide: the preview and « À compléter » on the right')
+    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid', 'stacked', 'wide: the sheet beside the map and the unfolding')
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
     _ed_fill(c, 'edtitle', 'Mission retouchée')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -2124,7 +2127,7 @@ def n50(c):
 _TEAMS_JS = f"""[...document.querySelectorAll('{E} [data-edteams] [data-team]')].map(r => ['name', 'type', 'service', 'role'].map(f => r.querySelector('[data-f=' + f + ']').value))"""
 
 
-@case('N51', 'Missions › editor, step 2 (Équipes): « Suivante » goes from the Cadre to the Équipes; one row per team (callsign, type, service, '
+@case('N51', 'Missions › editor, the Équipes: the group unfolds by its name (« Suivante » is gone, SOG-0444); one row per team (callsign, type, service, '
       'role); a row is changed, removed, added; « Enregistrer » writes the teams and keeps their other keys and the rest of the file',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0287 step 2, the mock-up: « Équipes : une ligne par équipe (indicatif, service, type ICAO, rôle) ; + Équipe »')
@@ -2135,9 +2138,9 @@ def n51(c):
         '{ name: ALPHA1, service: Service d\'essai, type: H135, role: recherche, base: Base Test }')]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
-    c.tap(f'{E} [data-do="ednext"]')
-    c.until(f"!!document.querySelector('{E} [data-edteams]')", what='« Suivante » opens the Équipes')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="teams"]')
+    c.until(f"!!document.querySelector('{E} [data-edteams]')", what='the group « Équipes » unfolds')
     c.eq(c.js(_TEAMS_JS), [['ALPHA1', 'H135', "Service d'essai", 'recherche'], ['BRAVO2', 'H145', "Service d'essai", 'relais'],
                            ['CHARLIE3', 'EC25', "Service d'essai", 'hélitreuillage']], 'one row per team of the file', what='rows')
     c.page.fill(f'{E} [data-team="1"] [data-f=role]', 'relais radio')
@@ -2173,7 +2176,7 @@ def n52(c):
     reg_open(c, _ED_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
     c.eq(c.js(_PLACES_JS), [['dep', 'XTST · Base Test'], ['arr', 'XTSU · Base Test Sud'], ['target', "TARGET · Cible d'essai"],
@@ -2225,7 +2228,7 @@ def n53(c):
         'payload: { description: Un treuil inventé., mass_kg: 120, passengers: 2, constraints: [Une contrainte inventée.] }')]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="story"]')
     c.until(f"!!document.querySelector('{E} [data-k=edstory]')", what='the Récit')
     st = c.js(_STORY_JS)
@@ -2286,7 +2289,7 @@ def n54(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     _ed_open(c, _MESSY)
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='the messy file in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='the messy file in the editor')
     for step in ('teams', 'places', 'story', 'risks', 'timeline', 'cadre'):
         c.tap(f'{E} [data-steps] [data-step="{step}"]')
         c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
@@ -2332,7 +2335,7 @@ def n55(c):
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', text]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="risks"]')
     c.until(f"!!document.querySelector('{E} [data-edrisks]')", what='the Risques')
     c.eq(c.js(_RISKS_JS), [f'Danger {w} → Parade {w}' for w in ('un', 'deux', 'trois', 'quatre', 'cinq')], 'one row « danger → parade » per risk',
@@ -2384,7 +2387,7 @@ def n56(c):
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], [path, _SINGLE_RDV]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-place][data-kind=rdv]')", what='the single rendezvous listed')
     c.tap(f'{E} [data-place][data-kind=target] [data-do="edplace"]')
@@ -2428,7 +2431,7 @@ def n57(c):
     reg_open(c, _ED_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
     c.eq(c.js(f"[...document.querySelectorAll('{E} [data-edmaps] [data-map]')].map(m => m.dataset.map)"), ['general', 'zone_1', 'bad'],
@@ -2582,7 +2585,7 @@ def n60(c):
                                                        _ED_FULL + 'timeline:\n  - { at: H, text: Premier inventé }\n  - { at: H+1h, description: Second inventé }\n']])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events of the list shown')
     c.tap(f'{E} [data-do="edeventadd"]')
@@ -2703,7 +2706,7 @@ def n64(c):
     c.until(_REG_READ, timeout=20000, what='the registry read')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     T = f'{E} [data-edpreview] [data-edthumb]'
     c.until(f"document.querySelectorAll('{T} circle').length === 7", timeout=15000,
             what='seven marks: departure (from the base), arrival, target, two turning points, the rendezvous, the circle zone')
@@ -2860,7 +2863,7 @@ def n70(c):
     reg_open(c, _REF_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
-    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='X-001A in the editor')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     # the Chronologie first: its rows stay on screen with the identifiers of the file (the trap of a rename made afterwards)
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
@@ -3017,3 +3020,141 @@ def n71(c):
          'a mission whose zones, objects or phases are not lists is read all the same; « constructor » is not a point', what='hostile lists')
     c.ok('aircraft' in (got['kinds'] or []) and 'raft' in got['kinds'] and got['passage'] == {'nm': 20, 'min': 10}, [got['kinds'], got['passage']],
          'the closed list of kinds; passageMin gives the distance and the estimated minutes to a point of part A')
+
+
+
+@case('N72', 'Missions › editor: after typing in a field, ONE real click on another group opens it — what the finger is pressing is never '
+      'redrawn (the groups\' buttons, the « À compléter » button and « Enregistrer » are the same elements before and after a keystroke and '
+      'after leaving the field)', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0449 (17 Nov 2026, found while moving the editor\'s screen; the ergonomist: « on ne redessine pas ce que le doigt est en '
+      'train de presser »): the step pills were replaced at every input and at every change — leaving a field of the Récit by pressing a '
+      'pill redrew it between the press and the release, and the click was lost')
+def n72(c):
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _REF_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
+    c.tap(f'{E} [data-steps] [data-step="story"]')
+    c.until(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')", what='the Récit unfolded')
+    # the buttons are marked, then a field is typed in: the SAME elements must still be there (a redrawn button has lost its mark)
+    c.js(f"document.querySelectorAll('{E} [data-steps] [data-step], {E} [data-do=edsave], {E} [data-do=edtodo], {E} [data-do=edcancel]').forEach(b => b.__kept = true)")
+    c.page.fill(f'{E} [data-k=edstory][data-f=summary]', 'Un résumé retouché, puis un seul clic.')
+    kept = c.js(f"[...document.querySelectorAll('{E} [data-steps] [data-step], {E} [data-do=edsave], {E} [data-do=edtodo], {E} [data-do=edcancel]')].map(b => !!b.__kept)")
+    c.ok(len(kept) == 9 and all(kept), kept, 'the six groups\' buttons and the three buttons of the foot are the same elements after the keystrokes')
+    line = c.js(f"document.querySelector('{E} [data-line=story]').textContent")
+    c.ok('38' in line, line, 'and the line of the group follows the typing (38 signs)')
+    # ONE real click (press and release of a pointer), straight from the field: the Lieux unfold
+    c.page.click(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", timeout=3000, what='the Lieux unfolded by ONE click')
+    c.eq(c.js(f"document.querySelector('{E}').dataset.step"), 'places', 'one click was enough', what='the open group')
+    # the same from the Cadre: a title typed, one click on « Enregistrer » saves
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+    c.page.fill(f'{E} input[data-k=edtitle]', 'Mission complète, retouchée')
+    c.page.click(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved by ONE click after typing')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('title: Mission complète, retouchée' in t and 'Un résumé retouché, puis un seul clic.' in t, t[:300], 'both fields written')
+    c.js(_REG_CLEAR)
+
+
+_AT_MISSION = _REF_MISSION.replace('route_order: [ORIGIN, PT1, RDV-1, TARGET, PT2, GHOST, DESTINATION]', 'route_order: [ORIGIN, PT1, RDV-1, TARGET, PT2, DESTINATION]').replace(
+    'teams:\n', "  - { id: C, title: Entrée du secteur, trigger_zone: ZONE-1, fallback_delay_min: 60 }\n"
+    "  - { id: D, title: Retour, trigger_condition: { kind: arrival, point: DESTINATION, radius_nm: 1, speed_max_kt: 30, require_on_ground: true } }\nteams:\n", 1)
+EDTX_FILE = 'modules/missions/editor_texts.js'
+_AT_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _AT_MISSION]]
+_AT_FLOW = f"[...document.querySelectorAll('{E} [data-atflow] [data-part]')].map(x => [x.dataset.kind, x.querySelector('b').textContent.trim()])"
+_AT_LINES = f"Object.fromEntries([...document.querySelectorAll('{E} [data-line]')].map(x => [x.dataset.line, x.textContent.trim()]))"
+
+
+@case('N73', 'Missions › the workshop: the editor in its new shape — the unfolding (« Au départ », then the drawers of the file by their rank, '
+      'read as they are), the sheet of the departure in six groups that each say their content in one line (one unfolded at a time; all '
+      'folded on a phone when a mission is modified, the Cadre unfolded on a wide screen and for a new mission), the foot « Enregistrer · '
+      'À compléter (n) · Annuler » whose middle button opens the named list; the map folded behind its button on a phone; saving without '
+      'touching anything writes nothing, and a change keeps the drawers of the file', 'N', tags=('missions',), designs=('standard',),
+      screens=False, langs4=False,
+      rule='SOG-0444, lot P1 (modules/missions/EDITOR.md « Porting the workshop », the mock-up modules/missions/maquette/atelier_*.png '
+      'accepted by the ergonomist on 17 Nov 2026 with six corrections): one authoring tool — the six-step editor BECOMES the workshop')
+def n73(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _AT_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    c.eq(c.js(_AT_FLOW), [['start', norm(row(c, 'atStart', EDTX_FILE))], ['drawer', f"{row(c, 'atDrawer', EDTX_FILE).replace('{n}', '1')} · Changement"],
+                          ['drawer', f"{row(c, 'atDrawer', EDTX_FILE).replace('{n}', '2')} · Entrée du secteur"],
+                          ['drawer', f"{row(c, 'atDrawer', EDTX_FILE).replace('{n}', '3')} · Retour"]],
+         'the unfolding: the departure, then the three drawers of the file, said by their rank', what='the unfolding')
+    c.eq(c.js(f"document.querySelector('{E}').dataset.step"), '', 'on a phone every group is folded', what='the open group')
+    lines = c.js(_AT_LINES)
+    c.ok(set(lines) == {'cadre', 'teams', 'places', 'story', 'risks', 'timeline'} and all(lines.values()) and 'XTST → XTSU' in lines['cadre'], lines,
+         'each of the six groups says its content in one line (the Cadre: its family and « XTST → XTSU »)')
+    c.eq(c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display"), 'none', 'on a phone the map is folded behind its button', what='the map')
+    c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display !== 'none'", what='the map unfolded by its button')
+    c.ok(c.count(f'{E} [data-atmapbody] [data-edthumb]') == 1, 'no sketch', 'the sketch of the places in the map')
+    c.tap(f'{E} [data-do="edmap"]')
+    # the foot: « À compléter (n) » alone on a phone, a button that opens the named list
+    btn = c.text(f'{E} [data-edtodobtn]')
+    c.ok('(1)' in btn and c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") == 'none', btn,
+         'the button says the count alone on a phone (never a cut text)')
+    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodo]')).display") == 'none', 'shown', 'the list is closed')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='the named list opened by the button')
+    c.eq(c.js(_ED_TODO), ['theatre'], 'the one point to complete, named', what='the list')
+    seen = c.js(f"""(() => {{ const l = document.querySelector('{E} [data-edtodo]').getBoundingClientRect(), b = document.querySelector('{E} [data-edtodobtn]').getBoundingClientRect();
+      return [l.height > 0 && l.top >= 0 && l.bottom <= b.top + 1, b.bottom <= innerHeight] }})()""")
+    c.eq(seen, [True, True], 'the list opens ON SCREEN, just above its button (never at the end of a page that scrolls)', what='the list on screen')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N73_390_workshop.png')
+    c.tap(f'{E} [data-do="edtodo"]')
+    # a group unfolds by its name; touched again, it folds; one at a time
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux unfolded')
+    c.tap(f'{E} [data-steps] [data-step="risks"]')
+    c.until(f"!!document.querySelector('{E} [data-edrisks]')", what='the Risques unfolded')
+    c.eq(c.count(f'{E} [data-edform]'), 1, 'one group unfolded at a time', what='unfolded groups')
+    c.tap(f'{E} [data-steps] [data-step="risks"]')
+    c.until(f"!document.querySelector('{E} [data-edform]')", what='the group folded when touched again')
+    # saving without touching anything writes nothing; a change keeps the drawers of the file as they are
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(400)
+    c.eq(c.js(_TEXT_OF, path), _AT_MISSION, 'nothing touched: the file is the same', what='the file')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # at 390 the toast covers the foot
+    c.tap(f'{E} [data-steps] [data-step="story"]')
+    c.until(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')", what='the Récit unfolded')
+    c.page.fill(f'{E} [data-k=edstory][data-f=summary]', 'Un résumé changé dans l’atelier.')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    kept = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const MS = await import('/frame/lib/mission.js');
+      const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return { summary: d.summary, keys: MS.readMission(d).drawers.map(x => [x.rank, x.key.kind]), zone: d.phases[1].trigger_zone } }""" % _TEXT_OF, path)
+    c.eq(kept, {'summary': 'Un résumé changé dans l’atelier.', 'keys': [[1, 'time'], [2, 'zone'], [3, 'arrival']], 'zone': 'ZONE-1'},
+         'the summary is written; the three drawers of the file are kept as they are', what='the saved file')
+    # a wide screen: the sheet beside the map and the unfolding, the Cadre unfolded, the first point said in the foot
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.until(_REG_READ, timeout=20000, what='back to the registry')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='on a wide screen the Cadre is unfolded at the opening')
+    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid' and
+         c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display") != 'none' and
+         c.js(f"getComputedStyle(document.querySelector('{E} [data-do=edmap]')).display") == 'none', 'not side by side',
+         'wide: the map (always shown, no button) and the unfolding on the left, the sheet on the right')
+    c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") != 'none', 'hidden',
+         'wide: the foot also says the first point to complete')
+    row_w = c.js(f"(() => {{ const r = document.querySelector('{E} .ms-atflowrow'); return [r.scrollWidth > r.clientWidth || r.children.length <= 4, getComputedStyle(r).flexWrap] }})()")
+    c.eq(row_w[1], 'nowrap', 'the unfolding is ONE row (it scrolls sideways, it never wraps)', what='the row')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N73_1280_workshop.png')
+    # a new mission: the Cadre unfolded, no drawer, the unfolding alone with « Au départ »
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.until(_REG_READ, timeout=20000, what='back to the registry')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission opens on its Cadre, on a phone too')
+    c.eq([c.count(f'{E} [data-atflow] [data-part]'), c.count(f'{E} [data-drawerskept]')], [1, 0], 'a new mission has its departure alone', what='the unfolding of a new mission')
+    c.js(_REG_CLEAR)

@@ -7,6 +7,11 @@
 //     fiche et le registre) : REGISTRY, TX, allRows, coSelect, cut, draw, esc, famChoices, famHtml, famLetter, mapHref, regLoad,
 //     subChoices, yamlFile ; et state() → l'état du module en cours (réaffecté à chaque montage).
 //   edClick, edHtml, edInput : l'écran (s.ed), une saisie, un clic « ed… » — appelés par l'aiguillage de module.js.
+//
+// L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (le croquis des lieux, sans
+// outil dans ce lot) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
+// en six groupes repliables, un seul déplié (s.ed.step ; '' : tous repliés) ; le pied : « Enregistrer », « À compléter (n) » qui ouvre
+// la liste nommée, « Annuler ». Rien de ce qu'on peut presser n'est redessiné pendant la frappe (SOG-0449 : edRefresh).
 import * as ADD from './add.js';
 import * as ED from './editor.js';
 import * as MS from '../../frame/lib/mission.js';
@@ -42,7 +47,54 @@ export function init(tools) {
   } = tools);
 }
 
-// ---------------------------------------------------------------- l'éditeur de missions (SOG-0287)
+// ---------------------------------------------------------------- l'éditeur de missions (SOG-0287), dans la forme de l'atelier (SOG-0444)
+// Les règles de l'atelier (SOG-0444, lot P1) : la carte, le déroulé, la fiche du départ en six groupes, le pied. Dans la fiche (une colonne
+// étroite, même sur un grand écran), les lignes d'équipe et d'événement gardent leur forme étroite. Les règles des champs
+// de chaque étape (ms-edteam, ms-pl…) restent dans module.js. Module large : la carte et le déroulé à gauche, la fiche à droite.
+const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:column;min-height:calc(100dvh - 160px)}
+[data-module="missions"] .ms-atmap{margin:0 0 12px}
+[data-module="missions"] .ms-atmapbtn{min-height:44px}
+[data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
+[data-module="missions"] .ms-atmap[data-open="1"] .ms-atmapbody{display:block}
+[data-module="missions"] .ms-atmapbody .ms-thumb{margin-top:0;max-height:320px}
+[data-module="missions"] .ms-atflowrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity}
+[data-module="missions"] .ms-atpart{flex:0 0 172px;scroll-snap-align:start;border:1px solid var(--sog-line,#ddd);border-top:4px solid var(--sog-muted,#888);padding:8px 10px;min-height:84px;background:var(--sog-bg,#fff)}
+[data-module="missions"] .ms-atpart[data-kind=start]{border-top-color:var(--ok,#1e7e34)}
+[data-module="missions"] .ms-atpart[aria-current]{outline:2px solid var(--accent,#1a73e8)}
+[data-module="missions"] .ms-atpart>span{display:block}
+[data-module="missions"] .ms-atpart .ms-attag{font-size:.75em;letter-spacing:.05em;text-transform:uppercase}
+[data-module="missions"] .ms-atgrp{border-top:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-atgrp:last-child{border-bottom:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-atsum{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;width:100%;min-height:48px;text-align:left;border:0;background:none;padding:4px 0;font:inherit;color:inherit}
+[data-module="missions"] .ms-atsum>b{white-space:nowrap}
+[data-module="missions"] .ms-atline{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.9em}
+[data-module="missions"] .ms-atgrp[data-open="1"]>.ms-atsum{font-size:1.05em}
+[data-module="missions"] .ms-atbody{padding:2px 0 10px;min-width:0}
+[data-module="missions"] .ms-atbody>h3{display:none}
+[data-module="missions"] .ms-atbody .f-row{align-items:flex-start}
+[data-module="missions"] .ms-atbody .f-row>.f-field{flex:1 1 10em;min-width:0}
+[data-module="missions"] .ms-atbody textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
+[data-module="missions"] .ms-atbody .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
+[data-module="missions"] .ms-atbody .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2}
+[data-module="missions"] .ms-atbody .ms-edthead{display:none}
+[data-module="missions"] .ms-atbody .ms-tlabel{display:block}
+[data-module="missions"] .ms-atbody .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
+[data-module="missions"] .ms-atbody .ms-evrow>.ms-evtext{grid-column:1 / span 2}
+[data-module="missions"] .ms-atfoot{position:sticky;bottom:var(--f-tab-space,0px);margin-top:auto;background:var(--sog-bg,#fff);border-top:1px solid var(--sog-line,#ddd);z-index:2}
+[data-module="missions"] .ms-atbar{display:flex;gap:8px;align-items:center;padding:8px 0}
+[data-module="missions"] .ms-atbar>.ms-edcancel{margin-left:auto}
+[data-module="missions"] .ms-attodobtn .ms-attodofirst{display:none}
+[data-module="missions"] .ms-attodobtn>*,[data-module="missions"] .ms-atsum>*{pointer-events:none}
+[data-module="missions"] .ms-attodo{margin:8px 0 0;max-height:40dvh;overflow:auto}
+[data-module="missions"] .ms-attodo[hidden]{display:none}
+@container (min-width: 850px){
+  [data-module="missions"] .ms-atgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(22em,26em);gap:16px;align-items:start}
+  [data-module="missions"] .ms-atmapbtn{display:none}
+  [data-module="missions"] .ms-atmapbody{display:block;margin-top:0}
+  [data-module="missions"] .ms-atpart{flex-basis:220px}
+  [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:inline}
+}`;
+
 /** La lettre d'une famille pour l'éditeur (famLetter, les identifiants des lignes de la famille). */
 const edLetter = (s, fam) => famLetter(fam, allRows(s).filter(r => r.family === fam).map(r => r.id));
 /** Les familles de l'éditeur : celles des thèmes et celles des lignes, « T · AIRLIFT · … » (SOG-0292). La famille commerciale attend la
@@ -137,7 +189,9 @@ async function edOpen(s, mode, line = null) {
   if (mode === 'dup') cadre.id = ED.numbering(allRows(s), cadre.family, edLetter(s, cadre.family)).id;
   s.ed = {
     mode,
-    step: 'cadre',
+    // une mission qu'on modifie sur un téléphone : tous les groupes repliés, chacun dit son contenu en une ligne ; une copie s'ouvre
+    // sur son Cadre, comme une mission neuve (son identifiant et son titre sont à donner)
+    step: mode === 'dup' || edWide(s) ? 'cadre' : '',
     base,
     cadre,
     path: mode === 'edit' ? path : '',
@@ -148,23 +202,6 @@ async function edOpen(s, mode, line = null) {
     regSeries
   };
   draw(s);
-}
-
-/** Les pastilles des six étapes : l'état de chacune (✓ ou !), seule l'étape Cadre s'ouvre dans ce lot. */
-function edStepsHtml(s, doc) {
-  const names = {
-      cadre: TX.stepCadre,
-      teams: TX.stepTeams,
-      places: TX.stepPlaces,
-      story: TX.stepStory,
-      risks: TX.stepRisks,
-      timeline: TX.stepTimeline
-    },
-    open = ED.OPEN;
-  return `<nav class="ms-steps" data-steps>${ED.STEPS.map((k, i) => {
-    const ok = ED.stepState(doc, k) === 'ok';
-    return `<button type="button" data-do="edstep" data-step="${k}"${s.ed.step === k ? ' aria-current="step"' : ''}${open.includes(k) ? '' : ` disabled title="${esc(s.tt(TX.edLater))}"`}><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" aria-hidden="true">${ok ? '✓' : '!'}</span> ${i + 1}. ${esc(s.tt(names[k]))}</button>`;
-  }).join('')}</nav>`;
 }
 
 /** L'étape Cadre (sept éléments au plus : famille et sous-type, série et identifiant, titre, théâtre, départ et arrivée). */
@@ -193,27 +230,6 @@ function edCadreHtml(s) {
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
     ${field('edth', TX.edTheatre, sel('edth', theatres.map(t => ({ code: t, label: t })), c.theatre))}
     <div class="f-row">${field('eddep', TX.edDep, text('eddep', c.dep, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}${field('edarr', TX.edArr, text('edarr', c.arr, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}</div>`;
-}
-
-/** La colonne de droite : l'aperçu de la fiche (titre, famille · série, résumé, trois risques) et « À compléter ». */
-function edAsideHtml(s, doc) {
-  const m = MS.readMission(doc),
-    c = s.ed.cadre,
-    names = {
-      cadre: TX.stepCadre,
-      teams: TX.stepTeams,
-      places: TX.stepPlaces,
-      story: TX.stepStory,
-      risks: TX.stepRisks,
-      timeline: TX.stepTimeline
-    },
-    todo = ED.todo(doc),
-    sum = m?.summary || '';
-  return `<div class="f-card" data-edpreview><p class="f-muted">${esc(s.tt(TX.edPreview))}</p><h3>${esc(c.title || s.tt(TX.edNewTitle))}</h3>
-      <p class="f-muted">${c.family ? famHtml(s, c.family) : ''}${c.series !== '' ? ` · ${esc(s.tt(TX.edSeriesN, { n: c.series }))}` : ''}</p>
-      ${sum ? `<p>${esc(sum.length > 160 ? `${sum.slice(0, 159)}…` : sum)}</p>` : ''}
-      ${m?.risks.length ? `<ul class="ms-lines">${m.risks.slice(0, 3).map(x => `<li>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>` : ''}${thumbHtml(s, doc)}</div>
-    <div class="f-card" data-edtodo><p class="f-muted">${esc(s.tt(TX.edTodo))}</p>${todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`}</div>`;
 }
 
 /** Le document en cours d'édition : le fichier lu, puis le cadre, les équipes et les lieux retouchés (une étape jamais ouverte ne
@@ -342,17 +358,115 @@ function edTimelineHtml(s) {
     <div class="f-row ms-pladd">${missing.length ? `<button type="button" data-do="edmapspropose">${esc(s.tt(TX.mpPropose, { n: missing.length }))}</button>` : ''}<span class="f-muted">${esc(s.tt(TX.mpStudio))}</span></div>`;
 }
 
-/** L'écran de l'éditeur (la maquette : modules/missions/maquette/editeur_cadre_*.png). */
+/** Vrai sur un module large (la fiche à côté de la carte) : à l'ouverture, le premier groupe de la fiche est déplié ; sur un module
+ *  étroit (un téléphone) tous les groupes sont repliés et disent leur contenu en une ligne (l'ergonome, 17 nov.). */
+const edWide = s => (s.el?.clientWidth || 0) >= 850;
+
+/** Les noms des six groupes de la fiche du départ (les six étapes de l'éditeur). */
+const edNames = () => ({
+  cadre: TX.stepCadre,
+  teams: TX.stepTeams,
+  places: TX.stepPlaces,
+  story: TX.stepStory,
+  risks: TX.stepRisks,
+  timeline: TX.stepTimeline
+});
+
+/** Ce qu'un groupe de la fiche contient, dit en une ligne (un groupe replié ne cache pas ce qu'il porte). */
+function edLine(s, doc, k) {
+  const c = s.ed.cadre;
+  if (k === 'cadre') return [c.family, c.series !== '' ? s.tt(TX.edSeriesN, {
+    n: c.series
+  }) : '', ED.liaisonTitle(c.dep, c.arr)].filter(Boolean).join(' · ');
+  if (k === 'teams') {
+    const t = ED.teamsOf(doc);
+    return t.length ? `${s.tt(EDTX.atLine_teams, { n: t.length })} · ${t.slice(0, 2).map(x => x.name).filter(Boolean).join(', ')}${t.length > 2 ? '…' : ''}` : s.tt(EDTX.atLine_none);
+  }
+  if (k === 'places') {
+    const n = ED.placesOf(doc).filter(p => !['dep', 'arr'].includes(p.kind)).length;
+    return n ? s.tt(EDTX.atLine_places, {
+      n
+    }) : s.tt(EDTX.atLine_none);
+  }
+  if (k === 'story') {
+    const n = ED.storyOf(doc).summary.length;
+    return n ? s.tt(EDTX.atLine_story, {
+      n
+    }) : s.tt(EDTX.atLine_none);
+  }
+  if (k === 'risks') {
+    const n = ED.risksOf(doc).length;
+    return n ? s.tt(EDTX.atLine_risks, {
+      n
+    }) : s.tt(EDTX.atLine_none);
+  }
+  const n = ED.eventsOf(doc).length,
+    m = ED.mapsOf(doc).length;
+  return n || m ? s.tt(EDTX.atLine_timeline, {
+    n,
+    m
+  }) : s.tt(EDTX.atLine_none);
+}
+
+/** Le contenu d'un groupe déplié : le formulaire de son étape (inchangé). */
+const edGroupBody = (s, k) => k === 'teams' ? edTeamsHtml(s) : k === 'places' ? edPlacesHtml(s) : k === 'story' ? edStoryHtml(s) : k ===
+  'risks' ? edRisksHtml(s) : k === 'timeline' ? edTimelineHtml(s) : edCadreHtml(s);
+
+/** La fiche du départ (la partie A du fichier) : les six étapes de l'éditeur en six groupes repliables, un seul déplié à la fois ; chaque
+ *  groupe dit son contenu en une ligne et porte sa marque (✓ ou !). */
+function edSheetHtml(s, doc) {
+  const names = edNames();
+  return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atSheet))}</h3><p class="f-muted">${esc(s.tt(EDTX.atSheetHint))}</p>
+    <div data-steps>${ED.STEPS.map(k => {
+    const ok = ED.stepState(doc, k) === 'ok',
+      open = s.ed.step === k;
+    return `<div class="ms-atgrp" data-grp="${k}" data-open="${open ? '1' : ''}"><button type="button" class="ms-atsum" data-do="edstep" data-step="${k}" aria-expanded="${open}"${open ? ' aria-current="step"' : ''}><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="${k}" aria-hidden="true">${ok ? '✓' : '!'}</span><b>${esc(s.tt(names[k]))}</b><span class="ms-atline f-muted" data-line="${k}">${esc(edLine(s, doc, k))}</span></button>${open ? `<div class="ms-atbody" data-edform>${edGroupBody(s, k)}</div>` : ''}</div>`;
+  }).join('')}</div></section>`;
+}
+
+/** Le déroulé de la mission : « Au départ » (visible), puis les tiroirs du fichier dans l'ordre — dits par leur rang, lus par le lecteur
+ *  (frame/lib/mission.js) et montrés tels quels : ils se modifieront ici dans un prochain lot (SOG-0445). */
+function edFlowHtml(s, doc) {
+  const drawers = MS.readMission(doc)?.drawers || [],
+    c = s.ed.cadre;
+  return `<section class="f-card ms-atflow" data-atflow><h3>${esc(s.tt(EDTX.atFlow))}</h3><p class="f-muted">${esc(s.tt(EDTX.atFlowHint))}</p>
+    <div class="ms-atflowrow"><div class="ms-atpart" data-part="start" data-kind="start" aria-current="true"><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></div>${drawers.map(d => `<div class="ms-atpart" data-part="${d.rank}" data-kind="drawer"><span class="ms-attag f-muted">${esc(s.tt(EDTX.atSealed))}</span><b>${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></div>`).join('')}</div>
+    ${drawers.length ? `<p class="f-muted" data-drawerskept>${esc(s.tt(EDTX.atDrawersKept))}</p>` : ''}</section>`;
+}
+
+/** La carte de la mission (lot P1 : le croquis des lieux, sans outil — la carte d'édition vient avec le socle de carte, SOG-0446) :
+ *  repliée derrière son bouton sur un module étroit, toujours montrée sur un module large. */
+function edMapHtml(s, doc) {
+  const thumb = thumbHtml(s, doc);
+  return `<div class="ms-atmap" data-atmap data-open="${s.ed.mapOpen ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!s.ed.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>`;
+}
+
+/** « À compléter » : les points à compléter, nommés (jamais bloquants) — la liste que le bouton du pied ouvre. */
+function edTodoHtml(s, doc) {
+  const names = edNames(),
+    todo = ED.todo(doc);
+  return todo.length ? `<ul class="ms-lines">${todo.slice(0, 7).map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`).join('')}</ul>${todo.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: todo.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
+}
+
+/** Le bouton « À compléter (n) » du pied : son compte, et sur un module large le premier point. */
+function edTodoBtnHtml(s, doc) {
+  const names = edNames(),
+    todo = ED.todo(doc),
+    t = todo[0];
+  return `${esc(s.tt(EDTX.atTodo, { n: todo.length }))}${t ? `<span class="ms-attodofirst"> : ${esc(s.tt(names[t.step]))} — ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</span>` : ''}`;
+}
+
+/** L'écran de l'atelier (SOG-0444, lot P1 ; la maquette : modules/missions/maquette/atelier_*.png) : la carte et le déroulé, la fiche du
+ *  départ en six groupes, le pied (« Enregistrer », « À compléter (n) », « Annuler »). */
 export function edHtml(s) {
   const e = s.ed,
-    doc = edDoc(e),
-    nextStep = ED.OPEN[ED.OPEN.indexOf(e.step) + 1] || '',
-    crumb = e.mode === 'new' ? TX.edCrumbNew : e.mode === 'dup' ? TX.edCrumbDup : TX.edCrumbEdit;
-  return `<div class="ms-ed" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(crumb))}</p>
+    doc = edDoc(e);
+  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-edgrid">${edStepsHtml(s, doc)}<section class="f-card ms-edform" data-edform>${e.step === 'teams' ? edTeamsHtml(s) : e.step === 'places' ? edPlacesHtml(s) : e.step === 'story' ? edStoryHtml(s) : e.step === 'risks' ? edRisksHtml(s) : e.step === 'timeline' ? edTimelineHtml(s) : edCadreHtml(s)}</section><aside class="ms-edaside" data-edaside>${edAsideHtml(s, doc)}</aside></div>
-    <div class="ms-edbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" data-do="ednext"${nextStep ? ` data-step="${nextStep}"` : ` disabled title="${esc(s.tt(TX.edLater))}"`}>${esc(s.tt(TX.edNext))}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc)}${edFlowHtml(s, doc)}</div>${edSheetHtml(s, doc)}</div>
+    <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
+    <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div></div>`;
 }
 
 /** Une saisie de l'éditeur : un texte met à jour l'aperçu, les pastilles et l'en-tête seuls (le champ garde son curseur) ; une liste
@@ -520,16 +634,36 @@ function thumbHtml(s, doc) {
   // les zones dessous, les points dessus
   return `<svg class="ms-thumb" data-edthumb viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(s.tt(TX.edThumb))}">${[...pts.filter(p => p.k === 'zone'), ...pts.filter(p => p.k !== 'zone')].map(shape).join('')}</svg>`;
 }
-/** L'aperçu, les pastilles et l'en-tête redessinés seuls (pendant la frappe). */
+/** Ce qui suit la frappe, mis à jour SUR PLACE (SOG-0449 : on ne redessine pas ce que le doigt est en train de presser — les pastilles
+ *  d'étape, remplacées à chaque saisie et à chaque sortie de champ, perdaient le clic qui suivait) : le titre, la ligne et la marque de
+ *  chaque groupe, le déroulé, le croquis, « À compléter ». Aucun bouton n'est remplacé ; seuls des textes et des attributs changent. */
 function edRefresh(s) {
   const e = s.ed,
     doc = edDoc(e),
-    aside = s.el.querySelector('[data-edaside]'),
-    steps = s.el.querySelector('[data-steps]'),
-    head = s.el.querySelector('[data-edhead]');
-  if (aside) aside.innerHTML = edAsideHtml(s, doc);
-  if (steps) steps.outerHTML = edStepsHtml(s, doc);
-  if (head) head.textContent = [e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · ');
+    q = sel => s.el.querySelector(sel),
+    put = (node, text) => {
+      if (node && node.textContent !== text) node.textContent = text;
+    };
+  put(q('[data-edhead]'), [e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '));
+  for (const k of ED.STEPS) {
+    const ok = ED.stepState(doc, k) === 'ok',
+      mark = q(`[data-mark="${k}"]`);
+    put(q(`[data-line="${k}"]`), edLine(s, doc, k));
+    put(mark, ok ? '✓' : '!');
+    if (mark) mark.dataset.kind = ok ? 'ok' : 'warn';
+  }
+  put(q('[data-flowline]'), ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
+  // le croquis et la liste « À compléter » ne portent aucun bouton : leur contenu se remplace
+  const map = q('[data-atmapbody]'),
+    todo = q('[data-edtodo]'),
+    btn = q('[data-edtodobtn]'),
+    thumb = thumbHtml(s, doc) || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`,
+    list = edTodoHtml(s, doc),
+    label = edTodoBtnHtml(s, doc);
+  if (map && e.lastThumb !== thumb) map.innerHTML = e.lastThumb = thumb;
+  if (todo && e.lastTodo !== list) todo.innerHTML = e.lastTodo = list;
+  // le libellé du bouton : ses nœuds de texte seulement (le bouton reste le même élément)
+  if (btn && e.lastTodoBtn !== label) btn.innerHTML = e.lastTodoBtn = label;
 }
 
 /** Le registre retouché par l'éditeur : relu d'abord (un autre pilote a pu l'écrire), `change(doc)` → { doc } | { error } ; une seule
@@ -636,10 +770,16 @@ export function edClick(s, b) {
       return line && edOpen(s, 'dup', line);
     case 'edsave':
       return edSave(s);
+    case 'edtodo':
+      s.ed.todoOpen = !s.ed.todoOpen;
+      return draw(s);
+    case 'edmap':
+      s.ed.mapOpen = !s.ed.mapOpen;
+      return draw(s);
     case 'edstep':
-    case 'ednext':
       if (!ED.OPEN.includes(b.dataset.step)) return;
-      s.ed.step = b.dataset.step;
+      // un groupe touché se déplie ; déjà déplié, il se replie (un seul à la fois)
+      s.ed.step = s.ed.step === b.dataset.step ? '' : b.dataset.step;
       // la première ouverture des Équipes lit celles du fichier ; ensuite, les lignes retouchées sont gardées d'une étape à l'autre
       if (s.ed.step === 'teams' && !s.ed.teams) s.ed.teams = ED.teamsOf(s.ed.base);
       // les lieux lus du document au cadre déjà retouché (le départ et l'arrivée portent le nom saisi au Cadre)
@@ -648,7 +788,7 @@ export function edClick(s, b) {
       if (s.ed.step === 'risks' && !s.ed.risks) s.ed.risks = ED.risksOf(s.ed.base);
       if (s.ed.step === 'timeline' && !s.ed.events) s.ed.events = ED.eventsOf(s.ed.base);
       draw(s);
-      // au téléphone, la pastille de l'étape ouverte vient dans la bande qui défile (sans faire sauter la page)
+      // le groupe déplié vient à l'écran (sans faire sauter la page)
       return s.el.querySelector('[data-steps] [aria-current]')?.scrollIntoView?.({
         inline: 'nearest',
         block: 'nearest'
