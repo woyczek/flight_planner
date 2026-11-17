@@ -1,0 +1,188 @@
+<!doctype html>
+<!-- Banc du crochet `before` du client du lanceur (frame/lib/launcher.js, SOG-0400) : un travail du lanceur n'attend pas l'envoi de ce qui attend dans data/ au-delà d'une
+     borne courte, et un travail qui ne fait que lire ce que le lanceur a construit (le READ_ONLY de tools/regen_jobs.py) ne l'attend pas du tout. Mesuré avant : « Calculer »
+     attendait toute la passe en cours (38,7 s pour un envoi de 40 s). Lanceur simulé (fetch donné au client). window.__beforeBench = { done, pass, fail, rows, readOnly }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>launcher before — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    launcherClient,
+    READ_ONLY_JOBS,
+    READ_ONLY_EXCLUDED,
+    BEFORE_MAX_MS,
+    readOnlyJob
+  } from '../launcher.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__beforeBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows,
+    readOnly: [...(READ_ONLY_JOBS || [])].sort(),
+    excluded: [...(READ_ONLY_EXCLUDED || [])].sort()
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__beforeBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const json = (v, status = 200) => new Response(JSON.stringify(v), {
+    status,
+    headers: {
+      'content-type': 'application/json'
+    }
+  });
+  const ROOT = 'http://launcher.test/',
+    DECL = {
+      routes: ['regen/job']
+    };
+  /** Un lanceur qui accepte tout travail et le finit à la première lecture ; `starts` : l'heure (performance.now) de chaque départ. */
+  const fake = starts => async (url, init = {}) => {
+    const u = new URL(url);
+    if (u.pathname.endsWith('/regen/job') && (init.method || 'GET') === 'POST') {
+      starts.push({
+        at: performance.now(),
+        body: JSON.parse(init.body || '{}')
+      });
+      return json({
+        ok: true,
+        job: 'j1'
+      });
+    }
+    return json({
+      state: 'done',
+      done: 1,
+      total: 1,
+      result: {
+        ok: true
+      }
+    });
+  };
+  const never = () => new Promise(() => {}); // l'envoi tenu : une passe de synchronisation qui n'en finit pas
+  /** Lance un travail avec un `before` donné ; rend { waited: ms entre l'appel et le départ, wait: ce que le client a dit, r: le résultat }. */
+  async function run(body, before, extra = {}) {
+      const starts = [],
+        waits = [],
+        c = launcherClient({
+          root: ROOT,
+          info: {
+            host: 'pc',
+            data: true,
+            dataGit: true,
+            lan: false
+          },
+          fetch: fake(starts),
+          before,
+          onWait: w => waits.push(w),
+          poll: 5,
+          ...extra
+        }),
+        t0 = performance.now(),
+        r = await Promise.race([c.forModule(DECL).job('regen/job', body), new Promise(res => setTimeout(() => res({
+          timeout: true
+        }), 6000))]);
+      return {
+        waited: starts[0] ? Math.round(starts[0].at - t0) : null,
+        wait: waits[0] || null,
+        r
+      };
+    }
+    (async () => {
+      ck('la borne par défaut de l’attente est de 4 s', BEFORE_MAX_MS === 4000, String(BEFORE_MAX_MS));
+      ck('readOnlyJob : route/compute et base/status sont en lecture seule, aircraft/publish et base/build non',
+        readOnlyJob('regen/job', {
+          set: 'route',
+          verb: 'compute'
+        }) && readOnlyJob('regen/job', {
+          set: 'base',
+          verb: 'status'
+        }) && !readOnlyJob('regen/job', {
+          set: 'aircraft',
+          verb: 'publish'
+        }) && !readOnlyJob('regen/job', {
+          set: 'base',
+          verb: 'build'
+        }) && !readOnlyJob('regen/job', null) && !readOnlyJob('other', {
+          set: 'route',
+          verb: 'compute'
+        }));
+      // 1. un travail en lecture seule part TOUT DE SUITE, l'envoi fût-il tenu pour toujours (la mesure : 38 746 ms avant)
+      const a = await run({
+        set: 'route',
+        verb: 'compute',
+        args: {}
+      }, never);
+      ck('« Calculer » (route/compute) pendant un envoi tenu : le travail part en moins d’une seconde', a.waited !== null && a.waited <
+        1000, JSON.stringify({
+          waited: a.waited,
+          wait: a.wait
+        }));
+      ck('… et le client dit qu’il n’a rien attendu (skipped)', a.wait?.skipped === true && a.wait?.late === false && a.wait?.set ===
+        'route' && a.wait?.verb === 'compute', JSON.stringify(a.wait));
+      // 2. un travail qui peut lire ce que les pages écrivent attend l'envoi, mais jamais au-delà de la borne ; puis il part et le client le dit
+      const b = await run({
+        set: 'aircraft',
+        verb: 'publish'
+      }, never, {
+        beforeMax: 400
+      });
+      ck('un travail qui peut lire ce que les pages écrivent, envoi tenu : il attend la borne (400 ms ici), puis il part', b.waited !==
+        null && b.waited >= 380 && b.waited < 1500, JSON.stringify({
+          waited: b.waited,
+          wait: b.wait
+        }));
+      ck('… et le client dit que la borne est atteinte (late), pour que la page le dise', b.wait?.late === true && b.wait?.skipped ===
+        false && b.wait?.ms >= 380, JSON.stringify(b.wait));
+      // 2 bis. un travail en lecture seule du lanceur qui peut lire ce que des pages écrivent (stats/output) garde l'attente bornée
+      const e = await run({
+        set: 'stats',
+        verb: 'output'
+      }, never, {
+        beforeMax: 300
+      });
+      ck('stats/output (en lecture seule, mais il peut lire ce que des pages écrivent) : l’attente est bornée, puis il part', e
+        .waited !== null && e.waited >= 280 && e.waited < 1500 && e.wait?.late === true && e.wait?.skipped === false, JSON.stringify({
+          waited: e.waited,
+          wait: e.wait
+        }));
+      // 3. un envoi rapide : le travail part dès qu'il est fini, sans borne atteinte
+      const c = await run({
+        set: 'aircraft',
+        verb: 'publish'
+      }, () => new Promise(res => setTimeout(res, 120)), {
+        beforeMax: 2000
+      });
+      ck('un envoi qui finit en 120 ms : le travail part juste après, la borne n’est pas atteinte', c.waited !== null && c.waited >=
+        100 && c.waited < 1000 && c.wait?.late === false, JSON.stringify({
+          waited: c.waited,
+          wait: c.wait
+        }));
+      // 4. un envoi qui échoue ne retient pas le travail
+      const d = await run({
+        set: 'aircraft',
+        verb: 'publish'
+      }, async () => {
+        throw new Error('send failed');
+      });
+      ck('un envoi qui échoue : le travail part tout de suite', d.waited !== null && d.waited < 1000 && d.wait?.late === false, JSON
+        .stringify({
+          waited: d.waited,
+          wait: d.wait
+        }));
+      // 5. le travail se termine normalement dans tous les cas
+      ck('le travail rend son résultat dans les quatre cas', [a, b, c, d].every(x => x.r?.state === 'done' || x.r?.ok === true), JSON
+        .stringify([a, b, c, d].map(x => x.r)));
+      window.__beforeBench.done = true;
+    })().catch(e => {
+      ck('le banc va au bout', false, String(e));
+      window.__beforeBench.done = true;
+    });
+</script>
+</body>
+</html>

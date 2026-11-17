@@ -5037,6 +5037,65 @@ def a249(c):
     c.check_errors()
 
 
+@case('A250', 'A job of the launcher does not wait for the send of what is pending beyond a short bound, and a job that only reads what the launcher built does not wait at all (SOG-0400); the table is the READ_ONLY of tools/regen_jobs.py minus one named exclusion (stats/output), not one job more', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0400 (the user, 17 Nov 2026, « le choix a relancé un calcul qui attend la synchro »; measured: « Calculer » started 38 746 ms after the click, behind a send of 40 s): the `before` hook of the launcher client sends what waits in data/ before a job; it is now skipped for the jobs that only read (READ_ONLY of tools/regen_jobs.py, exactly) and bounded to 4 s for the others, after which the job starts and the frame says so (onWait)')
+def a250(c):
+    _bench(c, 'frame/lib/test/launcher_before.html', '__beforeBench')
+    got = c.js('window.__beforeBench.readOnly')
+    src = (ROOT / 'tools' / 'regen_jobs.py').read_text(encoding='utf-8')
+    block = re.search(r'^READ_ONLY = \{(.*?)\}\s*$', src, re.M | re.S).group(1)
+    want = sorted(f'{a}/{b}' for a, b in re.findall(r"\('([a-z0-9_-]+)',\s*'([a-z0-9_-]+)'\)", block))
+    excluded = c.js('window.__beforeBench.excluded')
+    c.eq(excluded, ['stats/output'], 'the one named exclusion: stats/output may read what pages write, it keeps the bounded wait', what='exclusions')
+    c.eq(sorted(got + excluded), want, 'the client skips the wait for the read-only jobs of tools/regen_jobs.py minus the named exclusions: no job more, none less', what='read-only table')
+    c.ok(not set(got) & set(excluded), str(set(got) & set(excluded)), 'an excluded job is not in the no-wait table')
+
+
+@case('A251', 'A route chosen on a Map alone is taken in under a second while the send to the launcher is held for good (SOG-0400); on a phone too', 'A',
+      tags=('fuel', 'launcher'), designs=('standard',), screens=True, night=False, langs4=False,
+      rule='SOG-0400 (contract of the foundation: what is on the device is read and written at once, the synchronisation is a background work that makes no screen wait): the choice goes through the device only (document cache/fuel/route_alts.json, the route field, the local queue) — nothing of it may wait for the pass')
+def a251(c):
+    import importlib
+    F = importlib.import_module('cases.fuel')
+    F._route_launcher(c, ['route/compute'])
+    F.open_proc(c)
+    c.until(f"!!document.querySelector('{F.FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.tap(f'{F.FUEL} [data-do="rcompute"]')
+    c.until_doc('cache/fuel/route_alts.json', lambda x: x and len(x.get('alternatives') or []) == 3, 'three routes in the document', timeout=8000)
+    c.go('maps')
+    # the send is held for good: no pass ever answers, no tree, no exchange
+    c.js("() => { window.FrameData.sendPending = () => new Promise(() => {}); window.FrameData.sync = () => new Promise(() => {}) }")
+    c.context.route(re.compile(r'/__setup/(sync|changes)'), lambda r: None)
+    c.page.evaluate("() => { window.__t0 = performance.now(); location.hash = '#fuel?ralt=2' }")
+    c.until("(() => { const ta = document.querySelector('[data-k=\"rtext\"]'); return !!ta && ta.value.split(/\s+/).filter(w => w !== 'DCT').slice(0, 3).join(' ') === 'LFRS LUGEN LFML' })()",
+            timeout=1000, what='the third route taken in the route field, in under a second, the send held')
+    ms = c.js('Math.round(performance.now() - window.__t0)')
+    c.ok(ms < 1000, f'{ms} ms', 'the choice reaches the route field in under a second with the send held')
+    c.check_errors()
+
+
+@case('A252', '« Calculer » pressed while the send of the pending writes is held: the job of the launcher starts in under a second (SOG-0400); on a phone too', 'A',
+      tags=('fuel', 'launcher'), designs=('standard',), screens=True, night=False, langs4=False,
+      rule='SOG-0400 (measured on the bench: 66 ms without a send, 38 746 ms behind a send of 40 s): the route job only reads what the launcher built (READ_ONLY of tools/regen_jobs.py) — it starts at once; red before: the post of regen/job never left')
+def a252(c):
+    import importlib
+    import time
+    F = importlib.import_module('cases.fuel')
+    st = F._route_launcher(c, ['route/compute'])
+    F.open_proc(c)
+    c.until(f"!!document.querySelector('{F.FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    c.js("() => { window.FrameData.sendPending = () => new Promise(() => {}) }")   # the send of what waits never finishes
+    n0 = len(st['posts'])
+    c.tap(f'{F.FUEL} [data-do="rcompute"]')
+    end = time.time() + 1.0
+    while len(st['posts']) <= n0 and time.time() < end:
+        time.sleep(0.05)
+    c.ok(len(st['posts']) > n0, f"posts {len(st['posts'])}, before {n0}", 'the route job reached the launcher in under a second although the send never finished')
+    c.eq((st['posts'][-1].get('set'), st['posts'][-1].get('verb')), ('route', 'compute'), 'it is the route computation', what='job')
+    c.check_errors()
+
+
 @case('A119', 'The « Sources et licences » page (SOG-0162): in Maintenance, one line per catalogue source with its publisher, licence, date and, for X-Plane and EUROCONTROL, « read on this workstation only »', 'A',
       designs=('standard',), screens=True, night=False, langs4=True,
       rule='SOG-0162 (the user, 10 Nov 2026): « tu collectes bien toutes les licences et les sources, dans la page ad hoc »; the guard: what is proprietary (X-Plane, EUROCONTROL) stays read on this workstation and never enters the published base nor an export, box ticked or not — the page says it per source')

@@ -1051,6 +1051,25 @@
   }
   /** Lit un fichier absent du cache par le transport (arbre lu d'abord s'il n'est pas connu) ; enveloppe ou null. */
   let lastReadError = null; // { path, message, at } : dernière lecture d'un fichier en échec (diagnostic)
+  // SOG-0400 : les repères de temps du diagnostic — la dernière passe (durée), la lecture la plus longue depuis le chargement, et les dix derniers travaux du lanceur (attente de l'envoi
+  // avant leur départ : « parti tout de suite », « attendu n ms », « borne atteinte ») : une prochaine recette dit elle-même où l'attente a eu lieu
+  const timing = {
+    pass: null,
+    read: null,
+    jobs: []
+  };
+  /** Le repère d'un travail du lanceur (client du lanceur, onWait) : { route, set, verb, ms, skipped, late }. */
+  function noteJobWait(w) {
+    if (!w || typeof w !== 'object') return;
+    timing.jobs.unshift({
+      at: new Date().toISOString(),
+      job: `${String(w.set || '').slice(0, 30)}/${String(w.verb || '').slice(0, 30)}`,
+      waitedMs: Math.max(0, Math.round(+w.ms || 0)),
+      skipped: !!w.skipped,
+      late: !!w.late
+    });
+    timing.jobs.length = Math.min(timing.jobs.length, 10);
+  }
   let treeNowP = null; // { head, tree } du moment en cours de lecture, partagé tant qu'il n'est pas lu
   /** Tête et arbre du dépôt du moment, lus une seule fois pour toutes les demandes faites pendant la lecture : au
    *  premier passage, la reprise des copies locales et les premières lectures d'un module monté aussitôt partagent une
@@ -1237,7 +1256,14 @@
           pending: false,
           at: Date.now()
         };
-      })().catch(e => {
+      })().finally(() => {
+        const ms = Date.now() - startedAt;
+        if (!timing.read || ms > timing.read.ms) timing.read = {
+          path: String(path).slice(0, 200),
+          ms,
+          at: new Date().toISOString()
+        };
+      }).catch(e => {
         if (e?.aborted) throw e; // abandonnée par celui qui la demandait : pas une erreur de lecture
         lastReadError = {
           path,
@@ -1332,7 +1358,13 @@
   } = {}) {
     if (syncing) return syncing;
     const lock = fn => navigator.locks?.request ? navigator.locks.request('sog-frame-sync', fn) : fn();
+    const t0 = Date.now();
     syncing = lock(() => run(reason, include)).finally(() => {
+      timing.pass = {
+        ms: Date.now() - t0,
+        reason,
+        at: new Date().toISOString()
+      };
       syncing = null;
       emitStatus();
     });
@@ -1919,6 +1951,11 @@
         cached: docs.filter(d => d.policy === 'reference').length
       },
       lastReadError,
+      timing: {
+        pass: timing.pass,
+        longestRead: timing.read,
+        jobs: timing.jobs
+      },
       // ce que la dernière lecture de l'arbre du dépôt a rendu (pages, entrées, fichiers) : un arbre lu en entier ? (SOG-0235, téléphone sans lanceur)
       treeRead: cfg.transport?.lastTree || null,
       // SOG-0337 : les limites de requêtes lues (attentes, secondes, dernière : statut, Retry-After lisible ou non, quota restant), la cadence tenue
@@ -2468,6 +2505,7 @@
     discardPlan,
     discard,
     sendPending,
+    noteJobWait,
     sendNow,
     isHeld,
     status,

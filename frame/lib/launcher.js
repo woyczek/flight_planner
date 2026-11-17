@@ -81,6 +81,21 @@ const sleep = (ms, signal) => new Promise(r => {
   });
 });
 
+// SOG-0400 : les travaux du lanceur qui ne font que LIRE ce qu'il a construit (le « READ_ONLY » de tools/regen_jobs.py MOINS une liste d'exclusions nommée : le banc A250 compare les deux
+// tables) partent tout de suite ; l'envoi de ce qui attend dans data/ (crochet `before`) ne retient qu'un travail qui peut lire ce que les pages écrivent, et au plus
+// BEFORE_MAX_MS : passé ce délai le travail part avec ce que data/ porte et le cadre le dit (onWait). Mesuré : « Calculer » attendait toute la passe en cours (38,7 s
+// pour un envoi de 40 s) alors que le calcul de route ne lit que la base, les procédures et les performances construites.
+const LAUNCHER_READ_ONLY = ['base/status', 'base/coverage', 'base/cycle', 'base/last', 'aircraft/registry', 'route/compute',
+  'route/fra-points', 'ground/state', 'stats/output',
+  'proc/lnm'
+];
+// les travaux en lecture seule du lanceur qui PEUVENT lire ce que des pages écrivent : ils gardent l'attente bornée (liste nommée, retirée de la table « sans attente » ; A250 la compare)
+export const READ_ONLY_EXCLUDED = ['stats/output'];
+export const READ_ONLY_JOBS = new Set(LAUNCHER_READ_ONLY.filter(j => !READ_ONLY_EXCLUDED.includes(j)));
+export const BEFORE_MAX_MS = 4000;
+/** Le travail de cette route et de ce corps ne fait que lire ce que le lanceur a construit ? */
+export const readOnlyJob = (route, body) => route === 'regen/job' && !!body && typeof body === 'object' && READ_ONLY_JOBS.has(`${body.set}/${body.verb}`);
+
 /** Client du lanceur servi à root ({ host, data, dataGit, lan } pour info), par fetch (celui de la page par défaut). */
 export function launcherClient({
   root,
@@ -90,6 +105,9 @@ export function launcherClient({
   onLost = () => {}, // un envoi qui échoue par le réseau (le lanceur ne répond plus) : le cadre le marque (SOG-0208)
   before =
   null, // SOG-0279 : appelé (et attendu) avant de lancer un travail du lanceur, qui lit data/ : le cadre y envoie ce qui attend, pour que le travail ne lise pas une copie vieille de cinq minutes
+  beforeMax = BEFORE_MAX_MS, // SOG-0400 : l'attente de `before` ne dépasse jamais cette borne (ms)
+  onWait =
+  () => {}, // SOG-0400 : { route, set, verb, ms, skipped, late } après chaque travail : le cadre garde le repère de temps (diagnostic) et dit une attente trop longue
   poll = 1000
 }) {
   async function request(route, {
@@ -226,8 +244,31 @@ export function launcherClient({
     async function job(route, body, opts = {}) {
       const r = routeOf(route);
       if (!r || !under(r, routes)) return refuse(route);
-      if (typeof before === 'function') await Promise.resolve(before(r)).catch(
-        () => {}); // un envoi qui échoue ne bloque pas le travail : il part avec ce que data/ porte
+      if (typeof before === 'function') {
+        const skipped = readOnlyJob(r, body),
+          t0 = Date.now();
+        let late = false;
+        if (!skipped) {
+          let timer;
+          // un envoi qui échoue ne bloque pas le travail (il part avec ce que data/ porte) ; un envoi trop long non plus : la borne
+          late = await Promise.race([Promise.resolve(before(r)).then(() => false, () => false), new Promise(res => {
+            timer = setTimeout(() => res(true), beforeMax);
+          })]);
+          clearTimeout(timer);
+        }
+        try {
+          onWait({
+            route: r,
+            set: String(body?.set || '').slice(0, 30),
+            verb: String(body?.verb || '').slice(0, 30),
+            ms: Date.now() - t0,
+            skipped,
+            late
+          });
+        } catch {
+          /* le repère du cadre en échec : le travail part */
+        }
+      }
       const who = String(author() || ''),
         s = await call(r, body && typeof body === 'object' && !Array.isArray(body) ? {
           ...body,

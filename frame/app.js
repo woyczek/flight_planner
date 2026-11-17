@@ -627,6 +627,12 @@
     ],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    // SOG-0400 : l'envoi de ce qui attend, avant un travail du lanceur, dépasse la borne : le travail part, la page le dit
+    jobLate: ['L’envoi de vos données est long : le travail part avec ce que ce poste porte déjà.',
+      'Sending your data is slow: the job starts with what this workstation already holds.',
+      'Das Senden Ihrer Daten dauert lange: die Aufgabe startet mit dem, was dieser Rechner schon hat.',
+      'El envío de sus datos tarda: el trabajo empieza con lo que este equipo ya tiene.'
+    ],
     ivaoOk: ['Compte IVAO relié à cet appareil.', 'IVAO account linked to this device.', 'IVAO-Konto mit diesem Gerät verbunden.',
       'Cuenta IVAO vinculada a este dispositivo.'
     ],
@@ -1397,7 +1403,14 @@
         info: launcherHere,
         fetch: launcherFetch,
         onLost: () => setLauncherDown(true),
-        before: () => FD.sendPending?.() // un travail du lanceur lit data/ : ce qui attend part d'abord (SOG-0279)
+        before: () => FD.sendPending?.
+          (), // un travail du lanceur lit data/ : ce qui attend part d'abord (SOG-0279), sauf pour un travail en lecture seule et au plus 4 s (SOG-0400)
+        onWait: w => {
+          FD.noteJobWait?.(w); // le repère de temps, dans le diagnostic du cadre
+          if (w.late) notify(t(T.jobLate), 'warn', {
+            key: 'job-late'
+          });
+        }
       });
     }
     return lcClient;

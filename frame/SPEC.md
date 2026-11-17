@@ -88,6 +88,8 @@ exchange happens in batches, explicitly or periodically, through a transport the
 - **Diagnostic** (`FrameData.diagnostic()`, no network), for a report copied from Settings (the frame puts the suite's
   version, `suite`, at its head; INTEGRATION § 10.2):
   - the state (transport, last success, last error, pending, conflicts);
+  - the timings (SOG-0400): `timing.pass` (duration and reason of the last pass), `timing.longestRead` (the longest read since the load: path, ms) and `timing.jobs` (the last ten
+    jobs of the launcher: waited ms before the start, started at once or bound reached) — a report says where a wait took place;
   - the kept tree (head, date, number of files, compared or not in this page);
   - the reference paths known in the tree (all, `sia/base/`, `AircraftDB/`) and those cached;
   - the last read that failed.
