@@ -4201,6 +4201,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0085",
+   "fiche": "SOG-0415",
+   "app": "pilote",
+   "question": "Routes Concorde : la carte d'équipage que tu montres (Sierra Mike, November, Oscar) suffit-elle comme source ?",
+   "context": "J'ai lu ton scan : la carte porte les trois routes imprimées avec leurs points (pour SN : N 49 49.6 W020 puis N 49 41.0 W015 ; pour SO : N 48 22.0 W030, N 48 48.6 W020, N 48 40.0 W015 ; ceux de SM sont sous le surlignage). C'est une carte d'exploitation de l'époque : fiable, de première main, mais pas une publication d'État. Ce que je conteste : l'appeler « officielle », et mettre le scan dans le dépôt publié (carte d'un éditeur) — on relève les points et la référence, pas l'image. Pour relever tous les points il me faut les deux moitiés en pleine taille : dépose-les hors du dépôt publié (par exemple dans data/local/) et dis-moi où.",
+   "options": [
+    "Oui : cette carte comme source, citée (« carte de route d'équipage, Concorde ») ; la recherche d'un document d'État continue sans bloquer",
+    "Non : attendre un document d'État (AIP d'avant 2003, OACI) avant tout relevé",
+    "Oui, et inutile de chercher plus loin",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
