@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
   "tests": 282,
-  "verdicts": 204
+  "verdicts": 205
  },
  "apps": [
   "pilote",
@@ -3983,8 +3983,9 @@
    },
    "test": "Carburant, étape 1 « Vol », après avoir rechargé la page. (1) Sur l'ordinateur, design metro : les étiquettes « Niveau (FL) » et « Date du vol » sont sur la même ligne ; le champ du niveau, « Auto », le champ de la date, « +30 » et « Maint. » partent de la même hauteur ; « Auto » ne touche pas la date. (2) « auto · durée » est sous le niveau et « heure locale de l'appareil » sous la date, chacun sur une ligne. (3) Il y a un espace entre la rangée des terrains, celle du niveau et celle de Famille / Série. (4) Au téléphone : « +30 » et « Maint. » passent sous la date, la précision dessous ; rien ne se chevauche. (5) Change de design dans Réglages : pareil.",
    "since": "2026-11-17",
-   "state": "todo",
-   "delivered": "2026-11-17T08:35:42Z"
+   "state": "ok",
+   "delivered": "2026-11-17T08:35:42Z",
+   "at": "2026-11-17T15:17:05Z"
   },
   {
    "id": "SOG-0394",
@@ -4240,38 +4241,6 @@
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0085",
-   "fiche": "SOG-0415",
-   "app": "pilote",
-   "question": "Routes Concorde : la carte d'équipage que tu montres (Sierra Mike, November, Oscar) suffit-elle comme source ?",
-   "context": "J'ai lu ton scan : la carte porte les trois routes imprimées avec leurs points (pour SN : N 49 49.6 W020 puis N 49 41.0 W015 ; pour SO : N 48 22.0 W030, N 48 48.6 W020, N 48 40.0 W015 ; ceux de SM sont sous le surlignage). C'est une carte d'exploitation de l'époque : fiable, de première main, mais pas une publication d'État. Ce que je conteste : l'appeler « officielle », et mettre le scan dans le dépôt publié (carte d'un éditeur) — on relève les points et la référence, pas l'image. Pour relever tous les points il me faut les deux moitiés en pleine taille : dépose-les hors du dépôt publié (par exemple dans data/local/) et dis-moi où. Le 17/11 à 15 h 06, ton mot : tu n'as pas encore la seconde moitié, ni de données chiffrées. Rien ne presse : réponds quand la carte sera complète ; d'ici là AeroDB cherche un document d'avant 2003 qui donne les points.",
-   "options": [
-    "Oui : cette carte comme source, citée (« carte de route d'équipage, Concorde ») ; la recherche d'un document d'État continue sans bloquer",
-    "Non : attendre un document d'État (AIP d'avant 2003, OACI) avant tout relevé",
-    "Oui, et inutile de chercher plus loin",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0086",
-   "fiche": "SOG-0402",
-   "app": "pilote",
-   "question": "Plan de vol : lancer maintenant le lot 2 de SOG-0402 — l'équipement réel de l'aéronef (radio HF, etc.) pris dans sa fiche ?",
-   "context": "Ton second collage est refusé, entre autres, parce que la radio HF est obligatoire dans l'espace océanique et que le plan copié écrit un équipement type (« SDGRWY/S ») sans HF. L'immatriculation exigée, elle, est traitée tout de suite (SOG-0422). Pour la HF je refuse d'inventer un équipement : en attendant, le bouton prévient. Le vrai remède est le lot 2 : l'équipement lu dans la fiche de l'aéronef. Features SOG a aussi le terrain de dégagement (SOG-0398) en attente de ton mot.",
-   "options": [
-    "Oui, le lot 2 maintenant, avant le terrain de dégagement",
-    "Plus tard : l'avertissement suffit pour l'instant, le terrain de dégagement d'abord",
-    "Plus tard : ni l'un ni l'autre aujourd'hui, les routes d'abord",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",
@@ -4685,6 +4654,44 @@
    "choice": 2,
    "text": "je ne suis pas sûr du calcul. le tracé était le même, en tout cas.",
    "at": "2026-11-17T10:14:56Z"
+  },
+  {
+   "id": "Q-0085",
+   "fiche": "SOG-0415",
+   "app": "pilote",
+   "question": "Routes Concorde : la carte d'équipage que tu montres (Sierra Mike, November, Oscar) suffit-elle comme source ?",
+   "context": "J'ai lu ton scan : la carte porte les trois routes imprimées avec leurs points (pour SN : N 49 49.6 W020 puis N 49 41.0 W015 ; pour SO : N 48 22.0 W030, N 48 48.6 W020, N 48 40.0 W015 ; ceux de SM sont sous le surlignage). C'est une carte d'exploitation de l'époque : fiable, de première main, mais pas une publication d'État. Ce que je conteste : l'appeler « officielle », et mettre le scan dans le dépôt publié (carte d'un éditeur) — on relève les points et la référence, pas l'image. Pour relever tous les points il me faut les deux moitiés en pleine taille : dépose-les hors du dépôt publié (par exemple dans data/local/) et dis-moi où. Le 17/11 à 15 h 06, ton mot : tu n'as pas encore la seconde moitié, ni de données chiffrées. Rien ne presse : réponds quand la carte sera complète ; d'ici là AeroDB cherche un document d'avant 2003 qui donne les points.",
+   "options": [
+    "Oui : cette carte comme source, citée (« carte de route d'équipage, Concorde ») ; la recherche d'un document d'État continue sans bloquer",
+    "Non : attendre un document d'État (AIP d'avant 2003, OACI) avant tout relevé",
+    "Oui, et inutile de chercher plus loin",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-17T15:16:29Z"
+  },
+  {
+   "id": "Q-0086",
+   "fiche": "SOG-0402",
+   "app": "pilote",
+   "question": "Plan de vol : lancer maintenant le lot 2 de SOG-0402 — l'équipement réel de l'aéronef (radio HF, etc.) pris dans sa fiche ?",
+   "context": "Ton second collage est refusé, entre autres, parce que la radio HF est obligatoire dans l'espace océanique et que le plan copié écrit un équipement type (« SDGRWY/S ») sans HF. L'immatriculation exigée, elle, est traitée tout de suite (SOG-0422). Pour la HF je refuse d'inventer un équipement : en attendant, le bouton prévient. Le vrai remède est le lot 2 : l'équipement lu dans la fiche de l'aéronef. Features SOG a aussi le terrain de dégagement (SOG-0398) en attente de ton mot.",
+   "options": [
+    "Oui, le lot 2 maintenant, avant le terrain de dégagement",
+    "Plus tard : l'avertissement suffit pour l'instant, le terrain de dégagement d'abord",
+    "Plus tard : ni l'un ni l'autre aujourd'hui, les routes d'abord",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 1,
+   "text": "",
+   "at": "2026-11-17T15:16:52Z"
   }
  ]
 }
