@@ -4045,6 +4045,22 @@
  ],
  "decisions": [
   {
+   "id": "Q-0082",
+   "fiche": "SOG-0412",
+   "app": "pilote",
+   "question": "Une route NAT valide mais qui rallonge le vol (Madrid → Boston : + 14,6 %) : la prendre quand même ?",
+   "context": "Le calcul rejoint maintenant les six routes NAT du jour au lieu d'une seule (SOG-0412, en local). Conséquence : pour un vol du sud de l'Europe, une route NAT valide mais très au nord est prise avant la route libre — Madrid → Boston à FL370 : 3 694 NM par la route F, contre 3 224 NM par une route libre au sud (+ 14,6 %, soit 470 NM). Ta règle dit « toujours une route NAT ». Ce que je conteste pour ce cas : le système de routes n'est pas obligatoire (OACI, NAT Doc 007, § 2.1.4), et un vrai vol de Madrid passe au sud. Notre calcul ne connaît pas le vent : la distance est son seul coût. Ma proposition : la route NAT tant qu'elle ne rallonge pas trop ; au-delà, la route libre, et l'écran dit pourquoi (« route NAT F écartée : + 470 NM »).",
+   "options": [
+    "La route NAT si elle rallonge de moins de 5 % ; au-delà la route libre, dite avec l'écart",
+    "Toujours la route NAT quand il y en a une de valide, même plus longue",
+    "Toujours la plus courte des deux, sans seuil",
+    "Autre seuil (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
