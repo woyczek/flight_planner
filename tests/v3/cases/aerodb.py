@@ -14856,3 +14856,65 @@ def k332(c):
          'the rule of the ergonomics session: a CALCULATED route is never lost to a rule that is decided — with the rule LF9201 (form A, SITET, not satisfied by this flight) the only link of the bench goes through SITET: the search without the blocks gives the best route, the answer says « aucune route sans infraction », names the rule LF9201 in a REVUE (never an ERREUR) and the status is `computed` (red before: no route, a proposal)', what='calculated form A')
     big = 'DEP (' + 'AAAA, ' * 1000 + 'BBBB)'
     c.eq((RFL.condition(big, ctx('XXXX', 'YYYY'), G()), RFL.condition('DEP (AAAA, XXXX)', ctx('XXXX', 'YYYY'), G())), (None, True), 'a cell of more than 4 000 signs is not decided (the cost of the reading stays bounded); a short one is', what='bounded')
+@case('K335', 'Route engine, SOG-0401 (the requested LEVEL in the RAD rules): the conditions « RFL ABV FL105 », « RFL BLW FL295 », « RFL BTN FL105-FL195 » are decided with the level FILED, and « ABV / BLW FL245 AT point » with the altitude the PROFILE gives at that point (a point that is not on the route: false); a level EXACTLY on a limit (the source does not say whether « ABV FL105 » includes FL105) or an unknown level is not decided; a CALCULATED route keeps the rules it still breaks as REVUE lines (the best route is returned: never a route lost to a decided rule)',
+      'K', static=True,
+      rule='SOG-0401 (the ergonomics session: « le lot RAD niveau demandé : lire RFL ABV / BLW / BTN FLnnn (et AT point, IN pays quand c\'est simple) — le plus rentable, 2 674 règles »). Measured on the RAD 2611 of the workstation (8 179 active rows of the annex 2B): the rules that need a level are 2 674 (32.7 %), but only 24 need nothing else than RFL; 151 more are a simple « ABV / BLW FLnnn AT point »; the mass (about 2 000) is « ABV FLnnn AT point » inside nested lists and exceptions (form B: « 1. DEP (…) & BLW FL265 AT (UPALA Z109 BAMAS) EXC ARR (…) A. RFL ABV FL265 AT … »): decidable shape 17.0 % → 18.8 %; on the exact route of the user (EDDF → LFMN FL350): 95 conditions decided before the lot of Europe, 110 after it, 123 with the levels. Bench: the conditions on their own and a fixture RAD.')
+def k335(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    _regen()
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, rad_flight as RFL, view as V
+
+    class G:
+        groups = {}
+
+        def match(self, spec, ad):
+            import fnmatch
+            return any(fnmatch.fnmatchcase(ad, t) for t in RFL.names(spec))
+    ctx = lambda fl=350, alt=None, points=('P1',), dep='ZZAA', arr='ZZBB': dict(dep=dep, arr=arr, all=set(), points=set(points), known=None, fl=fl, alt=alt or {})
+    cond = lambda text, **k: RFL.condition(text, ctx(**k), G())
+    c.eq([cond('RFL ABV FL105', fl=f) for f in (90, 105, 150, None)] + [cond('RFL BLW FL295', fl=f) for f in (200, 295, 350)] + [cond('RFL BTN FL105-FL195', fl=f) for f in (100, 105, 150, 195, 200)],
+         [False, None, True, None, True, None, False, False, None, True, None, False], 'RFL: above / below / between a level with the level FILED; EXACTLY on a limit: not decided; no level: not decided', what='rfl')
+    c.eq([cond('DEP ZZAA & RFL ABV FL105'), cond('DEP ZZXX & RFL ABV FL105'), cond('1. DEP ZZAA & RFL BLW FL200 2. ARR ZZBB'), cond('DEP ZZAA & RFL ABV FL105 AT X'), cond('RFL ABV FL105 EXC DEP ZZAA')],
+         [True, False, True, None, False], 'RFL inside a conjunction and numbered alternatives; a point name of one sign is not read (not decided); an exception around RFL is decided (the level filed, then the exception)', what='conj')
+    # AT point: the altitude of the profile at the point
+    pts = ('P1', 'P2')
+    c.eq([cond('ABV FL245 AT P1', alt={'P1': a}, points=pts) for a in (10000, 24500, 35000, None)] + [cond('BLW FL245 AT P2', alt={'P2': a}, points=pts) for a in (10000, 35000)] + [cond('ABV FL245 AT P9', alt={'P1': 35000}, points=pts)] + [cond('ARR ZZBB & RFL ABV FL245 AT P1', alt={'P1': 35000}, points=pts)],
+         [False, None, True, None, True, False, False, True], '« ABV / BLW FLnnn AT point »: the altitude of the PROFILE at the point (a climb at the point: below; the cruise: above); the profile unknown or exactly on the limit: not decided; the point not on the route: false', what='at')
+    # the context carries the altitude of each point of the legs
+    legs = [dict(start={'id': 'A'}, end={'id': 'B'}, kind='AIRWAY', via='X1', altitude_start_ft=1000, altitude_end_ft=20000), dict(start={'id': 'B'}, end={'id': 'C'}, kind='AIRWAY', via='X1', altitude_start_ft=20000, altitude_end_ft=35000)]
+    c.eq(RFL.context(legs, 'A', 'C')['alt'], {'A': 1000, 'B': 20000, 'C': 35000}, 'the altitude of the profile at each point of the route (the end of each leg, the start of the first)', what='context')
+    # a CALCULATED route keeps its remaining decided infractions as REVUE (the rule of the ergonomics session); the typed one keeps its ERREUR
+    pad = lambda row: row + [''] * (17 - len(row))
+    rules = [pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9401', '', '', '', 'KEPAD', 'NOT AVBL FOR TFC\nDEP LFPO & RFL ABV FL300', 'H24', 'C', 'level rule, violated at FL350']),
+             pad(['NEW', '29 OCT 2026 [2611]', 'UFN', 'LF9402', '', '', '', 'BOYNE', 'NOT AVBL FOR TFC\nDEP LFPO & BLW FL100 AT BOYNE', 'H24', 'C', 'AT rule, not violated (cruise at the point)'])]
+
+    def run(fl, **req):
+        out = []
+        for n, rows in RF.rad_sheets():
+            out.append((n, rows + rules if n == 'Annex 2B' else rows))
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = os.path.join(td, 'data')
+            os.makedirs(data)
+            RF.make_base(data)
+            rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+            RF.write_xlsx(rad_file, out)
+            I.write(os.path.join(data, 'route', 'rad.json.gz'), I.merge([], [I.read_book(rad_file)[1]]))
+            args = dict({'adep': 'LFPO', 'adest': 'EIDW', 'fl': fl, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **req)
+            request = V.to_request(args)
+            res = PL.compute(request, data, os.path.join(data, 'route', 'rad.json.gz'), None)
+            return res, V.to_view(res, request)
+    typed = {'action': 'check', 'route': 'LFPO DCT OLZOM B1 SITET A1 KEPAD A1 BOYNE DCT EIDW'}
+    res, _ = run(350, **typed)
+    st = {m['id']: m['assessment'][:10] for m in res['primary']['rad'] if m['id'] in ('LF9401', 'LF9402')}
+    c.eq((st, [i['level'] for i in res['primary']['issues'] if 'LF9401' in i['text']]), ({'LF9401': 'INFRACTION', 'LF9402': 'Condition '}, ['ERREUR']), 'filed at FL350 the rule « RFL ABV FL300 » of KEPAD is violated (an ERREUR of the typed route) and the AT rule of BOYNE is decided and not violated (cruise at the point)', what='typed level')
+    res2, _ = run(250, **typed)
+    c.eq([m['assessment'][:10] for m in res2['primary']['rad'] if m['id'] == 'LF9401'], ['Condition '], 'filed at FL250 the same rule is decided and not violated (red before: « to interpret » at any level)', what='other level')
+    res3, view3 = run(350, **{'action': 'compute', 'via': []})
+    p3 = res3['primary']
+    c.eq((p3['ok'], [i['level'] for i in p3['issues'] if 'LF9401' in i['text']], [i['level'] for i in p3['issues'] if i['level'] == 'ERREUR'], 'aucune route sans infraction' in ' '.join(i['text'] for i in p3['issues']), view3['status']), (True, ['REVUE'], [], True, 'computed'),
+         'a CALCULATED route that still breaks the decided level rule is RETURNED with a REVUE that says it (never an ERREUR that would lose the route)', what='calculated')

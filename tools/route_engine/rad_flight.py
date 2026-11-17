@@ -18,6 +18,28 @@ def active_during(clock,start,end):
         day+=dt.timedelta(days=1)
     return False
 
+RFL_ATOM=re.compile(r'\bRFL\s+(?:(ABV|BLW)\s+FL\s*(\d{2,3})|BTN\s+FL\s*(\d{2,3})\s*-\s*FL\s*(\d{2,3}))\b')      # SOG-0401 (le niveau demandé) : « RFL ABV FL105 », « RFL BLW FL295 », « RFL BTN FL105-FL195 » : le niveau de CROISIÈRE déposé par rapport à un niveau ; « AT point » et « IN pays » ne sont PAS lus ici
+
+AT_ATOM=re.compile(r'\b(?:RFL\s+)?(ABV|BLW)\s+FL\s*(\d{2,3})\s+AT\s+([A-Z][A-Z0-9]{1,6})\b')      # SOG-0401 : « ABV FL245 AT UMDAS », « RFL BLW FL105 AT X » : le niveau AU POINT, tel que le PROFIL du vol le donne (le point doit être sur la route : sinon la condition est fausse)
+
+def at_test(kind,level,point,ctx):
+    """Vrai / faux / None : le niveau du profil au point `point` est-il au-dessus (ABV) ou au-dessous (BLW) de FL`level` ? Le point absent de la route : faux ; l'altitude du profil inconnue ou EXACTEMENT sur la limite : None."""
+    if point not in ctx.get('points',()):return False
+    alt=(ctx.get('alt') or {}).get(point)
+    if not isinstance(alt,(int,float)):return None
+    x=int(level)*100
+    return None if abs(alt-x)<1 else (alt>x if kind=='ABV' else alt<x)
+
+def rfl_test(spec,fl):
+    """Vrai / faux si le niveau demandé `fl` (un entier, FL) satisfait `spec` (le texte d'un atome RFL, sans « RFL ») ; None s'il n'est pas décidable : niveau inconnu, texte non lu, ou niveau EXACTEMENT sur une limite (la source ne dit pas si « ABV FL105 » inclut FL105 : jamais deviné)."""
+    m=RFL_ATOM.fullmatch('RFL '+spec.strip())
+    if not m or not isinstance(fl,int):return None
+    if m[1]:
+        x=int(m[2])
+        return None if fl==x else (fl>x if m[1]=='ABV' else fl<x)
+    lo,hi=int(m[3]),int(m[4])
+    return None if fl in (lo,hi) or lo>hi else lo<fl<hi
+
 MAX_CONDITION=4000      # SOG-0401 (Sécurisation) : au-delà de ce nombre de signes une condition n'est pas décidée
 PAIR=r'\d\d:\d\d\s*-\s*\d\d:\d\d'
 
@@ -49,7 +71,11 @@ def context(legs,dep,arr):
     sids=[l for l in legs if l['kind']=='SID'];stars=[l for l in legs if l['kind'] in ['STAR','APPROACH_LINK']]
     if sids:sid.add(sids[-1]['end']['id'])
     if stars:star.add(stars[0]['start']['id'])
-    return dict(points=points,routes=routes,all=points|routes,dep=dep,arr=arr,sid=sid,star=star,phases=dict(phases))
+    alt={}      # SOG-0401 : l'altitude que le PROFIL donne à chaque point de la route : le bout de chaque tronçon (le point où l'avion passe), le début du premier pour le départ
+    for n,l in enumerate(legs):
+        if n==0 and isinstance(l.get('altitude_start_ft'),(int,float)):alt[l['start']['id']]=l['altitude_start_ft']
+        if isinstance(l.get('altitude_end_ft'),(int,float)):alt[l['end']['id']]=l['altitude_end_ft']
+    return dict(points=points,routes=routes,all=points|routes,dep=dep,arr=arr,sid=sid,star=star,phases=dict(phases),alt=alt)
 
 def alternatives(text):
     """SOG-0401 (forme A) : les alternatives NUMÉROTÉES « 1. … 2. … » d'une condition (le RAD les lit comme un OU), ou None quand le texte n'est pas une liste numérotée simple : une seule alternative, ou une sous-liste « a. », « i) », une exception, un point-virgule : non décidé ici."""
@@ -74,7 +100,7 @@ def condition(text,ctx,rad):
     if len(text)>MAX_CONDITION:return None      # SOG-0401 (Sécurisation) : un texte de cellule plus long est illisible, il n'est pas décidé (le coût de la lecture reste borné)
     text=' '.join(text.upper().split())
     if not text:return True
-    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',text):return None
+    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',AT_ATOM.sub(' ',RFL_ATOM.sub(' ',text))):return None      # les atomes RFL lus (ci-dessus) ne bloquent plus ; tout autre niveau reste non décidé
     numbered=alternatives(text)      # SOG-0401 (forme A) : « 1. ARR (LSGC, LSZH) 2. DEP (LSZA, LSZL) » : des alternatives (OU) numérotées, chacune une conjonction simple
     if numbered:
         results=[condition(a,ctx,rad) for a in numbered]
@@ -84,7 +110,7 @@ def condition(text,ctx,rad):
     parts=re.split(r'\s+EXC\s+',text)
     if len(parts)>2:return None
     def conjunction(value):
-        matches=list(re.finditer(r'(DEP|ARR|VIA)\s+([A-Z0-9_*(), /-]+?)(?=\s*(?:&|\bAND\b|$))',value))
+        matches=list(re.finditer(r'(DEP|ARR|VIA|RFL|ABV|BLW)\s+([A-Z0-9_*(), /-]+?)(?=\s*(?:&|\bAND\b|$))',value))
         if not matches:return None
         residue=value
         tests=[]
@@ -92,6 +118,16 @@ def condition(text,ctx,rad):
         if re.sub(r'\bAND\b|[&\s]','',residue):return None
         for m in matches:
             spec=m[2]
+            if m[1] in ('ABV','BLW') or (m[1]=='RFL' and re.search(r'\bAT\b',spec)):      # SOG-0401 : « ABV FLnnn AT point » : le niveau du PROFIL au point
+                a=AT_ATOM.fullmatch(((m[1]+' ') if m[1]!='RFL' else 'RFL ')+spec.strip()) if m[1]!='RFL' else AT_ATOM.fullmatch('RFL '+spec.strip())
+                if not a:return None
+                t=at_test(a[1],a[2],a[3],ctx)
+                if t is None:return None
+                tests.append(t);continue
+            if m[1]=='RFL':      # SOG-0401 : le niveau demandé (ctx['fl'], le niveau déposé) ; inconnu ou sur la limite : non décidé
+                t=rfl_test(spec,ctx.get('fl'))
+                if t is None:return None
+                tests.append(t);continue
             if names(spec)&{'AND','OR','EXC','DEP','ARR','VIA','ABV','BLW','FL','RFL','TYP','PBN','NOT','DCT','SID','STAR','BELOW','ABOVE','EXCEPT'}:return None
             if m[1] in ['DEP','ARR']:
                 if any(not (re.fullmatch('[A-Z0-9_*]{4}',t) or t in rad.groups) for t in names(spec)):return None
@@ -138,9 +174,9 @@ def target(rule,ctx,legs,rad):
         return bool(ids),sorted(set(ids))
     return None,[]
 
-def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None):
+def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None):
     ctx=context(legs,dep,arr);findings=[];avoids=[];decided=0
-    ctx['known']=known_ids
+    ctx['known']=known_ids;ctx['fl']=int(fl) if isinstance(fl,(int,float)) else None      # SOG-0401 : le niveau demandé (déposé), pour les conditions « RFL ABV FLnnn »
     duplicates=collections.Counter((c['sheet'],c['id']) for c in candidates if c.get('change')!='DEL')
     for rule in candidates:
         if rule.get('change')=='DEL':continue

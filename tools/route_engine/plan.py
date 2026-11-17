@@ -324,6 +324,16 @@ def plan(request, root):
                 primary.setdefault('issues', []).insert(0, {'level': 'REVUE', 'text': 'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue et les règles qu’elle enfreint sont dites ci-dessous (à examiner).'})
         except (ValueError, SearchBudget):
             pass
+    if request.get('mode', 'calculate') == 'calculate' and primary.get('ok'):
+        # SOG-0401 (règle de l'ergonome) : une route CALCULÉE reste rendue quand les reprises RAD n'ont pas écarté toutes ses infractions : les règles décidées qu'elle enfreint sont DITES (REVUE), jamais un refus qui ferait perdre la route
+        ids = {f['id'] for f in (primary.get('rad_summary') or {}).get('findings', [])}
+        broken = [i for i in primary.get('issues', []) if i['level'] == 'ERREUR' and (i['text'].startswith('Interdiction RAD explicite') or any(i['text'].startswith(f'RAD {x} (') for x in ids))]
+        if broken:
+            for i in broken:
+                i['level'], i['text'] = 'REVUE', 'Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' + i['text']
+            primary['issues'].insert(0, {'level': 'REVUE', 'text': 'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue et les règles qu’elle enfreint sont dites ci-dessous (à examiner).'})
+            if not any(i['level'] == 'ERREUR' for i in primary['issues']):
+                primary['status'] = 'CONTRÔLE INCOMPLET — DONNÉES MANQUANTES' if primary.get('data_gaps') else 'CONTRÔLE PARTIEL — À VÉRIFIER'
     for x in avoids if request.get('mode', 'calculate') == 'calculate' else []:      # SOG-0354 L5 (4) défaut 4 : un point écarté est un DÉTOUR : la réponse le dit, avec les deux distances
         if x.get('fallback') and primary.get('distance_nm') and head_nm:
             primary.setdefault('issues', []).append({'level': 'REVUE', 'text': f"Point {x['point']} écarté (règle RAD {x['id']} : passer par le point obligatoire n'a pas abouti) : détour de {primary['distance_nm'] - head_nm:+.0f} NM ({head_nm:.0f} → {primary['distance_nm']:.0f} NM)."})

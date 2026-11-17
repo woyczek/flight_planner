@@ -966,7 +966,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     elapsed=0.
     for leg in legs:
         leg['time_start_min']=elapsed;elapsed+=leg['nm']/(leg.get('planned_speed_kt') or options['speed_kt'])*60;leg['time_end_min']=elapsed
-    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes)
+    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl)
     atomic_ids={(b['sheet'],b['row']) for b in violations}
     for finding in rad_summary['findings']:
         if (finding['sheet'],finding['row']) not in atomic_ids:issue('REVUE' if fallback else 'ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'])
