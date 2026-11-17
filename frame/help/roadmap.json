@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "01e4e8a",
-  "fiches": 434,
+  "organisation": "dbd5c2a",
+  "fiches": 435,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3585,6 +3585,15 @@
      "de": "Missionen am Telefon: der Titel ist in eine schmale Spalte gequetscht, ein Wort pro Zeile",
      "es": "Misiones en el teléfono: el título queda aplastado en una columna estrecha, una palabra por línea",
      "rank": 342
+    },
+    {
+     "id": "SOG-0436",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Missions « à tiroir » : une partie suivante révélée par le passage dans une zone, et un objet à trouver dans X-Plane — SPÉCIFICATION d'abord",
+     "en": "“Drawer” missions: a next part revealed by passing through a zone, and an object to find in X-Plane — specification first",
+     "de": "„Schubladen“-Missionen: ein nächster Teil wird durch das Durchfliegen einer Zone freigegeben, dazu ein in X-Plane zu findendes Objekt — zuerst die Spezifikation",
+     "es": "Misiones «de cajones»: una parte siguiente revelada al pasar por una zona, y un objeto que encontrar en X-Plane — primero la especificación"
     }
    ]
   },
