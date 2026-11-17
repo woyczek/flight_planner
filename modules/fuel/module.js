@@ -5009,6 +5009,10 @@ function routeTake(i) {
   const a = S.ralts?.list?.[i],
     ta = S.body?.querySelector('[data-k="rtext"]');
   if (!a?.route || !ta) return;
+  // SOG-0400 (cause prouvée par V3 Frame : un choix fait pendant la recherche des variantes relançait un calcul) : un itinéraire pris
+  // arrête la demande de variantes en cours AVANT que le texte change ; sinon l'écriture du vol (altsMoreCheck) voyait une entrée
+  // changée et relançait « Calculer A → B »
+  altsMoreStop();
   // SOG-0372 (c, point 3) : les points que le moteur a placés pour cet itinéraire (bornés par RE.normalize) deviennent des points connus du
   // champ Route pour ce départ et cette arrivée (aerodb passe toujours d'abord) ; gardés en mémoire, rien de plus écrit dans data/
   S.takenPts = a.points?.length ? {

@@ -2228,3 +2228,9 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   (`setLevel`, « Auto » off) and computes again (`recomputeAt`), nothing else. F245: a button expected (a track outside its window
   left out of the choice), a button refused (every track of the level outside its window), the time and the level in cause (red on
   the parent: no button).
+- **17 Nov 2026 — SOG-0400, taking an itinerary never computes again** (cause proved by V3 Frame: « Calculer » during a slow upload
+  waited 38 s, and an itinerary chosen while the variants were being computed RELAUNCHED a computation). `routeTake` stops the request of
+  the variants in progress (`altsMoreStop`: the job cancelled, `S.raltsMore` cleared at once) before it writes the route text; the
+  write of the flight then finds no request to check (`altsMoreCheck`) and asks nothing. A changed input typed by hand during the
+  search still cancels and asks the head route again (SOG-0296 c, F218). F248 (red on the parent: a second « compute » posted after
+  the take).

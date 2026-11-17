@@ -7024,3 +7024,27 @@ def f245(c):
     _compute_now(c, st)
     c.until(f"document.querySelector('{F}')?.dataset.cause === 'both'", timeout=15000, what='the line, time and level in cause')
     c.eq(c.js(f"document.querySelector('{B}')?.dataset.fl"), '320', 'the time in cause too: « Recalculer à FL320 » all the same', what='both')
+
+
+@case('F248', 'Route step, an itinerary TAKEN while the variants are being searched: the search is stopped (its job cancelled) and NO new '
+      'computation is asked; the route taken stays', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0400 (cause proved by V3 Frame, 17 Nov: a choice made during the search of the variants relaunched a computation — '
+      'altsMoreCheck saw the input changed by the take and asked « compute » again); a fake launcher whose second request is slow')
+def f248(c):
+    st = _route_launcher(c, ['route/compute'])
+    st['delay_alt'] = 6.0
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+    comps = lambda: [p['args'] for p in st['posts'] if (p.get('args') or {}).get('action') == 'compute']
+    c.tap(f'{FUEL} [data-do="rcompute"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-altlist] [data-alt]') && !!document.querySelector('{FUEL} [data-rmore=busy]')", timeout=8000,
+            what='the head route, « Variantes en recherche… »')
+    n = len(comps())
+    c.eq(n, 2, 'two requests: the head route, then the variants', what='before the take')
+    c.tap(f'{FUEL} [data-altlist] [data-alt="0"] [data-do="rtake"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-rtaken]')", timeout=5000, what='the route taken')
+    c.wait(2500)   # the write of the flight (300 ms) and its check have run
+    c.eq(len(comps()), n, 'no new computation after the take', what='after the take')
+    c.ok(len(st.get('cancels') or []) >= 1, st.get('cancels'), 'the search of the variants is cancelled')
+    c.ok('NEPIX' in (c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value") or ''), c.js(f"document.querySelector('{FUEL} [data-k=rtext]').value"),
+         'the route taken stays in the field')
