@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7289626",
+  "organisation": "f55478f",
   "fiches": 449,
   "untranslated": 0,
   "priorities": 374,
@@ -3744,7 +3744,7 @@
     {
      "id": "SOG-0439",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Éditeur de mission : renommer ou retirer un lieu laisse des références mortes (suite de route, déclencheurs, cartes, chronologie)",
      "en": "Mission editor: renaming or removing a place leaves dead references (route continuation, triggers, maps, timeline)",
      "de": "Missionseditor: Umbenennen oder Entfernen eines Ortes hinterlässt tote Verweise (Routenfortsetzung, Auslöser, Karten, Zeitablauf)",
@@ -3762,7 +3762,7 @@
     {
      "id": "SOG-0444",
      "kind": "feature",
-     "state": "planned",
+     "state": "doing",
      "fr": "Atelier de missions : l'éditeur de la V3 prend la forme de la maquette (la carte, le déroulé, la fiche) — un seul outil d'auteur",
      "en": "Mission workshop: the V3 editor takes the shape of the mock-up (map, sequence, sheet) — one author tool",
      "de": "Missionswerkstatt: der V3-Editor nimmt die Form des Entwurfs an (Karte, Ablauf, Blatt) — ein einziges Autorenwerkzeug",
@@ -3780,7 +3780,7 @@
     {
      "id": "SOG-0449",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Éditeur de mission : après une saisie, le premier clic sur une pastille d'étape est perdu",
      "en": "Mission editor: after typing, the first click on a step pill is lost",
      "de": "Missionseditor: nach einer Eingabe geht der erste Klick auf eine Schritt-Schaltfläche verloren",
