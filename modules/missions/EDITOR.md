@@ -241,8 +241,9 @@ and the label of « À compléter » — by `textContent` and attributes; no but
 inner HTML set in a button, and the children of the foot's and the groups' buttons take no pointer event: the finger always presses
 the button itself). The rule holds for every later lot of the workshop: a redraw (`draw`) answers a click or a list, never a keystroke.
 
-**Left in `module.js`** (Features SOG's file; a follow-up for its owner, nothing breaks): the style rules `.ms-steps`, `.ms-edaside`
-and the texts `edNext`, `edPreview`, which the screen no longer uses.
+**`module.js` after P1** (Features SOG's file): the rules and texts the former screen alone used (`.ms-steps`, `.ms-edaside`,
+`.ms-edgrid`, `.ms-edbar`, `.ms-edform`, `edNext`, `edPreview`) were removed by their owner (782830b47); `.ms-ed` and `edNextSeries`
+stay, the workshop still uses them. The rules of the fields of each step (`ms-edteam`, `ms-pl…`) stay there too.
 
 ### 7 quater. P3, first brick: the key of a drawer is a reference like the others (17 Nov 2026; SOG-0445; noreg N74)
 
