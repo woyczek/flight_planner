@@ -2889,7 +2889,7 @@
     {
      "id": "SOG-0450",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Routes de l'Atlantique : la comparaison « route NAT ou route libre » coûte trois à quatre secondes, même quand elle ne change rien",
      "en": "Atlantic routes: the “NAT track or free route” comparison costs three to four seconds, even when it changes nothing",
      "de": "Atlantikrouten: der Vergleich „NAT-Track oder freie Route“ kostet drei bis vier Sekunden, auch wenn er nichts ändert",

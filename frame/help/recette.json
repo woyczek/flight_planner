@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 301,
+  "tests": 302,
   "verdicts": 212
  },
  "apps": [
@@ -4502,6 +4502,19 @@
     "es": "Editor de misiones: tras escribir, el primer clic en una pastilla de etapa se pierde"
    },
    "test": "Missions, Registre, « Modifier » une mission. Tape quelques mots dans un champ du Récit, puis clique UNE fois sur un autre groupe (Lieux, Risques). Attendu : il s'ouvre du premier clic — plus besoin de cliquer deux fois.",
+   "since": "2026-11-17",
+   "state": "known"
+  },
+  {
+   "id": "SOG-0450",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes de l'Atlantique : la comparaison « route NAT ou route libre » coûte trois à quatre secondes, même quand elle ne change rien",
+    "en": "Atlantic routes: the “NAT track or free route” comparison costs three to four seconds, even when it changes nothing",
+    "de": "Atlantikrouten: der Vergleich „NAT-Track oder freie Route“ kostet drei bis vier Sekunden, auch wenn er nichts ändert",
+    "es": "Rutas del Atlántico: la comparación «ruta NAT o ruta libre» cuesta de tres a cuatro segundos, aunque no cambie nada"
+   },
+   "test": "Lanceur relancé. Carburant, calcule un vol d'Europe du Nord vers San Francisco (EGLL → KSFO, EHAM → KSFO). Attendu : le calcul revient à peu près à son temps d'hier (3 à 5 s) au lieu de 6 à 8 s ; la route est la même. EDDF → KSFO reste à environ 6 s : exception connue. Les vols de Madrid gardent leur route libre par le sud.",
    "since": "2026-11-17",
    "state": "known"
   }
