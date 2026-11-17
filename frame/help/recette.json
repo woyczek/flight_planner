@@ -3976,6 +3976,22 @@
  ],
  "decisions": [
   {
+   "id": "Q-0075",
+   "fiche": "SOG-0398",
+   "app": "maintenance",
+   "question": "Terrain de dégagement : que veulent dire le vert, l'orange et le rouge pour la météo prévue ?",
+   "context": "Tu as écrit « un warn si c'est uniquement mvfr ou vfr ». Ce que je conteste : pour un dégagement, VFR est le meilleur cas. Ma lecture : tu veux un avertissement quand le terrain n'est utilisable qu'à vue. Ma proposition lit la prévision (TAF) à l'heure d'arrivée au dégagement, une heure avant et après. J'ajoute un quatrième état, gris « non vérifié », quand il n'y a pas de TAF : une coche verte sans donnée serait un mensonge. La spécification entière est dans la fiche SOG-0398.",
+   "options": [
+    "Vert : VFR ou MVFR prévu. Orange : IFR prévu (approche aux instruments nécessaire) OU terrain sans approche aux instruments. Rouge : sous les minima (LIFR). Gris : pas de TAF",
+    "Vert : au-dessus des minima majorés, quelle que soit la catégorie. Orange : terrain utilisable à vue seulement (VFR / MVFR exigé). Rouge : sous les minima. Gris : pas de TAF",
+    "Seulement dire la catégorie prévue (VFR, MVFR, IFR, LIFR), sans couleur de verdict",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",

@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "188599f",
-  "fiches": 396,
+  "organisation": "593b711",
+  "fiches": 397,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -4305,6 +4305,27 @@
      "de": "BLOCKIEREND: der Flug wird in einer Schleife neu geschrieben, die Synchronisation hört nicht auf, die Blöcke flackern",
      "es": "BLOQUEANTE: el vuelo se reescribe en bucle, la sincronización no se detiene, los bloques parpadean",
      "rank": 227
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-meteo-donnees-d-aerodromes",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; Météo ; données d'aérodromes",
+    "en": "Carburant ; Météo ; données d'aérodromes",
+    "de": "Carburant ; Météo ; données d'aérodromes",
+    "es": "Carburant ; Météo ; données d'aérodromes"
+   },
+   "items": [
+    {
+     "id": "SOG-0398",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Carburant : vérifier le terrain de dégagement (piste et moyens, météo prévue, distance au départ) et en proposer un",
+     "en": "Fuel: check the alternate aerodrome (runway and aids, forecast weather, distance from departure) and propose one",
+     "de": "Kraftstoff: den Ausweichflugplatz prüfen (Piste und Anflughilfen, Wettervorhersage, Entfernung vom Abflug) und einen vorschlagen",
+     "es": "Combustible: comprobar el aeródromo alternativo (pista y ayudas, meteorología prevista, distancia a la salida) y proponer uno"
     }
    ]
   },
