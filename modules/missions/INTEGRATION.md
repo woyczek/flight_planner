@@ -13,6 +13,8 @@ addresses).
 | `missions/mission_registry.yaml` | the CPCO (V2 today) | the list of the airline's missions, read once per mount | missions |
 | `missions/<LETTER>_<FAMILY>/<ID>/mission<ID>.yaml` (+ `summary<ID>.md`, `cartes/`) | the CPCO (V2 today) | one mission, read when opened; **never written by this module** | missions, maps (drawing), fuel (through `missionFlight`) |
 | `missions/affectations.json`, `missions/<…>/<ID>/affectations.yaml` | the CPCO (V2 today) | the assignments; the crew's rendezvous of SPEC § 6 is added here, by the CPCO | missions, flightlog |
+| `pilot/<TRI>/missions/<ID>.json` | missions (`drawers_view.js`), each pilot his own only | the pilot's record of a mission (SOG-0441): the play, the real departure, one key per drawer opened by gesture or finding; `record` merge; another pilot's record is read as an untrusted input (`drawers.js`, `docs/technique/AFFECTATION_MISSIONS.md` § 11) | missions |
+| `cache/missions/seen_<ID>.json` | missions (`drawers_view.js`) | the openings of other pilots this device has seen (an open drawer stays open); policy cache | missions |
 | `cache/missions/read.json` | missions | `{ <id>: read_at }`, the device's own "lu" (policy cache) | missions |
 | `cache/missions/status.json` | missions | one status line (assigned missions with a rendezvous in the next seven days), `go: '#missions'` | frame (status block) |
 
