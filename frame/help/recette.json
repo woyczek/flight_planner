@@ -3989,16 +3989,16 @@
  ],
  "decisions": [
   {
-   "id": "Q-0080",
-   "fiche": "SOG-0401",
-   "app": "pilote",
-   "question": "Moteur de route : après la phrase honnête, on corrige d'abord l'Atlantique Nord ou l'Europe ?",
-   "context": "Deux défauts du jour, un seul AeroDB. (1) Atlantique Nord, SOG-0396 : avec le seul message NAT du matin, la moitié des traversées n'a AUCUNE route. (2) Europe, SOG-0401 : nos routes sortent, mais le contrôle RAD ne décide que 94 conditions sur 531 pour EDDF → LFMN, et Eurocontrol refuse la route (22 erreurs). Dans les deux cas, je fais d'abord dire la vérité à l'écran (nombre de conditions vérifiées et non vérifiées) et corriger un défaut net (les règles qui visent un espace). Ce que je conteste : mener les deux de front — AeroDB a déjà cinq commits en attente. Ma recommandation : l'océan d'abord (pas de route du tout est pire qu'une route à corriger), puis l'Europe par familles de règles, en commençant par celles qu'Eurocontrol t'a citées.",
+   "id": "Q-0081",
+   "fiche": "SOG-0400",
+   "app": "maintenance",
+   "question": "Itinéraire choisi sur la Carte, de retour dans Carburant : qu'est-ce qui tardait exactement ?",
+   "context": "V3 Frame a mesuré : le choix lui-même ne passe pas par la synchronisation (moins d'une demi-seconde, même au téléphone). Deux attentes restent possibles — un calcul relancé qui attend la fin de la synchronisation, ou un navigateur sans état connu du dépôt (autre port du lanceur, données effacées), où le lanceur met 30 à 46 s. Ta réponse dit laquelle corriger d'abord. Si le lanceur tournait sur un autre port que d'habitude, dis-le dans le texte.",
    "options": [
-    "L'Atlantique Nord d'abord (SOG-0396), puis l'Europe (SOG-0401) par familles de règles",
-    "L'Europe d'abord (SOG-0401), puis l'Atlantique Nord",
-    "Alterner : un petit lot de l'un, un petit lot de l'autre",
-    "Autre (dans le texte)"
+    "Le champ Route avait changé, mais le devis ou la liste restait « en chargement »",
+    "Rien n'avait changé, même pas le champ Route",
+    "Le champ Route avait changé et un calcul tournait sans finir",
+    "Je ne sais plus (dans le texte ce dont tu te souviens)"
    ],
    "since": "2026-11-17",
    "state": "todo",
@@ -4379,6 +4379,25 @@
    "choice": 0,
    "text": "je voudrais que x-plane soit vraiment un fallback, voire que ce soit débrayable. on se souvient que xplane, c’est navigraph. si on n’a plus d’abonnement navigraph, on n’a plus de routes à jour.",
    "at": "2026-11-17T09:29:26Z"
+  },
+  {
+   "id": "Q-0080",
+   "fiche": "SOG-0401",
+   "app": "pilote",
+   "question": "Moteur de route : après la phrase honnête, on corrige d'abord l'Atlantique Nord ou l'Europe ?",
+   "context": "Deux défauts du jour, un seul AeroDB. (1) Atlantique Nord, SOG-0396 : avec le seul message NAT du matin, la moitié des traversées n'a AUCUNE route. (2) Europe, SOG-0401 : nos routes sortent, mais le contrôle RAD ne décide que 94 conditions sur 531 pour EDDF → LFMN, et Eurocontrol refuse la route (22 erreurs). Dans les deux cas, je fais d'abord dire la vérité à l'écran (nombre de conditions vérifiées et non vérifiées) et corriger un défaut net (les règles qui visent un espace). Ce que je conteste : mener les deux de front — AeroDB a déjà cinq commits en attente. Ma recommandation : l'océan d'abord (pas de route du tout est pire qu'une route à corriger), puis l'Europe par familles de règles, en commençant par celles qu'Eurocontrol t'a citées.",
+   "options": [
+    "L'Atlantique Nord d'abord (SOG-0396), puis l'Europe (SOG-0401) par familles de règles",
+    "L'Europe d'abord (SOG-0401), puis l'Atlantique Nord",
+    "Alterner : un petit lot de l'un, un petit lot de l'autre",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "le tout dans la journée.",
+   "at": "2026-11-17T09:49:47Z"
   }
  ]
 }

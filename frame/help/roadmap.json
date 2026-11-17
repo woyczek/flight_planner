@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7d164d2",
-  "fiches": 404,
+  "organisation": "3d48a8c",
+  "fiches": 406,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2587,6 +2587,27 @@
      "de": "Routengenerierung aus den RAD-Dateien von Eurocontrol (und dem FRA)",
      "es": "Generación de rutas a partir de los archivos RAD de Eurocontrol (y del FRA)",
      "rank": 130
+    }
+   ]
+  },
+  {
+   "id": "pilote-socle-mise-a-jour-de-l-appli-recette",
+   "app": "pilote",
+   "label": {
+    "fr": "Socle (mise à jour de l'appli) ; Recette",
+    "en": "Socle (mise à jour de l'appli) ; Recette",
+    "de": "Socle (mise à jour de l'appli) ; Recette",
+    "es": "Socle (mise à jour de l'appli) ; Recette"
+   },
+   "items": [
+    {
+     "id": "SOG-0407",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "RÉGRESSION : le bouton « pas à jour, rafraîchir » a disparu — une page ouverte ne dit plus qu'une version plus récente existe",
+     "en": "REGRESSION: the “out of date, refresh” button has disappeared — an open page no longer says a newer version exists",
+     "de": "REGRESSION: die Schaltfläche „nicht aktuell, neu laden“ ist verschwunden — eine offene Seite meldet keine neuere Version mehr",
+     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente"
     }
    ]
   },
@@ -5198,6 +5219,27 @@
      "de": "Daten: zehn Sekunden nach dem Öffnen ist der Zustand der Basis noch nicht gelesen",
      "es": "Datos: diez segundos después de abrir, el estado de la base sigue sin leerse",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-donnees-de-navigation-europe",
+   "app": "maintenance",
+   "label": {
+    "fr": "Données de navigation ; Europe",
+    "en": "Données de navigation ; Europe",
+    "de": "Données de navigation ; Europe",
+    "es": "Données de navigation ; Europe"
+   },
+   "items": [
+    {
+     "id": "SOG-0406",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Voies aériennes de la Suisse et de l'Italie : la base n'a plus de source, le moteur roule sur des fichiers du 01/10",
+     "en": "Airways of Switzerland and Italy: the base has no source any more, the engine runs on files of 1 October",
+     "de": "Luftstraßen der Schweiz und Italiens: die Basis hat keine Quelle mehr, die Engine nutzt Dateien vom 1. Oktober",
+     "es": "Aerovías de Suiza e Italia: la base ya no tiene fuente, el motor usa archivos del 1 de octubre"
     }
    ]
   },
