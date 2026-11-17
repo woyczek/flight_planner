@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 271,
+  "tests": 272,
   "verdicts": 204
  },
  "apps": [
@@ -4027,6 +4027,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T11:07:39Z"
+  },
+  {
+   "id": "SOG-0402",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : copier un plan de vol OACI complet, prêt à coller dans la validation d'Eurocontrol",
+    "en": "Fuel: copy a complete ICAO flight plan, ready to paste into the Eurocontrol validation",
+    "de": "Kraftstoff: einen vollständigen ICAO-Flugplan kopieren, bereit zum Einfügen in die Eurocontrol-Validierung",
+    "es": "Combustible: copiar un plan de vuelo OACI completo, listo para pegar en la validación de Eurocontrol"
+   },
+   "test": "Carburant, étape Route, après avoir rechargé la page. (1) Un vol avec sa route (par exemple EDDF → LFMN, la route calculée) : sous l'itinéraire, le bouton « Copier pour Eurocontrol ». (2) Ouvre le pli « Plan de vol OACI (relecture) » : le message est écrit case par case — « (FPL-CHECK01-IG », le type et l'équipement supposé, le départ et son heure, la vitesse et le niveau puis la route, l'arrivée, la durée et le dégagement, « PBN/… DOF/… ) ». (3) Les mentions disent : identifiant neutre par défaut, équipement supposé pour ne contrôler que la route, l'heure de départ prise, aucune SID écrite quand le terrain n'en a pas. (4) Change l'identifiant dans le champ : le message suit, en majuscules ;",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T11:11:00Z"
   },
   {
    "id": "SOG-0403",

@@ -1221,11 +1221,12 @@
     {
      "id": "SOG-0402",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : copier un plan de vol OACI complet, prêt à coller dans la validation d'Eurocontrol",
      "en": "Fuel: copy a complete ICAO flight plan, ready to paste into the Eurocontrol validation",
      "de": "Kraftstoff: einen vollständigen ICAO-Flugplan kopieren, bereit zum Einfügen in die Eurocontrol-Validierung",
-     "es": "Combustible: copiar un plan de vuelo OACI completo, listo para pegar en la validación de Eurocontrol"
+     "es": "Combustible: copiar un plan de vuelo OACI completo, listo para pegar en la validación de Eurocontrol",
+     "test": true
     },
     {
      "id": "SOG-0408",
