@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "07a4400",
+  "organisation": "c434b95",
   "fiches": 435,
   "untranslated": 0,
   "priorities": 374,
@@ -5961,11 +5961,12 @@
     {
      "id": "SOG-0427",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Lanceur : la console est noyée sous un avertissement de lecture de PDF répété (« fontTools is required… »)",
      "en": "Launcher: the console is flooded by a repeated PDF-reading warning (“fontTools is required…”)",
      "de": "Starter: die Konsole wird von einer wiederholten PDF-Lesewarnung überflutet („fontTools is required…“)",
-     "es": "Lanzador: la consola se inunda con un aviso repetido de lectura de PDF («fontTools is required…»)"
+     "es": "Lanzador: la consola se inunda con un aviso repetido de lectura de PDF («fontTools is required…»)",
+     "test": true
     }
    ]
   },

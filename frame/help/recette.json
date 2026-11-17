@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 287,
+  "tests": 288,
   "verdicts": 212
  },
  "apps": [
@@ -4287,6 +4287,20 @@
    "since": "2026-11-17",
    "state": "todo",
    "delivered": "2026-11-17T16:29:58Z"
+  },
+  {
+   "id": "SOG-0427",
+   "app": "maintenance",
+   "title": {
+    "fr": "Lanceur : la console est noyée sous un avertissement de lecture de PDF répété (« fontTools is required… »)",
+    "en": "Launcher: the console is flooded by a repeated PDF-reading warning (“fontTools is required…”)",
+    "de": "Starter: die Konsole wird von einer wiederholten PDF-Lesewarnung überflutet („fontTools is required…“)",
+    "es": "Lanzador: la consola se inunda con un aviso repetido de lectura de PDF («fontTools is required…»)"
+   },
+   "test": "Sur le poste, APRÈS avoir relancé le lanceur. Données : lance la reconstruction VFR. Attendu : (1) la console du lanceur ne se remplit plus de lignes « fontTools is required… » : UNE ligne à la fin, du genre « n documents lus ; dans m des polices n'ont pas pu être décodées entièrement — contournement appliqué » ; (2) la reconstruction ne dure pas plus longtemps qu'avant ; (3) dans le résultat, un nom à apostrophe se lit juste (« l'Erdre », plus de caractère étrange à la place de l'apostrophe) ; (4) rien n'est à installer.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T16:38:42Z"
   },
   {
    "id": "SOG-0431",
