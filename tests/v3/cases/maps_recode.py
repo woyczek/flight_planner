@@ -8316,3 +8316,40 @@ def d_barbside(c):
             c.js("([z, mid]) => { window.__mpMap.jumpTo({ center: [mid.lon, mid.lat], zoom: z }); return true }", [zooms[1], mid])
             c.wait(1800)
             c.shot(f'D246_{c.design}_{name}_{w}_delivered.png')
+
+
+@case('D248', 'Proposed routes, on the Map: a click with the mouse on a row of the window chooses it — with a free route over the ocean whose points are named with a bar (« 48/50 », « 51/40 »), two variants and a route already chosen —, even when the press is held a moment before the release (the list is not rewritten while the pointer rests on it: no mutation in a second), and the keyboard (Enter on a focused row) chooses too', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0392 (the user, 17 Nov, third time after SOG-0224 and SOG-0348: « si on passe en vue carte, on ne peut pas cliquer sur le tableau, seulement le trajet », then « pas depuis carburant, depuis carte »; D235 green because it clicked at once, on two plain routes): the window was rewritten at every drawing (the browser re-reads an <svg> of the legend differently from the text written, so « changed » was always true) and the hover asked a drawing at every element crossed: the row under the pointer was replaced between the press and the release, and the click never came')
+def d_altclick(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    d = _alts_doc(schema=2, open=None, computed_at=iso(now()), aircraft='F-ABCD', base='', chosen=0)
+    names = ['LFRS', '48/50', '51/40', 'LFML']   # a free route over the ocean: points named with a bar
+    for a in d['alternatives']:
+        a['ids'] = names[:len(a['points'])]
+    d['answer'] = {'ok': True, 'alternatives': [{'name': 'Free route', 'route': 'LFRS DCT 48/50 DCT 51/40 DCT LFML', 'distanceNm': 366, 'fl': 270, 'faults': 0,
+                                                   'points': [{'id': i, 'lat': p[0], 'lon': p[1]} for i, p in zip(names, d['alternatives'][0]['points'])]},
+                                                  {'name': 'Via UN20', 'route': 'LFRS X Y LFML', 'distanceNm': 402, 'fl': 250, 'faults': 1}]}
+    c.open('maps', docs=fdocs(flight()) + [['cache/fuel/route_alts.json', d, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.alts && window.__mp.S.alts.list.length === 2 && !document.querySelector('.mp-alts').hidden && document.querySelectorAll('.mp-al-row').length === 2", timeout=15000, what='the window of the proposals')
+    c.wait(2500)    # the first drawings are over
+    shown = "() => { const r = document.querySelector('.mp-al-row[data-shown=\"1\"]'); return r ? +r.dataset.alt : null }"
+    box = lambda i: c.js("(i) => { const r = document.querySelector(`.mp-al-row[data-alt=\"${i}\"]`).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2] }", i)
+    c.eq(c.js(shown), 0, 'the route already chosen is the one shown on arrival', what='shown')
+    b = box(1)
+    c.page.mouse.move(b[0] - 20, b[1] - 4)
+    c.page.mouse.move(*b)
+    c.js("() => { window.__mut = 0; window.__mo = new MutationObserver(m => { window.__mut += m.length }); window.__mo.observe(document.querySelector('.mp-alts'), { childList: true, subtree: true, attributes: true, characterData: true }); return true }")
+    c.wait(1200)
+    c.eq(c.js("() => window.__mut"), 0, 'the pointer rests on a row for a second: the window is not rewritten (a row replaced under the pointer loses the click)', what='mutations')
+    c.page.mouse.down()
+    c.wait(250)
+    c.page.mouse.up()
+    c.until("() => { const r = document.querySelector('.mp-al-row[data-shown=\"1\"]'); return !!r && +r.dataset.alt === 1 }", timeout=4000, what='a click held a moment on the second row chooses it')
+    c.ok(c.js("() => !!window.__mp.S.alts && window.__mp.S.altShow === 1"), 'altShow', 'the Map’s shown route is the second')
+    c.js("() => { document.querySelector('.mp-al-row[data-alt=\"0\"]').focus(); return true }")
+    c.page.keyboard.press('Enter')
+    c.until("() => { const r = document.querySelector('.mp-al-row[data-shown=\"1\"]'); return !!r && +r.dataset.alt === 0 }", timeout=4000, what='Enter on the focused first row chooses it')
+    c.shot('D248_standard_click_on_the_map_delivered.png')

@@ -463,8 +463,15 @@ export function altsCard() {
   let html = on ? `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${said && !A.list.some(natureKnown) ? `<span class="mp-al-key f-muted">${esc(tt(TX.altKey))}</span>` : ''}${legend.length ? `<details class="mp-al-leg"><summary>${esc(tt(TX.altLegend))}</summary><ul>${legend.map(r => `<li>${r[0]}<span>${r[1]}</span></li>`).join('')}</ul></details>` : ''}${A.list.map(a => `<button type="button" class="mp-al-row" data-alt="${a.index}" data-chosen="${a.index === A.chosen ? 1 : 0}" data-shown="${a.index === S.altShow ? 1 : 0}" data-faulty="${a.faulty.size ? 1 : 0}"${A.mode === 'compute' ? '' : ' disabled'}><span class="mp-al-n">${esc(a.name || `#${a.index + 1}`)}</span>${a.index === A.chosen ? `<span class="mp-al-k">${esc(tt(TX.altChosen))}</span>` : ''}${a.faulty.size ? `<span class="mp-al-f">${esc(tt(TX.altFaulty))}</span>` : ''}</button>`).join('')}${detailHtml(A)}${A.mode === 'compute' && !dual() ? `<button type="button" class="f-btn mp-al-take" data-alttake${A.list.some(a => a.index === S.altShow) ? '' : ' disabled'}>${esc(tt(TX.altTake))}</button>` : ''}` : '';
   if (on && dual()) html = `<b class="mp-al-t">${esc(tt(A.mode === 'check' ? TX.altCheck : TX.altTitle))}</b>${detailHtml(A)}`;
   if (el.hidden === on) el.hidden = !on;
-  if (el.innerHTML !== html) el.innerHTML = html;
+  // écrite seulement si elle change : comparée à ce que CE code a écrit, jamais à el.innerHTML (le navigateur relit le HTML autrement qu'il n'a été écrit — « <line/> » d'un <svg> devient « <line></line> » —,
+  // la liste semblait changée à chaque image et ses lignes étaient remplacées sous le doigt entre l'appui et le relâchement : le clic n'avait pas lieu, SOG-0392)
+  if (WRITTEN.get(el) !== html) {
+    WRITTEN.set(el, html);
+    el.innerHTML = html;
+  }
 }
+/** Ce que altsCard a écrit dans chaque fenêtre (la dernière chaîne) : la liste n'est réécrite que si elle diffère. */
+const WRITTEN = new WeakMap();
 /** La route du vol telle que les itinéraires proposés la voient : départ, arrivée et texte. */
 const routeKey = () => {
   const r = S?.route?.flight?.route || {};
@@ -520,14 +527,16 @@ export function altsStart() {
     const b = e.target.closest('[data-alt]');
     if (b && !b.disabled) altsShow(+b.dataset.alt);
   });
+  // un redessin seulement quand la ligne survolée change (pas à chaque élément traversé : un redessin par mouvement)
+  const hover = v => {
+    if ((S.altHover ?? null) === v) return;
+    S.altHover = v;
+    schedule();
+  };
   S.altsEl?.addEventListener('pointerover', e => {
     const b = e.target.closest('[data-alt]');
-    S.altHover = b ? +b.dataset.alt : null;
-    schedule();
+    hover(b ? +b.dataset.alt : null);
   });
-  S.altsEl?.addEventListener('pointerleave', () => {
-    S.altHover = null;
-    schedule();
-  });
+  S.altsEl?.addEventListener('pointerleave', () => hover(null));
   return () => stops.forEach(f => f());
 }

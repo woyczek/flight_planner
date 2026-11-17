@@ -11,6 +11,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Map: a click on a row of the « Proposed routes » window chooses it** (SOG-0392; the user, 17 Nov, third time after SOG-0224 and SOG-0348) — on the Map, clicking a row of the window with the mouse did nothing, only the trace answered (seen from Fuel to the Map and on the Map opened alone, with a free route over the ocean whose points are named « 48/50 », « 51/40 »). Cause: the window was rewritten at every drawing (the browser re-reads the `<svg>` of its legend differently from the text written, so the « changed » test was always true) and the hover asked a drawing at every element crossed; the row under the pointer was replaced between the press and the release, so the click never came (a touch very likely too). The window is now compared with what was last written and the hover redraws only when the hovered row changes; D248 (red before: a free route with bar-named points, two variants, one chosen; the pointer at rest, the mouse held a moment, the keyboard); D235 clicked at once on two plain routes.
 
 - **Fuel, Flight step: the level and date fields start at the same height, « device's local time » under the date field, « Auto » clear of the date, a space between the rows** (fuel DECISIONS; noreg F243; SOG-0393).
 - **Fuel, Route: a compound airway name of the launcher's route (« N71B-N90B », the North American routes) is kept in the route line and in the route taken into the flight** (fuel DECISIONS; noreg F242; SOG-0390).
