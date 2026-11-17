@@ -121,7 +121,7 @@ input[type=range]{width:100%;min-height:44px}
 </style>
 </head>
 <body>
-<div class="mockbar">Maquette SOG-0444 — l'atelier de missions : l'éditeur prend la forme de la maquette de l'utilisateur (la carte, le déroulé, la fiche) ; rien n'est écrit ; mission X-301A du banc (inventée) ; la carte est un dessin d'attente. États : <a href="#a">partie A</a> · <a href="#lieux">les lieux</a> · <a href="#b">tiroir B</a> · <a href="#repere">un repère touché</a> · <a href="#essai">l'essai des clés</a></div>
+<div class="mockbar">Maquette SOG-0444 — l'atelier de missions : l'éditeur prend la forme de la maquette de l'utilisateur (la carte, le déroulé, la fiche) ; rien n'est écrit ; mission X-301A du banc (inventée) ; la carte est un dessin d'attente. États : <a href="#a">au départ</a> · <a href="#lieux">les lieux</a> · <a href="#b">tiroir 1</a> · <a href="#repere">un repère touché</a> · <a href="#essai">l'essai des clés</a></div>
 <div class="top"><span>✈ Compagnie</span><span class="sp"></span><span class="chip">● Sur cet appareil</span></div>
 <div class="page">
   <div class="head">
@@ -140,7 +140,7 @@ input[type=range]{width:100%;min-height:44px}
           <path d="M50 90 C170 60 280 130 420 100 S650 40 780 110" fill="none" stroke="#c9d3c2" stroke-width="12" stroke-linecap="round"/>
           <path d="M170 0 C200 90 150 170 210 270" fill="none" stroke="#b9cfe2" stroke-width="5"/>
           <path d="M84 52 L250 120 L458 214 L610 286 L748 372" fill="none" stroke="#59636e" stroke-width="1.8" stroke-dasharray="7 6"/>
-          <g data-only="b essai"><circle cx="420" cy="186" r="100" fill="rgba(138,63,252,.14)" stroke="#8a3ffc" stroke-width="2.5"/><circle cx="420" cy="186" r="5" fill="#8a3ffc"/><circle cx="520" cy="186" r="8" fill="#fff" stroke="#8a3ffc" stroke-width="2.5"/><text x="366" y="262" font-size="14" fill="#8a3ffc" font-weight="700">zone du tiroir B</text></g>
+          <g data-only="b essai"><circle cx="420" cy="186" r="100" fill="rgba(138,63,252,.14)" stroke="#8a3ffc" stroke-width="2.5"/><circle cx="420" cy="186" r="5" fill="#8a3ffc"/><circle cx="520" cy="186" r="8" fill="#fff" stroke="#8a3ffc" stroke-width="2.5"/><text x="366" y="262" font-size="14" fill="#8a3ffc" font-weight="700">zone du tiroir 1</text></g>
           <g data-only="a lieux repere"><circle cx="420" cy="186" r="100" fill="none" stroke="#8a3ffc" stroke-width="1.5" stroke-dasharray="5 5"/></g>
           <circle cx="330" cy="150" r="60" fill="none" stroke="#1e7d32" stroke-width="2" stroke-dasharray="6 5"/><text x="286" y="84" font-size="13" fill="#1e7d32">ZONE-1 · Secteur nord</text>
           <path d="M470 318 l14 26 h-28z" fill="#8a3ffc"/><text x="490" y="340" font-size="13" fill="#8a3ffc">OBJ-1 · radeau</text>
@@ -155,7 +155,7 @@ input[type=range]{width:100%;min-height:44px}
           <g data-only="essai"><path d="M84 52 L210 104 L318 150" fill="none" stroke="#1a6fd8" stroke-width="3"/><path d="M318 150 l-16 -2 6 -12z" fill="#1a6fd8"/><circle cx="318" cy="150" r="14" fill="none" stroke="#1a6fd8" stroke-width="2"/></g>
         </svg>
         <div class="tools">
-          <div class="seg" data-only="a lieux b repere"><button aria-pressed="true">Sélection</button><button aria-pressed="false">Point</button><button aria-pressed="false">Tracé</button><button aria-pressed="false">Cercle</button><button aria-pressed="false">Contour</button><button aria-pressed="false">Objet</button></div>
+          <div class="seg" data-only="a lieux b repere"><button aria-pressed="true">Sélection</button><button aria-pressed="false">Point</button><button aria-pressed="false">Tracé</button><button aria-pressed="false">Zone</button><button aria-pressed="false">Objet</button></div>
           <div class="seg" data-only="essai"><button aria-pressed="true">Poser l'avion ici</button></div>
         </div>
         <div class="layers"><label><input type="checkbox" checked> Repères d'AeroDB</label> · <span class="link">Tout voir</span></div>
@@ -167,20 +167,20 @@ input[type=range]{width:100%;min-height:44px}
     <!-- le déroulé : A visible, puis les tiroirs scellés, chacun avec sa clé dite en une ligne -->
     <section class="card">
       <div class="flowhead"><h2>Déroulé de la mission</h2><span class="sp"></span><a class="btn" href="#essai">Essayer les clés</a></div>
-      <p class="hint">Une partie visible au départ, puis trois tiroirs au plus. Touchez une carte pour ouvrir sa fiche.</p>
+      <p class="hint">Ce que le pilote lit au départ, puis les tiroirs, dans l'ordre (douze au plus). Touchez une carte pour ouvrir sa fiche.</p>
       <div class="flow">
-        <a class="part a" href="#a" data-part="a"><span class="h"><span class="k">A</span><span class="tag">visible</span></span><b>Préparer le départ</b><span class="m">XTST → PT1 → Cible → XTSU · 96 NM</span></a>
-        <a class="part" href="#b" data-part="b"><span class="h"><span class="k">B</span><span class="tag">scellé</span></span><b>Entrée dans le secteur nord</b><span class="m">zone de passage · repli H + 60 min</span></a>
-        <a class="part" href="#b" data-part="c"><span class="h"><span class="k">C</span><span class="tag">scellé</span></span><b>Radeau en vue</b><span class="m">objet à trouver · repli H + 1 h 30</span></a>
-        <a class="part add" href="#b"><span>＋ Tiroir D</span></a>
+        <a class="part a" href="#a" data-part="a"><span class="h"><span class="k">●</span><span class="tag">visible</span></span><b>Au départ</b><span class="m">XTST → PT1 → Cible → XTSU · 96 NM</span></a>
+        <a class="part" href="#b" data-part="b"><span class="h"><span class="k">1</span><span class="tag">tiroir scellé</span></span><b>Entrée dans le secteur nord</b><span class="m">zone de passage · repli H + 60 min</span></a>
+        <a class="part" href="#b" data-part="c"><span class="h"><span class="k">2</span><span class="tag">tiroir scellé</span></span><b>Radeau en vue</b><span class="m">objet à trouver · repli H + 1 h 30</span></a>
+        <a class="part add" href="#b"><span>＋ Tiroir</span></a>
       </div>
     </section>
   </main>
 
   <aside>
-    <!-- la fiche de la partie A : les six étapes de l'éditeur, en groupes repliables -->
+    <!-- la fiche du départ (la partie A du fichier) : les six étapes de l'éditeur, en groupes repliables -->
     <section class="card sheet" data-only="a lieux repere">
-      <h2><span class="k a">A</span>Partie A — visible dès le départ</h2>
+      <h2><span class="k a">●</span>Au départ — visible par le pilote</h2>
       <p class="hint">Ce que le pilote lit avant de partir. Six groupes ; un groupe à compléter le dit.</p>
       <details class="grp" data-grp="cadre"><summary>Cadre<span class="n">SAR · série 1</span></summary><div>
         <label class="f"><span>Famille</span><select><option>S · SAR · Recherche et sauvetage</option></select></label>
@@ -197,7 +197,7 @@ input[type=range]{width:100%;min-height:44px}
         <div class="plrow"><span class="t">PT</span><b>PT1 · Point un</b><span class="m">entrée · 44°48′N 1°12′E</span><span class="link act">Modifier</span></div>
         <div class="plrow"><span class="t">PT</span><b>PT2 · Point deux</b><span class="m">sortie · 44°24′N 1°36′E</span><span class="link act">Modifier</span></div>
         <div class="plrow"><span class="t">RDV</span><b>RDV-1 · Rendez-vous d'essai</b><span class="m">ralliement · ALPHA1, BRAVO2</span><span class="link act">Modifier</span></div>
-        <div class="plrow"><span class="t">OBJET</span><b>OBJ-1 · Radeau</b><span class="m">du tiroir C · caché au pilote</span><span class="link act">Modifier</span></div>
+        <div class="plrow"><span class="t">OBJET</span><b>OBJ-1 · Radeau</b><span class="m">du tiroir 2 · caché au pilote</span><span class="link act">Modifier</span></div>
         <p class="lbl">+ 1 autre · à l'ordinateur, un lieu se pose et se déplace sur la carte ; ici, « Modifier » ouvre ses champs.</p>
       </div></details>
       <details class="grp"><summary>Récit<span class="n">résumé, description, objectifs</span></summary><div><p class="hint">Résumé (600 signes conseillés), description, objectif principal, objectifs secondaires, charge.</p></div></details>
@@ -207,12 +207,12 @@ input[type=range]{width:100%;min-height:44px}
 
     <!-- la fiche d'un tiroir : trois groupes — la clé, les textes, la suite de route — puis ce que le pilote voit -->
     <section class="card sheet" data-only="b">
-      <h2><span class="k">B</span>Tiroir B — scellé</h2>
+      <h2><span class="k">1</span>Tiroir 1 — scellé</h2>
       <p class="hint">S'ouvre par UNE clé ; le pilote peut toujours l'ouvrir à la main.</p>
       <details class="grp" open><summary>La clé<span class="n">zone de passage</span></summary><div>
         <label class="f"><span>Ce qui ouvre le tiroir</span><select><option>Zone de passage</option><option>Objet à trouver</option><option>Arrivée au terrain</option><option>Heure</option><option>Geste du pilote seul</option></select></label>
         <div class="f"><span>Heure de repli</span><div class="fall"><span>H +</span><input value="60" inputmode="numeric" aria-label="Heure de repli, en minutes après le décollage"><span>min</span></div><small>Sans position de l'avion, le tiroir s'ouvre à cette heure ; le pilote ne la lit que dans ce cas.</small></div>
-        <div class="zsum">Cercle · centre 44°36′N 1°18′E · rayon 2,5 km<br><span class="link">Dessiner sur la carte</span> · <span class="link">Reprendre une zone de la mission</span></div>
+        <div class="zsum">Zone ronde · centre 44°36′N 1°18′E · rayon 2,5 km<br><span class="link">Dessiner sur la carte</span> · <span class="link">Reprendre une zone de la mission</span></div>
         <div class="two"><label class="f"><span>Rayon (km)</span><input value="2,5" inputmode="decimal"></label><label class="f"><span>Plafond (ft, facultatif)</span><input value="1500" inputmode="numeric"></label></div>
         <label class="check"><input type="checkbox" checked><span>Montrer la zone au pilote<small>Décochée : le tiroir dit seulement « s'ouvre en vol ».</small></span></label>
       </div></details>
@@ -226,7 +226,7 @@ input[type=range]{width:100%;min-height:44px}
         <p class="hint" style="margin-top:8px">« Tracé » sur la carte ajoute un lieu en le touchant ; une pastille se déplace et se retire. Jamais un identifiant à taper.</p>
       </div></details>
       <details class="grp"><summary>Ce que le pilote voit<span class="n">avant · après</span></summary><div>
-        <div class="pilot"><span class="when">Avant</span><p><b>B · Entrée dans le secteur nord</b></p><p>s'ouvre au passage de la zone montrée sur la Carte</p></div>
+        <div class="pilot"><span class="when">Avant</span><p><b>Tiroir 1 · Entrée dans le secteur nord</b></p><p>s'ouvre au passage de la zone montrée sur la Carte</p></div>
         <div class="pilot"><span class="when">Après</span><p class="how">ouvert au passage de la zone, à 14 h 32 Z</p><p>« CROSS : écho radar dans le secteur nord, descendez voir. »</p></div>
       </div></details>
       <div class="row" style="margin-top:10px"><button class="link">Retirer le tiroir</button></div>
@@ -236,11 +236,11 @@ input[type=range]{width:100%;min-height:44px}
     <section class="card sheet" data-only="essai">
       <h2>Essai des clés</h2>
       <p class="hint">Sans simulateur : posez l'avion sur la carte, avancez le temps. Le même calcul que le vol ; rien n'est écrit dans la mission.</p>
-      <label class="f"><span>Temps depuis le décollage</span><input type="range" min="0" max="120" value="18"><small>H + 18 min · l'avion suit la route de la partie A à 120 kt</small></label>
+      <label class="f"><span>Temps depuis le décollage</span><input type="range" min="0" max="120" value="18"><small>H + 18 min · l'avion suit la route du départ à 120 kt</small></label>
       <div class="two"><label class="f"><span>Altitude (ft)</span><input value="1200" inputmode="numeric"></label><label class="f"><span>Vitesse (kt)</span><input value="120" inputmode="numeric"></label></div>
       <ul class="log">
-        <li>H + 00 — départ de XTST ; tiroirs B et C fermés</li>
-        <li><b>H + 18 — entrée dans la zone du tiroir B, à 1 200 ft : le tiroir B s'ouvre</b></li>
+        <li>H + 00 — départ de XTST ; tiroirs 1 et 2 fermés</li>
+        <li><b>H + 18 — entrée dans la zone du tiroir 1, à 1 200 ft : le tiroir 1 s'ouvre</b></li>
         <li>le pilote se voit proposer « Prendre la suite de route »</li>
       </ul>
       <div class="row" style="margin-top:10px"><button>Recommencer</button><a class="btn" href="#b">Fermer l'essai</a></div>
@@ -249,14 +249,14 @@ input[type=range]{width:100%;min-height:44px}
 </div>
 <div class="bar"><button class="primary">Enregistrer</button><span class="todo">À compléter (3) : Chronologie — aucun événement</span><span class="sp"></span><button class="link">Annuler</button></div>
 <script>
-// Les états de la maquette : la partie A (ses six groupes), les lieux, un tiroir, un repère d'AeroDB touché, l'essai des clés.
+// Les états de la maquette : le départ (la partie A du fichier, ses six groupes), les lieux, un tiroir, un repère d'AeroDB touché, l'essai des clés.
 const STATES = ['a', 'lieux', 'b', 'repere', 'essai'],
   NOTES = {
     a: 'Sélection — touchez un élément pour ouvrir sa fiche ; un outil revient à « Sélection » après une pose (sauf « Tracé »).',
     lieux: 'Sélection — touchez un élément pour ouvrir sa fiche ; un outil revient à « Sélection » après une pose (sauf « Tracé »).',
-    b: 'Tiroir B — sa zone se déplace par son centre, son rayon se tire par la poignée.',
+    b: 'Tiroir 1 — sa zone se déplace par son centre, son rayon se tire par la poignée ; une zone qui n\'est pas ronde se dessine par ses sommets.',
     repere: 'Un repère de la base aéronautique : touché, il dit ce qu\'il est ; « Ajouter comme point » en fait un lieu de la mission.',
-    essai: 'Essai — touchez la carte pour poser l\'avion ; la zone du tiroir B et la trace sont dessinées.'
+    essai: 'Essai — touchez la carte pour poser l\'avion ; la zone du tiroir 1 et la trace sont dessinées.'
   };
 /** L'état de l'adresse montré. */
 function show() {

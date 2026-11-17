@@ -118,21 +118,21 @@ details.pv>summary{min-height:44px;display:flex;align-items:center;cursor:pointe
   <main>
     <section class="card">
       <h2>7. Tiroirs</h2>
-      <p class="hint">La suite que le pilote ne connaît pas au départ : trois tiroirs au plus, dans l'ordre. Chacun s'ouvre par UNE clé ; le pilote peut toujours l'ouvrir à la main.</p>
+      <p class="hint">La suite que le pilote ne connaît pas au départ : des tiroirs, dans l'ordre (douze au plus). Chacun s'ouvre par UNE clé ; le pilote peut toujours l'ouvrir à la main.</p>
 
       <!-- l'état « la liste » : une ligne par tiroir -->
       <div data-state="liste">
         <div class="places">
-          <div class="place"><span class="k">B</span><b>Entrée dans le secteur nord</b><span class="m">zone de passage · cercle 2,5 km, sous 1 500 ft · montrée · repli H + 60 min</span><a class="link act" href="#zone">Modifier</a></div>
-          <div class="place"><span class="k">C</span><b>Radeau en vue</b><span class="m">objet à trouver · radeau · portée 0,4 NM · repli H + 1 h 30</span><a class="link act" href="#objet">Modifier</a></div>
-          <div class="place"><span class="k">D</span><b>Retour par le sud</b><span class="m">heure · 10 min après RDV-1 · suite : PT2, arrivée</span><a class="link act" href="#heure">Modifier</a></div>
+          <div class="place"><span class="k">1</span><b>Entrée dans le secteur nord</b><span class="m">zone de passage · cercle 2,5 km, sous 1 500 ft · montrée · repli H + 60 min</span><a class="link act" href="#zone">Modifier</a></div>
+          <div class="place"><span class="k">2</span><b>Radeau en vue</b><span class="m">objet à trouver · radeau · portée 0,4 NM · repli H + 1 h 30</span><a class="link act" href="#objet">Modifier</a></div>
+          <div class="place"><span class="k">3</span><b>Retour par le sud</b><span class="m">heure · 10 min après RDV-1 · suite : PT2, arrivée</span><a class="link act" href="#heure">Modifier</a></div>
         </div>
-        <div class="add"><button disabled>+ Tiroir</button><span class="lbl">trois tiroirs au plus (B, C, D) ; un tiroir retiré, les lettres se resserrent</span></div>
+        <div class="add"><button>+ Tiroir</button><span class="lbl">« Tiroir 1, 2, 3… » : un tiroir retiré, les rangs se resserrent ; douze au plus</span></div>
       </div>
 
       <!-- l'état « un tiroir ouvert » : sept champs au plus -->
       <div class="open" data-state="zone objet heure" hidden>
-        <h3><span class="k" data-letter>B</span><span data-otitle>Tiroir B</span></h3>
+        <h3><span class="k" data-letter>1</span><span data-otitle>Tiroir 1</span></h3>
         <label class="f"><span>Titre</span><input data-title value="Entrée dans le secteur nord"><small>Le pilote le lit sur le tiroir fermé : restez neutre si la suite doit surprendre.</small></label>
         <div class="keyrow">
           <label class="f"><span>Clé — ce qui ouvre le tiroir</span>
@@ -162,7 +162,7 @@ details.pv>summary{min-height:44px;display:flex;align-items:center;cursor:pointe
               <rect x="436" y="196" width="8" height="8" fill="#59636e"/><text x="450" y="205" font-size="13" fill="#1b1f24">PT2</text>
               <path d="M60 36 L180 84 L332 150 L440 200 L540 262" fill="none" stroke="#59636e" stroke-width="1.5" stroke-dasharray="6 5"/>
             </svg>
-            <div class="tools"><div class="seg"><button aria-pressed="true">Cercle</button><button aria-pressed="false">Polygone</button></div></div>
+            <div class="tools"><div class="seg"><button aria-pressed="true">Cercle</button><button aria-pressed="false">Contour</button></div></div>
             <div class="note">Centre 44°36′N 1°18′E · rayon 2,5 km</div>
           </div>
           <div class="two">
@@ -215,7 +215,7 @@ details.pv>summary{min-height:44px;display:flex;align-items:center;cursor:pointe
     </div>
     <div class="card">
       <div class="lbl">À compléter</div>
-      <ul class="todo-list"><li>Tiroirs : le tiroir C n'a pas de briefing</li><li>Chronologie : aucun événement</li></ul>
+      <ul class="todo-list"><li>Tiroirs : le tiroir 2 n'a pas de briefing</li><li>Chronologie : aucun événement</li></ul>
     </div>
   </aside>
 </div>
@@ -225,18 +225,18 @@ details.pv>summary{min-height:44px;display:flex;align-items:center;cursor:pointe
 // Les états de la maquette : la liste des tiroirs, puis un tiroir ouvert par sa clé (zone, objet, heure). Rien n'est écrit.
 const STEPS = [['Cadre', 'done'], ['Équipes', 'done'], ['Lieux', 'done'], ['Récit', 'done'], ['Risques', 'done'], ['Chronologie et cartes', 'todo'], ['Tiroirs', 'todo']];
 const DRAWERS = {
-  zone: { letter: 'B', title: 'Entrée dans le secteur nord', closed: 's\'ouvre au passage de la zone montrée sur la Carte', nopos: 's\'ouvrira à H + 60 min', how: 'ouvert au passage de la zone, à 14 h 32 Z',
+  zone: { letter: '1', title: 'Entrée dans le secteur nord', closed: 's\'ouvre au passage de la zone montrée sur la Carte', nopos: 's\'ouvrira à H + 60 min', how: 'ouvert au passage de la zone, à 14 h 32 Z',
     msg: '« CROSS : écho radar dans le secteur nord, descendez voir. »', brief: 'Recherche à vue dans le secteur nord, sous 1 500 ft. Rendez compte de tout objet flottant…', route: ['PT2 · Point deux', 'Arrivée'], hint: 'Elle part de la position de l\'avion ; le pilote la prend d\'un geste, jamais d\'office.' },
-  objet: { letter: 'C', title: 'Radeau en vue', closed: 's\'ouvre quand l\'objet est trouvé', nopos: 's\'ouvrira à H + 1 h 30', how: 'ouvert sur « Objet en vue », à 14 h 51 Z',
+  objet: { letter: '2', title: 'Radeau en vue', closed: 's\'ouvre quand l\'objet est trouvé', nopos: 's\'ouvrira à H + 1 h 30', how: 'ouvert sur « Objet en vue », à 14 h 51 Z',
     msg: '« CROSS : radeau confirmé, deux personnes. Treuillage. »', brief: '', route: [], hint: 'Elle part de la position de l\'avion ; le pilote la prend d\'un geste, jamais d\'office.' },
-  heure: { letter: 'D', title: 'Retour par le sud', closed: 's\'ouvre 10 min après RDV-1 (heure estimée)', how: 'ouvert à l\'heure, à 15 h 20 Z',
+  heure: { letter: '3', title: 'Retour par le sud', closed: 's\'ouvre 10 min après RDV-1 (heure estimée)', how: 'ouvert à l\'heure, à 15 h 20 Z',
     msg: '« Base : orage sur le nord, retour par le sud. »', brief: 'Retour par PT2, niveau inchangé. Contact Base Test Sud à 20 NM.', route: ['RDV-1 · Rendez-vous d\'essai', 'PT2 · Point deux', 'Arrivée'], hint: 'Elle reprend au point de passage ; le pilote la prend d\'un geste, jamais d\'office.' }
 };
 /** Le texte, échappé. */
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 /** Ce que le pilote voit d'un tiroir : fermé (avant), ouvert (après). */
 function pilot(d) {
-  return `<div class="pilot"><span class="when">Avant</span><div class="env"><span class="ico"></span><div><b>${esc(d.letter)} · ${esc(d.title)}</b><p>${esc(d.closed)}</p>${d.nopos ? `<p class="lbl">Sans position en direct sur son appareil : « ${esc(d.nopos)} »</p>` : ''}<p><span class="link">Ouvrir le tiroir</span></p></div></div></div>
+  return `<div class="pilot"><span class="when">Avant</span><div class="env"><span class="ico"></span><div><b>Tiroir ${esc(d.letter)} · ${esc(d.title)}</b><p>${esc(d.closed)}</p>${d.nopos ? `<p class="lbl">Sans position en direct sur son appareil : « ${esc(d.nopos)} »</p>` : ''}<p><span class="link">Ouvrir le tiroir</span></p></div></div></div>
     <div class="pilot"><span class="when">Après</span><p class="how">${esc(d.how)}</p><p class="msg">${esc(d.msg)}</p>${d.brief ? `<p>${esc(d.brief)}</p>` : '<p class="lbl">(pas de briefing)</p>'}${d.route.length ? '<p><span class="link">Prendre la suite de route</span></p>' : ''}</div>`;
 }
 /** L'état de l'adresse montré. */
@@ -260,7 +260,7 @@ function show() {
     document.querySelector('[data-route]').innerHTML = `${d.route.map(r => `<span class="c">${esc(r)}</span>`).join('<span class="arrow">›</span>')}<button class="link">+ Lieu</button>`;
     document.querySelector('[data-routehint]').textContent = d.hint;
   }
-  const html = d ? pilot(d) : Object.values(DRAWERS).map(x => `<div class="pilot"><div class="env"><span class="ico"></span><div><b>${esc(x.letter)} · ${esc(x.title)}</b><p>${esc(x.closed)}</p></div></div></div>`).join('');
+  const html = d ? pilot(d) : Object.values(DRAWERS).map(x => `<div class="pilot"><div class="env"><span class="ico"></span><div><b>Tiroir ${esc(x.letter)} · ${esc(x.title)}</b><p>${esc(x.closed)}</p></div></div></div>`).join('');
   for (const p of document.querySelectorAll('[data-pilot]')) p.innerHTML = html;
   if (document.querySelector('.steps a[aria-current]')) document.querySelector('.steps a[aria-current]').scrollIntoView({ inline: 'end', block: 'nearest' });
 }
