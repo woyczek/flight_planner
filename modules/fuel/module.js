@@ -601,10 +601,11 @@ const TX = {
   fplCopy: ['Copier pour Eurocontrol', 'Copy for Eurocontrol', 'Für Eurocontrol kopieren', 'Copiar para Eurocontrol'],
   fplFold: ['Plan de vol OACI (relecture)', 'ICAO flight plan (review)', 'ICAO-Flugplan (Durchsicht)', 'Plan de vuelo OACI (revisión)'],
   fplId: ['Identifiant', 'Identification', 'Kennung', 'Identificación'],
-  fplNeutral: ['Identifiant neutre par défaut ({id}) : votre immatriculation ne part pas sans votre geste.',
-    'Neutral identification by default ({id}): your registration does not leave without your gesture.',
-    'Standardmäßig neutrale Kennung ({id}): Ihr Kennzeichen geht nicht ohne Ihr Zutun hinaus.',
-    'Identificación neutra por defecto ({id}): su matrícula no sale sin su gesto.'
+  fplNeutral: [
+    'Identifiant neutre par défaut ({id}) ; l’immatriculation, exigée par Eurocontrol, est en case 18 (REG/) ; rien ne part sans votre geste.',
+    'Neutral identification by default ({id}); the registration, required by Eurocontrol, is in item 18 (REG/); nothing leaves without your gesture.',
+    'Standardmäßig neutrale Kennung ({id}); das von Eurocontrol verlangte Kennzeichen steht in Feld 18 (REG/); nichts geht ohne Ihr Zutun hinaus.',
+    'Identificación neutra por defecto ({id}); la matrícula, exigida por Eurocontrol, va en la casilla 18 (REG/); nada sale sin su gesto.'
   ],
   fplEquip: [
     'Équipement supposé, pour ne contrôler que la route : {e} et PBN/{p} ; sans liaison de données, une erreur CPDLC peut rester.',
@@ -651,6 +652,11 @@ const TX = {
       'nivel de crucero (FL010 a FL660)'
     ],
     route: ['route vide', 'empty route', 'leere Route', 'ruta vacía'],
+    reg: ['immatriculation absente de la fiche de l’aéronef (exigée par Eurocontrol)',
+      'registration missing from the aircraft sheet (required by Eurocontrol)',
+      'Kennzeichen fehlt im Luftfahrzeugblatt (von Eurocontrol verlangt)',
+      'matrícula ausente de la ficha de la aeronave (exigida por Eurocontrol)'
+    ],
     routeword: ['route : élément hors de la forme OACI « {t} »', 'route: element not in ICAO form “{t}”',
       'Route: Element nicht in ICAO-Form „{t}“', 'ruta: elemento fuera de la forma OACI «{t}»'
     ],
@@ -660,6 +666,16 @@ const TX = {
       'carácter fuera del alfabeto del mensaje'
     ]
   },
+  fplJoined: ['Deux indicatifs pour le même tracé ({v}) : le premier est écrit.',
+    'Two designators for the same track ({v}): the first is written.',
+    'Zwei Bezeichner für dieselbe Strecke ({v}): der erste wird geschrieben.',
+    'Dos designadores para el mismo trazado ({v}): se escribe el primero.'
+  ],
+  fplNoHf: ['Route océanique : la radio HF y est exigée, et l’équipement supposé ne la porte pas — Eurocontrol refusera sans elle.',
+    'Oceanic route: HF radio is required there, and the assumed equipment does not carry it — Eurocontrol will refuse without it.',
+    'Ozeanische Route: dort ist HF-Funk vorgeschrieben, und die angenommene Ausrüstung hat ihn nicht — Eurocontrol lehnt ohne ihn ab.',
+    'Ruta oceánica: la radio HF es obligatoria y el equipo supuesto no la lleva; Eurocontrol rechazará sin ella.'
+  ],
   fplWake: ['Catégorie de turbulence de sillage inconnue du catalogue : « M » supposée.',
     'Wake turbulence category unknown to the catalogue: « M » assumed.',
     'Wirbelschleppenkategorie im Katalog unbekannt: „M“ angenommen.',
@@ -4844,6 +4860,7 @@ function fplOf(C) {
       dep: r.dep,
       arr: r.arr,
       altn: r.altn,
+      reg: f.aircraft?.registration || '',
       eobt,
       speedKt: +q?.cruise?.tas || +C?.sheet?.cruise?.tasKt || 0,
       levelFt: +C?.levelFt || 0,
@@ -4877,7 +4894,9 @@ function fplDraw(C, textOnly = false) {
       ad: r.dep
     }), n.star ? '' : tt(TX.fplNoStar, {
       ad: r.arr
-    }), n.oceanic ? tt(TX.fplOceanic) : '', n.wake ? tt(TX.fplWake) : ''].filter(Boolean),
+    }), n.oceanic ? tt(TX.fplOceanic) : '', n.hf ? tt(TX.fplNoHf) : '', ...(n.joined || []).slice(0, 4).map(v => tt(TX.fplJoined, {
+      v
+    })), n.wake ? tt(TX.fplWake) : ''].filter(Boolean),
     bad = F.m.errors.length ? tt(TX.fplBad, {
       l: fplErrs(F.m)
     }) : '',
@@ -4909,6 +4928,8 @@ async function fplCopy() {
   await copyText(F.m.text);
   if (fold) fold.open = true;
   S.ctx.notify(tt(TX.fplCopied), 'ok');
+  // SOG-0422 : la HF manque sur une route océanique : copié (le pilote juge), mais dit ; l'équipement n'est jamais inventé
+  if (F.m.notes.hf) S.ctx.notify(tt(TX.fplNoHf), 'warn');
 }
 /** SOG-0391 (b) : une heure UTC « AAAA-MM-JJTHH:MMZ » dite à la minute, en Z (« 13 h 32 Z » en français, « 13:32Z » ailleurs) ; `bare` :
  *  sans le « Z » (le début d'une fenêtre). */

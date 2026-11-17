@@ -7092,9 +7092,9 @@ def f249(c):
 # SOG-0402: the ICAO flight plan expected, character by character (Doc 4444, appendix 2) — two invented flights: a European one with a
 # SID and a level change, an Atlantic one through a NAT track and coordinates « 54/50 »
 _FPL_EU = ('(FPL-CHECK01-IG\n-C30J/M-SDGRWY/S\n-LFPO0930\n-N0330F270 OPAL2E OPALE UN491 NEPIX DCT LUGEN/N0330F250 DCT TOU\n'
-           '-LFML0115 LFMT\n-PBN/B2D2 DOF/261118)')
-_FPL_NAT = ('(FPL-ABC123-IG\n-B744/H-SDGRWY/S\n-EIDW2355\n-N0480F350 DOGAL NATE 54N050W DCT NICSO\n'
-            '-KJFK0712\n-PBN/B2D2 DOF/261231)')
+           '-LFML0115 LFMT\n-PBN/B2D2 DOF/261118 REG/FZZAB)')
+_FPL_NAT = ('(FPL-ABC123-IG\n-B744/H-SDGRWY/S\n-EIDW2355\n-N0480F350 DOGAL NATE 54N050W DCT NICSO N71B ZZEND\n'
+            '-KJFK0712\n-PBN/B2D2 DOF/261231 REG/EIZZC)')
 
 
 @case('F247', 'Route step, « Copier pour Eurocontrol »: the ICAO flight plan of the flight (Doc 4444, appendix 2) — a neutral identification '
@@ -7111,16 +7111,16 @@ def f247(c):
     c.open('fuel', docs=flight_docs())
     wait_quote(c)
     got = c.js("""() => import('/modules/fuel/fpl.js').then(F => [
-      F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', altn: 'LFMT', eobt: F.eobtOf('2026-11-18T09:30:00Z'), speedKt: 330,
-        levelFt: 27000, routeText: 'LFPO OPAL2E OPALE UN491 NEPIX LUGEN/F250 TOU LFML', eetMin: 75 }).text,
-      F.message({ id: 'abc123', type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', eobt: F.eobtOf('2026-12-31T23:55:00Z'), speedKt: 480,
-        levelFt: 35000, routeText: 'EIDW DOGAL NATE 54/50 DCT NICSO N71B-N90B KJFK', eetMin: 432 }).text,
-      F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', eobt: F.eobtOf('2026-11-18T09:30:00Z'), speedKt: 330, levelFt: 27000,
-        routeText: 'LFPO LFML', eetMin: 75 }).errors,
+      F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', altn: 'LFMT', reg: 'F-ZZAB', eobt: F.eobtOf('2026-11-18T09:30:00Z'),
+        speedKt: 330, levelFt: 27000, routeText: 'LFPO OPAL2E OPALE UN491 NEPIX LUGEN/F250 TOU LFML', eetMin: 75 }).text,
+      F.message({ id: 'abc123', type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', reg: 'EI-ZZC', eobt: F.eobtOf('2026-12-31T23:55:00Z'),
+        speedKt: 480, levelFt: 35000, routeText: 'EIDW DOGAL NATE 54/50 DCT NICSO N71B-N90B ZZEND KJFK', eetMin: 432 }).text,
+      F.message({ type: 'C30J', wake: 'M', dep: 'LFPO', arr: 'LFML', reg: 'F-ZZAB', eobt: F.eobtOf('2026-11-18T09:30:00Z'), speedKt: 330,
+        levelFt: 27000, routeText: 'LFPO LFML', eetMin: 75 }).errors,
       F.eobtOf(null, Date.parse('2026-11-17T10:51:10Z')).at.toISOString(),
       F.item15('EIDW DOGAL 54/20 55/30 KJFK', { dep: 'EIDW', arr: 'KJFK', speedKt: 470, levelFt: 37000 }).oceanic ])""")
     c.eq(got[0], _FPL_EU, 'a European flight: SID kept, DCT between points, the level change with its speed-level group', what='EU')
-    c.eq(got[1], _FPL_NAT, 'an Atlantic flight: the NAT track, « 54/50 » as « 54N050W », the compound airway not written (SOG-0422), the identification in capitals', what='NAT')
+    c.eq(got[1], _FPL_NAT, 'an Atlantic flight: the NAT track, « 54/50 » as « 54N050W », the compound airway by its first designator (SOG-0422), the registration in item 18, the identification in capitals', what='NAT')
     c.eq(got[2], ['route'], 'a route of the two aerodromes only: refused (« route vide »)', what='empty route')
     c.eq(got[3], '2026-11-17T10:55:00.000Z', 'no time in the flight: now, rounded up to the next five minutes', what='now')
     c.eq(got[4], True, 'North Atlantic coordinates: said unchecked by Eurocontrol', what='oceanic')
@@ -7143,7 +7143,7 @@ def f247(c):
     c.eq(lines[2], '-LFRS0930', 'the departure at the flight\'s time', what='item 13')
     c.ok(re.fullmatch(r'-N0\d{3}F270 LUGEN DCT NEPIX', lines[3] or '') is not None, lines[3], 'item 15: no aerodromes, DCT between the two points')
     c.ok(re.fullmatch(r'-LFML\d{4} LFMT', lines[4] or '') is not None, lines[4], 'the arrival, the estimated time, the alternate')
-    c.eq(lines[5], '-PBN/B2D2 DOF/261118)', 'the PBN mention and the date of flight', what='item 18')
+    c.eq(lines[5], '-PBN/B2D2 DOF/261118 REG/FRAJA)', 'the PBN mention, the date of flight, the registration of the sheet', what='item 18')
     notes = norm(c.text(f'{FUEL} [data-fplnotes]') or '')
     for k in ('fplEquip', 'fplNoSid', 'fplNoStar'):
         c.ok(norm(tx(T, k, L)).split('{')[0].strip() in notes, notes, f'the fold says {k}')
@@ -7157,32 +7157,44 @@ def f247(c):
 
 
 @case('F256', 'Route step, « Copier pour Eurocontrol »: item 15 never carries a hyphen (a segment the data name after two airways joined by '
-      'a hyphen, « N12C-N34D », is written « DCT » between its two points: the hyphen would open a new item of the message), never writes '
-      'a speed-level group identical to the one in force, never « DCT » before a STAR at the end of the route (« ZZSTA3 », a STAR without a '
-      'route letter); an element not in ICAO form is never copied: the button says which', 'F', tags=('fuel',), designs=('standard',),
+      'a hyphen, « N12C-N34D », the same track, is written by its first designator and the choice said: the hyphen would open a new item '
+      'of the message), never writes a speed-level group identical to the one in force, never « DCT » before a STAR at the end of the route '
+      '(« ZZSTA3 », a STAR without a route letter); an element not in ICAO form is never copied: the button says which; the registration '
+      'required in item 18 (REG/), its absence said; an oceanic route without HF in the equipment said on copying', 'F', tags=('fuel',),
+      designs=('standard',),
       screens=False, langs4=True,
       rule='SOG-0422 (the user pasted the plan of a crossing to Eurocontrol: refused, five syntax errors from column 140 of the route, '
-      'one cause: two North American airways joined by a hyphen); invented routes, never the user\'s flight')
+      'one cause: two North American airways joined by a hyphen); the second paste: REG required (EUIFPS002A), HF in oceanic airspace '
+      '(EUROEGGX1A), never invented; AeroDB: the joined name comes from the AIXM source, both designators the same track; invented routes, '
+      'never the user\'s flight')
 def f256(c):
     T = 'modules/fuel/module.js'
     L = c.lang
     c.open('fuel', docs=flight_docs())
     wait_quote(c)
     got = c.js("""() => import('/modules/fuel/fpl.js').then(F => {
-      const ok = F.message({ type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', eobt: F.eobtOf('2026-12-31T23:55:00Z'), speedKt: 480,
-          levelFt: 35000, routeText: 'EIDW ZZONE/F350 ZZTWO NATE 54/50 DCT ZZNIC N12C-N34D ZZALX DCT ZZARV ZZSTA3 KJFK', eetMin: 432 }),
-        bad = F.message({ type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', eobt: F.eobtOf('2026-12-31T23:55:00Z'), speedKt: 480,
-          levelFt: 35000, routeText: 'EIDW ZZONE ZZ-AB ZZTWO KJFK', eetMin: 432 });
-      return [ok.text.split('\\n')[3], ok.errors, ok.notes.star, ok.notes.oceanic, bad.errors, bad.notes.bad];
+      const ok = F.message({ type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', reg: 'EI-ZZD', eobt: F.eobtOf('2026-12-31T23:55:00Z'),
+          speedKt: 480, levelFt: 35000, routeText: 'EIDW ZZONE/F350 ZZTWO NATE 54/50 DCT ZZNIC N12C-N34D ZZALX DCT ZZARV ZZSTA3 KJFK',
+          eetMin: 432 }),
+        bad = F.message({ type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', reg: 'EI-ZZD', eobt: F.eobtOf('2026-12-31T23:55:00Z'),
+          speedKt: 480, levelFt: 35000, routeText: 'EIDW ZZONE ZZ-AB ZZTWO KJFK', eetMin: 432 }),
+        noreg = F.message({ type: 'B744', wake: 'H', dep: 'EIDW', arr: 'KJFK', eobt: F.eobtOf('2026-12-31T23:55:00Z'), speedKt: 480,
+          levelFt: 35000, routeText: 'EIDW ZZONE ZZTWO KJFK', eetMin: 432 });
+      return [ok.text.split('\\n')[3], ok.errors, ok.notes.star, ok.notes.oceanic, bad.errors, bad.notes.bad, ok.notes.joined,
+        ok.notes.hf, ok.text.split('\\n')[5], noreg.errors];
     })""")
-    c.eq(got[0], '-N0480F350 ZZONE DCT ZZTWO NATE 54N050W DCT ZZNIC DCT ZZALX DCT ZZARV ZZSTA3',
-         'item 15: the joined airways as DCT, no group repeated at ZZONE, the STAR after its point without DCT', what='item 15')
+    c.eq(got[0], '-N0480F350 ZZONE DCT ZZTWO NATE 54N050W DCT ZZNIC N12C ZZALX DCT ZZARV ZZSTA3',
+         'item 15: the joined airways by the first designator, no group repeated at ZZONE, the STAR after its point without DCT', what='item 15')
     c.ok('-' not in (got[0] or '')[1:], got[0], 'no hyphen in the route line')
     c.eq(got[1], [], 'the message passes its form rules', what='errors')
     c.eq(got[2], True, 'the STAR without a route letter at the end is known as a STAR (the fold does not say « no STAR »)', what='star')
     c.eq(got[3], True, 'the joined North American airways still said unchecked by Eurocontrol', what='oceanic')
     c.ok('routeword' in (got[4] or []), got[4], 'an element with a hyphen: the message refuses it')
     c.eq(got[5], ['ZZ-AB'], 'the element not in ICAO form named', what='bad')
+    c.eq(got[6], ['N12C-N34D'], 'the joined name kept to be said', what='joined')
+    c.eq(got[7], True, 'an oceanic route, no H in the assumed equipment: said', what='hf')
+    c.eq(got[8], '-PBN/B2D2 DOF/261231 REG/EIZZD)', 'the registration in item 18, letters and digits only', what='REG')
+    c.eq(got[9], ['reg'], 'no registration: the message refuses to be copied', what='no REG')
     # the screen: a route text with an element not in ICAO form; the button says it instead of copying
     docs = flight_docs()
     for d in docs:
@@ -7194,14 +7206,36 @@ def f256(c):
     wait_quote(c)
     to_step(c, 1)
     c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]')", timeout=10000, what='« Copier pour Eurocontrol »')
-    c.tap(f'{FUEL} [data-do=fplcopy]')
+    # the message fails: the button carries aria-disabled (Playwright will not tap it) but still answers a press, saying why
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-do=fplcopy]').getAttribute('aria-disabled')"), 'true', 'the button said unavailable',
+         what='aria-disabled')
+    c.js(f"document.querySelector('{FUEL} [data-do=fplcopy]').click()")
     want = norm(tx(T, 'routeword', L)).split('{')[0].strip()
-    c.until(f"(window.__notes || []).some(x => x.includes({json.dumps(want)}))", timeout=5000, what='the button says the element')
+    c.until(f"(window.__notes || []).some(x => x.replace(/\\s+/g, ' ').includes({json.dumps(want)}))", timeout=5000, what='the button says the element')
     bad = norm(c.text(f'{FUEL} [data-fplbad]') or '')
     c.ok(want in bad and 'ZZ-AB' in bad, bad, 'the fold says the element not in ICAO form, named')
-    c.ok(not any(norm(tx(T, 'fplCopied', L))[:11] in x for x in (c.js('window.__notes || []') or [])), 'copied', 'nothing copied')
+    c.ok(not any(norm(tx(T, 'fplCopied', L))[:11] in norm(x) for x in (c.js('window.__notes || []') or [])), 'copied', 'nothing copied')
     c.js(f"document.querySelector('{FUEL} [data-fpl]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F256_{c.design}_390_{L}.png')
+    # an oceanic route: copied, the missing HF said; the fold names the joined airways
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['planned_at'] = '2026-11-18T09:30:00Z'
+            d[1]['route']['text'] = 'LFRS LUGEN 54/20 ZZNIC N12C-N34D ZZALX NEPIX LFML'
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]')", timeout=10000, what='« Copier pour Eurocontrol »')
+    c.tap(f'{FUEL} [data-do=fplcopy]')
+    hf = norm(tx(T, 'fplNoHf', L))[:24]
+    c.until(f"(window.__notes || []).some(x => x.replace(/\\s+/g, ' ').includes({json.dumps(hf)}))", timeout=5000, what='the missing HF said on copying')
+    c.ok(any(norm(tx(T, 'fplCopied', L))[:11] in norm(x) for x in (c.js('window.__notes || []') or [])), 'copied', 'copied all the same')
+    notes = norm(c.text(f'{FUEL} [data-fplnotes]') or '')
+    c.ok(norm(tx(T, 'fplJoined', L)).split('(')[0].strip() in notes and 'N12C-N34D' in notes, notes, 'the fold says the joined airways')
+    c.ok(hf in notes, notes, 'the fold says the missing HF')
+    c.js(f"document.querySelector('{FUEL} [data-fpl]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F256_{c.design}_390_{L}_ocean.png')
 
 
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)

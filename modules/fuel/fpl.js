@@ -7,14 +7,15 @@
 //   NEUTRAL_ID, EQUIPMENT, PBN : les valeurs supposées (constantes nommées).
 //   coordWord(lat, lon) : « 54N050W » en degrés entiers, sinon « 5430N05000W ».
 //   speedLevel(kt, ft) : « N0450F350 ».
-//   item15(text, { dep, arr, speedKt, levelFt }) → { route, oceanic, sid, star, bad } : la case 15 depuis le texte de la route du vol
-//     (départ et arrivée retirés, « DCT » entre deux points hors voie, coordonnées OACI, groupe vitesse-niveau en tête et à chaque
-//     changement de niveau — jamais deux fois le même —, jamais de tiret : SOG-0422) ; oceanic : la route passe par une route NAT,
-//     une voie nord-américaine ou des coordonnées de l'Atlantique Nord (non contrôlées par Eurocontrol) ; sid / star : un nom de
-//     procédure écrit contre le départ / l'arrivée ; bad : les éléments écrits hors de la forme OACI (le message les refuse).
+//   item15(text, { dep, arr, speedKt, levelFt }) → { route, oceanic, sid, star, bad, joined } : la case 15 depuis le texte de la
+//     route du vol (départ et arrivée retirés, « DCT » entre deux points hors voie, coordonnées OACI, groupe vitesse-niveau en tête et
+//     à chaque changement de niveau — jamais deux fois le même —, jamais de tiret : SOG-0422) ; oceanic : la route passe par une route
+//     NAT, une voie nord-américaine ou des coordonnées de l'Atlantique Nord (non contrôlées par Eurocontrol) ; sid / star : un nom de
+//     procédure écrit contre le départ / l'arrivée ; bad : les éléments écrits hors de la forme OACI (le message les refuse) ;
+//     joined : les noms de voies jointes dont le premier indicatif est écrit (dit au pilote).
 //   eobtOf(plannedAt, now) → { at: Date, now: bool } : l'heure du vol, sinon l'heure présente arrondie aux cinq minutes suivantes.
-//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad } } : le message « (FPL-…) », une case par
-//     ligne.
+//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad, joined, hf } } : le message « (FPL-…) », une
+//     case par ligne ; l'immatriculation en case 18 (REG/, exigée par Eurocontrol) ; hf : route océanique sans HF dans l'équipement.
 
 import {
   tokenize
@@ -30,8 +31,9 @@ export const PBN = 'B2D2';
 const pad = (n, w) => String(Math.max(0, Math.round(n))).padStart(w, '0');
 /** Une voie nord-américaine composée (« N71B-N90B ») ou une route NAT (« NATV ») : hors du contrôle d'Eurocontrol. */
 const OCEANIC = /^(?:NAT[A-Z]{1,2}|[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?)+)$/;
-/** SOG-0422 : un tronçon que les données nomment de plusieurs voies jointes par un tiret (le format des voies d'X-Plane écrit ainsi un
- *  tronçon commun à plusieurs voies : « N71B-N90B »). Le tiret ouvre une nouvelle case du message : jamais écrit. */
+/** SOG-0422 : un tronçon que la source nomme de plusieurs voies jointes par un tiret (le fichier AIXM publie un seul nom, « L457-M325 »,
+ *  quand deux voies ont exactement les mêmes segments : AeroDB, parseAixm). Le tiret ouvre une nouvelle case du message : jamais écrit ;
+ *  chaque indicatif désigne le même tracé, le premier est écrit et le choix dit. */
 const JOINED = /^[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?)+$/;
 /** Un nom de procédure (SID, STAR) : finit par un chiffre et une lettre (« OPAL2E »). */
 const PROC = /\d[A-Z]$/;
@@ -43,6 +45,8 @@ const PROC_BARE = /^[A-Z]{3,5}[1-9]$/;
 const ITEM15_WORD = /^[A-Z0-9]{2,11}(?:\/[NKM]\d{4}[FAMS]\d{3,4})?$/;
 /** L'alphabet du message (majuscules, chiffres, espace, « / - ( ) », retour à la ligne). */
 const ALPHABET = /^[A-Z0-9 /()\-\n]*$/;
+/** SOG-0422 : la marque d'immatriculation de la case 18 (REG/) : lettres et chiffres seulement (« F-ABCD » s'écrit « FABCD »). */
+export const regWord = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 /** « 54N050W » quand les deux sont en degrés entiers, sinon degrés et minutes « 5430N05000W ». */
 export function coordWord(lat, lon) {
@@ -73,12 +77,19 @@ export function item15(text, {
   let oceanic = false;
   const D = String(dep || '').toUpperCase(),
     A = String(arr || '').toUpperCase(),
-    // SOG-0422 : un tronçon nommé de voies jointes n'est pas écrit (le tiret ouvrirait une nouvelle case) : ses deux points restent,
-    // reliés par « DCT » (la règle ci-dessous) ; il reste une voie nord-américaine, dite non contrôlée
-    toks = tokenize(text).filter(t => {
-      if (t.kind === 'group') return false;
-      if (JOINED.test(t.id || '')) return !(oceanic = true);
-      return true;
+    joined = [],
+    // SOG-0422 : un tronçon nommé de voies jointes : son premier indicatif (le même tracé), le nom entier dit ; il reste une voie
+    // nord-américaine, dite non contrôlée
+    toks = tokenize(text).filter(t => t.kind !== 'group').map(t => {
+      if (!JOINED.test(t.id || '')) return t;
+      oceanic = true;
+      joined.push(t.id);
+      return {
+        kind: 'name',
+        id: t.id.split('-')[0],
+        alt_ft: 0,
+        airway: true
+      };
     });
   if (toks.length && toks[0].kind === 'name' && toks[0].id === D) toks.shift();
   if (toks.length && toks.at(-1).kind === 'name' && toks.at(-1).id === A) toks.pop();
@@ -116,7 +127,8 @@ export function item15(text, {
     sid,
     star,
     // SOG-0422 : la garde générale : un élément hors de la forme OACI (un tiret, une ponctuation, un mot trop long) n'est jamais copié
-    bad: out.filter(w => !ITEM15_WORD.test(w))
+    bad: out.filter(w => !ITEM15_WORD.test(w)),
+    joined
   };
 }
 
@@ -138,7 +150,8 @@ const hhmm = d => `${pad(d.getUTCHours(), 2)}${pad(d.getUTCMinutes(), 2)}`;
 const yymmdd = d => `${pad(d.getUTCFullYear() % 100, 2)}${pad(d.getUTCMonth() + 1, 2)}${pad(d.getUTCDate(), 2)}`;
 
 /** Le message de plan de vol (voir l'en-tête) ; les règles de forme vérifiées, dites par leurs codes : id, type, wake, dep, arr, altn,
- *  speed, level, route, eet, alphabet ; une catégorie de sillage inconnue est supposée « M » et dite (notes.wake). o : { id, type, wake, dep, arr, altn, eobt: { at, now }, speedKt, levelFt, routeText, eetMin }. */
+ *  speed, level, route, routeword, reg, eet, alphabet ; une catégorie de sillage inconnue est supposée « M » et dite (notes.wake).
+ *  o : { id, type, wake, dep, arr, altn, reg, eobt: { at, now }, speedKt, levelFt, routeText, eetMin }. */
 export function message(o = {}) {
   const up = v => String(v ?? '').toUpperCase().trim(),
     id = up(o.id) || NEUTRAL_ID,
@@ -150,6 +163,7 @@ export function message(o = {}) {
     speed = Math.round(+o.speedKt || 0),
     level = Math.round((+o.levelFt || 0) / 100),
     eet = Math.round(+o.eetMin || 0),
+    reg = regWord(o.reg),
     at = o.eobt?.at instanceof Date ? o.eobt.at : new Date(),
     r = item15(o.routeText, {
       dep,
@@ -167,9 +181,11 @@ export function message(o = {}) {
   if (!(level >= 10 && level <= 660)) errors.push('level');
   if (r.route.split(' ').length < 2) errors.push('route');
   if (r.bad.length) errors.push('routeword');
+  // SOG-0422 : Eurocontrol exige l'immatriculation (EUIFPS002A) : sans elle, le plan serait refusé
+  if (!/^[A-Z0-9]{2,7}$/.test(reg)) errors.push('reg');
   if (!(eet > 0 && eet < 100 * 60)) errors.push('eet');
   const text = ['(FPL-' + id + '-IG', `-${type || 'ZZZZ'}/${wake || 'M'}-${EQUIPMENT}`, `-${dep}${hhmm(at)}`, `-${r.route}`,
-    `-${arr}${pad(Math.floor(eet / 60), 2)}${pad(eet % 60, 2)}${altn ? ` ${altn}` : ''}`, `-PBN/${PBN} DOF/${yymmdd(at)})`
+    `-${arr}${pad(Math.floor(eet / 60), 2)}${pad(eet % 60, 2)}${altn ? ` ${altn}` : ''}`, `-PBN/${PBN} DOF/${yymmdd(at)}${reg ? ` REG/${reg}` : ''})`
   ].join('\n');
   if (!ALPHABET.test(text)) errors.push('alphabet');
   return {
@@ -181,7 +197,10 @@ export function message(o = {}) {
       star: r.star,
       now: !!o.eobt?.now,
       wake: !/^[LMHJ]$/.test(wake),
-      bad: r.bad
+      bad: r.bad,
+      joined: r.joined,
+      // SOG-0422 : la HF est exigée en espace océanique (EUROEGGX1A) ; l'équipement supposé ne l'invente pas : dit
+      hf: r.oceanic && !EQUIPMENT.split('/')[0].includes('H')
     }
   };
 }

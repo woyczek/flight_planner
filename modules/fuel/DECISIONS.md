@@ -2355,3 +2355,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   digit 1-9) is now a procedure when it stands against the departure or the arrival — where a point of that name would make no sense;
   the fold then no longer says « no STAR ». F256 (invented routes; counter-test: red on the parent, the hyphen in the route line); F247's
   Atlantic flight no longer writes its compound airway.
+- **17 Nov 2026 — SOG-0422, continued (the user's second paste: hyphen removed by hand, the syntax passed, twelve errors of route
+  and fields — SOG-0423)**. (1, revised) AeroDB: the joined name does not come from the engine nor from X-Plane but from the AIXM source
+  (shared/aero_sources.js, parseAixm, the `routeFormed` of each RouteSegment): when two airways have EXACTLY the same segments, the
+  source gives one name with a hyphen (« L457-M325 »); the engine keeps it as `leg.via`, with no list nor junction point. Both
+  designators name the same track, so each is valid for that segment: the FIRST is written (the user reduced « N260B-N271B » to
+  « N260B » by hand), and the fold says the choice (« Two designators for the same track (…): the first is written »), instead of DCT.
+  The name is cut at the hyphen in fpl.js — a closed list, no field asked of AeroDB. (5) The registration is required by Eurocontrol
+  (EUIFPS002A): written in item 18 as `REG/` + the registration of the aircraft sheet, letters and digits only (« F-ABCD » → « FABCD »;
+  a hyphen would open a new item); without it the message is not copied and the button says so (error `reg`). Item 7 stays the neutral
+  identification. (6) HF is required in oceanic airspace (EUROEGGX1A); the assumed equipment (SDGRWY/S) does not carry H and is NOT
+  completed (the real equipment is SOG-0402 lot 2, Q-0086, not started): on an oceanic route the fold says it and the copy, which still
+  happens (the pilot judges), adds a warning. F256 extended; F247 now carries a registration and a point after its compound airway.
