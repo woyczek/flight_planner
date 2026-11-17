@@ -9290,8 +9290,8 @@ def k237(c):
     air = lambda route, ids: [{'route': route, 'a': pt(a, *nodes[a]), 'b': pt(b, *nodes[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
     ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
     track = lambda tid, route, frm, to, east=('350', '360', '370'), west=(): {'id': tid, 'route': route, 'east': list(east), 'west': list(west), 'nar': [], 'by': 'EGGX', 'from': frm, 'to': to}
-    A = track('A', ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], '2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z')
-    B = track('B', ['ENTRB', '50/40', '50/30', '5030/20', '5130/12'], '2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z')
+    A = track('A', ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], '2026-11-10T01:30:00Z', '2026-11-10T10:00:00Z')
+    B = track('B', ['ENTRB', '50/40', '50/30', '5030/20', '5130/12'], '2026-11-10T01:30:00Z', '2026-11-10T10:00:00Z')
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         def bench(name, doc):
             data = os.path.join(td, name, 'data')
@@ -11532,7 +11532,7 @@ def k293(c):
             g.setdefault(n0, []).append((n1, e))
     track('A', [('EA', 52, -15), ('XA', 47, -60)], 'west')
     track('B', [('EB', 54, -15), ('XB', 48, -60)], 'west', west_levels=(350, 390))
-    track('C', [('EC', 55, -15), ('XC', 49, -60)], 'west', a='2026-11-16T14:00:00Z')
+    track('C', [('EC', 55, -15), ('XC', 49, -60)], 'west', a='2026-11-16T16:00:00Z')
     track('D', [('ED', 56, -15), ('XD', 50, -60)], 'east', west_levels=(), east_levels=(350, 370))
     track('F', [('EF', 61, -15), ('XF', 56, -60)], 'west')
 
@@ -11565,7 +11565,7 @@ def k293(c):
     info = nav.sections_info
     rej = {r['track']: r['code'] for r in info['rejected']}
     c.eq((info['chosen'], rej, sorted(nav.nat_rejected), info['depart']), ('A', {'B': 'level', 'C': 'time', 'D': 'direction'}, ['B', 'C', 'D'], {'time': '2026-11-16T12:00Z', 'basis': 'request'}),
-         'at 12:00 FL370: A is the gate; B does not offer FL370 (level), C is valid only from 14:00 (time), D goes the other way (direction); F (far north) is valid but not resolved (its bound is above the best cost); the answer lists the three with their reason and the hour of the departure; the whole search that follows is told not to take them', what='solve')
+         'at 12:00 FL370: A is the gate; B does not offer FL370 (level), C is valid only from 16:00 at 30°W (time; SOG-0403), D goes the other way (direction); F (far north) is valid but not resolved (its bound is above the best cost); the answer lists the three with their reason and the hour of the departure; the whole search that follows is told not to take them', what='solve')
     c.ok(all(r['text'].startswith('route NAT ') for r in info['rejected']), str(info['rejected']), 'each reason is a sentence of the pilot')
     nav2 = Fake()
     nav2.depart = (datetime.datetime(2026, 11, 16, 3, 0), 'request')
@@ -11921,7 +11921,7 @@ def k298(c):
     nodes = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
     air = lambda route, ids: [{'route': route, 'a': pt(a, *nodes[a]), 'b': pt(b, *nodes[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
     ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
-    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         # 1. the list of requests, from a base that has the twelve aerodromes and one message in each direction
         lists = os.path.join(td, 'lists')
@@ -12015,7 +12015,7 @@ def k299(c):
     nodes = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
     air = lambda route, ids: [{'route': route, 'a': pt(a, *nodes[a]), 'b': pt(b, *nodes[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
     ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
-    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         def bench(name, elev):
             data = os.path.join(td, name, 'data')
@@ -12113,7 +12113,7 @@ def k300(c):
     pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
     air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
     ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
-    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         def bench(name, tracks):
             data = os.path.join(td, name, 'data')
@@ -12779,7 +12779,7 @@ def k309(c):
         nav = Fake(basis)
         S.solve(nav, g, 'DEP', 'ARR')
         out.append((nav.sections_info['fl'], nav.sections_info['fl_basis'], nav.sections_info['rejected']))
-    expected_rejected = [{'track': 'B', 'code': 'level', 'text': 'route NAT B : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390], 'at': '2026-11-16T12:46Z', 'entry': 'EB', 'from': '2026-11-16T11:30:00Z', 'to': '2026-11-16T19:00:00Z'}, {'track': 'C', 'code': 'direction', 'text': 'route NAT C : sens contraire (la track va vers l\'est, le vol vers l\'ouest)'}]
+    expected_rejected = [{'track': 'B', 'code': 'level', 'text': 'route NAT B : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390], 'at': '2026-11-16T14:02Z', 'point': '30W', 'entry': 'EB', 'from': '2026-11-16T11:30:00Z', 'to': '2026-11-16T19:00:00Z'}, {'track': 'C', 'code': 'direction', 'text': 'route NAT C : sens contraire (la track va vers l\'est, le vol vers l\'ouest)'}]
     c.eq(out, [(370, 'request', expected_rejected), (370, 'default', expected_rejected)],
          'the track B offers FL350 and FL390 westbound: set aside for the LEVEL at FL370, it says `levels: [350, 390]`; C is set aside for the direction and has NO `levels`; `fl` is the level taken and `fl_basis` where it comes from (red before: neither field)', what='fields')
     # 3. the engine, on the bench of K237: a flight with no level is at FL180 and says it; at FL370 the track is taken
@@ -12787,7 +12787,7 @@ def k309(c):
     pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
     air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
     ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
-    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = os.path.join(td, 'data')
         os.makedirs(data)
@@ -12854,9 +12854,9 @@ def k310(c):
     S.solve(nav, g, 'DEP', 'ARR')
     at = lambda n: (datetime.datetime(2026, 11, 16, 12, 0) + datetime.timedelta(hours=engine.nm(nodes['DEP'], nodes[n]) / 450)).strftime('%Y-%m-%dT%H:%MZ')
     c.eq((at('EB'), nav.sections_info['rejected'], nav.sections_info.get('entry'), nav.sections_info.get('direction')),
-         (at('EB'), [{'track': 'B', 'code': 'time', 'text': 'route NAT B : non valide à ' + at('EB')[11:13] + at('EB')[14:16] + 'Z (valide de 0200Z à 0800Z)', 'at': at('EB'), 'entry': 'EB', 'from': '2026-11-16T02:00:00Z', 'to': '2026-11-16T08:00:00Z'},
+         (at('EB'), [{'track': 'B', 'code': 'time', 'text': 'route NAT B : non valide à 1402Z (valide de 0200Z à 0800Z)', 'at': '2026-11-16T14:02Z', 'point': '30W', 'entry': 'EB', 'from': '2026-11-16T02:00:00Z', 'to': '2026-11-16T08:00:00Z'},
                      {'track': 'C', 'code': 'direction', 'text': 'route NAT C : sens contraire (la track va vers l\'est, le vol vers l\'ouest)'},
-                     {'track': 'L', 'code': 'level', 'text': 'route NAT L : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390], 'at': at('EL'), 'entry': 'EL', 'from': '2026-11-16T11:00:00Z', 'to': '2026-11-16T19:00:00Z'}], None, 'west'),
+                     {'track': 'L', 'code': 'level', 'text': 'route NAT L : FL370 non proposé vers l\'ouest (FL350 à FL390)', 'levels': [350, 390], 'at': '2026-11-16T14:12Z', 'point': '30W', 'entry': 'EL', 'from': '2026-11-16T11:00:00Z', 'to': '2026-11-16T19:00:00Z'}], None, 'west'),
          'the track B (levels 350-370 westbound, valid 02:00-08:00Z) is set aside for the HOUR: `at` is the passage of its entry EB (estimated), `from` / `to` its window; C is set aside for the direction and has NO such fields; L is set aside for the LEVEL (it offers FL350 and FL390) and says the hour of the passage of its entry and its window too (the hour is not judged there, only said); `direction` is the direction of the flight as the engine took it; no route taken: no `sections.entry` (red before: none of these fields)', what='fields')
     nothing = Fake()
     nothing.nat = {'meta': {}, 'tracks': []}
@@ -12869,7 +12869,7 @@ def k310(c):
     pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
     air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
     ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
-    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = os.path.join(td, 'data')
         os.makedirs(data)
@@ -12900,7 +12900,7 @@ def k310(c):
             results_cache.ENABLED = True
         c.eq(nohour, ('A', None, [], None, 'east'), 'a request with a date and NO hour (the validity of the hours is not checked): the track A is taken and there is no `sections.entry` (red at the first draft: the entry hour crashed on the missing hour)', what='no hour')
         c.eq((inside, outside), (('A', {'point': 'ENTRA', 'time': '2026-11-10T07:05Z', 'nm': 1164.0, 'speed_kt': 450}, [], None, 'east'),
-                                      (None, {'point': 'ENTRA', 'time': '2026-11-10T13:05Z', 'nm': 1164.0, 'speed_kt': 450}, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T13:02Z', 'entry': 'ENTRA', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}], 'ENTRA', 'east')), 'KJFK → EGLL at FL370: at 04:30Z the track A is taken and `sections.entry` says its entry (ENTRA) and the hour; at 10:30Z A is set aside for the HOUR with its fields, and the route taken (free) says its own entry', what='engine')
+                                      (None, {'point': 'ENTRA', 'time': '2026-11-10T13:05Z', 'nm': 1164.0, 'speed_kt': 450}, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T14:44Z', 'entry': 'ENTRA', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}], 'ENTRA', 'east')), 'KJFK → EGLL at FL370: at 04:30Z the track A is taken and `sections.entry` says its entry (ENTRA) and the hour; at 10:30Z A is set aside for the HOUR with its fields, and the route taken (free) says its own entry', what='engine')
 
 
 @case('K315', 'The temporary data folder of the real-base cases (`_hybrid_data`) removes its junctions ITSELF and never the navigation behind them: the target and its content survive the cleaning; if a junction cannot be removed nothing is deleted below it',
@@ -12932,3 +12932,62 @@ def k315(c):
         c.eq((went, temp.exists(), all(f.read_text(encoding='utf-8') == 'keep me' for f in files)), (False, True, True), 'if a junction cannot be removed NOTHING is deleted: the temporary folder stays and the target is untouched', what='refused')
         went = clean()
         c.eq((went, temp.exists(), all(f.read_text(encoding='utf-8') == 'keep me' for f in files), (real / 'sia' / 'base' / 'us').is_dir()), (True, False, True, True), 'the cleaning removes the links and the temporary folder; the target and its content survive', what='cleaned')
+
+
+@case('K318', 'Route engine, SOG-0403: the window of a NAT route is judged at the passage of the 30°W of THAT route (NAT Doc 007, § 2.1.1 and 2.1.3: « Day-time OTS 1130 UTC to 1900 UTC at 30°W »), not at its entry; `at` is the hour estimated at that point and the field `point` says it (`30W`; `entry` when the route does not cross it); a route of the direction of the flight set aside for the hour by less than an hour says by how many minutes and from / until which hour of departure it would be taken (`near`)',
+      'K', static=True,
+      rule='SOG-0403 (the user: « nats : pas convaincu […] le tracé ne suit pas la nats », a westbound flight leaving in the morning: the six westbound routes of the day, valid 11:30-19:00Z, were set aside for the hour and a free route was made 1° south of the route F; ergonomics session 17 Nov 10:50: « la fenêtre se juge au 30° ouest »). NAT Doc 007 V.2026-1, § 2.1.1: « peak westbound traffic crossing the 30W longitude between 1130 UTC and 1900 UTC and peak eastbound traffic crossing the 30W longitude between 0100 UTC and 0800 UTC »; § 2.1.3: « The hours of validity of the two Organised Track Systems (OTS) are as follows: (Westbound) Day-time OTS 1130 UTC to 1900 UTC at 30°W; (Eastbound) Night-time OTS 0100 UTC to 0800 UTC at 30°W ». Before: the hour was estimated at the ENTRY of the route (the decision of 16 Nov, wrong): a flight entering at 10:40Z and crossing the 30°W after 11:30Z was refused the route. Now `sections.passage` adds to the distance to the entry the distance along the route to its crossing of the 30°W (the real section of the departure side when the search has been made), with the speed of the flight; a route that does not cross it keeps the entry. Said: `rejected[].at` (the hour at the point), `rejected[].point`, and for a refusal by less than 60 minutes `rejected[].near` = { minutes, side (`early` | `late`), depart_from | depart_until }.')
+def k318(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'CANOUT': (50.5, -42.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J3', ['MIDUS', 'CANOUT']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T10:00:00Z'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        results_cache.ENABLED = False
+        try:
+            def run(window, hour):
+                track = dict(A, **{'from': window[0], 'to': window[1]})
+                with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'tracks': [track]}, f)
+                res = PL.compute(view.to_request({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T' + hour, 'alternatives': False, 'proposals': True, 'fl': 370}), data, radz, fra)
+                sec = res.get('sections') or {}
+                return sec.get('chosen'), [{k: r.get(k) for k in ('track', 'code', 'at', 'point', 'near')} for r in sec.get('rejected', [])]
+            inside = run(('2026-11-10T08:00:00Z', '2026-11-10T20:00:00Z'), '04:30')
+            late = run(('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z'), '04:30')
+            late_ok = run(('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z'), '03:40')
+            early = run(('2026-11-10T09:30:00Z', '2026-11-10T20:00:00Z'), '04:30')
+            early_ok = run(('2026-11-10T09:30:00Z', '2026-11-10T20:00:00Z'), '05:20')
+            far = run(('2026-11-10T01:30:00Z', '2026-11-10T08:00:00Z'), '10:30')
+        finally:
+            results_cache.ENABLED = True
+    c.eq(inside, ('A', []), 'the track A valid 08:00-20:00Z, a departure at 04:30Z: the entry ENTRA is passed at 07:05Z (before the window) but the 30°W at 08:44Z (inside): the route is TAKEN (red before: refused for the hour, judged at the entry)', what='30W inside')
+    c.eq(late, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T08:44Z', 'point': '30W', 'near': {'minutes': 44, 'side': 'late', 'depart_until': '2026-11-10T03:45Z'}}]),
+         'the same track valid 01:30-08:00Z: the entry at 07:05Z is inside, the 30°W at 08:44Z is 44 minutes after the end: refused, `at` is the hour at the 30°W, `point` says `30W`, `near` says 44 minutes late and « depart until 03:45Z »', what='late')
+    c.eq((late_ok, early_ok), (('A', []), ('A', [])), 'the departure the field gives is right: at 03:40Z (before 03:45Z) and at 05:20Z (after 05:15Z) the track is taken', what='advice')
+    c.eq(early, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T08:44Z', 'point': '30W', 'near': {'minutes': 46, 'side': 'early', 'depart_from': '2026-11-10T05:15Z'}}]), 'a window that opens at 09:30Z: 46 minutes early, « depart from 05:15Z »', what='early')
+    c.eq(far, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T14:44Z', 'point': '30W', 'near': None}]), 'six hours late: refused, no `near` (more than an hour)', what='far')

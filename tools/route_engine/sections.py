@@ -102,6 +102,16 @@ def _solve(nav, g, start, end):
     hour = depart[0] if depart else None      # None : la demande ne donne pas d'heure : la validité horaire n'est pas vérifiée (le sens et le niveau, si)
     speed = flight.get('speed_kt') or 450
     eta_of = lambda nm_: depart[0] + datetime.timedelta(hours=nm_ / speed)
+
+    def passage(o, to_entry):
+        """SOG-0403 : (la distance depuis le départ au passage du 30° OUEST de la route, 'passage') : `to_entry` + la distance le long de la route de son entrée au 30°W ; (`to_entry`, 'entry') si la route ne franchit pas le 30°W."""
+        along = 0.0
+        for u, v, e in o['legs']:
+            lu, lv = nav.nodes[u]['lon'] - nat_layer.MERIDIAN, nav.nodes[v]['lon'] - nat_layer.MERIDIAN
+            if lu * lv <= 0 and lu != lv:
+                return to_entry + along + e['nm'] * abs(lu) / abs(lu - lv), '30W'
+            along += e['nm']
+        return to_entry, 'entry'
     rejected = {tid: why for tid, m in meta.items() if (why := nat_layer.check(m, fl, east))}
     candidates = []
     chains = oriented_chains(nav.nodes, g, east)
@@ -109,7 +119,8 @@ def _solve(nav, g, start, end):
     for tid, (code, _text) in rejected.items():
         if code == 'level' and hour and chains.get(tid):
             o = min(chains[tid], key=lambda o: engine.nm(a, nav.nodes[o['entry']]))      # l'entrée la plus proche du départ
-            when[tid] = (eta_of(engine.nm(a, nav.nodes[o['entry']])), nav.nodes[o['entry']]['id'])
+            d, pt = passage(o, engine.nm(a, nav.nodes[o['entry']]))
+            when[tid] = (eta_of(d), nav.nodes[o['entry']]['id'], pt, hour)
     avoid = getattr(g, 'rad_avoid', frozenset())      # SOG-0354 L5 (4) défaut 4 : un point que la règle RAD fait éviter (repli) n'est ni l'entrée ni la sortie d'une route NAT
     for tid, options in chains.items():
         if tid in rejected:
@@ -120,12 +131,16 @@ def _solve(nav, g, start, end):
             rejected[tid] = ('rad', f"route NAT {tid} : son entrée ou sa sortie est un point que la règle RAD fait éviter ({', '.join(sorted(avoid))})")
             continue
         for o in options:
-            eta = eta_of(engine.nm(a, nav.nodes[o['entry']])) if hour and tid in meta else None
+            pt = 'entry'
+            eta = None
+            if hour and tid in meta:
+                d, pt = passage(o, engine.nm(a, nav.nodes[o['entry']]))      # SOG-0403 : l'heure du passage du 30° OUEST (la fenêtre d'un système de routes NAT s'y juge : NAT Doc 007 § 2.1.3), pas de l'entrée
+                eta = eta_of(d)
             why = nat_layer.check(meta[tid], fl, east, eta) if eta else None      # l'heure estimée (grand cercle) : elle écarte avant toute recherche
             if not why:
                 candidates.append((tid, o))
             elif why[0] == 'time':
-                seen = (eta, nav.nodes[o['entry']]['id'])      # SOG-0391 (a) : l'heure du passage de l'entrée dont la track est écartée, dite en champs
+                seen = (eta, nav.nodes[o['entry']]['id'], pt, hour)      # SOG-0391 (a) : l'heure du passage dont la track est écartée, dite en champs ; SOG-0403 : au 30°W, avec le point et la marge
         if why and not any(t == tid for t, _o in candidates):
             rejected[tid] = why
             if why[0] == 'time':
@@ -168,13 +183,17 @@ def _solve(nav, g, start, end):
     skeleton, lost, lost_when = [], {}, {}
     for tid, o in candidates:
         found = europe.get(o['entry'])
-        eta = eta_of(sum(x['nm'] for _u, _v, x in found['path'])) if found and hour and tid in meta else None      # l'heure au passage de l'entrée, avec la distance RÉELLE de la section d'Europe
+        pt = 'entry'
+        eta = None
+        if found and hour and tid in meta:
+            d, pt = passage(o, sum(x['nm'] for _u, _v, x in found['path']))      # l'heure au passage du 30°W, avec la distance RÉELLE de la section d'Europe (SOG-0403)
+            eta = eta_of(d)
         why = ('network', f"route NAT {tid} : son entrée n'est pas atteignable depuis le départ à ce niveau" + (' (budget de recherche atteint)' if info['europe'].get('truncated') else '')) if not found else \
             (nat_layer.check(meta[tid], fl, east, eta) if eta else None)
         if why:
             lost[tid] = why
             if why[0] == 'time':
-                lost_when[tid] = (eta, nav.nodes[o['entry']]['id'])
+                lost_when[tid] = (eta, nav.nodes[o['entry']]['id'], pt, hour)
             continue
         skeleton.append((found['cost'] + ratio * engine.nm(nav.nodes[o['exit']], b) + o['cost'], tid, o))
     for tid, why in lost.items():

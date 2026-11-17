@@ -35,7 +35,7 @@ LIMIT_S, HARD_S = 5.0, 20.0
 GROUND_KT = 450.0
 SHORT = {'computed': 'c', 'published': 'p', 'created': 'r', 'direct': 'd'}      # preuves : c calculée, p publiée, r créée (route libre), d direct
 # l'entrée approximative de l'océan, seulement pour calculer l'heure de départ (lat, lon)
-GATE_WEST, GATE_EAST = (55.0, -15.0), (47.0, -50.0)
+GATE_WEST, GATE_EAST = (53.0, -30.0), (53.0, -30.0)      # SOG-0403 : la fenêtre d'un système de routes NAT se juge au passage du 30° OUEST (NAT Doc 007, § 2.1.3) : l'heure de départ est celle d'un passage à ce méridien (grand cercle), pas de l'entrée
 
 
 def nm(a, b):

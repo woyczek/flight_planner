@@ -75,10 +75,24 @@ def check(meta, fl, east, eta=None):
     return None
 
 
-def time_fields(meta, eta, entry=None):
+MERIDIAN = -30.0      # SOG-0403 : la validité d'un système de routes NAT se juge au passage du 30° OUEST (NAT Doc 007, § 2.1.1 et 2.1.3 : « Day-time OTS 1130 UTC to 1900 UTC at 30°W »)
+NEAR_MIN = 60         # SOG-0403 : une route écartée pour l'heure à moins d'une heure près dit de combien et à partir de quelle heure de départ elle serait prise
+
+
+def time_fields(meta, eta, entry=None, point=None, hour=None):
     """SOG-0391 (a) : une track écartée pour l'HEURE dit, en CHAMPS, l'heure du passage de son entrée (`at`, « 2026-11-17T13:32Z »), le point d'entrée (`entry`) et la fenêtre du message (`from`, `to`, « 2026-11-17T01:30:00Z » ; None si le message n'en donne pas) : l'écran ne lit aucun mot."""
     t = eta if eta.tzinfo else eta.replace(tzinfo=dt.timezone.utc)
-    return {'at': t.strftime('%Y-%m-%dT%H:%MZ'), 'entry': entry, 'from': meta.get('from'), 'to': meta.get('to')}
+    out = {'at': t.strftime('%Y-%m-%dT%H:%MZ'), 'point': point or 'entry', 'entry': entry, 'from': meta.get('from'), 'to': meta.get('to')}      # `at` : l'heure estimée au `point` (« 30W » : le passage du 30° ouest ; « entry » : l'entrée, quand la route ne le franchit pas)
+    a, b = _date(meta.get('from')), _date(meta.get('to'))
+    if hour is not None and not meta.get('stale'):
+        d = hour if hour.tzinfo else hour.replace(tzinfo=dt.timezone.utc)
+        late = (t - b).total_seconds() / 60 if b and t > b else None      # SOG-0403 : à moins d'une heure près : de combien, et à partir de / jusqu'à quelle heure de départ la route serait prise
+        early = (a - t).total_seconds() / 60 if a and t < a else None
+        if late is not None and late <= NEAR_MIN:
+            out['near'] = {'minutes': round(late), 'side': 'late', 'depart_until': (d - dt.timedelta(minutes=late)).strftime('%Y-%m-%dT%H:%MZ')}
+        elif early is not None and early <= NEAR_MIN:
+            out['near'] = {'minutes': round(early), 'side': 'early', 'depart_from': (d + dt.timedelta(minutes=early)).strftime('%Y-%m-%dT%H:%MZ')}
+    return out
 
 
 def coordinate(token):
