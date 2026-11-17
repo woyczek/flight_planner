@@ -7,12 +7,14 @@
 //   NEUTRAL_ID, EQUIPMENT, PBN : les valeurs supposées (constantes nommées).
 //   coordWord(lat, lon) : « 54N050W » en degrés entiers, sinon « 5430N05000W ».
 //   speedLevel(kt, ft) : « N0450F350 ».
-//   item15(text, { dep, arr, speedKt, levelFt }) → { route, oceanic, sid, star } : la case 15 depuis le texte de la route du vol
+//   item15(text, { dep, arr, speedKt, levelFt }) → { route, oceanic, sid, star, bad } : la case 15 depuis le texte de la route du vol
 //     (départ et arrivée retirés, « DCT » entre deux points hors voie, coordonnées OACI, groupe vitesse-niveau en tête et à chaque
-//     changement de niveau) ; oceanic : la route passe par une route NAT, une voie nord-américaine ou des coordonnées de
-//     l'Atlantique Nord (non contrôlées par Eurocontrol) ; sid / star : un nom de procédure écrit contre le départ / l'arrivée.
+//     changement de niveau — jamais deux fois le même —, jamais de tiret : SOG-0422) ; oceanic : la route passe par une route NAT,
+//     une voie nord-américaine ou des coordonnées de l'Atlantique Nord (non contrôlées par Eurocontrol) ; sid / star : un nom de
+//     procédure écrit contre le départ / l'arrivée ; bad : les éléments écrits hors de la forme OACI (le message les refuse).
 //   eobtOf(plannedAt, now) → { at: Date, now: bool } : l'heure du vol, sinon l'heure présente arrondie aux cinq minutes suivantes.
-//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake } } : le message « (FPL-…) », une case par ligne.
+//   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad } } : le message « (FPL-…) », une case par
+//     ligne.
 
 import {
   tokenize
@@ -28,8 +30,17 @@ export const PBN = 'B2D2';
 const pad = (n, w) => String(Math.max(0, Math.round(n))).padStart(w, '0');
 /** Une voie nord-américaine composée (« N71B-N90B ») ou une route NAT (« NATV ») : hors du contrôle d'Eurocontrol. */
 const OCEANIC = /^(?:NAT[A-Z]{1,2}|[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?)+)$/;
+/** SOG-0422 : un tronçon que les données nomment de plusieurs voies jointes par un tiret (le format des voies d'X-Plane écrit ainsi un
+ *  tronçon commun à plusieurs voies : « N71B-N90B »). Le tiret ouvre une nouvelle case du message : jamais écrit. */
+const JOINED = /^[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?)+$/;
 /** Un nom de procédure (SID, STAR) : finit par un chiffre et une lettre (« OPAL2E »). */
 const PROC = /\d[A-Z]$/;
+/** SOG-0422 : un nom de procédure sans lettre de route (indicateur de base, chiffre de validité : « ROBUC3 », annexe 11, appendice 3),
+ *  reconnu seulement contre le départ ou l'arrivée, là où un point de ce nom n'aurait pas de sens. */
+const PROC_BARE = /^[A-Z]{3,5}[1-9]$/;
+/** SOG-0422 : un élément de la case 15 en forme OACI : « DCT », un point, une voie, une procédure ou des coordonnées (2 à 11 lettres
+ *  et chiffres), avec au plus un groupe vitesse-niveau (« /N0450F350 »). */
+const ITEM15_WORD = /^[A-Z0-9]{2,11}(?:\/[NKM]\d{4}[FAMS]\d{3,4})?$/;
 /** L'alphabet du message (majuscules, chiffres, espace, « / - ( ) », retour à la ligne). */
 const ALPHABET = /^[A-Z0-9 /()\-\n]*$/;
 
@@ -59,35 +70,53 @@ export function item15(text, {
   speedKt = 0,
   levelFt = 0
 } = {}) {
-  const toks = tokenize(text).filter(t => t.kind !== 'group'),
-    D = String(dep || '').toUpperCase(),
-    A = String(arr || '').toUpperCase();
+  let oceanic = false;
+  const D = String(dep || '').toUpperCase(),
+    A = String(arr || '').toUpperCase(),
+    // SOG-0422 : un tronçon nommé de voies jointes n'est pas écrit (le tiret ouvrirait une nouvelle case) : ses deux points restent,
+    // reliés par « DCT » (la règle ci-dessous) ; il reste une voie nord-américaine, dite non contrôlée
+    toks = tokenize(text).filter(t => {
+      if (t.kind === 'group') return false;
+      if (JOINED.test(t.id || '')) return !(oceanic = true);
+      return true;
+    });
   if (toks.length && toks[0].kind === 'name' && toks[0].id === D) toks.shift();
   if (toks.length && toks.at(-1).kind === 'name' && toks.at(-1).id === A) toks.pop();
-  // un mot de route (voie, procédure, route NAT, voie composée) ou un point
-  const isWay = t => t.kind === 'word' || (t.kind === 'name' && (t.airway || OCEANIC.test(t.id)));
+  // SOG-0422 : une SID ou une STAR sans lettre de route (« ROBUC3 »), contre le départ ou l'arrivée : une procédure, pas un point
+  // (la STAR suit son point d'entrée sans « DCT » : DCT est un élément de route, que doit suivre un point, jamais une autre route)
+  const procAt = t => !!t && t.kind === 'name' && ((t.airway && PROC.test(t.id)) || PROC_BARE.test(t.id)),
+    first = toks[0],
+    last = toks.at(-1),
+    sid = procAt(first),
+    star = toks.length > 1 && procAt(last);
+  // un mot de route (voie, procédure, route NAT) ou un point
+  const isWay = (t, i) => t.kind === 'word' || (t.kind === 'name' && (t.airway || OCEANIC.test(t.id))) || (i === 0 && sid) ||
+    (i === toks.length - 1 && star);
   const out = [];
-  let oceanic = false;
+  // SOG-0422 : le groupe vitesse-niveau en vigueur ; un point qui porte le même n'en écrit pas un second
+  let group = speedLevel(speedKt, levelFt);
   toks.forEach((t, i) => {
     const prev = toks[i - 1];
-    if (prev && !isWay(prev) && !isWay(t)) out.push('DCT');
+    if (prev && !isWay(prev, i - 1) && !isWay(t, i)) out.push('DCT');
     // une coordonnée de l'Atlantique Nord (route libre créée, point « 54/50 ») : hors du contrôle d'Eurocontrol, comme une route NAT
     if (t.kind === 'coord' && t.lat >= 40 && t.lat <= 75 && t.lon >= -70 && t.lon <= -10) oceanic = true;
-    if (isWay(t)) {
+    if (isWay(t, i)) {
       if (OCEANIC.test(t.id)) oceanic = true;
       out.push(t.id);
       return;
     }
-    const word = t.kind === 'coord' ? coordWord(t.lat, t.lon) : t.id;
-    out.push(t.alt_ft > 0 ? `${word}/${speedLevel(speedKt, t.alt_ft)}` : word);
+    const word = t.kind === 'coord' ? coordWord(t.lat, t.lon) : t.id,
+      g = t.alt_ft > 0 ? speedLevel(speedKt, t.alt_ft) : group;
+    out.push(g !== group ? `${word}/${g}` : word);
+    group = g;
   });
-  const first = toks[0],
-    last = toks.at(-1);
   return {
     route: [speedLevel(speedKt, levelFt), ...out].join(' '),
     oceanic,
-    sid: !!(first && first.kind === 'name' && first.airway && PROC.test(first.id)),
-    star: !!(last && last.kind === 'name' && last.airway && PROC.test(last.id))
+    sid,
+    star,
+    // SOG-0422 : la garde générale : un élément hors de la forme OACI (un tiret, une ponctuation, un mot trop long) n'est jamais copié
+    bad: out.filter(w => !ITEM15_WORD.test(w))
   };
 }
 
@@ -137,6 +166,7 @@ export function message(o = {}) {
   if (!(speed >= 40 && speed <= 9999)) errors.push('speed');
   if (!(level >= 10 && level <= 660)) errors.push('level');
   if (r.route.split(' ').length < 2) errors.push('route');
+  if (r.bad.length) errors.push('routeword');
   if (!(eet > 0 && eet < 100 * 60)) errors.push('eet');
   const text = ['(FPL-' + id + '-IG', `-${type || 'ZZZZ'}/${wake || 'M'}-${EQUIPMENT}`, `-${dep}${hhmm(at)}`, `-${r.route}`,
     `-${arr}${pad(Math.floor(eet / 60), 2)}${pad(eet % 60, 2)}${altn ? ` ${altn}` : ''}`, `-PBN/${PBN} DOF/${yymmdd(at)})`
@@ -150,7 +180,8 @@ export function message(o = {}) {
       sid: r.sid,
       star: r.star,
       now: !!o.eobt?.now,
-      wake: !/^[LMHJ]$/.test(wake)
+      wake: !/^[LMHJ]$/.test(wake),
+      bad: r.bad
     }
   };
 }

@@ -2337,4 +2337,21 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   never written either; XP_SEEN is the page's memory, capped at 20 000 positions: beyond, xpNote stops noting IN SILENCE — a failure on
   the side of the leak, without realistic consequence (a page would need 20 000 X-Plane positions), said here. F255 also covers the path
   « page reloaded, the route taken from route_alts.json ».
-
+- **17 Nov 2026 — SOG-0422, item 15 that Eurocontrol reads** (the user pasted the plan of a crossing: REFUSED, five syntax errors
+  — ADES, TTLEET, ALTRNT1, two of the route — all from column 140 of the route line; one cause). (1) A hyphen opens a new item of the
+  ICAO message (Doc 4444, appendix 2): a route token « N12C-N34D » ended item 15 there, and everything after it was read as the next
+  items. Such a token is a segment the data name after several airways joined by a hyphen (the X-Plane airway format names that way a
+  segment common to several airways; the engine keeps the name as the leg's `via`). It is never written: its two points stay, joined by
+  « DCT » (the rule « DCT between two points off an airway »), and it still counts as a North American route, said not checked by
+  Eurocontrol. Which single designator to write instead was asked to AeroDB — not guessed; until its answer, DCT (syntactically valid;
+  the segment lies outside the IFPS zone). (2) The general guard: every element written to item 15 must be in ICAO form — « DCT », a
+  point, an airway, a procedure or coordinates (2 to 11 letters and digits), with at most one speed-level group; otherwise the message
+  is not copied and the button and the fold name the element (error `routeword`, the first three elements cited). (3) A speed-level group
+  is written only when it differs from the one in force (the head group, then the last written): a point carrying the cruise level gets
+  none. (4) « DCT » before a STAR at the end of the route: WRONG — in item 15, DCT is a route element and must be followed by a
+  significant point; a STAR designator is itself a route element, written right after its entry point (« ZZARV ZZSTA3 »), last in the
+  route. The fault came from a STAR without a route letter (« ROBUC3 », common in North America: basic indicator + validity digit,
+  Annex 11, appendix 3), which PROC (« digit + letter ») did not know, so it was taken for a point. Such a name (3 to 5 letters and one
+  digit 1-9) is now a procedure when it stands against the departure or the arrival — where a point of that name would make no sense;
+  the fold then no longer says « no STAR ». F256 (invented routes; counter-test: red on the parent, the hyphen in the route line); F247's
+  Atlantic flight no longer writes its compound airway.

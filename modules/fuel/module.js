@@ -651,6 +651,9 @@ const TX = {
       'nivel de crucero (FL010 a FL660)'
     ],
     route: ['route vide', 'empty route', 'leere Route', 'ruta vacía'],
+    routeword: ['route : élément hors de la forme OACI « {t} »', 'route: element not in ICAO form “{t}”',
+      'Route: Element nicht in ICAO-Form „{t}“', 'ruta: elemento fuera de la forma OACI «{t}»'
+    ],
     eet: ['durée estimée', 'estimated time', 'geschätzte Dauer', 'duración estimada'],
     alphabet: ['caractère hors de l’alphabet du message', 'character outside the message alphabet',
       'Zeichen außerhalb des Nachrichtenalphabets',
@@ -4876,7 +4879,7 @@ function fplDraw(C, textOnly = false) {
       ad: r.arr
     }), n.oceanic ? tt(TX.fplOceanic) : '', n.wake ? tt(TX.fplWake) : ''].filter(Boolean),
     bad = F.m.errors.length ? tt(TX.fplBad, {
-      l: F.m.errors.map(k => tt(TX.fplErr[k])).join(', ')
+      l: fplErrs(F.m)
     }) : '',
     inner = `<pre class="fu-fpltext" data-fpltext>${esc(F.m.text)}</pre>${bad ? `<p class="f-warn" data-fplbad>${esc(bad)}</p>` : ''}<ul class="fu-fplnotes" data-fplnotes>${notes.map(x => `<li class="f-muted">${esc(x)}</li>`).join('')}</ul>`;
   if (textOnly && box.querySelector('[data-fplbody]')) {
@@ -4886,6 +4889,12 @@ function fplDraw(C, textOnly = false) {
   const open = !!box.querySelector('details[data-fplfold]')?.open;
   box.innerHTML = `<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
 }
+/** SOG-0402 : les règles de forme qui échouent, dites ; SOG-0422 : l'élément de route hors forme cité (un tiret, une ponctuation). */
+function fplErrs(m) {
+  return m.errors.map(k => tt(TX.fplErr[k], {
+    t: (m.notes?.bad || []).slice(0, 3).join(' ')
+  })).join(', ');
+}
 /** SOG-0402 : copie le message, seulement quand ses règles de forme passent ; sinon le pli s'ouvre sur ce qui échoue. */
 async function fplCopy() {
   const F = fplOf(S.C),
@@ -4894,7 +4903,7 @@ async function fplCopy() {
   if (F.m.errors.length) {
     if (fold) fold.open = true;
     return S.ctx.notify(tt(TX.fplBad, {
-      l: F.m.errors.map(k => tt(TX.fplErr[k])).join(', ')
+      l: fplErrs(F.m)
     }), 'warn');
   }
   await copyText(F.m.text);
