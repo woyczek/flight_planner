@@ -7152,3 +7152,69 @@ def f247(c):
     c.tap(f'{FUEL} [data-do=fplcopy]')
     c.until(f"(window.__notes || []).some(x => x.includes({json.dumps(norm(tx(T, 'fplCopied', L))[:11])}))", timeout=5000,
             what='« Plan de vol copié »')
+
+
+# SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)
+_RAD_VIEW = {'title': 'RAD test', 'start': '2026-10-29', 'decided': 412, 'review': 37, 'findings': 0, 'total': 449, 'listed': 449, 'cut': False,
+             'unknown_spaces': [{'space': 'LS100A', 'rules': ['LS2815A', 'LS2816A']}, {'space': 'EDUU100E', 'rules': []}],
+             'items': [{'sheet': 'Annex 2B', 'row': 3, 'id': 'LSLI1008A', 'reason': 'route interdite au-dessus du FL245', 'assessment': 'À interpréter',
+                        'validity': '', 'values': []},
+                       {'sheet': 'Annex 2B', 'row': 9, 'id': 'ED3518A', 'reason': '<b>markup</b>', 'assessment': 'review', 'validity': '', 'values': []},
+                       {'sheet': 'Annex 2B', 'row': 12, 'id': 'LF9999', 'reason': 'décidée', 'assessment': 'decided', 'validity': '', 'values': []}]}
+
+
+@case('F250', 'Route step, under « Calculé à … », one grey line without a fold says what the simulation checked and did not — « Contrôle '
+      'de simulation : 412 conditions RAD vérifiées, 37 non vérifiées, 2 espaces inconnus — ce n\'est pas une validation » —, each itinerary '
+      'says « 0 écart contrôlé », the fold « Ce que le contrôle ne couvre pas » writes the unknown spaces and the conditions left to examine '
+      'only when opened; a free route judged at 30° west says « au 30° ouest vers … »', 'F', tags=('fuel', 'aerodb'), designs=('standard',),
+      screens=False, langs4=True,
+      rule='SOG-0401 (the user: « validité ifps : échec », 22 errors of route on a proposal said « sans incompatibilité détectée »); the '
+      'ergonomist, 17/11: the line from the numbers of AeroDB 9929e1afa, « 0 écart contrôlé », the detail in the fold read at its opening; '
+      'SOG-0403 R1 (AeroDB 733af8fbf): the hour judged at 30° west, the field `point`; a fake launcher')
+def f250(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    st = _route_launcher(c, ['route/compute'])
+    st['extra'] = {'rad': _RAD_VIEW}
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='« Calculer A → B »')
+    _compute_now(c, st)
+    Lx = f'{FUEL} [data-routealts] [data-radline]'
+    c.until(f"!!document.querySelector('{Lx}')", timeout=10000, what='the line of what was checked')
+    want = re.sub(r'\((s|en|es|e|n|x)\)', r'\1', tx(T, 'rRadLine', L)).replace('{d}', '412').replace('{r}', '37').replace('{k}', '2')
+    c.eq(norm(c.text(f'{Lx} > span') or ''), norm(want), 'the numbers of the check, and « ce n\'est pas une validation »', what='line')
+    order = c.js(f"[...document.querySelector('{FUEL} [data-routealts]').children].map(e => e.hasAttribute('data-rage') ? 'age' : "
+                 f"e.hasAttribute('data-radline') ? 'rad' : '').filter(Boolean)")
+    c.eq(order[:2], ['age', 'rad'], 'right under « Calculé à … »', what='place')
+    c.eq(c.count(f'{Lx} details, {FUEL} details[data-radline]'), 0, 'no fold on the line', what='no fold')
+    rows = c.js(f"[...document.querySelectorAll('{FUEL} [data-altlist] [data-alt]')].map(e => e.textContent)")
+    c.ok(rows and all(norm(tx(T, 'rFaults0', L)) in norm(r) for r in rows), rows, '« 0 écart contrôlé » on each itinerary')
+    # the fold: written only when opened
+    F = f'{FUEL} details[data-rlimits]'
+    c.eq(c.js(f"document.querySelector('{F} [data-radlist]')?.innerHTML ?? null"), '', 'the detail is not written before the fold opens', what='closed')
+    c.tap(f'{F} > summary')
+    c.until(f"!!document.querySelector('{F} [data-radspaces]')", timeout=5000, what='the detail written at the opening')
+    spaces = c.js(f"[...document.querySelectorAll('{F} [data-radspaces] li')].map(e => e.textContent)")
+    c.ok(len(spaces) == 2 and 'LS100A' in spaces[0] and 'LS2815A' in spaces[0] and 'EDUU100E' in spaces[1], spaces, 'the unknown spaces and their rules')
+    rev = c.js(f"[...document.querySelectorAll('{F} [data-radreview] li')].map(e => e.textContent)")
+    c.ok(any('LSLI1008A' in x for x in rev) and any('ED3518A' in x for x in rev) and not any('LF9999' in x for x in rev), rev,
+         'the conditions left to examine, not the decided ones')
+    c.eq(c.count(f'{F} [data-radreview] li b'), len(rev), 'a reason that is markup is text (one <b>, the identifier, per line)', what='escaped')
+    c.js(f"document.querySelector('{Lx}').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F250_{c.design}_390_{L}.png')
+    # SOG-0403 R1: the free route whose tracks were judged at 30° west says so
+    sec = _free_time_sections()
+    for r in sec['rejected']:
+        if r['code'] == 'time':
+            r['point'] = '30W'
+    st['extra'] = {'alternatives': [_OCEAN_ALT], 'sections': sec, 'rad': _RAD_VIEW}
+    c.open('fuel', docs=_ocean_docs())
+    to_step(c, 1)
+    _compute_now(c, st)
+    Fr = f'{FUEL} [data-routealts] [data-rfree]'
+    c.until(f"!!document.querySelector('{Fr}')", timeout=15000, what='the free route line')
+    west = tx(T, 'west', L, after='rFreeDir:')
+    win = f'{_zt(L, "11", "30", True)} – {_zt(L, "19", "00")}'
+    want = tx(T, 'rFreeTime30', L).replace('{at}', _zt(L, '09', '10')).replace('{dw}', ' (' + tx(T, 'rFreeWin', L).replace('{dir}', west).replace('{win}', win) + ')')
+    c.ok(norm(c.text(f'{Fr} > span') or '').startswith(norm(want)), c.text(f'{Fr} > span'), '« … au 30° ouest vers 09 h 10 Z (routes vers l\'ouest : …) »')

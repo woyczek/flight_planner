@@ -245,6 +245,8 @@ function timeOf(x) {
   const id = text(own('entry'), 12).toUpperCase();
   return {
     at: isoMinute(own('at')),
+    // SOG-0403 R1 (AeroDB 733af8fbf) : où l'heure a été jugée — au 30° ouest (« 30W ») ou à l'entrée de la route (« entry ») ; '' sinon
+    point: ['30W', 'entry'].includes(own('point')) ? own('point') : '',
     entry: PT_ID.test(id) ? id : '',
     from: isoMinute(own('from')),
     to: isoMinute(own('to'))
@@ -314,6 +316,8 @@ function proofOf(v) {
       direction: codes.filter(c => c === 'direction').length,
       levels: offered,
       at: times.map(x => x.at).filter(Boolean).sort()[0] || '',
+      // le point du jugement de ce passage le plus tôt (30W | entry | '')
+      point: (times.filter(x => x.at).sort((a, b) => a.at < b.at ? -1 : a.at > b.at ? 1 : 0)[0] || {}).point || '',
       from: win.from || '',
       to: win.to || ''
     };
@@ -436,6 +440,35 @@ export function sectionsKept(v) {
   };
 }
 
+/** SOG-0401 (AeroDB 9929e1afa) : ce que le contrôle RAD a décidé et ce qu'il a laissé à examiner (`res.rad`), lu comme une entrée non
+ *  sûre : decided, review, findings, total, listed (entiers de 0 à 1 000 000), cut (vrai seulement si vrai), unknown_spaces (60 au plus :
+ *  { space, rules: 30 identifiants au plus }), items (1 500 au plus : { id, reason, assessment, sheet }, textes bornés) ; null sans livre
+ *  RAD. Les clés sont celles de l'entrée : relu tel quel depuis route_alts.json. */
+export function radOf(v) {
+  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
+    int = x => Number.isInteger(x) && x >= 0 && x <= 1e6 ? x : 0;
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const arr = (x, n) => Array.isArray(x) ? x.slice(0, n) : [];
+  return {
+    decided: int(own(v, 'decided')),
+    review: int(own(v, 'review')),
+    findings: int(own(v, 'findings')),
+    total: int(own(v, 'total')),
+    listed: int(own(v, 'listed')),
+    cut: own(v, 'cut') === true,
+    unknown_spaces: arr(own(v, 'unknown_spaces'), 60).map(u => ({
+      space: text(own(u, 'space'), 24),
+      rules: arr(own(u, 'rules'), 30).map(r => text(r, 24)).filter(Boolean)
+    })).filter(u => u.space),
+    items: arr(own(v, 'items'), 1500).map(x => ({
+      id: text(own(x, 'id'), 32),
+      reason: text(own(x, 'reason'), 200),
+      assessment: text(own(x, 'assessment'), 40),
+      sheet: text(own(x, 'sheet'), 40)
+    })).filter(x => x.id)
+  };
+}
+
 export function normalize(res, action = 'compute', asked = null) {
   if (!res || res.ok !== true) return {
     ok: false,
@@ -466,6 +499,7 @@ export function normalize(res, action = 'compute', asked = null) {
     plans,
     level: check ? null : levelOf(res, asked, plans),
     depart: check ? null : departOf(res, asked),
+    rad: radOf(res.rad), // SOG-0401
     limitation: text(res.limitation, 400),
     // SOG-0161 (AeroDB 329847a19) : ce que la réponse est — une route calculée, des propositions de repli, rien ; déduit des itinéraires
     // pour une réponse plus ancienne

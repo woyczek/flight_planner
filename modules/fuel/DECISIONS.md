@@ -2266,3 +2266,15 @@ Target: the SPEC's procedures and route sections rewritten as the current state;
   A second writer of « (FPL-…) » exists in frame/lib/last_flight.js (`fplText`, not exported, another owner): debt noted, not
   touched. F247 (character by character on two invented flights, one through a NAT track and coordinates, one with a level change;
   the screen; red on the parent: no module, no button).
+- **17 Nov 2026 — SOG-0401, what the simulation checked, said at the head; SOG-0403 R1, the hour at 30° west** (the user: « validité
+  ifps : échec » — 22 route errors on a proposal the screen called « sans incompatibilité détectée »). AeroDB 9929e1afa gives `rad`
+  (decided, review, findings, total, listed, cut, unknown_spaces, items) and an empty `message` when itineraries exist. `RE.radOf` reads
+  it as untrusted input (integers bounded, 60 spaces, 1 500 items, texts bounded; the keys of the input, so the copy kept in
+  route_alts.json reads back the same). Under « Calculé à … », one grey line without a fold, made of those numbers: « Contrôle de
+  simulation : N conditions RAD vérifiées, M non vérifiées, K espaces inconnus — ce n'est pas une validation » (marks agreed by the
+  frame: one number per mark); « 0 écart » of each itinerary becomes « 0 écart contrôlé »; the fold « Ce que le contrôle ne couvre pas »
+  writes the unknown spaces and their rules and the conditions left to examine (assessment « à interpréter » / review; a hundred, then
+  their number; « liste bornée » when cut) only when it is opened. AeroDB 733af8fbf judges a NAT system's window at the crossing of 30°W
+  (NAT Doc 007 § 2.1.3) and says where (`point`: 30W | entry): when the earliest passage of the tracks set aside was judged at 30°W, the
+  free-route line says « au 30° ouest vers 13 h 10 Z » with that hour, else as before the ocean entry of the route taken. F250 (red on
+  the parent: no line, « 0 écart », no list, « entrée de l'océan »).

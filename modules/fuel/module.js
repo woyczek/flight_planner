@@ -530,6 +530,33 @@ const TX = {
   },
   rFreeWin: ['{dir} : {win}', '{dir}: {win}', '{dir}: {win}', '{dir}: {win}'],
   rFreeAt: ['entrée de l’océan vers {at}', 'ocean entry about {at}', 'Ozeaneintritt gegen {at}', 'entrada al océano hacia las {at}'],
+  // SOG-0403 R1 : l'heure jugée au 30° ouest (NAT Doc 007 § 2.1.3)
+  rFreeTime30: ['Route libre : aucune route NAT valable au 30° ouest vers {at}{dw}',
+    'Free route: no NAT track valid at 30° west about {at}{dw}',
+    'Freie Route: keine NAT-Route gültig bei 30° West gegen {at}{dw}',
+    'Ruta libre: ninguna ruta NAT válida a 30° oeste hacia las {at}{dw}'
+  ],
+  rFreeAt30: ['passage au 30° ouest vers {at}', 'crossing 30° west about {at}', 'Überflug von 30° West gegen {at}',
+    'paso por 30° oeste hacia las {at}'
+  ],
+  // SOG-0401 : ce qui a été vérifié, et ce qui ne l'a pas été, en tête des itinéraires ; le détail dans le pli
+  rRadLine: [
+    'Contrôle de simulation : {d} condition(s) RAD vérifiée(s), {r} non vérifiée(s), {k} espace(s) inconnu(s) — ce n’est pas une validation',
+    'Simulation check: {d} RAD condition(s) checked, {r} not checked, {k} unknown space(s) — this is not a validation',
+    'Simulationsprüfung: RAD-Bedingungen geprüft: {d}, nicht geprüft: {r}, unbekannte Lufträume: {k} — das ist keine Validierung',
+    'Control de simulación: condiciones RAD comprobadas: {d}, no comprobadas: {r}, espacios desconocidos: {k} — no es una validación'
+  ],
+  // insécables : « 0 écart contrôlé » d'un bloc (l'ergonome, capture F250 : coupé après « écart »)
+  rFaults0: ['0 écart contrôlé', '0 checked deviations', '0 geprüfte Abweichungen', '0 desviaciones controladas'],
+  rRadSpaces: ['Espaces inconnus de la base : leurs règles RAD ne sont pas vérifiées',
+    'Spaces unknown to the base: their RAD rules are not checked',
+    'Der Basis unbekannte Lufträume: ihre RAD-Regeln werden nicht geprüft',
+    'Espacios desconocidos de la base: sus reglas RAD no se comprueban'
+  ],
+  rRadReview: ['Conditions RAD laissées à examiner', 'RAD conditions left to examine', 'Zu prüfende RAD-Bedingungen',
+    'Condiciones RAD por examinar'
+  ],
+  rRadCut: ['liste bornée : {n} sur {t}', 'list bounded: {n} of {t}', 'Liste begrenzt: {n} von {t}', 'lista limitada: {n} de {t}'],
   rFreeValid: ['valables {win}', 'valid {win}', 'gültig {win}', 'válidas {win}'],
   // SOG-0402 : « Copier pour Eurocontrol » et son pli de relecture
   fplCopy: ['Copier pour Eurocontrol', 'Copy for Eurocontrol', 'Für Eurocontrol kopieren', 'Copiar para Eurocontrol'],
@@ -3209,6 +3236,8 @@ function onPlanClick(e) {
   if (e.target.closest('[data-do="rtimecopy"]')) return routeTimingCopy(); // SOG-0134
   if (e.target.closest('[data-do="rclose"]')) return proposalsEnd(); // SOG-0224 : « Fermer les propositions »
   if (e.target.closest('[data-do="rgolevel"]')) return goLevel(); // SOG-0389 (b) : « Donner le niveau »
+  const limits = e.target.closest('details[data-rlimits] > summary');
+  if (limits) radListFill(limits.parentElement); // SOG-0401 : le détail du RAD, écrit à l'ouverture du pli
   if (e.target.closest('[data-do="fplcopy"]')) return fplCopy(); // SOG-0402 : « Copier pour Eurocontrol »
   const gf = e.target.closest('[data-do="rgofl"]');
   if (gf) return recomputeAt(+gf.dataset.fl); // SOG-0391 (b bis) : « Recalculer à FLxxx »
@@ -4602,7 +4631,18 @@ function sectionsHtml(a) {
 const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 /** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
  *  du moteur et ses domaines hors contrôle, repliés. */
-const limitsHtml = n => n.limitation || n.gaps.length ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}</details>` : '';
+const limitsHtml = n => n.limitation || n.gaps.length || n.rad ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}${n.rad ? '<div data-radlist></div>' : ''}</details>` : '';
+/** SOG-0401 : le détail du contrôle RAD, écrit à l'ouverture du pli seulement (la liste peut compter 1 500 conditions) — les espaces
+ *  inconnus et leurs règles, puis les conditions laissées à examiner (cent au plus, puis leur nombre). */
+function radListFill(fold) {
+  const box = fold?.querySelector('[data-radlist]'),
+    R = S.ralts?.n?.rad;
+  if (!box || !R || box.dataset.filled) return;
+  box.dataset.filled = '1';
+  const rev = R.items.filter(x => /examin|review|interpr/i.test(x.assessment)),
+    li = x => `<li><b>${esc(x.id)}</b>${x.reason ? ` · ${esc(x.reason)}` : ''}</li>`;
+  box.innerHTML = `${R.unknown_spaces.length ? `<p class="f-muted"><b>${esc(tt(TX.rRadSpaces))}</b></p><ul class="fu-faultlist" data-radspaces>${R.unknown_spaces.map(u => `<li><b>${esc(u.space)}</b>${u.rules.length ? ` · ${esc(u.rules.join(', '))}` : ''}</li>`).join('')}</ul>` : ''}${rev.length ? `<p class="f-muted"><b>${esc(tt(TX.rRadReview))}</b></p><ul class="fu-faultlist" data-radreview>${rev.slice(0, 100).map(li).join('')}</ul>${rev.length > 100 ? `<p class="f-muted">${esc(tt(TX.rMore, { n: rev.length - 100 }))}</p>` : ''}` : ''}${R.cut ? `<p class="f-muted">${esc(tt(TX.rRadCut, { n: R.listed, t: R.total }))}</p>` : ''}`;
+}
 /** SOG-0402 : le message de plan de vol du vol courant (modules/fuel/fpl.js) — identifiant de la page (neutre par défaut), type OACI et
  *  sillage (catalogue d'aerodb), départ à l'heure du vol (sinon maintenant, arrondi), vitesse vraie et niveau du devis, route du
  *  vol, durée estimée (en vol), dégagement ; null sans départ, arrivée ni route. */
@@ -4709,10 +4749,12 @@ function freeLineHtml(A) {
       dir,
       win
     }) : dir})` : '',
-    at = P.entry?.time || c.at || '',
+    // SOG-0403 R1 : l'heure jugée au 30° ouest (point « 30W ») est celle des routes écartées ; sinon l'entrée de l'océan de la route prise
+    at30 = c.point === '30W' && c.at,
+    at = at30 ? c.at : P.entry?.time || c.at || '',
     fl = A.n?.level?.fl ?? top.fl ?? null,
     flT = fl ? String(fl).padStart(3, '0') : '',
-    tp = [at ? tt(TX.rFreeAt, {
+    tp = [at ? tt(at30 ? TX.rFreeAt30 : TX.rFreeAt, {
       at: zTime(at)
     }) : '', win ? tt(TX.rFreeValid, {
       win
@@ -4724,7 +4766,7 @@ function freeLineHtml(A) {
       nl: c.level,
       tp: tp ? ` (${tp})` : '',
       fl: flT || '—'
-    }) : kind === 'time' ? tt(at ? TX.rFreeTime : TX.rFreeTime0, {
+    }) : kind === 'time' ? tt(at30 ? TX.rFreeTime30 : at ? TX.rFreeTime : TX.rFreeTime0, {
       at: at ? zTime(at) : '',
       dw
     }) : kind === 'level' ? tt(flT ? TX.rFreeLevel : TX.rFreeLevel0, {
@@ -4784,13 +4826,16 @@ function routeAltsDraw() {
   // SOG-0134 : la ligne montrée (un appui sur elle ou sur son tracé dans la Carte) est marquée et son détail déplié ; « Choisir » la prend
   const unfold = (html, i) => i === A.shown ? html.replace(/<details class="fu-r(faults|sections)"/g, '<details open class="fu-r$1"') :
     html;
-  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults, { n: 0 }), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
+  const row = (a, i) => `<div class="f-item${a.accepted ? '' : ' fu-raltbad'}${a.incomplete ? ' fu-raltinc' : ''}${i === A.shown ? ' fu-raltshown' : ''}" data-alt="${i}"${i === A.shown ? ' data-shown' : ''}${a.incomplete ? ' data-incomplete' : ''}${a.proposal ? ' data-proposal' : ''}${i === A.chosen ? ' aria-current="true"' : ''}><span><b data-altname>${esc(name(a, i))}</b> <span class="f-muted">${esc([a.distanceNm !== null ? distTxt(a.distanceNm) : '', flOf(a), RE.faultLines(a).length || a.incomplete ? '' : tt(TX.rFaults0), a.control ? '' : a.incomplete ? tt(TX.rIncomplete) : ''].filter(Boolean).join(' · '))}${a.control ? `<small class="f-muted fu-rshare" data-share>${esc(shareText(a.control, a.proposal))}</small>` : ''}${natHtml(a.nat)}</span>${a.route ? `<small class="f-muted fu-raltroute">${esc(a.route)}</small>` : ''}${proofHtml(a)}${a.calcError ? `<small class="f-warn">${esc(a.calcError)}</small>` : ''}${unfold(`${RE.faultLines(a).length || a.incomplete ? faultsHtml(RE.faultLines(a), a) : ''}${sectionsHtml(a)}`, i)}</span>${i === A.chosen ? `<span class="f-badge" data-kind="ok">${esc(tt(TX.rTaken))}</span>` : a.route ? `<button type="button" data-do="rtake" data-i="${i}">${esc(tt(a.proposal ? TX.rTakeProposal : TX.rTake))}</button>` : ''}</div>`;
   // SOG-0224 : l'âge du calcul toujours dit, « périmé » au changement d'AIRAC, à la base changée ou, par les NAT, le lendemain (frame/lib/route_alts.js) (avec « Recalculer », jamais effacé), et
   // « Fermer les propositions »
   const at = A.computed_at ? hhmmLocal(A.computed_at) : '',
     head = at ? `<p class="f-row fu-rage ${A.stale ? 'f-warn' : 'f-muted'}" data-rage${A.stale ? ' data-stale' : ''}${A.cache?.hit ? ' data-cache' : ''}><span>${esc(tt(A.stale ? TX.rStale : A.cache?.hit ? TX.rCache : TX.rAge, { t: at }))}</span>${A.stale ? `<button type="button" class="fu-linkbtn" data-do="rcompute">${esc(tt(TX.rRecompute))}</button>` : ''}<button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` :
     A.list.length ? `<p class="f-row fu-rage" data-rage><button type="button" class="fu-linkbtn" data-do="rclose">${esc(tt(TX.rClose))}</button></p>` : '';
-  box.innerHTML = head + freeLineHtml(A) + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
+  // SOG-0401 : ce qui a été vérifié et ce qui ne l'a pas été, sous « Calculé à … », sans pli
+  const R = A.n?.rad,
+    radLine = R && A.list?.length ? `<p class="f-row f-muted fu-rage" data-radline><span>${esc(tt(TX.rRadLine, { d: R.decided, r: R.review, k: R.unknown_spaces.length }))}</span></p>` : '';
+  box.innerHTML = head + radLine + freeLineHtml(A) + noLevel + dropped + (routes.length ? `<div class="f-list fu-ralts" data-altlist>${routes.map(([a, i]) => row(a, i)).join('')}</div>` :
     `<h4 class="fu-rnoroute" data-rnoroute>${esc(tt(TX.rNoRoute))}</h4><p class="f-muted" data-rnone>${esc(A.n?.message || tt(TX.rNone))}</p>`) + moreHtml(A) + (props.length ?
     `<h4 class="fu-rprophead" data-proposals-head>${esc(tt(TX.rProposals))}</h4><div class="f-list fu-ralts" data-altlist data-proposals>${props.map(([a, i]) => row(a, i)).join('')}</div>` :
     '') + (A.list.length ? `<details class="fu-rlegend" data-rlegend><summary class="f-muted">${esc(tt(TX.rLegend))}</summary>${RL.legendHtml(S.ctx.lang())}</details>` : '') + limitsHtml(A.n || {
@@ -4934,6 +4979,7 @@ function answerOf(res, n = null) {
     level: n?.level || null, // SOG-0389 (b) : le niveau du calcul et sa base, relus par RE.normalize
     depart: n?.depart || null, // SOG-0391 (b) : l'heure de départ de la DEMANDE (et « maintenant »), jamais l'horloge au dessin
     sections: RE.sectionsKept(res?.sections), // SOG-0391 (b) : la preuve, la route libre et sa cause se relisent après un rechargement
+    rad: RE.radOf(res?.rad), // SOG-0401 : le contrôle RAD, relu par RE.normalize (déjà borné)
     alternatives: (Array.isArray(res?.alternatives) ? res.alternatives : []).slice(0, 3),
     issues: (Array.isArray(res?.issues) ? res.issues : []).slice(0, 300),
     message: String(res?.message ?? '').slice(0, 300),
