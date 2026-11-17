@@ -5080,11 +5080,11 @@ def k103(c):
         r5 = run(dict(req, fl=5))
         c.eq((r5['ok'], r5['plan']['primary']['ok'], 'FL010' in r5['plan']['primary']['error']), (True, False, True), 'a level out of FL010-FL660: said', what='bad level')
     # the answer is bounded
-    big = {'ok': True, 'status': 's', 'route': 'r' * 9000, 'legs': [{'a': i} for i in range(2000)], 'issues': [{'level': 'REVUE', 'text': 't'}] * 1000, 'rad': [{'id': i, 'headers': ['h'] * 5, 'values': ['v']} for i in range(500)], 'report': 'x' * 300000}
+    big = {'ok': True, 'status': 's', 'route': 'r' * 9000, 'legs': [{'a': i} for i in range(2000)], 'issues': [{'level': 'REVUE', 'text': 't'}] * 1000, 'rad': [{'id': i, 'headers': ['h'] * 5, 'values': ['v']} for i in range(1600)], 'report': 'x' * 300000}
     b = PL.bound_result({'primary': big, 'alternatives': [dict(big)] * 5, 'alternative_failures': ['f' * 9000] * 60, 'alternative_attempts': [{'errors': ['e' * 9000] * 20}] * 60})
     pb = b['primary']
-    c.eq((len(pb['legs']), len(pb['issues']), len(pb['rad']), pb['rad_count'], len(pb['report']), len(pb['route']), sorted(pb['truncated']), 'headers' in pb['rad'][0], len(b['alternatives'])), (800, 300, 100, 500, 120000, 4000, ['issues', 'legs', 'rad'], False, 3),
-         'bounded: 800 segments, 300 checks, 100 RAD mentions (the total said, no repeated headers), the texts, three alternatives', what='bounded')
+    c.eq((len(pb['legs']), len(pb['issues']), len(pb['rad']), pb['rad_count'], len(pb['report']), len(pb['route']), sorted(pb['truncated']), 'headers' in pb['rad'][0], len(b['alternatives'])), (800, 300, 1500, 1600, 120000, 4000, ['issues', 'legs', 'rad'], False, 3),
+         'bounded: 800 segments, 300 checks, 1 500 RAD mentions (SOG-0401: the whole list up to this bound, the total said, no repeated headers), the texts, three alternatives', what='bounded')
     c.eq((len(b['alternative_failures']), len(b['alternative_failures'][0]), len(b['alternative_attempts']), len(b['alternative_attempts'][0]['errors'])), (40, 4000, 40, 10), 'and the failures and the attempts', what='failures')
 
 
@@ -10189,7 +10189,7 @@ def k281(c):
             c.eq(([i['text'] for i in r1['primary']['issues'] if i['level'] == 'ERREUR' and 'ZZZ' in i['text']] != [], r1['automatic_alternatives'], r1['alternatives'], r1['recovery'], r1['alternative_message'], time.perf_counter() - t0 < P.HEAD_BUDGET_S),
                  (True, False, [], None, '', True), 'a refused check says what is refused (the unknown point) in the bound of the head route: no automatic variants, no fallback proposals, no message about variants', what='refused check')
             r2 = P.compute(V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': bad, 'enable_fra': False, 'alternatives': True}), data, rad, None)
-            c.ok(r2['alternative_message'] != '' or r2['alternative_failures'], str(r2['alternative_message']), 'with `alternatives` asked the check still searches variants')
+            c.ok(bool(r2['alternatives']) or r2['alternative_message'] != '' or r2['alternative_failures'], str(r2['alternative_message']), 'with `alternatives` asked the check still searches variants (SOG-0401: variants found, no phrase « sans incompatibilité » any more: the message is empty)')
             # (c) the positions of the points of each itinerary
             alt = V.to_view(res, req)['alternatives'][0]
             pts = alt['points']
@@ -12991,3 +12991,37 @@ def k318(c):
     c.eq((late_ok, early_ok), (('A', []), ('A', [])), 'the departure the field gives is right: at 03:40Z (before 03:45Z) and at 05:20Z (after 05:15Z) the track is taken', what='advice')
     c.eq(early, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T08:44Z', 'point': '30W', 'near': {'minutes': 46, 'side': 'early', 'depart_from': '2026-11-10T05:15Z'}}]), 'a window that opens at 09:30Z: 46 minutes early, « depart from 05:15Z »', what='early')
     c.eq(far, (None, [{'track': 'A', 'code': 'time', 'at': '2026-11-10T14:44Z', 'point': '30W', 'near': None}]), 'six hours late: refused, no `near` (more than an hour)', what='far')
+
+
+@case('K317', 'Route engine, SOG-0401 lot 1: the answer says how many RAD conditions were DECIDED and how many are left to EXAMINE (`rad.decided`, `rad.review`, `rad.findings`), carries the WHOLE list of the mentions (1 500 at most; if the bound cuts, `rad.cut` and the total say it), the phrase « sans incompatibilité détectée » is no longer rendered, a rule whose target is a SPACE that the base does not know is « to examine » and said with the space (`rad.unknown_spaces`), and the answer KEEPS its request (`request`, bounded)',
+      'K', static=True,
+      rule='SOG-0401 (the user: EDDF → LFMN proposed « sans incompatibilité détectée » by us, 24 errors at the Eurocontrol validation; ergonomics session 17 Nov, lot 1). Measured on the real base (the exact route, FL350 then FL320, 17 Nov 08:45Z): 95 conditions decided against 555 to examine, 0 finding, the list of the answer cut silently at 100 mentions of 531, the phrase said « no incompatibility » for what was only « no finding among what the grammar can decide ». Now: the answer carries the numbers (the screen composes its own sentence), the list whole up to `plan.MAX_RAD` = 1 500 (`rad_count` and `truncated` say a cut), the target of an Annex 2B rule that is not a point of the base (LSASFRA, EDUUUTA, EDMMCTA… : 25 307 airspaces in the base of the workstation, none carries these names) is listed as an unknown SPACE, with the rules that cite it, and the rule is NOT applied (« À interpréter : la cible est un ESPACE (X) inconnu de la base »); the polygon path has no data to apply yet. The request is kept in the answer (`request`: at most 60 fields, 600 signs a text, no field that begins with « _ »).')
+def k317(c):
+    import datetime
+    import sys
+    import types
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from route_engine import plan as PL, rad_flight as RF, view as V
+    pad = lambda row: row + [''] * (17 - len(row))
+    rule = lambda rid, target, util: {'sheet': 'Annex 2B', 'id': rid, 'row': 1, 'change': '', 'values': pad(['', '2601', 'UFN', rid, '', '', '', target, util, 'H24', 'S', 'remarks']), 'assessment': 'À interpréter : correspondance de texte, applicabilité non établie'}
+    candidates = [rule('LSLI1039', 'LSASFRA', 'NOT AVBL FOR TFC 1. VIA CANNE EXC a. VIA (CANNE Z651 DETRI)'), rule('ED2056', 'EDUUUTA', 'NOT AVBL FOR TFC VIA SITET'), rule('SIM1', 'SITET', 'NOT AVBL FOR TFC ARR EIDX'), rule('ENU1', 'KEPAD', 'ONLY AVBL FOR TFC 1. VIA (A DCT B)')]
+    leg = lambda a, b, via='A1', kind='AIRWAY': {'kind': kind, 'via': via, 'start': {'id': a}, 'end': {'id': b}, 'time_start_min': 0, 'time_end_min': 10}
+    legs = [leg('LFPO', 'OLZOM', 'DCT', 'DCT'), leg('OLZOM', 'SITET'), leg('SITET', 'KEPAD'), leg('KEPAD', 'EIDW', 'DCT', 'DCT')]
+    rad = types.SimpleNamespace(groups={}, match=lambda expr, ad: False)
+    known = {'LFPO', 'EIDW', 'OLZOM', 'SITET', 'KEPAD', 'A1', 'CANNE', 'Z651', 'DETRI'}
+    out = RF.evaluate(rad, legs, 'LFPO', 'EIDW', datetime.datetime(2026, 11, 17, 8, 45), candidates, known)
+    c.eq((out['evaluated_conditions'], out['review_conditions'], out['findings'], out['unknown_spaces']), (1, 3, [], [{'space': 'EDUUUTA', 'rules': ['ED2056']}, {'space': 'LSASFRA', 'rules': ['LSLI1039']}]),
+         'one condition decided (SIM1), three to examine (the two rules whose target is a SPACE of the base that the base does not know, and ENU1 whose enumeration the grammar cannot decide); the unknown spaces are listed with the rules that cite them (red before: no `unknown_spaces`, the rules of a space were left silently undecided)', what='summary')
+    c.ok(all('ESPACE (' + s + ')' in r['assessment'] for r, s in ((candidates[0], 'LSASFRA'), (candidates[1], 'EDUUUTA'))), str([x['assessment'] for x in candidates]), 'each rule of an unknown space says it in its assessment: « À interpréter : la cible est un ESPACE (X) inconnu de la base (aucun polygone) : règle non appliquée »')
+    # the list whole, the cut said
+    mention = lambda i: {'sheet': 'Annex 2B', 'row': i, 'id': 'R%d' % i, 'reason': 'x', 'assessment': 'À interpréter', 'validity': 'v', 'values': ['a'] * 15, 'headers': ['h'] * 15}
+    cut = PL._bound_one({'ok': True, 'status': 's', 'rad': [mention(i) for i in range(1600)], 'rad_source': {'title': 't', 'start': 's'}, 'rad_summary': {'evaluated_conditions': 95, 'review_conditions': 555, 'findings': []}})
+    whole = PL._bound_one({'ok': True, 'status': 's', 'rad': [mention(i) for i in range(531)], 'rad_source': {'title': 't', 'start': 's'}, 'rad_summary': {'evaluated_conditions': 94, 'review_conditions': 437, 'findings': []}})
+    vc, vw = V.rad_view(cut), V.rad_view(whole)
+    c.eq(((vc['decided'], vc['review'], vc['findings'], vc['total'], vc['listed'], vc['cut']), (vw['decided'], vw['review'], vw['total'], vw['listed'], vw['cut']), 'headers' in vw['items'][0]), (((95, 555, 0, 1600, 1500, True)), (94, 437, 531, 531, False), False),
+         'the answer carries the numbers and the WHOLE list: 531 mentions of 531 (EDDF → LFMN: before, 100 of 531, the cut said only in `truncated` of the plan, never in what the screen receives), and when the bound of 1 500 cuts, `cut` is true and the total is said', what='rad view')
+    c.eq(V.rad_view({'ok': True}), None, 'no RAD source: no `rad`', what='no rad')
+    req = V.bounded_request({'dep': 'EDDF', 'arr': 'LFMN', 'fl': 350, 'route': 'R' * 700, 'via': ['V'] * 100, '_rad_avoid': [1, 2], 'date': '2026-11-17T08:45'})
+    c.eq((sorted(req), len(req['route']), len(req['via']), req['fl']), (['arr', 'date', 'dep', 'fl', 'route', 'via'], 600, 60, 350), 'the request kept in the answer is bounded (600 signs a text, 60 items a list) and has no internal field « _… »', what='request')
+    src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
+    c.ok('sans incompatibilité détectée. Le niveau' not in src and "message = ('' if alternatives" in src, 'plan.py', 'the phrase « N alternative(s) sans incompatibilité détectée » is no longer built: an answer with alternatives has an empty `alternative_message`')

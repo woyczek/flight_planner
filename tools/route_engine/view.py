@@ -142,6 +142,26 @@ def alternative(i, r, requested_fl):
                             'sections': [{'layer': s['layer'], 'control': s['control'], 'from': s['from'], 'to': s['to'], 'nm': s['nm'], 'reason': s['reason']} for s in r['control']['sections']]}} if r.get('control') else {})}
 
 
+def bounded_request(request):
+    """SOG-0401 : la demande telle que le moteur l'a prise, BORNÉE (au plus 60 champs, 600 signes par texte, aucun champ interne `_…`) : un signalement se rejoue à l'identique."""
+    out = {}
+    for k, v in list((request or {}).items())[:60]:
+        if isinstance(k, str) and not k.startswith('_'):
+            out[k] = v[:600] if isinstance(v, str) else v[:60] if isinstance(v, (list, tuple)) else v
+    return out
+
+
+def rad_view(p):
+    """SOG-0401 : la RAD de la réponse : { title, start, decided (conditions décidées), review (à examiner), findings (constats), total (mentions), listed, cut (la borne a coupé : dit), unknown_spaces, items } ; la liste ENTIÈRE jusqu'à plan.MAX_RAD, chaque mention sans ses en-têtes ; None sans RAD."""
+    if not p.get('rad_source'):
+        return None
+    summary = p.get('rad_summary') or {}
+    items = [{k: m.get(k) for k in ('sheet', 'row', 'id', 'reason', 'assessment', 'validity', 'values')} for m in p.get('rad') or []]
+    total = p.get('rad_count') or len(items)
+    return {'title': p['rad_source'].get('title'), 'start': p['rad_source'].get('start'), 'decided': summary.get('evaluated_conditions'), 'review': summary.get('review_conditions'), 'findings': len(summary.get('findings') or []),
+            'total': total, 'listed': len(items), 'cut': total > len(items), 'unknown_spaces': summary.get('unknown_spaces') or [], 'items': items}
+
+
 def to_view(plan_result, request, include_raw=False):
     """Le plan du moteur → la réponse de l'écran. `request` : la demande du moteur (le FL demandé)."""
     p = plan_result['primary']
@@ -169,6 +189,6 @@ def to_view(plan_result, request, include_raw=False):
     status = 'none' if not alts else 'proposal' if alts[0].get('proposal') else 'computed'
     why = str(p.get('error') or '').strip()
     message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
-    return {'ok': True, 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': {'title': (p.get('rad_source') or {}).get('title'), 'start': (p.get('rad_source') or {}).get('start')} if p.get('rad_source') else None,
+    return {'ok': True, 'request': bounded_request(request), 'alternatives': alts, 'segments': alts[0]['segments'] if alts else [], 'issues': issues[:300], 'rad': rad_view(p),
             'fra': {'start': (p.get('fra_source') or {}).get('start')} if p.get('fra_source') else None, 'report': p.get('report', ''), 'message': message, 'status': status, 'budget': plan_result.get('budget'), 'timing': plan_result.get('timing'), 'sections': plan_result.get('sections'), 'gaps': p.get('gaps') or [], 'limitation': p.get('limitation', ''),
             **({'plan': plan_result} if include_raw else {})}

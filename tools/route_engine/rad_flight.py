@@ -85,7 +85,10 @@ def target(rule,ctx,legs,rad):
     if sheet!='Annex 2B':return None,[]
     if v[7] and not any(v[i] for i in [4,5,6]):
         if not re.fullmatch(r'[A-Z0-9]{2,8}',v[7]):return None,[]
-        if ctx.get('known') is not None and v[7] not in ctx['known']:return None,[]
+        if ctx.get('known') is not None and v[7] not in ctx['known']:
+            # SOG-0401 : la cible n'est pas un POINT de la base : c'est un ESPACE (une FRA, une UTA, un ACC : LSASFRA, EDUUUTA…) ; la base n'en a pas le polygone sous ce nom (aucun des 25 307 espaces de la base de ce poste ne porte ces noms) : la règle n'est pas appliquée, elle est « à examiner », DITE avec l'espace
+            ctx.setdefault('unknown_spaces',{}).setdefault(v[7],[]).append(rule['id']);rule['assessment']='À interpréter : la cible est un ESPACE ('+v[7]+') inconnu de la base (aucun polygone) : règle non appliquée'
+            return None,[]
         if v[7] not in ctx['points']:return False,[]
         return True,[i for i,l in enumerate(legs) if v[7] in [l['start']['id'],l['end']['id']]]
     if all(v[i] for i in [4,5,6]) and not v[7]:
@@ -143,7 +146,8 @@ def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None):
                 if block not in avoids:avoids.append(block)
             else:avoids.append(dict(kind='segment',via=l['via'],start=l['start']['id'],end=l['end']['id']))
     return dict(scope='Vol entier : départ, tous les points SID, route, tous les points STAR et arrivée',segments=len(legs),phases=ctx['phases'],
-        evaluated_conditions=decided,review_conditions=sum('interpréter' in c['assessment'] for c in candidates),findings=findings,search_exclusions=avoids)
+        evaluated_conditions=decided,review_conditions=sum('interpréter' in c['assessment'] for c in candidates),findings=findings,search_exclusions=avoids,
+        unknown_spaces=[dict(space=s,rules=sorted(set(r))) for s,r in sorted(ctx.get('unknown_spaces',{}).items())])      # SOG-0401 : les règles dont la cible est un espace inconnu de la base, par espace
 
 def static_blocks(rad,dep,arr):
     """Airport-only ONLY/NOT conditions can safely constrain the graph upfront."""

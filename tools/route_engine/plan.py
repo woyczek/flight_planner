@@ -35,7 +35,7 @@ MAX_ALTERNATIVES = 3
 MAX_LEGS = 800
 MAX_ISSUES = 300
 MAX_TEXT = 4000
-MAX_RAD = 100
+MAX_RAD = 1500                       # SOG-0401 : les mentions RAD de la réponse : la liste ENTIÈRE jusqu'à cette borne (531 pour EDDF → LFMN) ; au-delà, `rad_count` dit le total et `truncated` contient « rad » : jamais une coupe muette
 MAX_REPORT = 120000
 
 
@@ -440,8 +440,7 @@ def plan(request, root):
         pool.sort(key=lambda r: r.get('objective_score', r['distance_nm']))
         primary = pool[0]
         alternatives = pool[1:4]
-    message = (f'{len(alternatives)} alternative(s) sans incompatibilité détectée. Le niveau et les paliers de chaque proposition sont affichés.'
-               if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''
+    message = ('' if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''      # SOG-0401 : « sans incompatibilité détectée » n'est plus rendu (c'était un 0 constat sur les seules conditions décidables, 95 contre 555 à examiner) : l'écran compose sa phrase avec `rad.decided` et `rad.review`
     repli = None
     if rejected and not alternatives and not check_only:
         engine.DEADLINE = started + bounds['total_s']      # les propositions de repli ont la fin du budget
