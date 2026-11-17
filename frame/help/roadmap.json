@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "180b830",
-  "fiches": 450,
+  "organisation": "5557a77",
+  "fiches": 451,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2894,6 +2894,15 @@
      "en": "Atlantic routes: the “NAT track or free route” comparison costs three to four seconds, even when it changes nothing",
      "de": "Atlantikrouten: der Vergleich „NAT-Track oder freie Route“ kostet drei bis vier Sekunden, auch wenn er nichts ändert",
      "es": "Rutas del Atlántico: la comparación «ruta NAT o ruta libre» cuesta de tres a cuatro segundos, aunque no cambie nada"
+    },
+    {
+     "id": "SOG-0452",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : le même vol ne rend pas la même route selon les vols calculés avant lui (400 NM d'écart sur Madrid)",
+     "en": "Routes: the same flight does not give the same route depending on the flights computed before it (400 NM apart on Madrid)",
+     "de": "Routen: derselbe Flug liefert je nach zuvor berechneten Flügen nicht dieselbe Route (400 NM Unterschied ab Madrid)",
+     "es": "Rutas: el mismo vuelo no da la misma ruta según los vuelos calculados antes (400 NM de diferencia desde Madrid)"
     }
    ]
   },
