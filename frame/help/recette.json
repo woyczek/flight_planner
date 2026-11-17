@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-17",
-  "tests": 261,
+  "tests": 262,
   "verdicts": 204
  },
  "apps": [
@@ -3944,25 +3944,23 @@
    "since": "2026-11-16",
    "state": "todo",
    "delivered": "2026-11-16T22:24:33Z"
+  },
+  {
+   "id": "SOG-0393",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant, étape 1 « Vol » : les champs Niveau et Date du vol sont décalés",
+    "en": "Fuel, step 1 “Flight”: the Level and Flight date fields are misaligned",
+    "de": "Kraftstoff, Schritt 1 „Flug“: die Felder Flugfläche und Flugdatum sind versetzt",
+    "es": "Combustible, paso 1 «Vuelo»: los campos Nivel y Fecha del vuelo están desalineados"
+   },
+   "test": "Carburant, étape 1 « Vol », après avoir rechargé la page. (1) Sur l'ordinateur, design metro : les étiquettes « Niveau (FL) » et « Date du vol » sont sur la même ligne ; le champ du niveau, « Auto », le champ de la date, « +30 » et « Maint. » partent de la même hauteur ; « Auto » ne touche pas la date. (2) « auto · durée » est sous le niveau et « heure locale de l'appareil » sous la date, chacun sur une ligne. (3) Il y a un espace entre la rangée des terrains, celle du niveau et celle de Famille / Série. (4) Au téléphone : « +30 » et « Maint. » passent sous la date, la précision dessous ; rien ne se chevauche. (5) Change de design dans Réglages : pareil.",
+   "since": "2026-11-17",
+   "state": "todo",
+   "delivered": "2026-11-17T08:35:42Z"
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0074",
-   "fiche": "SOG-0394",
-   "app": "maintenance",
-   "question": "Vol dont le passage ne tombe dans aucun message NAT gardé (celui de la nuit pas encore paru) : routes de la veille, ou route libre ?",
-   "context": "Je corrige ma question : j'avais oublié TA règle du 13/11 (« même si on n'a pas la bonne nats, on essaie tout de même de les utiliser ») — aujourd'hui un message d'un jour passé est déjà utilisé et dit périmé. Avec les messages gardés (SOG-0394), une route de la veille servira d'abord dans SA fenêtre (vol avancé, heure du simulateur). Reste le vol dont le message n'existe pas encore. Ce que je contestais : faire passer pour valable une route d'un autre jour ; ta règle y répond si l'écran le dit en clair. Je me range à ta règle.",
-   "options": [
-    "Les routes de la veille du même sens, aux mêmes heures, dites « périmées — à confirmer à la parution » (ta règle du 13/11)",
-    "Route libre, et une ligne le dit : « message NAT pas encore paru — relire après sa parution »",
-    "Route libre, et la route de la veille montrée seulement comme prévision, jamais comptée comme route du vol",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",
@@ -4224,6 +4222,25 @@
    "choice": 0,
    "text": "pas recalculer, mais récupérer les nouvelles routes quand c’est l’heure qui pose souci. si les routes sont dispo, évidement. conserver les routes « en cours » et les routes futures (on peut décider d’avancer un vol, il faut avoir encore les informations de la veille).",
    "at": "2026-11-17T08:10:27Z"
+  },
+  {
+   "id": "Q-0074",
+   "fiche": "SOG-0394",
+   "app": "maintenance",
+   "question": "Vol dont le passage ne tombe dans aucun message NAT gardé (celui de la nuit pas encore paru) : routes de la veille, ou route libre ?",
+   "context": "Je corrige ma question : j'avais oublié TA règle du 13/11 (« même si on n'a pas la bonne nats, on essaie tout de même de les utiliser ») — aujourd'hui un message d'un jour passé est déjà utilisé et dit périmé. Avec les messages gardés (SOG-0394), une route de la veille servira d'abord dans SA fenêtre (vol avancé, heure du simulateur). Reste le vol dont le message n'existe pas encore. Ce que je contestais : faire passer pour valable une route d'un autre jour ; ta règle y répond si l'écran le dit en clair. Je me range à ta règle.",
+   "options": [
+    "Les routes de la veille du même sens, aux mêmes heures, dites « périmées — à confirmer à la parution » (ta règle du 13/11)",
+    "Route libre, et une ligne le dit : « message NAT pas encore paru — relire après sa parution »",
+    "Route libre, et la route de la veille montrée seulement comme prévision, jamais comptée comme route du vol",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-17",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "avec message « message NAT pas encore paru — relire après sa parution » ou «  périmées — à confirmer à la parution »",
+   "at": "2026-11-17T08:34:36Z"
   }
  ]
 }

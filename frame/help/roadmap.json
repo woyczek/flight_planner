@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2622c5b",
+  "organisation": "60e3864",
   "fiches": 394,
   "untranslated": 0,
   "priorities": 374,
@@ -791,11 +791,12 @@
     {
      "id": "SOG-0393",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant, étape 1 « Vol » : les champs Niveau et Date du vol sont décalés",
      "en": "Fuel, step 1 “Flight”: the Level and Flight date fields are misaligned",
      "de": "Kraftstoff, Schritt 1 „Flug“: die Felder Flugfläche und Flugdatum sind versetzt",
-     "es": "Combustible, paso 1 «Vuelo»: los campos Nivel y Fecha del vuelo están desalineados"
+     "es": "Combustible, paso 1 «Vuelo»: los campos Nivel y Fecha del vuelo están desalineados",
+     "test": true
     }
    ]
   },
