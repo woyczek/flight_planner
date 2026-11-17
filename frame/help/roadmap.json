@@ -4,7 +4,7 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "947d83c",
+  "organisation": "ab126c0",
   "fiches": 411,
   "untranslated": 0,
   "priorities": 374,
@@ -1315,11 +1315,12 @@
     {
      "id": "SOG-0401",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Itinéraire proposé EDDF → LFMN : « sans incompatibilité détectée » chez nous, 24 erreurs à la validation d'Eurocontrol",
      "en": "Proposed itinerary EDDF → LFMN: “no incompatibility detected” on our side, 24 errors at the Eurocontrol validation",
      "de": "Vorgeschlagene Route EDDF → LFMN: bei uns „keine Unverträglichkeit erkannt“, 24 Fehler bei der Eurocontrol-Validierung",
-     "es": "Itinerario propuesto EDDF → LFMN: «sin incompatibilidad detectada» por nuestra parte, 24 errores en la validación de Eurocontrol"
+     "es": "Itinerario propuesto EDDF → LFMN: «sin incompatibilidad detectada» por nuestra parte, 24 errores en la validación de Eurocontrol",
+     "test": true
     }
    ]
   },
