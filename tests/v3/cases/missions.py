@@ -3300,7 +3300,7 @@ _DROWS_JS = """async () => { const ED = await import('/modules/missions/editor_d
     none: 'phases' in ED.withDrawerRows({ phases: [{ id: 'B' }] }, []), hostile: J(ED.withDrawerRows({}, [{ i: -1, id: '__proto__', title: 'x' }])), threw,
     todo: ED.drawersTodo(base).map(t => t.name + ':' + t.key).join(' '),
     blank: ED.drawerRowsOf({ phases: [{ id: 'B', trigger_delay_min: ' ', fallback_delay_min: '  ' }] }).map(r => [r.delay, r.fallback]),
-    hidden: (() => { const doc = { phases: [{ id: 'B', title: 'Ti\u202Etre\u200B', message: 'a\u2066b\u200Dc fin\u202F!' }] }, rows = ED.drawerRowsOf(doc),
+    hidden: (() => { const doc = { phases: [{ id: 'B', title: 'Ti\u202Etre\u200B\u206A\uFFF9', message: 'a\u2066b\u200Dc fin\u202F!' }] }, rows = ED.drawerRowsOf(doc),
       d = ED.withDrawerRows(doc, [{ ...rows[0], message: 'x\u202Ey' }]);
       return [rows[0].title, rows[0].message, J(ED.withDrawerRows(doc, rows)) === J(doc), d.phases[0].message, d.phases[0].title === doc.phases[0].title] })(),
     clone: ED.withDrawerRows(base, rows) !== base } }"""
@@ -3344,7 +3344,7 @@ def n75(c):
          'every drawer removed: `phases` leaves the file; a hostile letter writes nothing; no hostile input throws')
     c.eq(r['blank'], [['', '']], 'a blank text in a number of the file is not zero', what='blank numbers')
     c.eq(r['hidden'], ['Titre', 'ab\u200dc fin\u202f!', True, 'xy', True],
-         'the invisible format characters (direction overrides, zero-width space) leave what the workshop shows and writes — the joiner and the '
+         'the invisible format characters (direction overrides, zero-width space, deprecated formats, annotations) leave what the workshop shows and writes — the joiner and the '
          'narrow no-break space stay; a text of the file the author does not touch is kept as it is', what='format characters')
     c.ok(r['clone'] is True, r['clone'], 'nothing touched: a COPY of equal content (never the object received)')
     c.eq(r['todo'], '2:noMessage 2:noBrief 3:noFallback 3:noMessage 3:noBrief 4:noFallback 4:noMessage 4:noBrief 5:noFallback 5:noMessage 5:noBrief '
@@ -3520,3 +3520,36 @@ def n82(c):
     c.settle()
     c.eq(c.count(S), 0, 'a mission without drawers has no section', what='section')
     c.js(_DW_CLEAR)
+
+
+_HIDDEN_JS = """async () => { const MS = await import('/frame/lib/mission.js');
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'Mis\\u202Esion\\u2066 cachée\\u206A', summary: 'Un ré\\u200Bsumé.', detailed_description: 'Un para\\uFEFFgraphe.',
+    origin: { name: 'Base\\u200E Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    turning_points: [{ id: 'PT1', name: 'Po\\u202Dint', lat: 44.8, lon: 1.2 }], route_order: ['ORIGIN', 'PT1\\u200B', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Ti\\u202Etre', trigger: 'au\\u2066 point', trigger_point: 'PT1\\u200B', trigger_delay_min: 5, message: 'Mes\\u202Esage a\\u200Db',
+      brief: 'Ligne\\uFFF9 un.\\nFin\\u202F!' }] };
+  const m = MS.readMission(doc), d = m.drawers[0];
+  return { visible: typeof MS.visible === 'function' ? [MS.visible('a\\u061Cb\\u2060c\\u2069d\\u206Fe\\uFFFBf'), MS.visible('g\\u200Ch\\u200Di\\u202Fj'), MS.visible(null), MS.visible(7)] : null,
+    mission: [m.title, m.summary, m.details, m.origin.name, Object.values(m.points).map(p => p.name)],
+    drawer: [d.title, d.trigger, d.message, d.brief, d.key.kind, d.keyWhy],
+    registry: MS.readRegistry({ missions: [{ id: 'X-001A', family: 'REG', title: 'Re\\u202Egistre', folder: 'X_REG/X-001A', files: ['missionX-001A.yaml'] }] }).map(r => r.title) } }"""
+
+
+@case('N76', 'Mission reader: the invisible format characters that deceive the eye (direction overrides and isolates, zero-width space, word '
+      'joiner, deprecated formats, interlinear annotations, byte-order mark) are removed from every text read from a mission file or a '
+      'registry — title, summary, description, names, the title, the words, the message and the briefing of a drawer — and from an '
+      'identifier before it is compared (a route word « PT1 » followed by a zero-width space is PT1); the joiner, the non-joiner and '
+      'the narrow no-break space are kept', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='Sécurisation, review of 18 Nov 2026 (after SOG-0445): a mission file is written by any pilot, and the pilot\'s screen shows its '
+      'title, its message and its briefing — a text must not read otherwise than it is written. ONE function, `visible` of '
+      'frame/lib/mission.js, used by the reader and by the workshop (modules/missions/editor_drawers.js); docs/technique/FORMAT_MISSION.md § 5')
+def n76(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_HIDDEN_JS)
+    c.eq(r['mission'], ['Mission cachée', 'Un résumé.', ['Un paragraphe.'], 'Base Test (XTST)', ['Point']],
+         'the title, the summary, the description, the names: read without the hidden characters', what='the mission')
+    c.eq(r['drawer'], ['Titre', 'au point', 'Message a\u200db', 'Ligne un.\nFin\u202f!', 'time', ''],
+         'the drawer: its texts without them (the joiner and the narrow no-break space kept), and its trigger point « PT1 + zero-width space » is PT1',
+         what='the drawer')
+    c.eq(r['registry'], ['Registre'], 'a title of the registry too', what='the registry')
+    c.eq(r['visible'], ['abcdef', 'g\u200ch\u200di\u202fj', '', '7'], 'the one function: what it removes, what it keeps, nothing for nothing', what='visible')

@@ -151,6 +151,12 @@ route is read up to 60 ids, `required_points` up to 20, `zones` up to 40 and `ob
 up among the mission's own points only (never `constructor`); a value that is not a list where a list is expected
 (`zones: 7`) is read as nothing and no longer fails the whole reading.
 
+**The invisible format characters are removed from every text read** (`visible(v)`, exported; Security review of 18 Nov 2026): a
+title, a message or a briefing must not read otherwise than it is written. Removed: U+061C, U+200B, U+200E, U+200F, U+202A to
+U+202E, U+2060 to U+2064, U+2066 to U+206F, U+FFF9 to U+FFFB, U+FEFF. Kept on purpose: U+200C and U+200D (scripts and emoji need
+them) and U+202F (the narrow no-break space of French typography). An identifier is compared after the same removal. The workshop
+(`modules/missions/editor_drawers.js`) uses the same function for what it shows and writes.
+
 **A number out of its bounds is never clamped** — a zone shrunk to fit would be another zone. The key is said
 unreadable and the drawer opens by hand:
 

@@ -15,6 +15,8 @@
 //     participants, role }] et turns [{ id, name, role, lat, lon }] (60 points), maps [{ id, file (motif strict, un nom de fichier du
 //     dossier de la mission), type, description, centreRef }] (20), objectives { primary, secondary }, payload { description, massKg,
 //     passengers }, details [paragraphe] (2 000 caractères chacun), hasCoords (un lieu, un point ou une zone situé).
+//     visible(v) → le texte sans ses caractères de format invisibles (contrôles de sens d'écriture, espace de largeur nulle…) : tout
+//     texte lu d'un fichier passe par là ; l'atelier l'emploie aussi.
 //     drawerSlots(doc) → [{ i, id }] : les parties de `phases` qui sont des tiroirs (leur place, leur lettre) — la règle
 //     d'acceptation, partagée avec l'atelier (modules/missions/editor_drawers.js).
 //     Les tiroirs (SOG-0440) : drawers [{ id (B à M), rank (1 à 12 : ce que l'écran dit), title, trigger, message, brief, key, keyWhy,
@@ -57,8 +59,18 @@
 //   categoryOf(v) : l'identifiant de catégorie d'une mission (SOG-0041, § 10.38 ; la forme des identifiants de
 //     frame/lib/mission_categories.js), '' sinon ; le nom et la charge se lisent dans la liste de la compagnie (forAirline).
 
-/** Un texte nettoyé (blancs repliés), '' pour rien. */
-const clean = v => String(v ?? '').replace(/\s+/g, ' ').trim();
+/** Les caractères de format invisibles qui trompent l'œil : la marque arabe (U+061C), l'espace de largeur nulle (U+200B), les marques
+ *  et les contrôles de sens d'écriture (U+200E, U+200F, U+202A à U+202E, U+2066 à U+2069), le liant de mots et les opérateurs
+ *  invisibles (U+2060 à U+2064), les formats dépréciés (U+206A à U+206F), les annotations interlinéaires (U+FFF9 à U+FFFB), la
+ *  marque d'ordre (U+FEFF). Gardés à dessein : le liant et l'anti-liant (U+200C, U+200D : des écritures et des émojis en ont
+ *  besoin) et l'espace fine insécable (U+202F, la typographie française). */
+const HIDDEN = /[\u061C\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFFF9-\uFFFB\uFEFF]/g;
+/** Un texte d'un fichier sans ses caractères de format invisibles (un fichier de mission ou de registre est écrit par tout pilote : un
+ *  titre ne doit pas se lire autrement qu'il est écrit) — LA fonction, pour le lecteur et pour l'atelier (modules/missions/
+ *  editor_drawers.js) ; '' pour rien. */
+export const visible = v => String(v ?? '').replace(HIDDEN, '');
+/** Un texte nettoyé (caractères invisibles retirés, blancs repliés), '' pour rien. */
+const clean = v => visible(v).replace(/\s+/g, ' ').trim();
 /** Un nombre fini, ou null. */
 const num = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v;
 
@@ -149,7 +161,7 @@ function sheetOf(d) {
     pl = d.payload && typeof d.payload === 'object' ? d.payload : {},
     places = [d.origin, d.destination, d.target].filter(p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null);
   return {
-    summary: String(d.summary ?? '').trim().slice(0, 2000),
+    summary: visible(d.summary).trim().slice(0, 2000),
     teams: list(d.teams, 40).map(t => ({
       name: cut(t?.name, 80),
       service: cut(t?.service, 120),
@@ -177,7 +189,7 @@ function sheetOf(d) {
       massKg: num(pl.mass_kg) !== null && +pl.mass_kg > 0 && +pl.mass_kg < 1e6 ? +pl.mass_kg : null,
       passengers: Number.isInteger(num(pl.passengers)) && +pl.passengers > 0 && +pl.passengers < 10000 ? +pl.passengers : null
     },
-    details: String(d.detailed_description ?? '').split(/\n\s*\n/).map(p => p.replace(/\s+/g, ' ').trim().slice(0, 2000)).filter(Boolean)
+    details: visible(d.detailed_description).split(/\n\s*\n/).map(p => p.replace(/\s+/g, ' ').trim().slice(0, 2000)).filter(Boolean)
       .slice(0, 30),
     hasCoords: !!(places.length || turns.some(p => p.lat !== null && p.lon !== null) || rdv.some(p => p.lat !== null && p.lon !== null) ||
       zones.some(z => z.lat !== null && z.lon !== null))
@@ -232,7 +244,7 @@ export const DRAWER_BOUNDS = Object.freeze({
 const ROUTE_START = new Set(['ORIGIN', 'DEPART', 'DEPARTURE']),
   ROUTE_END = new Set(['DESTINATION', 'ARRIVAL', 'ARRIVEE']);
 /** Un texte de plusieurs lignes, ses fins de ligne ramenées à « \n », borné. */
-const para = (v, n) => typeof v === 'string' || typeof v === 'number' ? String(v).replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').trim()
+const para = (v, n) => typeof v === 'string' || typeof v === 'number' ? visible(v).replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').trim()
   .slice(0, n) : '';
 /** Un nombre du fichier dans [lo, hi] ; null sinon (un texte qui n'est pas un nombre, un booléen, hors bornes). */
 const within = (v, lo, hi) => (typeof v === 'number' || typeof v === 'string' && /^\s*-?\d+(\.\d+)?\s*$/.test(v)) && +v >= lo && +v <= hi ?
@@ -662,7 +674,7 @@ export function readMission(doc) {
     type,
     subtype: clean(m.subtype),
     title: clean(d.title),
-    summary: String(d.summary ?? '').trim(),
+    summary: visible(d.summary).trim(),
     organisation: m.role === 'organisation' || /Z$/.test(id),
     operation: d.operation && typeof d.operation === 'object' ? {
       id: clean(d.operation.id),

@@ -5,7 +5,8 @@
 // partie inchangée reste l'objet du fichier ; rien de changé, rien d'écrit — withDrawerRows rend alors une COPIE de contenu identique
 // (un structuredClone), jamais l'objet reçu : la règle se juge au contenu (Sécurisation, relecture du 17 nov. 2026).
 // Les caractères de format invisibles qui trompent l'œil (contrôles de sens d'écriture, espaces de largeur nulle, marque d'ordre) sont
-// retirés de ce que l'atelier lit dans ses lignes et de ce qu'il écrit ; un texte du fichier que l'auteur ne touche pas reste tel quel.
+// retirés de ce que l'atelier lit dans ses lignes et de ce qu'il écrit — par `visible` du lecteur (frame/lib/mission.js), la seule
+// liste ; un texte du fichier que l'auteur ne touche pas reste tel quel.
 //
 // Le format (FORMAT_MISSION.md § 2, § 3 ; décision du 17 nov. 2026 sur Q-0095) : un tiroir CITE une zone ou un objet de la mission par
 // son identifiant — l'atelier n'écrit jamais une zone ou un objet dans la partie. Les parties que le lecteur refuse (identifiant hors
@@ -41,14 +42,10 @@ const KEY_FIELDS = ['trigger_zone', 'zone_shown', 'trigger_actor', 'trigger_obje
   'trigger_delay_min'
 ];
 
-/** Les caractères de format invisibles retirés (U+061C, U+200B, U+200E, U+200F, U+202A à U+202E, U+2060 à U+2064, U+2066 à U+2069,
- *  U+FEFF) ; le liant et l'anti-liant (U+200C, U+200D : des écritures et des émojis en ont besoin) et l'espace fine insécable (U+202F,
- *  la typographie française) sont gardés. */
-const HIDDEN = /[\u061C\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
-/** Un texte d'une ligne, borné. */
-const cut = (v, n) => String(v ?? '').replace(HIDDEN, '').replace(/\s+/g, ' ').trim().slice(0, n);
+/** Un texte d'une ligne, sans caractère invisible, borné. */
+const cut = (v, n) => MS.visible(v).replace(/\s+/g, ' ').trim().slice(0, n);
 /** Un texte de plusieurs lignes (le message, le briefing), comme le lecteur le lit : ses sauts de ligne gardés, borné. */
-const lines = (v, n) => typeof v === 'string' || typeof v === 'number' ? String(v).replace(HIDDEN, '').replace(/\r\n?/g, '\n').replace(
+const lines = (v, n) => typeof v === 'string' || typeof v === 'number' ? MS.visible(v).replace(/\r\n?/g, '\n').replace(
     /[ \t]+\n/g, '\n').trim()
   .slice(0, n) : '';
 /** Un objet du fichier (ni liste, ni valeur nue). */

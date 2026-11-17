@@ -293,9 +293,11 @@ Lieux. Not yet imported by the screen: the sheet is the next brick.
   `structuredClone`), never the object received — the rule is judged on the content; the invisible format characters that deceive the
   eye (direction overrides and isolates, zero-width space, word joiner, byte-order mark) are removed from what the workshop reads into
   its rows and from what it writes — the joiner and non-joiner (scripts and emoji need them) and the narrow no-break space stay; a text
-  of the file the author does not touch is kept as it is; a blank text in a number of the file is not zero. **Not done, to decide**:
-  the reader (`frame/lib/mission.js`, `clean`) folds blanks only, so the pilot's screen still shows such a character of a title — the
-  same removal there changes every reading and wants its own commit, its regression measure and its review.
+  of the file the author does not touch is kept as it is; a blank text in a number of the file is not zero. **Done next, on the
+  reviewer's request (18 Nov)**: the same removal in the READER, by one function — `visible` of `frame/lib/mission.js`, which the
+  workshop imports (no second list to keep): every text read from a mission file or a registry, and an identifier before it is
+  compared (noreg N76; 112 mission files and the registry of a real repository read identically before and after). The six steps'
+  own fields (`editor.js`) still fold blanks only: to align when they are next touched.
 - **Open for the sheet**: who writes `said` — proposed: the workshop generates it from the key (« au passage de ZONE-1 », « 10 min
   après PT1 ») as long as the author has not typed his own words, since the V2's Markdown and PDF print it.
 
