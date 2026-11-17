@@ -4,8 +4,8 @@
  "updated": "2026-11-17",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c497e53",
-  "fiches": 444,
+  "organisation": "0531bc0",
+  "fiches": 446,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2091,6 +2091,27 @@
      "en": "Map: the airspaces held by an IVAO or VATSIM controller, and the time before having to contact them",
      "de": "Karte: die von einem IVAO- oder VATSIM-Lotsen besetzten Lufträume und die Zeit bis zur Kontaktaufnahme",
      "es": "Mapa: los espacios atendidos por un controlador de IVAO o VATSIM, y el tiempo antes de tener que contactarlo"
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-socle",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; socle",
+    "en": "Carte ; socle",
+    "de": "Carte ; socle",
+    "es": "Carte ; socle"
+   },
+   "items": [
+    {
+     "id": "SOG-0446",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Socle de carte : éditer sur la carte (toucher nu, déplacer, tracé en cours, couches de l'auteur, repères d'AeroDB cliquables) et lire l'altitude du terrain",
+     "en": "Map base: editing on the map (bare tap, drag, path in progress, author layers, clickable AeroDB landmarks) and reading terrain elevation",
+     "de": "Kartensockel: Bearbeiten auf der Karte (Tippen, Ziehen, laufender Linienzug, Autorenebenen, anklickbare AeroDB-Marken) und Geländehöhe lesen",
+     "es": "Base de mapa: editar en el mapa (toque libre, arrastrar, trazo en curso, capas del autor, referencias de AeroDB pulsables) y leer la altitud del terreno"
     }
    ]
   },
@@ -4746,6 +4767,27 @@
      "de": "BLOCKIEREND: die Seite friert minutenlang ein, auch nach Schließen und erneutem Öffnen, nach einem Aufbau, der Tausende Dateien neu schreibt",
      "es": "BLOQUEANTE: la página se congela durante minutos, incluso cerrada y reabierta, tras una construcción que reescribe miles de archivos",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-position-en-direct",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; position en direct",
+    "en": "Cadre ; position en direct",
+    "de": "Cadre ; position en direct",
+    "es": "Cadre ; position en direct"
+   },
+   "items": [
+    {
+     "id": "SOG-0447",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Cadre : un relevé de position qui dit « au sol », la hauteur au-dessus du sol et le cap vrai, et un service de franchissement pur — le même en vol et à l'essai",
+     "en": "Frame: a position fix that says “on ground”, height above ground and true heading, and one pure crossing service — the same in flight and in the author's test",
+     "de": "Rahmen: eine Positionsmeldung mit „am Boden“, Höhe über Grund und rechtweisendem Steuerkurs, und ein reiner Durchflugsdienst — derselbe im Flug und im Autorentest",
+     "es": "Marco: una posición que dice «en tierra», la altura sobre el terreno y el rumbo verdadero, y un servicio puro de cruce — el mismo en vuelo y en la prueba del autor"
     }
    ]
   },
