@@ -75,6 +75,7 @@ function nmTicks(from, to, plotW) {
   const step = [1, 2, 5, 10, 20, 25, 50, 100, 250, 500, 1000, 2500].find(n => plotW * n / Math.max(1e-9, to - from) >= 40 && (to - from) /
       n <= 12) || 5000,
     out = [];
+  if (!((to - from) <= 1e6)) return out; // une fenêtre infinie ou absurde : pas de repères
   for (let nm = Math.ceil(from / step) * step; nm <= to + 1e-9; nm += step)
     if (nm > 0) out.push({
       nm

@@ -482,7 +482,9 @@
       total = d[d.length - 1],
       step = stepNm || (total > 150 ? 50 : 10),
       out = [];
-    for (let nm = step, i = 1; nm < total; nm += step) {
+    // la borne vient de la donnée : un total infini, ou absurde (au-delà de 1e6 NM : le tour du monde en fait 11 000), n'a pas de marques (une tâche de plusieurs minutes sur la page Pilote) ; et jamais plus de 5 000
+    if (!(total < 1e6) || !(step > 0)) return [];
+    for (let nm = step, i = 1; nm < total && out.length < 5000; nm += step) {
       while (i < d.length - 1 && d[i] < nm) i++;
       if (points[i].gapBefore?.length) continue;
       const a = points[i - 1],
@@ -1139,6 +1141,8 @@
 
   function gridValues(a, b, step) {
     const out = [];
+    if (!(Math.abs(b - a) / step <= 2000))
+      return out; // une emprise infinie ou absurde : pas de graticule (la boucle prendrait sa borne dans la donnée)
     for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + 1e-9; v += step) out.push(+v.toFixed(6));
     return out;
   }

@@ -9592,6 +9592,25 @@ def d276(c):
     c.page.keyboard.type('ZZQQ')
     c.until("() => { const n = document.querySelector('.mp-find-none'); return !!n && !n.hidden && n.textContent.length > 3 }", timeout=8000, what='« no place found »')
 
+@case('D277', 'Loops bounded by the data (the page that froze for minutes): the distance marks of a route of absurd length, and the grid of altitudes of a profile whose top is absurd, are not drawn, never looped', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='a long task of 213 to 435 s on the Pilot page (the user, 18 Nov): the distance marks (render.js marks, one every 10 or 50 NM up to the total) and the grid of altitudes of the profile (vertical_profile.js, one line every 1 000 to 5 000 ft up to the top) take their bound from the data; a total or a top that is infinite or over 1e6 draws neither marks nor grid, and the marks are at most 5 000')
+def d277(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    r = c.js("""() => { const R = window.MapsRender, A = { lat: 45, lon: 0 }, B = (shift) => ({ lat: 45, lon: 1, gapShift: shift });
+      const norm = R.marks([A, B(0)]), big = R.marks([A, B(2e6)]), inf = R.marks([A, B(Infinity)]), nan = R.marks([A, { lat: NaN, lon: 1 }]);
+      return { norm: norm.length, big: big.length, inf: inf.length, nan: nan.length } }""")
+    c.ok(r['norm'] >= 4 and r['big'] == 0 and r['inf'] == 0 and r['nan'] == 0, str(r), 'a route of 60 NM has its marks; a total over 1e6, infinite or not a number has none')
+    c.page.goto(f'{c.base}/modules/maps/lib/test/profile_embed.html', wait_until='load')
+    c.until("() => window.__pe && window.__pe.ready", timeout=30000, what='the profile bench')
+    g = c.js("""async () => { const P = window.__pe, cv = P.canvas, pts = [{ lat: 45.0, lon: 1.0, id: 'A' }, { lat: 45.2, lon: 1.6, id: 'B' }], labels = {};
+      const spy = lvl => { const ctx = cv.getContext('2d'), f = ctx.fillText.bind(ctx); let n = 0; ctx.fillText = (t, ...a) => { if (/ ft$|^FL /.test(String(t))) n++; return f(t, ...a) }; return () => { ctx.fillText = f; return n } };
+      const ok = spy(); await P.drawProfile(cv, pts, { load: P.load, levelFt: 9000 }); labels.normal = ok();
+      const bad = spy(); const t0 = performance.now(); await P.drawProfile(cv, pts, { load: P.load, levelFt: 5e7 }); labels.absurd = bad(); labels.ms = performance.now() - t0; return labels }""")
+    c.ok(g['normal'] >= 3, str(g), 'a profile to FL90 draws its grid of altitudes')
+    c.eq(g['absurd'], 0, 'a profile whose top is 5e7 ft draws no grid (it would have looped for ever with a top of 1e12)', what=str(g))
+
 
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""

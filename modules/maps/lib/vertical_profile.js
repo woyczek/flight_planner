@@ -677,7 +677,8 @@
     // 13 px) ; les traits des niveaux supprimés partent avec leur étiquette
     const thin = Math.max(H < 110 ? 4 : H < 160 ? 2 : 1, Math.ceil(13 * scale / Math.max(1, (H - padT - padB) * step / span)));
     let lvl = 0;
-    for (let a = Math.ceil(bottom / step) * step; a <= top; a += step, lvl++) {
+    // la borne vient de la donnée : un sommet infini ou absurde (au-delà de 1e6 ft) n'a pas de grille de niveaux (une tâche de plusieurs minutes sur la page Pilote)
+    for (let a = Math.ceil(bottom / step) * step; a <= top && span > 0 && span <= 1e6; a += step, lvl++) {
       if (lvl % thin) continue;
       const y = Y(a);
       ctx.beginPath();
