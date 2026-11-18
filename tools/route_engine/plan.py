@@ -265,6 +265,7 @@ def plan(request, root):
     nav.nat_rejected = frozenset((getattr(nav, 'nat', None) or {}).get('kept') or ())      # SOG-0394 : une route GARDÉE d'un message précédent est fermée à toute recherche tant que `sections.solve` ne l'a pas jugée valable à l'heure de son passage
     nav.fl_basis = request.get('fl_basis', 'request')      # SOG-0389 : d'où vient le niveau : `request` (la demande le donne) ou `default` (le défaut du moteur, FL180 : sans niveau) ; dit dans `sections.fl_basis`
     nav.sections_info = None      # SOG-0354 L5 (4) : rien d'une demande précédente (le contexte est gardé) ne passe dans la réponse de celle-ci
+    nav._graph_cost = 0.0      # SOG-0475 : le coût du plus lent des graphes de CE calcul (engine.routing_graph)
     nav.depart = depart_of(request)      # SOG-0354 L5 (1) : l'heure de départ que la demande donne (sans heure : (None, 'none'), la validité horaire n'est pas vérifiée, dit)
     context_s = round(time.perf_counter() - context_began, 3)
     crossing = crosses_ocean(nav.ads.get(str(request.get('dep', '')).upper()) or {}, nav.ads.get(str(request.get('arr', '')).upper()) or {})

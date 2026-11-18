@@ -15560,3 +15560,51 @@ def k348(c):
         engine.DEADLINE, engine.DEADLINE_CEIL = keep
     c.eq((a, b, c2, d, e), (104.0, 104.0, 112.0, None, 100.0), 'the bound moves to the asked instant; never backwards (103 after 104); never beyond the end of the calculation (130 → 112); with no bound or no end of calculation nothing moves', what='extend_deadline')
     c.eq((engine.GRAPH_SEARCH_MIN_S, engine.DEADLINE_CEIL), (3.0, None), 'the search after a graph keeps at least 3 s; outside a calculation there is no ceiling (plan.plan resets it)', what='constants')
+
+
+@case('K349', 'Route engine, SOG-0474 (a State without a network): when the arrival aerodrome has NO point of the network within reach of a connector (the base has no point or airway for its State), the route is never lost: it goes to the last known point — the nearest point of the main network at the level that can be reached — then ONE direct leg to the aerodrome, said in a REVUE with the cause and the distance, status « CONTRÔLE PARTIEL » (red before: « CALCUL IMPOSSIBLE — Aucun point du réseau… »); a flight whose arrival has a network keeps no such leg',
+      'K', static=True,
+      rule='SOG-0474 (ergonomics session, 18 Nov: « CALCUL IMPOSSIBLE ne va pas : la règle « ne jamais perdre une route » vaut ici — la route jusqu’au dernier point connu puis un direct vers le terrain, marquée « à examiner », avec la cause en clair »; measured: 38 of the 47 zones of Europe have no point and no airway in the base, EGGW → LQSA answered « Aucun point du réseau au FL350 à moins de 40 NM de LQSA »). The anchor is searched in the main connected network at the level AND reachable from the departure (a one-way airway end that leads nowhere is not the last known point); beyond NO_NETWORK_MAX_NM (900 NM) there is no fallback. Invented points and airports.')
+def k349(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTAAA': (51.7, -1.0), 'PTBBB': (50.5, 4.0), 'PTCCC': (48.5, 9.0), 'PTDDD': (47.0, 13.0), 'PTEEE': (47.4, 14.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('L601', ['PTAAA', 'PTBBB', 'PTCCC', 'PTDDD', 'PTEEE'])
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        rows = [['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0], ['LQXX', 'FAR AIRFIELD', 43.8, 18.3, 1700, 0, 0], ['EGWU', 'NEAR AIRFIELD', 51.55, -0.9, 120, 0, 0]]
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': rows},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        results_cache.ENABLED = False
+        try:
+            def run(arr):
+                res = PL.compute(view.to_request({'action': 'compute', 'adep': 'EGLL', 'adest': arr, 'date': '2026-11-10T10:30', 'alternatives': False, 'proposals': False, 'fl': 350}), data, radz, fra)
+                p = res['primary']
+                return p.get('status'), p.get('route'), [i['text'] for i in p.get('issues', []) if i['level'] == 'REVUE' and 'Réseau absent' in i['text']], [l.get('no_network') for l in p.get('legs', [])]
+            far = run('LQXX')
+            near = run('EGWU')
+        finally:
+            results_cache.ENABLED = True
+    c.eq(far[0], 'CONTRÔLE PARTIEL — À VÉRIFIER', 'no network near the arrival: the route is returned, to examine (not « CALCUL IMPOSSIBLE »)', what='status')
+    c.ok(bool(far[1]) and far[1].endswith('PTEEE DCT LQXX'), str(far[1]), 'the route goes to the last known point (the nearest of the main network, PTEEE) then ONE direct leg to the aerodrome')
+    c.eq((len(far[2]), 'PTEEE' in far[2][0] and 'LQXX' in far[2][0] and ' NM ' in far[2][0], far[3].count(True)), (1, True, 1), 'one REVUE says the cause (« la base n’a pas le réseau de cet État »), the last known point, the aerodrome and the distance; exactly one leg is marked', what='review')
+    c.ok(near[0] != 'CALCUL IMPOSSIBLE' and not near[2] and not any(near[3]), str(near[:3]), 'a flight whose arrival HAS a network (EGWU, 9 NM from a point) has no such leg nor such review: nothing changes for it')

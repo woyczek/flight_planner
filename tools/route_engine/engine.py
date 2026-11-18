@@ -18,6 +18,7 @@ SEARCH_CAP_S = 6.0   # SOG-0354 : la borne d'UNE recherche (A*) ; plan.plan() la
 GRAPH_MIN_S = 0.0   # SOG-0354 L5 (3) : un vol océanique ne COMMENCE pas la construction d'un graphe (~4 s, non interruptible) quand il reste moins de cela avant la borne ; posé par plan.plan (5 s pour un vol qui traverse l'Atlantique), 0 sinon
 DEADLINE_CEIL = None      # SOG-0475 : la fin du calcul entier (plan.plan la pose) : la borne de tête ne s'étend jamais au-delà
 GRAPH_SEARCH_MIN_S = 3.0      # SOG-0475 : après la construction d'un graphe, la recherche a au moins cela (dans la limite du calcul entier) : un graphe de 5 à 9 s (un vol long d'Europe) ne mange plus toute la borne de tête
+NO_NETWORK_MAX_NM = 900      # SOG-0474 : au-delà, aucun direct de repli (le terrain est trop loin de tout réseau lu)
 DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
 
 
@@ -449,6 +450,21 @@ class Nav:
         self.last_search=dict(algorithm='parcours en largeur (liaison sans altitude)',expanded=len(seen),seconds=0.0,found=False,fra_reachable=fra_seen)
         return False
 
+    def no_network_anchor(self,airport,isdep,g,incoming,fl,a,b):
+        """SOG-0474 : le point du réseau le plus proche d'un terrain qui n'en a aucun à portée de raccord : (NM, clé), dans la plus grande partie CONNEXE du réseau haut à ce niveau (`nat_layer.main_network` : un point isolé n'est pas un point de repli) ET ATTEIGNABLE depuis le départ (vers l'arrivée pour un départ : un bout de voie à sens unique qui ne mène nulle part n'est pas le dernier point connu), à NO_NETWORK_MAX_NM au plus ; None sinon."""
+        from . import nat_layer
+        main=nat_layer.main_network(self,fl*100)
+        reach={b if isdep else a};todo=[b if isdep else a];links=incoming if isdep else g
+        while todo:      # le parcours en largeur sans altitude : le même sens que `connected`
+            for other,_e in links.get(todo.pop(),()):
+                if other not in reach:reach.add(other);todo.append(other)
+        best=None
+        for k in main&reach:
+            if k in (a,b) or ('|FRA|' in k) or ('|PROC|' in k):continue
+            d=nm(self.nodes[airport],self.nodes[k])
+            if d<=NO_NETWORK_MAX_NM and (best is None or d<best[0]):best=(d,k)
+        return best
+
     def terminal_gates(self,airport,isdep,ad,g,incoming,terminal,radius,have,other):
         """SOG-0161 : sans SID ni STAR, les portes FRA que le classeur EUROCONTROL publie pour CET aérodrome (point « D » de départ, « A » d'arrivée, l'aérodrome nommé dans la ligne) sont des raccords possibles
         AU-DELÀ du rayon : le plancher d'une zone FRA (FL285 en Suède et au Danemark) est atteint après une distance de montée (2000 ft/min, 450 kt : ~107 NM) que la SID parcourt ; un point plus proche n'est pas atteignable,
@@ -482,6 +498,8 @@ class Nav:
         import time
         if GRAPH_MIN_S and DEADLINE is not None and time.perf_counter()+GRAPH_MIN_S>DEADLINE:      # SOG-0354 L5 (3) : la construction (~4 s) ne commence pas si elle ne finirait pas avant la borne
             raise ValueError(f'Budget de recherche atteint : la construction du graphe n’est pas commencée (moins de {GRAPH_MIN_S:g} s restent avant la borne). Ce résultat ne prouve pas l’absence de route.')
+        if DEADLINE_CEIL is not None and getattr(self,'_graph_cost',0.0) and time.perf_counter()+0.8*self._graph_cost>DEADLINE_CEIL:      # SOG-0475 : une reprise ne COMMENCE pas un graphe (non interruptible : 5 à 10 s sur un vol long d'Europe) qui ne finirait pas avant la fin du calcul : la route déjà trouvée est gardée
+            raise ValueError('Budget de recherche atteint : la construction du graphe n’est pas commencée (elle ne finirait pas avant la fin du calcul). Ce résultat ne prouve pas l’absence de route.')
         built=time.perf_counter()
         point_rules=collections.defaultdict(list);segment_rules=collections.defaultdict(list);procedure_rules=collections.defaultdict(list)
         chain_blocks=[]
@@ -554,10 +572,14 @@ class Nav:
             near=[(d,k) for d,k in near if d<=radius]
             gates,unreachable=self.terminal_gates(airport,isdep,dep if isdep else arr,g,incoming,terminal,radius,{k for d,k in near},self.nodes[b if isdep else a])   # SOG-0161
             near=[(d,k) for d,k in near if k not in unreachable]+gates
-            if not near: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
+            fallback=False
+            if not near:      # SOG-0474 : la base n'a PAS le réseau de cet État (la Bosnie : ni point ni voie) : jamais une route perdue ; le dernier point connu, dans la partie principale du réseau à ce niveau, et UN direct jusqu'au terrain, DIT
+                far=self.no_network_anchor(airport,isdep,g,incoming,fl,a,b)
+                if far is None: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
+                near,fallback=[far],True
             for d,k in near:
                 ids=(self.nodes[airport]['id'],self.nodes[k]['id']) if isdep else (self.nodes[k]['id'],self.nodes[airport]['id'])
-                e=dict(route='DCT',nm=d,connector=True)
+                e=dict(route='DCT',nm=d,connector=True,**({'no_network':True} if fallback else {}))
                 if isdep: g.setdefault(airport,[]).append((k,e))
                 else: g.setdefault(k,[]).append((airport,e))
         # An imposed AD is an overflight waypoint, never a landing. Only this
@@ -597,6 +619,7 @@ class Nav:
         if profile_options:
             graph.flight=dict(profile_options,departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
         self.graph_seconds=round(time.perf_counter()-built,3)
+        self._graph_cost=max(getattr(self,'_graph_cost',0.0),self.graph_seconds)      # SOG-0475 : le coût d'un graphe de CE calcul (remis à 0 par plan.plan)
         if DEADLINE is not None and DEADLINE_CEIL is not None:      # SOG-0475 : le graphe a pris la borne de tête (ESSA → LEMG : 9 s de graphe, aucune seconde de recherche : « budget atteint ») : la recherche a au moins GRAPH_SEARCH_MIN_S, jamais au-delà du calcul entier
             extend_deadline(time.perf_counter()+GRAPH_SEARCH_MIN_S)
         self._routing_cache[cache_key]=(graph,a,b)
@@ -899,7 +922,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
             fra_floor_cap=e.get('fra_floor_cap'),procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_partial=bool(e.get('partial')),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
-            nat=e.get('nat'),nat_link=e.get('nat_link'),origin=e.get('origin')))   # SOG-0078 ; SOG-0354 L5 (2) : origin='random' = route libre CRÉÉE (jamais lue) ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
+            nat=e.get('nat'),nat_link=e.get('nat_link'),origin=e.get('origin'),no_network=e.get('no_network')))   # SOG-0078 ; SOG-0354 L5 (2) : origin='random' = route libre CRÉÉE (jamais lue) ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
     flight_profile.elevation(dep,dep_elev); flight_profile.elevation(arr,arr_elev)      # SOG-0354 L5 (4) : une élévation hors de -1 500 à 30 000 ft est refusée, dite
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
@@ -981,6 +1004,12 @@ def assess(request,_nav=None,_rad=None,_path=None):
         if hint:issue('REVUE',hint)
     for l in legs:   # SOG-0263 : le raccord du réseau à la track (entrée) ou de la track au réseau (sortie) est un DCT de simulation, dit « revue »
         if l.get('nat_link'):issue('REVUE',f'Raccord NAT ({"entrée" if l["nat_link"]=="entry" else "sortie"}) : DCT de {l["nm"]:.0f} NM {l["start"]["id"]}–{l["end"]["id"]}, simulation (aucune route lue).')
+    for l in legs:      # SOG-0474 : le terrain n'a aucun point du réseau à portée de raccord (la base n'a pas le réseau de son État) : la route va jusqu'au dernier point connu, puis UN direct, dit
+        if l.get('no_network'):
+            far_end=l['end'] if l['start']['id'] in (dep,arr) else l['start']
+            ad_end=l['start'] if far_end is l['end'] else l['end']
+            ad_id,far_id,km=ad_end['id'],far_end['id'],l['nm']
+            issue('REVUE',f"Réseau absent : la base n'a pas le réseau de cet État près de {ad_id} ; la route s'arrête au dernier point connu {far_id}, puis un direct de {km:.0f} NM jusqu'au terrain, simulation non validée (aucune route lue).")
     candidates=rad.candidates(dep,arr,known_ids,used_routes | {alias for route_name in used_routes for alias in rad_flight.aliases(route_name)})
     if request.get('unable_rnav'):
         for a,b,e in parsed:

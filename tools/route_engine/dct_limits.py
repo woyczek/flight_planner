@@ -134,7 +134,7 @@ def check(rad, legs, dep, arr, typed, procedures=None):
     if not legs or not getattr(rad, 'book', None):
         return {'checked': checked, 'not_applied': note}, issues
     for end, ad, leg in (('dep', dep, legs[0]), ('arr', arr, legs[-1])):
-        if not ad or leg.get('procedure_id') or leg.get('via') != 'DCT' or leg.get('kind') in ('SID', 'STAR', 'APPROACH_LINK'):
+        if not ad or leg.get('procedure_id') or leg.get('no_network') or leg.get('via') != 'DCT' or leg.get('kind') in ('SID', 'STAR', 'APPROACH_LINK'):      # SOG-0474 : le direct sans réseau est dit à part
             continue
         a, b = str((leg.get('start') or {}).get('id', '')).upper(), str((leg.get('end') or {}).get('id', '')).upper()
         if (a if end == 'dep' else b) != str(ad).upper():
