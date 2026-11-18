@@ -1473,6 +1473,41 @@ def n34(c):
     c.eq(same[1], same[0], 'its line of choice is the one of the same mission without a drawer', what='choice')
     c.js(_REG_CLEAR)
 
+@case('N35', 'Mission sheet, Detail: a section unfolded or folded by the pilot keeps its state when the sheet is drawn again (back to the '
+      'first page and to the Detail on a phone; a drawer that opens redraws the sheet the same way) — another mission starts with the '
+      'sections of the design', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0448, its side effect named by « Affectation des missions » (90bd284f1: the sheet redrawn when a drawer opens): « au '
+      'redessin, les sections du Détail dépliées à la main se replient » — the fix promised to the ergonomist; an invented mission')
+def n35(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    open_sheet(c, 'X-301A')
+    c.tap(f'{M} [data-do="detail"]')
+    c.until(f"(() => {{ const d = document.querySelector('{M} [data-detailpane]'); return !!d && d.getBoundingClientRect().height > 0 }})()", what='the Detail')
+    state = lambda: c.js(f"Object.fromEntries([...document.querySelectorAll('{M} [data-detailpane] details.ms-sec')].map(d => [d.dataset.sec, d.open]))")
+    first = state()
+    c.eq([first.get('desc'), first.get('obj'), first.get('route')], [True, False, False], 'the sections of the design: the description unfolded',
+         what='default')
+    c.tap(f'{M} [data-sec=obj] > summary')
+    c.tap(f'{M} [data-sec=route] > summary')
+    c.tap(f'{M} [data-sec=desc] > summary')
+    c.until(f"document.querySelector('{M} [data-sec=obj]').open && !document.querySelector('{M} [data-sec=desc]').open", what='two unfolded, one folded')
+    mine = state()
+    c.tap(f'{M} [data-do="first"]')
+    c.until(f"document.querySelector('{M} [data-first]')?.getBoundingClientRect().height > 0", what='the first page (the sheet drawn again)')
+    c.tap(f'{M} [data-do="detail"]')
+    c.until(f"(() => {{ const d = document.querySelector('{M} [data-detailpane]'); return !!d && d.getBoundingClientRect().height > 0 }})()", what='the Detail again')
+    c.eq(state(), mine, 'drawn twice more: each section as the pilot left it', what='kept')
+    # opened anew from the list: the sections of the design
+    c.tap(f'{M} [data-do="first"]')
+    c.until(f"document.querySelector('{M} [data-first]')?.getBoundingClientRect().height > 0", what='the first page')
+    c.tap(f'{M} [data-do="back"]')
+    c.until(f"!!document.querySelector('{M} [data-list]')", timeout=8000, what='the list')
+    c.tap(f'{M} [data-list] [data-id="X-301A"]')
+    c.tap(f'{M} [data-do="detail"]')
+    c.until(f"(() => {{ const d = document.querySelector('{M} [data-detailpane]'); return !!d && d.getBoundingClientRect().height > 0 }})()", what='the Detail, opened anew')
+    again = state()
+    c.eq([again.get('desc'), again.get('obj')], [True, False], 'opened anew from the list: the sections of the design', what='anew')
+
 
 @case('N40', 'Time on area per point: read from the mission (a range counted at its maximum), said in the quote one line per point, changed by the pilot in the list of points; an unread duration key said',
       'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=False,

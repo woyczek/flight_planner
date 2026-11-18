@@ -1093,6 +1093,11 @@ function draw(s) {
   s.ctx.helpAnchor?.(() => s.ed ? 'missions-editor' : s.open ? 'missions-open' : s.reg ? 'missions-registry' : 'missions-list');
   for (const u of s.urls || []) URL.revokeObjectURL(u);
   s.urls = [];
+  // le Détail garde ses sections ouvertes ou fermées d'un dessin à l'autre de la MÊME mission (un tiroir qui s'ouvre, la première page
+  // et le Détail au téléphone redessinent la fiche) : lues dans l'écran que ce dessin remplace
+  const was = s.open && !s.ed ? s.el.querySelector('.ms-sheet[data-id]') : null;
+  if (was && was.dataset.id === s.open.row?.id) s.open.secs = new Set([...was.querySelectorAll('details.ms-sec[data-sec]')].filter(d => d
+    .open).map(d => d.dataset.sec));
   s.el.innerHTML = `<style>${STYLE}</style><h1>${esc(s.tt(meta.title))}</h1>${s.ed ? edHtml(s) : s.open ? missionHtml(s) : s.add ? addHtml(s) : s.move ? moveHtml(s) : s.reg ? regHtml(s) : listHtml(s)}`;
   if (s.open?.mission && !s.open.mission.hasCoords) legacyPngs(s);
   // SOG-0441 : la section « Tiroirs » de la fiche ouverte (repeinte dans l'élément neuf à chaque dessin), arrêtée hors de la fiche
@@ -1318,7 +1323,8 @@ function missionHtml(s) {
     mission: whole,
     drawn
   } = s.open,
-    m = DW.sees(r.id, whole), // SOG-0448 : ce que le pilote peut voir (pilotView du lecteur) — rien d'un tiroir fermé, ni dans la fiche ni dans le Détail
+    m = DW.sees(r.id,
+      whole), // SOG-0448 : ce que le pilote peut voir (pilotView du lecteur) — rien d'un tiroir fermé, ni dans la fiche ni dans le Détail
     why = s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { id: r.id, t: r.title || '', p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : '';
   return `<div class="f-card ms-sheet" data-pane="mission" data-id="${esc(r.id)}"${s.open.detail ? ' data-detail' : ''}>
     <section class="ms-first" data-first>${firstHtml(s, r, m, drawn, why)}</section>
@@ -1429,7 +1435,8 @@ const mapHref = (r, extra) => `?app=pilot#maps?mission=${encodeURIComponent(r.id
 /** Le détail (voir missionHtml) : description, objectifs, zones à activer, rendez-vous, route fournie, cartes fournies, charge et
  *  appareils ; une section vide n'est pas montrée. */
 function detailHtml(s, r, m) {
-  const sec = (id, title, body, open = false) => body ? `<details class="ms-sec" data-sec="${id}"${open ? ' open' : ''}><summary>${esc(s.tt(title))}</summary>${body}</details>` : '',
+  const kept = s.open?.secs, // l'état laissé par le pilote (voir draw) ; sans lui, l'ouverture par défaut de chaque section
+    sec = (id, title, body, open = false) => body ? `<details class="ms-sec" data-sec="${id}"${(kept ? kept.has(id) : open) ? ' open' : ''}><summary>${esc(s.tt(title))}</summary>${body}</details>` : '',
     km = v => `${Math.round(v * 10) / 10} km`,
     // une carte fournie centrée sur une zone (son centre_ref) : la Carte l'ouvre à cette carte
     zoneMap = z => m.maps.find(x => x.file && x.centreRef && x.centreRef.toUpperCase() === z.id.toUpperCase())?.file || '',
