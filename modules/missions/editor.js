@@ -1361,23 +1361,45 @@ export const ROUTE_MAX = 60;
 const routeId = x => cut(x && typeof x === 'object' && !Array.isArray(x) ? x.id : typeof x === 'string' || typeof x === 'number' ? x : '',
   40);
 
+/** La route du fichier coupée en deux : `ids`, ses soixante premiers identifiants (une entrée sans identifiant est sautée) — la part
+ *  que l'atelier montre et retouche —, et `tail`, les entrées du fichier au-delà, gardées telles quelles. */
+function routeParts(doc) {
+  const raw = arrOf(obj(doc).route_order),
+    ids = [];
+  let n = 0;
+  for (; n < raw.length && ids.length < ROUTE_MAX; n++) {
+    const id = routeId(raw[n]);
+    if (id) ids.push(id);
+  }
+  return {
+    ids,
+    tail: raw.slice(n)
+  };
+}
+
 /** La route du départ (`route_order`) en liste d'identifiants — « ORIGIN », « PT1 », « TARGET », « DESTINATION » —, soixante au plus ;
  *  une entrée sans identifiant est sautée. */
 export function routeOf(doc) {
-  return arrOf(obj(doc).route_order).slice(0, ROUTE_MAX * 2).map(routeId).filter(Boolean).slice(0, ROUTE_MAX);
+  return routeParts(doc).ids;
 }
 
 /** Le document avec cette route du départ (un NOUVEAU document). Rien de changé — les mêmes identifiants dans le même ordre — : rien
  *  n'est réécrit (audit 182). Sinon `route_order` est la liste : une entrée dont l'identifiant était dans le fichier garde l'entrée du
- *  fichier (un texte, ou son objet avec ses autres clés), une neuve est un texte ; une liste vide retire la clé. Les identifiants sont
- *  des textes bornés (quarante signes), soixante au plus ; rien d'autre n'est lu de `ids`. */
+ *  fichier (un texte, ou son objet avec ses autres clés), une neuve est un texte ; **les entrées du fichier au-delà de la soixantième
+ *  restent telles quelles à la fin** (Sécurisation, 18 nov. 2026 : retoucher une longue route n'en perd aucun lieu) ; une liste vide,
+ *  sans rien au-delà, retire la clé. Les identifiants sont des textes bornés (quarante signes), soixante au plus ; rien d'autre n'est
+ *  lu de `ids`. */
 export function withRoute(doc, ids) {
   const out = structuredClone(obj(doc)),
-    was = routeOf(doc),
+    {
+      ids: was,
+      tail
+    } = routeParts(out),
     list = (Array.isArray(ids) ? ids : []).map(x => cut(typeof x === 'string' ? x : '', 40)).filter(Boolean).slice(0, ROUTE_MAX);
   if (JSON.stringify(list) === JSON.stringify(was)) return out;
-  const old = arrOf(out.route_order);
-  if (list.length) out.route_order = list.map(id => old.find(x => routeId(x) === id) ?? id);
+  const old = arrOf(out.route_order).slice(0, arrOf(out.route_order).length - tail.length),
+    all = [...list.map(id => old.find(x => routeId(x) === id) ?? id), ...tail];
+  if (all.length) out.route_order = all;
   else delete out.route_order;
   return out;
 }

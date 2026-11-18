@@ -576,6 +576,8 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - `withRoute(doc, ids)` → a NEW document. **Nothing changed, nothing rewritten** (the same identifiers in the same order). Else
   `route_order` is the list: an identifier the file already had keeps the entry of the file (a text, or its object with its other
   keys), a new one is a text; an empty list removes the key. Identifiers are texts of forty signs at most; nothing else is read.
+  **A route of more than sixty places in the file loses none when it is retouched**: the entries beyond the sixtieth stay as they are
+  at the end (the Security session's note of 18 Nov; as the places beyond `PLACES_MAX`).
 - `routeToken(row)`: what a route writes for a row of the Lieux — `ORIGIN` for the departure, `DESTINATION` for the arrival, else
   its identifier (`''`: a place without an identifier does not enter a route).
 - The references still follow the places renamed or removed (`withRefs`, last, as before): the screen will apply `withRoute` before.

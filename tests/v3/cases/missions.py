@@ -4863,6 +4863,9 @@ _ROUTE_JS = """async () => {
     bounded: [ED.withRoute(doc, [{}, 5, 'A'.repeat(80), 'B']).route_order.map(x => x.length), ED.withRoute({}, Array.from({ length: 90 }, (_, n) => 'P' + n)).route_order.length,
       ED.routeOf({ route_order: Array.from({ length: 200 }, (_, n) => 'P' + n) }).length],
     none: [ED.routeOf({}), ED.routeOf(null), ED.routeOf({ route_order: 'x' })],
+    long: (() => { const d = { route_order: Array.from({ length: 70 }, (_, n) => n === 65 ? { id: 'P65', note: 'kept' } : 'P' + n) }, r = ED.routeOf(d),
+      w = ED.withRoute(d, r.slice(1)).route_order; return [r.length, J(ED.withRoute(d, r)) === J(d), w.length, w[0], w[58], w[59], J(w[64]), w[68],
+      ED.withRoute(d, []).route_order.length] })(),
     tokens: [ED.routeToken({ kind: 'dep', id: '' }), ED.routeToken({ kind: 'arr' }), ED.routeToken({ kind: 'pt', id: 'PT1' }), ED.routeToken({ kind: 'zone', id: '' }), ED.routeToken(null)],
     threw, untouched: J(doc) === before } }"""
 
@@ -4871,7 +4874,7 @@ _ROUTE_JS = """async () => {
       '`route_order` — « ORIGIN », the places, « DESTINATION » —, sixty at most; written back unchanged, the document is the same; a route '
       'changed keeps, for an identifier the file already had, the entry of the file (a text, or its object with its other keys), a new '
       'one is a text; an empty route removes the key; a row of the Lieux gives its token (« ORIGIN » for the departure, « DESTINATION » '
-      'for the arrival, else its identifier); identifiers are bounded texts; no hostile input throws',
+      'for the arrival, else its identifier); a route of more than sixty places loses none when retouched; identifiers are bounded texts; no hostile input throws',
       'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0444, lot P2, push 3b, the pure part (modules/missions/EDITOR.md § 3: « A route is a list of chips, filled by touching the '
       'map in Tracé… never ids séparés par des virgules »; audit 182: only what changed is written): modules/missions/editor.js '
@@ -4883,6 +4886,9 @@ def n98(c):
     c.ok(r['unchanged'] is True, r['unchanged'], 'the same route written back: the document is the same (audit 182)')
     c.eq(r['changed'], ['ORIGIN', 'PT2', {'id': 'PT1', 'note': 'kept'}, 'DESTINATION'], 'a route changed: PT1 keeps the object of the file, the new place is a text', what='a route changed')
     c.ok(r['emptied'] is False, r['emptied'], 'an empty route removes the key')
+    c.eq(r['long'], [60, True, 69, 'P1', 'P59', 'P60', '{"id":"P65","note":"kept"}', 'P69', 10],
+         'a route of seventy places in the file: sixty are shown; written back unchanged, the document is the same; retouched (the first removed), the ten beyond '
+         'the sixtieth stay as they are at the end — none is lost; emptied, those ten remain', what='a long route')
     c.eq(r['bounded'], [[40, 1], 60, 60], 'identifiers are texts of forty signs at most (an object, a number are not taken); sixty places at most, written and read', what='the bounds')
     c.eq(r['none'], [[], [], []], 'no route, no document, a route that is not a list: an empty route', what='no route')
     c.eq(r['tokens'], ['ORIGIN', 'DESTINATION', 'PT1', '', ''], 'the token of a row: the departure, the arrival, an identifier; a place without an identifier has none', what='the tokens')
