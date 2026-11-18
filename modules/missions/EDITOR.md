@@ -922,6 +922,14 @@ coordinates. Two causes, both confirmed by case N118 (red before, green after):
   18 Nov the workshop had no live map at all, so nothing regressed on the map; the sketch did not read lower case since 14 Nov.
 - Not changed: `frame/lib/mission.js` `placeOf` / `icaoOf` (the reader still finds the code only between parentheses at the end of
   the name; `originIcao` for `name: xtst` or `icao: xtst` stays empty there).
+- **Limit, said** (note of the Security session; checked in `placeText`, `placeIn`, `ED.adCodeOf` and `icaoOf` of `frame/lib/mission.js`):
+  the code of an aerodrome is also read between parentheses at the end of the name, and the reader (`MS.icaoOf`) puts the text in
+  capitals BEFORE it looks — so ANY word of four letters between parentheses at the end of a name is taken for a code: « Piste (nord) »
+  is shown « NORD · Piste », and if the author touches the field and saves, the file carries « Piste (NORD) ». It was already true in
+  capitals before SOG-0469; reading lower case widens the case (a place named « metz » in lower case is taken for a code as well;
+  « Metz » is not: `headCode` wants four letters all in capitals or all in lower case). **Not corrected in this lot.** The planned
+  touch: take the parenthesis off the name only when the code is kept AND known by the aeronautical base (or comes from the `icao`
+  field).
 
 ### 8. What is NOT ported
 
