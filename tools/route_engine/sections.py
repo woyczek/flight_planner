@@ -320,14 +320,15 @@ def _previous_system(nav, g, meta, east, a, hour, eta_of, passage, chains, rejec
         a0, b0 = nat_layer._date(frm), nat_layer._date(to)
         if (a0 is None or a0 <= t0) and (b0 is None or t0 <= b0) and (a0 or b0):
             return [], g, {}
+    order = lambda p: (p[0], p[1][0] or '', p[1][1] or '')      # la clé d'un système peut n'avoir ni début ni fin (nat_tracks.json : entrée non fiable) : jamais « str » contre « None » (revue de Sécurisation, 18 nov.)
     previous = [(nat_layer._date(k[1]), k) for k, v in systems.items() if nat_layer._date(k[1]) and nat_layer._date(k[1]) <= min(x[2] for x in v)]
     upcoming = [(nat_layer._date(k[0]), k) for k, v in systems.items() if nat_layer._date(k[0]) and nat_layer._date(k[0]) >= min(x[2] for x in v)]
     if previous:
-        key, relation = max(previous)[1], 'previous'
+        key, relation = max(previous, key=order)[1], 'previous'
     elif upcoming:
-        key, relation = min(upcoming)[1], 'next'
+        key, relation = min(upcoming, key=order)[1], 'next'
     else:
-        key, relation = sorted(systems)[0], 'previous'
+        key, relation = min(systems, key=lambda k: (k[0] or '', k[1] or '')), 'previous'
     candidates, outwin = [], {}
     chosen = set()
     for tid, options, _t in systems[key]:

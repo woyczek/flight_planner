@@ -3571,3 +3571,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done**: the two cases expect the returned route (K103: status, route, first REVUE, rule LF9003 said; K106: one alternative, first issue `review`). K103 « unknown aerodrome »: it passed only because the forbidding rule was still in the base; it now uses the ordinary RAD and a request without a typed route.
 - **Said**: with a typed `route` the engine does not check `arr` against the aerodrome (same at 9a208ba1f): a request whose `route` ends elsewhere than `arr` is answered for the route. Not changed here.
 
+## 18 November 2026 — SOG-0468, review by Security of the NAT chain: an unordered key
+
+- **Found** (Security, after the push of 17 Nov): `max(previous)`, `min(upcoming)` and `sorted(systems)` of `_previous_system` compared (date, (from, to)) where `from` / `to` can be None; two systems of the same `to` with one `from` missing raised TypeError, which `plan.compute` does not catch (ValueError, KeyError, SearchBudget). The data come from `nat_tracks.json` of the data repository, which every pilot writes: untrusted input.
+- **Done**: one key `(date, from or '', to or '')` for the three choices; a missing start sorts first, so of two systems that ended together the one with a start is the latest. Case K345, red before.
+- **Not done here** (hardening lines of the review, a separate commit): `network_for` one network per distinct floor (bound 16), the longitude loop of `sections` (finite bounds), the `_nat_kept` set (1 000), the unknown spaces of `view.rad_view` (100 spaces, 50 rules).

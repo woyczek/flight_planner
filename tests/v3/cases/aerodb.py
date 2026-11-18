@@ -15400,3 +15400,55 @@ def k469(c):
         if n and re.search(r'json\.loads?\(', text):
             found[p.relative_to(ROOT).as_posix()] = n
     c.eq(found, LEGACY_JSON_GUARDS, 'the files of tools/ that guard a json.load themselves are exactly the list of the sites still to migrate to safe_json (a new site is refused; a migrated one leaves the list)', what='own guards')
+
+
+@case('K345', 'Route engine, SOG-0468 review by Security: two NAT systems of the same end date, one with no start (a `nat_tracks.json` read from the repository is NOT trusted) are ordered, never compared as « str » and « None » — the previous system is taken, no exception (`sections._previous_system`: max, min and sorted on the key (from or \'\', to or \'\'))',
+      'K', static=True,
+      rule='Security, 18 Nov (review after the push of the NAT chain): `max(previous)`, `min(upcoming)` and `sorted(systems)` compared tuples (date, (from, to)) where `from` can be None (`nat_layer._date`): two systems of the same `to`, one without `from`, raised TypeError (« > not supported between str and NoneType ») and `plan` catches only ValueError, KeyError and SearchBudget: a track without `from` made every dated calculation without a valid route fail. Red before: the TypeError.')
+def k345(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTLUS': (40.8, -73.2), 'MIDUS': (45.0, -60.0), 'ENTRA': (50.0, -50.0), 'EXITA': (52.0, -15.0), 'UKIN1': (51.5, -10.0), 'UKIN2': (51.6, -4.0), 'UKIN3': (51.5, -1.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('J1', ['PTLUS', 'MIDUS', 'ENTRA']) + air('J2', ['EXITA', 'UKIN1', 'UKIN2', 'UKIN3'])
+    A = {'id': 'A', 'route': ['ENTRA', '51/40', '5130/30', '52/20', 'EXITA'], 'east': ['350', '360', '370'], 'west': [], 'nar': [], 'by': 'EGGX', 'from': '2026-11-10T01:30:00Z', 'to': '2026-11-10T08:00:00Z'}
+    B = {k: v for k, v in dict(A, id='B', route=['ENTRA', '51/41', '5130/31', '52/21', 'EXITA']).items() if k != 'from'}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [['KJFK', 'NEW YORK', 40.64, -73.78, 13, 0, 0], ['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0]]},
+                     'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        folder = os.path.join(data, 'sia', 'zones', 'nat')
+        os.makedirs(folder)
+        results_cache.ENABLED = False
+        try:
+            with open(os.path.join(folder, 'nat_tracks.json'), 'w', encoding='utf-8') as f:
+                json.dump({'tracks': [A, B]}, f)
+            err, res = None, {}
+            try:
+                res = PL.compute(view.to_request({'action': 'compute', 'adep': 'KJFK', 'adest': 'EGLL', 'date': '2026-11-10T10:30', 'alternatives': False, 'proposals': True, 'fl': 370}), data, radz, fra)
+            except Exception as e:      # the defect: a TypeError that the plan does not catch
+                err = e.__class__.__name__
+        finally:
+            results_cache.ENABLED = True
+    sec = res.get('sections') or {}
+    c.eq(err, None, 'no exception: two systems of the same end date, one without a start, are ordered')
+    c.eq((sec.get('chosen'), (sec.get('taken') or {}).get('window'), ((sec.get('taken') or {}).get('system') or {}).get('relation')), ('A', 'out', 'previous'),
+         'the previous system is taken OUT of its window; of two systems that ended at the same instant the one WITH a start (A) is the latest, a missing start sorts first (B)', what='previous system')
