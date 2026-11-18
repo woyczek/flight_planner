@@ -8405,7 +8405,9 @@ def f276(c):
                  + english + "' }", 'none read, with codes')
     want = norm(tx(T, 'procNoneRead', c.lang).replace('{icao}', 'EGLL').replace('{d}', '9').replace('{read}', '0').replace('{pages}', '12')
                 .replace('{why}', '').replace('{wn}', ''))
-    c.eq(got, want, 'the sentence of the card, its counts, in the screen\'s language', what='none-read')
+    # the frame agrees « document(s) », « page(s) lue(s) », « Dokument(e) » with the number on screen: each « (x) » of the text optional
+    pat = re.sub(r'\\\(([^()\\]+)\\\)', r'(?:\1)?', re.escape(want))
+    c.ok(re.fullmatch(pat, got) is not None, [got, want], 'the sentence of the card, its counts, in the screen\'s language')
     c.ok('no procedure could be read' not in got, got, 'never the launcher\'s English sentence')
     got = answer("{ ok: false, reason: 'failed', message: '" + english + "' }", 'older launcher, no codes')
     want = norm(tx(T, "none-read'", c.lang, after='procReasons').replace('{icao}', 'EGLL').replace('{m}', '').replace('{c}', '')
