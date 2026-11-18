@@ -17,8 +17,20 @@ Mock-up: `tri_registre.html` (three buttons at the top: default sort, sorted by 
 - **Phone (≤ 700 px)**: the same rows as a list and **one** « Trier : Durée ▼ » button that opens a small panel — a radio per column and two buttons « Croissant / Décroissant » (44 px, no horizontal scroll). `aria-sort` is valid only on a real column header, so the panel carries `aria-expanded` / `aria-pressed`.
 - **First migrations**: (a) the Data coverage table, already conforming, becomes the reference (its tests of `sortCoverage` stay); (b) the missions registry: today it has no columns, it gets the sort control above `[data-regrows]` and a default state `{ id, desc }`, the « not found / problem / not read » grouping kept as the DEFAULT sort only (Features SOG wires it, they offered). Statistics use it when their screen exists.
 
-## Decisions to take (the ergonomist)
-1. Wide registry: a **table** with sortable headers (as the mock-up), or keep the folded `<details>` rows and add only the sort bar? The table shows more at once; the rows lose their unfolding (the unfolded body — path, gestures Brief / Atelier / Dupliquer / ⋯ — would move to a row action or a side sheet).
-2. The registry's default order (found first, then problem / read / not read): kept as the default sort, or replaced by « Identifiant ▼ » like the mock-up?
-3. Is the chosen sort KEPT between visits (per device), or reset at each opening? Proposal: kept per list, reset by a « Remettre l'ordre » entry of the panel.
-4. 32 px buttons of the coverage table under a fine pointer: raise them to 44 px (proposal), or keep the dense table for that one screen?
+## The folded chevron goes: how a mission is opened, edited, briefed (the user's question, 18 Nov)
+- **Touching a row opens the mission's sheet**: a panel on the right at 1280 (the table narrows beside it; the selected row is marked), full screen at 390 (« ← Registre » to come back, browser Back too). The sheet carries what the unfolded row carried: the state in words, the file path, the route as chips (« LFRB → ILE DE BATZ → ILE D'OUESSANT → LFRK »), family · series · duration · aircraft · theatre, and the SAME gestures as today: **Brief** (primary), **Atelier**, **Dupliquer** and **⋯** (Corriger, Retirer).
+- **A « ⋯ » button at the end of each row** (44 px, `aria-haspopup="menu"`) opens a small menu — Brief, Atelier, Dupliquer, then Corriger, Retirer — for the quick gestures WITHOUT leaving the table; the same button exists on the phone list.
+- Captures: `tri_registre_fiche_{1280,390}.png` (the sheet), `tri_registre_menu_{1280,390}.png` (the row menu).
+
+## Recycling the V2 table (the user: « il y en a un en v2, peut-être le recycler ? »)
+- **V2 has one real component, `shared/mission_table.js` (SortedTable, 310 lines, 10 call sites, ~25 pages)**, and four hand copies of the same rule (`app_framework.js sortableTable` — it only flips the state and sorts nothing —, `cr/flotte.js`, the landing dashboard, `data_admin.js`, `flight_perf_view.js`). All of it disappears with V2 and none of it is importable by V3.
+- **What is taken** (the habits the users know, and the good ideas): click again reverses; the `↕ / ▲ / ▼` glyphs with the accent colour on the active column; `aria-sort` values; `Intl.Collator` numeric and accent-blind; the `sortValue(row)` hook (= `get(row)`); `setRows` keeping the sort when the filter changes (V2's registry lost it: a bug there); the number reading with the minus sign U+2212 and the decimal comma, for number columns ONLY.
+- **What is dropped**: the `window` global and its dependencies, `innerHTML` with a raw `col.html()`, its own CSS, `localStorage` widths, the leading-number heuristic for text and date columns (its dates « 2026-11-18 » and « 2026-03-02 » tie: the date column of the V2 reporting was in fact unsorted).
+- **What V3 adds, V2 lacks**: typed columns (text, number, date, duration); empty values last in BOTH directions (V2 puts them first when ascending); an explicit stable sort; per-type first direction; a real button per column at 44 px (V2's `<th>` is mouse-only and about 33 px); the phone panel (V2 scrolls sideways); the sort kept on the device through `ctx.data` (policy `cache`) and « Remettre l'ordre ».
+- **The risk**: typed columns change orders V2 users saw (a V2 sort that worked by accident of the leading number); each migration states its default sort.
+
+## Decisions (the user, 18 Nov; Q-0115, Q-0116)
+1. **A real sortable table on a computer**, the gestures move to a row action (this mock-up); on a phone, the list with « Trier ».
+2. **The sort is KEPT on the device**, with « Remettre l'ordre »; **the default order is the identifier, the most recent on top**.
+3. **The block serves ALL the tables of the suite**, each migrated by its owner; the Data coverage table and the missions registry first.
+4. **Buttons of 44 px** until the ergonomist decides (Thursday): the coverage table's 32 px buttons go to 44 px.

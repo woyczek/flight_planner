@@ -247,6 +247,182 @@ td.num {
 .phoneonly {
   display: none
 }
+.layout {
+  display: block
+}
+.rowact {
+  font: inherit;
+  min-width: var(--touch);
+  min-height: var(--touch);
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 6px
+}
+.rowact:hover,
+.rowact[aria-expanded="true"] {
+  background: var(--accent-bg)
+}
+table.reg tr[data-id] {
+  cursor: pointer
+}
+table.reg tr[aria-selected="true"] td {
+  background: var(--accent-bg)
+}
+.menu {
+  position: absolute;
+  z-index: 5;
+  min-width: 190px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+  padding: 4px
+}
+.menu[hidden] {
+  display: none
+}
+.menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  min-height: var(--touch);
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  border-radius: 6px;
+  cursor: pointer
+}
+.menu button:hover {
+  background: var(--soft)
+}
+.menu hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 4px 0
+}
+.sheet {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 12px 14px
+}
+.sheet[hidden] {
+  display: none
+}
+.sheet h2 {
+  font-size: 18px;
+  margin: 0 0 2px
+}
+.sheet .meta {
+  font-size: 13px;
+  color: var(--muted)
+}
+.sheet dl {
+  margin: 10px 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: 15px
+}
+.sheet dt {
+  color: var(--muted)
+}
+.sheet dd {
+  margin: 0
+}
+.route {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+  margin: 6px 0 10px
+}
+.route span {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1px 9px;
+  font-size: 13px;
+  background: var(--soft)
+}
+.gestures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px
+}
+.gestures button {
+  font: inherit;
+  min-height: var(--touch);
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer
+}
+.gestures button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff
+}
+.close {
+  float: right;
+  font: inherit;
+  min-height: var(--touch);
+  min-width: var(--touch);
+  border: 0;
+  background: none;
+  font-size: 22px;
+  cursor: pointer
+}
+@media (min-width: 701px) {
+  .layout.open {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 16px;
+    align-items: start
+  }
+  .sheet {
+    position: sticky;
+    top: 8px
+  }
+  .back {
+    display: none
+  }
+}
+@media (max-width: 700px) {
+  .sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    border-radius: 0;
+    overflow: auto;
+    padding: 12px 16px 24px
+  }
+  .list .row {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    cursor: pointer
+  }
+  .list .row .txt {
+    flex: 1;
+    min-width: 0
+  }
+  .back {
+    display: inline-block;
+    font: inherit;
+    min-height: var(--touch);
+    padding: 0 6px;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    cursor: pointer
+  }
+}
 @media (max-width: 700px) {
   table.reg {
     display: none
@@ -270,7 +446,9 @@ td.num {
     <button type="button" data-state="a" aria-pressed="true">Tri par défaut</button>
     <button type="button" data-state="b" aria-pressed="false">Tri par la durée, du plus long</button>
     <button type="button" data-state="c" aria-pressed="false">Téléphone : panneau de tri ouvert</button>
-    <div style="font-size:13px;color:var(--muted)">Missions inventées. Large : un tableau dont chaque colonne est un bouton ; étroit (≤ 700 px) : les mêmes lignes en liste et UN bouton « Trier » qui ouvre un panneau.</div>
+    <button type="button" data-state="d" aria-pressed="false">Une ligne touchée : sa fiche</button>
+    <button type="button" data-state="e" aria-pressed="false">Le bouton « ⋯ » d'une ligne</button>
+    <div style="font-size:13px;color:var(--muted)">Missions inventées. Large : un tableau dont chaque colonne est un bouton, une ligne touchée ouvre sa fiche à droite, « ⋯ » pour les gestes rapides ; étroit (≤ 700 px) : la liste, « Trier » et la fiche en plein écran.</div>
   </div>
 
   <h1>Registre des missions</h1>
@@ -288,6 +466,8 @@ td.num {
     <div class="dirs"><button type="button" data-dir="asc" aria-pressed="false">▲ Croissant</button><button type="button" data-dir="desc" aria-pressed="true">▼ Décroissant</button></div>
   </div>
 
+  <div class="layout" id="layout">
+  <div>
   <table class="reg" id="tbl">
     <thead>
       <tr>
@@ -298,12 +478,29 @@ td.num {
         <th scope="col" aria-sort="none"><button type="button" data-col="ser">Série</button></th>
         <th scope="col" aria-sort="none"><button type="button" data-col="route">Origine → destination</button></th>
         <th scope="col" aria-sort="none"><button type="button" data-col="dur" style="justify-content:flex-end">Durée</button></th>
+        <th scope="col" style="width:52px"><span class="sr" style="position:absolute;left:-9999px">Actions</span></th>
       </tr>
     </thead>
     <tbody id="tb"></tbody>
   </table>
   <div class="list" id="ls"></div>
   <button class="more" type="button">12 autres</button>
+  </div>
+  <aside class="sheet" id="sheet" hidden aria-label="Fiche de la mission">
+    <button class="back" type="button" id="back">← Registre</button>
+    <button class="close wideonly" type="button" id="close" aria-label="Fermer la fiche">×</button>
+    <h2 id="sh-title"></h2>
+    <div class="meta" id="sh-meta"></div>
+    <div class="route" id="sh-route" aria-label="Trajet"></div>
+    <dl id="sh-dl"></dl>
+    <div class="gestures">
+      <button type="button" class="primary">Brief</button><button type="button">Atelier</button><button type="button">Dupliquer</button><button type="button" id="sh-more" aria-haspopup="menu">⋯</button>
+    </div>
+  </aside>
+  </div>
+  <div class="menu" id="menu" role="menu" hidden>
+    <button type="button" role="menuitem">Brief</button><button type="button" role="menuitem">Atelier</button><button type="button" role="menuitem">Dupliquer</button><hr><button type="button" role="menuitem">Corriger</button><button type="button" role="menuitem">Retirer</button>
+  </div>
 </div>
 <script>
 (() => {
@@ -320,7 +517,33 @@ td.num {
   const lab = { st: 'État', id: 'Identifiant', title: 'Titre', fam: 'Famille', ser: 'Série', dur: 'Durée' };
   const stl = { pb: 'À corriger', ok: 'Lue', nr: 'Non lue' };
   const fmt = m => m == null ? '—' : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
-  let S = { key: 'id', dir: 'desc' };
+  let S = { key: 'id', dir: 'desc' }, sel = null;
+  const ROUTES = { 'M-014': ['LFRB', 'ILE DE BATZ', 'ILE D’OUESSANT', 'LFRK'], 'M-009': ['LFRS', 'NTS', 'ROYAN', 'LFBO'], 'M-007': ['LFRN', 'CAP FRÉHEL', 'LFRN'], 'M-006': ['LFOB', 'LFRH'], 'M-004': ['LFRD', 'LFRS'], 'M-003': ['LFRS'], 'M-002': ['LFOH', 'ROUEN', 'LFRZ'] };
+  const openSheet = id => {
+    const r = ROWS.find(x => x[1] === id); if (!r) return; sel = id;
+    document.getElementById('sh-title').textContent = `${r[1]} · ${r[2]}`;
+    document.getElementById('sh-meta').innerHTML = `<span class="st ${r[0]}">${stl[r[0]]}</span> · fichier missions/${r[1]}.yaml`;
+    document.getElementById('sh-route').innerHTML = (ROUTES[id] || []).map((p, i, a) => `<span>${p}</span>${i < a.length - 1 ? '→' : ''}`).join('');
+    document.getElementById('sh-dl').innerHTML = `<dt>Famille</dt><dd>${r[3]}</dd><dt>Série</dt><dd>${r[4] ?? '—'}</dd><dt>Durée ≈</dt><dd>${fmt(r[6])}</dd><dt>Aéronefs</dt><dd>EC135, H145</dd><dt>Théâtre</dt><dd>Bretagne</dd>`;
+    document.getElementById('sheet').hidden = false; document.getElementById('layout').classList.add('open'); paint();
+  };
+  const closeSheet = () => { sel = null; document.getElementById('sheet').hidden = true; document.getElementById('layout').classList.remove('open'); paint(); };
+  const menu = document.getElementById('menu');
+  const showMenu = btn => {
+    const r = btn.getBoundingClientRect(); menu.hidden = false;
+    menu.style.top = `${window.scrollY + r.bottom + 4}px`; menu.style.left = `${Math.max(8, Math.min(window.scrollX + r.right - 190, window.innerWidth - 200))}px`;
+    document.querySelectorAll('[aria-expanded][data-act]').forEach(x => x.setAttribute('aria-expanded', 'false')); btn.setAttribute('aria-expanded', 'true');
+  };
+  const hideMenu = () => { menu.hidden = true; document.querySelectorAll('[data-act]').forEach(x => x.removeAttribute('aria-expanded')); };
+  document.addEventListener('click', e => {
+    const act = e.target.closest('[data-act]');
+    if (act) { e.stopPropagation(); if (!menu.hidden) { hideMenu(); } else showMenu(act); return; }
+    if (e.target.closest('#sh-more')) { showMenu(e.target.closest('#sh-more')); return; }
+    if (!e.target.closest('#menu')) hideMenu();
+    const row = e.target.closest('[data-id]'); if (row && !e.target.closest('th')) openSheet(row.dataset.id);
+  });
+  document.getElementById('close').addEventListener('click', closeSheet);
+  document.getElementById('back').addEventListener('click', closeSheet);
   const coll = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
   const sorted = () => {
     const i = cols[S.key], k = S.dir === 'asc' ? 1 : -1;
@@ -334,9 +557,9 @@ td.num {
   };
   const paint = () => {
     const rows = sorted();
-    document.getElementById('tb').innerHTML = rows.map(r => `<tr><td><span class="st ${r[0]}">${stl[r[0]]}</span></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4] ?? '—'}</td><td>${r[5]}</td><td class="num">${fmt(r[6])}</td></tr>`).join('');
-    document.getElementById('ls').innerHTML = rows.map(r => `<div class="row"><b>${r[1]}</b> ${r[2]}<div class="meta"><span class="st ${r[0]}">${stl[r[0]]}</span> · ${r[3]} · série ${r[4] ?? '—'} · ${r[5]} · ${fmt(r[6])}</div></div>`).join('');
-    document.querySelectorAll('#tbl th').forEach(th => th.setAttribute('aria-sort', th.querySelector('button').dataset.col === S.key ? (S.dir === 'asc' ? 'ascending' : 'descending') : 'none'));
+    document.getElementById('tb').innerHTML = rows.map(r => `<tr data-id="${r[1]}"${sel === r[1] ? ' aria-selected="true"' : ''}><td><span class="st ${r[0]}">${stl[r[0]]}</span></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4] ?? '—'}</td><td>${r[5]}</td><td class="num">${fmt(r[6])}</td><td><button class="rowact" type="button" data-act="${r[1]}" aria-haspopup="menu" aria-label="Gestes de ${r[1]}">⋯</button></td></tr>`).join('');
+    document.getElementById('ls').innerHTML = rows.map(r => `<div class="row" data-id="${r[1]}"><div class="txt"><b>${r[1]}</b> ${r[2]}<div class="meta"><span class="st ${r[0]}">${stl[r[0]]}</span> · ${r[3]} · série ${r[4] ?? '—'} · ${r[5]} · ${fmt(r[6])}</div></div><button class="rowact" type="button" data-act="${r[1]}" aria-haspopup="menu" aria-label="Gestes de ${r[1]}">⋯</button></div>`).join('');
+    document.querySelectorAll('#tbl th[aria-sort]').forEach(th => th.setAttribute('aria-sort', th.querySelector('button').dataset.col === S.key ? (S.dir === 'asc' ? 'ascending' : 'descending') : 'none'));
     document.getElementById('sortlbl').textContent = `${lab[S.key] || 'Identifiant'} ${S.dir === 'asc' ? '▲' : '▼'}`;
     document.querySelectorAll('input[name=col]').forEach(r => r.checked = r.value === S.key);
     document.querySelectorAll('.dirs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir === S.dir)));
@@ -358,7 +581,10 @@ td.num {
     const open = id === 'c';
     document.getElementById('panel').hidden = !open; document.getElementById('sortbtn').setAttribute('aria-expanded', String(open));
     if (id === 'c') S = { key: 'dur', dir: 'desc' };
+    hideMenu(); closeSheet();
     paint();
+    if (id === 'd') openSheet('M-014');
+    if (id === 'e') { const w = window.innerWidth > 700; const b = document.querySelector(w ? '#tb tr[data-id="M-009"] [data-act]' : '#ls .row[data-id="M-009"] [data-act]'); if (b) showMenu(b); }
   };
   document.querySelectorAll('[data-state]').forEach(b => b.addEventListener('click', () => go(b.dataset.state)));
   const v = new URLSearchParams(location.search).get('v');
