@@ -10,6 +10,12 @@
 //     défaut), puis l'heure UTC.
 //   fmtDayZ(iso) → « 29/10 16:53Z » : le jour et le mois UTC (jj/mm, sans année, la même écriture dans toutes les langues), puis
 //     l'heure UTC : « lu le … » de la ligne des procédures de Carburant.
+//   SOG-0468 (4), ajoutés par Features SOG (accord de V3 Frame) — des durées, aucun mot d'une langue (les unités sont des options) :
+//   two(n) → « 05 » : deux chiffres ;
+//   fmtHm(min, { positive, none }) → « 1:05 » : heures et minutes d'une durée en minutes (arrondie à la minute ; négative ou illisible :
+//     « 0:00 ») ; positive : une durée nulle, négative ou illisible rend `none` ('' par défaut) ;
+//   fmtDur(min, { h, min, wholeHour }) → « 45 min », « 1 h 05 » : en dessous d'une heure les minutes seules, sinon heures et minutes à
+//     deux chiffres ; wholeHour : « 2 h » pour une heure ronde (sinon « 2 h 00 ») ; h et min : les unités (« h », « min » par défaut).
 
 const two = n => String(n).padStart(2, '0');
 /** Date lue, ou null. */
@@ -88,4 +94,27 @@ export function fmtMoment(iso, lang = 'fr', now = Date.now()) {
   if (d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate()) return m.today(h);
   const day = lang === 'de' ? `${two(d.getDate())}.${two(d.getMonth() + 1)}.` : `${two(d.getDate())}/${two(d.getMonth() + 1)}`;
   return m.on(day, h);
+}
+
+// ---- SOG-0468 (4) : durées (ajout seul, Features SOG, accord de V3 Frame)
+export {
+  two
+};
+/** « 1:05 » : une durée en minutes en heures et minutes (voir l'en-tête). */
+export function fmtHm(min, o = {}) {
+  const v = Number(min),
+    x = Math.round(Number.isFinite(v) ? v : 0);
+  if (o.positive && !(x > 0)) return o.none ?? '';
+  const t = Math.max(0, x);
+  return `${Math.floor(t / 60)}:${two(t % 60)}`;
+}
+/** « 45 min », « 1 h 05 », « 2 h » : une durée en minutes en mots d'unités (voir l'en-tête). */
+export function fmtDur(min, o = {}) {
+  const v = Number(min),
+    t = Math.max(0, Math.round(Number.isFinite(v) ? v : 0)),
+    h = Math.floor(t / 60),
+    m = t % 60,
+    H = o.h ?? 'h',
+    M = o.min ?? 'min';
+  return !h ? `${m} ${M}` : o.wholeHour && !m ? `${h} ${H}` : `${h} ${H} ${two(m)}`;
 }

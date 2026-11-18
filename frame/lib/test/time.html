@@ -26,7 +26,10 @@
   import {
     fmtZ,
     fmtDateZ,
-    fmtDayZ
+    fmtDayZ,
+    two,
+    fmtHm,
+    fmtDur
   } from '../time.js?v=0';
   const rows = [],
     out = document.getElementById('out');
@@ -53,6 +56,29 @@
     Date.UTC(2026, 9, 29, 16, 53))) === '29/10 16:53Z');
   ck('fmtDayZ : vide ou illisible → \'\'', fmtDayZ(null) === '' && fmtDayZ('') === '' && fmtDayZ(undefined) === '' && fmtDayZ(
     'pas une date') === '');
+  // SOG-0468 (4) : les durées (Features SOG)
+  ck('two : deux chiffres', two(5) === '05' && two(12) === '12' && two(0) === '00', [two(5), two(12), two(0)].join());
+  ck('fmtHm : heures et minutes, arrondi à la minute', fmtHm(65) === '1:05' && fmtHm(0) === '0:00' && fmtHm(59.6) === '1:00' && fmtHm(605) ===
+    '10:05', [fmtHm(65), fmtHm(0), fmtHm(59.6), fmtHm(605)].join());
+  ck('fmtHm : négatif ou illisible → 0:00 ; positive → none', fmtHm(-5) === '0:00' && fmtHm('x') === '0:00' && fmtHm(0, {
+    positive: true
+  }) === '' && fmtHm(NaN, {
+    positive: true,
+    none: '—'
+  }) === '—' && fmtHm(45, {
+    positive: true
+  }) === '0:45');
+  ck('fmtDur : minutes seules, puis heures et minutes à deux chiffres', fmtDur(45) === '45 min' && fmtDur(60) === '1 h 00' && fmtDur(80) ===
+    '1 h 20' && fmtDur(605) === '10 h 05' && fmtDur(-3) === '0 min', [fmtDur(45), fmtDur(60), fmtDur(80), fmtDur(605), fmtDur(-3)].join(
+    ' | '));
+  ck('fmtDur : heure ronde et unités en option', fmtDur(120, {
+    wholeHour: true
+  }) === '2 h' && fmtDur(125, {
+    wholeHour: true
+  }) === '2 h 05' && fmtDur(75, {
+    h: 'Std',
+    min: 'Min'
+  }) === '1 Std 15');
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,
