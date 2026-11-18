@@ -1,6 +1,6 @@
 // V3 data — la ligne « X-Plane (personnel, local) » du bloc des sources personnelles (Q-0108, repli local d'AeroDB) : le dossier d'X-Plane se donne UNE fois, le lanceur (`__setup/xplane`) le vérifie et le garde sur ce poste. La page ne contrôle
-// rien d'autre que la longueur (260 signes) : le chemin n'est écrit NULLE PART côté page (ni message, ni DOM après l'envoi, ni attribut, ni stockage, ni console) ; le champ est vidé AVANT la réponse, la ligne ne dit que l'état (« Enregistré — X-Plane, cycle 2610 »).
-// L'état est gardé dans S.xp : { state: 'loading' | 'ready' | 'none', data (xplaneOf), msg: null | { level, row } (le dernier geste), dirty, reading, sending }.
+// rien d'autre que la longueur (260 signes) : le chemin n'est écrit NULLE PART côté page (ni message, ni DOM après l'envoi, ni attribut, ni stockage, ni console) ; le champ est vidé AVANT la réponse, la ligne ne dit que l'état (« Enregistré — X-Plane, cycle 2610 », neutre) ; un ÉCHEC de geste n'est jamais écrit dans la page : une notification flottante (S.ctx.notify, 'err') avec une phrase FIXE.
+// L'état est gardé dans S.xp : { state: 'loading' | 'ready' | 'none', data (xplaneOf), dirty, reading, sending }.
 import {
   xplaneOf,
   xplaneReason
@@ -35,7 +35,6 @@ const REASON_ROW = {
 export const xpInit = () => ({
   state: 'loading',
   data: null,
-  msg: null,
   dirty: true,
   reading: false,
   sending: false
@@ -68,14 +67,13 @@ export async function wantXplane() {
   x.state = x.data ? 'ready' : 'none';
   renderBuild();
 }
-/** La coche « personnel » a changé (ou un geste a fini) : la lecture est à refaire ; décochée, la ligne et son message disparaissent aussitôt. */
+/** La coche « personnel » a changé (ou un geste a fini) : la lecture est à refaire ; décochée, la ligne disparaît aussitôt. */
 export function xplaneRefresh() {
   const x = S?.xp;
   if (!x) return;
   x.dirty = true;
   if (S.certified !== true) {
     x.data = null;
-    x.msg = null;
     x.state = 'none';
   }
   wantXplane();
@@ -95,19 +93,13 @@ function sendPath(input, clear) {
   input.value = ''; // vidé avant même la réponse
   return sent;
 }
-/** Le message d'un geste d'après la réponse du lanceur : « Enregistré. » / « Effacé. », ou la phrase fermée du code de refus ; sans réponse lisible : « Demande refusée ». Jamais un texte du lanceur. */
-function outcome(r, clear) {
-  if (r !== null && typeof r === 'object' && r.ok === true) return {
-    level: 'ok',
-    row: clear ? TX.xp.cleared : TX.xp.saved
-  };
+/** La phrase fermée d'un ÉCHEC de geste d'après la réponse du lanceur : celle de son code de refus (hors liste : « refused »), ou « Demande refusée » sans réponse lisible ; null quand le lanceur a accepté (`ok: true`). Jamais un texte du lanceur. */
+function failure(r) {
+  if (r !== null && typeof r === 'object' && r.ok === true) return null;
   const code = r !== null && typeof r === 'object' && typeof r.reason === 'string' ? xplaneReason(r.reason) : 'bad-body';
-  return {
-    level: 'warn',
-    row: REASON_ROW[code]
-  };
+  return REASON_ROW[code];
 }
-/** « Enregistrer » (`xplane-save`, ou la touche Entrée dans le champ) et « Effacer » (`xplane-clear`) : un seul geste à la fois, jamais pendant une opération ; le message du geste est écrit sur la ligne (ctx.notify n'est pas utilisé : le chemin pourrait y fuir),
+/** « Enregistrer » (`xplane-save`, ou la touche Entrée dans le champ) et « Effacer » (`xplane-clear`) : un seul geste à la fois, jamais pendant une opération ; un succès n'écrit rien de plus (le GET relu change la ligne d'état), un échec est dit par une notification flottante à phrase FIXE (jamais le chemin),
  *  puis le GET est relu. Un 261e signe ou plus : « Chemin trop long », le lanceur n'est pas appelé. */
 export async function xplaneGesture(act) {
   const me = S,
@@ -116,15 +108,8 @@ export async function xplaneGesture(act) {
   if (!x || !input || x.sending || frozen() || S.certified !== true) return;
   const out = sendPath(input, act === 'xplane-clear');
   if (out === null) return;
-  if (out === 'too-long') {
-    x.msg = {
-      level: 'warn',
-      row: TX.xp.reason.tooLong
-    };
-    return renderBuild();
-  }
+  if (out === 'too-long') return S.ctx.notify(tt(TX.xp.reason.tooLong), 'err');
   x.sending = true;
-  x.msg = null;
   let r = null;
   try {
     r = await out;
@@ -133,13 +118,15 @@ export async function xplaneGesture(act) {
   }
   if (S !== me) return;
   x.sending = false;
-  x.msg = outcome(r, act === 'xplane-clear');
+  const row = failure(r);
+  if (row) S.ctx.notify(tt(row), 'err'); // l'échec : une notification, phrase fixe
   x.dirty = true;
-  renderBuild();
-  wantXplane(); // le GET relu dit l'état d'après (cycle, dossier introuvable…)
+  renderBuild(); // les boutons se rouvrent
+  wantXplane(); // le GET relu dit l'état d'après (cycle, dossier introuvable, non configuré…)
 }
-/** La ligne d'état d'après ce que le lanceur dit : « Enregistré — X-Plane, cycle 2610 », « Dossier introuvable », « Ce n'est pas un dossier X-Plane », « Dossier illisible » ; '' sans état. Jamais le chemin, jamais le nombre de zones. */
+/** La ligne d'état d'après ce que le lanceur dit : « Non configuré » (rien d'enregistré), « Enregistré — X-Plane, cycle 2610 », « Dossier introuvable », « Ce n'est pas un dossier X-Plane », « Dossier illisible » ; '' sans état. Jamais le chemin, jamais le nombre de zones. */
 function stateText(d) {
+  if (!d.configured) return tt(TX.xp.notConfigured);
   if (d.state === 'ok') return d.cycle ? tt(TX.xp.okCycle, {
     c: d.cycle
   }) : tt(TX.xp.ok);
@@ -148,7 +135,7 @@ function stateText(d) {
   if (d.state === 'unreadable') return tt(TX.xp.unreadable);
   return '';
 }
-/** La ligne « X-Plane (personnel, local) » : vide sans la coche « personnel » ou sans réponse du lanceur ; sinon le champ du dossier, « Enregistrer » (et « Effacer » quand un dossier est configuré), l'état dit, le message du dernier geste.
+/** La ligne « X-Plane (personnel, local) » : vide sans la coche « personnel » ou sans réponse du lanceur ; sinon le champ du dossier, « Enregistrer » (et « Effacer » quand un dossier est configuré), l'état dit (ton neutre).
  *  Grisée comme la coche pendant une marche (`busy`). Le chemin n'est jamais écrit : ni valeur, ni attribut, ni titre. */
 export function xplaneRowHtml(busy) {
   const x = S?.xp;
@@ -159,6 +146,5 @@ export function xplaneRowHtml(busy) {
   return `<div class="d-xplane" data-xplane><p class="d-xp-title"><b>${esc(tt(TX.xp.title))}</b></p>
     <label>${esc(tt(TX.xp.field))}<input type="text" data-xplane-path maxlength="${MAX}" autocomplete="off" autocapitalize="off" spellcheck="false"${off}></label>
     <p class="d-verbs"><button type="button" class="primary" data-act="xplane-save"${off}>${esc(tt(TX.xp.save))}</button>${d.configured ? `<button type="button" data-act="xplane-clear"${off}>${esc(tt(TX.xp.clear))}</button>` : ''}</p>
-    ${state ? `<p class="f-muted" data-xplane-state role="status">${esc(state)}</p>` : ''}
-    ${x.msg ? `<p class="${x.msg.level === 'ok' ? 'f-ok' : 'f-warn'}" data-xplane-msg role="status">${esc(tt(x.msg.row))}</p>` : ''}</div>`;
+    ${state ? `<p class="f-muted" data-xplane-state role="status">${esc(state)}</p>` : ''}</div>`;
 }

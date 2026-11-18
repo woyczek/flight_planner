@@ -10220,14 +10220,21 @@ def _xp_retick(c, st):
         c.until("document.querySelector('[data-certify]').checked === %s" % ('true' if want else 'false'), timeout=6000, what='the box follows the launcher')
 
 
-def _xp_msg(c, want):
-    """Waits until the gesture message of the X-Plane line says exactly `want` (spaces of every kind collapsed)."""
-    c.until("(w) => { const e = document.querySelector('[data-xplane-msg]'); return !!e && e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }", arg=want, timeout=8000, what=f'the message « {want} »')
+def _xp_note(c, want):
+    """Waits until a floating notification says exactly `want` (spaces of every kind collapsed): the FAILURE of a gesture is said there, never in the page (the rule of the user: a failure is a notification with a fixed sentence);
+    the page holds no message element of its own."""
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w)", arg=want, timeout=8000, what=f'the notification « {want} »')
+    c.eq(c.count('[data-xplane-msg]'), 0, 'and the page has no message element of its own', what='no message in the page')
+
+
+def _xp_clear_notes(c):
+    """Forgets the notifications asked so far (the log of the run), to read the next gesture's alone."""
+    c.js("window.__notes.length = 0")
 
 
 @case('L158', 'Données: the line « X-Plane (personnel, local) » is in the personal-use block ONLY with the tick AND when the launcher answers GET /__setup/xplane (Q-0108); it says the state, never the path',
       'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
-      rule='Q-0108 (choice A of Sécurisation): absent without the tick, absent when the launcher answers 404 (older launcher / paired device), present with the tick and a GET { ok: true }; says « Enregistré — X-Plane, cycle 2610 » for configured / ok / 2610, « Dossier introuvable », « Ce n\'est pas un dossier X-Plane », « Dossier illisible » for the other states, nothing for an empty state')
+      rule='Q-0108 (choice A of Sécurisation): absent without the tick, absent when the launcher answers 404 (older launcher / paired device), present with the tick and a GET { ok: true }; says « Enregistré — X-Plane, cycle 2610 » for configured / ok / 2610, « Dossier introuvable », « Ce n\'est pas un dossier X-Plane », « Dossier illisible » for the other states, « Non configuré » when nothing is configured; the state line is NEUTRAL (f-muted), the page holds no message element')
 def l158(c):
     lang = c.lang
     Q = lambda k: norm(_trow(k, lang, after='  xp: {'))
@@ -10248,8 +10255,8 @@ def l158(c):
     gets = st['xplane_gets']
     _tap_certify(c)
     c.until("!!document.querySelector('[data-xplane]')", timeout=8000, what='the line of the X-Plane folder')
-    c.eq([st['xplane_gets'] > gets, norm(c.text('[data-xplane-state]')), c.count('[data-act=xplane-save]'), c.count('[data-act=xplane-clear]'), c.count('[data-xplane-msg]')],
-         [True, Q('okCycle').replace('{c}', '2610'), 1, 1, 0], 'ticked and answered: « Enregistré — X-Plane, cycle 2610 », « Enregistrer » and « Effacer », no gesture message', what='present')
+    c.eq([st['xplane_gets'] > gets, norm(c.text('[data-xplane-state]')), c.count('[data-act=xplane-save]'), c.count('[data-act=xplane-clear]'), c.count('[data-xplane-msg]'), c.attr('[data-xplane-state]', 'class')],
+         [True, Q('okCycle').replace('{c}', '2610'), 1, 1, 0, 'f-muted'], 'ticked and answered: « Enregistré — X-Plane, cycle 2610 » in a neutral tone, « Enregistrer » and « Effacer », no message element', what='present')
     f = c.js("(e => [e.maxLength, e.getAttribute('autocomplete'), e.getAttribute('value'), e.value, e.type])(document.querySelector('[data-xplane-path]'))")
     c.eq(f, [260, 'off', None, '', 'text'], 'the field: 260 signs at most, no autocomplete, no value at all', what='field')
     c.eq(norm(c.text('[data-xplane] label')), Q('field'), 'the field is named', what='label')
@@ -10262,7 +10269,7 @@ def l158(c):
     st['xplane'] = {'configured': False, 'state': None, 'cycle': None, 'zones': None}
     _xp_retick(c, st)
     c.until("!!document.querySelector('[data-xplane]')", timeout=8000, what='the line with no folder')
-    c.eq([c.count('[data-xplane-state]'), c.count('[data-act=xplane-save]'), c.count('[data-act=xplane-clear]')], [0, 1, 0], 'nothing configured: no state, no « Effacer »', what='empty')
+    c.eq([norm(c.text('[data-xplane-state]')), c.attr('[data-xplane-state]', 'class'), c.count('[data-act=xplane-save]'), c.count('[data-act=xplane-clear]')], [Q('notConfigured'), 'f-muted', 1, 0], 'nothing configured: « Non configuré » (neutral), no « Effacer »', what='empty')
     st['xplane'] = dict(_XP_OK)
     _xp_retick(c, st)
     c.until("!!document.querySelector('[data-xplane-state]')", timeout=8000, what='the folder is configured again')
@@ -10274,9 +10281,9 @@ def l158(c):
     c.check_errors()
 
 
-@case('L159', 'Données: SECURITY — the X-Plane path is written NOWHERE on the page side (Q-0108): the strict body, the field emptied at once, the sentinel in no text, attribute, storage or console message, every refusal said by its closed sentence, 261 signs never leave, « Effacer » posts an empty path',
+@case('L159', 'Données: SECURITY — the X-Plane path is written NOWHERE on the page side (Q-0108): the strict body, the field emptied at once, the sentinel in no text, attribute, storage, console message or notification, every refusal said by its closed sentence IN A NOTIFICATION (never in the page), 261 signs never leave, « Effacer » posts an empty path',
       'L', tags=('data',), langs4=False, designs=('standard',), screens=False, night=False,
-      rule='Q-0108: the LAUNCHER controls the path, the page only its length; POST { path } and nothing else; the field is emptied before the answer; a reason outside the contract is said as `refused`; ctx.notify is not used (the path could leak into a toast); red without the guard: the path echoed in the message or kept in the field')
+      rule='Q-0108: the LAUNCHER controls the path, the page only its length; POST { path } and nothing else; the field is emptied before the answer; a reason outside the contract is said as `refused`; a failure is a floating notification (`err`) with a FIXED sentence, never a message in the page; red without the guard: the path echoed in the notification or kept in the field')
 def l159(c):
     lang = c.lang
     msgs = []
@@ -10286,45 +10293,49 @@ def l159(c):
     st = _xp_open(c)
     c.until("!!document.querySelector('[data-xplane]')", timeout=10000, what='the line of the X-Plane folder')
     where = lambda: c.js(_XP_WHERE_JS)
-    gone = lambda what: c.ok('Sentinel' not in where() and 'Sentinel' not in ' '.join(msgs), what, f'the path is on no surface of the page ({what})')
+    gone = lambda what: c.ok('Sentinel' not in where() and 'Sentinel' not in ' '.join(msgs) and 'Sentinel' not in ' '.join(c.note_log()), what, f'the path is on no surface of the page, notifications included ({what})')
     # ---- the path typed, « Enregistrer »: the strict body, the field empty, the line says it, the path nowhere
+    gets = st['xplane_gets']
     c.page.fill('[data-xplane-path]', _XP_SENT)
     c.tap('[data-act=xplane-save]')
     _xp_wait(c, lambda: len(st['xplane_posts']) == 1, 'the launcher received the path')
     c.eq(st['xplane_posts'], [{'path': _XP_SENT}], 'the body is exactly { path } and nothing else', what='body')
-    _xp_msg(c, Q('saved'))
+    _xp_wait(c, lambda: st['xplane_gets'] > gets, 'the state is read again after the save')
     c.eq(c.js("document.querySelector('[data-xplane-path]').value"), '', 'the field is empty at once', what='field')
     c.until("!!document.querySelector('[data-xplane-state]')", timeout=6000, what='the state is read again')
     c.eq(norm(c.text('[data-xplane-state]')), Q('okCycle').replace('{c}', '2610'), 'the state read again says the cycle', what='state')
     c.eq(c.js("document.querySelector('[data-xplane-path]').value"), '', 'and the field is still empty', what='field2')
-    c.eq([c.count('#fNotes .f-note'), c.note_log()], [0, []], 'no notification: the path could leak into a toast', what='notify')
+    c.eq([c.count('#fNotes .f-note'), c.note_log(), c.count('[data-xplane-msg]')], [0, [], 0], 'a success says nothing more: no notification, no message (the state line is what changes)', what='notify')
     gone('after a save')
     # ---- every refusal of the contract, by its closed sentence; an unknown code (and hostile) is said as `refused`
     for code, key in (('bad-body', 'badBody'), ('too-long', 'tooLong'), ('refused', 'refused'), ('not-a-folder', 'notAFolder'), ('not-xplane', 'notXplane'), ('not-personal', 'notPersonal'),
                       ('weird', 'refused'), ('<img src=x onerror=window.__pwn=1>', 'refused')):
         st['xplane_answer'] = (400, {'ok': False, 'reason': code})
         n = len(st['xplane_posts'])
+        _xp_clear_notes(c)
         c.page.fill('[data-xplane-path]', _XP_SENT)
         c.tap('[data-act=xplane-save]')
         _xp_wait(c, lambda: len(st['xplane_posts']) == n + 1, f'the launcher received the path ({code})')
-        _xp_msg(c, R(key))
-        c.eq([c.js("document.querySelector('[data-xplane-path]').value"), c.js('window.__pwn === undefined'), c.count('[data-xplane] img')], ['', True, 0], f'{code}: field empty, nothing in the message is markup', what=code)
+        _xp_note(c, R(key))
+        c.eq([c.js("document.querySelector('[data-xplane-path]').value"), c.js('window.__pwn === undefined'), c.count('[data-xplane] img')], ['', True, 0], f'{code}: field empty, nothing in the notification is markup', what=code)
         gone(f'refusal {code}')
     # ---- an answer with no reason, or not readable: « Demande refusée », never the text of the error
     base = len(st['xplane_posts'])
     for i, ans in enumerate(((500, {}), (400, {'ok': False, 'message': _XP_SENT}), (200, {'ok': False}))):
         st['xplane_answer'] = ans
+        _xp_clear_notes(c)
         c.page.fill('[data-xplane-path]', _XP_SENT)
         c.tap('[data-act=xplane-save]')
         _xp_wait(c, lambda: len(st['xplane_posts']) == base + i + 1, 'the launcher received it')
-        _xp_msg(c, R('badBody'))
+        _xp_note(c, R('badBody'))
         gone(f'no reason {ans[0]}')
-    # ---- 261 signs: the launcher is not called, the sentence says why, the field is empty
+    # ---- 261 signs: the launcher is not called, the notification says why, the field is empty
     n = len(st['xplane_posts'])
     c.js("(() => { const e = document.querySelector('[data-xplane-path]'); e.value = 'C:\\\\Sentinel\\\\' + 'x'.repeat(261 - 'C:\\\\Sentinel\\\\'.length); e.dispatchEvent(new Event('input', { bubbles: true })) })()")
     c.eq(c.js("document.querySelector('[data-xplane-path]').value.length"), 261, 'a 261-sign path is in the field (typed past the limit by a script)', what='261')
+    _xp_clear_notes(c)
     c.tap('[data-act=xplane-save]')
-    _xp_msg(c, R('tooLong'))
+    _xp_note(c, R('tooLong'))
     c.wait(400)
     c.eq([len(st['xplane_posts']), c.js("document.querySelector('[data-xplane-path]').value")], [n, ''], '261 signs: the launcher is not called, the field is empty', what='too long')
     gone('after 261 signs')
@@ -10334,18 +10345,19 @@ def l159(c):
     c.eq(len(st['xplane_posts']), n, 'an empty field posts nothing', what='empty')
     # ---- Enter in the field is « Enregistrer »
     st['xplane_answer'] = None
+    _xp_clear_notes(c)
     c.page.fill('[data-xplane-path]', _XP_SENT)
     c.page.press('[data-xplane-path]', 'Enter')
     _xp_wait(c, lambda: len(st['xplane_posts']) == n + 1 and st['xplane_posts'][-1] == {'path': _XP_SENT}, 'Enter posted the path')
-    _xp_msg(c, Q('saved'))
+    c.wait(400)
+    c.eq(c.note_log(), [], 'accepted: nothing is said in a notification', what='no note on success')
     gone('after Enter')
     # ---- « Effacer » posts an empty path
     c.tap('[data-act=xplane-clear]')
     _xp_wait(c, lambda: len(st['xplane_posts']) == n + 2, 'the launcher received « Effacer »')
     c.eq(st['xplane_posts'][-1], {'path': ''}, '« Effacer » posts { path: "" } and nothing else', what='clear body')
-    _xp_msg(c, Q('cleared'))
     c.until("!document.querySelector('[data-act=xplane-clear]')", timeout=6000, what='nothing configured any more: « Effacer » goes away')
-    c.eq(c.count('[data-xplane-state]'), 0, 'and the line says no state', what='cleared state')
+    c.eq([norm(c.text('[data-xplane-state]')), c.attr('[data-xplane-state]', 'class')], [Q('notConfigured'), 'f-muted'], 'and the line says « Non configuré », neutral', what='cleared state')
     gone('at the end')
     c.check_errors()
 

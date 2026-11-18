@@ -3111,8 +3111,7 @@ export const TX = {
       'No es una carpeta de X-Plane'
     ],
     unreadable: ['Dossier illisible', 'Folder unreadable', 'Ordner nicht lesbar', 'Carpeta ilegible'],
-    saved: ['Enregistré.', 'Saved.', 'Gespeichert.', 'Guardado.'],
-    cleared: ['Effacé.', 'Cleared.', 'Gelöscht.', 'Borrado.'],
+    notConfigured: ['Non configuré', 'Not configured', 'Nicht eingerichtet', 'No configurado'],
     reason: {
       badBody: ['Demande refusée', 'Request refused', 'Anfrage abgelehnt', 'Solicitud rechazada'],
       tooLong: ['Chemin trop long (260 signes au plus)', 'Path too long (260 characters at most)',
