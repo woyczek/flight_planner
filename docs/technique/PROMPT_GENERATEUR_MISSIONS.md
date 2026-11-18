@@ -274,9 +274,11 @@ zones:                         # 0 à 3 zones de travail, id ZONE-1…, plus la 
     kind: search               # search : zone de recherche ; mission : zone de travail (observation, largage,
                                # feu, levé, hippodrome…) ; exclusion : zone à éviter (population, faune, relief)
     centre: { lat: 0.000000, lon: 0.000000 }
-    radius_km: 20              # zone ronde : centre + rayon
-    points:                    # OU zone polygonale (3 à 8 sommets dans l'ordre, lieux réels) : secteur borné par
-      - { lat: 0.000000, lon: 0.000000 }   # des vallées, crêtes, routes, côtes… ; le centre reste donné
+    radius_km: 20              # zone RONDE : centre + rayon (au-dessus de 0, 500 au plus) — l'un OU l'autre : ronde, ou en contour
+    points:                    # zone EN CONTOUR (FACULTATIF, à la place de radius_km) : clé « points », un sommet = { lat, lon },
+                               # dans l'ordre du pourtour (3 sommets au moins, 100 au plus pour le lecteur ; 3 à 8 suffisent
+                               # pour un secteur borné par des vallées, crêtes, routes, côtes… ; lieux réels) ; le centre reste donné
+      - { lat: 0.000000, lon: 0.000000 }
     role: "zone de recherche / zone AAR / zone de largage / …"
     time_on_task_min: 45         # temps de travail dans la zone (recherche, hippodrome de ravitaillement…)
     ceiling_ft: 3000             # FACULTATIF : la zone ne joue qu'au-dessous de cette altitude (ft, niveau de la mer ; 0 à 60000)
@@ -440,7 +442,7 @@ Parties (phases) : une partie existe pour un vrai changement de situation en vol
 aucune pour une mission simple, jusqu'à douze pour un scénario riche. Choisir la clé d'après ce qui déclenche le changement
 dans le récit : l'heure quand un message tombe à un moment, la zone quand il arrive en entrant dans un secteur, l'objet quand
 l'équipage doit trouver quelque chose, l'arrivée pour la fin du vol, le geste seul quand la décision est la sienne. Une zone
-de passage est ronde (centre et radius_km) quand le secteur est centré sur un point connu, en contour (points, 3 à 8 sommets)
+de passage est ronde (centre et radius_km) quand le secteur est centré sur un point connu, en contour (points : { lat, lon }, 3 à 8 sommets suffisent)
 quand il suit le terrain. La zone d'une partie et l'objet d'une partie sont CACHÉS à l'équipage tant que la partie est fermée :
 ne les citer ni dans summary et detailed_description (qui ne disent rien de l'existence des parties), ni dans la route_order
 de la mission, ni dans une carte (§ 8) ; seul zone_shown: true montre la zone dès le départ. Forme seule, sur des lieux
