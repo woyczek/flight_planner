@@ -10,6 +10,7 @@ il n'est pas, par construction, le meilleur de tous les vols (un vol sans track 
 `solve` rend le chemin (la liste des tronçons, comme Nav.search) ou None (pas applicable : pas de track dans le sens du vol, un vol hors Atlantique, rien de résolu) ; dans ce cas la recherche entière suit, comme sans l'option. Ce que la dernière résolution a fait est dans `nav.sections_info` : les sections (nom, de, à, distance, coût, états développés), la track retenue, les tracks essayées."""
 import copy
 import datetime
+import math
 import time
 
 from . import engine, free_route, nat_layer
@@ -18,6 +19,7 @@ EUROPE_NEED = 3      # SOG-0412 (le temps) : la recherche d'Europe vers les entr
 
 NAT_MAX_EXTRA = 0.05      # SOG-0421 (Q-0082, la réponse de l'utilisateur : « direct, pas forcément par le nord ») : une route NAT valable est prise tant qu'elle rallonge de MOINS de 5 % la route libre ; au-delà, la route libre, et la réponse dit la route écartée et l'écart
 NAT_COMPARE_MIN = 1.15      # SOG-0421 (le temps) : la route libre n'est cherchée que si la route NAT dépasse le grand cercle de plus de 15 % (la recherche de la route libre coûte 3 à 8 s : sur les 72 traversées vers l'ouest du 17/11 elle ne change que les vols de Madrid, dont la route NAT est à 1,17 à 1,25 fois le grand cercle ; sous 1,15 elle gaspillait 3 à 8 s par vol sans rien changer) ; une route NAT entre 5 et 15 % au-dessus du grand cercle n'est pas comparée
+NAT_KEPT_MAX = 1000      # revue de Sécurisation (18 nov.) : les comparaisons gardées d'un Nav gardé ne croissent pas sans borne (par requête)
 NAT_NEAR_DEG = 1.0      # SOG-0421 : une route libre prise à la place d'une route NAT qui passe à moins d'un degré de latitude d'une route NAT valable le dit
 
 WEST_LON, EAST_LON = -35.0, -15.0      # les mêmes limites que plan.crosses_ocean et nat_layer.hint
@@ -274,6 +276,12 @@ def _europe(nav, g, start, entries, info, key='europe', need=None, track=None, m
     return found
 
 
+def _keep(kept, memo):
+    """Une comparaison gardée de plus, jusqu'à NAT_KEPT_MAX : au-delà elle se refait (jamais une mémoire sans borne sur un Nav gardé)."""
+    if len(kept) < NAT_KEPT_MAX:
+        kept.add(memo)
+
+
 def _previous_system(nav, g, meta, east, a, hour, eta_of, passage, chains, rejected, when, avoid):
     """SOG-0403 (R2 ; règle de l'utilisateur : « il y a TOUJOURS une fenêtre NAT ouverte avec des routes valides : si ce n'est l'active, c'est la précédente ») : aucune route du sens du vol n'a sa fenêtre sur le passage du 30°W : on prend le SYSTÈME PRÉCÉDENT du même sens — le groupe de routes de même fenêtre (from, to) dont la fin est la plus
     récente avant le passage — ; à défaut de précédent, le système À VENIR le plus proche. La route est prise HORS de sa fenêtre, DITE : sa liste de niveaux ne lie plus (R6), elle s'écrit POINT PAR POINT (`DCT`, jamais « NATx », R5). Pas de borne d'âge à l'usage (le fichier gardé est borné à 3 jours et 120 routes).
@@ -414,7 +422,7 @@ def _nat_or_free(nav, g, start, end, ratio, info, path, tid, valid, meta):
         paid = False
     elif any(x[0] <= avoid and x[1] <= compel and thr <= x[2] and (not x[3] or x[4].get('source') != 'random' or nat_nm - sum(e['nm'] for _u, _v, e in x[3]) < NAT_MAX_EXTRA * sum(e['nm'] for _u, _v, e in x[3])) for x in shared):
         # la même recherche, faite AVEC MOINS de contraintes, a déjà dit « la route NAT reste » : avec plus de points écartés ou imposés la route libre ne peut qu'être plus longue (ou absente) : la réponse « non » vaut encore, sans nouvelle recherche
-        kept.add(memo)
+        _keep(kept, memo)
         return None
     else:
         alt = copy.deepcopy(info)
@@ -425,14 +433,14 @@ def _nat_or_free(nav, g, start, end, ratio, info, path, tid, valid, meta):
     if not free_path or alt.get('source') != 'random':
         if paid:
             info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])      # la recherche de la route libre a coûté : elle est dans le temps dit
-        kept.add(memo)
+        _keep(kept, memo)
         return None
     free_nm = sum(e['nm'] for _u, _v, e in free_path)
     extra = nat_nm - free_nm
     if free_nm <= 0 or extra < NAT_MAX_EXTRA * free_nm:
         if paid:
             info.setdefault('steps', []).extend((alt.get('steps') or [])[seen:])
-        kept.add(memo)
+        _keep(kept, memo)
         return None
     label = (meta.get(tid) or {}).get('label') or tid
     alt['nat_discarded'] = {'track': label, 'key': tid, 'nm': round(nat_nm, 1), 'free_nm': round(free_nm, 1), 'extra_nm': round(extra, 1), 'extra_pct': round(100 * extra / free_nm, 1), 'max_pct': round(100 * NAT_MAX_EXTRA, 1)}
@@ -457,7 +465,7 @@ def _near_nat(nav, free_path, tracks):
         close = []
         for p, q in created:
             lo0, lo1 = sorted((p['lon'], q['lon']))
-            if lo1 - lo0 < 0.01:
+            if not (math.isfinite(lo0) and math.isfinite(lo1)) or lo1 - lo0 < 0.01:      # la boucle ne s'arrête que si la longitude est finie (inf + 1 ne bouge pas)
                 continue
             lon = lo0
             while lon <= lo1 + 1e-9:

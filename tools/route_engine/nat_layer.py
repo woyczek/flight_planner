@@ -25,6 +25,7 @@ LINK_NM = 900                         # un raccord DCT de simulation : jusqu'à 
 LINK_NODES = 3
 MIN_COMPONENT = 200                  # un réseau d'au moins 200 nœuds connexes : celui d'un pays, pas un îlot
 HIGH_FT = 24500                      # un airway « haut » : son plafond atteint au moins cette altitude
+NETWORK_FLOORS_MAX = 16                      # revue de Sécurisation (18 nov.) : au plus 16 planchers distincts pour les réseaux d'une track (les vrais : FL290 à FL410 par dizaines)
 NAME = re.compile(r'[A-Z][A-Z0-9]{1,6}', re.A)      # re.A : jamais de chiffres ou de lettres d'une autre écriture
 TRACK = re.compile(r'[A-Z]{1,2}', re.A)
 COORD = re.compile(r'(\d{2})(\d{2})?/(\d{2,3})', re.A)
@@ -233,6 +234,8 @@ def add(nav, nm):
 
     def network_for(lower_ft):
         floor_ft = max(HIGH_FT, lower_ft)
+        if floor_ft not in networks and len(networks) >= NETWORK_FLOORS_MAX:      # revue de Sécurisation (18 nov.) : un réseau (union-find sur toutes les arêtes) par plancher distinct ; les vrais planchers sont des dizaines de FL290 à FL410 : au-delà de la borne, le plus proche déjà calculé
+            floor_ft = min(networks, key=lambda f: abs(f - floor_ft))
         if floor_ft not in networks:
             networks[floor_ft] = main_network(nav, floor_ft)
         return networks[floor_ft]

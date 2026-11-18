@@ -116,6 +116,8 @@ def name_of(r, requested_fl):
 
 
 MAX_POINTS = 600
+MAX_UNKNOWN_SPACES = 100      # revue de Sécurisation (18 nov.) : les espaces inconnus de la RAD et leurs règles sont bornés (items l'est à 1500)
+MAX_UNKNOWN_RULES = 50
 MAX_CHANGES = 60
 
 
@@ -162,7 +164,7 @@ def rad_view(p):
     items = [{k: m.get(k) for k in ('sheet', 'row', 'id', 'reason', 'assessment', 'validity')} for m in p.get('rad') or []]      # sans `values` (578 Ko → la liste entière reste légère : le texte de la règle se lit au classeur, par sa feuille et sa ligne)
     total = p.get('rad_count') or len(items)
     return {'title': p['rad_source'].get('title'), 'start': p['rad_source'].get('start'), 'decided': summary.get('evaluated_conditions'), 'review': summary.get('review_conditions'), 'findings': len(summary.get('findings') or []),
-            'total': total, 'listed': len(items), 'cut': total > len(items), 'unknown_spaces': summary.get('unknown_spaces') or [], 'items': items}
+            'total': total, 'listed': len(items), 'cut': total > len(items), 'unknown_spaces': [dict(u, rules=(u.get('rules') or [])[:MAX_UNKNOWN_RULES]) for u in (summary.get('unknown_spaces') or [])[:MAX_UNKNOWN_SPACES] if isinstance(u, dict)], 'items': items}
 
 
 def to_view(plan_result, request, include_raw=False):

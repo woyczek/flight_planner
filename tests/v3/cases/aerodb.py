@@ -15452,3 +15452,35 @@ def k345(c):
     c.eq(err, None, 'no exception: two systems of the same end date, one without a start, are ordered')
     c.eq((sec.get('chosen'), (sec.get('taken') or {}).get('window'), ((sec.get('taken') or {}).get('system') or {}).get('relation')), ('A', 'out', 'previous'),
          'the previous system is taken OUT of its window; of two systems that ended at the same instant the one WITH a start (A) is the latest, a missing start sorts first (B)', what='previous system')
+
+
+@case('K346', 'Route engine, SOG-0468 review by Security (hardening): the longitude loop of `_near_nat` stops on an infinite longitude, the kept comparisons of a Nav are bounded (1 000), the unknown spaces of the RAD view are bounded (100 spaces, 50 rules each)',
+      'K', static=True,
+      rule='Security, 18 Nov (review after the push of the NAT chain): `while lon <= lo1 + 1e-9: lon += 1.0` never ends if lon is infinite (inf + 1 does not move: the old code hangs); `_nat_kept` grew by request on a kept Nav; `rad_view` listed every unknown space and its rules (items is bounded at 1 500, these were not). The floors of `network_for` (one union-find per distinct floor) are bounded at 16, the nearest floor already built being used beyond.')
+def k346(c):
+    import sys
+    import threading
+    RJ = _regen()
+    from route_engine import sections, view, nat_layer
+
+    class Nav:
+        pass
+    nav = Nav()
+    nav.nodes = {1: {'lat': 50.0, 'lon': float('-inf')}, 2: {'lat': 50.0, 'lon': float('inf')}, 3: {'lat': 50.0, 'lon': -30.0}, 4: {'lat': 50.0, 'lon': -20.0}}
+    nav.nat = {'points': {'T': [{'lon': -40.0, 'lat': 50.0}, {'lon': -10.0, 'lat': 51.0}]}, 'meta': {}}
+    box = []
+    th = threading.Thread(target=lambda: box.append((sections._near_nat(nav, [(1, 2, {'origin': 'random'})], ['T']), sections._near_nat(nav, [(3, 4, {'origin': 'random'})], ['T']))), daemon=True)
+    th.start()
+    th.join(5)
+    c.ok(not th.is_alive(), str(th.is_alive()), 'an infinite longitude ends the loop (the old code never returns)')
+    if box:
+        c.eq(box[0][0], [], 'a segment with an infinite longitude is skipped')
+        c.eq([x['track'] for x in box[0][1]], ['T'], 'an ordinary segment 1° from the track is still reported (the check is not vacuous)')
+    kept = set()
+    for i in range(sections.NAT_KEPT_MAX + 500):
+        sections._keep(kept, i)
+    c.eq(len(kept), sections.NAT_KEPT_MAX, 'the kept comparisons stop at NAT_KEPT_MAX', what='kept')
+    v = view.rad_view({'rad_source': {'title': 't'}, 'rad_summary': {'unknown_spaces': [{'space': 'S%d' % i, 'rules': list(range(view.MAX_UNKNOWN_RULES + 30))} for i in range(view.MAX_UNKNOWN_SPACES + 50)]}, 'rad': []})
+    c.eq((len(v['unknown_spaces']), len(v['unknown_spaces'][0]['rules']), v['unknown_spaces'][0]['space']), (view.MAX_UNKNOWN_SPACES, view.MAX_UNKNOWN_RULES, 'S0'), 'at most 100 unknown spaces, 50 rules each, the first ones in order', what='unknown spaces')
+    # `network_for` is nested in `nat_layer.add`: no end-to-end case (reviewed by Security: the constant is enough, the code is `min(networks, key=...)` on a non-empty dict)
+    c.eq(nat_layer.NETWORK_FLOORS_MAX, 16, 'the floors of the networks of a track are bounded at 16')
