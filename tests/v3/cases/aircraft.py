@@ -1586,6 +1586,10 @@ def m52(c):
     c.until(f"!!document.querySelector('{M} [data-pane=edit]')", what='the editor of F-TST2')
     sel = f'{M} input[data-f="base"]'
     opts = f"[...document.querySelectorAll('{M} [data-adsug] [role=option]')].map(o => o.dataset.code)"
+    # the published base read before typing (Essais, 18/11: unstable when « XQB » was typed while aerodb was still loading — the field
+    # asks once per keystroke; F45 waits the same way, through its name lines)
+    c.until("Promise.resolve(window.SogFrame?.aerodb?.coords?.('XQB1')).then(x => !!x, () => false)", timeout=15000,
+            what='the published base is read')
     c.page.fill(sel, '')
     c.page.locator(sel).click()
     c.page.keyboard.type('XQB')
