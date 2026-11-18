@@ -5316,6 +5316,18 @@ def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A352', 'SogFrame.text (SOG-0468 (2), the classic screens of Settings): the frame loads frame/lib/text.js with its start and gives it, frozen and ready before the first screen, to the screens that cannot await an import; the service worker keeps it for offline', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (2) (Réglages: access.js draws synchronously, an `await import` would make four folds asynchronous or keep a second copy): window.SogFrame.text is { stripMarks, foldUpper, foldLower, foldAlnum, wordsOf, slug } of frame/lib/text.js, frozen, set before the first screen is drawn; frame/sw.js lists lib/text.js in its shell')
+def a352(c):
+    c.open('hello')
+    got = c.js("() => { const T = window.SogFrame.text; return T ? [Object.isFrozen(T), Object.keys(T).sort().join(','), T.slug('Île-de-Ré, Cancún', 24), T.foldUpper(' Éléphant '), T.foldAlnum('EC 135 T2+'), T.wordsOf('Crème brûlée'), T.stripMarks('Œuvre Ærø')] : null }")
+    c.eq(got, [True, 'foldAlnum,foldLower,foldUpper,slug,stripMarks,wordsOf', 'ile-de-re-cancun', 'ELEPHANT', 'EC135T2', 'creme brulee', 'Œuvre Ærø'], 'SogFrame.text: the six functions of text.js, frozen, ready once the first screen is up', what='SogFrame.text')
+    sw = (ROOT / 'frame' / 'sw.js').read_text(encoding='utf-8')
+    c.eq("'lib/text.js'" in sw, True, 'the service worker keeps frame/lib/text.js (Settings draws offline)', what='sw shell')
+    c.check_errors()
+
+
 @case('A351', 'The fold of the frame (SOG-0468 (3), frame/lib/fold.js): fold() gives EXACTLY the text of the <details> builders it replaces (Data cycle, packs, recette, tokens), wireFolds() reports an opened or closed fold once and writes nothing for an unchanged value, openFold() opens by key', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (3) (the ergonomist: one <details> builder, one owner at a time): about thirty hand-written <details><summary> and nine toggle listeners, each with its chain of matches; frame/lib/fold.js says the fold once (fold) and keeps it once (wireFolds(root, set, { get })), the bench frame/lib/test/fold.html (window.__foldBench) shows fold() equal to the original text of four builders; the state stays the caller\'s')

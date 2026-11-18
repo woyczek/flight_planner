@@ -1079,7 +1079,7 @@ About fifteen files copied their own accent folding, in five variants of one ide
 | `wordsOf(v)` | `stripMarks`, lower case, every other run of signs becomes one space (search words) |
 | `slug(v, max = 40)` | `stripMarks`, lower case, hyphens, cut at `max` (a readable identifier) |
 
-A null or absent value is the empty text; nothing throws on a text, a number or an absent value. What stays with a module: a folding of its own (`report/model.js` also drops the dots and folds the blanks, `fuel/fpl.js` keeps spaces), built on `stripMarks`. The files that still carry a copy migrate ONE AT A TIME, with their owners (the classic scripts of `frame/aerodb` reach the module by `import()` or a `window` export: their owner decides).
+A null or absent value is the empty text; nothing throws on a text, a number or an absent value. **For the classic scripts of the frame** (the parts of Settings draw synchronously and cannot `await` an import): the frame loads `text.js` with its start, before the first screen, and gives it as `window.SogFrame.text` (frozen; `null` only if the load failed); `lib/text.js` is in the service worker's shell (A352). A module (ES) imports the file itself. What stays with a module: a folding of its own (`report/model.js` also drops the dots and folds the blanks, `fuel/fpl.js` keeps spaces), built on `stripMarks`. The files that still carry a copy migrate ONE AT A TIME, with their owners (the classic scripts of `frame/aerodb` reach the module by `import()` or a `window` export: their owner decides).
 
 ## 12f. The fold (`frame/lib/fold.js`, SOG-0468 (3))
 

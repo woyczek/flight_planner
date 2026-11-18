@@ -130,6 +130,11 @@
   let TZ = null;
   const timeP = import(new URL('lib/time.js?v=0', document.currentScript.src).href).then(m => TZ = m).catch(e => console
     .warn('time', e));
+  // le pliage des textes (frame/lib/text.js, SOG-0468 (2)) : chargé avec le reste du démarrage, attendu avant le premier dessin, donné en synchrone aux écrans classiques (Réglages) par SogFrame.text
+  let TXT = null;
+  const textP = import(new URL('lib/text.js?v=0', document.currentScript.src).href).then(m => TXT = Object.freeze({
+    ...m
+  })).catch(e => console.warn('text', e));
   /** Heure de l'appli : fmtZ (« 16:30Z »), fmtZLocal (« 16:30Z (18:30) »), fmtDateZ (date UTC et heure Z). */
   const tz = (fn, iso) => TZ?.[fn]?.(iso, lang()) ?? '';
   const ROOT = new URL('../', document.currentScript.src).href;
@@ -5791,6 +5796,7 @@
       paintStale();
     }).catch(() => {});
     await timeP; // les heures du cadre (synchronisation, pastilles) en UTC dès leur premier dessin
+    await textP; // le pliage des textes, prêt pour SogFrame.text avant le premier écran
     await loadDevice();
     bootLoaded();
     readVersion(); // en fond : la version de la suite, dernière ligne du bloc d'état
@@ -6446,6 +6452,9 @@
     syncNow,
     reloads: reloadsState,
     reloadApp, // SOG-0484 (aussi donné à Réglages) : le rechargement demandé par un geste, noté par le cadre
+    get text() {
+      return TXT; // frame/lib/text.js (stripMarks, foldUpper, foldLower, foldAlnum, wordsOf, slug), figé ; prêt avant le premier écran ; null si son chargement a échoué
+    },
     unsaved: unsavedNow, // SOG-0458 (diagnostic, tests)
     longTasks: longState,
     profiler: profilerState,
