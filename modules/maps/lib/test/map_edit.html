@@ -17,7 +17,8 @@ body {
 </head><body><div id="map"></div>
 <script type="module">
 import {
-  startTiles
+  startTiles,
+  zonesLayer
 } from '../map_base.js?v=0';
 import * as E from '../map_edit.js?v=0';
 import {
@@ -37,6 +38,7 @@ const style = {
 const M = window.__me = {
   E,
   startTiles,
+  zonesLayer,
   elevationAt,
   taps: [],
   longs: [],

@@ -9261,6 +9261,21 @@ def d265(c):
             c.ok(n and 'Z669' in n, f'{mode} z{z}: {n}', f'{mode}, zoom {z}: the cartouche of the one-way segment is drawn (its point comes with it)')
             c.shot(f'D265_awy_{mode}_z{z:.1f}.png')
 
+@case('D266', 'The zones layer of the base (lib/map_base.js zonesLayer): the fill option (0 to 1) sets the opacity of ordinary entities, contours at .04; without it .25; picked and partial keep theirs', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0456 (request of « Mission creation »): zonesLayer(map, features, { colors, onTap, fill }) — fill replaces the .25 of ordinary entities (a layer of airspaces drawn as outlines: .04); picked (.45) and partial (.06) are unchanged; a value outside 0..1 is ignored; without the option nothing changes for the Data map')
+def d266(c):
+    _me_open(c)
+    r = c.js("""() => { const M = window.__me, F = { type: 'FeatureCollection', features: [{ type: 'Feature', properties: { id: 'Z1', tone: 'warn' }, geometry: { type: 'Polygon', coordinates: [[[1, 41], [3, 41], [3, 43], [1, 43], [1, 41]]] } }] };
+      const mk = o => { const z = M.zonesLayer(M.map, F, { colors: { ok: '#0a0', warn: '#fa0', err: '#a00', muted: '#888', line: '#000' }, ...o }); const ids = M.map.getStyle().layers.map(l => l.id).filter(id => /^mb-zones-\d+-fill$/.test(id)); return { z, id: ids[ids.length - 1] } };
+      const out = {}, a = mk({}), b = mk({ fill: 0.04 }), d = mk({ fill: 7 }), e = mk({ fill: 0 });
+      for (const [k, v] of Object.entries({ none: a, small: b, bad: d, zero: e })) out[k] = M.map.getPaintProperty(v.id, 'fill-opacity');
+      for (const v of [a, b, d, e]) v.z.remove();
+      return out }""")
+    ord_ = lambda k: r[k][-1] if isinstance(r[k], list) else r[k]
+    c.eq([ord_('none'), ord_('small'), ord_('bad'), ord_('zero')], [0.25, 0.04, 0.25, 0], 'the opacity of an ordinary entity: .25 without the option, the given value (.04, 0), a value outside 0..1 ignored', what=str(r))
+    c.eq([r['small'][2], r['small'][4]], [0.45, 0.06], 'picked and partial keep their own opacity (.45, .06)', what=str(r['small']))
+
 
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""

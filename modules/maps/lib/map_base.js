@@ -340,14 +340,16 @@ function mainBox(fc) {
  *  (MapLibre ne lit pas les variables CSS : l'appelant lit les jetons du design et les passe) ; le remplissage translucide et le
  *  trait à la teinte du ton (line pour un ton inconnu), le trait plus épais quand picked, en pointillé quand approx. onTap(id) :
  *  une tape ou un clic sans déplacement de la carte (l'événement « click » de MapLibre n'a jamais lieu à la fin d'un glissement ni
- *  d'un pincement), l'entité la plus haute sous le doigt, sinon dans TAP_PX autour. Les couches reviennent à chaque changement de
+ *  d'un pincement), l'entité la plus haute sous le doigt, sinon dans TAP_PX autour. fill : l'opacité (0 à 1) du remplissage des entités ordinaires, .25 par défaut
+ *  (SOG-0456 : des contours pour une couche d'espaces, .04 ; une entité picked ou partial garde la sienne). Les couches reviennent à chaque changement de
  *  style (setStyle : jour, nuit). → { update(features, colors), fit(padding, bounds), remove() } : update remplace les données
  *  (setData) et, si colors est donné, les teintes, sans recréer les couches ; fit cadre bounds ([w, s, e, n], l'est pouvant passer
  *  180), sinon l'union des anneaux principaux des entités (mainBox) ; remove retire couches, source et écoutes. Un anneau qui passe
  *  l'antiméridien se dessine d'un seul tenant quand l'appelant le donne ainsi (longitudes ouest + 360). */
 export function zonesLayer(map, features, {
   colors = {},
-  onTap = null
+  onTap = null,
+  fill: ordinary = null
 } = {}) {
   const n = (zoneLayers.get(map) || 0) + 1;
   zoneLayers.set(map, n);
@@ -369,7 +371,9 @@ export function zonesLayer(map, features, {
     tone = () => ['match', ['get', 'tone'], ...['ok', 'warn', 'err', 'muted'].flatMap(k => [k, cols[k] || cols.line || 'rgba(0,0,0,0)']),
       cols.line || 'rgba(0,0,0,0)'
     ],
-    lineWidth = ['case', picked, 3, 1.2];
+    lineWidth = ['case', picked, 3, 1.2],
+    // `fill` (0 à 1) : l'opacité du remplissage des entités ordinaires, au lieu de .25 (des contours : .04) ; picked et partial gardent la leur ; hors de 0..1, .25
+    density = Number.isFinite(ordinary) && ordinary >= 0 && ordinary <= 1 ? +ordinary : .25;
   /** Source et couches posées si elles manquent (au départ, puis après chaque changement de style qui les a retirées) ; sans effet
    *  quand elles sont là. Un style pas encore chargé refuse : la prochaine « style.load » ou « styledata » les pose (isStyleLoaded()
    *  ne sert pas de garde : il est faux tant qu'une source charge, celle qu'une autre couche vient de poser comprise). */
@@ -410,7 +414,7 @@ export function zonesLayer(map, features, {
       source: src,
       paint: {
         'fill-color': tone(),
-        'fill-opacity': ['case', picked, .45, partial, .06, .25]
+        'fill-opacity': ['case', picked, .45, partial, .06, density]
       }
     });
     // l'image d'abord : addImage déclenche « styledata » (add reprend de façon réentrante) ; la couche n'est posée que si elle manque encore
