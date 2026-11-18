@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "20d4b93",
+  "organisation": "22b4d06",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -3225,12 +3225,13 @@
     {
      "id": "SOG-0476",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : Londres → Islande (EGLL → BIKF) rend « calcul impossible »",
      "en": "Routes: London → Iceland (EGLL → BIKF) gives “computation impossible”",
      "de": "Routen: London → Island (EGLL → BIKF) ergibt „Berechnung unmöglich“",
      "es": "Rutas: Londres → Islandia (EGLL → BIKF) da «cálculo imposible»",
-     "rank": 427
+     "rank": 427,
+     "test": true
     },
     {
      "id": "SOG-0501",
