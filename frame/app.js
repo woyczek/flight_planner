@@ -937,6 +937,11 @@
     loadDetails: ['Détails', 'Details', 'Details', 'Detalles'],
     loadCopy: ['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico'],
     loadCopied: ['Diagnostic copié.', 'Diagnostic copied.', 'Diagnose kopiert.', 'Diagnóstico copiado.'],
+    loadCopyManual: ['Copie impossible ici : le diagnostic est sélectionné ci-dessous, copiez-le à la main.',
+      'Could not copy here: the diagnostic is selected below, copy it by hand.',
+      'Kopieren ist hier nicht möglich: Die Diagnose ist unten markiert, kopieren Sie sie von Hand.',
+      'No se puede copiar aquí: el diagnóstico está seleccionado abajo, cópielo a mano.'
+    ],
     // un écran de service qui déclare une route que le lanceur de ce poste ne publie pas (GET /__setup/routes, R-C4)
     screenOld: ['Le lanceur de ce poste est plus ancien que cet écran : relancez-le à jour (lancer.cmd).',
       'This computer’s launcher is older than this screen: restart it up to date (lancer.cmd).',
@@ -3477,24 +3482,58 @@
     window.addEventListener('frame-launcher', onLauncher);
     box.querySelector('[data-retry]').onclick = retry;
     box.querySelector('[data-copy]').onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(diag);
-      } catch {
-        const ta = document.createElement('textarea');
-        ta.value = diag;
-        ta.style.cssText = 'position:fixed;opacity:0';
-        document.body.append(ta);
-        ta.select();
-        try {
-          document.execCommand('copy');
-        } catch {
-          /* rien d'autre à tenter : le diagnostic reste lisible dans les détails */
-        }
-        ta.remove();
+      // SOG-0468 (1) : la copie de frame/lib/clipboard.js (presse-papiers, puis execCommand, puis le diagnostic montré sélectionné dans un champ de la carte) et le dit : « copié »
+      // seulement si c'est copié, sinon « copiez-le à la main » (la carte disait « copié » même quand les deux chemins échouaient)
+      const card = box.querySelector('[data-loadfail]'),
+        field = card?.querySelector('textarea[data-diagbox]') || card?.appendChild(Object.assign(document.createElement(
+          'textarea'), {
+          readOnly: true,
+          hidden: true,
+          rows: 9
+        }));
+      if (field && !field.hasAttribute('data-diagbox')) {
+        field.dataset.diagbox = '';
+        field.style.cssText =
+          'width:100%;box-sizing:border-box;margin-top:6px;font:inherit'; // caché (hidden) tant que la copie réussit
       }
-      notify(t(T.loadCopied), 'ok', {
-        key: 'load-copied'
-      });
+      const say = {
+        ok: t(T.loadCopied),
+        manual: t(T.loadCopyManual),
+        box: field || null
+      };
+      try {
+        await (await import(new URL('frame/lib/clipboard.js', ROOT).href)).copyAndTell({
+          notify
+        }, diag, say);
+      } catch {
+        // la bibliothèque n'a pas pu être chargée (hors ligne, pas encore gardée) : le même ordre ici
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(diag);
+          ok = true;
+        } catch {
+          const ta = document.createElement('textarea');
+          ta.value = diag;
+          ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.append(ta);
+          ta.select();
+          try {
+            ok = document.execCommand('copy');
+          } catch {
+            ok = false;
+          }
+          ta.remove();
+        }
+        if (!ok && field) {
+          field.value = diag;
+          field.hidden = false;
+          field.focus({
+            preventScroll: true
+          });
+          field.select();
+        }
+        notify(ok ? say.ok : say.manual, ok ? 'ok' : 'warn');
+      }
     };
   }
   /** Écran d'aide ou de feuille de route : ses scripts d'abord ; rien si l'adresse a changé entre-temps. */

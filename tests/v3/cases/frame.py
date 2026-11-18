@@ -7844,6 +7844,40 @@ def a158(c):
     c.check_errors()
 
 
+@case('A327', 'The load-failure card says « copied » only when the diagnostic WAS copied (SOG-0468 (1)): the clipboard refused and execCommand failing → a WARNING « copy it by hand », the diagnostic shown selected in the card, never « Diagnostic copied »; copied → « Diagnostic copied » once', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0468 (1) (the ergonomist): the card of A158 said « Diagnostic copié » even when navigator.clipboard.writeText and document.execCommand both failed; it copies through copyAndTell of frame/lib/clipboard.js: copied → the « copied » note, else the diagnostic is shown selected in a field of the card and a warning says to copy it by hand (four languages)')
+def a327(c):
+    lang = c.lang
+    copied = norm(tx('frame/app.js', 'loadCopied', lang))
+    manual = norm(tx('frame/app.js', 'loadCopyManual', lang))
+    c.page.add_init_script("""(() => { window.__clipOk = false; window.__clip = [];
+      const w = async t => { if (!window.__clipOk) throw new DOMException('no', 'NotAllowedError'); window.__clip.push(t) };
+      try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: w } }) } catch (e) {}
+      document.execCommand = () => { if (!window.__clipOk) throw new Error('no'); return true } })()""")
+    c.context.route(re.compile(r'/frame/help/roadmap\.js'), lambda r: r.abort())
+    c.open('fuel', docs=LEVEL3, wait=False)
+    c.until('!!window.SogFrame', timeout=20000, what='the frame')
+    c.wait(1500)
+    c.js("() => { location.hash = '#roadmap' }")
+    c.until("!!document.querySelector('[data-loadfail] [data-copy]')", timeout=15000, what='the card that says why')
+    c.tap('[data-loadfail] [data-copy]')
+    NOTES = "(window.__notes || []).map(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+    c.until(f"{NOTES}.includes({json.dumps(manual)})", what='the warning « copy it by hand »')
+    c.eq(c.js(f"{NOTES}.filter(n => n === {json.dumps(copied)}).length"), 0, 'both copies failed: « Diagnostic copied » is never said', what='no « copied »')
+    c.eq(c.js("(() => { const f = document.querySelector('[data-loadfail] textarea[data-diagbox]'); return !!f && !f.hidden && f.value.includes('requested:') && f.selectionEnd - f.selectionStart === f.value.length })()"), True,
+         'the diagnostic is shown selected in the card, to copy by hand', what='shown')
+    c.eq(c.js("document.querySelector('.f-note[data-kind=warn]') ? 1 : 0"), 1, 'it is a warning (floating note)', what='kind')
+    # the copy works: « Diagnostic copied », once
+    c.js("() => { window.__clipOk = true; window.__notes.length = 0 }")
+    c.tap('[data-loadfail] [data-copy]')
+    c.until('window.__clip.length === 1', what='the diagnostic copied')
+    c.until(f"{NOTES}.includes({json.dumps(copied)})", what='the note « copied »')
+    c.eq(c.js(f"{NOTES}.filter(n => n === {json.dumps(manual)}).length"), 0, 'copied: no warning', what='no warning')
+    c.errors[:] = [e for e in c.errors if 'roadmap.js' not in e]
+    c.check_errors()
+
+
 
 @case('A159', 'The left bar in three steps by the width of the window (SOG-0274): the whole bar from 1100 px, an icon RAIL (56 px) from 761 to 1099 px, the phone mode up to 760 px; the label is the tooltip and the accessible name, the active screen stays marked, the separators and the V2 entry (an icon) stay, no horizontal scroll; on Pilot and on Maintenance', 'A',
       screens=False, night=False,
