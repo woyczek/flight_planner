@@ -3095,8 +3095,8 @@ def n80(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 81, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (81 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 91, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (91 at least)')
 
 
 # ---- the session « Création de missions »: cases N70 to N79 (the editor's references, the drawers' format)
@@ -3659,13 +3659,16 @@ def n75(c):
 
 
 # SOG-0441 (lot T2): the « Tiroirs » section, its view mounted in a bare page with a fake frame (documents in memory)
-@case('N81', 'Missions bench: the « Tiroirs » section — a browsed mission says only « Tiroirs : n »; the pilot\'s own mission shows each '
-      'drawer, its key in words, « Ouvrir le tiroir » in two steps, the opening on time with its note, another pilot\'s record', 'N',
+@case('N81', 'Missions bench: the « Suite de la mission » section — nothing before an opening, for any mission (with or without drawers, '
+      'mine or browsed); one line per OPEN drawer; « Demander la suite » then « Demander » opens the gesture or an object in range, else '
+      '« Rien de nouveau pour l\'instant », then rests; the same screen without a drawer and with every drawer closed', 'N',
       tags=('missions',), designs=('standard',), screens=False,
-      rule='SOG-0441 T2: the section is whole only for MY mission (assigned to me, or the mission of my current flight); a closed drawer '
-      'shows neither message nor briefing; the gesture writes the pilot\'s own record only, after a second touch within five seconds; a '
-      'drawer that opens while the sheet is shown is announced once; another pilot\'s finding opens it for all and is kept on the device, '
-      'his gesture opens it for him only and is said, a refused opening is said with its author; « Resceller » at the Full level only')
+      rule='SOG-0459 over SOG-0441 T2: the section stays hidden and empty until a drawer of MY mission (assigned to me, or the mission of '
+      'my current flight) is open; the one gesture « Demander la suite » lives in the place [data-actslot] of the sheet\'s actions row, '
+      'writes the pilot\'s own record only, and never opens a time, a zone or an arrival; a drawer that opens is announced once '
+      '(« Suite de la mission : {title} »); another pilot\'s finding opens it for all and is kept on the device, his gesture opens it for '
+      'him only and is not said, a refused opening is not said; « Resceller » at the Full level only; describe() keeps the sentences of '
+      'a drawer for the author\'s workshop')
 def n81(c):
     c.page.goto(f'{c.base}/modules/missions/test/drawers_view.html', wait_until='load')
     try:
@@ -3673,16 +3676,17 @@ def n81(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers_view.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 74, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (74 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 93, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (93 at least)')
 
-# SOG-0441 (lot T2): the « Tiroirs » section on the mission sheet. Invented missions X-90x (no real mission, no AIP content).
+# SOG-0441 (lot T2), SOG-0459: the « Suite de la mission » section on the mission sheet. Invented missions X-90x (no real mission, no AIP content).
 DW = 'modules/missions/drawers_view.js'
 _DW_REGISTRY = """missions:
   - { id: X-901A, family: TESTTIROIR, title: Recherche en mer, folder: X_TIR/X-901A, files: [missionX-901A.yaml] }
   - { id: X-902A, family: TESTTIROIR, title: Transport simple, folder: X_TIR/X-902A, files: [missionX-902A.yaml] }
   - { id: X-903A, family: TESTTIROIR, title: Ravitaillement, folder: X_TIR/X-903A, files: [missionX-903A.yaml] }
 """
+# drawer 1 by hand (a `trigger` text without `trigger_*`), drawer 2 at a time already passed, drawer 3 a zone
 _DW_MISSION = """mission: { id: X-901A, type: SAR, subtype: RECHERCHE }
 title: Recherche en mer
 summary: Un voilier inventé a lancé un appel de détresse. Décollez, la suite vous sera donnée en vol.
@@ -3698,21 +3702,22 @@ maps:
 route_order: [ORIGIN, PT1, DESTINATION]
 phases:
   - id: B
-    title: Nouvel ordre du centre
+    title: Retour <img src=x onerror="window.__pwn=1">
+    trigger: Quand vous êtes sur la zone de travail
     message: "Echo radar au nord, descendez voir."
     brief: Altitude de recherche 500 ft.
-    trigger_point: ORIGIN
-    trigger_delay_min: 40
   - id: C
-    title: Secteur de recherche
+    title: Nouvel ordre du centre
     message: "Cherchez un radeau orange."
     brief: Balayage en créneaux.
-    trigger_zone: { centre: { lat: 44.62, lon: 1.28 }, radius_km: 4 }
-    fallback_delay_min: 90
+    trigger_point: ORIGIN
+    trigger_delay_min: 20
   - id: D
-    title: Retour <img src=x onerror="window.__pwn=1">
+    title: Secteur de recherche
     message: "Mission terminée, retour à la base."
     brief: Rendez compte à l'arrivée.
+    trigger_zone: { centre: { lat: 44.62, lon: 1.28 }, radius_km: 4 }
+    fallback_delay_min: 90
 """
 _DW_OTHER = """mission: { id: X-903A, type: TRANSPORT }
 title: Ravitaillement
@@ -3730,21 +3735,27 @@ _DW_CLEAR = """async () => { if (!(await indexedDB.databases()).some(d => d.name
     const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^(missions\\/|pilot\\/[A-Z]{3}\\/missions\\/|cache\\/missions\\/)/.test(String(k))) t.objectStore(st).delete(k);
     await new Promise(res => { t.oncomplete = res; t.onerror = res }) }
   db.close(); return true }"""
+# SOG-0459: the section hidden and EMPTY (no text, no element, no « data-mine »): nothing says that the mission has a sequel
+_DW_EMPTY = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]'); return !!s && s.hidden === true && s.innerHTML === '' && !s.hasAttribute('data-mine') }})()"""
+# the row of the actions of the sheet, in order: « prepare », the place (and what it carries), then the rest
+_DW_ROW = f"""[...(document.querySelector('{M} .ms-sheet .ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? 'slot:' + [...e.children].map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join(',') : (e.dataset.do || e.tagName))"""
+_DW_ASK = f'{M} [data-actslot] > [data-dw-ask]'
 
 
-@case('N82', 'Missions: the « Tiroirs » section of the sheet — my assigned mission shows its drawers closed, in order (one gesture, on the '
-      'first closed one; the next say « après le tiroir n »), another pilot\'s gesture said, « Ouvrir le tiroir » in two steps writes my record; '
-      'a mission I only browse says « Tiroirs : n »',
+@case('N82', 'Missions: the sequel of my mission is hidden — before anything opens, the sheet of my assigned mission shows no section, no '
+      'count and no word of its drawers, only « Demander la suite » next to « Préparer ce vol »; « Demander » opens the drawer given by '
+      'hand, a drawer at its time opens by itself and both appear under « Suite de la mission »; a mission I only browse shows nothing',
       'N', tags=('missions',), designs=('standard',), langs4=True,
-      rule='SOG-0441 T2 (SPEC_MISSIONS_TIROIRS § 5): in HIS mission the pilot reads one drawer per line — closed: its title and its key in '
-      'words (« heure estimée »; the fallback time only when it concerns him: no live position on the flight of the mission, a key the device does not follow), neither message nor briefing; « Ouvrir le tiroir » asks a '
-      'second touch, then writes pilot/<TRI>/missions/<ID>.json and shows how and when it opened, its message and its briefing; the gesture '
-      'of another pilot of the mission opens for him only and is said; a mission that is not his says only « Tiroirs : n »; a title is text')
+      rule='SOG-0459 (the user, 18 Nov 2026: « si une mission a des tiroirs, ils sont masqués ; même le fait qu\'il y en ait doit être '
+      'masqué ») over SOG-0441 T2: the section [data-drawers] stays hidden and empty until a drawer of MY mission is open; then one line '
+      'per OPEN drawer (title, how and when, message, briefing); the one neutral gesture « Demander la suite » (in the place [data-actslot] '
+      'of the actions row) opens the first closed drawer only when its key is the gesture (or an object followed and in range), writes '
+      'pilot/<TRI>/missions/<ID>.json, then rests a minute; another pilot\'s gesture is not said; a title is text')
 def n82(c):
     import datetime
     import json
     at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
-    off = at(-30)                                  # the assigned take-off, thirty minutes ago: B is due in ten minutes
+    off = at(-30)                                  # the assigned take-off, thirty minutes ago: C (ORIGIN + 20 min) is already due
     idx = {'updatedAt': at(0), 'assignments': [
         {'mission': 'X-901A', 'title': 'Recherche en mer', 'pilot': 'ABC', 'callsign': 'TEST31', 'takeoff': off, 'status': 'affectée', 'role': 'mission'},
         {'mission': 'X-901A', 'title': 'Recherche en mer', 'pilot': 'XYZ', 'callsign': 'TEST32', 'takeoff': off, 'status': 'affectée', 'role': 'mission'}]}
@@ -3752,6 +3763,7 @@ def n82(c):
     BOOK = 'pilot/ABC/missions/X-901A.json'
     S = f'{M} [data-drawers]'
     row = lambda k: tx(DW, k, c.lang)
+    WORDS = ('Echo radar', 'radeau', 'Rendez compte', 'Nouvel ordre', 'Secteur de recherche', 'Retour <img', 'XYZ', 'Quand vous')
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_DW_CLEAR)
     c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_REGISTRY], ['missions/X_TIR/X-901A/missionX-901A.yaml', _DW_MISSION],
@@ -3770,67 +3782,61 @@ def n82(c):
         c.tap(f'{M} [data-list] [data-id="{mid}"]')
         c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === '{mid}'", timeout=10000, what=f'the sheet of {mid}')
 
-    # my assigned mission: three drawers, closed; the order — only the first closed drawer can open
+    # my assigned mission, three drawers closed: nothing of them, one neutral gesture in the row
     sheet('X-901A')
-    c.until(f"document.querySelectorAll('{S} [data-dw]').length === 3", timeout=10000, what='the three drawers of my mission')
-    c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw]')].map(e => e.dataset.dw + (e.dataset.open || ''))"), ['B', 'C', 'D'], 'three drawers, all closed', what='drawers')
-    c.eq(norm(c.text(f'{S} h3')), norm(row('head')), 'the section is titled', what='title')
-    nth = lambda n: norm(row('drawerN').replace('{n}', str(n)))
-    after = lambda n: norm(row('afterDrawer').replace('{n}', str(n)))
-    kb = norm(c.text(f'{S} [data-dw="B"] [data-dw-key]'))
-    c.ok(norm(row('estimated')) in kb and re.search(r'\d\d:\d\dZ', kb) is not None, kb, 'drawer 1: its time, said « heure estimée » (the take-off is the planned one)')
-    c.ok(norm(c.text(f'{S} [data-dw="C"] .dw-top')) == nth(2) + ' · Secteur de recherche' and c.count(f'{S} [data-dw] .dw-ico') == 3,
-         c.text(f'{S} [data-dw="C"] .dw-top'), 'the mock-up: « Tiroir 2 · Titre » (a rank, never a letter) and an envelope on each closed drawer')
-    c.eq([norm(c.text(f'{S} [data-dw="{d}"] [data-dw-after]')) for d in 'CD'], [after(1), after(2)],
-         'the order: the next drawers say « après le tiroir n », neither key nor gesture', what='locked drawers')
-    c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-open]')].map(b => b.dataset.dwOpen)"), ['B'],
-         '« Ouvrir le tiroir » is offered on the first closed drawer only', what='gestures')
-    page = c.text(S)
-    c.ok('Echo radar' not in page and 'radeau' not in page and 'Rendez compte' not in page and c.count(f'{S} [data-dw-text]') == 0, page[:200],
-         'a closed drawer shows neither its message nor its briefing')
-    c.ok(c.js('window.__pwn') is None and c.count(f'{S} img') == 0 and '<img' in c.text(f'{S} [data-dw="D"]'), c.text(f'{S} [data-dw="D"]'),
-         'a title is shown as text, never interpreted')
-    c.ok(norm(c.text(f'{S} [data-dw="B"] [data-dw-hand="XYZ"]')).startswith('XYZ') and c.count(f'{S} [data-dw="B"][data-open]') == 0,
-         c.text(f'{S} [data-dw="B"]'), 'the gesture of another pilot of the mission: said, the drawer stays closed here')
-    c.ok(c.js(f"(() => {{ const z = document.querySelector('{M} .ms-first [data-zones]'); return !!z && getComputedStyle(z).display === 'none' }})()"),
-         c.text(f'{M} .ms-first'), 'in MY mission the « Tiroirs » section takes the place of the zones line of the first page (the zones stay in Détail)')
-    c.js(f"document.querySelector('{S}').scrollIntoView({{block: 'start'}})")
+    c.until(f"!!document.querySelector('{_DW_ASK}')", timeout=10000, what='« Demander la suite » in the row of my mission')
+    c.settle()
+    c.ok(c.js(_DW_EMPTY), c.js(f"document.querySelector('{S}')?.outerHTML"),
+         'before anything opens: the section is hidden and EMPTY — no line, no count, no title, no key, no « après le tiroir n », no note')
+    page = c.text(f'{M} .ms-sheet')
+    c.eq([w for w in WORDS if w in page], [], 'no word of a closed drawer in the sheet — neither title, nor message, nor briefing, nor the gesture of another pilot',
+         what='words of the drawers')
+    row_now = c.js(_DW_ROW)
+    c.ok(row_now[:2] == ['prepare', 'slot:ask'] and row_now[-1] == 'back' and norm(c.text(_DW_ASK)) == norm(row('ask')), row_now,
+         'the row: « Préparer ce vol », then the place with « Demander la suite » in it, then the rest, « Retour » last')
+    c.ok(c.js('window.__pwn') is None and c.count(f'{M} .ms-sheet img') == 0, c.js('window.__pwn'), 'nothing of the file is interpreted')
+    c.ok(c.js(f"(() => {{ const z = document.querySelector('{M} .ms-first [data-zones]'); return !!z && getComputedStyle(z).display !== 'none' }})()"),
+         c.text(f'{M} .ms-first'), 'before an opening the zones line of the first page is there, as for any mission')
     c.shot(f'N82_{c.design}_{c.width}_{c.lang}_closed.png')
-    # the gesture, in two steps, on the first drawer
-    c.tap(f'{S} [data-dw-open="B"]')
-    c.eq(norm(c.text(f'{S} [data-dw-open="B"]')), norm(row('confirm')), 'first touch: « Confirmer », nothing opened', what='armed')
-    c.ok(c.doc(BOOK) is None and c.count(f'{S} [data-dw="B"][data-open]') == 0, c.doc(BOOK), 'nothing written at the first touch')
-    c.tap(f'{S} [data-dw-open="B"]')
+    # « Demander la suite » → the panel; « Demander » → the drawer given by hand opens, then the one at its time
+    c.tap(_DW_ASK)
+    c.until(f"!!document.querySelector('{S} [data-dw-askbox]')", timeout=4000, what='the panel')
+    c.ok(norm(c.text(f'{S} [data-dw-askbox] p')) == norm(row('askText')) and norm(c.text(f'{S} [data-dw-ask-yes]')) == norm(row('askYes'))
+         and norm(c.text(f'{S} [data-dw-ask-no]')) == norm(row('askNo')) and c.doc(BOOK) is None and c.count(f'{S} [data-dw]') == 0,
+         c.text(S), 'first touch: the question, « Demander » and « Pas maintenant »; nothing written, no line of a drawer')
+    c.tap(f'{S} [data-dw-ask-yes]')
     book = c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', what='my record carries the drawer B open')
     c.ok(book['drawer_B']['how'] == 'hand' and book['seance'] == f'A:{off[:10]}' and book['by'] == 'ABC' and 'drawer_C' not in book and 'drawer_D' not in book,
-         book, 'my record: the drawer, by hand, the play, the author — the other drawers untouched')
-    c.until(f"document.querySelector('{S} [data-dw=\"B\"]')?.dataset.open === 'hand'", timeout=6000, what='the drawer 1 is open on screen')
-    t = c.text(f'{S} [data-dw="B"]')
-    c.ok('Echo radar' in t and 'Altitude de recherche' in t and re.search(r'\d\d:\d\dZ', t) is not None and c.count(f'{S} [data-dw-open="B"]') == 0, t,
-         'open: how and when, its message and its briefing, no gesture left')
-    # the second drawer is now the first closed one: its key, the pilot's sentence, the only gesture
-    kc = norm(c.text(f'{S} [data-dw="C"] [data-dw-key]'))
-    note = norm(c.text(f'{S} [data-dw="C"] [data-dw-note]'))
-    c.ok(kc == norm(row('keyZone')) and note.startswith(norm(row('noLive').split('{x}')[0])) and re.search(r'\d\d:\d\dZ', note) is not None
-         and 'H +' not in note, [kc, note],
-         'drawer 2: « s\'ouvre au passage de la zone montrée sur la Carte », and the pilot\'s sentence — no live position here (no started flight of this mission): the fallback hour first, once')
-    c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-open]')].map(b => b.dataset.dwOpen)"), ['C'], 'the gesture moved to drawer 2', what='gestures')
-    c.eq(norm(c.text(f'{S} [data-dw="D"] [data-dw-after]')), after(2), 'drawer 3 still waits for drawer 2', what='drawer 3')
+         book, 'my record: the drawer given by hand, by hand, the play, the author — the others untouched (the time is computed, never written)')
+    c.until(f"document.querySelector('{S} [data-dw=\"C\"]')?.dataset.open === 'time'", timeout=8000, what='the drawer at its time, open by itself')
+    c.eq(norm(c.text(f'{S} h3')), norm(row('head')), 'the section appears, titled « Suite de la mission »', what='title')
+    t = c.text(S)
+    c.ok('Echo radar' in t and 'Altitude de recherche' in t and 'radeau' in t and re.search(r'\d\d:\d\dZ', t) is not None
+         and c.count(f'{S} [data-dw]') == 2 and 'Secteur de recherche' not in t and 'Rendez compte' not in t, t,
+         'two lines, the open ones: how and when, message and briefing; nothing of the zone still closed')
+    c.ok(norm(c.text(f'{S} [data-dw="B"] .dw-top')).startswith('Retour <img') and c.count(f'{S} img') == 0 and c.js('window.__pwn') is None,
+         c.text(f'{S} [data-dw="B"]'), 'the title in bold, without « Tiroir n »; shown as text, never interpreted')
+    log = [norm(n) for n in c.note_log()]
+    c.ok(norm(row('nowOpen').replace('{title}', 'Nouvel ordre du centre')) in log and any(n.startswith(norm(row('nowOpen').split('{')[0])) and 'Retour' in n for n in log),
+         log, 'each opening has its notification « Suite de la mission : {title} », without a number')
+    c.ok(c.js(f"document.querySelector('{_DW_ASK}').disabled") and c.count(f'{_DW_ASK}[data-dw-rest]') == 1, c.js(_DW_ROW),
+         'after the answer the command rests (a minute)')
+    c.ok(c.js(f"(() => {{ const z = document.querySelector('{M} .ms-first [data-zones]'); return !!z && getComputedStyle(z).display === 'none' }})()"),
+         c.text(f'{M} .ms-first'), 'once a drawer of MY mission is open, the section takes the place of the zones line (the zones stay in Détail)')
     c.eq(c.doc('pilot/XYZ/missions/X-901A.json').get('drawer_B', {}).get('how'), 'hand', 'another pilot\'s record is never written', what='the other record')
     c.js(f"document.querySelector('{S}').scrollIntoView({{block: 'start'}})")
     c.shot(f'N82_{c.design}_{c.width}_{c.lang}_open.png')
-    # a mission I only browse: one line, nothing of its drawers; a mission without drawers: no section
+    # a mission I only browse: nothing — neither section nor gesture; a mission without drawers, browsed: the same
     sheet('X-903A')
-    c.until(f"!!document.querySelector('{S} [data-dw-count]')", timeout=8000, what='the line « Tiroirs : 1 »')
+    c.settle()
     t = c.text(f'{M} .ms-sheet')
-    c.ok('1' in c.text(f'{S} [data-dw-count]') and 'secret' not in t and c.count(f'{S} [data-dw]') == 0 and c.count(f'{S} button') == 0, t[-200:],
-         'a browsed mission: « Tiroirs : 1 », neither title, nor key, nor gesture')
+    c.ok(c.js(_DW_EMPTY) and c.count(_DW_ASK) == 0 and 'secret' not in t and c.js(_DW_ROW)[:2] == ['prepare', 'slot:'], [t[-200:], c.js(_DW_ROW)],
+         'a browsed mission: hidden and empty, no « Tiroirs : n », no gesture; the place stays empty')
     c.ok(c.js(f"(() => {{ const z = document.querySelector('{M} .ms-first [data-zones]'); return !!z && getComputedStyle(z).display !== 'none' }})()"),
          t[:200], 'a browsed mission keeps its zones line')
     sheet('X-902A')
     c.settle()
-    # SOG-0459 (asked by « Affectation des missions »): the section is posed for ANY mission read, hidden — its presence says nothing
-    c.eq(c.js(f"[...document.querySelectorAll('{S}')].map(x => x.hidden)"), [True], 'a mission without drawers: its section posed and hidden — nothing shown (SOG-0459)', what='section')
+    c.ok(c.js(_DW_EMPTY) and c.count(_DW_ASK) == 0, c.js(f"document.querySelector('{S}')?.outerHTML"), 'a browsed mission without drawers: the same, hidden and empty')
     c.js(_DW_CLEAR)
 
 
@@ -3871,16 +3877,16 @@ phases:
 """
 
 
-@case('N83', 'Missions: the drawers follow the flight — with a live position on the started flight of the mission, the first closed drawer '
-      'says « Cet appareil suit ce passage »; the zone crossed opens it and writes the finding, with its two fixes, in my record; an object '
-      'in range offers « Objet en vue » (refused out of range, never opened by the range alone); the landed arrival opens the last one',
+@case('N83', 'Missions: the drawers follow the flight in silence — with a live position on the started flight of the mission nothing is '
+      'said while the device follows; the zone crossed opens the first drawer, writes the finding with its two fixes and shows it under '
+      '« Suite de la mission »; the object: « Demander » out of range answers « Rien de nouveau pour l\'instant » and writes nothing, in '
+      'range it opens and writes the finding; the landed arrival opens the last one',
       'N', tags=('missions',), designs=('standard',), langs4=True,
-      rule='SOG-0441, zone lot (the ergonomist, 17 Nov 2026, 21 h 48): the frame\'s crossing service (frame/lib/crossing.js, SOG-0447) judges '
-      'each leg of the live position (ctx.live.watch) for the FIRST closed drawer of the mission of the started flight — a zone the leg '
-      'touches, an object in range (the pilot then declares « Objet en vue »), an arrival landed; the finding is written in the pilot\'s own '
-      'record pilot/<TRI>/missions/<ID>.json with the two fixes of the leg, so that another device replays it; « Cet appareil ne suit pas '
-      'encore ce passage » stays only for what the device really does not judge; the launcher and the simulator are simulated (two routes), '
-      'no network')
+      rule='SOG-0459 over the zone lot of SOG-0441 (the ergonomist, 17 Nov 2026, 21 h 48): the frame\'s crossing service (frame/lib/crossing.js, '
+      'SOG-0447) judges each leg of the live position (ctx.live.watch) for the FIRST closed drawer of the mission of the started flight — '
+      'a zone the leg touches, an object in range (the pilot then asks with « Demander la suite »), an arrival landed; the finding is '
+      'written in the pilot\'s own record pilot/<TRI>/missions/<ID>.json with the two fixes of the leg; the screen says nothing of what '
+      'is followed; the launcher and the simulator are simulated (two routes), no network')
 def n83(c):
     import datetime
     import json
@@ -3902,6 +3908,15 @@ def n83(c):
     S = f'{M} [data-drawers]'
     row = lambda k: tx(DW, k, c.lang)
     head = lambda k: norm(row(k).split('{')[0])
+    nothing = norm(row('nothing'))
+
+    def ask():
+        """« Demander la suite » (once its rest is over), then « Demander »."""
+        c.until(f"(() => {{ const b = document.querySelector('{_DW_ASK}'); return !!b && !b.disabled }})()", timeout=75000, what='« Demander la suite » ready')
+        c.tap(_DW_ASK)
+        c.until(f"!!document.querySelector('{S} [data-dw-ask-yes]')", timeout=4000, what='the panel')
+        c.tap(f'{S} [data-dw-ask-yes]')
+
     try:
         c.page.goto(c.base + '/frame/manifest.webmanifest')
         c.js(_DW_CLEAR)
@@ -3912,16 +3927,16 @@ def n83(c):
         c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-904A'", timeout=10000, what='the sheet of X-904A')
 
         def frame_it(name):
-            """The section at the top of the screen, then the picture."""
-            c.js(f"document.querySelector('{S}').scrollIntoView({{block: 'start'}})")
+            """The first page at the top of the screen, then the picture."""
+            c.js(f"document.querySelector('{M} .ms-first').scrollIntoView({{block: 'start'}})")
             c.shot(f'N83_{c.design}_{c.width}_{c.lang}_{name}.png')
 
-        # followed: the mission of my started flight, a live position, the first closed drawer is a zone
-        c.until(f"!!document.querySelector('{S} [data-dw=\"B\"] [data-dw-follow=\"followed\"]')", timeout=40000, what='the first drawer followed by this device')
-        c.eq(norm(c.text(f'{S} [data-dw="B"] [data-dw-note]')), norm(row('followed')), '« Cet appareil suit ce passage » — no fallback hour, it does not concern him',
-             what='the note of a followed drawer')
-        c.ok(c.count(f'{S} [data-dw-open="B"]') == 1 and c.count(f'{S} [data-dw-seen]') == 0 and c.count(f'{S} [data-dw][data-locked]') == 2
-             and (c.doc(BOOK) or {}).get('drawer_B') is None, c.text(S), 'the gesture stays, the next two drawers wait, nothing opened outside the zone')
+        # followed: the mission of my started flight, a live position — and NOTHING on screen (two fixes at least)
+        c.until(f"!!document.querySelector('{_DW_ASK}')", timeout=20000, what='« Demander la suite »: the mission of my flight is mine')
+        c.wait(11000)
+        c.ok(c.js(_DW_EMPTY) and (c.doc(BOOK) or {}).get('drawer_B') is None and norm(row('followed')) not in norm(c.text(f'{M} .ms-sheet')),
+             c.js(f"document.querySelector('{S}')?.outerHTML"),
+             'while the device follows the zone: the section stays hidden and empty (no « Cet appareil suit ce passage »), nothing opened outside the zone')
         frame_it('followed')
         # crossed: the next fix is inside the zone — the finding is written with the two fixes of the leg
         now['fix'] = fix(44.80, 1.0)
@@ -3931,35 +3946,35 @@ def n83(c):
         c.ok(b['how'] == 'zone' and b.get('source') == 'xplane' and abs(b['from']['lat'] - 44.9) < 1e-9 and abs(b['to']['lat'] - 44.8) < 1e-9
              and b['to'].get('altFt') == 2000 and b['to'].get('onGround') is False and book['seance'].startswith(f'S:{start[:19]}') and 'drawer_C' not in book, book,
              'my record: the zone, the source, the TWO fixes of the leg at full precision, the play of this flight — the next drawer untouched')
-        t = norm(c.text(f'{S} [data-dw="B"]'))
-        c.ok(head('openZoneMe') in t and 'canot orange' in t and 'Descendez' in t and re.search(r'\d\d:\d\dZ', t) is not None, t,
-             'open: « ouvert au passage de la zone, à … », its message and its briefing')
-        # the object, out of range: followed, « Objet en vue » is offered but refused
-        c.until(f"!!document.querySelector('{S} [data-dw=\"C\"] [data-dw-follow=\"followed\"]')", timeout=20000, what='the second drawer followed')
-        c.ok(norm(c.text(f'{S} [data-dw="C"] [data-dw-key]')) == norm(row('keyObject')) and c.count(f'{S} [data-dw-seen="C"]') == 1
-             and c.count(f'{S} [data-dw-seen="C"].primary') == 0, c.text(f'{S} [data-dw="C"]'),
-             'drawer 2: « s\'ouvre quand l\'objet est trouvé », « Objet en vue » offered, not yet the main button')
-        c.tap(f'{S} [data-dw-seen="C"]')
+        t = norm(c.text(S))
+        c.ok(norm(c.text(f'{S} h3')) == norm(row('head')) and head('openZoneMe') in t and 'canot orange' in t and 'Descendez' in t
+             and re.search(r'\d\d:\d\dZ', t) is not None and 'Canot en vue' not in t, t,
+             'under « Suite de la mission »: « ouvert au passage de la zone, à … », its message and its briefing — nothing of the object still closed')
+        c.ok(any(norm(n) == norm(row('nowOpen').replace('{title}', 'Secteur de recherche')) for n in c.note_log()), c.note_log(),
+             'the notification « Suite de la mission : Secteur de recherche »')
+        # the object, out of range: « Demander » answers « Rien de nouveau pour l'instant » and writes nothing
+        c.wait(6000)
+        ask()
+        c.until(f"window.__notes.some(n => n.replace(/\\s+/g, ' ').trim() === {json.dumps(nothing)})", timeout=6000, what='« Rien de nouveau pour l\'instant »')
         c.wait(600)
-        c.ok('drawer_C' not in c.doc(BOOK) and c.count(f'{S} [data-dw="C"][data-open]') == 0, c.doc(BOOK), '« Objet en vue » out of range writes nothing')
+        c.ok('drawer_C' not in c.doc(BOOK) and c.count(f'{S} [data-dw="C"]') == 0 and c.count(f'{_DW_ASK}[data-dw-rest]') == 1, c.doc(BOOK),
+             '« Demander » out of range: nothing written, nothing opened; the command rests')
         frame_it('crossed')
-        # in range: the sentence and the main button; the range alone never opens
+        # in range: still nothing said, nothing written before the pilot asks
         now['fix'] = fix(44.705, 1.0, altFt=600, aglFt=600)
-        c.until(f"!!document.querySelector('{S} [data-dw=\"C\"] [data-dw-follow=\"range\"]')", timeout=40000, what='the object in range')
-        c.ok(norm(c.text(f'{S} [data-dw="C"] [data-dw-note]')) == norm(row('inRange')) and c.count(f'{S} [data-dw-seen="C"].primary') == 1
-             and 'drawer_C' not in c.doc(BOOK), c.text(f'{S} [data-dw="C"]'),
-             'in range: « À portée de l\'objet : déclarez « Objet en vue » », the main button, nothing written before the pilot\'s word')
+        c.wait(11000)
+        c.ok('drawer_C' not in c.doc(BOOK) and c.count(f'{S} [data-dw="C"]') == 0 and 'Canot en vue' not in c.text(f'{M} .ms-sheet'), c.text(S),
+             'in range: nothing on screen says it, nothing written — the range alone never opens an object the author wants declared')
         frame_it('range')
-        c.tap(f'{S} [data-dw-seen="C"]')
-        book = c.until_doc(BOOK, lambda d: d and d.get('drawer_C', {}).get('state') == 'open', what='my record carries the object found')
+        ask()
+        book = c.until_doc(BOOK, lambda d: d and d.get('drawer_C', {}).get('state') == 'open', timeout=15000, what='my record carries the object found')
         c.ok(book['drawer_C']['how'] == 'object' and abs(book['drawer_C']['to']['lat'] - 44.705) < 1e-9 and 'drawer_D' not in book, book,
-             'my record: the object, the fix in range')
+             '« Demander » in range: my record carries the object, the fix in range')
         c.until(f"document.querySelector('{S} [data-dw=\"C\"]')?.dataset.open === 'object'", timeout=8000, what='the second drawer open on screen')
         # the arrival: in flight over the aerodrome opens nothing; landed, slow, it does
-        c.until(f"!!document.querySelector('{S} [data-dw=\"D\"] [data-dw-follow=\"followed\"]')", timeout=20000, what='the third drawer followed')
         now['fix'] = fix(44.5, 1.0, altFt=1200, aglFt=800)
         c.wait(11000)
-        c.ok('drawer_D' not in c.doc(BOOK), c.doc(BOOK), 'over the arrival aerodrome, in flight: nothing opens')
+        c.ok('drawer_D' not in c.doc(BOOK) and c.count(f'{S} [data-dw="D"]') == 0, c.doc(BOOK), 'over the arrival aerodrome, in flight: nothing opens, nothing is said')
         now['fix'] = fix(44.5, 1.0, altFt=400, aglFt=0, onGround=True, gsKt=6)
         c.until(f"document.querySelector('{S} [data-dw=\"D\"]')?.dataset.open === 'arrival'", timeout=40000, what='the third drawer opened by the arrival')
         book = c.doc(BOOK)
@@ -3972,9 +3987,9 @@ def n83(c):
     c.js(_DW_CLEAR)
 
 
-# SOG-0448 (the part of « Affectation »): what the sheet and its Detail show of a mission with drawers, and the open drawers published on
-# the device. An invented mission whose drawer 1 hides a zone, a point and a rendezvous; the same file under another identifier is the
-# mission of another pilot.
+# SOG-0448 (the part of « Affectation »), SOG-0459: what the sheet and its Detail show of a mission with drawers, and the open drawers
+# published on the device. An invented mission whose drawer 1 (given by hand) hides a point and a rendezvous, and whose drawer 2 hides a
+# zone; the same file under another identifier is the mission of another pilot.
 _DW_SECRET_REGISTRY = """missions:
   - { id: X-905A, family: TESTTIROIR, title: Recherche cachée, folder: X_TIR/X-905A, files: [missionX-905A.yaml] }
   - { id: X-906A, family: TESTTIROIR, title: Recherche d'un autre, folder: X_TIR/X-906A, files: [missionX-906A.yaml] }
@@ -3998,13 +4013,18 @@ maps:
 route_order: [ORIGIN, PT1, DESTINATION]
 phases:
   - id: B
-    title: Secteur de recherche
-    message: "Le bateau a été vu au sud, rejoignez le secteur."
+    title: Point de recueil
+    trigger: Sur la zone d'attente
+    message: "Le bateau a été vu au sud, rejoignez le point."
     brief: Descendez à 500 ft.
+    route_order: [PT2, RDV-1]
+  - id: C
+    title: Secteur de recherche
+    message: "Fouillez le secteur du naufrage."
+    brief: Balayage en créneaux.
     trigger_zone: ZONE-2
     zone_shown: false
     fallback_delay_min: 60
-    route_order: [PT2, RDV-1]
 """
 # the places the Detail lists (in the page, shown or not): the zones, the rendezvous, the points of the route, and every text of the sheet
 _DW_PLACES = f"""(() => {{ const p = document.querySelector('{M} [data-detailpane]'), sh = document.querySelector('{M} .ms-sheet');
@@ -4017,15 +4037,17 @@ _DW_HELD = """async (p) => { const db = await new Promise((res, rej) => { const 
   const pend = await get('pending'), row = await get('docs'); db.close(); return [row ? row.policy : null, !!pend] }"""
 
 
-@case('N84', 'Missions: the secret of a closed drawer on the sheet — in MY mission the sheet and its Detail neither list nor name the zone, '
-      'the point and the rendezvous a closed drawer hides; « Ouvrir le tiroir » shows them at once; the open drawers are published on the '
-      'device (a cache document, never sent); a mission I only browse shows the visible part alone, and a document that said it mine is undone',
+@case('N84', 'Missions: the secret of a closed drawer on the sheet — in MY mission the sheet and its Detail neither list nor name the point, '
+      'the rendezvous and the zone the closed drawers hide, and say nothing of the drawers themselves; « Demander » opens the drawer given '
+      'by hand and shows its places at once (the next drawer\'s zone stays hidden); the open drawers are published on the device (a cache '
+      'document, never sent); a mission I only browse shows the visible part alone, and a document that said it mine is undone',
       'N', tags=('missions', 'security'), designs=('standard',), langs4=True,
       rule='SOG-0448, the part of « Affectation » (the ergonomist, 18 Nov 2026): « publie sur l\'appareil quels tiroirs de MA mission sont '
       'ouverts (un document de cache, jamais envoyé, relu comme une entrée bornée) ; la fiche de ma mission et son Détail passent par '
       'pilotView : un lieu, une zone, un objet ou la cible d\'un tiroir fermé n\'y est ni listé ni nommé ; une mission feuilletée (pas la '
-      'mienne) ne montre que la partie visible » — modules/missions/drawers_view.js `sees`, cache/missions/open_<ID>.json '
-      '(drawers.js `openAfter`, `readOpen`), the reader\'s rule frame/lib/mission.js `pilotView` (FORMAT_MISSION.md § 4 bis)')
+      'mienne) ne montre que la partie visible » — and SOG-0459: nothing says that the drawers exist before one is open; '
+      'modules/missions/drawers_view.js `sees`, cache/missions/open_<ID>.json (drawers.js `openAfter`, `readOpen`), the reader\'s rule '
+      'frame/lib/mission.js `pilotView` (FORMAT_MISSION.md § 4 bis)')
 def n84(c):
     import datetime
     import json
@@ -4035,8 +4057,8 @@ def n84(c):
     stale = {'schema': 1, 'mission': 'X-906A', 'mine': True, 'seance': None, 'opened': ['B'], 'at': at(-1)}   # « mine, drawer 1 open »: no longer true
     OPEN, OTHER = 'cache/missions/open_X-905A.json', 'cache/missions/open_X-906A.json'
     S = f'{M} [data-drawers]'
-    row = lambda k: tx(DW, k, c.lang)
-    SECRET = ('ZONE-2', 'Secteur du naufrage', 'PT2', 'Point de treuillage', 'RDV-1', 'Rendez-vous du navire', 'Navire Test', 'rejoignez le secteur', 'Descendez')
+    SECRET_B = ('PT2', 'Point de treuillage', 'RDV-1', 'Rendez-vous du navire', 'Navire Test', 'rejoignez le point', 'Descendez', 'Point de recueil')
+    SECRET_C = ('ZONE-2', 'Secteur du naufrage', 'Fouillez', 'Secteur de recherche', 'Balayage')
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_DW_CLEAR)
     c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_SECRET_REGISTRY],
@@ -4064,38 +4086,38 @@ def n84(c):
         c.shot(f'N84_{c.design}_{c.width}_{c.lang}_{name}.png')
         if narrow:
             c.tap(f'{M} .ms-tofirst')
-            c.until(f"!!document.querySelector('{S} [data-dw]')", timeout=6000, what='back to the first page')
+            c.until(f"!!document.querySelector('{_DW_ASK}')", timeout=6000, what='back to the first page')
 
-    # MY mission, its drawer closed: the open drawers published on the device — mine, none open
+    # MY mission, its drawers closed: the open drawers published on the device — mine, none open
     sheet('X-905A')
-    c.until(f"document.querySelectorAll('{S} [data-dw]').length === 1", timeout=10000, what='the drawer of my mission')
+    c.until(f"!!document.querySelector('{_DW_ASK}')", timeout=10000, what='« Demander la suite » in the row of my mission')
     doc = c.until_doc(OPEN, lambda d: d and d.get('mine') is True, what='the document of the open drawers, on the device')
     c.ok(doc['schema'] == 1 and doc['mission'] == 'X-905A' and doc['opened'] == [] and str(doc['seance']).startswith('A:') and set(doc) == {'schema', 'mission', 'mine', 'seance', 'opened', 'at'},
          doc, 'the document: my mission, its play, no drawer open — and nothing else (no position, no title)')
     c.eq(c.js(_DW_HELD, OPEN), ['cache', False], 'it stays on the device: a cache document, no write of it waits to be sent', what='policy, pending')
-    # the sheet and its Detail: the visible part alone
+    # the sheet and its Detail: the visible part alone, and nothing of the drawers
     c.until(f"({_DW_PLACES}).zones.length === 1", timeout=6000, what='the Detail lists one zone')
     p = c.js(_DW_PLACES)
     c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1'], 0, ['PT1']],
-         'the Detail lists the zone the visible part cites (the centre of its map) and the point of its route — neither the zone, nor the point, nor the rendezvous of the closed drawer',
+         'the Detail lists the zone the visible part cites (the centre of its map) and the point of its route — neither the point, nor the rendezvous, nor the zone of the closed drawers',
          what='zones, rendezvous, route')
     c.ok('ZONE-1' in p['first'] and 'ZONE-2' not in p['first'], p['first'], 'the zones line of the first page counts the visible zone alone')
-    c.eq([w for w in SECRET if w in p['html']], [], 'nothing of the closed drawer is in the page — not a name, not an identifier, not its message, not its briefing',
+    c.eq([w for w in SECRET_B + SECRET_C if w in p['html']], [], 'nothing of the closed drawers is in the page — not a name, not an identifier, not a title, not a message, not a briefing',
          what='secret words in the sheet')
-    kb = norm(c.text(f'{S} [data-dw="B"] [data-dw-key]'))
-    c.ok(norm(c.text(f'{S} [data-dw="B"] .dw-top')).endswith('Secteur de recherche') and kb == norm(row('keyHidden')), [c.text(f'{S} [data-dw="B"] .dw-top'), kb],
-         'the « Tiroirs » section still says the closed drawer: its title, and « s\'ouvre en vol » for a zone its author hides')
+    c.ok(c.js(_DW_EMPTY), c.js(f"document.querySelector('{S}')?.outerHTML"), 'the section says nothing of the closed drawers (SOG-0459): hidden and empty')
     shot('closed')
-    # « Ouvrir le tiroir », in two steps: the sheet is drawn again with the places of the drawer
-    c.tap(f'{S} [data-dw-open="B"]')
-    c.tap(f'{S} [data-dw-open="B"]')
+    # « Demander »: the drawer given by hand opens — the sheet is drawn again with ITS places; the zone of the next one stays hidden
+    c.tap(_DW_ASK)
+    c.until(f"!!document.querySelector('{S} [data-dw-ask-yes]')", timeout=4000, what='the panel')
+    c.tap(f'{S} [data-dw-ask-yes]')
     c.until(f"document.querySelector('{S} [data-dw=\"B\"]')?.dataset.open === 'hand'", timeout=8000, what='the drawer is open on screen')
-    c.until(f"({_DW_PLACES}).zones.length === 2", timeout=6000, what='the Detail lists the zone of the open drawer')
+    c.until(f"({_DW_PLACES}).rdv === 1", timeout=6000, what='the Detail lists the rendezvous of the open drawer')
     p = c.js(_DW_PLACES)
-    c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1', 'ZONE-2'], 1, ['PT1', 'PT2']],
-         'the drawer open: its zone, the point and the rendezvous of its onward route are listed, without leaving the sheet', what='zones, rendezvous, route')
-    c.ok(all(w in p['html'] for w in ('Secteur du naufrage', 'Point de treuillage', 'Rendez-vous du navire', 'rejoignez le secteur')), p['html'][-300:],
-         'and they are named, with the message of the drawer')
+    c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1'], 1, ['PT1', 'PT2']],
+         'the drawer open: the point and the rendezvous of its onward route are listed, without leaving the sheet — the zone the next drawer hides is not',
+         what='zones, rendezvous, route')
+    c.ok(all(w in p['html'] for w in ('Point de treuillage', 'Rendez-vous du navire', 'rejoignez le point')) and [w for w in SECRET_C if w in p['html']] == [],
+         p['html'][-300:], 'they are named, with the message of the drawer; nothing of the drawer still closed')
     doc = c.until_doc(OPEN, lambda d: d and d.get('opened') == ['B'], what='the document carries the open drawer')
     c.ok(doc['mine'] is True and str(doc['seance']).startswith('A:'), doc, 'the document of the device: my mission, the letter of the open drawer')
     c.eq(c.js(_DW_HELD, OPEN), ['cache', False], 'still on the device alone', what='policy, pending')
@@ -4103,12 +4125,126 @@ def n84(c):
     shot('open')
     # the same file as the mission of another pilot: the visible part alone, whatever a document of the device said
     sheet('X-906A')
-    c.until(f"!!document.querySelector('{S} [data-dw-count]')", timeout=8000, what='the line « Tiroirs : 1 »')
     doc = c.until_doc(OTHER, lambda d: d and d.get('mine') is False, what='the document that said this mission mine is undone')
     c.eq(doc['opened'], [], 'undone: no drawer is held open for a mission that is not mine', what='opened')
     p = c.js(_DW_PLACES)
-    c.eq([p['zones'], p['rdv'], p['route'], [w for w in SECRET if w in p['html']]], [['ZONE-1'], 0, ['PT1'], []],
-         'a mission I only browse: the visible part alone, nothing of its closed drawer in the page', what='zones, rendezvous, route, secret words')
+    c.eq([p['zones'], p['rdv'], p['route'], [w for w in SECRET_B + SECRET_C if w in p['html']], c.js(_DW_EMPTY), c.count(_DW_ASK)],
+         [['ZONE-1'], 0, ['PT1'], [], True, 0],
+         'a mission I only browse: the visible part alone, nothing of its drawers in the page, no section, no gesture', what='zones, rendezvous, route, secret words, section, gesture')
+    c.js(_DW_CLEAR)
+
+
+# SOG-0459: the same file, with and without a sequel. X-907A has no `phases`; X-908A has two drawers, both closed (a hidden zone, then
+# an object), written INSIDE the parts so that the visible part of both files is the same (a place of the visible part is cited by the
+# route or by a map: the reader\'s rule, pilotView, does not hide it).
+_DW_TWIN_REGISTRY = """missions:
+  - { id: X-907A, family: TESTTIROIR, title: Patrouille côtière, folder: X_TIR/X-907A, files: [missionX-907A.yaml] }
+  - { id: X-908A, family: TESTTIROIR, title: Patrouille côtière, folder: X_TIR/X-908A, files: [missionX-908A.yaml] }
+"""
+_DW_TWIN = """mission: { id: %s, type: SAR, subtype: RECHERCHE }
+title: Patrouille côtière
+summary: Une patrouille inventée le long de la côte. Décollez, suivez la route et rendez compte.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+turning_points:
+  - { id: PT1, name: Point côtier, lat: 44.75, lon: 1.25 }
+zones:
+  - { id: ZONE-1, name: Zone de patrouille, kind: mission, centre: { lat: 44.75, lon: 1.25 }, radius_km: 5 }
+maps:
+  - { file: patrouille.png, description: La zone de patrouille, centre_ref: ZONE-1 }
+route_order: [ORIGIN, PT1, DESTINATION]
+"""
+_DW_TWIN_PHASES = """phases:
+  - id: B
+    title: Secteur caché
+    message: "Un écho a été vu au large, entrez dans le secteur."
+    brief: Descendez à 800 ft.
+    trigger_zone: { centre: { lat: 44.6, lon: 1.3 }, radius_km: 4 }
+    zone_shown: false
+    fallback_delay_min: 90
+  - id: C
+    title: Épave en vue
+    message: "Tournez au-dessus de l'épave, un navire arrive."
+    brief: Orbitez à 500 ft.
+    trigger_object: { kind: wreck, name: Épave grise, lat: 44.55, lon: 1.35, detection_range_nm: 0.5 }
+    fallback_delay_min: 120
+"""
+
+
+@case('N87', 'Missions: the same screen and the same answer for a mission without a sequel and for a mission whose drawers are all '
+      'closed — the same sheet, element for element, before any gesture; the same panel « Demander la suite »; the same answer « Rien de '
+      'nouveau pour l\'instant », nothing written, the command at rest; no word of the drawers in the page',
+      'N', tags=('missions', 'security'), designs=('standard',), langs4=True,
+      rule='SOG-0459 (the user, 18 Nov 2026: « même le fait qu\'il y en ait doit être masqué, et tout moyen de voir que la mission va '
+      'au-delà d\'un objectif primaire »): the section runs for EVERY mission (drawers_view.js show), stays hidden and empty until a drawer '
+      'opens, and « Demander » opens only the gesture or an object followed and in range (drawers.js asked) — so the screen of a mission '
+      'with closed drawers cannot be told from the screen of a mission without any')
+def n87(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    line = lambda mid: {'mission': mid, 'title': 'Patrouille côtière', 'pilot': 'ABC', 'callsign': 'TEST41', 'takeoff': at(-10), 'status': 'affectée', 'role': 'mission'}
+    idx = {'updatedAt': at(0), 'assignments': [line('X-907A'), line('X-908A')]}
+    S = f'{M} [data-drawers]'
+    row = lambda k: tx(DW, k, c.lang)
+    nothing = norm(row('nothing'))
+    WORDS = ('Secteur caché', 'écho', 'Descendez', 'Épave', 'épave', 'Orbitez', 'navire', 'wreck')
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_TWIN_REGISTRY], ['missions/X_TIR/X-907A/missionX-907A.yaml', _DW_TWIN % 'X-907A'],
+                     ['missions/X_TIR/X-908A/missionX-908A.yaml', _DW_TWIN % 'X-908A' + _DW_TWIN_PHASES],
+                     ['missions/affectations.json', json.dumps(idx)]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-908A\"]')", timeout=20000, what='the list')
+    # the HTML of the sheet, its identifier and its title replaced by a fixed word
+    html = lambda mid: c.js(f"document.querySelector('{M} .ms-sheet').innerHTML").replace(mid, 'MISSION').replace('Patrouille côtière', 'TITRE')
+
+    def play(mid):
+        """The sheet, the panel, the answer: three HTML captures, the notifications asked, the record."""
+        if c.js(f"!!document.querySelector('{M} [data-do=back]')"):
+            c.tap(f'{M} [data-do="back"]')
+            c.until(f"!!document.querySelector('{M} [data-pane=list]')", timeout=8000, what='back to the list')
+        c.tap(f'{M} [data-list] [data-id="{mid}"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === '{mid}'", timeout=10000, what=f'the sheet of {mid}')
+        c.until(f"!!document.querySelector('{_DW_ASK}')", timeout=10000, what=f'« Demander la suite » in the row of {mid}')
+        c.until_doc(f'cache/missions/open_{mid}.json', lambda d: d and d.get('mine') is True, what=f'the document of the open drawers of {mid}')
+        c.settle()
+        r = {'sheet': html(mid), 'row': c.js(_DW_ROW), 'empty': c.js(_DW_EMPTY)}
+        if mid == 'X-908A':
+            c.shot(f'N87_{c.design}_{c.width}_{c.lang}_sheet.png')
+        c.tap(_DW_ASK)
+        c.until(f"!!document.querySelector('{S} [data-dw-askbox]')", timeout=4000, what='the panel')
+        c.settle()
+        r['ask'] = html(mid)
+        if mid == 'X-908A':
+            c.shot(f'N87_{c.design}_{c.width}_{c.lang}_ask.png')
+        before = len(c.note_log())
+        c.tap(f'{S} [data-dw-ask-yes]')
+        c.until(f"window.__notes.length > {before}", timeout=6000, what='the answer')
+        c.settle()
+        r['answer'] = html(mid)
+        r['notes'] = [norm(n) for n in c.note_log()[before:]]
+        r['rest'] = c.count(f'{_DW_ASK}[disabled][data-dw-rest]')
+        r['book'] = c.doc(f'pilot/ABC/missions/{mid}.json')
+        r['text'] = c.text(f'{M} .ms-sheet')
+        if mid == 'X-908A':
+            c.shot(f'N87_{c.design}_{c.width}_{c.lang}_answer.png')
+        return r
+
+    bare, closed = play('X-907A'), play('X-908A')
+    c.ok(bare['empty'] and closed['empty'] and bare['row'][:2] == ['prepare', 'slot:ask'] and bare['row'] == closed['row'], [bare['row'], closed['row']],
+         'both: the section hidden and empty, « Demander la suite » in the place after « Préparer ce vol », the same row')
+    c.ok(bare['sheet'] == closed['sheet'], [bare['sheet'][-400:], closed['sheet'][-400:]],
+         'the sheet before any gesture: the SAME HTML, element for element, with and without a sequel')
+    c.ok(bare['ask'] == closed['ask'] and 'data-dw-askbox' in closed['ask'], [bare['ask'][-400:], closed['ask'][-400:]],
+         '« Demander la suite » → the panel: the SAME HTML')
+    c.ok(bare['notes'] == closed['notes'] == [nothing], [bare['notes'], closed['notes']], '« Demander » → the SAME answer, « Rien de nouveau pour l\'instant »')
+    c.ok(bare['answer'] == closed['answer'] and bare['rest'] == closed['rest'] == 1, [bare['answer'][-400:], closed['answer'][-400:]],
+         'after the answer: the SAME HTML, the command at rest')
+    c.ok(bare['book'] is None and closed['book'] is None, [bare['book'], closed['book']], 'nothing written in the record, for either')
+    c.eq([w for w in WORDS if w in closed['text'] or w in closed['answer']], [], 'no word of the drawers (titles, messages, zone, object) in the page',
+         what='words of the drawers')
     c.js(_DW_CLEAR)
 
 

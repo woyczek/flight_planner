@@ -323,6 +323,8 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
 
 ### 11.2 Batch T2 — the « Tiroirs » section of the mission sheet (`modules/missions/drawers_view.js`)
 
+The screen described here was changed by § 11.5 (SOG-0459): nothing of a closed drawer is shown any more — no line, no count, no key, no « Ouvrir le tiroir »; the section shows the OPEN drawers only, under « Suite de la mission », and the one gesture is « Demander la suite ». What is said below of the reading, the writing, the order and the synchronisation still holds.
+
 - **Where**: on the first page of the sheet, **in the place of the zones line for MY mission** (the ergonomist, 17 Nov, 19 h 06: the
   first page keeps its seven elements; the zones stay in « Détail »; a browsed mission keeps its zones line and gets one line
   « Tiroirs : n »), a section `[data-drawers]` the module only places (`module.js`: the import, `meta.files`,
@@ -386,6 +388,8 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   runs only while a drawer is awaited and the page is visible, and stops at the opening.
 
 ### 11.3 The zone lot — the drawers follow the flight (`frame/lib/crossing.js` through `ctx.live.watch`)
+
+The screen described here was changed by § 11.5 (SOG-0459): the following goes on in silence — no « Cet appareil suit ce passage », no « À portée de l'objet », no « Objet en vue »: an object in range is opened by « Demander la suite ». The judging and the findings are unchanged.
 
 The ergonomist's word, 17 Nov 2026, 21 h 48. The frame's crossing service (SOG-0447, `frame/lib/crossing.js`) judges; this module
 decides what is followed, writes the finding and says it.
@@ -490,3 +494,62 @@ and nobody else computes them.
   the document written, the sheet told once, a browsed mission, the document undone), N84 (the sheet of an invented mission whose
   drawer 1 hides a zone, a point and a rendezvous: closed, opened by the gesture, then the same file as another pilot's mission; 390
   and 1280 px, four languages).
+
+### 11.5 The existence of the drawers is hidden (SOG-0459)
+
+The user's word, 18 Nov 2026: « si une mission a des tiroirs, ils sont masqués ; même le fait qu'il y en ait doit être masqué, et tout
+moyen de voir que la mission va au-delà d'un objectif primaire ». The ergonomist's decisions of the same day; `drawers_view.js` and one
+pure function of `drawers.js`.
+
+- **What is removed from the pilot's screen** — every line of a closed drawer (its envelope, « Tiroir n · title », its key in words,
+  « après le tiroir n », the notes « Cet appareil suit ce passage », « Sans position en direct… », « Cet appareil ne suit pas encore… »,
+  « À portée de l'objet… »), the line « Tiroirs : n » of a browsed mission, another pilot's gesture (« BBB l'a ouvert à la main… »), the
+  notification of a refused opening of another record, the gestures « Ouvrir le tiroir » and « Objet en vue », and the number in the
+  notification of an opening. `describe(tt, state, drawer, opts)` keeps its form and its sentences: the author's workshop
+  (`editor_view.js`, case N79) uses them; the rows of `TX` it needs stay, the others are gone.
+- **Nothing before an opening** — for EVERY mission (mine or browsed, with or without drawers), as long as no drawer is open, the
+  section `[data-drawers]` stays `hidden` and EMPTY: no text, no element, no attribute that depends on the drawers (`data-mine` only
+  when an open drawer is shown; before, the zones line of the first page is there as for any mission).
+- **« Suite de la mission »** — as soon as a drawer of MY mission is open, the section shows `<h3>Suite de la mission</h3>` and one line
+  per OPEN drawer, in order: its title in bold (no rank), how and when (`describe`'s `how`, with « reçu ici à … » and « … a retiré cette
+  ouverture »), its message, its briefing (cut at 1 200 signs, « Lire la suite »), « Resceller » at the Full level. Nothing says what is
+  still to come. Beyond seven open lines, the next are folded under « {n} autres ». The notification: « Suite de la mission : {title} ».
+- **The following goes on in silence** — time, fallback time, zone entered, arrival landed, object in range without a wanted declaration
+  (`key.object.confirm === false`), another pilot's finding: they open as before (same computation, same writings in the record).
+  `v.inRange` is still kept for an object to declare, without painting anything.
+- **One neutral gesture, « Demander la suite »** — a button `[data-dw-ask]` the section places in the place `[data-actslot]` that
+  `module.js` gives it in the actions row of the sheet, right after « Préparer ce vol » (a `<span>` in `display: contents`; the batch T3
+  will put « Lire la mission » there too: the section removes only ITS button), for every mission that is MINE, with or without drawers;
+  removed when the mission is not mine and by `stop()`; no place (a bare page), no button. Touch height 44 px, no forced wrap. The first
+  touch shows the panel `[data-dw-askbox]` — « Vous avez atteint ou trouvé ce que la mission demande ? Le centre vous donne la suite s'il
+  y en a une. », « Demander » and « Pas maintenant » — the same words and elements for every mission. « Demander » opens the first closed
+  drawer (not locked) when its key is the gesture (`hand`, whatever `keyWhy`; written by `withOpen(…, 'hand')`), or when its key is an
+  object that the device follows and has in range NOW (a fix in range less than `RANGE_MS` ago; the finding written as « Objet en vue »
+  did); an unknown position never satisfies the key; a time, a zone, an arrival, an object out of range or not followed: nothing opens.
+  The rule is pure: `asked(states, { inRange })` of `drawers.js` → `{ id, how: 'hand' | 'object' }` or `null`. The answer: the opening
+  (the section and its notification), else the floating notification « Rien de nouveau pour l'instant » — word for word the same for a
+  mission without drawers, a mission whose drawers are all closed and a mission whose drawers are all open. After EVERY answer the
+  command rests one minute (`disabled`, `data-dw-rest`), re-armed by the only new timer; the rest is kept per mission in a `Map` of the
+  module (opening the sheet again does not reset it); `show()` takes `restMs` (a bench shortens it). « Pas maintenant » closes the panel
+  without rest.
+- **The section runs for every mission** — `show()` no longer stops on a mission without drawers: it reads the assignments and the
+  current flight to know whether the mission is mine, places « Demander la suite » if so, and publishes `cache/missions/open_<ID>.json`
+  (`mine: true, opened: []`) as for a mission with drawers — the same visible behaviour; a mission without drawers arms neither a due
+    timer nor the minute pass, and does not subscribe to the live position (nothing to follow), without any effect on screen. Nothing
+  is written to the pilot's record for a mission WITHOUT drawers — not even the real departure of its flight (the review of 18 Nov:
+  the secret is a secret of the screen; no file added to the repository for every flight of every pilot); the device-only document
+  `open_<ID>.json` is published for every mission that is mine. The section element for every mission read and the place
+  `[data-actslot]` are GIVEN by `module.js` (the session Features SOG, in its own batch); this batch does not touch `module.js`.
+- **The sentences of an open drawer** — the pilot's own opening no longer names a gesture that is gone: « ouvert à votre demande,
+  à … » (`openHandMe`), « ouvert quand vous avez trouvé l'objet, à … » (`openObjectMe`), « ouvert quand BBB a trouvé l'objet, à … »
+  (`openObjectBy`); the sentences the author's workshop reads (`openHandBy`, `inRange`, `followed`…) are unchanged.
+- **Limits, said** — the sheet of a mission with drawers hides, by the reader's rule (`pilotView`, § 11.4), a place of the visible part
+  that nothing cites (neither the route, nor the centre of a map, nor a drawer), when a mission without drawers shows it: a file written
+  that way can still tell the two apart. The invented missions of N87 cite every visible place. The file itself stays readable by whoever
+  opens it.
+- Cases: N80 (89 checks: `asked` — by hand, object in range or not, zone, time and arrival → null, locked, none, hostile entries), N81
+  (93: nothing before, the panel, « Demander », the rest, the same DOM with and without drawers, no record written without drawers, the
+  object in range and out of range, the shared place), N82 (my assigned mission: nothing before, « Demander » opens the drawer given by hand, the drawer at its time opens
+  by itself, a browsed mission shows nothing), N83 (in flight: nothing said while followed, the zone crossed, the object refused out of
+  range then opened in range, the arrival), N84 (the secret in the sheet and the Detail; the gesture is « Demander »), N87 (the same
+  screen and the same answer for X-907A, without `phases`, and X-908A, two drawers closed).

@@ -8,12 +8,12 @@
 //     lu la condition de l'auteur, et toute clé que ce fichier ne sait pas encore juger — « arrivée », cible mobile : elle n'est pas
 //     refusée, le tiroir reste fermé et s'ouvre au geste ou à son heure de repli) : CALCULÉES, jamais écrites ;
 //   · les CARNETS : un par pilote et par mission, `pilot/<TRI>/missions/<ID>.json` — chacun n'écrit que le sien (aucun conflit
-//     d'écriture) ; seuls les gestes (« Ouvrir le tiroir ») et les constats (zone franchie, objet trouvé, arrivée posée — avec les
+//     d'écriture) ; seuls les gestes (« Demander la suite », SOG-0459) et les constats (zone franchie, objet trouvé, arrivée posée — avec les
 //     DEUX relevés du trajet, à pleine précision, pour qu'un autre appareil rejoue le constat) s'y écrivent.
 // « Ouvert pour tous » (décision de l'utilisateur, 17/11/2026, Q-0087) se CALCULE : un tiroir est ouvert dès que le carnet d'UN pilote
-// de la mission dit un CONSTAT (zone franchie, objet trouvé). Le GESTE « Ouvrir le tiroir » n'ouvre que pour celui qui le fait (sur tous
-// ses appareils) : les autres le lisent (`hands` : « BBB l'a ouvert à la main ») et gardent leur tiroir fermé — en attendant la réponse
-// de l'utilisateur à Q-0094 (une ligne à changer : SHARED). Le carnet d'un autre est une entrée NON FIABLE (tout pilote écrit dans le dépôt) : il est relu borné, son
+// de la mission dit un CONSTAT (zone franchie, objet trouvé). Le GESTE « Demander la suite » (SOG-0459) n'ouvre que pour celui qui le
+// fait (sur tous ses appareils) : les autres gardent leur tiroir fermé et n'en lisent rien à l'écran (`hands` reste calculé) — réponse
+// de l'utilisateur à Q-0094, 18/11 (une ligne à changer : SHARED). Le carnet d'un autre est une entrée NON FIABLE (tout pilote écrit dans le dépôt) : il est relu borné, son
 // ouverture n'est retenue que si elle tient debout (checkOther), et une ouverture refusée est DITE avec son auteur. Un tiroir ouvert
 // le reste : l'appareil garde les ouvertures des autres qu'il a vues (`seen`, sur l'appareil seul) ; si l'un d'eux la retire de son
 // carnet, le tiroir reste ouvert ici et l'écran le dit (`gone`).
@@ -52,6 +52,8 @@
 //   follows(key) → vrai si la clé se juge avec une position en direct ; finding(key, prev, next, { trail }) → le constat d'un trajet,
 //     ou null ; stands(entry, key) → le constat d'un carnet tient-il sur cette clé ; catchUp(key, trail, since) → le constat retrouvé sur
 //     la trace gardée (le rattrapage au retour de la page).
+//   asked(states, { inRange }) → { id, how: 'hand' | 'object' } ou null (SOG-0459) : le tiroir qu'ouvre le geste neutre « Demander la
+//     suite » — le premier fermé, si sa clé est le geste, ou un objet que l'appareil suit et a à portée (`inRange` : son identifiant).
 //   seenAfter(seen, states, seance, now) → ce que l'appareil garde après ce calcul ; readSeen(doc, seance) → { B: { by, at, how, got } }
 //     borné (got : l'heure où l'appareil l'a reçue).
 //   openPath(missionId) → 'cache/missions/open_<ID>.json' (SOG-0448 : ce que CET appareil sait des tiroirs ouverts de MA mission — sur
@@ -360,6 +362,33 @@ function minutesTo(passage, point) {
   const r = typeof passage === 'function' ? passage(point) : null,
     m = typeof r === 'number' ? r : r && typeof r === 'object' ? r.min : null;
   return typeof m === 'number' && Number.isFinite(m) && m >= 0 && m <= 48 * 60 ? m : null;
+}
+
+/** Le geste neutre « Demander la suite » (SOG-0459) : quel tiroir il ouvre, ou null. Seul le PREMIER tiroir fermé (non verrouillé)
+ *  compte : sa clé est le geste (`hand`, quel que soit `keyWhy`) → { id, how: 'hand' } ; c'est un objet, et `inRange` est son
+ *  identifiant (l'appareil suit cet objet et l'a à portée maintenant : la vue le sait, pas ce calcul) → { id, how: 'object' }. Toute
+ *  autre clé (heure, zone, arrivée, objet hors de portée ou non suivi), aucun tiroir fermé, une entrée illisible : null. Ne lève jamais. */
+export function asked(states, options = null) {
+  try {
+    const inRange = own(options, 'inRange');
+    const first = (Array.isArray(states) ? states : []).slice(0, 64).find(s => s && typeof s === 'object' && !Array.isArray(s) &&
+      own(s, 'open') !== true && own(s, 'locked') !== true);
+    const id = first ? own(first, 'id') : undefined;
+    if (typeof id !== 'string' || !LETTERS.includes(id)) return null;
+    const key = own(first, 'key'),
+      kind = key && typeof key === 'object' ? own(key, 'kind') : undefined;
+    if (kind === 'hand') return {
+      id,
+      how: 'hand'
+    };
+    if (kind === 'object' && typeof inRange === 'string' && inRange === id) return {
+      id,
+      how: 'object'
+    };
+    return null;
+  } catch {
+    return null; // un état hostile (un accesseur qui lève) : rien n'est ouvert
+  }
 }
 
 /** L'état de chaque tiroir pour ce pilote à cet instant (voir l'en-tête). */

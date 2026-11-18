@@ -1421,6 +1421,224 @@
   ck('readOpen ne lève jamais et ne tient rien pour ouvert sur une entrée hostile (null, un nombre, une liste, des clés héritées de « __proto__ ») ; des options qui ne sont pas un objet valent « pas d\'option »',
     opThrew === '', opThrew);
 
+  // ---- SOG-0459 : « Demander la suite » — asked(states, { inRange }), le tiroir qu'ouvre le geste neutre
+  const kHand = {
+      kind: 'hand'
+    },
+    kTime = {
+      kind: 'time',
+      point: 'ORIGIN',
+      delayMin: 40
+    },
+    kZone = {
+      kind: 'zone',
+      shape: {
+        circle: {
+          lat: 44.5,
+          lon: -1.2,
+          radiusM: 3000
+        }
+      },
+      shown: false,
+      fallbackMin: 90
+    },
+    kObj = {
+      kind: 'object',
+      object: {
+        kind: 'raft',
+        lat: 44.6,
+        lon: -1.3,
+        rangeNm: 0.5,
+        confirm: true,
+        moving: false
+      },
+      fallbackMin: 45
+    },
+    kArr = {
+      kind: 'arrival',
+      point: 'DESTINATION',
+      at: {
+        lat: 45,
+        lon: 1
+      },
+      radiusNm: 1,
+      speedMaxKt: 30,
+      onGround: true,
+      required: [],
+      escortMinSec: 0,
+      fallbackMin: 120
+    },
+    /** Les états d'une mission faite de ces clés (B, C, D… dans l'ordre), jugée entière pour AAA à T0. */
+    askOf = (keys, o = {}) => st({
+      chain: true,
+      drawers: keys.map((key, i) => ({
+        id: 'BCDEFG' [i],
+        title: `Suite ${i + 1}`,
+        key,
+        ...(o.why ? {
+          keyWhy: o.why
+        } : {})
+      })),
+      doc: o.doc
+    }),
+    same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  ck('asked : le premier tiroir fermé est « à la main » → « Demander » l\'ouvre ({ id, how: « hand » }), même sans rien à portée',
+    same(D.asked(askOf([kHand, kTime])), {
+      id: 'B',
+      how: 'hand'
+    }) && same(D.asked(askOf([kHand, kTime]), {
+      inRange: null
+    }), {
+      id: 'B',
+      how: 'hand'
+    }), D.asked(askOf([kHand, kTime])));
+  ck('asked : un geste que le lecteur rend pour une condition qu\'il n\'a pas lue (keyWhy « condition ») s\'ouvre aussi à « Demander »',
+    same(D.asked(askOf([kHand], {
+      why: 'condition'
+    })), {
+      id: 'B',
+      how: 'hand'
+    }));
+  ck('asked : l\'objet du premier tiroir fermé, suivi et à portée maintenant (inRange = son identifiant) → { id, how: « object » }',
+    same(D.asked(askOf([kObj, kHand]), {
+      inRange: 'B'
+    }), {
+      id: 'B',
+      how: 'object'
+    }));
+  ck('asked : l\'objet HORS de portée (rien, null, un autre tiroir, un mot qui n\'est pas une chaîne) → null : rien n\'est ouvert',
+    [undefined, null, '', 'C', ['B'], {
+      toString: () => 'B'
+    }].every(r => D.asked(askOf([kObj, kHand]), {
+      inRange: r
+    }) === null) && D.asked(askOf([kObj, kHand])) === null);
+  ck('asked : une zone, une heure, une arrivée → null, même si l\'appareil dit quelque chose « à portée » (une position ne vaut que pour un objet)',
+    [kZone, kTime, kArr, {
+      kind: 'condition'
+    }].every(k => D.asked(askOf([k, kHand]), {
+      inRange: 'B'
+    }) === null));
+  const askOpenB = D.withOpen(null, ctx(T0 - MIN), 'B', 'hand');
+  ck('asked : seul le PREMIER tiroir fermé compte — un tiroir verrouillé derrière une heure n\'est jamais ouvert ; le premier ouvert, c\'est le suivant',
+    D.asked(askOf([kTime, kHand])) === null && D.asked(askOf([kZone, kHand]), {
+      inRange: 'C'
+    }) === null && same(D.asked(askOf([kHand, kHand], {
+      doc: askOpenB
+    })), {
+      id: 'C',
+      how: 'hand'
+    }), [askOf([kTime, kHand]).map(s => [s.id, s.open, s.locked]), D.asked(askOf([kHand, kHand], {
+      doc: askOpenB
+    }))]);
+  ck('asked : aucun tiroir, ou tous ouverts → null (la réponse « Rien de nouveau pour l\'instant »)', D.asked([]) === null && D.asked(
+    askOf([kHand], {
+      doc: askOpenB
+    })) === null);
+  let askThrew = '';
+  const trap = {};
+  Object.defineProperty(trap, 'open', {
+    enumerable: true,
+    get() {
+      throw new Error('piège');
+    }
+  });
+  for (const bad of [null, undefined, 7, 'x', {},
+      [null, 7, 'B', []],
+      [{
+        id: '__proto__',
+        open: false,
+        key: kHand
+      }],
+      [{
+        id: 'Z',
+        open: false,
+        key: kHand
+      }],
+      [JSON.parse('{"__proto__":{"id":"B","open":false,"key":{"kind":"hand"}}}')],
+      [{
+        id: 'B',
+        open: false,
+        key: JSON.parse('{"__proto__":{"kind":"hand"}}')
+      }],
+      [trap], new Proxy([], {
+        get() {
+          throw new Error('piège');
+        }
+      })
+    ]) {
+    try {
+      const r = D.asked(bad, {
+        inRange: 'B'
+      });
+      if (r !== null) askThrew += `ouvert:${JSON.stringify(r)} `;
+    } catch (e) {
+      askThrew += `${e.message} `;
+    }
+  }
+  for (const o of [null, 7, 'x', []]) {
+    try {
+      D.asked(askOf([kHand]), o);
+    } catch (e) {
+      askThrew += `options:${e.message} `;
+    }
+  }
+  ck('asked ne lève jamais et n\'ouvre rien sur une entrée hostile (null, un nombre, une lettre inconnue, des clés héritées de « __proto__ », un accesseur ou un Proxy qui lève) ; des options qui ne sont pas un objet ne lèvent pas',
+    askThrew === '', askThrew);
+
+  // ---- SOG-0459 (question de Sécurisation) : le constat d'objet posé par « Demander » porte l'heure de la DEMANDE (at), ses deux
+  // relevés celle du trajet à portée, jusqu'à une minute plus tôt — un AUTRE appareil de la mission le retient-il ?
+  const scB = D.seanceOf({
+      mission: ID,
+      me: 'BBB',
+      lines
+    }),
+    TR = T0 + 20 * MIN, // le trajet à portée
+    legObj = {
+      from: {
+        lat: 44.61,
+        lon: -1.32,
+        at: iso(TR - 5000),
+        altFt: 600
+      },
+      to: {
+        lat: 44.6,
+        lon: -1.3,
+        at: iso(TR),
+        altFt: 600
+      }
+    },
+    /** Le carnet de BBB tel que record() de la vue l'écrit : withOpen(…, 'object', { from, to, at, source }), at = l'heure de la demande. */
+    asBBB = at => D.withOpen(null, {
+      mission: ID,
+      me: 'BBB',
+      seance: scB,
+      now: at
+    }, 'B', 'object', {
+      ...legObj,
+      at,
+      source: 'xplane'
+    }),
+    /** L'état du tiroir B (un objet) chez AAA, avec ce carnet de BBB. */
+    seenByAAA = at => st({
+      chain: true,
+      drawers: [{
+        id: 'B',
+        title: 'Objet',
+        key: kObj
+      }],
+      others: [
+        ['BBB', asBBB(at)]
+      ],
+      now: at + MIN
+    })[0];
+  const o55 = seenByAAA(TR + 55e3),
+    o5m = seenByAAA(TR + 5 * MIN);
+  ck('un constat d\'objet daté de la DEMANDE, 55 s après son trajet à portée (withOpen comme record()) : retenu par un autre appareil — ouvert par BBB, « object », aucun refus',
+    asBBB(TR + 55e3)?.drawer_B?.at === iso(TR + 55e3) && o55.open === true && o55.how === 'object' && o55.by === 'BBB' && o55.refused
+    .length === 0, [o55, asBBB(TR + 55e3)?.drawer_B]);
+  ck('… et 5 min après son trajet : retenu aussi — aucune règle ne lie l\'heure du constat à celle de ses relevés (le rejeu ne juge que le trajet, l\'heure seulement contre le futur et la référence)',
+    o5m.open === true && o5m.how === 'object' && o5m.by === 'BBB' && o5m.refused.length === 0, o5m);
+
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,
