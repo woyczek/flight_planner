@@ -225,7 +225,7 @@ class Nav:
         return cache[key]
 
     def release_graph_caches(self):
-        for name in ['_fra_graph_cache','_routing_cache','_fra_recovery_graph_cache']:
+        for name in ['_fra_graph_cache','_routing_cache','_routing_base','_fra_recovery_graph_cache']:
             cache=getattr(self,name,None)
             if cache is not None:cache.clear()
 
@@ -547,10 +547,15 @@ class Nav:
             self.graph_seconds=0.0
             return self._routing_cache[cache_key]
         import time
-        if GRAPH_MIN_S and DEADLINE is not None and time.perf_counter()+GRAPH_MIN_S>DEADLINE:      # SOG-0354 L5 (3) : la construction (~4 s) ne commence pas si elle ne finirait pas avant la borne
-            raise ValueError(f'Budget de recherche atteint : la construction du graphe n’est pas commencée (moins de {GRAPH_MIN_S:g} s restent avant la borne). Ce résultat ne prouve pas l’absence de route.')
-        if DEADLINE_CEIL is not None and getattr(self,'_graph_cost',0.0) and time.perf_counter()+0.8*self._graph_cost>DEADLINE_CEIL:      # SOG-0475 : une reprise ne COMMENCE pas un graphe (non interruptible : 5 à 10 s sur un vol long d'Europe) qui ne finirait pas avant la fin du calcul : la route déjà trouvée est gardée
-            raise ValueError('Budget de recherche atteint : la construction du graphe n’est pas commencée (elle ne finirait pas avant la fin du calcul). Ce résultat ne prouve pas l’absence de route.')
+        if not hasattr(self,'_routing_base'):self._routing_base=collections.OrderedDict()
+        base_key=json.dumps([dep,arr,fl,radius,profile_options,allow_steps,via,str(when),enable_fra,{k:v for k,v in cost_fields.items() if k not in ('_rad_avoid',)},sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)      # SOG-0468 (1) : le graphe SANS les règles RAD (la construction, 1 à 3 s) ne dépend ni des interdictions ni des évitements : une reprise RAD ne le refait pas, elle n'applique que ses règles
+        base=self._routing_base.get(base_key)
+        if base is None:
+            if GRAPH_MIN_S and DEADLINE is not None and time.perf_counter()+GRAPH_MIN_S>DEADLINE:      # SOG-0354 L5 (3) : la construction (~4 s) ne commence pas si elle ne finirait pas avant la borne
+                raise ValueError(f'Budget de recherche atteint : la construction du graphe n’est pas commencée (moins de {GRAPH_MIN_S:g} s restent avant la borne). Ce résultat ne prouve pas l’absence de route.')
+            if DEADLINE_CEIL is not None and getattr(self,'_graph_cost',0.0) and time.perf_counter()+0.8*self._graph_cost>DEADLINE_CEIL:      # SOG-0475 : une reprise ne COMMENCE pas un graphe (non interruptible : 5 à 10 s sur un vol long d'Europe) qui ne finirait pas avant la fin du calcul : la route déjà trouvée est gardée
+                raise ValueError('Budget de recherche atteint : la construction du graphe n’est pas commencée (elle ne finirait pas avant la fin du calcul). Ce résultat ne prouve pas l’absence de route.')
+
         built=time.perf_counter()
         point_rules=collections.defaultdict(list);segment_rules=collections.defaultdict(list);procedure_rules=collections.defaultdict(list)
         chain_blocks=[]
@@ -573,82 +578,89 @@ class Nav:
             else:segment_rules[(rule['via'],rule['start'],rule['end'])].append(rule)
         def relevant_rules(a,b,e):
             return point_rules.get(a,[])+point_rules.get(b,[])+segment_rules.get((e['route'],a,b),[])+procedure_rules.get(e.get('procedure_id'),[])
-        if dep==arr: raise ValueError('Choisir deux aérodromes différents.')
-        if dep not in self.ads or arr not in self.ads: raise ValueError('Aérodrome absent d’AeroDB : '+(dep if dep not in self.ads else arr))
-        a,b=self.resolve(dep),self.resolve(arr); g=self.graph(None if allow_steps else fl)
-        terminal=terminal or {}
-        when=when or dt.datetime.combine(self.date,dt.time(12))
-        if enable_fra and getattr(self,'fra',None) and self.fra.book:
-            key=(dep,arr,fl,allow_steps,tuple(via),when.isoformat(timespec='minutes'),terminal.get('search_density','normal'))
-            if key not in self._fra_graph_cache:
-                self._fra_graph_cache[key]=self.fra.graph(g,dep,arr,fl,when,via,allow_steps,terminal.get('search_density','normal'))
-                if len(self._fra_graph_cache)>1: self._fra_graph_cache.pop(next(iter(self._fra_graph_cache)))
-            g={u:list(es) for u,es in self._fra_graph_cache[key].items()}
-        if terminal.get('unable_rnav'):
-            rejected=0;unknown=0
-            for u in list(g):
-                permitted=[]
-                for v,e in g[u]:
-                    if e.get('kind') in ['FRA','FRA_GATE']:continue
-                    info=planning.rnav_edge(self,u,v,e)
-                    if info['required'] is False:permitted.append((v,e))
-                    elif info['required'] is True:rejected+=1
-                    else:unknown+=1
-                g[u]=permitted
-            if not any(g.values()):raise ValueError(f'Unable RNAV : aucun segment IFR conventionnel confirmé dans ce réseau. {rejected} sens de segments exigent RNAV ; {unknown} ont une exigence inconnue. Aucun DCT de substitution n’a été inventé.')
-        floors=getattr(self,'fra_floors',None)      # SOG-0401 (lot 3) : une voie de la Suisse ou de l'Italie n'existe pas au-dessus du plancher de la route libre (RAD, annexe 3B) : son plafond est ramené à ce plancher (une voie « basse » : évitée, jamais interdite) ; la recherche ne la vole plus à FL350
-        if floors:
-            for u in list(g):
-                capped=None
-                for k,(other,e) in enumerate(g[u]):
-                    f=floors.get(e.get('zone'))
-                    if f and e.get('route')!='DCT' and not e.get('procedure_id') and e.get('kind') not in ('FRA','FRA_GATE') and isinstance(e.get('upper'),(int,float)) and e['upper']>f*100:
-                        if capped is None:capped=list(g[u])
-                        capped[k]=(other,dict(e,upper=f*100,fra_floor_cap=f))
-                if capped is not None:g[u]=capped
-        for key in list(g):
-            g[key]=[(other,e) for other,e in g[key] if isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100 and e['upper']>=e['lower']]
-            if not g[key]: del g[key]
-        incoming=collections.defaultdict(list)
-        for u,edges in g.items():
-            for v,e in edges: incoming[v].append((u,e))
-        terminal=terminal or {}; used_procs={}
-        if terminal.get('use_procedures',False) and getattr(self,'procedures',None):
-            for ad,kind,rwy in [(dep,'SID',terminal.get('dep_runway','')),(arr,'STAR',terminal.get('arr_runway',''))]:
-                used_procs[ad]=self.procedures.add_graph(g,ad,kind,rwy,float(terminal.get('terminal_speed_kt',220)),terminal.get('unable_rnav',False))
-        # DCT fallback is explicit when no complete, connected procedure is available.
-        for airport,isdep in [(a,True),(b,False)]:
-            if used_procs.get(dep if isdep else arr):continue
-            near=sorted((nm(self.nodes[airport],self.nodes[k]),k) for k in set(g)|set(incoming) if k not in [a,b] and '|FRA|' not in k)
-            near=[(d,k) for d,k in near if d<=radius]
-            gates,unreachable=self.terminal_gates(airport,isdep,dep if isdep else arr,g,incoming,terminal,radius,{k for d,k in near},self.nodes[b if isdep else a])   # SOG-0161
-            near=[(d,k) for d,k in near if k not in unreachable]+gates
-            fallback=False
-            if not near:      # SOG-0474 : la base n'a PAS le réseau de cet État (la Bosnie : ni point ni voie) : jamais une route perdue ; le dernier point connu, dans la partie principale du réseau à ce niveau, et UN direct jusqu'au terrain, DIT
-                far=self.no_network_anchor(airport,isdep,g,incoming,fl,a,b)
-                if far is None: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
-                near,fallback=[far],True
-            for d,k in near:
-                ids=(self.nodes[airport]['id'],self.nodes[k]['id']) if isdep else (self.nodes[k]['id'],self.nodes[airport]['id'])
-                e=dict(route='DCT',nm=d,connector=True,**({'no_network':True} if fallback else {}))
-                if isdep: g.setdefault(airport,[]).append((k,e))
-                else: g.setdefault(k,[]).append((airport,e))
-        # An imposed AD is an overflight waypoint, never a landing. Only this
-        # explicit simulation connector is added; its altitude stays airborne.
-        for ident in via:
-            if ident not in self.ads or ident in [dep,arr]:continue
-            if terminal.get('unable_rnav'):continue
-            waypoint=self.resolve(ident)
-            for key in set(g)|{v for es in g.values() for v,_ in es}:
-                if key==waypoint or '|PROC|' in key or '|FRA|' in key or key in [a,b]:continue
-                distance=nm(self.nodes[waypoint],self.nodes[key])
-                if not .1<distance<=radius:continue
-                edge=dict(route='DCT',kind='VIA_AD',nm=distance,connector=True,overflight=ident,lower=0,upper=fl*100)
-                g.setdefault(waypoint,[]).append((key,edge))
-                g.setdefault(key,[]).append((waypoint,edge))
+        if base is None:
+            if dep==arr: raise ValueError('Choisir deux aérodromes différents.')
+            if dep not in self.ads or arr not in self.ads: raise ValueError('Aérodrome absent d’AeroDB : '+(dep if dep not in self.ads else arr))
+            a,b=self.resolve(dep),self.resolve(arr); g=self.graph(None if allow_steps else fl)
+            terminal=terminal or {}
+            when=when or dt.datetime.combine(self.date,dt.time(12))
+            if enable_fra and getattr(self,'fra',None) and self.fra.book:
+                key=(dep,arr,fl,allow_steps,tuple(via),when.isoformat(timespec='minutes'),terminal.get('search_density','normal'))
+                if key not in self._fra_graph_cache:
+                    self._fra_graph_cache[key]=self.fra.graph(g,dep,arr,fl,when,via,allow_steps,terminal.get('search_density','normal'))
+                    if len(self._fra_graph_cache)>1: self._fra_graph_cache.pop(next(iter(self._fra_graph_cache)))
+                g={u:list(es) for u,es in self._fra_graph_cache[key].items()}
+            if terminal.get('unable_rnav'):
+                rejected=0;unknown=0
+                for u in list(g):
+                    permitted=[]
+                    for v,e in g[u]:
+                        if e.get('kind') in ['FRA','FRA_GATE']:continue
+                        info=planning.rnav_edge(self,u,v,e)
+                        if info['required'] is False:permitted.append((v,e))
+                        elif info['required'] is True:rejected+=1
+                        else:unknown+=1
+                    g[u]=permitted
+                if not any(g.values()):raise ValueError(f'Unable RNAV : aucun segment IFR conventionnel confirmé dans ce réseau. {rejected} sens de segments exigent RNAV ; {unknown} ont une exigence inconnue. Aucun DCT de substitution n’a été inventé.')
+            floors=getattr(self,'fra_floors',None)      # SOG-0401 (lot 3) : une voie de la Suisse ou de l'Italie n'existe pas au-dessus du plancher de la route libre (RAD, annexe 3B) : son plafond est ramené à ce plancher (une voie « basse » : évitée, jamais interdite) ; la recherche ne la vole plus à FL350
+            if floors:
+                for u in list(g):
+                    capped=None
+                    for k,(other,e) in enumerate(g[u]):
+                        f=floors.get(e.get('zone'))
+                        if f and e.get('route')!='DCT' and not e.get('procedure_id') and e.get('kind') not in ('FRA','FRA_GATE') and isinstance(e.get('upper'),(int,float)) and e['upper']>f*100:
+                            if capped is None:capped=list(g[u])
+                            capped[k]=(other,dict(e,upper=f*100,fra_floor_cap=f))
+                    if capped is not None:g[u]=capped
+            for key in list(g):
+                g[key]=[(other,e) for other,e in g[key] if isinstance(e.get('lower'),(int,float)) and isinstance(e.get('upper'),(int,float)) and e['lower']<=fl*100 and e['upper']>=e['lower']]
+                if not g[key]: del g[key]
+            incoming=collections.defaultdict(list)
+            for u,edges in g.items():
+                for v,e in edges: incoming[v].append((u,e))
+            terminal=terminal or {}; used_procs={}
+            if terminal.get('use_procedures',False) and getattr(self,'procedures',None):
+                for ad,kind,rwy in [(dep,'SID',terminal.get('dep_runway','')),(arr,'STAR',terminal.get('arr_runway',''))]:
+                    used_procs[ad]=self.procedures.add_graph(g,ad,kind,rwy,float(terminal.get('terminal_speed_kt',220)),terminal.get('unable_rnav',False))
+            # DCT fallback is explicit when no complete, connected procedure is available.
+            for airport,isdep in [(a,True),(b,False)]:
+                if used_procs.get(dep if isdep else arr):continue
+                near=sorted((nm(self.nodes[airport],self.nodes[k]),k) for k in set(g)|set(incoming) if k not in [a,b] and '|FRA|' not in k)
+                near=[(d,k) for d,k in near if d<=radius]
+                gates,unreachable=self.terminal_gates(airport,isdep,dep if isdep else arr,g,incoming,terminal,radius,{k for d,k in near},self.nodes[b if isdep else a])   # SOG-0161
+                near=[(d,k) for d,k in near if k not in unreachable]+gates
+                fallback=False
+                if not near:      # SOG-0474 : la base n'a PAS le réseau de cet État (la Bosnie : ni point ni voie) : jamais une route perdue ; le dernier point connu, dans la partie principale du réseau à ce niveau, et UN direct jusqu'au terrain, DIT
+                    far=self.no_network_anchor(airport,isdep,g,incoming,fl,a,b)
+                    if far is None: raise ValueError(f'Aucun point du réseau au FL{fl:03d} à moins de {radius:g} NM de {self.nodes[airport]["id"]}. Couverture ou niveau insuffisant.')
+                    near,fallback=[far],True
+                for d,k in near:
+                    ids=(self.nodes[airport]['id'],self.nodes[k]['id']) if isdep else (self.nodes[k]['id'],self.nodes[airport]['id'])
+                    e=dict(route='DCT',nm=d,connector=True,**({'no_network':True} if fallback else {}))
+                    if isdep: g.setdefault(airport,[]).append((k,e))
+                    else: g.setdefault(k,[]).append((airport,e))
+            # An imposed AD is an overflight waypoint, never a landing. Only this
+            # explicit simulation connector is added; its altitude stays airborne.
+            for ident in via:
+                if ident not in self.ads or ident in [dep,arr]:continue
+                if terminal.get('unable_rnav'):continue
+                waypoint=self.resolve(ident)
+                for key in set(g)|{v for es in g.values() for v,_ in es}:
+                    if key==waypoint or '|PROC|' in key or '|FRA|' in key or key in [a,b]:continue
+                    distance=nm(self.nodes[waypoint],self.nodes[key])
+                    if not .1<distance<=radius:continue
+                    edge=dict(route='DCT',kind='VIA_AD',nm=distance,connector=True,overflight=ident,lower=0,upper=fl*100)
+                    g.setdefault(waypoint,[]).append((key,edge))
+                    g.setdefault(key,[]).append((waypoint,edge))
+            g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
+            base=(g,used_procs,a,b)
+            self._routing_base[base_key]=base
+            if len(self._routing_base)>1:self._routing_base.popitem(last=False)
+        g,used_procs,a,b=base
         # Apply RAD after SID/STAR and all connectors have been inserted. A rule
         # on a procedure point must affect path finding, not only final checking.
-        for u,edges in list(g.items()):
+        out={}
+        for u,edges in g.items():
             allowed=[]
             for v,e in edges:
                 relevant=relevant_rules(self.nodes[u]['id'],self.nodes[v]['id'],e)
@@ -662,9 +674,8 @@ class Nav:
                         if hi<upper:next_bands.append((hi+.01,upper))
                     bands=next_bands
                 allowed.extend((v,dict(e,lower=lower,upper=upper)) if relevant else (v,e) for lower,upper in bands)
-            g[u]=allowed
-        g={u:[(v,dict(e,_cost=planning.edge_cost(e,terminal))) for v,e in es] for u,es in g.items()}
-        graph=RoutingGraph(g)
+            out[u]=allowed
+        graph=RoutingGraph(out)
         graph.rad_avoid=frozenset(r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='point')      # SOG-0354 L5 (4) défaut 4 : les points qu'une règle RAD fait éviter (repli) : ni entrée ni sortie de route NAT ou de route libre
         graph.rad_compel={r['before']:r['point'] for r in (terminal or {}).get('_rad_avoid',[]) if r.get('kind')=='compel'}      # { Y : X } : Y s'atteint (se quitte) par X (la route libre)
         if profile_options:

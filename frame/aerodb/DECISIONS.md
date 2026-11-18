@@ -3690,3 +3690,9 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done**: the grammar of `condition` is a small recursive reading (alternatives, exception with sub-lists, sequence in order, conjunction of atoms); atoms ARR/DEP, BTN … AT, ABV/BLW … AT (list). 28 % → 72 % of the 8,602 parts readable, no true/false result changed (measured by `cover.py` on the real RAD with a synthetic flight); two of thirteen reference routes change, for rules now applied.
 - **Decided**: « 1. EXC … 2. EXC … » stays not decided (the meaning of an OR of exceptions is not written anywhere); a sub-list after AND-THEN or without EXC stays not decided (the rule does not say if it is an OR or an AND).
 - **Not done**: the aircraft attributes (PBN, engine, flight type, type), the FIR as an aerodrome set, XNG (crossing of a border), « IN country », a level along a portion of airway. **Aside (not mine)**: K303 (real base, LEMD → KBOS) fails on the branch before this change too.
+
+## 19 November 2026 — SOG-0468 (1): the graph before the rules is kept
+
+- **Done**: `routing_graph` is in two parts — the graph without the RAD rules (kept, keyed without `blocks` and `_rad_avoid`) and the rules (applied to a new dictionary on each call). The cost of an edge does not depend on its band, so it is computed in the first part. Budget checks (`GRAPH_MIN_S`, `DEADLINE_CEIL`) stay on the first part only: a retry on a kept graph costs about 0.3 s and is no longer refused for a graph it does not build.
+- **Not done**: the next ones of the survey (2: `fra.graph` per request, 5: small gains, 4: the JS copies of the distance).
+- **Aside**: when the retry « pass by X next to Y » finds no route, `plan.py` stops instead of trying the fallback « set Y aside », and says « Point Y écarté … +0 NM » although the retry failed (the message is false); a fiche, not done here.

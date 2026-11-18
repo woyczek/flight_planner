@@ -17431,3 +17431,64 @@ def k371(c):
          'a level at a LIST of points: true at one of them, false at none, not decided when a point of the list is on the route without a known level and none is true', what='at list')
     c.eq([cond('1. DEP EDDF A. ARR LFMN B. VIA AAA'), cond('VIA AAA AND-THEN A. VIA CCC B. VIA BBB'), cond('FLT-TYPE (M)'), cond('ABV FL245 AT (AAA L607 CCC)')], [None] * 4,
          'still not decided: a sub-list without an exception, a sub-list after AND-THEN, a flight type, a level along a portion of airway', what='open')
+
+
+@case('K372', 'Route engine, SOG-0468 (1): the graph WITHOUT the RAD rules is built once per request — a RAD retry (an avoided point) applies only its rules to the graph already built (no cost of an edge is computed again) and gives the same route as a graph built from nothing; the caches are released with the others',
+      'K', static=True,
+      rule='SOG-0468 (1) (the survey: « le graphe reconstruit par réparation »; the ergonomics session: order 1, 2, 5, 4, no change of behaviour). Measured on EDDF → LFMN (three assessments, three graphs: 7.2 s of 8.4 s in `routing_graph`): the FRA graph was already kept, the rest (the copy, the floors, the SID/STAR connectors, the costs) was rebuilt by every retry; none of it depends on the rules. The graph before the rules is kept (one entry, like the graph itself); the rules and their bands are applied to a NEW dictionary (the kept graph is shared). The bench is the fixture of the route engine (LFPO → EIDW by A1).')
+def k372(c):
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    sys.path.insert(0, str(c.root / 'tests' / 'v3'))
+    import datetime
+    import route_fixture as RF
+    from route_engine import engine, import_books as I, planning, view as V
+    pad = lambda row: row + [''] * (17 - len(row))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(os.path.join(data, 'route'))
+        RF.make_base(data)
+        rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad_file, RF.rad_sheets())
+        rad_gz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad_gz, I.merge([], [I.read_book(rad_file)[1]]))
+        saved = (engine.DATA_DIR, engine.RAD_FILE, planning.edge_cost)
+        engine.DATA_DIR, engine.RAD_FILE = data, rad_gz
+        calls = [0]
+
+        def counted(edge, request):
+            calls[0] += 1
+            return saved[2](edge, request)
+        planning.edge_cost = counted
+        try:
+            request = V.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False})
+            date = datetime.date(2026, 11, 9)
+            avoid = [dict(kind='point', point='SITET', id='XX1', sheet='Annex 2B', row=1)]
+
+            def answer(nav, rad, **extra):
+                try:
+                    r = engine.assess(dict(request, **extra), nav, rad)
+                    return (r.get('route'), r.get('distance_nm'))
+                except ValueError as e:
+                    return ('refused', str(e)[:80])
+            nav, rad = engine.Nav(data, date), engine.Rad(date)
+            first = answer(nav, rad)
+            built = calls[0]
+            calls[0] = 0
+            retry = answer(nav, rad, _rad_avoid=avoid)
+            again = calls[0]
+            calls[0] = 0
+            back = answer(nav, rad)
+            fresh_nav, fresh_rad = engine.Nav(data, date), engine.Rad(date)
+            fresh = answer(fresh_nav, fresh_rad, _rad_avoid=avoid)
+            c.ok(built > 0 and first[0] and 'LFPO' in first[0], str((built, first)), 'the first assessment builds the graph (the costs of its edges are computed) and finds the route')
+            c.eq(again, 0, 'the retry with an avoided point computes NO cost of an edge: the graph before the rules was kept, only its rules are applied', what='no rebuild')
+            c.eq(retry, fresh, 'the retry gives the SAME answer as a graph built from nothing for the same avoided point (' + str(retry)[:60] + ')', what='same')
+            c.eq(back[0], first[0], 'and the request without the avoided point, back on the kept graph, gives the first route again (the rules of the retry did not touch the kept graph)', what='shared')
+            c.ok(len(nav._routing_base) == 1, str(len(getattr(nav, '_routing_base', ()))), 'the kept graph is ONE entry of the cache of the nav')
+            nav.release_graph_caches()
+            c.ok(not getattr(nav, '_routing_base', None) and not getattr(nav, '_routing_cache', None), str(getattr(nav, '_routing_base', None)), 'release_graph_caches releases it with the others')
+        finally:
+            engine.DATA_DIR, engine.RAD_FILE, planning.edge_cost = saved
