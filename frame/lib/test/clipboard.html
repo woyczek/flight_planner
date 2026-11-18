@@ -1,0 +1,236 @@
+<!doctype html>
+<!-- Banc du presse-papiers (frame/lib/clipboard.js, SOG-0468) : copyAndTell (copié → la note « ok » de l'appelant, une fois ; montré → son alerte « manual » ; jamais le texte copié dans la note ;
+     sans notify, rien et pas d'exception) et readClipboard (html et text rendus en CHAÎNES brutes, jamais insérés ; borne de 1 048 576 caractères ; refus ; API absente). navigator.clipboard
+     et document.execCommand sont simulés. Page nue ; window.__clipboardBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>clipboard — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<p id="near">près d'ici</p>
+<script type="module">
+  import * as C from '../clipboard.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__clipboardBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__clipboardBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const J = v => JSON.stringify(v);
+  /** navigator.clipboard simulé (undefined : absent). */
+  const fakeClip = v => Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: v
+  });
+  /** document.execCommand simulé : rend r (ou lève si r est 'throw'). */
+  const fakeExec = r => {
+    document.execCommand = () => {
+      if (r === 'throw') throw new Error('no');
+      return r;
+    };
+  };
+  /** Un contexte qui note ce qu'on lui notifie. */
+  const ctxOf = () => {
+    const notes = [];
+    return {
+      notes,
+      notify: (text, kind) => notes.push([text, kind])
+    };
+  };
+  const HOSTILE = '<img src=x onerror="window.__pwn=1">';
+  const imgs = () => document.querySelectorAll('img').length;
+  try {
+    ck('copyAndTell et readClipboard sont exportées', typeof C.copyAndTell === 'function' && typeof C.readClipboard === 'function', Object
+      .keys(C).join(','));
+    if (typeof C.copyAndTell === 'function') {
+      // ---- copié par le presse-papiers : la note « ok » de l'appelant, une fois
+      let copied = [];
+      fakeClip({
+        writeText: async s => void copied.push(s)
+      });
+      fakeExec(false);
+      let x = ctxOf();
+      let r = await C.copyAndTell(x, 'SOG-0001 — titre', {
+        ok: 'Copié.',
+        manual: 'Copiez à la main.'
+      });
+      ck('presse-papiers : « clipboard », le texte copié, la note ok de l\'appelant une fois', r === 'clipboard' && J(copied) === J([
+        'SOG-0001 — titre'
+      ]) && J(x.notes) === J([
+        ['Copié.', 'ok']
+      ]), J([r, copied, x.notes]));
+      // ---- presse-papiers refusé, execCommand accepte : « exec », la note ok
+      fakeClip({
+        writeText: async () => {
+          throw new Error('denied');
+        }
+      });
+      fakeExec(true);
+      x = ctxOf();
+      r = await C.copyAndTell(x, 'abc', {
+        ok: 'Copié.',
+        manual: 'Copiez à la main.'
+      });
+      ck('presse-papiers refusé, execCommand oui : « exec », la note ok une fois', r === 'exec' && J(x.notes) === J([
+        ['Copié.', 'ok']
+      ]), J([r, x.notes]));
+      // ---- les deux échouent : « shown », l'alerte manual, le texte montré sélectionné près de near ; jamais « ok »
+      fakeExec('throw');
+      x = ctxOf();
+      const near = document.getElementById('near');
+      r = await C.copyAndTell(x, HOSTILE, {
+        ok: 'Copié.',
+        manual: 'Copiez à la main : il est sélectionné.',
+        near
+      });
+      const box = near.nextElementSibling;
+      ck('les deux échouent : « shown », l\'alerte manual une fois, jamais ok', r === 'shown' && J(x.notes) === J([
+        ['Copiez à la main : il est sélectionné.', 'warn']
+      ]), J([r, x.notes]));
+      ck('montré : le texte dans un champ en lecture seule après near (une valeur, pas du HTML)', !!box?.matches?.('input.sog-copybox') &&
+        box.readOnly && box.value === HOSTILE, box?.outerHTML || 'rien');
+      ck('le texte notifié n\'est jamais le texte copié (« <img onerror> » copié : aucune note ne le porte, aucune image)', x.notes.every(([
+          t
+        ]) => !t.includes('<img') && t !==
+        HOSTILE) && imgs() === 0 && window.__pwn === undefined, J(x.notes));
+      // ---- presse-papiers absent, execCommand non : « shown » sans champ (ni box ni near) : l'alerte quand même
+      fakeClip(undefined);
+      fakeExec(false);
+      x = ctxOf();
+      r = await C.copyAndTell(x, 'abc', {
+        ok: 'Copié.',
+        manual: 'Copiez à la main.'
+      });
+      ck('presse-papiers absent : « shown » et l\'alerte', r === 'shown' && J(x.notes) === J([
+        ['Copiez à la main.', 'warn']
+      ]), J([r, x.notes]));
+      // ---- sans notify, notify qui lève, contexte nul, texte nul : rien ne lève
+      let threw = '';
+      try {
+        fakeClip({
+          writeText: async () => {}
+        });
+        const a = await C.copyAndTell({}, 'x', {
+          ok: 'ok'
+        });
+        const b = await C.copyAndTell(null, 'x');
+        const d = await C.copyAndTell({
+          notify: () => {
+            throw new Error('boom');
+          }
+        }, 'x', {
+          ok: 'ok'
+        });
+        const e = await C.copyAndTell(undefined, null);
+        threw = J([a, b, d, e]) === J(['clipboard', 'clipboard', 'clipboard', 'clipboard']) ? '' : J([a, b, d, e]);
+      } catch (e) {
+        threw = 'threw: ' + e.message;
+      }
+      ck('sans notify, notify qui lève, contexte nul, texte nul : la copie est faite, rien ne lève', threw === '', threw);
+    }
+    if (typeof C.readClipboard === 'function') {
+      /** Un élément de presse-papiers simulé. */
+      const item = map => ({
+        types: Object.keys(map),
+        getType: async t => new Blob([map[t]], {
+          type: t
+        })
+      });
+      // ---- html hostile : rendu en CHAÎNE, aucun élément créé
+      const before = document.body.querySelectorAll('*').length;
+      fakeClip({
+        read: async () => [item({
+          'text/html': HOSTILE,
+          'text/plain': 'brut'
+        })],
+        readText: async () => 'pas lu'
+      });
+      let r = await C.readClipboard();
+      ck('read : html hostile rendu tel quel, en chaîne ; text/plain ; reason vide', typeof r.html === 'string' && r.html === HOSTILE && r
+        .text === 'brut' && r.reason === '', J(r));
+      ck('read : rien n\'est inséré ni analysé (aucun élément de plus, aucune image, rien d\'exécuté)', document.body.querySelectorAll('*')
+        .length === before && imgs() === 0 && window
+        .__pwn === undefined, String(document.body.querySelectorAll('*').length - before));
+      // ---- la borne : 1 048 576 caractères gardés, un de plus : '' et « too-big »
+      const MAX = 1048576;
+      fakeClip({
+        read: async () => [item({
+          'text/plain': 'a'.repeat(MAX)
+        })]
+      });
+      r = await C.readClipboard();
+      ck('borne : 1 048 576 caractères sont gardés', r.text.length === MAX && r.reason === '', J([r.text.length, r.reason]));
+      fakeClip({
+        read: async () => [item({
+          'text/html': '<b>' + 'a'.repeat(MAX) + '</b>',
+          'text/plain': 'court'
+        })]
+      });
+      r = await C.readClipboard();
+      ck('borne : un html au-delà est rendu vide, « too-big » (le texte court reste)', r.html === '' && r.text === 'court' && r.reason ===
+        'too-big', J([r.html.length, r.text, r.reason]));
+      fakeClip({
+        readText: async () => 'b'.repeat(MAX + 1)
+      });
+      r = await C.readClipboard();
+      ck('borne : readText au-delà : vide, « too-big »', r.text === '' && r.html === '' && r.reason === 'too-big', J([r.text.length, r
+        .reason
+      ]));
+      // ---- readText seul
+      fakeClip({
+        readText: async () => HOSTILE
+      });
+      r = await C.readClipboard();
+      ck('readText seul : le texte brut, html vide', r.text === HOSTILE && r.html === '' && r.reason === '', J(r));
+      // ---- refus : read et readText lèvent
+      fakeClip({
+        read: async () => {
+          throw new DOMException('no', 'NotAllowedError');
+        },
+        readText: async () => {
+          throw new DOMException('no', 'NotAllowedError');
+        }
+      });
+      r = await C.readClipboard();
+      ck('refus : { html: \'\', text: \'\', reason: \'denied\' }', J(r) === J({
+        html: '',
+        text: '',
+        reason: 'denied'
+      }), J(r));
+      // ---- read refusé, readText accepte : le texte
+      fakeClip({
+        read: async () => {
+          throw new Error('no html');
+        },
+        readText: async () => 'repli'
+      });
+      r = await C.readClipboard();
+      ck('read refusé, readText accepte : le texte', r.text === 'repli' && r.reason === '', J(r));
+      // ---- API absente
+      fakeClip(undefined);
+      r = await C.readClipboard();
+      ck('API absente : reason « unavailable »', J(r) === J({
+        html: '',
+        text: '',
+        reason: 'unavailable'
+      }), J(r));
+      fakeClip({});
+      r = await C.readClipboard();
+      ck('presse-papiers sans read ni readText : « unavailable »', r.reason === 'unavailable', J(r));
+    }
+  } catch (e) {
+    ck('le banc se déroule sans exception', false, e?.stack || String(e));
+  }
+  window.__clipboardBench.done = true;
+</script>
+</body>
+</html>

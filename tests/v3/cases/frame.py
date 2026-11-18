@@ -5316,6 +5316,13 @@ def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A326', 'The clipboard helpers (SOG-0468 (1), frame/lib/clipboard.js): copyAndTell says the CALLER\'s « ok » once when copied, its « manual » warning when the text is only shown, never the copied text, never throws; readClipboard gives html and text as raw STRINGS (nothing inserted), bounded at 1 048 576 characters, « denied » / « unavailable »', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (1) (the ergonomist): one copy-and-tell for the frame\'s three copies (load-failure card, roadmap, recette) that said « ok » or nothing when the copy failed, and one read of the clipboard for the two identical blocks (access.js, website): frame/lib/test/clipboard.html (window.__clipboardBench), navigator.clipboard and document.execCommand faked')
+def a326(c):
+    _bench(c, 'frame/lib/test/clipboard.html', '__clipboardBench')
+
+
 @case('A313', 'A module that keeps a DRAFT says so to the frame (SOG-0486): ctx.unsaved(fn, { kept: true }) and ctx.askLeave({ kept: true }) ask « Quitter ? Vos changements restent en brouillon sur cet appareil. » — « Quitter » / « Rester », in four languages — instead of « les changements seront perdus »', 'A',
       designs=('standard',), screens=False, night=False, langs4=True,
       rule='SOG-0486 (« Création de missions »: the workshop now keeps a draft on the device at every change, so leaving loses nothing and « Les changements seront perdus » is false there): ctx.unsaved(fn, { kept: true }) and ctx.askLeave({ kept: true }) give the frame\'s question another text, in four languages: « Quitter ? Vos changements restent en brouillon sur cet appareil. », buttons « Quitter » and « Rester »; without the option the question and its words are those of A264 / A301')

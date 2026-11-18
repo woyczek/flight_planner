@@ -289,6 +289,7 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
   zones by their centre, target; the aircraft from `aircraft`, else from `teams`), `readRegistry(doc)` (`missions/mission_registry.yaml`),
   `icaoOf(name)`, `levelFt(text)`, `missionFlight(mission, assignment)` → `{ route: { dep, arr, points }, aircraft, levelFt, speedKt,
   mission }`. Pure; bench `frame/lib/test/mission.html` (N1).
+- **Copy and tell, read the clipboard** (`frame/lib/clipboard.js`, SOG-0468 (1)): `copyAndTell(ctx, text, { ok, manual, box, near })` copies (as `copyText`) and notifies YOUR `ok` (copied) or `manual` warning (shown selected), never the copied text; `readClipboard()` → `{ html, text, reason }`, raw untrusted strings bounded at 1 048 576 characters (`'too-big'`, `'denied'`, `'unavailable'`): sanitise before use. Bench A326.
 - **The flight in time** (`frame/lib/flight_time.js` since 29 Oct 2026, re-exported by `current_flight.js` during the transition; 28 Oct 2026, with the recoded Map): `etaOf(flight, now)` →
   `[{ id, at }]` and `plannedPositionAt(flight, now)` → `{ lat, lon, legIndex, nmFromDep, phase }`, derived from
   `started.at` / `planned_at`, `quote.taxiMin` and `quote.legs` (else the profile and `quote.minutes`); with
