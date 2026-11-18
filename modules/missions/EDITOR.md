@@ -1045,6 +1045,9 @@ kind (`ED.newPlace`, one gesture to undo, a full kind: a notification); with a r
   without position. Now the `change` of the Nom of a point, a target or a rendez-vous WITHOUT position and with one word asks `aerodb.coordsAll` (nearest
   first) and `edNameBase` gives the place the position and the code. A place that already has a position is never moved; a name the base does not know
   changes nothing; the answer is ignored if the name changed meanwhile. The identifier field is not read as a code.
+- **The line of a place says its position at once** (noreg N128). The title and detail of each row of the Lieux were written only by the redraw of a gesture, so a
+  place taken from the base said « à placer » until « OK ». `edRefresh` now writes them in place for every row, from the row being edited (the same path as the
+  rest of the redraw, SOG-0478); the open sheet is not touched.
 - Veiled workshop: nothing to add (hidden rows are never touched, `edHid`).
 
 ### 8. What is NOT ported

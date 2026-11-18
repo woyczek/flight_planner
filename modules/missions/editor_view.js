@@ -2256,7 +2256,7 @@ function thumbHtml(s, doc, run = null) {
 }
 /** Ce qui suit la frappe, mis à jour SUR PLACE (SOG-0449 : on ne redessine pas ce que le doigt est en train de presser — les pastilles
  *  d'étape, remplacées à chaque saisie et à chaque sortie de champ, perdaient le clic qui suivait) : le titre, la ligne et la marque de
- *  chaque groupe, le déroulé, le croquis, « À compléter ». Aucun bouton n'est remplacé ; seuls des textes et des attributs changent. */
+ *  chaque groupe, le déroulé, le croquis, « À compléter », les lignes des Lieux (titre et détail). Aucun bouton n'est remplacé ; seuls des textes et des attributs changent. */
 function edRefresh(s) {
   const e = s.ed,
     doc = edDoc(e),
@@ -2322,6 +2322,17 @@ function edRefresh(s) {
     }
   }
   if (todo && e.lastTodo !== list) todo.innerHTML = e.lastTodo = list;
+  // SOG-0480 : le titre et le détail de chaque ligne des Lieux disent la ligne EN COURS d'édition (un point pris dans la base, une
+  // saisie), pas celle de l'ouverture ; sur place, la fiche ouverte n'est pas touchée (pas de second chemin de redessin)
+  const places = q('[data-edplaces]');
+  if (places) {
+    const fresh = document.createElement('template');
+    fresh.innerHTML = edPlacesHtml(s, true);
+    for (const f of fresh.content.querySelectorAll('[data-place]')) {
+      const live = places.querySelector(`[data-place="${f.dataset.place}"]`);
+      for (const sel of ['.ms-plbody > b', '.ms-plbody > .f-muted']) put(live?.querySelector(sel), f.querySelector(sel)?.textContent ?? '');
+    }
+  }
   // le libellé du bouton : ses nœuds de texte seulement (le bouton reste le même élément)
   if (btn && e.lastTodoBtn !== label) btn.innerHTML = e.lastTodoBtn = label;
 }

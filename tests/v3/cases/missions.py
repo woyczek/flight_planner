@@ -8695,3 +8695,29 @@ def n127(c):
          'the pilot\'s sheet of a mission with one closed drawer: neither its title, nor its message, nor « Suite de la mission », nor the key said in plain words',
          what='the sheet')
     c.js(_DW_CLEAR)
+
+
+@case('N128', 'Missions › the workshop, a place taken from the base says its position at once (SOG-0480): the title line of a turning point whose Name is a point of the base chosen in '
+      'the list (an invented reporting point XPT01) shows the position of the base and no longer « à placer », before « OK » (the line read the row being edited, not the saved one)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0480 (the redraw is the one of SOG-0478: modules/missions/editor_view.js `edRefresh` writes the lines of the Lieux in place; `edPlName`, `edPlaceFromBase`)')
+def n128(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    _pb_open(c)
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=edplname]')", what='the Name of the new turning point')
+    line = lambda: c.js(f"(document.querySelector('{E} [data-place=\"5\"] .ms-plbody')?.textContent || '').trim()")  # noqa: E731
+    c.ok('à placer' in line(), line(), 'before the choice, the line of the new place says « à placer »')
+    sug = f"[...document.querySelectorAll('{E} [data-plform] [data-adsug]:not([hidden]) [data-code]')].map(x => x.dataset.code)"
+    c.js(f"document.querySelector('{E} [data-plform] input[data-k=edplname]').focus()")
+    c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press_sequentially('xpt', delay=40)
+    c.until(f"({sug}).length > 0", timeout=8000, what='XPT01 proposed')
+    c.key('ArrowDown')
+    c.key('Enter')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=name]').value === 'XPT01'", timeout=5000, what='XPT01 chosen')
+    c.until(f"!(document.querySelector('{E} [data-place=\"5\"] .ms-plbody')?.textContent || '').includes('à placer')", timeout=3000, what='the line leaves « à placer »')
+    got = line()
+    c.ok('XPT01' in got and '44°54′N' in got and '1°27′E' in got and 'à placer' not in got, got,
+         'the title line of the place taken from the base says its code and its position at once, with the sheet still open (before « OK »)')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
