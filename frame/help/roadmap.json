@@ -5895,11 +5895,12 @@
     {
      "id": "SOG-0494",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : aucun dégagement proposé pour Sarajevo (LQSA) — « aucun terrain entre 30 et 300 NM ne passe la piste et les moyens »",
      "en": "Fuel: no alternate offered for Sarajevo (LQSA) — no aerodrome within 30–300 NM passes runway and aids",
      "de": "Kraftstoff: Kein Ausweichflugplatz für Sarajevo (LQSA) – keiner im Umkreis von 30–300 NM besteht Piste und Hilfen",
-     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas"
+     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas",
+     "test": true
     }
    ]
   },
