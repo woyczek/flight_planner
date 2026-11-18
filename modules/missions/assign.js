@@ -33,6 +33,9 @@
 //   meOf(trigram) → le trigramme de l'auteur validé comme drawers_view.js le fait (bookPath : rogné, trois lettres), '' sinon.
 
 import {
+  own
+} from '../../frame/lib/untrusted.js'; // la valeur d'une clé PROPRE d'un objet, jamais une clé héritée (K479, SOG-0468 c : écrite une fois)
+import {
   mine
 } from './assigned.js'; // le lecteur de « Mes missions affectées » : la ligne construite doit y passer telle quelle
 import {
@@ -59,9 +62,6 @@ const TRI = /^[A-Z]{3}$/, // assigned.js : le pilote
   ICAO = /^[A-Z0-9]{4}$/, // assigned.js : le terrain de départ
   REG = /^[A-Z0-9-]{1,10}$/i; // l'immatriculation (SOG-0443 : facultative, dix signes)
 
-/** La valeur d'une clé PROPRE d'un objet (jamais une clé héritée : `__proto__`, `constructor`), sinon undefined — la règle de
- *  drawers.js (own), qui ne l'exporte pas. */
-const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined;
 /** Un texte nettoyé (sans caractère de contrôle) et borné ; '' pour ce qui n'est pas un texte (la règle `cut` de assigned.js). */
 const cut = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
 /** Un trigramme en capitales, '' sinon — validé comme drawers_view.js le fait : par bookPath (rogné, trois lettres). */
