@@ -6938,3 +6938,32 @@ def n112(c):
     c.eq([r['none'], r['drawers'], r['pv']], [['', ''], 2, [['Vallee Test', 'FR', 2], ['Vallee Test', 'FR', 2], ['Vallee Test', 'FR', 2]]],
          'a mission without these keys reads empty and empty; both fields go through pilotView of a mission with drawers (closed, open, browsed) as they are', what='public')
     c.eq(r['threw'], '', 'no hostile input throws', what='no throw')
+
+
+@case('N145', 'Missions › the network it declares adds nothing to the page\'s policy: every host of Missions\' meta.net is, written exactly '
+      'the same, a host of the Map\'s meta.net — the sources of connect-src are the same with or without Missions', 'N', static=True,
+      rule='SOG-0464 (the relief under the workshop\'s map, the ergonomist 18 Nov 11:24; Sécurisation\'s condition: copy the Map\'s exact '
+      'entries, and a case comparing the policy before and after); the constraint of the user: no session widens the CSP')
+def n145(c):
+    import importlib
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    P = importlib.import_module('csp_policy')
+
+    def net_of(mod):
+        text = (c.root / 'modules' / mod / 'module.js').read_text(encoding='utf-8')
+        meta = re.search(r'export const meta = \{(.*?)\n\};', text, re.S)
+        net = re.search(r'\bnet\s*:\s*\[([^\]]*)\]', meta.group(1)) if meta else None
+        return [a or b for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", net.group(1) if net else '')]
+    mine, maps = net_of('missions'), net_of('maps')
+    c.eq([h for h in mine if h not in maps], [], 'each host of Missions\' net is the Map\'s, written the same', what='hosts')
+    c.ok('s3.amazonaws.com/elevation-tiles-prod' in mine, mine, 'the relief of the profile declared (SOG-0464)')
+    # the policy's sources computed with every module, then as if Missions declared nothing: the same list
+    full = P.module_hosts(str(c.root))
+    real = P.module_files
+    try:
+        P.module_files = lambda root: [p for p in real(root) if not p.replace('\\', '/').endswith('/missions/module.js')]
+        without = P.module_hosts(str(c.root))
+    finally:
+        P.module_files = real
+    c.eq(sorted(full), sorted(without), 'the sources of connect-src are the same without Missions', what='policy')

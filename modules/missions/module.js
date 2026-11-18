@@ -48,13 +48,18 @@ export const meta = {
     '../../frame/lib/crossing.js',
     '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
     '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
+    // SOG-0464 : le profil vertical de la Carte sous la carte de l'atelier (modules/maps/lib/profile_embed.js, de BUGS SOG) et les scripts
+    // qu'il charge (render.js est déjà ci-dessus)
+    '../maps/lib/profile_embed.js?v=0', '../maps/lib/aero_symbols.js?v=0', '../maps/lib/vertical_profile.js?v=0', '../maps/profile.js?v=0',
     '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
   // la carte de l'atelier : MapLibre, chargé à la demande par le socle de carte (comme Données et Météo) ; ses tuiles, appelées par lui
   lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'],
-  net: ['tiles.openfreemap.org'],
+  // SOG-0464 : le relief du profil, l'entrée EXACTE de la Carte (modules/maps/module.js) — la CSP effective ne change pas (N145) ; lu par
+  // ctx.net.fetch, que l'atelier passe à drawProfile
+  net: ['tiles.openfreemap.org', 's3.amazonaws.com/elevation-tiles-prod'],
   reads: ['missions/', 'cr/',
     'airline/', 'pilot/',
     'cache/missions/' // SOG-0441 : les carnets des pilotes de la mission, le vol courant ; ce que l'appareil a vu ouvert
