@@ -596,8 +596,9 @@
       for (const c of el.getElementsByTagNameNS(NSX, '*'))
         if (/^(pointChoice_|theDesignatedPoint|theNavaid)/.test(c.localName) || /fixDesignatedPoint|navaidSystem/.test(c.localName)) {
           const w = where.get(href(c)),
-            title = (c.getAttributeNS('http://www.w3.org/1999/xlink', 'title') || c.getAttribute('xlink:title') || '').trim().slice(0,
-              12);
+            raw = (c.getAttributeNS('http://www.w3.org/1999/xlink', 'title') || c.getAttribute('xlink:title') || '').trim(),
+            // DFS : certaines références n'ont pas le nom pour titre mais la description du point (« urn:aixm:DesignatedPoint(…;aixm:designator=SUBIX;…) », 66 extrémités sur 3 594) : le nom est le désignateur
+            title = (/^urn:aixm:/.test(raw) ? /aixm:designator=([A-Z0-9]{1,12})[;)]/.exec(raw)?.[1] || '' : raw).slice(0, 12);
           if (w) return {
             id: w.id,
             lat: w.lat,

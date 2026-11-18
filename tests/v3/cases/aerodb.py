@@ -5512,12 +5512,13 @@ def k113(c):
     xml = ('<?xml version="1.0"?><message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">'
            + route('r1', 'Z', '717') + route('r2', 'N', '850')
            + seg(1, 'r1', 'GUDOP', 'BEKBA', (53.0, 13.1), (53.2, 13.7), ['FORWARD', 'BACKWARD']) + seg(2, 'r1', 'BEKBA', 'ABC', (53.2, 13.7), (53.5, 14.0), ['FORWARD']) + seg(3, 'r2', 'ABC', 'IRBUP', (51.0, 7.0), (51.4, 7.4), ['BACKWARD'])
+           + seg(4, 'r2', 'IRBUP', 'urn:aixm:DesignatedPoint(gml:timePosition=2026-10-29T00:00:00;aixm:type=ICAO;aixm:designator=SUBIX;location=urn:aixm:ElevatedPoint(gml:srsName=urn:ogc:def:crs:EPSG::4326;gml:pos=52.4 14.6))', (51.4, 7.4), (52.4, 14.6), ['FORWARD'])
            + '</message:AIXMBasicMessage>')
     c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
     c.page.wait_for_function('!!window.AeroSources', timeout=30000)
     r = c.js("""(xml) => { const w = window.AeroSources.aixm5(xml).aero.airways; return w.map(x => [x.route, x.dir, x.a.id, x.a.lat, x.a.lon, x.b.id, x.b.lat, x.b.lon, x.lower, x.upper]); }""", xml)
-    c.eq(r, [['Z717', 'FB', 'GUDOP', 53.0, 13.1, 'BEKBA', 53.2, 13.7, 4000, 66000], ['Z717', 'F', 'BEKBA', 53.2, 13.7, 'ABC', 53.5, 14.0, 4000, 66000], ['N850', 'B', 'ABC', 51.0, 7.0, 'IRBUP', 51.4, 7.4, 4000, 66000]],
-         'the reader gives the airways of a file without points: the designator from the segment, the ends from the curve (lat lon), the direction from the availabilities, the levels', what='reader')
+    c.eq(r, [['Z717', 'FB', 'GUDOP', 53.0, 13.1, 'BEKBA', 53.2, 13.7, 4000, 66000], ['Z717', 'F', 'BEKBA', 53.2, 13.7, 'ABC', 53.5, 14.0, 4000, 66000], ['N850', 'B', 'ABC', 51.0, 7.0, 'IRBUP', 51.4, 7.4, 4000, 66000], ['N850', 'F', 'IRBUP', 51.4, 7.4, 'SUBIX', 52.4, 14.6, 4000, 66000]],
+         'the reader gives the airways of a file without points: the designator from the segment, the ends from the curve (lat lon), the direction from the availabilities, the levels; an end whose reference has for title the description of the point (« urn:aixm:DesignatedPoint(…;aixm:designator=SUBIX;… ») is named by its designator, not by the first twelve signs of the description (66 ends of 3 594 in the real file)', what='reader')
     name = 'ED_Routes_2026-10-01_2026-10-29_revision.xml'
     body = xml.encode('utf-8')
     sha = hashlib.sha512(body).hexdigest()
