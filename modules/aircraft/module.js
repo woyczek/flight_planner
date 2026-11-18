@@ -31,7 +31,8 @@ export const meta = {
   level: 3,
   title: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
   files: ['fleet.js', 'registry_read.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js',
-    '../../frame/lib/suggest_list.js', '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js', // SOG-0490 : la base d'un appareil
+    '../../frame/lib/suggest_list.js', '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
+    '../../frame/lib/text.js', // SOG-0490 : la base d'un appareil
     '../../frame/lib/clipboard.js',
     '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js',
     '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'

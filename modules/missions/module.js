@@ -47,6 +47,7 @@ export const meta = {
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
+    '../../frame/lib/text.js', // text.js : importé par ad_field.js et search.js (SOG-0468 (2))
     '../../frame/lib/callsign_field.js', // SOG-0488 : le champ d'indicatif (Équipes)
     '../../frame/lib/icons.js', // l'atelier (editor_view.js) l'importe : demandé par Création (I26)
     '../../frame/lib/suggest_list.js', // SOG-0465 (adnames.js : importé par ad_field.js) : le champ de terrain de l'atelier (Départ, Arrivée), celui de Carburant

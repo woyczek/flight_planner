@@ -36,6 +36,9 @@ import {
 import {
   createSuggestList
 } from './suggest_list.js'; // la liste de propositions, commune à tous les champs qui proposent
+import {
+  foldLower
+} from './text.js'; // SOG-0468 (2) : le pliage des textes, une fois dans le cadre
 const TX = {
   unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
   listLabel: ['Terrains proposés', 'Suggested aerodromes', 'Vorgeschlagene Flugplätze', 'Aeródromos propuestos'],
@@ -53,8 +56,8 @@ const POINT_KINDS = ['navaid', 'point', 'vrp'],
 const MAX_SUGGESTIONS = 7;
 /** Rayon autour d'une ville où ses terrains sont proposés (NM ; SOG-0158). */
 const CITY_NM = 40;
-/** Un texte replié pour comparer des noms : minuscules, sans accents (« Suède » → « suede »). */
-const fold = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+/** Un texte replié pour comparer des noms : minuscules, sans accents (« Suède » → « suede ») — foldLower du cadre (text.js). */
+const fold = foldLower;
 /** Longueur minimale du texte pour proposer. */
 const MIN_CHARS = 2;
 /** La forme d'un code de terrain (isCode, isIcao, isIcaoAlpha) : définie dans adnames.js (calcul pur, lu aussi sans écran), réexportée
