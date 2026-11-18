@@ -15346,3 +15346,57 @@ def k468(c):
     c.ok(len(py_set) >= 3 and len(js_set) >= 4, f'{sorted(py_set)} {sorted(js_set)}', 'neither list is empty or truncated (xplane, eurocontrol, eurocontrol_rad, and lnm in the JavaScript one)')
     c.eq(sorted(py_set - js_set), [], 'every source the base builder keeps out of the committed base is also refused by the workshop (no source is local in Python only)', what='missing in JavaScript')
     c.eq(sorted(js_set - py_set), sorted(LOCAL_JS_ONLY & js_set), 'what the JavaScript list holds besides is the named exception (Little Navmap, which the base builder never builds); any other extra source has to be decided here', what='extra in JavaScript')
+
+
+# the sites of tools/ that still carry their OWN guard around a json.load (RecursionError and company): the list only shrinks — a site migrated to
+# tools/safe_json.py leaves it (the case then asks to update it), a NEW site is refused
+LEGACY_JSON_GUARDS = {'tools/aero_fetch.py': 1, 'tools/build_world_weather.py': 1, 'tools/pdf_guard.py': 1, 'tools/regen/proc.py': 1, 'tools/registry_fr.py': 2,
+                      'tools/route_engine/nat_layer.py': 1, 'tools/route_engine/nat_refresh.py': 2, 'tools/route_engine/results_cache.py': 1, 'tools/tree_memo.py': 1}
+
+
+@case('K469', 'tools/safe_json.py, SOG-0468 (a): ONE bounded reader for the JSON files of the data repository (untrusted: any pilot writes them): it never raises and says WHY it gave nothing (missing, size, unreadable); a file that is too big, nested tens of thousands of levels deep, carrying NaN or Infinity, not UTF-8, a folder or absent gives the fallback; and no NEW file of tools/ writes its own guard around a json.load',
+      'K', static=True,
+      rule='SOG-0468 (the ergonomics session, 18 Nov 2026: « tout ce qui peut être constitué de modules doit l\'être ; reuse ») and the project rule that every file of the data repository is untrusted (§ 10.36; the audits 205 and 213: a JSON nested on tens of thousands of levels raises RecursionError): the guard `except (OSError, ValueError, RecursionError, MemoryError)` was written eleven times; the reader is written once, and the case forbids a twelfth')
+def k469(c):
+    import importlib
+    import os
+    import shutil
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    SJ = importlib.import_module('safe_json')
+    tmp = Path(tempfile.mkdtemp(prefix='k469-'))
+    try:
+        def put(name, data):
+            p = tmp / name
+            p.write_bytes(data if isinstance(data, bytes) else data.encode('utf-8'))
+            return str(p)
+        ok = put('ok.json', '{"a": [1, 2, {"b": null}]}')
+        c.eq(SJ.read(ok, 1000), ({'a': [1, 2, {'b': None}]}, ''), 'a good file is read: the value and an empty reason', what='good file')
+        c.eq(SJ.read(put('bom.json', b'\xef\xbb\xbf{"a": 1}'), 1000), ({'a': 1}, ''), 'a file that begins with a byte-order mark is read (utf-8-sig)', what='BOM')
+        c.eq(SJ.read(str(tmp / 'absent.json'), 1000), (None, 'missing'), 'an absent file: missing', what='absent')
+        c.eq(SJ.read(str(tmp), 1000), (None, 'missing'), 'a folder is not a file: missing', what='folder')
+        c.eq(SJ.read(ok, 10), (None, 'size'), 'a file above the bound: size (nothing is parsed)', what='size')
+        c.eq((SJ.read(ok, os.path.getsize(ok))[1], SJ.read(ok, os.path.getsize(ok) - 1)[1]), ('', 'size'), 'a file exactly at the bound is read, one byte over is refused', what='at the bound')
+        deep = put('deep.json', '[' * 200000 + ']' * 200000)
+        c.eq(SJ.read(deep, 1_000_000), (None, 'unreadable'), 'a JSON nested 200,000 levels deep does not raise RecursionError: unreadable', what='deep')
+        for name, text in (('nan.json', '{"a": NaN}'), ('inf.json', '{"a": Infinity}'), ('minf.json', '[-Infinity]')):
+            c.eq(SJ.read(put(name, text), 1000), (None, 'unreadable'), f'{text} is refused (NaN and Infinity are not JSON: a comparison lets them through in silence)', what=name)
+        c.eq(SJ.read(put('latin.json', b'{"a": "\xe9"}'), 1000), (None, 'unreadable'), 'bytes that are not UTF-8: unreadable', what='encoding')
+        c.eq(SJ.read(put('bad.json', '{"a": '), 1000), (None, 'unreadable'), 'a truncated JSON: unreadable', what='truncated')
+        c.eq((SJ.read(ok, -1)[1], SJ.read(ok, None)[1], SJ.read(None, 10)[1]), ('unreadable', 'unreadable', 'unreadable'), 'a hostile bound or path (negative, None) does not raise', what='arguments')
+        c.eq((SJ.load(ok, 1000), SJ.load(ok, 5, default={}), SJ.load(str(tmp / 'absent.json'), 5, default=[1])), ({'a': [1, 2, {'b': None}]}, {}, [1]), 'load gives the value, or the fallback', what='load')
+        c.eq((SJ.loads('{"a": 1}'), SJ.loads('[NaN]'), SJ.loads('[' * 200000)), (({'a': 1}, ''), (None, 'unreadable'), (None, 'unreadable')), 'loads: the same control on a text already read', what='loads')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    # no NEW guard of its own around a json.load in tools/ (the list of the sites still to migrate only shrinks)
+    found = {}
+    for p in sorted((ROOT / 'tools').rglob('*.py')):
+        if p.name == 'safe_json.py' or '__pycache__' in p.parts:
+            continue
+        text = p.read_text(encoding='utf-8', errors='replace')
+        n = len([1 for line in text.split('\n') if re.match(r'\s*except\b[^#\n]*RecursionError', line) or re.match(r'\s*except Exception\b[^\n]*(RecursionError|imbrication)', line)])
+        if n and re.search(r'json\.loads?\(', text):
+            found[p.relative_to(ROOT).as_posix()] = n
+    c.eq(found, LEGACY_JSON_GUARDS, 'the files of tools/ that guard a json.load themselves are exactly the list of the sites still to migrate to safe_json (a new site is refused; a migrated one leaves the list)', what='own guards')
