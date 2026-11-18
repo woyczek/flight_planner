@@ -1338,6 +1338,16 @@ the model is visible near the title, and changes.
 - **« Write only if it changes », in one place**: `put(node, text)`, `putAttr(node, name, value)`, `putData(node, key, value)` and `putProp(node, prop, value)` at the head of `editor_view.js` replace the local copies of the guard and are used for the writes that had none (`data-kind` of the marks, `data-open`, `data-map`, `aria-pressed`, `data-over`, `disabled`, `hidden`). A keystroke now writes 1 node of the DOM instead of 25 (1280) or 27 (390) on 12 drawers and 59 places. `editor_map.js` keeps its own guard in `mark` (it needs to know that the text changed).
 - **The texts of a place line, from one function**: `edPlaceTexts(s, rows, doc)` gives `title(r)`, `detail(r, i)` (and `zk`, `ok`, the words of a zone kind and of an object kind) to `edPlacesHtml` (the list) and to `edRefresh` (the in-place update of the titles and details): no more HTML built, parsed in a `<template>` and read back for two selectors per row at every keystroke, and a frame of a gesture (`edLive`) builds the list once instead of twice.
 
+### 7 sexquadragies. The icons of the map turn on (18 Nov 2026; SOG-0471; noreg N131)
+
+V3 Frame pushed the eight missing icons (`frame/lib/icons.js`, efc39e5aa: `pointer`, `dot`, `route`, `circle`, `polygon`, `person`, `redo`, `mountain`); the
+set of the suite now has every name of `ED_ICONS`, so `edIcons()` is true and the whole map turns to icons with no other change of code: Sélection,
+Point, Tracé, « Zone » (`circle` or `polygon`, by `s.ed.zoneShape`), Objet, « Annuler le geste », « Rétablir », « Recentrer » (`target`, the icon of the
+Carte) and the two backgrounds, « Rapide » (`map`) and « Relief » (`mountain`). Each keeps its name as `aria-label` and `title` in four languages; the
+tool in hand stays marked (`aria-pressed`). At 390 the row wraps onto a second line (« Rétablir » and « Recentrer » under the first five) and never
+scrolls sideways. A set that lost an icon would bring back every written name together (never a mixed row). Case N131 follows: besides the names, it
+reads that every button carries `data-icon` and an `svg`, and no written text.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

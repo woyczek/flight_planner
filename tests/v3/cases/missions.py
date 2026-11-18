@@ -8957,6 +8957,9 @@ def n131(c):
           ['edmapundo', T('atMapUndo')], ['edmapredo', T('atMapRedo')], ['edmapfit', T('atMapFit')], ['fast', T('atBase_fast')], ['relief', T('atBase_relief')]],
          'each button of the map has its name read (aria-label)', what='the names')
     c.ok(all(x[1] and x[1] == x[2] for x in names), names, 'and the same name as a tooltip (title)')
+    # SOG-0471: the whole row is icons (all or nothing), no button keeps its written name
+    ico = c.js(f"[...document.querySelectorAll('{_EDTOOLS} button, {_LOOK} [data-do=edmapbase]')].map(b => [b.hasAttribute('data-icon'), !!b.querySelector('svg'), b.textContent.trim()])")
+    c.ok(len(ico) == 10 and all(x[0] and x[1] and not x[2] for x in ico), ico, 'every button of the map is an icon of the suite (an svg, no written name)')
     c.eq(c.js(_ZONE_STATE)[:2], ['round', 'false'], 'the tool « Zone » poses a circle at the opening', what='Zone')
     # a second touch on the chosen « Zone » changes its shape (it stays in hand)
     c.tap(_ZONE_TOOL)
