@@ -58,6 +58,23 @@ export function rhumbCourse(a, b) {
   return (Math.atan2(dLonOf(a, b) * Math.PI / 180, dPsi) * 180 / Math.PI + 360) % 360;
 }
 
+// ---------------------------------------------------------------- l'orthodromie : LA distance du grand cercle (SOG-0468)
+/** Distance orthodromique (NM) de a à b, deux { lat, lon } en degrés : haversine, R = 3 440,065 NM (6 371 000,4 m, le rayon de
+ *  tools/route_engine/geo.py R_NM), sans passer par le mètre. L'écart en longitude passe par un sinus : une route qui passe 180°
+ *  est juste. h borné à 1 (un arrondi près des antipodes ne sort pas l'arcsinus de son domaine). Une entrée non finie (ou absente)
+ *  rend NaN, jamais d'exception. La seule fonction du cadre pour cette mesure : un lecteur qui veut des mètres ou des paires
+ *  [lat, lon] l'adapte chez lui. */
+export function gcNm(a, b) {
+  const r = Math.PI / 180,
+    la1 = +a?.lat,
+    lo1 = +a?.lon,
+    la2 = +b?.lat,
+    lo2 = +b?.lon;
+  if (!Number.isFinite(la1) || !Number.isFinite(lo1) || !Number.isFinite(la2) || !Number.isFinite(lo2)) return NaN;
+  const h = Math.sin((la2 - la1) * r / 2) ** 2 + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.sin((lo2 - lo1) * r / 2) ** 2;
+  return 2 * RHUMB_R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
 /** Points d'une route aux longitudes continues : chaque point prend la copie la plus proche du précédent (donc à moins de
  *  180° de lui) ; une route qui passe la ligne de changement de date (177° puis −165°) va de 177° à 195°, sans faire le
  *  tour du monde. Le premier point garde sa longitude ; un point déjà continu est rendu tel quel (même objet).

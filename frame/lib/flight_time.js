@@ -20,13 +20,11 @@ import {
 
 /** Minutes de roulage quand le devis ne les donne pas. */
 export const TAXI_MIN = 10;
-const RAD = Math.PI / 180;
-/** Distance orthodromique (NM) ; la différence de longitude passe par un sinus : une route qui passe 180° est juste. */
-export const gcNm = (a, b) => {
-  const d = Math.sin((b.lat - a.lat) * RAD / 2) ** 2 + Math.cos(a.lat * RAD) * Math.cos(b.lat * RAD) * Math.sin((b.lon - a.lon) * RAD /
-    2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
-};
+/** Distance orthodromique (NM) : celle de geo.js, la seule du cadre (SOG-0468), ré-exportée ici pour ses lecteurs. */
+export {
+  gcNm
+}
+from './geo.js';
 /** Longueur (NM) d'un tronçon de route : sa loxodromie, un direct se vole au compas (SOG-0243 ; l'utilisateur, Q-0019 : « Oui ») ; gcNm
  *  reste la mesure des proximités (un point près d'un autre). */
 export const legNm = (a, b) => rhumbNm(a, b);
