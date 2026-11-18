@@ -6,8 +6,10 @@
 // page à page, l'affectation (§ 5–6).
 import * as MS from '../../frame/lib/mission.js';
 import {
-  fmtHm
-} from '../../frame/lib/time.js'; // SOG-0468 (4) : les durées du cadre
+  fmtHm,
+  fmtMoment
+} from '../../frame/lib/time.js'; // SOG-0468 (4) : les durées du cadre ; SOG-0486 : l'instant d'un brouillon, à l'heure de l'appareil
+import * as DF from './draft.js'; // SOG-0486 : les brouillons de l'atelier gardés sur l'appareil (Création)
 import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
@@ -159,6 +161,11 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-rbody>span{display:block;margin:.15em 0}
 [data-module="missions"] .ms-rrow button + button{margin-left:.5em} /* « Corriger » et « Retirer du registre » ne se touchent pas (retouche de N28) */
 [data-module="missions"] .ms-regbar{align-items:center}
+/* SOG-0486 : les brouillons de l'atelier, en tête du registre : une ligne chacun, ses deux gestes à la suite (sous le texte à 390) */
+[data-module="missions"] .ms-drafts{list-style:none;margin:.5em 0 .75em;padding:0}
+[data-module="missions"] .ms-drafts>li{display:flex;flex-wrap:wrap;align-items:center;gap:.25em .75em;padding:.35em 0}
+[data-module="missions"] .ms-drafts>li>.ms-dtext{flex:1 1 16em;min-width:0;overflow-wrap:anywhere}
+[data-module="missions"] .ms-drafts>li>.f-row{margin:0;gap:.5em}
 [data-module="missions"] .ms-reghead{display:flex;flex-wrap:wrap;gap:0 .75em;align-items:center}
 [data-module="missions"] .ms-reghead>.f-field{flex:1 1 12em;margin:0}
 [data-module="missions"] .ms-reghead>.ms-famrow{flex:2 1 24em;margin:0}
@@ -799,6 +806,21 @@ const TX = {
     'Serie und Nummer: eine ganze Zahl oder nichts.', 'Serie y número: un número entero, o nada.'
   ],
   regRemove: ['Retirer du registre', 'Remove from the registry', 'Aus dem Register entfernen', 'Quitar del registro'],
+  // SOG-0486 : les brouillons de l'atelier, en tête du registre
+  regDraft: ['Brouillon', 'Draft', 'Entwurf', 'Borrador'],
+  regDraftNew: ['nouvelle mission', 'new mission', 'neue Mission', 'misión nueva'],
+  regDraftResume: ['Reprendre', 'Resume', 'Fortsetzen', 'Retomar'],
+  regDraftDrop: ['Jeter', 'Discard', 'Verwerfen', 'Descartar'],
+  regDraftDropAsk: ['Jeter le brouillon « {t} » ? Ses changements non enregistrés seront perdus.',
+    'Discard the draft “{t}”? Its unsaved changes will be lost.',
+    'Den Entwurf „{t}“ verwerfen? Seine nicht gespeicherten Änderungen gehen verloren.',
+    '¿Descartar el borrador «{t}»? Se perderán sus cambios no guardados.'
+  ],
+  regDraftDropped: ['Brouillon jeté.', 'Draft discarded.', 'Entwurf verworfen.', 'Borrador descartado.'],
+  regDraftDropFail: ['Le brouillon n’a pas pu être jeté.', 'The draft could not be discarded.',
+    'Der Entwurf konnte nicht verworfen werden.',
+    'No se pudo descartar el borrador.'
+  ],
   regRemoveAsk: ['Retirer {id} du registre ? Le fichier de la mission reste dans le dépôt.',
     'Remove {id} from the registry? The mission file stays in the repository.',
     '{id} aus dem Register entfernen? Die Missionsdatei bleibt im Depot.',
@@ -1940,7 +1962,8 @@ async function regOpen(s) {
     found: [], // [{ path, entry }] les missions du dépôt que le registre ne connaît pas
     checking: true,
     plan: null, // le plan montré avant d'écrire
-    edit: null // la place de la ligne en correction
+    edit: null, // la place de la ligne en correction
+    drafts: [] // SOG-0486 : les brouillons de l'atelier gardés sur l'appareil (draft.js), en tête
   };
   draw(s);
   await regLoad(s);
@@ -1950,6 +1973,7 @@ async function regOpen(s) {
 async function regLoad(s) {
   const r = s.reg;
   if (!r) return;
+  regDrafts(s); // SOG-0486 : les brouillons, lus à part (sans réseau) : leur ligne se pose sans attendre le registre
   const live = () => S === s && s.reg === r;
   let got = await yamlFile(s.ctx, REGISTRY);
   if (got.why === 'late') got = await got.later;
@@ -2154,6 +2178,30 @@ const regFamHtml = s => famFilterHtml(s, 'rfam', 'rsub', [...s.reg.lines.map(e =
   subtype: f.entry.subtype
 }))], s.reg.fam, s.reg.sub || '');
 /** L'écran « Registre des missions ». */
+/** SOG-0486 : les brouillons de l'atelier gardés sur cet appareil (DF.listDrafts : dix au plus, le plus récent d'abord, sans réseau),
+ *  lus à chaque lecture du registre et après « Jeter » ; la ligne en tête se redessine à la réponse. */
+async function regDrafts(s) {
+  const r = s.reg,
+    list = await Promise.resolve().then(() => DF.listDrafts(s.ctx)).catch(() => []);
+  if (S !== s || s.reg !== r) return;
+  r.drafts = Array.isArray(list) ? list : [];
+  draw(s);
+}
+/** Ce que dit un brouillon : l'identifiant et le titre d'une mission modifiée, le titre (ou « nouvelle mission ») d'une création. */
+const draftWhat = (s, d) => cut(d.mode === 'edit' && d.id ? [d.id, d.title].filter(Boolean).join(' · ') : d.title || s.tt(TX
+  .regDraftNew), 80);
+/** SOG-0486 (l'utilisateur : « Conserver une mission en brouillon, et la proposer en tête de liste du registre ») : une ligne par
+ *  brouillon, « Brouillon — X-301A · Titre · aujourd’hui à 12 h 10 », puis « Reprendre » (l'atelier de Création, data-do="eddraft") et
+ *  « Jeter » ; rien sans brouillon. */
+function regDraftsHtml(s) {
+  const list = s.reg?.drafts || [];
+  if (!list.length) return '';
+  return `<ul class="ms-drafts" data-drafts>${list.map(d => {
+    const when = fmtMoment(d.updated_at, s.ctx.lang?.() || 'fr');
+    return `<li data-draft="${esc(d.key)}"><span class="ms-dtext"><b>${esc(s.tt(TX.regDraft))}</b> — ${esc(draftWhat(s, d))}${when ? `<span class="f-muted"> · ${esc(when)}</span>` : ''}</span><span class="f-row"><button type="button" class="primary" data-do="eddraft" data-key="${esc(d.key)}">${esc(s.tt(TX.regDraftResume))}</button><button type="button" data-do="regdraftdrop" data-key="${esc(d.key)}">${esc(s.tt(TX.regDraftDrop))}</button></span></li>`;
+  }).join('')}</ul>`;
+}
+
 function regHtml(s) {
   const r = s.reg,
     n = r.lines.length,
@@ -2163,7 +2211,7 @@ function regHtml(s) {
     // dans l'aide), puis « Mettre à jour le registre », « Retour » et le compte sur la même ligne
     count = r.why === 'loading' || broken ? '' : `<span class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}${r.readOf ? ` · <span data-regreadof>${esc(s.tt(TX.regReadOf, r.readOf))}</span>` : ''}</span>`,
     head = `<div class="f-card" data-pane="registry"><h2 title="${esc(s.tt(TX.regHint))}">${esc(s.tt(TX.regTitle))}</h2>
-    <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="edcreate">${esc(s.tt(TX.edCreate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}<label class="f-check ms-fullview" data-fullview title="${esc(s.tt(TX.regFullHint))}"><input type="checkbox" data-k="regfull"${s.fullView ? ' checked' : ''}><span>${esc(s.tt(TX.regFull))}</span></label></div>`;
+    <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="edcreate">${esc(s.tt(TX.edCreate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}<label class="f-check ms-fullview" data-fullview title="${esc(s.tt(TX.regFullHint))}"><input type="checkbox" data-k="regfull"${s.fullView ? ' checked' : ''}><span>${esc(s.tt(TX.regFull))}</span></label></div>${regDraftsHtml(s)}`;
   if (r.why === 'loading') return `${head}<p class="f-muted" data-why="loading">${esc(s.tt(TX.regLoading))}</p></div>`;
   if (broken) return `${head}<p class="f-warn" data-why="unreadable">${esc(s.tt(TX.regUnreadable, { e: r.err }))}</p></div>`;
   return `${head}${r.why === 'missing' ? `<p class="f-muted" data-why="missing">${esc(s.tt(TX.none))}</p>` : ''}
@@ -2289,6 +2337,19 @@ async function regClick(s, b) {
         number: v('rnumber'),
         operation: v('rop')
       }));
+    }
+    case 'regdraftdrop': {
+      // SOG-0486 : « Jeter » un brouillon, après confirmation ; la liste relue ensuite
+      const d = (r.drafts || []).find(x => x.key === b.dataset.key);
+      if (!d) return;
+      if (!await s.ctx.ask(s.tt(TX.regDraftDropAsk, {
+          t: draftWhat(s, d)
+        }), {
+          ok: s.tt(TX.regDraftDrop)
+        })) return;
+      const ok = await DF.dropDraft(s.ctx, d.key);
+      s.ctx.notify(s.tt(ok ? TX.regDraftDropped : TX.regDraftDropFail), ok ? 'ok' : 'warn');
+      return regDrafts(s);
     }
     case 'regremove': {
       if (!line) return;

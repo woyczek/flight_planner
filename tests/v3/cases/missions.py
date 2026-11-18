@@ -10848,3 +10848,53 @@ def n162(c):
         c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+def _draft_at(key, mode, text, title, at):
+    """The JSON text of an invented draft, as draft.js writes it, at the instant `at`."""
+    return json.dumps({'version': 1, 'updated_at': at, 'key': key, 'mode': mode, 'title': title, 'text': text}, ensure_ascii=False)
+
+
+@case('N170', 'Missions › Registre: each draft of the workshop kept on the device has its line at the head of the registry (SOG-0486) — « Brouillon — '
+      'X-001A · its title », « nouvelle mission » or its title for a creation, the most recent first, an instant; « Reprendre » opens the workshop on '
+      'it, « Jeter » asks first, then erases the file; a hostile title is text, never markup', 'N', tags=('missions', 'security'), designs=('standard',),
+      screens=True, langs4=True,
+      rule='SOG-0486 (the user: « Conserver une mission en brouillon, et la proposer en tête de liste du registre »); Création\'s contract (draft.js, '
+      'EDITOR.md: listDrafts, data-do="eddraft" data-key, dropDraft); Sécurisation: the id and the title escaped, the key taken from readDraft, never '
+      'from the page; invented drafts')
+def n170(c):
+    good = 'mission: { id: X-001A, type: REG }\ntitle: Brouillon retouché\n'
+    new = "mission: { id: X-990A, type: REG }\ntitle: '<img src=x onerror=window.__pwn=1>Nouvelle'\n"
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        reg_open(c, _ED_TEXTS)
+        c.js(_DRAFT_PUT, [['cache/missions/draft_new.json', _draft_at('new', 'new', new, '<img src=x onerror=window.__pwn=1>Nouvelle', '2026-11-18T09:00:00.000Z')],
+                          ['cache/missions/draft_X-001A.json', _draft_at('X-001A', 'edit', good, 'Brouillon retouché', '2026-11-18T10:00:00.000Z')]])
+        c.tap(f'{R} [data-do="regback"]')  # the drafts are read when the registry opens
+        c.tap(f'{M} [data-do="regopen"]')
+        c.until(f"document.querySelectorAll('{R} [data-drafts] [data-draft]').length === 2", timeout=15000, what=f'{w} px: the two drafts at the head')
+        got = c.js(f"[...document.querySelectorAll('{R} [data-drafts] [data-draft]')].map(li => [li.dataset.draft, li.textContent.replace(/\\s+/g, ' ').trim(), "
+                   f"li.querySelector('[data-do=eddraft]')?.dataset.key, li.querySelector('[data-do=regdraftdrop]')?.dataset.key])")
+        c.eq([g[0] for g in got], ['X-001A', 'new'], f'{w} px: the most recent first', what='order')
+        c.ok('X-001A' in got[0][1] and 'Brouillon retouché' in got[0][1], got, f'{w} px: « Brouillon — X-001A · Brouillon retouché »')
+        c.ok('<img src=x onerror=window.__pwn=1>Nouvelle' in got[1][1], got, f'{w} px: the hostile title said as TEXT')
+        c.eq([c.js('window.__pwn || 0'), c.count(f'{R} [data-drafts] img')], [0, 0], f'{w} px: never markup, nothing run', what='escaped')
+        c.eq([[g[2], g[3]] for g in got], [['X-001A', 'X-001A'], ['new', 'new']], f'{w} px: « Reprendre » and « Jeter » carry the key of their draft',
+             what='keys')
+        c.ok(c.count(f'{R} [data-drafts]') == 1 and c.js(f"(() => {{ const d = document.querySelector('{R} [data-drafts]'), "
+                                                          f"t = document.querySelector('{R} [data-regrows], {R} [data-reglist]'); "
+                                                          f"return !!d && !!t && (d.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) > 0 }})()"),
+             '', f'{w} px: the drafts above the registry\'s lines')
+        c.js(f"document.querySelector('{R} [data-drafts]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'N170_{c.design}_{w}_{c.lang}_drafts.png')
+        # « Jeter » the new one: asked first, then the file erased, the line gone
+        c.tap(f'{R} [data-drafts] [data-do=regdraftdrop][data-key="new"]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", what=f'{w} px: asked before discarding')
+        c.tap('.f-modal [data-ok]')
+        c.until(f"document.querySelectorAll('{R} [data-drafts] [data-draft]').length === 1", timeout=8000, what=f'{w} px: one draft left')
+        c.eq(c.js(_DRAFT_PATHS), ['draft_X-001A.json'], f'{w} px: the file of the discarded draft erased, the other kept', what='erased')
+        if w != 1280:
+            c.js(_REG_CLEAR)
+    # « Reprendre » (last: the workshop then holds the draft): the workshop opens on it (Création's resumption)
+    c.tap(f'{R} [data-drafts] [data-do=eddraft][data-key="X-001A"]')
+    c.until(f"!!document.querySelector('{E}')", timeout=10000, what='« Reprendre » opens the workshop')
