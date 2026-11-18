@@ -7633,9 +7633,13 @@ def n118(c):
     if not c.count(f'{E} input[data-k=eddep]'):  # the Cadre is open at the opening
         c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
-    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTST'", timeout=8000, what='the departure read in capitals once the base has answered')
-    c.eq([c.js(f"document.querySelector('{E} input[data-k=eddep]').value"), c.js(f"document.querySelector('{E} input[data-k=edarr]').value")], ['XTST', 'XTSU · base sud'],
-         'the Cadre shows the departure and the arrival with their code in capitals', what='the Cadre')
+    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTST' && document.querySelector('{E} input[data-k=edarr]').value === 'XTSU'", timeout=8000,
+            what='the departure and the arrival read in capitals once the base has answered')
+    # SOG-0465: the field of an aerodrome carries its code alone, the name is read under it (« XTSU — … »)
+    c.until(f"[...document.querySelectorAll('{E} [data-adline]')].every(x => x.dataset.state === 'found')", timeout=8000, what='the names under the fields')
+    c.eq([c.js(f"document.querySelector('{E} input[data-k=eddep]').value"), c.js(f"document.querySelector('{E} input[data-k=edarr]').value"),
+          [norm(c.text(f'{E} [data-adline={k}]') or '')[:6] for k in ('eddep', 'edarr')]], ['XTST', 'XTSU', ['XTST —', 'XTSU —']],
+         'the Cadre shows the departure and the arrival with their code in capitals (SOG-0465: the code in the field, the name under it)', what='the Cadre')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(500)
     c.eq(c.js(_TEXT_OF, pa), _LC_A, 'nothing touched: « Enregistrer » writes nothing, the file keeps its lower case', what='the file')
@@ -7768,4 +7772,156 @@ def n119(c):
     to_fuel('menu')
     left_for_fuel('left after the save')
     c.eq(c.count('.f-modal'), 0, 'just saved: the menu leaves at once, no question', what='saved')
+    c.js(_REG_CLEAR)
+
+
+# SOG-0465: the aerodrome field of the suite in the Cadre of the workshop — a small published base: XTST and XTSU (those of N118) and six more of the same two
+# first letters, so that two letters propose more than seven
+_AD_BASE = {'aerodromes': _LC_BASE_AD['aerodromes'] + [{'icao': f'XTA{i}', 'name': f'XTA{i} TEST', 'lat': 44.4 + i / 10, 'lon': 1.4, 'elev': 100} for i in range(6)]}
+_AD_SUG = f"[...document.querySelectorAll('{E} [data-adsug]:not([hidden]) [data-code]')].map(x => x.dataset.code)"
+# the map of the workshop framed on XTST and XTSU (the start view of the Carte is 15° wide)
+_AD_FRAMED = "(() => { const b = window.__edMap.getBounds(); return [[45, 1], [44, 2]].every(([la, lo]) => b.contains([lo, la])) && b.getEast() - b.getWest() < 4 })()"
+# where the list of proposals is: its left and right edges, the width of the screen and of the page, and how many of its proposals are seen whole (within the
+# screen, nothing over their middle)
+_AD_BOX = f"""(() => {{ const b = document.querySelector('{E} [data-adsug]'), r = b.getBoundingClientRect(), items = [...b.querySelectorAll('[data-code]')];
+  const seen = items.filter(x => {{ const q = x.getBoundingClientRect(); return q.top >= 0 && q.bottom <= innerHeight && x.contains(document.elementFromPoint((q.left + q.right) / 2, (q.top + q.bottom) / 2)) }});
+  return [Math.round(r.left), Math.round(r.right), innerWidth, document.documentElement.scrollWidth, seen.length, items.length] }})()"""
+
+
+@case('N120', 'Missions › the workshop, Départ and Arrivée of the Cadre are THE aerodrome field of the suite (the one of Carburant, frame/lib/ad_field.js): two letters '
+      'propose aerodromes of the base (seven at most), a choice by the keyboard (↓ Entrée) or by touch writes the CODE in capitals and the name under the field, '
+      'Échap closes; a code typed in lower case is put in capitals only when the base knows it, any other text stays as typed; the file is written in the form '
+      'of before (origin: { name, icao }) and the map of the workshop is framed on the aerodromes chosen; an existing mission saved untouched writes nothing; '
+      'the proposals are never cut by the edge of the screen at 390',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0465 (the user, 18 Nov: « le champ adep / adest avec complétion, le même que dans fuel. Le même code. La même fonction. C\'est un module '
+      'factorisé. »): modules/missions/editor_view.js `edAd`, `edAdValue`; editor.js `fieldText`, `fieldCode`; the ergonomist\'s rule of capitals (four letters '
+      'are not a code); modules/missions/EDITOR.md § 7 tricies')
+def n120(c):
+    pa, pc = 'missions/X_REG/X-001A/missionX-001A.yaml', 'missions/X_REG/X-003/missionX-003.yaml'
+    val = lambda k: c.js(f"document.querySelector('{E} input[data-k={k}]').value")  # noqa: E731
+    line = lambda k: norm(c.text(f'{E} [data-adline={k}]') or '')  # noqa: E731
+    shut = f"document.querySelector('{E} [data-adsug]').hidden"
+
+    def cadre():
+        """The Cadre unfolded in the sheet of the workshop."""
+        if not c.count(f'{E} input[data-k=eddep]'):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+
+    def typed(k, text):
+        """Types a text in a field key by key, as a finger would (the field emptied first)."""
+        c.page.fill(f'{E} input[data-k={k}]', '')
+        c.page.locator(f'{E} input[data-k={k}]').press_sequentially(text, delay=40)
+
+    def proposals(k, text):
+        """Types a text and waits for the aerodromes proposed under the field: their codes."""
+        typed(k, text)
+        c.until(f"({_AD_SUG}).length > 0", timeout=8000, what=f'the aerodromes proposed under {k} for « {text} »')
+        return c.quiet(_AD_SUG)
+
+    def choose(k, code):
+        """Proposes « xts » and chooses `code` by the keyboard: ↓ as many times as needed, then Entrée."""
+        got = proposals(k, 'xts')
+        c.ok(code in got, got, f'{code} proposed for « xts »')
+        for _ in range(got.index(code) + 1):
+            c.key('ArrowDown')
+        c.key('Enter')
+        c.until(f"document.querySelector('{E} input[data-k={k}]').value === '{code}' && {shut}", timeout=5000, what=f'{code} chosen by the keyboard')
+
+    def look(name, keep=False):
+        """The Cadre in view (or the view the field left at its focus: `keep`), the notifications gone: a capture."""
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        if not keep:
+            c.js(f"document.querySelector('{E} [data-grp=cadre]').scrollIntoView({{block: 'start'}})")
+        c.wait(150)
+        c.shot(name)
+
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _LC_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra=_AD_BASE)
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    # an EXISTING mission (aerodromes in lower case, known to the base): the code in the field, the name under it; saved untouched, nothing is written
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the workshop of X-001A')
+    cadre()
+    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTST' && document.querySelector('{E} input[data-k=edarr]').value === 'XTSU' && "
+            f"[...document.querySelectorAll('{E} [data-adline]')].every(x => x.dataset.state === 'found')", timeout=8000, what='the codes in the fields, the names under them')
+    c.ok(line('eddep').startswith('XTST — ') and line('edarr').startswith('XTSU — '), [line('eddep'), line('edarr')], 'under each field « XTST — <its name> »')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(500)
+    c.eq(c.js(_TEXT_OF, pa), _LC_A, 'an existing mission saved untouched: nothing written', what='the file of X-001A')
+    ed_leave(c)
+    # a mission CREATED
+    c.until(f"!!document.querySelector('{R} [data-do=edcreate]')", timeout=10000, what='back to the registry')
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E}')", what='the editor')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
+    c.until(f"!!document.querySelector('{E} input[data-k=edid]')?.value", what='the identifier proposed')
+    _ed_fill(c, 'edid', 'X-003')
+    _ed_fill(c, 'edtitle', 'Liaison choisie')
+    cadre()
+    c.eq([c.js(f"document.querySelector('{E} input[data-k=eddep]').closest('label') !== null"), c.count(f'{E} [data-adsug]'), c.js(shut)], [True, 1, True],
+         'the field in its label, ONE list of proposals, closed', what='the marking')
+    # two letters: aerodromes of the base, seven at most, never cut by the edge of the screen
+    got = proposals('eddep', 'xt')
+    c.eq([len(got), all(x.startswith('XT') for x in got)], [7, True], 'two letters propose the aerodromes of the base, seven at most (eight begin with XT)', what='« xt »')
+    box = c.js(_AD_BOX)
+    c.ok(box[0] >= 0 and box[1] <= box[2] and box[3] <= box[2] and box[4] == box[5] == 7, box,
+         'the proposals within the screen at 390: no horizontal scroll, the seven seen whole, nothing over them (the field went up at its focus)')
+    look('P7a_390_propositions.png', keep=True)
+    c.key('Escape')
+    c.until(shut, timeout=3000, what='Échap closes the list')
+    c.eq([val('eddep'), c.count(E)], ['xt', 1], 'Échap closes the list only: the text stays, the workshop too', what='Échap')
+    # the keyboard: ↓ Entrée writes the code in capitals and the name under the field
+    choose('eddep', 'XTST')
+    c.until(f"document.querySelector('{E} [data-adline=eddep]').dataset.state === 'found'", timeout=5000, what='the name under Départ')
+    c.ok(line('eddep').startswith('XTST — '), line('eddep'), '« XTST — <its name> » under Départ')
+    # a text that is not an aerodrome stays as typed; a code in lower case the base knows is put in capitals
+    typed('edarr', 'metz')
+    c.wait(900)
+    c.eq(val('edarr'), 'metz', 'the base does not know METZ: « metz » stays as typed', what='not an aerodrome')
+    typed('edarr', 'xtsu')
+    c.until(f"document.querySelector('{E} input[data-k=edarr]').value === 'XTSU'", timeout=5000, what='« xtsu », known to the base, put in capitals')
+    # the touch: a proposal touched is chosen
+    proposals('edarr', 'xts')
+    c.tap(f'{E} [data-adsug] [data-code="XTSU"]')
+    c.until(f"document.querySelector('{E} input[data-k=edarr]').value === 'XTSU' && {shut}", timeout=5000, what='XTSU chosen by touch')
+    c.until(f"document.querySelector('{E} [data-adline=edarr]').dataset.state === 'found'", timeout=5000, what='the name under Arrivée')
+    c.ok(line('edarr').startswith('XTSU — '), line('edarr'), '« XTSU — <its name> » under Arrivée')
+    look('P7a_390_choisi.png')
+    # the map of the workshop framed on the aerodromes chosen
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map) && !!window.__edMap", timeout=15000, what='the map of the workshop')
+    c.until(_AD_FRAMED, timeout=10000, what='the map framed on XTST and XTSU')
+    # saved: the file in the form of before
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return [d.origin, d.destination] }""" % _TEXT_OF, pc)
+    c.ok(all(isinstance(o, dict) and sorted(o) == ['icao', 'name'] and o['icao'] == code and o['name'].endswith(f'({code})') for o, code in zip(got, ('XTST', 'XTSU'))),
+         got, 'origin and destination written as before: { name: « <name> (XTST) », icao: XTST }')
+    # at 1280: the same list, the same choice (the captures of the ergonomist)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    cadre()
+    got = proposals('eddep', 'xt')
+    c.eq(len(got), 7, 'at 1280 as well: seven at most', what='« xt » at 1280')
+    box = c.js(_AD_BOX)
+    c.ok(box[0] >= 0 and box[1] <= box[2] and box[4] == box[5] == 7, box, 'at 1280 the seven seen whole as well')
+    look('P7a_1280_propositions.png', keep=True)
+    c.key('Escape')
+    c.until(shut, timeout=3000, what='Échap closes the list at 1280')
+    choose('eddep', 'XTST')
+    c.until(f"document.querySelector('{E} [data-adline=eddep]').dataset.state === 'found'", timeout=5000, what='the name under Départ at 1280')
+    c.until(_LC_FOUND, timeout=10000, what='at 1280, the map framed again on XTST and XTSU once Départ is chosen again')
+    look('P7a_1280_choisi.png')
+    ed_leave(c)
     c.js(_REG_CLEAR)

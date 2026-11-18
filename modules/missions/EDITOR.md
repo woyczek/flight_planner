@@ -939,6 +939,41 @@ coordinates. Two causes, both confirmed by case N118 (red before, green after):
   SOG-0469, kept so that a file or a typing in capitals does not depend on the base); otherwise the name stays whole, in the field and
   in the file. « Piste (nord) » stays « Piste (nord) » unless the base knows NORD.
 
+### 7 tricies. Départ and Arrivée take the aerodrome field of the suite, with its completion (18 Nov 2026; SOG-0465; noreg N120, N118)
+
+The user, 18 Nov: « le champ adep / adest avec complétion, le même que dans fuel. Le même code. La même fonction. C'est un module
+factorisé. » The two fields of the Cadre (both forms of the group: the full Cadre and the reduced Cadre of a link flight) are now THE
+aerodrome field of Fuel, moved into `frame/lib/ad_field.js` (and `frame/lib/suggest_list.js`) by the Features SOG session.
+
+- **Reused as is** (`createAdField`, nothing copied nor rewritten): the completion (two characters at least, seven proposals at most,
+  by the code, the name, the country or a town), the list under the field (↑ ↓ Entrée Échap, touch, closed when the field loses the
+  focus), the line « XTST — Base Test » under the field (`data-adline`, its height reserved), `known(code)` and `nameKnown(code)`.
+  Its texts are its own, in four languages. The base comes from `ctx.aerodb` only.
+- **Written by the workshop**: the marking (each input in its `<label>`, ONE `[data-adsug]` list in the row `.ms-adrow`, positioned;
+  its styles in `AT_STYLE`, without rounded corners); `edAd(s)`, one block per mounting of the workshop (created at its first need —
+  the drawing of the Cadre, `edAfter`, a typing —, stopped by `edAfter` outside the workshop and at unmounting); the listeners.
+- **The listeners**: `module.js` gives the workshop only `input`, `change` and the click of an « ed… » button. The workshop puts its
+  OWN listeners on `s.el`, once per mounting (`keydown` → `onKey`, `focusout` → `onFocusOut`, `pointerdown` → `onPointerDown`,
+  `click` → `onClick`: a proposal is not an « ed… » button, so `edClick` never sees it), and `edInput` gives the typing to the block
+  first (`onInput`) before doing what it did. `AD.paint()` after each drawing (`edAfter`) and after `edRecode`. A `focusin` listener
+  lifts the field to the top of the view when the seven proposals have no room under it before the foot (a phone, the Cadre low in the
+  sheet): a reaction to the focus, nothing rewritten.
+- **What the field carries**: the CODE of an aerodrome alone (`ED.fieldText`: the code `codeIn` reads — written in capitals, or known
+  to the base), its name under it; the TEXT as written for a place that is not an aerodrome (a heliport pad, a hospital): free text
+  stays possible. What the Cadre keeps (`e.cadre.dep`, `arr`) and what is written do not change form (`ED.withCadre`: `origin:
+  { name, icao, lat, lon }`). `edAdValue`: the field still saying what the Cadre keeps → nothing changes; the aerodrome of the file
+  typed again → its text as written (nothing written); a choice of the list → the code, noted as known; a code of four signs typed →
+  kept as typed, then, if the base knows it (`AD.known`), in CAPITALS; in both cases, once the base has given the name, the Cadre
+  keeps « XTST · <name> » and the file gets `name: <name> (XTST)`, `icao: XTST`; any other text → as typed (« metz » stays
+  « metz »). Nothing is written while the field is not touched (« Enregistrer » untouched writes nothing, N120).
+- **Not changed**: `adPosOf` (the position of an aerodrome for the map and the sketch, by `aerodb.aerodromes`) stays — the block
+  gives the name and whether the base knows the code, not the position; no function of the workshop became useless. The four-sign
+  patterns of `editor.js` and `editor_view.js` stay: `isCode` (the heliport code « LF418 ») is not yet on this head — a follow-up.
+- **Other aerodrome fields of the workshop**: none. The key « arrival » of a drawer chooses a place in a list (Destination, Départ,
+  the places), the rows Départ and Arrivée of the Places carry only their latitude and longitude.
+- Known limit of the block: a free name of four letters (« metz ») shows « inconnu » under the field, the block taking any four signs
+  for a code to look up.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

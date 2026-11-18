@@ -53,6 +53,14 @@
 // et positions se retouchent, retirer un lieu ou changer son identifiant demande de dévoiler (une notification, la même phrase) ; un
 // lieu ajouté dans la séance (i = -1) se retire et se renomme librement.
 //
+// Départ et Arrivée du Cadre (SOG-0465) : LE champ de terrain de la suite, celui de Carburant (frame/lib/ad_field.js, appelé tel quel :
+// sa complétion, sa liste, la ligne « XTST — Base Test » sous le champ). Un bloc par montage de l'atelier (edAd : créé au premier
+// dessin, arrêté hors de l'atelier et au démontage, edAfter) ; module.js ne rend à l'atelier que input, change et click d'un bouton
+// « ed… » : l'atelier pose ses propres écoutes (keydown, focusout, pointerdown, click) sur s.el, une fois par montage, et rend la
+// main au bloc d'abord dans edInput. Le champ montre le CODE d'un terrain (ED.fieldText), le texte tel qu'écrit d'un lieu qui n'en est
+// pas un ; un texte ne passe en majuscules et n'est un terrain que si la base le connaît (AD.known) ; ce qui est écrit ne change pas de
+// forme (ED.withCadre) et rien ne l'est tant que le champ n'est pas touché.
+//
 // L'essai des clés (SOG-0444, lot P4) : « Essayer les clés », dans l'en-tête du déroulé, met le volet de l'essai à la place de la
 // fiche (s.ed.trial : { on, min, max, speed, alt, declares, hands }) ; le calcul est celui de editor_trial.js sur le document de la
 // séance ; la carte se déplie d'elle-même et montre l'avion et sa trace ; chaque carte du déroulé dit « ouvert à H + 6 min » ou
@@ -68,6 +76,9 @@ import * as MS from '../../frame/lib/mission.js';
 import * as MT from '../../frame/lib/mission_themes.js';
 import * as RG from './registry.js';
 import * as TR from './editor_trial.js';
+import {
+  createAdField
+} from '../../frame/lib/ad_field.js'; // SOG-0465 : le champ de terrain de la suite (Départ, Arrivée), celui de Carburant
 import {
   EDTX,
   citedText,
@@ -188,6 +199,16 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody>h3{display:none}
 [data-module="missions"] .ms-atbody .f-row{align-items:flex-start}
 [data-module="missions"] .ms-atbody .f-row>.f-field{flex:1 1 10em;min-width:0}
+[data-module="missions"] .ms-atbody .f-row.ms-adrow{position:relative} /* SOG-0465 : la liste des terrains proposés s'y pose */
+[data-module="missions"] .ms-adrow>.f-field{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* monté en haut de la vue au focus (edAdRoom), sous l'en-tête */
+[data-module="missions"] .ms-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
+[data-module="missions"] .ms-adname[data-state="unknown"]{font-style:italic}
+[data-module="missions"] .ms-adsug{position:absolute;left:0;right:0;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface,#fff);border:1px solid var(--sog-border,#ccc);box-shadow:var(--sog-shadow)} /* par-dessus la fiche, jamais dans la mise en page */
+[data-module="missions"] .ms-adsug[hidden]{display:none}
+[data-module="missions"] .ms-adsug .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
+[data-module="missions"] .ms-adsug .fu-sugitem:last-child{border-bottom-width:0}
+[data-module="missions"] .ms-adsug .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
+[data-module="missions"] .ms-adsug .fu-sugitem span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 [data-module="missions"] .ms-atbody textarea{width:100%;box-sizing:border-box;resize:vertical;font:inherit}
 [data-module="missions"] .ms-plcheck{display:flex;gap:8px;align-items:center;min-height:44px;margin:4px 0}
 [data-module="missions"] .ms-atbody .ms-plbody>.f-muted{white-space:normal;overflow:visible} /* le détail d'un lieu n'est jamais coupé */
@@ -355,11 +376,16 @@ function edCadreHtml(s) {
     field = (k, label, input, hint = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span>${input}${hint ? `<small class="f-muted" data-hint="${k}">${esc(hint)}</small>` : ''}</label>`,
     text = (k, v, extra = '') => `<input data-k="${k}" value="${esc(v)}" autocomplete="off"${extra}>`,
     sel = (k, list, v, empty = true) => `<select data-k="${k}">${empty ? '<option value=""></option>' : ''}${list.map(x => `<option value="${esc(x.code)}"${x.code === v ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select>`,
-    idHint = e.mode === 'edit' ? c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '' : c.id === num.id ? s.tt(TX.edIdNext) : '';
+    idHint = e.mode === 'edit' ? c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '' : c.id === num.id ? s.tt(TX.edIdNext) : '',
+    // SOG-0465 : Départ et Arrivée, le champ de terrain de la suite (frame/lib/ad_field.js) — le code d'un terrain dans le champ (son nom
+    // dessous, data-adline), le texte d'un lieu qui n'est pas un terrain ; la liste des propositions posée dans la rangée (data-adsug)
+    AD = edAd(s),
+    ad = (k, label, v) => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="${k}" value="${esc(ED.fieldText(v))}" maxlength="160" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-adsug" placeholder="${esc(s.tt(TX.edPlaceHint))}"><small class="ms-adname" data-adline="${k}"></small></label>`,
+    ads = `<div class="f-row ms-adrow">${ad('eddep', TX.edDep, c.dep)}${ad('edarr', TX.edArr, c.arr)}<div class="ms-adsug" id="ed-adsug" data-adsug role="listbox" aria-label="${esc(s.tt(AD.texts.listLabel))}" hidden></div></div>`;
   if (ED.liaison(c.family)) // une liaison (famille commerciale) : le Cadre réduit (décision du 13 nov.), six éléments
     return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3><p class="f-muted" data-liaison>${esc(s.tt(TX.edLiaisonHint))}</p>
     <div class="f-row">${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edCharge, sel('edsub', subs, c.subtype)) : ''}</div>
-    <div class="f-row">${field('eddep', TX.edDep, text('eddep', c.dep, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}${field('edarr', TX.edArr, text('edarr', c.arr, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}</div>
+    ${ads}
     <div class="f-row">${field('edco', TX.edAirline, coSelect(s, 'edco', c.airline || MS.PERSONAL))}${field('edac', TX.edAircraft, text('edac', c.aircraft, ' maxlength="12" autocapitalize="characters" placeholder="A320"'))}</div>
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'), c.title && c.title === ED.liaisonTitle(c.dep, c.arr) ? s.tt(TX.edTitleAuto) : '')}
     <div class="f-row">${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), s.tt(TX.edNextSeries, { n: num.nextSeries }))}</div>`;
@@ -368,7 +394,7 @@ function edCadreHtml(s) {
     <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), s.tt(TX.edNextSeries, { n: num.nextSeries }))}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
     ${field('edth', TX.edTheatre, sel('edth', theatres.map(t => ({ code: t, label: t })), c.theatre))}
-    <div class="f-row">${field('eddep', TX.edDep, text('eddep', c.dep, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}${field('edarr', TX.edArr, text('edarr', c.arr, ` maxlength="160" placeholder="${esc(s.tt(TX.edPlaceHint))}"`))}</div>`;
+    ${ads}`;
 }
 
 /** Le document en cours d'édition : le fichier lu, puis le cadre, les équipes et les lieux retouchés (une étape jamais ouverte ne
@@ -1325,6 +1351,112 @@ function edMapPose(s, e, p) {
   draw(s);
 }
 
+/** Le champ de terrain de l'atelier en vie : { s, el, ad, off } — un par montage de l'atelier (SOG-0465). */
+let AF = null;
+
+/** Le champ de terrain de la suite pour Départ et Arrivée du Cadre (frame/lib/ad_field.js, appelé tel quel) : créé au premier besoin
+ *  pour ce montage (le dessin du Cadre, edAfter, une saisie), avec les écoutes que module.js ne rend pas à l'atelier — keydown (↑ ↓
+ *  Entrée Échap), focusout, pointerdown et le toucher d'une proposition (qui n'est pas un bouton « ed… ») — posées UNE fois sur s.el. */
+function edAd(s) {
+  if (AF && AF.s === s && AF.el === s.el) return AF.ad;
+  edAdStop();
+  const el = s.el,
+    ad = createAdField({
+      ctx: s.ctx,
+      body: () => state() === s && s.ed ? el : null,
+      gone: () => state() !== s || !s.ed,
+      keys: ['eddep', 'edarr'],
+      idPrefix: 'ed-sug'
+    }),
+    on = [
+      ['keydown', ev => ad.onKey(ev)],
+      ['focusout', ev => ad.onFocusOut(ev)],
+      ['pointerdown', ev => ad.onPointerDown(ev)],
+      ['click', ev => ad.onClick(ev)],
+      ['focusin', ev => edAdRoom(el, ev)]
+    ];
+  for (const [t, f] of on) el.addEventListener(t, f);
+  AF = {
+    s,
+    el,
+    ad,
+    off: () => {
+      for (const [t, f] of on) el.removeEventListener(t, f);
+      ad.stop();
+    }
+  };
+  return ad;
+}
+
+/** Un champ de terrain prend le focus : s'il n'y a pas sous lui la place des sept propositions avant le pied de l'atelier (un téléphone,
+ *  le Cadre bas dans la fiche), il monte en haut de la vue — la liste n'est jamais coupée par le bord de l'écran. Une réaction au focus,
+ *  rien n'est réécrit. */
+function edAdRoom(el, ev) {
+  const k = ev.target?.dataset?.k,
+    label = k === 'eddep' || k === 'edarr' ? ev.target.closest('label') : null;
+  if (!label) return;
+  const foot = el.querySelector('.ms-atfoot')?.getBoundingClientRect().top ?? innerHeight;
+  if (foot - label.getBoundingClientRect().bottom < 7 * 44 + 8) label.scrollIntoView?.({
+    block: 'start'
+  });
+}
+
+/** Arrête le champ de terrain de l'atelier : ses écoutes retirées, son abonnement à la base arrêté ; sans effet s'il n'y en a pas. */
+function edAdStop() {
+  const f = AF;
+  AF = null;
+  f?.off();
+}
+
+/** La saisie de Départ ou d'Arrivée (SOG-0465), le bloc ayant déjà pris la frappe : le texte que le cadre retient, ou null si rien ne
+ *  change. Le terrain du fichier retapé garde son texte (rien n'est écrit) ; un choix de la liste, ou un code tapé que la base connaît
+ *  (AD.known), devient le CODE en majuscules, avec le nom de la base dès qu'elle l'a dit ; tout autre texte reste tel que tapé. */
+function edAdValue(s, key, ev) {
+  const e = s.ed,
+    input = ev.target,
+    t = String(input.value ?? ''),
+    T = t.trim().toUpperCase(),
+    ad = edAd(s),
+    was = ED.cadreOf(e.base)[key];
+  if (t === ED.fieldText(e.cadre[key])) return null; // le champ dit déjà ce que le cadre retient (un « change », le même choix)
+  if (T && ED.fieldCode(was) === T) return was; // le terrain du fichier : son texte tel qu'écrit
+  const picked = ad.isPicking();
+  if (picked) ED.noteAerodrome(T, true); // la liste ne propose que des terrains de la base
+  else if (!/^[A-Z0-9]{4}$/.test(T)) return t; // un lieu qui n'est pas un code : tel que tapé
+  const now = picked ? T : t;
+  ad.known(T).then(ok => {
+    ED.noteAerodrome(T, ok);
+    // la réponse ne vaut que pour ce même texte, dans ce même atelier
+    if (!ok || state() !== s || s.ed !== e || e.cadre[key] !== now || input.value.trim().toUpperCase() !== T) return;
+    const name = ad.nameKnown(T);
+    edCadreSet(s, key, typeof name === 'string' && name ? `${T} · ${name}` : T);
+    if (input.value !== T) input.value = T; // connu de la base : en majuscules
+    edRefresh(s);
+  });
+  return now;
+}
+
+/** Un champ du Cadre retenu : la valeur (`key` : dep, arr, family…), le titre proposé d'une liaison qui suit les deux bouts, et la ligne
+ *  des Lieux d'un départ ou d'une arrivée retouchés. */
+function edCadreSet(s, key, value) {
+  const e = s.ed,
+    auto = ED.liaison(e.cadre.family) && (!e.cadre.title || e.cadre.title === ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
+  e.cadre[key] = value;
+  // une liaison : tant que le titre est celui que proposent les deux bouts (ou vide), il les suit (« LFPO → LFRS »)
+  if (auto && (key === 'dep' || key === 'arr' || key === 'family')) {
+    e.cadre.title = ED.liaisonTitle(e.cadre.dep, e.cadre.arr);
+    const t = s.el.querySelector('input[data-k=edtitle]');
+    if (t && t.value !== e.cadre.title) t.value = e.cadre.title;
+  }
+  // un départ ou une arrivée retouchés au Cadre : leur ligne des Lieux suit (sa position ne reste que si le code OACI ne change pas)
+  if ((key === 'dep' || key === 'arr') && e.places) {
+    const fresh = ED.placesOf(ED.withCadre(e.base, e.cadre)).find(r => r.kind === key),
+      at = e.places.findIndex(r => r.kind === key);
+    if (at >= 0) e.places = fresh ? e.places.map((r, i) => i === at ? fresh : r) : e.places.filter((_, i) => i !== at);
+    else if (fresh) e.places = [fresh, ...e.places];
+  }
+}
+
 /** Après chaque dessin de la page (module.js l'appelle à la fin de son dessin, et au démontage avec null) : dans l'atelier, la carte
  *  du socle est reposée dans l'emplacement neuf ; hors de l'atelier, elle est retirée avec son contexte WebGL. Les conditions du
  *  propriétaire de module.js (Features SOG, 18 nov. 2026), puisque cet appel est sur le chemin de chaque dessin : il ne lève JAMAIS
@@ -1333,9 +1465,16 @@ function edMapPose(s, e, p) {
  *  effet la seconde. */
 export function edAfter(s) {
   try {
-    if (!s) return EM.stop(); // au démontage : la carte en vie, quelle qu'elle soit
+    if (!s) { // au démontage : la carte en vie, quelle qu'elle soit, et le champ de terrain (SOG-0465)
+      edAdStop();
+      return EM.stop();
+    }
     // hors de l'atelier : la carte de l'ATELIER seulement — celle d'un bloc en lecture (mission_map.js : le Brief, la liseuse) reste
-    if (!s.ed) return EM.editing() ? EM.stop() : undefined;
+    if (!s.ed) {
+      edAdStop();
+      return EM.editing() ? EM.stop() : undefined;
+    }
+    edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée
     s.ed.mapLook = null; // le design a pu changer de ton entre deux dessins
     edMapShow(s);
   } catch {
@@ -1779,23 +1918,16 @@ function edInputDo(s, ev) {
     edac: 'aircraft'
   } [k];
   if (!key) return;
-  const auto = ED.liaison(e.cadre.family) && (!e.cadre.title || e.cadre.title === ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
-  e.cadre[key] = key === 'id' || key === 'aircraft' ? ev.target.value.toUpperCase() : key === 'airline' && ev.target.value === MS.PERSONAL ?
-    '' :
-    ev.target.value;
-  // une liaison : tant que le titre est celui que proposent les deux bouts (ou vide), il les suit (« LFPO → LFRS »)
-  if (auto && (key === 'dep' || key === 'arr' || key === 'family')) {
-    e.cadre.title = ED.liaisonTitle(e.cadre.dep, e.cadre.arr);
-    const t = s.el.querySelector('input[data-k=edtitle]');
-    if (t) t.value = e.cadre.title;
+  if (key === 'dep' || key === 'arr') { // SOG-0465 : le champ de terrain de la suite prend la frappe d'abord (sa ligne, sa liste)
+    edAd(s).onInput(ev);
+    const v = edAdValue(s, key, ev);
+    if (v === null) return;
+    edCadreSet(s, key, v);
+    if (ev.type === 'input') edRefresh(s);
+    return;
   }
-  // un départ ou une arrivée retouchés au Cadre : leur ligne des Lieux suit (sa position ne reste que si le code OACI ne change pas)
-  if ((key === 'dep' || key === 'arr') && e.places) {
-    const fresh = ED.placesOf(ED.withCadre(e.base, e.cadre)).find(r => r.kind === key),
-      at = e.places.findIndex(r => r.kind === key);
-    if (at >= 0) e.places = fresh ? e.places.map((r, i) => i === at ? fresh : r) : e.places.filter((_, i) => i !== at);
-    else if (fresh) e.places = [fresh, ...e.places];
-  }
+  const v = ev.target.value;
+  edCadreSet(s, key, key === 'id' || key === 'aircraft' ? v.toUpperCase() : key === 'airline' && v === MS.PERSONAL ? '' : v);
   if (ev.target.tagName === 'SELECT') {
     if (ev.type !== 'change') return;
     if (key === 'family') {
@@ -1826,7 +1958,8 @@ function edRecode(s) {
     if (e.cadre[k] === was[k] && now[k] !== was[k]) {
       e.cadre[k] = now[k];
       const input = s.el.querySelector(`input[data-k=${field}]`);
-      if (input && document.activeElement !== input) input.value = now[k];
+      // SOG-0465 : le champ montre le code d'un terrain (son nom dessous), le texte d'un autre lieu
+      if (input && document.activeElement !== input && input.value !== ED.fieldText(now[k])) input.value = ED.fieldText(now[k]);
       if (e.places) e.places = e.places.map(r => r && r.kind === k && r.name === was[k] ? {
         ...r,
         name: now[k]
@@ -1837,6 +1970,7 @@ function edRecode(s) {
     dep: now.dep,
     arr: now.arr
   };
+  edAd(s).paint();
 }
 /** SOG-0287 (fin) : la position d'un terrain de liaison d'après la base publiée (aerodb.aerodromes), demandée une fois par code ; null
  *  (inconnu), absente tant que la réponse n'est pas venue ; l'aperçu redessiné à la réponse. */

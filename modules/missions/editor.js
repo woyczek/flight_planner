@@ -47,7 +47,8 @@
 //     sans point, les parties restées sans clé (leur zone ou le point de leur arrivée retirés).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
 //   cadreOf(doc) → { family, subtype, series, id, title, theatre, dep, arr, airline, aircraft } (textes) ; placeText(p) : « XTST · Base
-//     Test ». airline : la compagnie (airline au premier niveau, la forme de move.js ; '' = personnelle) ; aircraft : aircraft[0].type.
+//     Test » ; fieldText(texte) : ce que le champ Départ ou Arrivée montre (le code seul d'un terrain, sinon le texte) et fieldCode(texte)
+//     son code ('' sans code) — SOG-0465. airline : la compagnie (airline au premier niveau, la forme de move.js ; '' = personnelle) ; aircraft : aircraft[0].type.
 //   COMMERCIAL, liaison(family) : la famille commerciale (thème COMMERCIAL, sigle CAT, lettre E) — une liaison : le Cadre se réduit au
 //     départ, à l'arrivée, à la compagnie, à la charge (le sous-type) et à l'aéronef ; liaisonTitle(dep, arr) → « LFPO → LFRS » ;
 //     Équipes, Risques, Chronologie et le théâtre ne comptent pas dans « À compléter » (décision du 13 nov., SOG-0287).
@@ -173,6 +174,18 @@ export function placeText(p) {
   else if (icao && m && m[1].toUpperCase() === icao) name = cut(t.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120);
   return [icao, name].filter(Boolean).join(' · ');
 }
+/** Le code de terrain qu'un texte de Départ ou d'Arrivée porte (voir codeIn : écrit en majuscules, ou connu de la base), '' sinon
+ *  (SOG-0465). */
+export function fieldCode(text) {
+  return codeIn(cut(text, 160))?.icao || '';
+}
+
+/** Ce que le champ Départ ou Arrivée du Cadre montre d'un texte de terrain (SOG-0465, le champ de terrain de la suite) : le CODE seul
+ *  quand le texte en porte un (fieldCode) — le nom se lit sous le champ —, le texte tel qu'écrit sinon (« metz », « Hôpital Nord »). */
+export function fieldText(text) {
+  return fieldCode(text) || cut(text, 160);
+}
+
 /** Un terrain saisi (« XTST · Base Test », « Base Test (XTST) », « XTST », et en minuscules ceux que la base connaît) → { icao, name } ;
  *  le nom écrit « Base Test (XTST) » ; un texte sans code connu reste tel que saisi. */
 function placeIn(text) {
