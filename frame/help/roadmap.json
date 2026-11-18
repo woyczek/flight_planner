@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9346398",
+  "organisation": "3e953a1",
   "fiches": 498,
   "untranslated": 0,
   "priorities": 481,
@@ -7396,12 +7396,13 @@
     {
      "id": "SOG-0473",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages : cocher certaines cases décale l'écran, et le second clic arrive n'importe où",
      "en": "Settings: ticking some boxes shifts the screen, and the second click lands anywhere",
      "de": "Einstellungen: Manche Kästchen verschieben den Bildschirm, der zweite Klick landet irgendwo",
      "es": "Ajustes: al marcar ciertas casillas la pantalla se desplaza y el segundo clic cae en cualquier sitio",
-     "rank": 479
+     "rank": 479,
+     "test": true
     }
    ]
   },
@@ -7495,13 +7496,14 @@
     {
      "id": "SOG-0477",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages perdus sur 127.0.0.1:8000, et l'interface bloquée en anglais",
      "en": "Settings lost on 127.0.0.1:8000, and the interface stuck in English",
      "de": "Einstellungen auf 127.0.0.1:8000 verloren, Oberfläche bleibt auf Englisch",
      "es": "Ajustes perdidos en 127.0.0.1:8000 y la interfaz bloqueada en inglés",
      "milestone": "6.0.0-alpha.5",
-     "rank": 44
+     "rank": 44,
+     "test": true
     }
    ]
   },

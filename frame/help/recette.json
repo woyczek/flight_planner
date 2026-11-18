@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 314,
+  "tests": 316,
   "verdicts": 215
  },
  "apps": [
@@ -4636,6 +4636,20 @@
    "delivered": "2026-11-18T14:06:30Z"
   },
   {
+   "id": "SOG-0473",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages : cocher certaines cases décale l'écran, et le second clic arrive n'importe où",
+    "en": "Settings: ticking some boxes shifts the screen, and the second click lands anywhere",
+    "de": "Einstellungen: Manche Kästchen verschieben den Bildschirm, der zweite Klick landet irgendwo",
+    "es": "Ajustes: al marcar ciertas casillas la pantalla se desplaza y el segundo clic cae en cualquier sitio"
+   },
+   "test": "Réglages, fenêtre étroite (ou téléphone) : coche puis décoche « Utilisation sur cette machine seule » (et d'autres cases de la carte Usages). Attendu : l'écran ne se décale pas, la case reste sous ton doigt, et un second clic tombe bien sur ce que tu vises.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T15:16:04Z"
+  },
+  {
    "id": "SOG-0474",
    "app": "pilote",
    "title": {
@@ -4662,6 +4676,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T12:14:40Z"
+  },
+  {
+   "id": "SOG-0477",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages perdus sur 127.0.0.1:8000, et l'interface bloquée en anglais",
+    "en": "Settings lost on 127.0.0.1:8000, and the interface stuck in English",
+    "de": "Einstellungen auf 127.0.0.1:8000 verloren, Oberfläche bleibt auf Englisch",
+    "es": "Ajustes perdidos en 127.0.0.1:8000 y la interfaz bloqueada en inglés"
+   },
+   "test": "Réglages › Affichage : une ligne « Langue » (Automatique, Français, English, Deutsch, Español). Choisis Français : la page se recharge en français ; choisis English : en anglais ; Automatique : la langue de ton navigateur. Rappel : tes réglages vivent sur http://localhost:8000 (127.0.0.1 est une autre adresse, avec ses propres réglages).",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T15:16:13Z"
   },
   {
    "id": "SOG-0490",
