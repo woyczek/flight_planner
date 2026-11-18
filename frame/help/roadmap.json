@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "b640418",
-  "fiches": 456,
+  "organisation": "a1ee164",
+  "fiches": 460,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2254,6 +2254,27 @@
    ]
   },
   {
+   "id": "pilote-carte-voies-aeriennes",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; voies aériennes",
+    "en": "Carte ; voies aériennes",
+    "de": "Carte ; voies aériennes",
+    "es": "Carte ; voies aériennes"
+   },
+   "items": [
+    {
+     "id": "SOG-0461",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : le sens d'une voie aérienne paraît en même temps que son cartouche ; une petite flèche séparée du cartouche par un liseré blanc",
+     "en": "Map: an airway's direction shows together with its label; a small arrow set apart from the label by a white edge",
+     "de": "Karte: die Richtung einer Luftstraße erscheint zugleich mit ihrem Schild; ein kleiner Pfeil, durch einen weißen Rand vom Schild getrennt",
+     "es": "Mapa: el sentido de una aerovía aparece a la vez que su etiqueta; una flecha pequeña separada de la etiqueta por un filete blanco"
+    }
+   ]
+  },
+  {
    "id": "pilote-carte-vol",
    "app": "pilote",
    "label": {
@@ -3899,6 +3920,27 @@
    ]
   },
   {
+   "id": "compagnie-missions-registre-atelier-fiche",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; registre ; atelier ; fiche",
+    "en": "Missions ; registre ; atelier ; fiche",
+    "de": "Missions ; registre ; atelier ; fiche",
+    "es": "Missions ; registre ; atelier ; fiche"
+   },
+   "items": [
+    {
+     "id": "SOG-0459",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions à tiroirs : l'existence même des tiroirs est cachée ; on choisit de dévoiler la mission complète",
+     "en": "Missions with drawers: the very existence of drawers is hidden; revealing the full mission is a deliberate choice",
+     "de": "Missionen mit Schubladen: schon ihre Existenz bleibt verborgen; die ganze Mission wird nur auf ausdrücklichen Wunsch aufgedeckt",
+     "es": "Misiones con cajones: se oculta incluso que existan; revelar la misión completa es una elección expresa"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-registre-fiche",
    "app": "compagnie",
    "label": {
@@ -3916,6 +3958,27 @@
      "en": "Missions: two views of one mission — the Brief (pilot: the story first) and the Workshop (author: the map first); the register opens the Brief",
      "de": "Missionen: zwei Ansichten einer Mission — das Briefing (Pilot: zuerst die Geschichte) und die Werkstatt (Autor: zuerst die Karte); das Register öffnet das Briefing",
      "es": "Misiones: dos vistas de una misma misión — el Brief (piloto: primero la historia) y el Taller (autor: primero el mapa); el registro abre el Brief"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-registre-import",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; registre ; import",
+    "en": "Missions ; registre ; import",
+    "de": "Missions ; registre ; import",
+    "es": "Missions ; registre ; import"
+   },
+   "items": [
+    {
+     "id": "SOG-0460",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : l'aller-retour avec ChatGPT — copier le prompt, coller la réponse, alimenter le registre (tiroirs et zones en contour compris)",
+     "en": "Missions: the round trip with ChatGPT — copy the prompt, paste the answer, feed the register (drawers and outlined areas included)",
+     "de": "Missionen: der Hin- und Rückweg mit ChatGPT — Prompt kopieren, Antwort einfügen, Register füllen (mit Schubladen und umrissenen Gebieten)",
+     "es": "Misiones: la ida y vuelta con ChatGPT — copiar el prompt, pegar la respuesta, alimentar el registro (cajones y zonas con contorno incluidos)"
     }
    ]
   },
@@ -4928,6 +4991,27 @@
      "de": "BLOCKIEREND: die Seite friert minutenlang ein, auch nach Schließen und erneutem Öffnen, nach einem Aufbau, der Tausende Dateien neu schreibt",
      "es": "BLOQUEANTE: la página se congela durante minutos, incluso cerrada y reabierta, tras una construcción que reescribe miles de archivos",
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-navigation",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; navigation",
+    "en": "Cadre ; navigation",
+    "de": "Cadre ; navigation",
+    "es": "Cadre ; navigation"
+   },
+   "items": [
+    {
+     "id": "SOG-0458",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Quitter un écran qui a des changements non enregistrés, par le menu de la suite ou par « Retour », les perd sans rien demander",
+     "en": "Leaving a screen with unsaved changes through the suite menu or “Back” loses them without asking",
+     "de": "Verlässt man eine Seite mit ungespeicherten Änderungen über das Menü oder „Zurück“, gehen sie ohne Rückfrage verloren",
+     "es": "Salir de una pantalla con cambios sin guardar, por el menú o con «Atrás», los pierde sin preguntar"
     }
    ]
   },

@@ -4612,6 +4612,21 @@
    "recommended": 0
   },
   {
+   "id": "Q-0100",
+   "fiche": "SOG-0460",
+   "app": "compagnie",
+   "question": "Aller-retour ChatGPT : de quel prompt part-on ?",
+   "context": "Le dépôt n'a que le prompt de la V2 (docs/technique/PROMPT_GENERATEUR_MISSIONS.md), d'avant les tiroirs. Tu dis que le tien a probablement changé (tiroirs, polygones de zone de déclenchement). Je n'ai trouvé aucun prompt dans le dossier de ta maquette. Le retour (coller un YAML dans « Ajouter des missions ») existe déjà ; il sera vérifié sur une mission inventée à tiroirs.",
+   "options": [
+    "Tu pars du prompt du dépôt et tu le mets à jour depuis le format de ma maquette ; je le relis",
+    "Je te donne le mien : je le dépose dans organisation/ (dis-moi quand c'est fait dans le texte)",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
