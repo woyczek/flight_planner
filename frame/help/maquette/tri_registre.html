@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liste triable : le registre des missions (maquette)</title>
+<style>
+:root {
+  --ink: #1b1f24;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --soft: #f6f8fa;
+  --accent: #0b5cad;
+  --accent-bg: #eaf2fb;
+  --ok: #1a7f37;
+  --warn: #7d4e00;
+  --warn-bg: #fff4d1;
+  --err: #a0211b;
+  --touch: 44px;
+}
+* {
+  box-sizing: border-box
+}
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif
+}
+.wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px 48px
+}
+h1 {
+  font-size: 22px;
+  margin: 16px 0 8px
+}
+.mock {
+  background: var(--soft);
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 12px 0;
+  font-size: 14px
+}
+.mock button {
+  font: inherit;
+  padding: 6px 10px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer
+}
+.mock button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent)
+}
+.search {
+  display: block;
+  width: 100%;
+  min-height: var(--touch);
+  padding: 8px 12px;
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 0 0 8px
+}
+.bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 8px
+}
+.chip {
+  font: inherit;
+  min-height: var(--touch);
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #fff;
+  cursor: pointer
+}
+.chip[aria-pressed="true"] {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent)
+}
+.sortbtn {
+  font: inherit;
+  min-height: var(--touch);
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center
+}
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin: 0 0 8px;
+  background: #fff
+}
+.panel[hidden] {
+  display: none
+}
+.panel label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--touch);
+  padding: 0 6px;
+  cursor: pointer
+}
+.panel .dirs {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  margin-top: 4px
+}
+.panel .dirs button {
+  flex: 1;
+  font: inherit;
+  min-height: var(--touch);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer
+}
+.panel .dirs button[aria-pressed="true"] {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600
+}
+/* wide: a real table, a button in each header */
+table.reg {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px
+}
+table.reg th,
+table.reg td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top
+}
+table.reg th {
+  padding: 0;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--soft)
+}
+table.reg th button {
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  width: 100%;
+  min-height: var(--touch);
+  text-align: left;
+  padding: 0 8px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  gap: 6px;
+  align-items: center
+}
+table.reg th[aria-sort="ascending"] button::after {
+  content: "▲";
+  font-size: 11px
+}
+table.reg th[aria-sort="descending"] button::after {
+  content: "▼";
+  font-size: 11px
+}
+table.reg th[aria-sort="ascending"],
+table.reg th[aria-sort="descending"] {
+  color: var(--accent);
+  background: var(--accent-bg)
+}
+td.num {
+  text-align: right
+}
+.st {
+  font-size: 12px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid;
+  white-space: nowrap
+}
+.st.ok {
+  color: var(--ok);
+  border-color: #9bd3a8
+}
+.st.pb {
+  color: var(--err);
+  border-color: #e3a19d
+}
+.st.nr {
+  color: var(--warn);
+  border-color: #d4a72c
+}
+.more {
+  display: block;
+  margin: 10px 0 0;
+  min-height: var(--touch);
+  padding: 8px 14px;
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--accent);
+  cursor: pointer
+}
+/* phone: the same rows as a list; the sort is one button + a small panel */
+.list {
+  display: none
+}
+.list .row {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 0 0 6px;
+  min-height: var(--touch)
+}
+.list .row b {
+  font-weight: 600
+}
+.list .meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px
+}
+.wideonly {
+  display: block
+}
+.phoneonly {
+  display: none
+}
+@media (max-width: 700px) {
+  table.reg {
+    display: none
+  }
+  .list {
+    display: block
+  }
+  .wideonly {
+    display: none
+  }
+  .phoneonly {
+    display: block
+  }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mock">
+    <b>Maquette :</b>
+    <button type="button" data-state="a" aria-pressed="true">Tri par défaut</button>
+    <button type="button" data-state="b" aria-pressed="false">Tri par la durée, du plus long</button>
+    <button type="button" data-state="c" aria-pressed="false">Téléphone : panneau de tri ouvert</button>
+    <div style="font-size:13px;color:var(--muted)">Missions inventées. Large : un tableau dont chaque colonne est un bouton ; étroit (≤ 700 px) : les mêmes lignes en liste et UN bouton « Trier » qui ouvre un panneau.</div>
+  </div>
+
+  <h1>Registre des missions</h1>
+  <input class="search" type="search" placeholder="Chercher dans le registre" aria-label="Chercher dans le registre">
+  <div class="bar"><button class="chip" type="button" aria-pressed="true">Toutes les familles</button><button class="chip" type="button" aria-pressed="false">Secours</button><button class="chip" type="button" aria-pressed="false">Transport</button>
+    <span class="phoneonly"><button class="sortbtn" type="button" id="sortbtn" aria-expanded="false" aria-controls="panel">Trier : <b id="sortlbl">Identifiant ▼</b></button></span>
+  </div>
+
+  <div class="panel phoneonly" id="panel" hidden role="group" aria-label="Trier par">
+    <label><input type="radio" name="col" value="id" checked> Identifiant</label>
+    <label><input type="radio" name="col" value="title"> Titre</label>
+    <label><input type="radio" name="col" value="fam"> Famille</label>
+    <label><input type="radio" name="col" value="ser"> Série</label>
+    <label><input type="radio" name="col" value="dur"> Durée</label>
+    <div class="dirs"><button type="button" data-dir="asc" aria-pressed="false">▲ Croissant</button><button type="button" data-dir="desc" aria-pressed="true">▼ Décroissant</button></div>
+  </div>
+
+  <table class="reg" id="tbl">
+    <thead>
+      <tr>
+        <th scope="col" aria-sort="none"><button type="button" data-col="st">État</button></th>
+        <th scope="col" aria-sort="descending"><button type="button" data-col="id">Identifiant</button></th>
+        <th scope="col" aria-sort="none"><button type="button" data-col="title">Titre</button></th>
+        <th scope="col" aria-sort="none"><button type="button" data-col="fam">Famille</button></th>
+        <th scope="col" aria-sort="none"><button type="button" data-col="ser">Série</button></th>
+        <th scope="col" aria-sort="none"><button type="button" data-col="route">Origine → destination</button></th>
+        <th scope="col" aria-sort="none"><button type="button" data-col="dur" style="justify-content:flex-end">Durée</button></th>
+      </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+  <div class="list" id="ls"></div>
+  <button class="more" type="button">12 autres</button>
+</div>
+<script>
+(() => {
+  const ROWS = [
+    ['pb', 'M-014', 'Évacuation sanitaire Îles du Ponant', 'Secours', 12, 'LFRB → LFRK', 94],
+    ['ok', 'M-009', 'Ravitaillement d’une base avancée', 'Transport', 4, 'LFRS → LFBO', 118],
+    ['ok', 'M-007', 'Reconnaissance côtière', 'Surveillance', 2, 'LFRN → LFRN', 150],
+    ['nr', 'M-006', 'Largage de matériel', 'Transport', null, 'LFOB → LFRH', null],
+    ['ok', 'M-004', 'Transfert d’un patient', 'Secours', 12, 'LFRD → LFRS', 47],
+    ['ok', 'M-003', 'Vol de réception', 'Entraînement', 1, 'LFRS → LFRS', 35],
+    ['pb', 'M-002', 'Convoyage d’un hélicoptère', 'Transport', 4, 'LFOH → LFRZ', 73]
+  ];
+  const cols = { st: 0, id: 1, title: 2, fam: 3, ser: 4, route: 5, dur: 6 }, text = new Set(['st', 'id', 'title', 'fam', 'route']);
+  const lab = { st: 'État', id: 'Identifiant', title: 'Titre', fam: 'Famille', ser: 'Série', dur: 'Durée' };
+  const stl = { pb: 'À corriger', ok: 'Lue', nr: 'Non lue' };
+  const fmt = m => m == null ? '—' : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+  let S = { key: 'id', dir: 'desc' };
+  const coll = new Intl.Collator('fr', { numeric: true, sensitivity: 'base' });
+  const sorted = () => {
+    const i = cols[S.key], k = S.dir === 'asc' ? 1 : -1;
+    return ROWS.map((r, n) => [r, n]).sort((A, B) => {
+      const a = A[0][i], b = B[0][i];
+      const ea = a == null || a === '', eb = b == null || b === '';
+      if (ea !== eb) return ea ? 1 : -1; // vide toujours en dernier, dans les deux sens
+      const c = text.has(S.key) ? coll.compare(String(a), String(b)) : a - b;
+      return c ? c * k : A[1] - B[1];
+    }).map(x => x[0]);
+  };
+  const paint = () => {
+    const rows = sorted();
+    document.getElementById('tb').innerHTML = rows.map(r => `<tr><td><span class="st ${r[0]}">${stl[r[0]]}</span></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4] ?? '—'}</td><td>${r[5]}</td><td class="num">${fmt(r[6])}</td></tr>`).join('');
+    document.getElementById('ls').innerHTML = rows.map(r => `<div class="row"><b>${r[1]}</b> ${r[2]}<div class="meta"><span class="st ${r[0]}">${stl[r[0]]}</span> · ${r[3]} · série ${r[4] ?? '—'} · ${r[5]} · ${fmt(r[6])}</div></div>`).join('');
+    document.querySelectorAll('#tbl th').forEach(th => th.setAttribute('aria-sort', th.querySelector('button').dataset.col === S.key ? (S.dir === 'asc' ? 'ascending' : 'descending') : 'none'));
+    document.getElementById('sortlbl').textContent = `${lab[S.key] || 'Identifiant'} ${S.dir === 'asc' ? '▲' : '▼'}`;
+    document.querySelectorAll('input[name=col]').forEach(r => r.checked = r.value === S.key);
+    document.querySelectorAll('.dirs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir === S.dir)));
+  };
+  document.querySelectorAll('#tbl th button').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.col; // même colonne : on inverse ; une autre : texte croissant d'abord, nombre décroissant d'abord
+    S = S.key === k ? { key: k, dir: S.dir === 'asc' ? 'desc' : 'asc' } : { key: k, dir: text.has(k) ? 'asc' : 'desc' };
+    paint();
+  }));
+  document.getElementById('sortbtn').addEventListener('click', () => {
+    const p = document.getElementById('panel'), o = p.hidden;
+    p.hidden = !o; document.getElementById('sortbtn').setAttribute('aria-expanded', String(o));
+  });
+  document.querySelectorAll('input[name=col]').forEach(r => r.addEventListener('change', () => { S = { key: r.value, dir: text.has(r.value) ? 'asc' : 'desc' }; paint(); }));
+  document.querySelectorAll('.dirs button').forEach(b => b.addEventListener('click', () => { S = { ...S, dir: b.dataset.dir }; paint(); }));
+  const go = id => {
+    document.querySelectorAll('[data-state]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.state === id)));
+    S = id === 'b' ? { key: 'dur', dir: 'desc' } : { key: 'id', dir: 'desc' };
+    const open = id === 'c';
+    document.getElementById('panel').hidden = !open; document.getElementById('sortbtn').setAttribute('aria-expanded', String(open));
+    if (id === 'c') S = { key: 'dur', dir: 'desc' };
+    paint();
+  };
+  document.querySelectorAll('[data-state]').forEach(b => b.addEventListener('click', () => go(b.dataset.state)));
+  const v = new URLSearchParams(location.search).get('v');
+  go(v || 'a');
+})();
+</script>
+</body>
+</html>
