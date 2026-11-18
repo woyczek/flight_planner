@@ -8842,7 +8842,7 @@ def n129(c):
     c.tap(f'{E} [data-atflow] [data-dradd]')
     c.until(f"!!document.querySelector('{E} [data-atflow] [data-kinds=new]')", what='the choice of the type under « ＋ Tiroir »')
     kinds = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
-    c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'landing'], 'the types the flight judges, in order (the landing since SOG-0500, 3c2e2abba)', what='the choice')
+    c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'landing', 'overflight'], 'the types the flight judges, in order (the landing since SOG-0500, 3c2e2abba; the overflight since 4c9b10ef3)', what='the choice')
     c.eq(c.js(_FLOW_N), 4, 'opening the choice creates nothing', what='the drawers')
     below = c.js(f"(() => {{ const a = document.querySelector('{E} [data-dradd]').getBoundingClientRect(), k = document.querySelector('{E} [data-kinds=new]').getBoundingClientRect(); return k.top >= a.bottom - 1 }})()")
     c.ok(below, below, 'the choice opens IN PLACE, under « ＋ Tiroir »')
@@ -9370,11 +9370,11 @@ def n139(c):
         c.tap(f'{E} [data-atflow] [data-dradd]')
         c.until(f"document.querySelectorAll('{E} [data-kinds=new] [data-bricks] [data-do=edbrick]').length > 0", timeout=10000, what='the bricks under the types')
         kinds = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
-        c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'landing'], f'{width}: the five types are still there, first, then the landing', what='the choice')
+        c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'landing', 'overflight'], f'{width}: the five types are still there, first, then the landing and the overflight', what='the choice')
         c.eq(c.js(f"document.querySelector('{E} [data-kinds=new] select[data-k=edbrickfam]').value"), 'SAR', f'{width}: the family of the mission first', what='the family')
         c.eq(c.js(_BRICKS), [['sar-land', 'Recherche terrestre progressive', 'une zone de passage'], ['sar-aircraft', 'Localisation d’une épave', 'un objet à trouver'],
-              ['sar-csar', 'Extraction en zone contrainte', 'un poser']],
-             f'{width}: the bricks of SAR, each its title and its key (a landing brick too, since the flight judges it)', what='the bricks')
+              ['sar-csar', 'Extraction en zone contrainte', 'un poser'], ['sar-sea', 'Survol d’un radeau ou d’un navire', 'un survol']],
+             f'{width}: the bricks of SAR, each its title and its key (a landing and an overflight brick too, since the flight judges them)', what='the bricks')
         if width == 390:
             c.js(f"document.querySelector('{E} [data-kinds=new]').scrollIntoView({{block: 'center'}})")
             c.shot('P11a_390_briques.png')
@@ -10120,8 +10120,8 @@ def n152(c):
         c.page.fill(f'{_DW} [data-f="rule.duration"]', '20')
         c.tap(f'{E} [data-atflow] [data-dradd]')
         c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
-        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)"), ['hand', 'time', 'zone', 'object', 'arrival', 'landing'],
-             f'{width}: « ＋ Tiroir » offers the landing and no other 1.1 condition', what='the offer')
+        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)"), ['hand', 'time', 'zone', 'object', 'arrival', 'landing', 'overflight'],
+             f'{width}: « ＋ Tiroir » offers the landing and the overflight, no other 1.1 condition', what='the offer')
         c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
@@ -10318,12 +10318,14 @@ _JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), 
   const two = [{ id: 'B', trigger_condition: { kind: 'hover', point: 'PT1', ...hold, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 } },
     { id: 'C', trigger_condition: { kind: 'landing', point: 'PT1', ...hold, speed_max_kt: 3 } },
     { id: 'D', trigger_condition: { kind: 'landing', object: 'OBJ-1', ...hold, speed_max_kt: 3 } },
-    { id: 'E', trigger_condition: { kind: 'overflight', object: 'OBJ-2', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 } },
-    { id: 'F', trigger_condition: { kind: 'sequence', steps: [{ kind: 'hover', object: 'OBJ-1', ...hold, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 }] } },
-    { id: 'G', trigger_condition: { kind: 'event', event: 'EV-1' } }];
+    { id: 'E', trigger_condition: { kind: 'overflight', point: 'PT1', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 } },
+    { id: 'F', trigger_condition: { kind: 'overflight', object: 'OBJ-1', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000, require_confirmation: false } },
+    { id: 'G', trigger_condition: { kind: 'overflight', object: 'OBJ-2', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 } },
+    { id: 'H', trigger_condition: { kind: 'sequence', steps: [{ kind: 'hover', object: 'OBJ-1', ...hold, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 }] } },
+    { id: 'I', trigger_condition: { kind: 'event', event: 'EV-1' } }];
   const keys = [...MS.readMission({ ...head, phases: one }).drawers, ...MS.readMission({ ...head, phases: two }).drawers]
     .map(d => [d.key, d.keyWhy]);
-  const name = k => k.kind === 'condition' ? k.condition : k.kind + (k.actor ? '+actor' : '') + (k.object?.moving ? '+moving' : '') + (k.escortMinSec > 0 ? '+escort' : '');
+  const name = k => k.kind === 'condition' ? k.condition + (k.rule?.object ? (k.rule.object.moving ? '+moving' : '+obj') : '') : k.kind + (k.actor ? '+actor' : '') + (k.object?.moving ? '+moving' : '') + (k.escortMinSec > 0 ? '+escort' : '');
   // THE control (Affectation, 18 Nov): the pilot's screen (notJudgedYet of the reader) and « ＋ Tiroir » (follows) never diverge
   const rule = k => MS.notJudgedYet(k) === !(k.kind === 'hand' || k.kind === 'time' || D.follows(k));
   const samples = DR.KEYS.map(key => { const t = DR.TYPES.find(x => x.key === key); return [key, t.judged] });
@@ -10338,7 +10340,7 @@ _JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), 
 
 @case('N155', 'Missions › what « ＋ Tiroir » offers comes from what the FLIGHT judges (SOG-0500 (c)): the flag `judged` of each kind is `follows` of '
       'modules/missions/drawers.js (Affectation\'s function) applied to the key the READER reads of a drawer of that kind written by the workshop itself — '
-      'the gesture and the hour always judged; today the five keys hand, time, zone, object, arrival are offered, no 1.1 condition; with a function that '
+      'the gesture and the hour always judged; today the five keys hand, time, zone, object, arrival are offered, with the landing and the overflight (the two 1.1 conditions the flight judges); with a function that '
       'judges everything, the ten kinds would be offered (the same function the page calls, `DR.offered`, with the flight\'s function given); a drawer '
       'keyed by a landing keeps its key in its own choice, with its mention; THE CONTROL of Affectation: for every kind of key the reader gives (hand, '
       'time, zone, zone crossed by a target, object, moving object, arrival, arrival with a following, hover, landing on a point and on an object, '
@@ -10349,18 +10351,19 @@ _JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), 
 def n155(c):
     c.page.goto(f'{c.base}/frame/manifest.webmanifest')
     g = c.js(_JUDGED_JS)
-    c.eq(g['kinds'], ['hand', 'time', 'zone', 'zone+actor', 'object', 'object+moving', 'arrival', 'arrival+escort', 'hover', 'landing', 'landing',
-                      'overflight', 'sequence', 'event'], 'every kind of key the reader gives, read without a reason', what='the keys')
+    c.eq(g['kinds'], ['hand', 'time', 'zone', 'zone+actor', 'object', 'object+moving', 'arrival', 'arrival+escort', 'hover', 'landing', 'landing+obj',
+                      'overflight', 'overflight+obj', 'overflight+moving', 'sequence', 'event'], 'every kind of key the reader gives, read without a reason', what='the keys')
     c.eq(g['diverge'], [], 'notJudgedYet(k) === !(hand || time || follows(k)) for every kind: the reader and the flight agree', what='THE control')
     c.eq(g['judged'], {'hand': True, 'time': True, 'zone': True, 'zone+actor': False, 'object': True, 'object+moving': False, 'arrival': True,
-                       'arrival+escort': False, 'hover': False, 'landing': True, 'overflight': False, 'sequence': False, 'event': False},
-         'what the flight judges today (follows of drawers.js; the landing since 3c2e2abba)', what='judged today')
+                       'arrival+escort': False, 'hover': False, 'landing': True, 'landing+obj': True, 'overflight': True,
+                       'overflight+obj': True, 'overflight+moving': False, 'sequence': False, 'event': False},
+         'what the flight judges today (follows of drawers.js; the landing since 3c2e2abba, the overflight on a point or a still object since 4c9b10ef3)', what='judged today')
     c.eq(g['types'], [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', False], ['landing', True],
-                      ['overflight', False], ['sequence', False], ['event', False]], 'DR.TYPES: the flag of each kind, from the flight', what='the types')
+                      ['overflight', True], ['sequence', False], ['event', False]], 'DR.TYPES: the flag of each kind, from the flight', what='the types')
     c.eq(g['typesAgree'], True, 'judgedKind and TYPES say the same', what='judgedKind')
     c.eq([g['offered'], g['offeredCur'], g['offeredIfJudged'], g['offeredNone']],
-         [['hand', 'time', 'zone', 'object', 'arrival', 'landing'],
-          [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['landing', True]],
+         [['hand', 'time', 'zone', 'object', 'arrival', 'landing', 'overflight'],
+          [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['landing', True], ['overflight', True]],
           ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'event'], ['hand', 'time']],
          'offered today; the key in force kept; a flight that judges everything: ten; a flight that judges nothing: the gesture and the hour',
          what='offered')
@@ -10379,7 +10382,7 @@ def n155(c):
     c.until(f"!!document.querySelector('{_DW} [data-kinds=drawer]')", what='the choice in the sheet')
     got = c.js(f"[...document.querySelectorAll('{_DW} [data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, !!x.querySelector('.f-muted'), x.getAttribute('aria-pressed')])")
     c.eq(got, [['hand', False, 'false'], ['time', False, 'false'], ['zone', False, 'false'], ['object', False, 'false'], ['arrival', False, 'false'],
-               ['landing', False, 'true']], 'the key in force kept (judged: no mention), nothing else of 1.1', what='the choice of the drawer')
+               ['landing', False, 'true'], ['overflight', False, 'false']], 'the key in force kept (judged: no mention), the overflight judged too, nothing else of 1.1', what='the choice of the drawer')
     # a forged touch of a kind the flight does not judge changes nothing
     c.js(f"""(() => {{ const b = document.createElement('button'); b.dataset.do = 'edkind'; b.dataset.key = 'hover';
       document.querySelector('{_DW} [data-kinds=drawer]').append(b); b.click() }})()""")
@@ -10421,7 +10424,7 @@ _BRICKS11_JS = """async () => { const MS = await import('/frame/lib/mission.js')
       '(28 + 12 landings, 9 hovers — 2 of them a following: a wide hover on an object, 1 000 m, 0 to 3 000 ft —, 5 overflights, 1 sequence, 5 messages), '
       '16 families (HEMS and SOF added), nothing set aside, nothing of a real look; each brick of a condition, born as « ＋ Tiroir » makes it, is written '
       'and read back by the reader as its condition, without a reason, nothing missing but the identifier of a message; « ＋ Tiroir » offers only the bricks '
-      'whose key the flight judges (40 today, with the 12 landings, 60 if it judged everything); a model saved from a sitting keeps a hover\'s numbers and a sequence\'s steps', 'N',
+      'whose key the flight judges (45 today, with the 12 landings and the 5 overflights, 60 if it judged everything); a model saved from a sitting keeps a hover\'s numbers and a sequence\'s steps', 'N',
       tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0500 (d): « les 32 briques 1.1 du catalogue de l\'utilisateur : ajoute-les à catalog.yaml (textes ×4, bornes respectées), proposées sous la '
       'même règle que leur clé (rien tant que le vol ne juge pas). Rien d\'allure réelle. »; EDITOR.md § 7 duoquinquagies')
@@ -10442,7 +10445,7 @@ def n156(c):
          [[1000, 60, 'OBJ-1'], [5, 60, 'DESTINATION'], [5, 60, 'OBJ-1'], [0.5, None, 'OBJ-1'], ['deploy', 'recover']],
          'a following on the object, a precision landing of 60 s at the arrival, a hover on the object, an overflight, two steps confirmed',
          what='some bricks')
-    c.eq([g['offered'], g['ifJudged']], [40, 60], '« ＋ Tiroir » offers only what the flight judges (the 12 landings since 3c2e2abba)', what='offered')
+    c.eq([g['offered'], g['ifJudged']], [45, 60], '« ＋ Tiroir » offers only what the flight judges (the 12 landings since 3c2e2abba, the 5 overflights since 4c9b10ef3)', what='offered')
     c.eq(g['model'], [['hover', 'OBJ-1', {'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100}],
                       ['sequence', '', {'steps': [
                           {'kind': 'hover', 'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100, 'confirmation': 'deploy'},
@@ -10545,6 +10548,76 @@ def n158(c):
              f'{width}: « ＋ Tiroir » offers « atterrissage »', what='the offer')
         c.js(f"document.querySelector('{E} [data-atflow] [data-dradd]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
         c.shot(f'P13b_{width}_atterrissage.png')  # the choice of the type under « ＋ Tiroir », with the landing
+        c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+# SOG-0500 (Affectation's 4c9b10ef3): the overflight, judged by the flight like the landing — the reader's verdict against `follows`, on the variants
+_OVER_JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), D = await import('/modules/missions/drawers.js'),
+    DR = await import('/modules/missions/editor_drawers.js');
+  const head = { mission: { id: 'X-001A', type: 'REG' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', lat: 44.8, lon: 1.2 }],
+    objects: [{ id: 'OBJ-1', kind: 'vehicle', lat: 44.6, lon: 1.4, detection_range_nm: 1 },
+      { id: 'OBJ-2', kind: 'ship', lat: 44.5, lon: 1.5, detection_range_nm: 1, speed_kt: 10, motion: 'axis', course_deg: 90 }] };
+  const base = { kind: 'overflight', point: 'PT1', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 };
+  const cases = { full: {}, confirmTrue: { require_confirmation: true }, confirmFalse: { require_confirmation: false },
+    objStill: { point: undefined, object: 'OBJ-1' }, objMoving: { point: undefined, object: 'OBJ-2' }, word: { confirmation: 'deploy' },
+    radius0: { radius_nm: 0 }, band0: { height_min_ft: 500, height_max_ft: 500 }, bandBack: { height_min_ft: 3000 }, noMin: { height_min_ft: undefined },
+    noMax: { height_max_ft: undefined }, destination: { point: 'DESTINATION' }, other: { point: 'PT9' } };
+  const out = {};
+  for (const [k, over] of Object.entries(cases)) {
+    const c = { ...base, ...over }; for (const f of Object.keys(c)) if (c[f] === undefined) delete c[f];
+    const d = MS.readMission({ ...head, phases: [{ id: 'B', trigger_condition: c }] }).drawers[0];
+    out[k] = d ? [MS.notJudgedYet(d.key), !D.follows(d.key), D.howOf(d.key)] : null;
+  }
+  const r = (extra = {}) => DR.ruleMissing('overflight', { ...DR.holdRow('overflight', [{ id: 'PT1', kind: 'pt' }]), point: 'PT1', object: '', radiusNm: '0.5', hMin: '100', hMax: '2000', ...extra });
+  return { out, miss: [r(), r({ hMin: '3000' }), r({ radiusNm: '' })] } }"""
+
+
+@case('N159', 'Missions › the overflight is judged (SOG-0500, Affectation\'s 4c9b10ef3), pure and on the screen: `notJudgedYet` of the reader is false for a complete '
+      'overflight — a point (or ORIGIN, DESTINATION) or a STILL object, no confirmation word, a radius above 0, a band of heights (AGL) whose bottom is not above its top — '
+      'with or without `require_confirmation`, and true for an overflight that follows a MOVING object or asks for a word; it always equals `!follows(key)` of drawers.js; '
+      'the sheet of an overflight offers only the still objects of the mission and keeps its confirmation box checked; « ＋ Tiroir » offers « survol »; at 390 and at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500, lot 2 of Affectation (4c9b10ef3): « follows() accepte le survol : un point lisible ou un objet IMMOBILE, confirmation vide, radius_nm > 0, '
+      'height_min_ft <= height_max_ft, finis ; require_confirmation accepté » — notJudgedYet of frame/lib/mission.js follows it without importing drawers.js, N155 keeps '
+      'the two together; EDITOR.md § 7 duoquinquagies')
+def n159(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    g = c.js(_OVER_JUDGED_JS)
+    c.eq(g['out'], {'full': [False, False, 'overflight'], 'confirmTrue': [False, False, 'overflight'], 'confirmFalse': [False, False, 'overflight'],
+                    'objStill': [False, False, 'overflight'], 'objMoving': [True, True, 'overflight'], 'word': [True, True, 'overflight'],
+                    'radius0': [False, True, 'hand'], 'band0': [False, False, 'overflight'], 'bandBack': [False, True, 'hand'], 'noMin': [False, True, 'hand'],
+                    'noMax': [False, True, 'hand'], 'destination': [False, False, 'overflight'], 'other': [False, True, 'hand']},
+         'notJudgedYet(overflight) === !follows(overflight): judged when complete (the confirmation box or not, a band of one height); not judged on a moving object or '
+         'with a confirmation word; a rule the reader refuses (a radius of 0, a band upside down, a height missing, a place that does not exist) is read as the gesture (judged by hand, not by follows)',
+         what='notJudgedYet')
+    c.eq(g['miss'], [[], ['hOrder'], ['radiusNm']], 'the workshop: a complete overflight has nothing to complete, a band upside down and a missing radius are said', what='the rule')
+    text = _LANDING_MISSION.replace('objects:\n', "objects:\n  - { id: OBJ-2, kind: ship, name: Navire mobile, lat: 44.5, lon: 1.5, detection_range_nm: 1, speed_kt: 10, motion: axis, course_deg: 90 }\n"
+                                    ).replace('trigger_condition: { kind: landing, point: PT1, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 }',
+                                              'trigger_condition: { kind: overflight, point: PT1, radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 }')
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, text)
+        ed_reveal(c)
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the overflight')
+        opts = c.js(f"[...document.querySelectorAll('{_DW} select[data-f=\"rule.object\"] option')].map(o => o.value)")
+        c.eq(opts, ['', 'OBJ-1'], f'{width}: the sheet of an overflight offers only the STILL object (OBJ-2 moves: not judged)', what='the objects')
+        c.eq([c.js(_DW_VAL, 'key'), c.js(f"document.querySelector('{_DW} [data-f=\"rule.confirm\"]').checked"), c.count(f'{_DW} [data-dwnotjudged]')],
+             ['overflight', True, 0], f'{width}: the key is « overflight », the pilot\'s confirmation stays checked, no « not judged » mention', what='the sheet')
+        mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
+        c.eq(c.js(mark), '✓', f'{width}: the overflight drawer has nothing to complete', what='the mark')
+        c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
+        c.shot(f'P13c_{width}_survol_fiche.png')  # the sheet of an overflight
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
+        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('overflight'), 1,
+             f'{width}: « ＋ Tiroir » offers « survol »', what='the offer')
+        c.eq(c.count(f'{E} [data-kinds=new] [data-do=edkind] .f-muted'), 0, f'{width}: no type of the choice carries the « not judged » mention', what='the mentions')
+        c.js(f"document.querySelector('{E} [data-atflow] [data-dradd]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
+        c.shot(f'P13c_{width}_survol.png')  # the choice of the type under « ＋ Tiroir », with the overflight
         c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)

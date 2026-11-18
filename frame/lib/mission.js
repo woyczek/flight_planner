@@ -43,7 +43,7 @@
 //   OBJECT_KINDS, DRAWER_IDS, DRAWER_BOUNDS : les genres d'objet (liste fermée), les identifiants des tiroirs, les bornes de lecture.
 //   HOLD_KINDS, HOLD_BOUNDS, CONFIRM_WORD, EVENT_ID : les conditions de maintien et de survol (1.1), les bornes de leurs nombres, la
 //     forme d'un mot de confirmation et d'un identifiant d'événement — LES règles de lecture, que l'atelier reprend pour écrire (SOG-0500).
-//   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1 — sauf l'atterrissage complet, que le vol juge —,
+//   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1 — sauf l'atterrissage et le survol complets, que le vol juge —,
 //     cible qui franchit, objet mobile, suivi) ; suit `follows` de drawers.js, le contrôle N155 le garde.
 //   passageMin(mission, pointId) → { nm, min | null } : la distance et le temps estimé du départ au passage d'un point de la partie A
 //     ('ORIGIN' : 0) ; null si le point n'est pas dans la route de la partie A.
@@ -479,27 +479,32 @@ export function drawerSlots(doc) {
  *  d'accord (`notJudgedYet(k) === !(hand || time || follows(k))`). */
 const FIX_PERIOD_SEC = 5;
 
-/** Une condition « atterrissage » que le vol sait juger (SOG-0500, lot d'Affectation 3c2e2abba) : LA règle de `landSpec` / `follows` de
- *  modules/missions/drawers.js, recopiée ici sans l'importer (le cadre n'importe pas un module) — elle DOIT la suivre, et le contrôle N155
- *  (tests/v3, `notJudgedYet(k) === !(hand || time || follows(k))`) échoue dès qu'elles divergent. Conditions : le genre « atterrissage » (de la clé
- *  et de la règle), AUCUN mot de confirmation demandé par l'auteur, un point lisible ou un objet IMMOBILE, un rayon et une durée au-dessus de 0,
- *  un écart permis d'au moins la période d'un relevé (FIX_PERIOD_SEC), une vitesse d'au moins 0, tous des nombres finis. */
-function landingJudged(key) {
-  const r = key.condition === 'landing' ? key.rule : null;
-  if (!r || typeof r !== 'object' || r.kind !== 'landing' || r.confirmation !== '') return false;
+/** Une condition « atterrissage » ou « survol » que le vol sait juger (SOG-0500, lot d'Affectation : 3c2e2abba l'atterrissage, 4c9b10ef3 le
+ *  survol) : LA règle de `landSpec` / `overSpec` de modules/missions/drawers.js, une par sorte, recopiée ici sans l'importer (le cadre
+ *  n'importe pas un module) — suit `follows`, N155 / N158 le gardent : ils échouent dès que les deux divergent. Pour les deux : le genre de la
+ *  clé et de la règle, AUCUN mot de confirmation demandé par l'auteur, un point lisible ou un objet IMMOBILE, des nombres finis. Un
+ *  atterrissage : un rayon et une durée au-dessus de 0, un écart permis d'au moins la période d'un relevé (FIX_PERIOD_SEC), une vitesse d'au
+ *  moins 0. Un survol : un rayon au-dessus de 0 et une bande de hauteur (sol) finie, le bas sous le haut ; `require_confirmation` y est
+ *  permis (le pilote demande la suite à portée), jamais un mot. */
+function conditionJudged(key) {
+  const r = key.condition === 'landing' || key.condition === 'overflight' ? key.rule : null;
+  if (!r || typeof r !== 'object' || r.kind !== key.condition || r.confirmation !== '') return false;
   const spot = p => p && typeof p === 'object' && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90 && Number.isFinite(p.lon) && Math.abs(p
       .lon) <= 180,
     num = v => typeof v === 'number' && Number.isFinite(v) ? v : null,
     at = r.at ? spot(r.at) : r.object && !r.object.moving ? spot(r.object) : false;
-  return !!at && num(r.radiusM) > 0 && num(r.durationSec) > 0 && num(r.maxGapSec) !== null && num(r.maxGapSec) >= FIX_PERIOD_SEC && num(r
+  if (!at) return false;
+  if (r.kind === 'overflight')
+    return num(r.radiusNm) > 0 && num(r.heightMinFt) !== null && num(r.heightMaxFt) !== null && r.heightMinFt <= r.heightMaxFt;
+  return num(r.radiusM) > 0 && num(r.durationSec) > 0 && num(r.maxGapSec) !== null && num(r.maxGapSec) >= FIX_PERIOD_SEC && num(r
       .speedMaxKt) !== null &&
     num(r.speedMaxKt) >= 0;
 }
 
 /** Vrai pour une clé que le vol ne sait pas encore juger (à dire à l'écran : « pas encore jugé en vol — s'ouvre à l'heure de repli ou au
- *  geste ») : une condition de la version 1.1 que le vol ne juge pas (l'atterrissage complet ET lisible est jugé : landingJudged), une zone
+ *  geste ») : une condition de la version 1.1 que le vol ne juge pas (l'atterrissage et le survol complets ET lisibles sont jugés : conditionJudged), une zone
  *  franchie par une cible, un objet qui se déplace, un suivi exigé. Doit suivre `follows` de drawers.js (le contrôle N155 le garde). */
-export const notJudgedYet = key => !!key && (key.kind === 'condition' ? !landingJudged(key) : !!key.actor || !!key.object?.moving || key
+export const notJudgedYet = key => !!key && (key.kind === 'condition' ? !conditionJudged(key) : !!key.actor || !!key.object?.moving || key
   .escortMinSec > 0);
 
 /** Les tiroirs d'une mission (voir l'en-tête) : { drawers, drawersRefused }. `d` : le document ; `points` : les points de la mission

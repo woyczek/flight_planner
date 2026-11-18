@@ -1467,8 +1467,9 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   à l'heure de repli » shows for a key the flight does not judge (`!DR.judgedKind`), or for a key the reader reads as not judged (`MS.notJudgedYet`). « Message
   envoyé à l'ouverture » shows for a drawer that sends one, or when the flight judges messages.
 - **The control** (Affectation): for every kind of key the reader gives, `MS.notJudgedYet(k) === !(hand || time || follows(k))` (case N155) — the pilot's
-  screen and « ＋ Tiroir » never diverge. It went RED on the landing when Affectation's 3c2e2abba made `follows` accept it (N155 named `landing`, twice); the
-  same lot makes `notJudgedYet` of `frame/lib/mission.js` say false for it (see § 7 duoquinquagies, « The landing is judged »).
+  screen and « ＋ Tiroir » never diverge. It went RED on the landing when Affectation's 3c2e2abba made `follows` accept it (N155 named `landing`, twice), and on
+  the overflight when 4c9b10ef3 did (N155 names `overflight` and `overflight+obj`); each time the same lot makes `notJudgedYet` of `frame/lib/mission.js` say
+  false for it (see § 7 duoquinquagies, « The landing is judged » and « The overflight is judged »).
 
 ### 7 duoquinquagies. The 32 bricks of the 1.1 conditions in the catalogue (18 Nov 2026; SOG-0500 (d); noreg N156, N138, N139)
 
@@ -1505,6 +1506,15 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   the screen. A message with its identifier and no recipient is written `emit_event: { id, to: ['all'] }` (`putEmit`; « all » passes `MS.EVENT_ID`); recipients a file
   already carries stay as written (the row keeps them in `emitTo`, the sheet says « Destinataires du fichier, gardés : … »), and nothing is rewritten if the author does
   not touch the message. « Message envoyé sans destinataire » can no longer arise from the screen.
+
+- **The overflight is judged** (SOG-0500, after Affectation's 4c9b10ef3; noreg N155, N159, N139, N152, N129, N156). `follows` accepts a condition `overflight`: `rule.kind`
+  `overflight`, a readable point or a STILL object, an empty `confirmation` (the WORD), `radius_nm` > 0, `height_min_ft` ≤ `height_max_ft`, both finite (heights above
+  the ground, AGL). `require_confirmation: true` is accepted: the pilot must be in range, then touch « Demander la suite » — the workshop keeps its default (box checked)
+  and never writes a confirmation word for an overflight. The rule is generalised in ONE place, `conditionJudged` of `frame/lib/mission.js` (the former `landingJudged`:
+  one rule per kind, commented « suit follows, N155 / N158 le gardent »; N159 plays the variants), and `notJudgedYet` says false in exactly those conditions. « ＋ Tiroir »
+  therefore offers « Un survol » (the `judged` flag still comes from `follows`) and the 5 overflight bricks of the catalogue (45 offered instead of 40); the sheet of an
+  overflight offers only STILL objects, like the landing (`still` of `edRuleHtml`). The hover, the sequence and the event stay not judged. Captures `P13c_390_survol.png`,
+  `P13c_1280_survol.png` (the choice of the type) and `P13c_390_survol_fiche.png`, `P13c_1280_survol_fiche.png` (the sheet of an overflight).
 
 ### 8. What is NOT ported
 
