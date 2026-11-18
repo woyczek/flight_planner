@@ -447,16 +447,33 @@ function departOf(res, asked) {
 /** SOG-0391 (b) : ce que la page garde de `sections` avec la réponse (route_alts.json), pour que la preuve, la route libre et sa cause se
  *  relisent après un rechargement : les seules clés que proofOf et levelOf lisent, bornées comme ils les bornent ; relu par eux. */
 export function sectionsKept(v) {
-  const own = k => v && typeof v === 'object' && !Array.isArray(v) && Object.hasOwn(v, k) ? v[k] : undefined;
+  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
+    // SOG-0470 (Sécurisation) : une valeur simple bornée — un texte de 200 signes, un nombre fini, un booléen ; rien d'autre
+    leaf = x => typeof x === 'string' ? x.slice(0, 200) : typeof x === 'number' ? Number.isFinite(x) ? x : null : typeof x === 'boolean' ?
+    x :
+    null,
+    // un objet réduit à ses champs lus (liste blanche), chacun une valeur simple bornée ; null s'il n'est pas un objet
+    pick = (o, keys, more = {}) => o && typeof o === 'object' && !Array.isArray(o) ? Object.fromEntries([...keys.filter(k => Object.hasOwn(
+      o,
+      k)).map(k => [k, leaf(o[k])]), ...Object.entries(more).filter(([k]) => Object.hasOwn(o, k)).map(([k, f]) => [k, f(o[k])])]) : null,
+    levels = x => (Array.isArray(x) ? x : []).slice(0, 40).filter(n => Number.isInteger(n) && n >= 0 && n <= 1000),
+    near = x => pick(x, ['minutes', 'side', 'depart_from', 'depart_until']);
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   return {
-    sections: Array.isArray(own('sections')) ? own('sections').slice(0, 6) : [],
-    rejected: Array.isArray(own('rejected')) ? own('rejected').slice(0, 40) : [],
-    depart: own('depart') ?? null,
-    entry: own('entry') ?? null,
-    direction: own('direction') ?? null,
-    fl: own('fl') ?? null,
-    fl_basis: own('fl_basis') ?? null
+    sections: (Array.isArray(own(v, 'sections')) ? own(v, 'sections').slice(0, 6) : []).map(x => pick(x, ['proof', 'from', 'to', 'name',
+      'nm'
+    ])).filter(Boolean),
+    rejected: (Array.isArray(own(v, 'rejected')) ? own(v, 'rejected').slice(0, 40) : []).map(x => pick(x, ['track', 'text', 'code',
+      'entry', 'at', 'point', 'from', 'to'
+    ], {
+      levels,
+      near
+    })).filter(Boolean),
+    depart: pick(own(v, 'depart'), ['basis', 'time', 'now']),
+    entry: pick(own(v, 'entry'), ['point', 'time']),
+    direction: leaf(own(v, 'direction')),
+    fl: leaf(own(v, 'fl')),
+    fl_basis: leaf(own(v, 'fl_basis'))
   };
 }
 

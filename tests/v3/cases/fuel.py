@@ -8080,6 +8080,93 @@ def f270(c):
          what='forced')
     c.eq(got['failed'], [1, False, True], 'a failed job counts as a job: two minutes later, refused with its retryAt', what='failed')
 
+_KEPT_JS = """async () => { const RE = await import('/modules/fuel/route_engine.js'), J = JSON.stringify;
+  const near = { minutes: 10, side: 'late', depart_until: '2026-11-18T10:00:00Z', x: 1 };
+  const v = { sections: [{ proof: 'published', from: 'XAAA', to: 'XBBB', name: 'track A', nm: 812, junk: { deep: 'x'.repeat(100000) } }],
+    rejected: [{ track: 'B', text: 'route NAT B : niveau', code: 'level', levels: [340, 350], entry: 'XAAA', at: '2026-11-18T12:00:00Z', point: '30W',
+      from: '2026-11-18T11:30:00Z', to: '2026-11-18T19:00:00Z', near, big: 'y'.repeat(50000) }],
+    depart: { basis: 'asked', time: '2026-11-18T10:00:00Z', now: false, o: { a: 1 } }, entry: { point: 'XAAA', time: '2026-11-18T12:00:00Z', z: 9 },
+    direction: 'west', fl: 350, fl_basis: 'asked', noise: 1 };
+  const k = RE.sectionsKept(v);
+  return { size: J(k).length, section: k.sections[0], rejected: Object.keys(k.rejected[0]).sort(), near: k.rejected[0].near, depart: k.depart,
+    entry: k.entry, noise: 'noise' in k, idem: J(RE.sectionsKept(k)) === J(k),
+    hostile: RE.sectionsKept({ sections: [null, 'x', { from: { a: 1 }, nm: Infinity }], rejected: 'x', depart: [], fl: { a: 1 } }) } }"""
+
+
+@case('F271', 'Route step, two hardenings of Sécurisation (SOG-0470): what the page keeps of the engine\'s `sections` (route_alts.json) is '
+      'a WHITE LIST — the fields the proof, the level and the departure read, each a bounded simple value, nothing else (a 100 000-sign '
+      'object gone); and a NAT window without its two times is not written (the direction alone, never « NaN h NaN »)', 'F',
+      tags=('fuel', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0470 (Sécurisation, review of the NAT chain of 17 Nov: « sectionsKept garde des objets bruts non bornés : liste blanche des '
+      'champs »; « une fenêtre sans dates affiche NaN h NaN : omets-la »); invented answers, aerodb\'s NAT state held by the case (stub)')
+def f271(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_KEPT_JS)
+    c.ok(r['size'] < 1500, r['size'], 'the kept sections are small: the 100 000- and 50 000-sign values are gone')
+    c.eq(r['section'], {'proof': 'published', 'from': 'XAAA', 'to': 'XBBB', 'name': 'track A', 'nm': 812}, 'a section: its five read fields',
+         what='section')
+    c.eq(r['rejected'], ['at', 'code', 'entry', 'from', 'levels', 'near', 'point', 'text', 'to', 'track'], 'a rejected track: its read fields',
+         what='rejected')
+    c.eq([r['near'], r['depart'], r['entry'], r['noise'], r['idem']],
+         [{'minutes': 10, 'side': 'late', 'depart_until': '2026-11-18T10:00:00Z'}, {'basis': 'asked', 'time': '2026-11-18T10:00:00Z', 'now': False},
+          {'point': 'XAAA', 'time': '2026-11-18T12:00:00Z'}, False, True], 'near, departure, entry reduced to their fields; nothing else kept; '
+         'kept twice gives the same', what='others')
+    c.eq(r['hostile'], {'sections': [{'from': None, 'nm': None}], 'rejected': [], 'depart': None, 'entry': None, 'direction': None, 'fl': None,
+                        'fl_basis': None}, 'hostile values: no throw, nothing but simple values', what='hostile')
+    # a NAT window without its times: the direction alone
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.add_init_script(_NAT_STUB_ARGS)
+    c.page.add_init_script("""(() => { const t = setInterval(() => { if (!window.__nat) return; clearInterval(t);
+      window.__nat.st = { present: true, readAt: '2026-11-17T08:02:00.000Z', count: 2, from: '2026-11-17T11:30:00.000Z', validUntil: '2026-11-17T19:00:00.000Z', expired: false, current: 2 };
+      window.__nat.tracks = [{ id: 'A', west: ['340'], east: [] }, { id: 'B', west: ['350'], east: [], from: 'not a date' }]; }, 5) })()""")
+    _route_launcher(c, ['route/compute'])
+    c.open('fuel', docs=_nat_flight())
+    to_step(c, 1)
+    Lx = f'{FUEL} [data-natline]'
+    c.until(f"!!document.querySelector('{Lx}:not([hidden]) [data-natstate=ok]')", timeout=15000, what='the NAT line, tracks valid')
+    line = c.text(f'{Lx} [data-natstate]') or ''
+    c.ok('NaN' not in line and norm(tx('modules/fuel/module.js', 'natW', c.lang).replace('{t}', '').strip()) in norm(line), line,
+         'westbound tracks without their times: the direction alone, no « NaN »')
+
+# SOG-0470: the writes of route_alts.json counted where the frame's data layer stores them (IndexedDB « docs », the document's path)
+_ALTS_PUTS = """(() => { window.__altsPuts = 0; const put = IDBObjectStore.prototype.put;
+  IDBObjectStore.prototype.put = function (v, ...a) { try { if (v && v.path === 'cache/fuel/route_alts.json') window.__altsPuts++ } catch (e) {}
+    return put.call(this, v, ...a) } })()"""
+
+
+@case('F272', 'Route step, the list of proposed routes (SOG-0470): three quick touches on three lines tell the Map each line at once (its '
+      'event) but write cache/fuel/route_alts.json ONCE, after the touches stop — never a rewrite of the whole answer per touch; the line '
+      'last shown is the one written', 'F', tags=('fuel', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0470 (Sécurisation, review of the NAT chain of 17 Nov: « radOf (1 500 éléments) réécrit route_alts.json à chaque clic »); '
+      'the ergonomist: a case for each hardening; a fake launcher, invented names')
+def f272(c):
+    c.page.add_init_script(_ALTS_PUTS)
+    c.page.add_init_script("window.__altsShown = []; window.addEventListener('fuel-route-alts', e => window.__altsShown.push(e.detail?.shown ?? null))")
+    st = _route_launcher(c, ['route/compute'])
+    st['extra'] = {'alternatives': [dict(_alt(i, f'Via {i}', _STEPS_ROUTE, 380, 350, [], sid=False)) for i in (1, 2, 3)]}
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['route'] = {'text': 'LFPO EIDW', 'dep': 'LFPO', 'arr': 'EIDW', 'manual': True,
+                             'points': [{'id': 'LFPO', 'lat': 48.72, 'lon': 2.38}, {'id': 'EIDW', 'lat': 53.42, 'lon': -6.27}]}
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    _compute_now(c, st)
+    c.until(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length >= 2", timeout=10000, what='the proposed routes')
+    c.wait(2000)  # the arrival's own write, settled
+    before = c.js("window.__altsPuts")
+    n = c.js(f"document.querySelectorAll('{FUEL} [data-altlist] [data-alt]').length")
+    order = [1, 0, 1] if n >= 2 else [0]
+    for i in order:
+        c.js(f"document.querySelector('{FUEL} [data-altlist] [data-alt=\"{i}\"] [data-do=\"rshow\"], {FUEL} [data-altlist] [data-alt=\"{i}\"]').click()")
+        c.wait(150)
+    c.wait(2500)
+    after = c.js("window.__altsPuts")
+    c.eq(after - before, 1, 'three quick touches: route_alts.json written ONCE', what='writes')
+    shown = (c.doc('cache/fuel/route_alts.json') or {}).get('open')
+    c.eq(shown, order[-1], 'the line last shown is the one written', what='open')
+    c.ok(len(c.js("window.__altsShown")) >= len(order), c.js("window.__altsShown"), 'the Map told at each touch (its event)')
+
 
 # SOG-0413: the NAT stub, its natEnsure keeping the argument it received (force)
 _NAT_STUB_ARGS = _NAT_STUB.replace('db.natEnsure = () => { window.__nat.asks++;', 'db.natEnsure = (o) => { window.__nat.asks++; window.__nat.args = o || null;')

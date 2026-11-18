@@ -4685,15 +4685,16 @@ async function natLine() {
     here = natHere(),
     // SOG-0413 : les sens présents dans le message lu et leur fenêtre (« vers l'ouest 11 h 30 – 19 h 00 Z ; aucune vers l'est »)
     dirs = fresh ? await natDirsNow(s) : null,
-    win = g => `${zTime(g.from, true)} – ${zTime(g.to)}`,
+    // SOG-0470 (Sécurisation) : une fenêtre sans ses deux heures n'est pas écrite (jamais « NaN h NaN ») — le sens seul est dit
+    win = g => g.from && g.to ? `${zTime(g.from, true)} – ${zTime(g.to)}` : '',
     text = fresh && dirs ? tt(TX.natDirs, {
       d: day(st.from),
       w: dirs.w.n ? tt(TX.natW, {
         t: win(dirs.w)
-      }) : tt(TX.natW0),
+      }).trim() : tt(TX.natW0),
       e: dirs.e.n ? tt(TX.natE, {
         t: win(dirs.e)
-      }) : tt(TX.natE0)
+      }).trim() : tt(TX.natE0)
     }) : fresh ? tt(TX.natValid, {
       d: day(st.from),
       t: hm(st.validUntil)
@@ -5758,7 +5759,21 @@ function altsShow(i) {
   if (k === (S.ralts.shown ?? -1)) return;
   S.ralts.shown = k;
   routeAltsDraw();
-  if (S.alts?.mode === 'compute') altsSend(true); // SOG-0224 : la ligne ouverte survit (un appui, jamais au survol)
+  if (S.alts?.mode === 'compute') altsSendSoon(); // SOG-0224 : la ligne ouverte survit (un appui, jamais au survol)
+}
+/** SOG-0470 (Sécurisation : le document, son contrôle RAD porte jusqu'à 1 500 éléments, était réécrit à chaque appui) : la Carte apprend
+ *  la ligne montrée aussitôt (l'événement) ; le document est écrit une fois, ALTS_WRITE_MS après le dernier appui d'une série, ou au
+ *  démontage s'il est encore en attente. */
+const ALTS_WRITE_MS = 1500;
+
+function altsSendSoon() {
+  const s = S;
+  altsSend(false);
+  clearTimeout(s.altsTimer);
+  s.altsTimer = setTimeout(() => {
+    s.altsTimer = null;
+    if (S === s) altsSend(true);
+  }, ALTS_WRITE_MS);
 }
 /** L'événement (toujours) et le document (doc vrai : arrivée, choix, effacement ; jamais au survol). */
 function altsSend(doc) {
@@ -5766,7 +5781,17 @@ function altsSend(doc) {
   window.dispatchEvent(new CustomEvent('fuel-route-alts', {
     detail: altsObject(false)
   }));
-  if (doc) Promise.resolve(S.ctx.data.put(ALTS_DOC, altsObject(true))).catch(() => {});
+  if (!doc) return;
+  // SOG-0470 (Sécurisation) : le document (son contrôle RAD porte jusqu'à 1 500 éléments) n'est réécrit que si son contenu change —
+  // un appui sur la ligne déjà montrée ne réécrit rien ; l'heure d'écriture n'entre pas dans la comparaison
+  const o = altsObject(true),
+    sig = JSON.stringify({
+      ...o,
+      updated_at: ''
+    });
+  if (S.altsSig === sig) return;
+  S.altsSig = sig;
+  Promise.resolve(S.ctx.data.put(ALTS_DOC, o)).catch(() => {});
 }
 /** SOG-0224 : la clé d'aéronef de l'objet « propositions en cours » — l'immatriculation, sinon la fiche, sinon le type (24 signes au
  *  plus) ; '' sans aéronef. */
@@ -9067,6 +9092,12 @@ export function unmount() {
   // une série de choix de procédures en attente est écrite ; une lecture en cours n'est pas abandonnée : le travail du poste continue
   // et sa fin est dite (procedures.js)
   S.P.stop();
+  // SOG-0470 : la ligne montrée en attente d'écriture est écrite avant de partir (le document garde la ligne ouverte)
+  if (S.altsTimer) {
+    clearTimeout(S.altsTimer);
+    S.altsTimer = null;
+    altsSend(true);
+  }
   window.removeEventListener('maps-route-alt-show', S.onAltPick);
   window.removeEventListener('maps-altn-pick', S.onAltnPick);
   window.removeEventListener('maps-route-alts-drawn', S.onAltsDrawn);
