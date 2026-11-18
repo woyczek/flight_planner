@@ -17,6 +17,7 @@ import {
   tokenize
 } from './route_text.js';
 import {
+  gcNm,
   rhumbNm
 } from './geo.js';
 import {
@@ -335,12 +336,8 @@ export async function routeModel(text, {
 export const FAR_EXTRA_NM = 400;
 /** Au-delà de cette distance entre deux points consécutifs, le tronçon est dit (SOG-0142). */
 export const JUMP_NM = 1000;
-/** Distance orthodromique en NM entre deux { lat, lon }. */
-function nmOf(a, b) {
-  const r = Math.PI / 180,
-    h = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+/** Distance orthodromique en NM entre deux { lat, lon } : gcNm de geo.js (SOG-0468). */
+const nmOf = gcNm;
 /** Désignateur de voie aérienne, composé compris (UN460, G54-R66) : le mot qui précède un point y arrivant par cette voie. */
 export const AIRWAY_WORD = /^[A-Z]{1,2}\d{1,4}[A-Z]?(-[A-Z]{1,2}\d{1,4}[A-Z]?)*$/;
 /** SOG-0372 (refus du 16/11 à 14 h 53, « on a toujours des tracés directs entre Dublin et JFK ») : chaque route NAT gardée (natAt :
