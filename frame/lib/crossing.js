@@ -19,7 +19,10 @@
 import {
   plain,
   bounded as num
-} from './untrusted.js'; // SOG-0468 (c) : l'objet simple et le nombre borné (un nombre réel dans [lo, hi] ; null sinon), définis une fois par le cadre
+} from './untrusted.js';
+import {
+  gcNm
+} from './geo.js'; // SOG-0468 (2) : LA distance orthodromique du cadre (rayon 3 440,065 NM, celui du moteur de route) // SOG-0468 (c) : l'objet simple et le nombre borné (un nombre réel dans [lo, hi] ; null sinon), définis une fois par le cadre
 
 export const BOUNDS = Object.freeze({
   vertices: Object.freeze([3, 100]),
@@ -164,11 +167,7 @@ function enter(a, b, r) {
   const t = (-B - Math.sqrt(disc)) / (2 * A);
   return t >= 0 && t <= 1 ? t : null;
 }
-const nmBetween = (a, b) => {
-  const s = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad /
-    2) ** 2;
-  return 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(s))) / M_PER_NM;
-};
+const nmBetween = gcNm;
 const lerp = (a, b, t) => a === null || b === null ? null : a + (b - a) * t;
 
 /** Ce que le trajet prev → next fait d'une zone : { state, touched, at, altFt, reason? }.
