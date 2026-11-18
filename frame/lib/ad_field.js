@@ -18,7 +18,8 @@
 //                   classés par distance, et le choix d'un point rend son identifiant AVEC sa position :
 //                   le champ reçoit l'identifiant, ses data-lat / data-lon / data-code reçoivent la position choisie (positionOf)
 //   }
-//   api = { paint, onInput, onKey, onFocusOut, onPointerDown, onClick, texts, isPicking, known, hitsFor, nameKnown, positionOf, stop }
+//   api = { paint, onInput, onKey, onFocusOut, onPointerDown, onClick, texts, isPicking, known, hitsFor, nameKnown, positionOf, isCode,
+//           stop }
 //   zoneAt(zones, p) : la zone d'une position (exporté pour modules/fuel/zone_gap.js)
 //
 // Le marquage de l'écran : un champ [data-k="<clé>"] par clé ; facultatifs, une ligne [data-adline="<clé>"] sous un champ (le nom
@@ -53,8 +54,9 @@ const CITY_NM = 40;
 const fold = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 /** Longueur minimale du texte pour proposer. */
 const MIN_CHARS = 2;
-/** Un code de terrain complet : quatre caractères. */
-const CODE = /^[A-Z0-9]{4}$/;
+/** Un code de terrain complet : quatre caractères, ou le code de liste d'une hélistation du SIA — deux lettres et trois chiffres
+ *  (« LF418 » ; le motif d'AeroDB, SOG-0465 : aerodb.suggest, coords et route/compute le prennent), ASCII seulement. */
+const CODE = /^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$/;
 /** La zone d'une position : le plus petit cadre qui la contient, sinon le plus proche ; null sans zones (sorti de
  *  modules/fuel/zone_gap.js avec ce bloc, qui le réexporte). */
 export function zoneAt(zones, p) {
@@ -123,7 +125,7 @@ export function createAdField(host) {
     return undefined;
   }
 
-  /** Code saisi d'un champ : majuscules, sans blancs ; '' tant que le code n'a pas quatre caractères. */
+  /** Code saisi d'un champ : majuscules, sans blancs ; '' tant que ce n'est pas un code complet (CODE). */
   const codeOf = k => {
     // le texte du champ quand il est à l'écran (la saisie de recherche n'écrit la route qu'une fois le terrain choisi), sinon la route
     const el = body()?.querySelector(`input[data-k="${k}"]`),
@@ -331,6 +333,9 @@ export function createAdField(host) {
       if (n !== undefined) return Promise.resolve(n !== null);
       return (asked.get(code) || Promise.resolve(null)).then(x => x !== null && x !== undefined);
     },
+    /** Le texte (déjà en majuscules) est-il un code de terrain complet ? Quatre signes, ou le code de liste d'une hélistation (CODE) :
+     *  l'écran s'en sert au lieu de son propre motif, pour que le champ et la route acceptent les mêmes codes. */
+    isCode: v => CODE.test(String(v || '')),
     /** Nombre de terrains proposés pour le champ k au dernier texte tapé (0 si la liste est fermée ou pour un autre champ). */
     hitsFor: k => list.input()?.dataset?.k === k ? list.hits().length : 0,
     /** SOG-0480 : la position choisie d'un point pour la clé k — { code, lat, lon } tant que le champ porte l'identifiant choisi ; null

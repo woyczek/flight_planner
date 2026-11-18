@@ -3077,7 +3077,8 @@ function onPlanInput(e) {
     case 'arr':
     case 'altn': {
       // le champ est une saisie de recherche (« orly », « toulouse ») : la route ne prend qu'un champ vidé, un choix de la liste, ou
-      // un code de quatre caractères qu'aerodb connaît (V3 § 10.27, décision du 29/10) ; un nom tapé n'y entre jamais
+      // un code complet qu'aerodb connaît (V3 § 10.27, décision du 29/10 ; quatre signes, ou « LF418 » d'une hélistation depuis
+      // SOG-0465 : S.AD.isCode) ; un nom tapé n'y entre jamais
       const code = v.trim().toUpperCase(),
         s = S;
       S.AD.onInput(e); // la ligne du nom et la liste des terrains proposés
@@ -3085,7 +3086,7 @@ function onPlanInput(e) {
       if (!S.AD.isPicking()) {
         // un code de quatre caractères n'entre qu'une fois connu d'aerodb (et si le champ le porte encore) ; un texte de recherche
         // n'écrit rien
-        if (/^[A-Z0-9]{4}$/.test(code)) S.AD.known(code).then(ok => {
+        if (S.AD.isCode(code)) S.AD.known(code).then(ok => {
           const el = !gone(s) && S.body?.querySelector(`[data-k="${k}"]`);
           if (!ok || !el || el.value.trim().toUpperCase() !== code) return;
           setAd(k, code);
@@ -3451,7 +3452,7 @@ function revertAd(el, hits = 0) {
     saveFlight();
     return refresh();
   }
-  const code = /^[A-Z0-9]{4}$/.test(v),
+  const code = S.AD.isCode(v), // quatre signes, ou le code de liste d'une hélistation (SOG-0465)
     n = code ? S.AD.nameKnown(v) : null;
   if (code && n !== null) return; // connu (ou en cours) : la saisie l'a écrit, ou l'écrira
   if (code && !hits) {

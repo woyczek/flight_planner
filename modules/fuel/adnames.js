@@ -4,7 +4,7 @@
 //
 // Interface étroite (createAdNames(host) → api), inchangée :
 //   host = { ctx, body(), flight(), gone() } ; api = celle de createAdField (paint, onInput, onKey, onFocusOut, onPointerDown, onClick,
-//   texts, isPicking, known, hitsFor, nameKnown, stop)
+//   texts, isPicking, known, hitsFor, nameKnown, positionOf, isCode, stop)
 import {
   createAdField
 } from '../../frame/lib/ad_field.js';

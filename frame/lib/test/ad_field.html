@@ -66,6 +66,12 @@
         name: 'Base Test Sud',
         lat: 44.6,
         lon: 1.5
+      },
+      // SOG-0465 : une hélistation inventée, au code de liste (deux lettres et trois chiffres)
+      XH418: {
+        name: 'HELISTATION TEST',
+        lat: 45.3,
+        lon: 1.3
       }
     },
     calls = [];
@@ -143,6 +149,25 @@
   ck('un code inconnu de la base : « inconnu »', line.textContent === 'inconnu' && line.dataset.state === 'unknown', line.textContent);
   ck('known : vrai pour un terrain de la base, faux sinon', await F.known('XTST') === true && await F.known('XZZZ') === false);
   ck('le nom demandé une fois par code', calls.filter(c => c[0] === 'coords' && c[1] === 'XTST').length === 1, JSON.stringify(calls));
+  // SOG-0465 : le code de liste d'une hélistation (« LF418 ») est un code complet — proposé, écrit, nommé
+  ck('isCode : quatre signes ou deux lettres et trois chiffres, rien d’autre', ['LFPO', 'XH418', 'LF418'].every(F.isCode) && ![
+    'XH4189', 'X1418', 'XH41A', 'LFP', 'LF4', 'ÉH418', ''
+  ].some(F.isCode));
+  input.value = 'xh';
+  F.onInput({
+    type: 'input',
+    target: input
+  });
+  await wait(50);
+  const heli = [...screen.querySelectorAll('[data-adsug] [data-code]')].map(x => x.dataset.code);
+  ck('hélistation : son code de liste proposé', JSON.stringify(heli) === JSON.stringify(['XH418']), JSON.stringify(heli));
+  F.onClick({
+    target: screen.querySelector('[data-adsug] [data-code="XH418"]')
+  });
+  await wait(50);
+  ck('hélistation : le code écrit dans le champ, son nom dessous', input.value === 'XH418' && /XH418/.test(line.textContent) &&
+    /HELISTATION TEST/i.test(line.textContent) && line.dataset.state === 'found', JSON.stringify([input.value, line.textContent]));
+  ck('hélistation : known vrai', await F.known('XH418') === true);
   ck('zoneAt : le plus petit cadre qui porte la position, null sans zones', zoneAt([{
     id: 'A',
     frames: [[0, 40, 10, 50]]

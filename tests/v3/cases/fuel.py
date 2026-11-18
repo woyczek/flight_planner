@@ -7888,7 +7888,8 @@ def f267(c):
 
 @case('F268', 'The aerodrome field, a shared block (frame/lib/ad_field.js): on a page without any module, with an invented aerodb given '
       'by the context — the keys given by the screen, the completion by the code, the choice written, « XTST — Base Test » under the '
-      'field, « inconnu » for a code the base does not know, the fallback value of a key without a field; its imports stay in frame/lib',
+      'field, « inconnu » for a code the base does not know, the fallback value of a key without a field; its imports stay in frame/lib; '
+      'a helipad\'s list code (two letters and three digits) is a full code: proposed, written, named',
       'F', tags=('fuel',), designs=('standard',), screens=False,
       rule='SOG-0465 (the user, in the mission workshop: « les champs adep / adest ne sont pas uniformes avec les autres, pas de complétion ; '
       'on réutilise l\'existant »): the core of modules/fuel/adnames.js moved into frame/lib, Fuel keeps a wrapper of its three fields; '
@@ -8310,3 +8311,31 @@ def f255(c):
     d = cf_doc(c, lambda d: any(p.get('id') == 'ZZEXA' for p in (d.get('route') or {}).get('points') or []), 'the route taken after a reload', timeout=12000)
     z = {p.get('id'): p for p in (d.get('route') or {}).get('points') or []}.get('ZZEXA') or {}
     c.ok('lat' not in z and 'lon' not in z and '15.12' not in json.dumps(d), z, 'after a reload too: ZZEXA by name only')
+
+
+# SOG-0465: an invented helipad under its list code (two letters and three digits), in the published base beside the named aerodromes
+_HELI = {'icao': 'LF999', 'name': 'Helistation Test', 'lat': 45.6, 'lon': 3.1, 'elev': 200, 'type': 'HP'}
+
+
+@case('F273', 'Step Flight: a helipad\'s list code (« LF999 », two letters and three digits) is a full code — proposed from its start, '
+      'named under the field once typed, and written into the flight\'s route like a four-sign code', 'F', tags=('fuel', 'aerodb'),
+      designs=('standard',), screens=False,
+      rule='SOG-0465 (the user: the aerodrome fields « seront parfaits avec leur complétion » once the helipads are in the base); '
+      'AeroDB\'s pattern ^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$ (SOG-0466 lots 1-2, route/compute ccb61fcc7); red before: the field and the '
+      'route took four signs only')
+def f273(c):
+    c.open('fuel', flight=True, airfields=True, aero_extra={'aerodromes': NAMES_BASE + [_HELI]})
+    wait_quote(c)
+    to_step(c, 0)
+    c.until("[...document.querySelectorAll('[data-module=fuel] .fu-adname')].every(e => e.textContent.trim())", timeout=8000,
+            what='the three name lines are filled')
+    # its start proposes it
+    type_in(c, 'altn', 'LF99')
+    wait_sug(c, 'LF99', 'the start of the list code proposes the helipad')
+    c.ok(any(x.startswith('LF999') for x in sug(c)['items']), sug(c), 'LF999 is proposed')
+    c.key('Escape')
+    # typed in full by hand: named, then written into the route
+    type_in(c, 'arr', 'LF999')
+    c.until("document.querySelector('[data-module=fuel] .fu-adname[data-adline=arr]').textContent.includes('Helistation Test')",
+            what='the name line names the helipad')
+    cf_doc(c, lambda d: d['route'].get('arr') == 'LF999', 'the flight\'s arrival is the helipad')
