@@ -508,6 +508,16 @@ const TX = {
     'Das Register hat sich inzwischen geändert: es wird neu gelesen, bitte erneut versuchen.',
     'El registro cambió entretanto: se vuelve a leer, inténtelo de nuevo.'
   ],
+  regFull: ['Voir le contenu complet des missions', 'See the full content of the missions',
+    'Den vollständigen Inhalt der Missionen anzeigen',
+    'Ver el contenido completo de las misiones'
+  ],
+  regFullHint: [
+    'Décochée à chaque ouverture de Missions et jamais enregistrée ; cochée, l\'atelier ouvre les missions en entier, parties cachées comprises.',
+    'Unticked each time Missions opens and never saved; ticked, the workshop opens the missions in full, hidden parts included.',
+    'Bei jedem Öffnen von Missionen abgewählt und nie gespeichert; angehakt öffnet die Werkstatt die Missionen vollständig, verborgene Teile eingeschlossen.',
+    'Desmarcada cada vez que se abre Misiones y nunca guardada; marcada, el taller abre las misiones completas, partes ocultas incluidas.'
+  ],
   regEdit: ['Corriger la ligne du registre', 'Correct the registry line', 'Registerzeile korrigieren', 'Corregir la línea del registro'],
   // SOG-0455 : les deux vues d'une mission, et la ligne de choix
   brief: ['Brief', 'Brief', 'Briefing', 'Briefing'],
@@ -873,6 +883,9 @@ async function parse(text, max = MS.NODES_MAX) {
 export async function mount(el, ctx) {
   const s = S = {
     el,
+    // SOG-0459 : « Voir le contenu complet des missions » — décochée à chaque montage, JAMAIS enregistrée (la mémoire de la page seule) :
+    // quitter Missions ou fermer la page la remet à zéro ; l'atelier la lit (edInit, state) pour s'ouvrir complet
+    fullView: false,
     ctx,
     tt: (row, v) => ctx.t(row, v),
     rows: [],
@@ -1400,7 +1413,7 @@ function firstHtml(s, r, m, drawn, why) {
   // la famille : son sigle en gras puis son nom long (SOG-0187, comme au compte rendu et dans la liste ; familyParts)
   return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
     ${kindLine.length || flownBadge ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}${kindLine.length && flownBadge ? ' ' : ''}${flownBadge}</p>` : ''}
-    ${m ? choiceHtml(s, m) : ''}
+    ${m ? choiceHtml(s, MS.pilotView(m, [], { mine: false }) || m) : '' /* SOG-0459 : la ligne de choix de la seule partie visible */}
     ${s.co?.filter ? coHtml(s, r) : ''}
     ${m?.summary ? `<div class="ms-summary" data-summary><h3>${esc(s.tt(TX.sumTitle))}</h3><p data-sumtext>${esc(sumCut(m.summary))}</p>${m.summary.length > SUM_MAX ? `<button type="button" class="f-linkbtn" data-do="detail" data-readmore>${esc(s.tt(TX.readMore))}</button>` : ''}</div>` : ''}
     ${m ? risks.length ? `<div data-risks><h3>${esc(s.tt(TX.risks))}</h3><ul class="ms-lines">${risks.slice(0, 3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>${risks.length > 3 ? `<details class="ms-more" data-riskmore><summary class="f-muted">${esc(s.tt(TX.more, { n: risks.length - 3 }))}</summary><ul class="ms-lines">${risks.slice(3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul></details>` : ''}</div>` :
@@ -1502,6 +1515,11 @@ function onInput(s, e) {
   if (s.reg) {
     // l'écran Registre : la recherche et le filtre de famille redessinent les lignes seules (le champ garde son curseur)
     const rk = e.target?.dataset?.k;
+    // SOG-0459 : la case du contenu complet, gardée dans l'état du montage seulement (rien n'est écrit)
+    if (rk === 'regfull' && e.type === 'change') {
+      s.fullView = e.target.checked === true;
+      return;
+    }
     if ((rk === 'rq' && e.type === 'input') || ((rk === 'rfam' || rk === 'rsub') && e
         .type === 'change'
       )) { // « change » de la recherche (à la perte du focus) ne redessine pas : il mangerait le toucher qui la provoque
@@ -2080,7 +2098,8 @@ function regHtml(s) {
     // dans l'aide), puis « Mettre à jour le registre », « Retour » et le compte sur la même ligne
     count = r.why === 'loading' || broken ? '' : `<span class="f-muted" data-regcount>${esc(s.tt(TX.regCount, { n }))}${r.found.length ? ` · ${esc(s.tt(TX.regUnlisted, { n: r.found.length }))}` : ''}${r.checking ? ` · ${esc(s.tt(TX.regChecking))}` : ''}${r.readOf ? ` · <span data-regreadof>${esc(s.tt(TX.regReadOf, r.readOf))}</span>` : ''}</span>`,
     head = `<div class="f-card" data-pane="registry"><h2 title="${esc(s.tt(TX.regHint))}">${esc(s.tt(TX.regTitle))}</h2>
-    <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="edcreate">${esc(s.tt(TX.edCreate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}</div>`;
+    <div class="f-row ms-regbar"><button type="button" class="primary" data-do="regplan"${r.checking || broken ? ' disabled' : ''}>${esc(s.tt(TX.regUpdate))}</button><button type="button" data-do="edcreate">${esc(s.tt(TX.edCreate))}</button><button type="button" data-do="regback">${esc(s.tt(TX.back))}</button>${count}</div>
+    <label class="f-check ms-fullview" data-fullview title="${esc(s.tt(TX.regFullHint))}"><input type="checkbox" data-k="regfull"${s.fullView ? ' checked' : ''}><span>${esc(s.tt(TX.regFull))}</span></label>`;
   if (r.why === 'loading') return `${head}<p class="f-muted" data-why="loading">${esc(s.tt(TX.regLoading))}</p></div>`;
   if (broken) return `${head}<p class="f-warn" data-why="unreadable">${esc(s.tt(TX.regUnreadable, { e: r.err }))}</p></div>`;
   return `${head}${r.why === 'missing' ? `<p class="f-muted" data-why="missing">${esc(s.tt(TX.none))}</p>` : ''}

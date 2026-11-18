@@ -1419,6 +1419,60 @@ def n33(c):
     c.shot(f'N33_{c.design}_1280_{c.lang}_brief.png')
     c.js(_REG_CLEAR)
 
+# SOG-0459: the box « Voir le contenu complet des missions » — unticked by default, never saved, back to unticked after leaving Missions
+# or a reload; a registry line of a mission with a drawer says nothing of it (an invented mission, X-905A: a drawer « Le secret »)
+_BR_DRAWER = ['missions/X_REG/X-905A/missionX-905A.yaml', 'mission: { id: X-905A, type: TEST }\ntitle: Brief cinq\n' + _BR_PLACES
+              + 'aircraft: [{ type: EC45, callsign: TEST05, cruise_speed_kt: 120 }]\n'
+              'phases: [{ id: B, title: Le secret, trigger: Au passage du col, trigger_zone: ZONE-9, fallback_delay_min: 30, route_order: [PT9] }]\n'
+              'zones: [{ id: ZONE-9, name: Vallee cachee, centre: { lat: 45.9, lon: 1.9 }, radius_km: 2 }]\n'
+              'rendezvous: [{ id: PT9, name: Refuge cache, lat: 45.95, lon: 1.95 }]\n']
+_BR_TEXTS5 = [[_BR_TEXTS[0][0], _BR_TEXTS[0][1] + '  - { id: X-905A, family: TESTREG, title: Brief cinq, folder: X_REG/X-905A, files: [missionX-905A.yaml] }\n'],
+              *_BR_TEXTS[1:], _BR_DRAWER]
+
+
+@case('N34', 'Missions › registry, the secret of the drawers (SOG-0459): the box « Voir le contenu complet des missions » is unticked by '
+      'default, kept in the memory of the page only — never saved — and unticked again after leaving Missions or a reload; the line of a '
+      'mission with a drawer says nothing of it (no count, no title of a drawer, no hidden place) and its line of choice is the one of '
+      'the same mission without its drawer', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0459 (the user, 18 Nov 2026: « même le fait qu\'il y en ait devrait être masqué … une case décochée par défaut, qui revient '
+      'à zéro quand la séance de modification est finie »; the ergonomist: never saved, the memory of the page only); invented missions')
+def n34(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _BR_TEXTS5)
+    box = f'{R} [data-fullview] input[type=checkbox]'
+    c.eq(c.js(f"document.querySelector('{box}')?.checked"), False, 'unticked by default', what='default')
+    before = c.js("JSON.stringify(Object.keys(localStorage).sort())")
+    c.tap(box)
+    c.until(f"document.querySelector('{box}')?.checked === true", what='ticked')
+    # back to the list and to the registry: still ticked (the page's memory, within Missions)
+    c.tap(f'{R} [data-do="regback"]')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry again')
+    c.eq(c.js(f"document.querySelector('{box}')?.checked"), True, 'within Missions, the box keeps its state', what='within')
+    c.eq(c.js("JSON.stringify(Object.keys(localStorage).sort())"), before, 'nothing written in the browser\'s storage', what='storage')
+    pend = c.js("""async () => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+      const all = await new Promise((res) => { const t = db.transaction('pending').objectStore('pending').getAll(); t.onsuccess = () => res(t.result); t.onerror = () => res([]) });
+      db.close(); return all.map(x => x.path) }""")
+    c.eq(pend, [], 'nothing queued for the repository', what='pending')
+    # leaving Missions (another module of the application), then back: unticked
+    c.go('aircraft')
+    c.wait(500)
+    c.go('missions?view=registry')
+    c.until(_REG_READ, timeout=20000, what='the registry after leaving Missions')
+    c.eq(c.js(f"document.querySelector('{box}')?.checked"), False, 'after leaving Missions: unticked', what='left')
+    c.tap(box)
+    c.until(f"document.querySelector('{box}')?.checked === true", what='ticked again')
+    c.page.reload()
+    c.until(_REG_READ, timeout=20000, what='the registry after a reload')
+    c.eq(c.js(f"document.querySelector('{box}')?.checked"), False, 'after a reload: unticked', what='reload')
+    # the line of the mission with a drawer: nothing of the drawer, the same line of choice as X-901A (same route, same speed)
+    txt = norm(c.js(f"document.querySelector('{R} [data-rowid=\"X-905A\"]')?.textContent || ''"))
+    c.ok(all(w not in txt.lower() for w in ('secret', 'cache', 'tiroir', 'drawer', 'schublade', 'cajón', 'cajon')), txt,
+         'the line says nothing of the drawer')
+    same = c.js(f"""['X-901A', 'X-905A'].map(id => [...document.querySelectorAll('{R} [data-rowid="' + id + '"] summary [data-choice] > span')].map(x => x.textContent))""")
+    c.eq(same[1], same[0], 'its line of choice is the one of the same mission without a drawer', what='choice')
+    c.js(_REG_CLEAR)
+
 
 @case('N40', 'Time on area per point: read from the mission (a range counted at its maximum), said in the quote one line per point, changed by the pilot in the list of points; an unread duration key said',
       'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=False,
