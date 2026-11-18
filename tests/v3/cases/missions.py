@@ -8393,6 +8393,8 @@ def n123(c):
         c.page.locator(f'{E} input[data-k={k}]').press_sequentially(text, delay=40)
 
     c.page.add_init_script(_EDMAP_HOOK)
+    # the handle of the AeroDB the page creates: the published base is read late, the case waits for it to know XT123 before typing
+    c.page.add_init_script("(() => { let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => { real = v && { ...v, create: (...a) => { const db = v.create(...a); window.__aeroDb = db; return db } } } }) })()")
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_REG_CLEAR)
@@ -8411,6 +8413,7 @@ def n123(c):
     if not c.count(f'{E} input[data-k=eddep]'):
         c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    c.until("async () => !!(window.__aeroDb && await window.__aeroDb.coords('XT123'))", timeout=20000, what='the published base knows XT123')
     # the helistation is proposed for « xt1 » and chosen by the keyboard
     typed('eddep', 'xt1')
     c.until(f"({_AD_SUG}).includes('XT123')", timeout=8000, what='the helistation XT123 proposed for « xt1 »')
