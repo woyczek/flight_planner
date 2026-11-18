@@ -279,7 +279,7 @@ def plan(request, root):
     context_began = time.perf_counter()
     nav, rad = context(request, root)
     nav.fra_floors = fra_floor.floors(rad) if fra_floor.CAP_SEARCH else {}      # SOG-0401 (lot 3) : les planchers de route libre de la Suisse et de l'Italie (RAD, annexe 3B) : le graphe de la recherche y ramène le plafond des voies SEULEMENT si CAP_SEARCH (faux par défaut : la route la plus courte est gardée)
-    # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte est refait à chaque demande et disparaît avec elle
+    # RouteSim libère les caches du graphe à la fin de chaque plan (release_graph_caches) : ici le contexte (le Nav et ses caches : le graphe de la dernière demande, celui d'avant les règles, la mémoire des virages) est GARDÉ d'une demande à la suivante (au plus MAX_CONTEXTS, IDLE_S) et ses caches sont bornés (un graphe de chaque sorte, TURN_CACHE_MAX virages)
     entered = str(request.get('route', '')).strip().upper()
     words = [engine.split_level(w)[0] for w in entered.split()]      # SOG-0401 : « POINT/Fnnn » est le point POINT (le groupe de niveau se lit dans engine.assess)
     airways = {e['route'] for e in nav.edges}

@@ -17643,3 +17643,54 @@ def k377(c):
     c.eq([RF.at_test('ABV', 245, 'BADRU', {}), RF.between_test(245, 660, 'BADRU', {}), RF.at_test('ABV', 245, 'BADRU', {'points': set()}), RF.between_test(245, 660, 'BADRU', {'points': {'BADRU'}, 'alt': {'BADRU': 35000}})], [None, None, False, True],
          'without `points` in the context: not decided; with a route that does not pass the point: false; on the route at 35 000 ft: between', what='tests')
     c.eq([RF.at_test('ABV', 245, 'P', {'points': {'P'}, 'alt': {'P': float('nan')}}), RF.between_test(245, 660, 'P', {'points': {'P'}, 'alt': {'P': float('nan')}}), RF.at_test('ABV', 245, 'P', {'points': {'P'}, 'alt': {'P': float('inf')}})], [None, None, None], 'an altitude that is not a finite number (NaN, infinity) is not decided', what='finite')
+
+
+@case('K378', 'Route engine, review of Security on SOG-0501 (a) and SOG-0468 (1) (2, 3): the memo of the turns (`_turn_cache`) is bounded and released with the caches of the graph, the graph kept before the rules is released with them, and the key of a graph carries the climb and the descent rate that the terminal gates read (`climb_fpm`, `descent_fpm`): two requests with other rates do not share a graph',
+      'K', static=True,
+      rule='Security, 19 Nov (replayed in the code): (2) `_turn_cache` (previous, u, v) grew at every search for the whole life of the Nav and was never emptied; `_routing_base` was not emptied by `release_graph_caches`. (3) `terminal_gates` reads `climb_fpm` and `descent_fpm` of the request, which were NOT in `cost_fields`: without a profile (the key carries the profile otherwise) two requests with other rates shared the gates of one graph. The bench is the fixture of the route engine (LFPO → EIDW).')
+def k378(c):
+    import os
+    import sys
+    import tempfile
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    sys.path.insert(0, str(c.root / 'tests' / 'v3'))
+    import datetime
+    import route_fixture as RF
+    from route_engine import engine, import_books as I
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in {'A': (50.0, 0.0), 'B': (50.0, 1.0), 'C': (51.0, 1.0), 'D': (50.0, 2.0), 'E': (49.0, 1.0)}.items()}
+    fake = types.SimpleNamespace(nodes=nodes, TURN_MAX_DEG=100.0, TURN_FREE_KINDS=engine.Nav.TURN_FREE_KINDS)
+    keep = engine.TURN_CACHE_MAX
+    try:
+        engine.TURN_CACHE_MAX = 3
+        for t in (('A', 'B', 'C'), ('A', 'B', 'D'), ('A', 'B', 'E'), ('B', 'C', 'A'), ('C', 'B', 'A')):
+            engine.Nav.sharp_turn(fake, t[0], t[1], t[2], {'route': 'DCT'}, {'route': 'DCT'})
+        size = len(fake._turn_cache)
+    finally:
+        engine.TURN_CACHE_MAX = keep
+    c.ok(0 < size <= 3, str(size), 'the memo of the turns is emptied when it reaches its bound (3 here; 200 000 in the engine), never beyond')
+    nav = engine.Nav.__new__(engine.Nav)
+    nav._turn_cache = {('A', 'B', 'C'): True}
+    nav._routing_base = {'k': 1}
+    nav._routing_cache = {'k': 1}
+    nav._fra_graph_cache = {'k': 1}
+    nav.release_graph_caches()
+    c.eq((nav._turn_cache, nav._routing_base, nav._routing_cache, nav._fra_graph_cache), ({}, {}, {}, {}), '`release_graph_caches` empties the memo of the turns and the graph kept before the rules with the other caches', what='release')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(os.path.join(data, 'route'))
+        RF.make_base(data)
+        rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad_file, RF.rad_sheets())
+        rad_gz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad_gz, I.merge([], [I.read_book(rad_file)[1]]))
+        saved = (engine.DATA_DIR, engine.RAD_FILE)
+        engine.DATA_DIR, engine.RAD_FILE = data, rad_gz
+        try:
+            real = engine.Nav(data, datetime.date(2026, 11, 9))
+            g = lambda **t: real.routing_graph('LFPO', 'EIDW', 350, 100, enable_fra=False, terminal=t)
+            a1, a2, b1 = g(climb_fpm=1500), g(climb_fpm=1500), g(climb_fpm=3000)
+            d1 = g(descent_fpm=800)
+            c.eq((a1[0] is a2[0], a1[0] is b1[0], b1[0] is d1[0]), (True, False, False), 'the same rates: the graph is kept; another climb rate or another descent rate: another graph (the key carries them)', what='key')
+        finally:
+            engine.DATA_DIR, engine.RAD_FILE = saved

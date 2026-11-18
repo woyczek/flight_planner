@@ -19,6 +19,7 @@ SEARCH_CAP_S = 6.0   # SOG-0354 : la borne d'UNE recherche (A*) ; plan.plan() la
 GRAPH_MIN_S = 0.0   # SOG-0354 L5 (3) : un vol océanique ne COMMENCE pas la construction d'un graphe (~4 s, non interruptible) quand il reste moins de cela avant la borne ; posé par plan.plan (5 s pour un vol qui traverse l'Atlantique), 0 sinon
 DEADLINE_CEIL = None      # SOG-0475 : la fin du calcul entier (plan.plan la pose) : la borne de tête ne s'étend jamais au-delà
 GRAPH_SEARCH_MIN_S = 3.0      # SOG-0475 : après la construction d'un graphe, la recherche a au moins cela (dans la limite du calcul entier) : un graphe de 5 à 9 s (un vol long d'Europe) ne mange plus toute la borne de tête
+TURN_CACHE_MAX = 200000      # revue de Sécurisation : au plus ce nombre de triplets (précédent, point, suivant) dans la mémoire des virages d'un Nav ; au-delà elle est vidée
 NO_NETWORK_MAX_NM = 900      # SOG-0474 : au-delà, aucun direct de repli (le terrain est trop loin de tout réseau lu)
 DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
 
@@ -220,12 +221,13 @@ class Nav:
         if '|' in previous or '|' in u or '|' in v or incoming.get('connector') or e.get('connector') or incoming.get('kind') in self.TURN_FREE_KINDS or e.get('kind') in self.TURN_FREE_KINDS:return False
         cache=self.__dict__.setdefault('_turn_cache',{});key=(previous,u,v)
         if key not in cache:
+            if len(cache)>=TURN_CACHE_MAX:cache.clear()      # revue de Sécurisation : la mémoire des virages ne croît pas sans borne pendant la vie du Nav (elle est aussi vidée avec les caches du graphe)
             nodes=self.nodes
             cache[key]=previous!=v and geo.turn_deg(nodes[previous],nodes[u],nodes[v])>self.TURN_MAX_DEG if previous in nodes and u in nodes and v in nodes else False
         return cache[key]
 
     def release_graph_caches(self):
-        for name in ['_fra_graph_cache','_routing_cache','_routing_base','_fra_recovery_graph_cache']:
+        for name in ['_fra_graph_cache','_routing_cache','_routing_base','_fra_recovery_graph_cache','_turn_cache']:
             cache=getattr(self,name,None)
             if cache is not None:cache.clear()
 
@@ -540,7 +542,7 @@ class Nav:
 
     def routing_graph(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         terminal=terminal or {}
-        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','_fuel_model','search_density','_rad_avoid']}
+        cost_fields={k:terminal.get(k) for k in ['objective','fra_preference','unable_rnav','use_procedures','dep_runway','arr_runway','terminal_speed_kt','speed_kt','climb_fpm','descent_fpm','_fuel_model','search_density','_rad_avoid']}      # climb_fpm et descent_fpm : lus par terminal_gates (revue de Sécurisation) : deux demandes de montées différentes ne partagent pas un graphe
         cache_key=json.dumps([dep,arr,fl,radius,blocks,profile_options,allow_steps,via,str(when),enable_fra,cost_fields,sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)
         if not hasattr(self,'_routing_cache'):self._routing_cache=collections.OrderedDict()
         if cache_key in self._routing_cache:
