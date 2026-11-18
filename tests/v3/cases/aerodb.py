@@ -5489,7 +5489,7 @@ def k112(c):
          'AeroDb.packs(): read once, frozen, the regions and themes as in the file, Turkey in two packs (the Middle East, the Mediterranean), Antarctica empty with its reason, the partial zones of the arctic', what='packs()')
 
 
-@case('K113', 'DFS « ED Routes » (Germany, AIXM 5.1, CC BY 4.0): the launcher fetches the amendment in force checked by its SHA-512, the AIXM reader gives the airways although the file carries no points (names from the segments, positions from the curves), the catalogue and the mirror know the source', 'K', tags=('aerodb',), phone=False,
+@case('K113', 'DFS « ED Routes », « ED Waypoints » and « ED Navaids » (Germany, AIXM 5.1, CC BY 4.0): the launcher fetches the three sets of the amendment in force, each checked by its SHA-512 (one failing does not stop the others), the AIXM reader gives the airways although the file carries no points (names from the segments, positions from the curves) and the ICAO points and the navaids that place them, the catalogue and the mirror know the source', 'K', tags=('aerodb',), phone=False,
       rule='SOG-0077 (10 Nov 2026, decision of the ergonomics session): DFS « AIP Datasets » (aip.dfs.de/datasets, REST API v1.2: metadata, then <amendment>/<file name>) is the first new source of airways after France, the UK and Spain; the file has Route, RouteSegment and StandardLevelColumn only, no DesignatedPoint: each end is named by the reference (xlink:title) and placed by the end of the segment curve; files are checked by the SHA-512 of the metadata, nothing is written when it does not match, nothing is downloaded when the file in place is the one the metadata names')
 def k113(c):
     import hashlib
@@ -5519,12 +5519,33 @@ def k113(c):
     r = c.js("""(xml) => { const w = window.AeroSources.aixm5(xml).aero.airways; return w.map(x => [x.route, x.dir, x.a.id, x.a.lat, x.a.lon, x.b.id, x.b.lat, x.b.lon, x.lower, x.upper]); }""", xml)
     c.eq(r, [['Z717', 'FB', 'GUDOP', 53.0, 13.1, 'BEKBA', 53.2, 13.7, 4000, 66000], ['Z717', 'F', 'BEKBA', 53.2, 13.7, 'ABC', 53.5, 14.0, 4000, 66000], ['N850', 'B', 'ABC', 51.0, 7.0, 'IRBUP', 51.4, 7.4, 4000, 66000], ['N850', 'F', 'IRBUP', 51.4, 7.4, 'SUBIX', 52.4, 14.6, 4000, 66000]],
          'the reader gives the airways of a file without points: the designator from the segment, the ends from the curve (lat lon), the direction from the availabilities, the levels; an end whose reference has for title the description of the point (« urn:aixm:DesignatedPoint(…;aixm:designator=SUBIX;… ») is named by its designator, not by the first twelve signs of the description (66 ends of 3 594 in the real file)', what='reader')
-    name = 'ED_Routes_2026-10-01_2026-10-29_revision.xml'
-    body = xml.encode('utf-8')
-    sha = hashlib.sha512(body).hexdigest()
-    meta = lambda **kw: json.dumps({'Amdts': [{'Amdt': 1, 'Metadata': {'datasets': []}}, {'Amdt': 0, 'Metadata': {'datasets': [{'type': 'group', 'name': 'x', 'items': [
-        {'type': 'leaf', 'name': 'ED Navaids', 'releases': [{'type': 'AIXM 5.1', 'filename': 'ED_Navaids_a.xml', 'checksum': {'value': '0' * 128}}]},
-        {'type': 'leaf', 'name': 'ED Routes', 'releases': [{'type': 'Excel', 'filename': 'x.xlsx'}, {'type': 'AIXM 5.1', 'filename': kw.get('name', name), 'checksum': {'value': kw.get('sha', sha)}}]}]}]}}]}).encode('utf-8')
+    dp = lambda ident, lat, lon, kind: (f'<message:hasMember><aixm:DesignatedPoint gml:id="id.d{ident}"><gml:identifier codeSpace="urn:uuid:">d{ident}</gml:identifier><aixm:timeSlice><aixm:DesignatedPointTimeSlice><aixm:designator>{ident}</aixm:designator><aixm:type>{kind}</aixm:type>'
+                                        f'<aixm:location><aixm:Point><gml:pos>{lat} {lon}</gml:pos></aixm:Point></aixm:location></aixm:DesignatedPointTimeSlice></aixm:timeSlice></aixm:DesignatedPoint></message:hasMember>')
+    head = '<?xml version="1.0"?><message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">'
+    wxml = head + dp('GUDOP', 53.0, 13.1, 'ICAO') + dp('BEKBA', 53.2, 13.7, 'ICAO') + dp('TRM01', 50.0, 8.0, 'TERMINAL') + dp('OWN01', 50.1, 8.1, 'DESIGNED') + '</message:AIXMBasicMessage>'
+    vor = ('<message:hasMember><aixm:VOR gml:id="id.v1"><gml:identifier codeSpace="urn:uuid:">v1</gml:identifier><aixm:timeSlice><aixm:VORTimeSlice><aixm:designator>ABC</aixm:designator><aixm:name>INVENTED</aixm:name><aixm:frequency uom="MHz">112.3</aixm:frequency>'
+           '<aixm:location><aixm:ElevatedPoint><gml:pos>53.5 14.0</gml:pos></aixm:ElevatedPoint></aixm:location></aixm:VORTimeSlice></aixm:timeSlice></aixm:VOR></message:hasMember>'
+           '<message:hasMember><aixm:Navaid gml:id="id.n1"><gml:identifier codeSpace="urn:uuid:">n1</gml:identifier><aixm:timeSlice><aixm:NavaidTimeSlice><aixm:type>VOR</aixm:type><aixm:designator>ABC</aixm:designator>'
+           '<aixm:navaidEquipment><aixm:NavaidComponent><aixm:theNavaidEquipment xlink:href="urn:uuid:v1"/></aixm:NavaidComponent></aixm:navaidEquipment></aixm:NavaidTimeSlice></aixm:timeSlice></aixm:Navaid></message:hasMember>')
+    nxml = head + vor + '</message:AIXMBasicMessage>'
+    r = c.js("""(a) => { const w = window.AeroSources; const p = w.aixm5(a.wxml).aero, n = w.aixm5(a.nxml).aero;
+      return { points: (p.points || []).map(x => [x.id, x.lat, x.lon, x.type]), navaids: (n.navaids || []).map(x => [x.id, x.kind, x.lat, x.lon]) }; }""", {'wxml': wxml, 'nxml': nxml})
+    c.eq(r['points'], [['GUDOP', 53.0, 13.1, 'ICAO'], ['BEKBA', 53.2, 13.7, 'ICAO'], ['TRM01', 50.0, 8.0, 'TERMINAL'], ['OWN01', 50.1, 8.1, 'DESIGNED']],
+         'DFS « ED Waypoints »: the points are read with their position and their type (the builder keeps only the ICAO ones, the points that name the ends of the routes: sia_base.js)', what='waypoints')
+    c.eq(r['navaids'], [['ABC', 'VOR', 53.5, 14.0]], 'DFS « ED Navaids »: a VOR with its ident and position (the other ends of the routes are navaids)', what='navaids')
+    kinds = ('Routes', 'Waypoints', 'Navaids')
+    bodies = {'Routes': xml.encode('utf-8'), 'Waypoints': wxml.encode('utf-8'), 'Navaids': nxml.encode('utf-8')}
+    names = {k: f'ED_{k}_2026-10-01_2026-10-29_revision.xml' for k in kinds}
+    sums = {k: hashlib.sha512(bodies[k]).hexdigest() for k in kinds}
+
+    def meta(**kw):
+        """Les métadonnées : `kw` change le nom (name_<jeu>) ou la somme (sha_<jeu>) d'un jeu ; `drop` retire un jeu."""
+        leaves = [{'type': 'leaf', 'name': 'ED Procedure', 'releases': [{'type': 'AIXM 5.1', 'filename': 'ED_Procedure_a.xml', 'checksum': {'value': '0' * 128}}]}]
+        for k in kinds:
+            if k == kw.get('drop'):
+                continue
+            leaves.append({'type': 'leaf', 'name': 'ED ' + k, 'releases': [{'type': 'Excel', 'filename': 'x.xlsx'}, {'type': 'AIXM 5.1', 'filename': kw.get('name_' + k, names[k]), 'checksum': {'value': kw.get('sha_' + k, sums[k])}}]})
+        return json.dumps({'Amdts': [{'Amdt': 1, 'Metadata': {'datasets': []}}, {'Amdt': 0, 'Metadata': {'datasets': [{'type': 'group', 'name': 'x', 'items': leaves}]}}]}).encode('utf-8')
 
     class _Net:
         """Le réseau d'essai : remplace aero_fetch.get ; routes : { morceau d'adresse: octets | ('os', texte) }, le premier qui correspond ; garde les appels."""
@@ -5548,26 +5569,41 @@ def k113(c):
         def __exit__(self, *a):
             self.AF.get = self.saved
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
-        path = os.path.join(td, 'sia', 'zones', 'de', 'dfs_ED_Routes.xml')
-        net = {'/rest/0/': body, '/rest/': meta()}
+        paths = {k: os.path.join(td, 'sia', 'zones', 'de', f'dfs_ED_{k}.xml') for k in kinds}
+        net = {'/rest/0/' + names[k]: bodies[k] for k in kinds}
+        net['/rest/'] = meta()
         with _Net(AF, net) as n:
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], open(path, 'rb').read() == body, [u.split('/rest')[1] for u, _ in n.calls]), (True, [('dfs_ED_Routes.xml', False)], True, ['/', '/0/' + name]),
-                 'the amendment in force (n° 0): the metadata, then <amendment>/<file name>; written under a stable name in zones/de/', what='fetch')
+            c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], [open(paths[k], 'rb').read() == bodies[k] for k in kinds], [u.split('/rest')[1] for u, _ in n.calls]),
+                 (True, [(f'dfs_ED_{k}.xml', False) for k in kinds], [True] * 3, ['/'] + ['/0/' + names[k] for k in kinds]),
+                 'the amendment in force (n° 0): the metadata, then <amendment>/<file name> for each of the three sets (routes, points, navaids; not the procedures); one stable name each in zones/de/', what='fetch')
         with _Net(AF, net) as n:
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], len(n.calls)), (True, [('dfs_ED_Routes.xml', True)], 1), 'the file in place is the one the metadata names (same SHA-512): nothing downloaded, said unchanged', what='unchanged')
-        os.remove(path)
+            c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], len(n.calls)), (True, [(f'dfs_ED_{k}.xml', True) for k in kinds], 1), 'the files in place are the ones the metadata names (same SHA-512): nothing downloaded, said unchanged', what='unchanged')
+        os.remove(paths['Waypoints'])
+        with _Net(AF, net) as n:
+            res = AF.fetch(td, 'dfs')
+            c.eq((res['ok'], [f['unchanged'] for f in res['files']], len(n.calls)), (True, [True, False, True], 2), 'one file missing: only that one is downloaded again', what='one missing')
+        for k in kinds:
+            os.remove(paths[k])
         with _Net(AF, {'/rest/0/': b'<other/>', '/rest/': meta()}):
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], os.path.exists(path), 'SHA-512' in res['errors'][0]), (False, False, True), 'a download whose SHA-512 is not the metadata\'s: refused, nothing written', what='checksum')
-        for label, m in (('hostile name', meta(name='../../x.xml')), ('bad sum', meta(sha='abc')), ('not json', b'<html/>'), ('no amendment', json.dumps({'Amdts': [{'Amdt': 2}]}).encode())):
-            with _Net(AF, {'/rest/': m}):
+            c.eq((res['ok'], [os.path.exists(paths[k]) for k in kinds], len(res['errors']), all('SHA-512' in e for e in res['errors'])), (False, [False] * 3, 3, True), 'downloads whose SHA-512 is not the metadata\'s: refused, nothing written', what='checksum')
+        bad = {'/rest/0/' + names['Routes']: bodies['Routes'], '/rest/0/' + names['Navaids']: bodies['Navaids'], '/rest/': meta()}
+        with _Net(AF, bad):
+            res = AF.fetch(td, 'dfs')
+            c.eq((res['ok'], [f['name'] for f in res['files']], [os.path.exists(paths[k]) for k in kinds], len(res['errors'])), (False, ['dfs_ED_Routes.xml', 'dfs_ED_Navaids.xml'], [True, False, True], 1),
+                 'the points are not served: the failure is said, the other two sets are still taken', what='one fails')
+        for k in kinds:
+            if os.path.exists(paths[k]):
+                os.remove(paths[k])
+        for label, m in (('hostile name', meta(name_Waypoints='../../x.xml')), ('name of another set', meta(name_Routes=names['Navaids'])), ('digits of another script', meta(name_Routes='ED_Routes_٢٠٢٦-10-01_2026-10-29_revision.xml')), ('bad sum', meta(sha_Navaids='abc')), ('set missing', meta(drop='Routes')), ('not json', b'<html/>'), ('no amendment', json.dumps({'Amdts': [{'Amdt': 2}]}).encode())):
+            with _Net(AF, {'/rest/': m}) as n:
                 res = AF.fetch(td, 'dfs')
-                c.eq((res['ok'], os.path.exists(path)), (False, False), f'{label}: refused with a reason, nothing written', what=label)
+                c.eq((res['ok'], any(os.path.exists(paths[k]) for k in kinds) and not label.startswith(('hostile', 'name', 'digits', 'bad', 'set')), bool(res['errors']), all('..' not in u and '٢' not in u for u, _ in n.calls)), (False, False, True, True), f'{label}: refused with a reason, nothing is fetched under that name', what=label)
         with _Net(AF, {'/rest/': ('os', 'unreachable')}):
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], res['errors'][0].startswith('DFS :')), (False, True), 'the service unreachable: said, nothing written', what='offline')
+            c.eq((res['ok'], res['errors'][0].startswith('DFS :'), [os.path.exists(paths[k]) for k in kinds]), (False, True, [False] * 3), 'the service unreachable: said, nothing written', what='offline')
     c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
     k = c.js("""async () => { await AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false }).sources().catch(() => null);
       const s = (window.AeroCatalogue.SOURCES || []).find(x => x.id === 'dfs'); return { found: !!s, zones: s && s.zones, provider: s && s.fetch && s.fetch.provider, names: s && s.n.length, lic: s && s.lic[0] }; }""")

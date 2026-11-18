@@ -561,15 +561,16 @@
     publish: true,
     no: 19,
     status: 'used',
-    n: ['DFS (Allemagne, routes ATS, AIXM 5.1)', 'DFS (Germany, ATS routes, AIXM 5.1)', 'DFS (Deutschland, ATS-Strecken, AIXM 5.1)',
-      'DFS (Alemania, rutas ATS, AIXM 5.1)'
+    n: ['DFS (Allemagne, routes, points et balises, AIXM 5.1)', 'DFS (Germany, routes, points and navaids, AIXM 5.1)',
+      'DFS (Deutschland, Strecken, Punkte und Funkfeuer, AIXM 5.1)',
+      'DFS (Alemania, rutas, puntos y ayudas, AIXM 5.1)'
     ],
     url: 'https://aip.dfs.de/datasets/',
     gives: [
-      'Les routes ATS (airways) de l’Allemagne (zone de), avec leurs niveaux et leur sens ; pas encore les espaces ni les points.',
-      'The ATS routes (airways) of Germany (zone de), with their levels and direction; not the airspaces or the points yet.',
-      'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung; noch keine Lufträume oder Punkte.',
-      'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido; aún sin espacios ni puntos.'
+      'Les routes ATS (airways) de l’Allemagne (zone de), avec leurs niveaux et leur sens, les points de report ICAO et les balises (VOR, NDB, DME) ; pas encore les espaces.',
+      'The ATS routes (airways) of Germany (zone de), with their levels and direction, the ICAO reporting points and the navaids (VOR, NDB, DME); not the airspaces yet.',
+      'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung, die ICAO-Meldepunkte und die Funkfeuer (VOR, NDB, DME); noch keine Lufträume.',
+      'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido, los puntos de notificación OACI y las ayudas (VOR, NDB, DME); aún sin espacios.'
     ],
     pub: 'DFS Deutsche Flugsicherung',
     credit: ['Source : DFS, CC BY 4.0', 'Source: DFS, CC BY 4.0', 'Quelle: DFS, CC BY 4.0', 'Fuente: DFS, CC BY 4.0'],

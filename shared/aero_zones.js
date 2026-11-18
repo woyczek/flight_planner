@@ -300,21 +300,24 @@
       content: ['airspace'],
       age: 'file'
     },
-    // Routes ATS de l’Allemagne (DFS « AIP Datasets », jeu « ED Routes », AIXM 5.1, CC BY 4.0, crédit DFS) : téléchargé par le lanceur (tools/aero_fetch.py dfs),
-    // somme SHA-512 vérifiée ; zones/de/dfs_ED_Routes.xml (lu par AeroSources.aixm5 : les extrémités des tronçons sont nommées par la référence et placées par la courbe)
+    // Données ATS de l’Allemagne (DFS « AIP Datasets », jeux « ED Routes », « ED Waypoints » et « ED Navaids », AIXM 5.1, CC BY 4.0, crédit DFS) : téléchargées par le lanceur
+    // (tools/aero_fetch.py dfs), somme SHA-512 de chaque jeu vérifiée ; zones/de/dfs_ED_Routes.xml, dfs_ED_Waypoints.xml, dfs_ED_Navaids.xml (lus par AeroSources.aixm5 :
+    // les extrémités des tronçons sont nommées par la référence, les points ICAO et les balises les placent) ; ni aérodromes, ni pistes, ni SID/STAR (Q-0111)
     dfs: {
       kind: 'download',
       provider: 'dfs',
       args: [],
       readable: true,
-      label: L4('DFS — routes ATS de l’Allemagne (AIXM 5.1, jeu « ED Routes »)',
-        'DFS — Germany ATS routes (AIXM 5.1, dataset “ED Routes”)',
-        'DFS — ATS-Strecken Deutschlands (AIXM 5.1, Datensatz „ED Routes“)',
-        'DFS — rutas ATS de Alemania (AIXM 5.1, conjunto «ED Routes»)'),
-      gives: L4('routes ATS (airways) avec leurs niveaux et leur sens, sans les points : leurs noms viennent des tronçons',
-        'ATS routes (airways) with their levels and direction, without the points: their names come from the segments',
-        'ATS-Strecken (Airways) mit Flugflächen und Richtung, ohne die Punkte: ihre Namen stammen aus den Segmenten',
-        'rutas ATS (aerovías) con sus niveles y sentido, sin los puntos: sus nombres vienen de los tramos'),
+      label: L4('DFS — routes ATS, points et balises de l’Allemagne (AIXM 5.1, jeux « ED Routes », « ED Waypoints », « ED Navaids »)',
+        'DFS — Germany ATS routes, points and navaids (AIXM 5.1, datasets “ED Routes”, “ED Waypoints”, “ED Navaids”)',
+        'DFS — ATS-Strecken, Punkte und Funkfeuer Deutschlands (AIXM 5.1, Datensätze „ED Routes“, „ED Waypoints“, „ED Navaids“)',
+        'DFS — rutas ATS, puntos y ayudas de Alemania (AIXM 5.1, conjuntos «ED Routes», «ED Waypoints», «ED Navaids»)'),
+      gives: L4(
+        'routes ATS (airways) avec leurs niveaux et leur sens, les points de report ICAO et les balises (VOR, NDB, DME) qui les placent',
+        'ATS routes (airways) with their levels and direction, the ICAO reporting points and the navaids (VOR, NDB, DME) that place them',
+        'ATS-Strecken (Airways) mit Flugflächen und Richtung, die ICAO-Meldepunkte und die Funkfeuer (VOR, NDB, DME), die sie verorten',
+        'rutas ATS (aerovías) con sus niveles y sentido, los puntos de notificación OACI y las ayudas (VOR, NDB, DME) que las sitúan'
+      ),
       src: 'dfsRoutes',
       link: 'https://aip.dfs.de/datasets/',
       howto: L4(
@@ -327,7 +330,7 @@
       hand: 'none',
       rank: 'primary',
       rhythm: 'airac',
-      content: ['airways'],
+      content: ['points', 'navaids', 'airways'],
       age: 'file'
     },
     // Designated Airspace Handbook (TP 1820, tous les 56 jours, nom daté lu sur la page des guides) : téléchargé et lu par

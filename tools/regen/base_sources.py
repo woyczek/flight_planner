@@ -141,10 +141,10 @@ SOURCES = {
             'AIP Frankreich ENR 5.1 (SIA): Art der Gefahr, Stelle und Bedingungen der P-, R-, D-Gebiete',
             'ENR 5.1 del AIP de Francia (SIA): naturaleza del peligro, organismo y condiciones de las zonas P, R, D'), link='https://www.sia.aviation-civile.gouv.fr/', provider='enr51'),
     'dfs': _src('download', (
-            'DFS — routes ATS de l’Allemagne (AIXM 5.1, jeu « ED Routes »)',
-            'DFS — Germany ATS routes (AIXM 5.1, dataset “ED Routes”)',
-            'DFS — ATS-Strecken Deutschlands (AIXM 5.1, Datensatz „ED Routes“)',
-            'DFS — rutas ATS de Alemania (AIXM 5.1, conjunto «ED Routes»)'), link='https://aip.dfs.de/datasets/', provider='dfs'),
+            'DFS — routes ATS, points et balises de l’Allemagne (AIXM 5.1, jeux « ED Routes », « ED Waypoints », « ED Navaids »)',
+            'DFS — Germany ATS routes, points and navaids (AIXM 5.1, datasets “ED Routes”, “ED Waypoints”, “ED Navaids”)',
+            'DFS — ATS-Strecken, Punkte und Funkfeuer Deutschlands (AIXM 5.1, Datensätze „ED Routes“, „ED Waypoints“, „ED Navaids“)',
+            'DFS — rutas ATS, puntos y ayudas de Alemania (AIXM 5.1, conjuntos «ED Routes», «ED Waypoints», «ED Navaids»)'), link='https://aip.dfs.de/datasets/', provider='dfs'),
     'navcan': _src('download', (
             'NAV CANADA — manuel des espaces aériens désignés (DAH)',
             'NAV CANADA — Designated Airspace Handbook (DAH)',
@@ -187,7 +187,7 @@ SOURCE_FACTS = {
     'faaclass': ('primary', 'airac', ('airspace',)),
     'nats': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points')),
     'ukmil': ('primary', 'editions', ('airspace', 'aar_tracks')),
-    'dfs': ('primary', 'airac', ('airways',)),
+    'dfs': ('primary', 'airac', ('points', 'navaids', 'airways')),
     'enr51': ('primary', 'airac', ('airspace',)),
     'navcan': ('primary', 'editions', ()),
     'nat': ('primary', 'daily', ('nat_tracks',)),

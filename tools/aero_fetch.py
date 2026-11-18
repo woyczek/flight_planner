@@ -60,7 +60,8 @@ NAT_URL = 'https://nms.aim.faa.gov/datanat/nat.json'
 DFS = 'https://aip.dfs.de/datasets/rest/'     # DFS « AIP Datasets » (API REST v1.2) : les métadonnées à cette adresse, un jeu à <adresse><amendement>/<nom du fichier>
 ENR51_HOST = 'https://www.sia.aviation-civile.gouv.fr/'     # SOG-0462 lot B : l'eAIP du SIA (le même hôte que les procédures)
 ENR51_PAGE_BYTES = 16 * 1024 * 1024     # la page fait 6,7 Mo (cycle du 29 oct. 2026)
-DFS_FILE = re.compile(r'^ED_Routes_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_[a-z]+\.xml\Z')
+DFS_KINDS = ('Routes', 'Waypoints', 'Navaids')      # DFS lot 1 : les trois jeux lus (Q-0111 : pas d'aérodromes, de pistes ni de SID/STAR avant la réponse de l'utilisateur)
+DFS_FILES = {k: re.compile(r'^ED_' + k + r'_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_[a-z]+\.xml\Z', re.A) for k in DFS_KINDS}      # un motif PAR jeu, en ASCII (re.A : « \d » n'accepte pas les chiffres d'une autre écriture)
 MAX_BYTES = 200 * 1024 * 1024  # 200 Mo au plus par réponse : au-delà, le téléchargement s'arrête (le fichier présent est gardé)
 CHUNK = 1024 * 1024
 
@@ -351,8 +352,9 @@ def enaire(data):
 
 
 def dfs(data):
-    """Les routes ATS de l'Allemagne (DFS, jeu « ED Routes », AIXM 5.1, licence CC BY 4.0, crédit DFS) : l'amendement en vigueur (n° 0 des métadonnées), vérifié par sa somme SHA-512, rangé sous un nom stable
-    (zones/de/dfs_ED_Routes.xml : un seul fichier, l'amendement suivant le remplace). La somme du fichier présent est comparée à celle des métadonnées : identique, rien n'est téléchargé (15 Mo)."""
+    """Les données ATS de l'Allemagne (DFS, jeux « ED Routes », « ED Waypoints » et « ED Navaids », AIXM 5.1, licence CC BY 4.0, crédit DFS) : l'amendement en vigueur (n° 0 des métadonnées), chaque jeu vérifié par sa somme SHA-512, rangé sous un nom STABLE de zones/de/
+    (dfs_ED_Routes.xml, dfs_ED_Waypoints.xml, dfs_ED_Navaids.xml : un fichier par jeu, l'amendement suivant le remplace). Les routes n'ont pas de points (leurs extrémités sont nommées par la référence) : les deux autres jeux les donnent (SOG-0462 suite, DFS lot 1 ; Q-0111 : ni les aérodromes, ni les pistes,
+    ni les SID/STAR d'ici la réponse de l'utilisateur). La somme du fichier présent est comparée à celle des métadonnées : identique, rien n'est téléchargé (15 Mo pour les routes, 10 pour les points, 4,5 pour les balises) ; un jeu qui échoue est dit et les autres sont tout de même pris. Un nom de fichier du serveur qui n'a pas la forme attendue pour SON jeu n'est jamais un chemin."""
     import hashlib
     try:
         meta = json.loads(get(DFS).decode('utf-8'))
@@ -365,31 +367,41 @@ def dfs(data):
                 yield from leaves(it.get('items'))
             elif isinstance(it, dict):
                 yield it
-    release = None
+    found = {}
     for amdt in meta.get('Amdts', []) if isinstance(meta, dict) else []:
         if isinstance(amdt, dict) and amdt.get('Amdt') == 0:
             for leaf in leaves((amdt.get('Metadata') or {}).get('datasets')):
-                if leaf.get('name') == 'ED Routes':
-                    release = next((r for r in leaf.get('releases') or [] if isinstance(r, dict) and r.get('type') == 'AIXM 5.1'), None)
-    name = release.get('filename') if release else None
-    check = ((release or {}).get('checksum') or {}).get('value')
-    if not (isinstance(name, str) and DFS_FILE.match(name) and isinstance(check, str) and re.fullmatch(r'[0-9a-f]{128}', check)):
-        return [], ['DFS : le jeu « ED Routes » (AIXM 5.1) n’est pas dans les métadonnées (format changé ?)']
-    path = os.path.join(data, 'sia', 'zones', 'de', 'dfs_ED_Routes.xml')
-    try:
-        with open(path, 'rb') as f:
-            if hashlib.sha512(f.read()).hexdigest() == check:
-                return [{'name': 'dfs_ED_Routes.xml', 'bytes': os.path.getsize(path), 'unchanged': True}], []
-    except OSError:
-        pass
-    try:
-        body = get(DFS + '0/' + name)
-    except OSError as e:
-        return [], [f'{name} : {e}']
-    if hashlib.sha512(body).hexdigest() != check:
-        return [], [f'{name} : la somme SHA-512 ne correspond pas aux métadonnées : rien n’est écrit']
-    changed = write(path, body)
-    return [{'name': 'dfs_ED_Routes.xml', 'bytes': len(body), 'unchanged': not changed}], []
+                for kind in DFS_KINDS:
+                    if leaf.get('name') == 'ED ' + kind:
+                        found[kind] = next((r for r in leaf.get('releases') or [] if isinstance(r, dict) and r.get('type') == 'AIXM 5.1'), None)
+    files, errors = [], []
+    for kind in DFS_KINDS:
+        release = found.get(kind)
+        name = release.get('filename') if release else None
+        check = ((release or {}).get('checksum') or {}).get('value')
+        if not (isinstance(name, str) and DFS_FILES[kind].fullmatch(name) and isinstance(check, str) and re.fullmatch(r'[0-9a-f]{128}', check)):
+            errors.append(f'DFS : le jeu « ED {kind} » (AIXM 5.1) n’est pas dans les métadonnées (format changé ?)')
+            continue
+        local = f'dfs_ED_{kind}.xml'
+        path = os.path.join(data, 'sia', 'zones', 'de', local)
+        try:
+            with open(path, 'rb') as f:
+                if hashlib.sha512(f.read()).hexdigest() == check:
+                    files.append({'name': local, 'bytes': os.path.getsize(path), 'unchanged': True})
+                    continue
+        except OSError:
+            pass
+        try:
+            body = get(DFS + '0/' + name)
+        except OSError as e:
+            errors.append(f'{name} : {e}')
+            continue
+        if hashlib.sha512(body).hexdigest() != check:
+            errors.append(f'{name} : la somme SHA-512 ne correspond pas aux métadonnées : rien n’est écrit')
+            continue
+        changed = write(path, body)
+        files.append({'name': local, 'bytes': len(body), 'unchanged': not changed})
+    return files, errors
 
 
 def enr51_url(cycle):
