@@ -465,6 +465,8 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
   `edAfter(null)` in `unmount`. **The owner's conditions** (Features SOG, 18 Nov), since the call is on the path of every drawing of
   the page: `edAfter` never throws (its body is in its own `try`), does nothing out of the workshop (no map alive: `stop()` returns
   at once, nothing is loaded — MapLibre is only loaded when the workshop opens, N93 counts the requests), and is idempotent.
+- **What leaves the device** (the Security session's note, 18 Nov): opening the map asks the tile provider for the area shown, hence
+  that of the mission, as the Map does; the help of the workshop says so in four languages; offline, nothing is asked.
 - **Not done** (next bricks): Sélection and the drag of a place, the poses (Point, Objet, Zone), the handles of a zone and its
   contour, Tracé, the landmarks of AeroDB, « Vue du pilote », « Poser l'avion ici »; no name is written on the map yet (a base style
   does not always carry glyphs: the names come with the selection). **Asked of the map's owner**: `startTiles` gives up at once when
