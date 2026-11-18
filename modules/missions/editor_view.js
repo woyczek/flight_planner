@@ -196,7 +196,7 @@ async function edCatalog(s) {
   if (e.kinds === 'new' || e.modelOpen) return draw(s);
   // la ligne du modèle dit son nom, désormais connu : sur place (aucun bouton n'est remplacé)
   const name = s.el?.querySelector('[data-atmodelname]');
-  if (name && name.textContent !== edModelLine(s)) name.textContent = edModelLine(s);
+  put(name, edModelLine(s));
 }
 
 /** Les modèles personnels de ce pilote (pilot/<TRI>/modeles/<id>.yaml, écrits par « Enregistrer comme modèle ») : chacun lu par le même
@@ -796,6 +796,29 @@ function edHid(e, i) {
   return !!rows[i] && edShown(e, rows)[i] === null;
 }
 
+/** Écrit un texte dans le DOM SEULEMENT s'il change (SOG-0468 : la règle du dépôt, en un seul endroit — une écriture qui ne change rien
+ *  relance les observateurs et dérange les lecteurs d'écran). `node` absent : rien. */
+function put(node, text) {
+  if (node && node.textContent !== text) node.textContent = text;
+}
+
+/** Idem pour un attribut (sa valeur, dite en texte). */
+function putAttr(node, name, value) {
+  const v = String(value);
+  if (node && node.getAttribute(name) !== v) node.setAttribute(name, v);
+}
+
+/** Idem pour un attribut `data-<key>`. */
+function putData(node, key, value) {
+  const v = String(value);
+  if (node && node.dataset[key] !== v) node.dataset[key] = v;
+}
+
+/** Idem pour une propriété du nœud (`value`, `disabled`, `hidden`). */
+function putProp(node, prop, value) {
+  if (node && node[prop] !== value) node[prop] = value;
+}
+
 // document → { clé → valeur } : ce qu'edOnce a déjà calculé (le document parti, la ligne part avec lui)
 const ONCE = new WeakMap();
 
@@ -1041,12 +1064,12 @@ function edChipsShow(s, where, moved) {
       const name = chip.querySelector('.ms-chipname'),
         on = +name?.dataset.n === sel;
       chip.toggleAttribute('data-chipsel', on);
-      name?.setAttribute('aria-pressed', String(on));
+      putAttr(name, 'aria-pressed', on);
     }
   if (!row) return;
   const [earlier, later] = row.querySelectorAll('button');
-  if (earlier) earlier.disabled = ends.first;
-  if (later) later.disabled = ends.last;
+  putProp(earlier, 'disabled', !!ends.first);
+  putProp(later, 'disabled', !!ends.last);
 }
 
 /** La route du départ en pastilles (SOG-0444, Tracé ; jamais « des identifiants séparés par des virgules »), sous la liste des Lieux :
@@ -1358,17 +1381,16 @@ function edProfile(s, doc = null) {
     levelFt = Number.isFinite(lv) && lv > 0 ? Math.min(lv, 60000) : 0,
     key = JSON.stringify([pts, levelFt, W]),
     warn = s.el.querySelector('[data-atprofwarn]'),
-    put = (text, empty, alert = '') => {
-      if (say.textContent !== text) say.textContent = text;
-      if (warn && warn.textContent !== alert) warn.textContent = alert;
-      const v = empty ? '1' : '';
-      if ((cv.dataset.empty || '') !== v) cv.dataset.empty = v;
+    paint = (text, empty, alert = '') => {
+      put(say, text);
+      put(warn, alert);
+      if (empty || cv.dataset.empty) putData(cv, 'empty', empty ? '1' : ''); // absent = vide : l'attribut n'est pas créé pour rien
     };
   if (cv.__profKey === key) return;
   cv.__profKey = key;
   if (pts.length < 2) {
     cv.__profRun = (cv.__profRun || 0) + 1; // un dessin encore en route ne peint plus
-    return put(s.tt(EDTX.atProfEmpty), true);
+    return paint(s.tt(EDTX.atProfEmpty), true);
   }
   import('../maps/lib/profile_embed.js').then(m => m.drawProfile(cv, pts, {
     load: edTileLoad(s),
@@ -1377,7 +1399,7 @@ function edProfile(s, doc = null) {
     if (state() !== s || s.ed !== e || cv.__profKey !== key || r?.stale) return;
     if (!r) {
       cv.__profKey = ''; // les bibliothèques du profil ne sont pas venues : le prochain redessin réessaie
-      return put(s.tt(EDTX.atProfNoRelief), true);
+      return paint(s.tt(EDTX.atProfNoRelief), true);
     }
     const k = r.terrain ? r.clear :
       null, // clear : la marge de la croisière sur le relief lu ; absent (Carte plus ancienne) ou nul : rien à dire
@@ -1386,12 +1408,12 @@ function edProfile(s, doc = null) {
         nm: dec(s, Math.round(k.atNm * 10) / 10),
         ft: Math.abs(Math.round(k.minFt))
       } : null;
-    put(r.terrain ? s.tt(EDTX.atProfNm, {
+    paint(r.terrain ? s.tt(EDTX.atProfNm, {
       nm: dec(s, Math.round(r.nm * 10) / 10)
     }) : s.tt(EDTX.atProfNoRelief), false, !ok ? '' : k.below ? s.tt(EDTX.atProfBelow, vars) : k.minFt < 500 ? s.tt(EDTX.atProfLow,
       vars) : '');
   }).catch(() => {
-    if (cv.__profKey === key) put(s.tt(EDTX.atProfNoRelief), true);
+    if (cv.__profKey === key) paint(s.tt(EDTX.atProfNoRelief), true);
   });
 }
 
@@ -1616,7 +1638,7 @@ function edMapSpacesAsk(s, e, v) {
       e.spacesSaid = x;
       const el = s.el.querySelector('[data-maplooksaid]'),
         text = edLookSaid(s);
-      if (el && el.textContent !== text) el.textContent = text;
+      put(el, text);
     };
   if (v?.far) return say('far');
   if (typeof a?.airspaces !== 'function' || !Array.isArray(v?.bbox) || v.bbox.length !== 4) return say('nobase');
@@ -1645,37 +1667,35 @@ function edMapShow(s) {
         sketch = q('[data-atsketch]'),
         hint = q('[data-maphint]'),
         text = edMapHint(s);
-      if (body) body.dataset.map = live;
+      putData(body, 'map', live);
       if (live === 'plain' && !e.plainSaid) { // le fond uni (hors ligne, ou les tuiles ne sont pas venues) : dit une fois par séance
         e.plainSaid = true;
         s.ctx.notify?.(s.tt(EDTX.atMapPlain), 'info');
       }
-      if (sketch) sketch.hidden = !!live;
+      putProp(sketch, 'hidden', !!live);
       for (const b of s.el.querySelectorAll('[data-atmaptools] button')) {
         const t = b.dataset.tool,
           dis = b.dataset.do === 'edmapfit' ? !live : b.dataset.do === 'edmapundo' ? off || !e.mapUndo?.size() : b.dataset.do ===
           'edmapredo' ?
           off || !e.mapRedo?.size() : off;
-        if (b.disabled !== dis) b.disabled = dis;
-        if (t && b.getAttribute('aria-pressed') !== String(tool === t)) b.setAttribute('aria-pressed', String(tool === t));
+        putProp(b, 'disabled', !!dis);
+        if (t) putAttr(b, 'aria-pressed', tool === t);
         if (t === 'zone') edZoneShow(s, b);
       }
-      if (hint && hint.textContent !== text) hint.textContent = text;
+      put(hint, text);
       const del = q('[data-vertexdel]'),
         add = q('[data-refadd]');
-      if (del) del.hidden = !(edMapVertex(e) >= 0 && tool === 'select');
-      if (add) add.hidden = !edMapRef(e);
+      putProp(del, 'hidden', !(edMapVertex(e) >= 0 && tool === 'select'));
+      putProp(add, 'hidden', !edMapRef(e));
       const view = q('[data-mapview] select'),
         said = q('[data-maplooksaid]'),
         saidText = edLookSaid(s);
-      if (view) view.disabled = !live;
-      if (said && said.textContent !== saidText) said.textContent = saidText;
-      for (const x of s.el.querySelectorAll('[data-refseek] input, [data-refseek] > button')) x.disabled = !live;
-      const put = q('[data-trput]');
-      if (put) {
-        put.hidden = !(live && e.trial?.on);
-        put.setAttribute('aria-pressed', String(tool === 'put'));
-      }
+      putProp(view, 'disabled', !live);
+      put(said, saidText);
+      for (const x of s.el.querySelectorAll('[data-refseek] input, [data-refseek] > button')) putProp(x, 'disabled', !live);
+      const trput = q('[data-trput]');
+      putProp(trput, 'hidden', !(live && e.trial?.on));
+      putAttr(trput, 'aria-pressed', tool === 'put');
     };
   if (!slot || !e.mapFeats) return mark();
   if (e.mapLook?.key !== EM.lookKey()) e.mapLook = EM.lookOf(s.el); // relue seulement si le design a changé de ton (SOG-0468)
@@ -2220,7 +2240,7 @@ function edAdValue(s, key, ev) {
     if (!ok || state() !== s || s.ed !== e || e.cadre[key] !== now || input.value.trim().toUpperCase() !== T) return;
     const name = ad.nameKnown(T);
     edCadreSet(s, key, typeof name === 'string' && name ? `${T} · ${name}` : T);
-    if (input.value !== T) input.value = T; // connu de la base : en majuscules
+    putProp(input, 'value', T); // connu de la base : en majuscules
     edRefresh(s);
   });
   return now;
@@ -2267,7 +2287,7 @@ function edPlaceFromBase(s, e, {
   // les champs de la fiche ouverte disent ce que le lieu retient (un champ n'est réécrit que si sa valeur change)
   for (const f of ['name', 'lat', 'lon']) {
     const input = s.el.querySelector(`[data-plform="${i}"] input[data-f="${f}"]`);
-    if (input && input.value !== row[f]) input.value = row[f];
+    putProp(input, 'value', row[f]);
   }
   return i;
 }
@@ -2326,7 +2346,7 @@ function edCadreSet(s, key, value) {
   if (auto && (key === 'dep' || key === 'arr' || key === 'family')) {
     e.cadre.title = ED.liaisonTitle(e.cadre.dep, e.cadre.arr);
     const t = s.el.querySelector('input[data-k=edtitle]');
-    if (t && t.value !== e.cadre.title) t.value = e.cadre.title;
+    putProp(t, 'value', e.cadre.title);
   }
   // un départ ou une arrivée retouchés au Cadre : leur ligne des Lieux suit (sa position ne reste que si le code OACI ne change pas)
   if ((key === 'dep' || key === 'arr') && e.places) {
@@ -2709,11 +2729,11 @@ export function edInput(s, ev) {
     if (e.story && ['summary', 'description', 'primary', 'secondary', 'payload', 'mass', 'pax'].includes(f)) e.story[f] = ev.target.value;
     const n = s.el.querySelector('[data-stcount]');
     if (n && f === 'summary') {
-      n.textContent = s.tt(TX.stCount, {
+      put(n, s.tt(TX.stCount, {
         n: ev.target.value.length,
         m: ED.SUMMARY_MAX
-      });
-      n.dataset.over = ev.target.value.length > ED.SUMMARY_MAX ? '1' : '';
+      }));
+      putData(n, 'over', ev.target.value.length > ED.SUMMARY_MAX ? '1' : '');
     }
     return edRefresh(s);
   }
@@ -2724,7 +2744,7 @@ export function edInput(s, ev) {
     if (edHid(e, +ev.target.dataset.i)) return; // SOG-0459 : une ligne cachée n'est jamais retouchée
     // SOG-0459 : l'identifiant d'un lieu du fichier ne change pas dans l'atelier voilé — la même phrase pour tous
     if (e.veil && row && row.i >= 0 && f === 'id') {
-      if (ev.target.value !== row.id) ev.target.value = row.id;
+      putProp(ev.target, 'value', row.id);
       return s.ctx.notify(s.tt(EDTX.veilLocked), 'warn', {
         key: 'missions-veil'
       });
@@ -2804,7 +2824,7 @@ function edRecode(s) {
       e.cadre[k] = now[k];
       const input = s.el.querySelector(`input[data-k=${field}]`);
       // SOG-0465 : le champ montre le code d'un terrain (son nom dessous), le texte d'un autre lieu
-      if (input && document.activeElement !== input && input.value !== ED.fieldText(now[k])) input.value = ED.fieldText(now[k]);
+      if (document.activeElement !== input) putProp(input, 'value', ED.fieldText(now[k]));
       if (e.places) e.places = e.places.map(r => r && r.kind === k && r.name === was[k] ? {
         ...r,
         name: now[k]
@@ -2914,17 +2934,14 @@ function thumbHtml(s, doc, run = null) {
 function edRefresh(s) {
   const e = s.ed,
     doc = edDoc(e),
-    q = sel => s.el.querySelector(sel),
-    put = (node, text) => {
-      if (node && node.textContent !== text) node.textContent = text;
-    };
+    q = sel => s.el.querySelector(sel);
   put(q('[data-edhead]'), [e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '));
   for (const k of ED.STEPS) {
     const ok = edStepOk(e, doc, k),
       mark = q(`[data-mark="${k}"]`);
     put(q(`[data-line="${k}"]`), edLine(s, doc, k));
     put(mark, ok ? '✓' : '!');
-    if (mark) mark.dataset.kind = ok ? 'ok' : 'warn';
+    putData(mark, 'kind', ok ? 'ok' : 'warn');
   }
   put(q('[data-flowline]'), ED.liaisonTitle(e.cadre.dep, e.cadre.arr));
   const drow = (e.sel || 'start') === 'start' ? null : edDrawers(e).find(r => r.id === e.sel);
@@ -2942,7 +2959,7 @@ function edRefresh(s) {
     put(q(`[data-dtitle="${d.rank}"]`), `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`);
     put(q(`[data-dkey="${d.rank}"]`), s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand));
     put(mark, bad ? '!' : '✓');
-    if (mark) mark.dataset.kind = bad ? 'warn' : 'ok';
+    putData(mark, 'kind', bad ? 'warn' : 'ok');
   }
   // le croquis et la liste « À compléter » ne portent aucun bouton : leur contenu se remplace ; la carte du socle suit sur place
   const map = q('[data-atsketch]'),
@@ -2967,13 +2984,13 @@ function edRefresh(s) {
     for (const d of run.ok ? run.drawers : []) {
       const st = q(`[data-trstate="${d.rank}"]`);
       put(st, trState(s, d));
-      if (st) st.dataset.open = d.open ? '1' : '';
+      putData(st, 'open', d.open ? '1' : '');
     }
     if (hand) {
       put(hand, first ? s.tt(EDTX.trHandBtn, {
         n: first.rank
       }) : s.tt(EDTX.trHandNone));
-      hand.disabled = !first;
+      putProp(hand, 'disabled', !first);
     }
   }
   if (todo && e.lastTodo !== list) todo.innerHTML = e.lastTodo = list;
@@ -3545,8 +3562,8 @@ export function edClick(s, b) {
         ...edMapWant(s.ed),
         base
       };
-      for (const x of s.el.querySelectorAll('[data-maplook] [data-do=edmapbase]')) x.setAttribute('aria-pressed', String(x.dataset
-        .base === base));
+      for (const x of s.el.querySelectorAll('[data-maplook] [data-do=edmapbase]')) putAttr(x, 'aria-pressed', x.dataset
+        .base === base);
       return edMapShow(s);
     }
     case 'edunveil': // « Dévoiler la mission complète » (SOG-0459) : la question du cadre, puis l'atelier entier
