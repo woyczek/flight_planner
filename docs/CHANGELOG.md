@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Fuel, Procedures: the UK package line still says « n SID lues en partie le <date> » after a reload, and offers « Relire… »** (SOG-0374, the user's refusal of 16 Nov); manuals ×4; F269.
 - **Fuel, Route: three hardenings** (SOG-0470, Sécurisation) — the kept sections of the engine in a white list, a NAT window without times never « NaN », route_alts.json written once per series of touches and only when it changes; F271, F272.
 - **NAT tracks: a read of the source every five minutes at most, one minute for « Relire »** (SOG-0470, Sécurisation) — an unchanged message no longer let every mount ask the source again; F270.
 - **Shared blocks: the aerodrome field and the suggestion list leave Fuel for frame/lib** (SOG-0465; no change of behaviour) — `frame/lib/ad_field.js` and `frame/lib/suggest_list.js`, for the mission workshop's departure and arrival; Fuel keeps wrappers; benches F267, F268.

@@ -6235,7 +6235,9 @@ def f231(c):
     to_step(c, 1)
     open_foot(c, 'dep')
     c.until(f"!!document.querySelector('{D} [data-do=procukpkg]')", timeout=15000, what='the gesture in « Source et cartes » of the departure')
-    c.eq(norm(c.text(f'{D} [data-do=procukpkg]')), norm(tx(T, 'procUkRead', c.lang)), '« Lire les départs dans le paquet du Royaume-Uni »', what='label')
+    # SOG-0374 (lot du 18/11) : cet appareil DÉTIENT déjà deux SID du paquet (le fixture) : le geste est « Relire » (F269 le prouve)
+    c.eq(norm(c.text(f'{D} [data-do=procukpkg]')), norm(tx(T, 'procUkReread', c.lang)), '« Relire les départs dans le paquet du Royaume-Uni » '
+         '(two SIDs held)', what='label')
     c.eq(c.count(f'{FUEL} [data-proc="arr"] [data-do=procukpkg]'), 0, 'not on the arrival (KJFK)', what='arrival')
 
     def answer(ans, what):
@@ -7839,6 +7841,40 @@ def f262(c):
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPB]')", timeout=15000, what='« Proposé : XQPB » from the address')
     c.eq(c.doc('pilot/ABC/current_flight.json')['route']['altn'], 'LFMT', 'proposed, not taken', what='field')
 
+
+@case('F269', 'Procedures, departure from an aerodrome of the United Kingdom: what the device HOLDS from the UK package is said after a '
+      'reload — « 2 SID lues en partie le 16/11 09:00Z » from the aerodrome\'s records (source ukpkg) and the date of the last hand '
+      'reading — and the gesture is « Relire les départs… » when a reading exists; without a reading, « Lire les départs… » and nothing said',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0374 (the user, 16 Nov: « ça lit, n\'affiche rien, ne garde rien »; the measure of « Procédures »: after a reload the line '
+      'no longer said « n SID lues » — ukDone lived in the page\'s memory only — and « Lire » was offered again as if nothing was read); '
+      'the invented EGLL of F231 (two SIDs read in part, the index dated 16/11 09:00Z)')
+def f269(c):
+    T = 'modules/fuel/procedures_texts.js'
+    D = f'{FUEL} [data-proc="dep"]'
+    L = f'{D} [data-ukline]'
+    c.page.add_init_script(_UK_STUB)
+    _route_launcher(c, ['route/compute'])
+    # first a device that holds nothing from the package: « Lire », nothing said (the browser's storage keeps the files of an opening,
+    # so the empty device comes first)
+    docs = [d for d in _uk_docs() if not d[0].startswith('proc/manual/')]
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    open_foot(c, 'dep')
+    c.until(f"!!document.querySelector('{D} [data-do=procukpkg]')", timeout=15000, what='the gesture')
+    c.eq([norm(c.text(f'{D} [data-do=procukpkg]')), c.count(f'{L} [data-ukres]')], [norm(tx(T, 'procUkRead', c.lang)), 0],
+         'without a reading: « Lire les départs… » and nothing said', what='nothing held')
+    # then the device holds the two SIDs read earlier from the package: a fresh page (as after a reload) says so at once
+    c.open('fuel', docs=_uk_docs())
+    to_step(c, 1)
+    open_foot(c, 'dep')
+    c.until(f"!!document.querySelector('{L} [data-ukres]')", timeout=15000, what='the line says what the device holds')
+    want = norm(tx(T, 'procUkHeldAt', c.lang).replace('{n}', '2'))
+    got = norm(c.text(f'{L} [data-ukres]'))
+    c.ok(got.startswith(want.split('{d}')[0].strip()) and '16/11' in got, got, '« 2 SID lues en partie le 16/11 … » after a reload')
+    c.eq(norm(c.text(f'{D} [data-do=procukpkg]')), norm(tx(T, 'procUkReread', c.lang)), '« Relire les départs… » when a reading exists',
+         what='reread')
+    c.eq(c.js("window.__uk.asked"), [], 'nothing asked of aerodb: the line reads what the device holds', what='asked')
 
 
 @case('F267', 'The suggestion list under a field, a shared block (frame/lib/suggest_list.js): on a page without any module, three '

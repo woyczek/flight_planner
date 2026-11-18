@@ -22,6 +22,13 @@ export const TX = {
     'Paket des Vereinigten Königreichs wird gelesen…',
     'Leyendo el paquete del Reino Unido…'
   ],
+  // SOG-0374 : ce que l'appareil détient, dit après un rechargement ; le geste quand une lecture existe
+  procUkHeldAt: ['{n} SID lues en partie le {d} (point de sortie et niveaux)', '{n} SIDs read in part on {d} (exit point and levels)',
+    '{n} SIDs teilweise gelesen am {d} (Ausflugpunkt und Höhen)', '{n} SID leídas en parte el {d} (punto de salida y niveles)'
+  ],
+  procUkReread: ['Relire les départs dans le paquet du Royaume-Uni', 'Read the departures in the United Kingdom package again',
+    'Abflüge im Paket des Vereinigten Königreichs erneut lesen', 'Volver a leer las salidas en el paquete del Reino Unido'
+  ],
   procUkOk: ['{n} SID lues en partie (point de sortie et niveaux)', '{n} SIDs read in part (exit point and levels)',
     '{n} SIDs teilweise gelesen (Ausflugpunkt und Höhen)', '{n} SID leídas en parte (punto de salida y niveles)'
   ],

@@ -737,13 +737,20 @@ export function createProcedures(host) {
     if (side !== 'dep' || !/^EG[A-Z]{2}$/.test(k) || typeof ctx.aerodb?.fetchProcedures !== 'function' || !launcherHere()) return '';
     const busy = ukReading === k,
       d = busy ? null : ukDone.get(k),
-      said = !d ? '' : d.k === 'ok' ? tt(TX.procUkOk, {
+      // ce que l'appareil DÉTIENT du paquet (les fiches du terrain lues de lui : source ukpkg), dit même après un rechargement — la
+      // réponse de la dernière lecture (ukDone) ne vit que dans la mémoire de la page ; la date est celle de la dernière lecture à la main
+      held = (Array.isArray(m.all) ? m.all : []).filter(r => r?.kind === 'SID' && r?.source?.ref === 'ukpkg').length,
+      when = held ? fmtDayZ(m.cov?.read_at) : '',
+      said = !d ? held ? tt(when ? TX.procUkHeldAt : TX.procUkOk, {
+        n: held,
+        d: when
+      }) : '' : d.k === 'ok' ? tt(TX.procUkOk, {
         n: d.n
       }) : d.k === 'not-personal' ? tt(TX.procUkPersonal) : d.k === 'no-package' ? tt(TX.procUkNoPkg) : d.k === 'released' ? tt(TX
         .procUkReleased) : d.m ? tt(TX.procUkFail, {
         m: d.m
       }) : tt(TX.procUkFail0);
-    return `<span class="fu-ukline" data-ukline><button type="button" class="fu-linkbtn" data-do="procukpkg" data-icao="${esc(k)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procUkReading : TX.procUkRead))}</button>${said ? ` <span class="${d.k === 'ok' ? 'f-muted' : 'f-warn'}" data-ukres="${esc(d.k)}">${esc(said)}</span>` : ''}</span>`;
+    return `<span class="fu-ukline" data-ukline><button type="button" class="fu-linkbtn" data-do="procukpkg" data-icao="${esc(k)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procUkReading : held || d?.k === 'ok' ? TX.procUkReread : TX.procUkRead))}</button>${said ? ` <span class="${!d || d.k === 'ok' ? 'f-muted' : 'f-warn'}" data-ukres="${esc(d ? d.k : 'held')}">${esc(said)}</span>` : ''}</span>`;
   }
   /** Ce poste peut lire Little Navmap (AeroDb.lnmAvailable : un booléen, ni chemin ni nom de base) ; faux en cas de doute. */
   const lnmHere = () => {
