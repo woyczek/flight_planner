@@ -1084,6 +1084,33 @@ besoin ». The ergonomist (18 Nov, 11:26): « ＋ Tiroir » opens the choice of 
 - Cases: N73 now checks the list (the « ONE row that scrolls sideways » of SOG-0444 is replaced); N78 changes the key by the choice
   (`dw_key`) and reads the key in force from `data-kindcur`; N129 is new.
 
+### 7 sextricies. « Lieux » at the head of the right column, in a frame (18 Nov 2026; SOG-0472; noreg N130, N50, N54, N72, N73)
+
+The ergonomist's decision (SOG-0472): « Lieux » goes to the HEAD of the right column, in a frame, with a list of fixed height that scrolls; the
+fields of the chosen place under the list; map and list linked both ways; the column no longer scrolls to find a place; on a phone the list comes
+under the map.
+
+- **The frame** (`edPlacesCardHtml`): the mark ✓ / ! of the step, « Lieux », its line (`data-mark="places"`, `data-line="places"`, kept up to date
+  by `edRefresh` like the other groups), then `edPlacesHtml` in the same `.ms-atbody` as a group (its field rules apply). The sheet of the
+  departure keeps its five other groups, folded one at a time (`ED.STEPS` is unchanged: « À compléter » still names the step « Lieux »). The frame
+  shows on the departure's sheet and on a drawer's sheet, not during a trial of the keys (the trial pane takes the column, as before).
+- **The list (reused: the rows of `edPlacesHtml` and its rows-only mode of SOG-0478).** `[data-pllist]`, a fixed `max-height` (`min(36dvh,
+  264px)`) that scrolls in itself (`overflow-y: auto`, `overscroll-behavior: contain`). Each row is ONE button (`.ms-plpick`, `data-do="edplace"`,
+  its badge, its name, its detail line); the « Modifier » link is gone (touching the row is the gesture). The chosen row is marked
+  (`aria-current`: the open place, else the place chosen on the map). The fields of the chosen place come UNDER the list, in `[data-edplaces]`
+  (the same form as before). The rows are read from the document when the sitting has none yet (`e.places || placesOf(edDoc)`: the ranks are
+  those of `edPlaces`); every path that changes the rows (open a row, add, remove, the route list) first creates them with `edPlaces`.
+- **Map and list, both ways, ONE path of redraw** (SOG-0478 unchanged: `draw`, `edRefresh`, `edLive` — the live gesture now replaces the rows of
+  `[data-pllist]` only). A place touched on the map (`edMapPick`) chooses and opens its row; after the draw, `edPlShow` (called by `edAfter`) puts
+  the list back where it was (`e.plTop`, remembered on its own scroll) and brings the chosen row into view INSIDE the list — only `scrollTop`
+  changes, and only when it must; the page and the column do not scroll (the old `scrollIntoView` is gone). `edMapPick` no longer switches the
+  sheet to the departure nor folds the open group: the Lieux are always on screen. A row touched chooses the place on the map (`mapSel`, as the
+  « Modifier » link did). « Créez-le dans les Lieux » (a drawer without zone or object) brings the frame into view.
+- **On a phone**, one DOM, the order in CSS: `.ms-atgrid` is a column, `.ms-atmain` and `.ms-atside` are `display: contents`, and the blocks are
+  ordered map, Lieux, unfolding, sheet. From 850 px the two columns come back (the left one sticky, as before).
+- Cases: the taps on the step « Lieux » become `ed_places(c)` (the frame is there); N50 reads the six steps from their marks (the Lieux first);
+  N54 opens and closes a place instead of the group; N72 and N73 take another group for « one click » and « one at a time »; N130 is new.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

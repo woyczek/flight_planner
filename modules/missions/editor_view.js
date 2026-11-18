@@ -48,6 +48,12 @@
 // qu'une clé neuve devine) et ouvre sa fiche ; la clé d'un tiroir existant se change par LE MÊME choix, dans sa fiche (s.ed.kinds =
 // 'drawer') ; « ＋ Tiroir » retouché, ou « Annuler », le referme sans rien créer.
 //
+// « Lieux » en tête de la colonne de droite (SOG-0472, décision de l'ergonome) : un cadre (edPlacesCardHtml) où la liste des lieux — les
+// lignes d'edPlacesHtml, un bouton par ligne — a une hauteur fixe et défile en elle-même ; la ligne choisie est marquée et les champs du
+// lieu choisi sont SOUS la liste, dans le même cadre. Carte et liste sont liées : un lieu touché sur la carte choisit sa ligne et la fait
+// venir à l'écran DANS la liste (edPlShow, après chaque dessin : la colonne ne défile pas) ; une ligne touchée choisit le lieu sur la
+// carte. Au téléphone, le cadre se met sous la carte (l'ordre des blocs, en CSS). Les cinq autres groupes de la fiche gardent leur pli.
+//
 // L'atelier voilé (SOG-0459 ; l'utilisateur, 18 nov. : « l'existence même des tiroirs est cachée par défaut, à tout le monde, auteur
 // compris ; on choisit de dévoiler ») : une mission EXISTANTE ouverte par « Modifier » ou « Dupliquer » s'ouvre voilée (s.ed.veil,
 // ED.veiledAt : sauf `state().fullView === true`) ; une mission créée est entière. Voilé, l'atelier ne montre que ce que le pilote voit
@@ -126,6 +132,21 @@ export function init(tools) {
 // étroite, même sur un grand écran), les lignes d'équipe et d'événement gardent leur forme étroite. Les règles des champs
 // de chaque étape (ms-edteam, ms-pl…) restent dans module.js. Module large : la carte et le déroulé à gauche, la fiche à droite.
 const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:column;min-height:calc(100dvh - 160px)}
+[data-module="missions"] .ms-atgrid{display:flex;flex-direction:column}
+[data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
+[data-module="missions"] .ms-atmap{order:1}
+[data-module="missions"] .ms-atplaces{order:2}
+[data-module="missions"] .ms-atflow{order:3}
+[data-module="missions"] .ms-atsheet{order:4}
+[data-module="missions"] .ms-atplhead{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px}
+[data-module="missions"] .ms-atplhead>h3{margin:0}
+[data-module="missions"] .ms-pllist{position:relative;max-height:min(36dvh,264px);overflow-y:auto;overscroll-behavior:contain;border:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-pllist>.ms-plrow{display:block;padding:0}
+[data-module="missions"] .ms-pllist>.ms-plrow:last-child{border-bottom:0}
+[data-module="missions"] .ms-plpick{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;align-items:center;width:100%;min-height:48px;margin:0;padding:6px 8px;border:0;border-radius:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+[data-module="missions"] .ms-plpick>*{pointer-events:none}
+[data-module="missions"] .ms-plpick[aria-current]{background:var(--sog-surface-2,#eef);box-shadow:inset 3px 0 0 var(--sog-accent,#1a73e8)}
+[data-module="missions"] .ms-atplaces [data-edplaces]>.ms-plform{border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmap{margin:0 0 12px}
 [data-module="missions"] .ms-atmapbtn{min-height:44px}
 [data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
@@ -248,6 +269,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-attodo[hidden]{display:none}
 @container (min-width: 850px){
   [data-module="missions"] .ms-atgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(22em,26em);gap:16px;align-items:start}
+  [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:block}
   [data-module="missions"] .ms-atmapbtn{display:none}
   [data-module="missions"] .ms-atmapbody{display:block;margin-top:0}
   [data-module="missions"] .ms-atmapframe{height:min(46dvh,440px)}
@@ -496,11 +518,13 @@ function dms(s, lat, lon) {
 /** Un nombre écrit dans une phrase (« portée 0,3 NM ») : la virgule décimale, sauf en anglais ; le champ, lui, garde sa saisie. */
 const dec = (s, v) => (s.ctx.lang?.() || 'fr') === 'en' ? String(v ?? '') : String(v ?? '').replace('.', ',');
 
-/** L'étape Lieux (la maquette editeur_lieux_*.png) : une ligne par lieu, « Modifier » en ouvre les champs sur place ; « + Zone »,
- *  « + Point tournant », « + Rendez-vous » (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte. */
+/** Les Lieux (la maquette editeur_lieux_*.png ; SOG-0472) : une ligne par lieu dans une liste de hauteur fixe qui défile — toucher une
+ *  ligne la choisit (le lieu aussi sur la carte) et ouvre ses champs SOUS la liste ; « + Zone », « + Point tournant », « + Rendez-vous »
+ *  (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte ; la route du départ. `listOnly` : les lignes seules
+ *  (SOG-0478, un geste en cours). Les lignes non encore retouchées sont lues du document (les rangs sont ceux d'edPlaces). */
 function edPlacesHtml(s, listOnly = false) {
   const e = s.ed,
-    rows = e.places || [],
+    rows = e.places || ED.placesOf(edDoc(e)),
     badge = {
       dep: TX.plDep,
       arr: TX.plArr,
@@ -571,10 +595,13 @@ function edPlacesHtml(s, listOnly = false) {
     id = e.cadre.id.trim().toUpperCase(),
     shown = edShown(e, rows); // SOG-0459 : l'atelier voilé ne montre pas les lignes cachées (elles restent à leur rang)
   // « + Cible » : jamais dans l'atelier voilé (une cible cachée ne doit pas se deviner à son absence)
-  const list = rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('');
+  // SOG-0472 : la ligne entière est le bouton qui choisit le lieu (sur la carte aussi) ; la ligne choisie est marquée
+  const on = i => e.placeEdit === i || e.placeEdit < 0 && edMapSel(e) === i,
+    list = rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><button type="button" class="ms-plpick" data-do="edplace" data-i="${i}"${on(i) ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span></button></div>`).join('');
   if (listOnly) return list; // SOG-0478 : un geste en cours ne remplace que les lignes
-  return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
-    <div class="f-list" data-edplaces>${list}</div>
+  const open = e.placeEdit >= 0 && rows[e.placeEdit] && shown[e.placeEdit] ? form(rows[e.placeEdit], e.placeEdit) : '';
+  return `<p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
+    <div data-edplaces><div class="ms-pllist" data-pllist>${list}</div>${open}</div>
     <div class="f-row ms-pladd">${e.veil || rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>${edRouteHtml(s, rows)}`;
 }
 
@@ -786,16 +813,23 @@ function edLine(s, doc, k) {
   }) : s.tt(EDTX.atLine_none);
 }
 
-/** Le contenu d'un groupe déplié : le formulaire de son étape (inchangé). */
-const edGroupBody = (s, k) => k === 'teams' ? edTeamsHtml(s) : k === 'places' ? edPlacesHtml(s) : k === 'story' ? edStoryHtml(s) : k ===
-  'risks' ? edRisksHtml(s) : k === 'timeline' ? edTimelineHtml(s) : edCadreHtml(s);
+/** Le contenu d'un groupe déplié : le formulaire de son étape (inchangé). Les Lieux ont leur cadre (edPlacesCardHtml). */
+const edGroupBody = (s, k) => k === 'teams' ? edTeamsHtml(s) : k === 'story' ? edStoryHtml(s) : k === 'risks' ? edRisksHtml(s) : k ===
+  'timeline' ? edTimelineHtml(s) : edCadreHtml(s);
+
+/** « Lieux » en tête de la colonne de droite (SOG-0472) : un cadre — sa marque (✓ ou !), son nom, son contenu en une ligne (les mêmes
+ *  que ceux d'un groupe : edRefresh les suit), puis les Lieux (edPlacesHtml). */
+function edPlacesCardHtml(s, doc) {
+  const ok = edStepOk(s.ed, doc, 'places');
+  return `<section class="f-card ms-atplaces" data-atplaces data-grp="places"><div class="ms-atplhead"><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="places" aria-hidden="true">${ok ? '✓' : '!'}</span><h3>${esc(s.tt(TX.stepPlaces))}</h3><span class="ms-atline f-muted" data-line="places">${esc(edLine(s, doc, 'places'))}</span></div><div class="ms-atbody">${edPlacesHtml(s)}</div></section>`;
+}
 
 /** La fiche du départ (la partie A du fichier) : les six étapes de l'éditeur en six groupes repliables, un seul déplié à la fois ; chaque
  *  groupe dit son contenu en une ligne et porte sa marque (✓ ou !). */
 function edSheetHtml(s, doc) {
   const names = edNames();
   return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atSheet))}</h3><p class="f-muted">${esc(s.tt(EDTX.atSheetHint))}</p>
-    <div data-steps>${ED.STEPS.map(k => {
+    <div data-steps>${ED.STEPS.filter(k => k !== 'places').map(k => {
     const ok = edStepOk(s.ed, doc, k),
       open = s.ed.step === k;
     return `<div class="ms-atgrp" data-grp="${k}" data-open="${open ? '1' : ''}"><button type="button" class="ms-atsum" data-do="edstep" data-step="${k}" aria-expanded="${open}"${open ? ' aria-current="step"' : ''}><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="${k}" aria-hidden="true">${ok ? '✓' : '!'}</span><b>${esc(s.tt(names[k]))}</b><span class="ms-atline f-muted" data-line="${k}">${esc(edLine(s, doc, k))}</span></button>${open ? `<div class="ms-atbody" data-edform>${edGroupBody(s, k)}</div>` : ''}</div>`;
@@ -1293,8 +1327,9 @@ function edPlaces(e) {
   return e.places;
 }
 
-/** Un lieu choisi sur la carte (son rang, -1 : la carte nue) : il dit son nom sur la carte, et sa ligne des Lieux s'ouvre — la fiche du
- *  départ, le groupe « Lieux », la ligne en vue. La carte nue ne choisit plus rien (sur place). Une carte d'une autre séance : rien. */
+/** Un lieu choisi sur la carte (son rang, -1 : la carte nue) : il dit son nom sur la carte, et sa ligne des Lieux est choisie, ses champs
+ *  ouverts sous la liste, la ligne en vue DANS la liste (SOG-0472 : la fiche affichée à côté ne change pas). La carte nue ne choisit plus
+ *  rien (sur place). Une carte d'une autre séance : rien. */
 function edMapPick(s, e, i) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
   if (edHid(e, i)) return; // SOG-0459 : une ligne cachée ne se choisit pas (elle n'est pas dessinée)
@@ -1308,15 +1343,30 @@ function edMapPick(s, e, i) {
     return edRefresh(s);
   }
   e.mapSel = i;
-  e.sel = 'start';
-  e.step = 'places';
   e.placeAsk = -1;
   e.placeEdit = i;
-  draw(s);
+  draw(s); // edAfter → edPlShow : la ligne vient à l'écran dans la liste, la colonne ne défile pas (SOG-0472)
   edMapFocus(e, i);
-  s.el.querySelector(`[data-edplaces] [data-place="${i}"]`)?.scrollIntoView?.({
-    block: 'nearest'
-  });
+}
+
+/** La liste des Lieux après un dessin (SOG-0472) : elle reprend là où elle était (e.plTop, gardé quand on la fait défiler), puis la ligne
+ *  choisie vient à l'écran DANS la liste — seule la liste défile, jamais la colonne ni la page. Une réaction au dessin : seul scrollTop
+ *  change, et seulement s'il le faut. */
+function edPlShow(s) {
+  const e = s.ed,
+    list = s.el?.querySelector?.('[data-pllist]');
+  if (!e || !list) return;
+  list.onscroll = () => {
+    e.plTop = list.scrollTop;
+  };
+  if (list.scrollTop !== (e.plTop || 0)) list.scrollTop = e.plTop || 0;
+  const i = e.placeEdit >= 0 ? e.placeEdit : edMapSel(e),
+    row = i >= 0 ? list.querySelector(`[data-place="${i}"]`) : null;
+  if (!row) return;
+  const top = row.offsetTop,
+    bottom = top + row.offsetHeight,
+    to = top < list.scrollTop ? top : bottom > list.scrollTop + list.clientHeight ? bottom - list.clientHeight : list.scrollTop;
+  if (to !== list.scrollTop) list.scrollTop = e.plTop = to;
 }
 
 /** Une zone à contour choisie est cadrée sur la carte, avec une marge (l'ergonome, 18 nov. : ses poignées s'entassent quand elle est
@@ -1371,7 +1421,7 @@ function edLive(s, e) {
     e.liveAsk = 0;
     if (state() !== s || s.ed !== e || !e.dragBase) return;
     edRefresh(s);
-    const list = s.el.querySelector('[data-edplaces]'),
+    const list = s.el.querySelector('[data-pllist]'),
       html = list ? edPlacesHtml(s, true) : '';
     if (list && e.lastLive !== html) list.innerHTML = e.lastLive = html;
   });
@@ -1688,6 +1738,7 @@ export function edAfter(s) {
     edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée
     s.ed.mapLook = null; // le design a pu changer de ton entre deux dessins
     edMapShow(s);
+    edPlShow(s); // SOG-0472 : la liste des Lieux reprend sa place, la ligne choisie en vue
   } catch {
     /* la carte ne casse jamais le dessin : l'écran garde son croquis */
   }
@@ -1965,7 +2016,7 @@ export function edHtml(s) {
   return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edFlowHtml(s, doc, run)}</div>${run ? edTrialHtml(s, run) : e.veil || (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}</div>
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edFlowHtml(s, doc, run)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : `${edPlacesCardHtml(s, doc)}${e.veil || (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}`}</div></div>
     <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
 }
@@ -2007,7 +2058,8 @@ export function edInput(s, ev) {
   if (k === 'edroute') { // la route du départ : « Ajouter un lieu… » en ajoute un (avant l'arrivée quand elle termine la route)
     const token = String(ev.target.value || '').slice(0, 40);
     // seulement le jeton d'un lieu de la séance : une page forgée n'écrit pas un identifiant quelconque dans la route
-    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !edShown(e, e.places || []).some(r => r && ED.routeToken(r) ===
+    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !edShown(e, e.places || ED.placesOf(edDoc(e))).some(r => r && ED
+        .routeToken(r) ===
         token)) return;
     e.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre (il ne défait jamais une saisie)
     edRouteAdd(s, e, token);
@@ -2552,8 +2604,7 @@ export function edClick(s, b) {
       e.step = 'places';
       if (!e.places) e.places = ED.placesOf(edDoc(e));
       draw(s);
-      return s.el.querySelector('[data-steps] [aria-current]')?.scrollIntoView?.({
-        inline: 'nearest',
+      return s.el.querySelector('[data-atplaces]')?.scrollIntoView?.({
         block: 'nearest'
       });
     }
@@ -2730,6 +2781,7 @@ export function edClick(s, b) {
       });
     case 'edplace':
       if (edHid(s.ed, +b.dataset.i)) return; // SOG-0459 : une ligne cachée ne s'ouvre pas
+      edPlaces(s.ed); // SOG-0472 : la liste est toujours montrée, les lignes de la séance naissent quand on en ouvre une
       s.ed.placeAsk = -1;
       s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
       // la liste et la carte disent le même lieu : la ligne ouverte est le lieu choisi sur la carte (refermée : plus aucun)
@@ -2780,7 +2832,7 @@ export function edClick(s, b) {
       // SOG-0439 : un lieu encore cité se retire en deux temps (editor.js removePlace) ; le premier appui dit qui le cite
       // (le second, inerte une seconde ; la notification reste jusqu'à sa croix ou au second appui, qui la remplace)
       const i = +b.dataset.i,
-        row = s.ed.places?.[i];
+        row = edPlaces(s.ed)[i];
       // SOG-0459 : dans l'atelier voilé, un lieu du fichier ne se retire pas sans dévoiler — la même phrase pour TOUS (un refus au cas
       // par cas serait un indice) ; un lieu ajouté dans la séance (i = -1) se retire librement
       if (s.ed.veil && row && row.i >= 0) return s.ctx.notify(s.tt(EDTX.veilLocked), 'warn', {
@@ -2821,7 +2873,7 @@ export function edClick(s, b) {
         });
         return at < 0 ? edMapShow(s) : edMapPick(s, s.ed, at);
       }
-      const made = ED.newPlace(s.ed.places || [], b.dataset.kind, s.ed.base);
+      const made = ED.newPlace(edPlaces(s.ed), b.dataset.kind, s.ed.base);
       if (!made) return;
       s.ed.mapUndo?.clear(); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
       s.ed.mapSel = -1;
