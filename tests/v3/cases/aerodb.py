@@ -17365,3 +17365,27 @@ def k366(c):
     text = FF.unread_issue([air('A', 'B', 10, 'de'), air('B', 'C', 10, 'de'), air('C', 'D', 10, 'fr'), air('D', 'E', 10, 'gb'), leg('E', 'F', 5), {'via': 'L2', 'kind': 'SID', 'source_zone': 'de'}, {'via': 'L3', 'kind': 'AIRWAY', 'connector': True, 'source_zone': 'es'}])
     c.eq(('Allemagne, France' in text, '3 tronçon(s)' in text, 'Espagne' in text, 'PROF407' in text, 'ROUTE52' in text), (True, True, False, True, True), 'the States of NOT_READ the route flies airways in are named with the number of legs; a State of the base with no such rule, a DCT, a SID and a connector are not counted', what='free route')
     c.eq((FF.unread_issue([air('A', 'B', 10, 'gb'), leg('B', 'C', 5)]), FF.unread_issue([]), FF.unread_issue(None)), (None, None, None), 'a route without such legs says nothing', what='nothing')
+
+
+@case('K370', 'Route engine, SOG-0501 (the second pass of the IFPS: « ROUTE135 SID LIMIT EXCEEDED FOR AERODROME EGGW »): in a list of aerodromes of the RAD limit line `XX_LIM_AD` the exception « (except below FL105) » belongs to the aerodrome that PRECEDES it, not to the whole list — the others of the list have a known limit (EGGW: 0 NM, the route must start at the last point of a SID), the one with the exception stays « to examine »',
+      'K', static=True,
+      rule='SOG-0501 (the user\'s second pass to the IFPS: 18 errors; the new one, ROUTE135, is the limit EG_LIM_AD « … EGGW … Departures/Arrivals DCT = 0NM » for a route typed « EGGW DCT LAM »). Measured: the whole clause of the UK list was read as « complex » because three aerodromes of it carry « (except below FL105) »: EGGW had `unknown` and the review said nothing of the limit that the IFPS applies. Invented codes (the RAD is the property of EUROCONTROL and stays on the workstation).')
+def k370(c):
+    import importlib
+    import sys
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('route_engine.dct_limits')
+    text = 'AD  Departures/Arrivals DCT  = 50NM\nAAAA / BBBB / CCCC (except below FL105)/ DDDD / EEEE (except below FL105) / FFFF Departures/Arrivals DCT = 0NM\nGGGG / HHHH  Departures  = 0NM  Arrivals   = 50NM'
+    clauses = D.parse('XX_LIM_AD', text)
+    c.eq((clauses[1]['exc'], clauses[1]['complex'], clauses[1]['nm']), (['CCCC', 'EEEE'], False, 0), 'the clause of the list: the aerodromes with an exception are named (CCCC, EEEE), the clause itself is no longer « complex »', what='parse')
+    D.CACHE.clear()
+    rad = types.SimpleNamespace(book={'file': 'k370', 'sheets': {D.SHEET: [{'v': ['', '', '', 'XX_LIM_AD', 'Limits', text, 'H24'], 'row': 1}]}}, active=lambda r: True)
+    pick = lambda ad, end: (lambda x: (x['state'], x['nm']))(D.limit_of(rad, ad, end))
+    c.eq([pick('AAAA', 'dep'), pick('DDDD', 'arr'), pick('FFFF', 'dep'), pick('CCCC', 'dep'), pick('EEEE', 'arr')], [('known', 0), ('known', 0), ('known', 0), ('complex', None), ('complex', None)],
+         'AAAA, DDDD, FFFF: 0 NM known (the route must start at the last point of a SID); CCCC and EEEE (« except below FL105 »): to examine', what='limits')
+    c.eq([pick('GGGG', 'dep'), pick('GGGG', 'arr'), pick('ZZZZ', 'dep')], [('known', 0), ('unknown', None), ('unknown', None)], 'a clause by direction is unchanged: GGGG departures 0 NM, its arrivals not named by this clause; an aerodrome that no clause names: unknown', what='direction')
+    text2 = 'ALL DCT (FL095 and above) = 10NM\nAAAA Departures/Arrivals DCT = 0NM'
+    D.CACHE.clear()
+    rad2 = types.SimpleNamespace(book={'file': 'k370b', 'sheets': {D.SHEET: [{'v': ['', '', '', 'AA_LIM_AD', 'Limits', text2, 'H24'], 'row': 1}]}}, active=lambda r: True)
+    c.eq((D.limit_of(rad2, 'AAAA', 'dep')['state'], D.limit_of(rad2, 'AAZZ', 'dep')['state']), ('known', 'complex'), 'a clause that carries a level (« FL095 and above ») that is NOT an exception of an aerodrome is still « complex » for the aerodromes it covers', what='level')

@@ -18,6 +18,7 @@ NM = re.compile(r'(\d{1,4})\s*NM', re.I)      # une limite de NM s'écrit en qua
 ICAO = re.compile(r'\b[A-Z]{2}[A-Z0-9]{2}\b')
 STOP = {'STAR', 'EXC', 'NOTE', 'ONLY', 'FROM', 'THEN', 'WITH', 'DEPA', 'ARRI'}      # des mots de quatre signes qui ne sont pas des terrains
 COMPLEX = re.compile(r'\bFL\s*\d|\bBELOW\b|\bABOVE\b|\bABV\b|\bBLW\b|\bDURING\b|\bNIGHT\b|\bH\d\d\b|\d\d:\d\d', re.I)
+EXC = re.compile(r'(\b[A-Z]{2}[A-Z0-9]{2}\b)\s*\(([^()]*\b(?:FL\s*\d|BELOW|ABOVE|ABV|BLW)[^()]*)\)', re.I)      # « EGBJ (except below FL105) » : l'exception du terrain qui la précède, pas de toute la liste
 MAX_TEXT = 8000
 CACHE = {}
 
@@ -54,9 +55,11 @@ def parse(sheet_id, text, struck=False):
         seg = flat[last:m.end()]
         last = m.end()
         after = flat[m.end():(ms[n + 1].start() if n + 1 < len(ms) else len(flat))][:200]      # ce qui suit la limite, jusqu'à la clause suivante : « (sauf là où une SID existe, RFL au-dessus de FL055) » la rend non décidée
-        pref, codes = _subject(seg)
-        out.append({'prefix': pref, 'codes': sorted(codes) if codes else None, 'kinds': sorted(_kinds(seg)), 'nm': int(m.group(1)), 'other': bool(re.search(r'\bOTHERS?\b', seg, re.I)),
-                    'complex': bool(struck or COMPLEX.search(seg) or COMPLEX.search(after) or re.search(r'\bEXCEPT\b', after, re.I))})
+        exc = {x.group(1).upper() for x in EXC.finditer(seg)}      # SOG-0501 : les terrains dont la liste dit « (except below FL105) » : seuls ceux-là ne sont pas décidés ; les autres de la même liste le sont
+        plain = EXC.sub(lambda x: x.group(1), seg)
+        pref, codes = _subject(plain)
+        out.append({'prefix': pref, 'codes': sorted(codes) if codes else None, 'kinds': sorted(_kinds(plain)), 'nm': int(m.group(1)), 'other': bool(re.search(r'\bOTHERS?\b', plain, re.I)),
+                    'exc': sorted(exc) or None, 'complex': bool(struck or COMPLEX.search(plain) or COMPLEX.search(after) or re.search(r'\bEXCEPT\b', after, re.I))})
     return out
 
 
@@ -107,7 +110,7 @@ def limit_of(rad, icao, end):
             if not hit:
                 continue
             rule = sid
-            if cl['complex']:
+            if cl['complex'] or icao in (cl.get('exc') or ()):
                 state, nm = 'complex', None
             else:
                 state, nm = 'known', cl['nm']

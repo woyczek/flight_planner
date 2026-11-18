@@ -3679,3 +3679,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 ## 19 November 2026 — SOG-0501 (c): known and not applied
 
 - **Done**: three reviews (ROUTE134 with the limit LQ_LIM_AD; the RAD rules whose target has no outline; the free route not read). **Corrected from the triage**: LO2196A (« via OBEDI ») is NOT a small lot: OBEDI exists only as a free-route point of the EUROCONTROL book (zone of Vienna, entry D), SAXFRA, the other point of the mandatory route of the IFPS, is in no source of the workstation, and the base has no airway that reaches either: the rule is read and flagged « infraction » by the engine, it cannot be satisfied with the data; it stays flagged.
+
+## 19 November 2026 — SOG-0501, second pass of the IFPS (18 errors instead of 24)
+
+- **Measure** (the user's second pass on the route of the branch « turn »; the detail is in the user's file, not copied): gone — the two PROF340 (turns), PROF407 EDUU100E, ED2996A, ED2325A, ED2327A, ROUTE165; new — ROUTE135 (the route had no SID at EGGW: « EGGW DCT LAM »). The prediction of the triage was right.
+- **Done**: the exception « (except below FL105) » of a list of aerodromes is read per aerodrome (K370). **Not done / answer**: a SID of EGGW cannot be rendered until the UK package is read (SOG-0499); the engine's route still starts with a DCT to LAM and says so (« aucune SID complète connectée utilisée ») and, now, that the RAD limit is 0 NM.
