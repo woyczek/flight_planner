@@ -17496,9 +17496,9 @@ def k372(c):
             engine.DATA_DIR, engine.RAD_FILE, planning.edge_cost = saved
 
 
-@case('K373', 'Route engine, SOG-0468 (2): the FRA graph (`Fra.graph`) is the same graph as before the optimisation — the sort key « distance to a goal » is computed once per (candidate, goal) from positions made once per point; a bench of 60 points of two areas gives the same edges, in the same order, in both densities',
+@case('K373', 'Route engine, SOG-0468 (2): the FRA graph (`Fra.graph`) is the same graph as before the optimisation — the sort key « distance to a goal » is computed once per (candidate, goal) from positions made once per point; a bench of 400 points of two areas (a grid, every point a neighbour of every other) gives the same edges, in the same order, in both densities',
       'K', static=True,
-      rule='SOG-0468 (2) (the survey: `fra.graph`, the heaviest graph of the long flights, ESSA → LEMG 4.6 s). The positions in radians were made again for every pair and the key of `heapq.nsmallest` went through two functions; now the position is in the record of the point (`_tr`) and the key is one function with a memo per goal. Measured on the real FRA book: ESSA → LEMG 4.6 s → 3.2 s, the wide search 3.2 s → 2.6 s, the graphs identical (hash of every edge). The bench has ties (a regular grid) on purpose: the order of the 8 nearest of a goal must not change. Invented points.')
+      rule='SOG-0468 (2) (the survey: `fra.graph`, the heaviest graph of the long flights, ESSA → LEMG 4.6 s). The positions in radians were made again for every pair and the key of `heapq.nsmallest` went through two functions; now the position is in the record of the point (`_tr`) and the key is one function with a memo per goal. Measured on the real FRA book: ESSA → LEMG 4.6 s → 3.2 s, the wide search 3.2 s → 2.6 s, the graphs identical (hash of every edge). The bench has ties (a regular grid) and MORE neighbours than the graph keeps on purpose, so that the choice of the 24 nearest, of the 8 nearest to each goal and of the 4 of each sector decides the edges (a bench of 60 points did not: Essais found the case green on the old base, and a change of 8 to 7 or of 4 to 3 left it green). Invented points.')
 def k373(c):
     import datetime as dt
     import hashlib
@@ -17508,13 +17508,13 @@ def k373(c):
     from route_engine import fra as F
     pts = {}
     ids = []
-    for i in range(60):
-        k = 'P%02d' % i
-        pts[k] = {'id': k, 'lat': 48.0 + (i // 10) * 1.0, 'lon': 5.0 + (i % 10) * 1.5}      # a regular grid: many equal distances
+    for i in range(400):
+        k = 'P%03d' % i
+        pts[k] = {'id': k, 'lat': 49.5 + (i // 20) * 0.2, 'lon': 9.0 + (i % 20) * 0.2}      # a regular grid: many equal distances, 399 neighbours each (the graph keeps about 60)
         ids.append(k)
-    pts['DEP'] = {'id': 'DEP', 'lat': 47.0, 'lon': 4.0}
-    pts['ARR'] = {'id': 'ARR', 'lat': 54.0, 'lon': 19.0}
-    pts['VIA1'] = {'id': 'VIA1', 'lat': 51.0, 'lon': 11.0}
+    pts['DEP'] = {'id': 'DEP', 'lat': 49.0, 'lon': 7.0}
+    pts['ARR'] = {'id': 'ARR', 'lat': 51.5, 'lon': 14.0}
+    pts['VIA1'] = {'id': 'VIA1', 'lat': 50.2, 'lon': 10.5}
 
     class Nav:
         def __init__(self):
@@ -17531,7 +17531,7 @@ def k373(c):
     fra.records = []
     roles = ['E', 'X', 'I', 'E', 'X']
     for i, k in enumerate(ids):
-        fra.records.append(dict(key=k, id=k, area='AREA1' if i < 35 else 'AREA2', enroute=roles[i % 5], terminal='-', arr='', dep='', flos='-', lower=19500 if i % 7 else 24500, upper=66000, time='H24', remarks=None, row=i + 1, cycle='2026-10-29'))
+        fra.records.append(dict(key=k, id=k, area='AREA1' if i < 230 else 'AREA2', enroute=roles[i % 5], terminal='-', arr='', dep='', flos='-', lower=19500 if i % 7 else 24500, upper=66000, time='H24', remarks=None, row=i + 1, cycle='2026-10-29'))
     when = dt.datetime(2026, 11, 18, 10, 30)
     out = {}
     for density in ('normal', 'wide'):
@@ -17539,7 +17539,7 @@ def k373(c):
         g = fra.graph({}, 'DEP', 'ARR', 350, when, ('VIA1',), False, density)
         edges = [(u, v, e['kind'], e.get('fra_area'), round(e['nm'], 6), e['lower'], e['upper'], e.get('fra_rows')) for u, es in g.items() for v, e in es]
         out[density] = (len(edges), hashlib.sha1(json.dumps(edges, default=str).encode()).hexdigest()[:12])
-    c.eq(out, {'normal': (688, '65286859718e'), 'wide': (702, 'ad2e2c1eec04')}, 'the FRA graph of the bench is edge for edge the one of before (count and hash of every edge, with its order), in the normal and the wide density', what='same graph')
+    c.eq(out, {'normal': (10242, '5b477ca331b1'), 'wide': (24953, '90751b056dc9')}, 'the FRA graph of the bench is edge for edge the one of before (count and hash of every edge, with its order), in the normal and the wide density', what='same graph')
 
 
 @case('K374', 'Route engine, SOG-0468 (5): the names of an airway (`rad_flight.aliases`, « UL607 » → UL607, « SID1A » → SID1A and SID) are computed once per text (a memo of 8 192) and returned as an immutable set — the callers only read it; the values are those of before',
