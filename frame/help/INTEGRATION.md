@@ -45,3 +45,7 @@ python frame/help/build_help.py
 ```
 
 It writes `frame/help/pilot.<lang>.md`, refuses a missing language, and lists the modules without a chapter.
+
+## 4. The Signaler screen: what it reads (SOG-0410)
+
+Nothing for a module to do. The screen reads: the launcher verbs `signalement/lire|ajouter|lister|detail|noter|commenter` (route `regen/job`, set `signalement`; reply shapes in `frame/help/maquette/signalements.md`) on the ergonomist's workstation; `device/signaler.json` (draft, `mine`, `unsent`) on any device; `frame/help/roadmap.json` (the cards and the `reports` map) once per page. Addresses: `#signaler?sig=SIG-<10 hex>` opens the sheet of a report, `#roadmap?fiche=SOG-nnnn` shows a card. A text from a report, a comment, an answer or a pilot's folder is data: escaped, bounded, never a link.

@@ -661,7 +661,7 @@ html .f-head button.f-stale:focus-visible {
 [data-card="display"] .f-pill {
   padding: 0 12px
 }
-[data-card="company"] > .f-muted {
+[data-card="company"]>.f-muted {
   font-size: .85rem;
   margin: 2px 0 2px
 }
@@ -1227,7 +1227,8 @@ p.f-back {
 .f-rm-over {
   display: grid;
   gap: 4px;
-  max-width: 36rem /* le pourcentage reste près de son libellé sur grand écran */
+  max-width: 36rem
+    /* le pourcentage reste près de son libellé sur grand écran */
 }
 .f-rm-all {
   display: flex;
@@ -2311,6 +2312,164 @@ html.f-land.f-fixed.f-full .f-view:not(.f-split):not(.f-over) {
   width: 100%;
   box-sizing: border-box
 }
+/* « Mes signalements » (SOG-0410) : un champ de recherche, les groupes par priorité, une ligne = un lien vers la fiche (44 px au moins), l'état en couleur et en mots (.f-badge) ;
+   la fiche d'un signalement sur deux colonnes à partir de 900 px (le texte à gauche, la priorité et les commentaires à droite) */
+.f-sg-q {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: var(--sog-touch, 44px);
+  margin: 0 0 var(--sog-gap)
+}
+.f-sg-grp h3 {
+  margin: var(--sog-gap) 0 6px
+}
+.f-sg-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  background: var(--sog-surface)
+}
+.f-sg-rows>li+li {
+  border-top: 1px solid var(--sog-border)
+}
+.f-sg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: var(--sog-touch, 44px);
+  box-sizing: border-box;
+  padding: 8px 12px;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere
+}
+.f-sg-row:hover .f-sg-t {
+  text-decoration: underline
+}
+.f-sg-row:focus-visible {
+  outline: 2px solid var(--sog-focus, var(--sog-accent));
+  outline-offset: -2px
+}
+.f-sg-l1 .f-sg-tag {
+  margin-right: 4px
+}
+.f-sg-ex,
+.f-sg-meta,
+.f-sg-who {
+  font-size: var(--sog-size-s);
+  color: var(--sog-muted)
+}
+.f-sg-pri {
+  padding: 0 6px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius-s);
+  white-space: nowrap
+}
+.f-sg-meta .f-badge {
+  white-space: normal
+}
+.f-badge.f-sg-state[data-kind] {
+  color: var(--f-kind)
+}
+.f-sg-row mark {
+  background: color-mix(in srgb, var(--sog-warn) 30%, transparent);
+  color: inherit
+}
+.f-sg-more {
+  min-height: var(--sog-touch, 44px);
+  margin-top: 6px
+}
+.f-sg-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch, 44px)
+}
+.f-sg-backp {
+  margin: 0
+}
+.f-sg-sheet {
+  display: grid;
+  gap: var(--sog-gap);
+  min-width: 0
+}
+.f-sg-sheet>* {
+  min-width: 0;
+  overflow-wrap: anywhere
+}
+.f-sg-sheet h1 {
+  margin: 6px 0 4px
+}
+.f-sg-sheet .f-sg-body {
+  color: inherit
+}
+.f-sg-side {
+  display: grid;
+  gap: var(--sog-gap);
+  align-content: start
+}
+.f-sg-fiche p {
+  margin: 4px 0
+}
+.f-sg-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--sog-touch, 44px)
+}
+[data-mine] {
+  margin-bottom: var(--sog-gap-l, 24px)
+}
+.f-sg-fiche[data-kind="ok"] {
+  border-color: var(--sog-ok)
+}
+.f-sg-fiche[data-kind="accent"] {
+  border-color: var(--sog-accent)
+}
+.f-sg-fiche[data-kind="err"] {
+  border-color: var(--sog-err)
+}
+.f-sg-fiche h2,
+.f-sg-prio h2,
+.f-sg-cms h2 {
+  font-size: 1rem;
+  margin: 0 0 6px
+}
+.f-sg-axis {
+  margin: 6px 0 4px;
+  font-size: var(--sog-size-s)
+}
+.f-sg-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px
+}
+.f-sg-gname {
+  margin: 8px 0 0
+}
+.f-sg-cmlist {
+  list-style: none;
+  margin: 0;
+  padding: 0
+}
+.f-sg-cmlist>li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--sog-border)
+}
+.f-sg-cms textarea {
+  width: 100%;
+  box-sizing: border-box
+}
+@media (min-width: 900px) {
+  .f-sg-sheet[data-poste] {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)
+  }
+}
+/* la fiche montrée par #roadmap?fiche=SOG-nnnn (SOG-0410) */
+.f-rm-item[data-target] {
+  outline: 2px solid var(--sog-accent);
+  outline-offset: 2px
+}
 /* la barre d'en-tête d'une vue de l'aide, de la recette et de la feuille de route : le titre ou le fil, et le bouton « Signaler » (SOG-0316) ; collante, il reste à portée quand la page défile */
 .f-docbar {
   position: sticky;
@@ -2419,4 +2578,3 @@ html.f-limited .f-view {
 .f-rm-origin {
   font-style: italic
 }
-

@@ -8102,7 +8102,8 @@ def a179(c):
         c.eq(sorted(p.name for p in (root / 'organisation' / 'images').iterdir()), [f'{sid}-1.png', f'{sid}-2.png'], 'the captures are in organisation/images/ under the names the launcher made', what='images')
         c.eq(c.js("document.querySelector('[data-mine] li').dataset.id"), sid, 'the list shows the identifier the launcher gave', what='mine')
         c.eq(c.js("document.querySelector('[data-title]').value + document.querySelector('[data-text]').value"), '', 'the form is empty again', what='cleared')
-        c.ok(all(p['verb'] in ('lire', 'ajouter') for p in st['posts']) and st['posts'][-1]['images'] == 2, st['posts'][-1], 'the page asked the verb with two captures and nothing else')
+        adds = [p for p in st['posts'] if p['verb'] == 'ajouter']   # SOG-0410: the screen also asks signalement/lister (its list), a reading verb
+        c.ok(all(p['verb'] in ('lire', 'ajouter', 'lister') for p in st['posts']) and len(adds) == 1 and adds[0]['images'] == 2, st['posts'], 'the page asked the verb with two captures and nothing else')
         # the launcher goes down: the text stays on the device, « not sent »
         st['up'] = False
         c.page.fill('[data-title]', 'Hors ligne')
@@ -10021,4 +10022,407 @@ def a266(c):
              f'{lang}: the radio checked is the one kept', what='radio checked')
         c.eq(c.text('[data-card="display"] h2'), titles[shown], f'{lang}: the card is titled in the language chosen', what='title of the card')
     c.shot(f'A266_auto_{c.width}.png')   # the Display card after « Automatic »: five choices, Automatic checked
+
+
+# ------------------------------------------------------------------------------------------------------ A267-A270: « Mes signalements » (SOG-0410)
+_SG = 'frame/help/signaler.js'
+
+
+def _sgt(key, lang, after=None, **kw):
+    """A text of the Signaler screen in the run's language, its tokens resolved, spaces collapsed (the frame's French typography)."""
+    s = tx(_SG, key, lang, after=after)
+    for k, v in kw.items():
+        s = s.replace('{' + k + '}', str(v))
+    return norm(s)
+
+
+def _sg_roadmap(reports=None):
+    """A roadmap.json of the shape the generator writes (sog-roadmap/1, version 2) with four cards and, when given, the top-level `reports` map (SIG-… → { fiche, answer?, refused? })."""
+    def card(i, kind, state, fr, en):
+        return {'id': i, 'kind': kind, 'state': state, 'fr': fr, 'en': en, 'de': en, 'es': en}
+    d = {'schema': 'sog-roadmap/1', 'version': 2, 'updated': '2026-11-18', 'states': {}, 'apps': [], 'milestones': [],
+         'lanes': [{'id': 'help', 'app': 'pilot', 'label': {'fr': 'Aide', 'en': 'Help'}, 'items': [
+             card('SOG-0409', 'bug', 'done', 'Signaler : la page est lente à la frappe', 'Report: the page is slow to type in'),
+             card('SOG-0368', 'bug', 'doing', 'Islande : la récupération Avians', 'Iceland: the Avians fetch'),
+             card('SOG-0447', 'feature', 'planned', 'Missions : position de l’avion', 'Missions: position of the aircraft'),
+             card('SOG-0301', 'bug', 'later', 'Carburant : le total suit la réserve', 'Fuel: the total follows the reserve')]}]}
+    if reports is not None:
+        d['reports'] = reports
+    return d
+
+
+_SG_HOSTILE = 'SIG-1000000004'
+_SG_SLOW = 'SIG-02d3670a2b'
+
+
+def _sg_reports53():
+    """53 reports of the user's file (the scale of his organisation/SIGNALEMENTS.json, 18 Nov 2026), newest first: 9 « now », 4 « next », 3 « later », 37 without priority;
+    the four states (no card, card doing, card done, refused), an accented title, a hostile one (markup, a right-to-left override)."""
+    items = []
+
+    def add(i, kind, title, text, screen, g='', f='', **kw):
+        n = len(items)
+        items.append({'id': i, 'kind': kind, 'title': title, 'text': text, 'screen': screen, 'ctx': {'lang': 'fr', 'design': 'standard', 'size': 'phone', 'version': '0721a0c'},
+                      'at': f'2026-11-{18 - n // 4:02d}T{10 + n % 4:02d}:38:00Z', 'state': 'new', 'gravity': g, 'frequency': f, 'comments': [], **kw})
+    add('SIG-1000000001', 'regression', 'Islande : la récupération Avians échoue, pas de repli', 'Le serveur ne répond pas.', 'data', 'blocking', 'always', fiche='SOG-0368', state='fiche')
+    add(_SG_SLOW, 'bug', 'bugs : lenteur', 'que fait la page « bugs » pour être aussi peu réactive ? des tâches en background ? je tape bien trop vite. un refresh à chaque caractère ??',
+        'signaler', 'annoying', 'often', fiche='SOG-0409', state='fiche', answer='Le brouillon s’écrivait à chaque signe.',
+        comments=[{'id': 'COM-00000000a1', 'at': '2026-11-17T15:20:00Z', 'text': 'C’est bon. C’était quoi ?'}])
+    add('SIG-1000000002', 'bug', 'NAT : la lecture du jour échoue en silence', 'Rien ne vient.', 'data', 'annoying', 'rare', fiche='SOG-0447', refused=True)
+    add('SIG-1000000003', 'request', 'Évitement des zones : récupérer les NOTAM', 'Une demande.', 'maps', 'minor', 'often')
+    add(_SG_HOSTILE, 'bug', '<img src=x onerror="window.__pwn=1">‮evil', '<script>window.__pwn=2</script><img src=x onerror="window.__pwn=3">', 'fuel',
+        comments=[{'id': 'COM-00000000b2', 'at': '2026-11-17T16:00:00Z', 'text': '<img src=x onerror="window.__pwn=4">'}])
+    for k in range(8):
+        add(f'SIG-20000000{k:02d}', 'bug', f'Maintenant numéro {k}', 'Bloquant.', 'maps', 'blocking', ['always', 'often', 'rare'][k % 3])
+    for k, (g, f) in enumerate((('annoying', 'often'), ('minor', 'always'), ('minor', 'always'))):
+        add(f'SIG-30000000{k:02d}', 'ergonomics', f'Ensuite numéro {k}', 'Ensuite.', 'settings', g, f)
+    add('SIG-4000000000', 'request', 'Plus tard numéro 0', 'Plus tard.', 'help', 'minor', 'rare')
+    for k in range(36):
+        add(f'SIG-50000000{k:02d}', 'request', f'À classer numéro {k}', 'Sans priorité.', 'other')
+    assert len(items) == 53
+    return items
+
+
+def _sg_list_launcher(c, items):
+    """A FAKE launcher of the ergonomist's workstation that answers the verbs of the contract frame/help/maquette/signalements.md with EXACTLY their reply shapes:
+    signalement/lire, /lister { q?, limit? }, /detail { id }, /noter { id, gravity?, frequency? }, /commenter { id, text }. `st`: `posts` (verb, args), `fail` (verbs whose job fails)."""
+    import unicodedata
+    by = {i['id']: i for i in items}
+    st = {'posts': [], 'fail': set(), 'views': {}, 'n': 0, 'by': by}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False,
+              'version': {'version': 'alpha.6-25-g1a2b3c4', 'date': '2026-11-13', 'time': '15:00'}}
+
+    def fold(s):
+        return ''.join(ch for ch in unicodedata.normalize('NFKD', s or '') if not unicodedata.combining(ch)).lower()
+
+    def starts(hay, w):
+        h, p = fold(hay), -1
+        while True:
+            p = h.find(w, p + 1)
+            if p < 0:
+                return False
+            if p == 0 or not h[p - 1].isalnum():
+                return True
+
+    def opt(i):
+        return {k: i[k] for k in ('fiche', 'answer', 'refused') if i.get(k)} | {k: i[k] for k in ('gravity', 'frequency') if i.get(k)}
+
+    def lister(a):
+        words = [w[:60] for w in re.split(r'[\W_]+', fold(a.get('q') or '')) if w][:8]
+        rows = sorted(items, key=lambda i: i['at'], reverse=True)
+        hit = [i for i in rows if all(starts('\n'.join([i['title'], i['text'], i['screen'], i.get('fiche', ''), i.get('answer', '')]), w) for w in words)]
+        out = []
+        for i in hit[:int(a.get('limit') or 300)]:
+            txt, at = i['text'], 0
+            if words:
+                f = fold(txt)
+                at = max(0, min([f.find(w) for w in words if f.find(w) >= 0] or [0]) - 80)
+            out.append({'id': i['id'], 'kind': i['kind'], 'title': i['title'], 'excerpt': txt[at:at + 240], 'screen': i['screen'], 'at': i['at'], 'state': i['state'],
+                        'comments': len(i['comments']), **opt(i)})
+        return {'ok': True, 'total': len(items), 'searched': len(items), 'items': out}
+
+    def run(verb, a):
+        if verb == 'lire':
+            return {'ok': True, 'items': {}, 'refs': []}
+        if verb == 'lister':
+            return lister(a)
+        i = by.get(a.get('id'))
+        if not i:
+            return {'ok': False, 'reason': 'unknown'}
+        if verb == 'detail':
+            return {'ok': True, 'item': {'id': i['id'], 'kind': i['kind'], 'title': i['title'], 'text': i['text'], 'screen': i['screen'], 'ctx': i['ctx'], 'at': i['at'],
+                                         'state': i['state'], 'images': [f"{i['id']}-1.png"], 'comments': i['comments'], **opt(i)}}
+        if verb == 'noter':
+            if any(k in a and a[k] not in v for k, v in (('gravity', ('blocking', 'annoying', 'minor')), ('frequency', ('always', 'often', 'rare')))):
+                return {'ok': False, 'reason': 'bad-value'}
+            for k in ('gravity', 'frequency'):
+                if k in a:
+                    i[k] = a[k]
+            return {'ok': True, 'gravity': i.get('gravity') or None, 'frequency': i.get('frequency') or None}
+        if verb == 'commenter':
+            cm = {'id': f"COM-{len(i['comments']) + 1:010x}", 'at': '2026-11-18T10:00:00Z', 'text': a['text']}
+            i['comments'].append(cm)
+            return {'ok': True, 'comment': cm}
+        return None
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        code, body = 200, {}
+        if u.path.endswith('/__setup/status'):
+            body = status
+        elif u.path.endswith('/__setup/regen/job'):
+            if req.method == 'POST':
+                post = json.loads(req.post_data or '{}')
+                verb, args = post.get('verb'), post.get('args') or {}
+                st['posts'].append({'verb': verb, 'args': args})
+                res = None if verb in st['fail'] else run(verb, args)
+                if res is None:
+                    code, body = 500, {'ok': False, 'message': 'down'}
+                else:
+                    st['n'] += 1
+                    st['views'][f"j{st['n']}"] = {'id': f"j{st['n']}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res, 'zones': {},
+                                                  'set': 'signalement', 'verb': verb, 'args': {}}
+                    body = {'job': f"j{st['n']}"}
+            elif 'id=' in u.query:
+                body = st['views'].get(urllib.parse.parse_qs(u.query)['id'][0], {})
+        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+def _sg_open_list(c, items=None, reports=None, docs=()):
+    """The Signaler screen of the ergonomist's workstation over the 53 reports; waits for the list of the launcher (its groups)."""
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_sg_roadmap(reports))))
+    st = _sg_list_launcher(c, items or _sg_reports53())
+    c.open('signaler', docs=LEVEL3 + list(docs))
+    c.until("!!document.querySelector('[data-mine] [data-grp=now]')", timeout=20000, what='the list of the workstation, in groups')
+    return st
+
+
+def _sg_scroll_to(c, sel):
+    """Scrolls the page so that `sel` is just under the header (the shots for the ergonomist show the list, not the form above it)."""
+    c.js(f"(() => {{ const e = document.querySelector({json.dumps(sel)}); if (e) scrollTo(0, e.getBoundingClientRect().top + scrollY - 130) }})()")
+    c.wait(150)
+
+
+def _sg_no_hscroll(c):
+    w = c.js("[document.documentElement.scrollWidth, innerWidth]")
+    c.le(w[0], w[1], 'no horizontal scroll', what='scrollWidth')
+
+
+@case('A267', '« Mes signalements » on the workstation (SOG-0410): the reports of signalement/lister (ONE call at mount) in four groups by the priority table — Maintenant, Ensuite, Plus tard, À classer —, seven rows at most per group then « Voir les n suivants » (here, no call); a row = kind, title, state in colour AND words (no card yellow, card blue, done green, refused red), date, screen, priority; 53 reports; four languages, phone and 1280', 'A',
+      tags=('signaler',), designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0410 (maquette frame/help/maquette/signalements.md, decisions of the ergonomist of 18 Nov 2026): Maintenant = Bloquant (any frequency) and Gênant + Toujours; Ensuite = Gênant + Souvent and Mineur + Toujours; Plus tard = the rest; À classer = no choice; the state of a report comes from its card in roadmap.json')
+def a267(c):
+    st = _sg_open_list(c)
+    L = c.lang
+    g = c.js("Object.fromEntries([...document.querySelectorAll('[data-mine] [data-grp]')].map(s => [s.dataset.grp, [s.querySelectorAll('li[data-id]').length, +s.querySelector('[data-n]').textContent, (s.querySelector('h3')?.textContent || '').trim(), (s.querySelector('[data-more]')?.textContent || '').trim()]]))")
+    c.eq({k: v[:2] for k, v in g.items()}, {'now': [7, 9], 'next': [4, 4], 'later': [3, 3], 'unrated': [7, 37]}, 'the four groups by the table, seven rows at most each, the count of the group in its title', what='groups')
+    for k in ('now', 'next', 'later', 'unrated'):
+        c.ok(norm(g[k][2]).startswith(_sgt(k, L)), g[k][2], f'the group {k} is named in the language of the run')
+    c.eq(norm(g['now'][3]), _sgt('moreMany', L, n=2), '« Voir les 2 suivants » under the nine reports of Maintenant', what='more')
+    c.eq(norm(g['unrated'][3]), _sgt('moreMany', L, n=7), '« Voir les 7 suivants » under À classer', what='more')
+    c.eq(len([p for p in st['posts'] if p['verb'] == 'lister']), 1, 'ONE call of signalement/lister at mount', what='lister calls')
+    n0 = len(st['posts'])
+    c.tap('[data-grp=now] [data-more]')
+    c.until("document.querySelectorAll('[data-grp=now] li[data-id]').length === 9 && !document.querySelector('[data-grp=now] [data-more]')", what='the two next rows of Maintenant')
+    c.tap('[data-grp=unrated] [data-more]')
+    c.until("document.querySelectorAll('[data-grp=unrated] li[data-id]').length === 14", what='seven more rows of À classer')
+    c.eq(len(st['posts']), n0, '« Voir les n suivants » shows rows already there: no call to the launcher', what='posts')
+    # the four states: colour AND words
+    s = c.js("""Object.fromEntries(['SIG-1000000003', 'SIG-1000000001', 'SIG-02d3670a2b', 'SIG-1000000002'].map(i => { const b = document.querySelector(`[data-mine] li[data-id="${i}"] [data-st]`);
+      return [i, [b.dataset.kind || '', b.textContent.trim(), getComputedStyle(b).color]] }))""")
+    c.eq([s[i][0] for i in ('SIG-1000000003', 'SIG-1000000001', 'SIG-02d3670a2b', 'SIG-1000000002')], ['warn', 'accent', 'ok', 'err'], 'no card: yellow; a card being done: blue; a card done: green; refused: red', what='colours')
+    c.eq(len({s[i][2] for i in s}), 4, 'four different colours on screen', what='computed colours')
+    c.eq([norm(s[i][1]) for i in ('SIG-1000000003', 'SIG-1000000001', 'SIG-02d3670a2b', 'SIG-1000000002')],
+         [_sgt('stNone', L), _sgt('stCard', L, f='SOG-0368'), _sgt('stDone', L, f='SOG-0409'), _sgt('stRefused', L)], 'and the state in words', what='words')
+    row = norm(c.text(f'[data-mine] li[data-id="{_SG_SLOW}"]'))
+    for want in (_sgt('bug', L), 'bugs : lenteur', _sgt('signaler', L, after='scr: {'), _sgt('annoying', L) + ' · ' + _sgt('often', L, after='freqLow')):
+        c.ok(norm(want) in row, row, f'the row says « {want} » (kind, title, screen, priority)')
+    c.ok(c.js(f"document.querySelector('[data-mine] li[data-id=\"{_SG_SLOW}\"] a').getAttribute('href')") == f'#signaler?sig={_SG_SLOW}', '', 'a row is a link to the sheet of the report')
+    hs = c.js("[...document.querySelectorAll('[data-mine] a.f-sg-row, [data-mine] [data-more], [data-q]')].map(e => e.getBoundingClientRect().height).filter(h => h < 43.5)")
+    c.eq(hs, [], 'rows, the search field and « Voir les n suivants » are 44 px touch targets', what='small targets')
+    c.eq(c.js('window.__pwn === undefined && !document.querySelector("[data-mine] img")'), True, 'the hostile title is shown as text, nothing runs', what='hostile')
+    _sg_no_hscroll(c)
+    _sg_scroll_to(c, '[data-q]')
+    c.shot(f'ecran_liste_{c.width}_{c.lang}.png')
+    c.check_errors()
+
+
+@case('A268', '« Mes signalements », the search (SOG-0410): ONE field; the launcher is asked 300 ms after the last key (one call for a word typed fast); accent- and case-blind, every word the start of a word; the found words marked (<mark> on escaped text); a « Fiches » group of the cards of roadmap.json with their linked reports; the empty sentence « Aucun signalement ne contient « … » (53 cherchés). »; four languages', 'A',
+      tags=('signaler',), designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0410: the user could not find the latency report (SOG-0409) among his 53 reports: the search finds it by « tape » or « lente », and by the title of its card; the marks are added by the page around the found word, by index, never HTML from the data')
+def a268(c):
+    st = _sg_open_list(c)
+    L = c.lang
+    lister = lambda: [p['args'] for p in st['posts'] if p['verb'] == 'lister']
+    c.page.focus('[data-q]')
+    c.page.keyboard.type('TAPE', delay=40)
+    c.until("!!document.querySelector('[data-mine] [data-grp=found]')", timeout=8000, what='the reports found')
+    c.wait(500)
+    c.eq([a.get('q') for a in lister()][1:], ['TAPE'], 'one call for the word typed fast (300 ms after the last key)', what='lister q')
+    r = c.js(f"""(() => {{ const li = document.querySelector('[data-grp=found] li[data-id="{_SG_SLOW}"]');
+      return li && [[...li.querySelectorAll('mark')].map(m => m.textContent), (li.closest('[data-grp]').querySelector('h3')?.textContent || '').trim()] }})()""")
+    c.ok(r and r[0] == ['tape'], r, 'the latency report is found by « tape », the word marked in its excerpt')
+    c.ok(norm(r[1]).startswith(_sgt('found', L)), r[1], 'the group of the reports found is named')
+    # several words, accents: « evitement recup » finds « Évitement des zones : récupérer… », both marked
+    c.page.fill('[data-q]', 'evitement RECUP')
+    c.until("!!document.querySelector('[data-grp=found] li[data-id=\"SIG-1000000003\"]')", timeout=8000, what='the accented title found')
+    c.eq(c.js("[...document.querySelectorAll('[data-grp=found] li[data-id=\"SIG-1000000003\"] .f-sg-t mark')].map(m => m.textContent)"), ['Évitement', 'récup'], 'accent- and case-blind, each word marked at the start of a word', what='marks')
+    c.eq(c.count('[data-grp=found] li[data-id]'), 1, 'every word must be found', what='rows')
+    # the cards: « lente » finds the report « lenteur » and the card SOG-0409 « … lente à la frappe » (its title in the language of the run: « slow » in English), with its linked report
+    c.page.fill('[data-q]', 'lente' if L == 'fr' else 'slow')
+    c.until("!!document.querySelector('[data-grp=cards] li[data-card=\"SOG-0409\"]')", timeout=8000, what='the card found')
+    card = c.js("(() => { const li = document.querySelector('[data-grp=cards] li[data-card=\"SOG-0409\"]'); return [li.querySelector('a').getAttribute('href'), li.textContent, (li.closest('[data-grp]').querySelector('h3').textContent || '').trim()] })()")
+    c.eq(card[0], '#roadmap?fiche=SOG-0409', 'a card found opens in the Roadmap', what='card link')
+    c.ok(_sgt('linkedOne', L, n=1) in norm(card[1]) and norm(card[2]).startswith(_sgt('cards', L)), card, 'the « Fiches » group says how many reports are linked to the card')
+    if L == 'fr':
+        c.ok(c.count(f'[data-grp=found] li[data-id="{_SG_SLOW}"]') == 1, '', 'the report « bugs : lenteur » is found by the start of « lenteur »')
+    # nothing
+    c.page.fill('[data-q]', 'lenteur zzz')
+    c.until("(document.querySelector('[data-mine] [data-none]')?.textContent || '').includes('zzz')", timeout=8000, what='the empty sentence')
+    c.eq(norm(c.text('[data-mine] [data-none]')), _sgt('noneFound', L, q='lenteur zzz', n=53), 'the empty state says what was looked for and in how many', what='empty')
+    _sg_scroll_to(c, '[data-q]')
+    c.shot(f'ecran_recherche_vide_{c.width}_{c.lang}.png')
+    c.page.fill('[data-q]', 'tape')
+    c.until("!!document.querySelector('[data-mine] [data-grp=found]')", timeout=8000, what='found again')
+    _sg_scroll_to(c, '[data-q]')
+    c.shot(f'ecran_recherche_{c.width}_{c.lang}.png')
+    c.page.fill('[data-q]', '')
+    c.until("!!document.querySelector('[data-mine] [data-grp=now]')", timeout=8000, what='the groups back when the field is empty')
+    # a hostile title found: shown as text, marked by index
+    c.page.fill('[data-q]', 'img')
+    c.until(f"!!document.querySelector('[data-grp=found] li[data-id=\"{_SG_HOSTILE}\"]')", timeout=8000, what='the hostile title found')
+    h = c.js(f"(() => {{ const li = document.querySelector('[data-grp=found] li[data-id=\"{_SG_HOSTILE}\"]'); return [li.querySelectorAll('img,script').length, li.querySelector('.f-sg-t').textContent, window.__pwn === undefined] }})()")
+    c.ok(h[0] == 0 and h[1].startswith('<img src=x') and '‮' in h[1] and h[2], h, 'markup in a title is text: no element, nothing runs; the right-to-left mark stays a character')
+    _sg_no_hscroll(c)
+    c.check_errors()
+
+
+@case('A269', 'The sheet of a report (SOG-0410): a row opens it in the same screen (#signaler?sig=…, the heading focused) — context, text, the linked card and « Ouvrir dans la feuille de route » (the card shown there), the priority in two rows of three buttons (signalement/noter, at once on screen, back with a notification on failure), the comments (signalement/commenter); « ← Mes signalements » and the browser Back return to the list, the report in its new group, the form draft untouched; hostile texts stay text; two columns at 1280', 'A',
+      tags=('signaler',), designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0410 (maquette signalements_fiche_*.png): the priority is the user\'s own choice of two axes, the group follows; the link report → card comes from roadmap.json, the card is found by its SOG-nnnn; a text of a report or a comment is an untrusted input')
+def a269(c):
+    st = _sg_open_list(c)
+    L = c.lang
+    # a draft in the form: the sheet does not touch it
+    c.page.fill('[data-title]', 'Brouillon gardé')
+    c.wait(1200)
+    c.tap(f'[data-mine] li[data-id="{_SG_SLOW}"] a')
+    c.until(f"location.hash === '#signaler?sig={_SG_SLOW}' && !!document.querySelector('[data-sheet-title]')", timeout=15000, what='the sheet of the report')
+    c.eq(c.js("document.activeElement === document.querySelector('[data-sheet-title]')"), True, 'the heading of the sheet has the focus', what='focus')
+    c.eq(c.count('[data-form]'), 0, 'the sheet is shown instead of the form', what='form')
+    ctx = norm(c.text('[data-ctx]'))
+    c.ok('0721a0c' in ctx and _sgt('phone', L, after='size: {') in ctx, ctx, 'the noted context: date, screen, size, design, language, version')
+    c.ok('je tape bien trop vite' in c.text('[data-body]'), c.text('[data-body]'), 'the text of the report')
+    ft = norm(c.text('[data-ftitle]'))
+    c.ok('SOG-0409' in ft and ('lente à la frappe' if L == 'fr' else 'slow to type in') in ft, ft, 'the linked card: its id and its title from roadmap.json')
+    c.eq(c.attr('[data-open-rm]', 'href'), '#roadmap?fiche=SOG-0409', 'the link to the card in the Roadmap', what='link')
+    pr = c.js("[...document.querySelectorAll('[data-grav],[data-freq]')].map(b => [b.dataset.grav || b.dataset.freq, b.getAttribute('aria-pressed'), b.getBoundingClientRect().height >= 43.5])")
+    c.eq([p[0] for p in pr], ['blocking', 'annoying', 'minor', 'always', 'often', 'rare'], 'two rows of three buttons', what='buttons')
+    c.eq([p[0] for p in pr if p[1] == 'true'], ['annoying', 'often'], 'the priority chosen is pressed (aria-pressed)', what='pressed')
+    c.ok(all(p[2] for p in pr), pr, 'the buttons are 44 px touch targets')
+    c.eq(norm(c.text('[data-gname]')), _sgt('next', L), 'the group in words: Gênant + Souvent = Ensuite', what='group')
+    c.shot(f'ecran_fiche_{c.width}_{c.lang}.png')
+    if c.width >= 1000:
+        col = c.js("(() => { const a = document.querySelector('.f-sg-main').getBoundingClientRect(), b = document.querySelector('.f-sg-side').getBoundingClientRect(); return [a.right <= b.left + 1, Math.abs(a.top - b.top) < 40] })()")
+        c.eq(col, [True, True], 'two columns at 1280: the report on the left, priority and comments on the right', what='columns')
+    # the priority: at once on screen, then written by the verb
+    c.tap('[data-grav=blocking]')
+    c.eq(c.attr('[data-grav=blocking]', 'aria-pressed'), 'true', 'the choice is on screen at once', what='optimistic')
+    c.until("document.querySelector('[data-gname]').textContent.trim().length > 0", what='group')
+    c.eq(norm(c.text('[data-gname]')), _sgt('now', L), 'Bloquant: Maintenant', what='group now')
+    for _ in range(20):
+        if any(p['verb'] == 'noter' for p in st['posts']):
+            break
+        c.wait(150)
+    c.eq([p['args'] for p in st['posts'] if p['verb'] == 'noter'], [{'id': _SG_SLOW, 'gravity': 'blocking'}], 'signalement/noter is asked with the id and the axis changed', what='noter')
+    # comments
+    c.eq(c.count('[data-cmlist] li'), 1, 'the comment already written', what='comments')
+    c.eq(c.js("document.querySelector('[data-cmadd]').disabled"), True, 'nothing to add yet', what='add off')
+    c.page.fill('[data-cm-text]', 'Merci, c’est bon.')
+    c.tap('[data-cmadd]')
+    c.until("document.querySelectorAll('[data-cmlist] li').length === 2", timeout=8000, what='the comment added')
+    c.eq((c.js("document.querySelector('[data-cm-text]').value"), norm(c.text('[data-cmn]')), [p['args'] for p in st['posts'] if p['verb'] == 'commenter']),
+         ('', '2', [{'id': _SG_SLOW, 'text': 'Merci, c’est bon.'}]), 'the comment is written by signalement/commenter and listed; the field is empty again', what='commenter')
+    c.ok(norm(c.text('[data-cmlist] li:last-child')).startswith(_sgt('you', L)), c.text('[data-cmlist] li:last-child'), 'its author: « Vous »')
+    # a failure: back as before, said in a notification
+    st['fail'].add('noter')
+    c.tap('[data-grav=minor]')
+    c.until("document.querySelector('[data-grav=blocking]').getAttribute('aria-pressed') === 'true' && document.querySelector('[data-grav=minor]').getAttribute('aria-pressed') === 'false'", timeout=8000, what='the choice rolled back')
+    want = _sgt('prioFail', L)[:25]
+    for _ in range(30):
+        if any(want in norm(n) for n in c.js('window.__notes || []')):
+            break
+        c.wait(150)
+    c.ok(any(want in norm(n) for n in c.js('window.__notes || []')), c.js('window.__notes'), 'the failure is said in a floating notification')
+    st['fail'].discard('noter')
+    c.js("document.querySelectorAll('#fNotes .f-note button').forEach(b => b.click())")
+    # back: the list, the report in its new group, its row focused, the draft untouched
+    c.tap('[data-back]')
+    c.until(f"location.hash === '#signaler' && !!document.querySelector('[data-grp=now] li[data-id=\"{_SG_SLOW}\"]')", timeout=15000, what='the list, the report now in Maintenant')
+    c.until(f"document.activeElement === document.querySelector('[data-mine] a[data-sig=\"{_SG_SLOW}\"]')", timeout=4000, what='its row focused')
+    c.eq(c.js("document.querySelector('[data-title]').value"), 'Brouillon gardé', 'the draft of the form is untouched', what='draft')
+    # the browser Back
+    c.tap(f'[data-mine] li[data-id="{_SG_SLOW}"] a')
+    c.until("!!document.querySelector('[data-sheet-title]')", timeout=15000, what='the sheet again')
+    c.page.go_back()
+    c.until("location.hash === '#signaler' && !!document.querySelector('[data-mine] [data-grp]')", timeout=15000, what='the browser Back gives the list')
+    # the Roadmap link
+    c.tap(f'[data-mine] li[data-id="{_SG_SLOW}"] a')
+    c.until("!!document.querySelector('[data-open-rm]')", timeout=15000, what='the sheet again')
+    c.tap('[data-open-rm]')
+    c.until("location.hash === '#roadmap?fiche=SOG-0409' && !!document.querySelector('li.f-rm-item[data-id=\"SOG-0409\"][data-target]')", timeout=15000, what='the card shown in the Roadmap')
+    c.eq(c.js("document.activeElement === document.querySelector('li.f-rm-item[data-id=\"SOG-0409\"]')"), True, 'the card has the focus (a delivered card is shown)', what='card focus')
+    # a hostile report: text only
+    c.go(f'signaler?sig={_SG_HOSTILE}')
+    c.until("!!document.querySelector('[data-sheet-title]') && !!document.querySelector('[data-cmlist]')", timeout=15000, what='the hostile sheet')
+    h = c.js("[document.querySelectorAll('[data-sheet] img, [data-sheet] script').length, document.querySelector('[data-sheet-title]').textContent, document.querySelector('[data-body]').textContent, document.querySelector('[data-cmlist]').textContent, window.__pwn === undefined, [...document.querySelectorAll('[data-sheet] a')].map(a => a.getAttribute('href'))]")
+    c.eq(h[0], 0, 'no element made from a title, a text or a comment', what='elements')
+    c.ok(h[1].startswith('<img') and '‮' in h[1] and h[2].startswith('<script>') and h[3].strip().startswith(_sgt('you', L)) and '<img src=x' in h[3] and h[4], h, 'they are shown as text; nothing runs')
+    c.ok(all(a in ('#signaler',) for a in h[5]), h[5], 'no link made from a report (it has no card here)')
+    _sg_no_hscroll(c)
+    c.check_errors()
+
+
+def _sg_pilot_docs():
+    return [['device/signaler.json', {'poste': False, 'unsent': [{'id': 'SIG-a0000000a3', 'kind': 'bug', 'title': 'Le brouillon n’est pas gardé hors ligne', 'text': 'Sans réseau.', 'screen': 'signaler', 'at': '2026-11-18T09:00:00Z', 'via': 'poste'}],
+                                      'mine': [{'id': 'SIG-a0000000a1', 'kind': 'bug', 'title': 'Carburant : le total ne suit pas la réserve', 'text': 'La réserve change, le total non.', 'screen': 'fuel', 'at': '2026-11-15T09:00:00Z', 'via': 'pilote'},
+                                               {'id': 'SIG-a0000000a2', 'kind': 'request', 'title': 'Carte : afficher les zones militaires', 'text': 'Les zones.', 'screen': 'maps', 'at': '2026-11-17T09:00:00Z', 'via': 'pilote'},
+                                               {'id': 'SIG-a0000000a4', 'kind': 'bug', 'title': '<img src=x onerror="window.__pwn=5">', 'text': 'x', 'screen': 'maps', 'at': '2026-11-16T09:00:00Z', 'via': 'pilote'}],
+                                      'draft': {'kind': 'bug', 'title': '', 'text': ''}}, 'cache']]
+
+
+@case('A270', '« Mes signalements » of a pilot (SOG-0410): no launcher verb — the device\'s reports (not sent first), the state, the linked card and the short answer from the `reports` map of roadmap.json; a search over what the device holds; the sheet without priority nor comments; without `reports` the states of today; four languages', 'A',
+      tags=('signaler',), designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0410 (decision 4 of the ergonomist: the pilot sees the state, the linked card and the answer; no priority, no comment in v1): roadmap.json carries `reports` copied by the generator from SIGNALEMENTS_FICHES.json')
+def a270(c):
+    reports = {'SIG-a0000000a1': {'fiche': 'SOG-0301', 'answer': 'Corrigé dans la prochaine version.'}, 'SIG-a0000000a2': {'fiche': 'SOG-0447', 'refused': True}, 'SIG-bad': {'fiche': 'x'}}
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_sg_roadmap(reports))))
+    L = c.lang
+    c.open('signaler', docs=LEVEL3 + _sg_pilot_docs())
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 4 && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what="the device's reports")
+    c.until("document.querySelector('[data-mine] li[data-id=\"SIG-a0000000a1\"] [data-st]').dataset.kind === 'accent'", timeout=8000, what='the state from roadmap.json')
+    c.eq(c.js("[...document.querySelectorAll('[data-mine] li[data-id]')].map(l => l.dataset.id)"), ['SIG-a0000000a3', 'SIG-a0000000a1', 'SIG-a0000000a2', 'SIG-a0000000a4'], 'not sent first, then the device\'s reports', what='order')
+    s = c.js("Object.fromEntries([...document.querySelectorAll('[data-mine] li[data-id]')].map(l => { const b = l.querySelector('[data-st]'); return [l.dataset.id, [b.dataset.kind || '', b.textContent.trim()]] }))")
+    c.eq(s['SIG-a0000000a1'], ['accent', _sgt('stCard', L, f='SOG-0301')], 'a card « later » in roadmap.json: blue « Fiche SOG-0301 »', what='card')
+    c.eq(s['SIG-a0000000a2'], ['err', _sgt('stRefused', L)], 'refused: red', what='refused')
+    c.eq(s['SIG-a0000000a3'][0], 'warn', 'not sent: yellow, as today', what='unsent')
+    c.eq(s['SIG-a0000000a4'][0], '', 'a report not in `reports`: the state of today (sent)', what='plain')
+    c.eq(c.count('[data-mine] [data-grp] h3'), 0, 'one list, no priority groups for a pilot', what='groups')
+    c.eq(c.attr('[data-q]', 'placeholder'), _sgt('searchMine', L), 'the search field says it searches my reports', what='placeholder')
+    _sg_scroll_to(c, '[data-q]')
+    c.shot(f'ecran_pilote_{c.width}_{c.lang}.png')
+    # the search on the device
+    c.page.fill('[data-q]', 'reserve')
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=8000, what='one report found')
+    c.eq(c.js("[...document.querySelectorAll('[data-mine] li[data-id] .f-sg-t mark')].map(m => m.textContent)"), ['réserve'], 'found and marked, accent-blind', what='marks')
+    c.page.fill('[data-q]', '')
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 4", timeout=8000, what='the list back')
+    # the sheet: state, card, answer; no priority nor comments
+    c.tap('[data-mine] li[data-id="SIG-a0000000a1"] a')
+    c.until("!!document.querySelector('[data-sheet-title]')", timeout=15000, what='the sheet')
+    c.ok('Corrigé dans la prochaine version.' in c.text('[data-answer]') and c.attr('[data-open-rm]', 'href') == '#roadmap?fiche=SOG-0301', c.text('[data-sheet]'), 'the answer and the linked card')
+    c.eq([c.count('[data-prio]'), c.count('[data-cms]'), c.count('[data-sheet] textarea'), c.count('[data-grav]')], [0, 0, 0, 0], 'no priority, no comment for a pilot', what='controls')
+    c.ok('La réserve change' in c.text('[data-body]'), c.text('[data-body]'), 'the text kept on the device')
+    c.shot(f'ecran_pilote_fiche_{c.width}_{c.lang}.png')
+    c.tap('[data-back]')
+    c.until("location.hash === '#signaler' && document.querySelectorAll('[data-mine] li[data-id]').length === 4", timeout=15000, what='back to the list')
+    c.eq(c.js('window.__pwn === undefined && !document.querySelector("[data-mine] img")'), True, 'a hostile title on the device is text', what='hostile')
+    _sg_no_hscroll(c)
+    c.check_errors()
+
+
+@case('A271', '« Mes signalements » of a pilot when roadmap.json has no `reports` map (SOG-0410): nothing changes from the states of today — not sent in yellow, the others as they were, no card', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False, langs4=False,
+      rule='SOG-0410: `reports` may be absent (a generator that does not copy it yet, an old roadmap.json): the list then says what it said before')
+def a271(c):
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(_sg_roadmap(None))))
+    c.open('signaler', docs=LEVEL3 + _sg_pilot_docs())
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 4 && document.querySelector('[data-why]').textContent.length > 0", timeout=20000, what='the list')
+    c.wait(800)
+    k = c.js("[...document.querySelectorAll('[data-mine] li[data-id] [data-st]')].map(b => [b.dataset.kind || '', b.classList.contains('f-warn')])")
+    c.eq(k, [['warn', True], ['', False], ['', False], ['', False]], 'no `reports` in roadmap.json: nothing changes from the states of today', what='states')
+    c.eq(c.count('[data-mine] [data-open-rm], [data-mine] a[href^="#roadmap"]'), 0, 'no card linked', what='cards')
     c.check_errors()

@@ -32,6 +32,21 @@
     UNSENT_MAX = 10,
     PILOT_MAX = 60,
     PILOT_FILE_MAX = 8192;
+  // « Mes signalements » (SOG-0410, frame/help/maquette/signalements.md) : la liste par priorité, la recherche, la fiche d'un signalement
+  const GRAV = ['blocking', 'annoying', 'minor'],
+    FREQ = ['always', 'often', 'rare'],
+    GROUPS = ['now', 'next', 'later', 'unrated'];
+  const PAGE = 7, // sept lignes au plus par groupe, puis « Voir les n suivants »
+    MAX_CM = 2000,
+    MAX_ANSWER = 300,
+    MAX_LIST = 300,
+    MAX_REPORTS = 1000,
+    MAX_CARDS = 100,
+    Q_MS = 300; // la recherche part 300 ms après la dernière frappe dans le champ de recherche, jamais à chaque signe
+  const IMG = /^SIG-[0-9a-f]{10}-[1-3]\.(png|jpe?g|webp)$/,
+    COM_ID = /^COM-[0-9a-f]{10}$/;
+  let LAST_SIG = '', // la fiche ouverte en dernier : la liste y revient (focus sur sa ligne) au retour
+    FROM_LIST = false; // la fiche a été ouverte depuis la liste : « ← Mes signalements » revient en arrière dans l'historique
   const T = {
     title: ['Signaler un problème ou une demande', 'Report a problem or make a request', 'Ein Problem melden oder einen Wunsch äußern',
       'Informar de un problema o hacer una petición'
@@ -251,14 +266,6 @@
     },
     mine: ['Mes signalements', 'My reports', 'Meine Meldungen', 'Mis informes'],
     mineNone: ['Aucun signalement pour l’instant.', 'No report yet.', 'Noch keine Meldung.', 'Ningún informe por ahora.'],
-    minePost: ['Dix derniers signalements de ce poste.', 'Last ten reports of this workstation.',
-      'Letzte zehn Meldungen dieses Rechners.', 'Últimos diez informes de este puesto.'
-    ],
-    minePilot: ['Dix derniers signalements de cet appareil ; l’administrateur voit ceux de la compagnie.',
-      'Last ten reports of this device; the administrator sees the company’s.',
-      'Letzte zehn Meldungen dieses Geräts; die Administration sieht die der Gesellschaft.',
-      'Últimos diez informes de este dispositivo; el administrador ve los de la compañía.'
-    ],
     state: {
       written: ['écrit', 'written', 'geschrieben', 'escrito'],
       read: ['lu par l’ergonome', 'read by the ergonomist', 'von der Ergonomie gelesen', 'leído por la ergonomía'],
@@ -286,7 +293,119 @@
     taken: ['repris', 'taken over', 'übernommen', 'retomado'],
     invalid: ['signalement invalide (ignoré)', 'invalid report (ignored)', 'ungültige Meldung (ignoriert)',
       'informe no válido (ignorado)'
-    ]
+    ],
+    // ---- « Mes signalements » : la liste, la recherche, la fiche (SOG-0410)
+    search: ['Chercher dans les signalements et les fiches', 'Search the reports and the cards', 'In Meldungen und Karten suchen',
+      'Buscar en los informes y las fichas'
+    ],
+    searchMine: ['Chercher dans mes signalements', 'Search my reports', 'In meinen Meldungen suchen', 'Buscar en mis informes'],
+    grp: {
+      now: ['Maintenant', 'Now', 'Jetzt', 'Ahora'],
+      next: ['Ensuite', 'Next', 'Danach', 'Después'],
+      later: ['Plus tard', 'Later', 'Später', 'Más tarde'],
+      unrated: ['À classer', 'To sort', 'Einzuordnen', 'Por clasificar'],
+      found: ['Signalements', 'Reports', 'Meldungen', 'Informes'],
+      cards: ['Fiches', 'Cards', 'Karten', 'Fichas']
+    },
+    moreOne: ['Voir le suivant', 'Show the next one', 'Den nächsten zeigen', 'Ver el siguiente'],
+    moreMany: ['Voir les {n} suivants', 'Show the next {n}', 'Die nächsten {n} zeigen', 'Ver los {n} siguientes'],
+    stNone: ['Sans fiche', 'No card', 'Ohne Karte', 'Sin ficha'],
+    stCard: ['Fiche {f}', 'Card {f}', 'Karte {f}', 'Ficha {f}'],
+    stDone: ['Fait · {f}', 'Done · {f}', 'Erledigt · {f}', 'Hecho · {f}'],
+    stRefused: ['Refusé', 'Refused', 'Abgelehnt', 'Rechazado'],
+    cst: {
+      done: ['Fait', 'Done', 'Erledigt', 'Hecho'],
+      doing: ['En cours', 'In progress', 'In Arbeit', 'En curso'],
+      planned: ['Prévu', 'Planned', 'Geplant', 'Previsto'],
+      later: ['Plus tard', 'Later', 'Später', 'Más tarde']
+    },
+    grav: {
+      blocking: ['Bloquant', 'Blocking', 'Blockierend', 'Bloqueante'],
+      annoying: ['Gênant', 'Annoying', 'Störend', 'Molesto'],
+      minor: ['Mineur', 'Minor', 'Geringfügig', 'Menor']
+    },
+    freq: {
+      always: ['Toujours', 'Always', 'Immer', 'Siempre'],
+      often: ['Souvent', 'Often', 'Oft', 'A menudo'],
+      rare: ['Rare', 'Rarely', 'Selten', 'Rara vez']
+    },
+    freqLow: {
+      always: ['toujours', 'always', 'immer', 'siempre'],
+      often: ['souvent', 'often', 'oft', 'a menudo'],
+      rare: ['rare', 'rarely', 'selten', 'rara vez']
+    },
+    noneFound: ['Aucun signalement ne contient « {q} » ({n} cherchés).', 'No report contains “{q}” ({n} searched).',
+      'Keine Meldung enthält „{q}“ ({n} durchsucht).', 'Ningún informe contiene «{q}» ({n} buscados).'
+    ],
+    noneFoundOne: ['Aucun signalement ne contient « {q} » ({n} cherché).', 'No report contains “{q}” ({n} searched).',
+      'Keine Meldung enthält „{q}“ ({n} durchsucht).', 'Ningún informe contiene «{q}» ({n} buscado).'
+    ],
+    linkedOne: ['{n} signalement', '{n} report', '{n} Meldung', '{n} informe'],
+    linkedMany: ['{n} signalements', '{n} reports', '{n} Meldungen', '{n} informes'],
+    back: ['← Mes signalements', '← My reports', '← Meine Meldungen', '← Mis informes'],
+    atDay: ['{D}/{M}', '{D}/{M}', '{D}.{M}.', '{D}/{M}'],
+    atFull: ['{D}/{M} à {h} h {mm}', '{D}/{M} at {hh}:{mm}', '{D}.{M}. um {hh}:{mm}', '{D}/{M} a las {hh}:{mm}'],
+    ctxScreen: ['écran {s}', '{s} screen', 'Bildschirm {s}', 'pantalla {s}'],
+    ctxDesign: ['design {d}', '{d} design', 'Design {d}', 'diseño {d}'],
+    ctxVersion: ['version {v}', 'version {v}', 'Version {v}', 'versión {v}'],
+    images: ['Captures : {names}', 'Screenshots: {names}', 'Screenshots: {names}', 'Capturas: {names}'],
+    linked: ['Fiche liée', 'Linked card', 'Verknüpfte Karte', 'Ficha vinculada'],
+    openRm: ['Ouvrir dans la feuille de route', 'Open in the Roadmap', 'Im Fahrplan öffnen', 'Abrir en la hoja de ruta'],
+    answer: ['Réponse :', 'Answer:', 'Antwort:', 'Respuesta:'],
+    prio: ['Priorité', 'Priority', 'Priorität', 'Prioridad'],
+    gravL: ['Gravité — ce que le défaut empêche', 'Severity — what the fault prevents', 'Schwere — was der Fehler verhindert',
+      'Gravedad — lo que el fallo impide'
+    ],
+    gravA: ['Gravité', 'Severity', 'Schwere', 'Gravedad'],
+    freqL: ['Fréquence — à quelle fréquence ça arrive', 'Frequency — how often it happens', 'Häufigkeit — wie oft es vorkommt',
+      'Frecuencia — con qué frecuencia ocurre'
+    ],
+    freqA: ['Fréquence', 'Frequency', 'Häufigkeit', 'Frecuencia'],
+    prioFail: ['La priorité n’a pas été enregistrée : le lanceur ne l’a pas écrite. Elle revient à ce qu’elle était.',
+      'The priority was not saved: the launcher did not write it. It is back to what it was.',
+      'Die Priorität wurde nicht gespeichert: Der Launcher hat sie nicht geschrieben. Sie ist wieder wie vorher.',
+      'La prioridad no se ha guardado: el lanzador no la escribió. Vuelve a ser la de antes.'
+    ],
+    comments: ['Commentaires', 'Comments', 'Kommentare', 'Comentarios'],
+    cmNone: ['Aucun commentaire.', 'No comment.', 'Kein Kommentar.', 'Ningún comentario.'],
+    you: ['Vous', 'You', 'Sie', 'Usted'],
+    cmAdd: ['Ajouter un commentaire', 'Add a comment', 'Einen Kommentar hinzufügen', 'Añadir un comentario'],
+    cmHint: ['Votre commentaire (2 000 signes)', 'Your comment (2,000 signs)', 'Ihr Kommentar (2 000 Zeichen)',
+      'Su comentario (2000 signos)'
+    ],
+    add: ['Ajouter', 'Add', 'Hinzufügen', 'Añadir'],
+    cmFail: ['Le commentaire n’a pas été ajouté : le lanceur ne l’a pas écrit. Votre texte reste dans le champ.',
+      'The comment was not added: the launcher did not write it. Your text stays in the field.',
+      'Der Kommentar wurde nicht hinzugefügt: Der Launcher hat ihn nicht geschrieben. Ihr Text bleibt im Feld.',
+      'El comentario no se ha añadido: el lanzador no lo escribió. Su texto se queda en el campo.'
+    ],
+    reading: ['Lecture du signalement…', 'Reading the report…', 'Meldung wird gelesen…', 'Leyendo el informe…'],
+    unknown: ['Ce signalement est introuvable, ni sur ce poste ni sur cet appareil.',
+      'This report cannot be found, neither on this workstation nor on this device.',
+      'Diese Meldung ist nicht auffindbar, weder auf diesem Rechner noch auf diesem Gerät.',
+      'Este informe no se encuentra, ni en este puesto ni en este dispositivo.'
+    ],
+    scr: {
+      aircraft: ['Appareils', 'Aircraft', 'Flugzeuge', 'Aeronaves'],
+      atmosphere: ['Météo', 'Weather', 'Wetter', 'Meteo'],
+      data: ['Données', 'Data', 'Daten', 'Datos'],
+      flightlog: ['Mes vols', 'My flights', 'Meine Flüge', 'Mis vuelos'],
+      fuel: ['Carburant', 'Fuel', 'Kraftstoff', 'Combustible'],
+      hello: ['Accueil', 'Home', 'Start', 'Inicio'],
+      maps: ['Carte', 'Map', 'Karte', 'Mapa'],
+      missions: ['Missions', 'Missions', 'Missionen', 'Misiones'],
+      report: ['Compte rendu', 'Report', 'Bericht', 'Informe'],
+      stats: ['Statistiques', 'Statistics', 'Statistik', 'Estadísticas'],
+      website: ['Site', 'Website', 'Website', 'Sitio'],
+      help: ['Aide', 'Help', 'Hilfe', 'Ayuda'],
+      roadmap: ['Roadmap', 'Roadmap', 'Fahrplan', 'Hoja de ruta'],
+      recette: ['Recette', 'Acceptance', 'Abnahme', 'Recepción'],
+      settings: ['Réglages', 'Settings', 'Einstellungen', 'Ajustes'],
+      device: ['Appareil', 'Device', 'Gerät', 'Dispositivo'],
+      conflicts: ['Conflits', 'Conflicts', 'Konflikte', 'Conflictos'],
+      sources: ['Sources', 'Sources', 'Quellen', 'Fuentes'],
+      signaler: ['Signaler', 'Feedback', 'Melden', 'Informar']
+    }
   };
   /** La version de la suite (git describe : « jalon-n-gSHA ») pour le signalement : les signes permis seulement, le SHA court gardé en queue, 40 signes au plus ; '' si elle n'est pas connue. */
   const versionOf = raw => {
@@ -352,6 +471,13 @@
         title: text(m.title, MAX_TITLE),
         at: m.at,
         via: m.via,
+        // le texte et l'écran, gardés depuis SOG-0410 : la liste de l'appareil se cherche et sa fiche se lit sans réseau
+        ...(typeof m.text === 'string' && m.text ? {
+          text: multi(m.text, MAX_TEXT)
+        } : {}),
+        ...(SCREENS.includes(m.screen) ? {
+          screen: m.screen
+        } : {}),
         ...(typeof m.state === 'string' && ['written', 'read', 'fiche'].includes(m.state) ? {
           state: m.state
         } : {}),
@@ -397,29 +523,172 @@
     r.readAsDataURL(f);
   });
 
-  /** Dessine l'écran dans view. */
-  async function screen(view, c) {
+  // ---------------------------------------------------------------- « Mes signalements » : recherche, états, lignes (SOG-0410)
+  /** Le texte plié pour chercher : sans accents (NFKD sans les marques combinantes), en minuscules. */
+  const fold = s => s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const WORD = /[\p{L}\p{N}]/u;
+  /** Les mots d'une recherche : pliés, coupés sur ce qui n'est ni lettre ni chiffre, 8 au plus, 60 signes chacun (les bornes du verbe signalement/lister). */
+  const wordsOf = q => [...new Set(fold(String(q || '')).split(/[^\p{L}\p{N}]+/u).filter(Boolean).map(w => w.slice(0, 60)))].slice(0, 8);
+  /** Le texte plié et, pour chaque signe plié, la plage du signe d'origine : les mots trouvés se marquent sur le texte d'origine, par indices. */
+  const folded = s => {
+    let out = '',
+      i = 0;
+    const map = [];
+    for (const ch of s) {
+      const f = fold(ch);
+      for (let k = 0; k < f.length; k++) map.push([i, i + ch.length]);
+      out += f;
+      i += ch.length;
+    }
+    return {
+      out,
+      map
+    };
+  };
+  /** Les plages [début, fin[ du texte d'origine où un mot commence un mot du texte (fusionnées, triées). */
+  const spans = (s, words) => {
+    const {
+      out,
+      map
+    } = folded(s), got = [];
+    for (const w of words)
+      for (let p = out.indexOf(w); p >= 0; p = out.indexOf(w, p + 1))
+        if (p === 0 || !WORD.test(out[p - 1])) got.push([map[p][0], map[p + w.length - 1][1], w]);
+    got.sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    for (const g of got) {
+      const last = merged[merged.length - 1];
+      if (last && g[0] <= last[1]) last[1] = Math.max(last[1], g[1]);
+      else merged.push([g[0], g[1]]);
+    }
+    return {
+      merged,
+      words: new Set(got.map(g => g[2]))
+    };
+  };
+  /** Chaque mot commence un mot du texte (la règle du verbe signalement/lister, appliquée ici aux signalements de l'appareil et aux fiches). */
+  const hits = (s, words) => !words.length || spans(s, words).words.size === words.length;
+  /** Le texte échappé, les mots trouvés entourés de <mark> : la marque est posée par indices sur le texte échappé morceau par morceau, jamais tirée du texte. */
+  const marks = (s, words) => {
+    s = String(s || '');
+    if (!words.length) return esc(s);
+    let html = '',
+      at = 0;
+    for (const [a, b] of spans(s, words).merged) {
+      html += `${esc(s.slice(at, a))}<mark>${esc(s.slice(a, b))}</mark>`;
+      at = b;
+    }
+    return html + esc(s.slice(at));
+  };
+  /** Un extrait de 240 signes autour du premier mot trouvé (ou le début) : la même forme que l'`excerpt` du verbe, pour les signalements de l'appareil. */
+  const excerptOf = (s, words) => {
+    s = String(s || '').replace(/\s+/g, ' ').trim();
+    const first = words.length ? spans(s, words).merged[0]?.[0] ?? 0 : 0,
+      from = Math.max(0, first - 80);
+    return `${from ? '…' : ''}${s.slice(from, from + 240)}${from + 240 < s.length ? '…' : ''}`;
+  };
+  /** Le groupe d'un signalement par sa priorité (la table du contrat, décision de l'ergonome du 18 nov.) : rien de choisi → À classer ; une seule moitié choisie se lit avec l'autre absente. */
+  const groupOf = it => {
+    const g = it.gravity,
+      f = it.frequency;
+    if (!g && !f) return 'unrated';
+    if (g === 'blocking' || (g === 'annoying' && f === 'always')) return 'now';
+    if ((g === 'annoying' && f === 'often') || (g === 'minor' && f === 'always')) return 'next';
+    return 'later';
+  };
+  /** Une ligne [fr, en, de, es] d'un texte de roadmap.json ({ fr, en, de, es }) : une langue absente reprend l'anglais, puis le français (la règle de roadmap.js). */
+  const rowOf = o => {
+    const en = text(o?.en, 200) || text(o?.fr, 200);
+    return [text(o?.fr, 200) || en, en, text(o?.de, 200) || en, text(o?.es, 200) || en];
+  };
+  let RM = null;
+  /** roadmap.json, lu une fois par page : les fiches (identifiant, titre, état) et la table `reports` (signalement → fiche, réponse, refus) que le générateur y copie. Une entrée mal formée est ignorée. */
+  const rmOf = c => RM ||= fetch(new URL('frame/help/roadmap.json', c.root), {
+    cache: 'no-cache'
+  }).then(r => r.ok ? r.json() : null).catch(() => null).then(d => {
+    const cards = new Map(),
+      reports = {};
+    if (!d || typeof d !== 'object') {
+      RM = null; // pas de fichier (hors ligne à la première visite) : relu au montage suivant
+      return {
+        cards,
+        reports
+      };
+    }
+    for (const l of Array.isArray(d.lanes) ? d.lanes : [])
+      for (const it of Array.isArray(l?.items) ? l.items : [])
+        if (it && FICHE.test(it.id) && !cards.has(it.id)) cards.set(it.id, {
+          id: it.id,
+          title: rowOf(it),
+          state: ['done', 'doing', 'planned', 'later', 'refused'].includes(it.state) ? it.state : 'planned'
+        });
+    const src = d.reports && typeof d.reports === 'object' && !Array.isArray(d.reports) ? d.reports : {};
+    let n = 0;
+    for (const [k, v] of Object.entries(src)) {
+      if (n >= MAX_REPORTS) break;
+      if (!SG_ID.test(k) || !v || typeof v !== 'object' || !FICHE.test(v.fiche)) continue;
+      reports[k] = {
+        fiche: v.fiche,
+        answer: text(v.answer, MAX_ANSWER),
+        refused: v.refused === true
+      };
+      n++;
+    }
+    return {
+      cards,
+      reports
+    };
+  });
+  /** Une ligne du verbe signalement/lister, relue aux règles de la page (entrée non fiable) ; null si elle n'en est pas une. */
+  const itemOf = v => {
+    if (!v || typeof v !== 'object' || !SG_ID.test(v.id)) return null;
+    return {
+      id: v.id,
+      kind: KINDS.includes(v.kind) ? v.kind : '',
+      title: text(v.title, MAX_TITLE) || v.id,
+      excerpt: text(v.excerpt, 260),
+      screen: SCREENS.includes(v.screen) ? v.screen : '',
+      at: AT.test(v.at) ? v.at : '',
+      fiche: FICHE.test(v.fiche) ? v.fiche : '',
+      answer: text(v.answer, MAX_ANSWER),
+      refused: v.refused === true,
+      gravity: GRAV.includes(v.gravity) ? v.gravity : '',
+      frequency: FREQ.includes(v.frequency) ? v.frequency : '',
+      comments: Number.isInteger(v.comments) && v.comments > 0 ? Math.min(v.comments, 200) : 0
+    };
+  };
+  const ctxOf = c => {
+    const k = {};
+    if (!c || typeof c !== 'object' || Array.isArray(c)) return k;
+    if (typeof c.version === 'string' && VERSION.test(c.version)) k.version = c.version;
+    if (LANGS.includes(c.lang)) k.lang = c.lang;
+    if (DESIGNS.includes(c.design)) k.design = c.design;
+    if (['phone', 'tablet', 'desktop'].includes(c.size)) k.size = c.size;
+    return k;
+  };
+  const commentOf = v => v && typeof v === 'object' && COM_ID.test(v.id) && AT.test(v.at) && multi(v.text, MAX_CM) ? {
+    id: v.id,
+    at: v.at,
+    text: multi(v.text, MAX_CM)
+  } : null;
+  /** La fiche d'un signalement (verbe signalement/detail), relue aux règles de la page ; null si elle n'en est pas une. */
+  const detailOf = v => {
+    const it = itemOf(v);
+    if (!it) return null;
+    return {
+      ...it,
+      text: multi(v.text, MAX_TEXT),
+      ctx: ctxOf(v.ctx),
+      folder: typeof v.folder === 'string' && TRI.test(v.folder) ? v.folder : '',
+      images: (Array.isArray(v.images) ? v.images : []).filter(n => typeof n === 'string' && IMG.test(n)).slice(0, MAX_SHOTS),
+      comments: (Array.isArray(v.comments) ? v.comments : []).slice(0, 200).map(commentOf).filter(Boolean)
+    };
+  };
+  /** Les outils communs à la liste et à la fiche : le lanceur, ses verbes, les mots d'un état, d'une date, d'un écran, d'une priorité. */
+  const tools = c => {
     const {
       t
     } = c;
-    // l'écran est monté de nouveau (une page qui se redessine, un retour, un autre élément de vue) : les écouteurs du montage précédent sont retirés, où qu'ils aient été posés — sinon chaque appui sur
-    // « Envoyer » les faisait tous partir, chacun avec son état et son identifiant, et chaque saisie réécrivait le brouillon de l'ancien montage (SOG-0366 : un signalement en double ou en triple, même texte, même seconde, identifiants différents)
-    await FLUSH?.(); // le brouillon du montage précédent est écrit AVANT de relire le brouillon (SOG-0409)
-    MOUNTED?.abort();
-    const mount = new AbortController();
-    MOUNTED = mount;
-    const st = await readStore(c);
-    if (mount.signal.aborted) return; // un montage plus récent a pris la place pendant la lecture
-    const ui = {
-      ch: null, // 'poste' | 'poste-off' | 'pilote' | 'old'
-      shots: [], // les fichiers choisis (poste)
-      pshots: [], // les photos RÉDUITES (un pilote, sans lanceur) : { name, bytes, type, w, h }
-      reducing: false,
-      note: '', // { kind: 'ok' | 'warn', text }
-      sending: false,
-      pilots: null, // { items, left, more, refs } | null
-      busy: false
-    };
     const launcher = () => {
       try {
         return c.launcher?.() || null;
@@ -448,6 +717,113 @@
         offline: true // le travail n'a pas tourné (lanceur arrêté, occupé, en erreur) : rien n'a été écrit de ce côté
       };
     };
+    const kindLabel = k => KINDS.includes(k) ? t(T.kind[k]) : '';
+    const stateLine = m => {
+      if (m.via === 'poste') return m.state === 'fiche' ? t(T.state.fiche, {
+        f: m.fiche || ''
+      }) : m.state === 'read' ? t(T.state.read) : t(T.state.written);
+      return m.pending ? t(T.state.inMin, {
+        n: m.pending
+      }) : t(T.state.sent);
+    };
+    /** L'état d'un signalement en couleur ET en mots : sans fiche (jaune), fiche prévue, en cours ou plus tard (bleu), faite (vert), refusée (rouge). */
+    const pillOf = (rep, rm) => {
+      const cd = rep.fiche ? rm?.cards.get(rep.fiche) : null;
+      if (rep.refused || cd?.state === 'refused') return {
+        k: 'err',
+        w: t(T.stRefused)
+      };
+      if (!rep.fiche) return {
+        k: 'warn',
+        w: t(T.stNone)
+      };
+      return cd?.state === 'done' ? {
+        k: 'ok',
+        w: t(T.stDone, {
+          f: rep.fiche
+        })
+      } : {
+        k: 'accent',
+        w: t(T.stCard, {
+          f: rep.fiche
+        })
+      };
+    };
+    const p2 = n => String(n).padStart(2, '0');
+    /** Une date du signalement (l'heure locale) : « 14/11 », ou « 14/11 à 11 h 38 » ; '' si elle n'est pas aux règles. */
+    const when = (at, full) => {
+      const d = AT.test(at || '') ? new Date(at) : null;
+      if (!d || Number.isNaN(d.getTime())) return '';
+      return t(full ? T.atFull : T.atDay, {
+        D: p2(d.getDate()),
+        M: p2(d.getMonth() + 1),
+        h: d.getHours(),
+        hh: p2(d.getHours()),
+        mm: p2(d.getMinutes())
+      });
+    };
+    const screenName = s => T.scr[s] ? t(T.scr[s]) : '';
+    const prioText = it => [it.gravity && t(T.grav[it.gravity]), it.frequency && t(it.gravity ? T.freqLow[it.frequency] : T.freq[it
+      .frequency])].filter(Boolean).join(' · ');
+    const badge = p => `<span class="f-badge f-sg-state${p.unsent ? ' f-warn' : ''}"${p.k ? ` data-kind="${p.k}"` : ''} data-st>${esc(p.w)}</span>`;
+    return {
+      launcher,
+      call,
+      kindLabel,
+      stateLine,
+      pillOf,
+      when,
+      screenName,
+      prioText,
+      badge
+    };
+  };
+
+  /** Dessine l'écran dans view ; `query.sig` (#signaler?sig=SIG-…) : la fiche de ce signalement à la place du formulaire et de la liste. */
+  async function screen(view, c, query) {
+    const {
+      t
+    } = c;
+    // l'écran est monté de nouveau (une page qui se redessine, un retour, un autre élément de vue) : les écouteurs du montage précédent sont retirés, où qu'ils aient été posés — sinon chaque appui sur
+    // « Envoyer » les faisait tous partir, chacun avec son état et son identifiant, et chaque saisie réécrivait le brouillon de l'ancien montage (SOG-0366 : un signalement en double ou en triple, même texte, même seconde, identifiants différents)
+    await FLUSH?.(); // le brouillon du montage précédent est écrit AVANT de relire le brouillon (SOG-0409)
+    MOUNTED?.abort();
+    const mount = new AbortController();
+    MOUNTED = mount;
+    const sig = typeof query?.sig === 'string' && SG_ID.test(query.sig) ? query.sig : '';
+    if (sig) {
+      FLUSH = null; // la fiche n'a pas de formulaire : le brouillon reste tel que le montage précédent l'a écrit
+      return sheet(view, c, sig, mount);
+    }
+    const K = tools(c);
+    const st = await readStore(c);
+    if (mount.signal.aborted) return; // un montage plus récent a pris la place pendant la lecture
+    const ui = {
+      ch: null, // 'poste' | 'poste-off' | 'pilote' | 'old'
+      shots: [], // les fichiers choisis (poste)
+      pshots: [], // les photos RÉDUITES (un pilote, sans lanceur) : { name, bytes, type, w, h }
+      reducing: false,
+      note: '', // { kind: 'ok' | 'warn', text }
+      sending: false,
+      pilots: null, // { items, left, more, refs } | null
+      busy: false,
+      // « Mes signalements » (SOG-0410)
+      src: 'local', // 'poste' : la liste vient du verbe signalement/lister ; 'local' : les signalements de l'appareil (pilote, lanceur absent ou ancien)
+      all: [], // les signalements du poste (signalement/lister, sans recherche)
+      total: 0,
+      q: '', // la recherche affichée
+      found: null, // { items, searched } : la réponse du verbe à la recherche `q`
+      more: {}, // groupe → nombre de lignes montrées (7, puis 7 de plus à chaque « Voir les n suivants »)
+      rm: null, // roadmap.json : fiches et table `reports`
+      listHtml: null, // la liste dessinée : réécrite seulement si elle change
+      ready: false // la liste est la bonne (celle du poste quand c'est le poste) : la ligne de la fiche quittée peut reprendre le focus
+    };
+    const {
+      launcher,
+      call,
+      stateLine,
+      kindLabel
+    } = K;
     const langNow = () => typeof c.lang === 'function' ? c.lang() : c.lang; // le cadre donne la langue par une fonction
     const ctxNow = () => {
       const h = document.documentElement,
@@ -468,15 +844,6 @@
       const f = c.from?.();
       return SCREENS.includes(f) ? f : 'other';
     };
-    const stateLine = m => {
-      if (m.via === 'poste') return m.state === 'fiche' ? t(T.state.fiche, {
-        f: m.fiche || ''
-      }) : m.state === 'read' ? t(T.state.read) : t(T.state.written);
-      return m.pending ? t(T.state.inMin, {
-        n: m.pending
-      }) : t(T.state.sent);
-    };
-    const kindLabel = k => t(T.kind[k]);
     view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-muted" data-lead></p>
       <form class="f-card f-sg" data-form autocomplete="off">
         <fieldset class="f-sg-kinds"><legend>${esc(t(T.kinds))}</legend>${KINDS.map(k => `<label><input type="radio" name="sg-kind" value="${k}"${st.draft.kind === k ? ' checked' : ''}> ${esc(kindLabel(k))}</label>`).join('')}</fieldset>
@@ -489,7 +856,7 @@
         <div class="f-row"><button type="submit" class="primary" data-send disabled>${esc(t(T.send))}</button> <span class="f-muted" data-why></span></div>
       </form>
       <div data-note role="status"></div>
-      <h2>${esc(t(T.mine))}</h2><ul class="f-sg-list" data-mine></ul><p class="f-muted" data-foot></p>
+      <h2>${esc(t(T.mine))}</h2><input type="search" class="f-sg-q" data-q maxlength="200" autocomplete="off" spellcheck="false" aria-label="${esc(t(T.searchMine))}" placeholder="${esc(t(T.searchMine))}"><div data-mine></div>
       <section data-pilots hidden></section>`;
     const $ = s => view.querySelector(s);
     const fitText = () => {
@@ -593,14 +960,147 @@
       const n = $('[data-note]');
       const html = ui.note ? `<p class="${ui.note.kind === 'warn' ? 'f-warn' : 'f-card'}" data-kind="${esc(ui.note.kind)}">${esc(ui.note.text)}</p>` : '';
       if (n.innerHTML !== html) n.innerHTML = html;
-      const rows = [...st.unsent.map(u => ({
-        ...u,
-        unsent: true
-      })), ...st.mine].slice(0, MINE_MAX);
-      $('[data-mine]').innerHTML = rows.length ? rows.map(m => `<li data-id="${esc(m.id)}"><span class="f-sg-tag">${esc(kindLabel(m.kind))}</span> <span class="f-sg-t">${esc(m.title)}</span> <span class="f-sg-state${m.unsent ? ' f-warn' : ''}">${esc(m.unsent ? t(T.state.unsent) : stateLine(m))}</span></li>`).join('') :
-        `<li class="f-muted" data-none>${esc(t(T.mineNone))}</li>`;
-      $('[data-foot]').textContent = ui.ch === 'pilote' ? t(T.minePilot) : t(T.minePost);
+      paintList();
       paintPilots();
+    };
+
+    // ---- « Mes signalements » (SOG-0410) : la liste par priorité (poste), la recherche, les lignes ; écrite seulement quand elle change (la frappe du formulaire n'y touche jamais : SOG-0409)
+    /** Les signalements de l'appareil (non envoyés d'abord) : l'état de la table `reports` de roadmap.json quand elle a le signalement, sinon celui d'aujourd'hui. */
+    const localItems = () => [...st.unsent.map(u => ({
+      ...u,
+      unsent: true
+    })), ...st.mine].slice(0, MINE_MAX + UNSENT_MAX).map(m => {
+      const rep = ui.rm?.reports[m.id];
+      return {
+        id: m.id,
+        kind: m.kind,
+        title: m.title,
+        text: m.text || '',
+        screen: m.screen && m.screen !== 'other' ? m.screen : '',
+        at: m.at,
+        fiche: rep?.fiche || '',
+        answer: rep?.answer || '',
+        pill: rep ? K.pillOf(rep, ui.rm) : m.unsent ? {
+          k: 'warn',
+          w: t(T.state.unsent),
+          unsent: true
+        } : {
+          k: '',
+          w: stateLine(m)
+        }
+      };
+    });
+    const withPill = it => ({
+      ...it,
+      pill: K.pillOf(it, ui.rm)
+    });
+    const hayOf = it => [it.title, it.text || it.excerpt, K.screenName(it.screen), it.fiche, it.answer].filter(Boolean).join('\n');
+    const rowHtml = (it, words) => {
+      const ex = words.length ? it.excerpt || (it.text ? excerptOf(it.text, words) : '') : '',
+        meta = [K.when(it.at), K.screenName(it.screen)].filter(Boolean).map(esc).join(' · '),
+        pri = K.prioText(it);
+      return `<li data-id="${esc(it.id)}"><a class="f-sg-row" href="#signaler?sig=${esc(it.id)}" data-sig="${esc(it.id)}"><span class="f-sg-l1">${it.kind ? `<span class="f-sg-tag">${esc(kindLabel(it.kind))}</span> ` : ''}<b class="f-sg-t"><bdi>${marks(it.title, words)}</bdi></b></span>${ex ? `<span class="f-sg-ex"><bdi>${marks(ex, words)}</bdi></span>` : ''}<span class="f-sg-meta">${K.badge(it.pill)}${meta ? ` · ${meta}` : ''}${pri ? ` · <span class="f-sg-pri" data-pri>${esc(pri)}</span>` : ''}</span></a></li>`;
+    };
+    /** Une fiche de roadmap.json trouvée par la recherche : son identifiant, son titre (mots marqués), son état et le nombre de signalements qui y sont liés ; elle s'ouvre dans la Roadmap. */
+    const cardHtml = (cd, words) => {
+      const n = ui.all.filter(i => i.fiche === cd.id).length,
+        p = cd.state === 'refused' ? {
+          k: 'err',
+          w: t(T.stRefused)
+        } : {
+          k: cd.state === 'done' ? 'ok' : 'accent',
+          w: t(T.cst[cd.state] || T.cst.planned)
+        };
+      return `<li data-card="${esc(cd.id)}"><a class="f-sg-row" href="#roadmap?fiche=${esc(cd.id)}"><span class="f-sg-l1"><span class="f-sg-tag">${marks(cd.id, words)}</span> <b class="f-sg-t">${marks(t(cd.title), words)}</b></span><span class="f-sg-meta">${K.badge(p)} · ${esc(t(n === 1 ? T.linkedOne : T.linkedMany, { n }))}</span></a></li>`;
+    };
+    const grpHtml = (key, items, words, row) => {
+      const n = ui.more[key] || PAGE,
+        left = Math.max(0, items.length - n),
+        step = Math.min(PAGE, left);
+      return `<section class="f-sg-grp" data-grp="${key}">${key === 'mine' ? '' : `<h3>${esc(t(T.grp[key]))} <small class="f-muted" data-n>${items.length}</small></h3>`}<ul class="f-sg-rows">${items.slice(0, n).map(i => row(i, words)).join('')}</ul>${left ? `<button type="button" class="f-sg-more" data-more="${key}">${esc(t(step === 1 ? T.moreOne : T.moreMany, { n: step }))}</button>` : ''}</section>`;
+    };
+
+    function paintList() {
+      if (mount.signal.aborted) return;
+      const words = wordsOf(ui.q),
+        poste = ui.src === 'poste';
+      let html = '';
+      if (!ui.q) {
+        const items = poste ? ui.all.map(withPill) : localItems();
+        html = !items.length ? `<p class="f-muted" data-none>${esc(t(T.mineNone))}</p>` : poste ? GROUPS.map(g => [g, items.filter(i =>
+          groupOf(i) === g)]).filter(([, l]) => l.length).map(([g, l]) => grpHtml(g, l, words, rowHtml)).join('') : grpHtml('mine',
+          items, words, rowHtml);
+      } else {
+        const local = poste ? null : localItems(),
+          found = poste ? (ui.found?.items || []).map(withPill) : local.filter(i => hits(hayOf(i), words)),
+          searched = poste ? ui.found?.searched ?? ui.total : local.length,
+          cards = poste && words.length ? [...(ui.rm?.cards.values() || [])].filter(cd => hits(`${cd.id} ${t(cd.title)}`, words))
+          .slice(0, MAX_CARDS) : [];
+        html = (found.length ? grpHtml('found', found, words, rowHtml) : `<p class="f-muted" data-none>${esc(t(searched === 1 ? T.noneFoundOne : T.noneFound, { q: text(ui.q, 60), n: searched }))}</p>`) +
+          (cards.length ? grpHtml('cards', cards, words, cardHtml) : '');
+      }
+      const box = $('[data-mine]');
+      if (ui.listHtml !== html) {
+        ui.listHtml = html;
+        box.innerHTML = html;
+      }
+      const ph = t(poste ? T.search : T.searchMine),
+        q = $('[data-q]');
+      if (q.placeholder !== ph) q.placeholder = ph;
+      if (q.getAttribute('aria-label') !== ph) q.setAttribute('aria-label', ph);
+      // retour d'une fiche : sa ligne reprend le focus (une fois, quand elle est dessinée)
+      if (LAST_SIG && !ui.q && ui.ready) {
+        const a = box.querySelector(`a[data-sig="${LAST_SIG}"]`);
+        if (a) {
+          LAST_SIG = '';
+          a.focus({
+            preventScroll: true
+          });
+          a.scrollIntoView({
+            block: 'center'
+          });
+        }
+      }
+    }
+    /** Les signalements du poste : UN appel du verbe signalement/lister (au montage, après un envoi) ; un lanceur qui ne le connaît pas laisse la liste de l'appareil. */
+    const loadList = async () => {
+      const r = await call('lister', {
+        limit: MAX_LIST
+      });
+      if (mount.signal.aborted) return;
+      if (r.ok && Array.isArray(r.items)) {
+        ui.src = 'poste';
+        ui.all = r.items.slice(0, MAX_LIST).map(itemOf).filter(Boolean);
+        ui.total = Number.isInteger(r.total) && r.total >= 0 ? r.total : ui.all.length;
+      } else ui.src = 'local';
+    };
+    let qTimer = 0,
+      qSeq = 0;
+    /** La recherche, 300 ms après la dernière frappe dans son champ : le verbe sur le poste (le texte entier, côté lanceur), les signalements de l'appareil sinon. */
+    const runSearch = async () => {
+      const q = text($('[data-q]').value, 200),
+        seq = ++qSeq;
+      if (!q || ui.src !== 'poste') {
+        ui.q = q;
+        ui.found = null;
+        ui.more = {};
+        return paintList();
+      }
+      const r = await call('lister', {
+        q,
+        limit: MAX_LIST
+      });
+      if (seq !== qSeq || mount.signal.aborted) return; // une recherche plus récente est partie : celle-ci ne dessine rien
+      ui.q = q;
+      ui.more = {};
+      ui.found = r.ok && Array.isArray(r.items) ? {
+        items: r.items.slice(0, MAX_LIST).map(itemOf).filter(Boolean),
+        searched: Number.isInteger(r.searched) && r.searched >= 0 ? r.searched : ui.total
+      } : { // le verbe ne répond pas : la recherche se fait sur ce que la liste a déjà (titre, extrait, écran, fiche, réponse)
+        items: ui.all.filter(i => hits(hayOf(i), wordsOf(q))),
+        searched: ui.all.length
+      };
+      paintList();
     };
 
     function paintPilots() {
@@ -752,10 +1252,13 @@
         kind: 'warn',
         text: t(T.offPost)
       };
+      ui.ready = ui.ch !== 'poste'; // la liste est celle de l'appareil : prête ; le poste attend la sienne
       paint();
       if (ui.ch === 'poste') {
         await refreshStates();
         await flush();
+        await loadList(); // SOG-0410 : la liste du poste, un appel au montage
+        ui.ready = true;
         paint();
         loadPilots(r.refs || []);
       } else if (ui.ch === 'pilote') {
@@ -811,12 +1314,15 @@
           id: res.id,
           kind: r.kind,
           title: r.title,
+          text: r.text,
+          screen: r.screen,
           at: AT.test(res.at) ? res.at : now(),
           via: 'poste',
           state: 'written'
         });
         st.mine = st.mine.slice(0, MINE_MAX);
         await saveStore(c, st);
+        if (ui.src === 'poste') await loadList(); // la liste du poste suit : le signalement écrit y entre
         return res.id;
       }
       ui.refusal = res;
@@ -873,6 +1379,8 @@
         id,
         kind: r.kind,
         title: r.title,
+        text: r.text,
+        screen: r.screen,
         at,
         via: 'pilote'
       });
@@ -1088,6 +1596,11 @@
         st.draft = withId(draft());
         paintTyping();
         queueDraft();
+      } else if (e.target.matches(
+          '[data-q]'
+        )) { // SOG-0410 : la recherche part 300 ms après la dernière frappe dans SON champ ; le formulaire n'en déclenche aucune
+        clearTimeout(qTimer);
+        qTimer = setTimeout(runSearch, Q_MS);
       }
     });
     on('change', e => {
@@ -1124,7 +1637,19 @@
     on('click', e => {
       const b = e.target.closest('[data-take]');
       if (b) take(b.dataset.take);
+      const more = e.target.closest('[data-more]');
+      if (more && GROUPS.concat('found', 'cards', 'mine').includes(more.dataset
+          .more)) { // « Voir les n suivants » : sept lignes de plus, ici seulement
+        const g = more.dataset.more,
+          was = ui.more[g] || PAGE;
+        ui.more[g] = was + PAGE;
+        paintList();
+        $(`[data-grp="${g}"] .f-sg-rows > li:nth-child(${was + 1}) a`)?.focus();
+      }
+      if (e.target.closest('a[data-sig]')) FROM_LIST =
+        true; // la fiche s'ouvre par son adresse (#signaler?sig=…) : « ← Mes signalements » reviendra en arrière
     });
+    mount.signal.addEventListener('abort', () => clearTimeout(qTimer));
     document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && void flushDraft(), {
       signal: mount.signal
     });
@@ -1133,7 +1658,187 @@
     });
     fitText();
     paint();
+    rmOf(c).then(rm => { // roadmap.json : les fiches liées et la table `reports` ; la liste est redessinée seulement si elle change
+      ui.rm = rm;
+      paintList();
+    });
     check();
+  }
+  /** La fiche d'un signalement (#signaler?sig=SIG-…, SOG-0410), dans le même écran : sorte, état, titre, contexte noté, texte, captures (leurs noms), fiche liée et réponse ;
+   *  sur le poste (verbe signalement/detail), la priorité (deux rangées de trois boutons, signalement/noter) et les commentaires (signalement/commenter). Un pilote : ce que
+   *  l'appareil garde, et la table `reports` de roadmap.json. Le brouillon du formulaire n'est pas touché. Tout texte d'un signalement est une donnée : échappé, isolé (<bdi>), jamais un lien. */
+  async function sheet(view, c, sig, mount) {
+    const {
+      t
+    } = c;
+    const K = tools(c);
+    LAST_SIG = sig;
+    view.innerHTML = `<p class="f-sg-backp"><a href="#signaler" class="f-sg-back" data-back>${esc(t(T.back))}</a></p><div data-sheet="${esc(sig)}" aria-busy="true"><p class="f-muted" data-reading>${esc(t(T.reading))}</p></div>`;
+    const $ = s => view.querySelector(s);
+    const on = (type, fn) => view.addEventListener(type, fn, {
+      signal: mount.signal
+    });
+    on('click', e => {
+      // ouverte depuis la liste : le retour est celui du navigateur (la liste revient telle qu'elle était, sa ligne au focus) ; sinon l'adresse de la liste
+      if (e.target.closest('[data-back]') && FROM_LIST && history.length > 1) {
+        e.preventDefault();
+        FROM_LIST = false;
+        history.back();
+      }
+    });
+    const [rm, r] = await Promise.all([rmOf(c), K.launcher() ? K.call('detail', {
+      id: sig
+    }) : {
+      offline: true
+    }]);
+    if (mount.signal.aborted) return;
+    let it = r.ok ? detailOf(r.item) : null;
+    const poste = !!it && it.id === sig;
+    if (poste) it.pill = K.pillOf(it, rm);
+    else {
+      it = null;
+      const st = await readStore(c);
+      if (mount.signal.aborted) return;
+      const u = st.unsent.find(x => x.id === sig),
+        m = u ? {
+          ...u,
+          unsent: true
+        } : st.mine.find(x => x.id === sig),
+        rep = rm.reports[sig];
+      if (m) it = {
+        id: sig,
+        kind: m.kind,
+        title: m.title,
+        text: m.text || '',
+        screen: m.screen && m.screen !== 'other' ? m.screen : '',
+        at: m.at,
+        ctx: ctxOf(m.ctx),
+        folder: '',
+        images: [],
+        comments: [],
+        fiche: rep?.fiche || '',
+        answer: rep?.answer || '',
+        refused: rep?.refused === true,
+        pill: rep ? K.pillOf(rep, rm) : m.unsent ? {
+          k: 'warn',
+          w: t(T.state.unsent),
+          unsent: true
+        } : {
+          k: '',
+          w: K.stateLine(m)
+        }
+      };
+    }
+    const box = $('[data-sheet]');
+    box.removeAttribute('aria-busy');
+    if (!it) {
+      box.innerHTML = `<p class="f-card" data-unknown>${esc(t(T.unknown))}</p>`;
+      return;
+    }
+    const ctx = it.ctx || {},
+      line = [K.when(it.at, true), T.scr[it.screen] && t(T.ctxScreen, {
+        s: K.screenName(it.screen)
+      }), ctx.size && t(T.size[ctx.size]), ctx.design && t(T.ctxDesign, {
+        d: ctx.design
+      }), ctx.lang && T.langName[ctx.lang], ctx.version && t(T.ctxVersion, {
+        v: ctx.version
+      })].filter(Boolean).join(' · ');
+    // la fiche liée : trouvée par son SOG-nnnn dans roadmap.json, son titre vient de là (jamais du signalement) ; son adresse est faite de l'identifiant vérifié
+    const cd = it.fiche ? rm.cards.get(it.fiche) : null,
+      cdState = cd ? cd.state === 'refused' ? t(T.stRefused) : t(T.cst[cd.state] || T.cst.planned) : '',
+      fiche = it.fiche || it.answer ? `<section class="f-card f-sg-fiche" data-fiche="${esc(it.fiche)}"${it.pill.k ? ` data-kind="${it.pill.k}"` : ''}><h2>${esc(t(T.linked))}</h2>${it.fiche ? `<p data-ftitle><b>${esc(it.fiche)}</b>${cd ? ` — ${esc(t(cd.title))}` : ''}</p>` : ''}${cdState ? `<p class="f-muted" data-fstate>${esc(cdState)}</p>` : ''}${it.answer ? `<p class="f-sg-ans" data-answer><span class="f-muted">${esc(t(T.answer))}</span> <bdi>${esc(it.answer)}</bdi></p>` : ''}${it.fiche ? `<p><a class="f-sg-open" href="#roadmap?fiche=${esc(it.fiche)}" data-open-rm>${esc(t(T.openRm))}</a></p>` : ''}</section>` : '';
+    const cmLi = cm => `<li data-cm="${esc(cm.id)}"><div class="f-muted f-sg-who">${esc(t(T.you))} · ${esc(K.when(cm.at, true))}</div><div class="f-sg-body"><bdi>${esc(cm.text)}</bdi></div></li>`;
+    const side = !poste ? '' : `<div class="f-sg-side"><section class="f-card f-sg-prio" data-prio><h2>${esc(t(T.prio))}</h2>
+      <p class="f-muted f-sg-axis">${esc(t(T.gravL))}</p><div class="f-sg-seg" role="group" aria-label="${esc(t(T.gravA))}">${GRAV.map(g => `<button type="button" class="f-pill" data-grav="${g}" aria-pressed="${it.gravity === g}">${esc(t(T.grav[g]))}</button>`).join('')}</div>
+      <p class="f-muted f-sg-axis">${esc(t(T.freqL))}</p><div class="f-sg-seg" role="group" aria-label="${esc(t(T.freqA))}">${FREQ.map(f => `<button type="button" class="f-pill" data-freq="${f}" aria-pressed="${it.frequency === f}">${esc(t(T.freq[f]))}</button>`).join('')}</div>
+      <p class="f-sg-gname" data-gname role="status"><b>${esc(t(T.grp[groupOf(it)]))}</b></p></section>
+      <section class="f-card f-sg-cms" data-cms><h2>${esc(t(T.comments))} <small class="f-muted" data-cmn>${it.comments.length}</small></h2>${it.comments.length ? '' : `<p class="f-muted" data-cmnone>${esc(t(T.cmNone))}</p>`}<ol class="f-sg-cmlist" data-cmlist>${it.comments.map(cmLi).join('')}</ol>
+      <label class="f-field">${esc(t(T.cmAdd))}<textarea data-cm-text rows="3" maxlength="${MAX_CM}" placeholder="${esc(t(T.cmHint))}"></textarea><small class="f-muted f-rc-count" data-cmcount hidden></small></label>
+      <div class="f-row"><button type="button" class="primary" data-cmadd disabled>${esc(t(T.add))}</button></div></section></div>`;
+    box.innerHTML = `<div class="f-sg-sheet"${poste ? ' data-poste' : ''}><div class="f-sg-main"><p class="f-sg-l1">${it.kind ? `<span class="f-sg-tag">${esc(K.kindLabel(it.kind))}</span> ` : ''}${K.badge(it.pill)}</p><h1 tabindex="-1" data-sheet-title><bdi>${esc(it.title)}</bdi></h1>${line ? `<p class="f-muted f-sg-ctx" data-ctx>${esc(line)}</p>` : ''}${it.folder ? `<p class="f-muted" data-folder>${esc(t(T.pilotsFrom, { tri: it.folder }))}</p>` : ''}${it.text ? `<p class="f-sg-body" data-body><bdi>${esc(it.text)}</bdi></p>` : ''}${it.images.length ? `<p class="f-muted" data-imgs>${esc(t(T.images, { names: it.images.join(', ') }))}</p>` : ''}${fiche}</div>${side}</div>`;
+    $('[data-sheet-title]').focus();
+    if (!poste) return;
+    // ---- la priorité : la mise à jour se voit tout de suite, le verbe l'écrit ; un refus la remet comme avant et le dit
+    let chain = Promise.resolve(),
+      cmBusy = false;
+    const paintPrio = () => {
+      for (const b of view.querySelectorAll('[data-grav],[data-freq]')) {
+        const on = String(b.dataset.grav ? it.gravity === b.dataset.grav : it.frequency === b.dataset.freq);
+        if (b.getAttribute('aria-pressed') !== on) b.setAttribute('aria-pressed', on);
+      }
+      const g = t(T.grp[groupOf(it)]),
+        n = $('[data-gname] b');
+      if (n.textContent !== g) n.textContent = g;
+    };
+    const setPrio = (axis, val) => {
+      if (it[axis] === val) return;
+      const before = {
+        gravity: it.gravity,
+        frequency: it.frequency
+      };
+      it[axis] = val;
+      paintPrio();
+      chain = chain.then(async () => {
+        const res = await K.call('noter', {
+          id: sig,
+          [axis]: val
+        });
+        if (mount.signal.aborted) return;
+        if (res.ok) {
+          if (GRAV.includes(res.gravity)) it.gravity = res.gravity;
+          if (FREQ.includes(res.frequency)) it.frequency = res.frequency;
+        } else {
+          it.gravity = before.gravity;
+          it.frequency = before.frequency;
+          c.notify?.(t(T.prioFail), 'warn');
+        }
+        paintPrio();
+      });
+    };
+    // ---- les commentaires : 2 000 signes (le compteur du formulaire), « Ajouter » écrit par le verbe ; un refus garde le texte dans le champ
+    const paintCm = () => {
+      const x = $('[data-cm-text]'),
+        n = x.value.length,
+        cc = $('[data-cmcount]'),
+        ct = t(T.count, {
+          n,
+          max: MAX_CM
+        });
+      if (cc.hidden !== n < COUNT_FROM) cc.hidden = n < COUNT_FROM;
+      if (cc.textContent !== ct) cc.textContent = ct;
+      const off = cmBusy || !x.value.trim(),
+        b = $('[data-cmadd]');
+      if (b.disabled !== off) b.disabled = off;
+    };
+    const addCm = async () => {
+      const x = $('[data-cm-text]'),
+        body = multi(x.value, MAX_CM);
+      if (!body || cmBusy) return;
+      cmBusy = true;
+      paintCm();
+      const res = await K.call('commenter', {
+        id: sig,
+        text: body
+      });
+      if (mount.signal.aborted) return;
+      cmBusy = false;
+      const cm = res.ok ? commentOf(res.comment) : null;
+      if (cm) {
+        it.comments.push(cm);
+        $('[data-cmlist]').insertAdjacentHTML('beforeend', cmLi(cm));
+        $('[data-cmnone]')?.remove();
+        $('[data-cmn]').textContent = String(it.comments.length);
+        x.value = '';
+      } else c.notify?.(t(T.cmFail), 'warn');
+      paintCm();
+    };
+    on('input', e => e.target.matches('[data-cm-text]') && paintCm());
+    on('click', e => {
+      const p = e.target.closest('[data-grav],[data-freq]');
+      if (p && GRAV.concat(FREQ).includes(p.dataset.grav || p.dataset.freq)) setPrio(p.dataset.grav ? 'gravity' : 'frequency', p
+        .dataset.grav || p.dataset.freq);
+      else if (e.target.closest('[data-cmadd]')) addCm();
+    });
   }
   window.SogSignaler = {
     screen,

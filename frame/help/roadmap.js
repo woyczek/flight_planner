@@ -173,7 +173,7 @@
   }
 
   /** Schéma 2 : frise des jalons, onglets, filtre par application, case « Masquer les livrées », kanban ; les priorités de l'utilisateur (glisser une carte). */
-  async function screenV2(view, c, d) {
+  async function screenV2(view, c, d, want = '') {
     const {
       t
     } = c;
@@ -763,11 +763,35 @@
       });
       draw('input[data-hide]');
     };
+    // #roadmap?fiche=SOG-nnnn (SOG-0410, « Ouvrir dans la feuille de route » d'un signalement) : la fiche montrée là où elle est — son onglet, sa voie dépliée, les livrées
+    // montrées si elle l’est, la vue par thème — ces choix valent pour cet affichage (seul le dépli de sa voie suit la règle des voies) ; la carte prend le focus
+    const target = want ? itemById(want) : null;
+    if (target) {
+      ui.kind = kindOf(target);
+      ui.view = 'themes';
+      if (target.state === 'done') ui.hide = false;
+      const lane = (d.lanes || []).find(l => (l.items || []).includes(target));
+      if (lane) ui.fold = {
+        ...ui.fold,
+        [lane.id]: false
+      };
+    }
     draw();
+    const li = target && view.querySelector(`li.f-rm-item[data-id="${want}"]`);
+    if (li) {
+      li.dataset.target = '';
+      li.tabIndex = -1;
+      li.scrollIntoView({
+        block: 'center'
+      });
+      li.focus({
+        preventScroll: true
+      });
+    }
   }
 
   /** Dessine l'écran de la feuille de route dans view. */
-  async function screen(view, c) {
+  async function screen(view, c, query) {
     const {
       t
     } = c;
@@ -776,7 +800,9 @@
       view.innerHTML = `<h1>${esc(t(T.title))}</h1><p class="f-card">${esc(t(T.missing))}</p>`;
       return;
     }
-    if (d.schema === 'sog-roadmap/2' || d.version >= 2) return screenV2(view, c, d);
+    if (d.schema === 'sog-roadmap/2' || d.version >= 2) return screenV2(view, c, d, typeof query?.fiche === 'string' && ID.test(query
+        .fiche) ?
+      query.fiche : '');
     screenV1(view, c, d);
   }
 

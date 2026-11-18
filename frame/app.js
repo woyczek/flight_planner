@@ -3497,8 +3497,8 @@
     }
     if (tok !== navSeq || location.hash !== at || !box.isConnected) return;
     return id === 'help' ? SogHelp.screen(box, helpCtx(), query) : id === 'recette' ? SogRecette.screen(box, helpCtx()) : id ===
-      'signaler' ? SogSignaler.screen(box, helpCtx()) : SogRoadmap
-      .screen(box, helpCtx());
+      'signaler' ? SogSignaler.screen(box, helpCtx(), query) : SogRoadmap
+      .screen(box, helpCtx(), query); // SOG-0410 : #signaler?sig=SIG-… (la fiche d'un signalement), #roadmap?fiche=SOG-nnnn (une fiche)
   }
   /** Aide en page d'un module monté : panneau replié « Comment s'en servir » tiré de son chapitre (frame/help), et carte
    *  d'accueil des tutoriels à la première ouverture ; chargés après le module, jamais avant, et posés SOUS lui (la carte
