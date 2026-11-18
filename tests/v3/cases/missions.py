@@ -9182,3 +9182,120 @@ def n135(c):
     c.ok('XTEST01' in t and 'XT01' in t and 'Équipe libre' in t and t.count('XTEST02') == 1, t, 'the file carries the callsign and the type, the second callsign without a type, the free text')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0464: the vertical profile of the Carte under the map of the workshop. The tile loader is a FAKE at the level of the browser: the request to the Terrarium host
+# (s3.amazonaws.com/elevation-tiles-prod) is answered by the case — a plain tile built in the page, or a refusal — and every other host is aborted by the harness
+_PROF = f'{E} [data-atprof]'
+_PROF_CV = f'{_PROF} [data-atprofcv]'
+# the pixels of the canvas that are not white, and a fingerprint of its drawing
+_PROF_INK = """(sel) => { const k = document.querySelector(sel); if (!k || !k.width) return -1; const d = k.getContext('2d').getImageData(0, 0, k.width, k.height).data;
+  let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0 && (d[i] < 250 || d[i + 1] < 250 || d[i + 2] < 250)) n++; return n }"""
+_PROF_SIG = "(sel) => { const k = document.querySelector(sel); return k ? k.toDataURL().length + ':' + k.toDataURL().slice(-60) : '' }"
+_PROF_BOX = """(sel) => { const k = document.querySelector(sel); if (!k) return null; const r = k.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), getComputedStyle(k).display] }"""
+# a Terrarium tile of one plain colour (800 m), PNG, as base64 — built in the page
+_PROF_PNG = """(async () => { const c = new OffscreenCanvas(256, 256), g = c.getContext('2d'), v = Math.round((800 + 32768) * 256);
+  g.fillStyle = `rgb(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255})`; g.fillRect(0, 0, 256, 256);
+  const a = new Uint8Array(await (await c.convertToBlob()).arrayBuffer()); let t = ''; for (const x of a) t += String.fromCharCode(x); return btoa(t) })()"""
+
+
+@case('N137', 'Missions › the workshop, « Profil » under the map (SOG-0464): the vertical profile of the Carte (modules/maps/lib/profile_embed.js, not a second one) under the '
+      'route of the part shown — folded at 390, open at 1280, a canvas of fixed height; a refused tile says « relief indisponible » and nothing is invented; with a fake loader '
+      '(a plain Terrarium tile built in the page) the canvas is painted and the length of the route is said; a place moved redraws it by the one path of the workshop; fewer '
+      'than two places: « Placez deux lieux pour voir le profil »; no request leaves for a real host',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0464 (the user: « on a perdu le profil vertical dans la bagarre ? »; the ergonomist: reuse the Carte\'s profile, folded at the phone; modules/maps/INTEGRATION.md '
+      '§ 7 ter): modules/missions/editor_view.js `edProfHtml`, `edProfile` (called by `edRefresh` and `edAfter`), `edTileLoad`; modules/missions/EDITOR.md § 7 quadragies')
+def n137(c):
+    T = lambda k: norm(row(c, k, EDTX_FILE))  # noqa: E731
+    asked, png, seen = [], [], []
+    mode = {'tiles': 'refuse'}
+
+    def fake(route):
+        asked.append(route.request.url)
+        if mode['tiles'] == 'refuse':
+            return route.abort('blockedbyclient')
+        route.fulfill(status=200, content_type='image/png', body=png[0])
+
+    c.page.on('request', lambda r: seen.append(r.url))
+    c.context.route(re.compile(r'^https://s3\.amazonaws\.com/elevation-tiles-prod/'), fake)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    import base64
+    import json
+    png.append(base64.b64decode(c.js(_PROF_PNG)))
+    c.ok(png[0][:4] == b'\x89PNG', png[0][:4], 'the fake tile is a PNG built in the page')
+
+    def modify():
+        c.until(f"!!document.querySelector('{R} [data-rowid=\"X-001A\"]')", timeout=10000, what='the registry')
+        c.tap(f'{R} [data-rowid="X-001A"] > summary')
+        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"!!document.querySelector('{_PROF_CV}')", timeout=15000, what='the section « Profil » of the workshop')
+
+    def clear():
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js(f"document.querySelector('{_PROF}').scrollIntoView({{block: 'center'}})")
+
+    # 1. 1280, the tiles are REFUSED: the section is under the map, open, 200 px high; it says « relief indisponible », nothing else is invented
+    modify()
+    c.ok(c.js(f"!!(document.querySelector('{E} [data-atmap]').compareDocumentPosition(document.querySelector('{_PROF}')) & Node.DOCUMENT_POSITION_FOLLOWING)"), '',
+         'the section « Profil » follows the map in the page')
+    box = c.js(_PROF_BOX, _PROF_CV)
+    c.ok(box[0] > 300 and box[1] == 200 and box[2] != 'none', box, 'at 1280 the section is open: the canvas takes the width of its column, 200 px high')
+    c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.includes('{T('atProfNoRelief')[:16]}')", timeout=15000, what='« relief indisponible » said')
+    c.ok('relief indisponible' in T('atProfNoRelief').lower() and T('atProfNoRelief') in norm(c.text(f'{_PROF} [data-atprofsay]')), c.text(f'{_PROF} [data-atprofsay]'),
+         '« Relief indisponible » is said under the profile when the tile is refused')
+    c.ok(len(asked) >= 1, asked, 'the loader was asked for tiles (and refused)')
+    clear()
+    c.shot('P10a_1280_sans_relief.png')
+    ed_leave(c)
+
+    # 2. a loader that returns invented tiles: the canvas is painted, the length of the route is said; a place moved redraws
+    mode['tiles'] = 'ok'
+    modify()
+    c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.includes('NM')", timeout=15000, what='the length of the route said (terrain read)')
+    ink = c.js(_PROF_INK, _PROF_CV)
+    c.ok(ink > 200 and c.js(f"document.querySelector('{_PROF_CV}').dataset.empty || ''") == '', ink, 'with invented tiles (terrain: true) the canvas is painted (pixels that are not white)')
+    c.ok('relief indisponible' not in c.text(f'{_PROF} [data-atprofsay]').lower(), c.text(f'{_PROF} [data-atprofsay]'), 'and it does not say the relief is unavailable')
+    sig, says = c.js(_PROF_SIG, _PROF_CV), norm(c.text(f'{_PROF} [data-atprofsay]'))
+    clear()
+    c.shot('P10a_1280_profil.png')
+    ed_places(c)
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="4"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces] [data-k^=edpl][data-i=\"4\"][data-f=lat]')", what='the row of PT1 open')
+    c.page.fill(f'{E} [data-edplaces] [data-k^=edpl][data-i="4"][data-f=lat]', '45.6')
+    c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.trim() !== {json.dumps(says)}", timeout=10000, what='the length of the route changed')
+    c.until(f"(() => {{ const k = document.querySelector('{_PROF_CV}'); return k.toDataURL().length + ':' + k.toDataURL().slice(-60) }})() !== {json.dumps(sig)}",
+            timeout=10000, what='the canvas redrawn')
+    c.ok(c.js(_PROF_INK, _PROF_CV) > 200, c.js(_PROF_INK, _PROF_CV), 'a place moved: the canvas is redrawn and still painted')
+    ed_leave(c)
+
+    # 3. fewer than two places: the empty state
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{_PROF_CV}')", timeout=10000, what='the section « Profil » of a created mission')
+    c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.trim() !== ''", timeout=10000, what='the empty state said')
+    c.eq([norm(c.text(f'{_PROF} [data-atprofsay]')), c.js(f"document.querySelector('{_PROF_CV}').dataset.empty")], [T('atProfEmpty'), '1'],
+         'a mission without two places says « Placez deux lieux pour voir le profil » (no drawing)', what='empty state')
+    ed_leave(c)
+
+    # 4. 390: folded behind its button; unfolded, 160 px high, painted
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.wait(400)
+    modify()
+    c.eq([c.js(f"document.querySelector('{_PROF} [data-atprofbody]').getBoundingClientRect().height"), c.js(f"document.querySelector('{_PROF} [data-do=edprof]').getAttribute('aria-expanded')")],
+         [0, 'false'], 'at 390 the section is folded: its body takes no room, its button says it is not expanded', what='folded at 390')
+    c.tap(f'{_PROF} [data-do="edprof"]')
+    c.until(f"document.querySelector('{_PROF} [data-do=edprof]').getAttribute('aria-expanded') === 'true' && document.querySelector('{_PROF_CV}').getBoundingClientRect().width > 250",
+            timeout=10000, what='the section unfolded')
+    c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.includes('NM')", timeout=15000, what='the terrain read')
+    box = c.js(_PROF_BOX, _PROF_CV)
+    c.ok(box[1] == 160 and 250 < box[0] <= 390 and c.js(_PROF_INK, _PROF_CV) > 200, [box, c.js(_PROF_INK, _PROF_CV)], 'unfolded at 390: 160 px high, the width of the column, painted')
+    clear()
+    c.shot('P10a_390_profil.png')
+    ed_leave(c)
+    # no request left for a real host: the Terrarium host was answered by the case, the others aborted by the harness
+    c.ok(all(u in asked for u in seen if 's3.amazonaws.com' in u) and len(asked) >= 2, [len(asked), [u for u in seen if 's3.amazonaws.com' in u and u not in asked][:3]],
+         'every request to the Terrarium host went through the fake loader of the case; nothing reached the network')
+    c.context.unroute(re.compile(r'^https://s3\.amazonaws\.com/elevation-tiles-prod/'))
+    c.js(_REG_CLEAR)

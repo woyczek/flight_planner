@@ -1228,6 +1228,26 @@ The ergonomist's decision: ONE callsign field, common to the workshop and the as
   in its list closes the list.
 - **Written**: nothing until the author types or chooses; the format of the team (`name`, `service`, `type`, `role`) does not change; a free text stays as typed.
 
+### 7 quadragies. « Profil » under the map: the vertical profile of the Carte, reused (18 Nov 2026; SOG-0464; noreg N137, N93, N110, N118, N121, N129 to N132, N134)
+
+The user: « on a perdu le profil vertical dans la bagarre ? » — behind a fold if need be, but the terrain matters when drawing the route of a mission. The ergonomist's decision: REUSE
+the Carte's profile (`modules/maps/lib/profile_embed.js`, contract in `modules/maps/INTEGRATION.md` § 7 ter), do not write a second one.
+
+- **Where**: a section `[data-atprof]` right under the map, before the unfolding (`edProfHtml`): a button « Profil » (`data-do="edprof"`, `s.ed.profOpen`) and a canvas of fixed
+  height (160 px; 200 px on a wide module). Folded at the phone, open on a wide module (the button is then hidden), like the map.
+- **What is reused**: `drawProfile` of `profile_embed.js`, imported on demand (`import()`: a library that does not come never breaks the workshop); the route is THE line `route` of
+  `e.mapFeats` (what the map draws; not recomputed, positions already bounded); the loader is the Map's (`ctx.net.fetch`, as `tileLoader` of `maps/state.js`), one per sitting
+  (`edTileLoad`) because the profile keeps the tiles read per loader; the cruise level is `cruiseLevelFt` of the reader, bounded (0 = the terrain alone).
+- **What is written**: `edProfile(s)`, called by the ONE path of redraw (`edRefresh`, which `edLive` calls at most once per frame during a gesture) and by `edAfter` (the canvas is
+  new at each drawing of the screen). Nothing is redrawn when the route, the level and the width did not change (a key kept on the canvas); folded (width 0): nothing; a newer
+  drawing took the place (`stale`): nothing. No timer, no second path.
+- **What it says**: the length of the route when the relief was read; « Relief indisponible » (and the route drawn without it) when the tile is refused or the host not declared in
+  `net` of the module (the expected state until Features SOG adds `s3.amazonaws.com/elevation-tiles-prod` and `../maps/lib/profile_embed.js` + its four scripts to `module.js`);
+  « Placez deux lieux pour voir le profil » under two places. Nothing is invented.
+- **A wide module**: the sticky left column (map, profile, unfolding) is taller than the screen; it is bounded to the screen and scrolls in itself, otherwise it became the tallest
+  column of the grid and no longer stuck while the sheet scrolled (N121).
+- **Case N137**: the tile loader is a fake at the level of the browser (a plain Terrarium tile built in the page, or a refusal); every other host is aborted by the harness.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

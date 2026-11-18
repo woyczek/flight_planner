@@ -156,6 +156,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:contents} /* au téléphone : la carte, les Lieux, le déroulé, la fiche */
 [data-module="missions"] .ms-atmap{order:1}
 [data-module="missions"] .ms-atplaces{order:2}
+[data-module="missions"] .ms-atprof{order:1}
 [data-module="missions"] .ms-atflow{order:3}
 [data-module="missions"] .ms-atsheet{order:4}
 [data-module="missions"] .ms-atplhead{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;margin:0 0 8px}
@@ -170,6 +171,13 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmap{margin:0 0 12px}
 [data-module="missions"] .ms-atmapbtn{min-height:44px}
 [data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
+[data-module="missions"] .ms-atprof{margin:0 0 12px}
+[data-module="missions"] .ms-atprofbtn{min-height:44px}
+[data-module="missions"] .ms-atprofbody{display:none;margin-top:8px}
+[data-module="missions"] .ms-atprof[data-open="1"] .ms-atprofbody{display:block}
+[data-module="missions"] .ms-atprofcv{display:block;width:100%;height:160px;box-sizing:border-box;border:1px solid var(--sog-line,#ddd);background:#fff}
+[data-module="missions"] .ms-atprofcv[data-empty="1"]{visibility:hidden}
+[data-module="missions"] .ms-atprofsay{margin:4px 0 0;min-height:1.5em} /* la ligne a sa place avant sa phrase : rien ne bouge quand le relief arrive */
 [data-module="missions"] .ms-atmap[data-open="1"] .ms-atmapbody{display:block}
 [data-module="missions"] .ms-atmapframe{position:relative;height:300px;overflow:hidden;box-sizing:border-box;border:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmapslot,[data-module="missions"] .ms-atsketch{position:absolute;inset:0}
@@ -296,11 +304,13 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 @container (min-width: 850px){
   [data-module="missions"] .ms-atgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(22em,26em);gap:16px;align-items:start}
   [data-module="missions"] .ms-atmain,[data-module="missions"] .ms-atside{display:block}
-  [data-module="missions"] .ms-atmapbtn{display:none}
+  [data-module="missions"] .ms-atmapbtn,[data-module="missions"] .ms-atprofbtn{display:none}
+  [data-module="missions"] .ms-atprofbody{display:block;margin-top:0}
+  [data-module="missions"] .ms-atprofcv{height:200px}
   [data-module="missions"] .ms-atmapbody{display:block;margin-top:0}
   [data-module="missions"] .ms-atmapframe{height:min(46dvh,440px)}
   /* la carte et le déroulé restent en vue pendant que la fiche défile (l'ergonome, 18 nov.) */
-  [data-module="missions"] .ms-atmain{position:sticky;top:var(--f-pane-top,70px);align-self:start}
+  [data-module="missions"] .ms-atmain{position:sticky;top:var(--f-pane-top,70px);align-self:start;max-height:calc(100dvh - var(--f-pane-top,70px) - 72px);overflow-y:auto;overscroll-behavior:contain} /* SOG-0464 : avec le profil, la colonne est plus haute que l'écran ; bornée, elle défile en elle-même et reste collée (sinon elle devenait la plus haute de la grille et ne collait plus) */
   [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:inline}
   /* la fiche d'un tiroir sur un module large : ses trois groupes dépliés, leurs titres ne se touchent pas */
   [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:block}
@@ -975,6 +985,68 @@ function edRefSeek(s) {
       q: text
     }), 'warn');
   }).catch(() => {});
+}
+
+/** Le repli « Profil » sous la carte (SOG-0464) : le profil vertical de la Carte (modules/maps/lib/profile_embed.js) sous la route de la partie
+ *  affichée. Au téléphone il est replié (le bouton le déplie) ; sur un module large il est ouvert, sans bouton. Le canvas est peint par edProfile. */
+function edProfHtml(s) {
+  const open = !!s.ed.profOpen;
+  return `<section class="ms-atprof" data-atprof data-open="${open ? '1' : ''}"><button type="button" class="ms-atprofbtn" data-do="edprof" aria-expanded="${open}">${esc(s.tt(EDTX.atProf))}</button><div class="ms-atprofbody f-card" data-atprofbody><canvas class="ms-atprofcv" data-atprofcv role="img" aria-label="${esc(s.tt(EDTX.atProfAlt))}"></canvas><p class="f-muted ms-atprofsay" data-atprofsay></p></div></section>`;
+}
+
+/** Le chargeur de tuiles de relief du profil : celui de la Carte (tileLoader de maps/state.js), par ctx.net.fetch ; refusé, il lève (le profil le dit). Un seul par
+ *  séance : le profil garde les tuiles lues par chargeur. */
+function edTileLoad(s) {
+  return s.ed.profLoad ||= async url => {
+    const r = await s.ctx.net.fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.blob();
+  };
+}
+
+/** Le profil vertical sous la route que la carte dessine (SOG-0464) : la liste est CELLE de la carte (la ligne `route` de e.mapFeats, pas recalculée), le niveau
+ *  celui de croisière de la mission s'il est écrit. Appelé par edRefresh (le chemin de redessin, au plus une fois par image pendant un geste : edLive) et après chaque
+ *  dessin de l'écran. Rien n'est refait si la route, le niveau et la largeur n'ont pas changé (la clé gardée sur le canvas) ; replié (largeur nulle) : rien.
+ *  Un dessin plus récent a pris la place (stale) : rien. Sans relief : le dire ; sous deux lieux : l'état vide. */
+function edProfile(s) {
+  const e = s.ed,
+    cv = s.el.querySelector('[data-atprofcv]'),
+    say = s.el.querySelector('[data-atprofsay]'),
+    W = cv?.clientWidth || 0;
+  if (!cv || !say || !W) return;
+  const pts = (e.mapFeats?.lines?.find(l => l.id === 'route')?.points || []).map(p => ({
+      lat: p.lat,
+      lon: p.lon
+    })),
+    lv = MS.readMission(edDoc(e))?.cruiseLevelFt,
+    levelFt = Number.isFinite(lv) && lv > 0 ? Math.min(lv, 60000) : 0,
+    key = JSON.stringify([pts, levelFt, W]),
+    put = (text, empty) => {
+      if (say.textContent !== text) say.textContent = text;
+      const v = empty ? '1' : '';
+      if ((cv.dataset.empty || '') !== v) cv.dataset.empty = v;
+    };
+  if (cv.__profKey === key) return;
+  cv.__profKey = key;
+  if (pts.length < 2) {
+    cv.__profRun = (cv.__profRun || 0) + 1; // un dessin encore en route ne peint plus
+    return put(s.tt(EDTX.atProfEmpty), true);
+  }
+  import('../maps/lib/profile_embed.js').then(m => m.drawProfile(cv, pts, {
+    load: edTileLoad(s),
+    levelFt
+  })).then(r => {
+    if (state() !== s || s.ed !== e || cv.__profKey !== key || r?.stale) return;
+    if (!r) {
+      cv.__profKey = ''; // les bibliothèques du profil ne sont pas venues : le prochain redessin réessaie
+      return put(s.tt(EDTX.atProfNoRelief), true);
+    }
+    put(r.terrain ? s.tt(EDTX.atProfNm, {
+      nm: Math.round(r.nm * 10) / 10
+    }) : s.tt(EDTX.atProfNoRelief), false);
+  }).catch(() => {
+    if (cv.__profKey === key) put(s.tt(EDTX.atProfNoRelief), true);
+  });
 }
 
 /** Le sélecteur « Vue de la carte », sous le cadre : « Tout — la vue de l'auteur », puis la vue du pilote au départ et après chaque
@@ -1939,6 +2011,7 @@ export function edAfter(s) {
     edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée
     s.ed.mapLook = null; // le design a pu changer de ton entre deux dessins
     edMapShow(s);
+    edProfile(s); // SOG-0464 : le canvas du profil est neuf à chaque dessin de l'écran
     edPlShow(s); // SOG-0472 : la liste des Lieux reprend sa place, la ligne choisie en vue
   } catch {
     /* la carte ne casse jamais le dessin : l'écran garde son croquis */
@@ -2216,7 +2289,7 @@ export function edHtml(s) {
   return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edFlowHtml(s, doc, run)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : `${edPlacesCardHtml(s, doc)}${e.veil || (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}`}</div></div>
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}${edFlowHtml(s, doc, run)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : `${edPlacesCardHtml(s, doc)}${e.veil || (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}`}</div></div>
     <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
 }
@@ -2532,6 +2605,7 @@ function edRefresh(s) {
   if (map && e.lastThumb !== thumb) map.innerHTML = e.lastThumb = thumb;
   e.mapFeats = edMapFeats(s, doc, run);
   edMapShow(s);
+  edProfile(s); // SOG-0464 : le profil suit la route que la carte vient de recevoir (au plus un dessin par route : sa clé)
   if (run) {
     // l'essai : l'heure, le journal (des textes), l'état de chaque carte, le bouton « Ouvrir à la main » (le même élément)
     const log = q('[data-trlog]'),
@@ -2876,6 +2950,9 @@ export function edClick(s, b) {
       return draw(s);
     case 'edmap':
       s.ed.mapOpen = !s.ed.mapOpen;
+      return draw(s);
+    case 'edprof': // SOG-0464 : le repli « Profil » (au téléphone) ; le dessin se refait avec l'écran (edAfter)
+      s.ed.profOpen = !s.ed.profOpen;
       return draw(s);
     case 'edmapfit': // « Recentrer » : la vue revient au cadre de la mission (rien n'est redessiné)
       return EM.fit();

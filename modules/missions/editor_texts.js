@@ -384,6 +384,18 @@ export const EDTX = {
     'Misiones › Registro › Taller'
   ],
   atMap: ['Carte de la mission', 'Map of the mission', 'Karte der Mission', 'Mapa de la misión'],
+  // SOG-0464 : le profil vertical de la Carte sous la carte de l'atelier (titre du repli, légende du dessin, relief absent, état vide)
+  atProf: ['Profil', 'Profile', 'Profil', 'Perfil'],
+  atProfAlt: ['Profil vertical sous la route de la partie affichée', 'Vertical profile under the route of the part shown',
+    'Vertikalprofil unter der Route des angezeigten Teils', 'Perfil vertical bajo la ruta de la parte mostrada'
+  ],
+  atProfNoRelief: ['Relief indisponible : le profil est tracé sans lui.', 'Terrain unavailable: the profile is drawn without it.',
+    'Gelände nicht verfügbar: Das Profil wird ohne es gezeichnet.', 'Relieve no disponible: el perfil se traza sin él.'
+  ],
+  atProfEmpty: ['Placez deux lieux pour voir le profil.', 'Place two places to see the profile.',
+    'Platzieren Sie zwei Orte, um das Profil zu sehen.', 'Coloque dos lugares para ver el perfil.'
+  ],
+  atProfNm: ['Route : {nm} NM', 'Route: {nm} NM', 'Route: {nm} NM', 'Ruta: {nm} NM'],
   // la carte sur son fond uni (hors ligne, ou le fond de la suite n'est pas venu) : dit une fois par séance, en notification
   mmNone: ['Carte indisponible sur cet appareil.', 'Map unavailable on this device.', 'Karte auf diesem Gerät nicht verfügbar.',
     'Mapa no disponible en este dispositivo.'
