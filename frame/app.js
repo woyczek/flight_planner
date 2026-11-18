@@ -642,6 +642,15 @@
     ],
     cancel: ['Annuler', 'Cancel', 'Abbrechen', 'Cancelar'],
     close: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+    // SOG-0458 : la question du cadre quand on quitte un module qui a dit « j'ai des changements non enregistrés » (ctx.unsaved)
+    leave: {
+      // les mots de l'atelier des missions (SOG-0454), pour que « Annuler » et le menu disent la même chose
+      ask: ['Quitter sans enregistrer ? Les changements seront perdus.', 'Leave without saving? The changes will be lost.',
+        'Ohne Speichern verlassen? Die Änderungen gehen verloren.', '¿Salir sin guardar? Los cambios se perderán.'
+      ],
+      ok: ['Quitter sans enregistrer', 'Leave without saving', 'Ohne Speichern verlassen', 'Salir sin guardar'],
+      stay: ['Rester', 'Stay', 'Bleiben', 'Quedarse']
+    },
     // SOG-0400 : l'envoi de ce qui attend, avant un travail du lanceur, dépasse la borne : le travail part, la page le dit
     jobLate: ['L’envoi de vos données est long : le travail part avec ce que ce poste porte déjà.',
       'Sending your data is slow: the job starts with what this workstation already holds.',
@@ -3904,10 +3913,70 @@
   });
   let current = null, // { id, mod }
     navSeq = 0; // jeton de navigation : le dernier changement d'adresse gagne
+  // SOG-0458 — la sortie gardée : un module dit « j'ai des changements non enregistrés » (ctx.unsaved) ; le cadre pose SA question avant de le
+  // démonter (menu, « Retour », précédent du navigateur : tout passe par route()), et le navigateur avertit à la fermeture de l'onglet.
+  // Rien n'est demandé quand rien n'a changé ; la déclaration tombe avec le démontage du module (life), il n'y a rien à désarmer.
+  const unsavedBy = new Map(); // clé du module (id, ou id#pane) → () => booléen
+  let leaving = false, // la question de sortie est posée : une autre adresse arrivée entre-temps n'en pose pas une seconde
+    cameFrom = null, // l'entrée de l'historique que le dernier changement d'adresse a quittée (API Navigation, quand le navigateur l'a)
+    restoring =
+    null; // l'adresse que le cadre vient de remettre en traversant l'historique : le hashchange qui suit n'est pas une navigation
+  /** Vrai quand un module dit avoir des changements non enregistrés (la fonction qu'il a déclarée répond vrai). Une fonction qui jette compte pour « non modifié ». */
+  const unsavedNow = () => {
+    for (const fn of unsavedBy.values()) {
+      try {
+        if (fn()) return true;
+      } catch (e) {
+        console.warn('ctx.unsaved:', e);
+      }
+    }
+    return false;
+  };
+  /** Pose la question de sortie. Oui : l'adresse demandée est rejouée sans question. Non : l'adresse d'avant est remise, sans rien démonter — en
+   *  traversant l'historique jusqu'à l'entrée quittée (API Navigation : « précédent » refusé rend l'entrée, la pile ne change pas, un second
+   *  « précédent » repose la question) ; sans cette API, par replaceState (l'entrée où le navigateur était allé est réécrite). */
+  async function askLeave() {
+    if (leaving) return;
+    leaving = true;
+    let yes = false;
+    try {
+      yes = await ask(t(T.leave.ask), {
+        ok: t(T.leave.ok),
+        cancel: t(T.leave.stay)
+      });
+    } finally {
+      leaving = false;
+    }
+    if (yes) return route(null, true);
+    const nav = window.navigation,
+      from = cameFrom;
+    if (!from?.url) return;
+    const back = new URL(from.url).hash;
+    if (back === location.hash) return;
+    restoring = back; // le hashchange de la traversée n'est pas une navigation : route() le laisse passer
+    if (nav?.traverseTo && nav.currentEntry && from.key !== nav.currentEntry.key) {
+      try {
+        nav.traverseTo(from.key).finished.catch(() => {
+          restoring = null;
+          history.replaceState(history.state, '', back);
+        });
+        return;
+      } catch {
+        /* l'entrée n'existe plus : le repli ci-dessous */
+      }
+    }
+    restoring = null;
+    history.replaceState(history.state, '', back);
+  }
   /** Affiche l'écran de l'adresse (#module, #module?…, #conflicts, #settings) ; démonte le module précédent. Une seule
    *  navigation à la fois : chaque appel prend un jeton, et une reprise après un await dont le jeton n'est plus le dernier
    *  abandonne sans rien écrire (la vue est déjà vidée par la navigation suivante, qui a démonté le module en cours de montage). */
-  async function route() {
+  async function route(ev, leaveOk = false) {
+    if (restoring !== null) { // SOG-0458 : le cadre vient de remettre l'adresse d'avant (refus de quitter) : rien à router
+      const was = restoring;
+      restoring = null;
+      if (location.hash === was) return;
+    }
     const first = !routed;
     routed = true;
     routeLog.push({
@@ -3934,6 +4003,9 @@
     // écrans du cadre (aide, feuille de route, réglages, conflits) par-dessus le module courant, qui reste monté
     if (over && location.hash === over.returnHash) return closeOver();
     if (SCREENS.includes(id) && (current || over)) return openOver(id, h);
+    if (!leaveOk) {
+      if (unsavedNow()) return askLeave(); // SOG-0458 : le module a des changements non enregistrés : la question avant tout démontage
+    }
     if (over) closeOver(false);
     const tok = ++navSeq;
     paintModule(id);
@@ -4024,6 +4096,7 @@
    *  openPane voit alors le volet fermé et ne le monte pas). */
   function closePane() {
     if (!pane) return;
+    unsavedBy.delete(`${pane.id}#pane`);
     pane.life?.abort();
     try {
       pane.mod?.unmount?.();
@@ -4553,6 +4626,16 @@
         return level;
       },
       query,
+      // SOG-0458 : ctx.unsaved(() => booléen) — la fonction que le cadre interroge au moment de quitter (changement d'écran, « Retour », fermeture de l'onglet) ;
+      // vrai : le cadre pose sa question avant de démonter le module et le navigateur avertit à la fermeture de l'onglet ; ctx.unsaved(null) retire la déclaration
+      unsaved: fn => {
+        const key = entry.id + (inPane ? '#pane' : '');
+        if (typeof fn !== 'function') return void unsavedBy.delete(key);
+        unsavedBy.set(key, fn);
+        life?.addEventListener('abort', () => unsavedBy.get(key) === fn && unsavedBy.delete(key), {
+          once: true
+        });
+      },
       // ctx.consume(clés) : les valeurs de ces clés de ctx.query, retirées de l'adresse en une seule écriture (replaceState, sans
       // remonter le module) ; with, from et pane restent au cadre ; dans un volet, l'adresse n'est pas la sienne : rien
       // n'est réécrit (INTEGRATION § 6.1)
@@ -5694,6 +5777,15 @@
     setTimeout(checkAsk, 4e3); // SOG-0347 : ce que le lanceur retient, dit dès le chargement puis chaque minute
     setInterval(checkAsk, 60e3);
     window.addEventListener('hashchange', route);
+    window.navigation?.addEventListener('currententrychange', e => {
+      cameFrom = e.from; // SOG-0458 : l'entrée quittée, pour la remettre si l'utilisateur refuse de quitter
+    });
+    // SOG-0458 : fermer l'onglet, recharger ou quitter la page avec des changements non enregistrés : l'avertissement du navigateur (son texte, pas le nôtre)
+    window.addEventListener('beforeunload', e => {
+      if (!unsavedNow()) return;
+      e.preventDefault();
+      e.returnValue = '';
+    });
     infoData.watch('cache/', paths => {
       if (paths.some(p => /^cache\/[\w-]+\/status\.json$/.test(p))) readModuleLines();
       if (paths.includes(PENDING_REPORTS)) readPending();
@@ -6207,6 +6299,7 @@
     net,
     syncNow,
     reloads: reloadsState,
+    unsaved: unsavedNow, // SOG-0458 (diagnostic, tests)
     longTasks: longState,
     profiler: profilerState,
     setProfiler,

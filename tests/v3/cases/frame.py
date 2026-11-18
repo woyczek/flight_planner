@@ -5309,6 +5309,81 @@ def a256(c):
     c.check_errors()
 
 
+@case('A264', 'ctx.unsaved (SOG-0458): a module that says « I have unsaved changes » is not unmounted without the frame\'s question (menu, Back), refusing keeps it intact on its address, the browser warns when the tab closes, and nothing is asked when nothing changed', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0458 (the ergonomist, after SOG-0454: the missions workshop asks before « Cancel » but the menu, « Back » and closing the tab lost the work in silence): ctx.unsaved(() => bool) — one function the frame asks when the user leaves — and, while it says true, the frame asks ITS question (« Quitter sans enregistrer ? ») before it unmounts the module (menu, Back, another address of the same module: every change of address goes through the router), goes back in the history to the entry that was left (same entries, same position: a second Back asks again, Forward leads nowhere else) and keeps the module mounted and intact when the user stays, lets go when the user leaves, arms the browser warning of the tab (beforeunload) for as long as a module says so, and asks nothing when nothing changed; the declaration falls with the unmounting')
+def a264(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    # the example module, with one line more at its mount: it declares its changes through ctx.unsaved (a function the frame asks)
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    head = 'export async function mount(el, ctx) {'
+    assert src.count(head) == 1
+    patched = src.replace(head, head + "\n  window.__d = false; window.__ctx = ctx; window.__mounts = (window.__mounts || 0) + 1; el.dataset.mark = 'kept'; ctx.unsaved?.(() => window.__d);")
+    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
+    bye = "new Event('beforeunload', { cancelable: true })"
+    c.open('hello', wait=False)
+    c.until("!!document.querySelector('[data-module=hello]') && window.__mounts === 1", timeout=20000, what='the module mounted')
+    # nothing changed: nothing asked, the module is left
+    c.js("() => { location.hash = '#fuel' }")
+    c.until("!document.querySelector('[data-module=hello]') && location.hash.startsWith('#fuel')", timeout=20000, what='left without a question')
+    c.eq(c.count('.f-modal'), 0, 'nothing changed: no question', what='no question')
+    # changed: the menu asks the frame's question, staying keeps the module and its address
+    c.js("() => { location.hash = '#hello' }")
+    c.until("!!document.querySelector('[data-module=hello]') && window.__mounts === 2", timeout=20000, what='mounted again')
+    c.js("() => { window.__d = true; location.hash = '#fuel' }")
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=20000, what='the frame asks before leaving')
+    c.eq(c.js("() => [window.SogFrame.unsaved(), ((document.querySelector('.f-modal p') || {}).textContent || '').startsWith('Quitter sans enregistrer ? Les changements seront perdus.'.replace(' ?', ' ?'))]"), [True, True], "the frame's question (the page is in French: « Il reste des changements non enregistrés »)", what='question text')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", timeout=10000, what='the question is closed')
+    c.eq(c.js("() => [location.hash, !!document.querySelector('[data-module=hello][data-mark=kept]'), window.__mounts, window.__d]"), ['#hello', True, 2, True], 'stay: the address is back, the module is the same one (not mounted again) and its changes are intact', what='stayed')
+    # the same module on another address is a remount: asked too
+    c.js("() => { location.hash = '#hello?x=1' }")
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=10000, what='a change of address of the same module asks too')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", timeout=10000, what='closed')
+    c.eq(c.js("() => [location.hash, window.__mounts]"), ['#hello', 2], 'the same module on another address is a remount: asked, refused, nothing moved', what='same module')
+    # the question is open again (menu): the browser warning is armed as long as the function says true
+    c.js("() => { location.hash = '#fuel' }")
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='asked again')
+    # the browser warns at the closing of the tab for as long as a module says so (the page is not left: the event is only sent)
+    c.eq(c.js("() => { const e = " + bye + "; window.dispatchEvent(e); return e.defaultPrevented }"), True, 'changes not saved: the browser is asked to warn', what='beforeunload armed')
+    # leave: the module goes, the declaration falls with it
+    c.tap('.f-modal [data-ok]')
+    c.until("!document.querySelector('[data-module=hello]') && location.hash.startsWith('#fuel')", timeout=20000, what='left')
+    c.eq(c.js("() => [window.SogFrame.unsaved(), (() => { const e = " + bye + "; window.dispatchEvent(e); return e.defaultPrevented })()]"), [False, False], 'left: no declaration left, the browser warns of nothing', what='disarmed')
+    # a declaration that throws counts as « nothing changed »; unsaved(null) lifts it
+    c.js("() => { location.hash = '#hello' }")
+    c.until("!!document.querySelector('[data-module=hello]') && window.__mounts === 3", timeout=20000, what='mounted a third time')
+    # « Back »: the question is asked and, refused, the history is exactly as it was — the same entries, the same position; a second « Back » asks again and « Forward » leads nowhere else
+    hist = "() => [navigation.currentEntry.index, navigation.entries().map(e => new URL(e.url).hash).join(' ')]"
+    h0 = c.js(hist)
+    c.js("() => { window.__d = true; history.back() }")
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=10000, what='« Back » asks too')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal') && location.hash === '#hello'", timeout=10000, what='closed, the address is back')
+    c.eq(c.js("() => [location.hash, !!document.querySelector('[data-module=hello][data-mark=kept]'), window.__mounts]"), ['#hello', True, 3], '« Back » refused: the module stays on its address, the same one (not mounted again)', what='back refused')
+    c.eq(c.js(hist), h0, '« Back » refused: the history is intact (same entries, same position)', what='history intact')
+    c.js("() => history.back()")
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=10000, what='a second « Back » asks again')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal') && location.hash === '#hello'", timeout=10000, what='closed again')
+    c.js("() => history.forward()")
+    c.wait(600)
+    c.eq(c.js("() => [location.hash, !!document.querySelector('.f-modal'), !!document.querySelector('[data-module=hello][data-mark=kept]')]"), ['#hello', False, True], '« Forward » leads nowhere else: the module is where it was, nothing asked', what='forward')
+    c.eq(c.js(hist), h0, 'after the second refusal and « Forward »: the history is still the same', what='history still intact')
+    c.js("() => { window.__d = false }")
+    c.js("() => window.__ctx.unsaved(() => { throw new Error('boom') })")
+    c.eq(c.js("() => window.SogFrame.unsaved()"), False, 'a function that throws: not changed (and the frame is not disturbed)', what='throws')
+    c.js("() => { window.__d = true; window.__ctx.unsaved(() => window.__d); window.__ctx.unsaved(null) }")
+    c.eq(c.js("() => window.SogFrame.unsaved()"), False, 'unsaved(null): saved, nothing is kept', what='saved')
+    c.js("() => { location.hash = '#fuel' }")
+    c.until("!document.querySelector('[data-module=hello]') && location.hash.startsWith('#fuel')", timeout=20000, what='left without a question once saved')
+    c.eq(c.count('.f-modal'), 0, 'saved: no question', what='no question after save')
+    c.check_errors()
+
+
 @case('A263', 'ctx.live.watch(fn) (SOG-0447): every valid fix is given to each subscriber (a frozen copy), a subscriber that throws disturbs nothing, at most fifty subscribers, the unmounting of the module unsubscribes', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0447 (the ergonomist: one subscription of the frame is worth more than a timer per module — « Affectation » judges its keys at each fix): ctx.live.watch(fn) calls fn(fix) at each valid fix as the frame receives it (a copy frozen: a subscriber cannot change what the others see), returns the function that unsubscribes, a subscriber that throws is isolated, fifty subscribers at most, and the module\'s life (its unmounting) unsubscribes by itself')
