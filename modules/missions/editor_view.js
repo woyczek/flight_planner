@@ -91,10 +91,17 @@
 // comme point ») et la POSITION de la base (lat, lon du lieu) ; le format du fichier ne change pas (id, name, lat, lon). Écoutes, arrêt :
 // celles du bloc des terrains (edAd), la liste cherchée dans la fiche (data-adform).
 //
+// L'indicatif d'une équipe (SOG-0488) : le champ d'indicatif de la suite (frame/lib/callsign_field.js), un TROISIÈME bloc du même montage, créé
+// par edAd et branché sur les mêmes écoutes (celles dont la cible est dans [data-edteams]) ; le choix écrit l'indicatif et, quand un seul type
+// est connu, le type OACI de la ligne (évènement input, que edInput enregistre) ; rien n'est écrit tant que l'auteur ne tape ni ne choisit.
+//
 // L'essai des clés (SOG-0444, lot P4) : « Essayer les clés », dans l'en-tête du déroulé, met le volet de l'essai à la place de la
 // fiche (s.ed.trial : { on, min, max, speed, alt, declares, hands }) ; le calcul est celui de editor_trial.js sur le document de la
 // séance ; la carte se déplie d'elle-même et montre l'avion et sa trace ; chaque carte du déroulé dit « ouvert à H + 6 min » ou
 // « fermé » ; rien n'est écrit dans la mission.
+import {
+  createCallsignField
+} from '../../frame/lib/callsign_field.js'; // SOG-0488 : le champ d'indicatif de la suite (les Équipes)
 import * as ADD from './add.js';
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
@@ -260,6 +267,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-adrow>.f-field{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* monté en haut de la vue au focus (edAdRoom), sous l'en-tête */
 [data-module="missions"] .ms-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="missions"] .ms-adname[data-state="unknown"]{font-style:italic}
+[data-module="missions"] .ms-atbody .ms-edteams{position:relative} /* SOG-0488 : la liste des indicatifs proposés s'y pose */
 [data-module="missions"] .ms-adsug{position:absolute;left:0;right:0;z-index:30;display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:0;background:var(--sog-surface,#fff);border:1px solid var(--sog-border,#ccc);box-shadow:var(--sog-shadow)} /* par-dessus la fiche, jamais dans la mise en page */
 [data-module="missions"] .ms-adsug[hidden]{display:none}
 [data-module="missions"] .ms-adsug .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
@@ -512,7 +520,7 @@ function edTeamsHtml(s) {
   const rows = s.ed.teams || [],
     inp = (i, f, v, label, extra = '') => `<label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(label))}</span><input data-k="edteam" data-i="${i}" data-f="${f}" value="${esc(v)}" placeholder="${esc(s.tt(label))}" autocomplete="off"${extra}></label>`;
   return `<h3>2. ${esc(s.tt(TX.stepTeams))}</h3>
-    <div class="f-list" data-edteams>${rows.length ? `<div class="ms-edteam ms-edthead f-muted" aria-hidden="true">${[TX.edTeamName, TX.edTeamType, TX.edTeamService, TX.edTeamRole].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>` : ''}${rows.length ? rows.map((r, i) => `<div class="ms-edteam" data-team="${i}">${inp(i, 'name', r.name, TX.edTeamName, ' maxlength="80"')}${inp(i, 'type', r.type, TX.edTeamType, ' maxlength="60" autocapitalize="characters"')}${inp(i, 'service', r.service, TX.edTeamService, ' maxlength="120"')}${inp(i, 'role', r.role, TX.edTeamRole, ' maxlength="200"')}<button type="button" class="ms-edtdel" data-do="edteamdel" data-i="${i}" title="${esc(s.tt(TX.edTeamDel))}" aria-label="${esc(s.tt(TX.edTeamDel))}">✕</button></div>`).join('') : `<p class="f-muted" data-noteam>${esc(s.tt(TX.edTeamNone))}</p>`}</div>
+    <div class="f-list ms-edteams" data-edteams>${rows.length ? `<div class="ms-edteam ms-edthead f-muted" aria-hidden="true">${[TX.edTeamName, TX.edTeamType, TX.edTeamService, TX.edTeamRole].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>` : ''}${rows.length ? rows.map((r, i) => `<div class="ms-edteam" data-team="${i}">${inp(i, 'name', r.name, TX.edTeamName, ' maxlength="80"')}${inp(i, 'type', r.type, TX.edTeamType, ' maxlength="60" autocapitalize="characters"')}${inp(i, 'service', r.service, TX.edTeamService, ' maxlength="120"')}${inp(i, 'role', r.role, TX.edTeamRole, ' maxlength="200"')}<button type="button" class="ms-edtdel" data-do="edteamdel" data-i="${i}" title="${esc(s.tt(TX.edTeamDel))}" aria-label="${esc(s.tt(TX.edTeamDel))}">✕</button></div>`).join('') : `<p class="f-muted" data-noteam>${esc(s.tt(TX.edTeamNone))}</p>`}<div class="ms-adsug" id="ed-cssug" data-cssug role="listbox" aria-label="${esc(s.tt(edAdCs(s).texts.listLabel))}" hidden></div></div>
     ${rows.length < ED.TEAMS_MAX ? `<button type="button" data-do="edteamadd">${esc(s.tt(TX.edTeamAdd))}</button>` : ''}`;
 }
 
@@ -1667,8 +1675,19 @@ function edAd(s) {
       points: true,
       near: () => edPtNear(s)
     }),
-    // l'évènement va au bloc dont le champ (ou la liste) est la cible : la fiche d'un lieu à nom commun, sinon le Cadre
-    of = ev => ev.target?.closest?.('[data-adform]') ? pt : ad,
+    // SOG-0488 : l'indicatif d'une équipe, le champ d'indicatif de la suite (frame/lib/callsign_field.js) ; sa liste (data-cssug) est
+    // posée dans la liste des équipes ; le choix écrit l'indicatif, et le type OACI de la même ligne (avec son évènement input, que
+    // edInput enregistre) quand UN seul type est connu ; rien n'est écrit tant que l'auteur ne choisit ni ne tape rien
+    cs = createCallsignField({
+      ctx: s.ctx,
+      body: () => state() === s && s.ed ? el.querySelector('[data-edteams]') : null,
+      gone: () => state() !== s || !s.ed,
+      owns: f => !!f?.matches?.('[data-k="edteam"][data-f="name"]') && !!el.contains(f),
+      typeOf: f => f.closest('[data-team]')?.querySelector('[data-k="edteam"][data-f="type"]') || null,
+      idPrefix: 'ed-cs'
+    }),
+    // l'évènement va au bloc dont le champ (ou la liste) est la cible : la liste des équipes, la fiche d'un lieu à nom commun, sinon le Cadre
+    of = ev => ev.target?.closest?.('[data-edteams]') ? cs : ev.target?.closest?.('[data-adform]') ? pt : ad,
     on = [
       ['keydown', ev => of(ev).onKey(ev)],
       ['focusout', ev => of(ev).onFocusOut(ev)],
@@ -1683,13 +1702,21 @@ function edAd(s) {
     el,
     ad,
     pt,
+    cs,
     off: () => {
       for (const [t, f] of on) el.removeEventListener(t, f);
       ad.stop();
       pt.stop();
+      cs.stop();
     }
   };
   return ad;
+}
+
+/** Le bloc de l'indicatif d'une équipe (SOG-0488) du montage en vie, créé avec celui des terrains (edAd). */
+function edAdCs(s) {
+  edAd(s);
+  return AF.cs;
 }
 
 /** Le bloc du Nom d'un lieu (points de la base compris, SOG-0480) du montage en vie, créé avec celui des terrains (edAd). */
@@ -2292,6 +2319,7 @@ export function edInput(s, ev) {
   if (k === 'edteam') { // une équipe : la ligne retouchée en place (le champ garde son curseur)
     const row = e.teams?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
+    if (f === 'name') edAdCs(s).onInput(ev); // SOG-0488 : le champ d'indicatif prend la frappe d'abord (sa liste)
     if (row && ['name', 'service', 'type', 'role'].includes(f)) row[f] = ev.target.value;
     return edRefresh(s);
   }

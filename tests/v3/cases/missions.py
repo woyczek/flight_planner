@@ -9073,3 +9073,66 @@ def n134(c):
         c.ok(g is not None and 0 <= g['top'] < g['foot'] - 40, g, f'{width}: the top of the sheet of the drawer is in the window, above the foot of the workshop')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+_FLEET = ('airline/fleet.json', '{"schema":1,"aircraft":[{"registration":"F-XTST","type":"XT01","callsign":"XTEST01"},'
+          '{"registration":"F-XTSU","type":"XT02","callsign":"XTEST02"},{"registration":"F-XTSV","type":"XT03","callsign":"XTEST02"}]}')
+_CS_LIST = f"(() => {{ const b = document.querySelector('{E} [data-cssug]'); return {{ shown: !!b && !b.hidden && b.getBoundingClientRect().height > 0, items: b ? [...b.querySelectorAll('[role=option]')].map(o => o.dataset.callsign) : [] }} }})()"
+
+
+@case('N135', 'Missions › the workshop, step Équipes: the callsign field of the suite (frame/lib/callsign_field.js, SOG-0488) — typing « xte » in the callsign of a team '
+      'proposes XTEST01 from the known fleet; choosing it writes the callsign AND fills the type OACI of the same line (XT01); a callsign of two types fills nothing; a free '
+      'text stays as typed; nothing is written before the author types or chooses; the file keeps its form (callsign and type of the team)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0488 (the user: « quand on saisit un callsign, on est censé avoir une complétion pour trouver le callsign et le type… en fonction de la flotte connue »; the '
+      'ergonomist: a common field reused by the workshop): modules/missions/editor_view.js `edAd` (one block per mounting, the listeners of the block of the aerodromes), `edInput`; '
+      'invented fleet (XTEST01 / XT01), F274 for the block itself')
+def n135(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _ED_TEXTS + [list(_FLEET)])
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E}')", what='the editor of a created mission')
+    c.tap(f'{E} [data-steps] [data-step="teams"]')
+    c.tap(f'{E} [data-do="edteamadd"]')
+    N0, T0 = f'{E} [data-team="0"] [data-f=name]', f'{E} [data-team="0"] [data-f=type]'
+    c.eq(c.js(f"document.querySelector('{T0}').value"), '', 'a new team has no type', what='type before')
+    # a keystroke is the only thing that opens the list
+    c.page.locator(N0).click()
+    c.wait(300)
+    c.eq(c.js(_CS_LIST)['shown'], False, 'nothing is proposed before the author types', what='list before')
+    c.page.keyboard.type('xte')
+    c.until(f"[...document.querySelectorAll('{E} [data-cssug] [role=option]')].some(o => o.dataset.callsign === 'XTEST01')", timeout=8000, what='« xte » proposes XTEST01')
+    g = c.js(_CS_LIST)
+    c.ok(g['shown'] and g['items'][:2] == ['XTEST01', 'XTEST02'], g, 'the list shows the callsigns of the fleet that hold « xte »')
+    c.tap(f'{E} [data-cssug] [data-callsign="XTEST01"]')
+    c.until(f"document.querySelector('{T0}').value === 'XT01'", what='the choice fills the type of the same line')
+    c.eq(c.js(f"document.querySelector('{N0}').value"), 'XTEST01', 'the choice writes the callsign', what='callsign')
+    c.eq(c.js(_CS_LIST)['shown'], False, 'the list is closed after the choice', what='list after')
+    # a callsign of two types: nothing guessed
+    c.tap(f'{E} [data-do="edteamadd"]')
+    c.page.locator(f'{E} [data-team="1"] [data-f=name]').click()
+    c.page.keyboard.type('xtest0')  # the whole callsign alone would close the list: nothing left to propose
+    c.until(f"[...document.querySelectorAll('{E} [data-cssug] [role=option]')].some(o => o.dataset.callsign === 'XTEST02')", timeout=8000, what='XTEST02 proposed')
+    c.tap(f'{E} [data-cssug] [data-callsign="XTEST02"]')
+    c.until(f"document.querySelector('{E} [data-team=\"1\"] [data-f=name]').value === 'XTEST02'", what='XTEST02 written')
+    c.eq(c.js(f"document.querySelector('{E} [data-team=\"1\"] [data-f=type]').value"), '', 'a callsign known with two types fills no type', what='two types')
+    # a free text stays as typed
+    c.tap(f'{E} [data-do="edteamadd"]')
+    c.page.fill(f'{E} [data-team="2"] [data-f=name]', 'Équipe libre')
+    c.wait(300)
+    c.eq(c.js(f"document.querySelector('{E} [data-team=\"2\"] [data-f=name]').value"), 'Équipe libre', 'a free text stays as typed', what='free text')
+    c.eq(c.js(_CS_LIST)['shown'], False, 'and proposes nothing', what='list free')
+    # save: the file keeps its form
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
+    c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier')
+    _ed_fill(c, 'edtitle', 'Mission équipes')
+    c.page.select_option(f'{E} select[data-k=edth]', 'Corse')
+    _ed_fill(c, 'eddep', 'XTST · Base Test')
+    _ed_fill(c, 'edarr', 'Base Test Sud (XTSU)')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-002/missionX-002.yaml') or ''
+    c.ok('XTEST01' in t and 'XT01' in t and 'Équipe libre' in t and t.count('XTEST02') == 1, t, 'the file carries the callsign and the type, the second callsign without a type, the free text')
+    ed_leave(c)
+    c.js(_REG_CLEAR)

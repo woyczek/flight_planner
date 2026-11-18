@@ -1211,6 +1211,22 @@ removed.
   « Le polygone garde ses n points… », « cible mobile », the count of signs of the summary, « Plusieurs repères : choisissez. », what the row
   « Fond / Espaces » says), the line under the tools of the map, « Ce que le pilote voit » (what the pilot will read), the questions.
 
+### 7 novemtricies. The callsign of a team completes from the known fleet (18 Nov 2026; SOG-0488; noreg N135, N54, N50, N109, N122)
+
+The user: « quand on saisit un callsign, on est censé avoir une complétion pour trouver le callsign et le type, non ? En fonction de la flotte connue. »
+The ergonomist's decision: ONE callsign field, common to the workshop and the assignment form (`frame/lib/callsign_field.js`, Features SOG; contract in
+`frame/INTEGRATION.md`, « The callsign field »; bench F274).
+
+- **Where**: the Teams step, one block per mounting of the workshop, created by `edAd` with the block of the aerodromes and the block of the names of the
+  places (the same schema: the listeners keydown, focusout, pointerdown and click are set ONCE on the element of the workshop and stopped when it is
+  unmounted; each event goes to the block whose field or list is the target — `[data-edteams]` for this one). `edAdCs(s)` hands the block to `edInput`.
+- **The list**: ONE `[data-cssug]` element in the list of the teams (positioned, like `[data-adsug]`); each field is in a `<label>`. `owns` = the callsign
+  field of a team line; `typeOf` = the « Type OACI » field of the same line.
+- **The gesture**: from two characters, seven callsigns at most, « CALLSIGN — TYPE · REGISTRATION »; the choice writes the callsign and, when ONE type is
+  known for it, writes the type with an `input` event that `edInput` records like a keystroke; two types: nothing guessed. A callsign typed in full and alone
+  in its list closes the list.
+- **Written**: nothing until the author types or chooses; the format of the team (`name`, `service`, `type`, `role`) does not change; a free text stays as typed.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
