@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ffd4e95",
+  "organisation": "3925b24",
   "fiches": 502,
   "untranslated": 0,
   "priorities": 481,
@@ -1855,11 +1855,12 @@
     {
      "id": "SOG-0491",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Carte : chercher un point, un terrain ou autre par un outil loupe",
      "en": "Map: search for a point, an aerodrome or anything else with a magnifier tool",
      "de": "Karte: Punkt, Flugplatz oder anderes mit einem Lupenwerkzeug suchen",
-     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa"
+     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa",
+     "test": true
     },
     {
      "id": "SOG-0492",

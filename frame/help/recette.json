@@ -4732,9 +4732,15 @@
     "de": "Karte: Punkt, Flugplatz oder anderes mit einem Lupenwerkzeug suchen",
     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa"
    },
-   "test": "Carte : touche la loupe et tape « REN ». Attendu : la VOR REN en PREMIER, puis les autres. Puis « toul » : les terrains, balises et villes de Toulouse. Choisis un terrain : la carte se centre avec un repère, « Fiche du terrain » ouvre sa fiche ; avec un vol, « Ajouter à la route » l'insère. Échap ferme.",
+   "test": "Carte : touche la loupe, tape « REN » : la VOR REN vient en premier ; choisis-la (la carte se centre). Ferme, puis rouvre la loupe et cherche « toul » : la liste vient, et un choix centre de nouveau la carte. Recommence une troisième fois sans fermer.",
    "since": "2026-11-18",
-   "state": "known",
+   "state": "todo",
+   "delivered": "2026-11-18T17:16:40Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "la première fois, ça marche nickel. centrage et tout. La seconde, rien ne se passe.",
+    "at": "2026-11-18T16:54:05Z"
+   },
    "history": [
     {
      "verdict": "ko",
@@ -4759,36 +4765,6 @@
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0115",
-   "fiche": "SOG-0498",
-   "app": "maintenance",
-   "question": "Registre des missions sur ordinateur : un vrai tableau triable par colonne, ou garder les lignes dépliables et ajouter seulement un tri ?",
-   "context": "Maquette envoyée (tri_registre). Un tableau : chaque colonne (état, identifiant, titre, famille, série, origine → destination, durée) se trie dans les deux sens ; mais une ligne ne se déplie plus : ses gestes (Brief, Atelier, Dupliquer, ⋯) passent dans une action de ligne. Au téléphone, dans les deux cas, les lignes restent en liste avec un bouton « Trier » qui ouvre un petit panneau. Le même bloc servira aux futurs écrans de statistiques.",
-   "options": [
-    "Un vrai tableau triable (comme la maquette), les gestes passent dans une action de ligne",
-    "Garder les lignes dépliables, avec seulement une barre de tri au-dessus",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0116",
-   "fiche": "SOG-0498",
-   "app": "maintenance",
-   "question": "Le tri que tu choisis dans une liste : on le garde d'une visite à l'autre ?",
-   "context": "Par exemple, tu tries le registre par durée : en revenant demain, la liste est-elle encore triée par durée (sur cet appareil, avec une entrée « Remettre l'ordre » pour revenir à l'ordre de départ), ou repart-elle toujours de l'ordre par défaut ? L'ordre par défaut proposé : par identifiant, le plus récent en haut.",
-   "options": [
-    "Gardé sur cet appareil, avec « Remettre l'ordre »",
-    "Jamais gardé : chaque visite repart de l'ordre par défaut",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",
