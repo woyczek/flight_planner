@@ -9544,6 +9544,54 @@ def d275(c):
     c.eq(r['why'], [['rwy-unread', 'aids-unread', 'wx-unread'], ['rwy-unread'], ['aids-unread'], ['aids-visual', 'wx-ifr']], 'the closed list, in Fuel’s order: the two new reasons are kept, each alone too; an unknown one is dropped', what=str(r['why']))
     c.eq(r['words'], {'rwy-unread': ['piste non vérifiée', 'runway not checked', 'Piste nicht geprüft', 'pista no comprobada'], 'aids-unread': ['moyens non vérifiés', 'aids not checked', 'Navigationshilfen nicht geprüft', 'medios no comprobados']}, 'their words, as Fuel writes them, in the four languages', what=str(r['words']))
 
+@case('D276', 'The loupe of the Map (SOG-0491): a field that proposes aerodromes, navaids, points and towns from the base; a choice centres the Map, puts a mark, and offers the sheet of the aerodrome and « Add to the route »; Escape closes', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=True, langs4=True,
+      rule='SOG-0491 (the user validated the mock-up, 18 Nov): a loupe among the tools of the Map opens a field (aerodb.find and suggest, the list of the frame: arrows, Enter, Escape, touch); the choice centres the Map on the place and marks it; « Fiche du terrain » (an aerodrome) opens its sheet, « Ajouter à la route » (with a flight) inserts it where it lengthens the route least; nothing is written but by the last button; spaces are not searched yet')
+def d276(c):
+    c.open('maps', flight=True, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2", timeout=15000, what='the flight is drawn')
+    c.tap('[data-mp="find"]')
+    c.until("() => { const e = document.querySelector('.mp-find'); return !!e && !e.hidden && !!e.querySelector('.mp-find-q') }", timeout=6000, what='the loupe opens its field')
+    c.eq(c.js("() => document.activeElement && document.activeElement.className"), 'mp-find-q', 'the field has the focus', what='focus')
+    # one letter proposes nothing; a code proposes the aerodrome
+    c.page.keyboard.type('L')
+    c.wait(500)
+    c.eq(c.js("() => document.querySelectorAll('.mp-find-sug [role=option]').length"), 0, 'one letter: nothing is proposed', what='one letter')
+    c.page.keyboard.type('FMT')
+    c.until("() => document.querySelectorAll('.mp-find-sug [role=option]').length > 0", timeout=8000, what='the aerodrome is proposed')
+    t = c.js("() => document.querySelector('.mp-find-sug').textContent")
+    c.ok('LFMT' in t, t, 'the code is proposed with its name')
+    c.shot(f'D276_search_{c.width}.png')
+    # keyboard: down, Enter
+    c.page.keyboard.press('ArrowDown')
+    c.page.keyboard.press('Enter')
+    c.until("() => !!window.__mp.S.find.pin", timeout=6000, what='a choice puts the mark')
+    c.wait(1500)
+    g = c.js("() => { const S = window.__mp.S, k = S.map ? S.map.getCenter() : null; return { pin: S.find.pin, c: k && [k.lat, k.lng], act: [...document.querySelectorAll('.mp-find [data-find]')].map(b => b.dataset.find), list: document.querySelectorAll('.mp-find-sug [role=option]').length } }")
+    c.ok(abs(g['pin']['lat'] - 43.5762) < 0.01 and abs(g['pin']['lon'] - 3.963) < 0.01, str(g), 'the mark is on the aerodrome chosen')
+    c.ok(g['c'] is None or (abs(g['c'][0] - 43.5762) < 0.3 and abs(g['c'][1] - 3.963) < 0.3), str(g), 'the Map is centred on it')
+    c.eq(g['act'], ['sheet', 'add'], 'the sheet of the aerodrome and « add to the route » (a flight is shown)', what=str(g))
+    c.eq(g['list'], 0, 'the list is closed after the choice', what=str(g))
+    c.shot(f'D276_choice_{c.width}.png')
+    # add to the route
+    c.tap('.mp-find [data-find="add"]')
+    c.until("() => window.__mp.S.route.points.some(p => p.id === 'LFMT')", timeout=8000, what='the place is inserted in the route')
+    # the sheet of the aerodrome
+    c.tap('.mp-find [data-find="sheet"]')
+    c.until("() => window.__mp.S.vfrPin === 'LFMT'", timeout=6000, what='the sheet of the aerodrome opens')
+    # Escape closes the loupe and the mark goes
+    c.js("() => { document.querySelector('.mp-find-q').focus(); return true }")
+    c.page.keyboard.press('Escape')
+    c.until("() => { const e = document.querySelector('.mp-find'); return !e || e.hidden }", timeout=4000, what='Escape closes the loupe')
+    c.eq(c.js("() => window.__mp.S.find.pin"), None, 'the mark goes with it', what='pin')
+    # nothing found
+    c.tap('[data-mp="find"]')
+    c.until("() => { const e = document.querySelector('.mp-find'); return !!e && !e.hidden }", timeout=6000, what='the loupe opens again')
+    c.page.keyboard.type('ZZQQ')
+    c.until("() => { const n = document.querySelector('.mp-find-none'); return !!n && !n.hidden && n.textContent.length > 3 }", timeout=8000, what='« no place found »')
+
 
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""

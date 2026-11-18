@@ -347,6 +347,30 @@ function copyFrame() {
   g.drawImage(c, 0, 0);
 }
 
+/** Le repère du lieu choisi dans la loupe : une goutte rouge à son bord blanc, la pointe sur le lieu. */
+function drawFindPin(ctx, toC) {
+  const p = toC(S.find.pin.lat, S.find.pin.lon);
+  if (!p || !Number.isFinite(p.x)) return;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.bezierCurveTo(-4, -9, -11, -13, -11, -21);
+  ctx.arc(0, -21, 11, Math.PI, 0);
+  ctx.bezierCurveTo(11, -13, 4, -9, 0, 0);
+  ctx.closePath();
+  ctx.fillStyle = '#d6173f';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, -21, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------- fond uni : contours des pays
 let outlinesP = null;
 /** Contours des pays du fond uni (aerodb.zoneOutlines() du cadre), chargés au premier dessin sans tuiles ; la carte est redessinée
@@ -874,6 +898,7 @@ function draw() {
     for (const l of got0.routeLabelDraws || []) MapsRender.kit.halo(ctx, l.text, l.x, l.y, l.size, l.color || col, l.align);
     ctx.restore();
   }
+  if (S.find?.pin) drawFindPin(ctx, toC); // le repère du lieu choisi dans la loupe (SOG-0491)
   S.altHits = drawAlts(ctx, toC, S.routeLabelRects); // les itinéraires proposés par Carburant, sur la route (SOG-0134 a)
   S.altnHits = drawProposedAltn(ctx, toC, S.routeLabelRects, altn && !pick ? altn :
     null); // les terrains de dégagement proposés (SOG-0398, lot 2)

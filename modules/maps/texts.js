@@ -254,6 +254,23 @@ export const TX = {
   ],
   spWho: ['Organisme et fréquence', 'Unit and frequency', 'Stelle und Frequenz', 'Organismo y frecuencia'],
   spSource: ['Source', 'Source', 'Quelle', 'Fuente'],
+  // la loupe de la Carte (SOG-0491)
+  findHelp: ['Chercher un lieu', 'Find a place', 'Ort suchen', 'Buscar un lugar'],
+  findHolder: ['Terrain, balise, point, ville…', 'Aerodrome, navaid, point, town…', 'Flugplatz, Funkfeuer, Punkt, Stadt…',
+    'Aeródromo, radioayuda, punto, ciudad…'
+  ],
+  findClose: ['Fermer la recherche', 'Close the search', 'Suche schließen', 'Cerrar la búsqueda'],
+  findNone: ['Aucun lieu trouvé', 'No place found', 'Kein Ort gefunden', 'Ningún lugar encontrado'],
+  findSheet: ['Fiche du terrain', 'Aerodrome sheet', 'Flugplatzblatt', 'Ficha del aeródromo'],
+  findAdd: ['Ajouter à la route', 'Add to the route', 'Zur Route hinzufügen', 'Añadir a la ruta'],
+  findAdded: ['{c} ajouté à la route', '{c} added to the route', '{c} zur Route hinzugefügt', '{c} añadido a la ruta'],
+  findKinds: {
+    aerodrome: ['aérodrome', 'aerodrome', 'Flugplatz', 'aeródromo'],
+    navaid: ['balise', 'navaid', 'Funkfeuer', 'radioayuda'],
+    point: ['point', 'point', 'Punkt', 'punto'],
+    vrp: ['point VFR', 'VFR point', 'VFR-Punkt', 'punto VFR'],
+    city: ['ville', 'town', 'Stadt', 'ciudad']
+  },
   // la fenêtre d'une zone (SOG-0462) : la nature du danger, l'organisme et les conditions (ENR 5.1 du SIA, dits tels qu'ils sont publiés), la source communautaire, le cycle du texte
   spNature: ['Nature du danger', 'Nature of the hazard', 'Art der Gefahr', 'Naturaleza del peligro'],
   spAuth: ['Organisme et conditions de pénétration', 'Authority and conditions of penetration', 'Stelle und Einflugbedingungen',

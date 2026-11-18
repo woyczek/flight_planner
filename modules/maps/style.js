@@ -324,6 +324,21 @@ export const STYLE = `
 @media (pointer:coarse){[data-module="maps"] .mp-al-row{min-height:44px}}
 [data-module="maps"] .mp-mbar{position:absolute;z-index:4;left:8px;top:8px;right:72px;max-width:420px;padding:6px 10px;box-sizing:border-box;line-height:1.25}
 [data-module="maps"] .mp-mbar[hidden]{display:none}
+[data-module="maps"] .mp-find{position:absolute;z-index:6;left:8px;top:8px;right:72px;max-width:420px;padding:0;box-sizing:border-box;overflow:visible}
+[data-module="maps"] .mp-find[hidden]{display:none}
+[data-module="maps"] .mp-find.f-card{background:var(--sog-surface);border:1px solid var(--sog-border)}
+[data-module="maps"] .mp-find-f{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 10px;margin:0}
+[data-module="maps"] .mp-find-q{flex:1;min-width:0;height:36px;border:0;background:transparent;font:inherit;font-size:16px;color:inherit;outline:0}
+[data-module="maps"] .mp-find-x{width:36px;height:36px;border:0;background:transparent;border-radius:50%;display:flex;align-items:center;justify-content:center;color:inherit;cursor:pointer}
+[data-module="maps"] .mp-find-sug{position:static;border-top:1px solid var(--sog-border)}
+[data-module="maps"] .mp-find-sug .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border:0;border-bottom:1px solid var(--sog-border);border-radius:0;background:transparent;font:inherit;padding:6px 12px;cursor:pointer}
+[data-module="maps"] .mp-find-sug .fu-sugitem:last-child{border-bottom:0}
+[data-module="maps"] .mp-find-sug .fu-sugitem[aria-selected="true"]{background:var(--sog-surface-2);box-shadow:inset 3px 0 0 var(--sog-accent)}
+[data-module="maps"] .mp-find-sug .fu-sugitem span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-module="maps"] .mp-find-act{display:flex;flex-wrap:wrap;gap:8px;padding:8px 10px;border-top:1px solid var(--sog-border)}
+[data-module="maps"] .mp-find-none{margin:0;padding:8px 12px;border-top:1px solid var(--sog-border)}
+[data-module="maps"] .mp-find :is(.mp-find-act,.mp-find-none,.mp-find-sug)[hidden]{display:none}
+[data-module="maps"] .mp-find-q::-webkit-search-cancel-button{display:none}
 /* un panneau posé sur la carte est opaque dans tous les designs (SOG-0299) : swiss dessine ses cartes en filets, sans fond (« .f-card{background:transparent} »), la carte se voyait à travers ; la
    survol (.mp-hover) a sa propre translucidité voulue */
 [data-module="maps"] :is(.mp-mbar,.mp-alts,.mp-empty,.mp-spsel,.mp-tip:not(.mp-hover)).f-card{background:var(--sog-surface);border:1px solid var(--sog-border)}

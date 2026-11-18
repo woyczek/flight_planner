@@ -295,6 +295,18 @@ function insertPoint(a) {
   });
   commit(pts);
 }
+/** Un lieu ajouté à la route (la loupe, « Ajouter à la route » : SOG-0491) : posé là où il rallonge le moins la route, comme un point ajouté au doigt ; faux sans vol, quand le lieu y est déjà ou hors du mode. */
+export function addPlace(a) {
+  install();
+  if (!a?.id || !Number.isFinite(+a.lat) || !Number.isFinite(+a.lon) || rawPoints().length < 2) return false;
+  if (rawPoints().some(p => p.id === a.id && Math.abs(+p.lat - a.lat) < 1e-3 && Math.abs(dLon(+p.lon, a.lon)) < 1e-3)) return false;
+  insertPoint({
+    id: a.id,
+    lat: +a.lat,
+    lon: +a.lon
+  });
+  return true;
+}
 /** Point i retiré (jamais le départ ni l'arrivée). */
 function removePoint(i) {
   const pts = rawPoints();

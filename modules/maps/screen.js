@@ -180,7 +180,7 @@ export function buildOverlay(ctx, modesHtml) {
   // la recherche d'une voie, d'un poste, d'une attente (SOG-0297 : « j'ai perdu le bouton recherche »): le champ de filtre du panneau Sol, jusque-là derrière le bouton « Sol » de la fiche du terrain ; caché
   // tant que la vue ne montre pas le départ ou l'arrivée du vol (ground.js groundBtnSync lui pose le terrain dans data-ground : le clic est celui des fiches)
   S.groundBtn = btn('ground', {
-    icon: 'search',
+    icon: 'list', // pas la loupe de la recherche d'un lieu (SOG-0491) : une liste de voies, de postes, d'attentes
     label: ctx.t(TX.gSearch)
   });
   S.groundBtn.hidden = true;
@@ -212,6 +212,18 @@ export function buildOverlay(ctx, modesHtml) {
     onClick: () => {
       closePanels();
       setFollow(!S.follow);
+    }
+  });
+  // la loupe (SOG-0491) : chercher un terrain, une balise, un point ou une ville, centrer la carte dessus
+  S.findBtn = btn('find', {
+    icon: 'search',
+    label: ctx.t(TX.findHelp),
+    pressed: false,
+    onClick: () => {
+      closePanels();
+      need('find').then(m => m.setFind(!S.find.on), () => ctx.notify?.(ctx.t(TX.saveFailed, {
+        m: 'find.js'
+      }), 'err'));
     }
   });
   S.addBtn = btn('add', {
@@ -248,6 +260,7 @@ export function syncButtons() {
     flight = on && !onMission() && !pick,
     edit = flight && S.edit.on;
   show(S.fitBtn, on);
+  show(S.findBtn, on && !pick && !S.edit.on);
   show(S.layersBtn, !pick);
   show(S.routeBtn, flight && !edit);
   show(S.modeBtn, flight && !edit);

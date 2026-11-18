@@ -48,13 +48,15 @@ def d1(c):
     c.until("() => [...document.querySelectorAll('.f-ov-right .f-ov-btn')].filter(b => window.__t.shown(b)).length >= 5", timeout=10000, what='the buttons of the map are shown (under load the route reads later)')
     btns = vis_right(c)
     order = [b['mp'] for b in btns]
-    c.eq(order, ['route', 'fit', 'mode', 'edit', 'full'], 'right column: Edit the route, Recentre, mode, Edit (toggle), then the frame\'s full screen', what='visible right buttons in order')
+    c.eq(order, ['route', 'fit', 'mode', 'edit', 'find', 'full'], 'right column: Edit the route, Recentre, mode, Edit (toggle), the loupe (SOG-0491), then the frame\'s full screen', what='visible right buttons in order')
     t = {b['mp']: b for b in btns}
     c.eq(t['route']['title'], row(c, 'edit'), 'the route button is named in the language of the run', what='route button title')
     c.eq(t['fit']['title'], row(c, 'fit'), 'the Recentre button is named in the language of the run', what='fit button title')
     c.ok(norm(t['mode']['title']).startswith(norm(row(c, 'preset'))), f'mode button title {t["mode"]["title"]!r}', f'starts with "{row(c, "preset")}"')
     c.eq(t['edit']['title'], row(c, 'editHelp'), 'the Edit toggle is named in the language of the run', what='edit button title')
     c.eq(t['edit']['pressed'], 'false', 'the Edit button is a toggle, released', what='edit aria-pressed')
+    c.eq(t['find']['title'], row(c, 'findHelp'), 'the loupe is named in the language of the run', what='find button title')
+    c.eq(t['find']['pressed'], 'false', 'the loupe is a toggle, released', what='find aria-pressed')
     c.eq(t['full']['title'], tx(APP, 'enter', c.lang, after='full: {'), 'the frame\'s full-screen button is named in the language of the run', what='full button title')
     for mp, why in (('follow', 'Follow is hidden without a started flight'), ('add', '"+" is hidden outside Edit mode'), ('undo', 'Undo is hidden outside Edit mode')):
         c.ok(not c.shown(f'[data-mp="{mp}"]'), f'[data-mp={mp}] is displayed', why)

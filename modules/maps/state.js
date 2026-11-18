@@ -161,6 +161,7 @@ export function setOff(b, off) {
 /** Fichiers du module chargés à leur premier usage : le mode Édition, la page de réglage des seuils. */
 const LAZY = {
   edit: 'edit.js',
+  find: 'find.js',
   tune: 'tune.js'
 };
 const loaded = {},

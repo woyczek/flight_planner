@@ -186,7 +186,9 @@ export const meta = {
   // gardés au premier usage : le mode Édition et la page de réglage ; MapLibre (1 Mo, inutile sans tuiles) ; le rendu de la coupe
   // météo d'Atmosphère (au premier « Météo ») ; les contours des pays du fond uni viennent d'aerodb (zoneOutlines, le cadre), la
   // copie lib/outlines.js reste le repli de map_base.loadOutlines sans aerodb (Atmosphère)
-  lazy: ['edit.js?v=0', 'lib/map_edit.js?v=0', 'tune.js?v=0', 'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',
+  lazy: ['edit.js?v=0', 'find.js?v=0', '../../frame/lib/suggest_list.js?v=0', 'lib/map_edit.js?v=0', 'tune.js?v=0',
+    'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0',
+    'lib/outlines.js?v=0',
     '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/texts.js?v=0', '../fuel/winds.js?v=0'
   ],
   // hôtes publics appelés directement par MapLibre (tuiles) et par le relief ombré ; CSP connect-src du cadre
@@ -209,6 +211,7 @@ ${ctx.query?.tune ? '<section class="mp-tune f-card" aria-live="off"></section>'
 <div class="mp-tip f-card" hidden role="tooltip"></div>
 <div class="mp-tip mp-pcard f-card" hidden role="dialog"></div>
 <div class="mp-mbar f-card" hidden></div>
+<div class="mp-find f-card" hidden></div>
 <div class="mp-alts f-card" hidden></div>
 </div>
 <div class="mp-follow" hidden></div></div>
@@ -227,6 +230,12 @@ export async function mount(el, ctx) {
     ctx,
     missionId: ctx.query?.mission || '', // l'adresse d'abord ; sinon la mission du vol (deriveMission, plus bas)
     stops: [],
+    find: {
+      on: false,
+      pick: null,
+      pin: null,
+      list: null
+    }, // la loupe (find.js, SOG-0491)
     edit: {
       on: false,
       undo: null, // posée au premier chargement du mode (edit.js, createUndo)
@@ -252,6 +261,7 @@ export async function mount(el, ctx) {
     canvas: q('canvas.mp-over'),
     stEl: q('.mp-empty'),
     mbarEl: q('.mp-mbar'),
+    findEl: q('.mp-find'),
     altsEl: q('.mp-alts'),
     followEl: q('.mp-follow'),
     profBox: q('.mp-prof'),
