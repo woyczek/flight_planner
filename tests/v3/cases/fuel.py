@@ -8375,3 +8375,39 @@ def f275(c):
     want = norm(tx(T, "aids-unread'", L, after='altnPropWhy'))
     c.ok(all(want in norm(r[1]) for r in rows), [r[1] for r in rows], 'each line says « moyens non vérifiés »')
     c.eq(c.count(f'{B} [data-altnprop][data-msg]'), 0, 'never « Aucun terrain … » (no message in place of the list)', what='none')
+
+
+@case('F276', 'Procedures, the line of the UK package: a reading that finds no procedure says it in the screen\'s language, with its counts '
+      '(« EGLL : aucune procédure lue — 9 document(s), 0 page(s) lue(s) sur 12 ») — never the launcher\'s English sentence; an older '
+      'launcher without codes: « EGLL : aucune procédure lue. »', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=True,
+      rule='the relay, 18/11 (the user saw on EGGW « no procedure could be read for this aerodrome: 9 document(s)… »): the UK line reuses '
+      'the rendering already made for the codes (procNoneRead: none-read, counts, reasons; SOG-0433), no new text; invented answers')
+def f276(c):
+    T = 'modules/fuel/procedures_texts.js'
+    D = f'{FUEL} [data-proc="dep"]'
+    L = f'{D} [data-ukline]'
+    c.page.add_init_script(_UK_STUB)
+    _route_launcher(c, ['route/compute'])
+    c.open('fuel', docs=_uk_docs())
+    to_step(c, 1)
+    open_foot(c, 'dep')
+    c.until(f"!!document.querySelector('{D} [data-do=procukpkg]')", timeout=15000, what='the gesture of the UK package')
+
+    def answer(ans, what):
+        c.tap(f'{D} [data-do=procukpkg]')
+        c.until("window.__uk.go !== null", timeout=8000, what=f'asked ({what})')
+        c.js(f"window.__uk.go({ans})")
+        c.until(f"!!document.querySelector('{L} [data-ukres]')", timeout=8000, what=f'the answer in the line ({what})')
+        return norm(c.text(f'{L} [data-ukres]'))
+    english = "no procedure could be read for this aerodrome: 9 document(s), 0 of 12 page(s) read"
+    got = answer("{ ok: false, reason: 'failed', code: 'none-read', counts: { docs: 9, read: 0, pages: 12 }, reasons: [], message: '"
+                 + english + "' }", 'none read, with codes')
+    want = norm(tx(T, 'procNoneRead', c.lang).replace('{icao}', 'EGLL').replace('{d}', '9').replace('{read}', '0').replace('{pages}', '12')
+                .replace('{why}', '').replace('{wn}', ''))
+    c.eq(got, want, 'the sentence of the card, its counts, in the screen\'s language', what='none-read')
+    c.ok('no procedure could be read' not in got, got, 'never the launcher\'s English sentence')
+    got = answer("{ ok: false, reason: 'failed', message: '" + english + "' }", 'older launcher, no codes')
+    want = norm(tx(T, "none-read'", c.lang, after='procReasons').replace('{icao}', 'EGLL').replace('{m}', '').replace('{c}', '')
+                .replace('{wn}', ''))
+    c.eq(got, want, 'an older launcher: the short sentence of the card, never its English', what='old launcher')

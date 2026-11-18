@@ -747,7 +747,16 @@ export function createProcedures(host) {
       }) : '' : d.k === 'ok' ? tt(TX.procUkOk, {
         n: d.n
       }) : d.k === 'not-personal' ? tt(TX.procUkPersonal) : d.k === 'no-package' ? tt(TX.procUkNoPkg) : d.k === 'released' ? tt(TX
-        .procUkReleased) : d.m ? tt(TX.procUkFail, {
+        .procUkReleased) : d.k === 'none' ? d.p ? tt(TX.procNoneRead, {
+        icao: k,
+        ...d.p,
+        wn: ''
+      }) : tt(TX.procReasons['none-read'], {
+        icao: k,
+        m: '',
+        c: '',
+        wn: ''
+      }) : d.m ? tt(TX.procUkFail, {
         m: d.m
       }) : tt(TX.procUkFail0);
     return `<span class="fu-ukline" data-ukline><button type="button" class="fu-linkbtn" data-do="procukpkg" data-icao="${esc(k)}"${busy ? ' disabled aria-busy="true"' : ''}>${esc(tt(busy ? TX.procUkReading : held || d?.k === 'ok' ? TX.procUkReread : TX.procUkRead))}</button>${said ? ` <span class="${!d || d.k === 'ok' ? 'f-muted' : 'f-warn'}" data-ukres="${esc(d ? d.k : 'held')}">${esc(said)}</span>` : ''}</span>`;
@@ -1691,9 +1700,9 @@ export function createProcedures(host) {
       };
     }
     reading = null;
-    // libellés des motifs de lecture (codes d'aerodb, AeroCatalogue.READ_REASONS[code] = [fr, en, de, es]) ; un code inconnu tel quel
-    const cat = await Promise.resolve().then(() => ctx.aerodb?.sources?.()).catch(() => null),
-      why = code => cat?.READ_REASONS?.[code] ? ctx.t(cat.READ_REASONS[code]) : String(code || '?');
+    // libellés des motifs de lecture (codes d'aerodb) ; un code inconnu tel quel
+    const why = await readWhy(),
+      none = noneReadParams(res, why);
     const wn = Array.isArray(res?.warnings) && res.warnings.length ? ctx.t(TX.procWarnings, {
       n: res.warnings.length
     }) : '';
@@ -1712,23 +1721,15 @@ export function createProcedures(host) {
           d: +st.dropped
         }) : ''
       }, 'ok');
-    } else if (res?.code === 'none-read' && res.counts && typeof res.counts === 'object') {
-      // SOG-0433 : le lanceur dit l'échec « rien de lu » en code et en entiers (tools/regen/proc.py) : la phrase est écrite ici, dans la
-      // langue de l'écran ; sa phrase anglaise (`message`) ne sert plus que de repli à un lanceur plus ancien. Entrée non fiable : bornée.
-      const n = v => Math.max(0, Math.min(9999, Math.round(+v || 0))),
-        rs = (Array.isArray(res.reasons) ? res.reasons : []).slice(0, 3).filter(x => Array.isArray(x) && /^[a-z-]{1,20}$/.test(String(x[
-          0])) && +x[1] > 0).map(([c, k]) => `${why(c)} ×${n(k)}`).join(' ; ');
+    } else if (none) {
+      // SOG-0433 : la phrase écrite ici, dans la langue de l'écran ; la phrase anglaise du lanceur (`message`) n'est qu'un repli
       say(TX.procNoneRead, {
         icao,
-        d: n(res.counts.docs),
-        read: n(res.counts.read),
-        pages: n(res.counts.pages),
-        why: rs ? ` (${rs})` : '',
+        ...none,
         wn
       }, 'warn');
     } else {
-      const none = res?.reason === 'failed' && /no procedure could be read/i.test(res.message || ''),
-        row = none ? TX.procReasons['none-read'] : TX.procReasons[res?.reason] || TX.procReasons.other,
+      const row = noneReadOld(res) ? TX.procReasons['none-read'] : TX.procReasons[res?.reason] || TX.procReasons.other,
         st = res?.stats;
       say(row, {
         icao,
@@ -2003,6 +2004,29 @@ export function createProcedures(host) {
       render();
     }
   }
+  /** Le libellé d'un code de motif de lecture (codes d'aerodb, AeroCatalogue.READ_REASONS[code] = [fr, en, de, es]) ; un code inconnu tel
+   *  quel. Lu à chaque appel (le catalogue peut changer). */
+  async function readWhy() {
+    const cat = await Promise.resolve().then(() => ctx.aerodb?.sources?.()).catch(() => null);
+    return code => cat?.READ_REASONS?.[code] ? ctx.t(cat.READ_REASONS[code]) : String(code || '?');
+  }
+  /** SOG-0433 : l'échec « rien de lu » dit par le lanceur en code et en entiers (tools/regen/proc.py) → les paramètres de procNoneRead (sans
+   *  icao ni wn), la phrase écrite ici dans la langue de l'écran ; null pour une autre réponse. Entrée non fiable : bornée. */
+  function noneReadParams(res, why) {
+    if (res?.code !== 'none-read' || !res.counts || typeof res.counts !== 'object') return null;
+    const n = v => Math.max(0, Math.min(9999, Math.round(+v || 0))),
+      rs = (Array.isArray(res.reasons) ? res.reasons : []).slice(0, 3).filter(x => Array.isArray(x) && /^[a-z-]{1,20}$/.test(String(x[
+          0])) &&
+        +x[1] > 0).map(([c, k]) => `${why(c)} ×${n(k)}`).join(' ; ');
+    return {
+      d: n(res.counts.docs),
+      read: n(res.counts.read),
+      pages: n(res.counts.pages),
+      why: rs ? ` (${rs})` : ''
+    };
+  }
+  /** La phrase anglaise « no procedure could be read » d'un lanceur plus ancien, sans codes : le repli procReasons['none-read']. */
+  const noneReadOld = res => res?.reason === 'failed' && /no procedure could be read/i.test(res.message || '');
   /** SOG-0374 : « Lire les départs dans le paquet du Royaume-Uni » — aerodb.fetchProcedures(icao, { source: 'ukpkg' }) (le lanceur lit le
    *  paquet eAIP de NATS décompressé dans ses Téléchargements) ; la réponse est gardée pour la ligne du terrain : le nombre de SID lues en
    *  partie, l'usage personnel à cocher, l'absence du paquet, ou la phrase du lanceur (texte borné, échappé au dessin). Un geste à la fois. */
@@ -2032,12 +2056,19 @@ export function createProcedures(host) {
     }
     ukReading = null;
     const list = Array.isArray(res?.procedures) ? res.procedures : [],
-      msg = String(res?.message ?? '').replace(/[\u0000-\u001f\u007f\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+      msg = String(res?.message ?? '').replace(/[\u0000-\u001f\u007f\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 200),
+      // « rien de lu » : la phrase de Carburant (procNoneRead, ses comptes), jamais la phrase anglaise du lanceur (le relais, 18/11, EGGW)
+      none = !res?.ok ? noneReadParams(res, await readWhy()) : null;
     ukDone.set(k, res?.ok ? {
       k: 'ok',
       n: Math.min(999, list.filter(p => p?.kind === 'SID' && isPartial(p)).length)
     } : ['not-personal', 'no-package', 'released'].includes(res?.reason) ? {
       k: res.reason
+    } : none ? {
+      k: 'none',
+      p: none
+    } : noneReadOld(res) ? {
+      k: 'none'
     } : {
       k: 'fail',
       m: msg
