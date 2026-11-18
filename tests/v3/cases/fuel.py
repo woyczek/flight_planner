@@ -8552,14 +8552,20 @@ def f279(c):
     c.eq([c.js(f"document.querySelector('{D} [data-chart-slot={r}] a').getAttribute('href')") for r in ('rwy', 'main')],
          ['https://charts.example.test/EGLL/adc.pdf', 'https://charts.example.test/EGLL/sid-XMODA1J.pdf'], 'ADC and the SID\'s chart',
          what='chosen charts')
+    # one side unfolded at a time (§ 10.31): the departure for its shots, then the arrival unfolded for its own (the STAR line SEEN)
     c.js(f"document.querySelector('{D} [data-kindcharts]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F279_{c.design}_390_{c.lang}_dep.png')
+    unfold(c, 'arr')
+    c.ok(c.shown(f'{A} [data-kindcharts]'), 'hidden', 'the STAR charts SEEN once the arrival is unfolded')
     c.js(f"document.querySelector('{A} [data-kindcharts]').scrollIntoView({{block: 'center'}})")
     c.shot(f'F279_{c.design}_390_{c.lang}_arr.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
+    c.js(f"document.querySelector('{A}').scrollIntoView({{block: 'start'}})")
+    c.shot(f'F279_{c.design}_1280_{c.lang}_arr.png')
+    unfold(c, 'dep')
     c.js(f"document.querySelector('{D}').scrollIntoView({{block: 'start'}})")
-    c.shot(f'F279_{c.design}_1280_{c.lang}.png')
+    c.shot(f'F279_{c.design}_1280_{c.lang}_dep.png')
     # before the package is read: no « Cartes » page (chartsUrl null); after a reading, asked again and shown
     open_foot(c, 'dep')
     c.eq(c.count(f'{D} [data-source-slot] a[data-charts]'), 0, 'no page of the aerodrome before the package is read', what='before')
