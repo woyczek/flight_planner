@@ -5309,17 +5309,17 @@ def a256(c):
     c.check_errors()
 
 
-@case('A265', 'The reading guards (SOG-0468 (a), frame/lib/untrusted.js): a key of the object ITSELF (never « __proto__ », « constructor », « toString » of the prototype), a plain object, a finite number, a bounded number, a text without invisible format characters, a written identifier; hostile inputs never throw', 'A',
+@case('A300', 'The reading guards (SOG-0468 (a), frame/lib/untrusted.js): a key of the object ITSELF (never « __proto__ », « constructor », « toString » of the prototype), a plain object, a finite number, a bounded number, a text without invisible format characters, a written identifier; hostile inputs never throw', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (a) (the ergonomist; the list is Security’s): ONE definition of the small guards that ten files copied — frame/lib/test/untrusted.html (window.__untrustedBench): own / has read only an own key of a plain object (the prototype never answers), plain, finite (typeof number), bounded (bounds included), visible / clean / idWord (the invisible format characters out, the joiners and the narrow no-break space kept); nothing throws')
-def a265(c):
+def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
-@case('A266', 'ctx.unsaved also guards the address that leaves the document (SOG-0458, found by « Création »): an address of another application (APP.elsewhere) asks the frame’s question BEFORE the redirect; ctx.askLeave() gives the modules the same question', 'A',
+@case('A301', 'ctx.unsaved also guards the address that leaves the document (SOG-0458, found by « Création »): an address of another application (APP.elsewhere) asks the frame’s question BEFORE the redirect; ctx.askLeave() gives the modules the same question', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0458 (« Création de missions » plugging the workshop): from Pilot, #missions is an address of the Company application (APP.elsewhere): the frame redirected at once (location.replace) before it looked at ctx.unsaved, so only the browser’s warning played; the guard stands before the redirect (the moved screens too), refusing keeps the module and the page, accepting lets the redirect go; and ctx.askLeave() — the same question, the same words, true when the user leaves — is given to the modules for their own « Annuler » (« reuse »: no copy of the texts)')
-def a266(c):
+def a301(c):
     full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
     c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
     src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
