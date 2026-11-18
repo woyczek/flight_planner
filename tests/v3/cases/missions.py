@@ -1359,6 +1359,7 @@ _BR_PURE_JS = """async () => { const MS = await import('/frame/lib/mission.js'),
       'brief.html, accepted; the duration at a typical speed of the CLASS read in a data of the type, never a list of types; the theatre: '
       'the file, else the State of the departure aerodrome in AeroDB); invented missions')
 def n33(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the imports of the pure part
     r = c.js(_BR_PURE_JS)
     c.eq([r['helico'], r['jet'], r['other'], r['none'], r['threw'], r['proto']],
          [{'min': 30, 'est': 'class'}, {'min': 10, 'est': 'class'}, None, None, None, None],
