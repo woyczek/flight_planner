@@ -143,3 +143,21 @@ export function pdfLine(d) {
 }
 /** Les États (préfixes) à demander à `proc/status` : ceux que l'utilisateur a cochés, à défaut tous ceux de la liste, bornés ; [] sans. */
 export const procArgs = ids => [...new Set((ids || []).filter(x => typeof x === 'string' && PREFIX.test(x)))].slice(0, 60);
+
+// SOG / Q-0108 : le dossier d'X-Plane (repli local), tel que le lanceur le dit (`__setup/xplane`). Tout vient du lanceur : états et codes d'une liste fermée, cycle de 4 chiffres, entier borné.
+const XP_STATES = ['ok', 'missing', 'not-xplane', 'unreadable'];
+const XP_REASONS = ['bad-body', 'too-long', 'refused', 'not-a-folder', 'not-xplane', 'not-personal'];
+/** Ce que dit le GET du lanceur sur le dossier d'X-Plane : { configured, state (ok | missing | not-xplane | unreadable | null), cycle ('2610' ou ''), zones (0..100000 ou null) } ; null sans `ok: true` (404, 403, lanceur plus ancien, réponse illisible). */
+export function xplaneOf(r) {
+  if (r === null || typeof r !== 'object' || Array.isArray(r) || r.ok !== true) return null;
+  return {
+    configured: r.configured === true,
+    state: typeof r.state === 'string' && XP_STATES.includes(r.state) ? r.state : null,
+    cycle: typeof r.cycle === 'string' && /^\d{4}$/.test(r.cycle) ? r.cycle : '',
+    zones: Number.isInteger(r.zones) && r.zones >= 0 && r.zones <= 1e5 ? r.zones : null
+  };
+}
+/** Le code de refus d'un enregistrement, ramené à la liste fermée du contrat (bad-body, too-long, refused, not-a-folder, not-xplane, not-personal) ; tout autre est dit « refused ». */
+export function xplaneReason(code) {
+  return typeof code === 'string' && XP_REASONS.includes(code) ? code : 'refused';
+}

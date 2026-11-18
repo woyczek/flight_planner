@@ -19,6 +19,11 @@ import {
   tt
 } from './state.js';
 import {
+  xpInit,
+  xplaneGesture,
+  xplaneRefresh
+} from './xplane.js';
+import {
   addZone,
   journalWrite,
   load,
@@ -160,7 +165,7 @@ export const meta = {
   launcher: {
     // regen/job couvre aussi son annulation regen/job/cancel (cadre, f70eba426) ; sync-status : l'état de data/ avant la
     // question de « Publier » (GET, jamais de POST /__setup/sync : la publication passe par ctx.data.sync)
-    routes: ['regen/job', 'regen/job/release', 'regen/verbs', 'sync-status', 'data/inventory', 'base/upload', 'personal'],
+    routes: ['regen/job', 'regen/job/release', 'regen/verbs', 'sync-status', 'data/inventory', 'base/upload', 'personal', 'xplane'],
     read: []
   },
   files: ['model.js', 'model_screen.js', 'model_sets.js', 'model_results.js', 'model_chain.js', 'model_map.js', 'model_publish.js',
@@ -168,7 +173,7 @@ export const meta = {
     'chain.js', 'inventory.js', 'model_route.js', 'model_update.js', 'model_status.js', 'model_packs.js', 'route.js', 'update.js',
     'status.js', 'packs.js', 'model_world.js', 'world.js', 'model_coverage.js', 'covtable.js', 'upload.js', 'model_busy.js', 'busy.js',
     'model_countries.js', 'countries.js', 'model_todo.js', 'todo.js', 'later.js', 'registry.js', 'tours.js', 'model_tours.js',
-    'model_setstate.js', 'setstate.js',
+    'model_setstate.js', 'setstate.js', 'xplane.js',
     'zipmember.js', 'model_mapview.js',
     'mapview.js',
     'model_thread.js',
@@ -220,6 +225,9 @@ function opOf(v) {
 }
 /** Retient le groupe touché en dernier (le « ? » du cadre ouvre l'aide au paragraphe du groupe ouvert), puis le geste d'un bouton. */
 function onClick(e) {
+  const xp = e.target.closest?.(
+    '[data-act="xplane-save"], [data-act="xplane-clear"]'); // « Enregistrer » et « Effacer » du dossier d'X-Plane (xplane.js)
+  if (xp) return xp.disabled ? undefined : xplaneGesture(xp.dataset.act);
   const mv = e.target.closest?.('button[data-move]');
   if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
   const pt = e.target.closest?.('button[data-pack-tab]');
@@ -365,6 +373,11 @@ function onZoneOut(e) {
 }
 /** « Échap » vide la sélection de pays de la carte, puis referme la fiche d'un pays. */
 function onKey(e) {
+  if (e.key === 'Enter' && !e.isComposing && e.target?.matches?.(
+      '[data-xplane-path]')) { // la touche Entrée dans le champ du dossier d'X-Plane : « Enregistrer »
+    e.preventDefault();
+    return xplaneGesture('xplane-save');
+  }
   if (e.key === 'Escape' && hasSel() && !e.defaultPrevented) return clearSel(); // d'abord la sélection de pays, ensuite la fiche
   if (e.key === 'Escape' && S?.cw?.sheet && !e.defaultPrevented) closeSheet();
 }
@@ -420,6 +433,7 @@ async function setCertified(want) {
     }
     S.certified = r.certified;
   }
+  xplaneRefresh(); // la ligne « X-Plane (personnel, local) » n'existe qu'avec la coche : elle se lit (ou disparaît) avec elle
   savePersonal();
   if (S.d?.cov?.ids) refreshStatus(S.d.cov
     .ids); // l'état par zone dépend de la coche (les sources personnelles comptent dans « fichiers changés ») : relu
@@ -514,6 +528,7 @@ export async function mount(el, ctx) {
     again: 0,
     ticked: null, // « toute la couverture » (SOG-0262 : plus aucune sélection à la main ; les verbes de la base la lisent)
     cw: cwInit(), // la carte du monde, les paquets et la fiche d'un pays (countries.js) : survol, paquet ouvert, fiche ouverte, vue, lectures du lanceur
+    xp: xpInit(), // la ligne « X-Plane (personnel, local) » : état lu du lanceur et dernier message (xplane.js ; le chemin n'est jamais gardé)
     certified: false, // sources sous licence personnelle cochées : celles mémorisées sur ce poste (cache/data/personal.json), aucune la première fois
     status: null, // l'état par zone que le lanceur a dit (base/status, M.statusOf) : { current, parserVersion, zones: { id: { state, reasons, buildable } } } ; null : jamais lu
     statusP: null, // la lecture en cours (une seule à la fois)

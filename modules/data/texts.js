@@ -3095,5 +3095,41 @@ export const TX = {
       'Diese Datei ist nicht das XML VfrCircuits des Extraktors. Es wurde nichts behalten.',
       'Este archivo no es el XML VfrCircuits del extractor. No se guardó nada.'
     ]
+  },
+  // la ligne « X-Plane (personnel, local) » du bloc des sources personnelles (Q-0108) : le dossier d'X-Plane, tapé une fois, vérifié et gardé par le lanceur ; jamais le chemin à l'écran
+  xp: {
+    title: ['X-Plane (personnel, local)', 'X-Plane (personal, local)', 'X-Plane (persönlich, lokal)', 'X-Plane (personal, local)'],
+    field: ['Dossier d’X-Plane', 'X-Plane folder', 'X-Plane-Ordner', 'Carpeta de X-Plane'],
+    save: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
+    clear: ['Effacer', 'Clear', 'Löschen', 'Borrar'],
+    ok: ['Enregistré — X-Plane', 'Saved — X-Plane', 'Gespeichert — X-Plane', 'Guardado — X-Plane'],
+    okCycle: ['Enregistré — X-Plane, cycle {c}', 'Saved — X-Plane, cycle {c}', 'Gespeichert — X-Plane, Zyklus {c}',
+      'Guardado — X-Plane, ciclo {c}'
+    ],
+    missing: ['Dossier introuvable', 'Folder not found', 'Ordner nicht gefunden', 'Carpeta no encontrada'],
+    notXplane: ['Ce n’est pas un dossier X-Plane', 'This is not an X-Plane folder', 'Das ist kein X-Plane-Ordner',
+      'No es una carpeta de X-Plane'
+    ],
+    unreadable: ['Dossier illisible', 'Folder unreadable', 'Ordner nicht lesbar', 'Carpeta ilegible'],
+    saved: ['Enregistré.', 'Saved.', 'Gespeichert.', 'Guardado.'],
+    cleared: ['Effacé.', 'Cleared.', 'Gelöscht.', 'Borrado.'],
+    reason: {
+      badBody: ['Demande refusée', 'Request refused', 'Anfrage abgelehnt', 'Solicitud rechazada'],
+      tooLong: ['Chemin trop long (260 signes au plus)', 'Path too long (260 characters at most)',
+        'Pfad zu lang (höchstens 260 Zeichen)', 'Ruta demasiado larga (260 caracteres como máximo)'
+      ],
+      refused: ['Chemin refusé par le lanceur', 'Path refused by the launcher', 'Pfad vom Starter abgelehnt',
+        'Ruta rechazada por el lanzador'
+      ],
+      notAFolder: ['Ce n’est pas un dossier', 'This is not a folder', 'Das ist kein Ordner', 'No es una carpeta'],
+      notXplane: ['Pas un dossier X-Plane : les fichiers de navigation sont introuvables',
+        'Not an X-Plane folder: the navigation files cannot be found',
+        'Kein X-Plane-Ordner: die Navigationsdateien wurden nicht gefunden',
+        'No es una carpeta de X-Plane: no se encuentran los archivos de navegación'
+      ],
+      notPersonal: ['Cochez d’abord l’usage personnel', 'Tick personal use first',
+        'Kreuzen Sie zuerst die persönliche Nutzung an', 'Marque primero el uso personal'
+      ]
+    }
   }
 };

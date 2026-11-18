@@ -65,6 +65,9 @@ import {
 import {
   cycleBarHtml
 } from './todo.js';
+import {
+  xplaneRowHtml
+} from './xplane.js';
 
 /** L'assistant de première installation (page V2 servie par le lanceur : SPEC § 6.5), adresse fixe du dépôt, jamais prise d'une réponse. */
 /** Les zones de la couverture dans l'ordre de zones() et, parmi elles, les cochées. */
@@ -766,6 +769,7 @@ function choiceHtml(set, busy) {
       <p class="f-muted">${esc(tt(TX.certifyHint))} <a href="#sources" data-licences-link>${esc(tt(TX.licencesLink))}</a></p>
       ${S.tickLauncher ? '' : `<p class="f-muted" data-tick-station>${esc(tt(TX.tickOnStation))}</p>`}
       <ul class="d-pers-list" data-personal-list>${pers.map(p => `<li data-personal-row="${p.id}"><b>${esc(personalName(p.id))}</b> <span class="f-muted" data-personal-line>${esc(tt(TX.personalLine[p.kind]))}</span></li>`).join('')}</ul>
+      ${xplaneRowHtml(busy)}
       ${S.certified ? `<p class="f-ok" data-personal-kept>${esc(tt(TX.personalKept))}</p>` : ''}</div>` : ''}</div>`;
   }
   if (set === 'proc') {
@@ -859,11 +863,14 @@ function redrawPanel(box) {
       .dataset.gid) + '[data-act="grp-toggle"]' : a.dataset.act === 'open-country' && a.closest('[data-cw-groups]') ? '[data-cw-groups] ' +
     q('data-zone', a.dataset.zone) + '[data-act="open-country"]' :
     a.dataset.act === 'world-toggle' ? '[data-act="world-toggle"]' :
-    a.dataset.certify !== undefined ? '[data-certify]' : a.dataset
+    a.dataset.certify !== undefined ? '[data-certify]' : a.dataset.xplanePath !== undefined ? '[data-xplane-path]' : /^xplane-(save|clear)$/
+    .test(a.dataset.act || '') ? `[data-xplane] [data-act="${a.dataset.act}"]` : a.dataset
     .item ? q('data-item', a.dataset.item) : a.dataset.f ? q('data-f', a.dataset.f) : a.dataset.verb ? q('data-verb', a.dataset.verb) : '' :
     '',
     from = a?.selectionStart ?? null,
-    to = a?.selectionEnd ?? null;
+    to = a?.selectionEnd ?? null,
+    xpText = box.querySelector('[data-xplane-path]')?.value ||
+    ''; // ce qui est tapé dans le champ du dossier d'X-Plane survit au redessin (le temps de ce dessin seulement : jamais gardé, jamais écrit en attribut)
   const inner = [...box.querySelectorAll('[data-sheet]')].map(e => [e
     .scrollTop
   ]); // la fiche d'un pays défile en elle-même : elle garde sa place à chaque redessin
@@ -878,6 +885,10 @@ function redrawPanel(box) {
     });
     syncPackSwitches(box);
     attachMaps(box); // la carte MapLibre survit au redessin : son hôte reprend la place de l'emplacement
+    if (xpText) {
+      const f = box.querySelector('[data-xplane-path]');
+      if (f) f.value = xpText;
+    }
     const el = sel && box.querySelector(sel);
     if (el && !el.disabled) {
       el.focus({

@@ -646,10 +646,11 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
     `busy_running`: the running operation a « busy » refusal names (SOG-0245; AeroDB's `running`, see _running); the dict is LIVE (the test changes its vitals), GET regen/job?id=<its id> answers it as a running view
     (`st['gets']` records the reads), POST regen/job/cancel flips its `cancelling`, POST regen/job/release is recorded in `st['releases']` and answers 200 (or 409 `alive` while `st['release_alive']`).  The 409 itself is
     the test's `start=(409, {'reason': 'busy', 'job': id, 'running': busy_running})`.  `cycle` (SOG-0262): the RESULT of the read-only job base/cycle (a dict, or a function of its args `{zone, personal}`; None = the verb answers nothing);
+    `st['xplane']` (Q-0108): the local X-Plane folder the launcher holds, a LIVE dict `{'configured', 'state', 'cycle', 'zones'}` that GET /__setup/xplane answers as `{ok: True, ...}` (None = an older launcher, 404); `st['xplane_gets']` counts the reads, `st['xplane_posts']` records the bodies posted, `st['xplane_answer']` is what the next POST answers (a body dict, a `(status, body)` tuple, or a function of the posted body; None = the launcher accepts: ok, state ok, cycle 2610, and `st['xplane']` follows).
     every such read is recorded in `st['posts']` (verb `cycle`).  `last_results` (SOG-0262, lot D3): the RESULT of the read-only job base/last (K191: the journal of the last pickup / fetch / build / update; a dict or a function of its args; None = the verb answers nothing)."""
     st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
-          'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0,
+          'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0, 'xplane': None, 'xplane_posts': [], 'xplane_gets': 0, 'xplane_answer': None,
           'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False, 'cycle': cycle, 'publish': publish, 'last_results': last_results}
 
     def handler(route):
@@ -681,6 +682,26 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
             else:
                 st['personal_gets'] += 1
                 body = st['personal']
+        elif u.path.endswith('/__setup/xplane'):
+            if st['xplane'] is None:
+                code = 404
+            elif req.method == 'POST':
+                b = json.loads(req.post_data or '{}')
+                st['xplane_posts'].append(b)
+                ans = st['xplane_answer']
+                if callable(ans):
+                    ans = ans(b)
+                if ans is None:   # the launcher accepts: it checks, keeps the folder, and says the cycle it read
+                    has = bool(b.get('path'))
+                    st['xplane'] = {'configured': has, 'state': 'ok' if has else None, 'cycle': '2610' if has else None, 'zones': 12 if has else None}
+                    body = {'ok': True, 'configured': has, 'state': st['xplane']['state'], **({'cycle': '2610'} if has else {})}
+                elif isinstance(ans, tuple):
+                    code, body = ans
+                else:
+                    body = ans
+            else:
+                st['xplane_gets'] += 1
+                body = {'ok': True, 'configured': False, 'state': None, 'cycle': None, 'zones': None, **st['xplane']}
         elif u.path.endswith('/__setup/data/inventory'):
             st['inventory_calls'] += 1
             if st['inventory'] is None:
@@ -10155,4 +10176,195 @@ def l157(c):
     long = c.js("(e => { const r = document.createRange(); r.selectNodeContents(e); const b = r.getBoundingClientRect(), h = e.getBoundingClientRect(); return [Math.round(b.right) <= Math.round(h.right) + 1, e.scrollWidth <= e.clientWidth + 1, h.height > 2 * parseFloat(getComputedStyle(e).lineHeight), getComputedStyle(e).whiteSpace] })(document.querySelector('[data-data-head] [data-pdf-libs]'))")
     c.eq(long[:3], [True, True, True], 'a LONG sentence wraps over several lines, never cut', what='long wraps')
     c.js("document.querySelector('[data-data-head] [data-pdf-libs]').scrollIntoView({ block: 'center' })")
+    c.check_errors()
+
+
+# ---- Q-0108: the local X-Plane folder (the fallback of AeroDB), set ONCE from the personal-use block — the launcher checks and keeps it, the page never writes the path anywhere
+_XP_SENT = 'C:\\Sentinel\\Chemin\\XP12'   # a path nobody could meet by chance: it must be on NO surface of the page after it was sent
+_XP_OK = {'configured': True, 'state': 'ok', 'cycle': '2610', 'zones': 12}
+_XP_WHERE_JS = """async () => {
+  const out = [document.documentElement.outerHTML, document.body.innerText, document.cookie, JSON.stringify(Object.entries(localStorage)), JSON.stringify(Object.entries(sessionStorage))];
+  for (const d of (await indexedDB.databases?.()) || []) {
+    const db = await new Promise(res => { const r = indexedDB.open(d.name); r.onsuccess = () => res(r.result); r.onerror = () => res(null) });
+    if (!db) continue;
+    for (const s of [...db.objectStoreNames]) out.push(JSON.stringify(await new Promise(res => { const q = db.transaction(s).objectStore(s).getAll(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) })));
+    db.close();
+  }
+  return out.join('\\n') }"""
+
+
+def _xp_open(c, personal=True, xplane=_XP_OK):
+    """Opens Données against a fake launcher that holds the personal-use tick (ticked or not) and, if given, a local X-Plane folder."""
+    cfg, _ = _fixture()
+    st = _launcher(c, [], personal={'certified': personal, 'at': '2026-11-10T09:00:00Z'})
+    st['xplane'] = dict(xplane) if xplane is not None else None
+    _open(c, cfg)
+    return st
+
+
+def _xp_wait(c, fn, what, tries=60):
+    """Waits (in the test) until `fn()` holds: the fake launcher is read from this side."""
+    for _ in range(tries):
+        if fn():
+            return
+        c.wait(150)
+    raise Fail(f'never true: {what}', 'it becomes true')
+
+
+def _xp_retick(c, st):
+    """Unticks then ticks the personal-use box again, each gesture awaited (the launcher's file answers each): the line of the X-Plane folder is read again."""
+    for want in (False, True):
+        n = len(st['personal_posts'])
+        _tap_certify(c)
+        _xp_wait(c, lambda: len(st['personal_posts']) == n + 1, 'the tick is posted')
+        c.until("document.querySelector('[data-certify]').checked === %s" % ('true' if want else 'false'), timeout=6000, what='the box follows the launcher')
+
+
+def _xp_msg(c, want):
+    """Waits until the gesture message of the X-Plane line says exactly `want` (spaces of every kind collapsed)."""
+    c.until("(w) => { const e = document.querySelector('[data-xplane-msg]'); return !!e && e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }", arg=want, timeout=8000, what=f'the message « {want} »')
+
+
+@case('L158', 'Données: the line « X-Plane (personnel, local) » is in the personal-use block ONLY with the tick AND when the launcher answers GET /__setup/xplane (Q-0108); it says the state, never the path',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='Q-0108 (choice A of Sécurisation): absent without the tick, absent when the launcher answers 404 (older launcher / paired device), present with the tick and a GET { ok: true }; says « Enregistré — X-Plane, cycle 2610 » for configured / ok / 2610, « Dossier introuvable », « Ce n\'est pas un dossier X-Plane », « Dossier illisible » for the other states, nothing for an empty state')
+def l158(c):
+    lang = c.lang
+    Q = lambda k: norm(_trow(k, lang, after='  xp: {'))
+    st = _xp_open(c, personal=False)
+    c.wait(500)
+    c.eq([c.count('[data-xplane]'), st['xplane_gets']], [0, 0], 'without the tick: no line, and nothing is read from the launcher', what='no tick')
+    # ---- the tick, an older launcher (404): no line
+    st['xplane'] = None
+    _tap_certify(c)
+    c.until("!!document.querySelector('[data-personal-kept]')", timeout=6000, what='the box is ticked')
+    c.wait(600)
+    c.eq(c.count('[data-xplane]'), 0, 'ticked but the launcher answers 404: no line', what='404')
+    # ---- unticked then ticked with a launcher that holds the folder: the line is there, says the state, and offers « Effacer »
+    st['xplane'] = dict(_XP_OK)
+    _tap_certify(c)
+    c.until("!document.querySelector('[data-certify]').checked", timeout=6000, what='unticked')
+    c.eq(c.count('[data-xplane]'), 0, 'unticked: the line goes away at once', what='unticked')
+    gets = st['xplane_gets']
+    _tap_certify(c)
+    c.until("!!document.querySelector('[data-xplane]')", timeout=8000, what='the line of the X-Plane folder')
+    c.eq([st['xplane_gets'] > gets, norm(c.text('[data-xplane-state]')), c.count('[data-act=xplane-save]'), c.count('[data-act=xplane-clear]'), c.count('[data-xplane-msg]')],
+         [True, Q('okCycle').replace('{c}', '2610'), 1, 1, 0], 'ticked and answered: « Enregistré — X-Plane, cycle 2610 », « Enregistrer » and « Effacer », no gesture message', what='present')
+    f = c.js("(e => [e.maxLength, e.getAttribute('autocomplete'), e.getAttribute('value'), e.value, e.type])(document.querySelector('[data-xplane-path]'))")
+    c.eq(f, [260, 'off', None, '', 'text'], 'the field: 260 signs at most, no autocomplete, no value at all', what='field')
+    c.eq(norm(c.text('[data-xplane] label')), Q('field'), 'the field is named', what='label')
+    # ---- the other states, said
+    for state, key in (('missing', 'missing'), ('not-xplane', 'notXplane'), ('unreadable', 'unreadable')):
+        st['xplane'] = {'configured': True, 'state': state, 'cycle': None, 'zones': None}
+        _xp_retick(c, st)
+        c.until("!!document.querySelector('[data-xplane]') && !!document.querySelector('[data-xplane-state]')", timeout=8000, what=f'the state {state}')
+        c.eq(norm(c.text('[data-xplane-state]')), Q(key), f'state {state}', what=state)
+    st['xplane'] = {'configured': False, 'state': None, 'cycle': None, 'zones': None}
+    _xp_retick(c, st)
+    c.until("!!document.querySelector('[data-xplane]')", timeout=8000, what='the line with no folder')
+    c.eq([c.count('[data-xplane-state]'), c.count('[data-act=xplane-save]'), c.count('[data-act=xplane-clear]')], [0, 1, 0], 'nothing configured: no state, no « Effacer »', what='empty')
+    st['xplane'] = dict(_XP_OK)
+    _xp_retick(c, st)
+    c.until("!!document.querySelector('[data-xplane-state]')", timeout=8000, what='the folder is configured again')
+    c.eq(c.js('document.documentElement.scrollWidth <= window.innerWidth'), True, 'no horizontal scroll', what='overflow')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-xplane]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L158_{c.width}_{lang}.png')
+    c.check_errors()
+
+
+@case('L159', 'Données: SECURITY — the X-Plane path is written NOWHERE on the page side (Q-0108): the strict body, the field emptied at once, the sentinel in no text, attribute, storage or console message, every refusal said by its closed sentence, 261 signs never leave, « Effacer » posts an empty path',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=False, night=False,
+      rule='Q-0108: the LAUNCHER controls the path, the page only its length; POST { path } and nothing else; the field is emptied before the answer; a reason outside the contract is said as `refused`; ctx.notify is not used (the path could leak into a toast); red without the guard: the path echoed in the message or kept in the field')
+def l159(c):
+    lang = c.lang
+    msgs = []
+    c.page.on('console', lambda m: msgs.append(m.text))
+    Q = lambda k, after='  xp: {': norm(_trow(k, lang, after=after))
+    R = lambda k: Q(k, '      badBody: [') if k != 'notXplane' else Q(k, '      notAFolder: [')
+    st = _xp_open(c)
+    c.until("!!document.querySelector('[data-xplane]')", timeout=10000, what='the line of the X-Plane folder')
+    where = lambda: c.js(_XP_WHERE_JS)
+    gone = lambda what: c.ok('Sentinel' not in where() and 'Sentinel' not in ' '.join(msgs), what, f'the path is on no surface of the page ({what})')
+    # ---- the path typed, « Enregistrer »: the strict body, the field empty, the line says it, the path nowhere
+    c.page.fill('[data-xplane-path]', _XP_SENT)
+    c.tap('[data-act=xplane-save]')
+    _xp_wait(c, lambda: len(st['xplane_posts']) == 1, 'the launcher received the path')
+    c.eq(st['xplane_posts'], [{'path': _XP_SENT}], 'the body is exactly { path } and nothing else', what='body')
+    _xp_msg(c, Q('saved'))
+    c.eq(c.js("document.querySelector('[data-xplane-path]').value"), '', 'the field is empty at once', what='field')
+    c.until("!!document.querySelector('[data-xplane-state]')", timeout=6000, what='the state is read again')
+    c.eq(norm(c.text('[data-xplane-state]')), Q('okCycle').replace('{c}', '2610'), 'the state read again says the cycle', what='state')
+    c.eq(c.js("document.querySelector('[data-xplane-path]').value"), '', 'and the field is still empty', what='field2')
+    c.eq([c.count('#fNotes .f-note'), c.note_log()], [0, []], 'no notification: the path could leak into a toast', what='notify')
+    gone('after a save')
+    # ---- every refusal of the contract, by its closed sentence; an unknown code (and hostile) is said as `refused`
+    for code, key in (('bad-body', 'badBody'), ('too-long', 'tooLong'), ('refused', 'refused'), ('not-a-folder', 'notAFolder'), ('not-xplane', 'notXplane'), ('not-personal', 'notPersonal'),
+                      ('weird', 'refused'), ('<img src=x onerror=window.__pwn=1>', 'refused')):
+        st['xplane_answer'] = (400, {'ok': False, 'reason': code})
+        n = len(st['xplane_posts'])
+        c.page.fill('[data-xplane-path]', _XP_SENT)
+        c.tap('[data-act=xplane-save]')
+        _xp_wait(c, lambda: len(st['xplane_posts']) == n + 1, f'the launcher received the path ({code})')
+        _xp_msg(c, R(key))
+        c.eq([c.js("document.querySelector('[data-xplane-path]').value"), c.js('window.__pwn === undefined'), c.count('[data-xplane] img')], ['', True, 0], f'{code}: field empty, nothing in the message is markup', what=code)
+        gone(f'refusal {code}')
+    # ---- an answer with no reason, or not readable: « Demande refusée », never the text of the error
+    base = len(st['xplane_posts'])
+    for i, ans in enumerate(((500, {}), (400, {'ok': False, 'message': _XP_SENT}), (200, {'ok': False}))):
+        st['xplane_answer'] = ans
+        c.page.fill('[data-xplane-path]', _XP_SENT)
+        c.tap('[data-act=xplane-save]')
+        _xp_wait(c, lambda: len(st['xplane_posts']) == base + i + 1, 'the launcher received it')
+        _xp_msg(c, R('badBody'))
+        gone(f'no reason {ans[0]}')
+    # ---- 261 signs: the launcher is not called, the sentence says why, the field is empty
+    n = len(st['xplane_posts'])
+    c.js("(() => { const e = document.querySelector('[data-xplane-path]'); e.value = 'C:\\\\Sentinel\\\\' + 'x'.repeat(261 - 'C:\\\\Sentinel\\\\'.length); e.dispatchEvent(new Event('input', { bubbles: true })) })()")
+    c.eq(c.js("document.querySelector('[data-xplane-path]').value.length"), 261, 'a 261-sign path is in the field (typed past the limit by a script)', what='261')
+    c.tap('[data-act=xplane-save]')
+    _xp_msg(c, R('tooLong'))
+    c.wait(400)
+    c.eq([len(st['xplane_posts']), c.js("document.querySelector('[data-xplane-path]').value")], [n, ''], '261 signs: the launcher is not called, the field is empty', what='too long')
+    gone('after 261 signs')
+    # ---- an empty field: nothing
+    c.tap('[data-act=xplane-save]')
+    c.wait(400)
+    c.eq(len(st['xplane_posts']), n, 'an empty field posts nothing', what='empty')
+    # ---- Enter in the field is « Enregistrer »
+    st['xplane_answer'] = None
+    c.page.fill('[data-xplane-path]', _XP_SENT)
+    c.page.press('[data-xplane-path]', 'Enter')
+    _xp_wait(c, lambda: len(st['xplane_posts']) == n + 1 and st['xplane_posts'][-1] == {'path': _XP_SENT}, 'Enter posted the path')
+    _xp_msg(c, Q('saved'))
+    gone('after Enter')
+    # ---- « Effacer » posts an empty path
+    c.tap('[data-act=xplane-clear]')
+    _xp_wait(c, lambda: len(st['xplane_posts']) == n + 2, 'the launcher received « Effacer »')
+    c.eq(st['xplane_posts'][-1], {'path': ''}, '« Effacer » posts { path: "" } and nothing else', what='clear body')
+    _xp_msg(c, Q('cleared'))
+    c.until("!document.querySelector('[data-act=xplane-clear]')", timeout=6000, what='nothing configured any more: « Effacer » goes away')
+    c.eq(c.count('[data-xplane-state]'), 0, 'and the line says no state', what='cleared state')
+    gone('at the end')
+    c.check_errors()
+
+
+@case('L160', 'Données: SECURITY — a hostile answer of GET /__setup/xplane is bounded to nothing (Q-0108): a state outside the closed list, a cycle that is not four digits, a zone count that is not a number — no markup, no script, no sentence',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=False, night=False,
+      rule='Q-0108: everything the launcher says is untrusted — state from a closed list, cycle /^\\d{4}$/, zones an integer 0..100000, reason from a closed list; written as text, never in an attribute')
+def l160(c):
+    hostile = {'configured': True, 'state': '<img src=x onerror=window.__pwn=1>', 'cycle': '<b>9</b>', 'zones': 'x'}
+    st = _xp_open(c, xplane=hostile)
+    c.until("!!document.querySelector('[data-xplane]')", timeout=10000, what='the line (the folder is configured)')
+    c.wait(400)
+    c.eq([c.count('[data-xplane] img'), c.count('[data-xplane-state]'), c.js('window.__pwn === undefined'), 'onerror' in c.js('document.querySelector("[data-xplane]").outerHTML'), '<b>9' in c.js('document.querySelector("[data-xplane]").outerHTML')],
+         [0, 0, True, False, False], 'no tag, no state sentence, no script: the hostile state and cycle are bounded to nothing', what='hostile')
+    m = c.js("""async () => { const m = await import('/modules/data/model_setstate.js');
+      return [m.xplaneOf({ ok: true, configured: true, state: '<b>', cycle: '<b>9</b>', zones: 'x' }), m.xplaneOf({ ok: false, configured: true }), m.xplaneOf(null), m.xplaneOf([]), m.xplaneOf({ ok: 'true' }),
+        m.xplaneOf({ ok: true, configured: 'true', state: 'ok', cycle: '26100', zones: 1e9 }), m.xplaneOf({ ok: true, configured: true, state: 'ok', cycle: '2610', zones: 12 }), m.xplaneOf({ ok: true, state: 'constructor', cycle: '2610\\n', zones: -1 }),
+        m.xplaneReason('x'), m.xplaneReason(null), m.xplaneReason('constructor'), m.xplaneReason('not-xplane'), m.xplaneReason('too-long')] }""")
+    nul = {'configured': False, 'state': None, 'cycle': '', 'zones': None}
+    c.eq(m, [{'configured': True, 'state': None, 'cycle': '', 'zones': None}, None, None, None, None, {**nul, 'state': 'ok'}, {'configured': True, 'state': 'ok', 'cycle': '2610', 'zones': 12}, {**nul},
+             'refused', 'refused', 'refused', 'not-xplane', 'too-long'], 'the model bounds every field and a code outside the contract is `refused`', what='model')
     c.check_errors()

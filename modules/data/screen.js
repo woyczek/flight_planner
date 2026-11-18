@@ -184,6 +184,11 @@ export const STYLE = `
 [data-module="data"] [data-set-panel] h2,[data-module="data"] [data-set-panel] h3{margin:8px 0 4px}
 [data-module="data"] .d-codes{display:grid;gap:4px;margin:4px 0}
 [data-module="data"] .d-codes input{min-height:var(--sog-touch);max-width:100%;box-sizing:border-box;text-transform:uppercase}
+[data-module="data"] .d-xplane{display:grid;gap:4px;margin:8px 0 0}
+[data-module="data"] .d-xplane p{margin:0}
+[data-module="data"] .d-xplane label{display:grid;gap:4px}
+[data-module="data"] .d-xplane input{min-height:var(--sog-touch);max-width:100%;box-sizing:border-box}
+[data-module="data"] .d-xplane .d-verbs{margin:2px 0 0}
 [data-module="data"] .d-verbs{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
 [data-module="data"] details.d-moreverbs{flex:1 1 auto}
 [data-module="data"] details.d-moreverbs>summary{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;padding:0 12px}

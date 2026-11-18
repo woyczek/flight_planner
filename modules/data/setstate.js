@@ -22,6 +22,9 @@ import {
   procList,
   renderBuild
 } from './panels.js';
+import {
+  wantXplane
+} from './xplane.js';
 
 /** La ligne « Lecture des PDF » (SOG-0376), d'après `pdf/status` lu une fois à l'ouverture : « prête », ou le paquet du groupe pdf en cause (« pypdf 6.21.3, il faut 6.21.4 au moins », « pypdf manque ») puis le NOM du script à lancer — aucune commande pip ; le groupe OCR à part,
  *  jamais le groupe OCR (facultatif : il n'a pas sa place ici). Les noms, versions et script viennent du lanceur : écrits en texte, jamais dans un attribut. '' sans l'état (lanceur plus ancien, lecture refusée). */
@@ -151,6 +154,7 @@ async function wantOne(set) {
 /** Lit ce qui est à lire (appelée après un dessin complet de l'écran et quand il est libre) : les trois jeux, l'un après l'autre. */
 export function wantSetStates() {
   if (!S?.cw) return;
+  wantXplane(); // le dossier d'X-Plane que le lanceur tient (Q-0108) : lu avec les autres états, seulement avec la coche « personnel »
   S.cw.ss ||= ssInit();
   for (const set of Object.keys(SET_STATE_VERBS)) wantOne(set);
 }
@@ -160,6 +164,7 @@ export function forgetSetStates() {
 }
 /** Une lecture que le lanceur a refusée est retentée dès que l'écran est libre, au plus toutes les 4 s ; une lecture « à relire » aussi. */
 export function setStatesIdle() {
+  if (S?.xp?.dirty) wantXplane(); // la lecture du dossier d'X-Plane refusée pendant une opération est reprise ici
   const ss = S?.cw?.ss;
   if (!ss) return;
   const due = r => !!r && (r.dirty || r.state === 'busy') && !(r.tries >= 3 && Date.now() - r.at < 4000);
