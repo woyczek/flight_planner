@@ -9653,6 +9653,23 @@ def n142(c):
         _md_name(c, 'Interception')
         c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => /modèle de la suite/.test(n.textContent))", timeout=5000, what='the name of the suite refused')
         c.eq(sorted(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')), [path], f'{width}: nothing written under the name of the suite', what='refused')
+        # a text the reader refuses (« < », « > », an address) is left out, and the workshop says how many (retouch of the security session)
+        c.js(quiet)  # the notice of the refusal would cover the sheet
+        c.js("(q) => { const b = document.querySelector(q); b.scrollIntoView({ block: 'center' }); b.click() }", f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the first drawer')
+        if c.count(f'{_DW} [data-do="eddrgrp"][data-grp="texts"]'):  # folded on a narrow module only
+            c.js("(q) => { const b = document.querySelector(q); b.scrollIntoView({ block: 'center' }); b.click() }", f'{_DW} [data-do="eddrgrp"][data-grp="texts"]')
+        c.page.fill(f'{_DW} [data-f="message"]', 'altitude < 500')
+        c.js(quiet)
+        c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
+        _md_name(c, 'Modèle deux')
+        path2 = 'pilot/ABC/modeles/modele-deux.yaml'
+        _md_wait(c, lambda t: path2 in t, 'the second model written')
+        c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => /Modèle enregistré/.test(n.textContent))", timeout=5000, what='the notice of the left-out text')
+        c.eq([norm(n).replace('✕', '').strip() for n in c.js("[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent)") if 'Modèle' in n],
+             [norm(row(c, 'mdDropped', EDTX_FILE).replace('{n}', '1').replace('il(s) portai(en)t', 'il portait').replace('(s)', ''))],
+             f'{width}: one text left out, said by the frame', what='the notice')
+        c.eq('altitude' in c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')[path2], False, f'{width}: the refused text is not in the file', what='the file')
         ed_leave(c)
         c.js(_MD_CLEAR)
 
@@ -9677,7 +9694,7 @@ export async function drawProfile(cv, pts, o) {
 def n143(c):
     import base64
     import json
-    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
+    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', (str(kv[1]) if c.lang == 'en' else str(kv[1]).replace('.', ','))), v.items(), row(c, k, EDTX_FILE)))  # the decimal comma outside English (SOG, profile)  # noqa: E731
     asked, png = [], []
 
     def tiles(route):

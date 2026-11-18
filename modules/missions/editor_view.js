@@ -265,6 +265,26 @@ function edModelListHtml(s) {
   return `<div class="f-list ms-kinds ms-models" data-models role="group" aria-label="${esc(s.tt(EDTX.mdList))}">${fam ? '' : `<p class="f-muted" data-modelfam>${esc(s.tt(EDTX.mdFamilyFirst))}</p>`}${cat.map(item).join('')}${mine.length ? `<p class="f-muted ms-modelsmine">${esc(s.tt(EDTX.mdMine))}</p>${mine.map(item).join('')}` : ''}<button type="button" class="f-linkbtn ms-kindoff" data-do="edmodeloff">${esc(s.tt(TX.cancel))}</button></div>`;
 }
 
+/** Le nombre de textes de la séance que le modèle écrit n'a pas gardés (un tiroir : titre, message, briefing ; un lieu : son nom) : ce que le
+ *  lecteur du catalogue refuse (une balise, une adresse) ne se recopie pas ici, la différence entre ce que l'atelier avait et ce qui est
+ *  écrit le dit. Un texte seulement raccourci ou nettoyé n'est pas écarté ; un titre de tiroir écarté devient « — » dans le modèle. */
+function edModelDropped(drawers, places, model) {
+  const txt = v => typeof v === 'string' || typeof v === 'number' ? String(v).trim() : '',
+    outP = new Map((model.places || []).map(p => [p.id, p]));
+  let n = 0;
+  (Array.isArray(drawers) ? drawers : []).slice(0, model.drawers.length).forEach((r, i) => {
+    const o = model.drawers[i] || {};
+    if (txt(r.title) && txt(r.title) !== '—' && (!o.title || o.title === '—')) n++;
+    if (txt(r.message) && !o.message) n++;
+    if (txt(r.brief) && !o.brief) n++;
+  });
+  for (const p of Array.isArray(places) ? places : []) {
+    const o = outP.get(p?.id);
+    if (o && txt(p.name) && !o.name) n++;
+  }
+  return n;
+}
+
 /** « Enregistrer comme modèle » (voir l'en-tête) : le nom demandé, le fichier du modèle personnel écrit sur l'appareil, puis relu parmi
  *  « Vos modèles ». Sans trigramme, un nom sans lettre ni chiffre, le nom d'un modèle de la suite : rien n'est écrit, l'atelier le dit. */
 async function edModelSave(s) {
@@ -272,7 +292,7 @@ async function edModelSave(s) {
   if (!e || e.veil || e.busy) return;
   const tri = s.ctx.identity?.trigram;
   if (!CAT.modelPath(tri, 'x')) return s.ctx.notify(s.tt(EDTX.mdNoTrigram), 'warn');
-  const name = await s.ctx.askText(s.tt(EDTX.mdSaveAsk), {
+  const name = await s.ctx.askText(`${s.tt(EDTX.mdSaveAsk)} ${s.tt(EDTX.mdSecret)}`, { // le cadre n'a qu'un texte : la phrase « pas secret » le suit
     value: String(e.cadre.title || '').slice(0, CAT.LIMITS.title),
     ok: s.tt(EDTX.mdSaveOk),
     cancel: s.tt(TX.cancel)
@@ -294,13 +314,16 @@ async function edModelSave(s) {
       cancel: s.tt(EDTX.mdReplaceKeep)
     }))) return;
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
-  const model = CAT.modelFromSession({
-    id,
-    title,
-    family: e.cadre.family,
-    drawers: edDrawers(e),
-    places: e.places || ED.placesOf(edDoc(e))
-  });
+  const srcDrawers = edDrawers(e),
+    srcPlaces = e.places || ED.placesOf(edDoc(e)),
+    model = CAT.modelFromSession({
+      id,
+      title,
+      family: e.cadre.family,
+      drawers: srcDrawers,
+      places: srcPlaces
+    }),
+    dropped = edModelDropped(srcDrawers, srcPlaces, model);
   if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
   const text = CAT.modelText(model, globalThis.jsyaml);
   // ce qui ne se relirait pas (un nom refusé par le lecteur, une balise) n'est pas écrit
@@ -314,7 +337,10 @@ async function edModelSave(s) {
     const again = await edMine(s);
     if (state() !== s || s.ed !== e) return;
     e.mine = again;
-    s.ctx.notify(s.tt(EDTX.mdSaved, {
+    if (dropped) s.ctx.notify(s.tt(EDTX.mdDropped, {
+      n: dropped
+    }), 'warn'); // le modèle est écrit, mais sans ces textes : l'atelier le dit
+    else s.ctx.notify(s.tt(EDTX.mdSaved, {
       name: title
     }), 'ok');
   } catch (x) {
@@ -1334,11 +1360,11 @@ function edProfile(s) {
       null, // clear : la marge de la croisière sur le relief lu ; absent (Carte plus ancienne) ou nul : rien à dire
       ok = k && Number.isFinite(k.minFt) && Number.isFinite(k.atNm),
       vars = ok ? {
-        nm: Math.round(k.atNm * 10) / 10,
+        nm: dec(s, Math.round(k.atNm * 10) / 10),
         ft: Math.abs(Math.round(k.minFt))
       } : null;
     put(r.terrain ? s.tt(EDTX.atProfNm, {
-      nm: Math.round(r.nm * 10) / 10
+      nm: dec(s, Math.round(r.nm * 10) / 10)
     }) : s.tt(EDTX.atProfNoRelief), false, !ok ? '' : k.below ? s.tt(EDTX.atProfBelow, vars) : k.minFt < 500 ? s.tt(EDTX.atProfLow,
       vars) : '');
   }).catch(() => {

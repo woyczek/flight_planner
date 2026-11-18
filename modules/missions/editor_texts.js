@@ -199,6 +199,17 @@ export const EDTX = {
   ],
   mdReplaceOk: ['Remplacer le modèle', 'Replace the model', 'Modell ersetzen', 'Sustituir el modelo'],
   mdReplaceKeep: ['Garder l’ancien', 'Keep the old one', 'Das alte behalten', 'Conservar el anterior'],
+  mdSecret: ['Un modèle enregistré n’est pas secret : quiconque ouvre le dépôt des données de la compagnie peut le lire.',
+    'A saved model is not secret: anyone who opens the company’s data repository can read it.',
+    'Ein gespeichertes Modell ist nicht geheim: wer das Datenrepository der Gesellschaft öffnet, kann es lesen.',
+    'Un modelo guardado no es secreto: quien abra el repositorio de datos de la compañía puede leerlo.'
+  ],
+  mdDropped: ['Modèle enregistré : {n} texte(s) écarté(s), car il(s) portai(en)t < > ou une adresse.',
+    'Model saved: {n} text(s) left out (< > and addresses are not accepted).',
+    'Modell gespeichert: {n} Text(e) weggelassen (< > und Adressen sind nicht zulässig).',
+    'Modelo guardado: {n} texto(s) descartado(s) (no se admiten < > ni direcciones).'
+  ],
+
   mdSaved: ['Modèle « {name} » enregistré sur cet appareil : il part avec le prochain envoi.',
     'Model “{name}” saved on this device: it goes with the next sending.',
     'Modell „{name}“ auf diesem Gerät gespeichert: es geht mit dem nächsten Senden mit.',
