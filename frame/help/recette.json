@@ -4595,37 +4595,6 @@
    "recommended": 0
   },
   {
-   "id": "Q-0103",
-   "fiche": "SOG-0462",
-   "app": "pilote",
-   "question": "Zones R et D : pour la « nature du danger », le lanceur peut-il lire la section ENR 5.1 de l'AIP de France sur le site du SIA ?",
-   "context": "Ta demande (nature, gestionnaire, horaires, conditions). Mesure d'AeroDB : horaires, conditions et gestionnaire sont déjà là pour la France ; le NOM USUEL aussi (« MONT SAINT MICHEL » pour la R 12) et il sera affiché sans rien demander de plus. Mais la colonne « Genre de limitation / Nature du danger » n'est dans aucun fichier que le lanceur lit aujourd'hui : elle n'est que dans l'AIP. Le site du SIA est déjà interrogé pour les procédures ; il s'agirait d'y lire une section de plus, à chaque cycle. Les autres États suivraient un par un, plus tard.",
-   "options": [
-    "Oui : le lanceur lit l'ENR 5.1 sur le site du SIA, à chaque cycle",
-    "Non : seulement ce qui est déjà lu (nom usuel, horaires, conditions, gestionnaire)",
-    "Par un PDF de l'AIP que je dépose moi-même, sans nouvelle lecture du site",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0104",
-   "fiche": "SOG-0444",
-   "app": "compagnie",
-   "question": "Atelier de missions : d'où vient le catalogue des modèles et des briques ? Vois file:///E:/DEFA-v3-missions-creation/modules/missions/maquette/atelier.html#modele (la ligne « Modèle : … · Changer de modèle »)",
-   "context": "Tu as dit oui à « Changer de modèle » (Q-0099). Mais la V3 n'a aujourd'hui aucun modèle ni aucune brique : « Créer une mission » ouvre un atelier vide. Ta maquette, elle, en a (tes soixante briques en seize familles, tes modèles), et je m'étais interdit de recopier ses exemples dans le dépôt. Dans tous les cas le catalogue sera un fichier du dépôt que tu pourras compléter, pas du code. Le lot attend ta réponse, et celle sur la palette (Q-0101) : les deux se conçoivent ensemble.",
-   "options": [
-    "De ma maquette : reprends mes briques et mes modèles, je t'y autorise",
-    "Trois modèles inventés pour commencer (recherche qui se précise, interception, bateau mobile) ; j'ajouterai les miens au fichier",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
@@ -5022,23 +4991,41 @@
    "at": "2026-11-17T10:14:56Z"
   },
   {
-   "id": "Q-0101",
-   "fiche": "SOG-0444",
-   "app": "compagnie",
-   "question": "Atelier de missions : où vit la palette de briques ? Ouvre file:///E:/DEFA-v3-missions-creation/modules/missions/maquette/atelier.html#briques puis la même adresse finie par #biblio",
-   "context": "Reprise de Q-0098, avec les adresses. « #briques » : une rangée « Briques » sous le déroulé (familles en onglets, la famille de la mission d'abord, recherche) ; la brique tombe à côté de « ＋ Tiroir » et la carte garde sa largeur. « #biblio » : la colonne de gauche repliable ; elle montre tout d'un coup, mais à 1280 px elle rétrécit la carte, et repliée elle cache de nouveau la palette. Les briques de la maquette sont inventées. Les deux captures à 1280 sont aussi dans le fil de la session (atelier_briques_1280, atelier_biblio_1280).",
+   "id": "Q-0103",
+   "fiche": "SOG-0462",
+   "app": "pilote",
+   "question": "Zones R et D : pour la « nature du danger », le lanceur peut-il lire la section ENR 5.1 de l'AIP de France sur le site du SIA ?",
+   "context": "Ta demande (nature, gestionnaire, horaires, conditions). Mesure d'AeroDB : horaires, conditions et gestionnaire sont déjà là pour la France ; le NOM USUEL aussi (« MONT SAINT MICHEL » pour la R 12) et il sera affiché sans rien demander de plus. Mais la colonne « Genre de limitation / Nature du danger » n'est dans aucun fichier que le lanceur lit aujourd'hui : elle n'est que dans l'AIP. Le site du SIA est déjà interrogé pour les procédures ; il s'agirait d'y lire une section de plus, à chaque cycle. Les autres États suivraient un par un, plus tard.",
    "options": [
-    "La rangée « Briques » sous le déroulé (#briques)",
-    "La colonne de gauche, repliable (#biblio)",
-    "Les deux : la rangée par défaut, la colonne sur un très grand écran",
+    "Oui : le lanceur lit l'ENR 5.1 sur le site du SIA, à chaque cycle",
+    "Non : seulement ce qui est déjà lu (nom usuel, horaires, conditions, gestionnaire)",
+    "Par un PDF de l'AIP que je dépose moi-même, sans nouvelle lecture du site",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-18",
    "state": "answered",
    "recommended": 0,
-   "choice": 3,
-   "text": "si je reprend l’ergonomie de départ. On parle bien de création from scratch dans le mindset. - choix du type de mission - choix du template (s’il y en a) - choix des briques (tiroirs)  Je prend le second mode. - édition de mission - visu des tiroirs - modif du tiroir, ou suppression / recréation  La dernière livraison du template considère qu’on n’a besoin de voir les « briques » qu’à un seul moment, la création de tiroir.  On peut également modifier la clé d’ouverture, c’est à dire la brique de base. Le design « + » qui cache le nouveau type est probablement suffisant. concis, il ne fait apparaître l’information qu’au moment où on en a besoin.  On conserve la densité et les informations uniquement utiles. BTW : rien ne nous limite à 3 tiroirs, si ?  Seconde remarque : ta maquette étire les tiroirs en largeur. la mienne en hauteur. je préfère réduire le texte secondaire et étirer en hauteur.  Globablement, beaucoup de texte un peu partout gagnerait à réduire en taille. avis de l’ergonome.",
-   "at": "2026-11-18T09:31:50Z"
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-18T10:15:52Z"
+  },
+  {
+   "id": "Q-0104",
+   "fiche": "SOG-0444",
+   "app": "compagnie",
+   "question": "Atelier de missions : d'où vient le catalogue des modèles et des briques ? Vois file:///E:/DEFA-v3-missions-creation/modules/missions/maquette/atelier.html#modele (la ligne « Modèle : … · Changer de modèle »)",
+   "context": "Tu as dit oui à « Changer de modèle » (Q-0099). Mais la V3 n'a aujourd'hui aucun modèle ni aucune brique : « Créer une mission » ouvre un atelier vide. Ta maquette, elle, en a (tes soixante briques en seize familles, tes modèles), et je m'étais interdit de recopier ses exemples dans le dépôt. Dans tous les cas le catalogue sera un fichier du dépôt que tu pourras compléter, pas du code. Le lot attend ta réponse, et celle sur la palette (Q-0101) : les deux se conçoivent ensemble.",
+   "options": [
+    "De ma maquette : reprends mes briques et mes modèles, je t'y autorise",
+    "Trois modèles inventés pour commencer (recherche qui se précise, interception, bateau mobile) ; j'ajouterai les miens au fichier",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "je ne sais pas comment mettre à jour le modèle, en revanche.",
+   "at": "2026-11-18T10:16:31Z"
   }
  ]
 }

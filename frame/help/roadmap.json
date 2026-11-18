@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c441aa6",
-  "fiches": 462,
+  "organisation": "1623ba1",
+  "fiches": 466,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -293,6 +293,27 @@
      "de": "Vereinigtes Königreich: keine SID für EGLL gelesen (Abflüge nur als PDF veröffentlicht) — aus dem abgelegten eAIP lesen",
      "es": "Reino Unido: ninguna SID leída para EGLL (las salidas solo se publican en PDF) — leerlas del eAIP depositado",
      "rank": 311
+    }
+   ]
+  },
+  {
+   "id": "pilote-aerodb-terrains",
+   "app": "pilote",
+   "label": {
+    "fr": "AeroDB ; terrains",
+    "en": "AeroDB ; terrains",
+    "de": "AeroDB ; terrains",
+    "es": "AeroDB ; terrains"
+   },
+   "items": [
+    {
+     "id": "SOG-0466",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Hélistations de France : les avoir dans la base (codes, positions), et dire où en sont les cartes VAC et VACH",
+     "en": "French heliports: have them in the database (codes, positions), and say where VAC and VACH charts stand",
+     "de": "Französische Hubschrauberlandeplätze: in die Datenbank aufnehmen (Codes, Positionen) und den Stand der VAC- und VACH-Karten nennen",
+     "es": "Helipuertos de Francia: tenerlos en la base (códigos, posiciones) y decir cómo están las cartas VAC y VACH"
     }
    ]
   },
@@ -3840,6 +3861,57 @@
      "de": "Missionswerkstatt: „Abbrechen“ ist schlecht platziert, kaum sichtbar und anders als auf den übrigen Seiten",
      "es": "Taller de misiones: «Cancelar» está mal situado, se ve poco y no se parece a las demás pantallas",
      "test": true
+    },
+    {
+     "id": "SOG-0467",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : les briques au « ＋ Tiroir » seulement, le déroulé en hauteur, moins de texte secondaire",
+     "en": "Mission workshop: building blocks only at “＋ Drawer”, the sequence as a vertical list, less secondary text",
+     "de": "Missionswerkstatt: Bausteine nur bei „＋ Schublade“, der Ablauf als senkrechte Liste, weniger Nebentext",
+     "es": "Taller de misiones: los bloques solo en «＋ Cajón», la secuencia en vertical, menos texto secundario"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-atelier-champs",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; champs",
+    "en": "Missions ; atelier ; champs",
+    "de": "Missions ; atelier ; champs",
+    "es": "Missions ; atelier ; champs"
+   },
+   "items": [
+    {
+     "id": "SOG-0465",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : Départ et Arrivée avec le champ de terrain de la suite (complétion comprise)",
+     "en": "Mission workshop: Departure and Arrival with the suite's airfield field (completion included)",
+     "de": "Missionswerkstatt: Start und Ziel mit dem Flugplatzfeld der Suite (samt Vervollständigung)",
+     "es": "Taller de misiones: Salida y Llegada con el campo de aeródromo de la suite (con autocompletado)"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-carte-relief",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; carte ; relief",
+    "en": "Missions ; carte ; relief",
+    "de": "Missions ; carte ; relief",
+    "es": "Missions ; carte ; relief"
+   },
+   "items": [
+    {
+     "id": "SOG-0464",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : le profil vertical du trajet, sous la carte",
+     "en": "Mission workshop: the vertical profile of the route, under the map",
+     "de": "Missionswerkstatt: das Höhenprofil der Strecke unter der Karte",
+     "es": "Taller de misiones: el perfil vertical del trayecto, bajo el mapa"
     }
    ]
   },
