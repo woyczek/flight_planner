@@ -92,7 +92,7 @@ BECOMES the workshop. We port its frame, not its details of the day. Mock-up: `m
 | the mission's map | on the left, the place where one edits | folded (« Carte de la mission »), read only |
 | the unfolding (« déroulé ») | under the map, ONE row that scrolls sideways: « Au départ » (visible), then « Tiroir 1, 2, 3… » (scellé; twelve at most), each with its key in one line; « ＋ Tiroir » is its last card | first, the same single row |
 | the sheet (« fiche ») | on the right, of what is selected (the departure, a drawer, a place) | under the unfolding |
-| the foot | « Enregistrer », « À compléter (n) » and its first point, « Annuler » | « À compléter (n) » alone: a button that opens the named list (never a cut text) |
+| the foot | « Enregistrer » and « Annuler » side by side, then « À compléter (n) » and its first point (§ 7 quinvicies) | « À compléter (n) » alone: a button that opens the named list (never a cut text) |
 
 - **A drawer is said by its rank** (« Tiroir 1 »), never by a letter: letters name the crews of an operation (the user, 17 Nov). In the
   file the ids stay B to M; the visible part (part A of the file) is « Au départ ». A drawer removed in the middle: the ranks close up.
@@ -229,9 +229,9 @@ The screen of `editor_view.js` (its rules in `AT_STYLE`, its texts `at…` in `e
   content in one line (`edLine`); the form of the open group (the step's form, unchanged) under its button; `s.ed.step` names the open
   group, `''` when all are folded — a mission being modified on a narrow module opens folded, a new mission and a copy open on the Cadre
   (a copy must be given its identifier: this session's choice, to be confirmed by the ergonomist), a wide module opens the Cadre;
-- **the foot** (`.ms-atfoot`, sticky above the tab bar): « Enregistrer », « À compléter (n) » — on a wide module with its first point
-  — and « Annuler »; the button opens the named list INSIDE the foot, just above itself (opened at the end of the page, it was off the
-  screen of a phone). « Suivante » is gone: a group is opened by its name.
+- **the foot** (`.ms-atfoot`, sticky above the tab bar): « Enregistrer » and « Annuler » side by side (§ 7 quinvicies), then, at
+  the end of the bar, « À compléter (n) » — on a wide module with its first point; that button opens the named list INSIDE the foot,
+  just above itself (opened at the end of the page, it was off the screen of a phone). « Suivante » is gone: a group is opened by its name.
 - **the library** has its place kept in the specification and shows nothing in this lot.
 
 **SOG-0449 — what the finger is pressing is never redrawn.** The pills were replaced at every `input` AND at every `change` (leaving
@@ -748,6 +748,24 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   by the page once the workshop has been opened online).
 - **Not done**: coming back online does not bring the suite's background back in an open workshop (nothing reloads by itself):
   leaving the workshop and opening it again does.
+
+### 7 quinvicies. « Annuler » against « Enregistrer », and the question before leaving (18 Nov 2026; SOG-0454; noreg N109)
+
+The user, after his first sitting in the workshop: « Annuler » was « mal placé, pas assez visible, pas cohérent avec les autres
+interfaces » — a text link at the far end of the foot, after « Enregistrer » and « À compléter ».
+
+- **The pair of every other form of the suite**: « Enregistrer » (primary) then « Annuler », a plain button, side by side — the
+  form of a line of the registry (`regEditHtml` in `module.js`: « Enregistrer » / « Annuler »), the moves, the question of the
+  frame (`ask`). « À compléter (n) » is pushed to the end of the bar (`margin-left: auto`): it is a state, not an answer of the
+  form. At 390 the three stay on one line, on screen without scrolling.
+- **Leaving asks when something would be lost** (`edLeave`, `edDirty`): the document of the workshop (`edDoc`) is compared with
+  the file read or last saved (`e.base`) — for a new mission or a copy, with the document of its opening (`e.start`). The same:
+  « Annuler » leaves at once, as before. Different: the question of the frame (`ctx.ask`) — « Quitter l'atelier sans enregistrer ?
+  Les changements de cette mission seront perdus. », « Quitter sans enregistrer » / « Rester dans l'atelier ». Nothing is left,
+  nothing is written, without the yes. **Before this lot « Annuler » dropped every change without a word.**
+- **Not covered** (the frame's, not the workshop's): leaving by the menu of the suite, by « Retour » of the browser or by closing
+  the tab asks nothing — said to the ergonomist.
+- The cases that leave the workshop go through `ed_leave` (the question answered when it comes).
 
 ### 8. What is NOT ported
 

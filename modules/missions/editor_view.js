@@ -197,7 +197,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atbody .ms-evrow>.ms-evtext{grid-column:1 / span 2}
 [data-module="missions"] .ms-atfoot{position:sticky;bottom:var(--f-tab-space,0px);margin-top:auto;background:var(--sog-bg,#fff);border-top:1px solid var(--sog-line,#ddd);z-index:2}
 [data-module="missions"] .ms-atbar{display:flex;gap:8px;align-items:center;padding:8px 0}
-[data-module="missions"] .ms-atbar>.ms-edcancel{margin-left:auto}
+[data-module="missions"] .ms-atbar>.ms-attodobtn{margin-left:auto} /* « Enregistrer » et « Annuler » collés, « À compléter » au bout (SOG-0454) */
 [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:none}
 [data-module="missions"] .ms-attodobtn>*,[data-module="missions"] .ms-atsum>*{pointer-events:none}
 [data-module="missions"] .ms-attodo{margin:8px 0 0;max-height:40dvh;overflow:auto}
@@ -291,6 +291,7 @@ async function edOpen(s, mode, line = null) {
       origId: '',
       pending: false
     };
+    s.ed.start = edDoc(s.ed); // ce qu'« Annuler » compare : rien de saisi, rien à perdre (SOG-0454)
     return draw(s);
   }
   const path = RG.pathOf(line?.row);
@@ -323,6 +324,7 @@ async function edOpen(s, mode, line = null) {
     pending: mode === 'edit' && got.pending,
     regSeries
   };
+  if (mode === 'dup') s.ed.start = edDoc(s.ed); // une copie pas encore retouchée se quitte sans question (SOG-0454)
   draw(s);
 }
 
@@ -1559,7 +1561,8 @@ function edTrialInput(s, ev) {
 }
 
 /** L'écran de l'atelier (SOG-0444, lot P1 ; la maquette : modules/missions/maquette/atelier_*.png) : la carte et le déroulé, la fiche du
- *  départ en six groupes, le pied (« Enregistrer », « À compléter (n) », « Annuler »). */
+ *  départ en six groupes, le pied (« Enregistrer » et « Annuler » collés, comme dans les autres formulaires de la suite — SOG-0454 —
+ *  puis « À compléter (n) »). */
 export function edHtml(s) {
   const e = s.ed,
     doc = edDoc(e),
@@ -1569,7 +1572,7 @@ export function edHtml(s) {
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
     <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edFlowHtml(s, doc, run)}</div>${run ? edTrialHtml(s, run) : (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}</div>
     <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
-    <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button><button type="button" class="f-linkbtn ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button></div></div></div>`;
+    <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
 }
 
 /** Une saisie de l'éditeur : un texte met à jour l'aperçu, les pastilles et l'en-tête seuls (le champ garde son curseur) ; une liste
@@ -1934,6 +1937,7 @@ async function edSave(s) {
     Object.assign(e, {
       mode: 'edit',
       base: doc,
+      start: null, // « Annuler » compare désormais au fichier enregistré
       cadre: ED.cadreOf(doc),
       teams: null,
       // le groupe « Lieux » resté déplié garde sa liste : ses lignes sont relues du fichier enregistré (sans cela la liste se vidait
@@ -2379,9 +2383,27 @@ function edClickDo(s, b) {
       s.ed.teams = (s.ed.teams || []).filter((_, i) => i !== +b.dataset.i);
       return draw(s);
     case 'edcancel':
-      s.ed = null;
-      draw(s);
-      if (s.reg) regLoad(s);
-      return;
+      return edLeave(s);
   }
+}
+
+/** Vrai quand la mission de l'atelier porte un changement non enregistré : son document n'est plus celui de l'ouverture (une
+ *  mission neuve ou une copie : `start`, pris à l'ouverture) ni celui du dernier enregistrement (`base`). */
+function edDirty(e) {
+  return !ED.same(edDoc(e), e.start || e.base);
+}
+
+/** « Annuler » (SOG-0454) : quitte l'atelier et rend le registre ; avec un changement non enregistré, la question du cadre d'abord
+ *  (« Quitter sans enregistrer » / « Rester dans l'atelier ») — rien n'est quitté sans le oui. */
+async function edLeave(s) {
+  const e = s.ed;
+  if (!e) return;
+  if (edDirty(e) && !(await s.ctx.ask(s.tt(EDTX.leaveAsk), {
+      ok: s.tt(EDTX.leaveOk),
+      cancel: s.tt(EDTX.leaveStay)
+    }))) return;
+  if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
+  s.ed = null;
+  draw(s);
+  if (s.reg) regLoad(s);
 }

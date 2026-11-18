@@ -2038,6 +2038,15 @@ _ED_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nversi
 E = f'{M} [data-pane=editor]'
 
 
+def ed_leave(c):
+    """Leaves the workshop by « Annuler »: a mission with an unsaved change asks first (SOG-0454, case N109) and the case answers
+    « Quitter sans enregistrer »; a mission left untouched leaves at once."""
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.wait(200)
+    if c.count('.f-modal [data-ok]'):
+        c.tap('.f-modal [data-ok]')
+
+
 def _ed_fill(c, k, v):
     c.page.fill(f'{E} input[data-k={k}]', v)
 
@@ -2085,7 +2094,7 @@ def n50(c):
     c.ok('id: X-002' in reg_text(c) and 'X_REG/X-002' in reg_text(c), reg_text(c), 'its registry line, on the device')
     # the noreg's transport is local: data.put writes the cache at once (on a device with a repository, the same put waits for the grouped send)
     # modify X-001A: every other field kept
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
@@ -2094,7 +2103,7 @@ def n50(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the captures without the toasts of the steps before
     bar = c.js(f"""(() => {{ const b = document.querySelector('{E} [data-do=edsave]').getBoundingClientRect();
       return document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2)?.closest('[data-do=edsave]') ? b.bottom <= innerHeight : false }})()""")
-    c.ok(bar, 'covered or off screen', 'at 390, « Enregistrer · À compléter · Annuler » stays on screen above the tab bar')
+    c.ok(bar, 'covered or off screen', 'at 390, « Enregistrer · Annuler · À compléter » stays on screen above the tab bar')
     c.shot('N50_390_cadre.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
@@ -2110,7 +2119,7 @@ def n50(c):
          'Modifier changes the frame and keeps the rest of the file')
     reg_wait_text(c, lambda x: 'Mission retouchée' in x)
     # duplicate X-001A: the next identifier, the content kept, the original untouched
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="eddup"]')
@@ -2312,7 +2321,7 @@ def n54(c):
     c.ok(('Un titre inventé très long ' * 12).strip() in t and 'elevation_ft: 300' in t and 'Premier objectif inventé.' in t and "mass_kg: '120'" in t,
          t[:400], 'the frame, the places and the story untouched')
     # YAML aliases: refused at opening
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     _ed_open(c, _ALIAS)
     c.wait(800)
     c.ok(not c.count(E) and any(norm(row(c, 'edAlias')) in norm(n) for n in c.note_log()), c.note_log(),
@@ -2397,7 +2406,7 @@ def n56(c):
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     t = c.js(_TEXT_OF, path) or ''
     c.ok('lat: 44.65' in t and 'rendezvous:\n  id: RDV-1' in t, t[t.find('target'):][:500], 'the target moved, the single-object rendezvous kept as it was')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     # the anchored registry: unreadable at once, never rewritten
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_REG_CLEAR)
@@ -2937,7 +2946,7 @@ def n70(c):
     c.eq(got['events'], [['ALPHA', 'Passage au point un'], ['', 'Jonction']], 'the events follow; an event keeps its text', what='events')
     c.eq(got['profile'], 'ORIGIN, FL100, ALPHA/FL080, TARGET, PT2, DESTINATION', 'the vertical profile follows, the level after « / » kept', what='profile')
     c.eq([got['pts'], got['rdv'], got['dead']], [['ALPHA', 'PT2', 'PT3'], False, ['GHOST']], 'no reference dead by the editor\'s doing', what='places and dead references')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     # the pure rules: nothing changed gives the very same document; a swap of two identifiers follows the places
     pure = c.js("""async (text) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const ED = await import('/modules/missions/editor.js');
       const base = globalThis.jsyaml.load(text, { schema: globalThis.jsyaml.CORE_SCHEMA }), rows = ED.placesOf(base), swap = structuredClone(rows);
@@ -3136,7 +3145,7 @@ def n73(c):
     c.eq(kept, {'summary': 'Un résumé changé dans l’atelier.', 'keys': [[1, 'time'], [2, 'zone'], [3, 'arrival']], 'zone': 'ZONE-1'},
          'the summary is written; the three drawers of the file are kept as they are', what='the saved file')
     # a wide screen: the sheet beside the map and the unfolding, the Cadre unfolded, the first point said in the foot
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
@@ -3164,7 +3173,7 @@ def n73(c):
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the link opens the Lieux of the departure')
     c.eq(c.js(f"document.querySelector('{E}').dataset.step"), 'places', 'the Lieux are unfolded', what='the open group')
     # a new mission: the Cadre unfolded, no drawer, the unfolding alone with « Au départ »
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.tap(f'{R} [data-do="edcreate"]')
@@ -4611,7 +4620,7 @@ def n93(c):
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
     c.shot('N93_390_map.png')
     # leaving the workshop removes the map
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.until(f"!document.querySelector('{E}')", what='the workshop left')
     c.eq([c.js('window.__edMapRemoved'), c.count('.maplibregl-canvas')], [1, 0], 'the map is removed with the workshop', what='the map removed')
     c.ok(c.js(loaded) >= 1, c.js(loaded), 'the map library was loaded by the workshop, and only then')
@@ -4623,7 +4632,7 @@ def n93(c):
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'plain'", timeout=20000, what='the plain background')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements on the plain background')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -4805,7 +4814,7 @@ def n95(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
     c.shot('N95_390_tools.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -4990,7 +4999,7 @@ def n97(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
     c.shot('N97_390_contour.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -5147,7 +5156,7 @@ def n99(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
     c.shot('N99_390_route.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -5258,7 +5267,7 @@ def n100(c):
     c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched on a phone')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N100_390_landmark.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -5403,7 +5412,7 @@ def n102(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
     c.shot('N102_390_put.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -5599,7 +5608,7 @@ def n104(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{_EDMAP} [data-mapview]').scrollIntoView({{block: 'end'}})")
     c.shot('N104_390_pilot.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -5762,7 +5771,7 @@ def n105(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{_SEEK}').scrollIntoView({{block: 'center'}})")
     c.shot('N105_390_seek_many.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -5925,7 +5934,7 @@ def n106(c):
          'on a phone the two arrows hold in the width and are 44 px high; a chip is chosen the same way', what='a phone')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N106_390_chosen.png')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -5982,10 +5991,13 @@ def n107(c):
     c.page.select_option(f'{E} [data-edroute] [data-k=edroute]', rdv)
     c.until(f"({_UNCITED}).length === 1", timeout=8000, what='the rendez-vous cited by the route')
     c.ok(T('todo_uncited', id=obj) in said()[0] and all(rdv + ' ' not in x for x in said()), said(), 'put in the route of the departure, the rendez-vous is cited: only the object is still said')
+    # a zone that nothing cites is named too (the ergonomist, 18 Nov: « cette zone n'est citée nulle part : le pilote ne la verra pas »)
+    zone = add('zone', 10)
+    c.ok(len(said()) == 2 and any(T('todo_uncited', id=zone) in x for x in said()), [zone, said()], 'a zone that neither a map nor a drawer cites is named: the pilot will never see it')
     # three at most
-    more = [add('pt', 10), add('zone', 11), add('rdv', 12)]
+    more = [add('pt', 11), add('rdv', 12)]
     c.ok(len(said()) == 3 and len(set(ids())) == 12, [said(), more, ids()], 'four places nothing cites: three are named, not more (the list stays short)')
-    c.tap(f'{E} [data-do="edcancel"]')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 
@@ -6066,5 +6078,107 @@ def n108(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
     c.shot('N108_390_offline.png')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+# SOG-0454: the foot of the workshop — the buttons in their order, « Annuler » against « Enregistrer » and against a plain button of the
+# suite (the pair of every other form: the line of the registry, the question of the frame), and whether it is on screen
+_FOOT_JS = f"""(() => {{ const bar = document.querySelector('{E} .ms-atbar'), save = bar.querySelector('[data-do=edsave]'), can = bar.querySelector('[data-do=edcancel]'),
+  ref = document.createElement('button'), look = b => {{ const k = getComputedStyle(b); return [k.borderTopStyle, k.borderTopWidth, k.borderTopColor, k.borderTopLeftRadius, k.backgroundColor, k.color, k.fontSize, k.fontWeight, k.textDecorationLine, k.paddingLeft, k.paddingTop].join(' ') }};
+  ref.type = 'button'; ref.textContent = can.textContent; bar.parentNode.insertBefore(ref, bar);
+  const rs = save.getBoundingClientRect(), rc = can.getBoundingClientRect(), same = look(ref) === look(can), tall = Math.round(rc.height - ref.getBoundingClientRect().height);
+  ref.remove();
+  return {{ order: [...bar.children].map(b => b.dataset.do), tag: can.tagName, plain: same, tall, gap: Math.round(rc.left - rs.right), level: Math.round(rc.top - rs.top), height: Math.round(rc.height - rs.height),
+    finger: rc.height >= 40, onScreen: rc.top >= 0 && rc.left >= 0 && rc.right <= innerWidth && rc.bottom <= innerHeight
+      && !!document.elementFromPoint(rc.left + rc.width / 2, rc.top + rc.height / 2)?.closest('[data-do=edcancel]') }} }})()"""
+_FOOT = {'order': ['edsave', 'edcancel', 'edtodo'], 'tag': 'BUTTON', 'plain': True, 'tall': 0, 'gap': 8, 'level': 0, 'height': 0, 'finger': True, 'onScreen': True}
+
+
+@case('N109', 'Missions › the workshop, « Annuler » is a real button against « Enregistrer »: in the foot the order is « Enregistrer », '
+      '« Annuler », then « À compléter (n) » — the pair of every other form of the suite (the line of the registry, the question of '
+      'the frame): a plain button, the same look, the same height, eight pixels from « Enregistrer », on screen at 390 without '
+      'scrolling; a mission left untouched (opened, new, just saved) leaves at once; with an unsaved change the frame asks first — '
+      '« Rester dans l\'atelier » keeps the workshop and what was typed, « Quitter sans enregistrer » gives the registry back and '
+      'nothing is written',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0454 (the user, 18 Nov: « Annuler est mal placé, pas assez visible, pas cohérent avec les autres interfaces »; the '
+      'ergonomist: a real button against « Enregistrer », in the order and the look of the other forms, visible at 390, leaving with '
+      'unsaved changes asks; modules/missions/EDITOR.md § 7 quinvicies)')
+def n109(c):
+    T = lambda key: norm(row(c, key, EDTX_FILE))  # noqa: E731
+    title = f"document.querySelector('{E} input[data-k=edtitle]')?.value"
+    asked = "!!document.querySelector('.f-modal [data-ok]')"
+
+    def open_x(wide):
+        """Opens X-001A in the workshop, its Cadre unfolded."""
+        c.until(_REG_READ, timeout=20000, what='the registry')
+        c.tap(f'{R} [data-rowid="X-001A"] > summary')
+        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
+        if not wide:
+            return
+        if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+
+    def gone(what):
+        """The workshop is left, and no question was asked."""
+        c.until(f"!document.querySelector('{E}')", timeout=8000, what=what)
+
+    # at 390: the foot, on screen; an untouched mission leaves at once
+    reg_open(c, _TRIAL_TEXTS)
+    open_x(False)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.eq(c.js(_FOOT_JS), _FOOT, 'at 390: « Enregistrer », « Annuler », « À compléter » — « Annuler » is a plain button of the suite, against « Enregistrer », on screen without scrolling', what='the foot at 390')
+    c.shot('N109_390_foot.png')
     c.tap(f'{E} [data-do="edcancel"]')
+    c.wait(300)
+    c.eq([c.count('.f-modal'), c.count(E)], [0, 0], 'a mission opened and left untouched leaves at once: no question', what='untouched')
+    # at 1280: the same foot; a change, then « Annuler »: the question, and its two answers
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    open_x(True)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.eq(c.js(_FOOT_JS), _FOOT, 'at 1280: the same foot', what='the foot at 1280')
+    c.shot('N109_1280_foot.png')
+    t0 = c.js(title)
+    _ed_fill(c, 'edtitle', 'Un titre retouché')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.until(asked, timeout=8000, what='the question before leaving')
+    said = c.js("(() => { const m = document.querySelector('.f-modal'); return [m.querySelector('p').textContent, m.querySelector('[data-ok]').textContent, m.querySelector('[data-no]').textContent] })()")
+    c.eq([norm(x) for x in said], [T('leaveAsk'), T('leaveOk'), T('leaveStay')], 'with an unsaved change, the frame asks: « Quitter sans enregistrer » or « Rester dans l\'atelier »', what='the question')
+    c.shot('N109_1280_ask.png')
+    c.tap('.f-modal [data-no]')
+    c.wait(300)
+    c.eq([c.count('.f-modal'), c.count(E), c.js(title)], [0, 1, 'Un titre retouché'], '« Rester dans l\'atelier »: the workshop stays, what was typed is kept', what='staying')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.until(asked, timeout=8000, what='asked again')
+    c.tap('.f-modal [data-ok]')
+    gone('« Quitter sans enregistrer »: the workshop left')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('Un titre retouché' not in t and t0 != '' and t0 in t, t[:200], 'nothing was written: the file keeps its title')
+    # saved, then « Annuler »: nothing to lose, no question
+    open_x(True)
+    c.eq(c.js(title), t0, 'the mission reopened is the one of the file', what='reopened')
+    _ed_fill(c, 'edtitle', 'Un titre enregistré')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.wait(300)
+    c.eq([c.count('.f-modal'), c.count(E)], [0, 0], 'a mission just saved leaves at once', what='saved, then left')
+    # a new mission: empty, it leaves at once; typed, it asks
+    c.until(_REG_READ, timeout=20000, what='the registry')
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.wait(300)
+    c.eq([c.count('.f-modal'), c.count(E)], [0, 0], 'a new mission in which nothing was typed leaves at once', what='new, untouched')
+    c.until(_REG_READ, timeout=20000, what='the registry')
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission')
+    _ed_fill(c, 'edtitle', 'Une mission commencée')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.until(asked, timeout=8000, what='a new mission with a title asks')
+    c.tap('.f-modal [data-ok]')
+    gone('the new mission abandoned')
     c.js(_REG_CLEAR)
