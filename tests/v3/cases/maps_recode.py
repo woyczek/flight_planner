@@ -9427,6 +9427,73 @@ def d270(c):
     c.ok(r['frozen'] and r['uses'] and not r['copy'], str(r), 'it is frozen, the Map’s fallback reads it, and no second copy of the box is written in fitOf')
 
 
+@case('D271', 'The window of a zone (SOG-0462): the usual name beside the code, the nature of the danger, authority and conditions of penetration, the text’s cycle, openAIP said community-maintained; every text escaped; an absent field shows nothing', 'D',
+      tags=('maps',), screens=False, designs=('standard',), langs4=True, night=False,
+      rule='SOG-0462 (AeroDB lots A and B, frame/aerodb/INTEGRATION.md « Zones R / D / P » and « ENR 5.1 »): spaceCardHtml shows `uname` beside the code (« R 12 — MONT SAINT MICHEL », as published), `nat` under « Nature du danger » and `auth` under « Organisme et conditions de pénétration » (texts of the SIA, French then English, 800 signs at most, never translated), `ed` and `src` as the source, `src` openaip as « openAIP, communautaire »; ALL these texts are external: escaped; a field the record does not carry shows no line (never « undefined », never a default)')
+def d271(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    f = flight()
+    c.open('maps', docs=fdocs(f), airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const L = await import('/modules/maps/lv.js'), T = (await import('/modules/maps/texts.js')).TX, lang = window.__mp.S.lang || 'fr';
+      const fr = L.spaceCardHtml({ type: 'R', name: 'LFR12', uname: 'MONT SAINT MICHEL', lower: 0, upper: 'FL115', admin: 'CCER BORDEAUX', src: 'sia', ed: '2026-11-13', act: 'activable',
+        hours: ['H24 sauf NOTAM'], rem: ['Activité aérienne intense'], nat: 'Tir à munitions réelles. / Live firing.', auth: 'CDC TOURS tel 02 47 00 00 00. / Contact before entering.' });
+      const evil = L.spaceCardHtml({ type: 'D', name: 'LFD1', uname: '<img src=x onerror=alert(1)>', lower: 0, upper: 'FL50', src: 'sia', nat: '<script>alert(1)</script> & "x"', auth: '<b>bold</b>' });
+      const other = L.spaceCardHtml({ type: 'R', name: 'EGR1', lower: 0, upper: 'FL60', src: 'openaip' });
+      const long = L.spaceCardHtml({ type: 'R', name: 'LFR9', lower: 0, upper: 'FL60', src: 'sia', nat: 'N'.repeat(900), auth: 'A'.repeat(900) });
+      const bare = L.spaceCardHtml({ type: 'TMA', name: 'TMA 1', lower: 1500, upper: 'FL65' });
+      const dup = L.spaceCardHtml({ type: 'R', name: 'LFR12', lower: 0, upper: 'FL115', src: 'sia', admin: 'CCER BORDEAUX', info: 'BORDEAUX ESSAIS 122.9', auth: 'CCER BORDEAUX — accord du CCER. / CCER clearance.' }), alone = L.spaceCardHtml({ type: 'R', name: 'LFR13', lower: 0, upper: 'FL115', src: 'sia', admin: 'CCER BORDEAUX', info: 'BORDEAUX ESSAIS 122.9' });
+      return { dup, alone, fr, evil, other, long, bare, labels: { nat: T.spNature, auth: T.spAuth, community: T.spCommunity } } }""")
+    txt = lambda h: re.sub(r'<[^>]+>', ' ', h)
+    fr = r['fr']
+    c.ok('LFR12' in txt(fr) and 'MONT SAINT MICHEL' in txt(fr) and re.search(r'LFR12\s*</b>\s*—\s*MONT SAINT MICHEL|R LFR12.{0,20}MONT SAINT MICHEL', fr) , fr[:260], 'the usual name is beside the code, as published')
+    c.ok('Tir à munitions réelles. / Live firing.' in fr and 'CDC TOURS tel 02 47 00 00 00. / Contact before entering.' in fr, fr[:300], 'the nature of the danger and the authority are shown as the SIA words them (French then English, in the same cell)')
+    c.ok(all(isinstance(v, list) and len(v) == 4 and all(v) for v in r['labels'].values()), str(r['labels']), 'the three new words exist in the four languages')
+    c.ok('2026-11-13' in fr, fr[:200], 'the cycle of the text (ed) is in the source line')
+    c.ok('<script' not in r['evil'] and '<img' not in r['evil'] and '<b>bold' not in r['evil'] and ('&amp;' in r['evil'] or '&#38;' in r['evil']) and not re.search(r'<[^>]*onerror', r['evil']), r['evil'][:300], 'every external text is cleaned then escaped: no tag survives from uname, nat or auth, the ampersand and the quotes are escaped')
+    oth = r['other']
+    c.ok(('communautaire' in oth or 'community' in oth or 'Gemeinschaft' in oth or 'comunidad' in oth) and not re.search(r'undefined|null', oth), oth[:260], 'openAIP is said community-maintained; nothing is invented for the fields the record does not carry')
+    for k in ('nat', 'auth'):
+        c.ok(r['labels'][k][0] not in oth and r['labels'][k][0] not in r['bare'], k, f'no « {k} » line when the record has none')
+    c.ok(not re.search(r'non relevés|not carried|nicht enthalten|no recogidos', r['other']), r['other'][:300], 'a field the record does not carry writes no line: no « hours not carried » for a zone of another State')
+    t = txt(r['dup'])
+    c.ok(t.count('CCER BORDEAUX') == 1 and '122.9' in t, t[:300], 'the authority is not said twice: when the conditions line names it, the unit line keeps only what it adds (the frequency)')
+    t = txt(r['alone'])
+    c.ok('CCER BORDEAUX' in t and '122.9' in t, t[:300], 'without the conditions line, unit and frequency stay as before')
+    c.ok('N' * 801 not in r['long'] and 'N' * 700 in r['long'] and 'A' * 801 not in r['long'], 'long', 'a text of the SIA is cut at 800 signs')
+    c.eq(bool(re.search(r'undefined|null|NaN', r['bare'])), False, 'a bare record writes no « undefined »', what=r['bare'][:200])
+
+
+@case('D272', 'The window of a zone (SOG-0462), captures: a complete zone of France (usual name, nature of the danger, authority, hours, conditions, cycle) and a zone of another State (openAIP, community-maintained, no invented field), from the block of the profile', 'D',
+      tags=('maps', 'sheet'), designs=('standard',), night=False, screens=True,
+      rule='SOG-0462: the delivered state to read at 390 and 1280: the window of a zone of France carries every field the base has; that of another State shows what openAIP gives and says it is community-maintained, nothing more')
+def d272(c):
+    ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
+    zones = [{'type': 'R', 'cls': '', 'name': '12', 'key': 'LFR12', 'uname': 'MONT SAINT MICHEL', 'lower': 'SFC', 'upper': 'FL115', 'act': 'activable', 'admin': 'CCER Bordeaux', 'src': 'sia', 'ed': '2026-11-13',
+              'hours': ['Activité : lundi au jeudi 0700-1600 ; vendredi 0700-1300. / Activity: Monday to Thursday 0700-1600; Friday 0700-1300.'], 'rem': ['Hors ces horaires, par NOTAM. / Outside these hours, by NOTAM.'],
+              'nat': 'Tir à munitions réelles, activités aériennes. / Firing with live ammunition, air activities.', 'auth': 'CCER BORDEAUX — pénétration soumise à l’accord du CCER. / Penetration subject to the CCER’s clearance.',
+              'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
+             {'type': 'D', 'cls': '', 'name': '999', 'key': 'EGD999', 'lower': 'SFC', 'upper': 'FL115', 'src': 'openaip', 'rings': [ring(44.6, 45.4, 1.9, 2.4)]}]
+    c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R') && window.__mp.S.prof.crossed.some(x => x.a.type === 'D'))", timeout=15000, what='the profile crosses the R and the D')
+    c.wait(500)
+    for want, name, check in (('R', 'france', 'MONT SAINT MICHEL'), ('D', 'other', 'D 999')):
+        c.js("(w) => { window.__want = w; return true }", want)
+        _open_space_from_profile(c, f"() => {{ const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.includes({check!r}) }}", f'the window of the {name} zone opens')
+        t = c.js("() => document.querySelector('.mp-sp-card').textContent")
+        if want == 'R':
+            c.ok('MONT SAINT MICHEL' in t and 'Tir à munitions réelles' in t and 'CCER BORDEAUX' in t and '0700-1600' in t and '2026-11-13' in t, t, 'the France zone: usual name, nature of the danger, authority, hours, the cycle')
+        else:
+            c.ok(re.search(r'(communautaire|community|Gemeinschaft|comunidad)', t) and not re.search(r'undefined|null', t), t, 'the other State: openAIP said community-maintained, nothing invented')
+        c.shot(f'D272_{name}_{c.width}.png')
+        c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
+        c.wait(400)
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

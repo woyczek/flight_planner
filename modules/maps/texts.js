@@ -247,16 +247,21 @@ export const TX = {
   ],
   spActivity: ['Activité publiée', 'Published activity', 'Veröffentlichte Aktivität', 'Actividad publicada'],
   spHours: ['Horaires publiés', 'Published hours', 'Veröffentlichte Zeiten', 'Horarios publicados'],
-  spNoHours: ['Horaires publiés : non relevés dans cette base pour cet espace',
-    'Published hours: not carried by this database for this area',
-    'Veröffentlichte Zeiten: in dieser Datenbank für dieses Gebiet nicht enthalten',
-    'Horarios publicados: no recogidos en esta base para este espacio'
-  ],
   spRemarks: ['Conditions et remarques de l’AIP', 'AIP conditions and remarks', 'Bedingungen und Bemerkungen des AIP',
     'Condiciones y observaciones del AIP'
   ],
   spWho: ['Organisme et fréquence', 'Unit and frequency', 'Stelle und Frequenz', 'Organismo y frecuencia'],
   spSource: ['Source', 'Source', 'Quelle', 'Fuente'],
+  // la fenêtre d'une zone (SOG-0462) : la nature du danger, l'organisme et les conditions (ENR 5.1 du SIA, dits tels qu'ils sont publiés), la source communautaire, le cycle du texte
+  spNature: ['Nature du danger', 'Nature of the hazard', 'Art der Gefahr', 'Naturaleza del peligro'],
+  spAuth: ['Organisme et conditions de pénétration', 'Authority and conditions of penetration', 'Stelle und Einflugbedingungen',
+    'Organismo y condiciones de penetración'
+  ],
+  spFreq: ['Fréquence ou contact', 'Frequency or contact', 'Frequenz oder Kontakt', 'Frecuencia o contacto'],
+  spCommunity: ['openAIP, communautaire', 'openAIP, community-maintained', 'openAIP, von der Gemeinschaft gepflegt',
+    'openAIP, mantenido por la comunidad'
+  ],
+  spEd: ['texte du cycle {c}', 'text of cycle {c}', 'Text des Zyklus {c}', 'texto del ciclo {c}'],
   spActual: ['Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus).',
     'Actual activity not known: published hours only (neither NOTAM nor AZBA read).',
     'Tatsächliche Aktivität unbekannt: nur veröffentlichte Zeiten (weder NOTAM noch AZBA gelesen).',

@@ -61,7 +61,10 @@ function sameFamilyOverlap(list, read) {
 const CARD_LINES = 7;
 /** Une valeur de la base en lignes de texte : une chaîne, ou une liste de chaînes (bornées, sans balise) ; rien sinon. */
 const linesOf = v => (Array.isArray(v) ? v : [v]).filter(x => typeof x === 'string' && x.trim()).slice(0, 12).map(x => x.replace(
-  /[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 400));
+  /[\u0000-\u001f<>\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 400));
+/** Un texte du SIA (ENR 5.1 : nature du danger, organisme et conditions) : une chaîne de 800 signes au plus, français puis anglais dans la même cellule, jamais traduite ni reformulée ;
+ *  une entrée externe (SOG-0462), nettoyée comme les autres lignes et échappée à l'affichage ; '' sans elle. */
+const textOf = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 800) : '';
 /** La fiche d'un espace (SOG-0163 ; un clic ou un appui sur sa ligne de la liste, ou sur son bloc du profil) : nom et type, limites, activité et
  *  horaires publiés, conditions et remarques de l'AIP telles quelles, organisme et fréquence, source et date, et une phrase franche sur
  *  l'activité réelle. Ne dit que ce que la base porte (AeroDB relève ce que chaque source donne) ; un P dit « interdit ». */
@@ -73,23 +76,40 @@ export function spaceCardHtml(a) {
     hours = linesOf(a.hours ?? a.sched),
     rem = linesOf(a.rem ?? a.remarks),
     who = [a.admin, a.info].filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()).join(' · '),
+    uname = textOf(a.uname).slice(0, 80), // le nom usuel, tel que publié (SOG-0462) : à côté du code, jamais la nature du danger
+    nat = textOf(a.nat),
+    auth = textOf(a.auth),
     L = [];
-  L.push(`<b>${esc([type, a.name].filter(Boolean).join(' '))}</b> · ${esc(tt(TX.spTypes[type] || TX.spTypes.other))}${type === 'P' ? ` — <b class="mp-sp-no">${esc(tt(TX.spProhibited))}</b>` : ''}`);
+  L.push(`<b>${esc([type, a.name].filter(Boolean).join(' '))}</b>${uname ? ` — ${esc(uname)}` : ''} · ${esc(tt(TX.spTypes[type] || TX.spTypes.other))}${type === 'P' ? ` — <b class="mp-sp-no">${esc(tt(TX.spProhibited))}</b>` : ''}`);
   if (lim || a.cls) L.push(`${esc(tt(TX.spLimits))} : ${esc([lim, a.cls ? tt(TX.spClass, {
     c: a.cls
   }) : ''].filter(Boolean).join(' · '))}`);
   if (act === 'AZBA' || a.azba) L.push(esc(tt(TX.spActAzba)));
   else if (act === 'NOTAM') L.push(esc(tt(TX.spActNotam)));
   else if (act) L.push(`${esc(tt(TX.spActivity))} : ${esc(act)}`);
+  if (nat) L.push(`${esc(tt(TX.spNature))} : ${esc(nat)}`); // ENR 5.1 : la nature du danger, avant la phrase franche et les horaires
   // la phrase franche reste dans les sept premières lignes, quel que soit le nombre de lignes d'horaires et de remarques (AeroDB en donne douze de chaque)
   if (live) L.push(`<span class="mp-sp-real">${esc(tt(TX.spActual))}</span>`);
-  if (hours.length) L.push(...hours.map(h => `${esc(tt(TX.spHours))} : ${esc(h)}`));
-  else if (live) L.push(esc(tt(TX.spNoHours)));
+  if (hours.length) L.push(...hours.map(h =>
+    `${esc(tt(TX.spHours))} : ${esc(h)}`
+  )); // un champ que l'enregistrement ne porte pas n'écrit aucune ligne (SOG-0462 : plus de « horaires non relevés » ; la phrase franche dit déjà que l'activité réelle est inconnue)
+  if (auth) L.push(`${esc(tt(TX.spAuth))} : ${esc(auth)}`);
   if (rem.length) L.push(...rem.map(h => `${esc(tt(TX.spRemarks))} : ${esc(h)}`));
-  if (who) L.push(`${esc(tt(TX.spWho))} : ${esc(who)}`);
-  L.push(`<span class="mp-sp-src">${esc(tt(TX.spSource))} : ${esc(String(a.src || '?').toUpperCase())} <span class="mp-sp-cyc"></span></span>`);
-  const shown = L.slice(0, CARD_LINES),
-    more = L.slice(CARD_LINES);
+  // l'organisme n'est pas dit deux fois : quand la ligne des conditions de pénétration le nomme, la ligne « organisme et fréquence » ne garde que ce qu'elle apporte en plus (la fréquence ou le contact)
+  const adm = typeof a.admin === 'string' ? a.admin.trim() : '',
+    info = typeof a.info === 'string' ? a.info.trim() : '',
+    named = !!auth && !!adm && auth.toLowerCase().includes(adm.toLowerCase());
+  if (named) {
+    if (info) L.push(`${esc(tt(TX.spFreq))} : ${esc(info)}`);
+  } else if (who) L.push(`${esc(tt(TX.spWho))} : ${esc(who)}`);
+  const src = String(a.src || '?').toLowerCase() === 'openaip' ? tt(TX.spCommunity) : String(a.src || '?')
+    .toUpperCase(), // openAIP : « communautaire », dit
+    ed = textOf(a.ed).slice(0, 32);
+  L.push(`<span class="mp-sp-src">${esc(tt(TX.spSource))} : ${esc(src)}${ed ? ` · ${esc(tt(TX.spEd, { c: ed }))}` : ''} <span class="mp-sp-cyc"></span></span>`);
+  // les sept lignes d'avant, plus celles de la nature du danger et de l'organisme quand le SIA les donne (elles ne repoussent rien dans « n autres »)
+  const lines = CARD_LINES + (nat ? 1 : 0) + (auth ? 1 : 0),
+    shown = L.slice(0, lines),
+    more = L.slice(lines);
   return `<div class="mp-sp-lines">${shown.map(x => `<p>${x}</p>`).join('')}</div>${more.length ? `<details><summary>${esc(tt(TX.spMore, {
     n: more.length
   }))}</summary>${more.map(x => `<p>${x}</p>`).join('')}</details>` : ''}`;

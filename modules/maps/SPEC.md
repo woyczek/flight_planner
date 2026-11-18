@@ -1187,7 +1187,7 @@ cursor until all fingers are up.
   profile, in two gestures: a first tap **chooses** the block whose limits hold the touched altitude, the narrowest first — highlighted, its name and limits and a « Sheet » button in a label over the profile (`.mp-spsel`; the strip under the profile is hidden unless the sheet is expanded) — and a second tap on the chosen block, or the button, opens the list of the spaces crossed at the cursor; a tap outside any block chooses nothing; the profile is never replaced without an explicit gesture), opens
   under the chart `spaceCardHtml(a)` (`lv.js`) — a click, not a hover: no hover on a finger, and conditions run to several lines. Lines:
   name and type (a **P says « prohibited »**), limits and class, the activation published (`act`: AZBA, NOTAM; `azba`), the hours (`hours` /
-  `sched`, when the base carries them: else « published hours: not carried by this database » for R, D, TSA, TRA), AIP conditions and
+  `sched`, when the base carries them: else no line: a field the record does not carry writes none, SOG-0462), AIP conditions and
   remarks (`rem` / `remarks`) as published, unit and frequency (`admin` · `info`), source (`src`) and the base's cycle date, and for R, D,
   TSA, TRA the frank line « actual activity not known: published hours only (neither NOTAM nor AZBA read) » (placed right after the activation,
   before the hours and remarks: AeroDB gives up to twelve lines of each, the frank line stays in the seven shown). Seven lines, then « n more »
