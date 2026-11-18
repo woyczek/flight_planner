@@ -1565,3 +1565,45 @@ def m51(c):
     c.until(f"!!document.querySelector('{M} {SHEETS} [data-review] [data-do=apply]')", what='the review is shown')
     c.tap(f'{M} {SHEETS} [data-do="apply"]')
     c.until_doc('aircraft/sheets/EC25.json', lambda d: d and (d.get('alternate') or {}).get('approachMin') == 12, '12 min written')
+
+
+# SOG-0490: invented aerodromes (three sharing the prefix XQB) and a helipad under its list code, in the published base
+_BASE_AD = [{'icao': f'XQB{i}', 'name': f'Base Field {i}', 'lat': 44.0 + i / 10, 'lon': 2.0, 'elev': 100} for i in range(1, 4)]
+_BASE_HELI = {'icao': 'XQ418', 'name': 'Base Helistation', 'lat': 45.6, 'lon': 3.1, 'elev': 200, 'type': 'HP'}
+
+
+@case('M52', 'Fleet editor: the Base field of an aircraft is the shared aerodrome field — completion by code or name, the name under the field, '
+      'a helipad\'s list code; what is saved is the code picked or the text typed', 'M', tags=('aircraft', 'aerodb'), designs=('standard',),
+      screens=False,
+      rule='SOG-0490 (the ergonomist: the base of an aircraft takes the common aerodrome field of SOG-0465, completion and helipads included, nothing '
+      'else changes in the sheet); red before: a plain input, no list, no name line')
+def m52(c):
+    c.open('aircraft', docs=LEVEL3 + [['airline/fleet.json', fleet_doc(3), 'document']], aero_extra={'aerodromes': _BASE_AD + [_BASE_HELI]},
+           wait=False, app='maintenance')
+    c.until(f"!!document.querySelector('{M} [data-pane=fleet]')", timeout=15000, what='the fleet list is drawn')
+    help_placed(c)
+    c.tap(f'{M} [data-reg="F-TST2"]')
+    c.until(f"!!document.querySelector('{M} [data-pane=edit]')", what='the editor of F-TST2')
+    sel = f'{M} input[data-f="base"]'
+    opts = f"[...document.querySelectorAll('{M} [data-adsug] [role=option]')].map(o => o.dataset.code)"
+    c.page.fill(sel, '')
+    c.page.locator(sel).click()
+    c.page.keyboard.type('XQB')
+    c.until(f"(() => {{ const o = {opts}; return o.length === 3 && o.every(x => x.startsWith('XQB')) }})()", timeout=8000, what='« XQB » proposes the three aerodromes')
+    c.tap(f'{M} [data-adsug] [data-code="XQB2"]')
+    c.until(f"document.querySelector('{sel}').value === 'XQB2'", what='a tap on a proposal writes the code in the field')
+    c.until(f"(document.querySelector('{M} [data-adline=base]')?.textContent || '').includes('Base Field 2')", what='the name line shows the aerodrome')
+    # a helipad's list code is a full code: proposed, named
+    c.page.fill(sel, '')
+    c.page.locator(sel).click()
+    c.page.keyboard.type('XQ41')
+    c.until(f"{opts}.includes('XQ418')", timeout=8000, what='the helipad is proposed by its list code')
+    c.key('ArrowDown')
+    c.key('Enter')
+    c.until(f"document.querySelector('{sel}').value === 'XQ418'", what='Enter picks the helipad')
+    c.until(f"(document.querySelector('{M} [data-adline=base]')?.textContent || '').includes('Base Helistation')", what='the helipad is named under the field')
+    c.page.fill(sel, 'XQB3')
+    c.tap(f'{M} [data-do="save"]')
+    d = fleet_of(c, lambda d: any(a.get('registration') == 'F-TST2' and a.get('base') == 'XQB3' for a in (d or {}).get('aircraft') or []),
+                 'the saved aircraft carries the base')
+    c.eq([x['base'] for x in d['aircraft'] if x['registration'] != 'F-TST2'], ['Testville', 'Testville'], 'the other aircraft are untouched', what='others')

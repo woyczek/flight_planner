@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **My aircraft: an aircraft's base takes the shared aerodrome field** (SOG-0490, the ergonomist's defect) — completion by code, name, town or country, the name under the field, helipad list codes (« LF418 »); what is saved is unchanged; bench M52.
 - **Aerodrome fields (Fuel, mission workshop): a helipad is found by its list code (« LF418 ») or its name, and enters the route** (SOG-0465, after AeroDB's helipads); bench F268.
 - **Shared aerodrome field: an option `points` proposes the base's points too** (SOG-0480, for the turning points of the mission workshop) — homonyms by distance, the choice keeping its position; Fuel unchanged; bench F268.
 - **Fuel, Procedures: the UK package line still says « n SID lues en partie le <date> » after a reload, and offers « Relire… »** (SOG-0374, the user's refusal of 16 Nov); manuals ×4; F269.

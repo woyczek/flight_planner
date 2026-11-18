@@ -222,3 +222,9 @@
   alternat » unchanged, optional numbers bounded 0 to 60 (the 6th element of PROFILE_FIELDS: out of range, said, nothing written);
   the word of the screen is « dégagement »; labels in four languages (sheets_texts.js FIELD_TX). Fuel reads them (F246); empty, its
   defaults. M51 (red on the parent: no field).
+- **18 Nov 2026 — SOG-0490: the « Base » field of an aircraft is the shared aerodrome field** (the ergonomist's defect: a plain input).
+  `createAdField` (frame/lib/ad_field.js, SOG-0465) is created at mount with `keys: ['base']`; the input carries `data-k="base"` beside
+  `data-f="base"`, a `[data-adline="base"]` line under it and one `[data-adsug]` list; keyboard, focus-out, pointer and click are delegated
+  like Fuel's; `stop()` at unmount. Seven proposals at most; a helipad list code (« LF418 ») is a full code. What is saved does not change:
+  the code of a pick, or the free text as typed (an unknown base is never refused). Nothing else changes in the sheet. M52 (red on the
+  parent: no list, no name line).

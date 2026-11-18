@@ -17,6 +17,9 @@ import {
   createSheetsView,
   SHEETS_STYLE
 } from './sheets.js';
+import {
+  createAdField
+} from '../../frame/lib/ad_field.js'; // SOG-0490 : le champ de terrain commun (complétion, nom sous le champ), celui de Carburant
 import * as MC from '../../frame/lib/mission_categories.js'; // la compagnie dite comme Réglages la dit (SOG-0190, même source que SOG-0181)
 
 export const meta = {
@@ -27,7 +30,7 @@ export const meta = {
   level: 3,
   title: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
   files: ['fleet.js', 'registry_read.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js',
-    '../../frame/lib/suggest_list.js',
+    '../../frame/lib/suggest_list.js', '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js', // SOG-0490 : la base d'un appareil
     '../../frame/lib/clipboard.js',
     '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js',
     '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'
@@ -213,6 +216,7 @@ const STYLE = `[data-module="aircraft"] .ac-head{align-items:center;gap:8px}
 [data-module="aircraft"] .ac-head{flex-wrap:wrap} /* « Ajouter » suit l'en-tête dans son flux, jamais seul à droite (SOG-0190) */
 [data-module="aircraft"] .ac-row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;width:100%;min-height:44px;text-align:left}
 [data-module="aircraft"] .ac-group{position:relative;border:0;padding:0;margin:0 0 12px;display:grid;gap:4px}
+[data-module="aircraft"] .ac-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* SOG-0490 : hauteur réservée, même vide */
 [data-module="aircraft"] .ac-sug[hidden]{display:none} /* SOG-0313 : fermée, la liste ne laisse ni cadre ni ombre sous le champ */
 [data-module="aircraft"] .ac-sug{position:absolute;left:0;right:0;max-width:26em;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface);border:1px solid var(--sog-border);border-radius:var(--sog-radius);box-shadow:var(--sog-shadow)}
 [data-module="aircraft"] .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
@@ -283,9 +287,23 @@ export async function mount(el, ctx) {
       return true;
     }
   });
-  el.addEventListener('keydown', e => s.view === 'fleet' && s.TS.onKey(e));
-  el.addEventListener('focusout', e => s.TS.onFocusOut(e));
-  for (const type of ['pointerdown', 'mousedown']) el.addEventListener(type, e => s.TS.onPointerDown(e));
+  // SOG-0490 : le champ Base de l'éditeur prend le champ de terrain commun (frame/lib/ad_field.js) : sa liste, son nom sous le champ
+  s.AD = createAdField({
+    ctx,
+    body: () => S === s ? s.el : null,
+    gone: () => S !== s,
+    keys: ['base'],
+    idPrefix: 'ac-adsug'
+  });
+  el.addEventListener('keydown', e => s.view === 'fleet' && (s.TS.onKey(e), s.AD.onKey(e)));
+  el.addEventListener('focusout', e => {
+    s.TS.onFocusOut(e);
+    s.AD.onFocusOut(e);
+  });
+  for (const type of ['pointerdown', 'mousedown']) el.addEventListener(type, e => {
+    s.TS.onPointerDown(e);
+    s.AD.onPointerDown(e);
+  });
   el.onclick = e => onClick(s, e);
   el.oninput = e => s.view === 'sheets' ? s.sv.onInput(e) : onInput(s, e);
   el.onchange = e => s.view === 'sheets' && s.sv.onChange(e);
@@ -355,6 +373,7 @@ export function unmount() {
   S?.unwatch?.();
   if (S?.onAirline) window.removeEventListener('frame-data-airline', S.onAirline);
   S?.sv?.stop();
+  S?.AD?.stop();
   S = null;
 }
 
@@ -746,7 +765,8 @@ function editorHtml(s) {
       <div class="ac-sug" id="ac-typesug" data-typesug role="listbox" aria-label="${esc(s.tt(TX.typeList))}" hidden></div>
       ${field('variant', TX.variant)}${field('operator', TX.operator)}<small class="f-muted" data-hint="operator">${esc(s.tt(TX.operatorHint))}</small></fieldset>
     <fieldset class="ac-group"><legend>${esc(s.tt(TX.operation))}</legend>
-      ${field('callsigns', TX.callsigns, ' autocapitalize="characters" spellcheck="false"')}<small class="f-muted" data-hint="callsigns">${esc(s.tt(TX.callsignsHint))}</small>${field('base', TX.base)}${field('tacticalNumber', TX.tactical)}
+      ${field('callsigns', TX.callsigns, ' autocapitalize="characters" spellcheck="false"')}<small class="f-muted" data-hint="callsigns">${esc(s.tt(TX.callsignsHint))}</small>${field('base', TX.base, ' data-k="base" autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ac-adsug"')}<small class="f-muted ac-adname" data-adline="base"></small>
+      <div class="ac-sug" id="ac-adsug" data-adsug role="listbox" aria-label="${esc(s.tt(s.AD.texts.listLabel))}" hidden></div>${field('tacticalNumber', TX.tactical)}
       <label class="f-check"><input type="checkbox" data-f="operational"${d.operational === false ? '' : ' checked'}>${esc(s.tt(TX.operational))}</label>
       ${old?.location ? `<p class="f-muted">${esc(s.tt(TX.location, { l: old.location, d: old.locationAt ? String(old.locationAt).slice(0, 10) : '' }))}</p>` : ''}</fieldset>
     <p class="f-muted" data-changes aria-live="polite"></p>
@@ -776,6 +796,7 @@ function readForm(s) {
 
 /** La ligne des changements et ce que la base dit du type (son nom, ou « absent de la base » : gardé, jamais refusé). */
 async function refreshEditor(s) {
+  s.AD?.paint(); // SOG-0490 : le nom du terrain sous le champ Base
   const d = readForm(s),
     old = s.edit.was ? listOf(s).find(a => a.registration === s.edit.was) : {},
     ch = FL.changed(old || {}, d),
@@ -823,6 +844,7 @@ function onInput(s, e) {
     });
   }
   if (e.target.dataset.f === 'type' && s.edit && !s.TS.picking()) typeSuggest(s, e.target);
+  if (e.target.dataset.k === 'base' && s.edit) s.AD.onInput(e); // SOG-0490 : le nom sous le champ et la liste des terrains
   if (e.target.dataset.f && s.edit) refreshEditor(s);
 }
 
@@ -865,7 +887,7 @@ async function typeSuggest(s, input) {
 
 /** Gestes : ouvrir une ligne, ajouter, « N autres », enregistrer, retirer, revenir. */
 async function onClick(s, e) {
-  if (s.view === 'fleet' && s.TS?.onClick(e)) return; // une proposition du champ Type
+  if (s.view === 'fleet' && (s.TS?.onClick(e) || s.AD?.onClick(e))) return; // une proposition du champ Type ou du champ Base
   const tab = e.target.closest('[data-view]');
   if (tab) return showView(s, tab.dataset.view);
   if (s.view === 'sheets') return s.sv.onClick(e);
