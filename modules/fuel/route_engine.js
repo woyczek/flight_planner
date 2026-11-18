@@ -21,6 +21,8 @@
 //   faultLines(plan) → [{ seg: 'FROM–TO' | '', kind, ruleId, text }] : un écart par ligne (SOG-0134) — chaque motif d'un segment fautif,
 //     un segment fautif sans motif, puis les erreurs du moteur qu'aucun motif ne dit déjà (seg vide).
 
+import { own, own as ownOf } from '../../frame/lib/untrusted.js'; // SOG-0468 (c) : la clé PROPRE d'un objet simple, définie une fois par le cadre
+
 export const VERB = 'route/compute';
 /** SOG-0390 : un mot du texte de route rendu par le lanceur — identifiant, point NAT (« 54/50 »), ou nom de voie COMPOSÉ, lettres et
  *  chiffres reliés par des tirets (« N71B-N90B », les voies nord-américaines : quatre parts au plus) ; 24 signes au plus ; le reste
@@ -245,7 +247,7 @@ export function isoMinute(v) {
 /** SOG-0411 (E) : une route écartée pour l'heure à une heure près (AeroDB 733af8fbf, `near`) — { minutes (1 à 60), side ('late' : partir
  *  au plus tard à `depart` ; 'early' : au plus tôt), depart (« AAAA-MM-JJTHH:MMZ ») } ; null pour toute autre forme. */
 function nearOf(v) {
-  const own = k => v && typeof v === 'object' && !Array.isArray(v) && Object.hasOwn(v, k) ? v[k] : undefined,
+  const own = k => ownOf(v, k),
     m = own('minutes'),
     side = own('side'),
     depart = isoMinute(own(side === 'late' ? 'depart_until' : 'depart_from'));
@@ -259,7 +261,7 @@ function nearOf(v) {
  *  — `at` (le passage de son entrée), `entry` (le point), `from` / `to` (la fenêtre du message) — lus comme une entrée non sûre ; rien pour
  *  un autre code. */
 function timeOf(x) {
-  const own = k => x && typeof x === 'object' && !Array.isArray(x) && Object.hasOwn(x, k) ? x[k] : undefined;
+  const own = k => ownOf(x, k);
   if (own('code') !== 'time' && own('code') !== 'level') return {};
   const id = text(own('entry'), 12).toUpperCase();
   return {
@@ -274,8 +276,7 @@ function timeOf(x) {
 }
 
 function proofOf(v) {
-  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
-    list = own(v, 'sections');
+  const list = own(v, 'sections');
   if (!own(v, 'sections') && !own(v, 'rejected')) return null;
   const end = x => {
       const t = text(x, 12).toUpperCase();
@@ -418,8 +419,7 @@ function altOf(a, role, errors, reviews = []) {
  *  ('request' | 'default') d'abord ; sinon `level` d'une réponse gardée sur l'appareil (route_alts.json) ; sinon la demande : sans `fl`,
  *  le moteur a pris son niveau par défaut. FL entier de 10 à 660 ou null ; null sans base connue. */
 function levelOf(res, asked, plans) {
-  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
-    fl = n => Number.isInteger(n) && n >= 10 && n <= 660 ? n : null,
+  const fl = n => Number.isInteger(n) && n >= 10 && n <= 660 ? n : null,
     sec = own(res, 'sections'),
     kept = own(res, 'level'),
     basis = ['request', 'default'].includes(own(sec, 'fl_basis')) ? own(sec, 'fl_basis') : ['request', 'default'].includes(own(kept,
@@ -434,8 +434,7 @@ function levelOf(res, asked, plans) {
  *  gardée sur l'appareil (`depart`), sinon celle de la demande (`date`) — et si elle était l'heure présente faute d'heure du vol
  *  (`now` : posé par la page sur la demande, gardé avec la réponse). { time: « AAAA-MM-JJTHH:MMZ », now } ; null sans heure lisible. */
 function departOf(res, asked) {
-  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
-    kept = own(res, 'depart');
+  const kept = own(res, 'depart');
   // le moteur dit n'avoir pris aucune heure (`depart.basis` = 'none') : aucune heure de départ n'est dite
   if (own(own(own(res, 'sections'), 'depart'), 'basis') === 'none') return null;
   const time = isoMinute(own(own(own(res, 'sections'), 'depart'), 'time')) || isoMinute(own(kept, 'time')) || isoMinute(own(asked, 'date'));
@@ -447,9 +446,8 @@ function departOf(res, asked) {
 /** SOG-0391 (b) : ce que la page garde de `sections` avec la réponse (route_alts.json), pour que la preuve, la route libre et sa cause se
  *  relisent après un rechargement : les seules clés que proofOf et levelOf lisent, bornées comme ils les bornent ; relu par eux. */
 export function sectionsKept(v) {
-  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
-    // SOG-0470 (Sécurisation) : une valeur simple bornée — un texte de 200 signes, un nombre fini, un booléen ; rien d'autre
-    leaf = x => typeof x === 'string' ? x.slice(0, 200) : typeof x === 'number' ? Number.isFinite(x) ? x : null : typeof x === 'boolean' ?
+  // SOG-0470 (Sécurisation) : une valeur simple bornée — un texte de 200 signes, un nombre fini, un booléen ; rien d'autre
+  const leaf = x => typeof x === 'string' ? x.slice(0, 200) : typeof x === 'number' ? Number.isFinite(x) ? x : null : typeof x === 'boolean' ?
     x :
     null,
     // un objet réduit à ses champs lus (liste blanche), chacun une valeur simple bornée ; null s'il n'est pas un objet
@@ -482,8 +480,7 @@ export function sectionsKept(v) {
  *  { space, rules: 30 identifiants au plus }), items (1 500 au plus : { id, reason, assessment, sheet }, textes bornés) ; null sans livre
  *  RAD. Les clés sont celles de l'entrée : relu tel quel depuis route_alts.json. */
 export function radOf(v) {
-  const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined,
-    int = x => Number.isInteger(x) && x >= 0 && x <= 1e6 ? x : 0;
+  const int = x => Number.isInteger(x) && x >= 0 && x <= 1e6 ? x : 0;
   if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
   const arr = (x, n) => Array.isArray(x) ? x.slice(0, n) : [];
   return {

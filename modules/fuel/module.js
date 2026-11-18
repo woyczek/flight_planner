@@ -123,6 +123,7 @@ export const meta = {
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js', '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
     '../../frame/lib/plural.js', // SOG-0468
+    '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par route_engine.js
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/ad_field.js',
     '../../frame/lib/suggest_list.js', '../../frame/lib/metar.js',

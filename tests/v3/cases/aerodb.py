@@ -16944,7 +16944,7 @@ def k478(c):
 # the small guards that files of the pages wrote for themselves (SOG-0468 (c)): « the own key of a plain object » and « a plain object » exist ONCE in
 # frame/lib/untrusted.js; the sites still carrying an identical copy are listed here — the list only shrinks (a migrated site leaves it, a NEW copy is refused)
 LEGACY_UNTRUSTED_COPIES = {
-    'own': {'modules/data/model_sets.js': 1, 'modules/fuel/route_engine.js': 8, 'modules/missions/drawers.js': 1},
+    'own': {'modules/data/model_sets.js': 1, 'modules/fuel/route_engine.js': 1, 'modules/missions/drawers.js': 1},
     'plain': {'frame/lib/crossing.js': 1, 'frame/lib/mission.js': 1, 'modules/maps/pilot.js': 1}}
 
 
