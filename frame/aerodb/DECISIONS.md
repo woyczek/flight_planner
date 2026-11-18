@@ -3640,3 +3640,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Order set by the relay**: 3 (geo.py), then 1 (the graph rebuilt at each repair), 2 (`fra.graph`), 5 (small gains), 4 (the JS copies); one subject per commit, no change of behaviour, twelve flights identical before and after, Essais each time.
 - **Done**: `route_engine/geo.py`; `engine.nm`, `fra.graph`, `fra_recovery`, `nat_refresh`, `route_matrix` and `ukmil_aip` call it. **Said plainly**: the relay was told that six copies could raise a `ValueError`; the search of two million near-antipodal pairs found `h` up to 1.0000000000000002 and no raise, so the guard is a hardening. **Not done**: `launch.py`, `proc_arc.py`, `proc_geometry.py` (other sessions); the JS copies (item 4).
+
+## 19 November 2026 — SOG-0462 refused at the acceptance: the manager and the conditions of the remarks
+
+- **Check (read only, the base of the workstation)**: no `enr51_fr_*` under `data/sia/zones/fr/`; the zone fr of the cycle of 29 Oct is built with parser 28 (no `nat`, `auth`, `uname` in its spaces); its `rem` and `hours` are there (1 438 spaces with remarks). The user's observation was exact: with this base only the remarks can show anything.
+- **Done**: `authFromRemarks` (labels « Managers », « Managing authority », « Gestionnaires », « CDC », « Entry conditions », « Conditions d'entrée », a line of mandatory avoidance), after the ENR 5.1 join; the text as published, the lines taken leave `rem`. **Not done**: the other kinds of conditions of the remarks (« IFR: upon PARIS ACC or BASEL INFO authorisation. »), the activity lines (« Activity known on: … »), the administrators (`admin`); the translation of the labels.

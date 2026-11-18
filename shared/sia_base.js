@@ -1144,6 +1144,67 @@
     }
     return n;
   }
+  /** SOG-0462 (recette refusée : « le gestionnaire n'est pas récupéré, ni les conditions d'entrée ») : ce que l'AIP écrit dans les REMARQUES d'un espace R / D / P — « Managers: » puis les noms à la ligne suivante (ou sur la même),
+   *  « CDC … », « Entry conditions: » et ses tirets jusqu'à « Authorities to be contacted », une ligne d'évitement obligatoire (« avoidance mandatory … ») — passe dans `auth` quand l'ENR 5.1 ne l'a pas donné ; le texte reste TEL QUE PUBLIÉ
+   *  (rien n'est traduit) ; les lignes reprises quittent `rem` (elles ne sont pas dites deux fois), sauf si le texte a dû être coupé à AUTH_MAX. Rend le nombre d'espaces complétés. */
+  const AUTH_MAX = 1200,
+    AUTH_LINE = 2000,
+    AUTH_MGR = /^(?:Managers?|Managing authorit(?:y|ies)|Gestionnaires?|Organismes? gestionnaires?)\s*:\s*(.*)$/i,
+    AUTH_COND = /^(?:Entry conditions?|Conditions? d['’]entrée|Conditions? de pénétration)\s*:\s*(.*)$/i,
+    AUTH_CDC = /^CDC\s+\S/,
+    AUTH_STOP =
+    /^(?:Authorities to be contacted|Activity known|Actual activity|Activation (?:known|timetable)|Administrators?|TEL\b|Contact\b|Throughout activation|https?:|Services? provided|Autorités? à contacter)/i;
+
+  function authFromRemarks(airspaces) {
+    let n = 0;
+    for (const a of airspaces || []) {
+      if (!/^(R|D|P)$/.test(a.type) || a.auth || !Array.isArray(a.rem) || !a.rem.length) continue;
+      const rem = a.rem.map(x => typeof x === 'string' ? x.slice(0, AUTH_LINE) : ''),
+        take = new Set,
+        pieces = [],
+        stops = l => AUTH_STOP.test(l) || AUTH_MGR.test(l) || AUTH_COND.test(l) || AUTH_CDC.test(l),
+        /** L'étiquette à la ligne i, sa valeur sur la ligne ou, si elle est vide, sur les lignes qui suivent jusqu'à une autre étiquette ; `all` : l'étiquette des conditions, dont les lignes à tiret ne sont pas des étiquettes. */
+        block = (i, rest, all) => {
+          take.add(i);
+          const parts = [rest.trim()].filter(Boolean);
+          if (all || !parts.length)
+            for (let j = i + 1; j < rem.length; j++) {
+              const l = rem[j];
+              if (stops(l) || (!all && /^[^:]{2,40}:\s*$/.test(l) && !/^\s*-/.test(l))) break;
+              take.add(j);
+              parts.push(l.trim());
+            }
+          return parts.join(' ');
+        };
+      for (let i = 0; i < rem.length; i++) {
+        if (take.has(i)) continue;
+        const l = rem[i].trim();
+        let m;
+        if ((m = AUTH_MGR.exec(l))) {
+          const v = block(i, m[1], false);
+          if (v) pieces.push(`${l.slice(0, l.indexOf(':') + 1)} ${v}`);
+        } else if ((m = AUTH_COND.exec(l))) {
+          const v = block(i, m[1], true);
+          if (v) pieces.push(`${l.slice(0, l.indexOf(':') + 1)} ${v}`);
+        } else if (AUTH_CDC.test(l)) {
+          take.add(i);
+          pieces.push(l);
+        } else if (/avoidance|évitement/i.test(l) && /mandatory|compulsory|obligatoire/i.test(l)) {
+          take.add(i);
+          pieces.push(l);
+        }
+      }
+      const text = pieces.join(' ').replace(/\s+/g, ' ').trim();
+      if (!text) continue;
+      a.auth = text.slice(0, AUTH_MAX);
+      if (text.length <= AUTH_MAX) {
+        a.rem = a.rem.filter((_, i) => !take.has(i));
+        if (!a.rem.length) delete a.rem;
+      }
+      n++;
+    }
+    return n;
+  }
   /** Ancien fichier dérivé sia-airspaces-<date>.xml : lu seulement en l'absence de XML_SIA du même cycle. */
   function parseLegacyAirspaces(text) {
     const doc = new DOMParser().parseFromString(text, 'application/xml');
@@ -1767,6 +1828,9 @@
       enr51Joined = joinEnr51(base.airspaces, base.enr51);
       delete base.enr51;
     }
+    authFromRemarks(base
+      .airspaces
+    ); // SOG-0462 (recette refusée) : le gestionnaire et les conditions d'entrée des remarques, quand l'ENR 5.1 n'a rien donné
     base.sources = Z ? {
       zones: Object.keys(zs.on).filter(id => Z.isOn(id, zs))
     } : {};
@@ -3120,6 +3184,7 @@
     parseXmlSiaAirspaces,
     joinUsualNames,
     joinEnr51,
+    authFromRemarks,
     parseXmlSiaVfrPoints,
     parseAixmAirspaces,
     aeroIndex,

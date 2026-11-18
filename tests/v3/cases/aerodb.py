@@ -16635,3 +16635,40 @@ def k479(c):
         if b:
             found['plain'][f] = b
     c.eq(found, LEGACY_UNTRUSTED_COPIES, 'the files that still carry an identical copy of « own » or « plain » are exactly the list of the sites to migrate to frame/lib/untrusted.js (a new copy is refused; a migrated one leaves the list)', what='copies')
+@case('K364', 'Zones R / D / P (SOG-0462, the user\'s refusal of the acceptance): the manager and the entry conditions that the AIP writes in the REMARKS — « Managers: » and its names on the next line or on the same one, « Managing authority: », « CDC … », « Entry conditions: » and its dashes down to « Authorities to be contacted », a line of mandatory avoidance — go to `auth` when the ENR 5.1 gave none, as published (nothing translated); the lines taken leave `rem` (not said twice), except when the text had to be cut; a space with an `auth` already, a space that is not an R / D / P and a remark of another kind are not touched',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0462 (the relay, 18 Nov: « Conditions et remarques de l\'AIP : Managers: … DE GAULLE APP, ORLY APP … Entry conditions: … » on R 205 /11, « CDC CINQ MARS LA PILE … avoidance mandatory during activity … » on R 7 B; the user: « le gestionnaire n\'est pas récupéré, ni les conditions d\'entrées […] des infos sont à glaner là-dedans »). Measured on the real zone fr of 29 Oct (parser 28): 874 R / D / P of which 16 carry « Managers », 12 « CDC », 14 « Entry conditions », 492 an avoidance line; the base of that workstation has neither the ENR 5.1 file nor parser 29. Invented forms: the real texts are the AIP of France.')
+def k364(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      const load = src => new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); w.document.head.appendChild(s); });
+      await load('/shared/sia_base.js'); await load('/shared/aero_sources.js');
+      const SB = w.SiaBase;
+      const list = [
+        { type: 'R', key: 'LFRA1', rem: ['Managers:', 'ALPHA APP, BETA APP.', 'Entry conditions:', '- IFR GAT flights inbound to TOWN:', 'Entry authorized after radio contact.', '- Other IFR GAT flights:', 'Compulsory avoidance except with prior permission.', 'Authorities to be contacted: SNA-X', '(mail@example.invalid,'] },
+        { type: 'R', key: 'LFRB2', rem: ['CDC GAMMA LA PILE.', 'IFR/VFR : avoidance mandatory during activity except for AWY V99, follow ACC instructions.', 'Activity known on : DELTA ACC.'] },
+        { type: 'D', key: 'LFDC3', rem: ['Managing authority: EPSILON CENTRE.', 'Avoidance mandatory during activity.', 'Activity known on: ZETA ACC.'] },
+        { type: 'R', key: 'LFRD4', auth: 'FROM ENR', rem: ['Managers:', 'NOT TAKEN'] },
+        { type: 'TMA', key: 'LFTE5', rem: ['Managers:', 'NOT TAKEN EITHER'] },
+        { type: 'R', key: 'LFRF6', rem: ['Gestionnaires :', 'THETA APP.', "Conditions d'entrée :", '- Vols IFR : contournement obligatoire.'] },
+        { type: 'R', key: 'LFRG7', rem: ['Managers:', 'x'.repeat(5000)] },
+        { type: 'R', key: 'LFRH8', rem: ['Something else', 'Activity known on: X'] },
+        { type: 'R', key: 'LFRI9', rem: ['Managers: IOTA APP.', 'Activity known on: X'] },
+        { type: 'R', key: 'LFRJ0' }
+      ];
+      const n = SB.authFromRemarks(list);
+      return { n, rows: list.map(a => [a.key, a.auth ?? null, a.rem ?? null]), none: SB.authFromRemarks(null) };
+    }""")
+    rows = {k: (a, m) for k, a, m in r['rows']}
+    c.eq((r['n'], r['none']), (6, 0), 'six spaces completed (the real forms of the acceptance, invented names), none for an empty list', what='count')
+    c.eq(rows['LFRA1'], ('Managers: ALPHA APP, BETA APP. Entry conditions: - IFR GAT flights inbound to TOWN: Entry authorized after radio contact. - Other IFR GAT flights: Compulsory avoidance except with prior permission.', ['Authorities to be contacted: SNA-X', '(mail@example.invalid,']),
+         'R 205: « Managers: » with its names on the next line, then « Entry conditions: » with its dashes down to « Authorities to be contacted » (which stays in the remarks), as published', what='managers and conditions')
+    c.eq((rows['LFRB2'], rows['LFRI9']), (('CDC GAMMA LA PILE. IFR/VFR : avoidance mandatory during activity except for AWY V99, follow ACC instructions.', ['Activity known on : DELTA ACC.']), ('Managers: IOTA APP.', ['Activity known on: X'])),
+         'R 7 B: the « CDC … » line and the line of mandatory avoidance; a manager on the same line as its label: only that line is taken', what='cdc')
+    c.eq(rows['LFDC3'], ('Managing authority: EPSILON CENTRE. Avoidance mandatory during activity.', ['Activity known on: ZETA ACC.']), 'the « Managing authority: » of the overseas spaces and the avoidance line', what='managing authority')
+    c.eq(rows['LFRF6'], ("Gestionnaires : THETA APP. Conditions d'entrée : - Vols IFR : contournement obligatoire.", None), 'the French labels are read too; nothing translated; a remark list that is taken entirely leaves no `rem`', what='french')
+    c.eq((rows['LFRD4'], rows['LFTE5'], rows['LFRH8'], rows['LFRJ0']), (('FROM ENR', ['Managers:', 'NOT TAKEN']), (None, ['Managers:', 'NOT TAKEN EITHER']), (None, ['Something else', 'Activity known on: X']), (None, None)),
+         'an `auth` already given by the ENR 5.1 is kept, a TMA is not an R / D / P, a remark of another kind or a space without remarks is not touched', what='untouched')
+    a, m = rows['LFRG7']
+    c.eq((len(a), len(m), m[0]), (1200, 2, 'Managers:'), 'HOSTILE: a line of 5 000 signs is cut (a line of 2 000 at most is read, the text at 1 200): the remarks are then all kept, nothing is lost', what='bounded')
