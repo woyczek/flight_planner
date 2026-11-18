@@ -16,7 +16,16 @@ HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
 SEARCH_CAP_S = 6.0   # SOG-0354 : la borne d'UNE recherche (A*) ; plan.plan() la porte à 12 s pour un vol qui traverse l'Atlantique (plan.budgets), et la remet à 6 s à la fin du calcul
 GRAPH_MIN_S = 0.0   # SOG-0354 L5 (3) : un vol océanique ne COMMENCE pas la construction d'un graphe (~4 s, non interruptible) quand il reste moins de cela avant la borne ; posé par plan.plan (5 s pour un vol qui traverse l'Atlantique), 0 sinon
+DEADLINE_CEIL = None      # SOG-0475 : la fin du calcul entier (plan.plan la pose) : la borne de tête ne s'étend jamais au-delà
+GRAPH_SEARCH_MIN_S = 3.0      # SOG-0475 : après la construction d'un graphe, la recherche a au moins cela (dans la limite du calcul entier) : un graphe de 5 à 9 s (un vol long d'Europe) ne mange plus toute la borne de tête
 DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
+
+
+def extend_deadline(until):
+    """SOG-0475 : repousse la borne de tête à `until` (jamais au-delà de DEADLINE_CEIL, jamais en arrière)."""
+    global DEADLINE
+    if DEADLINE is not None and DEADLINE_CEIL is not None and until > DEADLINE:
+        DEADLINE = max(DEADLINE, min(DEADLINE_CEIL, until))
 RAD_FILE = None   # SOG-0081 : chemin de rad.json.gz posé par le travail du lanceur (data/route/rad.json.gz) ; None : à côté du module, comme RouteSim 2
 MONTHS = dict(zip('JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(),range(1,13)))
 
@@ -588,6 +597,8 @@ class Nav:
         if profile_options:
             graph.flight=dict(profile_options,departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
         self.graph_seconds=round(time.perf_counter()-built,3)
+        if DEADLINE is not None and DEADLINE_CEIL is not None:      # SOG-0475 : le graphe a pris la borne de tête (ESSA → LEMG : 9 s de graphe, aucune seconde de recherche : « budget atteint ») : la recherche a au moins GRAPH_SEARCH_MIN_S, jamais au-delà du calcul entier
+            extend_deadline(time.perf_counter()+GRAPH_SEARCH_MIN_S)
         self._routing_cache[cache_key]=(graph,a,b)
         if len(self._routing_cache)>1:self._routing_cache.popitem(last=False)
         return graph,a,b

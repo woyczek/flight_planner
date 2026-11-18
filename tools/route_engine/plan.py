@@ -277,6 +277,7 @@ def plan(request, root):
     engine.GRAPH_MIN_S = 5.0 if bounds['ocean'] else 0.0      # SOG-0354 L5 (3) : un graphe (~4 s) n'est pas commencé quand il reste moins de 5 s avant la borne
     request['_deadline'] = started + bounds['head_s']
     engine.DEADLINE = started + bounds['head_s']       # SOG-0371 : la route de tête et ses reprises RAD ; la phase suivante pose la sienne
+    engine.DEADLINE_CEIL = limit['until']      # SOG-0475 : la borne de tête peut s'étendre après un graphe lent, jamais au-delà de la fin du calcul
     if request.get('objective') == 'economical':
         request['alternatives'] = True
     try:
@@ -545,5 +546,5 @@ def compute(request, data, rad_file, fra_file):
         with SOLVER_LOCK:
             return bound_result(plan(request, data))
     finally:
-        engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = None
+        engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = engine.DEADLINE_CEIL = None
         engine.SEARCH_CAP_S = 6.0

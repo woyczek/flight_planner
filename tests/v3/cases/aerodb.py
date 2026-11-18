@@ -15533,3 +15533,30 @@ def k347(c):
     c.eq([cond('ARR LFMN & VIA (AAA L607 CCC)'), cond('ARR LFMN & VIA (AAA N871 BBB)'), cond('VIA (* DCT DDD) EXC VIA ((BBB, CCC) DCT DDD)'), cond('VIA (* DCT DDD) EXC VIA ((EEE, FFF) DCT DDD)'), cond('VIA (BBB L607 DDD)'), cond('VIA (AAA, ZZZ)')],
          [True, False, False, True, None, True],
          'in a condition: with ARR, with the exception EXC (the exception holds: the condition does not), a sequence not decided leaves the condition not decided, a plain list of points is read as before', what='condition')
+
+
+@case('K348', 'Route engine, SOG-0475 (bounded time): the search that follows a slow graph keeps at least `GRAPH_SEARCH_MIN_S` (3 s), never beyond the end of the whole calculation (`DEADLINE_CEIL`), never backwards — a long flight across Europe (a graph of 5 to 9 s) no longer finishes « Budget de recherche atteint (0 s) » with no search at all',
+      'K', static=True,
+      rule='SOG-0475 (found while measuring SOG-0474, 18 Nov): the head phase has 5 s from the start of the calculation (SOG-0371), context and graph included; the FRA graph of a long flight across Europe takes 5 to 9 s at rest (ESSA → LEMG: 9.5 s; EDDF → LFMN: 1 s), so the search had 0 s and the answer was « CALCUL IMPOSSIBLE » on a route that exists. Now `routing_graph` extends the head bound to now + 3 s when the graph ended later than that, up to the end of the whole calculation (15 s, 20 s over the ocean minus its reserve): the total time stays bounded, and a flight whose search ended before the bound gives the same route (identity checked on ten reference flights of Europe and the Atlantic).')
+def k348(c):
+    RJ = _regen()
+    from route_engine import engine, plan
+    keep = (engine.DEADLINE, engine.DEADLINE_CEIL)
+    try:
+        engine.DEADLINE, engine.DEADLINE_CEIL = 100.0, 112.0
+        engine.extend_deadline(104.0)
+        a = engine.DEADLINE
+        engine.extend_deadline(103.0)
+        b = engine.DEADLINE
+        engine.extend_deadline(130.0)
+        c2 = engine.DEADLINE
+        engine.DEADLINE, engine.DEADLINE_CEIL = None, 112.0
+        engine.extend_deadline(104.0)
+        d = engine.DEADLINE
+        engine.DEADLINE, engine.DEADLINE_CEIL = 100.0, None
+        engine.extend_deadline(104.0)
+        e = engine.DEADLINE
+    finally:
+        engine.DEADLINE, engine.DEADLINE_CEIL = keep
+    c.eq((a, b, c2, d, e), (104.0, 104.0, 112.0, None, 100.0), 'the bound moves to the asked instant; never backwards (103 after 104); never beyond the end of the calculation (130 → 112); with no bound or no end of calculation nothing moves', what='extend_deadline')
+    c.eq((engine.GRAPH_SEARCH_MIN_S, engine.DEADLINE_CEIL), (3.0, None), 'the search after a graph keeps at least 3 s; outside a calculation there is no ceiling (plan.plan resets it)', what='constants')
