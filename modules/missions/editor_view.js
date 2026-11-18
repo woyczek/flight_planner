@@ -483,6 +483,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-bricks>.f-field{margin:0}
 [data-module="missions"] .ms-atmodel{margin:0 0 10px} /* le modèle de la mission, sous le titre (lot « modèles de mission ») */
 [data-module="missions"] .ms-atmodelline{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin:0}
+  [data-module="missions"] .ms-atmodelline>.f-linkbtn{padding:0;min-height:24px} /* retouche de l'ergonome : sans le retrait de 4 px du lien, et sans blanc quand « Enregistrer comme modèle » passe à la ligne à 390 (des liens dans une ligne de texte : 24 px de haut, sans recouvrement) */
 [data-module="missions"] .ms-models{margin:4px 0 0 0;max-width:40em}
 [data-module="missions"] .ms-models>p{margin:4px 0}
 [data-module="missions"] .ms-dgrp{border-top:1px solid var(--sog-line,#ddd);padding:8px 0 4px}
