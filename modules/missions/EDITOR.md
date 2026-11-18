@@ -448,8 +448,8 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
   drawn; labels are cut at 60 signs and only go to MapLibre properties.
 - **The live map** (one at a time): `show(slot, feats, options)` starts it in a host of its own, kept from one drawing to the next
   (the screen is redrawn by `innerHTML`: the host is put back in the new slot), `fit()`, `stop()`. First the suite's background
-  (`startTiles` with `styleFor`), else **a plain background** (MapLibre on a local style, nothing to fetch), else — offline, no WebGL,
-  MapLibre missing — nothing: the sketch of P1 stays. The view is framed on the mission at the start, again when the frame of the
+  (`startTiles` with `styleFor`), else **a plain background** (MapLibre on a local style, nothing to fetch — **offline too**, § 7
+  quatervicies), else — no WebGL, MapLibre missing — nothing: the sketch of P1 stays. The view is framed on the mission at the start, again when the frame of the
   mission or the size of the box changes, **until the author moves the view**; « Recentrer » frames it again.
 - **The screen**: a frame of fixed size (300 px; `min(46dvh, 440px)` on a wide module) — nothing moves when the map arrives —, the
   sketch under it until the map is there, « Recentrer » at its bottom left, shown with the map only. **A place touched leads to its
@@ -469,8 +469,8 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
   that of the mission, as the Map does; the help of the workshop says so in four languages; offline, nothing is asked.
 - **Not done** (next bricks): Sélection and the drag of a place, the poses (Point, Objet, Zone), the handles of a zone and its
   contour, Tracé, the landmarks of AeroDB, « Vue du pilote », « Placer l'avion ici »; no name is written on the map yet (a base style
-  does not always carry glyphs: the names come with the selection). **Asked of the map's owner**: `startTiles` gives up at once when
-  the device is offline, even for a local style — the plain background therefore only serves when the tiles do not come.
+  does not always carry glyphs: the names come with the selection). **Asked of the map's owner** — and delivered (SOG-0446, 6f3e91140; § 7 quatervicies): `startTiles` gave up at once when the
+  device was offline, even for a local style; the plain background therefore only served when the tiles did not come.
 
 ### 7 duodecies. P2, second brick: the gestures of the map — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N94)
 
@@ -728,6 +728,23 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - The move is pure: `ED.routeMove(route, n, step, shown)` → `{ route, at }` — the place swaps with the nearest chip shown on that
   side (an entry the sheet does not show, a place the file cites that no longer exists, stays where it is); the same route when
   there is nothing to do. A move from the sheet is not a gesture of the map: « Annuler le geste » has nothing to give back after it.
+
+### 7 quatervicies. The map of the workshop offline (18 Nov 2026; SOG-0444, the rests of lot P2 — rest 6; noreg N108)
+
+- **The base now draws a local style offline** (SOG-0446, `modules/maps/lib/map_base.js`: `needsNetwork(style)`; BUGS SOG's D262):
+  `startTiles` still gives `null` at once, offline, for the suite's background (a style address) — nothing is asked of the tile
+  provider — and `editor_map.js` `start` then falls on its plain style (an object, no source, no glyph), which the base draws.
+  Nothing was changed in `start`: the fall-back was already there, it now succeeds offline.
+- **Everything else works on the plain background**: the mission drawn and named (the names are markers of the page, not glyphs),
+  Sélection and the handles, the poses, Tracé, the landmarks of the base **already on the device** (AeroDB answers from the cache)
+  and « Chercher un repère », « Vue du pilote », the trial of the keys.
+- **The screen says it once per sitting** (`s.ed.plainSaid`), by a floating notification: « Fond de carte indisponible : la carte
+  montre les lieux sur un fond uni. Tout le reste fonctionne. » — said too when, online, the tiles do not come (after
+  `MAPB.wait`). The frame keeps `data-map="plain"`.
+- **Still the sketch**: no WebGL, or MapLibre never loaded on this device (it is a file of the repository, declared `lazy`: kept
+  by the page once the workshop has been opened online).
+- **Not done**: coming back online does not bring the suite's background back in an open workshop (nothing reloads by itself):
+  leaving the workshop and opening it again does.
 
 ### 8. What is NOT ported
 

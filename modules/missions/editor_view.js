@@ -897,7 +897,8 @@ function edMapHint(s) {
 }
 
 /** La carte de la mission (SOG-0444, lot P2, première brique) : un cadre de taille fixe — rien ne bouge quand la carte arrive — où la
- *  carte du socle (editor_map.js) prend la place du croquis dès qu'elle est là ; sans carte (hors ligne, pas de WebGL), le croquis
+ *  carte du socle (editor_map.js) prend la place du croquis dès qu'elle est là — hors ligne, sur un fond uni (une notification le
+ *  dit, une fois par séance) ; sans carte (pas de WebGL, MapLibre jamais chargé), le croquis
  *  reste. « Recentrer » n'est montré qu'avec elle. Repliée derrière son bouton sur un module étroit, toujours montrée sur un module
  *  large. La carte elle-même est posée après le dessin (edAfter). */
 function edMapHtml(s, doc, run = null) {
@@ -974,6 +975,10 @@ function edMapShow(s) {
         hint = q('[data-maphint]'),
         text = edMapHint(s);
       if (body) body.dataset.map = live;
+      if (live === 'plain' && !e.plainSaid) { // le fond uni (hors ligne, ou les tuiles ne sont pas venues) : dit une fois par séance
+        e.plainSaid = true;
+        s.ctx.notify?.(s.tt(EDTX.atMapPlain), 'info');
+      }
       if (sketch) sketch.hidden = !!live;
       for (const b of s.el.querySelectorAll('[data-atmaptools] button')) {
         const t = b.dataset.tool;

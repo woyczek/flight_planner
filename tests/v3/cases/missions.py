@@ -5843,3 +5843,80 @@ def n107(c):
     c.ok(len(said()) == 3 and len(set(ids())) == 12, [said(), more, ids()], 'four places nothing cites: three are named, not more (the list stays short)')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+_OFFLINE_JS = "(() => { Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false }); return navigator.onLine })()"
+
+
+@case('N108', 'Missions › the workshop, the map offline: with the device offline the map of the workshop comes at once on a plain '
+      'background — nothing is asked of the tile provider — and a notification says so once; the mission is drawn and named, a place '
+      'is chosen by a touch, a point is posed with its tool, the landmarks of the base already on the device are shown and found by '
+      'their name; the sketch is hidden as with the suite\'s background',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, the rests of lot P2 — rest 6 (the ergonomist, 18 Nov: « la carte de l\'atelier hors ligne avec le fond uni local, '
+      'maintenant que le socle le permet »; SOG-0446, 6f3e91140: `startTiles` draws a local style offline, D262; '
+      'modules/missions/EDITOR.md § 7 quatervicies)')
+def n108(c):
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    asked = []
+    c.page.on('request', lambda r: asked.append(r.url) if 'openfreemap' in r.url else None)
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _TRIAL_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra={
+        'navaids': [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3, 'type': 'VOR', 'name': 'TESTVILLE'}],
+        'aerodromes': [{'icao': 'LFZZ', 'name': 'ZZ TEST', 'lat': 44.25, 'lon': 1.7, 'elev': 100}]})
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    # the device goes offline before the workshop opens
+    c.eq(c.js(_OFFLINE_JS), False, 'the device is offline', what='onLine')
+    asked.clear()
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'plain' && !!window.__edMap", timeout=8000, what='the map of the workshop on its plain background, offline')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements of the mission drawn')
+    c.eq([c.js(_EDMAP_IDS, None), c.js(_EDLABELS), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"), asked, [x[2] for x in c.js(_EDTOOL_STATE)]],
+         [['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'place:5', 'place:6', 'route'], ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], True, [],
+          [False, False, False, False, False, True, False]],
+         'offline the mission is drawn and named on a plain background, in place of the sketch; nothing was asked of the tile provider; the tools are given', what='the map offline')
+    c.ok(norm(T('atMapPlain')) in norm(c.js(_NOTES)) and norm(c.js(_NOTES)).count(norm(T('atMapPlain'))) == 1, norm(c.js(_NOTES)),
+         'a notification says the background is unavailable and that everything else works — once')
+    c.shot('N108_1280_offline.png')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    # the gestures work: a place chosen, a point posed
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
+    c.until(f"{_EDSEL} === 'PT2 · Point deux'", timeout=8000, what='PT2 chosen by a touch')
+    c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
+    c.until(f"{_EDSEL} === 'PT3'", timeout=8000, what='a point posed offline')
+    c.ok(abs(float(c.js(_EDPLACE_VAL, [6, 'lat'])) - 44.2) < 0.02 and c.js(_EDTOOL_STATE)[5] == ['edmapundo', None, False], [c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDTOOL_STATE)[5]],
+         'a place is chosen by a touch and a point is posed where the map is touched: the gestures do not need the background')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    # the landmarks of the base already on the device: shown closer, found by their name
+    c.page.fill(f'{_SEEK} input', 'TSV')
+    c.tap(f'{_SEEK} > button')
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=10000, what='the beacon found offline')
+    c.until(f"({_EDREFS} || []).includes('TSV')", timeout=15000, what='the landmarks drawn offline')
+    c.eq([hint(), asked, c.js(f"document.querySelector('{_EDMAP}').dataset.map"), norm(c.js(_NOTES))], [T('atRef_navaid', id='TSV'), [], 'plain', ''],
+         'the base kept on the device answers offline: the beacon is found, said and circled, the landmarks are drawn; still nothing asked of the tile provider; the '
+         'notification is not said again', what='the landmarks offline')
+    # on a phone
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
+    c.wait(400)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N108_390_offline.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

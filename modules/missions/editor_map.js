@@ -18,8 +18,9 @@
 //     (onRef), il n'est jamais créé par le toucher.
 //   - la carte EN VIE (une seule : l'atelier d'une mission à la fois) : show(slot, feats, options) la démarre dans un hôte à elle,
 //     gardé d'un dessin à l'autre (l'écran est redessiné par innerHTML : l'hôte est reposé dans l'emplacement neuf), fit() recadre,
-//     focus(i) cadre la vue sur une zone, stop() la retire avec son contexte WebGL. Sans tuiles, un fond uni (MapLibre sur un style local) ; sans MapLibre ni WebGL, ou
-//     hors ligne : rien — l'écran garde son croquis.
+//     focus(i) cadre la vue sur une zone, stop() la retire avec son contexte WebGL. Sans tuiles — et HORS LIGNE, sans rien demander
+//     (le socle dessine un style local hors ligne depuis SOG-0446) —, un fond uni (MapLibre sur un style local) ; sans MapLibre ni WebGL : rien —
+//     l'écran garde son croquis.
 import {
   isOwnResize,
   mapSize,
@@ -710,8 +711,9 @@ function frame(L) {
   L.fitting = false;
 }
 
-/** Démarre la carte dans son hôte : le fond de la suite, sinon le fond uni ; puis les couches de l'auteur et le premier cadre. Sans
- *  carte (hors ligne, pas de WebGL, MapLibre absent) : `onState('')`, l'écran garde son croquis. */
+/** Démarre la carte dans son hôte : le fond de la suite, sinon le fond uni — hors ligne le socle rend null AUSSITÔT pour le fond de
+ *  la suite (rien n'est demandé) et dessine le fond uni, un style local ; puis les couches de l'auteur et le premier cadre. Sans
+ *  carte (pas de WebGL, MapLibre absent) : `onState('')`, l'écran garde son croquis. */
 async function start(L, o) {
   L.starting = true;
   const alive = () => LIVE === L && o.alive(),

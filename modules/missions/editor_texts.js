@@ -371,6 +371,12 @@ export const EDTX = {
     'Misiones › Registro › Taller'
   ],
   atMap: ['Carte de la mission', 'Map of the mission', 'Karte der Mission', 'Mapa de la misión'],
+  // la carte sur son fond uni (hors ligne, ou le fond de la suite n'est pas venu) : dit une fois par séance, en notification
+  atMapPlain: ['Fond de carte indisponible : la carte montre les lieux sur un fond uni. Tout le reste fonctionne.',
+    'Map background unavailable: the map shows the places on a plain background. Everything else works.',
+    'Kartenhintergrund nicht verfügbar: die Karte zeigt die Orte auf einfarbigem Grund. Alles andere funktioniert.',
+    'Fondo de mapa no disponible: el mapa muestra los lugares sobre un fondo liso. Todo lo demás funciona.'
+  ],
   atMapNone: ['Aucun lieu placé : la carte est vide.', 'No place set: the map is empty.', 'Kein Ort gesetzt: die Karte ist leer.',
     'Ningún lugar situado: el mapa está vacío.'
   ],
