@@ -10550,3 +10550,201 @@ def a271(c):
     c.eq(k, [['warn', True], ['', False], ['', False], ['', False]], 'no `reports` in roadmap.json: nothing changes from the states of today', what='states')
     c.eq(c.count('[data-mine] [data-open-rm], [data-mine] a[href^="#roadmap"]'), 0, 'no card linked', what='cards')
     c.check_errors()
+
+
+def _rc_busy_launcher(c, root, hold_ms=800):
+    """A FAKE launcher for the Recette that behaves like tools/regen_jobs.py: ONE job that writes at a time — recette/verdict and recette/decision are such jobs (not in READ_ONLY) —
+    each held `hold_ms` (its view says « running » until then); a job asked while another holds the place is refused 409 « busy ».  Both verbs are the REAL ones (tools/regen/recette.py)
+    on `root`.  `st`: `posts`, `hold` (True: every job refused « busy », another job holds the place), `busy` (the number of refusals)."""
+    import importlib
+    import sys
+    import time
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RJ = importlib.import_module('regen_jobs')
+    if ('recette', 'verdict') not in RJ.REGISTRY:
+        RJ.load_verbs()
+    st = {'posts': [], 'hold': False, 'busy': 0, 'until': 0.0, 'views': {}, 'n': 0}
+    status = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False}
+
+    def handler(route):
+        req = route.request
+        u = urllib.parse.urlparse(req.url)
+        code, body = 200, {}
+        if u.path.endswith('/__setup/status'):
+            body = status
+        elif u.path.endswith('/__setup/regen/job'):
+            if req.method == 'POST':
+                post = json.loads(req.post_data or '{}')
+                st['posts'].append(post)
+                key = (post.get('set'), post.get('verb'))
+                if st['hold'] or time.time() < st['until']:
+                    st['busy'] += 1
+                    code, body = 409, {'ok': False, 'status': 409, 'reason': 'busy', 'message': 'a job is already running'}
+                elif key not in RJ.REGISTRY:
+                    code, body = 400, {'ok': False, 'status': 400, 'message': f'unknown operation {key[0]}/{key[1]}'}
+                else:
+                    fn, check = RJ.REGISTRY[key]
+                    st['n'] += 1
+                    args = check(post.get('args'))
+                    res = fn(RJ.Job(key[0], key[1], {}), args, {'root': str(root)}) if args else {'ok': False, 'reason': 'bad-args'}
+                    st['until'] = time.time() + hold_ms / 1000
+                    st['views'][f"j{st['n']}"] = {'until': st['until'], 'view': {'id': f"j{st['n']}", 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res, 'zones': {}, 'set': key[0], 'verb': key[1], 'args': post.get('args')}}
+                    body = {'job': f"j{st['n']}"}
+            elif 'id=' in u.query:
+                v = st['views'].get(urllib.parse.parse_qs(u.query)['id'][0])
+                body = {} if not v else ({**v['view'], 'state': 'running', 'result': None} if time.time() < v['until'] else v['view'])
+        route.fulfill(status=code, content_type='application/json', body=json.dumps(body))
+    c.context.route(re.compile(r'/__setup/'), handler)
+    return st
+
+
+def _rc0497_fixture():
+    """frame/help/recette.json for SOG-0497: SOG-0474 and SOG-0475 delivered the same day, side by side (same application, same height), two older tests, SOG-0476 passed in the
+    compiled list (10:00) while the launcher's file still holds an older refusal of it; two « points à trancher » still open in the compiled list (Q-0111, Q-0112)."""
+    lab = lambda n: {'fr': f'Routes : test {n}', 'en': f'Routes: test {n}', 'de': f'Routen: Test {n}', 'es': f'Rutas: prueba {n}'}
+    test = lambda n, since='2026-11-18', state='todo', **kw: {'id': f'SOG-{n:04d}', 'app': 'pilote', 'title': lab(n), 'test': f'Aller au test {n}, faire, voir.', 'since': since, 'state': state, **kw}
+    tests = [test(474), test(475), test(470, '2026-11-10'), test(471, '2026-11-10'), test(476, '2026-11-17', 'ok', at='2026-11-18T10:00:00Z')]
+    q = lambda n: {'id': f'Q-{n:04d}', 'fiche': f'SOG-{n + 300:04d}', 'app': 'pilote', 'question': f'Question {n} ?', 'context': 'Contexte.', 'options': ['Oui', 'Non'], 'recommended': 0, 'since': '2026-11-18', 'state': 'todo'}
+    return {'schema': 'sog-recette/1', 'generated': {'tool': 'tools/recette_build.py', 'at': '2026-11-18', 'tests': len(tests), 'verdicts': 1}, 'apps': ['pilote', 'compagnie', 'maintenance', 'stats'],
+            'tests': tests, 'decisions': [q(111), q(112)]}
+
+
+def _rc0497_root(td, verdicts=None):
+    """A suite root with organisation/RECETTE.json (the given verdicts) — the launcher's side; returns (root, read of RECETTE items, read of DECISIONS_REPONSES items)."""
+    from pathlib import Path
+    root = Path(td)
+    (root / 'organisation').mkdir()
+    f = root / 'organisation' / 'RECETTE.json'
+    d = root / 'organisation' / 'DECISIONS_REPONSES.json'
+    if verdicts is not None:
+        f.write_text(json.dumps({'schema': 'sog-recette/1', 'updated': '2026-11-17T09:00:00Z', 'items': verdicts}), encoding='utf-8')
+    return root, (lambda: json.loads(f.read_text(encoding='utf-8'))['items'] if f.exists() else {}), (lambda: json.loads(d.read_text(encoding='utf-8'))['items'] if d.exists() else {})
+
+
+def _rc_wait(c, read, key, n=60):
+    """Waits until the launcher's file (read()) holds `key`; its items."""
+    got = {}
+    for _ in range(n):
+        got = read()
+        if key in got:
+            return got
+        c.wait(250)
+    return got
+
+
+@case('A290', 'Recette (SOG-0497): a validation stays validated after the page is reloaded — a verdict and the answer to a « point à trancher » written by the launcher are read back at the opening, even though the launcher runs one job at a time (the two readings of the opening no longer collide), and the most recent of the compiled list and the launcher\'s files wins', 'A',
+      designs=('standard',), screens=True, phone=False, night=False,
+      rule='SOG-0497 (the user, 18 Nov 2026: « je viens de valider 2 points à trancher. si je refresh la page, ils sont revenus »): the launcher runs ONE job that writes at a time (tools/regen_jobs.py) and recette/verdict and recette/decision are such jobs; the screen launched the reading of RECETTE.json and the reading of DECISIONS_REPONSES.json together at its opening, the second was refused « busy » (409) and the screen fell back to frame/help/recette.json, compiled only at integration: the answers came back open; now the jobs of the screen go one after the other, a refusal « busy » is tried again, and the compiled list and the files of the launcher are merged by time (the most recent wins)')
+def a290(c):
+    import tempfile
+    fx = _rc0497_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        # the launcher's file holds an OLDER verdict of SOG-0476 (a refusal of the 17th) than the compiled list (passed on the 18th, 10:00)
+        root, verdicts, answers = _rc0497_root(td, {'SOG-0476': {'verdict': 'ko', 'comment': 'ancien refus', 'at': '2026-11-17T09:00:00Z'}})
+        st = _rc_busy_launcher(c, root)
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-section=today] [data-ok=\"SOG-0474\"]')", timeout=15000, what='the tests')
+        c.wait(3000)    # the two readings of the opening are over
+        c.tap('[data-ok="SOG-0474"]')
+        c.eq((_rc_wait(c, verdicts, 'SOG-0474').get('SOG-0474') or {}).get('verdict'), 'ok', 'the launcher wrote the verdict of SOG-0474', what='verdict written')
+        c.wait(1200)
+        c.tap('[data-tab=decisions]')
+        c.until("!!document.querySelector('[data-q=Q-0111] input[value=\"0\"]')", what='the open question')
+        c.page.check('[data-q=Q-0111] input[value="0"]')
+        c.tap('[data-dok=Q-0111]')
+        c.eq((_rc_wait(c, answers, 'Q-0111').get('Q-0111') or {}).get('choice'), 0, 'the launcher wrote the answer to Q-0111', what='answer written')
+        c.wait(1500)
+        # ---- the reload: the screen opens on the tab « À trancher » (kept), the two readings of the launcher are made again
+        c.page.reload()
+        c.until("!!document.querySelector('[data-q=Q-0111]')", timeout=15000, what='the questions again')
+        for _ in range(48):
+            if c.js("document.querySelector('[data-q=Q-0111]')?.dataset.state") == 'answered':
+                break
+            c.wait(250)
+        c.eq(c.js("document.querySelector('[data-q=Q-0111]')?.dataset.state"), 'answered', f'after a reload the answer to Q-0111 is still there (it is in DECISIONS_REPONSES.json; refusals « busy » by the launcher: {st["busy"]})', what='answer kept after reload')
+        c.eq(c.js("document.querySelector('[data-q=Q-0112]')?.dataset.state"), 'todo', 'the question not answered stays open', what='open stays open')
+        c.tap('[data-tab=tests]')
+        c.until("!!document.querySelector('[data-section=seen]')", what='the seen section')
+        c.js("document.querySelector('[data-section=seen]').open = true")
+        c.eq(c.js("document.querySelector('[data-section=seen] [data-id=\"SOG-0474\"]')?.dataset.state"), 'ok', 'after a reload SOG-0474 is still validated', what='verdict kept after reload')
+        c.eq(c.count('[data-section=today] [data-id="SOG-0474"]'), 0, 'and it is not back among the tests of the day', what='not back')
+        c.eq(c.js("document.querySelector('[data-id=\"SOG-0476\"]')?.dataset.state"), 'ok', 'SOG-0476: the compiled list (passed, 18 Nov 10:00) is more recent than the launcher\'s refusal (17 Nov): the most recent wins', what='most recent wins')
+    c.check_errors()
+
+
+@case('A291', 'Recette (SOG-0497): a verdict the launcher could not write is SAID — one floating note, a warning, « not recorded yet » with the reason (the launcher busy) instead of « validée »; the test says « pas encore envoyé », keeps it across a reload, and leaves by itself when the launcher is free again; four languages', 'A',
+      designs=('standard',), screens=True, night=False, langs4=True,
+      rule='SOG-0497 (the user: « Je valide SOG-0474 […] je refresh, elles sont revenues »; the relay: RECETTE.json did not change): a write refused by the launcher was followed by a green note « SOG-0474 validée » that covered the warning, and the verdict kept on the device left only at the next opening; now the note of the gesture says it is not recorded and why (one note, a warning), the test keeps its mark « pas encore envoyé » (the device keeps it, as for the answers and the Signaler), and the screen sends it again by itself (a refusal « busy »: tried again every few seconds; the launcher back: frame-launcher up)')
+def a291(c):
+    import tempfile
+    lang = c.lang
+    T = lambda k: tx('frame/help/recette.js', k, lang, after='const T = {')
+    fx = _rc0497_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root, verdicts, _ = _rc0497_root(td, {})
+        st = _rc_busy_launcher(c, root)
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-section=today] [data-ok=\"SOG-0474\"]')", timeout=15000, what='the tests')
+        c.wait(3000)
+        c.js("() => { window.__rcNotes = []; window.addEventListener('frame-note', e => window.__rcNotes.push({ text: e.detail.text, kind: e.detail.kind })) }")
+        st['hold'] = True    # another job of the launcher holds the place: every job of the screen is refused « busy »
+        c.tap('[data-ok="SOG-0474"]')
+        c.until("window.__rcNotes.some(n => n.text.includes('SOG-0474'))", timeout=15000, what='the note of the gesture')
+        c.wait(500)
+        notes = c.js('window.__rcNotes')
+        mine = [n for n in notes if 'SOG-0474' in n['text']]
+        c.eq([n['kind'] for n in mine], ['warn'], f'one note for the gesture, a warning (notes: {notes})', what='one warning')
+        c.ok(norm(T('busy')) in norm(mine[0]['text']), mine[0]['text'], 'the note says the verdict is not recorded and why: the launcher is busy')
+        c.eq(verdicts().get('SOG-0474'), None, 'the launcher wrote nothing', what='nothing written')
+        c.until("!!document.querySelector('[data-id=\"SOG-0474\"] [data-unsent]')", what='the test says « not sent yet »')
+        c.eq(norm(c.text('[data-id="SOG-0474"] [data-unsent]')), norm(T('unsent')), 'the test says « pas encore envoyé »', what='unsent mark')
+        # ---- a reload while the launcher is still busy: the verdict kept on the device is still there, still « not sent »
+        c.page.reload()
+        c.until("!!document.querySelector('[data-id=\"SOG-0474\"]')", timeout=15000, what='the screen again')
+        c.eq([c.js("document.querySelector('[data-id=\"SOG-0474\"]')?.dataset.state"), c.count('[data-id="SOG-0474"] [data-unsent]')], ['ok', 1], 'after a reload the verdict kept on the device holds, « not sent »', what='kept across reload')
+        # ---- the launcher is free again: the verdict leaves by itself, nobody clicks again
+        st['hold'] = False
+        got = _rc_wait(c, verdicts, 'SOG-0474', n=80)
+        c.eq((got.get('SOG-0474') or {}).get('verdict'), 'ok', 'the launcher free again: the verdict is written by itself', what='sent by itself')
+        c.until("!document.querySelector('[data-id=\"SOG-0474\"] [data-unsent]')", timeout=8000, what='the mark goes')
+    c.check_errors()
+
+
+@case('A292', 'Recette (SOG-0497): ONE gesture = ONE verdict — a double click on « Validé » of SOG-0474 validates SOG-0474 only, not SOG-0475 that comes up under the pointer when the list is redrawn; phone too', 'A',
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0497 (the user, 18 Nov 2026: « Je valide SOG-0474. les deux sont validées d\'un seul coup »): a verdict redraws the list at once, SOG-0474 leaves the tests of the day and SOG-0475 (delivered the same day, next in the list) comes up exactly under the pointer; the second click of a double click landed on its « Validé »; now a click of the same burst (detail > 1) on ANOTHER card than the one of the gesture makes no second verdict (a second touch on the same button, after a refusal without comment, stays a gesture)')
+def a292(c):
+    import tempfile
+    fx = _rc0497_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root, verdicts, _ = _rc0497_root(td, {})
+        _rc_busy_launcher(c, root)
+        c.open('recette', docs=LEVEL3)
+        c.until("!!document.querySelector('[data-section=today] [data-ok=\"SOG-0474\"]')", timeout=15000, what='the tests')
+        c.wait(3000)
+        order = c.js("[...document.querySelectorAll('[data-section=today] li[data-id]')].map(l => l.dataset.id)")
+        c.eq(order[:2], ['SOG-0474', 'SOG-0475'], 'SOG-0474 then SOG-0475, side by side', what='order')
+        c.page.locator('[data-ok="SOG-0474"]').scroll_into_view_if_needed()
+        box = c.page.locator('[data-ok="SOG-0474"]').bounding_box()
+        x, y = box['x'] + box['width'] / 2, box['y'] + box['height'] / 2
+        # a double click as a hand makes it: the first click, the list redraws, the second click of the same burst 200 ms later at the same place
+        c.page.mouse.move(x, y)
+        c.page.mouse.down(click_count=1)
+        c.page.mouse.up(click_count=1)
+        c.wait(200)
+        under = c.js("(p) => document.elementFromPoint(p[0], p[1])?.closest('button')?.dataset.ok || ''", [x, y])
+        c.page.mouse.down(click_count=2)
+        c.page.mouse.up(click_count=2)
+        _rc_wait(c, verdicts, 'SOG-0474')
+        c.wait(2500)
+        got = verdicts()
+        c.eq(sorted(got), ['SOG-0474'], f'one gesture, one verdict: SOG-0474 only (under the pointer at the second click: {under or "nothing"})', what='one verdict')
+        c.eq(c.count('[data-section=today] [data-id="SOG-0475"]'), 1, 'SOG-0475 is still to test', what='SOG-0475 untouched')
+    c.check_errors()
+
+

@@ -5,6 +5,8 @@
   // sont écrits par le lanceur (recette/verdict → organisation/RECETTE.json, même forme que roadmap/priorities), sinon l'appareil les garde, « non envoyé ». De haut en bas : un résumé, le filtre par application, « Tests du jour »
   // (livrés depuis la dernière recette), « Plus anciens », « En cours : ne pas retester » (un bug connu, dit sur son test : jamais remonté deux fois), « Déjà vus » ; sept tests visibles par section, puis « Voir les n autres ».
   // Contexte donné par frame/app.js : { t, lang, own, root, notify, launcher }. Le fichier et la réponse du lanceur sont des entrées non fiables : tout est échappé, borné et filtré.
+  // SOG-0497 : ce qui est en vigueur pour une fiche ou une question est la plus récente des entrées (le magasin de l'appareil d'abord, puis le fichier du lanceur, le dépôt, la liste générée) ;
+  // les travaux de l'écran au lanceur passent un par un (il n'en fait tourner qu'un qui écrit) et ce qui est refusé « occupé » ou sans réponse se retente seul ; un geste = un verdict.
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
   const STORE = 'device/recette.json';
   const ID = /^SOG-\d{4}$/;
@@ -166,6 +168,20 @@
       'The launcher could not write the verdicts: they stay on this device.',
       'Der Launcher konnte die Urteile nicht schreiben: Sie bleiben auf diesem Gerät.',
       'El lanzador no pudo escribir los veredictos: se quedan en este dispositivo.'
+    ],
+    // SOG-0497 : un verdict que le lanceur n'a pas écrit ne se dit jamais « validée » tout court — la note dit qu'il n'est pas enregistré, et pourquoi ; il part de lui-même plus tard
+    unrecorded: ['{note} — pas encore enregistrée. {why}', '{note} — not recorded yet. {why}', '{note} — noch nicht gespeichert. {why}',
+      '{note} — aún no registrada. {why}'
+    ],
+    busy: ['Le lanceur est occupé par un autre travail : le verdict reste sur cet appareil et partira dès qu’il sera libre.',
+      'The launcher is busy with another job: the verdict stays on this device and will leave as soon as it is free.',
+      'Der Launcher ist mit einer anderen Aufgabe beschäftigt: Das Urteil bleibt auf diesem Gerät und geht, sobald er frei ist.',
+      'El lanzador está ocupado con otro trabajo: el veredicto se queda en este dispositivo y saldrá en cuanto esté libre.'
+    ],
+    down: ['Le lanceur ne répond pas : le verdict reste sur cet appareil et partira à son retour.',
+      'The launcher does not answer: the verdict stays on this device and will leave when it is back.',
+      'Der Launcher antwortet nicht: Das Urteil bleibt auf diesem Gerät und geht, wenn er zurück ist.',
+      'El lanzador no responde: el veredicto se queda en este dispositivo y saldrá cuando vuelva.'
     ],
     nothing: ['Aucun test à montrer avec ce choix.', 'No test to show with this choice.', 'Kein Test mit dieser Auswahl.',
       'Ninguna prueba con esta opción.'
@@ -419,6 +435,8 @@
       local: saved.pending,
       // ceux de cet appareil, pas encore envoyés (null : à retirer)
       unsent: new Set(saved.unsent),
+      lastGesture: '', // la fiche (ou la question) du dernier geste, tant qu'aucun autre bouton de geste n'a été touché (SOG-0497)
+      why: '', // pourquoi le dernier verdict n'est pas parti (SOG-0497) : busy, offline, unknown, failed, ou la raison du lanceur (no-organisation…)
       open: saved.open,
       more: {},
       draft: {},
@@ -436,9 +454,8 @@
     };
     // ---- ce que dit un test : son verdict en vigueur (l'appareil, puis le lanceur, puis le fichier généré), ou rien
     /** L'entrée en vigueur d'une fiche dans les FICHIERS : la plus récente, par son heure, de celle du lanceur (organisation/RECETTE.json) et de celle du dépôt (le téléphone) — SOG-0357. */
-    // le fichier du lanceur, quand il est lu, est LA source (la liste générée en est tirée) ; sinon la liste générée et le dépôt se départagent aussi par l'heure
-    const fileEntry = x => ui.fileRead ? R.latest(ui.file[x.id], ui.repo[x.id]) || null : R.latest(ui.repoRead ? ui.repo[x.id] : null, x
-      .gen) || null;
+    // SOG-0497 : la liste générée entre aussi dans le départage — la plus récente des trois l'emporte (le fichier du lanceur d'abord à heure égale) ; un fichier lu ne fait jamais reculer un verdict plus récent
+    const fileEntry = x => R.latest(ui.fileRead ? ui.file[x.id] : null, ui.repoRead ? ui.repo[x.id] : null, x.gen) || null;
     const rawEntry = x => Object.hasOwn(ui.local, x.id) ? ui.local[x.id] : fileEntry(x);
     /** Le verdict en vigueur vient-il du fichier du DÉPÔT (le téléphone), sur un poste qui a son propre fichier (un lanceur) ? Il le dit : « du téléphone » — il ne passe pas pour un verdict donné ici. */
     const fromRepoOf = x => !!launcher() && !Object.hasOwn(ui.local, x.id) && !!ui.repo[x.id] && rawEntry(x) === ui.repo[x.id];
@@ -560,7 +577,9 @@
     };
     // ---- l'onglet « À trancher » : une carte par question, les non répondues d'abord
     const questions = questionsOf(d.decisions);
-    const answerNow = q => Object.hasOwn(ui.dlocal, q.id) ? ui.dlocal[q.id] : ui.dfileRead ? ui.dfile[q.id] || null : q.gen;
+    // SOG-0497 : la réponse du fichier du lanceur et celle de la liste générée se départagent par l'heure (la plus récente) ; la liste n'est recompilée qu'à l'intégration
+    const answerNow = q => Object.hasOwn(ui.dlocal, q.id) ? ui.dlocal[q.id] : R.latest(ui.dfileRead ? ui.dfile[q.id] : null, q.gen) ||
+      null;
     const undecided = () => questions.filter(q => !answerNow(q)).length;
     const decisionItem = q => {
       const a = answerNow(q),
@@ -623,15 +642,29 @@
         return null;
       }
     };
-    /** Appel du verbe recette/verdict du lanceur : son résultat, ou null (pas de lanceur, lanceur sans ce verbe, travail en échec). */
-    const callRec = async args => {
+    // SOG-0497 : le lanceur ne fait tourner qu'UN travail qui écrit à la fois (tools/regen_jobs.py) et recette/verdict, recette/decision en sont : lancés ensemble (les deux lectures de
+    // l'ouverture), le second était refusé « occupé » (409) et l'écran retombait sur la liste générée — les réponses et les verdicts du jour « revenaient » après un rafraîchissement.
+    // Les travaux de cet écran passent donc l'un après l'autre ; un refus « occupé » ou un lanceur muet se retente plus tard (heal).
+    let jobs = Promise.resolve();
+    const job = (verb, args) => {
       const L = launcher();
-      if (!L) return null;
-      const r = await L.job('regen/job', {
+      if (!L) return Promise.resolve(null);
+      const p = jobs.then(() => L.job('regen/job', {
         set: 'recette',
-        verb: 'verdict',
+        verb,
         args
-      }).catch(() => null);
+      })).catch(() => null);
+      jobs = p.then(() => {}, () => {});
+      return p;
+    };
+    /** La raison d'un travail refusé : busy (un autre travail tient la place), offline (le lanceur ne répond pas), unknown (verbe inconnu d'un lanceur plus ancien), failed (le reste). */
+    const whyOf = r => r?.offline || !r ? 'offline' : r.status === 409 ? 'busy' : r.status === 400 && /unknown operation/.test(String(r
+      .message || '')) ? 'unknown' : 'failed';
+    /** Appel du verbe recette/verdict du lanceur : son résultat, ou null (pas de lanceur, lanceur sans ce verbe, travail en échec ; la raison dans ui.why). */
+    const callRec = async args => {
+      if (!launcher()) return null;
+      const r = await job('verdict', args);
+      ui.why = r?.ok ? r.result?.ok === false ? String(r.result.reason || 'failed') : '' : whyOf(r);
       return r?.ok && r.result && typeof r.result === 'object' ? r.result : null;
     };
     let sending = Promise.resolve(); // les envois se suivent : jamais deux à la fois
@@ -746,20 +779,53 @@
       });
       return true;
     };
+    /** Ce qu'on dit d'un verdict que le lanceur n'a pas écrit (SOG-0497 : jamais rien). */
+    const whyText = () => t(!launcher() ? T.noRepo : ui.why === 'no-organisation' ? T.noOrg : ui.why === 'busy' ? T.busy : ui.why ===
+      'offline' ? T.down : T.noWrite);
     const notSent = (quiet, r) => {
-      if (!quiet && launcher()) c.notify?.(t(r?.reason === 'no-organisation' ? T.noOrg : T.noWrite), 'warn');
+      if (r?.reason) ui.why = String(r.reason);
+      if (!quiet && launcher()) c.notify?.(whyText(), 'warn');
+      heal();
       return false;
     };
-    pulling = (async () => {
+    const pullRec = async () => {
       const r = await callRec({
         action: 'get'
       });
-      if (!r?.ok) return;
+      if (!r?.ok) return heal();
       ui.file = cleanMap(r.items);
       ui.fileRead = true;
       setLastDay();
       draw();
-    })();
+    };
+    // ---- SOG-0497 : ce qui n'a pas pu être lu ou écrit (le lanceur occupé ou muet) se retente de lui-même, toutes les HEAL_MS, HEAL_MAX fois au plus tant que l'écran est là ; le retour
+    // du lanceur (frame-launcher up) relance aussi tout, verdicts et réponses
+    const HEAL_MS = 4000,
+      HEAL_MAX = 30;
+    let healT = 0,
+      healN = 0;
+    const transient = w => w === 'busy' || w === 'offline';
+    const owed = () => !ui.fileRead || (questions.length && !ui.dfileRead) || Object.keys(ui.local).length || Object.keys(ui.dlocal)
+      .length;
+
+    function heal() {
+      if (healT || healN >= HEAL_MAX || !view.isConnected || !launcher() || !(transient(ui.why) || transient(ui.dwhy)) || !owed())
+        return;
+      healT = setTimeout(() => {
+        healT = 0;
+        healN++;
+        if (view.isConnected) resync();
+      }, HEAL_MS);
+    }
+    /** Relit ce qui n'a pas été lu, puis envoie ce que l'appareil garde (verdicts et réponses). */
+    async function resync() {
+      if (!launcher()) return;
+      if (!ui.fileRead) await (pulling = pulling.then(pullRec));
+      if (questions.length && !ui.dfileRead) await syncDec();
+      else if (Object.keys(ui.dlocal).length && await sendDec(true)) draw();
+      if (Object.keys(ui.local).length && await send(true)) draw();
+    }
+    pulling = pullRec();
     // le fichier du dépôt est lu à l'ouverture, et à chaque fois qu'il change (un autre appareil de ce trigramme y a écrit)
     const repoLoad = async () => {
       if (await readRepo()) {
@@ -798,7 +864,7 @@
       const before = snapshot(id),
         hist = keepHistory(before),
         x = tests.find(y => y.id === id);
-      await commit(id, e === null ? {
+      const sent = await commit(id, e === null ? {
         history: hist,
         at: now()
       } : {
@@ -807,11 +873,16 @@
           history: hist
         } : {})
       });
-      const title = x ? String(t(row(x.title))).slice(0, 70) : '';
-      c.notify?.(t(T.noted[kind], {
-        id,
-        title
-      }), kind === 'ko' ? 'warn' : 'ok', {
+      const title = x ? String(t(row(x.title))).slice(0, 70) : '',
+        note = t(T.noted[kind], {
+          id,
+          title
+        });
+      // SOG-0497 : une seule note par geste ; si rien n'est enregistré, elle le dit (alerte) avec la raison, au lieu d'un « validée » trompeur
+      c.notify?.(sent ? note : t(T.unrecorded, {
+        note,
+        why: whyText()
+      }), kind === 'ko' || !sent ? 'warn' : 'ok', {
         key: 'recette-undo',
         ms: 15000, // l'occasion d'annuler dure quinze secondes, puis la note s'efface (sur un téléphone elle recouvre le bas de l'écran)
         action: {
@@ -840,7 +911,9 @@
         unsent: [...ui.unsent]
       });
       draw();
-      if (await send(false)) draw();
+      const ok = await send(true); // la note du geste dit le résultat (une seule note)
+      draw();
+      return ok;
     };
     // ---- les réponses : écrites par le lanceur (recette/decision), sinon gardées sur l'appareil, « non envoyé » (comme les verdicts)
     const callDec = async args => {
@@ -849,13 +922,9 @@
         ui.dwhy = 'offline';
         return null;
       }
-      const r = await L.job('regen/job', {
-        set: 'recette',
-        verb: 'decision',
-        args
-      }).catch(() => null);
-      ui.dwhy = r?.ok ? '' : r?.offline ? 'offline' : r?.status === 400 && /unknown operation/.test(String(r.message || '')) ?
-        'unknown' : 'failed';
+      const r = await job('decision', args);
+      ui.dwhy = r?.ok ? '' : whyOf(r);
+      if (!r?.ok) heal();
       return r?.ok && r.result && typeof r.result === 'object' ? r.result : null;
     };
     let dsending = Promise.resolve();
@@ -933,7 +1002,10 @@
     syncDec();
     const onLauncher = e => {
       if (!view.isConnected) return window.removeEventListener('frame-launcher', onLauncher);
-      if (e.detail?.state === 'up' && questions.length) syncDec();
+      if (e.detail?.state !== 'up') return;
+      // le lanceur revient : les verdicts aussi repartent (SOG-0497 ; avant, seules les réponses), et les relances reprennent leur compte
+      healN = 0;
+      resync();
     };
     window.addEventListener('frame-launcher', onLauncher);
     /** Garde la réponse d'une question (`null` : la retirer) : sur l'appareil d'abord, puis on tente l'envoi. */
@@ -953,7 +1025,8 @@
     const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     view.onclick = e => {
       const b = e.target.closest?.('button');
-      if (!b || !view.contains(b)) return;
+      // un toucher ailleurs (une réponse cochée, un champ) clôt la rafale du geste (SOG-0497)
+      if (!b || !view.contains(b)) return void(ui.lastGesture = '');
       if (b.dataset.tab) {
         ui.tab = b.dataset.tab === 'decisions' ? 'decisions' : 'tests';
         saveStore(c, {
@@ -963,6 +1036,12 @@
       }
       if (b.dataset.copy) return void(c.copy ? c.copy(b.dataset.copy) : navigator.clipboard?.writeText(b.dataset.copy).catch(
         () => {}));
+      // SOG-0497 (« Je valide SOG-0474. les deux sont validées d'un seul coup ») : un geste redessine la liste, la fiche quitte sa place et la suivante (SOG-0475) remonte SOUS le
+      // pointeur ; le second clic d'un double clic tombait sur son « Validé ». Un geste = un verdict : le clic suivant d'une même rafale (detail > 1) qui tombe sur une AUTRE fiche que
+      // celle du geste n'en fait pas un second (un second toucher sur le même bouton, après un refus sans commentaire par exemple, reste un geste)
+      const target = b.dataset.ok || b.dataset.ko || b.dataset.reserve || b.dataset.redo || b.dataset.dok;
+      if (target && e.detail > 1 && ui.lastGesture && ui.lastGesture !== target) return;
+      if (target) ui.lastGesture = '';
       if (b.dataset.dmod && QID.test(b.dataset.dmod)) {
         ui.dedit.add(b.dataset.dmod);
         return draw(`[data-dtext="${CSS.escape(b.dataset.dmod)}"]`);
@@ -981,6 +1060,7 @@
           ui.dneed = id;
           return draw(`[data-dok="${CSS.escape(id)}"]`);
         }
+        ui.lastGesture = id;
         return commitDec(id, a);
       }
       if (b.dataset.app !== undefined) {
@@ -991,7 +1071,7 @@
         ui.more[b.dataset.more] = !ui.more[b.dataset.more];
         return draw(`[data-more="${CSS.escape(b.dataset.more)}"]`);
       }
-      if (b.dataset.redo) return gesture(b.dataset.redo, 'redo', null, '');
+      if (b.dataset.redo) return (ui.lastGesture = b.dataset.redo), gesture(b.dataset.redo, 'redo', null, '');
       const id = b.dataset.ok || b.dataset.ko || b.dataset.reserve;
       if (!id || !ID.test(id)) return;
       const comment = text(ui.draft[id] ?? view.querySelector(`[data-comment="${CSS.escape(id)}"]`)?.value, MAX_COMMENT);
@@ -1001,6 +1081,7 @@
         ui.needKind = b.dataset.reserve ? 'reserve' : 'ko';
         return draw(`[data-comment="${CSS.escape(id)}"]`);
       }
+      ui.lastGesture = id;
       return gesture(id, b.dataset.ok ? 'ok' : b.dataset.reserve ? 'reserve' : 'ko', {
         verdict: b.dataset.ok ? 'ok' : b.dataset.reserve ? 'reserve' : 'ko',
         ...(comment ? {
