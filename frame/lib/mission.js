@@ -50,6 +50,15 @@
 //     tout lecteur qui réécrit (éditeur, registre, « Ajouter », « Changer de compagnie ») le refuse avant (audits 182 et 186).
 //   icaoOf(name) : le code OACI entre parenthèses à la fin d'un nom (« BA 118 Mont-de-Marsan (LFBM) » → « LFBM ») ; '' sinon.
 //   levelFt(text) : « FL240 » → 24000, « 1500 ft » → 1500, un nombre tel quel ; null sinon.
+//   pilotView(mission, opened, { mine = true }) → CE QUE LE PILOTE PEUT VOIR (SOG-0448, « le secret d'un tiroir fermé ») : la mission
+//     lue, dans la même forme, où un lieu, une zone, un rendez-vous ou la cible n'est gardé que s'il est cité par la partie visible
+//     (sa route `routeOrder`, le centre d'une de ses cartes) ou par un tiroir OUVERT (sa zone, le point de sa clé, ses arrêts, sa suite
+//     de route) ; la zone de passage d'un tiroir fermé aussi quand son auteur l'a dite « montrée » ; un tiroir fermé est SCELLÉ
+//     (`sealed: true` : son titre et sa clé dite en clair, le genre de sa clé et son heure de repli — ni message, ni briefing, ni suite
+//     de route, ni géométrie, ni objet). `opened` : les lettres des tiroirs ouverts de MA mission (une entrée bornée : seules les
+//     lettres de DRAWER_IDS comptent) ; `mine: false` (une mission qu'on feuillette) : la partie visible seule. Une mission SANS tiroir
+//     n'a pas de secret : elle est rendue telle quelle. Ajoute `pilot: { mine, opened, hidden: { places, drawers } }`. Pour AFFICHER
+//     seulement : le suivi des clés en vol lit la mission entière. null sans mission.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points, depAt, arrAt }, aircraft: { type, registration }, levelFt, speedKt, mission,
 //     category } (le vol que Carburant pose ; § 4 de la SPEC) ; null sans mission.
 //   lockedPoint(p) : vrai pour un point que la mission impose (rendez-vous, cible, source par son rôle) ; missionFlight le marque
@@ -851,6 +860,119 @@ function legNm(a, b) {
   const rad = Math.PI / 180,
     h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) ** 2;
   return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/** Un tiroir fermé tel que le pilote le voit (SOG-0448) : son rang, son titre, sa clé dite en clair par l'auteur (`trigger`, que la V2
+ *  imprime sur le pli), et de sa clé ce qu'il faut pour dire la phrase du tiroir fermé — son genre, son heure de repli, le point et le
+ *  délai d'une heure, le point d'une arrivée, « montrée » pour une zone (avec sa forme SEULEMENT quand l'auteur la montre), et les
+ *  seuls drapeaux que notJudgedYet lit (un acteur, un objet mobile, un suivi) — jamais une position, un objet, un message, un
+ *  briefing, une suite de route. */
+function sealedDrawer(d) {
+  const k = plain(d.key) || {
+      kind: 'hand'
+    },
+    shown = k.kind === 'zone' && k.shown === true;
+  return {
+    id: d.id,
+    rank: d.rank,
+    title: d.title,
+    trigger: d.trigger,
+    message: '',
+    brief: '',
+    key: {
+      kind: k.kind,
+      fallbackMin: Number.isFinite(k.fallbackMin) ? k.fallbackMin : null,
+      ...(k.kind === 'time' ? {
+        point: k.point,
+        delayMin: k.delayMin
+      } : k.kind === 'zone' ? {
+        shown,
+        zoneId: shown ? k.zoneId ?? null : null,
+        ...(shown ? {
+          shape: k.shape,
+          ceilingFt: k.ceilingFt ?? null
+        } : {}),
+        actor: k.actor ? true : null
+      } : k.kind === 'object' ? {
+        object: {
+          confirm: k.object?.confirm !== false,
+          moving: !!k.object?.moving
+        }
+      } : k.kind === 'arrival' ? {
+        point: k.point,
+        escortMinSec: Number.isFinite(k.escortMinSec) ? k.escortMinSec : 0
+      } : k.kind === 'condition' ? {
+        condition: k.condition
+      } : {})
+    },
+    keyWhy: d.keyWhy,
+    condition: d.condition,
+    emits: null,
+    route: [],
+    routeUnknown: 0,
+    sealed: true
+  };
+}
+
+/** Ce que le pilote peut voir d'une mission (voir l'en-tête ; SOG-0448). La règle, écrite une fois : un lieu n'est montré que s'il est
+ *  CITÉ — par la partie visible (sa route, le centre d'une de ses cartes) ou par un tiroir ouvert ; la zone d'un tiroir fermé aussi
+ *  quand son auteur l'a dite « montrée ». Les identifiants se comparent comme le lecteur les lit (sans blancs, en capitales). Rien de
+ *  la mission lue n'est modifié : un nouvel objet est rendu (la mission elle-même quand elle n'a pas de tiroir). */
+export function pilotView(mission, opened = [], options = null) {
+  const m = plain(mission),
+    mine = plain(options)?.mine !== false; // des options qui n'en sont pas (null, un texte) : la mission est « la mienne », le défaut
+  if (!m) return null;
+  const drawers = (Array.isArray(m.drawers) ? m.drawers : []).filter(plain);
+  if (!drawers.length) return m; // une mission sans tiroir n'a pas de secret
+  const open = new Set(!mine ? [] : (Array.isArray(opened) ? opened.slice(0, 64) : []).filter(x => typeof x === 'string' &&
+      DRAWER_IDS.includes(x))),
+    cited = new Set(),
+    cite = v => {
+      const w = idWord(plain(v) ? v.id : v);
+      if (w) cited.add(w);
+    };
+  (Array.isArray(m.routeOrder) ? m.routeOrder : []).slice(0, 400).forEach(cite);
+  (Array.isArray(m.maps) ? m.maps : []).slice(0, 40).forEach(x => cite(plain(x)?.centreRef));
+  for (const d of drawers) {
+    const k = plain(d.key) || {};
+    if (open.has(d.id)) {
+      cite(k.zoneId);
+      cite(k.point);
+      (Array.isArray(k.required) ? k.required : []).slice(0, DRAWER_BOUNDS.required).forEach(cite);
+      (Array.isArray(d.route) ? d.route : []).slice(0, DRAWER_BOUNDS.route).forEach(cite);
+    } else if (k.kind === 'zone' && k.shown === true) cite(k.zoneId);
+  }
+  const all = plain(m.points) || {},
+    seen = id => cited.has(idWord(id)),
+    targetId = Object.keys(all).find(id => plain(all[id])?.kind === 'target'),
+    targetSeen = cited.has('TARGET') || (targetId !== undefined && seen(targetId)),
+    points = {},
+    keep = list => (Array.isArray(list) ? list : []).filter(x => plain(x) && x.id && seen(x.id));
+  for (const id of Object.keys(all))
+    if (id !== '__proto__' && (plain(all[id])?.kind === 'target' ? targetSeen : seen(id))) points[id] = all[id];
+  const zones = keep(m.zones),
+    rendezvous = keep(m.rendezvous),
+    turns = keep(m.turns),
+    target = targetSeen ? m.target : null,
+    at = p => plain(p) && p.lat !== null && p.lat !== undefined && p.lon !== null && p.lon !== undefined;
+  return {
+    ...m,
+    target,
+    points,
+    zones,
+    rendezvous,
+    turns,
+    drawers: drawers.map(d => open.has(d.id) ? d : sealedDrawer(d)),
+    hasCoords: [m.origin, m.destination, target, ...turns, ...rendezvous, ...zones].some(at),
+    pilot: {
+      mine,
+      opened: DRAWER_IDS.filter(x => open.has(x)),
+      hidden: {
+        places: Object.keys(all).length - Object.keys(points).length,
+        drawers: drawers.filter(d => !open.has(d.id)).length
+      }
+    }
+  };
 }
 
 /** La distance et le temps estimé du départ au passage d'un point de la partie A (voir l'en-tête ; la clé « heure » d'un tiroir, que la

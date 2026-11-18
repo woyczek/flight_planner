@@ -144,6 +144,30 @@ phases:
   departure to a point of part A — distance at the cruise speed, plus the time on task of the points before (the middle
   of a range); `min` is null without a speed; null when the point is not on the route of part A; `'ORIGIN'` is 0.
 
+## 4 bis. What the pilot may see — `pilotView` (SOG-0448, 18 Nov 2026)
+
+The workshop's format writes the target, the zones, the points and the objects at the top of the file: shown as they are, the sheet
+of the mission, its Detail and the Map would give away the position a closed drawer hides. **One rule, written once**, in the
+reader: `pilotView(mission, opened, { mine = true })` returns the mission read, **in the same shape**, where
+
+- a place, a zone, a rendezvous or the target is kept **only if it is cited** — by the visible part (its route `routeOrder`, the
+  centre of one of its maps) or by a drawer that is OPEN (its zone, the point of its key, its required stops, its onward route);
+- the passage zone of a closed drawer is also kept when its author said it is shown (`zone_shown`, true unless written otherwise);
+- **a closed drawer is sealed** (`sealed: true`): its rank, its title, the key in plain words written by the author (`trigger`), the
+  kind of its key and its fallback time (plus the point and the delay of an hour, the point of an arrival, and the only flags
+  `notJudgedYet` reads) — never a position, an object, a message, a briefing or an onward route;
+- `opened` is the letters of the open drawers of MY mission, a bounded input: only the letters of `DRAWER_IDS` count; `mine: false`
+  (a mission one browses) gives the visible part alone, whatever `opened` says;
+- **a mission without a drawer has no secret**: it is returned as it is (the V2 missions are shown as before);
+- `pilot: { mine, opened, hidden: { places, drawers } }` is added.
+
+Identifiers are compared as the reader reads them (trimmed, upper case; `TARGET` names the target). The mission read is never
+modified. **For display only**: the device that follows the keys in flight reads the whole mission. **The limit, said**: the file
+stays readable by whoever opens it, and the V2 shows everything — it is a seal of the game, not a protection. The author, in the
+workshop, sees everything. Who goes through it: the sheet and the Detail of a mission (Features SOG), the Map (BUGS SOG), with the
+open drawers published on the device by « Affectation » — none writes a rule of its own. Bench: `frame/lib/test/mission.html`
+(noreg N1); noreg N103.
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a

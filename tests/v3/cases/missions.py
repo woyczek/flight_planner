@@ -5258,3 +5258,80 @@ def n102(c):
     c.shot('N102_390_put.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+# SOG-0448: what the pilot may see of a mission with drawers (frame/lib/mission.js, pilotView) — an invented mission, never a copy:
+# a hiker to find on a glacier; the hidden position (45.31 N, 1.42 E) is the one of the target, of the object, of the zone of the
+# second drawer and of a rendezvous nearby
+_PV_VIEW_JS = """async () => { const MS = await import('/frame/lib/mission.js'), J = x => JSON.stringify(x);
+  const doc = { schema: 'helo-xp-mission', mission: { id: 'X-002A', type: 'REG' }, title: 'Glacier', cruise_speed_kt: 100,
+    origin: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 }, destination: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 },
+    target: { id: 'TARGET', name: 'Randonneur', lat: 45.31, lon: 1.42 },
+    turning_points: [{ id: 'PT1', name: 'Col', lat: 45.2, lon: 1.2 }, { id: 'PT2', name: 'Refuge', lat: 45.35, lon: 1.5 }, { id: 'PT3', name: 'Nulle part', lat: 45.1, lon: 1.1 },
+      { id: 'PT4', name: 'Vol stationnaire', lat: 45.31, lon: 1.43 }],
+    rendezvous: [{ id: 'RDV-1', name: 'Secours au sol', lat: 45.33, lon: 1.44 }],
+    zones: [{ id: 'ZONE-1', name: 'Vallee', centre: { lat: 45.25, lon: 1.3 }, radius_km: 6 }, { id: 'ZONE-2', name: 'Glacier', centre: { lat: 45.31, lon: 1.42 }, radius_km: 2 }],
+    objects: [{ id: 'OBJ-1', kind: 'person', name: 'Randonneur', lat: 45.31, lon: 1.42, detection_range_nm: 1 }],
+    route_order: ['ORIGIN', ' pt1 ', 'DESTINATION'], maps: [{ id: 'carte1', filename: 'detail_X-002A_1.png', centre_ref: 'PT1' }],
+    phases: [{ id: 'B', title: 'La vallee', trigger: 'En entrant dans la vallee', trigger_zone: 'ZONE-1', fallback_delay_min: 30, route_order: ['PT2'] },
+      { id: 'C', title: 'Le glacier', trigger_zone: 'ZONE-2', zone_shown: false, fallback_delay_min: 60, message: 'Randonneur vu vers 45.31 N.', brief: 'Position 45.31 N 1.42 E.',
+        route_order: ['TARGET', 'RDV-1'] },
+      { id: 'D', title: 'Trouve', trigger_object: 'OBJ-1', fallback_delay_min: 90 },
+      { id: 'E', title: 'Retour', trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: 1, speed_max_kt: 30, require_on_ground: true, required_points: ['PT4'] } },
+      { id: 'F', title: 'Heure', trigger_point: 'PT1', trigger_delay_min: 10 }] };
+  const m = MS.readMission(doc), before = J(m);
+  const seen = v => [!!v.target, Object.keys(v.points).sort().join(' '), v.zones.map(z => z.id).join(' '), v.rendezvous.map(z => z.id).join(' '), v.turns.map(z => z.id).join(' '),
+    v.drawers.map(d => d.id + (d.sealed ? '-' : '+')).join(' ')], leak = v => /45\\.31|1\\.42|1\\.43|Randonneur vu|Position 45/.test(J(v));
+  const none = MS.pilotView(m, []), sealed = Object.fromEntries(none.drawers.map(d => [d.id, d.key]));
+  let threw = '';
+  const hostile = [null, 'B', 7, {}, ['Z', 7, null, {}, '__proto__', 'b', ['B']], Array.from({ length: 500 }, () => 'B'), ['C', 'C', 'B']];
+  const opened = hostile.map(o => { try { return MS.pilotView(m, o).pilot.opened } catch (e) { threw += String(e); return null } });
+  for (const x of [null, 'x', 7, [], { drawers: 'x' }, { drawers: [null, 'x', {}], points: null, routeOrder: 'x', maps: 7, zones: 'x' }]) try { MS.pilotView(x, ['B'], x) } catch (e) { threw += String(e) }
+  const plainDoc = { ...doc, phases: undefined }, plain = MS.readMission(plainDoc);
+  return { none: [seen(none), leak(none), none.pilot, none.hasCoords], first: [seen(MS.pilotView(m, ['B'])), leak(MS.pilotView(m, ['B']))],
+    second: [seen(MS.pilotView(m, ['B', 'C'])), leak(MS.pilotView(m, ['B', 'C']))], all: seen(MS.pilotView(m, ['B', 'C', 'D', 'E', 'F'])),
+    arrival: seen(MS.pilotView(m, ['E']))[4], browsed: [seen(MS.pilotView(m, ['B', 'C', 'D'], { mine: false })), leak(MS.pilotView(m, ['B', 'C', 'D'], { mine: false }))],
+    sealed, texts: none.drawers.map(d => [d.title, d.trigger, d.message, d.brief, d.route.length]), opened, threw,
+    plain: [MS.pilotView(plain, ['B']) === plain, !!plain.target, MS.pilotView(null, []), MS.pilotView('x', [])], untouched: J(m) === before } }"""
+
+
+@case('N103', 'Missions › the reader, what the pilot may see (pure, no screen): of a mission with drawers a place, a zone, a rendezvous or the '
+      'target is kept only if it is cited by the visible part (its route, the centre of one of its maps) or by a drawer that is open — '
+      'its zone, the point and the stops of its key, its onward route —; the passage zone of a closed drawer also when its author shows '
+      'it; a closed drawer is sealed: its title, the key in plain words, the kind of its key and its fallback time, nothing else; before '
+      'the opening the hidden position is in NOTHING of what is returned; a mission one browses gives the visible part alone; a mission '
+      'without a drawer is returned as it is; the open drawers are a bounded input; no hostile input throws; the mission read is not '
+      'touched', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0448 (the ergonomist, 17 Nov 2026: « le secret fuit » — « un lieu, une zone, un objet ou la cible n\'est montré au pilote que '
+      's\'il est cité par la partie visible (sa route, ses cartes) ou par un tiroir déjà ouvert ; une zone de passage aussi quand son auteur '
+      'l\'a dite montrée… UNE règle, écrite une fois : une fonction pure du lecteur »): frame/lib/mission.js `pilotView`; '
+      'docs/technique/FORMAT_MISSION.md § 4 bis; the bench frame/lib/test/mission.html (N1)')
+def n103(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_PV_VIEW_JS)
+    c.eq(r['none'], [[False, 'PT1 ZONE-1', 'ZONE-1', '', 'PT1', 'B- C- D- E- F-'], False, {'mine': True, 'opened': [], 'hidden': {'places': 6, 'drawers': 5}}, True],
+         'no drawer open: the visible part alone — the point of its route (written « pt1 »: identifiers compare as the reader reads them) and of its map, the zone the closed '
+         'drawer 1 shows; the target, the hidden zone, the rendezvous and the other points are not kept, and the hidden position is in NOTHING of what is returned',
+         what='nothing open')
+    c.eq(r['first'], [[False, 'PT1 PT2 ZONE-1', 'ZONE-1', '', 'PT1 PT2', 'B+ C- D- E- F-'], False], 'drawer 1 open: its onward route in addition; still nothing of the hidden position',
+         what='drawer 1 open')
+    c.eq(r['second'], [[True, 'PT1 PT2 RDV-1 TARGET ZONE-1 ZONE-2', 'ZONE-1 ZONE-2', 'RDV-1', 'PT1 PT2', 'B+ C+ D- E- F-'], True],
+         'drawer 2 open: its zone, and the target and the rendezvous of its onward route — the position is now shown', what='drawer 2 open')
+    c.eq([r['all'][1], r['all'][5], r['arrival']], ['PT1 PT2 PT4 RDV-1 TARGET ZONE-1 ZONE-2', 'B+ C+ D+ E+ F+', 'PT1 PT4'],
+         'everything open: every place cited by a drawer; PT3, cited by nobody, stays out; an arrival open alone shows the stop it requires', what='all open')
+    c.eq(r['browsed'], [[False, 'PT1 ZONE-1', 'ZONE-1', '', 'PT1', 'B- C- D- E- F-'], False], 'a mission one browses (not mine): the visible part alone, whatever is said open',
+         what='browsed')
+    c.eq(r['sealed'], {'B': {'kind': 'zone', 'fallbackMin': 30, 'shown': True, 'zoneId': 'ZONE-1', 'shape': {'circle': {'lat': 45.25, 'lon': 1.3, 'radiusM': 6000}}, 'ceilingFt': None,
+                             'actor': None},
+                       'C': {'kind': 'zone', 'fallbackMin': 60, 'shown': False, 'zoneId': None, 'actor': None},
+                       'D': {'kind': 'object', 'fallbackMin': 90, 'object': {'confirm': True, 'moving': False}},
+                       'E': {'kind': 'arrival', 'fallbackMin': None, 'point': 'DESTINATION', 'escortMinSec': 0},
+                       'F': {'kind': 'time', 'fallbackMin': None, 'point': 'PT1', 'delayMin': 10}},
+         'the key of a sealed drawer: its kind and its fallback time; the shape of a zone only when its author shows it; of an object, nothing but two flags; of an arrival, '
+         'its point; of an hour, its point and its delay — never a position that is not shown', what='the sealed keys')
+    c.eq(r['texts'], [['La vallee', 'En entrant dans la vallee', '', '', 0], ['Le glacier', '', '', '', 0], ['Trouve', '', '', '', 0], ['Retour', '', '', '', 0], ['Heure', '', '', '', 0]],
+         'a sealed drawer keeps its title and the key in plain words; its message, its briefing and its onward route are not returned', what='the sealed texts')
+    c.eq(r['opened'], [[], [], [], [], [], ['B'], ['B', 'C']], 'the open drawers are a bounded input: only the letters of the drawers count, once each, in order', what='the open drawers')
+    c.eq(r['plain'], [True, True, None, None], 'a mission without a drawer has no secret: it is returned as it is, its target with it; without a mission, null', what='no drawer')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the mission read is not touched')
