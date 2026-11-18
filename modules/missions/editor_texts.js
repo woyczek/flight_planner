@@ -100,6 +100,12 @@ export const EDTX = {
   // les objets à trouver dans les Lieux (SOG-0445) : la pastille, la fiche, « caché au pilote », « clé du tiroir n »
   plObject: ['OBJ', 'OBJ', 'OBJ', 'OBJ'],
   plAddObject: ['+ Objet à trouver', '+ Object to find', '+ Zu findendes Objekt', '+ Objeto por encontrar'],
+  // SOG-0480 : « Point de la base » dans la fiche d'un point tournant (le champ de terrain de la suite, avec les points de la base)
+  plBase: ['Point de la base', 'Point of the base', 'Punkt der Datenbasis', 'Punto de la base'],
+  plBaseHint: ['code : report, balise, point du réseau', 'code: reporting point, beacon, network point',
+    'Kennung: Meldepunkt, Funkfeuer, Netzpunkt', 'código: notificación, radioayuda, punto de red'
+  ],
+  plBaseList: ['Points proposés', 'Suggested points', 'Vorgeschlagene Punkte', 'Puntos propuestos'],
   plObjectHintVeil: ['identifiant donné par l\'atelier.', 'identifier given by the workshop.', 'Kennung von der Werkstatt vergeben.',
     'identificador dado por el taller.'
   ],

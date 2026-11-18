@@ -1014,6 +1014,32 @@ and exposes `isCode(v)`. The workshop copies no pattern.
 - Written file: unchanged in form — `origin: { name: « <name> (XT123) », icao: XT123 }`. N123 (invented helistation XT123): proposed, chosen,
   the name under the field, lower case put in capitals, written, framed on the map.
 
+### 7 quatertricies. A point of the base becomes a place of the mission, by ONE function (18 Nov 2026; SOG-0480, SOG-0481, SOG-0495; noreg N124, N125, N126, N100)
+
+The user: « un turning point doit pouvoir être un point quelconque aerodb (LF485, par ex., ou REN) » (SOG-0480); with a landmark of the base chosen on
+the map, « + Point tournant » and « + Cible » add THAT point (SOG-0481); a point named by its code stayed « à placer » without coordinates (SOG-0495).
+The three gestures call ONE function, `edPlaceFromBase(s, e, { kind, at, code, lat, lon })`: the place takes the **position of the base** and the **code
+as its name**; the identifier (`PT3`) and the format of the file do not change (`id`, `name`, `lat`, `lon`). With `at` < 0 it makes a new row of the
+kind (`ED.newPlace`, one gesture to undo, a full kind: a notification); with a row rank it retouches that row and the open sheet says it.
+
+- **SOG-0480 — the field.** « Point de la base » (`input[data-k=edptbase]`, only in the sheet of a turning point) is a SECOND instance of the common field
+  (`createAdField` with `points: true`, `near()`): `edAdPt(s)`, created and stopped with the first (`edAd`/`edAfter`). The list is searched in the sheet
+  (`data-ptform`), not in the whole workshop, so the two lists never meet; the four listeners of the workshop go to the instance whose field (or list) is
+  the target. `near()` = the position of the open place if it has one, else the centre of the map of the workshop (`EM.centreOf`), else the departure.
+  A CHOICE (`isPicking`) gives `positionOf` → `edPlaceFromBase`; typing alone writes nothing. One instance cannot serve Départ, Arrivée AND this field:
+  `points` and `near()` belong to the instance (Départ and Arrivée stay aerodromes only), and `keys` are `data-k` values (all the place fields share
+  `data-k="edplace"`), hence a field of its own and a second instance.
+- **« Ajouter comme point » and this field**: the same function and the same result (name = code, position of the base). The button takes the landmark
+  touched on the map; the field takes a code typed by the author; neither writes anything on its own.
+- **SOG-0481.** `edplaceadd` (« + Point tournant », « + Cible ») with `edMapRef(e)` true calls `edPlaceFromBase` with the landmark; `edrefadd` does the same
+  (the code it had copied is gone). Without a landmark: a new place « à placer », as before. The position of a landmark is the one the map gives (its
+  rendered point: the fifth decimal may differ from the base, 44.6999 for 44.7).
+- **SOG-0495.** Reproduced by: « + Point tournant », a code typed in its Nom (a reporting point, an aerodrome, in lower case too), Tab — the place stayed
+  without position. Now the `change` of the Nom of a point, a target or a rendez-vous WITHOUT position and with one word asks `aerodb.coordsAll` (nearest
+  first) and `edNameBase` gives the place the position and the code. A place that already has a position is never moved; a name the base does not know
+  changes nothing; the answer is ignored if the name changed meanwhile. The identifier field is not read as a code.
+- Veiled workshop: nothing to add (hidden rows are never touched, `edHid`).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

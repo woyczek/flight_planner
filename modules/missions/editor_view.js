@@ -61,6 +61,11 @@
 // pas un ; un texte ne passe en majuscules et n'est un terrain que si la base le connaît (AD.known) ; ce qui est écrit ne change pas de
 // forme (ED.withCadre) et rien ne l'est tant que le champ n'est pas touché.
 //
+// Un point tournant se choisit aussi parmi les points de la base (SOG-0480) : le champ « Point de la base » de sa fiche est un SECOND
+// bloc du même champ commun (createAdField, `points: true`, `near()` : la position du lieu, sinon le centre de la carte, sinon le départ).
+// Le choix rend le CODE (le nom du lieu, comme « Ajouter comme point ») et la POSITION de la base (lat, lon du lieu) ; le format du
+// fichier ne change pas (id, name, lat, lon). Écoutes, arrêt : celles du bloc des terrains (edAd), la liste cherchée dans la fiche.
+//
 // L'essai des clés (SOG-0444, lot P4) : « Essayer les clés », dans l'en-tête du déroulé, met le volet de l'essai à la place de la
 // fiche (s.ed.trial : { on, min, max, speed, alt, declares, hands }) ; le calcul est celui de editor_trial.js sur le document de la
 // séance ; la carte se déplie d'elle-même et montre l'avion et sa trace ; chaque carte du déroulé dit « ouvert à H + 6 min » ou
@@ -203,7 +208,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-adrow>.f-field{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* monté en haut de la vue au focus (edAdRoom), sous l'en-tête */
 [data-module="missions"] .ms-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="missions"] .ms-adname[data-state="unknown"]{font-style:italic}
-[data-module="missions"] .ms-adsug{position:absolute;left:0;right:0;z-index:30;display:grid;gap:0;margin:0;background:var(--sog-surface,#fff);border:1px solid var(--sog-border,#ccc);box-shadow:var(--sog-shadow)} /* par-dessus la fiche, jamais dans la mise en page */
+[data-module="missions"] .ms-adsug{position:absolute;left:0;right:0;z-index:30;display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin:0;background:var(--sog-surface,#fff);border:1px solid var(--sog-border,#ccc);box-shadow:var(--sog-shadow)} /* par-dessus la fiche, jamais dans la mise en page */
 [data-module="missions"] .ms-adsug[hidden]{display:none}
 [data-module="missions"] .ms-adsug .fu-sugitem{display:block;width:100%;min-height:44px;text-align:left;border-width:0 0 1px;border-radius:0;background:transparent}
 [data-module="missions"] .ms-adsug .fu-sugitem:last-child{border-bottom-width:0}
@@ -540,7 +545,9 @@ function edPlacesHtml(s, listOnly = false) {
         ${r.moving ? `<p class="f-muted" data-plmoving>${esc(s.tt(EDTX.plMoving))}</p>` : ''}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
       }
-      return `<div class="ms-plform" data-plform="${i}">${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}</div>`}
+      // SOG-0480 : un point tournant se choisit aussi parmi les points de la base (le champ commun, sa liste posée dans la rangée)
+      const base = r.kind === 'pt' ? `<div class="f-row ms-adrow"><label class="f-field"><span>${esc(s.tt(EDTX.plBase))}</span><input data-k="edptbase" data-i="${i}" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-ptsug" placeholder="${esc(s.tt(EDTX.plBaseHint))}"></label><div class="ms-adsug" id="ed-ptsug" data-adsug role="listbox" aria-label="${esc(s.tt(EDTX.plBaseList))}" hidden></div></div>` : '';
+      return `<div class="ms-plform" data-plform="${i}"${r.kind === 'pt' ? ' data-ptform' : ''}>${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}</div>`}${base}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
         ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
@@ -1397,7 +1404,8 @@ function edMapPose(s, e, p) {
   draw(s);
 }
 
-/** Le champ de terrain de l'atelier en vie : { s, el, ad, off } — un par montage de l'atelier (SOG-0465). */
+/** Le champ de terrain de l'atelier en vie : { s, el, ad, pt, off } — un par montage de l'atelier (SOG-0465) ; `pt` : le même champ
+ *  commun pour « Point de la base » d'un point tournant (SOG-0480). */
 let AF = null;
 
 /** Le champ de terrain de la suite pour Départ et Arrivée du Cadre (frame/lib/ad_field.js, appelé tel quel) : créé au premier besoin
@@ -1414,11 +1422,24 @@ function edAd(s) {
       keys: ['eddep', 'edarr'],
       idPrefix: 'ed-sug'
     }),
+    // SOG-0480 : « Point de la base » d'un point tournant, le même champ commun avec les points de la base ; sa liste est cherchée dans
+    // la fiche du point (data-ptform), pas dans tout l'atelier : une liste par bloc, jamais celle du Cadre
+    pt = createAdField({
+      ctx: s.ctx,
+      body: () => state() === s && s.ed ? el.querySelector('[data-ptform]') : null,
+      gone: () => state() !== s || !s.ed,
+      keys: ['edptbase'],
+      idPrefix: 'ed-pt',
+      points: true,
+      near: () => edPtNear(s)
+    }),
+    // l'évènement va au bloc dont le champ (ou la liste) est la cible : la fiche d'un point tournant, sinon le Cadre
+    of = ev => ev.target?.closest?.('[data-ptform]') ? pt : ad,
     on = [
-      ['keydown', ev => ad.onKey(ev)],
-      ['focusout', ev => ad.onFocusOut(ev)],
-      ['pointerdown', ev => ad.onPointerDown(ev)],
-      ['click', ev => ad.onClick(ev)],
+      ['keydown', ev => of(ev).onKey(ev)],
+      ['focusout', ev => of(ev).onFocusOut(ev)],
+      ['pointerdown', ev => of(ev).onPointerDown(ev)],
+      ['click', ev => of(ev).onClick(ev)],
       ['focusin', ev => edAdRoom(el, ev)]
     ];
   for (const [t, f] of on) el.addEventListener(t, f);
@@ -1426,12 +1447,42 @@ function edAd(s) {
     s,
     el,
     ad,
+    pt,
     off: () => {
       for (const [t, f] of on) el.removeEventListener(t, f);
       ad.stop();
+      pt.stop();
     }
   };
   return ad;
+}
+
+/** Le bloc « Point de la base » du montage en vie (SOG-0480), créé avec celui des terrains (edAd). */
+function edAdPt(s) {
+  edAd(s);
+  return AF.pt;
+}
+
+/** Une position valide d'un lieu des Lieux (champs en texte : un champ vide n'est pas 0) : { lat, lon } ou null. */
+function edPos(r) {
+  const ok = v => v !== '' && v !== null && v !== undefined && Number.isFinite(+v),
+    lat = +r?.lat,
+    lon = +r?.lon;
+  return r && ok(r.lat) && ok(r.lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? {
+    lat,
+    lon
+  } : null;
+}
+
+/** La position de référence de « Point de la base » (SOG-0480, near() du champ commun : les homonymes d'un point sont classés par
+ *  distance) : celle du lieu ouvert s'il en a une, sinon le centre de la carte de l'atelier, sinon le départ (sa ligne des Lieux, ou
+ *  le terrain que la base a donné) ; null sans rien de tout cela. */
+function edPtNear(s) {
+  const e = s.ed;
+  if (!e) return null;
+  const rows = e.places || [];
+  return edPos(rows[e.placeEdit]) || EM.centreOf(e) || edPos(rows.find(r => r && r.kind === 'dep')) || adPosOf(s, ED.adCodeOf(e.cadre
+    ?.dep));
 }
 
 /** Un champ de terrain prend le focus : s'il n'y a pas sous lui la place des sept propositions avant le pied de l'atelier (un téléphone,
@@ -1439,7 +1490,7 @@ function edAd(s) {
  *  rien n'est réécrit. */
 function edAdRoom(el, ev) {
   const k = ev.target?.dataset?.k,
-    label = k === 'eddep' || k === 'edarr' ? ev.target.closest('label') : null;
+    label = k === 'eddep' || k === 'edarr' || k === 'edptbase' ? ev.target.closest('label') : null;
   if (!label) return;
   const foot = el.querySelector('.ms-atfoot')?.getBoundingClientRect().top ?? innerHeight;
   if (foot - label.getBoundingClientRect().bottom < 7 * 44 + 8) label.scrollIntoView?.({
@@ -1480,6 +1531,94 @@ function edAdValue(s, key, ev) {
     edRefresh(s);
   });
   return now;
+}
+
+/** UN point de la base devient un lieu de la mission (le seul chemin de SOG-0480 le champ « Point de la base », SOG-0481 « + Point
+ *  tournant » et « + Cible » avec un repère choisi sur la carte, « Ajouter comme point », SOG-0495 un nom tapé qui est un code de la
+ *  base) : le lieu prend la POSITION de la base et le CODE comme nom. `at` : le rang d'une ligne qui existe (retouchée), sinon une ligne
+ *  neuve de la sorte `kind` (ED.newPlace, « Annuler le geste » la défait) ; `{ code, lat, lon }` : le point de la base. → le rang du
+ *  lieu, -1 sans lieu neuf possible (sorte pleine : une notification). */
+function edPlaceFromBase(s, e, {
+  kind = 'pt',
+  at = -1,
+  code,
+  lat,
+  lon
+}) {
+  const num = v => String(+(+v).toFixed(5));
+  let i = at;
+  if (i < 0) {
+    const made = ED.newPlace(edPlaces(e), kind, e.base, {
+      lat,
+      lon
+    });
+    if (!made) {
+      s.ctx.notify?.(s.tt(EDTX.atPoseFull), 'warn');
+      return -1;
+    }
+    edMapRemember(e);
+    e.places = made.rows;
+    i = made.at;
+  } else e.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+  const row = e.places[i];
+  if (!row) return -1;
+  Object.assign(row, {
+    name: String(code),
+    lat: num(lat),
+    lon: num(lon)
+  });
+  // les champs de la fiche ouverte disent ce que le lieu retient (un champ n'est réécrit que si sa valeur change)
+  for (const f of ['name', 'lat', 'lon']) {
+    const input = s.el.querySelector(`[data-plform="${i}"] input[data-k="edplace"][data-f="${f}"]`);
+    if (input && input.value !== row[f]) input.value = row[f];
+  }
+  return i;
+}
+
+/** SOG-0495 : le nom d'un point tournant, d'une cible ou d'un rendez-vous venu d'être tapé (un « change ») est-il un point de la base ?
+ *  Un lieu SANS position qui porte un mot seul demande la base (aerodb.coordsAll, le plus proche d'abord) ; si elle le connaît, le lieu
+ *  prend sa position et son code (edPlaceFromBase). Rien n'est changé si le lieu a déjà une position, si le nom a changé entre-temps ou
+ *  si la base ne répond rien. */
+function edNameBase(s, e, i) {
+  const row = e.places?.[i],
+    word = String(row?.name || '').trim().toUpperCase(),
+    a = s.ctx.aerodb;
+  if (!row || !['pt', 'target', 'rdv'].includes(row.kind) || edPos(row) || !/^\S{2,24}$/.test(word) || typeof a?.coordsAll !== 'function')
+    return;
+  const near = edPtNear(s);
+  Promise.resolve().then(() => a.coordsAll(word, near ? {
+    near: [near.lat, near.lon]
+  } : {})).catch(() => []).then(all => {
+    const hit = (Array.isArray(all) ? all : []).find(x => Number.isFinite(+x?.item?.lat) && Number.isFinite(+x?.item?.lon));
+    const now = state() === s && s.ed === e ? e.places?.[i] : null;
+    if (!hit || !now || now.id !== row.id || edPos(now) || String(now.name || '').trim().toUpperCase() !== word) return;
+    edPlaceFromBase(s, e, {
+      at: i,
+      code: word,
+      lat: +hit.item.lat,
+      lon: +hit.item.lon
+    });
+    edRefresh(s);
+  });
+}
+
+/** La saisie de « Point de la base » d'un point tournant (SOG-0480), le champ commun ayant déjà la main : la frappe fait proposer ; un
+ *  CHOIX de la liste donne au lieu le code (son nom, comme « Ajouter comme point ») et la position de la base (positionOf) — rien
+ *  n'est écrit tant qu'aucun point n'est choisi. Une ligne cachée (atelier voilé) et un lieu qui n'est pas un point tournant : rien. */
+function edPtBase(s, ev) {
+  const e = s.ed,
+    pt = edAdPt(s),
+    i = +ev.target.dataset.i,
+    row = e.places?.[i];
+  pt.onInput(ev);
+  if (!pt.isPicking() || !row || row.kind !== 'pt' || edHid(e, i)) return;
+  const at = pt.positionOf('edptbase');
+  if (!at) return;
+  edPlaceFromBase(s, e, {
+    at: i,
+    ...at
+  });
+  edRefresh(s);
 }
 
 /** Un champ du Cadre retenu : la valeur (`key` : dep, arr, family…), le titre proposé d'une liaison qui suit les deux bouts, et la ligne
@@ -1896,6 +2035,7 @@ function edInputDo(s, ev) {
     return draw(s);
   }
   if (k === 'edtr') return edTrialInput(s, ev); // le volet de l'essai des clés
+  if (k === 'edptbase') return edPtBase(s, ev); // SOG-0480 : « Point de la base » d'un point tournant
   if (k === 'edevent') { // un événement : le champ retouché en place (le lieu, une liste, aussi)
     const row = e.events?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
@@ -1943,6 +2083,7 @@ function edInputDo(s, ev) {
     // un objet à trouver : son identifiant ne se saisit pas ; « trouvé sur la parole du pilote » est une case
     else if (row?.kind === 'object' && ['okind', 'range', 'height', 'alt'].includes(f)) row[f] = ev.target.value;
     else if (row?.kind === 'object' && f === 'confirm') row.confirm = ev.target.checked === true;
+    if (f === 'name' && ev.type === 'change') edNameBase(s, e, +ev.target.dataset.i); // SOG-0495 : un code de la base prend sa position
     return edRefresh(s);
   }
   if (k === 'edteam') { // une équipe : la ligne retouchée en place (le champ garde son curseur)
@@ -2516,20 +2657,14 @@ function edClickDo(s, b) {
       const e = s.ed,
         r = edMapRef(e);
       if (!r) return edMapShow(s);
-      const made = ED.newPlace(edPlaces(e), 'pt', e.base, {
+      const at = edPlaceFromBase(s, e, { // le chemin commun : un point de la base devient un lieu (SOG-0481)
+        kind: 'pt',
+        code: r.id,
         lat: r.lat,
         lon: r.lon
       });
-      if (!made) {
-        s.ctx.notify?.(s.tt(EDTX.atPoseFull), 'warn');
-        return edMapShow(s);
-      }
-      edMapRemember(e);
-      e.places = made.rows.map((x, k) => k === made.at ? {
-        ...x,
-        name: r.id
-      } : x);
-      return edMapPick(s, e, made.at);
+      if (at < 0) return edMapShow(s);
+      return edMapPick(s, e, at);
     }
     case 'eddrdraw': { // « Dessiner sur la carte » (une zone) ou « Poser sur la carte » (un objet) depuis la fiche d'un tiroir : l'outil
       // en main, la carte dépliée ; ce qui sera posé deviendra la clé de ce tiroir
@@ -2689,6 +2824,18 @@ function edClickDo(s, b) {
     }
     case 'edplaceadd': { // une ligne neuve à la place de sa sorte (ED.newPlace : la même que la pose sur la carte), son premier champ en main
       if (s.ed.veil && b.dataset.kind === 'target') return; // « + Cible » n'est pas donné dans l'atelier voilé
+      // SOG-0481 : avec un repère de la base choisi sur la carte, « + Point tournant » et « + Cible » ajoutent CE point (le même chemin
+      // qu'« Ajouter comme point ») ; sans repère, une ligne neuve à placer
+      const ref = ['pt', 'target'].includes(b.dataset.kind) ? edMapRef(s.ed) : null;
+      if (ref) {
+        const at = edPlaceFromBase(s, s.ed, {
+          kind: b.dataset.kind,
+          code: ref.id,
+          lat: ref.lat,
+          lon: ref.lon
+        });
+        return at < 0 ? edMapShow(s) : edMapPick(s, s.ed, at);
+      }
       const made = ED.newPlace(s.ed.places || [], b.dataset.kind, s.ed.base);
       if (!made) return;
       s.ed.mapUndo?.clear(); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte

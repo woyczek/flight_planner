@@ -8412,3 +8412,208 @@ def n123(c):
          'the file: origin written { name: « <name> (XT123) », icao: XT123 }, the code of the helistation kept')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0480, SOG-0481, SOG-0495: a point of the base becomes a place of the mission — by ONE function of the workshop (`edPlaceFromBase`), three gestures.
+# The invented base: a reporting point XPT01 (44.9 N, 1.45 E), the beacon TSV, the fix NEPIX and two aerodromes; the mission of the trial, with or without its target.
+_PB_BASE = {'vrp': [{'id': 'XPT01', 'name': 'POINT DE REPORT TEST', 'lat': 44.9, 'lon': 1.45}],
+            'navaids': [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3, 'type': 'VOR', 'name': 'TESTVILLE'}],
+            'points': [{'id': 'NEPIX', 'lat': 44.7, 'lon': 1.75, 'type': 'RNAV'}],
+            'aerodromes': [{'icao': 'XTST', 'name': 'XTST TEST', 'lat': 45.0, 'lon': 1.0, 'elev': 100}, {'icao': 'XTSU', 'name': 'XTSU TEST SUD', 'lat': 44.0, 'lon': 2.0, 'elev': 120}]}
+_PB_NOTARGET = (_TRIAL_MISSION.replace("target: { id: TARGET, name: Cible d'essai, lat: 44.6, lon: 1.4 }\n", '')
+                .replace('route_order: [ORIGIN, PT1, TARGET, DESTINATION]', 'route_order: [ORIGIN, PT1, DESTINATION]'))
+_PB_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _PB_NOTARGET]]
+# the turning points and the target of the file written, read by js-yaml
+_PB_FILE = """async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+  return { pts: (d.turning_points || []).map(x => [x.id, x.name, x.lat, x.lon]), target: d.target ? [d.target.id, d.target.name, d.target.lat, d.target.lon] : null } }""" % _TEXT_OF
+
+
+def _pb_open(c, width=1280):
+    """Opens the workshop of the trial mission without target on the invented base, whole, the Lieux unfolded, the map of the workshop there."""
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _PB_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra=_PB_BASE)
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"({_EDPLACE_IDS}).length === 6", what='the six places of the mission listed')
+    if width != 1280:
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        c.settle()
+
+
+def _pb_click(c, at):
+    """Brings the map of the workshop into view and touches it at a position ([lat, lon])."""
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.page.mouse.click(*c.js(_EDMAP_XY, at))
+
+
+def _pb_notes(c):
+    """The notifications gone (a capture)."""
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+
+
+@case('N124', 'Missions › the workshop, a turning point is chosen among the points of the base (SOG-0480): « Point de la base » in the sheet of a turning point is the common '
+      'field of the suite with `points` — an invented reporting point XPT01 typed in it is proposed, then chosen: the place takes the POSITION of the base and the code as its '
+      'name (the identifier PT3 does not change), the point is on the map, and the file is written in the same form (id, name, lat, lon)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0480 (the user: « un turning point doit pouvoir être un point quelconque aerodb »; Features SOG a79c3b40a: `points`, `near()`, `positionOf`): '
+      'modules/missions/editor_view.js `edAdPt`, `edPtBase`, `edPlaceFromBase`; EDITOR.md § 7 quatertricies')
+def n124(c):
+    w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    _pb_open(c)
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=edptbase]')", what='the field « Point de la base » in the sheet of the new turning point')
+    c.eq([c.count(f'{E} [data-plform] [data-adsug]'), c.js(f"document.querySelector('{E} [data-plform] input[data-k=edptbase]').closest('label') !== null")], [1, True],
+         'ONE list of proposals in the sheet of the point, the field in its label', what='the marking')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    c.page.locator(f'{E} [data-plform] input[data-k=edptbase]').press_sequentially('xpt', delay=40)
+    sug = f"[...document.querySelectorAll('{E} [data-plform] [data-adsug]:not([hidden]) [data-code]')].map(x => x.dataset.code)"
+    c.until(f"({sug}).length > 0", timeout=8000, what='the point of the base proposed for « xpt »')
+    got = c.quiet(sug)
+    c.ok(len(got) == 1 and got[0].startswith('XPT01@44.9'), got, 'the reporting point XPT01 is proposed, with its position (a point of the base, not an aerodrome)')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('P8a_390_points.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{E} [data-plform] input[data-k=edptbase]').focus()")
+    c.page.fill(f'{E} [data-plform] input[data-k=edptbase]', '')
+    c.page.locator(f'{E} [data-plform] input[data-k=edptbase]').press_sequentially('xpt', delay=40)
+    c.until(f"({sug}).length > 0", timeout=8000, what='the point proposed at 1280')
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('P8a_1280_points.png')
+    c.key('ArrowDown')
+    c.key('Enter')
+    val = lambda f: c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]').value")  # noqa: E731
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=name]').value === 'XPT01'", timeout=5000, what='XPT01 chosen by the keyboard')
+    c.ok(abs(float(val('lat')) - 44.9) < 0.001 and abs(float(val('lon')) - 1.45) < 0.001 and val('id') == 'PT3', [val('id'), val('name'), val('lat'), val('lon')],
+         'the place takes the POSITION of the base and the code as its name; its identifier PT3 stays')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('P8a_1280_choisi.png')
+    c.until(f"(({_EDMAP_IDS})() || []).includes('place:5')", timeout=8000, what='the new point drawn on the map')
+    c.ok(c.js(_EDMAP_IDS, [44.9, 1.45]) is not None and 'place:5' in c.js(_EDMAP_IDS, [44.9, 1.45]), c.js(_EDMAP_IDS, [44.9, 1.45]), 'the point is drawn at the position of the base')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('P8a_390_choisi.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js(_PB_FILE, path)
+    c.eq(got['pts'], [['PT1', 'Point un', 44.8, 1.2], ['PT2', 'Point deux', 44.4, 1.6], ['PT3', 'XPT01', 44.9, 1.45]],
+         'the file: the new turning point written in the form of before (id, name = the code, lat, lon of the base); the others untouched', what='the file')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N125', 'Missions › the workshop, « + Point tournant » and « + Cible » with a landmark of the base chosen on the map add THAT point (SOG-0481): at its position, under its '
+      'name, by the path of « Ajouter comme point » (a gesture of the map: it can be undone); with no landmark chosen they make a new place « à placer » as before', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0481 (the user\'s answer): modules/missions/editor_view.js `edPlaceFromBase`, `edplaceadd`, `edrefadd`; EDITOR.md § 7 quatertricies')
+def n125(c):
+    val = lambda i, f: c.js(_EDPLACE_VAL, [i, f])  # noqa: E731
+    near = lambda v, x: v not in (None, '') and abs(float(v) - x) < 0.02  # noqa: E731
+    add = lambda: c.js(f"document.querySelector('{_EDMAP} [data-refadd]').hidden")  # noqa: E731
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    _pb_open(c)
+    c.until(f"(({_EDREFS}) || []).includes('TSV') && (({_EDREFS}) || []).includes('NEPIX')", timeout=15000, what='the landmarks of the base on the map')
+    # without a landmark chosen: a new place, to be placed
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"({_EDPLACE_IDS}).length === 7", what='a turning point added')
+    c.eq([val(5, 'name'), val(5, 'lat'), val(5, 'lon')], ['', '', ''], 'no landmark chosen: « + Point tournant » makes a new place to be placed, as before', what='no landmark')
+    c.tap(f'{E} [data-plform="5"] [data-do="edplacedel"]')
+    c.until(f"({_EDPLACE_IDS}).length === 6", what='the empty point removed')
+    # a beacon chosen on the map, then « + Point tournant »
+    _pb_click(c, [44.3, 1.3])
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched')
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"({_EDPLACE_IDS}).length === 7", what='the beacon added as a turning point')
+    c.ok(near(val(5, 'lat'), 44.3) and near(val(5, 'lon'), 1.3) and val(5, 'name') == 'TSV' and add() is True and c.js(_EDTOOL_STATE)[5][0] == 'edmapundo',
+         [val(5, 'name'), val(5, 'lat'), val(5, 'lon')], '« + Point tournant » with the beacon chosen adds THAT point: its position, its code as name; a gesture that can be undone')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"({_EDPLACE_IDS}).length === 6", timeout=8000, what='the point undone')
+    # a fix chosen on the map, then « + Cible »
+    _pb_click(c, [44.15, 1.15])
+    _pb_click(c, [44.7, 1.75])
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the fix touched')
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="target"]')
+    c.until(f"({_EDPLACE_IDS}).includes('target')", what='the fix added as the target')
+    t = c.js(_EDPLACE_IDS).index('target')
+    c.ok(near(val(t, 'lat'), 44.7) and near(val(t, 'lon'), 1.75) and val(t, 'name') == 'NEPIX', [val(t, 'name'), val(t, 'lat'), val(t, 'lon')],
+         '« + Cible » with the fix chosen adds THAT point as the target: its position, its code as name')
+    # on a phone: the capture of the ergonomist
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    _pb_notes(c)
+    c.shot('P8a_390_cible.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js(_PB_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')
+    t = got['target']
+    c.ok(t and t[:2] == ['TARGET', 'NEPIX'] and near(t[2], 44.7) and near(t[3], 1.75), t, 'the file: the target written with the position and the code of the fix')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N126', 'Missions › the workshop, a point named by its code takes its position from the base (SOG-0495): in the sheet of a new turning point, the name typed is a code '
+      'of the base — a reporting point or an aerodrome, in lower case too — and the place, left « à placer » until now, takes the position of the base and the code; a place '
+      'that already has a position is not moved; a name the base does not know changes nothing', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0495 (the user\'s defect: a named point chosen by its code stays « à placer »): modules/missions/editor_view.js `edNameBase`, `edPlaceFromBase`')
+def n126(c):
+    val = lambda i, f: c.js(_EDPLACE_VAL, [i, f])  # noqa: E731
+    near = lambda v, x: v is not None and v != '' and abs(float(v) - x) < 0.02  # noqa: E731
+
+    def named(i, text):
+        """A new turning point, the name typed and left (the change of the field)."""
+        c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+        c.until(f"({_EDPLACE_IDS}).length === {i + 2}", what='a turning point added')
+        c.page.fill(f'{E} [data-plform] [data-f=name]', text)
+        c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
+
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    _pb_open(c)
+    named(5, 'xpt01')
+    c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"5\"][data-f=lat]')?.value !== ''", timeout=8000, what='the reporting point XPT01 placed from the base')
+    c.ok(near(val(5, 'lat'), 44.9) and near(val(5, 'lon'), 1.45) and val(5, 'name') == 'XPT01', [val(5, 'name'), val(5, 'lat'), val(5, 'lon')],
+         'a name typed that is a code of the base (in lower case too): the place takes the position of the base and the code')
+    named(6, 'xtsu')
+    c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"6\"][data-f=lat]')?.value !== ''", timeout=8000, what='the aerodrome XTSU placed from the base')
+    c.ok(near(val(6, 'lat'), 44.0) and near(val(6, 'lon'), 2.0) and val(6, 'name') == 'XTSU', [val(6, 'name'), val(6, 'lat'), val(6, 'lon')],
+         'an aerodrome of the base named the same way: its position and its code')
+    # a name the base does not know, and a place that already has a position
+    named(7, 'Pont nord')
+    c.wait(600)
+    c.eq([val(7, 'name'), val(7, 'lat'), val(7, 'lon')], ['Pont nord', '', ''], 'a name the base does not know: nothing changes, the place stays to be placed', what='unknown')
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"({_EDPLACE_IDS}).length === 10", what='a turning point added')
+    c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.5')
+    c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.1')
+    c.page.fill(f'{E} [data-plform] [data-f=name]', 'xpt01')
+    c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
+    c.wait(600)
+    c.eq([val(8, 'name'), val(8, 'lat'), val(8, 'lon')], ['xpt01', '44.5', '1.1'], 'a place that already has a position is not moved by its name', what='already placed')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js(_PB_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')['pts']
+    c.eq(got[2:5], [['PT3', 'XPT01', 44.9, 1.45], ['PT4', 'XTSU', 44, 2], ['PT5', 'Pont nord', None, None]],
+         'the file: the two points placed from the base carry their position and their code; the unknown one stays without a position', what='the file')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
