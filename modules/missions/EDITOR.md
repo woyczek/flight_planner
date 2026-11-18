@@ -1111,6 +1111,32 @@ under the map.
 - Cases: the taps on the step « Lieux » become `ed_places(c)` (the frame is there); N50 reads the six steps from their marks (the Lieux first);
   N54 opens and closes a place instead of the group; N72 and N73 take another group for « one click » and « one at a time »; N130 is new.
 
+### 7 septemtricies. The tools of the map: names, the shape of « Zone », « Rétablir »; the icons wait for the set of the suite (18 Nov 2026; SOG-0471 points 1 to 3; noreg N131, N93, N95, N118)
+
+The user (SOG-0471): the tools of the map become ICONS of the suite (pointer: Sélection; black disc: Point; two strokes and three points: Tracé;
+circle or polygon: Zone; a figure: Objet; « Recentrer » the icon of the Carte; « Annuler le geste », « Rapide », « Relief » too), each with its
+name read and as a tooltip in four languages; « Zone » carries the shape in force, changed by a long press and by a second touch; « Rétablir »
+next to « Annuler le geste ». Point (4), the third background, waits for the ergonomist (Q-0107): not touched.
+
+- **One button for every control of the map** (`edIconBtn(icon, name, attrs)`): the icon of `frame/lib/icons.js` (`IC.svg`, read only) or the
+  name written, `aria-label` and `title` = the name (the texts of the workshop: `atTool_*`, `atMapUndo`, `atMapRedo`, `atMapFit`, `atBase_*`).
+  The icons are named in `ED_ICONS`: `pointer`, `dot`, `route`, `circle`, `polygon`, `person`, `undo`, `redo`, `target` (« Recentrer »: the
+  same source as the Carte, `modules/maps/screen.js`), `map` (Rapide), `mountain` (Relief). **The set of the suite has `undo`, `target` and `map`
+  only today**: `edIcons()` is all or nothing — while one icon is missing every button keeps its written name (never a mixed row), and the day
+  V3 Frame adds the eight missing ones (`pointer`, `dot`, `route`, `circle`, `polygon`, `person`, `redo`, `mountain`), the rows turn to icons
+  with nothing else to change. The tool in hand stays marked (`aria-pressed`).
+- **« Zone » carries its shape** (`s.ed.zoneShape`: `round`, the default, or `contour`; `data-shape` on the button). Its name and tooltip:
+  « Zone (cercle) — Changer en polygone » / « Zone (polygone) — Changer en cercle » (the user's words, Q-0110: `plToContour` / `plToRound`). A
+  second touch on « Zone » already in hand changes the shape (it used to drop the tool; « Sélection » drops it); so does a long press
+  (`edToolHold`, half a second, on `pointerdown` among the listeners of the workshop; the click that ends it does nothing more). The button is
+  updated in place (`edZoneShow`: only what changes). A zone posed in polygon shape is born as a contour — `ED.toContour` of the round zone
+  just posed, ONE gesture to undo; the line under the tools says it (`atHint_zoneContour`). The sheet of the zone keeps its shape button.
+- **« Rétablir »** (`edmapredo`, after « Annuler le geste »): a second `createUndo` of the socle (`s.ed.mapRedo`) holding the SAME states
+  (`edMapSnap`, the former body of `edMapRemember`) — no other memory of the state. « Annuler le geste » pushes the state after onto it; « Rétablir »
+  pops it and pushes the state before back onto « Annuler le geste »; both restore through `edMapBack` (the former body of `edmapundo`). Any new
+  gesture (`edMapRemember`) and any retouch of a sheet (`edUndoClear`, in place of every `mapUndo.clear()`) empty it; « Enregistrer » too.
+- Cases: N93 reads the name of « Recentrer » from its `aria-label`; N95, N108 and N118 count « Rétablir » in the row; N131 is new.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

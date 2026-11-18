@@ -5250,7 +5250,7 @@ def n93(c):
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     c.eq([c.js(f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmapframe').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)] }})()"),
           c.count(f'{_EDMAP} [data-atmapslot] canvas'), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"),
-          c.js(f"document.querySelector('{_EDMAP} [data-do=edmapfit]').disabled"), norm(c.text(f'{_EDMAP} [data-do=edmapfit]'))],
+          c.js(f"document.querySelector('{_EDMAP} [data-do=edmapfit]').disabled"), norm(c.js(f"document.querySelector('{_EDMAP} [data-do=edmapfit]').getAttribute('aria-label')"))],
          [box, 1, True, False, T('atMapFit')], 'the map takes the place of the sketch in the same frame (nothing moved); « Recentrer » is given with it', what='the frame')
     c.eq([c.js(_EDMAP_IDS, None), c.js(_EDMAP_IDS, [44.8, 1.2]), c.js(_EDMAP_IDS, [44.4, 1.6])],
          [['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'place:5', 'place:6', 'route'], ['place:3', 'place:4', 'route'], ['place:5', 'route']],
@@ -5426,7 +5426,7 @@ def n95(c):
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     c.eq([c.js(_EDTOOL_STATE), norm(c.text(f'{_EDMAP} [data-maphint]'))],
          [[['select', 'true', False], ['point', 'false', False], ['route', 'false', False], ['zone', 'false', False], ['object', 'false', False], ['edmapundo', None, True],
-           ['edmapfit', None, False]],
+           ['edmapredo', None, True], ['edmapfit', None, False]],
           T('atHint_select')], 'the tools above the map: Sélection in hand, nothing to undo; the line says what the tool does', what='the tools')
     # Sélection: a place touched is chosen — its name on the map, its row open
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
@@ -6740,7 +6740,7 @@ def n108(c):
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements of the mission drawn')
     c.eq([c.js(_EDMAP_IDS, None), c.js(_EDLABELS), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"), asked, [x[2] for x in c.js(_EDTOOL_STATE)]],
          [['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'place:5', 'place:6', 'route'], ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], True, [],
-          [False, False, False, False, False, True, False]],
+          [False, False, False, False, False, True, True, False]],
          'offline the mission is drawn and named on a plain background, in place of the sketch; nothing was asked of the tile provider; the tools are given', what='the map offline')
     c.ok(norm(T('atMapPlain')) in norm(c.js(_NOTES)) and norm(c.js(_NOTES)).count(norm(T('atMapPlain'))) == 1, norm(c.js(_NOTES)),
          'a notification says the background is unavailable and that everything else works — once')
@@ -7823,7 +7823,7 @@ def n118(c):
     modify('X-002A')
     c.eq([c.js(_LC_START), c.js(labels), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"), norm(c.text(f'{_EDMAP} [data-maphint]')),
           c.js(f"document.querySelector('{_EDMAP} [data-do=edmapfit]').disabled"), c.js(f"[...document.querySelectorAll('{_EDMAP} [data-atmaptools] button')].filter(b => b.disabled).map(b => b.dataset.do)")],
-         [True, [], True, T('atHint_empty'), False, ['edmapundo']],
+         [True, [], True, T('atHint_empty'), False, ['edmapundo', 'edmapredo']],
          'no aerodrome known, no place located: the map is alive and empty on the start view of the Carte (the sitting has seen nothing yet), nothing labelled; the sketch « Aucun lieu placé » is '
          'hidden and the line says « Aucun lieu : choisissez Point, puis touchez la carte. » in place of the usual instruction; « Recentrer » and every tool are given (only « Annuler le geste » waits)',
          what='the empty map')
@@ -8876,5 +8876,82 @@ def n130(c):
     order = c.js(f"""(() => {{ const y = s => document.querySelector('{E} ' + s)?.getBoundingClientRect(); const m = y('[data-atmap]'), p = y('[data-atplaces]'), f = y('[data-atflow]');
       return [p.top >= m.bottom - 1, f.top >= p.bottom - 1, document.documentElement.scrollWidth <= document.documentElement.clientWidth] }})()""")
     c.eq(order, [True, True, True], '390: the frame of the Lieux comes right under the map, before the unfolding; nothing scrolls sideways', what='the order at 390')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+
+_TOOL_NAMES = f"[...document.querySelectorAll('{_EDTOOLS} button, {_LOOK} [data-do=edmapbase]')].map(b => [b.dataset.tool || b.dataset.base || b.dataset.do, b.getAttribute('aria-label'), b.title])"
+_ZONE_TOOL = f'{_EDTOOLS} [data-tool="zone"]'
+_ZONE_STATE = f"(() => {{ const b = document.querySelector('{_ZONE_TOOL}'); return [b.dataset.shape, b.getAttribute('aria-pressed'), b.getAttribute('aria-label')] }})()"
+_REDO = f"document.querySelector('{_EDTOOLS} [data-do=edmapredo]').disabled"
+
+
+@case('N131', 'Missions › the workshop, the tools of the map (SOG-0471, points 1 to 3): every tool, « Annuler le geste », « Rétablir », « Recentrer », « Rapide » '
+      'and « Relief » has its name read by a screen reader (aria-label) and as a tooltip (title), in the language of the page; the tool « Zone » carries the shape '
+      'it poses — a second touch on the chosen tool, or a long press, changes it (« Changer en polygone » / « Changer en cercle » in its name); a zone posed in '
+      'polygon shape is a contour; « Annuler le geste » then « Rétablir » give the state before, then the state after; a new gesture empties « Rétablir »; '
+      'at 390 the row of tools never scrolls sideways', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0471 points (1) to (3) (the user; Q-0110: « Changer en polygone » / « Changer en cercle ») — modules/missions/EDITOR.md § 7 septemtricies')
+def n131(c):
+    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the places drawn')
+    names = c.js(_TOOL_NAMES)
+    zone = f"{T('atToolZoneIs', shape=T('atZone_round'))} — {T('plToContour')}"
+    c.eq([[x[0], norm(x[1] or '')] for x in names],
+         [['select', T('atTool_select')], ['point', T('atTool_point')], ['route', T('atTool_route')], ['zone', zone], ['object', T('atTool_object')],
+          ['edmapundo', T('atMapUndo')], ['edmapredo', T('atMapRedo')], ['edmapfit', T('atMapFit')], ['fast', T('atBase_fast')], ['relief', T('atBase_relief')]],
+         'each button of the map has its name read (aria-label)', what='the names')
+    c.ok(all(x[1] and x[1] == x[2] for x in names), names, 'and the same name as a tooltip (title)')
+    c.eq(c.js(_ZONE_STATE)[:2], ['round', 'false'], 'the tool « Zone » poses a circle at the opening', what='Zone')
+    # a second touch on the chosen « Zone » changes its shape (it stays in hand)
+    c.tap(_ZONE_TOOL)
+    c.until(f"document.querySelector('{_ZONE_TOOL}').getAttribute('aria-pressed') === 'true'", what='Zone in hand')
+    c.tap(_ZONE_TOOL)
+    st = c.js(_ZONE_STATE)
+    c.ok(st[0] == 'contour' and st[1] == 'true' and T('plToRound') in norm(st[2]), st, 'a second touch: the polygon, « Changer en cercle » in its name, still in hand')
+    # a zone posed in polygon shape is a contour
+    n0 = c.count(f'{E} [data-edplaces] [data-place]')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
+    c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0 + 1}", what='the zone posed')
+    c.until(f"!!document.querySelector('{E} [data-edplaces] [data-plform] [data-plshape=contour]')", what='a contour')
+    after = c.js(_EDPLACE_IDS)
+    c.eq(c.js(_REDO), True, 'nothing to redo yet', what='Rétablir')
+    # « Annuler le geste », then « Rétablir »
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0}", what='the zone undone')
+    c.eq(c.js(_REDO), False, '« Rétablir » is given after an undo', what='Rétablir')
+    c.tap(f'{_EDTOOLS} [data-do="edmapredo"]')
+    c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0 + 1}", what='the zone redone')
+    c.eq([c.js(_EDPLACE_IDS), c.js(_REDO), c.js(f"document.querySelector('{_EDTOOLS} [data-do=edmapundo]').disabled")], [after, True, False],
+         '« Rétablir » gives the state after back (and can be undone again); nothing more to redo', what='redone')
+    # a new gesture empties « Rétablir »
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0}", what='undone again')
+    c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.1, 1.3]))
+    c.until(f"document.querySelectorAll('{E} [data-edplaces] [data-place]').length === {n0 + 1}", what='a point posed')
+    c.eq(c.js(_REDO), True, 'a new gesture empties « Rétablir »', what='Rétablir')
+    # a long press on « Zone » changes the shape (once: the click that ends it does nothing more)
+    was = c.js(_ZONE_STATE)[0]
+    c.page.hover(_ZONE_TOOL)
+    c.page.mouse.down()
+    c.wait(800)
+    c.page.mouse.up()
+    c.wait(200)
+    st = c.js(_ZONE_STATE)
+    c.ok(st[0] != was and st[1] == 'true', [was, st], 'a long press changes the shape of « Zone », and it is in hand')
+    # 390: the row of tools does not scroll sideways
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    w = c.js(f"(() => {{ const r = document.querySelector('{_EDTOOLS}'); return [r.scrollWidth <= r.clientWidth, document.documentElement.scrollWidth <= document.documentElement.clientWidth] }})()")
+    c.eq(w, [True, True], '390: the row of tools holds without scrolling sideways', what='the row at 390')
     ed_leave(c)
     c.js(_REG_CLEAR)

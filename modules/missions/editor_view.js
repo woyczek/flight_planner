@@ -29,6 +29,13 @@
 // dit et cerclé comme un repère touché (edRefSeek, edSeekGo) — la base confirme chaque candidat, jamais un lieu à marqueur local.
 // « Vue du pilote » (SOG-0448) : le sélecteur « Vue de la carte » sous le cadre (s.ed.mapView : -1 tout, 0 au départ, n après le
 // tiroir n) ; en vue du pilote la carte ne dessine que ce que MS.pilotView garde (edPilotRows) et ne fait que montrer.
+// Les outils en icônes (SOG-0471, points 1 à 3) : chaque outil, « Annuler le geste », « Rétablir », « Recentrer », « Rapide » et
+// « Relief » est un bouton du jeu d'icônes de la suite (frame/lib/icons.js : ED_ICONS, l'icône de « Recentrer » est celle de la Carte),
+// avec son nom lu (aria-label) et en infobulle (title) en quatre langues. Tant qu'une icône du jeu manque, les boutons gardent leur nom
+// écrit (edIcons : tout ou rien, jamais une rangée mêlée). L'outil « Zone » porte la forme de la zone qu'il pose (s.ed.zoneShape :
+// 'round' ou 'contour', ED.toContour) ; un second toucher sur l'outil déjà choisi, ou un appui long (edToolHold), en change.
+// « Rétablir » (s.ed.mapRedo, le même createUndo, les mêmes états qu'« Annuler le geste » : edMapSnap) rejoue le dernier geste annulé ;
+// tout geste neuf, toute retouche de la fiche le vide (edUndoClear).
 // « Placer l'avion ici » : pendant un essai des clés, un bouton à côté de la ligne de l'outil (s.ed.trial.putting) ; le toucher suivant
 // de la carte ajoute une pose à s.ed.trial.puts ({ min, lat, lon } à la minute du curseur) ; le moteur de l'essai la joue.
 //
@@ -92,6 +99,7 @@ import {
 } from '../maps/lib/map_edit.js';
 import * as MS from '../../frame/lib/mission.js';
 import * as MT from '../../frame/lib/mission_themes.js';
+import * as IC from '../../frame/lib/icons.js';
 import * as RG from './registry.js';
 import * as TR from './editor_trial.js';
 import {
@@ -160,6 +168,9 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atmaptools button{min-height:44px;padding-left:10px;padding-right:10px}
 [data-module="missions"] .ms-atmaptools button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="missions"] .ms-atmaptools .ms-atmapend{margin-left:auto}
+[data-module="missions"] .ms-atico{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+[data-module="missions"] .ms-atico[data-icon]{min-width:44px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center}
+[data-module="missions"] .ms-atico>svg{pointer-events:none}
 [data-module="missions"] .ms-atseek{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0 0}
 [data-module="missions"] .ms-atseek>label{flex:1 1 160px;margin:0}
 [data-module="missions"] .ms-atseek input{width:100%;min-height:44px}
@@ -1047,6 +1058,7 @@ function edMapHint(s) {
   if (tool === 'route') return edSelDrawer(e) ? s.tt(EDTX.atHint_routeDrawer, {
     n: edSelDrawer(e).rank
   }) : s.tt(EDTX.atHint_route);
+  if (tool === 'zone' && e.zoneShape === 'contour') return s.tt(EDTX.atHint_zoneContour);
   if (tool !== 'select') return s.tt(EDTX[`atHint_${tool}`]);
   if (!r && edMapRef(e)) return s.tt(EDTX[`atRef_${edMapRef(e).kind}`], {
     id: edMapRef(e).id
@@ -1070,15 +1082,64 @@ function edMapHint(s) {
  *  dit, une fois par séance) ; sans carte (pas de WebGL, MapLibre jamais chargé), le croquis
  *  reste. « Recentrer » n'est montré qu'avec elle. Repliée derrière son bouton sur un module étroit, toujours montrée sur un module
  *  large. La carte elle-même est posée après le dessin (edAfter). */
+/** Les icônes des boutons de la carte (SOG-0471), prises dans le jeu de la suite (frame/lib/icons.js) ; « Recentrer » : celle de la Carte
+ *  (modules/maps/screen.js, 'target'). */
+const ED_ICONS = Object.freeze({
+  select: 'pointer',
+  point: 'dot',
+  route: 'route',
+  zone_round: 'circle',
+  zone_contour: 'polygon',
+  object: 'person',
+  undo: 'undo',
+  redo: 'redo',
+  fit: 'target',
+  fast: 'map',
+  relief: 'mountain'
+});
+
+/** Vrai quand le jeu de la suite a TOUTES les icônes des boutons de la carte : sinon ils gardent leur nom écrit (jamais une rangée mêlée). */
+const edIcons = () => Object.values(ED_ICONS).every(n => IC.has(n));
+
+/** Ce qu'un bouton de la carte montre : son icône (edIcons), sinon son nom écrit. */
+const edIconOf = (icon, name) => edIcons() ? IC.svg(icon) : esc(name);
+
+/** Un bouton de la carte (SOG-0471) : son icône ou son nom (edIconOf), son nom lu (aria-label) et en infobulle (title) ; `attrs` : ses
+ *  attributs (data-do, aria-pressed, disabled…), `cls` : sa classe en plus. */
+function edIconBtn(icon, name, attrs, cls = '') {
+  return `<button type="button" class="ms-atico${cls ? ` ${cls}` : ''}"${edIcons() ? ' data-icon' : ''} ${attrs} aria-label="${esc(name)}" title="${esc(name)}">${edIconOf(icon, name)}</button>`;
+}
+
+/** L'outil « Zone » (SOG-0471) : { icon, text (ce qu'il montre sans icône), name (son nom lu et son infobulle : la forme en cours et
+ *  « Changer en polygone » / « Changer en cercle », les mots de l'utilisateur) }. */
+function edZoneTool(s) {
+  const contour = s.ed.zoneShape === 'contour',
+    text = s.tt(EDTX.atToolZoneIs, {
+      shape: s.tt(contour ? EDTX.atZone_contour : EDTX.atZone_round)
+    });
+  return {
+    icon: contour ? ED_ICONS.zone_contour : ED_ICONS.zone_round,
+    text,
+    name: `${text} — ${s.tt(contour ? EDTX.plToRound : EDTX.plToContour)}`
+  };
+}
+
+/** Le bouton d'un outil de la carte (Sélection, Point, Tracé, Zone, Objet). */
+function edToolBtn(s, t, tool, off) {
+  const z = t === 'zone' ? edZoneTool(s) : null,
+    attrs = `data-do="edtool" data-tool="${t}"${z ? ` data-shape="${s.ed.zoneShape === 'contour' ? 'contour' : 'round'}"` : ''} aria-pressed="${tool === t}"${off ? ' disabled' : ''}`;
+  if (!z) return edIconBtn(ED_ICONS[t], s.tt(EDTX[`atTool_${t}`]), attrs);
+  return `<button type="button" class="ms-atico"${edIcons() ? ' data-icon' : ''} ${attrs} aria-label="${esc(z.name)}" title="${esc(z.name)}">${edIconOf(z.icon, z.text)}</button>`;
+}
+
 function edMapHtml(s, doc, run = null) {
   const e = s.ed,
     thumb = thumbHtml(s, doc, run),
     live = EM.stateOf(e),
     tool = edMapTool(e),
-    off = !live || edMapTrial(tool),
-    btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
+    off = !live || edMapTrial(tool);
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(t => edToolBtn(s, t, tool, off)).join('')}${edIconBtn(ED_ICONS.undo, s.tt(EDTX.atMapUndo), `data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}`, 'ms-atmapend')}${edIconBtn(ED_ICONS.redo, s.tt(EDTX.atMapRedo), `data-do="edmapredo"${off || !e.mapRedo?.size() ? ' disabled' : ''}`)}${edIconBtn(ED_ICONS.fit, s.tt(EDTX.atMapFit), `data-do="edmapfit"${live ? '' : ' disabled'}`)}</div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
 }
 
 /** Le fond et la couche de la carte de la mission en cours (SOG-0456) : le choix de la séance, sinon ce que le fichier dit. */
@@ -1106,8 +1167,7 @@ function edLookSaid(s) {
  *  topographique du socle), et la couche des espaces aériens (zones R, D, P et RTBA), éteinte d'office et lue à la demande. */
 function edLookHtml(s) {
   const w = edMapWant(s.ed),
-    btn = b =>
-    `<button type="button" data-do="edmapbase" data-base="${b}" aria-pressed="${w.base === b}">${esc(s.tt(EDTX[`atBase_${b}`]))}</button>`;
+    btn = b => edIconBtn(ED_ICONS[b], s.tt(EDTX[`atBase_${b}`]), `data-do="edmapbase" data-base="${b}" aria-pressed="${w.base === b}"`);
   return `<div class="ms-atlook" data-maplook><span class="f-muted">${esc(s.tt(EDTX.atBase))}</span>${btn('fast')}${btn('relief')}<label><input type="checkbox" data-k="edmapspaces"${w.airspaces ? ' checked' : ''}><span>${esc(s.tt(EDTX.atSpaces))}</span></label><small class="f-muted ms-atlooksaid" data-maplooksaid>${esc(edLookSaid(s))}</small></div>`;
 }
 
@@ -1158,9 +1218,13 @@ function edMapShow(s) {
       }
       if (sketch) sketch.hidden = !!live;
       for (const b of s.el.querySelectorAll('[data-atmaptools] button')) {
-        const t = b.dataset.tool;
-        b.disabled = b.dataset.do === 'edmapfit' ? !live : b.dataset.do === 'edmapundo' ? off || !e.mapUndo?.size() : off;
-        if (t) b.setAttribute('aria-pressed', String(tool === t));
+        const t = b.dataset.tool,
+          dis = b.dataset.do === 'edmapfit' ? !live : b.dataset.do === 'edmapundo' ? off || !e.mapUndo?.size() : b.dataset.do ===
+          'edmapredo' ?
+          off || !e.mapRedo?.size() : off;
+        if (b.disabled !== dis) b.disabled = dis;
+        if (t && b.getAttribute('aria-pressed') !== String(tool === t)) b.setAttribute('aria-pressed', String(tool === t));
+        if (t === 'zone') edZoneShow(s, b);
       }
       if (hint && hint.textContent !== text) hint.textContent = text;
       const del = q('[data-vertexdel]'),
@@ -1309,7 +1373,14 @@ function edMapRoute(s, e, i) {
  *  départ, et ce qu'un geste de la carte change d'un tiroir — sa suite de route (Tracé), la zone ou l'objet qu'il cite (« Dessiner sur
  *  la carte »). Vingt états au plus. */
 function edMapRemember(e) {
-  (e.mapUndo ||= createUndo(20)).push({
+  (e.mapUndo ||= createUndo(20)).push(edMapSnap(e));
+  e.mapRedo?.clear(); // SOG-0471 : un geste neuf vide « Rétablir »
+}
+
+/** L'état de la séance que gardent « Annuler le geste » et « Rétablir » (SOG-0471 : la même forme, la même pile du socle) : les lignes
+ *  des Lieux, la route du départ, la suite de route et la clé des tiroirs. */
+function edMapSnap(e) {
+  return {
     places: edPlaces(e),
     route: e.route || null,
     drawers: edDrawers(e).map(r => ({
@@ -1318,7 +1389,83 @@ function edMapRemember(e) {
       zone: r.zone,
       object: r.object
     }))
-  });
+  };
+}
+
+/** Rend un état gardé (edMapSnap) à la séance : le lieu choisi le reste quand il existe encore à son rang (le même identifiant, la même
+ *  sorte), sinon plus aucun ; puis le dessin. */
+function edMapBack(s, e, snap) {
+  const was = (e.places || [])[edMapSel(e)],
+    now = snap.places[edMapSel(e)],
+    same = !!was && !!now && now.kind === was.kind && now.id === was.id;
+  e.places = snap.places;
+  e.route = Array.isArray(snap.route) ? snap.route : null;
+  if (e.drawers)
+    for (const d of snap.drawers || []) {
+      const r = e.drawers.find(x => x.id === d.id);
+      if (r) Object.assign(r, {
+        route: [...(d.route || [])],
+        zone: d.zone,
+        object: d.object
+      });
+    }
+  if (!same) e.mapSel = -1;
+  if (!same || e.placeEdit !== e.mapSel) e.placeEdit = -1;
+  e.mapVertex = -1;
+  e.placeAsk = -1;
+  return draw(s);
+}
+
+/** Une retouche de la fiche (une saisie, une liste, un lieu ajouté ou retiré) : « Annuler le geste » et « Rétablir » n'ont plus rien à rendre
+ *  (ils ne défont jamais une saisie). */
+function edUndoClear(e) {
+  e.mapUndo?.clear();
+  e.mapRedo?.clear();
+}
+
+/** L'outil « Zone » dit la forme qu'il pose (SOG-0471), sur place : son icône ou son nom, son nom lu, son infobulle — écrits seulement
+ *  s'ils changent. */
+function edZoneShow(s, b) {
+  const z = edZoneTool(s),
+    shape = s.ed.zoneShape === 'contour' ? 'contour' : 'round',
+    html = edIconOf(z.icon, z.text);
+  if (b.dataset.shape === shape) return;
+  b.dataset.shape = shape;
+  b.setAttribute('aria-label', z.name);
+  b.title = z.name;
+  b.innerHTML = html;
+}
+
+/** La forme de la zone que pose l'outil « Zone » change (SOG-0471 : rond ↔ polygone), l'outil en main. */
+function edZoneFlip(s) {
+  const e = s.ed;
+  e.zoneShape = e.zoneShape === 'contour' ? 'round' : 'contour';
+  e.tool = 'zone';
+  e.drawFor = '';
+  e.mapRef = null;
+  edMapShow(s);
+}
+
+/** L'appui long sur l'outil « Zone » (SOG-0471) : au bout d'une demi-seconde, la forme change (comme un second toucher) ; le clic qui
+ *  termine l'appui ne fait rien de plus (s.ed.holdDone). Une réaction à pointerdown, posée avec les écoutes de l'atelier (edAd). */
+function edToolHold(s, ev) {
+  const e = s.ed,
+    b = ev.target?.closest?.('[data-do="edtool"][data-tool="zone"]');
+  if (!e) return;
+  e.holdDone = false;
+  clearTimeout(e.holdT);
+  if (!b || b.disabled || state() !== s) return;
+  const stop = () => {
+    clearTimeout(e.holdT);
+    for (const t of ['pointerup', 'pointerleave', 'pointercancel']) b.removeEventListener(t, stop);
+  };
+  for (const t of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(t, stop);
+  e.holdT = setTimeout(() => {
+    stop();
+    if (state() !== s || s.ed !== e || b.disabled) return;
+    e.holdDone = true;
+    edZoneFlip(s);
+  }, 500);
 }
 
 /** Les lignes des Lieux de la séance, créées à la première retouche (comme l'étape « Lieux »). */
@@ -1469,7 +1616,8 @@ function edMapPose(s, e, p) {
     return edMapShow(s);
   }
   edMapRemember(e);
-  e.places = made.rows;
+  // SOG-0471 : l'outil « Zone » en forme polygone pose une zone en contour (ED.toContour, à son rayon) — un seul geste à annuler
+  e.places = kind === 'zone' && e.zoneShape === 'contour' ? ED.toContour(made.rows, made.at) : made.rows;
   const forDrawer = ['zone', 'object'].includes(kind) ? edDrawFor(e) : null;
   e.drawFor = '';
   if (!forDrawer) return edMapPick(s, e, made.at);
@@ -1517,6 +1665,7 @@ function edAd(s) {
       ['keydown', ev => of(ev).onKey(ev)],
       ['focusout', ev => of(ev).onFocusOut(ev)],
       ['pointerdown', ev => of(ev).onPointerDown(ev)],
+      ['pointerdown', ev => edToolHold(s, ev)], // SOG-0471 : l'appui long sur l'outil « Zone »
       ['click', ev => of(ev).onClick(ev)],
       ['focusin', ev => edAdRoom(el, ev)]
     ];
@@ -1637,7 +1786,7 @@ function edPlaceFromBase(s, e, {
     edMapRemember(e);
     e.places = made.rows;
     i = made.at;
-  } else e.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+  } else edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
   const row = e.places[i];
   if (!row) return -1;
   Object.assign(row, {
@@ -1919,7 +2068,7 @@ function edDrawerInput(s, ev) {
   if (list && ev.type !== 'change') return;
   const r = edDrawerRow(e);
   if (!r) return;
-  e.mapUndo?.clear(); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
+  edUndoClear(e); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
   if (['point', 'zone', 'object', 'arrPoint'].includes(f) && list) {
     r[f] = String(t.value).slice(0, 40);
     if (f === 'point') r.said = edSaid(s, r);
@@ -2061,7 +2210,7 @@ export function edInput(s, ev) {
     if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !edShown(e, e.places || ED.placesOf(edDoc(e))).some(r => r && ED
         .routeToken(r) ===
         token)) return;
-    e.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre (il ne défait jamais une saisie)
+    edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre (il ne défait jamais une saisie)
     edRouteAdd(s, e, token);
     return draw(s);
   }
@@ -2106,7 +2255,7 @@ export function edInput(s, ev) {
         key: 'missions-veil'
       });
     }
-    e.mapUndo?.clear(); // « Annuler le geste » ne défait jamais une saisie : après elle, il n'a plus rien à rendre
+    edUndoClear(e); // « Annuler le geste » ne défait jamais une saisie : après elle, il n'a plus rien à rendre
     // l'identifiant d'un objet est donné par l'atelier : il ne se saisit pas, même par une page forgée (Sécurisation, 18 nov.)
     if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f) && !(row.kind === 'object' &&
         f ===
@@ -2446,6 +2595,7 @@ async function edSave(s) {
       chipSel: null,
       mapVertex: -1,
       mapUndo: null,
+      mapRedo: null,
       tool: 'select',
       drawFor: '',
       story: null,
@@ -2646,7 +2796,7 @@ export function edClick(s, b) {
         where,
         n: made.at
       };
-      e.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+      edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       edChipsShow(s, where, true);
       return edRefresh(s);
     }
@@ -2657,7 +2807,7 @@ export function edClick(s, b) {
       // le départ en tête et l'arrivée en queue ne se retirent pas (une route sans départ n'a pas de sens) : leur croix n'est pas
       // donnée, et une page forgée ne les retire pas non plus
       if (Number.isInteger(n) && n >= ED.routeFree(route).lo && n <= ED.routeFree(route).hi) s.ed.route = route.filter((_, k) => k !== n);
-      s.ed.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+      edUndoClear(s.ed); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       return draw(s);
     }
     case 'eddrchipdel': { // un lieu retiré de la suite de route
@@ -2665,7 +2815,7 @@ export function edClick(s, b) {
         n = +b.dataset.n;
       s.ed.chipSel = null;
       if (r && Number.isInteger(n) && n >= 0) r.route = r.route.filter((_, i) => i !== n);
-      s.ed.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+      edUndoClear(s.ed); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       return draw(s);
     }
     case 'edtodo':
@@ -2677,6 +2827,11 @@ export function edClick(s, b) {
     case 'edmapfit': // « Recentrer » : la vue revient au cadre de la mission (rien n'est redessiné)
       return EM.fit();
     case 'edtool': // un outil de la carte pris en main : sur place (le bouton pressé n'est pas redessiné) ; le même outil repris le lâche
+      if (s.ed.holdDone) { // le clic qui termine un appui long sur « Zone » : la forme a déjà changé
+        s.ed.holdDone = false;
+        return;
+      }
+      if (b.dataset.tool === 'zone' && edMapTool(s.ed) === 'zone' && !s.ed.drawFor) return edZoneFlip(s); // SOG-0471 : la forme change
       s.ed.tool = ['point', 'route', 'zone', 'object'].includes(b.dataset.tool) && s.ed.tool !== b.dataset.tool ? b.dataset.tool : 'select';
       s.ed.drawFor = ''; // un outil pris à la main ne pose plus pour un tiroir
       s.ed.mapRef = null;
@@ -2746,27 +2901,18 @@ export function edClick(s, b) {
       // départ, la suite de route et la clé des tiroirs (edMapRemember) ; le lieu choisi le reste quand il existe encore à son rang
       // (le même identifiant, la même sorte), sinon plus aucun
       const e = s.ed,
-        was = (e.places || [])[edMapSel(e)],
         snap = e.mapUndo?.undo();
       if (!snap || !Array.isArray(snap.places)) return edMapShow(s);
-      const now = snap.places[edMapSel(e)],
-        same = !!was && !!now && now.kind === was.kind && now.id === was.id;
-      e.places = snap.places;
-      e.route = Array.isArray(snap.route) ? snap.route : null;
-      if (e.drawers)
-        for (const d of snap.drawers || []) {
-          const r = e.drawers.find(x => x.id === d.id);
-          if (r) Object.assign(r, {
-            route: [...(d.route || [])],
-            zone: d.zone,
-            object: d.object
-          });
-        }
-      if (!same) e.mapSel = -1;
-      if (!same || e.placeEdit !== e.mapSel) e.placeEdit = -1;
-      e.mapVertex = -1;
-      e.placeAsk = -1;
-      return draw(s);
+      (e.mapRedo ||= createUndo(20)).push(edMapSnap(e)); // SOG-0471 : l'état d'après, pour « Rétablir »
+      return edMapBack(s, e, snap);
+    }
+    case 'edmapredo': { // « Rétablir » (SOG-0471) : le dernier geste annulé est rejoué — l'état d'après revient, celui d'avant retourne à
+      // « Annuler le geste » (la même pile, sans vider « Rétablir »)
+      const e = s.ed,
+        snap = e.mapRedo?.undo();
+      if (!snap || !Array.isArray(snap.places)) return edMapShow(s);
+      (e.mapUndo ||= createUndo(20)).push(edMapSnap(e));
+      return edMapBack(s, e, snap);
     }
     case 'edstep':
       if (!ED.OPEN.includes(b.dataset.step)) return;
@@ -2849,7 +2995,7 @@ export function edClick(s, b) {
         s.ctx.notify(citedText(s.tt, row, r.cited), 'warn', note);
       } else {
         s.ed.placeEdit = -1;
-        s.ed.mapUndo?.clear(); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
+        edUndoClear(s.ed); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
         s.ed.mapSel = -1;
         if (r.cited.length) s.ctx.notify(removedText(s.tt, row), 'ok', {
           key: note.key
@@ -2875,7 +3021,7 @@ export function edClick(s, b) {
       }
       const made = ED.newPlace(edPlaces(s.ed), b.dataset.kind, s.ed.base);
       if (!made) return;
-      s.ed.mapUndo?.clear(); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
+      edUndoClear(s.ed); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
       s.ed.mapSel = -1;
       s.ed.places = made.rows;
       s.ed.placeEdit = made.at;
@@ -2947,7 +3093,7 @@ function edKind(s, key) {
   const r = edDrawerRow(e);
   e.kinds = '';
   if (r && r.key !== key) {
-    e.mapUndo?.clear(); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
+    edUndoClear(e); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
     const next = DR.keyed(r, key, places);
     next.said = edSaid(s, next);
     e.drawers[e.drawers.indexOf(r)] = next;

@@ -496,6 +496,15 @@ export const EDTX = {
   atTool_zone: ['Zone', 'Zone', 'Zone', 'Zona'],
   atTool_object: ['Objet', 'Object', 'Objekt', 'Objeto'],
   atMapUndo: ['Annuler le geste', 'Undo the gesture', 'Geste rückgängig', 'Deshacer el gesto'],
+  atMapRedo: ['Rétablir', 'Redo', 'Wiederherstellen', 'Rehacer'],
+  atToolZoneIs: ['Zone ({shape})', 'Zone ({shape})', 'Zone ({shape})', 'Zona ({shape})'],
+  atZone_round: ['cercle', 'circle', 'Kreis', 'círculo'],
+  atZone_contour: ['polygone', 'polygon', 'Vieleck', 'polígono'],
+  atHint_zoneContour: ['Touchez la carte : une zone en polygone est posée là ; ses sommets se déplacent ensuite.',
+    'Touch the map: a polygon zone is posed there; its vertices are moved afterwards.',
+    'Berühren Sie die Karte: dort wird eine Vieleckzone gesetzt; ihre Eckpunkte lassen sich danach verschieben.',
+    'Toque el mapa: allí se coloca una zona en polígono; sus vértices se mueven después.'
+  ],
   atHint_empty: ['Aucun lieu : choisissez Point, puis touchez la carte.', 'No place: choose Point, then touch the map.',
     'Kein Ort: wählen Sie Punkt und berühren Sie dann die Karte.', 'Ningún lugar: elija Punto y toque el mapa.'
   ],
