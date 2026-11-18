@@ -10,7 +10,6 @@ du vol (ex. : le message de 11 h 30-19 h 00 Z pour un vol vers l'est qui passe �
   · `state(data, request, info)` : le champ `sections.nat` de la réponse : { sense, messages, fetched_at, age_s, refresh, why?, seconds?, tracks_in_sense, valid_at_passage } et, quand rien ne couvre le passage, la phrase qui le dit.
 Le moteur lit le fichier au chargement du contexte ; l'empreinte du contexte (plan.fingerprint) change à l'écriture : la relecture est vue par la même demande."""
 import datetime
-import json
 import math
 import os
 import re
@@ -18,6 +17,8 @@ import sys
 import threading
 import time
 from pathlib import Path
+
+import safe_json
 
 from . import nat_layer
 
@@ -51,17 +52,17 @@ def _positions(path):
     if hit and hit[0] == mt:
         return hit[1]
     out = {}
+    doc, why = safe_json.read(path, MAX_POS_BYTES, encoding='utf-8')      # trop gros, absent ou illisible (imbrication, NaN) : aucune position
     try:
-        if os.path.getsize(path) > MAX_POS_BYTES:
-            raise ValueError('too big')
-        with open(path, encoding='utf-8') as f:
-            rows = json.load(f)['data']
+        if why:
+            raise ValueError(why)
+        rows = doc['data']
         names = rows['fields']
         i, a, o = names.index('icao'), names.index('lat'), names.index('lon')
         for r in rows['rows']:
             if isinstance(r[i], str) and isinstance(r[a], (int, float)) and isinstance(r[o], (int, float)):
                 out[r[i]] = (float(r[a]), float(r[o]))
-    except (OSError, ValueError, KeyError, IndexError, TypeError, RecursionError, MemoryError):      # un fichier énorme ou imbriqué : aucune position, et l'échec est mémorisé avec la date du fichier (pas relu à chaque demande)
+    except (KeyError, IndexError, TypeError, AttributeError, ValueError):      # un fichier énorme, imbriqué ou de mauvaise forme : aucune position, et l'échec est mémorisé avec la date du fichier (pas relu à chaque demande)
         out = {}
     _pos[path] = (mt, out)
     return out
@@ -234,14 +235,14 @@ def state(data, request, info, now=None):
     try:
         mt = datetime.datetime.fromtimestamp(path.stat().st_mtime, datetime.timezone.utc)
         fetched, age = mt.strftime('%Y-%m-%dT%H:%M:%SZ'), max(0, int((now - mt).total_seconds()))
-        if path.stat().st_size > MAX_NAT_BYTES:
-            raise ValueError('too big')
-        with open(path, encoding='utf-8-sig') as f:
-            for m in (json.load(f).get('messages') or [])[:20]:
-                x = m.get('id') if isinstance(m, dict) else None
-                if isinstance(x, str) and re.fullmatch(r'[A-Z]{4}\d{4}/\d{2}', x, re.A) and x not in messages:
-                    messages.append(x)
-    except (OSError, ValueError, AttributeError, RecursionError, MemoryError):
+        doc, why = safe_json.read(str(path), MAX_NAT_BYTES)      # trop gros, absent ou illisible : aucun message
+        if why:
+            raise ValueError(why)
+        for m in (doc.get('messages') or [])[:20]:
+            x = m.get('id') if isinstance(m, dict) else None
+            if isinstance(x, str) and re.fullmatch(r'[A-Z]{4}\d{4}/\d{2}', x, re.A) and x not in messages:
+                messages.append(x)
+    except (OSError, ValueError, AttributeError):
         pass
     out = {'sense': dec.get('sense'), 'messages': messages, 'fetched_at': fetched, 'age_s': age, 'refresh': ref['refresh'], **({'why': ref['why']} if ref.get('why') else {}), **({'seconds': ref['seconds']} if 'seconds' in ref else {}),
            'tracks_in_sense': dec.get('tracks_in_sense'), 'valid_at_passage': dec.get('valid_at_passage')}
