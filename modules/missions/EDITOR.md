@@ -1275,6 +1275,21 @@ have written — the same reader reads the personal models (§ 7 quaterquadragie
   fleet), its callsigns and registrations, its private block `x_mission_editor`.
 - **Bench**: `modules/missions/test/catalog.html` (the delivered file, then forged ones: 200 KB, 100 bricks, « ../x », a tag, 1e9, an anchor, a position).
 
+### 7 duoquadragies. The bricks under « ＋ Tiroir »: THE SAME choice of the type (18 Nov 2026; lot « modèles de mission »; noreg N139, N129)
+
+The user: « Tout ce qui peut être constitué de modules doit être constitué de modules. KISS, oui, mais reuse. » The bricks are not a second component: they ENTER the choice
+of the type of SOG-0467 (§ 7 quinquetricies).
+
+- **Where**: `edKindsHtml(s, 'new')` — under « ＋ Tiroir » only — draws the five types, then `edBricksHtml`: a list « Briques » of the families that have bricks
+  (`data-k="edbrickfam"`, `s.ed.brickFam`; the family of the mission first, then the first one) and the bricks of THAT family, seven at most, each its title and its key
+  in one line (`data-do="edbrick"`, `data-brick`). In the sheet of a drawer (`edKindsHtml(s, 'drawer')`, its key) no brick: changing a key never rewrites the author's texts.
+- **What a brick does**: `edKind(s, key, brick)` — the same path as a type: `DR.blankDrawer`, then `CAT.drawerFrom` (which is `DR.keyed`, what the key guesses — the first
+  zone, the first object, the arrival at the destination — then the title, the message, the fallback and the arrival's settings of the brick, in the language of the
+  screen); the sheet of the new drawer opens, its title in hand. A brick the catalogue read does not carry (a forged page) does nothing; veiled, nothing (`VEILED_OFF`).
+- **The catalogue**: read once per page by `edCatalog` (`ctx.net.fetch` of `catalog.yaml`, beside the module; refused or absent — offline without a copy — an empty
+  catalogue: the workshop works without bricks, and the reading is tried again at the next opening); posed in the sitting (`s.ed.cat`); when it arrives only an open
+  choice under « ＋ Tiroir » is redrawn, never a field being typed.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

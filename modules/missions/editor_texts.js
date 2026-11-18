@@ -135,6 +135,8 @@ export const EDTX = {
   // la fiche d'un tiroir (SOG-0445) : le déroulé, les trois groupes (la clé, les textes, la suite de route), « à compléter », la clé
   // dite en clair (`trigger`, que le pilote lit sur le tiroir fermé : des mots qui ne nomment ni la zone ni l'objet)
   dwAdd: ['＋ Tiroir', '＋ Drawer', '＋ Schublade', '＋ Cajón'],
+  dwBricks: ['Briques', 'Bricks', 'Bausteine', 'Ladrillos'], // lot « modèles de mission » : les briques du catalogue sous « ＋ Tiroir »
+  dwBrickCommon: ['Toute mission', 'Any mission', 'Jede Mission', 'Cualquier misión'],
   dwMax: ['Douze tiroirs au plus.', 'Twelve drawers at most.', 'Höchstens zwölf Schubladen.', 'Doce cajones como máximo.'],
   dwSheet: ['Tiroir {n} — scellé jusqu\'à ce que sa clé joue', 'Drawer {n} — sealed until its key plays',
     'Schublade {n} — versiegelt, bis ihr Schlüssel greift',

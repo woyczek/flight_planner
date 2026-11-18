@@ -16,7 +16,8 @@
 //   KEYS : les clés que l'atelier édite — hand (le geste du pilote seul), time (l'heure : un point et un délai), zone (une zone de
 //     passage), object (un objet à trouver), arrival (l'arrivée au terrain).
 //   TYPES : ce que le choix du type propose (SOG-0467 : « ＋ Tiroir » et la clé d'un tiroir, LE MÊME choix) — [{ key, judged }] dans
-//     l'ordre, une liste à allonger (le catalogue de briques y viendra) ; `judged` faux : une sorte que le vol ne juge pas encore (l'écran
+//     l'ordre, une liste à allonger (sous « ＋ Tiroir », les briques du catalogue — catalog.js — s'y ajoutent, chacune une de ces clés) ;
+//     `judged` faux : une sorte que le vol ne juge pas encore (l'écran
 //     dit « s'ouvre au geste ou à l'heure de repli »). Aujourd'hui les cinq clés que l'atelier sait ÉCRIRE, toutes jugées en vol.
 //   keyed(row, key, places) → la ligne avec la clé choisie et ce qu'une clé neuve devine : la première zone, le premier objet des
 //     lieux, l'arrivée au terrain d'arrivée (1 NM, 30 kt, posé), l'heure après le décollage.

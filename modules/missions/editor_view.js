@@ -54,6 +54,11 @@
 // SUR PLACE, sous lui, le choix du TYPE (s.ed.kinds = 'new' ; DR.TYPES) — un type touché crée le tiroir avec cette clé (DR.keyed : ce
 // qu'une clé neuve devine) et ouvre sa fiche ; la clé d'un tiroir existant se change par LE MÊME choix, dans sa fiche (s.ed.kinds =
 // 'drawer') ; « ＋ Tiroir » retouché, ou « Annuler », le referme sans rien créer.
+// Les briques (lot « modèles de mission », décision A) : sous « ＋ Tiroir », LE MÊME choix propose aussi les briques du catalogue livré
+// (modules/missions/catalog.yaml, lu une fois par page par edCatalog, borné par CAT.readCatalog) — celles d'une famille à la fois (une
+// liste des familles, d'abord celle de la mission ; s.ed.brickFam) ; une brique touchée crée le tiroir avec sa clé (DR.keyed, par
+// CAT.drawerFrom), son titre, son message et son heure de repli, et ouvre sa fiche. Pas dans la fiche d'un tiroir : changer de clé ne
+// réécrit pas les textes de l'auteur.
 //
 // « Lieux » en tête de la colonne de droite (SOG-0472, décision de l'ergonome) : un cadre (edPlacesCardHtml) où la liste des lieux — les
 // lignes d'edPlacesHtml, un bouton par ligne — a une hauteur fixe et défile en elle-même ; la ligne choisie est marquée et les champs du
@@ -103,6 +108,7 @@ import {
   createCallsignField
 } from '../../frame/lib/callsign_field.js'; // SOG-0488 : le champ d'indicatif de la suite (les Équipes)
 import * as ADD from './add.js';
+import * as CAT from './catalog.js'; // le catalogue des briques et des modèles (lot « modèles de mission »)
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
 import * as EM from './editor_map.js';
@@ -145,6 +151,34 @@ export function init(tools) {
     yamlFile,
     state
   } = tools);
+}
+
+/** Le catalogue livré (catalog.yaml) : la promesse de sa lecture, une fois par page (une lecture en échec la laisse à refaire). */
+let CATALOG = null;
+
+/** Lit le catalogue livré (une fois par page) et le pose dans la séance (s.ed.cat) ; refusé ou absent (hors ligne sans copie) : un
+ *  catalogue vide — l'atelier marche sans briques. À son arrivée, seul le choix ouvert sous « ＋ Tiroir » est redessiné (jamais un
+ *  champ en cours de frappe). */
+async function edCatalog(s) {
+  const e = s.ed;
+  if (!e) return;
+  if (!CATALOG) CATALOG = (async () => {
+    try {
+      if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+      const r = await s.ctx.net.fetch(new URL('./catalog.yaml', import.meta.url).href, {
+        cache: 'no-cache'
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return CAT.readCatalog(await r.text(), globalThis.jsyaml);
+    } catch {
+      CATALOG = null; // à relire à la prochaine ouverture de l'atelier
+      return CAT.readCatalog('');
+    }
+  })();
+  const cat = await CATALOG;
+  if (state() !== s || s.ed !== e) return;
+  e.cat = cat;
+  if (e.kinds === 'new') draw(s);
 }
 
 // ---------------------------------------------------------------- l'éditeur de missions (SOG-0287), dans la forme de l'atelier (SOG-0444)
@@ -222,6 +256,8 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-kind>b::first-letter{text-transform:uppercase}
 [data-module="missions"] .ms-kind[aria-pressed="true"]{border-color:var(--sog-accent,#1a73e8);box-shadow:inset 0 0 0 1px var(--sog-accent,#1a73e8)}
 [data-module="missions"] .ms-kinds>.ms-kindoff{justify-self:start;min-height:44px}
+[data-module="missions"] .ms-bricks{margin:6px 0 0;padding-top:6px;border-top:1px solid var(--sog-line,#ddd)} /* les briques du catalogue, sous les types */
+[data-module="missions"] .ms-bricks>.f-field{margin:0}
 [data-module="missions"] .ms-dgrp{border-top:1px solid var(--sog-line,#ddd);padding:8px 0 4px}
 [data-module="missions"] .ms-dgrp>h4{margin:4px 0 8px}
 [data-module="missions"] .ms-dgrp .f-row{align-items:flex-start}
@@ -394,6 +430,7 @@ async function edOpen(s, mode, line = null) {
     };
     s.ed.start = edDoc(s.ed); // ce qu'« Annuler » compare : rien de saisi, rien à perdre (SOG-0454)
     edDeclare(s);
+    edCatalog(s); // les briques et les modèles : lus pendant que l'atelier se dessine
     return draw(s);
   }
   const path = RG.pathOf(line?.row);
@@ -436,6 +473,7 @@ async function edOpen(s, mode, line = null) {
   };
   if (mode === 'dup') s.ed.start = edDoc(s.ed); // une copie pas encore retouchée se quitte sans question (SOG-0454)
   edDeclare(s);
+  edCatalog(s);
   draw(s);
 }
 
@@ -901,7 +939,24 @@ function edFlowHtml(s, doc, run = null) {
  *  la fiche d'un tiroir ('drawer', sa clé change) : une ligne par sorte de DR.TYPES (une liste à allonger), son nom ; une sorte que le
  *  vol ne juge pas encore le dit en une ligne ; la clé en cours est marquée ; « Annuler » referme sans rien changer. */
 function edKindsHtml(s, where, cur = '') {
-  return `<div class="f-list ms-kinds" data-kinds="${where}" role="group" aria-label="${esc(s.tt(EDTX.dwKey))}">${DR.TYPES.map(t => `<button type="button" class="f-item ms-kind" data-do="edkind" data-key="${t.key}" aria-pressed="${t.key === cur}"><b>${esc(s.tt(EDTX[`dwKey_${t.key}`]))}</b>${t.judged ? '' : `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>`}</button>`).join('')}<button type="button" class="f-linkbtn ms-kindoff" data-do="edkindoff">${esc(s.tt(TX.cancel))}</button></div>`;
+  return `<div class="f-list ms-kinds" data-kinds="${where}" role="group" aria-label="${esc(s.tt(EDTX.dwKey))}">${DR.TYPES.map(t => `<button type="button" class="f-item ms-kind" data-do="edkind" data-key="${t.key}" aria-pressed="${t.key === cur}"><b>${esc(s.tt(EDTX[`dwKey_${t.key}`]))}</b>${t.judged ? '' : `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>`}</button>`).join('')}${where === 'new' ? edBricksHtml(s) : ''}<button type="button" class="f-linkbtn ms-kindoff" data-do="edkindoff">${esc(s.tt(TX.cancel))}</button></div>`;
+}
+
+/** La famille dont le choix montre les briques : celle choisie dans la liste, sinon celle de la mission, sinon la première. */
+const edBrickFam = (e, fams) => fams.includes(e.brickFam) ? e.brickFam : fams.includes(e.cadre?.family) ? e.cadre.family : fams[0] || '';
+
+/** Les briques du catalogue dans le choix du type (sous « ＋ Tiroir ») : la liste des familles qui en ont, puis les briques de la famille
+ *  choisie — sept au plus, chacune son titre et sa clé en une ligne ; rien tant que le catalogue n'est pas lu, ou s'il est vide. */
+function edBricksHtml(s) {
+  const e = s.ed,
+    bricks = e.cat?.bricks || [];
+  if (!bricks.length) return '';
+  const lang = s.ctx.lang?.() || 'fr',
+    fams = [...new Set(bricks.map(b => b.family))],
+    fam = edBrickFam(e, fams),
+    labels = new Map(edFamilies(s, lang).map(f => [f.code, f.label])),
+    label = f => f === 'common' ? s.tt(EDTX.dwBrickCommon) : labels.get(f) || f;
+  return `<div class="f-list ms-bricks" data-bricks role="group" aria-label="${esc(s.tt(EDTX.dwBricks))}"><label class="f-field"><span>${esc(s.tt(EDTX.dwBricks))}</span><select data-k="edbrickfam">${fams.map(f => `<option value="${esc(f)}"${f === fam ? ' selected' : ''}>${esc(label(f))}</option>`).join('')}</select></label>${bricks.filter(b => b.family === fam).slice(0, 7).map(b => `<button type="button" class="f-item ms-kind" data-do="edbrick" data-brick="${esc(b.id)}"><b>${esc(CAT.textIn(b.title, lang))}</b><span class="f-muted">${esc(s.tt(EDTX[`dwKey_${b.key}`] || EDTX.dwKey_hand))}</span></button>`).join('')}</div>`;
 }
 
 /** Les lignes des Lieux que la « Vue du pilote » garde (SOG-0448) : au stade choisi, seulement ce que le lecteur rend au pilote
@@ -2300,6 +2355,11 @@ export function edInput(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return e.veil ? undefined : edDrawerInput(s, ev); // la fiche d'un tiroir (jamais dans l'atelier voilé)
+  if (k === 'edbrickfam') { // les briques d'une autre famille, sous « ＋ Tiroir » : rien n'est créé
+    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || e.veil || e.kinds !== 'new') return;
+    e.brickFam = String(ev.target.value || '').slice(0, 24);
+    return draw(s);
+  }
   if (k === 'edrefseek') { // « Chercher un repère » : le texte est gardé ; Entrée (un « change » le champ encore en main) cherche
     e.refSeek = String(ev.target.value ?? '').slice(0, 40);
     if (e.seekRows) { // le texte a changé : les candidats de l'ancien ne se proposent plus
@@ -2851,6 +2911,10 @@ export function edClick(s, b) {
       return draw(s);
     case 'edkind':
       return edKind(s, b.dataset.key);
+    case 'edbrick': { // une brique du catalogue, sous « ＋ Tiroir » : le tiroir naît d'elle (une brique que le catalogue lu ne porte pas : rien)
+      const brick = (s.ed.cat?.bricks || []).find(x => x.id === b.dataset.brick);
+      return brick ? edKind(s, brick.key, brick) : undefined;
+    }
     case 'eddrdel': { // « Retirer ce tiroir », en deux temps : le second appui est inerte une seconde (comme pour un lieu cité)
       const e = s.ed,
         r = edDrawerRow(e);
@@ -3191,13 +3255,14 @@ export function edClick(s, b) {
 /** Les gestes qui ne jouent pas dans l'atelier voilé (SOG-0459) : l'essai des clés, les tiroirs, les cartes proposées (elles nomment
  *  les zones par leur rang). */
 const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddradd', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
-  'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff'
+  'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff', 'edbrick'
 ]);
 
 /** Un type touché dans le choix (SOG-0467) : sous « ＋ Tiroir », le tiroir suivant naît avec cette clé (DR.keyed : ce qu'elle devine)
  *  et sa fiche s'ouvre, son titre en main ; dans la fiche d'un tiroir, sa clé devient celle-ci (la même : rien ne change). Le choix se
- *  referme. Une sorte que DR.TYPES ne propose pas (une page forgée) : rien. */
-function edKind(s, key) {
+ *  referme. Une sorte que DR.TYPES ne propose pas (une page forgée) : rien. `brick` : une brique du catalogue touchée sous « ＋ Tiroir »
+ *  — le tiroir naît d'elle (CAT.drawerFrom : la même DR.keyed, puis son titre, son message et son heure de repli). */
+function edKind(s, key, brick = null) {
   const e = s.ed;
   if (!DR.TYPES.some(t => t.key === key) || !['new', 'drawer'].includes(e.kinds)) return;
   const places = e.places || ED.placesOf(edDoc(e));
@@ -3209,7 +3274,7 @@ function edKind(s, key) {
       return draw(s);
     }
     edDrawerRow(e);
-    const row = DR.keyed(blank, key, places);
+    const row = brick ? CAT.drawerFrom(blank, brick, places, s.ctx.lang?.() || 'fr') : DR.keyed(blank, key, places);
     row.said = edSaid(s, row);
     e.drawers = [...e.drawers, row];
     e.sel = row.id;

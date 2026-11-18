@@ -9334,3 +9334,62 @@ def n138(c):
     c.eq([got['huge'], got['many'], got['dot'], got['tag'], got['big']], ['size', [80, 20], ['ok'], ['t2'], None],
          'a 200 KB file refused; 100 bricks cut at 80; « ../x » set aside; a title with a tag refused; a fallback of 1e9 not read', what='the bounds')
     c.eq(got['cat'], [28, ['blank', 'search-glacier', 'interception'], 0], 'the delivered catalogue: 28 bricks, the three models, nothing set aside', what='the delivered catalogue')
+
+
+_BRICKS = f"[...document.querySelectorAll('{E} [data-kinds=new] [data-bricks] [data-do=edbrick]')].map(x => [x.dataset.brick, x.querySelector('b').textContent.trim(), x.querySelector('.f-muted').textContent.trim()])"
+
+
+def _ed_new(c, family):
+    """Opens « Créer une mission » from the invented registry and chooses the family (the TYPE, first)."""
+    reg_open(c, _ED_TEXTS)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} select[data-k=edfam]')", timeout=10000, what='a new mission on its Cadre')
+    c.page.select_option(f'{E} select[data-k=edfam]', family)
+    c.until(f"document.querySelector('{E} select[data-k=edfam]')?.value === '{family}'", what=f'the family {family}')
+
+
+@case('N139', 'Missions › the workshop, the bricks of the catalogue under « ＋ Tiroir » (lot « modèles de mission »): THE SAME choice of the type (SOG-0467) '
+      'offers, under the five types, the bricks of ONE family at a time — the family of the mission first (SAR: « Recherche terrestre progressive » and '
+      '« Localisation d\'une épave », each with its key in one line), a list of the families that have bricks changes the family (FIRE: three bricks) and creates '
+      'nothing; touching a brick creates the drawer with its key, its title, its message and its fallback filled in and opens its sheet; the choice in the '
+      'sheet of a drawer (its key) offers no brick; at 390 and at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='Lot « modèles de mission » (the user: « Tout ce qui peut être constitué de modules doit être constitué de modules. KISS, oui, mais reuse. »): the bricks '
+      'ENTER the choice of SOG-0467 (`edKindsHtml`, `DR.TYPES`, `DR.keyed`), not a second component; EDITOR.md § 7 duoquadragies')
+def n139(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_new(c, 'SAR')
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        c.until(f"document.querySelectorAll('{E} [data-kinds=new] [data-bricks] [data-do=edbrick]').length > 0", timeout=10000, what='the bricks under the types')
+        kinds = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
+        c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival'], f'{width}: the five types are still there, first', what='the choice')
+        c.eq(c.js(f"document.querySelector('{E} [data-kinds=new] select[data-k=edbrickfam]').value"), 'SAR', f'{width}: the family of the mission first', what='the family')
+        c.eq(c.js(_BRICKS), [['sar-land', 'Recherche terrestre progressive', 'une zone de passage'], ['sar-aircraft', 'Localisation d’une épave', 'un objet à trouver']],
+             f'{width}: the bricks of SAR, each its title and its key', what='the bricks')
+        if width == 390:
+            c.js(f"document.querySelector('{E} [data-kinds=new]').scrollIntoView({{block: 'center'}})")
+            c.shot('P11a_390_briques.png')
+        c.page.select_option(f'{E} [data-kinds=new] select[data-k=edbrickfam]', 'FIRE')
+        c.until(f"document.querySelector('{E} [data-kinds=new] select[data-k=edbrickfam]')?.value === 'FIRE'", what='the family FIRE')
+        c.eq([x[0] for x in c.js(_BRICKS)], ['fire-gaar', 'fire-drop', 'fire-reload'], f'{width}: another family, its bricks', what='the bricks of FIRE')
+        c.eq(c.js(_FLOW_N), 0, 'changing the family creates nothing', what='the drawers')
+        if width == 1280:
+            c.js(f"document.querySelector('{E} [data-kinds=new]').scrollIntoView({{block: 'center'}})")
+            c.shot('P11a_1280_briques.png')
+        c.page.select_option(f'{E} [data-kinds=new] select[data-k=edbrickfam]', 'SAR')
+        c.until(f"document.querySelectorAll('{E} [data-kinds=new] [data-brick=sar-land]').length === 1", what='back to SAR')
+        c.tap(f'{E} [data-kinds=new] [data-brick="sar-land"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the drawer born of the brick, its sheet open')
+        got = [c.js(_FLOW_N), c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'title'), c.js(_DW_VAL, 'message'), c.js(_DW_VAL, 'fallback'), c.count(f'{E} [data-kinds]')]
+        c.eq(got, [1, 'zone', 'Recherche terrestre progressive', 'Une zone de passage révèle le secteur précis.', '60', 0],
+             f'{width}: one drawer keyed by a zone, its title, its message and its fallback filled in, the choice closed', what='the drawer of the brick')
+        if width == 390:
+            c.shot('P11a_390_tiroir.png')
+        # the key of a drawer: the same choice, without bricks (changing the key does not rewrite the author's texts)
+        c.tap(f'{_DW} [data-kindcur]')
+        c.until(f"!!document.querySelector('{_DW} [data-kinds=drawer]')", what='the choice in the sheet')
+        c.eq(c.count(f'{_DW} [data-kinds=drawer] [data-bricks]'), 0, f'{width}: no brick in the sheet of a drawer', what='the choice in the sheet')
+        c.tap(f'{_DW} [data-kinds=drawer] [data-do=edkindoff]')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
