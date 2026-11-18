@@ -883,6 +883,37 @@ no badge, no title of a closed drawer.
     description, the text of an event) say what the author wrote in them; the attributes `data-place` / `data-i` of the page carry the
     ranks of the file (a gap in them tells a hidden row).
 
+### 7 novovicies. The map opens without a located place, and an aerodrome code is read whatever its case (18 Nov 2026; SOG-0469; noreg N118)
+
+The user, 18 Nov, on one of his real missions: the workshop had NO MAP (« Aucun lieu placé : la carte est vide », « Sans carte, les lieux
+se placent par leurs champs »), the departure and the arrival « à placer ». His aerodromes are written in LOWER case and carry no
+coordinates. Two causes, both confirmed by case N118 (red before, green after):
+
+- **The code was read in capitals only.** The position of a departure or arrival the file does not locate is asked to the
+  aeronautical base by its code, found by `/^[A-Z]{4}(?= ·|$)/` (in `edMapFeats`, in `thumbHtml`, in `mission_map.js` `featsOf`);
+  `placeText` read `icao` and the head of the name in capitals only. Now ONE function reads it, `ED.adCodeOf(name)`: four letters all
+  in capitals or all in lower case (« Metz » is not a code) at the head of the name (« xtst », « xtst · base sud »), else between
+  parentheses at the end (« Base Test (xtst) »); `placeText` (the Cadre, the rows of the Lieux) uses the same reading, and the field
+  `icao` is read in any case. They are SHOWN in capitals (« XTST · base test »); what is WRITTEN is untouched until the author edits
+  the field (the Cadre unchanged writes nothing; typing « xtsv » writes `{ name: XTSV, icao: XTSV }`). Read before → after:
+  `name: xtst` no → yes; `name: "xtst · base test"` no → yes; `icao: xtst` no (no row at all) → yes; `name: Base Test (xtst)` yes
+  (the Cadre said « XTST · Base Test (xtst) ») → yes (« XTST · Base Test »).
+- **A mission with no located element had no frame, so no map.** `mapFeatures` now ALWAYS gives a frame: that of the located
+  elements, else the WIDE frame `MAPB.wide` — metropolitan France, west -5.5, south 41, east 9.8, north 51.3 (the aerodromes of the
+  suite are those of the AIP France) — with `wide: true`. `show()` and `start()` are unchanged; the first place set by a tool
+  reframes the map unless the author has already moved the view. The sketch « Aucun lieu placé » stays hidden while the map is alive;
+  the tools (Point, Zone, Objet) are given on the empty map. A Zone set on the wide view takes the usual radius (span / 8, at most
+  100 km).
+- **The read-only block** (`mission_map.js`) keeps its behaviour — no located element, no map, the slot stays empty — except that an
+  aerodrome the base knows locates the mission: the map is then shown, framed on it, as soon as the base answers (the block places
+  itself then; before, it was drawn only at the next drawing of the screen).
+- **Date of the defect** (`git log -S`): the capital-only regex came with the sketch of the preview, 14 Nov (9422d3925); it became a
+  defect the night of 18 Nov, 01:57, when the map of the workshop took it over and returned without a frame (`if (!slot ||
+  !feats?.box) return;`, e872defb2, SOG-0444), and the read-only block copied it at 10:04 the same day (06ceade63, SOG-0456). Before
+  18 Nov the workshop had no live map at all, so nothing regressed on the map; the sketch did not read lower case since 14 Nov.
+- Not changed: `frame/lib/mission.js` `placeOf` / `icaoOf` (the reader still finds the code only between parentheses at the end of
+  the name; `originIcao` for `name: xtst` or `icao: xtst` stays empty there).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

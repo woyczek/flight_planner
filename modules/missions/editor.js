@@ -104,19 +104,41 @@ const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
  *  (audit 186 : un « rendezvous: { … } » seul était perdu à la première retouche des Lieux). */
 const arrOf = v => Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : [];
 
-/** Le texte d'un terrain : « XTST · Base Test » (le code OACI d'abord), le nom seul sans code. */
+/** Le code OACI écrit EN TÊTE d'un texte de terrain, quelle que soit la casse (SOG-0469 : un fichier écrit à la main dit « xtst · base
+ *  test ») : quatre lettres toutes en majuscules ou toutes en minuscules (un « Metz » n'est pas un code), seules ou suivies d'un
+ *  séparateur (·, -, –, —, :) et du nom → { icao (en majuscules), rest (le nom, tel qu'écrit) } ; null sinon. */
+function headCode(text) {
+  const a = /^([A-Za-z]{4})(?:\s*[·\-–—:]\s*(.*))?$/.exec(cut(text, 160));
+  return a && (a[1] === a[1].toUpperCase() || a[1] === a[1].toLowerCase()) ? {
+    icao: a[1].toUpperCase(),
+    rest: cut(a[2], 120)
+  } : null;
+}
+
+/** Le code OACI d'un nom de lieu pour interroger la base aéronautique, en majuscules, quelle que soit la casse écrite : en tête
+ *  (« xtst · Base Test »), sinon entre parenthèses à la fin (« Base Test (xtst) ») ; '' sinon (SOG-0469). */
+export function adCodeOf(name) {
+  return headCode(name)?.icao || MS.icaoOf(name);
+}
+
+/** Le texte d'un terrain : « XTST · Base Test » (le code OACI d'abord, en majuscules quelle que soit la casse du fichier : le champ
+ *  `icao`, un code en tête du nom, un code entre parenthèses à la fin), le nom seul sans code. Ce qui est écrit dans le fichier n'est
+ *  pas touché : seul l'affichage est lu ainsi. */
 export function placeText(p) {
   const o = obj(p),
-    icao = /^[A-Z]{4}$/.test(String(o.icao || '')) ? o.icao : MS.icaoOf(o.name),
-    name = cut(String(o.name || '').replace(/\s*\([A-Z]{4}\)\s*$/, ''), 120);
+    raw = String(o.name || ''),
+    given = /^[A-Za-z]{4}$/.test(String(o.icao || '').trim()) ? String(o.icao).trim().toUpperCase() : '',
+    head = headCode(raw),
+    icao = given || MS.icaoOf(raw) || head?.icao || '',
+    name = head && head.icao === icao ? head.rest : cut(raw.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120);
   return [icao, name].filter(Boolean).join(' · ');
 }
-/** Un terrain saisi (« XTST · Base Test », « Base Test (XTST) », « XTST ») → { icao, name } ; le nom écrit « Base Test (XTST) ». */
+/** Un terrain saisi (« XTST · Base Test », « xtst », « Base Test (XTST) », « XTST ») → { icao, name } ; le nom écrit « Base Test (XTST) ». */
 function placeIn(text) {
   const t = cut(text, 160),
-    a = /^([A-Z]{4})(?:\s*[·\-–—:]\s*(.*))?$/.exec(t),
-    icao = a ? a[1] : MS.icaoOf(t),
-    bare = a ? cut(a[2], 120) : cut(t.replace(/\s*\([A-Z]{4}\)\s*$/, ''), 120);
+    a = headCode(t),
+    icao = a ? a.icao : MS.icaoOf(t),
+    bare = a ? a.rest : cut(t.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120);
   return {
     icao,
     name: icao ? bare ? `${bare} (${icao})` : icao : bare

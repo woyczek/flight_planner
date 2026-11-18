@@ -132,7 +132,7 @@ function featsOf(R) {
   const last = (view.drawers || []).filter(Boolean).at(-1); // la vue ne rend que les tiroirs ouverts (SOG-0459)
   return EM.mapFeatures(ED.pilotRows(R.doc, rows, R.opened), {
     zones: R.doc?.zones,
-    adPos: name => adPos(R, (/^[A-Z]{4}(?= ·|$)/.exec(String(name || '')) || [])[0]),
+    adPos: name => adPos(R, ED.adCodeOf(name)), // le code d'un terrain quelle que soit la casse écrite (SOG-0469)
     path: TR.pathOf(view),
     onward: (Array.isArray(last?.route) ? last.route : []).map(p => String(p?.id ?? '')).filter(Boolean)
   });
@@ -156,7 +156,12 @@ function adPos(R, icao) {
         lat,
         lon
       });
-      R.feats = null;
+      R.feats = featsOf(R);
+      // SOG-0469 : un terrain que seule la base situe — la carte se pose à sa réponse
+      if (R.feats?.box && !R.feats.wide && !R.root && R.slot) {
+        R.root = build(R);
+        R.slot.replaceChildren(R.root);
+      }
       paint(R);
     }).catch(() => {});
   }
@@ -217,7 +222,7 @@ function spaces(R, v) {
 function paint(R) {
   if (READ !== R) return;
   R.feats ||= featsOf(R);
-  if (R.feats?.box) {
+  if (R.root && R.feats?.box && !R.feats.wide) { // le cadre large (aucun lieu situé) n'est pas une carte à lire : rien à montrer
     R.look ||= EM.lookOf(R.root);
     EM.show(R.root.querySelector('[data-mmslot]'), R.feats, {
       owner: R.owner,
@@ -256,13 +261,15 @@ export function readMap(slot, o) {
     ad: new Map()
   };
   R.o = o;
+  R.slot = slot;
   if (R.doc !== o.doc || R.opened !== opened) {
     R.doc = o.doc;
     R.opened = opened;
     R.feats = null;
   }
   R.feats ||= featsOf(R);
-  if (!R.feats?.box) { // aucun lieu situé que le pilote puisse voir : pas de carte, l'emplacement reste vide
+  // aucun lieu situé que le pilote puisse voir (ni la base pour un terrain) : pas de carte, l'emplacement reste vide
+  if (!R.feats?.box || R.feats.wide) {
     if (slot.firstChild) slot.replaceChildren();
     return false;
   }

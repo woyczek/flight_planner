@@ -866,7 +866,7 @@ function edMapFeats(s, doc, run = null) {
   return EM.mapFeatures(run ? rows : edPilotRows(e, doc, edShown(e, rows)), { // SOG-0459 : le voile, puis la vue du pilote
     zones: e.base?.zones,
     // « XTST · Base Test » (placeText : le code d'abord) : la position de la base quand le fichier ne la dit pas
-    adPos: name => adPosOf(s, (/^[A-Z]{4}(?= ·|$)/.exec(String(name || '')) || [])[0]),
+    adPos: name => adPosOf(s, ED.adCodeOf(name)), // le code d'un terrain quelle que soit la casse écrite (SOG-0469)
     path: TR.pathOf(MS.readMission(doc)),
     run,
     sel: run ? -1 : edMapSel(e),
@@ -1834,7 +1834,8 @@ function thumbHtml(s, doc, run = null) {
     let lat = p.lat === '' ? NaN : +p.lat,
       lon = p.lon === '' ? NaN : +p.lon;
     if ((p.kind === 'dep' || p.kind === 'arr') && !(Number.isFinite(lat) && Number.isFinite(lon))) {
-      const q = adPosOf(s, (/^[A-Z]{4}(?= ·|$)/.exec(String(p.name || '')) || [])[0]); // « XTST · Base Test » (placeText : le code d'abord)
+      // « XTST · Base Test » (placeText : le code d'abord, en majuscules ; SOG-0469 : quelle que soit la casse)
+      const q = adPosOf(s, ED.adCodeOf(p.name));
       if (q)[lat, lon] = [q.lat, q.lon];
     }
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) continue;

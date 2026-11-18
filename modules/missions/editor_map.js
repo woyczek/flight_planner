@@ -61,7 +61,15 @@ export const MAPB = Object.freeze({
   spaceRings: 8, // … anneaux d'un espace, au plus
   spaceRing: 2000, // … sommets d'un anneau, au plus (au-delà l'anneau n'est pas dessiné)
   spaceFill: 0.04, // … l'opacité du remplissage d'un espace (des contours, pas des aplats)
-  reliefErrors: 4 // « Relief » : tuiles refusées sans qu'aucune soit venue avant de repartir en « Rapide »
+  reliefErrors: 4, // « Relief » : tuiles refusées sans qu'aucune soit venue avant de repartir en « Rapide »
+  // SOG-0469 : le cadre LARGE d'une mission sans aucun lieu situé — la France métropolitaine (ouest, sud, est, nord, en degrés) : les
+  // terrains de la suite sont ceux de l'AIP France ; l'auteur y pose son premier lieu, puis le cadre suit la mission
+  wide: Object.freeze({
+    w: -5.5,
+    s: 41,
+    e: 9.8,
+    n: 51.3
+  })
 });
 /** Les règles de style que le bloc porte partout où il est posé (l'atelier, la lecture seule — mission_map.js) : son hôte, les
  *  étiquettes des lieux, la rangée « Fond / Espaces » et sa ligne. */
@@ -310,7 +318,9 @@ function contourOf(row) {
   })) : null;
 }
 
-/** Ce que la carte dessine d'une mission (voir l'en-tête). `rows` : les lignes des Lieux que l'écran montre (une zone en contour y
+/** Ce que la carte dessine d'une mission (voir l'en-tête). Le cadre `box` est TOUJOURS rendu (SOG-0469) : celui des éléments situés ;
+ *  sans aucun, le cadre large (MAPB.wide) et `wide: true` — la carte s'ouvre alors quand même, et un outil y pose le premier lieu ;
+ *  la lecture seule (mission_map.js), elle, ne montre pas une carte sur le cadre large. `rows` : les lignes des Lieux que l'écran montre (une zone en contour y
  *  porte ses sommets : `ring`) ; `adPos(nom)` : la position que la base donne à un terrain dont le fichier ne dit pas la position (départ, arrivée), ou
  *  null ; `path` : la route du départ ([{ lat, lon }…], celle de l'essai) ; `run` : l'essai des clés en cours (sa trace, son avion).
  *  L'identifiant d'un élément est « place:i », i étant le rang de sa ligne dans la liste des Lieux : toucher l'élément mène à elle.
@@ -464,7 +474,10 @@ export function mapFeatures(rows, {
     lines,
     polygons,
     labels,
-    box: null
+    box: {
+      ...MAPB.wide
+    },
+    wide: true
   };
   const lats = all.map(p => p.lat),
     lons = all.map(p => p.lon),
@@ -1037,8 +1050,9 @@ async function start(L, o) {
  *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom), ref (le repère de la base touché, marqué sur la carte) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
  *  onRadius({ i, km }), onPose({ lat, lon, spanKm }), et pour un contour onVertex({ i, k, lat, lon }), onInsert({ i, k, lat, lon }),
  *  onVertexPick({ i, k }) ; onRoute(rang) en Tracé ; les repères de la base : onView({ bbox, zoom }) quand la vue s'arrête (l'écran
- *  les demande et les rend par setRefs), onRef({ id, kind, lat, lon }) quand un repère est touché en Sélection. Sans élément situé
- *  (pas de cadre) : pas de carte. */
+ *  les demande et les rend par setRefs), onRef({ id, kind, lat, lon }) quand un repère est touché en Sélection. Sans élément situé :
+ *  la carte s'ouvre sur le cadre large de mapFeatures (SOG-0469) ; sans cadre du tout (une entrée qui n'est pas de mapFeatures) :
+ *  pas de carte. */
 export function show(slot, feats, o) {
   if (LIVE && LIVE.owner !== o.owner) stop();
   if (!slot || !feats?.box) return;

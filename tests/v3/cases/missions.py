@@ -4943,8 +4943,8 @@ _MAPF_JS = """async () => {
     lines: f.lines.map(l => [l.id, !!l.dash, l.points.length]), box: f.box, tags: f.labels.map(l => [l.text, l.lat, l.lon]),
     longTag: EM.mapFeatures([{ kind: 'pt', id: 'I'.repeat(40), lat: 1, lon: 1 }, { kind: 'pt', name: 'Sans identifiant · suite', lat: 2, lon: 2 }]).labels.map(l => l.text),
     inside: [...f.points, ...f.polygons.flatMap(p => p.rings[0]), ...f.lines.flatMap(l => l.points)].every(inBox),
-    none: [EM.mapFeatures([]).box, EM.mapFeatures(ED.placesOf({ mission: { id: 'X-001A' }, origin: { name: 'Sans position' } })).box],
-    empty: hostile.map(h => { const g = EM.mapFeatures(h, { zones: h, path: h, run: { ok: true, trail: h } }); return [g.points.length, g.lines.length, g.polygons.length, g.box] }),
+    none: [EM.mapFeatures([]), EM.mapFeatures(ED.placesOf({ mission: { id: 'X-001A' }, origin: { name: 'Sans position' } })), f].map(g => [g.wide === true, g.box.w, g.box.s, g.box.e, g.box.n]),
+    empty: hostile.map(h => { const g = EM.mapFeatures(h, { zones: h, path: h, run: { ok: true, trail: h } }); return [g.points.length, g.lines.length, g.polygons.length, g.wide === true, g.box.w] }),
     threw, untouched: JSON.stringify([rows, doc]) === before } }"""
 
 
@@ -4977,8 +4977,9 @@ def n92(c):
     c.eq(r['lines'], [['route', True, 3], ['trail', False, 3]], 'the route of the departure is dashed (a position out of bounds is skipped), the trail of the trial is plain',
          what='the lines')
     c.ok(r['inside'] is True and r['box']['w'] < 1 and r['box']['e'] > 2 and r['box']['s'] < 44 and r['box']['n'] > 45, r['box'], 'the frame holds every element, with a margin')
-    c.eq(r['none'], [None, None], 'nothing located: no frame (the screen then shows no map)', what='nothing located')
-    c.eq(r['empty'], [[0, 0, 0, None]] * 4, 'rows, zones, a route and a trail that are not what they should be: nothing is drawn', what='hostile inputs')
+    c.eq(r['none'], [[True, -5.5, 41, 9.8, 51.3]] * 2 + [[False, r['box']['w'], r['box']['s'], r['box']['e'], r['box']['n']]],
+         'nothing located: the frame is the WIDE one (France: the map still opens, SOG-0469), marked `wide`; a mission with elements has its own frame, not `wide`', what='nothing located')
+    c.eq(r['empty'], [[0, 0, 0, True, -5.5]] * 4, 'rows, zones, a route and a trail that are not what they should be: nothing is drawn, the frame is the wide one', what='hostile inputs')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws (but the caller\'s own function); what was read is not touched')
 
 
@@ -7452,5 +7453,135 @@ def n117(c):
     c.eq(c.js(_VEIL_PROBE_FILE, [path, _VEIL_PROBE_MISSION]), ['Mission d\'essai, sonde', True, ['ZONE-1'],
                                                                 {'id': 'F', 'title': 'Ravin', 'trigger_zone': 'ZONE-9', 'fallback_delay_min': 30}],
          'saved: the title written; the phases identical to the file — the drawer still cites ZONE-9; no zone added', what='the saved file')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+# SOG-0469 (the user's trial of 18 Nov: his own missions write their aerodromes in lower case, without coordinates, and the workshop had no map):
+# two invented missions — X-001A: aerodromes the published base knows (XTST, XTSU) written the way a hand-written file does; X-002A: aerodromes the base
+# does not know (ZZAA, ZZAB) — and the forms of an aerodrome a hand-written file may carry (read by the pure part)
+_LC_BASE = 'mission: { id: %s, type: REG }\ntitle: %s\norigin: { name: %s }\ndestination: { name: "%s" }\n'
+_LC_A = _LC_BASE % ('X-001A', 'Liaison de nuit', 'xtst', 'xtsu · base sud')
+_LC_B = _LC_BASE % ('X-002A', 'Liaison hors base', 'zzaa', 'zzab · terrain inconnu')
+_LC_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nmissions:\n'
+              '  - { id: X-001A, family: REG, series: 1, title: Liaison de nuit, folder: X_REG/X-001A, files: [missionX-001A.yaml] }\n'
+              '  - { id: X-002A, family: REG, series: 2, title: Liaison hors base, folder: X_REG/X-002A, files: [missionX-002A.yaml] }\n'],
+             ['missions/X_REG/X-001A/missionX-001A.yaml', _LC_A], ['missions/X_REG/X-002A/missionX-002A.yaml', _LC_B]]
+_LC_BASE_AD = {'aerodromes': [{'icao': 'XTST', 'name': 'XTST TEST', 'lat': 45.0, 'lon': 1.0, 'elev': 100},
+                              {'icao': 'XTSU', 'name': 'XTSU TEST SUD', 'lat': 44.0, 'lon': 2.0, 'elev': 120}]}
+_LC_FORMS = """async () => { const ED = await import('/modules/missions/editor.js');
+  const forms = [{ name: 'xtst' }, { name: 'xtst · base test' }, { icao: 'xtst' }, { name: 'Base Test (xtst)' }, { name: 'Base Test (XTST)' }, { name: 'XTST · Base Test' },
+    { name: 'Metz' }, { name: 'METZ' }, { name: 'Base Test' }];
+  const out = forms.map(o => { const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'T', origin: o }, row = ED.placesOf(doc)[0];
+    return [ED.cadreOf(doc).dep, row ? ED.adCodeOf(row.name) : null, JSON.stringify(ED.withCadre(doc, ED.cadreOf(doc))) === JSON.stringify(doc)] });
+  const d2 = { mission: { id: 'X-001A', type: 'REG' }, title: 'T', origin: { name: 'xtst' } }, typed = ED.withCadre(d2, { ...ED.cadreOf(d2), dep: 'xtsv' });
+  return { out, typed: [typed.origin, ED.adCodeOf('Base Test (xtst)'), ED.adCodeOf('Base (Test'), ED.adCodeOf(null), ED.adCodeOf('x'.repeat(5000))] } }"""
+_LC_FOUND = """(() => { const b = window.__edMap.getBounds(), z = +window.__edMap.getZoom().toFixed(2);
+  return [[45, 1], [44, 2]].every(([la, lo]) => b.contains([lo, la])) && b.getEast() - b.getWest() < 8 && z > 7 })()"""
+_LC_WIDE = """(() => { const b = window.__edMap.getBounds(), z = +window.__edMap.getZoom().toFixed(2);
+  return [[41, -5.5], [51.3, 9.8], [41, 9.8], [51.3, -5.5]].every(([la, lo]) => b.contains([lo, la])) && z < 6.5 })()"""
+
+
+@case('N118', 'Missions › the workshop, a mission without a located place still has its map (SOG-0469): the aerodromes of a hand-written file, in '
+      'lower case and without coordinates (« xtst », « xtsu · base sud »), are read whatever the case — shown in capitals, found in the aeronautical '
+      'base, the map framed on them; a mission whose aerodromes the base does not know opens the map on a WIDE view and a tool sets a first place on it; '
+      '« Enregistrer » without touching anything writes nothing; the forms of an aerodrome a hand-written file carries (`name: xtst`, '
+      '`name: xtst · base test`, `icao: xtst`, `name: Base Test (xtst)`) are read; a word that is not a code (« Metz ») is not',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0469 (the user\'s trial of 18 Nov: « L\'atelier n\'a pas de carte : Aucun lieu placé, la carte est vide » — a regression?): '
+      'modules/missions/editor.js `placeText`, `adCodeOf`; editor_map.js `mapFeatures` (the frame is always given, `wide` without a located element); '
+      'mission_map.js; modules/missions/EDITOR.md § 7 novovicies')
+def n118(c):
+    T = lambda k: norm(row(c, k, EDTX_FILE))  # noqa: E731
+    pa, pb = 'missions/X_REG/X-001A/missionX-001A.yaml', 'missions/X_REG/X-002A/missionX-002A.yaml'
+    live = f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map) && !!window.__edMap"
+    labels = f"[...document.querySelectorAll('{_EDMAP} [data-maplbl]')].map(x => x.textContent).sort()"
+
+    def unfold():
+        """On a phone the map is folded behind its button."""
+        if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+            c.tap(f'{E} [data-do="edmap"]')
+        c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000,
+                what='the map unfolded')
+
+    def look(name):
+        """The map in view, the notifications gone: a capture at 1280, then at 390."""
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+        c.shot(name)
+
+    # the pure part: the forms an aerodrome may be written in
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_LC_FORMS)
+    c.eq(r['out'], [['XTST', 'XTST', True], ['XTST · base test', 'XTST', True], ['XTST', 'XTST', True], ['XTST · Base Test', 'XTST', True],
+                    ['XTST · Base Test', 'XTST', True], ['XTST · Base Test', 'XTST', True], ['Metz', '', True], ['METZ', 'METZ', True], ['Base Test', '', True]],
+         'the Cadre shows the code in capitals whatever the case of the file (`name: xtst`, `name: xtst · base test`, `icao: xtst`, `name: Base Test (xtst)`); a word that is not a '
+         'code (« Metz », « Base Test ») is not made one; the code is the one asked to the base; the Cadre unchanged writes nothing (the file is the same)', what='the forms read')
+    c.eq(r['typed'], [{'name': 'XTSV', 'icao': 'XTSV'}, 'XTST', '', '', ''],
+         'an aerodrome typed in lower case is written in capitals; a code between parentheses is found at the end of the name; a hostile name finds nothing', what='typing, hostile names')
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _LC_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra=_LC_BASE_AD)
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    # X-001A: lower case, no coordinates — the map is there, framed on the two aerodromes, labelled in capitals
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the workshop of X-001A')
+    c.until(live, timeout=15000, what='the map of the workshop')
+    c.until(f"({labels}).length === 2", timeout=10000, what='the two aerodromes drawn')
+    c.eq([c.js(labels), c.js(_LC_FOUND), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden")], [['XTST', 'XTSU'], True, True],
+         'no place carries a position, yet the map is alive, framed on XTST and XTSU found in the base (their labels in capitals); the sketch « Aucun lieu placé » is hidden', what='the map')
+    if not c.count(f'{E} input[data-k=eddep]'):  # the Cadre is open at the opening
+        c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    c.eq([c.js(f"document.querySelector('{E} input[data-k=eddep]').value"), c.js(f"document.querySelector('{E} input[data-k=edarr]').value")], ['XTST', 'XTSU · base sud'],
+         'the Cadre shows the departure and the arrival with their code in capitals', what='the Cadre')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(500)
+    c.eq(c.js(_TEXT_OF, pa), _LC_A, 'nothing touched: « Enregistrer » writes nothing, the file keeps its lower case', what='the file')
+    look('N118_1280_minuscules.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    unfold()
+    c.until(f"({labels}).length === 2", timeout=10000, what='the two aerodromes drawn on a phone')
+    look('N118_390_minuscules.png')
+    ed_leave(c)
+    # X-002A: aerodromes the base does not know — the map opens on the wide view; a tool sets a first place on it
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.until(f"!!document.querySelector('{R} [data-rowid=\"X-002A\"]')", timeout=10000, what='the registry')
+    c.tap(f'{R} [data-rowid="X-002A"] > summary')
+    c.tap(f'{R} [data-rowid="X-002A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the workshop of X-002A')
+    c.until(live, timeout=15000, what='the map of the workshop, the wide view')
+    c.wait(600)
+    c.eq([c.js(_LC_WIDE), c.js(labels), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"), norm(c.text(f'{_EDMAP} [data-maphint]')) != T('atHint_none'),
+          c.js(f"document.querySelector('{_EDMAP} [data-do=edmapfit]').disabled"), c.js(f"[...document.querySelectorAll('{_EDMAP} [data-atmaptools] button')].filter(b => b.disabled).map(b => b.dataset.do)")],
+         [True, [], True, True, False, ['edmapundo']],
+         'no aerodrome known, no place located: the map is alive on the WIDE view (France), nothing labelled; the sketch « Aucun lieu placé » is hidden, the hint is not « Sans carte… », '
+         '« Recentrer » and every tool are given (only « Annuler le geste » waits: nothing to undo)', what='the wide view')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(500)
+    c.eq(c.js(_TEXT_OF, pb), _LC_B, 'nothing touched: « Enregistrer » writes nothing', what='the file')
+    look('N118_1280_vue_large.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    unfold()
+    c.wait(600)
+    c.ok(c.js(_LC_WIDE), c.js('window.__edMap.getZoom()'), 'on a phone the map is on the wide view as well')
+    look('N118_390_vue_large.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.until(live, timeout=10000, what='the map back at 1280')
+    c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [46.5, 2.5]))
+    c.until(f"(({_EDMAP_IDS})() || []).includes('place:2')", timeout=10000, what='the first place set on the empty map')
+    c.eq([c.js(_EDMAP_IDS, None), c.js(f"document.querySelector('{_EDMAP}').dataset.map") in ('tiles', 'plain')], [['place:2'], True],
+         'a Point set on the wide view is a place of the mission, drawn on the map', what='the first place')
     ed_leave(c)
     c.js(_REG_CLEAR)
