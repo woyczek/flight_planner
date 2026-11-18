@@ -9797,7 +9797,9 @@ _DRAFT_LIST = """async () => { if (!globalThis.jsyaml) await import('/frame/lib/
   return { list: list.map(d => [d.key, d.mode, d.title]), reads,
     pure: [DF.draftPath('../x'), DF.draftPath('new'), DF.keyOf('edit', 'x-001a'), DF.keyOf('dup', 'X-001A'), DF.keyOf('edit', 'X-001A'),
       DF.draftOf({ key: 'new', mode: 'edit', text: 't' }), DF.draftOf({ key: 'new', mode: 'new', text: 'x'.repeat(262145) }), DF.readDraft('{', globalThis.jsyaml)] } }""" % _TEXT_OF
-_NOTES = "[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+# The texts of the notifications, one per notification (a list). Named apart from _NOTES (the joined text of the cases N70 to N108):
+# one module-level name read by both broke those cases (TypeError in norm).
+_NOTE_TEXTS = "[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
 
 # SOG-0486 (Sécurisation's notes): listDrafts through the fallback `data.list` (a frame whose `cached` fails), the files read recorded; the paths kept
 _DRAFT_FALLBACK = """async () => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const DF = await import('/modules/missions/draft.js');
@@ -9886,7 +9888,7 @@ def n150(c):
         # the resumption: the entry the registry will carry
         c.ok(c.js(_DRAFT_RESUME, 'new'), '', 'the entry of the resumption touched in the registry')
         c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(title)}", timeout=10000, what='the workshop reopened on the draft')
-        notes = c.js(_NOTES)
+        notes = c.js(_NOTE_TEXTS)
         c.ok(any(norm(row(c, 'draftBack', EDTX_FILE)) in norm(n) for n in notes), notes, f'{width}: « Brouillon repris. » is said')
         c.js('window.scrollTo(0, 0)')
         c.shot(f'P12a_{width}_repris.png')  # the workshop resumed, « Brouillon repris. » said
@@ -9953,10 +9955,10 @@ def n150(c):
         c.ok(c.js(_DRAFT_RESUME, key), '', f'the resumption of {key}')
         want = norm(row(c, said, EDTX_FILE).replace('{id}', key))
         for _ in range(20):
-            if any(want in norm(n) for n in c.js(_NOTES)):
+            if any(want in norm(n) for n in c.js(_NOTE_TEXTS)):
                 break
             c.wait(200)
-        c.eq([any(want in norm(n) for n in c.js(_NOTES)), c.count(E)], [True, 0], f'(C) the resumption of {key}: « {want} », no workshop', what=f'(C) {key}')
+        c.eq([any(want in norm(n) for n in c.js(_NOTE_TEXTS)), c.count(E)], [True, 0], f'(C) the resumption of {key}: « {want} », no workshop', what=f'(C) {key}')
     c.js(_REG_CLEAR)
 
     # (D) more than 40 drafts on the device: the workshop writing its own erases the OLDEST, never its own, down to 40 (Sécurisation's note)
