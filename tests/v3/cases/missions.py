@@ -1375,29 +1375,34 @@ def n33(c):
          'the theatre of the file cleaned and bounded; else the country named; else the State of the aerodrome; else nothing', what='theatre')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _BR_TEXTS)
-    ch = lambda rid: c.js(f"""(() => {{ const x = document.querySelector('{R} [data-rowid="{rid}"] summary [data-choice]');
-      return x ? [x.querySelector('[data-dur]')?.dataset.dur || null, x.querySelector('[data-dur]')?.textContent || '', x.querySelector('[data-ac]')?.dataset.ac || null,
-        !!x.querySelector('[data-theatre]')] : null }})()""")
-    ch = (lambda f: lambda rid: (lambda v: v if v is None else [v[0], norm(v[1]), v[2], v[3]])(f(rid)))(ch)  # norm is Python's, never the page's
+    def ch(rid):
+        """SOG-0487: the duration on the line (its « Durée » column), the number of aircraft and the theatre in the line's sheet."""
+        d = c.js(f"(() => {{ const x = document.querySelector('{R} [data-rowid=\"{rid}\"] [data-dur]'); return x ? [x.dataset.dur, x.textContent] : [null, ''] }})()")
+        c.tap(f'{R} [data-rowid="{rid}"]')
+        c.until(f"!!document.querySelector('{R} [data-regsheet][data-sheetid=\"{rid}\"]')", what=f'the sheet of {rid}')
+        sh = c.js(f"[document.querySelector('{R} [data-regsheet] [data-ac]')?.dataset.ac || null, !!document.querySelector('{R} [data-regsheet] [data-theatre]')]")
+        c.tap(f'{R} [data-regsheet] [data-do=regsheetclose] >> visible=true')
+        c.until(f"!document.querySelector('{R} [data-regsheet]')", what='the sheet closed')
+        return [d[0], norm(d[1]), sh[0], sh[1]]
     one = ch('X-901A')
     c.eq([one[0], one[2], one[3]], ['file', '1', False], 'X-901A: a duration computed at the speed of the file, one aircraft, no theatre known',
          what='X-901A')
-    c.ok(one[1].startswith('≈') and '30' in one[1], one, '« ≈ 30 min » under the title')
+    c.ok(one[1].startswith('≈') and '30' in one[1], one, '« ≈ 30 min » in the « Durée » column')
     two = ch('X-902A')
     c.eq([two[0], two[2]], ['written', '2'], 'X-902A: the duration written, two aircraft', what='X-902A')
     c.ok('45' in two[1] and '≈' not in two[1], two, '« 45 min », without « ≈ »')
     c.eq(ch('X-903A'), [None, '', '1', False], 'X-903A: a type the base does not know — no duration, one aircraft', what='X-903A')
     c.ok(c.count(f'{R} [data-choicelegend]') == 1, '', 'the legend says « ≈ » once under the lines')
-    c.tap(f'{R} [data-rowid="X-901A"] > summary')
-    gest = c.js(f"[...document.querySelector('{R} [data-rowid=\"X-901A\"] .ms-rgest').children].map(x => x.dataset.do || (x.matches('details') ? 'more' : x.tagName))")
+    c.tap(f'{R} [data-rowid="X-901A"]')
+    gest = c.js(f"[...document.querySelector('{R} [data-regsheet] .ms-rgest').children].map(x => x.dataset.do || (x.matches('details') ? 'more' : x.tagName))")
     c.eq(gest, ['regbrief', 'edmodify', 'eddup', 'more'], '« Brief » first, then « Atelier », « Dupliquer », « ⋯ »', what='gestures')
-    c.ok(c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"] [data-do=regbrief]').classList.contains('primary')"), '', '« Brief » is the primary gesture')
-    c.ok(not c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"] [data-do=regedit]').checkVisibility()"), '', '« Corriger » folded behind « ⋯ »')
-    c.tap(f'{R} [data-rowid="X-901A"] .ms-rmore > summary')
-    c.until(f"!!document.querySelector('{R} [data-rowid=\"X-901A\"] [data-do=regedit]')?.checkVisibility()", what='« ⋯ » shows « Corriger la ligne du registre »')
-    c.eq(norm(c.text(f'{R} [data-rowid="X-901A"] [data-do=regedit]')), norm(row(c, 'regEdit')), '« Corriger la ligne du registre »', what='correct')
+    c.ok(c.js(f"document.querySelector('{R} [data-regsheet] [data-do=regbrief]').classList.contains('primary')"), '', '« Brief » is the primary gesture')
+    c.ok(not c.js(f"document.querySelector('{R} [data-regsheet] [data-do=regedit]').checkVisibility()"), '', '« Corriger » folded behind « ⋯ »')
+    c.tap(f'{R} [data-regsheet] .ms-rmore > summary')
+    c.until(f"!!document.querySelector('{R} [data-regsheet] [data-do=regedit]')?.checkVisibility()", what='« ⋯ » shows « Corriger la ligne du registre »')
+    c.eq(norm(c.text(f'{R} [data-regsheet] [data-do=regedit]')), norm(row(c, 'regEdit')), '« Corriger la ligne du registre »', what='correct')
     # the menu opens toward the left, aligned on the right edge of « ⋯ »: its two gestures stay inside the screen at 390
-    c.ok(c.js(f"[...document.querySelectorAll('{R} [data-rowid=\"X-901A\"] .ms-rmore [data-do]')].every(b => {{ const r = b.getBoundingClientRect(); "
+    c.ok(c.js(f"[...document.querySelectorAll('{R} [data-regsheet] .ms-rmore [data-do]')].every(b => {{ const r = b.getBoundingClientRect(); "
               f"return r.left >= 0 && r.right <= innerWidth }})"), '', 'the menu of « ⋯ » inside the screen at 390 (nothing cut)')
     c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"]').scrollIntoView({{block: 'center'}})")
     c.shot(f'N33_{c.design}_390_{c.lang}_registry.png')
@@ -1407,7 +1412,7 @@ def n33(c):
     c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
     c.shot(f'N33_{c.design}_1280_{c.lang}_registry.png')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
-    c.tap(f'{R} [data-rowid="X-901A"] [data-do=regbrief]')
+    c.tap(f'{R} [data-regsheet] [data-do=regbrief]')
     S = f'{M} [data-pane=mission][data-id="X-901A"]'
     c.until(f"!!document.querySelector('{S} [data-first] [data-choice] [data-dur]')", timeout=10000, what='the Brief with its line of choice')
     order = c.js(f"[...document.querySelector('{S} [data-first]').children].map(x => x.matches('h2') ? 'title' : x.matches('[data-cat]') ? 'cat' : x.matches('[data-summary]') ? 'summary' : x.matches('.ms-actions') ? 'actions' : '')"
@@ -1427,8 +1432,8 @@ def n33(c):
          '', '« Préparer ce vol » in view at 390')
     c.shot(f'N33_{c.design}_390_{c.lang}_brief.png')
     c.tap(f'{S} .ms-actions [data-do=back]')
-    c.until(f"!!document.querySelector('{R} [data-rowid=\"X-901A\"]')?.open", timeout=8000, what='the registry given back, the line unfolded')
-    c.ok(c.js(f"(() => {{ const b = document.querySelector('{R} [data-rowid=\"X-901A\"]').getBoundingClientRect(); return b.top < innerHeight && b.bottom > 0 }})()"),
+    c.until(f"!!document.querySelector('{R} [data-reglist] [data-rowid=\"X-901A\"]')", timeout=8000, what='the registry given back at the line')
+    c.ok(c.js(f"(() => {{ const b = document.querySelector('{R} [data-reglist] [data-rowid=\"X-901A\"]').getBoundingClientRect(); return b.top < innerHeight && b.bottom > 0 }})()"),
          '', 'the line in view')
     # from the list: no « Atelier » in the sheet
     c.tap(f'{R} [data-do="regback"]')
@@ -1490,7 +1495,7 @@ def n34(c):
     txt = norm(c.js(f"document.querySelector('{R} [data-rowid=\"X-905A\"]')?.textContent || ''"))
     c.ok(all(w not in txt.lower() for w in ('secret', 'cache', 'tiroir', 'drawer', 'schublade', 'cajón', 'cajon')), txt,
          'the line says nothing of the drawer')
-    same = c.js(f"""['X-901A', 'X-905A'].map(id => [...document.querySelectorAll('{R} [data-rowid="' + id + '"] summary [data-choice] > span')].map(x => x.textContent))""")
+    same = c.js(f"""['X-901A', 'X-905A'].map(id => [...document.querySelectorAll('{R} [data-rowid="' + id + '"] [data-dur]')].map(x => x.textContent))""")
     c.eq(same[1], same[0], 'its line of choice is the one of the same mission without a drawer', what='choice')
     c.js(_REG_CLEAR)
 
@@ -1805,9 +1810,9 @@ def n29(c):
     reg_open(c)
     c.page.fill(f'{R} [data-k=rq]', 'X-701A')
     c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-701A found')
-    c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] summary')  # the line unfolded (SOG-0286)
-    c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] .ms-rmore > summary')  # SOG-0455: « Corriger la ligne du registre » behind « ⋯ »
-    c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] [data-do="regedit"]')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-701A"]')  # the line unfolded (SOG-0286)
+    c.tap(f'{R} [data-regsheet] .ms-rmore > summary')  # SOG-0455: « Corriger la ligne du registre » behind « ⋯ »
+    c.tap(f'{R} [data-regsheet] [data-do="regedit"]')
     c.until(f"!!document.querySelector('{R} [data-redit]')", what='the form of the line')
     c.page.fill(f'{R} [data-redit] [data-k=rtitle]', 'Titre corrigé')
     c.page.fill(f'{R} [data-redit] [data-k=rseries]', 'abc')
@@ -1830,12 +1835,12 @@ def n29(c):
     c.until(_REG_READ, timeout=20000, what='read again')
     c.page.fill(f'{R} [data-k=rq]', 'quatre')
     c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-704A found')
-    c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] summary')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-704A"]')
     # the notification of the previous step (a refusal) sits at the bottom of the screen: gone, and the line centred, before « ⋯ »
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{R} [data-reglist] [data-rowid=\"X-704A\"]').scrollIntoView({{block: 'center'}})")
-    c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] .ms-rmore > summary')  # SOG-0455: « Retirer du registre » behind « ⋯ »
-    c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] [data-do="regremove"]')
+    c.tap(f'{R} [data-regsheet] .ms-rmore > summary')  # SOG-0455: « Retirer du registre » behind « ⋯ »
+    c.tap(f'{R} [data-regsheet] [data-do="regremove"]')
     c.until("!!document.querySelector('.f-modal [data-ok]')", what='asks before removing')
     c.ok(norm(row(c, 'regRemoveAsk').replace('{id}', 'X-704A')) in norm(c.text('.f-modal') or ''), '', 'the question says the file stays')
     c.tap('.f-modal [data-ok]')
@@ -1899,11 +1904,13 @@ def n41(c):
     c.js(_TEXTS_JS, TEXTS)
     c.open('missions', docs=docs(), wait=False, app='company')
     c.go('missions?view=registry')
-    c.until(f"document.querySelectorAll('{M} .ms-rrow button').length >= 2", timeout=15000, what='a line of the registry with its buttons')
-    c.js(f"[...document.querySelectorAll('{M} .ms-rrow')].find(r => r.querySelectorAll('button').length >= 2).open = true")  # unfolded (SOG-0286)
-    m = c.js(f"""(() => {{ const row = [...document.querySelectorAll('{M} .ms-rrow')].find(r => r.querySelectorAll('button').length >= 2);
-      const [a, b] = row.querySelectorAll('button'), ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), rr = row.getBoundingClientRect(),
-        t = row.querySelector('b').getBoundingClientRect();
+    # SOG-0487: the gestures of a line are in its sheet (the line touched opens it)
+    c.until(f"[...document.querySelectorAll('{M} [data-reglist] [data-rowid]')].some(r => r.dataset.rid !== 'new')", timeout=15000, what='a line of the registry')
+    c.js(f"[...document.querySelectorAll('{M} [data-reglist] [data-rowid]')].find(r => r.dataset.rid !== 'new').click()")
+    c.until(f"document.querySelectorAll('{M} [data-regsheet] .ms-rgest > button').length >= 2", timeout=8000, what='the sheet of the line with its buttons')
+    m = c.js(f"""(() => {{ const row = document.querySelector('{M} [data-regsheet]');
+      const [a, b] = row.querySelectorAll('.ms-rgest > button'), ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), rr = row.getBoundingClientRect(),
+        t = row.querySelector('h2').getBoundingClientRect();
       return {{ gap: rb.left - ra.right, inner: t.left - rr.left }} }})()""")
     c.ok(m['gap'] >= 6 and m['inner'] >= 8, m, 'a space between the two buttons, the text off the edge of the card')
 
@@ -1971,43 +1978,93 @@ _BIG_REGISTRY = 'schema: mission-registry\nversion: 1\nmissions:\n' + ''.join(
 _BIG_TEXTS = [['missions/mission_registry.yaml', _BIG_REGISTRY]] + [[f'missions/X_REG/{m}/mission{m}.yaml', mission_doc(m)] for m in _BIG_IDS]
 
 
-@case('N43', 'Missions › Registre, the V2 model: one line per mission (state sign, identifier, title, family · series, origin → destination); '
-      'the state in words, « Corriger », « Retirer » and the path when the line is unfolded; a family filter at the head; at 1 280 twenty '
-      'missions seen without scrolling, at 390 two lines of text at most per mission',
-      'N', tags=('missions',), designs=('standard',), screens=False, langs4=True,
-      rule='SOG-0286 (the user, 12 Nov: « trop de lignes. prendre le modèle de la v2, qui était efficace »): the V2 registry is a table, one '
-      'row per mission, the sheet when the row is opened; nothing changes in the data nor in their guards (24 invented X-7xx missions); '
-      'captures 390 and 1 280')
+@case('N43', 'Missions › Registre as a sortable table (SOG-0487, mock-up frame/help/maquette/tri_registre): at 1 280 a table — État, '
+      'Identifiant, Titre, Famille, Série, Origine → destination, Durée, « ⋯ » —, one button per column; at 390 the list and ONE « Trier » '
+      'with its panel; the default order is the identifier, the most recent on top; a touched line opens its sheet (on the right at 1 280, '
+      'full screen at 390 with « ← Registre »), « ⋯ » of a line gives Brief, Atelier, Dupliquer, Corriger, Retirer; the sort is kept on '
+      'the device across a reload, « Remettre l\'ordre » gives the default back; the family filter keeps working',
+      'N', tags=('missions',), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0487 (the user, 18 Nov, Q-0115 / Q-0116: « un vrai tableau triable sur ordinateur », the gestures in a row action, the sort '
+      'kept with « Remettre l\'ordre », the identifier most recent on top); SOG-0286 (one line per mission, origin → destination, the state '
+      'sign); the frame\'s block frame/lib/sortlist.js (SOG-0498); 24 invented X-7xx missions')
 def n43(c):
     rows = f'{R} [data-reglist] [data-rowid]'
+    order = lambda: c.js(f"[...document.querySelectorAll('{rows}')].map(r => r.dataset.rowid)")
+    newest = sorted(_BIG_IDS, reverse=True)
     for w in (1280, 390):
         c.page.set_viewport_size({'width': w, 'height': c.height})
         reg_open(c, _BIG_TEXTS)
-        m = c.js(f"""(() => {{ const rs = [...document.querySelectorAll('{rows}')];
-          const head = r => r.querySelector('summary') || r;
-          // the lines of text of a folded line: the tops of the boxes of its text (a gap of more than 6 px: a new line)
-          const lines = rs.map(r => {{ const g = document.createRange(); g.selectNodeContents(head(r));
-            const tops = [...g.getClientRects()].filter(x => x.width > 0 && x.height > 0).map(x => x.top).sort((a, b) => a - b);
-            return tops.reduce((n, t, i) => n + (i && t - tops[i - 1] > 6 ? 1 : 0), tops.length ? 1 : 0) }});
-          const seen = rs.filter(r => {{ const b = head(r).getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight }}).length;
-          const hidden = rs.every(r => !r.querySelector('[data-do=regedit]')?.checkVisibility());
-          return {{ n: rs.length, seen, maxLines: Math.max(...lines), hidden }} }})()""")
-        c.eq(m['n'], 24, f'{w} px: one line per mission, all listed', what='rows')
-        c.eq(c.js(f"[...document.querySelectorAll('{rows}')].slice(0, 3).map(r => r.dataset.rowid)"), ['X-720A', 'X-723A', 'X-726A'],
-             f'{w} px: by series, then identifier (the order of the V2 table)', what='order')
-        if w == 1280:
-            c.ok(m['seen'] >= 20, m, '1 280 px: twenty missions at least seen without scrolling')
+        wide = w == 1280
+        c.until(f"!!document.querySelector('{R} {'table' if wide else 'ul'}[data-reglist]')", what=f'{w} px: the {"table" if wide else "list"}')
+        c.eq(len(order()), 24, f'{w} px: one line per mission, all listed', what='rows')
+        c.eq(order()[:3], newest[:3], f'{w} px: by identifier, the most recent on top (the user\'s default)', what='default order')
+        c.ok(c.count(f"{rows} [data-rstate]") == 24, '', f'{w} px: the state on each line')
+        c.ok(c.count(f"{rows} [data-rowmenu]") == 24, '', f'{w} px: « ⋯ » at the end of each line')
+        first = norm(c.text(f'{rows}'))
+        c.ok('LFRS → LFML' in first, first, f'{w} px: origin → destination on the line')
+        if wide:
+            c.eq(c.js(f"[...document.querySelectorAll('{R} thead th[data-col]')].map(t => t.dataset.col)"),
+                 ['state', 'id', 'title', 'family', 'series', 'route', 'dur'], '1 280 px: one sortable column each, in the mock-up\'s order',
+                 what='columns')
+            c.eq(c.attr(f'{R} th[data-col=id]', 'aria-sort'), 'descending', '1 280 px: « Identifiant ▼ »', what='aria-sort')
+            c.ok(c.count(f'{R} th[data-col] > button.f-sortbtn') == 7, '', '1 280 px: a button per column')
         else:
-            c.ok(m['maxLines'] <= 2, m, '390 px: two lines of text at most per mission')
-        c.ok(m['hidden'], m, f'{w} px: « Corriger » is folded')
-        first = c.js(f"(() => {{ const r = document.querySelector('{rows}'); return r.querySelector('summary')?.textContent.replace(/\\s+/g, ' ') || '' }})()")
-        c.ok('LFRS' in first and 'LFML' in first and '→' in first, first, f'{w} px: origin → destination on the line')
-        c.ok(c.count(f"{R} [data-reglist] [data-rowid] summary [data-rstate]") == 24, '', f'{w} px: the state sign on each line')
+            c.ok(c.shown(f'{R} [data-sort-open]'), '', '390 px: « Trier » shown')
+            c.eq(c.count(f'{R} thead'), 0, '390 px: no table', what='no table')
         c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
-        c.shot(f'N43_{c.design}_{w}_{c.lang}_delivered.png')
-        c.tap(f'{rows} summary')
-        c.until(f"!!document.querySelector('{rows} [data-do=regbrief]')?.checkVisibility()", what='the unfolded line shows « Brief » (SOG-0455)')
-        c.ok('missions/X_REG/' in c.text(f'{rows}'), '', f'{w} px: the path when unfolded')
+        c.shot(f'N43_{c.design}_{w}_{c.lang}_table.png' if wide else f'N43_{c.design}_{w}_{c.lang}_list.png')
+        # « ⋯ » of a line: the quick gestures, without leaving the table (the sheet stays closed)
+        c.tap(f'{rows}:first-child [data-rowmenu] > summary')
+        c.until(f"!!document.querySelector('{rows}:first-child [data-rowmenu] [data-do=regremove]')?.checkVisibility()", what=f'{w} px: the menu of « ⋯ »')
+        c.eq(c.js(f"[...document.querySelectorAll('{rows}:first-child [data-rowmenu] [role=menuitem]')].map(b => b.dataset.do)"),
+             ['regbrief', 'edmodify', 'eddup', 'regedit', 'regremove'], f'{w} px: Brief, Atelier, Dupliquer, Corriger, Retirer', what='menu')
+        c.ok(c.js(f"[...document.querySelectorAll('{rows}:first-child [data-rowmenu] [role=menuitem]')].every(b => {{ const r = b.getBoundingClientRect(); "
+                  f"return r.left >= 0 && r.right <= innerWidth }})"), '', f'{w} px: the menu inside the screen')
+        c.eq(c.count(f'{R} [data-regsheet]'), 0, f'{w} px: « ⋯ » does not open the sheet', what='no sheet')
+        c.shot(f'N43_{c.design}_{w}_{c.lang}_menu.png')
+        c.tap(f'{R} h2')  # touched elsewhere: the menu closes
+        c.until(f"!document.querySelector('{rows}:first-child [data-rowmenu]').open", what=f'{w} px: the menu closed by a touch elsewhere')
+        # a touched line: its sheet
+        c.tap(f'{rows}:first-child')
+        c.until(f"!!document.querySelector('{R} [data-regsheet][data-sheetid=\"{newest[0]}\"] [data-do=regbrief]')?.checkVisibility()",
+                what=f'{w} px: the sheet of the line, « Brief » shown')
+        c.ok('missions/X_REG/' in (c.text(f'{R} [data-regsheet] [data-rpath]') or ''), '', f'{w} px: the file of the mission in the sheet')
+        c.ok('LFRS' in (c.text(f'{R} [data-regsheet] [data-route]') or '') or c.count(f'{R} [data-regsheet] [data-route]') == 0, '',
+             f'{w} px: the route of the mission as chips, when it has one')
+        if wide:
+            c.ok(c.count(f'{rows}[aria-selected="true"]') == 1, '', '1 280 px: the line of the sheet marked in the table, beside it')
+            c.ok(c.js(f"(() => {{ const t = document.querySelector('{R} table[data-reglist]').getBoundingClientRect(), "
+                      f"s = document.querySelector('{R} [data-regsheet]').getBoundingClientRect(); return s.left >= t.right }})()"), '',
+                 '1 280 px: the sheet on the right of the table')
+        else:
+            c.ok(c.js(f"(() => {{ const b = document.querySelector('{R} [data-regsheet]').getBoundingClientRect(); "
+                      f"return b.left <= 0 && b.top <= 0 && b.right >= innerWidth && b.bottom >= innerHeight }})()"), '',
+                 '390 px: the sheet full screen, over the page (the list kept under it, as in the mock-up)')
+            c.ok(c.shown(f'{R} [data-regsheet] .ms-sback'), '', '390 px: « ← Registre »')
+        c.shot(f'N43_{c.design}_{w}_{c.lang}_sheet.png')
+        if wide:
+            c.tap(f'{R} [data-regsheet] .ms-sclose')  # a panel beside the table: « × » closes it (no history entry)
+        else:
+            c.page.go_back()  # full screen on a phone: the browser's Back closes it (the mock-up)
+        c.until(f"!document.querySelector('{R} [data-regsheet]') && !!document.querySelector('{R} [data-reglist]')",
+                what=f'{w} px: {"« × »" if wide else "Back"} closes the sheet')
+        # sorting by the title: the header (1 280) or « Trier » and its panel (390); kept across a reload; « Remettre l'ordre »
+        if wide:
+            c.tap(f'{R} th[data-col=title] > button')
+        else:
+            c.tap(f'{R} [data-sort-open]')
+            c.until(f"!document.querySelector('{R} [data-sort-panel]').hidden", what='390 px: the sort panel open')
+            c.shot(f'N43_{c.design}_{w}_{c.lang}_panel.png')
+            c.tap(f'{R} [data-sort-panel] input[type=radio][value=title]')
+        by_title = list(_BIG_IDS)  # « numéro 1 », « numéro 2 », … « numéro 24 »: the collator reads the numbers as numbers
+        c.until(f"[...document.querySelectorAll('{rows}')][0]?.dataset.rowid === '{by_title[0]}'", what=f'{w} px: sorted by title (« numéro 1 » first)')
+        c.eq(order()[:3], by_title[:3], f'{w} px: by title, numbers read as numbers (1, 2, 3)', what='by title')
+        c.page.reload()
+        c.until(_REG_READ, timeout=20000, what=f'{w} px: the registry after a reload')
+        c.until(f"[...document.querySelectorAll('{rows}')][0]?.dataset.rowid === '{by_title[0]}'", what=f'{w} px: the sort kept on the device')
+        c.tap(f'{R} [data-sortbar] [data-sort-reset]')
+        c.until(f"[...document.querySelectorAll('{rows}')][0]?.dataset.rowid === '{newest[0]}'", what=f'{w} px: « Remettre l\'ordre » gives the default back')
+        # the family filter keeps working (after the sort)
         c.until(f"!!document.querySelector('{R} select[data-k=rfam]')", what='the family filter at the head')
         c.page.select_option(f'{R} select[data-k=rfam]', 'TESTREG')
         c.until(f"document.querySelectorAll('{rows}').length === 12", what='the family filter keeps the twelve TESTREG missions')
@@ -2072,7 +2129,7 @@ def n45(c):
              ['missions/X_REG/old1/missionold1.yaml', mission_doc('ABCDEFGHIJKL01')], ['missions/X_REG/old2/missionold2.yaml', mission_doc('ABCDEFGHIJKL02')]]
     reg_open(c, texts)
     c.eq(reg_states(c), {'ABCDEFGHIJKL01': 'ok', 'ABCDEFGHIJKL02': 'ok'}, 'two lines, each its own identity, neither double nor former', what='screen')
-    b = c.js(f"(() => {{ const b = document.querySelector('{R} [data-rowid=ABCDEFGHIJKL01] summary b'); return [b.textContent, b.title] }})()")
+    b = c.js(f"(() => {{ const b = document.querySelector('{R} [data-rowid=ABCDEFGHIJKL01] :is(b, .ms-regid)'); return [b.textContent, b.title] }})()")
     c.eq(b, ['ABCDEFGHIJK…', 'ABCDEFGHIJKL01'], 'the line shortens the identifier for display only, the whole of it in the tooltip', what='display')
     c.tap(f'{R} [data-do="regplan"]')
     c.until(f"!!document.querySelector('{R} [data-regplan]')", what='the plan')
@@ -2389,9 +2446,11 @@ def n50(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _ED_TEXTS)
     c.ok(c.count(f'{R} [data-do=edcreate]') == 1, 'no « Créer une mission »', '« Créer une mission » at the head of the Registry')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.ok(c.count(f'{R} [data-rowid="X-001A"] [data-do=edmodify]') == 1 and c.count(f'{R} [data-rowid="X-001A"] [data-do=eddup]') == 1,
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.ok(c.count(f'{R} [data-regsheet] [data-do=edmodify]') == 1 and c.count(f'{R} [data-regsheet] [data-do=eddup]') == 1,
          'no Modifier / Dupliquer', '« Modifier » and « Dupliquer » on the unfolded line')
+    c.tap(f'{R} [data-regsheet] [data-do=regsheetclose] >> visible=true')  # SOG-0487: the sheet closed, the head of the Registry reachable
+    c.until(f"!document.querySelector('{R} [data-regsheet]')", what='the sheet closed')
     # create
     c.tap(f'{R} [data-do="edcreate"]')
     c.until(f"!!document.querySelector('{E}')", what='the editor')
@@ -2424,8 +2483,8 @@ def n50(c):
     # modify X-001A: every other field kept
     ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('Mission complète')", timeout=10000, what='X-001A in the editor')
     c.eq(c.js(f"document.querySelector('{E}').dataset.step"), '', 'on a phone, a mission being modified opens with every group folded', what='the open group')
@@ -2450,8 +2509,8 @@ def n50(c):
     # duplicate X-001A: the next identifier, the content kept, the original untouched
     ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="eddup"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="eddup"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-003'", timeout=10000, what='the duplicate proposes X-003')
     c.tap(f'{E} [data-do="edsave"]')
@@ -2475,8 +2534,8 @@ def n51(c):
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', _ED_FULL.replace(
         '{ name: ALPHA1, service: Service d\'essai, type: H135, role: recherche }',
         '{ name: ALPHA1, service: Service d\'essai, type: H135, role: recherche, base: Base Test }')]])
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="teams"]')
@@ -2514,8 +2573,8 @@ _PLACES_JS = f"""[...document.querySelectorAll('{E} [data-edplaces] [data-place]
 def n52(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _ED_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     ed_places(c)
@@ -2567,8 +2626,8 @@ def n53(c):
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', _ED_FULL.replace(
         'payload: { description: Un treuil inventé., mass_kg: 120, passengers: 2 }',
         'payload: { description: Un treuil inventé., mass_kg: 120, passengers: 2, constraints: [Une contrainte inventée.] }')]])
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="story"]')
@@ -2616,8 +2675,8 @@ _ALIAS = 'mission: { id: X-001A, type: REG }\ntitle: Alias\nbase: &b { name: Bas
 
 def _ed_open(c, text):
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', text]])
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
 
 
 @case('N54', 'Missions › editor, audit 182: opening every delivered step and « Enregistrer » without touching anything leaves the file '
@@ -2681,8 +2740,8 @@ def n55(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     text = _ED_FULL + ('i18n:\n  en:\n    risks:\n' + ''.join(f'      - {{ hazard: Hazard {w} }}\n' for w in ('one', 'two', 'three', 'four', 'five')))
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', text]])
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="risks"]')
@@ -2734,8 +2793,8 @@ def n56(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     assert _SINGLE_RDV != _ED_FULL
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], [path, _SINGLE_RDV]])
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     ed_places(c)
@@ -2779,8 +2838,8 @@ def n56(c):
 def n57(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _ED_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
@@ -2934,8 +2993,8 @@ def n60(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml',
                                                        _ED_FULL + 'timeline:\n  - { at: H, text: Premier inventé }\n  - { at: H+1h, description: Second inventé }\n']])
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
@@ -3056,8 +3115,8 @@ def n64(c):
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     T = f'{E} [data-edpreview] [data-edthumb]'
@@ -3214,8 +3273,8 @@ def n70(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     reg_open(c, _REF_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     # the Chronologie first: its rows stay on screen with the identifiers of the file (the trap of a rename made afterwards)
@@ -3387,8 +3446,8 @@ def n71(c):
 def n72(c):
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _REF_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="story"]')
@@ -3436,8 +3495,8 @@ def n73(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _AT_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.eq(c.js(_AT_FLOW), [['start', norm(row(c, 'atStart', EDTX_FILE))], ['drawer', f"{row(c, 'atDrawer', EDTX_FILE).replace('{n}', '1')} · Changement"],
@@ -3496,8 +3555,8 @@ def n73(c):
     ed_leave(c)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.until(_REG_READ, timeout=20000, what='back to the registry')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='on a wide screen the Cadre is unfolded at the opening')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid' and
@@ -3594,8 +3653,8 @@ def n74(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _AT_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     ed_places(c)
@@ -4628,8 +4687,8 @@ def n77(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _OBJ_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     ed_places(c)
@@ -4744,8 +4803,8 @@ def n78(c):
     T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _OBJ_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     cards = c.js(_DW_CARDS)
@@ -4894,8 +4953,8 @@ def n79(c):
     T = lambda k, f=EDTX_FILE, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, f)))  # noqa: E731
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _OBJ_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
@@ -5078,8 +5137,8 @@ def n91(c):
     T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.ok(c.count(_TR) == 0 and norm(c.text(f'{E} [data-atflow] [data-trbtn]')) == T('trBtn'), c.text(f'{E} [data-atflow] [data-trbtn]'),
@@ -5250,8 +5309,8 @@ def n93(c):
     loaded = "performance.getEntriesByType('resource').filter(e => /maplibre-gl|outlines\\.js/.test(e.name)).length"
     c.eq([c.js(loaded), c.js('typeof window.maplibregl'), c.count('.maplibregl-canvas')], [0, 'undefined', 0],
          'the list and the registry open without loading MapLibre nor the outlines: the map library waits for the workshop', what='before the workshop')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     box = c.js(f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmapframe').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)] }})()")
@@ -5328,8 +5387,8 @@ def n93(c):
     c.page.route(re.compile(r'^https://tiles\.openfreemap\.org/styles/'), lambda route: route.abort('failed'))
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
-    c.tap(f'{R} [data-rowid="X-001A"] > summary') if c.count(f'{R} [data-rowid="X-001A"][open]') == 0 else None
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]') if c.count(f'{R} [data-regsheet][data-sheetid="X-001A"]') == 0 else None
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'plain'", timeout=20000, what='the plain background')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements on the plain background')
@@ -5428,8 +5487,8 @@ def n95(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
@@ -5607,8 +5666,8 @@ def n97(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
@@ -5773,8 +5832,8 @@ def n99(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
@@ -5912,8 +5971,8 @@ def n100(c):
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"JSON.stringify({_EDREFS}) === '[\"LFZZ\",\"NEPIX\",\"TSV\"]'", timeout=15000, what='the landmarks of the base on the map')
@@ -6058,8 +6117,8 @@ def n102(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
@@ -6259,8 +6318,8 @@ def n104(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements of the mission drawn')
@@ -6393,8 +6452,8 @@ def n105(c):
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"document.querySelector('{_SEEK} input')?.disabled === false", timeout=8000, what='the field given with the map')
@@ -6537,8 +6596,8 @@ def n106(c):
          'rewritten); a place added enters before the arrival when it ends the route, at the end otherwise', what='the anchors')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-atplaces]')", timeout=15000, what='the workshop')
     ed_places(c)
@@ -6677,8 +6736,8 @@ def n107(c):
          'without drawers nothing is hidden from the pilot: no place is said « cited by nothing », and every row is kept; no hostile document throws', what='no drawer')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-atplaces]')", timeout=15000, what='the workshop')
     ed_places(c)
@@ -6743,8 +6802,8 @@ def n108(c):
     c.eq(c.js(_OFFLINE_JS), False, 'the device is offline', what='onLine')
     asked.clear()
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'plain' && !!window.__edMap", timeout=8000, what='the map of the workshop on its plain background, offline')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements of the mission drawn')
@@ -6824,8 +6883,8 @@ def n109(c):
     def open_x(wide):
         """Opens X-001A in the workshop, its Cadre unfolded."""
         c.until(_REG_READ, timeout=20000, what='the registry')
-        c.tap(f'{R} [data-rowid="X-001A"] > summary')
-        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
         if not wide:
@@ -6979,8 +7038,8 @@ def n110(c):
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"{state} === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the mission drawn')
@@ -7032,8 +7091,8 @@ def n110(c):
          'saved: `mission_map` with « base: relief » and « airspaces: true » — two fields, no address of any host')
     ed_leave(c)
     c.until(_REG_READ, timeout=20000, what='back to the registry')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"{state} === 'relief'", timeout=15000, what='reopened in Relief')
     c.until(f"(({_MAP_TONES}) || []).length === 4", timeout=10000, what='the airspaces of the file')
@@ -7438,8 +7497,8 @@ def n114(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length === 5", timeout=10000, what='the places of the departure drawn')
@@ -7509,8 +7568,8 @@ def n114(c):
             ed_leave(c)
             c.page.set_viewport_size({'width': 390, 'height': c.height})
             c.settle()
-            c.tap(f'{R} [data-rowid="X-001A"] > summary') if not c.count(f'{R} [data-rowid="X-001A"][open]') else None
-            c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+            c.tap(f'{R} [data-rowid="X-001A"]') if not c.count(f'{R} [data-regsheet][data-sheetid="X-001A"]') else None
+            c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
             c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop on a phone')
             v = c.js(_VEIL_LEAKS)
             c.eq([v['veil'], v['parts'], v['found'], v['tiroir'], c.js(_VEIL_FOOT)], ['1', ['start'], [], False, [3, True, True]],
@@ -7548,8 +7607,8 @@ def n114(c):
     # a copy stays veiled and copies everything, drawers included
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
-    c.js(f"(() => {{ const d = document.querySelector('{R} [data-rowid=\"X-001A\"]'); if (d) d.open = true }})()")
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="eddup"]')
+    c.js(f"(() => {{ if (!document.querySelector('{R} [data-regsheet][data-sheetid=\"X-001A\"]')) document.querySelector('{R} [data-rowid=\"X-001A\"]')?.click() }})()")
+    c.tap(f'{R} [data-regsheet] [data-do="eddup"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]') && !!document.querySelector('{E} input[data-k=edid]')?.value", timeout=15000, what='the copy, veiled')
     dup = c.js(f"document.querySelector('{E} input[data-k=edid]').value")
     c.tap(f'{E} [data-do="edsave"]')
@@ -7560,8 +7619,8 @@ def n114(c):
     ed_leave(c)
     # a mission without drawer: the button is there too, and says so; a created mission has no button
     reg_open(c, _PLAIN_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='a mission without drawer, veiled')
     clear()
     c.tap(f'{E} [data-unveil]')
@@ -7649,8 +7708,8 @@ def n116(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _VEIL_EV_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events')
@@ -7705,8 +7764,8 @@ def n117(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _VEIL_PROBE_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
     ed_places(c)
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux unfolded')
@@ -7798,8 +7857,8 @@ def n118(c):
         """Opens a mission by « Modifier » (the map of the former workshop is forgotten) and waits for its map."""
         c.until(f"!!document.querySelector('{R} [data-rowid=\"{mid}\"]')", timeout=10000, what='the registry')
         c.js('window.__edMap = null')
-        c.tap(f'{R} [data-rowid="{mid}"] > summary')
-        c.tap(f'{R} [data-rowid="{mid}"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="{mid}"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what=f'the workshop of {mid}')
         if c.js('innerWidth') < 700:
             unfold()
@@ -7918,8 +7977,8 @@ def n119(c):
     def open_x():
         """Opens X-001A in the workshop (whole), its Cadre unfolded."""
         c.until(_REG_READ, timeout=20000, what='the registry')
-        c.tap(f'{R} [data-rowid="X-001A"] > summary')
-        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
         if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
@@ -8080,8 +8139,8 @@ def n120(c):
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
     # an EXISTING mission (aerodromes in lower case, known to the base): the code in the field, the name under it; saved untouched, nothing is written
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the workshop of X-001A')
     cadre()
     c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTST' && document.querySelector('{E} input[data-k=edarr]').value === 'XTSU' && "
@@ -8202,8 +8261,8 @@ def n121(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _DRAG_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
@@ -8312,8 +8371,8 @@ def n122(c):
 
     def open_row(rid):
         c.until(_REG_READ, timeout=20000, what='the registry')
-        c.tap(f'{R} [data-rowid="{rid}"] > summary')
-        c.tap(f'{R} [data-rowid="{rid}"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="{rid}"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('{rid}')", timeout=15000, what=f'{rid} in the workshop')
 
     # (A) a created mission: the summary and the description typed, then saved
@@ -8477,8 +8536,8 @@ def _pb_open(c, width=1280):
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     ed_places(c)
@@ -8696,8 +8755,8 @@ def n136(c):
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     ed_places(c)
@@ -8839,8 +8898,8 @@ def _flow_vertical(c, width):
 def n129(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)
     c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the four drawers of X-001A')
     _flow_vertical(c, 390)
@@ -8906,8 +8965,8 @@ def n130(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the places drawn')
@@ -8957,8 +9016,8 @@ def n131(c):
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     reg_open(c, _TRIAL_TEXTS)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     ed_reveal(c)
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the places drawn')
@@ -9059,8 +9118,8 @@ def n132(c):
     for width in (390, 1280):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         reg_open(c, _TRIAL_TEXTS)
-        c.tap(f'{R} [data-rowid="X-001A"] > summary')
-        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
         _text_rule(c, f'{width}, veiled')
         ed_reveal(c)
@@ -9120,8 +9179,8 @@ def n134(c):
     for width in (1280, 390):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         reg_open(c, _TRIAL_TEXTS)
-        c.tap(f'{R} [data-rowid="X-001A"] > summary')
-        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)
         c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the four drawers of X-001A')
         # the finger is on the row: the page is scrolled so that the row is near the top of the window, the sheet (above it in the column) out of sight
@@ -9243,8 +9302,8 @@ def n137(c):
 
     def modify():
         c.until(f"!!document.querySelector('{R} [data-rowid=\"X-001A\"]')", timeout=10000, what='the registry')
-        c.tap(f'{R} [data-rowid="X-001A"] > summary')
-        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)
         c.until(f"!!document.querySelector('{_PROF_CV}')", timeout=15000, what='the section « Profil » of the workshop')
 
@@ -9560,8 +9619,8 @@ def n141(c):
     ed_leave(c)
     # an ill-formed mission_model reads « aucun »; veiled, no line of the model
     reg_open(c, [_ED_TEXTS[0], [_ED_TEXTS[1][0], _ED_TEXTS[1][1] + chr(10) + 'mission_model: { id: "../x", placed: [ZONE-1] }' + chr(10)]])
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
     c.eq(c.count(f'{E} [data-atmodel]'), 0, 'veiled: no line of the model', what='the veiled workshop')
     ed_reveal(c)
@@ -9604,8 +9663,8 @@ def n142(c):
         c.page.goto(c.base + '/frame/manifest.webmanifest')
         c.js(_MD_CLEAR)  # before the seeding: it clears the registry and X_REG too
         reg_open(c, _TRIAL_TEXTS)
-        c.tap(f'{R} [data-rowid="X-001A"] > summary')
-        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
         c.eq(c.count(f'{E} [data-do=edmodelsave]'), 0, f'{width}: veiled, no « Enregistrer comme modèle »', what='veiled')
         # a forged touch in the veiled workshop writes nothing
@@ -9732,8 +9791,8 @@ def n143(c):
     def modify(clear):
         c.js(f"window.__CLEAR = {json.dumps(clear)}; window.__PTS = []")
         c.until(f"!!document.querySelector('{R} [data-rowid=\"X-001A\"]')", timeout=10000, what='the registry')
-        c.tap(f'{R} [data-rowid="X-001A"] > summary')
-        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
         ed_reveal(c)
         c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.includes('NM')", timeout=15000, what='the profile drawn with the relief')
 
@@ -9914,8 +9973,8 @@ def n150(c):
     retitled = 'Mission d’essai retouchée, en brouillon'
     reg_open(c, _TRIAL_TEXTS)
     phases = c.js("async (t) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); return globalThis.jsyaml.load(t).phases }", _TRIAL_MISSION)
-    c.tap(f'{R} [data-rowid="X-001A"] > summary')
-    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.tap(f'{R} [data-rowid="X-001A"]')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
     c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A') && document.querySelector('{E}').dataset.veil === '1'",
             timeout=15000, what='X-001A in the veiled workshop')
     if not c.count(f'{E} input[data-k=edtitle]'):

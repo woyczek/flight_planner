@@ -10,6 +10,7 @@ import {
   fmtMoment
 } from '../../frame/lib/time.js'; // SOG-0468 (4) : les durées du cadre ; SOG-0486 : l'instant d'un brouillon, à l'heure de l'appareil
 import * as DF from './draft.js'; // SOG-0486 : les brouillons de l'atelier gardés sur l'appareil (Création)
+import * as SL from '../../frame/lib/sortlist.js'; // SOG-0487 : le tableau triable du registre (le bloc commun de V3 Frame, SOG-0498)
 import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
@@ -43,7 +44,8 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'draft.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
+    'draft.js',
     'editor_drawers.js', 'catalog.js', 'catalog.yaml', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'assign.js', 'assign_view.js', // SOG-0443 : « Affecter… » — le calcul pur et l'écran
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
@@ -55,6 +57,7 @@ export const meta = {
     '../../frame/lib/suggest_list.js', // SOG-0465 (adnames.js : importé par ad_field.js) : le champ de terrain de l'atelier (Départ, Arrivée), celui de Carburant
     '../../frame/lib/crossing.js', '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par crossing.js
     '../../frame/lib/geo.js', // SOG-0468 (2) : gcNm, que crossing.js importera (V3 Frame ; cas I26)
+    '../../frame/lib/sortlist.js', // SOG-0487 : le tableau triable du registre (il importe untrusted.js, déjà là)
     '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
     '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
     // SOG-0464 : le profil vertical de la Carte sous la carte de l'atelier (modules/maps/lib/profile_embed.js, de BUGS SOG) et les scripts
@@ -98,6 +101,9 @@ export const meta = {
   }, {
     prefix: 'cache/missions/', // sur l'appareil seul : les ouvertures des autres déjà vues
     policy: 'cache'
+  }, {
+    prefix: 'cache/sort/', // SOG-0487 : le tri du registre, gardé sur l'appareil (sortlist.js : cache/sort/registry.json)
+    policy: 'cache'
   }]
 };
 
@@ -128,6 +134,38 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-summary>p{margin:0}
 [data-module="missions"] .ms-lines li{margin:.15em 0}
 [data-module="missions"] .ms-rrow{display:block;border-top:1px solid var(--sog-border)} /* une ligne du registre : une mission, repliée (le modèle de la V2, SOG-0286) */
+/* SOG-0487 : le registre en tableau triable (maquette tri_registre) : la fiche à droite sur un écran large, en plein écran sur un étroit */
+[data-module="missions"] .ms-regwrap{display:block}
+[data-module="missions"] .ms-regwrap[data-sheet][data-wide]{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:16px;align-items:start}
+[data-module="missions"] .ms-regtable{width:100%}
+[data-module="missions"] .ms-regtable td{vertical-align:top}
+[data-module="missions"] .ms-regtable tbody tr{cursor:pointer}
+[data-module="missions"] .ms-regtable tbody tr:hover{background:color-mix(in srgb,var(--sog-accent) 6%,transparent)}
+[data-module="missions"] .ms-regtable tbody tr[aria-selected="true"]{background:color-mix(in srgb,var(--sog-accent) 12%,transparent)}
+[data-module="missions"] .ms-regtable td.ms-ract{position:relative;width:52px;text-align:right;padding-top:2px;padding-bottom:2px}
+[data-module="missions"] .ms-regtable td.ms-rnum{white-space:nowrap}
+[data-module="missions"] .ms-reglist{list-style:none;margin:0;padding:0}
+[data-module="missions"] .ms-reglist>li{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;align-items:start;padding:8px 10px;margin:0 0 8px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);cursor:pointer;min-height:var(--sog-touch,44px)}
+[data-module="missions"] .ms-reglist>li>.ms-rl2{grid-column:1;font-size:var(--sog-size-s)}
+[data-module="missions"] .ms-reglist>li>.ms-rmore{grid-column:2;grid-row:1 / span 2}
+[data-module="missions"] .ms-regid{border:0;background:none;padding:0;margin:0;min-height:0;font:inherit;font-weight:700;color:inherit;cursor:pointer;text-align:left}
+[data-module="missions"] .ms-regsheet{margin:0}
+[data-module="missions"] .ms-regsheet>.ms-shead{display:flex;align-items:flex-start;gap:8px}
+[data-module="missions"] .ms-regsheet>.ms-shead>h2{flex:1 1 auto;margin:0;font-size:var(--sog-size-l,1.15em)}
+[data-module="missions"] .ms-regsheet .ms-sclose{min-width:44px;min-height:44px;border:0;background:none;font-size:1.2em}
+[data-module="missions"] .ms-regsheet .ms-sback{display:none}
+[data-module="missions"] .ms-regwrap:not([data-wide]) .ms-regsheet .ms-sback{display:inline-flex}
+[data-module="missions"] .ms-regwrap:not([data-wide])>.ms-regsheet{position:fixed;inset:0;z-index:15;overflow:auto;margin:0;border-radius:0;padding:16px;box-sizing:border-box;background:var(--sog-card-bg,var(--sog-surface,#fff))}
+[data-module="missions"] .ms-regwrap:not([data-wide]) .ms-regsheet>.ms-shead{flex-wrap:wrap}
+[data-module="missions"] .ms-regwrap:not([data-wide]) .ms-regsheet .ms-sback{flex:0 0 100%;justify-content:flex-start;padding-left:0}
+[data-module="missions"] :is(.ms-regtable,.ms-reglist) .ms-rmore>summary{border-color:transparent} /* le « ⋯ » d'une ligne, sans cadre (maquette) */
+[data-module="missions"] .ms-regwrap:not([data-wide]) .ms-regsheet .ms-sclose{display:none}
+[data-module="missions"] .ms-schips{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:.4em 0}
+[data-module="missions"] .ms-schips>span[data-chip]{border:1px solid var(--sog-border);border-radius:999px;padding:1px 8px;font-size:var(--sog-size-s)}
+[data-module="missions"] .ms-sfacts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;margin:.5em 0}
+[data-module="missions"] .ms-sfacts>dt{color:var(--sog-muted)}
+[data-module="missions"] .ms-sfacts>dd{margin:0}
+[data-module="missions"] .ms-regsheet .ms-rgest{position:relative;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-top:.5em}
 [data-module="missions"] .ms-rrow>summary{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:8px;padding:.3em .75em;min-height:44px;box-sizing:border-box} /* le chevron du cadre à gauche, les deux lignes à droite */
 [data-module="missions"] .ms-rrow>summary::before{grid-row:span 2}
 [data-module="missions"] .ms-rrow>summary::-webkit-details-marker{display:none}
@@ -821,6 +859,14 @@ const TX = {
     'Der Entwurf konnte nicht verworfen werden.',
     'No se pudo descartar el borrador.'
   ],
+  // SOG-0487 : la fiche d'une ligne du registre
+  regSheetBack: ['← Registre', '← Registry', '← Register', '← Registro'],
+  regSheetClose: ['Fermer la fiche', 'Close the sheet', 'Blatt schließen', 'Cerrar la ficha'],
+  regSheetFile: ['fichier {p}', 'file {p}', 'Datei {p}', 'archivo {p}'],
+  regSheetFamily: ['Famille', 'Family', 'Familie', 'Familia'],
+  regSheetDur: ['Durée', 'Duration', 'Dauer', 'Duración'],
+  regSheetAircraft: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
+  regSheetTheatre: ['Théâtre', 'Theatre', 'Einsatzgebiet', 'Teatro'],
   regRemoveAsk: ['Retirer {id} du registre ? Le fichier de la mission reste dans le dépôt.',
     'Remove {id} from the registry? The mission file stays in the repository.',
     '{id} aus dem Register entfernen? Die Missionsdatei bleibt im Depot.',
@@ -946,7 +992,21 @@ export async function mount(el, ctx) {
   // le retour du navigateur (même adresse : popstate sans hashchange, le module n'est pas remonté) : le détail revient à la première
   // page, la première page à la liste
   s.onPop = () => {
-    if (S !== s || !s.open) return;
+    if (S !== s) return;
+    // SOG-0487 : l'entrée de la fiche, devenue sans objet (on a quitté le registre par un geste, ou cherché) : sautée, le Retour fait ce
+    // qu'il aurait fait sans elle
+    if (!s.open && s.reg?.staleSheet) {
+      s.reg.staleSheet = false;
+      return history.back();
+    }
+    // SOG-0487 : la fiche d'une ligne du registre se ferme au Retour du navigateur (son entrée « regsheet »)
+    if (!s.open && !s.ed && s.reg?.sheetPushed) {
+      s.reg.sheetPushed = false;
+      s.reg.sheet = null;
+      s.reg.edit = null;
+      return draw(s);
+    }
+    if (!s.open) return;
     if (s.open.detail) s.open.detail = false;
     else s.open = null;
     draw(s);
@@ -1044,6 +1104,7 @@ async function unlisted(s, reg) {
 export function unmount() {
   if (S?.onAirline) window.removeEventListener('frame-data-airline', S.onAirline);
   if (S?.onPop) window.removeEventListener('popstate', S.onPop);
+  S?.reg?.unwire?.(); // SOG-0487 : les gestes du tri du registre et le suivi de sa largeur
   for (const u of S?.urls || []) URL.revokeObjectURL(u);
   DW.stop(); // SOG-0441 : les minuteurs et l'écoute de la section « Tiroirs »
   edAfter(null); // SOG-0444, lot P2 : la carte de l'atelier est retirée avec son contexte WebGL
@@ -1154,7 +1215,7 @@ function draw(s) {
   // SOG-0455 : revenu du Brief au registre — la ligne d'où l'on venait, ramenée sous les yeux
   if (!s.open && !s.ed && s.reg?.scrollBack) {
     s.reg.scrollBack = false;
-    s.el.querySelector(`.ms-rrow[data-rid="${s.reg.back}"]`)?.scrollIntoView?.({
+    s.el.querySelector(`[data-reglist] [data-rid="${s.reg.back}"]`)?.scrollIntoView?.({
       block: 'center'
     });
   }
@@ -1586,6 +1647,12 @@ function onInput(s, e) {
         if (row) row.outerHTML = regFamHtml(s);
       }
       s.reg.all = false;
+      // SOG-0487 : chercher ou filtrer agit sur les lignes : la fiche ouverte se ferme (le champ garde le focus : rien d'autre n'est redessiné)
+      if (s.reg.sheet) {
+        regSheetLeave(s);
+        s.el.querySelector('[data-regsheet]')?.remove();
+        s.el.querySelector('.ms-regwrap')?.removeAttribute('data-sheet');
+      }
       const box = s.el.querySelector('[data-regrows]');
       if (box) box.innerHTML = regListHtml(s);
     }
@@ -1638,11 +1705,17 @@ function onInput(s, e) {
 
 /** Gestes : une ligne (Choisir), « Tirer au sort » / « Tirer encore », « N autres », « Retour ». */
 function onClick(s, e) {
+  // SOG-0487 : un « ⋯ » ouvert se ferme dès qu'on touche ailleurs
+  for (const d of s.el.querySelectorAll('details.ms-rmore[open]'))
+    if (!d.contains(e.target)) d.open = false;
   const row = !s.open && e.target.closest('[data-id]');
   if (row) return openMission(s, s.rows.find(r => r.id === row.dataset.id));
   const b = e.target.closest('[data-do]');
   if (!b) return;
-  if (b.dataset.do.startsWith('ed') && (s.ed || s.reg)) return edClick(s, b);
+  if (b.dataset.do.startsWith('ed') && (s.ed || s.reg)) {
+    if (!s.ed && s.reg) regSheetLeave(s); // SOG-0487 : vers l'atelier, la fiche du registre se ferme
+    return edClick(s, b);
+  }
   switch (b.dataset.do) {
     case 'meetcopy': // SOG-0114 (A) : un canal à copier (serveur, fréquence, code) ; le pilote ne le tape jamais
       return copyText(String(b.dataset.v || '').slice(0, 80), {
@@ -1947,6 +2020,125 @@ const cut = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 
 // ---------------------------------------------------------------- « Registre des missions » (SOG-0021, CONCEPTION § 2 bis)
 const REG_READ_MAX = 500; // fichiers lus à l'ouverture de l'écran, au plus (un dépôt hors norme ne bloque pas l'écran)
+/** SOG-0487 : les colonnes du registre (sortlist.js : la valeur de tri de chaque colonne, lue sur l'élément de regRows). « État » trie
+ *  dans l'ordre d'avant (hors registre, à corriger, lues, non lues) ; un vide (série, durée) toujours en dernier. */
+const REG_COLS = [{
+    key: 'state',
+    label: ['État', 'State', 'Status', 'Estado'],
+    type: 'number',
+    first: 'asc',
+    get: x => x.rank
+  }, {
+    key: 'id',
+    label: ['Identifiant', 'Identifier', 'Kennung', 'Identificador'],
+    type: 'text',
+    first: 'desc',
+    get: x => x.id
+  }, {
+    key: 'title',
+    label: ['Titre', 'Title', 'Titel', 'Título'],
+    type: 'text',
+    get: x => x.title
+  }, {
+    key: 'family',
+    label: ['Famille', 'Family', 'Familie', 'Familia'],
+    type: 'text',
+    get: x => x.fam
+  }, {
+    key: 'series',
+    label: ['Série', 'Series', 'Serie', 'Serie'],
+    type: 'number',
+    first: 'asc',
+    get: x => x.series
+  }, {
+    key: 'route',
+    label: ['Origine → destination', 'Origin → destination', 'Start → Ziel', 'Origen → destino'],
+    type: 'text',
+    get: x => x.route
+  }, {
+    key: 'dur',
+    label: ['Durée', 'Duration', 'Dauer', 'Duración'],
+    type: 'duration',
+    get: x => x.min
+  }],
+  // la décision de l'utilisateur (Q-0116) : l'identifiant, le plus récent en haut
+  REG_SORT = SL.defaultState(REG_COLS, {
+    key: 'id',
+    dir: 'desc'
+  }),
+  REG_WIDE = 700; // au-delà (largeur du module, comme la requête de conteneur de sortlist.js), le tableau ; en deçà, la liste
+
+/** SOG-0487 : la largeur du module (sa boîte de contenu : celle de la requête de conteneur de sortlist.js) passe-t-elle REG_WIDE ? */
+function regWide(s) {
+  const el = s.el,
+    cs = el && getComputedStyle(el),
+    w = el ? el.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) : 0;
+  return w > REG_WIDE;
+}
+/** SOG-0487 : le tri du registre — relu de l'appareil (sortlist.loadState, entrée non fiable, lue par stateOf), ses gestes branchés une
+ *  fois sur le module (sortlist.bind, délégués) ; la largeur suivie (tableau au-delà de REG_WIDE, liste en deçà). Tout s'arrête quand
+ *  l'écran Registre se ferme ou que le module est démonté. */
+function regSortWire(s) {
+  const r = s.reg;
+  SL.loadState(s.ctx, 'registry', REG_COLS, REG_SORT).then(st => {
+    if (S !== s || s.reg !== r || !st) return;
+    r.sort = st;
+    regRedraw(s);
+  });
+  const unbind = SL.bind(s.el, {
+    cols: REG_COLS,
+    dflt: REG_SORT,
+    getState: () => s.reg?.sort || REG_SORT,
+    setState: st => {
+      if (!s.reg) return;
+      s.reg.sort = st;
+      s.reg.all = false; // « N autres » s'applique APRÈS le tri : un autre ordre repart des premières lignes
+      SL.saveState(s.ctx, 'registry', st);
+    },
+    onChange: () => regRedraw(s)
+  });
+  const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => {
+    if (S !== s || s.reg !== r) return ro.disconnect();
+    const w = regWide(s);
+    if (w !== r.wide) {
+      r.wide = w;
+      if (!s.open && !s.ed) draw(s);
+    }
+  }) : null;
+  ro?.observe(s.el);
+  r.unwire = () => {
+    unbind?.();
+    ro?.disconnect();
+  };
+}
+/** SOG-0487 : au téléphone, la fiche ouverte pose UNE entrée d'historique (le Retour du navigateur la ferme) ; sur un écran large, la
+ *  fiche est un panneau à côté du tableau, fermé par « × », sans entrée. */
+function regSheetPush(s) {
+  const r = s.reg;
+  if (!r || r.wide || r.sheetPushed) return;
+  history.pushState({
+    missions: 'regsheet'
+  }, '', location.href);
+  r.sheetPushed = true;
+}
+/** SOG-0487 : la fiche se ferme sans le Retour du navigateur (un geste quitte le registre, une recherche, un filtre) : son entrée
+ *  d'historique, s'il y en a une, devient sans objet et sera sautée au prochain Retour (s.onPop). */
+function regSheetLeave(s) {
+  const r = s.reg;
+  if (!r) return;
+  if (r.sheetPushed) r.staleSheet = true;
+  r.sheetPushed = false;
+  r.sheet = null;
+  r.edit = null;
+}
+/** SOG-0487 : redessine les lignes seules (le tri, « Remettre l'ordre ») en gardant le défilement et le champ de recherche. */
+function regRedraw(s) {
+  const box = s.reg && !s.open && !s.ed ? s.el.querySelector('[data-regrows]') : null;
+  if (!box) return;
+  const y = window.scrollY;
+  box.innerHTML = regListHtml(s);
+  window.scrollTo(0, y);
+}
 
 /** Ouvre l'écran : le registre et les fichiers du dépôt lus, l'état de chaque ligne dit au fur et à mesure. */
 async function regOpen(s) {
@@ -1963,8 +2155,12 @@ async function regOpen(s) {
     checking: true,
     plan: null, // le plan montré avant d'écrire
     edit: null, // la place de la ligne en correction
-    drafts: [] // SOG-0486 : les brouillons de l'atelier gardés sur l'appareil (draft.js), en tête
+    drafts: [], // SOG-0486 : les brouillons de l'atelier gardés sur l'appareil (draft.js), en tête
+    sort: REG_SORT, // SOG-0487 : le tri, relu de l'appareil ci-dessous
+    sheet: null, // SOG-0487 : la fiche ouverte — { rid } (une ligne du registre) ou { found } (une mission hors registre)
+    wide: regWide(s)
   };
+  regSortWire(s);
   draw(s);
   await regLoad(s);
 }
@@ -2069,71 +2265,46 @@ function regRows(s) {
     hit = (id, title, fam, sub, row) => (!q || (row ? qWhere(s, row, r.q) !== null : SE.fold(`${id} ${title}`).includes(SE.fold(r.q)))) && (!r
       .fam ||
       fam === r.fam) && (!r.sub || String(sub || '') === r.sub),
-    rows = [
-      ...r.found.filter(f => hit(f.entry.id, f.entry.title, f.entry.family, f.entry.subtype)).sort((a, b) => b.entry.id.localeCompare(a
-        .entry.id)).map(f =>
-        ({
-          kind: 'found',
-          f
-        })),
-      ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family, e.row.subtype, e.row)).map(e => ({
-        kind: 'line',
-        e,
-        rank: r.status.get(e.idx) === 'notread' ? 2 : r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 1 : 0 // les non lues en dernier
-      })).sort((a, b) => a.rank - b.rank || serOf(a.e) - serOf(b.e) || a.e.row.id.localeCompare(b.e.row.id))
-    ];
+    lang = s.ctx.lang?.() || 'fr',
+    kit = choiceKit(s),
+    has = v => v !== undefined && v !== null && v !== '',
+    route = (a, b) => a || b ? `${a || '?'} → ${b || '?'}` : '',
+    // SOG-0487 : chaque élément porte les valeurs de ses colonnes (REG_COLS) ; l'ordre est celui du tri gardé (sortlist.sortRows)
+    items = [
+      ...r.found.filter(f => hit(f.entry.id, f.entry.title, f.entry.family, f.entry.subtype)).map(f => ({
+        kind: 'found',
+        f,
+        rank: 0, // hors registre : en tête du tri par état, comme avant
+        id: f.entry.id,
+        title: f.entry.title,
+        fam: familyParts(f.entry.family, lang).short,
+        series: has(f.entry.series) ? f.entry.series : null,
+        route: '',
+        min: null
+      })),
+      ...r.lines.filter(e => hit(e.row.id, e.row.title, e.row.family, e.row.subtype, e.row)).map(e => {
+        const m = r.mis?.get(e.idx),
+          d = m ? CH.durationOf(m, kit.classify) : null;
+        return {
+          kind: 'line',
+          e,
+          // à corriger (et en lecture), lues, non lues en dernier : l'ordre d'avant, devenu le tri de la colonne « État »
+          rank: r.status.get(e.idx) === 'notread' ? 3 : r.status.get(e.idx) === 'ok' && !bad.has(e.idx) ? 2 : 1,
+          id: e.row.id,
+          title: e.row.title,
+          fam: familyParts(e.row.family, lang).short,
+          series: Number.isFinite(serOf(e)) && serOf(e) < 1e9 ? serOf(e) : null,
+          route: route(e.row.originIcao || cut(e.row.origin, 12), e.row.destinationIcao || cut(e.row.destination, 12)),
+          min: d ? d.min : null,
+          dur: d
+        };
+      })
+    ],
+    rows = SL.sortRows(items, REG_COLS, r.sort || REG_SORT, lang);
   return {
     rows,
     plan
   };
-}
-
-/** Le signe d'état d'une ligne repliée (le mot entier en infobulle, et au dépli) : ✓ fichier là, … lecture, + pas dans le registre,
- *  ! tout le reste (manquant, illisible, chemin refusé, double, ancien identifiant). */
-const SIGN = {
-  ok: '✓',
-  checking: '…',
-  notread: '?',
-  notyet: '+'
-};
-
-/** La ligne repliée d'une mission (le modèle du tableau de la V2, SOG-0286) : le signe d'état, l'identifiant, le titre ; puis famille ·
- *  série et origine → destination. Deux lignes de texte au plus au téléphone, une seule sur un écran large. */
-function regSumHtml(s, k, word, id, title, fam, series, from, to, warn, where = '', choice = '') {
-  const kind = warn ? 'warn' : k === 'ok' ? 'ok' : k === 'checking' || k === 'notread' ? 'info' : 'warn',
-    has = v => v !== undefined && v !== null && v !== '',
-    second = [
-      [familyParts(fam, s.ctx.lang?.() || 'fr').short, has(series) ? cut(series, 8) : ''].filter(Boolean).join(' · '),
-      from || to ? `${from || '?'} → ${to || '?'}` : ''
-    ].filter(Boolean).join(' · ');
-  // l'identifiant raccourci à l'AFFICHAGE seul (12 signes, entier en infobulle) : l'identité garde ses 40 signes (audit 176)
-  const shown = id.length > 12 ? `${id.slice(0, 11)}…` : id;
-  return `<summary${choice ? ' data-ch' : ''}><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b title="${esc(id)}">${esc(shown)}</b> ${esc(title)}</span>${choice}<span class="f-muted">${esc(second)}${where}</span></summary>`;
-}
-
-/** Une ligne du registre : repliée, le signe d'état, l'identifiant, le titre, famille · série, origine → destination ; au dépli, l'état
- *  du fichier en toutes lettres, famille · série · numéro · opération, le chemin, « Corriger » / « Retirer ». */
-function regLineHtml(s, e, plan) {
-  const r = s.reg,
-    row = e.row,
-    [k, st] = regState(s, e.idx),
-    lang = s.ctx.lang?.() || 'fr',
-    dup = plan.dup.includes(e.idx),
-    former = plan.former.includes(e.idx),
-    badges = [`<span class="f-badge" data-kind="${k === 'ok' ? 'ok' : k === 'checking' || k === 'notread' ? 'info' : 'warn'}">${esc(st)}</span>`,
-      dup ? `<span class="f-badge" data-kind="warn" data-rdup>${esc(s.tt(TX.regDup))}</span>` : '',
-      former ? `<span class="f-badge" data-kind="info" data-rformer>${esc(s.tt(TX.regFormer, { f: cut(e.raw.id, 40) }))}</span>` : ''
-    ].join(' '),
-    has = v => v !== undefined && v !== null && v !== '',
-    detail = [familyText(row.family, lang), has(e.raw.series) ? `${s.tt(TX.regSeries)} ${cut(e.raw.series, 8)}` : '',
-      has(e.raw.number) ? `${s.tt(TX.regNumber)} ${cut(e.raw.number, 8)}` : '', row.operation
-    ].filter(Boolean).join(' · '),
-    path = RG.pathOf(row),
-    word = [st, dup ? s.tt(TX.regDup) : '', former ? s.tt(TX.regFormer, {
-      f: cut(e.raw.id, 40)
-    }) : ''].filter(Boolean).join(' · ');
-  return `<details class="ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"${r.edit === e.idx || r.back === e.idx ? ' open' : ''}>${regSumHtml(s, k, word, row.id, row.title, row.family, e.raw.series, row.originIcao || cut(row.origin, 12), row.destinationIcao || cut(row.destination, 12), dup || former, whereHtml(s, row, r.q), r.mis?.has(e.idx) ? choiceHtml(s, r.mis.get(e.idx)) : '')}
-    <div class="ms-rbody"><span>${badges}</span><span class="f-muted">${esc(detail)}</span>${path ? `<span class="f-muted" data-rpath>${esc(path)}</span>` : ''}${r.edit === e.idx ? regEditHtml(s, e) : `<span class="ms-rgest"><button type="button" class="primary" data-do="regbrief" data-rid="${e.idx}">${esc(s.tt(TX.brief))}</button><button type="button" data-do="edmodify" data-rid="${e.idx}">${esc(s.tt(TX.atelier))}</button><button type="button" data-do="eddup" data-rid="${e.idx}">${esc(s.tt(TX.edDup))}</button><details class="ms-rmore"><summary title="${esc(s.tt(TX.regMoreGest))}" aria-label="${esc(s.tt(TX.regMoreGest))}">⋯</summary><div><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></div></details></span>`}</div></details>`;
 }
 
 /** Le formulaire de correction d'une ligne : titre, série, numéro, opération. */
@@ -2143,22 +2314,120 @@ function regEditHtml(s, e) {
     <div class="f-row"><button type="button" class="primary" data-do="regsave" data-rid="${e.idx}">${esc(s.tt(TX.regSave))}</button><button type="button" data-do="regeditcancel">${esc(s.tt(TX.cancel))}</button></div></div>`;
 }
 
-/** Les lignes (une par mission, soixante puis « N autres », SOG-0286) : redessinées seules à la frappe et au filtre de famille. */
+/** SOG-0487 : l'état d'un élément du registre pour l'œil : [clé (data-rstate), mot, sorte de pastille, marques (double, ancien identifiant)]. */
+function regItemState(s, x, plan) {
+  if (x.kind === 'found') return ['notyet', s.tt(TX.regNotYet), 'warn', ''];
+  const [k, st] = regState(s, x.e.idx),
+    dup = plan.dup.includes(x.e.idx),
+    former = plan.former.includes(x.e.idx),
+    marks = (dup ? ` <span class="f-badge" data-kind="warn" data-rdup>${esc(s.tt(TX.regDup))}</span>` : '') + (former ?
+      ` <span class="f-badge" data-kind="info" data-rformer>${esc(s.tt(TX.regFormer, { f: cut(x.e.raw.id, 40) }))}</span>` : '');
+  return [k, st, dup || former ? 'warn' : k === 'ok' ? 'ok' : k === 'checking' || k === 'notread' ? 'info' : 'warn', marks];
+}
+/** SOG-0487 : la durée d'une ligne (« ≈ » quand elle est estimée, son explication en infobulle) ; '' sans durée. */
+function regDurHtml(s, d) {
+  return d ? `<span data-dur="${d.est || 'written'}" title="${esc(s.tt(d.est === 'class' ? TX.durClass : d.est === 'file' ? TX.durFile : TX.durWritten))}">${d.est ? '≈ ' : ''}${esc(CH.hm(d.min))}</span>` : '';
+}
+/** SOG-0487 : « ⋯ » d'une ligne — les gestes rapides sans quitter le tableau : Brief, Atelier, Dupliquer, Corriger, Retirer (le menu des
+ *  gestes de l'ancienne ligne dépliée). Une mission hors registre n'en a pas. */
+function regRowMenuHtml(s, x) {
+  if (x.kind !== 'line') return '';
+  const i = x.e.idx,
+    g = (k, label, cls = '') => `<button type="button"${cls} role="menuitem" data-do="${k}" data-rid="${i}">${esc(s.tt(label))}</button>`;
+  return `<details class="ms-rmore" data-rowmenu><summary data-do="regmenu" aria-haspopup="menu" title="${esc(s.tt(TX.regMoreGest))}" aria-label="${esc(s.tt(TX.regMoreGest))}">⋯</summary><div role="menu" data-do="regmenu">${g('regbrief', TX.brief)}${g('edmodify', TX.atelier)}${g('eddup', TX.edDup)}${g('regedit', TX.regEdit)}${g('regremove', TX.regRemove)}</div></details>`;
+}
+/** Les lignes (une par mission, soixante puis « N autres », SOG-0286), dans l'ordre du tri gardé (SOG-0487) : un tableau sur un module
+ *  large (une colonne par bouton de tri), la liste et « Trier » sur un étroit ; toucher une ligne ouvre sa fiche. Redessinées seules à la
+ *  frappe, au filtre de famille et au tri. */
 function regListHtml(s) {
   const r = s.reg,
+    lang = s.ctx.lang?.() || 'fr',
     {
       rows,
       plan
     } = regRows(s),
     shown = r.all ? rows : rows.slice(0, REG_ROWS),
-    found = f => `<details class="ms-rrow" data-rid="new" data-rowid="${esc(f.entry.id)}">${regSumHtml(s, 'notyet', s.tt(TX.regNotYet), f.entry.id, f.entry.title, f.entry.family, f.entry.series, '', '', false)}
-      <div class="ms-rbody"><span><span class="f-badge" data-kind="warn">${esc(s.tt(TX.regNotYet))}</span></span><span class="f-muted">${esc([familyText(f.entry.family, s.ctx.lang?.() || 'fr'), f.entry.operation?.name].filter(Boolean).join(' · '))}</span><span class="f-muted" data-rpath>${esc(f.path)}</span></div></details>`,
-    item = x => x.kind === 'found' ? found(x.f) : regLineHtml(s, x.e, plan),
-    lines = rows.length ? shown.map(item).join('') : '';
+    sel = r.sheet ? r.sheet.found ?? r.sheet.rid : null,
+    keyOf = x => x.kind === 'found' ? x.f.entry.id : x.e.idx,
+    // le panneau de tri du téléphone reste ouvert d'un dessin à l'autre (le registre se redessine pendant la lecture des fichiers)
+    open = !!s.el?.querySelector('[data-regrows] [data-sort-panel]:not([hidden])'),
+    bar = SL.barHtml(REG_COLS, r.sort || REG_SORT, {
+      lang,
+      id: 'registry',
+      dflt: REG_SORT,
+      open
+    }),
+    rid = x => x.kind === 'found' ? `data-rid="new" data-found="${esc(x.f.entry.id)}"` : `data-rid="${x.e.idx}"`,
+    wide = x => {
+      const [k, st, kind, marks] = regItemState(s, x, plan),
+        on = sel !== null && String(sel) === String(keyOf(x));
+      return `<tr data-do="regsheet" ${rid(x)} data-rowid="${esc(x.id)}"${on ? ' aria-selected="true"' : ''}><td><span class="f-badge" data-kind="${kind}" data-rstate="${k}">${esc(st)}</span>${marks}</td><td><button type="button" class="ms-regid" data-do="regsheet" ${rid(x)} title="${esc(x.id)}">${esc(x.id.length > 12 ? `${x.id.slice(0, 11)}…` : x.id)}</button></td><td>${esc(x.title)}${x.kind === 'line' ? whereHtml(s, x.e.row, r.q) : ''}</td><td>${esc(x.fam || '—')}</td><td class="ms-rnum">${esc(x.series === null ? '—' : cut(x.series, 8))}</td><td class="ms-rnum">${esc(x.route || '—')}</td><td class="ms-rnum">${regDurHtml(s, x.dur) || '—'}</td><td class="ms-ract">${regRowMenuHtml(s, x)}</td></tr>`;
+    },
+    narrow = x => {
+      const [k, st, kind, marks] = regItemState(s, x, plan),
+        on = sel !== null && String(sel) === String(keyOf(x)),
+        two = [x.fam, x.series === null ? '' : `${s.tt(TX.regSeries).toLowerCase()} ${cut(x.series, 8)}`, x.route].filter(Boolean);
+      return `<li data-do="regsheet" ${rid(x)} data-rowid="${esc(x.id)}"${on ? ' aria-selected="true"' : ''}><span><b title="${esc(x.id)}">${esc(x.id.length > 12 ? `${x.id.slice(0, 11)}…` : x.id)}</b> ${esc(x.title)}${x.kind === 'line' ? whereHtml(s, x.e.row, r.q) : ''}</span>${regRowMenuHtml(s, x)}<span class="ms-rl2"><span class="f-badge" data-kind="${kind}" data-rstate="${k}">${esc(st)}</span>${marks}${two.length ? ` · ${esc(two.join(' · '))}` : ''}${x.dur ? ` · ${regDurHtml(s, x.dur)}` : ''}</span></li>`;
+    },
+    lines = rows.length ? r.wide ? `<div class="f-scroll"><table class="f-table ms-regtable" data-reglist><thead>${SL.headHtml(REG_COLS, r.sort || REG_SORT, { lang, actions: true })}</thead><tbody>${shown.map(wide).join('')}</tbody></table></div>` :
+    `<ul class="ms-reglist" data-reglist>${shown.map(narrow).join('')}</ul>` : '';
   // SOG-0455 : « ≈ » dit une fois sous la liste, dès qu'une ligne montre une durée estimée
-  return `${unreadHtml(s, r.q)}<div class="f-list" data-reglist>${rows.length ? lines : `<p class="f-muted">${esc(s.tt(TX.regNone))}</p>`}</div>
+  return `${unreadHtml(s, r.q)}${rows.length ? bar : ''}${rows.length ? lines : `<div data-reglist><p class="f-muted">${esc(s.tt(TX.regNone))}</p></div>`}
     ${/data-dur="(class|file)"/.test(lines) ? `<p class="f-muted" data-choicelegend>${esc(s.tt(TX.choiceLegend))}</p>` : ''}
     ${rows.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="regmore">${esc(s.tt(TX.more, { n: rows.length - shown.length }))}</button>` : ''}`;
+}
+
+/** SOG-0487 : la fiche d'une ligne (maquette tri_registre : à droite sur un module large, en plein écran sur un étroit) — l'identifiant et
+ *  le titre, l'état en mots et le fichier, le trajet en étiquettes, famille, série, numéro, opération, durée, aéronefs, théâtre ; les
+ *  gestes de l'ancienne ligne dépliée (Brief, Atelier, Dupliquer, « ⋯ » : Corriger, Retirer) ; « Corriger » y ouvre son formulaire.
+ *  Une mission hors registre : son fichier et sa famille, sans geste (comme avant). '' sans fiche, ou si sa ligne n'existe plus. */
+function regSheetHtml(s) {
+  const r = s.reg,
+    sh = r.sheet;
+  if (!sh) return '';
+  const lang = s.ctx.lang?.() || 'fr',
+    plan = RG.planOf(r.doc, r.status, r.found),
+    has = v => v !== undefined && v !== null && v !== '',
+    fact = (k, v, attr = '') => v ? `<dt>${esc(s.tt(k))}</dt><dd${attr}>${v}</dd>` : '',
+    head = (id, title) => `<div class="ms-shead"><button type="button" class="f-linkbtn ms-sback" data-do="regsheetclose">${esc(s.tt(TX.regSheetBack))}</button><h2 title="${esc(id)}">${esc(cut(`${id} · ${title}`, 160))}</h2><button type="button" class="ms-sclose" data-do="regsheetclose" title="${esc(s.tt(TX.regSheetClose))}" aria-label="${esc(s.tt(TX.regSheetClose))}">×</button></div>`;
+  if (sh.found !== undefined) {
+    const f = r.found.find(x => x.entry.id === sh.found);
+    if (!f) return '';
+    return `<aside class="f-card ms-regsheet" data-regsheet data-sheetid="${esc(f.entry.id)}">${head(f.entry.id, f.entry.title)}
+      <p><span class="f-badge" data-kind="warn" data-rstate="notyet">${esc(s.tt(TX.regNotYet))}</span> <span class="f-muted" data-rpath>${esc(s.tt(TX.regSheetFile, { p: f.path }))}</span></p>
+      <dl class="ms-sfacts">${fact(TX.regSheetFamily, esc(familyText(f.entry.family, lang)))}${fact(TX.regSeries, has(f.entry.series) ? esc(cut(f.entry.series, 8)) : '')}${fact(TX.regOperation, esc(f.entry.operation?.name || ''))}</dl></aside>`;
+  }
+  const e = r.lines.find(x => x.idx === sh.rid && x.row.id === sh.id); // une place reprise par une autre mission (ligne retirée) : rien
+  if (!e) return '';
+  const row = e.row,
+    [k, st, kind, marks] = regItemState(s, {
+      kind: 'line',
+      e
+    }, plan),
+    path = RG.pathOf(row),
+    m = r.mis?.get(e.idx),
+    kit = choiceKit(s),
+    d = m ? CH.durationOf(m, kit.classify) : null,
+    fl = m ? MS.missionFlight(m) : null,
+    // le trajet : le départ, les points de la route de la partie visible, l'arrivée (pilotView : rien d'un tiroir fermé)
+    chips = fl ? [m.origin?.icao || m.origin?.name, ...(fl.route?.points || []).map(p => p?.name || p?.id), m.destination?.icao || m
+      .destination?.name
+    ].map(v => cut(v, 24)).filter(Boolean).slice(0, 24) : [],
+    // les aéronefs par type, dans l'ordre du fichier : « EC135, H145 », « 2 × EC45 » ; leur nombre en data-ac (CH.aircraftOf)
+    acN = m ? CH.aircraftOf(m) : 0,
+    byType = m ? (m.aircraft || []).map(a => a.type).filter(Boolean).reduce((o, t) => o.set(t, (o.get(t) || 0) + 1), new Map()) : new Map(),
+    types = [...byType].slice(0, 8).map(([t, n]) => n > 1 ? `${n} × ${t}` : t).join(', '),
+    th = m ? CH.theatreOf(m, {
+      region: c => regionName(kit.lang, c),
+      adState: adStateOf(s, kit, CH.depIcao(m))
+    }) : '',
+    dur = d ? `${d.est ? '≈ ' : ''}${esc(CH.hm(d.min))}` : '',
+    gest = r.edit === e.idx ? regEditHtml(s, e) : `<span class="ms-rgest"><button type="button" class="primary" data-do="regbrief" data-rid="${e.idx}">${esc(s.tt(TX.brief))}</button><button type="button" data-do="edmodify" data-rid="${e.idx}">${esc(s.tt(TX.atelier))}</button><button type="button" data-do="eddup" data-rid="${e.idx}">${esc(s.tt(TX.edDup))}</button><details class="ms-rmore"><summary title="${esc(s.tt(TX.regMoreGest))}" aria-label="${esc(s.tt(TX.regMoreGest))}">⋯</summary><div><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></div></details></span>`;
+  return `<aside class="f-card ms-regsheet" data-regsheet data-sheetid="${esc(row.id)}" data-rid="${e.idx}">${head(row.id, row.title)}
+    <p><span class="f-badge" data-kind="${kind}" data-rstate="${k}">${esc(st)}</span>${marks}${path ? ` <span class="f-muted" data-rpath>${esc(s.tt(TX.regSheetFile, { p: path }))}</span>` : ''}</p>
+    ${chips.length > 1 ? `<p class="ms-schips" data-route>${chips.map(c => `<span data-chip>${esc(c)}</span>`).join('<span aria-hidden="true">→</span>')}</p>` : ''}
+    <dl class="ms-sfacts">${fact(TX.regSheetFamily, esc(familyText(row.family, lang)))}${fact(TX.regSeries, has(e.raw.series) ? esc(cut(e.raw.series, 8)) : '')}${fact(TX.regNumber, has(e.raw.number) ? esc(cut(e.raw.number, 8)) : '')}${fact(TX.regOperation, esc(row.operation || ''))}${fact(TX.regSheetDur, dur, d ? ` data-dur="${d.est || 'written'}"` : '')}${fact(TX.regSheetAircraft, esc(types), ` data-ac="${acN}"`)}${fact(TX.regSheetTheatre, esc(th || ''), ' data-theatre')}</dl>
+    ${gest}</aside>`;
 }
 
 /** Le plan montré avant d'écrire (CONCEPTION § 2 bis : « il montre d'abord ce qu'il ferait »). */
@@ -2218,7 +2487,14 @@ function regHtml(s) {
     ${r.plan ? regPlanHtml(s) : ''}
     <div class="ms-reghead">${regFamHtml(s)}
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.regSearch))}</span><input type="search" data-k="rq" value="${esc(r.q)}" placeholder="${esc(s.tt(TX.regSearch))}" autocomplete="off"></label></div>
-    <div data-regrows>${regListHtml(s)}</div></div>`;
+    ${regBodyHtml(s)}</div>`;
+}
+/** SOG-0487 : le corps du registre — les lignes, et la fiche ouverte : à côté sur un module large, à la place des lignes sur un étroit
+ *  (« ← Registre », ou le Retour du navigateur, y ramène). */
+function regBodyHtml(s) {
+  const r = s.reg,
+    sheet = regSheetHtml(s);
+  return `<div class="ms-regwrap"${sheet ? ' data-sheet' : ''}${r.wide ? ' data-wide' : ''}><div data-regrows>${regListHtml(s)}</div>${sheet}</div>`;
 }
 
 // ---------------------------------------------------------------- l'éditeur de missions (SOG-0287) : son écran est dans editor_view.js
@@ -2299,6 +2575,7 @@ async function regClick(s, b) {
   switch (b.dataset.do) {
     case 'regback':
       s.ctx.view?.('');
+      r.unwire?.(); // SOG-0487 : les gestes du tri et le suivi de la largeur s'arrêtent avec l'écran
       s.reg = null;
       return draw(s);
     case 'regplan':
@@ -2319,11 +2596,42 @@ async function regClick(s, b) {
     case 'regbrief':
       // SOG-0455 : le Brief de la mission (sa fiche, par pilotView) ; « Retour » rend le registre à cette ligne
       if (!line) return;
+      regSheetLeave(s); // SOG-0487 : la fiche se ferme, la ligne est ramenée sous les yeux au retour
       r.back = idx;
       r.scrollBack = true;
       return openMission(s, line.row, false, idx);
+    case 'regmenu': // SOG-0487 : « ⋯ » d'une ligne s'ouvre ou se ferme seul (details) ; la ligne n'ouvre pas sa fiche
+      return;
+    case 'regsheet': {
+      // SOG-0487 : toucher une ligne ouvre sa fiche ; le Retour du navigateur la ferme (une entrée d'historique, à la première fiche)
+      const fid = b.dataset.found;
+      if (fid === undefined && !line) return;
+      r.sheet = fid !== undefined ? {
+        found: fid
+      } : {
+        rid: idx,
+        id: line.row.id
+      };
+      r.edit = null;
+      regSheetPush(s);
+      return draw(s);
+    }
+    case 'regsheetclose':
+      if (r.sheetPushed) return history.back(); // le popstate ferme la fiche (s.onPop)
+      r.sheet = null;
+      r.edit = null;
+      return draw(s);
     case 'regedit':
+      // « Corriger » : dans la fiche de la ligne (ouverte si besoin, depuis « ⋯ » d'une ligne du tableau)
+      if (!line) return;
       r.edit = idx;
+      if (r.sheet?.rid !== idx) {
+        r.sheet = {
+          rid: idx,
+          id: line.row.id
+        };
+        regSheetPush(s);
+      }
       return draw(s);
     case 'regeditcancel':
       r.edit = null;
