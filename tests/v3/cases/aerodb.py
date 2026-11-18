@@ -16602,3 +16602,36 @@ def k478(c):
         c.eq(victim.read_text(encoding='utf-8'), 'keep', 'what a link at the old temporary name points to is never written', what='victim')
         c.eq([p.name for p in org.glob('.SIGNALEMENTS_NOTES*')], [], 'no temporary file is left', what='no tmp')
         c.ok(json.loads((org / 'SIGNALEMENTS_NOTES.json').read_text(encoding='utf-8'))['items']['SIG-00000000a1']['comments'][-1]['text'] == 'ok', '', 'the notes file holds the comment')
+
+
+# the small guards that files of the pages wrote for themselves (SOG-0468 (c)): « the own key of a plain object » and « a plain object » exist ONCE in
+# frame/lib/untrusted.js; the sites still carrying an identical copy are listed here — the list only shrinks (a migrated site leaves it, a NEW copy is refused)
+LEGACY_UNTRUSTED_COPIES = {
+    'own': {'modules/data/model_sets.js': 1, 'modules/fuel/route_engine.js': 8, 'modules/missions/drawers.js': 1},
+    'plain': {'frame/lib/crossing.js': 1, 'frame/lib/mission.js': 1, 'modules/maps/pilot.js': 1}}
+
+
+@case('K479', 'frame/lib/untrusted.js, SOG-0468 (c): the guards « the OWN key of a plain object » and « a plain object » are defined once (frame/lib/untrusted.js) and no NEW copy is written in the pages: the files that still carry an identical copy are exactly the list of the sites to migrate (it only shrinks)',
+      'K', static=True,
+      rule='SOG-0468 (the ergonomics session, 18 Nov 2026: « tout ce qui peut être constitué de modules doit l\'être ; reuse ») and the rule that a prototype key (`__proto__`, `constructor`) never answers for a file written by any pilot: the same one-line guard was copied twelve times; it is written once, and the case forbids a thirteenth')
+def k479(c):
+    import subprocess
+    src = ROOT / 'frame' / 'lib' / 'untrusted.js'
+    c.ok(src.is_file(), str(src.is_file()), 'frame/lib/untrusted.js exists (own, has, plain, finite, bounded, visible, clean, idWord)')
+    own_re = re.compile(r'Object\.hasOwn\((\w+),(\w+)\)\?\1\[\2\]:undefined')
+    plain_re = re.compile(r"(\w+)&&typeof\1==='object'&&!Array\.isArray\(\1\)\?\1:null")
+    found = {'own': {}, 'plain': {}}
+    tracked = subprocess.run(['git', 'ls-files', '*.js'], cwd=str(ROOT), capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.split('\n')
+    for f in tracked:
+        if not f or re.search(r'maplibre|js-yaml|docs_bundle|/test/|\.min\.js|jspdf|^data/|^AircraftDB/', f) or f == 'frame/lib/untrusted.js':
+            continue
+        p = ROOT / f
+        if not p.is_file():
+            continue
+        text = re.sub(r'\s', '', p.read_text(encoding='utf-8', errors='replace'))
+        a, b = len(own_re.findall(text)), len(plain_re.findall(text))
+        if a:
+            found['own'][f] = a
+        if b:
+            found['plain'][f] = b
+    c.eq(found, LEGACY_UNTRUSTED_COPIES, 'the files that still carry an identical copy of « own » or « plain » are exactly the list of the sites to migrate to frame/lib/untrusted.js (a new copy is refused; a migrated one leaves the list)', what='copies')
