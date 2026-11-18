@@ -796,9 +796,33 @@ function edHid(e, i) {
   return !!rows[i] && edShown(e, rows)[i] === null;
 }
 
-/** « À compléter » de la séance : ED.todo, ou dans l'atelier voilé ED.veilTodo (rien du caché, ni tiroir ni lieu caché). */
+// document → { clé → valeur } : ce qu'edOnce a déjà calculé (le document parti, la ligne part avec lui)
+const ONCE = new WeakMap();
+
+/** Ce qu'on calcule d'UN document, une seule fois (SOG-0468) : `make()` au premier appel pour (doc, key), la même valeur ensuite. Un
+ *  document est neuf à chaque edDoc — un nouveau dessin ou une nouvelle frappe donne un nouveau document, donc rien de périmé — ; ce
+ *  qu'on garde se lit sans être retouché. Une valeur qui dépend d'autre chose que du document porte cette chose dans `key`. */
+function edOnce(doc, key, make) {
+  if (!doc || typeof doc !== 'object') return make();
+  let m = ONCE.get(doc);
+  if (!m) ONCE.set(doc, m = new Map());
+  if (!m.has(key)) m.set(key, make());
+  return m.get(key);
+}
+
+/** La mission lue (MS.readMission) d'un document, une fois (edOnce) : le déroulé, « À compléter », la mise à jour sur place et le
+ *  profil la lisaient chacun. */
+const edMission = doc => edOnce(doc, 'read', () => MS.readMission(doc));
+
+/** Ce que les tiroirs ont « à compléter » (DR.drawersTodo) pour un document, une fois (edOnce). */
+const edDrawersTodo = doc => edOnce(doc, 'dtodo', () => DR.drawersTodo(doc));
+
+/** « À compléter » de la séance : ED.todo, ou dans l'atelier voilé ED.veilTodo (rien du caché, ni tiroir ni lieu caché). Calculé une
+ *  fois par document (edOnce ; dans l'atelier voilé la clé porte les lieux cachés) : cinq marques d'étape, six lignes, la liste et le
+ *  bouton le demandaient chacun. */
 function edTodos(e, doc) {
-  return e?.veil ? ED.veilTodo(doc, edShown(e, e.places || ED.placesOf(doc))) : ED.todo(doc);
+  return edOnce(doc, e?.veil ? `todo:${(e.veilHide || []).join()}` : 'todo', () => e?.veil ? ED.veilTodo(doc, edShown(e, e.places || ED.placesOf(doc))) : ED.todo(
+    doc));
 }
 
 /** Le document où l'on cherche QUI CITE un lieu avant de le retirer (SOG-0459, retouche de Sécurisation) : celui de la séance ; dans
@@ -855,9 +879,9 @@ const dec = (s, v) => (s.ctx.lang?.() || 'fr') === 'en' ? String(v ?? '') : Stri
  *  ligne la choisit (le lieu aussi sur la carte) et ouvre ses champs SOUS la liste ; « + Zone », « + Point tournant », « + Rendez-vous »
  *  (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte ; la route du départ. `listOnly` : les lignes seules
  *  (SOG-0478, un geste en cours). Les lignes non encore retouchées sont lues du document (les rangs sont ceux d'edPlaces). */
-function edPlacesHtml(s, listOnly = false) {
+function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
   const e = s.ed,
-    rows = e.places || ED.placesOf(edDoc(e)),
+    rows = e.places || ED.placesOf(doc),
     badge = {
       dep: TX.plDep,
       arr: TX.plArr,
@@ -869,7 +893,6 @@ function edPlacesHtml(s, listOnly = false) {
     },
     zk = v => TX[`zk_${v}`] ? s.tt(TX[`zk_${v}`]) : v,
     ok = v => EDTX[`ok_${v}`] ? s.tt(EDTX[`ok_${v}`]) : v,
-    doc = edDoc(e),
     // qui emploie une zone ou un objet comme clé : « clé du tiroir 2 » (SOG-0445 : un tiroir CITE une zone ou un objet de la mission)
     // dans l'atelier voilé, rien ne dit qu'un tiroir cite un lieu (SOG-0459)
     usedBy = i => e.veil ? [] : ED.citedBy(doc, rows, i).filter(c => c.where === 'drawerKey' || c.where === 'drawerActor').map(c => s.tt(
@@ -1151,7 +1174,7 @@ const edGroupBody = (s, k) => k === 'teams' ? edTeamsHtml(s) : k === 'story' ? e
  *  que ceux d'un groupe : edRefresh les suit), puis les Lieux (edPlacesHtml). */
 function edPlacesCardHtml(s, doc) {
   const ok = edStepOk(s.ed, doc, 'places');
-  return `<section class="f-card ms-atplaces" data-atplaces data-grp="places"><div class="ms-atplhead"><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="places" aria-hidden="true">${ok ? '✓' : '!'}</span><h3>${esc(s.tt(TX.stepPlaces))}</h3><span class="ms-atline f-muted" data-line="places">${esc(edLine(s, doc, 'places'))}</span></div><div class="ms-atbody">${edPlacesHtml(s)}</div></section>`;
+  return `<section class="f-card ms-atplaces" data-atplaces data-grp="places"><div class="ms-atplhead"><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="places" aria-hidden="true">${ok ? '✓' : '!'}</span><h3>${esc(s.tt(TX.stepPlaces))}</h3><span class="ms-atline f-muted" data-line="places">${esc(edLine(s, doc, 'places'))}</span></div><div class="ms-atbody">${edPlacesHtml(s, false, doc)}</div></section>`;
 }
 
 /** La fiche du départ (la partie A du fichier) : les six étapes de l'éditeur en six groupes repliables, un seul déplié à la fois ; chaque
@@ -1181,8 +1204,8 @@ function edFlowHtml(s, doc, run = null) {
   // SOG-0459, l'atelier voilé : « Au départ » seul, et « Dévoiler la mission complète » à la place d'« Essayer les clés »
   if (e.veil) return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div>
     <div class="f-list ms-atflowlist">${edStartRowHtml(s, true)}</div></section>`;
-  const drawers = MS.readMission(doc)?.drawers || [],
-    todo = new Set(DR.drawersTodo(doc).map(t => t.name)),
+  const drawers = edMission(doc)?.drawers || [],
+    todo = new Set(edDrawersTodo(doc).map(t => t.name)),
     sel = e.sel || 'start',
     on = id => sel === id ? ' aria-current="true"' : '',
     adding = e.kinds === 'new';
@@ -1318,7 +1341,7 @@ function edTileLoad(s) {
  *  celui de croisière de la mission s'il est écrit. Appelé par edRefresh (le chemin de redessin, au plus une fois par image pendant un geste : edLive) et après chaque
  *  dessin de l'écran. Rien n'est refait si la route, le niveau et la largeur n'ont pas changé (la clé gardée sur le canvas) ; replié (largeur nulle) : rien.
  *  Un dessin plus récent a pris la place (stale) : rien. Sans relief : le dire ; sous deux lieux : l'état vide. */
-function edProfile(s) {
+function edProfile(s, doc = null) {
   const e = s.ed,
     cv = s.el.querySelector('[data-atprofcv]'),
     say = s.el.querySelector('[data-atprofsay]'),
@@ -1331,7 +1354,7 @@ function edProfile(s) {
       lon: p.lon,
       id: named.find(q => q.lat === p.lat && q.lon === p.lon && q.label && !['handle', 'vertex', 'mid'].includes(q.kind))?.label || ''
     })),
-    lv = MS.readMission(edDoc(e))?.cruiseLevelFt,
+    lv = edMission(doc || edDoc(e))?.cruiseLevelFt,
     levelFt = Number.isFinite(lv) && lv > 0 ? Math.min(lv, 60000) : 0,
     key = JSON.stringify([pts, levelFt, W]),
     warn = s.el.querySelector('[data-atprofwarn]'),
@@ -2395,7 +2418,7 @@ function edSaid(s, r) {
 /** Ce que les tiroirs ont « à compléter », une ligne par tiroir : [{ name (le rang), text }]. */
 function edDrawerTodo(s, doc) {
   const by = new Map();
-  for (const t of DR.drawersTodo(doc)) by.set(t.name, [...(by.get(t.name) || []), s.tt(EDTX[`dwTodo_${t.key}`] || EDTX.dwTodo_keyUnread)]);
+  for (const t of edDrawersTodo(doc)) by.set(t.name, [...(by.get(t.name) || []), s.tt(EDTX[`dwTodo_${t.key}`] || EDTX.dwTodo_keyUnread)]);
   return [...by].map(([name, what]) => ({
     name,
     text: s.tt(EDTX.dwTodoOf, {
@@ -2913,8 +2936,8 @@ function edRefresh(s) {
     const pv = edPilotView(s, doc, drow.id);
     for (const k of ['name', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
   }
-  const dtodo = new Set(DR.drawersTodo(doc).map(t => t.name));
-  for (const d of e.veil ? [] : MS.readMission(doc)?.drawers || []) {
+  const dtodo = new Set(edDrawersTodo(doc).map(t => t.name));
+  for (const d of e.veil ? [] : edMission(doc)?.drawers || []) {
     const mark = q(`[data-dmark="${d.rank}"]`),
       bad = dtodo.has(String(d.rank));
     put(q(`[data-dtitle="${d.rank}"]`), `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`);
@@ -2933,7 +2956,7 @@ function edRefresh(s) {
   if (map && e.lastThumb !== thumb) map.innerHTML = e.lastThumb = thumb;
   e.mapFeats = edMapFeats(s, doc, run);
   edMapShow(s);
-  edProfile(s); // SOG-0464 : le profil suit la route que la carte vient de recevoir (au plus un dessin par route : sa clé)
+  edProfile(s, doc); // SOG-0464 : le profil suit la route que la carte vient de recevoir (au plus un dessin par route : sa clé)
   if (run) {
     // l'essai : l'heure, le journal (des textes), l'état de chaque carte, le bouton « Ouvrir à la main » (le même élément)
     const log = q('[data-trlog]'),
@@ -2960,7 +2983,7 @@ function edRefresh(s) {
   const places = q('[data-edplaces]');
   if (places) {
     const fresh = document.createElement('template');
-    fresh.innerHTML = edPlacesHtml(s, true);
+    fresh.innerHTML = edPlacesHtml(s, true, doc);
     for (const f of fresh.content.querySelectorAll('[data-place]')) {
       const live = places.querySelector(`[data-place="${f.dataset.place}"]`);
       for (const sel of ['.ms-plbody > b', '.ms-plbody > .f-muted']) put(live?.querySelector(sel), f.querySelector(sel)?.textContent ?? '');

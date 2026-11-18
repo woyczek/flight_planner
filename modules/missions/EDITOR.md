@@ -1330,6 +1330,10 @@ the model is visible near the title, and changes.
   whose identifier is the file's name). Choosing it poses its drawers and its places « to place », like a model of the catalogue.
 - **To be reviewed by Sécurisation before any push** (it writes files to the data repository; a personal model is read on every device of the pilot).
 
+### 7 quinquaquadragies. The optimisation pass of the workshop: the same screen, less work per keystroke and per drawing (18 Nov 2026; SOG-0468; no change of behaviour; noreg N91, N93, N95, N97, N106, N109, N110, N114, N118, N121, N129 to N132, N134, N137, N139 to N143)
+
+- **« À compléter » and the document, once**: `edOnce(doc, key, make)` keeps per document (a `WeakMap`) what the screen derives from it — `edTodos` (one key, or `todo:<hidden rows>` in the veiled workshop), `edMission` (`MS.readMission`), `edDrawersTodo` (`DR.drawersTodo`); a new `edDoc` is a new document, so no cache goes stale; what is kept is only read. `edRefresh` passes its document to `edPlacesHtml(s, listOnly, doc)` and `edProfile(s, doc)`. Per keystroke on 12 drawers and 59 places: `ED.todo` 8 -> 1, `uncited` 8 -> 1, `pilotView` 8 -> 1, `readMission` 14 -> 4, `edDoc` 3 -> 1, `placesOf` 41 -> 9.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
