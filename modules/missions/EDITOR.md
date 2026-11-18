@@ -741,6 +741,9 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - **The screen says it once per sitting** (`s.ed.plainSaid`), by a floating notification: « Fond de carte indisponible : la carte
   montre les lieux sur un fond uni. Tout le reste fonctionne. » — said too when, online, the tiles do not come (after
   `MAPB.wait`). The frame keeps `data-map="plain"`.
+- **A hairline around the frame of the map** (the ergonomist, 18 Nov): one pixel, the colour of the suite's borders (`--sog-line`),
+  square corners, inside the fixed size of the frame (`box-sizing: border-box`: nothing moves) — on a plain background of the
+  colour of the page one did not see where the map ends. It is there with the suite's background too.
 - **Still the sketch**: no WebGL, or MapLibre never loaded on this device (it is a file of the repository, declared `lazy`: kept
   by the page once the workshop has been opened online).
 - **Not done**: coming back online does not bring the suite's background back in an open workshop (nothing reloads by itself):

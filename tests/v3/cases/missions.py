@@ -5887,6 +5887,10 @@ def n108(c):
          'offline the mission is drawn and named on a plain background, in place of the sketch; nothing was asked of the tile provider; the tools are given', what='the map offline')
     c.ok(norm(T('atMapPlain')) in norm(c.js(_NOTES)) and norm(c.js(_NOTES)).count(norm(T('atMapPlain'))) == 1, norm(c.js(_NOTES)),
          'a notification says the background is unavailable and that everything else works — once')
+    # a hairline around the frame of the map: on a plain background one sees where the map ends (the ergonomist, 18 Nov)
+    edge = c.js(f"(() => {{ const f = document.querySelector('{_EDMAP} .ms-atmapframe'), k = getComputedStyle(f), r = f.getBoundingClientRect(), m = f.querySelector('canvas').getBoundingClientRect(); "
+                "return [k.borderTopWidth, k.borderLeftWidth, k.borderBottomWidth, k.borderRightWidth, k.borderTopStyle, k.borderTopLeftRadius, Math.round(r.width - m.width), Math.round(r.height - m.height)] })()")
+    c.eq(edge, ['1px', '1px', '1px', '1px', 'solid', '0px', 2, 2], 'the frame of the map carries a hairline of one pixel, square corners; the map fills the inside of it', what='the hairline')
     c.shot('N108_1280_offline.png')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     # the gestures work: a place chosen, a point posed

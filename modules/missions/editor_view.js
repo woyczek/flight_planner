@@ -99,7 +99,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmapbtn{min-height:44px}
 [data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
 [data-module="missions"] .ms-atmap[data-open="1"] .ms-atmapbody{display:block}
-[data-module="missions"] .ms-atmapframe{position:relative;height:300px;overflow:hidden}
+[data-module="missions"] .ms-atmapframe{position:relative;height:300px;overflow:hidden;box-sizing:border-box;border:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmapslot,[data-module="missions"] .ms-atsketch{position:absolute;inset:0}
 [data-module="missions"] .ms-atmaphost{width:100%;height:100%}
 [data-module="missions"] .ms-atsketch{display:flex;align-items:center;justify-content:center;background:var(--sog-bg,#fff)}
