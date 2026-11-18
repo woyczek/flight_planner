@@ -1247,6 +1247,10 @@ the Carte's profile (`modules/maps/lib/profile_embed.js`, contract in `modules/m
 - **A wide module**: the sticky left column (map, profile, unfolding) is taller than the screen; it is bounded to the screen and scrolls in itself, otherwise it became the tallest
   column of the grid and no longer stuck while the sheet scrolled (N121).
 - **Case N137**: the tile loader is a fake at the level of the browser (a plain Terrarium tile built in the page, or a refusal); every other host is aborted by the harness.
+- **Retouch (18 Nov 2026; noreg N143)**: each point given to `drawProfile` carries `id`, the label of the place found in `e.mapFeats.points` at the same position (the Map writes it under the axis; a route position that
+  no place carries stays unnamed). When the answer carries `clear` (`{ minFt, atNm, below }`, INTEGRATION § 7 ter; absent from an older Map: nothing is said) and the terrain was read, the line `[data-atprofwarn]` says
+  « La croisière passe sous le relief à {nm} NM ({ft} ft) » when `below` (`ft` = the depth under the terrain), « Marge faible au-dessus du relief : {ft} ft à {nm} NM » when the margin is under 500 ft; nothing otherwise.
+  Case N143 serves `profile_embed.js` through a wrapper that adds `clear` to the answer of the real one when it has none, built from the case's own values (the fake tile gives 2 625 ft, the mission cruises at 2 000 ft).
 
 ### 7 unquadragies. The catalogue of bricks and models: one file of the code repository, read as untrusted (18 Nov 2026; lot « modèles de mission », decision A; noreg N138)
 

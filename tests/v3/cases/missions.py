@@ -9655,3 +9655,76 @@ def n142(c):
         c.eq(sorted(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')), [path], f'{width}: nothing written under the name of the suite', what='refused')
         ed_leave(c)
         c.js(_MD_CLEAR)
+
+
+# SOG-0464 (retouche): drawProfile of the Carte says `clear` (the margin of the cruise over the relief). The branch of this case may not carry it yet (modules/maps is not written
+# here): the module profile_embed.js is served by the case with a wrapper that adds `clear` to the answer when the real one has none, built from the case's own values
+_PROF_WRAP = """
+export async function drawProfile(cv, pts, o) {
+  (window.__PTS ||= []).push(JSON.parse(JSON.stringify(pts)));
+  const r = await __real(cv, pts, o);
+  return r && r.ok && r.terrain && !('clear' in r) ? { ...r, clear: window.__CLEAR || null } : r;
+}
+"""
+
+
+@case('N143', 'Missions › the workshop, the profile names its places and says a cruise under the relief (SOG-0464, retouch): the points given to drawProfile carry the identifier of '
+      'their place (so the Carte writes it under the axis); `clear` below zero says « La croisière passe sous le relief à {nm} NM ({ft} ft) » (four languages), a margin under 500 ft '
+      '« Marge faible au-dessus du relief », a wide margin or no `clear` says nothing; the answer of the real drawProfile is faked for the case when it has no `clear`',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0464 retouch: modules/missions/editor_view.js `edProfile` (identifier of each point of `route` found in `e.mapFeats.points`; `clear` read when it exists), '
+      'modules/maps/INTEGRATION.md § 7 ter; modules/missions/EDITOR.md § 7 quadragies')
+def n143(c):
+    import base64
+    import json
+    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
+    asked, png = [], []
+
+    def tiles(route):
+        asked.append(route.request.url)
+        route.fulfill(status=200, content_type='image/png', body=png[0])
+
+    def wrap(route):
+        r = route.fetch()
+        src = r.text().replace('export async function drawProfile(', 'async function __real(', 1)
+        route.fulfill(status=200, content_type='text/javascript', body=src + _PROF_WRAP)
+
+    c.context.route(re.compile(r'^https://s3\.amazonaws\.com/elevation-tiles-prod/'), tiles)
+    c.context.route(re.compile(r'/modules/maps/lib/profile_embed\.js'), wrap)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    png.append(base64.b64decode(c.js(_PROF_PNG)))
+    warn = f'{_PROF} [data-atprofwarn]'
+
+    def modify(clear):
+        c.js(f"window.__CLEAR = {json.dumps(clear)}; window.__PTS = []")
+        c.until(f"!!document.querySelector('{R} [data-rowid=\"X-001A\"]')", timeout=10000, what='the registry')
+        c.tap(f'{R} [data-rowid="X-001A"] > summary')
+        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"document.querySelector('{_PROF} [data-atprofsay]').textContent.includes('NM')", timeout=15000, what='the profile drawn with the relief')
+
+    # 1. the relief at 2 600 ft (the fake tile), the cruise at 2 000 ft: below the relief, said with the figures
+    modify({'minFt': -625, 'atNm': 3.456, 'below': True})
+    pts = c.js("window.__PTS[window.__PTS.length - 1]")
+    c.ok(len(pts) >= 2 and all(p.get('id') for p in pts), pts, 'every point given to drawProfile carries the identifier of its place (the name written under the axis)')
+    c.eq(norm(c.text(warn)), T('atProfBelow', nm=3.5, ft=625), 'a cruise under the relief says it, with the NM and the feet', what='below')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_PROF}').scrollIntoView({{block: 'center'}})")
+    c.shot('P10a_1280_alerte.png')
+    ed_leave(c)
+    # 2. a thin margin
+    modify({'minFt': 300, 'atNm': 2.0, 'below': False})
+    c.eq(norm(c.text(warn)), T('atProfLow', nm=2, ft=300), 'a margin under 500 ft says « Marge faible »', what='low')
+    ed_leave(c)
+    # 3. a wide margin, then no `clear` at all: nothing is said
+    modify({'minFt': 900, 'atNm': 2.0, 'below': False})
+    c.eq([norm(c.text(warn)), c.js(f"getComputedStyle(document.querySelector('{warn}')).display")], ['', 'none'], 'a wide margin says nothing', what='wide')
+    ed_leave(c)
+    modify(None)
+    c.eq(norm(c.text(warn)), '', 'no `clear` (no relief read or no level): nothing is said', what='none')
+    ed_leave(c)
+    c.ok(len(asked) >= 1 and all('s3.amazonaws.com' in u for u in asked), asked[:2], 'the tiles came from the fake of the case only')
+    c.context.unroute(re.compile(r'^https://s3\.amazonaws\.com/elevation-tiles-prod/'))
+    c.context.unroute(re.compile(r'/modules/maps/lib/profile_embed\.js'))
+    c.js(_REG_CLEAR)

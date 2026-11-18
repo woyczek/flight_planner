@@ -432,7 +432,9 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atprof[data-open="1"] .ms-atprofbody{display:block}
 [data-module="missions"] .ms-atprofcv{display:block;width:100%;height:160px;box-sizing:border-box;border:1px solid var(--sog-line,#ddd);background:#fff}
 [data-module="missions"] .ms-atprofcv[data-empty="1"]{visibility:hidden}
-[data-module="missions"] .ms-atprofsay{margin:4px 0 0;min-height:1.5em} /* la ligne a sa place avant sa phrase : rien ne bouge quand le relief arrive */
+[data-module="missions"] .ms-atprofwarn{margin:4px 0 0;font-weight:600;color:var(--sog-warn,#a15c00)}
+  [data-module="missions"] .ms-atprofwarn:empty{display:none}
+  [data-module="missions"] .ms-atprofsay{margin:4px 0 0;min-height:1.5em} /* la ligne a sa place avant sa phrase : rien ne bouge quand le relief arrive */
 [data-module="missions"] .ms-atmap[data-open="1"] .ms-atmapbody{display:block}
 [data-module="missions"] .ms-atmapframe{position:relative;height:300px;overflow:hidden;box-sizing:border-box;border:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmapslot,[data-module="missions"] .ms-atsketch{position:absolute;inset:0}
@@ -1272,7 +1274,7 @@ function edRefSeek(s) {
  *  affichée. Au téléphone il est replié (le bouton le déplie) ; sur un module large il est ouvert, sans bouton. Le canvas est peint par edProfile. */
 function edProfHtml(s) {
   const open = !!s.ed.profOpen;
-  return `<section class="ms-atprof" data-atprof data-open="${open ? '1' : ''}"><button type="button" class="ms-atprofbtn" data-do="edprof" aria-expanded="${open}">${esc(s.tt(EDTX.atProf))}</button><div class="ms-atprofbody f-card" data-atprofbody><canvas class="ms-atprofcv" data-atprofcv role="img" aria-label="${esc(s.tt(EDTX.atProfAlt))}"></canvas><p class="f-muted ms-atprofsay" data-atprofsay></p></div></section>`;
+  return `<section class="ms-atprof" data-atprof data-open="${open ? '1' : ''}"><button type="button" class="ms-atprofbtn" data-do="edprof" aria-expanded="${open}">${esc(s.tt(EDTX.atProf))}</button><div class="ms-atprofbody f-card" data-atprofbody><canvas class="ms-atprofcv" data-atprofcv role="img" aria-label="${esc(s.tt(EDTX.atProfAlt))}"></canvas><p class="f-muted ms-atprofsay" data-atprofsay></p><p class="ms-atprofwarn" data-atprofwarn role="status"></p></div></section>`;
 }
 
 /** Le chargeur de tuiles de relief du profil : celui de la Carte (tileLoader de maps/state.js), par ctx.net.fetch ; refusé, il lève (le profil le dit). Un seul par
@@ -1295,15 +1297,20 @@ function edProfile(s) {
     say = s.el.querySelector('[data-atprofsay]'),
     W = cv?.clientWidth || 0;
   if (!cv || !say || !W) return;
-  const pts = (e.mapFeats?.lines?.find(l => l.id === 'route')?.points || []).map(p => ({
+  const named = e.mapFeats?.points ||
+  [], // le nom sous l'axe : l'identifiant du lieu (à défaut son nom) qui est à la même position (SOG-0464, retouche)
+    pts = (e.mapFeats?.lines?.find(l => l.id === 'route')?.points || []).map(p => ({
       lat: p.lat,
-      lon: p.lon
+      lon: p.lon,
+      id: named.find(q => q.lat === p.lat && q.lon === p.lon && q.label && !['handle', 'vertex', 'mid'].includes(q.kind))?.label || ''
     })),
     lv = MS.readMission(edDoc(e))?.cruiseLevelFt,
     levelFt = Number.isFinite(lv) && lv > 0 ? Math.min(lv, 60000) : 0,
     key = JSON.stringify([pts, levelFt, W]),
-    put = (text, empty) => {
+    warn = s.el.querySelector('[data-atprofwarn]'),
+    put = (text, empty, alert = '') => {
       if (say.textContent !== text) say.textContent = text;
+      if (warn && warn.textContent !== alert) warn.textContent = alert;
       const v = empty ? '1' : '';
       if ((cv.dataset.empty || '') !== v) cv.dataset.empty = v;
     };
@@ -1322,9 +1329,17 @@ function edProfile(s) {
       cv.__profKey = ''; // les bibliothèques du profil ne sont pas venues : le prochain redessin réessaie
       return put(s.tt(EDTX.atProfNoRelief), true);
     }
+    const k = r.terrain ? r.clear :
+      null, // clear : la marge de la croisière sur le relief lu ; absent (Carte plus ancienne) ou nul : rien à dire
+      ok = k && Number.isFinite(k.minFt) && Number.isFinite(k.atNm),
+      vars = ok ? {
+        nm: Math.round(k.atNm * 10) / 10,
+        ft: Math.abs(Math.round(k.minFt))
+      } : null;
     put(r.terrain ? s.tt(EDTX.atProfNm, {
       nm: Math.round(r.nm * 10) / 10
-    }) : s.tt(EDTX.atProfNoRelief), false);
+    }) : s.tt(EDTX.atProfNoRelief), false, !ok ? '' : k.below ? s.tt(EDTX.atProfBelow, vars) : k.minFt < 500 ? s.tt(EDTX.atProfLow,
+      vars) : '');
   }).catch(() => {
     if (cv.__profKey === key) put(s.tt(EDTX.atProfNoRelief), true);
   });
