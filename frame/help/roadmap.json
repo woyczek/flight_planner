@@ -5,7 +5,7 @@
  "generated": {
   "tool": "tools/roadmap_build.py",
   "organisation": "e43e6fb",
-  "fiches": 493,
+  "fiches": 497,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -4174,6 +4174,15 @@
      "en": "Mission workshop: “Save” empties the mission's brief and description — lost",
      "de": "Missionswerkstatt: „Speichern“ leert Briefing und Beschreibung der Mission – verloren",
      "es": "Taller de misiones: «Guardar» vacía el briefing y la descripción de la misión — perdidos"
+    },
+    {
+     "id": "SOG-0495",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : un point nommé choisi (LFRF…) reste « à placer », sans coordonnées",
+     "en": "Mission workshop: a chosen named point (LFRF…) stays “to place”, with no coordinates",
+     "de": "Missionswerkstatt: Ein gewählter benannter Punkt (LFRF…) bleibt „zu platzieren“, ohne Koordinaten",
+     "es": "Taller de misiones: un punto con nombre elegido (LFRF…) queda «por situar», sin coordenadas"
     }
    ]
   },
@@ -4496,6 +4505,27 @@
      "de": "Missionen: der Hin- und Rückweg mit ChatGPT — Prompt kopieren, Antwort einfügen, Register füllen (mit Schubladen und umrissenen Gebieten)",
      "es": "Misiones: la ida y vuelta con ChatGPT — copiar el prompt, pegar la respuesta, alimentar el registro (cajones y zonas con contorno incluidos)",
      "rank": 461
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-tiroirs",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; tiroirs",
+    "en": "Missions ; tiroirs",
+    "de": "Missions ; tiroirs",
+    "es": "Missions ; tiroirs"
+   },
+   "items": [
+    {
+     "id": "SOG-0496",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : le tiroir 1 de M23 se voit avant que l'objet soit trouvé — un tiroir caché doit le rester jusqu'à son ouverture",
+     "en": "Missions: drawer 1 of M23 shows before the object is found — a hidden drawer must stay hidden until it opens",
+     "de": "Missionen: Schublade 1 von M23 ist sichtbar, bevor das Objekt gefunden ist – eine verborgene Schublade bleibt verborgen",
+     "es": "Misiones: el cajón 1 de M23 se ve antes de encontrar el objeto — un cajón oculto debe seguir oculto hasta abrirse"
     }
    ]
   },
@@ -5601,6 +5631,27 @@
      "es": "V3 becomes the default version; every V2 page stays reachable from V3",
      "milestone": "6.0.0-beta.1",
      "rank": 95
+    }
+   ]
+  },
+  {
+   "id": "maintenance-cadre-registre-statistiques",
+   "app": "maintenance",
+   "label": {
+    "fr": "Cadre ; registre ; statistiques",
+    "en": "Cadre ; registre ; statistiques",
+    "de": "Cadre ; registre ; statistiques",
+    "es": "Cadre ; registre ; statistiques"
+   },
+   "items": [
+    {
+     "id": "SOG-0498",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Un bloc commun « liste / tableau » : toute colonne triable, ordre croissant ou décroissant — pour le registre et les modules de statistiques",
+     "en": "A common “list / table” block: any sortable column, ascending or descending — for the register and statistics modules",
+     "de": "Ein gemeinsamer Block „Liste / Tabelle“: jede Spalte sortierbar, auf- oder absteigend – für Register und Statistikmodule",
+     "es": "Un bloque común «lista / tabla»: cualquier columna ordenable, ascendente o descendente — para el registro y los módulos de estadísticas"
     }
    ]
   },
@@ -7172,6 +7223,27 @@
      "es": "Procedimientos SIA: leer todas las páginas de una tabla o de una familia de cartas (OKASI 2A y PILUL, segunda página de las SID RNAV de la pista 20 de LFPO)",
      "milestone": "6.0.0-alpha.4",
      "rank": 295
+    }
+   ]
+  },
+  {
+   "id": "maintenance-recette-cadre-lanceur",
+   "app": "maintenance",
+   "label": {
+    "fr": "Recette ; cadre ; lanceur",
+    "en": "Recette ; cadre ; lanceur",
+    "de": "Recette ; cadre ; lanceur",
+    "es": "Recette ; cadre ; lanceur"
+   },
+   "items": [
+    {
+     "id": "SOG-0497",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Recette : un verdict validé n'est pas enregistré, deux validations partent d'un seul geste, et ce qui est répondu revient au rechargement",
+     "en": "Acceptance page: a validated verdict is not saved, one gesture validates two, and answers come back on reload",
+     "de": "Abnahmeseite: ein bestätigtes Urteil wird nicht gespeichert, eine Geste bestätigt zwei, Antworten kehren beim Neuladen zurück",
+     "es": "Página de aceptación: un veredicto validado no se guarda, un gesto valida dos y las respuestas vuelven al recargar"
     }
    ]
   },

@@ -4666,38 +4666,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0111",
-   "fiche": "SOG-0474",
-   "app": "pilote",
-   "question": "Allemagne officielle (DFS) : en plus des points et des balises, prend-on aussi ses aérodromes, ses pistes et ses SID/STAR ?",
-   "context": "Suite de ta réponse à Q-0108 (l'officiel État par État, l'Allemagne d'abord). AeroDB lit déjà les voies d'Allemagne chez la DFS (ED Routes). Sur le même site, et sous la même licence CC BY 4.0 avec crédit DFS, il y a aussi les points, les balises, les aérodromes, les pistes et les procédures SID/STAR. Les points et les balises sont lancés tout de suite : ce sont eux qui manquent à la route. Le 28/10, tu avais écarté les SID/STAR allemands parce qu'on croyait qu'il fallait une licence ; la page de la DFS dit aujourd'hui que ses propres données sont réutilisables, même pour un usage commercial (seules les données des exploitants d'aéroports sont non commerciales, et on ne les prend pas). Un fichier par cycle de 28 jours, rien de redemandé s'il est déjà là.",
-   "options": [
-    "Oui, tout : aérodromes, pistes et SID/STAR officiels de la DFS",
-    "Aérodromes et pistes seulement ; pas les SID/STAR",
-    "Non : points et balises seulement",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0112",
-   "fiche": "SOG-0487",
-   "app": "compagnie",
-   "question": "Registre des missions : dans quel ordre veux-tu les lignes ?",
-   "context": "Aujourd'hui (relevé de Features SOG) : d'abord les missions trouvées hors registre (« + »), puis les lignes rangées par état (à problème « ! », lues ✓, non lues « ? »), puis par série et par numéro. Une famille est éparpillée, et une ligne SAUTE de place quand tu la lis (« ? » devient ✓). Proposé : les brouillons en tête (SOG-0486), puis les « + », puis tout le registre par famille (dans l'ordre du filtre de famille), et dans une famille par série puis par numéro. L'état n'est plus qu'un signe, rien ne bouge pendant la lecture. Un intertitre discret par famille, retiré quand un filtre de famille est actif. Il n'y a pas aujourd'hui de compte des lignes à problème au-dessus de la liste : si les « ! » quittent la tête, il faudrait ajouter une ligne « N lignes à traiter ». Garder les « ! » en tête n'ajoute rien, et elles ne sautent pas pendant la lecture (leur état vient du plan du registre).",
-   "options": [
-    "Par famille, puis série et numéro, et les « ! » restent en tête de liste (recommandé : rien à ajouter)",
-    "Par famille, puis série et numéro, et une ligne « N lignes à traiter » au-dessus remplace les « ! » en tête",
-    "Garder l'ordre par état, mais stable : une ligne lue ne change plus de place",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
