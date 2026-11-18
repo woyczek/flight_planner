@@ -17,6 +17,12 @@
 //     images, étiquettes seules, points, texte, VFR seulement, aucune : SOG-0157), son motif tel que Données le dit et les replis externes ;
 //     '' pour un État lisible ou détenu.
 
+import {
+  zoneAt
+} from '../../frame/lib/ad_field.js'; // la zone d'une position, sortie avec le champ de terrain (SOG-0465)
+export {
+  zoneAt
+};
 export const STATES = ['absent', 'stale', 'empty'];
 export const TX = {
   absent: ['{z} : base non installée', '{z}: database not installed', '{z}: Datenbank nicht installiert', '{z}: base no instalada'],
@@ -43,22 +49,6 @@ export const READABLE = ['sia', 'ead'];
 export const KEEP_READ = ['sia', 'ead', 'held', 'partial', 'unknown'];
 
 export const zoneHref = id => `?app=maintenance#data?zone=${encodeURIComponent(id)}`;
-
-/** La zone d'une position (voir l'en-tête). */
-export function zoneAt(zones, p) {
-  if (!p || !Number.isFinite(+p.lat) || !Number.isFinite(+p.lon)) return null;
-  let best = null;
-  for (const z of zones || [])
-    for (const [w, s, e, n] of z.frames || []) {
-      const inside = +p.lon >= w && +p.lon <= e && +p.lat >= s && +p.lat <= n,
-        d = inside ? (e - w) * (n - s) : 1e6 + Math.hypot(Math.max(w - p.lon, 0, p.lon - e), Math.max(s - p.lat, 0, p.lat - n));
-      if (!best || d < best.d) best = {
-        z,
-        d
-      };
-    }
-  return best?.z || null;
-}
 
 /** L'état d'une zone pour une position qu'elle devrait porter (voir l'en-tête). */
 export async function zoneState(aerodb, z, p) {

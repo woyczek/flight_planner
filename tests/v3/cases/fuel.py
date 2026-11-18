@@ -1514,7 +1514,7 @@ def f43(c):
 NAMES_BASE = ([{'icao': f'LFQ{i}', 'name': f'Quarry Field {i}', 'lat': 44.0 + i / 10, 'lon': 2.0, 'elev': 100} for i in range(1, 10)]
               + [{'icao': 'LFZO', 'name': 'Zorly-Ville', 'lat': 45.0, 'lon': 3.0, 'elev': 90},
                  {'icao': 'LFZT', 'name': 'Toulzone Test Aerodrome With A Very Long Name Indeed', 'lat': 45.5, 'lon': 3.2, 'elev': 80}])
-AD = 'modules/fuel/adnames.js'
+AD = 'frame/lib/ad_field.js'  # the field's texts: the shared block since SOG-0465 (modules/fuel/adnames.js is its wrapper)
 
 
 def open_names(c, **kw):
@@ -7838,6 +7838,27 @@ def f262(c):
     _prop_open(c, target='fuel?altn=XQPB', more=[['cache/fuel/altn_candidates.json', keep, 'cache']])
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPB]')", timeout=15000, what='« Proposé : XQPB » from the address')
     c.eq(c.doc('pilot/ABC/current_flight.json')['route']['altn'], 'LFMT', 'proposed, not taken', what='field')
+
+
+
+@case('F267', 'The suggestion list under a field, a shared block (frame/lib/suggest_list.js): on a page without any module, three '
+      'suggestions under the field, ↓ ↑ Enter Escape, a touch; a choice writes the field and gives it back its « input » without '
+      'reopening the list; only the last request is alive', 'F', tags=('fuel',), designs=('standard',), screens=False,
+      rule='SOG-0465 (the user: « tout ce qui peut être constitué de modules doit être constitué de modules ; KISS, oui, mais reuse »): '
+      'modules/fuel/suggest.js moved as it is into frame/lib (V3 Frame granted the file), re-exported for routecomplete.js and Aircraft')
+def f267(c):
+    run_bench(c, 'frame/lib/test/suggest_list.html')
+
+
+@case('F268', 'The aerodrome field, a shared block (frame/lib/ad_field.js): on a page without any module, with an invented aerodb given '
+      'by the context — the keys given by the screen, the completion by the code, the choice written, « XTST — Base Test » under the '
+      'field, « inconnu » for a code the base does not know, the fallback value of a key without a field; its imports stay in frame/lib',
+      'F', tags=('fuel',), designs=('standard',), screens=False,
+      rule='SOG-0465 (the user, in the mission workshop: « les champs adep / adest ne sont pas uniformes avec les autres, pas de complétion ; '
+      'on réutilise l\'existant »): the core of modules/fuel/adnames.js moved into frame/lib, Fuel keeps a wrapper of its three fields; '
+      'aerodb only through the context, never a global (V3 Frame\'s condition)')
+def f268(c):
+    run_bench(c, 'frame/lib/test/ad_field.html')
 
 
 # SOG-0401: what the RAD check decided and left to examine, in the form of AeroDB 9929e1afa (invented numbers and identifiers)

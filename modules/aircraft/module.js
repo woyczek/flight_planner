@@ -27,6 +27,7 @@ export const meta = {
   level: 3,
   title: ['Aéronefs', 'Aircraft', 'Luftfahrzeuge', 'Aeronaves'],
   files: ['fleet.js', 'registry_read.js', 'sheets.js', 'sheets_texts.js', 'perf_prompt.js', '../fuel/suggest.js',
+    '../../frame/lib/suggest_list.js',
     '../../frame/lib/clipboard.js',
     '../../frame/lib/dom.js', '../../frame/lib/fuel_units.js', '../stats/phases.js', '../stats/journals.js',
     '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'

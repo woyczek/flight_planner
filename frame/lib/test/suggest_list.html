@@ -1,0 +1,135 @@
+<!doctype html>
+<!-- Banc de la liste de propositions (frame/lib/suggest_list.js, SOG-0465 : sortie de Carburant en bloc commun) : posée sous le champ,
+     ↑ ↓ Entrée Échap, toucher ; un choix écrit le champ et lui rend l'évènement « input » sans rouvrir la liste. Page nue, sans module ;
+     window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>suggest_list — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+  #screen {
+    position: relative
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">suggest_list.js — bench</h1>
+<div id="screen"><label>Champ <input data-k="a" autocomplete="off"></label><label>Autre <input data-k="b" autocomplete="off"></label>
+  <div data-sug hidden></div>
+</div>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    createSuggestList
+  } from '../suggest_list.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      got: String(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${got}`}`;
+    out.appendChild(l);
+  }
+  const screen = document.getElementById('screen'),
+    A = screen.querySelector('[data-k=a]'),
+    B = screen.querySelector('[data-k=b]'),
+    box = () => screen.querySelector('[data-sug]'),
+    writes = [],
+    inputs = [];
+  let alive = true;
+  const list = createSuggestList({
+    body: () => alive ? screen : null,
+    box: '[data-sug]',
+    attr: 'v',
+    idPrefix: 'bn',
+    fields: () => [A, B],
+    owns: el => el === A || el === B,
+    write: (input, v) => {
+      writes.push(v);
+      input.value = v;
+      return true;
+    }
+  });
+  A.addEventListener('input', () => inputs.push([A.value, list.picking()]));
+  const key = k => {
+    const e = new KeyboardEvent('keydown', {
+      key: k,
+      cancelable: true,
+      bubbles: true
+    });
+    Object.defineProperty(e, 'target', {
+      value: A
+    });
+    return list.onKey(e);
+  };
+  const hits = [{
+    value: 'XAAA',
+    label: 'Un <b>'
+  }, {
+    value: 'XBBB',
+    label: 'Deux'
+  }, {
+    value: 'XCCC',
+    label: 'Trois'
+  }];
+  list.show(A, hits);
+  ck('show : trois propositions, la liste visible, le champ « aria-expanded »', box().querySelectorAll('[role=option]').length === 3 && !box()
+    .hidden && A.getAttribute('aria-expanded') === 'true' && B.getAttribute('aria-expanded') === 'false', box().innerHTML.slice(0, 120));
+  ck('show : un libellé est du texte (échappé ; seul le code est en gras)', box().querySelectorAll('b').length === 3 && box().textContent.includes('Un <b>'), box().innerHTML.slice(0,
+    200));
+  ck('↓ ↓ : la deuxième surlignée, signalée au lecteur d’écran', key('ArrowDown') && key('ArrowDown') && A.getAttribute(
+    'aria-activedescendant') === 'bn-1', A.getAttribute('aria-activedescendant'));
+  ck('↑ : revient à la première', key('ArrowUp') && A.getAttribute('aria-activedescendant') === 'bn-0', A.getAttribute(
+    'aria-activedescendant'));
+  key('ArrowDown');
+  ck('Entrée : la proposition surlignée écrite, la liste fermée, « input » rendu au champ pendant le choix', key('Enter') && writes.join() ===
+    'XBBB' && A.value === 'XBBB' && box().hidden && JSON.stringify(inputs) === JSON.stringify([['XBBB', true]]), JSON.stringify({
+      writes,
+      inputs,
+      hidden: box().hidden
+    }));
+  ck('après le choix : plus « en train de choisir »', list.picking() === false, list.picking());
+  list.show(A, hits);
+  ck('Échap : la liste fermée, rien d’écrit', key('Escape') && box().hidden && writes.length === 1, writes.join());
+  list.show(A, hits);
+  const item = box().querySelector('[data-v="XCCC"]');
+  ck('toucher : la proposition touchée écrite', list.onClick({
+    target: item
+  }) === true && A.value === 'XCCC' && box().hidden, A.value);
+  ck('un clic ailleurs n’est pas pour la liste', list.onClick({
+    target: screen
+  }) === false);
+  const t1 = list.ticket(),
+    t2 = list.ticket();
+  ck('ticket : seule la dernière demande est vivante', !list.live(t1) && list.live(t2));
+  alive = false;
+  ck('écran démonté : aucune demande vivante', !list.live(t2));
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

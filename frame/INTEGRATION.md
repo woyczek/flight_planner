@@ -341,6 +341,10 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
 - **The aerodrome's name** (`frame/lib/adnames.js`, 30 Oct 2026, § 10.27): `adLabel(rec)`, `adTitle(rec, code)` → « LFPO
   Paris-Orly », `adLine(rec, code)` → « LFPO — Paris-Orly », from an aerodb record (`coords`, `aerodromes`, `find`). One text rule
   for Fuel and the Map's pin; the base carries no city today, the rule adds it only when a record has one. Bench F71.
+- **The aerodrome field and the suggestion list** (`frame/lib/ad_field.js`, `frame/lib/suggest_list.js`, 18 Nov 2026, SOG-0465; writer:
+  Features SOG): `createAdField({ ctx, body, gone, keys, value?, idPrefix? })` — the completion of an aerodrome code (aerodb through
+  `ctx.aerodb` only) and its name under the field (`adnames.js`); `createSuggestList(o)` — the list under any field. Out of Fuel, which
+  keeps wrappers; the mission workshop uses the field. Benches F267, F268.
 - **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
   `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
   (a VRB wind has no direction: nothing invented); `label(c)` → « ↓ 12 kt · ← 6 kt » (arrows: where the wind blows, the runway drawn
