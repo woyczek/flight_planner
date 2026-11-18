@@ -42,6 +42,7 @@ import datetime, email.utils, http.client, json, os, re, ssl, sys, threading, ti
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import outbound  # noqa: E402 (le User-Agent du lanceur, chaque échec dit en console)
+import safe_json  # noqa: E402 (la lecture bornée d'un JSON non fiable : une seule garde pour tout le dépôt)
 
 UA = {'User-Agent': outbound.UA}
 TIMEOUT = 120          # secondes : le temps d'une requête (chaque lecture de la socket une fois connecté)
@@ -802,12 +803,8 @@ def nat_key(t):
 
 def nat_read(path):
     """Les routes d'un fichier de routes NAT, nettoyées (nat_clean) ; [] si le fichier manque, est trop gros ou illisible. Au plus 400 routes lues."""
-    try:
-        if os.path.getsize(path) > NAT_PAST_BYTES:
-            return []
-        with open(path, encoding='utf-8-sig') as f:
-            doc = json.load(f)
-    except (OSError, ValueError, RecursionError, MemoryError):      # un fichier à imbrication profonde ou énorme est un fichier illisible (le moteur ne s'arrête pas)
+    doc, why = safe_json.read(path, NAT_PAST_BYTES)      # absent, trop gros, à imbrication profonde ou NaN : un fichier illisible (le moteur ne s'arrête pas)
+    if why:
         return []
     rows = doc.get('tracks') if isinstance(doc, dict) else None
     return [x for x in (nat_clean(t) for t in (rows[:400] if isinstance(rows, list) else [])) if x]

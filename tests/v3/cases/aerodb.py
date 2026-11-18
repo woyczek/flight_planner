@@ -15350,7 +15350,7 @@ def k468(c):
 
 # the sites of tools/ that still carry their OWN guard around a json.load (RecursionError and company): the list only shrinks — a site migrated to
 # tools/safe_json.py leaves it (the case then asks to update it), a NEW site is refused
-LEGACY_JSON_GUARDS = {'tools/aero_fetch.py': 1, 'tools/build_world_weather.py': 1, 'tools/pdf_guard.py': 1, 'tools/regen/proc.py': 1, 'tools/registry_fr.py': 2,
+LEGACY_JSON_GUARDS = {'tools/build_world_weather.py': 1, 'tools/pdf_guard.py': 1, 'tools/regen/proc.py': 1, 'tools/registry_fr.py': 2,
                       'tools/tree_memo.py': 1}
 
 
