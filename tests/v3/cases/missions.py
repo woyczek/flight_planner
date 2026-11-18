@@ -3670,7 +3670,9 @@ _DROWS_JS = """async () => { const ED = await import('/modules/missions/editor_d
     next: ED.nextDrawerId(rows.filter(r => r.id !== 'D'), base), read: MS.readMission(d8).drawers.map(d => [d.rank, d.id, d.key.kind]),
     twelve: [many.length, many.map(r => r.id).join(''), ED.withDrawerRows({}, [...many, { i: -1, id: 'B', title: 'en trop' }]).phases.length],
     none: 'phases' in ED.withDrawerRows({ phases: [{ id: 'B' }] }, []), hostile: J(ED.withDrawerRows({}, [{ i: -1, id: '__proto__', title: 'x' }])), threw,
-    todo: ED.drawersTodo(base).map(t => t.name + ':' + t.key).join(' '),
+    todo: ED.drawersTodo(base).map(t => t.name + ':' + t.key).join(' '), todoWhat: ED.drawersTodo(base).filter(t => t.what).map(t => [t.name, t.what]),
+    unread: ED.drawersTodo({ ...base, phases: [{ id: 'B', title: 'Inconnue', message: 'M.', brief: 'B.', trigger_condition: { kind: 'escort', point: 'PT1' } }] })
+      .map(t => t.name + ':' + t.key).join(' '),
     blank: ED.drawerRowsOf({ phases: [{ id: 'B', trigger_delay_min: ' ', fallback_delay_min: '  ' }] }).map(r => [r.delay, r.fallback]),
     hidden: (() => { const doc = { phases: [{ id: 'B', title: 'Ti\u202Etre\u200B\u206A\uFFF9', message: 'a\u2066b\u200Dc fin\u202F!' }] }, rows = ED.drawerRowsOf(doc),
       d = ED.withDrawerRows(doc, [{ ...rows[0], message: 'x\u202Ey' }]);
@@ -3690,8 +3692,10 @@ _DROWS_JS = """async () => { const ED = await import('/modules/missions/editor_d
 def n75(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     r = c.js(_DROWS_JS)
+    # G, a hover (`trigger_condition` of kind hover): since SOG-0500 (a) (60eb99871) the workshop edits it — its row is « hover », no longer a
+    # key kept as it is (the kept condition: N153); « nothing touched, the same document » below holds for it too
     c.eq(r['rows'], [[0, 'B', 'time', ''], [2, 'C', 'zone', ''], [4, 'D', 'object', ''], [5, 'E', 'arrival', ''], [6, 'F', 'kept', 'inPart'],
-                     [7, 'G', 'kept', 'condition'], [8, 'H', 'hand', '']], 'seven drawers; the bare value and the duplicate are not rows', what='the rows')
+                     [7, 'G', 'hover', ''], [8, 'H', 'hand', '']], 'seven drawers; the bare value and the duplicate are not rows', what='the rows')
     c.ok(r['ranks'] is True and r['slots'] == '0B 2C 4D 5E 6F 7G 8H', [r['ranks'], r['slots']], 'the rows are the reader\'s drawers, in its order (drawerSlots)')
     c.eq(r['time'], ['PT1', '10', '10 min après PT1', 'Ligne un.\nLigne deux.', ['PT1', 'PT2', 'DESTINATION']], 'the hour: its point, its delay, its words; the briefing keeps its lines',
          what='the row of the hour')
@@ -3720,7 +3724,11 @@ def n75(c):
          'narrow no-break space stay; a text of the file the author does not touch is kept as it is', what='format characters')
     c.ok(r['clone'] is True, r['clone'], 'nothing touched: a COPY of equal content (never the object received)')
     c.eq(r['todo'], '2:noMessage 2:noBrief 3:noFallback 3:noMessage 3:noBrief 4:noFallback 4:noMessage 4:noBrief 5:noFallback 5:noMessage 5:noBrief '
-         '6:keyUnread 6:noMessage 6:noBrief 7:noMessage 7:noBrief', 'what each drawer has to complete, by rank', what='drawersTodo')
+         '6:condIncomplete 6:noMessage 6:noBrief 7:noMessage 7:noBrief', 'what each drawer has to complete, by rank', what='drawersTodo')
+    # the hover G is a row of the workshop (SOG-0500 (a)): « À compléter » names what its rule lacks; a key the workshop does not
+    # read (a condition of an unknown kind) is still « keyUnread »
+    c.eq([r['todoWhat'], r['unread']], [[['6', ['radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax']]], '1:keyUnread'], 'the hover says what its rule lacks; an unknown condition is a key not read',
+         what='condIncomplete, keyUnread')
 
 
 # SOG-0441 (lot T2): the « Tiroirs » section, its view mounted in a bare page with a fake frame (documents in memory)
