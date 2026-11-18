@@ -440,8 +440,31 @@ def j5(c):
     c.until_doc('device/design.json', lambda d: d and d.get('design') == 'metro', what='the design is kept on the device', timeout=6000)
 
     c.step(P, 5, 'language from Réglages')
-    c.skip_step('Réglages has no language control (the frame reads sogFrame:lang / repositoryLanguageMode, set by the landing page): '
-                'the switch to en without reload is not walked')
+    # SOG-0477: Réglages has a language choice (Display card); the screen reloads on a choice, because the language touches the bar, the titles and every screen.
+    # The harness sets sogFrame:lang at EVERY load: what the page wrote when it left is kept in sessionStorage and put back by the next load (installed now AND in the page already loaded).
+    keep = """(() => { const KEYS = ['sogFrame:lang', 'repositoryLanguageMode'];
+      try { const k = sessionStorage.getItem('__keepLang'); if (k) { const v = JSON.parse(k); for (const n of KEYS) v[n] === null ? localStorage.removeItem(n) : localStorage.setItem(n, v[n]) } } catch (e) {}
+      addEventListener('pagehide', () => { try { const v = {}; for (const n of KEYS) v[n] = localStorage.getItem(n); sessionStorage.setItem('__keepLang', JSON.stringify(v)) } catch (e) {} }) })()"""
+    c.page.add_init_script(keep)
+    c.page.evaluate(keep)
+    shown = {'en': 'Display', 'fr': 'Affichage'}
+
+    def pick(lang):
+        if c.count('[data-group="display"]') and not c.js("document.querySelector('[data-group=\"display\"]').open"):
+            c.tap('[data-group="display"] > summary')
+        c.until("!!document.querySelector('[data-card=\"display\"] [data-lang-pick]')", timeout=10000, what='the language choice in the Display card')
+        c.js('window.__beforeLang = 1')
+        c.tap(f'[data-card="display"] [data-lang-pick={lang}]')
+        c.until("(t) => !window.__beforeLang && document.querySelector('[data-card=\"display\"] h2')?.textContent.trim() === t", arg=shown[lang], timeout=15000,
+                what=f'{lang}: the screen reloaded and the Display card is titled « {shown[lang]} »')
+    pick('en')
+    c.eq(c.js("localStorage.getItem('sogFrame:lang')"), 'en', 'the choice is kept on the device', what='sogFrame:lang')
+    c.eq(c.js("document.querySelector('[data-lang-pick=en]').checked"), True, 'English is the box checked', what='checked')
+    pick('fr')     # back to the language of the run: the next steps compare the texts with it
+    c.eq(c.js("localStorage.getItem('sogFrame:lang')"), 'fr', 'the choice is kept on the device', what='sogFrame:lang back')
+    # the reload left Réglages as the page itself (not a screen opened over another one): Escape has nothing to close, as after any direct load of #settings; the next steps open it by the gear again
+    c.js("location.hash = '#fuel'")
+    c.until("location.hash === '#fuel'", what='the journey leaves Réglages for a module, as a pilot does after a choice')
 
     c.step(P, 6, 'offline: amber and the Status line say offline')
     c.context.set_offline(True)
