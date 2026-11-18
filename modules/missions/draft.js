@@ -17,6 +17,8 @@
 //     texte), bornée et validée ; `doc` : le texte relu par js-yaml (Y), schéma CORE.
 //   listDrafts(ctx, Y?) → [{ key, mode, id, title, updated_at }] : les brouillons lisibles de l'appareil, le plus récent d'abord, dix
 //     au plus (un fichier illisible est écarté sans bruit).
+//   pruneDrafts(ctx, keepKey) → le nombre de brouillons effacés : au-delà de LIMITS.keep (40) brouillons sur l'appareil, les plus anciens
+//     s'effacent (jamais celui de `keepKey`, que l'atelier vient d'écrire) ; appelé au moment où l'atelier écrit le sien.
 //   dropDraft(ctx, key) → vrai si le brouillon a été effacé (ou n'existait pas) ; une clé hors forme : faux, rien n'est touché.
 import * as ED from './editor.js';
 
@@ -24,7 +26,8 @@ export const LIMITS = Object.freeze({
   text: 262144, // 256 Ko : le texte YAML de la mission
   file: 270336, // le fichier entier : le texte et son enveloppe
   list: 10, // les brouillons proposés
-  scan: 40 // les fichiers du dossier lus pour les trouver, au plus
+  scan: 40, // les fichiers du dossier lus pour les trouver, au plus
+  keep: 40 // les brouillons gardés sur l'appareil : au-delà, les plus anciens s'effacent (pruneDrafts)
 });
 export const KEY = /^(new|[A-Z0-9-]{1,24})$/;
 export const PREFIX = 'cache/missions/';
@@ -98,8 +101,20 @@ export function readDraft(value, Y) {
   }
 }
 
+/** Vrai quand la taille connue d'un fichier (`bytes` d'une ligne de `data.cached`) dépasse la borne d'un brouillon : le fichier n'est
+ *  alors pas lu. Une taille inconnue ne dit pas « trop gros » (readDraft borne ensuite le texte lu). */
+const tooBig = bytes => Number(bytes) > LIMITS.file;
+
+/** La taille que l'appareil connaît d'UN fichier (`data.cached(chemin)`, sans lire le fichier) ; null quand elle n'est pas connue. Sert au
+ *  repli `data.list`, qui ne rend que des chemins : le même filtre de taille que la voie principale, avant de lire. */
+async function sizeOf(data, path) {
+  const rows = await Promise.resolve().then(() => data.cached?.(path)).catch(() => null);
+  return Array.isArray(rows) ? rows.find(r => r?.path === path)?.bytes ?? null : null;
+}
+
 /** Les brouillons de l'appareil (voir l'en-tête) : ce que l'appareil garde (`data.cached`, sans réseau ; `data.list` d'un cadre plus
- *  ancien), les fichiers trop gros écartés avant d'être lus. */
+ *  ancien), les fichiers trop gros écartés avant d'être lus — par les deux voies : le repli `data.list` interroge la taille de chaque
+ *  fichier (`sizeOf`) avant de le lire. */
 export async function listDrafts(ctx, Y = globalThis.jsyaml) {
   const data = ctx?.data;
   if (!data) return [];
@@ -108,11 +123,13 @@ export async function listDrafts(ctx, Y = globalThis.jsyaml) {
     Y = globalThis.jsyaml;
   }
   const kept = await Promise.resolve().then(() => data.cached?.(PREFIX)).catch(() => null),
-    paths = Array.isArray(kept) ? kept.filter(r => !(Number(r?.bytes) > LIMITS.file)).map(r => r?.path) : await Promise.resolve().then(
+    paths = Array.isArray(kept) ? kept.filter(r => !tooBig(r?.bytes)).map(r => r?.path) : await Promise.resolve().then(
       () => data.list(PREFIX)).catch(() => null),
     todo = (Array.isArray(paths) ? paths : []).filter(p => typeof p === 'string' && PATH.test(p)).slice(0, LIMITS.scan),
     out = [];
   for (const p of todo) {
+    if (!Array.isArray(kept) && tooBig(await sizeOf(data, p)))
+      continue; // le repli : la taille avant la lecture, comme la voie principale
     const d = readDraft(await Promise.resolve().then(() => data.get(p)).catch(() => null), Y);
     if (d && draftPath(d.key) === p) out.push({
       key: d.key,
@@ -123,6 +140,45 @@ export async function listDrafts(ctx, Y = globalThis.jsyaml) {
     });
   }
   return out.sort((a, b) => (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0)).slice(0, LIMITS.list);
+}
+
+/** Borne le nombre de brouillons de l'appareil (SOG-0486, retouche de Sécurisation) : au-delà de LIMITS.keep, les plus anciens sont
+ *  effacés, jamais celui de `keepKey` (celui que l'atelier vient d'écrire). L'âge est celui de la copie locale (`at` de `data.cached`) ;
+ *  sans lui (repli `data.list`), la date `updated_at` du fichier, une date illisible comptant pour la plus ancienne. Rien n'est lu tant que
+ *  le compte ne dépasse pas la borne. Rend le nombre de brouillons effacés. */
+export async function pruneDrafts(ctx, keepKey) {
+  const data = ctx?.data;
+  if (!data) return 0;
+  const kept = await Promise.resolve().then(() => data.cached?.(PREFIX)).catch(() => null),
+    rows = Array.isArray(kept) ? kept.map(r => ({
+      path: r?.path,
+      at: Number(r?.at) || 0
+    })) : (await Promise.resolve().then(() => data.list(PREFIX)).catch(() => null) || []).map(p => ({
+      path: p,
+      at: null
+    })),
+    mine = draftPath(keepKey),
+    all = rows.filter(r => typeof r.path === 'string' && PATH.test(r.path));
+  if (all.length <= LIMITS.keep) return 0;
+  for (const r of all) {
+    if (r.at !== null) continue;
+    const d = await Promise.resolve().then(() => data.get(r.path)).catch(() => null);
+    let at = NaN;
+    try {
+      const env = typeof d === 'string' && d.length <= LIMITS.file ? JSON.parse(d) : d;
+      at = Date.parse(env?.updated_at);
+    } catch {
+      /* illisible : la plus ancienne */
+    }
+    r.at = Number.isFinite(at) ? at : 0;
+  }
+  const old = all.filter(r => r.path !== mine).sort((a, b) => a.at - b.at).slice(0, all.length - LIMITS.keep);
+  let n = 0;
+  for (const r of old) {
+    const key = r.path.slice(PREFIX.length + 'draft_'.length, -'.json'.length);
+    if (await dropDraft(ctx, key)) n++;
+  }
+  return n;
 }
 
 /** Efface le brouillon d'une clé (voir l'en-tête). */

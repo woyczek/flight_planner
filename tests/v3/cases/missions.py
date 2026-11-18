@@ -9785,7 +9785,7 @@ _DRAFT_RESUME = f"""(key) => {{ const bar = document.querySelector('{R} .ms-regb
 # drafts written by hand into the device's cache (the frame's record of a `cache` file)
 _DRAFT_PUT = """async (rows) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
   await new Promise((res, rej) => { const tx = db.transaction('docs', 'readwrite');
-    for (const [path, text] of rows) tx.objectStore('docs').put({ path, text, base: text, rev: '', at: Date.now(), policy: 'cache' });
+    for (const [path, text, at] of rows) tx.objectStore('docs').put({ path, text, base: text, rev: '', at: at ?? Date.now(), policy: 'cache' });
     tx.oncomplete = res; tx.onerror = () => rej(tx.error) }); db.close(); return rows.length }"""
 # listDrafts and readDraft over what the device keeps (FrameData.cached, and the texts read as the frame reads a .json: parsed, or null)
 _DRAFT_LIST = """async () => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const DF = await import('/modules/missions/draft.js');
@@ -9797,6 +9797,16 @@ _DRAFT_LIST = """async () => { if (!globalThis.jsyaml) await import('/frame/lib/
     pure: [DF.draftPath('../x'), DF.draftPath('new'), DF.keyOf('edit', 'x-001a'), DF.keyOf('dup', 'X-001A'), DF.keyOf('edit', 'X-001A'),
       DF.draftOf({ key: 'new', mode: 'edit', text: 't' }), DF.draftOf({ key: 'new', mode: 'new', text: 'x'.repeat(262145) }), DF.readDraft('{', globalThis.jsyaml)] } }""" % _TEXT_OF
 _NOTES = "[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+
+# SOG-0486 (Sécurisation's notes): listDrafts through the fallback `data.list` (a frame whose `cached` fails), the files read recorded; the paths kept
+_DRAFT_FALLBACK = """async () => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const DF = await import('/modules/missions/draft.js');
+  const text = %s, reads = [];
+  const get = async p => { reads.push(p); const t = await text(p); try { return t == null ? null : JSON.parse(t) } catch { return null } };
+  const paths = (await FrameData.cached('cache/missions/')).map(r => r.path);
+  const data = { cached: p => p === 'cache/missions/' ? Promise.reject(new Error('no list')) : FrameData.cached(p), list: async () => paths, get };
+  const list = await DF.listDrafts({ data }, globalThis.jsyaml);
+  return { list: list.map(d => d.key), reads: reads.map(p => p.replace('cache/missions/', '')), paths: paths.length } }""" % _TEXT_OF
+_DRAFT_PATHS = "async () => (await FrameData.cached('cache/missions/')).map(r => r.path.replace('cache/missions/', '')).filter(p => /^draft_/.test(p)).sort()"
 
 
 def _draft_env(key, mode, text, title='t'):
@@ -9933,6 +9943,10 @@ def n150(c):
     c.eq(got.get('pure'), [None, 'cache/missions/draft_new.json', '', 'new', 'X-001A', None, None, None],
          '(C) the forms: a path never leaves cache/missions/, a lower-case identifier has no draft, a copy is « new », a key and its mode go together, 256 KB at most',
          what='(C) pure')
+    fb = c.js(_DRAFT_FALLBACK)
+    c.eq([fb.get('list'), 'draft_new.json' in fb.get('reads', []), 'draft_X-006.json' in fb.get('reads', []), fb.get('paths')], [['X-006'], False, True, 6],
+         '(C) listDrafts through the fallback `data.list`: the same size filter as the main way, BEFORE the file is read (the 300 KB draft is never read)',
+         what='(C) fallback size filter')
     for key, said in (('new', 'draftUnread'), ('X-003', 'draftUnread'), ('X-005', 'draftUnread'), ('X-006', 'draftGone')):
         c.js(quiet)
         c.ok(c.js(_DRAFT_RESUME, key), '', f'the resumption of {key}')
@@ -9942,6 +9956,25 @@ def n150(c):
                 break
             c.wait(200)
         c.eq([any(want in norm(n) for n in c.js(_NOTES)), c.count(E)], [True, 0], f'(C) the resumption of {key}: « {want} », no workshop', what=f'(C) {key}')
+    c.js(_REG_CLEAR)
+
+    # (D) more than 40 drafts on the device: the workshop writing its own erases the OLDEST, never its own, down to 40 (Sécurisation's note)
+    reg_open(c, _ED_TEXTS)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='(D) a new mission on its Cadre')
+    c.js(_DRAFT_PUT, [[f'cache/missions/draft_X-{100 + i}.json', _draft_env(f'X-{100 + i}', 'edit', good, f'Ancien {i}'), 1000000 + i] for i in range(1, 46)])
+    c.eq(len(c.js(_DRAFT_PATHS)), 45, '(D) 45 old drafts on the device before the workshop writes its own', what='(D) before')
+    _ed_fill(c, 'edtitle', 'Le quarante-sixième brouillon')
+    left = []
+    for _ in range(40):
+        left = c.js(_DRAFT_PATHS)
+        if len(left) == 40:
+            break
+        c.wait(250)
+    c.eq([len(left), 'draft_new.json' in left, 'draft_X-101.json' in left, 'draft_X-106.json' in left, 'draft_X-107.json' in left, 'draft_X-145.json' in left],
+         [40, True, False, False, True, True],
+         '(D) 46 drafts with its own: the 6 oldest (X-101 to X-106) are erased, its own and the others stay — 40 at most', what='(D) bounded')
+    ed_leave(c)
     c.js(_REG_CLEAR)
 
 

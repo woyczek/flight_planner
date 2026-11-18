@@ -3964,6 +3964,8 @@ async function edDraftKeep(s, e, last = false) {
   })).catch(() => {
     e.draftDoc = null; // refusé : le prochain changement réessaie
   });
+  if (e.draftDoc) DF.pruneDrafts(s.ctx, key).catch(() =>
+    0); // SOG-0486 : au-delà de 40 brouillons, les plus anciens s'effacent (jamais celui-ci)
 }
 
 /** La sortie de l'atelier (« Annuler », le démontage) : un atelier changé écrit son brouillon une dernière fois ; un atelier revenu

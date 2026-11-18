@@ -1373,6 +1373,10 @@ The ergonomist: the workshop keeps the mission ON THE DEVICE at each change, nev
 - **Content** (`draft.js` `draftOf`): `{ version: 1, updated_at, key, mode ('new' | 'dup' | 'edit'), title, text }`, `text` = the YAML « Enregistrer » would
   write at that instant (`edSaveCadre`, `edDoc`, `ED.yamlText`, the same functions as `edSave`), veiled or not (the veil filters the screen, never what is
   written: the drawers stay in the text); 256 KB at most, else nothing is written.
+  **The draft of a VEILED workshop carries the WHOLE mission, closed drawers included, on the device alone**: that is a screen secret (the pilot
+  who opens the workshop does not see it on the screen), NOT a protection — whoever reads the device's storage reads the text of the draft.
+- **Bounded in number** (`draft.js` `pruneDrafts`, called by `edDraftKeep` right after the workshop wrote its own): beyond `LIMITS.keep` (40)
+  drafts on the device, the OLDEST are erased (their `at` in the device's cache, else their `updated_at`), never the one just written.
 - **When** (`editor_view.js`): after each drawing (`edAfter`) and each keystroke (`edRefresh`) a write is asked (`edDraftSoon`), made one second later at most
   once per second (`edDraftKeep`), only when the workshop is « changed » in the sense of the question before leaving (`edDirty`, the test `ctx.unsaved` reads:
   no second detector) and the document differs from the last one written; once more when the workshop is left (`edLeave` after « Quitter »,
