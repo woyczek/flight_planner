@@ -2801,8 +2801,8 @@ def n80(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 72, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (72 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 81, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (81 at least)')
 
 
 # ---- the session « Création de missions »: cases N70 to N79 (the editor's references, the drawers' format)
@@ -3379,8 +3379,8 @@ def n81(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers_view.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 64, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (64 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 74, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (74 at least)')
 
 # SOG-0441 (lot T2): the « Tiroirs » section on the mission sheet. Invented missions X-90x (no real mission, no AIP content).
 DW = 'modules/missions/drawers_view.js'
@@ -3399,6 +3399,8 @@ turning_points:
   - { id: PT1, lat: 44.75, lon: 1.25 }
 zones:
   - { id: ZONE-9, name: Zone de travail, kind: mission, centre: { lat: 44.7, lon: 1.2 }, radius_km: 5 }
+maps:
+  - { file: travail.png, description: La zone de travail, centre_ref: ZONE-9 }
 route_order: [ORIGIN, PT1, DESTINATION]
 phases:
   - id: B
@@ -3423,6 +3425,8 @@ title: Ravitaillement
 summary: Une mission que ce pilote ne joue pas.
 zones:
   - { id: ZONE-8, name: Zone de dépose, kind: mission, centre: { lat: 44.1, lon: 1.9 }, radius_km: 3 }
+maps:
+  - { file: depose.png, description: La zone de dépose, centre_ref: ZONE-8 }
 phases:
   - { id: B, title: Titre secret, message: "Message secret.", trigger_point: ORIGIN, trigger_delay_min: 5 }
 """
@@ -3670,6 +3674,146 @@ def n83(c):
     finally:
         c.context.unroute(re.compile(r'/__setup/status'))
         c.context.unroute(re.compile(r'/__setup/sim/position'))
+    c.js(_DW_CLEAR)
+
+
+# SOG-0448 (the part of « Affectation »): what the sheet and its Detail show of a mission with drawers, and the open drawers published on
+# the device. An invented mission whose drawer 1 hides a zone, a point and a rendezvous; the same file under another identifier is the
+# mission of another pilot.
+_DW_SECRET_REGISTRY = """missions:
+  - { id: X-905A, family: TESTTIROIR, title: Recherche cachée, folder: X_TIR/X-905A, files: [missionX-905A.yaml] }
+  - { id: X-906A, family: TESTTIROIR, title: Recherche d'un autre, folder: X_TIR/X-906A, files: [missionX-906A.yaml] }
+"""
+_DW_SECRET = """mission: { id: %s, type: SAR, subtype: RECHERCHE }
+title: %s
+summary: Un bateau inventé ne répond plus. Décollez vers la zone d'attente ; la suite vous sera donnée en vol.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+turning_points:
+  - { id: PT1, name: Point d'attente, lat: 44.75, lon: 1.25 }
+  - { id: PT2, name: Point de treuillage, lat: 44.6, lon: 1.3 }
+zones:
+  - { id: ZONE-1, name: Zone d'attente, kind: mission, centre: { lat: 44.75, lon: 1.25 }, radius_km: 5 }
+  - { id: ZONE-2, name: Secteur du naufrage, kind: search, centre: { lat: 44.6, lon: 1.3 }, radius_km: 4 }
+rendezvous:
+  - { id: RDV-1, name: Rendez-vous du navire, lat: 44.55, lon: 1.35, participants: [Navire Test], role: recueil }
+maps:
+  - { file: attente.png, description: La zone d'attente, centre_ref: ZONE-1 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - id: B
+    title: Secteur de recherche
+    message: "Le bateau a été vu au sud, rejoignez le secteur."
+    brief: Descendez à 500 ft.
+    trigger_zone: ZONE-2
+    zone_shown: false
+    fallback_delay_min: 60
+    route_order: [PT2, RDV-1]
+"""
+# the places the Detail lists (in the page, shown or not): the zones, the rendezvous, the points of the route, and every text of the sheet
+_DW_PLACES = f"""(() => {{ const p = document.querySelector('{M} [data-detailpane]'), sh = document.querySelector('{M} .ms-sheet');
+  return {{ zones: [...p.querySelectorAll('[data-zone]')].map(e => e.dataset.zone), rdv: p.querySelectorAll('[data-rdv]').length,
+    route: [...p.querySelectorAll('[data-routetable] tr')].map(r => r.cells[0].textContent),
+    first: (sh.querySelector('.ms-first [data-zones]')?.textContent || '').replace(/\\s+/g, ' ').trim(), html: sh.innerHTML }} }})()"""
+# how the frame's cache holds a document: its policy, and whether a write of it waits to be sent
+_DW_HELD = """async (p) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  const get = st => new Promise(res => { const q = db.transaction(st).objectStore(st).get(p); q.onsuccess = () => res(q.result); q.onerror = () => res(null) });
+  const pend = await get('pending'), row = await get('docs'); db.close(); return [row ? row.policy : null, !!pend] }"""
+
+
+@case('N84', 'Missions: the secret of a closed drawer on the sheet — in MY mission the sheet and its Detail neither list nor name the zone, '
+      'the point and the rendezvous a closed drawer hides; « Ouvrir le tiroir » shows them at once; the open drawers are published on the '
+      'device (a cache document, never sent); a mission I only browse shows the visible part alone, and a document that said it mine is undone',
+      'N', tags=('missions', 'security'), designs=('standard',), langs4=True,
+      rule='SOG-0448, the part of « Affectation » (the ergonomist, 18 Nov 2026): « publie sur l\'appareil quels tiroirs de MA mission sont '
+      'ouverts (un document de cache, jamais envoyé, relu comme une entrée bornée) ; la fiche de ma mission et son Détail passent par '
+      'pilotView : un lieu, une zone, un objet ou la cible d\'un tiroir fermé n\'y est ni listé ni nommé ; une mission feuilletée (pas la '
+      'mienne) ne montre que la partie visible » — modules/missions/drawers_view.js `sees`, cache/missions/open_<ID>.json '
+      '(drawers.js `openAfter`, `readOpen`), the reader\'s rule frame/lib/mission.js `pilotView` (FORMAT_MISSION.md § 4 bis)')
+def n84(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    line = lambda mid, title, pilot: {'mission': mid, 'title': title, 'pilot': pilot, 'callsign': 'TEST31', 'takeoff': at(-10), 'status': 'affectée', 'role': 'mission'}
+    idx = {'updatedAt': at(0), 'assignments': [line('X-905A', 'Recherche cachée', 'ABC'), line('X-906A', "Recherche d'un autre", 'XYZ')]}
+    stale = {'schema': 1, 'mission': 'X-906A', 'mine': True, 'seance': None, 'opened': ['B'], 'at': at(-1)}   # « mine, drawer 1 open »: no longer true
+    OPEN, OTHER = 'cache/missions/open_X-905A.json', 'cache/missions/open_X-906A.json'
+    S = f'{M} [data-drawers]'
+    row = lambda k: tx(DW, k, c.lang)
+    SECRET = ('ZONE-2', 'Secteur du naufrage', 'PT2', 'Point de treuillage', 'RDV-1', 'Rendez-vous du navire', 'Navire Test', 'rejoignez le secteur', 'Descendez')
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_SECRET_REGISTRY],
+                     ['missions/X_TIR/X-905A/missionX-905A.yaml', _DW_SECRET % ('X-905A', 'Recherche cachée')],
+                     ['missions/X_TIR/X-906A/missionX-906A.yaml', _DW_SECRET % ('X-906A', "Recherche d'un autre")],
+                     ['missions/affectations.json', json.dumps(idx)]])
+    c.open('missions', wait=False, app='company', docs=[[OTHER, stale, 'cache']])
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the list')
+
+    def sheet(mid):
+        """Opens the sheet of a mission from the list (back to the list first)."""
+        if c.js(f"!!document.querySelector('{M} [data-do=back]')"):
+            c.tap(f'{M} [data-do="back"]')
+            c.until(f"!!document.querySelector('{M} [data-pane=list]')", timeout=8000, what='back to the list')
+        c.tap(f'{M} [data-list] [data-id="{mid}"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === '{mid}'", timeout=10000, what=f'the sheet of {mid}')
+
+    def shot(name):
+        """The Detail with its sections of places unfolded (on a narrow screen it is a second screen), then back to the first page."""
+        narrow = c.js(f"(() => {{ const b = document.querySelector('{M} .ms-todetail'); return !!b && getComputedStyle(b).display !== 'none' }})()")
+        if narrow:
+            c.tap(f'{M} .ms-todetail')
+        c.js(f"document.querySelectorAll('{M} [data-detailpane] details').forEach(e => {{ e.open = ['zones', 'rdv', 'route', 'maps'].includes(e.dataset.sec) }})")
+        c.settle()
+        c.shot(f'N84_{c.design}_{c.width}_{c.lang}_{name}.png')
+        if narrow:
+            c.tap(f'{M} .ms-tofirst')
+            c.until(f"!!document.querySelector('{S} [data-dw]')", timeout=6000, what='back to the first page')
+
+    # MY mission, its drawer closed: the open drawers published on the device — mine, none open
+    sheet('X-905A')
+    c.until(f"document.querySelectorAll('{S} [data-dw]').length === 1", timeout=10000, what='the drawer of my mission')
+    doc = c.until_doc(OPEN, lambda d: d and d.get('mine') is True, what='the document of the open drawers, on the device')
+    c.ok(doc['schema'] == 1 and doc['mission'] == 'X-905A' and doc['opened'] == [] and str(doc['seance']).startswith('A:') and set(doc) == {'schema', 'mission', 'mine', 'seance', 'opened', 'at'},
+         doc, 'the document: my mission, its play, no drawer open — and nothing else (no position, no title)')
+    c.eq(c.js(_DW_HELD, OPEN), ['cache', False], 'it stays on the device: a cache document, no write of it waits to be sent', what='policy, pending')
+    # the sheet and its Detail: the visible part alone
+    c.until(f"({_DW_PLACES}).zones.length === 1", timeout=6000, what='the Detail lists one zone')
+    p = c.js(_DW_PLACES)
+    c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1'], 0, ['PT1']],
+         'the Detail lists the zone the visible part cites (the centre of its map) and the point of its route — neither the zone, nor the point, nor the rendezvous of the closed drawer',
+         what='zones, rendezvous, route')
+    c.ok('ZONE-1' in p['first'] and 'ZONE-2' not in p['first'], p['first'], 'the zones line of the first page counts the visible zone alone')
+    c.eq([w for w in SECRET if w in p['html']], [], 'nothing of the closed drawer is in the page — not a name, not an identifier, not its message, not its briefing',
+         what='secret words in the sheet')
+    kb = norm(c.text(f'{S} [data-dw="B"] [data-dw-key]'))
+    c.ok(norm(c.text(f'{S} [data-dw="B"] .dw-top')).endswith('Secteur de recherche') and kb == norm(row('keyHidden')), [c.text(f'{S} [data-dw="B"] .dw-top'), kb],
+         'the « Tiroirs » section still says the closed drawer: its title, and « s\'ouvre en vol » for a zone its author hides')
+    shot('closed')
+    # « Ouvrir le tiroir », in two steps: the sheet is drawn again with the places of the drawer
+    c.tap(f'{S} [data-dw-open="B"]')
+    c.tap(f'{S} [data-dw-open="B"]')
+    c.until(f"document.querySelector('{S} [data-dw=\"B\"]')?.dataset.open === 'hand'", timeout=8000, what='the drawer is open on screen')
+    c.until(f"({_DW_PLACES}).zones.length === 2", timeout=6000, what='the Detail lists the zone of the open drawer')
+    p = c.js(_DW_PLACES)
+    c.eq([p['zones'], p['rdv'], p['route']], [['ZONE-1', 'ZONE-2'], 1, ['PT1', 'PT2']],
+         'the drawer open: its zone, the point and the rendezvous of its onward route are listed, without leaving the sheet', what='zones, rendezvous, route')
+    c.ok(all(w in p['html'] for w in ('Secteur du naufrage', 'Point de treuillage', 'Rendez-vous du navire', 'rejoignez le secteur')), p['html'][-300:],
+         'and they are named, with the message of the drawer')
+    doc = c.until_doc(OPEN, lambda d: d and d.get('opened') == ['B'], what='the document carries the open drawer')
+    c.ok(doc['mine'] is True and str(doc['seance']).startswith('A:'), doc, 'the document of the device: my mission, the letter of the open drawer')
+    c.eq(c.js(_DW_HELD, OPEN), ['cache', False], 'still on the device alone', what='policy, pending')
+    c.eq(c.js(f"document.querySelector('{M} .ms-sheet')?.dataset.id"), 'X-905A', 'the sheet stayed on the mission', what='sheet')
+    shot('open')
+    # the same file as the mission of another pilot: the visible part alone, whatever a document of the device said
+    sheet('X-906A')
+    c.until(f"!!document.querySelector('{S} [data-dw-count]')", timeout=8000, what='the line « Tiroirs : 1 »')
+    doc = c.until_doc(OTHER, lambda d: d and d.get('mine') is False, what='the document that said this mission mine is undone')
+    c.eq(doc['opened'], [], 'undone: no drawer is held open for a mission that is not mine', what='opened')
+    p = c.js(_DW_PLACES)
+    c.eq([p['zones'], p['rdv'], p['route'], [w for w in SECRET if w in p['html']]], [['ZONE-1'], 0, ['PT1'], []],
+         'a mission I only browse: the visible part alone, nothing of its closed drawer in the page', what='zones, rendezvous, route, secret words')
     c.js(_DW_CLEAR)
 
 

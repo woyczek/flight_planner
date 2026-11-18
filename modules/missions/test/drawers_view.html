@@ -1068,6 +1068,146 @@
   DV.stop();
   stage.innerHTML = '';
 
+  // ---- 12. SOG-0448 : les tiroirs ouverts publiés sur l'appareil, sees() et la fiche prévenue
+  const OPEN = 'cache/missions/open_X-701A.json',
+    // une mission lue (à la forme de frame/lib/mission.js) : une zone montrée par la partie visible, une zone que le tiroir 1 cache
+    seenMission = {
+      id: ID,
+      routeOrder: ['ZONE-1'],
+      maps: [],
+      points: {},
+      turns: [],
+      rendezvous: [],
+      zones: [{
+        id: 'ZONE-1',
+        name: 'Attente',
+        lat: 44.7,
+        lon: 1.2
+      }, {
+        id: 'ZONE-2',
+        name: 'Cachée',
+        lat: 44.6,
+        lon: 1.3
+      }],
+      drawers: [{
+        id: 'B',
+        rank: 1,
+        title: 'Secteur',
+        message: 'Message du tiroir.',
+        brief: 'Briefing du tiroir.',
+        key: {
+          kind: 'zone',
+          zoneId: 'ZONE-2',
+          shown: false,
+          fallbackMin: 60,
+          shape: {
+            circle: {
+              lat: 44.6,
+              lon: 1.3,
+              radiusM: 4000
+            }
+          }
+        },
+        route: []
+      }]
+    },
+    zonesOf = m => (m?.zones || []).map(x => x.id).join();
+  let changes = 0;
+  DV.stop();
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': index(Date.now() - 10 * MIN)
+    }
+  });
+  let view = DV.sees(ID, seenMission);
+  ck('sees() avant que la section ait lu : la partie visible seule — la zone du tiroir fermé n\'y est pas, le tiroir est scellé (ni message, ni briefing), « pas la mienne »',
+    zonesOf(view) === 'ZONE-1' && view.drawers[0].sealed === true && view.drawers[0].message === '' && view.drawers[0].brief === '' &&
+    view
+    .pilot.mine === false && !JSON.stringify(view).includes('44.6'), view);
+  await mount(ctx, seenMission, 1, {
+    changed: () => changes++
+  });
+  await until(() => !!ctx.store.get(OPEN));
+  ck('MA mission lue, tiroir fermé : le document « ouverts » est écrit sur l\'appareil (ma mission, la séance, aucune lettre), et la fiche est prévenue une fois (elle était dessinée « pas la mienne »)',
+    ctx.store.get(OPEN)?.mine === true && JSON.stringify(ctx.store.get(OPEN).opened) === '[]' && /^A:\d{4}-\d\d-\d\d$/.test(ctx.store
+      .get(OPEN).seance) && ctx.store.get(OPEN).mission === ID && changes === 1, [ctx.store.get(OPEN), changes]);
+  view = DV.sees(ID, seenMission);
+  ck('sees() pour MA mission, tiroir fermé : la mienne, rien d\'ouvert — la zone cachée n\'est toujours pas là',
+    zonesOf(view) === 'ZONE-1' && view.pilot.mine === true && view.pilot.opened.length === 0 && view.drawers[0].sealed === true, view);
+  await twice('B');
+  await until(() => ctx.store.get(OPEN)?.opened?.length === 1);
+  ck('le tiroir ouvert à la main : le document « ouverts » porte sa lettre, et la fiche est prévenue (une fois)', JSON.stringify(ctx.store
+    .get(OPEN)?.opened) === '["B"]' && changes === 2, [ctx.store.get(OPEN), changes]);
+  view = DV.sees(ID, seenMission);
+  ck('sees() après l\'ouverture : la zone du tiroir est montrée, le tiroir rendu en entier ; la mission lue n\'est pas modifiée',
+    zonesOf(view) === 'ZONE-1,ZONE-2' && view.drawers[0].message === 'Message du tiroir.' && !view.drawers[0].sealed && view.pilot.opened
+    .join() === 'B' && seenMission.zones.length === 2 && !('pilot' in seenMission), view);
+  DV.show(host(), {
+    ctx,
+    id: ID,
+    mission: seenMission,
+    changed: () => changes++
+  });
+  await sleep(150);
+  ck('la fiche redessinée après sees() : rien n\'a changé, elle n\'est pas prévenue de nouveau (aucune boucle de dessin)', changes === 2 &&
+    !!q('[data-dw="B"][data-open]'), changes);
+  ck('sees() pour une AUTRE mission que celle de la section : la partie visible seule', zonesOf(DV.sees('X-702A', {
+    ...seenMission,
+    id: 'X-702A'
+  })) === 'ZONE-1');
+  DV.sees(ID, seenMission);
+  const cached = ctx.asked.filter(p => p.startsWith('cache/missions/open_')).length;
+  ck('MA mission : le document « ouverts » n\'est jamais relu par la section (elle l\'écrit de ce qu\'elle calcule) ; rien n\'est écrit hors de mon carnet et du cache de l\'appareil',
+    cached === 0 && [...ctx.store.keys()].every(p => p === BOOK || p.startsWith('cache/missions/') || p === 'missions/affectations.json'),
+    [
+      ...ctx.store.keys()
+    ]);
+  // une mission qu'on feuillette : un document qui la disait mienne (une affectation retirée) est défait ; sinon rien n'est écrit
+  DV.stop();
+  changes = 0;
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': {
+        assignments: [{
+          mission: ID,
+          pilot: 'BBB',
+          takeoff: iso(Date.now())
+        }]
+      },
+      [OPEN]: {
+        schema: 1,
+        mission: ID,
+        mine: true,
+        seance: null,
+        opened: ['B'],
+        at: iso(Date.now() - MIN)
+      }
+    }
+  });
+  DV.sees(ID, seenMission);
+  await mount(ctx, seenMission, 0, {
+    changed: () => changes++
+  });
+  await until(() => ctx.store.get(OPEN)?.mine === false);
+  ck('mission feuilletée dont un document « ouverts » disait « la mienne, tiroir B ouvert » : il est défait (plus la mienne, aucune lettre), et la fiche n\'est pas redessinée',
+    ctx.store.get(OPEN)?.mine === false && JSON.stringify(ctx.store.get(OPEN).opened) === '[]' && changes === 0 && zonesOf(DV.sees(ID,
+      seenMission)) === 'ZONE-1', [ctx.store.get(OPEN), changes]);
+  DV.stop();
+  ctx = fakeCtx({
+    docs: {
+      'missions/affectations.json': {
+        assignments: []
+      }
+    }
+  });
+  await mount(ctx, seenMission, 0);
+  await sleep(200);
+  ck('mission feuilletée sans document « ouverts » : rien n\'est écrit', !ctx.store.has(OPEN) && ctx.store.size === 1, [...ctx.store
+    .keys()
+  ]);
+  DV.stop();
+  stage.innerHTML = '';
+
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

@@ -1252,6 +1252,175 @@
   ck('stateOf sans rien (ni tiroirs, ni options) : une liste vide, aucune exception', JSON.stringify(D.stateOf()) === '[]' && JSON
     .stringify(D.stateOf(null, {})) === '[]' && D.stateOf(drawers).length === 3);
 
+  // ---- le document « ouverts » de l'appareil (SOG-0448) : ce que la Carte lit des tiroirs ouverts de MA mission
+  const opSt = [{
+      id: 'B',
+      open: true
+    }, {
+      id: 'C',
+      open: false
+    }, {
+      id: 'D',
+      open: true
+    }, {
+      id: 'Z',
+      open: true
+    }],
+    opDoc = D.openAfter(opSt, {
+      mission: ' x-701a ',
+      mine: true,
+      seance: sc
+    }, T0),
+    opNone = JSON.stringify({
+      mine: false,
+      opened: [],
+      seance: null,
+      at: null
+    }),
+    opRead = (doc, o) => JSON.stringify(D.readOpen(doc, ID, {
+      now: T0 + MIN,
+      ...o
+    }));
+  ck('openPath : cache/missions/open_<ID>.json, l\'identifiant relu (rogné, en capitales) ; null pour ce qui n\'est pas un identifiant de mission (jamais un chemin pris tel quel)',
+    D.openPath(' x-701a ') === 'cache/missions/open_X-701A.json' && [D.openPath('../X-701A'), D.openPath('X-701A/..'), D.openPath(7), D
+      .openPath(null), D.openPath()
+    ].every(x => x === null), D.openPath(' x-701a '));
+  ck('openAfter : la mission, « mine », la séance, les lettres des tiroirs ouverts dans l\'ordre du lecteur (une lettre inconnue n\'y est pas), l\'heure',
+    JSON.stringify(opDoc) === JSON.stringify({
+      schema: 1,
+      mission: ID,
+      mine: true,
+      seance: sc.key,
+      opened: ['B', 'D'],
+      at: iso(T0)
+    }), opDoc);
+  ck('openAfter pour une mission qui n\'est pas la mienne : aucune lettre, aucune séance, quoi que disent les états ; null sans identifiant de mission',
+    JSON.stringify(D.openAfter(opSt, {
+      mission: ID,
+      mine: false,
+      seance: sc
+    }, T0)) === JSON.stringify({
+      schema: 1,
+      mission: ID,
+      mine: false,
+      seance: null,
+      opened: [],
+      at: iso(T0)
+    }) && D.openAfter(opSt, {
+      mission: ID,
+      mine: 'true',
+      seance: sc
+    }, T0).mine === false && D.openAfter(opSt, {
+      mission: 'x',
+      mine: true
+    }, T0) === null && D.openAfter(opSt) === null);
+  ck('readOpen : le document relu rend « mine », les lettres, la séance et l\'heure', opRead(opDoc) === JSON.stringify({
+    mine: true,
+    opened: ['B', 'D'],
+    seance: sc.key,
+    at: T0
+  }), opRead(opDoc));
+  ck('readOpen, fermé à l\'échec : une autre mission, un autre schéma, « mine » qui n\'est pas exactement vrai (le texte « true », 1), sans heure',
+    [{
+      ...opDoc,
+      mission: 'X-702A'
+    }, {
+      ...opDoc,
+      schema: 2
+    }, {
+      ...opDoc,
+      mine: 'true'
+    }, {
+      ...opDoc,
+      mine: 1
+    }, {
+      ...opDoc,
+      at: null
+    }, {
+      ...opDoc,
+      at: 'demain'
+    }].every(d => opRead(d) === opNone) && JSON.stringify(D.readOpen(opDoc, 'X-702A', {
+      now: T0
+    })) === opNone);
+  ck('readOpen : un document daté du futur (plus de deux minutes) ou de plus d\'un jour ne tient aucun tiroir pour ouvert ; à la limite, il vaut',
+    opRead(opDoc, {
+      now: T0 - 3 * MIN
+    }) === opNone && opRead(opDoc, {
+      now: T0 + D.OPEN_MS + MIN
+    }) === opNone && D.readOpen(opDoc, ID, {
+      now: T0 - MIN
+    }).mine && D.readOpen(opDoc, ID, {
+      now: T0 + D.OPEN_MS - MIN
+    }).mine && opRead(opDoc, {
+      now: NaN
+    }) === opNone && opRead(opDoc, {
+      now: '0'
+    }) === opNone);
+  ck('readOpen avec la séance de celui qui lit : la même vaut ; une autre, ou « aucune séance en cours » (null), ne vaut pas ; non donnée, elle n\'est pas comparée',
+    D.readOpen(opDoc, ID, {
+      now: T0,
+      seance: sc.key
+    }).mine && opRead(opDoc, {
+      seance: 'A:2026-11-17'
+    }) === opNone && opRead(opDoc, {
+      seance: null
+    }) === opNone && D.readOpen(opDoc, ID, {
+      now: T0,
+      seance: undefined
+    }).mine && D.readOpen({
+      ...opDoc,
+      seance: null
+    }, ID, {
+      now: T0,
+      seance: null
+    }).mine);
+  const opHostile = JSON.parse(
+    '{"schema":1,"mission":"X-701A","mine":true,"at":"2026-11-18T19:40:00Z","opened":["A","B","b","N",7,null,["C"],{"id":"D"},"B","M","__proto__"]}'
+  );
+  ck('readOpen, une entrée bornée : seules les lettres du lecteur comptent (ni « A », ni « b », ni un nombre, ni une liste), sans doublon, dans l\'ordre du lecteur ; soixante-quatre entrées lues au plus',
+    JSON.stringify(D.readOpen(opHostile, ID, {
+      now: T0
+    }).opened) === '["B","M"]' && JSON.stringify(D.readOpen({
+      ...opDoc,
+      opened: [...Array(64).fill('x'), 'C']
+    }, ID, {
+      now: T0
+    }).opened) === '[]' && JSON.stringify(D.readOpen({
+      ...opDoc,
+      opened: 'BCD'
+    }, ID, {
+      now: T0
+    }).opened) === '[]', D.readOpen(opHostile, ID, {
+      now: T0
+    }));
+  let opThrew = '';
+  for (const bad of [null, undefined, 7, 'x', [],
+      [opDoc], JSON.parse('{"__proto__":{"schema":1,"mission":"X-701A","mine":true,"at":"2026-11-18T19:40:00Z","opened":["B"]}}'),
+      JSON.parse(
+        '{"schema":1,"mission":"X-701A","mine":true,"at":"2026-11-18T19:40:00Z","opened":{"length":2,"0":"B"},"constructor":{"prototype":{}}}'
+      )
+    ]) {
+    try {
+      const r = D.readOpen(bad, ID, {
+        now: T0
+      });
+      if (r.opened.length || (r.mine && !Object.hasOwn(Object(bad), 'mine'))) opThrew += `ouvert:${JSON.stringify(bad)} `;
+    } catch (e) {
+      opThrew += `${e.message} `;
+    }
+  }
+  for (const o of [null, undefined, 7, 'x', [],
+      []
+    ]) {
+    try {
+      D.readOpen(opDoc, ID, o);
+    } catch (e) {
+      opThrew += `options:${e.message} `;
+    }
+  }
+  ck('readOpen ne lève jamais et ne tient rien pour ouvert sur une entrée hostile (null, un nombre, une liste, des clés héritées de « __proto__ ») ; des options qui ne sont pas un objet valent « pas d\'option »',
+    opThrew === '', opThrew);
+
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

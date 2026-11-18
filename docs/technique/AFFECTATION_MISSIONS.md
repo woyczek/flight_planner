@@ -437,3 +437,46 @@ decides what is followed, writes the finding and says it.
 - Cases: N80 (72 checks: `follows`, `finding`, `stands`, `catchUp`, the fixes of a record), N81 (64: the subscription, the three
   states, the catch-up, the flight of another mission), N83 (the sheet with a simulated launcher and simulator: followed, crossed,
   in range and « Objet en vue », the arrival; 390 and 1280 px, four languages).
+
+### 11.4 The secret of a closed drawer on the sheet, and the open drawers published on the device (SOG-0448, the part of this session)
+
+The rule is the reader's, written once: `pilotView(mission, opened, { mine })` of `frame/lib/mission.js`
+(`docs/technique/FORMAT_MISSION.md` § 4 bis). This session gives it its two inputs — whose mission it is, which drawers are open —
+and nobody else computes them.
+
+- **The sheet and its Detail** — `drawers_view.js` exports `sees(id, mission)`: the mission read, through `pilotView`, with what the
+  posed « Tiroirs » section knows. Before the section has read (the first drawing), and for a mission that is not mine: the visible
+  part alone — a place, a zone, a rendezvous or the target of a closed drawer is neither listed nor named, in the first page as in the
+  Detail. `modules/missions/module.js` calls it in `missionHtml` (one line) and gives `show()` a `changed` callback (one line): when a
+  drawer opens — a gesture, its hour, a finding — the section tells the sheet ONCE per state and the sheet is drawn again with the
+  places of the drawer (a sheet that does not redraw is not called at every computation; no drawing loop: a redrawn sheet calls
+  `sees` again, which records what it returned). The section itself keeps reading the WHOLE mission: it follows the keys in flight.
+- **The document of the device** — `cache/missions/open_<ID>.json` (prefix `cache/missions/`, policy `cache`: on the device alone,
+  never sent, never in a backup), written by `drawers_view.js` after every computation of the section, when it changes or when its
+  hour is a quarter of an hour old:
+
+  ```json
+  { "schema": 1, "mission": "X-905A", "mine": true, "seance": "A:2026-11-18", "opened": ["B", "C"], "at": "2026-11-18T05:12:00.000Z" }
+  ```
+
+  `opened`: the letters of the drawers open for THIS pilot at this computation (his gesture, the hour, a finding of the crew), in the
+  reader's order; `seance`: the play it belongs to (null before the start of a mission played alone); `at`: the hour of the
+  computation. No position, no title, no text of the mission. A mission that is not mine writes nothing — except to undo a document
+  that said it mine (an assignment withdrawn): `mine: false`, no letter.
+- **Reading it** — an UNTRUSTED entry like any document (another tab, another version, a hand): only through
+  `readOpen(doc, missionId, { now, seance })` of `drawers.js` (pure, never throws) → `{ mine, opened, seance, at }`, closed on failure
+  (`{ mine: false, opened: [] }`): another mission, another schema, a `mine` that is not exactly `true`, no hour, an hour more than
+  two minutes in the future or more than a day old (`OPEN_MS`), a play that is not the reader's when the reader gives it; of `opened`
+  only the letters of `DRAWER_IDS` count (64 entries read at most). The Map (BUGS SOG) reads the document with it and passes the
+  result to `pilotView(mission, r.opened, { mine: r.mine })`; it can watch `cache/missions/` to follow an opening. `openPath(id)`
+  gives the path (never a path taken as it is), `openAfter(states, { mission, mine, seance }, now)` the document to write.
+- **Limits, said** — the document is what the device knew when the SHEET last computed: the page closed, a drawer whose hour passes
+  stays closed on the Map until the sheet is shown again (too little is shown, never too much). A mission played alone and started
+  again within a day without showing its sheet keeps the letters of the play before, unless the reader gives the play to `readOpen`.
+  A place of a mission with drawers that nothing cites (neither the route, nor the centre of a map, nor a drawer) is not shown: the
+  reader's rule; the invented missions of N82 cite their zone by a map. It is a seal of the game, not a protection: the file stays
+  readable by whoever opens it.
+- Cases: N80 (81 checks: `openPath`, `openAfter`, `readOpen` and its hostile entries), N81 (74: `sees` before and after the reading,
+  the document written, the sheet told once, a browsed mission, the document undone), N84 (the sheet of an invented mission whose
+  drawer 1 hides a zone, a point and a rendezvous: closed, opened by the gesture, then the same file as another pilot's mission; 390
+  and 1280 px, four languages).

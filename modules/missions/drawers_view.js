@@ -2,7 +2,9 @@
 // drawers.js (pur) ; ce fichier lit et écrit par le cadre (ctx.data), ne touche à aucun autre document que :
 //   · le carnet de CE pilote, pilot/<TRI>/missions/<ID>.json (écrit : le geste « Ouvrir le tiroir », le départ réel du vol) ;
 //   · les carnets des autres pilotes de la mission (LUS seulement, entrées non fiables) ;
-//   · cache/missions/seen_<ID>.json (sur l'appareil seul : les ouvertures des autres déjà vues — un tiroir ouvert le reste).
+//   · cache/missions/seen_<ID>.json (sur l'appareil seul : les ouvertures des autres déjà vues — un tiroir ouvert le reste) ;
+//   · cache/missions/open_<ID>.json (sur l'appareil seul, SOG-0448 : les tiroirs ouverts de MA mission, publiés à chaque calcul — la
+//     Carte et quiconque montre la mission par pilotView les lisent par D.readOpen, jamais une règle à eux).
 //
 // La section n'est COMPLÈTE que pour MA mission (elle m'est affectée, ou c'est la mission de mon vol courant) ; une mission qu'on
 // feuillette ne dit que « n tiroirs » : ni titre, ni clé, ni geste (on n'ouvre pas le tiroir d'une mission qu'on ne joue pas).
@@ -16,11 +18,17 @@
 //   describe(tt, state, drawer, { live, notJudged, inRange }) → { key, note, how, follow } : les phrases d'un tiroir (la clé d'un tiroir fermé, la note
 //   « pas encore jugé en vol » ou « sans position en direct », comment et quand il s'est ouvert) — pur : l'aperçu de l'éditeur peut
 //   s'en servir pour dire la même chose que l'écran du pilote. TX : les textes, quatre langues.
+//   sees(id, mission) → ce que la fiche et son Détail montrent de cette mission (SOG-0448) : pilotView du lecteur, avec les tiroirs
+//   que la section posée sait ouverts — rien d'ouvert tant qu'elle n'a pas lu, la partie visible seule pour une mission qui n'est pas
+//   la mienne. show() reçoit `changed` : rappelé quand ce que sees() a rendu n'est plus à jour (un tiroir s'ouvre) — la fiche se redessine.
 
 import * as D from './drawers.js';
 import {
   fmtZ
 } from '../../frame/lib/time.js';
+import {
+  pilotView
+} from '../../frame/lib/mission.js'; // ce que le pilote peut voir : la règle du lecteur, écrite une fois (SOG-0448)
 
 export const TX = {
   head: ['Tiroirs', 'Drawers', 'Schubladen', 'Cajones'],
@@ -192,6 +200,62 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};
   ARM_MS = 5000, // « Confirmer » reste armé cinq secondes (la V2)
   POLL_MS = 60e3; // un passage de synchronisation par minute pendant qu'un tiroir est attendu (les carnets des autres arrivent par lui)
 let V = null; // la section posée : une fiche à la fois
+let SHOWN = null; // { id, key } : ce que sees() a rendu à la fiche au dernier dessin (à qui est la mission, quels tiroirs sont ouverts)
+const REPUB_MS = 15 * 60e3; // le document « ouverts » est récrit au moins tous les quarts d'heure tant que la section calcule (son heure)
+
+/** À qui est la mission et quels tiroirs sont ouverts, en un mot comparable. */
+const pubKey = (mine, opened) => `${mine ? 1 : 0}:${opened.join('')}`;
+/** Ce que la section posée sait : la mission est-elle la mienne (et lue), quelles lettres sont ouvertes. */
+const known = v => {
+  const mine = !!v && v.mine === true && Array.isArray(v.states);
+  return {
+    mine,
+    opened: mine ? v.states.filter(s => s.open).map(s => s.id) : []
+  };
+};
+
+/** Ce que la fiche et son Détail montrent de cette mission (voir l'en-tête) : la mission lue passée par pilotView. Pur à l'état de la
+ *  section près ; null pour une mission illisible. */
+export function sees(id, mission) {
+  const k = known(V && V.id === id ? V : null);
+  SHOWN = {
+    id,
+    key: pubKey(k.mine, k.opened)
+  };
+  return pilotView(mission, k.opened, {
+    mine: k.mine
+  });
+}
+
+/** Après un calcul : le document « ouverts » de l'appareil (écrit quand il change, ou que son heure a un quart d'heure), puis la fiche
+ *  prévenue si ce que sees() lui a rendu n'est plus à jour. Une mission qui n'est pas la mienne n'écrit que pour défaire un document
+ *  qui la disait mienne (`old` : le document relu, quand il vient d'être lu). */
+function publish(v, old = null) {
+  const k = known(v),
+    key = `${pubKey(k.mine, k.opened)}:${k.mine ? v.seance?.key ?? '' : ''}`,
+    path = D.openPath(v.id),
+    now = Date.now(),
+    due = k.mine ? v.pub?.key !== key || now - v.pub.at > REPUB_MS : D.readOpen(old, v.id).mine,
+    doc = due && path ? D.openAfter(v.states, {
+      mission: v.id,
+      mine: k.mine,
+      seance: v.seance
+    }, now) : null;
+  if (doc) {
+    v.pub = {
+      key,
+      at: now
+    };
+    Promise.resolve().then(() => v.ctx.data.put(path, doc)).catch(() => {});
+  }
+  // la fiche est prévenue UNE fois par état (une fiche qui ne se redessine pas n'est pas rappelée à chaque calcul)
+  const shown = pubKey(k.mine, k.opened);
+  if (SHOWN?.id !== v.id || SHOWN.key === shown) v.told = null;
+  else if (v.told !== shown) {
+    v.told = shown;
+    v.changed?.();
+  }
+}
 
 /** La fiche se ferme ou le module se démonte : minuteurs et écoute arrêtés. */
 export function stop() {
@@ -212,6 +276,7 @@ export function show(host, {
   mission,
   passage,
   notJudged,
+  changed,
   pollMs
 } = {}) {
   const drawers = (Array.isArray(mission?.drawers) ? mission.drawers : []).filter(d => D.LETTERS.includes(d?.id)).slice(0, D.LETTERS
@@ -228,7 +293,8 @@ export function show(host, {
       host,
       drawers,
       passage,
-      notJudged
+      notJudged,
+      changed
     });
     bind(host);
     return paint();
@@ -241,6 +307,8 @@ export function show(host, {
     drawers,
     passage,
     notJudged,
+    changed, // la fiche à redessiner quand un tiroir s'ouvre (SOG-0448 : ses lieux apparaissent)
+    pub: null, // { key, at } : le dernier document « ouverts » écrit
     pollMs: Number.isFinite(pollMs) && pollMs >= 100 ? pollMs : POLL_MS, // la période du passage à la minute (un banc la raccourcit)
     tt: (row, vars) => ctx.t(row, vars),
     mine: false,
@@ -303,7 +371,12 @@ async function load(v) {
   v.mine = !!myPath && (seance.assigned || playing);
   if (!v.mine) {
     v.states = [];
-    return paint();
+    paint();
+    // un document « ouverts » qui disait cette mission mienne (une affectation retirée) est défait
+    const path = D.openPath(v.id),
+      old = path ? await get(path) : null;
+    if (V === v) publish(v, old);
+    return;
   }
   const peers = seance.crew.filter(p => p !== me),
     seenPath = `cache/missions/seen_${v.id}.json`;
@@ -355,6 +428,7 @@ async function load(v) {
   announce(v, before, states);
   paint();
   arm(v, peers.length);
+  publish(v); // SOG-0448 : les tiroirs ouverts publiés sur l'appareil, la fiche prévenue
   // le rattrapage au retour de la page : le premier tiroir fermé que l'appareil suit est relu UNE fois sur la trace gardée du vol de
   // cette mission (depuis l'instant où il est devenu le premier fermé) — la trace d'un autre vol n'est jamais lue
   const first = states.find(x => !x.open && !x.locked);

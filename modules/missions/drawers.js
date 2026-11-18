@@ -54,6 +54,12 @@
 //     la trace gardée (le rattrapage au retour de la page).
 //   seenAfter(seen, states, seance, now) → ce que l'appareil garde après ce calcul ; readSeen(doc, seance) → { B: { by, at, how, got } }
 //     borné (got : l'heure où l'appareil l'a reçue).
+//   openPath(missionId) → 'cache/missions/open_<ID>.json' (SOG-0448 : ce que CET appareil sait des tiroirs ouverts de MA mission — sur
+//     l'appareil seul, jamais envoyé ; lu par la Carte et par quiconque montre la mission par pilotView de frame/lib/mission.js), ou null.
+//   openAfter(states, { mission, mine, seance }, now) → le document à garder : { schema: 1, mission, mine, seance, opened: ['B', 'C'],
+//     at } ; `mine` faux : aucune lettre. readOpen(doc, missionId, { now, seance }) → { mine, opened, seance, at } relu BORNÉ, fermé à
+//     l'échec ({ mine: false, opened: [] }) : un document d'une autre mission, sans `mine` exactement vrai, daté du futur ou de plus de
+//     OPEN_MS (un jour), ou — quand `seance` est donnée — d'une autre séance, ne tient aucun tiroir pour ouvert.
 //   withOpen(doc, ctx, id, how, fix?), withSeal(doc, ctx, id), withRead(doc, ctx), withStart(doc, ctx, startAt) → le carnet à écrire
 //     (ctx : { mission, me, seance, now }) ; null si rien n'est à écrire (identifiants refusés).
 
@@ -556,6 +562,66 @@ export function seenAfter(seen, states, seance, now = Date.now()) {
     schema: 1,
     seance: seance.key,
     drawers
+  };
+}
+
+/** Le document « ouverts » vaut un jour après son écriture (il est récrit à chaque calcul de la section) : au-delà, la Carte ne tient
+ *  plus aucun tiroir pour ouvert tant que la fiche de la mission n'a pas été rouverte. */
+export const OPEN_MS = 24 * 3600e3;
+
+/** Le chemin du document « ouverts » de cette mission sur l'appareil, ou null (jamais un chemin pris tel quel). */
+export function openPath(missionId) {
+  const m = midOf(missionId);
+  return m ? `cache/missions/open_${m}.json` : null;
+}
+
+/** Le document « ouverts » à garder sur l'appareil après un calcul (voir l'en-tête) : les lettres des tiroirs ouverts de MA mission,
+ *  dans l'ordre du lecteur ; une mission qui n'est pas la mienne n'en a aucune. null sans identifiant de mission ni instant. */
+export function openAfter(states, {
+  mission,
+  mine,
+  seance
+} = {}, now = Date.now()) {
+  const id = midOf(mission);
+  if (!id || !Number.isFinite(now)) return null;
+  const is = mine === true,
+    open = new Set(is ? (Array.isArray(states) ? states : []).filter(s => s && s.open === true).map(s => s.id) : []),
+    key = own(seance, 'key');
+  return {
+    schema: 1,
+    mission: id,
+    mine: is,
+    seance: is && typeof key === 'string' && SEANCE.test(key) ? key : null,
+    opened: LETTERS.filter(l => open.has(l)),
+    at: isoOf(now)
+  };
+}
+
+/** Le document « ouverts » relu borné (voir l'en-tête) → { mine, opened, seance, at } ; fermé à l'échec. Ne lève jamais. */
+export function readOpen(doc, missionId, options = null) {
+  const none = {
+      mine: false,
+      opened: [],
+      seance: null,
+      at: null
+    },
+    o = options && typeof options === 'object' && !Array.isArray(options) ? options : {},
+    now = own(o, 'now') === undefined ? Date.now() : own(o, 'now'),
+    id = midOf(missionId),
+    at = msOf(own(doc, 'at')),
+    s = own(doc, 'seance'),
+    key = typeof s === 'string' && SEANCE.test(s) ? s : null;
+  if (!id || own(doc, 'schema') !== 1 || midOf(own(doc, 'mission')) !== id || own(doc, 'mine') !== true || at == null) return none;
+  if (typeof now !== 'number' || !Number.isFinite(now) || at > now + FUTURE_MS || at < now - OPEN_MS) return none;
+  // la séance, quand celui qui lit la connaît (null : aucune séance en cours) : un document d'une autre séance ne vaut pas
+  if (Object.hasOwn(o, 'seance') && o.seance !== undefined && (o.seance ?? null) !== key) return none;
+  const list = own(doc, 'opened'),
+    got = new Set((Array.isArray(list) ? list.slice(0, 64) : []).filter(x => typeof x === 'string'));
+  return {
+    mine: true,
+    opened: LETTERS.filter(l => got.has(l)),
+    seance: key,
+    at
   };
 }
 
