@@ -15608,3 +15608,51 @@ def k349(c):
     c.ok(bool(far[1]) and far[1].endswith('PTEEE DCT LQXX'), str(far[1]), 'the route goes to the last known point (the nearest of the main network, PTEEE) then ONE direct leg to the aerodrome')
     c.eq((len(far[2]), 'PTEEE' in far[2][0] and 'LQXX' in far[2][0] and ' NM ' in far[2][0], far[3].count(True)), (1, True, 1), 'one REVUE says the cause (« la base n’a pas le réseau de cet État »), the last known point, the aerodrome and the distance; exactly one leg is marked', what='review')
     c.ok(near[0] != 'CALCUL IMPOSSIBLE' and not near[2] and not any(near[3]), str(near[:3]), 'a flight whose arrival HAS a network (EGWU, 9 NM from a point) has no such leg nor such review: nothing changes for it')
+
+
+@case('K350', 'Zones R / D / P (SOG-0462, lot A): the usual name of a French space (XML_SIA `NomUsuel`, « MONT SAINT MICHEL » for R 12) is carried as `uname`, joined to the AIXM record by territory + type + name; the FAA and NAV CANADA `TIMESOFUSE` is also carried as `hours`; openAIP gives only the hours it PUBLISHES (a day at real times, BY NOTAM, ON REQUEST…) — its default « 00:00-00:00 » is NOT « H24 » and writes nothing — and its remarks as `rem`; texts as the source writes them, bounded; parser version 29',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0462 (the user, 18 Nov: for the zones R and D, the nature of the danger, the manager, the hours and the conditions; « la R du Mont-Saint-Michel n’a rien à voir avec la R 108 »). Measured on this workstation (18 Nov): France 871 / 874 zones with hours and 853 with remarks, 781 of 874 get a usual name by the key; FAA / NAV CANADA carried the hours in `info` only; openAIP gives « 00:00-00:00 » to 8 797 of its 8 820 R / D / P (reading it as hours would write a false H24). Never translated, never reworded; a field the source does not give is absent. The nature of the danger (`nat`) stays absent until the ENR 5.1 is read (lot B). Invented data.')
+def k350(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      const load = src => new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); w.document.head.appendChild(s); });
+      await load('/shared/sia_base.js'); await load('/shared/aero_sources.js');
+      const esp = (pk, t, nom, lk) => `<Espace pk="${pk}" lk="${lk}"><Territoire pk="100" lk="[LF]"/><TypeEspace>${t}</TypeEspace><Nom>${nom}</Nom></Espace>`;
+      const part = (pk, usual, geo) => `<Partie pk="${pk}0"><Espace pk="${pk}"/><NomPartie>.</NomPartie>${usual ? `<NomUsuel>${usual}</NomUsuel>` : ''}<Geometrie>${geo}</Geometrie></Partie>`;
+      const xml = `<SiaExport><EspaceS>${esp('1', 'R', '12', '[LF][R 12]')}${esp('2', 'R', '13', '[LF][R 13]')}${esp('3', 'R', '12', '[SO][R 12]')}${esp('4', 'D', '2 .1', '[FM][D 2 .1]')}</EspaceS>`
+        + `<PartieS>${part('1', '', '45.0,1.0 45.0,2.0')}${part('1', 'TEST BAY', '45.0,2.0 46.0,2.0 46.0,1.0')}${part('2', '', '45.0,1.0 45.0,2.0 46.0,2.0')}${part('3', 'OTHER TERRITORY', '4.0,-53.0 4.0,-52.0 5.0,-52.0')}${part('4', 'SMALL ISLAND', '1.0,1.0 1.0,2.0 2.0,2.0')}</PartieS></SiaExport>`;
+      const list = w.SiaBase.parseXmlSiaAirspaces(xml);
+      const aixm = [{ type: 'R', key: 'LFR12', name: '12' }, { type: 'R', key: 'LFR13', name: '13' }, { type: 'R', key: 'SOR12', name: '12' }, { type: 'D', key: 'FMD2.1', name: '2 .1' }, { type: 'TMA', key: 'LFR12', name: 'X' }, { type: 'R', key: 'LFR99', name: '99' }];
+      const joined = w.SiaBase.joinUsualNames(list, aixm);
+      const mk = props => ({ type: 'Feature', properties: props, geometry: { type: 'Polygon', coordinates: [[[1, 45], [2, 45], [2, 46], [1, 45]]] } });
+      const def = [0, 1, 2, 3, 4, 5, 6].map(d => ({ dayOfWeek: d, startTime: '00:00', endTime: '00:00', byNotam: false }));
+      const real = [0, 1, 2, 3, 4].map(d => ({ dayOfWeek: d, startTime: '08:00', endTime: '17:00', byNotam: false })).concat([{ dayOfWeek: 5, startTime: '09:00', endTime: '12:00' }]);
+      const oa = (name, hours, extra = {}) => mk({ _id: name, name, type: 1, icaoClass: 8, country: 'FR', hoursOfOperation: { operatingHours: hours }, ...extra, upperLimit: { value: 100, unit: 6, referenceDatum: 2 }, lowerLimit: { value: 0, unit: 1, referenceDatum: 0 } });
+      const g = w.AeroSources.geojson({ type: 'FeatureCollection', features: [
+        oa('DEFAULT ZONE', def),
+        oa('REAL ZONE', real, { remarks: 'Contact the club.\\nNfL 1' }),
+        oa('NOTAM ZONE', [{ dayOfWeek: 0, byNotam: true }, { dayOfWeek: 1, byNotam: true }], { byNotam: true, onRequest: true }),
+        oa('HOSTILE ZONE', [{ dayOfWeek: 0, startTime: '<img src=x onerror=alert(1)>', endTime: '17:00' }, { dayOfWeek: 1, startTime: '8'.repeat(5000), endTime: '17:00' }, { dayOfWeek: 2, startTime: '7:5', endTime: '17:00' }, { dayOfWeek: 3, startTime: 800, endTime: '17:00' }]),
+        mk({ TYPE_CODE: 'R', NAME: 'FAA ZONE', IDENT: 'R-1', TIMESOFUSE: 'INTERMITTENT BY NOTAM', CONT_AGENT: 'FAA, TEST ARTCC', UPPER_VAL: 100, UPPER_UOM: 'FL', LOWER_VAL: 0, LOWER_UOM: 'FT', LOWER_CODE: 'SFC' })
+      ] }, 'fr_asp.geojson');
+      const sz = g.airspaces.reduce((m, a) => (m[a.name] = a, m), {});
+      return { n: list.length, uname: list.map(a => [a.key, a.uname || null]), aixm: aixm.map(a => a.uname || null), joined, sz, ver: w.SiaBase.VERSION ?? null, keys: Object.keys(g.airspaces[0] || {}) };
+    }""")
+    c.eq(r['uname'], [['[LF][R 12]', 'TEST BAY'], ['[LF][R 13]', None], ['[SO][R 12]', 'OTHER TERRITORY'], ['[FM][D 2 .1]', 'SMALL ISLAND']],
+         'XML_SIA: the usual name is the first one a part gives (R 12 has two parts, the first with none); a space whose parts give none has no `uname`', what='xml_sia')
+    c.eq((r['aixm'], r['joined']), (['TEST BAY', None, 'OTHER TERRITORY', 'SMALL ISLAND', None, None], 3),
+         'the AIXM records get it by territory + type + name: R 12 of LF and R 12 of SO are NOT mixed up, « D 2 .1 » meets « FMD2.1 » (spaces dropped), a TMA never gets one, an unknown key none', what='join')
+    sz = r['sz']
+    c.eq(('hours' in sz['DEFAULT ZONE'], 'rem' in sz['DEFAULT ZONE']), (False, False), 'openAIP « 00:00-00:00 » on every day is the default, NOT « H24 »: no hours are written', what='default')
+    c.eq((sz['REAL ZONE'].get('hours'), sz['REAL ZONE'].get('rem')), (['MON-FRI 08:00-17:00', 'SAT 09:00-12:00'], ['Contact the club.', 'NfL 1']),
+         'real hours are written (the days grouped by the same times), the remarks one line per line', what='real')
+    c.eq('hours' in sz['HOSTILE ZONE'], False, 'a time that is not HH:MM (HTML, 5 000 signs, « 7:5 », a number) writes no line: the file is deposited, never trusted', what='hostile')
+    c.eq(sz['NOTAM ZONE'].get('hours'), ['BY NOTAM', 'ON REQUEST'], 'the flags of the openAIP sheet (by NOTAM, on request) are said once', what='flags')
+    c.eq((sz['FAA ZONE'].get('hours'), sz['FAA ZONE'].get('info'), sz['FAA ZONE'].get('admin')), (['INTERMITTENT BY NOTAM'], 'INTERMITTENT BY NOTAM', 'FAA, TEST ARTCC'),
+         'FAA / NAV CANADA: TIMESOFUSE is the hours; `info` stays (the map windows read it), the controlling agency stays in `admin`', what='faa')
+    c.ok('uname' not in sz['FAA ZONE'] and 'nat' not in sz['FAA ZONE'], str(sorted(sz['FAA ZONE'])), 'no usual name where the source has none, never a nature of the danger (lot B)')
+    sv = [m.group(1) for m in [re.search(r'const VERSION =\s*(\d+)', (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'))]]
+    pv = re.search(r'const PARSER_VERSION = (\d+)', (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8'))
+    c.eq((int(sv[0]), int(pv.group(1))), (29, 29), 'the parser version is 29 in both places (the zones built before have no usual name and are rebuilt: parser-old)', what='version')

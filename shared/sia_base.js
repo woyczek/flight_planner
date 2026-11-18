@@ -30,7 +30,7 @@
   const COMPAT =
     14; // plus ancien format encore utilisable tel quel (15 n'ajoute que aero.vrp ; 17 à 21 ne changent pas le format : une base 14 à 20 se lit, signalée « outdated »)
   const VERSION =
-    28; // 28 : les ILS, LOC, GLS et MLS des fichiers AIXM 5.1 (NATS, ENAIRE) comme balises `ILS` (id, name « EGLL 27L », freq, ad, rwy, bearing, dme ; loc / sys quand ce n'est pas un ILS complet), au lieu d'être sautés (avant : la France seule avait des ILS) ; 27 : le genre du terrain (type : AD, AH, HP, MIL) dans l'index léger des terrains, et la plus longue piste en dur (hardLen) des terrains AIXM 5.1 (NATS, ENAIRE : la longueur nominale des pistes à revêtement dur) ; 26 : les FIR et UIR des sources qui les portent (openAIP, AIXM 5.1 ; avant : la France seulement), contours simplifiés à 0,01° ; 25 : longueur de la plus longue piste en dur (hardLen) dans l'index léger des terrains (aeroindex), pour proposer les principaux terrains d'un pays ; 24 : horaires (hours) et remarques (rem) d'AIP des espaces, tels que la source les publie (SIA : txtRmkWorkHr, Timsh, txtRmk ; AIXM 5.1 : notes), les zones construites avant n'en ont pas ; 23 : les extrémités d'un tronçon AIXM 5.1 sans point dans le fichier (DFS) sont nommées par la référence et placées par la courbe du tronçon ; 22 : sens des voies aériennes (dir : F, B ou FB, d'après le SIA, NATS / ENAIRE et X-Plane ; absent : la source ne le dit pas ; les zones construites avant n'ont pas dir) ; 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre) ; 20 : pistes des terrains d'openAIP (bearing, hardLen, water, runways) et magVar, comme le SIA les donne à la France (AeroSources.geojson ; les zones construites avant ne les ont pas) ; 21 : un espace de classe E plafonné au plancher de la classe A de son État (États-Unis, Canada : 17 999 ft AMSL au lieu du « FL 600 » d'openAIP), capped: 'classA'
+    29; // 29 : le nom usuel (uname) des espaces R / D / P de France (XML_SIA NomUsuel, joint par territoire + type + nom à l'AIXM), les horaires (hours) et remarques (rem) des fichiers GeoJSON (FAA / NAV CANADA : TIMESOFUSE ; openAIP : ses vrais horaires, jamais le « 00:00-00:00 » par défaut, et ses remarques) ; 28 : les ILS, LOC, GLS et MLS des fichiers AIXM 5.1 (NATS, ENAIRE) comme balises `ILS` (id, name « EGLL 27L », freq, ad, rwy, bearing, dme ; loc / sys quand ce n'est pas un ILS complet), au lieu d'être sautés (avant : la France seule avait des ILS) ; 27 : le genre du terrain (type : AD, AH, HP, MIL) dans l'index léger des terrains, et la plus longue piste en dur (hardLen) des terrains AIXM 5.1 (NATS, ENAIRE : la longueur nominale des pistes à revêtement dur) ; 26 : les FIR et UIR des sources qui les portent (openAIP, AIXM 5.1 ; avant : la France seulement), contours simplifiés à 0,01° ; 25 : longueur de la plus longue piste en dur (hardLen) dans l'index léger des terrains (aeroindex), pour proposer les principaux terrains d'un pays ; 24 : horaires (hours) et remarques (rem) d'AIP des espaces, tels que la source les publie (SIA : txtRmkWorkHr, Timsh, txtRmk ; AIXM 5.1 : notes), les zones construites avant n'en ont pas ; 23 : les extrémités d'un tronçon AIXM 5.1 sans point dans le fichier (DFS) sont nommées par la référence et placées par la courbe du tronçon ; 22 : sens des voies aériennes (dir : F, B ou FB, d'après le SIA, NATS / ENAIRE et X-Plane ; absent : la source ne le dit pas ; les zones construites avant n'ont pas dir) ; 13 : gestionnaire (admin) et mode d'activation (act) des espaces AIXM ; 14 : voies aériennes (aero.airways) ; 15 : points de report VFR (aero.vrp) ; 16 : sources (src) et données d'autres pays (shared/aero_sources.js) ; 17 : un seul point de report VFR par point (le jumeau nu d'openAIP n'est plus ajouté à celui du SIA, AeroSources.merge) ; 18 : limites des espaces OpenAir d'X-Plane en pieds (le M de « MSL » n'est plus des mètres, AeroSources.openair : les zones construites avant sont à reconstruire) ; 19 : secteurs d'une même famille qui se recouvrent avec des planchers différents, signalés (ovl sur les espaces, overlaps dans le meta de la zone ; les zones construites avant n'ont ni l'un ni l'autre) ; 20 : pistes des terrains d'openAIP (bearing, hardLen, water, runways) et magVar, comme le SIA les donne à la France (AeroSources.geojson ; les zones construites avant ne les ont pas) ; 21 : un espace de classe E plafonné au plancher de la classe A de son État (États-Unis, Canada : 17 999 ft AMSL au lieu du « FL 600 » d'openAIP), capped: 'classA'
   const SCRIPT_URL = document.currentScript?.src || location.href;
   /** URL d'un fichier de l'application (chemin depuis la racine : « shared/carto/… »). */
   const appUrl = path => new URL('../' + path, SCRIPT_URL).href;
@@ -1086,12 +1086,36 @@
         if (k > 0 && Number.isFinite(lat) && Number.isFinite(lon)) ring.push([lat, lon]);
       }
       if (ring.length < 2) continue;
-      (out.get(pk) || out.set(pk, {
-        ...e,
-        rings: []
-      }).get(pk)).rings.push(ring);
+      const o = out.get(pk) || out.set(pk, {
+          ...e,
+          rings: []
+        }).get(pk),
+        usual = val(chunk, 'NomUsuel');
+      if (usual && !o.uname) o.uname = usual.slice(0,
+        80); // SOG-0462 : le nom usuel de la première partie qui en a un (R 12 : « MONT SAINT MICHEL »)
+      o.rings.push(ring);
     }
     return [...out.values()];
+  }
+  /** SOG-0462 : la clé d'un espace de l'XML_SIA (« [LF][R 12] ») ramenée à celle de l'AIXM (« LFR12 ») : territoire, type, nom sans espaces ; null si elle n'a pas cette forme. */
+  const xmlSiaKey = k => {
+    const m = /^\[(\w+)\]\[(\w+) ([^\]]*)\]$/.exec(String(k || ''));
+    return m ? m[1] + m[2] + m[3].replace(/\s+/g, '') : null;
+  };
+  /** SOG-0462 : le nom usuel des R / D / P (l'AIXM n'en a pas) vient de l'XML_SIA, joint par territoire + type + nom (« [LF][R 12] » ↔ « LFR12 ») ; rend le nombre d'espaces AIXM qui en ont reçu un. */
+  function joinUsualNames(xmlSia, aixm) {
+    const usual = new Map;
+    for (const a of xmlSia || [])
+      if (a.uname && /^(R|D|P)$/.test(a.type) && xmlSiaKey(a.key)) usual.set(xmlSiaKey(a.key), a.uname);
+    let n = 0;
+    for (const a of aixm || []) {
+      const k = String(a.key || '').replace(/\s+/g, '');
+      if (/^(R|D|P)$/.test(a.type) && usual.has(k)) {
+        a.uname = usual.get(k);
+        n++;
+      }
+    }
+    return n;
   }
   /** Ancien fichier dérivé sia-airspaces-<date>.xml : lu seulement en l'absence de XML_SIA du même cycle. */
   function parseLegacyAirspaces(text) {
@@ -1534,7 +1558,10 @@
         doneUnits += 0.3 * f.size;
       } else doneUnits += f.size;
     }
-    if (aixmAirspaces.length) airspaces = airspaces.filter(a => !AIXM_TYPES.has(a.type)).concat(aixmAirspaces);
+    if (aixmAirspaces.length) {
+      joinUsualNames(airspaces, aixmAirspaces);
+      airspaces = airspaces.filter(a => !AIXM_TYPES.has(a.type)).concat(aixmAirspaces);
+    }
     const seen = new Set;
     airspaces = airspaces.filter(a => {
       const k = a.type + '|' + a.name + '|' + a.key;
@@ -3051,6 +3078,7 @@
     appAsset,
     inspectXml,
     parseXmlSiaAirspaces,
+    joinUsualNames,
     parseXmlSiaVfrPoints,
     parseAixmAirspaces,
     aeroIndex,

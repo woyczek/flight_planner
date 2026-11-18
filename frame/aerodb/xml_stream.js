@@ -219,7 +219,8 @@
               lon = +p.slice(k + 1);
             if (k > 0 && Number.isFinite(lat) && Number.isFinite(lon)) ring.push([lat, lon]);
           }
-          if (ring.length >= 2) parts.push([pk, ring]);
+          if (ring.length >= 2) parts.push([pk, ring, val(b,
+            'NomUsuel')]); // SOG-0462 : le nom usuel de la partie (comme parseXmlSiaAirspaces)
         } else if (name === 'NavFix') {
           if (!/<NavType>\s*VFR\s*<\/NavType>/.test(b)) return;
           const t = n => (new RegExp(`<${n}>([^<]*)</${n}>`).exec(b) || [])[1] || '',
@@ -239,13 +240,15 @@
       stats: m.stats,
       end() {
         const out = new Map;
-        for (const [pk, ring] of parts) {
+        for (const [pk, ring, usual] of parts) {
           const e = esp.get(pk);
           if (!e) continue;
-          (out.get(pk) || out.set(pk, {
+          const o = out.get(pk) || out.set(pk, {
             ...e,
             rings: []
-          }).get(pk)).rings.push(ring);
+          }).get(pk);
+          if (usual && !o.uname) o.uname = usual.slice(0, 80);
+          o.rings.push(ring);
         }
         return {
           kind: 'sia',

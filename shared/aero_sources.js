@@ -222,6 +222,10 @@
     ...(Array.isArray(z.rem) && z.rem.length ? {
       rem: z.rem // les conditions et remarques de l'AIP, telles quelles
     } : {}),
+    ...(typeof z.uname === 'string' && z.uname.trim() ? {
+      uname: z.uname.trim().slice(0,
+        80) // SOG-0462 : le nom usuel publié (« MONT SAINT MICHEL » pour R 12), tel quel : ce n'est pas la nature du danger
+    } : {}),
     ...(z.capped ? {
       capped: z.capped // plafond déduit, pas celui de la source : 'classA' (classe E sous la classe A de son État)
     } : {}),
@@ -832,6 +836,29 @@
     return '';
   };
 
+  /** SOG-0462 : les lignes d'un texte publié (saut de ligne ou « # »), espaces réduits, 12 lignes de 400 signes au plus. */
+  const textLines = s => String(s || '').split(/#|\r?\n/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 12).map(x => x
+    .slice(0, 400));
+  const OA_DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  /** SOG-0462 : les horaires d'un espace openAIP, SEULEMENT ce qu'il publie. Le fichier donne « 00:00-00:00 » à chaque jour quand rien n'est publié (8 797 des 8 820 espaces R / D / P de ce poste) : ce n'est PAS « H24 », rien n'est écrit. Sont lus : les jours à heures réelles (« MON-FRI 08:00-17:00 »), « BY NOTAM », « ON REQUEST », « ON DEMAND », « SPECIAL AGREEMENT » (les drapeaux de la fiche). */
+  function openAipHours(p) {
+    const oh = p.hoursOfOperation && Array.isArray(p.hoursOfOperation.operatingHours) ? p.hoursOfOperation.operatingHours : [],
+      by = new Map,
+      out = [];
+    for (const d of oh) {
+      const day = OA_DAYS[+d.dayOfWeek];
+      if (!day || typeof d.startTime !== 'string' || typeof d.endTime !== 'string' || !/^\d{2}:\d{2}$/.test(d.startTime) || !/^\d{2}:\d{2}$/.test(d.endTime) || d.startTime === '00:00' && d.endTime === '00:00') continue; // le fichier est déposé : une heure n'est écrite que sous la forme HH:MM
+      const k = `${d.startTime}-${d.endTime}${d.sunrise ? ' SR' : ''}${d.sunset ? ' SS' : ''}`;
+      (by.get(k) || by.set(k, []).get(k)).push(day);
+    }
+    for (const [k, days] of by) out.push(`${days.length > 2 ? days[0] + '-' + days[days.length - 1] : days.join(',')} ${k}`);
+    if (p.byNotam || oh.some(d => d.byNotam)) out.push('BY NOTAM');
+    if (p.onRequest) out.push('ON REQUEST');
+    if (p.onDemand) out.push('ON DEMAND');
+    if (p.specialAgreement) out.push('SPECIAL AGREEMENT');
+    return out.slice(0, 12);
+  }
+
   /** Lit un GeoJSON (FeatureCollection ou Feature) : export openAIP (espaces, aérodromes, balises, points VFR), MTR et zones
    *  FAA ADDS, sinon polygones à propriétés courantes ; name (nom du fichier) distingue la source openaip / geojson. */
   function geojson(obj, name = '') {
@@ -908,6 +935,10 @@
             ...classECap(cls, upper, p.country),
             lower: oaLimit(p.lowerLimit),
             act: p.byNotam ? 'NOTAM' : p.onRequest || p.onDemand ? 'sur demande' : activable(type) ? 'activable' : '',
+            hours: openAipHours(
+              p
+            ), // SOG-0462 : seulement ce qu'openAIP publie (jamais le « 00:00-00:00 » par défaut) ; ses remarques sont communautaires (`src` dit « openaip »)
+            rem: textLines(p.remarks),
             rings: ringsOf(g)
           }));
         } else if (pointOf(g) && (p.icaoCode !== undefined || p.trafficType !== undefined)) {
@@ -993,6 +1024,8 @@
           act: /NOTAM/i.test(p.TIMESOFUSE || '') ? 'NOTAM' : activable(type) ? 'activable' : '',
           info: p.TIMESOFUSE ? String(p.TIMESOFUSE) : '',
           admin: p.CONT_AGENT || '',
+          // SOG-0462 : les horaires publiés (FAA et NAV CANADA : TIMESOFUSE, « CONTINUOUS », « INTERMITTENT BY NOTAM ») ; `info` reste (les fenêtres de la carte le lisent)
+          hours: textLines(p.TIMESOFUSE),
           rings
         }));
       }
