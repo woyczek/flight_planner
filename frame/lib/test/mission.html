@@ -169,7 +169,7 @@
     };
 
   ck('icaoOf : le code entre parenthèses à la fin, rien sinon', icaoOf('BA 999 Base-Test (XTST)') === 'XTST' && icaoOf('Col Test') === '' &&
-    icaoOf(null) === '');
+    icaoOf(null) === '' && icaoOf('Hélistation test (XT123)') === 'XT123' && icaoOf('Rallye (2024)') === '');
   ck('levelFt : FL240, 1500 ft, un nombre, rien', levelFt('FL240') === 24000 && levelFt('1500 ft') === 1500 && levelFt(3000) === 3000 &&
     levelFt('haut') === null && levelFt(null) === null);
   ck('readMission : sans id ou sans type, rien', readMission({

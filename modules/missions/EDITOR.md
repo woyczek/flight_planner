@@ -999,18 +999,20 @@ sitting are kept) at the opening of a group AND after « Enregistrer ». The fil
 the fields that differ from the file (audit 182), so a mission saved from an empty-looking Récit kept its texts. Origin: the Récit,
 13 Nov (ce72c9c25), the Équipes the same morning (c138087b3); moved unchanged to `editor_view.js` on 17 Nov (c2a6960c1).
 
-### 7 tertricies. A helistation in Départ and Arrivée: `isCode` of the common field (18 Nov 2026; SOG-0465; noreg N123, N120, N118)
+### 7 tertricies. A helistation in Départ and Arrivée: `isCode` of the common field (18 Nov 2026; SOG-0465; noreg N123, N133, N120, N118)
 
 Features SOG: the common field knows the helistation code (two letters and three digits, « LF418 »; AeroDB pattern `^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$`)
 and exposes `isCode(v)`. The workshop copies no pattern.
 
-- **`editor.js` is pure** and holds no field instance: it takes `isCode` from the block itself — `export const isCode = createAdField({ ctx, body: () => null,
-  gone: () => true, keys: [] }).isCode`, an instance without a screen made once for its test alone (no list, no base, nothing drawn). `headCode`,
+- **`editor.js` is pure** and holds no field instance: it imports `{ isCode }` from `frame/lib/ad_field.js` (the pure function Features SOG exports,
+  commit 7fd7a29de; it replaces the instance without a screen made first, bd6d7cfb3) and re-exports it (`ED.isCode`). `headCode`,
   `tailCode` (the code between brackets at the end), `placeText`, `codeIn`, `fieldCode`, `noteAerodrome` and `codeCands` read a word of four or five
   signs and ask `isCode` (a word without any letter is never a code). `mission_map.js` gets the same through `ED.adCodeOf`.
 - **`editor_view.js`**: `edAdValue` asks `ad.isCode` of the field instance; `adPosOf` asks `ED.isCode` (the same function).
-- **Not changed**: `frame/lib/mission.js` (`icaoOf`, `originIcao`, four capital letters) and `modules/missions/choice.js` (`depIcao`): readers outside the
-  workshop, they keep reading a helistation as a name.
+- **The reader asks it too** (`frame/lib/mission.js`): it imports the same `isCode` (`ad_field.js` has no dependency on the reader, no DOM at load); `icaoOf`
+  reads `(XT123)` at the end of a name as a code (a word of four or five signs with a letter, `isCode`), and `originIcao` / `destinationIcao` of the registry
+  entry take an `icao` written `XT123` (`placeIcao`). A year « (2024) » is still no code. N133 (pure; red before) and the bench check on `icaoOf`.
+- **Not changed**: `modules/missions/choice.js` (`depIcao`), not ours.
 - Written file: unchanged in form — `origin: { name: « <name> (XT123) », icao: XT123 }`. N123 (invented helistation XT123): proposed, chosen,
   the name under the field, lower case put in capitals, written, framed on the map.
 

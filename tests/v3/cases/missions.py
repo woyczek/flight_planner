@@ -9748,3 +9748,22 @@ def n143(c):
     c.context.unroute(re.compile(r'^https://s3\.amazonaws\.com/elevation-tiles-prod/'))
     c.context.unroute(re.compile(r'/modules/maps/lib/profile_embed\.js'))
     c.js(_REG_CLEAR)
+
+
+@case('N133', 'Missions › the reader, a helistation code is a code (SOG-0465, pure, no screen): readMission of an invented mission whose origin is « Hélistation test (XT123) » '
+      'gives the icao XT123 (two letters and three digits: the pattern of the common field, `isCode` of frame/lib/ad_field.js, imported — not copied); « (XTST) » still gives XTST, '
+      'a year « (2024) » or a word « (TEST1234) » gives none; an `icao` written « XT123 » is kept; the registry line says the same (originIcao)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0465 (Features SOG 7fd7a29de: `isCode` pure; the relay: « une hélistation en origine doit être lue comme un code »): frame/lib/mission.js `icaoOf`, `placeIcao`')
+def n133(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js("""async () => { const MS = await import('/frame/lib/mission.js');
+      const mk = (o, d = { name: 'Base test (XTST)' }) => MS.readMission({ mission: { id: 'X-001A', type: 'REG', title: 't' }, origin: o, destination: d });
+      const ic = o => mk(o)?.origin?.icao;
+      return { heli: ic({ name: 'Hélistation test (XT123)', lat: 45.3, lon: 1.5 }), four: ic({ name: 'Base test (XTST)' }), year: ic({ name: 'Rallye (2024)' }),
+        long: ic({ name: 'Mot (TEST1234)' }), low: ic({ name: 'Heli (xt123)' }), dest: mk({ name: 'Base test (XTST)' }, { name: 'Hélistation test (XT123)' }).destination.icao,
+        fn: [MS.icaoOf('Hélistation test (XT123)'), MS.icaoOf('Col (1234)'), MS.icaoOf(null)] } }""")
+    c.eq([r['heli'], r['four'], r['year'], r['long'], r['low'], r['dest']], ['XT123', 'XTST', '', '', 'XT123', 'XT123'],
+         'the origin « Hélistation test (XT123) » reads the icao XT123; « (XTST) » stays XTST; « (2024) » and « (TEST1234) » are no code; lower case is put in capitals; the destination is read too',
+         what='icao read')
+    c.eq(r['fn'], ['XT123', '', ''], 'icaoOf: the helistation code, a number alone nothing, null nothing', what='icaoOf')

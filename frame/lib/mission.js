@@ -81,6 +81,10 @@
 //   categoryOf(v) : l'identifiant de catégorie d'une mission (SOG-0041, § 10.38 ; la forme des identifiants de
 //     frame/lib/mission_categories.js), '' sinon ; le nom et la charge se lisent dans la liste de la compagnie (forAirline).
 
+import {
+  isCode
+} from './ad_field.js'; // le test d'un code de terrain est celui du champ commun (SOG-0465) : une fonction pure, jamais recopiée ici
+
 /** Les caractères de format invisibles qui trompent l'œil : la marque arabe (U+061C), l'espace de largeur nulle (U+200B), les marques
  *  et les contrôles de sens d'écriture (U+200E, U+200F, U+202A à U+202E, U+2066 à U+2069), le liant de mots et les opérateurs
  *  invisibles (U+2060 à U+2064), les formats dépréciés (U+206A à U+206F), les annotations interlinéaires (U+FFF9 à U+FFFB), la
@@ -109,11 +113,17 @@ const mapFile = v => {
   return /^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}\.png$/i.test(f) ? f : '';
 };
 
-/** Le code OACI à la fin d'un nom (voir l'en-tête). */
+/** Le code OACI à la fin d'un nom (voir l'en-tête) : un code de terrain au sens du champ commun (`isCode` de ad_field.js : quatre signes,
+ *  ou le code de liste d'une hélistation « XT123 ») portant au moins une lettre ; le motif n'est écrit nulle part ici. */
 export function icaoOf(name) {
-  const m = /\(([A-Z]{4})\)\s*$/.exec(clean(name).toUpperCase());
-  return m ? m[1] : '';
+  const m = /\(([A-Z0-9]{4,5})\)\s*$/.exec(clean(name).toUpperCase());
+  return m && /[A-Z]/.test(m[1]) && isCode(m[1]) ? m[1] : '';
 }
+/** Le code d'un lieu lu : son `icao` écrit s'il est un code de terrain (isCode), sinon celui de son nom (icaoOf). */
+const placeIcao = p => {
+  const w = String(p?.icao ?? '');
+  return w && isCode(w) ? w : icaoOf(p?.name);
+};
 
 /** Un niveau écrit (voir l'en-tête). */
 export function levelFt(text) {
@@ -868,8 +878,8 @@ export function rowOfMission(doc, path) {
     types: m.aircraft.map(a => cut(a.type, 12)).filter(Boolean).slice(0, 10),
     origin: cut(m.origin?.name),
     destination: cut(m.destination?.name),
-    originIcao: /^[A-Z]{4}$/.test(m.origin?.icao || '') ? m.origin.icao : icaoOf(m.origin?.name),
-    destinationIcao: /^[A-Z]{4}$/.test(m.destination?.icao || '') ? m.destination.icao : icaoOf(m.destination?.name),
+    originIcao: placeIcao(m.origin),
+    destinationIcao: placeIcao(m.destination),
     blockMin: m.estimate.blockMin !== null && m.estimate.blockMin >= 0 && m.estimate.blockMin < 10000 ? m.estimate.blockMin : null,
     folder: where.folder,
     file: where.file,

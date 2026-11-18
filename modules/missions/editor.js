@@ -75,8 +75,8 @@
 //   Règle des with… (audit 182, Sécurisation) : seul ce que le pilote a changé est écrit ; « Enregistrer » sans rien toucher n'écrit rien.
 import * as MS from '../../frame/lib/mission.js';
 import {
-  createAdField
-} from '../../frame/lib/ad_field.js'; // SOG-0465 : le motif d'un code de terrain est celui du champ commun (isCode)
+  isCode
+} from '../../frame/lib/ad_field.js'; // SOG-0465 : le motif d'un code de terrain est celui du champ commun (fonction pure, sans instance ni écran)
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
 /** La famille commerciale : une liaison (SOG-0287, ajout du 13 nov.). */
@@ -109,16 +109,11 @@ const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
 const arrOf = v => Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : [];
 
 /** Le test d'un code de terrain complet (quatre signes ou code de liste d'une hélistation) : celui du champ de terrain de la suite
- *  (frame/lib/ad_field.js, `isCode` de l'instance, SOG-0465) — le motif n'est écrit nulle part ailleurs. Une instance sans écran, créée
- *  une fois pour son seul test : ni liste, ni base, rien n'est dessiné. Ce module reste pur (aucun DOM touché). */
-export const isCode = createAdField({
-  ctx: {
-    t: () => ''
-  },
-  body: () => null,
-  gone: () => true,
-  keys: []
-}).isCode;
+ *  (`isCode`, fonction pure de frame/lib/ad_field.js, SOG-0465) — le motif n'est écrit nulle part ailleurs ; aucune instance du champ,
+ *  aucun écran. Réexporté pour l'atelier (ED.isCode). */
+export {
+  isCode
+};
 
 /** Un mot de quatre ou cinq signes lu comme un code de terrain : le code en majuscules s'il en est un (avec au moins une lettre), '' sinon. */
 function wordCode(w) {
