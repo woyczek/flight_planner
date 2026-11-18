@@ -982,6 +982,7 @@ export async function mount(el, ctx) {
   if (!s.open && !s.reg) draw(s);
   await unlisted(s, got.doc);
   if (S !== s) return;
+  reopen(s);
   s.flown = await flownOf(s);
   if (S === s && !s.open) results(s);
   // SOG-0114 (A) : les affectations de ce pilote, lues une fois ; le groupe posé à sa place sans redessiner la liste
@@ -989,6 +990,22 @@ export async function mount(el, ctx) {
   if (S !== s) return;
   s.assigned = AS.mine(idx, s.ctx.identity?.trigram);
   assignedPaint(s);
+}
+/** SOG-0503 : le montage retrouve une entrée d'historique « mission ouverte » (le Retour du navigateur depuis la Carte recharge la page ou
+ *  remonte le module) : la mission se rouvre, son détail aussi s'il était ouvert ; les entrées existent déjà (rien n'est poussé), « Retour »
+ *  revient donc à la liste comme avant. Un identifiant inconnu des lignes lues : la liste, sans rien dire. */
+function reopen(s) {
+  const st = history.state,
+    id = st && (st.missions === 'open' || st.missions === 'detail') ? String(st.id || '') : '';
+  if (!id || s.open || s.reg) return;
+  const row = (s.rows || []).find(r => r.id === id);
+  if (!row) return;
+  openMission(s, row, false, null, true).then(() => {
+    if (S === s && s.open?.row === row && st.missions === 'detail') {
+      s.open.detail = true;
+      draw(s);
+    }
+  });
 }
 /** SOG-0114 (A) : « Mes missions affectées » en tête de la liste — dès qu'une affectation porte mon trigramme, et seulement alors
  *  (pas de drapeau d'usage) ; chaque ligne : la mission, le décollage (terrain, heure Z), l'aéronef et l'indicatif, le rendez-vous et
@@ -1526,7 +1543,7 @@ async function legacyPngs(s) {
 
 /** Ouvre une mission : son fichier lu (le registre suffit s'il ne vient pas, la cause dite) ; un fichier en retard est repris
  *  à son arrivée si la mission est encore ouverte. */
-async function openMission(s, row, drawn = false, fromReg = null) {
+async function openMission(s, row, drawn = false, fromReg = null, restore = false) {
   // un chemin que le registre donnait pas sûr (readRegistry l'a vidé) : jamais lu, dit
   const got = row.folder && row.file ? await yamlFile(s.ctx, `missions/${row.folder}/${row.file}`) : {
     why: 'unreadable',
@@ -1540,9 +1557,11 @@ async function openMission(s, row, drawn = false, fromReg = null) {
       s.idx.map.set(rowPath(row), SE.missionFields(mission));
       s.qMemo = null;
     }
-    const pushed = s.open ? s.open.pushed : (history.pushState({
-      missions: 'open'
-    }, '', location.href), true); // le retour du navigateur revient à la liste
+    // le retour du navigateur revient à la liste ; SOG-0503 : l'entrée porte l'identifiant, pour qu'un retour depuis la Carte la rouvre
+    const pushed = s.open ? s.open.pushed : restore || (history.pushState({
+      missions: 'open',
+      id: row.id
+    }, '', location.href), true);
     s.open = {
       row,
       mission,
@@ -1664,7 +1683,8 @@ function onClick(s, e) {
     case 'detail':
       s.open.detail = true;
       history.pushState({
-        missions: 'detail'
+        missions: 'detail',
+        id: s.open.row?.id // SOG-0503 : le détail aussi se rouvre au retour de la Carte (ses zones et ses cartes y mènent)
       }, '', location.href); // le retour du navigateur revient à la première page (popstate, sans changer l'adresse)
       draw(s);
       return s.el.querySelector('[data-detailpane]')?.scrollIntoView?.({

@@ -6967,3 +6967,27 @@ def n145(c):
     finally:
         P.module_files = real
     c.eq(sorted(full), sorted(without), 'the sources of connect-src are the same without Missions', what='policy')
+
+
+@case('N146', 'Missions › a mission sheet sends to the Map (a zone of its detail): the browser\'s back brings the SAME mission back, at the '
+      'detail it left, then its first page, then the list — never the list at once', 'N', tags=('missions', 'maps'), designs=('standard',),
+      screens=False,
+      rule='SOG-0503 (the user, SIG-7b206c7a34: « mission : voir la carte. envoie la carte. mais le retour ne se fait pas »): the history '
+      'entry of an open mission carries its id; a mount that finds it reopens the mission; invented missions')
+def n146(c):
+    open_sheet(c, 'X-301A')
+    c.tap(f'{M} [data-do="detail"]')
+    c.until(f"(() => {{ const d = document.querySelector('{M} [data-detailpane]'); return !!d && d.getBoundingClientRect().height > 0 }})()",
+            what='the detail')
+    c.js(f"document.querySelector('{M} [data-sec=zones]').open = true")
+    c.tap(f'{M} [data-zone="ZONE-2"] a[data-zonemap]')
+    c.until("location.hash.startsWith('#maps') && !!document.querySelector('[data-module=maps]')", timeout=20000, what='the Map, on the zone')
+    c.page.go_back()
+    c.until(f"!!document.querySelector('{M} [data-pane=mission][data-id=\"X-301A\"]')", timeout=15000, what='back: the mission X-301A')
+    c.until(f"(() => {{ const d = document.querySelector('{M} [data-detailpane]'); return !!d && d.getBoundingClientRect().height > 0 }})()",
+            timeout=8000, what='back: at the detail it left')
+    c.page.go_back()
+    c.until(f"(() => {{ const f = document.querySelector('{M} [data-pane=mission][data-id=\"X-301A\"] [data-first]'); return !!f && "
+            f"f.getBoundingClientRect().height > 0 }})()", timeout=15000, what='back again: its first page')
+    c.page.go_back()
+    c.until(f"!!document.querySelector('{M} [data-pane=list]')", timeout=15000, what='back again: the list')
