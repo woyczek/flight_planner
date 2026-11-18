@@ -764,11 +764,20 @@ interfaces » — a text link at the far end of the foot, after « Enregistrer �
   form. At 390 the three stay on one line, on screen without scrolling.
 - **Leaving asks when something would be lost** (`edLeave`, `edDirty`): the document of the workshop (`edDoc`) is compared with
   the file read or last saved (`e.base`) — for a new mission or a copy, with the document of its opening (`e.start`). The same:
-  « Annuler » leaves at once, as before. Different: the question of the frame (`ctx.ask`) — « Quitter l'atelier sans enregistrer ?
-  Les changements de cette mission seront perdus. », « Quitter sans enregistrer » / « Rester dans l'atelier ». Nothing is left,
-  nothing is written, without the yes. **Before this lot « Annuler » dropped every change without a word.**
-- **Not covered** (the frame's, not the workshop's): leaving by the menu of the suite, by « Retour » of the browser or by closing
-  the tab asks nothing — said to the ergonomist.
+  « Annuler » leaves at once, as before. Different: the question of the frame (`ctx.ask`) — « Quitter sans enregistrer ? Les
+  changements seront perdus. », « Quitter sans enregistrer » / « Rester ». Nothing is left, nothing is written, without the yes.
+  **Before this lot « Annuler » dropped every change without a word.**
+- **Leaving by the frame** (SOG-0458, noreg N119; `edDeclare` in `editor_view.js`): the workshop declares its state to the frame
+  with `ctx.unsaved(() => the workshop is open AND edDirty)` — at every opening (`edOpen`, the three modes; the function reads
+  `s.ed` at the moment it is asked, so « Enregistrer » is taken into account at once). So the menu of the suite, the « Missions »
+  tab or any other address of the module, and the browser's « Back » ask the SAME question (one text, the frame's: `T.leave` in
+  `app.js`, not exposed to modules, so `leaveAsk` / `leaveOk` / `leaveStay` of `editor_texts.js` repeat its words — « Rester »,
+  no longer « Rester dans l'atelier »; both sides move together); « Rester » keeps the workshop and what was typed, the frame
+  puts the address back. « Annuler » keeps its own question (same words) and, once the answer is yes, closes the workshop and
+  withdraws the declaration (`ctx.unsaved(null)`): the frame never asks a second time. « Dévoiler la mission complète » alone
+  does not make the workshop « changed » (`edDirty` reads the document only). **Limit, said**: from Compagnie, a module of
+  ANOTHER application (Carburant, which the frame opens in Pilote) is a page replacement, not a change of screen: the frame asks
+  nothing there, only the browser's own warning of `beforeunload` applies.
 - The cases that leave the workshop go through `ed_leave` (the question answered when it comes).
 
 ### 7 sexvicies. The block « carte de mission »: a background, a layer, a read-only mode (18 Nov 2026; SOG-0456; noreg N110, N111)

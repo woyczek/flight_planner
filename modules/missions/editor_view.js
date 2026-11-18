@@ -297,6 +297,7 @@ async function edOpen(s, mode, line = null) {
       pending: false
     };
     s.ed.start = edDoc(s.ed); // ce qu'« Annuler » compare : rien de saisi, rien à perdre (SOG-0454)
+    edDeclare(s);
     return draw(s);
   }
   const path = RG.pathOf(line?.row);
@@ -333,6 +334,7 @@ async function edOpen(s, mode, line = null) {
     veilHide: ED.veilHidden(base)
   };
   if (mode === 'dup') s.ed.start = edDoc(s.ed); // une copie pas encore retouchée se quitte sans question (SOG-0454)
+  edDeclare(s);
   draw(s);
 }
 
@@ -2525,8 +2527,16 @@ function edDirty(e) {
   return !ED.same(edDoc(e), e.start || e.base);
 }
 
+/** Déclare l'atelier au cadre (SOG-0458, `ctx.unsaved`) : la fonction que le cadre interroge au moment de quitter lit l'état À CE MOMENT-LÀ —
+ *  vraie seulement si l'atelier est ouvert ET modifié (après « Enregistrer » l'état est à jour, un atelier fermé dit faux). Idempotente :
+ *  la même clé côté cadre, une déclaration ne s'ajoute pas à l'autre. */
+function edDeclare(s) {
+  s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed));
+}
+
 /** « Annuler » (SOG-0454) : quitte l'atelier et rend le registre ; avec un changement non enregistré, la question du cadre d'abord
- *  (« Quitter sans enregistrer » / « Rester dans l'atelier ») — rien n'est quitté sans le oui. */
+ *  (les mots du cadre : « Quitter sans enregistrer » / « Rester ») — rien n'est quitté sans le oui. L'atelier fermé, la déclaration au
+ *  cadre est retirée : aucune seconde question. */
 async function edLeave(s) {
   const e = s.ed;
   if (!e) return;
@@ -2536,6 +2546,7 @@ async function edLeave(s) {
     }))) return;
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
   s.ed = null;
+  s.ctx.unsaved?.(null); // l'atelier n'existe plus : plus rien à garder (le cadre ne pose pas une seconde question)
   draw(s);
   if (s.reg) regLoad(s);
 }

@@ -7606,3 +7606,108 @@ def n118(c):
          'a Point set on the wide view is a place of the mission, drawn on the map', what='the first place')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+@case('N119', 'Missions › the workshop tells the frame what it holds (ctx.unsaved): with a mission opened and its title changed, leaving by the menu of the suite, by '
+      'another address of Missions, or by the browser\'s « Back » asks the question of the frame — « Rester » keeps the workshop AND what was typed, « Quitter sans '
+      'enregistrer » leaves; nothing changed or just saved: left at once; « Annuler » asks ONE question, with the words of the frame, and the frame does not ask again',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0458 (the ergonomist: the workshop lost its work without a word when left by the menu, the tab or the browser\'s Back; frame/INTEGRATION.md `ctx.unsaved`; '
+      'modules/missions/editor_view.js `edDeclare`; modules/missions/EDITOR.md § 7 quinvicies)')
+def n119(c):
+    title = f"document.querySelector('{E} input[data-k=edtitle]')?.value"
+    asked = "!!document.querySelector('.f-modal [data-ok]')"
+    FRAME_ASK = 'Quitter sans enregistrer ? Les changements seront perdus.'
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+
+    def open_x():
+        """Opens X-001A in the workshop (whole), its Cadre unfolded."""
+        c.until(_REG_READ, timeout=20000, what='the registry')
+        c.tap(f'{R} [data-rowid="X-001A"] > summary')
+        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
+        if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+
+    def to_fuel(what):
+        """The menu: another module (no answer given here)."""
+        c.js("() => { location.hash = '#aircraft' }")
+
+    def left_for_fuel(what):
+        c.until("!document.querySelector('[data-module=missions]') && location.hash.startsWith('#aircraft')", timeout=20000, what=what)
+
+    def to_registry():
+        """Missions again, then its registry."""
+        c.js("() => { location.hash = '#missions' }")
+        c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=20000, what='the Registry button')
+        c.tap(f'{M} [data-do="regopen"]')
+
+    def question():
+        """The frame's question: [number of questions, its words, its two buttons]."""
+        c.until(asked, timeout=10000, what='the frame asks before leaving')
+        r = c.js("(() => { const q = [...document.querySelectorAll('.f-modal')]; const m = q[0]; return [q.length, m.querySelector('p').textContent, m.querySelector('[data-ok]').textContent, m.querySelector('[data-no]').textContent] })()")
+        return [r[0], norm(r[1]), norm(r[2]), norm(r[3])]
+
+    def stay(what):
+        """Answers « Rester » and checks the workshop is still there, with what was typed."""
+        c.tap('.f-modal [data-no]')
+        c.until("!document.querySelector('.f-modal')", timeout=10000, what='the question closed')
+        c.wait(300)
+        c.eq([c.count(E), c.js(title)], [1, 'Un titre retouché'], what + ': « Rester » keeps the workshop and what was typed', what=what)
+
+    reg_open(c, _TRIAL_TEXTS)
+    open_x()
+    t0 = c.js(title)
+    # nothing changed: left at once, no question
+    to_fuel('menu')
+    left_for_fuel('left without a question')
+    c.eq(c.count('.f-modal'), 0, 'nothing changed: the menu leaves at once, no question', what='untouched')
+    # changed: (a) the menu of the suite, (b) another address of Missions, (c) the browser's Back
+    to_registry()
+    open_x()
+    _ed_fill(c, 'edtitle', 'Un titre retouché')
+    ASKED = [1, FRAME_ASK, 'Quitter sans enregistrer', 'Rester']
+    to_fuel('menu')
+    to_fuel('menu')
+    c.eq(question(), ASKED, '(a) the menu: ONE question, the frame\'s words', what='question (a)')
+    stay('(a) the menu')
+    c.js("() => { location.hash = '#missions?x=1' }")
+    c.eq(question(), ASKED, '(b) another address of Missions: the same question', what='question (b)')
+    stay('(b) another address of Missions')
+    c.eq(c.js("() => window.SogFrame.unsaved()"), True, 'the frame knows the workshop holds changes', what='declared')
+    c.page.go_back()
+    c.eq(question(), ASKED, '(c) the browser\'s Back: the same question', what='question (c)')
+    stay('(c) the browser\'s Back')
+    c.page.go_back()
+    question()
+    c.tap('.f-modal [data-ok]')
+    c.until(f"!document.querySelector('{E}')", timeout=20000, what='« Quitter sans enregistrer »: the workshop left (the entry before Back)')
+    c.wait(500)
+    c.eq(c.js("() => window.SogFrame.unsaved()"), False, 'left: the declaration fell with the module', what='declaration gone')
+    t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
+    c.ok('Un titre retouché' not in t and t0 in t, t[:200], 'nothing was written')
+    # « Annuler »: ONE question, the frame's words, and the frame does not ask again (a fresh page: the history of the steps above is not this one's)
+    reg_open(c, _TRIAL_TEXTS)
+    open_x()
+    _ed_fill(c, 'edtitle', 'Un titre retouché')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.eq(question(), ASKED, '« Annuler »: ONE question, with the words of the frame', what='question (Annuler)')
+    c.tap('.f-modal [data-ok]')
+    c.until(f"!document.querySelector('{E}')", timeout=8000, what='« Annuler »: the workshop left')
+    c.wait(500)
+    c.eq([c.count('.f-modal'), c.js("() => window.SogFrame.unsaved()")], [0, False], '« Annuler » then the registry: no second question, nothing declared', what='no second question')
+    to_fuel('menu')
+    left_for_fuel('the menu after « Annuler »')
+    c.eq(c.count('.f-modal'), 0, 'after « Annuler », the menu leaves at once', what='menu after Annuler')
+    # saved: nothing to lose, the menu leaves at once
+    reg_open(c, _TRIAL_TEXTS)
+    open_x()
+    _ed_fill(c, 'edtitle', 'Un titre enregistré')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved')
+    to_fuel('menu')
+    left_for_fuel('left after the save')
+    c.eq(c.count('.f-modal'), 0, 'just saved: the menu leaves at once, no question', what='saved')
+    c.js(_REG_CLEAR)
