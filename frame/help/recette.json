@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 325,
+  "tests": 329,
   "verdicts": 219
  },
  "apps": [
@@ -4174,6 +4174,20 @@
    "at": "2026-11-17T15:18:57Z"
   },
   {
+   "id": "SOG-0410",
+   "app": "maintenance",
+   "title": {
+    "fr": "Signalements : une liste des bugs et demandes, avec recherche, commentaires et priorité",
+    "en": "Reports: a list of bugs and requests, with search, comments and priority",
+    "de": "Meldungen: eine Liste der Fehler und Wünsche, mit Suche, Kommentaren und Priorität",
+    "es": "Informes: una lista de errores y peticiones, con búsqueda, comentarios y prioridad"
+   },
+   "test": "Après la relance du lanceur : bouton « Signaler » (la coccinelle) › « Mes signalements ». Attendu : UN champ de recherche, tes signalements groupés Maintenant / Ensuite / Plus tard / À classer, 7 par groupe puis « Voir les n suivants », chacun avec sa couleur ET son mot d'état ; touche-en un : sa fiche s'ouvre (fiche liée, priorité par deux rangées de trois boutons, commentaires) ; « Ouvrir dans la feuille de route » mène à la fiche liée ; le Retour du navigateur ramène à la liste.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T18:12:54Z"
+  },
+  {
    "id": "SOG-0411",
    "app": "pilote",
    "title": {
@@ -4597,6 +4611,20 @@
    "at": "2026-11-18T17:02:47Z"
   },
   {
+   "id": "SOG-0458",
+   "app": "maintenance",
+   "title": {
+    "fr": "Quitter un écran qui a des changements non enregistrés, par le menu de la suite ou par « Retour », les perd sans rien demander",
+    "en": "Leaving a screen with unsaved changes through the suite menu or “Back” loses them without asking",
+    "de": "Verlässt man eine Seite mit ungespeicherten Änderungen über das Menü oder „Zurück“, gehen sie ohne Rückfrage verloren",
+    "es": "Salir de una pantalla con cambios sin guardar, por el menú o con «Atrás», los pierde sin preguntar"
+   },
+   "test": "Atelier d'une mission : change un champ sans enregistrer, puis quitte par le menu de la suite (une autre application) ou par Retour. Attendu : une question te demande si tu veux quitter sans enregistrer ; « Rester » te laisse sur l'atelier, tes changements intacts.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T18:12:21Z"
+  },
+  {
    "id": "SOG-0459",
    "app": "compagnie",
    "title": {
@@ -4781,6 +4809,20 @@
    "delivered": "2026-11-18T16:49:26Z"
   },
   {
+   "id": "SOG-0484",
+   "app": "maintenance",
+   "title": {
+    "fr": "Réglages : changer de langue recharge l'application hors du cadre — alerte « rechargements en série » au troisième essai, et Échap ne ferme plus Réglages",
+    "en": "Settings: changing language reloads the app outside the frame — “reload loop” alert on the third try, and Escape no longer closes Settings",
+    "de": "Einstellungen: Sprachwechsel lädt die App am Rahmen vorbei neu – Warnung „Neuladeschleife“ beim dritten Mal, Escape schließt die Einstellungen nicht mehr",
+    "es": "Ajustes: cambiar de idioma recarga la aplicación fuera del marco — alerta de «recargas en serie» al tercer intento, y Escape ya no cierra Ajustes"
+   },
+   "test": "Réglages › Affichage › Langue : change de langue trois ou quatre fois de suite rapidement (Français, English, Deutsch, Français). Attendu : aucune alerte « Rechargements en série » ; après chaque rechargement, Réglages se rouvre PAR-DESSUS l'écran d'avant, et Échap le referme sur cet écran.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T18:13:06Z"
+  },
+  {
    "id": "SOG-0485",
    "app": "compagnie",
    "title": {
@@ -4847,6 +4889,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T15:09:00Z"
+  },
+  {
+   "id": "SOG-0497",
+   "app": "maintenance",
+   "title": {
+    "fr": "Recette : un verdict validé n'est pas enregistré, deux validations partent d'un seul geste, et ce qui est répondu revient au rechargement",
+    "en": "Acceptance page: a validated verdict is not saved, one gesture validates two, and answers come back on reload",
+    "de": "Abnahmeseite: ein bestätigtes Urteil wird nicht gespeichert, eine Geste bestätigt zwei, Antworten kehren beim Neuladen zurück",
+    "es": "Página de aceptación: un veredicto validado no se guarda, un gesto valida dos y las respuestas vuelven al recargar"
+   },
+   "test": "Page de recette : valide un test (par exemple SOG-0474, que tu avais validé sans qu'il soit écrit), puis RECHARGE la page : il reste validé. Valide-en un autre d'un double clic rapide : un seul est validé (la carte suivante, remontée sous le pointeur, ne l'est pas). Si le lanceur ne répond pas, un avertissement « pas encore enregistrée » paraît et le verdict part tout seul au retour du lanceur.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T18:13:17Z"
   },
   {
    "id": "SOG-0503",

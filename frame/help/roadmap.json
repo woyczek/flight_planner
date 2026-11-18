@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7604c22",
+  "organisation": "a73eabb",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -5700,12 +5700,13 @@
     {
      "id": "SOG-0458",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Quitter un écran qui a des changements non enregistrés, par le menu de la suite ou par « Retour », les perd sans rien demander",
      "en": "Leaving a screen with unsaved changes through the suite menu or “Back” loses them without asking",
      "de": "Verlässt man eine Seite mit ungespeicherten Änderungen über das Menü oder „Zurück“, gehen sie ohne Rückfrage verloren",
      "es": "Salir de una pantalla con cambios sin guardar, por el menú o con «Atrás», los pierde sin preguntar",
-     "rank": 467
+     "rank": 467,
+     "test": true
     }
    ]
   },
@@ -7360,11 +7361,12 @@
     {
      "id": "SOG-0497",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Recette : un verdict validé n'est pas enregistré, deux validations partent d'un seul geste, et ce qui est répondu revient au rechargement",
      "en": "Acceptance page: a validated verdict is not saved, one gesture validates two, and answers come back on reload",
      "de": "Abnahmeseite: ein bestätigtes Urteil wird nicht gespeichert, eine Geste bestätigt zwei, Antworten kehren beim Neuladen zurück",
-     "es": "Página de aceptación: un veredicto validado no se guarda, un gesto valida dos y las respuestas vuelven al recargar"
+     "es": "Página de aceptación: un veredicto validado no se guarda, un gesto valida dos y las respuestas vuelven al recargar",
+     "test": true
     }
    ]
   },
@@ -7573,11 +7575,12 @@
     {
      "id": "SOG-0484",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Réglages : changer de langue recharge l'application hors du cadre — alerte « rechargements en série » au troisième essai, et Échap ne ferme plus Réglages",
      "en": "Settings: changing language reloads the app outside the frame — “reload loop” alert on the third try, and Escape no longer closes Settings",
      "de": "Einstellungen: Sprachwechsel lädt die App am Rahmen vorbei neu – Warnung „Neuladeschleife“ beim dritten Mal, Escape schließt die Einstellungen nicht mehr",
-     "es": "Ajustes: cambiar de idioma recarga la aplicación fuera del marco — alerta de «recargas en serie» al tercer intento, y Escape ya no cierra Ajustes"
+     "es": "Ajustes: cambiar de idioma recarga la aplicación fuera del marco — alerta de «recargas en serie» al tercer intento, y Escape ya no cierra Ajustes",
+     "test": true
     }
    ]
   },
@@ -7641,12 +7644,13 @@
     {
      "id": "SOG-0410",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Signalements : une liste des bugs et demandes, avec recherche, commentaires et priorité",
      "en": "Reports: a list of bugs and requests, with search, comments and priority",
      "de": "Meldungen: eine Liste der Fehler und Wünsche, mit Suche, Kommentaren und Priorität",
      "es": "Informes: una lista de errores y peticiones, con búsqueda, comentarios y prioridad",
-     "rank": 480
+     "rank": 480,
+     "test": true
     }
    ]
   },
