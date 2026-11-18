@@ -1812,7 +1812,7 @@ function edAdValue(s, key, ev) {
  *  tournant » et « + Cible » avec un repère choisi sur la carte, « Ajouter comme point », SOG-0495 un nom tapé qui est un code de la
  *  base) : le lieu prend la POSITION de la base et le CODE comme nom. `at` : le rang d'une ligne qui existe (retouchée), sinon une ligne
  *  neuve de la sorte `kind` (ED.newPlace, « Annuler le geste » la défait) ; `{ code, lat, lon }` : le point de la base. → le rang du
- *  lieu, -1 sans lieu neuf possible (sorte pleine : une notification). */
+ *  lieu, -1 sans lieu neuf possible (sorte pleine : une notification), et -1 sans rien changer si la position ou le code de la base n'est pas borné. */
 function edPlaceFromBase(s, e, {
   kind = 'pt',
   at = -1,
@@ -1820,6 +1820,10 @@ function edPlaceFromBase(s, e, {
   lat,
   lon
 }) {
+  // garde de Sécurisation : la base est un fichier du dépôt, non fiable — position dans les limites, code court, sinon rien n'est écrit
+  const bound = (v, max) => v !== null && v !== undefined && String(v).trim() !== '' && Number.isFinite(+v) && Math.abs(+v) <= max;
+  const clean = String(code ?? '').trim().toUpperCase();
+  if (!bound(lat, 90) || !bound(lon, 180) || !/^[A-Z0-9][A-Z0-9 ./-]{0,23}$/.test(clean)) return -1;
   const num = v => String(+(+v).toFixed(5));
   let i = at;
   if (i < 0) {
@@ -1838,7 +1842,7 @@ function edPlaceFromBase(s, e, {
   const row = e.places[i];
   if (!row) return -1;
   Object.assign(row, {
-    name: String(code),
+    name: clean,
     lat: num(lat),
     lon: num(lon)
   });

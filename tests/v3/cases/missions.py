@@ -8655,6 +8655,52 @@ def n126(c):
     c.js(_REG_CLEAR)
 
 
+# SOG-0480 (Sécurisation): the base is a file of the repository, so NOT trusted: three invented points are added to the base of this case ONLY — a position of 1e9, a
+# position « NaN », a code with a chevron and one of 60 signs. None of them gives a position to a place of the mission.
+_PB_BASE_BAD = dict(_PB_BASE, vrp=[{'id': 'BADLAT', 'name': 'LAT HORS LIMITES', 'lat': 1e9, 'lon': 1.0}, {'id': 'BADNAN', 'name': 'LAT NAN', 'lat': 'NaN', 'lon': 1.0},
+                                   {'id': 'A<B>', 'name': 'CHEVRON', 'lat': 44.5, 'lon': 1.5}, {'id': 'X' * 60, 'name': 'TROP LONG', 'lat': 44.5, 'lon': 1.5}] + _PB_BASE['vrp'])
+
+
+@case('N136', 'Missions › the workshop, a point of the base is taken only when bounded (SOG-0480, Sécurisation): a point of the base whose latitude is 1e9 or « NaN », or whose '
+      'code carries a chevron or has 60 signs, gives NO position to a place (the Name stays as typed, latitude and longitude empty); a valid point (XPT01) still passes', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0480 (the security session: the base is a file of the repository, not trusted): modules/missions/editor_view.js `edPlaceFromBase`')
+def n136(c):
+    val = lambda i, f: c.js(_EDPLACE_VAL, [i, f])  # noqa: E731
+
+    def named(i, text):
+        """A new turning point, the name typed and left (the change of the field)."""
+        c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+        c.until(f"({_EDPLACE_IDS}).length === {i + 2}", what='a turning point added')
+        c.page.fill(f'{E} [data-plform] [data-f=name]', text)
+        c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
+
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _PB_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra=_PB_BASE_BAD)
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    ed_places(c)
+    c.until(f"({_EDPLACE_IDS}).length === 6", what='the six places of the mission listed')
+    for i, text in enumerate(['badlat', 'badnan', 'a<b>', 'X' * 60]):
+        named(5 + i, text)
+        c.wait(700)
+        c.eq([val(5 + i, 'name'), val(5 + i, 'lat'), val(5 + i, 'lon')], [text, '', ''],
+             f'the point of the base « {text[:8]} » is refused: the Name stays as typed, no position', what=f'refused {i}')
+    named(9, 'xpt01')
+    c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"9\"][data-f=lat]')?.value !== ''", timeout=8000, what='the valid point XPT01 placed')
+    c.eq([val(9, 'name'), val(9, 'lat'), val(9, 'lon')], ['XPT01', '44.9', '1.45'], 'a valid point of the base still passes: its code (upper case) and its position', what='valid')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
 # SOG-0496 (the user: « Le tiroir 1 doit être masqué, affiché uniquement une fois l'objet trouvé »): a drawer shut by an OBJECT key
 # (here OBJ-1, with no `kind`) was drawn on the pilot's sheet as a sealed stub (its title, its key said in plain words) with its count.
 # An invented mission, one drawer (rank 1); the reader and the sheet must say nothing of it while it is not open.

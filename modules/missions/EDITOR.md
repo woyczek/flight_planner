@@ -1048,6 +1048,7 @@ kind (`ED.newPlace`, one gesture to undo, a full kind: a notification); with a r
 - **The line of a place says its position at once** (noreg N128). The title and detail of each row of the Lieux were written only by the redraw of a gesture, so a
   place taken from the base said « à placer » until « OK ». `edRefresh` now writes them in place for every row, from the row being edited (the same path as the
   rest of the redraw, SOG-0478); the open sheet is not touched.
+- **A point of the base is taken only when bounded** (security session; noreg N136). The base is a file of the repository, not trusted: `edPlaceFromBase` refuses first (returns -1, no place made, nothing written) a latitude or longitude that is absent, not finite or out of bounds (|lat| > 90, |lon| > 180), and a code that, trimmed and in upper case, does not match `^[A-Z0-9][A-Z0-9 ./-]{0,23}$`; the place's name is that cleaned code. The three gestures go through it.
 - Veiled workshop: nothing to add (hidden rows are never touched, `edHid`).
 
 ### 7 quinquetricies. The unfolding is a vertical list; « ＋ Tiroir » opens the choice of the type (18 Nov 2026; SOG-0467; noreg N129, N134, N73, N78)
