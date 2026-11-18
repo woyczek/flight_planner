@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3e953a1",
-  "fiches": 498,
+  "organisation": "fc2236d",
+  "fiches": 499,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1854,16 +1854,17 @@
     {
      "id": "SOG-0491",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : chercher un point, un terrain ou autre par un outil loupe",
      "en": "Map: search for a point, an aerodrome or anything else with a magnifier tool",
      "de": "Karte: Punkt, Flugplatz oder anderes mit einem Lupenwerkzeug suchen",
-     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa"
+     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa",
+     "test": true
     },
     {
      "id": "SOG-0492",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte : la flèche du sens d'une voie a un liseré blanc que le cartouche n'a pas — l'enlever",
      "en": "Map: the airway direction arrow has a white edge the label does not — remove it",
      "de": "Karte: Der Richtungspfeil der Luftstraße hat einen weißen Rand, das Etikett nicht – entfernen",
@@ -4290,6 +4291,27 @@
      "en": "Mission workshop: a mission in progress is a kept draft, offered at the top of the register, even without “Save”",
      "de": "Missionswerkstatt: Eine laufende Mission bleibt als Entwurf erhalten und steht oben im Register, auch ohne „Speichern“",
      "es": "Taller de misiones: una misión en curso se guarda como borrador y aparece arriba del registro, incluso sin «Guardar»"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-atelier-tiroirs",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; tiroirs",
+    "en": "Missions ; atelier ; tiroirs",
+    "de": "Missions ; atelier ; tiroirs",
+    "es": "Missions ; atelier ; tiroirs"
+   },
+   "items": [
+    {
+     "id": "SOG-0500",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Atelier de missions : écrire aussi les clés de la version 1.1 (stationnaire, atterrissage, survol, suite d'étapes, événement)",
+     "en": "Mission workshop: also write the 1.1 keys (hover, landing, overflight, sequence of steps, event)",
+     "de": "Missionswerkstatt: auch die Schlüssel der Version 1.1 schreiben (Schweben, Landung, Überflug, Schrittfolge, Ereignis)",
+     "es": "Taller de misiones: escribir también las claves de la 1.1 (estacionario, aterrizaje, sobrevuelo, secuencia de etapas, evento)"
     }
    ]
   },

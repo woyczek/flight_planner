@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 316,
+  "tests": 317,
   "verdicts": 215
  },
  "apps": [
@@ -4704,6 +4704,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T15:08:49Z"
+  },
+  {
+   "id": "SOG-0491",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : chercher un point, un terrain ou autre par un outil loupe",
+    "en": "Map: search for a point, an aerodrome or anything else with a magnifier tool",
+    "de": "Karte: Punkt, Flugplatz oder anderes mit einem Lupenwerkzeug suchen",
+    "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa"
+   },
+   "test": "Carte : touche la loupe dans la colonne des commandes (sous le crayon). Tape « toul » : des terrains, balises et villes de Toulouse sont proposés. Choisis LFBO : la carte se centre dessus avec un repère rouge, et « Fiche du terrain » ouvre sa fiche ; avec un vol en cours, « Ajouter à la route » l'insère là où la route s'allonge le moins. Échap ou la croix ferme et retire le repère. Les espaces (R, D, P) ne sont pas encore cherchés.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T15:59:48Z"
   },
   {
    "id": "SOG-0494",
