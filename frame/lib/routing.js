@@ -35,6 +35,9 @@ import {
   textFromTokens,
   icaoCoord
 } from './route_text.js';
+import {
+  gcNm
+} from './geo.js';
 
 export const DEFAULTS = {
   reachNm: 60,
@@ -55,15 +58,8 @@ export class RoutingError extends Error {
 }
 
 const rad = d => d * Math.PI / 180;
-/** Distance orthodromique (NM). */
-export function nm(a, b) {
-  const f1 = rad(a.lat),
-    f2 = rad(b.lat),
-    df = f2 - f1,
-    dl = rad(b.lon - a.lon);
-  const h = Math.sin(df / 2) ** 2 + Math.cos(f1) * Math.cos(f2) * Math.sin(dl / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+/** Distance orthodromique (NM) : gcNm de geo.js, la seule du cadre (SOG-0468). */
+export const nm = gcNm;
 
 const NAME = /^[A-Z0-9]{2,7}$/,
   isNum = v => Number.isFinite(+v) && v !== null && v !== '';
