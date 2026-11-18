@@ -56,13 +56,10 @@ export const meta = {
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
   // la carte de l'atelier : MapLibre, chargé à la demande par le socle de carte (comme Données et Météo) ; ses tuiles, appelées par lui
-  lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'],
+  lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0'],
   // SOG-0464 : le relief du profil, l'entrée EXACTE de la Carte (modules/maps/module.js) — la CSP effective ne change pas (N145) ; lu par
   // ctx.net.fetch, que l'atelier passe à drawProfile
   net: ['tiles.openfreemap.org', 's3.amazonaws.com/elevation-tiles-prod'],
-
-  lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0'],
-  net: ['tiles.openfreemap.org'],
   reads: ['missions/', 'cr/',
     'airline/', 'pilot/',
     'cache/missions/' // SOG-0441 : les carnets des pilotes de la mission, le vol courant ; ce que l'appareil a vu ouvert
