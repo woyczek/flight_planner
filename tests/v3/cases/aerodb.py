@@ -17296,3 +17296,32 @@ def k368(c):
     finally:
         AF.get = kept
         importlib.reload(AF)
+@case('K365', 'Route engine, SOG-0501 (a): a turn of more than 100° at a point of the route is not taken (the IFPS: « CRITICAL SHARP TURN ») — `Nav.sharp_turn(previous, u, v, incoming, e)` from the bearings of `geo.py`; no turn is judged for a procedure link, a gate, a connector, a node without a position; the limit is `TURN_MAX_DEG` (a PROVISIONAL 100°, 0 switches it off) and the answer is memorised per triplet',
+      'K', static=True,
+      rule='SOG-0501 (the user passed EGGW → LQSA FL350 to the IFPS of EUROCONTROL: 24 errors, two of them « PROF340: CRITICAL SHARP TURN »). Measured on that route: the two refused turns are 139.2° and 138.3° (airway changes), the largest turn that was NOT refused 68.4°: the exact threshold of the IFPS is between 69° and 138°; the relay set 100° as a provisional, prudent value (DECISIONS), to be replaced by the value of the IFPS manual. Invented positions.')
+def k365(c):
+    import importlib
+    import sys
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    geo = importlib.import_module('route_engine.geo')
+    engine = importlib.import_module('route_engine.engine')
+    at = lambda lat, lon: {'lat': lat, 'lon': lon}
+    c.eq([round(geo.turn_deg(at(0, 0), at(0, 1), at(0, 2)), 1), round(geo.turn_deg(at(0, 0), at(0, 1), at(1, 1)), 1), round(geo.turn_deg(at(0, 0), at(0, 1), at(0, 0)), 1), round(geo.turn_deg(at(0, 0), at(0, 1), at(-1, 1)), 1)],
+         [0.0, 90.0, 180.0, 90.0], 'turn_deg: straight on 0°, a left or a right angle 90° (no sign), going back 180°', what='turn_deg')
+    nodes = {'A': at(50.0, 0.0), 'B': at(50.0, 2.0), 'C': at(50.0, 4.0), 'D': at(50.0, 0.5), 'E': at(51.5, 2.0), 'F': at(49.0, 2.0), 'G': at(50.3, 1.0)}
+    fake = types.SimpleNamespace(nodes=nodes, TURN_MAX_DEG=100.0, TURN_FREE_KINDS=engine.Nav.TURN_FREE_KINDS)
+    sharp = lambda p, u, v, inc=None, e=None: engine.Nav.sharp_turn(fake, p, u, v, inc if inc is not None else {'kind': 'AIRWAY'}, e if e is not None else {'kind': 'AIRWAY'})
+    c.eq([sharp('A', 'B', 'C'), sharp('A', 'B', 'E'), sharp('A', 'B', 'D'), sharp('A', 'B', 'G')], [False, False, True, True], 'straight on and a right angle are taken; going back almost on the same track (A → B → D, 180°) and an acute turn (A → B → G, about 160°) are not', what='threshold')
+    fake.TURN_MAX_DEG = 140.0
+    fake.__dict__.pop('_turn_cache', None)
+    c.eq([sharp('A', 'B', 'D'), sharp('A', 'B', 'G')], [True, True], 'the threshold is a constant of the class that the instance reads (the memory is per triplet: here cleared, 140° keeps both turns refused (about 155° and 180°))', what='constant')
+    fake.TURN_MAX_DEG = 0
+    fake.__dict__.pop('_turn_cache', None)
+    c.eq(sharp('A', 'B', 'D'), False, '0 switches the limit off', what='off')
+    fake.TURN_MAX_DEG = 100.0
+    fake.__dict__.pop('_turn_cache', None)
+    c.eq([sharp('A', 'B', 'D', {'kind': 'SID'}), sharp('A', 'B', 'D', {'kind': 'AIRWAY'}, {'kind': 'STAR'}), sharp('A', 'B', 'D', {'kind': 'AIRWAY', 'connector': True}), sharp('A', 'B', 'D', {'kind': 'AIRWAY'}, {'kind': 'FRA_GATE'}),
+          sharp('A|FRA|x', 'B', 'D'), sharp('A', 'Z', 'D'), engine.Nav.sharp_turn(fake, 'A', 'B', 'D', None, {'kind': 'AIRWAY'})],
+         [False] * 7, 'no turn is judged at a procedure link (SID, STAR), a gate, a connector, a node of the FRA graph, a node without a position, or at the start of the route', what='exempt')
+    c.eq(sorted(fake._turn_cache.items(), key=str)[:1] != [], True, 'the answer is kept per triplet (previous, point, next)', what='cache')

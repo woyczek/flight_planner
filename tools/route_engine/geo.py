@@ -26,6 +26,18 @@ def nm_pair(a, b):
     return nm_ll(a[0], a[1], b[0], b[1])
 
 
+def bearing(a, b):
+    """Cap initial (degrés vrais, 0 à 360) du grand cercle de a vers b, deux points { 'lat', 'lon' }."""
+    x, y = math.radians(a['lat']), math.radians(b['lat'])
+    dl = math.radians(b['lon'] - a['lon'])
+    return (math.degrees(math.atan2(math.sin(dl) * math.cos(y), math.cos(x) * math.sin(y) - math.sin(x) * math.cos(y) * math.cos(dl))) + 360) % 360
+
+
+def turn_deg(a, b, c):
+    """Le virage (0 à 180°, sans signe) que fait la route a → b → c au point b."""
+    return abs((bearing(b, c) - bearing(a, b) + 180) % 360 - 180)
+
+
 def chord_nm(a, b):
     """Distance (NM) entre deux positions déjà en radians avec leur cosinus : a = (lat, lon, cos lat, …) ; pour les boucles de millions d'appels (`fra.graph`), où le sinus et le cosinus sont faits une fois par point."""
     return R_NM * 2 * math.asin(min(1, math.sqrt(math.sin((b[0] - a[0]) / 2) ** 2 + a[2] * b[2] * math.sin((b[1] - a[1]) / 2) ** 2)))

@@ -174,6 +174,8 @@ class Nav:
         import threading
         self._plan_lock=threading.RLock()
 
+    TURN_MAX_DEG=100.0      # SOG-0501 : un virage plus serré que cela à un point de la route n'est pas pris (l'IFPS : « CRITICAL SHARP TURN » ; mesuré : refusés à 138° et 139°, le plus grand virage non refusé 68° : le seuil exact est entre les deux, 100° est PROVISOIRE et prudent)
+    TURN_FREE_KINDS=('SID','STAR','APPROACH_LINK','FRA_GATE')      # les raccords de procédures et les portes ne virent pas « à un point de la route »
     XPLANE_MIN_OFFICIAL=20      # un État dont la base a moins de tronçons de voie n'a pas de réseau officiel (même seuil que tools/regen/xplane.py)
 
     def _xplane_overlay(self):
@@ -211,6 +213,16 @@ class Nav:
                 used.append(zone);total+=count
                 self.coverage.append(dict(zone=zone,cycle=None,segments=count,dataset_cycles={},sources=['xplane']))
         if used:self.xplane=dict(cycle=cycle,zones=used,segments=total)
+
+    def sharp_turn(self,previous,u,v,incoming,e):
+        """SOG-0501 : vrai si la route `previous` → `u` → `v` vire à `u` de plus de TURN_MAX_DEG ; faux pour un raccord, une porte, un point sans position (nœud FRA ou de procédure) ; mémorisé par triplet."""
+        if not self.TURN_MAX_DEG or incoming is None:return False
+        if '|' in previous or '|' in u or '|' in v or incoming.get('connector') or e.get('connector') or incoming.get('kind') in self.TURN_FREE_KINDS or e.get('kind') in self.TURN_FREE_KINDS:return False
+        cache=self.__dict__.setdefault('_turn_cache',{});key=(previous,u,v)
+        if key not in cache:
+            nodes=self.nodes
+            cache[key]=previous!=v and geo.turn_deg(nodes[previous],nodes[u],nodes[v])>self.TURN_MAX_DEG if previous in nodes and u in nodes and v in nodes else False
+        return cache[key]
 
     def release_graph_caches(self):
         for name in ['_fra_graph_cache','_routing_cache','_fra_recovery_graph_cache']:
@@ -432,8 +444,10 @@ class Nav:
                     previous,e=prev[state];path.append((previous[0],state[0],e));state=previous
                 self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=True,fra_reachable=fra_reachable,band=(low,high),cost=cost)
                 return list(reversed(path))
+            came=prev.get(state) if state!=origin else None      # SOG-0501 : l'arête par laquelle ce meilleur état a été atteint (le virage au point u)
             for v,e in g.get(u,[]):
                 if self.nat_rejected and e.get('nat') and e['nat']['track'] in self.nat_rejected:continue
+                if came is not None and self.sharp_turn(came[0][0],u,v,came[1],e):continue
                 a,b=self.edge_band(e,'start')
                 if a==0:a=ground      # le plancher 0 est le sol (L5 4) : sous le niveau de la mer pour EHAM
                 a=max(a,low);b=min(b,high)
