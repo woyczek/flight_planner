@@ -313,12 +313,14 @@ export function cleanNat(raw) {
       win = Number.isFinite(fromMs) && Number.isFinite(toMs) && toMs > fromMs && toMs - fromMs <= 48 * 3600e3;
     return {
       id: String(t.id ?? '').replace(/[^A-Za-z0-9]/g, '').slice(0, 4),
-      points: (Array.isArray(t.points) ? t.points : []).slice(0, 60).filter(p => p && Number.isFinite(+p.lat) && Math.abs(+p.lat) <=
-          90 && Number.isFinite(+p.lon) && Math.abs(+p.lon) <= 180)
+      // une coordonnée est un NOMBRE (SOG-0470 : null, '' et [] se lisaient 0 par +p.lat, un point (0, 0) injectable ; un texte numérique n'est pas une coordonnée non plus)
+      points: (Array.isArray(t.points) ? t.points : []).slice(0, 60).filter(p => p && typeof p.lat === 'number' && Number.isFinite(p
+            .lat) && Math.abs(p.lat) <= 90 &&
+          typeof p.lon === 'number' && Number.isFinite(p.lon) && Math.abs(p.lon) <= 180)
         .map(p => ({
           id: String(p.id ?? '').slice(0, 12),
-          lat: +p.lat,
-          lon: +p.lon
+          lat: p.lat,
+          lon: p.lon
         })),
       west: lv(t.west),
       east: lv(t.east),

@@ -350,6 +350,21 @@ function haloText(ctx, t, x, y, col) {
  *  sur le chemin volé, interpolée le long de chaque tronçon ; null sans heure de référence ni devis, ou quand le vol ne passe pas à moins de 400 NM. follows(points) : vrai quand
  *  l'itinéraire passe par au moins deux de ces points (à 15 NM près : il SUIT la route). */
 export function natFlightOf() {
+  // SOG-0470 : le vol vu des routes NAT est refait à chaque dessin (ses échantillons sont rebâtis à chaque `at` / `follows`) ; le même objet est rendu tant que la route, le vol,
+  // le départ du calcul, les routes écartées et la minute (les heures estimées avancent avec l'horloge) sont les mêmes
+  const key = [S.route?.points, S.route?.flown, S.route?.flight, S.alts?.depart?.ms, S.alts?.rejected, S.missionId, Math.floor(Date.now() /
+      6e4)],
+    memo = S.natMemo;
+  if (memo && memo.key.length === key.length && memo.key.every((v, i) => v === key[i])) return memo.val;
+  const val = natFlightBuild();
+  S.natMemo = {
+    key,
+    val
+  };
+  return val;
+}
+
+function natFlightBuild() {
   const f0 = S.route?.flight,
     dep = S.alts
     ?.depart, // le départ que le CALCUL a pris, rendu avec l'itinéraire affiché (Carburant le garde dans les sections de la réponse) : il passe avant l'heure du vol, qui passe avant le sens seul

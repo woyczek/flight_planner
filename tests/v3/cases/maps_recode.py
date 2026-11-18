@@ -9394,6 +9394,27 @@ def d268(c):
     c.shot('D268_profile_embed.png')
 
 
+@case('D269', 'NAT tracks (SOG-0470): a point whose latitude or longitude is null, empty, a list or a text is dropped, never read as 0; the flight seen from the NAT tracks is computed once for the same route and flight', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0470 (Sécurisation): cleanNat read null, '' and [] as 0 (+p.lat), so a point (0, 0) could be injected by the network file: a coordinate must be a number (typeof number, finite, within bounds); natFlightOf rebuilt its samples at every drawing: the same object is given back for the same route, flight, calculated departure, rejected routes and minute')
+def d269(c):
+    c.page.goto(f'{c.base}{_ME_URL}', wait_until='load')
+    c.until("() => window.__me && (window.__me.ready || window.__me.failed)", timeout=30000, what='the bench')
+    r = c.js("""async () => { const m = await import('/modules/maps/data.js'), P = (lat, lon, id) => ({ id, lat, lon });
+      const out = m.cleanNat([{ id: 'NATA', points: [P(50, -20, 'OK1'), P(null, -20, 'N1'), P('', -20, 'E1'), P([], -20, 'L1'), P(50, null, 'N2'), P(50, '', 'E2'), P(50, [], 'L2'), P('50', -20, 'T1'), P(true, -20, 'B1'), P(0, 0, 'ZERO'), P(91, 0, 'BIG'), P(50, -30, 'OK2')], west: [350], east: [] }]);
+      return out[0].points.map(p => p.id) }""")
+    c.eq(r, ['OK1', 'ZERO', 'OK2'], 'only real numbers are kept (a genuine (0, 0) stays: a number); null, empty text, a list, a numeric text, a boolean and a latitude out of bounds are dropped', what=str(r))
+    f = flight()
+    c.open('maps', docs=fdocs(f), airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    g = c.js("""async () => { const m = await import('/modules/maps/flight_time.js'), a = m.natFlightOf(), b = m.natFlightOf();
+      const S = window.__mp.S, keep = S.route.points; S.route.points = [...keep]; const d = m.natFlightOf(); S.route.points = keep; const e = m.natFlightOf();
+      return { has: !!a, same: a === b, changed: d !== a, back: e !== d } }""")
+    c.ok(g['has'] and g['same'], str(g), 'the same route and flight: the same object (its samples are built once, not at every drawing)')
+    c.ok(g['changed'], str(g), 'another route: another object')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
