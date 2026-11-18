@@ -4676,9 +4676,15 @@
     "de": "R- und D-Gebiete: Art der Gefahr, zuständige Stelle, Zeiten und Einflugbedingungen angeben",
     "es": "Zonas R y D: indicar la naturaleza del peligro, el gestor, los horarios y las condiciones de penetración"
    },
-   "test": "Après la relance du lanceur, Données : « Mettre à jour » pour la France, puis reconstruis la zone fr. Carte : touche la zone R 108 (ou une autre zone R ou D de France). Attendu : sous son code, la « Nature du danger » telle que l'écrit le SIA (pour la R 108 : « Activités spécifiques Défense. Vols d'essais. »), l'organisme et les conditions de pénétration, les horaires publiés ; la R 12 montre son nom usuel « MONT SAINT MICHEL ». Une zone d'un autre État dit sa source (« openAIP, communautaire ») et n'écrit rien pour un champ absent.",
+   "test": "D'abord, une fois : relance du lanceur, puis Données → « Mettre à jour » (France), puis reconstruis la zone fr. Carte : touche R 205 /11, puis R 7 B. Attendu : chaque rubrique UNE fois, avec ses lignes dessous — Nature du danger, Organisme et conditions de pénétration (le gestionnaire, par exemple « DE GAULLE APP, ORLY APP », et les conditions d'entrée, tirés des remarques quand l'ENR 5.1 ne les donne pas), Horaires, Remarques — au-delà de trois lignes, le reste se replie ; textes tels que publiés.",
    "since": "2026-11-18",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-18T18:33:43Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "R 205 /11 · zone réglementée Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : H24 Conditions et remarques de l’AIP : Managers: Conditions et remarques de l’AIP : DE GAULLE APP, ORLY APP. Conditions et remarques de l’AIP : Entry conditions:  plus d’autres. le gestionnaire n’est pas récupéré, ni les conditions d’entrées.  Une autre R 7 B · zone réglementée  Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : Possible activation except public HOL : Horaires publiés : Overall area : MON-FRI : 0800 - 1600 Horaires publiés : North of AWY V20 northerly limit : MON-THU : 1600 - 0600 and other times by NOTAM Horaires publiés : (SUM : -1HR)  Conditions et remarques de l’AIP : CDC CINQ MARS LA PILE. Conditions et remarques de l’AIP : IFR/VFR : avoidance mandatory during activity except for AWY V20, follow ACC instructions. Conditions et remarques de l’AIP : Activity known on : PARIS ACC/FIC and BREST ACC. Organisme et fréquence : PARIS ACC/FIC and BREST ACC Source : SIA (2026-10-29)  1/ la présentation n’est pas formidable ; 2/ des infos sont à glaner là dedans.",
+    "at": "2026-11-18T16:27:02Z"
+   }
   },
   {
    "id": "SOG-0465",

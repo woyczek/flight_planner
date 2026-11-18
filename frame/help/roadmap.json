@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a73eabb",
+  "organisation": "16b996f",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -1886,12 +1886,13 @@
     {
      "id": "SOG-0462",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Zones R et D : dire la nature du danger, le gestionnaire, les horaires et les conditions de pénétration",
      "en": "R and D areas: state the nature of the hazard, the managing authority, the hours and the entry conditions",
      "de": "R- und D-Gebiete: Art der Gefahr, zuständige Stelle, Zeiten und Einflugbedingungen angeben",
      "es": "Zonas R y D: indicar la naturaleza del peligro, el gestor, los horarios y las condiciones de penetración",
-     "rank": 403
+     "rank": 403,
+     "test": true
     }
    ]
   },
