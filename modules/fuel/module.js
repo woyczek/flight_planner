@@ -45,8 +45,9 @@ import * as FMS from '../../frame/lib/fms.js'; // plan de vol écrit pour X-Plan
 import * as ATIS from './atis.js';
 import * as DIR from './direct.js';
 import {
+  copyAndTell,
   copyText
-} from '../../frame/lib/clipboard.js'; // « Copier le diagnostic » du calcul de route (SOG-0134)
+} from '../../frame/lib/clipboard.js'; // « Copier le diagnostic » du calcul de route (SOG-0134) ; le plan de vol (SOG-0402) ; SOG-0468 (1)
 import {
   createProcedures,
   sideChosen,
@@ -307,6 +308,12 @@ const TX = {
     'Berechnet in {t} s — davon {p} s, um den Starter zu erreichen.', 'Calculado en {t} s — de ellos {p} s para alcanzar el lanzador.'
   ],
   rTimeCopy: ['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico'],
+  // SOG-0468 (1) : la copie n'a pu que MONTRER le texte (ni presse-papiers ni copie de secours : une tablette hors contexte sûr)
+  copyManual: ['Copie impossible ici : le texte est affiché, copiez-le à la main.',
+    'Copying is not possible here: the text is shown, copy it by hand.',
+    'Kopieren ist hier nicht möglich: Der Text wird angezeigt, kopieren Sie ihn von Hand.',
+    'No se puede copiar aquí: el texto se muestra, cópielo a mano.'
+  ],
   rTimeCopied: ['Diagnostic du calcul copié.', 'Diagnostic of the computation copied.', 'Diagnose der Berechnung kopiert.',
     'Diagnóstico del cálculo copiado.'
   ],
@@ -5016,8 +5023,11 @@ async function routeTimingCopy() {
   if (!T) return;
   const d = timingOf(T),
     text = `SOG route ${T.act} ${T.dep} → ${T.arr} · ${T.at} · reach ${d.reach} ms · launcher ${d.launcher} ms · draw ${d.draw} ms · map ${d.map ?? '—'} ms · total ${d.total} ms`;
-  await copyText(text);
-  S.ctx.notify(tt(TX.rTimeCopied), 'ok');
+  // SOG-0468 (1) : « copié » seulement s'il l'est ; le texte seulement montré : « copiez-le à la main »
+  await copyAndTell(S.ctx, text, {
+    ok: tt(TX.rTimeCopied),
+    manual: tt(TX.copyManual)
+  });
 }
 /** « N écarts aux règles » n'est jamais un nombre seul (SOG-0134) : un pli dont le titre dit le nombre et qui liste chaque écart — son
  *  segment, sa règle (l'identifiant du RAD ou du point FRA, sinon son genre), la phrase du moteur — sept lignes puis « N autres ». */
@@ -5180,11 +5190,14 @@ async function fplCopy() {
       l: fplErrs(F.m)
     }), 'warn');
   }
-  await copyText(F.m.text);
+  const how = await copyText(F.m.text),
+    shown = how === 'shown', // SOG-0468 (1) : le texte seulement montré — jamais « copié »
+    hf = !!F.m.notes.hf;
   if (fold) fold.open = true;
   // SOG-0422 (a) : UNE notification : sur une route océanique sans HF dans l'équipement supposé, la copie dit l'avertissement elle-même
   // (une seconde note attendrait derrière la première sur un téléphone et ne serait pas lue) ; l'équipement n'est jamais inventé
-  S.ctx.notify(tt(F.m.notes.hf ? TX.fplCopiedHf : TX.fplCopied), F.m.notes.hf ? 'warn' : 'ok');
+  S.ctx.notify(shown ? `${tt(TX.copyManual)}${hf ? ` ${tt(TX.fplNoHf)}` : ''}` : tt(hf ? TX.fplCopiedHf : TX.fplCopied), shown || hf ? 'warn' :
+    'ok');
 }
 /** SOG-0398 : l'attente au plus des lectures de la base pour la ligne du dégagement (terrain, couverture). */
 const ALTN_CHK_WAIT_MS = 4000;

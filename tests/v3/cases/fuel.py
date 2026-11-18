@@ -8576,3 +8576,42 @@ def f279(c):
     c.until(f"!!document.querySelector('{D} [data-source-slot] a[data-charts]')", timeout=10000,
             what='the page of the aerodrome, asked again after the reading')
     c.ok(c.js("window.__ukc.asked.charts") > n, c.js("window.__ukc.asked.charts"), 'chartsUrl asked again after the reading')
+
+
+# SOG-0468 (1): a browser where copying cannot work (a tablet outside a secure context: no navigator.clipboard, execCommand refused)
+_NO_COPY = """(() => { try { Object.defineProperty(navigator, 'clipboard', { get: () => undefined, configurable: true }) } catch (e) {}
+  document.execCommand = () => false })()"""
+
+
+@case('F280', 'Route step, « Copier pour Eurocontrol » where copying cannot work (no clipboard, the fallback refused): the text is SHOWN '
+      'and the one notification says « copiez-le à la main » as a warning — never « Plan de vol copié »', 'F', tags=('fuel',),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0468 (1) (V3 Frame, the relay: Fuel said « ok » on \'shown\'; copyAndTell of frame/lib/clipboard.js, 0ac4d975b); the copy '
+      'of the diagnostic goes through copyAndTell; invented flight')
+def f280(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    c.page.add_init_script(_NO_COPY)
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            d[1]['planned_at'] = '2026-11-18T09:30:00Z'
+    c.page.set_viewport_size({'width': 390, 'height': 667})
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]')", timeout=10000, what='« Copier pour Eurocontrol »')
+    c.eq(c.js("[typeof navigator.clipboard, document.execCommand('copy')]"), ['undefined', False], 'the browser cannot copy (the case\'s '
+         'set-up)', what='set-up')
+    c.js("window.__n0 = (window.__notes || []).length")
+    c.tap(f'{FUEL} [data-do=fplcopy]')
+    c.until("(window.__notes || []).length > window.__n0", timeout=5000, what='the notification of the copy')
+    got = [norm(x) for x in c.js("(window.__notes || []).slice(window.__n0)")]
+    want = {'fr': 'Copie impossible ici : le texte est affiché, copiez-le à la main.',
+            'en': 'Copying is not possible here: the text is shown, copy it by hand.',
+            'de': 'Kopieren ist hier nicht möglich: Der Text wird angezeigt, kopieren Sie ihn von Hand.',
+            'es': 'No se puede copiar aquí: el texto se muestra, cópielo a mano.'}[L]
+    c.eq(len(got), 1, 'ONE notification (SOG-0422 a)', what='one note')
+    c.ok(got[0].startswith(norm(want)), got, '« copiez-le à la main », the words written here (never read from the module)')
+    copied = {'fr': 'Plan de vol copié', 'en': 'Flight plan copied', 'de': 'Flugplan kopiert', 'es': 'Plan de vuelo copiado'}[L]
+    c.ok(copied not in got[0], got, 'never « Plan de vol copié »')
