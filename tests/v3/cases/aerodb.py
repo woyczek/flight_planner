@@ -15351,7 +15351,7 @@ def k468(c):
 # the sites of tools/ that still carry their OWN guard around a json.load (RecursionError and company): the list only shrinks — a site migrated to
 # tools/safe_json.py leaves it (the case then asks to update it), a NEW site is refused
 LEGACY_JSON_GUARDS = {'tools/aero_fetch.py': 1, 'tools/build_world_weather.py': 1, 'tools/pdf_guard.py': 1, 'tools/regen/proc.py': 1, 'tools/registry_fr.py': 2,
-                      'tools/route_engine/nat_layer.py': 1, 'tools/route_engine/nat_refresh.py': 2, 'tools/route_engine/results_cache.py': 1, 'tools/tree_memo.py': 1}
+                      'tools/route_engine/nat_refresh.py': 2, 'tools/route_engine/results_cache.py': 1, 'tools/tree_memo.py': 1}
 
 
 @case('K469', 'tools/safe_json.py, SOG-0468 (a): ONE bounded reader for the JSON files of the data repository (untrusted: any pilot writes them): it never raises and says WHY it gave nothing (missing, size, unreadable); a file that is too big, nested tens of thousands of levels deep, carrying NaN or Infinity, not UTF-8, a folder or absent gives the fallback; and no NEW file of tools/ writes its own guard around a json.load',

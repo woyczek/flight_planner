@@ -13,8 +13,9 @@ Ce que la couche ajoute au graphe (`add(nav)`, appelée par Nav.__init__ après 
   · l'ENTRÉE et la SORTIE (premier et dernier repère placés) qui ne touchent aucun airway HAUT de la base sont raccordées par un DCT de simulation aux LINK_NODES nœuds du réseau haut les plus proches à moins de
     LINK_NM NM (entrée : du réseau vers la track ; sortie : de la track vers le réseau), arêtes `nat_link` : le contrôle les dit « revue » (aucune route lue)."""
 import datetime as dt
-import json
 import re
+
+import safe_json
 
 MAX_BYTES = 2_000_000
 MAX_TRACKS = 60
@@ -129,12 +130,9 @@ def coordinate(token):
 def read(path, limit=MAX_TRACKS):
     """Le fichier en entrée lue : ({ tracks: [track nettoyées] }, [raisons de ce qui est laissé]) ; ({}, [raison]) sans fichier lisible."""
     skipped = []
-    try:
-        if path.stat().st_size > MAX_BYTES:
-            return [], ['file-too-big']
-        doc = json.loads(path.read_text(encoding='utf-8-sig'))
-    except (OSError, ValueError, RecursionError, MemoryError):      # une imbrication profonde ou un fichier énorme : « illisible », comme un fichier absent
-        return [], ['no-file']
+    doc, why = safe_json.read(str(path), MAX_BYTES)      # la garde (taille, imbrication, NaN) est celle de tools/safe_json.py
+    if why:
+        return [], ['file-too-big' if why == 'size' else 'no-file']
     rows = doc.get('tracks') if isinstance(doc, dict) else None
     if not isinstance(rows, list):
         return [], ['no-tracks']
