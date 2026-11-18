@@ -4473,3 +4473,58 @@ def n93(c):
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements on the plain background')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+# the pure part of the map's gestures: a place posed, a place moved, the radius of a zone (modules/missions/editor.js)
+_GEST_JS = """async () => {
+  const ED = await import('/modules/missions/editor.js');
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'x', origin: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44.0, lon: 2.0 }, target: { id: 'TARGET', name: 'Cible', lat: 44.6, lon: 1.4 },
+    zones: [{ id: 'ZONE-1', name: 'Ronde', centre: { lat: 44.8, lon: 1.2 }, radius_km: 5 },
+      { id: 'ZONE-2', name: 'Contour', points: [{ lat: 44.5, lon: 1.5 }, { lat: 44.5, lon: 1.7 }, { lat: 44.4, lon: 1.7 }] }],
+    turning_points: [{ id: 'PT1', name: 'Point un', lat: 44.8, lon: 1.2, note: 'kept' }] };
+  const rows = ED.placesOf(doc), before = JSON.stringify([rows, doc]), at = id => rows.findIndex(r => r.id === id);
+  const p = ED.newPlace(rows, 'pt', doc, { lat: 44.123456789, lon: 1.987654321 }), z = ED.newPlace(p.rows, 'zone', doc, { lat: 44.5, lon: 1.5, radius: 5 }),
+    o = ED.newPlace(z.rows, 'object', doc, { lat: 91, lon: 1 }), b = ED.newPlace(rows, 'rdv', doc);
+  const moved = ED.movePlace(rows, at('PT1'), { lat: 44.75, lon: 1.25 }), grown = ED.placeRadius(rows, at('ZONE-1'), 7.456);
+  const same = x => x === rows;
+  let threw = '';
+  for (const h of [null, 'x', 7, [null, 'x']]) try { ED.newPlace(h, 'pt', h, h); ED.movePlace(h, 0, h); ED.placeRadius(h, 0, 5); ED.newPlace(rows, h, doc, h) } catch (e) { threw += String(e) }
+  return { posed: [p.at, p.rows[p.at].id, p.rows[p.at].lat, p.rows[p.at].lon, p.rows.length], zone: [z.at, z.rows[z.at].id, z.rows[z.at].radius, z.rows.map(r => r.kind).join(' ')],
+    object: [o.rows[o.at].id, o.rows[o.at].lat, o.rows[o.at].lon, o.rows[o.at].confirm], blank: [b.rows[b.at].id, b.rows[b.at].lat, b.rows[b.at].lon],
+    full: [ED.newPlace(rows, 'target', doc, { lat: 1, lon: 1 }), ED.newPlace(rows, 'dep', doc), ED.newPlace(rows, '__proto__', doc)],
+    moved: [moved[at('PT1')].lat, moved[at('PT1')].lon, moved !== rows, moved[at('PT1')].name],
+    refused: [same(ED.movePlace(rows, 0, { lat: 44, lon: 1 })), same(ED.movePlace(rows, at('ZONE-2'), { lat: 44, lon: 1 })), same(ED.movePlace(rows, at('PT1'), { lat: 91, lon: 1 })),
+      same(ED.movePlace(rows, at('PT1'), { lat: '44', lon: '1' })), same(ED.movePlace(rows, 'x', { lat: 44, lon: 1 })), same(ED.movePlace(rows, 99, { lat: 44, lon: 1 }))],
+    radius: [grown[at('ZONE-1')].radius, same(ED.placeRadius(rows, at('ZONE-1'), 0.01)), same(ED.placeRadius(rows, at('ZONE-1'), 501)), same(ED.placeRadius(rows, at('ZONE-1'), NaN)),
+      same(ED.placeRadius(rows, at('ZONE-2'), 5)), same(ED.placeRadius(rows, at('PT1'), 5)), same(ED.placeRadius(rows, at('ZONE-1'), '5'))],
+    written: [ED.withPlaces(doc, moved).turning_points[0], ED.withPlaces(doc, grown).zones[0].radius_km, ED.withPlaces(doc, p.rows).turning_points[1],
+      ED.withPlaces(doc, z.rows).zones[2]], threw, untouched: JSON.stringify([rows, doc]) === before } }"""
+
+
+@case('N94', 'Missions › the workshop, the gestures of the map (pure part, no screen): a place posed is a new row at the place of its kind, '
+      'with a free identifier and the position of the touch (five decimals); a place moved takes the new position; the radius of a round '
+      'zone is set in km; the departure, the arrival and a contour are not moved; a position or a radius out of bounds is refused — never '
+      'brought back into its bounds —, the same rows are returned; what the file then writes is the row; no hostile input throws',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, second brick, the pure part (modules/missions/EDITOR.md § 2: « After a pose the tool goes back to Sélection », '
+      '§ 3: « Identifiers are given by the workshop »): modules/missions/editor.js `newPlace`, `movePlace`, `placeRadius`; audit 182 '
+      '(only what changed is written)')
+def n94(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_GEST_JS)
+    c.eq(r['posed'], [6, 'PT2', '44.12346', '1.98765', 7], 'a point posed: the next free identifier, after the points, the position at five decimals', what='a point posed')
+    c.eq(r['zone'], [5, 'ZONE-3', '5', 'dep arr target zone zone zone pt pt'], 'a zone posed joins the zones, round, with its radius', what='a zone posed')
+    c.eq([r['object'], r['blank']], [['OBJ-1', '', '', True], ['RDV-1', '', '']],
+         'a position out of bounds is not kept: the row is created « à placer »; without a position (the button of the Lieux), the same', what='to place')
+    c.eq(r['full'], [None, None, None], 'one target only; the departure and unknown kinds are never posed', what='refused poses')
+    c.eq(r['moved'], ['44.75', '1.25', True, 'Point un'], 'a place moved takes the position, in new rows; its other fields stay', what='a place moved')
+    c.eq(r['refused'], [True] * 6, 'refused, the SAME rows returned: the departure, a contour, a latitude of 91, texts instead of numbers, a rank that is not one',
+         what='refused moves')
+    c.eq(r['radius'], ['7.46', True, True, True, True, True, True], 'the radius of a round zone at two decimals; 0.01 km, 501 km, not a number, a contour, a point, a text: '
+         'refused', what='the radius')
+    c.eq(r['written'], [{'id': 'PT1', 'name': 'Point un', 'lat': 44.75, 'lon': 1.25, 'note': 'kept'}, 7.46, {'id': 'PT2', 'lat': 44.12346, 'lon': 1.98765},
+                        {'id': 'ZONE-3', 'centre': {'lat': 44.5, 'lon': 1.5}, 'radius_km': 5}],
+         'what the file writes: the moved point keeps its other keys, the radius, the posed point, the posed zone', what='written')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the rows and the document read are not touched')

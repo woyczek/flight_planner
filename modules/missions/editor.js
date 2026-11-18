@@ -31,7 +31,11 @@
 //     dont les références suivent les lieux renommés ou retirés — la DERNIÈRE retouche, après toutes les étapes ; refNow(id, base, rows)
 //     → l'identifiant d'aujourd'hui d'une référence du fichier ; citedBy(doc, rows, i) → qui cite le lieu d'une ligne ; removePlace(rows,
 //     i, doc, asked, sinceMs) → { rows, ask, cited, wait } : « Retirer » en deux temps quand le lieu est cité (le premier appui dit qui le
-//     cite, le second le retire, inerte pendant REMOVE_ARM_MS) ; nextPlaceId(rows, kind, base) → un identifiant libre pour un lieu neuf (« PT3 ») ; deadRefs(doc) → les références qui ne
+//     cite, le second le retire, inerte pendant REMOVE_ARM_MS) ; nextPlaceId(rows, kind, base) → un identifiant libre pour un lieu neuf (« PT3 ») ;
+//     les gestes de la carte de l'atelier (SOG-0444, lot P2) : newPlace(rows, kind, base, at) → { rows, at } | null — une ligne neuve à
+//     la place de sa sorte, située si `at` ({ lat, lon, radius }) le dit ; movePlace(rows, i, { lat, lon }) et placeRadius(rows, i, km)
+//     → de NOUVELLES lignes, ou les mêmes quand le geste est refusé (départ, arrivée, contour, position ou rayon hors bornes : jamais
+//     ramenés dans leurs bornes) ; MOVABLE : les sortes qu'un geste déplace ; RADIUS_KM : les bornes du rayon d'une zone ; deadRefs(doc) → les références qui ne
 //     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc), drawersNoKey(doc) → les cartes au centre vidé, les parties au délai
 //     sans point, les parties restées sans clé (leur zone ou le point de leur arrivée retirés).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
@@ -1291,6 +1295,88 @@ export function nextPlaceId(rows, kind, base = null) {
   for (let n = 1; n <= PLACES_MAX * 4; n++)
     if (!taken.has(name(n))) return name(n);
   return '';
+}
+
+/** Les sortes de lieu qu'un geste de la carte déplace : ni le départ ni l'arrivée (des terrains : leur position vient de la base). */
+export const MOVABLE = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
+/** Les bornes du rayon d'une zone ronde, en km (celles du lecteur : 500 au plus). */
+export const RADIUS_KM = Object.freeze([0.05, 500]);
+/** Une coordonnée venue d'un geste de la carte, en texte de ligne : cinq décimales (un mètre) ; '' hors bornes (jamais ramenée). */
+const posText = (v, max) => typeof v === 'number' && Number.isFinite(v) && Math.abs(v) <= max ? String(Math.round(v * 1e5) / 1e5) : '';
+
+/** Une ligne neuve pour un lieu de la sorte `kind` (cible, zone, point tournant, rendez-vous, objet), posée à la place de sa sorte
+ *  (l'ordre du fichier : cible, zones, points, rendez-vous, objets), avec un identifiant libre (nextPlaceId). `at` : sa position quand
+ *  elle vient de la carte ({ lat, lon }, et pour une zone son rayon en km) — hors bornes, la ligne est créée « à placer ». → { rows, at
+ *  (le rang de la ligne neuve) } ; null quand la sorte est pleine (PLACES_MAX, une seule cible) ou inconnue. */
+export function newPlace(rows, kind, base = null, at = null) {
+  const list = Array.isArray(rows) ? rows : [];
+  if (!MOVABLE.includes(kind)) return null;
+  const n = list.filter(r => r?.kind === kind).length + 1;
+  if (n > PLACES_MAX || (kind === 'target' && n > 1)) return null;
+  const lat = posText(at?.lat, 90),
+    lon = posText(at?.lon, 180),
+    km = typeof at?.radius === 'number' && at.radius >= RADIUS_KM[0] && at.radius <= RADIUS_KM[1] ? String(Math.round(at.radius * 100) /
+      100) : '',
+    row = {
+      kind,
+      i: -1,
+      id: nextPlaceId(list, kind, base), // SOG-0439 : un identifiant libre
+      name: '',
+      role: '',
+      lat: lat && lon ? lat : '',
+      lon: lat && lon ? lon : '',
+      ...(kind === 'zone' ? {
+        zkind: '',
+        radius: km,
+        tot: '',
+        poly: 0
+      } : kind === 'rdv' ? {
+        participants: ''
+      } : kind === 'object' ? {
+        okind: '',
+        range: '',
+        height: '',
+        alt: '',
+        confirm: true, // trouvé à portée ET sur la parole du pilote : le défaut du format
+        moving: false
+      } : {})
+    },
+    order = ['dep', 'arr', 'target', 'zone', 'pt', 'rdv', 'object'],
+    where = list.findIndex(r => order.indexOf(r?.kind) > order.indexOf(kind));
+  return where < 0 ? {
+    rows: [...list, row],
+    at: list.length
+  } : {
+    rows: [...list.slice(0, where), row, ...list.slice(where)],
+    at: where
+  };
+}
+
+/** Un lieu déplacé par un geste de la carte : sa ligne prend la position (cinq décimales). Refusé — les MÊMES lignes sont rendues —
+ *  pour le départ et l'arrivée, pour une zone en contour (ses sommets ne se déplacent pas d'un bloc ici), pour un rang inconnu ou une
+ *  position hors bornes. */
+export function movePlace(rows, i, pos) {
+  const r = Array.isArray(rows) && Number.isInteger(i) ? rows[i] : null,
+    lat = posText(pos?.lat, 90),
+    lon = posText(pos?.lon, 180);
+  if (!r || typeof r !== 'object' || !MOVABLE.includes(r.kind) || (r.kind === 'zone' && r.poly) || !lat || !lon) return rows;
+  return rows.map((x, k) => k === i ? {
+    ...x,
+    lat,
+    lon
+  } : x);
+}
+
+/** Le rayon d'une zone ronde réglé par sa poignée, en km (deux décimales). Refusé — les MÊMES lignes — pour ce qui n'est pas une zone
+ *  ronde, ou un rayon hors bornes (RADIUS_KM). */
+export function placeRadius(rows, i, km) {
+  const r = Array.isArray(rows) && Number.isInteger(i) ? rows[i] : null;
+  if (!r || typeof r !== 'object' || r.kind !== 'zone' || r.poly || typeof km !== 'number' || !(km >= RADIUS_KM[0] && km <= RADIUS_KM[1]))
+    return rows;
+  return rows.map((x, k) => k === i ? {
+    ...x,
+    radius: String(Math.round(km * 100) / 100)
+  } : x);
 }
 
 /** Les cartes dont le centre est écrit vide (la trace d'un lieu retiré, ou un fichier écrit ainsi) : leurs noms. */

@@ -472,6 +472,22 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
   does not always carry glyphs: the names come with the selection). **Asked of the map's owner**: `startTiles` gives up at once when
   the device is offline, even for a local style — the plain background therefore only serves when the tiles do not come.
 
+### 7 duodecies. P2, second brick: the gestures of the map — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N94)
+
+What the tools of the map will call, on the rows of the Lieux (`modules/missions/editor.js`), written and tested before any screen:
+
+- `newPlace(rows, kind, base, at)` → `{ rows, at }` or `null`: a new row at the place of its kind (the order of the file: target,
+  zones, points, rendezvous, objects) with a free identifier (`nextPlaceId`); `at` (`{ lat, lon }`, and `radius` in km for a zone) is
+  the position of the touch, kept at five decimals (one metre); out of bounds, the row is created « à placer ». `null` when the kind
+  is full (`PLACES_MAX`, one target) or is not one a gesture poses. **The buttons « + Zone », « + Point tournant »… of the Lieux go
+  through the same function** (they pass no position).
+- `movePlace(rows, i, { lat, lon })` → new rows; `placeRadius(rows, i, km)` → new rows (two decimals). **Refused — the SAME rows are
+  returned**: the departure and the arrival (aerodromes: their position comes from the base), a contour (its vertices are not moved
+  as a block here), a rank that is not one, a position out of bounds, a radius out of `RADIUS_KM` (0.05 to 500 km, the reader's
+  bound). Nothing is ever brought back into its bounds.
+- `MOVABLE` (the kinds a gesture moves), `RADIUS_KM`.
+- The file is written as before, at « Enregistrer », by `withPlaces` (audit 182: only what changed): N94 reads what is written.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

@@ -1567,40 +1567,11 @@ function edClickDo(s, b) {
       s.ed.placeAsk = r.ask;
       return draw(s);
     }
-    case 'edplaceadd': {
-      const kind = ['target', 'zone', 'pt', 'rdv', 'object'].includes(b.dataset.kind) ? b.dataset.kind : 'pt',
-        list = s.ed.places || [],
-        n = list.filter(r => r.kind === kind).length + 1;
-      if (n > ED.PLACES_MAX || (kind === 'target' && n > 1)) return;
-      const row = {
-        kind,
-        i: -1,
-        id: ED.nextPlaceId(list, kind, s.ed.base), // SOG-0439 : un identifiant libre
-        name: '',
-        role: '',
-        lat: '',
-        lon: '',
-        ...(kind === 'zone' ? {
-          zkind: '',
-          radius: '',
-          tot: '',
-          poly: 0
-        } : kind === 'rdv' ? {
-          participants: ''
-        } : kind === 'object' ? {
-          okind: '',
-          range: '',
-          height: '',
-          alt: '',
-          confirm: true, // trouvé à portée ET sur la parole du pilote : le défaut du format
-          moving: false
-        } : {})
-      };
-      // la nouvelle ligne rejoint les lieux de sa sorte (l'ordre du fichier : cible, zones, points, rendez-vous, objets)
-      const order = ['dep', 'arr', 'target', 'zone', 'pt', 'rdv', 'object'],
-        at = list.findIndex(r => order.indexOf(r.kind) > order.indexOf(kind));
-      s.ed.places = at < 0 ? [...list, row] : [...list.slice(0, at), row, ...list.slice(at)];
-      s.ed.placeEdit = at < 0 ? s.ed.places.length - 1 : at;
+    case 'edplaceadd': { // une ligne neuve à la place de sa sorte (ED.newPlace : la même que la pose sur la carte), son premier champ en main
+      const made = ED.newPlace(s.ed.places || [], b.dataset.kind, s.ed.base);
+      if (!made) return;
+      s.ed.places = made.rows;
+      s.ed.placeEdit = made.at;
       draw(s);
       return s.el.querySelector(`[data-plform="${s.ed.placeEdit}"] input`)?.focus();
     }
