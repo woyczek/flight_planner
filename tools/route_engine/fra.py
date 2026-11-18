@@ -72,11 +72,13 @@ class Fra:
                 la=math.radians(p['lat']);t=trig[id(p)]=(la,math.radians(p['lon']),math.cos(la),p)
             return t
         gmemo={}
-        def to_goal(o,tg):      # distance d'un candidat à un but : la même pour tous les points de départ, calculée une fois
-            k=(o['state'],id(tg[3]))
-            v=gmemo.get(k)
-            if v is None:v=gmemo[k]=fast(tr(nav.nodes[o['key']]),tg)
-            return v
+        def goal_key(tg):      # SOG-0468 (2) : la clé de tri « distance d'un candidat à un but », la même pour tous les points de départ, calculée une fois par (candidat, but) ; la position en radians du candidat est dans son enregistrement (`_tr`)
+            memo=gmemo.setdefault(id(tg[3]),{})
+            def key(pair):
+                o=pair[1];state=o['state'];v=memo.get(state)
+                if v is None:v=memo[state]=fast(o['_tr'],tg)
+                return v
+            return key
         fast=geo.chord_nm      # SOG-0468 (3) : la formule de geo.py, sur les positions en radians de `tr`
         resolved=nav.resolve_sequence(via,nav.resolve(dep),nav.resolve(arr))
         anchor=[nav.ads[dep],nav.ads[arr]]+[nav.nodes[k] for k in resolved]
@@ -94,7 +96,7 @@ class Fra:
             p=nav.nodes[r['key']]
             if not (latlo<=p['lat']<=lathi and lonlo<=p['lon']<=lonhi) or not in_corridor(p) or not self.eligible(r,fl,when,steps):continue
             state=r['key']+'|FRA|'+r['area']+'|'+str(r['row']);nav.nodes[state]=p
-            r=dict(r,state=state);groups[r['area']].append(r)
+            r=dict(r,state=state,_tr=tr(p));groups[r['area']].append(r)      # SOG-0468 (2) : `_tr` = les positions en radians du point, faites une fois (le dictionnaire reste local à ce graphe : les arêtes n'en reprennent que des valeurs)
             enter=('E' in r['enroute'] and parity(r['flos'],fl,'E')) or ('D' in r['terminal'] and self.airport_match(r['dep'],dep))
             leave=('X' in r['enroute'] and parity(r['flos'],fl,'X')) or ('A' in r['terminal'] and self.airport_match(r['arr'],arr))
             gate=dict(route='DCT',nm=0,kind='FRA_GATE',fra_area=r['area'],lower=r['lower'],upper=r['upper'])
@@ -120,7 +122,7 @@ class Fra:
                     if other['key']==r['key']:continue
                     if not ('X' in other['enroute'] or other['enroute']=='I' or 'A' in other['terminal'] and self.airport_match(other['arr'],arr)):continue
                     if max(r['lower'],other['lower'])>min(r['upper'],other['upper']):continue
-                    d=fast(tp,tr(nav.nodes[other['key']]))
+                    d=fast(tp,other['_tr'])
                     if .1<d<=max_nm:neighbors.append((d,other))
                 neighbors.sort(key=lambda pair:pair[0])
                 goals=[nav.nodes[k] for k in resolved]+[nav.ads[arr]]
@@ -128,7 +130,7 @@ class Fra:
                 chosen=neighbors[:(100 if density=='wide' else 24)]
                 chosen += [(d,o) for d,o in neighbors if 'X' in o['enroute']][:(40 if density=='wide' else 12)]
                 for goal in goals:
-                    tg=tr(goal);chosen += heapq.nsmallest(8,neighbors,key=lambda pair:to_goal(pair[1],tg))
+                    chosen += heapq.nsmallest(8,neighbors,key=goal_key(tr(goal)))
                 # Retain candidates in each compass sector, including directions
                 # away from the arrival when a mandatory waypoint requires it.
                 sectors=collections.defaultdict(list)

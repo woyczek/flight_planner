@@ -3696,3 +3696,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Done**: `routing_graph` is in two parts — the graph without the RAD rules (kept, keyed without `blocks` and `_rad_avoid`) and the rules (applied to a new dictionary on each call). The cost of an edge does not depend on its band, so it is computed in the first part. Budget checks (`GRAPH_MIN_S`, `DEADLINE_CEIL`) stay on the first part only: a retry on a kept graph costs about 0.3 s and is no longer refused for a graph it does not build.
 - **Not done**: the next ones of the survey (2: `fra.graph` per request, 5: small gains, 4: the JS copies of the distance).
 - **Aside**: when the retry « pass by X next to Y » finds no route, `plan.py` stops instead of trying the fallback « set Y aside », and says « Point Y écarté … +0 NM » although the retry failed (the message is false); a fiche, not done here.
+
+## 19 November 2026 — SOG-0468 (2): the FRA graph, same graph, faster
+
+- **Done**: the position in radians in the record (`_tr`), one memo per goal for the sort key. Tried and dropped: moving the test « can exit here » into the list of candidates (no gain: nearly every point passes it).
+- **Not done**: the rest of the time of `Fra.graph` is the distance itself (`geo.chord_nm`, 1.7 million calls on ESSA → LEMG): inlining it would copy the formula back, against SOG-0468 (3).
