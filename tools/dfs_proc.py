@@ -54,6 +54,11 @@ def _has_doctype(path):
     d'ElementTree (C) n'expose pas les rappels d'expat : le refus se fait AVANT lui, et la protection d'expat contre l'amplification reste la seconde garde. Un AIXM de la DFS n'a ni l'un ni l'autre."""
     tail = b''
     with open(path, 'rb') as f:
+        first = f.read(4096)
+        f.seek(0)
+        bom = (b'\xff\xfe', b'\xfe\xff')
+        if b'\x00' in first or first[:2] in bom or first[:4] == b'\x00\x00\xfe\xff':      # UTF-16 / UTF-32 (que expat sait lire) : « <!DOCTYPE » y est écrit avec des octets nuls et PASSERAIT ce balayage ; un AIXM de la DFS est en UTF-8 : refusé
+            return True
         while True:
             chunk = f.read(1 << 20)
             if not chunk:

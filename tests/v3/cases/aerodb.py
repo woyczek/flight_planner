@@ -16908,6 +16908,10 @@ def k367(c):
         late = b'<?xml version="1.0"?><!--' + b'x' * 70000 + b'--><!DOCTYPE x [<!ENTITY a "bbbb">]><m>&a;</m>'      # a DOCTYPE AFTER 70 KB of comment: the test of the first 64 KB does not see it, the parser does
         open(wp, 'wb').write(late)
         c.eq((hostile(late)[1], D.points_of([wp])[1]), ('doctype', 'doctype'), 'SECURITY: a DOCTYPE or an entity declaration is refused WHEREVER it is in the file (70 KB of comments before it), in the procedures AND in the files of points (the folder that is synchronised)', what='late doctype')
+        wide = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE x [<!ENTITY a "bbbb">]><m>&a;</m>'
+        for enc in ('utf-16', 'utf-16-le', 'utf-32'):
+            open(wp, 'wb').write(wide.encode(enc))
+            c.eq((hostile(wide.encode(enc))[1], D.points_of([wp])[1]), ('doctype', 'doctype'), f'SECURITY: a file in {enc} (expat reads it: « <!DOCTYPE » is written with null bytes and would pass the scan) is refused, in the procedures and in the points', what=enc)
         open(wp, 'w', encoding='utf-8').write(pts)
         kept_points = D.MAX_POINT_ELEMENTS
         D.MAX_POINT_ELEMENTS = 10
