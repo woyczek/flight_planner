@@ -488,6 +488,9 @@ export const EDTX = {
   atTool_zone: ['Zone', 'Zone', 'Zone', 'Zona'],
   atTool_object: ['Objet', 'Object', 'Objekt', 'Objeto'],
   atMapUndo: ['Annuler le geste', 'Undo the gesture', 'Geste rückgängig', 'Deshacer el gesto'],
+  atHint_empty: ['Aucun lieu : choisissez Point, puis touchez la carte.', 'No place: choose Point, then touch the map.',
+    'Kein Ort: wählen Sie Punkt und berühren Sie dann die Karte.', 'Ningún lugar: elija Punto y toque el mapa.'
+  ],
   atHint_select: ['Touchez un lieu pour le choisir, faites-le glisser pour le déplacer.',
     'Touch a place to choose it, drag it to move it.',
     'Berühren Sie einen Ort, um ihn zu wählen; ziehen Sie ihn, um ihn zu verschieben.',

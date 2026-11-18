@@ -150,8 +150,10 @@ function adPos(R, icao) {
       icao: k
     })).then(list => {
       const lat = +list?.[0]?.lat,
-        lon = +list?.[0]?.lon;
-      if (READ !== R || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
+        lon = +list?.[0]?.lon,
+        found = Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180;
+      ED.noteAerodrome(k, found); // un texte n'est un terrain que si la base le connaît (SOG-0469)
+      if (READ !== R || !found) return;
       R.ad.set(k, {
         lat,
         lon

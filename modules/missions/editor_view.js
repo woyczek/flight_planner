@@ -323,6 +323,11 @@ async function edOpen(s, mode, line = null) {
     step: mode === 'dup' || edWide(s) ? 'cadre' : '',
     base,
     cadre,
+    // le départ et l'arrivée tels que le Cadre les montrait à l'ouverture : ce que la réponse de la base remplace (edRecode), sauf une saisie
+    cadreAuto: {
+      dep: cadre.dep,
+      arr: cadre.arr
+    },
     path: mode === 'edit' ? path : '',
     regIdx: mode === 'edit' ? line.idx : -1,
     regId: mode === 'edit' ? cut(line.raw?.id, 40) : '',
@@ -865,6 +870,10 @@ function edMapViewHtml(s, live) {
 function edMapFeats(s, doc, run = null) {
   const e = s.ed,
     rows = e.places || ED.placesOf(doc);
+  // SOG-0469 : les codes que le départ et l'arrivée pourraient porter (écrits ou saisis, quelle que soit la casse) sont demandés à la base ;
+  // à sa réponse (adPosOf) le Cadre et la carte les lisent
+  for (const t of [e.base?.origin?.name, e.base?.destination?.name, e.cadre?.dep, e.cadre?.arr])
+    for (const k of ED.codeCands(t)) adPosOf(s, k);
   return EM.mapFeatures(run ? rows : edPilotRows(e, doc, edShown(e, rows)), { // SOG-0459 : le voile, puis la vue du pilote
     zones: e.base?.zones,
     // « XTST · Base Test » (placeText : le code d'abord) : la position de la base quand le fichier ne la dit pas
@@ -945,6 +954,7 @@ function edMapHint(s) {
   if (!r && edMapRef(e)) return s.tt(EDTX[`atRef_${edMapRef(e).kind}`], {
     id: edMapRef(e).id
   });
+  if (!r && e.mapFeats?.wide) return s.tt(EDTX.atHint_empty); // aucun lieu situé : l'état vide dit quoi faire (SOG-0469)
   if (!r) return s.tt(EDTX.atHint_select);
   if (r.kind === 'zone' && r.ring) return edMapVertex(e) >= 0 ? s.tt(EDTX.atHint_vertex, {
     k: edMapVertex(e) + 1,
@@ -1801,6 +1811,33 @@ function edInputDo(s, ev) {
   if (ev.type !== 'input') return;
   edRefresh(s);
 }
+/** SOG-0469 : la base aéronautique vient de dire qu'elle connaît un terrain — le départ et l'arrivée, que le Cadre montrait tels qu'écrits
+ *  (« xtst »), se lisent maintenant avec leur code en majuscules (« XTST »). Seuls les textes que l'auteur n'a pas touchés changent : un
+ *  champ saisi, ou en cours de saisie, n'est jamais remplacé ; leur ligne des Lieux suit. Le texte du groupe et la carte sont
+ *  redessinés SUR PLACE par l'appelant (edRefresh). */
+function edRecode(s) {
+  const e = s.ed,
+    was = e.cadreAuto || {},
+    now = ED.cadreOf(e.base);
+  for (const [k, field] of [
+      ['dep', 'eddep'],
+      ['arr', 'edarr']
+    ]) {
+    if (e.cadre[k] === was[k] && now[k] !== was[k]) {
+      e.cadre[k] = now[k];
+      const input = s.el.querySelector(`input[data-k=${field}]`);
+      if (input && document.activeElement !== input) input.value = now[k];
+      if (e.places) e.places = e.places.map(r => r && r.kind === k && r.name === was[k] ? {
+        ...r,
+        name: now[k]
+      } : r);
+    }
+  }
+  e.cadreAuto = {
+    dep: now.dep,
+    arr: now.arr
+  };
+}
 /** SOG-0287 (fin) : la position d'un terrain de liaison d'après la base publiée (aerodb.aerodromes), demandée une fois par code ; null
  *  (inconnu), absente tant que la réponse n'est pas venue ; l'aperçu redessiné à la réponse. */
 function adPosOf(s, icao) {
@@ -1821,7 +1858,11 @@ function adPosOf(s, icao) {
       } : null;
     }).catch(() => null).then(v => {
       s.adPos.set(k, v);
-      if (v && state() === s && s.ed) edRefresh(s);
+      ED.noteAerodrome(k, !!v); // un texte n'est un terrain que si la base le connaît (SOG-0469)
+      if (v && state() === s && s.ed) {
+        edRecode(s);
+        edRefresh(s);
+      }
     });
   }
   return s.adPos.get(k) || null;

@@ -104,41 +104,82 @@ const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
  *  (audit 186 : un « rendezvous: { … } » seul était perdu à la première retouche des Lieux). */
 const arrOf = v => Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : [];
 
-/** Le code OACI écrit EN TÊTE d'un texte de terrain, quelle que soit la casse (SOG-0469 : un fichier écrit à la main dit « xtst · base
- *  test ») : quatre lettres toutes en majuscules ou toutes en minuscules (un « Metz » n'est pas un code), seules ou suivies d'un
- *  séparateur (·, -, –, —, :) et du nom → { icao (en majuscules), rest (le nom, tel qu'écrit) } ; null sinon. */
+/** Ce que la base aéronautique a répondu sur un code (SOG-0469) : code → vrai (elle connaît ce terrain) ou faux ; un fait sur la base,
+ *  pas un état d'écran — l'atelier et le bloc en lecture le notent (noteAerodrome) quand leur demande revient. Borné. */
+const KNOWN = new Map();
+
+/** Note que la base connaît (ou ne connaît pas) le terrain de ce code ; sans effet pour autre chose que quatre signes. */
+export function noteAerodrome(code, known) {
+  const k = String(code || '').toUpperCase();
+  if (/^[A-Z0-9]{4}$/.test(k) && (KNOWN.has(k) || KNOWN.size < 400)) KNOWN.set(k, known === true);
+}
+
+/** Le code écrit EN TÊTE d'un texte de terrain, avec le séparateur (·, -, –, —, :) et le nom qui suit, ou seul : « xtst · base test » →
+ *  { icao: 'XTST', rest: 'base test', exact } ; `exact` : le code est écrit en majuscules. null sans quatre lettres en tête. */
 function headCode(text) {
   const a = /^([A-Za-z]{4})(?:\s*[·\-–—:]\s*(.*))?$/.exec(cut(text, 160));
-  return a && (a[1] === a[1].toUpperCase() || a[1] === a[1].toLowerCase()) ? {
+  return a ? {
     icao: a[1].toUpperCase(),
-    rest: cut(a[2], 120)
+    rest: cut(a[2], 120),
+    exact: a[1] === a[1].toUpperCase()
   } : null;
 }
 
-/** Le code OACI d'un nom de lieu pour interroger la base aéronautique, en majuscules, quelle que soit la casse écrite : en tête
- *  (« xtst · Base Test »), sinon entre parenthèses à la fin (« Base Test (xtst) ») ; '' sinon (SOG-0469). */
-export function adCodeOf(name) {
-  return headCode(name)?.icao || MS.icaoOf(name);
+/** Les codes que ce texte POURRAIT porter, en majuscules, quelle que soit la casse : en tête (« xtst · Base Test »), entre parenthèses
+ *  à la fin (« Base Test (xtst) ») — pour les demander à la base aéronautique (SOG-0469) ; rien n'est tenu pour un terrain ici. */
+export function codeCands(text) {
+  const t = cut(text, 1000),
+    out = [headCode(t)?.icao, MS.icaoOf(t)].filter(Boolean);
+  return [...new Set(out)];
 }
 
-/** Le texte d'un terrain : « XTST · Base Test » (le code OACI d'abord, en majuscules quelle que soit la casse du fichier : le champ
- *  `icao`, un code en tête du nom, un code entre parenthèses à la fin), le nom seul sans code. Ce qui est écrit dans le fichier n'est
- *  pas touché : seul l'affichage est lu ainsi. */
+/** Le premier code possible d'un nom de lieu (voir codeCands), '' sinon. */
+export function adCodeOf(name) {
+  return codeCands(name)[0] || '';
+}
+
+/** Un code lu dans un texte : { icao, name } ou null. Un code écrit en MAJUSCULES (« XTST · Base », « Base (XTST) ») est lu comme il l'a
+ *  toujours été ; un code en minuscules ou mêlées (« xtst », « Piste (nord) », « Metz ») ne l'est que si la base aéronautique CONNAÎT ce
+ *  terrain (noteAerodrome) : quatre lettres ne font pas un code (SOG-0469). */
+function codeIn(raw) {
+  const t = cut(raw, 1000),
+    h = headCode(t),
+    m = /\(([A-Za-z]{4})\)\s*$/.exec(t);
+  if (h && (h.exact || KNOWN.get(h.icao) === true)) return {
+    icao: h.icao,
+    name: h.rest
+  };
+  if (m && (m[1] === m[1].toUpperCase() || KNOWN.get(m[1].toUpperCase()) === true)) return {
+    icao: m[1].toUpperCase(),
+    name: cut(t.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120)
+  };
+  return null;
+}
+
+/** Le texte d'un terrain : « XTST · Base Test » (le code OACI d'abord : le champ `icao` — un code déclaré par l'auteur, en majuscules
+ *  quelle que soit sa casse —, sinon un code lu dans le nom, voir codeIn), le nom seul sans code ; un texte dont le code n'est pas connu
+ *  reste tel qu'écrit. Ce qui est écrit dans le fichier n'est pas touché : seul l'affichage est lu ainsi. */
 export function placeText(p) {
   const o = obj(p),
     raw = String(o.name || ''),
     given = /^[A-Za-z]{4}$/.test(String(o.icao || '').trim()) ? String(o.icao).trim().toUpperCase() : '',
-    head = headCode(raw),
-    icao = given || MS.icaoOf(raw) || head?.icao || '',
-    name = head && head.icao === icao ? head.rest : cut(raw.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120);
+    c = codeIn(raw),
+    icao = given || c?.icao || '',
+    t = cut(raw, 1000),
+    h = headCode(t),
+    m = /\(([A-Za-z]{4})\)\s*$/.exec(t);
+  let name = cut(raw, 120);
+  if (icao && h && h.icao === icao) name = h.rest;
+  else if (icao && m && m[1].toUpperCase() === icao) name = cut(t.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120);
   return [icao, name].filter(Boolean).join(' · ');
 }
-/** Un terrain saisi (« XTST · Base Test », « xtst », « Base Test (XTST) », « XTST ») → { icao, name } ; le nom écrit « Base Test (XTST) ». */
+/** Un terrain saisi (« XTST · Base Test », « Base Test (XTST) », « XTST », et en minuscules ceux que la base connaît) → { icao, name } ;
+ *  le nom écrit « Base Test (XTST) » ; un texte sans code connu reste tel que saisi. */
 function placeIn(text) {
   const t = cut(text, 160),
-    a = headCode(t),
-    icao = a ? a.icao : MS.icaoOf(t),
-    bare = a ? a.rest : cut(t.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120);
+    a = codeIn(t),
+    icao = a ? a.icao : '',
+    bare = a ? a.name : cut(t, 120);
   return {
     icao,
     name: icao ? bare ? `${bare} (${icao})` : icao : bare

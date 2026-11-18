@@ -62,13 +62,14 @@ export const MAPB = Object.freeze({
   spaceRing: 2000, // … sommets d'un anneau, au plus (au-delà l'anneau n'est pas dessiné)
   spaceFill: 0.04, // … l'opacité du remplissage d'un espace (des contours, pas des aplats)
   reliefErrors: 4, // « Relief » : tuiles refusées sans qu'aucune soit venue avant de repartir en « Rapide »
-  // SOG-0469 : le cadre LARGE d'une mission sans aucun lieu situé — la France métropolitaine (ouest, sud, est, nord, en degrés) : les
-  // terrains de la suite sont ceux de l'AIP France ; l'auteur y pose son premier lieu, puis le cadre suit la mission
-  wide: Object.freeze({
-    w: -5.5,
+  // SOG-0469 : la vue de départ d'une mission sans aucun lieu situé quand l'atelier n'a encore rien montré dans la séance — la vue de
+  // départ de la Carte de la suite, celle de `fitOf` (modules/maps/data.js) : ouest, sud, est, nord, en degrés. Elle deviendra l'import
+  // de la constante `START_VIEW` de modules/maps/lib/map_base.js quand le propriétaire du socle l'aura exportée.
+  start: Object.freeze({
+    w: -5,
     s: 41,
-    e: 9.8,
-    n: 51.3
+    e: 10,
+    n: 51.5
   })
 });
 /** Les règles de style que le bloc porte partout où il est posé (l'atelier, la lecture seule — mission_map.js) : son hôte, les
@@ -318,8 +319,30 @@ function contourOf(row) {
   })) : null;
 }
 
+/** Le DERNIER CADRE VU dans l'atelier pendant la séance (SOG-0469) : la vue de la carte en vie, gardée quand elle s'arrête de bouger
+ *  et quand elle est retirée ; en mémoire du module seulement, écrite nulle part. null tant que l'atelier n'a rien montré. */
+let LAST = null;
+
+/** Garde la vue de la carte de l'atelier comme dernier cadre vu (une vue que MapLibre ne sait pas dire, ou hors bornes : ignorée). */
+function keepView(L) {
+  if (!L?.map || !L.cb?.edit) return;
+  try {
+    const b = L.map.getBounds(),
+      v = {
+        w: +b.getWest().toFixed(6),
+        s: +Math.max(-85, b.getSouth()).toFixed(6),
+        e: +b.getEast().toFixed(6),
+        n: +Math.min(85, b.getNorth()).toFixed(6)
+      };
+    if ([v.w, v.s, v.e, v.n].every(Number.isFinite) && v.w >= -180 && v.e <= 180 && v.w < v.e && v.s < v.n) LAST = v;
+  } catch {
+    /* la vue d'avant reste le dernier cadre vu */
+  }
+}
+
 /** Ce que la carte dessine d'une mission (voir l'en-tête). Le cadre `box` est TOUJOURS rendu (SOG-0469) : celui des éléments situés ;
- *  sans aucun, le cadre large (MAPB.wide) et `wide: true` — la carte s'ouvre alors quand même, et un outil y pose le premier lieu ;
+ *  sans aucun, le dernier cadre vu dans l'atelier, sinon la vue de départ de la Carte (MAPB.start), et `wide: true` — la carte s'ouvre
+ *  alors quand même, et un outil y pose le premier lieu ;
  *  la lecture seule (mission_map.js), elle, ne montre pas une carte sur le cadre large. `rows` : les lignes des Lieux que l'écran montre (une zone en contour y
  *  porte ses sommets : `ring`) ; `adPos(nom)` : la position que la base donne à un terrain dont le fichier ne dit pas la position (départ, arrivée), ou
  *  null ; `path` : la route du départ ([{ lat, lon }…], celle de l'essai) ; `run` : l'essai des clés en cours (sa trace, son avion).
@@ -475,7 +498,7 @@ export function mapFeatures(rows, {
     polygons,
     labels,
     box: {
-      ...MAPB.wide
+      ...(LAST || MAPB.start)
     },
     wide: true
   };
@@ -932,7 +955,7 @@ function frame(L) {
   L.fitting = true;
   try {
     L.map.fitBounds(boundsOf(L.box), {
-      padding: MAPB.padding,
+      padding: L.feats?.wide ? 0 : MAPB.padding, // un cadre large est une vue déjà cadrée : rien n'est ajouté autour
       animate: false,
       maxZoom: 13
     });
@@ -952,7 +975,7 @@ async function start(L, o) {
       // la vue gardée d'une carte refaite (restart), sinon le cadre de la mission
       ...(L.camera ? L.camera : {
         bounds: boundsOf(L.box),
-        padding: MAPB.padding
+        padding: L.feats?.wide ? 0 : MAPB.padding
       }),
       attributionControl: {
         compact: true
@@ -1021,6 +1044,7 @@ async function start(L, o) {
     if (!L.fitting && !isOwnResize(map)) L.moved = true; // l'auteur a déplacé la vue : elle ne se recadre plus seule
   });
   map.on('zoomend', () => spread(L)); // les étiquettes voisines s'empilent à l'échelle de la vue
+  map.on('moveend', () => keepView(L)); // le dernier cadre vu de la séance (SOG-0469)
   mapSize(map, L.host);
   if (!L.moved) frame(L);
   // MapLibre ne suit pas seul la taille de son cadre (le socle) : la fenêtre change de taille, l'appareil tourne, la carte se déplie —
@@ -1196,6 +1220,7 @@ export function stop(owner = null) {
   const L = LIVE;
   if (!L || (owner && L.owner !== owner)) return; // la carte d'une autre séance n'est pas touchée
   LIVE = null;
+  keepView(L);
   unmap(L);
   L.host.remove();
 }

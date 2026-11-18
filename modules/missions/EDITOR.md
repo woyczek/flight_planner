@@ -892,27 +892,38 @@ no badge, no title of a closed drawer.
     description, the text of an event) say what the author wrote in them; the attributes `data-place` / `data-i` of the page carry the
     ranks of the file (a gap in them tells a hidden row).
 
-### 7 novovicies. The map opens without a located place, and an aerodrome code is read whatever its case (18 Nov 2026; SOG-0469; noreg N118)
+### 7 novovicies. The map opens without a located place, and a lower-case aerodrome is read when the base knows it (18 Nov 2026; SOG-0469; noreg N118)
 
 The user, 18 Nov, on one of his real missions: the workshop had NO MAP (« Aucun lieu placé : la carte est vide », « Sans carte, les lieux
 se placent par leurs champs »), the departure and the arrival « à placer ». His aerodromes are written in LOWER case and carry no
 coordinates. Two causes, both confirmed by case N118 (red before, green after):
 
-- **The code was read in capitals only.** The position of a departure or arrival the file does not locate is asked to the
-  aeronautical base by its code, found by `/^[A-Z]{4}(?= ·|$)/` (in `edMapFeats`, in `thumbHtml`, in `mission_map.js` `featsOf`);
-  `placeText` read `icao` and the head of the name in capitals only. Now ONE function reads it, `ED.adCodeOf(name)`: four letters all
-  in capitals or all in lower case (« Metz » is not a code) at the head of the name (« xtst », « xtst · base sud »), else between
-  parentheses at the end (« Base Test (xtst) »); `placeText` (the Cadre, the rows of the Lieux) uses the same reading, and the field
-  `icao` is read in any case. They are SHOWN in capitals (« XTST · base test »); what is WRITTEN is untouched until the author edits
-  the field (the Cadre unchanged writes nothing; typing « xtsv » writes `{ name: XTSV, icao: XTSV }`). Read before → after:
-  `name: xtst` no → yes; `name: "xtst · base test"` no → yes; `icao: xtst` no (no row at all) → yes; `name: Base Test (xtst)` yes
-  (the Cadre said « XTST · Base Test (xtst) ») → yes (« XTST · Base Test »).
+- **The code was read in capitals only, and four letters made a code.** The position of a departure or arrival the file does not
+  locate is asked to the aeronautical base by its code, found by `/^[A-Z]{4}(?= ·|$)/` (in `edMapFeats`, in `thumbHtml`, in
+  `mission_map.js` `featsOf`); `placeText` read `icao` and the head of the name in capitals only. Now: a code written in CAPITALS
+  (« XTST · Base », « Base (XTST) ») or declared in the field `icao` (in any case) is a code, as it always was; a code in lower or
+  mixed case (« xtst », « xtst · base sud », « Base Test (xtst) ») is one ONLY IF THE AERONAUTICAL BASE KNOWS THAT AERODROME
+  (`ctx.aerodb.aerodromes({ icao })`): the answer is noted (`ED.noteAerodrome`, by `adPosOf` of the workshop and `adPos` of the
+  block) and `placeText` / `placeIn` read with it; otherwise the text stays AS WRITTEN (« metz », « Piste (nord) », « lyon »: no
+  capitals, no position, nothing written). Without a base (`ctx.aerodb` absent) nothing in lower case is ever a code. The
+  candidates (`ED.codeCands`: the head, the parentheses, whatever the case) are asked at each drawing for the departure and the
+  arrival, as written in the file and as typed in the Cadre; the base answers after the first drawing, so the Cadre shows the text as
+  written and, at the answer, the code in capitals — `edRecode` replaces, ON THE SPOT (the line of the group, the map, the row of the
+  Lieux), only a departure or an arrival the author has not touched; a field being typed is never replaced. What is WRITTEN is
+  untouched until the author edits the field (the Cadre unchanged writes nothing; « xtsv » typed is written as typed while the base
+  does not know it, `{ name: XTSV, icao: XTSV }` once it does). Read before → after (the base knowing XTST): `name: xtst` no → yes;
+  `name: "xtst · base test"` no → yes; `icao: xtst` no (no row at all) → yes; `name: Base Test (xtst)` yes — the Cadre said
+  « XTST · Base Test (xtst) » — → yes (« XTST · Base Test »); `name: metz`, `Piste (nord)`: as written, before and after.
 - **A mission with no located element had no frame, so no map.** `mapFeatures` now ALWAYS gives a frame: that of the located
-  elements, else the WIDE frame `MAPB.wide` — metropolitan France, west -5.5, south 41, east 9.8, north 51.3 (the aerodromes of the
-  suite are those of the AIP France) — with `wide: true`. `show()` and `start()` are unchanged; the first place set by a tool
-  reframes the map unless the author has already moved the view. The sketch « Aucun lieu placé » stays hidden while the map is alive;
-  the tools (Point, Zone, Objet) are given on the empty map. A Zone set on the wide view takes the usual radius (span / 8, at most
-  100 km).
+  elements, else — `wide: true` — the LAST FRAME SEEN in the workshop during the sitting (the view of the live map, kept in a variable
+  of `editor_map.js` each time it stops moving and when it is removed; written nowhere), else the start view of the Carte of the suite,
+  `MAPB.start` = `{ w: -5, s: 41, e: 10, n: 51.5 }` (that of `fitOf`, modules/maps/data.js; it will become the import of a `START_VIEW`
+  constant of `modules/maps/lib/map_base.js` when the owner of the base exports it). A frame of this kind is fitted with no padding
+  (it is already a view). `show()` and `start()` are unchanged; the first place set by a tool reframes the map unless the author
+  has already moved the view. The sketch « Aucun lieu placé » stays hidden while the map is alive; in Sélection the line under the
+  tools says the empty state — « Aucun lieu : choisissez Point, puis touchez la carte. » — in place of « Touchez un lieu pour le
+  choisir… », which comes back as soon as a place is located; the tools (Point, Zone, Objet) are given on the empty map. A Zone set
+  on it takes the usual radius (span / 8, at most 100 km).
 - **The read-only block** (`mission_map.js`) keeps its behaviour — no located element, no map, the slot stays empty — except that an
   aerodrome the base knows locates the mission: the map is then shown, framed on it, as soon as the base answers (the block places
   itself then; before, it was drawn only at the next drawing of the screen).
@@ -922,14 +933,11 @@ coordinates. Two causes, both confirmed by case N118 (red before, green after):
   18 Nov the workshop had no live map at all, so nothing regressed on the map; the sketch did not read lower case since 14 Nov.
 - Not changed: `frame/lib/mission.js` `placeOf` / `icaoOf` (the reader still finds the code only between parentheses at the end of
   the name; `originIcao` for `name: xtst` or `icao: xtst` stays empty there).
-- **Limit, said** (note of the Security session; checked in `placeText`, `placeIn`, `ED.adCodeOf` and `icaoOf` of `frame/lib/mission.js`):
-  the code of an aerodrome is also read between parentheses at the end of the name, and the reader (`MS.icaoOf`) puts the text in
-  capitals BEFORE it looks — so ANY word of four letters between parentheses at the end of a name is taken for a code: « Piste (nord) »
-  is shown « NORD · Piste », and if the author touches the field and saves, the file carries « Piste (NORD) ». It was already true in
-  capitals before SOG-0469; reading lower case widens the case (a place named « metz » in lower case is taken for a code as well;
-  « Metz » is not: `headCode` wants four letters all in capitals or all in lower case). **Not corrected in this lot.** The planned
-  touch: take the parenthesis off the name only when the code is kept AND known by the aeronautical base (or comes from the `icao`
-  field).
+- **The rule that replaces the « Limit, said » of the Security session** (« Piste (nord) » was taken for a code, the reader putting
+  the text in capitals before it looks): a word of four letters between parentheses at the end of a name, or at its head, is a code
+  only if the base knows it (or if it comes from the field `icao`, or is written in capitals — the reading that existed before
+  SOG-0469, kept so that a file or a typing in capitals does not depend on the base); otherwise the name stays whole, in the field and
+  in the file. « Piste (nord) » stays « Piste (nord) » unless the base knows NORD.
 
 ### 8. What is NOT ported
 
