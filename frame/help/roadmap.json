@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "233a9e5",
-  "fiches": 497,
+  "organisation": "9346398",
+  "fiches": 498,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -2849,6 +2849,27 @@
    ]
   },
   {
+   "id": "pilote-procedures-royaume-uni",
+   "app": "pilote",
+   "label": {
+    "fr": "Procédures ; Royaume-Uni",
+    "en": "Procédures ; Royaume-Uni",
+    "de": "Procédures ; Royaume-Uni",
+    "es": "Procédures ; Royaume-Uni"
+   },
+   "items": [
+    {
+     "id": "SOG-0499",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Royaume-Uni : lire les SID conventionnelles (EGGW : 0 des 9 cartes lues, « table non reconnue »)",
+     "en": "United Kingdom: read conventional SIDs (EGGW: 0 of 9 charts read, “table not recognised”)",
+     "de": "Vereinigtes Königreich: konventionelle SIDs lesen (EGGW: 0 von 9 Karten gelesen, „Tabelle nicht erkannt“)",
+     "es": "Reino Unido: leer las SID convencionales (EGGW: 0 de 9 cartas leídas, «tabla no reconocida»)"
+    }
+   ]
+  },
+  {
    "id": "pilote-procedures-et-route",
    "app": "pilote",
    "label": {
@@ -3845,11 +3866,12 @@
     {
      "id": "SOG-0490",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Mes appareils : la « base » d'un appareil de la flotte n'a pas la complétion des terrains",
      "en": "My aircraft: the “base” of a fleet aircraft lacks the aerodrome completion",
      "de": "Meine Luftfahrzeuge: Die „Basis“ eines Flottenluftfahrzeugs hat keine Flugplatz-Vervollständigung",
-     "es": "Mis aeronaves: la «base» de una aeronave de la flota no tiene el autocompletado de aeródromos"
+     "es": "Mis aeronaves: la «base» de una aeronave de la flota no tiene el autocompletado de aeródromos",
+     "test": true
     }
    ]
   },
