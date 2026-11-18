@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 306,
+  "tests": 308,
   "verdicts": 214
  },
  "apps": [
@@ -4552,6 +4552,20 @@
    "delivered": "2026-11-18T09:01:17Z"
   },
   {
+   "id": "SOG-0455",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : deux vues d'une même mission — le Brief (pilote : l'histoire d'abord) et l'Atelier (auteur : la carte d'abord) ; le registre ouvre le Brief",
+    "en": "Missions: two views of one mission — the Brief (pilot: the story first) and the Workshop (author: the map first); the register opens the Brief",
+    "de": "Missionen: zwei Ansichten einer Mission — das Briefing (Pilot: zuerst die Geschichte) und die Werkstatt (Autor: zuerst die Karte); das Register öffnet das Briefing",
+    "es": "Misiones: dos vistas de una misma misión — el Brief (piloto: primero la historia) y el Taller (autor: primero el mapa); el registro abre el Brief"
+   },
+   "test": "Missions, Registre. Sous chaque titre : la ligne de choix (durée, « ≈ » quand elle est estimée ; nombre d'aéronefs ; théâtre quand il est connu). Déplie une ligne : « Brief » en premier, puis « Atelier », « Dupliquer » et « ⋯ » (« Corriger la ligne du registre », « Retirer du registre »). « Brief » ouvre la fiche du pilote : titre, ligne de choix, résumé, risques ; « Préparer ce vol » en premier ; « Retour au registre » te rend la même ligne, dépliée. En tête du registre : la case « Voir le contenu complet des missions », décochée ; coche-la, quitte Missions, reviens : elle est de nouveau décochée.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T10:45:04Z"
+  },
+  {
    "id": "SOG-0456",
    "app": "compagnie",
    "title": {
@@ -4564,6 +4578,19 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T09:36:00Z"
+  },
+  {
+   "id": "SOG-0460",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : l'aller-retour avec ChatGPT — copier le prompt, coller la réponse, alimenter le registre (tiroirs et zones en contour compris)",
+    "en": "Missions: the round trip with ChatGPT — copy the prompt, paste the answer, feed the register (drawers and outlined areas included)",
+    "de": "Missionen: der Hin- und Rückweg mit ChatGPT — Prompt kopieren, Antwort einfügen, Register füllen (mit Schubladen und umrissenen Gebieten)",
+    "es": "Misiones: la ida y vuelta con ChatGPT — copiar el prompt, pegar la respuesta, alimentar el registro (cajones y zonas con contorno incluidos)"
+   },
+   "test": "Missions, Registre, « Ajouter des missions ». Colle une réponse de ChatGPT TELLE QUELLE : une phrase, la mission dans un bloc de code, un mot de fin. Attendu : « 1 mission lue », la ligne « Le texte autour des blocs de code n'est pas lu. », puis « Ajouter (1) ». Colle un YAML abîmé (une ligne mal indentée) : l'erreur est dite en français avec son numéro de ligne. Rien ne dit si la mission a des tiroirs.",
+   "since": "2026-11-18",
+   "state": "known"
   },
   {
    "id": "SOG-0461",
