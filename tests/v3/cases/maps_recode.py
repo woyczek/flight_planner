@@ -9765,6 +9765,22 @@ def d283(c):
     c.ok(r['same'] and abs(r['anti'] - 3440.065) < 1e-6, f'{r}', "the Atmosphere gives the frame's distance, to the digit, and the frame's radius is 3440.065 NM")
 
 
+@case('D284', 'The radius of the Map is R_NM of the frame (SOG-0468 (2)): the ES modules read it, the classic scripts name it ONCE (a copy), and the great circle of render.js gives the distance of the frame to the digit', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0468 (2), last stray radii of the Map after D283: flight_time.js (the scale of its Mercator projection) and state.js (greatCircle) wrote 3440.065, the great circle of render.js 6371008.8 m, vertical_profile.js 6371000 m; one radius, R_NM of frame/lib/geo.js, which the classic scripts (render.js, lib/vertical_profile.js: no import) copy once under that name, so that the page and the route engine give the same distance')
+def d284(c):
+    import re
+    lit = lambda f: len(re.findall(r'3440[.]065', (ROOT / f).read_text(encoding='utf-8')))
+    c.eq((lit('modules/maps/flight_time.js'), lit('modules/maps/state.js')), (0, 0), 'the ES modules of the Map carry no radius of their own: they read R_NM of frame/lib/geo.js', what='es')
+    c.eq((lit('modules/maps/render.js'), lit('modules/maps/lib/vertical_profile.js')), (1, 1), 'the classic scripts name the radius once each (a copy of R_NM, no import possible)', what='classic')
+    bad = [f for f in ('modules/maps/render.js', 'modules/maps/lib/vertical_profile.js') if re.search(r'6371[0-9]*', (ROOT / f).read_text(encoding='utf-8'))]
+    c.eq(bad, [], 'no radius in metres is left in the scripts of the Map (6371000, 6371008.8)', what='metres')
+    c.open('maps')
+    r = c.js("""async () => { await import('/modules/maps/render.js'); const G = await import('/frame/lib/geo.js'), pairs = [[{ lat: 43.4, lon: 5.2 }, { lat: 47.1, lon: -1.6 }], [{ lat: 48.8, lon: 2.3 }, { lat: 40.6, lon: -73.8 }], [{ lat: -33.9, lon: 151.2 }, { lat: 35.5, lon: 139.8 }]];
+      return { worst: Math.max(...pairs.map(([a, b]) => Math.abs(window.MapsRender.rhumbNm(a, b) - G.rhumbNm(a, b)))), r: G.R_NM } }""")
+    c.ok(r['r'] == 3440.065 and r['worst'] < 1e-9, f'{r}', 'the radius copied in render.js is the one of the frame: its rhumb distance equals the one of the frame to 1e-9 NM (its great circle, internal, takes the same constant)')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

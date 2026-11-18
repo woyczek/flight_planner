@@ -16,7 +16,8 @@ import {
 import {
   nearLon,
   rhumbAt,
-  rhumbNm
+  rhumbNm,
+  R_NM
 } from '../../frame/lib/geo.js';
 import {
   isStarted,
@@ -177,8 +178,7 @@ function alongRoute(p) {
   const cum = MapsRender.distances(pts),
     rad = x => +x * Math.PI / 180,
     psi = lat => Math.log(Math.tan(Math.PI / 4 + Math.max(-89.9, Math.min(89.9, +lat)) * Math.PI / 360)),
-    unpsi = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI,
-    R = 3440.065;
+    unpsi = y => (2 * Math.atan(Math.exp(y)) - Math.PI / 2) * 180 / Math.PI;
   let best = null;
   for (let i = 0; i < pts.length - 1; i++) {
     const a = pts[i],
@@ -192,7 +192,7 @@ function alongRoute(p) {
       cx = bx * t,
       cy = by * t,
       k = Math.cos(rad((+p.lat + unpsi(psi(a.lat) + cy)) / 2)), // échelle de la projection à la hauteur du point
-      d = Math.hypot(px - cx, py - cy) * k * R, // distance sur la sphère : Mercator est conforme, l'échelle locale est cos φ
+      d = Math.hypot(px - cx, py - cy) * k * R_NM, // distance sur la sphère : Mercator est conforme, l'échelle locale est cos φ
       latAt = unpsi(psi(a.lat) + cy),
       f = Math.abs(b.lat - a.lat) > 1e-9 ? (latAt - a.lat) / (b.lat - a.lat) :
       t; // avancement : fraction de latitude (ou de longitude sur un parallèle)

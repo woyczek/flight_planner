@@ -18,7 +18,9 @@
   if (window.MapsRender) return;
   const A = () => window.SiaAero,
     PT = 4 / 3,
-    NM = 1852;
+    NM = 1852,
+    R_NM =
+    3440.065; // COPIE de R_NM de frame/lib/geo.js (script classique : pas d'import), le rayon unique de la suite — celui du moteur de routes
 
   // ---------------------------------------------------------------- longitudes autour de la ligne de changement de date
   // Copie de frame/lib/geo.js (render.js est un script classique, il n'importe rien ; frame/lib/test/geo.html compare les
@@ -439,7 +441,7 @@
       p2 = rad(b.lat),
       dl = rad(b.lon - a.lon),
       h = Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2;
-    return 2 * Math.asin(Math.min(1, Math.sqrt(h))) * 6371008.8 / NM;
+    return 2 * Math.asin(Math.min(1, Math.sqrt(h))) * R_NM;
   };
   /** (COPIE de rhumbNm de frame/lib/geo.js, comparée par frame/lib/test/geo.html.) Distance (NM) de a à b le long de la loxodromie : celle du devis (SOG-0243, Q-0019 : « oui »). */
   function rhumbNm(a, b) {
@@ -448,7 +450,7 @@
       dLam = rad(((((+b.lon - +a.lon + 180) % 360) + 360) % 360) - 180),
       dPsi = psi(b.lat) - psi(a.lat),
       q = Math.abs(dPsi) > 1e-12 ? dPhi / dPsi : Math.cos(rad(+a.lat));
-    return Math.hypot(dPhi, q * dLam) * 3440.065;
+    return Math.hypot(dPhi, q * dLam) * R_NM;
   }
   /** Distances cumulées (NM) depuis le premier point, le long de la loxodromie de chaque tronçon (comme le devis de Carburant). */
   function distances(points) {

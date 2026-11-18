@@ -5,6 +5,9 @@
 import {
   formatLevel
 } from '../../frame/lib/route_text.js';
+import {
+  R_NM
+} from '../../frame/lib/geo.js';
 
 /** État du montage courant (null hors montage). Lecture : import { S } (liaison vivante) ; écriture : setS(). */
 export let S = null;
@@ -95,7 +98,7 @@ export function greatCircle(a, b, n = 48) {
     A = v(a),
     B = v(b),
     d = Math.acos(Math.max(-1, Math.min(1, A[0] * B[0] + A[1] * B[1] + A[2] * B[2]))),
-    nm = d * 3440.065;
+    nm = d * R_NM;
   if (!(nm >= 5) || Math.PI - d < 1e-6) return null;
   const pts = [];
   let last = +a.lon;

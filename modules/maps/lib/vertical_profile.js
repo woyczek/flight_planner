@@ -10,7 +10,9 @@
 (() => {
   const NM = 1852,
     FT = 3.28084,
-    R = 6371000,
+    R_NM =
+    3440.065, // COPIE de R_NM de frame/lib/geo.js (script classique : pas d'import), le rayon unique de la suite — celui du moteur de routes
+    R = R_NM * NM, // en mètres
     rad = d => d * Math.PI / 180;
   /** Distance (NM) entre deux points (grand cercle). */
   const dist = (a, b) => {
@@ -1150,7 +1152,7 @@
   // ===== Noms des points =====
   // Point à une distance (NM) et un relèvement vrai (°) d'un autre (grand cercle).
   function destination(p, brgDeg, nm) {
-    const d = nm / 3440.065,
+    const d = nm / R_NM,
       t = rad(brgDeg),
       f1 = rad(p.lat),
       l1 = rad(p.lon),
@@ -1515,7 +1517,7 @@
     const nmBetween = (a, b) => {
       const r = Math.PI / 180,
         x = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
-      return 2 * 3440.065 * Math.asin(Math.sqrt(x));
+      return 2 * R_NM * Math.asin(Math.sqrt(x));
     };
     const desig = p => {
       const n = String(p.name || '').trim().toUpperCase();
