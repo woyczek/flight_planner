@@ -23,7 +23,9 @@ export const nearLon = (lon, ref) => +lon + 360 * Math.round((ref - lon) / 360);
 // Un direct se vole au compas (cap vrai constant) : c'est la droite de la carte Mercator ; le grand cercle n'est que la comparaison (le pointillé de la Carte).
 // UN SEUL chemin pour tout ce qui longe un tronçon direct : le trait, les repères de distance, les lieux où le vent est lu, les barbules, le relief et les espaces du profil, TOC / TOD,
 // la position à une distance — tous passent par rhumbAt, jamais par une interpolation de la latitude et de la longitude en degrés (qui n'est ni la loxodromie ni l'orthodromie).
-const RHUMB_R = 3440.065,
+/** Le rayon terrestre du cadre, en milles nautiques (celui du moteur de route, tools/route_engine/geo.py R_NM) : gcNm et rhumbNm s'en servent ; un module qui a besoin de l'échelle (mètres par degré) le lit d'ici. */
+export const R_NM = 3440.065,
+  RHUMB_R = R_NM,
   mercY = lat => Math.log(Math.tan(Math.PI / 4 + Math.max(-89.9, Math.min(89.9, +lat)) * Math.PI / 360)),
   dLonOf = (a, b) => ((((+b.lon - +a.lon + 180) % 360) + 360) % 360) - 180; // l'écart en longitude le plus court, dans [-180, 180[
 /** Le point à la fraction f (0 à 1) de la distance de a vers b le long de la loxodromie : { lat, lon } ; la latitude est linéaire en f (la distance d'une loxodromie

@@ -321,6 +321,7 @@
     const G = await import('../geo.js?v=0'),
       gcNm = typeof G.gcNm === 'function' ? G.gcNm : () => NaN,
       R = 3440.065,
+      rExported = G.R_NM === 3440.065,
       lfpg = {
         lat: 49.0097,
         lon: 2.5486
@@ -329,6 +330,7 @@
         lat: 43.6653,
         lon: 7.2150
       };
+    ck('R_NM : le rayon du cadre est exporté (3 440,065 NM, celui du moteur de route)', rExported);
     ck('gcNm est exportée par geo.js', typeof G.gcNm === 'function');
     ck('gcNm LFPG → LFMN : 374,5 NM (à 0,5 près)', near(gcNm(lfpg, lfmn), 374.5, .5), String(gcNm(lfpg, lfmn)));
     ck('gcNm : arguments inversés, même distance', gcNm(lfpg, lfmn) === gcNm(lfmn, lfpg), `${gcNm(lfpg, lfmn)} ${gcNm(lfmn, lfpg)}`);
