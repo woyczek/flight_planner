@@ -3755,9 +3755,15 @@
     "de": "Vereinigtes Königreich: keine SID für EGLL gelesen (Abflüge nur als PDF veröffentlicht) — aus dem abgelegten eAIP lesen",
     "es": "Reino Unido: ninguna SID leída para EGLL (las salidas solo se publican en PDF) — leerlas del eAIP depositado"
    },
-   "test": "D'abord : mets à jour la bibliothèque PDF du poste (pypdf 6.21.4 au moins — si elle est trop ancienne, l'écran affiche la commande à lancer), coche l'usage personnel dans Données, relance le lanceur. Puis sur l'ordinateur : Carburant, un vol au départ d'EGLL, étape Route, Procédures, Départ EGLL, pli « Source et cartes » : « Lire les départs dans le paquet du Royaume-Uni ». La ligne répond « n SID lues en partie (point de sortie et niveaux) » (24 attendues). Choisis une piste puis une SID : elle dit « lue en partie : point de sortie et niveaux ; tracé non lu, voir la carte », et la Carte ne dessine aucun tracé de départ. Si la ligne dit autre chose (« Lecture impossible… », « Aucun paquet… »",
+   "test": "Après la relance du lanceur : Carburant, départ EGLL. « Source et cartes » › « Lire les départs dans le paquet du Royaume-Uni » : la ligne dit ce qui est lu, en français. Sous la liste des SID : « Cartes SID de l'AIP : AD 2.EGLL-6-3 », un lien qui ouvre la carte chez NATS ; « Carte » sur la ligne de la piste et sur celle de la SID choisie. À l'arrivée EGLL (dépliée) : « Cartes STAR de l'AIP : AD 2.EGLL-7-1 · AD 2.EGLL-7-2 », en liens.",
    "since": "2026-11-16",
-   "state": "known"
+   "state": "todo",
+   "delivered": "2026-11-18T20:24:01Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "non, toujours pas. Ça lit, n’affiche rien, ne garde rien. Pas de lien vers les PDF piste, star, sid. cf screenshot.",
+    "at": "2026-11-16T16:27:10Z"
+   }
   },
   {
    "id": "SOG-0375",
