@@ -60,8 +60,9 @@ NAT_URL = 'https://nms.aim.faa.gov/datanat/nat.json'
 DFS = 'https://aip.dfs.de/datasets/rest/'     # DFS « AIP Datasets » (API REST v1.2) : les métadonnées à cette adresse, un jeu à <adresse><amendement>/<nom du fichier>
 ENR51_HOST = 'https://www.sia.aviation-civile.gouv.fr/'     # SOG-0462 lot B : l'eAIP du SIA (le même hôte que les procédures)
 ENR51_PAGE_BYTES = 16 * 1024 * 1024     # la page fait 6,7 Mo (cycle du 29 oct. 2026)
-DFS_KINDS = ('Routes', 'Waypoints', 'Navaids')      # DFS lot 1 : les trois jeux lus (Q-0111 : pas d'aérodromes, de pistes ni de SID/STAR avant la réponse de l'utilisateur)
-DFS_FILES = {k: re.compile(r'^ED_' + k + r'_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_[a-z]+\.xml\Z', re.A) for k in DFS_KINDS}      # un motif PAR jeu, en ASCII (re.A : « \d » n'accepte pas les chiffres d'une autre écriture)
+DFS_SETS = {'Routes': ('ED Routes', 'Routes'), 'Waypoints': ('ED Waypoints', 'Waypoints'), 'Navaids': ('ED Navaids', 'Navaids'), 'Airspace': ('ED Airspace StrokedBorders', 'Airspace_StrokedBorders')}      # DFS lots 1 et 2 : jeu → (nom de la fiche des métadonnées, début du nom de fichier) ; « StrokedBorders » : géométries résolues dans le fichier (l'autre jeu, « ReferencedBorders », renvoie à des frontières à part) ; Q-0111 : pas d'aérodromes, de pistes ni de SID/STAR avant la réponse de l'utilisateur
+DFS_KINDS = tuple(DFS_SETS)
+DFS_FILES = {k: re.compile(r'^ED_' + DFS_SETS[k][1] + r'_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_[a-z]+\.xml\Z', re.A) for k in DFS_KINDS}      # un motif PAR jeu, en ASCII (re.A : « \d » n'accepte pas les chiffres d'une autre écriture)
 MAX_BYTES = 200 * 1024 * 1024  # 200 Mo au plus par réponse : au-delà, le téléchargement s'arrête (le fichier présent est gardé)
 CHUNK = 1024 * 1024
 
@@ -352,9 +353,9 @@ def enaire(data):
 
 
 def dfs(data):
-    """Les données ATS de l'Allemagne (DFS, jeux « ED Routes », « ED Waypoints » et « ED Navaids », AIXM 5.1, licence CC BY 4.0, crédit DFS) : l'amendement en vigueur (n° 0 des métadonnées), chaque jeu vérifié par sa somme SHA-512, rangé sous un nom STABLE de zones/de/
-    (dfs_ED_Routes.xml, dfs_ED_Waypoints.xml, dfs_ED_Navaids.xml : un fichier par jeu, l'amendement suivant le remplace). Les routes n'ont pas de points (leurs extrémités sont nommées par la référence) : les deux autres jeux les donnent (SOG-0462 suite, DFS lot 1 ; Q-0111 : ni les aérodromes, ni les pistes,
-    ni les SID/STAR d'ici la réponse de l'utilisateur). La somme du fichier présent est comparée à celle des métadonnées : identique, rien n'est téléchargé (15 Mo pour les routes, 10 pour les points, 4,5 pour les balises) ; un jeu qui échoue est dit et les autres sont tout de même pris. Un nom de fichier du serveur qui n'a pas la forme attendue pour SON jeu n'est jamais un chemin."""
+    """Les données ATS de l'Allemagne (DFS, jeux « ED Routes », « ED Waypoints », « ED Navaids » et « ED Airspace StrokedBorders », AIXM 5.1, licence CC BY 4.0, crédit DFS) : l'amendement en vigueur (n° 0 des métadonnées), chaque jeu vérifié par sa somme SHA-512, rangé sous un nom STABLE de zones/de/
+    (dfs_ED_Routes.xml, dfs_ED_Waypoints.xml, dfs_ED_Navaids.xml, dfs_ED_Airspace.xml : un fichier par jeu, l'amendement suivant le remplace). Les routes n'ont pas de points (leurs extrémités sont nommées par la référence) : les deux autres jeux les donnent (SOG-0462 suite, DFS lot 1 ; Q-0111 : ni les aérodromes, ni les pistes,
+    ni les SID/STAR d'ici la réponse de l'utilisateur). La somme du fichier présent est comparée à celle des métadonnées : identique, rien n'est téléchargé (15 Mo pour les routes, 10 pour les points, 4,5 pour les balises, 20 pour les espaces) ; un jeu qui échoue est dit et les autres sont tout de même pris. Un nom de fichier du serveur qui n'a pas la forme attendue pour SON jeu n'est jamais un chemin."""
     import hashlib
     try:
         meta = json.loads(get(DFS).decode('utf-8'))
@@ -372,7 +373,7 @@ def dfs(data):
         if isinstance(amdt, dict) and amdt.get('Amdt') == 0:
             for leaf in leaves((amdt.get('Metadata') or {}).get('datasets')):
                 for kind in DFS_KINDS:
-                    if leaf.get('name') == 'ED ' + kind:
+                    if leaf.get('name') == DFS_SETS[kind][0]:
                         found[kind] = next((r for r in leaf.get('releases') or [] if isinstance(r, dict) and r.get('type') == 'AIXM 5.1'), None)
     files, errors = [], []
     for kind in DFS_KINDS:
@@ -380,7 +381,7 @@ def dfs(data):
         name = release.get('filename') if release else None
         check = ((release or {}).get('checksum') or {}).get('value')
         if not (isinstance(name, str) and DFS_FILES[kind].fullmatch(name) and isinstance(check, str) and re.fullmatch(r'[0-9a-f]{128}', check)):
-            errors.append(f'DFS : le jeu « ED {kind} » (AIXM 5.1) n’est pas dans les métadonnées (format changé ?)')
+            errors.append(f'DFS : le jeu « {DFS_SETS[kind][0]} » (AIXM 5.1) n’est pas dans les métadonnées (format changé ?)')
             continue
         local = f'dfs_ED_{kind}.xml'
         path = os.path.join(data, 'sia', 'zones', 'de', local)

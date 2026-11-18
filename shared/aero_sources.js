@@ -349,9 +349,38 @@
   const href = el => (el?.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || el?.getAttribute('xlink:href') || '').replace(
     /^.*?(urn:uuid:|#uuid\.|#)/, '');
 
+  /** Types d'espaces de la DFS (jeu « ED Airspace StrokedBorders »), codés par type + type local ; vocabulaire de la base, ou '' : écarté (DFS lot 2).
+   *  Gardés : CTR (CTR, CTR_P), TMA (CLASS : les gradins d'un TMA, classe C / D / E), R (R, OTHER:R_AMC), D (OTHER:D_AMC, D_OTHER), RMZ / TMZ / ATZ (RAS + type local).
+   *  Écartés : PART et SECTOR (secteurs de contrôle), CTA et UTA (« …CTAALL » : un volume sur tout le pays), PROTECT (protection d'aérodromes, aires basses militaires « à
+   *  dessiner sur la carte OACI seulement » : jamais des zones interdites P), A (vol à voile, parachutage, drones : le choix de KEEP), RAS FBZ (« pour la préparation du vol seulement »,
+   *  doublon des R / D de l'AMC), DLG-ATS (espaces délégués d'AIP voisines), NPZ, GT (« gates »), secteurs d'information et cellules FRA (artefacts de contrôle). */
+  const DFS_TYPES = {
+    CTR: 'CTR',
+    CTR_P: 'CTR',
+    CLASS: 'TMA',
+    R: 'R',
+    'OTHER:R_AMC': 'R',
+    'OTHER:D_AMC': 'D',
+    D_OTHER: 'D'
+  };
+  const DFS_LOCAL = {
+    RMZ: 'RMZ',
+    TMZ: 'TMZ',
+    ATZ: 'ATZ'
+  };
+  const dfsType = (type, local) => {
+    const t = String(type || '').trim().toUpperCase(),
+      l = String(local || '').trim().toUpperCase();
+    const table = t === 'RAS' ? DFS_LOCAL : DFS_TYPES,
+      key = t === 'RAS' ? l : t;
+    return Object.hasOwn(table, key) ? table[key] : ''; // la clé vient du fichier : jamais une clé héritée de l'objet
+  };
+  /** Nom d'un espace R / D de la DFS : le désignateur écrit comme l'AIP (« EDR32A » → « ED-R32A ») puis le nom (« ED-R32A MUNSTER A »). */
+  const dfsName = (designator, name) => `${String(designator || '').replace(/^ED([RD])(?=\d)/, 'ED-$1')} ${name || ''}`.trim();
   /** Lit un fichier AIXM 5.1 : { airspaces (types de KEEP), aero { navaids, points, vrp, aerodromes, airways, obstacles },
-   *  obstacleMax par case d'un degré } ; lève une erreur si le XML est illisible. */
-  function aixm5(txt) {
+   *  obstacleMax par case d'un degré } ; lève une erreur si le XML est illisible. opts.source = 'dfs' : fichier de la DFS (types par dfsType, source « dfs »). */
+  function aixm5(txt, opts = {}) {
+    const dfs = opts.source === 'dfs';
     const doc = new DOMParser().parseFromString(txt, 'application/xml');
     if (doc.querySelector('parsererror')) throw new Error('AIXM 5.1 illisible');
     const out = {
@@ -366,13 +395,14 @@
       },
       obstacleMax: {}
     };
+    if (dfs) out.layered = true;
     const where = new Map; // identifiant → { id, lat, lon } (points et balises, pour les tronçons de route)
     // espaces
     for (const f of doc.getElementsByTagNameNS(NSX, 'Airspace')) {
       const s = slice(f, 'AirspaceTimeSlice');
       if (!s) continue;
-      const type = normType(text(s, 'type'));
-      if (!KEEP.has(type)) continue;
+      const type = dfs ? dfsType(text(s, 'type'), text(s, 'localType')) : normType(text(s, 'type'));
+      if (!type || !KEEP.has(type)) continue;
       const vols = kids(s, 'AirspaceVolume');
       const notes = kids(s, 'note').map(n => n.textContent).join(' ');
       // SOG-0163 : les notes de l'espace (activation, conditions) ; celles qui portent sur l'intervalle de temps sont ses horaires
@@ -388,10 +418,11 @@
         if (!rings.length) continue;
         const up = kid(v, 'upperLimit'),
           lo = kid(v, 'lowerLimit');
-        out.airspaces.push(zone('aixm5', {
+        out.airspaces.push(zone(dfs ? 'dfs' : 'aixm5', {
           type,
           cls: text(s, 'classification') || kids(s, 'AirspaceLayerClass').map(c => text(c, 'classification'))[0] || '',
-          name: text(s, 'name') || text(s, 'designator'),
+          name: dfs && /^[RD]$/.test(type) ? dfsName(text(s, 'designator'), text(s, 'name')) : text(s, 'name') || text(s,
+            'designator'),
           key: text(s, 'designator') || idOf(f),
           upper: limit(up?.textContent, up?.getAttribute('uom'), text(v, 'upperLimitReference')),
           lower: limit(lo?.textContent, lo?.getAttribute('uom'), text(v, 'lowerLimitReference')),
@@ -1438,8 +1469,12 @@
     for (const a of part.airspaces || []) {
       const k = a.type + '|' + String(a.name).toUpperCase();
       if (a.type !== 'MTR' && (seenZ.has(k) || shapes.has(a))) continue;
-      seenZ.add(k);
-      shapes.add(a);
+      if (!part
+        .layered
+      ) { // DFS lot 2 (layered) : les espaces d'un même fichier ne se comparent pas entre eux (les gradins d'un TMA ont le même contour, d'autres planchers) ; seulement à ceux d'avant
+        seenZ.add(k);
+        shapes.add(a);
+      }
       base.airspaces.push(a);
     }
     if (part.aero) {

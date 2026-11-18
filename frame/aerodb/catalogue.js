@@ -561,16 +561,17 @@
     publish: true,
     no: 19,
     status: 'used',
-    n: ['DFS (Allemagne, routes, points et balises, AIXM 5.1)', 'DFS (Germany, routes, points and navaids, AIXM 5.1)',
-      'DFS (Deutschland, Strecken, Punkte und Funkfeuer, AIXM 5.1)',
-      'DFS (Alemania, rutas, puntos y ayudas, AIXM 5.1)'
+    n: ['DFS (Allemagne, routes, points, balises et espaces, AIXM 5.1)',
+      'DFS (Germany, routes, points, navaids and airspaces, AIXM 5.1)',
+      'DFS (Deutschland, Strecken, Punkte, Funkfeuer und Lufträume, AIXM 5.1)',
+      'DFS (Alemania, rutas, puntos, ayudas y espacios, AIXM 5.1)'
     ],
     url: 'https://aip.dfs.de/datasets/',
     gives: [
-      'Les routes ATS (airways) de l’Allemagne (zone de), avec leurs niveaux et leur sens, les points de report ICAO et les balises (VOR, NDB, DME) ; pas encore les espaces.',
-      'The ATS routes (airways) of Germany (zone de), with their levels and direction, the ICAO reporting points and the navaids (VOR, NDB, DME); not the airspaces yet.',
-      'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung, die ICAO-Meldepunkte und die Funkfeuer (VOR, NDB, DME); noch keine Lufträume.',
-      'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido, los puntos de notificación OACI y las ayudas (VOR, NDB, DME); aún sin espacios.'
+      'Les routes ATS (airways) de l’Allemagne (zone de), avec leurs niveaux et leur sens, les points de report ICAO, les balises (VOR, NDB, DME) et les espaces aériens (CTR, TMA, R, D, RMZ, TMZ, ATZ).',
+      'The ATS routes (airways) of Germany (zone de), with their levels and direction, the ICAO reporting points, the navaids (VOR, NDB, DME) and the airspaces (CTR, TMA, R, D, RMZ, TMZ, ATZ).',
+      'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung, die ICAO-Meldepunkte, die Funkfeuer (VOR, NDB, DME) und die Lufträume (CTR, TMA, R, D, RMZ, TMZ, ATZ).',
+      'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido, los puntos de notificación OACI, las ayudas (VOR, NDB, DME) y los espacios aéreos (CTR, TMA, R, D, RMZ, TMZ, ATZ).'
     ],
     pub: 'DFS Deutsche Flugsicherung',
     credit: ['Source : DFS, CC BY 4.0', 'Source: DFS, CC BY 4.0', 'Quelle: DFS, CC BY 4.0', 'Fuente: DFS, CC BY 4.0'],
@@ -1988,7 +1989,7 @@
   /** Version du format de la base publiée que les constructeurs écrivent (`parserVersion` des meta.json) : la valeur de `VERSION` de
    *  shared/sia_base.js, DOIT la suivre (le cas K21 lit les deux fichiers et compare). Le module Données la montre à côté de celle d'une zone
    *  publiée pour dire « à reconstruire ». */
-  const PARSER_VERSION = 29;
+  const PARSER_VERSION = 30;
   const GROUPS = ['base', 'proc', 'aircraft', 'weather'];
   const ORDER = ['used', 'candidate', 'abandoned'];
   const byId = id => SOURCES.find(s => s.id === id) || null;

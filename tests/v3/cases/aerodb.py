@@ -5489,7 +5489,7 @@ def k112(c):
          'AeroDb.packs(): read once, frozen, the regions and themes as in the file, Turkey in two packs (the Middle East, the Mediterranean), Antarctica empty with its reason, the partial zones of the arctic', what='packs()')
 
 
-@case('K113', 'DFS « ED Routes », « ED Waypoints » and « ED Navaids » (Germany, AIXM 5.1, CC BY 4.0): the launcher fetches the three sets of the amendment in force, each checked by its SHA-512 (one failing does not stop the others), the AIXM reader gives the airways although the file carries no points (names from the segments, positions from the curves) and the ICAO points and the navaids that place them, the catalogue and the mirror know the source', 'K', tags=('aerodb',), phone=False,
+@case('K113', 'DFS « ED Routes », « ED Waypoints », « ED Navaids » and « ED Airspace StrokedBorders » (Germany, AIXM 5.1, CC BY 4.0): the launcher fetches the four sets of the amendment in force, each checked by its SHA-512 (one failing does not stop the others), the AIXM reader gives the airways although the file carries no points (names from the segments, positions from the curves) and the ICAO points and the navaids that place them, the airspaces get their own table of types (DFS first, openAIP the fallback), the catalogue and the mirror know the source', 'K', tags=('aerodb',), phone=False,
       rule='SOG-0077 (10 Nov 2026, decision of the ergonomics session): DFS « AIP Datasets » (aip.dfs.de/datasets, REST API v1.2: metadata, then <amendment>/<file name>) is the first new source of airways after France, the UK and Spain; the file has Route, RouteSegment and StandardLevelColumn only, no DesignatedPoint: each end is named by the reference (xlink:title) and placed by the end of the segment curve; files are checked by the SHA-512 of the metadata, nothing is written when it does not match, nothing is downloaded when the file in place is the one the metadata names')
 def k113(c):
     import hashlib
@@ -5533,18 +5533,59 @@ def k113(c):
     c.eq(r['points'], [['GUDOP', 53.0, 13.1, 'ICAO'], ['BEKBA', 53.2, 13.7, 'ICAO'], ['TRM01', 50.0, 8.0, 'TERMINAL'], ['OWN01', 50.1, 8.1, 'DESIGNED']],
          'DFS « ED Waypoints »: the points are read with their position and their type (the builder keeps only the ICAO ones, the points that name the ends of the routes: sia_base.js)', what='waypoints')
     c.eq(r['navaids'], [['ABC', 'VOR', 53.5, 14.0]], 'DFS « ED Navaids »: a VOR with its ident and position (the other ends of the routes are navaids)', what='navaids')
-    kinds = ('Routes', 'Waypoints', 'Navaids')
-    bodies = {'Routes': xml.encode('utf-8'), 'Waypoints': wxml.encode('utf-8'), 'Navaids': nxml.encode('utf-8')}
-    names = {k: f'ED_{k}_2026-10-01_2026-10-29_revision.xml' for k in kinds}
+    def asp(ident, typ, local, name, cls, lower, upper, box):
+        la0, lo0, la1, lo1 = box
+        ring = ''.join(f'<gml:pos>{la} {lo}</gml:pos>' for la, lo in ((la0, lo0), (la0, lo1), (la1, lo1), (la1, lo0), (la0, lo0)))
+        return (f'<message:hasMember><aixm:Airspace gml:id="id.a{ident}"><gml:identifier codeSpace="urn:uuid:">a{ident}</gml:identifier><aixm:timeSlice><aixm:AirspaceTimeSlice><aixm:interpretation>BASELINE</aixm:interpretation>'
+                f'<aixm:type>{typ}</aixm:type><aixm:designator>{ident}</aixm:designator>' + (f'<aixm:localType>{local}</aixm:localType>' if local else '') + f'<aixm:name>{name}</aixm:name>'
+                + (f'<aixm:classification>{cls}</aixm:classification>' if cls else '')
+                + f'<aixm:geometryComponent><aixm:AirspaceGeometryComponent><aixm:theAirspaceVolume><aixm:AirspaceVolume><aixm:upperLimit uom="FL">{upper}</aixm:upperLimit><aixm:upperLimitReference>STD</aixm:upperLimitReference>'
+                f'<aixm:lowerLimit uom="FT">{lower}</aixm:lowerLimit><aixm:lowerLimitReference>{'SFC' if lower == 0 else 'MSL'}</aixm:lowerLimitReference><aixm:horizontalProjection><aixm:Surface srsName="urn:ogc:def:crs:EPSG::4326"><gml:patches><gml:PolygonPatch><gml:exterior><gml:Ring><gml:curveMember><gml:Curve><gml:segments>'
+                f'<gml:GeodesicString>{ring}</gml:GeodesicString></gml:segments></gml:Curve></gml:curveMember></gml:Ring></gml:exterior></gml:PolygonPatch></gml:patches></aixm:Surface></aixm:horizontalProjection></aixm:AirspaceVolume></aixm:theAirspaceVolume></aixm:AirspaceGeometryComponent></aixm:geometryComponent>'
+                '</aixm:AirspaceTimeSlice></aixm:timeSlice></aixm:Airspace></message:hasMember>')
+    box = lambda i: (50.0 + i, 8.0, 50.5 + i, 8.5)
+    rows = [('EDDX', 'CTR', '', 'TESTSTADT', 'D', 0, 25), ('EDDX2', 'CTR_P', '', 'TESTSTADT SECTOR', 'D', 0, 25), ('TSTA', 'CLASS', '', 'TESTSTADT A', 'C', 2500, 100), ('TSTB', 'CLASS', '', 'TESTSTADT B', 'E', 4500, 100),
+            ('EDR9', 'R', '', 'BEISPIEL', '', 0, 80), ('EDR32A', 'OTHER:R_AMC', '', 'MUSTER A', '', 0, 195), ('EDD19A', 'OTHER:D_AMC', '', 'MUSTER A', '', 0, 195), ('GAZ1', 'D_OTHER', '', 'GASSTELLE', '', 0, 25),
+            ('RMZ1', 'RAS', 'RMZ', 'FUNKZONE', '', 0, 50), ('TMZ1', 'RAS', 'TMZ', 'ANTWORTZONE', '', 0, 50), ('ATZ1', 'RAS', 'ATZ', 'PLATZ', '', 0, 15),
+            ('P1', 'PART', '', 'TEIL', '', 0, 90), ('S1', 'SECTOR', '', 'SEKTOR', '', 0, 90), ('CTAALL', 'CTA', '', 'BREMEN CTA', '', 0, 90), ('UTA1', 'UTA', '', 'KARLSRUHE UTA', '', 0, 90),
+            ('PR1', 'PROTECT', '', 'SCHUTZ', '', 0, 15), ('GL1', 'A', 'GLD', 'SEGELFLUG', '', 0, 50), ('FB1', 'RAS', 'FBZ', 'PLANUNG', '', 0, 90), ('DL1', 'RAS', 'DLG-ATS', 'DELEGIERT', '', 0, 90),
+            ('NP1', 'RAS', 'NPZ', 'NPZ', '', 0, 90), ('GT1', 'RAS', 'GT', 'TOR GATE', '', 0, 90), ('FR1', 'RAS', 'FRA', 'DFS FRA CELL', '', 0, 90)]
+    axml = head + ''.join(asp(*row, box(i)) for i, row in enumerate(rows)) + '</message:AIXMBasicMessage>'
+    ra = c.js("""(a) => { const AS = window.AeroSources;
+      const dfs = AS.aixm5(a, { source: 'dfs' }), other = AS.aixm5(a);
+      const row = z => [z.type, z.name, z.cls, z.lower, z.upper, z.src];
+      const ring = (la, lo) => [[la, lo], [la, lo + 0.5], [la + 0.5, lo + 0.5], [la + 0.5, lo], [la, lo]];
+      const part = { airspaces: dfs.airspaces.map(z => ({ ...z })), layered: dfs.layered };
+      const same = { airspaces: [{ src: 'openaip', type: 'CTR', name: 'CTR TESTSTADT OPENAIP', key: 'x', rings: [ring(50.0, 8.0)] }, { src: 'openaip', type: 'R', name: 'ED-R77 NUR OPENAIP', key: 'y', rings: [ring(40.0, 2.0)] }] };
+      const base = { airspaces: [] };
+      AS.merge(base, { airspaces: [{ type: 'TMA', name: 'ALT', rings: [ring(30, 30)] }] });
+      AS.merge(base, part); AS.merge(base, same);
+      const stack = { airspaces: [] };
+      AS.merge(stack, { airspaces: [{ type: 'TMA', name: 'A', rings: [ring(10, 10)], lower: 'SFC' }, { type: 'TMA', name: 'B', rings: [ring(10, 10)], lower: '2500' }] });
+      return { dfs: dfs.airspaces.map(row), layered: dfs.layered === true, other: other.airspaces.map(row), otherLayered: other.layered === true, merged: base.airspaces.map(z => [z.type, z.name, z.src || '']), stacked: stack.airspaces.length }; }""", axml)
+    c.eq(ra['dfs'], [['CTR', 'TESTSTADT', 'D', 'SFC', 'FL 25', 'dfs'], ['CTR', 'TESTSTADT SECTOR', 'D', 'SFC', 'FL 25', 'dfs'], ['TMA', 'TESTSTADT A', 'C', '2500 ft AMSL', 'FL 100', 'dfs'], ['TMA', 'TESTSTADT B', 'E', '4500 ft AMSL', 'FL 100', 'dfs'],
+                     ['R', 'ED-R9 BEISPIEL', '', 'SFC', 'FL 80', 'dfs'], ['R', 'ED-R32A MUSTER A', '', 'SFC', 'FL 195', 'dfs'], ['D', 'ED-D19A MUSTER A', '', 'SFC', 'FL 195', 'dfs'], ['D', 'GAZ1 GASSTELLE', '', 'SFC', 'FL 25', 'dfs'],
+                     ['RMZ', 'FUNKZONE', '', 'SFC', 'FL 50', 'dfs'], ['TMZ', 'ANTWORTZONE', '', 'SFC', 'FL 50', 'dfs'], ['ATZ', 'PLATZ', '', 'SFC', 'FL 15', 'dfs']],
+         'DFS « ED Airspace » (type + local type): CTR and CTR_P are CTR, the steps CLASS are TMA with their class, R and the AMC R / D keep the designator written as the AIP (ED-R32A), RAS + RMZ / TMZ / ATZ are those types; the source is dfs; the levels are read (FT, FL); PART, SECTOR, CTA, UTA, PROTECT, A, FBZ, DLG-ATS, NPZ, GT and FRA are left out', what='airspace types')
+    c.eq((ra['layered'], ra['otherLayered'], [(z[0], z[1], z[5]) for z in ra['other']]), (True, False, [('CTR', 'TESTSTADT', 'aixm5'), ('CTR', 'TESTSTADT SECTOR', 'aixm5'), ('R', 'BEISPIEL', 'aixm5'), ('CTA', 'BREMEN CTA', 'aixm5'), ('P', 'SCHUTZ', 'aixm5'), ('A', 'SEGELFLUG', 'aixm5')]),
+         'the table is the DFS only: read as any other AIXM 5.1 the same file keeps the old way (names as written, source aixm5, never layered) — and would show an airfield protection zone as a PROHIBITED area P, a glider site as an alert area A and « BREMEN CTA » over the country: what the table avoids', what='other sources')
+    c.eq(ra['merged'], [['TMA', 'ALT', ''], *[[z[0], z[1], 'dfs'] for z in ra['dfs']], ['R', 'ED-R77 NUR OPENAIP', 'openaip']],
+         'merged DFS first then openAIP: the steps of a TMA with the same outline and other floors both stay (a file is not compared with itself), the openAIP twin of a DFS space is dropped, an openAIP space the DFS does not have stays (the fallback)', what='merge')
+    c.eq(ra['stacked'], 1, 'the other sources are unchanged: two spaces of one part with the same outline are still one', what='unchanged rule')
+    kinds = ('Routes', 'Waypoints', 'Navaids', 'Airspace')
+    bodies = {'Routes': xml.encode('utf-8'), 'Waypoints': wxml.encode('utf-8'), 'Navaids': nxml.encode('utf-8'), 'Airspace': axml.encode('utf-8')}
+    sets = {'Routes': ('ED Routes', 'Routes'), 'Waypoints': ('ED Waypoints', 'Waypoints'), 'Navaids': ('ED Navaids', 'Navaids'), 'Airspace': ('ED Airspace StrokedBorders', 'Airspace_StrokedBorders')}
+    names = {k: f'ED_{sets[k][1]}_2026-10-01_2026-10-29_revision.xml' for k in kinds}
     sums = {k: hashlib.sha512(bodies[k]).hexdigest() for k in kinds}
 
     def meta(**kw):
         """Les métadonnées : `kw` change le nom (name_<jeu>) ou la somme (sha_<jeu>) d'un jeu ; `drop` retire un jeu."""
         leaves = [{'type': 'leaf', 'name': 'ED Procedure', 'releases': [{'type': 'AIXM 5.1', 'filename': 'ED_Procedure_a.xml', 'checksum': {'value': '0' * 128}}]}]
+        leaves.append({'type': 'leaf', 'name': 'ED Airspace ReferencedBorders', 'releases': [{'type': 'AIXM 5.1', 'filename': 'ED_Airspace_ReferencedBorders_2026-10-01_2026-10-29_revision.xml', 'checksum': {'value': '1' * 128}}]})
         for k in kinds:
             if k == kw.get('drop'):
                 continue
-            leaves.append({'type': 'leaf', 'name': 'ED ' + k, 'releases': [{'type': 'Excel', 'filename': 'x.xlsx'}, {'type': 'AIXM 5.1', 'filename': kw.get('name_' + k, names[k]), 'checksum': {'value': kw.get('sha_' + k, sums[k])}}]})
+            leaves.append({'type': 'leaf', 'name': sets[k][0], 'releases': [{'type': 'Excel', 'filename': 'x.xlsx'}, {'type': 'AIXM 5.1', 'filename': kw.get('name_' + k, names[k]), 'checksum': {'value': kw.get('sha_' + k, sums[k])}}]})
         return json.dumps({'Amdts': [{'Amdt': 1, 'Metadata': {'datasets': []}}, {'Amdt': 0, 'Metadata': {'datasets': [{'type': 'group', 'name': 'x', 'items': leaves}]}}]}).encode('utf-8')
 
     class _Net:
@@ -5575,7 +5616,7 @@ def k113(c):
         with _Net(AF, net) as n:
             res = AF.fetch(td, 'dfs')
             c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], [open(paths[k], 'rb').read() == bodies[k] for k in kinds], [u.split('/rest')[1] for u, _ in n.calls]),
-                 (True, [(f'dfs_ED_{k}.xml', False) for k in kinds], [True] * 3, ['/'] + ['/0/' + names[k] for k in kinds]),
+                 (True, [(f'dfs_ED_{k}.xml', False) for k in kinds], [True] * len(kinds), ['/'] + ['/0/' + names[k] for k in kinds]),
                  'the amendment in force (n° 0): the metadata, then <amendment>/<file name> for each of the three sets (routes, points, navaids; not the procedures); one stable name each in zones/de/', what='fetch')
         with _Net(AF, net) as n:
             res = AF.fetch(td, 'dfs')
@@ -5583,16 +5624,17 @@ def k113(c):
         os.remove(paths['Waypoints'])
         with _Net(AF, net) as n:
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], [f['unchanged'] for f in res['files']], len(n.calls)), (True, [True, False, True], 2), 'one file missing: only that one is downloaded again', what='one missing')
+            c.eq((res['ok'], [f['unchanged'] for f in res['files']], len(n.calls)), (True, [True, False, True, True], 2), 'one file missing: only that one is downloaded again', what='one missing')
         for k in kinds:
             os.remove(paths[k])
         with _Net(AF, {'/rest/0/': b'<other/>', '/rest/': meta()}):
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], [os.path.exists(paths[k]) for k in kinds], len(res['errors']), all('SHA-512' in e for e in res['errors'])), (False, [False] * 3, 3, True), 'downloads whose SHA-512 is not the metadata\'s: refused, nothing written', what='checksum')
-        bad = {'/rest/0/' + names['Routes']: bodies['Routes'], '/rest/0/' + names['Navaids']: bodies['Navaids'], '/rest/': meta()}
+            c.eq((res['ok'], [os.path.exists(paths[k]) for k in kinds], len(res['errors']), all('SHA-512' in e for e in res['errors'])), (False, [False] * len(kinds), len(kinds), True), 'downloads whose SHA-512 is not the metadata\'s: refused, nothing written', what='checksum')
+        bad = {'/rest/0/' + names[k]: bodies[k] for k in ('Routes', 'Navaids', 'Airspace')}
+        bad['/rest/'] = meta()
         with _Net(AF, bad):
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], [f['name'] for f in res['files']], [os.path.exists(paths[k]) for k in kinds], len(res['errors'])), (False, ['dfs_ED_Routes.xml', 'dfs_ED_Navaids.xml'], [True, False, True], 1),
+            c.eq((res['ok'], [f['name'] for f in res['files']], [os.path.exists(paths[k]) for k in kinds], len(res['errors'])), (False, ['dfs_ED_Routes.xml', 'dfs_ED_Navaids.xml', 'dfs_ED_Airspace.xml'], [True, False, True, True], 1),
                  'the points are not served: the failure is said, the other two sets are still taken', what='one fails')
         for k in kinds:
             if os.path.exists(paths[k]):
@@ -5603,7 +5645,7 @@ def k113(c):
                 c.eq((res['ok'], any(os.path.exists(paths[k]) for k in kinds) and not label.startswith(('hostile', 'name', 'digits', 'bad', 'set')), bool(res['errors']), all('..' not in u and '٢' not in u for u, _ in n.calls)), (False, False, True, True), f'{label}: refused with a reason, nothing is fetched under that name', what=label)
         with _Net(AF, {'/rest/': ('os', 'unreachable')}):
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], res['errors'][0].startswith('DFS :'), [os.path.exists(paths[k]) for k in kinds]), (False, True, [False] * 3), 'the service unreachable: said, nothing written', what='offline')
+            c.eq((res['ok'], res['errors'][0].startswith('DFS :'), [os.path.exists(paths[k]) for k in kinds]), (False, True, [False] * len(kinds)), 'the service unreachable: said, nothing written', what='offline')
     c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
     k = c.js("""async () => { await AeroDB.create({ reader: { read: async () => null, list: async () => [], watch: () => () => {} }, lnmperf: false }).sources().catch(() => null);
       const s = (window.AeroCatalogue.SOURCES || []).find(x => x.id === 'dfs'); return { found: !!s, zones: s && s.zones, provider: s && s.fetch && s.fetch.provider, names: s && s.n.length, lic: s && s.lic[0] }; }""")
@@ -15691,7 +15733,7 @@ def k350(c):
     c.ok('uname' not in sz['FAA ZONE'] and 'nat' not in sz['FAA ZONE'], str(sorted(sz['FAA ZONE'])), 'no usual name where the source has none, never a nature of the danger (lot B)')
     sv = [m.group(1) for m in [re.search(r'const VERSION =\s*(\d+)', (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'))]]
     pv = re.search(r'const PARSER_VERSION = (\d+)', (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8'))
-    c.eq((int(sv[0]), int(pv.group(1))), (29, 29), 'the parser version is 29 in both places (the zones built before have no usual name and are rebuilt: parser-old)', what='version')
+    c.eq((int(sv[0]), int(pv.group(1))), (30, 30), 'the parser version is 30 in both places (the German zone, built before the DFS airspaces, is rebuilt: parser-old; 29 gave the usual names, kept)', what='version')
 
 
 @case('K351', 'Heliports (SOG-0466, lot 1): an openAIP heliport with no code (id = name) is the SAME as the SIA one (code of the list « LF418 ») when it is of kind HP and within 100 m, or within 300 m with the same normalised name; otherwise both stay — the SIA code is kept, the other name goes to `aka` and its source to `also`, `icao` stays empty; the light index of the zone carries every coded heliport under its LIST code (« LF418 ») so that the completion of the aerodrome fields proposes it by code and by name',
