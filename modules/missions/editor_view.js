@@ -2275,6 +2275,9 @@ async function edSave(s) {
       regId: line ? cut(line.raw.id, 40) : e.regId,
       pending: true
     });
+    // SOG-0485 : le groupe resté déplié (Récit, Équipes, Risques, Chronologie) relit ses lignes du fichier enregistré — sans cela ses
+    // champs se montraient vides (« le brief est vidé ») et ce qu'on y tapait ensuite n'était jamais écrit
+    edLoadStep(e);
     s.ctx.notify(regErr ? s.tt(TX.edRegLater, {
       e: regErr
     }) : s.tt(TX.edSaved), regErr ? 'warn' : 'ok');
@@ -2286,6 +2289,19 @@ async function edSave(s) {
     e.busy = false;
     if (state() === s && s.ed === e) draw(s);
   }
+}
+
+/** Les lignes du groupe déplié de la fiche, lues du fichier à sa première ouverture et après « Enregistrer » (SOG-0485) ; des lignes
+ *  déjà dans la séance sont gardées telles quelles (les retouches passent d'une étape à l'autre). Un groupe montré sans ses lignes
+ *  dans la séance affichait des champs vides, et ce qu'on y tapait n'était jamais écrit. */
+function edLoadStep(e) {
+  // la première ouverture des Équipes, du Récit, des Risques et de la Chronologie lit ceux du fichier
+  if (e.step === 'teams' && !e.teams) e.teams = ED.teamsOf(e.base);
+  // les lieux lus du document au cadre déjà retouché (le départ et l'arrivée portent le nom saisi au Cadre)
+  if (e.step === 'places' && !e.places) e.places = ED.placesOf(edDoc(e));
+  if (e.step === 'story' && !e.story) e.story = ED.storyOf(e.base);
+  if (e.step === 'risks' && !e.risks) e.risks = ED.risksOf(e.base);
+  if (e.step === 'timeline' && !e.events) e.events = ED.eventsOf(e.base);
 }
 
 /** Les gestes de l'éditeur et ses entrées depuis le Registre. */
@@ -2585,13 +2601,7 @@ function edClickDo(s, b) {
       if (!ED.OPEN.includes(b.dataset.step)) return;
       // un groupe touché se déplie ; déjà déplié, il se replie (un seul à la fois)
       s.ed.step = s.ed.step === b.dataset.step ? '' : b.dataset.step;
-      // la première ouverture des Équipes lit celles du fichier ; ensuite, les lignes retouchées sont gardées d'une étape à l'autre
-      if (s.ed.step === 'teams' && !s.ed.teams) s.ed.teams = ED.teamsOf(s.ed.base);
-      // les lieux lus du document au cadre déjà retouché (le départ et l'arrivée portent le nom saisi au Cadre)
-      if (s.ed.step === 'places' && !s.ed.places) s.ed.places = ED.placesOf(edDoc(s.ed));
-      if (s.ed.step === 'story' && !s.ed.story) s.ed.story = ED.storyOf(s.ed.base);
-      if (s.ed.step === 'risks' && !s.ed.risks) s.ed.risks = ED.risksOf(s.ed.base);
-      if (s.ed.step === 'timeline' && !s.ed.events) s.ed.events = ED.eventsOf(s.ed.base);
+      edLoadStep(s.ed);
       draw(s);
       // le groupe déplié vient à l'écran (sans faire sauter la page)
       return s.el.querySelector('[data-steps] [aria-current]')?.scrollIntoView?.({

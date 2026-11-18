@@ -2633,7 +2633,9 @@ def n54(c):
          'one role changed: the 44 other teams (those beyond 40 too) kept whole, texts uncut')
     c.ok(('Un titre inventé très long ' * 12).strip() in t and 'elevation_ft: 300' in t and 'Premier objectif inventé.' in t and "mass_kg: '120'" in t,
          t[:400], 'the frame, the places and the story untouched')
-    # YAML aliases: refused at opening
+    # YAML aliases: refused at opening (SOG-0485: the Équipes stay listed after the save, the page is long and the toast of the save
+    # covers the foot at its place in the screen: cleared, as above)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     ed_leave(c)
     _ed_open(c, _ALIAS)
     c.wait(800)
@@ -8040,4 +8042,105 @@ def n121(c):
     c.page.mouse.up()
     c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the vertex moved, to undo')
     ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+# SOG-0485: the story of the file as written (summary, description, objectives, load), read by js-yaml in the page
+_STORY_OF = """async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
+  const t = await (%s)(p); if (typeof t !== 'string') return null; const d = globalThis.jsyaml.load(t, { schema: globalThis.jsyaml.CORE_SCHEMA });
+  return { summary: d.summary ?? null, description: d.detailed_description ?? null, objectives: d.objectives ?? null, payload: d.payload ?? null, title: d.title } }""" % _TEXT_OF
+
+
+@case('N122', 'Missions › the workshop, « Enregistrer » keeps the story (SOG-0485): a CREATED mission — a summary and a description typed in the Récit, '
+      'saved: the file holds them, the Récit left unfolded still shows them, a second retouch of the description is written, and the mission opened '
+      'again shows the same texts; an EXISTING mission opened (veiled, as the pilot opens it) and saved after a change of its title only, the Récit '
+      'unfolded or not: its summary, description, objectives and load are those of the file, character for character', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0485 (the user: « Quand on clique sur Enregistrer, le contenu (brief, description) de la mission est vidé. Perdu. »; the ergonomist: '
+      '« enregistrer ne change jamais un champ que l\'on n\'a pas touché »)')
+def n122(c):
+    path_new = 'missions/X_REG/X-002/missionX-002.yaml'
+    path_old = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    summ = 'Un résumé inventé, saisi dans l’atelier.'
+    desc = 'Premier paragraphe saisi.\n\nSecond paragraphe saisi, avec des accents : éàü.'
+    quiet = "document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())"  # at 390 a toast covers the foot
+
+    def unfold(step, probe):
+        """Unfolds a group of the sheet when it is not (a mission modified on a phone opens with every group folded)."""
+        if not c.js(f"!!document.querySelector('{E} {probe}')"):
+            c.js(quiet)
+            c.tap(f'{E} [data-steps] [data-step="{step}"]')
+        c.until(f"!!document.querySelector('{E} {probe}')", what=f'the group {step} unfolded')
+
+    def save(what):
+        c.js(quiet)
+        c.js(f"document.querySelector('{E}').dataset.n120 = ''")
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what=what)
+        c.wait(300)
+
+    def open_row(rid):
+        c.until(_REG_READ, timeout=20000, what='the registry')
+        c.tap(f'{R} [data-rowid="{rid}"] > summary')
+        c.tap(f'{R} [data-rowid="{rid}"] [data-do="edmodify"]')
+        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('{rid}')", timeout=15000, what=f'{rid} in the workshop')
+
+    # (A) a created mission: the summary and the description typed, then saved
+    reg_open(c, _ED_TEXTS)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission on its Cadre')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
+    c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier proposed')
+    _ed_fill(c, 'edtitle', 'Mission créée, avec son récit')
+    c.page.select_option(f'{E} select[data-k=edth]', 'Corse')
+    _ed_fill(c, 'eddep', 'XTST · Base Test')
+    _ed_fill(c, 'edarr', 'Base Test Sud (XTSU)')
+    unfold('story', '[data-k=edstory][data-f=summary]')
+    c.page.fill(f'{E} [data-k=edstory][data-f=summary]', summ)
+    c.page.fill(f'{E} [data-k=edstory][data-f=description]', desc)
+    save('the created mission saved')
+    st = c.js(_STORY_OF, path_new) or {}
+    c.eq([st.get('summary'), st.get('description')], [summ, desc], '(A) the created mission: the file holds the summary and the description typed',
+         what='created, the file')
+    shown = c.js(_STORY_JS)
+    c.eq([shown.get('summary'), shown.get('description')], [summ, desc],
+         '(A) after « Enregistrer », the Récit left unfolded still shows what was typed (an empty field reads as a lost text)', what='created, the screen')
+    # a second retouch of the description after the save: written too (it was dropped while the fields showed nothing)
+    c.page.fill(f'{E} [data-k=edstory][data-f=description]', desc + '\n\nTroisième paragraphe, après l’enregistrement.')
+    save('the second save')
+    st = c.js(_STORY_OF, path_new) or {}
+    c.eq([st.get('summary'), st.get('description')], [summ, desc + '\n\nTroisième paragraphe, après l’enregistrement.'],
+         '(A) a retouch typed after the first save is written by the second', what='created, second save')
+    # opened again from the registry: the same texts
+    ed_leave(c)
+    open_row('X-002')
+    unfold('story', '[data-k=edstory][data-f=summary]')
+    shown = c.js(_STORY_JS)
+    c.eq([shown.get('summary'), shown.get('description')], [summ, desc + '\n\nTroisième paragraphe, après l’enregistrement.'],
+         '(A) the created mission opened again: the same texts in the Récit', what='created, reopened')
+    ed_leave(c)
+    # (B) an existing mission, opened veiled (as the pilot opens it): its title changed, the Récit folded, saved
+    base = c.js(_STORY_OF, path_old)
+    c.ok(bool(base and base['summary'] and base['description'] and base['objectives'] and base['payload']), base, 'the file of X-001A has a story')
+    open_row('X-001A')
+    unfold('cadre', 'input[data-k=edtitle]')
+    _ed_fill(c, 'edtitle', 'Mission complète, titre retouché')
+    save('X-001A saved, the Récit never unfolded')
+    st = c.js(_STORY_OF, path_old) or {}
+    c.eq([st.get('title'), {k: st.get(k) for k in ('summary', 'description', 'objectives', 'payload')}],
+         ['Mission complète, titre retouché', {k: base[k] for k in ('summary', 'description', 'objectives', 'payload')}],
+         '(B) the title changed alone: the story of the file kept, character for character', what='existing, Récit folded')
+    # the Récit unfolded and read, nothing typed in it, the title changed again: saved, the story still identical, the fields still full
+    unfold('story', '[data-k=edstory][data-f=summary]')
+    unfold('cadre', 'input[data-k=edtitle]')
+    _ed_fill(c, 'edtitle', 'Mission complète, retouchée deux fois')
+    unfold('story', '[data-k=edstory][data-f=summary]')
+    save('X-001A saved, the Récit unfolded')
+    st = c.js(_STORY_OF, path_old) or {}
+    c.eq([st.get('title'), {k: st.get(k) for k in ('summary', 'description', 'objectives', 'payload')}],
+         ['Mission complète, retouchée deux fois', {k: base[k] for k in ('summary', 'description', 'objectives', 'payload')}],
+         '(B) the Récit unfolded but untouched: the story of the file kept', what='existing, Récit unfolded')
+    shown = c.js(_STORY_JS)
+    c.eq([shown.get('summary'), shown.get('description')], [base['summary'], base['description']],
+         '(B) after « Enregistrer », the Récit still shows the texts of the file', what='existing, the screen')
     c.js(_REG_CLEAR)

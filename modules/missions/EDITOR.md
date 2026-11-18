@@ -987,6 +987,18 @@ the view does not reframe under the finger (the frame is taken again at the end)
 the same function as ever: one « Annuler le geste » per gesture. The point between two vertices still waits for the end (placing a
 vertex changes the handles); a gesture dropped without an end gives back the rows of before.
 
+### 7 duotricies. « Enregistrer » keeps the unfolded group on screen (18 Nov 2026; SOG-0485; noreg N122, N54)
+
+The user: « Quand on clique sur Enregistrer, le contenu (brief, description) de la mission est vidé. Perdu. » After a save, `edSave`
+takes the saved document as the new base (`e.base`) and drops the rows of the sitting (`teams`, `story`, `risks`, `events`: `null`)
+while the group stays unfolded; those rows were read only when a group was touched (`edstep`), so the Récit showed EMPTY fields (the
+Équipes, Risques and Chronologie: no row) and a field typed afterwards was ignored (`edInput` writes into `e.story` only when it
+exists): « Enregistrer » then said « nothing changed » and leaving asked nothing — the typing was lost. The Lieux had the same defect,
+fixed alone on 18 Nov (37bf93ab5). Now `edLoadStep(e)` reads the rows of the unfolded group (from the file, once; rows already in the
+sitting are kept) at the opening of a group AND after « Enregistrer ». The file was not emptied by this path: `withStory` writes only
+the fields that differ from the file (audit 182), so a mission saved from an empty-looking Récit kept its texts. Origin: the Récit,
+13 Nov (ce72c9c25), the Équipes the same morning (c138087b3); moved unchanged to `editor_view.js` on 17 Nov (c2a6960c1).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
