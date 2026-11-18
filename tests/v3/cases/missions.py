@@ -1392,6 +1392,9 @@ def n33(c):
     c.tap(f'{R} [data-rowid="X-901A"] .ms-rmore > summary')
     c.until(f"!!document.querySelector('{R} [data-rowid=\"X-901A\"] [data-do=regedit]')?.checkVisibility()", what='« ⋯ » shows « Corriger la ligne du registre »')
     c.eq(norm(c.text(f'{R} [data-rowid="X-901A"] [data-do=regedit]')), norm(row(c, 'regEdit')), '« Corriger la ligne du registre »', what='correct')
+    # the menu opens toward the left, aligned on the right edge of « ⋯ »: its two gestures stay inside the screen at 390
+    c.ok(c.js(f"[...document.querySelectorAll('{R} [data-rowid=\"X-901A\"] .ms-rmore [data-do]')].every(b => {{ const r = b.getBoundingClientRect(); "
+              f"return r.left >= 0 && r.right <= innerWidth }})"), '', 'the menu of « ⋯ » inside the screen at 390 (nothing cut)')
     c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"]').scrollIntoView({{block: 'center'}})")
     c.shot(f'N33_{c.design}_390_{c.lang}_registry.png')
     c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")

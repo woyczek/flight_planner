@@ -125,14 +125,14 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-rrow>summary[data-ch]::before{grid-row:span 3}
 [data-module="missions"] [data-choicelegend]{font-size:var(--sog-size-s);margin:.4em .75em}
 /* les gestes d'une ligne : « Brief » d'abord, « Atelier », « Dupliquer », puis « ⋯ » (corriger la ligne, la retirer) */
-[data-module="missions"] .ms-rbody>.ms-rgest{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start} /* plus précis que « .ms-rbody>span » (bloc) : sans lui, « ⋯ » passait seul à la ligne */
+[data-module="missions"] .ms-rbody>.ms-rgest{position:relative;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start} /* plus précis que « .ms-rbody>span » (bloc) : sans lui, « ⋯ » passait seul à la ligne */
 [data-module="missions"] .ms-rgest button + button{margin-left:0}
 [data-module="missions"] .ms-rgest>button{padding-left:12px;padding-right:12px}
-[data-module="missions"] .ms-rmore{position:relative}
+[data-module="missions"] .ms-rmore{position:static} /* le menu se pose par rapport à la rangée, pas au bouton */
 [data-module="missions"] .ms-rmore>summary{list-style:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);cursor:pointer}
 [data-module="missions"] .ms-rmore>summary::-webkit-details-marker{display:none}
 [data-module="missions"] .ms-rmore>summary::before{content:none;display:none} /* un bouton, pas un repli : sans le chevron des replis du cadre */
-[data-module="missions"] .ms-rmore[open]>div{position:absolute;left:0;top:calc(100% + 4px);z-index:3;display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:16em;max-width:min(22em,80vw);padding:4px;background:var(--sog-bg,#fff);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:0 4px 16px rgba(0,0,0,.18)} /* un menu posé sur la ligne, pas dans son flux (la maquette) */
+[data-module="missions"] .ms-rmore[open]>div{position:absolute;right:0;left:auto;top:calc(100% + 4px);z-index:3;display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:16em;max-width:min(22em,80vw);padding:4px;background:var(--sog-bg,#fff);border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);box-shadow:0 4px 16px rgba(0,0,0,.18)} /* un menu posé sur la ligne, pas dans son flux (la maquette) */
 [data-module="missions"] .ms-rmore[open]>div>button{margin:0;text-align:left;white-space:nowrap}
 /* « Préparer ce vol » reste l'action première du Brief : la barre des gestes colle au bas de l'écran tant que la première page défile */
 [data-module="missions"] .ms-actslot{display:contents} /* SOG-0459 : la place des gestes d'« Affectation des missions » (« Demander la suite », « Lire la mission »), après « Préparer ce vol » */
