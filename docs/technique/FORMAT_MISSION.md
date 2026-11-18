@@ -244,7 +244,7 @@ phases:
       duration_sec: 60             #    1 to 3 600
       max_gap_sec: 10              #    0.1 to 60: the longest gap between two fixes before the count starts again
       speed_tolerance_kt: 2        #    0 to 100
-      height_min_ft: 10            #    0 to 60 000, not above height_max_ft
+      height_min_ft: 10            #    0 to 60 000, not above height_max_ft; HEIGHTS above the ground (AGL), see below
       height_max_ft: 100
     fallback_delay_min: 30
   - id: C
@@ -260,7 +260,7 @@ phases:
       kind: overflight
       object: OBJ-1
       radius_nm: 0.5               #    0.001 to 100
-      height_min_ft: 100
+      height_min_ft: 100           #    HEIGHTS above the ground (AGL), like the hover's
       height_max_ft: 2000
       require_confirmation: true
 ```
@@ -342,6 +342,10 @@ The 1.1 rules: `radius_m` 0.1 to 10 000, `duration_sec` 1 to 3 600, `max_gap_sec
 50 (3 when absent), `speed_tolerance_kt` 0 to 100, `height_min_ft` ≤ `height_max_ft` within 0 to 60 000, `radius_nm` of an
 overflight 0.001 to 100; a point AND an object, or neither, is unreadable; a sequence has 1 to 10 steps, never nested; the
 id of an event and a recipient are short words (80 signs, `[A-Za-z0-9_.-]`).
+
+**`height_min_ft` and `height_max_ft` (a hover, an overflight) are HEIGHTS above the ground (AGL), not altitudes above sea level.** The flight
+judges them only with the simulator, in agreement with « Affectation ». The workshop says so in the label of the two fields of a drawer's sheet
+(« Hauteur minimale (ft, sol) »).
 
 An optional value out of its bounds is simply not read (`null`): `ceiling_ft` and `detection_height_ft` (0 to 60 000),
 `altitude_ft` (−1 500 to 60 000), `fallback_delay_min` (0 to 1 440); a target whose `speed_kt` (above 0, up to 1 000) or

@@ -392,8 +392,10 @@ export const EDTX = {
   dwTol: ['Écart de vitesse toléré (kt)', 'Tolerated speed deviation (kt)', 'Tolerierte Geschwindigkeitsabweichung (kt)',
     'Desviación de velocidad tolerada (kt)'
   ],
-  dwHMin: ['Hauteur minimale (ft)', 'Minimum height (ft)', 'Mindesthöhe (ft)', 'Altura mínima (ft)'],
-  dwHMax: ['Hauteur maximale (ft)', 'Maximum height (ft)', 'Höchsthöhe (ft)', 'Altura máxima (ft)'],
+  dwHMin: ['Hauteur minimale (ft, sol)', 'Minimum height (ft, AGL)', 'Mindesthöhe (ft, über Grund)',
+    'Altura mínima (ft, sobre el suelo)'
+  ],
+  dwHMax: ['Hauteur maximale (ft, sol)', 'Maximum height (ft, AGL)', 'Höchsthöhe (ft, über Grund)', 'Altura máxima (ft, sobre el suelo)'],
   dwConfirm: ['Le pilote confirme le contact', 'The pilot confirms the contact', 'Der Pilot bestätigt den Kontakt',
     'El piloto confirma el contacto'
   ],
