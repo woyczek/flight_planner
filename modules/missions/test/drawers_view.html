@@ -1161,6 +1161,22 @@
   await sleep(500);
   ck('seul sur la mission : aucun passage demandé, même avec un tiroir à zone fermé', ctx.synced === 0, ctx.synced);
   DV.stop();
+  // SOG-0463 : la période est de dix secondes ; un premier tiroir à l'heure ou au geste n'est pas attendu, même avec d'autres pilotes
+  ck('la période du passage de synchronisation est de dix secondes (SOG-0463)', DV.POLL_MS === 10000, DV.POLL_MS);
+  for (const [label, list] of [['geste', [HAND, ZONE]], ['heure', [TIME, ZONE]]]) {
+    ctx = fakeCtx({
+      docs: {
+        'missions/affectations.json': index(T2)
+      }
+    });
+    await mount(ctx, missionOf(...list), {
+      mine: true,
+      pollMs: 150
+    });
+    await sleep(500);
+    ck(`le premier tiroir fermé est à ${label}, d'autres pilotes sont sur la mission : aucun passage demandé (la clé n'est pas attendue)`, ctx.synced === 0, ctx.synced);
+    DV.stop();
+  }
   ctx = fakeCtx({
     docs: {
       'missions/affectations.json': index(T2)

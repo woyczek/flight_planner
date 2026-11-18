@@ -360,11 +360,11 @@ The screen described here was changed by § 11.5 (SOG-0459): nothing of a closed
 - **What it reads and writes** (through `ctx.data` only): reads `missions/affectations.json`, `pilot/<me>/current_flight.json`, the
   records of the pilots of the mission (twelve at most) and `cache/missions/seen_<ID>.json`; writes **only** the pilot's own record
   (the gesture; the real departure `start_at` of the flight of this mission, once) and the device-only « seen » document.
-- **The others' records arrive by a synchronisation pass asked once a minute, bounded** (the ergonomist, 17 Nov): only while the first
+- **The others' records arrive by a synchronisation pass asked every ten seconds, bounded** (the ergonomist, 17 Nov; every ten seconds instead of every minute: SOG-0463, 18 Nov): only while the first
   closed drawer is awaited (a key judged in flight) AND the section is on screen AND the mission has other pilots; it stops when the
   drawer opens; it is **paused while the page is hidden** (a hidden tab, a sleeping device) and resumes with a pass at once when the
   page comes back. The pass is the module's background pass (`ctx.data.sync()` without `gesture`, never a gesture on a timer); its
-  cost is one pass a minute per waiting device — on a device without launcher, one request to the repository's API per pass.
+  cost is six passes a minute per waiting device — on a device without launcher, six requests a minute to the repository's API, under the ceiling of 80 a minute (hence ten seconds and not five).
 - **« reçu ici à … »**: an opening of another pilot received more than a minute after the fact says so — « ouvert au passage de la
   zone par BBB, à 20:14Z — reçu ici à 20:16Z » (the device keeps the time it first saw it, `got` in the « seen » document). No delay
   is promised in figures on screen (the ergonomist, 17 Nov, 19 h 32).
@@ -374,8 +374,9 @@ The screen described here was changed by § 11.5 (SOG-0459): nothing of a closed
   record, which the section shows at once. With only a re-reading of the files (`data.revalidate`) device B had **nothing after 90
   seconds**: on a workstation with a launcher, re-reading does not exchange with the repository, and the opening would have come
   with the background pass (every ten minutes) — hence the pass. End to end with the pass asked every minute: **47 seconds** in the
-  trial; the bound is one period (60 s) plus the exchange. **Not measured**: a real remote over the network (each exchange then takes
-  the time of a git fetch and push), a device without launcher, the load beside the simulator (one short git exchange a minute). A
+  trial; the bound was one period (60 s) plus the exchange. With ten seconds (SOG-0463) the bound is one period plus the exchange, about
+  10 + 1.5 s, so under 15 s; this bound is **computed** from the exchange times measured on 17 Nov, not measured again with two launchers. **Not measured**: a real remote over the network (each exchange then takes
+  the time of a git fetch and push), a device without launcher, the load beside the simulator (one short git exchange every ten seconds). A
   measure on the real repository is the user's to grant (Q-0097).
 - Help: `modules/missions/help/<lang>.md`, « Les tiroirs » (`missions-drawers`), four languages; the two documents of the section
   are listed in `modules/missions/INTEGRATION.md`.

@@ -170,9 +170,10 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-drawers] .dw-text{margin:6px 0 0;overflow-wrap:anywhere}
 [data-drawers] .dw-text p{margin:.4em 0;white-space:pre-wrap}
 [data-drawers] .dw-msg{border-left:3px solid var(--sog-border);padding-left:8px}`;
-const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`),
-  POLL_MS = 60e3, // un passage de synchronisation par minute pendant qu'un tiroir est attendu (les carnets des autres arrivent par lui)
-  REST_MS = 60e3; // « Demander la suite » se repose une minute après chaque réponse
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+export const POLL_MS =
+  10e3; // un passage de synchronisation toutes les dix secondes pendant qu'un tiroir est attendu, page visible (SOG-0463 : 60 s auparavant ; 10 s et non 5 pour le plafond de 80 requêtes par minute sans lanceur)
+const REST_MS = 60e3; // « Demander la suite » se repose une minute après chaque réponse
 // le repos de « Demander la suite », par mission : l'instant où la commande se réarme (rouvrir la fiche ne le remet pas à zéro)
 const REST = new Map();
 let V = null; // la section posée : une fiche à la fois
@@ -296,7 +297,7 @@ function showDrawers(host, {
     notJudged,
     changed, // la fiche à redessiner quand un tiroir s'ouvre (SOG-0448 : ses lieux apparaissent)
     pub: null, // { key, at } : le dernier document « ouverts » écrit
-    pollMs: Number.isFinite(pollMs) && pollMs >= 100 ? pollMs : POLL_MS, // la période du passage à la minute (un banc la raccourcit)
+    pollMs: Number.isFinite(pollMs) && pollMs >= 100 ? pollMs : POLL_MS, // la période du passage (un banc la raccourcit)
     restMs: Number.isFinite(restMs) && restMs >= 100 ? restMs : REST_MS, // le repos de « Demander la suite » (un banc le raccourcit)
     tt: (row, vars) => ctx.t(row, vars),
     mine: false,
@@ -522,7 +523,7 @@ function announce(v, before, states) {
 }
 
 /** Le minuteur de la prochaine échéance (celle du premier tiroir fermé), et le passage de synchronisation BORNÉ qui apporte les carnets
- *  des autres (décision de l'ergonome, 17/11) : chaque minute, seulement pendant que le premier tiroir fermé est ATTENDU (une clé jugée
+ *  des autres (décision de l'ergonome, 17/11) : toutes les dix secondes, seulement pendant que le premier tiroir fermé est ATTENDU (une clé jugée
  *  en vol : le constat d'un autre peut l'ouvrir à tous — ni l'heure ni le geste) ET que la section est à l'écran (page visible) ET que
  *  la mission a d'autres pilotes (douze au plus, seanceOf) ; il s'arrête à l'ouverture (arm est rappelé à chaque calcul). */
 function arm(v, peers) {
@@ -543,13 +544,13 @@ async function pass(v) {
   if (V !== v || !v.poll || document.visibilityState === 'hidden' || !v.host?.isConnected) return;
   // un PASSAGE de synchronisation, pas une simple relecture : sur un poste avec lanceur, relire (revalidate) ne déclenche pas
   // l'échange avec le dépôt — mesuré au banc à deux appareils le 17/11 : l'ouverture d'un autre n'arrivait qu'au passage de fond
-  // (dix minutes) ; avec un passage, elle arrive à la minute (le passage lui-même : une demi-seconde sur un dépôt local).
+  // (dix minutes) ; avec un passage, elle arrive à la période du passage (le passage lui-même : une demi-seconde sur un dépôt local).
   // Sans geste (jamais { gesture: true } sur un minuteur) : le passage de fond du module.
   await Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
   if (V === v) load(v);
 }
 
-/** La page redevient visible : un passage tout de suite, sans attendre la minute (la relecture était en pause). */
+/** La page redevient visible : un passage tout de suite, sans attendre la période (la relecture était en pause). */
 function onVisible() {
   if (V && document.visibilityState === 'visible') pass(V);
 }
