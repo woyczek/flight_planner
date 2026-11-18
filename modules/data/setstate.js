@@ -23,6 +23,7 @@ import {
   renderBuild
 } from './panels.js';
 import {
+  startXpBuild,
   wantXplane
 } from './xplane.js';
 
@@ -165,6 +166,7 @@ export function forgetSetStates() {
 /** Une lecture que le lanceur a refusée est retentée dès que l'écran est libre, au plus toutes les 4 s ; une lecture « à relire » aussi. */
 export function setStatesIdle() {
   if (S?.xp?.dirty) wantXplane(); // la lecture du dossier d'X-Plane refusée pendant une opération est reprise ici
+  if (S?.xp?.build?.state === 'waiting') startXpBuild(); // la lecture du réseau X-Plane qui attendait la fin d'une opération part ici
   const ss = S?.cw?.ss;
   if (!ss) return;
   const due = r => !!r && (r.dirty || r.state === 'busy') && !(r.tries >= 3 && Date.now() - r.at < 4000);

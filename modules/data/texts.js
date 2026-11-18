@@ -3112,6 +3112,50 @@ export const TX = {
     ],
     unreadable: ['Dossier illisible', 'Folder unreadable', 'Ordner nicht lesbar', 'Carpeta ilegible'],
     notConfigured: ['Non configuré', 'Not configured', 'Nicht eingerichtet', 'No configurado'],
+    // la lecture du réseau de repli (verbe xplane/build, lancée par « Enregistrer » et par « Mettre à jour ») : en cours, en attente d'une autre opération, lue (cycle et tronçons), ou non lue — UNE phrase par code du contrat, jamais un texte du lanceur
+    netRun: ['Lecture du réseau X-Plane…', 'Reading the X-Plane network…', 'X-Plane-Netz wird gelesen…', 'Leyendo la red de X-Plane…'],
+    netWait: ['Lecture du réseau X-Plane après l’opération en cours…', 'Reading the X-Plane network after the current operation…',
+      'X-Plane-Netz wird nach dem laufenden Vorgang gelesen…', 'La red de X-Plane se leerá al terminar la operación en curso…'
+    ],
+    netDone: ['Réseau lu — cycle {c}, {n} tronçon(s)', 'Network read — cycle {c}, {n} segment(s)',
+      'Netz gelesen — Zyklus {c}, {n} Abschnitt(e)',
+      'Red leída — ciclo {c}, {n} tramo(s)'
+    ],
+    netDoneNoCycle: ['Réseau lu — {n} tronçon(s)', 'Network read — {n} segment(s)', 'Netz gelesen — {n} Abschnitt(e)',
+      'Red leída — {n} tramo(s)'
+    ],
+    netFail: {
+      'not-personal': ['Réseau non lu — cochez d’abord l’usage personnel', 'Network not read — tick personal use first',
+        'Netz nicht gelesen — kreuzen Sie zuerst die persönliche Nutzung an', 'Red no leída — marque primero el uso personal'
+      ],
+      'not-configured': ['Réseau non lu — dossier non configuré', 'Network not read — folder not configured',
+        'Netz nicht gelesen — Ordner nicht eingerichtet',
+        'Red no leída — carpeta no configurada'
+      ],
+      missing: ['Réseau non lu — dossier introuvable', 'Network not read — folder not found',
+        'Netz nicht gelesen — Ordner nicht gefunden',
+        'Red no leída — carpeta no encontrada'
+      ],
+      'not-xplane': ['Réseau non lu — ce n’est pas un dossier X-Plane', 'Network not read — this is not an X-Plane folder',
+        'Netz nicht gelesen — das ist kein X-Plane-Ordner', 'Red no leída — no es una carpeta de X-Plane'
+      ],
+      refused: ['Réseau non lu — demande refusée', 'Network not read — request refused', 'Netz nicht gelesen — Anfrage abgelehnt',
+        'Red no leída — solicitud rechazada'
+      ],
+      unreadable: ['Réseau non lu — fichiers illisibles', 'Network not read — files unreadable',
+        'Netz nicht gelesen — Dateien nicht lesbar',
+        'Red no leída — archivos ilegibles'
+      ],
+      'too-big': ['Réseau non lu — fichiers trop volumineux', 'Network not read — files too big', 'Netz nicht gelesen — Dateien zu groß',
+        'Red no leída — archivos demasiado grandes'
+      ],
+      nothing: ['Réseau non lu — rien à lire dans ce dossier', 'Network not read — nothing to read in this folder',
+        'Netz nicht gelesen — in diesem Ordner gibt es nichts zu lesen', 'Red no leída — no hay nada que leer en esta carpeta'
+      ],
+      'no-zones': ['Réseau non lu — aucune zone sans réseau officiel', 'Network not read — no zone without an official network',
+        'Netz nicht gelesen — keine Zone ohne amtliches Netz', 'Red no leída — ninguna zona sin red oficial'
+      ]
+    },
     reason: {
       badBody: ['Demande refusée', 'Request refused', 'Anfrage abgelehnt', 'Solicitud rechazada'],
       tooLong: ['Chemin trop long (260 signes au plus)', 'Path too long (260 characters at most)',

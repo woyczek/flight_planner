@@ -147,14 +147,52 @@ export const procArgs = ids => [...new Set((ids || []).filter(x => typeof x === 
 // SOG / Q-0108 : le dossier d'X-Plane (repli local), tel que le lanceur le dit (`__setup/xplane`). Tout vient du lanceur : états et codes d'une liste fermée, cycle de 4 chiffres, entier borné.
 const XP_STATES = ['ok', 'missing', 'not-xplane', 'unreadable'];
 const XP_REASONS = ['bad-body', 'too-long', 'refused', 'not-a-folder', 'not-xplane', 'not-personal'];
-/** Ce que dit le GET du lanceur sur le dossier d'X-Plane : { configured, state (ok | missing | not-xplane | unreadable | null), cycle ('2610' ou ''), zones (0..100000 ou null) } ; null sans `ok: true` (404, 403, lanceur plus ancien, réponse illisible). */
+/** Les codes d'échec du verbe `xplane/build` (liste fermée du contrat du lanceur) ; tout autre code est dit « refused ». */
+export const XP_BUILD_REASONS = Object.freeze(['not-personal', 'not-configured', 'missing', 'not-xplane', 'refused', 'unreadable',
+  'too-big', 'nothing', 'no-zones'
+]);
+/** Ce que dit le GET du lanceur sur le dossier d'X-Plane : { configured, state (ok | missing | not-xplane | unreadable | null), cycle ('2610' ou ''), zones (0..100000 ou null), built? } ; null sans `ok: true` (404, 403, lanceur plus ancien, réponse illisible).
+ *  `built` (le cycle du réseau construit : '2610' ou null) n'est écrit que si le lanceur le dit en forme valide ; absent sinon (xplaneStale lit alors `zones`). */
 export function xplaneOf(r) {
   if (r === null || typeof r !== 'object' || Array.isArray(r) || r.ok !== true) return null;
+  const built = Object.hasOwn(r, 'built') && (r.built === null || typeof r.built === 'string' && /^\d{4}$/.test(r.built));
   return {
     configured: r.configured === true,
     state: typeof r.state === 'string' && XP_STATES.includes(r.state) ? r.state : null,
     cycle: typeof r.cycle === 'string' && /^\d{4}$/.test(r.cycle) ? r.cycle : '',
-    zones: Number.isInteger(r.zones) && r.zones >= 0 && r.zones <= 1e5 ? r.zones : null
+    zones: Number.isInteger(r.zones) && r.zones >= 0 && r.zones <= 1e5 ? r.zones : null,
+    ...(built ? {
+      built: r.built
+    } : {})
+  };
+}
+/** Le réseau X-Plane est-il à relire pour le cycle du dossier ? Vrai quand le dossier est configuré, en état 'ok', de cycle connu, et que le réseau construit n'est pas de ce cycle : `built` s'il est dit (différent du cycle), sinon aucune zone construite (`zones` null). */
+export function xplaneStale(d) {
+  if (!d || !d.configured || d.state !== 'ok' || !d.cycle) return false;
+  return Object.hasOwn(d, 'built') ? d.built !== d.cycle : d.zones === null;
+}
+/** Le code d'échec de `xplane/build`, ramené à la liste fermée du contrat ; tout autre est dit « refused ». */
+export const xplaneBuildReason = code => typeof code === 'string' && XP_BUILD_REASONS.includes(code) ? code : 'refused';
+/** La fin du travail `xplane/build` (ce que rend ctx.launcher.job) : { ok: true, cycle ('2610' ou ''), segs (la somme des tronçons des zones : entiers 0..1e7 par zone, 100 clés au plus de forme /^[a-z0-9_-]{2,12}$/) } ou { ok: false, reason (liste fermée) } ;
+ *  null sans rien à dire (suivi interrompu, arrêt). Tout vient du lanceur : jamais un texte de lui, un nombre hors borne vaut 0. */
+export function xplaneBuildOf(final) {
+  if (final === null || typeof final !== 'object' || Array.isArray(final) || final.detached || final.aborted || final.cancelled)
+    return null;
+  const r = final.result !== null && typeof final.result === 'object' && !Array.isArray(final.result) ? final.result : null;
+  if (final.state !== 'done' || r?.ok !== true) return {
+    ok: false,
+    reason: xplaneBuildReason(r?.reason)
+  };
+  const counts = r.counts !== null && typeof r.counts === 'object' && !Array.isArray(r.counts) ? r.counts : {};
+  let segs = 0;
+  for (const [k, v] of Object.entries(counts).slice(0, 100)) {
+    if (!/^[a-z0-9_-]{2,12}$/.test(k) || v === null || typeof v !== 'object' || !Object.hasOwn(v, 'airways')) continue;
+    segs += Number.isInteger(v.airways) && v.airways >= 0 && v.airways <= 1e7 ? v.airways : 0;
+  }
+  return {
+    ok: true,
+    cycle: typeof r.cycle === 'string' && /^\d{4}$/.test(r.cycle) ? r.cycle : '',
+    segs
   };
 }
 /** Le code de refus d'un enregistrement, ramené à la liste fermée du contrat (bad-body, too-long, refused, not-a-folder, not-xplane, not-personal) ; tout autre est dit « refused ». */

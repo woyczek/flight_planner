@@ -18,6 +18,9 @@ import {
   selectionOf
 } from './panels.js';
 import {
+  xplaneAfterUpdate
+} from './xplane.js';
+import {
   launch,
   runChunks,
   settle
@@ -152,13 +155,15 @@ export async function startUpdate(zones = null) {
     S.updating = false;
     renderBuild();
     if (!plan && refuseBusy(S.statusRefused, S.at)) return;
-    return S.ctx.notify(!plan ? tt(TX.upd.noStatus) : [plan.upToDate || !plan.unknown ? tt(TX.upd
+    S.ctx.notify(!plan ? tt(TX.upd.noStatus) : [plan.upToDate || !plan.unknown ? tt(TX.upd
       .none, { // le nombre dit est celui des zones que le lanceur a dites à jour (jamais toutes les cochées)
         n: count('zone', plan.upToDate)
       }) : '', plan.waiting.length ? waitingText(plan.waiting) : '', personalText(plan.personal), plan.unknown ? tt(TX.upd
       .noState, {
         n: count('zone', plan.unknown)
       }) : ''].filter(Boolean).join(' '), plan ? plan.unknown ? 'warn' : 'ok' : 'err');
+    return plan ? xplaneAfterUpdate() :
+      undefined; // rien à reconstruire : le réseau X-Plane peut pourtant être à relire (le cycle du dossier a changé)
   }
   const ids = plan.build.map(b => b.zone);
   S.asking = true; // une opération à la fois : les boutons restent gris pendant la question
@@ -175,14 +180,21 @@ export async function startUpdate(zones = null) {
   S.asking = false;
   S.updating = false;
   if (!yes) return renderBuild();
-  if (ids.length > M.MAX_ZONES) return void await runChunks(me, 'base', 'build', {
-    ...sel,
-    ids
-  });
-  await settle(me, await launch('base', 'build', M.setArgs('base', 'build', {
-    ...sel,
-    ids
-  }), ids), true);
+  if (ids.length > M.MAX_ZONES) {
+    if (await runChunks(me, 'base', 'build', {
+        ...sel,
+        ids
+      }) === 'stop') return;
+  } else {
+    await settle(me, await launch('base', 'build', M.setArgs('base', 'build', {
+      ...sel,
+      ids
+    }), ids), true);
+    if (S !== me || !S.lastOp || M.chunkVerdict('build', S.lastOp.out) === 'stop')
+      return; // un arrêt, une interruption : la lecture du réseau ne part pas
+  }
+  if (S === me)
+    await xplaneAfterUpdate(); // la fin normale de la construction : le réseau X-Plane est relu si le cycle du dossier a changé (son échec ne change rien au verdict)
 }
 /** Le lien `#data?zone=<id>` (SOG-0143 : « cette zone est à reconstruire ») : à demander avant le premier dessin ; il ouvre le groupe de la base et la fiche de la zone. Une seule fois par montage. */
 export function wantZone() {

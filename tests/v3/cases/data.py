@@ -357,7 +357,7 @@ def l2(c):
     for x in m['groups']:
         c.le(len(x['visible']), 7, f'group {x["id"]}', what='visible rows')
     c.eq(len(g['sources']['visible']), 7, 'the base has eleven used sets: seven visible', what='base rows visible')
-    c.eq(g['sources']['more']['text'], norm(tx(TX, 'moreSets', lang).replace('{n}', '5')), 'five more under the fold: four used sets and the candidate Naviair', what='base fold')
+    c.eq([g['sources']['more']['text'], g['sources']['more']['rows']], [norm(tx(TX, 'moreSets', lang).replace('{n}', '5')), g['sources']['more']['rows']], 'five more under the fold: four used sets and the candidate Naviair (the rows under the fold are given when it fails)', what=f"base fold {g['sources']['more']['rows']}")
     c.ok(sum(r.endswith(':used') for r in g['sources']['more']['rows']) == 4 and all(r.endswith((':used', ':candidate')) for r in g['sources']['more']['rows']), g['sources']['more']['rows'], 'the surplus of the base: the used sets, then the candidates after them (Naviair is a candidate of the catalogue)')
     c.eq(g['proc']['visible'], ['eaip', 'cifp', 'route'], 'procedures: eAIP and CIFP visible, then the route row (SOG-0125: one row more)', what='proc rows')
     c.eq(g['proc']['more']['rows'], ['ead:candidate', 'xpcifp:candidate', 'dfs:abandoned', 'eurocontrol:abandoned'], 'candidates, then set-aside sources: only in the fold, no state', what='proc fold')
@@ -647,10 +647,11 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
     (`st['gets']` records the reads), POST regen/job/cancel flips its `cancelling`, POST regen/job/release is recorded in `st['releases']` and answers 200 (or 409 `alive` while `st['release_alive']`).  The 409 itself is
     the test's `start=(409, {'reason': 'busy', 'job': id, 'running': busy_running})`.  `cycle` (SOG-0262): the RESULT of the read-only job base/cycle (a dict, or a function of its args `{zone, personal}`; None = the verb answers nothing);
     `st['xplane']` (Q-0108): the local X-Plane folder the launcher holds, a LIVE dict `{'configured', 'state', 'cycle', 'zones'}` that GET /__setup/xplane answers as `{ok: True, ...}` (None = an older launcher, 404); `st['xplane_gets']` counts the reads, `st['xplane_posts']` records the bodies posted, `st['xplane_answer']` is what the next POST answers (a body dict, a `(status, body)` tuple, or a function of the posted body; None = the launcher accepts: ok, state ok, cycle 2610, and `st['xplane']` follows).
-    every such read is recorded in `st['posts']` (verb `cycle`).  `last_results` (SOG-0262, lot D3): the RESULT of the read-only job base/last (K191: the journal of the last pickup / fetch / build / update; a dict or a function of its args; None = the verb answers nothing)."""
+    `st['xplane_build']` (Q-0108): the RESULT of the job xplane/build (`set: 'xplane'`; a dict, or a function of its args; None = the invented network `_XP_NET`: cycle 2610, 12 segments); a result with `ok: True` ends the job `done`, any other `error`; a success makes the GET say the zones (and `built`, when the GET says it).  The verb is announced by `verbs`
+    (`_XP_BUILD_VERBS`).  Every such read is recorded in `st['posts']` (verb `cycle`).  `last_results` (SOG-0262, lot D3): the RESULT of the read-only job base/last (K191: the journal of the last pickup / fetch / build / update; a dict or a function of its args; None = the verb answers nothing)."""
     st = {'status': None, 'posts': [], 'cancels': [], 'views': list(views), 'i': 0, 'current': last, 'cancelled': False, 'start': start, 'syncs': 0,
           'sync': sync or {'changes': 0, 'ahead': 0, 'merging': False, 'last': None}, 'verbs': verbs, 'verbs_calls': 0,
-          'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0, 'xplane': None, 'xplane_posts': [], 'xplane_gets': 0, 'xplane_answer': None,
+          'inventory': inventory, 'inventory_calls': 0, 'personal': personal, 'personal_posts': [], 'personal_refuse': False, 'personal_gets': 0, 'xplane': None, 'xplane_posts': [], 'xplane_gets': 0, 'xplane_answer': None, 'xplane_build': None,
           'running': busy_running, 'gets': [], 'releases': [], 'release_alive': False, 'cycle': cycle, 'publish': publish, 'last_results': last_results}
 
     def handler(route):
@@ -734,8 +735,19 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
             if req.method == 'POST':
                 st['posts'].append(json.loads(req.post_data or '{}'))
                 code, body = st['start']
+                if st['posts'][-1].get('set') == 'xplane' and code == 200:   # the reading of the X-Plane network is a job of its own (`jxp`): no other read can take its answer
+                    body = {'job': 'jxp'}
                 if code == 409 and busy_view:
                     st['current'] = busy_view
+            elif 'id=jxp' in u.query:
+                res = st['xplane_build']   # xplane/build (Q-0108): the reading of the X-Plane network; the failure is a job in error with its reason
+                if callable(res):
+                    res = res([p for p in st['posts'] if p.get('set') == 'xplane'][-1].get('args') or {})
+                if res is None:
+                    res = _XP_NET
+                if isinstance(res, dict) and res.get('ok') is True and isinstance(st['xplane'], dict):   # the launcher now holds a network: the GET says its zones, and its cycle when it says `built` at all
+                    st['xplane'] = {**st['xplane'], 'zones': res.get('zones'), **({'built': res.get('cycle')} if 'built' in st['xplane'] else {})}
+                body = {'id': 'jxp', 'state': 'done' if isinstance(res, dict) and res.get('ok') is True else 'error', 'step': '', 'done': 1, 'total': 1, 'unit': 'zones', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'cycle' and st.get('cycle') is not None:
                 res = st['cycle']
                 if callable(res):   # the answer depends on the zone asked for (the view per zone, K182)
@@ -10193,10 +10205,10 @@ _XP_WHERE_JS = """async () => {
   return out.join('\\n') }"""
 
 
-def _xp_open(c, personal=True, xplane=_XP_OK):
-    """Opens Données against a fake launcher that holds the personal-use tick (ticked or not) and, if given, a local X-Plane folder."""
+def _xp_open(c, personal=True, xplane=_XP_OK, verbs=None):
+    """Opens Données against a fake launcher that holds the personal-use tick (ticked or not) and, if given, a local X-Plane folder; `verbs`: what regen/verbs lists (`_XP_BUILD_VERBS`: the launcher knows xplane/build)."""
     cfg, _ = _fixture()
-    st = _launcher(c, [], personal={'certified': personal, 'at': '2026-11-10T09:00:00Z'})
+    st = _launcher(c, [], personal={'certified': personal, 'at': '2026-11-10T09:00:00Z'}, verbs=verbs)
     st['xplane'] = dict(xplane) if xplane is not None else None
     _open(c, cfg)
     return st
@@ -10379,4 +10391,213 @@ def l160(c):
     nul = {'configured': False, 'state': None, 'cycle': '', 'zones': None}
     c.eq(m, [{'configured': True, 'state': None, 'cycle': '', 'zones': None}, None, None, None, None, {**nul, 'state': 'ok'}, {'configured': True, 'state': 'ok', 'cycle': '2610', 'zones': 12}, {**nul},
              'refused', 'refused', 'refused', 'not-xplane', 'too-long'], 'the model bounds every field and a code outside the contract is `refused`', what='model')
+    c.check_errors()
+
+
+# ---- Q-0108 (suite): « Enregistrer » lit aussitôt le réseau de repli (job xplane/build) et « Mettre à jour » le relit quand le cycle du dossier a changé; the line of the folder says the result
+_XP_NET = {'ok': True, 'zones': 2, 'cycle': '2610', 'counts': {'de': {'points': 40, 'airways': 7}, 'at': {'points': 10, 'airways': 5}}}   # what the fake launcher's xplane/build answers by default: 7 + 5 = 12 segments
+_XP_BUILD_VERBS = ['xplane/build']
+_XP_JOBS = lambda st: [p for p in st['posts'] if p.get('set') == 'xplane']   # the jobs xplane/build the fake launcher received
+_XP_CODES = [('not-personal', 'not-personal'), ('not-configured', 'not-configured'), ('missing', 'missing'), ('not-xplane', 'not-xplane'), ('refused', 'refused'), ('unreadable', 'unreadable'), ('too-big', 'too-big'),
+             ('nothing', 'nothing'), ('no-zones', 'no-zones')]
+
+
+def _xp_net_text(c, key, n=None, cyc='2610'):
+    """A sentence of the network reading (`TX.xp.netRun`, `netWait`, `netDone`, `netDoneNoCycle`), the cycle and the number of segments put in, the marks (s) and (e) agreed with the number as the page does (fr: 0 and 1 are singular; en, de, es: 1 only); spaces normalised."""
+    t = _trow(key, c.lang, after='  xp: {').replace('{c}', cyc)
+    if n is not None:
+        one = n < 2 if c.lang == 'fr' else n == 1
+        t = re.sub(r'\((s|e)\)', lambda m: '' if one else m.group(1), t.replace('{n}', str(n)))
+    return norm(t)
+
+
+def _xp_line_is(c, want, what, timeout=12000):
+    """Waits until the state line of the X-Plane folder says exactly `want` (spaces of every kind collapsed)."""
+    c.until("(w) => { const e = document.querySelector('[data-xplane-state]'); return !!e && e.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w }", arg=want, timeout=timeout, what=what)
+
+
+@case('L161', 'Données: « Enregistrer » lit aussitôt le réseau X-Plane (job xplane/build, arguments {}) et la ligne d\'état dit le résultat — « Réseau lu — cycle 2610, 12 tronçons » (Q-0108)',
+      'L', tags=('data',), langs4=True, designs=('standard',), screens=True, night=False,
+      rule='Q-0108 (decision of the ergonome, 18 Nov 2026): no separate button; a successful « Enregistrer » starts the verb xplane/build ({ set: xplane, verb: build, args: {} }), the line says « Réseau lu — cycle 2610, 12 tronçons » (the sum of the airways of the zones), nothing about the path anywhere; a reading asked during another operation waits for it; red without the launch: no job reaches the launcher')
+def l161(c):
+    lang = c.lang
+    msgs = []
+    c.page.on('console', lambda m: msgs.append(m.text))
+    st = _xp_open(c, verbs=_XP_BUILD_VERBS)
+    c.until("!!document.querySelector('[data-xplane]')", timeout=10000, what='the line of the X-Plane folder')
+    where = lambda: c.js(_XP_WHERE_JS)
+    gone = lambda what: c.ok('Sentinel' not in where() and 'Sentinel' not in ' '.join(msgs) and 'Sentinel' not in ' '.join(c.note_log()), what, f'the path is on no surface of the page, notifications included ({what})')
+    done = _xp_net_text(c, 'netDone', 12)
+    c.eq(norm(c.text('[data-xplane-state]')), norm(_trow('okCycle', lang, after='  xp: {').replace('{c}', '2610')), 'before the save: the folder is only « Enregistré », nothing is read by itself', what='before')
+    c.eq(len(_XP_JOBS(st)), 0, 'opening the screen reads no network', what='no job at the opening')
+    # ---- « Enregistrer »: the job, exactly once, with no argument; the line says the result
+    c.page.fill('[data-xplane-path]', _XP_SENT)
+    c.tap('[data-act=xplane-save]')
+    _xp_wait(c, lambda: len(_XP_JOBS(st)) >= 1, 'the launcher received the job xplane/build')
+    _xp_line_is(c, done, 'the line says the network was read: cycle 2610, 12 segments')
+    c.wait(1500)
+    c.eq([{k: p[k] for k in ('set', 'verb', 'args')} for p in _XP_JOBS(st)], [{'set': 'xplane', 'verb': 'build', 'args': {}}], 'EXACTLY one job xplane/build, args {} and nothing else (the segments are those of the launcher)', what='job body')
+    c.eq(st['xplane_posts'], [{'path': _XP_SENT}], 'the body of the save is still { path } and nothing else', what='save body')
+    c.eq([c.attr('[data-xplane-state]', 'class'), c.count('[data-xplane-msg]'), c.count('#fNotes .f-note'), c.note_log()], ['f-muted', 0, 0, []], 'a success says nothing in a notification: the line (neutral) is what changes', what='no notification')
+    c.eq([c.js("document.querySelector('[data-xplane-path]').value"), c.js("document.querySelector('[data-act=xplane-save]').disabled")], ['', False], 'the field is empty and the buttons are open again', what='field')
+    gone('after the network was read')
+    if c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-xplane]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L161_{c.width}_{lang}.png')
+    if lang != 'fr':
+        c.check_errors()
+        return
+    # ---- a reading asked while another operation runs waits for it, then starts by itself when the screen is free
+    n = len(_XP_JOBS(st))
+    c.js("async () => { (await import('/modules/data/state.js')).S.other = {} }")
+    c.page.fill('[data-xplane-path]', _XP_SENT)
+    c.js("async () => (await import('/modules/data/xplane.js')).xplaneGesture('xplane-save')")
+    _xp_line_is(c, _xp_net_text(c, 'netWait'), 'another operation runs: the line says the reading waits', timeout=8000)
+    c.wait(1500)
+    c.eq(len(_XP_JOBS(st)) - n, 0, 'nothing is started while the screen is busy', what='waiting')
+    c.js("async () => { (await import('/modules/data/state.js')).S.other = null; (await import('/modules/data/setstate.js')).setStatesIdle() }")
+    _xp_wait(c, lambda: len(_XP_JOBS(st)) == n + 1, 'the waiting reading starts when the screen is free')
+    _xp_line_is(c, done, 'and the line says the network was read')
+    c.wait(1200)
+    c.eq(len(_XP_JOBS(st)) - n, 1, 'one reading, not two', what='one only')
+    gone('after the waiting reading')
+    c.check_errors()
+
+
+@case('L162', 'Données: « Mettre à jour » relit le réseau X-Plane à sa fin quand le cycle du dossier a changé (`built` ≠ `cycle`, ou sans `built` : aucune zone) et pas sinon ; son échec ne change pas le verdict (Q-0108)',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=False, night=False,
+      rule='Q-0108: after the normal end of « Mettre à jour » the reading is asked again only when the folder is configured, state ok, cycle known and `built` ≠ `cycle` (or, with no `built` in the GET, `zones` null); never without the personal-use tick; the failure of the reading is said by the line and a notification, the verdict of « Mettre à jour » stays; red without the rule: a job at every update, or none')
+def l162(c):
+    lang = c.lang
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')   # a page of the origin: the absolute import below fails on about:blank
+    # ---- the pure rule and the reading of `built`, on fixtures
+    m = c.js("""async () => { const m = await import('/modules/data/model_setstate.js'), g = (o) => ({ ok: true, configured: true, state: 'ok', cycle: '2610', zones: 12, ...o });
+      return [m.xplaneOf(g({ built: '2609' })).built, m.xplaneOf(g({ built: null })).built, Object.hasOwn(m.xplaneOf(g({})), 'built'), Object.hasOwn(m.xplaneOf(g({ built: 2610 })), 'built'), Object.hasOwn(m.xplaneOf(g({ built: '26100' })), 'built'), Object.hasOwn(m.xplaneOf(g({ built: '<b>' })), 'built'),
+        [{ built: '2609' }, { built: '2610' }, { built: null }, { zones: null }, { zones: 12 }, { configured: false }, { state: 'missing' }, { cycle: '' }].map(o => m.xplaneStale(m.xplaneOf(g(o)))), m.xplaneStale(null)] }""")
+    c.eq(m, ['2609', None, False, False, False, False, [True, False, True, True, False, False, False, False], False], 'xplaneOf keeps `built` only in its valid shape; xplaneStale: built ≠ cycle (null too), else zones null; never for a folder that is not ok, not configured or with no cycle', what='model')
+    _t, cur, prev, _n = _cycles()
+    fetched = _view('done', step='Terminé', result={'fetched': ['fr'], 'unchanged': ['ca', 'es', 'gb', 'us'], 'failed': [], 'manual': []})
+    built = _view('done', step='Terminé', jid='j2', zones={'fr': _zs('built', 4, 4, commit='abc1234')}, result={'built': ['fr'], 'failed': [], 'commits': [{'zone': 'fr', 'commit': 'abc1234'}], 'cycle': cur.isoformat(), 'current': cur.isoformat(), 'stale': False, 'blocking': []})
+    st = _launcher(c, [fetched], personal={'certified': True, 'at': '2026-11-10T09:00:00Z'}, verbs=_VERBS + _XP_BUILD_VERBS)
+    st['status'] = _FR_STALE()
+    st['xplane'] = {**_XP_OK, 'built': '2609'}
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _all_open(c)
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the state of the five zones, read at the opening')
+    c.until("!!document.querySelector('[data-xplane]')", timeout=10000, what='the line of the X-Plane folder')
+    # ---- 1. a real update (France to rebuild): the reading comes AFTER the build of the base, once
+    c.tap('[data-build] [data-verb=update]')
+    _ask_text(c)
+    st['views'] = [built]
+    st['i'] = 0
+    st['start'] = (200, {'job': 'j2'})
+    st['status'] = _ALL_OK()
+    c.tap('.f-modal [data-ok]')
+    _xp_wait(c, lambda: len(_XP_JOBS(st)) == 1, 'the reading is asked at the end of the update (built 2609, cycle 2610)')
+    _xp_line_is(c, _xp_net_text(c, 'netDone', 12), 'the line says the network was read')
+    c.eq([[p['set'], p['verb']] for p in st['posts'] if p['verb'] == 'build'], [['base', 'build'], ['xplane', 'build']], 'the build of the base first, then the reading of the network', what='order')
+    c.eq(_XP_JOBS(st)[0]['args'], {}, 'with no argument', what='args')
+    # ---- 2. nothing to rebuild (everything up to date): the rule alone decides, the GET is the launcher's
+    start = "async () => (await import('/modules/data/update.js')).startUpdate()"
+    said = norm(_UT('none', lang).split('{n}')[0])
+    todo = {'configured': True, 'state': 'ok', 'cycle': '2610'}
+
+    def update(xplane, jobs, what, build=None):
+        """One « Mettre à jour » with everything up to date, the launcher saying `xplane` at GET: `jobs` readings of the network must have been asked."""
+        st['status'] = _ALL_OK()
+        st['xplane'] = dict(xplane)
+        st['xplane_build'] = build
+        n = len(_XP_JOBS(st))
+        c.js(start)
+        c.eq(len(_XP_JOBS(st)) - n, jobs, what, what=what[:40])
+    update({**todo, 'zones': 12, 'built': '2609'}, 1, 'built 2609, cycle 2610: asked again')
+    update({**todo, 'zones': 12, 'built': '2610'}, 0, 'built = cycle: not asked')
+    update({**todo, 'zones': 12, 'built': None}, 1, 'built null (the launcher built nothing): asked')
+    update({**todo, 'zones': None}, 1, 'no `built` in the GET, zones null: asked')
+    update({**todo, 'zones': 12}, 0, 'no `built` in the GET, zones known: not asked')
+    update({'configured': True, 'state': 'missing', 'cycle': None, 'zones': None}, 0, 'a folder that is not found: not asked')
+    update({'configured': False, 'state': None, 'cycle': None, 'zones': None}, 0, 'nothing configured: not asked')
+    # ---- 3. the reading fails: said by the line and a notification; the verdict of « Mettre à jour » is the same sentence as before
+    _xp_clear_notes(c)
+    update({**todo, 'zones': 12, 'built': '2609'}, 1, 'built 2609 again: asked, and it fails', build={'ok': False, 'reason': 'missing'})
+    _xp_line_is(c, norm(_trow('missing', lang, after='    netFail: {')), 'the line says why the network was not read', timeout=8000)
+    c.eq([len(_notes_with(c, said)), len(_notes_with(c, norm(_trow('missing', lang, after='    netFail: {'))))], [1, 1], 'the update still says its own sentence (nothing to rebuild), the failure of the reading is one notification of its own', what='verdict')
+    # ---- 4. no personal-use tick: nothing is read, nothing is asked of the launcher about the folder
+    _tap_certify(c)
+    c.until("!document.querySelector('[data-certify]').checked", timeout=6000, what='unticked')
+    gets = st['xplane_gets']
+    update({**todo, 'zones': 12, 'built': '2609'}, 0, 'unticked: not asked')
+    c.eq(st['xplane_gets'], gets, 'and the folder is not even read', what='no GET')
+    c.check_errors()
+
+
+@case('L163', 'Données: SECURITY — the answer of xplane/build is untrusted (Q-0108): every code of the contract has its closed sentence, an unknown one and a hostile body say « refused » or a bounded number, nothing of the launcher on the screen; no verb, no job',
+      'L', tags=('data',), langs4=False, designs=('standard',), screens=False, night=False,
+      rule='Q-0108: the code of a failure from the closed list (not-personal, not-configured, missing, not-xplane, refused, unreadable, too-big, nothing, no-zones), anything else `refused`; the segments the sum of the `airways` of at most 100 zones keyed /^[a-z0-9_-]{2,12}$/, each an integer 0..1e7 (else 0); the cycle four digits or none; never a text of the launcher; no reading when regen/verbs does not list xplane/build; the path nowhere')
+def l163(c):
+    lang = c.lang
+    msgs = []
+    c.page.on('console', lambda m: msgs.append(m.text))
+    F = lambda code: norm(_trow(code, lang, after='    netFail: {'))
+    st = _xp_open(c, verbs=_XP_BUILD_VERBS)
+    c.until("!!document.querySelector('[data-xplane]')", timeout=10000, what='the line of the X-Plane folder')
+    where = lambda: c.js(_XP_WHERE_JS)
+    gone = lambda what: c.ok('Sentinel' not in where() and 'Sentinel' not in ' '.join(msgs) and 'Sentinel' not in ' '.join(c.note_log()) and c.js('window.__pwn === undefined') and not c.count('[data-xplane] img'), what, f'nothing of the launcher or of the path on the screen ({what})')
+
+    def save(result, want, what, note=True):
+        """One « Enregistrer » answered by the fake network reading `result`: the line says `want`; with `note`, one notification says the same sentence."""
+        n = len(_XP_JOBS(st))
+        st['xplane_build'] = result
+        _xp_clear_notes(c)
+        c.page.fill('[data-xplane-path]', _XP_SENT)
+        c.tap('[data-act=xplane-save]')
+        _xp_wait(c, lambda: len(_XP_JOBS(st)) == n + 1, f'the launcher received the job ({what})')
+        _xp_line_is(c, want, what)
+        if note:
+            _xp_note(c, want)
+        gone(what)
+    # ---- every code of the contract, by its closed sentence, in the line AND in a notification
+    for code, key in _XP_CODES:
+        save({'ok': False, 'reason': code}, F(key), code)
+    # ---- a code outside the contract, hostile, huge or missing: « refused »; never a text of the launcher
+    refused = F('refused')
+    save({'ok': False, 'reason': 'weird'}, refused, 'unknown code')
+    save({'ok': False, 'reason': '<img src=x onerror=window.__pwn=1>'}, refused, 'markup as a code')
+    save({'ok': False, 'reason': 'x' * 5000, 'message': _XP_SENT}, refused, 'a long text as a code')
+    save({'ok': False, 'message': _XP_SENT}, refused, 'no code')
+    save({'ok': False, 'reason': 'constructor'}, refused, 'a name of the prototype')
+    st['start'] = (500, {'ok': False, 'message': _XP_SENT})
+    save(None, refused, 'the launcher refuses the start (500)')
+    st['start'] = (200, {'job': 'j1'})
+    # ---- a hostile success: the segments are the bounded sum, the cycle four digits or none
+    counts = {'de': {'points': 1, 'airways': 10 ** 12}, 'at': {'points': 1, 'airways': -5}, 'fr': {'airways': 4}, '__proto__': {'airways': 2}, 'Bad Key': {'airways': 50}, 'x': {'airways': 50}, 'ab': 'text', 'cd': None, 'ef': {'airways': 1.5}}
+    counts.update({f'k{i:03d}': {'airways': 1} for i in range(120)})   # the first 100 keys count: 9 above (4 + 2 valid), then 91 of 1
+    save({'ok': True, 'zones': 130, 'cycle': '2611', 'counts': counts, 'message': _XP_SENT}, _xp_net_text(c, 'netDone', 97, '2611'), 'hostile counts', note=False)
+    save({'ok': True, 'zones': 1, 'cycle': '<b>9</b>', 'counts': {'de': {'airways': 1}}}, _xp_net_text(c, 'netDoneNoCycle', 1), 'a cycle that is not four digits, one segment', note=False)
+    save({'ok': True, 'cycle': None, 'counts': 'x'}, _xp_net_text(c, 'netDoneNoCycle', 0), 'counts that are not a table', note=False)
+    c.eq(c.note_log(), [], 'a success says nothing in a notification', what='no note on success')
+    # ---- the model, on fixtures
+    r = c.js("""async () => { const m = await import('/modules/data/model_setstate.js'), t = (s, r) => m.xplaneBuildOf({ state: s, result: r });
+      return [m.xplaneBuildOf(null), m.xplaneBuildOf({ detached: true }), m.xplaneBuildOf({ cancelled: true }), m.xplaneBuildOf('x'), m.xplaneBuildOf({ ok: false, status: 403, refused: true }), t('error', { ok: false, reason: 'too-big' }), t('done', { ok: false, reason: 'missing' }), t('done', null), t('error', { ok: true }),
+        t('done', { ok: true, cycle: '2610', counts: { de: { airways: 7 }, at: { airways: 5 } } }), t('done', { ok: true, counts: { de: { airways: 1e7 }, at: { airways: 1e7 + 1 } } }), t('done', { ok: true, counts: Object.create({ de: { airways: 9 } }) }),
+        t('done', { ok: true, counts: { de: Object.create({ airways: 9 }) } }), m.xplaneBuildReason('no-zones'), m.xplaneBuildReason('toString'), m.xplaneBuildReason(5)] }""")
+    c.eq(r, [None, None, None, None, {'ok': False, 'reason': 'refused'}, {'ok': False, 'reason': 'too-big'}, {'ok': False, 'reason': 'missing'}, {'ok': False, 'reason': 'refused'}, {'ok': False, 'reason': 'refused'},
+             {'ok': True, 'cycle': '2610', 'segs': 12}, {'ok': True, 'cycle': '', 'segs': 10000000}, {'ok': True, 'cycle': '', 'segs': 0}, {'ok': True, 'cycle': '', 'segs': 0}, 'no-zones', 'refused', 'refused'],
+         'xplaneBuildOf: nothing to say without an answer, a closed code for a failure, a sum bounded per zone, prototype keys never read', what='model')
+    # ---- no verb, no job: a launcher that does not list xplane/build (or an older one) is never asked
+    for verbs in (['base/build'], None, 404):
+        st['verbs'] = verbs
+        c.page.reload()
+        c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
+        c.settle()
+        c.js("document.querySelectorAll('details[data-my-coverage]').forEach(d => { d.open = true })")
+        c.until("!!document.querySelector('[data-xplane-state]')", timeout=10000, what='the line of the folder')
+        n, p0 = len(_XP_JOBS(st)), len(st['xplane_posts'])
+        c.page.fill('[data-xplane-path]', _XP_SENT)
+        c.tap('[data-act=xplane-save]')
+        _xp_wait(c, lambda: len(st['xplane_posts']) == p0 + 1, 'the folder is saved')
+        c.wait(2500)
+        c.eq([len(_XP_JOBS(st)) - n, norm(c.text('[data-xplane-state]'))], [0, norm(_trow('okCycle', lang, after='  xp: {').replace('{c}', '2610'))], f'regen/verbs = {verbs!r}: no reading is asked, the line says only « Enregistré »', what=f'no verb {verbs!r}')
     c.check_errors()
