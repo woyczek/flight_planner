@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 308,
-  "verdicts": 214
+  "tests": 310,
+  "verdicts": 215
  },
  "apps": [
   "pilote",
@@ -4603,59 +4603,40 @@
    },
    "test": "Carte, voies aériennes affichées. Sur une voie à sens unique, le cartouche porte une pointe dans le sens permis, de sa couleur, coupée du corps par un trait blanc ; une voie à double sens n'a pas de pointe. Dézoome : tant que le cartouche est là, la pointe y est aussi (avant, le sens ne venait qu'en zoomant).",
    "since": "2026-11-18",
+   "state": "ok",
+   "delivered": "2026-11-18T10:09:58Z",
+   "at": "2026-11-18T12:11:14Z"
+  },
+  {
+   "id": "SOG-0474",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : « calcul impossible » vers un État dont la base n'a ni point ni voie (la Bosnie, EGGW → LQSA)",
+    "en": "Routes: “computation impossible” towards a State for which the database has neither points nor airways (Bosnia, EGGW → LQSA)",
+    "de": "Routen: „Berechnung unmöglich“ in einen Staat, für den die Datenbank weder Punkte noch Luftstraßen hat (Bosnien, EGGW → LQSA)",
+    "es": "Rutas: «cálculo imposible» hacia un Estado del que la base no tiene puntos ni aerovías (Bosnia, EGGW → LQSA)"
+   },
+   "test": "Après la relance du lanceur : Carburant, un vol de Londres Luton (EGGW) à Sarajevo (LQSA) au FL350, calcul de route. Attendu : plus de « calcul impossible » ; le statut « CONTRÔLE PARTIEL », la route jusqu'au dernier point connu (LATLO) puis un direct vers LQSA, et dans la revue une ligne en clair qui dit que la base n'a pas le réseau de cet État et d'où part le direct. Un vol habituel (par exemple EDDF → LFMN) donne la même route qu'avant.",
+   "since": "2026-11-18",
    "state": "todo",
-   "delivered": "2026-11-18T10:09:58Z"
+   "delivered": "2026-11-18T12:14:45Z"
+  },
+  {
+   "id": "SOG-0475",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : sur un vol long d'Europe, le graphe de route libre prend tout le temps de la phase de tête — « calcul impossible »",
+    "en": "Routes: on a long European flight, the free-route graph uses up the whole lead phase — “computation impossible”",
+    "de": "Routen: Auf einem langen Europaflug verbraucht der Free-Route-Graph die ganze Anfangsphase – „Berechnung unmöglich“",
+    "es": "Rutas: en un vuelo largo por Europa, el grafo de ruta libre agota toda la fase inicial — «cálculo imposible»"
+   },
+   "test": "Après la relance du lanceur : Carburant, un vol de Stockholm Arlanda (ESSA) à Malaga (LEMG), calcul de route. Attendu : une route rendue (plus de « calcul impossible »), en une quinzaine de secondes au plus quand le poste n'est pas chargé.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T12:14:40Z"
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0108",
-   "fiche": "SOG-0474",
-   "app": "pilote",
-   "question": "Route fiable en Europe : 38 États sur 47 n'ont ni point ni voie dans la base. Par où commence-t-on ?",
-   "context": "Mesure d'AeroDB : seuls la France, le Royaume-Uni, l'Espagne, le Portugal, la Suède, l'Islande et l'Irlande ont un réseau ; l'Allemagne a ses voies sans ses points. Un vol vers ou à travers les autres n'a pas de route calculée. Trois voies comparées. Sources officielles ouvertes : un lecteur et un site à autoriser par État, environ un lot chacun — des semaines pour les dix premiers ; l'Allemagne est le cas facile (ses points sont sur le site déjà lu pour ses voies). EAD : écarté — des PDF, « pas la dernière information », et ta règle du 28/10 (un aérodrome à la fois, sur un geste). Repli local X-Plane (tes fichiers Navigraph) : tous les États d'un coup, un seul lot, aucun site de plus ; mais ce n'est pas officiel : étiqueté « X-Plane, personnel, cycle … », gardé sur ce poste, jamais publié, et il faut que tu indiques ton dossier une fois. Aujourd'hui ce repli est éteint par défaut, par ta décision. Tableau des sources d'AeroDB sur vingt États : SEULE l'Allemagne publie un jeu ouvert et réutilisable ; l'Italie et la Suisse sont derrière un compte ou un paiement ; les autres se lisent, mais sous droits réservés — donc une lecture « personnelle, locale, jamais publiée », un lecteur par État.",
-   "options": [
-    "Les deux : le repli local X-Plane tout de suite pour les États sans réseau (étiqueté, jamais publié), et l'officiel État par État ensuite — Allemagne d'abord — qui le remplace à mesure",
-    "L'officiel seulement, État par État (Allemagne, Italie, Suisse, Autriche d'abord) ; pas de X-Plane",
-    "Le repli local X-Plane seulement, pour l'instant",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0109",
-   "fiche": "SOG-0463",
-   "app": "compagnie",
-   "question": "Tiroir ouvert vu par les autres appareils : acceptes-tu que chaque pilote crée un compte (gratuit) pour un canal en direct, ou veux-tu un canal sans aucun compte ?",
-   "context": "Suite de Q-0102 (tu demandais plus d'infos). Tu demandais : coûts, comptes, individuels ou équipes ? Réponse de Sécurisation, voie par voie. TOUTES sont gratuites. (1) Le chemin léger par le dépôt : un petit fichier écrit, relu toutes les quelques secondes ; aucun compte de plus (chaque pilote a déjà son jeton), rien à héberger ; tout pilote qui lit le dépôt verrait le signal (c'est déjà vrai du dépôt) ; délai attendu de quelques secondes, pas encore mesuré : il faut d'abord savoir où passent les 47 secondes du banc. (2) Matrix (serveur public) : CHAQUE PILOTE crée son compte, une fois ; une salle par mission, qui invite ses pilotes (l'équipe, c'est la salle, pas un compte d'équipe) ; rien à héberger ; la règle d'inscription du serveur public n'est pas vérifiée cette année. (3) Nostr : AUCUN compte ; l'application fabrique une paire de clés par pilote sur son appareil ; messages chiffrés pour les seuls pilotes de la mission ; rien à héberger, mais une bibliothèque de chiffrement de plus et plusieurs hôtes à autoriser. (4) Discord, pour mémoire : un robot créé par l'équipe et un petit relais qui garde son jeton (à héberger) ; bon pour prévenir des humains, pas pour relier des appareils.",
-   "options": [
-    "D'abord le chemin léger par le dépôt, mesuré au banc ; un service seulement s'il ne suffit pas",
-    "Matrix : j'accepte que chaque pilote crée un compte gratuit, une salle par mission",
-    "Nostr : aucun compte, chiffré vers les pilotes de la mission (plus lourd à écrire)",
-    "On en reste là : le délai actuel me va, l'écran dit l'écart réel"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0110",
-   "fiche": "SOG-0479",
-   "app": "compagnie",
-   "question": "Atelier : quel nom pour le bouton qui passe une zone du rond au polygone (et retour) ?",
-   "context": "Aujourd'hui, dans la fiche d'une zone (colonne « Lieux ») : « Tracer son contour » / « La rendre ronde » (en anglais « Draw its outline » / « Make it round »). « Tracer » laisse croire qu'on dessine à main levée ; en fait le bouton change le rond en un polygone dont on déplace ensuite les sommets sur la carte. Le même couple de mots servira à l'outil Zone de la carte (SOG-0471). Proposé par Création ; les traductions suivent le même modèle.",
-   "options": [
-    "« Changer en polygone » / « Changer en cercle » (un verbe : le bouton fait une chose)",
-    "« Zone en polygone » / « Zone ronde »",
-    "« Forme : polygone » / « Forme : cercle »",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",

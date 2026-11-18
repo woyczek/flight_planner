@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0bda603",
+  "organisation": "4850582",
   "fiches": 481,
   "untranslated": 0,
   "priorities": 374,
@@ -2312,8 +2312,7 @@
      "fr": "Carte : le sens d'une voie aérienne paraît en même temps que son cartouche ; une petite flèche séparée du cartouche par un liseré blanc",
      "en": "Map: an airway's direction shows together with its label; a small arrow set apart from the label by a white edge",
      "de": "Karte: die Richtung einer Luftstraße erscheint zugleich mit ihrem Schild; ein kleiner Pfeil, durch einen weißen Rand vom Schild getrennt",
-     "es": "Mapa: el sentido de una aerovía aparece a la vez que su etiqueta; una flecha pequeña separada de la etiqueta por un filete blanco",
-     "test": true
+     "es": "Mapa: el sentido de una aerovía aparece a la vez que su etiqueta; una flecha pequeña separada de la etiqueta por un filete blanco"
     }
    ]
   },
@@ -3034,20 +3033,22 @@
     {
      "id": "SOG-0474",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : « calcul impossible » vers un État dont la base n'a ni point ni voie (la Bosnie, EGGW → LQSA)",
      "en": "Routes: “computation impossible” towards a State for which the database has neither points nor airways (Bosnia, EGGW → LQSA)",
      "de": "Routen: „Berechnung unmöglich“ in einen Staat, für den die Datenbank weder Punkte noch Luftstraßen hat (Bosnien, EGGW → LQSA)",
-     "es": "Rutas: «cálculo imposible» hacia un Estado del que la base no tiene puntos ni aerovías (Bosnia, EGGW → LQSA)"
+     "es": "Rutas: «cálculo imposible» hacia un Estado del que la base no tiene puntos ni aerovías (Bosnia, EGGW → LQSA)",
+     "test": true
     },
     {
      "id": "SOG-0475",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : sur un vol long d'Europe, le graphe de route libre prend tout le temps de la phase de tête — « calcul impossible »",
      "en": "Routes: on a long European flight, the free-route graph uses up the whole lead phase — “computation impossible”",
      "de": "Routen: Auf einem langen Europaflug verbraucht der Free-Route-Graph die ganze Anfangsphase – „Berechnung unmöglich“",
-     "es": "Rutas: en un vuelo largo por Europa, el grafo de ruta libre agota toda la fase inicial — «cálculo imposible»"
+     "es": "Rutas: en un vuelo largo por Europa, el grafo de ruta libre agota toda la fase inicial — «cálculo imposible»",
+     "test": true
     },
     {
      "id": "SOG-0476",
