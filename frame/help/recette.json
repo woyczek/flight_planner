@@ -4666,6 +4666,22 @@
  ],
  "decisions": [
   {
+   "id": "Q-0114",
+   "fiche": "SOG-0474",
+   "app": "pilote",
+   "question": "Données de la DFS (Allemagne) : la licence est contradictoire. Les garde-t-on dans le dépôt de données, ou sur ce poste seulement ?",
+   "context": "La page des jeux de données de la DFS dit CC BY 4.0 (réutilisable avec crédit, même commercial). Mais les métadonnées des fichiers eux-mêmes portent « tous droits réservés ». Les voies (ED Routes) sont déjà rangées dans le dossier synchronisé des données (data/sia/zones/de/) depuis le 28/10, et les points, balises et espaces sont prêts sans être poussés. Sécurisation recommande, tant que ce n'est pas tranché, de traiter la DFS comme Eurocontrol et X-Plane : lue et gardée sur ce poste seulement, hors du dossier synchronisé, jamais transmise aux autres pilotes. Écrire à la DFS pour une confirmation écrite reste possible (c'est toi qui écrirais).",
+   "options": [
+    "Sur ce poste seulement tant que la DFS n'a pas confirmé par écrit (recommandé par Sécurisation) ; les voies déjà rangées passent aussi en local",
+    "Je considère la page CC BY 4.0 comme suffisante : dépôt de données, avec le crédit DFS",
+    "J'écris à la DFS ; d'ici là, sur ce poste seulement",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
