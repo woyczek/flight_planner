@@ -9861,3 +9861,53 @@ def a246(c):
     c.wait(6500)
     c.eq(c.count('.f-modal'), 0, 'a paired device is never asked: the answer belongs to the workstation', what='lan')
     c.check_errors()
+
+
+@case('A265', 'Settings on a phone: ticking a box of the Usages card does not move what was touched — the page keeps its place, the focus stays on the box, and the second tap, aimed at the coordinates seen before the first, reaches the right box (SOG-0473)',
+      'A', designs=('standard',), screens=False, phone=True, night=False, tags=('settings',),
+      rule='SOG-0473: the redraw of a setting changes the height of the sentence « Seul sur cet appareil » / « Aucun moyen d\'échanger » higher in the SAME card; the card being cut by the top edge of the screen, keepPlace (it compensates only blocks entirely above) did not compensate: at 320 px the box moved by 22 px, the keyboard focus was lost and the next tap hit the wrong box. SogSettingsKit.holdTouched / restoreTouched note the control at the touch and put the page back after the redraw (browser anchoring left on)')
+def a265(c):
+    c.page.add_init_script("""(() => { const st = document.createElement('style'); st.textContent = 'html, body { scroll-behavior: auto !important }';
+      document.addEventListener('DOMContentLoaded', () => document.head.appendChild(st)) })()""")
+    c.open('settings', docs=LEVEL3 + [['device/usages.json', {'devices': False, 'users': False, 'single': True}, 'cache']])
+    c.until("!!document.querySelector('[data-card=\"usages\"] [data-u=devices]')", timeout=20000, what='the Usages card')
+    c.js("document.querySelector('details[data-group=data]')?.setAttribute('open', '')")
+    c.page.set_viewport_size({'width': 320, 'height': c.height})
+    c.wait(500)
+    # the card cut by the top edge of the screen: its top at -70 px, the boxes still in view
+    c.js("() => { const r = document.querySelector('[data-card=\"usages\"]').getBoundingClientRect(); window.scrollBy(0, r.top + 70) }")
+    c.wait(400)
+    pos = c.js("""() => { const r = e => { const b = document.querySelector(e).getBoundingClientRect(); return { x: Math.round(b.left + b.width / 2), y: Math.round(b.top + b.height / 2), top: b.top } };
+      return { card: document.querySelector('[data-card="usages"]').getBoundingClientRect().top, devices: r('[data-u=devices]'), users: r('[data-u=users]'), y: window.scrollY, h: innerHeight,
+        how: document.querySelector('[data-card="usages"] p b').textContent } }""")
+    c.ok(abs(pos['card'] + 70) <= 2, round(pos['card']), -70, 'the page could be scrolled so that the top of the card is at -70 px (the card is cut by the top edge)')
+    c.ok(0 < pos['devices']['y'] < pos['h'] and 0 < pos['users']['y'] < pos['h'], [pos['devices']['y'], pos['users']['y'], pos['h']], 'both boxes in the window',
+         'the boxes of the card are in view before the touch')
+    # the first touch: the box « devices »
+    c.tap('[data-u=devices]')
+    c.until("(b) => document.querySelector('[data-card=\"usages\"] p b').textContent !== b", arg=pos['how'], timeout=8000, what='the sentence of the card changed (the redraw happened)')
+    c.js("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))))")
+    c.wait(300)
+    after = c.js("""() => { const e = document.querySelector('[data-u=devices]'); return { top: e.getBoundingClientRect().top, y: window.scrollY, checked: e.checked,
+      focus: document.activeElement === e, active: document.activeElement ? document.activeElement.tagName : null } }""")
+    c.ok(abs(after['top'] - pos['devices']['top']) <= 1, round(after['top'] - pos['devices']['top'], 1), 0,
+         'the box touched stays where it was after the redraw (the page was put back by the difference; it was 22 px lower before the fix)')
+    c.ok(after['checked'], after['checked'], True, 'the box « devices » is ticked')
+    c.ok(after['focus'], after['active'], 'the box « devices »', 'the keyboard focus stays on the box touched (it was on BODY before the fix)')
+    # the second touch, aimed at the coordinates seen BEFORE the first: it must reach the box « users »
+    c.page.mouse.click(pos['users']['x'], pos['users']['y'])
+    saved = None
+    for _ in range(40):
+        saved = c.doc('device/usages.json')
+        if saved and saved.get('users'):
+            break
+        c.wait(150)
+    c.ok(bool(saved) and saved.get('users') is True and saved.get('devices') is True, saved, {'devices': True, 'users': True},
+         'the second touch reached the box « users » (device/usages.json says both)')
+    c.js("() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r))))")
+    c.wait(300)
+    last = c.js("() => ({ users: document.querySelector('[data-u=users]').checked, devices: document.querySelector('[data-u=devices]').checked, top: document.querySelector('[data-u=users]').getBoundingClientRect().top })")
+    c.ok(last['users'] and last['devices'], last, {'users': True, 'devices': True}, 'after the redraw the two boxes are ticked')
+    c.ok(abs(last['top'] - pos['users']['top']) <= 1, round(last['top'] - pos['users']['top'], 1), 0, 'the box « users » did not move either')
+    c.shot('A265_320.png')   # the card cut by the top edge, both boxes ticked, the touched box at the place it was
+    c.check_errors()

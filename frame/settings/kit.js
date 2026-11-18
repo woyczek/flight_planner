@@ -181,6 +181,90 @@
   const teReady = import(new URL('frame/lib/token_expiry.js', ROOT).href).then(m => TE = m).catch(() => null),
     recordOwn = who => void TE?.recordOwn(who?.expiresAt);
 
+  // le réglage touché garde sa place (SOG-0473) : le redessin d'un réglage change la hauteur d'un texte plus haut dans la MÊME carte ; `keepPlace` (settings.js) ne compense que les blocs entièrement au-dessus du bord haut
+  // de l'écran, et un nœud remplacé n'y a pas d'historique. Au toucher, la place et l'identité du contrôle sont notées ; après chaque redessin, la page est replacée et le foyer rendu.
+  const CONTROL = 'input,select,textarea,button,summary', // ce qu'un doigt ou une touche actionne
+    TOUCH_KEY = /^(?: |Enter|Arrow(?:Up|Down|Left|Right))$/; // les touches qui actionnent un contrôle
+
+  /** Attributs qui identifient un contrôle d'un dessin à l'autre : tous ses `data-*`, plus `type`, `name` et `value` pour un champ `input` (valeurs d'attribut, comparées exactement). */
+  function attrsOf(el) {
+    const a = {};
+    for (const n of el.getAttributeNames())
+      if (n.startsWith('data-') || (el.tagName === 'INPUT' && (n === 'type' || n === 'name' || n === 'value'))) a[n] = el.getAttribute(n);
+    return a;
+  }
+
+  /** Signature d'un contrôle : { card, tag, attrs } ; `card` est l'identifiant de sa carte (data-card), à défaut celui de son pli (data-group), à défaut ''. */
+  function sigOf(el) {
+    return {
+      card: el.closest('[data-card]')?.dataset.card || el.closest('details.f-group')?.dataset.group || '',
+      tag: el.tagName.toLowerCase(),
+      attrs: attrsOf(el)
+    };
+  }
+
+  /** Les deux listes d'attributs sont-elles identiques (mêmes noms, mêmes valeurs) ? */
+  function sameAttrs(a, b) {
+    const ka = Object.keys(a);
+    return ka.length === Object.keys(b).length && ka.every(k => Object.prototype.hasOwnProperty.call(b, k) && a[k] === b[k]);
+  }
+
+  /** Retrouve dans le dessin courant le contrôle de signature `sig` : le premier élément de ce `tag` aux attributs identiques, dans sa carte (ou son pli, ou la vue). Aucun sélecteur construit : tout est comparé ici. */
+  function findBySig(view, sig) {
+    let scope = view;
+    if (sig.card) {
+      scope = [...view.querySelectorAll('[data-card]')].find(e => e.dataset.card === sig.card) || [...view.querySelectorAll(
+        'details.f-group')].find(e => e.dataset.group === sig.card) || view;
+    }
+    return [...scope.getElementsByTagName(sig.tag)].find(e => sameAttrs(attrsOf(e), sig.attrs)) || null;
+  }
+
+  /** Pose, une fois par vue, les écouteurs qui notent le contrôle touché AVANT que son gestionnaire ne s'exécute (capture) : pointeur ou touche (Espace, Entrée, flèches) sur un contrôle visible dans la fenêtre → `view.__touched` { sig, top, focus, at } ;
+   *  toute autre cible, ou un défilement de l'utilisateur (molette, glissement du doigt), l'efface. Idempotent par vue. */
+  function holdTouched(view) {
+    if (view.__holdTouched) return;
+    view.__holdTouched = true;
+    /** Note le contrôle `el` (ou rien) comme le dernier touché. */
+    const note = el => {
+      if (!el || !(el instanceof Element)) return void(view.__touched = null);
+      const top = el.getBoundingClientRect().top;
+      view.__touched = top >= 0 && top <= innerHeight ? {
+        sig: sigOf(el),
+        top,
+        focus: true,
+        at: Date.now()
+      } : null;
+    };
+    /** Le contrôle visé par un évènement : le contrôle sous la cible, ou celui d'une étiquette (`label.control`). */
+    const controlOf = e => {
+      const t = e.target instanceof Element ? e.target : null;
+      return t?.closest(CONTROL) || t?.closest('label')?.control || null;
+    };
+    view.addEventListener('pointerdown', e => note(controlOf(e)), true);
+    view.addEventListener('keydown', e => note(TOUCH_KEY.test(e.key) ? controlOf(e) : null), true);
+    for (const type of ['wheel', 'touchmove']) view.addEventListener(type, () => void(view.__touched = null), {
+      capture: true,
+      passive: true
+    });
+  }
+
+  /** À appeler APRÈS chaque redessin : si un contrôle a été touché il y a moins de 4 s, la page est replacée pour qu'il reste là où il était, et le foyer lui est rendu s'il l'avait. Deux images d'attente, pour passer
+   *  après les rappels du ResizeObserver de `keepPlace` (sinon la même différence serait compensée deux fois). La note est gardée : un second redessin tardif (lecture du dépôt distant) restaure aussi. */
+  function restoreTouched(view) {
+    const touched = view.__touched;
+    if (!touched || Date.now() - touched.at >= 4000) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (view.__touched !== touched) return; // l'utilisateur a défilé ou touché ailleurs entre-temps
+      const el = findBySig(view, touched.sig);
+      if (!el || !el.isConnected) return;
+      const d = el.getBoundingClientRect().top - touched.top;
+      if (Math.abs(d) >= 1) scrollBy(0, d);
+      if (touched.focus && el !== document.activeElement) el.focus({
+        preventScroll: true
+      });
+    }));
+  }
+
   window.SogSettingsKit = {
     teReady,
     recordOwn,
@@ -201,6 +285,8 @@
     howtoHtml,
     link,
     fill,
-    tokenWarnings
+    tokenWarnings,
+    holdTouched,
+    restoreTouched
   };
 })();

@@ -864,3 +864,15 @@ Read-only survey of the workstation's `data/` (E:\DEFA\data, shared by E:\DEFA a
 - **Writes only when the value changes** (V3 Frame's note, 15 Nov): `paintSync` (`access.js`) rewrote `dl.innerHTML` and `SogSyncSummary.paint` (`sync_summary.js`) rewrote its head, queue, timings and pushed boxes at EVERY status
   announced, even with identical HTML — a field being typed in these cards would be replaced, a fold opened would close, the card could blink. Each now writes only when its HTML changes (`put(el, html)` keeps the last HTML written
   in `el.__html`). Case A244 (the card's lines and boxes are the SAME nodes after the state is announced three times; red before: 11 nodes replaced).
+
+## SOG-0473, the setting that was just touched keeps its place and its focus (18 Nov 2026)
+
+- Measured at 320 px: ticking « devices » in the Usages card rewrites `device/usages.json`, reloads and redraws the screen; the sentence « Seul sur cet appareil » becomes « Aucun moyen d'échanger… » (longer) HIGHER in the same card. The card being cut by the top
+  edge of the screen (top at -70 px), the box moved from top 81 to top 103, `scrollY` unchanged, and the keyboard focus was lost (`document.activeElement` = BODY): the second tap reached the wrong box.
+- Cause: `keepPlace` (SOG-0342) compensates only the blocks ENTIRELY above the top edge of the screen; a block cut by that edge is not compensated, and a node replaced by `reconcile` / `merge` has no entry in its WeakMap, so a replaced block above never is either.
+- **Rule**: the redraw of a setting never moves what the user has just touched — the page keeps its position, the focus stays on the control.
+- Where: `kit.js`, `holdTouched(view)` (capture listeners on the view: `pointerdown`, and `keydown` for Space, Enter and the arrows, note the control — or the `label.control` — with its signature { card, tag, `data-*` + type / name / value }, its top and the time; `wheel`
+  and `touchmove` forget it) and `restoreTouched(view)` (after each redraw, within 4 s: two frames later — after the `ResizeObserver` of `keepPlace`, else the difference would be compensated twice — the control is found again by its signature, the page is scrolled by the
+  difference of top and the focus is given back with `preventScroll`). Both are called by `render` of `settings.js` right after `keepPlace`; nothing in `actions.js`. The note is kept, so a late second redraw (the remote read arriving) restores too.
+- Case A265 (phone, 320 px, the card at -70 px, browser anchoring left ON: the fix does not depend on it): the box touched moves by 1 px at most, keeps the focus, and a second tap aimed at the coordinates seen before the first reaches « users ».
+

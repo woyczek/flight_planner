@@ -993,6 +993,8 @@
     });
     performance.mark?.('sog-settings-first');
     keepPlace(view); // rien ne bouge sous le doigt quand un bloc au-dessus change de hauteur (SOG-0342)
+    SogSettingsKit.holdTouched(view); // le réglage que l'on vient de toucher garde sa place et son foyer au redessin (SOG-0473)
+    SogSettingsKit.restoreTouched(view);
 
     /** Carte de l'écran par son nom (data-card). */
     const card = k => view.querySelector(`[data-card="${k}"]`);
