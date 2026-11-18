@@ -1631,6 +1631,17 @@
     ]);
   same('pilotView, le deuxième ouvert : sa zone, la cible et le rendez-vous de sa suite de route ; le troisième n\'est pas rendu',
     seenOf(pilotView(glacier, ['B', 'C'])), [true, 'PT1 PT2 RDV-1 TARGET ZONE-1 ZONE-2', 'ZONE-1 ZONE-2', 'RDV-1', 'PT1 PT2', 'B C']);
+  // SOG-0459 : le cheminement du profil (vertical_profile.route) ne nomme pas un lieu d'un tiroir fermé ; le jeton revient avec le tiroir ouvert
+  const glacierProfile = readMission({
+    ...glacierDoc,
+    vertical_profile: {
+      route: 'ORIGIN PT1 PT2 FL050 ZONE-1 DESTINATION'
+    }
+  });
+  same('pilotView, le cheminement du profil : un jeton qui nomme un lieu d\'un tiroir fermé (PT2, ZONE-1) n\'y est plus, le point visible et le niveau restent ; le tiroir ouvert, ils reviennent',
+    [pilotView(glacierProfile, []).profileRoute, pilotView(glacierProfile, ['B']).profileRoute, glacierProfile.profileRoute], [
+      'ORIGIN PT1 FL050 DESTINATION', 'ORIGIN PT1 PT2 FL050 ZONE-1 DESTINATION', 'ORIGIN PT1 PT2 FL050 ZONE-1 DESTINATION'
+    ]);
   same('pilotView, un tiroir fermé ne laisse rien (SOG-0459) : ni talon, ni compte ; drawersRefused vaut 0',
     [pilotView(glacier, []).drawers, pilotView(glacier, []).pilot, pilotView(glacier, []).drawersRefused], [
       [], {

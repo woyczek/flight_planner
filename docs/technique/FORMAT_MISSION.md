@@ -160,6 +160,12 @@ reader: `pilotView(mission, opened, { mine = true })` returns the mission read, 
   centre of one of its maps) or by a drawer that is OPEN (its zone, the point of its key, its required stops, its onward route);
 - the passage zone of a closed drawer is also kept when the file writes **`zone_shown: true`** (the boolean; absent, « true » as a
   text, 1 or false: hidden) — kept in `zones` as an ordinary zone, nothing tying it to the drawer;
+- the route text of the vertical profile (`vertical_profile.route`, from which the Map draws its route tokens) and its resolved points
+  (`vertical_profile.route_points`) are read by `readMission` as `profileRoute` (a text of 2 000 signs at most) and `profilePoints`
+  (`[{ id, lat, lon }]`, 200 at most), and **filtered by `pilotView`**: a token (cut at « / », compared as an identifier) or a point
+  that names a place the view does not keep — a place only a closed drawer cites, or its name — is not there; a level, a key word,
+  `ORIGIN` and `DESTINATION` stay; with the drawer open, the token comes back. A screen that draws the route reads these two fields
+  of the view, never `vertical_profile` of the document;
 - `opened` is the letters of the open drawers of MY mission, a bounded input: only the letters of `DRAWER_IDS` count; `mine: false`
   (a mission one browses) gives the visible part alone, whatever `opened` says; **`mine` is read strictly** (the Security session,
   18 Nov): without options, or without `mine`, the mission is mine — the default —, but a `mine` that is not exactly `true` (the text

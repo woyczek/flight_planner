@@ -7053,6 +7053,7 @@ _PV_NOTHING_JS = """async () => { const MS = await import('/frame/lib/mission.js
     zones: [{ id: 'ZONE-7', name: 'Ravin secret', centre: { lat: 44.53, lon: 1.63 }, radius_km: 2 }],
     objects: [{ id: 'OBJ-9', kind: 'person', name: 'Speleo perdu', lat: 44.54, lon: 1.64, detection_range_nm: 1 }],
     route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
+    vertical_profile: { route: 'ORIGIN PT1 PT8, RDV-3 FL050 ZONE-7/x CLIMB DESTINATION', route_points: [{ name: 'PT1', lat: 44.8, lon: 1.2 }, { name: 'PT8', lat: 44.51, lon: 1.61 }] },
     phases: [{ id: 'B', title: 'Tiroir ravin', trigger: 'Mot de clef ravin', trigger_zone: 'ZONE-7', fallback_delay_min: 30, message: 'Message ravin', brief: 'Brief ravin', route_order: ['PT8'] },
       { id: 'C', title: 'Tiroir speleo', trigger: 'Mot de clef speleo', trigger_object: 'OBJ-9', fallback_delay_min: 60, route_order: ['RDV-3'] },
       { id: 'D', title: 'Tiroir retour', trigger_condition: { kind: 'arrival', point: 'DESTINATION', required_points: ['PT8'] } }] };
@@ -7071,8 +7072,14 @@ _PV_NOTHING_JS = """async () => { const MS = await import('/frame/lib/mission.js
   for (const x of [null, 'x', 7, [], {}, { drawers: 'x' }, { drawers: [null, 7, 'B', {}], points: 'x', routeOrder: {}, maps: 'x', zones: 7, rendezvous: 'x', turns: null },
     { drawers: [{ id: 'B', key: 'x', route: 'x' }, { id: 'C', key: { kind: 'zone', shown: true, zoneId: {} } }] }])
     for (const o of [[], ['B'], null, 'B', [{}, null, 7]]) try { MS.pilotView(x, o, x) } catch (e) { threw += String(e) }
+  // the route text of the vertical profile: a token that names a place the view does not keep leaves it; a level, a key word, ORIGIN stay
+  const prof = v => [v.profileRoute ?? '', (v.profilePoints || []).map(p => p.id).join(' ')], pw = (...a) => prof(MS.pilotView(m, ...a));
+  const hostile = [7, { route: {} }, { route: 'PT8 '.repeat(5000) }, { route: 'PT8', route_points: 'x' }, { route: ['PT8'], route_points: [null, 7, { name: {} }] }]
+    .map(vp => { try { const v = MS.pilotView(MS.readMission({ ...doc, vertical_profile: vp }), []); return [typeof (v.profileRoute ?? ''), (v.profileRoute ?? '').length <= 2000, (v.profileRoute ?? '').includes('PT8'), (v.profilePoints || []).length] } catch (e) { threw += String(e); return null } });
   const one = MS.pilotView(m, ['C']);
-  return { none: [none.drawers, none.drawersRefused, none.pilot, Object.keys(none.pilot).sort(), found(none), none.zones.length, none.rendezvous.length, none.turns.map(t => t.id)],
+  return { profile: { none: pw([]), c: pw(['C']), b: pw(['B']), notMine: pw(['B', 'C'], { mine: false }), strict: pw(['B'], { mine: 'true' }),
+    whole: [m.profileRoute ?? '', (m.profilePoints || []).length], hostile },
+    none: [none.drawers, none.drawersRefused, none.pilot, Object.keys(none.pilot).sort(), found(none), none.zones.length, none.rendezvous.length, none.turns.map(t => t.id)],
     one: [one.drawers.map(d => [d.id, d.rank, d.title]), found(one).filter(w => !['Tiroir speleo', 'Mot de clef speleo', '"trigger"', '"rank"', 'OBJ-9', 'RDV-3', 'Equipe cachee', '44.52', '44.54', 'Speleo perdu'].includes(w))],
     zone: [undefined, true, 'true', 1, 'oui', false].map(zoneAs), refused: [refused.drawersRefused, rv.drawersRefused, rv.drawers, J(rv).includes('Hors liste')],
     mines, threw, untouched: J(m) === before } }"""
@@ -7098,6 +7105,20 @@ def n113(c):
     c.eq(r['zone'], [['', 0, False], ['ZONE-7', 0, False], ['', 0, False], ['', 0, False], ['', 0, False], ['', 0, False]],
          'the passage zone of a closed drawer: hidden without zone_shown; shown with zone_shown: true (the boolean), as an ordinary zone, nothing tying it to the drawer; '
          'hidden with « true » as a text, 1, « oui », false', what='zone_shown')
+    p = r['profile']
+    c.eq([p['none'], p['c'], p['b']],
+         [['ORIGIN PT1 FL050 CLIMB DESTINATION', 'PT1'], ['ORIGIN PT1 RDV-3 FL050 CLIMB DESTINATION', 'PT1'],
+          ['ORIGIN PT1 PT8 FL050 ZONE-7/x CLIMB DESTINATION', 'PT1 PT8']],
+         'the route text of the vertical profile (and its resolved points): in the view of a mission with no drawer open, a token that names a place of a closed drawer '
+         '(PT8, RDV-3, ZONE-7, even cut at « / ») is gone, a visible place (PT1), a level, a key word and ORIGIN / DESTINATION stay; with drawer B open its PT8 and its zone '
+         'come back (RDV-3 stays hidden: drawer C is closed); drawer C open brings RDV-3 back only', what='profile route')
+    c.eq([p['notMine'], p['strict'], p['whole']],
+         [['ORIGIN PT1 FL050 CLIMB DESTINATION', 'PT1'], ['ORIGIN PT1 FL050 CLIMB DESTINATION', 'PT1'],
+          ['ORIGIN PT1 PT8, RDV-3 FL050 ZONE-7/x CLIMB DESTINATION', 2]],
+         'a `mine` that is not strictly true: the profile route of the visible part alone; the mission read (readMission) keeps the whole text and both points',
+         what='profile route, mine and the whole')
+    c.eq(p['hostile'], [['string', True, False, 0]] * 5, 'hostile vertical_profile (a number, a route that is an object, 20 000 signs, a list, bad points): no exception, a bounded text, '
+         'no hidden word', what='profile hostile')
     c.eq(r['refused'], [1, 0, [], False], 'a mission whose only part is refused: the reader counts it, the view does not say it (0), and returns nothing of it',
          what='refused parts')
     c.eq(r['mines'], [[0, 0, False]] * 7, 'a `mine` that is not strictly true (false, « true », 1, null) or options that are not an object: the visible part alone, '

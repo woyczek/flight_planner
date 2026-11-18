@@ -65,7 +65,10 @@
 //     DRAWER_IDS comptent) ; `mine: false` (une mission qu'on feuillette) : la partie visible seule — et de même pour tout `mine` qui
 //     n'est pas exactement `true`, ou des options illisibles (échec fermé). Une mission SANS tiroir est rendue telle quelle (ses
 //     parties écartées ne sont pas comptées) ; une mission dont tous les tiroirs sont fermés a `drawers: []`. Ajoute
-//     `pilot: { mine, opened }` — aucun compte de ce qui est caché. Pour AFFICHER seulement : le suivi des clés en vol et l'atelier
+//     `pilot: { mine, opened }` — aucun compte de ce qui est caché. `profileRoute` (le texte `vertical_profile.route`, dont la Carte tire
+//     ses jetons) et `profilePoints` ([{ id, lat, lon }], `route_points`) : readMission les rend tels qu'écrits (bornés) ; la vue en retire
+//     tout jeton ou point qui nomme un lieu qu'elle ne garde pas (SOG-0459) — les autres jetons (niveau, ORIGIN…) restent, et le jeton
+//     revient avec le tiroir ouvert. Pour AFFICHER seulement : le suivi des clés en vol et l'atelier
 //     lisent la mission entière (readMission). null sans mission.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points, depAt, arrAt }, aircraft: { type, registration }, levelFt, speedKt, mission,
 //     category } (le vol que Carburant pose ; § 4 de la SPEC) ; null sans mission.
@@ -275,6 +278,8 @@ const positive = (v, hi) => {
 const plain = v => v && typeof v === 'object' && !Array.isArray(v) ? v : null;
 /** Un identifiant écrit (un texte ou un nombre), comme il se compare : sans blancs autour, en capitales ; '' sinon. */
 const idWord = v => typeof v === 'string' || typeof v === 'number' ? clean(v).toUpperCase() : '';
+/** La longueur au plus du texte du cheminement du profil vertical (`profileRoute`). */
+const PROFILE_TEXT = 2000;
 /** Oui ou non écrit dans le fichier (false, 0, « non », « no », « false » : non) ; `dflt` quand rien n'est écrit. */
 const yes = (v, dflt) => v === undefined || v === null || v === '' ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v)
   .trim()));
@@ -718,6 +723,14 @@ export function readMission(doc) {
     holdUnread: unread, // les clés de durée non reconnues (§ 1 ter : rien ne tombe en silence)
     mapLook: mapLook(d.mission_map), // le fond et la couche de la carte de la mission, choisis par l'auteur (SOG-0456)
     routeOrder: (Array.isArray(d.route_order) ? d.route_order : []).map(x => clean(typeof x === 'object' ? x?.id : x)).filter(Boolean),
+    // le cheminement du profil vertical (`vertical_profile.route`, un texte ; `route_points`, les points résolus par le studio), borné :
+    // la Carte en tire ses jetons de route ; pilotView en retire ce qui nomme un lieu que la vue ne garde pas (SOG-0459)
+    profileRoute: typeof plain(d.vertical_profile)?.route === 'string' ? cut(d.vertical_profile.route, PROFILE_TEXT) : '',
+    profilePoints: list(plain(d.vertical_profile)?.route_points, 200).map(p => ({
+      id: idWord(plain(p)?.name ?? plain(p)?.id),
+      lat: latOf(plain(p)?.lat),
+      lon: lonOf(plain(p)?.lon)
+    })).filter(p => p.id && p.lat !== null && p.lon !== null),
     aircraft: ac.map(a => ({
       type: clean(a.type || a.icao).split(' ')[0].toUpperCase(),
       role: clean(a.role),
@@ -929,6 +942,37 @@ export function pilotView(mission, opened = [], options = null) {
     keep = list => (Array.isArray(list) ? list : []).filter(x => plain(x) && x.id && seen(x.id));
   for (const id of Object.keys(all))
     if (id !== '__proto__' && (plain(all[id])?.kind === 'target' ? targetSeen : seen(id))) points[id] = all[id];
+  // le cheminement du profil : un jeton qui nomme un lieu de la mission que la vue ne garde pas (son identifiant, son nom, ou l'identifiant
+  // d'un lieu que seul un tiroir cite) n'y est plus ; les autres jetons (un niveau, un mot clé, ORIGIN…) restent
+  const lost = new Set(),
+    lose = v => {
+      const w = idWord(v);
+      if (w && !cited.has(w)) lost.add(w);
+    };
+  for (const id of Object.keys(all)) {
+    lose(id);
+    lose(plain(all[id])?.name);
+  }
+  for (const x of [...(Array.isArray(m.zones) ? m.zones : []), ...(Array.isArray(m.rendezvous) ? m.rendezvous : []),
+      ...(Array.isArray(m.turns) ? m.turns : [])
+    ].slice(0, 200)) {
+    lose(plain(x)?.id);
+    lose(plain(x)?.name);
+  }
+  for (const d of drawers) {
+    const k = plain(d.key) || {};
+    lose(k.zoneId);
+    lose(k.point);
+    (Array.isArray(k.required) ? k.required : []).slice(0, DRAWER_BOUNDS.required).forEach(lose);
+    (Array.isArray(d.route) ? d.route : []).slice(0, DRAWER_BOUNDS.route).forEach(p => lose(plain(p) ? p.id : p));
+  }
+  ['ORIGIN', 'DESTINATION'].forEach(w => lost.delete(w)); // le départ et l'arrivée ne sont pas des lieux cachés
+  const named = t => ![t, t.split('/')[0]].some(w => lost.has(idWord(w))),
+    profileRoute = (typeof m.profileRoute === 'string' ? m.profileRoute : '').slice(0, PROFILE_TEXT).split(/[\s,;]+/).filter(Boolean).slice(
+      0, 300)
+    .filter(named).join(' '),
+    profilePoints = (Array.isArray(m.profilePoints) ? m.profilePoints : []).slice(0, 200).filter(p => plain(p) && named(String(p.id ??
+      '')));
   const zones = keep(m.zones),
     rendezvous = keep(m.rendezvous),
     turns = keep(m.turns),
@@ -943,6 +987,8 @@ export function pilotView(mission, opened = [], options = null) {
     turns,
     drawers: drawers.filter(d => open.has(d.id)), // les ouverts seuls, entiers ; un fermé ne laisse rien (SOG-0459)
     drawersRefused: 0,
+    profileRoute,
+    profilePoints,
     hasCoords: [m.origin, m.destination, target, ...turns, ...rendezvous, ...zones].some(at),
     pilot: {
       mine,
