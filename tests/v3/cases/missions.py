@@ -10075,8 +10075,7 @@ def n152(c):
         c.eq([c.js(_RULE_VAL, f) for f in ('point', 'object', 'radiusM', 'duration', 'gap', 'speed')], ['PT1', '', '5', '10', '10', '3'],
              f'{width}: the values of the file', what='the values')
         c.eq(c.js(_DW_VAL, 'fallback'), '60', f'{width}: its fallback', what='the fallback')
-        if width == 390:
-            c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}})")
+        c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P13a_{width}_landing.png')
         c.page.fill(f'{_DW} [data-f="rule.duration"]', '99999')
         want = norm(row(c, 'dwTodo_condIncomplete', EDTX_FILE).replace('{what}', row(c, 'dwDuration', EDTX_FILE)))
@@ -10235,8 +10234,7 @@ def n154(c):
         c.eq([c.js(_STEP_VAL, [0, f]) for f in ('kind', 'label', 'object', 'radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax', 'confirmation')],
              ['hover', 'Dépose', 'OBJ-1', '5', '60', '10', '2', '10', '100', 'deploy'], f'{width}: the fields of step 1', what='step 1')
         c.eq([c.js(_DW_VAL, 'emit'), c.js(_DW_VAL, 'emitTo')], ['EV-B', 'ALPHA'], f'{width}: the message sent at the opening', what='the message sent')
-        if width == 390:
-            c.js(f"document.querySelector('{_DW} [data-dwsteps]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
+        c.js(f"document.querySelector('{_DW} [data-dwsteps]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P13a_{width}_sequence.png')
         c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstep][data-n="1"]')
         c.until(f"document.querySelector('{_DW} [data-dwsteps] [data-step=\"2\"]')?.dataset.open === '1'", what='step 2 open')
