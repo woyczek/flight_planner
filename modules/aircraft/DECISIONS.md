@@ -228,3 +228,7 @@
   like Fuel's; `stop()` at unmount. Seven proposals at most; a helipad list code (« LF418 ») is a full code. What is saved does not change:
   the code of a pick, or the free text as typed (an unknown base is never refused). Nothing else changes in the sheet. M52 (red on the
   parent: no list, no name line).
+- **18 Nov 2026 — a shared callsign field over the known fleet** (SOG-0488; the user: « quand on saisit un callsign, on est censé avoir une complétion pour trouver le callsign et le type… en fonction de la flotte connue »; the ergonomist: a common field like the aerodrome field, reused in the workshop and the assignment form; V3 Frame's agreement for the new file of frame/lib).
+  `frame/lib/callsign_field.js` reads the aircraft registry through `ctx.aerodb.aircraft().search` — the same rows as the fleet search, so it knows what the fleet knows — and the list of `suggest_list.js`.
+  A callsign is one line even when several aircraft carry it. Their types and two registrations are shown in the line, and the type is filled only when ONE type is known for it: we never guess between two.
+  Third-party text is checked against the registry's forms (callsign `[A-Z0-9 -]`, twelve signs; type two to eight; registration ten) and escaped; anything else is not shown. Mes appareils is unchanged (its own field). Bench F274.

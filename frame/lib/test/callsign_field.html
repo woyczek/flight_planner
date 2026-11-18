@@ -1,0 +1,191 @@
+<!doctype html>
+<!-- Banc du champ d'indicatif (frame/lib/callsign_field.js, SOG-0488) : sur une page SANS module, avec un registre des aéronefs inventé
+     passé par le contexte — deux lignes d'équipe (indicatif, type), la complétion dès deux caractères par un morceau de l'indicatif,
+     les indicatifs qui commencent par le texte d'abord, sept au plus, le choix écrit l'indicatif et remplit le type (avec son évènement
+     input), un indicatif de deux types ne remplit rien, un texte tiers jamais lu comme du HTML, rien sous deux caractères, l'arrêt.
+     window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>callsign_field — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+  #screen {
+    position: relative
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">callsign_field.js — bench</h1>
+<div id="screen">
+  <div data-row="0"><label>Indicatif <input data-k="edteam" data-f="name" data-i="0" autocomplete="off"></label><label>Type <input data-k="edteam"
+        data-f="type" data-i="0" autocomplete="off"></label></div>
+  <div data-row="1"><label>Indicatif <input data-k="edteam" data-f="name" data-i="1" autocomplete="off"></label><label>Type <input data-k="edteam"
+        data-f="type" data-i="1" autocomplete="off"></label></div>
+  <div data-cssug hidden></div>
+</div>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    createCallsignField
+  } from '../callsign_field.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      got: String(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : `  → ${got}`}`;
+    out.appendChild(l);
+  }
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  // un registre inventé : la forme de aerodb.aircraft().search (frame/aerodb/registry.js) ; aucune globale, tout passe par le contexte
+  const FLEET = [{
+      callsign: 'XCS101',
+      type: 'XT01',
+      registration: 'X-AAAA'
+    }, {
+      callsign: 'XCS102',
+      type: 'XT02',
+      registration: 'X-AAAB'
+    }, {
+      callsign: 'ZZXCS9',
+      type: 'XT03',
+      registration: 'X-AAAC'
+    }, {
+      callsign: 'XCS200',
+      type: 'XT01',
+      registration: 'X-AAAD'
+    }, {
+      callsign: 'XCS200',
+      type: 'XT04',
+      registration: 'X-AAAE'
+    }, {
+      callsign: '<img src=x onerror=alert(1)>',
+      type: 'XT05',
+      registration: 'X-AAAF'
+    }, {
+      callsign: 'XCS300',
+      type: '<b>X</b>',
+      registration: '<i>R</i>'
+    },
+    ...Array.from({
+      length: 9
+    }, (_, i) => ({
+      callsign: `XCM${i}`,
+      type: 'XT09',
+      registration: `X-BBB${i}`
+    }))
+  ];
+  const calls = [];
+  const ctx = {
+    aerodb: {
+      aircraft: async () => ({
+        search: async (q, n) => (calls.push([q, n]), FLEET.filter(x => JSON.stringify(x).toUpperCase().includes(String(q).toUpperCase()
+          .replace(/\s+/g, '')) || /^xc/i.test(q)))
+      })
+    },
+    lang: () => 'fr',
+    t: row => Array.isArray(row) ? row[0] : String(row)
+  };
+  const screen = document.getElementById('screen'),
+    nameOf = i => screen.querySelector(`[data-k=edteam][data-f=name][data-i="${i}"]`),
+    typeIn = i => screen.querySelector(`[data-k=edteam][data-f=type][data-i="${i}"]`),
+    box = () => screen.querySelector('[data-cssug]'),
+    codes = () => [...box().querySelectorAll('[data-callsign]')].map(x => x.dataset.callsign);
+  const F = createCallsignField({
+    ctx,
+    body: () => screen,
+    gone: () => false,
+    owns: el => el?.dataset?.k === 'edteam' && el.dataset.f === 'name',
+    typeOf: el => typeIn(el.dataset.i),
+    idPrefix: 'bn-cs'
+  });
+  // l'écran rend au bloc chaque frappe de ses champs : c'est le contrat
+  screen.addEventListener('input', e => F.onInput(e));
+  screen.addEventListener('click', e => F.onClick(e));
+  let typeEvents = 0;
+  typeIn(0).addEventListener('input', () => typeEvents++);
+  const type = async (i, v) => {
+    nameOf(i).value = v;
+    F.onInput({
+      type: 'input',
+      target: nameOf(i)
+    });
+    await wait(60);
+  };
+  await type(0, 'x');
+  ck('un caractère : rien proposé', box().hidden && codes().length === 0, codes());
+  await type(0, 'xcs');
+  ck('« xcs » : les indicatifs qui commencent par le texte d’abord, puis ceux qui le contiennent', JSON.stringify(codes()) === JSON.stringify(
+    ['XCS101', 'XCS102', 'XCS200', 'XCS300', 'ZZXCS9']), JSON.stringify(codes()));
+  ck('la ligne : le type et l’immatriculation', /XCS101\s*— XT01 · X-AAAA/.test(box().querySelector('[data-callsign="XCS101"]')
+    .textContent), box().querySelector('[data-callsign="XCS101"]').textContent);
+  ck('un indicatif de deux types : une ligne, ses deux types', /XT01 \/ XT04/.test(box().querySelector('[data-callsign="XCS200"]')
+    .textContent), box().querySelector('[data-callsign="XCS200"]').textContent);
+  ck('texte tiers jamais lu comme du HTML : ni balise ni indicatif illisible', !box().querySelector('img, b b, i') && !codes().some(c => /</
+    .test(c)) && !/<b>X<\/b>/.test(box().textContent), box().innerHTML.slice(0, 200));
+  await type(0, 'xc');
+  ck('sept propositions au plus', codes().length === 7, codes().length);
+  await type(0, 'xcs1');
+  F.onClick({
+    target: box().querySelector('[data-callsign="XCS101"]')
+  });
+  await wait(30);
+  ck('choix : l’indicatif écrit, la liste fermée', nameOf(0).value === 'XCS101' && box().hidden, nameOf(0).value);
+  ck('choix : le type rempli, avec son évènement input', typeIn(0).value === 'XT01' && typeEvents === 1, JSON.stringify([typeIn(0).value,
+    typeEvents
+  ]));
+  await type(0, 'xcs1');
+  F.onClick({
+    target: box().querySelector('[data-callsign="XCS101"]')
+  });
+  await wait(30);
+  ck('le même type déjà là : rien réécrit', typeEvents === 1, typeEvents);
+  await type(1, 'xcs2');
+  F.onClick({
+    target: box().querySelector('[data-callsign="XCS200"]')
+  });
+  await wait(30);
+  ck('un indicatif de deux types : l’indicatif écrit, le type laissé vide (on ne devine pas)', nameOf(1).value === 'XCS200' && typeIn(1)
+    .value === '', JSON.stringify([nameOf(1).value, typeIn(1).value]));
+  ck('un champ qui n’est pas un indicatif est ignoré', F.onInput({
+    type: 'input',
+    target: typeIn(0)
+  }) === undefined && calls.every(c => !/XT01/.test(c[0])));
+  ck('textes en quatre langues', Object.values(F.texts).every(r => Array.isArray(r) && r.length === 4));
+  const src = await fetch('../callsign_field.js').then(r => r.text());
+  const imports = [...src.matchAll(/from '([^']+)'/g)].map(m => m[1]);
+  ck('ses imports restent dans frame/lib (aucun module)', imports.length > 0 && imports.every(p => p.startsWith('./')), JSON.stringify(
+    imports));
+  ck('aucune globale de l’application lue', !/window\.(SogFrame|AeroDB|AppFramework)/.test(src));
+  F.stop();
+  await type(0, 'xcs');
+  ck('arrêté : plus aucune liste', box().hidden, codes());
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

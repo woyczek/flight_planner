@@ -8339,3 +8339,14 @@ def f273(c):
     c.until("document.querySelector('[data-module=fuel] .fu-adname[data-adline=arr]').textContent.includes('Helistation Test')",
             what='the name line names the helipad')
     cf_doc(c, lambda d: d['route'].get('arr') == 'LF999', 'the flight\'s arrival is the helipad')
+
+
+@case('F274', 'The callsign field, a shared block (frame/lib/callsign_field.js): on a page without any module, with an invented aircraft '
+      'registry given by the context — from two characters the callsigns that hold the text, those that start with it first, seven at '
+      'most; the pick writes the callsign and fills the type with its input event; a callsign of two types fills nothing; third-party '
+      'text never read as HTML; its imports stay in frame/lib', 'F', tags=('aircraft',), designs=('standard',), screens=False,
+      rule='SOG-0488 (the user: « quand on saisit un callsign, on est censé avoir une complétion pour trouver le callsign et le type… en '
+      'fonction de la flotte connue »; the ergonomist: a common field reused by the workshop and the assignment form); aerodb only '
+      'through the context (V3 Frame\'s condition)')
+def f274(c):
+    run_bench(c, 'frame/lib/test/callsign_field.html')

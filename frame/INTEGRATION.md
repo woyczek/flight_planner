@@ -347,6 +347,10 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
   choice keeping its position: `positionOf(key)`) (aerodb through
   `ctx.aerodb` only) and its name under the field (`adnames.js`); `createSuggestList(o)` — the list under any field. Out of Fuel, which
   keeps wrappers; the mission workshop uses the field. Benches F267, F268.
+- **The callsign field** (`frame/lib/callsign_field.js`, 18 Nov 2026, SOG-0488; writer: Features SOG, V3 Frame's agreement): `createCallsignField({ ctx, body, gone, owns(el), typeOf(el)?, idPrefix? })` → `{ onInput, onKey, onFocusOut, onPointerDown, onClick, texts, isPicking, stop }`.
+  From two characters, seven callsigns at most from `ctx.aerodb.aircraft().search` (sheets, the company's fleet, reference), those that start with the text first, « CALLSIGN — TYPE · REGISTRATION ».
+  The pick writes the callsign, and the type into `typeOf(el)` with an `input` event when ONE type is known for it (two types: nothing guessed; the same type already there: nothing rewritten).
+  The screen gives one `[data-cssug]` list element and puts each field in a `<label>`. For the mission workshop and the assignment form; Mes appareils keeps its own field. Bench F274.
 - **The wind on a runway** (`frame/lib/wind.js`, 30 Oct 2026, § 10.30): `components(runwayTrueHeading, windDirTrue, windKt)` →
   `{ head, cross, side }` (knots rounded, `head` negative for a tail wind, `side` 'L' | 'R' or null) or null when a value is missing
   (a VRB wind has no direction: nothing invented); `label(c)` → « ↓ 12 kt · ← 6 kt » (arrows: where the wind blows, the runway drawn
