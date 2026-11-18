@@ -1044,6 +1044,7 @@ function draw(s) {
     ctx: s.ctx,
     id: s.open.row.id,
     mission: s.open.mission,
+    changed: () => S === s && draw(s), // SOG-0448 : un tiroir s'ouvre — la fiche et le Détail montrent ses lieux (drawers_view.js sees)
     passage: p => MS.passageMin?.(s.open?.mission, p),
     notJudged: k => !!MS.notJudgedYet?.(k) // la règle du lecteur (frame/lib/mission.js) : une clé que le vol ne sait pas encore juger
   });
@@ -1174,9 +1175,10 @@ function results(s) {
 function missionHtml(s) {
   const {
     row: r,
-    mission: m,
+    mission: whole,
     drawn
   } = s.open,
+    m = DW.sees(r.id, whole), // SOG-0448 : ce que le pilote peut voir (pilotView du lecteur) — rien d'un tiroir fermé, ni dans la fiche ni dans le Détail
     why = s.open.why ? `<p class="f-muted" data-why="${esc(s.open.why)}">${esc(s.open.why === 'late' ? s.tt(TX.late) : s.open.why === 'missing' ? s.tt(TX.missing, { id: r.id, t: r.title || '', p: `missions/${r.folder}/${r.file}` }) : s.tt(TX.unreadable, { e: s.open.err || s.tt(TX.noIdType) }))}</p>` : '';
   return `<div class="f-card ms-sheet" data-pane="mission" data-id="${esc(r.id)}"${s.open.detail ? ' data-detail' : ''}>
     <section class="ms-first" data-first>${firstHtml(s, r, m, drawn, why)}</section>
