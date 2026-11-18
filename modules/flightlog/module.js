@@ -30,7 +30,8 @@ export const meta = {
     policy: 'cache'
   }],
   files: ['model.js', '../../frame/lib/last_flight.js', '../../frame/lib/js-yaml.min.js', '../../frame/lib/dom.js',
-    '../../frame/lib/time.js', '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js'
+    '../../frame/lib/time.js', '../../frame/lib/mission_categories.js', '../../frame/lib/airline.js',
+    '../../frame/lib/geo.js' // SOG-0468 (2) : gcNm, que last_flight.js importera (V3 Frame ; cas I26)
   ]
 };
 

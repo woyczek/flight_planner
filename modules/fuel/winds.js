@@ -5,10 +5,11 @@
 // niveau, inversions, altitude-densité). Ni page, ni stockage, ni réseau : module.js appelle et garde.
 
 import {
+  gcNm,
   wrapLon,
   unwrapLons,
   rhumbAt
-} from '../../frame/lib/geo.js';
+} from '../../frame/lib/geo.js'; // gcNm : la distance orthodromique, une seule fonction du cadre (SOG-0468 (2))
 
 /** Niveaux de pression demandés (hPa), du sol vers le haut. */
 export const LEVELS = [1000, 975, 950, 925, 900, 850, 800, 700, 600, 500, 400, 300, 250, 200];
@@ -55,13 +56,6 @@ export function atLevel(profile, ft) {
   };
 }
 
-/** Distance orthodromique (NM). */
-const gc = (a, b) => {
-  const r = Math.PI / 180,
-    d = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
-};
-
 /** Lieux de lecture le long de la route : chaque point, plus des points intermédiaires tous les stepNm environ ;
  *  au plus max lieux (le pas grandit). [{ lat, lon, nm (depuis le départ), point (indice du point de route ou -1) }].
  *  Les longitudes sont interpolées sur la route déroulée (frame/lib/geo.js : une route qui passe la ligne de changement de
@@ -75,14 +69,14 @@ export function samples(points, stepNm = 50, max = 24) {
     pts = unwrapLons(raw);
   if (!pts.length) return [];
   const wrap = lon => lon >= -180 && lon < 180 ? lon : wrapLon(lon),
-    total = pts.slice(1).reduce((s, p, i) => s + gc(pts[i], p), 0);
+    total = pts.slice(1).reduce((s, p, i) => s + gcNm(pts[i], p), 0);
   let step = Math.max(stepNm, total / Math.max(1, max - pts.length));
   const out = [];
   let cum = 0;
   pts.forEach((p, i) => {
     if (i) {
       const a = pts[i - 1],
-        len = gc(a, p),
+        len = gcNm(a, p),
         n = Math.floor(len / step);
       for (let k = 1; k <= n; k++) {
         const f = k / (n + 1),

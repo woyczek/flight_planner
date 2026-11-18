@@ -16,18 +16,14 @@
 //   verticalPath(path, q) → [{ nm, ft }] : le chemin vertical prévu le long de flownPath (profile.path), contraintes de procédure comprises.
 //   nmAlong(path, pos) → NM : la distance du départ du point du chemin le plus proche d'une position (le départ est-il passé ?).
 import {
+  gcNm,
   rhumbAt,
   rhumbCourse,
   rhumbNm,
   wrapLon
-} from '../../frame/lib/geo.js'; // la loxodromie d'un tronçon direct (SOG-0243, BUGS SOG)
+} from '../../frame/lib/geo.js'; // la loxodromie d'un tronçon direct (SOG-0243, BUGS SOG) ; la distance orthodromique (SOG-0468 (2))
 
 const R = Math.PI / 180;
-/** Distance orthodromique (NM). */
-const gc = (a, b) => {
-  const d = Math.sin((b.lat - a.lat) * R / 2) ** 2 + Math.cos(a.lat * R) * Math.cos(b.lat * R) * Math.sin((b.lon - a.lon) * R / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
-};
 
 /** Horaire prévu (voir l'en-tête). Segments { d0, d1 (NM), t0, t1 (min depuis la mise en route), f0, f1 (carburant
  *  consommé, unité du devis), phase }. */
@@ -389,7 +385,6 @@ export function nmAlong(path, pos) {
  *  (grand cercle de p à lui) ; `along` en distances loxodromiques des tronçons, comme le devis (Q-0019). Le tronçon le plus proche
  *  gagne. */
 export function alongRoute(pts, p) {
-  const gcNm = gc;
   const P = (pts || []).filter(x => Number.isFinite(+x?.lat) && Number.isFinite(+x?.lon)).map(x => ({
     lat: +x.lat,
     lon: +x.lon

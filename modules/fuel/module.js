@@ -20,9 +20,11 @@ import * as WD from './winds.js';
 import * as PG from './progress.js';
 import * as RT from '../../frame/lib/route_text.js';
 import {
+  gcNm,
   rhumbCourse,
   rhumbNm
-} from '../../frame/lib/geo.js'; // un direct se vole au compas : distance et cap de chaque tronçon (SOG-0243, Q-0019)
+} from '../../frame/lib/geo.js'; // un direct se vole au compas : distance et cap de chaque tronçon (SOG-0243, Q-0019) ; la distance
+// orthodromique, une seule fonction du cadre (SOG-0468 (2))
 import * as RM from '../../frame/lib/route_model.js'; // la route lue depuis son texte (refonte § 10.33 R-F4)
 import * as RG from '../../frame/lib/routing.js'; // voies aériennes du bouton « Auto » (bibliothèque du cadre)
 import * as CF from '../../frame/lib/current_flight.js';
@@ -1800,12 +1802,7 @@ const speedTxt = v => unitHelpers('speed').txt(v),
   vsLabel = () => unitHelpers('alt', true).label();
 
 // ---------------------------------------------------------------- géographie
-/** Distance orthodromique (NM) entre deux points { lat, lon }. */
-function gcNm(a, b) {
-  const r = Math.PI / 180,
-    d = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
-}
+// la distance orthodromique (NM) entre deux points { lat, lon } : gcNm de frame/lib/geo.js (importée en tête, SOG-0468 (2))
 /** Route vraie initiale (°) de a vers b. */
 function bearing(a, b) {
   const r = Math.PI / 180,
@@ -3300,7 +3297,7 @@ function setAd(k, code) {
       s = S;
     if (S.routeEnds?.[other] && r[other] && r[other] !== S.routeEnds[other]) return newPair();
     if (old && S.ctx.aerodb?.coords) Promise.resolve(S.ctx.aerodb.coords(code)).then(c => {
-      if (!gone(s) && S.flight.route === r && r[k] === code && c && Number.isFinite(+c.lat) && nmBetween(old, c) > NEW_PAIR_NM)
+      if (!gone(s) && S.flight.route === r && r[k] === code && c && Number.isFinite(+c.lat) && gcNm(old, c) > NEW_PAIR_NM)
         newPair();
     }).catch(() => {});
   }
@@ -3342,14 +3339,6 @@ function swapAds() {
 // ---------------------------------------------------------------- nouveau vol, nouveau couple de terrains
 const NEW_PAIR_NM = 150; // au-delà, un terrain changé fait un autre vol (Simplification, 1er nov. 2026)
 
-/** Distance orthodromique en NM entre deux { lat, lon }. */
-function nmBetween(a, b) {
-  const rad = Math.PI / 180,
-    dLat = (b.lat - a.lat) * rad,
-    dLon = (b.lon - a.lon) * rad,
-    h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
-}
 /** Le couple de terrains pour lequel la route est écrite (départ, arrivée) : posé quand le vol est lu, repris d'ailleurs, écrit
  *  dans le champ de route, ou remis à neuf ; un changement de terrain proche ne le change pas. */
 function markEnds() {
