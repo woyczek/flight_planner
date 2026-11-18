@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d8b8541",
-  "fiches": 483,
+  "organisation": "e73f872",
+  "fiches": 491,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1841,6 +1841,24 @@
      "de": "Gradrahmen / Rose: etwas Abstand zwischen Pfeilspitzen und Ziffern",
      "es": "Marco graduado / rosa: algo de espacio entre las puntas de flecha y las cifras",
      "rank": 327
+    },
+    {
+     "id": "SOG-0491",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : chercher un point, un terrain ou autre par un outil loupe",
+     "en": "Map: search for a point, an aerodrome or anything else with a magnifier tool",
+     "de": "Karte: Punkt, Flugplatz oder anderes mit einem Lupenwerkzeug suchen",
+     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa"
+    },
+    {
+     "id": "SOG-0492",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte : la flèche du sens d'une voie a un liseré blanc que le cartouche n'a pas — l'enlever",
+     "en": "Map: the airway direction arrow has a white edge the label does not — remove it",
+     "de": "Karte: Der Richtungspfeil der Luftstraße hat einen weißen Rand, das Etikett nicht – entfernen",
+     "es": "Mapa: la flecha de sentido de la aerovía tiene un borde blanco que la etiqueta no tiene — quitarlo"
     }
    ]
   },
@@ -3805,6 +3823,48 @@
    ]
   },
   {
+   "id": "compagnie-flotte-mes-appareils",
+   "app": "compagnie",
+   "label": {
+    "fr": "Flotte ; Mes appareils",
+    "en": "Flotte ; Mes appareils",
+    "de": "Flotte ; Mes appareils",
+    "es": "Flotte ; Mes appareils"
+   },
+   "items": [
+    {
+     "id": "SOG-0490",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Mes appareils : la « base » d'un appareil de la flotte n'a pas la complétion des terrains",
+     "en": "My aircraft: the “base” of a fleet aircraft lacks the aerodrome completion",
+     "de": "Meine Luftfahrzeuge: Die „Basis“ eines Flottenluftfahrzeugs hat keine Flugplatz-Vervollständigung",
+     "es": "Mis aeronaves: la «base» de una aeronave de la flota no tiene el autocompletado de aeródromos"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-flotte-v2",
+   "app": "compagnie",
+   "label": {
+    "fr": "Flotte ; V2",
+    "en": "Flotte ; V2",
+    "de": "Flotte ; V2",
+    "es": "Flotte ; V2"
+   },
+   "items": [
+    {
+     "id": "SOG-0489",
+     "kind": "feature",
+     "state": "later",
+     "fr": "Flotte : l'import de la flotte connue de la V2 (DEFA) ne marche pas — la flotte DEFA de la V2 a-t-elle été gardée ?",
+     "en": "Fleet: importing the known V2 fleet (DEFA) does not work — was the V2 DEFA fleet kept?",
+     "de": "Flotte: Der Import der bekannten V2-Flotte (DEFA) funktioniert nicht – wurde sie behalten?",
+     "es": "Flota: la importación de la flota conocida de la V2 (DEFA) no funciona — ¿se conservó?"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions",
    "app": "compagnie",
    "label": {
@@ -4095,6 +4155,15 @@
      "de": "Missionswerkstatt: Eine Punkteliste ist keine Route – Punkte, Gebiete und Objekte umordnen",
      "es": "Taller de misiones: una lista de puntos no es un itinerario — reordenar puntos, zonas y objetos",
      "rank": 446
+    },
+    {
+     "id": "SOG-0485",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : « Enregistrer » vide le brief et la description de la mission — perdus",
+     "en": "Mission workshop: “Save” empties the mission's brief and description — lost",
+     "de": "Missionswerkstatt: „Speichern“ leert Briefing und Beschreibung der Mission – verloren",
+     "es": "Taller de misiones: «Guardar» vacía el briefing y la descripción de la misión — perdidos"
     }
    ]
   },
@@ -4159,6 +4228,27 @@
      "de": "Missionswerkstatt: Start und Ziel mit dem Flugplatzfeld der Suite (samt Vervollständigung)",
      "es": "Taller de misiones: Salida y Llegada con el campo de aeródromo de la suite (con autocompletado)",
      "rank": 450
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-atelier-registre",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; registre",
+    "en": "Missions ; atelier ; registre",
+    "de": "Missions ; atelier ; registre",
+    "es": "Missions ; atelier ; registre"
+   },
+   "items": [
+    {
+     "id": "SOG-0486",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : une mission en cours est un brouillon gardé, proposé en tête du registre, même sans « Enregistrer »",
+     "en": "Mission workshop: a mission in progress is a kept draft, offered at the top of the register, even without “Save”",
+     "de": "Missionswerkstatt: Eine laufende Mission bleibt als Entwurf erhalten und steht oben im Register, auch ohne „Speichern“",
+     "es": "Taller de misiones: una misión en curso se guarda como borrador y aparece arriba del registro, incluso sin «Guardar»"
     }
    ]
   },
@@ -4269,6 +4359,27 @@
    ]
   },
   {
+   "id": "compagnie-missions-flotte",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; flotte",
+    "en": "Missions ; flotte",
+    "de": "Missions ; flotte",
+    "es": "Missions ; flotte"
+   },
+   "items": [
+    {
+     "id": "SOG-0488",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : saisir un indicatif propose les indicatifs et les types de la flotte connue",
+     "en": "Missions: typing a callsign offers the callsigns and types of the known fleet",
+     "de": "Missionen: Beim Eingeben eines Rufzeichens werden Rufzeichen und Typen der bekannten Flotte vorgeschlagen",
+     "es": "Misiones: al escribir un indicativo se proponen los indicativos y tipos de la flota conocida"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-lecture",
    "app": "compagnie",
    "label": {
@@ -4287,6 +4398,27 @@
      "de": "Das Geheimnis einer geschlossenen Schublade: Blatt, Detail und Karte zeigen nur, was der sichtbare Teil oder eine geöffnete Schublade nennt",
      "es": "El secreto de un cajón cerrado: la ficha, el Detalle y el Mapa solo muestran lo que cita la parte visible o un cajón abierto",
      "rank": 458
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-registre",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; registre",
+    "en": "Missions ; registre",
+    "de": "Missions ; registre",
+    "es": "Missions ; registre"
+   },
+   "items": [
+    {
+     "id": "SOG-0487",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : le registre n'a pas d'ordre défini — en prévoir un",
+     "en": "Missions: the register has no defined order — provide one",
+     "de": "Missionen: Das Register hat keine festgelegte Reihenfolge – eine vorsehen",
+     "es": "Misiones: el registro no tiene un orden definido — prever uno"
     }
    ]
   },
