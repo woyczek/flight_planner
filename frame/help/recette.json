@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 304,
-  "verdicts": 212
+  "tests": 305,
+  "verdicts": 213
  },
  "apps": [
   "pilote",
@@ -4129,13 +4129,16 @@
    },
    "test": "Page rechargée (pas besoin de relancer le lanceur pour cette retouche). Quand une version plus récente est servie, le cartouche de l'en-tête — « Version ancienne · Recharger » sur ordinateur, « Recharger » sur téléphone — s'affiche en BLANC SUR ROUGE FONCÉ dans les cinq designs, de jour comme de nuit ; carré là où le design est carré (metro, swiss), légèrement arrondi ailleurs. Un appui recharge la page ; rien ne se recharge d'office.",
    "since": "2026-11-17",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-17T16:47:57Z",
-   "previous": {
-    "verdict": "reserve",
-    "comment": "réapparu, mais pas en blanc sur cartouche rouge",
-    "at": "2026-11-17T15:17:53Z"
-   }
+   "at": "2026-11-18T09:31:58Z",
+   "history": [
+    {
+     "verdict": "reserve",
+     "comment": "réapparu, mais pas en blanc sur cartouche rouge",
+     "at": "2026-11-17T15:17:53Z"
+    }
+   ]
   },
   {
    "id": "SOG-0408",
@@ -4544,19 +4547,49 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T09:01:17Z"
+  },
+  {
+   "id": "SOG-0456",
+   "app": "compagnie",
+   "title": {
+    "fr": "Carte de mission : un seul bloc pour l'atelier et le Brief — fond « Rapide » ou « Relief », couche « Espaces » (RTBA, zones)",
+    "en": "Mission map: one block for the workshop and the Brief — “Fast” or “Terrain” background, “Airspace” layer (RTBA, areas)",
+    "de": "Missionskarte: ein Baustein für Werkstatt und Briefing — Hintergrund „Schnell“ oder „Relief“, Ebene „Lufträume“ (RTBA, Gebiete)",
+    "es": "Mapa de misión: un solo bloque para el taller y el Brief — fondo «Rápido» o «Relieve», capa «Espacios» (RTBA, zonas)"
+   },
+   "test": "Missions, Registre, ouvre une mission dans l'atelier. Sous la carte : « Fond : Rapide | Relief » et la case « Espaces ». Passe en « Relief » (il faut le réseau) : le fond topographique paraît, la carte reste fluide. Coche « Espaces » : les zones R, D, P et le RTBA de la vue se dessinent, et une ligne dit combien. Enregistre, rouvre la mission : le fond et la case sont ceux que tu avais choisis. Hors ligne, « Relief » dit qu'il n'est pas disponible et la carte reste en « Rapide ».",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T09:36:00Z"
   }
  ],
  "decisions": [
   {
-   "id": "Q-0101",
-   "fiche": "SOG-0444",
+   "id": "Q-0102",
+   "fiche": "SOG-0463",
    "app": "compagnie",
-   "question": "Atelier de missions : où vit la palette de briques ? Ouvre file:///E:/DEFA-v3-missions-creation/modules/missions/maquette/atelier.html#briques puis la même adresse finie par #biblio",
-   "context": "Reprise de Q-0098, avec les adresses. « #briques » : une rangée « Briques » sous le déroulé (familles en onglets, la famille de la mission d'abord, recherche) ; la brique tombe à côté de « ＋ Tiroir » et la carte garde sa largeur. « #biblio » : la colonne de gauche repliable ; elle montre tout d'un coup, mais à 1280 px elle rétrécit la carte, et repliée elle cache de nouveau la palette. Les briques de la maquette sont inventées. Les deux captures à 1280 sont aussi dans le fil de la session (atelier_briques_1280, atelier_biblio_1280).",
+   "question": "Tiroir ouvert vu par les autres appareils : par quel canal ?",
+   "context": "Étude de Sécurisation (résumé dans la fiche SOG-0463). Aucun service sans compte ne sait réserver un message aux seuls pilotes d'une mission ; sans compte, la seule protection est une adresse secrète, que nos règles excluent. Discord sert à prévenir des humains, pas à relier des appareils (et un message « un tiroir est ouvert » sur un salon dirait qu'un tiroir existe). Avant de choisir un service, il reste à savoir où passent les 47 secondes du banc : si c'est la synchronisation complète, un chemin léger par le dépôt (un petit fichier écrit, relu toutes les quelques secondes) descendrait à quelques secondes sans compte, sans clé et sans hôte de plus. « Autre outil » dans ta réponse à Q-0097 : je le lis comme ce chemin léger ; dis-moi si tu pensais à autre chose.",
    "options": [
-    "La rangée « Briques » sous le déroulé (#briques)",
-    "La colonne de gauche, repliable (#biblio)",
-    "Les deux : la rangée par défaut, la colonne sur un très grand écran",
+    "D'abord le chemin léger par le dépôt, mesuré au banc ; un service seulement s'il ne suffit pas",
+    "Matrix : une salle privée par mission ; chaque pilote crée un compte, et j'autorise l'hôte",
+    "Nostr : pas de compte, chiffré vers les pilotes de la mission ; plus lourd à écrire, plusieurs hôtes à autoriser",
+    "On en reste là : le délai actuel me va, l'écran dit l'écart réel"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0103",
+   "fiche": "SOG-0462",
+   "app": "pilote",
+   "question": "Zones R et D : pour la « nature du danger », le lanceur peut-il lire la section ENR 5.1 de l'AIP de France sur le site du SIA ?",
+   "context": "Ta demande (nature, gestionnaire, horaires, conditions). Mesure d'AeroDB : horaires, conditions et gestionnaire sont déjà là pour la France ; le NOM USUEL aussi (« MONT SAINT MICHEL » pour la R 12) et il sera affiché sans rien demander de plus. Mais la colonne « Genre de limitation / Nature du danger » n'est dans aucun fichier que le lanceur lit aujourd'hui : elle n'est que dans l'AIP. Le site du SIA est déjà interrogé pour les procédures ; il s'agirait d'y lire une section de plus, à chaque cycle. Les autres États suivraient un par un, plus tard.",
+   "options": [
+    "Oui : le lanceur lit l'ENR 5.1 sur le site du SIA, à chaque cycle",
+    "Non : seulement ce qui est déjà lu (nom usuel, horaires, conditions, gestionnaire)",
+    "Par un PDF de l'AIP que je dépose moi-même, sans nouvelle lecture du site",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-18",
@@ -4958,6 +4991,25 @@
    "choice": 2,
    "text": "je ne suis pas sûr du calcul. le tracé était le même, en tout cas.",
    "at": "2026-11-17T10:14:56Z"
+  },
+  {
+   "id": "Q-0101",
+   "fiche": "SOG-0444",
+   "app": "compagnie",
+   "question": "Atelier de missions : où vit la palette de briques ? Ouvre file:///E:/DEFA-v3-missions-creation/modules/missions/maquette/atelier.html#briques puis la même adresse finie par #biblio",
+   "context": "Reprise de Q-0098, avec les adresses. « #briques » : une rangée « Briques » sous le déroulé (familles en onglets, la famille de la mission d'abord, recherche) ; la brique tombe à côté de « ＋ Tiroir » et la carte garde sa largeur. « #biblio » : la colonne de gauche repliable ; elle montre tout d'un coup, mais à 1280 px elle rétrécit la carte, et repliée elle cache de nouveau la palette. Les briques de la maquette sont inventées. Les deux captures à 1280 sont aussi dans le fil de la session (atelier_briques_1280, atelier_biblio_1280).",
+   "options": [
+    "La rangée « Briques » sous le déroulé (#briques)",
+    "La colonne de gauche, repliable (#biblio)",
+    "Les deux : la rangée par défaut, la colonne sur un très grand écran",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 3,
+   "text": "si je reprend l’ergonomie de départ. On parle bien de création from scratch dans le mindset. - choix du type de mission - choix du template (s’il y en a) - choix des briques (tiroirs)  Je prend le second mode. - édition de mission - visu des tiroirs - modif du tiroir, ou suppression / recréation  La dernière livraison du template considère qu’on n’a besoin de voir les « briques » qu’à un seul moment, la création de tiroir.  On peut également modifier la clé d’ouverture, c’est à dire la brique de base. Le design « + » qui cache le nouveau type est probablement suffisant. concis, il ne fait apparaître l’information qu’au moment où on en a besoin.  On conserve la densité et les informations uniquement utiles. BTW : rien ne nous limite à 3 tiroirs, si ?  Seconde remarque : ta maquette étire les tiroirs en largeur. la mienne en hauteur. je préfère réduire le texte secondaire et étirer en hauteur.  Globablement, beaucoup de texte un peu partout gagnerait à réduire en taille. avis de l’ergonome.",
+   "at": "2026-11-18T09:31:50Z"
   }
  ]
 }

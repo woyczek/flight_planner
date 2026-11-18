@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "79031e6",
+  "organisation": "99f50f6",
   "fiches": 462,
   "untranslated": 0,
   "priorities": 374,
@@ -3068,8 +3068,7 @@
      "fr": "RÉGRESSION : le bouton « pas à jour, rafraîchir » a disparu — une page ouverte ne dit plus qu'une version plus récente existe",
      "en": "REGRESSION: the “out of date, refresh” button has disappeared — an open page no longer says a newer version exists",
      "de": "REGRESSION: die Schaltfläche „nicht aktuell, neu laden“ ist verschwunden — eine offene Seite meldet keine neuere Version mehr",
-     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente",
-     "test": true
+     "es": "REGRESIÓN: el botón «no actualizado, refrescar» ha desaparecido — una página abierta ya no avisa de una versión más reciente"
     }
    ]
   },
@@ -3380,11 +3379,12 @@
     {
      "id": "SOG-0456",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte de mission : un seul bloc pour l'atelier et le Brief — fond « Rapide » ou « Relief », couche « Espaces » (RTBA, zones)",
      "en": "Mission map: one block for the workshop and the Brief — “Fast” or “Terrain” background, “Airspace” layer (RTBA, areas)",
      "de": "Missionskarte: ein Baustein für Werkstatt und Briefing — Hintergrund „Schnell“ oder „Relief“, Ebene „Lufträume“ (RTBA, Gebiete)",
-     "es": "Mapa de misión: un solo bloque para el taller y el Brief — fondo «Rápido» o «Relieve», capa «Espacios» (RTBA, zonas)"
+     "es": "Mapa de misión: un solo bloque para el taller y el Brief — fondo «Rápido» o «Relieve», capa «Espacios» (RTBA, zonas)",
+     "test": true
     }
    ]
   },
