@@ -17,7 +17,11 @@
 //   eobtOf(plannedAt, now) → { at: Date, now: bool } : l'heure du vol, sinon l'heure présente arrondie aux cinq minutes suivantes.
 //   message(o) → { text, errors: [codes], notes: { oceanic, sid, star, now, wake, bad, joined, hf, regNeutral, rounded } } : le message
 //     « (FPL-…) », une case par ligne ; l'immatriculation en case 18 (REG/, exigée par Eurocontrol), neutre (NEUTRAL_ID) quand la fiche
-//     n'en donne pas (regNeutral) ; hf : route océanique sans HF dans l'équipement.
+//     n'en donne pas (regNeutral) ; hf : route océanique sans HF dans l'équipement. SOG-0483 : o.places { dep, arr, altn } = { name,
+//     lat, lon } — un départ, une arrivée ou un dégagement au code de liste d'une hélistation (« LF418 », pas d'indicateur OACI) s'écrit
+//     ZZZZ en case 13 / 16 et DEP/, DEST/, ALTN/ en case 18 (placeWord) ; sans position ni nom, le code est refusé (dep, arr, altn).
+//   placeWord({ name, lat, lon }) : « 4542N00448E HELISTATION TEST » — la position en degrés et minutes, puis le nom réduit à l'alphabet
+//     du message (quarante signes) ; '' sans rien.
 
 import {
   tokenize
@@ -37,6 +41,8 @@ const OCEANIC = /^(?:NAT[A-Z]{1,2}|[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[
  *  quand deux voies ont exactement les mêmes segments : AeroDB, parseAixm). Le tiret ouvre une nouvelle case du message : jamais écrit ;
  *  chaque indicatif désigne le même tracé, le premier est écrit et le choix dit. */
 const JOINED = /^[A-Z]{1,2}\d{1,4}[A-Z]?(?:-[A-Z]{1,2}\d{1,4}[A-Z]?)+$/;
+/** SOG-0483 : le code de liste d'une hélistation du SIA (deux lettres, trois chiffres : « LF418 ») — pas d'indicateur OACI. */
+const HELI = /^[A-Z]{2}[0-9]{3}$/;
 /** Un nom de procédure (SID, STAR) : finit par un chiffre et une lettre (« OPAL2E »). */
 const PROC = /\d[A-Z]$/;
 /** SOG-0422 : un nom de procédure sans lettre de route (indicateur de base, chiffre de validité : « ROBUC3 », annexe 11, appendice 3),
@@ -51,6 +57,24 @@ const ALPHABET = /^[A-Z0-9 /()\-\n]*$/;
 export const regWord = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
 /** « 54N050W » quand les deux sont en degrés entiers, sinon degrés et minutes « 5430N05000W ». */
+/** SOG-0483 : un lieu en clair pour DEP/, DEST/, ALTN/ (voir l'en-tête) : la position TOUJOURS en degrés et minutes (onze signes,
+ *  la forme de la case 18), le nom de la base sans accents ni signes hors de l'alphabet du message. Entrée non fiable : bornée. */
+export function placeWord(p) {
+  const lat = +p?.lat,
+    lon = +p?.lon,
+    dm = v => {
+      const a = Math.abs(v),
+        d = Math.floor(a + 1e-9),
+        m = Math.round((a - d) * 60);
+      return m === 60 ? [d + 1, 0] : [d, m];
+    },
+    pos = Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? (([ld, lm], [od, om]) =>
+      `${pad(ld, 2)}${pad(lm, 2)}${lat < 0 ? 'S' : 'N'}${pad(od, 3)}${pad(om, 2)}${lon < 0 ? 'W' : 'E'}`)(dm(lat), dm(lon)) : '',
+    name = String(p?.name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace(
+      /\s+/g, ' ').trim().slice(0, 40).trim();
+  return [pos, name].filter(Boolean).join(' ');
+}
+
 export function coordWord(lat, lon) {
   const la = Math.abs(lat),
     lo = Math.abs(lon),
@@ -193,9 +217,15 @@ export function message(o = {}) {
     errors = [];
   if (!/^[A-Z][A-Z0-9]{0,6}$/.test(id)) errors.push('id');
   if (!/^[A-Z][A-Z0-9]{1,3}$/.test(type)) errors.push('type');
-  if (!/^[A-Z]{4}$/.test(dep)) errors.push('dep');
-  if (!/^[A-Z]{4}$/.test(arr)) errors.push('arr');
-  if (altn && !/^[A-Z]{4}$/.test(altn)) errors.push('altn');
+  // SOG-0483 : un indicateur OACI (quatre lettres) d'abord ; sinon le code de liste d'une hélistation, écrit ZZZZ, son lieu en case 18
+  const places = o.places && typeof o.places === 'object' ? o.places : {},
+    at13 = (k, key) => /^[A-Z]{4}$/.test(k) ? [k, ''] : HELI.test(k) && placeWord(places[key]) ? ['ZZZZ', placeWord(places[key])] : null,
+    d13 = at13(dep, 'dep'),
+    a13 = at13(arr, 'arr'),
+    l13 = altn ? at13(altn, 'altn') : ['', ''];
+  if (!d13) errors.push('dep');
+  if (!a13) errors.push('arr');
+  if (!l13) errors.push('altn');
   if (!(speed >= 40 && speed <= 9999)) errors.push('speed');
   if (!(level >= 10 && level <= 660)) errors.push('level');
   if (r.route.split(' ').length < 2) errors.push('route');
@@ -203,9 +233,13 @@ export function message(o = {}) {
   // SOG-0422 : Eurocontrol exige l'immatriculation (EUIFPS002A) ; seule une immatriculation qui casserait la forme bloque
   if (!/^[A-Z0-9]{2,7}$/.test(reg)) errors.push('reg');
   if (!(eet > 0 && eet < 100 * 60)) errors.push('eet');
-  const text = ['(FPL-' + id + '-IG', `-${type || 'ZZZZ'}/${wake || 'M'}-${EQUIPMENT}`, `-${dep}${hhmm(at)}`, `-${r.route}`,
-    `-${arr}${pad(Math.floor(eet / 60), 2)}${pad(eet % 60, 2)}${altn ? ` ${altn}` : ''}`, `-PBN/${PBN} DOF/${yymmdd(at)} REG/${reg})`
-  ].join('\n');
+  // case 18 dans l'ordre de l'appendice 2 : PBN, DEP, DEST, DOF, REG, ALTN
+  const i18 = [`PBN/${PBN}`, d13?.[1] ? `DEP/${d13[1]}` : '', a13?.[1] ? `DEST/${a13[1]}` : '', `DOF/${yymmdd(at)}`, `REG/${reg}`,
+      l13?.[1] ? `ALTN/${l13[1]}` : ''
+    ].filter(Boolean).join(' '),
+    text = ['(FPL-' + id + '-IG', `-${type || 'ZZZZ'}/${wake || 'M'}-${EQUIPMENT}`, `-${d13 ? d13[0] : dep}${hhmm(at)}`, `-${r.route}`,
+      `-${a13 ? a13[0] : arr}${pad(Math.floor(eet / 60), 2)}${pad(eet % 60, 2)}${altn ? ` ${l13 ? l13[0] : altn}` : ''}`, `-${i18})`
+    ].join('\n');
   if (!ALPHABET.test(text)) errors.push('alphabet');
   return {
     text,

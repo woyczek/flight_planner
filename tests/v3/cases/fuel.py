@@ -8413,3 +8413,32 @@ def f276(c):
     want = norm(tx(T, "none-read'", c.lang, after='procReasons').replace('{icao}', 'EGLL').replace('{m}', '').replace('{c}', '')
                 .replace('{wn}', ''))
     c.eq(got, want, 'an older launcher: the short sentence of the card, never its English', what='old launcher')
+
+
+@case('F277', 'The ICAO flight plan of a flight from, to or diverting to a helipad (a list code « XH418 », no ICAO indicator): ZZZZ in '
+      'items 13 and 16, DEP/, DEST/ and ALTN/ in item 18 with the position and the name the base gives, in the order of appendix 2; a '
+      'real ICAO indicator kept; a helipad code without any place refused', 'F', tags=('fuel',), designs=('standard',), screens=False,
+      rule='SOG-0483 (the ergonomist: ZZZZ in item 13 or 16, DEP/ or DEST/ in item 18 with the name and the position as the base gives '
+      'them; a real ICAO indicator first); an invented helipad')
+def f277(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')  # an origin for the import of the pure module
+    got = c.js("""() => import('/modules/fuel/fpl.js').then(F => {
+      const base = { type: 'EC45', wake: 'L', reg: 'F-ZZHH', eobt: F.eobtOf('2026-12-31T23:55:00Z'), speedKt: 120, levelFt: 3000, eetMin: 90 },
+        heli = { name: 'Hélistation Test (centre)', lat: 45.7025, lon: 4.8075 },
+        a = F.message({ ...base, dep: 'XH418', arr: 'LFZZ', routeText: 'XH418 ZZPTA ZZPTB LFZZ', places: { dep: heli } }),
+        b = F.message({ ...base, dep: 'LFZZ', arr: 'XH418', altn: 'XH419', routeText: 'LFZZ ZZPTA ZZPTB XH418',
+          places: { arr: heli, altn: { name: 'Autre Test' } } }),
+        none = F.message({ ...base, dep: 'XH418', arr: 'LFZZ', routeText: 'XH418 ZZPTA ZZPTB LFZZ' });
+      const L = m => m.text.split('\n');
+      return { a: [L(a)[2], L(a)[3], L(a)[5], a.errors], b: [L(b)[4], L(b)[5], b.errors], none: none.errors,
+        word: [F.placeWord(heli), F.placeWord({ lat: -33.5, lon: -70.25 }), F.placeWord({}), F.placeWord({ name: '<b>x</b>' })] };
+    })""")
+    c.eq(got['a'], ['-ZZZZ2355', '-N0120F030 ZZPTA DCT ZZPTB', '-PBN/B2D2 DEP/4542N00448E HELISTATION TEST CENTRE DOF/261231 REG/FZZHH)', []],
+         'a departure from a helipad: ZZZZ in item 13, DEP/ with its position and its name in item 18, before DOF/; the route without it',
+         what='departure')
+    c.eq(got['b'], ['-ZZZZ0130 ZZZZ', '-PBN/B2D2 DEST/4542N00448E HELISTATION TEST CENTRE DOF/261231 REG/FZZHH ALTN/AUTRE TEST)', []],
+         'an arrival and an alternate at helipads: ZZZZ twice in item 16; DEST/ before DOF/, ALTN/ after REG/ (a name alone when the '
+         'position is unknown)', what='arrival')
+    c.ok('dep' in got['none'], got['none'], 'a helipad code with no place at all: refused, never « DEP/ » empty')
+    c.eq(got['word'], ['4542N00448E HELISTATION TEST CENTRE', '3330S07015W', '', 'B X B'],
+         'the place: degrees and minutes always (eleven signs), the name in the message\'s alphabet', what='placeWord')

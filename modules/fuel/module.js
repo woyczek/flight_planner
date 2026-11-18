@@ -5075,6 +5075,23 @@ function radListFill(fold) {
 /** SOG-0402 : le message de plan de vol du vol courant (modules/fuel/fpl.js) — identifiant de la page (neutre par défaut), type OACI et
  *  sillage (catalogue d'aerodb), départ à l'heure du vol (sinon maintenant, arrondi), vitesse vraie et niveau du devis, route du
  *  vol, durée estimée (en vol), dégagement ; null sans départ, arrivée ni route. */
+/** SOG-0483 : les lieux en clair du départ, de l'arrivée et du dégagement pour la case 18 (DEP/, DEST/, ALTN/) : le nom gardé par le
+ *  champ de terrain (S.AD.nameKnown), la position du premier ou du dernier point de la route quand il porte ce code. */
+function fplPlaces(r) {
+  const pts = Array.isArray(r.points) ? r.points : [],
+    at = (code, p) => ({
+      name: (code && S.AD?.nameKnown?.(code)) || '',
+      lat: p && String(p.id || '').toUpperCase() === code ? +p.lat : NaN,
+      lon: p && String(p.id || '').toUpperCase() === code ? +p.lon : NaN
+    }),
+    up = v => String(v || '').toUpperCase();
+  return {
+    dep: at(up(r.dep), pts[0]),
+    arr: at(up(r.arr), pts.at(-1)),
+    altn: at(up(r.altn), null)
+  };
+}
+
 function fplOf(C) {
   const f = S.flight,
     r = f.route || {},
@@ -5091,6 +5108,8 @@ function fplOf(C) {
       dep: r.dep,
       arr: r.arr,
       altn: r.altn,
+      // SOG-0483 : le lieu d'une hélistation (pas d'indicateur OACI) — le nom que la base donne, la position du point de la route
+      places: fplPlaces(r),
       reg: f.aircraft?.registration || '',
       eobt,
       speedKt: +q?.cruise?.tas || +C?.sheet?.cruise?.tasKt || 0,
