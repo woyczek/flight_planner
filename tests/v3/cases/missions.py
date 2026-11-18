@@ -1520,6 +1520,81 @@ def n35(c):
     again = state()
     c.eq([again.get('desc'), again.get('obj')], [True, False], 'opened anew from the list: the sections of the design', what='anew')
 
+# SOG-0460: an assistant's answer pasted into « Ajouter des missions » — invented missions
+_PASTE_PURE_JS = """async () => { const P = await import('/modules/missions/paste.js');
+  const f = '`'.repeat(3), big = 'x'.repeat(1000001);
+  const many = Array.from({ length: 30 }, (_, i) => f + 'yaml\\nmission: { id: X-9' + String(i).padStart(2, '0') + 'A, type: TESTCO }\\n' + f).join('\\n');
+  return { one: P.blocksOf('Voici :\\n\\n' + f + 'yaml\\nmission: { id: X-1 }\\n' + f + '\\n\\nBon vol'),
+    bare: P.blocksOf(f + '\\na: 1\\n' + f + '\\ntexte\\n' + f + '\\nb: 2\\n' + f).blocks.map(b => b.line),
+    yamlFirst: P.blocksOf(f + '\\na: 1\\n' + f + '\\n' + f + 'yml\\nb: 2\\n' + f).blocks.map(b => b.text),
+    other: P.blocksOf(f + 'json\\n{}\\n' + f).fenced, open: P.blocksOf(f + 'yaml\\na: 1\\nb: 2').blocks[0].text, tilde: P.blocksOf('~~~yaml\\na: 1\\n~~~').blocks[0].text,
+    none: P.blocksOf('mission: { id: X-1 }').fenced, many: P.blocksOf(many).blocks.length, big: [P.blocksOf(big).fenced, P.blocksOf(big).blocks.length],
+    tabs: [P.tabsLine('a:\\n\\t- b'), P.tabsLine('a: "x\\ty"'), P.tabsLine('a:\\n  \\tb: 1'), P.tabsLine(null)] } }"""
+
+
+@case('N36', 'Missions › « Ajouter des missions », an assistant\'s answer pasted whole (SOG-0460): a sentence, a « ```yaml » block and a '
+      'closing word give the mission of the block, and the screen says the text around is not read; two bare « ``` » blocks give two '
+      'missions; a tab in an indentation is refused by its sentence with the line of the pasted text; an unreadable YAML is said in the '
+      'screen\'s language with the line of the pasted text, never the reader\'s English; the report says nothing of drawers', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0460 (the user: « dès que tu as un import, je peux alimenter le registre »; the ergonomist: all the blocks, « ```yaml » '
+      'first, else bare « ``` »; the text outside ignored and said; tabs refused, not converted; the YAML error in the screen\'s language; '
+      'the pasted text is untrusted: bounded extraction); measured on an invented mission of « Création de missions »; invented missions')
+def n36(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_PASTE_PURE_JS)
+    c.eq([r['one']['blocks'], r['one']['fenced'], r['one']['outside']], [[{'text': 'mission: { id: X-1 }', 'line': 4}], True, True],
+         'a sentence, a yaml block, a closing word: the block (from line 4), the text around said', what='one block')
+    c.eq([r['bare'], r['yamlFirst'], r['other'], r['open'], r['tilde'], r['none']], [[2, 6], ['b: 2'], False, 'a: 1\nb: 2', 'a: 1', False],
+         'every bare block; the yaml blocks first; another language is no block; an unclosed block runs to the end; « ~~~ »; no block: the text',
+         what='blocks')
+    c.eq([r['many'], r['big'], r['tabs']], [21, [False, 1], [2, 0, 2, 0]],
+         'at most 21 blocks taken; over 1 MB, no cutting; the first line indented with a tab (a tab inside a value is not one)', what='bounds')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_CLEAR_ADD)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _ADD_REGISTRY], ['missions/X_CO/X-101A/missionX-101A.yaml', mission_doc('X-101A')]])
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-101A\"]')", timeout=15000, what='the list of missions')
+
+        def paste(text):
+            c.tap(f'{M} [data-do="add"]')
+            c.until(f"!!document.querySelector('{M} [data-pane=add] textarea[data-k=addtext]')", what='the add screen')
+            c.page.fill(f'{M} [data-pane=add] textarea[data-k=addtext]', text)
+            c.tap(f'{M} [data-do="addread"]')
+            c.until(f"!!document.querySelector('{M} [data-found]')", what='what was read')
+            return c.js(f"""(() => ({{ items: [...document.querySelectorAll('{M} [data-addlist] [data-add]')].map(e => e.dataset.add),
+              refused: [...document.querySelectorAll('{M} [data-refused] li')].map(e => [e.dataset.reason, e.textContent]),
+              outside: !!document.querySelector('{M} [data-outside]'), text: document.querySelector('{M} [data-pane=add]').textContent }}))()""")
+
+        fence = '`' * 3
+        a = paste(f'Voici la mission :\n\n{fence}yaml\nmission: {{ id: X-951A, type: TESTCO }}\ntitle: Dans un bloc\n'
+                  f'phases: [{{ id: B, title: Le secret, trigger: plus tard, fallback_delay_min: 30 }}]\n{fence}\n\nBon vol !')
+        c.eq([a['items'], a['refused'], a['outside']], [['X-951A'], [], True], f'{w} px: the mission of the block, the text around said', what='block')
+        c.ok(norm(row(c, 'addOutside')) in norm(a['text']), a['text'][:300], f'{w} px: « Le texte autour des blocs de code n\'est pas lu. »')
+        c.ok(all(x not in norm(a['text']).lower() for x in ('secret', 'tiroir', 'drawer', 'schublade', 'cajón')), a['text'][:300],
+             f'{w} px: the report says nothing of the drawer')
+        if w == 390:
+            c.shot(f'N36_{c.design}_390_{c.lang}_block.png')
+        c.tap(f'{M} [data-pane=add] [data-do="addcancel"]')
+        b = paste(f'{fence}\nmission: {{ id: X-952A, type: TESTCO }}\ntitle: Un\n{fence}\net\n{fence}\nmission: {{ id: X-953A, type: TESTCO }}\ntitle: Deux\n{fence}')
+        c.eq(b['items'], ['X-952A', 'X-953A'], f'{w} px: two bare blocks, two missions', what='two blocks')
+        c.tap(f'{M} [data-pane=add] [data-do="addcancel"]')
+        t = paste(f'Intro\n{fence}yaml\nmission:\n\tid: X-954A\n{fence}')
+        c.eq([t['items'], [x[0] for x in t['refused']]], [[], ['tabs']], f'{w} px: a tab in the indentation refused', what='tabs')
+        c.ok('4' in t['refused'][0][1], t['refused'], f'{w} px: its line in the pasted text (4)')
+        c.tap(f'{M} [data-pane=add] [data-do="addcancel"]')
+        y = paste(f'Intro\n\n{fence}yaml\nmission: {{ id: X-955A, type: TESTCO }}\ntitle: [cassé\n{fence}')
+        c.eq([x[0] for x in y['refused']], ['yaml'], f'{w} px: an unreadable YAML refused', what='yaml')
+        msg = y['refused'][0][1]
+        c.ok(all(x not in msg for x in ('expected', 'unexpected end', 'stream', 'mapping')) and any(d in msg for d in ('5', '6')), msg,
+             f'{w} px: said in the screen\'s language, with a line of the pasted text, never the reader\'s English')
+        if w == 1280:
+            c.shot(f'N36_{c.design}_1280_{c.lang}_refused.png')
+        c.tap(f'{M} [data-pane=add] [data-do="addcancel"]')
+    c.js(_CLEAR_ADD)
+
 
 @case('N40', 'Time on area per point: read from the mission (a range counted at its maximum), said in the quote one line per point, changed by the pilot in the list of points; an unread duration key said',
       'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=False,

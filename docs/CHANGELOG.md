@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Missions: « Ajouter des missions » reads an assistant's whole answer** (SOG-0460) — every « ```yaml » block (else « ``` » block) is a source, the text around is ignored and said; a tab indentation is refused by a clear sentence; a YAML error is said in the screen's language with the line of the pasted text; manuals ×4; N36.
 - **Missions: the Detail no longer folds its sections up when the sheet is drawn again** (SOG-0448, a side effect: a drawer that opens redraws the sheet) — each section stays as the pilot left it; N35.
 - **Missions: nothing says a mission has drawers; « Voir le contenu complet des missions » in the registry** (SOG-0459, part of Features SOG) — unticked by default, never saved, unticked again after leaving Missions; the line of choice of the Brief on the visible part; manuals ×4; N34.
 - **Missions: the Brief first, the Workshop for the author; a line of choice « duration · aircraft · theatre »** (SOG-0455) — a registry line offers « Brief », « Atelier », « Dupliquer » and « ⋯ » (« Corriger la ligne du registre », « Retirer du registre »); the Brief keeps « Préparer ce vol » in reach and gives the registry back at the same line; a missing duration is estimated on the route at a typical speed of the aircraft's class (« ≈ »); manuals ×4; N33.

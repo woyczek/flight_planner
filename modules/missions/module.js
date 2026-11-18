@@ -9,7 +9,9 @@ import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des 
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
 import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
-import * as CH from './choice.js'; // la ligne de choix « durée · aéronefs · théâtre » (SOG-0455) : le calcul pur
+import * as CH from './choice.js';
+import *
+as PS from './paste.js'; // « Coller la réponse » (SOG-0460) : les blocs de code d'un texte collé, le calcul pur // la ligne de choix « durée · aéronefs · théâtre » (SOG-0455) : le calcul pur
 import {
   init as edInit,
   edAfter,
@@ -37,7 +39,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
     'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
@@ -272,7 +274,16 @@ const TX = {
     'Uno o varios archivos YAML de misiones (un archivo puede contener varias), o un YAML pegado. Nada se escribe antes de «Añadir».'
   ],
   addFiles: ['Fichiers YAML', 'YAML files', 'YAML-Dateien', 'Archivos YAML'],
-  addPaste: ['ou collez un YAML ici', 'or paste a YAML here', 'oder YAML hier einfügen', 'o pegue un YAML aquí'],
+  addPaste: ['ou collez ici un YAML, ou la réponse entière d’un assistant : ses blocs de code sont lus',
+    'or paste a YAML here, or an assistant’s whole answer: its code blocks are read',
+    'oder fügen Sie hier YAML ein, oder die ganze Antwort eines Assistenten: ihre Codeblöcke werden gelesen',
+    'o pegue aquí un YAML, o la respuesta entera de un asistente: se leen sus bloques de código'
+  ],
+  // SOG-0460 : un bloc de code pris dans le texte collé, et le texte autour, ignoré et dit
+  pastedBlock: ['texte collé, bloc {n}', 'pasted text, block {n}', 'eingefügter Text, Block {n}', 'texto pegado, bloque {n}'],
+  addOutside: ['Le texte autour des blocs de code n’est pas lu.', 'The text around the code blocks is not read.',
+    'Der Text um die Codeblöcke wird nicht gelesen.', 'El texto alrededor de los bloques de código no se lee.'
+  ],
   pasted: ['texte collé', 'pasted text', 'eingefügter Text', 'texto pegado'],
   addRead: ['Lire', 'Read', 'Lesen', 'Leer'],
   addNothing: ['Choisissez un fichier ou collez un YAML.', 'Choose a file or paste a YAML.',
@@ -330,8 +341,16 @@ const TX = {
     'YAML-Aliasse („&…“, „*…“): das wiederholte Objekt an jeder Stelle ausschreiben',
     'alias YAML («&…», «*…»): escriba el objeto repetido entero en cada lugar'
   ],
-  why_yaml: ['YAML illisible, ligne {l} : {m}', 'unreadable YAML, line {l}: {m}', 'YAML unlesbar, Zeile {l}: {m}',
-    'YAML ilegible, línea {l}: {m}'
+  // SOG-0460 : dans la langue de l'écran, jamais le message anglais du lecteur YAML ; la ligne est celle du texte collé ou du fichier
+  why_yaml: ['YAML illisible à la ligne {l} : vérifiez l’indentation (des espaces) et les deux-points de cette ligne et de la précédente',
+    'unreadable YAML at line {l}: check the indentation (spaces) and the colons of this line and the one before',
+    'YAML unlesbar in Zeile {l}: prüfen Sie die Einrückung (Leerzeichen) und die Doppelpunkte dieser und der vorigen Zeile',
+    'YAML ilegible en la línea {l}: revise la sangría (espacios) y los dos puntos de esta línea y de la anterior'
+  ],
+  why_tabs: ['tabulation dans l’indentation, ligne {l} : le YAML s’indente avec des espaces',
+    'tab in the indentation, line {l}: YAML is indented with spaces',
+    'Tabulator in der Einrückung, Zeile {l}: YAML wird mit Leerzeichen eingerückt',
+    'tabulación en la sangría, línea {l}: el YAML se sangra con espacios'
   ],
   why_noMission: ['pas une mission (mission.id et mission.type attendus)', 'not a mission (mission.id and mission.type expected)',
     'keine Mission (mission.id und mission.type erwartet)', 'no es una misión (se esperan mission.id y mission.type)'
@@ -1780,6 +1799,7 @@ function addHtml(s) {
   const a = s.add,
     head = `<h2>${esc(s.tt(TX.add))}</h2>`;
   if (!a.items) return `<div class="f-card" data-pane="add">${head}<p class="f-muted">${esc(s.tt(TX.addHint))}</p>
+    <section class="ms-promptstep" data-promptstep hidden></section>
     <label class="f-field"><span>${esc(s.tt(TX.addFiles))}</span><input type="file" data-k="addfiles" accept=".yaml,.yml,text/yaml,application/yaml" multiple></label>
     <label class="f-field"><span class="f-sr">${esc(s.tt(TX.addPaste))}</span><textarea data-k="addtext" rows="8" spellcheck="false" placeholder="${esc(s.tt(TX.addPaste))}"></textarea></label>
     <div class="f-row"><button type="button" class="primary" data-do="addread">${esc(s.tt(TX.addRead))}</button><button type="button" data-do="addcancel">${esc(s.tt(TX.back))}</button></div></div>`;
@@ -1791,6 +1811,7 @@ function addHtml(s) {
       m: r.msg || ''
     });
   return `<div class="f-card" data-pane="add">${head}<p class="f-muted" data-found>${esc(s.tt(TX.addFound, { n: a.items.length }))}</p>
+    ${a.outside ? `<p class="f-muted" data-outside>${esc(s.tt(TX.addOutside))}</p>` : ''}
     <div class="f-list" data-addlist>${a.items.map(item).join('')}</div>
     ${s.co?.filter && a.items.length ? `<label class="f-field"><span>${esc(s.tt(TX.addAs))}</span>${coSelect(s, 'addas', a.as || '', `<option value=""${a.as ? '' : ' selected'}>${esc(s.tt(TX.asInFile))}</option>`)}</label>` : ''}
     ${a.refused.length ? `<h3 class="f-muted">${esc(s.tt(TX.addRefused))}</h3><ul data-refused>${a.refused.map(r => `<li data-reason="${esc(r.reason)}">${esc(s.tt(TX.refusedLine, { w: [r.name, r.id].filter(Boolean).join(' · '), r: why(r) }))}</li>`).join('')}</ul>` : ''}
@@ -1806,22 +1827,52 @@ async function addRead(s) {
     // un fichier trop gros n'est pas lu en entier : add.js le refuse à sa taille
     text: f.size > ADD.LIMITS.bytes ? ' '.repeat(ADD.LIMITS.bytes + 1) : await f.text().catch(() => '')
   });
-  if (pasted.trim()) sources.push({
-    name: s.tt(TX.pasted),
-    text: pasted
-  });
+  // SOG-0460 : la réponse d'un assistant — ses blocs de code, chacun une source (paste.js) ; « at » : le décalage de ses lignes
+  const P = pasted.trim() ? PS.blocksOf(pasted) : {
+    blocks: [],
+    fenced: false,
+    outside: false
+  };
+  P.blocks.forEach((b, i) => sources.push({
+    name: P.fenced ? s.tt(TX.pastedBlock, {
+      n: i + 1
+    }) : s.tt(TX.pasted),
+    text: b.text,
+    at: b.line - 1
+  }));
   if (!sources.length) return s.ctx.notify(s.tt(TX.addNothing), 'warn');
+  // une indentation par tabulation : refusée par sa phrase (jamais convertie : une conversion peut changer une structure)
+  const tabs = [];
+  for (const x of sources.splice(0)) {
+    const l = PS.tabsLine(x.text);
+    if (l) tabs.push({
+      name: x.name,
+      reason: 'tabs',
+      line: l + (x.at || 0)
+    });
+    else sources.push(x);
+  }
   if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
   const paths = new Set(await Promise.resolve().then(() => s.ctx.data.list('missions/')).catch(() => null) || []),
     known = new Map(s.rows.map(r => [r.id, r]));
   if (S !== s || !s.add) return;
-  const got = ADD.read(sources, {
-    yaml: globalThis.jsyaml,
-    known,
-    paths
-  });
+  const got = ADD.read(sources.map(x => ({
+      name: x.name,
+      text: x.text
+    })), {
+      yaml: globalThis.jsyaml,
+      known,
+      paths
+    }),
+    at = new Map(sources.map(x => [x.name, x.at || 0]));
   s.add = {
     ...got,
+    // la ligne d'une erreur YAML : celle du texte collé (un bloc commence plus bas que la ligne 1)
+    refused: [...tabs, ...got.refused.map(r => r.reason === 'yaml' && Number.isInteger(r.line) && r.line > 0 ? {
+      ...r,
+      line: r.line + (at.get(r.name) || 0)
+    } : r)],
+    outside: P.outside,
     replace: new Set()
   };
   draw(s);
