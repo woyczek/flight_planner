@@ -10413,7 +10413,7 @@ def k282(c):
             pdf_guard.require = real_require
         doc = res['docs'][0]
         blob = json.dumps(res, ensure_ascii=False) + ' '.join(logs)
-        c.eq(('AIRAC' in blob, 'UK-AIRAC' in blob, 'holiday' in blob, {p['source']['ref'] for p in doc['procedures']}, sorted(res['extra'])), (False, False, False, {'ukpkg'}, ['cycleKnown', 'partial']),
+        c.eq(('AIRAC 11-2026' in blob, 'UK-AIRAC' in blob, 'holiday' in blob, {p['source']['ref'] for p in doc['procedures']}, sorted(res['extra'])), (False, False, False, {'ukpkg'}, ['cycleKnown', 'partial']),
              'the NAME of the user\'s folder goes nowhere (not the journal, not the answer, not source.ref of the file that is committed and synchronised): `ref` is « ukpkg »', what='no folder name')
         c.eq((len(doc['procedures']), sorted({p['name'] for p in doc['procedures']}), doc['cycle'], {p['source']['kind'] for p in doc['procedures']}, [f['ok'] for f in res['formats']]),
              (4, ['MAXIT 1F', 'MAXIT 1G', 'MODMI 1J', 'MODMI 1K'], '2026-10-29', {'ukpkg'}, [True, False]), 'the reader: four SIDs from the first chart, none from the second (no instructions: said), the cycle of the package folder, the source `ukpkg`', what='reader')
@@ -10561,6 +10561,95 @@ def k343(c):
     c.ok(got[0][0] == '2026-10-29' and got[0][1] and not any(got[0][1]), str(got[0]), 'the page date wins over a folder with no date: cycle 2026-10-29, no SID marked unknown')
     c.ok(got[1][0] == '1970-01-01' and got[1][1] and all(got[1][1]), str(got[1]), 'without the tag the fallback is unchanged: cycle 1970-01-01 and `cycle_unknown` on every SID')
     c.eq((blank['docs'], [(f['ok'], f.get('reason')) for f in blank['formats']]), ([], [(False, 'no-table')]), 'a chart with no readable SID is a page not read with the code no-table (a chart, no table expected), the document is empty', what='no-table')
+
+
+@case('K344', 'UK aerodromes (SOG-0374, lot B): « Carte » links to the online NATS charts, composed from the file\'s `charts.base` (from the cycle) + a digits path the file lists; each SID says its chart (`source.chart`); host whitelisted (the page half: K380)', 'K', static=True,
+      rule='Q-0106, the user\'s choice 0 (18 Nov 2026): the online chart, as for the SIA. An address is ALWAYS composed from the cycle (ISO date, ASCII digits) and a digits-only chart number, never from a path taken in the package; `base` is composed by code from the cycle and written only in the aerodrome file; the page refuses a base outside the NATS host (NATS_EAIP_BASE) and any path the file does not list; the launcher reads nothing on NATS.')
+def k344(c):
+    import sys
+    import tempfile
+    import types
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    RJ = _regen()
+    import pdf_guard
+    import personal_use
+    import uk_package as U
+    base = 'https://www.aurora.nats.co.uk/htmlAIP/Publications/2026-10-29-AIRAC/'
+    titles = {'ADC': 'AERODROME CHART - ICAO', 'SID': 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L MODMI 1J 1K - ICAO', 'STAR': 'STANDARD ARRIVAL CHART - INSTRUMENT (STAR) RWY 27 - ICAO',
+              'IAC': 'INSTRUMENT APPROACH CHART - ICAO RWY 27 ILS', 'OTHER': 'AIRCRAFT PARKING/DOCKING CHART - ICAO'}
+    c.eq({k: U.chart_kind(t) for k, t in titles.items()}, {k: k for k in titles}, 'the kind of a chart from its title: ADC, SID, STAR, IAC, OTHER', what='chart_kind')
+    c.eq([U.online_base(x) for x in ('2026-10-29', '2026-1-29', '٢٠٢٦-١٠-٢٩', '../x', '', None)], [base, None, None, None, None, None], 'the base from an ISO cycle in ASCII digits only', what='online_base')
+    c.eq([U.chart_path({'pdf': x}) for x in ('525824', '52a', '../x', '1' * 13)] + [U.chart_path({})], ['graphics/525824.pdf', None, None, None, None], 'the path from 1 to 12 ASCII digits only', what='chart_path')
+    index = [{'label': 'AD 2.EGXX-2-1', 'pdf': '487994', 'kind': 'ADC'}, {'label': 'AD 2.EGXX-6-2', 'pdf': '../../x', 'kind': 'SID'}]
+    c.eq((U.charts_block(index, '2026-10-29'), U.charts_block(index, None), U.charts_block(index[1:], '2026-10-29')),
+         ({'base': base, 'items': [{'path': 'graphics/487994.pdf', 'kind': 'ADC', 'label': 'AD 2.EGXX-2-1'}]}, None, None), 'the block: base + items with a valid number; None without a cycle or without an item', what='charts_block')
+    fn, check = RJ.REGISTRY[('proc', 'ukpkg-fetch')]
+    ns = types.SimpleNamespace(**fn.__globals__)
+    tag = '<meta name="EM.effectiveDateStart" content="2026-10-29"/>'
+    text = ('511401N 0002910W MODMI .6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09R R025.MID VOR3.5, then turn right onto D LON R124 until LON VOR2 Straight ahead to MODMI 1J '
+            '.6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09L R025.MID VOR3.5, then turn right onto D LON Straight ahead to MODMI 1K')
+    rows = ''.join(f'<tr><td><p>{titles[k]}</p></td></tr><tr><td><a href="../../graphics/{n}.pdf">AD\xa02.EGXX-{lab}</a></td></tr>' for k, n, lab in (('ADC', 487994, '2-1'), ('SID', 475385, '6-2'), ('STAR', 461645, '7-1')))
+
+    class Job:
+        def log(self, t): pass
+        def step(self, *a): pass
+        def cancelled(self): return False
+    real, real_require = pdf_guard.read_text, pdf_guard.require
+    docs = []
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        dl = td / 'Downloads'
+        pkg = dl / 'UK-AIRAC-11-26' / 'AIRAC 11-2026' / 'AIRAC-pkg'
+        (pkg / 'html' / 'eAIP').mkdir(parents=True)
+        (pkg / 'graphics').mkdir()
+        (pkg / 'graphics' / '475385.pdf').write_bytes(b'%PDF-1.4 x')
+        personal_use.write(str(td / 'data'), True, False)
+        pdf_guard.read_text = lambda data, path, first=0, count=1, **k: {'pages': 1, 'texts': [text]}
+        pdf_guard.require = lambda *a, **k: None
+        try:
+            for head in ('<html><head>' + tag + '</head>', '<html><head></head>'):
+                (pkg / 'html' / 'eAIP' / 'EG-AD-2.EGXX-en-GB.html').write_text(head + '<body><table>' + rows + '</table></body></html>', encoding='utf-8')
+                docs.append(ns._read_ukpkg(ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl)]}))['docs'][0])
+        finally:
+            pdf_guard.read_text, pdf_guard.require = real, real_require
+    want = [{'path': 'graphics/487994.pdf', 'kind': 'ADC', 'label': 'AD 2.EGXX-2-1'}, {'path': 'graphics/475385.pdf', 'kind': 'SID', 'label': 'AD 2.EGXX-6-2'}, {'path': 'graphics/461645.pdf', 'kind': 'STAR', 'label': 'AD 2.EGXX-7-1'}]
+    c.eq(docs[0].get('charts'), {'base': base, 'items': want}, 'the launcher writes the charts block: the base from the page cycle, every chart of the page by its digits', what='block')
+    c.ok(docs[0]['procedures'] and all(p['source'].get('chart') == 'graphics/475385.pdf' for p in docs[0]['procedures']), str([p['source'] for p in docs[0]['procedures']]), 'every SID says the chart it was read from')
+    c.ok('charts' not in docs[1], str(docs[1].get('charts')), 'cycle unknown (no tag, no date in the folder): no charts key, no online link')
+
+
+@case('K380', 'UK aerodromes (SOG-0374, lot B), the page: chartUrl / chartsUrl / chartOnly compose the online NATS address from the file\'s `charts.base` + a digits path the file lists; a base outside the NATS host, a path not listed or with « .. », a cycle unknown: nothing', 'K', tags=('aerodb',), phone=False,
+      rule='Q-0106, the user\'s choice 0 (18 Nov 2026): the online chart, as for the SIA. The page refuses a base outside the NATS host (NATS_EAIP_BASE) and any path the file does not list; the aerodrome page needs the file cycle (never the calendar). The Python half of this lot is the static case K344; this one needs the browser bench frame/aerodb/test/procedures.html.')
+def k380(c):
+    base = 'https://www.aurora.nats.co.uk/htmlAIP/Publications/2026-10-29-AIRAC/'
+    want = [{'path': 'graphics/487994.pdf', 'kind': 'ADC', 'label': 'AD 2.EGXX-2-1'}, {'path': 'graphics/475385.pdf', 'kind': 'SID', 'label': 'AD 2.EGXX-6-2'}, {'path': 'graphics/461645.pdf', 'kind': 'STAR', 'label': 'AD 2.EGXX-7-1'}]
+    sid = {'id': 'EGXX.SID.MODMI1J.RW09R', 'icao': 'EGXX', 'kind': 'SID', 'name': 'MODMI 1J', 'runways': ['09R'], 'transition': 'MODMI', 'points': [{'seq': 1, 'id': 'MODMI', 'leg': 'TF'}],
+           'partial': {'read': ['exit'], 'unread': ['path'], 'note': 'x'}, 'status': 'check', 'source': {'kind': 'ukpkg', 'ref': 'ukpkg', 'cycle': '2026-10-29', 'chart': 'graphics/475385.pdf'}}
+    good = {'schema': 1, 'icao': 'EGXX', 'cycle': '2026-10-29', 'procedures': [sid], 'charts': {'base': base, 'items': want}}
+    evil = {**good, 'charts': {'base': 'https://evil.example.org/htmlAIP/Publications/2026-10-29-AIRAC/', 'items': want}}
+    old = {**good, 'cycle': '1970-01-01'}
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async ([docs, sid]) => {
+      const day = Date.parse('2026-11-18T12:00:00Z'), out = {};
+      const mk = files => AeroDB.create({ reader: { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} }, lnmperf: false, now: () => day });
+      const rwy = { icao: 'EGXX', kind: 'RWY', id: 'EGXX.RWY.09R', name: 'RWY 09R', runways: ['09R'] }, other = chart => ({ ...sid, source: { ...sid.source, chart } });
+      for (const [tag, doc] of Object.entries(docs)) {
+        const db = mk({ 'proc/manual/EGXX.json': doc });
+        out[tag] = { sid: await db.chartUrl(sid), rwy: await db.chartUrl(rwy), page: await db.chartsUrl('EGXX'), star: await db.chartOnly('EGXX', { kind: 'STAR' }), sids: await db.chartOnly('EGXX', { kind: 'SID' }),
+          up: await db.chartUrl(other('../../secret.pdf')), unlisted: await db.chartUrl(other('graphics/1.pdf')) };
+      }
+      return out;
+    }""", [{'good': good, 'evil': evil, 'old': old}, sid])
+    g = r['good']
+    c.eq((g['sid'], g['rwy']), (base + 'graphics/475385.pdf', base + 'graphics/487994.pdf'), 'chartUrl: the SID its chart, the runway the aerodrome chart (ADC), base + listed path', what='chartUrl')
+    c.eq(g['page'], base + 'html/eAIP/EG-AD-2.EGXX-en-GB.html', 'chartsUrl: the aerodrome page of the file cycle', what='chartsUrl')
+    c.eq((g['star'], g['sids']), ([{'name': 'AD 2.EGXX-7-1', 'runway': '', 'url': base + 'graphics/461645.pdf'}], []), 'chartOnly: the STAR chart; the SID chart has its record (taken)', what='chartOnly')
+    c.eq((g['up'], g['unlisted']), (None, None), 'a source.chart with « .. » or not listed by the file: null', what='unlisted')
+    e = r['evil']
+    c.eq((e['sid'], e['rwy'], e['page'], e['star']), (None, None, None, []), 'a base outside the NATS host: nothing composed', what='hostile')
+    c.eq(r['old']['page'], None, 'cycle 1970-01-01 (unknown): no aerodrome page', what='1970')
+
 
 
 @case('K274', 'Route engine: a fallback proposal after the search budget says so (`status: proposal`, a sentence) and does not cost the budget of every level (SOG-0161, EIDW → KBOS: 35 s)', 'K', static=True,

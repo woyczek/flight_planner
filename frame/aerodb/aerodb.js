@@ -935,6 +935,90 @@
      *  proc_sia.eaip_url) : le fichier du terrain est dans le dépôt synchronisé, modifiable par tout membre du groupe, et une base vers
      *  un autre hôte ferait un lien d'hameçonnage sous un libellé de confiance. Les autres sources n'ont pas de lien (leur nom suffit). */
     const SIA_EAIP_BASE = /^https:\/\/www\.sia\.aviation-civile\.gouv\.fr\/[A-Za-z0-9._~%/-]+\/$/;
+    /** La base de l'AIP en ligne de NATS d'un aérodrome EG… (SOG-0374, lot B) : exactement « …/Publications/AAAA-MM-JJ-AIRAC/ » sous
+     *  l'hôte de NATS (tools/uk_package.py online_base l'écrit dans le fichier du terrain) ; même esprit que SIA_EAIP_BASE : ancrée,
+     *  hôte exact, forme exacte, et jamais « .. ». Une carte est « graphics/<chiffres>.pdf » (NATS_CHART_PATH), listée par ce fichier. */
+    const NATS_EAIP_BASE = /^https:\/\/www\.aurora\.nats\.co\.uk\/htmlAIP\/Publications\/\d{4}-\d{2}-\d{2}-AIRAC\/$/;
+    const NATS_CHART_PATH = /^graphics\/\d{1,12}\.pdf$/;
+    const NATS_LABEL = /^AD 2\.EG[A-Z]{2}-\d{1,2}-\d{1,2}$/;
+
+    /** La base NATS du bloc `charts` d'un fichier de terrain, ou null si elle n'est pas sous l'hôte de NATS dans la forme exacte
+     *  (le fichier est dans le dépôt synchronisé, modifiable par tout membre du groupe : une autre base ferait un lien d'hameçonnage). */
+    function natsBase(file) {
+      const base = file?.charts?.base;
+      return typeof base === 'string' && NATS_EAIP_BASE.test(base) && !base.includes('..') ? base : null;
+    }
+
+    /** Les cartes NATS valides du bloc `charts` d'un fichier : celles dont le chemin est « graphics/<chiffres>.pdf » et le libellé
+     *  « AD 2.EGXX-n-n » (copies bornées : rien d'autre du fichier n'entre dans une adresse ni dans un nom affiché). */
+    function natsItems(file) {
+      const items = file?.charts?.items;
+      return Array.isArray(items) ? items.filter(i => i && typeof i.path === 'string' && NATS_CHART_PATH.test(i.path) &&
+        typeof i.label === 'string' && NATS_LABEL.test(i.label) && typeof i.kind === 'string').map(i => ({
+        path: i.path,
+        kind: i.kind,
+        label: i.label
+      })) : [];
+    }
+
+    /** chartUrl pour un aérodrome EG… (SOG-0374, lot B) : le fichier du terrain choisi comme pour le SIA (celui qui porte la fiche ;
+     *  pour la piste, le premier qui liste des cartes), sa base NATS (natsBase) + le chemin d'une carte que CE fichier liste. La piste :
+     *  la carte d'aérodrome ADC (la première par libellé) ; une SID / STAR / approche lue dans le paquet : sa carte `source.chart`, si le
+     *  fichier la liste. null sinon : rien n'est composé d'un chemin que le fichier ne liste pas. */
+    async function natsChartUrl(k, proc) {
+      let e;
+      try {
+        e = await procEntry(k);
+      } catch {
+        return null;
+      }
+      const {
+        pub,
+        manual
+      } = e.files || {}, mine = (f, lists) => f && lists.some(p => p && p.id === proc.id), cycle = proc.source?.cycle;
+      const file = proc.kind === 'RWY' ? [pub, manual].find(f => f?.charts?.items?.length) :
+        mine(pub, e.lists.pub) ? pub : mine(manual, e.lists.manual) ? manual : [pub, manual].find(f => f && cycle && f.cycle === cycle);
+      const base = natsBase(file);
+      if (!base) return null;
+      const items = natsItems(file);
+      if (proc.kind === 'RWY') {
+        const adc = items.filter(i => i.kind === 'ADC').sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0))[0];
+        return adc ? base + adc.path : null;
+      }
+      const chart = proc.source?.kind === 'ukpkg' ? proc.source.chart : null;
+      return typeof chart === 'string' && NATS_CHART_PATH.test(chart) && items.some(i => i.path === chart) ? base + chart : null;
+    }
+
+    /** chartOnly pour un aérodrome EG… (SOG-0374, lot B) : les cartes de la sorte demandée ('IAC', 'STAR', 'SID') que le fichier du
+     *  terrain liste, { name: son libellé « AD 2.EGXX-n-n », runway: '', url: base NATS + son chemin }, triées par libellé ; pour 'SID',
+     *  sans les cartes d'où une SID a été lue (`source.chart` : elles ont leur fiche, comme les IAC prises du SIA). [] sans base NATS. */
+    async function natsChartOnly(k, what) {
+      let e;
+      try {
+        e = await procEntry(k);
+      } catch {
+        return [];
+      }
+      const {
+        pub,
+        manual
+      } = e.files || {}, file = [pub, manual].find(f => f?.charts?.items?.length), base = natsBase(file);
+      if (!base) return [];
+      // les cartes d'où une SID a été lue : celles des fiches servies et celles des fiches du fichier lui-même (une fiche refusée à la fusion garde sa carte prise)
+      const taken = new Set();
+      if (what === 'SID') {
+        const served = await api.procedures(k, {
+          doubt: true
+        }).catch(() => []);
+        for (const p of [...served, ...(Array.isArray(file.procedures) ? file.procedures : [])])
+          if (p && p.kind === 'SID' && p.source?.kind === 'ukpkg' && typeof p.source.chart === 'string') taken.add(p.source.chart);
+      }
+      return natsItems(file).filter(i => i.kind === what && !taken.has(i.path)).map(i => ({
+        name: i.label,
+        runway: '',
+        url: base + i.path
+      })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    }
 
     function withSourceUrl(k, file, p) {
       const s = p?.source,
@@ -2849,7 +2933,8 @@
       /** L'adresse de la page d'un aérodrome dans l'AIP officiel de son État, là où sont ses cartes (ADC, SID, STAR, approche, VAC…), ou null (V3, lot C2, 5 nov. 2026 ; SOG-0024) :
        *  France (LF…) la page AD 2 de l'eAIP du SIA du cycle publié de la zone fr (à défaut, du cycle en vigueur), Espagne (LE…, GC…) la page de l'aérodrome d'ENAIRE (les cartes PDF de
        *  contenido_AIP/AD/AD2/<OACI>/ y sont listées), Irlande (EI…) la page AD 2 de l'édition d'AirNav Ireland de la zone ie publiée (rien sans zone publiée : le dossier d'une édition change
-       *  à chaque cycle) ; tout autre État, un code qui n'a pas quatre lettres : null. Ne lit aucune donnée d'aérodrome : un code inexistant donne une adresse qui n'ouvre rien. */
+       *  à chaque cycle) ; tout autre État, un code qui n'a pas quatre lettres : null. Ne lit aucune donnée d'aérodrome : un code inexistant donne une adresse qui n'ouvre rien.
+       *  Royaume-Uni (EG…, SOG-0374 lot B) : la page de l'AIP en ligne de NATS du cycle du fichier lu dans le paquet (sa base sous l'hôte de NATS, NATS_EAIP_BASE), null sans ce fichier ou cycle inconnu. */
       async chartsUrl(icao) {
         const k = String(icao || '').trim().toUpperCase();
         if (!/^[A-Z]{4}$/.test(k)) return null;
@@ -2872,6 +2957,21 @@
         if (/^EI/.test(k)) {
           const cycle = (await api.publication()).base?.ie?.inForce;
           return /^\d{4}-\d{2}-\d{2}$/.test(cycle || '') ? `https://www.airnav.ie/AIRAC/${cycle}-AIRAC/html/eAIP/EI-AD-2.${k}-en-IE.html` : null;
+        }
+        // SOG-0374, lot B : le cycle du fichier lu dans le paquet (jamais le calendrier : le dossier en ligne du jour ne nous est pas connu sans fichier), sa base sous l'hôte de NATS
+        if (/^EG/.test(k)) {
+          let e;
+          try {
+            e = await procEntry(k);
+          } catch {
+            return null;
+          }
+          const manual = e.files?.manual,
+            cycle = manual?.cycle;
+          if (typeof cycle !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(cycle) || cycle === '1970-01-01' || !natsBase(manual))
+            return null;
+          const base = `https://www.aurora.nats.co.uk/htmlAIP/Publications/${cycle}-AIRAC/`;
+          return NATS_EAIP_BASE.test(base) && !base.includes('..') ? `${base}html/eAIP/EG-AD-2.${k}-en-GB.html` : null;
         }
         return null;
       },
@@ -3004,10 +3104,12 @@
        *  `{ icao, kind: 'RWY', id, name, runways: [piste] }` (la réponse est alors la carte d'aérodrome ADC, sinon la carte VAC de l'atlas VFR). SIA seulement (LF…) : la carte IAC / SID / STAR choisie
        *  dans `charts.items` du fichier du terrain qui porte la fiche (procedures.js chartFor : une seule carte qui convienne, jamais devinée), sinon la page DATA de sa table de codage
        *  (`source.url`, § 10.25) ; ENAIRE et AirNav : null tant que leurs adresses ne sont pas connues. Jamais composée ailleurs (même contrat que chartsUrl) : l'adresse est `charts.base` du
-       *  fichier, sous l'hôte du SIA, + le chemin d'une carte listée par ce même fichier. Rien n'est lu ni téléchargé de la carte. */
+       *  fichier, sous l'hôte du SIA, + le chemin d'une carte listée par ce même fichier. Rien n'est lu ni téléchargé de la carte.
+       *  Royaume-Uni (EG…, SOG-0374 lot B) : la carte en ligne de NATS, `charts.base` du fichier (hôte de NATS seulement, NATS_EAIP_BASE) + un chemin « graphics/<chiffres>.pdf » listé par ce fichier (natsChartUrl). */
       async chartUrl(proc) {
         const k = String(proc?.icao || '').trim().toUpperCase();
         await api.sources().catch(() => null);
+        if (/^EG[A-Z]{2}$/.test(k) && proc && typeof proc === 'object') return natsChartUrl(k, proc);
         if (!window.AeroCatalogue?.siaRegionOf?.(k) || !proc || typeof proc !== 'object') return null;
         let e;
         try {
@@ -3040,13 +3142,15 @@
       },
       /** Les approches « cartes seulement » d'un terrain du SIA (SOG-0232 / SOG-0216) : les cartes IAC de `charts.items` du fichier du terrain qu'AUCUNE fiche d'approche (lue, en doute ou d'une autre source) ne porte :
        *  [{ name: 'ILS LOC RWY 05', runway: '05', url }], triées par piste puis par nom. L'AIP ne publie de table de codage que pour une partie des approches (les RNP, quelques ILS) : les autres n'existent qu'en carte.
-       *  `{ kind: 'STAR' | 'SID' }` : les cartes de départs ou d'arrivées CONVENTIONNELS (mot « CONV » du nom de la carte), qui n'ont jamais de table de codage. L'adresse est composée ICI, comme chartUrl (`charts.base` du fichier sous l'hôte du SIA + le chemin d'une carte listée par ce même fichier) ; [] hors de la France, sans fichier du terrain ou sans carte IAC. Rien n'est lu de la carte. */
+       *  `{ kind: 'STAR' | 'SID' }` : les cartes de départs ou d'arrivées CONVENTIONNELS (mot « CONV » du nom de la carte), qui n'ont jamais de table de codage. L'adresse est composée ICI, comme chartUrl (`charts.base` du fichier sous l'hôte du SIA + le chemin d'une carte listée par ce même fichier) ; [] hors de la France, sans fichier du terrain ou sans carte IAC. Rien n'est lu de la carte.
+       *  Royaume-Uni (EG…, SOG-0374 lot B) : les cartes de cette sorte que le fichier liste, base NATS (hôte de NATS seulement) + chemin en chiffres, nommées par leur libellé (natsChartOnly). */
       async chartOnly(icao, {
         kind: what = 'IAC'
       } = {}) {
         const k = String(icao || '').trim().toUpperCase();
         if (!/^[A-Z0-9]{4}$/.test(k) || !['IAC', 'STAR', 'SID'].includes(what)) return [];
         await api.sources().catch(() => null);
+        if (/^EG[A-Z]{2}$/.test(k)) return natsChartOnly(k, what);
         if (!window.AeroCatalogue?.siaRegionOf?.(k)) return [];
         let e;
         try {

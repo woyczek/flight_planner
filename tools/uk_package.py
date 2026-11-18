@@ -5,7 +5,9 @@ Les faits (lus le 16 nov. 2026 sur le paquet de l'utilisateur, 2 766 fichiers, 8
 
 Règles : jamais un chemin venu d'une page (un nom de PDF est ramené à des chiffres, un code d'aérodrome à quatre lettres) ; la recherche ne regarde que des NOMS de dossiers (jamais le contenu d'un fichier avant d'avoir reconnu le paquet par sa forme : html/eAIP/EG-AD-2.*-en-GB.html + graphics/),
 sur trois niveaux, dans les seuls dossiers dont le nom évoque un AIP (airac, aip, nats, le mot uk), au plus MAX_TOTAL entrées au total, sans suivre ni lien symbolique ni jonction Windows (`_link` : os.path.isjunction, Python 3.12 et après ; ce poste a Python 3.14) ; le NOM du dossier de l'utilisateur ne sort jamais de ce module (la date en est lue : package_date, en repli de celle de la page de l'aérodrome : page_date) ; la page de l'aérodrome et chaque PDF sont lus sous un plafond de taille ; seuls les PDF d'UN aérodrome et d'UNE sorte (les cartes SID) sont recopiés, sous un nom canonique, dans le dossier que l'appelant donne (data/local/upload/ :
-la lecture de PDF de pdf_guard n'ouvre rien d'autre). Bibliothèque standard seulement."""
+la lecture de PDF de pdf_guard n'ouvre rien d'autre). Bibliothèque standard seulement.
+
+En ligne (SOG-0374, lot B) : l'AIP de NATS publie les mêmes pages et les mêmes numéros de cartes sous <NATS_EAIP_BASE><cycle>-AIRAC/ (html/eAIP/EG-AD-2.<OACI>-en-GB.html, graphics/<numéro>.pdf) ; l'adresse est toujours composée ici du cycle (date ISO) et d'un numéro en chiffres seulement (charts_block), jamais d'un chemin lu dans le paquet."""
 import datetime
 import html as htmllib
 import os
@@ -28,6 +30,9 @@ PAGE = 'EG-AD-2.{}-en-GB.html'
 LABEL = re.compile(r'AD 2\.(EG[A-Z]{2})-(\d{1,2})-(\d{1,2})\Z', re.A)
 PDF_LINK = re.compile(r'(?:\.\./)*graphics/(\d{1,12})\.pdf\Z', re.A)
 CANON = re.compile(r'ukpkg_(EG[A-Z]{2})_(\d{1,2})-(\d{1,2})\.pdf\Z', re.A)
+NATS_EAIP_BASE = 'https://www.aurora.nats.co.uk/htmlAIP/Publications/'      # l'AIP en ligne de NATS : le seul hôte des liens « Carte » d'un aérodrome EG… (frame/aerodb/aerodb.js le recontrôle : NATS_EAIP_BASE)
+CYCLE = re.compile(r'\d{4}-\d{2}-\d{2}', re.A)
+PDF_NUMBER = re.compile(r'\d{1,12}', re.A)
 
 
 def _link(path):
@@ -158,15 +163,55 @@ def chart_index(page, icao):
         if not m or not h or m.group(1) != icao or m.group(0) in seen:
             continue
         seen.add(m.group(0))
-        out.append({'label': m.group(0), 'part': int(m.group(2)), 'number': int(m.group(3)), 'pdf': h.group(1), 'title': previous[:300]})
+        out.append({'label': m.group(0), 'part': int(m.group(2)), 'number': int(m.group(3)), 'pdf': h.group(1), 'title': previous[:300], 'kind': chart_kind(previous[:300])})
         if len(out) >= 400:
             break
     return out
 
 
+def chart_kind(title):
+    """La sorte d'une carte d'après son TITRE (en majuscules) : 'ADC' (« AERODROME CHART »), 'SID' (« (SID) » ou « STANDARD DEPARTURE CHART »), 'STAR' (« (STAR) » ou « STANDARD ARRIVAL CHART »),
+    'IAC' (« INSTRUMENT APPROACH CHART »), 'OTHER' sinon (cartes de stationnement, d'obstacles, de bruit…). Le titre est un texte non fiable de la page : il ne donne qu'un de ces cinq mots."""
+    t = title.upper() if isinstance(title, str) else ''
+    if 'AERODROME CHART' in t:
+        return 'ADC'
+    if '(SID)' in t or 'STANDARD DEPARTURE CHART' in t:
+        return 'SID'
+    if '(STAR)' in t or 'STANDARD ARRIVAL CHART' in t:
+        return 'STAR'
+    if 'INSTRUMENT APPROACH CHART' in t:
+        return 'IAC'
+    return 'OTHER'
+
+
 def sid_charts(index):
-    """Les cartes SID de l'index (« STANDARD DEPARTURE CHART - INSTRUMENT (SID) ») : les seules à recopier pour les départs."""
+    """Les cartes SID de l'index (« STANDARD DEPARTURE CHART - INSTRUMENT (SID) ») : les seules à recopier pour les départs. Les DEUX mots sont exigés (plus étroit que chart_kind, qui range « SID » sur un seul)."""
     return [c for c in index if 'STANDARD DEPARTURE CHART' in c['title'].upper() and '(SID)' in c['title'].upper()][:MAX_CHARTS]
+
+
+def online_base(cycle):
+    """La base de l'AIP en ligne de NATS pour un cycle : NATS_EAIP_BASE + « AAAA-MM-JJ-AIRAC/ », ou None si `cycle` n'est pas exactement une date ISO en chiffres ASCII (jamais un autre texte dans l'adresse)."""
+    if not isinstance(cycle, str) or not CYCLE.fullmatch(cycle):
+        return None
+    return f'{NATS_EAIP_BASE}{cycle}-AIRAC/'
+
+
+def chart_path(chart):
+    """Le chemin d'une carte sous la base en ligne : « graphics/<chiffres>.pdf », ou None si le numéro de la carte n'est pas fait de 1 à 12 chiffres ASCII (le chemin du paquet n'est jamais repris)."""
+    pdf = chart.get('pdf') if isinstance(chart, dict) else None
+    if not isinstance(pdf, str) or not PDF_NUMBER.fullmatch(pdf):
+        return None
+    return f'graphics/{pdf}.pdf'
+
+
+def charts_block(index, cycle):
+    """Le bloc `charts` du fichier de l'aérodrome (même forme que celui du SIA) : { base: online_base(cycle), items: [{ path, kind, label }] } pour les cartes de l'index dont le numéro est valide ;
+    None quand le cycle n'est pas connu ou qu'aucune carte ne reste. `label` est le « AD 2.EGXX-6-2 » déjà borné par LABEL."""
+    base = online_base(cycle)
+    if base is None:
+        return None
+    items = [{'path': chart_path(c), 'kind': c['kind'], 'label': c['label']} for c in index if chart_path(c)]
+    return {'base': base, 'items': items} if items else None
 
 
 def canonical(icao, chart):

@@ -143,7 +143,8 @@ def _read_ukpkg(env):
     env.say(f'{env.icao}: paquet du Royaume-Uni trouvé')      # jamais le nom du dossier de l'utilisateur
     try:
         page = uk_package.aerodrome_page(root, env.icao)
-        charts = uk_package.sid_charts(uk_package.chart_index(page, env.icao))
+        index = uk_package.chart_index(page, env.icao)      # toutes les cartes de la page : le bloc `charts` du fichier (liens en ligne, lot B)
+        charts = uk_package.sid_charts(index)
     except ValueError as e:
         return {'ok': False, 'reason': 'no-tables', 'message': str(e)}
     if not charts:
@@ -175,19 +176,29 @@ def _read_ukpkg(env):
         return {'docs': [], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {}}
     for p in procedures:
         p['source'] = {'kind': 'ukpkg', 'ref': 'ukpkg', 'file': name_of(p, charts, env.icao), 'cycle': day or UNKNOWN_CYCLE, 'at': None, **({} if day else {'cycle_unknown': True})}
+        chart = chart_of(p, charts)
+        p['source']['chart'] = uk_package.chart_path(chart) if chart else None      # « graphics/<chiffres>.pdf » : le lien « Carte » de la fiche (aerodb.js chartUrl), sous la base du fichier
     doc = {'schema': 1, 'icao': env.icao, 'cycle': day or UNKNOWN_CYCLE, 'updated_at': None, 'procedures': procedures, 'formats': formats, 'warnings': warnings,
            'notice': "Source : paquet eAIP du Royaume-Uni (NATS) posé à la main ; SID lues par la couche texte de leurs cartes : point de sortie et niveaux seulement, tracé non lu (voir la carte). Données NON OPÉRATIONNELLES : simulation seulement."}
+    if day:      # cycle connu : les liens vers les cartes EN LIGNE (base composée du cycle, chemins en chiffres) ; cycle inconnu : aucune clé `charts`
+        doc['charts'] = uk_package.charts_block(index, day)
     return {'docs': [doc], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {'partial': len(procedures), 'cycleKnown': bool(day)}}
 
 
-def name_of(proc, charts, icao):
-    """Le nom canonique de la carte d'où vient une SID (son désignateur est dans le titre de la carte)."""
-    import uk_package
+def chart_of(proc, charts):
+    """La carte (entrée de l'index) d'où vient une SID : la première dont le titre porte son désignateur ; None sinon."""
     import proc_uk_sid
     for c in charts:
         if any(d['name'] == proc['name'] for d in proc_uk_sid.designators(c['title'])):
-            return uk_package.canonical(icao, c)
+            return c
     return None
+
+
+def name_of(proc, charts, icao):
+    """Le nom canonique de la carte d'où vient une SID (son désignateur est dans le titre de la carte : chart_of)."""
+    import uk_package
+    c = chart_of(proc, charts)
+    return uk_package.canonical(icao, c) if c else None
 
 
 def _commit_message(source, icao):
