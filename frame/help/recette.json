@@ -4611,6 +4611,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0106",
+   "fiche": "SOG-0374",
+   "app": "pilote",
+   "question": "SID du Royaume-Uni : comment ouvrir les cartes PDF (piste, SID, STAR) depuis Carburant ?",
+   "context": "Tu avais refusé la lecture du paquet du Royaume-Uni le 16/11 (« pas de lien vers les PDF piste, star, sid »). Mesure de Procédures : aucun lien n'existe, parce que le lanceur ne sert à la page aucun fichier de son dossier local, et que la base ne connaît d'adresse de carte que pour le SIA. Trois façons : un lien vers la carte en ligne chez NATS, comme les cartes françaises ouvrent celles du SIA (il faut d'abord vérifier l'adresse sur le site de NATS : une lecture d'essai, avec ton accord) ; une route du lanceur qui sert les seuls PDF recopiés de ton paquet (marche hors ligne, mais c'est ouvrir un accès de plus au lanceur, sur ce poste seulement) ; ou « Ouvrir dans » le dossier des cartes recopiées, sans rien ouvrir de plus. Les deux autres manques (fiches grisées « cycle inconnu », compte perdu au rechargement) sont en cours de correction sans rien te demander.",
+   "options": [
+    "Un lien vers la carte en ligne chez NATS (j'accepte la lecture d'essai de l'adresse)",
+    "Une route du lanceur qui sert les PDF de mon paquet, sur ce poste seulement",
+    "« Ouvrir dans » le dossier des cartes recopiées, rien de plus",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
