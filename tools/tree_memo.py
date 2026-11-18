@@ -17,6 +17,8 @@ import os
 import re
 import tempfile
 
+import safe_json
+
 VERSION = 1
 MAX_BYTES = 32 * 2 ** 20      # la mémoire de 10 000 fichiers fait ~1,2 Mo
 MAX_ENTRIES = 400_000
@@ -55,17 +57,16 @@ def load(data):
     """{ chemin relatif: ((taille, date en ns), empreinte) } — vide au moindre défaut ; ne lève jamais."""
     try:
         return _load(data)
-    except Exception:   # RecursionError (JSON très imbriqué), MemoryError, tout autre défaut : « illisible », démarrage à froid
+    except Exception:   # tout autre défaut (la lecture du JSON est gardée par safe_json) : « illisible », démarrage à froid
         return {}
 
 
 def _load(data):
     p = path_of(data)
-    if not _local_ok(data) or os.path.islink(p) or not os.path.isfile(p) or os.path.getsize(p) > MAX_BYTES:
+    if not _local_ok(data) or os.path.islink(p):
         return {}
-    with open(p, 'rb') as f:
-        doc = json.loads(f.read(MAX_BYTES + 1).decode('utf-8'))
-    if not isinstance(doc, dict) or doc.get('v') != VERSION or not isinstance(doc.get('files'), dict) or len(doc['files']) > MAX_ENTRIES:
+    doc, why = safe_json.read(p, MAX_BYTES, encoding='utf-8')   # absent, trop gros, JSON invalide ou trop imbriqué, NaN : « illisible »
+    if why or not isinstance(doc, dict) or doc.get('v') != VERSION or not isinstance(doc.get('files'), dict) or len(doc['files']) > MAX_ENTRIES:
         return {}
     out = {}
     for k, v in doc['files'].items():
