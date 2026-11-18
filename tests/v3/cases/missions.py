@@ -1343,6 +1343,7 @@ _BR_PURE_JS = """async () => { const MS = await import('/frame/lib/mission.js'),
     none: CH.durationOf(m, null), threw: CH.durationOf(m, () => { throw new Error('x') }), proto: CH.durationOf(m, cls('__proto__')),
     written: CH.durationOf(MS.readMission({ ...base, timing: { estimated_flight_min: 47 } }), null),
     hm: [CH.hm(45), CH.hm(60), CH.hm(80), CH.hm(605)], dep: CH.depIcao(m), ac: CH.aircraftOf(m),
+    depHeli: [CH.depIcao({ origin: { icao: 'XH418' } }), CH.depIcao({ origin: { icao: 'XH41A' } }), CH.depIcao({ origin: { icao: '<b>' } })],
     theatre: [CH.theatreOf({ theatre: '  Alpes\\u0007  du   nord ' }), CH.theatreOf({ theatre: 'x'.repeat(90) }).length,
       CH.theatreOf({ country: 'FR' }, { region: c => c === 'FR' ? 'France' : '' }), CH.theatreOf({ country: 'fr1' }, { adState: 'Etat Test' }),
       CH.theatreOf({}, {}), CH.theatreOf({ country: 'FR' }, { region: () => { throw new Error('x') }, adState: 'Etat Test' })] } }"""
@@ -1367,6 +1368,8 @@ def n33(c):
          'unknown, without the service, when it throws or for a hostile class', what='class')
     c.eq([r['written'], r['hm'], r['dep'], r['ac']], [{'min': 47, 'est': ''}, ['45 min', '1 h', '1 h 20', '10 h 05'], 'XTST', 1],
          'a written duration as it is; « 45 min », « 1 h », « 1 h 20 »; the departure aerodrome; one aircraft', what='written')
+    c.eq(r['depHeli'], ['XH418', '', ''], 'a helipad\'s list code is a departure (isCode of the shared field); anything else is not',
+         what='helipad departure')
     c.eq(r['theatre'], ['Alpes du nord', 40, 'France', 'Etat Test', '', 'Etat Test'],
          'the theatre of the file cleaned and bounded; else the country named; else the State of the aerodrome; else nothing', what='theatre')
     c.page.set_viewport_size({'width': 390, 'height': c.height})

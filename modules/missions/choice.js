@@ -13,11 +13,15 @@
 //   durationOf(mission, classify) → { min, est: '' | 'file' | 'class' } | null : '' la durée écrite, 'file' calculée à la vitesse du
 //     fichier, 'class' à la vitesse type de la classe.
 //   aircraftOf(mission) → le nombre d'aéronefs (0 : rien à dire).
-//   depIcao(mission) → le code OACI du terrain de départ ('' sinon).
+//   depIcao(mission) → le code du terrain de départ ('' sinon) : quatre signes, ou le code de liste d'une hélistation (« LF418 » : isCode
+//     du champ de terrain commun, le motif d'AeroDB).
 //   theatreOf(mission, { region, adState }) → le théâtre ('' sinon) ; region(code ISO) : le nom d'un pays, adState : l'État du terrain.
 //   hm(min) → « 45 min », « 1 h », « 1 h 20 ».
 
 import * as MS from '../../frame/lib/mission.js';
+import {
+  isCode
+} from '../../frame/lib/ad_field.js'; // un code de terrain complet, la règle du champ commun (hélistations comprises)
 
 /** Vitesse type d'une classe d'aéronef (kt) ; une classe absente d'ici (« other », inconnue) : pas de durée. */
 export const CLASS_KT = Object.freeze({
@@ -78,7 +82,7 @@ export function durationOf(m, classify) {
 export const aircraftOf = m => Math.min(99, Array.isArray(m?.aircraft) ? m.aircraft.length : 0);
 
 /** Le code OACI du terrain de départ : celui que le lecteur a tiré de son nom (« … (XTST) ») ; '' sinon. */
-export const depIcao = m => /^[A-Z]{4}$/.test(String(m?.origin?.icao || '')) ? m.origin.icao : '';
+export const depIcao = m => isCode(String(m?.origin?.icao || '')) ? m.origin.icao : '';
 
 /** Le théâtre (voir l'en-tête). */
 export function theatreOf(m, {
