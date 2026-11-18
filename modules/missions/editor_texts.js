@@ -137,6 +137,44 @@ export const EDTX = {
   dwAdd: ['＋ Tiroir', '＋ Drawer', '＋ Schublade', '＋ Cajón'],
   dwBricks: ['Briques', 'Bricks', 'Bausteine', 'Ladrillos'], // lot « modèles de mission » : les briques du catalogue sous « ＋ Tiroir »
   dwBrickCommon: ['Toute mission', 'Any mission', 'Jede Mission', 'Cualquier misión'],
+  // le modèle de la mission (lot « modèles de mission ») : la ligne sous le titre, la liste, la question « Remplacé » / « Gardé »
+  mdLine: ['Modèle : {name}', 'Model: {name}', 'Modell: {name}', 'Modelo: {name}'],
+  mdNone: ['aucun', 'none', 'keines', 'ninguno'],
+  mdChange: ['Changer de modèle', 'Change model', 'Modell wechseln', 'Cambiar de modelo'],
+  mdChoose: ['Choisir un modèle', 'Choose a model', 'Modell wählen', 'Elegir un modelo'],
+  mdList: ['Modèles', 'Models', 'Modelle', 'Modelos'],
+  mdMine: ['Vos modèles', 'Your models', 'Ihre Modelle', 'Sus modelos'],
+  mdFamilyFirst: ['La famille d’abord (Cadre) : elle propose ses modèles.', 'The family first (Frame): it offers its models.',
+    'Zuerst die Familie (Rahmen): sie schlägt ihre Modelle vor.', 'Primero la familia (Marco): propone sus modelos.'
+  ],
+  mdPoses: ['{n} tiroir(s) · {m} lieu(x) à placer', '{n} drawer(s) · {m} place(s) to place',
+    '{n} Schublade(n) · {m} zu setzende(n) Ort(e)',
+    '{n} cajón(es) · {m} lugar(es) por situar'
+  ],
+  mdAsk: ['Prendre le modèle « {name} » ?', 'Take the model “{name}”?', 'Das Modell „{name}“ übernehmen?', '¿Tomar el modelo «{name}»?'],
+  mdGone: ['Remplacé', 'Replaced', 'Ersetzt', 'Sustituido'],
+  mdKept: ['Gardé', 'Kept', 'Behalten', 'Conservado'],
+  mdGoneDrawers: ['les tiroirs de la mission ({n})', 'the drawers of the mission ({n})', 'die Schubladen der Mission ({n})',
+    'los cajones de la misión ({n})'
+  ],
+  mdGonePlaces: ['les lieux du modèle encore à placer : {ids}', 'the model’s places still to place: {ids}',
+    'die noch zu setzenden Orte des Modells: {ids}', 'los lugares del modelo aún por situar: {ids}'
+  ],
+  mdKeptSheet: ['le Cadre, les Équipes, le Récit, les Risques, la Chronologie',
+    'the Frame, the Teams, the Story, the Risks, the Timeline',
+    'Rahmen, Teams, Erzählung, Risiken, Ablauf', 'el Marco, los Equipos, el Relato, los Riesgos, la Cronología'
+  ],
+  mdKeptMine: ['vos lieux : {ids}', 'your places: {ids}', 'Ihre Orte: {ids}', 'sus lugares: {ids}'],
+  mdKeptPlaced: ['les lieux du modèle déjà placés : {ids}', 'the model’s places already placed: {ids}',
+    'die bereits gesetzten Orte des Modells: {ids}',
+    'los lugares del modelo ya situados: {ids}'
+  ],
+  mdOk: ['Remplacer par ce modèle', 'Replace with this model', 'Durch dieses Modell ersetzen', 'Sustituir por este modelo'],
+  mdKeepOld: ['Garder la mission telle quelle', 'Keep the mission as it is', 'Die Mission so lassen', 'Dejar la misión como está'],
+  mdDone: ['Modèle « {name} » posé : {n} tiroir(s), {m} lieu(x) à placer.', 'Model “{name}” set: {n} drawer(s), {m} place(s) to place.',
+    'Modell „{name}“ gesetzt: {n} Schublade(n), {m} zu setzende(n) Ort(e).',
+    'Modelo «{name}» puesto: {n} cajón(es), {m} lugar(es) por situar.'
+  ],
   dwMax: ['Douze tiroirs au plus.', 'Twelve drawers at most.', 'Höchstens zwölf Schubladen.', 'Doce cajones como máximo.'],
   dwSheet: ['Tiroir {n} — scellé jusqu\'à ce que sa clé joue', 'Drawer {n} — sealed until its key plays',
     'Schublade {n} — versiegelt, bis ihr Schlüssel greift',

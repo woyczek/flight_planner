@@ -1290,6 +1290,24 @@ of the type of SOG-0467 (§ 7 quinquetricies).
   catalogue: the workshop works without bricks, and the reading is tried again at the next opening); posed in the sitting (`s.ed.cat`); when it arrives only an open
   choice under « ＋ Tiroir » is redrawn, never a field being typed.
 
+### 7 terquadragies. The model of the mission: at the creation, and « Changer de modèle » (18 Nov 2026; lot « modèles de mission », decisions B and D; noreg N140, N141)
+
+The order of the creation (the user): the TYPE (the family, in the Cadre), then the MODEL if any, then the BRICKS at « ＋ Tiroir ». The variant #modele of the mock-up:
+the model is visible near the title, and changes.
+
+- **The line**: in the WHOLE workshop only (never veiled: `edModelHtml` returns nothing), under the title — « Modèle : <its title> » (`[data-atmodelname]`; its identifier
+  while the catalogue is not read; « aucun » without model) and a link « Changer de modèle » (« Choisir un modèle » without model; `data-do="edmodel"`).
+- **The list**: opened IN PLACE under the line (`s.ed.modelOpen`, `edModelListHtml`): the models of the catalogue then « Vos modèles » (the personal models, `edMine`, § 7
+  quaterquadragies), of the TYPE of the mission (a model without type goes to any family); without a family, a line asks for the family first and only the models
+  without type are offered. Seven at most per group; each its title and what it poses in one line (« 3 tiroirs · 2 lieux à placer »); the model in force is marked.
+- **A model touched** (`edModelPick`): when it would replace something (a drawer, a place of the former model still to place), the question of the frame says it BEFORE
+  — « Prendre le modèle « … » ? », groups « Remplacé » (the drawers of the mission (n), the places of the model still to place) and « Gardé » (the Cadre, the Teams, the
+  Story, the Risks, the Timeline; your places; the places of the model already placed) — « Remplacer par ce modèle » / « Garder la mission telle quelle ». Nothing to
+  replace (a new mission): no question. Then `CAT.applyModel`: the places of the model are posed « to place » with a free identifier (`ED.newPlace`), its drawers
+  (`DR.blankDrawer` + `CAT.drawerFrom`) cite them; `s.ed.model = { id, placed }`, written by `edDoc` (`CAT.withModel`) — FORMAT_MISSION.md § 4 quater. A model the list
+  does not carry, or of another type (a forged page), does nothing; veiled, nothing (`VEILED_OFF`).
+- **After « Enregistrer »** the model is the file's (`s.ed.model` back to undefined).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

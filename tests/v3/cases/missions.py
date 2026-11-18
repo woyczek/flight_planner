@@ -9393,3 +9393,163 @@ def n139(c):
         c.tap(f'{_DW} [data-kinds=drawer] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+# the writes of the cases of the models: a mission of the family SAR (missions/S_SAR/) and the personal models of ABC (pilot/ABC/modeles/),
+# cleared before and after, queue and cache
+_MD_CLEAR = """async () => { if (!(await indexedDB.databases()).some(d => d.name === 'sogFrame')) return false; const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  for (const st of ['pending', 'docs']) { if (!db.objectStoreNames.contains(st)) continue;
+    const keys = await new Promise(res => { const q = db.transaction(st).objectStore(st).getAllKeys(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
+    const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^(missions\\/(mission_registry\\.yaml|X_REG\\/|S_SAR\\/)|pilot\\/ABC\\/modeles\\/)/.test(String(k))) t.objectStore(st).delete(k);
+    await new Promise(res => { t.oncomplete = res; t.onerror = res }) }
+  db.close(); return true }"""
+# the texts the frame keeps under a prefix (the write queue first): { path: text }
+_TEXTS_UNDER = """async (prefix) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  const out = {}; for (const st of ['docs', 'pending']) { if (!db.objectStoreNames.contains(st)) continue;
+    const rows = await new Promise(res => { const q = db.transaction(st).objectStore(st).getAll(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
+    for (const r of rows) if (String(r.path).startsWith(prefix) && typeof r.text === 'string') out[r.path] = r.text }
+  db.close(); return out }"""
+_MD_LINE = f"(() => [document.querySelector('{E} [data-atmodelname]')?.textContent, document.querySelector('{E} [data-do=edmodel]')?.textContent].map(t => t == null ? null : t.replace(/[\\s\u00a0\u202f]+/g, ' ').trim()))()"
+_MD_LIST = f"[...document.querySelectorAll('{E} [data-models] [data-do=edmodelpick]')].map(x => [x.dataset.model, x.querySelector('b').textContent.trim(), x.dataset.own, x.getAttribute('aria-pressed')])"
+
+
+def _md_save(c):
+    """« Enregistrer » in the workshop, then the text of the mission file written under missions/S_SAR/ (the write queue first), read by js-yaml."""
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='the mission saved')
+    texts = c.js(_TEXTS_UNDER, 'missions/S_SAR/')
+    c.eq(len(texts), 1, 'one mission file written under missions/S_SAR/', what='the files written')
+    text = list(texts.values())[0]
+    return text, c.js('(t) => window.jsyaml.load(t)', text)
+
+
+def _md_pick(c, model):
+    """Opens the list of the models under the title (if closed) and touches one."""
+    if not c.count(f'{E} [data-models]'):
+        c.tap(f'{E} [data-atmodel] [data-do=edmodel]')
+    c.until(f"!!document.querySelector('{E} [data-models] [data-model=\"{model}\"]')", timeout=10000, what=f'the model {model} in the list')
+    c.tap(f'{E} [data-models] [data-model="{model}"]')
+
+
+@case('N140', 'Missions › the workshop, the model at the creation (lot « modèles de mission », decisions B and D): in a new mission a line under the title says '
+      '« Modèle : aucun » and « Choisir un modèle » opens IN PLACE the list of the models; without a family it asks for the family first and offers only the '
+      'blank mission; the family SAR chosen (the TYPE first), it offers the blank mission and « Recherche sur un glacier » — not the interception (COMBAT); '
+      'the glacier touched (nothing to replace: no question) poses its three drawers and its two places « to place », the line says its name and « Changer '
+      'de modèle »; « Enregistrer » writes `mission_model: { id: search-glacier, placed: [ZONE-1, OBJ-1] }`, the drawers citing ZONE-1 and OBJ-1, the places '
+      'without position; at 390 and at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='Lot « modèles de mission » (order of the creation, the user: the TYPE, then the MODEL if any, then the BRICKS at « ＋ Tiroir »; the variant #modele of '
+      'the mock-up); docs/technique/FORMAT_MISSION.md § 4 quater; EDITOR.md § 7 terquadragies')
+def n140(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _ED_TEXTS)
+        c.js(_MD_CLEAR)
+        c.tap(f'{R} [data-do="edcreate"]')
+        c.until(f"!!document.querySelector('{E} [data-atmodel]')", timeout=10000, what='the line of the model under the title')
+        c.eq(c.js(_MD_LINE), ['Modèle : aucun', 'Choisir un modèle'], f'{width}: a new mission, no model yet', what='the line')
+        c.tap(f'{E} [data-atmodel] [data-do=edmodel]')
+        c.until(f"document.querySelectorAll('{E} [data-models] [data-do=edmodelpick]').length > 0", timeout=10000, what='the list of the models')
+        c.eq([c.count(f'{E} [data-models] [data-modelfam]'), [m[0] for m in c.js(_MD_LIST)]], [1, ['blank']], f'{width}: no family yet — the family first, the blank mission only',
+             what='the list without family')
+        c.page.select_option(f'{E} select[data-k=edfam]', 'SAR')
+        c.until(f"document.querySelectorAll('{E} [data-models] [data-do=edmodelpick]').length === 2", what='the models of SAR')
+        c.eq(c.js(_MD_LIST), [['blank', 'Mission vierge', '', 'false'], ['search-glacier', 'Recherche sur un glacier', '', 'false']],
+             f'{width}: SAR offers the blank mission and the glacier, not the interception', what='the list of SAR')
+        c.js('window.scrollTo(0, 0)')  # the title, the line of the model and its list, for the capture
+        c.shot(f'P11b_{width}_creation.png')
+        _md_pick(c, 'search-glacier')
+        c.until(f"({_FLOW_N}) === 3", timeout=5000, what='the three drawers of the glacier')
+        c.eq(c.count('.f-modal'), 0, 'nothing to replace: no question', what='the question')
+        c.eq(c.js(_MD_LINE), ['Modèle : Recherche sur un glacier', 'Changer de modèle'], f'{width}: the line says the model', what='the line')
+        c.eq([x[1] for x in c.js(_DW_CARDS)], ['Tiroir 1 · Entrée sur le glacier', 'Tiroir 2 · Personne en vue', 'Tiroir 3 · Retour au terrain'],
+             f'{width}: the three drawers of the model, in order', what='the drawers')
+        ed_places(c)
+        c.ok(all(c.js(_PLACE_AT, p) >= 0 for p in ('ZONE-1 · Secteur de recherche', 'OBJ-1 · Personne à trouver')), c.js(_PLACES_JS), f'{width}: the two places of the model, named')
+        if width == 1280:
+            c.js('window.scrollTo(0, 0)')  # the title, the line of the model and its list, for the capture
+            c.shot('P11b_1280_pose.png')
+        text, doc = _md_save(c)
+        c.eq(doc.get('mission_model'), {'id': 'search-glacier', 'placed': ['ZONE-1', 'OBJ-1']}, 'the file says the model and what it placed', what='mission_model')
+        ph = [(p.get('id'), p.get('trigger_zone') or p.get('trigger_object') or (p.get('trigger_condition') or {}).get('kind'), p.get('title')) for p in doc.get('phases') or []]
+        c.eq(ph, [('B', 'ZONE-1', 'Entrée sur le glacier'), ('C', 'OBJ-1', 'Personne en vue'), ('D', 'arrival', 'Retour au terrain')], 'the drawers cite the places of the model', what='phases')
+        zone = (doc.get('zones') or [{}])[0]
+        at = zone.get('centre') or {}
+        c.ok(zone.get('id') == 'ZONE-1' and at.get('lat') is None and at.get('lon') is None and zone.get('lat') is None, zone,
+             'the zone of the model is « to place »: no position written (its centre null, the form of the V2)')
+        ed_leave(c)
+        c.js(_MD_CLEAR)
+
+
+@case('N141', 'Missions › the workshop, « Changer de modèle » says BEFORE what it replaces and what it keeps (lot « modèles de mission », decision D): a SAR mission '
+      'built from the glacier, its zone ZONE-1 placed by the author (a position typed), its object OBJ-1 still « to place »; « Changer de modèle » → « Mission '
+      'vierge » asks through the question of the frame — « Remplacé »: the drawers of the mission (3), the places of the model still to place (OBJ-1); « Gardé »: '
+      'the Cadre, the Teams, the Story, the Risks, the Timeline, the places of the model already placed (ZONE-1); « Garder la mission telle quelle » changes '
+      'nothing; « Remplacer par ce modèle » leaves no drawer, ZONE-1 at its position, no OBJ-1, and the file says `mission_model: { id: blank, placed: [] }`; '
+      'a mission whose `mission_model` is ill-formed (« ../x ») reads « Modèle : aucun »; in the VEILED workshop there is no line of the model', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='Lot « modèles de mission », decision D (« Changer de modèle » — the variant #modele of the mock-up — says what is replaced and what is kept: the placed '
+      'places stay; `mission_model` unknown or ill-formed → no model); EDITOR.md § 7 terquadragies; FORMAT_MISSION.md § 4 quater')
+def n141(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _ED_TEXTS)
+    c.js(_MD_CLEAR)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} select[data-k=edfam]')", timeout=10000, what='a new mission')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'SAR')
+    c.until(f"document.querySelector('{E} select[data-k=edfam]')?.value === 'SAR'", what='the family SAR')
+    _md_pick(c, 'search-glacier')
+    c.until(f"({_FLOW_N}) === 3", timeout=5000, what='the three drawers of the glacier')
+    # the author places ZONE-1 (a position typed in its fields)
+    ed_places(c)
+    i = c.js(_PLACE_AT, 'ZONE-1')
+    c.tap(f'{E} [data-place="{i}"] [data-do="edplace"]')
+    c.page.fill(f'{E} [data-plform="{i}"] [data-f=lat]', '45.1')
+    c.page.fill(f'{E} [data-plform="{i}"] [data-f=lon]', '6.2')
+    c.tap(f'{E} [data-plform="{i}"] [data-do="edplaceok"]')
+    # « Changer de modèle » → the blank mission: the question first
+    _md_pick(c, 'blank')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question « Prendre le modèle « Mission vierge » ? »')
+    said = c.js("""(() => { const m = document.querySelector('.f-modal'), sp = t => t.replace(/[\\s\u00a0\u202f]+/g, ' ').trim();
+      const sec = id => [...m.querySelectorAll(`[data-ask-section="${id}"] li`)].map(x => sp(x.textContent));
+      return { q: sp(m.querySelector('p').textContent), gone: sec('gone'), kept: sec('kept'), ok: m.querySelector('[data-ok]').textContent.trim(), no: m.querySelector('[data-no]').textContent.trim() } })()""")
+    c.eq(said, {'q': 'Prendre le modèle « Mission vierge » ?', 'gone': ['les tiroirs de la mission (3)', 'les lieux du modèle encore à placer : OBJ-1'],
+                'kept': ['le Cadre, les Équipes, le Récit, les Risques, la Chronologie', 'les lieux du modèle déjà placés : ZONE-1'],
+                'ok': 'Remplacer par ce modèle', 'no': 'Garder la mission telle quelle'}, 'the question says what is replaced and what is kept, before', what='the question')
+    c.shot('P11b_390_changer.png')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal')", what='the question closed')
+    c.eq([c.js(_FLOW_N), c.js(_MD_LINE)[0]], [3, 'Modèle : Recherche sur un glacier'], '« Garder la mission telle quelle » changes nothing', what='kept')
+    _md_pick(c, 'blank')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question again')
+    c.tap('.f-modal [data-ok]')
+    c.until(f"({_FLOW_N}) === 0", timeout=5000, what='no drawer left')
+    ed_places(c)
+    c.eq([c.js(_PLACE_AT, 'ZONE-1') >= 0, c.js(_PLACE_AT, 'OBJ-1'), c.js(_MD_LINE)[0]], [True, -1, 'Modèle : Mission vierge'],
+         'ZONE-1 (placed) stays, OBJ-1 (to place) is gone, the line says the new model', what='after the change')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    _md_pick(c, 'search-glacier')
+    c.until(f"({_FLOW_N}) === 3", timeout=5000, what='the glacier again (nothing to replace: no question)')
+    _md_pick(c, 'blank')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question at 1280')
+    c.shot('P11b_1280_changer.png')
+    c.tap('.f-modal [data-ok]')
+    c.until(f"({_FLOW_N}) === 0", timeout=5000, what='no drawer left at 1280')
+    text, doc = _md_save(c)
+    zones = {z.get('id'): [(z.get('centre') or {}).get('lat'), (z.get('centre') or {}).get('lon')] for z in doc.get('zones') or []}
+    c.eq([doc.get('mission_model'), doc.get('phases'), zones.get('ZONE-1'), 'OBJ-' in text], [{'id': 'blank', 'placed': []}, None, [45.1, 6.2], False],
+         'the file: the blank model, no drawer, ZONE-1 at its position, no object of the model', what='the file')
+    ed_leave(c)
+    # an ill-formed mission_model reads « aucun »; veiled, no line of the model
+    reg_open(c, [_ED_TEXTS[0], [_ED_TEXTS[1][0], _ED_TEXTS[1][1] + chr(10) + 'mission_model: { id: "../x", placed: [ZONE-1] }' + chr(10)]])
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+    c.eq(c.count(f'{E} [data-atmodel]'), 0, 'veiled: no line of the model', what='the veiled workshop')
+    ed_reveal(c)
+    c.until(f"!!document.querySelector('{E} [data-atmodel]')", what='the line of the model in the whole workshop')
+    c.eq(c.js(_MD_LINE), ['Modèle : aucun', 'Choisir un modèle'], 'an ill-formed mission_model: no model', what='the ill-formed key')
+    ed_leave(c)
+    c.js(_MD_CLEAR)

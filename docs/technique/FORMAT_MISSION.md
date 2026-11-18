@@ -206,6 +206,28 @@ mission_map:
 - It is a wish of display, never a secret and never a rule of the game: the pilot changes the background and the layer on his
   device, for the sitting. Bench: noreg N110 (the key), N111 (the block in read only).
 
+## 4 quater. The model of the mission — `mission_model` (lot « modèles de mission », 18 Nov 2026)
+
+The workshop remembers which model of the catalogue (or which personal model) a mission was built from, and which places that model
+posed — what « Changer de modèle » needs to say what it replaces:
+
+```yaml
+mission_model:
+  id: search-glacier      # the model: an identifier of the closed form ^[a-z0-9-]{1,40}$
+  placed: [ZONE-1, OBJ-1] # the places the model posed (20 at most), by their identifier in this mission
+```
+
+- **Read by the workshop only** (`modelOf` of `modules/missions/catalog.js`): an identifier without its form, `placed` that is not a
+  list or holds more than 20 entries, a key that is not an object → **no model** (the line says « Modèle : aucun »); an entry of
+  `placed` that is not the identifier of a place of the mission (renamed, removed) is simply ignored — that place is then the
+  author's. The reader of the pilot (`frame/lib/mission.js`) does not read the key: it changes nothing in the game.
+- **Written by the workshop** (`withModel`) when a model is taken in the sitting, with these two fields and no other; « Enregistrer »
+  without a model taken writes nothing new (the key of the file is kept as it is).
+- **What « Changer de modèle » replaces**: every drawer, and the places of `placed` that are still « to place » (no position); it
+  KEEPS the places of `placed` the author has placed since, the places of the author, the Cadre, the Teams, the Story, the Risks and
+  the Timeline. A model never writes a position: its places are written with a null centre, « to place » (the form of the V2).
+  Bench: `modules/missions/test/catalog.html`; noreg N140, N141.
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a

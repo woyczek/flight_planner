@@ -59,6 +59,14 @@
 // liste des familles, d'abord celle de la mission ; s.ed.brickFam) ; une brique touchée crée le tiroir avec sa clé (DR.keyed, par
 // CAT.drawerFrom), son titre, son message et son heure de repli, et ouvre sa fiche. Pas dans la fiche d'un tiroir : changer de clé ne
 // réécrit pas les textes de l'auteur.
+// Le modèle de la mission (lot « modèles de mission », décisions B et D ; la variante #modele de la maquette) : dans l'atelier ENTIER,
+// une ligne sous le titre dit le modèle (« Modèle : Recherche sur un glacier », ou « aucun ») et porte « Changer de modèle » (« Choisir
+// un modèle » sans modèle), qui ouvre SUR PLACE la liste des modèles (s.ed.modelOpen) : ceux du catalogue livré puis les modèles
+// personnels du pilote (s.ed.mine, edMine), du TYPE de la mission (sa famille, choisie d'abord ; un modèle sans type va à toute
+// famille). Un modèle touché qui remplacerait quelque chose le dit avant, par la question du cadre (ses groupes « Remplacé » et
+// « Gardé » : CAT.modelChange) ; il pose ses tiroirs et ses lieux « à placer » (CAT.applyModel) et la clé `mission_model` { id, placed }
+// (s.ed.model, écrite par CAT.withModel dans edDoc ; undefined : celle du fichier, inchangée). Les lieux posés par l'ancien modèle et
+// placés depuis restent, comme les lieux de l'auteur ; le Cadre, les Équipes, le Récit, les Risques et la Chronologie ne bougent pas.
 //
 // « Lieux » en tête de la colonne de droite (SOG-0472, décision de l'ergonome) : un cadre (edPlacesCardHtml) où la liste des lieux — les
 // lignes d'edPlacesHtml, un bouton par ligne — a une hauteur fixe et défile en elle-même ; la ligne choisie est marquée et les champs du
@@ -175,10 +183,156 @@ async function edCatalog(s) {
       return CAT.readCatalog('');
     }
   })();
-  const cat = await CATALOG;
+  const cat = await CATALOG,
+    mine = await edMine(s);
   if (state() !== s || s.ed !== e) return;
   e.cat = cat;
-  if (e.kinds === 'new') draw(s);
+  e.mine = mine;
+  if (e.kinds === 'new' || e.modelOpen) return draw(s);
+  // la ligne du modèle dit son nom, désormais connu : sur place (aucun bouton n'est remplacé)
+  const name = s.el?.querySelector('[data-atmodelname]');
+  if (name && name.textContent !== edModelLine(s)) name.textContent = edModelLine(s);
+}
+
+/** Les modèles personnels de ce pilote (pilot/<TRI>/modeles/<id>.yaml, écrits par « Enregistrer comme modèle ») : chacun lu par le même
+ *  CAT.readCatalog que le catalogue (une entrée non fiable : n'importe quel appareil du pilote a pu l'écrire), vingt fichiers au plus,
+ *  un modèle par fichier, dont l'identifiant est celui du nom du fichier ; sans trigramme, aucun. */
+async function edMine(s) {
+  const path = CAT.modelPath(s.ctx.identity?.trigram, 'x');
+  if (!path) return [];
+  const prefix = path.slice(0, -'x.yaml'.length),
+    re = /^pilot\/[A-Z]{3}\/modeles\/([a-z0-9-]{1,40})\.yaml$/,
+    list = await Promise.resolve().then(() => s.ctx.data.list(prefix)).catch(() => null),
+    paths = (Array.isArray(list) ? list : []).filter(p => typeof p === 'string' && p.startsWith(prefix) && re.test(p)).sort().slice(0,
+      CAT.LIMITS.models),
+    out = [];
+  if (paths.length && !globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  for (const p of paths) {
+    const r = await Promise.resolve().then(() => s.ctx.data.read(p)).catch(() => null),
+      v = r?.value ?? r?.text ?? null,
+      m = CAT.readCatalog(typeof v === 'string' ? v : '', globalThis.jsyaml).models[0];
+    if (m && m.id === re.exec(p)[1]) out.push({
+      ...m,
+      own: true
+    });
+  }
+  return out;
+}
+
+/** Le modèle de la séance : celui posé dans la séance (s.ed.model), sinon celui du fichier (CAT.modelOf) ; null : aucun. */
+const edModelNow = e => e.model !== undefined ? e.model : CAT.modelOf(e.base);
+
+/** Un modèle lu (le catalogue d'abord, puis les modèles personnels) par son identifiant ; `own` : parmi les personnels seulement. */
+function edModelFind(e, id, own = null) {
+  const all = [...(own === true ? [] : e.cat?.models || []), ...(own === false ? [] : e.mine || [])];
+  return all.find(m => m.id === id) || null;
+}
+
+/** Le texte de la ligne du modèle : « Modèle : <son titre> » (son identifiant tant que le catalogue n'est pas lu), « Modèle : aucun ». */
+function edModelLine(s) {
+  const e = s.ed,
+    now = edModelNow(e),
+    m = now ? edModelFind(e, now.id) : null;
+  return s.tt(EDTX.mdLine, {
+    name: !now ? s.tt(EDTX.mdNone) : m ? CAT.textIn(m.title, s.ctx.lang?.() || 'fr') : now.id
+  });
+}
+
+/** La ligne du modèle sous le titre (l'atelier entier seulement), et sous elle, ouverte, la liste des modèles (edModelListHtml). */
+function edModelHtml(s) {
+  const e = s.ed;
+  if (e.veil) return '';
+  return `<div class="ms-atmodel" data-atmodel><p class="ms-atmodelline"><span class="f-muted" data-atmodelname>${esc(edModelLine(s))}</span><button type="button" class="f-linkbtn" data-do="edmodel" aria-expanded="${!!e.modelOpen}">${esc(s.tt(edModelNow(e) ? EDTX.mdChange : EDTX.mdChoose))}</button></p>${e.modelOpen ? edModelListHtml(s) : ''}</div>`;
+}
+
+/** La liste des modèles du type de la mission : un modèle sans type va à toute famille ; sans famille choisie, ceux-là seuls et une
+ *  ligne qui demande la famille d'abord (l'ordre de la création : le type, puis le modèle, puis les briques). Deux groupes de sept au
+ *  plus — le catalogue, puis « Vos modèles » — chacun son titre et ce qu'il pose en une ligne ; le modèle en vigueur est marqué. */
+function edModelListHtml(s) {
+  const e = s.ed,
+    lang = s.ctx.lang?.() || 'fr',
+    fam = e.cadre.family,
+    fits = m => !m.type || m.type === fam,
+    cur = edModelNow(e)?.id || '',
+    item = m => `<button type="button" class="f-item ms-kind" data-do="edmodelpick" data-model="${esc(m.id)}" data-own="${m.own ? '1' : ''}" aria-pressed="${m.id === cur}"><b>${esc(CAT.textIn(m.title, lang))}</b><span class="f-muted">${esc(s.tt(EDTX.mdPoses, { n: m.drawers.length, m: m.places.length }))}</span></button>`,
+    cat = (e.cat?.models || []).filter(fits).slice(0, 7),
+    mine = (e.mine || []).filter(fits).slice(0, 7);
+  return `<div class="f-list ms-kinds ms-models" data-models role="group" aria-label="${esc(s.tt(EDTX.mdList))}">${fam ? '' : `<p class="f-muted" data-modelfam>${esc(s.tt(EDTX.mdFamilyFirst))}</p>`}${cat.map(item).join('')}${mine.length ? `<p class="f-muted ms-modelsmine">${esc(s.tt(EDTX.mdMine))}</p>${mine.map(item).join('')}` : ''}<button type="button" class="f-linkbtn ms-kindoff" data-do="edmodeloff">${esc(s.tt(TX.cancel))}</button></div>`;
+}
+
+/** Un modèle touché dans la liste : ce qu'il remplace est dit d'abord, par la question du cadre (« Remplacé », « Gardé ») quand il
+ *  remplace quelque chose (un tiroir, un lieu du modèle d'avant encore à placer) ; sur oui, ses tiroirs et ses lieux sont posés
+ *  (CAT.applyModel) et la mission retient le modèle (s.ed.model). Un modèle que la liste ne porte pas (une page forgée) : rien. */
+async function edModelPick(s, id, own) {
+  const e = s.ed;
+  if (!e || e.veil || !e.modelOpen) return;
+  const model = edModelFind(e, id, own),
+    lang = s.ctx.lang?.() || 'fr';
+  if (!model || model.type && model.type !== e.cadre.family) return;
+  const places = e.places || ED.placesOf(edDoc(e)),
+    prior = edModelNow(e),
+    change = CAT.modelChange(places, edDrawers(e), prior),
+    name = CAT.textIn(model.title, lang),
+    ids = list => list.slice(0, 12).join(', ') + (list.length > 12 ? ' …' : '');
+  if (change.drawers || change.gone.length) {
+    const gone = [...(change.drawers ? [s.tt(EDTX.mdGoneDrawers, {
+        n: change.drawers
+      })] : []), ...(change.gone.length ? [s.tt(EDTX.mdGonePlaces, {
+        ids: ids(change.gone)
+      })] : [])],
+      kept = [s.tt(EDTX.mdKeptSheet), ...(change.mine.length ? [s.tt(EDTX.mdKeptMine, {
+        ids: ids(change.mine)
+      })] : []), ...(change.kept.length ? [s.tt(EDTX.mdKeptPlaced, {
+        ids: ids(change.kept)
+      })] : [])];
+    if (!(await s.ctx.ask(s.tt(EDTX.mdAsk, {
+        name
+      }), {
+        sections: [{
+          id: 'gone',
+          title: s.tt(EDTX.mdGone),
+          lines: gone
+        }, {
+          id: 'kept',
+          title: s.tt(EDTX.mdKept),
+          lines: kept
+        }],
+        ok: s.tt(EDTX.mdOk),
+        cancel: s.tt(EDTX.mdKeepOld)
+      }))) return;
+    if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
+  }
+  const out = CAT.applyModel({
+    places: e.places || ED.placesOf(edDoc(e)),
+    base: e.base,
+    prior
+  }, model, lang);
+  edUndoClear(e); // une retouche des lieux et des tiroirs : « Annuler le geste » n'a plus rien à rendre
+  e.places = out.places;
+  e.drawers = out.drawers.map(r => ({
+    ...r,
+    said: edSaid(s, r)
+  }));
+  e.model = {
+    id: model.id,
+    placed: out.placed
+  };
+  Object.assign(e, {
+    modelOpen: false,
+    kinds: '',
+    sel: 'start',
+    mapSel: -1,
+    mapVertex: -1,
+    drawFor: '',
+    chipSel: null,
+    drawerAsk: ''
+  });
+  draw(s);
+  s.ctx.notify(s.tt(EDTX.mdDone, {
+    name,
+    n: out.drawers.length,
+    m: out.placed.length
+  }), 'ok');
 }
 
 // ---------------------------------------------------------------- l'éditeur de missions (SOG-0287), dans la forme de l'atelier (SOG-0444)
@@ -258,6 +412,10 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-kinds>.ms-kindoff{justify-self:start;min-height:44px}
 [data-module="missions"] .ms-bricks{margin:6px 0 0;padding-top:6px;border-top:1px solid var(--sog-line,#ddd)} /* les briques du catalogue, sous les types */
 [data-module="missions"] .ms-bricks>.f-field{margin:0}
+[data-module="missions"] .ms-atmodel{margin:0 0 10px} /* le modèle de la mission, sous le titre (lot « modèles de mission ») */
+[data-module="missions"] .ms-atmodelline{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin:0}
+[data-module="missions"] .ms-models{margin:4px 0 0 0;max-width:40em}
+[data-module="missions"] .ms-models>p{margin:4px 0}
 [data-module="missions"] .ms-dgrp{border-top:1px solid var(--sog-line,#ddd);padding:8px 0 4px}
 [data-module="missions"] .ms-dgrp>h4{margin:4px 0 8px}
 [data-module="missions"] .ms-dgrp .f-row{align-items:flex-start}
@@ -526,6 +684,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.events) d = ED.withEvents(d, e.events);
   if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
   if (e.mapWant) d = ED.withMapLook(d, e.mapWant); // SOG-0456 : le fond et la couche de la carte, choisis par l'auteur
+  if (e.model !== undefined) d = CAT.withModel(d, e.model); // le modèle posé dans la séance (lot « modèles de mission », décision D)
   if (e.drawers) d = DR.withDrawerRows(d, e.drawers); // SOG-0445 : les tiroirs retouchés (une zone et un objet y sont cités, jamais écrits)
   return ED.withRefs(d, e.base, e.places); // SOG-0439 : après toutes les étapes, les références suivent les lieux renommés ou retirés
 }
@@ -2343,7 +2502,7 @@ export function edHtml(s) {
     run = edTrialRun(s, doc); // l'essai des clés en cours, ou null
   return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
-    ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
+    ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}${edModelHtml(s)}
     <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edProfHtml(s)}${edFlowHtml(s, doc, run)}</div><div class="ms-atside">${run ? edTrialHtml(s, run) : `${edPlacesCardHtml(s, doc)}${e.veil || (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}`}</div></div>
     <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
@@ -2792,6 +2951,8 @@ async function edSave(s) {
       drawers: null,
       drawerAsk: '',
       kinds: '',
+      model: undefined, // le modèle est désormais celui du fichier enregistré
+      modelOpen: false,
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -2911,6 +3072,16 @@ export function edClick(s, b) {
       return draw(s);
     case 'edkind':
       return edKind(s, b.dataset.key);
+    case 'edmodel': // « Changer de modèle » / « Choisir un modèle » : la liste s'ouvre sous la ligne, retouché il la referme
+      if (s.ed.veil) return;
+      s.ed.modelOpen = !s.ed.modelOpen;
+      if (s.ed.modelOpen && !s.ed.cat) edCatalog(s);
+      return draw(s);
+    case 'edmodeloff': // « Annuler » : la liste se referme, rien n'est changé
+      s.ed.modelOpen = false;
+      return draw(s);
+    case 'edmodelpick':
+      return edModelPick(s, b.dataset.model, b.dataset.own === '1');
     case 'edbrick': { // une brique du catalogue, sous « ＋ Tiroir » : le tiroir naît d'elle (une brique que le catalogue lu ne porte pas : rien)
       const brick = (s.ed.cat?.bricks || []).find(x => x.id === b.dataset.brick);
       return brick ? edKind(s, brick.key, brick) : undefined;
@@ -3255,7 +3426,8 @@ export function edClick(s, b) {
 /** Les gestes qui ne jouent pas dans l'atelier voilé (SOG-0459) : l'essai des clés, les tiroirs, les cartes proposées (elles nomment
  *  les zones par leur rang). */
 const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddradd', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
-  'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff', 'edbrick'
+  'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff', 'edbrick', 'edmodel',
+  'edmodeloff', 'edmodelpick'
 ]);
 
 /** Un type touché dans le choix (SOG-0467) : sous « ＋ Tiroir », le tiroir suivant naît avec cette clé (DR.keyed : ce qu'elle devine)
