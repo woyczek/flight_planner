@@ -8467,5 +8467,7 @@ def f278(c):
     f = c.js(f"""(() => {{ const d = document.querySelector('{FUEL} [data-routealts] [data-faults]');
         return {{ all: d.querySelectorAll('[data-fault]').length, more: d.querySelector('[data-faultmore] > summary')?.textContent || '' }} }})()""")
     c.eq(f['all'], 8, 'eight lines for eight deviations', what='lines')
-    want = norm(tx(T, 'rMore', c.lang).replace('{n}', '1').replace('(s)', ''))
-    c.eq(norm(f['more']), want, '« 1 autre » / « 1 more »: the singular, agreed by the frame', what='more')
+    # the words written here, not read from the module's texts: an expectation drawn from the texts followed the defect (« {n} autres »
+    # gave « 1 autres » on both sides; Essais, 18/11)
+    want = {'fr': '1 autre', 'en': '1 more', 'de': '1 weitere', 'es': '1 más'}[c.lang]
+    c.eq(norm(f['more']), want, '« 1 autre » / « 1 more »: the singular, agreed by the frame — never « 1 autres »', what='more')
