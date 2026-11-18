@@ -12,6 +12,10 @@ import {
   onMission
 } from './state.js';
 import {
+  text,
+  inRange
+} from './lib/safe_text.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -33,10 +37,10 @@ const DOC = 'cache/fuel/altn_candidates.json',
   WHY = ['rwy-unread', 'aids-unread', 'aids-visual', 'wx-ifr',
     'wx-unread'
   ]; // la liste fermée de Carburant (TX.altnPropWhy), dans son ordre (SOG-0494 : piste et moyens non vérifiés)
-// un NOMBRE JSON dans ses bornes : jamais une conversion (null, '' et true feraient 0 ou 1 : un terrain sans position serait dessiné au large du Gabon, Sécurisation)
-const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
-// un texte sans signes de contrôle, sans < > ni marques de format (Cf : U+202E, U+2066… : un nom ne se lit pas à l'envers), borné
-const clean = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
+// un NOMBRE JSON dans ses bornes (jamais une conversion : null, '' et true feraient 0 ou 1, un terrain sans position serait dessiné au large du Gabon, Sécurisation) et un texte sans
+// signes de contrôle, sans < > ni marques de format, borné : les gardes du socle (lib/safe_text.js, bâti sur frame/lib/untrusted.js)
+const num = inRange,
+  clean = text;
 /** Les couleurs de la couche : vert et orange, de jour et de nuit (ni le rouge de la route proposée ni le gris du dégagement du vol). */
 export const ALTN_TINT = {
   day: {

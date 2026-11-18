@@ -15,6 +15,9 @@ import {
   need
 } from './state.js';
 import {
+  text
+} from './lib/safe_text.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -42,8 +45,8 @@ const MIN = 2,
     city: 9
   };
 
-/** Une valeur bornée et sans signes de contrôle ni de format (les noms viennent de la base, entrée externe) ; '' sinon. */
-const clean = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
+// les noms viennent de la base (entrée externe) : le garde de texte du socle (lib/safe_text.js)
+const clean = text;
 /** Le lieu d'une réponse d'aerodb, nettoyé : { value, name, kind, code, lat, lon } ou null (sans position ou sans nom ni code). */
 function place(h, kind) {
   const lat = typeof h?.lat === 'number' ? h.lat : NaN,

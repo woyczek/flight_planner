@@ -10,6 +10,9 @@ import {
   level
 } from './state.js';
 import {
+  text
+} from './lib/safe_text.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -62,11 +65,10 @@ const CARD_LINES = 7; // (avant les rubriques : la fiche ne se coupe plus à sep
 /** Les lignes d'une rubrique montrées (horaires, remarques…), le reste sous « n autres ». */
 const SECTION_LINES = 3;
 /** Une valeur de la base en lignes de texte : une chaîne, ou une liste de chaînes (bornées, sans balise) ; rien sinon. */
-const linesOf = v => (Array.isArray(v) ? v : [v]).filter(x => typeof x === 'string' && x.trim()).slice(0, 12).map(x => x.replace(
-  /[\u0000-\u001f<>\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 400));
+const linesOf = v => (Array.isArray(v) ? v : [v]).filter(x => typeof x === 'string' && x.trim()).slice(0, 12).map(x => text(x, 400));
 /** Un texte du SIA (ENR 5.1 : nature du danger, organisme et conditions) : une chaîne de 800 signes au plus, français puis anglais dans la même cellule, jamais traduite ni reformulée ;
  *  une entrée externe (SOG-0462), nettoyée comme les autres lignes et échappée à l'affichage ; '' sans elle. */
-const textOf = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 800) : '';
+const textOf = v => text(v, 800);
 /** La fiche d'un espace (SOG-0163 ; un clic ou un appui sur sa ligne de la liste, ou sur son bloc du profil) : nom et type, limites, activité et
  *  horaires publiés, conditions et remarques de l'AIP telles quelles, organisme et fréquence, source et date, et une phrase franche sur
  *  l'activité réelle. Ne dit que ce que la base porte (AeroDB relève ce que chaque source donne) ; un P dit « interdit ». */

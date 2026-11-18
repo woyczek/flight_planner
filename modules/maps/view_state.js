@@ -12,6 +12,12 @@ import {
   flightPath
 } from './state.js';
 import {
+  has
+} from '../../frame/lib/untrusted.js';
+import {
+  inRange
+} from './lib/safe_text.js';
+import {
   flightSig
 } from './screen.js';
 
@@ -21,9 +27,9 @@ const PATH = 'cache/maps/state.json',
   /** Attente avant l'écriture : les changements qui se suivent (un geste, puis un autre) ne font qu'une écriture. */
   DELAY = 400;
 
-const own = (o, k) => !!o && typeof o === 'object' && Object.hasOwn(o, k),
+const own = has, // une clé PROPRE d'un objet simple (le socle : frame/lib/untrusted.js)
   str = (v, n) => typeof v === 'string' && v.length <= n,
-  num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
+  num = inRange;
 
 /** Le vol, pour l'état : départ > arrivée (un vol re-planifié sur le même trajet reste le même vol). */
 export const flightKey = f => `${f?.route?.dep || ''}>${f?.route?.arr || ''}`;
