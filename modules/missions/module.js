@@ -122,7 +122,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-rrow>summary[data-ch]::before{grid-row:span 3}
 [data-module="missions"] [data-choicelegend]{font-size:var(--sog-size-s);margin:.4em .75em}
 /* les gestes d'une ligne : « Brief » d'abord, « Atelier », « Dupliquer », puis « ⋯ » (corriger la ligne, la retirer) */
-[data-module="missions"] .ms-rgest{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+[data-module="missions"] .ms-rbody>.ms-rgest{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start} /* plus précis que « .ms-rbody>span » (bloc) : sans lui, « ⋯ » passait seul à la ligne */
 [data-module="missions"] .ms-rgest button + button{margin-left:0}
 [data-module="missions"] .ms-rgest>button{padding-left:12px;padding-right:12px}
 [data-module="missions"] .ms-rmore{position:relative}
