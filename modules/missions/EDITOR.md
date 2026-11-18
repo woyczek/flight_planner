@@ -488,6 +488,39 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - `MOVABLE` (the kinds a gesture moves), `RADIUS_KM`.
 - The file is written as before, at « Enregistrer », by `withPlaces` (audit 182: only what changed): N94 reads what is written.
 
+### 7 terdecies. P2, second brick: the tools of the map (18 Nov 2026; SOG-0444 lot P2; noreg N95; the pure part: § 7 duodecies)
+
+- **A row of tools above the map**, given with the map only (disabled without it and during a trial of the keys): **Sélection, Point,
+  Zone, Objet**, then « Annuler le geste » and « Recentrer » (which left the corner of the map). Under it, one line says what the tool
+  in hand does, or the chosen place and what a gesture does with it. A tool is taken IN PLACE (`aria-pressed`, the line: no button is
+  redrawn — SOG-0449); the same tool taken again drops it. Tracé comes with the next brick.
+- **Every place says its identifier on the map** (the ergonomist's reading of 18 Nov: « une carte de points sans nom ne se lit
+  pas »): `mapFeatures` gives `labels` (the identifier, else the beginning of the name — the code of an aerodrome —, 24 signs; on the
+  point, or in the middle of a contour) and the live map shows each one as a MapLibre marker — a page element filled by `textContent`
+  that takes no touch —, not with a font of the background (a base style does not always carry glyphs). **Labels of places that
+  are close stack** instead of covering each other (a zone centred on a point, an object near the target): each one moves up one line
+  while it touches one already put, at the scale of the view (redone at each drawing and each change of zoom).
+- **Sélection**: a place touched is chosen — its label says its whole name (« PT2 · Point deux ») in a frame, its row of the Lieux
+  opens; the bare map chooses nothing. **A located place is dragged by its handle**
+  (`dragHandles`, the return of the gesture on `previewLayer`): the target, a turning point, a rendezvous, an object, a round zone by
+  its centre; **a round zone chosen shows the handle of its radius**, east of its circle. The departure and the arrival are not
+  handles (a press on them drags the map), nor is a contour (next brick).
+- **A tool of pose** (Point, Zone, Objet): a touch on the bare map (`tapPosition`) poses the place there — `newPlace`: a free
+  identifier, the place of its kind; a zone is round, its radius an eighth of the width of the view (1 to 100 km) — **then the tool
+  goes back to Sélection** (no creation by accident), the place is chosen and its row open, to say its name. A kind that is full: a
+  floating notification, nothing created.
+- **« Annuler le geste »** (`createUndo` of the base, twenty states): the rows of the Lieux of before the last gesture of the map
+  (a pose, a move, a radius). It never undoes a typing: a typing in a field of a place, a row added or removed by the Lieux, a
+  save empty what it keeps (and no place is chosen any more: the ranks changed).
+- **`editor_map.js`** only says which handles exist (`handlesOf`: read from the features, in Sélection only) and gives the finished
+  gesture back to the screen (`onPick`, `onMove`, `onRadius`, `onPose`); the screen alone changes the rows, through the pure
+  functions of § 7 duodecies — a refused gesture changes nothing. `mapFeatures` gives a round zone a point at its centre and, when
+  chosen, the point `radius:i`; the rank read back from an identifier is checked (`place:` or `radius:` and one to three digits).
+- **Nothing new is written**: the file is written at « Enregistrer » by `withPlaces`, as when the fields are typed (N95 reads the
+  saved file).
+- **Not done** (third brick): the contour and its vertices, Tracé, the landmarks of AeroDB, « Dessiner sur la carte » from the sheet
+  of a drawer, « Poser l'avion ici », « Vue du pilote ».
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

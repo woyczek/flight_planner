@@ -4321,7 +4321,8 @@ _MAPF_JS = """async () => {
     labels: [f.points.find(p => p.kind === 'object').label, EM.mapFeatures([{ kind: 'pt', name: 'N'.repeat(200), lat: 1, lon: 1 }]).points[0].label.length],
     polygons: f.polygons.map(p => [kindOf(+p.id.slice(6)), p.rings.length, p.rings[0].length]),
     circle: [ring.length, +ring[0].lat.toFixed(4), ring[0].lon, +Math.min(...far).toFixed(2), +Math.max(...far).toFixed(2)],
-    lines: f.lines.map(l => [l.id, !!l.dash, l.points.length]), box: f.box,
+    lines: f.lines.map(l => [l.id, !!l.dash, l.points.length]), box: f.box, tags: f.labels.map(l => [l.text, l.lat, l.lon]),
+    longTag: EM.mapFeatures([{ kind: 'pt', id: 'I'.repeat(40), lat: 1, lon: 1 }, { kind: 'pt', name: 'Sans identifiant · suite', lat: 2, lon: 2 }]).labels.map(l => l.text),
     inside: [...f.points, ...f.polygons.flatMap(p => p.rings[0]), ...f.lines.flatMap(l => l.points)].every(inBox),
     none: [EM.mapFeatures([]).box, EM.mapFeatures(ED.placesOf({ mission: { id: 'X-001A' }, origin: { name: 'Sans position' } })).box],
     empty: hostile.map(h => { const g = EM.mapFeatures(h, { zones: h, path: h, run: { ok: true, trail: h } }); return [g.points.length, g.lines.length, g.polygons.length, g.box] }),
@@ -4340,15 +4341,20 @@ _MAPF_JS = """async () => {
 def n92(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     r = c.js(_MAPF_JS)
-    c.eq(r['points'], [['dep', 'dep', 45, 1], ['arr', 'arr', 44, 2], ['target:TARGET', 'target', 44.6, 1.4], ['zone:ZONE-3', 'zone', 44.2, 1.9],
+    c.eq(r['points'], [['dep', 'dep', 45, 1], ['arr', 'arr', 44, 2], ['target:TARGET', 'target', 44.6, 1.4], ['zone:ZONE-1', 'zone', 44.8, 1.2], ['zone:ZONE-3', 'zone', 44.2, 1.9],
                        ['pt:PT1', 'pt', 44.8, 1.2], ['object:OBJ-1', 'object', 44.6, 1.42], ['plane', 'plane', 44.85, 1.15]],
-         'every located place is a point of its kind: the arrival at the position of the base; a zone whose radius is out of bounds is its centre alone; a point at '
+         'every located place is a point of its kind: the arrival at the position of the base; a round zone is also a point at its centre (it is moved by it); a '
+         'zone whose radius is out of bounds is its centre alone; a point at '
          'latitude 95 and a point without a position are not drawn; the aircraft of the trial at the end of its trail', what='the points')
     c.eq(r['labels'], ['OBJ-1', 60], 'a label is the identifier, else the name cut at sixty signs', what='the labels')
     c.eq(r['polygons'], [['zone:ZONE-1', 1, 64], ['zone:ZONE-2', 1, 4]],
          'a round zone is a ring of 64 vertices, a contour its own vertices; a contour with a vertex that is not a position is not drawn', what='the zones')
     c.ok(r['circle'][:3] == [64, 44.845, 1.2] and 4.99 <= r['circle'][3] <= r['circle'][4] <= 5.01, r['circle'],
          'the ring starts due north of the centre and every vertex is at 5 km of it')
+    c.eq([r['tags'], r['longTag']], [[['XTST', 45, 1], ['XTSU', 44, 2], ['TARGET', 44.6, 1.4], ['ZONE-1', 44.8, 1.2], ['ZONE-2', 44.45, 1.6], ['ZONE-3', 44.2, 1.9],
+                                       ['PT1', 44.8, 1.2], ['OBJ-1', 44.6, 1.42]], ['I' * 24, 'Sans identifiant']],
+         'every place drawn carries a label: its identifier (the code of an aerodrome), on its point, or in the middle of its contour; cut at 24 signs; without an '
+         'identifier, the beginning of its name', what='the labels')
     c.eq(r['lines'], [['route', True, 3], ['trail', False, 3]], 'the route of the departure is dashed (a position out of bounds is skipped), the trail of the trial is plain',
          what='the lines')
     c.ok(r['inside'] is True and r['box']['w'] < 1 and r['box']['e'] > 2 and r['box']['s'] < 44 and r['box']['n'] > 45, r['box'], 'the frame holds every element, with a margin')
@@ -4400,12 +4406,14 @@ def n93(c):
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     c.eq([c.js(f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmapframe').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)] }})()"),
           c.count(f'{_EDMAP} [data-atmapslot] canvas'), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"),
-          c.js(f"document.querySelector('{_EDMAP} [data-atmaptools]').hidden"), norm(c.text(f'{_EDMAP} [data-do=edmapfit]'))],
-         [box, 1, True, False, T('atMapFit')], 'the map takes the place of the sketch in the same frame (nothing moved); « Recentrer » is shown with it', what='the frame')
+          c.js(f"document.querySelector('{_EDMAP} [data-do=edmapfit]').disabled"), norm(c.text(f'{_EDMAP} [data-do=edmapfit]'))],
+         [box, 1, True, False, T('atMapFit')], 'the map takes the place of the sketch in the same frame (nothing moved); « Recentrer » is given with it', what='the frame')
     c.eq([c.js(_EDMAP_IDS, None), c.js(_EDMAP_IDS, [44.8, 1.2]), c.js(_EDMAP_IDS, [44.4, 1.6])],
          [['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'place:5', 'place:6', 'route'], ['place:3', 'place:4', 'route'], ['place:5', 'route']],
          'the departure, the arrival, the target, the zone, the two points, the object and the route; at PT1: the point, its zone and the route; at PT2: the '
          'point and the route', what='the elements')
+    c.eq(c.js(f"[...document.querySelectorAll('{_EDMAP} [data-maplbl]')].map(x => x.textContent).sort()"), ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'],
+         'every place says its identifier on the map (written by the page, not by a font of the background)', what='the labels on the map')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N93_1280_map.png')
     # a place touched leads to its row, open; the same canvas, the same view
@@ -4528,3 +4536,129 @@ def n94(c):
                         {'id': 'ZONE-3', 'centre': {'lat': 44.5, 'lon': 1.5}, 'radius_km': 5}],
          'what the file writes: the moved point keeps its other keys, the radius, the posed point, the posed zone', what='written')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the rows and the document read are not touched')
+
+
+
+_EDTOOLS = f'{_EDMAP} [data-atmaptools]'
+_EDTOOL_STATE = f"[...document.querySelectorAll('{_EDTOOLS} button')].map(b => [b.dataset.tool || b.dataset.do, b.getAttribute('aria-pressed'), b.disabled])"
+_EDPLACE_VAL = f"""([i, f]) => document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i="' + i + '"][data-f=' + f + ']')?.value ?? null"""
+_EDPLACE_IDS = f"[...document.querySelectorAll('{E} [data-edplaces] [data-place]')].map(x => x.dataset.kind)"
+_EDSEL = f"document.querySelector('{_EDMAP} [data-mapsel]')?.textContent ?? null"
+
+
+def _ed_drag(c, a, b):
+    """Presses the mouse on the position `a` of the workshop's map and releases it on `b` ([lat, lon])."""
+    x0, y0 = c.js(_EDMAP_XY, a)
+    x1, y1 = c.js(_EDMAP_XY, b)
+    c.page.mouse.move(x0, y0)
+    c.page.mouse.down()
+    c.page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=4)
+    c.page.mouse.move(x1, y1, steps=4)
+    c.page.mouse.up()
+
+
+@case('N95', 'Missions › the workshop, the tools of the map: Sélection, Point, Zone, Objet above the map, with « Annuler le geste » and '
+      '« Recentrer »; in Sélection a place touched is chosen (it says its name on the map, its row opens) and a located place is dragged — '
+      'its row takes the new position; a round zone chosen shows the handle of its radius; with a tool of pose, a touch on the bare map '
+      'poses the place there (a free identifier) and THE TOOL GOES BACK TO SÉLECTION: a second touch creates nothing; the departure is '
+      'not moved; « Annuler le geste » gives back the rows of before the last gesture, never a typing; a tool taken redraws no button; '
+      'the file saved carries what was posed',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, second brick (modules/missions/EDITOR.md § 2: « After a pose the tool goes back to Sélection: no creation by '
+      'accident », § 3 and § 7 terdecies; modules/maps/INTEGRATION.md § 7 bis: `tapPosition`, `dragHandles`, `previewLayer`, `createUndo`; '
+      'the pure part: N94; SOG-0449)')
+def n95(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
+    near = lambda v, x: v is not None and abs(float(v) - x) < 0.02  # noqa: E731
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
+    c.eq([c.js(_EDTOOL_STATE), norm(c.text(f'{_EDMAP} [data-maphint]'))],
+         [[['select', 'true', False], ['point', 'false', False], ['zone', 'false', False], ['object', 'false', False], ['edmapundo', None, True], ['edmapfit', None, False]],
+          T('atHint_select')], 'the tools above the map: Sélection in hand, nothing to undo; the line says what the tool does', what='the tools')
+    # Sélection: a place touched is chosen — its name on the map, its row open
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
+    c.until(f"{_EDSEL} === 'PT2 · Point deux'", what='PT2 chosen, its name on the map')
+    c.eq([c.js(_EDPLACE_VAL, [5, 'lat']), norm(c.text(f'{_EDMAP} [data-maphint]'))], ['44.4', T('atHint_chosen', name='PT2 · Point deux')],
+         'its row of the Lieux is open; the line says it can be dragged', what='the chosen place')
+    # a located place is dragged: its row takes the new position
+    _ed_drag(c, [44.4, 1.6], [44.3, 1.75])
+    c.until(f"(({_EDMAP_IDS})([44.3, 1.75]) || []).includes('place:5')", timeout=8000, what='PT2 moved on the map')
+    lat, lon = c.js(_EDPLACE_VAL, [5, 'lat']), c.js(_EDPLACE_VAL, [5, 'lon'])
+    c.ok(near(lat, 44.3) and near(lon, 1.75) and c.js(_EDTOOL_STATE)[4] == ['edmapundo', None, False] and c.js(_EDSEL) == 'PT2 · Point deux', [lat, lon, c.js(_EDTOOL_STATE)[4]],
+         'the row of PT2 took the position of the release (five decimals); the gesture can be undone; PT2 stays chosen')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N95_1280_moved.png')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"(({_EDMAP_IDS})([44.4, 1.6]) || []).includes('place:5')", timeout=8000, what='PT2 back')
+    c.eq(c.js(_EDTOOL_STATE)[4], ['edmapundo', None, True], '« Annuler le geste » gave the place back; nothing more to undo', what='undone')
+    # the departure is not moved: the same press drags the map
+    view = c.js(_EDMAP_VIEW)
+    _ed_drag(c, [45.0, 1.0], [44.9, 1.1])
+    c.until(f"(() => {{ const v = {_EDMAP_VIEW}; return Math.abs(v[0] - {view[0]}) > 0.002 || Math.abs(v[1] - {view[1]}) > 0.002 }})()", what='the view moved')
+    c.ok(c.js(_EDMAP_IDS, [45.0, 1.0]) is not None and 'place:0' in c.js(_EDMAP_IDS, [45.0, 1.0]) and c.js(_EDTOOL_STATE)[4][2] is True, c.js(_EDMAP_IDS, [45.0, 1.0]),
+         'a press on the departure drags the map: the departure stays where it is, nothing to undo')
+    c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
+    # a tool of pose: taken in place (no button redrawn); a touch poses; the tool goes back to Sélection
+    c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
+    c.ok(all(kept) and c.js(_EDTOOL_STATE)[:2] == [['select', 'false', False], ['point', 'true', False]] and norm(c.text(f'{_EDMAP} [data-maphint]')) == T('atHint_point')
+         and c.js(_EDSEL) is None, [c.js(_EDTOOL_STATE)[:2], c.text(f'{_EDMAP} [data-maphint]')], '« Point » taken in hand in place: no button was redrawn (SOG-0449); the line says what a touch will do')
+    kinds = c.js(_EDPLACE_IDS)
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
+    c.until(f"{_EDSEL} === 'PT3'", what='PT3 posed and chosen')
+    c.ok(near(c.js(_EDPLACE_VAL, [6, 'lat']), 44.2) and near(c.js(_EDPLACE_VAL, [6, 'lon']), 1.2) and c.js(_EDPLACE_VAL, [6, 'id']) == 'PT3'
+         and c.js(_EDTOOL_STATE)[:2] == [['select', 'true', False], ['point', 'false', False]] and len(c.js(_EDPLACE_IDS)) == len(kinds) + 1,
+         [c.js(_EDPLACE_VAL, [6, 'id']), c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDTOOL_STATE)[:2]],
+         'a touch on the bare map posed PT3 there (a free identifier), its row is open, and the tool went back to Sélection')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.1, 1.3]))
+    c.until(f"{_EDSEL} === null", what='nothing chosen')
+    c.eq(len(c.js(_EDPLACE_IDS)), len(kinds) + 1, 'a second touch on the bare map creates nothing: no creation by accident', what='the rows')
+    # a zone: round, with a radius; chosen, it shows the handle of its radius, which sets it
+    c.tap(f'{_EDTOOLS} [data-tool="zone"]')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.15, 1.45]))
+    c.until(f"{_EDSEL} === 'ZONE-2'", what='ZONE-2 posed and chosen')
+    km = float(c.js(_EDPLACE_VAL, [4, 'radius']))
+    c.ok(1 <= km <= 100 and near(c.js(_EDPLACE_VAL, [4, 'lat']), 44.15) and 'radius:4' in c.js(_EDMAP_IDS, None) and norm(c.text(f'{_EDMAP} [data-maphint]')) == T('atHint_round', name='ZONE-2'),
+         [km, c.js(_EDPLACE_VAL, [4, 'lat']), c.text(f'{_EDMAP} [data-maphint]'), c.js(_EDMAP_IDS, None)],
+         'a round zone posed with a radius from the width of the view; chosen, it shows the handle of its radius and the line says so')
+    east = 1.45 + km / (111.32 * 0.7176)
+    _ed_drag(c, [44.15, east], [44.15, east + 0.25])
+    c.until(f"parseFloat(({_EDPLACE_VAL})([4, 'radius']) || '0') > {km} + 5", timeout=8000, what='the radius grown by its handle')
+    c.ok(near(c.js(_EDPLACE_VAL, [4, 'lat']), 44.15), c.js(_EDPLACE_VAL, [4, 'lat']), 'the handle of the radius sets the radius; the centre did not move')
+    # an object to find
+    c.tap(f'{_EDTOOLS} [data-tool="object"]')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.9, 1.7]))
+    c.until(f"{_EDSEL} === 'OBJ-2'", what='OBJ-2 posed and chosen')
+    c.ok(near(c.js(_EDPLACE_VAL, [9, 'lat']), 44.9) and c.js(_EDTOOL_STATE)[0] == ['select', 'true', False], c.js(_EDPLACE_VAL, [9, 'lat']), 'an object posed; back to Sélection')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N95_1280_posed.png')
+    # « Annuler le geste » never undoes a typing: after one, nothing to give back
+    c.ok(c.js(_EDTOOL_STATE)[4][2] is False, c.js(_EDTOOL_STATE)[4], 'the poses can be undone')
+    c.page.fill(f'{E} [data-edplaces] [data-k=edplace][data-i="9"][data-f=name]', 'Balise')
+    c.until(f"({_EDTOOL_STATE})[4][2] === true", what='nothing to undo after a typing')
+    # saved: the file carries what was posed
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(600)
+    text = c.js(_TEXT_OF, path) or ''
+    c.ok(all(k in text for k in ('PT3', 'ZONE-2', 'OBJ-2', 'Balise')) and text.count('ZONE-1') >= 1, text[:400], 'the file saved carries the point, the zone and the object posed on the map')
+    c.eq([c.js(_EDSEL), c.js(_EDTOOL_STATE)[4][2], norm(c.text(f'{_EDMAP} [data-maphint]'))], [None, True, T('atHint_select')],
+         'saved: the file is the new base — no place chosen on the map any more, nothing to undo', what='after the save')
+    # on a phone the tools wrap above the map
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    c.ok(c.js(f"document.querySelector('{_EDTOOLS}').scrollWidth <= document.querySelector('{_EDTOOLS}').clientWidth + 1"), 'the tools overflow', 'on a phone the tools hold in the width (they wrap)')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N95_390_tools.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

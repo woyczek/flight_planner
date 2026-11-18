@@ -358,6 +358,51 @@ export const EDTX = {
     'Ningún lugar situado: el mapa está vacío.'
   ],
   atMapFit: ['Recentrer', 'Recenter', 'Neu zentrieren', 'Recentrar'],
+  // les outils de la carte (SOG-0444, lot P2) : après une pose, l'outil revient à Sélection
+  atTool_select: ['Sélection', 'Selection', 'Auswahl', 'Selección'],
+  atTool_point: ['Point', 'Point', 'Punkt', 'Punto'],
+  atTool_zone: ['Zone', 'Zone', 'Zone', 'Zona'],
+  atTool_object: ['Objet', 'Object', 'Objekt', 'Objeto'],
+  atMapUndo: ['Annuler le geste', 'Undo the gesture', 'Geste rückgängig', 'Deshacer el gesto'],
+  atHint_select: ['Touchez un lieu pour le choisir, faites-le glisser pour le déplacer.',
+    'Touch a place to choose it, drag it to move it.',
+    'Berühren Sie einen Ort, um ihn zu wählen; ziehen Sie ihn, um ihn zu verschieben.',
+    'Toque un lugar para elegirlo, arrástrelo para moverlo.'
+  ],
+  atHint_chosen: ['{name} : faites-le glisser pour le déplacer.', '{name}: drag it to move it.', '{name}: ziehen, um zu verschieben.',
+    '{name}: arrástrelo para moverlo.'
+  ],
+  atHint_round: ['{name} : son centre la déplace, la poignée de son bord règle son rayon.',
+    '{name}: its centre moves it, the handle on its edge sets its radius.',
+    '{name}: die Mitte verschiebt sie, der Griff am Rand stellt den Radius ein.',
+    '{name}: su centro la mueve, el tirador del borde ajusta su radio.'
+  ],
+  atHint_fixed: ['{name} : ce lieu ne se déplace pas sur la carte.', '{name}: this place is not moved on the map.',
+    '{name}: dieser Ort wird nicht auf der Karte verschoben.', '{name}: este lugar no se mueve en el mapa.'
+  ],
+  atHint_point: ['Touchez la carte : le point tournant est posé là.', 'Touch the map: the turning point is posed there.',
+    'Berühren Sie die Karte: der Wendepunkt wird dort gesetzt.', 'Toque el mapa: el punto de viraje se pone ahí.'
+  ],
+  atHint_zone: ['Touchez la carte : une zone ronde est posée là ; son rayon se règle ensuite.',
+    'Touch the map: a round zone is posed there; its radius is set afterwards.',
+    'Berühren Sie die Karte: eine runde Zone wird dort gesetzt; ihr Radius wird danach eingestellt.',
+    'Toque el mapa: una zona redonda se pone ahí; su radio se ajusta después.'
+  ],
+  atHint_object: ['Touchez la carte : l\'objet à trouver est posé là.', 'Touch the map: the object to find is posed there.',
+    'Berühren Sie die Karte: das zu findende Objekt wird dort gesetzt.', 'Toque el mapa: el objeto por encontrar se pone ahí.'
+  ],
+  atHint_view: ['Pendant l\'essai, la carte montre l\'avion et sa trace.', 'During the trial, the map shows the aircraft and its trail.',
+    'Während des Versuchs zeigt die Karte das Luftfahrzeug und seine Spur.',
+    'Durante la prueba, el mapa muestra la aeronave y su traza.'
+  ],
+  atHint_none: ['Sans carte, les lieux se placent par leurs champs.', 'Without a map, the places are set by their fields.',
+    'Ohne Karte werden die Orte über ihre Felder gesetzt.', 'Sin mapa, los lugares se sitúan por sus campos.'
+  ],
+  atPoseFull: ['La mission porte déjà autant de lieux de cette sorte qu\'elle le peut.',
+    'The mission already carries as many places of this kind as it can.',
+    'Die Mission trägt bereits so viele Orte dieser Art wie möglich.',
+    'La misión ya lleva tantos lugares de este tipo como puede.'
+  ],
   atFlow: ['Déroulé de la mission', 'Unfolding of the mission', 'Ablauf der Mission', 'Desarrollo de la misión'],
   atFlowHint: ['Ce que le pilote lit au départ, puis les tiroirs, dans l\'ordre.',
     'What the pilot reads at the departure, then the drawers, in order.',

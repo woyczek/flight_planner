@@ -8,6 +8,11 @@
 //     rayon, un contour par ses sommets, lus dans les zones du fichier), la route du départ (en tireté), et pendant un essai des clés la
 //     trace et l'avion. Les lignes et le fichier sont des entrées NON FIABLES : tout nombre est borné (jamais ramené dans ses bornes : hors bornes, l'élément n'est pas dessiné),
 //     les libellés ne vont que dans des propriétés de MapLibre (jamais dans la page).
+//   - les GESTES (deuxième brique) : en Sélection, un lieu touché est choisi (il dit son nom), un lieu situé se déplace par sa poignée,
+//     le rayon d'une zone ronde choisie par la sienne ; avec un outil de pose, un toucher de la carte nue rend une position. Chaque
+//     lieu porte son identifiant écrit sur la carte (un marqueur de MapLibre, pas une police du fond). Tout
+//     passe par le socle d'édition (tapPosition, dragHandles, previewLayer) ; ce fichier ne fait que dire quelles poignées existent
+//     et rendre le geste fini à l'écran (onPick, onMove, onRadius, onPose), qui seul retouche les lignes.
 //   - la carte EN VIE (une seule : l'atelier d'une mission à la fois) : show(slot, feats, options) la démarre dans un hôte à elle,
 //     gardé d'un dessin à l'autre (l'écran est redessiné par innerHTML : l'hôte est reposé dans l'emplacement neuf), fit() recadre,
 //     stop() la retire avec son contexte WebGL. Sans tuiles, un fond uni (MapLibre sur un style local) ; sans MapLibre ni WebGL, ou
@@ -19,25 +24,25 @@ import {
   styleFor
 } from '../maps/lib/map_base.js';
 import {
-  authorLayers
+  authorLayers,
+  dragHandles,
+  previewLayer,
+  tapPosition
 } from '../maps/lib/map_edit.js';
 import * as MS from '../../frame/lib/mission.js';
 
 /** Les bornes du dessin : le rayon d'une zone ronde (km : celles du lecteur), le nombre de côtés d'un rond, la marge du cadre (degrés,
- *  au moins), l'attente des tuiles puis du fond uni (ms), la marge du cadrage (px ; en bas, la place de « Recentrer »). */
+ *  au moins), l'attente des tuiles puis du fond uni (ms), la marge du cadrage (px). */
 export const MAPB = Object.freeze({
   radiusKm: Object.freeze([0.05, 500]),
   ring: 64,
   margin: 0.02,
   wait: 6000,
   waitPlain: 4000,
-  padding: Object.freeze({
-    top: 36,
-    right: 36,
-    bottom: 64,
-    left: 36
-  })
+  padding: 36
 });
+/** Les sortes de lieu qu'une poignée déplace (celles de ED.MOVABLE : ni le départ ni l'arrivée, ni l'avion de l'essai). */
+const MOVABLE = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
 
 const RAD = Math.PI / 180,
   EARTH_KM = 6371.0088;
@@ -94,18 +99,30 @@ function contourOf(zone) {
  *  FICHIER d'origine (une ligne de zone garde en `i` son rang dans le fichier : ses sommets y sont lus, ils ne se retouchent pas
  *  encore) ; `adPos(nom)` : la position que la base donne à un terrain dont le fichier ne dit pas la position (départ, arrivée), ou
  *  null ; `path` : la route du départ ([{ lat, lon }…], celle de l'essai) ; `run` : l'essai des clés en cours (sa trace, son avion).
- *  L'identifiant d'un élément est « place:i », i étant le rang de sa ligne dans la liste des Lieux : toucher l'élément mène à elle. */
+ *  L'identifiant d'un élément est « place:i », i étant le rang de sa ligne dans la liste des Lieux : toucher l'élément mène à elle.
+ *  Une zone ronde est aussi un point en son centre (c'est par lui qu'elle se déplace) ; `sel` : le rang du lieu choisi — une zone
+ *  ronde choisie montre la poignée de son rayon (« radius:i », à l'est de son rond). Un point qu'une poignée déplace porte `movable`.
+ *  `labels` [{ id, lat, lon, text }] : l'étiquette de chaque lieu dessiné — son identifiant (à défaut le début de son nom : le code
+ *  d'un terrain), vingt-quatre signes au plus —, sur son point, ou au milieu de son contour. */
 export function mapFeatures(rows, {
   zones = [],
   adPos = null,
   path = [],
-  run = null
+  run = null,
+  sel = -1
 } = {}) {
   const points = [],
     lines = [],
     polygons = [],
+    labels = [],
     all = [],
-    file = Array.isArray(zones) ? zones : [];
+    file = Array.isArray(zones) ? zones : [],
+    // l'étiquette d'un lieu : son identifiant ; à défaut le début de son nom (« XTST · Base Test » : le code du terrain)
+    tag = r => String(r.id || String(r.name || '').split(' · ')[0] || '').slice(0, 24),
+    middle = ring => ({
+      lat: +(ring.reduce((t, p) => t + p.lat, 0) / ring.length).toFixed(6),
+      lon: +(ring.reduce((t, p) => t + p.lon, 0) / ring.length).toFixed(6)
+    });
   (Array.isArray(rows) ? rows : []).slice(0, 400).forEach((r, i) => {
     if (!r || typeof r !== 'object') return;
     const id = `place:${i}`,
@@ -125,7 +142,22 @@ export function mapFeatures(rows, {
           rings: [ring]
         });
         all.push(...ring);
-        return;
+        if (r.poly) { // un contour : ses sommets se retouchent au lot suivant ; son étiquette en son milieu
+          if (tag(r)) labels.push({
+            id,
+            ...middle(ring),
+            text: tag(r)
+          });
+          return;
+        }
+        if (sel === i) points.push({
+          id: `radius:${i}`,
+          lat: ring[ring.length / 4].lat,
+          lon: ring[ring.length / 4].lon,
+          label: '',
+          kind: 'handle',
+          center: at
+        });
       }
     }
     if (!at) return;
@@ -134,7 +166,16 @@ export function mapFeatures(rows, {
       lat: at.lat,
       lon: at.lon,
       label,
-      kind: r.kind
+      kind: r.kind,
+      ...(MOVABLE.includes(r.kind) ? {
+        movable: true
+      } : {})
+    });
+    if (tag(r)) labels.push({
+      id,
+      lat: at.lat,
+      lon: at.lon,
+      text: tag(r)
     });
     all.push(at);
   });
@@ -169,6 +210,7 @@ export function mapFeatures(rows, {
     points,
     lines,
     polygons,
+    labels,
     box: null
   };
   const lats = all.map(p => p.lat),
@@ -178,6 +220,7 @@ export function mapFeatures(rows, {
     points,
     lines,
     polygons,
+    labels,
     box: {
       w: +(Math.min(...lons) - m).toFixed(6),
       s: +Math.max(-85, Math.min(...lats) - m).toFixed(6),
@@ -188,7 +231,7 @@ export function mapFeatures(rows, {
 }
 
 /** Ce qui fait changer le dessin : les éléments eux-mêmes. */
-const signature = f => JSON.stringify([f.points, f.lines, f.polygons]);
+const signature = f => JSON.stringify([f.points, f.lines, f.polygons, f.labels]);
 /** Le cadre de la vue pour MapLibre : [[ouest, sud], [est, nord]]. */
 const boundsOf = b => [
   [b.w, b.s],
@@ -207,7 +250,164 @@ const plainStyle = bg => ({
   }]
 });
 
-let LIVE = null; // la carte en vie : { owner, host, map, auth, state, sig, box, dark, moved, fitting, starting, failed, ro, timer }
+let LIVE = null; // la carte en vie : { owner, host, map, auth, pv, drag, tap, labels, mode, sel, cb, state, sig, box, dark, moved, … }
+
+/** Le rang de la ligne que désigne l'identifiant d'un élément (« place:12 », « radius:12 ») ; -1 sinon. */
+const rankOf = id => /^(place|radius):\d{1,3}$/.test(String(id || '')) ? +String(id).split(':')[1] : -1;
+
+/** Les poignées que le socle d'édition peut saisir (dragHandles), relues à chaque toucher : en Sélection seulement, les points qu'un
+ *  geste déplace (une zone ronde par son centre) et la poignée du rayon de la zone choisie. */
+function handlesOf(L) {
+  if (L.mode !== 'select') return [];
+  return (L.feats?.points || []).filter(p => p.movable || p.kind === 'handle').map(p => p.kind === 'handle' ? {
+    id: p.id,
+    lat: p.lat,
+    lon: p.lon,
+    kind: 'radius',
+    center: p.center
+  } : {
+    id: p.id,
+    lat: p.lat,
+    lon: p.lon,
+    kind: p.kind === 'object' ? 'object' : 'point'
+  });
+}
+
+/** La largeur de la vue, en km (à la latitude de son centre) : l'écran en tire le rayon d'une zone posée. */
+function spanKm(map) {
+  try {
+    const b = map.getBounds(),
+      lat = map.getCenter().lat;
+    return Math.abs(b.getEast() - b.getWest()) * 111.32 * Math.max(0.01, Math.cos(lat * RAD));
+  } catch {
+    return 0;
+  }
+}
+
+/** Chaque lieu dit son identifiant sur la carte (l'ergonome, 18 nov. 2026 : « une carte de points sans nom ne se lit pas »), et le lieu
+ *  choisi son nom complet : des marqueurs de MapLibre — des éléments de la page, leur texte par textContent, qui ne prennent aucun
+ *  toucher —, pas une police du fond (un fond n'en porte pas toujours). Un marqueur par étiquette, gardé d'un dessin à l'autre, déplacé,
+ *  retiré avec son lieu ; pendant un essai des clés, les étiquettes restent, aucun lieu n'est choisi. */
+function mark(L) {
+  const ml = globalThis.maplibregl,
+    want = new Map((L.map && ml?.Marker ? L.feats?.labels || [] : []).map(l => [l.id, l]));
+  L.labels ||= new Map();
+  for (const [id, m] of L.labels)
+    if (!want.has(id)) {
+      m.remove();
+      L.labels.delete(id);
+    }
+  for (const [id, l] of want) {
+    let m = L.labels.get(id);
+    if (!m) {
+      const el = Object.assign(document.createElement('div'), {
+        className: 'ms-atmaplbl'
+      });
+      el.dataset.maplbl = id;
+      m = new ml.Marker({
+        element: el,
+        anchor: 'bottom-left',
+        offset: [7, -7]
+      });
+      L.labels.set(id, m);
+    }
+    const el = m.getElement(),
+      chosen = L.mode === 'select' && id === `place:${L.sel}`,
+      text = String((chosen && L.selLabel) || l.text).slice(0, 60);
+    if (el.textContent !== text) el.textContent = text;
+    if (chosen) el.dataset.mapsel = '';
+    else delete el.dataset.mapsel;
+    m.setLngLat([l.lon, l.lat]).addTo(L.map);
+  }
+  spread(L);
+}
+
+/** Les étiquettes de lieux voisins s'empilent au lieu de se recouvrir (une zone centrée sur un point, un objet près de la cible) :
+ *  chacune monte d'une ligne tant qu'elle en touche une déjà posée — à l'échelle de la vue, donc refait à chaque dessin et à chaque
+ *  changement d'échelle. */
+function spread(L) {
+  if (!L.map || !L.labels) return;
+  const step = 16,
+    placed = [];
+  for (const m of L.labels.values()) {
+    let p;
+    try {
+      p = L.map.project(m.getLngLat());
+    } catch {
+      continue;
+    }
+    const w = m.getElement().offsetWidth || 60;
+    let k = 0;
+    while (k < 6 && placed.some(q => p.x < q.x + q.w && q.x < p.x + w && Math.abs(q.y - (p.y - step * k)) < step - 1)) k++;
+    placed.push({
+      x: p.x,
+      y: p.y - step * k,
+      w
+    });
+    m.setOffset([7, -7 - step * k]);
+  }
+}
+
+/** Branche les gestes du socle d'édition sur la carte en vie (une fois, au démarrage) : le retour pendant un glisser, le geste fini
+ *  rendu à l'écran. Rien n'est retouché ici. */
+function gestures(L, map, o) {
+  const ignore = '.maplibregl-ctrl';
+  L.pv = previewLayer(map, 'mission', {
+    tokens: o.colors?.preview
+  });
+  L.drag = dragHandles(map, L.host, {
+    handles: () => handlesOf(L),
+    ignore,
+    onMove: m => {
+      const c = m.kind === 'radius' ? (L.feats?.points || []).find(p => p.id === m.id)?.center : null;
+      L.pv.set(c ? {
+        circle: {
+          lat: c.lat,
+          lon: c.lon,
+          meters: m.meters
+        }
+      } : {
+        ghost: {
+          lat: m.lat,
+          lon: m.lon
+        }
+      });
+    },
+    onEnd: m => {
+      L.pv.clear();
+      const i = rankOf(m.id);
+      if (i < 0) return;
+      if (!m.moved) return L.cb?.onPick?.(i);
+      if (m.kind === 'radius') L.cb?.onRadius?.({
+        i,
+        km: m.meters / 1000
+      });
+      else L.cb?.onMove?.({
+        i,
+        lat: m.lat,
+        lon: m.lon
+      });
+    },
+    onTap: h => L.cb?.onPick?.(rankOf(h.id)),
+    onCancel: () => L.pv.clear()
+  });
+  L.tap = tapPosition(map, L.host, {
+    ignore,
+    onTap: p => {
+      if (L.mode === 'select') {
+        // en Sélection : l'élément sous le doigt est choisi (un terrain, un contour, le rond d'une zone) ; la carte nue ne choisit rien
+        const f = L.auth?.at(p.x, p.y);
+        return L.cb?.onPick?.(f ? rankOf(f.id) : -1);
+      }
+      if (L.mode === 'view') return; // pendant un essai des clés la carte ne fait que montrer
+      L.cb?.onPose?.({
+        lat: p.lat,
+        lon: p.lon,
+        spanKm: spanKm(map)
+      });
+    }
+  });
+}
 
 /** L'état de la carte en vie pour l'écran : 'tiles' (le fond de la suite), 'plain' (le fond uni), '' (pas de carte : le croquis). */
 export const stateOf = owner => LIVE && LIVE.owner === owner && LIVE.map ? LIVE.state : '';
@@ -275,13 +475,15 @@ async function start(L, o) {
   L.state = state;
   L.auth = authorLayers(map, {
     id: 'mission',
-    tokens: o.colors?.tokens,
-    onTap: f => L.onTap?.(f)
+    tokens: o.colors?.tokens
   });
   L.auth.setFeatures(L.feats);
+  gestures(L, map, o);
+  mark(L);
   map.on('movestart', () => {
     if (!L.fitting && !isOwnResize(map)) L.moved = true; // l'auteur a déplacé la vue : elle ne se recadre plus seule
   });
+  map.on('zoomend', () => spread(L)); // les étiquettes voisines s'empilent à l'échelle de la vue
   mapSize(map, L.host);
   frame(L);
   // MapLibre ne suit pas seul la taille de son cadre (le socle) : la fenêtre change de taille, l'appareil tourne, la carte se déplie —
@@ -300,8 +502,10 @@ async function start(L, o) {
 
 /** Montre la carte de la mission dans `slot` (l'emplacement du dessin courant) : la démarre au premier appel, repose son hôte après
  *  chaque dessin, met ses éléments à jour s'ils ont changé, la recadre tant que l'auteur n'a pas déplacé la vue. `feats` : mapFeatures ;
- *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg }), onTap(élément),
- *  onState(état), alive(). Sans élément situé (pas de cadre) : pas de carte. */
+ *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg, preview }), onState(état),
+ *  alive() ; mode ('select' : la Sélection ; 'point', 'zone', 'object' : un outil de pose ; 'view' : la carte ne fait que montrer),
+ *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
+ *  onRadius({ i, km }), onPose({ lat, lon, spanKm }). Sans élément situé (pas de cadre) : pas de carte. */
 export function show(slot, feats, o) {
   if (LIVE && LIVE.owner !== o.owner) stop();
   if (!slot || !feats?.box) return;
@@ -324,7 +528,10 @@ export function show(slot, feats, o) {
     sig = signature(feats),
     boxSig = JSON.stringify(feats.box),
     reframed = boxSig !== JSON.stringify(L.box);
-  L.onTap = o.onTap;
+  L.cb = o;
+  L.mode = ['select', 'point', 'zone', 'object', 'view'].includes(o.mode) ? o.mode : 'select';
+  L.sel = Number.isInteger(o.sel) ? o.sel : -1;
+  L.selLabel = o.selLabel || '';
   L.feats = feats;
   L.box = feats.box;
   if (L.host.parentNode !== slot) slot.replaceChildren(L.host);
@@ -339,6 +546,8 @@ export function show(slot, feats, o) {
   L.dark = !!o.dark;
   if (sig !== L.sig) L.auth.setFeatures(feats);
   L.sig = sig;
+  L.drag?.refresh(); // un geste dont la poignée a disparu est lâché
+  mark(L);
   const resized = mapSize(L.map, L.host);
   if ((reframed || resized) && !L.moved) frame(L);
 }
@@ -359,6 +568,10 @@ export function stop() {
   clearTimeout(L.timer);
   L.ro?.disconnect();
   try {
+    for (const m of L.labels?.values() || []) m.remove();
+    L.tap?.stop();
+    L.drag?.stop();
+    L.pv?.remove();
     L.auth?.remove();
     L.map?.remove();
   } catch {
