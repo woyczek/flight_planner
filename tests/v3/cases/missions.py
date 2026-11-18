@@ -3304,8 +3304,9 @@ def n71(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     got = c.js(_DRAWERS_JS)
     c.eq(got['byId'], [['B', 'zone', '', ''], ['C', 'object', '', ''], ['D', 'arrival', '', 'arrival']], 'the three keys cited by identifier are read', what='keys by identifier')
-    c.eq(got['zone'], [{'circle': {'lat': 44.62, 'lon': 1.28, 'radiusM': 4000}}, 3000, True, 60, ['OBJ-2', True, ['PT1', 'TARGET']]],
-         'the zone of `zones` resolved in the key: its circle, its ceiling, shown by default, its fallback hour, the moving target that crosses it', what='the zone')
+    c.eq(got['zone'], [{'circle': {'lat': 44.62, 'lon': 1.28, 'radiusM': 4000}}, 3000, False, 60, ['OBJ-2', True, ['PT1', 'TARGET']]],
+         'the zone of `zones` resolved in the key: its circle, its ceiling, hidden by default (SOG-0459: shown only when the file writes zone_shown: true), its fallback '
+         'hour, the moving target that crosses it', what='the zone')
     c.eq(got['object'], [0.3, 800, 2500, True, False], 'the object of `objects`: range in NM, height and altitude in ft, « within range AND declared » by default', what='the object')
     c.eq(got['arrival'], ['DESTINATION', {'lat': 44.0, 'lon': 1.2}, 1, 30, True, [{'id': 'PT2', 'lat': 44.7, 'lon': 1.4}]], 'the arrival key, its place and its stop resolved', what='the arrival')
     c.eq(got['route'], [['PT1', 'TARGET'], ['PT1', 'TARGET']], 'the onward route of a drawer is resolved and never enters the mission\'s own route', what='routes')
@@ -4467,7 +4468,8 @@ _DW_CARDS = f"[...document.querySelectorAll('{E} [data-atflow] [data-kind=drawer
 
 @case('N78', 'Missions › the workshop, the sheet of a drawer: a card of the unfolding is touched and its sheet takes the place of the '
       'departure\'s — the key (the pilot\'s gesture, an hour, a passage zone, an object to find, the arrival at the aerodrome; a zone and '
-      'an object are CHOSEN among those of the mission), its fallback time, « Montrer la zone au pilote », the texts (title, message, '
+      'an object are CHOSEN among those of the mission), its fallback time, « Montrer cette zone au pilote dès le départ » (unticked: the '
+      'zone is hidden by default, SOG-0459), the texts (title, message, '
       'briefing), the onward route in chips; « ＋ Tiroir » adds the next one (the pilot\'s gesture by default); « Retirer ce tiroir » '
       'takes two presses and the ranks close up; touching a drawer without changing anything writes nothing; typing never redraws a card '
       '(one click after typing is enough); the drawers count in « À compléter », one line per drawer; the file is written by '
@@ -4496,7 +4498,8 @@ def n78(c):
     c.ok(c.count(f'{E} [data-steps]') == 0 and norm(c.text(f'{_DW} [data-dwhead]')) == T('dwSheet', n=2), c.text(f'{_DW} [data-dwhead]'),
          'the sheet of the drawer takes the place of the departure\'s')
     c.eq(c.js(_DW_FIELDS), ['key', 'zone', 'shown', 'fallback', 'title', 'message', 'brief', 'routeadd'], 'the fields of a drawer keyed by a zone', what='fields')
-    c.eq([c.js(_DW_VAL, f) for f in ('key', 'zone', 'shown', 'fallback', 'title')], ['zone', 'ZONE-1', True, '60', 'Entrée du secteur'], 'read from the file', what='values')
+    c.eq([c.js(_DW_VAL, f) for f in ('key', 'zone', 'shown', 'fallback', 'title')], ['zone', 'ZONE-1', False, '60', 'Entrée du secteur'],
+         'read from the file — the file does not write zone_shown: the box is unticked (SOG-0459: the zone is hidden by default)', what='values')
     c.eq(c.js(f"[...document.querySelectorAll('{_DW} [data-f=zone] option')].map(o => o.value)"), ['', 'ZONE-1'], 'the zones of the mission, to choose from', what='zones')
     folds = c.js(f"[...document.querySelectorAll('{_DW} [data-dgrp]')].map(g => [g.dataset.dgrp, g.querySelector('.ms-dbody') ? getComputedStyle(g.querySelector('.ms-dbody')).display !== 'none' : true, (g.querySelector('[data-dline]')?.textContent || '').trim()])")
     c.eq(folds, [['key', True, ''], ['texts', False, norm(' · '.join(['Entrée du secteur', T('dwTodo_noMessage'), T('dwTodo_noBrief')]))], ['route', False, T('dwLineNoRoute')],
@@ -4609,13 +4612,13 @@ def n78(c):
 
 
 DV_FILE = 'modules/missions/drawers_view.js'
-_PV = f"Object.fromEntries(['name', 'key', 'case', 'note', 'msg', 'brief', 'route'].map(k => [k, (document.querySelector('{_DW} [data-pv' + k + ']')?.textContent || '').trim()]))"
+_PV = f"Object.fromEntries(['name', 'nothing', 'msg', 'brief', 'route', 'before'].map(k => [k, (document.querySelector('{_DW} [data-pv' + k + ']')?.textContent || '').trim()]))"
 
 
 @case('N79', 'Missions › the workshop, « Ce que le pilote voit » and the stops of an arrival: the sheet of a drawer shows the drawer as the '
-      'pilot will see it — closed: its name, the sentence of its key and the note, in the very words of the pilot\'s screen (the same '
-      'function); open: its message, its briefing, its onward route — read from the document of the sitting by the reader, and it '
-      'follows the typing in place; a zone that is not shown says « s\'ouvre en vol »; the stops an arrival requires are chips, added '
+      'pilot will see it — closed: NOTHING (SOG-0459: one fixed sentence, neither its title nor its key); open: its title, its message, '
+      'its briefing, its onward route — read from the document of the sitting by the reader, and it follows the typing in place; the '
+      'box « Montrer cette zone au pilote dès le départ » ticked writes zone_shown: true; the stops an arrival requires are chips, added '
       'from the places of the mission and removed one by one', 'N', tags=('missions', 'security'), designs=('standard',), screens=False,
       langs4=False,
       rule='SOG-0445, end of lot P3 (modules/missions/EDITOR.md § 7 octies; the mock-up tiroirs.html « Ce que le pilote voit »; '
@@ -4633,13 +4636,11 @@ def n79(c):
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
     pv = c.js(_PV)
-    c.eq([norm(pv['name']), norm(pv['key'])], [f"{T('atDrawer', n=2)} · Entrée du secteur", T('keyZone', DV_FILE)],
-         'closed: its name and the sentence of its key — the words of the pilot\'s screen (a zone shown on the Map)', what='the closed drawer')
-    c.ok(T('willOpen', DV_FILE).split('{t}')[0].strip() in norm(pv['note']) and norm(pv['note']).startswith(T('noLive', DV_FILE).split('{x}')[0].strip())
-         and norm(pv['case']) == T('dwPilotCase'), [pv['case'], pv['note']],
-         'and the note the pilot reads without a live position — it says its case itself, then the fallback time —, under the line « Sur '
-         'l\'appareil du pilote : » (not the author\'s own)')
-    c.eq([norm(pv['msg']), pv['brief'], pv['route']], [T('dwPilotNoMsg'), '', ''], 'open: no message yet, no briefing, no onward route', what='the open drawer')
+    before = norm(c.text(f'{_DW} [data-pvbefore]'))
+    c.ok(norm(pv['nothing']) == T('dwPilotNothing') and 'Entrée' not in before and T('atDrawer', n=2) not in before, [pv['nothing'], before],
+         'closed: nothing — one fixed sentence, neither the title nor the key of the drawer (SOG-0459)')
+    c.eq([norm(pv['name']), norm(pv['msg']), pv['brief'], pv['route']], ['Entrée du secteur', T('dwPilotNoMsg'), '', ''],
+         'open: its title (without its rank), no message yet, no briefing, no onward route', what='the open drawer')
     # it follows the typing and the boxes, in place
     c.js(f"document.querySelectorAll('{_DW} [data-pvbefore], {_DW} [data-pvafter]').forEach(x => x.__kept = true)")
     c.tap(f'{_DW} [data-f=shown]')
@@ -4648,16 +4649,17 @@ def n79(c):
     c.page.select_option(f'{_DW} [data-f=routeadd]', 'PT2')
     c.until(f"document.querySelectorAll('{_DW} [data-chip]').length === 1", what='one place in the onward route')
     pv = c.js(_PV)
-    c.eq([norm(pv['name']), norm(pv['key']), pv['msg'], norm(pv['route'])],
-         [f"{T('atDrawer', n=2)} · Entrée nord", T('keyHidden', DV_FILE), 'Écho radar au nord.', T('dwPilotRoute', r='Point deux')],
-         'the title, the message and the route follow; a zone that is not shown: « s\'ouvre en vol »', what='after typing')
+    c.eq([norm(pv['name']), norm(pv['nothing']), pv['msg'], norm(pv['route'])],
+         ['Entrée nord', T('dwPilotNothing'), 'Écho radar au nord.', T('dwPilotRoute', r='Point deux')],
+         'the title, the message and the route follow; before the opening still nothing', what='after typing')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{_DW} [data-dgrp=pilot]').scrollIntoView({{block: 'center'}})")
     c.shot('N79_1280_pilot.png')
     # the stops of an arrival: chips
     c.tap(f'{E} [data-atflow] [data-sel="D"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", what='the sheet of drawer 3')
-    c.eq(norm(c.js(_PV)['key']), T('keyArrival', DV_FILE, p='DESTINATION'), 'an arrival: the sentence of the pilot\'s screen', what='the key of an arrival')
+    c.eq([norm(c.js(_PV)['name']), norm(c.js(_PV)['nothing'])], ['Retour', T('dwPilotNothing')], 'an arrival: nothing before the opening, its title once open',
+         what='the key of an arrival')
     c.page.select_option(f'{_DW} [data-f=stopadd]', 'PT2')
     c.until(f"document.querySelectorAll('{_DW} [data-stop]').length === 1", what='one stop')
     c.page.select_option(f'{_DW} [data-f=stopadd]', 'PT1')
@@ -4681,9 +4683,9 @@ def n79(c):
     got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
       const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
       return { c: d.phases[1], stops: d.phases[2].trigger_condition.required_points } }""" % _TEXT_OF, path)
-    c.eq(got, {'c': {'id': 'C', 'title': 'Entrée nord', 'trigger_zone': 'ZONE-1', 'zone_shown': False, 'fallback_delay_min': 60, 'message': 'Écho radar au nord.',
+    c.eq(got, {'c': {'id': 'C', 'title': 'Entrée nord', 'trigger_zone': 'ZONE-1', 'zone_shown': True, 'fallback_delay_min': 60, 'message': 'Écho radar au nord.',
                      'route_order': ['PT2']}, 'stops': ['PT2']},
-         'the file: what was typed, « zone montrée » written false, the stop of the arrival by identifier', what='the saved file')
+         'the file: what was typed, the box ticked writes zone_shown: true (SOG-0459), the stop of the arrival by identifier', what='the saved file')
     c.js(_REG_CLEAR)
 
 
@@ -5868,8 +5870,9 @@ _PV_VIEW_JS = """async () => { const MS = await import('/frame/lib/mission.js'),
       { id: 'F', title: 'Heure', trigger_point: 'PT1', trigger_delay_min: 10 }] };
   const m = MS.readMission(doc), before = J(m);
   const seen = v => [!!v.target, Object.keys(v.points).sort().join(' '), v.zones.map(z => z.id).join(' '), v.rendezvous.map(z => z.id).join(' '), v.turns.map(z => z.id).join(' '),
-    v.drawers.map(d => d.id + (d.sealed ? '-' : '+')).join(' ')], leak = v => /45\\.31|1\\.42|1\\.43|Randonneur vu|Position 45/.test(J(v));
-  const none = MS.pilotView(m, []), sealed = Object.fromEntries(none.drawers.map(d => [d.id, d.key]));
+    v.drawers.map(d => d.id).join(' ')], leak = v => /45\\.31|1\\.42|1\\.43|Randonneur vu|Position 45/.test(J(v));
+  const titles = v => /La vallee|Le glacier|Trouve|Retour|Heure|En entrant/.test(J(v));
+  const none = MS.pilotView(m, []);
   let threw = '';
   const hostile = [null, 'B', 7, {}, ['Z', 7, null, {}, '__proto__', 'b', ['B']], Array.from({ length: 500 }, () => 'B'), ['C', 'C', 'B']];
   const opened = hostile.map(o => { try { return MS.pilotView(m, o).pilot.opened } catch (e) { threw += String(e); return null } });
@@ -5878,7 +5881,8 @@ _PV_VIEW_JS = """async () => { const MS = await import('/frame/lib/mission.js'),
   return { none: [seen(none), leak(none), none.pilot, none.hasCoords], first: [seen(MS.pilotView(m, ['B'])), leak(MS.pilotView(m, ['B']))],
     second: [seen(MS.pilotView(m, ['B', 'C'])), leak(MS.pilotView(m, ['B', 'C']))], all: seen(MS.pilotView(m, ['B', 'C', 'D', 'E', 'F'])),
     arrival: seen(MS.pilotView(m, ['E']))[4], browsed: [seen(MS.pilotView(m, ['B', 'C', 'D'], { mine: false })), leak(MS.pilotView(m, ['B', 'C', 'D'], { mine: false }))],
-    sealed, texts: none.drawers.map(d => [d.title, d.trigger, d.message, d.brief, d.route.length]), opened, threw,
+    closed: [none.drawers, none.drawersRefused, titles(none), MS.pilotView(m, ['B']).drawers.map(d => [d.id, d.rank, d.title, d.message === '' && d.route.length === 1]),
+      titles(MS.pilotView(m, ['B', 'C', 'D'], { mine: false }))], opened, threw,
     strict: [{ mine: 'false' }, { mine: 0 }, { mine: 'true' }, { mine: 1 }, { mine: null }, 'x', [], 7].map(o => { const v = MS.pilotView(m, ['B', 'C'], o); return [v.pilot.mine, leak(v)] }),
     dflt: [undefined, null, {}, { mine: true }].map(o => { const v = MS.pilotView(m, ['B', 'C'], o); return [v.pilot.mine, leak(v)] }),
     plain: [MS.pilotView(plain, ['B']) === plain, !!plain.target, MS.pilotView(null, []), MS.pilotView('x', [])], untouched: J(m) === before } }"""
@@ -5886,40 +5890,34 @@ _PV_VIEW_JS = """async () => { const MS = await import('/frame/lib/mission.js'),
 
 @case('N103', 'Missions › the reader, what the pilot may see (pure, no screen): of a mission with drawers a place, a zone, a rendezvous or the '
       'target is kept only if it is cited by the visible part (its route, the centre of one of its maps) or by a drawer that is open — '
-      'its zone, the point and the stops of its key, its onward route —; the passage zone of a closed drawer also when its author shows '
-      'it; a closed drawer is sealed: its title, the key in plain words, the kind of its key and its fallback time, nothing else; before '
-      'the opening the hidden position is in NOTHING of what is returned; a mission one browses gives the visible part alone; a mission '
+      'its zone, the point and the stops of its key, its onward route —; the passage zone of a closed drawer also when the file writes '
+      '`zone_shown: true`; a closed drawer is not returned at all (SOG-0459: no stub, no title, no count) — `drawers` holds the open ones '
+      'only, whole; before the opening the hidden position is in NOTHING of what is returned; a mission one browses gives the visible part alone; a mission '
       'without a drawer is returned as it is; the open drawers are a bounded input; no hostile input throws; the mission read is not '
       'touched', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0448 (the ergonomist, 17 Nov 2026: « le secret fuit » — « un lieu, une zone, un objet ou la cible n\'est montré au pilote que '
       's\'il est cité par la partie visible (sa route, ses cartes) ou par un tiroir déjà ouvert ; une zone de passage aussi quand son auteur '
       'l\'a dite montrée… UNE règle, écrite une fois : une fonction pure du lecteur »): frame/lib/mission.js `pilotView`; '
-      'docs/technique/FORMAT_MISSION.md § 4 bis; the bench frame/lib/test/mission.html (N1)')
+      'docs/technique/FORMAT_MISSION.md § 4 bis; the bench frame/lib/test/mission.html (N1); SOG-0459, the user on 18 Nov: « l\'existence même '
+      'des tiroirs est cachée par défaut » — no stub, no count, the passage zone hidden unless written shown)')
 def n103(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     r = c.js(_PV_VIEW_JS)
-    c.eq(r['none'], [[False, 'PT1 ZONE-1', 'ZONE-1', '', 'PT1', 'B- C- D- E- F-'], False, {'mine': True, 'opened': [], 'hidden': {'places': 6, 'drawers': 5}}, True],
-         'no drawer open: the visible part alone — the point of its route (written « pt1 »: identifiers compare as the reader reads them) and of its map, the zone the closed '
-         'drawer 1 shows; the target, the hidden zone, the rendezvous and the other points are not kept, and the hidden position is in NOTHING of what is returned',
-         what='nothing open')
-    c.eq(r['first'], [[False, 'PT1 PT2 ZONE-1', 'ZONE-1', '', 'PT1 PT2', 'B+ C- D- E- F-'], False], 'drawer 1 open: its onward route in addition; still nothing of the hidden position',
-         what='drawer 1 open')
-    c.eq(r['second'], [[True, 'PT1 PT2 RDV-1 TARGET ZONE-1 ZONE-2', 'ZONE-1 ZONE-2', 'RDV-1', 'PT1 PT2', 'B+ C+ D- E- F-'], True],
+    c.eq(r['none'], [[False, 'PT1', '', '', 'PT1', ''], False, {'mine': True, 'opened': []}, True],
+         'no drawer open: the visible part alone — the point of its route (written « pt1 »: identifiers compare as the reader reads them) and of its map; the zone of the '
+         'closed drawer 1, which does not write zone_shown, is hidden (SOG-0459); the target, the rendezvous and the other points are not kept, no drawer is returned, '
+         'nothing is counted, and the hidden position is in NOTHING of what is returned', what='nothing open')
+    c.eq(r['first'], [[False, 'PT1 PT2 ZONE-1', 'ZONE-1', '', 'PT1 PT2', 'B'], False], 'drawer 1 open: it alone is returned, with its zone and its onward route; still '
+         'nothing of the hidden position', what='drawer 1 open')
+    c.eq(r['second'], [[True, 'PT1 PT2 RDV-1 TARGET ZONE-1 ZONE-2', 'ZONE-1 ZONE-2', 'RDV-1', 'PT1 PT2', 'B C'], True],
          'drawer 2 open: its zone, and the target and the rendezvous of its onward route — the position is now shown', what='drawer 2 open')
-    c.eq([r['all'][1], r['all'][5], r['arrival']], ['PT1 PT2 PT4 RDV-1 TARGET ZONE-1 ZONE-2', 'B+ C+ D+ E+ F+', 'PT1 PT4'],
+    c.eq([r['all'][1], r['all'][5], r['arrival']], ['PT1 PT2 PT4 RDV-1 TARGET ZONE-1 ZONE-2', 'B C D E F', 'PT1 PT4'],
          'everything open: every place cited by a drawer; PT3, cited by nobody, stays out; an arrival open alone shows the stop it requires', what='all open')
-    c.eq(r['browsed'], [[False, 'PT1 ZONE-1', 'ZONE-1', '', 'PT1', 'B- C- D- E- F-'], False], 'a mission one browses (not mine): the visible part alone, whatever is said open',
+    c.eq(r['browsed'], [[False, 'PT1', '', '', 'PT1', ''], False], 'a mission one browses (not mine): the visible part alone, whatever is said open',
          what='browsed')
-    c.eq(r['sealed'], {'B': {'kind': 'zone', 'fallbackMin': 30, 'shown': True, 'zoneId': 'ZONE-1', 'shape': {'circle': {'lat': 45.25, 'lon': 1.3, 'radiusM': 6000}}, 'ceilingFt': None,
-                             'actor': None},
-                       'C': {'kind': 'zone', 'fallbackMin': 60, 'shown': False, 'zoneId': None, 'actor': None},
-                       'D': {'kind': 'object', 'fallbackMin': 90, 'object': {'confirm': True, 'moving': False}},
-                       'E': {'kind': 'arrival', 'fallbackMin': None, 'point': 'DESTINATION', 'escortMinSec': 0},
-                       'F': {'kind': 'time', 'fallbackMin': None, 'point': 'PT1', 'delayMin': 10}},
-         'the key of a sealed drawer: its kind and its fallback time; the shape of a zone only when its author shows it; of an object, nothing but two flags; of an arrival, '
-         'its point; of an hour, its point and its delay — never a position that is not shown', what='the sealed keys')
-    c.eq(r['texts'], [['La vallee', 'En entrant dans la vallee', '', '', 0], ['Le glacier', '', '', '', 0], ['Trouve', '', '', '', 0], ['Retour', '', '', '', 0], ['Heure', '', '', '', 0]],
-         'a sealed drawer keeps its title and the key in plain words; its message, its briefing and its onward route are not returned', what='the sealed texts')
+    c.eq(r['closed'], [[], 0, False, [['B', 1, 'La vallee', True]], False],
+         'a closed drawer is not returned at all: `drawers` is empty with nothing open, `drawersRefused` is 0, no title of a drawer is in what is returned; with drawer 1 '
+         'open, it alone, whole, with its rank', what='the closed drawers')
     c.eq([r['strict'], r['dflt']], [[[False, False]] * 8, [[True, True]] * 4],
          '`mine` is read strictly (the Security session, 18 Nov): a `mine` that is not exactly true — « false » as a text, 0, « true » as a text, 1, null — or options that are '
          'not an object mean « not mine »: nothing is held open, nothing leaks; without options, or without `mine`, the mission is mine (the default)', what='mine, strictly')
@@ -5999,11 +5997,11 @@ def n104(c):
          what='the list')
     # the pilot at the departure: the object of the closed drawer 2 and the point of its onward route are not drawn, nor named
     c.page.select_option(_EDVIEW, '0')
-    c.until(f"(({_EDMAP_IDS})() || []).length === 6", timeout=8000, what='the view of the pilot at the departure')
+    c.until(f"(({_EDMAP_IDS})() || []).length === 5", timeout=8000, what='the view of the pilot at the departure')
     c.eq([c.js(_EDMAP_IDS, None), c.js(_EDLABELS), hint(), [x[2] for x in c.js(_EDTOOL_STATE)[:6]], c.js(f"document.querySelector('{_EDVIEW}').value")],
-         [['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route'], ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], T('atHint_pilot'), [True] * 6, '0'],
-         'at the departure the pilot sees the route and its places, and the zone drawer 1 shows; the object drawer 2 hides (OBJ-1) and the point of its onward route (PT2) are '
-         'neither drawn nor named; the tools are not given and the line says why', what='the pilot at the departure')
+         [['place:0', 'place:1', 'place:2', 'place:4', 'route'], ['PT1', 'TARGET', 'XTST', 'XTSU'], T('atHint_pilot'), [True] * 6, '0'],
+         'at the departure the pilot sees the route and its places; the zone of drawer 1 (it does not write zone_shown: hidden by default, SOG-0459), the object drawer 2 '
+         'hides (OBJ-1) and the point of its onward route (PT2) are neither drawn nor named; the tools are not given and the line says why', what='the pilot at the departure')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N104_1280_pilot.png')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
@@ -6012,8 +6010,8 @@ def n104(c):
          'in the pilot\'s view a touch on a place does nothing: the map only shows')
     # after drawer 1: the same; after drawer 2: its object and its onward route are shown
     c.page.select_option(_EDVIEW, '1')
-    c.wait(400)
-    c.eq(c.js(_EDMAP_IDS, None), ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route'], 'drawer 1 open: nothing more (its zone was already shown)', what='after drawer 1')
+    c.until(f"(({_EDMAP_IDS})() || []).length === 6", timeout=8000, what='the view of the pilot after drawer 1')
+    c.eq(c.js(_EDMAP_IDS, None), ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route'], 'drawer 1 open: its zone is drawn', what='after drawer 1')
     c.page.select_option(_EDVIEW, '2')
     c.until(f"(({_EDMAP_IDS})() || []).length === 8", timeout=8000, what='the view of the pilot after drawer 2')
     c.eq([c.js(_EDMAP_IDS, None), c.js(_EDLABELS)], [every, ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'XTST', 'XTSU', 'ZONE-1']],
@@ -6833,25 +6831,25 @@ def n111(c):
     # a mission that says nothing about its map, at the departure: Rapide, Espaces off, what the pilot may see
     c.eq(c.js(_MM_POSE, [_TRIAL_MISSION, 0, True]), True, 'the block is posed: the mission has located places', what='posed')
     c.until(f"({_MM_STATE})?.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the block')
-    c.until(f"({_MM_STATE}).labels.length === 5", timeout=8000, what='the places of the departure')
+    c.until(f"({_MM_STATE}).labels.length === 4", timeout=8000, what='the places of the departure')
     c.wait(600)  # the layers of the places are added a moment after their labels
     s = st()
     c.eq([s['base'], s['spaces'], s['said'], s['labels'], s['dos'], s['frame'], s['border'], c.js('window.__mm.asked'), c.js(_EDMAP_IDS, None)],
-         [['fast:true', 'relief:false'], False, '', ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], 0, 300, '1px', 0, ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route']],
-         'at the departure: « Rapide », « Espaces » off and nothing asked of the base; the pilot sees the route and its places and the zone drawer 1 shows — not the object of the closed drawer 2 (OBJ-1) nor '
+         [['fast:true', 'relief:false'], False, '', ['PT1', 'TARGET', 'XTST', 'XTSU'], 0, 300, '1px', 0, ['place:0', 'place:1', 'place:2', 'place:4', 'route']],
+         'at the departure: « Rapide », « Espaces » off and nothing asked of the base; the pilot sees the route and its places — not the zone of drawer 1 (no zone_shown: hidden by default, SOG-0459), not the object of the closed drawer 2 (OBJ-1) nor '
          'the point of its onward route (PT2); the block carries no control of the screen that poses it (no data-do, no data-k); its frame is 300 px high, with its hairline', what='at the departure')
     # « the mission is mine » is read strictly by the block: three drawers asked, but without `mine` (or with « true » as a text) none is open
     for mine in ('absent', 'true', 1, None):
         c.eq(c.js(_MM_POSE, [_TRIAL_MISSION, 3, False, mine]), True, 'posed with three drawers asked and mine = ' + repr(mine), what='posed, not mine')
         c.wait(300)
-        c.eq([st()['labels'], c.js('window.__edMap.getCenter().lat') > 44.3], [['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], True],
+        c.eq([st()['labels'], c.js('window.__edMap.getCenter().lat') > 44.3], [['PT1', 'TARGET', 'XTST', 'XTSU'], True],
              'a mission that is not mine (`mine` absent, « true » as a text, 1, null) with opened = 3: nothing of a closed drawer — the labels are those of the departure (not OBJ-1, not PT2)', what='not mine ' + repr(mine))
     c.js(_MM_POSE, [_TRIAL_MISSION, 0, False])
     c.wait(300)
     # it only shows: a touch on a place chooses nothing; no handle
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.wait(300)
-    c.eq([c.count(f'{_MM} [data-mapsel]'), st()['labels']], [0, ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1']], 'a touch on a place chooses nothing: the map only shows', what='read only')
+    c.eq([c.count(f'{_MM} [data-mapsel]'), st()['labels']], [0, ['PT1', 'TARGET', 'XTST', 'XTSU']], 'a touch on a place chooses nothing: the map only shows', what='read only')
     # posed again after a redraw of the screen (a new slot): the same map, not a new one
     c.js("document.querySelector('[data-msmap] canvas').__kept = true")
     c.eq(c.js(_MM_POSE, [_TRIAL_MISSION, 0, 'redraw']), True, 'posed again in the new slot', what='posed again')
@@ -6885,7 +6883,7 @@ def n111(c):
     c.eq(c.js(_MM_POSE, [relief, 0, True]), True, 'another mission posed', what='another mission')
     c.until(f"({_MM_STATE})?.map === 'relief' && (({tones}) || []).length === 2", timeout=15000, what='the choice of the author')
     s = st()
-    c.eq([s['base'], s['spaces'], s['labels']], [['fast:false', 'relief:true'], True, ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1']],
+    c.eq([s['base'], s['spaces'], s['labels']], [['fast:false', 'relief:true'], True, ['PT1', 'TARGET', 'XTST', 'XTSU']],
          'a mission whose author chose « Relief » and « Espaces » opens so — at the departure, with what the pilot may see', what='the choice of the author')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
@@ -6935,8 +6933,9 @@ def n112(c):
          'the theatre: a text cleaned and cut at 40 signs (a writing-direction character and a zero-width one removed); a number, a list, an object, null or nothing reads empty', what='the theatre')
     c.eq(r['co'], ['FR', '', '', '', '', '', 'FR', 'FR', '', ''],
          'the country: exactly two capital letters once cleaned — « fr », « FRA », « F1 », 12, a list, null, an object read empty', what='the country')
-    c.eq([r['none'], r['drawers'], r['pv']], [['', ''], 2, [['Vallee Test', 'FR', 2], ['Vallee Test', 'FR', 2], ['Vallee Test', 'FR', 2]]],
-         'a mission without these keys reads empty and empty; both fields go through pilotView of a mission with drawers (closed, open, browsed) as they are', what='public')
+    c.eq([r['none'], r['drawers'], r['pv']], [['', ''], 2, [['Vallee Test', 'FR', 0], ['Vallee Test', 'FR', 1], ['Vallee Test', 'FR', 0]]],
+         'a mission without these keys reads empty and empty; both fields go through pilotView of a mission with drawers (closed, open, browsed) as they are '
+         '(the view returns the open drawers only, SOG-0459)', what='public')
     c.eq(r['threw'], '', 'no hostile input throws', what='no throw')
 
 
@@ -6991,3 +6990,66 @@ def n146(c):
             f"f.getBoundingClientRect().height > 0 }})()", timeout=15000, what='back again: its first page')
     c.page.go_back()
     c.until(f"!!document.querySelector('{M} [data-pane=list]')", timeout=15000, what='back again: the list')
+
+
+# SOG-0459: nothing of a closed drawer leaves the view — an invented mission (a cave to find under a ridge, never a copy): every word a
+# closed drawer carries (its title, its key said in plain words, its message, its briefing) and every place only a closed drawer cites
+# (ZONE-7, OBJ-9, PT8, RDV-3, their names) is searched in the JSON of pilotView
+_PV_NOTHING_JS = """async () => { const MS = await import('/frame/lib/mission.js'), J = x => JSON.stringify(x); let threw = '';
+  const doc = { schema: 'helo-xp-mission', mission: { id: 'X-003A', type: 'REG' }, title: 'Crete', cruise_speed_kt: 100,
+    origin: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44.0, lon: 2.0 },
+    turning_points: [{ id: 'PT1', name: 'Col public', lat: 44.8, lon: 1.2 }, { id: 'PT8', name: 'Grotte secrete', lat: 44.51, lon: 1.61 }],
+    rendezvous: [{ id: 'RDV-3', name: 'Equipe cachee', lat: 44.52, lon: 1.62 }],
+    zones: [{ id: 'ZONE-7', name: 'Ravin secret', centre: { lat: 44.53, lon: 1.63 }, radius_km: 2 }],
+    objects: [{ id: 'OBJ-9', kind: 'person', name: 'Speleo perdu', lat: 44.54, lon: 1.64, detection_range_nm: 1 }],
+    route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Tiroir ravin', trigger: 'Mot de clef ravin', trigger_zone: 'ZONE-7', fallback_delay_min: 30, message: 'Message ravin', brief: 'Brief ravin', route_order: ['PT8'] },
+      { id: 'C', title: 'Tiroir speleo', trigger: 'Mot de clef speleo', trigger_object: 'OBJ-9', fallback_delay_min: 60, route_order: ['RDV-3'] },
+      { id: 'D', title: 'Tiroir retour', trigger_condition: { kind: 'arrival', point: 'DESTINATION', required_points: ['PT8'] } }] };
+  const m = MS.readMission(doc), before = J(m);
+  // every word of a closed drawer, every hidden place (identifier, name, position), every word of a count or of a stub
+  const SECRET = ['Tiroir ravin', 'Tiroir speleo', 'Tiroir retour', 'Mot de clef ravin', 'Mot de clef speleo', 'Message ravin', 'Brief ravin', 'ZONE-7', 'OBJ-9', 'PT8', 'RDV-3', 'Grotte secrete',
+    'Equipe cachee', 'Ravin secret', 'Speleo perdu', '44.51', '44.52', '44.53', '44.54', '"sealed"', '"hidden"', '"trigger"', '"rank"'];
+  const found = v => SECRET.filter(w => J(v).includes(w));
+  const none = MS.pilotView(m, []);
+  // the zone of the closed drawer B, as the file writes zone_shown
+  const zoneAs = v => { const x = MS.pilotView(MS.readMission({ ...doc, phases: doc.phases.map((q, i) => i ? q : { ...q, zone_shown: v }) }), []);
+    return [x.zones.map(z => z.id).join(' '), x.drawers.length, J(x).includes('Tiroir ravin')] };
+  // a mission whose only part is refused (a letter out of the list): no drawer, and its count is not returned
+  const refused = MS.readMission({ ...doc, phases: [{ id: 'Z', title: 'Hors liste' }] }), rv = MS.pilotView(refused, []);
+  const mines = [{ mine: false }, { mine: 'true' }, { mine: 1 }, { mine: null }, 'x', 7, []].map(o => { const v = MS.pilotView(m, ['B', 'C'], o); return [v.drawers.length, found(v).length, v.pilot.mine] });
+  for (const x of [null, 'x', 7, [], {}, { drawers: 'x' }, { drawers: [null, 7, 'B', {}], points: 'x', routeOrder: {}, maps: 'x', zones: 7, rendezvous: 'x', turns: null },
+    { drawers: [{ id: 'B', key: 'x', route: 'x' }, { id: 'C', key: { kind: 'zone', shown: true, zoneId: {} } }] }])
+    for (const o of [[], ['B'], null, 'B', [{}, null, 7]]) try { MS.pilotView(x, o, x) } catch (e) { threw += String(e) }
+  const one = MS.pilotView(m, ['C']);
+  return { none: [none.drawers, none.drawersRefused, none.pilot, Object.keys(none.pilot).sort(), found(none), none.zones.length, none.rendezvous.length, none.turns.map(t => t.id)],
+    one: [one.drawers.map(d => [d.id, d.rank, d.title]), found(one).filter(w => !['Tiroir speleo', 'Mot de clef speleo', '"trigger"', '"rank"', 'OBJ-9', 'RDV-3', 'Equipe cachee', '44.52', '44.54', 'Speleo perdu'].includes(w))],
+    zone: [undefined, true, 'true', 1, 'oui', false].map(zoneAs), refused: [refused.drawersRefused, rv.drawersRefused, rv.drawers, J(rv).includes('Hors liste')],
+    mines, threw, untouched: J(m) === before } }"""
+
+
+@case('N113', 'Missions › the reader, nothing of a closed drawer leaves the view (pure, no screen): of a mission with drawers and none open, the '
+      'JSON of pilotView carries no title of a drawer, no key said in plain words, no message, no briefing, no identifier, name or position of '
+      'a place only a closed drawer cites, no stub and no count — `drawers` is empty, `drawersRefused` is 0, `pilot` is { mine, opened }; with '
+      'one drawer open, it alone, whole, with its rank; the passage zone of a closed drawer is hidden without `zone_shown`, shown with '
+      '`zone_shown: true`, hidden with « true » as a text, 1, « oui » or false; a `mine` that is not strictly true gives the visible part '
+      'alone; a mission whose parts are all refused does not say how many; no hostile input throws; the mission read is not touched',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0459 (the user, 18 Nov 2026: « l\'existence même des tiroirs est cachée par défaut, à tout le monde, auteur compris ; on choisit '
+      'de dévoiler » — E:/DEFA/organisation/SPEC_MISSIONS_TIROIRS.md § 11.3): frame/lib/mission.js `pilotView`; docs/technique/FORMAT_MISSION.md § 4 bis')
+def n113(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_PV_NOTHING_JS)
+    c.eq(r['none'], [[], 0, {'mine': True, 'opened': []}, ['mine', 'opened'], [], 0, 0, ['PT1']],
+         'nothing open: no drawer, no refused count, `pilot` says mine and opened only; not one word of a closed drawer, not one hidden place, no stub and no count '
+         'in the JSON of the view; only the point of the visible route is kept', what='nothing open')
+    c.eq(r['one'], [[['C', 2, 'Tiroir speleo']], []],
+         'drawer 2 open: it alone, whole, with its rank; nothing of drawers 1 and 3 (their titles, their keys, their places) is in the view', what='one open')
+    c.eq(r['zone'], [['', 0, False], ['ZONE-7', 0, False], ['', 0, False], ['', 0, False], ['', 0, False], ['', 0, False]],
+         'the passage zone of a closed drawer: hidden without zone_shown; shown with zone_shown: true (the boolean), as an ordinary zone, nothing tying it to the drawer; '
+         'hidden with « true » as a text, 1, « oui », false', what='zone_shown')
+    c.eq(r['refused'], [1, 0, [], False], 'a mission whose only part is refused: the reader counts it, the view does not say it (0), and returns nothing of it',
+         what='refused parts')
+    c.eq(r['mines'], [[0, 0, False]] * 7, 'a `mine` that is not strictly true (false, « true », 1, null) or options that are not an object: the visible part alone, '
+         'nothing of a drawer said open', what='mine, strictly')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the mission read is not touched')

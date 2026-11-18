@@ -75,7 +75,7 @@ function keyOf(p) {
       point: '',
       delay: numText(p.trigger_delay_min),
       zone: '',
-      shown: true,
+      shown: false, // SOG-0459 : une zone de passage est cachée au pilote sauf écrit autrement
       object: '',
       arrPoint: '',
       arrRadius: '',
@@ -94,7 +94,7 @@ function keyOf(p) {
     ...f,
     key: 'zone',
     zone: cut(p.trigger_zone, 40),
-    shown: yes(p.zone_shown, true)
+    shown: p.zone_shown === true // SOG-0459 : montrée seulement quand le fichier écrit le booléen
   };
   if (written[0] === 'trigger_object') return scalar(p.trigger_object) ? {
     ...f,
@@ -157,7 +157,7 @@ export function withKey(row, key) {
     point: '',
     delay: '',
     zone: '',
-    shown: true,
+    shown: false,
     object: '',
     arrPoint: '',
     arrRadius: '',
@@ -226,7 +226,11 @@ function putKey(o, r, diff) {
     if (ch('delay')) putNumber(o, 'trigger_delay_min', r.delay, 0, B.delayMin);
   } else if (r.key === 'zone') {
     if (ch('zone')) putText(o, 'trigger_zone', r.zone, 40);
-    if (ch('shown')) o.zone_shown = r.shown !== false;
+    // SOG-0459 : cochée → `zone_shown: true` ; décochée → la clé n'est pas écrite (cachée, le défaut)
+    if (ch('shown')) {
+      if (r.shown === true) o.zone_shown = true;
+      else delete o.zone_shown;
+    }
   } else if (r.key === 'object') {
     if (ch('object')) putText(o, 'trigger_object', r.object, 40);
   } else if (r.key === 'arrival') {

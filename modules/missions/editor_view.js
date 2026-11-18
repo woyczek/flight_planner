@@ -53,9 +53,6 @@ import * as EM from './editor_map.js';
 import {
   createUndo
 } from '../maps/lib/map_edit.js';
-import {
-  describe as pilotSays
-} from './drawers_view.js';
 import * as MS from '../../frame/lib/mission.js';
 import * as MT from '../../frame/lib/mission_themes.js';
 import * as RG from './registry.js';
@@ -1349,35 +1346,20 @@ function edDrawerLines(s, r, now) {
   };
 }
 
-/** Ce que le pilote voit d'un tiroir (SOG-0445) : fermé — son nom, la phrase de sa clé et la note que l'écran du pilote dit lui-même
- *  (describe de drawers_view.js, la session « Affectation » : les mêmes mots), sans position en direct ; ouvert — son message, le début
- *  de son briefing, sa suite de route. Lu du DOCUMENT de la séance par le lecteur (bornes, caractères invisibles retirés), jamais des
- *  lignes en mémoire (Sécurisation, 18 nov.). → { name, key, case, note, msg, brief, route } (des textes). */
+/** Ce que le pilote voit d'un tiroir (SOG-0445 ; SOG-0459) : fermé — RIEN (le pilote ne sait pas que le tiroir existe : ni titre, ni
+ *  clé, ni compte ; la fiche le dit en une phrase fixe) ; ouvert — son titre, son message, le début de son briefing, sa suite de route.
+ *  Lu du DOCUMENT de la séance par le lecteur (bornes, caractères invisibles retirés), jamais des lignes en mémoire (Sécurisation,
+ *  18 nov.). → { name, msg, brief, route } (des textes). */
 function edPilotView(s, doc, id) {
   const d = (MS.readMission(doc)?.drawers || []).find(x => x.id === id);
   if (!d) return {
     name: '',
-    key: '',
-    case: '',
-    note: '',
     msg: '',
     brief: '',
     route: ''
   };
-  const says = pilotSays(s.tt, {
-    key: d.key,
-    dueAt: null
-  }, d, {
-    live: false,
-    notJudged: MS.notJudgedYet
-  });
   return {
-    name: `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`,
-    key: says.key,
-    // « Cet appareil… » se lirait comme l'ordinateur de l'auteur : la ligne dit que c'est celui du pilote ; son cas (sans position en
-    // direct, passage pas encore suivi), la note le dit elle-même depuis le lot de la zone d'Affectation
-    case: says.note ? s.tt(EDTX.dwPilotCase) : '',
-    note: says.note,
+    name: d.title,
     msg: d.message || s.tt(EDTX.dwPilotNoMsg),
     brief: d.brief.length > 600 ? `${d.brief.slice(0, 600)}…` : d.brief,
     route: d.route.length ? s.tt(EDTX.dwPilotRoute, {
@@ -1420,7 +1402,7 @@ function edDrawerHtml(s, doc) {
     objects = of('object'),
     keys = [...DR.KEYS, ...(r.key === 'kept' ? ['kept'] : [])],
     body = r.key === 'time' ? `<div class="f-row">${select('point', EDTX.dwPoint, r.point || 'ORIGIN', [['ORIGIN', s.tt(EDTX.dwAtTakeoff)], ...points])}${field('delay', EDTX.dwDelay, r.delay, ' inputmode="numeric" maxlength="4"')}</div>` :
-    r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${onMap('zone', EDTX.dwDraw)}${check('shown', EDTX.dwShown, r.shown !== false)}${fallback}` :
+    r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${onMap('zone', EDTX.dwDraw)}${check('shown', EDTX.dwShown, r.shown === true)}${fallback}` :
     r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${onMap('object', EDTX.dwPose)}${fallback}` :
     r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
         <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
@@ -1444,8 +1426,8 @@ function edDrawerHtml(s, doc) {
     ${group('route', EDTX.dwGrpRoute, `<p class="f-muted">${esc(s.tt(route.length ? EDTX.dwRouteHint : EDTX.dwRouteNone))}</p>
       <div class="ms-chips" data-dwroute>${edChipsHtml(s, r.id, edDrawerChips(e, r))}</div>${edChipMoveHtml(s, r.id, edDrawerChips(e, r))}
       ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}`)}
-    ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p data-pvkey>${esc(pv.key)}</p><p class="f-muted ms-attag" data-pvcase>${esc(pv.case)}</p><p class="f-muted" data-pvnote>${esc(pv.note)}</p></div>
-      <div class="ms-pilot" data-pvafter><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotAfter))}</span><p class="ms-pre" data-pvmsg>${esc(pv.msg)}</p><p class="ms-pre f-muted" data-pvbrief>${esc(pv.brief)}</p><p class="f-muted" data-pvroute>${esc(pv.route)}</p></div>`)}
+    ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p data-pvnothing>${esc(s.tt(EDTX.dwPilotNothing))}</p></div>
+      <div class="ms-pilot" data-pvafter><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotAfter))}</span><p><b data-pvname>${esc(pv.name)}</b></p><p class="ms-pre" data-pvmsg>${esc(pv.msg)}</p><p class="ms-pre f-muted" data-pvbrief>${esc(pv.brief)}</p><p class="f-muted" data-pvroute>${esc(pv.route)}</p></div>`)}
     <div class="f-row"><button type="button" data-do="eddrdel">${esc(s.tt(e.drawerAsk === r.id ? EDTX.plRemoveAnyway : EDTX.dwRemove))}</button></div></section>`;
 }
 
@@ -1852,7 +1834,7 @@ function edRefresh(s) {
     put(q('[data-dline="texts"]'), lines.texts);
     put(q('[data-dline="route"]'), lines.route);
     const pv = edPilotView(s, doc, drow.id);
-    for (const k of ['name', 'key', 'case', 'note', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
+    for (const k of ['name', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
   }
   const dtodo = new Set(DR.drawersTodo(doc).map(t => t.name));
   for (const d of MS.readMission(doc)?.drawers || []) {

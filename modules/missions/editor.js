@@ -1798,7 +1798,8 @@ export function pilotRows(doc, rows, n) {
   const up = x => String(x ?? '').trim().toUpperCase(),
     kept = new Set([...Object.keys(v.points), ...v.zones.map(z => z.id), ...v.rendezvous.map(z => z.id), ...v.turns.map(z => z.id)].map(
       up)),
-    objects = new Set(v.drawers.filter(d => !d.sealed).map(d => up(d.key?.object?.id)).filter(Boolean));
+    // la vue ne rend que les tiroirs ouverts (SOG-0459) : l'objet de la clé de chacun
+    objects = new Set(v.drawers.map(d => up(d.key?.object?.id)).filter(Boolean));
   return rows.map(r => r.kind === 'dep' || r.kind === 'arr' ? r : r.kind === 'target' ? (v.target ? r : null) : r.kind === 'object' ? (
     objects.has(up(r.id)) ? r : null) : r.id && kept.has(up(r.id)) ? r : null);
 }

@@ -129,7 +129,7 @@ function featsOf(R) {
     return null; // un fichier que le lecteur refuse : pas de carte
   }
   if (!view) return null;
-  const last = (view.drawers || []).filter(d => d && !d.sealed).at(-1);
+  const last = (view.drawers || []).filter(Boolean).at(-1); // la vue ne rend que les tiroirs ouverts (SOG-0459)
   return EM.mapFeatures(ED.pilotRows(R.doc, rows, R.opened), {
     zones: R.doc?.zones,
     adPos: name => adPos(R, (/^[A-Z]{4}(?= ·|$)/.exec(String(name || '')) || [])[0]),

@@ -175,7 +175,11 @@ export const EDTX = {
   dwAtTakeoff: ['le décollage', 'the take-off', 'der Start', 'el despegue'],
   dwDelay: ['Délai (min)', 'Delay (min)', 'Verzögerung (min)', 'Retraso (min)'],
   dwZone: ['Zone de la mission', 'Zone of the mission', 'Zone der Mission', 'Zona de la misión'],
-  dwShown: ['Montrer la zone au pilote', 'Show the zone to the pilot', 'Die Zone dem Piloten zeigen', 'Mostrar la zona al piloto'],
+  // SOG-0459 : décochée par défaut — la zone de passage d'un tiroir fermé est cachée au pilote
+  dwShown: ['Montrer cette zone au pilote dès le départ', 'Show this zone to the pilot from the departure',
+    'Diese Zone dem Piloten ab dem Start zeigen',
+    'Mostrar esta zona al piloto desde la salida'
+  ],
   dwObject: ['Objet de la mission', 'Object of the mission', 'Objekt der Mission', 'Objeto de la misión'],
   dwNoZone: ['Aucune zone dans cette mission — créez-la dans les Lieux.', 'No zone in this mission — create it in the Places.',
     'Keine Zone in dieser Mission — legen Sie sie in den Orten an.', 'Ninguna zona en esta misión — créela en los Lugares.'
@@ -201,14 +205,17 @@ export const EDTX = {
   dwStopAdd: ['Ajouter un arrêt…', 'Add a stop…', 'Halt hinzufügen…', 'Añadir una parada…'],
   dwStopDel: ['Retirer l\'arrêt {id}', 'Remove the stop {id}', 'Halt {id} entfernen', 'Quitar la parada {id}'],
   dwGrpPilot: ['Ce que le pilote voit', 'What the pilot sees', 'Was der Pilot sieht', 'Lo que ve el piloto'],
-  dwPilotLine: ['tiroir fermé, puis ouvert', 'drawer closed, then open', 'Schublade geschlossen, dann offen',
-    'cajón cerrado, luego abierto'
+  // SOG-0459 : un tiroir fermé ne se montre pas au pilote — ni titre, ni clé, ni compte
+  dwPilotLine: ['rien avant l\'ouverture, puis le tiroir ouvert', 'nothing before the opening, then the open drawer',
+    'nichts vor dem Öffnen, dann die offene Schublade', 'nada antes de la apertura, luego el cajón abierto'
   ],
-  dwPilotBefore: ['Avant — tiroir fermé', 'Before — drawer closed', 'Vorher — Schublade geschlossen', 'Antes — cajón cerrado'],
+  dwPilotBefore: ['Avant l\'ouverture', 'Before the opening', 'Vor dem Öffnen', 'Antes de la apertura'],
+  dwPilotNothing: ['Rien : le pilote ne sait pas que ce tiroir existe — ni titre, ni clé, ni compte.',
+    'Nothing: the pilot does not know this drawer exists — no title, no key, no count.',
+    'Nichts: Der Pilot weiß nicht, dass es diese Schublade gibt — kein Titel, kein Schlüssel, keine Zahl.',
+    'Nada: el piloto no sabe que este cajón existe — ni título, ni llave, ni recuento.'
+  ],
   dwPilotAfter: ['Après — tiroir ouvert', 'After — drawer open', 'Nachher — Schublade offen', 'Después — cajón abierto'],
-  dwPilotCase: ['Sur l\'appareil du pilote :', 'On the pilot\'s device:', 'Auf dem Gerät des Piloten:',
-    'En el dispositivo del piloto:'
-  ],
   dwPilotNoMsg: ['(aucun message)', '(no message)', '(keine Nachricht)', '(ningún mensaje)'],
   dwPilotRoute: ['Suite de route proposée : {r}', 'Onward route proposed: {r}', 'Vorgeschlagene Folgeroute: {r}',
     'Ruta siguiente propuesta: {r}'

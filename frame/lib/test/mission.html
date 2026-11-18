@@ -510,7 +510,7 @@
     fallback_delay_min: '90'
   }]);
   same(
-    'tiroirs : la zone dans la partie — un cercle, son plafond, son repli ; un polygone (les sommets priment), cachée ; un centre à plat',
+    'tiroirs : la zone dans la partie — un cercle, son plafond, son repli, cachée sans zone_shown (SOG-0459) ; un polygone (les sommets priment), cachée ; un centre à plat',
     dm.drawers.map(d => d.key), [{
       kind: 'zone',
       shape: {
@@ -522,7 +522,7 @@
       },
       ceilingFt: 1500,
       zoneId: null,
-      shown: true,
+      shown: false,
       actor: null,
       fallbackMin: 60
     }, {
@@ -1510,7 +1510,7 @@
 
   // ---- SOG-0448 : ce que le pilote peut voir (pilotView). Une mission inventée : un randonneur à trouver sur un glacier ; la position
   // cachée (45.31 N, 1.42 E) est celle de la cible, de l'objet, de la zone du deuxième tiroir et d'un rendez-vous proche.
-  const glacier = readMission({
+  const glacierDoc = {
       schema: 'helo-xp-mission',
       mission: {
         id: 'X-002A',
@@ -1602,56 +1602,53 @@
         trigger_object: 'OBJ-1',
         fallback_delay_min: 90
       }]
-    }),
+    },
+    glacier = readMission(glacierDoc),
     glacierBefore = JSON.stringify(glacier),
+    // SOG-0459 : la vue ne rend que les tiroirs OUVERTS — leurs lettres
     seenOf = v => [!!v.target, Object.keys(v.points).sort().join(' '), v.zones.map(z => z.id).join(' '), v.rendezvous.map(z => z.id).join(
-      ' '), v.turns.map(z => z.id).join(' '), v.drawers.map(d => d.id + (d.sealed ? '-' : '+')).join(' ')],
-    leaks = v => /45\.31|1\.42|Randonneur vu/.test(JSON.stringify(v));
-  same('pilotView, aucun tiroir ouvert : la partie visible seule — sa route, le centre de sa carte, la zone qu\'un tiroir fermé montre',
-    seenOf(pilotView(glacier, [])), [false, 'PT1 ZONE-1', 'ZONE-1', '', 'PT1', 'B- C- D-']);
-  ck('pilotView, aucun tiroir ouvert : la position cachée et le message du tiroir ne sont dans RIEN de ce qui est rendu', !leaks(
+      ' '), v.turns.map(z => z.id).join(' '), v.drawers.map(d => d.id).join(' ')],
+    leaks = v => /45\.31|1\.42|Randonneur vu|La vallée|Le glacier|Trouvé/.test(JSON.stringify(v)),
+    // la zone du tiroir 1 (fermé) selon ce que le fichier écrit de zone_shown
+    shownAs = v => seenOf(pilotView(readMission({
+      ...glacierDoc,
+      phases: glacierDoc.phases.map((x, i) => i ? x : {
+        ...x,
+        zone_shown: v
+      })
+    }), []))[2];
+  same('pilotView, aucun tiroir ouvert : la partie visible seule — sa route, le centre de sa carte ; la zone d\'un tiroir fermé sans zone_shown est cachée (SOG-0459)',
+    seenOf(pilotView(glacier, [])), [false, 'PT1', '', '', 'PT1', '']);
+  ck('pilotView, aucun tiroir ouvert : la position cachée, le message et les titres des tiroirs ne sont dans RIEN de ce qui est rendu', !leaks(
     pilotView(glacier, [])), JSON.stringify(pilotView(glacier, [])).slice(0, 200));
-  same('pilotView, le premier tiroir ouvert : sa suite de route en plus, rien du deuxième',
-    [seenOf(pilotView(glacier, ['B'])), leaks(pilotView(glacier, ['B']))], [
-      [false, 'PT1 PT2 ZONE-1', 'ZONE-1', '', 'PT1 PT2', 'B+ C- D-'], false
+  same('pilotView, le premier tiroir ouvert : lui seul, entier — sa zone et sa suite de route en plus, rien du deuxième',
+    [seenOf(pilotView(glacier, ['B'])), pilotView(glacier, ['B']).drawers.map(d => [d.id, d.rank, d.title]), /Le glacier|Trouvé|Randonneur vu/.test(
+      JSON.stringify(pilotView(glacier, ['B'])))], [
+      [false, 'PT1 PT2 ZONE-1', 'ZONE-1', '', 'PT1 PT2', 'B'],
+      [
+        ['B', 1, 'La vallée']
+      ], false
     ]);
-  same('pilotView, le deuxième ouvert : sa zone, la cible et le rendez-vous de sa suite de route ; le troisième reste scellé',
-    seenOf(pilotView(glacier, ['B', 'C'])), [true, 'PT1 PT2 RDV-1 TARGET ZONE-1 ZONE-2', 'ZONE-1 ZONE-2', 'RDV-1', 'PT1 PT2', 'B+ C+ D-']);
-  same('pilotView, un tiroir fermé est scellé : ni message, ni suite de route, ni géométrie ; son genre et son heure de repli restent',
-    pilotView(glacier, []).drawers[1], {
-      id: 'C',
-      rank: 2,
-      title: 'Le glacier',
-      trigger: '',
-      message: '',
-      brief: '',
-      key: {
-        kind: 'zone',
-        fallbackMin: 60,
-        shown: false,
-        zoneId: null,
-        actor: null
-      },
-      keyWhy: '',
-      condition: '',
-      emits: null,
-      route: [],
-      routeUnknown: 0,
-      sealed: true
-    });
+  same('pilotView, le deuxième ouvert : sa zone, la cible et le rendez-vous de sa suite de route ; le troisième n\'est pas rendu',
+    seenOf(pilotView(glacier, ['B', 'C'])), [true, 'PT1 PT2 RDV-1 TARGET ZONE-1 ZONE-2', 'ZONE-1 ZONE-2', 'RDV-1', 'PT1 PT2', 'B C']);
+  same('pilotView, un tiroir fermé ne laisse rien (SOG-0459) : ni talon, ni compte ; drawersRefused vaut 0',
+    [pilotView(glacier, []).drawers, pilotView(glacier, []).pilot, pilotView(glacier, []).drawersRefused], [
+      [], {
+        mine: true,
+        opened: []
+      }, 0
+    ]);
+  same('pilotView, la zone de passage d\'un tiroir fermé : montrée avec zone_shown: true (le booléen) seulement ; « true » en texte, 1, false : cachée',
+    [true, 'true', 1, false, null].map(shownAs), ['ZONE-1', '', '', '', '']);
   same('pilotView, une mission qu\'on feuillette (pas la mienne) : la partie visible seule, quels que soient les tiroirs dits ouverts',
     [seenOf(pilotView(glacier, ['B', 'C', 'D'], {
       mine: false
     })), pilotView(glacier, ['B'], {
       mine: false
     }).pilot], [
-      [false, 'PT1 ZONE-1', 'ZONE-1', '', 'PT1', 'B- C- D-'], {
+      [false, 'PT1', '', '', 'PT1', ''], {
         mine: false,
-        opened: [],
-        hidden: {
-          places: 4,
-          drawers: 3
-        }
+        opened: []
       }
     ]);
   same('pilotView, des tiroirs ouverts qui ne sont pas des lettres de tiroir sont ignorés (une entrée bornée)',

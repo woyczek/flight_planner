@@ -32,7 +32,8 @@ phases:
 
     # ONE key among five:
     trigger_zone: ZONE-1           # 1. a passage zone — an id of `zones`, OR the zone itself (see § 3)
-    zone_shown: true               #    shown to the pilot on the Map (default), or hidden
+    zone_shown: true               #    shown to the pilot from the departure — ONLY the boolean true; absent (the default),
+                                   #    « true » as a text, 1, false: hidden until the drawer opens (SOG-0459)
     trigger_actor: OBJ-2           #    optional: this object (a moving target) crosses the zone, not the pilot
     trigger_object: OBJ-1          # 2. an object to find — an id of `objects`, OR the object itself (see § 3)
     trigger_condition:             # 3. a condition: « arrival », or one of the workshop's 1.1 conditions (§ 4)
@@ -109,7 +110,7 @@ phases:
 | `drawers` | twelve at most, in the order of the file: `{ id, rank, title, trigger, message, brief, key, keyWhy, condition, emits, route, routeUnknown }` — `rank` is 1 to 12, what the screen says (« Tiroir 1 ») |
 | `drawersRefused` | the parts left out: an id out of B to M, a duplicate, a bare value, beyond twelve (or beyond the 20 entries read) |
 | `key` | `{ kind: 'time', point, delayMin }` — `point` is a point of the mission or `'ORIGIN'` |
-| | `{ kind: 'zone', shape, ceilingFt, zoneId, shown, actor, fallbackMin }` — `shape` is `{ circle: { lat, lon, radiusM } }` or `{ polygon: [[lat, lon], …] }`; `actor` is the moving target that crosses the zone (an object, as below), or null: the pilot |
+| | `{ kind: 'zone', shape, ceilingFt, zoneId, shown, actor, fallbackMin }` — `shape` is `{ circle: { lat, lon, radiusM } }` or `{ polygon: [[lat, lon], …] }`; `shown` is true only when the file writes `zone_shown: true` (SOG-0459); `actor` is the moving target that crosses the zone (an object, as below), or null: the pilot |
 | | `{ kind: 'object', object, fallbackMin }` — `object` is `{ id, kind, name, lat, lon, rangeNm, heightFt, altitudeFt, confirm, hiddenUntil, moving, motion }`; `motion` is null, `{ kind: 'route', route, speedKt, startDelayMin }` or `{ kind: 'axis', courseDeg, speedKt, startDelayMin }` |
 | | `{ kind: 'arrival', point, at: { lat, lon }, radiusNm, speedMaxKt, onGround, required: [{ id, lat, lon }], escortMinSec, fallbackMin }` |
 | | `{ kind: 'condition', condition, rule \| steps \| event, fallbackMin }` — the workshop's 1.1 conditions: `hover`, `landing`, `overflight` (a `rule`), `sequence` (1 to 10 `steps`, each a rule), `event` (the id of a message between crews) |
@@ -144,31 +145,35 @@ phases:
   departure to a point of part A — distance at the cruise speed, plus the time on task of the points before (the middle
   of a range); `min` is null without a speed; null when the point is not on the route of part A; `'ORIGIN'` is 0.
 
-## 4 bis. What the pilot may see — `pilotView` (SOG-0448, 18 Nov 2026)
+## 4 bis. What the pilot may see — `pilotView` (SOG-0448, 18 Nov 2026; SOG-0459, 18 Nov 2026)
 
 The workshop's format writes the target, the zones, the points and the objects at the top of the file: shown as they are, the sheet
-of the mission, its Detail and the Map would give away the position a closed drawer hides. **One rule, written once**, in the
+of the mission, its Detail and the Map would give away the position a closed drawer hides. And the user, 18 Nov 2026 (SOG-0459,
+`organisation/SPEC_MISSIONS_TIROIRS.md` § 11.3): **the very existence of the drawers is hidden by default** — nothing says that a
+mission goes beyond its first objective: no count, no badge, no title of a closed drawer. **One rule, written once**, in the
 reader: `pilotView(mission, opened, { mine = true })` returns the mission read, **in the same shape**, where
 
+- `drawers` holds the **open drawers only**, whole, in the order of the file, with their `rank`; **a closed drawer is not there at
+  all** — no stub, no title, no key said in plain words; a mission whose drawers are all closed has `drawers: []`;
+- `drawersRefused` is `0` (a count of the parts left out would say there were some);
 - a place, a zone, a rendezvous or the target is kept **only if it is cited** — by the visible part (its route `routeOrder`, the
   centre of one of its maps) or by a drawer that is OPEN (its zone, the point of its key, its required stops, its onward route);
-- the passage zone of a closed drawer is also kept when its author said it is shown (`zone_shown`, true unless written otherwise);
-- **a closed drawer is sealed** (`sealed: true`): its rank, its title, the key in plain words written by the author (`trigger`), the
-  kind of its key and its fallback time (plus the point and the delay of an hour, the point of an arrival, and the only flags
-  `notJudgedYet` reads) — never a position, an object, a message, a briefing or an onward route;
+- the passage zone of a closed drawer is also kept when the file writes **`zone_shown: true`** (the boolean; absent, « true » as a
+  text, 1 or false: hidden) — kept in `zones` as an ordinary zone, nothing tying it to the drawer;
 - `opened` is the letters of the open drawers of MY mission, a bounded input: only the letters of `DRAWER_IDS` count; `mine: false`
   (a mission one browses) gives the visible part alone, whatever `opened` says; **`mine` is read strictly** (the Security session,
   18 Nov): without options, or without `mine`, the mission is mine — the default —, but a `mine` that is not exactly `true` (the text
   « false », 0, null) or options that are not an object mean « not mine »: a closed failure, no drawer is held open;
-- **a mission without a drawer has no secret**: it is returned as it is (the V2 missions are shown as before);
-- `pilot: { mine, opened, hidden: { places, drawers } }` is added.
+- **a mission without a drawer has no secret**: it is returned as it is (the V2 missions are shown as before) — only a count of
+  refused parts, if any, is returned as 0;
+- `pilot: { mine, opened }` is added — **no count** of what is hidden.
 
 Identifiers are compared as the reader reads them (trimmed, upper case; `TARGET` names the target). The mission read is never
-modified. **For display only**: the device that follows the keys in flight reads the whole mission. **The limit, said**: the file
-stays readable by whoever opens it, and the V2 shows everything — it is a seal of the game, not a protection. The author, in the
-workshop, sees everything. Who goes through it: the sheet and the Detail of a mission (Features SOG), the Map (BUGS SOG), with the
-open drawers published on the device by « Affectation » — none writes a rule of its own. Bench: `frame/lib/test/mission.html`
-(noreg N1); noreg N103.
+modified. **For display only**: the device that follows the keys in flight, and the workshop, read the whole mission
+(`readMission`). **The limit, said**: the file stays readable by whoever opens it, and the V2 shows everything — it is a secret of
+the screen, not a protection. Who goes through it: the sheet and the Detail of a mission (Features SOG), the Map (BUGS SOG), the
+search index, the read-only map of the mission (`modules/missions/mission_map.js`), with the open drawers published on the device
+by « Affectation » — none writes a rule of its own. Bench: `frame/lib/test/mission.html` (noreg N1); noreg N103, N113.
 
 ## 4 ter. The map of the mission — `mission_map` (SOG-0456, 18 Nov 2026)
 

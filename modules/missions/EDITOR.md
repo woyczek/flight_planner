@@ -387,6 +387,9 @@ The accepted form of `maquette/tiroirs.html`, in the frame of the workshop. `edi
 - **The stops of an arrival are chips** (`required_points`): added from a list of the places of the mission, removed one by one,
   twenty at most; written by identifier, followed by the references of SOG-0439 (`drawerStop`).
 - With this, lot P3 (SOG-0445) is delivered but for « Vue du pilote » on the map, which comes with the map of P2.
+- **Since SOG-0459** (§ 7 septvicies): a closed drawer is shown to nobody, so « Avant l'ouverture » says one fixed sentence — « Rien :
+  le pilote ne sait pas que ce tiroir existe » — and `describe` of `drawers_view.js` is no longer called; « Après — tiroir ouvert »
+  gives the title (without its rank), the message, the briefing and the onward route.
 
 ### 7 nonies. P4, first brick: the trial of the keys — the pure part (18 Nov 2026; SOG-0444 lot P4; no screen; noreg N90)
 
@@ -812,6 +815,21 @@ code in the workshop (edition) and in READ ONLY (the Brief, the reader) — neve
 
   A background changed on a live map: 180 to 230 ms. Not measured, said as such: the real tiles of the two hosts on the user's
   line, a phone.
+
+### 7 septvicies. The secret goes as far as the existence of the drawers (18 Nov 2026; SOG-0459; noreg N103, N113)
+
+The user, 18 Nov (`organisation/SPEC_MISSIONS_TIROIRS.md` § 11.3): « l'existence même des tiroirs est cachée par défaut, à tout le
+monde, auteur compris ; on choisit de dévoiler ». By default NOTHING says that a mission goes beyond its first objective: no count,
+no badge, no title of a closed drawer.
+
+- **The reader (part A, commit 1)** — `pilotView` (`docs/technique/FORMAT_MISSION.md` § 4 bis): `drawers` holds the OPEN drawers
+  only, whole, with their rank; the stub of a closed drawer (`sealed`) is gone, `drawersRefused` is 0, `pilot` is `{ mine, opened }`
+  (no `hidden` count). `ED.pilotRows` and `mission_map.js` no longer filter `sealed`.
+- **The passage zone of a closed drawer is hidden by default**: the reader's `shown` is true only when the file writes
+  `zone_shown: true` (the boolean). In the sheet of a drawer the box is « Montrer cette zone au pilote dès le départ », UNTICKED by
+  default; ticked → `zone_shown: true` is written; unticked → the key is not written (a file that writes `false` keeps it until the
+  box is touched: only what changes is written — `editor_drawers.js` `putKey`).
+- **« Ce que le pilote voit »** of a drawer: nothing before the opening (§ 7 octies).
 
 ### 8. What is NOT ported
 
