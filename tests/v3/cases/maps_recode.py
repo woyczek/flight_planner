@@ -9712,6 +9712,22 @@ def d279(c):
     c.ok('<b>x</b>' not in h and '&lt;' not in h.replace('&lt;', '&lt;') or '<b>x</b>' not in h, h[:200], 'a tag in a line is not kept')
     c.ok(not re.search(r'undefined|null', r['bare']) and r['lbl']['hours'] not in r['bare'] and r['lbl']['rem'] not in r['bare'], r['bare'][:200], 'a record with no heading writes none')
 
+@case('D280', 'The embedded profile says the clearance of the planned level over the relief (profile_embed.js, SOG-0464): { minFt, atNm, below }; none without relief or without a level', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0464 (Mission creation asks: a cruise under the relief must be said): drawProfile gives, beside { ok, terrain, nm }, `clear`: the smallest margin in feet between the planned altitude and the relief of the corridor, where it is (NM from the start) and whether it is negative; null when the relief is not read or no level is given; the Map itself says nothing about it (nothing changes there)')
+def d280(c):
+    c.page.goto(f'{c.base}/modules/maps/lib/test/profile_embed.html', wait_until='load')
+    c.until("() => window.__pe && window.__pe.ready", timeout=30000, what='the profile bench')
+    r = c.js("""async () => { const P = window.__pe, cv = P.canvas, pts = [{ lat: 45.0, lon: 1.0, id: 'A' }, { lat: 45.2, lon: 1.6, id: 'B' }, { lat: 45.1, lon: 2.4, id: 'C' }];
+      const low = await P.drawProfile(cv, pts, { load: P.load, levelFt: 2000 }), high = await P.drawProfile(cv, pts, { load: P.load, levelFt: 20000 }), none = await P.drawProfile(cv, pts, { load: P.load }), noRelief = await P.drawProfile(cv, pts, { levelFt: 20000 });
+      return { low, high, none, noRelief } }""")
+    lo, hi = r['low'], r['high']
+    c.ok(lo['ok'] and lo['clear'] and lo['clear']['below'] is True and lo['clear']['minFt'] < 0, str(lo), 'a level of 2 000 ft over relief of 2 600 ft and more: below the relief, the margin negative')
+    c.ok(lo['clear'] and lo['clear']['atNm'] >= 0 and lo['clear']['atNm'] <= lo['nm'], str(lo), 'and where it is, in NM from the start, within the route')
+    c.ok(hi['clear'] and hi['clear']['below'] is False and hi['clear']['minFt'] > 0, str(hi), 'FL200 over the same relief: above it, the margin positive (the climb of a short route does not reach it, but clears the relief)')
+    c.eq(r['none']['clear'], None, 'without a level there is no planned altitude: no clearance', what=str(r['none']))
+    c.eq(r['noRelief']['clear'], None, 'without the relief (no loader) there is no clearance either', what=str(r['noRelief']))
+
 
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""

@@ -87,9 +87,32 @@ export async function drawProfile(canvas, points, {
     H,
     scale
   });
+  // la marge du niveau prévu sur le relief (SOG-0464 : « une croisière sous le relief doit se dire ») : la plus petite différence, en pieds, entre l'altitude prévue et le relief du couloir,
+  // où elle est (NM depuis le départ) et si elle est négative ; null sans relief lu ou sans altitude prévue. La Carte ne le dit pas : rien n'est changé chez elle.
+  // dans la CROISIÈRE seulement (du TOC au TOD ; sinon sans les 5 % de chaque bout) : au départ et à l'arrivée l'altitude prévue est celle du terrain, la marge y est nulle par construction
+  let clear = null;
+  const alt = data.plan?.alt,
+    toc = data.plan?.toc?.s,
+    tod = data.plan?.tod?.s,
+    from = Number.isFinite(toc) && Number.isFinite(tod) && tod > toc ? toc : data.total * .05,
+    to = Number.isFinite(toc) && Number.isFinite(tod) && tod > toc ? tod : data.total * .95;
+  if (data.terrainOk && Array.isArray(alt))
+    for (let i = 0; i < data.samples.length; i++) {
+      const q = data.samples[i],
+        a = alt[i];
+      if (a == null || !Number.isFinite(a) || !Number.isFinite(q.terrain) || q.s < from || q.s > to) continue;
+      const m = a - q.terrain;
+      if (!clear || m < clear.minFt) clear = {
+        minFt: Math.round(m),
+        atNm: Math.round(q.s / NM * 10) / 10,
+        below: false
+      };
+    }
+  if (clear) clear.below = clear.minFt < 0;
   return {
     ok: true,
     terrain: !!data.terrainOk,
-    nm: data.total / NM
+    nm: data.total / NM,
+    clear
   };
 }
