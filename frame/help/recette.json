@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
   "tests": 317,
-  "verdicts": 215
+  "verdicts": 217
  },
  "apps": [
   "pilote",
@@ -4548,8 +4548,9 @@
    },
    "test": "Missions, Registre, « Atelier » (ou « Modifier ») sur une mission. En bas : « Enregistrer » puis « Annuler » côte à côte, en vrais boutons, et « À compléter » au bout de la barre. Change un titre puis clique « Annuler ». Attendu : la question « Quitter l'atelier sans enregistrer ? » ; « Rester dans l'atelier » garde ton changement, « Quitter sans enregistrer » le perd. Sans rien changer, « Annuler » quitte aussitôt.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T09:01:17Z"
+   "state": "ok",
+   "delivered": "2026-11-18T09:01:17Z",
+   "at": "2026-11-18T16:27:53Z"
   },
   {
    "id": "SOG-0455",
@@ -4618,8 +4619,7 @@
    },
    "test": "Après la relance du lanceur, Données : « Mettre à jour » pour la France, puis reconstruis la zone fr. Carte : touche la zone R 108 (ou une autre zone R ou D de France). Attendu : sous son code, la « Nature du danger » telle que l'écrit le SIA (pour la R 108 : « Activités spécifiques Défense. Vols d'essais. »), l'organisme et les conditions de pénétration, les horaires publiés ; la R 12 montre son nom usuel « MONT SAINT MICHEL ». Une zone d'un autre État dit sa source (« openAIP, communautaire ») et n'écrit rien pour un champ absent.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T12:59:27Z"
+   "state": "known"
   },
   {
    "id": "SOG-0470",
@@ -4660,8 +4660,10 @@
    },
    "test": "Après la relance du lanceur : Carburant, un vol de Londres Luton (EGGW) à Sarajevo (LQSA) au FL350, calcul de route. Attendu : plus de « calcul impossible » ; le statut « CONTRÔLE PARTIEL », la route jusqu'au dernier point connu (LATLO) puis un direct vers LQSA, et dans la revue une ligne en clair qui dit que la base n'a pas le réseau de cet État et d'où part le direct. Un vol habituel (par exemple EDDF → LFMN) donne la même route qu'avant.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T12:14:45Z"
+   "state": "reserve",
+   "delivered": "2026-11-18T12:14:45Z",
+   "comment": "oui, mais refusé eurocontrol.",
+   "at": "2026-11-18T16:27:25Z"
   },
   {
    "id": "SOG-0475",
@@ -4714,10 +4716,15 @@
     "de": "Karte: Punkt, Flugplatz oder anderes mit einem Lupenwerkzeug suchen",
     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa"
    },
-   "test": "Carte : touche la loupe dans la colonne des commandes (sous le crayon). Tape « toul » : des terrains, balises et villes de Toulouse sont proposés. Choisis LFBO : la carte se centre dessus avec un repère rouge, et « Fiche du terrain » ouvre sa fiche ; avec un vol en cours, « Ajouter à la route » l'insère là où la route s'allonge le moins. Échap ou la croix ferme et retire le repère. Les espaces (R, D, P) ne sont pas encore cherchés.",
+   "test": "Carte : touche la loupe et tape « REN ». Attendu : la VOR REN en PREMIER, puis les autres. Puis « toul » : les terrains, balises et villes de Toulouse. Choisis un terrain : la carte se centre avec un repère, « Fiche du terrain » ouvre sa fiche ; avec un vol, « Ajouter à la route » l'insère. Échap ferme.",
    "since": "2026-11-18",
    "state": "todo",
-   "delivered": "2026-11-18T15:59:48Z"
+   "delivered": "2026-11-18T16:48:09Z",
+   "previous": {
+    "verdict": "ko",
+    "comment": "chercher « REN » donne tout, sauf la VOR nommée REN. qui devrait être le premier résultat.",
+    "at": "2026-11-18T16:22:25Z"
+   }
   },
   {
    "id": "SOG-0494",
@@ -4735,22 +4742,6 @@
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0114",
-   "fiche": "SOG-0474",
-   "app": "pilote",
-   "question": "Données de la DFS (Allemagne) : la licence est contradictoire. Les garde-t-on dans le dépôt de données, ou sur ce poste seulement ?",
-   "context": "La page des jeux de données de la DFS dit CC BY 4.0 (réutilisable avec crédit, même commercial). Mais les métadonnées des fichiers eux-mêmes portent « tous droits réservés ». Les voies (ED Routes) sont déjà rangées dans le dossier synchronisé des données (data/sia/zones/de/) depuis le 28/10, et les points, balises et espaces sont prêts sans être poussés. Sécurisation recommande, tant que ce n'est pas tranché, de traiter la DFS comme Eurocontrol et X-Plane : lue et gardée sur ce poste seulement, hors du dossier synchronisé, jamais transmise aux autres pilotes. Écrire à la DFS pour une confirmation écrite reste possible (c'est toi qui écrirais).",
-   "options": [
-    "Sur ce poste seulement tant que la DFS n'a pas confirmé par écrit (recommandé par Sécurisation) ; les voies déjà rangées passent aussi en local",
-    "Je considère la page CC BY 4.0 comme suffisante : dépôt de données, avec le crédit DFS",
-    "J'écris à la DFS ; d'ici là, sur ce poste seulement",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",

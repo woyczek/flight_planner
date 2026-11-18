@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "fc2236d",
-  "fiches": 499,
+  "organisation": "c5e6520",
+  "fiches": 500,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1885,13 +1885,12 @@
     {
      "id": "SOG-0462",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Zones R et D : dire la nature du danger, le gestionnaire, les horaires et les conditions de pénétration",
      "en": "R and D areas: state the nature of the hazard, the managing authority, the hours and the entry conditions",
      "de": "R- und D-Gebiete: Art der Gefahr, zuständige Stelle, Zeiten und Einflugbedingungen angeben",
      "es": "Zonas R y D: indicar la naturaleza del peligro, el gestor, los horarios y las condiciones de penetración",
-     "rank": 403,
-     "test": true
+     "rank": 403
     }
    ]
   },
@@ -3164,8 +3163,7 @@
      "en": "Routes: “computation impossible” towards a State for which the database has neither points nor airways (Bosnia, EGGW → LQSA)",
      "de": "Routen: „Berechnung unmöglich“ in einen Staat, für den die Datenbank weder Punkte noch Luftstraßen hat (Bosnien, EGGW → LQSA)",
      "es": "Rutas: «cálculo imposible» hacia un Estado del que la base no tiene puntos ni aerovías (Bosnia, EGGW → LQSA)",
-     "rank": 425,
-     "test": true
+     "rank": 425
     },
     {
      "id": "SOG-0475",
@@ -3187,6 +3185,15 @@
      "de": "Routen: London → Island (EGLL → BIKF) ergibt „Berechnung unmöglich“",
      "es": "Rutas: Londres → Islandia (EGLL → BIKF) da «cálculo imposible»",
      "rank": 427
+    },
+    {
+     "id": "SOG-0501",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : la route EGGW → LQSA du moteur est refusée par l'IFPS d'Eurocontrol (24 erreurs : FRA, RAD, routes obligatoires, STAR)",
+     "en": "Routes: the engine's EGGW → LQSA route is rejected by Eurocontrol's IFPS (24 errors: FRA, RAD, mandatory routes, STAR)",
+     "de": "Routen: Die Route EGGW → LQSA des Rechners wird vom IFPS von Eurocontrol abgelehnt (24 Fehler: FRA, RAD, Pflichtrouten, STAR)",
+     "es": "Rutas: la ruta EGGW → LQSA del motor es rechazada por el IFPS de Eurocontrol (24 errores: FRA, RAD, rutas obligatorias, STAR)"
     }
    ]
   },
@@ -4126,8 +4133,7 @@
      "en": "Mission workshop: “Cancel” is misplaced, hard to see, and unlike the other screens",
      "de": "Missionswerkstatt: „Abbrechen“ ist schlecht platziert, kaum sichtbar und anders als auf den übrigen Seiten",
      "es": "Taller de misiones: «Cancelar» está mal situado, se ve poco y no se parece a las demás pantallas",
-     "rank": 440,
-     "test": true
+     "rank": 440
     },
     {
      "id": "SOG-0467",
