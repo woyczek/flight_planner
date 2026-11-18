@@ -5585,6 +5585,37 @@ def a260(c):
     c.check_errors()
 
 
+@case('A284', 'The page profile survives a task longer than its buffer (SOG-0430 A2, SOG-0493): when the browser stops the profiler because its buffer is full (a task of more than 60 s) the profile of the beginning of the task is kept and attached to it, not lost to the empty profile that restarts', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0493 (the Pilot page froze for 203, 213 and 435 s on the user\'s workstation and the three long tasks were kept WITHOUT a profile): the sample buffer holds 6000 samples (60 s at 10 ms); a longer task makes the browser fire « samplebufferfull » when the task is over, BEFORE the long task is reported; the handler restarted a new profiler and threw the full one away, so profileTake read an empty profile and kept nothing. The full profile is now held and used for the task that just ended (it holds its beginning: the loop)')
+def a284(c):
+    FAKE = """(() => {
+      const q0 = Document.prototype.querySelector;
+      Document.prototype.querySelector = function (s) { return s === 'meta[name="sog-js-profiling"]' ? { content: '1' } : q0.apply(this, arguments) };
+      window.__made = 0;
+      window.Profiler = class {
+        constructor(o) { window.__made++; this.t0 = performance.now(); this.l = {}; window.__cur = this }
+        addEventListener(n, f) { this.l[n] = f }
+        async stop() {
+          const now = performance.now(), resources = [location.origin + '/frame/app.js'], frames = [{ name: 'theLoop', resourceId: 0, line: 99 }], stacks = [{ frameId: 0 }], samples = [];
+          for (let ts = this.t0; ts < Math.min(now, this.t0 + 60000); ts += 10) samples.push({ timestamp: ts, stackId: 0 });
+          return { resources, frames, stacks, samples };
+        }
+      };
+    })()"""
+    # a busy task, and — in the microtask that follows it, BEFORE the long task is reported — the browser's « sample buffer full »
+    BUSY_FULL = "(ms) => new Promise(r => setTimeout(() => { const t = performance.now(); while (performance.now() - t < ms); const p = window.__cur; Promise.resolve().then(() => p.l.samplebufferfull && p.l.samplebufferfull()); r() }, 50))"
+    c.page.add_init_script(FAKE)
+    c.open('fuel', docs=LEVEL3, wait=False)
+    c.until("!!window.SogFrame && typeof window.SogFrame.profiler === 'function' && window.SogFrame.profiler().state === 'running'", timeout=20000, what='the profiler runs')
+    c.js("() => localStorage.removeItem('sog-frame-profiles')")
+    c.js(f"() => ({BUSY_FULL})(1300)")
+    c.until("window.SogFrame.profiler().list.length >= 1", timeout=10000, what='a profile of the long task is kept even though the buffer was full')
+    st = c.js("() => window.SogFrame.profiler()")
+    c.eq((st['list'][0]['top'][0]['fn'], st['list'][0]['top'][0]['line'], st['list'][0]['ms'] >= 1000, st['state']), ('theLoop', 99, True, 'running'), 'the profile names the function of the beginning of the task; the profiler runs again after it', what='profile kept')
+    c.check_errors()
+
+
 @case('A259', 'The page profiles itself during a task of a second or more (SOG-0430, A2): the fifteen busiest functions, names and paths of OUR scripts only, kept on the device (five at most), never sent; stopped when the page is hidden, off by a setting, absent without the browser\'s profiler', 'A',
       designs=('standard',), screens=False, night=False,
       rule='SOG-0430 A2 (the ergonomist; Security review of 17 Nov 2026): the browser\'s JS Self-Profiling (`Profiler`, which the launcher enables with `Document-Policy: js-profiling` on the HTML pages) samples the main thread; a task of 1000 ms or more stops the profile, reduces it to the 15 functions with the most samples (name ≤ 80 characters without control characters, the path of one of OUR scripts without origin, query or fragment — « (other) » for any other origin —, line, samples), keeps it in the LOCAL diagnostic (localStorage: five at most, read back as untrusted) and starts a new profile; stopped when the page is hidden; a setting turns it off; without `Profiler` (page served without the header, old cache) nothing runs and nothing fails; NOTHING goes to the network (spy on fetch, sendBeacon, XMLHttpRequest)')

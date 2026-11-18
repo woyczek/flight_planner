@@ -6095,7 +6095,9 @@
   } catch {
     /* stockage indisponible ou illisible : aucune trace gardée */
   }
-  let profiler = null;
+  let profiler = null,
+    held =
+    null; // le profil que le navigateur a arrêté parce que son tampon était plein (une tâche de plus de 60 s) : gardé pour la tâche qui finit
   const profilerOff = () => {
     try {
       return localStorage.getItem(PROFILE_SWITCH) === 'off';
@@ -6162,8 +6164,11 @@
       });
       p.addEventListener?.('samplebufferfull', () => {
         if (profiler !== p) return;
-        profiler = null; // le tampon est plein : ses plus vieux échantillons sont jetés, un nouveau profil repart
-        p.stop().catch(() => {});
+        profiler =
+          null; // le tampon est plein (une tâche de plus de 60 s) : un nouveau profil repart ; celui-ci est GARDÉ pour la tâche qui finit (il porte son début, celui qui nomme la boucle) — l'événement arrive
+        held = p.stop().catch(() =>
+          null
+        ); // quand la tâche est finie, avant que l'observateur de tâches longues la rapporte : sans cela le nouveau profil, vide, était pris pour celui de la tâche (SOG-0493 : trois tâches de 203 à 435 s sans profil)
         profilerStart();
       });
       profiler = p;
@@ -6185,8 +6190,15 @@
     if (!profiler) return;
     const trace = await profilerStop();
     profilerStart();
-    if (!trace) return;
-    const r = reduceProfile(trace, e.startTime, e.startTime + e.duration);
+    const was = held; // le profil arrêté par un tampon plein pendant cette tâche, s'il y en a un
+    held = null;
+    let r = trace ? reduceProfile(trace, e.startTime, e.startTime + e.duration) : {
+      samples: 0
+    };
+    if (!r.samples && was) {
+      const full = await was;
+      if (full) r = reduceProfile(full, e.startTime, e.startTime + e.duration);
+    }
     if (!r.samples) return;
     profiles.list.unshift({
       at,
