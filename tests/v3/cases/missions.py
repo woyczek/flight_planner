@@ -4847,3 +4847,42 @@ def n97(c):
     c.shot('N97_390_contour.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+# the pure part of Tracé: the route of the departure as a list of identifiers (modules/missions/editor.js)
+_ROUTE_JS = """async () => {
+  const ED = await import('/modules/missions/editor.js'), J = JSON.stringify;
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'x', route_order: ['ORIGIN', { id: 'PT1', note: 'kept' }, 'TARGET', null, {}, 'DESTINATION'] };
+  const before = J(doc), route = ED.routeOf(doc);
+  let threw = '';
+  for (const h of [null, 'x', 7, { route_order: 'x' }, { route_order: [null, {}, [], { id: {} }] }]) try { ED.routeOf(h); ED.withRoute(h, h); ED.withRoute(doc, h); ED.routeToken(h) } catch (e) { threw += String(e) }
+  return { route, unchanged: J(ED.withRoute(doc, route)) === J(doc),
+    changed: ED.withRoute(doc, ['ORIGIN', 'PT2', 'PT1', 'DESTINATION']).route_order, emptied: 'route_order' in ED.withRoute(doc, []),
+    bounded: [ED.withRoute(doc, [{}, 5, 'A'.repeat(80), 'B']).route_order.map(x => x.length), ED.withRoute({}, Array.from({ length: 90 }, (_, n) => 'P' + n)).route_order.length,
+      ED.routeOf({ route_order: Array.from({ length: 200 }, (_, n) => 'P' + n) }).length],
+    none: [ED.routeOf({}), ED.routeOf(null), ED.routeOf({ route_order: 'x' })],
+    tokens: [ED.routeToken({ kind: 'dep', id: '' }), ED.routeToken({ kind: 'arr' }), ED.routeToken({ kind: 'pt', id: 'PT1' }), ED.routeToken({ kind: 'zone', id: '' }), ED.routeToken(null)],
+    threw, untouched: J(doc) === before } }"""
+
+
+@case('N98', 'Missions › the workshop, Tracé (pure part, no screen): the route of the departure is the list of the identifiers of '
+      '`route_order` — « ORIGIN », the places, « DESTINATION » —, sixty at most; written back unchanged, the document is the same; a route '
+      'changed keeps, for an identifier the file already had, the entry of the file (a text, or its object with its other keys), a new '
+      'one is a text; an empty route removes the key; a row of the Lieux gives its token (« ORIGIN » for the departure, « DESTINATION » '
+      'for the arrival, else its identifier); identifiers are bounded texts; no hostile input throws',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, push 3b, the pure part (modules/missions/EDITOR.md § 3: « A route is a list of chips, filled by touching the '
+      'map in Tracé… never ids séparés par des virgules »; audit 182: only what changed is written): modules/missions/editor.js '
+      '`routeOf`, `withRoute`, `routeToken`')
+def n98(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_ROUTE_JS)
+    c.eq(r['route'], ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'], 'the identifiers of the route, an entry that has none is skipped', what='the route')
+    c.ok(r['unchanged'] is True, r['unchanged'], 'the same route written back: the document is the same (audit 182)')
+    c.eq(r['changed'], ['ORIGIN', 'PT2', {'id': 'PT1', 'note': 'kept'}, 'DESTINATION'], 'a route changed: PT1 keeps the object of the file, the new place is a text', what='a route changed')
+    c.ok(r['emptied'] is False, r['emptied'], 'an empty route removes the key')
+    c.eq(r['bounded'], [[40, 1], 60, 60], 'identifiers are texts of forty signs at most (an object, a number are not taken); sixty places at most, written and read', what='the bounds')
+    c.eq(r['none'], [[], [], []], 'no route, no document, a route that is not a list: an empty route', what='no route')
+    c.eq(r['tokens'], ['ORIGIN', 'DESTINATION', 'PT1', '', ''], 'the token of a row: the departure, the arrival, an identifier; a place without an identifier has none', what='the tokens')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the document read is not touched')

@@ -39,7 +39,10 @@
 //     le contour d'une zone (troisième brique) : sa ligne porte `ring`, ses sommets en texte (« lat,lon;lat,lon;… », '' sans contour
 //     ou pour un contour illisible, gardé tel quel) ; ringOf(row) → [[lat, lon]…] | null ; ringMiddle(ring) ; moveVertex, insertVertex,
 //     removeVertex(rows, i, k[, pos]) ; toContour(rows, i) et toRound(rows, i) ; movePlace déplace un contour d'un bloc ; VERTICES :
-//     3 à 100 sommets ; withPlaces écrit les sommets retouchés sous la clé du fichier (points, polygon ou vertices) ; deadRefs(doc) → les références qui ne
+//     3 à 100 sommets ; withPlaces écrit les sommets retouchés sous la clé du fichier (points, polygon ou vertices) ;
+//     la route du départ (Tracé, push 3b) : routeOf(doc) → ses identifiants (route_order, soixante au plus) ; withRoute(doc, ids) → un
+//     NOUVEAU document (rien de changé, rien de réécrit ; une entrée du fichier garde sa forme) ; routeToken(ligne) → « ORIGIN »,
+//     « DESTINATION » ou l'identifiant du lieu ; ROUTE_MAX ; deadRefs(doc) → les références qui ne
 //     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc), drawersNoKey(doc) → les cartes au centre vidé, les parties au délai
 //     sans point, les parties restées sans clé (leur zone ou le point de leur arrivée retirés).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
@@ -1350,6 +1353,40 @@ export function nextPlaceId(rows, kind, base = null) {
   for (let n = 1; n <= PLACES_MAX * 4; n++)
     if (!taken.has(name(n))) return name(n);
   return '';
+}
+
+/** Le nombre de lieux qu'une route porte au plus (la borne des suites de route des tiroirs). */
+export const ROUTE_MAX = 60;
+/** L'identifiant d'une entrée de route du fichier (un texte, ou { id }), borné ; '' sinon. */
+const routeId = x => cut(x && typeof x === 'object' && !Array.isArray(x) ? x.id : typeof x === 'string' || typeof x === 'number' ? x : '',
+  40);
+
+/** La route du départ (`route_order`) en liste d'identifiants — « ORIGIN », « PT1 », « TARGET », « DESTINATION » —, soixante au plus ;
+ *  une entrée sans identifiant est sautée. */
+export function routeOf(doc) {
+  return arrOf(obj(doc).route_order).slice(0, ROUTE_MAX * 2).map(routeId).filter(Boolean).slice(0, ROUTE_MAX);
+}
+
+/** Le document avec cette route du départ (un NOUVEAU document). Rien de changé — les mêmes identifiants dans le même ordre — : rien
+ *  n'est réécrit (audit 182). Sinon `route_order` est la liste : une entrée dont l'identifiant était dans le fichier garde l'entrée du
+ *  fichier (un texte, ou son objet avec ses autres clés), une neuve est un texte ; une liste vide retire la clé. Les identifiants sont
+ *  des textes bornés (quarante signes), soixante au plus ; rien d'autre n'est lu de `ids`. */
+export function withRoute(doc, ids) {
+  const out = structuredClone(obj(doc)),
+    was = routeOf(doc),
+    list = (Array.isArray(ids) ? ids : []).map(x => cut(typeof x === 'string' ? x : '', 40)).filter(Boolean).slice(0, ROUTE_MAX);
+  if (JSON.stringify(list) === JSON.stringify(was)) return out;
+  const old = arrOf(out.route_order);
+  if (list.length) out.route_order = list.map(id => old.find(x => routeId(x) === id) ?? id);
+  else delete out.route_order;
+  return out;
+}
+
+/** Ce qu'une route écrit pour une ligne des Lieux : « ORIGIN » pour le départ, « DESTINATION » pour l'arrivée, sinon son identifiant
+ *  ('' : un lieu sans identifiant n'entre pas dans une route). */
+export function routeToken(row) {
+  const r = row && typeof row === 'object' ? row : {};
+  return r.kind === 'dep' ? 'ORIGIN' : r.kind === 'arr' ? 'DESTINATION' : cut(r.id, 40);
 }
 
 /** Les sortes de lieu qu'un geste de la carte déplace : ni le départ ni l'arrivée (des terrains : leur position vient de la base). */

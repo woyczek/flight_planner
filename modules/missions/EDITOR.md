@@ -568,6 +568,18 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   reframes itself on the mission, **« Recentrer » comes back to it**; moving a place or a vertex never reframes (N97).
 - **Not done**: Tracé and the landmarks of AeroDB (next push), « Poser l'avion ici », « Vue du pilote ».
 
+### 7 sexdecies. P2, push 3b: Tracé — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N98)
+
+- **The route of the departure is a list of identifiers** (`route_order`): `routeOf(doc)` → `['ORIGIN', 'PT1', 'TARGET',
+  'DESTINATION']`, sixty at most (`ROUTE_MAX`, the bound of the onward routes of the drawers); an entry of the file is a text or
+  `{ id }`, one without an identifier is skipped.
+- `withRoute(doc, ids)` → a NEW document. **Nothing changed, nothing rewritten** (the same identifiers in the same order). Else
+  `route_order` is the list: an identifier the file already had keeps the entry of the file (a text, or its object with its other
+  keys), a new one is a text; an empty list removes the key. Identifiers are texts of forty signs at most; nothing else is read.
+- `routeToken(row)`: what a route writes for a row of the Lieux — `ORIGIN` for the departure, `DESTINATION` for the arrival, else
+  its identifier (`''`: a place without an identifier does not enter a route).
+- The references still follow the places renamed or removed (`withRefs`, last, as before): the screen will apply `withRoute` before.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
