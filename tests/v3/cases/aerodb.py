@@ -15699,3 +15699,126 @@ def k351(c):
     c.eq((rows['LF418'][1], rows['LF418'][8], rows['FMEH'][8]), ('LYON CENTRE HOSPITALIER SUD', 'HP', 'HP'), 'the row carries the name and the kind HP', what='row')
     ag = (ROOT / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8')
     c.ok("a.type === 'HP'" in ag and r'[A-Z]{2}\d{3}' in ag, 'aerodb.js', 'the completion (`suggest`) accepts the five-sign list code of a heliport')
+
+
+@case('K352', 'AIP of France ENR 5.1 (SOG-0462, lot B): `sia_enr51.parse` reads the page of the SIA eAIP (two table rows per zone: the identification and the usual name, then limits, hours, TYPE OF RESTRICTION = the nature of the danger, authority and penetration conditions) as the AIP writes it, keyed like the AIXM (territory + type + name without spaces); the page is untrusted (size, rows and zones bounded, texts cut, no markup kept); `aero_fetch.enr51` asks ONE page per cycle at a fixed address, writes `zones/fr/enr51_fr_<cycle>.json`, asks nothing when the file of the cycle is there and removes the older one',
+      'K', static=True,
+      rule='SOG-0462 lot B (Q-0103: the user said yes to the launcher reading the ENR 5.1 section of the AIP of France on the SIA site at each cycle). Measured on the real page of the cycle of 29 Oct 2026 (6.7 MB, 53 tables, read in 0.3 s): 768 zones (714 with a name, 767 with hours, 717 with a nature, 745 with authority and conditions); 725 of the 874 R / D / P of the base are joined by the key (the others are overseas, in other eAIP of the SIA). The texts are French then English in the same cell and are never translated. Invented page.')
+def k352(c):
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import aero_fetch as AF
+    import sia_enr51 as E
+    row = lambda *cells: '<tr>' + ''.join(f'<td>{x}</td>' for x in cells) + '</tr>'
+    page = ('<html><body><table>'
+            + row('Identification', 'Limites verticales', 'HOR', 'Type de restriction', 'Organisme, conditions')
+            + row('1', 'ZONES INTERDITES')
+            + row('LF R 77', 'TEST   BAY')
+            + row('circle of 1.6 NM', '3000ft AMSL ---- SFC', 'H24', 'Site classé <b>Classified</b> heritage site', 'Administrator: NIL. <br/>Avoidance mandatory.')
+            + row('LF D 12 A', '')
+            + row('ring', 'UNL ---- SFC', 'Activity: MON-FRI 0700-1600', 'Activités spécifiques Défense. Tirs et explosifs. Live firing.', "Gestionnaire: TEST CENTRE. TEL: 00 00 00 00 00")
+            + row('SO P 5', 'OTHER TERRITORY')
+            + row('ring', 'UNL ---- SFC', '', '', '')
+            + row('LF R 78', 'NO DATA ROW')
+            + row('only', 'three', 'cells')
+            + row('LF R 77', 'DUPLICATE', )
+            + row('ring', 'x', 'y', 'z', 'w')
+            + row('not an identifier', 'X') + row('a', 'b', 'c', 'd', 'e')
+            + '</table></body></html>').encode('utf-8')
+    z = E.parse(page)
+    c.eq(sorted(z), ['LFD12A', 'LFR77', 'SOP5'], 'the key is territory + type + name without spaces (« LF R 77 » → LFR77, « LF D 12 A » → LFD12A); a header, a row of another shape, a duplicate, a text that is not an identifier give nothing', what='keys')
+    c.eq(z['LFR77'], {'name': 'TEST BAY', 'hours': 'H24', 'nat': 'Site classé Classified heritage site', 'auth': 'Administrator: NIL. Avoidance mandatory.'},
+         'the cells as the AIP words them (blanks reduced, the markup dropped, French then English kept in the same cell), the first of two identical keys wins', what='LFR77')
+    c.eq((z['LFD12A'].get('name'), z['LFD12A']['hours'], z['LFD12A']['nat'].startswith('Activités spécifiques Défense.'), z['LFD12A']['auth'][:12]), (None, 'Activity: MON-FRI 0700-1600', True, 'Gestionnaire'),
+         'an empty name writes nothing; the nature of the danger is the fourth cell, the authority and conditions the fifth', what='LFD12A')
+    c.eq(z['SOP5'], {'name': 'OTHER TERRITORY'}, 'a zone whose five cells are empty has no field but its name (never a default)', what='empty')
+    big = b'<td>' + b'x' * (E.MAX_PAGE + 1)
+    try:
+        E.parse(big)
+        refused = False
+    except ValueError:
+        refused = True
+    long_cell = ('<table>' + row('LF R 1', 'N') + row('r', 'v', 'h', 'n' * 5000, 'a' * 5000) + '</table>').encode('utf-8')
+    lz = E.parse(long_cell)['LFR1']
+    many = ('<table>' + ''.join(row(f'LF R {i}', 'N') + row('r', 'v', 'h', 'n', 'a') for i in range(1, E.MAX_ZONES + 50)) + '</table>').encode('utf-8')
+    c.eq((refused, len(lz['nat']), len(lz['auth']), len(E.parse(many)) <= E.MAX_ZONES, E.parse(b'<html></html>'), E.parse('x'.encode())), (True, E.MAX_TEXT, E.MAX_TEXT, True, {}, {}),
+         'untrusted page: more than MAX_PAGE refused, a cell cut at 800 signs, the number of zones bounded, a page with no zone gives {}', what='bounds')
+    # the fetch: one fixed address per cycle, one file, nothing asked when it is there, the older file removed
+    asked = []
+    real_get = AF.get
+    AF.get = lambda url, **kw: (asked.append(url), page)[1]
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            import datetime
+            day = datetime.date(2026, 11, 18)
+            folder = os.path.join(td, 'sia', 'zones', 'fr')
+            os.makedirs(folder)
+            old = os.path.join(folder, 'enr51_fr_2026-10-01.json')
+            open(old, 'w').write('{}')
+            f1, e1 = AF.enr51(td, today=day)
+            f2, e2 = AF.enr51(td, today=day)
+            doc = json.loads(open(os.path.join(folder, 'enr51_fr_2026-10-29.json'), encoding='utf-8').read())
+            left = sorted(os.listdir(folder))
+    finally:
+        AF.get = real_get
+    c.eq((e1, e2, f1[0]['unchanged'], f2[0]['unchanged'], f1[0]['zones'], len(asked), left), ([], [], False, True, 3, 1, ['enr51_fr_2026-10-29.json']),
+         'the first call asks ONE page and writes the file of the cycle in force (29 Oct); the second asks nothing; the file of the older cycle is removed', what='fetch')
+    c.eq((asked[0], doc['cycle'], doc['zone'], sorted(doc['zones'])), ('https://www.sia.aviation-civile.gouv.fr/media/dvd/eAIP_29_OCT_2026/FRANCE/AIRAC-2026-10-29/html/eAIP/FR-ENR-5.1-fr-FR.html', '2026-10-29', 'fr', ['LFD12A', 'LFR77', 'SOP5']),
+         'the address is computed from the cycle on the fixed SIA host, never taken from a page; the file says its cycle', what='address')
+    try:
+        AF.enr51_url('2026-13-01')
+        bad = False
+    except ValueError:
+        bad = True
+    AF.get = lambda url, **kw: b'<html>nothing</html>'
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td2:
+            files, errors = AF.enr51(td2, today=day)
+    finally:
+        AF.get = real_get
+    c.eq((bad, files, bool(errors) and 'aucune zone' in errors[0]), (True, [], True), 'an impossible cycle is refused; a page with no zone writes nothing and says so (layout changed?)', what='failures')
+
+
+@case('K353', 'Zones R / D / P (SOG-0462, lot B): the ENR 5.1 of the AIP of France is joined to the airspaces by the key: `nat` = the nature of the danger and `auth` = authority and penetration conditions, as the AIP words them; `hours` only where the AIXM gave none, `uname` only where the XML_SIA gave none, `ed` = the cycle of the text; the other types and the keys it does not know are left alone; a table that is not an object, or fields that are not texts, change nothing',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0462 lot B: the nature of the danger is in no field of the sources already read (SIA AIXM 4.5 has no tag for it); it is the fourth cell of the ENR 5.1 table. The file `zones/fr/enr51_fr_<cycle>.json` is written by the launcher (tools/aero_fetch.py enr51) from the page of the SIA; the builder joins it by territory + type + name without spaces. The text of the file is bounded again at the join (800 signs). Invented data.')
+def k353(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      const load = src => new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); w.document.head.appendChild(s); });
+      await load('/shared/sia_base.js'); await load('/shared/aero_sources.js');
+      const SB = w.SiaBase;
+      const list = () => [
+        { type: 'R', key: 'LFR77', name: '77', hours: ['H24'], rem: ['AIXM remark'] },
+        { type: 'D', key: 'LFD12A', name: '12 A' },
+        { type: 'R', key: 'LFR88', name: '88', uname: 'FROM XML_SIA' },
+        { type: 'TMA', key: 'LFR77', name: 'TMA with the same key' },
+        { type: 'R', key: 'LFR99', name: '99' },
+        { type: 'R', key: '__proto__', name: 'proto' }
+      ];
+      const enr = { schema: 1, zone: 'fr', cycle: '2026-10-29', zones: {
+        LFR77: { name: 'TEST BAY', hours: 'H24 (ENR)', nat: 'Site classé Classified heritage site', auth: 'Administrator: NIL. Avoidance mandatory.' },
+        LFD12A: { name: 'TEST RANGE', hours: 'Activity: MON-FRI 0700-1600', nat: 'Activités spécifiques Défense. Tirs et explosifs.', auth: 'Gestionnaire: TEST CENTRE.' },
+        LFR88: { name: 'IGNORED NAME', nat: 'Vol à voile' },
+        LFR100: { nat: 'nobody has this key' },
+        '__proto__': { nat: 'polluted' }
+      } };
+      const a = list(), n = SB.joinEnr51(a, enr);
+      const by = k => a.find(x => x.key === k && x.type !== 'TMA');
+      const bad1 = list(), n1 = SB.joinEnr51(bad1, { zones: [1, 2] }), n2 = SB.joinEnr51(bad1, null), n3 = SB.joinEnr51(bad1, { zones: { LFR77: { nat: 42, auth: { x: 1 }, hours: ['H24'] } } });
+      const long = list(); SB.joinEnr51(long, { cycle: 'not a date', zones: { LFR77: { nat: 'n'.repeat(5000), auth: '  ' } } });
+      return { n, r77: by('LFR77'), d12: by('LFD12A'), r88: by('LFR88'), tma: a.find(x => x.type === 'TMA'), r99: by('LFR99'), proto: a.filter(x => x.key === '__proto__').map(x => Object.keys(x).sort()), polluted: ({}).nat, n1, n2, n3, badKeys: Object.keys(bad1[0]).sort(), longNat: long[0].nat.length, longEd: 'ed' in long[0], longAuth: 'auth' in long[0] };
+    }""")
+    c.eq(r['n'], 3, 'three spaces got the nature or the conditions (LFR77, LFD12A, LFR88)', what='count')
+    c.eq((r['r77']['nat'], r['r77']['auth'], r['r77']['hours'], r['r77']['rem'], r['r77']['ed'], r['r77'].get('uname')),
+         ('Site classé Classified heritage site', 'Administrator: NIL. Avoidance mandatory.', ['H24'], ['AIXM remark'], '2026-10-29', 'TEST BAY'),
+         'the nature and the authority as the AIP words them; the hours of the AIXM are kept (the ENR hours only fill a gap); the AIXM remark stays; the cycle of the text is said; the usual name fills the gap', what='r77')
+    c.eq((r['d12']['hours'], r['d12']['nat'][:25], r['d12']['uname']), (['Activity: MON-FRI 0700-1600'], 'Activités spécifiques Déf', 'TEST RANGE'), 'where the AIXM gave no hours the ENR hours are written', what='d12')
+    c.eq((r['r88']['uname'], r['r88']['nat'], 'auth' in r['r88'], 'hours' in r['r88']), ('FROM XML_SIA', 'Vol à voile', False, False), 'a usual name already there is kept; a field the ENR does not give writes nothing', what='r88')
+    c.eq((sorted(r['tma']), sorted(r['r99'])), (['key', 'name', 'type'], ['key', 'name', 'type']), 'a TMA with the same key and a key the table does not know are left alone', what='untouched')
+    c.eq((r['proto'], r['polluted']), ([['key', 'name', 'type']], None), 'the key « __proto__ » of the file is not a key of the table: nothing is polluted, nothing is joined to an airspace of that name', what='proto')
+    c.eq((r['n1'], r['n2'], r['n3'], r['badKeys']), (0, 0, 0, ['hours', 'key', 'name', 'rem', 'type']), 'a table that is an array, no table, or fields that are not texts change nothing', what='bad')
+    c.eq((r['longNat'], r['longEd'], r['longAuth']), (800, False, False), 'a text is cut at 800 signs again at the join; a cycle that is not a date is not written; a blank text writes nothing', what='long')

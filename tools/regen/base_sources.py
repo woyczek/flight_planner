@@ -135,6 +135,11 @@ SOURCES = {
             'UK Mil AIP — ENR 5.2: low flying, VATA, air-to-air refuelling (AARA)',
             'UK Mil AIP — ENR 5.2: Tiefflug, VATA, Luftbetankung (AARA)',
             'UK Mil AIP — ENR 5.2: baja altura, VATA, reabastecimiento (AARA)'), link='https://www.aidu.mod.uk/aip/aipVolumes.html', provider='ukmil'),
+    'enr51': _src('download', (
+            'ENR 5.1 de l’AIP de France (SIA) : nature du danger, organisme et conditions des zones P, R, D',
+            'AIP France ENR 5.1 (SIA): nature of the danger, authority and conditions of the P, R, D areas',
+            'AIP Frankreich ENR 5.1 (SIA): Art der Gefahr, Stelle und Bedingungen der P-, R-, D-Gebiete',
+            'ENR 5.1 del AIP de Francia (SIA): naturaleza del peligro, organismo y condiciones de las zonas P, R, D'), link='https://www.sia.aviation-civile.gouv.fr/', provider='enr51'),
     'dfs': _src('download', (
             'DFS — routes ATS de l’Allemagne (AIXM 5.1, jeu « ED Routes »)',
             'DFS — Germany ATS routes (AIXM 5.1, dataset “ED Routes”)',
@@ -168,7 +173,7 @@ SOURCES = {
 CONTENTS = ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles', 'aar_tracks', 'mil_routes', 'nat_tracks', 'mora')
 RANKS = ('primary', 'secondary')
 RHYTHMS = ('airac', 'editions', 'daily', 'none')
-HANDS = {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback', 'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'}      # SOG-0368 : « only » (le lanceur n'essaie rien : le fichier se prend à la main ; NAV Portugal aussi, SOG-0318), « fallback » (prise seule, le dépôt à la main n'est qu'un repli après un échec), « none » ; miroir de `hand` de shared/aero_zones.js (K52)
+HANDS = {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback', 'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'enr51': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'}      # SOG-0368 : « only » (le lanceur n'essaie rien : le fichier se prend à la main ; NAV Portugal aussi, SOG-0318), « fallback » (prise seule, le dépôt à la main n'est qu'un repli après un échec), « none » ; miroir de `hand` de shared/aero_zones.js (K52)
 SOURCE_FACTS = {
     'sia': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points', 'vfr_points', 'airways', 'obstacles')),
     'dircam': ('primary', 'none', ('aar_tracks',)),
@@ -183,6 +188,7 @@ SOURCE_FACTS = {
     'nats': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points')),
     'ukmil': ('primary', 'editions', ('airspace', 'aar_tracks')),
     'dfs': ('primary', 'airac', ('airways',)),
+    'enr51': ('primary', 'airac', ('airspace',)),
     'navcan': ('primary', 'editions', ()),
     'nat': ('primary', 'daily', ('nat_tracks',)),
     'xplane': ('secondary', 'none', ('airspace', 'navaids', 'points', 'airways', 'mora')),
@@ -194,7 +200,7 @@ assert set(HANDS) == set(SOURCES) and set(HANDS.values()) <= {'only', 'fallback'
 
 COMMON = ('openaip', 'mora', 'xplane')
 OWN = {'nat': ('nat', 'xplane')}  # zones hors pays : leurs seules sources
-EXTRA = {'fr': ('sia', 'dircam'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'pt': ('navpt',), 'is': ('avians',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
+EXTRA = {'fr': ('sia', 'dircam', 'enr51'), 'de': ('dfs',), 'gb': ('nats', 'ukmil'), 'es': ('enaire',), 'ie': ('airnav',), 'se': ('lfv',), 'pt': ('navpt',), 'is': ('avians',), 'us': ('faa', 'faaclass'), 'ca': ('navcan',)}
 SIA_ROOT = re.compile(r'^(AIXM4\.5_all_FR_OM_|XML_SIA_|sia-airspaces-)\d{4}-\d{2}-\d{2}\.xml\Z', re.I | re.A)
 
 
@@ -228,7 +234,7 @@ def file_source(rel):
     if d == 'geojson' and re.search(r'^faa_', name, re.I | re.A):
         return {'zone': 'us', 'source': 'faa'}
     # zones/<zone>/<source>_… : fichier d'une source nommée (ukmil_…) ; sinon la source déposée à la main de la zone
-    m = re.search(r'^([a-z]+)[_-]', name, re.I | re.A)
+    m = re.search(r'^([a-z][a-z0-9]*)[_-]', name, re.I | re.A)      # SOG-0462 : un chiffre peut suivre (« enr51_fr_… »)
     pre = m.group(1).lower() if m else ''
     if d == 'zones' and sub and pre and pre in sources_of(sub):
         return {'zone': sub, 'source': pre}
@@ -348,7 +354,7 @@ def _step(job, done, total):
 
 # ----------------------------------------------------------------------------------------------------------------------- base/fetch
 # où aero_fetch écrit, par fournisseur (data/sia/…) : la même arborescence que file_source lit (le banc K52 le vérifie)
-FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'dfs': 'sia/zones/de', 'airnav': 'sia/zones/ie', 'navpt': 'sia/zones/pt', 'avians': 'sia/zones/is', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
+FOLDERS = {'openaip': 'sia/openaip', 'faa': 'sia/geojson', 'enaire': 'sia/aixm5', 'ukmil': 'sia/zones/gb', 'dfs': 'sia/zones/de', 'enr51': 'sia/zones/fr', 'airnav': 'sia/zones/ie', 'navpt': 'sia/zones/pt', 'avians': 'sia/zones/is', 'navcan': 'sia/zones/ca', 'nat': 'sia/zones/nat'}
 # les messages de tools/aero_fetch.py (des textes, pas des codes) rangés en codes ; HTTP d'abord, puis ce qui est une forme de réponse inattendue
 HTTP_RE = re.compile(r'\bHTTP(?: Error)? (\d{3})\b')
 PARSE_RE = re.compile(r'illisible|aucun|introuvable|chang[ée]|invalide|inconnu|service FAA|Expecting|JSON|decod|Extra data|Unterminated', re.I)

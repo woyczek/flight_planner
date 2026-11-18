@@ -145,7 +145,7 @@ def k52(c):
     c.eq([(p, g) for p, g in zip(samples, got)], [(p, w) for p, w in zip(samples, js['fileSource'])], 'file_source gives AeroZones.fileSource on every sample path (zone and source, null for an unknown file)', what='fileSource')
     # the folders aero_fetch writes in are read back by the same rule: one source per provider, with the names it writes
     written = {'openaip': ('gb_asp.geojson', 'gb', 'openaip'), 'faa': ('faa_sua.geojson', 'us', 'faa'), 'enaire': ('LE_x_AIP_DS_FULL_Airspace.xml', 'es', 'enaire'),
-               'ukmil': ('ukmil_enr52.geojson', 'gb', 'ukmil'), 'navcan': ('navcan_dah.geojson', 'ca', 'navcan'), 'nat': ('nat_tracks.json', 'nat', 'nat')}
+               'ukmil': ('ukmil_enr52.geojson', 'gb', 'ukmil'), 'navcan': ('navcan_dah.geojson', 'ca', 'navcan'), 'nat': ('nat_tracks.json', 'nat', 'nat'), 'enr51': ('enr51_fr_2026-10-29.json', 'fr', 'enr51')}
     for prov, (name, zone, src) in written.items():
         rel = BS.FOLDERS[prov].split('/', 1)[1] + '/' + name
         c.eq(BS.file_source(rel), {'zone': zone, 'source': src}, f'what {prov} writes ({rel}) is attributed to {zone}/{src}', what=f'folder of {prov}')
@@ -2600,7 +2600,7 @@ def k283(c):
     RJ, BS, AF, DS = _mods()
     c.eq({k: v['hand'] for k, v in BS.SOURCES.items()},
          {'sia': 'only', 'nats': 'only', 'lfv': 'only', 'dircam': 'only', 'navpt': 'only', 'avians': 'fallback', 'ukmil': 'fallback', 'openaip': 'fallback', 'faa': 'fallback',
-          'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'},
+          'faaclass': 'none', 'enaire': 'none', 'airnav': 'none', 'dfs': 'none', 'enr51': 'none', 'navcan': 'none', 'nat': 'none', 'xplane': 'none', 'mora': 'none'},
          'the catalogue says how the hand enters each source: `only` (the launcher tries nothing: SIA, NATS, LFV, DIRCAM and NAV Portugal, SOG-0318), `fallback` (taken alone, the deposit is only a fallback: Iceland, UK Mil, openAIP, FAA), `none` (the others)', what='hand')
     cat = (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8')
     c.ok('fallback: true' not in cat, '', 'the first proposal (`fetch.pick.fallback`) is not in the catalogue: one field says it, `hand`')

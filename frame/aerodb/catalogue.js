@@ -577,6 +577,37 @@
     localOnly: false,
     lic: ['CC BY 4.0, crédit DFS', 'CC BY 4.0, credit DFS', 'CC BY 4.0, Quellenangabe DFS', 'CC BY 4.0, crédito DFS']
   }, {
+    id: 'enr51',
+    rhythm: 'airac',
+    group: 'base',
+    zones: ['fr'],
+    fetch: {
+      how: 'launcher',
+      provider: 'enr51'
+    },
+    build: {
+      runtime: 'worker',
+      id: 'geojson'
+    },
+    publish: true,
+    no: 23,
+    status: 'used',
+    n: ['SIA (France, AIP ENR 5.1)', 'SIA (France, AIP ENR 5.1)', 'SIA (Frankreich, AIP ENR 5.1)', 'SIA (Francia, AIP ENR 5.1)'],
+    url: 'https://www.sia.aviation-civile.gouv.fr/',
+    gives: [
+      'La page ENR 5.1 de l’eAIP du SIA, lue une fois par cycle : pour chaque zone P / R / D de France, la nature du danger, l’organisme et les conditions de pénétration, tels que l’AIP les écrit (jamais traduits).',
+      'The ENR 5.1 page of the SIA eAIP, read once per cycle: for each P / R / D area of France, the nature of the danger, the authority and the penetration conditions, as the AIP words them (never translated).',
+      'Die ENR-5.1-Seite des eAIP des SIA, einmal pro Zyklus gelesen: für jedes P-/R-/D-Gebiet Frankreichs die Art der Gefahr, die Stelle und die Einflugbedingungen, wie das AIP sie schreibt (nie übersetzt).',
+      'La página ENR 5.1 del eAIP del SIA, leída una vez por ciclo: para cada zona P / R / D de Francia, la naturaleza del peligro, el organismo y las condiciones de penetración, tal como las escribe el AIP (nunca traducidos).'
+    ],
+    pub: 'SIA (France)',
+    credit: ['Source : SIA, AIP de France, ENR 5.1', 'Source: SIA, AIP France, ENR 5.1', 'Quelle: SIA, AIP Frankreich, ENR 5.1',
+      'Fuente: SIA, AIP de Francia, ENR 5.1'
+    ],
+    date: '2026-11-18',
+    localOnly: false,
+    lic: ['Source citée : SIA', 'Source cited: SIA', 'Quellenangabe: SIA', 'Fuente citada: SIA']
+  }, {
     id: 'airnav',
     rhythm: 'airac',
     group: 'base',

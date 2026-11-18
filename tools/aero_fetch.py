@@ -58,6 +58,8 @@ ENAIRE = 'https://aip.enaire.es/AIP/'
 ENAIRE_KINDS = ('Airspace', 'EnRoute')
 NAT_URL = 'https://nms.aim.faa.gov/datanat/nat.json'
 DFS = 'https://aip.dfs.de/datasets/rest/'     # DFS « AIP Datasets » (API REST v1.2) : les métadonnées à cette adresse, un jeu à <adresse><amendement>/<nom du fichier>
+ENR51_HOST = 'https://www.sia.aviation-civile.gouv.fr/'     # SOG-0462 lot B : l'eAIP du SIA (le même hôte que les procédures)
+ENR51_PAGE_BYTES = 16 * 1024 * 1024     # la page fait 6,7 Mo (cycle du 29 oct. 2026)
 DFS_FILE = re.compile(r'^ED_Routes_\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}_[a-z]+\.xml\Z')
 MAX_BYTES = 200 * 1024 * 1024  # 200 Mo au plus par réponse : au-delà, le téléchargement s'arrête (le fichier présent est gardé)
 CHUNK = 1024 * 1024
@@ -388,6 +390,46 @@ def dfs(data):
         return [], [f'{name} : la somme SHA-512 ne correspond pas aux métadonnées : rien n’est écrit']
     changed = write(path, body)
     return [{'name': 'dfs_ED_Routes.xml', 'bytes': len(body), 'unchanged': not changed}], []
+
+
+def enr51_url(cycle):
+    """L'adresse de la page ENR 5.1 de l'eAIP de France d'un cycle (« 2026-10-29 ») : le disque du SIA, le dossier AIRAC du cycle, jamais une adresse prise d'une page (même règle que proc_sia.eaip_url)."""
+    m = re.fullmatch(r'(\d{4})-(\d{2})-(\d{2})', str(cycle), re.A)      # chiffres ASCII seulement
+    if not m or not 1 <= int(m[2]) <= 12:
+        raise ValueError(f'cycle AIRAC « AAAA-MM-JJ » attendu, reçu : {cycle!r}')
+    mon = ('JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC')[int(m[2]) - 1]
+    return f'{ENR51_HOST}media/dvd/eAIP_{m[3]}_{mon}_{m[1]}/FRANCE/AIRAC-{m[1]}-{m[2]}-{m[3]}/html/eAIP/FR-ENR-5.1-fr-FR.html'
+
+
+def enr51(data, today=None):
+    """L'ENR 5.1 de l'AIP de France (zones interdites, réglementées et dangereuses : nature du danger, horaires, organisme et conditions de pénétration), UNE page de l'eAIP du SIA par cycle (SOG-0462 lot B ; Q-0103 : l'utilisateur
+    l'a admis) : lue par tools/sia_enr51.py et rangée en zones/fr/enr51_fr_<cycle>.json (textes tels que le SIA les écrit, jamais traduits) ; le fichier du cycle déjà là : rien n'est demandé ; le fichier d'un cycle plus ancien est retiré
+    une fois le nouveau écrit. Le cycle est celui en vigueur (aero_cycles.airac_start)."""
+    import aero_cycles
+    import sia_enr51
+    cycle = aero_cycles.airac_start(today)
+    folder = os.path.join(data, 'sia', 'zones', 'fr')
+    name = f'enr51_fr_{cycle}.json'
+    path = os.path.join(folder, name)
+    if os.path.isfile(path) and os.path.getsize(path) > 0:
+        return [{'name': name, 'bytes': os.path.getsize(path), 'unchanged': True}], []
+    try:
+        page = get(enr51_url(cycle), limit=ENR51_PAGE_BYTES)
+        zones = sia_enr51.parse(page)
+    except (OSError, ValueError) as e:
+        return [], [f'ENR 5.1 : {e}']
+    if not zones:
+        return [], ['ENR 5.1 : aucune zone lue (mise en page changée ?)']
+    doc = {'schema': 1, 'zone': 'fr', 'cycle': cycle, 'source': 'SIA — AIP de France, ENR 5.1', 'zones': zones}
+    body = json.dumps(doc, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    write(path, body)
+    try:
+        for old in os.listdir(folder):
+            if re.fullmatch(r'enr51_fr_\d{4}-\d{2}-\d{2}\.json', old) and old != name:
+                os.remove(os.path.join(folder, old))
+    except OSError:
+        pass
+    return [{'name': name, 'bytes': len(body), 'unchanged': False, 'zones': len(zones)}], []
 
 
 def airnav(data):
@@ -883,6 +925,8 @@ def fetch(data, provider, args=()):
         files, errors = avians(data)
     elif provider == 'dfs':
         files, errors = dfs(data)
+    elif provider == 'enr51':
+        files, errors = enr51(data)
     elif provider == 'nat':
         files, errors = nat(data)
     else:

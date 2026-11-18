@@ -1117,6 +1117,33 @@
     }
     return n;
   }
+  /** SOG-0462 (lot B) : l'ENR 5.1 de l'AIP de France lu par le lanceur (tools/sia_enr51.py : zones/fr/enr51_fr_<cycle>.json) est jointe aux R / D / P par la clé (territoire + type + nom sans espaces) : `nat` = la NATURE DU DANGER (colonne « type de restriction » : « Activités spécifiques Défense. Tirs et explosifs. Defence specific activities. Live firing and explosives. »), `auth` = l'organisme et les conditions de pénétration, tels que l'AIP les écrit (jamais traduits) ; `hours` seulement quand l'AIXM n'en a pas, `uname` seulement quand l'XML_SIA n'en a pas ; `ed` = le cycle du texte. Rend le nombre d'espaces complétés. */
+  function joinEnr51(airspaces, enr) {
+    const zones = enr && typeof enr === 'object' && enr.zones && typeof enr.zones === 'object' && !Array.isArray(enr.zones) ? new Map(
+      Object.entries(enr.zones)) : null;
+    if (!zones) return 0;
+    const txt = (v, max) => typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '',
+      ed = typeof enr.cycle === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(enr.cycle) ? enr.cycle : '';
+    let n = 0;
+    for (const a of airspaces || []) {
+      if (!/^(R|D|P)$/.test(a.type)) continue;
+      const z = zones.get(String(a.key || '').replace(/\s+/g, ''));
+      if (!z || typeof z !== 'object') continue;
+      const nat = txt(z.nat, 800),
+        auth = txt(z.auth, 800),
+        hours = txt(z.hours, 800),
+        name = txt(z.name, 80);
+      if (nat) a.nat = nat;
+      if (auth) a.auth = auth;
+      if (hours && !(Array.isArray(a.hours) && a.hours.length)) a.hours = [hours];
+      if (name && !a.uname) a.uname = name;
+      if (nat || auth) {
+        if (ed) a.ed = ed;
+        n++;
+      }
+    }
+    return n;
+  }
   /** Ancien fichier dérivé sia-airspaces-<date>.xml : lu seulement en l'absence de XML_SIA du même cycle. */
   function parseLegacyAirspaces(text) {
     const doc = new DOMParser().parseFromString(text, 'application/xml');
@@ -1658,6 +1685,9 @@
               };
               natZone = fz;
               role = `tracks NAT (${base.natTracks.tracks.length})`;
+            } else if (/^enr51_[a-z]{2}_\d{4}-\d{2}-\d{2}\.json$/i.test(f.name)) {
+              base.enr51 = JSON.parse(t); // SOG-0462 lot B : l'ENR 5.1 de France, jointe aux R / D / P plus bas (joinEnr51)
+              role = 'ENR 5.1 (AIP de France)';
             } else if (/\.(geo)?json$/i.test(f.name)) {
               part = AS.geojson(JSON.parse(t), f.name);
               role = 'GeoJSON';
@@ -1730,6 +1760,13 @@
           airspaces: base.airspaces.length - before
         };
       }
+    let enr51Joined = 0;
+    if (base
+      .enr51
+    ) { // SOG-0462 lot B : l'ENR 5.1 complète les R / D / P (nature du danger, organisme et conditions) ; la table brute n'est pas gardée dans la base
+      enr51Joined = joinEnr51(base.airspaces, base.enr51);
+      delete base.enr51;
+    }
     base.sources = Z ? {
       zones: Object.keys(zs.on).filter(id => Z.isOn(id, zs))
     } : {};
@@ -1747,6 +1784,7 @@
       citiesWhy: city ? '' : appAssetWhy,
       noMora: !moraFile,
       bySource,
+      enr51: enr51Joined,
       timings,
       zones: {
         aar: aarZones,
@@ -3081,6 +3119,7 @@
     inspectXml,
     parseXmlSiaAirspaces,
     joinUsualNames,
+    joinEnr51,
     parseXmlSiaVfrPoints,
     parseAixmAirspaces,
     aeroIndex,

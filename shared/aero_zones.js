@@ -268,6 +268,38 @@
       content: ['airspace', 'aar_tracks'],
       age: 'file'
     },
+    // ENR 5.1 de l’AIP de France (SOG-0462, lot B ; Q-0103 : l’utilisateur l’a admis) : UNE page de l’eAIP du SIA par cycle, lue par le lanceur (tools/aero_fetch.py enr51 → tools/sia_enr51.py) ;
+    // zones/fr/enr51_fr_<cycle>.json, jointe aux R / D / P par la clé (nature du danger, organisme et conditions, tels que l’AIP les écrit)
+    enr51: {
+      kind: 'download',
+      provider: 'enr51',
+      args: [],
+      readable: true,
+      label: L4('ENR 5.1 de l’AIP de France (SIA) : nature du danger, organisme et conditions des zones P, R, D',
+        'AIP France ENR 5.1 (SIA): nature of the danger, authority and conditions of the P, R, D areas',
+        'AIP Frankreich ENR 5.1 (SIA): Art der Gefahr, Stelle und Bedingungen der P-, R-, D-Gebiete',
+        'ENR 5.1 del AIP de Francia (SIA): naturaleza del peligro, organismo y condiciones de las zonas P, R, D'),
+      gives: L4(
+        'La page ENR 5.1 de l’eAIP du SIA, lue une fois par cycle : pour chaque zone P / R / D de France, la nature du danger, l’organisme et les conditions de pénétration, tels que l’AIP les écrit (jamais traduits).',
+        'The ENR 5.1 page of the SIA eAIP, read once per cycle: for each P / R / D area of France, the nature of the danger, the authority and the penetration conditions, as the AIP words them (never translated).',
+        'Die ENR-5.1-Seite des eAIP des SIA, einmal pro Zyklus gelesen: für jedes P-/R-/D-Gebiet Frankreichs die Art der Gefahr, die Stelle und die Einflugbedingungen, wie das AIP sie schreibt (nie übersetzt).',
+        'La página ENR 5.1 del eAIP del SIA, leída una vez por ciclo: para cada zona P / R / D de Francia, la naturaleza del peligro, el organismo y las condiciones de penetración, tal como las escribe el AIP (nunca traducidos).'
+      ),
+      src: 'enr51',
+      link: 'https://www.sia.aviation-civile.gouv.fr/',
+      howto: L4(
+        'Page publique du SIA (la même que les procédures), lue par le lanceur à chaque cycle AIRAC ; une seule page, jamais d’aspiration.',
+        'Public SIA page (the same site as the procedures), read by the launcher at each AIRAC cycle; one page only, never a bulk download.',
+        'Öffentliche Seite des SIA (dieselbe Site wie die Verfahren), vom Starter bei jedem AIRAC-Zyklus gelesen; nur eine Seite, nie ein Massen-Download.',
+        'Página pública del SIA (el mismo sitio que los procedimientos), leída por el lanzador en cada ciclo AIRAC; una sola página, nunca una descarga masiva.'
+      ),
+      licence: 'SIA (source citée)',
+      hand: 'none',
+      rank: 'primary',
+      rhythm: 'airac',
+      content: ['airspace'],
+      age: 'file'
+    },
     // Routes ATS de l’Allemagne (DFS « AIP Datasets », jeu « ED Routes », AIXM 5.1, CC BY 4.0, crédit DFS) : téléchargé par le lanceur (tools/aero_fetch.py dfs),
     // somme SHA-512 vérifiée ; zones/de/dfs_ED_Routes.xml (lu par AeroSources.aixm5 : les extrémités des tronçons sont nommées par la référence et placées par la courbe)
     dfs: {
@@ -406,7 +438,7 @@
   /** Sources d'une zone : les siennes (zone océanique), sinon celles du pays puis les communes. */
   const sourcesOf = id => OWN[id] || [...(EXTRA[id] || []), ...COMMON];
   const EXTRA = {
-    fr: ['sia', 'dircam'],
+    fr: ['sia', 'dircam', 'enr51'],
     de: ['dfs'],
     gb: ['nats', 'ukmil'],
     es: ['enaire'],
@@ -563,7 +595,7 @@
       source: 'faa'
     };
     // zones/<zone>/<source>_… : fichier d'une source nommée (ukmil_…) ; sinon la source déposée à la main de la zone
-    const pre = /^([a-z]+)[_-]/i.exec(name)?.[1]?.toLowerCase();
+    const pre = /^([a-z][a-z0-9]*)[_-]/i.exec(name)?.[1]?.toLowerCase(); // SOG-0462 : un chiffre peut suivre (« enr51_fr_… »)
     if (dir === 'zones' && sub && pre && byIdOf(sub).sources.includes(pre)) return {
       zone: sub,
       source: pre
