@@ -553,3 +553,66 @@ pure function of `drawers.js`.
   by itself, a browsed mission shows nothing), N83 (in flight: nothing said while followed, the zone crossed, the object refused out of
   range then opened in range, the arrival), N84 (the secret in the sheet and the Detail; the gesture is « Demander »), N87 (the same
   screen and the same answer for X-907A, without `phases`, and X-908A, two drawers closed).
+
+## 12. Assigning a mission from V3 (SOG-0443)
+
+The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with
+V2 is owed (it was never used); the line written is the shape the V3 readers already read, nothing more. The pure part is
+`modules/missions/assign.js`, the screen `modules/missions/assign_view.js`, called by `drawers_view.js` `show()` / `stop()` (one import,
+one call in each) — not by `module.js`.
+
+- **The screen.** « Affecter… » is a button posed by the DOM at the END of the place `[data-actslot]` of the sheet's actions row
+  (after « Demander la suite » when it is there), at every drawing of the sheet, for EVERY mission read, at the Current level and above
+  (`ctx.level >= 2`; none at the Discovery level, none when the level is unknown); `stop()` removes it; no sheet, no button. It opens
+  « Affecter cette mission » in the place of the sheet (the attribute `data-assigning` on `.ms-sheet`: on a phone the first page and
+  the Detail are hidden; on a wide module the first page stays on the left and the form takes the column of the Detail; « ← Fiche » on
+  a phone, « Annuler » everywhere close it). Seven elements at most: the assignments of this mission (one line per NOT cancelled line,
+  « ABC · TEST31 · décollage 20:00Z · EC25 F-TEST » and « Retirer »; beyond seven, « {n} autres »), Pilote, Indicatif, Décollage (UTC),
+  Aéronef, the conflict when there is one, « Affecter » and « Annuler ». No help line under a field: « immatriculation (facultative) »
+  is the placeholder of the field.
+- **The fields.** Pilot: an input with a `<datalist>` of the trigrams that have a pilot's folder (`ctx.data.list('pilot/')`, read by
+  pattern as `frame/help/signaler.js` does; 400 at most), any three letters accepted (`/^[A-Z]{3}$/` after upper-casing, the rule of
+  `assigned.js`). Callsign: `/^[A-Z0-9-]{2,12}$/i` (`assigned.js`). Take-off: a date and a time field read in UTC
+  (`Date.parse(`${date}T${time}:00Z`)`, the way of `modules/atmosphere/screen_flight.js`; two fields as `modules/report/module.js`); a
+  date that does not exist (31 February) is refused, never moved to the next month; default: today, the next round hour, UTC. Aircraft:
+  a `<select>` of the types of the mission's VISIBLE part (`pilotView(mission, [], { mine: false })` of `frame/lib/mission.js`; « — »
+  for a mission without a type: the line then goes without a type) and a free registration, optional (`/^[A-Z0-9-]{1,10}$/i` after
+  trimming), no fleet check. The departure is the mission's visible ICAO (the whole text must be four signs), not a field. An empty or
+  refused field: « Affecter » says which by a floating `warn` notification; nothing is written.
+- **What is written** — `missions/affectations.json`, `{ updatedAt, assignments: [line…] }`; one line:
+  `{ mission, title, pilot, callsign, takeoff, departure, aircraft: { type, registration }, status: 'affectée' | 'annulée',
+  role: 'mission', updated_at, by }` — `takeoff` and `updated_at` in ISO UTC, `by` the device's trigram validated as `bookPath` does
+  (none: nothing is written), `title` the visible title (120 signs), `departure` the visible ICAO or `''`. Every line built is READ
+  BACK by `mine()` (`assigned.js`, « Mes missions affectées ») and `seanceOf()` (`drawers.js`, the play of the drawers) before it is
+  written: a line they would not read as it is is not written. Nothing of a closed drawer enters the form or the line.
+- **The key and the merge.** The key of a line is `mission + pilot + role`; it never changes on a line (changing the pilot = withdraw
+  one, assign the other). Every write re-reads the file (`ctx.data.get`), replaces OR appends its own line by that key (in place), keeps
+  every other line and every other top-level key AS IT IS (never re-read into another shape, never rewritten), sets `updatedAt`, writes.
+  `module.js` declares, before `{ prefix: 'missions/', merge: 'record' }`,
+  `{ prefix: 'missions/affectations.json', merge: 'keyed:assignments:mission+pilot+role' }` — the longest prefix wins (`ruleOf` of
+  `frame/store/frame_data.js`), and the frame's data layer registers the rule at start-up for every module (V3 Frame; its SHA will be
+  quoted when it is pushed). With it, two devices that each add a line to the same base keep BOTH lines; a line changed on both keeps
+  the most recent and the other goes to the conflicts. With `record` (the rule of `missions/` before this batch), the whole
+  `assignments` array of the most recent device won and the other line was lost — the bench shows both. The key is the one of
+  `tools/data_sync.py` (`mission|pilot|role`).
+- **Conflict, said, never blocking.** At the first « Affecter », if the pilot already has a NOT cancelled line of ANOTHER mission whose
+  take-off is LESS than two hours from this one (two hours exactly: no conflict), the form says « ABC a déjà une mission à cette heure :
+  X-901A, décollage 19:40Z. Vous pouvez affecter quand même. »; a second « Affecter » writes. The same pilot already on THIS mission (a
+  line not cancelled): « Affecter » updates his line (same key) and the notification says « ABC : affectation mise à jour ».
+  After a write: the list is updated, the fields are emptied (the type kept), « ABC est affecté à X-905A, décollage 20:00Z. ».
+- **« Retirer ».** The line gets `status: 'annulée'` and a new `updated_at` — never deleted; it leaves the list; « ABC n'est plus
+  affecté à X-905A. ». No confirmation: the line is assigned again in two gestures (the same key becomes « affectée » again).
+- **Untrusted inputs.** Any pilot writes the repository, so the file read may be hostile: every key read by `own()` (never an inherited
+  key, `__proto__` kept as data), texts bounded and cleaned, every text shown escaped (`esc`), at most 2 000 lines read — beyond, nothing
+  is written and an `err` notification says so (the lines of others are never cut); an unreadable file, another shape, a line that
+  throws or a file that does not serialise again: nothing is written, said by an `err` notification. No path is ever built from a value
+  read; the only document written is `missions/affectations.json` (and `ctx.data.sync()` is asked right after, as `drawers_view.js`
+  does). No new timer.
+- **Limits, said.** No rights and no availability check (the airline's organisation); a pilot of the airline can assign or withdraw
+  anyone. The pilot of the line is a trigram, not an account.
+- Cases: N88 (the bench `modules/missions/test/assign.html`, 54 checks: the input, the line read back by `mine()` and `seanceOf()`, the
+  key, the withdrawal, the conflict under two hours, the list, the hostile files, the merge of two devices through
+  `frame/store/frame_data.js` and its counter-proof with `record`), N89 (the screen, four languages: no button at the Discovery level,
+  the button, the form, the conflict said then assigned anyway, the line read in the store, the list, the notification, XYZ assigned,
+  « Retirer », the device of ABC that finds X-905A in « Mes missions affectées » only while the line is not cancelled). The view bench
+  `modules/missions/test/assign_view.html` (45 checks) is played by the session.

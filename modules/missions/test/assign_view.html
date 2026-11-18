@@ -1,0 +1,552 @@
+<!doctype html>
+<!-- Banc de l'écran « Affecter… » (modules/missions/assign_view.js, SOG-0443), monté par la section de la fiche (drawers_view.js show,
+     le vrai branchement) dans une FAUSSE fiche (.ms-sheet, la rangée des actions et sa place [data-actslot]) avec un FAUX cadre
+     (documents en mémoire, niveau d'usage, traduction, notifications, liste des chemins). Le bouton au niveau Courant et Complet, absent
+     au niveau Découverte et hors d'une fiche ; le formulaire ouvert et refermé, sans ligne d'aide sous un champ ; « Affecter » : la
+     ligne écrite, la liste, la notification ; le conflit dit puis « Affecter » quand même ; la même clé mise à jour ; « Retirer » ;
+     un fichier hostile : rien n'est écrit ; les textes de la mission passés par esc ; rien d'un tiroir fermé dans le formulaire.
+     Missions, trigrammes, indicatifs et immatriculations inventés. window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>assign view — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+  #stage {
+    max-width: 390px;
+    border: 1px dashed #999;
+    padding: 8px;
+    margin: 8px 0
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">assign_view.js — bench</h1>
+<div id="stage"></div>
+<pre id="out"></pre>
+<script type="module">
+  import * as DV from '../drawers_view.js?v=0';
+  import * as AV from '../assign_view.js?v=0';
+  import * as A from '../assign.js?v=0';
+  import {
+    readMission
+  } from '../../../frame/lib/mission.js?v=0';
+  import {
+    mine
+  } from '../assigned.js?v=0';
+  const out = document.getElementById('out'),
+    stage = document.getElementById('stage'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail: ok ? '' : typeof got === 'string' ? got : JSON.stringify(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + rows[rows.length - 1].detail}`;
+    out.append(l);
+  }
+  const J = v => JSON.stringify(v),
+    ID = 'X-905A',
+    P = 'missions/affectations.json',
+    sleep = ms => new Promise(r => setTimeout(r, ms)),
+    /** Attend qu'une condition soit vraie (4 s au plus). */
+    until = async (fn, ms = 4000) => {
+        const end = Date.now() + ms;
+        while (Date.now() < end) {
+          if (fn()) return true;
+          await sleep(30);
+        }
+        return !!fn();
+      },
+      TODAY = new Date().toISOString().slice(0, 10);
+
+  /** Un faux cadre : les documents en mémoire, la liste des chemins, les notifications gardées. */
+  function fakeCtx({
+    trigram = 'QRS',
+    level = 2,
+    docs = {}
+  } = {}) {
+    const store = new Map(Object.entries(docs)),
+      c = {
+        identity: {
+          trigram
+        },
+        level,
+        notes: [],
+        puts: [],
+        store,
+        t: (row, v) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''),
+        notify: (text, kind) => c.notes.push([kind, text]),
+        data: {
+          get: async p => store.has(p) ? structuredClone(store.get(p)) : null,
+          put: async (p, v) => {
+            c.puts.push(p);
+            store.set(p, structuredClone(v));
+          },
+          list: async prefix => [...store.keys()].filter(k => k.startsWith(prefix)),
+          watch: () => () => {},
+          sync: async () => {}
+        }
+      };
+    return c;
+  }
+  // la mission inventée, lue par le lecteur du cadre : un titre hostile, un terrain, un type ; deux tiroirs fermés (leurs mots ne doivent
+  // jamais paraître dans le formulaire)
+  const mission = readMission({
+    mission: {
+      id: ID,
+      type: 'SAR',
+      subtype: 'RECHERCHE'
+    },
+    title: 'Recherche <img src=x onerror="window.__xss=1">',
+    summary: 'Un bateau inventé ne répond plus.',
+    origin: {
+      name: 'Base Test (XTST)',
+      lat: 45,
+      lon: 1
+    },
+    destination: {
+      name: 'Base Test (XTST)',
+      lat: 45,
+      lon: 1
+    },
+    aircraft: [{
+      type: 'EC25'
+    }, {
+      type: 'H135'
+    }],
+    route_order: ['ORIGIN', 'DESTINATION'],
+    phases: [{
+      id: 'B',
+      title: 'Titre secret',
+      message: 'Message secret.',
+      brief: 'Briefing secret.',
+      trigger_zone: {
+        centre: {
+          lat: 44.6,
+          lon: 1.3
+        },
+        radius_km: 4
+      },
+      fallback_delay_min: 90
+    }, {
+      id: 'C',
+      title: 'Autre secret',
+      message: 'Cap au nord.',
+      trigger_point: 'ORIGIN',
+      trigger_delay_min: 600
+    }]
+  });
+  const SHEET =
+    '<div data-module="missions"><div class="ms-sheet" data-pane="mission"><section class="ms-first"><section data-drawers hidden></section><div class="ms-actions"><a data-do="prepare" href="#fuel">Préparer ce vol</a><span class="ms-actslot" data-actslot></span><button type="button" data-do="back">Retour</button></div></section><section class="ms-detail"></section></div></div>';
+  const q = sel => stage.querySelector(sel),
+    qa = sel => [...stage.querySelectorAll(sel)],
+    text = sel => (q(sel)?.textContent || '').replace(/\s+/g, ' ').trim(),
+    btn = () => q('[data-actslot] > [data-as-open]'),
+    box = () => q('.ms-sheet > [data-assign]'),
+    slotOrder = () => [...(q('[data-actslot]')?.children || [])].map(e => e.hasAttribute('data-dw-ask') ? 'ask' : e.hasAttribute(
+      'data-as-open') ? 'assign' : e.tagName).join(),
+    /** Monte la fiche (neuve : un dessin) et la section par le vrai branchement (drawers_view.js show). */
+    mount = (c, more = {}) => {
+      stage.innerHTML = more.bare ? '<section data-drawers></section>' : SHEET;
+      DV.show(q('[data-drawers]'), {
+        ctx: c,
+        id: ID,
+        mission,
+        restMs: 100,
+        ...more
+      });
+    },
+    /** Remplit le formulaire. */
+    fill = (v = {}) => {
+      for (const [k, x] of Object.entries(v)) {
+        const e = q(`[data-as="${k}"]`);
+        if (e) e.value = x;
+      }
+    },
+    /** « Affecter » et l'attente de sa réponse (une notification ou une écriture de plus). */
+    go = async c => {
+        const n = c.notes.length + c.puts.length;
+        q('[data-as-go]').click();
+        await until(() => c.notes.length + c.puts.length > n || !!q('[data-as-conflict]'));
+        await sleep(30);
+      },
+      index = () => ({
+        updatedAt: '2026-11-18T08:00:00.000Z',
+        assignments: [{
+          mission: 'X-901A',
+          title: 'Autre mission',
+          pilot: 'ABC',
+          callsign: 'TEST21',
+          takeoff: `${TODAY}T19:40:00.000Z`,
+          status: 'affectée',
+          role: 'mission'
+        }]
+      });
+
+  // ---- 1. le bouton : niveau, place, hors fiche
+  let c = fakeCtx({
+    level: 1
+  });
+  mount(c);
+  ck('niveau Découverte (1) : pas de « Affecter… » — la place reste vide', !btn() && q('[data-actslot]').innerHTML === '', q(
+    '[data-actslot]').innerHTML);
+  DV.stop();
+  for (const lv of [2, 3]) {
+    c = fakeCtx({
+      level: lv
+    });
+    mount(c);
+    ck(`niveau ${lv} : « Affecter… » posé dans la place de la rangée, un seul, un vrai bouton`, !!btn() && text('[data-as-open]') ===
+      'Affecter…' && qa('[data-as-open]').length === 1 && btn().type === 'button' && btn().getAttribute('aria-expanded') === 'false');
+    DV.stop();
+  }
+  ck('stop() : le bouton retiré', !q('[data-as-open]'));
+  c = fakeCtx({
+    level: 2
+  });
+  mount(c, {
+    bare: true
+  });
+  ck('hors d\'une fiche (pas de .ms-sheet ni de place) : rien, nulle part', !q('[data-as-open]') && !q('[data-assign]'));
+  DV.stop();
+  c = fakeCtx({
+    level: 2,
+    docs: {
+      [P]: index()
+    }
+  });
+  mount(c);
+  ck('le niveau absent du cadre (undefined) : pas de bouton (échec fermé)', (() => {
+    DV.stop();
+    const c0 = fakeCtx();
+    delete c0.level;
+    mount(c0);
+    const none = !btn();
+    DV.stop();
+    return none;
+  })());
+  // ma mission (ABC est affecté) : « Demander la suite » en tête de la place, « Affecter… » en queue
+  const cMine = fakeCtx({
+    trigram: 'ABC',
+    level: 2,
+    docs: {
+      [P]: {
+        assignments: [{
+          mission: ID,
+          pilot: 'ABC',
+          takeoff: new Date().toISOString(),
+          role: 'mission'
+        }]
+      }
+    }
+  });
+  mount(cMine);
+  await until(() => !!q('[data-dw-ask]'));
+  ck('pour MA mission : « Demander la suite » d\'abord, « Affecter… » EN QUEUE de la place', slotOrder() === 'ask,assign', slotOrder());
+  q('[data-actslot]').prepend(Object.assign(document.createElement('a'), {
+    textContent: 'Lire la mission'
+  }));
+  DV.show(q('[data-drawers]'), {
+    ctx: cMine,
+    id: ID,
+    mission
+  });
+  ck('la place partagée (« Lire la mission » du lot T3) : « Affecter… » reste en queue, une fois', slotOrder().endsWith(',assign') && qa(
+    '[data-as-open]').length === 1, slotOrder());
+  DV.stop();
+  ck('stop() ne retire QUE ses boutons : « Lire la mission » reste', slotOrder() === 'A', slotOrder());
+
+  // ---- 2. le formulaire : ouvert, refermé
+  c = fakeCtx({
+    level: 2,
+    docs: {
+      [P]: index(),
+      'pilot/ABC/profile.json': {},
+      'pilot/XYZ/missions/X-001A.json': {},
+      'pilot/ab/x.json': {}
+    }
+  });
+  mount(c);
+  btn().click();
+  await until(() => !!box() && !!q('#asPilots option'));
+  ck('« Affecter… » : le formulaire « Affecter cette mission » prend la place de la fiche (data-assigning), le bouton dit « ouvert »', !!
+    box() && q('.ms-sheet').hasAttribute('data-assigning') && text('[data-assign] h2') === 'Affecter cette mission' && btn()
+    .getAttribute('aria-expanded') === 'true');
+  const sheetDisplay = sel => getComputedStyle(q(sel)).display;
+  ck('au téléphone : la première page et le Détail cachés, le formulaire visible (STYLE)', sheetDisplay('.ms-first') === 'none' &&
+    sheetDisplay('.ms-detail') === 'none' && sheetDisplay('[data-assign]') !== 'none', [sheetDisplay('.ms-first'), sheetDisplay(
+      '.ms-detail')]);
+  ck('la barre : « ← Fiche » et l\'identifiant et le titre de la mission — le titre en TEXTE (aucun <img>, rien d\'exécuté)', text(
+    '.ms-asbar [data-as-back]') === '← Fiche' && text('.ms-asbar b') === 'X-905A Recherche <img src=x onerror="window.__xss=1">' && !q(
+    '[data-assign] img') && window.__xss === undefined, text(
+    '.ms-asbar'));
+  const top = [...box().children].filter(e => !e.matches('datalist,h2,.ms-asbar'));
+  const items = [...top.flatMap(e => e.matches('.ms-asfields') ? [...e.children] : [e])];
+  ck('sept éléments au plus sous le titre (champs, liste, conflit, actions)', items.length <= 7, items.map(e => e.className));
+  ck('les quatre champs dans l\'ordre de la maquette : Pilote, Indicatif, Décollage (UTC), Aéronef', J(qa('.ms-asfields > .f-field > span')
+    .map(e => e.textContent)) === J(['Pilote', 'Indicatif', 'Décollage (UTC)', 'Aéronef']));
+  ck('RETOUCHE 1 : aucune ligne d\'aide sous un champ — chaque champ n\'a que son nom et sa saisie ; l\'immatriculation dit « (facultative) » DANS le champ',
+    qa('.ms-asfields > .f-field').every(f => f.children.length === 2 && [...f.childNodes].every(n => n.nodeType !== 3 || !n.textContent
+      .trim())) && !q('[data-assign] small,[data-assign] .hint,[data-assign] .f-muted:not(summary)') && q('[data-as="registration"]')
+    .placeholder === 'immatriculation (facultative)', qa('.ms-asfields > .f-field').map(f => f.children.length));
+  const def = A.defaultTakeoff(Date.now());
+  ck('le décollage par défaut : aujourd\'hui, l\'heure ronde suivante (UTC), en deux champs date et heure ; le premier type de la mission',
+    q('[data-as="date"]').type === 'date' && q('[data-as="time"]').type === 'time' && q('[data-as="date"]').value === def.date && q(
+      '[data-as="time"]').value === def.time && q('[data-as="type"]').value === 'EC25', [q('[data-as="date"]').value, q(
+      '[data-as="time"]').value]);
+  ck('le type : un choix parmi ceux de la mission (EC25, H135) ; l\'immatriculation libre', J([...q('[data-as="type"]').options].map(o => o
+    .value)) === J(['EC25', 'H135']) && q('[data-as="registration"]').tagName === 'INPUT');
+  ck('la liste des pilotes : les trigrammes qui ont un dossier (ABC, XYZ — pas « ab »), proposés au champ Pilote (datalist)', J([...qa(
+    '#asPilots option')].map(o => o.value)) === J(['ABC', 'XYZ']) && q('[data-as="pilot"]').getAttribute('list') === 'asPilots');
+  ck('aucune affectation de cette mission : pas de liste « Affectations de cette mission »', !q('[data-as-list]'));
+  const html = box().innerHTML;
+  ck('rien d\'un tiroir fermé dans le formulaire (ni titre, ni message, ni briefing, ni sa zone)', !/secret|Cap au nord|Briefing/i.test(
+      html),
+    html.slice(0, 300));
+  q('[data-as-back]').click();
+  ck('« ← Fiche » : le formulaire refermé, la fiche rendue (data-assigning ôté), rien d\'écrit', !box() && !q('.ms-sheet').hasAttribute(
+    'data-assigning') && c.puts.length === 0 && btn().getAttribute('aria-expanded') === 'false');
+  btn().click();
+  await until(() => !!box());
+  q('[data-as-cancel]').click();
+  ck('« Annuler » : le même — refermé, rien d\'écrit', !box() && c.puts.length === 0);
+
+  // ---- 3. « Affecter » : refus d'une saisie, conflit dit, puis écrit
+  btn().click();
+  await until(() => !!box());
+  fill({
+    pilot: '',
+    callsign: 'TEST31'
+  });
+  await go(c);
+  ck('un champ vide : « Affecter » le dit par une notification « warn » (« Pilote : … »), rien n\'est écrit', J(c.notes.at(-1)) === J([
+    'warn',
+    'Pilote : un trigramme de trois lettres.'
+  ]) && c.puts.length === 0, c.notes);
+  fill({
+    pilot: 'abc',
+    callsign: 'TEST31',
+    date: TODAY,
+    time: '20:00',
+    type: 'EC25',
+    registration: 'f-test'
+  });
+  await go(c);
+  ck('premier « Affecter » : le conflit est DIT sous les champs (ABC sur X-901A, 19:40Z), rien n\'est écrit', text('[data-as-conflict]') ===
+    'ABC a déjà une mission à cette heure : X-901A, décollage 19:40Z. Vous pouvez affecter quand même.' && c.puts.length === 0, text(
+      '[data-as-conflict]'));
+  ck('… les valeurs tapées restent dans les champs', q('[data-as="pilot"]').value === 'abc' && q('[data-as="registration"]').value ===
+    'f-test');
+  await go(c);
+  const doc = c.store.get(P),
+    line = doc.assignments.find(l => l.mission === ID);
+  ck('second « Affecter » : la ligne est écrite, de la forme du § 2.4, la ligne de X-901A gardée telle quelle, updatedAt neuf', c.puts
+    .length === 1 && J(Object.keys(line)) === J(['mission', 'title', 'pilot', 'callsign', 'takeoff', 'departure', 'aircraft', 'status',
+      'role', 'updated_at', 'by'
+    ]) && line.pilot === 'ABC' && line.callsign === 'TEST31' && line.takeoff === `${TODAY}T20:00:00.000Z` && line.departure === 'XTST' && J(
+      line.aircraft) === J({
+      type: 'EC25',
+      registration: 'F-TEST'
+    }) && line.status === 'affectée' && line.role === 'mission' && line.by === 'QRS' && J(doc.assignments[0]) === J(index()
+      .assignments[0]) && doc.updatedAt !== '2026-11-18T08:00:00.000Z', doc);
+  ck('le titre écrit est le titre VISIBLE de la mission (texte brut, 120 signes au plus)', line.title ===
+    'Recherche <img src=x onerror="window.__xss=1">');
+  ck('la ligne écrite passe mine() : ABC lit X-905A dans « Mes missions affectées »', mine(doc, 'ABC')[1]?.mission === ID || mine(doc,
+    'ABC').some(a => a.mission === ID));
+  ck('la notification « ok » : « ABC est affecté à X-905A, décollage 20:00Z. »', J(c.notes.at(-1)) === J(['ok',
+    'ABC est affecté à X-905A, décollage 20:00Z.'
+  ]), c.notes.at(-1));
+  ck('la liste : « Affectations de cette mission », une ligne « ABC · TEST31 · décollage 20:00Z · EC25 F-TEST » et « Retirer »', text(
+      '[data-as-list] h3') === 'Affectations de cette mission' && qa('[data-as-line]').length === 1 && text('[data-as-line] span') ===
+    'ABC · TEST31 · décollage 20:00Z · EC25 F-TEST' && text('[data-as-remove]') === 'Retirer', text('[data-as-list]'));
+  ck('les champs se vident, le type reste ; le conflit n\'est plus dit', ['pilot', 'callsign', 'date', 'time', 'registration'].every(k => q(
+    `[data-as="${k}"]`).value === '') && q('[data-as="type"]').value === 'EC25' && !q('[data-as-conflict]'));
+  // la même clé : mise à jour
+  fill({
+    pilot: 'ABC',
+    callsign: 'TEST35',
+    date: TODAY,
+    time: '20:00',
+    type: 'H135'
+  });
+  await go(c); // ABC a toujours X-901A à 19:40Z : le conflit est dit de nouveau, puis « Affecter » quand même
+  const said = !!q('[data-as-conflict]') && c.puts.length === 1;
+  await go(c);
+  const doc2 = c.store.get(P),
+    abc = doc2.assignments.filter(l => l.mission === ID && l.pilot === 'ABC');
+  ck('ABC de nouveau sur CETTE mission : sa ligne mise à jour (même clé, une seule ligne), la notification le dit (le conflit avec X-901A dit d\'abord, jamais avec elle-même)',
+    abc.length === 1 && abc[0].callsign === 'TEST35' && abc[0].aircraft.type === 'H135' && J(c.notes.at(-1)) === J(['ok',
+      'ABC : affectation mise à jour'
+    ]) && doc2.assignments.length === 2 && said, [abc, c.notes.at(-1), said]);
+  fill({
+    pilot: 'XYZ',
+    callsign: 'TEST32',
+    date: TODAY,
+    time: '20:02',
+    type: 'EC25'
+  });
+  await go(c);
+  ck('XYZ affecté (sans immatriculation) : deux lignes listées, par décollage', qa('[data-as-line]').length === 2 && text(
+    '[data-as-line="1"] span') === 'XYZ · TEST32 · décollage 20:02Z · EC25' && c.store.get(P).assignments.length === 3, text(
+    '[data-as-list]'));
+  // un dessin de la fiche pendant la saisie : le formulaire reposé, les valeurs gardées
+  fill({
+    pilot: 'DEF',
+    callsign: 'TEST33'
+  });
+  stage.innerHTML = SHEET;
+  DV.show(q('[data-drawers]'), {
+    ctx: c,
+    id: ID,
+    mission
+  });
+  ck('la fiche redessinée : « Affecter… » et le formulaire reposés, les valeurs tapées gardées', !!btn() && !!box() && q(
+    '[data-as="pilot"]').value === 'DEF' && q('[data-as="callsign"]').value === 'TEST33' && qa('[data-as-line]').length === 2);
+
+  // ---- 4. « Retirer »
+  const putsBefore = c.puts.length;
+  q('[data-as-line="0"] [data-as-remove]').click();
+  await until(() => c.puts.length > putsBefore);
+  await sleep(30);
+  const gone = c.store.get(P).assignments.find(l => l.mission === ID && l.pilot === 'ABC');
+  ck('« Retirer » ABC : sa ligne passe « annulée » (jamais supprimée), updated_at neuf ; elle quitte la liste ; notification « ok »', gone
+    .status === 'annulée' && gone.callsign === 'TEST35' && c.store.get(P).assignments.length === 3 && qa('[data-as-line]').length ===
+    1 && text('[data-as-line] span').startsWith('XYZ') && J(c.notes.at(-1)) === J(['ok', 'ABC n\'est plus affecté à X-905A.']), [gone, c
+      .notes.at(-1)
+    ]);
+  ck('… et ABC ne lit plus X-905A dans « Mes missions affectées »', !mine(c.store.get(P), 'ABC', Date.parse(`${TODAY}T12:00:00Z`)).some(
+    a => a.mission === ID));
+  fill({
+    pilot: 'ABC',
+    callsign: 'TEST31',
+    date: TODAY,
+    time: '22:30',
+    registration: ''
+  });
+  await go(c);
+  ck('ré-affecter ABC (deux gestes) : la même ligne redevient « affectée », notification « est affecté »', c.store.get(P).assignments.find(
+    l => l.mission === ID && l.pilot === 'ABC').status === 'affectée' && c.notes.at(-1)[1].startsWith('ABC est affecté'), c.notes.at(-
+    1));
+  DV.stop();
+  ck('stop() : bouton et formulaire retirés, la fiche rendue à elle-même', !q('[data-as-open]') && !q('[data-assign]') && !q('.ms-sheet')
+    .hasAttribute('data-assigning'));
+
+  // ---- 5. un fichier hostile : rien n'est écrit
+  const big = {
+    assignments: Array.from({
+      length: A.MAX_LINES + 1
+    }, () => ({
+      mission: 'X-001A',
+      pilot: 'AAA'
+    }))
+  };
+  for (const [name, bad, msg] of [
+      ['un texte (fichier illisible)', 'pas du JSON', 'Le fichier des affectations est illisible : rien n\'a été écrit.'],
+      ['assignments d\'un autre type', {
+        assignments: 'x'
+      }, 'Le fichier des affectations est illisible : rien n\'a été écrit.'],
+      ['un tableau au lieu d\'un objet', [], 'Le fichier des affectations est illisible : rien n\'a été écrit.'],
+      ['plus de 2 000 lignes', big, 'Le fichier des affectations a plus de 2 000 lignes : rien n\'a été écrit.']
+    ]) {
+    const h = fakeCtx({
+      level: 2,
+      docs: {
+        [P]: bad
+      }
+    });
+    mount(h);
+    btn().click();
+    await until(() => !!box());
+    await sleep(40);
+    fill({
+      pilot: 'ABC',
+      callsign: 'TEST31',
+      date: TODAY,
+      time: '20:00'
+    });
+    await go(h);
+    ck(`fichier hostile — ${name} : rien n'est écrit, une notification « err » le dit ; aucune ligne listée`, h.puts.length === 0 && J(h
+      .notes.at(-1)) === J(['err', msg]) && !q('[data-as-list]'), h.notes);
+    DV.stop();
+  }
+  const hp = fakeCtx({
+    level: 2,
+    docs: {
+      [P]: JSON.parse(
+        '{"__proto__":{"x":1},"assignments":[{"mission":"X-905A","pilot":"<b>","callsign":"<img src=x onerror=window.__xss=2>","role":"mission"},{"mission":"X-905A","pilot":"XYZ","callsign":"<i>x</i>","takeoff":"<script>","role":"mission","aircraft":{"type":"<b>","registration":"<img src=x>"}}]}'
+      )
+    }
+  });
+  mount(hp);
+  btn().click();
+  await until(() => !!q('[data-as-line]'));
+  ck('des lignes hostiles : un pilote illisible écarté ; indicatif, type et immatriculation bornés et passés par esc (aucun élément créé)',
+    qa('[data-as-line]').length === 1 && !q('[data-as-list] img,[data-as-list] i,[data-as-list] b,[data-as-list] script') && window
+    .__xss === undefined, q('[data-as-list]')?.innerHTML);
+  DV.stop();
+  const hw = fakeCtx({
+    level: 2,
+    trigram: ''
+  });
+  mount(hw);
+  btn().click();
+  await until(() => !!box());
+  fill({
+    pilot: 'ABC',
+    callsign: 'TEST31',
+    date: TODAY,
+    time: '20:00'
+  });
+  await go(hw);
+  ck('sans trigramme sur cet appareil : rien n\'est écrit, l\'erreur est dite', hw.puts.length === 0 && hw.notes.at(-1)?.[0] === 'err', hw
+    .notes);
+  DV.stop();
+  const hr = fakeCtx({
+    level: 2
+  });
+  hr.data.put = async () => {
+    throw new Error('refusé par le cadre');
+  };
+  mount(hr);
+  btn().click();
+  await until(() => !!box());
+  fill({
+    pilot: 'ABC',
+    callsign: 'TEST31',
+    date: TODAY,
+    time: '20:00'
+  });
+  await go(hr);
+  ck('une écriture refusée par le cadre : dite (« err »), la liste et les champs inchangés', J(hr.notes.at(-1)) === J(['err',
+    'L\'affectation n\'a pas pu être enregistrée : refusé par le cadre'
+  ]) && q('[data-as="pilot"]').value === 'ABC' && !q('[data-as-list]'), hr.notes);
+  DV.stop();
+  stage.innerHTML = '';
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows: rows.filter(r => !r.ok)
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

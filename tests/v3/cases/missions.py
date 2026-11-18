@@ -3778,8 +3778,9 @@ _DW_CLEAR = """async () => { if (!(await indexedDB.databases()).some(d => d.name
   db.close(); return true }"""
 # SOG-0459: the section hidden and EMPTY (no text, no element, no « data-mine »): nothing says that the mission has a sequel
 _DW_EMPTY = f"""(() => {{ const s = document.querySelector('{M} [data-drawers]'); return !!s && s.hidden === true && s.innerHTML === '' && !s.hasAttribute('data-mine') }})()"""
-# the row of the actions of the sheet, in order: « prepare », the place (and what it carries), then the rest
-_DW_ROW = f"""[...(document.querySelector('{M} .ms-sheet .ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? 'slot:' + [...e.children].map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join(',') : (e.dataset.do || e.tagName))"""
+# the row of the actions of the sheet, in order: « prepare », the place (and what it carries), then the rest; « Affecter… » (SOG-0443, at
+# the Current level and above, posed at the END of the place by assign_view.js) is left out of this row — N89 reads it
+_DW_ROW = f"""[...(document.querySelector('{M} .ms-sheet .ms-actions')?.children || [])].map(e => e.matches('[data-actslot]') ? 'slot:' + [...e.children].filter(x => !x.hasAttribute('data-as-open')).map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.tagName).join(',') : (e.dataset.do || e.tagName))"""
 _DW_ASK = f'{M} [data-actslot] > [data-dw-ask]'
 
 
@@ -4286,6 +4287,196 @@ def n87(c):
     c.ok(bare['book'] is None and closed['book'] is None, [bare['book'], closed['book']], 'nothing written in the record, for either')
     c.eq([w for w in WORDS if w in closed['text'] or w in closed['answer']], [], 'no word of the drawers (titles, messages, zone, object) in the page',
          what='words of the drawers')
+    c.js(_DW_CLEAR)
+
+
+# SOG-0443: « Affecter… » — assign a mission from V3. The pure part (modules/missions/assign.js) and the merge rule of
+# missions/affectations.json, played by the frame's own data layer.
+@case('N88', 'Missions bench: assigning a mission — the input checked (trigram, callsign, UTC take-off, a type of the mission, an optional '
+      'registration), the line built and read back as it is by « Mes missions affectées » and by the play of the drawers, inserted by its '
+      'key mission + pilot + role, withdrawn as « annulée », a conflict under two hours said, a hostile file never rewritten, and the merge '
+      'of two devices that keeps both lines', 'N', tags=('missions', 'security'), designs=('standard',), screens=False,
+      rule='SOG-0443 (Q-0093: a minimal gesture to assign from V3): the line { mission, title, pilot, callsign, takeoff, departure, '
+      'aircraft { type, registration }, status, role, updated_at, by } is the shape mine() and seanceOf() already read; its key never '
+      'changes; every write re-reads the file and keeps every other line as it is; more than 2 000 lines, an unreadable file or another '
+      'shape: nothing is written; module.js declares missions/affectations.json « keyed:assignments:mission+pilot+role » (the key of '
+      'tools/data_sync.py) — with « record » one line of two devices is lost')
+def n88(c):
+    c.page.goto(f'{c.base}/modules/missions/test/assign.html', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=60000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/assign.html') from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] >= 54, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (54 at least)')
+
+
+# SOG-0443: the screen « Affecter… ». An invented mission X-905A (type EC25, base XTST, one drawer whose words must never show), two
+# invented pilots ABC and XYZ (a record under pilot/<TRI>/ is their folder), ABC already on X-901A at 19:40Z; the device that assigns is QRS.
+AV = 'modules/missions/assign_view.js'
+_AS_REGISTRY = """missions:
+  - { id: X-905A, family: TESTTIROIR, title: Recherche cachée, folder: X_TIR/X-905A, files: [missionX-905A.yaml] }
+"""
+_AS_MISSION = """mission: { id: X-905A, type: SAR, subtype: RECHERCHE }
+title: Recherche cachée
+summary: Un bateau inventé ne répond plus. Décollez vers la zone d'attente ; la suite vous sera donnée en vol.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+route_order: [ORIGIN, DESTINATION]
+phases:
+  - id: B
+    title: Secteur secret
+    message: "Message secret du tiroir."
+    brief: Briefing secret.
+    trigger_zone: { centre: { lat: 44.6, lon: 1.3 }, radius_km: 4 }
+    fallback_delay_min: 90
+"""
+_AS_OPEN = f'{M} [data-actslot] > [data-as-open]'
+_AS_BOX = f'{M} .ms-sheet > [data-assign]'
+_AS_SLOT = f"""[...(document.querySelector('{M} .ms-sheet [data-actslot]')?.children || [])].map(x => x.hasAttribute('data-dw-ask') ? 'ask' : x.hasAttribute('data-as-open') ? 'assign' : x.tagName)"""
+
+
+@case('N89', 'Missions: « Affecter… » in the sheet of a mission — at the Current level, the button at the end of the place of the actions '
+      'row (none at the Discovery level); « Affecter cette mission » takes the place of the sheet, no help line under a field; the pilot '
+      '(trigrams of the pilots\' folders), the callsign, the UTC take-off, a type of the mission and a registration; a conflict under two '
+      'hours is said, « Affecter » again writes; the line written, the list, the notification; « Retirer » marks it « annulée »; the pilot '
+      'finds the mission in « Mes missions affectées » only while the line is not cancelled', 'N', tags=('missions', 'security'),
+      designs=('standard',), langs4=True,
+      rule='SOG-0443 (Q-0093 of 18 Nov 2026: a minimal gesture to assign from V3, no rights and no availability check; the accepted mockup '
+      'with two touches — no help line under a field, the blocks already there reused): the button is posed by assign_view.js through '
+      'drawers_view.js show for every mission read, at ctx.level >= 2; the line written in missions/affectations.json is the shape '
+      'mine() and seanceOf() read; what is shown of the mission is its visible part only (pilotView), every text is escaped')
+def n89(c):
+    import datetime
+    import json
+    today = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+    P = 'missions/affectations.json'
+    idx = {'updatedAt': f'{today}T08:00:00.000Z', 'assignments': [
+        {'mission': 'X-901A', 'title': 'Autre mission', 'pilot': 'ABC', 'callsign': 'TEST21', 'takeoff': f'{today}T19:40:00.000Z',
+         'status': 'affectée', 'role': 'mission'}]}
+    # the folders of the two pilots: a record of another mission under pilot/<TRI>/ (cleared by _DW_CLEAR at the end)
+    folders = [['pilot/ABC/missions/X-001A.json', {'schema': 1, 'mission': 'X-001A'}, 'document'],
+               ['pilot/XYZ/missions/X-001A.json', {'schema': 1, 'mission': 'X-001A'}, 'document']]
+    row = lambda k: tx(AV, k, c.lang)
+    fmt = lambda k, **v: norm(re.sub(r'\{(\w+)\}', lambda m: v.get(m.group(1), ''), row(k)))
+    WORDS = ('secret', 'Secteur')
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _AS_REGISTRY], ['missions/X_TIR/X-905A/missionX-905A.yaml', _AS_MISSION],
+                     [P, json.dumps(idx)]])
+
+    def device(trigram, level):
+        """The application of this device (its trigram, its level of use), on the list of Missions."""
+        c.open('missions', wait=False, app='company', trigram=trigram, docs=[['device/level.json', {'level': level}, 'cache'], *folders])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-905A\"]')", timeout=20000, what='the list')
+
+    def sheet():
+        """Opens the sheet of X-905A from the list."""
+        c.tap(f'{M} [data-list] [data-id="X-905A"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-905A'", timeout=10000, what='the sheet of X-905A')
+
+    def fill(**v):
+        """Fills the form."""
+        for k, x in v.items():
+            sel = f'{_AS_BOX} [data-as="{k}"]'
+            c.page.select_option(sel, x) if k == 'type' else c.page.fill(sel, x)
+
+    def assign():
+        """« Affecter » and its answer: a notification more, or the conflict said."""
+        n0, had = len(c.note_log()), c.count(f'{_AS_BOX} [data-as-conflict]')
+        c.tap(f'{_AS_BOX} [data-as-go]')
+        c.until(f"window.__notes.length > {n0} || ({'false' if had else 'true'} && !!document.querySelector('{_AS_BOX} [data-as-conflict]'))",
+                timeout=6000, what='the answer of « Affecter »')
+        c.settle()
+
+    # the Discovery level: no « Affecter… »
+    device('QRS', 1)
+    sheet()
+    c.settle()
+    c.wait(600)
+    c.eq(c.count(_AS_OPEN), 0, 'at the Discovery level (1) the sheet has no « Affecter… »', what='the button')
+    # the Current level: the button at the end of the place, then the form
+    device('QRS', 2)
+    sheet()
+    c.until(f"!!document.querySelector('{_AS_OPEN}')", timeout=10000, what='« Affecter… » in the row')
+    c.ok(c.js(_AS_SLOT) == ['assign'] and norm(c.text(_AS_OPEN)) == norm(row('open')) and c.count(f'{M} [data-as-open]') == 1,
+         [c.js(_AS_SLOT), c.text(_AS_OPEN)], 'at the Current level (2): « Affecter… » once, in the place of the actions row (a mission I only browse: no « Demander la suite » before it)')
+    c.tap(_AS_OPEN)
+    c.until(f"!!document.querySelector('{_AS_BOX} #asPilots option')", timeout=6000, what='the form and the list of the pilots')
+    c.settle()
+    c.ok(norm(c.text(f'{_AS_BOX} h2')) == norm(row('head')) and c.js(f"document.querySelector('{M} .ms-sheet').hasAttribute('data-assigning')"),
+         c.text(f'{_AS_BOX} h2'), '« Affecter cette mission » takes the place of the sheet')
+    first = c.js(f"getComputedStyle(document.querySelector('{M} .ms-first')).display")
+    c.ok((first == 'none') if c.width < 850 else (first != 'none' and c.js(f"getComputedStyle(document.querySelector('{M} .ms-detail')).display") == 'none'),
+         first, 'on a phone the first page is hidden; on a wide module the first page stays on the left, the form takes the column of the detail')
+    c.eq([norm(x) for x in c.js(f"[...document.querySelectorAll('{_AS_BOX} .ms-asfields > .f-field > span')].map(e => e.textContent)")],
+         [norm(row('pilot')), norm(row('callsign')), norm(row('takeoff')), norm(row('aircraft'))], 'the four fields, in the order of the mockup', what='fields')
+    c.ok(c.js(f"[...document.querySelectorAll('{_AS_BOX} .ms-asfields > .f-field')].every(f => f.children.length === 2)")
+         and c.count(f'{_AS_BOX} small') == 0 and norm(c.attr(f'{_AS_BOX} [data-as="registration"]', 'placeholder')) == norm(row('registration')),
+         c.js(f"document.querySelector('{_AS_BOX} .ms-asfields').innerHTML")[:300],
+         'no help line under a field: a name and an input each; « immatriculation (facultative) » is said INSIDE the field')
+    c.ok(set(c.js(f"[...document.querySelectorAll('{_AS_BOX} #asPilots option')].map(o => o.value)")) >= {'ABC', 'XYZ'}
+         and c.js(f"[...document.querySelector('{_AS_BOX} [data-as=type]').options].map(o => o.value)") == ['EC25'],
+         c.js(f"[...document.querySelectorAll('{_AS_BOX} #asPilots option')].map(o => o.value)"),
+         'the pilots offered are the trigrams that have a folder; the type is one of the mission\'s')
+    t = c.text(_AS_BOX)
+    c.eq([w for w in WORDS if w in t], [], 'nothing of a closed drawer in the form', what='words of the drawer')
+    fill(pilot='ABC', callsign='TEST31', date=today, time='20:00', type='EC25', registration='F-TEST')
+    c.shot(f'N89_{c.design}_{c.width}_{c.lang}_form.png')
+    # the conflict, said, never blocking
+    assign()
+    c.eq(norm(c.text(f'{_AS_BOX} [data-as-conflict]')), fmt('conflict', p='ABC', m='X-901A', t='19:40Z'),
+         'first « Affecter »: the conflict is said under the fields', what='the conflict')
+    c.eq(len(c.doc(P)['assignments']), 1, 'nothing written yet', what='lines')
+    c.shot(f'N89_{c.design}_{c.width}_{c.lang}_conflict.png')
+    assign()
+    doc = c.until_doc(P, lambda d: any(x.get('mission') == 'X-905A' and x.get('pilot') == 'ABC' for x in d['assignments']),
+                      what='the line of ABC on X-905A')
+    line = next(x for x in doc['assignments'] if x['mission'] == 'X-905A')
+    c.eq({k: v for k, v in line.items() if k != 'updated_at'},
+         {'mission': 'X-905A', 'title': 'Recherche cachée', 'pilot': 'ABC', 'callsign': 'TEST31', 'takeoff': f'{today}T20:00:00.000Z',
+          'departure': 'XTST', 'aircraft': {'type': 'EC25', 'registration': 'F-TEST'}, 'status': 'affectée', 'role': 'mission', 'by': 'QRS'},
+         'second « Affecter »: the line written, the shape that « Mes missions affectées » reads', what='the line')
+    c.ok(re.match(r'^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$', line.get('updated_at', '')) is not None and doc['assignments'][0] == idx['assignments'][0],
+         doc, 'updated_at in ISO UTC; the line of X-901A kept as it is')
+    c.until(f"!!document.querySelector('{_AS_BOX} [data-as-line]')", timeout=4000, what='the list')
+    c.eq(norm(c.text(f'{_AS_BOX} [data-as-line] span')), norm(f"ABC · TEST31 · {row('lineOff').replace('{t}', '20:00Z')} · EC25 F-TEST"),
+         'the list « Affectations de cette mission »: one line', what='the list')
+    c.ok(fmt('done', p='ABC', m='X-905A', t='20:00Z') in [norm(n) for n in c.note_log()], c.note_log()[-2:], 'the notification « ABC est affecté à X-905A, décollage 20:00Z. »')
+    c.ok(c.js(f"['pilot', 'callsign', 'date', 'time', 'registration'].every(k => document.querySelector('{_AS_BOX} [data-as=' + k + ']').value === '')")
+         and c.js(f"document.querySelector('{_AS_BOX} [data-as=type]').value") == 'EC25', '', 'the fields are emptied, the type stays')
+    c.shot(f'N89_{c.design}_{c.width}_{c.lang}_list.png')
+    # XYZ, then « Retirer » ABC
+    fill(pilot='XYZ', callsign='TEST32', date=today, time='20:02')
+    assign()
+    c.until_doc(P, lambda d: any(x.get('pilot') == 'XYZ' for x in d['assignments']), what='the line of XYZ')
+    c.eq(c.count(f'{_AS_BOX} [data-as-line]'), 2, 'XYZ assigned: two lines', what='the list')
+    c.tap(f'{_AS_BOX} [data-as-line="0"] [data-as-remove]')
+    doc = c.until_doc(P, lambda d: any(x.get('pilot') == 'ABC' and x.get('mission') == 'X-905A' and x.get('status') == 'annulée' for x in d['assignments']),
+                      what='the line of ABC « annulée »')
+    c.ok(len(doc['assignments']) == 3 and c.count(f'{_AS_BOX} [data-as-line]') == 1 and fmt('removed', p='ABC', m='X-905A') in [norm(n) for n in c.note_log()],
+         [doc['assignments'], c.note_log()[-1:]], '« Retirer »: the line marked « annulée » (never deleted), it leaves the list, the notification says so')
+    # the device of ABC: X-905A is not in « Mes missions affectées » while the line is cancelled
+    device('ABC', 2)
+    c.until(f"!!document.querySelector('{M} [data-assigned] [data-assigned-id=\"X-901A\"]')", timeout=20000, what='« Mes missions affectées » of ABC')
+    c.eq(c.count(f'{M} [data-assigned] [data-assigned-id="X-905A"]'), 0, 'the line cancelled: ABC does not find X-905A', what='X-905A')
+    # assigned again (QRS), then ABC finds it
+    device('QRS', 2)
+    sheet()
+    c.until(f"!!document.querySelector('{_AS_OPEN}')", timeout=10000, what='« Affecter… »')
+    c.tap(_AS_OPEN)
+    c.until(f"!!document.querySelector('{_AS_BOX}')", timeout=6000, what='the form')
+    fill(pilot='ABC', callsign='TEST31', date=today, time='20:00', type='EC25')
+    assign()
+    assign()
+    c.until_doc(P, lambda d: any(x.get('pilot') == 'ABC' and x.get('mission') == 'X-905A' and x.get('status') == 'affectée' for x in d['assignments']),
+                what='ABC assigned again')
+    device('ABC', 2)
+    c.until(f"!!document.querySelector('{M} [data-assigned] [data-assigned-id=\"X-905A\"]')", timeout=20000, what='X-905A in « Mes missions affectées »')
+    c.ok('X-905A' in c.text(f'{M} [data-assigned]') and '20:00Z' in c.text(f'{M} [data-assigned-id="X-905A"]'), c.text(f'{M} [data-assigned]'),
+         'assigned again: ABC finds X-905A, take-off 20:00Z')
     c.js(_DW_CLEAR)
 
 

@@ -29,6 +29,7 @@
 //   la mienne. show() reçoit `changed` : rappelé quand ce que sees() a rendu n'est plus à jour (un tiroir s'ouvre) — la fiche se redessine.
 
 import * as D from './drawers.js';
+import * as AV from './assign_view.js'; // SOG-0443 : « Affecter… » dans la rangée de la fiche, appelé à chaque dessin (show) et par stop()
 import {
   fmtZ
 } from '../../frame/lib/time.js';
@@ -234,6 +235,7 @@ function publish(v, old = null) {
 
 /** La fiche se ferme ou le module se démonte : minuteurs et écoute arrêtés, « Demander la suite » retiré de la rangée de la fiche. */
 export function stop() {
+  AV.stop(); // SOG-0443 : « Affecter… » et son formulaire retirés avec la section
   if (!V) return;
   clearTimeout(V.dueTimer);
   clearTimeout(V.restTimer);
@@ -245,9 +247,16 @@ export function stop() {
   V = null;
 }
 
-/** Pose la section « Suite de la mission » dans host (voir l'en-tête) — pour TOUTE mission, avec ou sans tiroir (SOG-0459 : l'écran
- *  ne doit pas dire qu'une mission a une suite). passage(pointId) : le temps estimé jusqu'à un lieu (frame/lib/mission.js). */
-export function show(host, {
+/** Pose la section « Suite de la mission » dans host (voir l'en-tête), puis « Affecter… » dans la rangée de la fiche (SOG-0443,
+ *  assign_view.js : pour toute mission lue, au niveau Courant et au-delà). */
+export function show(host, o = {}) {
+  showDrawers(host, o);
+  AV.show(host, o); // SOG-0443 : après la section (qui peut s'arrêter, et arrêter avec elle le formulaire d'une autre mission)
+}
+
+/** La section « Suite de la mission » — pour TOUTE mission, avec ou sans tiroir (SOG-0459 : l'écran ne doit pas dire qu'une mission a
+ *  une suite). passage(pointId) : le temps estimé jusqu'à un lieu (frame/lib/mission.js). */
+function showDrawers(host, {
   ctx,
   id,
   mission,

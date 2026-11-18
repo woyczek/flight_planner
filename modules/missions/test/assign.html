@@ -1,0 +1,632 @@
+<!doctype html>
+<!-- Banc du calcul de « Affecter… » (modules/missions/assign.js, SOG-0443) : la saisie validée et refusée, la ligne construite (elle
+     passe telle quelle par mine() de assigned.js et seanceOf() de drawers.js), l'insertion par la clé mission + pilot + role, le retrait
+     (« annulée », jamais une suppression), le conflit à moins de deux heures, la liste d'une mission, un fichier hostile (rien n'est
+     écrit, rien ne lève) et LA FUSION : la règle déclarée par module.js, jouée par la couche de données du cadre
+     (frame/store/frame_data.js, chargée telle quelle) — deux appareils qui ajoutent chacun une ligne gardent les deux ; avec « record »,
+     une ligne est perdue (la contre-épreuve). Missions, trigrammes, indicatifs et immatriculations inventés. Page nue ;
+     window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>assign — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+<!-- la couche de données du cadre, telle quelle : sa fusion (window.FrameData.merge, mergeText) et ses déclarations (adapter) -->
+<script src="../../../frame/store/frame_data.js?v=0"></script>
+</head>
+<body>
+<h1 style="font-size:16px">assign.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import * as A from '../assign.js?v=0';
+  import {
+    mine
+  } from '../assigned.js?v=0';
+  import {
+    seanceOf
+  } from '../drawers.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail: ok ? '' : typeof got === 'string' ? got : JSON.stringify(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + rows[rows.length - 1].detail}`;
+    out.append(l);
+  }
+  /** Une fonction qui ne lève jamais : sa valeur, ou « THROW ». */
+  const safe = fn => {
+    try {
+      return fn();
+    } catch (e) {
+      return `THROW ${e?.message || e}`;
+    }
+  };
+  const J = v => JSON.stringify(v),
+    MIN = 60e3,
+    H = 3600e3,
+    ID = 'X-905A',
+    NOW = Date.parse('2026-11-18T12:00:00Z'),
+    MISSION = {
+      id: ID,
+      title: 'Recherche cachée',
+      departure: 'XTST'
+    },
+    TYPES = ['EC25'],
+    /** Une saisie complète, ces champs changés. */
+    input = (more = {}) => ({
+      pilot: 'abc',
+      callsign: 'test31',
+      date: '2026-11-18',
+      time: '20:00',
+      type: 'EC25',
+      registration: ' f-test ',
+      ...more
+    }),
+    /** La ligne d'une saisie (ABC sur X-905A à 20:00Z par défaut), écrite par QRS. */
+    lineFor = (more = {}, by = 'QRS', mission = MISSION) => A.lineOf(mission, A.check(input(more), {
+      types: TYPES
+    }).value, {
+      by,
+      now: NOW
+    });
+
+  // ---- 1. la saisie
+  const ok = A.check(input(), {
+    types: TYPES
+  });
+  ck('une saisie complète : acceptée, mise en capitales et rognée ; le décollage lu en UTC (« 2026-11-18T20:00:00.000Z »)', ok.ok && J(ok
+    .value) === J({
+    pilot: 'ABC',
+    callsign: 'TEST31',
+    takeoff: '2026-11-18T20:00:00.000Z',
+    type: 'EC25',
+    registration: 'F-TEST'
+  }), ok);
+  const why = more => A.check(input(more), {
+    types: TYPES
+  }).why;
+  ck('pilote : vide, deux lettres, quatre lettres, des chiffres, un caractère de contrôle → « pilot »', ['', 'AB', 'ABCD', 'A1C',
+    'A\u0000B',
+    '../'
+  ].every(p => why({
+    pilot: p
+  }) === 'pilot'), ['', 'AB', 'ABCD', 'A1C'].map(p => why({
+    pilot: p
+  })));
+  ck('pilote : trois lettres quelconques (sans dossier de pilote) acceptées — la règle de assigned.js', why({
+    pilot: 'zzz'
+  }) === '');
+  ck('indicatif : vide, une lettre, treize signes, une espace, un point → « callsign » ; « TEST-31 » et douze signes acceptés', ['', 'T',
+    'ABCDEFGHIJKLM', 'TE ST', 'TEST.31'
+  ].every(c => why({
+    callsign: c
+  }) === 'callsign') && why({
+    callsign: 'TEST-31'
+  }) === '' && why({
+    callsign: 'ABCDEFGHIJKL'
+  }) === '');
+  ck('décollage : date vide, heure vide, 31 février, 25:00, une date de 1999, un texte → « takeoff » (jamais reporté au mois suivant)', [{
+    date: ''
+  }, {
+    time: ''
+  }, {
+    date: '2026-02-31'
+  }, {
+    time: '25:00'
+  }, {
+    date: '1999-12-31'
+  }, {
+    date: 'demain'
+  }].every(m => why(m) === 'takeoff'), [{
+    date: '2026-02-31'
+  }, {
+    time: '25:00'
+  }].map(why));
+  ck('décollage : une heure avec secondes (« 20:00:30 ») est lue à la minute', A.check(input({
+    time: '20:00:30'
+  }), {
+    types: TYPES
+  }).value?.takeoff === '2026-11-18T20:00:00.000Z');
+  ck('type : hors des types de la mission → « type » ; vide quand la mission en a → « type »', why({
+    type: 'C30J'
+  }) === 'type' && why({
+    type: ''
+  }) === 'type');
+  const noType = A.check(input({
+    type: ''
+  }), {
+    types: []
+  });
+  ck('mission sans type : la saisie part sans type (« — ») ; un type tapé quand même est refusé', noType.ok && noType.value.type === '' && A
+    .check(input({
+      type: 'EC25'
+    }), {
+      types: []
+    }).why === 'type', noType);
+  ck('immatriculation : facultative (vide acceptée), onze signes, une espace, un « / » → « registration »', why({
+      registration: ''
+    }) === '' && ['F-TESTTESTT', 'F TEST', 'F/TEST'].every(r => why({
+      registration: r
+    }) === 'registration'),
+    ['F-TESTTESTT', 'F TEST', 'F/TEST'].map(r => why({
+      registration: r
+    })));
+  ck('le premier champ refusé dans l\'ordre de l\'écran (pilote avant indicatif)', why({
+    pilot: '',
+    callsign: ''
+  }) === 'pilot');
+  ck('une saisie hostile (null, un tableau, des nombres, un objet) : refusée, ne lève jamais', [null, [], 7, {
+    pilot: 7,
+    callsign: {}
+  }].every(x => safe(() => A.check(x, {
+    types: 'EC25'
+  })).ok === false));
+
+  // ---- 2. la ligne construite : la forme du § 2.4, lue telle quelle par mine() et seanceOf()
+  const L = lineFor();
+  ck('la ligne : mission, title, pilot, callsign, takeoff, departure, aircraft { type, registration }, status, role, updated_at, by — rien de plus',
+    J(Object.keys(L || {})) === J(['mission', 'title', 'pilot', 'callsign', 'takeoff', 'departure', 'aircraft', 'status', 'role',
+      'updated_at', 'by'
+    ]) && J(L) === J({
+      mission: ID,
+      title: 'Recherche cachée',
+      pilot: 'ABC',
+      callsign: 'TEST31',
+      takeoff: '2026-11-18T20:00:00.000Z',
+      departure: 'XTST',
+      aircraft: {
+        type: 'EC25',
+        registration: 'F-TEST'
+      },
+      status: 'affectée',
+      role: 'mission',
+      updated_at: new Date(NOW).toISOString(),
+      by: 'QRS'
+    }), L);
+  const read = mine({
+    assignments: [L]
+  }, 'ABC', NOW)[0];
+  ck('mine() (« Mes missions affectées ») lit la ligne TELLE QUELLE : mission, titre, indicatif, immatriculation, type, terrain, décollage',
+    read && read.mission === ID && read.title === 'Recherche cachée' && read.callsign === 'TEST31' && read.registration === 'F-TEST' &&
+    read.type === 'EC25' && read.departure === 'XTST' && read.takeoff === '2026-11-18T20:00:00.000Z' && !read.ferry, read);
+  const se = seanceOf({
+    mission: ID,
+    me: 'ABC',
+    lines: [L]
+  });
+  ck('seanceOf() (la séance des tiroirs) trouve le pilote dans la ligne : affecté, séance « A:2026-11-18 », équipage [ABC]', se.assigned &&
+    se.key === 'A:2026-11-18' && J(se.crew) === J(['ABC']), se);
+  ck('le titre VISIBLE coupé à 120 signes, les caractères de contrôle ôtés ; un titre « <img onerror> » reste du texte', lineFor({},
+    'QRS', {
+      ...MISSION,
+      title: 'T'.repeat(200)
+    }).title.length === 120 && lineFor({}, 'QRS', {
+    ...MISSION,
+    title: 'A\u0000<img src=x onerror=1>'
+  }).title === 'A <img src=x onerror=1>');
+  ck('le terrain de départ : l\'OACI visible (quatre signes) ou \'\' — jamais un nom', lineFor({}, 'QRS', {
+    ...MISSION,
+    departure: 'Base Test'
+  }).departure === '' && lineFor({}, 'QRS', {
+    ...MISSION,
+    departure: ''
+  }).departure === '');
+  ck('sans type ni immatriculation : aircraft { type: \'\', registration: \'\' }, la ligne lue par mine()', (() => {
+    const l = A.lineOf(MISSION, A.check(input({
+      type: '',
+      registration: ''
+    }), {
+      types: []
+    }).value, {
+      by: 'QRS',
+      now: NOW
+    });
+    return l && J(l.aircraft) === J({
+      type: '',
+      registration: ''
+    }) && mine({
+      assignments: [l]
+    }, 'ABC', NOW).length === 1;
+  })());
+  ck('l\'auteur : MON trigramme validé comme bookPath (« qrs » → « QRS ») ; sans trigramme valide (vide, « ../ », « AB ») : aucune ligne',
+    lineFor({}, ' qrs').by === 'QRS' && ['', '../', 'AB', null].every(b => lineFor({}, b) === null) && A.meOf('ABC ') === 'ABC' && A.meOf(
+      'A/B') === '');
+  ck('un identifiant de mission refusé (« ../X-905A », « X905A », vide) : aucune ligne — jamais un chemin, jamais une clé fausse', [
+    '../X-905A', 'X905A', '', null
+  ].every(id => lineFor({}, 'QRS', {
+    ...MISSION,
+    id
+  }) === null));
+  ck('une valeur refusée passée de force (pilote « AB ») : aucune ligne (lineOf ne fait confiance qu\'à ses propres règles)', A.lineOf(
+    MISSION, {
+      ...ok.value,
+      pilot: 'AB'
+    }, {
+      by: 'QRS'
+    }) === null && A.lineOf(MISSION, null, {
+    by: 'QRS'
+  }) === null);
+  ck('la clé de fusion : « mission|pilot|role », \'\' pour une valeur absente (la règle keyed de frame_data.js)', A.keyOf(L) ===
+    'X-905A|ABC|mission' && A.keyOf({
+      mission: ID,
+      pilot: 'ABC'
+    }) === 'X-905A|ABC|');
+
+  // ---- 3. l'insertion par la clé
+  const other = {
+      mission: 'X-901A',
+      pilot: 'ABC',
+      takeoff: '2026-11-18T19:40:00Z',
+      status: 'affectée',
+      role: 'mission',
+      legacy: {
+        keep: [1, 2]
+      }
+    },
+    base = {
+      updatedAt: '2026-11-18T08:00:00.000Z',
+      note: 'gardée',
+      assignments: [other]
+    };
+  const add = A.withLine(base, L, NOW);
+  ck('ajout : la ligne en dernier, la ligne d\'une autre mission et la clé « note » du fichier gardées TELLES QUELLES, updatedAt neuf',
+    add.doc && !add.updated && add.doc.assignments.length === 2 && add.doc.assignments[0] === other && add.doc.assignments[1] === L && add
+    .doc.note === 'gardée' && add.doc.updatedAt === new Date(NOW).toISOString(), add);
+  ck('le fichier lu n\'est pas modifié (une copie est rendue)', base.assignments.length === 1 && base.updatedAt ===
+    '2026-11-18T08:00:00.000Z');
+  const L2 = lineFor({
+    callsign: 'TEST99',
+    time: '21:00'
+  });
+  const upd = A.withLine(add.doc, L2, NOW + MIN);
+  ck('mise à jour : la MÊME clé (ABC sur X-905A, rôle mission) remplacée À SA PLACE, pas de doublon ; « updated » vrai', upd.updated && upd
+    .doc.assignments.length === 2 && upd.doc.assignments[1] === L2 && upd.doc.assignments[0] === other, upd);
+  const L3 = lineFor({
+    pilot: 'XYZ'
+  });
+  const two = A.withLine(upd.doc, L3, NOW);
+  ck('un autre pilote : une autre clé, une ligne de plus', !two.updated && two.doc.assignments.length === 3 && two.doc.assignments[2] ===
+    L3);
+  const ferry = {
+    mission: ID,
+    pilot: 'ABC',
+    role: 'convoyage',
+    takeoff: '2026-11-18T18:00:00Z'
+  };
+  const withFerry = A.withLine({
+    assignments: [ferry]
+  }, L, NOW);
+  ck('un autre rôle (convoyage du même pilote, même mission) : une autre clé — la ligne du convoyage gardée', withFerry.doc.assignments
+    .length === 2 && withFerry.doc.assignments[0] === ferry);
+  ck('une autre mission du même pilote : une autre clé (la ligne de X-901A gardée)', add.doc.assignments.includes(other));
+  ck('sans fichier : { updatedAt, assignments: [la ligne] }', J(A.withLine(null, L, NOW).doc) === J({
+    updatedAt: new Date(NOW).toISOString(),
+    assignments: [L]
+  }));
+  const cancelled = {
+    ...L,
+    status: 'annulée'
+  };
+  const back = A.withLine({
+    assignments: [cancelled]
+  }, L, NOW);
+  ck('ré-affecter une ligne annulée : la même clé, de nouveau « affectée » — pas « mise à jour »', !back.updated && back.doc.assignments
+    .length === 1 && back.doc.assignments[0].status === 'affectée');
+  ck('une ligne refusée (rôle autre que « mission », pilote faux) : rien n\'est écrit', A.withLine(base, {
+    ...L,
+    role: 'convoyage'
+  }).error === 'line' && A.withLine(base, {
+    ...L,
+    pilot: '../'
+  }).error === 'line' && A.withLine(base, null).error === 'line');
+
+  // ---- 4. le retrait
+  const rm = A.withdrawn(two.doc, {
+    mission: ID,
+    pilot: 'XYZ',
+    role: 'mission'
+  }, NOW + 5 * MIN);
+  ck('retirer : la ligne passe « annulée », updated_at neuf, le reste de la ligne tel quel ; jamais supprimée ; les autres lignes intactes',
+    rm.doc && rm.doc.assignments.length === 3 && rm.doc.assignments[2].status === 'annulée' && rm.doc.assignments[2].updated_at ===
+    new Date(
+      NOW + 5 * MIN).toISOString() && rm.doc.assignments[2].callsign === 'TEST31' && rm.doc.assignments[0] === other && rm.doc
+    .assignments[1] === L2, rm);
+  ck('… la ligne retirée n\'est plus lue par mine() ni par seanceOf() (l\'équipage n\'a plus XYZ)', mine(rm.doc, 'XYZ', NOW).length ===
+    0 && !seanceOf({
+      mission: ID,
+      me: 'XYZ',
+      lines: rm.doc.assignments
+    }).assigned);
+  ck('retirer une ligne déjà annulée, ou absente : « gone », rien n\'est écrit', A.withdrawn(rm.doc, {
+    mission: ID,
+    pilot: 'XYZ',
+    role: 'mission'
+  }).error === 'gone' && A.withdrawn(rm.doc, {
+    mission: ID,
+    pilot: 'DEF',
+    role: 'mission'
+  }).error === 'gone');
+
+  // ---- 5. le conflit
+  const idx = {
+    assignments: [other]
+  };
+  const at = t => A.conflictOf(idx, {
+    mission: ID,
+    pilot: 'ABC',
+    takeoff: t
+  });
+  ck('conflit : ABC sur X-901A à 19:40Z, un décollage à 20:00Z → { mission: X-901A, takeoff: 19:40Z }', J(at(
+      '2026-11-18T20:00:00.000Z')) ===
+    J({
+      mission: 'X-901A',
+      takeoff: '2026-11-18T19:40:00.000Z'
+    }), at('2026-11-18T20:00:00.000Z'));
+  ck('conflit : à 1 h 59 avant ou après → oui ; à DEUX HEURES PILE → non ; à 2 h 01 → non', !!at(new Date(Date.parse(other.takeoff) + 2 *
+    H -
+    MIN).toISOString()) && !!at(new Date(Date.parse(other.takeoff) - 2 * H + MIN).toISOString()) && at(new Date(Date.parse(other
+    .takeoff) + 2 * H).toISOString()) === null && at(new Date(Date.parse(other.takeoff) - 2 * H - MIN).toISOString()) === null);
+  ck('pas de conflit pour une ligne annulée, pour la même mission, pour un autre pilote', A.conflictOf({
+    assignments: [{
+      ...other,
+      status: 'annulée'
+    }]
+  }, {
+    mission: ID,
+    pilot: 'ABC',
+    takeoff: '2026-11-18T20:00:00Z'
+  }) === null && A.conflictOf({
+    assignments: [{
+      ...other,
+      mission: ID
+    }]
+  }, {
+    mission: ID,
+    pilot: 'ABC',
+    takeoff: '2026-11-18T20:00:00Z'
+  }) === null && A.conflictOf(idx, {
+    mission: ID,
+    pilot: 'XYZ',
+    takeoff: '2026-11-18T20:00:00Z'
+  }) === null);
+  ck('le pilote d\'une ligne lu comme mine() le lit (« abc » est ABC) ; la plus proche des lignes en conflit est dite', A.conflictOf({
+    assignments: [{
+      ...other,
+      pilot: 'abc',
+      mission: 'X-902A',
+      takeoff: '2026-11-18T21:30:00Z'
+    }, other]
+  }, {
+    mission: ID,
+    pilot: 'ABC',
+    takeoff: '2026-11-18T20:00:00Z'
+  })?.mission === 'X-901A');
+
+  // ---- 6. la liste d'une mission
+  const list = A.listOf({
+    assignments: [L3, other, {
+      ...L,
+      takeoff: '2026-11-18T19:00:00Z'
+    }, cancelled, {
+      mission: ID,
+      pilot: '<b>',
+      role: 'mission'
+    }, 'x', null]
+  }, ID);
+  ck('la liste : les lignes NON annulées de CETTE mission, par décollage ; un pilote illisible écarté ; la clé gardée telle quelle', J(list
+    .map(l => [l.tri, l.callsign, l.takeoff, l.type, l.registration, l.mission, l.pilot, l.role])) === J([
+    ['ABC', 'TEST31', '2026-11-18T19:00:00.000Z', 'EC25', 'F-TEST', ID, 'ABC', 'mission'],
+    ['XYZ', 'TEST31', '2026-11-18T20:00:00.000Z', 'EC25', 'F-TEST', ID, 'XYZ', 'mission']
+  ]), list);
+  ck('les trigrammes des dossiers de pilote : pilot/<TRI>/…, triés, sans doublon ; « pilot/ab/ », « pilot/../ », un nombre écartés', J(A
+    .trigramsOf(['pilot/XYZ/a.json', 'pilot/ABC/missions/X-1.json', 'pilot/ABC/b.json', 'pilot/ab/x.json', 'pilot/../x', 7, 'cr/ABC/x',
+      'pilot/ABCD/x'
+    ])) === J(['ABC', 'XYZ']) && J(A.trigramsOf(null)) === '[]');
+  ck('l\'heure par défaut : aujourd\'hui, l\'heure ronde suivante (UTC) — 19:30Z → 20:00 ; 23:10Z → demain 00:00', J(A.defaultTakeoff(Date
+    .parse('2026-11-18T19:30:00Z'))) === J({
+    date: '2026-11-18',
+    time: '20:00'
+  }) && J(A.defaultTakeoff(Date.parse('2026-11-18T23:10:00Z'))) === J({
+    date: '2026-11-19',
+    time: '00:00'
+  }));
+
+  // ---- 7. un fichier hostile : ne lève jamais, n'écrit rien
+  const thrower = {
+    get assignments() {
+      throw new Error('piège');
+    }
+  };
+  const badLine = {
+    assignments: [{
+      get mission() {
+        throw new Error('piège');
+      }
+    }]
+  };
+  const cyc = {
+    assignments: []
+  };
+  cyc.assignments.push(cyc);
+  const hostile = [thrower, badLine, cyc, 'texte', [], 7, {
+    assignments: 'x'
+  }, {
+    assignments: {
+      length: 3
+    }
+  }];
+  ck('fichier hostile (accesseur qui lève, ligne qui lève, cycle, texte, tableau, nombre, assignments d\'un autre type) : readIndex « shape »',
+    hostile.every(d => safe(() => A.readIndex(d)).why === 'shape'), hostile.map(d => safe(() => A.readIndex(d))));
+  ck('… withLine et withdrawn rendent une erreur, sans fichier à écrire ; conflictOf null ; listOf [] — rien ne lève', hostile.every(d => {
+    const w = safe(() => A.withLine(d, L, NOW)),
+      r = safe(() => A.withdrawn(d, {
+        mission: ID,
+        pilot: 'ABC',
+        role: 'mission'
+      }, NOW));
+    return w.error && !w.doc && r.error && !r.doc && safe(() => A.conflictOf(d, {
+      mission: ID,
+      pilot: 'ABC',
+      takeoff: '2026-11-18T20:00:00Z'
+    })) === null && J(safe(() => A.listOf(d, ID))) === '[]';
+  }));
+  const big = {
+    assignments: Array.from({
+      length: A.MAX_LINES + 1
+    }, (_, i) => ({
+      mission: 'X-001A',
+      pilot: 'AAA',
+      role: `r${i}`
+    }))
+  };
+  ck('plus de 2 000 lignes : « size » — rien n\'est écrit (jamais les lignes des autres tronquées) ; la liste et le conflit se taisent',
+    A.readIndex(big).why === 'size' && A.withLine(big, L, NOW).error === 'size' && A.withdrawn(big, L, NOW).error === 'size' && J(A
+      .listOf(big, ID)) === '[]' && A.conflictOf(big, {
+      mission: ID,
+      pilot: 'ABC',
+      takeoff: L.takeoff
+    }) === null);
+  const full = {
+    assignments: [...big.assignments.slice(2), cancelled]
+  };
+  ck('2 000 lignes pile : ajouter une ligne est refusé (« size ») ; mettre à jour une clé présente est permis', full.assignments.length ===
+    2000 && A.withLine(full, L3, NOW).error === 'size' && A.withLine(full, L, NOW).doc?.assignments.length === 2000);
+  const proto = JSON.parse(
+    '{"__proto__":{"polluted":1},"assignments":[{"mission":"X-905A","pilot":"ABC","role":"mission","__proto__":{"status":"annulée"}}]}');
+  const pw = A.withLine(proto, L3, NOW);
+  ck('« __proto__ » dans le fichier : jamais lu comme un prototype (rien n\'est pollué), gardé tel quel dans le fichier réécrit', ({})
+    .polluted === undefined && pw.doc && JSON.stringify(pw.doc).includes('"__proto__":{"polluted":1}') && JSON.stringify(pw.doc
+      .assignments[0]).includes('"__proto__":{"status":"annulée"}') && A.listOf(proto, ID).length === 1, pw);
+  const inherited = Object.create({
+    mission: ID,
+    pilot: 'ABC',
+    role: 'mission',
+    status: 'affectée'
+  });
+  ck('une clé héritée (prototype) ne compte pas : ni dans la liste, ni pour la clé, ni pour un conflit (own seulement)', A.listOf({
+    assignments: [inherited]
+  }, ID).length === 0 && A.keyOf(inherited) === '||' && A.withLine({
+    assignments: [inherited]
+  }, L, NOW).doc.assignments.length === 2);
+  ck('des types faux dans une ligne (nombres, objets, tableaux) : écartés de la liste et du conflit, gardés tels quels dans le fichier',
+    (() => {
+      const weird = {
+        mission: 905,
+        pilot: ['ABC'],
+        takeoff: {},
+        status: 7,
+        role: null
+      };
+      const w = A.withLine({
+        assignments: [weird]
+      }, L, NOW);
+      return A.listOf({
+        assignments: [weird]
+      }, ID).length === 0 && A.conflictOf({
+        assignments: [weird]
+      }, {
+        mission: 'X-906A',
+        pilot: 'ABC',
+        takeoff: L.takeoff
+      }) === null && w.doc.assignments[0] === weird;
+    })());
+
+  // ---- 8. la fusion : la règle déclarée par module.js, jouée par la couche de données du cadre (frame/store/frame_data.js)
+  const FD = window.FrameData;
+  ck('la couche de données du cadre est chargée (FrameData.merge, mergeText, adapter)', !!FD?.merge?.keyed && typeof FD?.mergeText ===
+    'function' && typeof FD?.adapter === 'function');
+  // la déclaration de module.js, lue dans son texte : le préfixe du fichier, sa règle, AVANT « missions/ » (record)
+  const src = await fetch('../module.js?v=0').then(r => r.text()).catch(() => ''),
+    decl = /prefix:\s*'missions\/affectations\.json',\s*merge:\s*'([^']+)'/.exec(src),
+    rule = decl?.[1] || '';
+  ck('module.js déclare missions/affectations.json en « keyed:assignments:mission+pilot+role », avant « missions/ » (record)', rule ===
+    'keyed:assignments:mission+pilot+role' && src.indexOf("prefix: 'missions/affectations.json'") < src.indexOf("prefix: 'missions/',"),
+    rule || 'absente');
+  FD.adapter({
+    id: 'missions-bench',
+    writes: [{
+      prefix: 'missions/affectations.json',
+      merge: rule || 'record'
+    }, {
+      prefix: 'missions/',
+      merge: 'record'
+    }]
+  });
+  const P = 'missions/affectations.json',
+    T = v => JSON.stringify(v, null, 1) + '\n',
+    B0 = {
+      updatedAt: '2026-11-18T08:00:00.000Z',
+      assignments: [other]
+    },
+    devA = A.withLine(B0, lineFor({
+      pilot: 'ABC'
+    }, 'QRS'), NOW).doc, // l'appareil A affecte ABC
+    devB = A.withLine(B0, {
+      ...lineFor({
+        pilot: 'XYZ',
+        callsign: 'TEST32'
+      }, 'DEF'),
+      updated_at: new Date(NOW + MIN).toISOString()
+    }, NOW + MIN).doc; // l'appareil B affecte XYZ, une minute plus tard
+  const m = FD.mergeText(P, T(B0), T(devA), T(devB)),
+    merged = JSON.parse(m.text);
+  ck('deux appareils ajoutent chacun une ligne à la même base : LES DEUX lignes survivent (la règle keyed), la ligne d\'avant aussi, aucun conflit',
+    J(merged.assignments.map(l => `${l.mission}:${l.pilot}`).sort()) === J(['X-901A:ABC', 'X-905A:ABC', 'X-905A:XYZ']) && m.conflict ===
+    null, [merged.assignments.map(l => `${l.mission}:${l.pilot}`), m.conflict]);
+  const rec = FD.merge.record(B0, devA, devB, 'missions/x.json'),
+    recLines = rec.value.assignments.map(l => `${l.mission}:${l.pilot}`).sort();
+  ck('la contre-épreuve : avec « record » (la règle de missions/), une ligne est PERDUE — le tableau du plus récent gagne, l\'autre ligne part en conflit',
+    recLines.length === 2 && !recLines.includes('X-905A:ABC') && !!rec.lost, [recLines, !!rec.lost]);
+  const devA2 = A.withdrawn(B0, {
+      mission: 'X-901A',
+      pilot: 'ABC',
+      role: 'mission'
+    }, NOW).doc, // A retire ABC de X-901A
+    m2 = JSON.parse(FD.mergeText(P, T(B0), T(devA2), T(devB)).text);
+  ck('un retrait sur un appareil, un ajout sur l\'autre : les deux tiennent (X-901A annulée, XYZ ajouté)', m2.assignments.find(l => l
+    .mission === 'X-901A')?.status === 'annulée' && m2.assignments.some(l => l.pilot === 'XYZ'), m2.assignments);
+  const old = A.withLine(B0, lineFor({
+      callsign: 'TEST40'
+    }), NOW).doc,
+    newer = A.withLine(B0, {
+      ...lineFor({
+        callsign: 'TEST41'
+      }),
+      updated_at: new Date(NOW + 2 * MIN).toISOString()
+    }, NOW + 2 * MIN).doc,
+    m3 = FD.mergeText(P, T(B0), T(old), T(newer));
+  ck('la MÊME clé changée sur les deux appareils : la plus récente gagne, la perdante gardée en conflit (jamais perdue en silence)', JSON
+    .parse(m3.text).assignments.find(l => l.mission === ID)?.callsign === 'TEST41' && !!m3.conflict, m3.conflict);
+  ck('la clé de la règle du cadre est celle de keyOf et de tools/data_sync.py (« mission|pilot|role »)', A.keyOf(L) ===
+    `${L.mission}|${L.pilot}|${L.role}`);
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows: rows.filter(r => !r.ok)
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>
