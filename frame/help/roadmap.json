@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "49fa9cd",
+  "organisation": "4486fee",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -4208,52 +4208,57 @@
     {
      "id": "SOG-0467",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : les briques au « ＋ Tiroir » seulement, le déroulé en hauteur, moins de texte secondaire",
      "en": "Mission workshop: building blocks only at “＋ Drawer”, the sequence as a vertical list, less secondary text",
      "de": "Missionswerkstatt: Bausteine nur bei „＋ Schublade“, der Ablauf als senkrechte Liste, weniger Nebentext",
      "es": "Taller de misiones: los bloques solo en «＋ Cajón», la secuencia en vertical, menos texto secundario",
-     "rank": 441
+     "rank": 441,
+     "test": true
     },
     {
      "id": "SOG-0472",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : « Lieux » en tête de la colonne de droite, dans un cadre, avec une liste défilante où l'on choisit",
      "en": "Mission workshop: “Places” at the top of the right column, framed, with a scrolling list to pick from",
      "de": "Missionswerkstatt: „Orte“ oben in der rechten Spalte, im Rahmen, mit einer rollenden Auswahlliste",
      "es": "Taller de misiones: «Lugares» arriba de la columna derecha, enmarcado, con una lista desplazable para elegir",
-     "rank": 442
+     "rank": 442,
+     "test": true
     },
     {
      "id": "SOG-0479",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : le nom de l'outil « contour » (« draw its outline ») n'est pas clair",
      "en": "Mission workshop: the name of the outline tool (“draw its outline”) is unclear",
      "de": "Missionswerkstatt: Der Name des Umriss-Werkzeugs („draw its outline“) ist unklar",
      "es": "Taller de misiones: el nombre de la herramienta de contorno («draw its outline») no es claro",
-     "rank": 443
+     "rank": 443,
+     "test": true
     },
     {
      "id": "SOG-0480",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : un point tournant peut être n'importe quel point de la base aéronautique (LF485, REN…)",
      "en": "Mission workshop: a turning point can be any point of the aeronautical database (LF485, REN…)",
      "de": "Missionswerkstatt: Ein Wendepunkt kann jeder Punkt der Luftfahrtdatenbank sein (LF485, REN…)",
      "es": "Taller de misiones: un punto de viraje puede ser cualquier punto de la base aeronáutica (LF485, REN…)",
-     "rank": 444
+     "rank": 444,
+     "test": true
     },
     {
      "id": "SOG-0481",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : avec un point choisi, « ajouter » une cible ou un point tournant ajoute le point choisi",
      "en": "Mission workshop: with a point selected, adding a target or turning point adds the selected point",
      "de": "Missionswerkstatt: Mit gewähltem Punkt fügt „Ziel/Wendepunkt hinzufügen“ den gewählten Punkt hinzu",
      "es": "Taller de misiones: con un punto seleccionado, añadir un objetivo o punto de viraje añade el punto seleccionado",
-     "rank": 445
+     "rank": 445,
+     "test": true
     },
     {
      "id": "SOG-0482",
@@ -4278,11 +4283,12 @@
     {
      "id": "SOG-0495",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : un point nommé choisi (LFRF…) reste « à placer », sans coordonnées",
      "en": "Mission workshop: a chosen named point (LFRF…) stays “to place”, with no coordinates",
      "de": "Missionswerkstatt: Ein gewählter benannter Punkt (LFRF…) bleibt „zu platzieren“, ohne Koordinaten",
-     "es": "Taller de misiones: un punto con nombre elegido (LFRF…) queda «por situar», sin coordenadas"
+     "es": "Taller de misiones: un punto con nombre elegido (LFRF…) queda «por situar», sin coordenadas",
+     "test": true
     }
    ]
   },
@@ -4310,12 +4316,13 @@
     {
      "id": "SOG-0471",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : des icônes pour les outils et les fonds, la zone ronde ou en contour au choix, un troisième fond avec les noms",
      "en": "Mission workshop: icons for tools and backgrounds, round or outlined area by choice, a third background with names",
      "de": "Missionswerkstatt: Symbole für Werkzeuge und Hintergründe, Gebiet rund oder als Umriss, ein dritter Hintergrund mit Namen",
      "es": "Taller de misiones: iconos para herramientas y fondos, zona redonda o con contorno a elegir, un tercer fondo con nombres",
-     "rank": 448
+     "rank": 448,
+     "test": true
     },
     {
      "id": "SOG-0478",
@@ -4408,12 +4415,13 @@
     {
      "id": "SOG-0464",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : le profil vertical du trajet, sous la carte",
      "en": "Mission workshop: the vertical profile of the route, under the map",
      "de": "Missionswerkstatt: das Höhenprofil der Strecke unter der Karte",
      "es": "Taller de misiones: el perfil vertical del trayecto, bajo el mapa",
-     "rank": 451
+     "rank": 451,
+     "test": true
     }
    ]
   },
@@ -4450,12 +4458,13 @@
     {
      "id": "SOG-0444",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Atelier de missions : l'éditeur de la V3 prend la forme de la maquette (la carte, le déroulé, la fiche) — un seul outil d'auteur",
      "en": "Mission workshop: the V3 editor takes the shape of the mock-up (map, sequence, sheet) — one author tool",
      "de": "Missionswerkstatt: der V3-Editor nimmt die Form des Entwurfs an (Karte, Ablauf, Blatt) — ein einziges Autorenwerkzeug",
      "es": "Taller de misiones: el editor de la V3 toma la forma de la maqueta (mapa, secuencia, ficha) — una sola herramienta de autor",
-     "rank": 454
+     "rank": 454,
+     "test": true
     },
     {
      "id": "SOG-0445",
@@ -4514,11 +4523,12 @@
     {
      "id": "SOG-0488",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : saisir un indicatif propose les indicatifs et les types de la flotte connue",
      "en": "Missions: typing a callsign offers the callsigns and types of the known fleet",
      "de": "Missionen: Beim Eingeben eines Rufzeichens werden Rufzeichen und Typen der bekannten Flotte vorgeschlagen",
-     "es": "Misiones: al escribir un indicativo se proponen los indicativos y tipos de la flota conocida"
+     "es": "Misiones: al escribir un indicativo se proponen los indicativos y tipos de la flota conocida",
+     "test": true
     }
    ]
   },
@@ -4647,11 +4657,12 @@
     {
      "id": "SOG-0496",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : le tiroir 1 de M23 se voit avant que l'objet soit trouvé — un tiroir caché doit le rester jusqu'à son ouverture",
      "en": "Missions: drawer 1 of M23 shows before the object is found — a hidden drawer must stay hidden until it opens",
      "de": "Missionen: Schublade 1 von M23 ist sichtbar, bevor das Objekt gefunden ist – eine verborgene Schublade bleibt verborgen",
-     "es": "Misiones: el cajón 1 de M23 se ve antes de encontrar el objeto — un cajón oculto debe seguir oculto hasta abrirse"
+     "es": "Misiones: el cajón 1 de M23 se ve antes de encontrar el objeto — un cajón oculto debe seguir oculto hasta abrirse",
+     "test": true
     }
    ]
   },
