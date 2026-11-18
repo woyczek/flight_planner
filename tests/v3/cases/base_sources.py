@@ -1544,6 +1544,18 @@ def k96(c):
         c.eq(len(run(action='get')['items']), 500, 'at most 500 entries are read', what='cap')
 
 
+@case('K470', 'roadmap_build reports: a key with a trailing newline and a fiche in non-ASCII digits are dropped, a valid entry stays', 'K',
+      static=True, rule='SOG-0410: SIGNALEMENTS_FICHES.json is untrusted (10.36): keys ^SIG-[0-9a-f]{10}$ and fiches ^SOG-\d{4}$ match whole and in ASCII only (`$` accepts a final newline, `\d` accepts Arabic-Indic digits)')
+def k470(c):
+    sys.path.insert(0, str(c.root / 'tools'))
+    import roadmap_build as RB
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        items = {'SIG-abcdef0123\n': {'fiche': 'SOG-0001'}, 'SIG-abcdef0124': {'fiche': 'SOG-\u0663\u0663\u0663\u0663'},
+                 'SIG-abcdef0125': {'fiche': 'SOG-0002', 'answer': 'ok', 'refused': False}}
+        (Path(td) / 'SIGNALEMENTS_FICHES.json').write_text(json.dumps({'schema': 'sog-signalements-fiches/1', 'items': items}), encoding='utf-8')
+        c.eq(RB.read_reports(td), {'SIG-abcdef0125': {'fiche': 'SOG-0002', 'answer': 'ok', 'refused': False}}, 'only the valid entry stays', what='reports')
+
+
 @case('K123', 'recette/verdict: organisation/RECETTE.json read and replaced by the launcher (no organisation folder said, bad entries refused in a block, a refusal needs a comment, a hostile file filtered, atomic write)', 'K',
       static=True, rule='SOG-0167: the user\u2019s verdicts on the functional tests are written by the launcher: 1000 entries at most, ids SOG-nnnn, ok or ko, a comment of 2000 signs (required for a refusal; 600 before SOG-0303), an ISO UTC date; a file read is untrusted')
 def k123(c):

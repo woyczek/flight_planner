@@ -16,6 +16,11 @@ listed by ``--check`` so a helper translates it.
 
 SOG-0386: when ``<org>/CAPACITES.json`` exists, the document also carries a ``capabilities`` block (the overview at the head of the screen: whole, four groups, 14 functions, 116 capacities with their
 percentage); the translations of the capacities are read from the same ``roadmap_i18n.json`` under the key ``cap:<French phrase>``.
+
+SOG-0410: the document also carries a top-level ``reports`` block, copied from ``<org>/SIGNALEMENTS_FICHES.json``
+(``{"schema": "sog-signalements-fiches/1", "items": {"SIG-xxxxxxxxxx": {"fiche": "SOG-nnnn", "answer"?, "refused"?}}}``): the
+screen of the reports tells a pilot which fiche his report is linked to. The file is untrusted: absent, unreadable or of another
+schema gives ``{}``; keys, ids, answer (300 characters) and refused (a real boolean) are filtered, 2000 entries at most.
 """
 import argparse
 import datetime as dt
@@ -26,6 +31,8 @@ import re
 import subprocess
 import sys
 import unicodedata
+
+import safe_json
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -206,6 +213,36 @@ def read_priorities(org):
     return out
 
 
+REPORT_KEY = re.compile(r'SIG-[0-9a-f]{10}', re.A)
+REPORT_FICHE = re.compile(r'SOG-\d{4}', re.A)
+
+
+def read_reports(org):
+    """<org>/SIGNALEMENTS_FICHES.json -> {SIG-id: {fiche, answer?, refused?}}, sorted by key, bounded and filtered (untrusted file:
+    never raises; absent, unreadable or wrong schema gives {})."""
+    d, why = safe_json.read(os.path.join(org, 'SIGNALEMENTS_FICHES.json'), 2 * 1024 * 1024)
+    if why or not isinstance(d, dict) or d.get('schema') != 'sog-signalements-fiches/1' or not isinstance(d.get('items'), dict):
+        return {}
+    out = {}
+    for key, v in d['items'].items():
+        if not isinstance(key, str) or not REPORT_KEY.fullmatch(key) or not isinstance(v, dict):
+            continue
+        fiche = v.get('fiche')
+        if not isinstance(fiche, str) or not REPORT_FICHE.fullmatch(fiche):
+            continue
+        e = {'fiche': fiche}
+        if isinstance(v.get('answer'), str):
+            text = ' '.join(''.join(c if c.isprintable() or c.isspace() else ' ' for c in v['answer']).split())
+            if text:
+                e['answer'] = text[:300]
+        if isinstance(v.get('refused'), bool):
+            e['refused'] = v['refused']
+        out[key] = e
+        if len(out) >= 2000:
+            break
+    return dict(sorted(out.items()))
+
+
 def tests_to_do(org):
     """The fiches delivered whose recette test still waits for the user's verdict (state « todo » of recette_build): they are
     « in test », not yet « delivered » for him (SOG-0256). recette_build imports this module, hence the late import."""
@@ -377,6 +414,7 @@ def build(org, previous):
         'apps': [{'id': a, 'label': lab, 'state': st} for a, lab, st in APPS],
         'milestones': milestones,
         'lanes': all_lanes,
+        'reports': read_reports(org),
     }
     if caps:
         doc['capabilities'] = caps

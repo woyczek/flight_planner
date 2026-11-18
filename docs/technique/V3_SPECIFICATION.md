@@ -1918,6 +1918,7 @@ redesigned for touch at that point.
        hand; the integrator regenerates and commits it with every pushed lot and at the evening pass. The schema string
        stays `sog-roadmap/1` with `version: 2`, so the help build's check keeps working; the screen and the build read
        version 2 (apps, milestones, kind, id, milestone per item).
+       A top-level `reports` block (SOG-0410) copies `organisation/SIGNALEMENTS_FICHES.json` as `{ "SIG-xxxxxxxxxx": { fiche, answer?, refused? } }` (filtered, 2000 entries at most, `{}` when the file is absent or invalid) so the reports screen can name the fiche linked to a report.
        **The screen** (`#roadmap`, Maintenance › About › Roadmap, frame/help): the milestone strip first (the current one
        marked, a touch filters the kanban, one scrolling line on a phone), the tabs Features | Bugs with their counts, the
        filter All + the applications in the file's order, « Hide delivered » ticked by default and remembered per device
