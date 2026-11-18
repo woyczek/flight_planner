@@ -6620,6 +6620,32 @@ def a133(c):
 LOOP_TEXT = {'fr': 'Rechargements en série arrêtés', 'en': 'Chain of reloads stopped', 'de': 'Serie von Neuladungen angehalten', 'es': 'Serie de recargas detenida'}
 
 
+@case('A282', 'A reload the frame makes itself on a gesture (ctx.reloadApp: the language of Settings) is never taken for a loop: four in ten seconds, no alert; three reloads the frame did not make still stop with a message in the language of the device (SOG-0484)', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0484 (« Réglages »: the language choice reloads the page; at the third change in ten seconds the loop guard said « Rechargements en série arrêtés : not the frame (reload navigation) » — English, and wrong: the frame made them): ctx.reloadApp(cause) = selfNavigate(cause, () => location.reload()) notes the reload as the frame\'s own and noteLoad does not count it as a foreign one; the three FOREIGN reloads in ten seconds (the browser, another script) still stop the series, and the cause is said in the language of the device (T.loopForeign)')
+def a282(c):
+    c.page.add_init_script("Object.defineProperty(navigator, 'serviceWorker', { get: () => undefined })")
+    c.open('settings', docs=LEVEL3)
+    c.until("!!window.SogFrame && typeof window.SogFrame.reloadApp === 'function'", timeout=20000, what='the frame offers reloadApp')
+    for i in range(4):
+        with c.page.expect_navigation(wait_until='load', timeout=20000):
+            c.js("() => window.SogFrame.reloadApp('reload: language')")
+        c.until("!!window.SogFrame && typeof window.SogFrame.reloadApp === 'function'", timeout=20000, what=f'the page is back (reload {i + 1})')
+    c.wait(500)
+    r = c.js('() => window.SogFrame.reloads()')
+    c.eq([r['stopped'], c.count('#fNotes .f-note')], [None, 0], 'four reloads asked by the user in ten seconds: the series is not stopped, no alert', what='no alert')
+    # three reloads the frame did not make: still stopped, said in the language of the device
+    for i in range(3):
+        with c.page.expect_navigation(wait_until='load', timeout=20000):
+            c.js("() => location.reload()")
+        c.until("!!window.SogFrame", timeout=20000, what=f'the page is back (foreign reload {i + 1})')
+    c.until("!!document.querySelector('#fNotes .f-note')", timeout=10000, what='the series is stopped by a note')
+    text = norm(c.js("[...document.querySelectorAll('#fNotes .f-note span')].map(s => s.textContent).join(' | ')"))
+    want = {'fr': 'pas du cadre', 'en': 'not the frame', 'de': 'nicht vom Rahmen', 'es': 'no del marco'}[c.lang]
+    c.ok(norm(LOOP_TEXT[c.lang]) in text and norm(want) in text, text, 'three foreign reloads stop the series, the cause is said in the language of the device')
+    c.check_errors()
+
+
 @case('A134', 'A cause of reload that repeats does not reload more than twice: the third in ten seconds is refused, the page stays and says why (SOG-0209)', 'A',
       designs=('standard',), screens=False, night=False, langs4=True,
       rule='SOG-0209 (the user, 15:20: « refresh en boucle »): the reloads and redirects the frame makes itself (new version, redirect from one application to the other, moved screen) are noted in sessionStorage; the third in ten seconds without a gesture is refused — the page stays, a notification says « Chain of reloads stopped: <cause> », the cause is kept in the page diagnostic (page.reloads, window.SogFrame.reloads())')

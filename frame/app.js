@@ -689,6 +689,10 @@
     loop: ['Rechargements en série arrêtés : {c}', 'Chain of reloads stopped: {c}', 'Serie von Neuladungen angehalten: {c}',
       'Serie de recargas detenida: {c}'
     ],
+    // SOG-0484 : la cause quand les rechargements ne sont pas ceux du cadre (le navigateur, un autre script) : dite dans la langue de l'appareil
+    loopForeign: ['pas du cadre (navigation « {type} »)', 'not the frame ({type} navigation)', 'nicht vom Rahmen (Navigation „{type}“)',
+      'no del marco (navegación «{type}»)'
+    ],
     // ctx.needLauncher : la raison, dite pareil dans tous les modules (SOG-0208)
     need: {
       none: [
@@ -4884,6 +4888,7 @@
       FD,
       own,
       reload: loadDevice,
+      reloadApp, // SOG-0484 : recharger la page par le cadre (la langue de Réglages) : noté, jamais pris pour une boucle
       identity: () => identity,
       usages: () => usages,
       launcher: () => launcherHere,
@@ -5927,6 +5932,9 @@
   }
   /** Le cadre recharge ou redirige la page : go() est appelé, sauf pour un rechargement sans geste (auto) qui serait le troisième en dix secondes
    *  (ou après un arrêt) : rend false, la page reste. cause : technique, en anglais (« redirect: elsewhere missions → company »). */
+  /** Recharge la page sur le geste de l'utilisateur, par le cadre : noté comme un rechargement du cadre (le garde de boucle ne le prend pas pour un rechargement étranger, SOG-0484). */
+  const reloadApp = cause => selfNavigate(String(cause || 'reload: user'), () => location.reload());
+
   function selfNavigate(cause, go, {
     auto = false
   } = {}) {
@@ -6221,15 +6229,26 @@
       /* pas de chronologie de navigation */
     }
     bootedBySelf = navLog().some(e => e.k === 'self' && Date.now() - e.t < 5000);
+    // SOG-0484 : un rechargement que le cadre a lui-même demandé (le choix de langue de Réglages) est celui d'une note « self » de moins de cinq secondes PAS ENCORE prise par un chargement :
+    // chaque note ne sert qu'une fois (un rechargement du navigateur tout de suite après n'est pas le sien) ; le cadre a déjà sa propre garde (selfNavigate) pour ceux qu'il fait sans geste
+    const before = navLog(),
+      mine = [...before].reverse().find(e => e.k === 'self' && Date.now() - e.t < 5000 && !before.some(l => l.k === 'load' && l.of === e
+        .t));
     navNote({
       t: Date.now(),
       k: 'load',
-      type
+      type,
+      ...(mine ? {
+        own: true,
+        of: mine.t
+      } : {})
     });
     const log = navLog();
-    if (log.filter(e => e.k === 'load' && e.type === 'reload').length >= NAV_MAX) {
-      const own = [...log].reverse().find(e => e.k === 'self');
-      navStop(own ? own.cause : `not the frame (${type || 'unknown'} navigation)`);
+    if (log.filter(e => e.k === 'load' && e.type === 'reload' && !e.own).length >= NAV_MAX) {
+      navStop(t(T
+        .loopForeign, { // ceux que le cadre n'a pas demandés : le navigateur, un autre script (les siens ont leur garde, selfNavigate)
+          type: type || 'unknown'
+        }));
     }
   }
   /** Nouvelle version prête (le service worker l'a relue entière) : ready ; at : quand la note l'a dite la dernière fois. */
@@ -6309,6 +6328,7 @@
     net,
     syncNow,
     reloads: reloadsState,
+    reloadApp, // SOG-0484 (aussi donné à Réglages) : le rechargement demandé par un geste, noté par le cadre
     unsaved: unsavedNow, // SOG-0458 (diagnostic, tests)
     longTasks: longState,
     profiler: profilerState,
