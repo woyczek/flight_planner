@@ -364,7 +364,11 @@ The screen described here was changed by § 11.5 (SOG-0459): nothing of a closed
   closed drawer is awaited (a key judged in flight) AND the section is on screen AND the mission has other pilots; it stops when the
   drawer opens; it is **paused while the page is hidden** (a hidden tab, a sleeping device) and resumes with a pass at once when the
   page comes back. The pass is the module's background pass (`ctx.data.sync()` without `gesture`, never a gesture on a timer); its
-  cost is six passes a minute per waiting device — on a device without launcher, six requests a minute to the repository's API, under the ceiling of 80 a minute (hence ten seconds and not five).
+  cost is six passes a minute per waiting device — on a device without launcher, six passes a minute to the repository's API, under the ceiling of 80 a minute (hence ten seconds and not five).
+  A pass that finds nothing new costs ONE conditional request for the head of the branch (two when a reference repository is set:
+  `pullRefs` asks its head too), and a 304 does not count in the API's limit (`transport_github.js`, `head()`); a pass that finds
+  something reads the changed files besides. Passes never pile up: `sync()` is single-flight and holds the `sog-frame-sync` lock, so a
+  pass slower than ten seconds does not start the next one (Sécurisation, 18 Nov).
 - **« reçu ici à … »**: an opening of another pilot received more than a minute after the fact says so — « ouvert au passage de la
   zone par BBB, à 20:14Z — reçu ici à 20:16Z » (the device keeps the time it first saw it, `got` in the « seen » document). No delay
   is promised in figures on screen (the ergonomist, 17 Nov, 19 h 32).
