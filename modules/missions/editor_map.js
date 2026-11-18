@@ -29,7 +29,7 @@ import {
   previewLayer,
   tapPosition
 } from '../maps/lib/map_edit.js';
-import * as MS from '../../frame/lib/mission.js';
+import * as ED from './editor.js';
 
 /** Les bornes du dessin : le rayon d'une zone ronde (km : celles du lecteur), le nombre de côtés d'un rond, la marge du cadre (degrés,
  *  au moins), l'attente des tuiles puis du fond uni (ms), la marge du cadrage (px). */
@@ -84,28 +84,27 @@ export function circleRing(c, km, n = MAPB.ring) {
   return out;
 }
 
-/** Le contour d'une zone du fichier (ses sommets, sous l'un des trois noms que le lecteur accepte) : 3 à 100 sommets tous situés,
- *  sinon null. */
-function contourOf(zone) {
-  const z = zone && typeof zone === 'object' && !Array.isArray(zone) ? zone : null,
-    raw = z ? [z.points, z.polygon, z.vertices].find(Array.isArray) : null,
-    [lo, hi] = MS.DRAWER_BOUNDS?.vertices || [3, 100];
-  if (!raw || raw.length < lo || raw.length > hi) return null;
-  const ring = raw.map(p => p && typeof p === 'object' ? posOf(p.lat, p.lon) : null);
-  return ring.every(Boolean) ? ring : null;
+/** Le contour d'une ligne de zone : ses sommets ({ lat, lon }), lus bornés par ED.ringOf (3 à 100, tous situés) ; null sans contour
+ *  retouchable (une zone ronde, ou un contour que le fichier garde tel quel). */
+function contourOf(row) {
+  const ring = ED.ringOf(row);
+  return ring ? ring.map(([lat, lon]) => ({
+    lat,
+    lon
+  })) : null;
 }
 
-/** Ce que la carte dessine d'une mission (voir l'en-tête). `rows` : les lignes des Lieux que l'écran montre ; `zones` : les zones du
- *  FICHIER d'origine (une ligne de zone garde en `i` son rang dans le fichier : ses sommets y sont lus, ils ne se retouchent pas
- *  encore) ; `adPos(nom)` : la position que la base donne à un terrain dont le fichier ne dit pas la position (départ, arrivée), ou
+/** Ce que la carte dessine d'une mission (voir l'en-tête). `rows` : les lignes des Lieux que l'écran montre (une zone en contour y
+ *  porte ses sommets : `ring`) ; `adPos(nom)` : la position que la base donne à un terrain dont le fichier ne dit pas la position (départ, arrivée), ou
  *  null ; `path` : la route du départ ([{ lat, lon }…], celle de l'essai) ; `run` : l'essai des clés en cours (sa trace, son avion).
  *  L'identifiant d'un élément est « place:i », i étant le rang de sa ligne dans la liste des Lieux : toucher l'élément mène à elle.
  *  Une zone ronde est aussi un point en son centre (c'est par lui qu'elle se déplace) ; `sel` : le rang du lieu choisi — une zone
- *  ronde choisie montre la poignée de son rayon (« radius:i », à l'est de son rond). Un point qu'une poignée déplace porte `movable`.
+ *  ronde choisie montre la poignée de son rayon (« radius:i », à l'est de son rond) ; une zone en contour est un point en son milieu,
+ *  et choisie elle montre ses sommets (« vertex:i:k ») et le milieu de chaque côté (« mid:i:k » : il ajoute un sommet après le
+ *  sommet k). Un point qu'une poignée déplace porte `movable`.
  *  `labels` [{ id, lat, lon, text }] : l'étiquette de chaque lieu dessiné — son identifiant (à défaut le début de son nom : le code
  *  d'un terrain), vingt-quatre signes au plus —, sur son point, ou au milieu de son contour. */
 export function mapFeatures(rows, {
-  zones = [],
   adPos = null,
   path = [],
   run = null,
@@ -116,7 +115,6 @@ export function mapFeatures(rows, {
     polygons = [],
     labels = [],
     all = [],
-    file = Array.isArray(zones) ? zones : [],
     // l'étiquette d'un lieu : son identifiant ; à défaut le début de son nom (« XTST · Base Test » : le code du terrain)
     tag = r => String(r.id || String(r.name || '').split(' · ')[0] || '').slice(0, 24),
     middle = ring => ({
@@ -134,31 +132,57 @@ export function mapFeatures(rows, {
     }
     if (r.kind === 'zone') {
       const km = within(r.radius, ...MAPB.radiusKm),
-        ring = r.poly ? (Number.isInteger(r.i) && r.i >= 0 ? contourOf(file[r.i]) : null) : at && km !== null ? circleRing(at, km) :
-        null;
+        contour = r.poly ? contourOf(r) : null,
+        ring = contour || (!r.poly && at && km !== null ? circleRing(at, km) : null);
       if (ring) {
         polygons.push({
           id,
           rings: [ring]
         });
         all.push(...ring);
-        if (r.poly) { // un contour : ses sommets se retouchent au lot suivant ; son étiquette en son milieu
-          if (tag(r)) labels.push({
-            id,
-            ...middle(ring),
-            text: tag(r)
-          });
-          return;
-        }
-        if (sel === i) points.push({
-          id: `radius:${i}`,
-          lat: ring[ring.length / 4].lat,
-          lon: ring[ring.length / 4].lon,
-          label: '',
-          kind: 'handle',
-          center: at
-        });
       }
+      if (contour) {
+        // un contour : il se déplace d'un bloc par son milieu, où il porte son étiquette ; choisi, il montre ses sommets (des
+        // poignées) et, au milieu de chaque côté, le point qui en ajoute un
+        const mid = middle(contour);
+        points.push({
+          id,
+          ...mid,
+          label,
+          kind: 'zone',
+          movable: true
+        });
+        if (tag(r)) labels.push({
+          id,
+          ...mid,
+          text: tag(r)
+        });
+        if (sel === i) contour.forEach((v, k) => {
+          const w = contour[(k + 1) % contour.length];
+          points.push({
+            id: `mid:${i}:${k}`,
+            lat: +((v.lat + w.lat) / 2).toFixed(6),
+            lon: +((v.lon + w.lon) / 2).toFixed(6),
+            label: '',
+            kind: 'mid'
+          }, {
+            id: `vertex:${i}:${k}`,
+            lat: v.lat,
+            lon: v.lon,
+            label: '',
+            kind: 'vertex'
+          });
+        });
+        return;
+      }
+      if (ring && sel === i) points.push({
+        id: `radius:${i}`,
+        lat: ring[ring.length / 4].lat,
+        lon: ring[ring.length / 4].lon,
+        label: '',
+        kind: 'handle',
+        center: at
+      });
     }
     if (!at) return;
     points.push({
@@ -252,19 +276,38 @@ const plainStyle = bg => ({
 
 let LIVE = null; // la carte en vie : { owner, host, map, auth, pv, drag, tap, labels, mode, sel, cb, state, sig, box, dark, moved, … }
 
-/** Le rang de la ligne que désigne l'identifiant d'un élément (« place:12 », « radius:12 ») ; -1 sinon. */
-const rankOf = id => /^(place|radius):\d{1,3}$/.test(String(id || '')) ? +String(id).split(':')[1] : -1;
+/** Ce que désigne l'identifiant d'un élément : { what: 'place' | 'radius', i } (le rang de la ligne), { what: 'vertex' | 'mid', i, k }
+ *  (le rang du sommet) ; null pour tout autre texte. */
+function partsOf(id) {
+  const m = /^(?:(place|radius):(\d{1,3})|(vertex|mid):(\d{1,3}):(\d{1,3}))$/.exec(String(id || ''));
+  return !m ? null : m[1] ? {
+    what: m[1],
+    i: +m[2]
+  } : {
+    what: m[3],
+    i: +m[4],
+    k: +m[5]
+  };
+}
+/** Le rang de la ligne que désigne l'identifiant d'un élément ; -1 sinon. */
+const rankOf = id => partsOf(id)?.i ?? -1;
 
 /** Les poignées que le socle d'édition peut saisir (dragHandles), relues à chaque toucher : en Sélection seulement, les points qu'un
- *  geste déplace (une zone ronde par son centre) et la poignée du rayon de la zone choisie. */
+ *  geste déplace (une zone ronde par son centre, un contour par son milieu), la poignée du rayon de la zone ronde choisie, les
+ *  sommets et les milieux des côtés du contour choisi. */
 function handlesOf(L) {
   if (L.mode !== 'select') return [];
-  return (L.feats?.points || []).filter(p => p.movable || p.kind === 'handle').map(p => p.kind === 'handle' ? {
+  return (L.feats?.points || []).filter(p => p.movable || ['handle', 'vertex', 'mid'].includes(p.kind)).map(p => p.kind === 'handle' ? {
     id: p.id,
     lat: p.lat,
     lon: p.lon,
     kind: 'radius',
     center: p.center
+  } : p.kind === 'vertex' || p.kind === 'mid' ? {
+    id: p.id,
+    lat: p.lat,
+    lon: p.lon,
+    kind: 'vertex'
   } : {
     id: p.id,
     lat: p.lat,
@@ -348,6 +391,40 @@ function spread(L) {
   }
 }
 
+/** Un geste fini sur une poignée, rendu à l'écran : un lieu touché est choisi, déplacé s'il a bougé ; la poignée d'un rayon le règle ; un
+ *  sommet touché est choisi (l'écran propose « Retirer ce sommet »), déplacé s'il a bougé ; le milieu d'un côté, touché ou tiré, pose
+ *  un sommet là où le geste finit. */
+function done(L, id, moved, at) {
+  const t = partsOf(id),
+    cb = L.cb;
+  if (!t) return;
+  if (t.what === 'mid') return cb?.onInsert?.({
+    i: t.i,
+    k: t.k,
+    lat: at.lat,
+    lon: at.lon
+  });
+  if (t.what === 'vertex') return moved ? cb?.onVertex?.({
+    i: t.i,
+    k: t.k,
+    lat: at.lat,
+    lon: at.lon
+  }) : cb?.onVertexPick?.({
+    i: t.i,
+    k: t.k
+  });
+  if (!moved) return cb?.onPick?.(t.i);
+  if (t.what === 'radius') return cb?.onRadius?.({
+    i: t.i,
+    km: at.meters / 1000
+  });
+  cb?.onMove?.({
+    i: t.i,
+    lat: at.lat,
+    lon: at.lon
+  });
+}
+
 /** Branche les gestes du socle d'édition sur la carte en vie (une fois, au démarrage) : le retour pendant un glisser, le geste fini
  *  rendu à l'écran. Rien n'est retouché ici. */
 function gestures(L, map, o) {
@@ -375,20 +452,9 @@ function gestures(L, map, o) {
     },
     onEnd: m => {
       L.pv.clear();
-      const i = rankOf(m.id);
-      if (i < 0) return;
-      if (!m.moved) return L.cb?.onPick?.(i);
-      if (m.kind === 'radius') L.cb?.onRadius?.({
-        i,
-        km: m.meters / 1000
-      });
-      else L.cb?.onMove?.({
-        i,
-        lat: m.lat,
-        lon: m.lon
-      });
+      done(L, m.id, m.moved, m);
     },
-    onTap: h => L.cb?.onPick?.(rankOf(h.id)),
+    onTap: h => done(L, h.id, false, h),
     onCancel: () => L.pv.clear()
   });
   L.tap = tapPosition(map, L.host, {
@@ -505,7 +571,8 @@ async function start(L, o) {
  *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg, preview }), onState(état),
  *  alive() ; mode ('select' : la Sélection ; 'point', 'zone', 'object' : un outil de pose ; 'view' : la carte ne fait que montrer),
  *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
- *  onRadius({ i, km }), onPose({ lat, lon, spanKm }). Sans élément situé (pas de cadre) : pas de carte. */
+ *  onRadius({ i, km }), onPose({ lat, lon, spanKm }), et pour un contour onVertex({ i, k, lat, lon }), onInsert({ i, k, lat, lon }),
+ *  onVertexPick({ i, k }). Sans élément situé (pas de cadre) : pas de carte. */
 export function show(slot, feats, o) {
   if (LIVE && LIVE.owner !== o.owner) stop();
   if (!slot || !feats?.box) return;

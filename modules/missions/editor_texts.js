@@ -380,6 +380,33 @@ export const EDTX = {
   atHint_fixed: ['{name} : ce lieu ne se déplace pas sur la carte.', '{name}: this place is not moved on the map.',
     '{name}: dieser Ort wird nicht auf der Karte verschoben.', '{name}: este lugar no se mueve en el mapa.'
   ],
+  atHint_contour: ['{name} : son milieu la déplace ; un sommet se déplace ; le point entre deux sommets en ajoute un.',
+    '{name}: its middle moves it; a vertex is dragged; the point between two vertices adds one.',
+    '{name}: die Mitte verschiebt sie; ein Eckpunkt wird gezogen; der Punkt zwischen zwei Eckpunkten fügt einen hinzu.',
+    '{name}: su centro la mueve; un vértice se arrastra; el punto entre dos vértices añade uno.'
+  ],
+  atHint_vertex: ['Sommet {k} de {name}.', 'Vertex {k} of {name}.', 'Eckpunkt {k} von {name}.', 'Vértice {k} de {name}.'],
+  atHint_drawFor: ['Touchez la carte : ce qui est posé là sera la clé du tiroir {n}.',
+    'Touch the map: what is posed there will be the key of drawer {n}.',
+    'Berühren Sie die Karte: was dort gesetzt wird, ist der Schlüssel der Schublade {n}.',
+    'Toque el mapa: lo que se ponga ahí será la llave del cajón {n}.'
+  ],
+  atVertexDel: ['Retirer ce sommet', 'Remove this vertex', 'Diesen Eckpunkt entfernen', 'Quitar este vértice'],
+  atVertexMin: ['Un contour garde au moins trois sommets.', 'An outline keeps at least three vertices.',
+    'Ein Umriss behält mindestens drei Eckpunkte.', 'Un contorno conserva al menos tres vértices.'
+  ],
+  plToContour: ['Tracer son contour', 'Draw its outline', 'Umriss zeichnen', 'Trazar su contorno'],
+  plToRound: ['La rendre ronde', 'Make it round', 'Rund machen', 'Hacerla redonda'],
+  plContour: ['Contour de {n} sommets : il se retouche sur la carte.', 'Outline of {n} vertices: it is edited on the map.',
+    'Umriss mit {n} Eckpunkten: er wird auf der Karte bearbeitet.', 'Contorno de {n} vértices: se edita en el mapa.'
+  ],
+  plShapeNeeds: ['Placez d\'abord la zone et donnez-lui un rayon : son contour part de son rond.',
+    'Place the zone and give it a radius first: its outline starts from its circle.',
+    'Setzen Sie zuerst die Zone und geben Sie ihr einen Radius: ihr Umriss geht von ihrem Kreis aus.',
+    'Sitúe primero la zona y dele un radio: su contorno parte de su círculo.'
+  ],
+  dwDraw: ['Dessiner sur la carte', 'Draw on the map', 'Auf der Karte zeichnen', 'Dibujar en el mapa'],
+  dwPose: ['Poser sur la carte', 'Pose on the map', 'Auf der Karte setzen', 'Poner en el mapa'],
   atHint_point: ['Touchez la carte : le point tournant est posé là.', 'Touch the map: the turning point is posed there.',
     'Berühren Sie die Karte: der Wendepunkt wird dort gesetzt.', 'Toque el mapa: el punto de viraje se pone ahí.'
   ],

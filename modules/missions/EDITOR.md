@@ -540,6 +540,32 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   `{ lat, lon }`; a zone made round again loses the key. Nothing changed, nothing rewritten (N96 compares the documents).
 - N94 follows: a contour is no longer « refused » by `movePlace`.
 
+### 7 quindecies. P2, third brick: the contour of a zone on the map, « Dessiner sur la carte » (18 Nov 2026; SOG-0444 lot P2; noreg N97; the pure part: § 7 quaterdecies)
+
+- **The shape is chosen in the sheet of the zone** (one button, so the sheet keeps its number of elements): « Tracer son contour » for
+  a round zone — six vertices at its radius (`toContour`); a zone without a position or a radius says so in a notification — and
+  « La rendre ronde » for a contour (`toRound`). The sheet of a contour says « Contour de n sommets : il se retouche sur la carte »
+  in place of the fields of the centre and of the radius; a contour the file writes in a way that cannot be read stays « kept as it
+  is », without the button.
+- **On the map, the contour chosen shows its handles**: its vertices (`vertex:i:k`), and in the middle of each side the point that
+  adds a vertex (`mid:i:k`, another colour). A vertex is dragged (`moveVertex`); a touch or a drag on the point of a side poses a
+  vertex where the gesture ends (`insertVertex`); the contour is moved as a block by the handle at its middle, where its label is
+  (`movePlace`). **A vertex touched, moved or posed is chosen**: the line names it (« Sommet 3 de ZONE-2 ») and **« Retirer ce
+  sommet »** is shown beside the line — a button, never a long press alone; under three vertices it is refused, with a notification.
+- All of these are gestures of the map: « Annuler le geste » gives the rows of before; **after an undo the place stays chosen** when
+  it is still at its rank (same identifier, same kind).
+- **A row of the Lieux opened by « Modifier » is the place chosen on the map** (closed: none): the list and the map say the same
+  place.
+- **« Dessiner sur la carte »** (a zone) and **« Poser sur la carte »** (an object), in the sheet of a drawer, under the list of the
+  zones or objects of the mission, when the map is there: the tool is taken in hand, the map unfolds, the line says « ce qui est posé
+  là sera la clé du tiroir n »; what is posed becomes the key of that drawer (`trigger_zone` / `trigger_object` by identifier) and
+  its sheet stays. Taking a tool by hand drops this.
+- **A defect corrected in passing**: after « Enregistrer », the group « Lieux » left unfolded showed an EMPTY list until it was
+  folded and reopened — its rows are now read again from the saved file (N97).
+- **Not automatic**: the view does not zoom on a zone when it is chosen — a small zone in a wide mission shows its handles close
+  together until the author zooms in.
+- **Not done**: Tracé and the landmarks of AeroDB (next push), « Poser l'avion ici », « Vue du pilote ».
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

@@ -4341,9 +4341,9 @@ _MAPF_JS = """async () => {
 def n92(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     r = c.js(_MAPF_JS)
-    c.eq(r['points'], [['dep', 'dep', 45, 1], ['arr', 'arr', 44, 2], ['target:TARGET', 'target', 44.6, 1.4], ['zone:ZONE-1', 'zone', 44.8, 1.2], ['zone:ZONE-3', 'zone', 44.2, 1.9],
+    c.eq(r['points'], [['dep', 'dep', 45, 1], ['arr', 'arr', 44, 2], ['target:TARGET', 'target', 44.6, 1.4], ['zone:ZONE-1', 'zone', 44.8, 1.2], ['zone:ZONE-2', 'zone', 44.45, 1.6], ['zone:ZONE-3', 'zone', 44.2, 1.9],
                        ['pt:PT1', 'pt', 44.8, 1.2], ['object:OBJ-1', 'object', 44.6, 1.42], ['plane', 'plane', 44.85, 1.15]],
-         'every located place is a point of its kind: the arrival at the position of the base; a round zone is also a point at its centre (it is moved by it); a '
+         'every located place is a point of its kind: the arrival at the position of the base; a round zone is also a point at its centre, a contour at its middle (they are moved by it); a '
          'zone whose radius is out of bounds is its centre alone; a point at '
          'latitude 95 and a point without a position are not drawn; the aircraft of the trial at the end of its trail', what='the points')
     c.eq(r['labels'], ['OBJ-1', 60], 'a label is the identifier, else the name cut at sixty signs', what='the labels')
@@ -4726,3 +4726,115 @@ def n96(c):
     c.eq(r['refused'], [True] * 11, 'refused, the SAME rows: a vertex that does not exist, a latitude of 91, texts, a round zone, an unreadable contour, a contour that '
          'would leave the bounds…', what='refused gestures')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the rows and the document read are not touched')
+
+
+
+_EDSHAPE = f"""(i) => {{ const f = document.querySelector('{E} [data-edplaces] [data-plform="' + i + '"]'); return f ? [f.querySelector('[data-plshape]')?.dataset.plshape || 'round',
+  (f.querySelector('[data-plshape]')?.textContent || '').trim(), (f.querySelector('[data-do=edzoneshape]')?.textContent || '').trim(), !!f.querySelector('[data-f=radius]')] : null }}"""
+_EDVERTS = "(i) => ((window.__edMap ? " + _EDMAP_IDS + " : () => [])() || []).filter(x => x.startsWith('vertex:' + i + ':')).length"
+
+
+@case('N97', 'Missions › the workshop, the contour of a zone on the map: in the sheet of a round zone « Tracer son contour » makes of it a '
+      'contour of six vertices; chosen, the contour shows its vertices and, between two of them, the point that adds one; a vertex is '
+      'dragged; a vertex touched is chosen and « Retirer ce sommet » is offered; the contour is moved by its middle; « Annuler le geste » '
+      'gives the contour back; the file saved carries the vertices; « La rendre ronde » brings the circle back; a row opened in the '
+      'Lieux is the place chosen on the map; from the sheet of a drawer « Dessiner sur la carte » poses a zone that becomes its key',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, third brick (modules/missions/EDITOR.md § 2: « its shape is chosen in its sheet, and a contour is drawn by its '
+      'vertices… a vertex touched offers Retirer ce sommet (three at least) », § 5: « Dessiner sur la carte creates a zone of the mission… '
+      'that this drawer cites », § 7 quindecies; the pure part: N96)')
+def n97(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    shape = lambda i: [norm(x) if isinstance(x, str) else x for x in c.js(_EDSHAPE, i)]  # noqa: E731
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
+    # a row opened in the Lieux is the place chosen on the map
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="3"]')
+    c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen on the map by its row')
+    c.eq([shape(3), hint(), 'radius:3' in c.js(_EDMAP_IDS, None)], [['round', '', T('plToContour'), True], T('atHint_round', name='ZONE-1 · Secteur nord'), True],
+         'the row of ZONE-1 open: a round zone, with its radius, the handle of its radius on the map, and « Tracer son contour »', what='a round zone')
+    # round → contour: six vertices, and the points that add one
+    c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
+    c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='the six vertices on the map')
+    ids = c.js(_EDMAP_IDS, None)
+    c.eq([shape(3), hint(), sum(1 for x in ids if x.startswith('mid:3:')), 'radius:3' in ids, c.js(_EDTOOL_STATE)[4][2]],
+         [['contour', T('plContour', n=6), T('plToRound'), False], T('atHint_contour', name='ZONE-1 · Secteur nord'), 6, False, False],
+         'the zone is a contour of six vertices: its sheet says so (no radius field any more), the map shows the vertices and the six points between them; it can be undone',
+         what='round to contour')
+    # a vertex is dragged; touched, it is chosen and « Retirer ce sommet » is offered
+    c.ok(c.js(f"document.querySelector('{_EDMAP} [data-vertexdel]').hidden") is True, 'shown', '« Retirer ce sommet » is not shown while no vertex is chosen')
+    _ed_drag(c, [44.84497, 1.2], [44.95, 1.2])
+    c.until(f"(({_EDMAP_IDS})([44.95, 1.2]) || []).includes('vertex:3:0')", timeout=8000, what='the first vertex moved')
+    c.eq([hint(), c.js(f"document.querySelector('{_EDMAP} [data-vertexdel]').hidden"), norm(c.text(f'{_EDMAP} [data-vertexdel]'))],
+         [T('atHint_vertex', k=1, name='ZONE-1 · Secteur nord'), False, T('atVertexDel')], 'the vertex moved stays chosen: the line names it, « Retirer ce sommet » is offered',
+         what='a vertex moved')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N97_1280_contour.png')
+    # the point between two vertices adds one; « Retirer ce sommet » removes the chosen one
+    mid = c.js(f"(() => {{ const f = window.__edMap.queryRenderedFeatures().find(x => x.properties.fid === 'mid:3:2'); return [f.geometry.coordinates[1], f.geometry.coordinates[0]] }})()")
+    c.page.mouse.click(*c.js(_EDMAP_XY, mid))
+    c.until(f"({_EDVERTS})(3) === 7", timeout=8000, what='a seventh vertex')
+    c.eq([shape(3)[1], hint()], [T('plContour', n=7), T('atHint_vertex', k=4, name='ZONE-1 · Secteur nord')], 'a touch on the point between two vertices added one there, chosen',
+         what='a vertex added')
+    c.tap(f'{_EDMAP} [data-vertexdel]')
+    c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='six vertices again')
+    c.ok(c.js(f"document.querySelector('{_EDMAP} [data-vertexdel]').hidden") is True and hint() == T('atHint_contour', name='ZONE-1 · Secteur nord'), hint(),
+         '« Retirer ce sommet » removed it; no vertex is chosen any more')
+    # the contour is moved as a block by its middle; « Annuler le geste » gives it back
+    where = c.js(f"(() => {{ const f = window.__edMap.queryRenderedFeatures().find(x => x.properties.fid === 'vertex:3:3'); return [f.geometry.coordinates[1], f.geometry.coordinates[0]] }})()")
+    lbl = c.js(f"(() => {{ const m = window.__edMap, r = m.getContainer().getBoundingClientRect(), e = document.querySelector('{_EDMAP} [data-maplbl=\"place:3\"]').getBoundingClientRect(); const p = m.unproject([e.left - r.left - 7, e.bottom - r.top + 7]); return [p.lat, p.lng] }})()")
+    _ed_drag(c, lbl, [lbl[0] - 0.3, lbl[1] - 0.25])
+    c.until(f"!(({_EDMAP_IDS})({where}) || []).includes('vertex:3:3')", timeout=8000, what='the contour moved away')
+    c.ok(c.js(_EDVERTS, 3) == 6 and 'vertex:3:3' in c.js(_EDMAP_IDS, [where[0] - 0.3, where[1] - 0.25]), c.js(_EDMAP_IDS, [where[0] - 0.3, where[1] - 0.25]),
+         'dragged by its middle, the contour moved as a block: every vertex followed')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"(({_EDMAP_IDS})({where}) || []).includes('vertex:3:3')", timeout=8000, what='the contour back')
+    # saved: the file carries the vertices
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(600)
+    text = c.js(_TEXT_OF, path) or ''
+    c.ok('points:' in text and '44.95' in text and 'radius_km: 5' in text, text[text.find('zones'):text.find('zones') + 400], 'the file saved carries the vertices of ZONE-1 under « points » (its radius stays, for the way back)')
+    # contour → round (the note of the save is removed and the row brought back in view first)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.ok(c.count(f'{E} [data-edplaces] [data-do="edplace"]') >= 7, c.count(f'{E} [data-edplaces] [data-do="edplace"]'),
+         'after the save the group « Lieux », left unfolded, still lists the places (it used to be empty until folded and reopened)')
+    c.js(f"document.querySelector('{E} [data-edplaces] [data-do=\"edplace\"][data-i=\"3\"]').scrollIntoView({{block: 'center'}})")
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="3"]')
+    c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen again')
+    c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
+    c.until(f"({_EDVERTS})(3) === 0 && (({_EDMAP_IDS})() || []).includes('radius:3')", timeout=8000, what='the zone round again')
+    c.eq(shape(3), ['round', '', T('plToContour'), True], '« La rendre ronde »: the circle is back, with its radius field', what='contour to round')
+    # from the sheet of a drawer: « Dessiner sur la carte » poses a zone that becomes its key
+    c.tap(f'{E} [data-atflow] [data-sel="B"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of drawer 1')
+    c.eq(c.js(f"document.querySelector('{_DW} [data-f=zone]').value"), 'ZONE-1', 'drawer 1 cites ZONE-1', what='the key of drawer 1')
+    c.tap(f'{_DW} [data-do="eddrdraw"][data-kind="zone"]')
+    c.eq([c.js(_EDTOOL_STATE)[2][:2], hint()], [['zone', 'true'], T('atHint_drawFor', n=1)], '« Dessiner sur la carte »: the tool Zone in hand, the line says for which drawer',
+         what='drawing for a drawer')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.3]))
+    c.until(f"document.querySelector('{_DW} [data-f=zone]')?.value === 'ZONE-2'", timeout=8000, what='the zone posed is the key of drawer 1')
+    c.ok(c.js(f"document.querySelector('{_DW}').dataset.drawer") == 'B' and c.js(_EDTOOL_STATE)[0][:2] == ['select', 'true'] and c.js(_EDSEL) == 'ZONE-2', c.js(_EDSEL),
+         'the zone posed on the map is the key of drawer 1; the sheet of the drawer stays; the tool went back to Sélection')
+    # on a phone
+    c.tap(f'{E} [data-atflow] [data-sel="start"]')
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="3"]') if c.count(f'{E} [data-edplaces] [data-plform="3"]') == 0 else None
+    c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
+    c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='a contour again')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N97_390_contour.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

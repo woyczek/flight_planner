@@ -15,6 +15,10 @@
 // Les outils (deuxième brique) : au-dessus de la carte, Sélection, Point, Zone, Objet (s.ed.tool ; pris en main SUR PLACE), « Annuler le
 // geste » (s.ed.mapUndo : createUndo du socle, les états des lignes des Lieux d'avant chaque geste de la carte) et « Recentrer » ; le
 // lieu choisi (s.ed.mapSel, son rang) ; les gestes finis de la carte retouchent les lignes par ED.newPlace, movePlace, placeRadius.
+// Le contour (troisième brique) : la forme d'une zone dans sa fiche (« Tracer son contour » / « La rendre ronde » : ED.toContour,
+// toRound) ; les sommets du contour choisi sur la carte (ED.moveVertex, insertVertex ; s.ed.mapVertex : le sommet choisi, pour
+// « Retirer ce sommet ») ; « Dessiner sur la carte » depuis la fiche d'un tiroir (s.ed.drawFor : sa lettre — ce qui est posé devient sa
+// clé) ; une ligne des Lieux ouverte est le lieu choisi sur la carte.
 //
 // L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (lot P1 : le croquis des
 // lieux, sans outil) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
@@ -93,7 +97,10 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmaptools button{min-height:44px}
 [data-module="missions"] .ms-atmaptools button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="missions"] .ms-atmaptools .ms-atmapend{margin-left:auto}
-[data-module="missions"] .ms-atmaphint{margin:0 0 6px;min-height:1.5em}
+[data-module="missions"] .ms-atmaphintrow{display:flex;align-items:center;gap:8px;margin:0 0 6px;min-height:44px}
+[data-module="missions"] .ms-atmaphint{margin:0;flex:1 1 auto}
+[data-module="missions"] .ms-atmaphintrow>button{flex:0 0 auto;min-height:44px}
+[data-module="missions"] .ms-atmaphintrow>button[hidden]{display:none}
 [data-module="missions"] .ms-atmaplbl{pointer-events:none;background:color-mix(in srgb,var(--sog-bg,#fff) 82%,transparent);color:var(--sog-text,#222);padding:0 4px;font-size:.78em;line-height:1.5;white-space:nowrap;max-width:16em;overflow:hidden;text-overflow:ellipsis}
 [data-module="missions"] .ms-atmaplbl[data-mapsel]{background:var(--sog-bg,#fff);border:1px solid var(--sog-accent);padding:1px 6px;font-size:.85em;z-index:1}
 [data-module="missions"] .ms-atflowrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity}
@@ -419,10 +426,10 @@ function edPlacesHtml(s) {
       }
       return `<div class="ms-plform" data-plform="${i}">${fixed ? '' : `<div class="f-row">${field(i, 'id', TX.plId, r.id, ' maxlength="40"')}${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row"><label class="f-field"><span>${esc(s.tt(TX.plKind))}</span><select data-k="edplace" data-i="${i}" data-f="zkind"><option value=""></option>${[...new Set(['search', 'mission', 'exclusion', r.zkind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.zkind ? ' selected' : ''}>${esc(zk(v))}</option>`).join('')}</select></label>${field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}</div>` : fixed ? '' : field(i, 'role', TX.plRole, r.role, ' maxlength="200"')}
-        ${r.kind === 'zone' && r.poly ? `<p class="f-muted">${esc(s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
+        ${r.kind === 'zone' && r.poly ? `<p class="f-muted" data-plshape="${r.ring ? 'contour' : 'kept'}">${esc(r.ring ? s.tt(EDTX.plContour, { n: r.poly }) : s.tt(TX.plPolyKept, { n: r.poly }))}</p>` : `<div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>`}
         ${r.kind === 'zone' ? `<div class="f-row">${r.poly ? '' : field(i, 'radius', TX.plRadius, r.radius, num)}${field(i, 'tot', TX.plTotF, r.tot, ' inputmode="numeric" maxlength="5"')}</div>` : ''}
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
-        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
+        <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${r.kind === 'zone' && (!r.poly || r.ring) ? `<button type="button" data-do="edzoneshape" data-i="${i}">${esc(s.tt(r.poly ? EDTX.plToRound : EDTX.plToContour))}</button>` : ''}${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
     },
     id = e.cadre.id.trim().toUpperCase();
   return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
@@ -577,6 +584,22 @@ const edMapTool = e => e.trial?.on ? 'view' : ['point', 'zone', 'object'].includ
 /** Le nom d'un lieu comme la carte et sa ligne le disent : « PT2 · Point deux ». */
 const edPlaceName = r => [r?.id, r?.name].filter(Boolean).join(' · ').slice(0, 60);
 
+/** Le rang du sommet choisi du contour choisi (s.ed.mapVertex), -1 sinon. */
+const edMapVertex = e => {
+  const r = (e.places || [])[edMapSel(e)];
+  return r?.kind === 'zone' && r.ring && Number.isInteger(e.mapVertex) && e.mapVertex >= 0 && e.mapVertex < r.poly ? e.mapVertex : -1;
+};
+/** Le tiroir pour lequel on pose une zone ou un objet sur la carte (« Dessiner sur la carte », s.ed.drawFor : sa lettre) : sa ligne
+ *  avec son rang, ou null. */
+const edDrawFor = e => {
+  const rows = e.drawFor ? edDrawers(e) : [],
+    at = rows.findIndex(r => r.id === e.drawFor);
+  return at < 0 ? null : {
+    row: rows[at],
+    rank: at + 1
+  };
+};
+
 /** La ligne sous les outils : ce que fait l'outil en main, ou le lieu choisi et ce qu'un geste en fait — sans carte, que les lieux se
  *  placent par leurs champs. Un texte (posé par textContent, jamais redessiné avec un bouton). */
 function edMapHint(s) {
@@ -584,8 +607,17 @@ function edMapHint(s) {
     tool = edMapTool(e),
     r = (e.places || [])[edMapSel(e)];
   if (!EM.stateOf(e)) return s.tt(EDTX.atHint_none);
+  if (['zone', 'object'].includes(tool) && edDrawFor(e)) return s.tt(EDTX.atHint_drawFor, {
+    n: edDrawFor(e).rank
+  });
   if (tool !== 'select') return s.tt(EDTX[`atHint_${tool}`]);
   if (!r) return s.tt(EDTX.atHint_select);
+  if (r.kind === 'zone' && r.ring) return edMapVertex(e) >= 0 ? s.tt(EDTX.atHint_vertex, {
+    k: edMapVertex(e) + 1,
+    name: edPlaceName(r)
+  }) : s.tt(EDTX.atHint_contour, {
+    name: edPlaceName(r)
+  });
   return s.tt(!ED.MOVABLE.includes(r.kind) || (r.kind === 'zone' && r.poly) ? EDTX.atHint_fixed : r.kind === 'zone' && r.radius ? EDTX
     .atHint_round : EDTX.atHint_chosen, {
       name: edPlaceName(r)
@@ -604,7 +636,7 @@ function edMapHtml(s, doc, run = null) {
     off = !live || tool === 'view',
     btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
 }
 
 /** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
@@ -636,6 +668,8 @@ function edMapLook(s) {
       },
       tokens: {
         handle: t('--sog-warn'),
+        vertex: accent,
+        mid: muted,
         default: muted,
         line: accent,
         fill: t('--sog-ok'),
@@ -675,6 +709,8 @@ function edMapShow(s) {
         if (t) b.setAttribute('aria-pressed', String(tool === t));
       }
       if (hint && hint.textContent !== text) hint.textContent = text;
+      const del = q('[data-vertexdel]');
+      if (del) del.hidden = !(edMapVertex(e) >= 0 && tool === 'select');
     };
   if (!slot || !e.mapFeats) return mark();
   e.mapLook ||= edMapLook(s);
@@ -688,6 +724,9 @@ function edMapShow(s) {
     onPick: i => edMapPick(s, e, i),
     onMove: m => edMapGesture(s, e, rows => ED.movePlace(rows, m.i, m), m.i),
     onRadius: m => edMapGesture(s, e, rows => ED.placeRadius(rows, m.i, m.km), m.i),
+    onVertex: m => edMapGesture(s, e, rows => ED.moveVertex(rows, m.i, m.k, m), m.i, m.k),
+    onInsert: m => edMapGesture(s, e, rows => ED.insertVertex(rows, m.i, m.k, m), m.i, m.k + 1),
+    onVertexPick: m => edMapVertexPick(s, e, m),
     onPose: p => edMapPose(s, e, p),
     onState: () => state() === s && s.ed === e && mark(),
     alive: () => state() === s && s.ed === e
@@ -706,6 +745,7 @@ function edPlaces(e) {
 function edMapPick(s, e, i) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
   const rows = edPlaces(e);
+  e.mapVertex = -1;
   if (!Number.isInteger(i) || !rows[i]) {
     if (edMapSel(e) < 0) return;
     e.mapSel = -1;
@@ -722,10 +762,17 @@ function edMapPick(s, e, i) {
   });
 }
 
-/** Un geste de la carte qui retouche les lignes (déplacer un lieu, régler un rayon) : `change(lignes)` rend de NOUVELLES lignes, ou les
+/** Un sommet touché du contour choisi : il est choisi (sur place : la ligne le dit, « Retirer ce sommet » se montre). */
+function edMapVertexPick(s, e, m) {
+  if (state() !== s || s.ed !== e || e.trial?.on || edMapSel(e) !== m.i) return;
+  e.mapVertex = m.k;
+  edMapShow(s);
+}
+
+/** Un geste de la carte qui retouche les lignes (déplacer un lieu ou un sommet, régler un rayon, poser un sommet) : `change(lignes)` rend de NOUVELLES lignes, ou les
  *  mêmes quand le geste est refusé (ED.movePlace, ED.placeRadius : alors rien ne change, la carte revient à ce qu'elle montrait).
  *  L'état d'avant est gardé pour « Annuler le geste » ; le lieu reste choisi. */
-function edMapGesture(s, e, change, i) {
+function edMapGesture(s, e, change, i, vertex = -1) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
   const before = edPlaces(e),
     after = change(before);
@@ -733,6 +780,7 @@ function edMapGesture(s, e, change, i) {
   (e.mapUndo ||= createUndo(20)).push(before);
   e.places = after;
   e.mapSel = i;
+  e.mapVertex = vertex; // le sommet déplacé ou posé reste choisi (« Retirer ce sommet » le concerne)
   e.placeAsk = -1;
   if (e.placeEdit !== i) e.placeEdit = -1; // une autre ligne ouverte se referme : ses champs ne diraient plus ce que la carte montre
   draw(s);
@@ -764,7 +812,16 @@ function edMapPose(s, e, p) {
   }
   (e.mapUndo ||= createUndo(20)).push(before);
   e.places = made.rows;
-  edMapPick(s, e, made.at);
+  const forDrawer = ['zone', 'object'].includes(kind) ? edDrawFor(e) : null;
+  e.drawFor = '';
+  if (!forDrawer) return edMapPick(s, e, made.at);
+  // « Dessiner sur la carte » depuis la fiche d'un tiroir : ce qui vient d'être posé devient sa clé ; on reste sur sa fiche
+  e.sel = forDrawer.row.id;
+  const r = edDrawerRow(e);
+  if (r) r[kind] = made.rows[made.at].id;
+  e.mapSel = made.at;
+  e.mapVertex = -1;
+  draw(s);
 }
 
 /** Après chaque dessin de la page (module.js l'appelle à la fin de son dessin, et au démontage avec null) : dans l'atelier, la carte
@@ -925,14 +982,16 @@ function edDrawerHtml(s, doc) {
     check = (f, text, on) => `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${f}"${on ? ' checked' : ''}><span>${esc(s.tt(text))}</span></label>`,
     // rien à choisir : la fiche le dit et mène aux Lieux, où la zone ou l'objet se crée
     none = text => `<p class="f-muted" data-dwnone>${esc(s.tt(text))} <button type="button" class="f-linkbtn" data-do="eddrplaces">${esc(s.tt(EDTX.dwToPlaces))}</button></p>`,
+    // avec la carte : la zone ou l'objet se pose aussi sur elle, et devient la clé de ce tiroir
+    onMap = (kind, text) => EM.stateOf(e) ? `<p class="ms-dwdraw"><button type="button" class="f-linkbtn" data-do="eddrdraw" data-kind="${kind}">${esc(s.tt(text))}</button></p>` : '',
     num = ' inputmode="decimal" maxlength="8"',
     fallback = `${field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"')}<p class="f-muted">${esc(s.tt(EDTX.dwFallbackHint))}</p>`,
     zones = of('zone'),
     objects = of('object'),
     keys = [...DR.KEYS, ...(r.key === 'kept' ? ['kept'] : [])],
     body = r.key === 'time' ? `<div class="f-row">${select('point', EDTX.dwPoint, r.point || 'ORIGIN', [['ORIGIN', s.tt(EDTX.dwAtTakeoff)], ...points])}${field('delay', EDTX.dwDelay, r.delay, ' inputmode="numeric" maxlength="4"')}</div>` :
-    r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${check('shown', EDTX.dwShown, r.shown !== false)}${fallback}` :
-    r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${fallback}` :
+    r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${onMap('zone', EDTX.dwDraw)}${check('shown', EDTX.dwShown, r.shown !== false)}${fallback}` :
+    r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${onMap('object', EDTX.dwPose)}${fallback}` :
     r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
         <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
         <div class="f-field"><span>${esc(s.tt(EDTX.dwStops))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
@@ -1434,12 +1493,16 @@ async function edSave(s) {
       base: doc,
       cadre: ED.cadreOf(doc),
       teams: null,
-      places: null,
+      // le groupe « Lieux » resté déplié garde sa liste : ses lignes sont relues du fichier enregistré (sans cela la liste se vidait
+      // jusqu'à ce qu'on replie et rouvre le groupe)
+      places: e.step === 'places' ? ED.placesOf(doc) : null,
       placeEdit: -1,
       // la carte : plus de lieu choisi, plus de geste à annuler (un état d'avant désignerait les rangs de l'ancien fichier)
       mapSel: -1,
+      mapVertex: -1,
       mapUndo: null,
       tool: 'select',
+      drawFor: '',
       story: null,
       risks: null,
       riskEdit: -1,
@@ -1605,14 +1668,59 @@ function edClickDo(s, b) {
       return EM.fit();
     case 'edtool': // un outil de la carte pris en main : sur place (le bouton pressé n'est pas redessiné) ; le même outil repris le lâche
       s.ed.tool = ['point', 'zone', 'object'].includes(b.dataset.tool) && s.ed.tool !== b.dataset.tool ? b.dataset.tool : 'select';
+      s.ed.drawFor = ''; // un outil pris à la main ne pose plus pour un tiroir
       return edMapShow(s);
-    case 'edmapundo': { // « Annuler le geste » : les lignes des Lieux d'avant le dernier geste de la carte
-      const rows = s.ed.mapUndo?.undo();
+    case 'eddrdraw': { // « Dessiner sur la carte » (une zone) ou « Poser sur la carte » (un objet) depuis la fiche d'un tiroir : l'outil
+      // en main, la carte dépliée ; ce qui sera posé deviendra la clé de ce tiroir
+      const e = s.ed,
+        kind = b.dataset.kind === 'object' ? 'object' : 'zone';
+      if (!EM.stateOf(e) || !edDrawerRow(e)) return;
+      e.tool = kind;
+      e.drawFor = e.sel;
+      e.mapOpen = true;
+      draw(s);
+      return s.el.querySelector('[data-atmap]')?.scrollIntoView?.({
+        block: 'nearest'
+      });
+    }
+    case 'edvertexdel': { // « Retirer ce sommet » : le sommet choisi du contour choisi (jamais sous trois)
+      const e = s.ed,
+        before = edPlaces(e),
+        after = ED.removeVertex(before, edMapSel(e), edMapVertex(e));
+      if (after === before) {
+        s.ctx.notify?.(s.tt(EDTX.atVertexMin), 'warn');
+        return edMapShow(s);
+      }
+      (e.mapUndo ||= createUndo(20)).push(before);
+      e.places = after;
+      e.mapVertex = -1;
+      return draw(s);
+    }
+    case 'edzoneshape': { // la forme d'une zone, dans sa fiche : ronde → un contour de six sommets à son rayon ; contour → ronde
+      const e = s.ed,
+        i = +b.dataset.i,
+        before = edPlaces(e),
+        after = before[i]?.poly ? ED.toRound(before, i) : ED.toContour(before, i);
+      if (after === before) return s.ctx.notify?.(s.tt(EDTX.plShapeNeeds), 'warn');
+      (e.mapUndo ||= createUndo(20)).push(before);
+      e.places = after;
+      e.mapSel = i;
+      e.mapVertex = -1;
+      return draw(s);
+    }
+    case 'edmapundo': { // « Annuler le geste » : les lignes des Lieux d'avant le dernier geste de la carte ; le lieu choisi le reste
+      // quand il existe encore à son rang (le même identifiant, la même sorte), sinon plus aucun
+      const e = s.ed,
+        was = (e.places || [])[edMapSel(e)],
+        rows = e.mapUndo?.undo();
       if (!rows) return edMapShow(s);
-      s.ed.places = rows;
-      s.ed.mapSel = -1;
-      s.ed.placeEdit = -1;
-      s.ed.placeAsk = -1;
+      const now = rows[edMapSel(e)],
+        same = !!was && !!now && now.kind === was.kind && now.id === was.id;
+      e.places = rows;
+      if (!same) e.mapSel = -1;
+      if (!same || e.placeEdit !== e.mapSel) e.placeEdit = -1;
+      e.mapVertex = -1;
+      e.placeAsk = -1;
       return draw(s);
     }
     case 'edstep':
@@ -1635,6 +1743,9 @@ function edClickDo(s, b) {
     case 'edplace':
       s.ed.placeAsk = -1;
       s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
+      // la liste et la carte disent le même lieu : la ligne ouverte est le lieu choisi sur la carte (refermée : plus aucun)
+      s.ed.mapSel = s.ed.placeEdit;
+      s.ed.mapVertex = -1;
       return draw(s);
     case 'edeventadd':
       s.ed.events = [...(s.ed.events || ED.eventsOf(s.ed.base)), {
