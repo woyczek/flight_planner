@@ -16479,6 +16479,37 @@ def k476(c):
     c.eq((len(re.findall(r"NOTES_FILE", src)) >= 2, len(re.findall(r"open\([^)]*(FICHES_FILE|NOTES_FILE)[^)]*'[wax]b?'", src)), len(re.findall(r"os\.replace\(", src))), (True, 0, 2), 'the code replaces files in two places only (the reports file of signalement/ajouter, the notes file of _write_notes) and opens neither the links file nor the notes file by hand', what='one writer')
 
 
+@case('K477', 'Launcher jobs (SOG-0410): the list and the sheet of « Mes signalements » (signalement/lister, signalement/detail) are pure READS that run BESIDE a running job (not refused 409 « a job is already running » while a base build runs); noter and commenter WRITE and stay alone',
+      'K', static=True,
+      rule='SOG-0410 + SOG-0384: the list is opened at any moment, often while the launcher builds the base; a refused read would say « the list did not answer ». lister and detail only read (never the last work: READ_ONLY, never the place: PARALLEL); noter and commenter write the notes file: one writer, never beside another job')
+def k477(c):
+    import sys
+    import threading
+    import time
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import regen_jobs as RJ
+    c.ok(all(k in RJ.PARALLEL and k in RJ.READ_ONLY for k in (('signalement', 'lister'), ('signalement', 'detail'))), str(sorted(RJ.PARALLEL)), 'lister and detail are in PARALLEL and in READ_ONLY')
+    c.ok(not any(k in RJ.PARALLEL or k in RJ.READ_ONLY for k in (('signalement', 'noter'), ('signalement', 'commenter'), ('signalement', 'ajouter'))), str(sorted(RJ.PARALLEL)), 'the verbs that write (noter, commenter, ajouter) are neither parallel nor read-only')
+    gate = threading.Event()
+    slow = lambda job, args, ctx: (gate.wait(10), {'ok': True})[1]
+    fast = lambda job, args, ctx: {'ok': True, 'read': 1}
+    reg = {('base', 'build'): (slow, lambda a: {}), ('signalement', 'lister'): (fast, lambda a: {}), ('signalement', 'detail'): (fast, lambda a: {}), ('signalement', 'noter'): (fast, lambda a: {})}
+    jobs = RJ.Jobs(reg, {})
+    a = jobs.start('base', 'build', {})
+    c.ok(a.get('ok'), str(a), 'a job that writes starts')
+    r1, r2, w = jobs.start('signalement', 'lister', {}), jobs.start('signalement', 'detail', {}), jobs.start('signalement', 'noter', {})
+    c.eq((bool(r1.get('ok')), bool(r2.get('ok'))), (True, True), 'the list and the sheet start BESIDE the running job', what='reads start')
+    c.eq((w.get('ok'), w.get('status'), w.get('reason')), (False, 409, 'busy'), 'noter, which writes, is refused while another job runs', what='writer refused')
+    deadline = time.time() + 5
+    while time.time() < deadline and not all(jobs.view(i['job']).get('state') == 'done' for i in (r1, r2)):
+        time.sleep(0.02)
+    c.eq([jobs.view(i['job']).get('state') for i in (r1, r2)], ['done', 'done'], 'the reads answer while the writer still runs', what='reads answer')
+    gate.set()
+    deadline = time.time() + 5
+    while time.time() < deadline and jobs.running():
+        time.sleep(0.02)
+
+
 @case('K360', 'Route engine, SOG-0468 (3): the great-circle distance is written ONCE (`route_engine/geo.py`) with its guard `min(1, …)` — for two nearly antipodal points `h` exceeds 1 by a rounding (85 000 of 2 million such pairs) and only the guard keeps the argument of asin in its domain — and the engine, the FRA graph, the NAT refresh, the route matrix and the UK Mil reader call it; the results are those of the old formula',
       'K', static=True,
       rule='SOG-0468 (3) (the relay, 18 Nov: « route_engine/geo.py et la garde min(1, …), défaut latent compris »). Measured: the formula was written nine times in Python (six of them in the files of the route engine and its tools), six without the guard: for a pair of points near the antipode, `h` = 1.0000000000000002; the square root of that still rounds to 1.0, so no ValueError was ever reached in 2 million trials — the missing guard is a hardening, not a crash found (said so to the relay). engine.nm, which had the guard, and the copies of fra (precomputed sine and cosine) give the same numbers as before; the three copies of other sessions (launch, proc_arc, proc_geometry) are signalled to them. The pair below is invented (no data of the base).')
