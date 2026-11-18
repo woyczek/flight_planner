@@ -5340,3 +5340,42 @@ def n103(c):
     c.eq(r['opened'], [[], [], [], [], [], ['B'], ['B', 'C']], 'the open drawers are a bounded input: only the letters of the drawers count, once each, in order', what='the open drawers')
     c.eq(r['plain'], [True, True, None, None], 'a mission without a drawer has no secret: it is returned as it is, its target with it; without a mission, null', what='no drawer')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the mission read is not touched')
+
+# SOG-0448, the search: the index reads the PUBLIC part of a mission (the Glacier mission of N103, invented): a place that only a closed
+# drawer cites never finds the mission; the public places still do; a mission without a drawer is indexed as it is
+_PV_SEARCH_JS = """async () => { const MS = await import('/frame/lib/mission.js'), SE = await import('/modules/missions/search.js');
+  const doc = { schema: 'helo-xp-mission', mission: { id: 'X-002A', type: 'REG' }, title: 'Glacier', cruise_speed_kt: 100,
+    origin: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 }, destination: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 },
+    target: { id: 'TARGET', name: 'Randonneur', lat: 45.31, lon: 1.42 },
+    turning_points: [{ id: 'PT1', name: 'Col', lat: 45.2, lon: 1.2 }, { id: 'PT2', name: 'Refuge', lat: 45.35, lon: 1.5 }, { id: 'PT3', name: 'Nulle part', lat: 45.1, lon: 1.1 }],
+    rendezvous: [{ id: 'RDV-1', name: 'Secours au sol', lat: 45.33, lon: 1.44 }],
+    zones: [{ id: 'ZONE-1', name: 'Vallee', centre: { lat: 45.25, lon: 1.3 }, radius_km: 6 }, { id: 'ZONE-2', name: 'Moraine', centre: { lat: 45.31, lon: 1.42 }, radius_km: 2 }],
+    route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'La vallee', trigger_zone: 'ZONE-1', fallback_delay_min: 30, route_order: ['PT2'] },
+      { id: 'C', title: 'Le glacier', trigger_zone: 'ZONE-2', zone_shown: false, fallback_delay_min: 60, route_order: ['TARGET', 'RDV-1'] }] };
+  const m = MS.readMission(doc), before = JSON.stringify(m), F = SE.missionFields(m), find = w => SE.where(F, SE.fold(w));
+  const plain = MS.readMission({ ...doc, phases: undefined }), P = SE.missionFields(plain);
+  return { hidden: ['refuge', 'randonneur', 'secours au sol', 'moraine', 'nulle part'].map(w => [w, find(w)]),
+    shown: ['col', 'vallee', 'glacier', 'base test'].map(w => [w, find(w)]),
+    plain: ['refuge', 'randonneur', 'moraine'].map(w => [w, SE.where(P, SE.fold(w))]),
+    untouched: JSON.stringify(m) === before, hostile: [null, 'x', 7, [], {}].map(x => SE.missionFields(x).length) } }"""
+
+
+@case('N32', 'Missions › search, the secret of a closed drawer (pure, no screen): the index reads the public part of a mission (pilotView, no '
+      'drawer open) — a place only a closed drawer cites (the target, a point of its onward route, a rendezvous, its hidden zone) never '
+      'finds the mission; the places of the visible part still do; a mission without a drawer is indexed as it is; the mission read is '
+      'not touched', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0448 (Features SOG, 18 Nov 2026: the search index read the whole mission, closed drawers included; the ergonomist: « une '
+      'vraie fuite » — the index reads pilotView(m, []), for every mission, no following of the openings per device in this version: a '
+      'word of a drawer already open does not find the mission, said in modules/missions/DECISIONS.md); an invented mission (N103)')
+def n32(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_PV_SEARCH_JS)
+    c.eq(r['hidden'], [['refuge', []], ['randonneur', []], ['secours au sol', []], ['moraine', []], ['nulle part', []]],
+         'a place only a closed drawer cites (or nobody) never finds the mission', what='hidden')
+    c.eq(r['shown'], [['col', ['places']], ['vallee', ['places']], ['glacier', ['title']], ['base test', ['places']]],
+         'the visible part is still searched: its route, the zone a closed drawer shows, the title', what='shown')
+    c.eq(r['plain'], [['refuge', ['places']], ['randonneur', ['places']], ['moraine', ['places']]], 'a mission without a drawer: every place',
+         what='plain')
+    c.eq([r['untouched'], r['hostile']], [True, [0, 0, 0, 0, 0]], 'the mission read is not touched; no hostile input throws',
+         what='untouched')

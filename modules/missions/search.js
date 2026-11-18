@@ -6,11 +6,17 @@
 //     (« Clermont-Ferrand » = « clermont ferrand »).
 //   missionFields(mission) → [[clé, texte replié]] : les champs d'une mission lue (MS.readMission) — titre, résumé, description,
 //     objectifs, risques (danger, conséquence, parade), lieux (origine, destination, cible, points, rendez-vous, zones), notes, indicatifs,
-//     types ; chaque champ borné à FIELD_MAX signes, le tout à MISSION_MAX (le fichier est écrit par n'importe quel pilote).
+//     types ; chaque champ borné à FIELD_MAX signes, le tout à MISSION_MAX (le fichier est écrit par n'importe quel pilote). SOG-0448 :
+//     de la PARTIE PUBLIQUE seule (pilotView du lecteur, aucun tiroir ouvert, échec fermé) — un lieu que seul un tiroir fermé cite ne
+//     fait jamais sortir la mission ; limite voulue : un mot d'un tiroir déjà ouvert sur cet appareil ne la trouve pas non plus.
 //   rowFields(row) → [[clé, texte replié]] : la ligne du registre seule (mission non lue sur l'appareil) — les champs que lisait la
 //     recherche d'avant (identifiant, ancien identifiant, titre, opération, famille, activité, terrains, indicatifs, types).
 //   where(fields, q) → les clés des champs où se trouve la recherche repliée `q` (déjà passée par fold), dans l'ordre de KEYS ; [] sinon.
 //   KEYS : l'ordre des champs, celui des mots de « dans : … ».
+
+import {
+  pilotView
+} from '../../frame/lib/mission.js'; // ce que le pilote peut voir : une seule règle, celle du lecteur (SOG-0448)
 
 const FIELD_MAX = 4000,
   MISSION_MAX = 16000;
@@ -42,7 +48,11 @@ function bounded(pairs) {
 }
 
 /** Les champs d'une mission lue (voir l'en-tête). */
-export function missionFields(m) {
+export function missionFields(mission) {
+  // SOG-0448 : la partie publique, comme pour une mission qu'on feuillette (mine: false — aucun tiroir tenu pour ouvert, quoi qu'on dise)
+  const m = mission && typeof mission === 'object' ? pilotView(mission, [], {
+    mine: false
+  }) : null;
   if (!m || typeof m !== 'object') return [];
   const arr = v => Array.isArray(v) ? v : [],
     name = p => p && typeof p === 'object' ? [p.name, p.icao, p.id] : [];
