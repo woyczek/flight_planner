@@ -1805,12 +1805,16 @@ export function pilotRows(doc, rows, n) {
 
 /** Les lieux d'une mission À TIROIRS que rien ne cite (l'ergonome, 18 nov. 2026) : ceux que le pilote ne verrait pas même tous les
  *  tiroirs ouverts — ni la route, ni une carte, ni un tiroir ne les nomme (un objet : il n'est la clé d'aucun tiroir). La règle du
- *  lecteur les lui cache pour toujours : l'auteur doit le savoir. → leurs identifiants (un lieu sans identifiant ne peut être cité
- *  par rien : il a son propre mot ailleurs). Une mission sans tiroir n'a pas de secret : aucun. */
+ *  lecteur les lui cache pour toujours : l'auteur doit le savoir. → [{ id, kind }] : l'identifiant et la sorte du lieu (zone, object,
+ *  pt, rdv, target : « À compléter » accorde son mot à la sorte ; un lieu sans identifiant ne peut être cité par rien : il a son
+ *  propre mot ailleurs). Une mission sans tiroir n'a pas de secret : aucun. */
 export function uncited(doc) {
   const rows = placesOf(doc),
     kept = pilotRows(doc, rows, DRAWERS_ALL);
-  return kept === rows ? [] : rows.filter((r, i) => kept[i] === null).map(r => cut(r.id, 40)).filter(Boolean);
+  return kept === rows ? [] : rows.filter((r, i) => kept[i] === null).map(r => ({
+    id: cut(r.id, 40),
+    kind: r.kind
+  })).filter(u => u.id);
 }
 /** Plus de tiroirs qu'une mission n'en porte : « tous ouverts ». */
 const DRAWERS_ALL = 64;
@@ -1862,8 +1866,9 @@ export function todo(doc) {
     name
   });
   // SOG-0448 : dans une mission à tiroirs, un lieu que rien ne cite — le pilote ne le verra jamais ; nommé, trois au plus
-  for (const id of uncited(d).slice(0, 3)) add('places', 'uncited', {
-    id
+  // le mot s'accorde à la sorte du lieu : clé uncited_zone, uncited_object, uncited_pt, uncited_rdv, uncited_target
+  for (const u of uncited(d).slice(0, 3)) add('places', `uncited_${['zone', 'object', 'rdv', 'target'].includes(u.kind) ? u.kind : 'pt'}`, {
+    id: u.id
   });
   // le récit d'une liaison est facultatif (décision du 13 nov.)
   if (!link && !String(d.summary ?? '').trim()) add('story', 'summary');

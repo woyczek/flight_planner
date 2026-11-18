@@ -676,8 +676,9 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - **The guard for the author** (the ergonomist, 18 Nov; noreg N107): the reader's rule is the safe one — what nothing cites stays
   hidden (otherwise a zone laid on the target would leak) — so, in a mission with drawers, a place, a zone or an object that
   NOTHING cites (neither the route, nor a map, nor a drawer; an object: the key of no drawer) is never shown to the pilot, even with
-  every drawer open. « À compléter » names it, under the Lieux: « RDV-1 n'est cité par rien : le pilote ne le verra jamais », three
-  at most (`ED.uncited(doc)`, read by `ED.todo`). The rule lives once, in `editor.js`: `ED.pilotRows(doc, rows, n)`, which the
+  every drawer open. « À compléter » names it, under the Lieux, with the word of its kind — « La zone Z1 n'est citée nulle part : le pilote ne la verra pas »,
+  « L'objet … », « Le point … », « Le rendez-vous … », « La cible … » (the key `uncited_<kind>`) — three
+  at most (`ED.uncited(doc)` gives `[{ id, kind }]`, read by `ED.todo`). The rule lives once, in `editor.js`: `ED.pilotRows(doc, rows, n)`, which the
   map's view calls too (`edPilotRows`). A mission without drawers has no secret: nothing is said.
 - The sheet on the right is NOT filtered: it is the author's. « Ce que le pilote voit » of a drawer (§ 7 octies) stays the
   preview of the drawer itself.

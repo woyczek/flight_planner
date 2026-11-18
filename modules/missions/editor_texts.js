@@ -69,8 +69,30 @@ export const EDTX = {
     'Schublade {name} hat ihren Schlüssel nicht mehr (sie öffnet sich nur von Hand oder zu ihrer Ersatzzeit)',
     'el cajón {name} ya no tiene su llave (solo se abre a mano o a su hora de reserva)'
   ],
-  todo_uncited: ['{id} n\'est cité par rien : le pilote ne le verra jamais', '{id} is cited by nothing: the pilot will never see it',
-    '{id} wird von nichts genannt: der Pilot wird es nie sehen', '{id} no está citado por nada: el piloto no lo verá nunca'
+  todo_uncited_zone: ['La zone {id} n\'est citée nulle part : le pilote ne la verra pas',
+    'Zone {id} is cited nowhere: the pilot will not see it',
+    'Die Zone {id} wird nirgends genannt: der Pilot wird sie nicht sehen',
+    'La zona {id} no se cita en ninguna parte: el piloto no la verá'
+  ],
+  todo_uncited_object: ['L\'objet {id} n\'est cité nulle part : le pilote ne le verra pas',
+    'Object {id} is cited nowhere: the pilot will not see it',
+    'Das Objekt {id} wird nirgends genannt: der Pilot wird es nicht sehen',
+    'El objeto {id} no se cita en ninguna parte: el piloto no lo verá'
+  ],
+  todo_uncited_pt: ['Le point {id} n\'est cité nulle part : le pilote ne le verra pas',
+    'Point {id} is cited nowhere: the pilot will not see it',
+    'Der Punkt {id} wird nirgends genannt: der Pilot wird ihn nicht sehen',
+    'El punto {id} no se cita en ninguna parte: el piloto no lo verá'
+  ],
+  todo_uncited_rdv: ['Le rendez-vous {id} n\'est cité nulle part : le pilote ne le verra pas',
+    'Rendezvous {id} is cited nowhere: the pilot will not see it',
+    'Der Treffpunkt {id} wird nirgends genannt: der Pilot wird ihn nicht sehen',
+    'El punto de encuentro {id} no se cita en ninguna parte: el piloto no lo verá'
+  ],
+  todo_uncited_target: ['La cible {id} n\'est citée nulle part : le pilote ne la verra pas',
+    'Target {id} is cited nowhere: the pilot will not see it',
+    'Das Ziel {id} wird nirgends genannt: der Pilot wird es nicht sehen',
+    'El objetivo {id} no se cita en ninguna parte: el piloto no lo verá'
   ],
   todo_mapNoCentre: ['la carte {name} n\'a plus de centre', 'map {name} no longer has a centre',
     'die Karte {name} hat keinen Mittelpunkt mehr', 'el mapa {name} ya no tiene centro'

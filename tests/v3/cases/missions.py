@@ -5941,13 +5941,13 @@ def n106(c):
 _UNCITED_JS = """async () => { const ED = await import('/modules/missions/editor.js'); let threw = '';
   for (const h of [null, 'x', 7, [], { rendezvous: 'x' }, { drawers: 'x', rendezvous: [null, 7] }]) try { if (ED.uncited(h).length) threw += 'said' } catch (e) { threw += String(e) }
   const plain = { title: 'T', origin: { icao: 'XTST', lat: 45, lon: 1 }, destination: { icao: 'XTSU', lat: 44, lon: 2 }, rendezvous: [{ id: 'RDV-1', name: 'x', lat: 44.5, lon: 1.5 }] };
-  return { threw, plain: ED.uncited(plain), todo: ED.todo(plain).filter(t => t.key === 'uncited').length, rows: ED.pilotRows(plain, ED.placesOf(plain), 0).length } }"""
-_UNCITED = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo=uncited]')].map(x => x.textContent.trim())"
+  return { threw, plain: ED.uncited(plain), todo: ED.todo(plain).filter(t => t.key.startsWith('uncited')).length, rows: ED.pilotRows(plain, ED.placesOf(plain), 0).length } }"""
+_UNCITED = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo^=uncited]')].map(x => x.textContent.trim())"
 
 
 @case('N107', 'Missions › the workshop, « À compléter » names a place that nothing cites: in a mission with drawers, a place, a zone or an '
       'object that neither the route, nor a map, nor a drawer cites would never be seen by the pilot (the rule of the reader hides it '
-      'for ever) — the list says « RDV-1 n\'est cité par rien : le pilote ne le verra jamais », three such places at most; once cited '
+      'for ever) — the list says it with the word of the kind — « Le rendez-vous RDV-1 n\'est cité nulle part : le pilote ne le verra pas », « L\'objet… », « La zone… », « Le point… » —, three such places at most; once cited '
       '(put in the route) it is no longer said; a mission without drawers has no secret: nothing is said',
       'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0448, lot B, the guard for the author (the ergonomist, 18 Nov: « un lieu, une zone ou un objet que rien ne cite est dit '
@@ -5978,10 +5978,10 @@ def n107(c):
     c.eq(said(), [], 'every place of the mission is cited (the route, a drawer): nothing is said', what='at the opening')
     # a rendez-vous nothing cites, then an object that is the key of no drawer
     rdv = add('rdv', 8)
-    c.ok(len(said()) == 1 and T('todo_uncited', id=rdv) in said()[0] and rdv != '', [rdv, said()],
+    c.ok(len(said()) == 1 and T('todo_uncited_rdv', id=rdv) in said()[0] and rdv != '', [rdv, said()],
          'a rendez-vous that nothing cites is NAMED in « À compléter », by its identifier: the pilot will never see it')
     obj = add('object', 9)
-    c.ok(len(said()) == 2 and T('todo_uncited', id=obj) in said()[1], [obj, said()], 'an object that is the key of no drawer is said too')
+    c.ok(len(said()) == 2 and T('todo_uncited_object', id=obj) in said()[1], [obj, said()], 'an object that is the key of no drawer is said too')
     c.tap(f'{E} [data-do="edtodo"]')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N107_1280_uncited.png')
@@ -5990,12 +5990,14 @@ def n107(c):
     c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
     c.page.select_option(f'{E} [data-edroute] [data-k=edroute]', rdv)
     c.until(f"({_UNCITED}).length === 1", timeout=8000, what='the rendez-vous cited by the route')
-    c.ok(T('todo_uncited', id=obj) in said()[0] and all(rdv + ' ' not in x for x in said()), said(), 'put in the route of the departure, the rendez-vous is cited: only the object is still said')
+    c.ok(T('todo_uncited_object', id=obj) in said()[0] and all(rdv + ' ' not in x for x in said()), said(), 'put in the route of the departure, the rendez-vous is cited: only the object is still said')
     # a zone that nothing cites is named too (the ergonomist, 18 Nov: « cette zone n'est citée nulle part : le pilote ne la verra pas »)
     zone = add('zone', 10)
-    c.ok(len(said()) == 2 and any(T('todo_uncited', id=zone) in x for x in said()), [zone, said()], 'a zone that neither a map nor a drawer cites is named: the pilot will never see it')
+    c.ok(len(said()) == 2 and any(T('todo_uncited_zone', id=zone) in x for x in said()), [zone, said()], 'a zone that neither a map nor a drawer cites is named: the pilot will never see it')
     # three at most
-    more = [add('pt', 11), add('rdv', 12)]
+    pt = add('pt', 11)
+    c.ok(len(said()) == 3 and any(T('todo_uncited_pt', id=pt) in x for x in said()), [pt, said()], 'a turning point that nothing cites is named with its own word: « Le point … »')
+    more = [pt, add('rdv', 12)]
     c.ok(len(said()) == 3 and len(set(ids())) == 12, [said(), more, ids()], 'four places nothing cites: three are named, not more (the list stays short)')
     ed_leave(c)
     c.js(_REG_CLEAR)

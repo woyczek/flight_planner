@@ -707,7 +707,7 @@ function edFlowHtml(s, doc, run = null) {
  *  (MS.pilotView : UNE règle, celle de la fiche, du Détail et de la Carte) — le départ et l'arrivée toujours, la cible si elle est
  *  montrée, un objet seulement quand le tiroir dont il est la clé est ouvert, les autres lieux par leur identifiant. Une ligne non
  *  gardée devient null : les rangs des autres ne bougent pas. En vue de l'auteur, ou pour une mission sans tiroir : toutes. La règle
- *  est dans editor.js (ED.pilotRows) : « À compléter » y lit aussi les lieux que rien ne cite (ED.uncited). */
+ *  est dans editor.js (ED.pilotRows) : « À compléter » y lit aussi les lieux que rien ne cite (ED.uncited : le mot s'accorde à la sorte du lieu). */
 function edPilotRows(e, doc, rows) {
   const n = edMapStage(e);
   return n < 0 ? rows : ED.pilotRows(doc, rows, n);
