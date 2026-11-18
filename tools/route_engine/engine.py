@@ -164,6 +164,7 @@ class Nav:
                     nm=nm(self.nodes[a],self.nodes[b]),zone=zone.name,source_cycle=datasets.cycles['airways']))
             self.coverage.append(dict(zone=zone.name,cycle=datasets.cycles['airways'] or self.cycles[zone.name],segments=count,
                 dataset_cycles=datasets.cycles,sources=datasets.sources['airways']))
+        self._xplane_overlay()      # SOG-0474 suite (Q-0108) : le réseau de repli X-Plane, personnel et local, pour les États SANS réseau officiel
         if not self.edges: raise ValueError('Aucun segment airway dans les cycles disponibles à cette date.')
         import time as _time;_began=_time.perf_counter()      # SOG-0354 L5 (3) : le temps de la lecture des tracks (`timing.tracks_s`)
         try:nat_layer.add(self,nm);self.nat['seconds']=round(_time.perf_counter()-_began,3)   # SOG-0263 : la couche NAT (les tracks du jour, même périmées, dites périmées) ; un fichier illisible ne coûte pas le calcul
@@ -174,6 +175,44 @@ class Nav:
         self.procedures=procedure_module.Catalog(self)
         import threading
         self._plan_lock=threading.RLock()
+
+    XPLANE_MIN_OFFICIAL=20      # un État dont la base a moins de tronçons de voie n'a pas de réseau officiel (même seuil que tools/regen/xplane.py)
+
+    def _xplane_overlay(self):
+        """SOG-0474 suite (Q-0108 : « les deux ») : le réseau dérivé des fichiers d'X-Plane (Navigraph) de l'utilisateur, lu dans data/local/xplane/ (tools/xplane_net.py, verbe xplane/build), n'est ajouté QUE pour les zones sans réseau officiel (moins de
+        XPLANE_MIN_OFFICIAL tronçons) et APRÈS le réseau officiel ; chaque tronçon porte `src: 'xplane'` (la revue le dit) ; un tronçon déjà là d'une source officielle (mêmes extrémités, même voie) n'est pas doublé. Personnel, local, jamais publié."""
+        self.xplane=None
+        try:
+            import xplane_net
+            net=xplane_net.net_of(str(self.data_dir))
+        except (ImportError,OSError,ValueError,KeyError,TypeError):return
+        if not net or not isinstance(net.get('zones'),dict):return
+        official={c['zone'] for c in self.coverage if (c.get('segments') or 0)>=self.XPLANE_MIN_OFFICIAL}
+        have={(frozenset((self.nodes[e['a']]['id'],self.nodes[e['b']]['id'])),e['route']) for e in self.edges}
+        cycle=net.get('cycle') if isinstance(net.get('cycle'),str) and re.fullmatch(r'\d{4}',net.get('cycle')) else None
+        used=[];total=0
+        for zone,part in sorted(net['zones'].items()):
+            if zone in official or not isinstance(part,dict) or not isinstance(part.get('airways'),list):continue
+            count=0
+            for w in part['airways']:
+                if not isinstance(w,dict) or not isinstance(w.get('route'),str) or not isinstance(w.get('a'),dict) or not isinstance(w.get('b'),dict):continue
+                if not (self.valid(w['a']) and self.valid(w['b'])) or not isinstance(w['a'].get('id'),str) or not isinstance(w['b'].get('id'),str):continue
+                signature=(frozenset((w['a']['id'],w['b']['id'])),w['route'])
+                if signature in have:continue
+                lo,up=w.get('lower'),w.get('upper')
+                if not (isinstance(lo,(int,float)) and isinstance(up,(int,float)) and 0<=lo<=up<=99900):continue
+                ends=[]
+                for end in ('a','b'):
+                    before=len(self.nodes);key=self.add(dict(id=w[end]['id'],lat=w[end]['lat'],lon=w[end]['lon']))
+                    if len(self.nodes)>before:self.nodes[key]['local']='xplane'      # SOG-0474 suite (Sécurisation) : la marque, PAR POINT, d'une position venue d'X-Plane (Navigraph) ; un point déjà connu d'une source officielle n'est pas marqué ; elle suit le point dans les tronçons et les points de la réponse : Carburant n'écrit jamais sa position au dépôt du groupe (xpStrip, F255)
+                    ends.append(key)
+                a,b=ends
+                have.add(signature);count+=1
+                self.edges.append(dict(a=a,b=b,route=w['route'],lower=lo,upper=up,dir=w.get('dir') if w.get('dir') in ('F','B','FB') else None,nm=nm(self.nodes[a],self.nodes[b]),zone=zone,src='xplane',source_cycle=None))      # le cycle d'X-Plane (« 2610 ») n'est pas une date ISO : il est dit dans `nav.xplane`
+            if count:
+                used.append(zone);total+=count
+                self.coverage.append(dict(zone=zone,cycle=None,segments=count,dataset_cycles={},sources=['xplane']))
+        if used:self.xplane=dict(cycle=cycle,zones=used,segments=total)
 
     def release_graph_caches(self):
         for name in ['_fra_graph_cache','_routing_cache','_fra_recovery_graph_cache']:
@@ -922,7 +961,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
             lower=e.get('lower'),upper=e.get('upper'),node_constraints=e.get('node_constraints'),planned_speed_kt=e.get('planned_speed_kt'),speed_limit_ias=e.get('speed_limit_ias'),
             fra_floor_cap=e.get('fra_floor_cap'),procedure_id=e.get('procedure_id'),procedure_name=e.get('procedure_name'),procedure_partial=bool(e.get('partial')),procedure_airport=e.get('airport'),runways=e.get('runways'),source_zone=e.get('zone'),source_cycle=e.get('source_cycle') or nav.cycles.get(e.get('zone')),
             direction=({'F':'sens unique','B':'sens unique','FB':'double sens'}.get(e.get('dir'),'inconnue') if e['route']!='DCT' else 'non vérifiée'),
-            nat=e.get('nat'),nat_link=e.get('nat_link'),origin=e.get('origin'),no_network=e.get('no_network')))   # SOG-0078 ; SOG-0354 L5 (2) : origin='random' = route libre CRÉÉE (jamais lue) ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
+            nat=e.get('nat'),nat_link=e.get('nat_link'),origin=e.get('origin'),no_network=e.get('no_network'),src=e.get('src')))   # SOG-0078 ; SOG-0354 L5 (2) : origin='random' = route libre CRÉÉE (jamais lue) ; SOG-0263 : la track NAT du tronçon et, pour un raccord DCT, entry / exit
     dep_elev=nav.ads.get(dep,{}).get('elev'); arr_elev=nav.ads.get(arr,{}).get('elev')
     flight_profile.elevation(dep,dep_elev); flight_profile.elevation(arr,arr_elev)      # SOG-0354 L5 (4) : une élévation hors de -1 500 à 30 000 ft est refusée, dite
     if dep_elev is None or arr_elev is None: issue('REVUE','Élévation AD absente : 0 ft utilisé pour le modèle vertical de simulation.')
@@ -1004,6 +1043,10 @@ def assess(request,_nav=None,_rad=None,_path=None):
         if hint:issue('REVUE',hint)
     for l in legs:   # SOG-0263 : le raccord du réseau à la track (entrée) ou de la track au réseau (sortie) est un DCT de simulation, dit « revue »
         if l.get('nat_link'):issue('REVUE',f'Raccord NAT ({"entrée" if l["nat_link"]=="entry" else "sortie"}) : DCT de {l["nm"]:.0f} NM {l["start"]["id"]}–{l["end"]["id"]}, simulation (aucune route lue).')
+    xp=[l for l in legs if l.get('src')=='xplane']      # SOG-0474 suite : des tronçons du réseau de repli X-Plane (personnel, non officiel) : dits, avec le cycle
+    if xp:
+        names=sorted({l['via'] for l in xp if l['via']!='DCT'})[:8]
+        issue('REVUE',f"Réseau X-Plane (Navigraph), personnel, cycle {(getattr(nav,'xplane',None) or {}).get('cycle') or '?'} : {len(xp)} tronçon(s) ({', '.join(names)}) d'un État sans réseau officiel — non officiel, à vérifier.")
     for l in legs:      # SOG-0474 : le terrain n'a aucun point du réseau à portée de raccord (la base n'a pas le réseau de son État) : la route va jusqu'au dernier point connu, puis UN direct, dit
         if l.get('no_network'):
             far_end=l['end'] if l['start']['id'] in (dep,arr) else l['start']

@@ -125,11 +125,11 @@ def _walk(path, out, skip=()):
 
 
 def fingerprint():
-    """L'empreinte des fichiers que le contexte lit : sia/base, proc (sans le sol), sia/zones/nat, RAD et FRA ; une chaîne courte."""
+    """L'empreinte des fichiers que le contexte lit : sia/base, proc (sans le sol), sia/zones/nat, local/xplane, RAD et FRA ; une chaîne courte."""
     items = []
     data = engine.DATA_DIR
     if data:
-        for sub, skip in ((('sia', 'base'), ()), (('proc',), ('ground',)), (('sia', 'zones', 'nat'), ())):
+        for sub, skip in ((('sia', 'base'), ()), (('proc',), ('ground',)), (('sia', 'zones', 'nat'), ()), (('local', 'xplane'), ())):      # SOG-0474 suite : le réseau de repli X-Plane (data/local/xplane/) fait refaire le contexte quand il change
             _walk(os.path.join(str(data), *sub), items, skip)
     for f in (engine.RAD_FILE, fra.FRA_FILE):
         try:

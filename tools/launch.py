@@ -35,6 +35,8 @@ import outbound  # requêtes sortantes : un User-Agent nommé, chaque échec dit
 import tree_memo  # mémoire des empreintes de data/ gardée dans data/local/frame_tree.json : un démarrage ne recalcule que les fichiers changés (SOG-0400)
 import suite_update  # mise à jour de la suite par canal (stable, early, suivi) : plan d'abord, avance rapide seulement
 import base_upload  # envoi d'un fichier choisi à la main : reconnu par son contenu (SOG-0199)
+import safe_json  # le chargement borné d'un JSON non fiable
+import xplane_net  # le dossier d'X-Plane de l'utilisateur et le réseau de repli local (SOG-0474 suite, Q-0108)
 import personal_use  # la coche « usage personnel » tenue par le lanceur (data/local/personal_use.json, SOG-0238)
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
 
@@ -1744,6 +1746,25 @@ class Setup(http.server.SimpleHTTPRequestHandler):
         if rec['certified'] != before or a['migrated']:
             say('usage personnel certifié' + (' (reporté du cache de la page)' if a['migrated'] else '') if rec['certified'] else 'usage personnel retiré')
         return self._json({'ok': True, 'certified': rec['certified'], 'at': rec['at'], **({'migrated': True} if rec.get('migrated') else {})})
+
+    @route('GET', '/__setup/xplane', public='poste')
+    def _get_xplane(self, path):
+        # SOG-0474 suite (Q-0108) : le dossier d'X-Plane de l'utilisateur (repli local, personnel) ; l'état est RECALCULÉ (le dossier est revalidé), JAMAIS le chemin ; ce poste seulement
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        return self._json({'ok': True, **xplane_net.status(DATA)})
+
+    @route('POST', '/__setup/xplane', public='poste')
+    def _post_xplane(self, path, body):
+        # corps STRICT { path: texte } ; '' efface ; refus par UN code court (bad-body, too-long, refused, not-a-folder, not-xplane, not-personal), jamais le chemin (ni réponse, ni console) ; la coche « personnel » est celle du lanceur
+        if self._lan():
+            return self._json({'error': 'refusé'}, 403)
+        a, why = safe_json.loads((body or b'null').decode('utf-8', 'replace')) if len(body or b'') <= 4096 else (None, 'size')      # un corps de 100 Ko de « [[[[… » (RecursionError) ou plus de 4 Ko est un corps invalide
+        ok = isinstance(a, dict) and set(a) == {'path'}
+        status, out = xplane_net.set_path(DATA, a['path'] if ok else None, personal_use.certified(DATA))
+        if out.get('ok'):
+            say('X-Plane : dossier ' + ('enregistré' if out['configured'] else 'effacé'))
+        return self._json(out, status)
 
     @route('POST', '/__setup/base/upload', public='poste')
     def _post_base_upload(self, path, body):

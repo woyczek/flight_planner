@@ -133,7 +133,7 @@ def points_of(r):
                 key = (i, round(la, 5), round(lo, 5))
                 if key not in seen:
                     seen.add(key)
-                    out.append({'id': i[:40], 'lat': key[1], 'lon': key[2]})
+                    out.append({'id': i[:40], 'lat': key[1], 'lon': key[2], **({'local': 'xplane'} if p.get('local') == 'xplane' else {})})      # SOG-0474 suite : la marque d'un point venu d'X-Plane : sa position ne part pas au dépôt du groupe
     return out[:MAX_POINTS]
 
 

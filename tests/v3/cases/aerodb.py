@@ -15822,3 +15822,241 @@ def k353(c):
     c.eq((r['proto'], r['polluted']), ([['key', 'name', 'type']], None), 'the key « __proto__ » of the file is not a key of the table: nothing is polluted, nothing is joined to an airspace of that name', what='proto')
     c.eq((r['n1'], r['n2'], r['n3'], r['badKeys']), (0, 0, 0, ['hours', 'key', 'name', 'rem', 'type']), 'a table that is an array, no table, or fields that are not texts change nothing', what='bad')
     c.eq((r['longNat'], r['longEd'], r['longAuth']), (800, False, False), 'a text is cut at 800 signs again at the join; a cycle that is not a date is not written; a blank text writes nothing', what='long')
+
+
+@case('K354', 'X-Plane fallback network (SOG-0474 continued, Q-0108): `tools/xplane_net.py` reads the user\'s X-Plane folder — a typed path REVALIDATED at each read (absolute path of a local drive; never UNC, `..`, a control character, more than 260 signs, a link or a junction), three files with FIXED names under `Custom Data` or `Resources/default data` — and writes only a derived network under data/local/xplane/; the answers are codes (never the path); the POST of `/__setup/xplane` is refused with ONE short code (`bad-body`, `too-long`, `refused`, `not-a-folder`, `not-xplane`, `not-personal`)',
+      'K', static=True,
+      rule='SOG-0474 continued (Q-0108: « les deux » — the local fallback now, the official network State by State after; Security: choice A, the launcher reads a typed path; conditions 1 to 6 of its review). A UNC path would make Windows send the identification hash of the user to another machine; the folder name of the user never leaves (answer, journal, error message); the files are read up to 200 MB in all, counted DURING the read; the cycle is read in the header of earth_fix.dat (« data cycle 2610 »). No coordinate read in X-Plane is in this case: the lines are INVENTED (points AAAAA…, coordinates of a made-up grid).')
+def k354(c):
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import xplane_net as X
+    fix = ['I', '1200 Version - data cycle 2610, build 20261007, metadata FixXP1200.  Invented for the case.', '',
+           '  10.000000   10.000000 AAAAA ENRT K1', '  10.000000   11.000000 BBBBB ENRT K1', '  10.000000   12.000000 CCCCC ENRT K1', '  10.000000   13.000000 DDDDD ENRT K1', '  60.000000   60.000000 FARFA ENRT K1',
+           '  10.500000   10.500000 TERMI LFXX K1', '  95.000000   10.000000 BADLA ENRT K1', '  10.000000   10.000000 ../../ ENRT K1']
+    nav = ['I', '1200 Version - data cycle 2610', '', '3  10.000000  14.000000 100 11400 130 0.0 VORAB LFXX K1 INVENTED VOR', '2  10.000000  15.000000 0 300 25 0.0 NDBCD LFXX K1 INVENTED NDB', '12 10.000000  16.000000 0 11400 18 0.0 DMEEF LFXX K1 INVENTED DME']
+    awy = ['I', '1200 Version - data cycle 2610', '',
+           'AAAAA K1 11 BBBBB K1 11 N 2 100 460 UL601-UN602', 'BBBBB K1 11 CCCCC K1 11 F 1 050 300 L603', 'CCCCC K1 11 DDDDD K1 11 B 2 250 460 UL604',
+           'DDDDD K1 11 VORAB K1 3 N 2 250 460 UL605', 'VORAB K1 3 NDBCD K1 2 N 1 000 195 L606', 'AAAAA K1 11 NOWHERE K1 11 N 2 100 460 UL607', 'FARFA K1 11 FARFA K1 11 N 2 100 460 UL608',
+           'AAAAA K1 11 BBBBB K1 11 X 2 100 460 UL609', 'AAAAA K1 11 BBBBB K1 11 N 2 600 100 UL610', 'AAAAA K1 11 BBBBB K1 11 N 2 100 460 BAD_NAME']
+    boxes = {'aa': [[9.5, 9.5, 12.5, 10.5]], 'bb': [[12.5, 9.5, 15.5, 10.5]], 'zz': [[50.0, 50.0, 70.0, 70.0]]}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        xp = os.path.join(td, 'XPlane 12')
+        cd = os.path.join(xp, 'Custom Data')
+        os.makedirs(cd)
+        for name, lines in (('earth_fix.dat', fix), ('earth_nav.dat', nav), ('earth_awy.dat', awy)):
+            with open(os.path.join(cd, name), 'w', encoding='utf-8') as f:
+                f.write('\n'.join(lines) + '\n')
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        refused = {'unc': X.check_folder('\\\\' + 'host' + '\\' + 'share'), 'unc2': X.check_folder('//host/share'), 'relative': X.check_folder('XPlane'), 'dotdot': X.check_folder(xp + '/../XPlane 12'),
+                   'long': X.check_folder('C:/' + 'a' * 300), 'control': X.check_folder(xp + '\x01'), 'missing': X.check_folder(os.path.join(td, 'nothing')), 'not-text': X.check_folder(None),
+                   'empty': X.check_folder(os.path.join(td, 'data'))}
+        ok = X.check_folder(xp)
+        link = os.path.join(td, 'LinkedXPlane')
+        made = False
+        try:
+            if os.name == 'nt':
+                import _winapi
+                _winapi.CreateJunction(xp, link)
+            else:
+                os.symlink(xp, link)
+            made = True
+        except OSError:
+            pass
+        linked = X.check_folder(link) if made else (False, 'link')
+        net, why = X.build(xp, ['aa', 'bb', 'zz', 'cc'], boxes)
+        name = X.save(data, net)
+        saved = json.loads(open(os.path.join(data, 'local', 'xplane', name), encoding='utf-8').read())
+        cfg = (X.config_read(data), X.config_write(data, xp), X.config_read(data) == xp)
+        st = X.status(data)
+        sp = {k: X.set_path(data, v, cert)[0:2] for k, (v, cert) in {'ok': (xp, True), 'personal': (xp, False), 'unc': ('//host/share', True), 'dotdot': (xp + '/../x', True), 'missing': (os.path.join(td, 'no'), True),
+                                                                         'nothing': (os.path.join(td, 'data'), True), 'long': ('C:/' + 'a' * 300, True), 'body': (None, True), 'long2': (7, True)}.items()}
+        cleared = X.set_path(data, '', True)
+        after = X.status(data)
+        # a file that grows during the read: the budget is counted while reading
+        big = os.path.join(cd, 'earth_awy.dat')
+        with open(big, 'ab') as f:
+            f.write(b'\n'.join([b'AAAAA K1 11 BBBBB K1 11 N 2 100 460 UL601'] * 20))
+        small = (X.MAX_TOTAL, X.MAX_LINES)
+        X.MAX_TOTAL = 1000
+        try:
+            tooBig = X.build(xp, ['aa'], boxes)
+        finally:
+            X.MAX_TOTAL = small[0]
+        with open(os.path.join(cd, 'earth_awy.dat'), 'wb') as f:      # a file with no line break: one line of 70 KB is never read whole
+            f.write(b'x' * 70000)
+        longLine = X.build(xp, ['aa'], boxes)
+    c.eq([refused[k] for k in ('unc', 'unc2', 'relative', 'dotdot', 'long', 'control', 'missing', 'not-text', 'empty')],
+         [(False, 'unc'), (False, 'unc'), (False, 'relative'), (False, 'dotdot'), (False, 'long'), (False, 'control'), (False, 'missing'), (False, 'not-text'), (False, 'no-files')],
+         'refused with a CODE: UNC (both writings: the Windows identification hash would leave), relative, « .. », more than 260 signs, a control character, missing, not a text, a folder without the files', what='refusals')
+    c.eq((ok, linked), ((True, ''), (False, 'link')), 'a real folder with the files is accepted; a link or a junction to it is refused', what='link')
+    c.eq(sorted(net['zones']), ['aa', 'bb'], 'the network is built only for the zones asked that have segments (zz: its only segment starts and ends on the same point and is left out; cc has no box)', what='zones')
+    aa = net['zones']['aa']['airways']
+    c.eq(sorted((w['route'], w['a']['id'], w['b']['id'], w['lower'], w['upper'], w['dir']) for w in aa),
+         [('L603', 'BBBBB', 'CCCCC', 5000, 30000, 'F'), ('UL601', 'AAAAA', 'BBBBB', 10000, 46000, 'FB'), ('UL604', 'CCCCC', 'DDDDD', 25000, 46000, 'B'), ('UN602', 'AAAAA', 'BBBBB', 10000, 46000, 'FB')],
+         'segments as in the file (one per route name of « UL601-UN602 »)', what='segments')
+    routes = sorted({w['route'] for z in net['zones'].values() for w in z['airways']})
+    c.eq(routes, ['L603', 'L606', 'UL601', 'UL604', 'UL605', 'UN602'],
+         'a segment with an unknown end (NOWHERE), a direction that is not N / F / B, base above top and a route name with a bad sign are left out; VOR and NDB of earth_nav give the positions of the ends, a DME line does not', what='routes')
+    c.eq((net['cycle'], name, saved['cycle'], saved['source']), ('2610', 'net_2610.json', '2610', 'X-Plane (Navigraph), personnel'), 'the cycle is read in the header of earth_fix.dat; the file is data/local/xplane/net_<cycle>.json and says its source', what='cycle')
+    c.eq((cfg, st['configured'], st['state'], st['cycle'], st['zones']), (('', True, True), True, 'ok', '2610', 2), 'the typed path is kept in data/local/xplane.json and REVALIDATED at each status: ok, its cycle, the number of zones already built', what='status')
+    c.eq(sp['ok'][0], 200, 'the POST of a valid folder is accepted', what='post ok')
+    c.eq({k: sp[k] for k in ('personal', 'unc', 'dotdot', 'missing', 'nothing', 'long', 'body', 'long2')},
+         {'personal': (403, {'ok': False, 'reason': 'not-personal'}), 'unc': (400, {'ok': False, 'reason': 'refused'}), 'dotdot': (400, {'ok': False, 'reason': 'refused'}), 'missing': (400, {'ok': False, 'reason': 'not-a-folder'}),
+          'nothing': (400, {'ok': False, 'reason': 'not-xplane'}), 'long': (400, {'ok': False, 'reason': 'too-long'}), 'body': (400, {'ok': False, 'reason': 'bad-body'}), 'long2': (400, {'ok': False, 'reason': 'bad-body'})},
+         'ONE short code per refusal, never the path nor a free text; the check of the box « personal » is the launcher\'s', what='codes')
+    c.eq((cleared, after['configured'], after['state']), ((200, {'ok': True, 'configured': False, 'state': None}), False, None), 'an empty path clears the configuration', what='clear')
+    c.eq(longLine, (None, 'too-big'), 'a line longer than 64 KB (a file with no line break) ends in « too-big »: a line is read by pieces, never whole', what='long line')
+    c.eq(tooBig, (None, 'too-big'), 'the budget of bytes is counted DURING the read: a file that is bigger than allowed ends in « too-big », never in a full read', what='budget')
+    texts = json.dumps([refused, sp, cleared, st, after, tooBig], default=str)
+    c.ok('XPlane' not in texts and td not in texts, 'no folder name', 'the name of the folder of the user is in no answer: only codes, booleans, the cycle and counts')
+
+
+@case('K355', 'Route engine, SOG-0474 continued (Q-0108): the X-Plane fallback network of data/local/xplane/ is added AFTER the official network and ONLY for the zones with no official network; every leg taken from it is said in a REVUE « Réseau X-Plane (Navigraph), personnel, cycle …, non officiel, à vérifier » (status « CONTRÔLE PARTIEL »); a zone that has an official network ignores it; without the file nothing changes',
+      'K', static=True,
+      rule='SOG-0474 continued (Q-0108: « les deux » — the local fallback first, then the official networks State by State; Security: local, personal, never published). The overlay of `Nav._xplane_overlay` reads data/local/xplane/net_<cycle>.json (written by the verb xplane/build); the segments carry `src: xplane`; an official segment with the same ends and the same route is not doubled. Invented airports, points and routes: no coordinate read in X-Plane.')
+def k355(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    import xplane_net as X
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTAAA': (51.7, -1.0), 'PTBBB': (50.5, 4.0), 'PTCCC': (48.5, 9.0), 'PTDDD': (47.0, 13.0), 'PTEEE': (47.4, 14.0)}
+    air = lambda route, ids: [{'route': route, 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in zip(ids, ids[1:])]
+    ways = air('L601', ['PTAAA', 'PTBBB', 'PTCCC', 'PTDDD', 'PTEEE'])
+    seg = lambda route, a, b: {'route': route, 'a': {'id': a[0], 'lat': a[1], 'lon': a[2]}, 'b': {'id': b[0], 'lat': b[1], 'lon': b[2]}, 'lower': 0, 'upper': 66000, 'dir': 'FB'}
+    net = {'schema': 1, 'source': 'X-Plane (Navigraph), personnel', 'cycle': '2610', 'zones': {
+        'yy': {'points': [], 'airways': [seg('UN700', ('PTEEE', *pos['PTEEE']), ('YYAAA', 46.0, 15.0)), seg('UN700', ('YYAAA', 46.0, 15.0), ('YYBBB', 44.2, 17.8))]},
+        'xx': {'points': [], 'airways': [seg('UN999', ('PTAAA', *pos['PTAAA']), ('PTEEE', *pos['PTEEE']))]}}}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        rows = [['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0], ['LQXX', 'FAR AIRFIELD', 43.8, 18.3, 1700, 0, 0]]
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': rows}, 'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        results_cache.ENABLED = False
+        from route_engine import engine
+        floor = engine.Nav.XPLANE_MIN_OFFICIAL
+        engine.Nav.XPLANE_MIN_OFFICIAL = 3      # the invented network has 4 segments: « official » from 3 (the real threshold is 20)
+        try:
+            def run():
+                res = PL.compute(view.to_request({'action': 'compute', 'adep': 'EGLL', 'adest': 'LQXX', 'date': '2026-11-10T10:30', 'alternatives': False, 'proposals': False, 'fl': 350}), data, radz, fra)
+                p = res['primary']
+                marks = sorted({(x['id'], x.get('local')) for l in p.get('legs', []) for x in (l['start'], l['end'])})
+                pts = sorted((x['id'], x.get('local')) for x in view.points_of(p))
+                return p.get('status'), p.get('route'), [i['text'] for i in p.get('issues', []) if i['level'] == 'REVUE' and 'X-Plane' in i['text']], [l.get('src') for l in p.get('legs', [])], marks, pts
+            without = run()
+            X.save(data, net)
+            with_net = run()
+        finally:
+            results_cache.ENABLED = True
+            engine.Nav.XPLANE_MIN_OFFICIAL = floor
+    c.ok(without[1] and 'UN700' not in without[1] and not without[2], str(without[:3]), 'without the file: the route of the official network, no X-Plane line (the fallback « no network » of K349 applies)')
+    c.eq(with_net[0], 'CONTRÔLE PARTIEL — À VÉRIFIER', 'with the file the route is returned to examine', what='status')
+    c.ok(bool(with_net[1]) and 'PTEEE UN700 YYBBB' in with_net[1] and 'UN999' not in with_net[1], str(with_net[1]), 'the route follows the fallback airway (PTEEE UN700 YYBBB) and never the extra segment of a zone that HAS an official network (UN999)')
+    c.eq(([m for m in with_net[4] if m[1]], [m for m in with_net[5] if m[1]], ('PTEEE', None) in with_net[4], ('PTEEE', None) in with_net[5]), ([('YYAAA', 'xplane'), ('YYBBB', 'xplane')], [('YYAAA', 'xplane'), ('YYBBB', 'xplane')], True, True),
+         'SECURITY: every point of the answer that comes from the fallback — the legs (`start` / `end`) and the points of the route (`points_of`, the alternatives) — carries the mark local = xplane (the mark the page reads to write it by NAME, without latitude nor longitude: xpNote / xpStrip, F255); the point that an OFFICIAL source already knows (PTEEE) carries none', what='local mark')
+    c.ok(all(m[1] is None for m in without[4]), str(without[4]), 'without the file no point carries the mark')
+    c.eq((len(with_net[2]), 'cycle 2610' in with_net[2][0] and 'UN700' in with_net[2][0] and 'non officiel' in with_net[2][0], with_net[3].count('xplane')), (1, True, 2), 'ONE review says the source (X-Plane, Navigraph, personnel), the cycle, the airway and « non officiel, à vérifier »; two legs are marked', what='review')
+
+
+@case('K356', 'X-Plane fallback network, the launcher side (SOG-0474 continued, Q-0108): GET and POST of `/__setup/xplane` (this workstation only; the state is RECALCULATED; one short code per refusal; the folder name is in no answer nor message of the console; `{ path: \'\' }` clears), and the verb `xplane/build` (refuses without the personal tick of the LAUNCHER, builds only for the zones WITHOUT an official network of the region of the route, writes only data/local/xplane/)',
+      'K', static=True,
+      rule='SOG-0474 continued (Q-0108, Security choice A: the launcher reads a typed path; conditions 1 to 6). The contract with the screen of Settings: GET → { ok, configured, state, cycle, zones }, POST { path } → { ok, configured, state, cycle } or 400 { ok: false, reason }. The verb is read by the same job follow-up as the others (`regen/job`), result { ok, zones, cycle, counts } or { ok: false, reason }. The invented network lies in the box of Bosnia-Herzegovina, which has no official network in the invented base. No coordinate read in X-Plane.')
+def k356(c):
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    PU = importlib.import_module('personal_use')
+    L = importlib.import_module('launch')
+    RJ = _regen()
+    import xplane_net as X
+    kept_data, kept_say = L.DATA, L.say
+    said = []
+    L.say = lambda m='': said.append(m)
+
+    class Fake:
+        def __init__(self, lan):
+            self.lan, self.out = lan, []
+
+        def _lan(self):
+            return self.lan
+
+        def _json(self, out, code=200):
+            self.out.append((code, out))
+    fix = ['I', '1200 Version - data cycle 2610, build 20261007, metadata FixXP1200.  Invented.', '', '  43.500000   17.000000 AAAAA ENRT K1', '  43.600000   17.500000 BBBBB ENRT K1', '  43.700000   18.000000 CCCCC ENRT K1']
+    awy = ['I', '1200 Version - data cycle 2610', '', 'AAAAA K1 11 BBBBB K1 11 N 2 100 460 UL701', 'BBBBB K1 11 CCCCC K1 11 N 2 100 460 UL701']
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            L.DATA = td
+            data = Path(td)
+            xp = Path(td) / 'My XPlane 12' / 'game'
+            cd = xp / 'Custom Data'
+            cd.mkdir(parents=True)
+            for n, lines in (('earth_fix.dat', fix), ('earth_nav.dat', ['I', '1200 Version - data cycle 2610', '']), ('earth_awy.dat', awy)):
+                (cd / n).write_text('\n'.join(lines) + '\n', encoding='utf-8')
+            post = lambda body, lan=False: (lambda f: (L.Setup._post_xplane(f, '/__setup/xplane', json.dumps(body).encode() if not isinstance(body, bytes) else body), f.out[-1])[1])(Fake(lan))
+            get = lambda lan=False: (lambda f: (L.Setup._get_xplane(f, '/__setup/xplane'), f.out[-1])[1])(Fake(lan))
+            c.eq(get(), (200, {'ok': True, 'configured': False, 'state': None, 'cycle': None, 'zones': None}), 'without a configuration: not configured, no state', what='get none')
+            c.eq((post({'path': str(xp)}, lan=True)[0], get(lan=True)[0]), (403, 403), 'a device of the local network (or the relay): 403 for the read and the write', what='lan')
+            c.eq(post({'path': str(xp)}), (403, {'ok': False, 'reason': 'not-personal'}), 'without the personal tick of the LAUNCHER: not-personal', what='not personal')
+            PU.write(td, True, False)
+            c.eq([post(b)[0] for b in (b'not json', b'{"path": 5}', b'{"path": "x", "y": 1}', b'[]', b'')], [400] * 5, 'a malformed or loose body: 400', what='400')
+            c.eq([post({'path': p}) for p in ('//host/share/x', 'relative/dir', str(xp) + '/../game', 'C:/' + 'a' * 300, str(Path(td) / 'nothing'), str(Path(td)))],
+                 [(400, {'ok': False, 'reason': r}) for r in ('refused', 'refused', 'refused', 'too-long', 'not-a-folder', 'not-xplane')], 'ONE short code per refusal (UNC, relative, « .. », too long, not a folder, a folder without the files)', what='codes')
+            c.eq(said, [], 'a refusal says nothing on the console', what='silent')
+            code, out = post({'path': str(xp)})
+            c.eq((code, out, said), (200, {'ok': True, 'configured': True, 'state': 'ok', 'cycle': '2610'}, ['X-Plane : dossier enregistré']), 'the folder is accepted: the state, the cycle of the header, one line on the console WITHOUT the folder', what='ok')
+            c.eq(get(), (200, {'ok': True, 'configured': True, 'state': 'ok', 'cycle': '2610', 'zones': None}), 'GET gives the state and the cycle, never the path; no network built yet', what='get ok')
+            texts = json.dumps([get(), said, out])
+            c.ok('My XPlane' not in texts and str(td) not in texts, 'no name', 'the name of the folder of the user is in no answer and no line of the console')
+            # the verb
+            ctx = {'data': str(data)}
+            os.makedirs(data / 'sia' / 'base' / 'ba' / '2026-10-29')
+            (data / 'sia' / 'base' / 'ba' / '2026-10-29' / 'airways.json').write_text(json.dumps({'schema': 2, 'zone': 'ba', 'cycle': '2026-10-29', 'kind': 'airways', 'data': []}), encoding='utf-8')
+            os.makedirs(data / 'sia' / 'base' / 'fr' / '2026-10-29')
+            (data / 'sia' / 'base' / 'fr' / '2026-10-29' / 'airways.json').write_text(json.dumps({'schema': 2, 'zone': 'fr', 'cycle': '2026-10-29', 'kind': 'airways', 'data': [{'route': 'L1', 'a': {'id': 'P%d' % i, 'lat': 45.0, 'lon': 1.0}, 'b': {'id': 'Q%d' % i, 'lat': 45.0, 'lon': 2.0}} for i in range(25)]}), encoding='utf-8')
+            fn, check = RJ.REGISTRY[('xplane', 'build')]
+            job = RJ.Job('xplane', 'build', {})
+            c.eq((check({}), check({'path': 'x'}), check(None)), ({}, None, None), 'the verb takes no argument: a path or anything else in the request is refused (400)', what='args')
+            PU.write(td, False, False)
+            c.eq(fn(job, {}, {'data': str(data)}), {'ok': False, 'reason': 'not-personal'}, 'the verb reads the tick of the launcher', what='verb not personal')
+            PU.write(td, True, False)
+            X.config_write(str(data), '')
+            c.eq(fn(job, {}, ctx), {'ok': False, 'reason': 'not-configured'}, 'no configured folder: not-configured', what='not configured')
+            X.config_write(str(data), str(xp))
+            res = fn(job, {}, ctx)
+            c.eq((res['ok'], res['zones'], res['cycle'], res['counts']), (True, 1, '2610', {'ba': {'points': 3, 'airways': 2}}), 'only Bosnia (no official network in the base) is built; France (25 segments) is not; the cycle is the one of the header', what='verb ok')
+            written = sorted(p.name for p in (data / 'local' / 'xplane').iterdir())
+            c.eq(written, ['net_2610.json'], 'the verb writes ONE file, data/local/xplane/net_<cycle>.json, nothing else', what='files')
+            c.eq(get()[1]['zones'], 1, 'GET now says how many zones the fallback network covers', what='zones')
+            for n in ('earth_awy.dat',):
+                (cd / n).unlink()
+            c.eq(fn(job, {}, ctx), {'ok': False, 'reason': 'not-xplane'}, 'a folder that lost one of the files: not-xplane', what='lost file')
+            texts = json.dumps([res, said, job.data])
+            c.ok('My XPlane' not in texts and str(td) not in texts, 'no name', 'the verb, the journal of the job (its steps) and the console never say the folder')
+            c.eq(post(b'[' * 100000)[0], 400, 'a body of 100 KB of nested brackets is a bad body (400), never an exception (RecursionError)', what='nested')
+            c.eq(post({'path': ''}), (200, {'ok': True, 'configured': False, 'state': None}), 'an empty path clears the configuration', what='clear')
+    finally:
+        L.DATA, L.say = kept_data, kept_say
