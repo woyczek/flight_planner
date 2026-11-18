@@ -641,13 +641,18 @@ function edRisksHtml(s) {
  *  et « Proposer les cartes depuis les lieux » (des entrées : les images se font au studio de la V2). */
 function edTimelineHtml(s) {
   const e = s.ed,
-    rows = (e.events || []).map(r => ({
-      ...r,
-      place: ED.refNow(r.place, e.base, e.places).toUpperCase()
-    })), // SOG-0439
     doc = edDoc(e),
     // jamais un objet caché au pilote ; dans l'atelier voilé, les seuls lieux montrés (SOG-0459)
     places = edShown(e, ED.placesOf(doc)).filter(p => p && p.id && !['dep', 'arr', 'object'].includes(p.kind)),
+    // SOG-0439 : l'identifiant d'aujourd'hui du lieu cité ; SOG-0459 : dans l'atelier voilé, un lieu qui n'est pas montré se dit comme
+    // « aucun lieu » — à l'écran SEULEMENT : la ligne de la séance garde la valeur du fichier tant que l'auteur ne choisit pas un lieu
+    rows = (e.events || []).map(r => {
+      const place = ED.refNow(r.place, e.base, e.places).toUpperCase();
+      return {
+        ...r,
+        place: e.veil && place && !places.some(p => p.id.toUpperCase() === place) ? '' : place
+      };
+    }),
     maps = ED.mapsOf(doc),
     // les cartes proposées nomment les zones par leur rang : dans l'atelier voilé, elles ne se proposent pas (un rang dirait le caché)
     missing = e.veil ? [] : ED.proposedMaps(doc),
@@ -1683,7 +1688,10 @@ function edInputDo(s, ev) {
   if (k === 'edevent') { // un événement : le champ retouché en place (le lieu, une liste, aussi)
     const row = e.events?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
-    if (row && ['at', 'place', 'text'].includes(f)) row[f] = f === 'place' ? ev.target.value.toUpperCase() : ev.target.value;
+    // SOG-0459 : dans l'atelier voilé, seul un lieu montré (ou aucun) se choisit — une page forgée ne pose pas un lieu caché
+    const shownPlace = v => !v || edShown(e, ED.placesOf(edDoc(e))).some(p => p && p.id && p.id.toUpperCase() === v);
+    if (row && ['at', 'place', 'text'].includes(f) && !(f === 'place' && e.veil && !shownPlace(ev.target.value.toUpperCase()))) row[f] =
+      f === 'place' ? ev.target.value.toUpperCase() : ev.target.value;
     return edRefresh(s);
   }
   if (k === 'edrisk') { // un risque : le champ retouché en place, la ligne redessinée à « OK »

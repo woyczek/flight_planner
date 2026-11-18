@@ -865,6 +865,11 @@ no badge, no title of a closed drawer.
   - **« Dupliquer »** a veiled mission copies everything, drawers included; the copy stays veiled.
   - Guards against a forged page: the gestures of the trial and of the drawers do nothing while veiled (`VEILED_OFF`), a hidden row is
     never opened nor retouched (`edHid`), « Ajouter un lieu… » takes only the token of a row shown.
+  - **A reference to a hidden place** (noreg N116): an event of the chronology placed on a place that is not shown displays its list
+    « lieu » as an event without a place (the empty option chosen, the visible places alone) — on screen only: the row of the sitting
+    keeps the value of the file, written back as it is, until the author chooses a place himself (his choice replaces it; a hidden one
+    cannot be chosen, even by a forged page). The other references were checked: the route of the departure and the centre of a map cite
+    a place, which makes it visible; the keys, stops and onward routes of the drawers are not shown while veiled; participants and the vertical profile are not references the workshop shows.
 
 ### 8. What is NOT ported
 

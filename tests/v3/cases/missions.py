@@ -7343,3 +7343,62 @@ def n115(c):
          what='a row added')
     c.eq(r['plain'], [[], True], 'a mission without drawer hides nothing: its « À compléter » is the same', what='no drawer')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the document is not touched')
+
+
+# SOG-0459, a reference to a hidden place: the trial mission (invented) with a chronology — one event at PT2 (hidden at the departure: the
+# point of the onward route of drawer 2), one at PT1 (the route); _TRIAL_MISSION itself is not changed (other cases read it)
+_VEIL_EV_MISSION = _TRIAL_MISSION + """timeline:
+  events:
+    - { at: H+40mn, place: PT2, text: Contact radio établi }
+    - { at: H+10mn, place: PT1, text: Passage du col }
+"""
+_VEIL_EV_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _VEIL_EV_MISSION]]
+_VEIL_EV_VALUES = f"""(() => {{ const root = document.querySelector('{E}'), clone = root.cloneNode(true); clone.querySelectorAll('style').forEach(x => x.remove());
+  const values = [...root.querySelectorAll('input, select, textarea')].map(x => String(x.value)), opts = [...root.querySelectorAll('option')].map(o => o.value + ' ' + o.textContent);
+  return {{ hits: [clone.innerHTML.includes('PT2'), clone.textContent.includes('PT2'), values.some(v => v.includes('PT2')), opts.some(o => o.includes('PT2')), opts.some(o => o.includes('Point deux'))],
+    places: [...root.querySelectorAll('[data-edevents] select[data-f=place]')].map(x => [x.value, [...x.options].map(o => o.value)]) }} }})()"""
+_VEIL_EV_FILE = """async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const Y = globalThis.jsyaml;
+  const d = Y.load(await (%s)(p), { schema: Y.CORE_SCHEMA }); return [d.title, d.timeline.events, (d.phases || []).length, (d.turning_points || []).map(t => t.id)] }""" % _TEXT_OF
+
+
+@case('N116', 'Missions › the veiled workshop, a reference to a hidden place: an event of the chronology placed on a place hidden at the '
+      'departure shows its list « lieu » as an event WITHOUT a place (the empty option chosen, the visible places alone offered) — the hidden '
+      'identifier is nowhere in the page (text, value of a field or a list, option); saved with another change (the title), the event of '
+      'the file still cites its place; a place the author chooses himself replaces it',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0459 (the ergonomist, after reading the two commits: « en atelier voilé, un événement placé sur un lieu caché montre '
+      'l\'identifiant de ce lieu comme valeur de sa liste » — closed: shown as an event without a place, the value of the file kept until '
+      'the author chooses); modules/missions/EDITOR.md § 7 septvicies')
+def n116(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _VEIL_EV_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events')
+    v = c.js(_VEIL_EV_VALUES)
+    c.eq(v, {'hits': [False] * 5, 'places': [['', ['', 'TARGET', 'PT1']], ['PT1', ['', 'TARGET', 'PT1']]]},
+         'veiled: the event at the hidden PT2 shows « aucun lieu » chosen and the visible places alone, as an event without a place; PT2 is nowhere — not in the '
+         'text, not in a value, not in an option; the event at PT1 keeps PT1', what='the hidden reference')
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
+    c.page.fill(f'{E} input[data-k=edtitle]', 'Mission d\'essai, chronologie')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    c.eq(c.js(_VEIL_EV_FILE, path), ['Mission d\'essai, chronologie', [{'at': 'H+40mn', 'place': 'PT2', 'text': 'Contact radio établi'},
+                                                                     {'at': 'H+10mn', 'place': 'PT1', 'text': 'Passage du col'}], 4, ['PT1', 'PT2']],
+         'saved without touching the events: the title written, the event still cites PT2, the drawers and the hidden point kept', what='the saved file')
+    # the author chooses a place himself: his choice replaces it
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events again')
+    c.eq(c.js(_VEIL_EV_VALUES)['hits'], [False] * 5, 'after the save, still nothing of PT2 in the page', what='after the save')
+    c.page.select_option(f'{E} [data-event="0"] select[data-f=place]', 'TARGET')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(600)
+    c.until(f"!document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved again')
+    c.eq(c.js(_VEIL_EV_FILE, path)[1][0], {'at': 'H+40mn', 'place': 'TARGET', 'text': 'Contact radio établi'}, 'a place chosen by the author replaces the hidden one',
+         what='a place chosen')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
