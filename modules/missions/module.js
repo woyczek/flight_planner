@@ -117,6 +117,8 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-rbody{padding:0 .75em .6em}
 /* SOG-0455 : la ligne de choix « durée · aéronefs · théâtre » — chaque morceau insécable, séparés par un point médian */
 [data-module="missions"] .ms-choice{display:flex;flex-wrap:wrap;column-gap:.45em;margin:.1em 0 .3em}
+[data-module="missions"] .ms-catline{margin:0 0 .3em}
+[data-module="missions"] .ms-catline>span.f-muted{display:block}
 [data-module="missions"] .ms-choice>span{white-space:nowrap}
 [data-module="missions"] .ms-choice>span+span::before{content:"·";margin-right:.45em;color:var(--sog-muted,#59636e)}
 [data-module="missions"] .ms-rrow>summary>.ms-choice{display:flex;font-size:var(--sog-size-s);margin:0}
@@ -1439,8 +1441,13 @@ function firstHtml(s, r, m, drawn, why) {
   const flownBadge = flown ? `<span class="f-badge" data-kind="ok" data-flown>${esc(s.tt(TX.flownOn, { d: day(flown) }))}</span>` : '';
   // la famille : son sigle en gras puis son nom long (SOG-0187, comme au compte rendu et dans la liste ; familyParts)
   return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
-    ${kindLine.length || flownBadge ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}${kindLine.length && flownBadge ? ' ' : ''}${flownBadge}</p>` : ''}
-    ${m ? choiceHtml(s, MS.pilotView(m, [], { mine: false }) || m) : '' /* SOG-0459 : la ligne de choix de la seule partie visible */}
+    ${(() => {
+      // la catégorie et, dessous, la ligne de choix (SOG-0455 ; SOG-0459 : la seule partie visible) : UN bloc, la règle 13 (sept
+      // éléments au plus sur la première page, N9)
+      const ch = m ? choiceHtml(s, MS.pilotView(m, [], { mine: false }) || m) : '',
+        cat = kindLine.length || flownBadge ? `<span class="f-muted">${esc(kindLine.join(' · '))}${kindLine.length && flownBadge ? ' ' : ''}${flownBadge}</span>` : '';
+      return cat || ch ? `<div class="ms-catline" data-cat>${cat}${ch}</div>` : '';
+    })()}
     ${s.co?.filter ? coHtml(s, r) : ''}
     ${m?.summary ? `<div class="ms-summary" data-summary><h3>${esc(s.tt(TX.sumTitle))}</h3><p data-sumtext>${esc(sumCut(m.summary))}</p>${m.summary.length > SUM_MAX ? `<button type="button" class="f-linkbtn" data-do="detail" data-readmore>${esc(s.tt(TX.readMore))}</button>` : ''}</div>` : ''}
     ${m ? risks.length ? `<div data-risks><h3>${esc(s.tt(TX.risks))}</h3><ul class="ms-lines">${risks.slice(0, 3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>${risks.length > 3 ? `<details class="ms-more" data-riskmore><summary class="f-muted">${esc(s.tt(TX.more, { n: risks.length - 3 }))}</summary><ul class="ms-lines">${risks.slice(3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul></details>` : ''}</div>` :

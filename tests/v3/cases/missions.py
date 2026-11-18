@@ -520,7 +520,7 @@ _FIRST_JS = f"""(() => {{ const f = document.querySelector('{M} [data-first]'), 
     sumLines: (() => {{ const p = f.querySelector('[data-summary]'); if (!p) return 0; const lh = parseFloat(getComputedStyle(p).lineHeight) || 1.4 * parseFloat(getComputedStyle(p).fontSize);
       return Math.round(p.getBoundingClientRect().height / lh) }})(),
     sumCut: (() => {{ const p = f.querySelector('[data-summary]'); return !!p && p.scrollHeight > p.clientHeight + 1 }})(),
-    empty: [...f.children].filter(e => !e.textContent.trim() && !e.querySelector('img')).length,
+    empty: [...f.children].filter(vis).filter(e => !e.textContent.trim() && !e.querySelector('img')).length, // a hidden section (the drawers, SOG-0459) is no line
     sw: document.documentElement.scrollWidth, iw: innerWidth }} }})()"""
 
 
@@ -1403,9 +1403,11 @@ def n33(c):
     c.tap(f'{R} [data-rowid="X-901A"] [data-do=regbrief]')
     S = f'{M} [data-pane=mission][data-id="X-901A"]'
     c.until(f"!!document.querySelector('{S} [data-first] [data-choice] [data-dur]')", timeout=10000, what='the Brief with its line of choice')
-    order = c.js(f"[...document.querySelector('{S} [data-first]').children].map(x => x.matches('h2') ? 'title' : x.matches('[data-choice]') ? 'choice' : x.matches('[data-summary]') ? 'summary' : x.matches('.ms-actions') ? 'actions' : '')"
+    order = c.js(f"[...document.querySelector('{S} [data-first]').children].map(x => x.matches('h2') ? 'title' : x.matches('[data-cat]') ? 'cat' : x.matches('[data-summary]') ? 'summary' : x.matches('.ms-actions') ? 'actions' : '')"
                  ".filter(Boolean)")
-    c.eq(order[:3], ['title', 'choice', 'summary'], 'the Brief: the title, the line of choice, the summary', what='order')
+    c.eq(order[:3], ['title', 'cat', 'summary'], 'the Brief: the title, the category with the line of choice under it (one block: rule 13, N9), '
+         'the summary', what='order')
+    c.ok(c.count(f'{S} [data-first] > [data-cat] > [data-choice]') == 1, '', 'the line of choice is the second line of the category block')
     acts = c.js(f"[...document.querySelectorAll('{S} .ms-actions > *')].map(x => x.dataset.do || (x.matches('[data-actslot]') ? 'slot' : ''))")
     c.eq([acts[0], acts[1], 'edmodify' in acts, acts[-1]], ['prepare', 'slot', True, 'back'],
          '« Préparer ce vol » first, the place of the gestures of « Affectation » right after, « Atelier » offered, then « Retour »', what='actions')
