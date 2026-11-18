@@ -3,6 +3,13 @@
 import {
   obj
 } from './model_kit.js';
+import {
+  finite as num
+} from '../../frame/lib/untrusted.js'; // SOG-0468 (c) : le nombre fini, défini une fois par le cadre
+
+export {
+  num
+}; // le même nom qu'avant, pour les modules qui l'importent d'ici
 
 /** Sources de la base sous licence d'usage personnel, par identifiant de shared/aero_zones.js (SOURCES : le champ `personal`) ;
  *  `zones` : les zones qu'elles nourrissent ('*' : toutes). Ce module ne charge pas shared/aero_zones.js : le cas L1 compare
@@ -63,8 +70,6 @@ const ERROR_CODES = ['browser-failed', 'browser-exited', 'timeout', 'page-error'
 const FETCH_CODES = ['network', 'http', 'parse', 'personal', 'manual'];
 /** États d'une source dans la vue d'un téléchargement. */
 const SOURCE_STATES = ['downloaded', 'unchanged', 'failed', 'skipped', 'manual'];
-/** Un nombre fini, sinon null. */
-export const num = v => Number.isFinite(v) ? v : null;
 /** La valeur d'une clé PROPRE d'une table, sinon undefined : jamais celle du prototype. Toute clé qui vient d'une réponse du lanceur (motif, erreur, état, verbe, jeu, source…) passe par
  *  là avant d'entrer dans une table du module : « constructor », « toString » ou « __proto__ » ne rendent ni une fonction ni un objet. */
 export const own = (table, key) => table !== null && typeof table === 'object' && (typeof key === 'string' || typeof key === 'number') &&

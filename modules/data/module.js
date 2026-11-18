@@ -178,7 +178,7 @@ export const meta = {
     'mapview.js',
     'model_thread.js',
     'zoneop.js', 'select.js',
-    '../../frame/lib/plural.js',
+    '../../frame/lib/plural.js', '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par model_sets.js
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
