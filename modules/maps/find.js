@@ -197,7 +197,7 @@ function open() {
     })));
   };
   const run = async () => {
-    const q = input.value.trim(),
+    const q = input.value.split(' — ')[0].trim(), // un texte repris après un choix (« LFMT — LFMT TEST ») : le code seul
       seq = list.ticket();
     if (q.length < MIN) {
       hits = [];
@@ -228,6 +228,17 @@ function open() {
     act.hidden = !b.length;
     none.hidden = true;
   }
+  // le champ garde le dernier choix : le toucher ou le focus le SÉLECTIONNE, la frappe suivante le remplace (SOG-0491, refus de recette : « la seconde fois, rien ne se passe »)
+  const reselect = () => {
+    if (S?.find.pick) input.select();
+  };
+  input.addEventListener('focus', reselect);
+  input.addEventListener('pointerup', e => {
+    if (S?.find.pick) {
+      e.preventDefault();
+      input.select();
+    }
+  });
   input.addEventListener('input', () => {
     if (list.picking()) return;
     S.find.pick = null;
@@ -237,6 +248,13 @@ function open() {
     timer = setTimeout(run, DEBOUNCE);
     schedule();
   });
+  // les écouteurs du cadre de la loupe partent à sa fermeture (un signal) : sinon chaque ouverture en ajoutait une série, dont la liste d'une ouverture ANCIENNE vidait celle de la nouvelle au toucher
+  // (SOG-0491, refus de recette : « la seconde fois, rien ne se passe »)
+  S.find.ac?.abort();
+  const ac = S.find.ac = new AbortController(),
+    sig = {
+      signal: ac.signal
+    };
   el.addEventListener('keydown', e => {
     if (list.onKey(e)) return;
     if (e.key === 'Escape') {
@@ -244,9 +262,9 @@ function open() {
       e.stopPropagation();
       setFind(false);
     }
-  });
-  el.addEventListener('focusout', e => list.onFocusOut(e));
-  el.addEventListener('pointerdown', e => list.onPointerDown(e));
+  }, sig);
+  el.addEventListener('focusout', e => list.onFocusOut(e), sig);
+  el.addEventListener('pointerdown', e => list.onPointerDown(e), sig);
   el.addEventListener('click', e => {
     if (list.onClick(e)) return;
     if (e.target.closest('.mp-find-x')) return setFind(false);
@@ -273,13 +291,15 @@ function open() {
     }, () => S?.ctx.notify?.(tt(TX.saveFailed, {
       m: 'edit.js'
     }), 'err'));
-  });
+  }, sig);
   input.focus();
   schedule();
 }
 
 function close() {
   const el = S.findEl;
+  S.find.ac?.abort();
+  S.find.ac = null;
   S.find.list?.close();
   S.find.list = null;
   S.find.pick = null;

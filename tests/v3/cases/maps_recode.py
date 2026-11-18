@@ -9641,6 +9641,50 @@ def d278(c):
     c.eq(r['four'], ['aerodrome:LFRN'], 'an aerodrome code, exact: first and once', what=str(r['four']))
 
 
+@case('D281', 'The loupe works the second time (SOG-0491, refused at the test: « la première fois ça marche nickel, la seconde rien ne se passe »): two searches in a row, with and without closing the loupe between them, each proposes, centres and marks', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0491 (the user, second refusal): a second search must propose, centre the Map and put the mark as the first did, whether the loupe was closed between the two or not')
+def d281(c):
+    c.open('maps', flight=True, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    c.until("() => !!window.__mp.S.route && window.__mp.S.route.points.length >= 2 && !!window.__mp.S.map", timeout=15000, what='the flight is drawn')
+    center = lambda: c.js("() => { const k = window.__mp.S.map.getCenter(); return [k.lat, k.lng] }")
+    near = lambda p, lat, lon: abs(p[0] - lat) < 0.3 and abs(p[1] - lon) < 0.3
+    PLACES = {'LFMT': (43.5762, 3.963), 'LFML': (43.4367, 5.215), 'LFRS': (47.1569, -1.6078)}
+
+    def search(text, key, how):
+        c.until("() => { const e = document.querySelector('.mp-find'); return !!e && !e.hidden && !!e.querySelector('.mp-find-q') }", timeout=6000, what=f'{how}: the field is there')
+        if how.startswith('second search, a touch'):
+            c.tap('.mp-find-q')    # the user touches the field that still holds the first choice and types: no selection made by the test
+        else:
+            c.js("() => { const i = document.querySelector('.mp-find-q'); i.focus(); i.select(); return true }")
+        c.page.keyboard.type(text)
+        c.until(f"() => [...document.querySelectorAll('.mp-find-sug [role=option]')].some(o => o.textContent.includes('{key}'))", timeout=8000, what=f'{how}: {key} is proposed')
+        # a touch on the proposition (not the keyboard): the way the user chose
+        c.js(f"() => {{ const o = [...document.querySelectorAll('.mp-find-sug [role=option]')].find(o => o.textContent.includes('{key}')); o.click(); return true }}")
+        c.until("() => !!window.__mp.S.find.pin", timeout=6000, what=f'{how}: the mark is put')
+        c.wait(1300)
+        pin = c.js("() => window.__mp.S.find.pin")
+        la, lo = PLACES[key]
+        c.ok(abs(pin['lat'] - la) < 0.01 and abs(pin['lon'] - lo) < 0.01, f'{how}: {pin}', f'{how}: the mark is on {key}')
+        c.ok(near(center(), la, lo), f'{how}: centre {center()}', f'{how}: the Map is centred on {key}')
+
+    c.tap('[data-mp="find"]')
+    search('LFMT', 'LFMT', 'first search')
+    # second search, the loupe still open
+    search('LFML', 'LFML', 'second search, loupe open')
+    search('LFMT', 'LFMT', 'second search, a touch in the field then typing')
+    # close, reopen, third
+    c.tap('.mp-find-x')
+    c.until("() => { const e = document.querySelector('.mp-find'); return !e || e.hidden }", timeout=4000, what='the loupe closes')
+    c.tap('[data-mp="find"]')
+    search('LFRS', 'LFRS', 'after closing and reopening')
+    c.tap('.mp-find-x')
+    c.tap('[data-mp="find"]')
+    search('LFMT', 'LFMT', 'after a second closing and reopening')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
