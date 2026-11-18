@@ -4761,9 +4761,14 @@ def n97(c):
     c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen on the map by its row')
     c.eq([shape(3), hint(), 'radius:3' in c.js(_EDMAP_IDS, None)], [['round', '', T('plToContour'), True], T('atHint_round', name='ZONE-1 · Secteur nord'), True],
          'the row of ZONE-1 open: a round zone, with its radius, the handle of its radius on the map, and « Tracer son contour »', what='a round zone')
-    # round → contour: six vertices, and the points that add one
+    # round → contour: six vertices, and the points that add one; the view is framed on the zone
+    view0 = c.js(_EDMAP_VIEW)
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
     c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='the six vertices on the map')
+    a0, a3 = c.js(_EDMAP_XY, [44.84497, 1.2]), c.js(_EDMAP_XY, [44.75503, 1.2])
+    zoomed = c.js(_EDMAP_VIEW)
+    c.ok(zoomed[2] > view0[2] + 2 and abs(a3[1] - a0[1]) > 120, [view0, zoomed, a0, a3],
+         '« Tracer son contour » frames the view on the zone, with a margin: its vertices are far enough apart to be caught')
     ids = c.js(_EDMAP_IDS, None)
     c.eq([shape(3), hint(), sum(1 for x in ids if x.startswith('mid:3:')), 'radius:3' in ids, c.js(_EDTOOL_STATE)[4][2]],
          [['contour', T('plContour', n=6), T('plToRound'), False], T('atHint_contour', name='ZONE-1 · Secteur nord'), 6, False, False],
@@ -4771,8 +4776,9 @@ def n97(c):
          what='round to contour')
     # a vertex is dragged; touched, it is chosen and « Retirer ce sommet » is offered
     c.ok(c.js(f"document.querySelector('{_EDMAP} [data-vertexdel]').hidden") is True, 'shown', '« Retirer ce sommet » is not shown while no vertex is chosen')
-    _ed_drag(c, [44.84497, 1.2], [44.95, 1.2])
-    c.until(f"(({_EDMAP_IDS})([44.95, 1.2]) || []).includes('vertex:3:0')", timeout=8000, what='the first vertex moved')
+    _ed_drag(c, [44.84497, 1.2], [44.86, 1.2])
+    c.until(f"(({_EDMAP_IDS})([44.86, 1.2]) || []).includes('vertex:3:0')", timeout=8000, what='the first vertex moved')
+    c.eq(c.js(_EDMAP_VIEW), zoomed, 'moving a vertex never reframes the view', what='the view after a move')
     c.eq([hint(), c.js(f"document.querySelector('{_EDMAP} [data-vertexdel]').hidden"), norm(c.text(f'{_EDMAP} [data-vertexdel]'))],
          [T('atHint_vertex', k=1, name='ZONE-1 · Secteur nord'), False, T('atVertexDel')], 'the vertex moved stays chosen: the line names it, « Retirer ce sommet » is offered',
          what='a vertex moved')
@@ -4790,10 +4796,10 @@ def n97(c):
          '« Retirer ce sommet » removed it; no vertex is chosen any more')
     # the contour is moved as a block by its middle; « Annuler le geste » gives it back
     where = c.js(f"(() => {{ const f = window.__edMap.queryRenderedFeatures().find(x => x.properties.fid === 'vertex:3:3'); return [f.geometry.coordinates[1], f.geometry.coordinates[0]] }})()")
-    lbl = c.js(f"(() => {{ const m = window.__edMap, r = m.getContainer().getBoundingClientRect(), e = document.querySelector('{_EDMAP} [data-maplbl=\"place:3\"]').getBoundingClientRect(); const p = m.unproject([e.left - r.left - 7, e.bottom - r.top + 7]); return [p.lat, p.lng] }})()")
-    _ed_drag(c, lbl, [lbl[0] - 0.3, lbl[1] - 0.25])
+    lbl = c.js("(() => { const f = window.__edMap.queryRenderedFeatures().find(x => x.properties.fid === 'place:3' && x.geometry.type === 'Point'); return [f.geometry.coordinates[1], f.geometry.coordinates[0]] })()")
+    _ed_drag(c, lbl, [lbl[0] - 0.02, lbl[1] - 0.02])
     c.until(f"!(({_EDMAP_IDS})({where}) || []).includes('vertex:3:3')", timeout=8000, what='the contour moved away')
-    c.ok(c.js(_EDVERTS, 3) == 6 and 'vertex:3:3' in c.js(_EDMAP_IDS, [where[0] - 0.3, where[1] - 0.25]), c.js(_EDMAP_IDS, [where[0] - 0.3, where[1] - 0.25]),
+    c.ok(c.js(_EDVERTS, 3) == 6 and 'vertex:3:3' in c.js(_EDMAP_IDS, [where[0] - 0.02, where[1] - 0.02]), c.js(_EDMAP_IDS, [where[0] - 0.02, where[1] - 0.02]),
          'dragged by its middle, the contour moved as a block: every vertex followed')
     c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
     c.until(f"(({_EDMAP_IDS})({where}) || []).includes('vertex:3:3')", timeout=8000, what='the contour back')
@@ -4801,7 +4807,7 @@ def n97(c):
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(600)
     text = c.js(_TEXT_OF, path) or ''
-    c.ok('points:' in text and '44.95' in text and 'radius_km: 5' in text, text[text.find('zones'):text.find('zones') + 400], 'the file saved carries the vertices of ZONE-1 under « points » (its radius stays, for the way back)')
+    c.ok('points:' in text and '44.86' in text and 'radius_km: 5' in text, text[text.find('zones'):text.find('zones') + 400], 'the file saved carries the vertices of ZONE-1 under « points » (its radius stays, for the way back)')
     # contour → round (the note of the save is removed and the row brought back in view first)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.ok(c.count(f'{E} [data-edplaces] [data-do="edplace"]') >= 7, c.count(f'{E} [data-edplaces] [data-do="edplace"]'),
@@ -4812,6 +4818,9 @@ def n97(c):
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
     c.until(f"({_EDVERTS})(3) === 0 && (({_EDMAP_IDS})() || []).includes('radius:3')", timeout=8000, what='the zone round again')
     c.eq(shape(3), ['round', '', T('plToContour'), True], '« La rendre ronde »: the circle is back, with its radius field', what='contour to round')
+    # « Recentrer » comes back to the mission
+    c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
+    c.eq(c.js(_EDMAP_VIEW), view0, '« Recentrer » brings the view back from the zone to the frame of the mission', what='the view recentred')
     # from the sheet of a drawer: « Dessiner sur la carte » poses a zone that becomes its key
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of drawer 1')

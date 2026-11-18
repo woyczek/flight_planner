@@ -757,9 +757,18 @@ function edMapPick(s, e, i) {
   e.placeAsk = -1;
   e.placeEdit = i;
   draw(s);
+  edMapFocus(e, i);
   s.el.querySelector(`[data-edplaces] [data-place="${i}"]`)?.scrollIntoView?.({
     block: 'nearest'
   });
+}
+
+/** Une zone à contour choisie est cadrée sur la carte, avec une marge (l'ergonome, 18 nov. : ses poignées s'entassent quand elle est
+ *  petite dans une mission étendue) ; « Recentrer » revient à la mission. Un lieu d'une autre sorte, ou un simple déplacement, ne
+ *  recadre jamais. À appeler après le dessin (la carte a alors les éléments du jour). */
+function edMapFocus(e, i) {
+  const r = (e.places || [])[i];
+  if (r?.kind === 'zone' && r.ring) EM.focus(i);
 }
 
 /** Un sommet touché du contour choisi : il est choisi (sur place : la ligne le dit, « Retirer ce sommet » se montre). */
@@ -1706,7 +1715,8 @@ function edClickDo(s, b) {
       e.places = after;
       e.mapSel = i;
       e.mapVertex = -1;
-      return draw(s);
+      draw(s);
+      return edMapFocus(e, i); // « Tracer son contour » cadre la vue sur la zone
     }
     case 'edmapundo': { // « Annuler le geste » : les lignes des Lieux d'avant le dernier geste de la carte ; le lieu choisi le reste
       // quand il existe encore à son rang (le même identifiant, la même sorte), sinon plus aucun
@@ -1746,7 +1756,8 @@ function edClickDo(s, b) {
       // la liste et la carte disent le même lieu : la ligne ouverte est le lieu choisi sur la carte (refermée : plus aucun)
       s.ed.mapSel = s.ed.placeEdit;
       s.ed.mapVertex = -1;
-      return draw(s);
+      draw(s);
+      return edMapFocus(s.ed, s.ed.placeEdit);
     case 'edeventadd':
       s.ed.events = [...(s.ed.events || ED.eventsOf(s.ed.base)), {
         i: -1,

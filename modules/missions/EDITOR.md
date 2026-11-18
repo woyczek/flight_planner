@@ -562,8 +562,10 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   its sheet stays. Taking a tool by hand drops this.
 - **A defect corrected in passing**: after « Enregistrer », the group « Lieux » left unfolded showed an EMPTY list until it was
   folded and reopened — its rows are now read again from the saved file (N97).
-- **Not automatic**: the view does not zoom on a zone when it is chosen — a small zone in a wide mission shows its handles close
-  together until the author zooms in.
+- **The view is framed on a zone with a contour** (the ergonomist's reading of 18 Nov: on a zone of 5 km in a mission of 150 km
+  « les six poignées sont entassées, personne ne les attrape »): « Tracer son contour », and choosing a zone with a contour — on the
+  map or by « Modifier » — frame the view on the zone, with a margin (`focus(i)` of `editor_map.js`); the view then no longer
+  reframes itself on the mission, **« Recentrer » comes back to it**; moving a place or a vertex never reframes (N97).
 - **Not done**: Tracé and the landmarks of AeroDB (next push), « Poser l'avion ici », « Vue du pilote ».
 
 ### 8. What is NOT ported

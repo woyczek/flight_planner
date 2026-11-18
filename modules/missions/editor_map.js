@@ -15,7 +15,7 @@
 //     et rendre le geste fini à l'écran (onPick, onMove, onRadius, onPose), qui seul retouche les lignes.
 //   - la carte EN VIE (une seule : l'atelier d'une mission à la fois) : show(slot, feats, options) la démarre dans un hôte à elle,
 //     gardé d'un dessin à l'autre (l'écran est redessiné par innerHTML : l'hôte est reposé dans l'emplacement neuf), fit() recadre,
-//     stop() la retire avec son contexte WebGL. Sans tuiles, un fond uni (MapLibre sur un style local) ; sans MapLibre ni WebGL, ou
+//     focus(i) cadre la vue sur une zone, stop() la retire avec son contexte WebGL. Sans tuiles, un fond uni (MapLibre sur un style local) ; sans MapLibre ni WebGL, ou
 //     hors ligne : rien — l'écran garde son croquis.
 import {
   isOwnResize,
@@ -617,6 +617,34 @@ export function show(slot, feats, o) {
   mark(L);
   const resized = mapSize(L.map, L.host);
   if ((reframed || resized) && !L.moved) frame(L);
+}
+
+/** Cadre la vue sur une zone (le rang de sa ligne), avec une marge : ses sommets ne s'attrapent pas quand elle est petite dans une
+ *  mission étendue (l'ergonome, 18 nov. 2026). La vue ne se recadre alors plus seule sur la mission : « Recentrer » y revient. Sans
+ *  carte, ou si la ligne n'est pas une zone dessinée : rien. */
+export function focus(i) {
+  const L = LIVE,
+    ring = L?.map ? (L.feats?.polygons || []).find(p => p.id === `place:${i}`)?.rings?.[0] : null;
+  if (!ring?.length) return;
+  const lats = ring.map(p => p.lat),
+    lons = ring.map(p => p.lon);
+  L.fitting = true;
+  try {
+    mapSize(L.map, L.host);
+    L.map.fitBounds([
+      [Math.min(...lons), Math.min(...lats)],
+      [Math.max(...lons), Math.max(...lats)]
+    ], {
+      padding: 70,
+      animate: false,
+      maxZoom: 15
+    });
+  } catch {
+    /* un cadre que MapLibre refuse : la vue reste où elle est */
+  }
+  L.fitting = false;
+  L.moved = true;
+  spread(L);
 }
 
 /** « Recentrer » : la vue revient au cadre de la mission, et se recadre de nouveau seule. */
