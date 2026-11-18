@@ -2,7 +2,7 @@
 All coded SID/STAR points participate in VIA conditions. Unparsed conditions are
 reported as reviews; they never become permissions or silently pass as valid.
 """
-import collections,re
+import collections,functools,re
 from . import fra   # SOG-0081 : import relatif
 from . import rad_via      # SOG-0401 (forme B) : la SUITE d'un groupe VIA
 
@@ -85,9 +85,10 @@ def unread_spaces_issue(summary,limit=8):
     return f"Règles RAD NON appliquées : {total} règle(s) dont la cible est un espace sans contour dans la base{first} — tous les espaces : {shown}{more} ; l'IFPS les applique, la route peut être refusée par elles.",total
 
 
+@functools.lru_cache(maxsize=8192)      # SOG-0468 (5) : le calcul demande les noms d'une voie des centaines de milliers de fois (221 000 appels, 0,7 s sur trois vols) ; une fonction pure d'un texte : mémorisée, et rendue en ensemble NON modifiable (les appelants ne font que lire)
 def aliases(text):
     text=re.sub('[^A-Z0-9]','',text.upper())
-    return {text,re.sub(r'\d[A-Z]$','',text)}-{''}
+    return frozenset({text,re.sub(r'\d[A-Z]$','',text)}-{''})
 
 def context(legs,dep,arr):
     points={dep,arr};routes=set();phases=collections.Counter();sid=set();star=set()

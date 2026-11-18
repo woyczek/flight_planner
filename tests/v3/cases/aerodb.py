@@ -17538,3 +17538,25 @@ def k373(c):
         edges = [(u, v, e['kind'], e.get('fra_area'), round(e['nm'], 6), e['lower'], e['upper'], e.get('fra_rows')) for u, es in g.items() for v, e in es]
         out[density] = (len(edges), hashlib.sha1(json.dumps(edges, default=str).encode()).hexdigest()[:12])
     c.eq(out, {'normal': (688, '65286859718e'), 'wide': (702, 'ad2e2c1eec04')}, 'the FRA graph of the bench is edge for edge the one of before (count and hash of every edge, with its order), in the normal and the wide density', what='same graph')
+
+
+@case('K374', 'Route engine, SOG-0468 (5): the names of an airway (`rad_flight.aliases`, « UL607 » → UL607, « SID1A » → SID1A and SID) are computed once per text (a memo of 8 192) and returned as an immutable set — the callers only read it; the values are those of before',
+      'K', static=True,
+      rule='SOG-0468 (5) (the survey: small gains; measured, 221 000 calls and 0.7 s on three flights with alternatives). A pure function of a text. The set is immutable so that a caller that wrote into it would fail at once instead of corrupting the memo.')
+def k374(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import rad_flight as RF
+    RF.aliases.cache_clear()
+    values = [RF.aliases('UL607'), RF.aliases('SID1A'), RF.aliases('n 8-5 9'), RF.aliases('DCT'), RF.aliases('')]
+    c.eq([set(v) for v in values], [{'UL607'}, {'SID1A', 'SID'}, {'N859'}, {'DCT'}, set()], 'the names: the airway as written without its signs, and without the last digit-and-letter of a procedure (SID1A → SID); empty text: none', what='values')
+    RF.aliases('UL607')
+    RF.aliases('UL607')
+    info = RF.aliases.cache_info()
+    c.eq((info.hits, info.misses), (2, 5), 'two more calls with a text already seen are two hits of the memo (five texts seen: five misses)', what='memo')
+    try:
+        RF.aliases('UL607').add('X')
+        wrote = True
+    except AttributeError:
+        wrote = False
+    c.eq((wrote, RF.aliases('UL607') & {'UL607', 'Z'}, 'UL607' in RF.aliases('UL607'), RF.aliases('SID1A') | {'Q'}), (False, frozenset({'UL607'}), True, frozenset({'SID1A', 'SID', 'Q'})), 'the set cannot be written to; reading it (in, &, |) works as with a set', what='read only')

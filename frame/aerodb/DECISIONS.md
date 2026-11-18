@@ -3701,3 +3701,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Done**: the position in radians in the record (`_tr`), one memo per goal for the sort key. Tried and dropped: moving the test « can exit here » into the list of candidates (no gain: nearly every point passes it).
 - **Not done**: the rest of the time of `Fra.graph` is the distance itself (`geo.chord_nm`, 1.7 million calls on ESSA → LEMG): inlining it would copy the formula back, against SOG-0468 (3).
+
+## 19 November 2026 — SOG-0468 (5): small gains
+
+- **Done**: `aliases` memoized (K374). **Dropped after measure**: the index « alias → names » for `engine.airway_portion` (it already keeps its result per (airway, p, q) and its graph per airway) and the list of identifiers with « / » (`engine.keys_of`: it runs only for an identifier written as a coordinate, a NAT point, and does not appear in the profile).
+- **Left**: item 4 of the survey (the JavaScript copies of the distance: `aerodb` and `procedures` → `frame/lib/geo.js`).
