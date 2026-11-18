@@ -156,6 +156,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-chip>button{min-width:44px;min-height:44px;border:0;background:none;font:inherit;color:inherit}
 [data-module="missions"] .ms-chip:has(>.ms-chipname){padding:0}
 [data-module="missions"] .ms-chip>.ms-chipname{padding:0 4px 0 10px;text-align:left}
+[data-module="missions"] .ms-chip.ms-chipfixed{padding:0 10px;background:color-mix(in srgb,var(--sog-line,#ddd) 35%,transparent)}
 [data-module="missions"] .ms-chip[data-chipsel]{border-color:var(--sog-accent,#1a6fd4);box-shadow:inset 0 0 0 1px var(--sog-accent,#1a6fd4)}
 [data-module="missions"] .ms-chip[data-chipsel]>.ms-chipname{font-weight:600}
 [data-module="missions"] .ms-chipmove{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px}
@@ -475,14 +476,21 @@ function edPlacesHtml(s) {
 const edRoute = e => e.route || ED.routeOf(edDoc(e));
 
 /** Les pastilles de la route du départ : [{ n (le rang dans la route), id (le jeton écrit), text (ce qu'il dit : le code du terrain
- *  pour le départ et l'arrivée, sinon l'identifiant) }]. */
+ *  pour le départ et l'arrivée, sinon l'identifiant), fixed (une pastille ANCRÉE : le départ quand il est premier, l'arrivée quand
+ *  elle est dernière — ED.routeFree) }]. */
 function edRouteChips(e, rows) {
   const name = r => r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id,
-    by = new Map(rows.map(r => [ED.routeToken(r), r]).filter(x => x[0]));
-  return edRoute(e).map((t, n) => ({
+    by = new Map(rows.map(r => [ED.routeToken(r), r]).filter(x => x[0])),
+    route = edRoute(e),
+    {
+      lo,
+      hi
+    } = ED.routeFree(route);
+  return route.map((t, n) => ({
     n,
     id: t,
-    text: (by.has(t) ? name(by.get(t)) : '') || t
+    text: (by.has(t) ? name(by.get(t)) : '') || t,
+    fixed: n < lo || n > hi // le départ en tête, l'arrivée en queue : ancrés
   }));
 }
 
@@ -500,21 +508,32 @@ function edDrawerChips(e, r) {
 const edChipSel = (e, where) => e.chipSel && e.chipSel.where === where && Number.isInteger(e.chipSel.n) ? e.chipSel.n : -1;
 
 /** Les pastilles d'une route : chacune dit son lieu par un bouton qui la CHOISIT (les deux flèches la déplacent alors) et se retire
- *  par sa croix. */
+ *  par sa croix. Une pastille ancrée (le départ et l'arrivée de la route du départ) dit seulement son lieu : ni bouton ni croix. */
 function edChipsHtml(s, where, chips) {
   const sel = edChipSel(s.ed, where),
     start = where === 'start';
-  return chips.map(c => `<span class="ms-chip" data-chip="${esc(c.id)}"${c.n === sel ? ' data-chipsel' : ''}><button type="button" class="ms-chipname" data-do="edchippick" data-where="${start ? 'start' : 'drawer'}" data-n="${c.n}" aria-pressed="${c.n === sel}">${esc(c.text)}</button><button type="button" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" data-n="${c.n}" aria-label="${esc(s.tt(start ? EDTX.rtChipDel : EDTX.dwChipDel, { id: c.text }))}">×</button></span>`).join('');
+  return chips.map(c => c.fixed ? `<span class="ms-chip ms-chipfixed" data-chip="${esc(c.id)}" data-chipfixed>${esc(c.text)}</span>` : `<span class="ms-chip" data-chip="${esc(c.id)}"${c.n === sel ? ' data-chipsel' : ''}><button type="button" class="ms-chipname" data-do="edchippick" data-where="${start ? 'start' : 'drawer'}" data-n="${c.n}" aria-pressed="${c.n === sel}">${esc(c.text)}</button><button type="button" data-do="${start ? 'edroutedel' : 'eddrchipdel'}" data-n="${c.n}" aria-label="${esc(s.tt(start ? EDTX.rtChipDel : EDTX.dwChipDel, { id: c.text }))}">×</button></span>`).join('');
+}
+
+/** Où en est la pastille choisie parmi celles d'une route : { at (son rang parmi les pastilles montrées, -1 sans choix), first (elle
+ *  ne peut pas avancer : aucune choisie, la première, ou la pastille d'avant est ancrée), last (elle ne peut pas reculer) }. */
+function edChipEnds(chips, sel) {
+  const at = chips.findIndex(c => c.n === sel && !c.fixed);
+  return {
+    at,
+    first: at <= 0 || !!chips[at - 1].fixed,
+    last: at < 0 || at >= chips.length - 1 || !!chips[at + 1].fixed
+  };
 }
 
 /** Les deux flèches d'une route, sous ses pastilles : « ← Plus tôt » et « Plus tard → » déplacent la pastille choisie d'un rang ;
- *  avant qu'une pastille soit choisie, la ligne dit comment faire. Rien pour une route de moins de deux lieux. */
+ *  avant qu'une pastille soit choisie, la ligne dit comment faire. Rien pour une route de moins de deux lieux LIBRES (les ancres
+ *  de la route du départ ne comptent pas). */
 function edChipMoveHtml(s, where, chips) {
-  const sel = edChipSel(s.ed, where),
-    at = chips.findIndex(c => c.n === sel),
+  const ends = edChipEnds(chips, edChipSel(s.ed, where)),
     w = where === 'start' ? 'start' : 'drawer',
     btn = (step, label, off) => `<button type="button" data-do="edchipmove" data-where="${w}" data-step="${step}"${off ? ' disabled' : ''}>${esc(s.tt(label))}</button>`;
-  return chips.length < 2 ? '' : `<div class="ms-chipmove" data-chipmove="${w}"><p class="f-muted" data-chiphint${at < 0 ? '' : ' hidden'}>${esc(s.tt(EDTX.rtMoveHint))}</p>${btn(-1, EDTX.rtEarlier, at <= 0)}${btn(1, EDTX.rtLater, at < 0 || at >= chips.length - 1)}</div>`;
+  return chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-chipmove" data-chipmove="${w}"><p class="f-muted" data-chiphint${ends.at < 0 ? '' : ' hidden'}>${esc(s.tt(EDTX.rtMoveHint))}</p>${btn(-1, EDTX.rtEarlier, ends.first)}${btn(1, EDTX.rtLater, ends.last)}</div>`;
 }
 
 /** Les pastilles et les flèches d'une route, remises SUR PLACE après un choix ou un déplacement (SOG-0449 : la flèche pressée n'est
@@ -526,12 +545,12 @@ function edChipsShow(s, where, moved) {
     r = start ? null : edDrawerRow(e),
     chips = start ? edRouteChips(e, edPlaces(e)) : r ? edDrawerChips(e, r) : [],
     sel = edChipSel(e, where),
-    at = chips.findIndex(c => c.n === sel),
+    ends = edChipEnds(chips, sel),
     box = s.el.querySelector(start ? '[data-rtchips]' : '[data-dwroute]'),
     row = s.el.querySelector(`[data-chipmove="${start ? 'start' : 'drawer'}"]`);
   if (box && moved) box.innerHTML = edChipsHtml(s, where, chips);
   else if (box)
-    for (const chip of box.querySelectorAll('.ms-chip')) {
+    for (const chip of box.querySelectorAll('.ms-chip:not([data-chipfixed])')) {
       const name = chip.querySelector('.ms-chipname'),
         on = +name?.dataset.n === sel;
       chip.toggleAttribute('data-chipsel', on);
@@ -540,9 +559,9 @@ function edChipsShow(s, where, moved) {
   if (!row) return;
   const hint = row.querySelector('[data-chiphint]'),
     [earlier, later] = row.querySelectorAll('button');
-  if (hint) hint.hidden = at >= 0;
-  if (earlier) earlier.disabled = at <= 0;
-  if (later) later.disabled = at < 0 || at >= chips.length - 1;
+  if (hint) hint.hidden = ends.at >= 0;
+  if (earlier) earlier.disabled = ends.first;
+  if (later) later.disabled = ends.last;
 }
 
 /** La route du départ en pastilles (SOG-0444, Tracé ; jamais « des identifiants séparés par des virgules »), sous la liste des Lieux :
@@ -1062,7 +1081,8 @@ function edMapRefPick(s, e, r) {
   edMapShow(s);
 }
 
-/** Un lieu ajouté à la fin de la route du départ (son jeton : « ORIGIN », « DESTINATION » ou son identifiant) ; soixante au plus :
+/** Un lieu ajouté à la route du départ — à la fin, ou juste avant l'arrivée quand elle la termine (ED.routeAddStart) — par son
+ *  jeton (« ORIGIN », « DESTINATION » ou son identifiant) ; soixante au plus :
  *  au-delà, une notification et rien n'est ajouté. → vrai s'il est ajouté. */
 function edRouteAdd(s, e, token) {
   const route = edRoute(e);
@@ -1070,7 +1090,7 @@ function edRouteAdd(s, e, token) {
     s.ctx.notify?.(s.tt(EDTX.rtFull), 'warn');
     return false;
   }
-  e.route = [...route, token];
+  e.route = ED.routeAddStart(route, token); // avant l'arrivée quand elle termine la route : elle reste dernière
   return true;
 }
 
@@ -1591,7 +1611,7 @@ function edInputDo(s, ev) {
     e.drawFor = '';
     return draw(s);
   }
-  if (k === 'edroute') { // la route du départ : « Ajouter un lieu… » en ajoute un à la fin
+  if (k === 'edroute') { // la route du départ : « Ajouter un lieu… » en ajoute un (avant l'arrivée quand elle termine la route)
     const token = String(ev.target.value || '').slice(0, 40);
     // seulement le jeton d'un lieu de la séance : une page forgée n'écrit pas un identifiant quelconque dans la route
     if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !(e.places || []).some(r => ED.routeToken(r) === token)) return;
@@ -2088,6 +2108,7 @@ function edClickDo(s, b) {
         where = b.dataset.where === 'start' ? 'start' : edDrawerRow(e)?.id,
         n = +b.dataset.n;
       if (!where || !Number.isInteger(n) || n < 0) return;
+      if (where === 'start' && (n < ED.routeFree(edRoute(e)).lo || n > ED.routeFree(edRoute(e)).hi)) return; // une ancre ne se choisit pas
       e.chipSel = edChipSel(e, where) === n ? null : {
         where,
         n
@@ -2103,7 +2124,8 @@ function edClickDo(s, b) {
         step = b.dataset.step === '-1' ? -1 : 1;
       if (n < 0) return;
       const list = start ? edRoute(e) : r.route,
-        made = ED.routeMove(list, n, step, start ? undefined : w => !!ED.refNow(w, e.base, e.places));
+        // la route du départ garde son départ premier et son arrivée dernière ; la suite d'un tiroir est libre
+        made = start ? ED.routeMoveStart(list, n, step) : ED.routeMove(list, n, step, w => !!ED.refNow(w, e.base, e.places));
       if (made.route === list) return edChipsShow(s, where, false);
       if (start) e.route = made.route;
       else r.route = made.route;
@@ -2119,7 +2141,9 @@ function edClickDo(s, b) {
       const n = +b.dataset.n,
         route = edRoute(s.ed);
       s.ed.chipSel = null;
-      if (Number.isInteger(n) && n >= 0 && n < route.length) s.ed.route = route.filter((_, k) => k !== n);
+      // le départ en tête et l'arrivée en queue ne se retirent pas (une route sans départ n'a pas de sens) : leur croix n'est pas
+      // donnée, et une page forgée ne les retire pas non plus
+      if (Number.isInteger(n) && n >= ED.routeFree(route).lo && n <= ED.routeFree(route).hi) s.ed.route = route.filter((_, k) => k !== n);
       s.ed.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       return draw(s);
     }

@@ -715,7 +715,16 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   puis déplacez-le par les flèches. ») and the arrows are not given. Nothing for a route of fewer than two places.
 - **In place** (SOG-0449): a choice changes attributes only; a move rewrites the chips, **not the arrows** — the arrow pressed stays
   under the finger and is pressed several times in a row; the lines, what the pilot will read and the map follow by `edRefresh`.
-- **The same for the onward route of a drawer** (`edDrawerChips`, `edChipsHtml`, `edChipMoveHtml`, `edChipsShow` are shared).
+- **In the route of the departure, the aerodrome of departure stays first and the aerodrome of arrival last** (the ergonomist, 18
+  Nov: a route without its departure makes no sense). `ED.routeFree(route)` → `{ lo, hi }`, the ranks of the free places: «
+  ORIGIN » at the head and « DESTINATION » at the tail are ANCHORED — their chips say their place only (no button to choose them,
+  no cross: `data-chipfixed`), `ED.routeMoveStart` moves a free place among the free places only (the arrow that would pass an
+  anchor is not given), a forged removal of an anchor does nothing, and a place added — « Ajouter un lieu… » or the « Tracé » tool
+  — enters BEFORE the arrival (`ED.routeAddStart`). No arrows with fewer than two free places. A route of an old file that does
+  not start with the departure or end with the arrival has no such anchor: it is shown as it is, never rewritten.
+  **Defect corrected**: until this lot the cross of the departure (and of the arrival) removed it from the route, and a place added
+  went after the arrival.
+- **The onward route of a drawer is free** (its arrival is a place like another), with the same chips and arrows (`edDrawerChips`, `edChipsHtml`, `edChipMoveHtml`, `edChipsShow` are shared).
 - The move is pure: `ED.routeMove(route, n, step, shown)` → `{ route, at }` — the place swaps with the nearest chip shown on that
   side (an entry the sheet does not show, a place the file cites that no longer exists, stays where it is); the same route when
   there is nothing to do. A move from the sheet is not a gesture of the map: « Annuler le geste » has nothing to give back after it.

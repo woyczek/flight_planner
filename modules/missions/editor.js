@@ -1435,6 +1435,48 @@ export function routeMove(route, n, step, shown = () => true) {
   };
 }
 
+/** Les rangs LIBRES de la route du départ (l'ergonome, 18 nov. 2026 : « le terrain de départ reste premier et le terrain d'arrivée
+ *  dernier ») : « ORIGIN » en tête et « DESTINATION » en queue sont ANCRÉS — ils ne se déplacent pas, ne se retirent pas, et aucun
+ *  lieu ne passe devant l'un ni derrière l'autre. → { lo, hi } : les rangs du premier et du dernier lieu libre (lo > hi : aucun). Une
+ *  route qui ne commence pas par le départ, ou ne finit pas par l'arrivée (un ancien fichier), n'a pas cette ancre-là : elle n'est pas
+ *  réécrite. La suite de route d'un tiroir, elle, est libre : elle ne passe pas par ici. */
+export function routeFree(route) {
+  const list = Array.isArray(route) ? route : [],
+    lo = list[0] === 'ORIGIN' ? 1 : 0;
+  return {
+    lo,
+    hi: list.length - 1 - (list.length > lo && list[list.length - 1] === 'DESTINATION' ? 1 : 0)
+  };
+}
+
+/** routeMove dans la route du départ : seul un lieu libre bouge, et seulement parmi les lieux libres (routeFree). → { route, at } ;
+ *  la même route et le même rang s'il n'y a rien à faire. */
+export function routeMoveStart(route, n, step) {
+  const list = Array.isArray(route) ? route : [],
+    {
+      lo,
+      hi
+    } = routeFree(list),
+    same = {
+      route: list,
+      at: Number.isInteger(n) && n >= 0 && n < list.length ? n : -1
+    };
+  if (same.at < lo || same.at > hi) return same;
+  const made = routeMove(list.slice(lo, hi + 1), n - lo, step);
+  return made.at === n - lo ? same : {
+    route: [...list.slice(0, lo), ...made.route, ...list.slice(hi + 1)],
+    at: made.at + lo
+  };
+}
+
+/** Un lieu ajouté à la route du départ : AVANT le terrain d'arrivée quand il la termine (il reste dernier), sinon à la fin. La route
+ *  donnée n'est pas retouchée. */
+export function routeAddStart(route, token) {
+  const list = Array.isArray(route) ? route : [],
+    at = routeFree(list).hi + 1;
+  return [...list.slice(0, at), token, ...list.slice(at)];
+}
+
 /** Les sortes de lieu qu'un geste de la carte déplace : ni le départ ni l'arrivée (des terrains : leur position vient de la base). */
 export const MOVABLE = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
 /** Les bornes du rayon d'une zone ronde, en km (celles du lecteur : 500 au plus). */
