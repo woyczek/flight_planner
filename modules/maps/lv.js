@@ -58,7 +58,9 @@ function sameFamilyOverlap(list, read) {
   return [...floors.values()].some(s => s.size > 1);
 }
 /** Sept lignes au plus dans la fiche, puis « n autres » (SOG-0163). */
-const CARD_LINES = 7;
+const CARD_LINES = 7; // (avant les rubriques : la fiche ne se coupe plus à sept lignes)
+/** Les lignes d'une rubrique montrées (horaires, remarques…), le reste sous « n autres ». */
+const SECTION_LINES = 3;
 /** Une valeur de la base en lignes de texte : une chaîne, ou une liste de chaînes (bornées, sans balise) ; rien sinon. */
 const linesOf = v => (Array.isArray(v) ? v : [v]).filter(x => typeof x === 'string' && x.trim()).slice(0, 12).map(x => x.replace(
   /[\u0000-\u001f<>\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 400));
@@ -87,32 +89,34 @@ export function spaceCardHtml(a) {
   if (act === 'AZBA' || a.azba) L.push(esc(tt(TX.spActAzba)));
   else if (act === 'NOTAM') L.push(esc(tt(TX.spActNotam)));
   else if (act) L.push(`${esc(tt(TX.spActivity))} : ${esc(act)}`);
-  if (nat) L.push(`${esc(tt(TX.spNature))} : ${esc(nat)}`); // ENR 5.1 : la nature du danger, avant la phrase franche et les horaires
-  // la phrase franche reste dans les sept premières lignes, quel que soit le nombre de lignes d'horaires et de remarques (AeroDB en donne douze de chaque)
+  // la phrase franche reste dans le haut de la fiche, quel que soit le nombre de lignes d'horaires et de remarques (AeroDB en donne douze de chaque)
   if (live) L.push(`<span class="mp-sp-real">${esc(tt(TX.spActual))}</span>`);
-  if (hours.length) L.push(...hours.map(h =>
-    `${esc(tt(TX.spHours))} : ${esc(h)}`
-  )); // un champ que l'enregistrement ne porte pas n'écrit aucune ligne (SOG-0462 : plus de « horaires non relevés » ; la phrase franche dit déjà que l'activité réelle est inconnue)
-  if (auth) L.push(`${esc(tt(TX.spAuth))} : ${esc(auth)}`);
-  if (rem.length) L.push(...rem.map(h => `${esc(tt(TX.spRemarks))} : ${esc(h)}`));
-  // l'organisme n'est pas dit deux fois : quand la ligne des conditions de pénétration le nomme, la ligne « organisme et fréquence » ne garde que ce qu'elle apporte en plus (la fréquence ou le contact)
+  // les RUBRIQUES (SOG-0462, refusée en recette : « Horaires publiés : … » répété à chaque ligne) : une étiquette, ses lignes dessous en liste courte ; l'ordre : nature du danger,
+  // organisme et conditions, horaires, remarques ; un champ que l'enregistrement ne porte pas n'écrit rien
   const adm = typeof a.admin === 'string' ? a.admin.trim() : '',
     info = typeof a.info === 'string' ? a.info.trim() : '',
-    named = !!auth && !!adm && auth.toLowerCase().includes(adm.toLowerCase());
-  if (named) {
-    if (info) L.push(`${esc(tt(TX.spFreq))} : ${esc(info)}`);
-  } else if (who) L.push(`${esc(tt(TX.spWho))} : ${esc(who)}`);
-  const src = String(a.src || '?').toLowerCase() === 'openaip' ? tt(TX.spCommunity) : String(a.src || '?')
+    named = !!auth && !!adm && auth.toLowerCase().includes(adm
+      .toLowerCase()
+    ), // l'organisme n'est pas dit deux fois : la ligne des conditions le nomme déjà, la suivante ne garde que la fréquence ou le contact
+    who2 = auth ? [auth, ...(named ? (info ? [`${tt(TX.spFreq)} : ${info}`] : []) : who ? [who] : [])] : who ? [who] : [],
+    R = [
+      [TX.spNature, nat ? [nat] : []],
+      [auth ? TX.spAuth : TX.spWho, who2],
+      [TX.spHours, hours],
+      [TX.spRemarks, rem]
+    ].filter(r => r[1].length),
+    section = (label, items) => `<section class="mp-sp-sec"><p class="mp-sp-h">${esc(tt(label))}</p><ul>${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>`,
+    kept = R.map(([label, items]) => section(label, items.slice(0, SECTION_LINES))).join(''),
+    folded = R.filter(r => r[1].length > SECTION_LINES),
+    rest = folded.reduce((n, r) => n + r[1].length - SECTION_LINES, 0),
+    src = String(a.src || '?').toLowerCase() === 'openaip' ? tt(TX.spCommunity) : String(a.src || '?')
     .toUpperCase(), // openAIP : « communautaire », dit
     ed = textOf(a.ed).slice(0, 32);
-  L.push(`<span class="mp-sp-src">${esc(tt(TX.spSource))} : ${esc(src)}${ed ? ` · ${esc(tt(TX.spEd, { c: ed }))}` : ''} <span class="mp-sp-cyc"></span></span>`);
-  // les sept lignes d'avant, plus celles de la nature du danger et de l'organisme quand le SIA les donne (elles ne repoussent rien dans « n autres »)
-  const lines = CARD_LINES + (nat ? 1 : 0) + (auth ? 1 : 0),
-    shown = L.slice(0, lines),
-    more = L.slice(lines);
-  return `<div class="mp-sp-lines">${shown.map(x => `<p>${x}</p>`).join('')}</div>${more.length ? `<details><summary>${esc(tt(TX.spMore, {
-    n: more.length
-  }))}</summary>${more.map(x => `<p>${x}</p>`).join('')}</details>` : ''}`;
+  return `<div class="mp-sp-lines">${L.map(x => `<p>${x}</p>`).join('')}${kept}</div>${rest ? `<details><summary>${esc(tt(TX.spMore, {
+    n: rest
+  }))}</summary>${folded.map(r => section(r[0], r[1].slice(SECTION_LINES))).join('')}</details>` : ''}<p class="mp-sp-src">${esc(tt(TX.spSource))} : ${esc(src)}${ed ? ` · ${esc(tt(TX.spEd, {
+    c: ed
+  }))}` : ''} <span class="mp-sp-cyc"></span></p>`;
 }
 /** Une ligne de la liste ouvre la fiche de son espace sous elle (la fiche en place, l'autre se ferme) ; la date de la base se lit une fois. */
 export function lvEvents() {

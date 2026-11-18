@@ -4175,15 +4175,15 @@ def d131(c):
     _open_space_from_profile(c, "() => { const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && /P 9/.test(k.textContent) }", 'the sheet of the P opens')
     t = c.js("() => document.querySelector('.mp-sp-card').textContent")
     c.ok(re.search(r'(prohibited|interdit|verboten|prohibido)', t, re.I), t, 'a P says it is prohibited')
-    # seven lines, then « n more » (the base will carry hours and remarks: the card is ready for them)
+    # a heading keeps three lines, the rest is folded under « n more » (SOG-0462: one label per heading)
     many = c.js("""async () => { const L = await import('/modules/maps/lv.js'); return L.spaceCardHtml({ type: 'R', name: '61', lower: 'SFC', upper: 'FL115', act: 'AZBA', admin: 'CCER', info: '122.9', src: 'sia',
       hours: ['H24', 'MON-FRI 0700-1700', 'SAT 0800-1200'], rem: ['Remark one', 'Remark two', 'Remark three'] }) }""")
-    c.ok('<details>' in many and many.count('<p>') >= 8 and 'MON-FRI 0700-1700' in many and 'Remark two' in many, many[:300], 'hours and remarks as published; seven lines, then « n more »')
+    c.ok('<details>' not in many and 'MON-FRI 0700-1700' in many and 'Remark two' in many and many.count('<li>') >= 7, many[:300], 'hours and remarks as published, three lines or fewer under each heading: nothing is folded (SOG-0462, one label per heading)')
     # AeroDB gives up to twelve lines of hours and twelve of remarks: the frank line and the activation stay in the seven lines shown
     big = c.js("""async () => { const L = await import('/modules/maps/lv.js'); return L.spaceCardHtml({ type: 'R', name: '61', lower: 'SFC', upper: 'FL115', act: 'AZBA', admin: 'CCER', info: '122.9', src: 'sia',
       hours: Array.from({ length: 12 }, (_, i) => 'HOURS ' + i), rem: Array.from({ length: 12 }, (_, i) => 'REM ' + i) }) }""")
     shown = big.split('<details>')[0]
-    c.ok(re.search(r'(not known|non connue|unbekannt|no conocida)', shown) and 'AZBA' in shown and 'HOURS 0' in shown and '<details>' in big, shown[:300], 'with twelve lines of hours and of remarks the frank line, the activation and the first hours stay in the seven lines shown')
+    c.ok(re.search(r'(not known|non connue|unbekannt|no conocida)', shown) and 'AZBA' in shown and 'HOURS 0' in shown and '<details>' in big, shown[:300], 'with twelve lines of hours and of remarks the frank line, the activation and the first hours stay in the part shown (three lines per heading, the rest folded)')
 
 
 _CLASSES_JS = """() => { const m = document.querySelector('[data-module="maps"] .mp-map'), k = m && m.dataset.kept ? JSON.parse(m.dataset.kept) : null;
@@ -9477,24 +9477,24 @@ def d271(c):
 def d272(c):
     ring = lambda la0, la1, lo0, lo1: [[la0, lo0], [la0, lo1], [la1, lo1], [la1, lo0], [la0, lo0]]
     zones = [{'type': 'R', 'cls': '', 'name': '12', 'key': 'LFR12', 'uname': 'MONT SAINT MICHEL', 'lower': 'SFC', 'upper': 'FL115', 'act': 'activable', 'admin': 'CCER Bordeaux', 'src': 'sia', 'ed': '2026-11-13',
-              'hours': ['Activité : lundi au jeudi 0700-1600 ; vendredi 0700-1300. / Activity: Monday to Thursday 0700-1600; Friday 0700-1300.'], 'rem': ['Hors ces horaires, par NOTAM. / Outside these hours, by NOTAM.'],
+              'hours': ['Lundi au jeudi 0700-1600. / Monday to Thursday 0700-1600.', 'Vendredi 0700-1300. / Friday 0700-1300.', 'Veille de jour férié : 0700-1000. / Eve of a holiday: 0700-1000.', 'Hors ces horaires, par NOTAM. / Outside these hours, by NOTAM.', 'Activité de nuit : sur préavis. / Night activity: on notice.'], 'rem': ['Hors ces horaires, par NOTAM. / Outside these hours, by NOTAM.', 'Tir en mer, hauteur maximale 3 000 ft. / Firing at sea, maximum height 3 000 ft.', 'Zone traversée par une voie de transit. / Zone crossed by a transit lane.'],
               'nat': 'Tir à munitions réelles, activités aériennes. / Firing with live ammunition, air activities.', 'auth': 'CCER BORDEAUX — pénétration soumise à l’accord du CCER. / Penetration subject to the CCER’s clearance.',
               'rings': [ring(44.6, 45.4, 0.4, 1.2)]},
-             {'type': 'D', 'cls': '', 'name': '999', 'key': 'EGD999', 'lower': 'SFC', 'upper': 'FL115', 'src': 'openaip', 'rings': [ring(44.6, 45.4, 1.9, 2.4)]}]
+             {'type': 'D', 'cls': '', 'name': '33', 'key': 'LED33', 'lower': 'SFC', 'upper': 'FL115', 'src': 'aixm5', 'admin': 'ENAIRE', 'rem': ['Actividad aérea de entrenamiento. / Air training activity.', 'Contactar con el control antes de penetrar. / Contact the control before entering.', 'Posible actividad de globos. / Possible balloon activity.', 'Véase el NOTAM. / See the NOTAM.'], 'rings': [ring(44.6, 45.4, 1.9, 2.4)]}]
     c.open('maps', docs=fdocs(_awy_flight()) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airspaces=zones, wait=False)
     c.ready('maps', sheet=True)
     c.js(_STATE_JS)
     hook_map(c)
     c.until("() => !!(window.__mp.S && window.__mp.S.prof && window.__mp.S.prof.crossed.some(x => x.a.type === 'R') && window.__mp.S.prof.crossed.some(x => x.a.type === 'D'))", timeout=15000, what='the profile crosses the R and the D')
     c.wait(500)
-    for want, name, check in (('R', 'france', 'MONT SAINT MICHEL'), ('D', 'other', 'D 999')):
+    for want, name, check in (('R', 'france', 'MONT SAINT MICHEL'), ('D', 'other', 'D 33')):
         c.js("(w) => { window.__want = w; return true }", want)
         _open_space_from_profile(c, f"() => {{ const k = document.querySelector('.mp-sp-card'); return !!k && !k.hidden && k.textContent.includes({check!r}) }}", f'the window of the {name} zone opens')
         t = c.js("() => document.querySelector('.mp-sp-card').textContent")
         if want == 'R':
             c.ok('MONT SAINT MICHEL' in t and 'Tir à munitions réelles' in t and 'CCER BORDEAUX' in t and '0700-1600' in t and '2026-11-13' in t, t, 'the France zone: usual name, nature of the danger, authority, hours, the cycle')
         else:
-            c.ok(re.search(r'(communautaire|community|Gemeinschaft|comunidad)', t) and not re.search(r'undefined|null', t), t, 'the other State: openAIP said community-maintained, nothing invented')
+            c.ok('ENAIRE' in t and 'Actividad aérea' in t and not re.search(r'undefined|null', t), t, 'the other State: the manager and the remarks it carries, nothing invented')
         c.shot(f'D272_{name}_{c.width}.png')
         c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
         c.wait(400)
@@ -9683,6 +9683,34 @@ def d281(c):
     c.tap('.mp-find-x')
     c.tap('[data-mp="find"]')
     search('LFMT', 'LFMT', 'after a second closing and reopening')
+
+@case('D279', 'The window of a zone, presentation (SOG-0462, refused at the test: the label was repeated on every line): one label per heading with its lines under it, the headings in the order nature, authority and conditions, hours, remarks; what goes beyond three lines of a heading is folded', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False, langs4=True,
+      rule='SOG-0462 (the user: « la présentation n\'est pas formidable »): « Horaires publiés : … » five times and « Conditions et remarques de l\'AIP : … » five times is a wall; one label per heading, its lines under it as a short list, the headings in the order nature, authority and conditions, hours, remarks, then the source; beyond three lines of a heading the rest is folded (« n more »); a heading the record does not carry writes nothing; every text escaped')
+def d279(c):
+    c.open('maps', flight=True, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const L = await import('/modules/maps/lv.js'), T = (await import('/modules/maps/texts.js')).TX, St = await import('/modules/maps/state.js'), w = k => St.esc(St.tt(T[k]));
+      const full = L.spaceCardHtml({ type: 'R', name: '12', uname: 'MONT SAINT MICHEL', lower: 0, upper: 'FL115', act: 'activable', admin: 'CCER BORDEAUX', info: '122.9', src: 'sia', ed: '2026-11-13',
+        hours: ['H1 <b>x</b>', 'H2', 'H3', 'H4', 'H5'], rem: ['R1', 'R2', 'R3', 'R4', 'R5', 'R6'], nat: 'Tir réel. / Live firing.', auth: 'CCER BORDEAUX — accord. / Clearance.' });
+      const few = L.spaceCardHtml({ type: 'R', name: '13', lower: 0, upper: 'FL115', src: 'sia', hours: ['A', 'B'], rem: ['C'] });
+      const bare = L.spaceCardHtml({ type: 'TMA', name: 'TMA 1', lower: 1500, upper: 'FL65' });
+      const lbl = { nat: w('spNature'), auth: w('spAuth'), hours: w('spHours'), rem: w('spRemarks') };
+      const count = (h, t) => h.split(t).length - 1;
+      return { full, few, bare, lbl, n: { hours: count(full, lbl.hours), rem: count(full, lbl.rem), nat: count(full, lbl.nat), auth: count(full, lbl.auth) } } }""")
+    c.eq(r['n'], {'hours': 2, 'rem': 2, 'nat': 1, 'auth': 1}, 'each heading is written once in the visible part and once more over what is folded: never once per line', what=str(r['n']))
+    f = r['few']
+    c.eq([f.count(r['lbl']['hours']), f.count(r['lbl']['rem']), f.count('<li>')], [1, 1, 3], 'two hours and one remark: one label each, three lines in lists, nothing folded', what=f[:400])
+    c.ok('<details>' not in f, f[:300], 'nothing is folded when each heading has three lines or fewer')
+    h = r['full']
+    pos = [h.index(r['lbl'][k]) for k in ('nat', 'auth', 'hours', 'rem')]
+    c.ok(pos == sorted(pos), str(pos), 'the order: nature of the hazard, authority and conditions, hours, remarks')
+    vis = h.split('<details>')[0]
+    c.ok('H1' in vis and 'H3' in vis and 'H4' not in vis and 'R3' in vis and 'R4' not in vis, vis[:500], 'three lines of a heading are shown, the others are folded')
+    c.ok('H4' in h.split('<details>')[1] and 'R6' in h.split('<details>')[1], h[-400:], 'the folded lines are under « n more », in the order of their headings')
+    c.ok('<b>x</b>' not in h and '&lt;' not in h.replace('&lt;', '&lt;') or '<b>x</b>' not in h, h[:200], 'a tag in a line is not kept')
+    c.ok(not re.search(r'undefined|null', r['bare']) and r['lbl']['hours'] not in r['bare'] and r['lbl']['rem'] not in r['bare'], r['bare'][:200], 'a record with no heading writes none')
 
 
 def _no_duplicate_names():
