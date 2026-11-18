@@ -6389,6 +6389,105 @@ def a128(c):
     c.check_errors()
 
 
+# a navigator.clipboard under the control of the case (A340, A341): window.__clipSet(spec) installs it; spec = { items: { 'text/html': s, 'text/plain': s } | null,
+# read: 'reject' | undefined, readText: s | 'reject' | undefined }; a string may be { c: 'x', n: 1500000 } (built in the page, never sent over the wire)
+CLIP_INIT = """(() => {
+  const mk = v => v && typeof v === 'object' ? v.c.repeat(v.n) : v, no = async () => { throw new DOMException('refused', 'NotAllowedError') };
+  window.__clip = undefined;
+  window.__clipSet = spec => {
+    const cb = {};
+    if (spec.read === 'reject') cb.read = no;
+    else if (spec.items) cb.read = async () => [{ types: Object.keys(spec.items), getType: async t => new Blob([mk(spec.items[t])], { type: t }) }];
+    if (spec.readText === 'reject') cb.readText = no;
+    else if (typeof spec.readText === 'string') cb.readText = async () => spec.readText;
+    window.__clip = cb;
+  };
+  try { Object.defineProperty(navigator, 'clipboard', { configurable: true, get: () => window.__clip }) } catch (e) {}
+})()"""
+CLIP_DOCS = [['device/level.json', {'level': 3}, 'cache'],
+             ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+             ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+             ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+CLIP_FLEET = '\n'.join(['SO Group',
+                        'A400M Atlas\tF-RBAA\t01\t1\tCOTAM1\tLFOB\tLFOB\t-\toui',
+                        'A400M Atlas\tF-RBAB\t02\t2\tCOTAM2\tLFOB\tLFOB\t-\toui'])
+
+
+def _clip_open(c):
+    """Settings › Company with the joining assistant open, navigator.clipboard faked (CLIP_INIT)."""
+    c.page.add_init_script(CLIP_INIT)
+    c.open('settings?card=company', docs=CLIP_DOCS)
+    c.until("document.querySelectorAll('[data-card=\"company\"] [data-airlines] [data-airline]').length === 2 && !!document.querySelector('[data-join]')", timeout=15000, what='the card and the joining assistant')
+    c.js("document.querySelector('[data-airline-join]').open = true")
+
+
+def _clip_press(c, spec):
+    """Fakes the clipboard as `spec` and presses « Lire le presse-papiers » (the assistant is back at its first step)."""
+    c.js("(spec) => window.__clipSet(spec)", spec)
+    c.tap('[data-act="companyJnClip"]')
+
+
+@case('A340', 'Settings › Company › « Rejoindre » › « Lire le presse-papiers » (SOG-0468 (1)): read through readClipboard of frame/lib/clipboard.js — an HTML item keeps the HTML and the text fills the area, readText alone fills it, a refusal says « paste the page first » and leaves the area empty; the text is only put in the area, never inserted as HTML', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (1) (the ergonomist): the block that read navigator.clipboard in joinClip was a copy of the Website module\u2019s; one block, readClipboard (frame/lib/clipboard.js, loaded on demand), and the behaviour is the same: the HTML first (kept for the parser), the text in the area, a refusal or an empty clipboard says jnEmpty and writes nothing')
+def a330(c):
+    lang = c.lang
+    T = lambda k: tx('frame/settings/access.js', k, lang, after='const TA = {')
+    _clip_open(c)
+    area = "document.querySelector('[data-join] [data-f=\"jn-page\"]').value"
+    msg = lambda: norm(c.text('[data-join] [data-jn-msg]'))
+    evil = '<img src=x onerror=window.__pwn=1>'
+    # ---- 1. read(): an HTML item and a plain-text item. The HTML is what the parser reads (the text alone has no aircraft), the text fills the area
+    html = '<h2>Escadre HTML</h2><table><tr><td>A400M Atlas</td><td>F-RBAA</td><td>01</td><td>1</td><td>COTAM1</td><td>LFOB</td><td>LFOB</td><td>-</td><td>oui</td></tr></table>' + evil
+    _clip_press(c, {'items': {'text/html': html, 'text/plain': 'Texte seul ' + evil}})
+    c.until("document.querySelector('[data-join]').dataset.step === 'read'", timeout=8000, what='the page read from the HTML kept by the assistant')
+    c.eq(c.js(area), 'Texte seul ' + evil, 'the text of the clipboard fills the area, as text', what='area (html+text)')
+    c.eq([c.js("document.querySelector('[data-join] [data-f=jn-name]').value"), norm(c.text('[data-join] [data-jn-counts]'))],
+         ['Escadre HTML', norm(T('jnCounts').replace('{a}', _noun(lang, 'aircraft', 1)).replace('{b}', _noun(lang, 'operator', 1)))], 'the parser read the HTML kept in the state (one aircraft, the operator of the heading), not the text', what='html kept')
+    c.ok(c.count('[data-join] img') == 0 and c.js('window.__pwn === undefined'), None, 'a hostile clipboard is text: no element, nothing runs')
+    c.eq(msg(), '', 'nothing is said when the clipboard was read', what='no message')
+    # ---- 2. only readText exists: the text fills the area and is read (the state keeps no HTML)
+    c.tap('[data-act="companyJnBack"]')
+    c.until("document.querySelector('[data-join]').dataset.step === 'site'", timeout=6000, what='back to the page step')
+    c.js("document.querySelector('[data-f=jn-name]').value = ''; document.querySelector('[data-f=jn-code]').value = ''")
+    _clip_press(c, {'readText': CLIP_FLEET})
+    c.until("document.querySelector('[data-join]').dataset.step === 'read'", timeout=8000, what='the page read from readText alone')
+    c.eq(c.js(area), CLIP_FLEET, 'readText alone: the text fills the area', what='area (readText)')
+    c.eq(c.js("document.querySelector('[data-join] [data-f=jn-name]').value"), 'SO Group', 'and it is the text that was read (the HTML of the previous reading is gone from the state)', what='text read')
+    # ---- 3. the clipboard refuses (read and readText): said, the area stays empty, still on the first step
+    c.tap('[data-act="companyJnBack"]')
+    c.until("document.querySelector('[data-join]').dataset.step === 'site'", timeout=6000, what='back to the page step')
+    c.js("document.querySelector('[data-f=jn-page]').value = ''")
+    _clip_press(c, {'read': 'reject', 'readText': 'reject'})
+    c.until("document.querySelector('[data-join] [data-jn-msg]').textContent.trim() !== ''", timeout=6000, what='the refusal said')
+    c.eq([msg(), c.js(area), c.js("document.querySelector('[data-join]').dataset.step")], [norm(T('jnEmpty')), '', 'site'], 'a refused clipboard: « paste the page first », the area stays empty, still on the first step', what='refused')
+    # ---- an empty clipboard says the same
+    c.js("document.querySelector('[data-join] [data-jn-msg]').textContent = ''")
+    _clip_press(c, {'items': {'text/plain': ''}})
+    c.wait(600)
+    c.eq([msg(), c.js(area)], [norm(T('jnEmpty')), ''], 'an empty clipboard says the same, writes nothing', what='empty')
+    c.check_errors()
+
+
+@case('A341', 'Settings › Company › « Rejoindre » › « Lire le presse-papiers »: the bound of frame/lib/clipboard.js (1 048 576 characters, SOG-0468 (1)) — a text over the bound is not taken (said, the area stays empty), an HTML over the bound with a short text: the text is taken, the HTML is not', 'A', langs4=True, tags=('airline',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (1) (the ergonomist): readClipboard bounds each string at 1 048 576 characters (beyond: \'\' and reason too-big); joinClip used to cut at 2e6 characters; now an oversized text is refused like an empty clipboard and an oversized HTML is dropped while the text that fits is used')
+def a331(c):
+    lang = c.lang
+    T = lambda k: tx('frame/settings/access.js', k, lang, after='const TA = {')
+    _clip_open(c)
+    area = "document.querySelector('[data-join] [data-f=\"jn-page\"]').value"
+    # ---- a text of 1.5 million characters, no HTML: not taken, jnEmpty said, the area empty
+    _clip_press(c, {'items': {'text/plain': {'c': 'x', 'n': 1500000}}})
+    c.until("document.querySelector('[data-join] [data-jn-msg]').textContent.trim() !== ''", timeout=15000, what='the oversized text refused')
+    c.eq([norm(c.text('[data-join] [data-jn-msg]')), c.js(area), c.js("document.querySelector('[data-join]').dataset.step")], [norm(T('jnEmpty')), '', 'site'], 'a text over 1 Mio: not taken, said, the area stays empty', what='text too big')
+    # ---- an HTML of 1.5 million characters with a short text: the text is taken (the page is read from it), the HTML is not kept
+    _clip_press(c, {'items': {'text/html': {'c': 'y', 'n': 1500000}, 'text/plain': CLIP_FLEET}})
+    c.until("document.querySelector('[data-join]').dataset.step === 'read'", timeout=15000, what='the page read from the short text')
+    c.eq([c.js(area), c.js("document.querySelector('[data-join] [data-f=jn-name]').value")], [CLIP_FLEET, 'SO Group'], 'an HTML over 1 Mio is dropped: the text that fits fills the area and is what is read', what='html too big')
+    c.check_errors()
+
+
 # the fake launcher of A129: /__setup/status says a launcher is here; /__setup/net is answered by the page itself (a patched fetch), after a delay, so that
 # the calls overlap and the case can count how many are in flight at once, per host and in all
 FAKE_RELAY = """(() => {

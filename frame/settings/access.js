@@ -1585,30 +1585,29 @@
     }), 'ok');
     return airlineLive(env);
   }
-  /** Le presse-papiers (le HTML d'abord, le texte sinon) dans la zone de l'assistant, comme le fait le module Site. */
+  /** Le presse-papiers lu par frame/lib/clipboard.js (readClipboard, chargé à la demande) : le HTML garde l'état, le texte (sinon le HTML) va dans la zone, jamais inséré en HTML ; rien de lisible (refus, vide, trop grand) : « collez d'abord la page ». */
   async function joinClip(env) {
     const {
       view,
       t
     } = env;
+    let html = '',
+      text = '';
     try {
-      let html = '',
-        text = '';
-      if (navigator.clipboard?.read) {
-        for (const item of await navigator.clipboard.read()) {
-          if (item.types.includes('text/html')) html = await (await item.getType('text/html')).text();
-          if (item.types.includes('text/plain')) text = await (await item.getType('text/plain')).text();
-        }
-      } else text = await navigator.clipboard.readText();
-      JN.set(view, {
-        ...JN.get(view),
-        html
-      });
-      view.querySelector('[data-f="jn-page"]').value = (text || html).slice(0, 2e6);
-      return joinNext(env);
+      ({
+        html,
+        text
+      } = await (await import(new URL('frame/lib/clipboard.js', ROOT).href)).readClipboard());
     } catch {
-      joinSay(view, t(TA.jnEmpty));
+      html = text = '';
     }
+    if (!html && !text) return joinSay(view, t(TA.jnEmpty));
+    JN.set(view, {
+      ...JN.get(view),
+      html
+    });
+    view.querySelector('[data-f="jn-page"]').value = (text || html).slice(0, 2e6);
+    return joinNext(env);
   }
   /** « Rester ici » : l'assistant se vide et revient à la page. */
   function joinReset(view) {
