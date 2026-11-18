@@ -1721,6 +1721,41 @@ export function blocking(cadre, {
   return out;
 }
 
+/** Les lignes des Lieux que le pilote peut voir une fois les `n` premiers tiroirs ouverts (SOG-0448) : seulement ce que le lecteur
+ *  lui rend (MS.pilotView : UNE règle, celle de la fiche, du Détail et de la Carte) — le départ et l'arrivée toujours, la cible si
+ *  elle est montrée, un objet seulement quand le tiroir dont il est la clé est ouvert, les autres lieux par leur identifiant. Une
+ *  ligne non gardée devient null : les rangs des autres ne bougent pas. Une mission sans tiroir, ou que le lecteur ne lit pas : les
+ *  lignes données, telles quelles. */
+export function pilotRows(doc, rows, n) {
+  let m = null;
+  try {
+    m = MS.readMission(doc);
+  } catch {
+    return rows;
+  }
+  const drawers = Array.isArray(m?.drawers) ? m.drawers : [],
+    v = drawers.length ? MS.pilotView(m, drawers.slice(0, Number.isFinite(n) && n > 0 ? n : 0).map(d => d.id)) : null;
+  if (!v || v === m || !Array.isArray(rows)) return rows;
+  const up = x => String(x ?? '').trim().toUpperCase(),
+    kept = new Set([...Object.keys(v.points), ...v.zones.map(z => z.id), ...v.rendezvous.map(z => z.id), ...v.turns.map(z => z.id)].map(
+      up)),
+    objects = new Set(v.drawers.filter(d => !d.sealed).map(d => up(d.key?.object?.id)).filter(Boolean));
+  return rows.map(r => r.kind === 'dep' || r.kind === 'arr' ? r : r.kind === 'target' ? (v.target ? r : null) : r.kind === 'object' ? (
+    objects.has(up(r.id)) ? r : null) : r.id && kept.has(up(r.id)) ? r : null);
+}
+
+/** Les lieux d'une mission À TIROIRS que rien ne cite (l'ergonome, 18 nov. 2026) : ceux que le pilote ne verrait pas même tous les
+ *  tiroirs ouverts — ni la route, ni une carte, ni un tiroir ne les nomme (un objet : il n'est la clé d'aucun tiroir). La règle du
+ *  lecteur les lui cache pour toujours : l'auteur doit le savoir. → leurs identifiants (un lieu sans identifiant ne peut être cité
+ *  par rien : il a son propre mot ailleurs). Une mission sans tiroir n'a pas de secret : aucun. */
+export function uncited(doc) {
+  const rows = placesOf(doc),
+    kept = pilotRows(doc, rows, DRAWERS_ALL);
+  return kept === rows ? [] : rows.filter((r, i) => kept[i] === null).map(r => cut(r.id, 40)).filter(Boolean);
+}
+/** Plus de tiroirs qu'une mission n'en porte : « tous ouverts ». */
+const DRAWERS_ALL = 64;
+
 /** « À compléter » (voir l'en-tête) : les champs vides de chaque étape, jamais bloquants. */
 export function todo(doc) {
   const d = obj(doc),
@@ -1766,6 +1801,10 @@ export function todo(doc) {
   // SOG-0445 : un tiroir dont la zone de passage, ou le point de l'arrivée, a été retiré
   for (const name of drawersNoKey(d).slice(0, 3)) add('places', 'drawerNoKey', {
     name
+  });
+  // SOG-0448 : dans une mission à tiroirs, un lieu que rien ne cite — le pilote ne le verra jamais ; nommé, trois au plus
+  for (const id of uncited(d).slice(0, 3)) add('places', 'uncited', {
+    id
   });
   // le récit d'une liaison est facultatif (décision du 13 nov.)
   if (!link && !String(d.summary ?? '').trim()) add('story', 'summary');

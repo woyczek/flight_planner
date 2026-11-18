@@ -673,6 +673,12 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   written on the map follow.
 - **The map only shows**: the tools are not given, a touch does nothing, the line says « Vue du pilote : la carte ne montre que ce
   qu'il peut voir à ce stade ; les outils reviennent avec « Tout » ». Choosing a view forgets the place chosen.
+- **The guard for the author** (the ergonomist, 18 Nov; noreg N107): the reader's rule is the safe one — what nothing cites stays
+  hidden (otherwise a zone laid on the target would leak) — so, in a mission with drawers, a place, a zone or an object that
+  NOTHING cites (neither the route, nor a map, nor a drawer; an object: the key of no drawer) is never shown to the pilot, even with
+  every drawer open. « À compléter » names it, under the Lieux: « RDV-1 n'est cité par rien : le pilote ne le verra jamais », three
+  at most (`ED.uncited(doc)`, read by `ED.todo`). The rule lives once, in `editor.js`: `ED.pilotRows(doc, rows, n)`, which the
+  map's view calls too (`edPilotRows`). A mission without drawers has no secret: nothing is said.
 - The sheet on the right is NOT filtered: it is the author's. « Ce que le pilote voit » of a drawer (§ 7 octies) stays the
   preview of the drawer itself.
 - **Not done**: the onward routes of the open drawers drawn in the pilot's view; the view during a trial of the keys.

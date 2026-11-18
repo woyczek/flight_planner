@@ -687,19 +687,11 @@ function edFlowHtml(s, doc, run = null) {
 /** Les lignes des Lieux que la « Vue du pilote » garde (SOG-0448) : au stade choisi, seulement ce que le lecteur rend au pilote
  *  (MS.pilotView : UNE règle, celle de la fiche, du Détail et de la Carte) — le départ et l'arrivée toujours, la cible si elle est
  *  montrée, un objet seulement quand le tiroir dont il est la clé est ouvert, les autres lieux par leur identifiant. Une ligne non
- *  gardée devient null : les rangs des autres ne bougent pas. En vue de l'auteur, ou pour une mission sans tiroir : toutes. */
+ *  gardée devient null : les rangs des autres ne bougent pas. En vue de l'auteur, ou pour une mission sans tiroir : toutes. La règle
+ *  est dans editor.js (ED.pilotRows) : « À compléter » y lit aussi les lieux que rien ne cite (ED.uncited). */
 function edPilotRows(e, doc, rows) {
   const n = edMapStage(e);
-  if (n < 0) return rows;
-  const m = MS.readMission(doc),
-    v = MS.pilotView(m, (m?.drawers || []).slice(0, n).map(d => d.id));
-  if (!v || v === m) return rows;
-  const up = x => String(x ?? '').trim().toUpperCase(),
-    kept = new Set([...Object.keys(v.points), ...v.zones.map(z => z.id), ...v.rendezvous.map(z => z.id), ...v.turns.map(z => z.id)].map(
-      up)),
-    objects = new Set(v.drawers.filter(d => !d.sealed).map(d => up(d.key?.object?.id)).filter(Boolean));
-  return rows.map(r => r.kind === 'dep' || r.kind === 'arr' ? r : r.kind === 'target' ? (v.target ? r : null) : r.kind === 'object' ? (
-    objects.has(up(r.id)) ? r : null) : r.id && kept.has(up(r.id)) ? r : null);
+  return n < 0 ? rows : ED.pilotRows(doc, rows, n);
 }
 
 /** « Chercher un repère » se donne-t-il ? Avec la base aéronautique de la suite, hors d'un essai des clés et hors de la vue du pilote

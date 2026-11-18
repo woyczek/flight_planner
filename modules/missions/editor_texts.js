@@ -69,6 +69,9 @@ export const EDTX = {
     'Schublade {name} hat ihren Schlüssel nicht mehr (sie öffnet sich nur von Hand oder zu ihrer Ersatzzeit)',
     'el cajón {name} ya no tiene su llave (solo se abre a mano o a su hora de reserva)'
   ],
+  todo_uncited: ['{id} n\'est cité par rien : le pilote ne le verra jamais', '{id} is cited by nothing: the pilot will never see it',
+    '{id} wird von nichts genannt: der Pilot wird es nie sehen', '{id} no está citado por nada: el piloto no lo verá nunca'
+  ],
   todo_mapNoCentre: ['la carte {name} n\'a plus de centre', 'map {name} no longer has a centre',
     'die Karte {name} hat keinen Mittelpunkt mehr', 'el mapa {name} ya no tiene centro'
   ],

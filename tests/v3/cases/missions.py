@@ -5746,3 +5746,64 @@ def n106(c):
     c.shot('N106_390_chosen.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+_UNCITED_JS = """async () => { const ED = await import('/modules/missions/editor.js'); let threw = '';
+  for (const h of [null, 'x', 7, [], { rendezvous: 'x' }, { drawers: 'x', rendezvous: [null, 7] }]) try { if (ED.uncited(h).length) threw += 'said' } catch (e) { threw += String(e) }
+  const plain = { title: 'T', origin: { icao: 'XTST', lat: 45, lon: 1 }, destination: { icao: 'XTSU', lat: 44, lon: 2 }, rendezvous: [{ id: 'RDV-1', name: 'x', lat: 44.5, lon: 1.5 }] };
+  return { threw, plain: ED.uncited(plain), todo: ED.todo(plain).filter(t => t.key === 'uncited').length, rows: ED.pilotRows(plain, ED.placesOf(plain), 0).length } }"""
+_UNCITED = f"[...document.querySelectorAll('{E} [data-edtodo] [data-todo=uncited]')].map(x => x.textContent.trim())"
+
+
+@case('N107', 'Missions › the workshop, « À compléter » names a place that nothing cites: in a mission with drawers, a place, a zone or an '
+      'object that neither the route, nor a map, nor a drawer cites would never be seen by the pilot (the rule of the reader hides it '
+      'for ever) — the list says « RDV-1 n\'est cité par rien : le pilote ne le verra jamais », three such places at most; once cited '
+      '(put in the route) it is no longer said; a mission without drawers has no secret: nothing is said',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0448, lot B, the guard for the author (the ergonomist, 18 Nov: « un lieu, une zone ou un objet que rien ne cite est dit '
+      'dans À compléter »; modules/missions/EDITOR.md § 7 unvicies; the rule: frame/lib/mission.js `pilotView`, N103)')
+def n107(c):
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    said = lambda: [norm(x) for x in c.js(_UNCITED)]  # noqa: E731
+    ids = lambda: c.js(f"[...document.querySelectorAll('{E} [data-edplaces] [data-place] .ms-plbody > b')].map(x => x.textContent.split(' · ')[0].trim())")  # noqa: E731
+
+    def add(kind, n):
+        """Adds a place of that kind in the Lieux (a new row takes the place of its kind) and returns its identifier."""
+        before = ids()
+        c.tap(f'{E} [data-do="edplaceadd"][data-kind="{kind}"]')
+        c.until(f"({_EDPLACE_IDS}).length === {n}", timeout=8000, what=f'a new {kind}')
+        return [x for x in ids() if x not in before][0]
+
+    # a mission without drawers has no secret; no hostile document throws
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.eq(c.js(_UNCITED_JS), {'threw': '', 'plain': [], 'todo': 0, 'rows': 3},
+         'without drawers nothing is hidden from the pilot: no place is said « cited by nothing », and every row is kept; no hostile document throws', what='no drawer')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-do=\"edstep\"][data-step=\"places\"]')", timeout=15000, what='the workshop')
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"({_EDPLACE_IDS}).length === 7", what='the seven places of the mission listed')
+    c.eq(said(), [], 'every place of the mission is cited (the route, a drawer): nothing is said', what='at the opening')
+    # a rendez-vous nothing cites, then an object that is the key of no drawer
+    rdv = add('rdv', 8)
+    c.ok(len(said()) == 1 and T('todo_uncited', id=rdv) in said()[0] and rdv != '', [rdv, said()],
+         'a rendez-vous that nothing cites is NAMED in « À compléter », by its identifier: the pilot will never see it')
+    obj = add('object', 9)
+    c.ok(len(said()) == 2 and T('todo_uncited', id=obj) in said()[1], [obj, said()], 'an object that is the key of no drawer is said too')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N107_1280_uncited.png')
+    c.tap(f'{E} [data-do="edtodo"]')
+    # cited by the route: no longer said
+    c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
+    c.page.select_option(f'{E} [data-edroute] [data-k=edroute]', rdv)
+    c.until(f"({_UNCITED}).length === 1", timeout=8000, what='the rendez-vous cited by the route')
+    c.ok(T('todo_uncited', id=obj) in said()[0] and all(rdv + ' ' not in x for x in said()), said(), 'put in the route of the departure, the rendez-vous is cited: only the object is still said')
+    # three at most
+    more = [add('pt', 10), add('zone', 11), add('rdv', 12)]
+    c.ok(len(said()) == 3 and len(set(ids())) == 12, [said(), more, ids()], 'four places nothing cites: three are named, not more (the list stays short)')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)
