@@ -540,8 +540,8 @@ export const EDTX = {
   atVertexMin: ['Un contour garde au moins trois sommets.', 'An outline keeps at least three vertices.',
     'Ein Umriss behält mindestens drei Eckpunkte.', 'Un contorno conserva al menos tres vértices.'
   ],
-  plToContour: ['Tracer son contour', 'Draw its outline', 'Umriss zeichnen', 'Trazar su contorno'],
-  plToRound: ['La rendre ronde', 'Make it round', 'Rund machen', 'Hacerla redonda'],
+  plToContour: ['Changer en polygone', 'Change to polygon', 'In Vieleck ändern', 'Cambiar a polígono'],
+  plToRound: ['Changer en cercle', 'Change to circle', 'In Kreis ändern', 'Cambiar a círculo'],
   plContour: ['Contour de {n} sommets : il se retouche sur la carte.', 'Outline of {n} vertices: it is edited on the map.',
     'Umriss mit {n} Eckpunkten: er wird auf der Karte bearbeitet.', 'Contorno de {n} vértices: se edita en el mapa.'
   ],

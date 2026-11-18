@@ -545,9 +545,9 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 
 ### 7 quindecies. P2, third brick: the contour of a zone on the map, « Dessiner sur la carte » (18 Nov 2026; SOG-0444 lot P2; noreg N97; the pure part: § 7 quaterdecies)
 
-- **The shape is chosen in the sheet of the zone** (one button, so the sheet keeps its number of elements): « Tracer son contour » for
+- **The shape is chosen in the sheet of the zone** (one button, so the sheet keeps its number of elements): « Changer en polygone » for
   a round zone — six vertices at its radius (`toContour`); a zone without a position or a radius says so in a notification — and
-  « La rendre ronde » for a contour (`toRound`). The sheet of a contour says « Contour de n sommets : il se retouche sur la carte »
+  « Changer en cercle » for a contour (`toRound`). The sheet of a contour says « Contour de n sommets : il se retouche sur la carte »
   in place of the fields of the centre and of the radius; a contour the file writes in a way that cannot be read stays « kept as it
   is », without the button.
 - **On the map, the contour chosen shows its handles**: its vertices (`vertex:i:k`), and in the middle of each side the point that
@@ -566,7 +566,7 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - **A defect corrected in passing**: after « Enregistrer », the group « Lieux » left unfolded showed an EMPTY list until it was
   folded and reopened — its rows are now read again from the saved file (N97).
 - **The view is framed on a zone with a contour** (the ergonomist's reading of 18 Nov: on a zone of 5 km in a mission of 150 km
-  « les six poignées sont entassées, personne ne les attrape »): « Tracer son contour », and choosing a zone with a contour — on the
+  « les six poignées sont entassées, personne ne les attrape »): « Changer en polygone », and choosing a zone with a contour — on the
   map or by « Modifier » — frame the view on the zone, with a margin (`focus(i)` of `editor_map.js`); the view then no longer
   reframes itself on the mission, **« Recentrer » comes back to it**; moving a place or a vertex never reframes (N97).
 - **Not done**: Tracé and the landmarks of AeroDB (next push), « Placer l'avion ici », « Vue du pilote ».

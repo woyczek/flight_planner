@@ -5555,10 +5555,10 @@ _EDSHAPE = f"""(i) => {{ const f = document.querySelector('{E} [data-edplaces] [
 _EDVERTS = "(i) => ((window.__edMap ? " + _EDMAP_IDS + " : () => [])() || []).filter(x => x.startsWith('vertex:' + i + ':')).length"
 
 
-@case('N97', 'Missions › the workshop, the contour of a zone on the map: in the sheet of a round zone « Tracer son contour » makes of it a '
+@case('N97', 'Missions › the workshop, the contour of a zone on the map: in the sheet of a round zone « Changer en polygone » makes of it a '
       'contour of six vertices; chosen, the contour shows its vertices and, between two of them, the point that adds one; a vertex is '
       'dragged; a vertex touched is chosen and « Retirer ce sommet » is offered; the contour is moved by its middle; « Annuler le geste » '
-      'gives the contour back; the file saved carries the vertices; « La rendre ronde » brings the circle back; a row opened in the '
+      'gives the contour back; the file saved carries the vertices; « Changer en cercle » brings the circle back; a row opened in the '
       'Lieux is the place chosen on the map; from the sheet of a drawer « Dessiner sur la carte » poses a zone that becomes its key',
       'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0444, lot P2, third brick (modules/missions/EDITOR.md § 2: « its shape is chosen in its sheet, and a contour is drawn by its '
@@ -5582,7 +5582,7 @@ def n97(c):
     c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="3"]')
     c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen on the map by its row')
     c.eq([shape(3), hint(), 'radius:3' in c.js(_EDMAP_IDS, None)], [['round', '', T('plToContour'), True], T('atHint_round', name='ZONE-1 · Secteur nord'), True],
-         'the row of ZONE-1 open: a round zone, with its radius, the handle of its radius on the map, and « Tracer son contour »', what='a round zone')
+         'the row of ZONE-1 open: a round zone, with its radius, the handle of its radius on the map, and « Changer en polygone »', what='a round zone')
     # round → contour: six vertices, and the points that add one; the view is framed on the zone
     view0 = c.js(_EDMAP_VIEW)
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
@@ -5590,7 +5590,7 @@ def n97(c):
     a0, a3 = c.js(_EDMAP_XY, [44.84497, 1.2]), c.js(_EDMAP_XY, [44.75503, 1.2])
     zoomed = c.js(_EDMAP_VIEW)
     c.ok(zoomed[2] > view0[2] + 2 and abs(a3[1] - a0[1]) > 120, [view0, zoomed, a0, a3],
-         '« Tracer son contour » frames the view on the zone, with a margin: its vertices are far enough apart to be caught')
+         '« Changer en polygone » frames the view on the zone, with a margin: its vertices are far enough apart to be caught')
     ids = c.js(_EDMAP_IDS, None)
     c.eq([shape(3), hint(), sum(1 for x in ids if x.startswith('mid:3:')), 'radius:3' in ids, c.js(_EDTOOL_STATE)[5][2]],
          [['contour', T('plContour', n=6), T('plToRound'), False], T('atHint_contour', name='ZONE-1 · Secteur nord'), 6, False, False],
@@ -5639,7 +5639,7 @@ def n97(c):
     c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen again')
     c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
     c.until(f"({_EDVERTS})(3) === 0 && (({_EDMAP_IDS})() || []).includes('radius:3')", timeout=8000, what='the zone round again')
-    c.eq(shape(3), ['round', '', T('plToContour'), True], '« La rendre ronde »: the circle is back, with its radius field', what='contour to round')
+    c.eq(shape(3), ['round', '', T('plToContour'), True], '« Changer en cercle »: the circle is back, with its radius field', what='contour to round')
     # « Recentrer » comes back to the mission
     c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
     c.eq(c.js(_EDMAP_VIEW), view0, '« Recentrer » brings the view back from the zone to the frame of the mission', what='the view recentred')

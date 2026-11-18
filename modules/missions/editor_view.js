@@ -15,7 +15,7 @@
 // Les outils (deuxième brique) : au-dessus de la carte, Sélection, Point, Zone, Objet (s.ed.tool ; pris en main SUR PLACE), « Annuler le
 // geste » (s.ed.mapUndo : createUndo du socle, les états des lignes des Lieux d'avant chaque geste de la carte) et « Recentrer » ; le
 // lieu choisi (s.ed.mapSel, son rang) ; les gestes finis de la carte retouchent les lignes par ED.newPlace, movePlace, placeRadius.
-// Le contour (troisième brique) : la forme d'une zone dans sa fiche (« Tracer son contour » / « La rendre ronde » : ED.toContour,
+// Le contour (troisième brique) : la forme d'une zone dans sa fiche (« Changer en polygone » / « Changer en cercle » : ED.toContour,
 // toRound) ; les sommets du contour choisi sur la carte (ED.moveVertex, insertVertex ; s.ed.mapVertex : le sommet choisi, pour
 // « Retirer ce sommet ») ; « Dessiner sur la carte » depuis la fiche d'un tiroir (s.ed.drawFor : sa lettre — ce qui est posé devient sa
 // clé) ; une ligne des Lieux ouverte est le lieu choisi sur la carte.
@@ -2708,7 +2708,7 @@ function edClickDo(s, b) {
       e.mapSel = i;
       e.mapVertex = -1;
       draw(s);
-      return edMapFocus(e, i); // « Tracer son contour » cadre la vue sur la zone
+      return edMapFocus(e, i); // « Changer en polygone » cadre la vue sur la zone
     }
     case 'edmapundo': { // « Annuler le geste » : l'état d'avant le dernier geste de la carte — les lignes des Lieux, la route du
       // départ, la suite de route et la clé des tiroirs (edMapRemember) ; le lieu choisi le reste quand il existe encore à son rang
