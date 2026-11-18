@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "8cc9e72",
-  "fiches": 452,
+  "organisation": "b640418",
+  "fiches": 456,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3334,6 +3334,15 @@
      "de": "Missionsvorbereitung: die Kartenauswahl erscheint erst nach einem Wechsel zwischen Karte und Kraftstoff",
      "es": "Preparación de misión: el selector de carta solo aparece tras ir y volver entre Mapa y Combustible",
      "rank": 339
+    },
+    {
+     "id": "SOG-0456",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte de mission : un seul bloc pour l'atelier et le Brief — fond « Rapide » ou « Relief », couche « Espaces » (RTBA, zones)",
+     "en": "Mission map: one block for the workshop and the Brief — “Fast” or “Terrain” background, “Airspace” layer (RTBA, areas)",
+     "de": "Missionskarte: ein Baustein für Werkstatt und Briefing — Hintergrund „Schnell“ oder „Relief“, Ebene „Lufträume“ (RTBA, Gebiete)",
+     "es": "Mapa de misión: un solo bloque para el taller y el Brief — fondo «Rápido» o «Relieve», capa «Espacios» (RTBA, zonas)"
     }
    ]
   },
@@ -3770,6 +3779,27 @@
    ]
   },
   {
+   "id": "compagnie-missions-atelier",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier",
+    "en": "Missions ; atelier",
+    "de": "Missions ; atelier",
+    "es": "Missions ; atelier"
+   },
+   "items": [
+    {
+     "id": "SOG-0454",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : « Annuler » est mal placé, peu visible, et ne ressemble pas aux autres écrans",
+     "en": "Mission workshop: “Cancel” is misplaced, hard to see, and unlike the other screens",
+     "de": "Missionswerkstatt: „Abbrechen“ ist schlecht platziert, kaum sichtbar und anders als auf den übrigen Seiten",
+     "es": "Taller de misiones: «Cancelar» está mal situado, se ve poco y no se parece a las demás pantallas"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-creation",
    "app": "compagnie",
    "label": {
@@ -3827,6 +3857,27 @@
    ]
   },
   {
+   "id": "compagnie-missions-fiche",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; fiche",
+    "en": "Missions ; fiche",
+    "de": "Missions ; fiche",
+    "es": "Missions ; fiche"
+   },
+   "items": [
+    {
+     "id": "SOG-0457",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Brief : la carte rapide de la mission dès le tirage, à côté du brief en vue large",
+     "en": "Brief: the fast mission map as soon as the mission is drawn, beside the brief on a wide screen",
+     "de": "Briefing: die schnelle Missionskarte gleich nach der Auslosung, auf breitem Bildschirm neben dem Briefing",
+     "es": "Brief: el mapa rápido de la misión desde el sorteo, junto al brief en pantalla ancha"
+    }
+   ]
+  },
+  {
    "id": "compagnie-missions-lecture",
    "app": "compagnie",
    "label": {
@@ -3844,6 +3895,27 @@
      "en": "The secret of a closed drawer: the sheet, the Detail and the Map only show what the visible part or an opened drawer cites",
      "de": "Das Geheimnis einer geschlossenen Schublade: Blatt, Detail und Karte zeigen nur, was der sichtbare Teil oder eine geöffnete Schublade nennt",
      "es": "El secreto de un cajón cerrado: la ficha, el Detalle y el Mapa solo muestran lo que cita la parte visible o un cajón abierto"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-registre-fiche",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; registre ; fiche",
+    "en": "Missions ; registre ; fiche",
+    "de": "Missions ; registre ; fiche",
+    "es": "Missions ; registre ; fiche"
+   },
+   "items": [
+    {
+     "id": "SOG-0455",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : deux vues d'une même mission — le Brief (pilote : l'histoire d'abord) et l'Atelier (auteur : la carte d'abord) ; le registre ouvre le Brief",
+     "en": "Missions: two views of one mission — the Brief (pilot: the story first) and the Workshop (author: the map first); the register opens the Brief",
+     "de": "Missionen: zwei Ansichten einer Mission — das Briefing (Pilot: zuerst die Geschichte) und die Werkstatt (Autor: zuerst die Karte); das Register öffnet das Briefing",
+     "es": "Misiones: dos vistas de una misma misión — el Brief (piloto: primero la historia) y el Taller (autor: primero el mapa); el registro abre el Brief"
     }
    ]
   },
