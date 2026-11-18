@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 310,
+  "tests": 311,
   "verdicts": 215
  },
  "apps": [
@@ -4608,6 +4608,20 @@
    "at": "2026-11-18T12:11:14Z"
   },
   {
+   "id": "SOG-0462",
+   "app": "pilote",
+   "title": {
+    "fr": "Zones R et D : dire la nature du danger, le gestionnaire, les horaires et les conditions de pénétration",
+    "en": "R and D areas: state the nature of the hazard, the managing authority, the hours and the entry conditions",
+    "de": "R- und D-Gebiete: Art der Gefahr, zuständige Stelle, Zeiten und Einflugbedingungen angeben",
+    "es": "Zonas R y D: indicar la naturaleza del peligro, el gestor, los horarios y las condiciones de penetración"
+   },
+   "test": "Après la relance du lanceur, Données : « Mettre à jour » pour la France, puis reconstruis la zone fr. Carte : touche la zone R 108 (ou une autre zone R ou D de France). Attendu : sous son code, la « Nature du danger » telle que l'écrit le SIA (pour la R 108 : « Activités spécifiques Défense. Vols d'essais. »), l'organisme et les conditions de pénétration, les horaires publiés ; la R 12 montre son nom usuel « MONT SAINT MICHEL ». Une zone d'un autre État dit sa source (« openAIP, communautaire ») et n'écrit rien pour un champ absent.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T12:59:27Z"
+  },
+  {
    "id": "SOG-0474",
    "app": "pilote",
    "title": {
@@ -4637,6 +4651,22 @@
   }
  ],
  "decisions": [
+  {
+   "id": "Q-0111",
+   "fiche": "SOG-0474",
+   "app": "pilote",
+   "question": "Allemagne officielle (DFS) : en plus des points et des balises, prend-on aussi ses aérodromes, ses pistes et ses SID/STAR ?",
+   "context": "Suite de ta réponse à Q-0108 (l'officiel État par État, l'Allemagne d'abord). AeroDB lit déjà les voies d'Allemagne chez la DFS (ED Routes). Sur le même site, et sous la même licence CC BY 4.0 avec crédit DFS, il y a aussi les points, les balises, les aérodromes, les pistes et les procédures SID/STAR. Les points et les balises sont lancés tout de suite : ce sont eux qui manquent à la route. Le 28/10, tu avais écarté les SID/STAR allemands parce qu'on croyait qu'il fallait une licence ; la page de la DFS dit aujourd'hui que ses propres données sont réutilisables, même pour un usage commercial (seules les données des exploitants d'aéroports sont non commerciales, et on ne les prend pas). Un fichier par cycle de 28 jours, rien de redemandé s'il est déjà là.",
+   "options": [
+    "Oui, tout : aérodromes, pistes et SID/STAR officiels de la DFS",
+    "Aérodromes et pistes seulement ; pas les SID/STAR",
+    "Non : points et balises seulement",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",
