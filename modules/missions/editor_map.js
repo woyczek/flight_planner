@@ -45,7 +45,10 @@ export const MAPB = Object.freeze({
   waitPlain: 4000,
   padding: 36,
   refZoom: 7, // les repères de la base ne se montrent et ne se demandent qu'à partir de ce zoom
-  refMax: 300 // par sorte, au plus
+  refMax: 300, // par sorte, au plus
+  seekMax: 5, // « Chercher un repère » : candidats montrés, au plus
+  seekZoom: 10, // … et le zoom de la vue centrée sur le repère trouvé, au moins (au-delà du zoom des repères : il est dessiné)
+  seekBox: 0.02 // … et la demi-largeur (degrés) du cadre où la base doit le confirmer
 });
 /** Les sortes de lieu qu'une poignée déplace (celles de ED.MOVABLE : ni le départ ni l'arrivée, ni l'avion de l'essai). */
 const MOVABLE = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
@@ -127,6 +130,88 @@ export function refData(lists) {
     points: take(l.points, x => x.id),
     vrp: take(l.vrp, x => x.id || x.name)
   };
+}
+
+/** « Chercher un repère » : la sorte d'un lieu de la base → celle d'un repère de la carte, et la liste de la base qui le confirme. */
+const SEEK_KINDS = Object.freeze({
+  aerodrome: 'aerodrome',
+  navaid: 'navaid',
+  point: 'fix',
+  fix: 'fix',
+  vrp: 'vrp'
+});
+export const SEEK_LISTS = Object.freeze({
+  aerodrome: 'aerodromes',
+  navaid: 'navaids',
+  fix: 'points',
+  vrp: 'vrp'
+});
+
+/** Les candidats d'une recherche de repère par son nom, tels que l'écran les propose : [{ id, kind, lat, lon, label }], cinq au plus,
+ *  sans doublon. `exact` : les lieux qui portent ce code (aerodb.coordsAll : [{ kind, item, local?, source?, zone? }], le plus proche
+ *  d'abord) ; `found` : les lieux qui répondent au texte (aerodb.find : [{ kind, code, name, lat, lon }]) — les villes n'en sont pas.
+ *  Tout est borné : une sorte connue, une position dans ses bornes, un identifiant de vingt-quatre signes, un libellé de soixante ;
+ *  **un lieu qui porte un marqueur local est écarté** (comme refData). Deux candidats de même libellé disent leur position. Ces
+ *  candidats ne sont PAS encore des repères : la base doit confirmer chacun (seekBox, seekKeep). Pur. */
+export function seekRows(exact, found) {
+  const out = [],
+    seen = new Set(),
+    list = v => Array.isArray(v) ? v.slice(0, 50) : [],
+    text = (v, n) => typeof v === 'string' || typeof v === 'number' ? String(v).replace(/\s+/g, ' ').trim().slice(0, n) : '',
+    add = (kindIn, idIn, nameIn, lat, lon) => {
+      const kind = typeof kindIn === 'string' && Object.hasOwn(SEEK_KINDS, kindIn) ? SEEK_KINDS[kindIn] : '',
+        at = kind ? posOf(lat, lon) : null,
+        name = text(nameIn, 40),
+        id = at ? text(idIn, 24) || name.slice(0, 24) : '',
+        key = `${kind}|${id.toUpperCase()}|${at?.lat.toFixed(2)}|${at?.lon.toFixed(2)}`;
+      if (!id || seen.has(key) || out.length >= MAPB.seekMax) return;
+      seen.add(key);
+      out.push({
+        id,
+        kind,
+        lat: at.lat,
+        lon: at.lon,
+        label: (name && name.toUpperCase() !== id.toUpperCase() ? `${id} — ${name}` : id).slice(0, 60)
+      });
+    };
+  for (const x of list(exact)) {
+    const item = x && typeof x === 'object' && x.item && typeof x.item === 'object' ? x.item : null;
+    if (item && !isLocal(x) && !isLocal(item)) add(x.kind, item.icao || item.id || item.name, item.name, item.lat, item.lon);
+  }
+  for (const x of list(found))
+    if (x && typeof x === 'object' && !isLocal(x)) add(x.kind, x.code || x.name, x.name, x.lat, x.lon);
+  return out.map(r => out.filter(q => q.label === r.label).length > 1 ? {
+    ...r,
+    label: `${r.label} · ${r.lat.toFixed(2)}, ${r.lon.toFixed(2)}`
+  } : r);
+}
+
+/** Le cadre [ouest, sud, est, nord] où la base doit confirmer un candidat : un petit carré autour de sa position. Pur. */
+export function seekBox(row) {
+  const d = MAPB.seekBox;
+  return [row.lon - d, row.lat - d, row.lon + d, row.lat + d].map(v => +v.toFixed(4));
+}
+
+/** Un candidat confirmé par la base : `lists` est ce qu'elle rend pour son cadre (seekBox) dans la liste de sa sorte (SEEK_LISTS) ;
+ *  le candidat n'est gardé que s'il est parmi les repères que la carte dessinerait (refData : bornés, **sans marqueur local**) — même
+ *  identifiant, même endroit ; sa position est alors celle de la base. Sinon null : la recherche ne cercle jamais qu'un repère de
+ *  la carte. Pur. */
+export function seekKeep(row, lists) {
+  if (!row || typeof row !== 'object' || !Object.hasOwn(SEEK_LISTS, row.kind)) return null;
+  const d = refData(lists),
+    all = row.kind === 'aerodrome' ? d.aerodromes.map(a => ({
+      id: a.icao,
+      lat: a.lat,
+      lon: a.lon
+    })) : d[SEEK_LISTS[row.kind]],
+    id = String(row.id).toUpperCase(),
+    hit = all.find(x => x.id.toUpperCase() === id && Math.abs(x.lat - row.lat) <= MAPB.seekBox && Math.abs(x.lon - row.lon) <= MAPB
+      .seekBox);
+  return hit ? {
+    ...row,
+    lat: hit.lat,
+    lon: hit.lon
+  } : null;
 }
 
 /** Le contour d'une ligne de zone : ses sommets ({ lat, lon }), lus bornés par ED.ringOf (3 à 100, tous situés) ; null sans contour
@@ -788,6 +873,40 @@ export function focus(i) {
   L.fitting = false;
   L.moved = true;
   spread(L);
+}
+
+/** Le centre de la vue ({ lat, lon }), pour chercher un repère près de ce que l'auteur regarde ; null sans carte. */
+export function centreOf(owner) {
+  if (!LIVE || LIVE.owner !== owner || !LIVE.map) return null;
+  try {
+    const c = LIVE.map.getCenter();
+    return posOf(c.lat, c.lng);
+  } catch {
+    return null;
+  }
+}
+
+/** Centre la vue sur un repère trouvé par son nom, au zoom des repères au moins (il est alors dessiné, et la base du cadre demandée).
+ *  La vue ne se recadre alors plus seule sur la mission : « Recentrer » y revient. → vrai si la vue a bougé. */
+export function centre(lat, lon) {
+  const L = LIVE,
+    at = posOf(lat, lon);
+  if (!L?.map || !at) return false;
+  L.fitting = true;
+  try {
+    mapSize(L.map, L.host);
+    L.map.jumpTo({
+      center: [at.lon, at.lat],
+      zoom: Math.max(L.map.getZoom(), MAPB.seekZoom)
+    });
+  } catch {
+    L.fitting = false;
+    return false; // une vue que MapLibre refuse : elle reste où elle est
+  }
+  L.fitting = false;
+  L.moved = true;
+  spread(L);
+  return true;
 }
 
 /** « Recentrer » : la vue revient au cadre de la mission, et se recadre de nouveau seule. */

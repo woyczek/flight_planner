@@ -677,6 +677,28 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   preview of the drawer itself.
 - **Not done**: the onward routes of the open drawers drawn in the pilot's view; the view during a trial of the keys.
 
+### 7 duovicies. « Chercher un repère » by its name (18 Nov 2026; SOG-0444, the rests of lot P2 — lot C; noreg N105)
+
+- **Under the frame of the map, above « Vue de la carte »**: a field (« Code ou nom », forty signs) and its button « Chercher ».
+  Enter searches as the button does (a `change` while the field is still in hand: `module.js` forwards no key). Not given in the
+  pilot's view nor during a trial of the keys (the map only shows), nor without the aeronautical base; disabled until the map is
+  there.
+- **What is asked** (`edRefSeek`): for a text shaped like a code (2 to 7 letters and digits), the places that carry it, the nearest
+  to the centre of the view first (`aerodb.coordsAll(text, { near })`); and the places whose name answers the text
+  (`aerodb.find(text, 20)`). `EM.seekRows` bounds them: a known kind (a town is not a landmark), a position within bounds, an
+  identifier of 24 signs, a label of 60, five candidates at most, once each; two candidates of the same label say where they are.
+- **The base confirms every candidate** before the screen sees it: the list of its kind is asked for a small frame around it
+  (`EM.seekBox`, ±0.02°) and `EM.seekKeep` keeps it only if it is among the landmarks the map would draw (`refData`: bounded,
+  **never a place carrying a local mark** — X-Plane, Eurocontrol, Little Navmap; SOG-0153), same identifier, same place; its
+  position is then the base's. `find` returns no mark: the confirmation is the guard, not a supposition.
+- **One landmark**: the view is centred on it (`EM.centre`, zoom 10 at least: it is drawn; the view no longer reframes itself, «
+  Recentrer » comes back); it becomes the landmark touched (`s.ed.mapRef`) — said in the line of the tool, circled, « Ajouter comme
+  point » offered. **Nothing is created.** A tool of pose in hand is dropped (« Sélection » again): the landmark found must be said.
+  **Several**: one button each under the field (« Plusieurs repères : choisissez. »), written in place; typing forgets them.
+  **None**, or less than two signs: a floating notification, the view does not move.
+- A late answer (another search since, the workshop left) is dropped (`s.ed.seekTok`).
+- **Not done**: the towns as places to go to; « Radiale et distance… » from a beacon.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

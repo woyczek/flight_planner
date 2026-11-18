@@ -5454,3 +5454,166 @@ def n104(c):
     c.shot('N104_390_pilot.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+_SEEK = f'{_EDMAP} [data-refseek]'
+_SEEK_OUT = f"[...document.querySelectorAll('{_SEEK} [data-refseekout] button')].map(x => x.textContent.trim())"
+_SEEK_JS = """async () => { const EM = await import('/modules/missions/editor_map.js'); let threw = '';
+  for (const h of [[null, null], ['x', 7], [[null, 'x', 7, { kind: {}, item: 'x' }, { kind: 'navaid', item: { id: {}, lat: 'x' } }], [null, 7, { kind: 'navaid', code: {}, name: [], lat: {}, lon: 1 }]]])
+    try { EM.seekRows(h[0], h[1]) } catch (e) { threw += String(e) }
+  for (const h of [[null, null], ['x', 'y'], [{ kind: 'city', id: 'C', lat: 1, lon: 1 }, {}], [{ kind: '__proto__', id: 'P', lat: 1, lon: 1 }, { __proto__: [] }], [{ kind: 'navaid', id: 'A', lat: 1, lon: 1 }, { navaids: 'x' }]])
+    try { if (EM.seekKeep(h[0], h[1]) !== null) threw += 'kept' } catch (e) { threw += String(e) }
+  const rows = EM.seekRows([{ kind: 'navaid', item: { id: 'TSV', name: 'TESTVILLE', lat: 44.3, lon: 1.3 } },
+      { kind: 'point', item: { id: 'FRA1', lat: 44.1, lon: 1.1 }, local: true, zone: 'fra' }, { kind: 'point', item: { id: 'XP1', lat: 44.1, lon: 1.2, source: 'xplane' } },
+      { kind: 'point', item: { id: 'LN1', lat: 44.1, lon: 1.3 }, zone: 'lnm' }, { kind: 'city', item: { id: 'TOWN', lat: 44, lon: 1 } }, { kind: 'navaid', item: { id: 'BAD', lat: 91, lon: 0 } },
+      { kind: '__proto__', item: { id: 'PROTO', lat: 1, lon: 1 } }],
+    [{ kind: 'navaid', code: 'TSV', name: 'VOR TESTVILLE', lat: 44.3, lon: 1.3 }, { kind: 'city', code: '', name: 'Testville', lat: 44, lon: 1 },
+      { kind: 'aerodrome', code: 'LFZZ', name: 'ZZ TEST', lat: 44.25, lon: 1.7 }, { kind: 'point', code: 'NEPIX', name: 'NEPIX', lat: 44.7, lon: 1.75 },
+      { kind: 'vrp', code: '', name: 'N'.repeat(60), lat: 44.2, lon: 1.2 }, { kind: 'navaid', code: 'X'.repeat(40), name: 'LONG', lat: 44.21, lon: 1.21, source: 'xplane' },
+      ...Array.from({ length: 30 }, (_, n) => ({ kind: 'point', code: 'P' + n, name: '', lat: 10 + n, lon: 1 }))]);
+  const twins = EM.seekRows([{ kind: 'navaid', item: { id: 'PAM', lat: 52.33, lon: 5.09 } }, { kind: 'navaid', item: { id: 'PAM', lat: 30.07, lon: -85.58 } }], []);
+  const tsv = rows[0];
+  return { threw, rows: rows.map(r => [r.id, r.kind, r.lat, r.lon, r.label]), twins: twins.map(r => r.label), box: EM.seekBox(tsv),
+    kept: EM.seekKeep(tsv, { navaids: [{ id: 'OTHER', lat: 44.3, lon: 1.3 }, { id: 'tsv', lat: 44.3004, lon: 1.2999, name: 'x' }] }),
+    local: EM.seekKeep(tsv, { navaids: [{ id: 'TSV', lat: 44.3, lon: 1.3, source: 'xplane' }] }), marked: EM.seekKeep(tsv, { navaids: [{ id: 'TSV', lat: 44.3, lon: 1.3, local: true }] }),
+    far: EM.seekKeep(tsv, { navaids: [{ id: 'TSV', lat: 45.3, lon: 1.3 }] }), wrong: EM.seekKeep(tsv, { points: [{ id: 'TSV', lat: 44.3, lon: 1.3 }] }),
+    ad: EM.seekKeep(rows[1], { aerodromes: [{ icao: 'LFZZ', lat: 44.2501, lon: 1.7 }] }) } }"""
+
+
+@case('N105', 'Missions › the workshop, « Chercher un repère » by its name: under the map a field and its button; a code or a name is asked '
+      'to the aeronautical base of the suite — one landmark: the view is centred on it, it is said in the line of the tool and '
+      'circled as a landmark touched, « Ajouter comme point » is offered, NOTHING IS CREATED; several: they are offered under the field '
+      'and the one chosen is gone to; none: a notification, the view does not move; Enter searches as the button does; a tool of pose '
+      'in hand is dropped; a place carrying a local mark (X-Plane, Eurocontrol, Little Navmap) is never found — the base confirms each '
+      'candidate among the landmarks the map would draw; the field is not given in the pilot\'s view nor during a trial of the keys',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, the rests of lot P2 — lot C (the ergonomist, 18 Nov: « Chercher un repère par son nom : un champ qui centre la '
+      'carte dessus et le cercle »; modules/missions/EDITOR.md § 7 duovicies; SOG-0153: a local position never reaches a file of the '
+      'repository; frame/aerodb: `coordsAll`, `find`, the lists of a bounding box)')
+def n105(c):
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    add = lambda: c.js(f"document.querySelector('{_EDMAP} [data-refadd]').hidden")  # noqa: E731
+    view = lambda: c.js(_EDMAP_VIEW)  # noqa: E731
+    at = lambda v, la, lo: abs(v[0] - la) < 0.01 and abs(v[1] - lo) < 0.01 and v[2] >= 10  # noqa: E731
+
+    def seek(text, enter=False):
+        """Types a text in the field and searches: the button, or Enter."""
+        c.page.fill(f'{_SEEK} input', text)
+        if enter:
+            c.page.press(f'{_SEEK} input', 'Enter')
+        else:
+            c.tap(f'{_SEEK} > button')
+
+    # the candidates of a search are bounded, and confirmed by the base, before anything reaches the screen
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_SEEK_JS)
+    c.eq([r['threw'], r['rows'], r['twins'], r['box']],
+         ['', [['TSV', 'navaid', 44.3, 1.3, 'TSV — TESTVILLE'], ['LFZZ', 'aerodrome', 44.25, 1.7, 'LFZZ — ZZ TEST'], ['NEPIX', 'fix', 44.7, 1.75, 'NEPIX'],
+               ['N' * 24, 'vrp', 44.2, 1.2, 'N' * 24 + ' — ' + 'N' * 33], ['P0', 'fix', 10, 1, 'P0']], ['PAM · 52.33, 5.09', 'PAM · 30.07, -85.58'], [1.28, 44.28, 1.32, 44.32]],
+         'the candidates: a known kind (a town is not a landmark), a position within bounds, an identifier of 24 signs, a label of 60, five at most, once each; a place that '
+         'carries a local mark is left out; two candidates of the same label say where they are; the frame where the base confirms one; no hostile answer throws',
+         what='the candidates bounded')
+    c.eq([r['kept'], r['local'], r['marked'], r['far'], r['wrong'], r['ad']],
+         [{'id': 'TSV', 'kind': 'navaid', 'lat': 44.3004, 'lon': 1.2999, 'label': 'TSV — TESTVILLE'}, None, None, None, None,
+          {'id': 'LFZZ', 'kind': 'aerodrome', 'lat': 44.2501, 'lon': 1.7, 'label': 'LFZZ — ZZ TEST'}],
+         'a candidate is kept only when the base gives it, in the list of its kind, at the same place, WITHOUT a local mark — its position is then the base\'s; otherwise it '
+         'is not a landmark', what='the candidates confirmed')
+    # the registry, the mission, and a small published base
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _TRIAL_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra={
+        'navaids': [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3, 'type': 'VOR', 'name': 'TESTVILLE'}, {'id': 'XPL', 'lat': 44.5, 'lon': 1.1, 'name': 'XPLANE', 'source': 'xplane'},
+                    {'id': 'LOC', 'lat': 44.55, 'lon': 1.9, 'local': True}],
+        'points': [{'id': 'NEPIX', 'lat': 44.7, 'lon': 1.75, 'type': 'RNAV'}],
+        'aerodromes': [{'icao': 'LFZZ', 'name': 'ZZ TEST', 'lat': 44.25, 'lon': 1.7, 'elev': 100}]})
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"document.querySelector('{_SEEK} input')?.disabled === false", timeout=8000, what='the field given with the map')
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"({_EDPLACE_IDS}).length === 7", what='the seven places of the mission listed')
+    n, home = len(c.js(_EDPLACE_IDS)), view()
+    c.eq([norm(c.text(f'{_SEEK} label > span')), c.js(f"document.querySelector('{_SEEK} input').placeholder"), norm(c.text(f'{_SEEK} > button')), c.js(_SEEK_OUT)],
+         [T('atSeek'), T('atSeekPh'), T('atSeekGo'), []], 'under the map: « Chercher un repère », its field and its button; no candidate', what='the field')
+    # one landmark of that code: the view goes there, it is said and circled; nothing is created
+    seek('tsv')
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=10000, what='the beacon found')
+    c.ok(at(view(), 44.3, 1.3) and hint() == T('atRef_navaid', id='TSV') and len(c.js(_EDPLACE_IDS)) == n and c.js(_EDSEL) is None and c.js(_SEEK_OUT) == []
+         and c.js(f"document.querySelector('{_SEEK} input').value") == 'tsv', [view(), hint(), len(c.js(_EDPLACE_IDS)), c.js(_SEEK_OUT)],
+         'the beacon of that code: the view is centred on it at the zoom of the landmarks, the line says what it is, « Ajouter comme point » is offered — and no place was created')
+    c.until(f"({_EDREFS} || []).includes('TSV')", timeout=15000, what='the landmark drawn where the view went')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N105_1280_seek.png')
+    # « Recentrer » comes back to the mission
+    c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
+    c.until(f"JSON.stringify({_EDMAP_VIEW}) === '{__import__('json').dumps(home, separators=(',', ':'))}'", timeout=8000, what='the view back on the mission')
+    # a name that several landmarks answer, by Enter: they are offered; the one chosen is gone to
+    seek('test', enter=True)
+    c.until(f"({_SEEK_OUT}).length === 2", timeout=10000, what='two candidates offered')
+    c.eq([c.js(_SEEK_OUT), norm(c.text(f'{_SEEK} [data-refseekout] p')), view()], [['TSV — TESTVILLE', 'LFZZ — ZZ TEST'], T('atSeekMany'), home],
+         'Enter searches as the button does; two landmarks answer the name: they are offered under the field, the view has not moved', what='several landmarks')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N105_1280_seek_many.png')
+    c.tap(f'{_SEEK} [data-refseekout] button >> nth=1')
+    c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.includes('LFZZ')", timeout=10000, what='the aerodrome chosen')
+    c.ok(at(view(), 44.25, 1.7) and hint() == T('atRef_aerodrome', id='LFZZ') and c.js(_SEEK_OUT) == [] and len(c.js(_EDPLACE_IDS)) == n, [view(), hint(), c.js(_SEEK_OUT)],
+         'the candidate chosen: the view goes to the aerodrome, the line says it, the candidates are gone; nothing created')
+    # a tool of pose in hand is dropped: the landmark found is said as one touched in Sélection
+    c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    seek('NEPIX')
+    c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.includes('NEPIX')", timeout=10000, what='the fix found')
+    c.ok(at(view(), 44.7, 1.75) and hint() == T('atRef_fix', id='NEPIX') and c.js(_EDTOOL_STATE)[0] == ['select', 'true', False] and c.js(_EDTOOL_STATE)[1][1] == 'false'
+         and add() is False and len(c.js(_EDPLACE_IDS)) == n, [view(), hint(), c.js(_EDTOOL_STATE)[:2]],
+         'with « Point » in hand, a landmark found drops the tool: « Sélection » again, the fix is said, « Ajouter comme point » is offered; nothing posed')
+    # a place that carries a local mark is never found, by its code nor by its name; an unknown name neither: a notification, the view stays
+    here = view()
+    for q in ('XPL', 'xplane', 'LOC', 'QQQQ'):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        seek(q)
+        c.until("!!document.querySelector('#fNotes .f-note')", timeout=10000, what=f'the notification for {q}')
+        c.ok(norm(T('atSeekNone', q=q)) in norm(c.js(_NOTES)) and view() == here and c.js(_SEEK_OUT) == [] and hint() == T('atRef_fix', id='NEPIX'), [q, norm(c.js(_NOTES)), view()],
+             f'« {q} »: no landmark of the map — a notification says so, the view does not move, nothing is offered')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    seek('x')
+    c.until("!!document.querySelector('#fNotes .f-note')", timeout=8000, what='the notification for one sign')
+    c.ok(norm(T('atSeekShort')) in norm(c.js(_NOTES)) and view() == here, norm(c.js(_NOTES)), 'one sign is not searched: a notification asks for two')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    # « Ajouter comme point » on the landmark found: a gesture of the map as for a landmark touched
+    c.tap(f'{_EDMAP} [data-refadd]')
+    c.until(f"{_EDSEL} === 'PT3 · NEPIX'", timeout=8000, what='PT3 created from the fix found')
+    c.ok(abs(float(c.js(_EDPLACE_VAL, [6, 'lat'])) - 44.7) < 0.001 and abs(float(c.js(_EDPLACE_VAL, [6, 'lon'])) - 1.75) < 0.001 and len(c.js(_EDPLACE_IDS)) == n + 1,
+         [c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDPLACE_VAL, [6, 'lon'])], '« Ajouter comme point » makes a turning point at the position the base gives for the landmark found')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"({_EDPLACE_IDS}).length === {n}", timeout=8000, what='the point undone')
+    # not given in the pilot's view, nor during a trial of the keys
+    c.page.select_option(_EDVIEW, '0')
+    c.until(f"!document.querySelector('{_SEEK}')", timeout=8000, what='the field gone in the pilot\'s view')
+    c.page.select_option(_EDVIEW, '-1')
+    c.until(f"document.querySelector('{_SEEK} input')?.disabled === false", timeout=8000, what='the field back with « Tout »')
+    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
+    c.eq(c.count(_SEEK), 0, 'during a trial of the keys the field is not given (the map only shows)', what='during the trial')
+    c.tap(f'{_TR} [data-do="edtrialoff"]')
+    c.until(f"!document.querySelector('{_TR}')", what='the trial closed')
+    # on a phone
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    seek('test')
+    c.until(f"({_SEEK_OUT}).length === 2", timeout=10000, what='two candidates offered on a phone')
+    box = c.js(f"(() => {{ const r = document.querySelector('{_SEEK}').getBoundingClientRect(); return [r.left >= 0, r.right <= innerWidth + 1] }})()")
+    c.eq(box, [True, True], 'on a phone the field, its button and the candidates hold in the width', what='the width')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_SEEK}').scrollIntoView({{block: 'center'}})")
+    c.shot('N105_390_seek_many.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

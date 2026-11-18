@@ -484,6 +484,19 @@ export const EDTX = {
     'Ein Versuch trägt höchstens zwanzig Setzungen: „Neu beginnen“ vergisst sie.',
     'Una prueba lleva veinte colocaciones como máximo: «Volver a empezar» las olvida.'
   ],
+  // « Chercher un repère » par son nom : un champ sous la carte ; la vue se centre sur le repère trouvé, dit et cerclé comme un repère touché
+  atSeek: ['Chercher un repère', 'Find a landmark', 'Orientierungspunkt suchen', 'Buscar una referencia'],
+  atSeekPh: ['Code ou nom', 'Code or name', 'Kennung oder Name', 'Código o nombre'],
+  atSeekGo: ['Chercher', 'Find', 'Suchen', 'Buscar'],
+  atSeekShort: ['Écrivez au moins deux signes.', 'Type at least two characters.', 'Mindestens zwei Zeichen eingeben.',
+    'Escriba al menos dos caracteres.'
+  ],
+  atSeekNone: ['Aucun repère « {q} » dans la base aéronautique.', 'No landmark « {q} » in the aeronautical base.',
+    'Kein Orientierungspunkt „{q}“ in der Luftfahrtdatenbank.', 'Ninguna referencia «{q}» en la base aeronáutica.'
+  ],
+  atSeekMany: ['Plusieurs repères : choisissez.', 'Several landmarks: choose one.', 'Mehrere Orientierungspunkte: bitte wählen.',
+    'Varias referencias: elija una.'
+  ],
   // « Vue du pilote » (SOG-0448) : ce que le pilote peut voir à un stade — la règle du lecteur (pilotView), sur la carte de l'atelier
   atView: ['Vue de la carte', 'View of the map', 'Ansicht der Karte', 'Vista del mapa'],
   atView_all: ['Tout — la vue de l\'auteur', 'Everything — the author\'s view', 'Alles — die Sicht des Autors',

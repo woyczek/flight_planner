@@ -25,6 +25,8 @@
 // Les repères de la base aéronautique : quand la vue s'arrête (au zoom 7 et au-delà), l'écran demande à ctx.aerodb les aérodromes,
 // balises, points et points VFR du cadre et les rend à la carte (EM.refData les borne) ; un repère touché en Sélection (s.ed.mapRef)
 // dit ce qu'il est dans la ligne et « Ajouter comme point » se montre à côté — le toucher ne crée rien.
+// « Chercher un repère » par son nom : un champ sous le cadre (s.ed.refSeek, s.ed.seekRows) ; la vue se centre sur le repère trouvé,
+// dit et cerclé comme un repère touché (edRefSeek, edSeekGo) — la base confirme chaque candidat, jamais un lieu à marqueur local.
 // « Vue du pilote » (SOG-0448) : le sélecteur « Vue de la carte » sous le cadre (s.ed.mapView : -1 tout, 0 au départ, n après le
 // tiroir n) ; en vue du pilote la carte ne dessine que ce que MS.pilotView garde (edPilotRows) et ne fait que montrer.
 // « Placer l'avion ici » : pendant un essai des clés, un bouton à côté de la ligne de l'outil (s.ed.trial.putting) ; le toucher suivant
@@ -107,6 +109,14 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmaptools button{min-height:44px;padding-left:10px;padding-right:10px}
 [data-module="missions"] .ms-atmaptools button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="missions"] .ms-atmaptools .ms-atmapend{margin-left:auto}
+[data-module="missions"] .ms-atseek{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:8px 0 0}
+[data-module="missions"] .ms-atseek>label{flex:1 1 160px;margin:0}
+[data-module="missions"] .ms-atseek input{width:100%;min-height:44px}
+[data-module="missions"] .ms-atseek>button{flex:0 0 auto;min-height:44px}
+[data-module="missions"] .ms-atseekout{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+[data-module="missions"] .ms-atseekout:empty{display:none}
+[data-module="missions"] .ms-atseekout>p{flex:1 1 100%;margin:0}
+[data-module="missions"] .ms-atseekout>button{min-height:44px}
 [data-module="missions"] .ms-atmapview{margin:8px 0 0}
 [data-module="missions"] .ms-atmapview select{width:100%;min-height:44px}
 [data-module="missions"] .ms-atmaphintrow{display:flex;align-items:center;gap:8px;margin:0 0 6px;min-height:44px}
@@ -614,6 +624,79 @@ function edPilotRows(e, doc, rows) {
     objects.has(up(r.id)) ? r : null) : r.id && kept.has(up(r.id)) ? r : null);
 }
 
+/** « Chercher un repère » se donne-t-il ? Avec la base aéronautique de la suite, hors d'un essai des clés et hors de la vue du pilote
+ *  (la carte ne fait alors que montrer). */
+const edSeekOn = (s, e) => !!s.ctx.aerodb && !e.trial?.on && edMapStage(e) < 0;
+
+/** Les candidats d'une recherche de repère (s.ed.seekRows : cinq au plus), un bouton chacun ; rien sans candidat. */
+function edSeekRowsHtml(s) {
+  const rows = Array.isArray(s.ed.seekRows) ? s.ed.seekRows : [];
+  return rows.length ? `<p class="f-muted">${esc(s.tt(EDTX.atSeekMany))}</p>${rows.map((r, i) => `<button type="button" data-do="edrefgo" data-i="${i}">${esc(r.label)}</button>`).join('')}` : '';
+}
+
+/** « Chercher un repère » par son nom, sous le cadre de la carte : un champ (un code ou un nom, quarante signes) et son bouton ; les
+ *  candidats dessous quand il y en a plusieurs. Inactif tant que la carte n'est pas là (edMapShow le donne sur place). */
+function edSeekHtml(s, live) {
+  const e = s.ed;
+  if (!edSeekOn(s, e)) {
+    e.seekRows = null; // une liste de candidats ne survit pas à un essai ni à une vue du pilote
+    return '';
+  }
+  return `<div class="ms-atseek" data-refseek><label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.atSeek))}</span><input type="text" data-k="edrefseek" maxlength="40" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="search" placeholder="${esc(s.tt(EDTX.atSeekPh))}" value="${esc(e.refSeek || '')}"${live ? '' : ' disabled'}></label><button type="button" data-do="edrefseek"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atSeekGo))}</button><div class="ms-atseekout" data-refseekout>${edSeekRowsHtml(s)}</div></div>`;
+}
+
+/** Les candidats de la recherche, écrits sur place (le champ et son bouton ne sont pas redessinés). */
+function edSeekShow(s) {
+  const out = s.el.querySelector('[data-refseekout]');
+  if (out) out.innerHTML = edSeekRowsHtml(s);
+}
+
+/** Le repère choisi d'une recherche : la vue se centre sur lui, au zoom des repères ; il est alors dit dans la ligne de l'outil et
+ *  cerclé, comme un repère touché en Sélection — l'outil de pose en main est lâché ; « Ajouter comme point » se montre. RIEN N'EST
+ *  CRÉÉ. */
+function edSeekGo(s, e, r) {
+  e.seekRows = null;
+  edSeekShow(s);
+  if (state() !== s || s.ed !== e || !edSeekOn(s, e) || !EM.centre(r.lat, r.lon)) return;
+  e.tool = 'select';
+  e.drawFor = '';
+  edMapRefPick(s, e, r);
+}
+
+/** « Chercher » : le texte du champ (deux à quarante signes) est demandé à la base de la suite — les lieux qui portent ce code, les
+ *  plus proches de la vue d'abord (coordsAll, pour un texte en forme de code), et ceux dont le nom y répond (find) ; EM.seekRows les
+ *  borne (cinq candidats, jamais un lieu à marqueur local), puis LA BASE CONFIRME chacun dans un petit cadre autour de lui
+ *  (EM.seekKeep : il doit être un repère que la carte dessinerait). Un seul : la vue y va ; plusieurs : ils se proposent sous le
+ *  champ ; aucun : une notification. Une réponse en retard (une autre recherche, l'atelier quitté) est jetée. */
+function edRefSeek(s) {
+  const e = s.ed,
+    a = s.ctx.aerodb,
+    text = String(e.refSeek ?? '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (!edSeekOn(s, e) || !EM.stateOf(e)) return;
+  if (text.length < 2) return s.ctx.notify?.(s.tt(EDTX.atSeekShort), 'warn');
+  const tok = e.seekTok = (e.seekTok || 0) + 1,
+    near = EM.centreOf(e),
+    call = (f, ...args) => typeof a[f] === 'function' ? Promise.resolve().then(() => a[f](...args)).catch(() => []) : Promise.resolve([]),
+    code = /^[A-Za-z0-9]{2,7}$/.test(text);
+  Promise.all([code ? call('coordsAll', text, near ? {
+    near: [near.lat, near.lon]
+  } : {}) : [], call('find', text, 20)]).then(([exact, found]) => Promise.all(EM.seekRows(exact, found).map(r => call(EM.SEEK_LISTS[r
+    .kind], {
+    bbox: EM.seekBox(r)
+  }).then(list => EM.seekKeep(r, {
+    [EM.SEEK_LISTS[r.kind]]: list
+  }))))).then(rows => {
+    if (state() !== s || s.ed !== e || tok !== e.seekTok) return;
+    const kept = rows.filter(Boolean);
+    if (kept.length === 1) return edSeekGo(s, e, kept[0]);
+    e.seekRows = kept.length ? kept : null;
+    edSeekShow(s);
+    if (!kept.length) s.ctx.notify?.(s.tt(EDTX.atSeekNone, {
+      q: text
+    }), 'warn');
+  }).catch(() => {});
+}
+
 /** Le sélecteur « Vue de la carte », sous le cadre : « Tout — la vue de l'auteur », puis la vue du pilote au départ et après chaque
  *  tiroir. Montré seulement quand la mission a des tiroirs, et hors d'un essai des clés (l'essai montre tout) ; inactif tant que la
  *  carte n'est pas là (elle arrive après le dessin : edMapShow le donne sur place). */
@@ -736,7 +819,7 @@ function edMapHtml(s, doc, run = null) {
     off = !live || edMapTrial(tool),
     btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edMapViewHtml(s, live)}</div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
 }
 
 /** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
@@ -815,6 +898,7 @@ function edMapShow(s) {
       if (add) add.hidden = !edMapRef(e);
       const view = q('[data-mapview] select');
       if (view) view.disabled = !live;
+      for (const x of s.el.querySelectorAll('[data-refseek] input, [data-refseek] > button')) x.disabled = !live;
       const put = q('[data-trput]');
       if (put) {
         put.hidden = !(live && e.trial?.on);
@@ -1418,6 +1502,15 @@ function edInputDo(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return edDrawerInput(s, ev); // la fiche d'un tiroir
+  if (k === 'edrefseek') { // « Chercher un repère » : le texte est gardé ; Entrée (un « change » le champ encore en main) cherche
+    e.refSeek = String(ev.target.value ?? '').slice(0, 40);
+    if (e.seekRows) { // le texte a changé : les candidats de l'ancien ne se proposent plus
+      e.seekRows = null;
+      edSeekShow(s);
+    }
+    if (ev.type === 'change' && document.activeElement === ev.target) edRefSeek(s);
+    return;
+  }
   if (k === 'edmapview') { // « Vue de la carte » : tout (l'auteur), ou ce que le pilote voit à un stade ; plus de lieu choisi
     if (ev.type !== 'change' || ev.target.tagName !== 'SELECT') return;
     const n = Number(ev.target.value);
@@ -1757,6 +1850,7 @@ async function edSave(s) {
       mapSel: -1,
       mapView: -1,
       mapRef: null,
+      seekRows: null,
       mapVertex: -1,
       mapUndo: null,
       tool: 'select',
@@ -1945,6 +2039,14 @@ function edClickDo(s, b) {
       s.ed.drawFor = ''; // un outil pris à la main ne pose plus pour un tiroir
       s.ed.mapRef = null;
       return edMapShow(s);
+    case 'edrefseek': // « Chercher » : le repère de ce nom (sur place : le bouton pressé n'est pas redessiné)
+      return edRefSeek(s);
+    case 'edrefgo': { // un candidat de la recherche choisi : la vue y va
+      const e = s.ed,
+        i = Number(b.dataset.i),
+        r = Number.isInteger(i) && i >= 0 && Array.isArray(e.seekRows) ? e.seekRows[i] : null;
+      return r ? edSeekGo(s, e, r) : undefined;
+    }
     case 'edrefadd': { // « Ajouter comme point » : le repère touché devient un point tournant de la mission, à sa position, sous son nom
       const e = s.ed,
         r = edMapRef(e);
