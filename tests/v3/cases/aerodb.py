@@ -17694,3 +17694,47 @@ def k378(c):
             c.eq((a1[0] is a2[0], a1[0] is b1[0], b1[0] is d1[0]), (True, False, False), 'the same rates: the graph is kept; another climb rate or another descent rate: another graph (the key carries them)', what='key')
         finally:
             engine.DATA_DIR, engine.RAD_FILE = saved
+
+
+@case('K379', 'Route engine, review of Security on SOG-0501 (e) (5, 6): the terms of an « AND-THEN » are at most 8 (more: not decided) and the nodes of the flight are made ONCE per context for all the terms; the limits of the aerodromes (`dct_limits.rules`) are kept per book AND per date of the RAD (a book at two dates does not share an entry); the pattern of the exception « (except below FL105) » is bounded (a hostile text of 8 000 signs is read in a moment)',
+      'K', static=True,
+      rule='Security, 19 Nov (replayed in the code): (5) 260 terms × all the legs per rule; `rad_via._flight` rebuilt for each term. (6) `dct_limits.CACHE` was keyed by the book only while `rules()` filters by `rad.active` (the date); `EXC` had two adjacent `[^()]*`. Invented codes.')
+def k379(c):
+    import sys
+    import time
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import dct_limits as D, rad_flight as RF, rad_via
+    leg = lambda a, b, v, k='ENROUTE': {'start': {'id': a}, 'end': {'id': b}, 'via': v, 'kind': k}
+    legs = [leg('EDDF', 'AAA', 'SID1', 'SID'), leg('AAA', 'BBB', 'L607'), leg('BBB', 'CCC', 'L607'), leg('CCC', 'DDD', 'DCT'), leg('DDD', 'LFMN', 'STAR1', 'STAR')]
+
+    class Rad:
+        groups = {}
+
+        def match(self, expr, ad):
+            return ad in expr.upper().replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+    ctx = RF.context(legs, 'EDDF', 'LFMN')
+    ctx['known'], ctx['fl'], ctx['alt'] = None, 350, {}
+    chain = lambda n: ' AND-THEN '.join(['VIA AAA'] * n)
+    c.eq([RF.condition(chain(8), dict(ctx), Rad()), RF.condition(chain(9), dict(ctx), Rad()), RF.condition(chain(260), dict(ctx), Rad())], [True, None, None], 'an AND-THEN of 8 terms is read; of 9 (or 260): not decided', what='terms')
+    keep, count = rad_via._flight, [0]
+
+    def counted(x):
+        count[0] += 1
+        return keep(x)
+    rad_via._flight = counted
+    try:
+        RF.condition('VIA AAA AND-THEN VIA CCC AND-THEN ARR LFMN AND-THEN VIA BBB', dict(ctx), Rad())
+    finally:
+        rad_via._flight = keep
+    c.eq(count[0], 1, 'the nodes and the airways of the flight are made once for the four terms (not once per term)', what='once')
+    D.CACHE.clear()
+    book = {'sha256': 'k379', 'sheets': {D.SHEET: [{'v': ['', '', '', 'XX_LIM_AD', 'Limits', 'AAAA Departures/Arrivals DCT = 0NM', 'H24'], 'row': 1}]}}
+    early = types.SimpleNamespace(book=book, date='2026-10-01', active=lambda r: False)
+    late = types.SimpleNamespace(book=book, date='2026-11-10', active=lambda r: True)
+    c.eq([D.limit_of(early, 'AAAA', 'dep')['state'], D.limit_of(late, 'AAAA', 'dep')['state'], D.limit_of(early, 'AAAA', 'dep')['state']], ['unknown', 'known', 'unknown'],
+         'the same book at two dates: the rules of each date (the cache is keyed by the book AND the date)', what='date')
+    hostile = 'AAAA (' + ' ' * 7000 + 'FL1'
+    t0 = time.perf_counter()
+    found = D.EXC.findall(hostile)
+    c.ok(found == [] and time.perf_counter() - t0 < 0.5, str((found, time.perf_counter() - t0)), 'a text of 7 000 signs made to make the pattern of the exception backtrack is read in under half a second (the two classes are bounded)')

@@ -56,6 +56,7 @@ def rfl_test(spec,fl):
     lo,hi=int(m[3]),int(m[4])
     return None if fl in (lo,hi) or lo>hi else lo<fl<hi
 
+MAX_THEN=8      # revue de Sécurisation : les termes d'un « AND-THEN » lus au plus
 MAX_CONDITION=4000      # SOG-0401 (Sécurisation) : au-delà de ce nombre de signes une condition n'est pas décidée
 PAIR=r'\d\d:\d\d\s*-\s*\d\d:\d\d'
 
@@ -171,7 +172,7 @@ def sequence(text,ctx,rad):
     """« X AND-THEN Y » : X, puis Y plus loin sur la route. Vrai si tous les termes sont vrais ET dans l'ordre du vol ; faux si l'un est faux, ou si tous sont vrais mais dans un autre ordre ; None si l'ordre ne se lit pas."""
     terms=[x.strip() for x in re.split(r'\s+AND-THEN\s+',text)]
     if len(terms)==1:return conjunction(text,ctx,rad)
-    if any(not x for x in terms):return None
+    if len(terms)>MAX_THEN or any(not x for x in terms):return None      # revue de Sécurisation : au plus MAX_THEN termes (le coût d'une règle reste borné)
     results=[conjunction(x,ctx,rad) for x in terms]
     if any(r is False for r in results):return False
     if any(r is None for r in results):return None
@@ -186,7 +187,8 @@ def sequence(text,ctx,rad):
 
 def places(term,ctx):
     """Où le terme est sur la route (une liste de positions : n pour le point n, n+0,5 pour le tronçon n) ; None quand le terme n'est pas un seul VIA de noms, ni DEP, ni ARR (l'ordre n'est alors pas connu)."""
-    flight=rad_via._flight(ctx.get('legs'))
+    if '_flight' not in ctx:ctx['_flight']=rad_via._flight(ctx.get('legs'))      # les nœuds et les voies du vol, faits UNE fois par contexte (et non pour chaque terme de chaque règle)
+    flight=ctx['_flight']
     if not flight:return None
     nodes,edges=flight
     atoms=[x.strip() for x in term.split('&')]

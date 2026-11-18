@@ -18,7 +18,7 @@ NM = re.compile(r'(\d{1,4})\s*NM', re.I)      # une limite de NM s'écrit en qua
 ICAO = re.compile(r'\b[A-Z]{2}[A-Z0-9]{2}\b')
 STOP = {'STAR', 'EXC', 'NOTE', 'ONLY', 'FROM', 'THEN', 'WITH', 'DEPA', 'ARRI'}      # des mots de quatre signes qui ne sont pas des terrains
 COMPLEX = re.compile(r'\bFL\s*\d|\bBELOW\b|\bABOVE\b|\bABV\b|\bBLW\b|\bDURING\b|\bNIGHT\b|\bH\d\d\b|\d\d:\d\d', re.I)
-EXC = re.compile(r'(\b[A-Z]{2}[A-Z0-9]{2}\b)\s*\(([^()]*\b(?:FL\s*\d|BELOW|ABOVE|ABV|BLW)[^()]*)\)', re.I)      # « EGBJ (except below FL105) » : l'exception du terrain qui la précède, pas de toute la liste
+EXC = re.compile(r'(\b[A-Z]{2}[A-Z0-9]{2}\b)\s*\(([^()]{0,120}\b(?:FL\s*\d|BELOW|ABOVE|ABV|BLW)[^()]{0,120})\)', re.I)      # « EGBJ (except below FL105) » : l'exception du terrain qui la précède, pas de toute la liste
 MAX_TEXT = 8000
 CACHE = {}
 
@@ -69,6 +69,7 @@ def rules(rad):
     if not book:
         return {}
     key = book.get('sha256') or book.get('file')      # sans empreinte ni nom : pas de cache (deux classeurs ne partagent jamais une entrée)
+    key = (key, str(getattr(rad, 'date', None))) if key else key      # revue de Sécurisation : `rules` filtre par `rad.active` (la date du RAD) : la date est dans la clé, un même classeur à deux dates ne partage pas une entrée
     if key and key in CACHE:
         return CACHE[key]
     out = {}
