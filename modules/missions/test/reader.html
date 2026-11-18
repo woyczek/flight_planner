@@ -1,0 +1,403 @@
+<!doctype html>
+<!-- Banc de l'enveloppe et de la liseuse de MA mission (modules/missions/reader.js et reader_view.js, SOG-0441 lot T3) : les pages
+     (l'ordre, la description et les objectifs, la route, un tiroir OUVERT par page — jamais un tiroir fermé), une ou deux pages
+     montrées, puis l'écran monté dans une fausse fiche : « Lire la mission » dans la rangée des actions, l'enveloppe et « lu »,
+     les pages tournées (flèches, clavier, glissé), la fiche redessinée, un tiroir qui s'ouvre pendant la lecture. Mission, trigramme
+     et indicatif inventés. window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>reader — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+  #stage {
+    border: 1px dashed #999;
+    padding: 8px;
+    margin: 8px 0
+  }
+</style>
+</head>
+<body>
+<h1 style="font-size:16px">reader.js, reader_view.js — bench</h1>
+<div id="stage"></div>
+<pre id="out"></pre>
+<script type="module">
+  import * as R from '../reader.js?v=0';
+  import * as RV from '../reader_view.js?v=0';
+  const out = document.getElementById('out'),
+    stage = document.getElementById('stage'),
+    rows = [];
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail: ok ? '' : typeof got === 'string' ? got : JSON.stringify(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + rows[rows.length - 1].detail}`;
+    out.append(l);
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms)),
+    ID = 'X-701A',
+    // la mission telle que pilotView la rend : le tiroir 1 ouvert (entier), le tiroir 2 fermé (scellé : ni message, ni briefing)
+    view = {
+      title: 'Recherche <img src=x onerror="window.__xss=1">',
+      type: 'SAR',
+      subtype: 'RECHERCHE',
+      summary: 'Un bateau inventé ne répond plus.',
+      origin: {
+        name: 'Base Test (XTST)',
+        lat: 45,
+        lon: 1
+      },
+      destination: {
+        name: 'Base Test Sud (XTSU)',
+        lat: 44.5,
+        lon: 1
+      },
+      aircraft: [{
+        type: 'EC25'
+      }],
+      cruiseLevelFt: 1500,
+      cruiseSpeedKt: 120,
+      details: ['Le bateau a quitté le port la veille.', 'Reconnaissance avant la nuit.'],
+      notes: ['Radio sur 121.5.'],
+      objectives: {
+        primary: 'Retrouver le bateau.',
+        secondary: ['Compter les personnes à bord.']
+      },
+      turns: [{
+        id: 'PT1',
+        name: 'Point d\'attente',
+        lat: 44.75,
+        lon: 1.25
+      }],
+      drawers: [{
+        id: 'B',
+        rank: 1,
+        title: 'Secteur de recherche',
+        message: 'Le bateau a été vu au sud.',
+        brief: 'Descendez à 500 ft.\nCherchez vers le sud.',
+        key: {
+          kind: 'hand'
+        },
+        route: [{
+          id: 'PT2',
+          name: 'Point de treuillage'
+        }, {
+          id: 'RDV-1',
+          name: ''
+        }]
+      }, {
+        id: 'C',
+        rank: 2,
+        title: 'Titre du tiroir fermé',
+        message: '',
+        brief: '',
+        sealed: true,
+        key: {
+          kind: 'zone',
+          shown: false
+        }
+      }]
+    },
+    states = [{
+      id: 'B',
+      open: true,
+      how: 'hand',
+      at: Date.parse('2026-11-18T20:10:00Z'),
+      mine: true
+    }, {
+      id: 'C',
+      open: false
+    }],
+    line = {
+      pilot: 'AAA',
+      callsign: 'TEST31',
+      takeoff: '2026-11-18T20:00:00.000Z',
+      departure: 'XTST',
+      type: 'EC25'
+    },
+    opt = more => ({
+      id: ID,
+      states,
+      line,
+      routeNm: 30.4,
+      ...more
+    });
+
+  // ---- 1. les pages (pur)
+  let r = R.pagesOf(view, opt());
+  ck('les pages : l\'ordre, la description et les objectifs, la route, puis le tiroir OUVERT ; un tiroir fermé compté, sans page', r.pages
+    .map(p => p.kind).join() === 'order,brief,route,drawer' && r.closed === 1, r.pages.map(p => p.kind));
+  ck('un tiroir fermé n\'a ni page ni titre : rien de lui dans ce que la liseuse reçoit', !JSON.stringify(r).includes(
+    'Titre du tiroir fermé'));
+  const [po, pb, pr, pd] = r.pages;
+  ck('la page « ordre » : la mission, pour qui (trigramme, indicatif), le décollage, le départ, l\'arrivée, l\'aéronef (une fois), le résumé',
+    po.mission.join() === 'X-701A,SAR,RECHERCHE' && po.pilot.join() === 'AAA,TEST31' && po.takeoff === line.takeoff && po.departure ===
+    'Base Test (XTST)' && po.arrival === 'Base Test Sud (XTSU)' && po.aircraft.join() === 'EC25' && po.summary.startsWith('Un bateau'),
+    po);
+  ck('la page « description et objectifs » : les paragraphes, les notes, l\'objectif principal, les secondaires', pb.details.length ===
+    2 && pb.notes.length === 1 && pb.primary === 'Retrouver le bateau.' && pb.secondary.length === 1, pb);
+  ck('la page « route » : le départ, l\'arrivée, le niveau, la vitesse, la longueur, les points que le pilote peut voir', pr.levelFt ===
+    1500 && pr.speedKt === 120 && pr.nm === 30.4 && pr.turns.map(p => p.id).join() === 'PT1', pr);
+  ck('la page d\'un tiroir ouvert : son rang, son titre, son état, son message, son briefing, la suite de route par les noms (l\'identifiant sans nom)',
+    pd.rank === 1 && pd.title === 'Secteur de recherche' && pd.state === states[0] && pd.message.startsWith('Le bateau') && pd.brief
+    .includes('\n') && pd.onward.join() === 'Point de treuillage,RDV-1', pd);
+  r = R.pagesOf({
+    ...view,
+    details: [],
+    notes: [],
+    objectives: null,
+    origin: null,
+    destination: null,
+    turns: []
+  }, opt({
+    line: null
+  }));
+  ck('sans description ni objectif, pas de page pour eux ; sans départ, arrivée ni point, pas de page « route » ; une mission jouée seul : ni « pour », ni décollage',
+    r.pages.map(p => p.kind).join() === 'order,drawer' && r.pages[0].pilot.length === 0 && r.pages[0].takeoff === '', r.pages);
+  r = R.pagesOf(view, opt({
+    states: [{
+      id: 'B',
+      open: true
+    }, {
+      id: 'C',
+      open: true
+    }]
+  }));
+  ck('un tiroir que la vue rend SCELLÉ n\'a pas de page, même si un état le dit ouvert (la règle du lecteur fait foi)', r.pages.filter(
+    p => p.kind === 'drawer').length === 1 && r.closed === 1, r);
+  r = R.pagesOf(view, opt({
+    states: null
+  }));
+  ck('sans états : aucun tiroir n\'a de page, tous sont comptés fermés', r.pages.every(p => p.kind !== 'drawer') && r.closed === 2, r);
+  let threw = '';
+  for (const bad of [null, undefined, 7, 'x', [], {
+      drawers: 'x',
+      turns: 7,
+      aircraft: {},
+      details: 'texte',
+      objectives: [],
+      origin: [],
+      title: {}
+    }, {
+      drawers: [null, 7, [], {
+        id: 'B',
+        route: 'x',
+        title: 9
+      }],
+      summary: 'x'.repeat(50000)
+    }]) {
+    try {
+      const p = R.pagesOf(bad, {
+        id: {},
+        states: [null, 7, {
+          id: 'B',
+          open: true
+        }],
+        line: 'x',
+        routeNm: 'loin'
+      });
+      if (!Array.isArray(p.pages) || p.pages.some(x => (x.summary || '').length > 2000)) threw += 'borne ';
+    } catch (e) {
+      threw += `${e.message} `;
+    }
+  }
+  ck('pagesOf ne lève jamais (null, un nombre, des champs d\'un autre genre) ; une mission illisible n\'a aucune page ; un résumé est borné',
+    threw === '' && R.pagesOf(null).pages.length === 0 && R.pagesOf(view).pages.length === 3, threw);
+  const sp = (i, n, two) => {
+    const s = R.spreadOf(i, n, two);
+    return [s.from, s.to, s.prev, s.next].join();
+  };
+  ck('une page à la fois : la page, celle d\'avant et celle d\'après ; rien au bout', sp(0, 4, false) === '0,0,,1' && sp(2, 4, false) ===
+    '2,2,1,3' && sp(3, 4, false) === '3,3,2,', [sp(0, 4, false), sp(2, 4, false), sp(3, 4, false)]);
+  ck('deux pages côte à côte : elles avancent deux par deux ; un nombre impair laisse la dernière seule', sp(0, 4, true) === '0,1,,2' &&
+    sp(3, 4, true) === '2,3,0,' && sp(2, 3, true) === '2,2,0,' && sp(1, 3, true) === '0,1,,2', [sp(0, 4, true), sp(3, 4, true), sp(2, 3,
+      true), sp(1, 3, true)]);
+  ck('un rang hors bornes est ramené dans les bornes ; aucune page : rien à montrer', sp(9, 4, false) === '3,3,2,' && sp(-3, 4, true) ===
+    '0,1,,2' && sp('x', 4, false) === '0,0,,1' && R.spreadOf(0, 0).to === -1 && R.spreadOf(0, 'x').to === -1, [sp(9, 4, false), sp(-3,
+      4, true)]);
+
+  // ---- 2. l'écran, dans une fausse fiche
+  const ctx = {
+      t: (row, v) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''),
+      lang: () => 'fr'
+    },
+    /** Une fiche neuve dans la scène (la fiche redessinée), à cette largeur de module. */
+    sheet = (width = 390) => {
+      stage.innerHTML = `<div data-module="missions" style="width:${width}px"><div class="ms-sheet" data-id="${ID}"><section class="ms-first"><div class="f-row ms-actions"><a data-do="prepare" href="#fuel">Préparer ce vol</a><button type="button" data-do="detail">Détail</button><button type="button" data-do="back">Retour</button></div></section><section class="ms-detail"></section></div></div>`;
+      return stage.querySelector('.ms-sheet');
+    },
+    q = sel => stage.querySelector(sel),
+    qa = sel => [...stage.querySelectorAll(sel)],
+    text = sel => (q(sel)?.textContent || '').replace(/\s+/g, ' ').trim();
+  let reads = 0,
+    readOk = true,
+    bubbled = 0;
+  stage.addEventListener('click', () => bubbled++);
+  const base = more => ({
+    ctx,
+    id: ID,
+    view,
+    states,
+    line,
+    unread: true,
+    how: s => `ouvert à la main (${s.id})`,
+    routeNm: 30.4,
+    onRead: async () => (reads++, readOk),
+    ...more
+  });
+  let sh = sheet();
+  RV.attach(sh, base());
+  RV.attach(sh, base());
+  ck('« Lire la mission » est posé dans la rangée des actions, juste après « Préparer ce vol », une seule fois ; la liseuse n\'est pas ouverte',
+    qa('.ms-actions > *').map(e => e.textContent).join('|') === 'Préparer ce vol|Lire la mission|Détail|Retour' && !q('[data-reader]') &&
+    !sh.hasAttribute('data-reading'), qa('.ms-actions > *').map(e => e.textContent));
+  q('[data-rd-read]').click();
+  ck('mission affectée pas encore lue : l\'enveloppe d\'abord — la mission, pour qui, le décollage ; rien de son contenu ; la fiche et le détail sont cachés ; le clic ne remonte pas au module',
+    !!q('[data-rd-env]') && text('.rd-lab').includes('AAA · TEST31') && text('.rd-lab').includes('20:00Z') && !text('[data-reader]')
+    .includes('bateau') && !q('[data-rd-pages]') && sh.hasAttribute('data-reading') && getComputedStyle(q('.ms-first')).display ===
+    'none' && getComputedStyle(q('.ms-detail')).display === 'none' && bubbled === 0 && reads === 0, [text('[data-reader]'), bubbled]);
+  readOk = false;
+  q('[data-rd-open]').click();
+  await sleep(60);
+  ck('« Ouvrir l\'enveloppe » dont l\'écriture est refusée : l\'enveloppe reste fermée', reads === 1 && !!q('[data-rd-env]') && !q(
+    '[data-rd-pages]'), reads);
+  readOk = true;
+  q('[data-rd-open]').click();
+  await sleep(60);
+  ck('« Ouvrir l\'enveloppe » : « lu » est demandé une fois, la liseuse s\'ouvre à la page 1 (l\'ordre), « Page 1 sur 4 », la flèche d\'avant est inerte',
+    reads === 2 && !q('[data-rd-env]') && q('.rd-page')?.dataset.rdPage === 'order' && text('[data-rd-where]') === 'Page 1 sur 4' && q(
+      '[data-rd-prev]').disabled && !q('[data-rd-next]').disabled && qa('.rd-page').length === 1, text('[data-rd-where]'));
+  ck('un titre de mission est du texte, jamais interprété ; « Tiroirs encore fermés : 1 » au pied de la page ; le titre du tiroir fermé n\'est nulle part',
+    window.__xss === undefined && !q('[data-reader] img') && text('.rd-page h3').includes('<img') && text('[data-rd-closed]') ===
+    'Tiroirs encore fermés : 1' && !q('[data-reader]').innerHTML.includes('Titre du tiroir fermé'), text('.rd-foot'));
+  q('[data-rd-next]').click();
+  q('[data-rd-next]').click();
+  ck('la flèche tourne la page : la route à la page 3, avec « Voir sur la Carte » et « Préparer ce vol » de cette mission', q('.rd-page')
+    ?.dataset.rdPage === 'route' && text('[data-rd-where]') === 'Page 3 sur 4' && q('[data-rd-map]').getAttribute('href') ===
+    '?app=pilot#maps?mission=X-701A' && q('[data-rd-prepare]').getAttribute('href') === '#fuel?mission=X-701A' && text('.rd-page')
+    .includes('1 500 ft') && text('.rd-page').includes('30 NM'), text('.rd-page'));
+  q('[data-reader]').dispatchEvent(new KeyboardEvent('keydown', {
+    key: 'ArrowRight',
+    bubbles: true
+  }));
+  ck('la flèche droite du clavier : la page du tiroir ouvert — comment et quand, son message, son briefing, la suite de route ; la flèche d\'après est inerte',
+    q('.rd-page')?.dataset.rdDrawer === 'B' && text('[data-rd-how]') === 'ouvert à la main (B)' && text('[data-rd-msg]').startsWith(
+      'Le bateau') && q('[data-rd-brief]').textContent.includes('\n') && text('[data-rd-onward]') ===
+    'Suite de route : Point de treuillage → RDV-1' && q('[data-rd-next]').disabled && text('[data-rd-where]') === 'Page 4 sur 4', text(
+      '.rd-page'));
+  /** Un glissé horizontal sur les pages (dx en pixels). */
+  const swipe = dx => {
+    for (const [type, x] of [
+        ['touchstart', 200],
+        ['touchend', 200 + dx]
+      ]) {
+      const e = new Event(type, {
+        bubbles: true
+      });
+      e.changedTouches = [{
+        clientX: x,
+        clientY: 300
+      }];
+      q('[data-rd-pages]').dispatchEvent(e);
+    }
+  };
+  swipe(120);
+  ck('un glissé vers la droite revient à la page d\'avant ; un glissé trop court ne tourne rien', text('[data-rd-where]') ===
+    'Page 3 sur 4' && (swipe(-20), text('[data-rd-where]')) === 'Page 3 sur 4', text('[data-rd-where]'));
+  // la fiche redessinée (un élément neuf) pendant la lecture : la liseuse revient, à la même page
+  const before = q('[data-reader]');
+  RV.attach(sh, base({
+    unread: false
+  }));
+  ck('le même dessin dans la même fiche : la liseuse n\'est pas touchée (le même élément)', q('[data-reader]') === before);
+  sh = sheet();
+  RV.attach(sh, base({
+    unread: false
+  }));
+  ck('la fiche redessinée pendant la lecture : la liseuse est reposée dans l\'élément neuf, à la même page, le bouton aussi', !!q(
+      '[data-reader]') && text('[data-rd-where]') === 'Page 3 sur 4' && sh.hasAttribute('data-reading') && qa('[data-rd-read]')
+    .length === 1, text('[data-rd-where]'));
+  // un tiroir s'ouvre pendant la lecture : sa page s'ajoute à la fin
+  const view2 = {
+      ...view,
+      drawers: [view.drawers[0], {
+        ...view.drawers[1],
+        sealed: false,
+        message: 'Message du tiroir 2.',
+        brief: ''
+      }]
+    },
+    states2 = [states[0], {
+      id: 'C',
+      open: true,
+      how: 'zone'
+    }];
+  RV.attach(sh, base({
+    unread: false,
+    view: view2,
+    states: states2
+  }));
+  ck('un tiroir s\'ouvre pendant la lecture : une page de plus, à la fin ; la page lue ne bouge pas ; plus de compte de tiroirs fermés',
+    text('[data-rd-where]') === 'Page 3 sur 5' && !q('[data-rd-closed]'), text('[data-rd-where]'));
+  q('[data-rd-back]').click();
+  ck('« ← Fiche » : la liseuse est retirée, la fiche et le détail reviennent', !q('[data-reader]') && !sh.hasAttribute('data-reading') &&
+    getComputedStyle(q('.ms-first')).display !== 'none');
+  q('[data-rd-read]').click();
+  ck('« Lire la mission » d\'une mission déjà lue : pas d\'enveloppe, la liseuse à la dernière page lue', !q('[data-rd-env]') && text(
+    '[data-rd-where]') === 'Page 3 sur 5' && reads === 2, text('[data-rd-where]'));
+  // un module large : deux pages côte à côte
+  RV.detach();
+  sh = sheet(900);
+  RV.attach(sh, base({
+    unread: false
+  }));
+  q('[data-rd-read]').click();
+  ck('module large (900 px) : deux pages côte à côte, « Pages 3 et 4 sur 4 » ; le compte des tiroirs fermés au pied de la page de droite seulement',
+    qa('.rd-page').length === 2 && text('[data-rd-where]') === 'Pages 3 et 4 sur 4' && qa('[data-rd-closed]').length === 1 && !!qa(
+      '.rd-page')[1].querySelector('[data-rd-closed]') && q('[data-rd-next]').disabled, text('[data-rd-where]'));
+  q('[data-rd-prev]').click();
+  ck('les pages reculent deux par deux : « Pages 1 et 2 sur 4 »', text('[data-rd-where]') === 'Pages 1 et 2 sur 4' && qa('.rd-page')
+    .map(e => e.dataset.rdPage).join() === 'order,brief' && q('[data-rd-prev]').disabled, text('[data-rd-where]'));
+  // une mission jouée seul : pas d'enveloppe ; une autre mission : la page repart du début
+  RV.detach();
+  ck('detach : le bouton et la liseuse sont retirés', !q('[data-rd-read]') && !q('[data-reader]') && !sh.hasAttribute('data-reading'));
+  sh = sheet();
+  RV.attach(sh, base({
+    id: 'X-702A',
+    unread: false,
+    line: null
+  }));
+  q('[data-rd-read]').click();
+  ck('une autre mission, jouée seul : pas d\'enveloppe, la liseuse à la page 1, sans « pour » ni décollage', !q('[data-rd-env]') && text(
+    '[data-rd-where]') === 'Page 1 sur 4' && !text('.rd-page').includes('TEST31') && reads === 2, text('.rd-page'));
+  RV.attach(null, base());
+  ck('attach sans fiche : tout est retiré, aucune exception', !q('[data-reader]') && !q('[data-rd-read]'));
+  stage.innerHTML = '';
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows: rows.filter(r => !r.ok)
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

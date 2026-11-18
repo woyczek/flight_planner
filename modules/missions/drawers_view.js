@@ -1,6 +1,7 @@
 // V3 missions — la section « Suite de la mission » de la fiche d'une mission (SOG-0441, lot T2 ; SOG-0459) : l'écran et ses gestes. Le
 // calcul est dans drawers.js (pur) ; ce fichier lit et écrit par le cadre (ctx.data), ne touche à aucun autre document que :
-//   · le carnet de CE pilote, pilot/<TRI>/missions/<ID>.json (écrit : le geste « Demander la suite », un constat, le départ réel du vol) ;
+//   · le carnet de CE pilote, pilot/<TRI>/missions/<ID>.json (écrit : le geste « Demander la suite », un constat, le départ réel du vol, « lu »
+//     à l'ouverture de l'enveloppe — lot T3, reader_view.js) ;
 //   · les carnets des autres pilotes de la mission (LUS seulement, entrées non fiables) ;
 //   · cache/missions/seen_<ID>.json (sur l'appareil seul : les ouvertures des autres déjà vues — un tiroir ouvert le reste) ;
 //   · cache/missions/open_<ID>.json (sur l'appareil seul, SOG-0448 : les tiroirs ouverts de MA mission, publiés à chaque calcul — la
@@ -42,8 +43,13 @@ import {
   fmtZ
 } from '../../frame/lib/time.js';
 import {
-  pilotView
+  pilotView,
+  routeNm
 } from '../../frame/lib/mission.js'; // ce que le pilote peut voir : la règle du lecteur, écrite une fois (SOG-0448)
+import * as RD from './reader_view.js'; // l'enveloppe et la liseuse de MA mission (lot T3)
+import {
+  mine as myLines
+} from './assigned.js'; // ma ligne d'affectation, relue bornée (l'enveloppe dit pour qui et quand)
 
 export const TX = {
   // SOG-0459 : l'écran du pilote — rien avant l'ouverture, puis « Suite de la mission » ; un seul geste neutre
@@ -230,6 +236,9 @@ export const TX = {
     'Die Anfrage konnte nicht gespeichert werden: {e}',
     'No se pudo guardar la solicitud: {e}'
   ],
+  noRead: ['La mission n\'a pas pu être notée comme lue : {e}', 'The mission could not be marked as read: {e}',
+    'Die Mission konnte nicht als gelesen vermerkt werden: {e}', 'No se pudo marcar la misión como leída: {e}'
+  ],
   noTrigram: ['aucun trigramme sur cet appareil', 'no trigram on this device', 'kein Trigramm auf diesem Gerät',
     'ningún trigrama en este dispositivo'
   ]
@@ -327,6 +336,7 @@ export function stop() {
   V.unwatch?.();
   V.unlive?.();
   document.removeEventListener('visibilitychange', onVisible);
+  RD.detach();
   V = null;
 }
 
@@ -361,6 +371,7 @@ function showDrawers(host, {
   if (V && V.id === id && V.ctx === ctx) { // la fiche redessinée : le même état, un nouvel élément
     Object.assign(V, {
       host,
+      mission,
       drawers,
       passage,
       notJudged,
@@ -374,6 +385,7 @@ function showDrawers(host, {
     id,
     ctx,
     host,
+    mission, // la mission lue, entière : le suivi des clés la lit ; la liseuse n'en reçoit que ce que pilotView montre
     drawers,
     passage,
     notJudged,
@@ -473,6 +485,8 @@ async function load(v) {
     seance,
     myPath,
     doc,
+    // ma ligne d'affectation pour cette mission (pas un convoyage), ou null pour une mission jouée seul
+    line: seance.assigned ? myLines(idx, me).find(a => a.mission === v.id && !a.ferry) || {} : null,
     flying: Number.isFinite(startAt),
     startIso: Number.isFinite(startAt) ? flight.started.at : ''
   });
@@ -670,12 +684,12 @@ function onVisible() {
 }
 
 /** Écrit un document par le cadre ; faux (et une notification) si l'écriture est refusée. */
-async function put(v, path, value) {
+async function put(v, path, value, row = TX.noWrite) {
   try {
     await v.ctx.data.put(path, value);
     return true;
   } catch (e) {
-    v.ctx.notify?.(v.tt(TX.noWrite, {
+    v.ctx.notify?.(v.tt(row, {
       e: String(e?.message || e).slice(0, 120)
     }), 'err');
     return false;
@@ -894,6 +908,67 @@ function paint() {
     if (V === v) v.restOpen = rest.open; // gardé à travers les dessins
   };
   placeAsk(v);
+  reader(v, v.mine && !!v.states?.length); // l'enveloppe et la liseuse : MA mission qui a des tiroirs (lot T3)
+}
+
+/** L'enveloppe et la liseuse de MA mission (lot T3, reader_view.js) : posées avec la section, retirées pour une mission qui n'est pas
+ *  la mienne. La liseuse ne reçoit que la mission passée par pilotView — rien d'un tiroir fermé. */
+function reader(v, full) {
+  const sheet = full ? v.host.closest('.ms-sheet') : null;
+  if (!sheet || !v.mission) return RD.detach();
+  const k = known(v),
+    view = pilotView(v.mission, k.opened, {
+      mine: true
+    });
+  RD.attach(sheet, {
+    ctx: v.ctx,
+    id: v.id,
+    view,
+    states: v.states,
+    line: v.line ? {
+      ...v.line,
+      pilot: v.me
+    } : null,
+    // l'enveloppe : seulement pour une mission AFFECTÉE que ce pilote n'a pas encore lue dans cette séance
+    unread: !!v.seance?.assigned && D.bookFor(D.readBook(v.doc, v.id), v.seance)?.readAt == null,
+    how: s => describe(v.tt, s, v.drawers.find(d => d.id === s.id), {
+      live: liveNow(v),
+      notJudged: v.notJudged
+    }).how,
+    routeNm: lengthOf(view),
+    onRead: () => markRead(v)
+  });
+}
+
+/** La longueur du trajet que le pilote peut voir, en NM ; null si elle ne se calcule pas (le dessin de la section ne lève jamais). */
+function lengthOf(view) {
+  try {
+    return routeNm(view);
+  } catch {
+    return null;
+  }
+}
+
+/** « Ouvrir l'enveloppe » : « lu » écrit une fois dans MON carnet (read_at), puis la section relue ; faux si rien n'a pu s'écrire. */
+async function markRead(v) {
+  if (V !== v || !v.mine) return false;
+  const next = D.withRead(v.doc, {
+    mission: v.id,
+    me: v.me,
+    seance: v.seance,
+    now: Date.now()
+  });
+  if (!next) {
+    v.ctx.notify?.(v.tt(TX.noRead, {
+      e: v.tt(TX.noTrigram)
+    }), 'err');
+    return false;
+  }
+  if (!await put(v, v.myPath, next, TX.noRead) || V !== v) return false;
+  await load(v);
+  // l'organisateur le lira à sa synchronisation : un passage demandé tout de suite
+  Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
+  return true;
 }
 
 /** « Demander la suite » touché : le panneau s'ouvre (rien n'est écrit). Au repos, ou pour une mission qui n'est pas la mienne : rien. */
