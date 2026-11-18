@@ -1021,8 +1021,8 @@
       gsKt: 1,
       ...more
     });
-  ck('landing, describe : la clé dit « s\'ouvre à l\'atterrissage à DESTINATION » (sans point : « s\'ouvre à l\'atterrissage ») ; jugée en vol, l\'appareil la suit comme une arrivée ; sans position en direct, la même note que l\'arrivée ; ouverte : « ouvert à votre atterrissage », « ouvert à l\'atterrissage de BBB »',
-    say(LAND).key === 's\'ouvre à l\'atterrissage à DESTINATION' && say({
+  ck('landing, describe : la clé dit « s\'ouvre à l\'atterrissage », jamais le lieu (ni « DESTINATION » ni un lieu caché), avec ou sans point ; jugée en vol, l\'appareil la suit comme une arrivée ; sans position en direct, la même note que l\'arrivée ; ouverte : « ouvert à votre atterrissage », « ouvert à l\'atterrissage de BBB »',
+    say(LAND).key === 's\'ouvre à l\'atterrissage' && !/DESTINATION/.test(say(LAND).key) && say({
       ...LAND,
       rule: {
         ...LAND.rule,

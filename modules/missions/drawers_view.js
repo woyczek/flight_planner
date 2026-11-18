@@ -108,11 +108,9 @@ export const TX = {
   openArrivalBy: ['ouvert à l\'arrivée de {by}, à {t}', 'opened when {by} arrived, at {t}', 'bei der Ankunft von {by} geöffnet um {t}',
     'abierto a la llegada de {by}, a las {t}'
   ],
-  // la condition « atterrissage » de l'atelier (SOG-0500) : un point nommé comme pour l'arrivée, sinon sans lieu (un objet)
-  keyLanding: ['s\'ouvre à l\'atterrissage à {p}', 'opens on landing at {p}', 'öffnet sich bei der Landung in {p}',
-    'se abre al aterrizar en {p}'
-  ],
-  keyLandingAny: ['s\'ouvre à l\'atterrissage', 'opens on landing', 'öffnet sich bei der Landung', 'se abre al aterrizar'],
+  // la condition « atterrissage » de l'atelier (SOG-0500) : jamais le lieu — le point peut être un lieu que la mission cache encore,
+  // et son identifiant (« DESTINATION », un id de l'atelier) n'est pas un nom pour le pilote
+  keyLanding: ['s\'ouvre à l\'atterrissage', 'opens on landing', 'öffnet sich bei der Landung', 'se abre al aterrizar'],
   openLandingMe: ['ouvert à votre atterrissage, à {t}', 'opened on your landing, at {t}', 'bei Ihrer Landung geöffnet um {t}',
     'abierto a su aterrizaje, a las {t}'
   ],
@@ -639,9 +637,7 @@ export function describe(tt, s, d, {
   else if (k.kind === 'arrival' && typeof k.point === 'string' && k.point) key = tt(TX.keyArrival, {
     p: k.point
   });
-  else if (D.howOf(k) === 'landing') key = typeof k.rule?.point === 'string' && k.rule.point ? tt(TX.keyLanding, {
-    p: k.rule.point
-  }) : tt(TX.keyLandingAny);
+  else if (D.howOf(k) === 'landing') key = tt(TX.keyLanding); // jamais le lieu (voir TX.keyLanding)
   else if (k.kind && k.kind !== 'hand') key = tt(TX.keyHidden); // une condition de l'auteur, une clé que cet écran ne connaît pas
   else key = tt(TX.keyHand);
   // l'heure de repli n'est dite que si elle concerne le pilote : la clé n'est pas suivie sur cet appareil

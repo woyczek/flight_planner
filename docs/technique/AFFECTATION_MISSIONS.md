@@ -583,8 +583,9 @@ bounds it (`holdRule`), and until this lot no flight judged it. `drawers.js` now
 - **Shared.** `'landing'` is in `HOWS` and `SHARED`: the finding of one pilot of the mission opens the drawer for all, as an arrival does.
   `howOf(key)` pairs the finding with its key (`'landing'` for the condition, `key.kind` otherwise). `stands()` replays a landing on the
   reader's own key: both fixes down by THAT key, at least `durationSec` apart, at most 24 hours apart.
-- **Texts** (four languages): `keyLanding` (« s'ouvre à l'atterrissage à {p} », without a point `keyLandingAny`; the point is written as
-  `keyArrival` does), `openLandingMe`, `openLandingBy`.
+- **Texts** (four languages): `keyLanding` (« s'ouvre à l'atterrissage », NEVER the place: the point may be a place the mission
+  still hides, and its identifier — « DESTINATION », an id of the workshop — is not a name for the pilot), `openLandingMe`,
+  `openLandingBy`.
 - **Cases.** N80 (100 checks, 9 new: follows, holding, hostile entries, stands, finding and catchUp null, HOWS/SHARED, the record and the
   other pilot's finding) and N81 (99, 3 new: the texts, a landing held in flight, a source that ignores « on the ground »).
 
