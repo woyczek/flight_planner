@@ -639,7 +639,8 @@ function edPilotView(s, doc, id) {
   return {
     name: `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`,
     key: says.key,
-    // la note vaut pour un appareil sans position en direct : le dire, sinon « Cet appareil… » se lit comme l'ordinateur de l'auteur
+    // « Cet appareil… » se lirait comme l'ordinateur de l'auteur : la ligne dit que c'est celui du pilote ; son cas (sans position en
+    // direct, passage pas encore suivi), la note le dit elle-même depuis le lot de la zone d'Affectation
     case: says.note ? s.tt(EDTX.dwPilotCase) : '',
     note: says.note,
     msg: d.message || s.tt(EDTX.dwPilotNoMsg),

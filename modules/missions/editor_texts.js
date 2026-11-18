@@ -181,9 +181,8 @@ export const EDTX = {
   ],
   dwPilotBefore: ['Avant — tiroir fermé', 'Before — drawer closed', 'Vorher — Schublade geschlossen', 'Antes — cajón cerrado'],
   dwPilotAfter: ['Après — tiroir ouvert', 'After — drawer open', 'Nachher — Schublade offen', 'Después — cajón abierto'],
-  dwPilotCase: ['Sur un appareil sans position en direct :', 'On a device without a live position:',
-    'Auf einem Gerät ohne Live-Position:',
-    'En un dispositivo sin posición en directo:'
+  dwPilotCase: ['Sur l\'appareil du pilote :', 'On the pilot\'s device:', 'Auf dem Gerät des Piloten:',
+    'En el dispositivo del piloto:'
   ],
   dwPilotNoMsg: ['(aucun message)', '(no message)', '(keine Nachricht)', '(ningún mensaje)'],
   dwPilotRoute: ['Suite de route proposée : {r}', 'Onward route proposed: {r}', 'Vorgeschlagene Folgeroute: {r}',

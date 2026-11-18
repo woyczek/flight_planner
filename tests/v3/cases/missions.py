@@ -4052,8 +4052,10 @@ def n79(c):
     pv = c.js(_PV)
     c.eq([norm(pv['name']), norm(pv['key'])], [f"{T('atDrawer', n=2)} · Entrée du secteur", T('keyZone', DV_FILE)],
          'closed: its name and the sentence of its key — the words of the pilot\'s screen (a zone shown on the Map)', what='the closed drawer')
-    c.ok(T('willOpen', DV_FILE).split('{t}')[0].strip() in norm(pv['note']) and norm(pv['case']) == T('dwPilotCase'), [pv['case'], pv['note']],
-         'and the note the pilot reads without a live position (the fallback time), under the line that says which case it is')
+    c.ok(T('willOpen', DV_FILE).split('{t}')[0].strip() in norm(pv['note']) and norm(pv['note']).startswith(T('noLive', DV_FILE).split('{x}')[0].strip())
+         and norm(pv['case']) == T('dwPilotCase'), [pv['case'], pv['note']],
+         'and the note the pilot reads without a live position — it says its case itself, then the fallback time —, under the line « Sur '
+         'l\'appareil du pilote : » (not the author\'s own)')
     c.eq([norm(pv['msg']), pv['brief'], pv['route']], [T('dwPilotNoMsg'), '', ''], 'open: no message yet, no briefing, no onward route', what='the open drawer')
     # it follows the typing and the boxes, in place
     c.js(f"document.querySelectorAll('{_DW} [data-pvbefore], {_DW} [data-pvafter]').forEach(x => x.__kept = true)")
