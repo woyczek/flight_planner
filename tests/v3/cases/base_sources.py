@@ -3748,3 +3748,63 @@ def k270(c):
         (org / 'RECETTE.json').write_text(json.dumps({'schema': 'sog-recette/1', 'items': {'SOG-0301': {'history': [ko, {'verdict': 'meh'}] + [ko] * 30 + [{**ko, 'comment': 'x' * 3000}]}}}), encoding='utf-8')
         h = RB.histories(str(org))
         c.eq([sorted(h), len(h['SOG-0301']), len(h['SOG-0301'][-1]['comment'])], [['SOG-0301'], 20, 2000], 'recette_build.histories: twenty at most, the unknown verdict dropped, a comment bounded to 2000', what='build')
+
+
+@case('K369', 'DFS lot 3 (the chain of the Data screen: « Mettre à jour » = `base/fetch` then `base/build`): `base/fetch` runs the job `dfsproc/build` AFTER the sources of the zone `de` are fetched — nothing else to press —, once for several zones, never for another zone, and its answer (the counts, or a short code) is in the result of the fetch, which the journal `base/last` keeps; a failure of the procedures (an answer or an exception) stops nothing',
+      'K', static=True,
+      rule='DFS lot 3 (the relay, 19 Nov, after Settings: the screen does NOT call `base/update`; it chains `base/fetch` then `base/build` and reads the result in `base/last`; no delay on the page). Fake sources, fake procedures job. The first version of the chain was in `base/update`: it would never have run from the page.')
+def k369(c):
+    import datetime
+    import importlib
+    import sys
+    import tempfile
+    from pathlib import Path
+    sys.path.insert(0, str(c.root / 'tools'))
+    RJ, BS, AF, DS = _mods()
+    calls = []
+    fetch_fn, check_f = RJ.REGISTRY[('base', 'fetch')]
+    ns = fetch_fn.__globals__      # the module as the launcher loaded it (BS is a copy of it)
+    keep = (ns['_fetch_source'], RJ.REGISTRY.get(('dfsproc', 'build')))
+
+    def source(job, data, z, s, **kw):
+        calls.append(f'fetch:{z}')
+        return {'state': 'unchanged', 'files': 1, 'bytes': 10}, [], [], [], False
+
+    def procs(job, a, ctx):
+        calls.append('procedures')
+        return {'ok': True, 'aerodromes': 35, 'procedures': 2396, 'kept': [], 'effective': '2026-10-29', 'counts': {'holds': 1560}, 'message': 'not copied'}
+    try:
+        ns['_fetch_source'] = source
+        RJ.REGISTRY[('dfsproc', 'build')] = (procs, lambda a: {} if a == {} else None)
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            data = Path(td) / 'data'
+            data.mkdir()
+            ctx = {'data': str(data), 'downloads': lambda: [], 'today': datetime.date(2026, 11, 9)}
+
+            def run(zones):
+                calls.clear()
+                r = fetch_fn(RJ.Job('base', 'fetch', {}), check_f({'zones': zones, 'personal': []}), ctx)
+                return r, list(calls)
+            r, seen = run(['de'])
+            c.eq((seen[-1], seen.count('procedures'), set(seen[:-1]), r['procedures']), ('procedures', 1, {'fetch:de'}, {'de': {'ok': True, 'aerodromes': 35, 'procedures': 2396, 'kept': [], 'effective': '2026-10-29', 'counts': {'holds': 1560}}}),
+                 'zone de: the sources of the zone are fetched FIRST, then the procedures job, once; the counts are in the result under procedures.de (the message of the job is not copied); `base/last` keeps this result', what='order')
+            r, seen = run(['dk'])
+            c.eq(('procedures' in r, 'procedures' in seen), (False, False), 'another zone: no procedures job, no key in the result', what='other zone')
+            r, seen = run(['dk', 'de', 'no'])
+            c.eq((seen.count('procedures'), sorted(r['procedures'])), (1, ['de']), 'several zones: the job once, when de is among them', what='several')
+            RJ.REGISTRY[('dfsproc', 'build')] = (lambda job, a, ctx: {'ok': False, 'reason': 'fetch', 'message': 'x' * 400}, lambda a: {})
+            r, seen = run(['de'])
+            c.eq((r['ok'], r['procedures']), (True, {'de': {'ok': False, 'reason': 'fetch'}}), 'a procedures job that answers a refusal: the fetch of the zone is a success, the reason is said, the message is not copied', what='refusal')
+
+            def boom(job, a, ctx):
+                raise RuntimeError('boom')
+            RJ.REGISTRY[('dfsproc', 'build')] = (boom, lambda a: {})
+            r, seen = run(['de'])
+            c.eq((r['ok'], r['procedures']), (True, {'de': {'ok': False, 'reason': 'error'}}), 'a procedures job that raises: nothing stops, `error` is said', what='exception')
+            RJ.REGISTRY.pop(('dfsproc', 'build'))
+            r, seen = run(['de'])
+            c.eq((r['ok'], r['procedures']), (True, {'de': {'ok': False, 'reason': 'absent'}}), 'a launcher without the job: `absent`, no crash', what='absent')
+    finally:
+        ns['_fetch_source'] = keep[0]
+        if keep[1] is not None:
+            RJ.REGISTRY[('dfsproc', 'build')] = keep[1]

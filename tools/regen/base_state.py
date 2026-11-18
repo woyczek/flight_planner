@@ -393,6 +393,8 @@ def update(job, args, ctx):
         if fa is not None:
             f = regen_jobs.REGISTRY[('base', 'fetch')][0](job, fa, ctx)
             res['fetched'] = {'ok': f.get('ok'), 'fetched': f.get('fetched', []), 'unchanged': f.get('unchanged', []), 'failed': f.get('failed', []), 'manual': f.get('manual', [])}
+            if 'procedures' in f:      # DFS lot 3 : le travail des procédures de la zone de (base/fetch) : dit aussi dans le résultat de la mise à jour
+                res['fetched']['procedures'] = f['procedures']
     if job.cancelled():
         return {**res, 'ok': False, 'reason': 'cancelled'}
     job.data['phase'] = 'status'

@@ -518,6 +518,22 @@ def _fetch_source(job, data, zone, source, absent=None, known=frozenset(), downl
     return entry, files, errors, mods, cancelled
 
 
+def _dfs_procedures(job, ctx):
+    """Le travail `dfsproc/build` (tools/regen/dfsproc.py) lancé par base/fetch pour la zone de, APRÈS le téléchargement de ses sources : { ok, aerodromes, procedures, kept, effective, counts } ou { ok: False, reason } ; JAMAIS une exception ni un arrêt du fetch (la zone se met à jour sans les procédures)."""
+    entry = regen_jobs.REGISTRY.get(('dfsproc', 'build'))
+    if not entry:
+        return {'ok': False, 'reason': 'absent'}
+    quiet = type('Quiet', (), {'step': staticmethod(lambda *a, **k: None)})      # la progression du travail est celle du fetch, pas celle du verbe
+    try:
+        r = entry[0](quiet, {}, ctx)
+    except Exception as e:      # noqa: BLE001 — un travail de procédures ne doit jamais faire échouer le téléchargement d'une zone
+        job.log(f'procédures de l’Allemagne : {e.__class__.__name__}')
+        return {'ok': False, 'reason': 'error'}
+    out = {k: r[k] for k in ('ok', 'reason', 'aerodromes', 'procedures', 'kept', 'effective', 'counts') if k in r}
+    job.log('procédures de l’Allemagne : ' + (f"{r.get('procedures', 0)} fiche(s), {r.get('aerodromes', 0)} terrain(s)" if r.get('ok') else f"non écrites ({r.get('reason')})"))
+    return out
+
+
 def fetch(job, args, ctx):
     """Verbe base/fetch (voir l'en-tête du module pour la vue et le résultat)."""
     data = ctx['data']
@@ -617,10 +633,15 @@ def fetch(job, args, ctx):
     # pickup : le lanceur sait prendre son fichier dans Téléchargements (base/pickup, motif expected)
     manual_list = [{'zone': z, 'source': s, **({'url': SOURCES[s]['link']} if SOURCES[s]['link'].startswith('https://') else {}), 'name': list(SOURCES[s]['label']),
                     **({'pickup': True, 'expected': PICKUP[s]['zip']} if s in PICKUP else {})} for z in zones for s in plans[z][2]]
+    procedures = {}
+    if 'de' in zones and not cancelled:      # DFS lot 3 : les procédures officielles de l'Allemagne suivent le fetch de la zone de, dans la même chaîne que la page appelle (« Mettre à jour » : base/fetch puis base/build) ; un échec n'arrête rien
+        procedures['de'] = _dfs_procedures(job, ctx)
     reason = ('cancelled' if cancelled else 'nothing-to-fetch' if not attempted else 'failed' if failed and not good else 'partial' if failed else None)
     res = {'ok': reason is None, 'fetched': fetched, 'unchanged': unchanged, 'failed': failed, **({'unavailable': unavailable} if unavailable else {}), 'manual': manual_list, 'outside_sync': outside,
            'absent': sorted(set(absent)), 'sources': aero_cycles.report(sia_rels(data), root=os.path.join(data, 'sia')),
            'warnings': [{'code': 'outside-sync', 'count': outside}] if outside else []}
+    if procedures:
+        res['procedures'] = procedures      # lu dans base/last (le journal du dernier travail) : { de: { ok, aerodromes, procedures, kept, effective, counts } | { ok: false, reason } }
     if reason:
         res['reason'] = reason
     return res
