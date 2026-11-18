@@ -638,7 +638,6 @@ export function shapeOf(doc, max = NODES_MAX) {
   return '';
 }
 
-/** Une mission lue (voir l'en-tête). */
 /** Le fond et la couche de la carte de la mission (SOG-0456 ; la clé `mission_map` du fichier, écrite par l'atelier) :
  *  { base: 'fast' | 'relief', airspaces: bool } — deux valeurs fermées et un booléen strict ; une clé absente, une valeur inconnue,
  *  tout autre type se lisent « fast » et faux (le fichier est une entrée non fiable : rien d'autre n'en sort). */
@@ -650,6 +649,7 @@ export function mapLook(v) {
   };
 }
 
+/** Une mission lue (voir l'en-tête). */
 export function readMission(doc) {
   const d = doc && typeof doc === 'object' ? doc : {},
     m = d.mission || {},

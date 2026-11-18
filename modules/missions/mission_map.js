@@ -6,9 +6,11 @@
 //
 // LE CONTRAT (ce que l'écran appelant fait, et rien de plus) :
 //   1. il laisse dans son HTML un emplacement vide, à lui : `<div data-msmap></div>` (dans le module Missions) ;
-//   2. APRÈS CHAQUE dessin de son écran il appelle readMap(emplacement, { doc, opened, owner, ctx, tt, alive }) :
+//   2. APRÈS CHAQUE dessin de son écran il appelle readMap(emplacement, { doc, opened, mine, owner, ctx, tt, alive }) :
 //        doc    — le document de la mission (le YAML lu, tel quel : une entrée non fiable, bornée ici) ;
 //        opened — le NOMBRE de tiroirs ouverts (les n premiers : ils s'ouvrent dans l'ordre) ; 0 au départ, pour le Brief ;
+//        mine   — vrai, STRICTEMENT (le booléen), si la mission est la mienne (affectée ou jouée) ; sans lui (absent, « true » en texte, 1,
+//                 null) aucun tiroir n'est tenu pour ouvert, quel que soit opened : échec fermé ;
 //        owner  — un objet qui dit de quel écran et de quelle mission il s'agit (un autre objet : une carte neuve) ;
 //        ctx    — le contexte du module (aerodb pour « Espaces » et les terrains non situés) ; tt — son traducteur ;
 //        alive  — () → faux dès que l'écran n'est plus celui-là (la carte en cours de démarrage est abandonnée) ;
@@ -236,11 +238,11 @@ function paint(R) {
   mark(R);
 }
 
-/** Pose le bloc dans `slot` (voir LE CONTRAT en tête) ; à rappeler après chaque dessin de l'écran — le bloc déjà posé est remis dans
+/** Pose le bloc dans `slot` (voir LE CONTRAT en tête) ; à rappeler après chaque dessin de l'écran ; `o.mine` doit être `true` (le booléen) pour que `o.opened` compte, sinon aucun tiroir n'est ouvert — le bloc déjà posé est remis dans
  *  l'emplacement neuf, la carte n'est pas refaite. → vrai si la mission a de quoi être dessinée. */
 export function readMap(slot, o) {
   if (!slot || !o || typeof o.tt !== 'function' || typeof o.alive !== 'function' || !o.owner) return false;
-  const opened = Number.isInteger(o.opened) && o.opened > 0 ? Math.min(o.opened, 12) : 0;
+  const opened = o.mine === true && Number.isInteger(o.opened) && o.opened > 0 ? Math.min(o.opened, 12) : 0; // `mine` strict : échec fermé
   if (READ && READ.owner !== o.owner) stopMap();
   const R = READ ||= {
     owner: o.owner,

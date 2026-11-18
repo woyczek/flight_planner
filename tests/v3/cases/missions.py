@@ -6361,7 +6361,7 @@ def n110(c):
 _MM_HOOK = _EDMAP_HOOK.replace('[data-atmapslot]', '[data-mmslot]')
 _MM = f'{M} [data-msmap] [data-mm]'
 # poses the block: the trial mission (with the key of the map the case wants), n drawers open, an aeronautical base of the case's own
-_MM_POSE = """async ([text, opened, fresh]) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
+_MM_POSE = """async ([text, opened, fresh, mine = true]) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
   const MM = await import('/modules/missions/mission_map.js'), TX = (await import('/modules/missions/editor_texts.js')).EDTX, mod = document.querySelector('[data-module="missions"]');
   const k = window.__mm ||= { owner: {}, asked: 0, alive: true, calls: 0 };
   if (fresh === true) { k.owner = {}; k.doc = null }
@@ -6371,7 +6371,7 @@ _MM_POSE = """async ([text, opened, fresh]) => { if (!globalThis.jsyaml) await i
   if (!slot || fresh === 'redraw') { slot?.remove(); slot = document.createElement('div'); slot.dataset.msmap = ''; mod.append(slot) }
   const ring = (a, b, c, d) => [[a, c], [a, d], [b, d], [b, c], [a, c]];
   k.calls++;
-  return MM.readMap(slot, { doc: k.doc, opened, owner: k.owner, alive: () => k.alive, tt: (t, v) => String(t[0]).replace('{n}', v?.n ?? '').replace(/\\(s\\)/g, 's'),
+  return MM.readMap(slot, { doc: k.doc, opened, ...(mine === 'absent' ? {} : { mine }), owner: k.owner, alive: () => k.alive, tt: (t, v) => String(t[0]).replace('{n}', v?.n ?? '').replace(/\\(s\\)/g, 's'),
     ctx: { aerodb: { airspaces: async q => { k.asked++; k.bbox = q.bbox; return [{ type: 'R', rings: [ring(44.3, 44.45, 1.2, 1.4)] }, { type: 'D', azba: true, rings: [ring(44.5, 44.6, 1.6, 1.75)] }, { type: 'CTR', rings: [ring(44, 45, 1, 2)] }] },
       aerodromes: async () => [] } } }) }"""
 _MM_STATE = f"""(() => {{ const r = document.querySelector('{_MM}'); if (!r) return null;
@@ -6403,11 +6403,20 @@ def n111(c):
     c.eq(c.js(_MM_POSE, [_TRIAL_MISSION, 0, True]), True, 'the block is posed: the mission has located places', what='posed')
     c.until(f"({_MM_STATE})?.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the block')
     c.until(f"({_MM_STATE}).labels.length === 5", timeout=8000, what='the places of the departure')
+    c.wait(600)  # the layers of the places are added a moment after their labels
     s = st()
     c.eq([s['base'], s['spaces'], s['said'], s['labels'], s['dos'], s['frame'], s['border'], c.js('window.__mm.asked'), c.js(_EDMAP_IDS, None)],
          [['fast:true', 'relief:false'], False, '', ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], 0, 300, '1px', 0, ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route']],
          'at the departure: « Rapide », « Espaces » off and nothing asked of the base; the pilot sees the route and its places and the zone drawer 1 shows — not the object of the closed drawer 2 (OBJ-1) nor '
          'the point of its onward route (PT2); the block carries no control of the screen that poses it (no data-do, no data-k); its frame is 300 px high, with its hairline', what='at the departure')
+    # « the mission is mine » is read strictly by the block: three drawers asked, but without `mine` (or with « true » as a text) none is open
+    for mine in ('absent', 'true', 1, None):
+        c.eq(c.js(_MM_POSE, [_TRIAL_MISSION, 3, False, mine]), True, 'posed with three drawers asked and mine = ' + repr(mine), what='posed, not mine')
+        c.wait(300)
+        c.eq([st()['labels'], c.js('window.__edMap.getCenter().lat') > 44.3], [['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], True],
+             'a mission that is not mine (`mine` absent, « true » as a text, 1, null) with opened = 3: nothing of a closed drawer — the labels are those of the departure (not OBJ-1, not PT2)', what='not mine ' + repr(mine))
+    c.js(_MM_POSE, [_TRIAL_MISSION, 0, False])
+    c.wait(300)
     # it only shows: a touch on a place chooses nothing; no handle
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.wait(300)

@@ -793,8 +793,8 @@ code in the workshop (edition) and in READ ONLY (the Brief, the reader) — neve
 - **The author chooses, for HIS mission** (the row « Fond : Rapide | Relief » and the box « Espaces » under the map; `edLookHtml`,
   `s.ed.mapWant`): written in the file by `ED.withMapLook` — the bounded key `mission_map` (`docs/technique/FORMAT_MISSION.md`
   § 4 ter), only when it differs from what the file says. In place: the button pressed and the box are not redrawn.
-- **The read-only mode** (`mission_map.js`: `readMap(slot, { doc, opened, owner, ctx, tt, alive })`, `stopMap()` — **the contract
-  is at the head of that file**): the block draws what `pilotView` keeps with the `opened` first drawers open, in mode `view` (a
+- **The read-only mode** (`mission_map.js`: `readMap(slot, { doc, opened, mine, owner, ctx, tt, alive })`, `stopMap()` — **the contract
+  is at the head of that file**): the block draws what `pilotView` keeps with the `opened` first drawers open — `opened` counts only when `mine === true` (the boolean, read strictly: absent, « true », 1, null mean no drawer open — closed on failure) — in mode `view` (a
   touch chooses nothing, no handle), in the background and with the layer of the file; the pilot changes them for the sitting —
   nothing is written, neither in the mission nor on the device. It brings its frame, its style and its row (« Fond », « Espaces »,
   « Recentrer »); it carries no `data-do`: the screen that poses it receives nothing. Called again after each draw of the
