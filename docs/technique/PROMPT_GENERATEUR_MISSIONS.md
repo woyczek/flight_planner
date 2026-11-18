@@ -147,7 +147,8 @@ de famille, le sous-type ni l'indicatif (COMBAT / BFM → « A-001A », pas « B
 « AAR-016 ») : le programme range la mission d'après cette lettre et refuse tout autre préfixe. Première opération = identifiant donné pour la famille dans PROCHAINS_NUMEROS
 (ex. « HEMS M-016 série 4 » → opérations M-016, M-017… ; mission.series = 4). Une seule équipe : mission NN (« M-016 »).
 Plusieurs équipes : missions NN + lettre de l'équipe, une par équipe dans l'ordre (« M-016A », « M-016B », « M-016C »).
-Deux fichiers par mission, chacun dans son propre bloc de code, précédé d'une ligne « Fichier : … » :
+Deux fichiers par mission, chacun dans son propre bloc de code (une mission par bloc yaml, indentation par espaces,
+rien d'autre dans le bloc), précédé d'une ligne « Fichier : … » :
   missionNNX.yaml   (bloc ```yaml)
   summaryNNX.md     (bloc ```markdown)
 Ordre : missionM-016A.yaml, summaryM-016A.md, missionM-016B.yaml, summaryM-016B.md, … puis l'opération suivante.
@@ -266,7 +267,8 @@ rendezvous:                    # 0 à 3 rendez-vous, id RDV-1, RDV-2… ; un ren
     participants: [COTAM3510, CERBERES51]   # callsigns présents dans aircraft ou teams
     role: "ralliement / relève / largage / poser / …"
     time_on_task_min: 5          # attente, jonction, poser au rendez-vous
-zones:                         # 0 à 3 zones de travail, id ZONE-1… (règles : voir sous le schéma)
+zones:                         # 0 à 3 zones de travail, id ZONE-1…, plus la zone de passage de chaque partie à clé zone
+                               # (règles : voir sous le schéma)
   - id: ZONE-1
     name: "Nom de la zone"
     kind: search               # search : zone de recherche ; mission : zone de travail (observation, largage,
@@ -277,6 +279,16 @@ zones:                         # 0 à 3 zones de travail, id ZONE-1… (règles 
       - { lat: 0.000000, lon: 0.000000 }   # des vallées, crêtes, routes, côtes… ; le centre reste donné
     role: "zone de recherche / zone AAR / zone de largage / …"
     time_on_task_min: 45         # temps de travail dans la zone (recherche, hippodrome de ravitaillement…)
+    ceiling_ft: 3000             # FACULTATIF : la zone ne joue qu'au-dessous de cette altitude (ft, niveau de la mer ; 0 à 60000)
+objects:                       # FACULTATIF : objets à trouver, cités par la clé trigger_object d'une partie (id OBJ-1…)
+  - id: OBJ-1
+    kind: raft                 # wreck | raft | person | vehicle | container | ship | smoke | aircraft
+    name: "Nom de l'objet"
+    lat: 0.000000
+    lon: 0.000000
+    altitude_ft: 0             # FACULTATIF : altitude de l'objet (ft, niveau de la mer ; -1500 à 60000)
+    detection_range_nm: 0.5    # portée de détection (NM ; au-dessus de 0, 100 au plus)
+    detection_height_ft: 1500  # FACULTATIF : trouvé seulement à moins de cette distance verticale (ft ; 0 à 60000)
 route_order: [ORIGIN, PT1, RDV-1, TARGET, PT2, DESTINATION]   # route PROBABLE de CETTE équipe, dans l'ordre :
                                # tous les points réellement survolés (points tournants, rendez-vous, TARGET, zones),
                                # de ORIGIN au retour base DESTINATION ; ids du fichier uniquement
@@ -290,9 +302,9 @@ return_options:                # 0 à 3 retours possibles AUTRES que destination
     then_base: true            # false si l'appareil y termine la mission
 # Pistes (chiffons) et messages en vol : JAMAIS dans la mission d'une équipe, mais dans le bloc exercise de la
 # mission d'organisation (§ 4 bis). Les anciens champs tracks / injects ne sont plus produits.
-phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus par le scénariste — la situation évolue
+phases:                        # FACULTATIF (0 à 12) : briefs successifs prévus par le scénariste — la situation évolue
                                # en cours de route ; le brief initial est la partie A (le reste du fichier), les
-                               # parties B, C… sont remises à l'équipage au moment indiqué (« pli » à ouvrir)
+                               # parties B, C… M (dans l'ordre, sans trou) sont remises à l'équipage au moment indiqué (« pli » à ouvrir)
   - id: B
     title: "Changement de destination"
     trigger_point: RDV-1       # point de référence (id du fichier) ; ORIGIN pour un délai après le décollage
@@ -303,8 +315,22 @@ phases:                        # FACULTATIF (0 à 3) : briefs successifs prévus
       Ce qui change (2 à 4 phrases) : nouvelle situation, nouvelle tâche, contraintes.
     route_order: [RDV-1, PT3, TARGET, DESTINATION]   # suite de la route à partir de trigger_point (ids du fichier :
                                # déclarer les nouveaux points dans turning_points, rendezvous ou zones)
-                               # exercice (§ 3) : chaque partie figure AUSSI dans la chronologie de la Z (kind: pli,
+                               # exercice (§ 3) : chaque partie à clé heure figure AUSSI dans la chronologie de la Z (kind: pli,
                                # to: l'équipe, at: trigger_point, by: son indicatif, phase: B)
+    # CLÉ de la partie : UNE seule, ce qui déclenche le changement dans le récit. trigger_point + trigger_delay_min (ci-dessus)
+    # est la clé « heure » ; les autres clés remplacent ces deux-là :
+    #   trigger_zone: ZONE-2       zone de passage : id d'une zone de zones ; s'ouvre quand l'équipage la traverse
+    #   zone_shown: true           FACULTATIF, avec trigger_zone seulement : montre la zone à l'équipage dès le départ
+    #                              (absent : zone CACHÉE jusqu'à l'ouverture de la partie ; seul le booléen true la montre)
+    #   trigger_object: OBJ-1      objet à trouver : id d'un objet de objects ; s'ouvre quand l'équipage le trouve
+    #   trigger_condition: { kind: arrival, point: DESTINATION, radius_nm: 1, speed_max_kt: 30, require_on_ground: true }
+    #                              arrivée : kind arrival, point (DESTINATION, ORIGIN ou un lieu du fichier), radius_nm (au-dessus
+    #                              de 0, 100 au plus), speed_max_kt (0 à 1000) et require_on_ground (true / false) : tous écrits
+    #   (aucune clé)               le geste de l'équipage seul : la partie s'ouvre quand il le décide
+    #   fallback_delay_min: 45     avec une clé zone, objet ou arrivée : heure de repli, en minutes après le décollage (0 à 1440),
+    #                              où la partie s'ouvre si la position de l'aéronef n'est pas connue
+    # Sans trigger_point, le premier id de la route_order de la partie est le dernier lieu de la partie d'avant (A pour B).
+    # Une valeur hors de ses bornes rend la clé illisible : la partie ne s'ouvre plus qu'au geste ou à l'heure de repli.
 timing:                        # durées estimées par TOI d'après route_order, vitesses, niveaux et time_on_task_min
   estimated_flight_min: 95     # décollage → atterrissage, retour base compris (option principale)
   estimated_block_min: 110     # cales → cales (mise en route et roulage compris)
@@ -409,6 +435,60 @@ véhicule signalé, épave localisée), la mission devient un exercice (§ 3) : 
 TARGET en est le centre, et la position réelle est un chiffon à UN point (played: false, nature de la cible)
 révélé par un message radio de la mission Z ; la carte détaillée de TARGET n'est pas produite (le studio fait la
 carte de la position révélée).
+
+Parties (phases) : une partie existe pour un vrai changement de situation en vol (nouvelle tâche, objet trouvé, arrivée) ;
+aucune pour une mission simple, jusqu'à douze pour un scénario riche. Choisir la clé d'après ce qui déclenche le changement
+dans le récit : l'heure quand un message tombe à un moment, la zone quand il arrive en entrant dans un secteur, l'objet quand
+l'équipage doit trouver quelque chose, l'arrivée pour la fin du vol, le geste seul quand la décision est la sienne. Une zone
+de passage est ronde (centre et radius_km) quand le secteur est centré sur un point connu, en contour (points, 3 à 8 sommets)
+quand il suit le terrain. La zone d'une partie et l'objet d'une partie sont CACHÉS à l'équipage tant que la partie est fermée :
+ne les citer ni dans summary et detailed_description (qui ne disent rien de l'existence des parties), ni dans la route_order
+de la mission, ni dans une carte (§ 8) ; seul zone_shown: true montre la zone dès le départ. Forme seule, sur des lieux
+inventés (mission partant de Base Test (XTST) et arrivant à Base Test Sud (XTSU), PT1 et PT2 déclarés plus haut) : ne reprendre
+ni ses valeurs ni son nombre de parties.
+
+zones:
+  - id: ZONE-1
+    name: "Secteur d'essai nord"
+    kind: mission
+    centre: { lat: 44.900000, lon: 1.200000 }
+    radius_km: 4
+    ceiling_ft: 3000
+objects:
+  - id: OBJ-1
+    kind: raft
+    name: "Canot orange"
+    lat: 44.820000
+    lon: 1.280000
+    altitude_ft: 0
+    detection_range_nm: 0.5
+    detection_height_ft: 1500
+phases:
+  - id: B
+    title: "Écho dans le secteur nord"
+    trigger: "au passage du secteur d'essai nord"
+    trigger_zone: ZONE-1
+    fallback_delay_min: 30
+    message: "« Écho signalé dans le secteur, descendez voir. »"
+    brief: |-
+      Une trace est signalée au sol ; l'équipage la cherche dans le secteur.
+    route_order: [PT1, PT2]
+  - id: C
+    title: "Canot trouvé"
+    trigger: "quand le canot est en vue"
+    trigger_object: OBJ-1
+    fallback_delay_min: 60
+    message: "« Le canot est en vue. »"
+    brief: |-
+      Confirmer le nombre de personnes à bord.
+  - id: D
+    title: "Arrivée à la base sud"
+    trigger: "à l'arrivée à la base sud"
+    trigger_condition: { kind: arrival, point: DESTINATION, radius_nm: 1, speed_max_kt: 30, require_on_ground: true }
+    fallback_delay_min: 120
+    message: "« Arrivée à la base sud. »"
+    brief: |-
+      Fin de la mission.
 
 Basse altitude : un avion de combat ou de transport tactique qui transite ou travaille à basse hauteur (sous
 environ 1500 ft ASFC) le fait dans le RTBA (réseau très basse altitude : zones R des cartes AZBA, ex. R 45, R 69,
@@ -601,8 +681,9 @@ STEPHANIE, TANIA, TIPHAINE, URSULA, VALENTINA, VIVIANE, YVETTE, ZOE, ZORA.
 ────────────────────────────────────────────────────────────────────────────
 Obligatoires : general (include : tout à true), cible (TARGET, range_km 30 à 80), detail_cible
 (TARGET, 8 × 5 km). En plus : une carte detail_rdv par rendez-vous (id detail_rdv_1, filename
-detail_rdvNN-1.png, type detail_rdv, centre_ref RDV-1, 8 × 5 km) et une carte zone par zone (id zone_1,
-filename zoneNN.png, type zone, centre_ref ZONE-1, range_km ≈ 2 × radius_km). filename : NN = id de la
+detail_rdvNN-1.png, type detail_rdv, centre_ref RDV-1, 8 × 5 km) et une carte zone par zone de travail (id zone_1,
+filename zoneNN.png, type zone, centre_ref ZONE-1, range_km ≈ 2 × radius_km) ; aucune carte pour la zone ou l'objet d'une
+partie fermée (une carte les montrerait). filename : NN = id de la
 mission. description : une phrase.
 
 ────────────────────────────────────────────────────────────────────────────
@@ -762,7 +843,10 @@ liste des corrections faites :
       livrée (§ 4 complet, role chiffon) ; chaque événement a un moment, une forme
       (radio / pli), un émetteur, des destinataires, un texte ; toute piste est révélée ; aucun tracks / injects dans
       les missions des équipes
-  [ ] phases (s'il y en a) : trigger_point existant, délai réaliste, message, brief, route_order reprise à trigger_point ;
+  [ ] phases (s'il y en a, douze au plus, B à M dans l'ordre) : UNE clé lisible chacune (zone et objet déclarés en tête et cités
+      par id, arrivée avec ses cinq valeurs, fallback_delay_min sur zone, objet et arrivée) ; zones et objets de parties
+      absents de summary, detailed_description, route_order de la mission et des cartes (sauf zone_shown: true) ;
+      clé heure : trigger_point existant, délai réaliste ; message, brief, route_order reprise à trigger_point ;
       route_order de la mission = partie A ; timing = mission complète prévue (parties comprises) ;
       une section « ## Partie X » par partie
   [ ] route_order : de ORIGIN à DESTINATION (retour base), tous les points survolés ; return_options si plusieurs
