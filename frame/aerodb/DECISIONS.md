@@ -3711,3 +3711,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Decided** (the relay, choice (c)): one function in `aerodb.js`, passed to `procedures.js`; nothing in `index.html`, `sw.js` or the test pages (the files of V3 Frame stay as they are). `procedures.js` throws if it is used without a distance (it never falls back on a second copy). `aar.js` (kilometres, another radius) and the radius constant of `destination` are not the formula: left.
 - **Not played here**: the pages `frame/aerodb/test/procedures.html` and `perf_procedures.html` (the browser): to replay by Essais.
+
+## 19 November 2026 — SOG-0504: the RAD retries
+
+- **Done**: `rad_repairs` extracted from `plan.plan` (same loop, three attempts at most), with the two corrections of the fiche. The old K303 assertion « the answer says a detour of +n NM » passed only because of the defect: its retry had failed (one NAT entry in the bench) and the head route differed from the first retry's by 8 NM; this was the sentence of a retry that did not exist.
+- **Not done**: a bench with a second entry that the fallback can take on the real base (with ETIKI as an ordinary entry the route does not pass by REGHI at all, so the fallback is not needed): the mechanism is proved by K376 with a scripted search.

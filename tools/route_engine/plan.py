@@ -222,6 +222,46 @@ def level_matters(primary, info):
     return False, 'la raison du premier échec n\'est pas une affaire de niveau : ' + text[:120]
 
 
+def rad_repairs(request, nav, rad, primary, check_budget, bounds, started, assess=None):
+    """Les reprises RAD d'une route de tête (au plus trois) : (la route, les exclusions APPLIQUÉES, les tentatives). Une reprise qui échoue (aucune route, budget) n'applique RIEN : ses exclusions ne sont ni dites ni gardées (SOG-0504 : le message « Point Y écarté » ne se disait que pour une reprise réussie) ; un ordre « passer par X à côté de Y » qui échoue est suivi du repli « Y écarté » (SOG-0354 L5 (4) défaut 4), jamais d'un abandon."""
+    import time
+    assess = assess or engine.assess
+    rad_retries = []
+    avoids = []
+    tried = set()      # SOG-0504 : les ordres « passer par X » dont la recherche a ÉCHOUÉ : plus rejoués, le repli (Y écarté) prend la suite
+    for attempt in range(3):
+        findings = primary.get('rad_summary', {}).get('findings', [])
+        extra = primary.get('rad_summary', {}).get('search_exclusions', [])
+        compelled = {(x.get('id'), x.get('before')) for x in avoids if x.get('kind') == 'compel'} | tried
+        extra = [x for x in extra if not (x.get('kind') == 'compel' and (x.get('id'), x.get('before')) in tried)]
+        extra = [x for x in extra if not x.get('fallback') or (x.get('id'), x.get('point')) in compelled]      # SOG-0354 L5 (4) défaut 4 : Y n'est écarté que si le passage par X à côté de Y a déjà été tenté
+        if not findings or not extra:
+            break
+        fresh = [x for x in extra if json.dumps(x, sort_keys=True) not in {json.dumps(y, sort_keys=True) for y in avoids}]
+        if not fresh:      # une reprise qui n'exclut (n'impose) rien de NEUF refait la même recherche : elle n'est JAMAIS jouée
+            rad_retries.append(dict(excluded=avoids, error='reprise RAD non faite : elle n\'exclurait rien de neuf'))
+            break
+        wanted = list({json.dumps(x, sort_keys=True): x for x in [*avoids, *extra]}.values())
+        if bounds['ocean'] and time.perf_counter() > started + bounds['head_s']:      # SOG-0354 L2b : un vol océanique ne reprend pas la route de tête après sa borne (chaque reprise refait un graphe et une recherche : 6 s) — le total de 20 s tient
+            rad_retries.append(dict(excluded=wanted, error='reprise RAD non faite : la borne de la route de tête est atteinte'))
+            break
+        try:
+            check_budget()
+            candidate = assess(dict(request, _rad_avoid=wanted), nav, rad)
+            rad_retries.append(dict(excluded=wanted, route=candidate['route'], errors=[i['text'] for i in candidate['issues'] if i['level'] == 'ERREUR']))
+            primary = candidate
+            avoids = wanted
+            request['_rad_avoid'] = avoids
+        except (ValueError, SearchBudget) as e:
+            rad_retries.append(dict(excluded=wanted, error=str(e)))
+            orders = [x for x in fresh if x.get('kind') == 'compel']
+            if orders and not isinstance(e, SearchBudget):      # SOG-0504 : « passer par X à côté de Y » ne trouve aucune route (un virage trop serré, une voie fermée) : le repli (Y écarté) est TENTÉ avant de rendre la route de tête avec ses infractions
+                tried |= {(x.get('id'), x.get('before')) for x in orders}
+                continue
+            break
+    return primary, avoids, rad_retries
+
+
 def plan(request, root):
     """Le plan, tel que server.plan() de RouteSim 4 le fait (voir l'en-tête du module). Le mode VFR (vfr.py) n'est pas porté : la demande IFR seule est acceptée (check_request)."""
     import time
@@ -289,34 +329,11 @@ def plan(request, root):
         hint = nat_layer.hint(nav, str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper()) if request.get('mode', 'calculate') == 'calculate' else ''      # SOG-0263 : traversée sans track dans le sens du vol
         primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e) + (' ' + hint if hint else ''), route=request.get('route', ''), legs=[], issues=[])
     rad_retries = []
+    avoids = []
+    head_nm = primary.get('distance_nm')
     # A route-dependent RAD condition can only be decided after its SID, route and STAR are known. Retry with the implicated procedure / links excluded.
     if request.get('mode', 'calculate') == 'calculate':
-        avoids = []
-        head_nm = primary.get('distance_nm')
-        for attempt in range(3):
-            findings = primary.get('rad_summary', {}).get('findings', [])
-            extra = primary.get('rad_summary', {}).get('search_exclusions', [])
-            compelled = {(x.get('id'), x.get('before')) for x in avoids if x.get('kind') == 'compel'}
-            extra = [x for x in extra if not x.get('fallback') or (x.get('id'), x.get('point')) in compelled]      # SOG-0354 L5 (4) défaut 4 : Y n'est écarté que si le passage par X à côté de Y a déjà été tenté
-            if not findings or not extra:
-                break
-            fresh = [x for x in extra if json.dumps(x, sort_keys=True) not in {json.dumps(y, sort_keys=True) for y in avoids}]
-            if not fresh:      # une reprise qui n'exclut (n'impose) rien de NEUF refait la même recherche : elle n'est JAMAIS jouée
-                rad_retries.append(dict(excluded=avoids, error='reprise RAD non faite : elle n\'exclurait rien de neuf'))
-                break
-            avoids = list({json.dumps(x, sort_keys=True): x for x in [*avoids, *extra]}.values())
-            if bounds['ocean'] and time.perf_counter() > started + bounds['head_s']:      # SOG-0354 L2b : un vol océanique ne reprend pas la route de tête après sa borne (chaque reprise refait un graphe et une recherche : 6 s) — le total de 20 s tient
-                rad_retries.append(dict(excluded=avoids, error='reprise RAD non faite : la borne de la route de tête est atteinte'))
-                break
-            try:
-                check_budget()
-                candidate = engine.assess(dict(request, _rad_avoid=avoids), nav, rad)
-                rad_retries.append(dict(excluded=avoids, route=candidate['route'], errors=[i['text'] for i in candidate['issues'] if i['level'] == 'ERREUR']))
-                primary = candidate
-                request['_rad_avoid'] = avoids
-            except (ValueError, SearchBudget) as e:
-                rad_retries.append(dict(excluded=avoids, error=str(e)))
-                break
+        primary, avoids, rad_retries = rad_repairs(request, nav, rad, primary, check_budget, bounds, started)
     if request.get('mode', 'calculate') == 'calculate' and not primary.get('ok') and not request.get('_rad_fallback') and 'Budget de recherche atteint' not in str(primary.get('error') or '') and rad.blocks(str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper(), None):
         # SOG-0401 (règle de l'ergonome, 17 nov.) : « le calcul ne perd jamais une route à cause d'une règle qu'il sait décider » : aucune route n'a été trouvée avec les interdictions décidées comme blocs : la recherche est refaite SANS ces blocs, la meilleure route est rendue et les règles qu'elle enfreint sont dites (REVUE) ; « proposition » seulement quand rien ne relie les deux terrains
         try:

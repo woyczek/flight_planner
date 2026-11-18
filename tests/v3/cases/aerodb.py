@@ -12823,8 +12823,10 @@ def k303(c):
         finally:
             F.solve = solve
         said = [i['text'] for i in res['primary'].get('issues', []) if i['text'].startswith('Point REGHI écarté')]
-        m = re.search(r'détour de \+(\d+) NM \((\d+) → (\d+) NM\)', said[0]) if said else None
-        c.ok(len(said) == 1 and m is not None and int(m.group(3)) > int(m.group(2)) and abs(int(m.group(3)) - res['primary']['distance_nm']) <= 1, str(said), 'when the pass by ETIKI fails, REGHI is set aside (the next entry) and the answer says « Point REGHI écarté … détour de +n NM (head → final NM) »')
+        broken = [i['text'] for i in res['primary'].get('issues', []) if i['text'].startswith('Règle RAD enfreinte') and 'LF2096' in i['text']]
+        failed = [a for a in res['rad_search_attempts'] if a.get('error') and any(x.get('fallback') for x in a.get('excluded', []))]
+        c.ok(said == [] and len(broken) == 1 and len(failed) == 1, str((said, broken, len(failed))),
+             'when the pass by ETIKI fails and the fallback has nowhere to go (this bench has ONE entry, REGHI), the fallback is TRIED (one attempt without a route) and the answer does NOT say that REGHI was set aside (SOG-0504: it said « détour de +8 NM » for a retry that had failed; this case asserted that sentence); the rule is said broken. The fallback that succeeds is K376')
     finally:
         F.MAX_GATES = saved_gates
         engine.Nav.TURN_MAX_DEG = saved_turn
@@ -17571,3 +17573,40 @@ def k375(c):
     host = (c.root / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8')
     c.eq((len(re.findall(r'Math\.sqrt\(h\)', src)), 'setDistance' in src, 'gcNm(a, b)' in src), (0, True, True), 'procedures.js: no haversine any more (no « Math.sqrt(h) »), the distance is given by setDistance, bearingNm takes its distance from gcNm', what='procedures')
     c.eq((len(re.findall(r'2 \* 3440\.065 \* Math\.asin', host)), len(re.findall(r'setDistance\(distNm\)', host))), (1, 3), 'aerodb.js: the formula once (distNm) and three gifts of it to the library (at the start, at the load by procLib, at the load by procedureFromOfp)', what='aerodb')
+
+
+@case('K376', 'Route engine, SOG-0504: a RAD retry that FAILS applies nothing — and an order « pass by X next to Y » that fails is followed by the fallback « set Y aside » (it used to stop there, and say « Point Y écarté … +0 NM » although the retry had failed)',
+      'K', static=True,
+      rule='SOG-0504 (found on LEMD → KBOS when the limit of the turns made the order impossible: the route of the head was kept with its infractions, the fallback never tried, and the answer said a point was set aside with a detour of +0 NM). The retries are now `plan.rad_repairs` (a function: the answer is (the route, the exclusions APPLIED, the attempts)); the case plays it with a scripted `assess`.')
+def k376(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import plan as PL
+    compel = dict(kind='compel', point='XXXXX', before='YYYYY', id='R1', sheet='Annex 2B', row=1)
+    fallback = dict(kind='point', point='YYYYY', fallback=True, id='R1', sheet='Annex 2B', row=1)
+    head = lambda: dict(route='A', distance_nm=100, issues=[], rad_summary=dict(findings=[dict(id='R1')], search_exclusions=[dict(compel), dict(fallback)]))
+    done = lambda route, nm: dict(route=route, distance_nm=nm, issues=[], rad_summary=dict(findings=[], search_exclusions=[]))
+    bounds = dict(ocean=False, head_s=5.0)
+
+    def play(script, bounds=bounds):
+        seen = []
+
+        def assess(request, nav, rad):
+            kinds = sorted(x['kind'] + ('/fallback' if x.get('fallback') else '') for x in request['_rad_avoid'])
+            seen.append(kinds)
+            r = script(kinds)
+            if isinstance(r, Exception):
+                raise r
+            return r
+        primary, avoids, retries = PL.rad_repairs({}, None, None, head(), lambda: None, bounds, __import__('time').perf_counter(), assess)
+        return primary['route'], [x['kind'] + ('/fallback' if x.get('fallback') else '') for x in avoids], seen, [bool(r.get('route')) for r in retries]
+    ok_compel = play(lambda k: done('C', 105))
+    c.eq(ok_compel, ('C', ['compel'], [['compel']], [True]), 'the order succeeds: its route, the order applied, the fallback NOT tried (as before)', what='order ok')
+    fell_back = play(lambda k: ValueError('Aucune route') if 'compel' in k else done('B', 110))
+    c.eq(fell_back, ('B', ['point/fallback'], [['compel'], ['point/fallback']], [False, True]), 'the order FAILS (no route): the fallback is tried and its route is kept — only the fallback is applied, the order that failed is not', what='fallback')
+    both = play(lambda k: ValueError('Aucune route'))
+    c.eq(both, ('A', [], [['compel'], ['point/fallback']], [False, False]), 'both fail: the route of the head is kept and NOTHING is said applied (no « Point Y écarté », no detour)', what='both fail')
+    budget = play(lambda k: PL.SearchBudget('budget'))
+    c.eq(budget, ('A', [], [['compel']], [False]), 'a budget that is reached is not a « no route »: no fallback is tried, nothing applied', what='budget')
+    late = play(lambda k: done('C', 105), bounds=dict(ocean=True, head_s=-1.0))
+    c.eq(late, ('A', [], [], [False]), 'an ocean flight past the bound of its head: the retry is not played (one attempt noted, without a route), nothing applied', what='bound')
