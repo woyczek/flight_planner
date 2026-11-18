@@ -12,6 +12,10 @@
 // reprise), effacée avec la position à l'arrêt du vol.
 // API : next(trail, fix, startedAt) → la trace à écrire ; TRAIL_MAX, TRAIL_NM, TRAIL_S, TRAIL_TURN.
 
+import {
+  gcNm
+} from './geo.js';
+
 export const TRAIL_MAX = 500;
 export const TRAIL_NM = 1;
 export const TRAIL_S = 60;
@@ -19,13 +23,15 @@ export const TRAIL_TURN = 15;
 const TURN_MIN_NM = 0.2; // en deçà, un écart de route est du bruit de position, pas un virage
 const ROUND_NM = 0.06; // points arrondis à 1e-3 degré (≈ 0,03 NM chacun) : le seuil de distance tolère leur écart
 
-const R_NM = 3440.065;
 const rad = Math.PI / 180;
-/** Distance en NM entre deux points [lat, lon]. */
-function nm(a, b) {
-  const s = Math.sin((b[0] - a[0]) * rad / 2) ** 2 + Math.cos(a[0] * rad) * Math.cos(b[0] * rad) * Math.sin((b[1] - a[1]) * rad / 2) ** 2;
-  return 2 * R_NM * Math.asin(Math.min(1, Math.sqrt(s)));
-}
+/** Distance en NM entre deux points [lat, lon] : gcNm de geo.js (SOG-0468), adaptée aux paires. */
+const nm = (a, b) => gcNm({
+  lat: a[0],
+  lon: a[1]
+}, {
+  lat: b[0],
+  lon: b[1]
+});
 /** Route vraie de a vers b, en degrés [0, 360[. */
 function bearing(a, b) {
   const y = Math.sin((b[1] - a[1]) * rad) * Math.cos(b[0] * rad),
