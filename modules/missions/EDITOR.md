@@ -580,6 +580,22 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   its identifier (`''`: a place without an identifier does not enter a route).
 - The references still follow the places renamed or removed (`withRefs`, last, as before): the screen will apply `withRoute` before.
 
+### 7 septdecies. P2, push 3b: Tracé on the screen (18 Nov 2026; SOG-0444 lot P2; noreg N99; the pure part: § 7 sexdecies)
+
+- **The route of the departure is a row of chips**, under the list of the Lieux (the sheet of the departure): each place by its
+  identifier — the departure and the arrival by the code of their aerodrome —, removed by its cross; « Ajouter un lieu… » adds one at
+  the end (only a place of the sitting: the value of the list is checked against the tokens of the rows). `s.ed.route` holds the
+  identifiers once retouched; `edDoc` applies `withRoute` before the references follow the places; a save forgets it. Sixty places
+  at most (a notification beyond).
+- **The fifth tool, « Tracé »**, between Point and Zone (the row has seven buttons; they are tightened to hold on one line on a wide
+  module): a place touched joins **the route chosen** — the onward route of the drawer chosen in the unfolding, else the route of the
+  departure; the line under the tools says which. **The tool stays in hand** until it is taken again (the only tool that does); a
+  touch on the bare map adds nothing and creates nothing; a place without an identifier says so in a notification.
+- **The map draws the onward route of the drawer chosen** (a second dashed line, `onward`, through its located places), beside the
+  route of the departure.
+- **Not undone by « Annuler le geste »**, which gives back the places only: a place added to a route is removed by its chip.
+- **Not done**: reordering the chips of a route (remove and add again); the landmarks of AeroDB (next), « Poser l'avion ici ».
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

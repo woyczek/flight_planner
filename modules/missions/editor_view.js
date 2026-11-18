@@ -19,6 +19,9 @@
 // toRound) ; les sommets du contour choisi sur la carte (ED.moveVertex, insertVertex ; s.ed.mapVertex : le sommet choisi, pour
 // « Retirer ce sommet ») ; « Dessiner sur la carte » depuis la fiche d'un tiroir (s.ed.drawFor : sa lettre — ce qui est posé devient sa
 // clé) ; une ligne des Lieux ouverte est le lieu choisi sur la carte.
+// Tracé (push 3b) : la route du départ en pastilles sous la liste des Lieux (s.ed.route : ses identifiants retouchés, ED.withRoute dans
+// edDoc) ; l'outil « Tracé » de la carte ajoute le lieu touché à la route choisie — celle du départ, ou la suite de route du tiroir
+// choisi dans le déroulé — et reste en main ; la suite de route du tiroir choisi est dessinée sur la carte.
 //
 // L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (lot P1 : le croquis des
 // lieux, sans outil) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
@@ -94,7 +97,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atsketch[hidden]{display:none}
 [data-module="missions"] .ms-atsketch .ms-thumb{margin-top:0;width:100%;height:100%;border:0}
 [data-module="missions"] .ms-atmaptools{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
-[data-module="missions"] .ms-atmaptools button{min-height:44px}
+[data-module="missions"] .ms-atmaptools button{min-height:44px;padding-left:10px;padding-right:10px}
 [data-module="missions"] .ms-atmaptools button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="missions"] .ms-atmaptools .ms-atmapend{margin-left:auto}
 [data-module="missions"] .ms-atmaphintrow{display:flex;align-items:center;gap:8px;margin:0 0 6px;min-height:44px}
@@ -122,6 +125,8 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:none}
 [data-module="missions"] .ms-dsum{grid-template-columns:auto minmax(0,1fr)}
 [data-module="missions"] .ms-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+[data-module="missions"] .ms-edroute{margin-top:12px;padding-top:10px;border-top:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-edroute>h4{margin:0 0 4px}
 [data-module="missions"] .ms-pilot{border:1px solid var(--sog-line,#ddd);padding:8px 10px;margin:0 0 8px;background:var(--sog-bg,#fff)}
 [data-module="missions"] .ms-pilot p{margin:.3em 0}
 [data-module="missions"] .ms-pilot p:empty{display:none}
@@ -326,6 +331,7 @@ function edDoc(e, cadre = e.cadre) {
   let d = ED.withCadre(e.base, cadre);
   if (e.teams) d = ED.withTeams(d, e.teams);
   if (e.places) d = ED.withPlaces(d, e.places);
+  if (e.route) d = ED.withRoute(d, e.route); // SOG-0444, Tracé : la route du départ retouchée (avant que les références suivent les lieux)
   if (e.story) d = ED.withStory(d, e.story);
   if (e.risks) d = ED.withRisks(d, e.risks);
   if (e.events) d = ED.withEvents(d, e.events);
@@ -434,7 +440,25 @@ function edPlacesHtml(s) {
     id = e.cadre.id.trim().toUpperCase();
   return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
     <div class="f-list" data-edplaces>${rows.map((r, i) => `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('')}</div>
-    <div class="f-row ms-pladd">${rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>`;
+    <div class="f-row ms-pladd">${rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>${edRouteHtml(s, rows)}`;
+}
+
+/** La route du départ de la séance : ses identifiants (s.ed.route quand elle a été retouchée, sinon ceux du fichier). */
+const edRoute = e => e.route || ED.routeOf(edDoc(e));
+
+/** La route du départ en pastilles (SOG-0444, Tracé ; jamais « des identifiants séparés par des virgules »), sous la liste des Lieux :
+ *  chaque lieu dit son identifiant (le départ et l'arrivée : le code de leur terrain) et se retire par sa croix ; « Ajouter un
+ *  lieu… » en ajoute un à la fin, comme l'outil « Tracé » de la carte. Soixante lieux au plus. */
+function edRouteHtml(s, rows) {
+  const e = s.ed,
+    route = edRoute(e),
+    name = r => r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id,
+    by = new Map(rows.map(r => [ED.routeToken(r), r]).filter(x => x[0])),
+    said = t => (by.has(t) ? name(by.get(t)) : '') || t,
+    options = [...by].map(([t, r]) => [t, [name(r), r.kind === 'dep' || r.kind === 'arr' ? '' : r.name].filter(Boolean).join(' · ')]);
+  return `<div class="ms-edroute" data-edroute><h4>${esc(s.tt(EDTX.rtTitle))}</h4><p class="f-muted">${esc(s.tt(route.length ? EDTX.rtHint : EDTX.rtNone))}</p>
+    <div class="ms-chips" data-rtchips>${route.map((t, n) => `<span class="ms-chip" data-chip="${esc(t)}">${esc(said(t))}<button type="button" data-do="edroutedel" data-n="${n}" aria-label="${esc(s.tt(EDTX.rtChipDel, { id: said(t) }))}">×</button></span>`).join('')}</div>
+    ${route.length < ED.ROUTE_MAX ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="edroute" data-f="add"><option value=""></option>${options.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}</div>`;
 }
 
 /** L'étape Récit (cinq éléments : résumé, description, objectif principal, objectifs secondaires, charge). */
@@ -572,15 +596,26 @@ function edMapFeats(s, doc, run = null) {
     adPos: name => adPosOf(s, (/^[A-Z]{4}(?= ·|$)/.exec(String(name || '')) || [])[0]),
     path: TR.pathOf(MS.readMission(doc)),
     run,
-    sel: run ? -1 : edMapSel(e)
+    sel: run ? -1 : edMapSel(e),
+    // la suite de route du tiroir choisi, dessinée elle aussi (les identifiants d'aujourd'hui de ses lieux)
+    onward: run ? [] : (edSelDrawer(e)?.row.route || []).map(id => ED.refNow(id, e.base, e.places))
   });
 }
 
 /** Le rang du lieu choisi sur la carte (s.ed.mapSel), -1 sinon. */
 const edMapSel = e => Number.isInteger(e.mapSel) ? e.mapSel : -1;
 /** L'outil de la carte : 'select' (la Sélection, à l'ouverture et après chaque pose), 'point', 'zone', 'object' ; 'view' pendant un
- *  essai des clés (la carte ne fait que montrer). */
-const edMapTool = e => e.trial?.on ? 'view' : ['point', 'zone', 'object'].includes(e.tool) ? e.tool : 'select';
+ *  essai des clés (la carte ne fait que montrer) ; 'route' : Tracé, qui reste en main jusqu'à ce qu'on le quitte. */
+const edMapTool = e => e.trial?.on ? 'view' : ['point', 'route', 'zone', 'object'].includes(e.tool) ? e.tool : 'select';
+/** Le tiroir choisi dans le déroulé (sa ligne et son rang), ou null quand c'est « Au départ ». */
+const edSelDrawer = e => {
+  const rows = (e.sel || 'start') === 'start' ? [] : edDrawers(e),
+    at = rows.findIndex(r => r.id === e.sel);
+  return at < 0 ? null : {
+    row: rows[at],
+    rank: at + 1
+  };
+};
 /** Le nom d'un lieu comme la carte et sa ligne le disent : « PT2 · Point deux ». */
 const edPlaceName = r => [r?.id, r?.name].filter(Boolean).join(' · ').slice(0, 60);
 
@@ -610,6 +645,9 @@ function edMapHint(s) {
   if (['zone', 'object'].includes(tool) && edDrawFor(e)) return s.tt(EDTX.atHint_drawFor, {
     n: edDrawFor(e).rank
   });
+  if (tool === 'route') return edSelDrawer(e) ? s.tt(EDTX.atHint_routeDrawer, {
+    n: edSelDrawer(e).rank
+  }) : s.tt(EDTX.atHint_route);
   if (tool !== 'select') return s.tt(EDTX[`atHint_${tool}`]);
   if (!r) return s.tt(EDTX.atHint_select);
   if (r.kind === 'zone' && r.ring) return edMapVertex(e) >= 0 ? s.tt(EDTX.atHint_vertex, {
@@ -636,7 +674,7 @@ function edMapHtml(s, doc, run = null) {
     off = !live || tool === 'view',
     btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
 }
 
 /** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
@@ -728,10 +766,38 @@ function edMapShow(s) {
     onInsert: m => edMapGesture(s, e, rows => ED.insertVertex(rows, m.i, m.k, m), m.i, m.k + 1),
     onVertexPick: m => edMapVertexPick(s, e, m),
     onPose: p => edMapPose(s, e, p),
+    onRoute: i => edMapRoute(s, e, i),
     onState: () => state() === s && s.ed === e && mark(),
     alive: () => state() === s && s.ed === e
   });
   mark();
+}
+
+/** Un lieu ajouté à la fin de la route du départ (son jeton : « ORIGIN », « DESTINATION » ou son identifiant) ; soixante au plus :
+ *  au-delà, une notification et rien n'est ajouté. → vrai s'il est ajouté. */
+function edRouteAdd(s, e, token) {
+  const route = edRoute(e);
+  if (route.length >= ED.ROUTE_MAX) {
+    s.ctx.notify?.(s.tt(EDTX.rtFull), 'warn');
+    return false;
+  }
+  e.route = [...route, token];
+  return true;
+}
+
+/** Tracé : un lieu touché sur la carte rejoint la route choisie — la suite de route du tiroir choisi dans le déroulé, sinon la route du
+ *  départ. L'outil reste en main (on trace plusieurs lieux de suite). Un lieu sans identifiant, une route pleine : une notification. */
+function edMapRoute(s, e, i) {
+  if (state() !== s || s.ed !== e || e.trial?.on) return;
+  const token = ED.routeToken(edPlaces(e)[i]);
+  if (!token) return s.ctx.notify?.(s.tt(EDTX.rtNoId), 'warn');
+  if (edSelDrawer(e)) {
+    const r = edDrawerRow(e);
+    if (!r) return;
+    if (r.route.length >= ED.ROUTE_MAX) return s.ctx.notify?.(s.tt(EDTX.rtFull), 'warn');
+    r.route = [...r.route, token];
+  } else if (!edRouteAdd(s, e, token)) return;
+  draw(s);
 }
 
 /** Les lignes des Lieux de la séance, créées à la première retouche (comme l'étape « Lieux »). */
@@ -1190,6 +1256,13 @@ function edInputDo(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return edDrawerInput(s, ev); // la fiche d'un tiroir
+  if (k === 'edroute') { // la route du départ : « Ajouter un lieu… » en ajoute un à la fin
+    const token = String(ev.target.value || '').slice(0, 40);
+    // seulement le jeton d'un lieu de la séance : une page forgée n'écrit pas un identifiant quelconque dans la route
+    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !(e.places || []).some(r => ED.routeToken(r) === token)) return;
+    edRouteAdd(s, e, token);
+    return draw(s);
+  }
   if (k === 'edtr') return edTrialInput(s, ev); // le volet de l'essai des clés
   if (k === 'edevent') { // un événement : le champ retouché en place (le lieu, une liste, aussi)
     const row = e.events?.[+ev.target.dataset.i],
@@ -1506,6 +1579,7 @@ async function edSave(s) {
       // jusqu'à ce qu'on replie et rouvre le groupe)
       places: e.step === 'places' ? ED.placesOf(doc) : null,
       placeEdit: -1,
+      route: null,
       // la carte : plus de lieu choisi, plus de geste à annuler (un état d'avant désignerait les rangs de l'ancien fichier)
       mapSel: -1,
       mapVertex: -1,
@@ -1661,6 +1735,12 @@ function edClickDo(s, b) {
       if (r && Number.isInteger(n) && n >= 0) r.stops = r.stops.filter((_, i) => i !== n);
       return draw(s);
     }
+    case 'edroutedel': { // un lieu retiré de la route du départ (sa pastille)
+      const n = +b.dataset.n,
+        route = edRoute(s.ed);
+      if (Number.isInteger(n) && n >= 0 && n < route.length) s.ed.route = route.filter((_, k) => k !== n);
+      return draw(s);
+    }
     case 'eddrchipdel': { // un lieu retiré de la suite de route
       const r = edDrawerRow(s.ed),
         n = +b.dataset.n;
@@ -1676,7 +1756,7 @@ function edClickDo(s, b) {
     case 'edmapfit': // « Recentrer » : la vue revient au cadre de la mission (rien n'est redessiné)
       return EM.fit();
     case 'edtool': // un outil de la carte pris en main : sur place (le bouton pressé n'est pas redessiné) ; le même outil repris le lâche
-      s.ed.tool = ['point', 'zone', 'object'].includes(b.dataset.tool) && s.ed.tool !== b.dataset.tool ? b.dataset.tool : 'select';
+      s.ed.tool = ['point', 'route', 'zone', 'object'].includes(b.dataset.tool) && s.ed.tool !== b.dataset.tool ? b.dataset.tool : 'select';
       s.ed.drawFor = ''; // un outil pris à la main ne pose plus pour un tiroir
       return edMapShow(s);
     case 'eddrdraw': { // « Dessiner sur la carte » (une zone) ou « Poser sur la carte » (un objet) depuis la fiche d'un tiroir : l'outil

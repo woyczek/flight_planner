@@ -4579,7 +4579,8 @@ def n95(c):
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     c.eq([c.js(_EDTOOL_STATE), norm(c.text(f'{_EDMAP} [data-maphint]'))],
-         [[['select', 'true', False], ['point', 'false', False], ['zone', 'false', False], ['object', 'false', False], ['edmapundo', None, True], ['edmapfit', None, False]],
+         [[['select', 'true', False], ['point', 'false', False], ['route', 'false', False], ['zone', 'false', False], ['object', 'false', False], ['edmapundo', None, True],
+           ['edmapfit', None, False]],
           T('atHint_select')], 'the tools above the map: Sélection in hand, nothing to undo; the line says what the tool does', what='the tools')
     # Sélection: a place touched is chosen — its name on the map, its row open
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
@@ -4590,18 +4591,18 @@ def n95(c):
     _ed_drag(c, [44.4, 1.6], [44.3, 1.75])
     c.until(f"(({_EDMAP_IDS})([44.3, 1.75]) || []).includes('place:5')", timeout=8000, what='PT2 moved on the map')
     lat, lon = c.js(_EDPLACE_VAL, [5, 'lat']), c.js(_EDPLACE_VAL, [5, 'lon'])
-    c.ok(near(lat, 44.3) and near(lon, 1.75) and c.js(_EDTOOL_STATE)[4] == ['edmapundo', None, False] and c.js(_EDSEL) == 'PT2 · Point deux', [lat, lon, c.js(_EDTOOL_STATE)[4]],
+    c.ok(near(lat, 44.3) and near(lon, 1.75) and c.js(_EDTOOL_STATE)[5] == ['edmapundo', None, False] and c.js(_EDSEL) == 'PT2 · Point deux', [lat, lon, c.js(_EDTOOL_STATE)[5]],
          'the row of PT2 took the position of the release (five decimals); the gesture can be undone; PT2 stays chosen')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N95_1280_moved.png')
     c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
     c.until(f"(({_EDMAP_IDS})([44.4, 1.6]) || []).includes('place:5')", timeout=8000, what='PT2 back')
-    c.eq(c.js(_EDTOOL_STATE)[4], ['edmapundo', None, True], '« Annuler le geste » gave the place back; nothing more to undo', what='undone')
+    c.eq(c.js(_EDTOOL_STATE)[5], ['edmapundo', None, True], '« Annuler le geste » gave the place back; nothing more to undo', what='undone')
     # the departure is not moved: the same press drags the map
     view = c.js(_EDMAP_VIEW)
     _ed_drag(c, [45.0, 1.0], [44.9, 1.1])
     c.until(f"(() => {{ const v = {_EDMAP_VIEW}; return Math.abs(v[0] - {view[0]}) > 0.002 || Math.abs(v[1] - {view[1]}) > 0.002 }})()", what='the view moved')
-    c.ok(c.js(_EDMAP_IDS, [45.0, 1.0]) is not None and 'place:0' in c.js(_EDMAP_IDS, [45.0, 1.0]) and c.js(_EDTOOL_STATE)[4][2] is True, c.js(_EDMAP_IDS, [45.0, 1.0]),
+    c.ok(c.js(_EDMAP_IDS, [45.0, 1.0]) is not None and 'place:0' in c.js(_EDMAP_IDS, [45.0, 1.0]) and c.js(_EDTOOL_STATE)[5][2] is True, c.js(_EDMAP_IDS, [45.0, 1.0]),
          'a press on the departure drags the map: the departure stays where it is, nothing to undo')
     c.tap(f'{_EDTOOLS} [data-do="edmapfit"]')
     # a tool of pose: taken in place (no button redrawn); a touch poses; the tool goes back to Sélection
@@ -4640,15 +4641,15 @@ def n95(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N95_1280_posed.png')
     # « Annuler le geste » never undoes a typing: after one, nothing to give back
-    c.ok(c.js(_EDTOOL_STATE)[4][2] is False, c.js(_EDTOOL_STATE)[4], 'the poses can be undone')
+    c.ok(c.js(_EDTOOL_STATE)[5][2] is False, c.js(_EDTOOL_STATE)[5], 'the poses can be undone')
     c.page.fill(f'{E} [data-edplaces] [data-k=edplace][data-i="9"][data-f=name]', 'Balise')
-    c.until(f"({_EDTOOL_STATE})[4][2] === true", what='nothing to undo after a typing')
+    c.until(f"({_EDTOOL_STATE})[5][2] === true", what='nothing to undo after a typing')
     # saved: the file carries what was posed
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(600)
     text = c.js(_TEXT_OF, path) or ''
     c.ok(all(k in text for k in ('PT3', 'ZONE-2', 'OBJ-2', 'Balise')) and text.count('ZONE-1') >= 1, text[:400], 'the file saved carries the point, the zone and the object posed on the map')
-    c.eq([c.js(_EDSEL), c.js(_EDTOOL_STATE)[4][2], norm(c.text(f'{_EDMAP} [data-maphint]'))], [None, True, T('atHint_select')],
+    c.eq([c.js(_EDSEL), c.js(_EDTOOL_STATE)[5][2], norm(c.text(f'{_EDMAP} [data-maphint]'))], [None, True, T('atHint_select')],
          'saved: the file is the new base — no place chosen on the map any more, nothing to undo', what='after the save')
     # on a phone the tools wrap above the map
     c.page.set_viewport_size({'width': 390, 'height': c.height})
@@ -4770,7 +4771,7 @@ def n97(c):
     c.ok(zoomed[2] > view0[2] + 2 and abs(a3[1] - a0[1]) > 120, [view0, zoomed, a0, a3],
          '« Tracer son contour » frames the view on the zone, with a margin: its vertices are far enough apart to be caught')
     ids = c.js(_EDMAP_IDS, None)
-    c.eq([shape(3), hint(), sum(1 for x in ids if x.startswith('mid:3:')), 'radius:3' in ids, c.js(_EDTOOL_STATE)[4][2]],
+    c.eq([shape(3), hint(), sum(1 for x in ids if x.startswith('mid:3:')), 'radius:3' in ids, c.js(_EDTOOL_STATE)[5][2]],
          [['contour', T('plContour', n=6), T('plToRound'), False], T('atHint_contour', name='ZONE-1 · Secteur nord'), 6, False, False],
          'the zone is a contour of six vertices: its sheet says so (no radius field any more), the map shows the vertices and the six points between them; it can be undone',
          what='round to contour')
@@ -4826,7 +4827,7 @@ def n97(c):
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of drawer 1')
     c.eq(c.js(f"document.querySelector('{_DW} [data-f=zone]').value"), 'ZONE-1', 'drawer 1 cites ZONE-1', what='the key of drawer 1')
     c.tap(f'{_DW} [data-do="eddrdraw"][data-kind="zone"]')
-    c.eq([c.js(_EDTOOL_STATE)[2][:2], hint()], [['zone', 'true'], T('atHint_drawFor', n=1)], '« Dessiner sur la carte »: the tool Zone in hand, the line says for which drawer',
+    c.eq([c.js(_EDTOOL_STATE)[3][:2], hint()], [['zone', 'true'], T('atHint_drawFor', n=1)], '« Dessiner sur la carte »: the tool Zone in hand, the line says for which drawer',
          what='drawing for a drawer')
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.3]))
     c.until(f"document.querySelector('{_DW} [data-f=zone]')?.value === 'ZONE-2'", timeout=8000, what='the zone posed is the key of drawer 1')
@@ -4886,3 +4887,93 @@ def n98(c):
     c.eq(r['none'], [[], [], []], 'no route, no document, a route that is not a list: an empty route', what='no route')
     c.eq(r['tokens'], ['ORIGIN', 'DESTINATION', 'PT1', '', ''], 'the token of a row: the departure, the arrival, an identifier; a place without an identifier has none', what='the tokens')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the document read is not touched')
+
+
+
+_RTCHIPS = f"[...document.querySelectorAll('{E} [data-edroute] [data-chip]')].map(x => [x.dataset.chip, x.firstChild.textContent.trim()])"
+_DWCHIPS = f"[...document.querySelectorAll('{_DW} [data-dwroute] [data-chip]')].map(x => x.dataset.chip)"
+
+
+@case('N99', 'Missions › the workshop, Tracé: the route of the departure is a row of chips under the list of the Lieux — each place by '
+      'its identifier (the departure and the arrival by the code of their aerodrome), removed by its cross, added by « Ajouter un '
+      'lieu… »; the tool « Tracé » of the map adds the place touched to the route chosen — the route of the departure, or the onward '
+      'route of the drawer chosen in the unfolding — and STAYS in hand; a touch on the bare map adds nothing; the map draws the route '
+      'of the departure and the onward route of the drawer chosen; the file saved carries both routes',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, push 3b (modules/missions/EDITOR.md § 2: « After a pose the tool goes back to Sélection (except Tracé, which '
+      'adds places to the selected route until it is left) », § 3: « A route is a list of chips, filled by touching the map in Tracé… '
+      'never ids séparés par des virgules », § 7 septdecies; the pure part: N98)')
+def n99(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
+    # the route of the departure: chips under the list of the Lieux
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edroute]')", what='the route of the departure in the Lieux')
+    c.eq([norm(c.text(f'{E} [data-edroute] h4')), c.js(_RTCHIPS)], [T('rtTitle'), [['ORIGIN', 'XTST'], ['PT1', 'PT1'], ['TARGET', 'TARGET'], ['DESTINATION', 'XTSU']]],
+         'the route of the departure as chips: the departure and the arrival by the code of their aerodrome, the places by their identifier', what='the chips')
+    c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
+    c.tap(f'{E} [data-edroute] [data-chip="TARGET"] [data-do="edroutedel"]')
+    c.until(f"({_RTCHIPS}).length === 3", what='TARGET removed from the route')
+    c.page.select_option(f'{E} [data-edroute] [data-k=edroute]', 'PT2')
+    c.until(f"({_RTCHIPS}).length === 4", what='PT2 added by the list')
+    c.eq([x[0] for x in c.js(_RTCHIPS)], ['ORIGIN', 'PT1', 'DESTINATION', 'PT2'], 'a cross removes a place; « Ajouter un lieu… » adds one at the end', what='the route retouched')
+    c.tap(f'{E} [data-edroute] [data-chip="PT2"] [data-do="edroutedel"]')
+    c.until(f"({_RTCHIPS}).length === 3", what='PT2 removed again')
+    # the tool « Tracé »: taken in place, it stays in hand; a place touched joins the route of the departure
+    c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    c.tap(f'{_EDTOOLS} [data-tool="route"]')
+    kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
+    c.ok(all(kept) and c.js(_EDTOOL_STATE)[2][:2] == ['route', 'true'] and hint() == T('atHint_route'), [c.js(_EDTOOL_STATE)[2], hint()],
+         '« Tracé » taken in hand in place (no button redrawn): the line says a touch adds to the route of the departure')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
+    c.until(f"({_RTCHIPS}).length === 4", timeout=8000, what='PT2 added by a touch on the map')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [45.0, 1.0]))
+    c.until(f"({_RTCHIPS}).length === 5", timeout=8000, what='the departure added by a touch on the map')
+    c.eq([[x[0] for x in c.js(_RTCHIPS)], c.js(_EDTOOL_STATE)[2][:2]], [['ORIGIN', 'PT1', 'DESTINATION', 'PT2', 'ORIGIN'], ['route', 'true']],
+         'two places touched joined the route, in order; the tool stayed in hand', what='traced')
+    n = len(c.js(_EDPLACE_IDS))
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
+    c.wait(300)
+    c.eq([len(c.js(_RTCHIPS)), len(c.js(_EDPLACE_IDS))], [5, n], 'a touch on the bare map adds nothing to the route and creates no place', what='the bare map')
+    # with a drawer chosen in the unfolding, Tracé fills its onward route; the map draws it
+    c.tap(f'{E} [data-atflow] [data-sel="C"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
+    c.eq([c.js(_DWCHIPS), hint(), c.js(_EDTOOL_STATE)[2][:2]], [['PT2'], T('atHint_routeDrawer', n=2), ['route', 'true']],
+         'drawer 2 chosen: its onward route is PT2; the tool is still in hand and the line says it now fills the onward route of drawer 2', what='a drawer chosen')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.25]))
+    c.until(f"({_DWCHIPS}).length === 2", timeout=8000, what='a place added to the onward route of drawer 2')
+    c.ok(c.js(_DWCHIPS)[0] == 'PT2' and c.js(_DWCHIPS)[1] in ('ZONE-1', 'PT1') and 'onward' in c.js(_EDMAP_IDS, None), [c.js(_DWCHIPS), c.js(_EDMAP_IDS, None)],
+         'the place touched joined the onward route of drawer 2; the map draws that onward route')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N99_1280_route.png')
+    # the tool is left by taking it again
+    c.tap(f'{_EDTOOLS} [data-tool="route"]')
+    c.eq([c.js(_EDTOOL_STATE)[0][:2], c.js(_EDTOOL_STATE)[2][:2]], [['select', 'true'], ['route', 'false']], 'taken again, « Tracé » is left: back to Sélection', what='the tool left')
+    # saved: the file carries both routes
+    added = c.js(_DWCHIPS)[1]
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(600)
+    text = c.js(_TEXT_OF, path) or ''
+    flat = re.sub(r'\s+', ' ', text)
+    c.ok(re.search(r'route_order: ?\[? ?-? ?ORIGIN,? ?-? ?PT1,? ?-? ?DESTINATION,? ?-? ?PT2,? ?-? ?ORIGIN', flat) is not None and re.search(r'PT2,? ?-? ?' + added, flat) is not None,
+         flat[:600], 'the file saved carries the route of the departure (ORIGIN, PT1, DESTINATION, PT2, ORIGIN) and the onward route of drawer 2')
+    # on a phone
+    c.tap(f'{E} [data-atflow] [data-sel="start"]')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.count(f'{E} [data-edroute]') == 0:
+        c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edroute]')", what='the route of the departure on a phone')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
+    c.shot('N99_390_route.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

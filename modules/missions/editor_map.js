@@ -101,20 +101,23 @@ function contourOf(row) {
  *  Une zone ronde est aussi un point en son centre (c'est par lui qu'elle se déplace) ; `sel` : le rang du lieu choisi — une zone
  *  ronde choisie montre la poignée de son rayon (« radius:i », à l'est de son rond) ; une zone en contour est un point en son milieu,
  *  et choisie elle montre ses sommets (« vertex:i:k ») et le milieu de chaque côté (« mid:i:k » : il ajoute un sommet après le
- *  sommet k). Un point qu'une poignée déplace porte `movable`.
+ *  sommet k). Un point qu'une poignée déplace porte `movable`. `onward` : les jetons de la suite de route du tiroir choisi — elle est
+ *  dessinée par ses lieux situés (« onward »).
  *  `labels` [{ id, lat, lon, text }] : l'étiquette de chaque lieu dessiné — son identifiant (à défaut le début de son nom : le code
  *  d'un terrain), vingt-quatre signes au plus —, sur son point, ou au milieu de son contour. */
 export function mapFeatures(rows, {
   adPos = null,
   path = [],
   run = null,
-  sel = -1
+  sel = -1,
+  onward = []
 } = {}) {
   const points = [],
     lines = [],
     polygons = [],
     labels = [],
     all = [],
+    spot = new Map(), // la position de chaque lieu par son jeton de route (« ORIGIN », « DESTINATION », son identifiant)
     // l'étiquette d'un lieu : son identifiant ; à défaut le début de son nom (« XTST · Base Test » : le code du terrain)
     tag = r => String(r.id || String(r.name || '').split(' · ')[0] || '').slice(0, 24),
     middle = ring => ({
@@ -130,6 +133,7 @@ export function mapFeatures(rows, {
       const q = adPos(r.name);
       at = q ? posOf(q.lat, q.lon) : null;
     }
+    const token = ED.routeToken(r);
     if (r.kind === 'zone') {
       const km = within(r.radius, ...MAPB.radiusKm),
         contour = r.poly ? contourOf(r) : null,
@@ -145,6 +149,7 @@ export function mapFeatures(rows, {
         // un contour : il se déplace d'un bloc par son milieu, où il porte son étiquette ; choisi, il montre ses sommets (des
         // poignées) et, au milieu de chaque côté, le point qui en ajoute un
         const mid = middle(contour);
+        if (token) spot.set(token, mid);
         points.push({
           id,
           ...mid,
@@ -185,6 +190,7 @@ export function mapFeatures(rows, {
       });
     }
     if (!at) return;
+    if (token) spot.set(token, at);
     points.push({
       id,
       lat: at.lat,
@@ -212,6 +218,13 @@ export function mapFeatures(rows, {
     });
     all.push(...route);
   }
+  // la suite de route du tiroir choisi : ses lieux situés, dans l'ordre (une deuxième ligne en tireté)
+  const next = (Array.isArray(onward) ? onward : []).slice(0, 60).map(t => typeof t === 'string' ? spot.get(t) : null).filter(Boolean);
+  if (next.length > 1) lines.push({
+    id: 'onward',
+    points: next,
+    dash: true
+  });
   if (run?.ok && Array.isArray(run.trail)) {
     const trail = run.trail.map(p => Array.isArray(p) ? posOf(p[0], p[1]) : null).filter(Boolean);
     if (trail.length > 1) lines.push({
@@ -466,6 +479,11 @@ function gestures(L, map, o) {
         return L.cb?.onPick?.(f ? rankOf(f.id) : -1);
       }
       if (L.mode === 'view') return; // pendant un essai des clés la carte ne fait que montrer
+      if (L.mode === 'route') {
+        // Tracé : le lieu sous le doigt rejoint la route choisie ; la carte nue ne fait rien
+        const t = partsOf(L.auth?.at(p.x, p.y)?.id);
+        return t?.what === 'place' ? L.cb?.onRoute?.(t.i) : undefined;
+      }
       L.cb?.onPose?.({
         lat: p.lat,
         lon: p.lon,
@@ -569,7 +587,8 @@ async function start(L, o) {
 /** Montre la carte de la mission dans `slot` (l'emplacement du dessin courant) : la démarre au premier appel, repose son hôte après
  *  chaque dessin, met ses éléments à jour s'ils ont changé, la recadre tant que l'auteur n'a pas déplacé la vue. `feats` : mapFeatures ;
  *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg, preview }), onState(état),
- *  alive() ; mode ('select' : la Sélection ; 'point', 'zone', 'object' : un outil de pose ; 'view' : la carte ne fait que montrer),
+ *  alive() ; mode ('select' : la Sélection ; 'point', 'zone', 'object' : un outil de pose ; 'route' : Tracé — un lieu touché est
+ *  rendu par onRoute(rang) ; 'view' : la carte ne fait que montrer),
  *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
  *  onRadius({ i, km }), onPose({ lat, lon, spanKm }), et pour un contour onVertex({ i, k, lat, lon }), onInsert({ i, k, lat, lon }),
  *  onVertexPick({ i, k }). Sans élément situé (pas de cadre) : pas de carte. */
@@ -596,7 +615,7 @@ export function show(slot, feats, o) {
     boxSig = JSON.stringify(feats.box),
     reframed = boxSig !== JSON.stringify(L.box);
   L.cb = o;
-  L.mode = ['select', 'point', 'zone', 'object', 'view'].includes(o.mode) ? o.mode : 'select';
+  L.mode = ['select', 'point', 'route', 'zone', 'object', 'view'].includes(o.mode) ? o.mode : 'select';
   L.sel = Number.isInteger(o.sel) ? o.sel : -1;
   L.selLabel = o.selLabel || '';
   L.feats = feats;

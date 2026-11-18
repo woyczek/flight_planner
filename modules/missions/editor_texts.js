@@ -361,6 +361,34 @@ export const EDTX = {
   // les outils de la carte (SOG-0444, lot P2) : après une pose, l'outil revient à Sélection
   atTool_select: ['Sélection', 'Selection', 'Auswahl', 'Selección'],
   atTool_point: ['Point', 'Point', 'Punkt', 'Punto'],
+  atTool_route: ['Tracé', 'Route', 'Route', 'Trazado'],
+  atHint_route: ['Tracé : touchez un lieu pour l\'ajouter à la route du départ.',
+    'Route: touch a place to add it to the route of the departure.',
+    'Route: Berühren Sie einen Ort, um ihn der Route des Abflugs hinzuzufügen.',
+    'Trazado: toque un lugar para añadirlo a la ruta de la salida.'
+  ],
+  atHint_routeDrawer: ['Tracé : touchez un lieu pour l\'ajouter à la suite de route du tiroir {n}.',
+    'Route: touch a place to add it to the onward route of drawer {n}.',
+    'Route: Berühren Sie einen Ort, um ihn der Folgeroute der Schublade {n} hinzuzufügen.',
+    'Trazado: toque un lugar para añadirlo a la ruta siguiente del cajón {n}.'
+  ],
+  rtTitle: ['Route du départ', 'Route of the departure', 'Route des Abflugs', 'Ruta de la salida'],
+  rtHint: ['Les lieux que le pilote rejoint, dans l\'ordre. Sur la carte, l\'outil « Tracé » en ajoute au toucher.',
+    'The places the pilot reaches, in order. On the map, the « Route » tool adds some by a touch.',
+    'Die Orte, die der Pilot nacheinander erreicht. Auf der Karte fügt das Werkzeug „Route“ sie durch Berühren hinzu.',
+    'Los lugares que el piloto alcanza, en orden. En el mapa, la herramienta «Trazado» los añade con un toque.'
+  ],
+  rtNone: ['Aucun lieu dans la route du départ.', 'No place in the route of the departure.', 'Kein Ort in der Route des Abflugs.',
+    'Ningún lugar en la ruta de la salida.'
+  ],
+  rtChipDel: ['Retirer {id} de la route', 'Remove {id} from the route', '{id} aus der Route entfernen', 'Quitar {id} de la ruta'],
+  rtNoId: ['Ce lieu n\'a pas d\'identifiant : il n\'entre pas dans une route.',
+    'This place has no identifier: it does not enter a route.',
+    'Dieser Ort hat keine Kennung: er kommt nicht in eine Route.', 'Este lugar no tiene identificador: no entra en una ruta.'
+  ],
+  rtFull: ['Une route porte soixante lieux au plus.', 'A route carries sixty places at most.', 'Eine Route trägt höchstens sechzig Orte.',
+    'Una ruta lleva sesenta lugares como máximo.'
+  ],
   atTool_zone: ['Zone', 'Zone', 'Zone', 'Zona'],
   atTool_object: ['Objet', 'Object', 'Objekt', 'Objeto'],
   atMapUndo: ['Annuler le geste', 'Undo the gesture', 'Geste rückgängig', 'Deshacer el gesto'],
