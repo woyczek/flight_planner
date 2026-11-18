@@ -8617,3 +8617,72 @@ def n126(c):
          'the file: the two points placed from the base carry their position and their code; the unknown one stays without a position', what='the file')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0496 (the user: « Le tiroir 1 doit être masqué, affiché uniquement une fois l'objet trouvé »): a drawer shut by an OBJECT key
+# (here OBJ-1, with no `kind`) was drawn on the pilot's sheet as a sealed stub (its title, its key said in plain words) with its count.
+# An invented mission, one drawer (rank 1); the reader and the sheet must say nothing of it while it is not open.
+_HIDE_ID = 'X-496A'
+_HIDE_REGISTRY = """missions:
+  - { id: X-496A, family: TESTTIROIR, title: Vol de contrôle, folder: X_TIR/X-496A, files: [missionX-496A.yaml] }
+"""
+_HIDE_MISSION = """mission: { id: X-496A, type: SAR, subtype: RECHERCHE }
+title: Vol de contrôle
+summary: Un vol inventé le long de la côte. Décollez, suivez la route et rendez compte.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+turning_points:
+  - { id: PT1, name: Point côtier, lat: 44.75, lon: 1.25 }
+objects:
+  - { id: OBJ-1, lat: 44.6, lon: 1.3 }
+target: { id: TARGET, name: Cible visible, lat: 44.75, lon: 1.25 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - id: B
+    title: Trouvé-test
+    message: Message-test
+    trigger_object: OBJ-1
+"""
+_HIDE_PURE_JS = """async () => { const MS = await import('/frame/lib/mission.js');
+  const m = MS.readMission({ mission: { id: 'X-496A', type: 'SAR' }, title: 'Vol de controle', origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, turning_points: [{ id: 'PT1', name: 'Point cotier', lat: 44.75, lon: 1.25 }],
+    objects: [{ id: 'OBJ-1', lat: 44.6, lon: 1.3 }], target: { id: 'TARGET', name: 'Cible visible', lat: 44.75, lon: 1.25 }, route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Trouvé-test', message: 'Message-test', trigger_object: 'OBJ-1' }] });
+  const v = MS.pilotView(m, [], { mine: true }), J = JSON.stringify(v);
+  return { read: m.drawers.length, drawers: v.drawers, hidden: 'hidden' in v, refused: v.drawersRefused, words: ['Trouvé-test', 'Message-test', 'OBJ-1'].filter(w => J.includes(w)) } }"""
+
+
+@case('N127', 'Missions › a drawer shut by an object key does not show before it opens: the mission is mine and no drawer is open — the reader\'s view has '
+      'no drawer and no `hidden` key, and neither the title, nor the message, nor OBJ-1 is anywhere in its JSON; on the pilot\'s sheet, neither the '
+      'title, nor « Suite de la mission », nor the key said in plain words is drawn',
+      'N', tags=('missions', 'security'), designs=('standard',), langs4=False,
+      rule='SOG-0496 (the user: « Le tiroir 1 doit être masqué, affiché uniquement une fois l\'objet trouvé »): frame/lib/mission.js `pilotView` (no stub, '
+      'no `pilot.hidden.drawers`), modules/missions/drawers_view.js; SOG-0459')
+def n127(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_HIDE_PURE_JS)
+    c.eq([r['read'], r['drawers'], r['hidden'], r['refused'], r['words']], [1, [], False, 0, []],
+         'the mission read has its drawer; the view of a mission that is mine with none open: no drawer, no `hidden` key, no count, and not one of the title, '
+         'the message or OBJ-1 in its JSON', what='the view')
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    idx = {'updatedAt': at(0), 'assignments': [{'mission': _HIDE_ID, 'title': 'Vol de contrôle', 'pilot': 'ABC', 'callsign': 'TEST41', 'takeoff': at(-10),
+                                                  'status': 'affectée', 'role': 'mission'}]}
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _HIDE_REGISTRY], ['missions/X_TIR/X-496A/missionX-496A.yaml', _HIDE_MISSION],
+                     ['missions/affectations.json', json.dumps(idx)]])
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"{_HIDE_ID}\"]')", timeout=20000, what='the list')
+    c.tap(f'{M} [data-list] [data-id="{_HIDE_ID}"]')
+    c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === '{_HIDE_ID}'", timeout=10000, what='the sheet')
+    c.until(f"!!document.querySelector('{_DW_ASK}')", timeout=10000, what='« Demander la suite » in the row')
+    c.until_doc(f'cache/missions/open_{_HIDE_ID}.json', lambda d: d and d.get('mine') is True, what='the document of the open drawers')
+    c.settle()
+    text = c.text(f'{M} .ms-sheet')
+    html = c.js(f"document.querySelector('{M} .ms-sheet').innerHTML")
+    c.eq([w for w in ('Trouvé-test', 'Message-test', 'Suite de la mission', 'OBJ-1') if w in text or w in html], [],
+         'the pilot\'s sheet of a mission with one closed drawer: neither its title, nor its message, nor « Suite de la mission », nor the key said in plain words',
+         what='the sheet')
+    c.js(_DW_CLEAR)
