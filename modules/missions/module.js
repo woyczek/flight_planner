@@ -43,6 +43,7 @@ export const meta = {
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
     'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
+    'assign.js', 'assign_view.js', // SOG-0443 : « Affecter… » — le calcul pur et l'écran
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
@@ -79,8 +80,12 @@ export const meta = {
     return [s, s, s, s];
   },
   // les missions ajoutées depuis un YAML (SOG-0212 b) : missions/<lettre>_<FAMILLE>/<ID>/mission<ID>.yaml, jamais le registre (une vue
-  // dérivée des fichiers, SOG-0036 : les fichiers hors registre sont listés à l'affichage suivant)
+  // dérivée des fichiers, SOG-0036 : les fichiers hors registre sont listés à l'affichage suivant) ; et missions/affectations.json,
+  // écrit par « Affecter… » (SOG-0443, assign_view.js)
   writes: [{
+    prefix: 'missions/affectations.json',
+    merge: 'keyed:assignments:mission+pilot+role' // SOG-0443 : fusion ligne par ligne, la même clé que tools/data_sync.py
+  }, {
     prefix: 'missions/',
     merge: 'record'
   }, {

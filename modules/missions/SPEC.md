@@ -21,6 +21,8 @@ on the same data. The CPCO (authoring) stays V2 until rebuilt as the third appli
   (+ `summary<ID>.md`, `cartes/`, `recu/`, `versions/`, `affectations.yaml`), indexed by `missions/mission_registry.yaml`
   and `missions/affectations.json`. **The module reads these files; it never writes a mission** (one author, the user,
   through the V2 CPCO; the numbering `<family letter>-<3 digits><team letter>` is the reference, `former_id` kept).
+  Since SOG-0443 it writes one of them, `missions/affectations.json`, line by line (« Affecter… », `assign.js` and `assign_view.js`;
+  `docs/technique/AFFECTATION_MISSIONS.md` § 12).
 - **A tolerant reader**, `frame/lib/mission.js` (pure, benched on the three real shapes: minimal `M-001`, complete
   `A-001A`, organisation `…Z`): nothing is mandatory but `mission.id` and `mission.type`; `origin` / `destination`
   may be missing (then the base of the assignment, else none); the ICAO code is parsed from `origin.name`
@@ -213,7 +215,8 @@ crew. V3 reads it as it is and adds to it; the mission file stays immutable.
   - `briefing[]`: optional named links (OFP, chart pack, exercise doc) already allowed by V2's `exerciseDocs`; same
     rendering.
 - **Who writes**: the CPCO (V2 today through the ODV matrix, V3 later); the module and the pilot write nothing in
-  the assignment. The "lu" of V2 (`assignmentsRead:v1`, local) becomes the device's own record (`policy: 'cache'`),
+  the assignment. Since SOG-0443 the module writes the index `missions/affectations.json` from « Affecter… » (Current level, one
+  line per pilot, key `mission+pilot+role`, merged line by line; « Retirer » marks a line `annulée`). The "lu" of V2 (`assignmentsRead:v1`, local) becomes the device's own record (`policy: 'cache'`),
   with the `read_at` the V2 document planned but never wrote: written once on "Ouvrir".
 - **Access model, said**: the assignment is repository data readable by every pilot of the airline (the fleet's
   model, audit line 63). A meeting password in `value` is readable by all of them: a known limit, stated in the
