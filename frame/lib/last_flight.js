@@ -5,6 +5,10 @@
 // puis le détail d'un vol au format de text_import.js (kind 'ivao-details' : indicatif, terrains, connexion,
 // déconnexion, trace, plan de vol OACI). Ni page, ni stockage. Code pur partagé (report, flightlog) : un module
 // n'importe jamais depuis un autre module, il importe d'ici.
+import {
+  gcNm
+} from './geo.js'; // la distance orthodromique, une seule fonction du cadre (SOG-0468 (2))
+
 const IVAO = 'https://api.ivao.aero/v2',
   VATSIM = 'https://api.vatsim.net/v2',
   DAYS = 7;
@@ -54,13 +58,14 @@ function fplText({
   if (item19) parts.push(item19);
   return '(' + parts.join(' -') + ')';
 }
-/** Distance en milles nautiques entre deux points de trace IVAO. */
-function nm(a, b) {
-  const r = Math.PI / 180,
-    h = Math.sin((b.latitude - a.latitude) * r / 2) ** 2 + Math.cos(a.latitude * r) * Math.cos(b.latitude * r) * Math.sin((b.longitude -
-      a.longitude) * r / 2) ** 2;
-  return 3440.065 * 2 * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+/** Distance en milles nautiques entre deux points de trace IVAO ({ latitude, longitude }) : gcNm de geo.js, par un adaptateur. */
+const nm = (a, b) => gcNm({
+  lat: a?.latitude,
+  lon: a?.longitude
+}, {
+  lat: b?.latitude,
+  lon: b?.longitude
+});
 
 /** Lecteur IVAO : getJson(url) → objet ; traces des sessions terminées gardées le temps de la lecture. */
 function ivaoReader(getJson) {
