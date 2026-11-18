@@ -1305,7 +1305,11 @@
         route: ['ZONE-2']
       }]
     },
-    zonesOf = m => (m?.zones || []).map(x => x.id).join();
+    zonesOf = m => (m?.zones || []).map(x => x.id).join(),
+    // Rien d'un tiroir fermé dans la vue : il n'y est pas (lecteur qui ne rend que les ouverts) ou il est scellé, sans message
+    // ni briefing (lecteur qui les rend scellés) — juste pour les deux lecteurs.
+    noneShown = m => (Array.isArray(m?.drawers) ? m.drawers : []).every(d => d?.sealed === true && d.message === '' && d.brief === ''),
+    drawerB = m => (Array.isArray(m?.drawers) ? m.drawers : []).find(d => d?.id === 'B');
   let changes = 0;
   DV.stop();
   ctx = fakeCtx({
@@ -1314,8 +1318,8 @@
     }
   });
   let view = DV.sees(ID, seenMission);
-  ck('sees() avant que la section ait lu : la partie visible seule — la zone du tiroir fermé n\'y est pas, le tiroir est scellé (ni message, ni briefing), « pas la mienne »',
-    zonesOf(view) === 'ZONE-1' && view.drawers[0].sealed === true && view.drawers[0].message === '' && view.drawers[0].brief === '' &&
+  ck('sees() avant que la section ait lu : la partie visible seule — la zone du tiroir fermé n\'y est pas, rien du tiroir (absent, ou scellé sans message ni briefing), « pas la mienne »',
+    zonesOf(view) === 'ZONE-1' && noneShown(view) &&
     view.pilot.mine === false && !JSON.stringify(view).includes('44.6'), view);
   await mount(ctx, seenMission, {
     mine: true,
@@ -1327,14 +1331,15 @@
       .get(OPEN).seance) && ctx.store.get(OPEN).mission === ID && changes === 1, [ctx.store.get(OPEN), changes]);
   view = DV.sees(ID, seenMission);
   ck('sees() pour MA mission, tiroir fermé : la mienne, rien d\'ouvert — la zone cachée n\'est toujours pas là',
-    zonesOf(view) === 'ZONE-1' && view.pilot.mine === true && view.pilot.opened.length === 0 && view.drawers[0].sealed === true, view);
+    zonesOf(view) === 'ZONE-1' && view.pilot.mine === true && view.pilot.opened.length === 0 && noneShown(view), view);
   await ask();
   await until(() => ctx.store.get(OPEN)?.opened?.length === 1);
   ck('le tiroir ouvert par « Demander » : le document « ouverts » porte sa lettre, et la fiche est prévenue (une fois)', JSON.stringify(ctx
     .store.get(OPEN)?.opened) === '["B"]' && changes === 2, [ctx.store.get(OPEN), changes]);
   view = DV.sees(ID, seenMission);
   ck('sees() après l\'ouverture : la zone du tiroir est montrée, le tiroir rendu en entier ; la mission lue n\'est pas modifiée',
-    zonesOf(view) === 'ZONE-1,ZONE-2' && view.drawers[0].message === 'Message du tiroir.' && !view.drawers[0].sealed && view.pilot.opened
+    zonesOf(view) === 'ZONE-1,ZONE-2' && drawerB(view)?.message === 'Message du tiroir.' && drawerB(view)?.sealed !== true && view.pilot
+    .opened
     .join() === 'B' && seenMission.zones.length === 2 && !('pilot' in seenMission), view);
   DV.show(host(), {
     ctx,
