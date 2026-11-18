@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c5e6520",
+  "organisation": "fb99406",
   "fiches": 500,
   "untranslated": 0,
   "priorities": 481,
@@ -1097,11 +1097,12 @@
     {
      "id": "SOG-0483",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carburant : le plan de vol OACI d'un vol qui part d'une hélistation ou y arrive (ZZZZ et DEP/, DEST/)",
      "en": "Fuel: the ICAO flight plan of a flight from or to a heliport (ZZZZ and DEP/, DEST/)",
      "de": "Kraftstoff: ICAO-Flugplan eines Fluges von oder zu einem Hubschrauberlandeplatz (ZZZZ und DEP/, DEST/)",
-     "es": "Combustible: el plan de vuelo OACI de un vuelo desde o hacia un helipuerto (ZZZZ y DEP/, DEST/)"
+     "es": "Combustible: el plan de vuelo OACI de un vuelo desde o hacia un helipuerto (ZZZZ y DEP/, DEST/)",
+     "test": true
     }
    ]
   },
