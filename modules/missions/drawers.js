@@ -74,6 +74,7 @@ export const HOWS = ['hand', 'zone', 'object', 'arrival'];
 /** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
  *  l'ergonome du 17/11 en attendant Q-0094 : « pour tous ou pour soi ? ») — pour l'ouvrir à tous, ajouter 'hand' ici, rien d'autre. */
 export const SHARED = ['zone', 'object', 'arrival'];
+export const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre (à l'écriture comme au rejeu)
 const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim', 'trail']; // trail : constat retrouvé sur la trace gardée (rattrapage)
 const TRI = /^[A-Z]{3}$/,
   MID = /^[A-Z]-\d{3}[A-Z]?$/,
@@ -223,7 +224,9 @@ function checkOther(e, {
   if (!seance.key || book.seance !== seance.key) return 'seance';
   if (e.at > now + FUTURE_MS) return 'future';
   if (ref != null && e.at < ref - BEFORE_MS) return 'before';
-  if (e.how !== 'hand' && key?.kind !== e.how) return 'key'; // un constat de zone sur un tiroir sans zone
+  // un constat de zone sur un tiroir sans zone ; un constat sur une clé que ce fichier ne sait pas suivre (une cible qui franchit,
+  // un objet mobile, une arrivée avec suivi) : l'écran dit qu'elle n'est pas jugée en vol, le constat d'un autre ne l'ouvre pas
+  if (e.how !== 'hand' && (key?.kind !== e.how || !follows(key))) return 'key';
   // le constat est REJOUÉ sur le fichier de mission de celui qui lit, avec le même service et le même mot que celui qui l'a écrit
   if (e.how !== 'hand' && !(e.to && (typeof crosses === 'function' ? crosses({
       from: e.from,
@@ -316,8 +319,11 @@ export function finding(key, prev, next, {
  *  touchée par le trajet, l'objet à portée, l'arrivée posée au dernier relevé. */
 export function stands(e, key) {
   if (!e || !e.to || !key || key.kind !== e.how) return false;
+  // les deux relevés d'un constat ne font un trajet que s'ils sont à une minute au plus l'un de l'autre (la règle de l'écriture) :
+  // sinon un « from » lointain tracerait une corde à travers la forme — le dernier relevé est alors jugé seul
   const same = !e.from || (e.from.lat === e.to.lat && e.from.lon === e.to.lon && e.from.at === e.to.at),
-    prev = same ? null : e.from;
+    gap = Math.abs(Date.parse(e.to.at) - Date.parse(e.from?.at)),
+    prev = same || !(gap <= LEG_MS) ? null : e.from;
   if (e.how === 'zone') return crossed(prev, e.to, key).touched === true;
   if (e.how === 'object') return !!key.object && reach(prev, e.to, key.object).ok === true;
   if (e.how === 'arrival') return arrived(e.to, key).ok === true;

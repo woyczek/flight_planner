@@ -658,6 +658,68 @@
     ], {
       id: 'C'
     }) === 'OPEN::');
+  // les deux retouches de « Sécurisation » (18/11) : une clé que ce fichier ne suit pas ; un trajet de plus d'une minute
+  const withKey = more => drawers.map(d => d.id === 'C' ? {
+      ...d,
+      key: {
+        ...d.key,
+        ...more
+      }
+    } : d),
+    chord = { // une corde à travers la zone (centre 44.5 N, 1.2 W, 3 km) entre deux relevés lointains, aucun dedans
+      from: {
+        lat: 44.5,
+        lon: -1.6,
+        at: iso(T0 + 20 * MIN),
+        altFt: 2000
+      },
+      to: {
+        lat: 44.5,
+        lon: -0.8,
+        at: iso(T0 + 30 * MIN),
+        altFt: 2000
+      }
+    };
+  ck('refus « key » (relecture de Sécurisation) : le constat d\'un autre sur une zone qu\'une CIBLE franchit (clé à « actor ») — ce fichier ne la suit pas, le constat d\'un pilote qui dit l\'avoir franchie lui-même ne l\'ouvre pas',
+    refusal([
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+    ], {
+      id: 'C',
+      drawers: withKey({
+        actor: {
+          id: 'OBJ-2',
+          moving: true
+        }
+      })
+    }) === 'closed:BBB=key:' && refusal([
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+    ], {
+      id: 'C',
+      drawers: withKey({})
+    }) === 'OPEN::');
+  ck('refus « shape » (relecture de Sécurisation) : deux relevés à plus d\'une minute l\'un de l\'autre ne font pas un trajet — la corde traverse la zone, aucun relevé n\'y est ; les mêmes à trente secondes l\'un de l\'autre ouvrent',
+    refusal([
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', chord)]
+    ], {
+      id: 'C'
+    }) === 'closed:BBB=shape:' && refusal([
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', {
+        from: {
+          ...chord.from,
+          at: iso(T0 + 29.5 * MIN)
+        },
+        to: chord.to
+      })]
+    ], {
+      id: 'C'
+    }) === 'OPEN::' && !D.stands({
+      how: 'zone',
+      from: {
+        ...chord.from,
+        at: 'hier'
+      },
+      to: chord.to
+    }, drawers[1].key));
   let seenArgs = null;
   s = st({
     others: [

@@ -323,11 +323,13 @@
       from: {
         lat: 44.52,
         lon: -1.25,
+        at: iso(Date.now() - 6000),
         altFt: 2000
       },
       to: {
         lat: 44.49,
         lon: -1.15,
+        at: iso(Date.now() - 1000),
         altFt: 2000
       },
       source: 'xplane'
@@ -350,15 +352,17 @@
 
   // ---- 6. « reçu ici à … » ; le constat d'un autre SOUS VERROU
   const T3 = Date.now() - 30 * MIN,
-    leg = {
+    leg = { // les deux relevés d'un vrai constat portent leur heure, à cinq secondes l'un de l'autre
       from: {
         lat: 44.52,
         lon: -1.25,
+        at: iso(T3 + 10 * MIN - 5000),
         altFt: 2000
       },
       to: {
         lat: 44.49,
         lon: -1.15,
+        at: iso(T3 + 10 * MIN),
         altFt: 2000
       }
     };

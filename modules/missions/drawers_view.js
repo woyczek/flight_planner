@@ -385,7 +385,7 @@ function onFix(v, fix) {
     // deux relevés à plus d'une minute l'un de l'autre (ou sans heure) ne font pas un trajet : le relevé est jugé seul, et ce qui
     // s'est passé entre les deux est l'affaire du rattrapage sur la trace
     gap = Date.parse(fix?.at) - Date.parse(v.prevFix?.at),
-    prev = gap >= 0 && gap <= LEG_MS ? v.prevFix : null;
+    prev = gap >= 0 && gap <= D.LEG_MS ? v.prevFix : null;
   v.prevFix = fix;
   v.wasLive = live;
   // la position en direct vient d'arriver (ou de se taire) : la section est relue — sa note le dit, la trace gardée est rattrapée
@@ -524,7 +524,6 @@ async function put(v, path, value) {
 }
 
 const RANGE_MS = 60e3; // « Objet en vue » est accepté une minute après le dernier relevé à portée
-const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre
 const SEVEN = 7; // sept tiroirs à l'écran, les suivants repliés
 const BRIEF_CUT = 1200; // le briefing (jusqu'à 20 000 signes dans le fichier) : le début, puis « Lire la suite » (la liseuse : lot T3)
 

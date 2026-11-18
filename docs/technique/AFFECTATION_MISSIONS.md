@@ -412,6 +412,13 @@ decides what is followed, writes the finding and says it.
 - **Another device replays it** — `stands(entry, key)`: the finding of another pilot's record is re-played by the same service on
   the reader's OWN mission file; a finding without a fix, or whose leg does not touch the zone, reach the object or land at the
   arrival, is refused (« shape ») and named as before. An arrival is a finding: open for all (`SHARED`).
+- **Security review** (« Sécurisation », 18 Nov, accepted with two touch-ups, each with its counter-test in the bench of N80): a
+  finding on a key this file does **not follow** (a zone a target crosses, a moving object, an arrival with a required following) is
+  refused « key » — the screen says the key is not judged in flight, another pilot's word does not open it; the two fixes of a finding
+  are a leg only when they are **one minute apart at most** (`LEG_MS`, the same rule as the writing) — otherwise a distant `from`
+  would draw a chord through the shape: the last fix is then judged alone. Known limit, unchanged: without accounts, a pilot of the
+  mission can still write two invented fixes that stand; the screen says by whom, when and how. A catch-up on a thinned track (two
+  points more than a minute apart, neither inside the shape) opens for its pilot and is refused by the others.
 - **« Objet en vue »** — an object whose author wants the pilot's word (`confirm`, the default) is never opened by the range alone:
   in range, the line says « À portée de l'objet : déclarez « Objet en vue » » and the button becomes the main one; the pilot's touch
   writes the finding (the leg in range, the time of the touch). The button is accepted for one minute after the last fix in range;
@@ -427,6 +434,6 @@ decides what is followed, writes the finding and says it.
   goes silent is said at the next minute at the latest.
 - **Not done here**: the page closed, nothing is judged (the catch-up does it at the return, on the track); a watch held by the frame
   (V3 Frame's idea, `device/watches.json`) is the ergonomist's to settle. The fallback hour still opens the drawer for everyone.
-- Cases: N80 (70 checks: `follows`, `finding`, `stands`, `catchUp`, the fixes of a record), N81 (64: the subscription, the three
+- Cases: N80 (72 checks: `follows`, `finding`, `stands`, `catchUp`, the fixes of a record), N81 (64: the subscription, the three
   states, the catch-up, the flight of another mission), N83 (the sheet with a simulated launcher and simulator: followed, crossed,
   in range and « Objet en vue », the arrival; 390 and 1280 px, four languages).
