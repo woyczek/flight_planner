@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ddc6f44",
+  "organisation": "2408ba4",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -2884,11 +2884,12 @@
     {
      "id": "SOG-0499",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Royaume-Uni : lire les SID conventionnelles (EGGW : 0 des 9 cartes lues, « table non reconnue »)",
      "en": "United Kingdom: read conventional SIDs (EGGW: 0 of 9 charts read, “table not recognised”)",
      "de": "Vereinigtes Königreich: konventionelle SIDs lesen (EGGW: 0 von 9 Karten gelesen, „Tabelle nicht erkannt“)",
-     "es": "Reino Unido: leer las SID convencionales (EGGW: 0 de 9 cartas leídas, «tabla no reconocida»)"
+     "es": "Reino Unido: leer las SID convencionales (EGGW: 0 de 9 cartas leídas, «tabla no reconocida»)",
+     "test": true
     }
    ]
   },

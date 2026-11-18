@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 329,
+  "tests": 330,
   "verdicts": 219
  },
  "apps": [
@@ -4909,6 +4909,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T18:13:17Z"
+  },
+  {
+   "id": "SOG-0499",
+   "app": "pilote",
+   "title": {
+    "fr": "Royaume-Uni : lire les SID conventionnelles (EGGW : 0 des 9 cartes lues, « table non reconnue »)",
+    "en": "United Kingdom: read conventional SIDs (EGGW: 0 of 9 charts read, “table not recognised”)",
+    "de": "Vereinigtes Königreich: konventionelle SIDs lesen (EGGW: 0 von 9 Karten gelesen, „Tabelle nicht erkannt“)",
+    "es": "Reino Unido: leer las SID convencionales (EGGW: 0 de 9 cartas leídas, «tabla no reconocida»)"
+   },
+   "test": "Après la relance du lanceur : Carburant, départ EGGW, « Source et cartes » › « Lire les départs dans le paquet du Royaume-Uni ». Attendu : les SID des cartes 6-2 à 6-9 sont lues, chacune avec son point de sortie, sa piste et ses niveaux (le tracé n'est PAS lu, « voir la carte ») ; la carte 6-1 est dite « carte sans table » ; plus de message en anglais. Le lien « Carte » vers NATS viendra avec le lot suivant.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T18:54:07Z"
   },
   {
    "id": "SOG-0503",
