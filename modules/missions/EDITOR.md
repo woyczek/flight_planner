@@ -999,6 +999,21 @@ sitting are kept) at the opening of a group AND after « Enregistrer ». The fil
 the fields that differ from the file (audit 182), so a mission saved from an empty-looking Récit kept its texts. Origin: the Récit,
 13 Nov (ce72c9c25), the Équipes the same morning (c138087b3); moved unchanged to `editor_view.js` on 17 Nov (c2a6960c1).
 
+### 7 tertricies. A helistation in Départ and Arrivée: `isCode` of the common field (18 Nov 2026; SOG-0465; noreg N123, N120, N118)
+
+Features SOG: the common field knows the helistation code (two letters and three digits, « LF418 »; AeroDB pattern `^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$`)
+and exposes `isCode(v)`. The workshop copies no pattern.
+
+- **`editor.js` is pure** and holds no field instance: it takes `isCode` from the block itself — `export const isCode = createAdField({ ctx, body: () => null,
+  gone: () => true, keys: [] }).isCode`, an instance without a screen made once for its test alone (no list, no base, nothing drawn). `headCode`,
+  `tailCode` (the code between brackets at the end), `placeText`, `codeIn`, `fieldCode`, `noteAerodrome` and `codeCands` read a word of four or five
+  signs and ask `isCode` (a word without any letter is never a code). `mission_map.js` gets the same through `ED.adCodeOf`.
+- **`editor_view.js`**: `edAdValue` asks `ad.isCode` of the field instance; `adPosOf` asks `ED.isCode` (the same function).
+- **Not changed**: `frame/lib/mission.js` (`icaoOf`, `originIcao`, four capital letters) and `modules/missions/choice.js` (`depIcao`): readers outside the
+  workshop, they keep reading a helistation as a name.
+- Written file: unchanged in form — `origin: { name: « <name> (XT123) », icao: XT123 }`. N123 (invented helistation XT123): proposed, chosen,
+  the name under the field, lower case put in capitals, written, framed on the map.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

@@ -74,6 +74,9 @@
 //   shapeOf(doc) → '' | 'alias' | 'size' : refusé à l'ouverture quand il ne se réécrit pas sans risque ; same(a, b) : rien n'a changé.
 //   Règle des with… (audit 182, Sécurisation) : seul ce que le pilote a changé est écrit ; « Enregistrer » sans rien toucher n'écrit rien.
 import * as MS from '../../frame/lib/mission.js';
+import {
+  createAdField
+} from '../../frame/lib/ad_field.js'; // SOG-0465 : le motif d'un code de terrain est celui du champ commun (isCode)
 
 export const STEPS = ['cadre', 'teams', 'places', 'story', 'risks', 'timeline'];
 /** La famille commerciale : une liaison (SOG-0287, ajout du 13 nov.). */
@@ -105,24 +108,56 @@ const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
  *  (audit 186 : un « rendezvous: { … } » seul était perdu à la première retouche des Lieux). */
 const arrOf = v => Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : [];
 
+/** Le test d'un code de terrain complet (quatre signes ou code de liste d'une hélistation) : celui du champ de terrain de la suite
+ *  (frame/lib/ad_field.js, `isCode` de l'instance, SOG-0465) — le motif n'est écrit nulle part ailleurs. Une instance sans écran, créée
+ *  une fois pour son seul test : ni liste, ni base, rien n'est dessiné. Ce module reste pur (aucun DOM touché). */
+export const isCode = createAdField({
+  ctx: {
+    t: () => ''
+  },
+  body: () => null,
+  gone: () => true,
+  keys: []
+}).isCode;
+
+/** Un mot de quatre ou cinq signes lu comme un code de terrain : le code en majuscules s'il en est un (avec au moins une lettre), '' sinon. */
+function wordCode(w) {
+  const u = String(w || '').toUpperCase();
+  return /[A-Z]/.test(u) && isCode(u) ? u : '';
+}
+
 /** Ce que la base aéronautique a répondu sur un code (SOG-0469) : code → vrai (elle connaît ce terrain) ou faux ; un fait sur la base,
  *  pas un état d'écran — l'atelier et le bloc en lecture le notent (noteAerodrome) quand leur demande revient. Borné. */
 const KNOWN = new Map();
 
-/** Note que la base connaît (ou ne connaît pas) le terrain de ce code ; sans effet pour autre chose que quatre signes. */
+/** Note que la base connaît (ou ne connaît pas) le terrain de ce code ; sans effet pour autre chose qu'un code (isCode). */
 export function noteAerodrome(code, known) {
   const k = String(code || '').toUpperCase();
-  if (/^[A-Z0-9]{4}$/.test(k) && (KNOWN.has(k) || KNOWN.size < 400)) KNOWN.set(k, known === true);
+  if (isCode(k) && (KNOWN.has(k) || KNOWN.size < 400)) KNOWN.set(k, known === true);
 }
 
 /** Le code écrit EN TÊTE d'un texte de terrain, avec le séparateur (·, -, –, —, :) et le nom qui suit, ou seul : « xtst · base test » →
- *  { icao: 'XTST', rest: 'base test', exact } ; `exact` : le code est écrit en majuscules. null sans quatre lettres en tête. */
+ *  { icao: 'XTST', rest: 'base test', exact } ; `exact` : le code est écrit en majuscules. null sans code (isCode) en tête. */
 function headCode(text) {
-  const a = /^([A-Za-z]{4})(?:\s*[·\-–—:]\s*(.*))?$/.exec(cut(text, 160));
-  return a ? {
-    icao: a[1].toUpperCase(),
+  const a = /^([A-Za-z0-9]{4,5})(?:\s*[·\-–—:]\s*(.*))?$/.exec(cut(text, 160)),
+    icao = a ? wordCode(a[1]) : '';
+  return icao ? {
+    icao,
     rest: cut(a[2], 120),
-    exact: a[1] === a[1].toUpperCase()
+    exact: a[1] === icao
+  } : null;
+}
+
+/** Le code écrit ENTRE PARENTHÈSES à la fin d'un texte (« Base Test (XTST) ») : { icao, exact, cut } (`cut` : le texte sans la
+ *  parenthèse), null sans code (isCode). */
+function tailCode(text) {
+  const t = cut(text, 1000),
+    m = /\(([A-Za-z0-9]{4,5})\)\s*$/.exec(t),
+    icao = m ? wordCode(m[1]) : '';
+  return icao ? {
+    icao,
+    exact: m[1] === icao,
+    cut: cut(t.replace(/\s*\([A-Za-z0-9]{4,5}\)\s*$/, ''), 120)
   } : null;
 }
 
@@ -130,7 +165,7 @@ function headCode(text) {
  *  à la fin (« Base Test (xtst) ») — pour les demander à la base aéronautique (SOG-0469) ; rien n'est tenu pour un terrain ici. */
 export function codeCands(text) {
   const t = cut(text, 1000),
-    out = [headCode(t)?.icao, MS.icaoOf(t)].filter(Boolean);
+    out = [headCode(t)?.icao, tailCode(t)?.icao].filter(Boolean);
   return [...new Set(out)];
 }
 
@@ -145,14 +180,14 @@ export function adCodeOf(name) {
 function codeIn(raw) {
   const t = cut(raw, 1000),
     h = headCode(t),
-    m = /\(([A-Za-z]{4})\)\s*$/.exec(t);
+    m = tailCode(t);
   if (h && (h.exact || KNOWN.get(h.icao) === true)) return {
     icao: h.icao,
     name: h.rest
   };
-  if (m && (m[1] === m[1].toUpperCase() || KNOWN.get(m[1].toUpperCase()) === true)) return {
-    icao: m[1].toUpperCase(),
-    name: cut(t.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120)
+  if (m && (m.exact || KNOWN.get(m.icao) === true)) return {
+    icao: m.icao,
+    name: m.cut
   };
   return null;
 }
@@ -163,15 +198,15 @@ function codeIn(raw) {
 export function placeText(p) {
   const o = obj(p),
     raw = String(o.name || ''),
-    given = /^[A-Za-z]{4}$/.test(String(o.icao || '').trim()) ? String(o.icao).trim().toUpperCase() : '',
+    given = wordCode(String(o.icao || '').trim()),
     c = codeIn(raw),
     icao = given || c?.icao || '',
     t = cut(raw, 1000),
     h = headCode(t),
-    m = /\(([A-Za-z]{4})\)\s*$/.exec(t);
+    m = tailCode(t);
   let name = cut(raw, 120);
   if (icao && h && h.icao === icao) name = h.rest;
-  else if (icao && m && m[1].toUpperCase() === icao) name = cut(t.replace(/\s*\([A-Za-z]{4}\)\s*$/, ''), 120);
+  else if (icao && m && m.icao === icao) name = m.cut;
   return [icao, name].filter(Boolean).join(' · ');
 }
 /** Le code de terrain qu'un texte de Départ ou d'Arrivée porte (voir codeIn : écrit en majuscules, ou connu de la base), '' sinon

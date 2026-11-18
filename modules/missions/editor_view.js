@@ -1468,7 +1468,7 @@ function edAdValue(s, key, ev) {
   if (T && ED.fieldCode(was) === T) return was; // le terrain du fichier : son texte tel qu'écrit
   const picked = ad.isPicking();
   if (picked) ED.noteAerodrome(T, true); // la liste ne propose que des terrains de la base
-  else if (!/^[A-Z0-9]{4}$/.test(T)) return t; // un lieu qui n'est pas un code : tel que tapé
+  else if (!ad.isCode(T)) return t; // un lieu qui n'est pas un code : tel que tapé (le test du champ : quatre signes ou une hélistation)
   const now = picked ? T : t;
   ad.known(T).then(ok => {
     ED.noteAerodrome(T, ok);
@@ -2022,7 +2022,7 @@ function edRecode(s) {
  *  (inconnu), absente tant que la réponse n'est pas venue ; l'aperçu redessiné à la réponse. */
 function adPosOf(s, icao) {
   const k = String(icao || '').toUpperCase();
-  if (!/^[A-Z0-9]{4}$/.test(k)) return null;
+  if (!ED.isCode(k)) return null; // le test du champ de terrain de la suite (ED.isCode)
   s.adPos = s.adPos || new Map();
   if (!s.adPos.has(k) && typeof s.ctx.aerodb?.aerodromes === 'function') {
     s.adPos.set(k, undefined);

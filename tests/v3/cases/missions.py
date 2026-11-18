@@ -8339,3 +8339,76 @@ def n122(c):
     c.eq([shown.get('summary'), shown.get('description')], [base['summary'], base['description']],
          '(B) after « Enregistrer », the Récit still shows the texts of the file', what='existing, the screen')
     c.js(_REG_CLEAR)
+
+
+# SOG-0465 (the helistations): the invented helistation of N123 — a code of two letters and three digits, the form of the list of the SIA (AeroDB: `^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$`)
+_HELI_BASE = {'aerodromes': _LC_BASE_AD['aerodromes'] + [{'icao': 'XT123', 'name': 'XT123 HELISTATION TEST', 'lat': 45.3, 'lon': 1.5, 'elev': 50}]}
+# the map of the workshop framed on the helistation (45.3 N, 1.5 E) and not on the start view of the Carte
+_HELI_FRAMED = "(() => { const b = window.__edMap.getBounds(), z = +window.__edMap.getZoom().toFixed(2); return b.contains([1.5, 45.3]) && b.getEast() - b.getWest() < 8 && z > 7 })()"
+
+
+@case('N123', 'Missions › the workshop, a helistation (SOG-0465, isCode of the common field): an invented helistation « XT123 » — two letters and three digits, the code of '
+      'the list of the SIA — typed in DÉPART is proposed by the field of the suite, chosen by the keyboard, and recognised: the CODE in the field and the NAME under it; '
+      'typed in lower case it is put in capitals (the base knows it); the file is written as for any aerodrome (origin: { name: « … (XT123) », icao: XT123 }) and the '
+      'map of the workshop is framed on it; the workshop keeps no pattern of its own: it asks the field (`isCode`)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0465, the addition of 18 Nov. (Features SOG: the common field knows the helistation codes and exposes `isCode`; the relay: « une hélistation en DÉPART, '
+      'reconnue par le champ et par la carte »): modules/missions/editor.js `isCode`, `wordCode`; editor_view.js `edAdValue`; frame/lib/ad_field.js `isCode`')
+def n123(c):
+    pc = 'missions/X_REG/X-004/missionX-004.yaml'
+    val = lambda k: c.js(f"document.querySelector('{E} input[data-k={k}]').value")  # noqa: E731
+    line = lambda k: norm(c.text(f'{E} [data-adline={k}]') or '')  # noqa: E731
+    shut = f"document.querySelector('{E} [data-adsug]').hidden"
+
+    def typed(k, text):
+        """Types a text in a field key by key, as a finger would (the field emptied first)."""
+        c.page.fill(f'{E} input[data-k={k}]', '')
+        c.page.locator(f'{E} input[data-k={k}]').press_sequentially(text, delay=40)
+
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _LC_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra=_HELI_BASE)
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    c.until(f"!!document.querySelector('{R} [data-do=edcreate]')", timeout=10000, what='the Registry')
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E}')", what='the editor')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
+    c.until(f"!!document.querySelector('{E} input[data-k=edid]')?.value", what='the identifier proposed')
+    _ed_fill(c, 'edid', 'X-004')
+    _ed_fill(c, 'edtitle', 'Hélistation choisie')
+    if not c.count(f'{E} input[data-k=eddep]'):
+        c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    # the helistation is proposed for « xt1 » and chosen by the keyboard
+    typed('eddep', 'xt1')
+    c.until(f"({_AD_SUG}).includes('XT123')", timeout=8000, what='the helistation XT123 proposed for « xt1 »')
+    got = c.quiet(_AD_SUG)
+    for _ in range(got.index('XT123') + 1):
+        c.key('ArrowDown')
+    c.key('Enter')
+    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XT123' && {shut}", timeout=5000, what='XT123 chosen by the keyboard')
+    # recognised by the field: the name under it
+    c.until(f"document.querySelector('{E} [data-adline=eddep]').dataset.state === 'found'", timeout=5000, what='the name under Départ')
+    c.ok(line('eddep').startswith('XT123 — ') and 'HELISTATION' in line('eddep').upper(), line('eddep'), 'the field recognises the helistation: « XT123 — <its name> » under Départ')
+    # typed in lower case: put in capitals (the base knows it)
+    typed('eddep', 'xt123')
+    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XT123'", timeout=5000, what='« xt123 », known to the base, put in capitals')
+    # the map of the workshop is framed on it
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"['tiles', 'plain'].includes(document.querySelector('{_EDMAP}')?.dataset.map) && !!window.__edMap", timeout=15000, what='the map of the workshop')
+    c.until(_HELI_FRAMED, timeout=10000, what='the map framed on the helistation')
+    # saved: the code written as for any aerodrome
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return d.origin }""" % _TEXT_OF, pc)
+    c.ok(isinstance(got, dict) and got.get('icao') == 'XT123' and str(got.get('name', '')).endswith('(XT123)'), got,
+         'the file: origin written { name: « <name> (XT123) », icao: XT123 }, the code of the helistation kept')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
