@@ -256,6 +256,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .f-row{align-items:flex-start}
 [data-module="missions"] .ms-atbody .f-row>.f-field{flex:1 1 10em;min-width:0}
 [data-module="missions"] .ms-atbody .f-row.ms-adrow{position:relative} /* SOG-0465 : la liste des terrains proposés s'y pose */
+[data-module="missions"] .ms-atsheet{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* la fiche choisie monte sous l'en-tête (edSheetShow) */
 [data-module="missions"] .ms-adrow>.f-field{scroll-margin-top:calc(var(--f-head-h,57px) + 8px)} /* monté en haut de la vue au focus (edAdRoom), sous l'en-tête */
 [data-module="missions"] .ms-adname{display:block;height:1.4em;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--sog-size-s);color:var(--sog-muted)} /* hauteur réservée, même vide : rien ne bouge */
 [data-module="missions"] .ms-adname[data-state="unknown"]{font-style:italic}
@@ -1732,6 +1733,19 @@ function edAdRoom(el, ev) {
   });
 }
 
+/** La fiche d'une ligne du déroulé choisie (SOG-0467) : si son haut n'est pas à l'écran (sous l'en-tête, ou près du pied de l'atelier),
+ *  la colonne défile jusqu'à elle — le même geste que le champ de terrain (edAdRoom : scrollIntoView, la marge sous l'en-tête posée en
+ *  CSS) ; une fiche déjà vue ne bouge pas. Une réaction au toucher, rien n'est réécrit. */
+function edSheetShow(s) {
+  const sheet = s.el?.querySelector?.('[data-atsheet]');
+  if (!sheet) return;
+  const top = sheet.getBoundingClientRect().top,
+    foot = s.el.querySelector('.ms-atfoot')?.getBoundingClientRect().top ?? innerHeight;
+  if (top < 57 + 8 || top > foot - 44) sheet.scrollIntoView?.({
+    block: 'start'
+  });
+}
+
 /** Arrête le champ de terrain de l'atelier : ses écoutes retirées, son abonnement à la base arrêté ; sans effet s'il n'y en a pas. */
 function edAdStop() {
   const f = AF;
@@ -2715,7 +2729,8 @@ export function edClick(s, b) {
       s.ed.drawerAsk = '';
       s.ed.dopen = {};
       s.ed.kinds = '';
-      return draw(s);
+      draw(s);
+      return edSheetShow(s); // SOG-0467 : la fiche choisie vient à l'écran
     }
     case 'eddradd': // « ＋ Tiroir » (SOG-0467) : ouvre sous lui le choix du type, retouché il le referme — rien n'est créé
       if (!DR.blankDrawer(edDrawers(s.ed), s.ed.base)) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');

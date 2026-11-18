@@ -9041,3 +9041,35 @@ def n132(c):
         _text_rule(c, f'{width}, a new mission')
         ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+_SHEET_TOP = f"""(() => {{ const s = document.querySelector('{E} [data-atsheet][data-drawer]'); if (!s) return null;
+  const r = s.getBoundingClientRect(), h = document.querySelector('{E} .ms-atfoot')?.getBoundingClientRect().top ?? innerHeight;
+  return {{ top: Math.round(r.top), foot: Math.round(h), id: s.dataset.drawer }} }})()"""
+
+
+@case('N134', 'Missions › the workshop, choosing a drawer in the unfolding BRINGS its sheet on screen (SOG-0467, the ergonomist\'s retouch): at 1280 and at 390, after the touch of a '
+      'drawer row (X-001A, revealed) the top of the sheet of the drawer is in the window — above the foot of the workshop, not under the frame of the Lieux out of sight; '
+      'the one mechanism of the Lieux (`scrollIntoView`, only when the sheet is not already seen)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0467 (the relay of the ergonomist, 18 Nov: « à 1280, choisir un tiroir laisse sa fiche sous le cadre Lieux, hors de l\'écran »): modules/missions/editor_view.js '
+      '`edSheetShow`, case `edsel`; EDITOR.md § 7 quinquetricies')
+def n134(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    for width in (1280, 390):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _TRIAL_TEXTS)
+        c.tap(f'{R} [data-rowid="X-001A"] > summary')
+        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the four drawers of X-001A')
+        # the finger is on the row: the page is scrolled so that the row is near the top of the window, the sheet (above it in the column) out of sight
+        c.js(f"document.querySelector('{E} [data-atflow] [data-sel=C]').scrollIntoView({{block: 'start'}})")
+        c.wait(200)
+        c.tap(f'{E} [data-atflow] [data-sel="C"]')
+        c.until(f"document.querySelector('{E} [data-atsheet][data-drawer]')?.dataset.drawer === 'C'", what='the sheet of the drawer touched')
+        c.wait(400)
+        g = c.js(_SHEET_TOP)
+        c.ok(g is not None and 0 <= g['top'] < g['foot'] - 40, g, f'{width}: the top of the sheet of the drawer is in the window, above the foot of the workshop')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

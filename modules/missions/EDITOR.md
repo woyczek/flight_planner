@@ -1050,7 +1050,7 @@ kind (`ED.newPlace`, one gesture to undo, a full kind: a notification); with a r
   rest of the redraw, SOG-0478); the open sheet is not touched.
 - Veiled workshop: nothing to add (hidden rows are never touched, `edHid`).
 
-### 7 quinquetricies. The unfolding is a vertical list; « ＋ Tiroir » opens the choice of the type (18 Nov 2026; SOG-0467; noreg N129, N73, N78)
+### 7 quinquetricies. The unfolding is a vertical list; « ＋ Tiroir » opens the choice of the type (18 Nov 2026; SOG-0467; noreg N129, N134, N73, N78)
 
 The user (SOG-0467): « Ta maquette étire les tiroirs en largeur, la mienne en hauteur ; je préfère réduire le texte secondaire et étirer en
 hauteur » and « Le + qui cache le nouveau type est probablement suffisant : concis, il ne fait apparaître l'information qu'au moment où on en a
@@ -1062,6 +1062,10 @@ besoin ». The ergonomist (18 Nov, 11:26): « ＋ Tiroir » opens the choice of 
   (`aria-current`); touching a row opens its sheet (`edsel`, unchanged). No sideways scroll at any width: the horizontal row (`.ms-atflowrow`,
   `scroll-snap`) and `edShowSel`, which scrolled it, are gone. The tags « visible » and « tiroir scellé » (.75 em, under the small size of the
   suite) are gone: the mark and the rank say it. Veiled (SOG-0459): « Au départ » alone and « Dévoiler la mission complète », unchanged.
+- **The chosen sheet comes on screen** (the relay of the ergonomist: at 1280 the sheet stayed under the frame of the Lieux, out of sight). After
+  `edsel`, `edSheetShow` looks at the top of the sheet (`[data-atsheet]`): under the header or near the foot of the workshop, it calls
+  `scrollIntoView({ block: 'start' })` — the one gesture of the aerodrome field (`edAdRoom`), the margin under the header written in CSS
+  (`.ms-atsheet{scroll-margin-top}`); a sheet already seen does not move. N134 (red before: sheet at −106 px at 1280, −62 at 390).
 - **The choice of the type (new: one component).** `edKindsHtml(s, where, cur)`, the SAME under « ＋ Tiroir » (`s.ed.kinds = 'new'`) and in
   the sheet of a drawer (`'drawer'`, opened by touching the key in force, `data-kindcur`; the `<select data-f=key>` is gone). One row per
   entry of `DR.TYPES` — `[{ key, judged }]` in editor_drawers.js, a list to lengthen (the catalogue of bricks by families will come into it;
