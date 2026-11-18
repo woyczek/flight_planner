@@ -4,6 +4,7 @@ The workbooks do not provide area polygons or NPZ geometry; links remain candida
 """
 import collections,datetime as dt,gzip,heapq,json,math,re
 from pathlib import Path
+from . import geo      # SOG-0468 (3)
 CORRIDOR_EXCESS_NM=250   # SOG-0161 : détour maximal d'un point FRA par rapport à un tronçon dep → passages → arr (recherche « normale »)
 FRA_FILE=None   # SOG-0081 : chemin de fra.json.gz posé par le travail du lanceur (data/route/fra.json.gz) ; None : à côté du module, comme RouteSim 2
 
@@ -76,8 +77,7 @@ class Fra:
             v=gmemo.get(k)
             if v is None:v=gmemo[k]=fast(tr(nav.nodes[o['key']]),tg)
             return v
-        def fast(a,b):
-            return 3440.065*2*math.asin(min(1,math.sqrt(math.sin((b[0]-a[0])/2)**2+a[2]*b[2]*math.sin((b[1]-a[1])/2)**2)))
+        fast=geo.chord_nm      # SOG-0468 (3) : la formule de geo.py, sur les positions en radians de `tr`
         resolved=nav.resolve_sequence(via,nav.resolve(dep),nav.resolve(arr))
         anchor=[nav.ads[dep],nav.ads[arr]]+[nav.nodes[k] for k in resolved]
         latlo=min(p['lat'] for p in anchor)-4; lathi=max(p['lat'] for p in anchor)+4

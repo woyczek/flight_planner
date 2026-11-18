@@ -12,6 +12,9 @@ Appelé par tools/aero_fetch.py (fournisseur « ukmil »). Essai : python tools/
 """
 import json, math, os, re, sys, zlib
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from route_engine import geo      # SOG-0468 (3) : la formule du grand cercle, une fois
+
 SOURCE = 'UK Mil AIP ENR 5.2 (AIDU, OGL v3.0)'
 URL = 'https://www.aidu.mod.uk/aip/pdf/enr/ENR-5-2.pdf'
 COORD = r'(\d{6}(?:\.\d+)?)\s*([NS])\s*(\d{7}(?:\.\d+)?)\s*([EW])'
@@ -187,9 +190,7 @@ def geojson(zones):
     } for z in zones]}
 
 
-def _nm(a, b):
-    la1, lo1, la2, lo2 = map(math.radians, (*a, *b))
-    return 2 * 3440.065 * math.asin(math.sqrt(math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2))
+_nm = geo.nm_pair      # SOG-0468 (3) : la formule de route_engine/geo.py
 
 
 def _hdg(a, b):

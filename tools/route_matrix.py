@@ -25,6 +25,7 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+from route_engine import geo      # SOG-0468 (3) : la formule du grand cercle, une fois
 
 EUROPE = ['EIDW', 'EGLL', 'LFPG', 'EHAM', 'EDDF', 'LEMD']
 AMERICA = ['KJFK', 'KBOS', 'KORD', 'CYYZ', 'KLAX', 'KSFO']
@@ -38,10 +39,7 @@ SHORT = {'computed': 'c', 'published': 'p', 'created': 'r', 'direct': 'd'}      
 GATE_WEST, GATE_EAST = (53.0, -30.0), (53.0, -30.0)      # SOG-0403 : la fenêtre d'un système de routes NAT se juge au passage du 30° OUEST (NAT Doc 007, § 2.1.3) : l'heure de départ est celle d'un passage à ce méridien (grand cercle), pas de l'entrée
 
 
-def nm(a, b):
-    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
-    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
-    return 2 * 3440.065 * math.asin(math.sqrt(h))
+nm = geo.nm_pair      # SOG-0468 (3) : la formule de route_engine/geo.py
 
 
 def no_network():

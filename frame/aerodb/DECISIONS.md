@@ -3635,3 +3635,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Found**: the front of the module was already right (the light index, `suggest`, `coords`, `aerodromes({ icao })` find `LF418`); the only refusal was the request of the engine (`plan.validate`: one to four signs of `[A-Za-z0-9]`, and `engine.assess` three to four).
 - **Done**: `dep` and `arr` accept `^[A-Za-z0-9]{1,4}$` or `^[A-Za-z]{2}[0-9]{3}$` (ASCII only); the runway fields are unchanged. Not widened: the lookups by `[A-Z0-9]{3,4}` or four letters of `aerodb.js` (procedures, runways, charts, eAIP, ground, VFR routes): a heliport has none, the answer stays empty. The route text (`LF418` as first or last word) is read as the aerodrome (a word of two letters and three digits is not an airway: the airway pattern starts with one letter and digits).
 - **To say to Features SOG**: the exact pattern of the common field is the one above.
+
+## 19 November 2026 — SOG-0468 (3): one distance function
+
+- **Order set by the relay**: 3 (geo.py), then 1 (the graph rebuilt at each repair), 2 (`fra.graph`), 5 (small gains), 4 (the JS copies); one subject per commit, no change of behaviour, twelve flights identical before and after, Essais each time.
+- **Done**: `route_engine/geo.py`; `engine.nm`, `fra.graph`, `fra_recovery`, `nat_refresh`, `route_matrix` and `ukmil_aip` call it. **Said plainly**: the relay was told that six copies could raise a `ValueError`; the search of two million near-antipodal pairs found `h` up to 1.0000000000000002 and no raise, so the guard is a hardening. **Not done**: `launch.py`, `proc_arc.py`, `proc_geometry.py` (other sessions); the JS copies (item 4).

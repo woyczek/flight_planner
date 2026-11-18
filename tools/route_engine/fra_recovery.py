@@ -3,7 +3,7 @@ Only physical nodes receive proposed bridges. FRA I states cannot be entered or
 left via these bridges: source E/X/A/D gateways remain mandatory.
 """
 import collections,datetime as dt,math
-from . import engine,planning   # SOG-0081 : imports relatifs
+from . import engine,planning,geo   # SOG-0081 : imports relatifs ; SOG-0468 (3) : geo.R_NM
 
 def project(p,a,b):
     # A planar longitude/latitude projection wrongly displaced the corridor by
@@ -11,11 +11,11 @@ def project(p,a,b):
     def bearing(x,y):
         la,lb=math.radians(x['lat']),math.radians(y['lat']);dl=math.radians(y['lon']-x['lon'])
         return math.atan2(math.sin(dl)*math.cos(lb),math.cos(la)*math.sin(lb)-math.sin(la)*math.cos(lb)*math.cos(dl))
-    length=engine.nm(a,b)/3440.065
+    length=engine.nm(a,b)/geo.R_NM
     if length<1e-10:return 0,engine.nm(a,p)
-    delta=engine.nm(a,p)/3440.065;angle=bearing(a,p)-bearing(a,b)
+    delta=engine.nm(a,p)/geo.R_NM;angle=bearing(a,p)-bearing(a,b)
     along=math.atan2(math.sin(delta)*math.cos(angle),math.cos(delta));t=along/length
-    cross=abs(math.asin(max(-1,min(1,math.sin(delta)*math.sin(angle)))))*3440.065
+    cross=abs(math.asin(max(-1,min(1,math.sin(delta)*math.sin(angle)))))*geo.R_NM
     return t,cross if 0<=t<=1 else engine.nm(p,a if t<0 else b)
 
 def build(request,nav,rad,anchors,samples,required_area=None,prepare_only=False):

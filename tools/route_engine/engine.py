@@ -9,6 +9,7 @@ from . import planning
 from . import rad_flight
 from . import nav_data
 from . import nat_layer     # SOG-0263
+from . import geo     # SOG-0468 (3) : la formule du grand cercle, une fois
 from . import fra_floor      # SOG-0401 (lot 3) : les voies volées au-dessus du plancher de route libre (RAD, annexe 3B « FRA LIM »)
 from . import dct_limits    # SOG-0401 (lot 3) : la limite des directs au raccord d'un terrain (RAD, annexe 3A « Conditions »)
 
@@ -38,10 +39,7 @@ def date_in(text):
         except (KeyError,ValueError): return None
     return None
 
-def nm(a,b):
-    x,y=math.radians(a['lat']),math.radians(b['lat'])
-    d=math.sin((y-x)/2)**2+math.cos(x)*math.cos(y)*math.sin(math.radians(b['lon']-a['lon'])/2)**2
-    return 3440.065*2*math.asin(min(1,math.sqrt(d)))
+nm=geo.nm      # SOG-0468 (3) : écrit une fois dans geo.py (avec la garde min(1, …)) ; les autres modules appellent engine.nm
 
 _LL=re.compile(r'(\d{2})(\d{2})?([NS])(\d{3})(\d{2})?([EW])')
 _NAT_A=re.compile(r'(\d{2})(\d{2})([NEWS])')      # « 5520N » : 55°N 020°W (la longitude à deux chiffres, moins de 100°)

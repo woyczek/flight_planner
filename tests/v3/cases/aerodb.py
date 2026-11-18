@@ -16128,3 +16128,49 @@ def k357(c):
     c.eq((errs['arr5'], errs['dep5']), (None, None), 'the request accepts the list code of a heliport as departure and as arrival', what='request')
     c.eq((errs['bad6'], errs['bad3d']), ('arr : code invalide', 'arr : code invalide'), 'a code of six signs and a code of one letter and four digits are still refused', what='refused')
     c.ok(res['primary'].get('status') != 'CALCUL IMPOSSIBLE' and (res['primary'].get('route') or '').endswith('LF418'), str(res['primary'].get('status')) + ' ' + str(res['primary'].get('route')), 'a calculation to the heliport LF418 gives a route that ends at it')
+
+
+@case('K360', 'Route engine, SOG-0468 (3): the great-circle distance is written ONCE (`route_engine/geo.py`) with its guard `min(1, …)` — for two nearly antipodal points `h` exceeds 1 by a rounding (85 000 of 2 million such pairs) and only the guard keeps the argument of asin in its domain — and the engine, the FRA graph, the NAT refresh, the route matrix and the UK Mil reader call it; the results are those of the old formula',
+      'K', static=True,
+      rule='SOG-0468 (3) (the relay, 18 Nov: « route_engine/geo.py et la garde min(1, …), défaut latent compris »). Measured: the formula was written nine times in Python (six of them in the files of the route engine and its tools), six without the guard: for a pair of points near the antipode, `h` = 1.0000000000000002; the square root of that still rounds to 1.0, so no ValueError was ever reached in 2 million trials — the missing guard is a hardening, not a crash found (said so to the relay). engine.nm, which had the guard, and the copies of fra (precomputed sine and cosine) give the same numbers as before; the three copies of other sessions (launch, proc_arc, proc_geometry) are signalled to them. The pair below is invented (no data of the base).')
+def k360(c):
+    import importlib
+    import math
+    import random
+    import re
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    geo = importlib.import_module('route_engine.geo')
+    engine = importlib.import_module('route_engine.engine')
+    fra = importlib.import_module('route_engine.fra')
+    refresh = importlib.import_module('route_engine.nat_refresh')
+    matrix = importlib.import_module('route_matrix')
+    ukmil = importlib.import_module('ukmil_aip')
+
+    def old(a, b):      # the formula of the copies that had no guard
+        la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
+        h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+        return 2 * 3440.065 * math.asin(math.sqrt(h))
+    near = ((-31.71010233003077, -125.6942973871793), (31.710102330332642, 54.30570261196557))
+    la1, lo1, la2, lo2 = map(math.radians, (near[0][0], near[0][1], near[1][0], near[1][1]))
+    h_near = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
+    pa, pb = {'lat': near[0][0], 'lon': near[0][1]}, {'lat': near[1][0], 'lon': near[1][1]}
+    half = math.pi * 3440.065
+    c.ok(h_near > 1, str(h_near), 'the pair is a real case: `h` is above 1 by a rounding (the guard is what keeps asin in its domain)')
+    got = [geo.nm(pa, pb), engine.nm(pa, pb), geo.nm_pair(*near), matrix.nm(*near), ukmil._nm(*near), refresh._nm(*near)]
+    c.ok(all(abs(x - half) < 0.01 for x in got), str(got), 'geo.nm, engine.nm, the route matrix, the UK Mil reader and the NAT refresh answer, a half of the circle (10 807.28 NM), for the same pair')
+    random.seed(3)
+    pts = [((random.uniform(-80, 80), random.uniform(-179, 179)), (random.uniform(-80, 80), random.uniform(-179, 179))) for _ in range(300)]
+    worst = max(abs(geo.nm_pair(a, b) - old(a, b)) for a, b in pts)
+    c.ok(worst < 1e-6, str(worst), 'on 300 random pairs the new distance is the old one (to a millionth of a mile)')
+    same = [(engine.nm({'lat': a[0], 'lon': a[1]}, {'lat': b[0], 'lon': b[1]}) == geo.nm_pair(a, b), matrix.nm(a, b) == geo.nm_pair(a, b), ukmil._nm(a, b) == geo.nm_pair(a, b), refresh._nm(a, b) == geo.nm_pair(a, b)) for a, b in pts[:50]]
+    c.eq(all(all(t) for t in same), True, 'engine.nm, the route matrix, the UK Mil reader and the NAT refresh ARE the function of geo.py: the same number to the bit', what='same function')
+    tr = lambda p: (math.radians(p[0]), math.radians(p[1]), math.cos(math.radians(p[0])), p)
+    c.ok(all(abs(geo.chord_nm(tr(a), tr(b)) - geo.nm_pair(a, b)) < 1e-6 for a, b in pts[:100]) and abs(geo.chord_nm(tr(near[0]), tr(near[1])) - half) < 0.01, 'chord', 'the variant on positions already in radians (the FRA graph: millions of calls) gives the same distances, the near-antipodal pair too')
+    c.ok(fra.geo is geo and engine.geo is geo and refresh.geo is geo and matrix.geo is geo and ukmil.geo is geo, 'modules', 'the five modules import geo')
+    files = ['engine.py', 'fra.py', 'fra_recovery.py', 'nat_refresh.py']
+    texts = {f: (c.root / 'tools' / 'route_engine' / f).read_text(encoding='utf-8') for f in files}
+    texts.update({f: (c.root / 'tools' / f).read_text(encoding='utf-8') for f in ('route_matrix.py', 'ukmil_aip.py')})
+    own = sorted(f for f, t in texts.items() if re.search(r'3440\.065', t))
+    geo_text = (c.root / 'tools' / 'route_engine' / 'geo.py').read_text(encoding='utf-8')
+    c.eq((own, len(re.findall(r'R_NM = 3440\.065', geo_text))), ([], 1), 'no file of the route engine and its tools writes the radius any more: ONE constant, in geo.py (the formula of the other sessions is theirs, signalled)', what='one place')

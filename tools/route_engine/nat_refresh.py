@@ -21,6 +21,7 @@ from pathlib import Path
 import safe_json
 
 from . import nat_layer
+from . import geo      # SOG-0468 (3)
 
 BOUND_S = 4.0                    # la relecture entière : au-delà elle est dite échouée (la tâche reste en route, son écriture est atomique)
 CONNECT_S = 2.0                  # se connecter (et chaque lecture de la socket)
@@ -87,10 +88,7 @@ def position(data, icao):
     return None
 
 
-def _nm(a, b):
-    la1, lo1, la2, lo2 = map(math.radians, (a[0], a[1], b[0], b[1]))
-    h = math.sin((la2 - la1) / 2) ** 2 + math.cos(la1) * math.cos(la2) * math.sin((lo2 - lo1) / 2) ** 2
-    return 2 * 3440.065 * math.asin(math.sqrt(h))
+_nm = geo.nm_pair      # SOG-0468 (3) : la formule de geo.py
 
 
 def _routes(data):
