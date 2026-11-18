@@ -6994,7 +6994,8 @@ def l91(c):
       (function walk(o, p) { if (Array.isArray(o) && o.length === 4 && typeof o[0] === 'string') { if (o.some(s => re.test(s))) out.push(p); return } if (o && typeof o === 'object') for (const k of Object.keys(o)) walk(o[k], p ? p + '.' + k : k) })(TX, '');
       return out }""")
     allowed = ('up.tick', 'certifyHint', 'tickOnStation', 'tickRefused', 'bal.personal', 'toCertify', 'zr.', 'upd.planTick', 'packs.', 'personalKept', 'greyReason.no-set', 'greyReason.no-state', 'zoneMap.', 'mapLegendNote',
-               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick', 'lc.addPersonal', 'sn.personal', 'now.tick')
+               'pickupUnread', 'pk.fixUnread', 'cwb.waitsTick', 'lc.addPersonal', 'sn.personal', 'now.tick',
+               'xp.reason.notPersonal', 'xp.netFail.not-personal')   # the X-Plane line: « Cochez d'abord l'usage personnel » speaks of the « personnel » box, which exists
     c.eq([h for h in hits if not h.startswith(allowed)], [], 'only the texts about the « Je certifie… » box, the coverage fold, the States of the Procédures and the proc map still say ticked / selection', what='selection texts')
     t = c.js("""async () => { const { TX } = await import('/modules/data/texts.js'); return [TX.upd.none, TX.upd.ask, TX.advice.partial, TX.advice.interrupted, TX.greyReason['no-zone']] }""")
     c.ok(all(not re.search(r'coch|ticked|angekreuzt|marcad', ' '.join(row), re.I) for row in t), t, '« Rien à reconstruire : ces n sont à jour », the question, the advice and « no zone » no longer say ticked')
