@@ -898,22 +898,11 @@ function dms(s, lat, lon) {
 /** Un nombre écrit dans une phrase (« portée 0,3 NM ») : la virgule décimale, sauf en anglais ; le champ, lui, garde sa saisie. */
 const dec = (s, v) => (s.ctx.lang?.() || 'fr') === 'en' ? String(v ?? '') : String(v ?? '').replace('.', ',');
 
-/** Les Lieux (la maquette editeur_lieux_*.png ; SOG-0472) : une ligne par lieu dans une liste de hauteur fixe qui défile — toucher une
- *  ligne la choisit (le lieu aussi sur la carte) et ouvre ses champs SOUS la liste ; « + Zone », « + Point tournant », « + Rendez-vous »
- *  (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte ; la route du départ. `listOnly` : les lignes seules
- *  (SOG-0478, un geste en cours). Les lignes non encore retouchées sont lues du document (les rangs sont ceux d'edPlaces). */
-function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
+/** Ce que dit une ligne des Lieux, en texte (SOG-0468) : { title(r), detail(r, i), zk, ok } — UNE source pour la liste (edPlacesHtml) et pour
+ *  la mise à jour sur place d'edRefresh, qui ne fabrique plus la liste en HTML pour n'en relire que ces deux textes. `rows` : les lignes de
+ *  la séance ; `doc` : le document de la séance (qui cite une zone ou un objet comme clé). */
+function edPlaceTexts(s, rows, doc) {
   const e = s.ed,
-    rows = e.places || ED.placesOf(doc),
-    badge = {
-      dep: TX.plDep,
-      arr: TX.plArr,
-      target: TX.plTarget,
-      zone: TX.plZone,
-      pt: TX.plPt,
-      rdv: TX.plRdv,
-      object: EDTX.plObject
-    },
     zk = v => TX[`zk_${v}`] ? s.tt(TX[`zk_${v}`]) : v,
     ok = v => EDTX[`ok_${v}`] ? s.tt(EDTX[`ok_${v}`]) : v,
     // qui emploie une zone ou un objet comme clé : « clé du tiroir 2 » (SOG-0445 : un tiroir CITE une zone ou un objet de la mission)
@@ -936,7 +925,37 @@ function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
       r: dec(s, r.radius)
     }) : '', r.kind === 'zone' && r.tot ? s.tt(TX.plTot, {
       n: r.tot
-    }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, r.lat, r.lon)].filter(Boolean).join(' · '),
+    }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, r.lat, r.lon)].filter(Boolean).join(' · ');
+  return {
+    zk,
+    ok,
+    detail,
+    title: r => [r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced)
+  };
+}
+
+/** Les Lieux (la maquette editeur_lieux_*.png ; SOG-0472) : une ligne par lieu dans une liste de hauteur fixe qui défile — toucher une
+ *  ligne la choisit (le lieu aussi sur la carte) et ouvre ses champs SOUS la liste ; « + Zone », « + Point tournant », « + Rendez-vous »
+ *  (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte ; la route du départ. `listOnly` : les lignes seules
+ *  (SOG-0478, un geste en cours). Les lignes non encore retouchées sont lues du document (les rangs sont ceux d'edPlaces). */
+function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
+  const e = s.ed,
+    rows = e.places || ED.placesOf(doc),
+    badge = {
+      dep: TX.plDep,
+      arr: TX.plArr,
+      target: TX.plTarget,
+      zone: TX.plZone,
+      pt: TX.plPt,
+      rdv: TX.plRdv,
+      object: EDTX.plObject
+    },
+    {
+      zk,
+      ok,
+      detail,
+      title
+    } = edPlaceTexts(s, rows, doc),
     field = (i, f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edplace" data-i="${i}" data-f="${f}" value="${esc(v ?? '')}" autocomplete="off"${extra}></label>`,
     form = (r, i) => {
       const fixed = r.kind === 'dep' || r.kind === 'arr',
@@ -975,7 +994,7 @@ function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
   // « + Cible » : jamais dans l'atelier voilé (une cible cachée ne doit pas se deviner à son absence)
   // SOG-0472 : la ligne entière est le bouton qui choisit le lieu (sur la carte aussi) ; la ligne choisie est marquée
   const on = i => e.placeEdit === i || e.placeEdit < 0 && edMapSel(e) === i,
-    list = rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><button type="button" class="ms-plpick" data-do="edplace" data-i="${i}"${on(i) ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span></button></div>`).join('');
+    list = rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><button type="button" class="ms-plpick" data-do="edplace" data-i="${i}"${on(i) ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc(title(r))}</b><span class="f-muted">${esc(detail(r, i))}</span></span></button></div>`).join('');
   if (listOnly) return list; // SOG-0478 : un geste en cours ne remplace que les lignes
   const open = e.placeEdit >= 0 && rows[e.placeEdit] && shown[e.placeEdit] ? form(rows[e.placeEdit], e.placeEdit) : '';
   return `<div data-edplaces><div class="ms-pllist" data-pllist>${list}</div>${open}</div>
@@ -2998,12 +3017,15 @@ function edRefresh(s) {
   // saisie), pas celle de l'ouverture ; sur place, la fiche ouverte n'est pas touchée (pas de second chemin de redessin)
   const places = q('[data-edplaces]');
   if (places) {
-    const fresh = document.createElement('template');
-    fresh.innerHTML = edPlacesHtml(s, true, doc);
-    for (const f of fresh.content.querySelectorAll('[data-place]')) {
-      const live = places.querySelector(`[data-place="${f.dataset.place}"]`);
-      for (const sel of ['.ms-plbody > b', '.ms-plbody > .f-muted']) put(live?.querySelector(sel), f.querySelector(sel)?.textContent ?? '');
-    }
+    const rows = e.places || ED.placesOf(doc),
+      shown = edShown(e, rows),
+      said = edPlaceTexts(s, rows, doc);
+    rows.forEach((r, i) => {
+      if (!shown[i]) return; // une ligne cachée par le voile n'a pas de ligne à l'écran
+      const live = places.querySelector(`[data-place="${i}"]`);
+      put(live?.querySelector('.ms-plbody > b'), said.title(r));
+      put(live?.querySelector('.ms-plbody > .f-muted'), said.detail(r, i));
+    });
   }
   // le libellé du bouton : ses nœuds de texte seulement (le bouton reste le même élément)
   if (btn && e.lastTodoBtn !== label) btn.innerHTML = e.lastTodoBtn = label;
