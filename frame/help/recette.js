@@ -215,6 +215,12 @@
     'Nada que decidir por ahora.'
   ];
   T.dCopy = ['Copier l’identifiant', 'Copy the identifier', 'Kennung kopieren', 'Copiar el identificador'];
+  T.dCopied = ['Identifiant copié.', 'Identifier copied.', 'Kennung kopiert.', 'Identificador copiado.'];
+  T.dCopyManual = ['Copie impossible ici : l’identifiant est sélectionné sous la carte, copiez-le à la main.',
+    'Could not copy here: the identifier is selected under the card, copy it by hand.',
+    'Kopieren ist hier nicht möglich: Die Kennung ist unter der Karte markiert, kopieren Sie sie von Hand.',
+    'No se puede copiar aquí: el identificador está seleccionado bajo la tarjeta, cópielo a mano.'
+  ];
   T.dKept = ['{n} réponse(s) gardée(s) sur cet appareil, pas encore envoyée(s).', '{n} answer(s) kept on this device, not sent yet.',
     '{n} Antwort(en) auf diesem Gerät behalten, noch nicht gesendet.',
     '{n} respuesta(s) guardada(s) en este dispositivo, aún no enviada(s).'
@@ -1022,6 +1028,39 @@
       draw();
       if (await sendDec(false)) draw();
     };
+    /** Copie l'identifiant d'une carte et le dit (SOG-0468 (1)) : copyAndTell de frame/lib/clipboard.js (presse-papiers, puis execCommand, puis l'identifiant montré
+     *  sélectionné sous la ligne near) ; la copie n'avait pas de repli et se taisait quand elle échouait. */
+    const copyId = async (text, near) => {
+      const say = {
+        ok: t(T.dCopied),
+        manual: t(T.dCopyManual),
+        near
+      };
+      try {
+        await (await import(new URL('frame/lib/clipboard.js', c.root).href)).copyAndTell(c, text, say);
+      } catch {
+        // la bibliothèque n'a pas pu être chargée (hors ligne, pas encore gardée) : le presse-papiers seul, et le dire
+        let ok = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        } catch {
+          ok = false;
+        }
+        if (!ok && near) { // montré sélectionné sous la ligne, comme la bibliothèque
+          const f = near.nextElementSibling?.matches?.('input.sog-copybox') ? near.nextElementSibling : near.insertAdjacentElement(
+            'afterend', Object.assign(document
+              .createElement('input'), {
+                className: 'sog-copybox',
+                readOnly: true
+              }));
+          f.value = text;
+          f.hidden = false;
+          f.select();
+        }
+        c.notify?.(ok ? say.ok : say.manual, ok ? 'ok' : 'warn');
+      }
+    };
     const now = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
     view.onclick = e => {
       const b = e.target.closest?.('button');
@@ -1034,8 +1073,7 @@
         });
         return draw(`[data-tab="${ui.tab}"]`);
       }
-      if (b.dataset.copy) return void(c.copy ? c.copy(b.dataset.copy) : navigator.clipboard?.writeText(b.dataset.copy).catch(
-        () => {}));
+      if (b.dataset.copy) return void copyId(b.dataset.copy, b.closest('p') || b);
       // SOG-0497 (« Je valide SOG-0474. les deux sont validées d'un seul coup ») : un geste redessine la liste, la fiche quitte sa place et la suivante (SOG-0475) remonte SOUS le
       // pointeur ; le second clic d'un double clic tombait sur son « Validé ». Un geste = un verdict : le clic suivant d'une même rafale (detail > 1) qui tombe sur une AUTRE fiche que
       // celle du geste n'en fait pas un second (un second toucher sur le même bouton, après un refus sans commentaire par exemple, reste un geste)

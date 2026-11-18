@@ -7908,6 +7908,45 @@ def a328(c):
     c.check_errors()
 
 
+@case('A329', 'The Recette copy of a card\'s identifier has the fallback and is never silent (SOG-0468 (1)): the clipboard refused and execCommand failing → a WARNING « copy it by hand » and the identifier shown selected under the line; execCommand alone → copied; copied → « Identifier copied. »', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0468 (1) (the ergonomist): the identifier button of a « À trancher » card (A147) called navigator.clipboard.writeText alone, with no fallback and nothing said on failure; it copies through copyAndTell of frame/lib/clipboard.js (clipboard, execCommand, shown selected) and says it (four languages)')
+def a329(c):
+    lang = c.lang
+    import ast
+    src = (ROOT / 'frame' / 'help' / 'recette.js').read_text(encoding='utf-8')
+    T = lambda k: norm(ast.literal_eval(re.search(r'T\.' + k + r' = (\[.*?\]);', src, re.S).group(1))[['fr', 'en', 'de', 'es'].index(lang)])
+    fx = _dq_fixture()
+    c.context.route(re.compile(r'/frame/help/recette\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fx)))
+    c.page.add_init_script("""(() => { window.__clipOk = false; window.__execOk = false; window.__clip = [];
+      const w = async t => { if (!window.__clipOk) throw new DOMException('no', 'NotAllowedError'); window.__clip.push(t) };
+      try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: w } }) } catch (e) {}
+      document.execCommand = () => { if (!window.__execOk) throw new Error('no'); window.__clip.push('exec'); return true } })()""")
+    c.open('recette', docs=LEVEL3)
+    c.until("!!document.querySelector('[data-tabs]')", timeout=15000, what='the two tabs')
+    c.tap('[data-tab=decisions]')
+    btn = '[data-q=Q-0001] [data-copy]'
+    c.until(f"!!document.querySelector('{btn}')", what='the identifier button')
+    NOTES = "(window.__notes || []).map(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+    c.tap(btn)
+    c.until(f"{NOTES}.includes({json.dumps(T('dCopyManual'))})", what='the warning « copy it by hand »')
+    c.eq(c.js(f"{NOTES}.filter(n => n === {json.dumps(T('dCopied'))}).length"), 0, 'both copies failed: « copied » is never said', what='no « copied »')
+    c.eq(c.js("(() => { const f = document.querySelector('[data-q=Q-0001] input.sog-copybox'); return !!f && !f.hidden && f.value === 'SOG-0229' })()"), True,
+         'the identifier is shown under the line, to copy by hand', what='shown')
+    # the clipboard refused, execCommand accepts: copied (the fallback the screen did not have)
+    c.js("() => { window.__execOk = true; window.__notes.length = 0 }")
+    c.tap(btn)
+    c.until(f"{NOTES}.includes({json.dumps(T('dCopied'))})", what='the note « copied » through execCommand')
+    c.eq(c.js('window.__clip'), ['exec'], 'copied by execCommand when the clipboard refuses', what='exec')
+    c.js("() => { window.__clipOk = true; window.__notes.length = 0 }")
+    c.tap(btn)
+    c.until('window.__clip.length === 2', what='the clipboard written')
+    c.eq(c.js('window.__clip[1]'), 'SOG-0229', 'the clipboard gets the identifier', what='copied')
+    c.until(f"{NOTES}.includes({json.dumps(T('dCopied'))})", what='the note « copied »')
+    c.eq(c.js(f"{NOTES}.filter(n => n === {json.dumps(T('dCopyManual'))}).length"), 0, 'copied: no warning', what='no warning')
+    c.check_errors()
+
+
 
 @case('A159', 'The left bar in three steps by the width of the window (SOG-0274): the whole bar from 1100 px, an icon RAIL (56 px) from 761 to 1099 px, the phone mode up to 760 px; the label is the tooltip and the accessible name, the active screen stays marked, the separators and the V2 entry (an icon) stay, no horizontal scroll; on Pilot and on Maintenance', 'A',
       screens=False, night=False,
