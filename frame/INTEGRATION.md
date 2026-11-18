@@ -84,6 +84,7 @@ on a module whose `mount()` may still be awaiting, and what that `mount()` does 
   - `journal`: append-only `{ entries }`;
   - `keyed:assignments:mission+pilot`: a list merged record by record;
   - or a function.
+  The rule is known from the start of the page for EVERY module, mounted or not (SOG-0443: the frame reads each module's `meta.writes` at start and registers the rules — not the reads — before the first synchronisation), so a pending write sent after a reload without the module is still merged by its rule; the longest prefix wins and an exact path is a prefix (`missions/affectations.json` beside `missions/`).
 - A write outside these prefixes throws an error. That is on purpose: it is the module's contract.
 - **Shared prefix**: several modules may declare the same prefix and all write there (`pilot/<trigram>/…`, shared by
   fuel and maps). Agree on the merge rule in both integration guides: the first declaration's rule applies.

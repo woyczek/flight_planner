@@ -5429,6 +5429,36 @@ def a264(c):
     c.check_errors()
 
 
+@case('A280', 'The merge rule a module declares in meta.writes is known from the start, even when the module is not mounted (SOG-0443): two rows added on two devices to a keyed document both survive, instead of the whole array of the newest winning', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0443 (« Affectation »: several pilots write missions/affectations.json, a list in ONE key): a rule { prefix, merge: keyed } was registered only when the module’s adapter was created, so a pending write sent after a reload where the module is not mounted was merged by « record » (the whole array, the newest wins: a row disappears); the frame now registers the merge RULES of every module (meta.writes, read at start by readLevels — not their reads: a module never mounted pulls nothing more) before the first synchronisation')
+def a280(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    old = "writes: [{\n    prefix: 'pilot/',"
+    assert src.count(old) == 1
+    patched = src.replace(old, "writes: [{\n    prefix: 'hello/rows.json',\n    merge: 'keyed:rows:id'\n  }, {\n    prefix: 'pilot/',")
+    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
+    c.open('fuel', wait=False)    # the module that declares the rule is NOT mounted
+    c.until("!!document.querySelector('[data-module=fuel]') && !!window.FrameData", timeout=20000, what='Fuel mounted, hello not')
+    c.eq(c.count('[data-module=hello]'), 0, 'hello is not mounted', what='not mounted')
+    c.wait(1500)
+    r = c.js("""() => {
+      const row = (id, at) => ({ id, v: id, updated_at: at });
+      const base = JSON.stringify({ rows: [row('a', '2026-11-18T09:00:00Z')] });
+      const local = JSON.stringify({ rows: [row('a', '2026-11-18T09:00:00Z'), row('b', '2026-11-18T10:00:00Z')] });
+      const remote = JSON.stringify({ rows: [row('a', '2026-11-18T09:00:00Z'), row('c', '2026-11-18T10:05:00Z')] });
+      const m = window.FrameData.mergeText('hello/rows.json', base, local, remote);
+      let ids = null;
+      try { ids = JSON.parse(m.text).rows.map(x => x.id).sort() } catch (e) {}
+      return { ids, conflict: !!m.conflict };
+    }""")
+    c.eq(r, {'ids': ['a', 'b', 'c'], 'conflict': False}, 'the keyed rule of a module that is not mounted merges the two added rows: no row disappears, no conflict', what='keyed merge')
+    c.check_errors()
+
+
 @case('A263', 'ctx.live.watch(fn) (SOG-0447): every valid fix is given to each subscriber (a frozen copy), a subscriber that throws disturbs nothing, at most fifty subscribers, the unmounting of the module unsubscribes', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0447 (the ergonomist: one subscription of the frame is worth more than a timer per module — « Affectation » judges its keys at each fix): ctx.live.watch(fn) calls fn(fix) at each valid fix as the frame receives it (a copy frozen: a subscriber cannot change what the others see), returns the function that unsubscribes, a subscriber that throws is isolated, fifty subscribers at most, and the module\'s life (its unmounting) unsubscribes by itself')

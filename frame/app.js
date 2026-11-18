@@ -3577,6 +3577,9 @@
     await Promise.all(APP.modules.map(async m => {
       try {
         const meta = (await import(new URL(`modules/${m.id}/module.js`, ROOT).href)).meta || {};
+        FD.declareRules(meta
+          .writes
+        ); // SOG-0443 : sa règle de fusion est connue même quand le module n'est pas monté (une écriture en attente envoyée après un rechargement)
         moduleLevel[m.id] = levelFrom(meta.level ?? 1);
         moduleFixed[m.id] = meta.fixed === true;
         if (Array.isArray(meta.title)) moduleTitle[m.id] = meta.title;
@@ -5817,6 +5820,7 @@
     });
     offlineApp();
     levelsP = readLevels();
+    FD.holdRules(levelsP); // la première synchronisation attend les règles de fusion de tous les modules
     FD.start();
     await landing();
     route();

@@ -395,14 +395,25 @@
         policy
       });
     }
-    for (const w of [].concat(decl.writes || [])) {
-      if (typeof w === 'object' && w.merge && !rules.some(r => r.prefix === w.prefix)) rules.push({
+    declareRules(decl.writes);
+    for (const w of [].concat(decl.writes || []))
+      if (typeof w === 'object' && w.policy === 'cache' && !caches.includes(w.prefix)) caches.push(w.prefix);
+  }
+  /** Enregistre les seules RÈGLES DE FUSION d'une déclaration d'écritures ({ prefix, merge }) — sans rien lire de plus : le cadre l'appelle au démarrage pour TOUS les modules
+   *  (leur meta.writes), car une écriture en attente envoyée après un rechargement où le module n'est pas monté serait sinon fusionnée par « record » (le tableau entier, le plus
+   *  récent gagne : une ligne disparaît). Un préfixe déjà déclaré garde sa règle (préfixe partagé : celle du premier qui le déclare). */
+  function declareRules(writes) {
+    for (const w of [].concat(writes || []))
+      if (w && typeof w === 'object' && w.merge && typeof w.prefix === 'string' && !rules.some(r => r.prefix === w.prefix)) rules.push({
         prefix: w.prefix,
         rule: ruleFrom(w.merge)
-      }); // préfixe partagé : la règle du premier module qui le déclare
-      if (typeof w === 'object' && w.policy === 'cache' && !caches.includes(w.prefix)) caches.push(w.prefix);
-    }
+      });
   }
+  // SOG-0443 : le premier passage de synchronisation attend que les règles de tous les modules soient là (au plus 5 s : un module qui ne se charge pas ne bloque rien)
+  let rulesReady = Promise.resolve();
+  const holdRules = p => {
+    rulesReady = Promise.race([Promise.resolve(p).catch(() => {}), new Promise(res => setTimeout(res, 5000))]);
+  };
   // documents écrits sans trigramme (pilot/ANON/…) : gardés sur l'appareil, jamais envoyés ; le cadre les reprend sous
   // pilot/<TRI>/ dès que le trigramme est posé (frame/SPEC.md § 2). proc/local/ : procédures converties des CIFP de X-Plane,
   // propres au poste, jamais envoyées (licence, frame/aerodb/SPEC.md § 5 quinquies)
@@ -1370,7 +1381,10 @@
     if (syncing) return syncing;
     const lock = fn => navigator.locks?.request ? navigator.locks.request('sog-frame-sync', fn) : fn();
     const t0 = Date.now();
-    syncing = lock(() => run(reason, include)).finally(() => {
+    syncing = lock(async () => {
+      await rulesReady;
+      return run(reason, include);
+    }).finally(() => {
       timing.pass = {
         ms: Date.now() - t0,
         reason,
@@ -2506,6 +2520,8 @@
     start,
     adapter,
     declare,
+    declareRules, // SOG-0443 : les règles de fusion de meta.writes de tous les modules, au démarrage
+    holdRules,
     airline, // la compagnie courante { code, name, settings, fleet } (§ 10.38) ; airlines() : les compagnies connues ; setAirline(code)
     airlines,
     setAirline,
