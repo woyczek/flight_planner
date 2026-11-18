@@ -12801,6 +12801,7 @@ def k303(c):
     results_cache.ENABLED = False
     saved_gates = F.MAX_GATES
     F.MAX_GATES = 0      # SOG-0396: with the permanent gates LEMD → KBOS needs no entry at REGHI (a shorter route by the gates): the proof of the RAD rule LF2096 on the real base is made WITHOUT them
+    saved_turn, engine.Nav.TURN_MAX_DEG = engine.Nav.TURN_MAX_DEG, 0      # SOG-0501 (a): the route that the rule imposes here (ETIKI then REGHI, then back west to the created entry 48/10) turns by 179° at REGHI: the proof of the RAD rule is made WITHOUT the limit of the turns (the case is about the RAD, not about the turns; K365 is about the turns)
     try:
         args = {'action': 'compute', 'adep': 'LEMD', 'adest': 'KBOS', 'fl': 370, 'date': '2026-11-17T13:00', 'alternatives': False, 'proposals': True}
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
@@ -12826,6 +12827,7 @@ def k303(c):
         c.ok(len(said) == 1 and m is not None and int(m.group(3)) > int(m.group(2)) and abs(int(m.group(3)) - res['primary']['distance_nm']) <= 1, str(said), 'when the pass by ETIKI fails, REGHI is set aside (the next entry) and the answer says « Point REGHI écarté … détour de +n NM (head → final NM) »')
     finally:
         F.MAX_GATES = saved_gates
+        engine.Nav.TURN_MAX_DEG = saved_turn
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
 
