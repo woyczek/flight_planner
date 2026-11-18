@@ -8031,16 +8031,54 @@ def f253(c):
           from: '2026-11-17T11:30:00Z', validUntil: '2026-11-17T19:00:00Z', expired: false, current: 6 });
         return { db, jobs: () => jobs } };
       const A = mk({}, 10, false), a = await A.db.natEnsure(), B = mk({}, 120, false), b = await B.db.natEnsure(),
-        C = mk({}, 10, true), c1 = await C.db.natEnsure({ force: true }), c2 = await C.db.natEnsure({ force: true }),
+        C = mk({}, 10, true), c1 = await C.db.natEnsure({ force: true }), c2 = await C.db.natEnsure({ force: true }), // SOG-0470: a minute
         D = mk({ lan: true }, 120, false), E = mk({}, null, false), e = await E.db.natEnsure();
       await D.db.natEnsure({ force: true });
-      return { a: [A.jobs(), a.refreshed], b: [B.jobs(), b.refreshed, b.unchanged], c: [C.jobs(), c1.refreshed, c1.unchanged, c2.refreshed], d: D.jobs(),
+      return { a: [A.jobs(), a.refreshed], b: [B.jobs(), b.refreshed, b.unchanged], c: [C.jobs(), c1.refreshed, c1.unchanged, c2.refreshed, !!c2.retryAt], d: D.jobs(),
         e: [E.jobs(), e.refreshed] } }""")
     c.eq(got['a'], [0, False], 'valid tracks read 10 min ago, not forced: nothing asked of the launcher', what='recent')
     c.eq(got['b'], [1, True, False], 'valid tracks read 2 h ago: read again (the age rule), changed', what='old')
-    c.eq(got['c'], [2, True, True, True], 'forced twice: two reads (the restraint is the screen\'s), the message said unchanged', what='forced')
+    c.eq(got['c'], [1, True, True, False, True], 'forced twice in a row: one read, the message said unchanged; the second refused with its '
+         'retryAt (SOG-0470, Sécurisation: a minute between two forced reads)', what='forced')
     c.eq(got['d'], 0, 'a paired phone never asks the launcher', what='paired')
     c.eq(got['e'], [0, False], 'valid tracks whose read time is unknown (no updated_at): nothing asked — the age rule needs a known time', what='unknown age')
+
+
+
+@case('F270', 'aerodb.natEnsure, the spacing (SOG-0470): tracks read more than an hour ago and a job that finds the message unchanged (it does '
+      'not rewrite the read time): two calls in a row run ONE job, the second refused with its retryAt five minutes after; after five '
+      'minutes, a new job; a FORCED call waits one minute only; a failed job counts as a job', 'F', tags=('fuel', 'aerodb', 'security'),
+      designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0470 (Sécurisation, review of the NAT chain of 17 Nov: the guard « not two tries within 5 minutes » played only after a '
+      'failure; an unchanged job leaves readAt old, so past an hour EVERY mount of Fuel or the Map launched a fetch to the NAT source); '
+      'AeroDB granted this change of natEnsure only; a fake launcher and a fake clock')
+def f270(c):
+    c.open('fuel', docs=flight_docs())
+    got = c.js("""async () => {
+      let t = Date.parse('2026-11-18T12:00:00Z');
+      const mk = fail => { let jobs = 0;
+        const launcher = { job: async () => { jobs++; if (fail) return { result: { ok: false } }; return { result: { ok: true, files: [{ unchanged: true }] } } },
+            info: () => ({}), request: async () => null },
+          db = window.AeroDB.create({ launcher, now: () => t });
+        // the read time stays two hours old: an unchanged job does not rewrite it
+        db.natState = async () => ({ present: true, readAt: new Date(t - 7200000).toISOString(), count: 6, from: '2026-11-18T11:30:00Z',
+          validUntil: '2026-11-18T19:00:00Z', expired: false, current: 6 });
+        return { db, jobs: () => jobs } };
+      const A = mk(false), a1 = await A.db.natEnsure(), a2 = await A.db.natEnsure(), j2 = A.jobs();
+      t += 4 * 60000; const a3 = await A.db.natEnsure(), j3 = A.jobs();
+      t += 61000; const a4 = await A.db.natEnsure(), j4 = A.jobs();
+      const f1 = await A.db.natEnsure({ force: true }), jf1 = A.jobs();
+      t += 61000; const f2 = await A.db.natEnsure({ force: true }), jf2 = A.jobs();
+      const B = mk(true), b1 = await B.db.natEnsure(); t += 2 * 60000; const b2 = await B.db.natEnsure();
+      return { pair: [j2, a1.refreshed, a2.refreshed, a2.retryAt || null], four: [j3, !!a3.retryAt], five: [j4, a4.refreshed],
+        force: [jf1, !!f1.retryAt, jf2, f2.refreshed], failed: [B.jobs(), b1.ok, !!b2.retryAt] } }""")
+    c.eq(got['pair'], [1, True, False, '2026-11-18T12:05:00.000Z'], 'two calls in a row, readAt old, job unchanged: ONE job; the second '
+         'refused with its retryAt five minutes after', what='pair')
+    c.eq(got['four'], [1, True], 'four minutes later: still refused, nothing asked', what='four minutes')
+    c.eq(got['five'], [2, True], 'past five minutes: a new job', what='five minutes')
+    c.eq(got['force'], [2, True, 3, True], 'forced at once after a job: refused; a minute later: a job (one minute for the gesture)',
+         what='forced')
+    c.eq(got['failed'], [1, False, True], 'a failed job counts as a job: two minutes later, refused with its retryAt', what='failed')
 
 
 # SOG-0413: the NAT stub, its natEnsure keeping the argument it received (force)

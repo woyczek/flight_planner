@@ -484,7 +484,10 @@
     const NAT_MAX_AGE_MS = 3600000;
     const natRefresh = {
         p: null,
-        failedAt: -Infinity
+        failedAt: -Infinity,
+        // SOG-0470 (Sécurisation) : la fin du dernier travail, réussi ou non — un travail « inchangé » ne réécrit pas l'heure de lecture,
+        // et sans elle chaque montage relançait la source passé une heure
+        lastAt: -Infinity
       }, // routes NAT reprises à la demande (SOG-0263) : un travail à la fois, pas deux essais à moins de 5 minutes
       loaded = new Map(), // zone → { id, cycle, split, base | data, parts, reads, idx } ; chargée une fois
       loading = new Map(), // zone → promesse de chargement
@@ -3220,6 +3223,13 @@
           refreshed: false,
           retryAt: new Date(natRefresh.failedAt + 300000).toISOString()
         };
+        // SOG-0470 : un travail a déjà tourné il y a peu — cinq minutes entre deux relances d'un appelant, une minute pour le geste exprès
+        const gap = force ? 60000 : 300000;
+        if (now() - natRefresh.lastAt < gap) return {
+          ...s0,
+          refreshed: false,
+          retryAt: new Date(natRefresh.lastAt + gap).toISOString()
+        };
 
         natRefresh.p = (async () => {
           try {
@@ -3236,6 +3246,7 @@
               busy: true,
               running: r.running || null
             }; // le lanceur fait déjà une autre opération : dite avec ce qui tourne (la carte « opération en cours »), pas un échec
+            natRefresh.lastAt = now(); // un travail a tourné (SOG-0470) : noté avant d'en lire l'issue
             if (r?.result?.ok === false) throw new Error('nat refresh failed');
             await natReread();
             // SOG-0413 (c) : le message relu est-il le même ? (files[0].unchanged du travail : nat_tracks.json non réécrit)
@@ -3243,7 +3254,7 @@
               unchanged: true
             } : true;
           } catch {
-            natRefresh.failedAt = now();
+            natRefresh.failedAt = natRefresh.lastAt = now();
             return false;
           } finally {
             natRefresh.p = null;
