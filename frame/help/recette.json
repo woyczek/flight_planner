@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 343,
+  "tests": 344,
   "verdicts": 219
  },
  "apps": [
@@ -4706,6 +4706,20 @@
     "comment": "R 205 /11 · zone réglementée Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : H24 Conditions et remarques de l’AIP : Managers: Conditions et remarques de l’AIP : DE GAULLE APP, ORLY APP. Conditions et remarques de l’AIP : Entry conditions:  plus d’autres. le gestionnaire n’est pas récupéré, ni les conditions d’entrées.  Une autre R 7 B · zone réglementée  Limites : FL115 → FL195 Activité réelle non connue : horaires publiés seulement (ni NOTAM ni AZBA lus). Horaires publiés : Possible activation except public HOL : Horaires publiés : Overall area : MON-FRI : 0800 - 1600 Horaires publiés : North of AWY V20 northerly limit : MON-THU : 1600 - 0600 and other times by NOTAM Horaires publiés : (SUM : -1HR)  Conditions et remarques de l’AIP : CDC CINQ MARS LA PILE. Conditions et remarques de l’AIP : IFR/VFR : avoidance mandatory during activity except for AWY V20, follow ACC instructions. Conditions et remarques de l’AIP : Activity known on : PARIS ACC/FIC and BREST ACC. Organisme et fréquence : PARIS ACC/FIC and BREST ACC Source : SIA (2026-10-29)  1/ la présentation n’est pas formidable ; 2/ des infos sont à glaner là dedans.",
     "at": "2026-11-18T16:27:02Z"
    }
+  },
+  {
+   "id": "SOG-0463",
+   "app": "compagnie",
+   "title": {
+    "fr": "Tiroirs ouverts pour tous : un canal en direct entre appareils qui ne soit pas le dépôt de données — étude",
+    "en": "Drawers opened for everyone: a live channel between devices other than the data repository — study",
+    "de": "Für alle geöffnete Schubladen: ein Live-Kanal zwischen Geräten, der nicht das Datenrepository ist — Studie",
+    "es": "Cajones abiertos para todos: un canal en directo entre dispositivos que no sea el repositorio de datos — estudio"
+   },
+   "test": "Deux appareils (ou deux navigateurs) sur la même mission affectée, un tiroir attendu. Sur le premier, ouvre le tiroir (« Demander la suite »). Attendu : sur le second, onglet visible, la suite paraît en une quinzaine de secondes au plus (au lieu d'une minute) ; un onglet caché ou sans tiroir attendu ne lit pas plus souvent qu'avant.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T21:18:01Z"
   },
   {
    "id": "SOG-0464",

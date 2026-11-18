@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2c09374",
+  "organisation": "69ceffa",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -4702,12 +4702,13 @@
     {
      "id": "SOG-0463",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Tiroirs ouverts pour tous : un canal en direct entre appareils qui ne soit pas le dépôt de données — étude",
      "en": "Drawers opened for everyone: a live channel between devices other than the data repository — study",
      "de": "Für alle geöffnete Schubladen: ein Live-Kanal zwischen Geräten, der nicht das Datenrepository ist — Studie",
      "es": "Cajones abiertos para todos: un canal en directo entre dispositivos que no sea el repositorio de datos — estudio",
-     "rank": 462
+     "rank": 462,
+     "test": true
     }
    ]
   },
