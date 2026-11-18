@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 306,
+  "tests": 308,
   "verdicts": 214
  },
  "apps": [
@@ -4552,6 +4552,20 @@
    "delivered": "2026-11-18T09:01:17Z"
   },
   {
+   "id": "SOG-0455",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : deux vues d'une même mission — le Brief (pilote : l'histoire d'abord) et l'Atelier (auteur : la carte d'abord) ; le registre ouvre le Brief",
+    "en": "Missions: two views of one mission — the Brief (pilot: the story first) and the Workshop (author: the map first); the register opens the Brief",
+    "de": "Missionen: zwei Ansichten einer Mission — das Briefing (Pilot: zuerst die Geschichte) und die Werkstatt (Autor: zuerst die Karte); das Register öffnet das Briefing",
+    "es": "Misiones: dos vistas de una misma misión — el Brief (piloto: primero la historia) y el Taller (autor: primero el mapa); el registro abre el Brief"
+   },
+   "test": "Missions, Registre. Sous chaque titre : la ligne de choix (durée, « ≈ » quand elle est estimée ; nombre d'aéronefs ; théâtre quand il est connu). Déplie une ligne : « Brief » en premier, puis « Atelier », « Dupliquer » et « ⋯ » (« Corriger la ligne du registre », « Retirer du registre »). « Brief » ouvre la fiche du pilote : titre, ligne de choix, résumé, risques ; « Préparer ce vol » en premier ; « Retour au registre » te rend la même ligne, dépliée. En tête du registre : la case « Voir le contenu complet des missions », décochée ; coche-la, quitte Missions, reviens : elle est de nouveau décochée.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T10:45:04Z"
+  },
+  {
    "id": "SOG-0456",
    "app": "compagnie",
    "title": {
@@ -4564,6 +4578,19 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T09:36:00Z"
+  },
+  {
+   "id": "SOG-0460",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : l'aller-retour avec ChatGPT — copier le prompt, coller la réponse, alimenter le registre (tiroirs et zones en contour compris)",
+    "en": "Missions: the round trip with ChatGPT — copy the prompt, paste the answer, feed the register (drawers and outlined areas included)",
+    "de": "Missionen: der Hin- und Rückweg mit ChatGPT — Prompt kopieren, Antwort einfügen, Register füllen (mit Schubladen und umrissenen Gebieten)",
+    "es": "Misiones: la ida y vuelta con ChatGPT — copiar el prompt, pegar la respuesta, alimentar el registro (cajones y zonas con contorno incluidos)"
+   },
+   "test": "Missions, Registre, « Ajouter des missions ». Colle une réponse de ChatGPT TELLE QUELLE : une phrase, la mission dans un bloc de code, un mot de fin. Attendu : « 1 mission lue », la ligne « Le texte autour des blocs de code n'est pas lu. », puis « Ajouter (1) ». Colle un YAML abîmé (une ligne mal indentée) : l'erreur est dite en français avec son numéro de ligne. Rien ne dit si la mission a des tiroirs.",
+   "since": "2026-11-18",
+   "state": "known"
   },
   {
    "id": "SOG-0461",
@@ -4582,62 +4609,15 @@
  ],
  "decisions": [
   {
-   "id": "Q-0102",
-   "fiche": "SOG-0463",
-   "app": "compagnie",
-   "question": "Tiroir ouvert vu par les autres appareils : par quel canal ?",
-   "context": "Étude de Sécurisation (résumé dans la fiche SOG-0463). Aucun service sans compte ne sait réserver un message aux seuls pilotes d'une mission ; sans compte, la seule protection est une adresse secrète, que nos règles excluent. Discord sert à prévenir des humains, pas à relier des appareils (et un message « un tiroir est ouvert » sur un salon dirait qu'un tiroir existe). Avant de choisir un service, il reste à savoir où passent les 47 secondes du banc : si c'est la synchronisation complète, un chemin léger par le dépôt (un petit fichier écrit, relu toutes les quelques secondes) descendrait à quelques secondes sans compte, sans clé et sans hôte de plus. « Autre outil » dans ta réponse à Q-0097 : je le lis comme ce chemin léger ; dis-moi si tu pensais à autre chose.",
-   "options": [
-    "D'abord le chemin léger par le dépôt, mesuré au banc ; un service seulement s'il ne suffit pas",
-    "Matrix : une salle privée par mission ; chaque pilote crée un compte, et j'autorise l'hôte",
-    "Nostr : pas de compte, chiffré vers les pilotes de la mission ; plus lourd à écrire, plusieurs hôtes à autoriser",
-    "On en reste là : le délai actuel me va, l'écran dit l'écart réel"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0105",
-   "fiche": "SOG-0466",
+   "id": "Q-0108",
+   "fiche": "SOG-0474",
    "app": "pilote",
-   "question": "Hélistations : le lanceur peut-il lire trois choses de plus sur le site du SIA (la liste des codes, la partie AD 3 de l'eAIP, les cartes VACH) ?",
-   "context": "Mesure d'AeroDB : la base a déjà 562 hélistations, dont beaucoup en double (elles seront fusionnées sans rien demander). Mais le lanceur ne sait ouvrir aucune carte d'hélistation, et le code d'une carte (souvent en « H… ») n'est pas le code LFnnn de la base : seule la liste des codes du SIA que tu cites fait le lien. Trois lectures seraient à ajouter, toutes sur le site du SIA déjà interrogé pour les aérodromes : (a) le PDF de la liste des codes, une fois ; (b) la partie AD 3 de l'eAIP, à chaque cycle ; (c) les cartes VACH/AD/AD-3.<code>.pdf, à la demande, quand tu ouvres une hélistation. Sécurisation relira ce code du lanceur.",
+   "question": "Route fiable en Europe : 38 États sur 47 n'ont ni point ni voie dans la base. Par où commence-t-on ?",
+   "context": "Mesure d'AeroDB : seuls la France, le Royaume-Uni, l'Espagne, le Portugal, la Suède, l'Islande et l'Irlande ont un réseau ; l'Allemagne a ses voies sans ses points. Un vol vers ou à travers les autres n'a pas de route calculée. Trois voies comparées. Sources officielles ouvertes : un lecteur et un site à autoriser par État, environ un lot chacun — des semaines pour les dix premiers ; l'Allemagne est le cas facile (ses points sont sur le site déjà lu pour ses voies). EAD : écarté — des PDF, « pas la dernière information », et ta règle du 28/10 (un aérodrome à la fois, sur un geste). Repli local X-Plane (tes fichiers Navigraph) : tous les États d'un coup, un seul lot, aucun site de plus ; mais ce n'est pas officiel : étiqueté « X-Plane, personnel, cycle … », gardé sur ce poste, jamais publié, et il faut que tu indiques ton dossier une fois. Aujourd'hui ce repli est éteint par défaut, par ta décision.",
    "options": [
-    "Oui aux trois",
-    "La liste des codes et l'AD 3 seulement ; pas les cartes",
-    "Non : seulement la fusion des doublons, rien de plus à lire",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0106",
-   "fiche": "SOG-0374",
-   "app": "pilote",
-   "question": "SID du Royaume-Uni : comment ouvrir les cartes PDF (piste, SID, STAR) depuis Carburant ?",
-   "context": "Tu avais refusé la lecture du paquet du Royaume-Uni le 16/11 (« pas de lien vers les PDF piste, star, sid »). Mesure de Procédures : aucun lien n'existe, parce que le lanceur ne sert à la page aucun fichier de son dossier local, et que la base ne connaît d'adresse de carte que pour le SIA. Trois façons : un lien vers la carte en ligne chez NATS, comme les cartes françaises ouvrent celles du SIA (il faut d'abord vérifier l'adresse sur le site de NATS : une lecture d'essai, avec ton accord) ; une route du lanceur qui sert les seuls PDF recopiés de ton paquet (marche hors ligne, mais c'est ouvrir un accès de plus au lanceur, sur ce poste seulement) ; ou « Ouvrir dans » le dossier des cartes recopiées, sans rien ouvrir de plus. Les deux autres manques (fiches grisées « cycle inconnu », compte perdu au rechargement) sont en cours de correction sans rien te demander.",
-   "options": [
-    "Un lien vers la carte en ligne chez NATS (j'accepte la lecture d'essai de l'adresse)",
-    "Une route du lanceur qui sert les PDF de mon paquet, sur ce poste seulement",
-    "« Ouvrir dans » le dossier des cartes recopiées, rien de plus",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-18",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0107",
-   "fiche": "SOG-0471",
-   "app": "compagnie",
-   "question": "Atelier : le troisième fond de carte, « avec les noms » — nos données, ou une vraie carte OACI ?",
-   "context": "Tu demandes un troisième fond « OACI » pour voir les noms des éléments et vérifier la faisabilité d'une mission. Possible sans rien ajouter : le fond rapide plus les terrains, hélistations, balises, points et espaces de notre base, avec leurs noms — je l'appellerais « Aéro », pour ne pas promettre la carte OACI. La vraie carte OACI-VFR (des tuiles d'un service extérieur, France seulement) demanderait un hôte de plus et la lecture de ses conditions d'usage : rien n'est vérifié de ce côté.",
-   "options": [
-    "« Aéro » : nos données avec leurs noms sur le fond rapide, rien de plus à autoriser",
-    "« Aéro » maintenant, et étudie la vraie carte OACI-VFR (hôte, conditions) pour me la proposer ensuite",
+    "Les deux : le repli local X-Plane tout de suite pour les États sans réseau (étiqueté, jamais publié), et l'officiel État par État ensuite — Allemagne d'abord — qui le remplace à mesure",
+    "L'officiel seulement, État par État (Allemagne, Italie, Suisse, Autriche d'abord) ; pas de X-Plane",
+    "Le repli local X-Plane seulement, pour l'instant",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-18",
@@ -5039,6 +5019,81 @@
    "choice": 2,
    "text": "je ne suis pas sûr du calcul. le tracé était le même, en tout cas.",
    "at": "2026-11-17T10:14:56Z"
+  },
+  {
+   "id": "Q-0102",
+   "fiche": "SOG-0463",
+   "app": "compagnie",
+   "question": "Tiroir ouvert vu par les autres appareils : par quel canal ?",
+   "context": "Étude de Sécurisation (résumé dans la fiche SOG-0463). Aucun service sans compte ne sait réserver un message aux seuls pilotes d'une mission ; sans compte, la seule protection est une adresse secrète, que nos règles excluent. Discord sert à prévenir des humains, pas à relier des appareils (et un message « un tiroir est ouvert » sur un salon dirait qu'un tiroir existe). Avant de choisir un service, il reste à savoir où passent les 47 secondes du banc : si c'est la synchronisation complète, un chemin léger par le dépôt (un petit fichier écrit, relu toutes les quelques secondes) descendrait à quelques secondes sans compte, sans clé et sans hôte de plus. « Autre outil » dans ta réponse à Q-0097 : je le lis comme ce chemin léger ; dis-moi si tu pensais à autre chose.",
+   "options": [
+    "D'abord le chemin léger par le dépôt, mesuré au banc ; un service seulement s'il ne suffit pas",
+    "Matrix : une salle privée par mission ; chaque pilote crée un compte, et j'autorise l'hôte",
+    "Nostr : pas de compte, chiffré vers les pilotes de la mission ; plus lourd à écrire, plusieurs hôtes à autoriser",
+    "On en reste là : le délai actuel me va, l'écran dit l'écart réel"
+   ],
+   "since": "2026-11-18",
+   "state": "answered",
+   "recommended": 0,
+   "choice": null,
+   "text": "j’ai besoin de plus d’infos (coûts ? comptes ? individuels, équipes ?)",
+   "at": "2026-11-18T10:53:07Z"
+  },
+  {
+   "id": "Q-0105",
+   "fiche": "SOG-0466",
+   "app": "pilote",
+   "question": "Hélistations : le lanceur peut-il lire trois choses de plus sur le site du SIA (la liste des codes, la partie AD 3 de l'eAIP, les cartes VACH) ?",
+   "context": "Mesure d'AeroDB : la base a déjà 562 hélistations, dont beaucoup en double (elles seront fusionnées sans rien demander). Mais le lanceur ne sait ouvrir aucune carte d'hélistation, et le code d'une carte (souvent en « H… ») n'est pas le code LFnnn de la base : seule la liste des codes du SIA que tu cites fait le lien. Trois lectures seraient à ajouter, toutes sur le site du SIA déjà interrogé pour les aérodromes : (a) le PDF de la liste des codes, une fois ; (b) la partie AD 3 de l'eAIP, à chaque cycle ; (c) les cartes VACH/AD/AD-3.<code>.pdf, à la demande, quand tu ouvres une hélistation. Sécurisation relira ce code du lanceur.",
+   "options": [
+    "Oui aux trois",
+    "La liste des codes et l'AD 3 seulement ; pas les cartes",
+    "Non : seulement la fusion des doublons, rien de plus à lire",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 1,
+   "text": "d’abord la lecture des cartes en local. l’aspiration me plaît moyen. c’est dans C:\\Users\\mojan\\synologydrive\\DOCS\\Flight\\Charts une fois l’aspiration locale faite, oui, tu pourras refresh sur le SIA, mais pas la grosse aspi d’un seul coup. Idem, je préfère du carte à carte sur les sites, et un gros download pour avoir « toutes » les données. c’est possible sur le sia, je l’ai fait, c’est encore faisable. au pire via un geste utilisateur.",
+   "at": "2026-11-18T10:50:23Z"
+  },
+  {
+   "id": "Q-0106",
+   "fiche": "SOG-0374",
+   "app": "pilote",
+   "question": "SID du Royaume-Uni : comment ouvrir les cartes PDF (piste, SID, STAR) depuis Carburant ?",
+   "context": "Tu avais refusé la lecture du paquet du Royaume-Uni le 16/11 (« pas de lien vers les PDF piste, star, sid »). Mesure de Procédures : aucun lien n'existe, parce que le lanceur ne sert à la page aucun fichier de son dossier local, et que la base ne connaît d'adresse de carte que pour le SIA. Trois façons : un lien vers la carte en ligne chez NATS, comme les cartes françaises ouvrent celles du SIA (il faut d'abord vérifier l'adresse sur le site de NATS : une lecture d'essai, avec ton accord) ; une route du lanceur qui sert les seuls PDF recopiés de ton paquet (marche hors ligne, mais c'est ouvrir un accès de plus au lanceur, sur ce poste seulement) ; ou « Ouvrir dans » le dossier des cartes recopiées, sans rien ouvrir de plus. Les deux autres manques (fiches grisées « cycle inconnu », compte perdu au rechargement) sont en cours de correction sans rien te demander.",
+   "options": [
+    "Un lien vers la carte en ligne chez NATS (j'accepte la lecture d'essai de l'adresse)",
+    "Une route du lanceur qui sert les PDF de mon paquet, sur ce poste seulement",
+    "« Ouvrir dans » le dossier des cartes recopiées, rien de plus",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-18T10:51:05Z"
+  },
+  {
+   "id": "Q-0107",
+   "fiche": "SOG-0471",
+   "app": "compagnie",
+   "question": "Atelier : le troisième fond de carte, « avec les noms » — nos données, ou une vraie carte OACI ?",
+   "context": "Tu demandes un troisième fond « OACI » pour voir les noms des éléments et vérifier la faisabilité d'une mission. Possible sans rien ajouter : le fond rapide plus les terrains, hélistations, balises, points et espaces de notre base, avec leurs noms — je l'appellerais « Aéro », pour ne pas promettre la carte OACI. La vraie carte OACI-VFR (des tuiles d'un service extérieur, France seulement) demanderait un hôte de plus et la lecture de ses conditions d'usage : rien n'est vérifié de ce côté.",
+   "options": [
+    "« Aéro » : nos données avec leurs noms sur le fond rapide, rien de plus à autoriser",
+    "« Aéro » maintenant, et étudie la vraie carte OACI-VFR (hôte, conditions) pour me la proposer ensuite",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "answered",
+   "recommended": 0,
+   "choice": 0,
+   "text": "notre carte du module carte est « presque » une carte OACI : respect des formalismes, et possibilité d’affichage des routes low, high, ou vfr. + axes ravito, rtba. mon idée était la vraie carte du module carte. le fallback, c’est un design léger, avec les labels. et un bouton de forçage du zoom « complexité ». À challenger.",
+   "at": "2026-11-18T10:52:43Z"
   }
  ]
 }
