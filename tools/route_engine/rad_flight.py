@@ -2,7 +2,7 @@
 All coded SID/STAR points participate in VIA conditions. Unparsed conditions are
 reported as reviews; they never become permissions or silently pass as valid.
 """
-import collections,functools,re
+import collections,functools,math,re
 from . import fra   # SOG-0081 : import relatif
 from . import rad_via      # SOG-0401 (forme B) : la SUITE d'un groupe VIA
 
@@ -29,18 +29,20 @@ BTN_ATOM=re.compile(r'\bBTN\s+FL\s*(\d{2,3})\s*-\s*FL\s*(\d{2,3})\s+AT\s+([A-Z][
 
 def between_test(lo,hi,point,ctx):
     """Vrai / faux : le niveau du profil au point `point` est-il entre FL`lo` et FL`hi` ? Le point absent de la route : faux ; l'altitude inconnue ou EXACTEMENT sur une limite : None (jamais devinée)."""
-    if point not in ctx.get('points',()):return False
+    if 'points' not in ctx:return None      # SOG-0501 (e), revue de Sécurisation : le contexte STATIQUE (static_blocks : les deux terrains seuls) n'a pas de route : « le point n'est pas sur la route » n'y est pas FAUX, il n'est pas décidé
+    if point not in ctx['points']:return False
     alt=(ctx.get('alt') or {}).get(point)
-    if not isinstance(alt,(int,float)):return None
+    if not isinstance(alt,(int,float)) or not math.isfinite(alt):return None
     a,b=int(lo)*100,int(hi)*100
     if a>=b or abs(alt-a)<1 or abs(alt-b)<1:return None
     return a<alt<b
 
 def at_test(kind,level,point,ctx):
     """Vrai / faux / None : le niveau du profil au point `point` est-il au-dessus (ABV) ou au-dessous (BLW) de FL`level` ? Le point absent de la route : faux ; l'altitude du profil inconnue ou EXACTEMENT sur la limite : None."""
-    if point not in ctx.get('points',()):return False
+    if 'points' not in ctx:return None      # voir between_test : sans route, pas décidé
+    if point not in ctx['points']:return False
     alt=(ctx.get('alt') or {}).get(point)
-    if not isinstance(alt,(int,float)):return None
+    if not isinstance(alt,(int,float)) or not math.isfinite(alt):return None
     x=int(level)*100
     return None if abs(alt-x)<1 else (alt>x if kind=='ABV' else alt<x)
 

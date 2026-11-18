@@ -17610,3 +17610,36 @@ def k376(c):
     c.eq(budget, ('A', [], [['compel']], [False]), 'a budget that is reached is not a « no route »: no fallback is tried, nothing applied', what='budget')
     late = play(lambda k: done('C', 105), bounds=dict(ocean=True, head_s=-1.0))
     c.eq(late, ('A', [], [], [False]), 'an ocean flight past the bound of its head: the retry is not played (one attempt noted, without a route), nothing applied', what='bound')
+
+
+@case('K377', 'Route engine, review of Security on SOG-0501 (e) (1): the static blocks of the RAD (`static_blocks`, the rules decided from the two aerodromes ALONE) never rest on a level or a position of the route — « ONLY AVBL FOR TFC BTN FL245-FL660 AT point », « ABV FL245 AT (p, q) », « BLW … AT point » are not decided there (a flight without a route is not « not at the point »), so no block is set on the target of such a rule for every flight',
+      'K', static=True,
+      rule='Security, 19 Nov (replayed in the code): `static_blocks` evaluates the condition with a context WITHOUT points and altitudes; `at_test` answered false for a point that is not on the route, so an H24 rule « ONLY AVBL FOR TFC … AT point » made `not result` true and a global block on its target for ALL flights: a route lost to a rule that the engine cannot judge. The point is false only when the context HAS a route (`points`); otherwise not decided. Invented codes.')
+def k377(c):
+    import sys
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import rad_flight as RF
+    pad = lambda row: row + [''] * (17 - len(row))
+
+    class Rad:
+        groups = {}
+
+        def match(self, expr, ad):
+            return ad in expr.upper().replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+
+        def active(self, r):
+            return True
+    rows = lambda *rules: [dict(row=i + 2, v=pad(['NEW', '', '', 'XX%04d' % (i + 1), '', '', '', 'TARGT' + str(i), *rule])) for i, rule in enumerate(rules)]
+    rad = Rad()
+    rad.book = {'sheets': {'Annex 2B': rows(
+        ['ONLY AVBL FOR TFC BTN FL245-FL660 AT BADRU', 'H24'],
+        ['ONLY AVBL FOR TFC ABV FL245 AT (BADRU, ZIRAF)', 'H24'],
+        ['ONLY AVBL FOR TFC BLW FL245 AT BADRU', 'H24'],
+        ['NOT AVBL FOR TFC ABV FL245 AT BADRU', 'H24'],
+        ['NOT AVBL FOR TFC DEP AAAA', 'H24'])}}
+    blocks = RF.static_blocks(rad, 'AAAA', 'BBBB')
+    c.eq([b['id'] for b in blocks], ['XX0005'], 'the only block is the rule that rests on the aerodromes (DEP AAAA); the four rules that rest on a level at a point are not decided without a route', what='blocks')
+    c.eq([RF.at_test('ABV', 245, 'BADRU', {}), RF.between_test(245, 660, 'BADRU', {}), RF.at_test('ABV', 245, 'BADRU', {'points': set()}), RF.between_test(245, 660, 'BADRU', {'points': {'BADRU'}, 'alt': {'BADRU': 35000}})], [None, None, False, True],
+         'without `points` in the context: not decided; with a route that does not pass the point: false; on the route at 35 000 ft: between', what='tests')
+    c.eq([RF.at_test('ABV', 245, 'P', {'points': {'P'}, 'alt': {'P': float('nan')}}), RF.between_test(245, 660, 'P', {'points': {'P'}, 'alt': {'P': float('nan')}}), RF.at_test('ABV', 245, 'P', {'points': {'P'}, 'alt': {'P': float('inf')}})], [None, None, None], 'an altitude that is not a finite number (NaN, infinity) is not decided', what='finite')
