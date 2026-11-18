@@ -16129,6 +16129,356 @@ def k357(c):
     c.ok(res['primary'].get('status') != 'CALCUL IMPOSSIBLE' and (res['primary'].get('route') or '').endswith('LF418'), str(res['primary'].get('status')) + ' ' + str(res['primary'].get('route')), 'a calculation to the heliport LF418 gives a route that ends at it')
 
 
+# « Mes signalements » (SOG-0410, launcher half): four verbs of tools/regen/signalement.py on the existing job route — signalement/lister, detail, noter, commenter —
+# over organisation/SIGNALEMENTS.json (the user's file, read only), SIGNALEMENTS_FICHES.json (the ergonomist's, read only) and SIGNALEMENTS_NOTES.json (written by the launcher only)
+SG_RULE = ('SOG-0410 (the ergonomist, 18 Nov 2026; contract: frame/help/maquette/signalements.md): the list, the search, the sheet, the priority and the comments of « Mes signalements » are read and written by launcher verbs on the existing job route; '
+           'every text of the three files is untrusted (bounded, control characters removed, closed lists); the notes file has ONE writer (atomic, never replaces an unreadable file, keeps what it did not create); the ergonomist\'s file of links is only read')
+
+
+def _sg_world():
+    """(run, ctx_of) : `run(verb, args, root)` runs a signalement verb exactly as the launcher does (its check first: None when the arguments are refused), the REAL verbs loaded like the launcher loads them."""
+    import importlib
+    import sys
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    RJ = importlib.import_module('regen_jobs')
+    if ('signalement', 'ajouter') not in RJ.REGISTRY:
+        failed = RJ.load_verbs()
+        if failed:
+            raise Fail(f'load_verbs: {failed}', 'every tools/regen/*.py loads', 'frame/INTEGRATION 15.1')
+
+    def run(verb, args, root):
+        if ('signalement', verb) not in RJ.REGISTRY:
+            raise Fail(f'signalement/{verb} is not a verb of the launcher', 'the four verbs of SOG-0410 are registered', 'tools/regen/signalement.py VERBS')
+        fn, check = RJ.REGISTRY[('signalement', verb)]
+        a = check(args)
+        return None if a is None else fn(RJ.Job('signalement', verb, {}), a, {'root': str(root)})
+    return run, RJ
+
+
+SG_ISO = r'\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ'
+
+
+def _sg_reports(extra=None):
+    """Three reports of the user, in file order (oldest first), and what `extra` adds."""
+    items = {
+        'SIG-00000000a1': {'kind': 'performance', 'title': 'Latence du rafraîchissement', 'text': 'Je tape un mot et rien ne bouge pendant deux secondes.\nÉlève la barre.', 'screen': 'fuel', 'ctx': {'version': '3.0.0-alpha.5', 'lang': 'fr', 'design': 'swiss', 'size': 'phone', 'tone': 'day'},
+                           'at': '2026-11-01T10:00:00Z', 'state': 'new'},
+        'SIG-00000000a2': {'kind': 'ergonomics', 'title': 'Menu à l\'étroit', 'text': 'Sur un écran étroit le menu déborde.', 'screen': 'maps', 'at': '2026-11-05T09:30:00Z', 'state': 'read'},
+        'SIG-00000000a3': {'kind': 'bug', 'title': 'Légende', 'text': 'La légende masque la carte entière.', 'screen': 'maps', 'images': ['SIG-00000000a3-1.png', '../x.png'], 'from': 'pilote', 'folder': 'ABC', 'ref': 'sig-2026-0001',
+                           'at': '2026-11-10T08:00:00Z', 'state': 'fiche', 'fiche': 'SOG-0409'},
+    }
+    items.update(extra or {})
+    return {'schema': 'sog-signalements/1', 'updated': '2026-11-10T08:00:00Z', 'items': items}
+
+
+def _sg_put(root, name, doc):
+    import json
+    org = root / 'organisation'
+    org.mkdir(exist_ok=True)
+    (org / name).write_text(doc if isinstance(doc, str) else json.dumps(doc, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
+    return org / name
+
+
+@case('K471', 'signalement/lister, SOG-0410: all the reports newest first by `at` (the shape of an item, `comments` a count, `searched` the number looked at), `limit` 1…300 and `offset`, a hostile file cleaned (control characters, lengths, a kind or a screen outside the list, a bad date, an entry that is not an object or under a bad identifier), an unreadable file said, no organisation folder said and nothing created, a key outside { q, offset, limit } refused',
+      'K', static=True, rule=SG_RULE)
+def k471(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    run, RJ = _sg_world()
+    c.ok(all(('signalement', v) in RJ.REGISTRY for v in ('lister', 'detail', 'noter', 'commenter')), sorted(k for k in RJ.REGISTRY if k[0] == 'signalement'), 'the four verbs are registered with the existing ones (same set, same route)')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        for verb, a in (('lister', {}), ('detail', {'id': 'SIG-00000000a1'}), ('noter', {'id': 'SIG-00000000a1', 'gravity': 'minor'}), ('commenter', {'id': 'SIG-00000000a1', 'text': 'x'})):
+            c.eq((run(verb, a, root), (root / 'organisation').exists()), ({'ok': False, 'reason': 'no-organisation'}, False), f'signalement/{verb}: no organisation folder (not the ergonomist\'s workstation) is said, and nothing is created', what=f'{verb} without organisation')
+        (root / 'organisation').mkdir()
+        c.eq(run('lister', {}, root), {'ok': True, 'total': 0, 'searched': 0, 'items': []}, 'an organisation folder without the reports file: an empty list, not an error', what='no file')
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        r = run('lister', {}, root)
+        c.eq((r['ok'], r['total'], r['searched'], [i['id'] for i in r['items']]), (True, 3, 3, ['SIG-00000000a3', 'SIG-00000000a2', 'SIG-00000000a1']), 'all the reports, the most recent first by `at`', what='order')
+        a1 = r['items'][2]
+        c.eq(a1, {'id': 'SIG-00000000a1', 'kind': 'performance', 'title': 'Latence du rafraîchissement', 'excerpt': 'Je tape un mot et rien ne bouge pendant deux secondes. Élève la barre.', 'screen': 'fuel', 'at': '2026-11-01T10:00:00Z', 'state': 'new', 'comments': 0},
+             'an item: id, kind, title, excerpt (the start of the text on one line when nothing is searched), screen, at, state and the number of comments; nothing else, no text, no context', what='item')
+        c.eq({k: r['items'][0].get(k) for k in ('state', 'fiche')}, {'state': 'fiche', 'fiche': 'SOG-0409'}, 'a report that already carries its card in the user\'s file (state fiche) shows it', what='own fiche')
+        # the same time: the later one in the file first
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000b1': {'title': 'même heure', 'at': '2026-11-10T08:00:00Z'}}))
+        c.eq([i['id'] for i in run('lister', {}, root)['items']][:2], ['SIG-00000000b1', 'SIG-00000000a3'], 'two reports of the same date: the one written later comes first', what='tie')
+        # window
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        c.eq([[i['id'] for i in run('lister', a, root)['items']] for a in ({'limit': 2}, {'offset': 2, 'limit': 2}, {'offset': 3}, {'offset': 1, 'limit': 1})],
+             [['SIG-00000000a3', 'SIG-00000000a2'], ['SIG-00000000a1'], [], ['SIG-00000000a2']], 'limit and offset cut the window', what='window')
+        c.eq(run('lister', {'limit': 1}, root)['total'], 3, '`total` is the number of reports that answer, not the size of the window', what='total')
+        for bad, why in (({'limit': 0}, 'limit 0'), ({'limit': 301}, 'limit 301'), ({'offset': -1}, 'offset -1'), ({'limit': True}, 'a boolean limit'), ({'limit': '5'}, 'a text limit'), ({'x': 1}, 'an unknown key'), ({'q': 5}, 'a number as q'),
+                         ({'q': 'a\x00b'}, 'a control character in q'), ({'q': 'a' * 601}, 'a q of 601 signs'), (None, 'no object'), ({'q': 'tape', 'id': 'SIG-00000000a1'}, 'the key of another verb')):
+            c.ok(run('lister', bad, root) is None, repr(bad)[:40], f'refused: {why}')
+        c.ok(run('lister', {'limit': 300, 'offset': 0, 'q': ''}, root)['ok'], '', 'limit 300 and an empty q are accepted (every report)')
+        # a hostile file: nothing of it reaches the page as it is
+        evil = {'SIG-00000000c1': {'kind': 'hack', 'title': 'T\x00i\x1b\ntle' + 'x' * 500, 'text': 'a\x00b\x1b\tc\n' + 'y' * 5000, 'screen': '../../x', 'at': 'hier', 'state': 'weird', 'fiche': 'SOG-1'},
+                'SIG-00000000c2': ['not', 'an', 'object'], 'bad-id': {'title': 'x'}, 'SIG-ZZZZ': {'title': 'x'}, 'SIG-00000000c3': 'text'}
+        _sg_put(root, 'SIGNALEMENTS.json', {'schema': 'sog-signalements/1', 'items': evil})
+        r = run('lister', {}, root)
+        e = r['items'][0]
+        c.eq((r['total'], r['searched'], len(r['items'])), (1, 1, 1), 'an entry that is not an object, and an entry under a bad identifier, are not reports', what='kept')
+        c.ok(e['kind'] == 'bug' and e['screen'] == 'other' and e['at'] == '' and e['state'] == 'new' and 'fiche' not in e, e, 'a kind, a screen or a state outside the closed lists, a bad date, a card of the wrong form: put back or dropped')
+        c.ok(len(e['title']) <= 80 and len(e['excerpt']) <= 240 and not re.search(r'[\x00-\x08\x0b-\x1f\x7f]', e['title'] + e['excerpt']), (len(e['title']), len(e['excerpt'])), 'the title is cut at 80, the excerpt at 240, no control character stays')
+        # an unreadable file is said, never guessed
+        for body in ('{not json', json.dumps({'schema': 'other/1', 'items': {}}), json.dumps({'schema': 'sog-signalements/1', 'items': []}), '[' * 100000):
+            _sg_put(root, 'SIGNALEMENTS.json', body)
+            c.eq(run('lister', {}, root), {'ok': False, 'reason': 'unreadable'}, f'the reports file {body[:20]!r} is unreadable: said (no crash)', what='unreadable')
+
+
+@case('K472', 'signalement/lister, the search, SOG-0410: done on the launcher\'s side, blind to accents and capitals (NFKD without the combining marks), every word of q must START a word of the title, the text, the screen, the card number or the answer; eight words and sixty signs at most; the excerpt is 240 signs of the text around the first match; `searched` says how many reports were looked at',
+      'K', static=True, rule=SG_RULE)
+def k472(c):
+    import tempfile
+    from pathlib import Path
+    run, RJ = _sg_world()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        long_text = 'Début. ' + 'mot ' * 250 + 'zèbre rayé ' + 'fin ' * 250
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000a4': {'kind': 'request', 'title': 'Un titre', 'text': long_text, 'screen': 'fuel', 'at': '2026-11-11T08:00:00Z', 'state': 'new'},
+                                                         'SIG-00000000a5': {'kind': 'bug', 'title': 'Ligature', 'text': 'Le \ufb01chier est perdu', 'screen': 'maps', 'at': '2026-11-12T08:00:00Z', 'state': 'new'}}))
+        _sg_put(root, 'SIGNALEMENTS_FICHES.json', {'schema': 'sog-signalements-fiches/1', 'items': {'SIG-00000000a1': {'fiche': 'SOG-0409', 'answer': 'Livré : le rafraîchissement est coalescé.'}}})
+
+        def ids(q, **kw):
+            r = run('lister', {'q': q, **kw}, root)
+            return [i['id'][-2:] for i in r['items']], r['total'], r['searched']
+        c.eq(ids('latence'), (['a1'], 1, 5), 'a word of the title is found; `searched` is the number of reports looked at (all five), `total` those that answer', what='title')
+        c.eq([ids(q)[0] for q in ('RAFRAICHISSEMENT', 'rafraîchissement', 'Rafraichissement', 'ÉLÈVE', 'eleve')], [['a1']] * 5, 'accents and capitals do not matter, on either side', what='accents')
+        c.eq((ids('tence')[1], ids('afraich')[1], ids('late')[1]), (0, 0, 1), 'a word is found by its BEGINNING, never from the middle', what='start of a word')
+        c.eq((ids('tape bouge')[0], ids('tape carte')[0], ids('mot rien')[0]), (['a1'], [], ['a1']), 'every word of q must be found (each in any field), the words in any order', what='several words')
+        c.eq((ids('maps')[0], ids('FUEL')[0]), (['a5', 'a3', 'a2'], ['a4', 'a1']), 'the screen is searched', what='screen')
+        c.eq((ids('sog-0409')[0], ids('0409')[0], ids('sog')[0], ids('SOG-04')[0]), (['a3', 'a1'], ['a3', 'a1'], ['a3', 'a1'], ['a3', 'a1']), 'the card number is searched (from the ergonomist\'s file, and a report\'s own card is in the same field), by its beginning or by its digits', what='card number')
+        c.eq((ids('coalesce')[0], ids('livre')[0], ids('livré rafraichissement')[0]), (['a1'], ['a1'], ['a1']), 'the ergonomist\'s answer is searched', what='answer')
+        c.eq((ids('fichier')[0], ids('perdu fi')[0]), (['a5'], ['a5']), 'NFKD: a ligature in the text (\ufb01) is found by « fi »', what='ligature')
+        c.eq(ids('xyz'), ([], 0, 5), 'nothing found: no item, and the number looked at is still said (« Aucun signalement ne contient « xyz » (5 cherchés) »)', what='no match')
+        c.eq((ids('   ')[1], ids('')[1]), (5, 5), 'a blank q is no search', what='blank')
+        c.eq(ids('tape', limit=1, offset=1), ([], 1, 5), 'the window applies to the answers of the search', what='window')
+        c.eq(ids('mot', limit=1), (['a4'], 2, 5), 'the same word in two reports: newest first', what='order')
+        c.eq(ids('tape bouge pendant deux secondes rien ne un mot ZZZ')[0], ['a1'], 'only the first eight words of q count (the ninth is ignored)', what='eight words')
+        c.eq(ids('tape tape tape tape tape tape tape tape tape ZZZ')[0], ['a1'], 'only the first eight words of q count (a ninth that finds nothing does not empty the answer)', what='ninth')
+        c.eq(ids('latence' + 'x' * 100)[1], 0, 'a long word that is not the beginning of a word finds nothing', what='long word')
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000a6': {'title': 'Long', 'text': 'x' * 70, 'screen': 'fuel', 'at': '2026-11-13T08:00:00Z', 'state': 'new'}}))
+        c.eq((ids('x' * 60 + 'y' * 5)[0], ids('x' * 71)[0]), (['a6'], ['a6']), 'a word of q is cut at 60 signs (a word of 65 signs is looked for as its first 60)', what='sixty signs')
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000a4': {'kind': 'request', 'title': 'Un titre', 'text': long_text, 'screen': 'fuel', 'at': '2026-11-11T08:00:00Z', 'state': 'new'},
+                                                         'SIG-00000000a5': {'kind': 'bug', 'title': 'Ligature', 'text': 'Le \ufb01chier est perdu', 'screen': 'maps', 'at': '2026-11-12T08:00:00Z', 'state': 'new'}}))
+        # excerpts
+        full = {i['id']: i for i in run('lister', {}, root)['items']}
+        c.ok(all(len(i['excerpt']) <= 240 for i in full.values()) and full['SIG-00000000a4']['excerpt'].startswith('Début. mot mot'), len(full['SIG-00000000a4']['excerpt']), 'no search: the excerpt is the start of the text, 240 signs at most')
+        z = run('lister', {'q': 'zèbre'}, root)['items'][0]
+        c.ok(z['id'] == 'SIG-00000000a4' and 'zèbre rayé' in z['excerpt'] and len(z['excerpt']) <= 240 and not z['excerpt'].startswith('Début'), z['excerpt'], 'the excerpt is cut AROUND the first match of the text (240 signs at most), not at its start')
+        t = run('lister', {'q': 'latence'}, root)['items'][0]
+        c.ok(t['excerpt'].startswith('Je tape un mot'), t['excerpt'], 'a match in the title only: the excerpt is the start of the text')
+        l5 = run('lister', {'q': 'fi'}, root)['items']
+        c.ok(any('\ufb01chier' in i['excerpt'] for i in l5), [i['excerpt'] for i in l5], 'the excerpt is cut in the ORIGINAL text (the ligature is kept as written)')
+
+
+@case('K473', 'signalement/detail and the merge of the three files, SOG-0410: the sheet of one report (text, noted context cleaned, images by their names, origin), the link and the answer from the ergonomist\'s SIGNALEMENTS_FICHES.json (a malformed entry ignored, an unreadable file ignored, the file never written), the priority and the comments from SIGNALEMENTS_NOTES.json; an unknown identifier said',
+      'K', static=True, rule=SG_RULE)
+def k473(c):
+    import tempfile
+    from pathlib import Path
+    run, RJ = _sg_world()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        for bad in ({}, {'id': 'SIG-1'}, {'id': '../x'}, {'id': 5}, {'id': 'SIG-00000000a1', 'x': 1}, {'id': 'SIG-00000000a1', 'q': 'x'}):
+            c.ok(run('detail', bad, root) is None, repr(bad), f'refused: {bad!r}')
+        c.eq(run('detail', {'id': 'SIG-00000000ff'}, root), {'ok': False, 'reason': 'unknown'}, 'an identifier that is not a report: unknown', what='unknown')
+        d = run('detail', {'id': 'SIG-00000000a1'}, root)['item']
+        c.eq(d, {'id': 'SIG-00000000a1', 'kind': 'performance', 'title': 'Latence du rafraîchissement', 'screen': 'fuel', 'at': '2026-11-01T10:00:00Z', 'state': 'new', 'text': 'Je tape un mot et rien ne bouge pendant deux secondes.\nÉlève la barre.',
+                 'ctx': {'version': '3.0.0-alpha.5', 'lang': 'fr', 'design': 'swiss', 'size': 'phone', 'tone': 'day'}, 'images': [], 'comments': []},
+             'the sheet: the whole text (line break kept), the noted context, no image, no comment, no card', what='sheet')
+        p = run('detail', {'id': 'SIG-00000000a3'}, root)['item']
+        c.eq((p['from'], p['folder'], p['images'], p['fiche'], p['state'], 'ctx' in p), ('pilote', 'ABC', ['SIG-00000000a3-1.png'], 'SOG-0409', 'fiche', False), 'a pilot\'s report: its origin and folder; the images by their names only (a name that is not one of the verb\'s is dropped)', what='pilot')
+        # hostile detail
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000d1': {'kind': 'bug', 'title': 't', 'text': 'x', 'screen': 'fuel', 'at': '2026-11-02T00:00:00Z', 'state': 'new', 'from': 'admin', 'folder': '../..',
+                                                                           'ctx': {'lang': 'xx', 'design': '<b>', 'version': '../1', 'size': 'phone', 'tone': 5}, 'images': ['../../etc/passwd', 'a.svg', 'SIG-00000000a1-1.png', 'SIG-00000000d1-2.webp', 'SIG-00000000d1-1.png', 'SIG-00000000d1-3.jpg', 'SIG-00000000d1-1.jpg']}}))
+        h = run('detail', {'id': 'SIG-00000000d1'}, root)['item']
+        c.eq((h.get('from'), h.get('folder'), h['ctx'], h['images']), (None, None, {'size': 'phone'}, ['SIG-00000000d1-2.webp', 'SIG-00000000d1-1.png', 'SIG-00000000d1-3.jpg']), 'a forged origin, a context value outside the lists, a name that is not an image of THIS report as the verb names them (a path, an svg, another report image): dropped; three names at most', what='hostile')
+        # the ergonomist's file of links
+        fiches = {'schema': 'sog-signalements-fiches/1', 'updated': '2026-11-18T10:00:00Z', 'items': {
+            'SIG-00000000a1': {'fiche': 'SOG-0409', 'answer': 'Livré le 17 novembre.', 'refused': False},
+            'SIG-00000000a2': {'fiche': 'SOG-0410', 'refused': True, 'future': 'key'},
+            'SIG-00000000a3': {'fiche': 'SOG-0500'},
+            'SIG-00000000d1': {'fiche': 'SOG-12', 'answer': 'bad number'},
+            'SIG-00000000e1': {'fiche': 'SOG-0411'}, 'SIG-00000000e2': 'text', 'SIG-0000': {'fiche': 'SOG-0412'}}}
+        f = _sg_put(root, 'SIGNALEMENTS_FICHES.json', fiches)
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        before = f.read_bytes()
+        r = {i['id']: i for i in run('lister', {}, root)['items']}
+        c.eq((r['SIG-00000000a1']['state'], r['SIG-00000000a1']['fiche'], r['SIG-00000000a1']['answer'], 'refused' in r['SIG-00000000a1']), ('fiche', 'SOG-0409', 'Livré le 17 novembre.', False), 'the list shows the link and the answer of the ergonomist\'s file (a report with no card yet becomes « fiche »)', what='list merge')
+        c.eq((r['SIG-00000000a2']['fiche'], r['SIG-00000000a2']['refused'], 'answer' in r['SIG-00000000a2'], r['SIG-00000000a2']['state']), ('SOG-0410', True, False, 'fiche'), 'a refused link says `refused: true` (and a key of the future is ignored)', what='refused')
+        c.eq(r['SIG-00000000a3']['fiche'], 'SOG-0500', 'the ergonomist\'s file wins over the card written in the user\'s file', what='precedence')
+        dd = run('detail', {'id': 'SIG-00000000a1'}, root)['item']
+        c.eq((dd['fiche'], dd['answer'], dd['state']), ('SOG-0409', 'Livré le 17 novembre.', 'fiche'), 'the sheet shows the same', what='detail merge')
+        # malformed entries: ignored, never fatal
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000d1': {'title': 'd1', 'at': '2026-11-02T00:00:00Z'}, 'SIG-00000000d2': {'title': 'd2', 'at': '2026-11-03T00:00:00Z'}, 'SIG-00000000d3': {'title': 'd3', 'at': '2026-11-04T00:00:00Z'},
+                                                         'SIG-00000000d4': {'title': 'd4', 'at': '2026-11-04T01:00:00Z'}}))
+        _sg_put(root, 'SIGNALEMENTS_FICHES.json', {'schema': 'sog-signalements-fiches/1', 'items': {
+            'SIG-00000000d1': {'fiche': 'SOG-12'}, 'SIG-00000000d2': {'fiche': 'SOG-0412', 'answer': 'x' * 301}, 'SIG-00000000d3': {'fiche': 'SOG-0413', 'answer': 'a\x1bb'}, 'SIG-00000000d4': {'fiche': 'SOG-0414', 'refused': 'yes'},
+            'SIG-00000000a2': {'fiche': 'SOG-0410', 'answer': 'x' * 300}}})
+        r = {i['id']: i for i in run('lister', {}, root)['items']}
+        c.eq([('fiche' in r[f'SIG-00000000d{n}']) for n in (1, 2, 3, 4)], [False] * 4, 'a link of the wrong form, an answer of 301 signs or with a control character, a `refused` that is not a boolean: the whole entry is ignored', what='malformed')
+        c.eq(len(r['SIG-00000000a2']['answer']), 300, 'an answer of exactly 300 signs is kept', what='300')
+        for body in ('{not json', '[1]', '{"schema": "other/1", "items": {"SIG-00000000a1": {"fiche": "SOG-0409"}}}', '{"schema": "sog-signalements-fiches/1", "items": []}', '[' * 100000):
+            _sg_put(root, 'SIGNALEMENTS_FICHES.json', body)
+            x = run('lister', {}, root)
+            c.ok(x['ok'] and x['total'] == 7 and all('fiche' not in i or i['id'] == 'SIG-00000000a3' for i in x['items']), body[:30], f'a links file that is unreadable or of another schema ({body[:20]!r}) is ignored: the list still answers')
+        (root / 'organisation' / 'SIGNALEMENTS_FICHES.json').unlink()
+        c.eq(run('lister', {'q': 'sog-0409'}, root)['total'], 1, 'no links file: the card of the user\'s own file only (the report that already carries one)', what='absent')
+        # the priority and the comments
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        _sg_put(root, 'SIGNALEMENTS_NOTES.json', {'schema': 'sog-signalements-notes/1', 'items': {'SIG-00000000a1': {'gravity': 'annoying', 'frequency': 'often', 'comments': [
+            {'id': 'COM-0123456789', 'at': '2026-11-18T10:00:00Z', 'text': 'Premier\tcommentaire\navec une ligne.\x00'}, {'id': 'bad', 'at': 'x', 'text': 'dropped'}, {'id': 'COM-aaaaaaaaaa', 'at': 'hier', 'text': 5}]},
+            'SIG-00000000a2': {'gravity': 'urgent', 'frequency': 3}}})
+        r = {i['id']: i for i in run('lister', {}, root)['items']}
+        c.eq((r['SIG-00000000a1']['gravity'], r['SIG-00000000a1']['frequency'], r['SIG-00000000a1']['comments'], 'gravity' in r['SIG-00000000a2'], 'frequency' in r['SIG-00000000a2'], r['SIG-00000000a2']['comments']),
+             ('annoying', 'often', 1, False, False, 0), 'the list shows the priority and counts the comments; a value outside the closed lists is dropped; a comment of the wrong form is not counted', what='notes in list')
+        d = run('detail', {'id': 'SIG-00000000a1'}, root)['item']
+        c.eq((d['gravity'], d['frequency'], d['comments']), ('annoying', 'often', [{'id': 'COM-0123456789', 'at': '2026-11-18T10:00:00Z', 'text': 'Premier\tcommentaire\navec une ligne.'}]), 'the sheet gives the comments (id, at, text; tab and line break kept, the NUL gone)', what='notes in detail')
+        _sg_put(root, 'SIGNALEMENTS_NOTES.json', '{not json')
+        c.ok(run('lister', {}, root)['ok'] and run('detail', {'id': 'SIG-00000000a1'}, root)['ok'], '', 'an unreadable notes file does not stop the list or the sheet (the writing verbs refuse it: K475)')
+
+
+@case('K474', 'signalement/noter, SOG-0410: the priority is the user\'s own choice in two closed lists (gravity blocking / annoying / minor, frequency always / often / rare); a value outside them is refused (bad-value) and nothing is written; null clears; the id must be a report of SIGNALEMENTS.json; the notes file is created by the verb with its schema, an atomic write, what it did not create kept as it is, 1000 reports at most',
+      'K', static=True, rule=SG_RULE)
+def k474(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    run, RJ = _sg_world()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        org = root / 'organisation'
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        notes = org / 'SIGNALEMENTS_NOTES.json'
+        for bad, why in (({'id': 'SIG-00000000a1'}, 'neither gravity nor frequency'), ({'gravity': 'minor'}, 'no id'), ({'id': '../x', 'gravity': 'minor'}, 'an id that is not one'), ({'id': 'SIG-00000000a1', 'gravity': 'minor', 'x': 1}, 'an unknown key'),
+                         ({'id': 'SIG-00000000a1', 'gravity': 3}, 'a number as value'), ({'id': 'SIG-00000000a1', 'gravity': ['minor']}, 'a list as value'), (None, 'no object'), ({'id': 'SIG-00000000a1', 'text': 'x'}, 'the key of another verb')):
+            c.ok(run('noter', bad, root) is None, repr(bad)[:60], f'refused: {why}')
+        c.ok(not notes.exists(), '', 'a refused call writes nothing')
+        for bad in ({'gravity': 'urgent'}, {'frequency': 'daily'}, {'gravity': ''}, {'gravity': 'BLOCKING'}, {'gravity': 'blocking', 'frequency': 'daily'}, {'gravity': 'frequency'}):
+            c.eq((run('noter', {'id': 'SIG-00000000a1', **bad}, root), notes.exists()), ({'ok': False, 'reason': 'bad-value'}, False), f'{bad}: outside the closed lists: refused, and nothing is written (even the valid half)', what='bad value')
+        c.eq(run('noter', {'id': 'SIG-00000000ff', 'gravity': 'minor'}, root), {'ok': False, 'reason': 'unknown'}, 'an id that is not a report: unknown (a note never floats free)', what='unknown')
+        c.ok(not notes.exists(), '', 'nothing written for an unknown id')
+        c.eq(run('noter', {'id': 'SIG-00000000a1', 'gravity': 'annoying'}, root), {'ok': True, 'gravity': 'annoying', 'frequency': None}, 'gravity alone: the reply says both values (the other one null)', what='reply')
+        d = json.loads(notes.read_text(encoding='utf-8'))
+        c.eq((d['schema'], d['items'], bool(re.fullmatch(SG_ISO, d['updated'])), list(org.glob('*.tmp'))), ('sog-signalements-notes/1', {'SIG-00000000a1': {'gravity': 'annoying'}}, True, []), 'the file is created with its schema, the entry and the date; no temporary file stays', what='file')
+        c.eq(run('noter', {'id': 'SIG-00000000a1', 'frequency': 'often'}, root), {'ok': True, 'gravity': 'annoying', 'frequency': 'often'}, 'frequency alone keeps the gravity', what='keep')
+        c.eq(run('noter', {'id': 'SIG-00000000a1', 'gravity': 'blocking', 'frequency': 'rare'}, root), {'ok': True, 'gravity': 'blocking', 'frequency': 'rare'}, 'both at once', what='both')
+        c.eq(run('noter', {'id': 'SIG-00000000a1', 'gravity': None}, root), {'ok': True, 'gravity': None, 'frequency': 'rare'}, 'null clears one value', what='clear')
+        c.eq(json.loads(notes.read_text(encoding='utf-8'))['items'], {'SIG-00000000a1': {'frequency': 'rare'}}, 'the cleared key is gone from the file', what='cleared')
+        run('noter', {'id': 'SIG-00000000a1', 'frequency': None}, root)
+        c.eq(json.loads(notes.read_text(encoding='utf-8'))['items'], {}, 'an entry with nothing left is removed', what='empty entry')
+        # what the verb did not create is kept as it is
+        _sg_put(root, 'SIGNALEMENTS_NOTES.json', {'schema': 'sog-signalements-notes/1', 'future': {'a': [1, 2]}, 'items': {'SIG-00000000a2': {'gravity': 'minor', 'extra': {'x': 1}, 'comments': [{'id': 'whatever', 'odd': True}]}, 'SIG-00000000a3': 'strange'}})
+        before = json.loads(notes.read_text(encoding='utf-8'))
+        run('noter', {'id': 'SIG-00000000a1', 'gravity': 'minor'}, root)
+        after = json.loads(notes.read_text(encoding='utf-8'))
+        c.eq((after['future'], after['items']['SIG-00000000a2'], after['items']['SIG-00000000a3'], after['items']['SIG-00000000a1']), (before['future'], before['items']['SIG-00000000a2'], 'strange', {'gravity': 'minor'}),
+             'a top-level key of the future, the entries of the other reports (unknown keys, an odd comment, an odd entry) are kept exactly', what='kept')
+        c.eq(run('noter', {'id': 'SIG-00000000a3', 'gravity': 'minor'}, root), {'ok': False, 'reason': 'unreadable'}, 'an entry of this report that is not an object: refused, not replaced', what='odd entry')
+        # 1000 reports at most
+        many = {f'SIG-{n:010x}': {'title': 't', 'at': '2026-11-01T00:00:00Z'} for n in range(1001)}
+        _sg_put(root, 'SIGNALEMENTS.json', {'schema': 'sog-signalements/1', 'items': many})
+        f = _sg_put(root, 'SIGNALEMENTS_NOTES.json', {'schema': 'sog-signalements-notes/1', 'items': {f'SIG-{n:010x}': {'gravity': 'minor'} for n in range(1000)}})
+        b0 = f.read_bytes()
+        c.eq((run('noter', {'id': 'SIG-%010x' % 1000, 'gravity': 'minor'}, root), f.read_bytes() == b0), ({'ok': False, 'reason': 'too-many'}, True), 'the 1001st report noted is refused by code, the file untouched', what='1001')
+        c.eq(run('noter', {'id': 'SIG-%010x' % 999, 'gravity': 'blocking'}, root)['ok'], True, 'a report already in the file can still be noted at 1000', what='1000 ok')
+
+
+@case('K475', 'signalement/commenter, SOG-0410: a comment of 1 to 2000 signs (tab and line break allowed, any other control character refused), the identifier (COM- and ten hexadecimal digits) made here and never received, an unknown key of the argument refused as in signalement/ajouter, 200 comments per report at most, the id must be a report, the reply and the file say the comment',
+      'K', static=True, rule=SG_RULE)
+def k475(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    run, RJ = _sg_world()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        org = root / 'organisation'
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        notes = org / 'SIGNALEMENTS_NOTES.json'
+        good = {'id': 'SIG-00000000a1', 'text': 'Vu aussi sur la tablette.'}
+        for bad, why in (({'id': 'SIG-00000000a1'}, 'no text'), ({'text': 'x'}, 'no id'), ({**good, 'text': ''}, 'an empty text'), ({**good, 'text': '  \n\t '}, 'a blank text'), ({**good, 'text': 'x' * 2001}, 'a text of 2001'), ({**good, 'text': 'a\x00b'}, 'a NUL'),
+                         ({**good, 'text': 'a\x1bb'}, 'an escape'), ({**good, 'text': 'a\rb'}, 'a carriage return'), ({**good, 'text': 'a\x7fb'}, 'a DEL'), ({**good, 'text': 5}, 'a number as text'), ({**good, 'text': ['a']}, 'a list as text'),
+                         ({**good, 'id': 'COM-0123456789'}, 'an id that is not a report\'s'), ({**good, 'extra': 1}, 'an unknown key'), ({**good, 'at': '2020-01-01T00:00:00Z'}, 'a date given by the page'), ({**good, 'comment_id': 'COM-0123456789'}, 'an identifier given by the page'), (None, 'no object')):
+            c.ok(run('commenter', bad, root) is None, repr(bad)[:60], f'refused: {why}')
+        c.ok(not notes.exists(), '', 'a refused call writes nothing')
+        c.eq(run('commenter', {'id': 'SIG-00000000ff', 'text': 'x'}, root), {'ok': False, 'reason': 'unknown'}, 'an id that is not a report: unknown', what='unknown')
+        c.ok(not notes.exists(), '', 'nothing written for an unknown id')
+        r = run('commenter', {'id': 'SIG-00000000a1', 'text': '  Ligne un\n\tligne deux « é »  '}, root)
+        cm = r.get('comment', {})
+        c.ok(r['ok'] and re.fullmatch(r'COM-[0-9a-f]{10}', cm.get('id', '')) and re.fullmatch(SG_ISO, cm.get('at', '')) and cm['text'] == 'Ligne un\n\tligne deux « é »' and set(r) == {'ok', 'comment'} and set(cm) == {'id', 'at', 'text'}, r, 'the reply: { ok, comment: { id, at, text } }, the id made here, the text trimmed with its tab and line break')
+        d = json.loads(notes.read_text(encoding='utf-8'))
+        c.eq((d['schema'], d['items'], list(org.glob('*.tmp'))), ('sog-signalements-notes/1', {'SIG-00000000a1': {'comments': [cm]}}, []), 'the file holds the comment under its report, no temporary file', what='file')
+        c.ok(run('commenter', {'id': 'SIG-00000000a1', 'text': 'y' * 2000}, root)['ok'], '', 'a comment of exactly 2000 signs is accepted')
+        run('noter', {'id': 'SIG-00000000a1', 'gravity': 'minor'}, root)
+        run('commenter', {'id': 'SIG-00000000a2', 'text': 'Autre'}, root)
+        e = json.loads(notes.read_text(encoding='utf-8'))['items']
+        c.eq((len(e['SIG-00000000a1']['comments']), e['SIG-00000000a1']['gravity'], len(e['SIG-00000000a2']['comments']), len({x['id'] for x in e['SIG-00000000a1']['comments']})), (2, 'minor', 1, 2), 'comments pile up in order, the priority beside them is kept, each report has its own, identifiers differ', what='pile')
+        c.eq([i['comments'] for i in run('lister', {}, root)['items']], [0, 1, 2], 'the list counts them (newest report first: a3, a2, a1)', what='count')
+        # 200 at most
+        f = _sg_put(root, 'SIGNALEMENTS_NOTES.json', {'schema': 'sog-signalements-notes/1', 'items': {'SIG-00000000a1': {'comments': [{'id': 'COM-%010x' % n, 'at': '2026-11-18T10:00:00Z', 'text': 't'} for n in range(199)]}}})
+        c.ok(run('commenter', good, root)['ok'], '', 'the 200th comment is accepted')
+        b0 = f.read_bytes()
+        c.eq((run('commenter', good, root), f.read_bytes() == b0), ({'ok': False, 'reason': 'too-many-comments'}, True), 'the 201st is refused by code, the file untouched', what='201')
+        c.ok(run('commenter', {'id': 'SIG-00000000a2', 'text': 'ok'}, root)['ok'], '', 'another report is not concerned by the limit of this one')
+
+
+@case('K476', 'The notes file of « Mes signalements », SOG-0410: one writer (noter and commenter only; the user\'s reports file and the ergonomist\'s links file are never written), an unreadable or other-schema or too-big file or a folder in its place refused and left as it is (never replaced), a result that would pass 4 Mio refused, no temporary file left',
+      'K', static=True, rule=SG_RULE)
+def k476(c):
+    import json
+    import tempfile
+    from pathlib import Path
+    run, RJ = _sg_world()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        org = root / 'organisation'
+        rep = _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        fic = _sg_put(root, 'SIGNALEMENTS_FICHES.json', {'schema': 'sog-signalements-fiches/1', 'items': {'SIG-00000000a1': {'fiche': 'SOG-0409'}}})
+        keep = (rep.read_bytes(), fic.read_bytes())
+        notes = org / 'SIGNALEMENTS_NOTES.json'
+        both = (({'id': 'SIG-00000000a1', 'gravity': 'minor'}, 'noter'), ({'id': 'SIG-00000000a1', 'text': 'x'}, 'commenter'))
+        for body, why in (('{not json', 'not JSON'), (json.dumps({'schema': 'other/1', 'items': {}}), 'another schema'), (json.dumps({'schema': 'sog-signalements-notes/1', 'items': []}), 'items that are not an object'),
+                          (json.dumps({'schema': 'sog-signalements-notes/1', 'items': {'SIG-00000000a1': {'comments': 'no'}}}), 'comments that are not a list'), ('[' * 100000, 'nested 100000 levels'), ('{"schema": "sog-signalements-notes/1", "items": {}, "x": NaN}', 'NaN')):
+            notes.write_text(body, encoding='utf-8')
+            for a, verb in both:
+                r = run(verb, a, root)
+                c.eq((r, notes.read_text(encoding='utf-8')), ({'ok': False, 'reason': 'unreadable'}, body), f'signalement/{verb}: a notes file that is {why} is refused and left as it is (the user\'s own words are never replaced)', what=f'{verb} {why}')
+        notes.write_bytes(b'{"schema": "sog-signalements-notes/1", "items": {}, "pad": "' + b'x' * (4 * 1024 * 1024) + b'"}')
+        for a, verb in both:
+            c.eq((run(verb, a, root), notes.stat().st_size > 4 * 1024 * 1024), ({'ok': False, 'reason': 'unreadable'}, True), f'signalement/{verb}: a notes file above 4 Mio is refused, not read, not replaced', what=f'{verb} big')
+        notes.unlink()
+        notes.mkdir()
+        for a, verb in both:
+            c.eq((run(verb, a, root), notes.is_dir()), ({'ok': False, 'reason': 'unreadable'}, True), f'signalement/{verb}: a folder in the place of the file is refused', what=f'{verb} folder')
+        notes.rmdir()
+        # the result would pass 4 Mio: refused, the file untouched
+        base = {'schema': 'sog-signalements-notes/1', 'items': {'SIG-00000000a2': {'pad': ''}}}
+        size = len((json.dumps(base, ensure_ascii=False, indent=1) + '\n').encode('utf-8'))
+        base['items']['SIG-00000000a2']['pad'] = 'x' * (4 * 1024 * 1024 - size - 600)
+        f = _sg_put(root, 'SIGNALEMENTS_NOTES.json', base)
+        b0 = f.read_bytes()
+        c.ok(len(b0) <= 4 * 1024 * 1024, len(b0), 'the file is just below 4 Mio (it is read)')
+        c.eq((run('commenter', {'id': 'SIG-00000000a1', 'text': 'z' * 2000}, root), f.read_bytes() == b0, list(org.glob('*.tmp'))), ({'ok': False, 'reason': 'too-big'}, True, []), 'a comment that would carry the file past 4 Mio is refused, the file untouched, no temporary file', what='4 Mio')
+        c.ok(run('commenter', {'id': 'SIG-00000000a1', 'text': 'petit'}, root)['ok'], '', 'a small comment still fits')
+        # the other two files are never written, and a temporary file is never left
+        run('noter', {'id': 'SIG-00000000a2', 'gravity': 'minor'}, root)
+        c.eq(((rep.read_bytes(), fic.read_bytes()) == keep, sorted(p.name for p in org.iterdir())), (True, ['SIGNALEMENTS.json', 'SIGNALEMENTS_FICHES.json', 'SIGNALEMENTS_NOTES.json']),
+             'after every writing, the user\'s reports file and the ergonomist\'s links file are byte for byte what they were; the folder holds the three files and no temporary one', what='other files')
+        # a reports file that cannot be read stops the writing too (the id cannot be checked)
+        rep.write_text('{not json', encoding='utf-8')
+        b0 = (org / 'SIGNALEMENTS_NOTES.json').read_bytes()
+        c.eq((run('noter', {'id': 'SIG-00000000a1', 'gravity': 'minor'}, root), (org / 'SIGNALEMENTS_NOTES.json').read_bytes() == b0), ({'ok': False, 'reason': 'unreadable'}, True), 'an unreadable reports file: the id cannot be checked, nothing is written', what='reports unreadable')
+    # one writer, in the code: the notes file is opened for writing in one place only, and the other two files nowhere
+    src = (ROOT / 'tools' / 'regen' / 'signalement.py').read_text(encoding='utf-8')
+    c.eq((len(re.findall(r"NOTES_FILE", src)) >= 2, len(re.findall(r"open\([^)]*(FICHES_FILE|NOTES_FILE)[^)]*'[wax]b?'", src)), len(re.findall(r"os\.replace\(", src))), (True, 0, 2), 'the code replaces files in two places only (the reports file of signalement/ajouter, the notes file of _write_notes) and opens neither the links file nor the notes file by hand', what='one writer')
+
+
 @case('K360', 'Route engine, SOG-0468 (3): the great-circle distance is written ONCE (`route_engine/geo.py`) with its guard `min(1, …)` — for two nearly antipodal points `h` exceeds 1 by a rounding (85 000 of 2 million such pairs) and only the guard keeps the argument of asin in its domain — and the engine, the FRA graph, the NAT refresh, the route matrix and the UK Mil reader call it; the results are those of the old formula',
       'K', static=True,
       rule='SOG-0468 (3) (the relay, 18 Nov: « route_engine/geo.py et la garde min(1, …), défaut latent compris »). Measured: the formula was written nine times in Python (six of them in the files of the route engine and its tools), six without the guard: for a pair of points near the antipode, `h` = 1.0000000000000002; the square root of that still rounds to 1.0, so no ValueError was ever reached in 2 million trials — the missing guard is a hardening, not a crash found (said so to the relay). engine.nm, which had the guard, and the copies of fra (precomputed sine and cosine) give the same numbers as before; the three copies of other sessions (launch, proc_arc, proc_geometry) are signalled to them. The pair below is invented (no data of the base).')

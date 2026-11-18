@@ -1,8 +1,17 @@
 """Le jeu « signalement » du lanceur : « Signaler un problème ou une demande » écrit sur le poste de l'ergonome (SOG-0316) — chargé par regen_jobs.load_verbs().
 
-Deux verbes, ce poste seulement (comme tous les travaux ; la route est la route existante POST /__setup/regen/job : aucune route nouvelle) :
+Six verbes, ce poste seulement (comme tous les travaux ; la route est la route existante POST /__setup/regen/job : aucune route nouvelle) :
   · `signalement/ajouter` { kind, title, text, screen, ctx?, images?, origin? } : ajoute UN signalement à organisation/SIGNALEMENTS.json, avec jusqu'à trois captures rangées dans organisation/images/ ;
   · `signalement/lire` { ids? } : { ok, count, items: { id: { state, fiche? } }, refs: ['ABC/SIG-…', …] (ceux d'un pilote déjà repris) } — l'état des signalements demandés (vingt derniers sans `ids`) ; { ok: false, reason: 'no-organisation' } sur un poste qui n'est pas celui de l'ergonome.
+  · `signalement/lister` { q?, offset?, limit? } : { ok, total, searched, items: [ { id, kind, title, excerpt, screen, at, state, fiche?, answer?, refused?, gravity?, frequency?, comments (le nombre) } ] } — les signalements, le plus récent d'abord (`at`), ou ceux qui répondent à `q` ; `limit` 1…300 (300 par défaut), `offset` ; `searched` : le nombre de signalements regardés ;
+  · `signalement/detail` { id } : { ok, item: { id, kind, title, text, screen, ctx?, at, state, from?, folder?, images: [noms], fiche?, answer?, refused?, gravity?, frequency?, comments: [ { id, at, text } ] } } ou { ok: false, reason: 'unknown' } ;
+  · `signalement/noter` { id, gravity?, frequency? } : { ok, gravity, frequency } — la priorité choisie PAR L'UTILISATEUR (gravity : blocking, annoying, minor ; frequency : always, often, rare ; null efface) ; une valeur hors liste : { ok: false, reason: 'bad-value' } ;
+  · `signalement/commenter` { id, text } : { ok, comment: { id, at, text } } — un commentaire de 1 à 2000 signes (200 par signalement au plus), l'identifiant (COM- et dix chiffres hexadécimaux) fabriqué ici.
+Les quatre verbes lisent aussi organisation/SIGNALEMENTS_FICHES.json (l'ergonome seul l'écrit ; ce module ne fait que le LIRE : { schema: 'sog-signalements-fiches/1', items: { SIG-… : { fiche: 'SOG-nnnn', answer?: 300 signes au plus sans caractère de commande, refused?: booléen } } } ; une entrée mal formée est ignorée, jamais fatale)
+et organisation/SIGNALEMENTS_NOTES.json (priorité et commentaires : { schema: 'sog-signalements-notes/1', updated, items: { SIG-… : { gravity?, frequency?, comments?: [ { id, at, text } ] } } } ; ÉCRIT PAR `noter` et `commenter` SEULS, un seul rédacteur : temporaire puis remplacement, 4 Mio et 1000 signalements au plus,
+un fichier illisible ou d'un autre schéma est refusé (reason: 'unreadable'), jamais remplacé ; ce qu'il ne crée pas est gardé tel quel, clés inconnues comprises ; l'identifiant doit être celui d'un signalement de SIGNALEMENTS.json, sinon reason: 'unknown').
+La recherche `q` se fait ICI, sur le texte : sans accent ni majuscule (NFKD sans les signes combinants), chaque mot de `q` (8 mots au plus, 60 signes chacun) doit COMMENCER un mot du titre, du texte, de l'écran, du numéro de fiche ou de la réponse ; `excerpt` : 240 signes du texte autour de la première correspondance (ou le début).
+Tout texte lu dans ces fichiers est NON FIABLE : borné, sans caractère de commande, avant d'être rendu ; ce qui sort d'une liste fermée (sorte, écran, priorité, état) est écarté.
 Forme du fichier : { "schema": "sog-signalements/1", "updated": "<ISO UTC>", "items": { "SIG-0123456789": { kind, title, text, screen, ctx?, images?, at, state, from?, folder?, ref? }, … } } — 1000 entrées au plus ; l'ergonome le lit à chaque tour
 et y pose l'état (`state` : new, read, fiche + `fiche` SOG-nnnn) : ce verbe n'efface et ne réécrit JAMAIS ce qu'il ne crée pas (les entrées déjà là sont gardées telles quelles, clés inconnues comprises ; un fichier illisible ou d'un autre schéma est refusé, pas remplacé).
 Règles : le dossier organisation/ absent → { ok: false, reason: 'no-organisation' } (rien n'est créé) ; sorte, écran, langue, design et taille sont des listes fermées ; titre de 80 signes au plus, texte de 2000 (sans caractère de commande, hors tabulation et saut de ligne pour le texte) ;
@@ -16,13 +25,33 @@ import json
 import os
 import re
 import secrets
+import sys
 import threading
 import time
+import unicodedata
 
 TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if TOOLS not in sys.path:
+    sys.path.insert(0, TOOLS)
+import safe_json  # noqa: E402  (la lecture bornée des fichiers non fiables)
 ROOT = os.path.dirname(TOOLS)
 SCHEMA = 'sog-signalements/1'
 FILE = 'SIGNALEMENTS.json'
+NOTES_FILE = 'SIGNALEMENTS_NOTES.json'
+NOTES_SCHEMA = 'sog-signalements-notes/1'
+FICHES_FILE = 'SIGNALEMENTS_FICHES.json'
+FICHES_SCHEMA = 'sog-signalements-fiches/1'
+GRAVITIES = ('blocking', 'annoying', 'minor')
+FREQUENCIES = ('always', 'often', 'rare')
+MAX_COMMENTS = 200
+MAX_COMMENT = 2000
+MAX_ANSWER = 300
+MAX_LIST = 300           # `limit` de signalement/lister
+MAX_LOOK = 2000          # signalements regardés au plus (les derniers du fichier) : borne le travail d'une recherche
+MAX_WORDS = 8
+MAX_WORD = 60
+MAX_Q = 600
+EXCERPT = 240
 MAX_ITEMS = 1000
 MAX_TITLE = 80
 MAX_TEXT = 2000        # le même que la recette (SOG-0303)
@@ -40,6 +69,8 @@ VERSION = re.compile(r'[0-9A-Za-z._+-]{1,40}')      # « jalon-n-gSHA » (git de
 ID = re.compile(r'SIG-[0-9a-f]{10}')
 IMAGE_NAME = re.compile(r'SIG-[0-9a-zA-Z]{4,16}-[1-3]\.(png|jpg|webp)')
 FICHE = re.compile(r'SOG-[0-9]{4}')
+COMMENT_ID = re.compile(r'COM-[0-9a-f]{10}')
+ISO = re.compile(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z')
 FOLDER = re.compile(r'[A-Za-z0-9]{2,8}')
 REF = re.compile(r'[A-Za-z0-9._-]{4,40}')
 CONTROL = re.compile(r'[\x00-\x08\x0b-\x1f\x7f]')       # le texte : tabulation et saut de ligne permis
@@ -56,6 +87,7 @@ HOLD_BYTES = HOLD_MAX * MAX_IMAGES * IMAGE_MAX
 # ---- la réserve des octets : en mémoire seulement, usage unique
 _HELD = {}                  # jeton → (échéance, [(extension, octets)], total)
 _LOCK = threading.Lock()
+_NOTES_LOCK = threading.Lock()      # un seul rédacteur de SIGNALEMENTS_NOTES.json à la fois (lecture, modification, remplacement)
 
 
 def _purge(now):
@@ -346,9 +378,341 @@ def lire(job, args, ctx):
     return {'ok': True, 'count': len(items), 'items': out, 'refs': refs}      # `refs` : les signalements de pilotes déjà repris (dossier/identifiant), pour dire « n non repris »
 
 
+# ---- la liste, la fiche, la priorité et les commentaires (SOG-0410)
+def _clean(v, n, multiline=False):
+    """Un texte non fiable : borné à `n` signes, sans caractère de commande (la tabulation et le saut de ligne restent si `multiline`) ; '' si ce n'est pas un texte."""
+    if not isinstance(v, str):
+        return ''
+    return (CONTROL if multiline else CONTROL_ALL).sub('', v[:n * 2]).strip()[:n]
+
+
+def fold(s):
+    """Sans accent ni majuscule (NFKD sans les signes combinants), pour la recherche."""
+    return ''.join(c for c in unicodedata.normalize('NFKD', s) if not unicodedata.combining(c)).lower()
+
+
+def _fold_map(s):
+    """(texte plié, position dans `s` de chacun de ses signes) : le pliage peut changer la longueur, l'extrait se coupe dans le texte d'origine."""
+    out, idx = [], []
+    for i, ch in enumerate(s):
+        f = fold(ch)
+        out.append(f)
+        idx.extend([i] * len(f))
+    return ''.join(out), idx
+
+
+def _first_word(hay, w):
+    """Position du premier mot de `hay` qui COMMENCE par `w`, ou -1."""
+    p = hay.find(w)
+    while p >= 0:
+        if p == 0 or not hay[p - 1].isalnum():
+            return p
+        p = hay.find(w, p + 1)
+    return -1
+
+
+def _words(q):
+    """Les mots cherchés : 8 au plus, 60 signes chacun, pliés."""
+    return [f for f in (fold(w)[:MAX_WORD] for w in q.split()[:MAX_WORDS]) if f]
+
+
+def _in_list(v, ok):
+    return v if isinstance(v, str) and v in ok else None
+
+
+def _read_reports(org):
+    """(items, None) de SIGNALEMENTS.json (un fichier absent : aucun) ou (None, raison) ; seules les entrées qui sont des objets, sous un identifiant valide, sont gardées, les MAX_LOOK dernières."""
+    d, why = safe_json.read(os.path.join(org, FILE), FILE_MAX)
+    if why == 'missing':
+        return {}, None
+    if why or not isinstance(d, dict) or d.get('schema') != SCHEMA or not isinstance(d.get('items'), dict):
+        return None, 'unreadable'
+    return {k: v for k, v in list(d['items'].items())[-MAX_LOOK:] if isinstance(k, str) and ID.fullmatch(k) and isinstance(v, dict)}, None
+
+
+def _read_fiches(org):
+    """{ id: { fiche, answer?, refused? } } de SIGNALEMENTS_FICHES.json, écrit par l'ergonome : lu seulement, jamais fatal (un fichier illisible ou d'un autre schéma : rien ; une entrée mal formée : ignorée)."""
+    d, why = safe_json.read(os.path.join(org, FICHES_FILE), FILE_MAX)
+    if why or not isinstance(d, dict) or d.get('schema') != FICHES_SCHEMA or not isinstance(d.get('items'), dict):
+        return {}
+    out = {}
+    for k, v in d['items'].items():
+        if not (isinstance(k, str) and ID.fullmatch(k) and isinstance(v, dict) and isinstance(v.get('fiche'), str) and FICHE.fullmatch(v['fiche'])):
+            continue
+        a = v.get('answer')
+        if a is not None and not (isinstance(a, str) and len(a) <= MAX_ANSWER and not CONTROL_ALL.search(a)):
+            continue
+        if 'refused' in v and not isinstance(v['refused'], bool):
+            continue
+        out[k] = {'fiche': v['fiche'], **({'answer': a.strip()} if isinstance(a, str) and a.strip() else {}), **({'refused': True} if v.get('refused') is True else {})}
+    return out
+
+
+def _read_notes_view(org):
+    """{ id: { gravity, frequency, comments: [ { id, at, text } ] } } de SIGNALEMENTS_NOTES.json, pour la lecture : un fichier illisible ou d'un autre schéma n'empêche pas la liste (aucune note)."""
+    d, why = safe_json.read(os.path.join(org, NOTES_FILE), FILE_MAX)
+    if why or not isinstance(d, dict) or d.get('schema') != NOTES_SCHEMA or not isinstance(d.get('items'), dict):
+        return {}
+    out = {}
+    for k, v in d['items'].items():
+        if not (isinstance(k, str) and ID.fullmatch(k) and isinstance(v, dict)):
+            continue
+        cs = []
+        for c in (v['comments'] if isinstance(v.get('comments'), list) else [])[:MAX_COMMENTS]:
+            if isinstance(c, dict) and isinstance(c.get('id'), str) and COMMENT_ID.fullmatch(c['id']) and isinstance(c.get('text'), str):
+                cs.append({'id': c['id'], 'at': c['at'] if isinstance(c.get('at'), str) and ISO.fullmatch(c['at']) else '', 'text': _clean(c['text'], MAX_COMMENT, True)})
+        out[k] = {'gravity': _in_list(v.get('gravity'), GRAVITIES), 'frequency': _in_list(v.get('frequency'), FREQUENCIES), 'comments': cs}
+    return out
+
+
+def _view(sid, r, fiches, notes):
+    """(champs communs à la liste et à la fiche, texte, commentaires) du signalement `sid`, tout texte borné et nettoyé ; la liste y ajoute l'extrait, la fiche le texte entier."""
+    fi = fiches.get(sid) or {}
+    nt = notes.get(sid) or {'gravity': None, 'frequency': None, 'comments': []}
+    st = r.get('state') if r.get('state') in STATES else 'new'
+    fiche = fi.get('fiche') or (r['fiche'] if st == 'fiche' and isinstance(r.get('fiche'), str) and FICHE.fullmatch(r['fiche']) else None)
+    out = {'id': sid, 'kind': _in_list(r.get('kind'), KINDS) or 'bug', 'title': _clean(r.get('title'), MAX_TITLE), 'screen': _in_list(r.get('screen'), SCREENS) or 'other',
+           'at': r['at'] if isinstance(r.get('at'), str) and ISO.fullmatch(r['at']) else '', 'state': 'fiche' if fiche else st}
+    if fiche:
+        out['fiche'] = fiche
+    if fi.get('answer'):
+        out['answer'] = fi['answer']
+    if fi.get('refused'):
+        out['refused'] = True
+    if nt['gravity']:
+        out['gravity'] = nt['gravity']
+    if nt['frequency']:
+        out['frequency'] = nt['frequency']
+    return out, _clean(r.get('text'), MAX_TEXT, True), nt['comments']
+
+
+def _org(ctx):
+    """organisation/ de ce poste, ou None (jamais créé)."""
+    org = os.path.join((ctx or {}).get('root') or ROOT, 'organisation')
+    return org if os.path.isdir(org) else None
+
+
+def check_list(a):
+    """Contrôle de signalement/lister : { q?, offset?, limit? } — une clé inconnue est refusée ; `limit` 1…300 (300 par défaut), `offset` 0 ou plus ; `q` : 600 signes au plus, sans caractère de commande."""
+    if not isinstance(a, dict) or not set(a) <= {'q', 'offset', 'limit'}:
+        return None
+    q = a.get('q', '')
+    if not isinstance(q, str) or len(q) > MAX_Q or CONTROL_ALL.search(q):
+        return None
+    out = {}
+    for k, lo, hi, default in (('offset', 0, 1_000_000, 0), ('limit', 1, MAX_LIST, MAX_LIST)):
+        v = a.get(k, default)
+        if isinstance(v, bool) or not isinstance(v, int) or not lo <= v <= hi:
+            return None
+        out[k] = v
+    return {**({'q': q.strip()} if q.strip() else {}), **out}
+
+
+def check_id(a):
+    """Contrôle de signalement/detail : { id } seulement."""
+    if not isinstance(a, dict) or set(a) != {'id'} or not isinstance(a['id'], str) or not ID.fullmatch(a['id']):
+        return None
+    return {'id': a['id']}
+
+
+def check_note(a):
+    """Contrôle de signalement/noter : { id, gravity?, frequency? }, au moins l'une des deux ; null l'efface ; une valeur hors liste passe ici et le verbe la refuse (reason: 'bad-value')."""
+    if not isinstance(a, dict) or not {'id'} < set(a) <= {'id', 'gravity', 'frequency'} or not isinstance(a['id'], str) or not ID.fullmatch(a['id']):
+        return None
+    if any(k in a and not (a[k] is None or (isinstance(a[k], str) and len(a[k]) <= 40)) for k in ('gravity', 'frequency')):
+        return None
+    return {k: a[k] for k in ('id', 'gravity', 'frequency') if k in a}
+
+
+def check_comment(a):
+    """Contrôle de signalement/commenter : { id, text } et rien d'autre ; texte de 1 à 2000 signes, sans caractère de commande (tabulation et saut de ligne permis)."""
+    if not isinstance(a, dict) or set(a) != {'id', 'text'} or not isinstance(a['id'], str) or not ID.fullmatch(a['id']) or not _text(a['text'], MAX_COMMENT, CONTROL):
+        return None
+    return {'id': a['id'], 'text': a['text'].strip()}
+
+
+def explain_fields(a):
+    """La raison d'un refus d'arguments de noter et commenter : un code, jamais le contenu."""
+    return {'reason': 'bad-fields', 'message': 'refused: bad-fields'}
+
+
+def lister(job, args, ctx):
+    """Verbe signalement/lister (voir l'en-tête)."""
+    org = _org(ctx)
+    if not org:
+        return {'ok': False, 'reason': 'no-organisation'}
+    reports, why = _read_reports(org)
+    if why:
+        return {'ok': False, 'reason': why}
+    fiches, notes = _read_fiches(org), _read_notes_view(org)
+    words = _words(args.get('q', ''))
+    found = []
+    for n, (sid, r) in enumerate(reports.items()):
+        v, text, comments = _view(sid, r, fiches, notes)
+        first = 0
+        if words:
+            ftext, idx = _fold_map(text)
+            hays = [fold(v['title']), ftext, fold(v['screen']), fold(v.get('fiche', '')), fold(v.get('answer', ''))]
+            pos = [[_first_word(h, w) for h in hays] for w in words]
+            if any(max(p) < 0 for p in pos):
+                continue
+            in_text = [p[1] for p in pos if p[1] >= 0]
+            first = idx[min(in_text)] if in_text else 0
+        a = max(0, min(first - 60, len(text) - EXCERPT))
+        v['excerpt'] = re.sub(r'\s+', ' ', text[a:a + EXCERPT]).strip()
+        v['comments'] = len(comments)
+        found.append((v['at'], n, v))
+    found.sort(key=lambda t: (t[0], t[1]), reverse=True)
+    o, k = args.get('offset', 0), args.get('limit', MAX_LIST)
+    return {'ok': True, 'total': len(found), 'searched': len(reports), 'items': [t[2] for t in found[o:o + k]]}
+
+
+def detail(job, args, ctx):
+    """Verbe signalement/detail (voir l'en-tête)."""
+    org = _org(ctx)
+    if not org:
+        return {'ok': False, 'reason': 'no-organisation'}
+    reports, why = _read_reports(org)
+    if why:
+        return {'ok': False, 'reason': why}
+    r = reports.get(args['id'])
+    if r is None:
+        return {'ok': False, 'reason': 'unknown'}
+    v, text, comments = _view(args['id'], r, _read_fiches(org), _read_notes_view(org))
+    v['text'] = text
+    c = r.get('ctx')
+    if isinstance(c, dict):
+        shown = {}
+        if isinstance(c.get('version'), str) and VERSION.fullmatch(c['version']):
+            shown['version'] = c['version']
+        for k, ok in (('lang', LANGS), ('design', DESIGNS), ('size', SIZES), ('tone', TONES)):
+            if _in_list(c.get(k), ok):
+                shown[k] = c[k]
+        if shown:
+            v['ctx'] = shown
+    if r.get('from') == 'pilote':
+        v['from'] = 'pilote'
+        if isinstance(r.get('folder'), str) and FOLDER.fullmatch(r['folder']):
+            v['folder'] = r['folder']
+    v['images'] = [n for n in (r['images'] if isinstance(r.get('images'), list) else []) if isinstance(n, str) and IMAGE_NAME.fullmatch(n) and n.startswith(args['id'] + '-')][:MAX_IMAGES]      # les images de CE signalement, nommées comme le verbe les nomme
+    v['comments'] = comments
+    return {'ok': True, 'item': v}
+
+
+def _read_notes(path):
+    """(document, None) du fichier des notes tel quel ; ({schéma, items vides}, None) s'il n'existe pas ; (None, 'unreadable') s'il est trop gros, illisible ou d'un autre schéma : jamais remplacé."""
+    d, why = safe_json.read(path, FILE_MAX)
+    if why == 'missing' and not os.path.exists(path):
+        return {'schema': NOTES_SCHEMA, 'items': {}}, None
+    if why or not isinstance(d, dict) or d.get('schema') != NOTES_SCHEMA or not isinstance(d.get('items'), dict):
+        return None, 'unreadable'
+    return d, None
+
+
+def _write_notes(path, doc):
+    """Écrit le fichier des notes (.tmp puis remplacement) ; 'too-big' au-delà de 4 Mio, 'failed' sur une erreur ; None si c'est écrit."""
+    doc['updated'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    data = (json.dumps(doc, ensure_ascii=False, indent=1) + '\n').encode('utf-8')
+    if len(data) > FILE_MAX:
+        return 'too-big'
+    tmp = path + '.tmp'
+    try:
+        with open(tmp, 'wb') as f:
+            f.write(data)
+        os.replace(tmp, path)
+    except OSError:
+        return 'failed'
+    finally:
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+    return None
+
+
+def _edit_notes(ctx, sid, change):
+    """Le rédacteur unique des notes : lit, laisse `change(entrée)` modifier l'entrée de `sid` (elle rend (résultat, raison de refus)), puis écrit. Rend (résultat, None) ou (None, raison)."""
+    org = _org(ctx)
+    if not org:
+        return None, 'no-organisation'
+    reports, why = _read_reports(org)
+    if why:
+        return None, why
+    if sid not in reports:
+        return None, 'unknown'
+    path = os.path.join(org, NOTES_FILE)
+    with _NOTES_LOCK:
+        doc, why = _read_notes(path)
+        if why:
+            return None, why
+        items = doc['items']
+        entry = items.get(sid, {})
+        if not isinstance(entry, dict) or not isinstance(entry.get('comments', []), list):
+            return None, 'unreadable'
+        if sid not in items and len(items) >= MAX_ITEMS:
+            return None, 'too-many'
+        res, why = change(entry)
+        if why:
+            return None, why
+        if entry:
+            items[sid] = entry
+        else:
+            items.pop(sid, None)
+        why = _write_notes(path, doc)
+    return (None, why) if why else (res, None)
+
+
+def noter(job, args, ctx):
+    """Verbe signalement/noter : la gravité et la fréquence choisies par l'utilisateur."""
+    new = {k: args[k] for k in ('gravity', 'frequency') if k in args}
+    if any(v is not None and v not in (GRAVITIES if k == 'gravity' else FREQUENCIES) for k, v in new.items()):
+        return {'ok': False, 'reason': 'bad-value'}
+
+    def change(entry):
+        for k, v in new.items():
+            if v is None:
+                entry.pop(k, None)
+            else:
+                entry[k] = v
+        return {'gravity': entry.get('gravity'), 'frequency': entry.get('frequency')}, None
+    res, why = _edit_notes(ctx, args['id'], change)
+    if why:
+        return {'ok': False, 'reason': why}
+    job.log(f"signalement : {args['id']} noté")
+    return {'ok': True, **res}
+
+
+def commenter(job, args, ctx):
+    """Verbe signalement/commenter : un commentaire de plus sous le signalement (200 au plus)."""
+    def change(entry):
+        comments = entry.setdefault('comments', [])
+        if len(comments) >= MAX_COMMENTS:
+            return None, 'too-many-comments'
+        taken = {c.get('id') for c in comments if isinstance(c, dict)}
+        for _ in range(8):
+            cid = 'COM-' + secrets.token_hex(5)
+            if cid not in taken:
+                break
+        else:
+            return None, 'failed'
+        comment = {'id': cid, 'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()), 'text': args['text']}
+        comments.append(comment)
+        return comment, None
+    res, why = _edit_notes(ctx, args['id'], change)
+    if why:
+        return {'ok': False, 'reason': why}
+    job.log(f"signalement : {args['id']} commenté")
+    return {'ok': True, 'comment': res}
+
+
 VERBS = {
     ('signalement', 'ajouter'): (ajouter, check),
     ('signalement', 'lire'): (lire, check_read),
+    ('signalement', 'lister'): (lister, check_list),
+    ('signalement', 'detail'): (detail, check_id),
+    ('signalement', 'noter'): (noter, check_note),
+    ('signalement', 'commenter'): (commenter, check_comment),
 }
 MIN_GAP = {('signalement', 'ajouter'): 2}
-EXPLAIN = {('signalement', 'ajouter'): explain}
+EXPLAIN = {('signalement', 'ajouter'): explain, ('signalement', 'noter'): explain_fields, ('signalement', 'commenter'): explain_fields}
