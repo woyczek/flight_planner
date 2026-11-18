@@ -356,11 +356,12 @@ def l2(c):
     c.eq([x['open'] for x in m['groups']], [False] * 5, 'nothing is unfolded by default (D4), even a set that needs attention: its state is on the line', what='open groups')
     for x in m['groups']:
         c.le(len(x['visible']), 7, f'group {x["id"]}', what='visible rows')
-    c.eq(len(g['sources']['visible']), 7, 'the base has eleven used sets: seven visible', what='base rows visible')
-    c.eq([g['sources']['more']['text'], g['sources']['more']['rows']], [norm(tx(TX, 'moreSets', lang).replace('{n}', '5')), g['sources']['more']['rows']], 'five more under the fold: four used sets and the candidate Naviair (the rows under the fold are given when it fails)', what=f"base fold {g['sources']['more']['rows']}")
-    c.ok(sum(r.endswith(':used') for r in g['sources']['more']['rows']) == 4 and all(r.endswith((':used', ':candidate')) for r in g['sources']['more']['rows']), g['sources']['more']['rows'], 'the surplus of the base: the used sets, then the candidates after them (Naviair is a candidate of the catalogue)')
+    c.eq(len(g['sources']['visible']), 7, 'the base has twelve used sets (eleven before enr51): seven visible', what='base rows visible')
+    # SOG-0462 lot B (AeroDB, 90189a70c): the source enr51 (the P / R / D zones of France) joined the catalogue: five used sets under the fold, not four
+    c.eq(g['sources']['more']['text'], norm(tx(TX, 'moreSets', lang).replace('{n}', '6')), 'six more under the fold: five used sets and the candidate Naviair', what=f"base fold {g['sources']['more']['rows']}")
+    c.ok(sum(r.endswith(':used') for r in g['sources']['more']['rows']) == 5 and all(r.endswith((':used', ':candidate')) for r in g['sources']['more']['rows']), g['sources']['more']['rows'], 'the surplus of the base: the used sets, then the candidates after them (Naviair is a candidate of the catalogue)')
     c.eq(g['proc']['visible'], ['eaip', 'cifp', 'route'], 'procedures: eAIP and CIFP visible, then the route row (SOG-0125: one row more)', what='proc rows')
-    c.eq(g['proc']['more']['rows'], ['ead:candidate', 'xpcifp:candidate', 'dfs:abandoned', 'eurocontrol:abandoned'], 'candidates, then set-aside sources: only in the fold, no state', what='proc fold')
+    c.eq(g['proc']['more']['rows'], ['ead:candidate', 'xpcifp:candidate', 'eurocontrol:abandoned'], 'candidates, then set-aside sources: only in the fold, no state', what='proc fold')
     # the states of the rows (stale base for France, the parser constant 3 against UK zone at 2)
     allst = {}
     for x in m['groups']:
