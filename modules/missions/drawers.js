@@ -51,9 +51,11 @@
 //     forme de la clé (par défaut : stands, le rejeu par le service du cadre — un constat sans relevé ne tient pas).
 //   follows(key) → vrai si la clé se juge avec une position en direct ; finding(key, prev, next, { trail }) → le constat d'un trajet,
 //     ou null (jamais pour un atterrissage : holding(key, hold, fix) → { hold, f }, SOG-0500, tient l'état d'une tenue posée) ; stands(entry, key) → le constat d'un carnet tient-il sur cette clé ; catchUp(key, trail, since) → le constat retrouvé sur
-//     la trace gardée (le rattrapage au retour de la page).
-//   asked(states, { inRange }) → { id, how: 'hand' | 'object' } ou null (SOG-0459) : le tiroir qu'ouvre le geste neutre « Demander la
-//     suite » — le premier fermé, si sa clé est le geste, ou un objet que l'appareil suit et a à portée (`inRange` : son identifiant).
+//     la trace gardée (le rattrapage au retour de la page). Un SURVOL (SOG-0500, lot 2) se juge sans état : finding rend le constat
+//     { how: 'overflight', confirm } du trajet (au rayon du point, dans la bande de hauteur SOL aux deux relevés).
+//   asked(states, { inRange }) → { id, how: 'hand' | 'object' | 'overflight' } ou null (SOG-0459) : le tiroir qu'ouvre le geste neutre
+//     « Demander la suite » — le premier fermé, si sa clé est le geste, ou un objet (ou un survol à confirmer) que l'appareil suit et
+//     a à portée (`inRange` : son identifiant).
 //   seenAfter(seen, states, seance, now) → ce que l'appareil garde après ce calcul ; readSeen(doc, seance) → { B: { by, at, how, got } }
 //     borné (got : l'heure où l'appareil l'a reçue).
 //   openPath(missionId) → 'cache/missions/open_<ID>.json' (SOG-0448 : ce que CET appareil sait des tiroirs ouverts de MA mission — sur
@@ -81,10 +83,10 @@ import {
 /** Les identifiants de tiroir : ceux du lecteur de mission (un tiroir lu a toujours sa place dans le carnet). */
 export const LETTERS = [...DRAWER_IDS];
 /** Ce qui s'écrit dans un carnet : un geste ou un constat. L'heure et l'heure de repli se calculent. */
-export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing'];
+export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing', 'overflight'];
 /** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
  *  l'ergonome du 17/11 en attendant Q-0094 : « pour tous ou pour soi ? ») — pour l'ouvrir à tous, ajouter 'hand' ici, rien d'autre. */
-export const SHARED = ['zone', 'object', 'arrival', 'landing'];
+export const SHARED = ['zone', 'object', 'arrival', 'landing', 'overflight'];
 export const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre (à l'écriture comme au rejeu)
 const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim', 'trail']; // trail : constat retrouvé sur la trace gardée (rattrapage)
 const TRI = /^[A-Z]{3}$/,
@@ -246,19 +248,21 @@ function checkOther(e, {
 
 /** Vrai si CE fichier sait juger cette clé avec une position en direct : une zone que le pilote franchit lui-même, un objet immobile,
  *  une arrivée sans suivi d'escorte, une condition « atterrissage » de l'atelier (SOG-0500 : un point ou un objet immobile, sans mot de
- *  confirmation, un écart permis d'au moins une période de relevé). Le reste (cible qui franchit, objet mobile, suivi, survol,
+ *  confirmation, un écart permis d'au moins une période de relevé), une condition « survol » (SOG-0500, lot 2 : un point ou un objet
+ *  immobile, un rayon, une bande de hauteur SOL, sans mot de confirmation). Le reste (cible qui franchit, objet mobile, suivi,
  *  maintien, séquence, événement) n'est pas jugé en vol. */
 export function follows(key) {
   if (!key || typeof key !== 'object') return false;
   if (key.kind === 'zone') return !key.actor;
   if (key.kind === 'object') return !!key.object && !key.object.moving;
   if (key.kind === 'arrival') return !(key.escortMinSec > 0);
-  return !!landSpec(key);
+  return !!landSpec(key) || !!overSpec(key);
 }
 
-/** Le genre de constat d'une clé : « landing » pour la condition « atterrissage » de l'atelier, `key.kind` sinon (ce que le carnet écrit
- *  dans `how`). */
-export const howOf = key => key?.kind === 'condition' && key.condition === 'landing' ? 'landing' : key?.kind;
+/** Le genre de constat d'une clé : « landing » ou « overflight » pour les conditions de l'atelier de ce nom, `key.kind` sinon (ce que le
+ *  carnet écrit dans `how`). */
+export const howOf = key => key?.kind === 'condition' && (key.condition === 'landing' || key.condition === 'overflight') ? key.condition :
+  key?.kind;
 
 /** La période d'un relevé du simulateur, en secondes (LIVE_SIM de frame/app.js) : un écart permis plus court (`maxGapSec`) ne peut
  *  jamais être tenu. */
@@ -294,6 +298,44 @@ function landSpec(key) {
     onGround: true,
     durationSec,
     maxGapSec
+  };
+}
+
+/** Ce que le vol juge d'une condition « survol » : { at, radiusNm, heightMinFt, heightMaxFt, confirm }, ou null quand elle ne se juge
+ *  pas ici : pas un survol, ni point lisible ni objet immobile, un mot de confirmation demandé par l'auteur, un rayon illisible ou nul,
+ *  une hauteur illisible, une bande à l'envers. Les hauteurs sont des hauteurs SOL (aglFt) : seul le simulateur les donne. `confirm`
+ *  (vrai par défaut) : le passage attend « Demander la suite », comme un objet. */
+function overSpec(key) {
+  const r = key && key.kind === 'condition' && key.condition === 'overflight' ? key.rule : null;
+  if (!r || typeof r !== 'object' || r.kind !== 'overflight' || r.confirmation !== '') return null;
+  const at = r.at ? spotOf(r.at) : r.object && !r.object.moving ? spotOf(r.object) : null,
+    num = v => typeof v === 'number' && Number.isFinite(v) ? v : null,
+    radiusNm = num(r.radiusNm),
+    heightMinFt = num(r.heightMinFt),
+    heightMaxFt = num(r.heightMaxFt);
+  if (!at || !(radiusNm > 0) || heightMinFt === null || heightMaxFt === null || heightMinFt > heightMaxFt) return null;
+  return {
+    at,
+    radiusNm,
+    heightMinFt,
+    heightMaxFt,
+    confirm: r.confirm !== false
+  };
+}
+
+/** Le passage d'un trajet (prev → next ; prev null : le relevé seul) selon cette règle : { ok, at } — vrai quand le trajet passe au
+ *  rayon du point (reach du cadre, SANS contrainte verticale : pas de heightFt) ET que la hauteur sol des DEUX relevés (du seul relevé
+ *  sans prev) est connue et dans la bande. Une hauteur inconnue ne compte jamais. */
+function overPass(prev, next, spec) {
+  const r = reach(prev, next, {
+      lat: spec.at.lat,
+      lon: spec.at.lon,
+      rangeNm: spec.radiusNm
+    }),
+    inBand = f => !!f && Number.isFinite(f.aglFt) && f.aglFt >= spec.heightMinFt && f.aglFt <= spec.heightMaxFt;
+  return {
+    ok: r.ok === true && inBand(next) && (!prev || inBand(prev)),
+    at: r.at
   };
 }
 
@@ -391,7 +433,8 @@ function stopsDone(key, prev, next, trail) {
 /** Le CONSTAT de ce trajet (prev → next, deux relevés ; prev null : le relevé seul) pour cette clé, ou null : { how, at, from, to,
  *  confirm } — zone : le trajet touche la zone (le mot « touched » du service : entré, dedans, traversé) ; objet : le trajet passe à
  *  portée (confirm : vrai quand le pilote doit encore déclarer « Objet en vue ») ; arrivée : posé au terrain, escales requises faites
- *  (trail : la trace gardée). Une donnée qui manque ne satisfait jamais une clé. */
+ *  (trail : la trace gardée) ; survol : le trajet passe au rayon, aux deux relevés dans la bande de hauteur sol (confirm : vrai par
+ *  défaut, comme l'objet). Une donnée qui manque ne satisfait jamais une clé. */
 export function finding(key, prev, next, {
   trail
 } = {}) {
@@ -417,6 +460,13 @@ export function finding(key, prev, next, {
       confirm: key.object.confirm !== false
     }) : null;
   }
+  if (howOf(key) === 'overflight') { // le survol : aucun état, le trajet et la bande de hauteur sol suffisent (SOG-0500, lot 2)
+    const spec = overSpec(key),
+      r = spec ? overPass(a, b, spec) : null;
+    return r?.ok ? leg('overflight', r.at, {
+      confirm: spec.confirm
+    }) : null;
+  }
   return arrived(b, key).ok === true && stopsDone(key, a, b, trail) ? leg('arrival', t) : null;
 }
 
@@ -433,12 +483,17 @@ export function stands(e, key) {
   if (e.how === 'zone') return crossed(prev, e.to, key).touched === true;
   if (e.how === 'object') return !!key.object && reach(prev, e.to, key.object).ok === true;
   if (e.how === 'arrival') return arrived(e.to, key).ok === true;
+  if (e.how === 'overflight') { // rejoué sur la règle du lecteur : « rejoué, pas prouvé » — des relevés forgés qui la satisfont tiennent
+    const spec = overSpec(key);
+    return !!spec && overPass(prev, e.to, spec).ok;
+  }
   return false;
 }
 
 /** Le rattrapage : le premier constat de cette clé sur la trace gardée depuis `since` (l'instant où ce tiroir est devenu le premier
  *  fermé ; null : toute la trace), ou null. La trace garde un point par mille marin : un trajet plus grossier que les relevés. Un
- *  objet qui veut « Objet en vue » n'est jamais rattrapé (il faut le geste, à portée). */
+ *  objet qui veut « Objet en vue » n'est jamais rattrapé (il faut le geste, à portée), ni un survol à confirmer. Un point de la trace
+ *  sans hauteur sol (aglFt, q[4] : absent des anciens points) donne une hauteur inconnue : jamais un survol. */
 export function catchUp(key, trail, since = null) {
   if (!follows(key) || howOf(key) === 'landing') return null; // la trace n'a pas de points d'un appareil posé (un par mille marin)
   const fixes = trailFixes(trail, since);
@@ -463,8 +518,9 @@ function minutesTo(passage, point) {
 }
 
 /** Le geste neutre « Demander la suite » (SOG-0459) : quel tiroir il ouvre, ou null. Seul le PREMIER tiroir fermé (non verrouillé)
- *  compte : sa clé est le geste (`hand`, quel que soit `keyWhy`) → { id, how: 'hand' } ; c'est un objet, et `inRange` est son
- *  identifiant (l'appareil suit cet objet et l'a à portée maintenant : la vue le sait, pas ce calcul) → { id, how: 'object' }. Toute
+ *  compte : sa clé est le geste (`hand`, quel que soit `keyWhy`) → { id, how: 'hand' } ; c'est un objet ou un survol à confirmer, et
+ *  `inRange` est son identifiant (l'appareil suit cette clé et l'a à portée maintenant : la vue le sait, pas ce calcul) → { id, how:
+ *  'object' | 'overflight' }. Toute
  *  autre clé (heure, zone, arrivée, objet hors de portée ou non suivi), aucun tiroir fermé, une entrée illisible : null. Ne lève jamais. */
 export function asked(states, options = null) {
   try {
@@ -479,9 +535,10 @@ export function asked(states, options = null) {
       id,
       how: 'hand'
     };
-    if (kind === 'object' && typeof inRange === 'string' && inRange === id) return {
+    const how = kind === 'object' ? 'object' : kind === 'condition' && own(key, 'condition') === 'overflight' ? 'overflight' : '';
+    if (how && typeof inRange === 'string' && inRange === id) return {
       id,
-      how: 'object'
+      how
     };
     return null;
   } catch {

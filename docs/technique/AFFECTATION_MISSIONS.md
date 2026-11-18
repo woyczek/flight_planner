@@ -593,6 +593,35 @@ bounds it (`holdRule`), and until this lot no flight judged it. `drawers.js` now
 - **Cases.** N80 (100 checks, 9 new: follows, holding, hostile entries, stands, finding and catchUp null, HOWS/SHARED, the record and the
   other pilot's finding) and N81 (99, 3 new: the texts, a landing held in flight, a source that ignores « on the ground »).
 
+### 11.7 Overflight judged in flight (SOG-0500, lot 2)
+
+The workshop's `{ kind: 'condition', condition: 'overflight', rule, fallbackMin }` (`holdRule` of `frame/lib/mission.js`, not modified)
+is now judged like the landing, with no hold state: a pass is judged on one leg.
+
+- **The rule** `{ kind: 'overflight', at | object, radiusNm, heightMinFt, heightMaxFt, confirmation, confirm }`. `overSpec(key)` returns
+  `null` (not judged) for: not an overflight; neither a readable point nor a still object; `confirmation !== ''` (a confirmation word is not
+  judged, by prudence); `radiusNm` not finite or <= 0; a height not finite; `heightMinFt > heightMaxFt`.
+- **The heights are heights ABOVE GROUND (`aglFt`), and only the simulator gives them.** With the browser GPS, IVAO or VATSIM `aglFt` is
+  unknown, so the condition is never met (an unknown datum never counts, and neither does the altitude `altFt`): the drawer opens at its
+  fallback time or by the gesture. Trail points carry `aglFt` in `q[4]`; older points have none, hence an unknown height.
+- **A pass** (`prev` → `next`, two fixes; `prev` null: the fix alone) counts when two things hold: the leg passes within `radiusNm` of the
+  point, horizontally — `reach()` of `frame/lib/crossing.js`, called with `{ lat, lon, rangeNm: radiusNm }` and no `heightFt`, which is how
+  `reach` skips its vertical judgement; nothing is copied — AND the height above ground is known and within `[heightMinFt, heightMaxFt]`
+  at BOTH fixes of the leg (at the single fix when `prev` is null), by prudence: a leg that crosses the circle between a fix inside the
+  band and one outside it does not count.
+- **`confirm`** (true by default, `require_confirmation`): `finding()` returns the finding with `confirm: true`, `drawers_view.js` keeps it
+  in `v.inRange` and « Ask for what comes next » opens the drawer, as for an object (`asked()` now returns `how: 'overflight'` for such a
+  key, and the view records any non-`hand` answer from `v.inRange`). With `confirm: false` the finding is written at once.
+- **Catch-up.** `catchUp()` replays the kept trail for `confirm: false` only; a confirmed overflight is never caught up, like an object.
+- **Shared and replayed.** `'overflight'` is in `HOWS` and `SHARED`; `howOf(key)` returns it for the condition. `stands()` replays the
+  finding on the reader's own key, with the two fixes taken as a leg only when they are at most `LEG_MS` (one minute) apart, as for the zone.
+  **Replayed, not proved**: a hostile record can carry two fixes with a plausible `aglFt` without having flown — the same level of trust
+  as the other findings.
+- **Texts** (four languages): `keyOverflight` (« s'ouvre au survol », NEVER the place), `openOverflightMe`, `openOverflightBy`.
+- **Cases.** N80 (112 checks, 12 new) and N81 (104, 5 new): follows, finding (in the band, outside the radius, above, below, unknown
+  height, `confirm`), stands, catch-up, hostile entries, `HOWS`/`SHARED`, the record; in flight with and without `confirm`, a source
+  without ground height.
+
 ## 12. Assigning a mission from V3 (SOG-0443)
 
 The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with

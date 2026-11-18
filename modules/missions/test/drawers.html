@@ -1893,6 +1893,298 @@
   ck('landing, carnet : le constat s\'écrit avec ses deux relevés et se relit ; celui de BBB ouvre le tiroir chez AAA (« landing », par BBB) ; sur un autre point chez le lecteur, il est refusé (« shape »)',
     landBook?.drawers?.B?.how === 'landing' && landBook.drawers.B.from?.at === iso(T0) && landSt.open === true && landSt.how === 'landing' && landSt.by === 'BBB' && landSt.refused.length === 0 && landOff.open === false && landOff.refused[0]?.why === 'shape', [landBook, landSt, landOff]);
 
+  // ---- SOG-0500, lot 2 : la condition « survol » de l'atelier jugée en vol (follows, finding, stands, catchUp, asked, HOWS, SHARED).
+  // La clé a la forme exacte rendue par holdRule de frame/lib/mission.js ; les hauteurs sont des hauteurs SOL (aglFt). Points inventés.
+  const orule = {
+      kind: 'overflight',
+      label: '',
+      point: 'DESTINATION',
+      at: {
+        lat: 45.0,
+        lon: 1.0
+      },
+      object: null,
+      radiusM: null,
+      radiusNm: 1,
+      durationSec: null,
+      maxGapSec: null,
+      speedMaxKt: null,
+      speedToleranceKt: null,
+      heightMinFt: 500,
+      heightMaxFt: 1500,
+      confirmation: '',
+      confirm: false
+    },
+    over = (more = {}) => ({
+      kind: 'condition',
+      condition: 'overflight',
+      rule: {
+        ...orule,
+        ...more
+      },
+      fallbackMin: 60
+    }),
+    OV = over(),
+    OVC = over({
+      confirm: true
+    }),
+    // un relevé à ce nombre de secondes après le décollage, à cette latitude (45,0 : sur le point), à cette hauteur sol
+    ovx = (sec, lat, agl, more = {}) => ({
+      lat,
+      lon: 1.0,
+      at: iso(T0 + sec * 1000),
+      altFt: 1200,
+      ...(agl === undefined ? {} : {
+        aglFt: agl
+      }),
+      ...more
+    }),
+    // un trajet qui coupe le point : de 3 NM au nord à 3 NM au sud, en 30 s
+    N3 = 45.05,
+    S3 = 44.95;
+  ck('overflight, follows : un point, un rayon, une bande de hauteur → jugé ; confirm vrai aussi ; un objet immobile à la place du point : oui, un objet mobile : non ; un mot de confirmation, un rayon nul, négatif, illisible, une hauteur illisible ou infinie, une bande à l\'envers, ni point ni objet, une règle d\'un autre genre : non',
+    D.follows(OV) && D.follows(OVC) && D.follows(over({
+      at: null,
+      object: {
+        lat: 45.0,
+        lon: 1.0,
+        moving: false
+      }
+    })) && !D.follows(over({
+      at: null,
+      object: {
+        lat: 45.0,
+        lon: 1.0,
+        moving: true
+      }
+    })) && !D.follows(over({
+      at: null,
+      object: null
+    })) && !D.follows(over({
+      confirmation: 'over'
+    })) && [0, -1, NaN, null, '1', Infinity].every(r => !D.follows(over({
+      radiusNm: r
+    }))) && [null, NaN, Infinity, '500'].every(h => !D.follows(over({
+      heightMinFt: h
+    })) && !D.follows(over({
+      heightMaxFt: h
+    }))) && !D.follows(over({
+      heightMinFt: 1600
+    })) && D.follows(over({
+      heightMinFt: 800,
+      heightMaxFt: 800
+    })) && !D.follows(over({
+      kind: 'hover'
+    })) && !D.follows(over({
+      at: {
+        lat: 95,
+        lon: 1.0
+      }
+    })));
+  const fo = D.finding(OV, ovx(0, N3, 1000), ovx(30, S3, 1000)),
+    fc = D.finding(OVC, ovx(0, N3, 1000), ovx(30, S3, 1000));
+  ck('overflight, finding : le trajet coupe le point, hauteur sol dans la bande aux deux relevés → constat « overflight » (ses deux relevés, l\'heure du passage entre les deux), confirm faux ; confirm vrai → confirm: true',
+    fo?.how === 'overflight' && fo.confirm === false && fo.from.at === iso(T0) && fo.to.at === iso(T0 + 30e3) && fo.at > T0 && fo.at < T0 + 30e3 && fc?.how === 'overflight' && fc.confirm === true, [fo, fc]);
+  ck('overflight, finding : un seul relevé (prev null) sur le point dans la bande → constat ; bande aux bornes (500 et 1500) comprise',
+    D.finding(OV, null, ovx(5, 45.0, 1000))?.how === 'overflight' && D.finding(OV, ovx(0, N3, 500), ovx(30, S3, 1500))?.how === 'overflight');
+  ck('overflight, finding : hors rayon (6 NM de côté) → null ; au-dessus du max, sous le min, à un seul des deux relevés → null',
+    D.finding(OV, ovx(0, 45.1, 1000), ovx(30, 45.1, 1000)) === null && D.finding(OV, null, ovx(5, 45.0, 1501)) === null && D.finding(OV, null,
+      ovx(5, 45.0, 499)) === null && D.finding(OV, ovx(0, N3, 1000), ovx(30, S3, 2000)) === null && D.finding(OV, ovx(0, N3, 100), ovx(30, S3,
+      1000)) === null);
+  ck('overflight, finding : hauteur sol inconnue (GPS, IVAO, VATSIM : aglFt absent, null ou illisible) → null, à l\'un ou l\'autre relevé ; l\'altitude seule (altFt dans la bande) ne compte pas',
+    D.finding(OV, null, ovx(5, 45.0, undefined)) === null && D.finding(OV, null, ovx(5, 45.0, null)) === null && D.finding(OV, null, ovx(5, 45.0,
+      'x')) === null && D.finding(OV, ovx(0, N3, undefined), ovx(30, S3, 1000)) === null && D.finding(OV, ovx(0, N3, 1000), ovx(30, S3,
+      undefined)) === null && D.finding(OV, null, ovx(5, 45.0, undefined, {
+      altFt: 1000
+    })) === null);
+  const ovf = {
+    how: 'overflight',
+    from: ovx(0, N3, 1000),
+    to: ovx(30, S3, 1000)
+  };
+  ck('overflight, stands : le constat tient sur la clé du lecteur → vrai ; confirm vrai aussi ; hors bande chez le lecteur (autre hauteurs) → faux ; hors rayon chez le lecteur (autre point) → faux ; d\'une autre sorte → faux',
+    D.stands(ovf, OV) && D.stands(ovf, OVC) && !D.stands(ovf, over({
+      heightMinFt: 2000,
+      heightMaxFt: 3000
+    })) && !D.stands(ovf, over({
+      at: {
+        lat: 46.0,
+        lon: 1.0
+      }
+    })) && !D.stands({
+      ...ovf,
+      how: 'object'
+    }, OV) && !D.stands(ovf, ARR) && !D.stands(ovf, over({
+      confirmation: 'over'
+    })));
+  ck('overflight, stands : les deux relevés à plus d\'une minute l\'un de l\'autre ne font pas un trajet (le dernier est jugé seul : 3 NM du point → faux) ; à 60 s exactement → vrai ; sans « from » : le relevé seul sur le point → vrai ; hauteur inconnue ou hors bande à un relevé → faux',
+    !D.stands({
+      ...ovf,
+      to: ovx(90, S3, 1000)
+    }, OV) && D.stands({
+      ...ovf,
+      to: ovx(60, S3, 1000)
+    }, OV) && D.stands({
+      how: 'overflight',
+      from: null,
+      to: ovx(5, 45.0, 1000)
+    }, OV) && !D.stands({
+      ...ovf,
+      from: ovx(0, N3, undefined)
+    }, OV) && !D.stands({
+      ...ovf,
+      to: ovx(30, S3, 3000)
+    }, OV));
+  const ot = {
+      from: iso(T0),
+      trail: [
+        [N3, 1.0, 1200, 10, 1000],
+        [S3, 1.0, 1200, 40, 1000]
+      ]
+    },
+    oc = D.catchUp(OV, ot);
+  ck('overflight, catchUp : confirm faux, des points avec aglFt dans la bande → le constat retrouvé (source « trail ») ; confirm vrai → null (il faut le geste) ; une trace sans aglFt (anciens points) → null ; une trace hors bande → null ; avant l\'instant d\'ouverture → null',
+    oc?.how === 'overflight' && oc.source === 'trail' && oc.from.aglFt === 1000 && D.catchUp(OVC, ot) === null && D.catchUp(OV, {
+      from: iso(T0),
+      trail: [
+        [N3, 1.0, 1200, 10],
+        [S3, 1.0, 1200, 40]
+      ]
+    }) === null && D.catchUp(OV, {
+      from: iso(T0),
+      trail: [
+        [N3, 1.0, 1200, 10, 2500],
+        [S3, 1.0, 1200, 40, 2500]
+      ]
+    }) === null && D.catchUp(OV, ot, T0 + 100e3) === null, oc);
+  ck('overflight, asked : un survol à confirmer que l\'appareil a à portée (inRange = son identifiant) → { id, how: « overflight » } ; hors de portée ou autre identifiant → null ; un objet garde « object »',
+    JSON.stringify(D.asked([{
+      id: 'B',
+      key: OVC
+    }], {
+      inRange: 'B'
+    })) === JSON.stringify({
+      id: 'B',
+      how: 'overflight'
+    }) && D.asked([{
+      id: 'B',
+      key: OVC
+    }], {
+      inRange: null
+    }) === null && D.asked([{
+      id: 'B',
+      key: OVC
+    }], {
+      inRange: 'C'
+    }) === null && D.asked([{
+      id: 'B',
+      key: OBJ
+    }], {
+      inRange: 'B'
+    })?.how === 'object');
+  ck('overflight, les entrées hostiles ne lèvent pas — fix null, indéfini, vide, sans heure, hauteur NaN ; clé null, sans règle, règle absurde ; trace absurde ; carnet sans relevés',
+    (() => {
+      try {
+        const bad = [null, undefined, {}, 'x', 7, [], {
+            lat: 45,
+            lon: 1,
+            aglFt: NaN
+          }, {
+            lat: NaN,
+            lon: 1,
+            aglFt: 1000
+          }],
+          keys = [null, undefined, {}, {
+            kind: 'condition',
+            condition: 'overflight'
+          }, {
+            kind: 'condition',
+            condition: 'overflight',
+            rule: null
+          }, {
+            kind: 'condition',
+            condition: 'overflight',
+            rule: [1, 2]
+          }, {
+            kind: 'condition',
+            condition: 'overflight',
+            rule: 'x'
+          }, over({
+            at: 'x'
+          }), over({
+            radiusNm: {}
+          })];
+        for (const k of keys)
+          for (const a of bad)
+            for (const b of bad) {
+              D.finding(k, a, b);
+              D.stands({
+                how: 'overflight',
+                from: a,
+                to: b
+              }, k);
+              D.follows(k);
+            }
+        for (const tr of [null, 7, {}, {
+            from: iso(T0),
+            trail: [null, [], [NaN], 'x', [45, 1, 0, 'x', 'y']]
+          }]) D.catchUp(OV, tr);
+        return D.finding(OV, ovx(0, N3, 1000), null) === null && D.stands({
+          how: 'overflight',
+          from: null,
+          to: null
+        }, OV) === false;
+      } catch (e) {
+        return String(e);
+      }
+    })() === true);
+  ck('overflight, HOWS et SHARED contiennent « overflight » ; howOf apparie la condition et le genre ; une condition « hover » reste « condition »',
+    D.HOWS.includes('overflight') && D.SHARED.includes('overflight') && D.howOf(OV) === 'overflight' && D.howOf(LAND) === 'landing' && D.howOf(over({
+      kind: 'hover'
+    })) === 'overflight' && D.howOf({
+      kind: 'condition',
+      condition: 'hover'
+    }) === 'condition');
+  // le carnet : un constat overflight s'écrit, se relit, et le constat d'un autre pilote ouvre le tiroir (comme l'atterrissage)
+  const ovDoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'overflight', {
+      from: ovf.from,
+      to: ovf.to,
+      at: T0 + 15e3,
+      source: 'xplane'
+    }),
+    ovBook = D.readBook(ovDoc, ID),
+    ovTheirs = peer('B', T0 + 15e3, 'overflight', {
+      from: ovf.from,
+      to: ovf.to
+    }),
+    ovSt = st({
+      drawers: [{
+        id: 'B',
+        title: 'Survol',
+        key: OV
+      }],
+      others: [
+        ['BBB', ovTheirs]
+      ],
+      now: T0 + 41 * MIN
+    })[0],
+    ovOff = st({
+      drawers: [{
+        id: 'B',
+        title: 'Survol',
+        key: over({
+          heightMinFt: 2000,
+          heightMaxFt: 3000
+        })
+      }],
+      others: [
+        ['BBB', ovTheirs]
+      ],
+      now: T0 + 41 * MIN
+    })[0];
+  ck('overflight, carnet : le constat s\'écrit avec ses deux relevés (hauteur sol comprise) et se relit ; celui de BBB ouvre le tiroir chez AAA (« overflight », par BBB) ; sur une autre bande chez le lecteur, il est refusé (« shape »)',
+    ovBook?.drawers?.B?.how === 'overflight' && ovBook.drawers.B.from?.aglFt === 1000 && ovSt.open === true && ovSt.how === 'overflight' && ovSt.by === 'BBB' && ovSt.refused.length === 0 && ovOff.open === false && ovOff.refused[0]?.why === 'shape', [ovBook, ovSt, ovOff]);
+
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

@@ -1099,6 +1099,144 @@
     empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
   DV.stop();
 
+  // ---- SOG-0500, lot 2 : le survol de l'atelier jugé en vol. Clé à la forme de holdRule (frame/lib/mission.js) ; hauteurs SOL (aglFt),
+  // que seul le simulateur donne. Le trajet de 3 NM au nord à 3 NM au sud du point passe sur le point.
+  const OVR = confirm => ({
+      kind: 'condition',
+      condition: 'overflight',
+      rule: {
+        kind: 'overflight',
+        label: '',
+        point: 'DESTINATION',
+        at: {
+          lat: 45.0,
+          lon: 1.0
+        },
+        object: null,
+        radiusM: null,
+        radiusNm: 1,
+        durationSec: null,
+        maxGapSec: null,
+        speedMaxKt: null,
+        speedToleranceKt: null,
+        heightMinFt: 500,
+        heightMaxFt: 1500,
+        confirmation: '',
+        confirm
+      },
+      fallbackMin: 120
+    }),
+    OVDRAWER = confirm => ({
+      title: 'Survol',
+      message: 'Bien survolé.',
+      brief: '',
+      key: OVR(confirm)
+    }),
+    TO = Date.now(),
+    // un relevé du simulateur, des secondes avant maintenant, à cette latitude et à cette hauteur sol (absente : inconnue)
+    ofix = (secAgo, lat, agl, more = {}) => ({
+      lat,
+      lon: 1.0,
+      at: iso(TO - secAgo * 1000),
+      ...(agl === undefined ? {} : {
+        aglFt: agl
+      }),
+      ...more
+    });
+  ck('overflight, describe : la clé dit « s\'ouvre au survol », jamais le lieu (ni « DESTINATION » ni un lieu caché) ; jugée en vol, l\'appareil la suit ; ouverte : « ouvert à votre survol », « ouvert au survol de BBB »',
+    say(OVR(false)).key === 's\'ouvre au survol' && !/DESTINATION/.test(say(OVR(true)).key) && say({
+      ...OVR(false),
+      rule: {
+        ...OVR(false).rule,
+        point: null
+      }
+    }).key === 's\'ouvre au survol' && say(OVR(false), {
+      live: true
+    }).follow === 'followed' && say(OVR(true), {}, {
+      open: true,
+      how: 'overflight',
+      mine: true,
+      at: AT
+    }).how === 'ouvert à votre survol, à 19:20Z' && say(OVR(true), {}, {
+      open: true,
+      how: 'overflight',
+      mine: false,
+      by: 'BBB',
+      at: AT,
+      srcAt: AT
+    }).how === 'ouvert au survol de BBB, à 19:20Z', [say(OVR(false)), say(OVR(true))]);
+  // sans confirmation : le passage dans la bande ouvre seul
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(OVDRAWER(false), HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit(ofix(30, 45.05, 3000));
+  await sleep(100);
+  ctx.live.emit(ofix(25, 44.95, 3000));
+  await sleep(150);
+  const tooHigh = empty() && !ctx.store.get(BOOK)?.drawer_B;
+  ctx.live.emit(ofix(10, 45.05, 1000));
+  await sleep(100);
+  ctx.live.emit(ofix(5, 44.95, 1000));
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const ob2 = ctx.store.get(BOOK)?.drawer_B;
+  ck('le survol sans confirmation : au-dessus de la bande, rien ; le trajet qui coupe le point dans la bande (relevés du simulateur avec hauteur sol) écrit le constat « overflight » (ses deux relevés, hauteur comprise) et « Suite de la mission » dit « ouvert à votre survol, à … »',
+    tooHigh && ob2?.how === 'overflight' && ob2.from?.aglFt === 1000 && ob2.to?.aglFt === 1000 && /^ouvert à votre survol, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Survol') && !/DESTINATION/.test(stage
+      .textContent), [tooHigh, ob2, ctx.notes]);
+  DV.stop();
+  // avec confirmation (par défaut) : rien avant « Demander la suite », qui l'ouvre ensuite
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(OVDRAWER(true), HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit(ofix(10, 45.05, 1000));
+  await sleep(100);
+  ctx.live.emit(ofix(5, 44.95, 1000));
+  await sleep(200);
+  const waiting = empty() && !ctx.store.get(BOOK)?.drawer_B && !stage.textContent.includes('DESTINATION');
+  const nOv = ctx.notes.length;
+  await ask();
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const ob3 = ctx.store.get(BOOK)?.drawer_B;
+  ck('le survol avec confirmation : le passage dans la bande n\'ouvre rien tout seul ; « Demander la suite » l\'ouvre (constat « overflight », ses deux relevés), « Suite de la mission » le dit',
+    waiting && ob3?.how === 'overflight' && ob3.from?.lat === 45.05 && ob3.to?.lat === 44.95 && /^ouvert à votre survol, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && JSON.stringify(ctx.notes.slice(nOv)) === JSON.stringify([
+      ['ok', 'Suite de la mission : Survol']
+    ]), [waiting, ob3, ctx.notes.slice(nOv)]);
+  DV.stop();
+  // la source ne donne pas la hauteur sol (GPS du navigateur, IVAO, VATSIM) : la condition n'est jamais remplie, ni par « Demander »
+  for (const confirm of [false, true]) {
+    ctx = fakeCtx({
+      docs: flying(T5)
+    });
+    ctx.live = fakeLive();
+    await mount(ctx, missionOf(OVDRAWER(confirm), HAND), {
+      mine: true
+    });
+    await until(() => ctx.live.subs.size === 1);
+    ctx.live.emit(ofix(10, 45.05, undefined, {
+      source: 'gps'
+    }));
+    await sleep(80);
+    ctx.live.emit(ofix(5, 44.95, undefined, {
+      source: 'gps'
+    }));
+    await sleep(150);
+    await ask();
+    ck(`le survol (confirm ${confirm}) avec une source sans hauteur sol : aucun constat, rien ne s'ouvre, « Demander » ne l'ouvre pas`,
+      empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
+    DV.stop();
+  }
+
   // le rattrapage au retour de la page : la trace gardée du vol de cette mission
   const crossing = start => ({
     from: iso(start),
