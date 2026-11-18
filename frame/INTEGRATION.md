@@ -1028,6 +1028,43 @@ What comes from a file, a launcher answer or a pilot is an object of `JSON.parse
 
 Not here, on purpose: the TOLERANT readings (a number written `'5'`, `''` or `null` read as absent or converted: `num` of `mission.js`, `fuel_units.js`, `pane_model.js`, `fuel/model.js`…) keep their own semantics at their owners, under another name. `mission.js` re-exports `visible` (its documented API does not change). The sites that still copy these guards move one file at a time, with their owners (the static case of Security lists the ones that remain). Bench `frame/lib/test/untrusted.html` (A300); the rules are Security's (K470).
 
+## 12d. Sortable lists and tables (`frame/lib/sortlist.js`, SOG-0498)
+
+ONE block for every sortable table or list of the suite (the user, 18 Nov 2026, Q-0115 / Q-0116; mock-up `frame/help/maquette/tri_registre.html`): a real sortable table on a computer, a list with ONE « Trier » button on a phone, the sort **kept on the device** with « Remettre l’ordre », a default order per list (for a registry: the identifier, the most recent on top). A pure ES module (nothing at import time, no storage, no network), no dependency on any module; it imports `untrusted.js` only.
+
+**How a module plugs in: it keeps its own rows; the block never draws rows.** The module sorts its rows with `sortRows`, draws its own `<tr>` (or `<details>`, or list items) and its row actions (« ⋯ », the sheet), and pages (« N autres ») AFTER the sort. The block gives the header row, the phone bar, the gestures and the kept state.
+
+```js
+import { sortRows, defaultState, headHtml, barHtml, refresh, bind, loadState, saveState } from '../../frame/lib/sortlist.js';
+const COLS = [
+  { key: 'id', label: ['Identifiant', 'Identifier', 'Kennung', 'Identificador'], type: 'text', get: m => m.id },
+  { key: 'dur', label: ['Durée', 'Duration', 'Dauer', 'Duración'], type: 'duration', get: m => m.minutes, align: 'num' }
+];
+const DFLT = defaultState(COLS, { key: 'id', dir: 'desc' });
+S.sort = await loadState(ctx, 'registry', COLS, DFLT);
+// draw: barHtml(COLS, S.sort, { lang, id: 'registry', dflt: DFLT }) above the list,
+//       <table class="f-table"><thead>${headHtml(COLS, S.sort, { lang, actions: true })}</thead><tbody>…your rows of sortRows(rows, COLS, S.sort, lang)…</tbody></table>
+const unbind = bind(root, { cols: COLS, dflt: DFLT, getState: () => S.sort,
+  setState: s => { S.sort = s; saveState(ctx, 'registry', s); },
+  onChange: s => { refresh(root, COLS, s, { lang, dflt: DFLT }); redrawRowsOnly(); } });   // keepScroll around the rows
+```
+
+| Export | Gives |
+|---|---|
+| column | `{ key, label: [fr, en, de, es], type: 'text' \| 'number' \| 'date' \| 'duration', get(row), first?: 'asc' \| 'desc', emptyLast?: true, align?: 'num' }`; `first` by default: text ascending, number / date / duration descending (as the Data coverage table); `align: 'num'` puts `f-num` on the header |
+| `sortRows(rows, cols, state, lang)` | a NEW array, the input untouched. Text: `Intl.Collator(lang, { numeric: true, sensitivity: 'base' })`, one per language (« M-10 » after « M-9 », accents and case ignored); number: numeric, also `'1 234,5'` and the minus U+2212 (number columns only); duration: numeric (a number or a numeric text); date: a `Date`, milliseconds or an ISO text by `Date.parse`. **Empty — null, undefined, `''`, NaN, a text of blanks, a value unreadable for the type, a `get` that throws — is ALWAYS last, in both directions.** Ties: the first column in its first direction, then the original order (explicit index). An unknown state: the default state |
+| `nextSort(state, key, cols)` | the same column reverses; another starts in its `first` direction; an unknown key keeps the state |
+| `defaultState(cols, { key, dir })` | the list's default; an unknown key → the first column, an unknown direction → the column's `first` |
+| `stateOf(stored, cols, dflt)` | a stored state read as **untrusted** (`own` / `plain`): `key` an own key naming a column, `dir` `'asc'` \| `'desc'`; else `dflt` (`defaultState(cols)` without it) |
+| `headHtml(cols, state, { lang, actions })` | the `<tr>` of `<th scope="col" aria-sort="ascending\|descending\|none" data-col>` each holding `<button type="button" data-sort class="f-sortbtn">`; `actions`: one more `<th>` (its name for screen readers) for the caller's row-action column. Labels and keys escaped |
+| `barHtml(cols, state, { lang, id, dflt, open })` | the bar: « Trier : Durée ▼ » (`aria-expanded`, `aria-controls`), shown in a pane of 700 px or less, and its hidden panel (`role="group"`: a radio per column, « Croissant / Décroissant » with `aria-pressed`); « Remettre l’ordre » in the bar at both widths, hidden at the default order. `id` names the panel and the radios |
+| `refresh(root, cols, state, { lang, dflt })` | the header and the bar of `root` follow the state IN PLACE (aria-sort, label, arrow, radio, aria-pressed, reset); writes only what changes; the panel stays open |
+| `bind(root, { cols, getState, setState, onChange, dflt })` | delegated gestures: a header, « Trier » (opens / closes the panel), a radio (its column in its first direction), a direction, « Remettre l’ordre » (→ `dflt`), Escape in the panel; a gesture that changes the state calls `setState(next)` then `onChange(next, { open })`; the block never redraws. Returns `unbind()` (an `AbortController`) |
+| `loadState(ctx, id, cols, dflt)` / `saveState(ctx, id, state)` | the kept state through `ctx.data`, policy `'cache'`, path `cache/sort/<id>.json`, `id` `^[a-z][a-z0-9-]{0,40}$`; read through `stateOf`; written only when it changes (`saveState` → `true` when written); never throws |
+| `TEXTS` | the block's own words (Trier, Trier par, Croissant, Décroissant, Remettre l’ordre, Actions) in four languages, chosen by `lang` |
+
+**The module declares** `{ prefix: 'cache/sort/', policy: 'cache' }` in `meta.writes` (a write outside the declared prefixes throws, § 3) and `'../../frame/lib/sortlist.js'`, `'../../frame/lib/untrusted.js'` in `meta.files` (I26). **CSS** (`frame/design/primitives.css`, tokens only): `.f-sortbtn` (44 px, flat in every design), the arrows ▲ ▼ and a dim ↕ from `[aria-sort]`, the bar and its panel; in a container of 700 px or less `.f-sortwide` (the caller's table wrapper) is hidden and `.f-sortnarrow` (the caller's list) shown — the view and each module are containers. Bench `frame/lib/test/sortlist.html` (A311), demonstration `frame/lib/test/sortlist_demo.html` (A312). Migrations (the Data coverage table, the missions registry, then the others) are done by each table's owner.
+
 ## 13. Service screens (`APP.screens`)
 
 A service screen is not a module. It is a screen of the frame, opened over the current module like Settings and the

@@ -1,0 +1,182 @@
+<!doctype html>
+<!-- Démonstration du bloc des listes triables (frame/lib/sortlist.js, SOG-0498) monté comme un module le monterait : douze lignes inventées, un tableau à l'écran large (un bouton par colonne,
+     aria-sort), la liste et le seul bouton « Trier » au téléphone (≤ 700 px de conteneur), l'état gardé par un faux ctx.data (dans le stockage de cette page d'essai : un module, lui, passe par
+     ctx.data), « Remettre l'ordre ». Adresse : ?lang=fr|en|de|es&design=standard|metro|swiss|…&tone=day|night. window.__demo = { ready, puts } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sortlist — démonstration</title>
+<link rel="stylesheet" href="../../design/tokens.css">
+<link rel="stylesheet" href="../../design/primitives.css">
+<link rel="stylesheet" href="../../design/metro.css">
+<link rel="stylesheet" href="../../design/swiss.css">
+<link rel="stylesheet" href="../../design/cupertino.css">
+<link rel="stylesheet" href="../../design/material.css">
+<style>
+  body {
+    margin: 0
+  }
+  .demo {
+    padding: 8px 16px 32px
+  }
+  .demo ul {
+    list-style: none;
+    margin: 0;
+    padding: 0
+  }
+  .demo li {
+    border-bottom: 1px solid var(--sog-border);
+    padding: 8px 2px;
+    min-height: var(--sog-touch)
+  }
+  .demo li small {
+    display: block;
+    color: var(--sog-muted)
+  }
+</style>
+</head>
+<body>
+<div class="f-module demo" id="root"></div>
+<script type="module">
+  import {
+    sortRows,
+    defaultState,
+    headHtml,
+    barHtml,
+    refresh,
+    bind,
+    loadState,
+    saveState
+  } from '../sortlist.js?v=0';
+  import {
+    keepScroll
+  } from '../dom.js?v=0';
+  const q = new URLSearchParams(location.search),
+    lang = ['fr', 'en', 'de', 'es'].includes(q.get('lang')) ? q.get('lang') : 'fr';
+  document.documentElement.lang = lang;
+  document.documentElement.dataset.design = q.get('design') || 'standard';
+  document.documentElement.dataset.tone = q.get('tone') === 'night' ? 'night' : 'day';
+  // un faux ctx.data : la politique « cache » d'un module, ici dans le stockage de la page d'essai
+  const puts = [];
+  const ctx = {
+    data: {
+      get: async p => {
+        try {
+          return JSON.parse(localStorage.getItem(`sortlist-demo:${p}`) || 'null');
+        } catch {
+          return null;
+        }
+      },
+      put: async (p, v, o) => {
+        puts.push([p, v, o && o.policy]);
+        localStorage.setItem(`sortlist-demo:${p}`, JSON.stringify(v));
+      }
+    }
+  };
+  const L = (fr, en, de, es) => [fr, en, de, es];
+  const COLS = [{
+    key: 'id',
+    label: L('Identifiant', 'Identifier', 'Kennung', 'Identificador'),
+    type: 'text',
+    get: r => r.id
+  }, {
+    key: 'title',
+    label: L('Titre', 'Title', 'Titel', 'Título'),
+    type: 'text',
+    get: r => r.title
+  }, {
+    key: 'ser',
+    label: L('Série', 'Series', 'Serie', 'Serie'),
+    type: 'number',
+    get: r => r.ser,
+    align: 'num'
+  }, {
+    key: 'at',
+    label: L('Date', 'Date', 'Datum', 'Fecha'),
+    type: 'date',
+    get: r => r.at
+  }, {
+    key: 'dur',
+    label: L('Durée', 'Duration', 'Dauer', 'Duración'),
+    type: 'duration',
+    get: r => r.dur,
+    align: 'num'
+  }];
+  const ROWS = [
+    ['M-001', 'Vol de réception', 1, '2026-01-12', 35],
+    ['M-002', 'Convoyage d’un hélicoptère', 4, '2026-02-03', 73],
+    ['M-003', 'Évacuation sanitaire', 12, '2026-02-20', 94],
+    ['M-004', 'Transfert d’un patient', 12, '2026-03-02', 47],
+    ['M-005', 'Largage de matériel', null, '2026-04-15', null],
+    ['M-006', 'Reconnaissance côtière', 2, '2026-05-01', 150],
+    ['M-007', 'Ravitaillement d’une base', 4, '2026-06-09', 118],
+    ['M-008', 'Entraînement de nuit', 1, '2026-07-21', 62],
+    ['M-009', 'Recherche en mer', 12, '2026-08-30', 181],
+    ['M-010', 'Hélitreuillage', 3, null, 55],
+    ['M-011', 'Assistance à un navire', null, '2026-10-04', 88],
+    ['M-012', 'Photographie aérienne', 2, '2026-11-18', 41]
+  ].map(([id, title, ser, at, dur]) => ({
+    id,
+    title,
+    ser,
+    at,
+    dur
+  }));
+  const DFLT = defaultState(COLS, {
+    key: 'id',
+    dir: 'desc'
+  });
+  const fmt = m => m == null ? '—' : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
+  const root = document.getElementById('root');
+  let state = await loadState(ctx, 'demo', COLS, DFLT);
+  const rowsHtml = () => {
+    const rows = sortRows(ROWS, COLS, state, lang);
+    return {
+      table: rows.map(r => `<tr data-id="${r.id}"><td>${r.id}</td><td>${r.title}</td><td class="f-num">${r.ser ?? '—'}</td><td>${r.at ?? '—'}</td><td class="f-num">${fmt(r.dur)}</td><td><button type="button" aria-label="${r.id}">⋯</button></td></tr>`)
+        .join(''),
+      list: rows.map(r => `<li data-id="${r.id}"><b>${r.id}</b> ${r.title}<small>${r.ser ?? '—'} · ${r.at ?? '—'} · ${fmt(r.dur)}</small></li>`)
+        .join('')
+    };
+  };
+  const draw = () => {
+    const r = rowsHtml();
+    root.innerHTML = `<div data-bar>${barHtml(COLS, state, { lang, id: 'demo', dflt: DFLT })}</div>
+      <div class="f-scroll f-sortwide"><table class="f-table" data-table><thead>${headHtml(COLS, state, { lang, actions: true })}</thead><tbody data-tbody>${r.table}</tbody></table></div>
+      <ul class="f-sortnarrow" data-list>${r.list}</ul>`;
+  };
+  /** Après un geste : l'en-tête et la barre suivent en place (refresh), seules les lignes sont redessinées. */
+  const redrawRows = () => {
+    const r = rowsHtml();
+    keepScroll(root, () => {
+      const tb = root.querySelector('[data-tbody]'),
+        ls = root.querySelector('[data-list]');
+      if (tb.innerHTML !== r.table) tb.innerHTML = r.table;
+      if (ls.innerHTML !== r.list) ls.innerHTML = r.list;
+    });
+  };
+  draw();
+  bind(root, {
+    cols: COLS,
+    dflt: DFLT,
+    getState: () => state,
+    setState: s => {
+      state = s;
+      saveState(ctx, 'demo', s);
+    },
+    onChange: s => {
+      refresh(root, COLS, s, {
+        lang,
+        dflt: DFLT
+      });
+      redrawRows();
+    }
+  });
+  window.__demo = {
+    ready: true,
+    puts,
+    state: () => state
+  };
+</script>
+</body>
+</html>

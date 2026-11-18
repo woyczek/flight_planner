@@ -1,0 +1,694 @@
+<!doctype html>
+<!-- Banc du bloc commun des listes triables (frame/lib/sortlist.js, SOG-0498) : chaque type de colonne (texte, nombre, date, durée), le vide toujours en dernier dans les deux sens, l'ordre stable,
+     la collation numérique et aveugle aux accents (« M-10 » après « M-9 »), le premier sens de chaque type, l'état gardé lu comme une entrée non fiable (« __proto__ », tableaux, autres clés),
+     l'en-tête (aria-sort, textes échappés), la barre du téléphone, l'état gardé par un faux ctx.data, les quatre langues. Page nue ; window.__sortlistBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>sortlist — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<div id="stage"></div>
+<script type="module">
+  import {
+    TEXTS,
+    sortRows,
+    nextSort,
+    defaultState,
+    stateOf,
+    headHtml,
+    barHtml,
+    refresh,
+    bind,
+    loadState,
+    saveState
+  } from '../sortlist.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__sortlistBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__sortlistBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const J = v => JSON.stringify(v);
+  const L = (fr, en = fr, de = fr, es = fr) => [fr, en, de, es];
+  const COLS = [{
+    key: 'id',
+    label: L('Identifiant', 'Identifier', 'Kennung', 'Identificador'),
+    type: 'text',
+    get: r => r.id
+  }, {
+    key: 'title',
+    label: L('Titre', 'Title', 'Titel', 'Título'),
+    type: 'text',
+    get: r => r.title
+  }, {
+    key: 'n',
+    label: L('Série', 'Series', 'Serie', 'Serie'),
+    type: 'number',
+    get: r => r.n,
+    align: 'num'
+  }, {
+    key: 'at',
+    label: L('Date'),
+    type: 'date',
+    get: r => r.at
+  }, {
+    key: 'dur',
+    label: L('Durée', 'Duration', 'Dauer', 'Duración'),
+    type: 'duration',
+    get: r => r.dur,
+    align: 'num'
+  }];
+  const ids = a => a.map(r => r.id).join(' ');
+  (async () => {
+    try {
+      // ---- texte : collation numérique, accents et casse ignorés
+      const T = [{
+        id: 'M-10'
+      }, {
+        id: 'M-9'
+      }, {
+        id: 'M-2'
+      }, {
+        id: 'M-100'
+      }];
+      ck('texte croissant : « M-10 » après « M-9 » (collation numérique)', ids(sortRows(T, COLS, {
+        key: 'id',
+        dir: 'asc'
+      }, 'fr')) === 'M-2 M-9 M-10 M-100', ids(sortRows(T, COLS, {
+        key: 'id',
+        dir: 'asc'
+      }, 'fr')));
+      ck('texte décroissant : M-100 M-10 M-9 M-2', ids(sortRows(T, COLS, {
+        key: 'id',
+        dir: 'desc'
+      }, 'fr')) === 'M-100 M-10 M-9 M-2');
+      const A = [{
+        id: 'a',
+        title: 'Zèbre'
+      }, {
+        id: 'b',
+        title: 'école'
+      }, {
+        id: 'c',
+        title: 'Eau'
+      }, {
+        id: 'd',
+        title: 'étang'
+      }];
+      ck('texte : accents et casse ignorés (Eau, école, étang, Zèbre)', ids(sortRows(A, COLS, {
+        key: 'title',
+        dir: 'asc'
+      }, 'fr')) === 'c b d a', ids(sortRows(A, COLS, {
+        key: 'title',
+        dir: 'asc'
+      }, 'fr')));
+      // ---- jamais modifié : un nouveau tableau
+      const before = J(T),
+        got = sortRows(T, COLS, {
+          key: 'id',
+          dir: 'asc'
+        }, 'fr');
+      ck('sortRows rend un NOUVEAU tableau et ne touche pas l\'entrée', got !== T && J(T) === before);
+      // ---- nombre : virgule décimale, espaces, moins U+2212
+      const N = [{
+        id: 'a',
+        n: '1 234,5'
+      }, {
+        id: 'b',
+        n: 12
+      }, {
+        id: 'c',
+        n: '−3'
+      }, {
+        id: 'd',
+        n: '1 000'
+      }, {
+        id: 'e',
+        n: 2.5
+      }];
+      ck('nombre croissant : « −3 », 2.5, 12, « 1 000 », « 1 234,5 »', ids(sortRows(N, COLS, {
+        key: 'n',
+        dir: 'asc'
+      }, 'fr')) === 'c e b d a', ids(sortRows(N, COLS, {
+        key: 'n',
+        dir: 'asc'
+      }, 'fr')));
+      ck('nombre décroissant', ids(sortRows(N, COLS, {
+        key: 'n',
+        dir: 'desc'
+      }, 'fr')) === 'a d b e c');
+      // ---- durée : numérique (minutes), la virgule n'est pas lue
+      const D = [{
+        id: 'a',
+        dur: 94
+      }, {
+        id: 'b',
+        dur: 150
+      }, {
+        id: 'c',
+        dur: 35
+      }, {
+        id: 'd',
+        dur: '47'
+      }];
+      ck('durée décroissante : 150 94 47 35', ids(sortRows(D, COLS, {
+        key: 'dur',
+        dir: 'desc'
+      }, 'fr')) === 'b a d c', ids(sortRows(D, COLS, {
+        key: 'dur',
+        dir: 'desc'
+      }, 'fr')));
+      ck('durée : « 1 234,5 » et « −3 » ne sont pas des durées (vides, en dernier)', ids(sortRows([{
+        id: 'x',
+        dur: '−3'
+      }, {
+        id: 'y',
+        dur: 5
+      }, {
+        id: 'z',
+        dur: '1 234,5'
+      }], COLS, {
+        key: 'dur',
+        dir: 'asc'
+      }, 'fr')) === 'y x z');
+      // ---- date : texte ISO, Date, millisecondes ; illisible = vide
+      const Dt = [{
+        id: 'a',
+        at: '2026-11-18'
+      }, {
+        id: 'b',
+        at: new Date('2026-03-02T00:00:00Z')
+      }, {
+        id: 'c',
+        at: Date.parse('2026-12-01T00:00:00Z')
+      }, {
+        id: 'd',
+        at: 'pas une date'
+      }, {
+        id: 'e',
+        at: '2025-01-01T10:00:00Z'
+      }];
+      ck('date décroissante (ISO, Date, ms) ; illisible en dernier', ids(sortRows(Dt, COLS, {
+        key: 'at',
+        dir: 'desc'
+      }, 'fr')) === 'c a b e d', ids(sortRows(Dt, COLS, {
+        key: 'at',
+        dir: 'desc'
+      }, 'fr')));
+      ck('date croissante ; illisible toujours en dernier', ids(sortRows(Dt, COLS, {
+        key: 'at',
+        dir: 'asc'
+      }, 'fr')) === 'e b a c d');
+      ck('dates « 2026-11-18 » et « 2026-03-02 » ne sont pas à égalité (le défaut de la V2)', ids(sortRows([Dt[0], {
+        id: 'f',
+        at: '2026-03-02'
+      }], COLS, {
+        key: 'at',
+        dir: 'asc'
+      }, 'fr')) === 'f a');
+      // ---- le vide toujours en dernier, dans les deux sens et pour chaque type
+      const E = [{
+        id: 'e1',
+        title: null,
+        n: null,
+        dur: undefined,
+        at: ''
+      }, {
+        id: 'v1',
+        title: 'B',
+        n: 2,
+        dur: 20,
+        at: '2026-01-02'
+      }, {
+        id: 'e2',
+        title: '   ',
+        n: NaN,
+        dur: NaN,
+        at: null
+      }, {
+        id: 'v2',
+        title: 'A',
+        n: 1,
+        dur: 10,
+        at: '2026-01-01'
+      }, {
+        id: 'e3',
+        title: '',
+        n: '',
+        dur: '',
+        at: undefined
+      }];
+      for (const key of ['title', 'n', 'dur', 'at'])
+        for (const dir of ['asc', 'desc']) {
+          const r = ids(sortRows(E, COLS, {
+            key,
+            dir
+          }, 'fr'));
+          ck(`vide en dernier : ${key} ${dir}`, r.split(' ').slice(2).join(' ') === 'e1 e2 e3' && r.split(' ').slice(0, 2).sort().join(' ') ===
+            'v1 v2', r);
+        }
+      ck('les vides gardent leur ordre d\'origine entre eux (stable)', ids(sortRows(E, COLS, {
+        key: 'n',
+        dir: 'desc'
+      }, 'fr')) === 'v1 v2 e1 e2 e3');
+      // ---- stable : égalités dans l'ordre d'origine, puis la première colonne
+      const S = Array.from({
+        length: 30
+      }, (_, i) => ({
+        id: 'M-1',
+        k: i,
+        dur: i % 3
+      }));
+      const sd = sortRows(S, COLS, {
+        key: 'dur',
+        dir: 'desc'
+      }, 'fr');
+      ck('stable : 30 lignes à trois valeurs, chaque groupe dans l\'ordre d\'origine', [2, 1, 0].every((v, g) => sd.slice(g * 10, g *
+        10 + 10).every((
+        r, j, a) => r.dur === v && (j === 0 || a[j - 1].k < r.k))), sd.map(r => `${r.dur}/${r.k}`).join(' '));
+      const F = [{
+        id: 'M-3',
+        dur: 5
+      }, {
+        id: 'M-1',
+        dur: 5
+      }, {
+        id: 'M-2',
+        dur: 5
+      }];
+      ck('égalité : départagée par la première colonne, dans son premier sens', ids(sortRows(F, COLS, {
+        key: 'dur',
+        dir: 'asc'
+      }, 'fr')) === 'M-1 M-2 M-3', ids(sortRows(F, COLS, {
+        key: 'dur',
+        dir: 'asc'
+      }, 'fr')));
+      // ---- état inconnu : l'état par défaut (la première colonne, son premier sens)
+      ck('clé inconnue : le défaut (première colonne, texte croissant)', ids(sortRows(T, COLS, {
+        key: 'zz',
+        dir: 'desc'
+      }, 'fr')) === 'M-2 M-9 M-10 M-100');
+      ck('état absent ou illisible : le défaut', ids(sortRows(T, COLS, null, 'fr')) === 'M-2 M-9 M-10 M-100' && ids(sortRows(T, COLS,
+        'id',
+        'fr')) === 'M-2 M-9 M-10 M-100');
+      ck('langue inconnue ou invalide : pas d\'exception', ids(sortRows(T, COLS, {
+        key: 'id',
+        dir: 'asc'
+      }, 'zz-!!')) === 'M-2 M-9 M-10 M-100');
+      ck('lignes illisibles : un tableau vide, pas d\'exception', J(sortRows(null, COLS, null, 'fr')) === '[]' && J(sortRows('abc',
+        COLS, null,
+        'fr')) === '[]');
+      ck('un get qui lève : la valeur est vide, pas d\'exception', sortRows([{
+        id: 'a'
+      }, {
+        id: 'b'
+      }], [{
+        key: 'x',
+        label: L('X'),
+        type: 'number',
+        get: () => {
+          throw new Error('x');
+        }
+      }], null, 'fr').length === 2);
+      // ---- defaultState / nextSort
+      ck('defaultState sans précision : la première colonne dans son premier sens', J(defaultState(COLS)) ===
+        '{"key":"id","dir":"asc"}');
+      ck('defaultState { id, desc } (l\'identifiant, le plus récent en haut)', J(defaultState(COLS, {
+        key: 'id',
+        dir: 'desc'
+      })) === '{"key":"id","dir":"desc"}');
+      ck('defaultState : une clé inconnue → la première colonne, un sens inconnu → son premier sens', J(defaultState(COLS, {
+        key: 'zz',
+        dir: 'up'
+      })) === '{"key":"id","dir":"asc"}' && J(defaultState(COLS, {
+        key: 'dur'
+      })) === '{"key":"dur","dir":"desc"}');
+      const st0 = {
+        key: 'id',
+        dir: 'desc'
+      };
+      ck('nextSort : la même colonne inverse', J(nextSort(st0, 'id', COLS)) === '{"key":"id","dir":"asc"}' && J(nextSort({
+        key: 'id',
+        dir: 'asc'
+      }, 'id', COLS)) === '{"key":"id","dir":"desc"}');
+      ck('nextSort : une autre colonne commence dans son premier sens (texte croissant ; nombre, date, durée décroissants)', J(nextSort(
+        st0,
+        'title', COLS)) === '{"key":"title","dir":"asc"}' && ['n', 'at', 'dur'].every(k => J(nextSort(st0, k, COLS)) ===
+        `{"key":"${k}","dir":"desc"}`));
+      ck('nextSort : « first » de la colonne l\'emporte sur le type', J(nextSort(st0, 'x', [...COLS, {
+        key: 'x',
+        label: L('X'),
+        type: 'number',
+        get: r => r.x,
+        first: 'asc'
+      }])) === '{"key":"x","dir":"asc"}');
+      ck('nextSort : une clé inconnue garde l\'état', J(nextSort(st0, 'zz', COLS)) === J(st0) && J(nextSort(st0, '__proto__', COLS)) ===
+        J(
+          st0));
+      ck('nextSort ne modifie pas l\'état donné', J(st0) === '{"key":"id","dir":"desc"}');
+      // ---- stateOf : l'état gardé est une entrée non fiable
+      const dflt = {
+        key: 'id',
+        dir: 'desc'
+      };
+      ck('stateOf : un état valide est rendu (une copie de { key, dir } seulement)', J(stateOf({
+        key: 'dur',
+        dir: 'asc',
+        extra: 1
+      }, COLS, dflt)) === '{"key":"dur","dir":"asc"}');
+      const hostile = [null, undefined, 'dur', 5, true, [],
+        ['dur', 'asc'], {}, {
+          key: 'zz',
+          dir: 'asc'
+        }, {
+          key: 'dur',
+          dir: 'up'
+        }, {
+          key: 'dur'
+        }, {
+          key: ['dur'],
+          dir: 'asc'
+        }, {
+          key: {
+            toString: () => 'dur'
+          },
+          dir: 'asc'
+        },
+        JSON.parse('{"__proto__":{"key":"dur","dir":"asc"}}'), Object.create({
+          key: 'dur',
+          dir: 'asc'
+        }), {
+          key: 'toString',
+          dir: 'asc'
+        }, {
+          key: '__proto__',
+          dir: 'asc'
+        }, {
+          key: 'constructor',
+          dir: 'desc'
+        }, {
+          key: 'dur',
+          dir: 'ASC'
+        }, {
+          key: ' dur',
+          dir: 'asc'
+        }
+      ];
+      ck('stateOf : chaque valeur hostile donne le défaut (__proto__, prototype, tableaux, autres clés, types)', hostile.every(v => J(
+        stateOf(v,
+          COLS, dflt)) === J(dflt)), hostile.filter(v => J(stateOf(v, COLS, dflt)) !== J(dflt)).map(J).join(' ; '));
+      ck('stateOf sans défaut : defaultState(cols)', J(stateOf(null, COLS)) === '{"key":"id","dir":"asc"}');
+      // ---- headHtml
+      const box = document.getElementById('stage'),
+        XC = [{
+          key: 'a"b',
+          label: L('<img src=x onerror=alert(1)>', '<img src=y>&N', 'D', 'S'),
+          type: 'text',
+          get: r => r.a
+        }, ...COLS];
+      box.innerHTML = `<table><thead>${headHtml(XC, {
+        key: 'dur',
+        dir: 'asc'
+      }, {
+        lang: 'en',
+        actions: true
+      })}</thead></table>`;
+      const ths = [...box.querySelectorAll('th')];
+      ck('headHtml : une <th scope="col"> par colonne, plus celle des gestes', ths.length === XC.length + 1 && ths.slice(0, -1).every(
+        t => t
+        .scope === 'col'), String(ths.length));
+      ck('headHtml : libellés échappés (aucun élément injecté), langue de l\'appel', !box.querySelector('img') && ths[0].querySelector(
+        'button').textContent === '<img src=y>&N' && ths[1].textContent === 'Identifier');
+      ck('headHtml : clé échappée dans data-sort et data-col', ths[0].dataset.col === 'a"b' && ths[0].querySelector('button').dataset
+        .sort ===
+        'a"b');
+      ck('headHtml : aria-sort « ascending » sur la colonne triée, « none » ailleurs', ths.find(t => t.dataset.col === 'dur')
+        .getAttribute(
+          'aria-sort') === 'ascending' && ths.filter(t => t.dataset.col && t.dataset.col !== 'dur').every(t => t.getAttribute(
+            'aria-sort') ===
+          'none'));
+      ck('headHtml : un bouton type="button" class="f-sortbtn" par colonne', ths.slice(0, -1).every(t => t.querySelector(
+        'button.f-sortbtn[type="button"]')));
+      ck('headHtml : la colonne des gestes n\'a ni aria-sort ni bouton, son nom pour les lecteurs d\'écran', !ths.at(-1).hasAttribute(
+        'aria-sort') && !ths.at(-1).querySelector('button') && ths.at(-1).textContent.trim() === TEXTS.actions[1]);
+      ck('headHtml : colonne align « num » marquée f-num', ths.find(t => t.dataset.col === 'dur').classList.contains('f-num') && !ths
+        .find(t =>
+          t.dataset.col === 'id').classList.contains('f-num'));
+      box.innerHTML = `<table><thead>${headHtml(COLS, {
+        key: 'dur',
+        dir: 'desc'
+      })}</thead></table>`;
+      ck('headHtml : « descending », sans gestes, langue par défaut fr', box.querySelector('[data-col="dur"]').getAttribute(
+          'aria-sort') ===
+        'descending' && box.querySelectorAll('th').length === COLS.length && box.querySelector('[data-col="id"]').textContent ===
+        'Identifiant');
+      // ---- barHtml
+      box.innerHTML = barHtml(COLS, {
+        key: 'dur',
+        dir: 'desc'
+      }, {
+        lang: 'fr',
+        id: 'reg',
+        dflt: {
+          key: 'id',
+          dir: 'desc'
+        }
+      });
+      const open = box.querySelector('[data-sort-open]'),
+        panel = box.querySelector('[data-sort-panel]');
+      ck('barHtml : « Trier : Durée ▼ » (aria-expanded false, aria-controls vers le panneau caché)', open.textContent.includes(
+        `${TEXTS.sort[0]} : `) && open.textContent.includes('Durée') && open.textContent.includes('▼') && open.getAttribute(
+        'aria-expanded') === 'false' && panel.id === open.getAttribute('aria-controls') && panel.hidden, open.textContent);
+      const radios = [...panel.querySelectorAll('input[type="radio"]')];
+      ck('barHtml : un bouton radio par colonne, un seul nom, la colonne triée cochée', radios.length === COLS.length && new Set(radios
+        .map(r =>
+          r.name)).size === 1 && radios.filter(r => r.checked).map(r => r.value).join() === 'dur');
+      const dirs = [...panel.querySelectorAll('[data-sort-dir]')];
+      ck('barHtml : « Croissant / Décroissant », aria-pressed sur le sens', dirs.length === 2 && dirs[0].textContent.includes(TEXTS.asc[
+          0]) &&
+        dirs[1].textContent.includes(TEXTS.desc[0]) && dirs[0].getAttribute('aria-pressed') === 'false' && dirs[1].getAttribute(
+          'aria-pressed') === 'true');
+      const reset = box.querySelector('[data-sort-reset]');
+      ck('barHtml : « Remettre l’ordre » montré quand l\'ordre n\'est pas celui par défaut', reset && !reset.hidden && reset
+        .textContent ===
+        TEXTS.reset[0]);
+      box.innerHTML = barHtml(COLS, {
+        key: 'id',
+        dir: 'desc'
+      }, {
+        lang: 'fr',
+        id: 'reg',
+        dflt: {
+          key: 'id',
+          dir: 'desc'
+        },
+        open: true
+      });
+      ck('barHtml : « Remettre l’ordre » caché à l\'ordre par défaut ; open : panneau ouvert', box.querySelector('[data-sort-reset]')
+        .hidden &&
+        !box.querySelector('[data-sort-panel]').hidden && box.querySelector('[data-sort-open]').getAttribute('aria-expanded') ===
+        'true');
+      box.innerHTML = barHtml(XC, {
+        key: 'a"b',
+        dir: 'asc'
+      }, {
+        lang: 'en',
+        id: 'x"y'
+      });
+      ck('barHtml : libellés, clés et id échappés', !box.querySelector('img') && box.querySelector('[data-sort-open]').textContent
+        .includes(
+          '<img') && box.querySelector('input[type="radio"]').value === 'a"b');
+      // ---- quatre langues
+      const ln = ['fr', 'en', 'de', 'es'];
+      ck('textes du bloc : quatre langues, aucune vide', ['sort', 'sortBy', 'asc', 'desc', 'reset', 'actions'].every(k => Array.isArray(
+        TEXTS[
+          k]) && TEXTS[k].length === 4 && TEXTS[k].every(s => typeof s === 'string' && s.trim())));
+      ln.forEach((l, i) => {
+        box.innerHTML = barHtml(COLS, {
+          key: 'title',
+          dir: 'asc'
+        }, {
+          lang: l,
+          id: 'q'
+        }) + `<table><thead>${headHtml(COLS, {
+          key: 'title',
+          dir: 'asc'
+        }, {
+          lang: l,
+          actions: true
+        })}</thead></table>`;
+        ck(`langue ${l} : la barre, le panneau, l'en-tête`, box.querySelector('[data-sort-open]').textContent.includes(TEXTS.sort[i]) && box
+          .querySelector('[data-sort-open]').textContent.includes(COLS[1].label[i]) && box.querySelector('[data-sort-dir="asc"]')
+          .textContent
+          .includes(TEXTS.asc[i]) && box.querySelector('[data-sort-reset]').textContent === TEXTS.reset[i] && box.querySelector(
+            '[data-sort-panel]').getAttribute('aria-label') === TEXTS.sortBy[i] && box.querySelector('[data-col="title"]')
+          .textContent ===
+          COLS[1].label[i], box.querySelector('[data-sort-open]').textContent);
+      });
+      ck('langue inconnue : le français', barHtml(COLS, defaultState(COLS), {
+        lang: 'it',
+        id: 'q'
+      }).includes(TEXTS.sort[0]));
+      // ---- bind : clics délégués, setState puis onChange, jamais de rendu ; unbind
+      let state = {
+          key: 'id',
+          dir: 'desc'
+        },
+        seen = [];
+      const DF = {
+        key: 'id',
+        dir: 'desc'
+      };
+      const paint = () => {
+        box.innerHTML = barHtml(COLS, state, {
+          lang: 'fr',
+          id: 'b',
+          dflt: DF
+        }) + `<table><thead>${headHtml(COLS, state, {
+          lang: 'fr'
+        })}</thead></table>`;
+      };
+      paint();
+      const unbind = bind(box, {
+        cols: COLS,
+        dflt: DF,
+        getState: () => state,
+        setState: s => {
+          state = s;
+        },
+        onChange: (s, o) => seen.push([J(s), o && o.open])
+      });
+      const html0 = box.innerHTML;
+      box.querySelector('[data-sort="dur"]').click();
+      ck('bind : un clic sur un en-tête → setState puis onChange (durée décroissante), rien redessiné', J(state) ===
+        '{"key":"dur","dir":"desc"}' &&
+        seen.length === 1 && box.innerHTML === html0, J(state));
+      box.querySelector('[data-sort="dur"]').click();
+      ck('bind : le même en-tête inverse', J(state) === '{"key":"dur","dir":"asc"}');
+      box.querySelector('[data-sort-open]').click();
+      ck('bind : « Trier » ouvre le panneau (hidden, aria-expanded)', !box.querySelector('[data-sort-panel]').hidden && box
+        .querySelector(
+          '[data-sort-open]').getAttribute('aria-expanded') === 'true' && seen.length === 2);
+      const r = box.querySelector('input[type="radio"][value="title"]');
+      r.checked = true;
+      r.dispatchEvent(new Event('change', {
+        bubbles: true
+      }));
+      ck('bind : un bouton radio choisit la colonne dans son premier sens ; onChange dit que le panneau est ouvert', J(state) ===
+        '{"key":"title","dir":"asc"}' && seen.at(-1)[1] === true, J(seen.at(-1)));
+      box.querySelector('[data-sort-dir="desc"]').click();
+      ck('bind : « Décroissant » garde la colonne', J(state) === '{"key":"title","dir":"desc"}');
+      box.querySelector('[data-sort-dir="desc"]').click();
+      ck('bind : le sens déjà choisi ne rappelle pas onChange', seen.length === 4, String(seen.length));
+      refresh(box, COLS, state, {
+        lang: 'fr',
+        dflt: DF
+      });
+      ck('refresh : aria-sort, l\'étiquette, la case cochée, aria-pressed, « Remettre l’ordre » suivent l\'état sans redessiner',
+        box.querySelector('[data-col="title"]').getAttribute('aria-sort') === 'descending' && box.querySelector('[data-col="dur"]')
+        .getAttribute(
+          'aria-sort') === 'none' && box.querySelector('[data-sort-open]').textContent.includes('Titre') && box.querySelector(
+          'input[value="title"]').checked && box.querySelector('[data-sort-dir="desc"]').getAttribute('aria-pressed') === 'true' && !
+        box
+        .querySelector('[data-sort-reset]').hidden && !box.querySelector('[data-sort-panel]').hidden);
+      let writes = 0;
+      const mo2 = new MutationObserver(m => {
+        writes += m.length;
+      });
+      mo2.observe(box, {
+        subtree: true,
+        attributes: true,
+        childList: true,
+        characterData: true
+      });
+      refresh(box, COLS, state, {
+        lang: 'fr',
+        dflt: DF
+      });
+      await new Promise(r => setTimeout(r, 0));
+      mo2.disconnect();
+      ck('refresh : rien n\'est écrit quand rien ne change', writes === 0, String(writes));
+      box.querySelector('[data-sort-reset]').click();
+      ck('bind : « Remettre l’ordre » rend l\'état par défaut', J(state) === J(DF));
+      box.querySelector('[data-sort-panel] input').focus();
+      box.querySelector('[data-sort-panel] input').dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true
+      }));
+      ck('bind : Échap dans le panneau le ferme et rend le focus à « Trier »', box.querySelector('[data-sort-panel]').hidden && document
+        .activeElement === box.querySelector('[data-sort-open]'));
+      const n0 = seen.length;
+      unbind();
+      box.querySelector('[data-sort="n"]').click();
+      ck('unbind : plus aucun geste lu', seen.length === n0 && J(state) === J(DF));
+      // ---- loadState / saveState par un faux ctx.data
+      const docs = new Map(),
+        puts = [];
+      const ctx = {
+        data: {
+          get: async p => docs.has(p) ? JSON.parse(docs.get(p)) : null,
+          put: async (p, v, o) => {
+            puts.push([p, J(v), o && o.policy]);
+            docs.set(p, J(v));
+          }
+        }
+      };
+      ck('loadState : rien de gardé → le défaut', J(await loadState(ctx, 'reg', COLS, DF)) === J(DF));
+      ck('saveState : écrit cache/sort/<id>.json, politique « cache »', await saveState(ctx, 'reg', {
+        key: 'dur',
+        dir: 'asc'
+      }) === true && J(puts.at(-1)) === '["cache/sort/reg.json","{\\"key\\":\\"dur\\",\\"dir\\":\\"asc\\"}","cache"]', J(puts));
+      ck('loadState : relit l\'état gardé', J(await loadState(ctx, 'reg', COLS, DF)) === '{"key":"dur","dir":"asc"}');
+      const np = puts.length;
+      ck('saveState : un état inchangé n\'est pas réécrit', await saveState(ctx, 'reg', {
+        key: 'dur',
+        dir: 'asc'
+      }) === false && puts.length === np);
+      ck('saveState : un identifiant invalide ou un état illisible n\'écrit rien', await saveState(ctx, '../x', {
+          key: 'dur',
+          dir: 'asc'
+        }) === false && await saveState(ctx, 'Reg', {
+          key: 'dur',
+          dir: 'asc'
+        }) === false && await saveState(ctx, 'reg', {
+          key: 'dur',
+          dir: 'up'
+        }) === false && await saveState(ctx, 'reg', null) === false && await saveState(ctx, 'a'.repeat(42), DF) === false && puts
+        .length ===
+        np);
+      docs.set('cache/sort/reg.json', '{"__proto__":{"key":"dur","dir":"asc"},"key":"zz"}');
+      ck('loadState : un fichier gardé hostile → le défaut', J(await loadState(ctx, 'reg', COLS, DF)) === J(DF));
+      docs.set('cache/sort/reg.json', '{"key":"title","dir":"desc"}');
+      ck('loadState : un identifiant invalide → le défaut, sans lecture', J(await loadState(ctx, '../reg', COLS, DF)) === J(DF));
+      const broken = {
+        data: {
+          get: async () => {
+            throw new Error('x');
+          },
+          put: async () => {
+            throw new Error('y');
+          }
+        }
+      };
+      ck('ctx.data qui échoue ou absent : le défaut, false, jamais d\'exception', J(await loadState(broken, 'reg', COLS, DF)) === J(
+          DF) &&
+        await saveState(broken, 'reg', DF) === false && J(await loadState(null, 'reg', COLS, DF)) === J(DF) && await saveState({},
+          'reg',
+          DF) === false);
+    } catch (e) {
+      ck('aucune exception dans le banc', false, String(e && e.stack || e));
+    }
+    window.__sortlistBench.done = true;
+  })();
+</script>
+</body>
+</html>

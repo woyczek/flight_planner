@@ -348,6 +348,129 @@ details.f-card[open]>summary {
   white-space: nowrap
 }
 
+/* ---- liste triable (frame/lib/sortlist.js, SOG-0498, frame/INTEGRATION.md § 12d) : à l'écran large, un bouton par
+   en-tête (44 px), la flèche posée d'après aria-sort ; dans un volet de 700 px au plus, la liste du module et un seul
+   bouton « Trier » qui ouvre son panneau. « Remettre l'ordre » est dans la barre aux deux largeurs (caché à l'ordre par
+   défaut). Le sélecteur `[data-design] button.f-sortbtn` passe devant les boutons d'un design (metro : filet de 2 px). */
+th:has(> .f-sortbtn) {
+  padding: 0
+}
+button.f-sortbtn,
+[data-design] button.f-sortbtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: var(--sog-touch);
+  padding: 0 6px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: left
+}
+th.f-num>button.f-sortbtn {
+  justify-content: flex-end;
+  text-align: right
+}
+th[aria-sort]>.f-sortbtn::after {
+  content: "↕";
+  content: "↕" / "";
+  font-size: .85em;
+  opacity: .45
+}
+th[aria-sort="ascending"]>.f-sortbtn::after {
+  content: "▲";
+  content: "▲" / "";
+  opacity: 1
+}
+th[aria-sort="descending"]>.f-sortbtn::after {
+  content: "▼";
+  content: "▼" / "";
+  opacity: 1
+}
+th:is([aria-sort="ascending"], [aria-sort="descending"]):has(> .f-sortbtn) {
+  color: var(--sog-link);
+  background: color-mix(in srgb, var(--sog-accent) 10%, transparent)
+}
+.f-sortbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--sog-gap-s)
+}
+.f-sortbar>button {
+  margin-bottom: var(--sog-gap-s)
+}
+.f-sortbar>button[hidden],
+.f-sortpanel[hidden] {
+  display: none
+}
+.f-sortopen,
+.f-sortpanel,
+.f-sortnarrow {
+  display: none
+}
+.f-sortopen {
+  align-items: center;
+  gap: 6px
+}
+.f-sortpanel {
+  flex: 1 1 100%;
+  min-width: 0;
+  margin-bottom: var(--sog-gap-s);
+  padding: 4px 8px 8px;
+  border: 1px solid var(--sog-border);
+  border-radius: var(--sog-radius);
+  background: var(--sog-surface)
+}
+.f-sortpanel label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--sog-touch);
+  padding: 0 4px;
+  cursor: pointer
+}
+.f-sortdirs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--sog-border)
+}
+.f-sortdirs>button {
+  flex: 1 1 0;
+  min-width: 0
+}
+.f-sortdirs>button[aria-pressed="true"],
+[data-design] .f-sortdirs>button[aria-pressed="true"] {
+  border-color: var(--sog-accent);
+  background: color-mix(in srgb, var(--sog-accent) 12%, transparent);
+  color: var(--sog-link);
+  font-weight: 600
+}
+@container (max-width: 700px) {
+  .f-sortbar {
+    justify-content: flex-start
+  }
+  .f-sortopen {
+    display: inline-flex
+  }
+  .f-sortpanel:not([hidden]),
+  .f-sortnarrow {
+    display: block
+  }
+  .f-sortwide {
+    display: none
+  }
+}
+
 /* ---- tuiles de chiffres */
 .f-tiles {
   display: grid;

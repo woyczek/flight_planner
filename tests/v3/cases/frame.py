@@ -10764,3 +10764,99 @@ def a292(c):
     c.check_errors()
 
 
+@case('A311', 'The common sortable list block (SOG-0498, frame/lib/sortlist.js): typed columns (text, number, date, duration), the empty value last in both directions, a stable order after the first column, numeric and accent-blind collation, the first direction of each type, a stored state read as untrusted, the escaped header with aria-sort, the phone bar, the state kept through ctx.data, four languages', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0498 (the user, 18 Nov, Q-0115 / Q-0116: a real sortable table on a computer, the sort KEPT on the device with « Remettre l’ordre », the default the identifier most recent on top, one block for all the tables): frame/lib/test/sortlist.html (window.__sortlistBench) — « M-10 » after « M-9 », accents ignored, « 1 234,5 » and U+2212 on number columns only, dates by Date.parse (unparsable = empty), empty ALWAYS last, ties by the first column then the original order, nextSort (same column reverses, another starts in its first direction), stateOf against __proto__, arrays and other keys, labels escaped, cache/sort/<id>.json written only when it changes')
+def a311(c):
+    _bench(c, 'frame/lib/test/sortlist.html', '__sortlistBench')
+
+
+def _sl_ids(c, where):
+    return c.js(f"[...document.querySelectorAll('{where} [data-id]')].map(e => e.dataset.id)")
+
+
+@case('A312', 'The sortable list block mounted (SOG-0498, frame/lib/test/sortlist_demo.html, 12 rows): a click on a header sorts, the same header reverses, aria-sort follows, headers are 44 px high; at 390 the table gives way to the list and ONE « Trier » button whose panel works with no horizontal scroll; the state kept through ctx.data survives a reload; « Remettre l’ordre » restores the default (the identifier, most recent on top); four languages', 'A',
+      tags=('launcher',), designs=('standard',), langs4=True,
+      rule='SOG-0498 (the user, 18 Nov, Q-0115 / Q-0116; mock-up frame/help/maquette/tri_registre.html): a <th scope="col" aria-sort> with one button per column at 44 px (until the ergonomist decides) on a computer; on a phone the list and one « Trier : <colonne> ▲|▼ » button opening a panel (a radio per column, « Croissant / Décroissant » with aria-pressed); the sort kept on the device (ctx.data, policy cache) with « Remettre l’ordre »; empty values last in both directions')
+def a312(c):
+    lang = c.lang
+    i = ['fr', 'en', 'de', 'es'].index(lang)
+    SRC = 'frame/lib/sortlist.js'
+    word = {k: tx(SRC, k, lang) for k in ('sort', 'asc', 'desc', 'reset')}
+    dur = ('Durée', 'Duration', 'Dauer', 'Duración')[i]
+    title = ('Titre', 'Title', 'Titel', 'Título')[i]
+    url = f'{c.base}/frame/lib/test/sortlist_demo.html?lang={lang}&design={c.design}&tone={c.tone}'
+    c.page.goto(url, wait_until='load')
+    c.js("Object.keys(localStorage).filter(k => k.startsWith('sortlist-demo:')).forEach(k => localStorage.removeItem(k))")
+
+    def load():
+        c.page.goto(url, wait_until='load')
+        c.until('window.__demo && window.__demo.ready', timeout=15000, what='the demo is mounted')
+
+    load()
+    newest = ['M-012', 'M-011', 'M-010']
+    no_hscroll = "document.scrollingElement.scrollWidth <= document.scrollingElement.clientWidth + 1"
+    if not c.phone:
+        c.ok(c.js("getComputedStyle(document.querySelector('[data-table]')).display !== 'none' && !document.querySelector('[data-sort-open]').offsetParent"),
+             'table hidden or « Trier » shown', 'a real table on a computer, the « Trier » button hidden')
+        c.eq(_sl_ids(c, '[data-tbody]')[:3], newest, 'the default order: the identifier, most recent on top', what='first rows')
+        c.eq(c.attr('th[data-col="id"]', 'aria-sort'), 'descending', 'the default column says it', what='aria-sort id')
+        hs = c.js("[...document.querySelectorAll('th[data-col] .f-sortbtn')].map(b => b.getBoundingClientRect().height)")
+        c.ok(hs and min(hs) >= 43.5, f'header buttons {[round(h, 1) for h in hs]} px', 'every header button ≥ 44 px (--sog-touch)')
+        c.ok(c.js("!document.querySelector('[data-sort-reset]').offsetParent"), 'reset shown at the default order', '« Remettre l’ordre » hidden at the default order')
+        c.tap('th[data-col="dur"] .f-sortbtn')
+        c.eq(_sl_ids(c, '[data-tbody]')[:3], ['M-009', 'M-006', 'M-007'], 'the longest first (181, 150, 118 min)', what='by duration')
+        c.eq(_sl_ids(c, '[data-tbody]')[-1], 'M-005', 'the row without a duration last', what='empty last (desc)')
+        c.eq([c.attr('th[data-col="dur"]', 'aria-sort'), c.attr('th[data-col="id"]', 'aria-sort')], ['descending', 'none'], 'aria-sort follows', what='aria-sort')
+        c.tap('th[data-col="dur"] .f-sortbtn')
+        c.eq(_sl_ids(c, '[data-tbody]')[:2], ['M-001', 'M-012'], 'the shortest first (35, 41 min)', what='reversed')
+        c.eq(_sl_ids(c, '[data-tbody]')[-1], 'M-005', 'the row without a duration still last', what='empty last (asc)')
+        c.eq(c.attr('th[data-col="dur"]', 'aria-sort'), 'ascending', 'aria-sort follows', what='aria-sort reversed')
+        c.ok(c.js("!!document.querySelector('[data-sort-reset]').offsetParent"), 'reset hidden', '« Remettre l’ordre » shown once the order is not the default')
+        c.ok(c.js(no_hscroll), 'horizontal scroll', 'no horizontal scroll')
+        load()
+        c.eq(c.attr('th[data-col="dur"]', 'aria-sort'), 'ascending', 'the sort kept on the device survives a reload', what='after reload')
+        c.eq(_sl_ids(c, '[data-tbody]')[:2], ['M-001', 'M-012'], 'the same order after a reload', what='order after reload')
+        c.eq(c.text('[data-sort-reset]'), word['reset'], 'the reset in the language', what='reset label')
+        c.tap('[data-sort-reset]')
+        c.eq(_sl_ids(c, '[data-tbody]')[:3], newest, '« Remettre l’ordre »: the default order again', what='after reset')
+        c.eq(c.attr('th[data-col="id"]', 'aria-sort'), 'descending', 'aria-sort back on the identifier', what='aria-sort after reset')
+        c.eq(c.text('th[data-col="title"]'), title, 'the header label in the language', what='header label')
+    else:
+        c.ok(c.js("getComputedStyle(document.querySelector('[data-table]').closest('.f-sortwide')).display === 'none'"), 'the table is shown', 'the table gives way to the list at 390')
+        c.eq(_sl_ids(c, '[data-list]')[:3], newest, 'the default order: the identifier, most recent on top', what='first rows')
+        btn = '[data-sort-open]'
+        c.ok(c.js("!!document.querySelector('[data-sort-open]').offsetParent"), 'the « Trier » button is hidden', 'ONE « Trier » button on the phone')
+        t = norm(c.text(btn))
+        c.ok(word['sort'] in t and '▼' in t, t, f'« {word["sort"]} : … ▼ » in the language')
+        c.ge(c.js("document.querySelector('[data-sort-open]').getBoundingClientRect().height"), 43.5, '44 px target', what='« Trier » height')
+        c.tap(btn)
+        c.eq(c.attr(btn, 'aria-expanded'), 'true', 'the panel opens', what='aria-expanded')
+        c.ok(c.js("!document.querySelector('[data-sort-panel]').hidden"), 'panel hidden', 'the panel is shown')
+        hs = c.js("[...document.querySelectorAll('[data-sort-panel] label, [data-sort-panel] button')].map(b => b.getBoundingClientRect().height)")
+        c.ok(hs and min(hs) >= 43.5, f'panel targets {[round(h, 1) for h in hs]} px', 'every target of the panel ≥ 44 px')
+        c.ok(c.js(no_hscroll), c.js('[document.scrollingElement.scrollWidth, document.scrollingElement.clientWidth]'), 'no horizontal scroll with the panel open')
+        c.tap('[data-sort-panel] label:has(input[value="dur"])')
+        c.eq(_sl_ids(c, '[data-list]')[:3], ['M-009', 'M-006', 'M-007'], 'a duration starts with the longest', what='by duration')
+        c.eq(_sl_ids(c, '[data-list]')[-1], 'M-005', 'the row without a duration last', what='empty last')
+        c.ok(c.js("!document.querySelector('[data-sort-panel]').hidden"), 'the panel closed', 'the panel stays open while one chooses')
+        t = norm(c.text(btn))
+        c.ok(dur in t and '▼' in t, t, f'« … {dur} ▼ »')
+        c.tap('[data-sort-dir="asc"]')
+        c.eq(c.attr('[data-sort-dir="asc"]', 'aria-pressed'), 'true', 'the direction pressed', what='aria-pressed asc')
+        c.eq(_sl_ids(c, '[data-list]')[:2], ['M-001', 'M-012'], 'ascending: the shortest first', what='ascending')
+        c.eq(_sl_ids(c, '[data-list]')[-1], 'M-005', 'the row without a duration still last', what='empty last (asc)')
+        c.ok(word['asc'] in c.text('[data-sort-dir="asc"]'), c.text('[data-sort-dir="asc"]'), 'the direction in the language')
+        c.tap(btn)
+        c.ok(c.js("document.querySelector('[data-sort-panel]').hidden"), 'the panel stays open', 'the button closes the panel')
+        load()
+        t = norm(c.text(btn))
+        c.ok(dur in t and '▲' in t, t, 'the sort kept on the device survives a reload')
+        c.eq(_sl_ids(c, '[data-list]')[:2], ['M-001', 'M-012'], 'the same order after a reload', what='order after reload')
+        c.eq(c.text('[data-sort-reset]'), word['reset'], 'the reset in the language', what='reset label')
+        c.tap('[data-sort-reset]')
+        c.eq(_sl_ids(c, '[data-list]')[:3], newest, '« Remettre l’ordre »: the default order again', what='after reset')
+        c.ok(c.js(no_hscroll), 'horizontal scroll', 'no horizontal scroll')
+    puts = c.js("window.__demo.puts.map(p => [p[0], p[2]])")
+    c.ok(puts and all(p == ['cache/sort/demo.json', 'cache'] for p in puts), puts, 'the state written to cache/sort/demo.json with the policy cache only')
+    c.check_errors()

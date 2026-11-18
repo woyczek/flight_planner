@@ -44,6 +44,8 @@ RULES = [
     ('frame/store/test/revalidate.html', ['A33', 'I'], 'revalidate bench'),
     ('frame/lib/mission.js', ['N', 'I'], 'the V2 missions read as they are, and the flight a mission gives (modules/missions)'),
     ('frame/lib/test/mission.html', ['N', 'I'], 'missions bench (N1)'),
+    ('frame/lib/sortlist.js', ['A311', 'A312', 'I'], 'the common sortable list block (SOG-0498): its bench and its demonstration; no module imports it yet'),
+    ('frame/lib/test/sortlist*.html', ['A311', 'A312'], 'sortable list bench and demonstration (SOG-0498)'),
     ('frame/lib/test/**', ['C', 'I'], 'sheet bench'),
     ('modules/missions/**', ['N', 'I'] + TITLED, 'the Missions module: list, choose, draw, prepare the flight in Fuel'),
     ('modules/aircraft/**', ['M', 'I'] + TITLED, 'the aircraft module of Maintenance: fleet, sheets, registry (V3 § 10.34 A2)'),
