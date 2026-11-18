@@ -1468,8 +1468,8 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   envoyé à l'ouverture » shows for a drawer that sends one, or when the flight judges messages.
 - **The control** (Affectation): for every kind of key the reader gives, `MS.notJudgedYet(k) === !(hand || time || follows(k))` (case N155) — the pilot's
   screen and « ＋ Tiroir » never diverge. It went RED on the landing when Affectation's 3c2e2abba made `follows` accept it (N155 named `landing`, twice), and on
-  the overflight when 4c9b10ef3 did (N155 names `overflight` and `overflight+obj`); each time the same lot makes `notJudgedYet` of `frame/lib/mission.js` say
-  false for it (see § 7 duoquinquagies, « The landing is judged » and « The overflight is judged »).
+  the overflight when 4c9b10ef3 did (N155 names `overflight` and `overflight+obj`), and on the hover when 9cbbf9e11 did (`hover`, `hover+obj`); each time the same lot makes `notJudgedYet` of `frame/lib/mission.js` say
+  false for it (see § 7 duoquinquagies, « The landing is judged », « The overflight is judged » and « The hover is judged »).
 
 ### 7 duoquinquagies. The 32 bricks of the 1.1 conditions in the catalogue (18 Nov 2026; SOG-0500 (d); noreg N156, N138, N139)
 
@@ -1513,8 +1513,17 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   and never writes a confirmation word for an overflight. The rule is generalised in ONE place, `conditionJudged` of `frame/lib/mission.js` (the former `landingJudged`:
   one rule per kind, commented « suit follows, N155 / N158 le gardent »; N159 plays the variants), and `notJudgedYet` says false in exactly those conditions. « ＋ Tiroir »
   therefore offers « Un survol » (the `judged` flag still comes from `follows`) and the 5 overflight bricks of the catalogue (45 offered instead of 40); the sheet of an
-  overflight offers only STILL objects, like the landing (`still` of `edRuleHtml`). The hover, the sequence and the event stay not judged. Captures `P13c_390_survol.png`,
+  overflight offers only STILL objects, like the landing (`still` of `edRuleHtml`). The sequence and the event stay not judged. Captures `P13c_390_survol.png`,
   `P13c_1280_survol.png` (the choice of the type) and `P13c_390_survol_fiche.png`, `P13c_1280_survol_fiche.png` (the sheet of an overflight).
+
+- **The hover is judged** (SOG-0500, after Affectation's 9cbbf9e11; noreg N155, N160, N139, N156, N129, N152). `follows` accepts a condition `hover`: `rule.kind` `hover`, a
+  readable point or a STILL object, an empty `confirmation`, `radius_m` > 0, `duration_sec` > 0, `max_gap_sec` of at least one fix period (`FIX_PERIOD_SEC`, 5 s),
+  `speed_tolerance_kt` >= 0, `height_min_ft` <= `height_max_ft`, all finite (heights above the ground, AGL). `conditionJudged` of `frame/lib/mission.js` gains the hover
+  (still one rule per kind, commented « suit follows »), so `notJudgedYet` says false in exactly those conditions. « ＋ Tiroir » offers « Un stationnaire » and the 9
+  hover bricks of the catalogue (54 offered instead of 45); the sheet of a hover offers only STILL objects (`still` of `edRuleHtml`) and asks for a tolerated gap of 5 s
+  at least, like the landing (`landingGapMin`). N155 now covers the THREE judged conditions — landing, overflight, hover — each on a point, on a still object and on a
+  moving object, so that the copy never diverges from `follows`; it was RED for the hover before this lot (`THE control: ['hover', 'hover+obj']`). Only the sequence and
+  the event stay not judged. Captures `P13d_390_stationnaire.png`, `P13d_1280_stationnaire.png` (the sheet of a hover).
 
 ### 8. What is NOT ported
 

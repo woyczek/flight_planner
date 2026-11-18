@@ -134,7 +134,7 @@ phases:
 - **A kind of condition this reader does not know is never an error**: `{ kind: 'hand' }`, `keyWhy: 'condition'`, and
   `condition` names it. The kind is kept only as a short word (`[a-z0-9_]`), never as free text.
 - **Not judged in flight yet** — `notJudgedYet(key)` says it, for the pilot's screen (« pas encore jugé en vol — s'ouvre à
-  l'heure de repli ou au geste »): a 1.1 condition (except a complete landing or overflight, over a point or a still object, which the flight
+  l'heure de repli ou au geste »): a 1.1 condition (except a complete landing, overflight or hover, over a point or a still object, which the flight
   judges: `follows` of `drawers.js`), a zone crossed by a target (`key.actor`), an object that moves
   (`key.object.moving`), a required following (`key.escortMinSec > 0`).
 - `drawerSlots(doc)` → `[{ i, id }]`: which entries of `phases` are drawers (their place in the list, their id) — the one rule of
@@ -309,9 +309,9 @@ target, else the arrival, and « À compléter » asks for the identifier of a m
 `modules/missions/drawers.js` (« Affectation ») says so — today a zone the pilot crosses himself (no `actor`), a fixed object, an
 arrival without a following (`escortMinSec` 0) —, and always the pilot's gesture and the hour (no position needed). The workshop
 offers under « ＋ Tiroir » only the kinds the flight judges: for each kind it writes a drawer with its own defaults, reads it with
-`readMission` and asks `follows` — no list of its own; of the 1.1 conditions, the landing and the overflight today. The reader's `notJudgedYet(key)` (what the
+`readMission` and asks `follows` — no list of its own; of the 1.1 conditions, the landing, the overflight and the hover today. The reader's `notJudgedYet(key)` (what the
 pilot's screen says) must stay `!(hand || time || follows(key))` for every kind of key: noreg N155 checks it, and will turn red the
-day `follows` judges a kind (the landing, then the overflight, did) that `notJudgedYet` still calls not judged.
+day `follows` judges a kind (the landing, then the overflight, then the hover, did) that `notJudgedYet` still calls not judged.
 
 ## 5. An untrusted file
 

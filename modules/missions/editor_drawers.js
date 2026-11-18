@@ -198,7 +198,7 @@ export function holdRow(kind, places = []) {
   };
 }
 
-/** Le plus court trou de relevés qu'un poser tolère : la période d'un relevé du vol (DW.FIX_PERIOD_SEC, lue par l'espace de noms : son
+/** Le plus court trou de relevés qu'un poser ou un stationnaire tolère : la période d'un relevé du vol (DW.FIX_PERIOD_SEC, lue par l'espace de noms : son
  *  absence n'est pas une erreur), jamais sous la borne du lecteur. */
 export function landingGapMin() {
   const p = DW.FIX_PERIOD_SEC;
@@ -228,9 +228,9 @@ export function ruleMissing(kind, rule) {
   if (blank(r.point) === blank(r.object)) out.push('at');
   for (const f of RULE_NEED[kind] || [])
     if (!ok(f)) out.push(f);
-  // un poser : le trou de relevés toléré n'est pas plus court que la période d'un relevé du vol (drawers.js, quand elle y est publiée ;
+  // un poser ou un stationnaire : le trou de relevés toléré n'est pas plus court que la période d'un relevé du vol (drawers.js, quand elle y est publiée ;
   // sans elle, la borne du lecteur seule)
-  if (kind === 'landing' && ok('gap') && +r.gap < landingGapMin()) out.push('gap');
+  if ((kind === 'landing' || kind === 'hover') && ok('gap') && +r.gap < landingGapMin()) out.push('gap');
   if (kind !== 'landing' && ok('hMin') && ok('hMax') && +r.hMin > +r.hMax) out.push('hOrder');
   if (!blank(r.confirmation) && !MS.CONFIRM_WORD.test(String(r.confirmation).trim())) out.push('confirmation');
   return out;
