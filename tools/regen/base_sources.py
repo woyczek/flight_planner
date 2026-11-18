@@ -141,10 +141,10 @@ SOURCES = {
             'AIP Frankreich ENR 5.1 (SIA): Art der Gefahr, Stelle und Bedingungen der P-, R-, D-Gebiete',
             'ENR 5.1 del AIP de Francia (SIA): naturaleza del peligro, organismo y condiciones de las zonas P, R, D'), link='https://www.sia.aviation-civile.gouv.fr/', provider='enr51'),
     'dfs': _src('download', (
-            'DFS — routes ATS, points, balises et espaces de l’Allemagne (AIXM 5.1, jeux « ED Routes », « ED Waypoints », « ED Navaids », « ED Airspace »)',
-            'DFS — Germany ATS routes, points, navaids and airspaces (AIXM 5.1, datasets “ED Routes”, “ED Waypoints”, “ED Navaids”, “ED Airspace”)',
-            'DFS — ATS-Strecken, Punkte, Funkfeuer und Lufträume Deutschlands (AIXM 5.1, Datensätze „ED Routes“, „ED Waypoints“, „ED Navaids“, „ED Airspace“)',
-            'DFS — rutas ATS, puntos, ayudas y espacios de Alemania (AIXM 5.1, conjuntos «ED Routes», «ED Waypoints», «ED Navaids», «ED Airspace»)'), link='https://aip.dfs.de/datasets/', provider='dfs'),
+            'DFS — routes ATS, points, balises, espaces, terrains et pistes de l’Allemagne (AIXM 5.1, jeux « ED Routes », « ED Waypoints », « ED Navaids », « ED Airspace », « ED AirportHeliport », « ED Runway »)',
+            'DFS — Germany ATS routes, points, navaids, airspaces, aerodromes and runways (AIXM 5.1, datasets “ED Routes”, “ED Waypoints”, “ED Navaids”, “ED Airspace”, “ED AirportHeliport”, “ED Runway”)',
+            'DFS — ATS-Strecken, Punkte, Funkfeuer, Lufträume, Flugplätze und Pisten Deutschlands (AIXM 5.1, Datensätze „ED Routes“, „ED Waypoints“, „ED Navaids“, „ED Airspace“, „ED AirportHeliport“, „ED Runway“)',
+            'DFS — rutas ATS, puntos, ayudas, espacios, aeródromos y pistas de Alemania (AIXM 5.1, conjuntos «ED Routes», «ED Waypoints», «ED Navaids», «ED Airspace», «ED AirportHeliport», «ED Runway»)'), link='https://aip.dfs.de/datasets/', provider='dfs'),
     'navcan': _src('download', (
             'NAV CANADA — manuel des espaces aériens désignés (DAH)',
             'NAV CANADA — Designated Airspace Handbook (DAH)',
@@ -187,7 +187,7 @@ SOURCE_FACTS = {
     'faaclass': ('primary', 'airac', ('airspace',)),
     'nats': ('primary', 'airac', ('airspace', 'aerodromes', 'navaids', 'points')),
     'ukmil': ('primary', 'editions', ('airspace', 'aar_tracks')),
-    'dfs': ('primary', 'airac', ('airspace', 'points', 'navaids', 'airways')),
+    'dfs': ('primary', 'airac', ('airspace', 'aerodromes', 'points', 'navaids', 'airways')),
     'enr51': ('primary', 'airac', ('airspace',)),
     'navcan': ('primary', 'editions', ()),
     'nat': ('primary', 'daily', ('nat_tracks',)),

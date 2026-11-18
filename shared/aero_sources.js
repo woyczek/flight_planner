@@ -375,6 +375,8 @@
       key = t === 'RAS' ? l : t;
     return Object.hasOwn(table, key) ? table[key] : ''; // la clé vient du fichier : jamais une clé héritée de l'objet
   };
+  /** Vrai si l'AirportHeliport de la DFS est gardé : type AD, HP ou LS ET un indicatif OACI (locationIndicatorICAO) ; sinon son désignateur « ED1567 » est un numéro de liste. */
+  const dfsAerodrome = s => /^(AD|HP|LS)$/.test(text(s, 'type')) && /^[A-Z0-9]{4}$/.test(text(s, 'locationIndicatorICAO'));
   /** Nom d'un espace R / D de la DFS : le désignateur écrit comme l'AIP (« EDR32A » → « ED-R32A ») puis le nom (« ED-R32A MUNSTER A »). */
   const dfsName = (designator, name) => `${String(designator || '').replace(/^ED([RD])(?=\d)/, 'ED-$1')} ${name || ''}`.trim();
   /** Lit un fichier AIXM 5.1 : { airspaces (types de KEEP), aero { navaids, points, vrp, aerodromes, airways, obstacles },
@@ -535,18 +537,23 @@
       where.set(idOf(f), pt);
     }
     // aérodromes
-    const adById = new Map,
-      rwyAd = new Map; // identifiant de piste → son terrain (SOG-0176 : l'ILS d'une direction de piste)
+    const shared = opts.shared ||
+      {}, // DFS lot 3 : les fichiers de la DFS séparent les terrains (AirportHeliport) et les pistes (Runway) : la table des terrains et celle des pistes passent d'un fichier au suivant (opts.shared, rempli par le lecteur)
+      adById = shared.adById ||= new Map,
+      rwyAd = shared.rwyAd ||= new Map; // identifiant de piste → son terrain (SOG-0176 : l'ILS d'une direction de piste)
     for (const f of doc.getElementsByTagNameNS(NSX, 'AirportHeliport')) {
       const s = slice(f, 'AirportHeliportTimeSlice'),
         p = s && posOf(kid(s, 'ARP') || s);
       if (!p) continue;
+      if (dfs && !dfsAerodrome(s))
+        continue; // DFS lot 3 : seulement les terrains qui ont un indicatif OACI (AD, HP, LS) : pas les 1 100 terrains de loisirs sans indicatif
       const el = kid(s, 'fieldElevation'),
         ad = {
           id: text(s, 'designator'),
           icao: text(s, 'locationIndicatorICAO') || text(s, 'designator'),
           name: text(s, 'name'),
-          type: text(s, 'type') || 'AD',
+          type: dfs && text(s, 'type') === 'LS' ? 'AD' : text(s, 'type') ||
+            'AD', // DFS : un terrain d'atterrissage (LS) à indicatif OACI est un aérodrome
           lat: p[0],
           lon: p[1],
           elev: el ? Math.round(toFt(+el.textContent, el.getAttribute('uom'))) : null,

@@ -5489,7 +5489,7 @@ def k112(c):
          'AeroDb.packs(): read once, frozen, the regions and themes as in the file, Turkey in two packs (the Middle East, the Mediterranean), Antarctica empty with its reason, the partial zones of the arctic', what='packs()')
 
 
-@case('K113', 'DFS « ED Routes », « ED Waypoints », « ED Navaids » and « ED Airspace StrokedBorders » (Germany, AIXM 5.1, CC BY 4.0): the launcher fetches the four sets of the amendment in force, each checked by its SHA-512 (one failing does not stop the others), the AIXM reader gives the airways although the file carries no points (names from the segments, positions from the curves) and the ICAO points and the navaids that place them, the airspaces get their own table of types (DFS first, openAIP the fallback), the catalogue and the mirror know the source', 'K', tags=('aerodb',), phone=False,
+@case('K113', 'DFS « ED Routes », « ED Waypoints », « ED Navaids » and « ED Airspace StrokedBorders » (Germany, AIXM 5.1, CC BY 4.0): the launcher fetches the six sets of the amendment in force, each checked by its SHA-512 (one failing does not stop the others), the AIXM reader gives the airways although the file carries no points (names from the segments, positions from the curves) and the ICAO points and the navaids that place them, the airspaces get their own table of types (DFS first, openAIP the fallback), the catalogue and the mirror know the source', 'K', tags=('aerodb',), phone=False,
       rule='SOG-0077 (10 Nov 2026, decision of the ergonomics session): DFS « AIP Datasets » (aip.dfs.de/datasets, REST API v1.2: metadata, then <amendment>/<file name>) is the first new source of airways after France, the UK and Spain; the file has Route, RouteSegment and StandardLevelColumn only, no DesignatedPoint: each end is named by the reference (xlink:title) and placed by the end of the segment curve; files are checked by the SHA-512 of the metadata, nothing is written when it does not match, nothing is downloaded when the file in place is the one the metadata names')
 def k113(c):
     import hashlib
@@ -5572,9 +5572,10 @@ def k113(c):
     c.eq(ra['merged'], [['TMA', 'ALT', ''], *[[z[0], z[1], 'dfs'] for z in ra['dfs']], ['R', 'ED-R77 NUR OPENAIP', 'openaip']],
          'merged DFS first then openAIP: the steps of a TMA with the same outline and other floors both stay (a file is not compared with itself), the openAIP twin of a DFS space is dropped, an openAIP space the DFS does not have stays (the fallback)', what='merge')
     c.eq(ra['stacked'], 1, 'the other sources are unchanged: two spaces of one part with the same outline are still one', what='unchanged rule')
-    kinds = ('Routes', 'Waypoints', 'Navaids', 'Airspace')
-    bodies = {'Routes': xml.encode('utf-8'), 'Waypoints': wxml.encode('utf-8'), 'Navaids': nxml.encode('utf-8'), 'Airspace': axml.encode('utf-8')}
-    sets = {'Routes': ('ED Routes', 'Routes'), 'Waypoints': ('ED Waypoints', 'Waypoints'), 'Navaids': ('ED Navaids', 'Navaids'), 'Airspace': ('ED Airspace StrokedBorders', 'Airspace_StrokedBorders')}
+    kinds = ('Routes', 'Waypoints', 'Navaids', 'Airspace', 'AirportHeliport', 'Runway')
+    bodies = {'Routes': xml.encode('utf-8'), 'Waypoints': wxml.encode('utf-8'), 'Navaids': nxml.encode('utf-8'), 'Airspace': axml.encode('utf-8'),
+              'AirportHeliport': (head + '</message:AIXMBasicMessage>').encode('utf-8'), 'Runway': (head + ' </message:AIXMBasicMessage>').encode('utf-8')}
+    sets = {'Routes': ('ED Routes', 'Routes'), 'Waypoints': ('ED Waypoints', 'Waypoints'), 'Navaids': ('ED Navaids', 'Navaids'), 'Airspace': ('ED Airspace StrokedBorders', 'Airspace_StrokedBorders'), 'AirportHeliport': ('ED AirportHeliport', 'AirportHeliport'), 'Runway': ('ED Runway', 'Runway')}
     names = {k: f'ED_{sets[k][1]}_2026-10-01_2026-10-29_revision.xml' for k in kinds}
     sums = {k: hashlib.sha512(bodies[k]).hexdigest() for k in kinds}
 
@@ -5617,24 +5618,24 @@ def k113(c):
             res = AF.fetch(td, 'dfs')
             c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], [open(paths[k], 'rb').read() == bodies[k] for k in kinds], [u.split('/rest')[1] for u, _ in n.calls]),
                  (True, [(f'dfs_ED_{k}.xml', False) for k in kinds], [True] * len(kinds), ['/'] + ['/0/' + names[k] for k in kinds]),
-                 'the amendment in force (n° 0): the metadata, then <amendment>/<file name> for each of the three sets (routes, points, navaids; not the procedures); one stable name each in zones/de/', what='fetch')
+                 'the amendment in force (n° 0): the metadata, then <amendment>/<file name> for each of the six sets (routes, points, navaids, airspaces, aerodromes, runways; not the procedures); one stable name each in zones/de/', what='fetch')
         with _Net(AF, net) as n:
             res = AF.fetch(td, 'dfs')
             c.eq((res['ok'], [(f['name'], f['unchanged']) for f in res['files']], len(n.calls)), (True, [(f'dfs_ED_{k}.xml', True) for k in kinds], 1), 'the files in place are the ones the metadata names (same SHA-512): nothing downloaded, said unchanged', what='unchanged')
         os.remove(paths['Waypoints'])
         with _Net(AF, net) as n:
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], [f['unchanged'] for f in res['files']], len(n.calls)), (True, [True, False, True, True], 2), 'one file missing: only that one is downloaded again', what='one missing')
+            c.eq((res['ok'], [f['unchanged'] for f in res['files']], len(n.calls)), (True, [True, False, True, True, True, True], 2), 'one file missing: only that one is downloaded again', what='one missing')
         for k in kinds:
             os.remove(paths[k])
         with _Net(AF, {'/rest/0/': b'<other/>', '/rest/': meta()}):
             res = AF.fetch(td, 'dfs')
             c.eq((res['ok'], [os.path.exists(paths[k]) for k in kinds], len(res['errors']), all('SHA-512' in e for e in res['errors'])), (False, [False] * len(kinds), len(kinds), True), 'downloads whose SHA-512 is not the metadata\'s: refused, nothing written', what='checksum')
-        bad = {'/rest/0/' + names[k]: bodies[k] for k in ('Routes', 'Navaids', 'Airspace')}
+        bad = {'/rest/0/' + names[k]: bodies[k] for k in ('Routes', 'Navaids', 'Airspace', 'AirportHeliport', 'Runway')}
         bad['/rest/'] = meta()
         with _Net(AF, bad):
             res = AF.fetch(td, 'dfs')
-            c.eq((res['ok'], [f['name'] for f in res['files']], [os.path.exists(paths[k]) for k in kinds], len(res['errors'])), (False, ['dfs_ED_Routes.xml', 'dfs_ED_Navaids.xml', 'dfs_ED_Airspace.xml'], [True, False, True, True], 1),
+            c.eq((res['ok'], [f['name'] for f in res['files']], [os.path.exists(paths[k]) for k in kinds], len(res['errors'])), (False, ['dfs_ED_Routes.xml', 'dfs_ED_Navaids.xml', 'dfs_ED_Airspace.xml', 'dfs_ED_AirportHeliport.xml', 'dfs_ED_Runway.xml'], [True, False, True, True, True, True], 1),
                  'the points are not served: the failure is said, the other two sets are still taken', what='one fails')
         for k in kinds:
             if os.path.exists(paths[k]):
@@ -16751,3 +16752,32 @@ def k364(c):
          'an `auth` already given by the ENR 5.1 is kept, a TMA is not an R / D / P, a remark of another kind or a space without remarks is not touched', what='untouched')
     a, m = rows['LFRG7']
     c.eq((len(a), len(m), m[0]), (1200, 2, 'Managers:'), 'HOSTILE: a line of 5 000 signs is cut (a line of 2 000 at most is read, the text at 1 200): the remarks are then all kept, nothing is lost', what='bounded')
+@case('K363', 'DFS lot 3 (aerodromes and runways of « ED AirportHeliport » and « ED Runway »): the reader keeps only the AD, HP and LS that have an ICAO indicator (a landing site with a list number « ED1567 » and a PERMIT are left out), an LS with an indicator is an aerodrome, the runways of the second file find their aerodrome in the first one (`opts.shared`), and the longest hard runway gives `hardLen`; read alone (without the shared table) the runways of another file find nothing',
+      'K', tags=('aerodb',), phone=False,
+      rule='DFS lot 3 (the relay, 18 Nov: « retiens les AD, les HP et les LS qui ont un indicatif OACI »). Measured on the real files: 1 576 aerodromes and heliports of which 483 have an ICAO indicator (437 AD civil, 7 AD joint, 2 AD other, 1 AD without control type, 31 + 1 HP, 3 LS), the others (597 + 73 LS and 423 HP, designators « ED1567 ») are list numbers of landing sites and helipads; 852 runways, each with its associated aerodrome by reference in ANOTHER file: AirportHeliport and Runway are two files, read one after the other with a shared table. Invented aerodromes and runways.')
+def k363(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    head = '<?xml version="1.0"?><message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">'
+    ah = lambda uid, desig, icao, name, kind, lat, lon: (f'<message:hasMember><aixm:AirportHeliport gml:id="id.a{uid}"><gml:identifier codeSpace="urn:uuid:">{uid}</gml:identifier><aixm:timeSlice><aixm:AirportHeliportTimeSlice>'
+                                                         f'<aixm:designator>{desig}</aixm:designator><aixm:name>{name}</aixm:name>' + (f'<aixm:locationIndicatorICAO>{icao}</aixm:locationIndicatorICAO>' if icao else '<aixm:locationIndicatorICAO xsi:nil="true" nilReason="unknown"/>')
+                                                         + f'<aixm:type>{kind}</aixm:type><aixm:controlType>CIVIL</aixm:controlType><aixm:fieldElevation uom="FT">500</aixm:fieldElevation><aixm:ARP><aixm:ElevatedPoint><gml:pos>{lat} {lon}</gml:pos></aixm:ElevatedPoint></aixm:ARP>'
+                                                         '</aixm:AirportHeliportTimeSlice></aixm:timeSlice></aixm:AirportHeliport></message:hasMember>')
+    rw = lambda uid, ad, length, comp: (f'<message:hasMember><aixm:Runway gml:id="id.r{uid}"><gml:identifier codeSpace="urn:uuid:">{uid}</gml:identifier><aixm:timeSlice><aixm:RunwayTimeSlice><aixm:designator>09/27</aixm:designator><aixm:type>RWY</aixm:type>'
+                                        f'<aixm:nominalLength uom="M">{length}</aixm:nominalLength><aixm:surfaceProperties><aixm:SurfaceCharacteristics><aixm:composition>{comp}</aixm:composition></aixm:SurfaceCharacteristics></aixm:surfaceProperties>'
+                                        f'<aixm:associatedAirportHeliport xlink:href="urn:uuid:{ad}"/></aixm:RunwayTimeSlice></aixm:timeSlice></aixm:Runway></message:hasMember>')
+    ahx = (head.replace('xmlns:xlink', 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink') + ah('u1', 'EDXA', 'EDXA', 'TESTSTADT', 'AD', 50.0, 8.0) + ah('u2', 'EDXB', 'EDXB', 'KLEINPLATZ', 'LS', 50.5, 8.5)
+           + ah('u3', 'ED1567', '', 'LISTENPLATZ', 'LS', 51.0, 9.0) + ah('u4', 'EDXH', 'EDXH', 'DACHLANDEPLATZ', 'HP', 51.5, 9.5) + ah('u5', 'ED3065', '', 'HUBSCHRAUBERPLATZ', 'HP', 52.0, 10.0)
+           + ah('u6', 'EDXP', 'EDXP', 'GENEHMIGT', 'PERMIT', 52.5, 10.5) + '</message:AIXMBasicMessage>')
+    rwx = head + rw('w1', 'u1', 2800, 'ASPH') + rw('w2', 'u1', 3500, 'GRASS') + rw('w3', 'u1', 1500, 'CONC') + rw('w4', 'u2', 600, 'GRASS') + rw('w5', 'u3', 900, 'ASPH') + '</message:AIXMBasicMessage>'
+    r = c.js("""(a) => { const AS = window.AeroSources; const shared = {};
+      const first = AS.aixm5(a.ah, { source: 'dfs', shared });
+      const second = AS.aixm5(a.rw, { source: 'dfs', shared });
+      const alone = AS.aixm5(a.rw, { source: 'dfs' });
+      const other = AS.aixm5(a.ah);
+      const row = x => [x.id, x.icao, x.type, x.name, x.hardLen ?? null];
+      return { first: first.aero.aerodromes.map(row), second: second.aero.aerodromes.map(row), aloneAds: alone.aero.aerodromes.length, other: other.aero.aerodromes.map(x => x.id) }; }""", {'ah': ahx, 'rw': rwx})
+    c.eq(r['first'], [['EDXA', 'EDXA', 'AD', 'TESTSTADT', 2800], ['EDXB', 'EDXB', 'AD', 'KLEINPLATZ', None], ['EDXH', 'EDXH', 'HP', 'DACHLANDEPLATZ', None]],
+         'DFS aerodromes: the AD, the LS with an indicator (read as an AD) and the HP with an indicator are kept; the LS and the HP of a list number (ED1567, ED3065) and the PERMIT are left out; the longest HARD runway of the second file gives hardLen in metres (2 800 of the asphalt one: not the 3 500 of grass, not the 1 500 of concrete), a grass runway gives none, the runway of an aerodrome that was left out links nothing', what='aerodromes')
+    c.eq((r['second'], r['aloneAds']), ([], 0), 'the runway file carries no aerodrome of its own; read alone it links nothing', what='runway file')
+    c.eq(r['other'], ['EDXA', 'EDXB', 'ED1567', 'EDXH', 'ED3065', 'EDXP'], 'the table is the DFS\'s only: any other AIXM 5.1 file keeps every aerodrome as before', what='other sources')

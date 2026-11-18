@@ -561,17 +561,17 @@
     publish: true,
     no: 19,
     status: 'used',
-    n: ['DFS (Allemagne, routes, points, balises et espaces, AIXM 5.1)',
-      'DFS (Germany, routes, points, navaids and airspaces, AIXM 5.1)',
-      'DFS (Deutschland, Strecken, Punkte, Funkfeuer und Lufträume, AIXM 5.1)',
-      'DFS (Alemania, rutas, puntos, ayudas y espacios, AIXM 5.1)'
+    n: ['DFS (Allemagne, routes, points, balises, espaces, terrains et pistes, AIXM 5.1)',
+      'DFS (Germany, routes, points, navaids, airspaces, aerodromes and runways, AIXM 5.1)',
+      'DFS (Deutschland, Strecken, Punkte, Funkfeuer, Lufträume, Flugplätze und Pisten, AIXM 5.1)',
+      'DFS (Alemania, rutas, puntos, ayudas, espacios, aeródromos y pistas, AIXM 5.1)'
     ],
     url: 'https://aip.dfs.de/datasets/',
     gives: [
-      'Les routes ATS (airways) de l’Allemagne (zone de), avec leurs niveaux et leur sens, les points de report ICAO, les balises (VOR, NDB, DME) et les espaces aériens (CTR, TMA, R, D, RMZ, TMZ, ATZ).',
-      'The ATS routes (airways) of Germany (zone de), with their levels and direction, the ICAO reporting points, the navaids (VOR, NDB, DME) and the airspaces (CTR, TMA, R, D, RMZ, TMZ, ATZ).',
-      'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung, die ICAO-Meldepunkte, die Funkfeuer (VOR, NDB, DME) und die Lufträume (CTR, TMA, R, D, RMZ, TMZ, ATZ).',
-      'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido, los puntos de notificación OACI, las ayudas (VOR, NDB, DME) y los espacios aéreos (CTR, TMA, R, D, RMZ, TMZ, ATZ).'
+      'Les routes ATS (airways) de l’Allemagne (zone de), avec leurs niveaux et leur sens, les points de report ICAO, les balises (VOR, NDB, DME) et les espaces aériens (CTR, TMA, R, D, RMZ, TMZ, ATZ), les terrains à indicatif OACI (aérodromes, hélistations) avec leur plus longue piste en dur.',
+      'The ATS routes (airways) of Germany (zone de), with their levels and direction, the ICAO reporting points, the navaids (VOR, NDB, DME) and the airspaces (CTR, TMA, R, D, RMZ, TMZ, ATZ), the aerodromes and heliports with an ICAO indicator and their longest hard runway.',
+      'Die ATS-Strecken (Airways) Deutschlands (Zone de) mit Flugflächen und Richtung, die ICAO-Meldepunkte, die Funkfeuer (VOR, NDB, DME) und die Lufträume (CTR, TMA, R, D, RMZ, TMZ, ATZ), die Flugplätze und Hubschrauberlandeplätze mit ICAO-Kennung und ihre längste befestigte Piste.',
+      'Las rutas ATS (aerovías) de Alemania (zona de), con sus niveles y sentido, los puntos de notificación OACI, las ayudas (VOR, NDB, DME) y los espacios aéreos (CTR, TMA, R, D, RMZ, TMZ, ATZ), los aeródromos y helipuertos con indicativo OACI y su pista dura más larga.'
     ],
     pub: 'DFS Deutsche Flugsicherung',
     credit: ['Source : DFS, CC BY 4.0', 'Source: DFS, CC BY 4.0', 'Quelle: DFS, CC BY 4.0', 'Fuente: DFS, CC BY 4.0'],

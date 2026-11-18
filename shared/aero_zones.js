@@ -301,24 +301,24 @@
       age: 'file'
     },
     // Données ATS de l’Allemagne (DFS « AIP Datasets », jeux « ED Routes », « ED Waypoints », « ED Navaids » et « ED Airspace StrokedBorders », AIXM 5.1, CC BY 4.0, crédit DFS) : téléchargées par le lanceur
-    // (tools/aero_fetch.py dfs), somme SHA-512 de chaque jeu vérifiée ; zones/de/dfs_ED_Routes.xml, dfs_ED_Waypoints.xml, dfs_ED_Navaids.xml, dfs_ED_Airspace.xml (lus par AeroSources.aixm5 :
-    // les extrémités des tronçons sont nommées par la référence, les points ICAO et les balises les placent, les espaces ont leur table de types) ; ni aérodromes, ni pistes, ni SID/STAR (Q-0111)
+    // (tools/aero_fetch.py dfs), somme SHA-512 de chaque jeu vérifiée ; zones/de/dfs_ED_Routes.xml, dfs_ED_Waypoints.xml, dfs_ED_Navaids.xml, dfs_ED_Airspace.xml, dfs_ED_AirportHeliport.xml, dfs_ED_Runway.xml (lus par AeroSources.aixm5 :
+    // les extrémités des tronçons sont nommées par la référence, les points ICAO et les balises les placent, les espaces ont leur table de types, les terrains à indicatif OACI et leurs pistes viennent de deux fichiers lus l'un après l'autre) ; pas les SID/STAR (ED Procedure : travail du lanceur à part)
     dfs: {
       kind: 'download',
       provider: 'dfs',
       args: [],
       readable: true,
       label: L4(
-        'DFS — routes ATS, points, balises et espaces de l’Allemagne (AIXM 5.1, jeux « ED Routes », « ED Waypoints », « ED Navaids », « ED Airspace »)',
-        'DFS — Germany ATS routes, points, navaids and airspaces (AIXM 5.1, datasets “ED Routes”, “ED Waypoints”, “ED Navaids”, “ED Airspace”)',
-        'DFS — ATS-Strecken, Punkte, Funkfeuer und Lufträume Deutschlands (AIXM 5.1, Datensätze „ED Routes“, „ED Waypoints“, „ED Navaids“, „ED Airspace“)',
-        'DFS — rutas ATS, puntos, ayudas y espacios de Alemania (AIXM 5.1, conjuntos «ED Routes», «ED Waypoints», «ED Navaids», «ED Airspace»)'
+        'DFS — routes ATS, points, balises, espaces, terrains et pistes de l’Allemagne (AIXM 5.1, jeux « ED Routes », « ED Waypoints », « ED Navaids », « ED Airspace », « ED AirportHeliport », « ED Runway »)',
+        'DFS — Germany ATS routes, points, navaids, airspaces, aerodromes and runways (AIXM 5.1, datasets “ED Routes”, “ED Waypoints”, “ED Navaids”, “ED Airspace”, “ED AirportHeliport”, “ED Runway”)',
+        'DFS — ATS-Strecken, Punkte, Funkfeuer, Lufträume, Flugplätze und Pisten Deutschlands (AIXM 5.1, Datensätze „ED Routes“, „ED Waypoints“, „ED Navaids“, „ED Airspace“, „ED AirportHeliport“, „ED Runway“)',
+        'DFS — rutas ATS, puntos, ayudas, espacios, aeródromos y pistas de Alemania (AIXM 5.1, conjuntos «ED Routes», «ED Waypoints», «ED Navaids», «ED Airspace», «ED AirportHeliport», «ED Runway»)'
       ),
       gives: L4(
-        'routes ATS (airways) avec leurs niveaux et leur sens, les points de report ICAO, les balises (VOR, NDB, DME) qui les placent et les espaces aériens (CTR, TMA, R, D, RMZ, TMZ, ATZ)',
-        'ATS routes (airways) with their levels and direction, the ICAO reporting points, the navaids (VOR, NDB, DME) that place them and the airspaces (CTR, TMA, R, D, RMZ, TMZ, ATZ)',
-        'ATS-Strecken (Airways) mit Flugflächen und Richtung, die ICAO-Meldepunkte, die Funkfeuer (VOR, NDB, DME), die sie verorten, und die Lufträume (CTR, TMA, R, D, RMZ, TMZ, ATZ)',
-        'rutas ATS (aerovías) con sus niveles y sentido, los puntos de notificación OACI, las ayudas (VOR, NDB, DME) que las sitúan y los espacios aéreos (CTR, TMA, R, D, RMZ, TMZ, ATZ)'
+        'routes ATS (airways) avec leurs niveaux et leur sens, les points de report ICAO, les balises (VOR, NDB, DME) qui les placent et les espaces aériens (CTR, TMA, R, D, RMZ, TMZ, ATZ), les terrains à indicatif OACI (aérodromes, hélistations) avec leur plus longue piste en dur',
+        'ATS routes (airways) with their levels and direction, the ICAO reporting points, the navaids (VOR, NDB, DME) that place them and the airspaces (CTR, TMA, R, D, RMZ, TMZ, ATZ), the aerodromes and heliports with an ICAO indicator and their longest hard runway',
+        'ATS-Strecken (Airways) mit Flugflächen und Richtung, die ICAO-Meldepunkte, die Funkfeuer (VOR, NDB, DME), die sie verorten, und die Lufträume (CTR, TMA, R, D, RMZ, TMZ, ATZ), die Flugplätze und Hubschrauberlandeplätze mit ICAO-Kennung und ihre längste befestigte Piste',
+        'rutas ATS (aerovías) con sus niveles y sentido, los puntos de notificación OACI, las ayudas (VOR, NDB, DME) que las sitúan y los espacios aéreos (CTR, TMA, R, D, RMZ, TMZ, ATZ), los aeródromos y helipuertos con indicativo OACI y su pista dura más larga'
       ),
       src: 'dfsRoutes',
       link: 'https://aip.dfs.de/datasets/',
@@ -332,7 +332,7 @@
       hand: 'none',
       rank: 'primary',
       rhythm: 'airac',
-      content: ['airspace', 'points', 'navaids', 'airways'],
+      content: ['airspace', 'aerodromes', 'points', 'navaids', 'airways'],
       age: 'file'
     },
     // Designated Airspace Handbook (TP 1820, tous les 56 jours, nom daté lu sur la page des guides) : téléchargé et lu par
