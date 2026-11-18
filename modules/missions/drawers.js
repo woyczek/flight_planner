@@ -69,6 +69,9 @@ import {
   DRAWER_IDS
 } from '../../frame/lib/mission.js'; // la liste fermée du lecteur (B à M) : une seule liste, jamais recopiée
 import {
+  own
+} from '../../frame/lib/untrusted.js'; // la valeur d'une clé PROPRE d'un objet, jamais une clé héritée (K479, SOG-0468 c : écrite une fois)
+import {
   crossed,
   reach,
   arrived,
@@ -92,8 +95,6 @@ export const FUTURE_MS = 2 * 60e3,
   BEFORE_MS = 12 * 3600e3;
 const CREW_MAX = 12;
 
-/** La valeur d'une clé PROPRE d'un objet (jamais une clé héritée : `__proto__`, `constructor`), sinon undefined. */
-const own = (o, k) => o && typeof o === 'object' && !Array.isArray(o) && Object.hasOwn(o, k) ? o[k] : undefined;
 /** Un instant en millisecondes d'un texte ISO borné, sinon null. */
 const msOf = v => {
   const t = typeof v === 'string' && v.length <= 40 ? Date.parse(v) : NaN;
