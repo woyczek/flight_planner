@@ -13,6 +13,9 @@ import {
   setHtml
 } from './state.js';
 import {
+  text
+} from './lib/safe_text.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -38,7 +41,8 @@ const CONTROLS = ['controlled', 'incomplete', 'fallback', 'error'];
 /** La couche d'un tronçon (route/compute) : SID, voies basses ou hautes, route libre, STAR, approche. */
 const LAYERS = ['SID', 'LOW', 'HIGH', 'FRA', 'STAR', 'APP'];
 const num = (v, lo, hi) => Number.isFinite(+v) && +v >= lo && +v <= hi;
-const clean = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
+// un texte sans signes de contrôle, sans < > ni marques de format (U+202E… : un nom ne se lit pas à l'envers) : le garde du socle, comme les terrains de dégagement (SOG-0468 (1) : il manquait ici)
+const clean = text;
 
 /** Le détail d'un itinéraire que Carburant garde (schéma 2, `answer.alternatives[i]`) : seulement des champs bornés, jamais l'objet ; null sans rien. */
 function detailOf(x) {

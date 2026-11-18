@@ -9739,6 +9739,18 @@ def d280(c):
     c.eq(r['noRelief']['clear'], None, 'without the relief (no loader) there is no clearance either', what=str(r['noRelief']))
 
 
+@case('D282', 'The routes Fuel proposes (alts.js): the invisible format characters of a name or a route text are removed, like the alternates (SOG-0468 (1), the gap of the survey)', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0468 (1) (Security): altn.js removed the format characters (U+202E, U+2066…: a name must not read backwards) while alts.js, reading the SAME kind of local document of Fuel, did not; one rule: the proposed routes\' names and texts carry none either')
+def d282(c):
+    _me_open(c)
+    r = c.js("""async () => { const A = await import('/modules/maps/alts.js'), bad = '\\u202E\\u2066', d = A.altsSanitize({ schema: 2, dep: 'LF' + bad + 'RS', arr: 'LFML', computed_at: '2026-11-19T10:00:00Z', base: 'x',
+        alternatives: [{ index: 0, name: 'Via ' + bad + 'Nord\\u200B', route: 'LFRS DCT ' + bad + 'LFML', points: [[47.1, -1.6], [43.4, 5.2]] }], answer: { alternatives: [{ route: 'LFRS ' + bad + 'DCT LFML', distanceNm: 400 }] } });
+      const l = d.list[0]; return { name: l.name, route: l.detail && l.detail.route, dep: d.dep } }""")
+    fmt = lambda t: any(ch in (t or '') for ch in '\u202e\u2066\u200b')
+    c.ok(not fmt(r['name']) and not fmt(r['route']) and not fmt(r['dep']), str(r), 'no invisible format character is left in a proposed route\'s name, text or code')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
