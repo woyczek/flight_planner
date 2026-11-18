@@ -5360,7 +5360,7 @@ def n94(c):
 
 _EDTOOLS = f'{_EDMAP} [data-atmaptools]'
 _EDTOOL_STATE = f"[...document.querySelectorAll('{_EDTOOLS} button')].map(b => [b.dataset.tool || b.dataset.do, b.getAttribute('aria-pressed'), b.disabled])"
-_EDPLACE_VAL = f"""([i, f]) => document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i="' + i + '"][data-f=' + f + ']')?.value ?? null"""
+_EDPLACE_VAL = f"""([i, f]) => document.querySelector('{E} [data-edplaces] [data-k^=edpl][data-i="' + i + '"][data-f=' + f + ']')?.value ?? null"""
 _EDPLACE_IDS = f"[...document.querySelectorAll('{E} [data-edplaces] [data-place]')].map(x => x.dataset.kind)"
 _EDSEL = f"document.querySelector('{_EDMAP} [data-mapsel]')?.textContent ?? null"
 
@@ -8460,25 +8460,34 @@ def _pb_notes(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
 
 
-@case('N124', 'Missions › the workshop, a turning point is chosen among the points of the base (SOG-0480): « Point de la base » in the sheet of a turning point is the common '
-      'field of the suite with `points` — an invented reporting point XPT01 typed in it is proposed, then chosen: the place takes the POSITION of the base and the code as its '
-      'name (the identifier PT3 does not change), the point is on the map, and the file is written in the same form (id, name, lat, lon)', 'N',
+@case('N124', 'Missions › the workshop, a turning point is chosen among the points of the base (SOG-0480): the NAME of a turning point is the common field of the suite with '
+      '`points` (no field apart): free text typed in it stays as it is, with no position; an invented reporting point XPT01 typed in it is proposed, then chosen: the place takes '
+      'the POSITION of the base and the code as its name (the identifier PT3 does not change), the point is on the map, and the file is written in the same form (id, name, lat, '
+      'lon)', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
-      rule='SOG-0480 (the user: « un turning point doit pouvoir être un point quelconque aerodb »; Features SOG a79c3b40a: `points`, `near()`, `positionOf`): '
-      'modules/missions/editor_view.js `edAdPt`, `edPtBase`, `edPlaceFromBase`; EDITOR.md § 7 quatertricies')
+      rule='SOG-0480 (the user: « un turning point doit pouvoir être un point quelconque aerodb »; Features SOG a79c3b40a: `points`, `near()`, `positionOf`; the ergonomist: no '
+      'field apart, the Name is the field): modules/missions/editor_view.js `edAdPt`, `edPlName`, `edPlaceFromBase`; EDITOR.md § 7 quatertricies')
 def n124(c):
     w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     _pb_open(c)
     c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
-    c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=edptbase]')", what='the field « Point de la base » in the sheet of the new turning point')
-    c.eq([c.count(f'{E} [data-plform] [data-adsug]'), c.js(f"document.querySelector('{E} [data-plform] input[data-k=edptbase]').closest('label') !== null")], [1, True],
-         'ONE list of proposals in the sheet of the point, the field in its label', what='the marking')
+    c.until(f"!!document.querySelector('{E} [data-plform] input[data-k=edplname]')", what='the Name, the common field, in the sheet of the new turning point')
+    c.eq([c.count(f'{E} [data-plform] [data-adsug]'), c.count(f'{E} [data-plform] input[data-f=name]'), c.count(f'{E} [data-k=edptbase]'),
+          c.js(f"document.querySelector('{E} [data-plform] input[data-k=edplname]').closest('label') !== null")], [1, 1, 0, True],
+         'ONE list of proposals, ONE Name field in the sheet of the point (no field « Point de la base » apart), the field in its label', what='the marking')
+    # free text typed in the Name stays as it is: no position, nothing written from the base
+    c.page.fill(f'{E} [data-plform] input[data-k=edplname]', 'Phare du test')
+    c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press('Tab')
+    c.wait(600)
+    c.eq([c.js(_EDPLACE_VAL, [5, 'name']), c.js(_EDPLACE_VAL, [5, 'lat']), c.js(_EDPLACE_VAL, [5, 'lon'])], ['Phare du test', '', ''],
+         'free text typed in the Name stays as it is, with no position', what='free text')
+    c.page.fill(f'{E} [data-plform] input[data-k=edplname]', '')
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.settle()
     c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
-    c.page.locator(f'{E} [data-plform] input[data-k=edptbase]').press_sequentially('xpt', delay=40)
+    c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press_sequentially('xpt', delay=40)
     sug = f"[...document.querySelectorAll('{E} [data-plform] [data-adsug]:not([hidden]) [data-code]')].map(x => x.dataset.code)"
     c.until(f"({sug}).length > 0", timeout=8000, what='the point of the base proposed for « xpt »')
     got = c.quiet(sug)
@@ -8487,9 +8496,9 @@ def n124(c):
     c.shot('P8a_390_points.png')
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
-    c.js(f"document.querySelector('{E} [data-plform] input[data-k=edptbase]').focus()")
-    c.page.fill(f'{E} [data-plform] input[data-k=edptbase]', '')
-    c.page.locator(f'{E} [data-plform] input[data-k=edptbase]').press_sequentially('xpt', delay=40)
+    c.js(f"document.querySelector('{E} [data-plform] input[data-k=edplname]').focus()")
+    c.page.fill(f'{E} [data-plform] input[data-k=edplname]', '')
+    c.page.locator(f'{E} [data-plform] input[data-k=edplname]').press_sequentially('xpt', delay=40)
     c.until(f"({sug}).length > 0", timeout=8000, what='the point proposed at 1280')
     c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")

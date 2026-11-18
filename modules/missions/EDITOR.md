@@ -1022,15 +1022,22 @@ The three gestures call ONE function, `edPlaceFromBase(s, e, { kind, at, code, l
 as its name**; the identifier (`PT3`) and the format of the file do not change (`id`, `name`, `lat`, `lon`). With `at` < 0 it makes a new row of the
 kind (`ED.newPlace`, one gesture to undo, a full kind: a notification); with a row rank it retouches that row and the open sheet says it.
 
-- **SOG-0480 — the field.** « Point de la base » (`input[data-k=edptbase]`, only in the sheet of a turning point) is a SECOND instance of the common field
-  (`createAdField` with `points: true`, `near()`): `edAdPt(s)`, created and stopped with the first (`edAd`/`edAfter`). The list is searched in the sheet
-  (`data-ptform`), not in the whole workshop, so the two lists never meet; the four listeners of the workshop go to the instance whose field (or list) is
-  the target. `near()` = the position of the open place if it has one, else the centre of the map of the workshop (`EM.centreOf`), else the departure.
-  A CHOICE (`isPicking`) gives `positionOf` → `edPlaceFromBase`; typing alone writes nothing. One instance cannot serve Départ, Arrivée AND this field:
-  `points` and `near()` belong to the instance (Départ and Arrivée stay aerodromes only), and `keys` are `data-k` values (all the place fields share
-  `data-k="edplace"`), hence a field of its own and a second instance.
+- **SOG-0480 — the field (retouched the same day, the ergonomist: no field apart).** The NAME of a turning point, a target or a rendez-vous
+  (`input[data-k=edplname][data-f=name]`; not the zone, not the object, not the departure and arrival rows) IS the common field with `points: true`
+  and `near()`, like Départ and Arrivée: one element less in the sheet, the same gesture everywhere. The first version had a field « Point de la
+  base » apart (`edptbase`); it is gone, with its texts. It is a SECOND instance of `createAdField` (`edAdPt(s)`, created and stopped with the
+  first, `edAd`/`edAfter`): `points` and `near()` belong to the instance (Départ and Arrivée stay aerodromes only). The list is searched in the sheet
+  (`data-adform`), not in the whole workshop, so the two lists never meet; the four listeners of the workshop go to the instance whose field (or
+  list) is the target. `near()` = the position of the open place if it has one, else the centre of the map of the workshop (`EM.centreOf`), else
+  the departure. `keys` are `data-k` values and the place fields all share `data-k="edplace"`, so ONLY the Name of these places carries its own
+  `data-k="edplname"` (`data-i` and `data-f=name` are kept, so the selectors and `edPlaceFromBase` find it by `data-f`); `edInput` reads it in the
+  same branch as `edplace` (`edPlName` first). Free text typed in the Name stays as it is and nothing is written until a point is chosen. A
+  CHOICE (`isPicking`) gives `positionOf` → `edPlaceFromBase` (code in the Name AND the position of the base, same format of file); a chosen
+  aerodrome has no position in the list, so `edNameBase` asks for it as for a typed code. The `change` that follows a choice does nothing more
+  (the place already has a position, `edNameBase` returns at once). No `data-adline` under the Name: the block names a code of four signs or a
+  helipad list code, not a point of the base.
 - **« Ajouter comme point » and this field**: the same function and the same result (name = code, position of the base). The button takes the landmark
-  touched on the map; the field takes a code typed by the author; neither writes anything on its own.
+  touched on the map; the Name takes a code typed or chosen by the author; neither writes anything on its own.
 - **SOG-0481.** `edplaceadd` (« + Point tournant », « + Cible ») with `edMapRef(e)` true calls `edPlaceFromBase` with the landmark; `edrefadd` does the same
   (the code it had copied is gone). Without a landmark: a new place « à placer », as before. The position of a landmark is the one the map gives (its
   rendered point: the fifth decimal may differ from the base, 44.6999 for 44.7).
