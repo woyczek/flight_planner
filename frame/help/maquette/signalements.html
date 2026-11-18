@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aide : Signalements, la liste (maquette)</title>
+<style>
+:root {
+  --ink: #1b1f24;
+  --muted: #59636e;
+  --line: #d0d7de;
+  --soft: #f6f8fa;
+  --accent: #0b5cad;
+  --accent-bg: #eaf2fb;
+  --yel: #7d4e00;
+  --yel-bg: #fff4d1;
+  --yel-line: #d4a72c;
+  --blue: #0b5cad;
+  --blue-bg: #eaf2fb;
+  --blue-line: #8fb8e6;
+  --grn: #1a7f37;
+  --grn-bg: #e6f6ea;
+  --grn-line: #9bd3a8;
+  --red: #a0211b;
+  --red-bg: #fdeceb;
+  --red-line: #e3a19d;
+}
+* {
+  box-sizing: border-box
+}
+html {
+  -webkit-text-size-adjust: 100%
+}
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif
+}
+.wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px 56px
+}
+h1 {
+  font-size: 24px;
+  line-height: 1.2;
+  margin: 16px 0 4px
+}
+h2 {
+  font-size: 18px;
+  margin: 22px 0 8px
+}
+h3 {
+  font-size: 16px;
+  margin: 0 0 6px
+}
+.muted {
+  color: var(--muted)
+}
+.mock {
+  background: var(--soft);
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 12px 0;
+  font-size: 14px
+}
+.mock button {
+  font: inherit;
+  padding: 6px 10px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer
+}
+.mock button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent)
+}
+.mock .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 4px 0
+}
+.screen[hidden] {
+  display: none
+}
+.search {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff
+}
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 4px 0 0
+}
+.grp {
+  margin: 18px 0 0
+}
+.grp>h2 {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 0 0 6px
+}
+.grp>h2 small {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 13px
+}
+ul.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden
+}
+ul.list li {
+  border-top: 1px solid var(--line)
+}
+ul.list li:first-child {
+  border-top: 0
+}
+.item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  min-height: 56px;
+  background: #fff;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer
+}
+.item:hover,
+.item[aria-current] {
+  background: var(--accent-bg)
+}
+.t1 {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap
+}
+.t1 b {
+  font-weight: 600
+}
+.meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px
+}
+.tag {
+  font-size: 12px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--soft);
+  white-space: nowrap
+}
+.st {
+  font-size: 12px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid;
+  white-space: nowrap
+}
+.st.y {
+  color: var(--yel);
+  background: var(--yel-bg);
+  border-color: var(--yel-line)
+}
+.st.b {
+  color: var(--blue);
+  background: var(--blue-bg);
+  border-color: var(--blue-line)
+}
+.st.g {
+  color: var(--grn);
+  background: var(--grn-bg);
+  border-color: var(--grn-line)
+}
+.st.r {
+  color: var(--red);
+  background: var(--red-bg);
+  border-color: var(--red-line)
+}
+.pri {
+  font-size: 12px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  background: #fff
+}
+.more {
+  display: block;
+  margin: 6px 0 0;
+  padding: 8px 12px;
+  min-height: 40px;
+  font: inherit;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--accent)
+}
+.hl {
+  background: #ffe9a3;
+  border-radius: 2px
+}
+.card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 10px 0;
+  background: #fff
+}
+.card.fiche {
+  background: var(--blue-bg);
+  border-color: var(--blue-line)
+}
+.card.fiche.done {
+  background: var(--grn-bg);
+  border-color: var(--grn-line)
+}
+.back {
+  display: inline-block;
+  margin: 12px 0 0;
+  padding: 8px 0;
+  min-height: 40px;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer
+}
+.body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 2px 0
+}
+.seg button {
+  font: inherit;
+  padding: 8px 12px;
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer
+}
+.seg button:first-child {
+  border-left: 0
+}
+.seg button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff
+}
+.axes {
+  display: grid;
+  gap: 6px 14px;
+  grid-template-columns: 1fr
+}
+.axes label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px
+}
+.result {
+  margin: 8px 0 0;
+  font-weight: 600
+}
+.cm {
+  border-top: 1px solid var(--line);
+  padding: 8px 0
+}
+.cm:first-of-type {
+  border-top: 0
+}
+.cm .who {
+  font-size: 13px;
+  color: var(--muted)
+}
+textarea {
+  width: 100%;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-height: 84px
+}
+.primary {
+  font: inherit;
+  padding: 8px 14px;
+  min-height: 44px;
+  background: var(--accent);
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 6px
+}
+.note {
+  font-size: 13px;
+  color: var(--muted)
+}
+@media (min-width: 900px) {
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px
+  }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="mock" data-mock>
+    <div class="row"><b>Maquette :</b>
+      <button type="button" data-go="list" aria-pressed="true">La liste</button>
+      <button type="button" data-go="search" aria-pressed="false">Une recherche</button>
+      <button type="button" data-go="detail" aria-pressed="false">La fiche d'un signalement</button>
+      <button type="button" data-go="pilot" aria-pressed="false">Côté pilote</button>
+    </div>
+    <div class="note">Rien ne s'enregistre ici : la maquette montre les écrans et leurs textes (français ; les quatre langues viendront avec le code). Les signalements montrés sont inventés, calqués sur ceux de la suite.</div>
+  </div>
+
+  <!-- ===== LA LISTE ===== -->
+  <section class="screen" data-screen="list">
+    <h1>Signalements</h1>
+    <p class="muted" style="margin:0 0 10px">Ce que vous avez signalé, ce qui en est devenu, et ce qui reste à faire.</p>
+    <input class="search" type="search" placeholder="Chercher dans les signalements et les fiches" aria-label="Chercher dans les signalements et les fiches">
+    <p class="hint">Un seul champ : le titre, le texte, l'écran, le numéro d'une fiche (SOG-0409).</p>
+
+    <div class="grp" data-grp="now">
+      <h2>Maintenant <small>3</small></h2>
+      <ul class="list">
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Régression</span><b>Islande : la récupération Avians échoue, pas de repli</b></div><div class="meta"><span class="st b">Fiche SOG-0368</span> · 16/11 · Données · <span class="pri">Bloquant · toujours</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Paramètres : l'écran se décale, le second clic arrive n'importe où</b></div><div class="meta"><span class="st y">Sans fiche</span> · 18/11 · Missions · <span class="pri">Gênant · toujours</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Synchro GitLab : la page se rafraîchit toutes les quelques secondes</b></div><div class="meta"><span class="st b">Fiche SOG-0361</span> · 16/11 · Réglages · <span class="pri">Bloquant · souvent</span></div></button></li>
+      </ul>
+    </div>
+
+    <div class="grp" data-grp="next">
+      <h2>Ensuite <small>7 sur 19</small></h2>
+      <ul class="list">
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Performance</span><b>Procédures : longue phase de rafraîchissement après un choix de SID</b></div><div class="meta"><span class="st b">Fiche SOG-0372</span> · 16/11 · Carte · <span class="pri">Gênant · souvent</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Ergonomie</span><b>Mes signalements : les distinguer par une couleur d'état</b></div><div class="meta"><span class="st g">Fait · SOG-0316</span> · 14/11 · Signaler · <span class="pri">Mineur · toujours</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Signaler : la page est lente à la frappe</b></div><div class="meta"><span class="st g">Fait · SOG-0409</span> · 14/11 · Signaler · <span class="pri">Gênant · toujours</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Missions : position de l'avion pour un sous-objectif</b></div><div class="meta"><span class="st b">Fiche SOG-0447</span> · 16/11 · Missions · <span class="pri">Gênant · rare</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>NAT : la lecture du jour semble réussir mais échoue en silence</b></div><div class="meta"><span class="st r">Refusé</span> · 16/11 · Données · <span class="pri">Gênant · rare</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Ergonomie</span><b>Clignotement de la page Réglages pendant la synchro</b></div><div class="meta"><span class="st g">Fait · SOG-0361</span> · 16/11 · Réglages · <span class="pri">Mineur · toujours</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Roadmap : filtrer par module</b></div><div class="meta"><span class="st y">Sans fiche</span> · 12/11 · Roadmap · <span class="pri">Mineur · souvent</span></div></button></li>
+      </ul>
+      <button class="more" type="button">Voir les 12 suivants</button>
+    </div>
+
+    <div class="grp" data-grp="later">
+      <h2>Plus tard <small>11</small></h2>
+      <button class="more" type="button" style="margin-top:0">Voir (7 sur 11)</button>
+    </div>
+
+    <div class="grp" data-grp="unrated">
+      <h2>À classer <small>31 sans priorité</small></h2>
+      <p class="hint" style="margin:0 0 6px">Ces signalements n'ont encore ni gravité ni fréquence : ouvrez-en un pour les choisir.</p>
+      <button class="more" type="button" style="margin-top:0">Voir (7 sur 31)</button>
+    </div>
+  </section>
+
+  <!-- ===== UNE RECHERCHE ===== -->
+  <section class="screen" data-screen="search" hidden>
+    <h1>Signalements</h1>
+    <input class="search" type="search" value="tape" aria-label="Chercher dans les signalements et les fiches">
+    <p class="hint">2 signalements et 1 fiche contiennent « tape ». Les mots sont cherchés où qu'ils soient, sans tenir compte des majuscules ni des accents.</p>
+    <div class="grp">
+      <h2>Signalements <small>2</small></h2>
+      <ul class="list">
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>bugs : lenteur</b></div><div class="meta">…aussi peu réactive ? des tâches en background ? je <span class="hl">tape</span> bien trop vite. un refresh à chaque caractère ?? enlever ça…</div><div class="meta"><span class="st g">Fait · SOG-0409</span> · 14/11 · Signaler</div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Signalements : une liste, avec recherche et commentaires</b></div><div class="meta">…je cherche le bug déclaré qui dit que quand on <span class="hl">tape</span> un texte de bug, il y a une sorte de latence…</div><div class="meta"><span class="st b">Fiche SOG-0410</span> · 17/11 · Signaler</div></button></li>
+      </ul>
+    </div>
+    <div class="grp">
+      <h2>Fiches <small>1</small></h2>
+      <ul class="list">
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">SOG-0409</span><b>Signaler : la page est lente à la fra<span class="hl">ppe</span></b></div><div class="meta"><span class="st g">Fait</span> · validée par vous le 17/11 · 1 signalement</div></button></li>
+      </ul>
+    </div>
+    <p class="note">Une recherche qui ne trouve rien le dit, avec le nombre total de signalements cherchés (« 0 sur 53 ») : on voit que la liste a bien été lue.</p>
+  </section>
+
+  <!-- ===== LA FICHE D'UN SIGNALEMENT ===== -->
+  <section class="screen" data-screen="detail" hidden>
+    <button class="back" type="button" data-back>← Signalements</button>
+    <div class="split">
+      <div>
+        <div class="t1" style="margin-top:6px"><span class="tag">Bug</span><span class="st g">Fait · SOG-0409</span></div>
+        <h1 style="margin-top:6px">bugs : lenteur</h1>
+        <p class="meta" style="margin:0">14/11 à 11 h 38 · écran Signaler · téléphone · design standard · français · version 0721a0c</p>
+        <p class="body">que fait la page « bugs » pour être aussi peu réactive ? des tâches en background ? je tape bien trop vite. un refresh à chaque caractère ?? enlever ça. tant sur le titre que sur le contenu.</p>
+        <div class="card fiche done">
+          <h3>Fiche liée</h3>
+          <div><b>SOG-0409</b> — Signaler : la page est lente à la frappe</div>
+          <div class="meta">Fait · validée le 17/11 : « c'est bon. c'était quoi ? »</div>
+          <button class="more" type="button" style="margin-top:8px">Ouvrir la fiche dans la Roadmap</button>
+        </div>
+      </div>
+      <div>
+        <div class="card" data-prio>
+          <h3>Priorité</h3>
+          <div class="axes">
+            <div>
+              <label>Gravité — ce que le défaut empêche</label>
+              <div class="seg" role="group" aria-label="Gravité"><button type="button" aria-pressed="false">Bloquant</button><button type="button" aria-pressed="true">Gênant</button><button type="button" aria-pressed="false">Mineur</button></div>
+            </div>
+            <div>
+              <label>Fréquence — à quelle fréquence ça arrive</label>
+              <div class="seg" role="group" aria-label="Fréquence"><button type="button" aria-pressed="true">Toujours</button><button type="button" aria-pressed="false">Souvent</button><button type="button" aria-pressed="false">Rare</button></div>
+            </div>
+          </div>
+          <p class="result">Gênant et toujours : « Ensuite »</p>
+          <p class="note" style="margin:4px 0 0">Bloquant : toujours « Maintenant ». Gênant et toujours : « Ensuite ». Le reste : « Plus tard ». Votre choix, pas celui de l'ergonome.</p>
+        </div>
+        <div class="card">
+          <h3>Commentaires <small class="muted">2</small></h3>
+          <div class="cm"><div class="who">Vous · 17/11 à 16 h 20</div><div class="body" style="margin:2px 0 0">C'est bon. C'était quoi ?</div></div>
+          <div class="cm"><div class="who">Ergonome · 17/11 à 16 h 22</div><div class="body" style="margin:2px 0 0">Le brouillon s'écrivait à chaque signe et chaque écriture relançait le chargement de l'appareil : il ne s'écrit plus qu'une fois la frappe finie.</div></div>
+          <label class="note" for="cm-new" style="display:block;margin-top:8px">Ajouter un commentaire</label>
+          <textarea id="cm-new" placeholder="Votre commentaire (2 000 signes)"></textarea>
+          <button class="primary" type="button">Ajouter</button>
+          <p class="note" style="margin:6px 0 0">Il part comme un signalement lié à celui-ci : même chemin, rien de nouveau à régler.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== COTE PILOTE ===== -->
+  <section class="screen" data-screen="pilot" hidden>
+    <h1>Mes signalements</h1>
+    <p class="muted" style="margin:0 0 10px">Ce que vous avez signalé depuis cet appareil et depuis le dépôt de votre compagnie.</p>
+    <input class="search" type="search" placeholder="Chercher dans mes signalements" aria-label="Chercher dans mes signalements">
+    <div class="grp">
+      <h2>Mes signalements <small>5</small></h2>
+      <ul class="list">
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Carburant : le total ne suit pas la réserve</b></div><div class="meta"><span class="st b">Fiche SOG-0301</span> · 15/11 · Carburant</div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Carte : afficher les zones militaires</b></div><div class="meta"><span class="st y">Envoyé, pas encore lu</span> · 17/11 · Carte</div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Le brouillon n'est pas gardé hors ligne</b></div><div class="meta"><span class="st y">Non envoyé : part au retour du réseau</span> · 18/11 · Signaler</div></button></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Ce que le pilote ne voit pas</h3>
+      <ul style="margin:0;padding-left:20px">
+        <li>pas de priorité (gravité, fréquence) : c'est le choix de l'ergonome ;</li>
+        <li>pas les signalements des autres pilotes ;</li>
+        <li>un commentaire du pilote part avec le prochain envoi groupé, comme un signalement lié (« non envoyé » tant que le réseau manque).</li>
+      </ul>
+    </div>
+  </section>
+
+  <h2>Questions ouvertes</h2>
+  <ol>
+    <li>Une page de plus (Aide › Signalements), ou la même liste dans la Roadmap, où chaque fiche montre déjà ses signalements d'origine ? Cette maquette est une page à part, qui renvoie vers la fiche de la Roadmap.</li>
+    <li>La priorité (gravité, fréquence) est-elle posée par l'utilisateur seul, ou aussi par l'ergonome ?</li>
+  </ol>
+</div>
+<script>
+(() => {
+  const screens = [...document.querySelectorAll('[data-screen]')], btns = [...document.querySelectorAll('[data-go]')];
+  let from = 'list';
+  const go = id => {
+    screens.forEach(s => s.hidden = s.dataset.screen !== id);
+    btns.forEach(b => b.setAttribute('aria-pressed', b.dataset.go === id ? 'true' : 'false'));
+    window.scrollTo(0, 0);
+  };
+  btns.forEach(b => b.addEventListener('click', () => { from = b.dataset.go; go(b.dataset.go); }));
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-open]')) go('detail');
+    else if (e.target.closest('[data-back]')) go(from === 'detail' ? 'list' : from);
+  });
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+  }));
+  const q = new URLSearchParams(location.search).get('v');
+  if (q) go(q);
+})();
+</script>
+</body>
+</html>
