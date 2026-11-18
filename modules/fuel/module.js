@@ -60,6 +60,9 @@ import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
+  plural
+} from '../../frame/lib/plural.js'; // SOG-0468 : la règle du pluriel du cadre (fr : 0 et 1 au singulier), jamais « n === 1 » écrit ici
+import {
   fmtZ,
   fmtZLocal,
   fmtDateZ,
@@ -113,6 +116,7 @@ export const meta = {
     '../../frame/lib/route_alts.js',
     '../../frame/lib/external_links.js', '../../frame/lib/icons.js', '../../frame/lib/dom.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/time.js', '../../frame/lib/geo.js', '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
+    '../../frame/lib/plural.js', // SOG-0468
     // importés depuis (R-F1, R-F4a, § 10.27, la météo du cadre) : gardés hors ligne eux aussi dès l’installation
     '../../frame/lib/wind.js', '../../frame/lib/route_model.js', '../../frame/lib/adnames.js', '../../frame/lib/ad_field.js',
     '../../frame/lib/suggest_list.js', '../../frame/lib/metar.js',
@@ -508,7 +512,7 @@ const TX = {
     continuity: ['continuité', 'continuity', 'Kontinuität', 'continuidad'],
     altitude: ['altitude', 'altitude', 'Höhe', 'altitud']
   },
-  rMore: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
+  rMore: ['{n} autre(s)', '{n} more', '{n} weitere', '{n} más'], // SOG-0468 : accordé par le cadre (« 1 autre », jamais « 1 autres »)
   // le contrôle par tronçon (SOG-0161) : trois mots et trois nombres, jamais « contrôlé » seul avant 100 %
   rCtrl: {
     controlled: ['contrôlé', 'checked', 'geprüft', 'controlado'],
@@ -1687,6 +1691,8 @@ async function loadLibs() {
 
 /** Texte d'une ligne de TX dans la langue de l'appli. */
 const tt = (row, v) => S.ctx.t(row, v);
+/** SOG-0468 : la forme de n (singulier, pluriel) selon la règle du cadre, dans la langue de l'écran. */
+const pl = (n, one, many) => plural(S.ctx.lang?.() || 'fr', n, [one, many]);
 
 // ---------------------------------------------------------------- unités et formats
 /** Unité de carburant affichée (réglage « Carburant »), à défaut celle de la fiche. */
@@ -5943,8 +5949,7 @@ function proofHtml(a) {
     },
     // les routes NAT écartées et pourquoi (six au plus), dans un pli FERMÉ qui dit leur nombre ; rien sans route écartée
     rl = P.rejected || [],
-    rej = rl.length ? `<details class="fu-rprooffold" data-proofrejs><summary class="f-muted">${esc(rl.length === 1 ? tt(TX.rProofRej1) : tt(TX
-      .rProofRejN, {
+    rej = rl.length ? `<details class="fu-rprooffold" data-proofrejs><summary class="f-muted">${esc(tt(pl(rl.length, TX.rProofRej1, TX.rProofRejN), {
         n: rl.length
       }))}</summary>${rl.map(x => `<small class="f-muted fu-rproof" data-proofrej="${esc(x.track)}">${esc(tt(TX.rProofRejected, {
       t: x.track,
@@ -6374,7 +6379,7 @@ function renderPts() {
     plan = +S.flight.level?.ft || 0,
     groups = procGroups(),
     inGroup = new Set(groups.flatMap(g => g.fixes)),
-    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(g.fixes.length === 1 ? TX.ptsGroup1 : TX.ptsGroupN, { n: g.fixes.length })}`)}</summary><div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt" data-hover-pt="${esc(fx)}"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div></details>`;
+    group = g => `<details class="f-item fu-ptgrp" data-kind="${g.kind}"><summary>${esc(`${g.label} · ${tt(pl(g.fixes.length, TX.ptsGroup1, TX.ptsGroupN), { n: g.fixes.length })}`)}</summary><div class="fu-ptfix">${g.fixes.map(fx => `<label class="f-item fu-pt" data-hover-pt="${esc(fx)}"><span class="fu-ptid"><b>${esc(fx)}</b></span><input data-k="pcon" data-fix="${esc(fx)}" data-kind="${g.kind}" inputmode="numeric" maxlength="3" value="${+S.flight.route?.constraints?.[fx] > 0 ? Math.round(S.flight.route.constraints[fx] / 100) : ''}" aria-label="${esc(tt(TX.pconLabel, { id: fx }))}"></label>`).join('')}</div></details>`;
   // les noms de la route sans position (SOG-0035) : une ligne chacun, à sa place, avec sa raison ; pour le texte qui les a lus seulement
   const un = S.unres && S.unres.text === S.flight.route?.text ? S.unres.rows : [],
     why = S.unres?.zone ? tt(TX.ptUnresZone, S.unres.zone) : tt(TX.ptUnres),
@@ -7381,7 +7386,7 @@ async function autoAirways() {
     }
     writeAuto(newTokens, newPoints, genTok);
     const names = new Set(done.flatMap(i => res.legs[i].routes));
-    S.ctx.notify(tt(names.size === 1 ? TX.autoOne : TX.autoMany, {
+    S.ctx.notify(tt(pl(names.size, TX.autoOne, TX.autoMany), {
       n: names.size,
       d: distTxt(Math.round(res.nm))
     }), 'ok');
@@ -8905,7 +8910,7 @@ function directLine(d) {
   return tt(TX.directLine, {
     to: d.to,
     from,
-    skipped: ids.length ? tt(ids.length === 1 ? TX.directSkipped1 : TX.directSkipped, {
+    skipped: ids.length ? tt(pl(ids.length, TX.directSkipped1, TX.directSkipped), {
       list: ids.join(', ')
     }) : tt(TX.directSkipped0),
     dnm: `${sign(dnm)}${distTxt(Math.abs(dnm))}`,

@@ -8442,3 +8442,30 @@ def f277(c):
     c.ok('dep' in got['none'], got['none'], 'a helipad code with no place at all: refused, never « DEP/ » empty')
     c.eq(got['word'], ['4542N00448E HELISTATION TEST CENTRE', '3330S07015W', '', 'B X B'],
          'the place: degrees and minutes always (eleven signs), the name in the message\'s alphabet', what='placeWord')
+
+
+@case('F278', 'Route step, the fold of the deviations with EIGHT lines: seven, then « 1 autre » — agreed by the frame, never « 1 autres »',
+      'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0468 (5), the relay: Fuel follows the plural rule of the frame (frame/lib/plural.js) instead of « n === 1 »; « {n} autres » '
+      'said « 1 autres » for a list of eight; a fake launcher')
+def f278(c):
+    T = 'modules/fuel/module.js'
+    st = _route_launcher(c, ['route/compute'])
+    R = lambda kind, text, rule=None: dict({'kind': kind, 'text': text}, **({'ruleId': rule} if rule else {}))
+    # F113's deviations, one fewer: eight lines
+    st['check'] = _alt(1, 'Direct', 'LFRS LUGEN NEPIX LFML', 370, 270, [
+        _seg('LFRS', 'LUGEN', R('RAD', 'Interdiction RAD LF1001', 'LF1001')),
+        _seg('LUGEN', 'NEPIX', R('FRA', 'Point FRA de sortie non respecté', 'LFFRA2')),
+        _seg('NEPIX', 'PT1', R('RAD', 'Interdiction RAD LF1002', 'LF1002'), R('RAD', 'Interdiction RAD LF1003', 'LF1003')),
+        _seg('PT1', 'PT2', R('direction', 'Sens interdit sur UN10'), R('floor', 'plancher FL195, prévu FL180')),
+        {'from': 'PT2', 'to': 'LFML', 'via': 'DCT', 'state': 'error', 'reasons': []}], sid=False)
+    st['issues'] = [{'level': 'error', 'text': 'Continuité : PT2 absent de la base'}, {'level': 'error', 'text': 'Interdiction RAD LF1001'}]
+    open_proc(c)
+    c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcheck]')", timeout=10000, what='the two buttons')
+    c.tap(f'{FUEL} [data-do="rcheck"]')
+    c.until(f"!!document.querySelector('{FUEL} [data-routealts] [data-faults]')", what='the fold of the deviations')
+    f = c.js(f"""(() => {{ const d = document.querySelector('{FUEL} [data-routealts] [data-faults]');
+        return {{ all: d.querySelectorAll('[data-fault]').length, more: d.querySelector('[data-faultmore] > summary')?.textContent || '' }} }})()""")
+    c.eq(f['all'], 8, 'eight lines for eight deviations', what='lines')
+    want = norm(tx(T, 'rMore', c.lang).replace('{n}', '1').replace('(s)', ''))
+    c.eq(norm(f['more']), want, '« 1 autre » / « 1 more »: the singular, agreed by the frame', what='more')
