@@ -9294,7 +9294,7 @@ _PL_DOC = {
               {'id': 'ZONE-2', 'name': 'Glacier', 'centre': {'lat': 45.31, 'lon': 1.42}, 'radius_km': 2}],
     'objects': [{'id': 'OBJ-1', 'kind': 'person', 'name': 'Randonneur', 'lat': 45.31, 'lon': 1.42, 'detection_range_nm': 1}],
     'route_order': ['ORIGIN', 'PT1', 'DESTINATION'], 'maps': [{'id': 'carte1', 'filename': 'detail_X-002A_1.png', 'centre_ref': 'PT1'}],
-    'phases': [{'id': 'B', 'title': 'La vallée', 'trigger_zone': 'ZONE-1', 'fallback_delay_min': 30, 'route_order': ['PT2']},
+    'phases': [{'id': 'B', 'title': 'La vallée', 'trigger_zone': 'ZONE-1', 'zone_shown': True, 'fallback_delay_min': 30, 'route_order': ['PT2']},
                {'id': 'C', 'title': 'Le glacier', 'trigger_zone': 'ZONE-2', 'zone_shown': False, 'fallback_delay_min': 60, 'message': 'Randonneur vu vers 45.31 N.', 'route_order': ['TARGET', 'RDV-1']},
                {'id': 'D', 'title': 'Trouvé', 'trigger_object': 'OBJ-1', 'fallback_delay_min': 90}]}
 
@@ -9316,6 +9316,16 @@ def d263(c):
     browse = read(['B', 'C'], False)
     c.eq(browse['points'], closed['points'], 'a mission one browses (not mine) opens nothing, whatever the device says', what=str(browse['points']))
     # the aliases of the V2 that the Map reads and the reader does not (waypoints, points, rdv, points_tournants): a place written there and cited only by a closed drawer is not read either (Sécurisation, 18 Nov)
+    # the vertical profile of the file (vertical_profile.route, route_points): the Map draws its route tokens and its profile from it; a place only a closed drawer cites is not in it (SOG-0459, the reader's profileRoute / profilePoints)
+    vp = dict(_PL_DOC, vertical_profile={'route': 'ORIGIN PT1 TARGET/FL65 PT2 RDV-1 DESTINATION', 'route_points': [
+        {'name': 'PT1', 'lat': 45.2, 'lon': 1.2}, {'name': 'TARGET', 'lat': 45.31, 'lon': 1.42, 'alt_ft': 6500}, {'name': 'PT2', 'lat': 45.35, 'lon': 1.5}, {'name': 'RDV-1', 'lat': 45.33, 'lon': 1.44}]})
+    pv = lambda opened, mine: c.js('(q) => { const r = window.__pl.read(q[0], q[1], q[2]); return { route: r.vprof.route, pts: r.vprof.routePoints.map(p => p.id), json: JSON.stringify(r.vprof) } }', [vp, opened, mine])
+    vs = pv([], True)
+    c.ok('TARGET' not in vs['route'] and 'PT2' not in vs['route'] and 'RDV-1' not in vs['route'] and 'PT1' in vs['route'], str(vs), 'closed: the route text of the profile keeps PT1 and the visible part, not the places only a closed drawer cites (the token and its /level go)')
+    c.ok(vs['pts'] == ['PT1'] and not any(w in vs['json'] for w in ('45.31', '1.42', '45.35', '6500')), str(vs), 'closed: the resolved points of the profile keep PT1 only; no position, no altitude of a hidden place')
+    vo = pv(['B', 'C'], True)
+    c.ok('TARGET/FL65' in vo['route'] and 'PT2' in vo['route'] and vo['pts'] == ['PT1', 'TARGET', 'PT2', 'RDV-1'] and '6500' in vo['json'], str(vo), 'drawers B and C open: the tokens and the points come back, with the level and the altitude to reach')
+    c.eq(pv(['B', 'C'], False)['pts'], ['PT1'], 'a mission not mine: closed again', what='not mine')
     alias = {k: v for k, v in _PL_DOC.items() if k not in ('turning_points', 'rendezvous', 'phases', 'objects')}
     alias['turning_points'] = [_PL_DOC['turning_points'][0]]
     alias['waypoints'] = [{'id': 'WPX', 'name': 'Passage', 'lat': 45.31, 'lon': 1.42}]

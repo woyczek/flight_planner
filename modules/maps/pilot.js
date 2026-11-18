@@ -96,6 +96,23 @@ export function pilotRoot(root, opened = [], mine = false) {
     },
     out = cut(root);
   if (plain(root.mission)) out.mission = cut(root.mission);
+  // le cheminement du profil vertical (SOG-0459) : le texte `vertical_profile.route` (dont la Carte tire ses jetons de route) et les `route_points` que le studio a résolus nomment des lieux ;
+  // la vue du lecteur (`profileRoute`, `profilePoints`) en a retiré ceux qu'elle ne garde pas — la Carte les prend de la VUE, jamais du fichier (le reste de `vertical_profile` est gardé)
+  if (plain(root.vertical_profile)) out.vertical_profile = {
+    ...root.vertical_profile,
+    route: typeof pv.profileRoute === 'string' ? pv.profileRoute : '',
+    route_points: (Array.isArray(pv.profilePoints) ? pv.profilePoints : []).map(q => ({
+      id: q.id,
+      ...(q.name ? {
+        name: q.name
+      } : {}),
+      lat: q.lat,
+      lon: q.lon,
+      ...(Number.isFinite(q.alt_ft) ? {
+        alt_ft: q.alt_ft
+      } : {})
+    }))
+  };
   return out;
 }
 
