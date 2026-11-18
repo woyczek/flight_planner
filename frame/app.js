@@ -649,7 +649,14 @@
         'Ohne Speichern verlassen? Die Änderungen gehen verloren.', '¿Salir sin guardar? Los cambios se perderán.'
       ],
       ok: ['Quitter sans enregistrer', 'Leave without saving', 'Ohne Speichern verlassen', 'Salir sin guardar'],
-      stay: ['Rester', 'Stay', 'Bleiben', 'Quedarse']
+      stay: ['Rester', 'Stay', 'Bleiben', 'Quedarse'],
+      // SOG-0486 : le module garde un BROUILLON sur l'appareil (ctx.unsaved(fn, { kept: true }), ctx.askLeave({ kept: true })) : rien n'est perdu, la question le dit
+      keptAsk: ['Quitter ? Vos changements restent en brouillon sur cet appareil.',
+        'Leave? Your changes stay as a draft on this device.',
+        'Verlassen? Ihre Änderungen bleiben als Entwurf auf diesem Gerät.',
+        '¿Salir? Sus cambios se conservan como borrador en este dispositivo.'
+      ],
+      keptOk: ['Quitter', 'Leave', 'Verlassen', 'Salir']
     },
     // SOG-0400 : l'envoi de ce qui attend, avant un travail du lanceur, dépasse la borne : le travail part, la page le dit
     jobLate: ['L’envoi de vos données est long : le travail part avec ce que ce poste porte déjà.',
@@ -3923,28 +3930,30 @@
   // SOG-0458 — la sortie gardée : un module dit « j'ai des changements non enregistrés » (ctx.unsaved) ; le cadre pose SA question avant de le
   // démonter (menu, « Retour », précédent du navigateur : tout passe par route()), et le navigateur avertit à la fermeture de l'onglet.
   // Rien n'est demandé quand rien n'a changé ; la déclaration tombe avec le démontage du module (life), il n'y a rien à désarmer.
-  const unsavedBy = new Map(); // clé du module (id, ou id#pane) → () => booléen
+  const unsavedBy =
+    new Map(); // clé du module (id, ou id#pane) → { fn: () => booléen, kept: le module garde un brouillon : rien n'est perdu }
   let leaving = false, // la question de sortie est posée : une autre adresse arrivée entre-temps n'en pose pas une seconde
     cameFrom = null, // l'entrée de l'historique que le dernier changement d'adresse a quittée (API Navigation, quand le navigateur l'a)
     restoring =
     null; // l'adresse que le cadre vient de remettre en traversant l'historique : le hashchange qui suit n'est pas une navigation
   /** Vrai quand un module dit avoir des changements non enregistrés (la fonction qu'il a déclarée répond vrai). Une fonction qui jette compte pour « non modifié ». */
-  const unsavedNow = () => {
-    for (const fn of unsavedBy.values()) {
+  const unsavedEntry = () => {
+    for (const u of unsavedBy.values()) {
       try {
-        if (fn()) return true;
+        if (u.fn()) return u;
       } catch (e) {
         console.warn('ctx.unsaved:', e);
       }
     }
-    return false;
+    return null;
   };
+  const unsavedNow = () => !!unsavedEntry();
   /** Pose la question de sortie. Oui : l'adresse demandée est rejouée sans question. Non : l'adresse d'avant est remise, sans rien démonter — en
    *  traversant l'historique jusqu'à l'entrée quittée (API Navigation : « précédent » refusé rend l'entrée, la pile ne change pas, un second
    *  « précédent » repose la question) ; sans cette API, par replaceState (l'entrée où le navigateur était allé est réécrite). */
   /** La question de sortie, les mots du cadre (SOG-0458) : vraie si l'utilisateur quitte ; aussi donnée aux modules (ctx.askLeave) pour que leur propre « Annuler » dise les mêmes. */
-  const leaveQuestion = () => ask(t(T.leave.ask), {
-    ok: t(T.leave.ok),
+  const leaveQuestion = (o = {}) => ask(t(o?.kept === true ? T.leave.keptAsk : T.leave.ask), {
+    ok: t(o?.kept === true ? T.leave.keptOk : T.leave.ok),
     cancel: t(T.leave.stay)
   });
   async function askLeave() {
@@ -3952,7 +3961,10 @@
     leaving = true;
     let yes = false;
     try {
-      yes = await leaveQuestion();
+      yes = await leaveQuestion({
+        kept: unsavedEntry()?.kept ===
+          true // un module qui garde un brouillon : « vos changements restent en brouillon » (SOG-0486)
+      });
     } finally {
       leaving = false;
     }
@@ -4641,11 +4653,16 @@
       // SOG-0458 : ctx.unsaved(() => booléen) — la fonction que le cadre interroge au moment de quitter (changement d'écran, « Retour », fermeture de l'onglet) ;
       // vrai : le cadre pose sa question avant de démonter le module et le navigateur avertit à la fermeture de l'onglet ; ctx.unsaved(null) retire la déclaration
       askLeave: leaveQuestion, // la question de sortie du cadre (vraie : on quitte), pour le « Annuler » d'un module : les mêmes mots que le menu
-      unsaved: fn => {
+      unsaved: (fn, o) => {
         const key = entry.id + (inPane ? '#pane' : '');
         if (typeof fn !== 'function') return void unsavedBy.delete(key);
-        unsavedBy.set(key, fn);
-        life?.addEventListener('abort', () => unsavedBy.get(key) === fn && unsavedBy.delete(key), {
+        const mine = {
+          fn,
+          kept: o?.kept ===
+            true // SOG-0486 : le module garde un brouillon sur l'appareil : la question du cadre le dit (rien n'est perdu)
+        };
+        unsavedBy.set(key, mine);
+        life?.addEventListener('abort', () => unsavedBy.get(key) === mine && unsavedBy.delete(key), {
           once: true
         });
       },

@@ -5316,6 +5316,43 @@ def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A313', 'A module that keeps a DRAFT says so to the frame (SOG-0486): ctx.unsaved(fn, { kept: true }) and ctx.askLeave({ kept: true }) ask « Quitter ? Vos changements restent en brouillon sur cet appareil. » — « Quitter » / « Rester », in four languages — instead of « les changements seront perdus »', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0486 (« Création de missions »: the workshop now keeps a draft on the device at every change, so leaving loses nothing and « Les changements seront perdus » is false there): ctx.unsaved(fn, { kept: true }) and ctx.askLeave({ kept: true }) give the frame\'s question another text, in four languages: « Quitter ? Vos changements restent en brouillon sur cet appareil. », buttons « Quitter » and « Rester »; without the option the question and its words are those of A264 / A301')
+def a313(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    head = 'export async function mount(el, ctx) {'
+    assert src.count(head) == 1
+    patched = src.replace(head, head + "\n  window.__d = true; window.__ctx = ctx; ctx.unsaved?.(() => window.__d, { kept: true });")
+    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
+    c.open('hello', wait=False)
+    c.until("!!document.querySelector('[data-module=hello]') && !!window.__ctx", timeout=20000, what='the module mounted')
+    want = {'fr': ('Quitter ? Vos changements restent en brouillon sur cet appareil.', 'Quitter', 'Rester'), 'en': ('Leave? Your changes stay as a draft on this device.', 'Leave', 'Stay'),
+            'de': ('Verlassen? Ihre Änderungen bleiben als Entwurf auf diesem Gerät.', 'Verlassen', 'Bleiben'), 'es': ('¿Salir? Sus cambios se conservan como borrador en este dispositivo.', 'Salir', 'Quedarse')}[c.lang]
+    c.js("() => { location.hash = '#fuel' }")
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=20000, what='the frame asks before leaving')
+    got = c.js("() => [(document.querySelector('.f-modal p') || {}).textContent, document.querySelector('.f-modal [data-ok]').textContent, document.querySelector('.f-modal [data-no]').textContent]")
+    c.eq([norm(x) for x in got], [norm(x) for x in want], 'the question of a module that keeps a draft: nothing is lost, the words say so', what='kept via unsaved')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal') && location.hash === '#hello'", timeout=10000, what='stayed')
+    # the module\'s own « Annuler »: ctx.askLeave({ kept: true }) gives the same words
+    c.js("() => { window.__q = window.__ctx.askLeave({ kept: true }) }")
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='askLeave asks')
+    got = c.js("() => [(document.querySelector('.f-modal p') || {}).textContent, document.querySelector('.f-modal [data-ok]').textContent]")
+    c.eq([norm(x) for x in got], [norm(want[0]), norm(want[1])], 'ctx.askLeave({ kept: true }): the same words', what='kept via askLeave')
+    c.tap('.f-modal [data-ok]')
+    c.eq(c.js("() => window.__q"), True, 'askLeave gives true when the user leaves', what='true')
+    # without the option the words are the ordinary ones (A264 / A301)
+    c.js("() => { window.__q = window.__ctx.askLeave() }")
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='ordinary question')
+    c.eq(c.js("() => ((document.querySelector('.f-modal p') || {}).textContent || '').indexOf('brouillon')"), -1, 'without the option the question does not speak of a draft', what='ordinary words')
+    c.tap('.f-modal [data-no]')
+    c.check_errors()
+
+
 @case('A301', 'ctx.unsaved also guards the address that leaves the document (SOG-0458, found by « Création »): an address of another application (APP.elsewhere) asks the frame’s question BEFORE the redirect; ctx.askLeave() gives the modules the same question', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0458 (« Création de missions » plugging the workshop): from Pilot, #missions is an address of the Company application (APP.elsewhere): the frame redirected at once (location.replace) before it looked at ctx.unsaved, so only the browser’s warning played; the guard stands before the redirect (the moved screens too), refusing keeps the module and the page, accepting lets the redirect go; and ctx.askLeave() — the same question, the same words, true when the user leaves — is given to the modules for their own « Annuler » (« reuse »: no copy of the texts)')
