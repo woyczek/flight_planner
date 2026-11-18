@@ -917,8 +917,8 @@ coordinates. Two causes, both confirmed by case N118 (red before, green after):
 - **A mission with no located element had no frame, so no map.** `mapFeatures` now ALWAYS gives a frame: that of the located
   elements, else — `wide: true` — the LAST FRAME SEEN in the workshop during the sitting (the view of the live map, kept in a variable
   of `editor_map.js` each time it stops moving and when it is removed; written nowhere), else the start view of the Carte of the suite,
-  `MAPB.start` = `{ w: -5, s: 41, e: 10, n: 51.5 }` (that of `fitOf`, modules/maps/data.js; it will become the import of a `START_VIEW`
-  constant of `modules/maps/lib/map_base.js` when the owner of the base exports it). A frame of this kind is fitted with no padding
+  the `START_VIEW` constant of `modules/maps/lib/map_base.js` (the one the Map itself starts on), imported by `editor_map.js` and read
+  as it is — never copied into the workshop. A frame of this kind is fitted with no padding
   (it is already a view). `show()` and `start()` are unchanged; the first place set by a tool reframes the map unless the author
   has already moved the view. The sketch « Aucun lieu placé » stays hidden while the map is alive; in Sélection the line under the
   tools says the empty state — « Aucun lieu : choisissez Point, puis touchez la carte. » — in place of « Touchez un lieu pour le

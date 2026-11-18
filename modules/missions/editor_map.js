@@ -27,6 +27,7 @@
 // couche de zones du socle, sous la mission ; éteinte d'office, lue à la demande par le cadre de la vue) sont des options de
 // show() ; aucun hôte ni aucun style n'y vient d'un fichier.
 import {
+  START_VIEW,
   isOwnResize,
   mapSize,
   startTiles,
@@ -61,16 +62,7 @@ export const MAPB = Object.freeze({
   spaceRings: 8, // … anneaux d'un espace, au plus
   spaceRing: 2000, // … sommets d'un anneau, au plus (au-delà l'anneau n'est pas dessiné)
   spaceFill: 0.04, // … l'opacité du remplissage d'un espace (des contours, pas des aplats)
-  reliefErrors: 4, // « Relief » : tuiles refusées sans qu'aucune soit venue avant de repartir en « Rapide »
-  // SOG-0469 : la vue de départ d'une mission sans aucun lieu situé quand l'atelier n'a encore rien montré dans la séance — la vue de
-  // départ de la Carte de la suite, celle de `fitOf` (modules/maps/data.js) : ouest, sud, est, nord, en degrés. Elle deviendra l'import
-  // de la constante `START_VIEW` de modules/maps/lib/map_base.js quand le propriétaire du socle l'aura exportée.
-  start: Object.freeze({
-    w: -5,
-    s: 41,
-    e: 10,
-    n: 51.5
-  })
+  reliefErrors: 4 // « Relief » : tuiles refusées sans qu'aucune soit venue avant de repartir en « Rapide »
 });
 /** Les règles de style que le bloc porte partout où il est posé (l'atelier, la lecture seule — mission_map.js) : son hôte, les
  *  étiquettes des lieux, la rangée « Fond / Espaces » et sa ligne. */
@@ -341,7 +333,7 @@ function keepView(L) {
 }
 
 /** Ce que la carte dessine d'une mission (voir l'en-tête). Le cadre `box` est TOUJOURS rendu (SOG-0469) : celui des éléments situés ;
- *  sans aucun, le dernier cadre vu dans l'atelier, sinon la vue de départ de la Carte (MAPB.start), et `wide: true` — la carte s'ouvre
+ *  sans aucun, le dernier cadre vu dans l'atelier, sinon la vue de départ de la Carte (START_VIEW, modules/maps/lib/map_base.js), et `wide: true` — la carte s'ouvre
  *  alors quand même, et un outil y pose le premier lieu ;
  *  la lecture seule (mission_map.js), elle, ne montre pas une carte sur le cadre large. `rows` : les lignes des Lieux que l'écran montre (une zone en contour y
  *  porte ses sommets : `ring`) ; `adPos(nom)` : la position que la base donne à un terrain dont le fichier ne dit pas la position (départ, arrivée), ou
@@ -498,7 +490,7 @@ export function mapFeatures(rows, {
     polygons,
     labels,
     box: {
-      ...(LAST || MAPB.start)
+      ...(LAST || START_VIEW)
     },
     wide: true
   };

@@ -7527,7 +7527,7 @@ _LC_FORMS = """async () => { const ED = await import('/modules/missions/editor.j
 _LC_BB = "(() => { const b = window.__edMap.getBounds(); return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()] })()"
 _LC_FOUND = """(() => { const b = window.__edMap.getBounds(), z = +window.__edMap.getZoom().toFixed(2);
   return [[45, 1], [44, 2]].every(([la, lo]) => b.contains([lo, la])) && b.getEast() - b.getWest() < 8 && z > 7 })()"""
-# the start view of the Carte of the suite ({ w: -5, s: 41, e: 10, n: 51.5 }): the view of a mission with nothing located when the sitting has seen nothing yet
+# the start view of the Carte of the suite (START_VIEW, here as its four corners seen by the map): the view of a mission with nothing located when the sitting has seen nothing yet
 _LC_START = """(() => { const b = window.__edMap.getBounds(), z = +window.__edMap.getZoom().toFixed(2);
   return [[41.01, -4.99], [51.49, 9.99], [41.01, 9.99], [51.49, -4.99]].every(([la, lo]) => b.contains([lo, la])) && z < 6.5 })()"""
 
