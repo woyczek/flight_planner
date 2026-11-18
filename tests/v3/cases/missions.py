@@ -5113,3 +5113,64 @@ def n100(c):
     c.shot('N100_390_landmark.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+# the pure part of « Poser l'avion ici »: the trial engine takes placements by hand (modules/missions/editor_trial.js, `puts`)
+_PUTS_JS = """async () => { const TR = await import('/modules/missions/editor_trial.js'), MS = await import('/frame/lib/mission.js'); const J = x => JSON.stringify(x);
+  // the invented mission of the trial: XTST (45N 1E) → PT1 → TARGET → XTSU (44N 2E) at 120 kt; a zone around PT1 under 3 000 ft, an object near the target
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'Essai', cruise_speed_kt: 120,
+    origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    target: { id: 'TARGET', name: 'Cible', lat: 44.6, lon: 1.4 },
+    turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }, { id: 'PT2', name: 'Deux', lat: 44.4, lon: 1.6 }],
+    zones: [{ id: 'ZONE-1', name: 'Secteur', kind: 'search', centre: { lat: 44.8, lon: 1.2 }, radius_km: 5, ceiling_ft: 3000 }],
+    objects: [{ id: 'OBJ-1', kind: 'person', name: 'Naufragé', lat: 44.6, lon: 1.42, detection_range_nm: 1, altitude_ft: 0, detection_height_ft: 2500 }],
+    route_order: ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Zone', trigger_zone: 'ZONE-1', fallback_delay_min: 60 },
+      { id: 'C', title: 'Objet', trigger_object: 'OBJ-1', fallback_delay_min: 90, route_order: ['PT2'] }, { id: 'D', title: 'Geste' }] };
+  const m = MS.readMission(doc), before = J(m), r3 = x => Math.round(x * 1000) / 1000;
+  const said = r => r.log.map(l => l.min + ':' + l.ev + (l.rank ? ' ' + l.rank : '') + (l.how ? ' ' + l.how : '') + (l.why ? ' ' + l.why : '')).join(' | ');
+  const sum = r => [r.ok, r.fix && [r3(r.fix.lat), r3(r.fix.lon), r.fix.onGround], r.landedMin, r.drawers.map(d => [d.rank, d.open, d.how, d.min]), said(r)];
+  const run = (o) => TR.trialRun(m, { altFt: 2000, ...o });
+  let threw = '';
+  const hostile = [null, 'x', 7, {}, [null, 'x', 7, { min: 'a', lat: 1, lon: 1 }, { min: 5, lat: 91, lon: 0 }, { min: -1, lat: 44, lon: 1 }, { min: 5 }, { min: 9999, lat: 44, lon: 1 },
+    { min: NaN, lat: 44, lon: 1 }, { min: 5, lat: '44', lon: '1' }]];
+  const plain = J(sum(run({ untilMin: 30 })));
+  const ignored = hostile.map(h => { try { return J(sum(run({ untilMin: 30, puts: h }))) === plain } catch (e) { threw += String(e); return false } });
+  const many = run({ untilMin: 30, puts: Array.from({ length: 25 }, (_, n) => ({ min: n + 1, lat: 44.9 - n / 100, lon: 1.1 })) });
+  return { none: sum(run({ untilMin: 10 })), zone: sum(run({ untilMin: 3, puts: [{ min: 2, lat: 44.8, lon: 1.2 }] })),
+    high: sum(TR.trialRun(m, { untilMin: 3, altFt: 5000, puts: [{ min: 2, lat: 44.8, lon: 1.2 }] }))[4],
+    both: sum(run({ untilMin: 5, puts: [{ min: 4, lat: 44.6, lon: 1.42 }, { min: 2, lat: 44.8, lon: 1.2 }] })),
+    order: sum(run({ untilMin: 5, puts: [{ min: 2, lat: 44.6, lon: 1.42 }] }))[3].slice(0, 2),
+    ground: sum(run({ untilMin: 60, puts: [{ min: 50, lat: 44.5, lon: 1.5 }] })).slice(1, 3), start: sum(run({ untilMin: 0, puts: [{ min: 0, lat: 44.9, lon: 1.1 }] })).slice(1, 2),
+    ignored, many: many.log.filter(l => l.ev === 'put').length, trail: many.trail.length <= TR.TRIAL.trail, threw, untouched: J(m) === before } }"""
+
+
+@case('N101', 'Missions › the workshop, « Poser l\'avion ici » (pure part, no screen): the trial takes placements by hand — at a minute the '
+      'aircraft is put at a position; putting is not flying: it is judged there on its position alone, so a zone it is put in opens '
+      '(under its ceiling), an object it is put near is found — in the order of the flight, the first closed drawer first — and a zone '
+      'a straight line would have crossed does not; then it '
+      'goes on towards what it had left to follow; put after its landing it stays on the ground, there; put at minute zero it starts '
+      'there; twenty placements at most, bounded: an unreadable placement is ignored; no hostile input throws; nothing is written in '
+      'the mission', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, « Poser l\'avion ici », the pure part (modules/missions/EDITOR.md § 4: « Poser l\'avion ici by a touch… It runs '
+      'the same pure judgement as the flight », § 7 novodecies): modules/missions/editor_trial.js, `puts`; the engine: N90')
+def n101(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_PUTS_JS)
+    c.eq(r['none'][3][0], [1, True, 'zone', 6.25], 'without a placement the zone around PT1 is entered at 6 min 15 s (the engine of N90)', what='no placement')
+    c.eq(r['zone'], [True, [44.773, 1.227, False], None, [[1, True, 'zone', 2], [2, False, None, None], [3, False, None, None]], '0:start | 2:put | 2:open 1 zone'],
+         'put in the zone at minute 2: judged on its position, the zone opens at minute 2; the aircraft then goes on towards what it had left to follow',
+         what='put in the zone')
+    c.eq(r['high'], '0:start | 2:put | 2:ceiling 1', 'put in the zone above its ceiling: said, nothing opens', what='above the ceiling')
+    c.eq([r['both'][3][:2], r['both'][4]], [[[1, True, 'zone', 2], [2, True, 'object', 4]], '0:start | 2:put | 2:open 1 zone | 4:put | 4:open 2 object | 4:route 2 | 4:hand 3'],
+         'two placements (given out of order: they play in the order of time): the zone, then the object the aircraft is put near — it then takes the onward route of that drawer',
+         what='two placements')
+    c.eq(r['order'], [[1, False, None, None], [2, False, None, None]], 'put near the object while drawer 1 is still closed: nothing opens — the zone between where it was and '
+         'where it is put is NOT crossed (putting is not flying), and only the first closed drawer can open',
+         what='the order of the flight')
+    c.eq([r['ground'], r['start']], [[[44.5, 1.5, True], 37], [[44.9, 1.1, True]]], 'put after its landing, the aircraft stays on the ground, there (it landed at minute 37); put at '
+         'minute zero, it starts there', what='on the ground')
+    c.eq([r['ignored'], r['many'], r['trail']], [[True] * 5, 20, True], 'placements that are not what they should be (not a list, a minute or a position out of bounds, texts) are '
+         'ignored: the trial is the same as without them; twenty placements at most; the trail stays bounded', what='hostile and too many')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the mission read is not touched')

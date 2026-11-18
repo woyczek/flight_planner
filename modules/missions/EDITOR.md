@@ -625,6 +625,20 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - **On a phone**, a mission of 150 km is framed under zoom 7: the landmarks only come when the author gets closer.
 - **Not done**: « Radiale et distance… » for a beacon; the names of the landmarks on the map (they are said when touched).
 
+### 7 novodecies. P2: « Poser l'avion ici » — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N101)
+
+- The trial engine (`trialRun` of `editor_trial.js`, § 7 nonies) takes **placements by hand**: `puts: [{ min, lat, lon }]` — at that
+  minute the author puts the aircraft of the trial at that position. Twenty at most (`TRIAL.puts`), each one bounded (a minute within
+  the trial, a position within bounds, numbers only): an unreadable placement is ignored, the trial is the same as without it; they
+  play in the order of time whatever the order they are given in.
+- **Putting is not flying**: the aircraft is judged there **on its position alone**, with no path from where it was — a zone it is
+  put in opens (under its ceiling; above, the log says so), an object it is put near is found, an arrival it is put on (on the ground,
+  after its landing) is judged; a zone a straight line from its former position would have crossed does NOT open. The order of the
+  flight holds: only the first closed drawer can open.
+- Then it **goes on from there** towards what it had left to follow (the route of the departure, or the onward route it had taken);
+  put after its landing, it stays on the ground, there; put at minute zero, it starts there. The log says `put`.
+- Nothing is written in the mission; no input throws (N101).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
