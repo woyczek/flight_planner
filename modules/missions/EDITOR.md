@@ -771,10 +771,10 @@ interfaces » — a text link at the far end of the foot, after « Enregistrer �
   with `ctx.unsaved(() => the workshop is open AND edDirty)` — at every opening (`edOpen`, the three modes; the function reads
   `s.ed` at the moment it is asked, so « Enregistrer » is taken into account at once). So the menu of the suite, the « Missions »
   tab or any other address of the module, and the browser's « Back » ask the SAME question (one text, the frame's: `T.leave` in
-  `app.js`, not exposed to modules, so `leaveAsk` / `leaveOk` / `leaveStay` of `editor_texts.js` repeat its words — « Rester »,
-  no longer « Rester dans l'atelier »; both sides move together); « Rester » keeps the workshop and what was typed, the frame
-  puts the address back. « Annuler » keeps its own question (same words) and, once the answer is yes, closes the workshop and
-  withdraws the declaration (`ctx.unsaved(null)`): the frame never asks a second time. « Dévoiler la mission complète » alone
+  `app.js`); « Rester » keeps the workshop and what was typed, the frame
+  puts the address back. « Annuler » asks the frame's own question through `ctx.askLeave()` (SOG-0458, continued: the three texts
+  `leaveAsk` / `leaveOk` / `leaveStay` the workshop used to copy are gone from `editor_texts.js`) and, once the answer is yes, closes the
+  workshop and withdraws the declaration (`ctx.unsaved(null)`) before the redraw: the frame never asks a second time. « Dévoiler la mission complète » alone
   does not make the workshop « changed » (`edDirty` reads the document only). **Limit, said**: from Compagnie, a module of
   ANOTHER application (Carburant, which the frame opens in Pilote) is a page replacement, not a change of screen: the frame asks
   nothing there, only the browser's own warning of `beforeunload` applies.

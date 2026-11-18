@@ -459,11 +459,6 @@ export const EDTX = {
     'Schublade {n}: unbekannt — ihr Schlüssel lässt sich nicht bewerten', 'cajón {n}: desconocido — su llave no se puede juzgar'
   ],
   // l'atelier (SOG-0444, lot P1) : le fil, la carte, le déroulé, la fiche du départ, le pied
-  leaveAsk: ['Quitter sans enregistrer ? Les changements seront perdus.', 'Leave without saving? The changes will be lost.',
-    'Ohne Speichern verlassen? Die Änderungen gehen verloren.', '¿Salir sin guardar? Los cambios se perderán.'
-  ],
-  leaveOk: ['Quitter sans enregistrer', 'Leave without saving', 'Ohne Speichern verlassen', 'Salir sin guardar'],
-  leaveStay: ['Rester', 'Stay', 'Bleiben', 'Quedarse'],
   atCrumb: ['Missions › Registre › Atelier', 'Missions › Registry › Workshop', 'Missionen › Register › Werkstatt',
     'Misiones › Registro › Taller'
   ],

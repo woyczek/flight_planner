@@ -3671,16 +3671,13 @@ function edDeclare(s) {
   s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed));
 }
 
-/** « Annuler » (SOG-0454) : quitte l'atelier et rend le registre ; avec un changement non enregistré, la question du cadre d'abord
- *  (les mots du cadre : « Quitter sans enregistrer » / « Rester ») — rien n'est quitté sans le oui. L'atelier fermé, la déclaration au
- *  cadre est retirée : aucune seconde question. */
+/** « Annuler » (SOG-0454, SOG-0458) : quitte l'atelier et rend le registre ; avec un changement non enregistré, la question du cadre
+ *  d'abord (`ctx.askLeave()` : les mots du cadre, « Quitter sans enregistrer » / « Rester », une promesse vraie quand on quitte) — rien
+ *  n'est quitté sans le oui. L'atelier fermé, la déclaration au cadre est retirée : aucune seconde question. */
 async function edLeave(s) {
   const e = s.ed;
   if (!e) return;
-  if (edDirty(e) && !(await s.ctx.ask(s.tt(EDTX.leaveAsk), {
-      ok: s.tt(EDTX.leaveOk),
-      cancel: s.tt(EDTX.leaveStay)
-    }))) return;
+  if (edDirty(e) && !(await s.ctx.askLeave())) return;
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
   s.ed = null;
   s.ctx.unsaved?.(null); // l'atelier n'existe plus : plus rien à garder (le cadre ne pose pas une seconde question)

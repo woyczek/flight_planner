@@ -6808,7 +6808,7 @@ _FOOT = {'order': ['edsave', 'edcancel', 'edtodo'], 'tag': 'BUTTON', 'plain': Tr
       'ergonomist: a real button against « Enregistrer », in the order and the look of the other forms, visible at 390, leaving with '
       'unsaved changes asks; modules/missions/EDITOR.md § 7 quinvicies)')
 def n109(c):
-    T = lambda key: norm(row(c, key, EDTX_FILE))  # noqa: E731
+    L = lambda key: norm(tx('frame/app.js', key, c.lang, after='leave: {'))  # noqa: E731 (SOG-0458: the question is the frame's, ctx.askLeave)
     title = f"document.querySelector('{E} input[data-k=edtitle]')?.value"
     asked = "!!document.querySelector('.f-modal [data-ok]')"
 
@@ -6849,7 +6849,7 @@ def n109(c):
     c.tap(f'{E} [data-do="edcancel"]')
     c.until(asked, timeout=8000, what='the question before leaving')
     said = c.js("(() => { const m = document.querySelector('.f-modal'); return [m.querySelector('p').textContent, m.querySelector('[data-ok]').textContent, m.querySelector('[data-no]').textContent] })()")
-    c.eq([norm(x) for x in said], [T('leaveAsk'), T('leaveOk'), T('leaveStay')], 'with an unsaved change, the frame asks: « Quitter sans enregistrer » or « Rester dans l\'atelier »', what='the question')
+    c.eq([norm(x) for x in said], [L('ask'), L('ok'), L('stay')], 'with an unsaved change, the frame asks: « Quitter sans enregistrer » or « Rester dans l\'atelier »', what='the question')
     c.shot('N109_1280_ask.png')
     c.tap('.f-modal [data-no]')
     c.wait(300)
