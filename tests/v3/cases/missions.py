@@ -1529,6 +1529,9 @@ _PASTE_PURE_JS = """async () => { const P = await import('/modules/missions/past
     yamlFirst: P.blocksOf(f + '\\na: 1\\n' + f + '\\n' + f + 'yml\\nb: 2\\n' + f).blocks.map(b => b.text),
     other: P.blocksOf(f + 'json\\n{}\\n' + f).fenced, open: P.blocksOf(f + 'yaml\\na: 1\\nb: 2').blocks[0].text, tilde: P.blocksOf('~~~yaml\\na: 1\\n~~~').blocks[0].text,
     none: P.blocksOf('mission: { id: X-1 }').fenced, many: P.blocksOf(many).blocks.length, big: [P.blocksOf(big).fenced, P.blocksOf(big).blocks.length],
+    // Sécurisation: a fence, a long run of spaces and one sign — no quadratic backtracking (more than ten seconds without the guard)
+    redos: [200000, 999000].map(n => { const t0 = performance.now(), r = P.blocksOf(f + ' '.repeat(n) + '!\\n' + f + 'yaml\\na: 1\\n' + f);
+      return [r.blocks.map(b => b.text), Math.round(performance.now() - t0) < 500] }),
     tabs: [P.tabsLine('a:\\n\\t- b'), P.tabsLine('a: "x\\ty"'), P.tabsLine('a:\\n  \\tb: 1'), P.tabsLine(null)] } }"""
 
 
@@ -1548,6 +1551,8 @@ def n36(c):
     c.eq([r['bare'], r['yamlFirst'], r['other'], r['open'], r['tilde'], r['none']], [[2, 6], ['b: 2'], False, 'a: 1\nb: 2', 'a: 1', False],
          'every bare block; the yaml blocks first; another language is no block; an unclosed block runs to the end; « ~~~ »; no block: the text',
          what='blocks')
+    c.eq(r['redos'], [[['a: 1'], True], [['a: 1'], True]], 'a fence followed by 200 000 or 999 000 spaces and a sign: read in less than half '
+         'a second, the yaml block still taken (Sécurisation: no quadratic backtracking)', what='redos')
     c.eq([r['many'], r['big'], r['tabs']], [21, [False, 1], [2, 0, 2, 0]],
          'at most 21 blocks taken; over 1 MB, no cutting; the first line indented with a tab (a tab inside a value is not one)', what='bounds')
     for w in (390, 1280):

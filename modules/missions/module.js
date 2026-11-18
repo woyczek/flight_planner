@@ -9,9 +9,8 @@ import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des 
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
 import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
-import * as CH from './choice.js';
-import *
-as PS from './paste.js'; // « Coller la réponse » (SOG-0460) : les blocs de code d'un texte collé, le calcul pur // la ligne de choix « durée · aéronefs · théâtre » (SOG-0455) : le calcul pur
+import * as CH from './choice.js'; // la ligne de choix « durée · aéronefs · théâtre » (SOG-0455) : le calcul pur
+import * as PS from './paste.js'; // « Coller la réponse » (SOG-0460) : les blocs de code d'un texte collé, le calcul pur
 import {
   init as edInit,
   edAfter,

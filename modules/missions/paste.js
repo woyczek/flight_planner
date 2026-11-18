@@ -14,8 +14,12 @@ export const LIMITS = Object.freeze({
   bytes: 1000000,
   blocks: 21 // un de plus que les vingt sources d'add.js : la vingt et unième suffit à le faire refuser
 });
-// une clôture : jusqu'à trois espaces, trois accents graves ou tildes au moins, puis la langue du bloc (ou rien)
-const FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*([A-Za-z0-9_+-]*)[ \t]*$/;
+// une clôture : jusqu'à trois espaces, trois accents graves ou tildes au moins, puis la langue du bloc (ou rien). Sécurisation : le motif
+// est SANS AMBIGUÏTÉ (la langue et ses blancs dans un seul groupe facultatif) — deux « [ \t]* » autour d'un groupe vide se disputaient
+// les mêmes espaces, un retour arrière en N² sur « ``` », N espaces et un caractère (une minute pour 1 Mo collé) ; et une clôture est
+// courte : une ligne de plus de FENCE_MAX signes n'est jamais testée
+const FENCE = /^ {0,3}(`{3,}|~{3,})[ \t]*(?:([A-Za-z0-9_+-]+)[ \t]*)?$/,
+  FENCE_MAX = 200;
 
 /** Les blocs de code du texte collé (voir l'en-tête). */
 export function blocksOf(text) {
@@ -31,13 +35,16 @@ export function blocksOf(text) {
   const lines = t.replace(/\r\n?/g, '\n').split('\n'),
     found = []; // { lang, text, line, from, to } : from / to, les lignes (0…) de la clôture ouvrante et fermante
   for (let i = 0; i < lines.length && found.length < LIMITS.blocks * 2; i++) {
+    if (lines[i].length > FENCE_MAX) continue;
     const m = FENCE.exec(lines[i]);
     if (!m) continue;
     const mark = m[1],
-      lang = m[2].toLowerCase();
+      lang = (m[2] || '').toLowerCase(),
+      // la clôture fermante : le même signe, au moins aussi long, rien d'autre (bâtie une fois par bloc, du signe et d'une longueur)
+      close = new RegExp(`^ {0,3}${mark[0] === '`' ? '`' : '~'}{${mark.length},}[ \\t]*$`);
     let j = i + 1;
-    // la clôture fermante : le même signe, au moins aussi long, rien d'autre ; un bloc jamais fermé va jusqu'à la fin du texte
-    while (j < lines.length && !new RegExp(`^ {0,3}${mark[0] === '`' ? '`' : '~'}{${mark.length},}[ \\t]*$`).test(lines[j])) j++;
+    // un bloc jamais fermé va jusqu'à la fin du texte
+    while (j < lines.length && !(lines[j].length <= FENCE_MAX && close.test(lines[j]))) j++;
     found.push({
       lang,
       text: lines.slice(i + 1, j).join('\n'),
