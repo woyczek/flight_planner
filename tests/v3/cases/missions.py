@@ -10263,3 +10263,90 @@ def n154(c):
              f'{width}: step 2 written as a landing, nothing else moved', what='the file written')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+# SOG-0500 (c): what the flight judges comes from Affectation's function (`follows` of drawers.js), never from a list of the workshop
+_JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), D = await import('/modules/missions/drawers.js'),
+    DR = await import('/modules/missions/editor_drawers.js');
+  const head = { mission: { id: 'X-001A', type: 'REG' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', lat: 44.8, lon: 1.2 }],
+    zones: [{ id: 'ZONE-1', centre: { lat: 44.7, lon: 1.3 }, radius_km: 5 }],
+    objects: [{ id: 'OBJ-1', kind: 'vehicle', lat: 44.6, lon: 1.4, detection_range_nm: 1 },
+      { id: 'OBJ-2', kind: 'ship', lat: 44.5, lon: 1.5, detection_range_nm: 1, speed_kt: 10, motion: 'axis', course_deg: 90 }] };
+  const hold = { radius_m: 5, duration_sec: 10, max_gap_sec: 10 };
+  const one = [{ id: 'B' }, { id: 'C', trigger_point: 'PT1', trigger_delay_min: 5 }, { id: 'D', trigger_zone: 'ZONE-1' },
+    { id: 'E', trigger_zone: 'ZONE-1', trigger_actor: 'OBJ-2' }, { id: 'F', trigger_object: 'OBJ-1' }, { id: 'G', trigger_object: 'OBJ-2' },
+    { id: 'H', trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: 1, speed_max_kt: 30 } },
+    { id: 'I', trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: 1, speed_max_kt: 30, escort_min_sec: 30 } }];
+  const two = [{ id: 'B', trigger_condition: { kind: 'hover', point: 'PT1', ...hold, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 } },
+    { id: 'C', trigger_condition: { kind: 'landing', point: 'PT1', ...hold, speed_max_kt: 3 } },
+    { id: 'D', trigger_condition: { kind: 'landing', object: 'OBJ-1', ...hold, speed_max_kt: 3 } },
+    { id: 'E', trigger_condition: { kind: 'overflight', object: 'OBJ-2', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 } },
+    { id: 'F', trigger_condition: { kind: 'sequence', steps: [{ kind: 'hover', object: 'OBJ-1', ...hold, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 }] } },
+    { id: 'G', trigger_condition: { kind: 'event', event: 'EV-1' } }];
+  const keys = [...MS.readMission({ ...head, phases: one }).drawers, ...MS.readMission({ ...head, phases: two }).drawers]
+    .map(d => [d.key, d.keyWhy]);
+  const name = k => k.kind === 'condition' ? k.condition : k.kind + (k.actor ? '+actor' : '') + (k.object?.moving ? '+moving' : '') + (k.escortMinSec > 0 ? '+escort' : '');
+  // THE control (Affectation, 18 Nov): the pilot's screen (notJudgedYet of the reader) and « ＋ Tiroir » (follows) never diverge
+  const rule = k => MS.notJudgedYet(k) === !(k.kind === 'hand' || k.kind === 'time' || D.follows(k));
+  const samples = DR.KEYS.map(key => { const t = DR.TYPES.find(x => x.key === key); return [key, t.judged] });
+  return { kinds: keys.map(([k, why]) => name(k) + (why ? '?' + why : '')), diverge: keys.filter(([k]) => !rule(k)).map(([k]) => name(k)),
+    judged: Object.fromEntries(keys.map(([k]) => [name(k), k.kind === 'hand' || k.kind === 'time' || D.follows(k)])),
+    types: samples,
+    // the same rule on what the WORKSHOP writes of each kind (its defaults: a complete landing as Affectation wants it)
+    typesAgree: DR.KEYS.every(key => DR.judgedKind(key) === DR.TYPES.find(t => t.key === key).judged),
+    offered: DR.offered().map(t => t.key), offeredCur: DR.offered('landing').map(t => [t.key, t.judged]),
+    offeredIfJudged: DR.offered('', () => true).map(t => t.key), offeredNone: DR.offered('', () => false).map(t => t.key) } }"""
+
+
+@case('N155', 'Missions › what « ＋ Tiroir » offers comes from what the FLIGHT judges (SOG-0500 (c)): the flag `judged` of each kind is `follows` of '
+      'modules/missions/drawers.js (Affectation\'s function) applied to the key the READER reads of a drawer of that kind written by the workshop itself — '
+      'the gesture and the hour always judged; today the five keys hand, time, zone, object, arrival are offered, no 1.1 condition; with a function that '
+      'judges everything, the ten kinds would be offered (the same function the page calls, `DR.offered`, with the flight\'s function given); a drawer '
+      'keyed by a landing keeps its key in its own choice, with its mention; THE CONTROL of Affectation: for every kind of key the reader gives (hand, '
+      'time, zone, zone crossed by a target, object, moving object, arrival, arrival with a following, hover, landing on a point and on an object, '
+      'overflight, sequence, event), `notJudgedYet(k) === !(hand || time || follows(k))` — the pilot\'s screen and « ＋ Tiroir » never diverge', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500 (c) and the precision of Affectation (18 Nov): « le drapeau judged du « ＋ Tiroir » vaut k.kind === hand || k.kind === time || '
+      'follows(k) » — « un contrôle par sorte de clé : notJudgedYet(k) === !(…) ; s\'il échoue, arrête-toi et dis pour quelle clé »; EDITOR.md § 7 unquinquagies')
+def n155(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    g = c.js(_JUDGED_JS)
+    c.eq(g['kinds'], ['hand', 'time', 'zone', 'zone+actor', 'object', 'object+moving', 'arrival', 'arrival+escort', 'hover', 'landing', 'landing',
+                      'overflight', 'sequence', 'event'], 'every kind of key the reader gives, read without a reason', what='the keys')
+    c.eq(g['diverge'], [], 'notJudgedYet(k) === !(hand || time || follows(k)) for every kind: the reader and the flight agree', what='THE control')
+    c.eq(g['judged'], {'hand': True, 'time': True, 'zone': True, 'zone+actor': False, 'object': True, 'object+moving': False, 'arrival': True,
+                       'arrival+escort': False, 'hover': False, 'landing': False, 'overflight': False, 'sequence': False, 'event': False},
+         'what the flight judges today (follows of drawers.js)', what='judged today')
+    c.eq(g['types'], [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', False], ['landing', False],
+                      ['overflight', False], ['sequence', False], ['event', False]], 'DR.TYPES: the flag of each kind, from the flight', what='the types')
+    c.eq(g['typesAgree'], True, 'judgedKind and TYPES say the same', what='judgedKind')
+    c.eq([g['offered'], g['offeredCur'], g['offeredIfJudged'], g['offeredNone']],
+         [['hand', 'time', 'zone', 'object', 'arrival'],
+          [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['landing', False]],
+          ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'event'], ['hand', 'time']],
+         'offered today; the key in force kept; a flight that judges everything: ten; a flight that judges nothing: the gesture and the hour',
+         what='offered')
+    # the screen: « ＋ Tiroir » shows exactly what DR.offered says, the choice of a landing drawer keeps its key with its mention
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    _ed_open(c, _LANDING_MISSION)
+    ed_reveal(c)
+    c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
+    page = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
+    c.eq(page, g['offered'], 'the page offers what DR.offered says', what='the page')
+    c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+    c.tap(f'{E} [data-atflow] [data-sel="B"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
+    c.tap(f'{_DW} [data-kindcur]')
+    c.until(f"!!document.querySelector('{_DW} [data-kinds=drawer]')", what='the choice in the sheet')
+    got = c.js(f"[...document.querySelectorAll('{_DW} [data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, !!x.querySelector('.f-muted'), x.getAttribute('aria-pressed')])")
+    c.eq(got, [['hand', False, 'false'], ['time', False, 'false'], ['zone', False, 'false'], ['object', False, 'false'], ['arrival', False, 'false'],
+               ['landing', True, 'true']], 'the key in force kept, with its mention, nothing else of 1.1', what='the choice of the drawer')
+    # a forged touch of a kind the flight does not judge changes nothing
+    c.js(f"""(() => {{ const b = document.createElement('button'); b.dataset.do = 'edkind'; b.dataset.key = 'hover';
+      document.querySelector('{_DW} [data-kinds=drawer]').append(b); b.click() }})()""")
+    c.wait(200)
+    c.eq(c.js(_DW_VAL, 'key'), 'landing', 'a forged « hover » is refused: the key stays', what='a forged kind')
+    ed_leave(c)
+    c.js(_REG_CLEAR)

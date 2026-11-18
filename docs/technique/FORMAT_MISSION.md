@@ -299,6 +299,14 @@ phases:
 - A sequence, a message awaited or a key the workshop cannot represent (a nested sequence, a step that is not an object, more than
   ten steps, an event that is not a bare word) stays `kept`, as it is.
 
+**What the flight judges, and what the workshop offers** (SOG-0500 (c)): the flight judges a key when `follows(key)` of
+`modules/missions/drawers.js` (« Affectation ») says so — today a zone the pilot crosses himself (no `actor`), a fixed object, an
+arrival without a following (`escortMinSec` 0) —, and always the pilot's gesture and the hour (no position needed). The workshop
+offers under « ＋ Tiroir » only the kinds the flight judges: for each kind it writes a drawer with its own defaults, reads it with
+`readMission` and asks `follows` — no list of its own; none of the 1.1 conditions today. The reader's `notJudgedYet(key)` (what the
+pilot's screen says) must stay `!(hand || time || follows(key))` for every kind of key: noreg N155 checks it, and will turn red the
+day `follows` judges a kind (a landing, first) that `notJudgedYet` still calls not judged.
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a

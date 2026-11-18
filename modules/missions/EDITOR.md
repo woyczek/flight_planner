@@ -1447,6 +1447,23 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
 - Actions `eddrstep`, `eddrstepadd`, `eddrstepdel` are off in the veiled workshop (`VEILED_OFF`).
 - Captures: `P13a_390_sequence.png`, `P13a_1280_sequence.png` (case N154).
 
+### 7 unquinquagies. What « ＋ Tiroir » offers comes from the flight (18 Nov 2026; SOG-0500 (c); noreg N155, N152, N139)
+
+- **The rule** (Affectation, 18 Nov): `judged = kind === 'hand' || kind === 'time' || follows(key)` — `follows` of `drawers.js` (read, never changed), the stable
+  contract: what the flight judges WITH a position.
+- **Which key** (`judgedKind(kind, judge = follows)`): for each kind the workshop writes a drawer with its own defaults (`keyed`: a landing at the arrival,
+  5 m, 10 s, a gap of 10 s, 3 kt — the complete rule Affectation will judge), on a small invented mission (`SAMPLE_DOC`), reads it with `readMission` and gives
+  THAT key to `follows`, once. `DR.TYPES` is `[{ key, judged }]` for the ten kinds, from this; `DR.offered(cur, judge)` keeps the judged kinds and the key in
+  force of a drawer. No list of the workshop: the day Affectation judges a condition in flight, it is offered without a change here.
+- **Today** (`follows`, read on 18 Nov): a zone crossed by the pilot himself (no `actor`), an object that does not move, an arrival without a following
+  (`escortMinSec` 0) — plus the gesture and the hour. Offered: hand, time, zone, object, arrival; no 1.1 condition.
+- **The screen**: `edKindsHtml` draws `DR.offered(cur)`; `edKind` refuses a kind `DR.offered` does not offer (a forged page); the mention « s'ouvre au geste ou
+  à l'heure de repli » shows for a key the flight does not judge (`!DR.judgedKind`), or for a key the reader reads as not judged (`MS.notJudgedYet`). « Message
+  envoyé à l'ouverture » shows for a drawer that sends one, or when the flight judges messages.
+- **The control** (Affectation): for every kind of key the reader gives, `MS.notJudgedYet(k) === !(hand || time || follows(k))` (case N155) — the pilot's
+  screen and « ＋ Tiroir » never diverge. It passes today. When Affectation's lot makes `follows` accept the landing, `notJudgedYet` of `frame/lib/mission.js`
+  must say false for those landings in the same lot, or N155 turns red and names the kind.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

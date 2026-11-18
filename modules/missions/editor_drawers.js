@@ -27,10 +27,15 @@
 //     l'utilisateur : 60 s, 5 m…). RULE_USE : les champs qu'une sorte lit. ruleMissing(kind, rule) → les champs à compléter
 //     (['at'] : ni point ni objet, ou les deux ; un nombre exigé absent ou hors bornes ; 'hOrder' : hauteur minimale au-dessus de la
 //     maximale ; 'confirmation' : un mot qui n'en est pas un) — [] pour une règle que le lecteur lira.
-//   TYPES : ce que le choix du type propose (SOG-0467 : « ＋ Tiroir » et la clé d'un tiroir, LE MÊME choix) — [{ key, judged }] dans
-//     l'ordre, une liste à allonger (sous « ＋ Tiroir », les briques du catalogue — catalog.js — s'y ajoutent, chacune une de ces clés) ;
-//     `judged` faux : une sorte que le vol ne juge pas encore (l'écran
-//     dit « s'ouvre au geste ou à l'heure de repli »). Aujourd'hui les cinq clés que l'atelier sait ÉCRIRE, toutes jugées en vol.
+//   TYPES : toutes les sortes que l'atelier écrit, [{ key, judged }] dans l'ordre de KEYS ; `judged` (SOG-0500 (c)) VIENT DU VOL, jamais
+//     d'une liste écrite ici : judgedKind(key) — le geste et l'heure toujours (sans position) ; toute autre sorte, si `follows` de
+//     drawers.js (Affectation) juge la clé que le LECTEUR lit d'un tiroir de cette sorte écrit par l'atelier lui-même (keyed : ses
+//     valeurs par défaut, une règle complète). Quand Affectation fera juger une condition, elle sera proposée sans retouche ici.
+//   judgedKind(key, judge = follows) → vrai si le vol juge cette sorte ; `judge` : la fonction du vol (un cas la remplace pour voir ce
+//     que l'atelier proposerait).
+//   offered(cur = '', judge = follows) → ce que le choix du type propose (SOG-0467 : « ＋ Tiroir » et la clé d'un tiroir, LE MÊME
+//     choix ; sous « ＋ Tiroir », les briques du catalogue — catalog.js — s'y ajoutent, sous la même règle) : les sortes jugées, et la
+//     clé en cours d'un tiroir (`cur`) même quand le vol ne la juge pas (l'écran dit « s'ouvre au geste ou à l'heure de repli »).
 //   keyed(row, key, places) → la ligne avec la clé choisie et ce qu'une clé neuve devine : la première zone, le premier objet des
 //     lieux, l'arrivée au terrain d'arrivée (1 NM, 30 kt, posé), l'heure après le décollage.
 //   drawerRowsOf(doc) → [{ i (la place dans `phases`, -1 pour une ligne ajoutée), id (B à M, donné, jamais saisi), title, said (la clé
@@ -67,12 +72,6 @@ export const HOLDS = MS.HOLD_KINDS;
 /** Les conditions de la version 1.1 que l'atelier écrit : les règles, la suite d'étapes, le message attendu. */
 export const CONDS = Object.freeze([...HOLDS, 'sequence', 'event']);
 export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival', ...CONDS]);
-/** Les sortes que le choix du type propose (voir l'en-tête) : les cinq clés jugées en vol, dans l'ordre de KEYS. Une condition de la
- *  version 1.1 n'y est pas (SOG-0500 : le vol ne la juge pas encore) ; un tiroir déjà écrit avec elle s'édite. */
-export const TYPES = Object.freeze(KEYS.slice(0, 5).map(key => Object.freeze({
-  key,
-  judged: true
-})));
 /** Les clés qui regardent l'avion : elles ont une heure de repli. */
 const LIVE = new Set(['zone', 'object', 'arrival', 'kept', ...CONDS]);
 /** Les nombres d'une règle : le champ de la ligne → [le champ du fichier, ses bornes — celles du lecteur]. */
@@ -654,6 +653,87 @@ export function withDrawerRows(doc, rows) {
   return out;
 }
 
+/** Une mission d'essai, sur place : un point, une zone et un objet immobile, pour écrire un tiroir de chaque sorte. */
+const SAMPLE_DOC = Object.freeze({
+  mission: {
+    id: 'X-000A',
+    type: 'TEST'
+  },
+  origin: {
+    name: 'Essai (XTST)',
+    lat: 45,
+    lon: 1
+  },
+  destination: {
+    name: 'Essai (XTSU)',
+    lat: 44,
+    lon: 2
+  },
+  turning_points: [{
+    id: 'PT1',
+    lat: 44.8,
+    lon: 1.2
+  }],
+  zones: [{
+    id: 'ZONE-1',
+    centre: {
+      lat: 44.7,
+      lon: 1.3
+    },
+    radius_km: 5
+  }],
+  objects: [{
+    id: 'OBJ-1',
+    kind: 'vehicle',
+    lat: 44.6,
+    lon: 1.4,
+    detection_range_nm: 1
+  }]
+});
+let sampleKeys = null;
+
+/** La clé que le LECTEUR lit d'un tiroir de chaque sorte écrit par l'atelier (keyed : ses valeurs par défaut ; un message attendu
+ *  nommé), une fois : { key → la clé lue }. */
+function samples() {
+  if (sampleKeys) return sampleKeys;
+  const places = [{
+      id: 'PT1',
+      kind: 'pt'
+    }, {
+      id: 'ZONE-1',
+      kind: 'zone'
+    }, {
+      id: 'OBJ-1',
+      kind: 'object'
+    }],
+    rows = [];
+  for (const key of KEYS) {
+    const row = keyed(blankDrawer(rows, null), key, places);
+    if (key === 'event') row.event = 'EV-1';
+    row.fallback = '60';
+    rows.push(row);
+  }
+  const read = MS.readMission(withDrawerRows(SAMPLE_DOC, rows))?.drawers || [];
+  sampleKeys = Object.fromEntries(KEYS.map((key, n) => [key, read[n]?.key || null]));
+  return sampleKeys;
+}
+
+/** Vrai si le vol juge cette sorte (voir l'en-tête) : le geste et l'heure toujours ; sinon la fonction du vol, sur la clé lue d'un
+ *  tiroir de cette sorte (une sorte inconnue, une clé que le lecteur ne lit pas : faux). */
+export function judgedKind(key, judge = DW.follows) {
+  if (key === 'hand' || key === 'time') return true;
+  const k = KEYS.includes(key) ? samples()[key] : null;
+  return !!k && typeof judge === 'function' && judge(k) === true;
+}
+
+/** Ce que le choix du type propose (voir l'en-tête). */
+export function offered(cur = '', judge = DW.follows) {
+  return KEYS.map(key => ({
+    key,
+    judged: judgedKind(key, judge)
+  })).filter(t => t.judged || t.key === cur);
+}
+
 /** Ce qu'un tiroir a « à compléter » (voir l'en-tête) : lu par le lecteur que l'écran du pilote emploie. */
 export function drawersTodo(doc) {
   const d = isObj(doc) ? doc : {},
@@ -688,3 +768,9 @@ export function drawersTodo(doc) {
   }
   return out;
 }
+
+/** Les sortes de l'atelier et ce que le vol en juge (voir l'en-tête) — en fin de fichier : elles écrivent un tiroir de chaque sorte. */
+export const TYPES = Object.freeze(KEYS.map(key => Object.freeze({
+  key,
+  judged: judgedKind(key)
+})));

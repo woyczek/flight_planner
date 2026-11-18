@@ -53,7 +53,8 @@
 // Le déroulé est une LISTE VERTICALE (SOG-0467 ; l'utilisateur : « je préfère réduire le texte secondaire et étirer en hauteur ») — les
 // lignes de liste de la suite (f-list, f-item, celles de la liste des missions) : « Au départ », un tiroir par ligne (sa marque, « Tiroir n
 // · son titre », sa clé en une ligne), « ＋ Tiroir » ; aucun défilement en largeur. « ＋ Tiroir » n'ajoute plus rien d'office : il ouvre
-// SUR PLACE, sous lui, le choix du TYPE (s.ed.kinds = 'new' ; DR.TYPES) — un type touché crée le tiroir avec cette clé (DR.keyed : ce
+// SUR PLACE, sous lui, le choix du TYPE (s.ed.kinds = 'new' ; DR.offered : les sortes que le vol juge, SOG-0500 (c)) — un type touché
+// crée le tiroir avec cette clé (DR.keyed : ce
 // qu'une clé neuve devine) et ouvre sa fiche ; la clé d'un tiroir existant se change par LE MÊME choix, dans sa fiche (s.ed.kinds =
 // 'drawer') ; « ＋ Tiroir » retouché, ou « Annuler », le referme sans rien créer.
 // Les briques (lot « modèles de mission », décision A) : sous « ＋ Tiroir », LE MÊME choix propose aussi les briques du catalogue livré
@@ -1291,10 +1292,11 @@ function edFlowHtml(s, doc, run = null) {
 }
 
 /** Le choix du TYPE d'un tiroir (SOG-0467) — LE MÊME sous « ＋ Tiroir » (`where` : 'new', le tiroir naît avec la clé touchée) et dans
- *  la fiche d'un tiroir ('drawer', sa clé change) : une ligne par sorte de DR.TYPES (une liste à allonger), son nom ; une sorte que le
- *  vol ne juge pas encore le dit en une ligne ; la clé en cours est marquée ; « Annuler » referme sans rien changer. */
+ *  la fiche d'un tiroir ('drawer', sa clé change) : une ligne par sorte que DR.offered propose (les sortes que le vol juge — drawers.js
+ *  `follows`, SOG-0500 (c) —, et la clé en cours du tiroir), son nom ; une sorte que le vol ne juge pas encore (la clé en cours) le dit
+ *  en une ligne ; la clé en cours est marquée ; « Annuler » referme sans rien changer. */
 function edKindsHtml(s, where, cur = '') {
-  return `<div class="f-list ms-kinds" data-kinds="${where}" role="group" aria-label="${esc(s.tt(EDTX.dwKey))}">${DR.TYPES.map(t => `<button type="button" class="f-item ms-kind" data-do="edkind" data-key="${t.key}" aria-pressed="${t.key === cur}"><b>${esc(s.tt(EDTX[`dwKey_${t.key}`]))}</b>${t.judged ? '' : `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>`}</button>`).join('')}${where === 'new' ? edBricksHtml(s) : ''}<button type="button" class="f-linkbtn ms-kindoff" data-do="edkindoff">${esc(s.tt(TX.cancel))}</button></div>`;
+  return `<div class="f-list ms-kinds" data-kinds="${where}" role="group" aria-label="${esc(s.tt(EDTX.dwKey))}">${DR.offered(cur).map(t => `<button type="button" class="f-item ms-kind" data-do="edkind" data-key="${t.key}" aria-pressed="${t.key === cur}"><b>${esc(s.tt(EDTX[`dwKey_${t.key}`]))}</b>${t.judged ? '' : `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>`}</button>`).join('')}${where === 'new' ? edBricksHtml(s) : ''}<button type="button" class="f-linkbtn ms-kindoff" data-do="edkindoff">${esc(s.tt(TX.cancel))}</button></div>`;
 }
 
 /** La famille dont le choix montre les briques : celle choisie dans la liste, sinon celle de la mission, sinon la première. */
@@ -2697,9 +2699,9 @@ function edDrawerHtml(s, doc) {
     group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
   return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
     <div class="ms-dgrp" data-dgrp="key" data-open="1"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
-      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) || DR.CONDS.includes(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
+      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) || DR.KEYS.includes(r.key) && !DR.judgedKind(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
       ${e.kinds === 'drawer' ? edKindsHtml(s, 'drawer', r.key) : ''}
-      ${body}${emits ? edEmitHtml(s, r) : ''}</div>
+      ${body}${emits || DR.judgedKind('event') ? edEmitHtml(s, r) : ''}</div>
     ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}
       <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
       <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label>`)}
@@ -3824,7 +3826,9 @@ const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddr
  *  — le tiroir naît d'elle (CAT.drawerFrom : la même DR.keyed, puis son titre, son message et son heure de repli). */
 function edKind(s, key, brick = null) {
   const e = s.ed;
-  if (!DR.TYPES.some(t => t.key === key) || !['new', 'drawer'].includes(e.kinds)) return;
+  // SOG-0500 (c) : seulement ce que le choix propose (une sorte que le vol ne juge pas : la clé en cours du tiroir, rien d'autre)
+  if (!['new', 'drawer'].includes(e.kinds) || !DR.offered(e.kinds === 'drawer' ? edDrawerRow(e)?.key || '' : '').some(t => t.key === key))
+    return;
   const places = e.places || ED.placesOf(edDoc(e));
   if (e.kinds === 'new') {
     const blank = DR.blankDrawer(edDrawers(e), e.base);
