@@ -16,6 +16,11 @@
 // du plan (pas un grand cercle). Un trajet est le segment rectiligne entre les deux relevés ; l'instant d'un franchissement est interpolé sur ce segment (à vitesse constante).
 // API : fixOf, shapeOf, crossed, reach, arrived, replay ; BOUNDS.
 
+import {
+  plain,
+  bounded as num
+} from './untrusted.js'; // SOG-0468 (c) : l'objet simple et le nombre borné (un nombre réel dans [lo, hi] ; null sinon), définis une fois par le cadre
+
 export const BOUNDS = Object.freeze({
   vertices: Object.freeze([3, 100]),
   radiusM: Object.freeze([1, 500000]),
@@ -31,10 +36,6 @@ export const BOUNDS = Object.freeze({
 const M_PER_DEG = 111194.93,
   M_PER_NM = 1852,
   rad = Math.PI / 180;
-
-/** Un nombre réel dans [lo, hi] ; null sinon (un texte, un booléen, NaN, ±Infinity, hors bornes). */
-const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : null;
-const plain = v => v && typeof v === 'object' && !Array.isArray(v) ? v : null;
 
 /** Un relevé lu : { t (ms | null), lat, lon, altFt, aglFt, onGround, headingDeg, trackDeg, gsKt, source } ; null quand sa position est illisible. Tout champ absent ou hors bornes : null. */
 export function fixOf(raw) {

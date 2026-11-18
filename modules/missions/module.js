@@ -49,7 +49,7 @@ export const meta = {
     '../../frame/lib/callsign_field.js', // SOG-0488 : le champ d'indicatif (Équipes)
     '../../frame/lib/icons.js', // l'atelier (editor_view.js) l'importe : demandé par Création (I26)
     '../../frame/lib/suggest_list.js', // SOG-0465 (adnames.js : importé par ad_field.js) : le champ de terrain de l'atelier (Départ, Arrivée), celui de Carburant
-    '../../frame/lib/crossing.js',
+    '../../frame/lib/crossing.js', '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par crossing.js
     '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
     '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
     // SOG-0464 : le profil vertical de la Carte sous la carte de l'atelier (modules/maps/lib/profile_embed.js, de BUGS SOG) et les scripts
