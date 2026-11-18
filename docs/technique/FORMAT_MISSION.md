@@ -228,6 +228,52 @@ mission_model:
   the Timeline. A model never writes a position: its places are written with a null centre, « to place » (the form of the V2).
   Bench: `modules/missions/test/catalog.html`; noreg N140, N141.
 
+## 4 quinquies. The 1.1 conditions, as the workshop writes them (SOG-0500, 18 Nov 2026)
+
+The V3 workshop (`modules/missions/editor_drawers.js`) writes the conditions of the user's workshop 1.1 in **the exact form the
+reader reads** (`holdRule` of `frame/lib/mission.js`), with the reader's own bounds (`HOLD_BOUNDS`, exported: one table, read by
+both). Each written drawer is read back by `readMission` in the noreg (N151): write → read → the same rule.
+
+```yaml
+phases:
+  - id: B
+    trigger_condition:             # a hover: over a point, OR following an object of the mission (never both)
+      kind: hover
+      object: OBJ-1                #    or  point: PT1  (a place of the mission, ORIGIN or DESTINATION)
+      radius_m: 5                  #    0.1 to 10 000
+      duration_sec: 60             #    1 to 3 600
+      max_gap_sec: 10              #    0.1 to 60: the longest gap between two fixes before the count starts again
+      speed_tolerance_kt: 2        #    0 to 100
+      height_min_ft: 10            #    0 to 60 000, not above height_max_ft
+      height_max_ft: 100
+    fallback_delay_min: 30
+  - id: C
+    trigger_condition:             # a landing: the same, with a maximum speed and no height
+      kind: landing
+      point: DESTINATION
+      radius_m: 5
+      duration_sec: 10
+      max_gap_sec: 10
+      speed_max_kt: 3              #    0 to 50 (the reader takes 3 when absent; the workshop always writes it)
+  - id: D
+    trigger_condition:             # an overflight: a radius in NM, two heights, the pilot's confirmation
+      kind: overflight
+      object: OBJ-1
+      radius_nm: 0.5               #    0.001 to 100
+      height_min_ft: 100
+      height_max_ft: 2000
+      require_confirmation: true
+```
+
+- **What the workshop writes**: only what the author changed (the rule of `with…`, audit 182); a condition of another kind is
+  replaced whole (no field of the old kind is left); a number out of the reader's bounds is never written nor clamped; a point and an
+  object are never written together. Other keys of the condition (`label`, `confirmation`, a key it does not know) stay as written.
+- **A landing as « Affectation » will judge it** (18 Nov 2026): a point OR a fixed object, `radius_m`, `speed_max_kt`,
+  `duration_sec`, `max_gap_sec` — not shorter than the period of a fix of the flight (`FIX_PERIOD_SEC` of `modules/missions/drawers.js`
+  once published; until then the reader's bound) — and no `confirmation`. The workshop proposes 10 s and a gap of 10 s.
+- **« À compléter »**: a rule the reader would refuse says what it misses (`condIncomplete`: the point or the object, a number out of
+  its bounds, a minimum height above the maximum, a confirmation that is not a word).
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a

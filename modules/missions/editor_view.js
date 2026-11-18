@@ -2468,11 +2468,7 @@ const edDrawers = e => e.drawers || DR.drawerRowsOf(e.base);
 /** La ligne du tiroir choisi, prête à être retouchée (les lignes de la séance sont créées à la première retouche : choisir un tiroir
  *  sans rien y changer n'écrit rien). → la ligne, ou null. */
 function edDrawerRow(e) {
-  if (!e.drawers) e.drawers = DR.drawerRowsOf(e.base).map(r => ({
-    ...r,
-    stops: [...r.stops],
-    route: [...r.route]
-  }));
+  if (!e.drawers) e.drawers = DR.drawerRowsOf(e.base).map(r => structuredClone(r)); // une copie entière : les règles et leurs étapes aussi
   return e.drawers.find(r => r.id === e.sel) || null;
 }
 
@@ -2495,7 +2491,9 @@ function edSaid(s, r) {
 /** Ce que les tiroirs ont « à compléter », une ligne par tiroir : [{ name (le rang), text }]. */
 function edDrawerTodo(s, doc) {
   const by = new Map();
-  for (const t of edDrawersTodo(doc)) by.set(t.name, [...(by.get(t.name) || []), s.tt(EDTX[`dwTodo_${t.key}`] || EDTX.dwTodo_keyUnread)]);
+  for (const t of edDrawersTodo(doc)) by.set(t.name, [...(by.get(t.name) || []), s.tt(EDTX[`dwTodo_${t.key}`] || EDTX.dwTodo_keyUnread, {
+    what: edMissText(s, t.what)
+  })]);
   return [...by].map(([name, what]) => ({
     name,
     text: s.tt(EDTX.dwTodoOf, {
@@ -2503,6 +2501,47 @@ function edDrawerTodo(s, doc) {
       what: what.join(', ')
     })
   }));
+}
+
+/** Le libellé d'un champ d'une règle (SOG-0500) : celui que la fiche lui donne. */
+const RULE_LABEL = Object.freeze({
+  at: 'dwMiss_at',
+  radiusM: 'dwRadiusM',
+  radiusNm: 'dwArrRadius',
+  duration: 'dwDuration',
+  gap: 'dwGap',
+  tol: 'dwTol',
+  speed: 'dwArrSpeed',
+  hMin: 'dwHMin',
+  hMax: 'dwHMax',
+  hOrder: 'dwMiss_hOrder',
+  confirmation: 'dwStepConfirm'
+});
+
+/** Les champs qui manquent à une règle (DR.ruleMissing), dits par leurs libellés de la fiche ; '' sans rien. */
+function edMissText(s, what) {
+  return (Array.isArray(what) ? what : []).map(k => RULE_LABEL[k] ? s.tt(EDTX[RULE_LABEL[k]]) : '').filter(Boolean).join(', ');
+}
+
+/** Les champs d'une règle de maintien ou de survol (SOG-0500) : son lieu — un point de la mission OU un objet suivi (deux listes : en
+ *  choisir un vide l'autre ; la valeur du fichier y figure toujours, suivie d'un « ? » quand elle ne désigne plus rien) —, puis les
+ *  nombres que sa sorte lit (DR.RULE_USE), deux par rangée, et pour un survol la confirmation du pilote. `pre` : 'rule' (la condition
+ *  du tiroir) ou 'step' (une étape d'une suite ; `n` son rang). Tout texte du fichier passe par esc(). */
+function edRuleHtml(s, rule, kind, pre, n, {
+  points,
+  objects,
+  now
+}) {
+  const use = DR.RULE_USE[kind] || [],
+    at = n === null ? '' : ` data-n="${n}"`,
+    num = (f, text) => use.includes(f) ? `<label class="f-field"><span>${esc(s.tt(text))}</span><input data-k="eddr" data-f="${pre}.${f}"${at} value="${esc(rule[f] ?? '')}" inputmode="decimal" maxlength="8" autocomplete="off"></label>` : '',
+    pick = (f, text, options) => {
+      const cur = now(rule[f] || '') || '',
+        all = cur && !options.some(o => o[0].toUpperCase() === cur.toUpperCase()) ? [...options, [cur, `${cur} ?`]] : options;
+      return `<label class="f-field"><span>${esc(s.tt(text))}</span><select data-k="eddr" data-f="${pre}.${f}"${at}><option value="">${esc(s.tt(EDTX.dwChoose))}</option>${all.map(o => `<option value="${esc(o[0])}"${o[0].toUpperCase() === cur.toUpperCase() ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
+    },
+    row = (...cells) => cells.some(Boolean) ? `<div class="f-row">${cells.join('')}</div>` : '';
+  return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${row(pick('point', EDTX.dwRulePoint, points), pick('object', EDTX.dwRuleObject, objects))}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
 }
 
 /** Ce que « Les textes » et « La suite de route » d'un tiroir contiennent, dit en une ligne (un groupe replié ne cache pas ce qu'il
@@ -2582,6 +2621,7 @@ function edDrawerHtml(s, doc) {
         <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
         <div class="f-field"><span>${esc(s.tt(EDTX.dwStops))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
         ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}${fallback}` :
+    DR.HOLDS.includes(r.key) ? `${edRuleHtml(s, r.rule || DR.blankRule(), r.key, 'rule', null, { points: [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points], objects, now })}${fallback}` :
     r.key === 'kept' ? `<p class="f-muted" data-dwkept>${esc(s.tt(EDTX.dwKept, { why: s.tt(EDTX[`dwWhy_${r.keptWhy}`] || EDTX.dwWhy_condition) }))}</p>${fallback}` : '',
     route = r.route.map(now).filter(Boolean),
     lines = edDrawerLines(s, r, now),
@@ -2591,7 +2631,7 @@ function edDrawerHtml(s, doc) {
     group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
   return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
     <div class="ms-dgrp" data-dgrp="key" data-open="1"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
-      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) ? `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
+      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) || DR.HOLDS.includes(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
       ${e.kinds === 'drawer' ? edKindsHtml(s, 'drawer', r.key) : ''}
       ${body}</div>
     ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}
@@ -2616,6 +2656,9 @@ function edDrawerInput(s, ev) {
   const r = edDrawerRow(e);
   if (!r) return;
   edUndoClear(e); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
+  // SOG-0500 : un champ d'une règle (la condition du tiroir)
+  const rf = /^rule\.([a-zA-Z]+)$/.exec(f || '');
+  if (rf) return edRuleInput(s, r.rule, rf[1], t, list);
   if (['point', 'zone', 'object', 'arrPoint'].includes(f) && list) {
     r[f] = String(t.value).slice(0, 40);
     if (f === 'point') r.said = edSaid(s, r);
@@ -2634,6 +2677,24 @@ function edDrawerInput(s, ev) {
     r[f] = t.value;
     if (f === 'delay') r.said = edSaid(s, r);
   }
+  return edRefresh(s);
+}
+
+/** Un champ d'une règle saisi (SOG-0500) : son lieu (une liste : un point choisi vide l'objet, et l'inverse ; l'écran se redessine),
+ *  la confirmation du pilote (une case), un nombre ou un mot (suivis à la frappe, rien de pressable redessiné). Un champ que la
+ *  règle ne porte pas (une page forgée) : rien. */
+function edRuleInput(s, rule, k, t, list) {
+  if (!rule) return;
+  if (k === 'point' || k === 'object') {
+    if (!list) return;
+    rule[k] = String(t.value).slice(0, 40);
+    if (rule[k]) rule[k === 'point' ? 'object' : 'point'] = '';
+    return draw(s);
+  }
+  if (k === 'confirm' && t.type === 'checkbox') rule.confirm = t.checked === true;
+  else if (!list && Object.hasOwn(RULE_LABEL, k) && !['at', 'hOrder'].includes(k) || !list && k === 'label') rule[k] = String(t.value)
+    .slice(0, 120);
+  else return;
   return edRefresh(s);
 }
 

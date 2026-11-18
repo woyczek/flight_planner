@@ -338,6 +338,38 @@ export const EDTX = {
   ],
   dwSaid_arrival: ['à l\'arrivée', 'on arrival', 'bei der Ankunft', 'a la llegada'],
   dwSaid_hand: ['au geste du pilote', 'at the pilot\'s gesture', 'auf die Geste des Piloten', 'al gesto del piloto'],
+  // SOG-0500 : les conditions de la version 1.1 — leur nom, leur clé dite en clair, les champs de leur règle
+  dwKey_hover: ['un stationnaire', 'a hover', 'ein Schwebeflug', 'un vuelo estacionario'],
+  dwKey_landing: ['un poser', 'a landing', 'eine Landung', 'un aterrizaje'],
+  dwKey_overflight: ['un survol', 'an overflight', 'ein Überflug', 'un sobrevuelo'],
+  dwSaid_hover: ['au stationnaire tenu', 'when the hover is held', 'wenn der Schwebeflug gehalten ist',
+    'cuando se mantiene el estacionario'
+  ],
+  dwSaid_landing: ['au poser stabilisé', 'on a steady landing', 'bei einer stabilen Landung', 'al aterrizaje estabilizado'],
+  dwSaid_overflight: ['au survol', 'on the overflight', 'beim Überflug', 'en el sobrevuelo'],
+  dwRulePoint: ['Sur un point', 'Over a point', 'Über einem Punkt', 'Sobre un punto'],
+  dwRuleObject: ['ou en suivant un objet', 'or following an object', 'oder einem Objekt folgend', 'o siguiendo un objeto'],
+  dwRadiusM: ['Rayon (m)', 'Radius (m)', 'Radius (m)', 'Radio (m)'],
+  dwDuration: ['Durée (s)', 'Duration (s)', 'Dauer (s)', 'Duración (s)'],
+  dwGap: ['Trou de relevés toléré (s)', 'Tolerated gap in fixes (s)', 'Tolerierte Messlücke (s)', 'Hueco de lecturas tolerado (s)'],
+  dwTol: ['Écart de vitesse toléré (kt)', 'Tolerated speed deviation (kt)', 'Tolerierte Geschwindigkeitsabweichung (kt)',
+    'Desviación de velocidad tolerada (kt)'
+  ],
+  dwHMin: ['Hauteur minimale (ft)', 'Minimum height (ft)', 'Mindesthöhe (ft)', 'Altura mínima (ft)'],
+  dwHMax: ['Hauteur maximale (ft)', 'Maximum height (ft)', 'Höchsthöhe (ft)', 'Altura máxima (ft)'],
+  dwConfirm: ['Le pilote confirme le contact', 'The pilot confirms the contact', 'Der Pilot bestätigt den Kontakt',
+    'El piloto confirma el contacto'
+  ],
+  dwStepConfirm: ['Mot de confirmation (facultatif)', 'Confirmation word (optional)', 'Bestätigungswort (optional)',
+    'Palabra de confirmación (opcional)'
+  ],
+  dwMiss_at: ['un point ou un objet', 'a point or an object', 'ein Punkt oder ein Objekt', 'un punto o un objeto'],
+  dwMiss_hOrder: ['hauteur minimale au-dessus de la maximale', 'minimum height above the maximum', 'Mindesthöhe über der Höchsthöhe',
+    'altura mínima por encima de la máxima'
+  ],
+  dwTodo_condIncomplete: ['condition à compléter : {what}', 'condition to complete: {what}', 'Bedingung zu vervollständigen: {what}',
+    'condición por completar: {what}'
+  ],
   // l'essai des clés (SOG-0444, lot P4) : le volet, les cartes du déroulé pendant l'essai, le journal en phrases (les faits viennent de
   // editor_trial.js : trOpen_<how>, trUnknown_<why>, trEv_<ev>)
   trBtn: ['Essayer les clés', 'Try the keys', 'Schlüssel ausprobieren', 'Probar las llaves'],

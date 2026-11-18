@@ -9941,3 +9941,159 @@ def n150(c):
             c.wait(200)
         c.eq([any(want in norm(n) for n in c.js(_NOTES)), c.count(E)], [True, 0], f'(C) the resumption of {key}: « {want} », no workshop', what=f'(C) {key}')
     c.js(_REG_CLEAR)
+
+
+# SOG-0500: the 1.1 conditions written by the workshop — a pure round trip (write by withDrawerRows, read again by readMission and by
+# drawerRowsOf) for each kind, in the page
+_HOLD_PURE_JS = """async () => { const MS = await import('/frame/lib/mission.js'), DR = await import('/modules/missions/editor_drawers.js');
+  const J = x => JSON.stringify(x), out = {};
+  const base = { mission: { id: 'X-001A', type: 'REG' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', name: 'Point un', lat: 44.8, lon: 1.2 }],
+    objects: [{ id: 'OBJ-1', kind: 'ship', name: 'Navire', lat: 44.6, lon: 1.4, detection_range_nm: 1 }],
+    phases: [{ id: 'B', title: 'Poser', trigger_condition: { kind: 'landing', point: 'PT1', radius_m: 5, duration_sec: 10, max_gap_sec: 10,
+      speed_max_kt: 3, extra: 'gardée' }, emit_event: { id: 'EV-1', to: ['A'] }, fallback_delay_min: 60 }] };
+  const places = [{ id: 'PT1', kind: 'pt' }, { id: 'OBJ-1', kind: 'object' }];
+  const pick = k => k && { kind: k.kind, condition: k.condition, rule: k.rule && { kind: k.rule.kind, point: k.rule.point, object: k.rule.object?.id ?? null,
+    radiusM: k.rule.radiusM, radiusNm: k.rule.radiusNm, durationSec: k.rule.durationSec, maxGapSec: k.rule.maxGapSec, speedMaxKt: k.rule.speedMaxKt,
+    speedToleranceKt: k.rule.speedToleranceKt, heightMinFt: k.rule.heightMinFt, heightMaxFt: k.rule.heightMaxFt, confirmation: k.rule.confirmation, confirm: k.rule.confirm },
+    fallbackMin: k.fallbackMin };
+  for (const kind of ['hover', 'landing', 'overflight']) {
+    const rows = DR.drawerRowsOf(base), row = DR.keyed(DR.blankDrawer(rows, base), kind, places);
+    row.fallback = '30';
+    const doc = DR.withDrawerRows(base, [...rows, row]), d = MS.readMission(doc).drawers[1], back = DR.drawerRowsOf(doc)[1];
+    out[kind] = { written: doc.phases[1].trigger_condition, read: pick(d.key), keyWhy: d.keyWhy, same: J(back.rule) === J(row.rule) && back.key === kind,
+      missing: DR.ruleMissing(kind, row.rule), todo: DR.drawersTodo(doc).filter(t => t.name === '2').map(t => t.key) };
+  }
+  // the drawer of the file: its fields, then one field changed — the rest of the condition and emit_event stay as written
+  const rows = DR.drawerRowsOf(base);
+  out.fileRow = [rows[0].key, rows[0].rule.point, rows[0].rule.radiusM, rows[0].rule.duration, rows[0].rule.gap, rows[0].rule.speed];
+  const r1 = structuredClone(rows); r1[0].rule.radiusM = '7'; r1[0].rule.point = ''; r1[0].rule.object = 'OBJ-1';
+  out.edited = DR.withDrawerRows(base, r1).phases[0];
+  out.untouched = J(DR.withDrawerRows(base, structuredClone(rows))) === J(base);
+  // out of the reader's bounds: never written, never brought back into bounds; said in « À compléter »
+  const r2 = structuredClone(rows); r2[0].rule.duration = '99999'; r2[0].rule.gap = '0';
+  const d2 = DR.withDrawerRows(base, r2);
+  out.bounds = [d2.phases[0].trigger_condition.duration_sec ?? null, d2.phases[0].trigger_condition.max_gap_sec ?? null, DR.drawersTodo(d2)[0]];
+  // a point AND an object, no point nor object, a minimum height above the maximum, a confirmation that is not a word
+  const h = DR.holdRow('hover', places);
+  out.rules = [DR.ruleMissing('hover', { ...h, point: 'PT1' }), DR.ruleMissing('hover', { ...h, object: '' }),
+    DR.ruleMissing('hover', { ...h, hMin: '500', hMax: '100' }), DR.ruleMissing('overflight', { ...DR.holdRow('overflight', places), confirmation: 'Deux mots' })];
+  // another key replaces the condition whole: from a landing to an overflight, no field of the landing is left
+  const r3 = structuredClone(rows); Object.assign(r3[0], DR.keyed(r3[0], 'overflight', places));
+  out.switched = DR.withDrawerRows(base, r3).phases[0].trigger_condition;
+  // hostile rows: a forged rule (a list, numbers as objects) writes nothing out of bounds and throws nothing
+  let threw = '';
+  try { const r4 = structuredClone(rows); r4[0].rule = { point: ['x'], radiusM: { a: 1 }, duration: 'NaN', gap: '1e9', speed: '-1' };
+    out.hostile = DR.withDrawerRows(base, r4).phases[0].trigger_condition } catch (e) { threw = String(e) }
+  out.threw = threw;
+  return out }"""
+
+
+@case('N151', 'Missions › the workshop WRITES the 1.1 conditions hover, landing and overflight (SOG-0500, pure, in the page): for each, a drawer keyed '
+      'by `DR.keyed` and written by `withDrawerRows` is read back by `readMission` as `{ kind: condition, condition, rule }` with the numbers written '
+      '(the reader\'s names: radius_m, duration_sec, max_gap_sec, speed_max_kt, speed_tolerance_kt, height_min_ft, height_max_ft, radius_nm, '
+      'require_confirmation), and by `drawerRowsOf` as the same row; a landing has no confirmation word and writes its speed; a drawer of the file '
+      'shows its fields, one field changed keeps the rest of the condition and `emit_event`; out of the reader\'s bounds: never written, said in '
+      '« À compléter »; a point and an object, or neither, a height order, a word that is not one: named; another key replaces the condition whole; '
+      'forged rows throw nothing', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500 (the ergonomist\'s decision): « pour chaque condition : ses champs dans la fiche du tiroir, le format écrit, et ce que le vol sait '
+      'en juger » — the workshop writes EXACTLY the form the reader reads (holdRule of frame/lib/mission.js, its bounds MS.HOLD_BOUNDS); a landing as '
+      'Affectation will judge it (18 Nov: radius_m, speed_max_kt, duration_sec, max_gap_sec, no confirmation); EDITOR.md § 7 novemquadragies')
+def n151(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    g = c.js(_HOLD_PURE_JS)
+    c.eq(g['hover']['written'], {'kind': 'hover', 'object': 'OBJ-1', 'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2,
+                                 'height_min_ft': 10, 'height_max_ft': 100}, 'a hover follows the first object of the mission, the defaults of the workshop',
+         what='hover written')
+    c.eq(g['hover']['read'], {'kind': 'condition', 'condition': 'hover', 'rule': {'kind': 'hover', 'point': None, 'object': 'OBJ-1', 'radiusM': 5, 'radiusNm': None,
+         'durationSec': 60, 'maxGapSec': 10, 'speedMaxKt': None, 'speedToleranceKt': 2, 'heightMinFt': 10, 'heightMaxFt': 100, 'confirmation': '',
+         'confirm': False}, 'fallbackMin': 30}, 'the reader reads the rule written', what='hover read')
+    c.eq(g['landing']['written'], {'kind': 'landing', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3},
+         'a landing at the arrival: 5 m, 10 s, a gap of 10 s, 3 kt written, no confirmation', what='landing written')
+    c.eq(g['landing']['read']['rule'], {'kind': 'landing', 'point': 'DESTINATION', 'object': None, 'radiusM': 5, 'radiusNm': None, 'durationSec': 10,
+         'maxGapSec': 10, 'speedMaxKt': 3, 'speedToleranceKt': None, 'heightMinFt': None, 'heightMaxFt': None, 'confirmation': '', 'confirm': False},
+         'the reader reads the landing', what='landing read')
+    c.eq(g['overflight']['written'], {'kind': 'overflight', 'object': 'OBJ-1', 'radius_nm': 0.5, 'height_min_ft': 100, 'height_max_ft': 2000,
+                                      'require_confirmation': True}, 'an overflight of the object, the pilot confirms', what='overflight written')
+    c.eq(g['overflight']['read']['rule']['confirm'], True, 'the reader reads the confirmation', what='overflight read')
+    for k in ('hover', 'landing', 'overflight'):
+        c.eq([g[k]['keyWhy'], g[k]['same'], g[k]['missing'], g[k]['todo']], ['', True, [], ['noMessage', 'noBrief']],
+             f'{k}: read without a reason, the same row read back, nothing missing in the rule (only the texts to write)', what=f'{k} round trip')
+    c.eq(g['fileRow'], ['landing', 'PT1', '5', '10', '10', '3'], 'the drawer of the file in fields', what='the file row')
+    c.eq(g['edited'], {'id': 'B', 'title': 'Poser', 'trigger_condition': {'kind': 'landing', 'radius_m': 7, 'duration_sec': 10, 'max_gap_sec': 10,
+                       'speed_max_kt': 3, 'extra': 'gardée', 'object': 'OBJ-1'}, 'emit_event': {'id': 'EV-1', 'to': ['A']}, 'fallback_delay_min': 60},
+         'the radius and the place changed, the rest as written (an unknown key, emit_event)', what='one field changed')
+    c.eq(g['untouched'], True, 'nothing changed: the document is identical', what='nothing changed')
+    c.eq(g['bounds'], [None, None, {'key': 'condIncomplete', 'name': '1', 'what': ['duration', 'gap']}],
+         '99999 s and a gap of 0 s are not written, « À compléter » names them', what='the bounds')
+    c.eq(g['rules'], [['at'], ['at'], ['hOrder'], ['confirmation']], 'what a rule misses, named', what='the rules')
+    c.eq(g['switched'], {'kind': 'overflight', 'object': 'OBJ-1', 'radius_nm': 0.5, 'height_min_ft': 100, 'height_max_ft': 2000, 'require_confirmation': True},
+         'another key: the landing is gone whole (its unknown key too: the condition is another one)', what='another key')
+    c.eq([g['threw'], g['hostile']], ['', {'kind': 'landing', 'extra': 'gardée'}],
+         'forged fields: nothing out of bounds written, nothing thrown', what='hostile rows')
+
+
+_LANDING_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Mission poser
+summary: Un poser inventé.
+cruise_speed_kt: 120
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.2 }
+objects:
+  - { id: OBJ-1, kind: vehicle, name: Véhicule d'essai, lat: 44.6, lon: 1.42, detection_range_nm: 1 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - { id: B, title: Poser au point un, message: Posez-vous., brief: Un poser stabilisé., fallback_delay_min: 60, trigger_condition: { kind: landing, point: PT1, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 } }
+"""
+_RULE_VAL = f"""(f) => {{ const x = document.querySelector('{E} [data-drawer] [data-dwrule=rule] [data-f="rule.' + f + '"]'); return !x ? null : x.type === 'checkbox' ? x.checked : x.value }}"""
+_RULE_FIELDS = f"[...document.querySelectorAll('{E} [data-drawer] [data-dwrule=rule] [data-k=eddr]')].map(x => x.dataset.f)"
+
+
+@case('N152', 'Missions › the workshop, a drawer of the file keyed by a LANDING (SOG-0500, an invented file): its sheet shows the key « un poser », the '
+      'mention « s\'ouvre au geste ou à l\'heure de repli », and the fields of the rule — the point (PT1) or an object, the radius, the duration, the gap '
+      'of fixes, the maximum speed — and its fallback; a duration out of the reader\'s bounds is said in « À compléter » (« condition à compléter : '
+      'Durée (s) ») and not written; a duration changed is written, nothing else of the file moves; « ＋ Tiroir » offers no 1.1 condition; at 390 and '
+      'at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500 (the ergonomist\'s decision): a condition the flight does not judge is not offered, but a drawer already written with one is edited '
+      '(its fields show) and keeps its mention (`dwNotJudged`); EDITOR.md § 7 novemquadragies')
+def n152(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, _LANDING_MISSION)
+        ed_reveal(c)
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
+        c.eq([c.js(_DW_VAL, 'key'), c.count(f'{_DW} [data-dwnotjudged]'), norm(c.js(f"document.querySelector('{_DW} [data-kindcur] b').textContent"))],
+             ['landing', 1, norm(row(c, 'dwKey_landing', EDTX_FILE))], f'{width}: the key « un poser » and its mention', what='the key')
+        c.eq(c.js(_RULE_FIELDS), ['rule.point', 'rule.object', 'rule.radiusM', 'rule.duration', 'rule.gap', 'rule.speed'],
+             f'{width}: the fields of a landing, in order', what='the fields')
+        c.eq([c.js(_RULE_VAL, f) for f in ('point', 'object', 'radiusM', 'duration', 'gap', 'speed')], ['PT1', '', '5', '10', '10', '3'],
+             f'{width}: the values of the file', what='the values')
+        c.eq(c.js(_DW_VAL, 'fallback'), '60', f'{width}: its fallback', what='the fallback')
+        if width == 390:
+            c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}})")
+        c.shot(f'P13a_{width}_landing.png')
+        c.page.fill(f'{_DW} [data-f="rule.duration"]', '99999')
+        want = norm(row(c, 'dwTodo_condIncomplete', EDTX_FILE).replace('{what}', row(c, 'dwDuration', EDTX_FILE)))
+        c.until(f"""(w) => document.querySelector('{E} [data-edtodo]')?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)""", want,
+                what='« À compléter » says the duration')
+        c.page.fill(f'{_DW} [data-f="rule.duration"]', '20')
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
+        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)"), ['hand', 'time', 'zone', 'object', 'arrival'],
+             f'{width}: « ＋ Tiroir » offers no 1.1 condition', what='the offer')
+        c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
+        after = c.js('(t) => window.jsyaml.load(t)', c.js(_TEXT_OF, path))
+        before = c.js('(t) => window.jsyaml.load(t)', _LANDING_MISSION)
+        before['phases'][0]['trigger_condition']['duration_sec'] = 20
+        c.eq({k: after.get(k) for k in ('phases', 'turning_points', 'objects', 'route_order')}, {k: before.get(k) for k in ('phases', 'turning_points', 'objects', 'route_order')},
+             f'{width}: the duration written, nothing else moved', what='the file written')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

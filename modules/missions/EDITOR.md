@@ -1402,6 +1402,30 @@ The ergonomist: the workshop keeps the mission ON THE DEVICE at each change, nev
 9. The drafts are on THIS device only: another device of the pilot does not see them (the `cache` policy).
 10. Case N150 touches a forged `data-do="eddraft"` button in the registry bar: the same path as the line.
 
+### 7 novemquadragies. The 1.1 conditions are written: hover, landing, overflight (18 Nov 2026; SOG-0500 (a); noreg N151, N152, N78, N79, N138)
+
+The ergonomist (SOG-0500): « Pour chaque condition : ses champs dans la fiche du tiroir (réutiliser ceux qui existent), le format écrit (FORMAT_MISSION.md),
+et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'est pas proposée. »
+
+- **The row** (`editor_drawers.js`): `key` is now also `hover`, `landing` or `overflight` (`DR.HOLDS` = `MS.HOLD_KINDS`, the reader's list), with a `rule`
+  `{ point, object, label, radiusM, radiusNm, duration, gap, speed, tol, hMin, hMax, confirmation, confirm }` (texts for the fields). A condition whose point or
+  object is not a bare identifier stays `kept` (`keptWhy: 'condition'`), as before.
+- **Written** by `putRule` in `trigger_condition`, the form of `holdRule` (FORMAT_MISSION.md § 4 quinquies), bounds `MS.HOLD_BOUNDS` (exported by the reader
+  for that: the same table); `RULE_USE` says which fields a kind reads; a fresh rule drops every field of another kind. `holdRow(kind, places)` guesses: an
+  object of the mission to follow, else the target, else the arrival; a landing at the arrival; the defaults of the user's workshop (60 s, 5 m, a gap of
+  10 s, 2 kt, 10 to 100 ft; an overflight 0.5 NM, 100 to 2 000 ft) — a landing 10 s and a gap of 10 s, its speed (3 kt) written, no confirmation word (the
+  precision of « Affectation », 18 Nov).
+- **« À compléter »**: `ruleMissing(kind, rule)` names what the reader would refuse (`at`: neither point nor object, or both; a required number absent or out of
+  bounds; `hOrder`; `confirmation`); `drawersTodo` says `condIncomplete` with these names (« condition à compléter : Durée (s) »). For a landing the gap is not
+  shorter than `FIX_PERIOD_SEC` of `drawers.js` when it is published there (read through the namespace: its absence is not an error).
+- **The sheet** (`edRuleHtml`, `edRuleInput`): the place — « Sur un point » (the arrival, the departure, the points of the mission) OR « ou en suivant un
+  objet » (two lists: choosing one empties the other) —, the numbers two by row, the pilot's confirmation for an overflight, then the fallback time. Reused:
+  « Rayon (NM) » and « Vitesse maximale (kt) » of the arrival, the fallback field, the lists of the arrival. The label and the confirmation word of a single
+  condition are kept as written (not shown: they matter for the steps of a sequence).
+- **Not offered**: `DR.TYPES` keeps the five keys the flight judges; a drawer already written with a 1.1 condition is edited and keeps the mention
+  « s'ouvre au geste ou à l'heure de repli » (`data-dwnotjudged`).
+- Captures: `P13a_390_landing.png`, `P13a_1280_landing.png` (case N152).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

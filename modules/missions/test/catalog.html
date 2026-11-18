@@ -111,9 +111,9 @@
     speed_max_kt: 30
   }), big.bricks.map(b => [b.fallback, b.params]));
   const hover = C.readCatalog(file(
-    '  - { id: h1, family: SAR, key: hover, title: "Stationnaire", brief: "b" }\n  - { id: h2, family: "x/y", key: zone, title: "Z", brief: "b" }\n'
+    '  - { id: h1, family: SAR, key: teleport, title: "Téléportation", brief: "b" }\n  - { id: h2, family: "x/y", key: zone, title: "Z", brief: "b" }\n'
   ), Y);
-  ck('une clé que l\'atelier n\'écrit pas encore (hover) et une famille sans sa forme : écartées', hover.bricks.length === 0 && hover
+  ck('une clé que l\'atelier ne connaît pas (teleport) et une famille sans sa forme : écartées', hover.bricks.length === 0 && hover
     .dropped === 2, hover);
   ck('une ancre YAML (« &a » / « *a ») : refusé entier (« alias »)', C.readCatalog(
     'version: 1\nbricks:\n  - &a { id: a1, family: SAR, key: zone, title: "A", brief: "b" }\n  - *a\n', Y).why === 'alias', '');

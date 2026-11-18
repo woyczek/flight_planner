@@ -14,7 +14,15 @@
 //
 // API :
 //   KEYS : les clés que l'atelier édite — hand (le geste du pilote seul), time (l'heure : un point et un délai), zone (une zone de
-//     passage), object (un objet à trouver), arrival (l'arrivée au terrain).
+//     passage), object (un objet à trouver), arrival (l'arrivée au terrain) ; et les conditions de la version 1.1 (SOG-0500) : hover
+//     (un stationnaire), landing (un poser), overflight (un survol) — HOLDS, une règle chacune (`rule` de la ligne), écrite dans
+//     `trigger_condition` sous la forme exacte que le lecteur lit (holdRule de frame/lib/mission.js), avec SES bornes (MS.HOLD_BOUNDS).
+//   blankRule() → une règle vide { point, object, label, radiusM, radiusNm, duration, gap, speed, tol, hMin, hMax, confirmation,
+//     confirm } (des textes pour les champs ; confirm : un booléen) ; holdRow(kind, places) → la règle qu'une sorte devine (un objet
+//     de la mission à suivre, sinon la cible, sinon l'arrivée ; un poser : l'arrivée ; les valeurs par défaut de l'atelier de
+//     l'utilisateur : 60 s, 5 m…). RULE_USE : les champs qu'une sorte lit. ruleMissing(kind, rule) → les champs à compléter
+//     (['at'] : ni point ni objet, ou les deux ; un nombre exigé absent ou hors bornes ; 'hOrder' : hauteur minimale au-dessus de la
+//     maximale ; 'confirmation' : un mot qui n'en est pas un) — [] pour une règle que le lecteur lira.
 //   TYPES : ce que le choix du type propose (SOG-0467 : « ＋ Tiroir » et la clé d'un tiroir, LE MÊME choix) — [{ key, judged }] dans
 //     l'ordre, une liste à allonger (sous « ＋ Tiroir », les briques du catalogue — catalog.js — s'y ajoutent, chacune une de ces clés) ;
 //     `judged` faux : une sorte que le vol ne juge pas encore (l'écran
@@ -23,7 +31,8 @@
 //     lieux, l'arrivée au terrain d'arrivée (1 NM, 30 kt, posé), l'heure après le décollage.
 //   drawerRowsOf(doc) → [{ i (la place dans `phases`, -1 pour une ligne ajoutée), id (B à M, donné, jamais saisi), title, said (la clé
 //     dite en clair, `trigger`), message, brief, key (une de KEYS, ou 'kept'), keptWhy, point, delay, zone, shown, object, arrPoint,
-//     arrRadius, arrSpeed, arrGround, stops [identifiants], fallback, route [identifiants] }] — les nombres en texte, pour les champs.
+//     arrRadius, arrSpeed, arrGround, stops [identifiants], rule (la règle d'une condition HOLDS), fallback, route [identifiants] }] —
+//     les nombres en texte, pour les champs.
 //     key 'kept' : une clé que l'atelier n'édite pas encore, MONTRÉE et GARDÉE telle quelle — keptWhy : 'several' (plusieurs clés
 //     écrites), 'inPart' (une zone ou un objet écrits dans la partie), 'actor' (une cible franchit la zone), 'condition' (une condition
 //     de la version 1.1 de l'atelier), 'escort' (une arrivée après un suivi). Choisir une autre clé la remplace (withKey).
@@ -34,23 +43,58 @@
 //     garde sa lettre jusqu'à l'enregistrement : les carnets des pilotes la citent) ; à défaut la première que les lignes ne portent pas.
 //   withDrawerRows(doc, rows) → un NOUVEAU document : les parties gardées dans l'ordre du fichier (une ligne retirée : sa partie part ;
 //     les rangs se resserrent, les identifiants restent), les lignes ajoutées à la fin ; douze tiroirs au plus.
-//   drawersTodo(doc) → [{ key, name (le rang) }] : ce qu'un tiroir a « à compléter », jamais bloquant — noMessage, noBrief, noFallback
-//     (une clé qui regarde l'avion sans heure de repli), keyUnread (une clé que le lecteur ne sait pas lire : le tiroir ne s'ouvre
-//     qu'à la main), routeUnknown (sa suite de route cite un lieu absent).
+//   drawersTodo(doc) → [{ key, name (le rang), what? }] : ce qu'un tiroir a « à compléter », jamais bloquant — noMessage, noBrief,
+//     noFallback (une clé qui regarde l'avion sans heure de repli), condIncomplete (une condition dont la règle n'est pas complète :
+//     `what`, les champs de ruleMissing — le lecteur la refuserait), keyUnread (une clé que le lecteur ne sait pas lire : le tiroir ne
+//     s'ouvre qu'à la main), routeUnknown (sa suite de route cite un lieu absent).
 import * as MS from '../../frame/lib/mission.js';
+import * as DW from './drawers.js'; // lu, jamais modifié : la période d'un relevé du vol (FIX_PERIOD_SEC, quand Affectation la publie)
 import {
   cut
 } from './editor.js'; // « un texte d'une ligne, sans caractère invisible, borné » : la définition unique est celle de l'atelier
 
-const B = MS.DRAWER_BOUNDS;
-export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival']);
-/** Les sortes que le choix du type propose (voir l'en-tête) : les clés que l'atelier sait écrire, dans l'ordre de KEYS. */
-export const TYPES = Object.freeze(KEYS.map(key => Object.freeze({
+const B = MS.DRAWER_BOUNDS,
+  H = MS.HOLD_BOUNDS;
+/** Les conditions de maintien et de survol (version 1.1) que l'atelier écrit : la liste du lecteur. */
+export const HOLDS = MS.HOLD_KINDS;
+export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival', ...HOLDS]);
+/** Les sortes que le choix du type propose (voir l'en-tête) : les cinq clés jugées en vol, dans l'ordre de KEYS. Une condition de la
+ *  version 1.1 n'y est pas (SOG-0500 : le vol ne la juge pas encore) ; un tiroir déjà écrit avec elle s'édite. */
+export const TYPES = Object.freeze(KEYS.slice(0, 5).map(key => Object.freeze({
   key,
   judged: true
 })));
 /** Les clés qui regardent l'avion : elles ont une heure de repli. */
-const LIVE = new Set(['zone', 'object', 'arrival', 'kept']);
+const LIVE = new Set(['zone', 'object', 'arrival', 'kept', ...HOLDS]);
+/** Les nombres d'une règle : le champ de la ligne → [le champ du fichier, ses bornes — celles du lecteur]. */
+const RULE_NUM = Object.freeze({
+  radiusM: ['radius_m', H.radiusM],
+  radiusNm: ['radius_nm', H.radiusNm],
+  duration: ['duration_sec', H.durationSec],
+  gap: ['max_gap_sec', H.maxGapSec],
+  speed: ['speed_max_kt', H.landingSpeedKt],
+  tol: ['speed_tolerance_kt', H.speedToleranceKt],
+  hMin: ['height_min_ft', H.heightFt],
+  hMax: ['height_max_ft', H.heightFt]
+});
+/** Les champs qu'une sorte de règle lit (holdRule du lecteur) ; le libellé et le mot de confirmation valent pour toutes. */
+export const RULE_USE = Object.freeze({
+  hover: Object.freeze(['point', 'object', 'radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax', 'label', 'confirmation']),
+  // un poser n'a pas de mot de confirmation (Affectation, 18 nov. : le vol le jugera sans) — un mot déjà écrit reste tel quel
+  landing: Object.freeze(['point', 'object', 'radiusM', 'duration', 'gap', 'speed', 'label']),
+  overflight: Object.freeze(['point', 'object', 'radiusNm', 'hMin', 'hMax', 'confirm', 'label', 'confirmation'])
+});
+/** Les nombres qu'une sorte de règle exige : sans l'un d'eux, ou hors de ses bornes, le lecteur la refuse. */
+const RULE_NEED = Object.freeze({
+  hover: ['radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax'],
+  // la vitesse d'un poser est écrite (le lecteur prend 3 kt sans elle ; Affectation veut une règle complète)
+  landing: ['radiusM', 'duration', 'gap', 'speed'],
+  overflight: ['radiusNm', 'hMin', 'hMax']
+});
+/** Les champs du fichier qu'une règle porte (une règle neuve, ou d'une autre sorte, les perd tous avant d'écrire les siens). */
+const RULE_FILE = ['point', 'object', 'label', 'radius_m', 'radius_nm', 'duration_sec', 'max_gap_sec', 'speed_max_kt',
+  'speed_tolerance_kt', 'height_min_ft', 'height_max_ft', 'confirmation', 'require_confirmation'
+];
 /** Les champs du fichier qui portent une clé. */
 const KEY_FIELDS = ['trigger_zone', 'zone_shown', 'trigger_actor', 'trigger_object', 'trigger_condition', 'trigger_point',
   'trigger_delay_min'
@@ -79,6 +123,97 @@ const tokens = (v, max) => (Array.isArray(v) ? v : []).slice(0, max).map(token).
 /** Les parties du fichier, comme le lecteur les lit : une liste, ou un objet seul. */
 const phasesOf = d => Array.isArray(d.phases) ? d.phases : isObj(d.phases) ? [d.phases] : [];
 
+/** Une règle vide (voir l'en-tête) : le survol demande la confirmation du pilote par défaut, comme le lecteur. */
+export const blankRule = () => ({
+  point: '',
+  object: '',
+  label: '',
+  radiusM: '',
+  radiusNm: '',
+  duration: '',
+  gap: '',
+  speed: '',
+  tol: '',
+  hMin: '',
+  hMax: '',
+  confirmation: '',
+  confirm: true
+});
+
+/** Une règle du fichier en champs (une condition, ou une étape d'une suite) ; null quand son lieu n'est pas un identifiant nu (une
+ *  position écrite dans la règle : la clé est gardée telle quelle). */
+function ruleOf(c) {
+  if (!isObj(c) || has(c.point) && !scalar(c.point) || has(c.object) && !scalar(c.object)) return null;
+  const r = blankRule();
+  r.point = has(c.point) ? cut(c.point, 40) : '';
+  r.object = has(c.object) ? cut(c.object, 40) : '';
+  r.label = cut(c.label, B.title);
+  for (const [f, [k]] of Object.entries(RULE_NUM)) r[f] = numText(c[k]);
+  r.confirmation = scalar(c.confirmation) ? cut(c.confirmation, 24) : '';
+  r.confirm = yes(c.require_confirmation, true);
+  return r;
+}
+
+/** La règle qu'une sorte devine (voir l'en-tête) ; `places` : les lignes des Lieux de la séance. */
+export function holdRow(kind, places = []) {
+  const first = k => (Array.isArray(places) ? places : []).find(p => p && p.id && p.kind === k)?.id || '',
+    obj = first('object'),
+    at = kind === 'landing' ? {
+      point: 'DESTINATION'
+    } : obj ? {
+      object: obj
+    } : {
+      point: first('target') || 'DESTINATION'
+    },
+    nums = kind === 'hover' ? {
+      radiusM: '5',
+      duration: '60',
+      gap: '10',
+      tol: '2',
+      hMin: '10',
+      hMax: '100'
+    } : kind === 'landing' ? {
+      radiusM: '5',
+      duration: '10', // Affectation, 18 nov. : dix secondes posé, un trou de dix secondes toléré
+      gap: '10',
+      speed: String(H.landingSpeedDefault)
+    } : {
+      radiusNm: '0.5',
+      hMin: '100',
+      hMax: '2000'
+    };
+  return {
+    ...blankRule(),
+    ...at,
+    ...nums
+  };
+}
+
+/** Le plus court trou de relevés qu'un poser tolère : la période d'un relevé du vol (DW.FIX_PERIOD_SEC, lue par l'espace de noms : son
+ *  absence n'est pas une erreur), jamais sous la borne du lecteur. */
+function landingGapMin() {
+  const p = DW.FIX_PERIOD_SEC;
+  return Number.isFinite(p) ? Math.max(p, H.maxGapSec[0]) : H.maxGapSec[0];
+}
+
+/** Les champs à compléter d'une règle (voir l'en-tête) : les bornes et les exigences du lecteur, jamais d'autres ; pour un poser, la
+ *  période d'un relevé du vol aussi (landingGapMin). */
+export function ruleMissing(kind, rule) {
+  const r = isObj(rule) ? rule : {},
+    out = [],
+    blank = v => String(v ?? '').trim() === '',
+    ok = f => within(r[f], ...RULE_NUM[f][1]) !== null;
+  if (blank(r.point) === blank(r.object)) out.push('at');
+  for (const f of RULE_NEED[kind] || [])
+    if (!ok(f)) out.push(f);
+  // un poser : le trou de relevés toléré n'est pas plus court que la période d'un relevé du vol (drawers.js, quand elle y est publiée ;
+  // sans elle, la borne du lecteur seule)
+  if (kind === 'landing' && ok('gap') && +r.gap < landingGapMin()) out.push('gap');
+  if (kind !== 'landing' && ok('hMin') && ok('hMax') && +r.hMin > +r.hMax) out.push('hOrder');
+  if (!blank(r.confirmation) && !MS.CONFIRM_WORD.test(String(r.confirmation).trim())) out.push('confirmation');
+  return out;
+}
+
 /** La clé d'une partie, en champs (voir l'en-tête). */
 function keyOf(p) {
   const f = {
@@ -93,7 +228,8 @@ function keyOf(p) {
       arrRadius: '',
       arrSpeed: '',
       arrGround: false,
-      stops: []
+      stops: [],
+      rule: blankRule()
     },
     written = ['trigger_zone', 'trigger_object', 'trigger_condition', 'trigger_point'].filter(k => has(p[k])),
     kept = why => ({
@@ -114,8 +250,18 @@ function keyOf(p) {
     object: cut(p.trigger_object, 40)
   } : kept('inPart');
   if (written[0] === 'trigger_condition') {
-    const c = p.trigger_condition;
-    if (!isObj(c) || cut(c.kind, 24).toLowerCase() !== 'arrival' || has(c.point) && !scalar(c.point)) return kept('condition');
+    const c = p.trigger_condition,
+      kind = isObj(c) ? cut(c.kind, 24).toLowerCase() : '';
+    // SOG-0500 : un stationnaire, un poser, un survol — leurs champs, la règle lue comme le lecteur la lit
+    if (HOLDS.includes(kind)) {
+      const rule = ruleOf(c);
+      return rule ? {
+        ...f,
+        key: kind,
+        rule
+      } : kept('condition');
+    }
+    if (!isObj(c) || kind !== 'arrival' || has(c.point) && !scalar(c.point)) return kept('condition');
     if (has(c.escort_min_sec) && +c.escort_min_sec !== 0) return kept('escort');
     return {
       ...f,
@@ -176,6 +322,7 @@ export function withKey(row, key) {
     arrSpeed: '',
     arrGround: false,
     stops: [],
+    rule: blankRule(),
     fallback: LIVE.has(k) ? String(r.fallback ?? '') : ''
   };
 }
@@ -196,6 +343,8 @@ export function keyed(row, key, places = []) {
       arrGround: true
     } : key === 'time' ? {
       point: 'ORIGIN'
+    } : HOLDS.includes(key) ? {
+      rule: holdRow(key, places)
     } : {})
   };
 }
@@ -250,8 +399,32 @@ function routeFrom(words, before, max) {
   });
 }
 
-/** Les champs de la clé d'une ligne, écrits dans une partie : `diff` — les champs changés (tous pour une clé neuve). */
-function putKey(o, r, diff) {
+/** Une règle écrite dans une condition (ou une étape) `c`, sous la forme que le lecteur lit : `was` — la règle d'avant (seuls ses
+ *  champs changés s'écrivent), ou null pour une règle neuve (les champs d'une autre sorte partent tous, ceux de la sienne s'écrivent).
+ *  Un nombre hors des bornes du lecteur n'est jamais écrit ; un point et un objet ne sont jamais écrits ensemble. */
+function putRule(c, kind, rule, was) {
+  const r = isObj(rule) ? rule : blankRule(),
+    w = isObj(was) ? was : null;
+  if (!w)
+    for (const k of RULE_FILE) delete c[k];
+  for (const f of RULE_USE[kind] || []) {
+    if (w && text(r[f]) === text(w[f])) continue;
+    if (f === 'point' || f === 'object') {
+      putText(c, f, scalar(r[f]) ? r[f] : '', 40); // un identifiant nu, jamais une liste ni un objet
+      if (c[f]) delete c[f === 'point' ? 'object' : 'point'];
+    } else if (f === 'label') putText(c, 'label', r.label, B.title);
+    else if (f === 'confirmation') {
+      const word = cut(r.confirmation, 24);
+      if (MS.CONFIRM_WORD.test(word)) c.confirmation = word;
+      else delete c.confirmation;
+    } else if (f === 'confirm') c.require_confirmation = r.confirm !== false;
+    else putNumber(c, RULE_NUM[f][0], r[f], ...RULE_NUM[f][1]);
+  }
+}
+
+/** Les champs de la clé d'une ligne, écrits dans une partie : `diff` — les champs changés (tous pour une clé neuve) ; `was` — la ligne
+ *  d'avant (null pour une clé neuve). */
+function putKey(o, r, diff, was = null) {
   const ch = f => diff.includes(f);
   if (r.key === 'time') {
     if (ch('point')) putText(o, 'trigger_point', r.point, 40);
@@ -280,16 +453,27 @@ function putKey(o, r, diff) {
       else delete c.required_points;
     }
     o.trigger_condition = c;
+  } else if (HOLDS.includes(r.key) && ch('rule')) {
+    // SOG-0500 : { kind, point | object, radius_m…, height_max_ft } — la forme de holdRule ; une autre clé de la condition reste
+    const c = {
+      ...(isObj(o.trigger_condition) ? o.trigger_condition : {}),
+      kind: r.key
+    };
+    putRule(c, r.key, r.rule, was && was.key === r.key ? was.rule : null);
+    o.trigger_condition = c;
   }
 }
 
 /** Les champs d'une ligne qui se comparent (une liste par sa forme écrite). */
 const FIELDS = ['title', 'said', 'message', 'brief', 'key', 'point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius',
   'arrSpeed',
-  'arrGround', 'stops', 'fallback', 'route'
+  'arrGround', 'stops', 'rule', 'fallback', 'route'
 ];
-const KEY_OF = ['point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stops'];
-const text = v => Array.isArray(v) ? JSON.stringify(v.map(x => String(x ?? ''))) : String(v ?? '');
+const KEY_OF = ['point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stops', 'rule'];
+/** La forme écrite d'un champ, pour comparer : une liste ou une règle par leur JSON, le reste en texte. */
+function text(v) {
+  return Array.isArray(v) ? JSON.stringify(v.map(x => isObj(x) ? x : String(x ?? ''))) : isObj(v) ? JSON.stringify(v) : String(v ?? '');
+}
 
 /** Le document avec ses tiroirs retouchés (voir l'en-tête). */
 export function withDrawerRows(doc, rows) {
@@ -312,7 +496,7 @@ export function withDrawerRows(doc, rows) {
       if (diff.includes('key') && KEYS.includes(r.key)) {
         for (const k of KEY_FIELDS) delete o[k];
         putKey(o, r, KEY_OF);
-      } else if (r.key !== 'kept') putKey(o, r, diff);
+      } else if (r.key !== 'kept') putKey(o, r, diff, was);
       // l'heure de repli saisie s'écrit quelle que soit la clé (withKey la vide pour une clé qui ne regarde pas l'avion)
       if (diff.includes('fallback')) putNumber(o, 'fallback_delay_min', r.fallback, 0, B.delayMin, true);
       if (diff.includes('route')) {
@@ -363,13 +547,22 @@ export function drawersTodo(doc) {
   } catch {
     return out; // un fichier que le lecteur ne lit pas : rien à dire ici (l'ouverture l'a déjà refusé)
   }
+  const rows = drawerRowsOf(d);
   for (const x of m?.drawers || []) {
     const name = String(x.rank),
       add = key => out.push({
         key,
         name
-      });
-    if (x.keyWhy && x.keyWhy !== 'several') add('keyUnread');
+      }),
+      row = rows.find(r => r.id === x.id),
+      miss = row && HOLDS.includes(row.key) ? ruleMissing(row.key, row.rule) : [];
+    // SOG-0500 : une règle incomplète dit CE qui manque (le lecteur la refuserait : le tiroir ne s'ouvrirait qu'à la main)
+    if (miss.length) out.push({
+      key: 'condIncomplete',
+      name,
+      what: miss
+    });
+    else if (x.keyWhy && x.keyWhy !== 'several') add('keyUnread');
     else if (['zone', 'object', 'arrival', 'condition'].includes(x.key.kind) && x.key.fallbackMin === null) add('noFallback');
     if (!x.message) add('noMessage');
     if (!x.brief) add('noBrief');

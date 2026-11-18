@@ -41,6 +41,8 @@
 //     keyWhy : '' | 'several' | 'zone' | 'object' | 'actor' | 'condition' | 'point' | 'delay' ; condition : le genre de trigger_condition
 //     écrit ; emits : { id, to } (le message envoyé aux autres équipages à l'ouverture) ou null ; route : la suite de route en points résolus (la forme de missionFlight) — jamais dans turns, routeNm ni missionFlight.
 //   OBJECT_KINDS, DRAWER_IDS, DRAWER_BOUNDS : les genres d'objet (liste fermée), les identifiants des tiroirs, les bornes de lecture.
+//   HOLD_KINDS, HOLD_BOUNDS, CONFIRM_WORD, EVENT_ID : les conditions de maintien et de survol (1.1), les bornes de leurs nombres, la
+//     forme d'un mot de confirmation et d'un identifiant d'événement — LES règles de lecture, que l'atelier reprend pour écrire (SOG-0500).
 //   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1, cible qui franchit, objet mobile, suivi).
 //   passageMin(mission, pointId) → { nm, min | null } : la distance et le temps estimé du départ au passage d'un point de la partie A
 //     ('ORIGIN' : 0) ; null si le point n'est pas dans la route de la partie A.
@@ -381,10 +383,25 @@ function objectKey(v, resolve) {
   };
 }
 
-/** Les conditions de maintien et de survol de l'atelier (version 1.1). */
-const HOLD_KINDS = Object.freeze(['hover', 'landing', 'overflight']);
+/** Les conditions de maintien et de survol de l'atelier (version 1.1) — exportées : l'atelier les écrit (editor_drawers.js). */
+export const HOLD_KINDS = Object.freeze(['hover', 'landing', 'overflight']);
 /** L'identifiant d'un événement entre équipages, d'un destinataire : un mot court, jamais un texte libre. */
-const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/;
+export const EVENT_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/;
+/** Le mot d'une confirmation demandée au pilote dans une règle (« deploy », « recover ») : un mot court, jamais un texte libre. */
+export const CONFIRM_WORD = /^[a-z][a-z0-9_]{0,23}$/;
+/** Les bornes d'une règle de maintien ou de survol, [min, max] : LES bornes, lues ici et écrites par l'atelier (SOG-0500) — rayon (m)
+ *  d'un maintien, rayon (NM) d'un survol, durée (s), lacune de relevés (s), vitesse maximale d'un poser (kt ; 3 sans valeur),
+ *  tolérance de vitesse d'un stationnaire (kt), hauteurs (ft). */
+export const HOLD_BOUNDS = Object.freeze({
+  radiusM: Object.freeze([0.1, 10000]),
+  radiusNm: Object.freeze([0.001, 100]),
+  durationSec: Object.freeze([1, 3600]),
+  maxGapSec: Object.freeze([0.1, 60]),
+  landingSpeedKt: Object.freeze([0, 50]),
+  landingSpeedDefault: 3,
+  speedToleranceKt: Object.freeze([0, 100]),
+  heightFt: Object.freeze([0, 60000])
+});
 
 /** Une règle de maintien (hover : stationnaire ; landing : poser) ou de survol (overflight) de l'atelier → { kind, label, point, at,
  *  object, radiusM, radiusNm, durationSec, maxGapSec, speedMaxKt, speedToleranceKt, heightMinFt, heightMaxFt, confirmation, confirm } —
@@ -401,21 +418,22 @@ function holdRule(c, place, object) {
     opt = (v, lo, hi, dflt) => v === undefined || v === null ? dflt : within(v, lo, hi),
     over = kind === 'overflight',
     hover = kind === 'hover',
+    H = HOLD_BOUNDS,
     r = {
       kind,
       label: cut(c.label, 120),
       point: pid ? ROUTE_END.has(pid) ? 'DESTINATION' : ROUTE_START.has(pid) ? 'ORIGIN' : pid : null,
       at,
       object: obj,
-      radiusM: over ? null : within(c.radius_m, 0.1, 10000),
-      radiusNm: over ? within(c.radius_nm, 0.001, DRAWER_BOUNDS.rangeNm) : null,
-      durationSec: over ? null : within(c.duration_sec, 1, 3600),
-      maxGapSec: over ? null : within(c.max_gap_sec, 0.1, 60),
-      speedMaxKt: kind === 'landing' ? opt(c.speed_max_kt, 0, 50, 3) : null,
-      speedToleranceKt: hover ? within(c.speed_tolerance_kt, 0, 100) : null,
-      heightMinFt: kind === 'landing' ? null : within(c.height_min_ft, 0, DRAWER_BOUNDS.feet),
-      heightMaxFt: kind === 'landing' ? null : within(c.height_max_ft, 0, DRAWER_BOUNDS.feet),
-      confirmation: /^[a-z][a-z0-9_]{0,23}$/.test(String(c.confirmation ?? '')) ? String(c.confirmation) : '',
+      radiusM: over ? null : within(c.radius_m, ...H.radiusM),
+      radiusNm: over ? within(c.radius_nm, ...H.radiusNm) : null,
+      durationSec: over ? null : within(c.duration_sec, ...H.durationSec),
+      maxGapSec: over ? null : within(c.max_gap_sec, ...H.maxGapSec),
+      speedMaxKt: kind === 'landing' ? opt(c.speed_max_kt, ...H.landingSpeedKt, H.landingSpeedDefault) : null,
+      speedToleranceKt: hover ? within(c.speed_tolerance_kt, ...H.speedToleranceKt) : null,
+      heightMinFt: kind === 'landing' ? null : within(c.height_min_ft, ...H.heightFt),
+      heightMaxFt: kind === 'landing' ? null : within(c.height_max_ft, ...H.heightFt),
+      confirmation: CONFIRM_WORD.test(String(c.confirmation ?? '')) ? String(c.confirmation) : '',
       confirm: over ? yes(c.require_confirmation, true) : false
     },
     need = over ? ['radiusNm', 'heightMinFt', 'heightMaxFt'] : hover ? ['radiusM', 'durationSec', 'maxGapSec', 'speedToleranceKt',
