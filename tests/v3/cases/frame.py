@@ -6646,6 +6646,41 @@ def a282(c):
     c.check_errors()
 
 
+@case('A283', 'Settings laid over a module that reload the page (ctx.reloadApp: the language) open again over THE SAME module: Escape closes them back onto it; a fresh #settings, an old or invalid note open Settings alone as before (SOG-0484, part 2)', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0484 part 2 (the ergonomist: after the language change, Escape in Settings led nowhere — the page came back at #settings with no module under it): reloadApp notes, in sessionStorage, the address of the module under the frame screen and the address of the screen (its card included); the next load, if it comes at that address within 30 s, mounts the module as an ordinary route, then opens the screen over it by the path of a click (location.hash); the note serves once, is validated (a module of this application under, a frame screen over) and never read as HTML or as a free address')
+def a283(c):
+    c.page.add_init_script("Object.defineProperty(navigator, 'serviceWorker', { get: () => undefined })")
+    over_ok = "!!document.querySelector('#fView > .f-screen [data-card]') && !!document.querySelector('#fView > [data-module=fuel]')"
+    c.open('fuel')
+    c.js("() => { location.hash = '#settings?card=display' }")
+    c.until(over_ok, timeout=20000, what='Settings open over Fuel')
+    with c.page.expect_navigation(wait_until='load', timeout=20000):
+        c.js("() => window.SogFrame.reloadApp('reload: language')")
+    c.until(over_ok, timeout=20000, what='after the reload: Settings over Fuel again')
+    c.eq(c.js("() => [location.hash, sessionStorage.getItem('sog-frame-over')]"), ['#settings?card=display', None],
+         'after the reload: the same Settings address (its card), the note is taken', what='address and note')
+    c.page.keyboard.press('Escape')
+    c.until("!document.querySelector('#fView > .f-screen') && location.hash.startsWith('#fuel')", timeout=10000, what='Escape closes Settings')
+    c.eq(c.js("() => [location.hash, !!document.querySelector('#fView > [data-module=fuel]')]"), ['#fuel', True], 'Escape: back onto Fuel, still mounted', what='back on the module')
+    # what does NOT bring a module back: no note (a fresh #settings), a note older than 30 s, notes that are not addresses of this application
+    url = f'{c.base}/frame/index.html#settings'
+    alone = "!!document.querySelector('#fView [data-card]') && !document.querySelector('[data-module]') && !document.querySelector('#fView > .f-screen')"
+    notes = [('no note', None),
+             ('a note older than 30 s', {'t': 'OLD', 'under': '#fuel', 'at': '#settings'}),
+             ('a module that does not exist', {'t': 'NOW', 'under': '#nothing', 'at': '#settings'}),
+             ('text that is not an address', {'t': 'NOW', 'under': '#fuel"><img src=x onerror=alert(1)>', 'at': '#settings'}),
+             ('a free address', {'t': 'NOW', 'under': 'https://example.org/#fuel', 'at': '#settings'}),
+             ('another address over it', {'t': 'NOW', 'under': '#fuel', 'at': '#help'})]
+    for what, note in notes:
+        c.js("(n) => { if (n) { n.t = n.t === 'OLD' ? Date.now() - 31000 : Date.now(); sessionStorage.setItem('sog-frame-over', JSON.stringify(n)) } else sessionStorage.removeItem('sog-frame-over') }", note)
+        c.page.goto('about:blank')
+        c.page.goto(url, wait_until='load')
+        c.until(alone, timeout=20000, what=f'{what}: Settings alone')
+        c.eq(c.js("() => [location.hash, sessionStorage.getItem('sog-frame-over')]"), ['#settings', None], f'{what}: Settings alone at their address, as before; the note is dropped', what=what)
+    c.check_errors()
+
+
 @case('A134', 'A cause of reload that repeats does not reload more than twice: the third in ten seconds is refused, the page stays and says why (SOG-0209)', 'A',
       designs=('standard',), screens=False, night=False, langs4=True,
       rule='SOG-0209 (the user, 15:20: « refresh en boucle »): the reloads and redirects the frame makes itself (new version, redirect from one application to the other, moved screen) are noted in sessionStorage; the third in ten seconds without a gesture is refused — the page stays, a notification says « Chain of reloads stopped: <cause> », the cause is kept in the page diagnostic (page.reloads, window.SogFrame.reloads())')

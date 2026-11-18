@@ -5828,7 +5828,12 @@
     FD.holdRules(levelsP); // la première synchronisation attend les règles de fusion de tous les modules
     FD.start();
     await landing();
-    route();
+    // SOG-0484 (2) : rechargée par Réglages ouverts sur un module : le module d'abord, l'écran ensuite, par-dessus
+    const back = takeOver();
+    if (!back) return void route();
+    history.replaceState(history.state, '', back.under);
+    await route();
+    if (location.hash === back.under) location.hash = back.at; // le chemin d'un clic : hashchange → route → openOver
   }
   /** Maintenance s'ouvre sur l'assistant de l'administrateur (Réglages, #settings?card=assistant) tant que la compagnie
    *  n'est pas installée (§ 10.36, Réglages, 1er nov. 2026) : installée = data/ est un dépôt git avec un distant (lanceur :
@@ -5930,11 +5935,55 @@
       key: 'reload-loop'
     });
   }
+  /** Recharge la page sur le geste de l'utilisateur, par le cadre : noté comme un rechargement du cadre (le garde de boucle ne le prend pas pour un rechargement étranger, SOG-0484). */
+  const reloadApp = cause => selfNavigate(String(cause || 'reload: user'), () => {
+    noteOver();
+    location.reload();
+  });
+  // SOG-0484 (2) : un écran du cadre (Réglages) ouvert par-dessus un module qui recharge la page la rouvre par-dessus le MÊME module : reloadApp note l'adresse
+  // du module dessous et celle de l'écran (sa carte comprise) ; le chargement suivant, s'il arrive à cette adresse en moins de 30 s, monte d'abord le module
+  // comme un routage ordinaire, puis ouvre l'écran par le chemin d'un clic (location.hash). La note sert une fois ; un autre rechargement n'en pose pas.
+  const OVER_KEY = 'sog-frame-over',
+    OVER_MS = 30000,
+    // l'adresse d'un module de cette application : « #id » et une suite de requête simple, jamais un texte libre
+    UNDER_RE = /^#([a-z][a-z0-9_-]{0,40})(?:\?[\w%=&.,:+-]{0,200})?$/;
+  /** Au rechargement demandé par un geste : l'écran du cadre ouvert et le module dessous (rien sans les deux). */
+  function noteOver() {
+    try {
+      if (over && current && isModule(current.id)) sessionStorage.setItem(OVER_KEY, JSON.stringify({
+        t: Date.now(),
+        under: over.returnHash,
+        at: location.hash
+      }));
+      else sessionStorage.removeItem(OVER_KEY);
+    } catch {
+      /* stockage indisponible : la page rouvre l'adresse seule, comme avant */
+    }
+  }
+  /** Au démarrage : la note de noteOver, prise une seule fois ; rendue seulement si elle a moins de 30 s, que la page est à son adresse et que les deux adresses
+   *  sont valides (un module de cette application dessous, un écran du cadre dessus) ; null sinon. */
+  function takeOver() {
+    let n = null;
+    try {
+      n = sessionStorage.getItem(OVER_KEY);
+      sessionStorage.removeItem(OVER_KEY);
+      n = JSON.parse(n || 'null');
+    } catch {
+      return null; // stockage indisponible ou note illisible (déjà retirée)
+    }
+    if (!n || typeof n.under !== 'string' || typeof n.at !== 'string' || typeof n.t !== 'number') return null;
+    const age = Date.now() - n.t,
+      m = UNDER_RE.exec(n.under),
+      at = UNDER_RE.exec(n.at);
+    if (!(age >= 0 && age < OVER_MS) || !m || !at || n.at !== location.hash || !isModule(m[1]) || !SCREENS.includes(at[1])) return null;
+    return {
+      under: n.under,
+      at: n.at
+    };
+  }
+
   /** Le cadre recharge ou redirige la page : go() est appelé, sauf pour un rechargement sans geste (auto) qui serait le troisième en dix secondes
    *  (ou après un arrêt) : rend false, la page reste. cause : technique, en anglais (« redirect: elsewhere missions → company »). */
-  /** Recharge la page sur le geste de l'utilisateur, par le cadre : noté comme un rechargement du cadre (le garde de boucle ne le prend pas pour un rechargement étranger, SOG-0484). */
-  const reloadApp = cause => selfNavigate(String(cause || 'reload: user'), () => location.reload());
-
   function selfNavigate(cause, go, {
     auto = false
   } = {}) {

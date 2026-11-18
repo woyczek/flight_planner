@@ -1373,6 +1373,9 @@ itself born of a redirect of the frame (under 5 s) — and that would be the thi
 flight » three times in a row is not a loop): the
 page stays and says « Chain of reloads stopped: <cause> »; the cause is in the page diagnostic (`page.reloads`) and `window.SogFrame.reloads()`. A module never reloads the page
 (`location.reload` / `location.replace` of the page are the frame's: use `ctx.consume`, `location.hash`); an `elsewhere` table of an application (`APPS`) must have no cycle.
+A reload asked by a gesture (the language of Settings) goes through `reloadApp(cause)` (given to Settings, and `SogFrame.reloadApp`): it is noted as the frame's own, never
+counted as a loop (SOG-0484), and when Settings are laid over a module the page comes back with that module mounted and Settings over it, on the same card, so Escape returns to it
+(a note in `sessionStorage`, under 30 s, used once; A283).
 
 ### 15.5 The airline in the header (SOG-0213)
 
