@@ -59,6 +59,15 @@ const P = {
   move: '<path d="M12 3v18M9 6l3-3 3 3M9 18l3 3 3-3"/>',
   move4: '<path d="M12 2v20M2 12h20M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3"/>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>',
+  // outils de dessin de la carte (SOG-0471, l'atelier de missions) : sélection, point, tracé, zone ronde, zone en contour, objet, relief
+  pointer: '<path d="m4 4 6.5 17 2.6-7.4L20.5 11z"/>',
+  dot: '<circle cx="12" cy="12" r="5" fill="currentColor"/>',
+  route: '<circle cx="5" cy="18" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="19" cy="14" r="2"/><path d="m6 16.2 4.9-8.4M13.7 7.4l4.1 5.2"/>',
+  circle: '<circle cx="12" cy="12" r="9"/>',
+  polygon: '<path d="m12 3 8.6 6.2-3.3 10.1H6.7L3.4 9.2z"/>',
+  person: '<circle cx="12" cy="7" r="3.5"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/>',
+  mountain: '<path d="m3 20 6-11 4 6 2.5-4L21 20z"/>',
   cloud: '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
   // champs
   box: '<path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/>',

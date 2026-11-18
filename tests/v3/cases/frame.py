@@ -5585,6 +5585,22 @@ def a260(c):
     c.check_errors()
 
 
+@case('A286', 'The suite\'s icons for the map tools of the workshop (SOG-0471): pointer, dot, route, circle, polygon, person, redo, mountain exist in frame/lib/icons.js, in the style of the others (a 24 × 24 grid, a 2 px stroke, currentColor), as valid, harmless SVG', 'A',
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0471 (« Création de missions »: the tools of the workshop map as icons of the suite): frame/lib/icons.js had no pointer, dot, route, circle, polygon, person, redo and mountain; each is drawn on the same grid with the same stroke and takes the colour of the text (currentColor), and svg(name) is a well-formed SVG with no script or event attribute')
+def a286(c):
+    c.open('fuel', wait=False)
+    c.until("!!window.SogFrame", timeout=20000, what='the frame')
+    r = c.js("""async () => { const IC = await import('/frame/lib/icons.js'); const out = {};
+      for (const n of ['pointer', 'dot', 'route', 'circle', 'polygon', 'person', 'redo', 'mountain', 'undo', 'map']) {
+        const s = IC.svg(n, { size: 20 }); const d = new DOMParser().parseFromString(s, 'image/svg+xml'); const el = d.documentElement;
+        out[n] = [IC.has(n), el.nodeName === 'svg' && !d.querySelector('parsererror'), el.getAttribute('viewBox'), el.getAttribute('stroke'), el.getAttribute('data-i'), /on[a-z]+=|<script/i.test(s)] }
+      return out }""")
+    want = lambda n: [True, True, '0 0 24 24', 'currentColor', n, False]
+    c.eq({k: v for k, v in r.items()}, {n: want(n) for n in r}, 'each icon exists, is well-formed SVG on the 24 × 24 grid with currentColor, and carries no script or event attribute', what='icons')
+    c.check_errors()
+
+
 @case('A285', 'The Pilot page, opened as it is (no address, a flight planned, Fuel and the Map side by side on a wide screen), is still ALIVE after 30 s and no task of the page lasts more than five seconds (SOG-0493: the page froze for 3 to 7 minutes)', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0493 (the user: « freeze reproductible très facilement : il suffit d\'ouvrir la page pilote »): the page was frozen by a single task of 203 to 435 s a few seconds after it opened, and no case opened the page and waited; this one opens the Pilot page on a planned flight, lets it sit for 30 s, then asks it for a value (a frozen page does not answer) and reads the page\'s own long-task list: none of five seconds or more')
