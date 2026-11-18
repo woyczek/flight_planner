@@ -124,6 +124,7 @@ const STYLE = `[data-module="missions"] [data-pane="mission"].ms-sheet[data-assi
   [data-module="missions"] [data-pane="mission"].ms-sheet[data-assigning] .ms-first{display:block}
   [data-module="missions"] .ms-asbar{display:none}
   [data-module="missions"] .ms-asfields{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  [data-module="missions"] .ms-asfields>.f-field:last-child{grid-column:1/-1} /* l'Aéronef sur toute la largeur : « immatriculation (facultative) » entière */
 }`;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`),
   PATH = 'missions/affectations.json', // le seul document écrit
