@@ -1372,8 +1372,9 @@ def n33(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     reg_open(c, _BR_TEXTS)
     ch = lambda rid: c.js(f"""(() => {{ const x = document.querySelector('{R} [data-rowid="{rid}"] summary [data-choice]');
-      return x ? [x.querySelector('[data-dur]')?.dataset.dur || null, norm(x.querySelector('[data-dur]')?.textContent || ''), x.querySelector('[data-ac]')?.dataset.ac || null,
+      return x ? [x.querySelector('[data-dur]')?.dataset.dur || null, x.querySelector('[data-dur]')?.textContent || '', x.querySelector('[data-ac]')?.dataset.ac || null,
         !!x.querySelector('[data-theatre]')] : null }})()""")
+    ch = (lambda f: lambda rid: (lambda v: v if v is None else [v[0], norm(v[1]), v[2], v[3]])(f(rid)))(ch)  # norm is Python's, never the page's
     one = ch('X-901A')
     c.eq([one[0], one[2], one[3]], ['file', '1', False], 'X-901A: a duration computed at the speed of the file, one aircraft, no theatre known',
          what='X-901A')
