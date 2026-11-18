@@ -595,7 +595,12 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   touch on the bare map adds nothing and creates nothing; a place without an identifier says so in a notification.
 - **The map draws the onward route of the drawer chosen** (a second dashed line, `onward`, through its located places), beside the
   route of the departure.
-- **Not undone by « Annuler le geste »**, which gives back the places only: a place added to a route is removed by its chip.
+- **A place added to a route by a touch of the map is a gesture of the map** (the ergonomist's reading of 18 Nov: else the button
+  undoes the gesture before, while the author believes he undoes his last touch): « Annuler le geste » gives it back. The state
+  kept before each gesture (`edMapRemember`) is therefore the rows of the Lieux, the route of the departure, and what a gesture
+  changes of a drawer — its onward route, the zone or the object it cites (« Dessiner sur la carte »). **A retouch made in a sheet**
+  — a chip removed, « Ajouter un lieu… », a field of a drawer, like a typing in a place — **empties what the button keeps**: it
+  never undoes what was done in a sheet.
 - **Not done**: reordering the chips of a route (remove and add again); the landmarks of AeroDB (next), « Poser l'avion ici ».
 
 ### 8. What is NOT ported

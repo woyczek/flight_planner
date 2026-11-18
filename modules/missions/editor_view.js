@@ -791,13 +791,35 @@ function edMapRoute(s, e, i) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
   const token = ED.routeToken(edPlaces(e)[i]);
   if (!token) return s.ctx.notify?.(s.tt(EDTX.rtNoId), 'warn');
+  // un lieu ajouté par un toucher de la carte est un geste de la carte (l'ergonome, 18 nov.) : « Annuler le geste » le rend
   if (edSelDrawer(e)) {
     const r = edDrawerRow(e);
     if (!r) return;
     if (r.route.length >= ED.ROUTE_MAX) return s.ctx.notify?.(s.tt(EDTX.rtFull), 'warn');
+    edMapRemember(e);
     r.route = [...r.route, token];
-  } else if (!edRouteAdd(s, e, token)) return;
+  } else {
+    if (edRoute(e).length >= ED.ROUTE_MAX) return s.ctx.notify?.(s.tt(EDTX.rtFull), 'warn');
+    edMapRemember(e);
+    edRouteAdd(s, e, token);
+  }
   draw(s);
+}
+
+/** L'état que « Annuler le geste » garde AVANT un geste de la carte (createUndo du socle le clone) : les lignes des Lieux, la route du
+ *  départ, et ce qu'un geste de la carte change d'un tiroir — sa suite de route (Tracé), la zone ou l'objet qu'il cite (« Dessiner sur
+ *  la carte »). Vingt états au plus. */
+function edMapRemember(e) {
+  (e.mapUndo ||= createUndo(20)).push({
+    places: edPlaces(e),
+    route: e.route || null,
+    drawers: edDrawers(e).map(r => ({
+      id: r.id,
+      route: [...r.route],
+      zone: r.zone,
+      object: r.object
+    }))
+  });
 }
 
 /** Les lignes des Lieux de la séance, créées à la première retouche (comme l'étape « Lieux »). */
@@ -852,7 +874,7 @@ function edMapGesture(s, e, change, i, vertex = -1) {
   const before = edPlaces(e),
     after = change(before);
   if (after === before) return edRefresh(s);
-  (e.mapUndo ||= createUndo(20)).push(before);
+  edMapRemember(e);
   e.places = after;
   e.mapSel = i;
   e.mapVertex = vertex; // le sommet déplacé ou posé reste choisi (« Retirer ce sommet » le concerne)
@@ -885,7 +907,7 @@ function edMapPose(s, e, p) {
     s.ctx.notify?.(s.tt(EDTX.atPoseFull), 'warn');
     return edMapShow(s);
   }
-  (e.mapUndo ||= createUndo(20)).push(before);
+  edMapRemember(e);
   e.places = made.rows;
   const forDrawer = ['zone', 'object'].includes(kind) ? edDrawFor(e) : null;
   e.drawFor = '';
@@ -1104,6 +1126,7 @@ function edDrawerInput(s, ev) {
   if (list && ev.type !== 'change') return;
   const r = edDrawerRow(e);
   if (!r) return;
+  e.mapUndo?.clear(); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
   const at = e.drawers.indexOf(r),
     put = next => {
       e.drawers[at] = next;
@@ -1260,6 +1283,7 @@ function edInputDo(s, ev) {
     const token = String(ev.target.value || '').slice(0, 40);
     // seulement le jeton d'un lieu de la séance : une page forgée n'écrit pas un identifiant quelconque dans la route
     if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !(e.places || []).some(r => ED.routeToken(r) === token)) return;
+    e.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre (il ne défait jamais une saisie)
     edRouteAdd(s, e, token);
     return draw(s);
   }
@@ -1739,12 +1763,14 @@ function edClickDo(s, b) {
       const n = +b.dataset.n,
         route = edRoute(s.ed);
       if (Number.isInteger(n) && n >= 0 && n < route.length) s.ed.route = route.filter((_, k) => k !== n);
+      s.ed.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       return draw(s);
     }
     case 'eddrchipdel': { // un lieu retiré de la suite de route
       const r = edDrawerRow(s.ed),
         n = +b.dataset.n;
       if (r && Number.isInteger(n) && n >= 0) r.route = r.route.filter((_, i) => i !== n);
+      s.ed.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
       return draw(s);
     }
     case 'edtodo':
@@ -1780,7 +1806,7 @@ function edClickDo(s, b) {
         s.ctx.notify?.(s.tt(EDTX.atVertexMin), 'warn');
         return edMapShow(s);
       }
-      (e.mapUndo ||= createUndo(20)).push(before);
+      edMapRemember(e);
       e.places = after;
       e.mapVertex = -1;
       return draw(s);
@@ -1791,22 +1817,33 @@ function edClickDo(s, b) {
         before = edPlaces(e),
         after = before[i]?.poly ? ED.toRound(before, i) : ED.toContour(before, i);
       if (after === before) return s.ctx.notify?.(s.tt(EDTX.plShapeNeeds), 'warn');
-      (e.mapUndo ||= createUndo(20)).push(before);
+      edMapRemember(e);
       e.places = after;
       e.mapSel = i;
       e.mapVertex = -1;
       draw(s);
       return edMapFocus(e, i); // « Tracer son contour » cadre la vue sur la zone
     }
-    case 'edmapundo': { // « Annuler le geste » : les lignes des Lieux d'avant le dernier geste de la carte ; le lieu choisi le reste
-      // quand il existe encore à son rang (le même identifiant, la même sorte), sinon plus aucun
+    case 'edmapundo': { // « Annuler le geste » : l'état d'avant le dernier geste de la carte — les lignes des Lieux, la route du
+      // départ, la suite de route et la clé des tiroirs (edMapRemember) ; le lieu choisi le reste quand il existe encore à son rang
+      // (le même identifiant, la même sorte), sinon plus aucun
       const e = s.ed,
         was = (e.places || [])[edMapSel(e)],
-        rows = e.mapUndo?.undo();
-      if (!rows) return edMapShow(s);
-      const now = rows[edMapSel(e)],
+        snap = e.mapUndo?.undo();
+      if (!snap || !Array.isArray(snap.places)) return edMapShow(s);
+      const now = snap.places[edMapSel(e)],
         same = !!was && !!now && now.kind === was.kind && now.id === was.id;
-      e.places = rows;
+      e.places = snap.places;
+      e.route = Array.isArray(snap.route) ? snap.route : null;
+      if (e.drawers)
+        for (const d of snap.drawers || []) {
+          const r = e.drawers.find(x => x.id === d.id);
+          if (r) Object.assign(r, {
+            route: [...(d.route || [])],
+            zone: d.zone,
+            object: d.object
+          });
+        }
       if (!same) e.mapSel = -1;
       if (!same || e.placeEdit !== e.mapSel) e.placeEdit = -1;
       e.mapVertex = -1;

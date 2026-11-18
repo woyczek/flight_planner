@@ -4904,7 +4904,8 @@ _DWCHIPS = f"[...document.querySelectorAll('{_DW} [data-dwroute] [data-chip]')].
       'its identifier (the departure and the arrival by the code of their aerodrome), removed by its cross, added by « Ajouter un '
       'lieu… »; the tool « Tracé » of the map adds the place touched to the route chosen — the route of the departure, or the onward '
       'route of the drawer chosen in the unfolding — and STAYS in hand; a touch on the bare map adds nothing; the map draws the route '
-      'of the departure and the onward route of the drawer chosen; the file saved carries both routes',
+      'of the departure and the onward route of the drawer chosen; « Annuler le geste » gives back a place added to a route by a touch '
+      'of the map; the file saved carries both routes',
       'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0444, lot P2, push 3b (modules/missions/EDITOR.md § 2: « After a pose the tool goes back to Sélection (except Tracé, which '
       'adds places to the selected route until it is left) », § 3: « A route is a list of chips, filled by touching the map in Tracé… '
@@ -4945,6 +4946,18 @@ def n99(c):
     c.until(f"({_RTCHIPS}).length === 5", timeout=8000, what='the departure added by a touch on the map')
     c.eq([[x[0] for x in c.js(_RTCHIPS)], c.js(_EDTOOL_STATE)[2][:2]], [['ORIGIN', 'PT1', 'DESTINATION', 'PT2', 'ORIGIN'], ['route', 'true']],
          'two places touched joined the route, in order; the tool stayed in hand', what='traced')
+    # a place added to a route by a touch of the map IS a gesture of the map: « Annuler le geste » gives it back (the ergonomist, 18 Nov)
+    c.ok(c.js(_EDTOOL_STATE)[5] == ['edmapundo', None, False], c.js(_EDTOOL_STATE)[5], 'the two touches can be undone (the chips retouched in the sheet before them cannot)')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"({_RTCHIPS}).length === 4", timeout=8000, what='the last touch undone')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"({_RTCHIPS}).length === 3", timeout=8000, what='the touch before undone')
+    c.eq([[x[0] for x in c.js(_RTCHIPS)], c.js(_EDTOOL_STATE)[5], c.js(_EDTOOL_STATE)[2][:2]], [['ORIGIN', 'PT1', 'DESTINATION'], ['edmapundo', None, True], ['route', 'true']],
+         '« Annuler le geste » gave the two places back, the last first; nothing more to undo; the tool is still in hand', what='the route undone')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
+    c.until(f"({_RTCHIPS}).length === 4", timeout=8000, what='PT2 traced again')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [45.0, 1.0]))
+    c.until(f"({_RTCHIPS}).length === 5", timeout=8000, what='the departure traced again')
     n = len(c.js(_EDPLACE_IDS))
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
     c.wait(300)
@@ -4958,6 +4971,12 @@ def n99(c):
     c.until(f"({_DWCHIPS}).length === 2", timeout=8000, what='a place added to the onward route of drawer 2')
     c.ok(c.js(_DWCHIPS)[0] == 'PT2' and c.js(_DWCHIPS)[1] in ('ZONE-1', 'PT1') and 'onward' in c.js(_EDMAP_IDS, None), [c.js(_DWCHIPS), c.js(_EDMAP_IDS, None)],
          'the place touched joined the onward route of drawer 2; the map draws that onward route')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"({_DWCHIPS}).length === 1", timeout=8000, what='the place added to the onward route undone')
+    c.eq([c.js(_DWCHIPS), c.js(f"document.querySelector('{_DW}').dataset.drawer")], [['PT2'], 'C'], '« Annuler le geste » gives back the onward route of the drawer too; its sheet stays',
+         what='the onward route undone')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.25]))
+    c.until(f"({_DWCHIPS}).length === 2", timeout=8000, what='the place added again')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N99_1280_route.png')
     # the tool is left by taking it again
