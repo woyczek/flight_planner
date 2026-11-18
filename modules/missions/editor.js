@@ -60,6 +60,13 @@
 //   blocking(cadre, { rows, letter, own }) → [clé] : ce qui empêche d'enregistrer (famille, format de l'identifiant, lettre de la
 //     famille, identifiant déjà pris par une autre ligne) ; le reste n'est jamais bloquant.
 //   todo(doc) → [{ step, key, vars? }] : « À compléter » (jamais bloquant) ; vars : ce que le mot nomme (SOG-0439).
+//   L'atelier voilé (SOG-0459, « l'existence même des tiroirs est cachée par défaut, auteur compris ») : veiledAt(mode, fullView) →
+//     vrai quand une mission s'ouvre voilée — « edit » et « dup » sauf `fullView === true` strictement, jamais « new » ; un mode
+//     inconnu : voilé (échec fermé) ; veilHidden(doc) → ['zone:0', …] : les lignes des Lieux (sorte et place dans le fichier) que le
+//     pilote ne voit pas au départ (pilotRows(doc, lignes, 0)) — calculé à l'ouverture, il désigne les MÊMES entrées après un
+//     enregistrement (un lieu neuf va au bout de sa sorte, un lieu du fichier ne se retire pas sans dévoiler) ; veilRows(rows,
+//     hidden) → les lignes, une ligne cachée devenue null (les rangs ne bougent pas : un filtre d'affichage, jamais un retrait) ;
+//     veilTodo(doc, shown) → « À compléter » sans rien du caché (ni tiroir, ni lieu caché ; « à placer » des seules lignes montrées).
 //   stepState(doc, step) → 'ok' | 'todo'.
 //   regAdd(regDoc, entry) → { doc } | { error: 'taken' } ; regEdit(regDoc, idx, regId, cadre, path, now) → { doc } | { error: 'stale' }.
 //   yamlText(doc, Y, now) : le texte du fichier (en-tête daté, puis le document).
@@ -1359,17 +1366,19 @@ export function removePlace(rows, i, doc, asked = -1, sinceMs = Infinity) {
 }
 
 /** Un identifiant libre pour un lieu neuf de la sorte `kind` (zone, pt, rdv, object, target) : « ZONE-n », « PTn », « RDV-n », « OBJ-n », « TARGET » —
- *  le plus petit n qu'aucun lieu ne porte (compter les lignes donnait un identifiant déjà pris après un retrait : deux lieux sous le
- *  même nom, et des références qui ne savent plus lequel elles désignent). `base` : le fichier lu. */
+ *  n : le plus GRAND numéro de la sorte déjà porté, plus un (SOG-0459) — par les lignes de la séance et par les lieux du fichier lu
+ *  (`base`, cachés compris : renommé ou retiré dans la séance, un lieu du fichier est encore désigné sous ce nom jusqu'à
+ *  l'enregistrement). Un trou n'est jamais rebouché, donc un trou ne prouve rien : dans l'atelier voilé, « ZONE-2 » proposé ne
+ *  trahit pas une ZONE-1 cachée. Au-delà de 9 999 : '' (le lieu se nomme à la main). */
 export function nextPlaceId(rows, kind, base = null) {
   if (kind === 'target') return 'TARGET';
-  // ni un identifiant d'un lieu d'aujourd'hui, ni celui d'un lieu du fichier (renommé ou retiré dans la séance : ses références le
-  // désignent encore sous ce nom jusqu'à l'enregistrement)
-  const taken = new Set([...citedIds(rows), ...citedIds(placesOf(base))].map(x => x.key)),
-    name = n => kind === 'zone' ? `ZONE-${n}` : kind === 'rdv' ? `RDV-${n}` : kind === 'object' ? `OBJ-${n}` : `PT${n}`;
-  for (let n = 1; n <= PLACES_MAX * 4; n++)
-    if (!taken.has(name(n))) return name(n);
-  return '';
+  const prefix = kind === 'zone' ? 'ZONE-' : kind === 'rdv' ? 'RDV-' : kind === 'object' ? 'OBJ-' : 'PT',
+    form = new RegExp(`^${prefix}(\\d{1,4})$`),
+    top = [...citedIds(rows), ...citedIds(placesOf(base))].reduce((m, x) => {
+      const hit = form.exec(x.key);
+      return hit ? Math.max(m, +hit[1]) : m;
+    }, 0);
+  return top < 9999 ? `${prefix}${top + 1}` : '';
 }
 
 /** Le nombre de lieux qu'une route porte au plus (la borne des suites de route des tiroirs). */
@@ -1819,6 +1828,42 @@ export function uncited(doc) {
 }
 /** Plus de tiroirs qu'une mission n'en porte : « tous ouverts ». */
 const DRAWERS_ALL = 64;
+
+/** Une mission s'ouvre-t-elle voilée dans l'atelier (SOG-0459) ? « new » (Créer) : jamais — l'auteur l'écrit ; « edit » (Modifier) et
+ *  « dup » (Dupliquer), et tout autre mode : voilée, sauf `fullView === true` STRICTEMENT (la case « Voir le contenu complet des
+ *  missions » du registre ; toute autre valeur — absente, « true » en texte, 1 — voile : échec fermé). Ne dépend JAMAIS de ce que la
+ *  mission cache : le voile lui-même ne dit rien. */
+export const veiledAt = (mode, fullView) => mode === 'new' ? false : fullView !== true;
+
+/** La clé d'une ligne des Lieux dans le fichier : sa sorte et sa place dans la liste de sa sorte (« zone:0 ») ; '' pour une ligne
+ *  ajoutée dans la séance (i = -1). */
+const placeKey = r => r && Number.isInteger(r.i) && r.i >= 0 ? `${r.kind}:${r.i}` : '';
+
+/** Les lignes des Lieux que le pilote ne voit pas au départ (voir l'en-tête) : la règle du lecteur, ED.pilotRows aucun tiroir ouvert.
+ *  → [clé] triées ; [] pour une mission sans tiroir. */
+export function veilHidden(doc) {
+  const rows = placesOf(doc),
+    kept = pilotRows(doc, rows, 0);
+  return kept === rows ? [] : rows.filter((r, k) => kept[k] === null).map(placeKey).filter(Boolean).sort();
+}
+
+/** Les lignes que l'atelier voilé montre : une ligne cachée devient null, à son rang (voir l'en-tête). `hidden` : veilHidden. */
+export function veilRows(rows, hidden) {
+  const set = new Set(Array.isArray(hidden) ? hidden : []);
+  return (Array.isArray(rows) ? rows : []).map(r => r && set.has(placeKey(r)) ? null : r);
+}
+
+/** « À compléter » de l'atelier voilé : celui du document SANS ses tiroirs (ni tiroir sans clé, ni lieu que rien ne cite — sans
+ *  tiroir, rien n'est caché), et « des lieux à placer » seulement quand une ligne MONTRÉE l'est (`shown` : les lignes montrées). */
+export function veilTodo(doc, shown) {
+  const d = {
+      ...obj(doc)
+    },
+    rows = (Array.isArray(shown) ? shown : []).filter(Boolean);
+  delete d.phases;
+  const unplaced = rows.some(p => !['dep', 'arr'].includes(p.kind) && !p.poly && (p.lat === '' || p.lon === ''));
+  return todo(d).filter(t => t.key !== 'unplaced' || unplaced);
+}
 
 /** « À compléter » (voir l'en-tête) : les champs vides de chaque étape, jamais bloquants. */
 export function todo(doc) {

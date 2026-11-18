@@ -2340,6 +2340,20 @@ def ed_leave(c):
         c.tap('.f-modal [data-ok]')
 
 
+def ed_reveal(c):
+    """Opens the WHOLE workshop of a mission opened by « Modifier » or « Dupliquer », which opens veiled since SOG-0459: touches
+    « Dévoiler la mission complète », answers « Dévoiler » and waits for the whole workshop; the notification « Cette mission n'a rien
+    de caché » (a mission without drawers) — that one only: another one, the map offline for instance, is the case's own — is removed
+    and the page goes back to its top, so that what the case reads next is what it read before the veil."""
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop and « Dévoiler la mission complète »')
+    c.tap(f'{E} [data-unveil]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question « Dévoiler la mission complète ? »')
+    c.tap('.f-modal [data-ok]')
+    c.until(f"document.querySelector('{E}')?.dataset.veil === '' && !document.querySelector('.f-modal')", timeout=5000, what='the whole workshop')
+    c.js("""(t) => { document.querySelectorAll('#fNotes .f-note').forEach(n => { if (n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(t)) n.remove() });
+      window.scrollTo(0, 0) }""", row(c, 'veilNothing', EDTX_FILE))
+
+
 def _ed_fill(c, k, v):
     c.page.fill(f'{E} input[data-k={k}]', v)
 
@@ -2391,6 +2405,7 @@ def n50(c):
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('Mission complète')", timeout=10000, what='X-001A in the editor')
     c.eq(c.js(f"document.querySelector('{E}').dataset.step"), '', 'on a phone, a mission being modified opens with every group folded', what='the open group')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the captures without the toasts of the steps before
@@ -2416,6 +2431,7 @@ def n50(c):
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="eddup"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-003'", timeout=10000, what='the duplicate proposes X-003')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
@@ -2440,6 +2456,7 @@ def n51(c):
         '{ name: ALPHA1, service: Service d\'essai, type: H135, role: recherche, base: Base Test }')]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="teams"]')
     c.until(f"!!document.querySelector('{E} [data-edteams]')", what='the group « Équipes » unfolds')
@@ -2478,6 +2495,7 @@ def n52(c):
     reg_open(c, _ED_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
@@ -2530,6 +2548,7 @@ def n53(c):
         'payload: { description: Un treuil inventé., mass_kg: 120, passengers: 2, constraints: [Une contrainte inventée.] }')]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="story"]')
     c.until(f"!!document.querySelector('{E} [data-k=edstory]')", what='the Récit')
@@ -2591,6 +2610,7 @@ def n54(c):
     c.page.set_viewport_size({'width': 390, 'height': c.height})
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
     _ed_open(c, _MESSY)
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='the messy file in the editor')
     for step in ('teams', 'places', 'story', 'risks', 'timeline', 'cadre'):
         c.tap(f'{E} [data-steps] [data-step="{step}"]')
@@ -2637,6 +2657,7 @@ def n55(c):
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], ['missions/X_REG/X-001A/missionX-001A.yaml', text]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="risks"]')
     c.until(f"!!document.querySelector('{E} [data-edrisks]')", what='the Risques')
@@ -2689,6 +2710,7 @@ def n56(c):
     reg_open(c, [[_ED_TEXTS[0][0], _ED_TEXTS[0][1]], [path, _SINGLE_RDV]])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-place][data-kind=rdv]')", what='the single rendezvous listed')
@@ -2733,6 +2755,7 @@ def n57(c):
     reg_open(c, _ED_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie')
@@ -2887,6 +2910,7 @@ def n60(c):
                                                        _ED_FULL + 'timeline:\n  - { at: H, text: Premier inventé }\n  - { at: H+1h, description: Second inventé }\n']])
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
     c.until(f"document.querySelectorAll('{E} [data-edevents] [data-event]').length === 2", what='the two events of the list shown')
@@ -3008,6 +3032,7 @@ def n64(c):
     c.until(_REG_READ, timeout=20000, what='the registry read')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     T = f'{E} [data-edpreview] [data-edthumb]'
     c.until(f"document.querySelectorAll('{T} circle').length === 7", timeout=15000,
@@ -3165,6 +3190,7 @@ def n70(c):
     reg_open(c, _REF_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     # the Chronologie first: its rows stay on screen with the identifiers of the file (the trap of a rename made afterwards)
     c.tap(f'{E} [data-steps] [data-step="timeline"]')
@@ -3337,6 +3363,7 @@ def n72(c):
     reg_open(c, _REF_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the editor')
     c.tap(f'{E} [data-steps] [data-step="story"]')
     c.until(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')", what='the Récit unfolded')
@@ -3385,6 +3412,7 @@ def n73(c):
     reg_open(c, _AT_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.eq(c.js(_AT_FLOW), [['start', norm(row(c, 'atStart', EDTX_FILE))], ['drawer', f"{row(c, 'atDrawer', EDTX_FILE).replace('{n}', '1')} · Changement"],
                           ['drawer', f"{row(c, 'atDrawer', EDTX_FILE).replace('{n}', '2')} · Entrée du secteur"],
@@ -3444,6 +3472,7 @@ def n73(c):
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='on a wide screen the Cadre is unfolded at the opening')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} .ms-atgrid')).display") == 'grid' and
          c.js(f"getComputedStyle(document.querySelector('{E} [data-atmapbody]')).display") != 'none' and
@@ -3541,6 +3570,7 @@ def n74(c):
     reg_open(c, _AT_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.tap(f'{E} [data-steps] [data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
@@ -4371,6 +4401,7 @@ def n77(c):
     reg_open(c, _OBJ_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.tap(f'{E} [data-steps] [data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux')
@@ -4484,6 +4515,7 @@ def n78(c):
     reg_open(c, _OBJ_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     cards = c.js(_DW_CARDS)
     c.eq([[x[0], norm(x[1]), norm(x[2]), x[4]] for x in cards],
@@ -4632,6 +4664,7 @@ def n79(c):
     reg_open(c, _OBJ_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.tap(f'{E} [data-atflow] [data-sel="C"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
@@ -4815,6 +4848,7 @@ def n91(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     c.ok(c.count(_TR) == 0 and norm(c.text(f'{E} [data-atflow] [data-trbtn]')) == T('trBtn'), c.text(f'{E} [data-atflow] [data-trbtn]'),
          '« Essayer les clés » is a button of the unfolding; no trial at the opening')
@@ -4985,6 +5019,7 @@ def n93(c):
          'the list and the registry open without loading MapLibre nor the outlines: the map library waits for the workshop', what='before the workshop')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
     box = c.js(f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmapframe').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)] }})()")
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
@@ -5062,6 +5097,7 @@ def n93(c):
     c.settle()
     c.tap(f'{R} [data-rowid="X-001A"] > summary') if c.count(f'{R} [data-rowid="X-001A"][open]') == 0 else None
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'plain'", timeout=20000, what='the plain background')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements on the plain background')
     ed_leave(c)
@@ -5161,6 +5197,7 @@ def n95(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     c.eq([c.js(_EDTOOL_STATE), norm(c.text(f'{_EDMAP} [data-maphint]'))],
@@ -5339,6 +5376,7 @@ def n97(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     # a row opened in the Lieux is the place chosen on the map
@@ -5504,6 +5542,7 @@ def n99(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     # the route of the departure: chips under the list of the Lieux
@@ -5642,6 +5681,7 @@ def n100(c):
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"JSON.stringify({_EDREFS}) === '[\"LFZZ\",\"NEPIX\",\"TSV\"]'", timeout=15000, what='the landmarks of the base on the map')
     c.eq(hint(), T('atHint_select'), 'the landmarks are shown; nothing is chosen', what='the line')
@@ -5787,6 +5827,7 @@ def n102(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
     c.eq(c.js(_TRPUT_STATE), [True, 'false'], 'out of a trial « Placer l\'avion ici » is not shown', what='before the trial')
@@ -5987,6 +6028,7 @@ def n104(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements of the mission drawn')
     every = ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'place:5', 'place:6', 'route']
@@ -6120,6 +6162,7 @@ def n105(c):
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"document.querySelector('{_SEEK} input')?.disabled === false", timeout=8000, what='the field given with the map')
     c.tap(f'{E} [data-do="edstep"][data-step="places"]')
@@ -6262,6 +6305,7 @@ def n106(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-do=\"edstep\"][data-step=\"places\"]')", timeout=15000, what='the workshop')
     c.tap(f'{E} [data-do="edstep"][data-step="places"]')
     c.until(f"!!document.querySelector('{E} [data-edroute]')", what='the route of the departure in the Lieux')
@@ -6401,6 +6445,7 @@ def n107(c):
     reg_open(c, _TRIAL_TEXTS)
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"!!document.querySelector('{E} [data-do=\"edstep\"][data-step=\"places\"]')", timeout=15000, what='the workshop')
     c.tap(f'{E} [data-do="edstep"][data-step="places"]')
     c.until(f"({_EDPLACE_IDS}).length === 7", what='the seven places of the mission listed')
@@ -6466,6 +6511,7 @@ def n108(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'plain' && !!window.__edMap", timeout=8000, what='the map of the workshop on its plain background, offline')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements of the mission drawn')
     c.eq([c.js(_EDMAP_IDS, None), c.js(_EDLABELS), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"), asked, [x[2] for x in c.js(_EDTOOL_STATE)]],
@@ -6546,6 +6592,7 @@ def n109(c):
         c.until(_REG_READ, timeout=20000, what='the registry')
         c.tap(f'{R} [data-rowid="X-001A"] > summary')
         c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
         c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
         if not wide:
             return
@@ -6700,6 +6747,7 @@ def n110(c):
     c.until(_REG_READ, timeout=20000, what='the registry read')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"{state} === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the mission drawn')
     c.wait(500)
@@ -6752,6 +6800,7 @@ def n110(c):
     c.until(_REG_READ, timeout=20000, what='back to the registry')
     c.tap(f'{R} [data-rowid="X-001A"] > summary')
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
     c.until(f"{state} === 'relief'", timeout=15000, what='reopened in Relief')
     c.until(f"(({_MAP_TONES}) || []).length === 4", timeout=10000, what='the airspaces of the file')
     c.eq(look()[:2], (['fast:false', 'relief:true'], True), 'reopened: « Relief » and « Espaces », as the file says', what='reopened')
@@ -7053,3 +7102,244 @@ def n113(c):
     c.eq(r['mines'], [[0, 0, False]] * 7, 'a `mine` that is not strictly true (false, « true », 1, null) or options that are not an object: the visible part alone, '
          'nothing of a drawer said open', what='mine, strictly')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the mission read is not touched')
+
+
+# SOG-0459, part B: the workshop opens VEILED. The trial mission (_TRIAL_MISSION, X-001A, invented): four drawers; at the departure the
+# pilot sees XTST, XTSU, TARGET and PT1 (the route) — the zone of drawer 1 (ZONE-1, « Secteur nord », no zone_shown), the object of
+# drawer 2 (OBJ-1, « Naufragé ») and the point of its onward route (PT2, « Point deux », 44.4 N 1.6 E) are hidden
+_VEIL_LEAKS = f"""(() => {{ const root = document.querySelector('{E}'); if (!root) return null; const btn = root.querySelector('[data-unveil]'), clone = root.cloneNode(true);
+  clone.querySelector('[data-unveil]')?.remove(); clone.querySelectorAll('style').forEach(x => x.remove());
+  const html = clone.innerHTML, text = clone.textContent, opts = [...root.querySelectorAll('select option')].map(o => o.value + ' ' + o.textContent);
+  const SECRET = ['OBJ-1', 'PT2', 'ZONE-1', 'Secteur nord', 'Naufrag', 'Point deux', '44°24', '1°25', 'data-sel="B"', 'data-kind="drawer"', 'data-dradd', 'data-trbtn',
+    'data-mapview', 'data-dtodo'];
+  return {{ found: SECRET.filter(w => html.includes(w) || opts.some(o => o.includes(w))), tiroir: /tiroir/i.test(text + ' ' + opts.join(' ')),
+    unveil: btn ? btn.textContent.trim() : null, veil: root.dataset.veil, parts: [...root.querySelectorAll('[data-atflow] [data-part]')].map(x => x.dataset.kind),
+    labels: [...root.querySelectorAll('[data-maplbl]')].map(x => x.textContent).sort() }} }})()"""
+_VEIL_SAVED_JS = """async ([p, before]) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const Y = globalThis.jsyaml, J = x => JSON.stringify(x);
+  const a = Y.load(before, { schema: Y.CORE_SCHEMA }), b = Y.load(await (%s)(p), { schema: Y.CORE_SCHEMA });
+  const pts = x => (x.turning_points || []).map(t => ({ ...t, name: t.id === 'PT1' ? '' : t.name }));
+  return { differ: ['phases', 'zones', 'objects', 'target', 'route_order'].filter(k => J(a[k]) !== J(b[k])), points: J(pts(a)) === J(pts(b)),
+    pt1: (b.turning_points || [])[0]?.name, title: b.title, n: [(b.phases || []).length, (b.zones || []).length, (b.turning_points || []).length, (b.objects || []).length] } }""" % _TEXT_OF
+_VEIL_FOOT = f"""(() => {{ const b = [...document.querySelectorAll('{E} .ms-atbar button')].map(x => x.getBoundingClientRect());
+  return [b.length, b.every(r => r.left >= 0 && r.right <= innerWidth && r.height >= 44), document.documentElement.scrollWidth <= innerWidth] }})()"""
+_VEIL_PURE_JS = """async () => { const ED = await import('/modules/missions/editor.js');
+  return [['edit', true], ['edit', 'true'], ['edit', 1], ['edit', undefined], ['edit', null], ['dup', true], ['dup', false], ['new', false], ['new', true], ['x', 'true']]
+    .map(([m, f]) => ED.veiledAt(m, f)) }"""
+_PLAIN_MISSION = """mission: { id: X-001A, type: REG }
+title: Sans tiroir
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.2 }
+route_order: [ORIGIN, PT1, DESTINATION]
+"""
+_PLAIN_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _PLAIN_MISSION]]
+_VEIL_TO = r"P4a_{w}_{n}.png"
+
+
+@case('N114', 'Missions › the workshop opens VEILED: a mission opened by « Modifier » or « Dupliquer » shows only what the pilot sees at the '
+      'departure — the unfolding says « Au départ » alone and carries « Dévoiler la mission complète » in place of « Essayer les clés »; no '
+      'drawer, no « ＋ Tiroir », no « Vue de la carte »; the Lieux, the map, its labels, the lists of places and « À compléter » say nothing of '
+      'what is hidden (neither a title of a drawer, nor OBJ-1, nor PT2, nor ZONE-1, nor the word « tiroir »); for EVERY place of the file one '
+      'sentence refuses a removal or a change of identifier, a place added in the sitting is renamed and removed freely; saving a mission '
+      'that is not revealed keeps its drawers and its hidden places INTACT; « Garder le secret » changes nothing, « Dévoiler » gives the '
+      'whole workshop (and is not a change); a mission without drawer has the button too and says « Cette mission n\'a rien de caché »; a '
+      'created mission has no button; a copy stays veiled and copies everything; `veiledAt` is strict',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0459 (the user, 18 Nov 2026: « l\'existence même des tiroirs est cachée par défaut, à tout le monde, auteur compris ; on choisit '
+      'de dévoiler » — E:/DEFA/organisation/SPEC_MISSIONS_TIROIRS.md § 11.3; the ergonomist: one sentence for every place, never a refusal '
+      'case by case); modules/missions/EDITOR.md § 7 septvicies')
+def n114(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda k, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, k, EDTX_FILE)))  # noqa: E731
+    clear = lambda: c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # noqa: E731
+    said = lambda: [norm(x) for x in c.notes()]  # noqa: E731
+    heard = lambda k: any(T(k) in x for x in said())  # noqa: E731
+    shots = []
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.eq(c.js(_VEIL_PURE_JS), [False, True, True, True, True, False, True, False, False, True],
+         '`veiledAt`: « Modifier » and « Dupliquer » are veiled unless fullView is exactly true; a created mission never; an unknown mode is veiled', what='veiledAt')
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length === 5", timeout=10000, what='the places of the departure drawn')
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux unfolded')
+    c.tap(f'{E} [data-do="edtodo"]')
+    c.until(f"!document.querySelector('{E} [data-edtodo]').hidden", what='« À compléter » open')
+    v = c.js(_VEIL_LEAKS)
+    c.eq([v['veil'], v['parts'], norm(v['unveil'] or ''), v['found'], v['tiroir'], v['labels'], c.js(_EDMAP_IDS, None)],
+         ['1', ['start'], T('veilBtn'), [], False, ['PT1', 'TARGET', 'XTST', 'XTSU'], ['place:0', 'place:1', 'place:2', 'place:4', 'route']],
+         'veiled: « Au départ » alone and « Dévoiler la mission complète »; nothing hidden in the page — not in its text, not in the labels of the map, not in « À '
+         'compléter », not in a list (no OBJ-1, PT2, ZONE-1, no name or position of theirs, no card of a drawer, no « Essayer les clés », no « Vue de la carte »), '
+         'and not the word « tiroir » outside the button; the map draws the four places of the departure and the route', what='veiled')
+    c.eq([c.count(f'{E} [data-edplaces] [data-place]'), c.count(f'{E} [data-do="edplaceadd"][data-kind="target"]'), c.js(f"(() => {{ const b = document.querySelector('{E} [data-edtodobtn]').textContent; "
+          f"return [b.match(/\\((\\d+)\\)/)?.[1], document.querySelectorAll('{E} [data-edtodo] [data-todo]').length] }})()")],
+         [4, 0, ['4', 4]], 'the Lieux: the four places of the departure (the hidden rows stay in the sitting, not shown); no « + Cible » in a veiled workshop; '
+         '« À compléter » counts what it lists, nothing of a drawer', what='the Lieux and the count')
+    c.tap(f'{E} [data-steps] [data-step="timeline"]')
+    c.until(f"!!document.querySelector('{E} [data-edevents]')", what='the Chronologie unfolded')
+    v = c.js(_VEIL_LEAKS)
+    c.eq([v['found'], v['tiroir'], c.count(f'{E} [data-do="edmapspropose"]')], [[], False, 0],
+         'the Chronologie: its list of places has none of the hidden ones; « Proposer les cartes » is not offered (it names the zones by their rank)', what='the Chronologie')
+    # one sentence for every place of the file: neither removed nor renamed in a veiled workshop
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux unfolded again')
+    clear()
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="4"]')
+    c.until(f"!!document.querySelector('{E} [data-plform=\"4\"]')", what='the form of PT1')
+    c.tap(f'{E} [data-plform="4"] [data-do="edplacedel"]')
+    c.wait(300)
+    c.ok(heard('veilLocked') and c.count(f'{E} [data-edplaces] [data-place="4"]') == 1, said(), 'PT1 removed in a veiled workshop: the sentence, and nothing is removed')
+    clear()
+    c.page.fill(f'{E} [data-plform="4"] input[data-f=id]', 'PT9')
+    c.wait(300)
+    c.ok(c.js(f"document.querySelector('{E} [data-plform=\"4\"] input[data-f=id]').value") == 'PT1' and heard('veilLocked'), [c.js(f"document.querySelector('{E} [data-plform=\"4\"] input[data-f=id]').value"), said()],
+         'its identifier changed in a veiled workshop: the field gives it back, and the same sentence')
+    c.page.fill(f'{E} [data-plform="4"] input[data-f=name]', 'Point un retouché')
+    c.tap(f'{E} [data-plform="4"] [data-do="edplaceok"]')
+    # a place added in the sitting: renamed and removed freely; its identifier is the greatest number carried, plus one (a gap proves nothing)
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"!!document.querySelector('{E} [data-plform=\"6\"] input[data-f=id]')", what='the form of the new point')
+    new_id = c.js(f"document.querySelector('{E} [data-plform=\"6\"] input[data-f=id]').value")
+    c.page.fill(f'{E} [data-plform="6"] input[data-f=id]', 'PT7')
+    c.wait(200)
+    renamed = c.js(f"document.querySelector('{E} [data-plform=\"6\"] input[data-f=id]').value")
+    clear()
+    c.tap(f'{E} [data-plform="6"] [data-do="edplacedel"]')
+    c.wait(300)
+    c.eq([new_id, renamed, c.count(f'{E} [data-edplaces] [data-place]'), heard('veilLocked')], ['PT3', 'PT7', 4, False],
+         'a point added in the sitting: PT3 (the greatest number of the file, hidden PT2 included, plus one), renamed PT7, removed at once — no sentence', what='a place added')
+    # the title, then « Enregistrer »: the drawers and the hidden places are written back INTACT
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
+    c.page.fill(f'{E} input[data-k=edtitle]', 'Mission d\'essai, voilée')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js(_VEIL_SAVED_JS, [path, _TRIAL_MISSION])
+    c.eq([got['differ'], got['points'], got['pt1'], got['title'], got['n']], [[], True, 'Point un retouché', 'Mission d\'essai, voilée', [4, 1, 2, 1]],
+         'saved without revealing: phases, zones, objects, target and route identical to the file, the turning points too but for the name of PT1; the title '
+         'written — the four drawers, ZONE-1, PT2 and OBJ-1 are kept', what='the saved file')
+    c.eq(c.js(f"document.querySelector('{E}').dataset.veil"), '1', 'after « Enregistrer » the workshop stays veiled', what='still veiled')
+    # the question; « Garder le secret » changes nothing; « Dévoiler » gives the whole workshop
+    if c.js(f"!document.querySelector('{E} [data-edtodo]').hidden"):
+        c.tap(f'{E} [data-do="edtodo"]')  # the list closed: the captures show the unfolding
+    for w in (1280, 390):
+        if w == 390:
+            ed_leave(c)
+            c.page.set_viewport_size({'width': 390, 'height': c.height})
+            c.settle()
+            c.tap(f'{R} [data-rowid="X-001A"] > summary') if not c.count(f'{R} [data-rowid="X-001A"][open]') else None
+            c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+            c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop on a phone')
+            v = c.js(_VEIL_LEAKS)
+            c.eq([v['veil'], v['parts'], v['found'], v['tiroir'], c.js(_VEIL_FOOT)], ['1', ['start'], [], False, [3, True, True]],
+                 'on a phone: veiled, nothing hidden in the page; the foot (« Enregistrer », « Annuler », « À compléter ») holds in 390 px', what='veiled at 390')
+        clear()
+        c.js(f"document.querySelector('{E} [data-atflow]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        shots.append(c.shot(_VEIL_TO.format(w=w, n='voile')))
+        c.tap(f'{E} [data-unveil]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question')
+        c.eq([norm(c.text('.f-modal p')), norm(c.text('.f-modal [data-ok]')), norm(c.text('.f-modal [data-no]'))], [T('veilAsk'), T('veilOk'), T('veilKeep')],
+             'the question of the frame: « Dévoiler la mission complète ? … » — « Dévoiler » / « Garder le secret »', what='the question')
+        shots.append(c.shot(_VEIL_TO.format(w=w, n='question')))
+        if w == 1280:
+            c.tap('.f-modal [data-no]')
+            c.wait(300)
+            c.eq([c.count('.f-modal'), c.js(f"document.querySelector('{E}').dataset.veil"), c.js(_VEIL_LEAKS)['found']], [0, '1', []], '« Garder le secret »: nothing changes',
+                 what='keep the secret')
+            c.tap(f'{E} [data-unveil]')
+            c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question again')
+        c.tap('.f-modal [data-ok]')
+        c.until(f"document.querySelector('{E}')?.dataset.veil === ''", timeout=5000, what='the whole workshop')
+        c.wait(300)
+        c.eq([c.js(f"[...document.querySelectorAll('{E} [data-atflow] [data-part]')].map(x => x.dataset.kind)"), c.count(f'{E} [data-trbtn]'), c.count(f'{E} [data-unveil]'),
+              heard('veilNothing')], [['start', 'drawer', 'drawer', 'drawer', 'drawer'], 1, 0, False],
+             'revealed: the unfolding shows the four drawers and « Essayer les clés »; this mission did hide something: no « rien de caché »', what='revealed')
+        clear()
+        c.js(f"document.querySelector('{E} [data-atflow]').scrollIntoView({{block: 'center'}})")
+        c.wait(300)
+        shots.append(c.shot(_VEIL_TO.format(w=w, n='devoile')))
+    # revealing is not a change: « Annuler » leaves at once
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.wait(300)
+    c.eq([c.count('.f-modal'), c.count(E)], [0, 0], '« Dévoiler » is not a change: « Annuler » leaves at once, without the question', what='not a change')
+    # a copy stays veiled and copies everything, drawers included
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.js(f"(() => {{ const d = document.querySelector('{R} [data-rowid=\"X-001A\"]'); if (d) d.open = true }})()")
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="eddup"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]') && !!document.querySelector('{E} input[data-k=edid]')?.value", timeout=15000, what='the copy, veiled')
+    dup = c.js(f"document.querySelector('{E} input[data-k=edid]').value")
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the copy saved')
+    copy = c.js(_VEIL_SAVED_JS, [f'missions/X_REG/{dup}/mission{dup}.yaml', _TRIAL_MISSION])
+    c.eq([c.js(f"document.querySelector('{E}').dataset.veil"), copy['differ'], copy['n']], ['1', [], [4, 1, 2, 1]],
+         'a copy opens veiled and copies everything: its four drawers, its zone, its points and its object', what='the copy')
+    ed_leave(c)
+    # a mission without drawer: the button is there too, and says so; a created mission has no button
+    reg_open(c, _PLAIN_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='a mission without drawer, veiled')
+    clear()
+    c.tap(f'{E} [data-unveil]')
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what='the question')
+    c.tap('.f-modal [data-ok]')
+    c.until(f"document.querySelector('{E}')?.dataset.veil === ''", timeout=5000, what='revealed')
+    c.wait(300)
+    c.ok(heard('veilNothing'), said(), 'a mission without drawer: « Dévoiler » is offered too (its presence says nothing), then « Cette mission n\'a rien de caché »')
+    ed_leave(c)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E}')", timeout=10000, what='a new mission')
+    c.eq([c.js(f"document.querySelector('{E}').dataset.veil"), c.count(f'{E} [data-unveil]'), c.count(f'{E} [data-dradd]')], ['', 0, 1],
+         'a created mission is whole: no veil, no « Dévoiler », « ＋ Tiroir » offered', what='a created mission')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+_VEIL_RULES_JS = """async () => { const ED = await import('/modules/missions/editor.js'), J = x => JSON.stringify(x); let threw = '';
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'T', origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    target: { id: 'TARGET', name: 'Cible', lat: 44.6, lon: 1.4 },
+    turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }, { id: 'PT5', name: 'Cache', lat: null, lon: null }],
+    zones: [{ id: 'ZONE-3', name: 'Cachee', centre: { lat: 44.5, lon: 1.5 }, radius_km: 3 }], objects: [{ id: 'OBJ-2', kind: 'person', lat: 44.55, lon: 1.45 }],
+    route_order: ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Tiroir', trigger_zone: 'ZONE-3', route_order: ['PT5'] }, { id: 'C', trigger_object: 'OBJ-2' }, { id: 'D', trigger_delay_min: 5 }] };
+  const before = J(doc), rows = ED.placesOf(doc), hidden = ED.veilHidden(doc), shown = ED.veilRows(rows, hidden);
+  const added = ED.newPlace(rows, 'zone', doc), plain = { ...doc, phases: undefined };
+  for (const h of [[null, null], ['x', 7], [[null, 7, 'x', { kind: 'zone', i: 0 }], ['zone:0', 7, null]]]) try { ED.veilRows(...h); ED.veilTodo(h[0], h[1]); ED.veilHidden(h[0]) } catch (e) { threw += String(e) }
+  return { hidden, shown: shown.map(r => r ? r.id || r.kind : null), keys: ED.veilTodo(doc, shown).map(t => t.key), full: ED.todo(doc).map(t => t.key),
+    ids: [ED.nextPlaceId(rows, 'pt', doc), ED.nextPlaceId(rows, 'zone', doc), ED.nextPlaceId(rows, 'rdv', doc), ED.nextPlaceId(rows, 'object', doc), ED.nextPlaceId([], 'pt', null),
+      ED.nextPlaceId([{ kind: 'pt', id: 'PT9999' }], 'pt', null), ED.nextPlaceId([{ kind: 'pt', id: 'PT2' }, { kind: 'pt', id: 'pt7 ' }], 'pt', null)],
+    added: [added.rows[added.at].id, J(ED.veilRows(added.rows, hidden).map(r => r ? r.id || r.kind : null))],
+    plain: [ED.veilHidden(plain), J(ED.veilTodo(plain, ED.placesOf(plain))) === J(ED.todo(plain))], threw, untouched: J(doc) === before } }"""
+
+
+@case('N115', 'Missions › the veiled workshop, the pure part (no screen): `veilHidden` names the rows of the Lieux the pilot does not see at the '
+      'departure (by their kind and their place in the file); `veilRows` turns them into null at their rank (a filter, never a removal: a '
+      'row added in the sitting is always shown); `veilTodo` says nothing of what is hidden (no drawer without key, no place cited nowhere, '
+      '« à placer » only for a row shown); `nextPlaceId` gives the greatest number of the kind carried — rows and file, hidden ones '
+      'included — plus one, a gap is never filled; a mission without drawer hides nothing; no hostile input throws',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0459 (« le voile est un filtre d\'AFFICHAGE : les lignes cachées restent dans s.ed.places à leur rang » ; « un trou n\'est jamais '
+      'rebouché, donc un trou ne prouve rien »): modules/missions/editor.js `veilHidden`, `veilRows`, `veilTodo`, `nextPlaceId`')
+def n115(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_VEIL_RULES_JS)
+    c.eq([r['hidden'], r['shown']], [['object:0', 'pt:1', 'zone:0'], ['dep', 'arr', 'TARGET', None, 'PT1', None, None]],
+         'hidden at the departure: the zone of drawer 1, the point of its onward route, the object of drawer 2 — each by its kind and place; shown: the departure, '
+         'the arrival, the target and PT1 (the route); the hidden rows are null at their rank', what='hidden')
+    c.ok('unplaced' in r['full'] and 'unplaced' not in r['keys'] and not any(k.startswith('drawer') or k.startswith('uncited') for k in r['keys']), [r['keys'], r['full']],
+         '« À compléter » veiled: the hidden point without position is not « à placer », no line of a drawer — the full list has them')
+    c.eq(r['ids'], ['PT6', 'ZONE-4', 'RDV-1', 'OBJ-3', 'PT1', '', 'PT8'],
+         'a new identifier: the greatest number of the kind carried (hidden PT5, ZONE-3, OBJ-2 included) plus one; RDV-1 for none; past 9 999, none; « pt7 » counts as PT7',
+         what='nextPlaceId')
+    c.eq(r['added'], ['ZONE-4', '["dep","arr","TARGET",null,"ZONE-4","PT1",null,null]'], 'a zone added in the sitting is shown, after the hidden one (a row added, i = -1)',
+         what='a row added')
+    c.eq(r['plain'], [[], True], 'a mission without drawer hides nothing: its « À compléter » is the same', what='no drawer')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the document is not touched')

@@ -100,6 +100,9 @@ export const EDTX = {
   // les objets à trouver dans les Lieux (SOG-0445) : la pastille, la fiche, « caché au pilote », « clé du tiroir n »
   plObject: ['OBJ', 'OBJ', 'OBJ', 'OBJ'],
   plAddObject: ['+ Objet à trouver', '+ Object to find', '+ Zu findendes Objekt', '+ Objeto por encontrar'],
+  plObjectHintVeil: ['identifiant donné par l\'atelier.', 'identifier given by the workshop.', 'Kennung von der Werkstatt vergeben.',
+    'identificador dado por el taller.'
+  ],
   plObjectHint: ['identifiant donné par l\'atelier ; un tiroir le cite comme clé.',
     'identifier given by the workshop; a drawer cites it as its key.',
     'Kennung von der Werkstatt vergeben; eine Schublade nennt sie als Schlüssel.',
@@ -611,6 +614,27 @@ export const EDTX = {
     'What the pilot reads at the departure, then the drawers, in order.',
     'Was der Pilot beim Abflug liest, dann die Schubladen, der Reihe nach.',
     'Lo que el piloto lee a la salida, luego los cajones, en orden.'
+  ],
+  // SOG-0459, l'atelier voilé : le déroulé ne dit que le départ ; « Dévoiler la mission complète » est sur TOUTE mission ouverte voilée
+  atFlowHintVeil: ['Ce que le pilote lit au départ.', 'What the pilot reads at the departure.', 'Was der Pilot beim Abflug liest.',
+    'Lo que el piloto lee a la salida.'
+  ],
+  veilBtn: ['Dévoiler la mission complète', 'Reveal the whole mission', 'Die ganze Mission aufdecken', 'Desvelar la misión completa'],
+  veilAsk: ['Dévoiler la mission complète ? Vous ne pourrez plus la découvrir en la jouant.',
+    'Reveal the whole mission? You will no longer be able to discover it by playing it.',
+    'Die ganze Mission aufdecken? Sie können sie dann nicht mehr beim Spielen entdecken.',
+    '¿Desvelar la misión completa? Ya no podrá descubrirla al jugarla.'
+  ],
+  veilOk: ['Dévoiler', 'Reveal', 'Aufdecken', 'Desvelar'],
+  veilKeep: ['Garder le secret', 'Keep the secret', 'Das Geheimnis wahren', 'Guardar el secreto'],
+  veilNothing: ['Cette mission n\'a rien de caché', 'This mission hides nothing', 'Diese Mission verbirgt nichts',
+    'Esta misión no oculta nada'
+  ],
+  // la même phrase pour TOUS les lieux d'une mission existante (l'ergonome : un refus au cas par cas serait un indice)
+  veilLocked: ['Retirer un lieu ou changer son identifiant demande de dévoiler la mission.',
+    'Removing a place or changing its identifier requires revealing the mission.',
+    'Einen Ort entfernen oder seine Kennung ändern verlangt, die Mission aufzudecken.',
+    'Quitar un lugar o cambiar su identificador exige desvelar la misión.'
   ],
   atStart: ['Au départ', 'At the departure', 'Beim Abflug', 'A la salida'],
   atVisible: ['visible', 'visible', 'sichtbar', 'visible'],

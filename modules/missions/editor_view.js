@@ -42,6 +42,17 @@
 // (s.ed.drawers, editor_drawers.js) ne sont créées qu'à la première retouche et s'écrivent dans edDoc avant que les références
 // suivent les lieux ; ils comptent dans « À compléter ».
 //
+// L'atelier voilé (SOG-0459 ; l'utilisateur, 18 nov. : « l'existence même des tiroirs est cachée par défaut, à tout le monde, auteur
+// compris ; on choisit de dévoiler ») : une mission EXISTANTE ouverte par « Modifier » ou « Dupliquer » s'ouvre voilée (s.ed.veil,
+// ED.veiledAt : sauf `state().fullView === true`) ; une mission créée est entière. Voilé, l'atelier ne montre que ce que le pilote voit
+// au départ : le déroulé dit « Au départ » seul et porte « Dévoiler la mission complète » (sur TOUTE mission voilée : sa présence ne
+// dit rien) ; ni tiroir, ni « Vue de la carte », ni essai ; les Lieux, la carte, le croquis, la route, les listes de lieux et
+// « À compléter » ne montrent que les lignes que ED.veilHidden ne cache pas (s.ed.veilHide, pris à l'ouverture). LE VOILE EST UN
+// FILTRE D'AFFICHAGE : les lignes cachées restent dans s.ed.places à leur rang, jamais retirées ni retouchées ; les tiroirs ne sont
+// pas chargés (s.ed.drawers reste nul : ils ne sont pas réécrits). Pour TOUS les lieux d'une mission existante, la même règle : textes
+// et positions se retouchent, retirer un lieu ou changer son identifiant demande de dévoiler (une notification, la même phrase) ; un
+// lieu ajouté dans la séance (i = -1) se retire et se renomme librement.
+//
 // L'essai des clés (SOG-0444, lot P4) : « Essayer les clés », dans l'en-tête du déroulé, met le volet de l'essai à la place de la
 // fiche (s.ed.trial : { on, min, max, speed, alt, declares, hands }) ; le calcul est celui de editor_trial.js sur le document de la
 // séance ; la carte se déplie d'elle-même et montre l'avion et sa trace ; chaque carte du déroulé dit « ouvert à H + 6 min » ou
@@ -316,7 +327,10 @@ async function edOpen(s, mode, line = null) {
     regId: mode === 'edit' ? cut(line.raw?.id, 40) : '',
     origId: mode === 'edit' ? line.row.id : '',
     pending: mode === 'edit' && got.pending,
-    regSeries
+    regSeries,
+    // SOG-0459 : une mission existante s'ouvre voilée — la règle ne dépend jamais de ce que la mission cache (ED.veiledAt)
+    veil: ED.veiledAt(mode, state()?.fullView),
+    veilHide: ED.veilHidden(base)
   };
   if (mode === 'dup') s.ed.start = edDoc(s.ed); // une copie pas encore retouchée se quitte sans question (SOG-0454)
   draw(s);
@@ -365,6 +379,25 @@ function edDoc(e, cadre = e.cadre) {
   if (e.drawers) d = DR.withDrawerRows(d, e.drawers); // SOG-0445 : les tiroirs retouchés (une zone et un objet y sont cités, jamais écrits)
   return ED.withRefs(d, e.base, e.places); // SOG-0439 : après toutes les étapes, les références suivent les lieux renommés ou retirés
 }
+
+/** Les lignes des Lieux que l'écran montre (SOG-0459) : toutes, sauf dans l'atelier voilé où une ligne cachée au départ devient null
+ *  (ED.veilRows : les rangs ne bougent pas, rien n'est retiré de s.ed.places). */
+const edShown = (e, rows) => e?.veil ? ED.veilRows(rows, e.veilHide) : rows;
+
+/** Vrai quand la ligne de rang `i` des Lieux de la séance est cachée par le voile (une page forgée ne la retouche pas). */
+function edHid(e, i) {
+  if (!e?.veil || !Number.isInteger(i)) return false;
+  const rows = e.places || ED.placesOf(edDoc(e));
+  return !!rows[i] && edShown(e, rows)[i] === null;
+}
+
+/** « À compléter » de la séance : ED.todo, ou dans l'atelier voilé ED.veilTodo (rien du caché, ni tiroir ni lieu caché). */
+function edTodos(e, doc) {
+  return e?.veil ? ED.veilTodo(doc, edShown(e, e.places || ED.placesOf(doc))) : ED.todo(doc);
+}
+
+/** Vrai quand une étape de la fiche n'a rien à compléter (edTodos : la marque ✓ ou !). */
+const edStepOk = (e, doc, step) => !edTodos(e, doc).some(t => t.step === step);
 
 /** L'étape Équipes : une ligne par équipe (indicatif, service, type OACI, rôle), « Retirer » ; « + Équipe » ajoute une ligne. */
 function edTeamsHtml(s) {
@@ -417,14 +450,18 @@ function edPlacesHtml(s) {
     ok = v => EDTX[`ok_${v}`] ? s.tt(EDTX[`ok_${v}`]) : v,
     doc = edDoc(e),
     // qui emploie une zone ou un objet comme clé : « clé du tiroir 2 » (SOG-0445 : un tiroir CITE une zone ou un objet de la mission)
-    usedBy = i => ED.citedBy(doc, rows, i).filter(c => c.where === 'drawerKey' || c.where === 'drawerActor').map(c => s.tt(EDTX.plKeyOf, {
-      name: c.name
-    })),
+    // dans l'atelier voilé, rien ne dit qu'un tiroir cite un lieu (SOG-0459)
+    usedBy = i => e.veil ? [] : ED.citedBy(doc, rows, i).filter(c => c.where === 'drawerKey' || c.where === 'drawerActor').map(c => s.tt(
+      EDTX.plKeyOf, {
+        name: c.name
+      })),
     // un objet à trouver : sa sorte, sa portée, « caché au pilote », le tiroir dont il est la clé (ou aucun), sa position
-    objectDetail = (r, i) => [ok(r.okind), s.tt(EDTX.plHidden), ...(usedBy(i).length ? usedBy(i) : [s.tt(EDTX.plNoDrawer)]), r.range ? s.tt(
-      EDTX.plRangeIs, {
-        r: dec(s, r.range)
-      }) : '', r.moving ? s.tt(EDTX.plMoving) : '', dms(s, r.lat, r.lon)].filter(Boolean).join(' · '),
+    objectDetail = (r, i) => [ok(r.okind), s.tt(EDTX.plHidden), ...(e.veil ? [] : usedBy(i).length ? usedBy(i) : [s.tt(EDTX.plNoDrawer)]), r
+      .range ? s.tt(
+        EDTX.plRangeIs, {
+          r: dec(s, r.range)
+        }) : '', r.moving ? s.tt(EDTX.plMoving) : '', dms(s, r.lat, r.lon)
+    ].filter(Boolean).join(' · '),
     detail = (r, i) => r.kind === 'object' ? objectDetail(r, i) : [r.kind === 'zone' ? zk(r.zkind) : '', r.role, ...(r.kind === 'zone' ?
       usedBy(i) : []), r.kind === 'zone' && r.poly ? s.tt(TX.plPoly, {
       n: r.poly
@@ -446,7 +483,7 @@ function edPlacesHtml(s) {
         }) : '', r.alt ? s.tt(EDTX.plAltIs, {
           a: dec(s, r.alt)
         }) : ''].filter(Boolean).join(' · ');
-        return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc(r.id)} — ${esc(s.tt(EDTX.plObjectHint))}</p>
+        return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc(r.id)} — ${esc(s.tt(e.veil ? EDTX.plObjectHintVeil : EDTX.plObjectHint))}</p>
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
         <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
         <div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
@@ -463,10 +500,12 @@ function edPlacesHtml(s) {
         ${r.kind === 'rdv' ? field(i, 'participants', TX.plParticipants, r.participants, ' maxlength="400"') : ''}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button>${r.kind === 'zone' && (!r.poly || r.ring) ? `<button type="button" data-do="edzoneshape" data-i="${i}">${esc(s.tt(r.poly ? EDTX.plToRound : EDTX.plToContour))}</button>` : ''}${fixed ? '' : `<button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button>`}</div></div>`;
     },
-    id = e.cadre.id.trim().toUpperCase();
+    id = e.cadre.id.trim().toUpperCase(),
+    shown = edShown(e, rows); // SOG-0459 : l'atelier voilé ne montre pas les lignes cachées (elles restent à leur rang)
+  // « + Cible » : jamais dans l'atelier voilé (une cible cachée ne doit pas se deviner à son absence)
   return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
-    <div class="f-list" data-edplaces>${rows.map((r, i) => `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('')}</div>
-    <div class="f-row ms-pladd">${rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>${edRouteHtml(s, rows)}`;
+    <div class="f-list" data-edplaces>${rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('')}</div>
+    <div class="f-row ms-pladd">${e.veil || rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>${edRouteHtml(s, rows)}`;
 }
 
 /** La route du départ de la séance : ses identifiants (s.ed.route quand elle a été retouchée, sinon ceux du fichier). */
@@ -568,7 +607,7 @@ function edRouteHtml(s, rows) {
   const e = s.ed,
     route = edRoute(e),
     name = r => r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id,
-    by = new Map(rows.map(r => [ED.routeToken(r), r]).filter(x => x[0])),
+    by = new Map(edShown(e, rows).filter(Boolean).map(r => [ED.routeToken(r), r]).filter(x => x[0])),
     options = [...by].map(([t, r]) => [t, [name(r), r.kind === 'dep' || r.kind === 'arr' ? '' : r.name].filter(Boolean).join(' · ')]);
   return `<div class="ms-edroute" data-edroute><h4>${esc(s.tt(EDTX.rtTitle))}</h4><p class="f-muted">${esc(s.tt(route.length ? EDTX.rtHint : EDTX.rtNone))}</p>
     <div class="ms-chips" data-rtchips>${edChipsHtml(s, 'start', edRouteChips(e, rows))}</div>${edChipMoveHtml(s, 'start', edRouteChips(e, rows))}
@@ -607,9 +646,11 @@ function edTimelineHtml(s) {
       place: ED.refNow(r.place, e.base, e.places).toUpperCase()
     })), // SOG-0439
     doc = edDoc(e),
-    places = ED.placesOf(doc).filter(p => p.id && !['dep', 'arr', 'object'].includes(p.kind)), // jamais un objet caché au pilote
+    // jamais un objet caché au pilote ; dans l'atelier voilé, les seuls lieux montrés (SOG-0459)
+    places = edShown(e, ED.placesOf(doc)).filter(p => p && p.id && !['dep', 'arr', 'object'].includes(p.kind)),
     maps = ED.mapsOf(doc),
-    missing = ED.proposedMaps(doc),
+    // les cartes proposées nomment les zones par leur rang : dans l'atelier voilé, elles ne se proposent pas (un rang dirait le caché)
+    missing = e.veil ? [] : ED.proposedMaps(doc),
     opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`,
     row = (r, i) => `<div class="ms-edteam ms-evrow" data-event="${i}"><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evAt))}</span><input data-k="edevent" data-i="${i}" data-f="at" value="${esc(r.at)}" placeholder="H+30mn" maxlength="20" autocomplete="off"></label><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evPlace))}</span><select data-k="edevent" data-i="${i}" data-f="place">${opt('', s.tt(TX.evFree), r.place)}${[...places.map(p => [p.id.toUpperCase(), `${p.id}${p.name ? ` — ${p.name}` : ''}`]), ...(r.place && !places.some(p => p.id.toUpperCase() === r.place) ? [[r.place, r.place]] : [])].map(([v, l]) => opt(v, l, r.place)).join('')}</select></label><label class="f-field ms-evtext"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evText))}</span><input data-k="edevent" data-i="${i}" data-f="text" value="${esc(r.text)}" maxlength="500" autocomplete="off"></label><button type="button" class="ms-edtdel" data-do="edeventdel" data-i="${i}" title="${esc(s.tt(TX.evDel))}" aria-label="${esc(s.tt(TX.evDel))}">✕</button></div>`;
   return `<h3>6. ${esc(s.tt(TX.stepTimeline))}</h3><p class="f-muted">${esc(s.tt(TX.edTimelineHint))}</p>
@@ -645,7 +686,7 @@ function edLine(s, doc, k) {
     return t.length ? `${s.tt(EDTX.atLine_teams, { n: t.length })} · ${t.slice(0, 2).map(x => x.name).filter(Boolean).join(', ')}${t.length > 2 ? '…' : ''}` : s.tt(EDTX.atLine_none);
   }
   if (k === 'places') {
-    const n = ED.placesOf(doc).filter(p => !['dep', 'arr'].includes(p.kind)).length;
+    const n = edShown(s.ed, ED.placesOf(doc)).filter(p => p && !['dep', 'arr'].includes(p.kind)).length; // SOG-0459 : le visible seul
     return n ? s.tt(EDTX.atLine_places, {
       n
     }) : s.tt(EDTX.atLine_none);
@@ -680,7 +721,7 @@ function edSheetHtml(s, doc) {
   const names = edNames();
   return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atSheet))}</h3><p class="f-muted">${esc(s.tt(EDTX.atSheetHint))}</p>
     <div data-steps>${ED.STEPS.map(k => {
-    const ok = ED.stepState(doc, k) === 'ok',
+    const ok = edStepOk(s.ed, doc, k),
       open = s.ed.step === k;
     return `<div class="ms-atgrp" data-grp="${k}" data-open="${open ? '1' : ''}"><button type="button" class="ms-atsum" data-do="edstep" data-step="${k}" aria-expanded="${open}"${open ? ' aria-current="step"' : ''}><span class="ms-stepmark" data-kind="${ok ? 'ok' : 'warn'}" data-mark="${k}" aria-hidden="true">${ok ? '✓' : '!'}</span><b>${esc(s.tt(names[k]))}</b><span class="ms-atline f-muted" data-line="${k}">${esc(edLine(s, doc, k))}</span></button>${open ? `<div class="ms-atbody" data-edform>${edGroupBody(s, k)}</div>` : ''}</div>`;
   }).join('')}</div></section>`;
@@ -691,8 +732,11 @@ function edSheetHtml(s, doc) {
  *  (SOG-0445). Les cartes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
 function edFlowHtml(s, doc, run = null) {
   const e = s.ed,
-    drawers = MS.readMission(doc)?.drawers || [],
-    c = e.cadre,
+    c = e.cadre;
+  // SOG-0459, l'atelier voilé : « Au départ » seul, et « Dévoiler la mission complète » à la place d'« Essayer les clés »
+  if (e.veil) return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div><p class="f-muted">${esc(s.tt(EDTX.atFlowHintVeil))}</p>
+    <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start" aria-current="true"><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button></div></section>`;
+  const drawers = MS.readMission(doc)?.drawers || [],
     todo = new Set(DR.drawersTodo(doc).map(t => t.name)),
     sel = e.sel || 'start',
     on = id => sel === id ? ' aria-current="true"' : '';
@@ -791,7 +835,7 @@ function edMapViewHtml(s, live) {
     n = edDrawers(e).length,
     stage = edMapStage(e),
     opt = (v, text) => `<option value="${v}"${stage === v ? ' selected' : ''}>${esc(text)}</option>`;
-  if (!n || e.trial?.on) return '';
+  if (!n || e.trial?.on || e.veil) return ''; // SOG-0459 : l'atelier voilé n'a qu'une vue, celle du départ
   return `<label class="f-field ms-atmapview" data-mapview><span class="f-muted">${esc(s.tt(EDTX.atView))}</span><select data-k="edmapview"${live ? '' : ' disabled'}>${opt(-1, s.tt(EDTX.atView_all))}${opt(0, s.tt(EDTX.atView_start))}${Array.from({ length: n }, (_, k) => opt(k + 1, s.tt(EDTX.atView_n, { n: k + 1 }))).join('')}</select></label>`;
 }
 
@@ -800,7 +844,7 @@ function edMapViewHtml(s, live) {
 function edMapFeats(s, doc, run = null) {
   const e = s.ed,
     rows = e.places || ED.placesOf(doc);
-  return EM.mapFeatures(run ? rows : edPilotRows(e, doc, rows), {
+  return EM.mapFeatures(run ? rows : edPilotRows(e, doc, edShown(e, rows)), { // SOG-0459 : le voile, puis la vue du pilote
     zones: e.base?.zones,
     // « XTST · Base Test » (placeText : le code d'abord) : la position de la base quand le fichier ne la dit pas
     adPos: name => adPosOf(s, (/^[A-Z]{4}(?= ·|$)/.exec(String(name || '')) || [])[0]),
@@ -1114,7 +1158,7 @@ function edRouteAdd(s, e, token) {
 /** Tracé : un lieu touché sur la carte rejoint la route choisie — la suite de route du tiroir choisi dans le déroulé, sinon la route du
  *  départ. L'outil reste en main (on trace plusieurs lieux de suite). Un lieu sans identifiant, une route pleine : une notification. */
 function edMapRoute(s, e, i) {
-  if (state() !== s || s.ed !== e || e.trial?.on) return;
+  if (state() !== s || s.ed !== e || e.trial?.on || edHid(e, i)) return;
   const token = ED.routeToken(edPlaces(e)[i]);
   if (!token) return s.ctx.notify?.(s.tt(EDTX.rtNoId), 'warn');
   // un lieu ajouté par un toucher de la carte est un geste de la carte (l'ergonome, 18 nov.) : « Annuler le geste » le rend
@@ -1158,6 +1202,7 @@ function edPlaces(e) {
  *  départ, le groupe « Lieux », la ligne en vue. La carte nue ne choisit plus rien (sur place). Une carte d'une autre séance : rien. */
 function edMapPick(s, e, i) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
+  if (edHid(e, i)) return; // SOG-0459 : une ligne cachée ne se choisit pas (elle n'est pas dessinée)
   const hadRef = !!e.mapRef;
   e.mapRef = null; // un lieu choisi, ou la carte nue : plus de repère touché
   const rows = edPlaces(e);
@@ -1271,8 +1316,8 @@ export function edAfter(s) {
  *  une ligne par tiroir (SOG-0445). */
 function edTodoHtml(s, doc) {
   const names = edNames(),
-    todo = ED.todo(doc),
-    drawers = edDrawerTodo(s, doc),
+    todo = edTodos(s.ed, doc),
+    drawers = s.ed.veil ? [] : edDrawerTodo(s, doc), // SOG-0459 : rien d'un tiroir dans l'atelier voilé
     lines = [...todo.map(t => `<li data-todo="${t.key}">${esc(s.tt(names[t.step]))} : ${esc(todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`]))}</li>`), ...drawers.map(t => `<li data-dtodo="${esc(t.name)}">${esc(t.text)}</li>`)];
   return lines.length ? `<ul class="ms-lines">${lines.slice(0, 7).join('')}</ul>${lines.length > 7 ? `<p class="f-muted">${esc(s.tt(TX.more, { n: lines.length - 7 }))}</p>` : ''}` : `<p>${esc(s.tt(TX.edNothing))}</p>`;
 }
@@ -1281,8 +1326,8 @@ function edTodoHtml(s, doc) {
  *  premier point. */
 function edTodoBtnHtml(s, doc) {
   const names = edNames(),
-    todo = ED.todo(doc),
-    drawers = edDrawerTodo(s, doc),
+    todo = edTodos(s.ed, doc),
+    drawers = s.ed.veil ? [] : edDrawerTodo(s, doc),
     t = todo[0],
     first = t ? `${s.tt(names[t.step])} — ${todoText(s.tt, t) || s.tt(TX[`todo_${t.key}`])}` : drawers[0]?.text || '';
   return `${esc(s.tt(EDTX.atTodo, { n: todo.length + drawers.length }))}${first ? `<span class="ms-attodofirst"> : ${esc(first)}</span>` : ''}`;
@@ -1564,10 +1609,10 @@ export function edHtml(s) {
   const e = s.ed,
     doc = edDoc(e),
     run = edTrialRun(s, doc); // l'essai des clés en cours, ou null
-  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
+  return `<style>${AT_STYLE}</style><div class="ms-ed ms-at" data-pane="editor" data-mode="${e.mode}" data-step="${e.step}" data-veil="${e.veil ? '1' : ''}"><p class="f-muted ms-crumb">${esc(s.tt(EDTX.atCrumb))}</p>
     <h2 data-edhead>${esc([e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '))}</h2>
     ${e.pending ? `<span class="f-badge ms-edpend" data-kind="warn" data-edpending>${esc(s.tt(TX.edPending))}</span>` : ''}
-    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edFlowHtml(s, doc, run)}</div>${run ? edTrialHtml(s, run) : (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}</div>
+    <div class="ms-atgrid"><div class="ms-atmain">${edMapHtml(s, doc, run)}${edFlowHtml(s, doc, run)}</div>${run ? edTrialHtml(s, run) : e.veil || (e.sel || 'start') === 'start' ? edSheetHtml(s, doc) : edDrawerHtml(s, doc)}</div>
     <div class="ms-atfoot"><div class="f-card ms-attodo" data-edtodo${e.todoOpen ? '' : ' hidden'}>${edTodoHtml(s, doc)}</div>
     <div class="ms-atbar"><button type="button" class="primary" data-do="edsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(TX.edSave))}</button><button type="button" class="ms-edcancel" data-do="edcancel">${esc(s.tt(TX.cancel))}</button><button type="button" class="ms-attodobtn" data-do="edtodo" data-edtodobtn aria-expanded="${!!e.todoOpen}">${edTodoBtnHtml(s, doc)}</button></div></div></div>`;
 }
@@ -1596,7 +1641,7 @@ function edShowSel(s) {
 function edInputDo(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
-  if (k === 'eddr') return edDrawerInput(s, ev); // la fiche d'un tiroir
+  if (k === 'eddr') return e.veil ? undefined : edDrawerInput(s, ev); // la fiche d'un tiroir (jamais dans l'atelier voilé)
   if (k === 'edrefseek') { // « Chercher un repère » : le texte est gardé ; Entrée (un « change » le champ encore en main) cherche
     e.refSeek = String(ev.target.value ?? '').slice(0, 40);
     if (e.seekRows) { // le texte a changé : les candidats de l'ancien ne se proposent plus
@@ -1616,7 +1661,7 @@ function edInputDo(s, ev) {
     return edMapShow(s); // sur place : la carte allume ou éteint sa couche, rien n'est redessiné
   }
   if (k === 'edmapview') { // « Vue de la carte » : tout (l'auteur), ou ce que le pilote voit à un stade ; plus de lieu choisi
-    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT') return;
+    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || e.veil) return;
     const n = Number(ev.target.value);
     e.mapView = Number.isInteger(n) && n >= 0 && n <= edDrawers(e).length ? n : -1;
     e.mapSel = -1;
@@ -1628,7 +1673,8 @@ function edInputDo(s, ev) {
   if (k === 'edroute') { // la route du départ : « Ajouter un lieu… » en ajoute un (avant l'arrivée quand elle termine la route)
     const token = String(ev.target.value || '').slice(0, 40);
     // seulement le jeton d'un lieu de la séance : une page forgée n'écrit pas un identifiant quelconque dans la route
-    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !(e.places || []).some(r => ED.routeToken(r) === token)) return;
+    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || !token || !edShown(e, e.places || []).some(r => r && ED.routeToken(r) ===
+        token)) return;
     e.mapUndo?.clear(); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre (il ne défait jamais une saisie)
     edRouteAdd(s, e, token);
     return draw(s);
@@ -1662,6 +1708,14 @@ function edInputDo(s, ev) {
   if (k === 'edplace') { // un lieu : le champ retouché en place, la ligne redessinée à « OK »
     const row = e.places?.[+ev.target.dataset.i],
       f = ev.target.dataset.f;
+    if (edHid(e, +ev.target.dataset.i)) return; // SOG-0459 : une ligne cachée n'est jamais retouchée
+    // SOG-0459 : l'identifiant d'un lieu du fichier ne change pas dans l'atelier voilé — la même phrase pour tous
+    if (e.veil && row && row.i >= 0 && f === 'id') {
+      if (ev.target.value !== row.id) ev.target.value = row.id;
+      return s.ctx.notify(s.tt(EDTX.veilLocked), 'warn', {
+        key: 'missions-veil'
+      });
+    }
     e.mapUndo?.clear(); // « Annuler le geste » ne défait jamais une saisie : après elle, il n'a plus rien à rendre
     // l'identifiant d'un objet est donné par l'atelier : il ne se saisit pas, même par une page forgée (Sécurisation, 18 nov.)
     if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f) && !(row.kind === 'object' &&
@@ -1754,7 +1808,7 @@ function adPosOf(s, icao) {
  *  sans au moins un lieu placé. */
 function thumbHtml(s, doc, run = null) {
   const pts = [];
-  for (const p of ED.placesOf(doc)) {
+  for (const p of edShown(s.ed, ED.placesOf(doc)).filter(Boolean)) { // SOG-0459 : l'atelier voilé ne dessine pas le caché
     let lat = p.lat === '' ? NaN : +p.lat,
       lon = p.lon === '' ? NaN : +p.lon;
     if ((p.kind === 'dep' || p.kind === 'arr') && !(Number.isFinite(lat) && Number.isFinite(lon))) {
@@ -1821,7 +1875,7 @@ function edRefresh(s) {
     };
   put(q('[data-edhead]'), [e.cadre.id || s.tt(TX.edNewTitle), e.cadre.title].filter(Boolean).join(' · '));
   for (const k of ED.STEPS) {
-    const ok = ED.stepState(doc, k) === 'ok',
+    const ok = edStepOk(e, doc, k),
       mark = q(`[data-mark="${k}"]`);
     put(q(`[data-line="${k}"]`), edLine(s, doc, k));
     put(mark, ok ? '✓' : '!');
@@ -1837,7 +1891,7 @@ function edRefresh(s) {
     for (const k of ['name', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
   }
   const dtodo = new Set(DR.drawersTodo(doc).map(t => t.name));
-  for (const d of MS.readMission(doc)?.drawers || []) {
+  for (const d of e.veil ? [] : MS.readMission(doc)?.drawers || []) {
     const mark = q(`[data-dmark="${d.rank}"]`),
       bad = dtodo.has(String(d.rank));
     put(q(`[data-dtitle="${d.rank}"]`), `${s.tt(EDTX.atDrawer, { n: d.rank })}${d.title ? ` · ${d.title}` : ''}`);
@@ -2002,6 +2056,8 @@ function edClickDo(s, b) {
   const r = s.reg,
     idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
     line = r?.lines.find(x => x.idx === idx);
+  // SOG-0459 : dans l'atelier voilé, rien d'un tiroir ni de l'essai ne joue — même d'une page forgée
+  if (s.ed?.veil && VEILED_OFF.has(b.dataset.do)) return;
   switch (b.dataset.do) {
     case 'edcreate':
       return edOpen(s, 'new');
@@ -2057,9 +2113,9 @@ function edClickDo(s, b) {
       };
       return draw(s);
     }
-    case 'edsel': { // une carte du déroulé : la fiche du départ, ou celle d'un tiroir
+    case 'edsel': { // une carte du déroulé : la fiche du départ, ou celle d'un tiroir (jamais dans l'atelier voilé)
       const id = String(b.dataset.sel || '');
-      s.ed.sel = id !== 'start' && edDrawers(s.ed).some(r => r.id === id) ? id : 'start';
+      s.ed.sel = !s.ed.veil && id !== 'start' && edDrawers(s.ed).some(r => r.id === id) ? id : 'start';
       s.ed.drawerAsk = '';
       s.ed.dopen = {};
       return draw(s);
@@ -2120,8 +2176,9 @@ function edClickDo(s, b) {
       return draw(s);
     }
     case 'edchippick': { // une pastille de route choisie (reprise : lâchée) — sur place, la pastille pressée n'est pas redessinée
-      const e = s.ed,
-        where = b.dataset.where === 'start' ? 'start' : edDrawerRow(e)?.id,
+      const e = s.ed;
+      if (e.veil && b.dataset.where !== 'start') return; // la suite de route d'un tiroir : jamais dans l'atelier voilé
+      const where = b.dataset.where === 'start' ? 'start' : edDrawerRow(e)?.id,
         n = +b.dataset.n;
       if (!where || !Number.isInteger(n) || n < 0) return;
       if (where === 'start' && (n < ED.routeFree(edRoute(e)).lo || n > ED.routeFree(edRoute(e)).hi)) return; // une ancre ne se choisit pas
@@ -2133,8 +2190,9 @@ function edClickDo(s, b) {
     }
     case 'edchipmove': { // « ← Plus tôt » / « Plus tard → » : la pastille choisie avance ou recule d'un rang ; sur place
       const e = s.ed,
-        start = b.dataset.where === 'start',
-        r = start ? null : edDrawerRow(e),
+        start = b.dataset.where === 'start';
+      if (e.veil && !start) return; // la suite de route d'un tiroir : jamais dans l'atelier voilé
+      const r = start ? null : edDrawerRow(e),
         where = start ? 'start' : r?.id,
         n = where ? edChipSel(e, where) : -1,
         step = b.dataset.step === '-1' ? -1 : 1;
@@ -2239,8 +2297,9 @@ function edClickDo(s, b) {
     }
     case 'edzoneshape': { // la forme d'une zone, dans sa fiche : ronde → un contour de six sommets à son rayon ; contour → ronde
       const e = s.ed,
-        i = +b.dataset.i,
-        before = edPlaces(e),
+        i = +b.dataset.i;
+      if (edHid(e, i)) return; // SOG-0459 : une ligne cachée n'est jamais retouchée
+      const before = edPlaces(e),
         after = before[i]?.poly ? ED.toRound(before, i) : ED.toContour(before, i);
       if (after === before) return s.ctx.notify?.(s.tt(EDTX.plShapeNeeds), 'warn');
       edMapRemember(e);
@@ -2294,6 +2353,7 @@ function edClickDo(s, b) {
         block: 'nearest'
       });
     case 'edplace':
+      if (edHid(s.ed, +b.dataset.i)) return; // SOG-0459 : une ligne cachée ne s'ouvre pas
       s.ed.placeAsk = -1;
       s.ed.placeEdit = s.ed.placeEdit === +b.dataset.i ? -1 : +b.dataset.i;
       // la liste et la carte disent le même lieu : la ligne ouverte est le lieu choisi sur la carte (refermée : plus aucun)
@@ -2344,8 +2404,13 @@ function edClickDo(s, b) {
       // SOG-0439 : un lieu encore cité se retire en deux temps (editor.js removePlace) ; le premier appui dit qui le cite
       // (le second, inerte une seconde ; la notification reste jusqu'à sa croix ou au second appui, qui la remplace)
       const i = +b.dataset.i,
-        row = s.ed.places?.[i],
-        note = {
+        row = s.ed.places?.[i];
+      // SOG-0459 : dans l'atelier voilé, un lieu du fichier ne se retire pas sans dévoiler — la même phrase pour TOUS (un refus au cas
+      // par cas serait un indice) ; un lieu ajouté dans la séance (i = -1) se retire librement
+      if (s.ed.veil && row && row.i >= 0) return s.ctx.notify(s.tt(EDTX.veilLocked), 'warn', {
+        key: 'missions-veil'
+      });
+      const note = {
           key: 'missions-place-cited',
           ms: 3600e3
         },
@@ -2367,6 +2432,7 @@ function edClickDo(s, b) {
       return draw(s);
     }
     case 'edplaceadd': { // une ligne neuve à la place de sa sorte (ED.newPlace : la même que la pose sur la carte), son premier champ en main
+      if (s.ed.veil && b.dataset.kind === 'target') return; // « + Cible » n'est pas donné dans l'atelier voilé
       const made = ED.newPlace(s.ed.places || [], b.dataset.kind, s.ed.base);
       if (!made) return;
       s.ed.mapUndo?.clear(); // les rangs ont changé : plus de geste à annuler, plus de lieu choisi sur la carte
@@ -2399,9 +2465,35 @@ function edClickDo(s, b) {
         .base === base));
       return edMapShow(s);
     }
+    case 'edunveil': // « Dévoiler la mission complète » (SOG-0459) : la question du cadre, puis l'atelier entier
+      return edUnveil(s);
     case 'edcancel':
       return edLeave(s);
   }
+}
+
+/** Les gestes qui ne jouent pas dans l'atelier voilé (SOG-0459) : l'essai des clés, les tiroirs, les cartes proposées (elles nomment
+ *  les zones par leur rang). */
+const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddradd', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
+  'eddrchipdel', 'eddrdraw', 'edmapspropose'
+]);
+
+/** « Dévoiler la mission complète » (SOG-0459) : la question du cadre (« Dévoiler » / « Garder le secret ») ; sur oui, l'atelier
+ *  d'aujourd'hui, entier — les saisies de la séance voilée sont gardées ; une mission qui ne cachait rien (aucun tiroir, aucune ligne
+ *  cachée) le dit. Dévoiler n'est pas une saisie : la mission n'en devient pas « changée » (edDirty ne lit que le document). */
+async function edUnveil(s) {
+  const e = s.ed;
+  if (!e?.veil) return;
+  if (!(await s.ctx.ask(s.tt(EDTX.veilAsk), {
+      ok: s.tt(EDTX.veilOk),
+      cancel: s.tt(EDTX.veilKeep)
+    }))) return;
+  if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
+  const nothing = !DR.drawerRowsOf(e.base).length && !(e.veilHide || []).length;
+  e.veil = false;
+  e.sel = 'start';
+  draw(s);
+  if (nothing) s.ctx.notify(s.tt(EDTX.veilNothing), 'info');
 }
 
 /** Vrai quand la mission de l'atelier porte un changement non enregistré : son document n'est plus celui de l'ouverture (une

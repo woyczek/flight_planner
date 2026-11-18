@@ -830,6 +830,41 @@ no badge, no title of a closed drawer.
   default; ticked → `zone_shown: true` is written; unticked → the key is not written (a file that writes `false` keeps it until the
   box is touched: only what changes is written — `editor_drawers.js` `putKey`).
 - **« Ce que le pilote voit »** of a drawer: nothing before the opening (§ 7 octies).
+- **The workshop opens VEILED (part B, commit 2; noreg N114, N115)** — the author too discovers his mission by playing it, unless he
+  chooses to reveal it:
+  - **Who is veiled**: a mission that EXISTS, opened by « Modifier » or « Dupliquer », opens veiled (`s.ed.veil`), unless
+    `state().fullView === true`, strictly (the box « Voir le contenu complet des missions » of the registry, which « Features SOG »
+    will set in the state of the module; any other value veils — closed on failure). A created mission is whole. The rule is the
+    pure `ED.veiledAt(mode, fullView)`; it NEVER depends on what the mission hides.
+  - **What the veiled workshop shows**: in the unfolding, « Au départ » alone — no card of a drawer, no « ＋ Tiroir », no « Essayer
+    les clés »; no « Vue de la carte »; in the Lieux, on the map and its labels, in the sketch, in the route of the departure and its
+    « Ajouter un lieu… », in every list of places: only the places `pilotView` keeps with no drawer open (`ED.veilHidden(doc)`: the
+    rows hidden at the departure, by their kind and their place in the file — `["zone:0", …]` —, taken at the opening and valid after a
+    save: a new place goes to the end of its kind, a place of the file is never removed while veiled). « À compléter » says nothing of
+    what is hidden (`ED.veilTodo`: the document without its drawers; « à placer » only for a row shown) and counts the visible only.
+    A zone or an object never says « clé du tiroir n »; « + Cible » and « Proposer les cartes depuis les lieux » are not offered (the
+    first would tell a hidden target by its absence, the second names the zones by their rank). The map stays editable (Sélection,
+    Point, Tracé, Zone, Objet) on the visible.
+  - **The veil is a filter of DISPLAY** — the rule of construction: the hidden rows STAY in `s.ed.places` at their rank (`ED.veilRows`
+    turns them into null for the screen), never removed, never retouched (`data-i`, `mapSel`… do not move); the drawers are not
+    loaded (`s.ed.drawers` stays null: they are not rewritten). Saving a mission that is not revealed keeps its drawers and its hidden
+    places intact (N114 compares the YAML written with the file; it is red if the veil removed the rows instead of hiding them —
+    checked by breaking the guard for one replay).
+  - **« Dévoiler la mission complète »**: a button on EVERY mission opened veiled, whether it hides something or not (its presence must
+    say nothing), in the card « Déroulé de la mission », in place of « Essayer les clés ». The frame's question: « Dévoiler la mission
+    complète ? Vous ne pourrez plus la découvrir en la jouant. » — « Dévoiler » / « Garder le secret ». On yes, `s.ed.veil = false`: the
+    workshop of today, whole; a mission that hid nothing (no drawer, no hidden row) says « Cette mission n'a rien de caché ». What was
+    typed in the veiled sitting is kept; revealing is not a change (`edDirty` reads the document only).
+  - **One rule for every place of a mission that exists** (the ergonomist: no refusal case by case, it would be a clue): texts and
+    positions are retouched; removing a place or changing its identifier asks to reveal — the same sentence everywhere, as a
+    notification: « Retirer un lieu ou changer son identifiant demande de dévoiler la mission. » A place added in the veiled sitting
+    (`i === -1`) is removed and renamed freely.
+  - **The identifier of a new place** (`ED.nextPlaceId`, in every mode): the GREATEST number of its kind already carried — rows of the
+    sitting and places of the file read, hidden ones included — plus one. A gap is never filled, so a gap proves nothing (« ZONE-2 »
+    proposed in a veiled workshop no longer tells a hidden ZONE-1).
+  - **« Dupliquer »** a veiled mission copies everything, drawers included; the copy stays veiled.
+  - Guards against a forged page: the gestures of the trial and of the drawers do nothing while veiled (`VEILED_OFF`), a hidden row is
+    never opened nor retouched (`edHid`), « Ajouter un lieu… » takes only the token of a row shown.
 
 ### 8. What is NOT ported
 

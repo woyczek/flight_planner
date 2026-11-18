@@ -170,7 +170,8 @@ reader: `pilotView(mission, opened, { mine = true })` returns the mission read, 
 
 Identifiers are compared as the reader reads them (trimmed, upper case; `TARGET` names the target). The mission read is never
 modified. **For display only**: the device that follows the keys in flight, and the workshop, read the whole mission
-(`readMission`). **The limit, said**: the file stays readable by whoever opens it, and the V2 shows everything — it is a secret of
+(`readMission`) — the workshop itself opens an existing mission VEILED (SOG-0459, part B: it shows what `pilotView` keeps with no
+drawer open, until the author chooses « Dévoiler la mission complète »; `modules/missions/EDITOR.md` § 7 septvicies). **The limit, said**: the file stays readable by whoever opens it, and the V2 shows everything — it is a secret of
 the screen, not a protection. Who goes through it: the sheet and the Detail of a mission (Features SOG), the Map (BUGS SOG), the
 search index, the read-only map of the mission (`modules/missions/mission_map.js`), with the open drawers published on the device
 by « Affectation » — none writes a rule of its own. Bench: `frame/lib/test/mission.html` (noreg N1); noreg N103, N113.
