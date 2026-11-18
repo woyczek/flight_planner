@@ -7878,6 +7878,36 @@ def a327(c):
     c.check_errors()
 
 
+@case('A328', 'The roadmap copy of « SOG-nnnn — title » is never silent (SOG-0468 (1)): the clipboard refused and execCommand failing → a WARNING « copy them by hand » and the text shown selected on the card; copied → « Copied », no warning', 'A',
+      designs=('standard',), screens=False, night=False, langs4=True,
+      rule='SOG-0468 (1) (the ergonomist): the right click (or long touch) of A101 said nothing when both navigator.clipboard.writeText and document.execCommand failed; it copies through copyAndTell of frame/lib/clipboard.js: copied → « Copié », else the text shown selected in a field of the card and a warning (four languages)')
+def a328(c):
+    lang = c.lang
+    T = lambda k: norm(tx('frame/help/roadmap.js', k, lang, after='const T = {'))
+    fixture = _rm_fixture()
+    c.context.route(re.compile(r'/frame/help/roadmap\.json'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(fixture)))
+    c.page.add_init_script("""(() => { window.__clipOk = false; window.__clip = [];
+      const w = async t => { if (!window.__clipOk) throw new DOMException('no', 'NotAllowedError'); window.__clip.push(t) };
+      try { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: w } }) } catch (e) {}
+      document.execCommand = () => { if (!window.__clipOk) throw new Error('no'); return true } })()""")
+    c.open('roadmap', docs=[['device/level.json', {'level': 3}, 'cache'], ['device/roadmap.json', {'view': 'themes'}, 'cache']])
+    c.until("!!document.querySelector('[data-kanban] li.f-rm-item[data-id]')", timeout=15000, what='a card with an identifier')
+    li = '[data-kanban] li.f-rm-item[data-id]'
+    want = c.js(f"document.querySelector('{li}').dataset.id")
+    NOTES = "(window.__notes || []).map(n => n.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+    c.page.click(li, button='right')
+    c.until(f"{NOTES}.includes({json.dumps(T('copyManual'))})", what='the warning « copy them by hand »')
+    c.eq(c.js(f"{NOTES}.filter(n => n === {json.dumps(T('copied'))}).length"), 0, 'both copies failed: « Copied » is never said', what='no « copied »')
+    c.eq(c.js(f"(() => {{ const f = document.querySelector('{li} input.sog-copybox'); return !!f && !f.hidden && f.value.startsWith({json.dumps(want + ' — ')}) }})()"), True,
+         'the text « SOG-nnnn — title » is shown on the card, to copy by hand', what='shown')
+    c.js("() => { window.__clipOk = true; window.__notes.length = 0 }")
+    c.page.click(li, button='right')
+    c.until('window.__clip.length === 1', what='the clipboard written')
+    c.until(f"{NOTES}.includes({json.dumps(T('copied'))})", what='the note « Copied »')
+    c.eq(c.js(f"{NOTES}.filter(n => n === {json.dumps(T('copyManual'))}).length"), 0, 'copied: no warning', what='no warning')
+    c.check_errors()
+
+
 
 @case('A159', 'The left bar in three steps by the width of the window (SOG-0274): the whole bar from 1100 px, an icon RAIL (56 px) from 761 to 1099 px, the phone mode up to 760 px; the label is the tooltip and the accessible name, the active screen stays marked, the separators and the V2 entry (an icon) stay, no horizontal scroll; on Pilot and on Maintenance', 'A',
       screens=False, night=False,

@@ -43,6 +43,11 @@
     doneOne: ['{n} livrée', '{n} delivered', '{n} geliefert', '{n} entregada'],
     doneMany: ['{n} livrées', '{n} delivered', '{n} geliefert', '{n} entregadas'],
     copied: ['Copié', 'Copied', 'Kopiert', 'Copiado'],
+    copyManual: ['Copie impossible ici : l’identifiant et le titre sont sélectionnés sur la carte, copiez-les à la main.',
+      'Could not copy here: the identifier and the title are selected on the card, copy them by hand.',
+      'Kopieren ist hier nicht möglich: Kennung und Titel sind auf der Karte markiert, kopieren Sie sie von Hand.',
+      'No se puede copiar aquí: el identificador y el título están seleccionados en la tarjeta, cópielos a mano.'
+    ],
     unsent: ['non envoyé', 'not sent', 'nicht gesendet', 'no enviado'],
     noOrg: ['Pas de dossier « organisation » sur ce poste : l’ordre reste sur cet appareil.',
       'No “organisation” folder on this computer: the order stays on this device.',
@@ -434,28 +439,51 @@
         }
       }, [id]);
     };
-    /** Copie « SOG-0046 — titre » dans le presse-papiers, puis le dit. */
+    /** Copie « SOG-0046 — titre » dans le presse-papiers, puis le dit (SOG-0468 (1) : copyAndTell de frame/lib/clipboard.js ; une copie impossible montre le texte
+     *  sélectionné sur la carte et le dit, au lieu de se taire). */
     const copy = async id => {
       const it = (d.lanes || []).flatMap(l => l.items || []).find(i => i.id === id);
       const text = `${id} — ${t(row(it || {}))}`.trim();
-      let ok = false;
+      const li = [...view.querySelectorAll('li.f-rm-item[data-id]')].find(l => l.dataset.id === id),
+        box = li ? li.querySelector('input.sog-copybox') || li.appendChild(Object.assign(document.createElement('input'), {
+          className: 'sog-copybox',
+          readOnly: true,
+          hidden: true
+        })) : null;
+      if (box) box.style.cssText = 'width:100%;box-sizing:border-box;margin-top:6px'; // caché (hidden) tant que la copie réussit
+      const say = {
+        ok: t(T.copied),
+        manual: t(T.copyManual),
+        box
+      };
       try {
-        await navigator.clipboard.writeText(text);
-        ok = true;
+        await (await import(new URL('frame/lib/clipboard.js', c.root).href)).copyAndTell(c, text, say);
       } catch {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.cssText = 'position:fixed;opacity:0';
-        document.body.append(ta);
-        ta.select();
+        // la bibliothèque n'a pas pu être chargée (hors ligne, pas encore gardée) : le même ordre ici
+        let ok = false;
         try {
-          ok = document.execCommand('copy');
+          await navigator.clipboard.writeText(text);
+          ok = true;
         } catch {
-          ok = false;
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.append(ta);
+          ta.select();
+          try {
+            ok = document.execCommand('copy');
+          } catch {
+            ok = false;
+          }
+          ta.remove();
         }
-        ta.remove();
+        if (!ok && box) {
+          box.value = text;
+          box.hidden = false;
+          box.select();
+        }
+        c.notify?.(ok ? say.ok : say.manual, ok ? 'ok' : 'warn');
       }
-      if (ok) c.notify?.(t(T.copied), 'ok');
     };
 
     // ---- le geste : souris (glisser après 6 px), toucher (appui long, puis glisser ; relâché sans bouger = copie) ; clic droit = copie
