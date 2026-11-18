@@ -196,6 +196,8 @@ export const TX = {
   altnWarn: ['À vérifier', 'To check', 'Zu prüfen', 'A comprobar'],
   altnDist: ['à {n} NM de l’arrivée', '{n} NM from the arrival', '{n} NM vom Ziel', 'a {n} NM del destino'],
   altnWhy: {
+    'rwy-unread': ['piste non vérifiée', 'runway not checked', 'Piste nicht geprüft', 'pista no comprobada'],
+    'aids-unread': ['moyens non vérifiés', 'aids not checked', 'Navigationshilfen nicht geprüft', 'medios no comprobados'],
     'aids-visual': ['approche à vue seulement', 'visual approach only', 'nur Sichtanflug', 'solo aproximación visual'],
     'wx-ifr': ['TAF en IFR autour de l’arrivée', 'TAF in IFR around the arrival', 'TAF in IFR um die Ankunft',
       'TAF en IFR en torno a la llegada'

@@ -222,6 +222,8 @@ export function llAt(x, y) {
       lon: outLon(p.lng)
     };
   }
+  if (!S.fit)
+    return null; // le fond uni avant tout cadrage (aucun vol, rien à montrer) : pas de position sous le doigt (mercator lisait `.w` d'undefined)
   const r = S.box.getBoundingClientRect(),
     ll = r.width ? MapsRender.mercator(S.fit, r.width, r.height, 12).toLL(x, y) : null;
   return ll && {

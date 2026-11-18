@@ -9518,6 +9518,32 @@ def d273(c):
     c.wait(2500)
     c.shot('D273_arrow_small.png')
 
+@case('D274', 'A tap on the Map when it has no view yet (no flight, no tiles) throws nothing: llAt gives null, not an error on the missing frame', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='tester report (18 Nov): maps/render.js mercator read `.w` of undefined, from tips.js llAt, from the click of module.js: without tiles (the plain background) and before any frame (S.fit unset: no flight), the position under a tap was computed with an undefined frame; it is now null, the tap does nothing')
+def d274(c):
+    c.open('maps', flight=False, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    r = c.js("""async () => { const S = window.__mp.S, m = await import('/modules/maps/tips.js'), map = S.map, fit = S.fit; let ll, err = '';
+      // the plain background (no tiles) before any frame was set: the state of a first tap on a Map that has not framed anything yet
+      S.map = null; S.fit = undefined;
+      try { ll = m.llAt(50, 50) } catch (e) { err = String(e).slice(0, 120) } finally { S.map = map; S.fit = fit }
+      return { ll: ll ?? null, err } }""")
+    c.ok(r['err'] == '' and r['ll'] is None, str(r), 'on the plain background with no frame, llAt gives null and throws nothing (it threw « reading w of undefined »)')
+
+
+@case('D275', 'The alternates Fuel proposes (SOG-0494): the two new reasons, runway not checked and aids not checked, are known to the Map, in order, with their words in the four languages; an unknown reason is dropped', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0494 (Features SOG, TX.altnPropWhy of Fuel): `why` is a closed list in this order: rwy-unread, aids-unread, aids-visual, wx-ifr, wx-unread; each may come alone, any of the first two makes the state warn; without the words the orange would show with no reason: the Map knows them and says them in fr, en, de, es')
+def d275(c):
+    _me_open(c)
+    r = c.js("""async () => { const A = await import('/modules/maps/altn.js'), T = (await import('/modules/maps/texts.js')).TX.altnWhy, t = (icao, why) => ({ icao, name: icao, lat: 43.5, lon: 5.2, state: 'warn', nm: 10, why });
+      const d = A.altnSanitize({ schema: 1, arr: 'LFML', list: [t('LFMT', ['rwy-unread', 'aids-unread', 'wx-unread', 'bogus']), t('LFMN', ['rwy-unread']), t('LFTH', ['aids-unread']), t('LFKJ', ['aids-visual', 'wx-ifr'])] });
+      return { why: d.list.map(x => x.why), words: Object.fromEntries(['rwy-unread', 'aids-unread'].map(k => [k, T[k]])) } }""")
+    c.eq(r['why'], [['rwy-unread', 'aids-unread', 'wx-unread'], ['rwy-unread'], ['aids-unread'], ['aids-visual', 'wx-ifr']], 'the closed list, in Fuel’s order: the two new reasons are kept, each alone too; an unknown one is dropped', what=str(r['why']))
+    c.eq(r['words'], {'rwy-unread': ['piste non vérifiée', 'runway not checked', 'Piste nicht geprüft', 'pista no comprobada'], 'aids-unread': ['moyens non vérifiés', 'aids not checked', 'Navigationshilfen nicht geprüft', 'medios no comprobados']}, 'their words, as Fuel writes them, in the four languages', what=str(r['words']))
+
 
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""

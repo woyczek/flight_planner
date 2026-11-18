@@ -30,7 +30,9 @@ import {
 const DOC = 'cache/fuel/altn_candidates.json',
   MAX = 7,
   HIT_PX = 20,
-  WHY = ['aids-visual', 'wx-ifr', 'wx-unread'];
+  WHY = ['rwy-unread', 'aids-unread', 'aids-visual', 'wx-ifr',
+    'wx-unread'
+  ]; // la liste fermée de Carburant (TX.altnPropWhy), dans son ordre (SOG-0494 : piste et moyens non vérifiés)
 // un NOMBRE JSON dans ses bornes : jamais une conversion (null, '' et true feraient 0 ou 1 : un terrain sans position serait dessiné au large du Gabon, Sécurisation)
 const num = (v, lo, hi) => typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi;
 // un texte sans signes de contrôle, sans < > ni marques de format (Cf : U+202E, U+2066… : un nom ne se lit pas à l'envers), borné
