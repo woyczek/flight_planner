@@ -15,6 +15,10 @@
 //   KEYS : l'ordre des champs, celui des mots de « dans : … ».
 
 import {
+  wordsOf
+} from '../../frame/lib/text.js'; // SOG-0468 (2) : les mots d'une recherche, une fois dans le cadre
+
+import {
   pilotView
 } from '../../frame/lib/mission.js'; // ce que le pilote peut voir : une seule règle, celle du lecteur (SOG-0448)
 
@@ -26,7 +30,7 @@ export const KEYS = ['id', 'title', 'summary', 'description', 'objectives', 'ris
 
 /** Le texte comparable (voir l'en-tête). */
 export function fold(text) {
-  return String(text ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return wordsOf(text); // SOG-0468 (2) : le pliage du cadre (frame/lib/text.js), au même résultat
 }
 
 /** Les textes non vides d'une liste, joints par une espace, bornés à FIELD_MAX signes avant repli. */
