@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6b671ae",
+  "organisation": "9280949",
   "fiches": 452,
   "untranslated": 0,
   "priorities": 374,
@@ -2855,7 +2855,7 @@
     {
      "id": "SOG-0453",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Noreg complète du 17/11 au soir : neuf cas rouges sur 1 397 (D183, I39, K103, K106, K146, K147, K206, K207, K296)",
      "en": "Full regression run of 17 Nov evening: nine red cases out of 1,397 (D183, I39, K103, K106, K146, K147, K206, K207, K296)",
      "de": "Vollständiger Regressionslauf vom 17.11. abends: neun rote Fälle von 1 397 (D183, I39, K103, K106, K146, K147, K206, K207, K296)",
