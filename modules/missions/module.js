@@ -607,11 +607,6 @@ const TX = {
   stepStory: ['Récit', 'Story', 'Erzählung', 'Relato'],
   stepRisks: ['Risques', 'Risks', 'Risiken', 'Riesgos'],
   stepTimeline: ['Chronologie et cartes', 'Timeline and maps', 'Ablauf und Karten', 'Cronología y mapas'],
-  edCadreHint: ['Ce qui range la mission : sa famille, sa série, son identifiant, d\'où elle part et où elle arrive.',
-    'What files the mission: its family, its series, its identifier, where it leaves from and where it arrives.',
-    'Was die Mission einordnet: Familie, Serie, Kennung, Abflug und Ankunft.',
-    'Lo que clasifica la misión: su familia, su serie, su identificador, de dónde sale y adónde llega.'
-  ],
   edLater: ['Cette étape arrive dans un prochain lot ; d\'ici là, elle se remplit dans la V2.',
     'This step comes in a next lot; until then, it is filled in the V2.',
     'Dieser Schritt kommt in einem nächsten Los; bis dahin wird er in der V2 ausgefüllt.',
@@ -627,7 +622,6 @@ const TX = {
   edArr: ['Arrivée', 'Arrival', 'Ankunft', 'Llegada'],
   edNextSeries: ['suivante : {n}', 'next: {n}', 'nächste: {n}', 'siguiente: {n}'],
   edIdKept: ['l\'ancien est gardé', 'the former one is kept', 'die frühere bleibt erhalten', 'el anterior se conserva'],
-  edIdNext: ['le suivant de la famille', 'the next of the family', 'die nächste der Familie', 'el siguiente de la familia'],
   edPlaceHint: ['code OACI · nom', 'ICAO code · name', 'ICAO-Code · Name', 'código OACI · nombre'],
   edSave: ['Enregistrer', 'Save', 'Speichern', 'Guardar'],
   edThumb: ['Croquis des lieux de la mission', 'Sketch of the mission\'s places', 'Skizze der Orte der Mission',
@@ -679,9 +673,6 @@ const TX = {
     'Diese Kennung steht schon im Register.',
     'Este identificador ya está en el registro.'
   ],
-  edTeamsHint: ['Les équipages et services engagés : une ligne par équipe.', 'The crews and services engaged: one row per team.',
-    'Die eingesetzten Besatzungen und Dienste: eine Zeile pro Team.', 'Las tripulaciones y servicios implicados: una fila por equipo.'
-  ],
   edTeamName: ['Indicatif', 'Callsign', 'Rufzeichen', 'Indicativo'],
   edTeamService: ['Service', 'Service', 'Dienst', 'Servicio'],
   edTeamType: ['Type', 'Type', 'Typ', 'Tipo'],
@@ -690,11 +681,6 @@ const TX = {
   edTeamDel: ['Retirer cette équipe', 'Remove this team', 'Dieses Team entfernen', 'Quitar este equipo'],
   edTeamNone: ['Aucune équipe : « + Équipe » en ajoute une.', 'No team: « + Team » adds one.', 'Kein Team: „+ Team“ fügt eines hinzu.',
     'Ningún equipo: «+ Equipo» añade uno.'
-  ],
-  edPlacesHint: ['Cible, zones, points tournants et rendez-vous. Une ligne par lieu ; « Modifier » en ouvre les champs.',
-    'Target, zones, turning points and rendezvous. One row per place; « Edit » opens its fields.',
-    'Ziel, Zonen, Wendepunkte und Treffpunkte. Eine Zeile pro Ort; „Bearbeiten“ öffnet seine Felder.',
-    'Objetivo, zonas, puntos de giro y encuentros. Una fila por lugar; «Modificar» abre sus campos.'
   ],
   plDep: ['DÉP', 'DEP', 'ABF', 'SAL'],
   plArr: ['ARR', 'ARR', 'ANK', 'LLE'],
@@ -734,12 +720,6 @@ const TX = {
   plDone: ['OK', 'OK', 'OK', 'OK'],
   plRemove: ['Retirer', 'Remove', 'Entfernen', 'Quitar'],
   todo_unplaced: ['lieux à placer', 'places to place', 'Orte zu platzieren', 'lugares por situar'],
-  edStoryHint: [
-    'Ce que lit le pilote : le résumé (la synthèse le montre entier jusqu\'à 600 signes), la description, les objectifs, la charge.',
-    'What the pilot reads: the summary (the sheet shows it whole up to 600 signs), the description, the objectives, the load.',
-    'Was der Pilot liest: die Kurzbeschreibung (das Blatt zeigt sie bis 600 Zeichen ganz), die Beschreibung, die Ziele, die Zuladung.',
-    'Lo que lee el piloto: el resumen (la ficha lo muestra entero hasta 600 signos), la descripción, los objetivos, la carga.'
-  ],
   stSummary: ['Résumé', 'Summary', 'Kurzbeschreibung', 'Resumen'],
   stCount: ['{n} / {m} signes', '{n} / {m} signs', '{n} / {m} Zeichen', '{n} / {m} signos'],
   stDescription: ['Description (un paragraphe par ligne vide)', 'Description (one paragraph per blank line)',
@@ -753,11 +733,6 @@ const TX = {
   stPayload: ['Charge', 'Load', 'Zuladung', 'Carga'],
   stMass: ['Masse (kg)', 'Mass (kg)', 'Masse (kg)', 'Masa (kg)'],
   stPax: ['Passagers', 'Passengers', 'Passagiere', 'Pasajeros'],
-  edRisksHint: ['Une ligne par risque : le danger, sa conséquence, la parade. La fiche en montre trois sur sa première page.',
-    'One row per risk: the hazard, its consequence, the mitigation. The sheet shows three on its first page.',
-    'Eine Zeile pro Risiko: die Gefahr, ihre Folge, die Gegenmaßnahme. Das Blatt zeigt drei auf seiner ersten Seite.',
-    'Una fila por riesgo: el peligro, su consecuencia, la medida. La ficha muestra tres en su primera página.'
-  ],
   rkHazard: ['Danger', 'Hazard', 'Gefahr', 'Peligro'],
   rkConsequence: ['Conséquence', 'Consequence', 'Folge', 'Consecuencia'],
   rkMitigation: ['Parade', 'Mitigation', 'Gegenmaßnahme', 'Medida'],
@@ -766,12 +741,6 @@ const TX = {
     'Ningún riesgo: «+ Riesgo» añade uno.'
   ],
   rkNoHazard: ['danger à dire', 'hazard to state', 'Gefahr angeben', 'peligro por indicar'],
-  edTimelineHint: [
-    'H = décollage prévu. Un événement par ligne : l\'heure (H+30mn, H+1h05mn), un lieu de la mission ou rien, ce qui se passe.',
-    'H = planned take-off. One event per row: the time (H+30mn, H+1h05mn), a place of the mission or none, what happens.',
-    'H = geplanter Start. Ein Ereignis pro Zeile: die Zeit (H+30mn, H+1h05mn), ein Ort der Mission oder keiner, was geschieht.',
-    'H = despegue previsto. Un evento por fila: la hora (H+30mn, H+1h05mn), un lugar de la misión o ninguno, lo que ocurre.'
-  ],
   evAt: ['Heure', 'Time', 'Zeit', 'Hora'],
   evPlace: ['Lieu', 'Place', 'Ort', 'Lugar'],
   evFree: ['(aucun lieu)', '(no place)', '(kein Ort)', '(ningún lugar)'],
@@ -801,25 +770,13 @@ const TX = {
     'Proponer los mapas a partir de los lugares ({n})'
   ],
   mpUnplaced: ['centre à placer (Lieux)', 'centre to place (Places)', 'Mitte zu platzieren (Orte)', 'centro por situar (Lugares)'],
-  mpStudio: ['Les images des cartes se font au studio cartographique de la V2.', 'The map images are made in the V2 map studio.',
-    'Die Kartenbilder entstehen im Kartenstudio der V2.', 'Las imágenes de los mapas se hacen en el estudio cartográfico de la V2.'
-  ],
   todo_mapUnplaced: ['carte centrée sur un lieu sans position', 'map centred on a place without position',
     'Karte auf einen Ort ohne Position zentriert',
     'mapa centrado en un lugar sin posición'
   ],
-  edLiaisonHint: ['Une liaison : le départ, l\'arrivée, la compagnie, la charge et l\'aéronef ; le titre se propose seul.',
-    'A link flight: the departure, the arrival, the airline, the load and the aircraft; the title is proposed by itself.',
-    'Eine Verbindung: Abflug, Ankunft, Fluggesellschaft, Zuladung und Luftfahrzeug; der Titel wird von selbst vorgeschlagen.',
-    'Un enlace: la salida, la llegada, la compañía, la carga y la aeronave; el título se propone solo.'
-  ],
   edCharge: ['Charge', 'Load', 'Zuladung', 'Carga'],
   edAirline: ['Compagnie', 'Airline', 'Fluggesellschaft', 'Compañía'],
   edAircraft: ['Aéronef (type OACI)', 'Aircraft (ICAO type)', 'Luftfahrzeug (ICAO-Typ)', 'Aeronave (tipo OACI)'],
-  edTitleAuto: ['proposé d\'après le départ et l\'arrivée', 'proposed from the departure and the arrival',
-    'aus Abflug und Ankunft vorgeschlagen',
-    'propuesto a partir de la salida y la llegada'
-  ],
   todo_aircraft: ['aéronef', 'aircraft', 'Luftfahrzeug', 'aeronave'],
   todo_title: ['titre', 'title', 'Titel', 'título'],
   todo_theatre: ['théâtre', 'theatre', 'Einsatzgebiet', 'teatro'],
