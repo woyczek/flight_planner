@@ -797,16 +797,20 @@ const TX = {
     noArr: ['Pas de proposition : la position de l’arrivée est inconnue.', 'No suggestion: the arrival’s position is unknown.',
       'Kein Vorschlag: die Position des Zielflugplatzes ist unbekannt.', 'Sin propuesta: la posición de la llegada es desconocida.'
     ],
-    none: ['Aucun terrain entre 30 et 300 NM de l’arrivée ne passe la piste et les moyens.',
-      'No aerodrome between 30 and 300 NM from the arrival passes the runway and the aids.',
-      'Kein Flugplatz zwischen 30 und 300 NM vom Ziel erfüllt Piste und Navigationshilfen.',
-      'Ningún aeródromo entre 30 y 300 NM de la llegada cumple pista y medios.'
+    // SOG-0494 : seule une piste trop courte (ou sans le bon revêtement) écarte encore un terrain
+    none: ['Aucun terrain entre 30 et 300 NM de l’arrivée n’a de piste assez longue.',
+      'No aerodrome between 30 and 300 NM from the arrival has a long enough runway.',
+      'Kein Flugplatz zwischen 30 und 300 NM vom Ziel hat eine ausreichend lange Piste.',
+      'Ningún aeródromo entre 30 y 300 NM de la llegada tiene una pista lo bastante larga.'
     ]
   },
-  altnPropHead: ['Les plus proches de {arr} (piste et moyens bons)', 'Closest to {arr} (runway and aids good)',
-    'Am nächsten zu {arr} (Piste und Navigationshilfen gut)', 'Los más cercanos a {arr} (pista y medios buenos)'
+  altnPropHead: ['Les plus proches de {arr} (piste et moyens vérifiés d’abord)', 'Closest to {arr} (runway and aids checked first)',
+    'Am nächsten zu {arr} (geprüfte Piste und Navigationshilfen zuerst)',
+    'Los más cercanos a {arr} (pista y medios comprobados primero)'
   ],
   altnPropWhy: {
+    'rwy-unread': ['piste non vérifiée', 'runway not checked', 'Piste nicht geprüft', 'pista no comprobada'], // SOG-0494
+    'aids-unread': ['moyens non vérifiés', 'aids not checked', 'Navigationshilfen nicht geprüft', 'medios no comprobados'],
     'aids-visual': ['à vue seulement', 'visual only', 'nur Sichtanflug', 'solo visual'],
     'wx-ifr': ['météo IFR', 'IFR weather', 'IFR-Wetter', 'meteorología IFR'],
     'wx-lifr': ['météo LIFR', 'LIFR weather', 'LIFR-Wetter', 'meteorología LIFR'],
@@ -5359,12 +5363,24 @@ async function altnProposeRun() {
     exclude: [arr, r.dep],
     dist: rhumbNm
   });
-  for (const c of cands) {
-    if (P.list.length >= AC.CAND_DOC) break;
+  // SOG-0494 : une piste ou des moyens non vérifiés n'écartent plus un terrain ; les CAND_SCAN plus proches examinés, les terrains
+  // vérifiés d'abord, puis par distance
+  const seen = [];
+  for (const c of cands.slice(0, AC.CAND_SCAN)) {
     const cov = await Promise.race([Promise.resolve(S.ctx.aerodb?.coverage?.(c.icao)).catch(() => null), late(ALTN_CHK_WAIT_MS)]);
     if (gone(s) || S.altnProp !== P) return;
     const aids = AC.aidsOf(cov);
-    if (!AC.aidsKept(aids)) continue;
+    if (AC.aidsKept(aids)) seen.push({
+      c,
+      aids
+    });
+  }
+  seen.sort((a, b) => AC.unverified(a.c.rwy, a.aids) - AC.unverified(b.c.rwy, b.aids) || a.c.nm - b.c.nm);
+  for (const {
+      c,
+      aids
+    }
+    of seen.slice(0, AC.CAND_DOC)) {
     const pos = {
         lat: +c.ad.lat,
         lon: +c.ad.lon

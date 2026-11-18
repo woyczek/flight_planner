@@ -7733,8 +7733,10 @@ _PROP_HELD = {'XQPB': {'SID': 1, 'STAR': 1, 'APP': 2}, 'XQPC': {'SID': 1, 'STAR'
               'XQPF': {'SID': 1, 'APP': 1}}
 
 
-def _prop_open(c, target='fuel', more=()):
-    """The seeded flight (alternate LFMT) with a C30J sheet asking 5000 ft, the aerodromes above, their coverage, TAFs kept fresh (XQPE LIFR)."""
+def _prop_open(c, target='fuel', more=(), held=None):
+    """The seeded flight (alternate LFMT) with a C30J sheet asking 5000 ft, the aerodromes above, their coverage (`held`, _PROP_HELD by
+    default), TAFs kept fresh (XQPE LIFR)."""
+    held = _PROP_HELD if held is None else held
     import time as _t
     now = int(_t.time())
     sheet = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'lb', 'usableFuel': 40000,
@@ -7746,7 +7748,7 @@ def _prop_open(c, target='fuel', more=()):
             d[1]['planned_at'] = _t.strftime('%Y-%m-%dT%H:00:00Z', _t.gmtime(now + 2 * 3600))
     docs += [['aircraft/sheets/C30J.json', sheet, 'document'],
              ['proc/manual/index.json', {'schema': 1, 'aerodromes': {k: {**v, 'cycle': '2026-10-01', 'updated_at': '2026-11-01T09:00:00Z'}
-                                                                       for k, v in _PROP_HELD.items()}}, 'reference']]
+                                                                       for k, v in held.items()}}, 'reference']]
     for icao, cat in (('XQPB', 'VFR'), ('XQPC', 'VFR'), ('XQPE', 'LIFR'), ('XQPF', 'VFR')):
         t = _altn_taf(cat, now)
         t['icaoId'] = icao
@@ -7777,8 +7779,8 @@ def f262(c):
     c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000, what='three aerodromes listed')
     rows = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.dataset.state, "
                 f"!!li.querySelector('[data-do=altntake]'), li.textContent])")
-    c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the three closest kept: XQPA too near, XQPD too short, the heliport, XQPH not '
-         'covered and LFMT without runway length left out', what='list')
+    c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the three closest CHECKED first: XQPA too near, XQPD too short, the heliport '
+         'left out; XQPH (procedures not held) and LFMT (no runway length) offered after them (SOG-0494)', what='list')
     c.eq([r[1] for r in rows], ['ok', 'warn', 'err'], 'green; visual only orange; LIFR red', what='signs')
     c.eq([r[2] for r in rows], [True, True, False], '« Prendre » except on the red one', what='take')
     c.ok(norm(tx(T, "aids-visual'", L, after='altnPropWhy')) in norm(rows[1][3]), rows[1][3], 'the reservation said: visual only')
@@ -7786,7 +7788,7 @@ def f262(c):
     c.ok(re.search(r'\b\d+ NM\b', row0) is not None and re.search(r'\d (lb|kg)', row0) is not None, row0,
          'its distance and its alternate fuel')
     more = norm(c.text(f'{B} [data-altnmore]') or '')
-    c.ok(more.startswith('1 '), more, 'the fourth (weather not read) said on the Map')
+    c.ok(more.startswith('3 '), more, 'the three others (XQPF weather not read, LFMT and XQPH not checked) said on the Map')
     # the ergonomist: a fold with a chevron (the component of « Critères du dégagement »), closed by its heading; no « Fermer »
     c.eq(c.js(f"[document.querySelector('{B} details[data-altnprop]')?.open, !!document.querySelector('{B} details[data-altnprop] > summary'), "
               f"document.querySelectorAll('{B} [data-do=altnpropclose]').length]"), [True, True, 0], 'a fold, open, no « Fermer »', what='fold')
@@ -7796,8 +7798,9 @@ def f262(c):
     d = c.until_doc('cache/fuel/altn_candidates.json', lambda d: bool(d) and len(d.get('list') or []) > 0, 'the document of the Map',
                     timeout=10000)
     c.eq([(x['icao'], x['state'], x['why']) for x in d['list']],
-         [('XQPB', 'ok', []), ('XQPF', 'ok', ['wx-unread']), ('XQPC', 'warn', ['aids-visual'])],
-         'ok before warn, then by distance; XQPE (LIFR) not offered to the Map', what='document')
+         [('XQPB', 'ok', []), ('XQPF', 'ok', ['wx-unread']), ('XQPC', 'warn', ['aids-visual']),
+          ('LFMT', 'warn', ['rwy-unread', 'aids-unread', 'wx-unread']), ('XQPH', 'warn', ['aids-unread', 'wx-unread'])],
+         'ok before warn, then by distance; XQPE (LIFR) not offered to the Map; what is not checked said (SOG-0494)', what='document')
     c.eq([d['schema'], d['arr']], [1, 'LFML'], 'schema 1, the arrival', what='head')
     c.ok(all(x['fuel'] and x['fuel']['unit'] == 'lb' and x['fuel']['amount'] > 0 for x in d['list']), d['list'], 'the alternate fuel of each')
     c.ok(c.js('window.__altnDocs.length') >= 1, 'event', 'the event fuel-altn-candidates sent')
@@ -7806,7 +7809,7 @@ def f262(c):
     c.shot(f'F262_{c.design}_390_{L}_list.png')
     c.tap(f'{B} details[data-altnprop] > summary')
     c.until(f"document.querySelector('{B} details[data-altnprop]')?.open === false", timeout=3000, what='closed by its heading')
-    c.eq(len((c.doc('cache/fuel/altn_candidates.json') or {}).get('list') or []), 3, 'closed, the Map keeps the proposal', what='closed')
+    c.eq(len((c.doc('cache/fuel/altn_candidates.json') or {}).get('list') or []), 5, 'closed, the Map keeps the proposal', what='closed')
     # a touch on the Map beside (maps-altn-pick): PROPOSED, its weather read, nothing taken; the fold reopened
     c.js("window.dispatchEvent(new CustomEvent('maps-altn-pick', { detail: { icao: 'XQPF' } }))")
     c.until(f"!!document.querySelector('{B} li[data-proposed][data-cand=XQPF]')", timeout=8000, what='« Proposé : XQPF »')
@@ -8350,3 +8353,25 @@ def f273(c):
       'through the context (V3 Frame\'s condition)')
 def f274(c):
     run_bench(c, 'frame/lib/test/callsign_field.html')
+
+
+@case('F275', 'Flight step, « Proposer un dégagement » around an arrival whose base holds NO procedures: the aerodromes are offered all '
+      'the same — the closest first, « moyens non vérifiés » in their line —, never « Aucun terrain … »', 'F', tags=('fuel', 'weather'),
+      designs=('standard',), screens=False, langs4=True,
+      rule='SOG-0494 (the user, EGGW → LQSA: « Aucun terrain entre 30 et 300 NM de l\'arrivée ne passe la piste et les moyens » — 82 '
+      'aerodromes passed the runway, none had procedures in the base); the relay: an ABSENT datum never removes an aerodrome, « non '
+      'vérifié » rather than nothing; invented aerodromes')
+def f275(c):
+    T = 'modules/fuel/module.js'
+    L = c.lang
+    _prop_open(c, held={})
+    B = f'{FUEL} [data-altnchk]'
+    c.until(f"!!document.querySelector('{B} [data-do=altnpropose]')", timeout=15000, what='« Proposer un dégagement »')
+    c.tap(f'{B} [data-do=altnpropose]')
+    c.until(f"document.querySelectorAll('{B} [data-altnprop] li[data-cand]').length === 3", timeout=20000,
+            what='three aerodromes listed although no procedure is held')
+    rows = c.js(f"[...document.querySelectorAll('{B} [data-altnprop] li[data-cand]')].map(li => [li.dataset.cand, li.textContent])")
+    c.eq([r[0] for r in rows], ['XQPB', 'XQPC', 'XQPE'], 'the closest, by distance (all equally unchecked on the aids)', what='list')
+    want = norm(tx(T, "aids-unread'", L, after='altnPropWhy'))
+    c.ok(all(want in norm(r[1]) for r in rows), [r[1] for r in rows], 'each line says « moyens non vérifiés »')
+    c.eq(c.count(f'{B} [data-altnprop][data-msg]'), 0, 'never « Aucun terrain … » (no message in place of the list)', what='none')

@@ -16,13 +16,16 @@
 //   SOG-0398 lot 2, « Proposer un dégagement » :
 //   candidates(ads, { from, minFt, type, exclude, dist, max }) → [{ ad, icao, nm, rwy }] : les terrains de `ads` (enregistrements complets
 //     d'aerodb) à CAND_MIN_NM au moins et CAND_MAX_NM au plus de `from` (dist(from, ad) en NM : le trait droit), d'un code OACI de
-//     quatre lettres, ouverts au public, ni hélistation ni plan d'eau, hors `exclude` (l'arrivée, le départ), dont la PISTE passe
-//     (runwayOf : ok) ; triés par distance, `max` au plus. Sans longueur mini dans la fiche : [] (rien ne peut être retenu sur la piste).
-//   aidsKept(aids) : les MOYENS retiennent le terrain — une approche (ok) ou « à vue seulement » (warn) dans une base qui le couvre ; non
-//     couvert (grey) : écarté (rien n'est dit d'un terrain dont la base ne sait rien).
+//     quatre lettres, ouverts au public, ni hélistation ni plan d'eau, hors `exclude` (l'arrivée, le départ), dont la PISTE n'est pas
+//     écartée (runwayOf : ok, ou non vérifiée — SOG-0494 : une donnée absente n'écarte pas) ; triés par distance, `max` au plus. Sans
+//     longueur mini dans la fiche : [] (rien ne peut être retenu sur la piste).
+//   aidsKept(aids) : les MOYENS retiennent le terrain — une approche (ok), « à vue seulement » (warn), ou non vérifiés (grey : la base ne
+//     tient pas ses procédures ; SOG-0494, l'utilisateur : aucun dégagement autour de LQSA, faute de procédures dans la base).
+//   unverified(rwy, aids) → le nombre de critères non vérifiés parmi la piste et les moyens (0, 1 ou 2) : les terrains vérifiés d'abord.
+//   CAND_SCAN : les candidats examinés au plus (une couverture demandée à aerodb pour chacun), les plus proches.
 //   proposalOf(crits) → { sign, state, why } : sign, l'état des trois critères (judge) pour la liste de Carburant ; state, celui du
-//     document de la Carte ('ok' | 'warn', null pour un terrain à écarter : météo LIFR) ; why, ses codes en liste fermée ('aids-visual',
-//     'wx-ifr', 'wx-unread').
+//     document de la Carte ('ok' | 'warn', null pour un terrain à écarter : météo LIFR) ; why, ses codes en liste fermée ('rwy-unread',
+//     'aids-unread', 'aids-visual', 'wx-ifr', 'wx-unread').
 // Chaque critère : { k: 'rwy' | 'aids' | 'wx', state, code, v } — code : la phrase à dire (textes du module), v : ses valeurs (nombres,
 // catégories et heures seulement : aucun texte tiers).
 
@@ -131,7 +134,8 @@ export function weatherOf(taf, t, {
 export const CAND_MIN_NM = 30,
   CAND_MAX_NM = 300,
   CAND_LIST = 3,
-  CAND_DOC = 7;
+  CAND_DOC = 7,
+  CAND_SCAN = 20;
 
 /** Les terrains candidats (voir l'en-tête). */
 export function candidates(ads, {
@@ -155,7 +159,7 @@ export function candidates(ads, {
     });
     if (!(nm >= CAND_MIN_NM && nm <= CAND_MAX_NM)) continue;
     const rwy = runwayOf(ad, minFt, type);
-    if (rwy.state !== 'ok') continue;
+    if (rwy.state === 'err') continue; // trop courte, ou sans piste du bon revêtement ; non vérifiée : gardée (SOG-0494)
     skip.add(icao);
     out.push({
       ad,
@@ -168,12 +172,17 @@ export function candidates(ads, {
 }
 
 /** Les MOYENS retiennent-ils le terrain (voir l'en-tête) ? */
-export const aidsKept = aids => aids?.state === 'ok' || aids?.state === 'warn';
+export const aidsKept = aids => ['ok', 'warn', 'grey'].includes(aids?.state);
+
+/** Le nombre de critères non vérifiés parmi la piste et les moyens (voir l'en-tête). */
+export const unverified = (rwy, aids) => (rwy?.state === 'grey' ? 1 : 0) + (aids?.state === 'grey' ? 1 : 0);
 
 /** L'état d'un terrain proposé, pour la liste et pour la Carte (voir l'en-tête). crits : [rwy, aids, wx]. */
 export function proposalOf(crits) {
-  const [, aids, wx] = crits || [],
+  const [rwy, aids, wx] = crits || [],
     why = [];
+  if (rwy?.state === 'grey') why.push('rwy-unread'); // SOG-0494 : proposé quand même, la réserve dite
+  if (aids?.state === 'grey') why.push('aids-unread');
   if (aids?.state === 'warn') why.push('aids-visual');
   if (wx?.state === 'warn') why.push('wx-ifr');
   if (!wx || wx.state === 'grey') why.push('wx-unread');

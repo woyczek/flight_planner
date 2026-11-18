@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Fuel, « Proposer un dégagement »: an aerodrome whose runway or procedures the base does not give is offered, « non vérifié », instead of nothing** (SOG-0494, no alternate around LQSA); checked ones first; F262, F275.
 - **A shared callsign field proposes the known fleet's callsigns and fills the type** (SOG-0488, `frame/lib/callsign_field.js`, for the mission workshop and the assignment form; Mes appareils unchanged); bench F274.
 - **My aircraft: an aircraft's base takes the shared aerodrome field** (SOG-0490, the ergonomist's defect) — completion by code, name, town or country, the name under the field, helipad list codes (« LF418 »); what is saved is unchanged; bench M52.
 - **Aerodrome fields (Fuel, mission workshop): a helipad is found by its list code (« LF418 ») or its name, and enters the route** (SOG-0465, after AeroDB's helipads); bench F268.
