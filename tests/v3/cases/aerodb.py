@@ -15325,3 +15325,24 @@ def k342(c):
     c.ok(alone[2] and alone[0], str(alone), 'the flight is computed (the guard is not vacuous)')
     c.eq(after, alone, 'the same flight, calculated again after ten others (both directions, other levels and times), gives the same route and the same length', what='same route')
     c.ok(len(others) == 10, str(len(others)), 'ten other calculations were made in between')
+
+
+# the sources that are « read on this workstation only » (SOG-0153 / Q-0061): two lists guard the same rule, one in Python (the base builder) and one in the
+# JavaScript of the mission workshop; they must not drift apart
+LOCAL_JS_ONLY = {'lnm'}      # Little Navmap: read locally by the workshop; the base builder never builds it, so the Python list does not need it
+
+
+@case('K468', 'Licence guard, SOG-0468 (d): the list of the sources « read on this workstation only » is the same rule in Python (tools/regen/base.py LOCAL_ONLY, never built into the committed base) and in the JavaScript of the mission workshop (modules/missions/editor_map.js LOCAL_SOURCES, never offered as a point written in a mission file): the JavaScript list holds EVERY source of the Python list, and what it holds besides is the named exception (lnm)',
+      'K', static=True,
+      rule='SOG-0153 / Q-0061 (the user: a position from X-Plane, Navigraph, Eurocontrol or Little Navmap never goes into a file of the shared repository): the guard is written twice (Python and JavaScript); a source added to one and forgotten in the other would open a hole silently. Security session, 18 Nov 2026 (SOG-0468, the list of guards written twice)')
+def k468(c):
+    py = (ROOT / 'tools' / 'regen' / 'base.py').read_text(encoding='utf-8')
+    js = (ROOT / 'modules' / 'missions' / 'editor_map.js').read_text(encoding='utf-8')
+    a = re.search(r'^LOCAL_ONLY\s*=\s*\(([^)]*)\)', py, re.M)
+    b = re.search(r'const LOCAL_SOURCES\s*=\s*Object\.freeze\(\[([^\]]*)\]\)', js)
+    c.ok(a is not None and b is not None, f'{bool(a)} {bool(b)}', 'both lists are found (the Python tuple LOCAL_ONLY, the JavaScript table LOCAL_SOURCES)')
+    py_set = set(re.findall(r"'([a-z_]+)'", a.group(1))) if a else set()
+    js_set = set(re.findall(r"'([a-z_]+)'", b.group(1))) if b else set()
+    c.ok(len(py_set) >= 3 and len(js_set) >= 4, f'{sorted(py_set)} {sorted(js_set)}', 'neither list is empty or truncated (xplane, eurocontrol, eurocontrol_rad, and lnm in the JavaScript one)')
+    c.eq(sorted(py_set - js_set), [], 'every source the base builder keeps out of the committed base is also refused by the workshop (no source is local in Python only)', what='missing in JavaScript')
+    c.eq(sorted(js_set - py_set), sorted(LOCAL_JS_ONLY & js_set), 'what the JavaScript list holds besides is the named exception (Little Navmap, which the base builder never builds); any other extra source has to be decided here', what='extra in JavaScript')
