@@ -57,6 +57,9 @@ const MIN_CHARS = 2;
 /** Un code de terrain complet : quatre caractères, ou le code de liste d'une hélistation du SIA — deux lettres et trois chiffres
  *  (« LF418 » ; le motif d'AeroDB, SOG-0465 : aerodb.suggest, coords et route/compute le prennent), ASCII seulement. */
 const CODE = /^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$/;
+/** Le texte (déjà en majuscules) est-il un code de terrain complet (CODE) ? Fonction pure, exportée pour les modules sans écran (l'atelier
+ *  de Missions, editor.js) ; l'instance du champ donne la même (api.isCode). */
+export const isCode = v => CODE.test(String(v || ''));
 /** La zone d'une position : le plus petit cadre qui la contient, sinon le plus proche ; null sans zones (sorti de
  *  modules/fuel/zone_gap.js avec ce bloc, qui le réexporte). */
 export function zoneAt(zones, p) {
@@ -280,16 +283,20 @@ export function createAdField(host) {
           near
         } : {})).catch(() => []);
         if (!list.live(seq)) return;
-        for (const x of (Array.isArray(all) ? all : []).filter(x => POINT_KINDS.includes(x?.kind)).slice(0, 3)) {
-          const lat = +x.item?.lat,
-            lon = +x.item?.lon,
+        const homs = (Array.isArray(all) ? all : []).filter(x => POINT_KINDS.includes(x?.kind) && Number.isFinite(+x.item?.lat) && Number
+          .isFinite(+x.item?.lon)).slice(0, 3);
+        for (const x of homs) {
+          const lat = +x.item.lat,
+            lon = +x.item.lon,
             value = `${code}@${lat.toFixed(5)},${lon.toFixed(5)}`;
-          if (full() || !Number.isFinite(lat) || !Number.isFinite(lon) || seen.has(value)) continue;
+          if (full() || seen.has(value)) continue;
           seen.add(value);
+          // la distance ne sert qu'à départager des homonymes (le relais, 18/11) : un identifiant seul de son nom n'en a pas
           const nm = String(x.item?.name || '').trim(),
-            far = Number.isFinite(+x.distanceNm) ? `${Math.round(+x.distanceNm)} NM` : '';
+            far = homs.length > 1 && Number.isFinite(+x.distanceNm) ? `${Math.round(+x.distanceNm)} NM` : '';
           hits.push({
             value,
+            text: code, // la ligne montre l'identifiant, jamais la clé interne « CODE@lat,lon » (retour de Création, 18/11)
             label: [nm && nm.toUpperCase() !== code ? nm : '', `(${[tt(TX[x.kind]), far].filter(Boolean).join(' · ')})`].filter(Boolean)
               .join(' ')
           });
@@ -335,7 +342,7 @@ export function createAdField(host) {
     },
     /** Le texte (déjà en majuscules) est-il un code de terrain complet ? Quatre signes, ou le code de liste d'une hélistation (CODE) :
      *  l'écran s'en sert au lieu de son propre motif, pour que le champ et la route acceptent les mêmes codes. */
-    isCode: v => CODE.test(String(v || '')),
+    isCode,
     /** Nombre de terrains proposés pour le champ k au dernier texte tapé (0 si la liste est fermée ou pour un autre champ). */
     hitsFor: k => list.input()?.dataset?.k === k ? list.hits().length : 0,
     /** SOG-0480 : la position choisie d'un point pour la clé k — { code, lat, lon } tant que le champ porte l'identifiant choisi ; null

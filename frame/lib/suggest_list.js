@@ -15,6 +15,8 @@
 //     write(input, v)   écrit la valeur choisie dans le champ ; faux si rien n'est écrit
 //   }
 //   api = { ticket, live, show, close, onKey, onFocusOut, onPointerDown, onClick, input, hits, picking }
+//   show(input, hits) : hits = [{ value, label, text? }] — value, la valeur rendue au champ (data-<attr>) ; text, facultatif, ce que la ligne
+//   montre en gras à sa place (une valeur qui est une clé interne : « XRN@45.2,1.2 » montre « XRN ») ; label, la suite de la ligne
 
 /** Échappe un texte pour du HTML. */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -68,7 +70,7 @@ export function createSuggestList(o) {
     if (!el || !input || !label) return;
     st.input = input;
     st.hits = hits;
-    el.innerHTML = hits.map((h, i) => `<button type="button" role="option" class="f-item fu-sugitem" id="${o.idPrefix}-${i}" tabindex="-1" aria-selected="false" data-${o.attr}="${esc(h.value)}"><span><b>${esc(h.value)}</b> ${esc(h.label)}</span></button>`).join('');
+    el.innerHTML = hits.map((h, i) => `<button type="button" role="option" class="f-item fu-sugitem" id="${o.idPrefix}-${i}" tabindex="-1" aria-selected="false" data-${o.attr}="${esc(h.value)}"><span><b>${esc(h.text ?? h.value)}</b> ${esc(h.label)}</span></button>`).join(''); // `text` : ce que la ligne montre quand la valeur est une clé interne
     el.style.top = `${label.offsetTop + label.offsetHeight}px`;
     el.hidden = !hits.length;
     expanded(input, !!hits.length);

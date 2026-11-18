@@ -347,6 +347,7 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
   choice keeping its position: `positionOf(key)`) (aerodb through
   `ctx.aerodb` only) and its name under the field (`adnames.js`); `createSuggestList(o)` — the list under any field. Out of Fuel, which
   keeps wrappers; the mission workshop uses the field. Benches F267, F268.
+  `isCode(v)` is also exported as a pure function (four signs or a helipad's list code `[A-Z]{2}[0-9]{3}`), for modules without a screen; a proposal may carry `text`, shown in the line instead of its value (a point's value is the internal key `CODE@lat,lon`, its line shows `CODE`).
 - **The callsign field** (`frame/lib/callsign_field.js`, 18 Nov 2026, SOG-0488; writer: Features SOG, V3 Frame's agreement): `createCallsignField({ ctx, body, gone, owns(el), typeOf(el)?, idPrefix? })` → `{ onInput, onKey, onFocusOut, onPointerDown, onClick, texts, isPicking, stop }`.
   From two characters, seven callsigns at most from `ctx.aerodb.aircraft().search` (sheets, the company's fleet, reference), those that start with the text first, « CALLSIGN — TYPE · REGISTRATION ».
   The pick writes the callsign, and the type into `typeOf(el)` with an `input` event when ONE type is known for it (two types: nothing guessed; the same type already there: nothing rewritten).

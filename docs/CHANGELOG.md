@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Shared aerodrome field: a proposed point shows its identifier, never the internal key « CODE@lat,lon »; `isCode` exported as a pure function** (feedback of the mission workshop on SOG-0480); bench F268.
 - **Fuel: the Procedures card of a replaced mount no longer asks the weather for the new one** (SOG-0493, the relay's trace « wxWhen: planned_at of undefined » in a fresh tab after a relaunch); guards only, no case reproduces it.
 - **Fuel, « Proposer un dégagement »: an aerodrome whose runway or procedures the base does not give is offered, « non vérifié », instead of nothing** (SOG-0494, no alternate around LQSA); checked ones first; F262, F275.
 - **A shared callsign field proposes the known fleet's callsigns and fills the type** (SOG-0488, `frame/lib/callsign_field.js`, for the mission workshop and the assignment form; Mes appareils unchanged); bench F274.

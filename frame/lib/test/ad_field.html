@@ -38,6 +38,7 @@
 <script type="module">
   import {
     createAdField,
+    isCode,
     zoneAt
   } from '../ad_field.js?v=0';
   const out = document.getElementById('out'),
@@ -219,6 +220,10 @@
   });
   await wait(80);
   const pv = [...screen2.querySelectorAll('[data-adsug] [data-code]')].map(x => x.dataset.code);
+  ck('points : la ligne montre l’identifiant, jamais la clé interne « CODE@lat,lon »', [...screen2.querySelectorAll('[data-adsug] [data-code]')]
+    .every(x => x.querySelector('b')?.textContent === 'XRN' && !/@/.test(x.textContent)), screen2.querySelector('[data-adsug]').textContent);
+  ck('isCode exporté : la même règle que l’instance, sans écran', isCode('LF418') && isCode('LFPO') && !isCode('LF41A') && !isCode('') &&
+    isCode === P.isCode);
   ck('points : les deux XRN, le plus proche d’abord, chacun avec sa position', JSON.stringify(pv) === JSON.stringify(['XRN@45.20000,1.20000',
     'XRN@60.00000,20.00000']), JSON.stringify(pv));
   ck('points : near() donné à coordsAll', JSON.stringify(calls.find(c => c[0] === 'coordsAll' && c[1] === 'XRN')?.[2]) === '[45,1]', JSON.stringify(
@@ -244,6 +249,8 @@
   });
   await wait(80);
   ck('points : une balise proposée avec son nom', /VOR XNV/.test(screen2.querySelector('[data-adsug]').textContent) && /balise/.test(screen2
+    .querySelector('[data-adsug]').textContent), screen2.querySelector('[data-adsug]').textContent);
+  ck('un identifiant sans homonyme : ni position ni distance dans sa ligne (elles ne servent qu’à départager)', !/NM|@/.test(screen2
     .querySelector('[data-adsug]').textContent), screen2.querySelector('[data-adsug]').textContent);
   P.stop();
   F.stop();
