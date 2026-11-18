@@ -5174,3 +5174,78 @@ def n101(c):
     c.eq([r['ignored'], r['many'], r['trail']], [[True] * 5, 20, True], 'placements that are not what they should be (not a list, a minute or a position out of bounds, texts) are '
          'ignored: the trial is the same as without them; twenty placements at most; the trail stays bounded', what='hostile and too many')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the mission read is not touched')
+
+
+
+_TRPUT = f'{_EDMAP} [data-trput]'
+_TRPUT_STATE = f"(() => {{ const b = document.querySelector('{_TRPUT}'); return [b.hidden, b.getAttribute('aria-pressed')] }})()"
+
+
+@case('N102', 'Missions › the workshop, « Poser l\'avion ici »: during a trial of the keys a button beside the line of the tool takes the '
+      'hand (in place: no button redrawn) and the line says at which minute; the next touch on the map puts the aircraft of the trial '
+      'there, at the minute of the slider — the zone it is put in opens at that minute, the log says it was put by hand, the map shows '
+      'it there — and the tool is dropped: another touch does nothing; « Recommencer » forgets the placements; out of a trial the '
+      'button is not shown; nothing is written in the mission',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, « Poser l\'avion ici » (modules/missions/EDITOR.md § 4: « Poser l\'avion ici by a touch », § 7 vicies; '
+      'the pure part: N101; SOG-0449)')
+def n102(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
+    c.eq(c.js(_TRPUT_STATE), [True, 'false'], 'out of a trial « Poser l\'avion ici » is not shown', what='before the trial')
+    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
+    c.js(_TR_SET, 2)
+    c.eq([c.js(_TRPUT_STATE), norm(c.text(_TRPUT)), hint(), c.js(_TR_STATES)[0][1]], [[False, 'false'], T('atPut'), T('atHint_view'), ''],
+         'during the trial « Poser l\'avion ici » is offered beside the line of the tool; at minute 2 drawer 1 is closed (the zone is entered at 6 min 15 s)', what='the button')
+    # taken in place; the line says at which minute
+    c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    c.tap(_TRPUT)
+    kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
+    c.ok(all(kept) and c.js(_TRPUT_STATE) == [False, 'true'] and hint() == T('atHint_put', m=2), [c.js(_TRPUT_STATE), hint()],
+         '« Poser l\'avion ici » taken in hand in place (no button redrawn): the line says the next touch puts the aircraft there, at H + 2 min')
+    # the touch puts the aircraft in the zone: it opens at that minute; the tool is dropped
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
+    c.until(f"({_TR_STATES})[0][1] === '1'", timeout=8000, what='drawer 1 open')
+    log = [norm(x) for x in c.js(_TR_LOG)]
+    c.ok(c.js(_TR_STATES)[0] == ['1', '1', T('trOpenAt', m=2)] and any(T('trEv_put') in x for x in log) and any(T('trOpen_zone', n=1) in x for x in log)
+         and c.js(_TRPUT_STATE) == [False, 'false'] and hint() == T('atHint_view') and 'plane' in c.js(_EDMAP_IDS, [44.8, 1.2]), [c.js(_TR_STATES)[0], log, c.js(_TRPUT_STATE)],
+         'the aircraft is put in the zone at minute 2: drawer 1 says « ouvert à H + 2 min », the log says it was put by hand and what opened; the map shows it there; the '
+         'tool is dropped')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N102_1280_put.png')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.2, 1.2]))
+    c.wait(300)
+    c.ok('plane' in c.js(_EDMAP_IDS, [44.8, 1.2]) and c.count(_TR) == 1, c.js(_EDMAP_IDS, [44.8, 1.2]), 'the tool dropped, another touch on the map does nothing: the aircraft stays')
+    # « Recommencer » forgets the placements
+    c.tap(f'{_TR} [data-do="edtrreset"]')
+    c.js(_TR_SET, 2)
+    c.eq([c.js(_TR_STATES)[0][1], any(T('trEv_put') in norm(x) for x in c.js(_TR_LOG))], ['', False], '« Recommencer » forgets the placements: at minute 2 drawer 1 is closed again',
+         what='started again')
+    # closing the trial: the button is gone, nothing was written
+    c.tap(f'{_TR} [data-do="edtrialoff"]')
+    c.until(f"!document.querySelector('{_TR}')", what='the trial closed')
+    c.eq(c.js(_TRPUT_STATE)[0], True, 'the trial closed: « Poser l\'avion ici » is not shown any more', what='after the trial')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(400)
+    c.eq(c.js(_TEXT_OF, path), _TRIAL_MISSION, 'the trial and its placement wrote nothing in the mission: the file is the same', what='the file')
+    # on a phone
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    c.until(f"!!document.querySelector('{_TR}')", what='the trial pane on a phone')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    c.tap(_TRPUT)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N102_390_put.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

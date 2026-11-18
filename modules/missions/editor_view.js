@@ -25,6 +25,8 @@
 // Les repères de la base aéronautique : quand la vue s'arrête (au zoom 7 et au-delà), l'écran demande à ctx.aerodb les aérodromes,
 // balises, points et points VFR du cadre et les rend à la carte (EM.refData les borne) ; un repère touché en Sélection (s.ed.mapRef)
 // dit ce qu'il est dans la ligne et « Ajouter comme point » se montre à côté — le toucher ne crée rien.
+// « Poser l'avion ici » : pendant un essai des clés, un bouton à côté de la ligne de l'outil (s.ed.trial.putting) ; le toucher suivant
+// de la carte ajoute une pose à s.ed.trial.puts ({ min, lat, lon } à la minute du curseur) ; le moteur de l'essai la joue.
 //
 // L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (lot P1 : le croquis des
 // lieux, sans outil) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
@@ -107,6 +109,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmaphint{margin:0;flex:1 1 auto}
 [data-module="missions"] .ms-atmaphintrow>button{flex:0 0 auto;min-height:44px}
 [data-module="missions"] .ms-atmaphintrow>button[hidden]{display:none}
+[data-module="missions"] .ms-atmaphintrow>button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="missions"] .ms-atmaplbl{pointer-events:none;background:color-mix(in srgb,var(--sog-bg,#fff) 82%,transparent);color:var(--sog-text,#222);padding:0 4px;font-size:.78em;line-height:1.5;white-space:nowrap;max-width:16em;overflow:hidden;text-overflow:ellipsis}
 [data-module="missions"] .ms-atmaplbl[data-mapsel]{background:var(--sog-bg,#fff);border:1px solid var(--sog-accent);padding:1px 6px;font-size:.85em;z-index:1}
 [data-module="missions"] .ms-atflowrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity}
@@ -608,8 +611,12 @@ function edMapFeats(s, doc, run = null) {
 /** Le rang du lieu choisi sur la carte (s.ed.mapSel), -1 sinon. */
 const edMapSel = e => Number.isInteger(e.mapSel) ? e.mapSel : -1;
 /** L'outil de la carte : 'select' (la Sélection, à l'ouverture et après chaque pose), 'point', 'zone', 'object' ; 'view' pendant un
- *  essai des clés (la carte ne fait que montrer) ; 'route' : Tracé, qui reste en main jusqu'à ce qu'on le quitte. */
-const edMapTool = e => e.trial?.on ? 'view' : ['point', 'route', 'zone', 'object'].includes(e.tool) ? e.tool : 'select';
+ *  essai des clés (la carte ne fait que montrer) ; 'put' pendant un essai, quand « Poser l'avion ici » est en main ; 'route' : Tracé,
+ *  qui reste en main jusqu'à ce qu'on le quitte. */
+const edMapTool = e => e.trial?.on ? (e.trial.putting ? 'put' : 'view') : ['point', 'route', 'zone', 'object'].includes(e.tool) ? e.tool :
+  'select';
+/** Pendant un essai des clés (la carte montre, ou attend qu'on pose l'avion) : les outils d'édition ne se donnent pas. */
+const edMapTrial = tool => tool === 'view' || tool === 'put';
 /** Le tiroir choisi dans le déroulé (sa ligne et son rang), ou null quand c'est « Au départ ». */
 const edSelDrawer = e => {
   const rows = (e.sel || 'start') === 'start' ? [] : edDrawers(e),
@@ -642,6 +649,9 @@ const edDrawFor = e => {
   };
 };
 
+/** Une minute de l'essai comme l'écran la dit (un quart de minute au plus près, la virgule du français restant au cadre). */
+const trMin = v => String(Math.round((+v || 0) * 100) / 100);
+
 /** La ligne sous les outils : ce que fait l'outil en main, ou le lieu choisi et ce qu'un geste en fait — sans carte, que les lieux se
  *  placent par leurs champs. Un texte (posé par textContent, jamais redessiné avec un bouton). */
 function edMapHint(s) {
@@ -649,6 +659,9 @@ function edMapHint(s) {
     tool = edMapTool(e),
     r = (e.places || [])[edMapSel(e)];
   if (!EM.stateOf(e)) return s.tt(EDTX.atHint_none);
+  if (tool === 'put') return s.tt(EDTX.atHint_put, {
+    m: trMin(e.trial.min)
+  });
   if (['zone', 'object'].includes(tool) && edDrawFor(e)) return s.tt(EDTX.atHint_drawFor, {
     n: edDrawFor(e).rank
   });
@@ -681,10 +694,10 @@ function edMapHtml(s, doc, run = null) {
     thumb = thumbHtml(s, doc, run),
     live = EM.stateOf(e),
     tool = edMapTool(e),
-    off = !live || tool === 'view',
+    off = !live || edMapTrial(tool),
     btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && edMapTrial(tool) ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
 }
 
 /** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
@@ -744,7 +757,7 @@ function edMapShow(s) {
     mark = () => {
       const live = EM.stateOf(e),
         tool = edMapTool(e),
-        off = !live || tool === 'view',
+        off = !live || edMapTrial(tool),
         body = q('[data-atmapbody]'),
         sketch = q('[data-atsketch]'),
         hint = q('[data-maphint]'),
@@ -761,6 +774,11 @@ function edMapShow(s) {
         add = q('[data-refadd]');
       if (del) del.hidden = !(edMapVertex(e) >= 0 && tool === 'select');
       if (add) add.hidden = !edMapRef(e);
+      const put = q('[data-trput]');
+      if (put) {
+        put.hidden = !(live && edMapTrial(tool));
+        put.setAttribute('aria-pressed', String(tool === 'put'));
+      }
     };
   if (!slot || !e.mapFeats) return mark();
   e.mapLook ||= edMapLook(s);
@@ -780,12 +798,33 @@ function edMapShow(s) {
     onVertexPick: m => edMapVertexPick(s, e, m),
     onPose: p => edMapPose(s, e, p),
     onRoute: i => edMapRoute(s, e, i),
+    onPut: p => edTrialPut(s, e, p),
     onView: v => edMapRefsAsk(s, e, v),
     onRef: r => edMapRefPick(s, e, r),
     onState: () => state() === s && s.ed === e && mark(),
     alive: () => state() === s && s.ed === e
   });
   mark();
+}
+
+/** « Poser l'avion ici » : le toucher de la carte pose l'avion de l'essai là, à la minute du curseur (une pose à la même minute
+ *  remplace la précédente ; vingt au plus, sinon une notification) ; l'outil est lâché ; l'essai est recalculé (le même moteur :
+ *  poser n'est pas voler). Rien n'est écrit dans la mission. */
+function edTrialPut(s, e, p) {
+  const t = e.trial;
+  if (state() !== s || s.ed !== e || !t?.on || !t.putting) return;
+  t.putting = false;
+  const puts = (t.puts || []).filter(x => x.min !== t.min);
+  if (puts.length >= TR.TRIAL.puts) {
+    s.ctx.notify?.(s.tt(EDTX.atPutFull), 'warn');
+    return edMapShow(s);
+  }
+  t.puts = [...puts, {
+    min: t.min,
+    lat: p.lat,
+    lon: p.lon
+  }];
+  draw(s);
 }
 
 /** Les repères de la base aéronautique du cadre de la vue (la vue vient de s'arrêter, au zoom des repères) : demandés à la base de la
@@ -1247,7 +1286,8 @@ function edTrialRun(s, doc) {
     speedKt: trNum(t.speed),
     altFt: trNum(t.alt),
     declares: t.declares !== false,
-    hands: t.hands
+    hands: t.hands,
+    puts: t.puts // « Poser l'avion ici » : les poses de l'auteur (le moteur les borne)
   });
 }
 
@@ -1732,7 +1772,9 @@ function edClickDo(s, b) {
         speed: m?.cruiseSpeedKt != null ? String(m.cruiseSpeedKt) : '',
         alt: m?.cruiseLevelFt != null ? String(m.cruiseLevelFt) : '',
         declares: true,
-        hands: {}
+        hands: {},
+        puts: [],
+        putting: false
       };
       return draw(s);
     }
@@ -1742,9 +1784,15 @@ function edClickDo(s, b) {
     case 'edtrreset':
       if (s.ed.trial) Object.assign(s.ed.trial, {
         min: 0,
-        hands: {}
+        hands: {},
+        puts: [], // « Recommencer » oublie aussi les poses de l'avion
+        putting: false
       });
       return draw(s);
+    case 'edtrput': // « Poser l'avion ici » : pris en main sur place (repris, il est lâché) ; le toucher suivant de la carte pose l'avion
+      if (!s.ed.trial?.on) return;
+      s.ed.trial.putting = !s.ed.trial.putting;
+      return edMapShow(s);
     case 'edtrhand': { // « Ouvrir à la main » : le premier tiroir encore fermé, à la minute du curseur (le geste du pilote, dans l'essai)
       const e = s.ed,
         run = edTrialRun(s, edDoc(e)),

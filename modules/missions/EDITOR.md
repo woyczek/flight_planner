@@ -639,6 +639,20 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   put after its landing, it stays on the ground, there; put at minute zero, it starts there. The log says `put`.
 - Nothing is written in the mission; no input throws (N101).
 
+### 7 vicies. P2: « Poser l'avion ici » on the screen (18 Nov 2026; SOG-0444 lot P2; noreg N102; the pure part: § 7 novodecies)
+
+- **During a trial of the keys, « Poser l'avion ici » is a button beside the line under the tools of the map** (where « Retirer ce
+  sommet » and « Ajouter comme point » are, out of a trial; the trial pane already has seven controls). It is taken in hand IN PLACE
+  (`aria-pressed`; taken again, it is dropped) and the line says « Touchez la carte : l'avion de l'essai est posé là, à H + 2 min ».
+- **The next touch on the map puts the aircraft there, at the minute of the slider** (`s.ed.trial.puts`; a placement at the same
+  minute replaces the one before; twenty at most, a notification beyond), and **the tool is dropped**: another touch does nothing.
+  The trial is computed again by the same engine: the card of the drawer says « ouvert à H + 2 min », the log « l'avion est posé à
+  la main », the map shows the aircraft there.
+- « Recommencer » forgets the placements with the gestures of the pilot; closing the trial hides the button.
+- Nothing is written in the mission (N102 compares the saved file).
+- With this, lot P2 is delivered but for « Vue du pilote » on the map (waits for the pure function of SOG-0448), « Radiale et
+  distance… » for a beacon and the reordering of the chips of a route (asked for later).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

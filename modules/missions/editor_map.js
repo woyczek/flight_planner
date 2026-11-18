@@ -588,6 +588,10 @@ function gestures(L, map, o) {
         return r ? L.cb?.onRef?.(r) : L.cb?.onPick?.(i);
       }
       if (L.mode === 'view') return; // pendant un essai des clés la carte ne fait que montrer
+      if (L.mode === 'put') return L.cb?.onPut?.({ // « Poser l'avion ici » : le toucher rend la position où poser l'avion de l'essai
+        lat: p.lat,
+        lon: p.lon
+      });
       if (L.mode === 'route') {
         // Tracé : le lieu sous le doigt rejoint la route choisie ; la carte nue ne fait rien
         const t = partsOf(L.auth?.at(p.x, p.y)?.id);
@@ -697,7 +701,8 @@ async function start(L, o) {
  *  chaque dessin, met ses éléments à jour s'ils ont changé, la recadre tant que l'auteur n'a pas déplacé la vue. `feats` : mapFeatures ;
  *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg, preview }), onState(état),
  *  alive() ; mode ('select' : la Sélection ; 'point', 'zone', 'object' : un outil de pose ; 'route' : Tracé — un lieu touché est
- *  rendu par onRoute(rang) ; 'view' : la carte ne fait que montrer),
+ *  rendu par onRoute(rang) ; 'view' : la carte ne fait que montrer ; 'put' : pendant un essai, un toucher rend la position où
+ *  poser l'avion — onPut({ lat, lon })),
  *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom), ref (le repère de la base touché, marqué sur la carte) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
  *  onRadius({ i, km }), onPose({ lat, lon, spanKm }), et pour un contour onVertex({ i, k, lat, lon }), onInsert({ i, k, lat, lon }),
  *  onVertexPick({ i, k }) ; onRoute(rang) en Tracé ; les repères de la base : onView({ bbox, zoom }) quand la vue s'arrête (l'écran
@@ -726,7 +731,7 @@ export function show(slot, feats, o) {
     boxSig = JSON.stringify(feats.box),
     reframed = boxSig !== JSON.stringify(L.box);
   L.cb = o;
-  L.mode = ['select', 'point', 'route', 'zone', 'object', 'view'].includes(o.mode) ? o.mode : 'select';
+  L.mode = ['select', 'point', 'route', 'zone', 'object', 'view', 'put'].includes(o.mode) ? o.mode : 'select';
   L.sel = Number.isInteger(o.sel) ? o.sel : -1;
   L.selLabel = o.selLabel || '';
   L.feats = feats;
