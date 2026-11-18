@@ -83,7 +83,7 @@
 
 import {
   isCode
-} from './ad_field.js'; // le test d'un code de terrain est celui du champ commun (SOG-0465) : une fonction pure, jamais recopiée ici
+} from './adnames.js'; // le test d'un code de terrain est celui du champ commun (SOG-0465), une fonction pure de adnames.js (sans écran), jamais recopiée ici
 import {
   visible,
   clean,
@@ -112,7 +112,7 @@ const mapFile = v => {
   return /^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}\.png$/i.test(f) ? f : '';
 };
 
-/** Le code OACI à la fin d'un nom (voir l'en-tête) : un code de terrain au sens du champ commun (`isCode` de ad_field.js : quatre signes,
+/** Le code OACI à la fin d'un nom (voir l'en-tête) : un code de terrain au sens du champ commun (`isCode` de adnames.js : quatre signes,
  *  ou le code de liste d'une hélistation « XT123 ») portant au moins une lettre ; le motif n'est écrit nulle part ici. */
 export function icaoOf(name) {
   const m = /\(([A-Z0-9]{4,5})\)\s*$/.exec(clean(name).toUpperCase());
