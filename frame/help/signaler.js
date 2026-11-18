@@ -416,8 +416,11 @@
     const out = m[1].slice(0, 40 - tail.length) + tail;
     return VERSION.test(out) ? out : '';
   };
-  const text = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
-  const multi = (s, n) => typeof s === 'string' ? s.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').replace(/\r\n?/g, '\n').trim()
+  // les caractères de FORMAT invisibles (marques et contrôles de sens d'écriture, largeur nulle, marque d'ordre) : même classe que `visible` de frame/lib/untrusted.js (ce fichier est un script classique, il ne l'importe pas) ; le liant et l'anti-liant restent
+  const HIDDEN = /[؜​‎‏‪-‮⁠-⁤⁦-⁯￹-￻﻿]/g;
+  const text = (s, n) => typeof s === 'string' ? s.replace(HIDDEN, '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, n) : '';
+  const multi = (s, n) => typeof s === 'string' ? s.replace(HIDDEN, '').replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, ' ').replace(
+      /\r\n?/g, '\n').trim()
     .slice(0, n) : '';
   const now = () => new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   let FLUSH =
@@ -1071,7 +1074,7 @@
       if (r.ok && Array.isArray(r.items)) {
         ui.src = 'poste';
         ui.all = r.items.slice(0, MAX_LIST).map(itemOf).filter(Boolean);
-        ui.total = Number.isInteger(r.total) && r.total >= 0 ? r.total : ui.all.length;
+        ui.total = Number.isInteger(r.total) && r.total >= 0 ? Math.min(r.total, 1e6) : ui.all.length;
       } else ui.src = 'local';
     };
     let qTimer = 0,
@@ -1095,7 +1098,7 @@
       ui.more = {};
       ui.found = r.ok && Array.isArray(r.items) ? {
         items: r.items.slice(0, MAX_LIST).map(itemOf).filter(Boolean),
-        searched: Number.isInteger(r.searched) && r.searched >= 0 ? r.searched : ui.total
+        searched: Number.isInteger(r.searched) && r.searched >= 0 ? Math.min(r.searched, 1e6) : ui.total
       } : { // le verbe ne répond pas : la recherche se fait sur ce que la liste a déjà (titre, extrait, écran, fiche, réponse)
         items: ui.all.filter(i => hits(hayOf(i), wordsOf(q))),
         searched: ui.all.length
@@ -1105,6 +1108,7 @@
 
     function paintPilots() {
       const box = $('[data-pilots]');
+      if (!box || mount.signal.aborted) return; // l'écran a été remplacé pendant la lecture des pilotes
       if (ui.ch !== 'poste' || !ui.pilots) {
         box.hidden = true;
         return;
@@ -1115,6 +1119,15 @@
       box.innerHTML = `<h2>${esc(t(T.pilots))}${left ? ` <small class="f-muted" data-left>${esc(t(T.pilotsLeft, { n: left }))}</small>` : ''}</h2><p class="f-muted">${esc(t(T.pilotsIntro))}</p>${p.items.length ? `<ul class="f-sg-list" data-plist>${p.items.map(i => `<li data-p="${esc(i.folder)}/${esc(i.id)}">${i.report ? `<span class="f-sg-tag">${esc(kindLabel(i.report.kind))}</span> <span class="f-sg-t">${esc(i.report.title)}</span><div class="f-muted">${esc(t(T.pilotsFrom, { tri: i.folder }))}</div><div class="f-sg-body">${esc(i.report.text)}</div>${i.images?.length ? `<div class="f-sg-imgs" data-pimgs><small class="f-muted">${esc(t(T.photosOf))}</small><div>${i.images.map(m => `<img src="${esc(m.url)}" alt="" width="${m.w > m.h ? 120 : Math.round(120 * m.w / m.h)}" height="${m.w > m.h ? Math.round(120 * m.h / m.w) : 120}">`).join('')}</div></div>` : ''}${i.refused ? `<div class="f-warn" data-pimg-refused>${esc(t(T.photoRefused))}</div>` : ''}${i.taken ? `<span class="f-sg-state">${esc(t(T.taken))}</span>` : `<button type="button" data-take="${esc(i.folder)}/${esc(i.id)}">${esc(t(T.take))}</button>`}` : `<span class="f-muted">${esc(t(T.invalid))}</span>`}</li>`).join('')}</ul>` : `<p class="f-muted" data-pnone>${esc(t(T.pilotsNone))}</p>`}${p.more ? `<p class="f-muted">${esc(t(T.pilotsMore, { n: p.more }))}</p>` : ''}`;
     }
     /** Les signalements de pilotes du dépôt de données (poste de l'ergonome) : chemins sous pilot/<tri>/signalements/, bornés, relus par les règles du verbe ; la liste des déjà repris vient du fichier. */
+    const blobs = new Set(); // les adresses d'images des signalements de pilotes : rendues quand l'écran est quitté
+    const blobUrl = b => {
+      const u = URL.createObjectURL(b);
+      blobs.add(u);
+      return u;
+    };
+    mount.signal.addEventListener('abort', () => blobs.forEach(u => URL.revokeObjectURL(u)), {
+      once: true
+    });
     const loadPilots = async refs => {
       let paths = [];
       try {
@@ -1156,7 +1169,7 @@
             b64: doc.b64,
             w: k.w,
             h: k.h,
-            url: URL.createObjectURL(new Blob([k.bytes], {
+            url: blobUrl(new Blob([k.bytes], {
               type: `image/${k.type}`
             }))
           });
@@ -1210,7 +1223,7 @@
             m.state = s.state === 'fiche' ? 'fiche' : s.state === 'read' ? 'read' : 'written';
             if (s.state === 'fiche' && FICHE.test(s.fiche)) m.fiche = s.fiche;
           }
-        await saveStore(c, st);
+        if (!mount.signal.aborted) await saveStore(c, st);
       }
       return r;
     };
@@ -1238,11 +1251,11 @@
         'pilote') : st.poste ? 'poste-off' : 'pilote';
       if (ui.ch === 'poste' && !st.poste) {
         st.poste = true;
-        await saveStore(c, st);
+        if (!mount.signal.aborted) await saveStore(c, st);
       }
       if (ui.ch === 'pilote' && st.poste && r.reason === 'no-organisation') {
         st.poste = false;
-        await saveStore(c, st);
+        if (!mount.signal.aborted) await saveStore(c, st);
       }
       if (ui.ch === 'old') ui.note = {
         kind: 'warn',
@@ -1260,7 +1273,7 @@
         await loadList(); // SOG-0410 : la liste du poste, un appel au montage
         ui.ready = true;
         paint();
-        loadPilots(r.refs || []);
+        loadPilots(r.refs || []).catch(() => {});
       } else if (ui.ch === 'pilote') {
         await queueLeft();
         await flush();
@@ -1290,7 +1303,7 @@
         if (!ok) keep.push(u);
       }
       st.unsent = keep;
-      await saveStore(c, st);
+      if (!mount.signal.aborted) await saveStore(c, st);
     };
     const sendPost = async (r, files = []) => {
       const images = [];
@@ -1500,7 +1513,7 @@
           };
         } else ui.note = {
           kind: 'warn',
-          text: t(T.refused[why] || T.refused.failed)
+          text: t(Object.hasOwn(T.refused, why) ? T.refused[why] : T.refused.failed)
         };
         c.notify?.(ui.note.text, 'warn');
       }
@@ -1530,7 +1543,7 @@
       } else {
         ui.note = {
           kind: 'warn',
-          text: t(T.refused[res.reason] || T.refused.failed)
+          text: t(Object.hasOwn(T.refused, res.reason) ? T.refused[res.reason] : T.refused.failed)
         };
         c.notify?.(ui.note.text, 'warn');
       }

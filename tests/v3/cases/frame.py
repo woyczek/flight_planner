@@ -10275,7 +10275,7 @@ def a268(c):
     c.page.fill('[data-q]', 'img')
     c.until(f"!!document.querySelector('[data-grp=found] li[data-id=\"{_SG_HOSTILE}\"]')", timeout=8000, what='the hostile title found')
     h = c.js(f"(() => {{ const li = document.querySelector('[data-grp=found] li[data-id=\"{_SG_HOSTILE}\"]'); return [li.querySelectorAll('img,script').length, li.querySelector('.f-sg-t').textContent, window.__pwn === undefined] }})()")
-    c.ok(h[0] == 0 and h[1].startswith('<img src=x') and '‮' in h[1] and h[2], h, 'markup in a title is text: no element, nothing runs; the right-to-left mark stays a character')
+    c.ok(h[0] == 0 and h[1].startswith('<img src=x') and '‮' not in h[1] and h[2], h, 'markup in a title is text: no element, nothing runs; the right-to-left mark is removed (Security: a text must not read otherwise than it is written)')
     _sg_no_hscroll(c)
     c.check_errors()
 
@@ -10360,7 +10360,7 @@ def a269(c):
     c.until("!!document.querySelector('[data-sheet-title]') && !!document.querySelector('[data-cmlist]')", timeout=15000, what='the hostile sheet')
     h = c.js("[document.querySelectorAll('[data-sheet] img, [data-sheet] script').length, document.querySelector('[data-sheet-title]').textContent, document.querySelector('[data-body]').textContent, document.querySelector('[data-cmlist]').textContent, window.__pwn === undefined, [...document.querySelectorAll('[data-sheet] a')].map(a => a.getAttribute('href'))]")
     c.eq(h[0], 0, 'no element made from a title, a text or a comment', what='elements')
-    c.ok(h[1].startswith('<img') and '‮' in h[1] and h[2].startswith('<script>') and h[3].strip().startswith(_sgt('you', L)) and '<img src=x' in h[3] and h[4], h, 'they are shown as text; nothing runs')
+    c.ok(h[1].startswith('<img') and '‮' not in h[1] and h[2].startswith('<script>') and h[3].strip().startswith(_sgt('you', L)) and '<img src=x' in h[3] and h[4], h, 'they are shown as text; nothing runs')
     c.ok(all(a in ('#signaler',) for a in h[5]), h[5], 'no link made from a report (it has no card here)')
     _sg_no_hscroll(c)
     c.check_errors()
@@ -10372,6 +10372,23 @@ def _sg_pilot_docs():
                                                {'id': 'SIG-a0000000a2', 'kind': 'request', 'title': 'Carte : afficher les zones militaires', 'text': 'Les zones.', 'screen': 'maps', 'at': '2026-11-17T09:00:00Z', 'via': 'pilote'},
                                                {'id': 'SIG-a0000000a4', 'kind': 'bug', 'title': '<img src=x onerror="window.__pwn=5">', 'text': 'x', 'screen': 'maps', 'at': '2026-11-16T09:00:00Z', 'via': 'pilote'}],
                                       'draft': {'kind': 'bug', 'title': '', 'text': ''}}, 'cache']]
+
+
+@case('A272', 'Security notes on « Mes signalements » (SOG-0410, Security): a report read from the device has no invisible format character (U+202E, U+2066, U+200B…), and the screen never writes a stale store after it is left, never reads a refusal reason like « constructor » as a text, caps a launcher count, and frees the pilots\' image addresses', 'A',
+      tags=('signaler',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0410, Security\'s five notes: (4) a title or a text read from the device store carries no format character (it would read otherwise than it is written; the joiners stay); (1) check, refreshStates and flush write the store only while the screen is mounted (a stale copy must not overwrite a newer draft of another mounting); (2) the pilots\' list is painted only into a screen that still exists and its blob addresses are revoked when the screen is left; (3) a refusal reason is looked up as an OWN key of the table (« constructor », « __proto__ » are not texts); (5) total and searched of a launcher answer are capped at one million')
+def a272(c):
+    docs = [['device/signaler.json', {'poste': False, 'unsent': [], 'mine': [{'id': 'SIG-a0000000b1', 'kind': 'bug', 'title': 'ab‮EVIL⁦c​d', 'text': 'x‮y', 'screen': 'fuel', 'at': '2026-11-15T09:00:00Z', 'via': 'pilote'}],
+                                      'draft': {'kind': 'bug', 'title': '', 'text': ''}}, 'cache']]
+    c.open('signaler', docs=LEVEL3 + docs)
+    c.until("document.querySelectorAll('[data-mine] li[data-id]').length === 1", timeout=20000, what="the device's report")
+    c.eq(c.text('[data-mine] li[data-id] .f-sg-t'), 'abEVILcd', 'the title read from the device has no format character', what='title')
+    src = (ROOT / 'frame' / 'help' / 'signaler.js').read_text(encoding='utf-8').replace('\r\n', '\n')
+    c.ok(src.count('if (!mount.signal.aborted) await saveStore(c, st);') >= 4, '', 'check, refreshStates and flush write the store only while the screen is mounted')
+    c.ok("if (!box || mount.signal.aborted) return;" in src and 'revokeObjectURL' in src and 'loadPilots(r.refs || []).catch(' in src, '', 'the pilots\' list is guarded and its blob addresses are freed')
+    c.ok('Object.hasOwn(T.refused, why)' in src and 'Object.hasOwn(T.refused, res.reason)' in src, '', 'a refusal reason is an own key of the table')
+    c.ok('Math.min(r.total, 1e6)' in src and 'Math.min(r.searched, 1e6)' in src, '', 'the counts of a launcher answer are capped')
+    c.check_errors()
 
 
 @case('A270', '« Mes signalements » of a pilot (SOG-0410): no launcher verb — the device\'s reports (not sent first), the state, the linked card and the short answer from the `reports` map of roadmap.json; a search over what the device holds; the sheet without priority nor comments; without `reports` the states of today; four languages', 'A',
