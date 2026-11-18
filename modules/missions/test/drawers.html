@@ -1702,7 +1702,7 @@
     every5 = (to, more) => Array.from({
       length: to / 5 + 1
     }, (_, i) => dn(i * 5, more));
-  ck('landing, follows : un point et un écart permis d\'une période de relevé (5 s) au moins → jugé ; 4 s : non ; un mot de confirmation, un objet mobile : non ; un objet immobile : oui ; hover, overflight, sequence, event : non',
+  ck('landing, follows : un point et un écart permis d\'une période de relevé (5 s) au moins → jugé ; 4 s : non ; un mot de confirmation, un objet mobile : non ; un objet immobile : oui ; hover, overflight, sequence sans étape, event : non',
     D.FIX_PERIOD_SEC === 5 && D.follows(land({
       maxGapSec: 5
     })) && !D.follows(land({
@@ -1737,7 +1737,7 @@
     })) && !D.follows({
       kind: 'condition',
       condition: 'sequence',
-      steps: [rule0]
+      steps: []
     }) && !D.follows({
       kind: 'condition',
       condition: 'event',
@@ -2138,12 +2138,12 @@
         return String(e);
       }
     })() === true);
-  ck('overflight, HOWS et SHARED contiennent « overflight » ; howOf apparie la condition et le genre ; une condition « sequence » reste « condition »',
+  ck('overflight, HOWS et SHARED contiennent « overflight » ; howOf apparie la condition et le genre ; une condition « event » reste « condition » (la suite a son genre depuis le lot 5)',
     D.HOWS.includes('overflight') && D.SHARED.includes('overflight') && D.howOf(OV) === 'overflight' && D.howOf(LAND) === 'landing' && D.howOf(over({
       kind: 'hover'
     })) === 'overflight' && D.howOf({
       kind: 'condition',
-      condition: 'sequence'
+      condition: 'event'
     }) === 'condition');
   // le carnet : un constat overflight s'écrit, se relit, et le constat d'un autre pilote ouvre le tiroir (comme l'atterrissage)
   const ovDoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'overflight', {
@@ -2487,6 +2487,330 @@
     })[0];
   ck('hover, carnet : le constat s\'écrit avec ses deux relevés (hauteur sol comprise) et se relit ; celui de BBB ouvre le tiroir chez AAA (« hover », par BBB) ; sur une autre bande chez le lecteur, il est refusé (« shape »)',
     hBook?.drawers?.B?.how === 'hover' && hBook.drawers.B.from?.aglFt === 40 && hSt.open === true && hSt.how === 'hover' && hSt.by === 'BBB' && hSt.refused.length === 0 && hOff.open === false && hOff.refused[0]?.why === 'shape', [hBook, hSt, hOff]);
+
+  // ---- SOG-0500, lot 5 : la condition « suite d'étapes » de l'atelier jugée en vol (follows, stepping, stands, carnet, judgeKind).
+  // Chaque étape est une règle de holdRule (atterrissage, survol, stationnaire) jugée comme la condition seule ; points inventés.
+  const L10 = land({
+      durationSec: 10
+    }),
+    H10 = hov({
+      durationSec: 10
+    }),
+    seq = (...keys) => ({
+      kind: 'condition',
+      condition: 'sequence',
+      steps: keys.map(k => k.rule),
+      fallbackMin: 90
+    }),
+    S_OL = seq(OV, L10), // un survol, puis un atterrissage tenu 10 s
+    S_LOH = seq(L10, OV, H10),
+    // un relevé posé ET dans la bande du survol, sur le point : il satisfait un survol comme un atterrissage
+    X = sec => ({
+      lat: 45.0,
+      lon: 1.0,
+      at: iso(T0 + sec * 1000),
+      altFt: 1200,
+      aglFt: 1000,
+      onGround: true,
+      gsKt: 1
+    }),
+    // la suite rejouée relevé après relevé, comme la vue : le relevé d'avant n'est un trajet qu'à une minute au plus
+    seqPlay = (key, fixes) => {
+      let state = null,
+        prev = null,
+        f = null,
+        n = -1;
+      fixes.forEach((x, i) => {
+        const gap = Date.parse(x.at) - Date.parse(prev?.at),
+          r = D.stepping(key, state, gap >= 0 && gap <= D.LEG_MS ? prev : null, x);
+        state = r.state;
+        prev = x;
+        if (r.f && !f) {
+          f = r.f;
+          n = i;
+        }
+      });
+      return {
+        f,
+        n,
+        state
+      };
+    },
+    doesNotThrow = fn => {
+      try {
+        fn();
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    A = seqPlay(S_OL, [ovx(0, 45.0, 1000), dn(5), dn(10), dn(15)]);
+  ck('suite, follows : un atterrissage puis un survol sans confirmation puis un stationnaire → jugé ; une seule étape, dix étapes : oui',
+    D.follows(S_LOH) && D.follows(seq(LAND)) && D.follows(seq(...Array.from({
+      length: 10
+    }, () => OV))));
+  ck('suite, follows : un survol à confirmer, une étape illisible (rayon nul), 0 étape, 11 étapes, une suite dans une suite, une étape d\'un autre genre, des étapes absentes → non',
+    !D.follows(seq(L10, OVC)) && !D.follows(seq(L10, land({
+      radiusM: 0
+    }))) && !D.follows(seq()) && !D.follows(seq(...Array.from({
+      length: 11
+    }, () => OV))) && !D.follows({
+      ...S_OL,
+      steps: [S_OL]
+    }) && !D.follows({
+      ...S_OL,
+      steps: [{
+        kind: 'zone'
+      }]
+    }) && !D.follows({
+      ...S_OL,
+      steps: null
+    }) && !D.follows({
+      kind: 'condition',
+      condition: 'sequence'
+    }) && !D.follows({
+      ...S_OL,
+      steps: [null]
+    }), [D.follows(seq(L10, OVC))]);
+  ck('suite, stepping dans l\'ordre : un survol puis un atterrissage tenu → un constat « sequence » à deux preuves, du premier relevé au dernier, à l\'heure de la dernière',
+    A.n === 3 && A.f?.how === 'sequence' && A.f.steps.length === 2 && A.f.steps[0].how === 'overflight' && A.f.steps[1].how === 'landing' &&
+    A.f.from === A.f.steps[0].from && A.f.to === A.f.steps[1].to && A.f.to.at === iso(T0 + 15e3) && A.f.at === A.f.steps[1].at && A.f.at === T0 + 15e3 &&
+    A.state.i === 2 && A.state.proofs.length === 2, A);
+  const B = seqPlay(S_OL, [dn(0), dn(5), dn(10), dn(15), dn(20), dn(25), dn(30)]),
+    C = seqPlay(S_OL, [dn(0), dn(5), dn(10), dn(15), dn(20), dn(25), dn(30), ovx(200, 45.0, 1000), dn(205), dn(210), dn(215)]);
+  ck('suite, stepping : dans le désordre (l\'atterrissage d\'abord), rien n\'avance ; le survol fait ensuite, l\'atterrissage se tient à son tour',
+    B.f === null && B.state.i === 0 && B.state.proofs.length === 0 && C.n === 10 && C.f?.steps.length === 2 && C.f.steps[1].from.at === iso(T0 + 205e3), [B, C]);
+  const I = seqPlay(S_OL, [ovx(0, 45.0, 1000), dn(5), dn(10), dn(15, {
+      onGround: false
+    })]),
+    J = seqPlay(S_OL, [ovx(0, 45.0, 1000), dn(5), dn(10), dn(15, {
+      onGround: false
+    }), dn(20), dn(25), dn(30)]);
+  ck('suite, stepping : une tenue interrompue repart sans perdre les étapes faites (le survol reste fait, l\'atterrissage recompte à zéro)',
+    I.f === null && I.state.i === 1 && I.state.hold === null && I.state.proofs.length === 1 && J.n === 6 && J.f?.steps[0].how === 'overflight' && J.f.steps[1].from.at === iso(T0 + 20e3), [I, J]);
+  ck('suite, stepping : le relevé qui finit une étape ne compte pas pour la suivante — la tenue de 10 s commence au relevé d\'après, un second survol aussi',
+    seqPlay(S_OL, [X(0), X(10)]).f === null && seqPlay(S_OL, [X(0), X(10)]).state.i === 1 && seqPlay(S_OL, [X(0), X(5)]).f === null && seqPlay(S_OL, [X(0), X(5), X(15)]).n === 2 &&
+    seqPlay(seq(OV, OV), [X(0)]).f === null && seqPlay(seq(OV, OV), [X(0)]).state.i === 1 && seqPlay(seq(OV, OV), [X(0), X(5)]).n === 1 &&
+    seqPlay(seq(OV, OV), [X(0), X(5)]).f.steps.length === 2, [seqPlay(S_OL, [X(0), X(5)]), seqPlay(seq(OV, OV), [X(0)])]);
+  const T3 = seqPlay(S_LOH, [dn(0), dn(10), ovx(20, 45.0, 1000), hv(30), hv(40)]);
+  ck('suite, stepping : trois étapes de trois genres (atterrissage, survol, stationnaire) dans l\'ordre → trois preuves',
+    T3.n === 4 && T3.f?.steps.map(p => p.how).join() === 'landing,overflight,hover' && T3.f.at === T0 + 40e3, T3);
+  ck('suite, stepping : les entrées hostiles ne lèvent pas — clé nulle ou absurde, état illisible, relevés nuls ou absurdes, accesseur qui lève',
+    doesNotThrow(() => {
+      D.stepping(null, null, null, null);
+      D.stepping(undefined);
+      D.stepping(S_OL, 'junk', 5, {
+        lat: 'x'
+      });
+      D.stepping(S_OL, {
+        get i() {
+          throw new Error('piège');
+        }
+      }, null, X(0));
+      D.stepping({
+        ...S_OL,
+        get steps() {
+          throw new Error('piège');
+        }
+      }, null, null, X(0));
+      D.stepping(S_OL, {
+        i: 1,
+        proofs: [7]
+      }, {
+        at: {}
+      }, [1]);
+    }) && D.stepping(null, null, null, null).f === null && D.stepping(null, null, null, null).state.i === 0 && D.stepping(S_OL, 'junk', null, null).f === null &&
+    D.stepping(seq(...Array.from({
+      length: 11
+    }, () => OV)), null, null, X(0)).state.i === 0);
+  ck('suite, stepping : un état illisible (étape hors bornes, preuves en nombre faux ou illisibles) repart du début',
+    [{
+      i: 9,
+      proofs: []
+    }, {
+      i: 1,
+      proofs: []
+    }, {
+      i: -1,
+      proofs: []
+    }, {
+      i: 1,
+      proofs: [{
+        how: 'teleport'
+      }]
+    }, {
+      i: 1.5,
+      proofs: [1]
+    }, null, 'x', 7].every(s => {
+      const r = D.stepping(S_OL, s, null, X(0));
+      return r.state.i === 1 && r.state.proofs.length === 1 && r.f === null;
+    }));
+  const e5 = A.f,
+    laterProof = n => ({
+      how: 'landing',
+      from: dn(n),
+      to: dn(n + 10),
+      at: T0 + (n + 10) * 1000
+    });
+  ck('suite, stands : le constat rejoué sur la clé du lecteur, preuve par preuve → vrai ; une preuve manquante, des preuves dans le désordre, une longueur différente chez le lecteur, une preuve hors règle chez le lecteur → faux',
+    D.stands(e5, S_OL) === true && D.stands({
+      ...e5,
+      steps: [e5.steps[0]]
+    }, S_OL) === false && D.stands({
+      ...e5,
+      steps: [e5.steps[0], laterProof(-100)]
+    }, S_OL) === false && D.stands({
+      ...e5,
+      steps: [e5.steps[0], laterProof(5)]
+    }, S_OL) === true && D.stands(e5, S_LOH) === false && D.stands(e5, seq(OV, L10, H10)) === false && D.stands(e5, seq(over({
+      heightMinFt: 2000,
+      heightMaxFt: 3000
+    }), L10)) === false && D.stands(e5, seq(OV, land({
+      radiusM: 30
+    }))) === false && D.stands(e5, seq(OV, land({
+      durationSec: 30
+    }))) === false, [D.stands(e5, S_OL)]);
+  ck('suite, stands : faux pour des étapes qui ne sont pas un tableau, une preuve nulle, un autre genre de clé, une suite non jugée (survol à confirmer)',
+    D.stands({
+      ...e5,
+      steps: 'abc'
+    }, S_OL) === false && D.stands({
+      ...e5,
+      steps: undefined
+    }, S_OL) === false && D.stands({
+      ...e5,
+      steps: [null, null]
+    }, S_OL) === false && D.stands(e5, L10) === false && D.stands(e5, OV) === false && D.stands(e5, seq(OVC, L10)) === false && D.stands({
+      ...e5,
+      how: 'landing'
+    }, S_OL) === false);
+  ck('suite, finding et catchUp rendent null (l\'état d\'une suite n\'est pas dans un trajet ni dans la trace) ; isHold est faux ; judgeKind : tenue, suite ou trajet',
+    D.finding(S_OL, null, X(0)) === null && D.finding(S_LOH, ovx(0, 45.0, 1000), ovx(5, 45.0, 1000)) === null && D.catchUp(S_OL, {
+      from: iso(T0),
+      trail: [
+        [45.0, 1.0, 1000, 0, 1000, 0]
+      ]
+    }) === null && D.isHold(S_OL) === false && D.judgeKind(LAND) === 'hold' && D.judgeKind(HOV) === 'hold' && D.judgeKind(S_OL) === 'steps' && D.judgeKind(
+      OV) === 'leg' && D.judgeKind(ARR) === 'leg' && D.judgeKind(null) === 'leg' && D.judgeKind(seq(OVC, L10)) === 'leg' && D.judgeKind(hov({
+      maxGapSec: 4
+    })) === 'leg');
+  ck('suite, HOWS et SHARED contiennent « sequence » ; howOf apparie la condition et le genre',
+    D.HOWS.includes('sequence') && D.SHARED.includes('sequence') && D.howOf(S_OL) === 'sequence' && D.howOf(OV) === 'overflight');
+  // le carnet : une suite s'écrit avec ses preuves, se relit, et le constat d'un autre pilote ouvre le tiroir
+  const sDoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'sequence', {
+      from: e5.from,
+      to: e5.to,
+      at: e5.at,
+      steps: e5.steps,
+      source: 'xplane'
+    }),
+    sBook = D.readBook(sDoc, ID),
+    pf = e5.steps.map(p => ({
+      ...p,
+      at: iso(p.at)
+    })),
+    sTheirs = peer('B', T0 + 15e3, 'sequence', {
+      from: e5.from,
+      to: e5.to,
+      steps: pf
+    }),
+    stSeq = key => st({
+      drawers: [{
+        id: 'B',
+        title: 'Suite',
+        key
+      }],
+      others: [
+        ['BBB', sTheirs]
+      ],
+      now: T0 + 41 * MIN
+    })[0],
+    sOk = stSeq(S_OL),
+    sOff = stSeq(seq(over({
+      heightMinFt: 2000,
+      heightMaxFt: 3000
+    }), L10)),
+    sKey = stSeq(seq(OVC, L10)),
+    readB = doc => D.readBook(doc, ID)?.drawers?.B;
+  ck('suite, carnet : le constat s\'écrit avec ses preuves (heures en texte ISO) et se relit (heures en millisecondes, relevés bornés) ; un ancien constat sans « steps » reste lu comme avant',
+    sBook?.drawers?.B?.how === 'sequence' && sBook.drawers.B.steps?.length === 2 && sBook.drawers.B.steps[0].how === 'overflight' && sBook.drawers.B.steps[0].from.aglFt === 1000 &&
+    sBook.drawers.B.steps[1].at === T0 + 15e3 && typeof sDoc.drawer_B.steps[0].at === 'string' && sDoc.drawer_B.steps.length === 2 &&
+    readB(peer('B', T0, 'overflight', {
+      from: e5.steps[0].from,
+      to: e5.steps[0].to
+    }))?.how === 'overflight' && readB(peer('B', T0, 'overflight', {
+      from: e5.steps[0].from,
+      to: e5.steps[0].to
+    })).steps === undefined && readB(peer('B', T0, 'hand')).how === 'hand', [sBook, sDoc]);
+  ck('suite, carnet : celui de BBB ouvre le tiroir chez AAA (« sequence », par BBB) ; sur une autre règle chez le lecteur il est refusé (« shape »), sur une suite non jugée (« key »)',
+    sOk.open === true && sOk.how === 'sequence' && sOk.by === 'BBB' && sOk.refused.length === 0 && sOff.open === false && sOff.refused[0]?.why === 'shape' &&
+    sKey.open === false && sKey.refused[0]?.why === 'key', [sOk, sOff, sKey]);
+  const mk = steps => readB(peer('B', T0 + 15e3, 'sequence', {
+    from: e5.from,
+    to: e5.to,
+    steps
+  }));
+  ck('suite, carnet : un « steps » hostile est refusé (11 preuves, un « how » inconnu ou « sequence », un relevé illisible, une heure illisible, un tableau vide, pas un tableau, une suite sans « steps ») ; dix preuves sont lues',
+    mk(Array.from({
+      length: 11
+    }, () => pf[0])) === undefined && mk([{
+      ...pf[0],
+      how: 'teleport'
+    }]) === undefined && mk([{
+      ...pf[0],
+      how: 'sequence'
+    }]) === undefined && mk([{
+      ...pf[0],
+      from: {
+        lat: 'x',
+        lon: 1
+      }
+    }]) === undefined && mk([{
+      ...pf[0],
+      to: null
+    }]) === undefined && mk([{
+      ...pf[0],
+      at: 'demain'
+    }]) === undefined && mk([]) === undefined && mk('abc') === undefined && mk(undefined) === undefined && mk([null]) === undefined &&
+    mk(Array.from({
+      length: 10
+    }, () => pf[0]))?.steps.length === 10 && mk(pf)?.steps.length === 2 && readB(peer('B', T0, 'landing', {
+      from: e5.from,
+      to: e5.to,
+      steps: 'abc'
+    })) === undefined);
+  ck('suite, carnet : l\'écriture refuse une suite sans preuve, à onze preuves ou à preuve illisible ; une tenue, un survol s\'écrivent comme avant',
+    D.withOpen(null, ctx(T0), 'B', 'sequence', {
+      from: e5.from,
+      to: e5.to,
+      at: e5.at
+    }) === null && D.withOpen(null, ctx(T0), 'B', 'sequence', {
+      from: e5.from,
+      to: e5.to,
+      at: e5.at,
+      steps: Array.from({
+        length: 11
+      }, () => e5.steps[0])
+    }) === null && D.withOpen(null, ctx(T0), 'B', 'sequence', {
+      from: e5.from,
+      to: e5.to,
+      at: e5.at,
+      steps: [{
+        how: 'zone',
+        from: null,
+        to: null,
+        at: 1
+      }]
+    }) === null && D.withOpen(null, ctx(T0), 'B', 'overflight', {
+      from: e5.steps[0].from,
+      to: e5.steps[0].to,
+      at: T0
+    })?.drawer_B?.how === 'overflight' && D.withOpen(null, ctx(T0), 'B', 'overflight', {
+      from: e5.steps[0].from,
+      to: e5.steps[0].to,
+      at: T0
+    }).drawer_B.steps === undefined);
+
 
   window.__bench = {
     done: true,

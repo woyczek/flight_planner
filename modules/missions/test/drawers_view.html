@@ -1357,6 +1357,82 @@
     empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
   DV.stop();
 
+  // ---- SOG-0500, lot 5 : la condition « suite d'étapes » de l'atelier jugée en vol — un survol (sans confirmation) puis un atterrissage
+  // tenu 10 s, dans l'ordre. L'écran ne dit ni le nombre d'étapes ni leur progression.
+  const SEQK = {
+      kind: 'condition',
+      condition: 'sequence',
+      steps: [OVR(false).rule, LAND.rule],
+      fallbackMin: 120
+    },
+    SDRAWER = {
+      title: 'Les étapes',
+      message: 'Toutes faites.',
+      brief: '',
+      key: SEQK
+    };
+  ck('suite d\'étapes, describe : la clé dit « s\'ouvre à la fin de ses étapes », sans lieu ni nombre d\'étapes ; jugée en vol, l\'appareil la suit ; ouverte : « ouvert à la fin de vos étapes », « ouvert à la fin des étapes de BBB »',
+    say(SEQK).key === 's\'ouvre à la fin de ses étapes' && !/DESTINATION|\d/.test(say(SEQK).key) && say(SEQK, {
+      live: true
+    }).follow === 'followed' && say(SEQK, {}, {
+      open: true,
+      how: 'sequence',
+      mine: true,
+      at: AT
+    }).how === 'ouvert à la fin de vos étapes, à 19:20Z' && say(SEQK, {}, {
+      open: true,
+      how: 'sequence',
+      mine: false,
+      by: 'BBB',
+      at: AT,
+      srcAt: AT
+    }).how === 'ouvert à la fin des étapes de BBB, à 19:20Z', [say(SEQK), say(SEQK, {}, {
+      open: true,
+      how: 'sequence',
+      mine: true,
+      at: AT
+    })]);
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(SDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit(ofix(30, 45.0, 1000));
+  await sleep(150);
+  ctx.live.emit(lfix(25));
+  await sleep(150);
+  ctx.live.emit(lfix(20));
+  await sleep(150);
+  const sNotYet = empty() && !ctx.store.get(BOOK)?.drawer_B;
+  ctx.live.emit(lfix(15));
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const sb = ctx.store.get(BOOK)?.drawer_B;
+  ck('la suite d\'étapes : le survol fait, l\'atterrissage posé 5 s, rien ; posé 10 s d\'affilée, le constat « sequence » est écrit avec ses deux preuves (survol, atterrissage) et « Suite de la mission » dit « ouvert à la fin de vos étapes, à … » ; la notification le dit, l\'écran ne montre aucun lieu',
+    sNotYet && sb?.how === 'sequence' && sb.steps?.length === 2 && sb.steps[0].how === 'overflight' && sb.steps[1].how === 'landing' && /^ouvert à la fin de vos étapes, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Les étapes') && !/DESTINATION/.test(stage
+      .textContent), [sNotYet, sb, ctx.notes]);
+  DV.stop();
+  // dans le désordre (l'atterrissage d'abord, jamais le survol) : rien ne s'ouvre
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(SDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  for (const s of [40, 35, 30, 25, 20, 15, 10, 5]) {
+    ctx.live.emit(lfix(s));
+    await sleep(40);
+  }
+  await sleep(150);
+  ck('la suite d\'étapes dans le désordre (posé 35 s, sans survol) : aucun constat, rien ne s\'ouvre',
+    empty() && !ctx.store.get(BOOK)?.drawer_B, [ctx.store.get(BOOK)]);
+  DV.stop();
+
   // le rattrapage au retour de la page : la trace gardée du vol de cette mission
   const crossing = start => ({
     from: iso(start),

@@ -55,6 +55,11 @@
 //     { how: 'overflight', confirm } du trajet (au rayon du point, dans la bande de hauteur SOL aux deux relevés). Un STATIONNAIRE
 //     (SOG-0500, lot 4) est une TENUE comme l'atterrissage : holding(key, hold, fix) la tient (isHold(key) dit si une clé s'y juge) ; un
 //     relevé tient quand il est au rayon, sous la tolérance de vitesse, EN L'AIR (onGround faux) et dans la bande de hauteur SOL.
+//     Une SUITE D'ÉTAPES (SOG-0500, lot 5 : `{ kind: 'condition', condition: 'sequence', steps: [règle…] }`, une à dix étapes, chacune un
+//     atterrissage, un survol sans confirmation ou un stationnaire) garde un état { i, hold, proofs } : stepping(key, state, prev, fix) →
+//     { state, f } juge l'étape en cours par les fonctions des conditions seules (stepKey : une étape est une clé), dans l'ordre ; f : le
+//     constat { how: 'sequence', at, from, to, steps: [{ how, from, to, at }…] } quand la dernière étape est faite. judgeKind(key) →
+//     'hold' | 'steps' | 'leg' : par quoi la vue juge cette clé (holding, stepping, finding).
 //   asked(states, { inRange }) → { id, how: 'hand' | 'object' | 'overflight' } ou null (SOG-0459) : le tiroir qu'ouvre le geste neutre
 //     « Demander la suite » — le premier fermé, si sa clé est le geste, ou un objet (ou un survol à confirmer) que l'appareil suit et
 //     a à portée (`inRange` : son identifiant).
@@ -85,10 +90,10 @@ import {
 /** Les identifiants de tiroir : ceux du lecteur de mission (un tiroir lu a toujours sa place dans le carnet). */
 export const LETTERS = [...DRAWER_IDS];
 /** Ce qui s'écrit dans un carnet : un geste ou un constat. L'heure et l'heure de repli se calculent. */
-export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing', 'overflight', 'hover'];
+export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing', 'overflight', 'hover', 'sequence'];
 /** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
  *  l'ergonome du 17/11 en attendant Q-0094 : « pour tous ou pour soi ? ») — pour l'ouvrir à tous, ajouter 'hand' ici, rien d'autre. */
-export const SHARED = ['zone', 'object', 'arrival', 'landing', 'overflight', 'hover'];
+export const SHARED = ['zone', 'object', 'arrival', 'landing', 'overflight', 'hover', 'sequence'];
 export const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre (à l'écriture comme au rejeu)
 const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim', 'trail']; // trail : constat retrouvé sur la trace gardée (rattrapage)
 const TRI = /^[A-Z]{3}$/,
@@ -149,14 +154,22 @@ function entryOf(v) {
     at
   };
   const how = HOWS.includes(own(v, 'how')) ? own(v, 'how') : 'hand',
-    source = SOURCES.includes(own(v, 'source')) ? own(v, 'source') : '';
+    source = SOURCES.includes(own(v, 'source')) ? own(v, 'source') : '',
+    raw = own(v, 'steps'),
+    steps = raw === undefined ? null : proofsOf(raw);
+  // une suite d'étapes (lot 5) : de 1 à 10 constats, chacun lu borné ; un tableau trop long ou illisible, ou une suite sans étapes, rend
+  // le constat illisible. Un constat sans `steps` se lit comme avant.
+  if ((raw !== undefined && !steps) || (how === 'sequence' && !steps)) return null;
   return {
     state,
     at,
     how,
     from: fixOf(own(v, 'from')),
     to: fixOf(own(v, 'to')),
-    source
+    source,
+    ...(steps ? {
+      steps
+    } : {})
   };
 }
 
@@ -253,19 +266,21 @@ function checkOther(e, {
  *  confirmation, un écart permis d'au moins une période de relevé), une condition « survol » (SOG-0500, lot 2 : un point ou un objet
  *  immobile, un rayon, une bande de hauteur SOL, sans mot de confirmation), une condition « stationnaire » (lot 4 : point ou objet
  *  immobile, rayon, tolérance de vitesse, bande de hauteur SOL, durée, écart permis d'au moins une période de relevé). Le reste (cible qui franchit, objet mobile, suivi,
- *  maintien, séquence, événement) n'est pas jugé en vol. */
+ *  maintien, événement) n'est pas jugé en vol. Une condition « suite d'étapes » (lot 5) se juge quand elle a de une à dix étapes, chacune
+ *  jugée ici (atterrissage, survol, stationnaire) et aucun survol à confirmer (un « Demander » au milieu d'une suite n'est pas jugé, par
+ *  prudence). */
 export function follows(key) {
   if (!key || typeof key !== 'object') return false;
   if (key.kind === 'zone') return !key.actor;
   if (key.kind === 'object') return !!key.object && !key.object.moving;
   if (key.kind === 'arrival') return !(key.escortMinSec > 0);
-  return !!landSpec(key) || !!overSpec(key) || !!hoverSpec(key);
+  return !!landSpec(key) || !!overSpec(key) || !!hoverSpec(key) || !!seqOf(key);
 }
 
 /** Le genre de constat d'une clé : « landing », « overflight » ou « hover » pour les conditions de l'atelier de ce nom, `key.kind` sinon
  *  (ce que le carnet écrit dans `how`). */
 export const howOf = key => key?.kind === 'condition' && (key.condition === 'landing' || key.condition === 'overflight' || key.condition ===
-  'hover') ? key.condition : key?.kind;
+  'hover' || key.condition === 'sequence') ? key.condition : key?.kind;
 
 /** La période d'un relevé du simulateur, en secondes (LIVE_SIM de frame/app.js) : un écart permis plus court (`maxGapSec`) ne peut
  *  jamais être tenu. */
@@ -436,6 +451,169 @@ export function holding(key, hold, fix) {
   }
 }
 
+/** Les étapes d'une suite : au plus dix (le lecteur de mission les borne déjà). */
+export const SEQ_MAX = 10;
+
+/** La clé d'une ÉTAPE : une étape est une clé, jugée comme la condition seule (SOG-0500, lot 5). */
+export const stepKey = rule => ({
+  kind: 'condition',
+  condition: rule?.kind,
+  rule
+});
+
+/** Les clés d'étape d'une condition « suite d'étapes » que le vol juge, ou null : de une à dix étapes, chacune d'un genre jugé (jamais une
+ *  suite dans une suite), chaque clé d'étape acceptée par follows, et AUCUN survol à confirmer (un « Demander » au milieu d'une suite
+ *  n'est pas encore jugé : décidé par prudence). */
+function seqOf(key) {
+  const steps = key && key.kind === 'condition' && key.condition === 'sequence' ? key.steps : null;
+  if (!Array.isArray(steps) || steps.length < 1 || steps.length > SEQ_MAX) return null;
+  const keys = [];
+  for (const rule of steps) {
+    if (!rule || typeof rule !== 'object' || !['landing', 'overflight', 'hover'].includes(rule.kind)) return null;
+    const k = stepKey(rule);
+    if (!follows(k) || (rule.kind === 'overflight' && overSpec(k).confirm)) return null;
+    keys.push(k);
+  }
+  return keys;
+}
+
+/** Par quoi la vue juge cette clé : 'hold' (une tenue : holding), 'steps' (une suite d'étapes : stepping), 'leg' (un trajet : finding). */
+export const judgeKind = key => isHold(key) ? 'hold' : seqOf(key) ? 'steps' : 'leg';
+
+/** Un constat d'étape lu borné : { how, from, to, at (ms) }, ou null. `how` est un genre de constat (jamais une suite ni un geste), les
+ *  deux relevés passent par fixOf, `at` est un nombre (millisecondes) ou un texte ISO. */
+function proofOf(v) {
+  const how = own(v, 'how'),
+    t = own(v, 'at'),
+    at = typeof t === 'number' ? (Number.isFinite(t) ? t : null) : msOf(t),
+    from = fixOf(own(v, 'from')),
+    to = fixOf(own(v, 'to'));
+  return HOWS.includes(how) && how !== 'sequence' && how !== 'hand' && at !== null && from && to ? {
+    how,
+    from,
+    to,
+    at
+  } : null;
+}
+
+/** Les constats d'étape d'un tableau (de 1 à SEQ_MAX), ou null si le tableau est absent, trop long, vide ou si l'un d'eux est illisible. */
+function proofsOf(v) {
+  if (!Array.isArray(v) || v.length < 1 || v.length > SEQ_MAX) return null;
+  const out = v.map(proofOf);
+  return out.every(Boolean) ? out : null;
+}
+
+/** L'état d'une suite relu borné : { i, hold, proofs } ; illisible → le départ { i: 0, hold: null, proofs: [] }. i est le nombre
+ *  d'étapes faites (de 0 à n), `proofs` en a exactement i. */
+function stepsState(state, n) {
+  const start = {
+    i: 0,
+    hold: null,
+    proofs: []
+  };
+  try {
+    const i = own(state, 'i'),
+      list = own(state, 'proofs'),
+      hold = own(state, 'hold');
+    if (!Number.isInteger(i) || i < 0 || i > n || !Array.isArray(list) || list.length !== i) return start;
+    const proofs = list.map(proofOf);
+    if (!proofs.every(Boolean)) return start;
+    return {
+      i,
+      hold: hold && typeof hold === 'object' ? hold : null,
+      proofs
+    };
+  } catch {
+    return start;
+  }
+}
+
+/** La SUITE D'ÉTAPES (SOG-0500, lot 5) : (clé, état d'avant, relevé d'avant, relevé) → { state, f }. state : { i (l'étape en cours),
+ *  hold (la tenue en cours, atterrissage ou stationnaire), proofs ([{ how, from, to, at }] : les constats des étapes faites) } ; f :
+ *  null, ou le constat { how: 'sequence', at (celui de la dernière étape), from (le premier relevé de la première preuve), to (le dernier
+ *  de la dernière), steps: proofs } quand la dernière étape est faite. Les étapes se font DANS L'ORDRE : seule l'étape en cours est
+ *  jugée, par holding (une tenue) ou finding (un survol), les mêmes fonctions que pour la condition seule ; le relevé qui finit une
+ *  étape ne compte pas pour la suivante (une étape par relevé, et le relevé d'avant n'est jamais le début du trajet d'un survol s'il a
+ *  fini l'étape d'avant). Une tenue interrompue repart sans perdre les étapes faites. Un état illisible repart du début. Ne lève
+ *  jamais. */
+export function stepping(key, state, prev, fix) {
+  const start = {
+    i: 0,
+    hold: null,
+    proofs: []
+  };
+  try {
+    const keys = seqOf(key);
+    if (!keys) return {
+      state: start,
+      f: null
+    };
+    const cur = stepsState(state, keys.length);
+    if (cur.i < keys.length) {
+      const k = keys[cur.i];
+      let f = null,
+        hold = null;
+      if (isHold(k)) {
+        const r = holding(k, cur.hold, fix);
+        hold = r.hold;
+        f = r.f;
+      } else {
+        // le relevé qui a fini l'étape d'avant ne fait pas le début du trajet de celle-ci
+        const last = cur.proofs.length ? cur.proofs[cur.proofs.length - 1].to.at : null,
+          p = fixOf(prev),
+          ok = !!p && (last === null || Date.parse(p.at) > Date.parse(last));
+        f = finding(k, ok ? p : null, fix);
+        if (f && f.confirm) f = null;
+      }
+      if (f) {
+        cur.proofs = [...cur.proofs, {
+          how: f.how,
+          from: f.from,
+          to: f.to,
+          at: f.at
+        }];
+        cur.i++;
+        hold = null;
+      }
+      cur.hold = hold;
+    }
+    if (cur.i < keys.length || !cur.proofs.length) return {
+      state: cur,
+      f: null
+    };
+    const first = cur.proofs[0],
+      last = cur.proofs[cur.proofs.length - 1];
+    return {
+      state: cur,
+      f: {
+        how: 'sequence',
+        at: last.at,
+        from: first.from,
+        to: last.to,
+        steps: cur.proofs
+      }
+    };
+  } catch {
+    return {
+      state: start,
+      f: null
+    };
+  }
+}
+
+/** Les preuves d'une suite se rejouent une à une sur la clé d'étape du LECTEUR, dans l'ordre : même nombre d'étapes, chaque preuve tient
+ *  sur sa règle (stands de la condition seule), et chacune commence après la fin de la précédente. Rejoué, pas prouvé. */
+function standsSteps(e, key) {
+  const keys = seqOf(key),
+    list = e.steps;
+  if (!keys || !Array.isArray(list) || list.length !== keys.length) return false;
+  return list.every((p, j) => !!p && stands({
+    how: p.how,
+    from: p.from,
+    to: p.to
+  }, keys[j]) && (j === 0 || Date.parse(p.from?.at) >= Date.parse(list[j - 1].to?.at)));
+}
+
 /** Le constat d'une tenue (atterrissage, stationnaire) tient-il sur CETTE clé ? Les deux relevés sont tenus selon elle, séparés d'au
  *  moins `durationSec` secondes et de MOINS de `durationSec + maxGapSec` : ce qu'un appareil honnête écrit (holding conclut au premier
  *  relevé qui complète la durée, et deux relevés tenus successifs sont à maxGapSec au plus) — un constat forgé doit lui ressembler
@@ -495,7 +673,7 @@ function stopsDone(key, prev, next, trail) {
 export function finding(key, prev, next, {
   trail
 } = {}) {
-  if (!follows(key) || isHold(key)) return null; // une tenue (atterrissage, stationnaire) a besoin d'un état : holding()
+  if (!follows(key) || isHold(key) || seqOf(key)) return null; // une tenue a besoin d'un état (holding), une suite aussi (stepping)
   const b = fixOf(next),
     a = prev ? fixOf(prev) : null;
   if (!b) return null;
@@ -532,6 +710,7 @@ export function finding(key, prev, next, {
 export function stands(e, key) {
   if (!e || !e.to || !key || howOf(key) !== e.how) return false;
   if (e.how === 'landing' || e.how === 'hover') return standsHeld(e, key);
+  if (e.how === 'sequence') return standsSteps(e, key); // chaque preuve rejouée sur l'étape du lecteur (lot 5)
   // les deux relevés d'un constat ne font un trajet que s'ils sont à une minute au plus l'un de l'autre (la règle de l'écriture) :
   // sinon un « from » lointain tracerait une corde à travers la forme — le dernier relevé est alors jugé seul
   const same = !e.from || (e.from.lat === e.to.lat && e.from.lon === e.to.lon && e.from.at === e.to.at),
@@ -552,7 +731,8 @@ export function stands(e, key) {
  *  objet qui veut « Objet en vue » n'est jamais rattrapé (il faut le geste, à portée), ni un survol à confirmer. Un point de la trace
  *  sans hauteur sol (aglFt, q[4] : absent des anciens points) donne une hauteur inconnue : jamais un survol. */
 export function catchUp(key, trail, since = null) {
-  if (!follows(key) || isHold(key)) return null; // la trace n'a pas les relevés d'une tenue (un point par mille marin)
+  if (!follows(key) || isHold(key) || seqOf(key))
+    return null; // la trace n'a pas les relevés d'une tenue ni d'une suite (un point par mille marin)
   const fixes = trailFixes(trail, since);
   for (let i = 0; i < fixes.length; i++) {
     const f = finding(key, i ? fixes[i - 1] : null, fixes[i], {
@@ -914,6 +1094,14 @@ function docOf(b, now) {
       } : {}),
       ...(e.source ? {
         source: e.source
+      } : {}),
+      ...(e.how === 'sequence' && e.steps ? {
+        steps: e.steps.map(p => ({
+          how: p.how,
+          from: p.from,
+          to: p.to,
+          at: isoOf(p.at)
+        }))
       } : {})
     };
   }
@@ -922,11 +1110,13 @@ function docOf(b, now) {
   return out;
 }
 
-/** Le carnet avec ce tiroir ouvert par ce pilote (how : 'hand', 'zone', 'object' ; fix : { from, to, source } d'un constat). Un tiroir
+/** Le carnet avec ce tiroir ouvert par ce pilote (how : 'hand', 'zone', 'object'… ; fix : { from, to, at, source } d'un constat, et `steps` pour une suite d'étapes). Un tiroir
  *  déjà ouvert par lui garde sa première ouverture. */
 export function withOpen(doc, ctx, id, how = 'hand', fix = null) {
   const b = baseOf(doc, ctx);
   if (!b || !LETTERS.includes(id) || !HOWS.includes(how)) return null;
+  const steps = how === 'sequence' ? proofsOf(fix?.steps) : null;
+  if (how === 'sequence' && !steps) return null; // une suite s'écrit avec ses preuves (de 1 à 10), sinon rien
   const now = Number.isFinite(ctx.now) ? ctx.now : Date.now();
   // l'heure d'un constat est celle du fait (le franchissement), jamais dans le futur ; celle d'un geste, l'instant du geste
   const at = how !== 'hand' && Number.isFinite(fix?.at) ? Math.min(fix.at, now) : now;
@@ -936,7 +1126,10 @@ export function withOpen(doc, ctx, id, how = 'hand', fix = null) {
     how,
     from: fixOf(fix?.from),
     to: fixOf(fix?.to),
-    source: SOURCES.includes(fix?.source) ? fix.source : ''
+    source: SOURCES.includes(fix?.source) ? fix.source : '',
+    ...(steps ? {
+      steps
+    } : {})
   };
   return docOf(b, now);
 }

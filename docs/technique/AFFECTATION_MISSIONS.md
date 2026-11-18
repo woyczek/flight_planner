@@ -652,6 +652,44 @@ like the landing of § 11.6: the same `holding(key, hold, fix)` serves both, thr
   `HOWS` / `SHARED`, the record) and N81 (107, 3 new: the texts, a hover held in flight, a source without ground height). The checks of
   the landing stay green: the generalisation changes nothing for it. The event (lot 3) waits for the ergonomist.
 
+### 11.9 Sequence judged in flight (SOG-0500, lot 5)
+
+The workshop's `{ kind: 'condition', condition: 'sequence', steps: [rule, …], fallbackMin }` (`frame/lib/mission.js`, not modified: one to
+ten steps, each a `holdRule` whose `kind` is `landing`, `hover` or `overflight`, never a nested sequence) is judged by `drawers.js` from the
+conditions already judged alone — nothing of them was copied.
+
+- **A step is a key.** `stepKey(rule) = { kind: 'condition', condition: rule.kind, rule }` (exported); `follows`, `holding`, `finding` and
+  `stands` work on these keys exactly as on the condition alone.
+- **`follows(sequence)`** is true when there are 1 to 10 steps, every step key is accepted by `follows`, and NO overflight step has `confirm`
+  true. A « Ask for what comes next » in the middle of a sequence is not judged yet: decided out of caution, so that the sequence keeps its
+  fallback time or the gesture instead of waiting for a gesture that nothing asks for.
+- **The order.** The state of a sequence is `{ i, hold, proofs }` — `i`: the step in progress (also: the number of steps done), `hold`: the hold
+  in progress (landing or hover), `proofs`: `[{ how, from, to, at }]`, the findings of the steps done. `stepping(key, state, prev, fix) →
+  { state, f }` (exported, pure, never throws; an unreadable `state` starts again from `{ i: 0, hold: null, proofs: [] }`) judges the step
+  `i` only: `holding(stepKey, hold, fix)` for a hold, `finding(stepKey, prev, fix)` for an overflight. When a step is done its finding is
+  pushed, `i` moves on and `hold` is reset. The fix that ends a step does NOT count for the next: one step per fix, and the previous fix is
+  never used as the start of the leg of an overflight if it ended the step before. An interrupted hold starts again without losing the steps
+  done. When `i === steps.length`, `f = { how: 'sequence', at (the last step's), from: proofs[0].from, to: proofs[last].to, steps: proofs }`.
+- **`judgeKind(key)`** (exported) → `'hold' | 'steps' | 'leg'`: `drawers_view.js` calls `holding`, `stepping` or `finding` from it, and
+  keeps the state of a sequence per drawer (`v.steps`) as it does `v.hold`. `isHold(sequence)` is false; `finding()` and `catchUp()` return
+  `null` for a sequence (the trail has one point per nautical mile).
+- **The record.** `'sequence'` is in `HOWS` and `SHARED`; `howOf` returns it. The finding carries `steps`: 1 to 10 proofs, each
+  `{ how, from, to, at }`. Written (`withOpen`, `docOf`): `at` as ISO text, the fixes at full precision; refused by `withOpen` without
+  proofs, with more than 10 or with an unreadable one. Read (`entryOf`): each `from` and `to` goes through the same `fixOf` / `fixRead`,
+  `how` must be in `HOWS` (and neither `sequence` nor `hand`: no nesting), at most 10 proofs, `at` readable; a `steps` that is too long,
+  empty, not an array or unreadable makes the whole entry unreadable (the drawer stays closed for that author), and so does a `sequence`
+  without `steps`. An entry without `steps` is read as before: existing records are untouched.
+- **`stands(e, key)`** for `'sequence'`: every proof `j` is replayed on the step key `j` of the READER (`stands({ how, from, to },
+  stepKey(rule_j))`), the lengths are equal, and the proofs are in order (`Date.parse(steps[j].from.at) >= Date.parse(steps[j-1].to.at)`).
+  Replayed, not proved, like the other conditions: a forged record that satisfies each rule in order stands; the honesty bound of a hold
+  (`durationSec <= gap < durationSec + maxGapSec`) applies to each hold step.
+- **Texts** (four languages): `keySequence` (« s'ouvre à la fin de ses étapes »: neither the number of steps nor a place, so that nothing of
+  what the mission hides is said), `openSequenceMe`, `openSequenceBy`. The screen does NOT show the progress step by step.
+- **Cases.** N80 (143 checks, 17 new: `follows`, `stepping` in order / out of order / interrupted hold / the fix that ends a step, hostile
+  entries and states, `stands` and its bounds, `finding` / `catchUp` null, `judgeKind`, `HOWS` / `SHARED`, the record written and read, a
+  hostile `steps`; two older checks that said « a sequence is not judged » now say it of an empty one and of `event`) and N81 (110, 3 new:
+  the texts, a sequence done in flight, the same steps out of order). The event (lot 3) still waits for the ergonomist.
+
 ## 12. Assigning a mission from V3 (SOG-0443)
 
 The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with

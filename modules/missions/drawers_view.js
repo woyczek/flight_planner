@@ -135,6 +135,16 @@ export const TX = {
     'beim Schwebeflug von {by} geöffnet um {t}',
     'abierto al estacionario de {by}, a las {t}'
   ],
+  // la condition « suite d'étapes » de l'atelier (SOG-0500, lot 5) : ni le nombre d'étapes ni un lieu, et pas de progression étape par étape
+  keySequence: ['s\'ouvre à la fin de ses étapes', 'opens at the end of its steps', 'öffnet sich am Ende seiner Etappen',
+    'se abre al final de sus etapas'
+  ],
+  openSequenceMe: ['ouvert à la fin de vos étapes, à {t}', 'opened at the end of your steps, at {t}',
+    'am Ende Ihrer Etappen geöffnet um {t}', 'abierto al final de sus etapas, a las {t}'
+  ],
+  openSequenceBy: ['ouvert à la fin des étapes de {by}, à {t}', 'opened at the end of the steps of {by}, at {t}',
+    'am Ende der Etappen von {by} geöffnet um {t}', 'abierto al final de las etapas de {by}, a las {t}'
+  ],
   gotHere: ['reçu ici à {t}', 'received here at {t}', 'hier empfangen um {t}', 'recibido aquí a las {t}'],
   // un tiroir ouvert : comment et quand
   openTime: ['ouvert à l\'heure, à {t}', 'opened on time, at {t}', 'planmäßig geöffnet um {t}', 'abierto a su hora, a las {t}'],
@@ -489,23 +499,33 @@ function onFix(v, fix) {
   (turned && v.mine ? load(v) : Promise.resolve()).then(() => judge(v, prev, fix)).catch(() => {});
 }
 
-/** Juge un trajet : un constat de zone, d'arrivée, d'atterrissage ou de stationnaire (tenu par holding, v.hold) ou de survol sans confirmation s'écrit tout de suite au carnet ; un objet à portée, ou un survol à confirmer
+/** Juge un trajet : un constat de zone, d'arrivée, d'atterrissage ou de stationnaire (tenu par holding, v.hold), d'une suite d'étapes (tenue par stepping, v.steps) ou de survol sans confirmation s'écrit tout de suite au carnet ; un objet à portée, ou un survol à confirmer
  *  (confirm : vrai), attend « Demander » (tenu dans v.inRange, rien n'est peint : l'écran ne dit pas qu'un objet est attendu). */
 async function judge(v, prev, fix) {
   if (!v.mine || !v.states || v.busy) return;
   const first = v.states.find(x => !x.open && !x.locked),
     here = !!first && followsHere(v, first);
   let f = null;
-  if (here && D.isHold(first
-      .key)) { // une tenue (atterrissage, stationnaire) : l'état de la tenue : l'état de la tenue est gardé par tiroir
+  const kind = here ? D.judgeKind(first.key) : 'leg';
+  if (kind === 'hold') { // une tenue (atterrissage, stationnaire) : son état est gardé par tiroir
     const r = D.holding(first.key, v.hold?.id === first.id ? v.hold.hold : null, fix);
     v.hold = {
       id: first.id,
       hold: r.hold
     };
+    v.steps = null;
+    f = r.f;
+  } else if (kind === 'steps') { // une suite d'étapes : son état (l'étape en cours, la tenue, les constats faits) est gardé par tiroir
+    const r = D.stepping(first.key, v.steps?.id === first.id ? v.steps.state : null, prev, fix);
+    v.steps = {
+      id: first.id,
+      state: r.state
+    };
+    v.hold = null;
     f = r.f;
   } else {
     v.hold = null;
+    v.steps = null;
     if (here) f = D.finding(first.key, prev, fix, {
       trail: v.ctx.live?.trail?.()
     });
@@ -540,6 +560,7 @@ async function record(v, id, f, source) {
       from: f.from,
       to: f.to,
       at: f.at,
+      steps: f.steps,
       source: f.source || source
     });
     if (!next || !await put(v, v.myPath, next) || V !== v) return;
@@ -658,6 +679,7 @@ export function describe(tt, s, d, {
   else if (D.howOf(k) === 'landing') key = tt(TX.keyLanding); // jamais le lieu (voir TX.keyLanding)
   else if (D.howOf(k) === 'overflight') key = tt(TX.keyOverflight); // jamais le lieu (voir TX.keyOverflight)
   else if (D.howOf(k) === 'hover') key = tt(TX.keyHover); // jamais le lieu (voir TX.keyHover)
+  else if (D.howOf(k) === 'sequence' && D.follows(k)) key = tt(TX.keySequence); // ni le nombre d'étapes ni un lieu (voir TX.keySequence)
   else if (k.kind && k.kind !== 'hand') key = tt(TX.keyHidden); // une condition de l'auteur, une clé que cet écran ne connaît pas
   else key = tt(TX.keyHand);
   // l'heure de repli n'est dite que si elle concerne le pilote : la clé n'est pas suivie sur cet appareil
@@ -691,7 +713,9 @@ export function describe(tt, s, d, {
         .openZoneBy) :
       s.how === 'object' ? (s.mine ? TX.openObjectMe : TX.openObjectBy) : s.how === 'arrival' ? (s.mine ? TX.openArrivalMe : TX
         .openArrivalBy) : s.how === 'landing' ? (s.mine ? TX.openLandingMe : TX.openLandingBy) : s.how === 'overflight' ? (s.mine ? TX
-        .openOverflightMe : TX.openOverflightBy) : s.how === 'hover' ? (s.mine ? TX.openHoverMe : TX.openHoverBy) :
+        .openOverflightMe : TX.openOverflightBy) : s.how === 'hover' ? (s.mine ? TX.openHoverMe : TX.openHoverBy) : s.how === 'sequence' ? (
+        s.mine ? TX.openSequenceMe : TX
+        .openSequenceBy) :
       s.mine ? TX.openHandMe : TX.openHandBy;
     how = tt(row, {
       t: fmtZ(new Date(other && Number.isFinite(s.srcAt) ? s.srcAt : s.at)),
