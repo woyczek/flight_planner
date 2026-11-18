@@ -1486,6 +1486,12 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
 - **Offered under the rule of their key**: `edBricksHtml` lists only the bricks whose key the flight judges (`DR.judgedKind`), the families with such bricks
   only; a forged `edbrick` of a brick not judged does nothing. Today: none of the 32.
 
+- **« Lieux » no longer says « done » and « to fill in » at once** (noreg N157; the ergonomist's capture of the draft). The mark of a group is the rule of
+  `ED.todo` (`edStepOk`: ✓ when the step has nothing to complete); the line is `edLine`. They disagreed on « Lieux »: `ED.todo` asks for no place besides the
+  departure and the arrival (a mission needs none), so the tick was TRUE, while the line said « à remplir » for ANY empty group — the line was the lying one.
+  « à remplir » is now said only by the groups `ED.todo` does require (teams, story, risks, timeline); « Lieux » with no place of its own says
+  « aucun lieu » (`atLine_noplace`, four languages), its mark stays ✓.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

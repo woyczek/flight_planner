@@ -797,6 +797,8 @@ export const EDTX = {
     'A la salida — visible para el piloto'
   ],
   atLine_none: ['à remplir', 'to fill in', 'auszufüllen', 'por rellenar'],
+  // « Lieux » sans lieu propre : rien à compléter (une mission n'en exige pas), la ligne le dit sans dire « à remplir » (SOG-0500)
+  atLine_noplace: ['aucun lieu', 'no place', 'kein Ort', 'ningún lugar'],
   atLine_teams: ['{n} équipe(s)', '{n} team(s)', '{n} Team(s)', '{n} equipo(s)'],
   atLine_places: ['{n} lieu(x)', '{n} place(s)', '{n} Ort(e)', '{n} lugar(es)'],
   atLine_story: ['résumé de {n} signe(s)', 'summary of {n} sign(s)', 'Kurzbeschreibung mit {n} Zeichen', 'resumen de {n} signo(s)'],

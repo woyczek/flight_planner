@@ -10447,3 +10447,33 @@ def n156(c):
     c.eq(g['back'], [['hover', '5', 'OBJ-2', []], ['sequence', '', '', ['deploy', 'recover']]],
          'the model applied again: the hover\'s numbers, on the object the model poses (OBJ-1 of the model, OBJ-2 in this mission, whose OBJ-1 is taken), '
          'the steps', what='the model applied')
+
+
+# SOG-0500 (the ergonomist's capture of the draft): the mark (✓ or !) and the line of each group of the sheet, read in the page
+_MARKS_JS = """() => Object.fromEntries([...document.querySelectorAll('%s [data-mark]')].map(m => [m.dataset.mark,
+  [m.textContent.trim(), (document.querySelector('%s [data-line="' + m.dataset.mark + '"]')?.textContent || '').trim()]]))""" % (E, E)
+
+
+@case('N157', 'Missions › the group « Lieux » never says « done » and « to fill in » at once (the capture of the draft): a group whose line says « à remplir » '
+      'carries the mark « ! », and a group carrying « ✓ » never says it; « Lieux » with no place of its own (only the departure and the arrival) has nothing to '
+      'complete — its mark is « ✓ », its line says « aucun lieu » (a mission needs no place besides its endpoints) — while the Equipes, the Récit, the Risques and the '
+      'Chronologie, which a mission does lack, keep « à remplir » with « ! »', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500 (the ergonomist, on the capture of the draft: the group « Lieux » carried a green tick AND « à remplir »): the tick is the rule of `ED.todo` '
+      '(nothing to complete: a mission needs no place of its own), the line was the lying one — it said « à remplir » for any empty group, `edLine` in editor_view.js; '
+      'EDITOR.md § 7 duoquinquagies')
+def n157(c):
+    c.page.set_viewport_size({'width': c.width, 'height': c.height})
+    reg_open(c, _ED_TEXTS)
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission on its Cadre')
+    g = c.js(_MARKS_JS)
+    to_fill = norm(row(c, 'atLine_none', EDTX_FILE))
+    lies = [k for k, (mark, line) in g.items() if norm(line) == to_fill and mark != '!']
+    c.eq(lies, [], 'no group says « à remplir » with a tick', what='tick against « à remplir »')
+    c.eq([g['places'][0], norm(g['places'][1])], ['✓', norm(row(c, 'atLine_noplace', EDTX_FILE))],
+         '« Lieux » with only its endpoints: the tick, and a line that says what it holds (no place), not « à remplir »', what='Lieux')
+    c.eq([[k, g[k][0], norm(g[k][1])] for k in ('teams', 'risks', 'timeline')], [[k, '!', to_fill] for k in ('teams', 'risks', 'timeline')],
+         'the groups a mission does lack keep « ! » and « à remplir »', what='the others')
+    ed_leave(c)
+    c.js(_REG_CLEAR)

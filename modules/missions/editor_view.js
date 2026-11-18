@@ -1208,7 +1208,8 @@ const edNames = () => ({
   timeline: TX.stepTimeline
 });
 
-/** Ce qu'un groupe de la fiche contient, dit en une ligne (un groupe replié ne cache pas ce qu'il porte). */
+/** Ce qu'un groupe de la fiche contient, dit en une ligne (un groupe replié ne cache pas ce qu'il porte). « à remplir » seulement pour un groupe
+ *  que `ED.todo` exige (équipes, récit, risques, chronologie) : « Lieux » sans lieu propre dit « aucun lieu », sa marque est ✓. */
 function edLine(s, doc, k) {
   const c = s.ed.cadre;
   if (k === 'cadre') return [c.family, c.series !== '' ? s.tt(TX.edSeriesN, {
@@ -1222,7 +1223,7 @@ function edLine(s, doc, k) {
     const n = edShown(s.ed, ED.placesOf(doc)).filter(p => p && !['dep', 'arr'].includes(p.kind)).length; // SOG-0459 : le visible seul
     return n ? s.tt(EDTX.atLine_places, {
       n
-    }) : s.tt(EDTX.atLine_none);
+    }) : s.tt(EDTX.atLine_noplace); // pas « à remplir » : ED.todo n'exige aucun lieu, la marque dit ✓ (SOG-0500)
   }
   if (k === 'story') {
     const n = ED.storyOf(doc).summary.length;
