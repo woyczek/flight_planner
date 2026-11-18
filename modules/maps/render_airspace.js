@@ -338,7 +338,10 @@
         x,
         y,
         r,
-        g
+        g,
+        w, // la longueur et la demi-hauteur du cartouche du nom, et s'il est peint par-dessus la route : sa pointe (le sens) se pose à son bout
+        h: f * .7,
+        along
       });
       // la cartouche de la voie (la primitive du noyau, R-M5) : son nom en blanc sur sa couleur, tournée le long du tronçon ; la route
       // interrompue : un liseré du fond autour ; une seule ligne sous elle : la distance (couleur de la voie), puis le niveau minimal
@@ -422,49 +425,75 @@
         }
       }
     }
-    if (oneWay.length && env.zoom >= ARROW_ZOOM) drawOneWay(ctx, oneWay, ends.hits, scale);
+    if (oneWay.length) drawOneWay(ctx, oneWay, ends.hits, scale, env.zoom >= ARROW_ZOOM, env.theme.bg, ends.over);
     ctx.restore();
     return ends;
   }
-  /** Zoom (MapLibre) à partir duquel un tronçon à sens unique porte sa flèche, et longueur minimale (px) du tronçon qui en porte une. */
+  /** Zoom (MapLibre) à partir duquel un tronçon à sens unique SANS cartouche porte sa petite flèche (au milieu du trait), et longueur minimale (px) du tronçon qui en
+   *  porte une. Avec son cartouche, le sens paraît à tout zoom (SOG-0461). */
   const ARROW_ZOOM = 9,
     ARROW_MIN_PX = 18;
-  /** Une flèche par tronçon à sens unique (SOG-0078), dans le sens permis (dir F : de a vers b ; B : de b vers a), au milieu du trait, dans
-   *  la teinte de la voie ; le cartouche du nom occupe ce milieu quand il est posé : la flèche se range alors à côté de lui, du côté qui
-   *  a de la place, et se tait s'il n'y en a pas. Tous les triangles d'une teinte dans un seul tracé (le coût du dessin, D68). */
-  function drawOneWay(ctx, list, hits, scale) {
+  /** Le sens des tronçons à sens unique (SOG-0078 ; dir F : de a vers b ; B : de b vers a).
+   *  SOG-0461 (l'utilisateur, 18 nov. 2026 : « le sens doit apparaître en même temps que le cartouche … c'est le prolongement du cartouche, mais avec un liseré blanc,
+   *  comme si on avait donné un coup de couteau ») : un tronçon qui a son cartouche le garde avec une POINTE dans le sens permis, à tout zoom : un triangle aussi haut que
+   *  le cartouche, de sa couleur, à son bout aval, séparé du corps par un trait du fond (`edge`) — la pointe est cernée du fond, qui coupe aussi le trait de la voie autour
+   *  d'elle. Sur une branche de la route (`along`) le cartouche est peint après la route : sa pointe aussi (`over`). Un tronçon sans cartouche (court, noms éteints, place
+   *  prise) garde la petite flèche d'avant, au milieu, à partir du zoom 9 (`late`) : tous les triangles d'une teinte dans un seul tracé (le coût du dessin, D68). */
+  function drawOneWay(ctx, list, hits, scale, late, edge, over) {
     const s = 4.5 * scale,
+      g = 1.8 * scale, // le trait blanc entre le corps du cartouche et sa pointe
       paths = new Map(),
       placed = new Map(hits.map(h => [h.g, h]));
     for (const {
-        g,
+        g: seg,
         P,
         Q,
         col,
         len
       }
       of list) {
-      let u = .5;
-      const h = placed.get(g);
-      if (h) {
-        const t = ((h.x - P.x) * (Q.x - P.x) + (h.y - P.y) * (Q.y - P.y)) / (len * len),
-          m = (h.r + 1.6 * s) / len,
-          fits = [t - m, t + m].filter(v => v >= .1 && v <= .9).sort((x, y) => Math.abs(x - .5) - Math.abs(y - .5));
-        if (!fits.length) continue;
-        u = fits[0];
-      }
-      const a = g.dir === 'F' ? P : Q,
-        b = g.dir === 'F' ? Q : P,
+      const a = seg.dir === 'F' ? P : Q,
+        b = seg.dir === 'F' ? Q : P,
         dx = (b.x - a.x) / len,
         dy = (b.y - a.y) / len,
-        cx = P.x + (Q.x - P.x) * u,
-        cy = P.y + (Q.y - P.y) * u,
-        p = paths.get(col) || paths.set(col, new Path2D()).get(col);
-      p.moveTo(cx + dx * s, cy + dy * s);
-      p.lineTo(cx - dx * s * .7 - dy * s * .75, cy - dy * s * .7 + dx * s * .75);
-      p.lineTo(cx - dx * s * .7 + dy * s * .75, cy - dy * s * .7 - dx * s * .75);
-      p.closePath();
+        h = placed.get(seg);
+      if (h) {
+        // la pointe : base à demi-longueur du cartouche + le trait blanc, aussi haute que lui, de sa longueur en pointe
+        const bx = h.x + dx * (h.w / 2 + g),
+          by = h.y + dy * (h.w / 2 + g),
+          paint = () => {
+            const p = new Path2D();
+            p.moveTo(bx + dx * h.h, by + dy * h.h);
+            p.lineTo(bx - dy * h.h, by + dx * h.h);
+            p.lineTo(bx + dy * h.h, by - dx * h.h);
+            p.closePath();
+            ctx.save();
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 2 * g;
+            ctx.strokeStyle = edge;
+            ctx.stroke(p);
+            ctx.fillStyle = col;
+            ctx.fill(p);
+            ctx.restore();
+          };
+        if (h.along) over.push(paint);
+        else paint();
+      } else if (late) {
+        const cx = (P.x + Q.x) / 2,
+          cy = (P.y + Q.y) / 2,
+          p = paths.get(col) || paths.set(col, new Path2D()).get(col);
+        p.moveTo(cx + dx * s, cy + dy * s);
+        p.lineTo(cx - dx * s * .7 - dy * s * .75, cy - dy * s * .7 + dx * s * .75);
+        p.lineTo(cx - dx * s * .7 + dy * s * .75, cy - dy * s * .7 - dx * s * .75);
+        p.closePath();
+      }
     }
+    if (!paths.size) return;
+    // la petite flèche : le liseré du fond d'abord, la flèche par-dessus
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 2.4 * scale;
+    ctx.strokeStyle = edge;
+    for (const p of paths.values()) ctx.stroke(p);
     ctx.globalAlpha = .9;
     for (const [col, p] of paths) {
       ctx.fillStyle = col;

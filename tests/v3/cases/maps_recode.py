@@ -9184,6 +9184,84 @@ def d262(c):
     c.ok(r['ms'] < 2000, str(r['ms']), 'and at once, without waiting for the tiles')
 
 
+_AWYTAG_JS = r"""() => {
+  const R = window.MapsRender, W = 600, H = 400, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const raw = cv.getContext('2d'), tri = new WeakMap(), fills = [], strokes = [], rects = [];
+  if (!Path2D.prototype.__d264) { const m = Path2D.prototype.moveTo, l = Path2D.prototype.lineTo;
+    Path2D.prototype.moveTo = function (x, y) { (tri.get(this) || tri.set(this, []).get(this)).push([x, y]); return m.call(this, x, y) };
+    Path2D.prototype.lineTo = function (x, y) { (tri.get(this) || tri.set(this, []).get(this)).push([x, y]); return l.call(this, x, y) };
+    Path2D.prototype.__d264 = true }
+  const ctx = new Proxy(raw, { get(o, p) {
+      if (p === 'fill') return a => { if (a instanceof Path2D) fills.push({ pts: (tri.get(a) || []).slice(), color: o.fillStyle, path: a }); return a ? o.fill(a) : o.fill() };
+      if (p === 'fillRect') return (...a) => { rects.push(o.fillStyle); return o.fillRect(...a) };
+      if (p === 'stroke') return a => { if (a instanceof Path2D) strokes.push({ path: a, color: o.strokeStyle, width: o.lineWidth }); return a ? o.stroke(a) : o.stroke() };
+      const v = o[p]; return typeof v === 'function' ? v.bind(o) : v }, set(o, p, v) { o[p] = v; return true } });
+  const seg = (route, lat, dir, lon0, lon1) => ({ route, a: { id: route + 'A', lat, lon: lon0 }, b: { id: route + 'B', lat, lon: lon1 }, lower: 6500, upper: 19500, nm: 150, ...(dir ? { dir } : {}) });
+  const BOX = [{ lat: 44.0, lon: -4 }, { lat: 46.0, lon: 4 }];
+  const one = (segs, labels = true) => { fills.length = 0; strokes.length = 0; rects.length = 0; const fit = R.bboxOf(BOX, 0), { toC, shown } = R.mercator(fit, W, H, 12);
+    const prof = R.routeProfile(9000); if (!labels) prof.elements = { ...(prof.elements || {}), awLabels: false };
+    const out = R.draw(ctx, { toC, W, H, scale: 1, bbox: shown, profile: prof, data: { airways: segs }, route: [], marks: [] }), P = segs.map(s => toC(s.a.lat, s.a.lon)), Q = segs.map(s => toC(s.b.lat, s.b.lon));
+    const arrows = fills.filter(f => f.pts.length === 3).map(f => { const [t, p, q] = f.pts, bx = (p[0] + q[0]) / 2, by = (p[1] + q[1]) / 2; return { tip: t, p, base: [bx, by], c: [(t[0] + bx) / 2, (t[1] + by) / 2], dx: t[0] - bx, dy: t[1] - by, color: f.color, path: f.path } });
+    return { hits: (out && out.airways || []).map(h => ({ x: h.x, y: h.y, r: h.r, w: h.w, h: h.h, route: h.g.route })), rects: [...new Set(rects)], arrows: arrows.map(a => ({ c: a.c, tip: a.tip, base: a.base, p: a.p, dx: a.dx, dy: a.dy, color: a.color, edge: strokes.filter(k => k.path === a.path).map(k => ({ color: k.color, width: k.width })) })), P, Q } };
+  return { F: one([seg('QF', 45.0, 'F', -2.5, 0)]), B: one([seg('QB', 45.0, 'B', -2.5, 0)]), FB: one([seg('QX', 45.0, 'FB', -2.5, 0)]), nolab: one([seg('QF', 45.0, 'F', -2.5, 0)], false),
+    tiny: one([seg('QT', 45.0, 'F', -0.1, 0)]) }
+}"""
+
+
+@case('D264', 'Airways, SOG-0461: the cartouche of a one-way segment keeps a point in the allowed direction, cut from its body by a thin white line (the user’s « coup de couteau »), at every zoom; none without the cartouche at zoom under 9', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0461 (the user, 18 Nov 2026: « le sens doit apparaître en même temps que le cartouche … c’est le prolongement du cartouche, mais avec un liseré blanc, comme si on avait donné un coup de couteau »): a one-way segment (dir F or B) whose cartouche is drawn carries, at every zoom, a triangle that prolongs the cartouche at its downstream end, as high as the cartouche, in the cartouche’s own colour, separated from it by a white line of 1 to 3 px; both ways or no dir: no point; a segment with no cartouche keeps the earlier small arrow from zoom 9')
+def d264(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    r = c.js(_AWYTAG_JS)
+    for k, fwd in (('F', True), ('B', False)):
+        v = r[k]
+        c.eq([len(v['hits']), len(v['arrows'])], [1, 1], f'dir {k}: one cartouche and one point, at a zoom under 9 (the segment is 150 px long)', what=str(v)[:300])
+        if not v['hits'] or not v['arrows']:
+            continue
+        h, a, P, Q = v['hits'][0], v['arrows'][0], v['P'][0], v['Q'][0]
+        ax, ay = Q['x'] - P['x'], Q['y'] - P['y']
+        L = (ax * ax + ay * ay) ** .5
+        t = (ax / L, ay / L) if fwd else (-ax / L, -ay / L)    # downstream
+        c.ok(a['dx'] * t[0] + a['dy'] * t[1] > 0, str(a), f'dir {k}: the point looks {"from a to b" if fwd else "from b to a"} (downstream)')
+        bx, by = a['base']
+        along = (bx - h['x']) * t[0] + (by - h['y']) * t[1]
+        side = abs((a['tip'][0] - h['x']) * -t[1] + (a['tip'][1] - h['y']) * t[0])
+        c.ok(h['w'] / 2 + 1 <= along <= h['w'] / 2 + 3.5 and side < 1.2, f'base at {along:.1f} px from the centre, the half-length of the cartouche is {h["w"] / 2:.1f}, tip {side:.1f} px off the stroke', f'dir {k}: the point prolongs the cartouche at its downstream end, a white line of 1 to 3 px between them, on the stroke')
+        half = ((a['p'][0] - a['base'][0]) ** 2 + (a['p'][1] - a['base'][1]) ** 2) ** .5
+        c.ok(.85 * h['h'] <= half <= 1.15 * h['h'], f'half base {half:.1f}, half height of the cartouche {h["h"]:.1f}', f'dir {k}: the point is as high as the cartouche')
+        c.ok(a['color'] in r[k]['rects'], f'{a["color"]} in {r[k]["rects"]}', f'dir {k}: the point has the cartouche’s own colour')
+        e = [x for x in a['edge'] if x['width'] >= 2]
+        c.ok(e and all(x['color'] != a['color'] for x in e), str(a['edge']), f'dir {k}: the white line is the background colour stroked around the point (a wide edge)')
+    c.eq([len(r['FB']['hits']), len(r['FB']['arrows'])], [1, 0], 'both ways: the cartouche, no point', what=str(r['FB'])[:200])
+    c.eq(len(r['nolab']['arrows']), 0, 'names off, zoom under 9: no cartouche and no arrow (the earlier rule: arrows from zoom 9)', what=str(r['nolab'])[:200])
+    c.eq(len(r['tiny']['arrows']), 0, 'a segment too short for its cartouche (and under 18 px): no arrow', what=str(r['tiny'])[:200])
+
+
+@case('D265', 'Airways, SOG-0461 (captures): the cartouche of a one-way segment keeps its point in the allowed direction, cut by a white line, at two zooms, alone and with the second pane', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0461: the delivered state, to be read by the ergonomist then the user: the cartouche of a one-way airway and its point (cut from the body by a white line) appear together at two zooms; a both-ways segment has the cartouche and no point')
+def d265(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    for mode, q in (('alone', 'maps'), ('dual', 'maps?pane=1')):
+        f = _awy_flight()
+        segs = []
+        for i, (route, dr) in enumerate([('Z669', 'F'), ('T873', 'B'), ('L612', 'FB')]):
+            lo = lambda k: -0.5 + k * 1.333
+            segs.append({'route': route, 'a': {'id': f'P{i + 1}A', 'lat': 45.12 + i * .15, 'lon': lo(0)}, 'b': {'id': f'P{i + 1}B', 'lat': 45.12 + i * .15, 'lon': lo(2)}, 'lower': 6500, 'upper': 19500, 'nm': 112.0, 'dir': dr})
+        c.open(q, docs=fdocs(f) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, airways=segs, wait=False)
+        c.ready('maps', sheet=True)
+        c.js(_STATE_JS)
+        hook_map(c)
+        for z in (8.2, 8.8):
+            c.js("([z]) => { const m = window.__mpMap; m.jumpTo({ center: [0.83, 45.27], zoom: z }); const p = m.project([0.83, 45.27]); m.panBy([0, p.y - 230], { duration: 0 }); return true }", [z])
+            c.wait(2000)
+            n = c.js("() => (window.__mp.S.awHits || []).map(h => h.g.route)")
+            c.ok(n and 'Z669' in n, f'{mode} z{z}: {n}', f'{mode}, zoom {z}: the cartouche of the one-way segment is drawn (its point comes with it)')
+            c.shot(f'D265_awy_{mode}_z{z:.1f}.png')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

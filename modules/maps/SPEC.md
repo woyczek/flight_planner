@@ -111,7 +111,7 @@ Everything is a parameter; nothing is read from a page or a data global. The pro
   2. airspace shapes (ICAO symbology, `SiaAero.drawAirspaces`);
   3. airways (all strokes, then all names, so that no stroke crosses a name; then **the one-way arrows**, SOG-0078: AeroDB publishes `dir`
      per segment, `F` (from `a` to `b`), `B` (from `b` to `a`), `FB` (both ways), absent (the source is silent); a segment with `F` or `B`,
-     drawn at an effective zoom of 9 or more and at least 18 px long, carries **one** small filled triangle in the allowed direction, in the
+     at least 18 px long, carries a point in the allowed direction — **its cartouche keeps a triangle as high as itself, in its colour, at its downstream end, cut from the body by a white line, at every zoom** (SOG-0461, noreg D264); a segment with no cartouche has **one** small filled triangle at the middle from an effective zoom of 9 — in the
      airway's colour, at the middle of the stroke, or beside its name's box when that box takes the middle (the side with room, nothing
      when there is none), all the triangles of a colour in one path; `FB` and no `dir` change nothing; never in the light drawing; the
      tooltip adds « one way a → b » (the allowed direction) or « both ways »; noreg D118 (the arrows, the cost: +1 ms for 608 arrows) and D119);
