@@ -67,6 +67,11 @@
 // « Gardé » : CAT.modelChange) ; il pose ses tiroirs et ses lieux « à placer » (CAT.applyModel) et la clé `mission_model` { id, placed }
 // (s.ed.model, écrite par CAT.withModel dans edDoc ; undefined : celle du fichier, inchangée). Les lieux posés par l'ancien modèle et
 // placés depuis restent, comme les lieux de l'auteur ; le Cadre, les Équipes, le Récit, les Risques et la Chronologie ne bougent pas.
+// « Enregistrer comme modèle » (décision C), sur la même ligne, dans l'atelier ENTIER seulement : un nom demandé (la question du cadre),
+// puis le fichier pilot/<TRI>/modeles/<id>.yaml écrit par ctx.data.put (comme edSave écrit une mission ; il part avec l'envoi groupé) —
+// les tiroirs complets et les lieux sans position (CAT.modelFromSession), ni identifiant de mission, ni équipes, ni indicatifs ; relu par
+// CAT.readCatalog avant d'être écrit. Le même nom remplace le modèle après la question du cadre (l'historique du dépôt des données garde
+// l'ancien) ; le nom d'un modèle de la suite est refusé. Le modèle écrit est relu aussitôt parmi « Vos modèles » (edMine).
 //
 // « Lieux » en tête de la colonne de droite (SOG-0472, décision de l'ergonome) : un cadre (edPlacesCardHtml) où la liste des lieux — les
 // lignes d'edPlacesHtml, un bouton par ligne — a une hauteur fixe et défile en elle-même ; la ligne choisie est marquée et les champs du
@@ -242,7 +247,7 @@ function edModelLine(s) {
 function edModelHtml(s) {
   const e = s.ed;
   if (e.veil) return '';
-  return `<div class="ms-atmodel" data-atmodel><p class="ms-atmodelline"><span class="f-muted" data-atmodelname>${esc(edModelLine(s))}</span><button type="button" class="f-linkbtn" data-do="edmodel" aria-expanded="${!!e.modelOpen}">${esc(s.tt(edModelNow(e) ? EDTX.mdChange : EDTX.mdChoose))}</button></p>${e.modelOpen ? edModelListHtml(s) : ''}</div>`;
+  return `<div class="ms-atmodel" data-atmodel><p class="ms-atmodelline"><span class="f-muted" data-atmodelname>${esc(edModelLine(s))}</span><button type="button" class="f-linkbtn" data-do="edmodel" aria-expanded="${!!e.modelOpen}">${esc(s.tt(edModelNow(e) ? EDTX.mdChange : EDTX.mdChoose))}</button><button type="button" class="f-linkbtn" data-do="edmodelsave"${e.busy ? ' disabled' : ''}>${esc(s.tt(EDTX.mdSave))}</button></p>${e.modelOpen ? edModelListHtml(s) : ''}</div>`;
 }
 
 /** La liste des modèles du type de la mission : un modèle sans type va à toute famille ; sans famille choisie, ceux-là seuls et une
@@ -258,6 +263,68 @@ function edModelListHtml(s) {
     cat = (e.cat?.models || []).filter(fits).slice(0, 7),
     mine = (e.mine || []).filter(fits).slice(0, 7);
   return `<div class="f-list ms-kinds ms-models" data-models role="group" aria-label="${esc(s.tt(EDTX.mdList))}">${fam ? '' : `<p class="f-muted" data-modelfam>${esc(s.tt(EDTX.mdFamilyFirst))}</p>`}${cat.map(item).join('')}${mine.length ? `<p class="f-muted ms-modelsmine">${esc(s.tt(EDTX.mdMine))}</p>${mine.map(item).join('')}` : ''}<button type="button" class="f-linkbtn ms-kindoff" data-do="edmodeloff">${esc(s.tt(TX.cancel))}</button></div>`;
+}
+
+/** « Enregistrer comme modèle » (voir l'en-tête) : le nom demandé, le fichier du modèle personnel écrit sur l'appareil, puis relu parmi
+ *  « Vos modèles ». Sans trigramme, un nom sans lettre ni chiffre, le nom d'un modèle de la suite : rien n'est écrit, l'atelier le dit. */
+async function edModelSave(s) {
+  const e = s.ed;
+  if (!e || e.veil || e.busy) return;
+  const tri = s.ctx.identity?.trigram;
+  if (!CAT.modelPath(tri, 'x')) return s.ctx.notify(s.tt(EDTX.mdNoTrigram), 'warn');
+  const name = await s.ctx.askText(s.tt(EDTX.mdSaveAsk), {
+    value: String(e.cadre.title || '').slice(0, CAT.LIMITS.title),
+    ok: s.tt(EDTX.mdSaveOk),
+    cancel: s.tt(TX.cancel)
+  });
+  if (name === null || state() !== s || s.ed !== e) return;
+  const title = String(name).trim().slice(0, CAT.LIMITS.title),
+    id = CAT.slug(title),
+    path = CAT.modelPath(tri, id);
+  if (!path) return s.ctx.notify(s.tt(EDTX.mdSaveBad), 'warn');
+  if ((e.cat?.models || []).some(m => m.id === id)) return s.ctx.notify(s.tt(EDTX.mdSaveSuite, {
+    name: title
+  }), 'warn');
+  const mine = await edMine(s);
+  if (state() !== s || s.ed !== e) return;
+  if (mine.some(m => m.id === id) && !(await s.ctx.ask(s.tt(EDTX.mdReplaceAsk, {
+      name: title
+    }), {
+      ok: s.tt(EDTX.mdReplaceOk),
+      cancel: s.tt(EDTX.mdReplaceKeep)
+    }))) return;
+  if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
+  const model = CAT.modelFromSession({
+    id,
+    title,
+    family: e.cadre.family,
+    drawers: edDrawers(e),
+    places: e.places || ED.placesOf(edDoc(e))
+  });
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  const text = CAT.modelText(model, globalThis.jsyaml);
+  // ce qui ne se relirait pas (un nom refusé par le lecteur, une balise) n'est pas écrit
+  if (!model.title || CAT.readCatalog(text, globalThis.jsyaml).models[0]?.id !== id) return s.ctx.notify(s.tt(EDTX.mdSaveBad), 'warn');
+  e.busy = true;
+  draw(s);
+  try {
+    await s.ctx.data.put(path, text, {
+      module: 'missions'
+    });
+    const again = await edMine(s);
+    if (state() !== s || s.ed !== e) return;
+    e.mine = again;
+    s.ctx.notify(s.tt(EDTX.mdSaved, {
+      name: title
+    }), 'ok');
+  } catch (x) {
+    s.ctx.notify(s.tt(TX.edFailed, {
+      e: String(x?.message || x).slice(0, 120)
+    }), 'error');
+  } finally {
+    e.busy = false;
+    if (state() === s && s.ed === e) draw(s);
+  }
 }
 
 /** Un modèle touché dans la liste : ce qu'il remplace est dit d'abord, par la question du cadre (« Remplacé », « Gardé ») quand il
@@ -3082,6 +3149,8 @@ export function edClick(s, b) {
       return draw(s);
     case 'edmodelpick':
       return edModelPick(s, b.dataset.model, b.dataset.own === '1');
+    case 'edmodelsave': // « Enregistrer comme modèle » (l'atelier entier seulement)
+      return edModelSave(s);
     case 'edbrick': { // une brique du catalogue, sous « ＋ Tiroir » : le tiroir naît d'elle (une brique que le catalogue lu ne porte pas : rien)
       const brick = (s.ed.cat?.bricks || []).find(x => x.id === b.dataset.brick);
       return brick ? edKind(s, brick.key, brick) : undefined;
@@ -3427,7 +3496,7 @@ export function edClick(s, b) {
  *  les zones par leur rang). */
 const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddradd', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
   'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff', 'edbrick', 'edmodel',
-  'edmodeloff', 'edmodelpick'
+  'edmodeloff', 'edmodelpick', 'edmodelsave'
 ]);
 
 /** Un type touché dans le choix (SOG-0467) : sous « ＋ Tiroir », le tiroir suivant naît avec cette clé (DR.keyed : ce qu'elle devine)

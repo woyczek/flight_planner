@@ -1308,6 +1308,24 @@ the model is visible near the title, and changes.
   does not carry, or of another type (a forged page), does nothing; veiled, nothing (`VEILED_OFF`).
 - **After « Enregistrer »** the model is the file's (`s.ed.model` back to undefined).
 
+### 7 quaterquadragies. « Enregistrer comme modèle »: a personal model, written like a mission (18 Nov 2026; lot « modèles de mission », decision C; noreg N142)
+
+- **Where**: on the line of the model (§ 7 terquadragies), in the WHOLE workshop only (`data-do="edmodelsave"`; veiled: no link, and a forged touch does nothing —
+  `VEILED_OFF`).
+- **What it writes** (`edModelSave`): the name asked by the frame (`ctx.askText`, the title of the mission offered); its identifier `CAT.slug(name)` (lower case without
+  accent, `^[a-z0-9-]{1,40}$`); the file `pilot/<TRI>/modeles/<id>.yaml` (`CAT.modelPath`: a trigram of three letters, else nothing is written and the workshop says
+  so) by `ctx.data.put(path, text, { module: 'missions' })` — as `edSave` writes a mission: on the device, bounded by the `writes` of the module (prefix `pilot/`), it goes
+  with the grouped sending. Its content (`CAT.modelFromSession`, `CAT.modelText`): `{ version: 1, models: [ { id, type (the family), title, drawers, places } ] }` —
+  the drawers COMPLETE (key, title, message, briefing, cited place, fallback, the arrival's settings, onward route), the places by identifier, kind, kind of object and
+  name, WITHOUT position (no latitude, longitude, centre, radius, contour); neither identifier of mission, nor departure or arrival, nor teams, nor callsigns (the
+  participants of a rendezvous are not copied). Bounded as the reader bounds it (12 drawers, 20 places, texts cut, a tag refused) and RE-READ by `CAT.readCatalog` before
+  it is written: what would not read back is not written.
+- **The same name**: the model is replaced after the question of the frame (« Le modèle « … » existe déjà : le remplacer par cette mission ? » — « Remplacer le modèle » /
+  « Garder l'ancien »); the history of the data repository keeps the former one. The name of a model of the suite (its identifier) is refused.
+- **Re-read**: at once among « Vos modèles » (`edMine`: the list of `pilot/<TRI>/modeles/`, twenty files at most, each read by the same `readCatalog`, one model per file
+  whose identifier is the file's name). Choosing it poses its drawers and its places « to place », like a model of the catalogue.
+- **To be reviewed by Sécurisation before any push** (it writes files to the data repository; a personal model is read on every device of the pilot).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

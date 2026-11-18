@@ -171,6 +171,39 @@ export const EDTX = {
   ],
   mdOk: ['Remplacer par ce modèle', 'Replace with this model', 'Durch dieses Modell ersetzen', 'Sustituir por este modelo'],
   mdKeepOld: ['Garder la mission telle quelle', 'Keep the mission as it is', 'Die Mission so lassen', 'Dejar la misión como está'],
+  mdSave: ['Enregistrer comme modèle', 'Save as a model', 'Als Modell speichern', 'Guardar como modelo'],
+  mdSaveAsk: ['Nom du modèle (vos modèles, sur cet appareil puis dans le dépôt)',
+    'Name of the model (your models, on this device then in the repository)',
+    'Name des Modells (Ihre Modelle, auf diesem Gerät, dann im Repository)',
+    'Nombre del modelo (sus modelos, en este dispositivo y luego en el repositorio)'
+  ],
+  mdSaveOk: ['Enregistrer le modèle', 'Save the model', 'Modell speichern', 'Guardar el modelo'],
+  mdSaveBad: ['Ce nom ne fait pas un modèle : des lettres ou des chiffres, sans balise.',
+    'This name does not make a model: letters or digits, no tag.',
+    'Dieser Name ergibt kein Modell: Buchstaben oder Ziffern, ohne Tag.',
+    'Este nombre no forma un modelo: letras o cifras, sin etiqueta.'
+  ],
+  mdSaveSuite: ['« {name} » est le nom d’un modèle de la suite : choisissez-en un autre.',
+    '“{name}” is the name of a model of the suite: choose another one.',
+    '„{name}“ ist der Name eines Modells der Suite: wählen Sie einen anderen.',
+    '«{name}» es el nombre de un modelo de la suite: elija otro.'
+  ],
+  mdNoTrigram: ['Aucun trigramme sur cet appareil : vos modèles se rangent sous lui (Réglages, Mon profil).',
+    'No trigram on this device: your models are kept under it (Settings, My profile).',
+    'Kein Trigramm auf diesem Gerät: Ihre Modelle werden darunter abgelegt (Einstellungen, Mein Profil).',
+    'Ningún trigrama en este dispositivo: sus modelos se guardan bajo él (Ajustes, Mi perfil).'
+  ],
+  mdReplaceAsk: ['Le modèle « {name} » existe déjà : le remplacer par cette mission ?',
+    'The model “{name}” already exists: replace it with this mission?',
+    'Das Modell „{name}“ gibt es schon: durch diese Mission ersetzen?', 'El modelo «{name}» ya existe: ¿sustituirlo por esta misión?'
+  ],
+  mdReplaceOk: ['Remplacer le modèle', 'Replace the model', 'Modell ersetzen', 'Sustituir el modelo'],
+  mdReplaceKeep: ['Garder l’ancien', 'Keep the old one', 'Das alte behalten', 'Conservar el anterior'],
+  mdSaved: ['Modèle « {name} » enregistré sur cet appareil : il part avec le prochain envoi.',
+    'Model “{name}” saved on this device: it goes with the next sending.',
+    'Modell „{name}“ auf diesem Gerät gespeichert: es geht mit dem nächsten Senden mit.',
+    'Modelo «{name}» guardado en este dispositivo: sale con el próximo envío.'
+  ],
   mdDone: ['Modèle « {name} » posé : {n} tiroir(s), {m} lieu(x) à placer.', 'Model “{name}” set: {n} drawer(s), {m} place(s) to place.',
     'Modell „{name}“ gesetzt: {n} Schublade(n), {m} zu setzende(n) Ort(e).',
     'Modelo «{name}» puesto: {n} cajón(es), {m} lugar(es) por situar.'

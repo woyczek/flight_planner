@@ -9553,3 +9553,105 @@ def n141(c):
     c.eq(c.js(_MD_LINE), ['Modèle : aucun', 'Choisir un modèle'], 'an ill-formed mission_model: no model', what='the ill-formed key')
     ed_leave(c)
     c.js(_MD_CLEAR)
+
+
+def _md_wait(c, test, what):
+    """Waits (10 s) until the texts the frame keeps under pilot/ABC/modeles/ satisfy `test`."""
+    for _ in range(40):
+        if test(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')):
+            return
+        c.wait(250)
+    raise Fail(f'never true within 10000 ms: {what}', 'it becomes true', c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/'))
+
+
+def _md_name(c, name):
+    """Answers the question of the frame « Nom du modèle » with `name` (the field of the frame, then its OK)."""
+    c.until("!!document.querySelector('.f-modal [data-in]')", timeout=5000, what='the name of the model asked')
+    c.page.fill('.f-modal [data-in]', name)
+    c.tap('.f-modal [data-ok]')
+
+
+@case('N142', 'Missions › the workshop, « Enregistrer comme modèle » (lot « modèles de mission », decision C): in the WHOLE workshop of X-001A (four drawers, '
+      'a team ALPHA1, every place with its position), the name asked « Modèle d\'essai » writes pilot/ABC/modeles/modele-d-essai.yaml — the four drawers complete '
+      '(key, title, cited place), the places WITHOUT position, no identifier of mission, no team, no callsign, under its bounds — re-read at once among « Vos '
+      'modèles » of the family; the same name asks first through the question of the frame (« Garder l\'ancien » writes nothing, « Remplacer le modèle » '
+      'replaces it); the name of a model of the suite is refused; veiled, no « Enregistrer comme modèle » and a forged touch writes nothing', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='Lot « modèles de mission », decision C (« Enregistrer comme modèle » in the whole workshop, never veiled: `ctx.data.put(pilot/<TRI>/modeles/<id>.yaml)` as '
+      'edSave writes a mission — complete drawers, places without coordinates, neither identifier of mission, nor teams, nor callsigns; same name = replacement after '
+      'a confirmation of the frame); EDITOR.md § 7 quaterquadragies')
+def n142(c):
+    path = 'pilot/ABC/modeles/modele-d-essai.yaml'
+    quiet = "document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())"
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_MD_CLEAR)  # before the seeding: it clears the registry and X_REG too
+        reg_open(c, _TRIAL_TEXTS)
+        c.tap(f'{R} [data-rowid="X-001A"] > summary')
+        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+        c.eq(c.count(f'{E} [data-do=edmodelsave]'), 0, f'{width}: veiled, no « Enregistrer comme modèle »', what='veiled')
+        # a forged touch in the veiled workshop writes nothing
+        c.js(f"""(() => {{ const b = document.createElement('button'); b.dataset.do = 'edmodelsave'; b.hidden = true; document.querySelector('{E}').append(b); b.click() }})()""")
+        c.wait(400)
+        c.eq([c.count('.f-modal'), c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')], [0, {}], f'{width}: a forged touch, veiled: no question, nothing written', what='the forged touch')
+        ed_reveal(c)
+        c.until(f"!!document.querySelector('{E} [data-atmodel] [data-do=edmodelsave]')", what='« Enregistrer comme modèle » in the whole workshop')
+        if width == 390:
+            c.js('window.scrollTo(0, 0)')
+            c.shot('P11c_390_ligne.png')
+        c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
+        c.until("!!document.querySelector('.f-modal [data-in]')", timeout=5000, what='the name of the model asked')
+        c.shot(f'P11c_{width}_nom.png')
+        _md_name(c, 'Modèle d\'essai')
+        _md_wait(c, lambda t: path in t, 'the file of the model written')
+        text = c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')[path]
+        doc = c.js('(t) => window.jsyaml.load(t)', text)
+        m = (doc.get('models') or [{}])[0]
+        c.eq([doc.get('version'), m.get('id'), m.get('type'), m.get('title'), [(d.get('key'), d.get('title'), d.get('place')) for d in m.get('drawers') or []]],
+             [1, 'modele-d-essai', 'REG', 'Modèle d\'essai', [('zone', 'Zone', 'ZONE-1'), ('object', 'Objet', 'OBJ-1'), ('arrival', 'Retour', None), ('hand', 'Geste', None)]],
+             f'{width}: the model: its name, its type, its four drawers complete', what='the file of the model')
+        c.eq(sorted(p.get('id') for p in m.get('places') or []), ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'ZONE-1'], f'{width}: its places, by identifier', what='the places')
+        bad = [w for w in ('lat', 'lon', 'centre', 'radius_km', 'ALPHA1', 'X-001A', 'teams', 'origin', 'destination', 'Base Test', 'participants') if w in text]
+        c.eq(bad, [], f'{width}: no position, no team, no callsign, no identifier of mission, neither departure nor arrival in the file', what='what the file must not hold')
+        c.ok(len(text.encode('utf-8')) < 131072 and len(m.get('drawers')) <= 12 and len(m.get('places')) <= 20, len(text), f'{width}: under the bounds of the reader')
+        # re-read at once among « Vos modèles »
+        c.js(quiet)
+        c.tap(f'{E} [data-atmodel] [data-do=edmodel]')
+        c.until(f"!!document.querySelector('{E} [data-models] [data-model=\"modele-d-essai\"]')", timeout=10000, what='the model among « Vos modèles »')
+        c.eq([x for x in c.js(_MD_LIST) if x[2] == '1'], [['modele-d-essai', 'Modèle d\'essai', '1', 'false']], f'{width}: re-read as a personal model', what='« Vos modèles »')
+        if width == 1280:
+            c.js('window.scrollTo(0, 0)')
+            c.shot('P11c_1280_vos_modeles.png')
+        c.tap(f'{E} [data-models] [data-do=edmodeloff]')
+        # the same name: the question first — « Garder l'ancien » writes nothing
+        c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
+        _md_name(c, 'Modèle d\'essai')
+        c.until("!!document.querySelector('.f-modal [data-ok]') && /existe|exists/.test(document.querySelector('.f-modal p')?.textContent || '')", timeout=5000, what='the question « le remplacer ? »')
+        if width == 390:
+            c.shot('P11c_390_remplacer.png')
+        c.tap('.f-modal [data-no]')
+        c.wait(400)
+        c.eq(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')[path], text, f'{width}: « Garder l\'ancien »: the file is unchanged', what='kept')
+        # « Remplacer le modèle »: replaced (the drawer « Geste » removed first, so that the content differs)
+        c.tap(f'{E} [data-atflow] [data-sel="E"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'E'", what='the drawer « Geste »')
+        c.tap(f'{_DW} [data-do="eddrdel"]')
+        c.wait(1100)
+        c.tap(f'{_DW} [data-do="eddrdel"]')
+        c.until(f"({_FLOW_N}) === 3", what='three drawers left')
+        c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
+        _md_name(c, 'Modèle d\'essai')
+        c.until("!!document.querySelector('.f-modal [data-ok]') && /existe|exists/.test(document.querySelector('.f-modal p')?.textContent || '')", timeout=5000, what='the question again')
+        c.tap('.f-modal [data-ok]')
+        _md_wait(c, lambda t: t.get(path, '').count('key:') == 3, 'the model replaced: three drawers')
+        c.eq(sorted(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')), [path], f'{width}: one file, replaced in place', what='the files of the models')
+        # the name of a model of the suite is refused
+        c.js(quiet)
+        c.tap(f'{E} [data-atmodel] [data-do=edmodelsave]')
+        _md_name(c, 'Interception')
+        c.until("[...document.querySelectorAll('#fNotes .f-note')].some(n => /modèle de la suite/.test(n.textContent))", timeout=5000, what='the name of the suite refused')
+        c.eq(sorted(c.js(_TEXTS_UNDER, 'pilot/ABC/modeles/')), [path], f'{width}: nothing written under the name of the suite', what='refused')
+        ed_leave(c)
+        c.js(_MD_CLEAR)
