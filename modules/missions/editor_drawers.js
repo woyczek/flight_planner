@@ -15,6 +15,11 @@
 // API :
 //   KEYS : les clés que l'atelier édite — hand (le geste du pilote seul), time (l'heure : un point et un délai), zone (une zone de
 //     passage), object (un objet à trouver), arrival (l'arrivée au terrain).
+//   TYPES : ce que le choix du type propose (SOG-0467 : « ＋ Tiroir » et la clé d'un tiroir, LE MÊME choix) — [{ key, judged }] dans
+//     l'ordre, une liste à allonger (le catalogue de briques y viendra) ; `judged` faux : une sorte que le vol ne juge pas encore (l'écran
+//     dit « s'ouvre au geste ou à l'heure de repli »). Aujourd'hui les cinq clés que l'atelier sait ÉCRIRE, toutes jugées en vol.
+//   keyed(row, key, places) → la ligne avec la clé choisie et ce qu'une clé neuve devine : la première zone, le premier objet des
+//     lieux, l'arrivée au terrain d'arrivée (1 NM, 30 kt, posé), l'heure après le décollage.
 //   drawerRowsOf(doc) → [{ i (la place dans `phases`, -1 pour une ligne ajoutée), id (B à M, donné, jamais saisi), title, said (la clé
 //     dite en clair, `trigger`), message, brief, key (une de KEYS, ou 'kept'), keptWhy, point, delay, zone, shown, object, arrPoint,
 //     arrRadius, arrSpeed, arrGround, stops [identifiants], fallback, route [identifiants] }] — les nombres en texte, pour les champs.
@@ -35,6 +40,11 @@ import * as MS from '../../frame/lib/mission.js';
 
 const B = MS.DRAWER_BOUNDS;
 export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival']);
+/** Les sortes que le choix du type propose (voir l'en-tête) : les clés que l'atelier sait écrire, dans l'ordre de KEYS. */
+export const TYPES = Object.freeze(KEYS.map(key => Object.freeze({
+  key,
+  judged: true
+})));
 /** Les clés qui regardent l'avion : elles ont une heure de repli. */
 const LIVE = new Set(['zone', 'object', 'arrival', 'kept']);
 /** Les champs du fichier qui portent une clé. */
@@ -165,6 +175,26 @@ export function withKey(row, key) {
     arrGround: false,
     stops: [],
     fallback: LIVE.has(k) ? String(r.fallback ?? '') : ''
+  };
+}
+
+/** La ligne avec la clé choisie et ce qu'elle devine (voir l'en-tête) ; `places` : les lignes des Lieux de la séance. */
+export function keyed(row, key, places = []) {
+  const first = kind => (Array.isArray(places) ? places : []).find(p => p && p.id && p.kind === kind)?.id || '';
+  return {
+    ...withKey(row, key),
+    ...(key === 'zone' ? {
+      zone: first('zone')
+    } : key === 'object' ? {
+      object: first('object')
+    } : key === 'arrival' ? {
+      arrPoint: 'DESTINATION',
+      arrRadius: '1',
+      arrSpeed: '30',
+      arrGround: true
+    } : key === 'time' ? {
+      point: 'ORIGIN'
+    } : {})
   };
 }
 

@@ -37,10 +37,16 @@
 // en six groupes repliables, un seul déplié (s.ed.step ; '' : tous repliés) ; le pied : « Enregistrer », « À compléter (n) » qui ouvre
 // la liste nommée, « Annuler ». Rien de ce qu'on peut presser n'est redessiné pendant la frappe (SOG-0449 : edRefresh).
 //
-// Les tiroirs (SOG-0445) : une carte du déroulé se touche (s.ed.sel : 'start', ou la lettre du tiroir) et la fiche du tiroir prend la
+// Les tiroirs (SOG-0445) : une ligne du déroulé se touche (s.ed.sel : 'start', ou la lettre du tiroir) et la fiche du tiroir prend la
 // place de celle du départ — la clé, les textes, la suite de route ; « ＋ Tiroir » ; « Retirer ce tiroir ». Les lignes des tiroirs
 // (s.ed.drawers, editor_drawers.js) ne sont créées qu'à la première retouche et s'écrivent dans edDoc avant que les références
 // suivent les lieux ; ils comptent dans « À compléter ».
+// Le déroulé est une LISTE VERTICALE (SOG-0467 ; l'utilisateur : « je préfère réduire le texte secondaire et étirer en hauteur ») — les
+// lignes de liste de la suite (f-list, f-item, celles de la liste des missions) : « Au départ », un tiroir par ligne (sa marque, « Tiroir n
+// · son titre », sa clé en une ligne), « ＋ Tiroir » ; aucun défilement en largeur. « ＋ Tiroir » n'ajoute plus rien d'office : il ouvre
+// SUR PLACE, sous lui, le choix du TYPE (s.ed.kinds = 'new' ; DR.TYPES) — un type touché crée le tiroir avec cette clé (DR.keyed : ce
+// qu'une clé neuve devine) et ouvre sa fiche ; la clé d'un tiroir existant se change par LE MÊME choix, dans sa fiche (s.ed.kinds =
+// 'drawer') ; « ＋ Tiroir » retouché, ou « Annuler », le referme sans rien créer.
 //
 // L'atelier voilé (SOG-0459 ; l'utilisateur, 18 nov. : « l'existence même des tiroirs est cachée par défaut, à tout le monde, auteur
 // compris ; on choisit de dévoiler ») : une mission EXISTANTE ouverte par « Modifier » ou « Dupliquer » s'ouvre voilée (s.ed.veil,
@@ -148,16 +154,22 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atmaphintrow>button{flex:0 0 auto;min-height:44px}
 [data-module="missions"] .ms-atmaphintrow>button[hidden]{display:none}
 [data-module="missions"] .ms-atmaphintrow>button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="missions"] .ms-atflowrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity}
-[data-module="missions"] .ms-atpart{flex:0 0 172px;scroll-snap-align:start;border:1px solid var(--sog-line,#ddd);border-top:4px solid var(--sog-muted,#888);padding:8px 10px;min-height:84px;background:var(--sog-bg,#fff)}
-[data-module="missions"] .ms-atpart[data-kind=start]{border-top-color:var(--ok,#1e7e34)}
-[data-module="missions"] .ms-atpart[aria-current]{outline:2px solid var(--accent,#1a73e8)}
-[data-module="missions"] .ms-atpart>span{display:block}
-[data-module="missions"] .ms-atpart .ms-attag{font-size:.75em;letter-spacing:.05em;text-transform:uppercase}
-[data-module="missions"] button.ms-atpart{display:block;font:inherit;color:inherit;text-align:left;border-radius:0;cursor:pointer}
-[data-module="missions"] .ms-atpart>*{pointer-events:none}
+[data-module="missions"] .ms-atflowlist{margin:0}
+[data-module="missions"] .ms-atpart{font:inherit;cursor:pointer;border-left:4px solid var(--sog-muted,#888)}
+[data-module="missions"] .ms-atpart[data-kind=start]{border-left-color:var(--ok,#1e7e34)}
+[data-module="missions"] .ms-atpart[aria-current]{outline:2px solid var(--sog-accent,#1a73e8);outline-offset:-2px}
+[data-module="missions"] .ms-atpart>*,[data-module="missions"] .ms-kind>*{pointer-events:none;min-width:0}
+[data-module="missions"] .ms-atparthead{display:flex;gap:6px;align-items:baseline}
+[data-module="missions"] .ms-atparthead>b{overflow-wrap:anywhere}
+[data-module="missions"] .ms-atpart>.f-muted,[data-module="missions"] .ms-kind>.f-muted{grid-column:1 / -1}
 [data-module="missions"] .ms-atpart .ms-stepmark{display:inline-block;font-size:.9em}
-[data-module="missions"] button.ms-atadd{display:flex;align-items:center;justify-content:center;border-style:dashed;font-weight:600}
+[data-module="missions"] button.ms-atadd{grid-template-columns:minmax(0,1fr);justify-items:center;border-style:dashed;border-left-width:1px;font-weight:600}
+[data-module="missions"] .ms-kinds{margin:0 0 0 16px;padding-left:10px;border-left:2px solid var(--sog-accent,#1a73e8)}
+[data-module="missions"] .ms-kind{font:inherit;cursor:pointer}
+[data-module="missions"] .ms-kind>b{font-weight:600}
+[data-module="missions"] .ms-kind>b::first-letter{text-transform:uppercase}
+[data-module="missions"] .ms-kind[aria-pressed="true"]{border-color:var(--sog-accent,#1a73e8);box-shadow:inset 0 0 0 1px var(--sog-accent,#1a73e8)}
+[data-module="missions"] .ms-kinds>.ms-kindoff{justify-self:start;min-height:44px}
 [data-module="missions"] .ms-dgrp{border-top:1px solid var(--sog-line,#ddd);padding:8px 0 4px}
 [data-module="missions"] .ms-dgrp>h4{margin:4px 0 8px}
 [data-module="missions"] .ms-dgrp .f-row{align-items:flex-start}
@@ -241,7 +253,6 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
   [data-module="missions"] .ms-atmapframe{height:min(46dvh,440px)}
   /* la carte et le déroulé restent en vue pendant que la fiche défile (l'ergonome, 18 nov.) */
   [data-module="missions"] .ms-atmain{position:sticky;top:var(--f-pane-top,70px);align-self:start}
-  [data-module="missions"] .ms-atpart{flex-basis:220px}
   [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:inline}
   /* la fiche d'un tiroir sur un module large : ses trois groupes dépliés, leurs titres ne se touchent pas */
   [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:block}
@@ -791,21 +802,35 @@ function edSheetHtml(s, doc) {
   }).join('')}</div></section>`;
 }
 
-/** Le déroulé de la mission : « Au départ » (visible), puis les tiroirs dans l'ordre — dits par leur rang, lus par le lecteur
- *  (frame/lib/mission.js) sur le document de la séance — et « ＋ Tiroir » (douze au plus). Une carte se touche : sa fiche s'ouvre
- *  (SOG-0445). Les cartes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
+/** La ligne « Au départ » du déroulé : son nom et, en une ligne, les deux bouts de la mission. */
+function edStartRowHtml(s, on) {
+  const c = s.ed.cadre;
+  return `<button type="button" class="f-item ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on ? ' aria-current="true"' : ''}><span class="ms-atparthead"><b>${esc(s.tt(EDTX.atStart))}</b></span><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>`;
+}
+
+/** Le déroulé de la mission (SOG-0467 : une liste verticale, les lignes de liste de la suite) : « Au départ » (visible), puis un tiroir
+ *  par ligne dans l'ordre — sa marque, « Tiroir n · son titre », sa clé en une ligne ; lus par le lecteur (frame/lib/mission.js) sur
+ *  le document de la séance — et « ＋ Tiroir » (douze au plus), qui ouvre sous lui le choix du type (edKindsHtml). Une ligne se
+ *  touche : sa fiche s'ouvre (SOG-0445). Les lignes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
 function edFlowHtml(s, doc, run = null) {
-  const e = s.ed,
-    c = e.cadre;
+  const e = s.ed;
   // SOG-0459, l'atelier voilé : « Au départ » seul, et « Dévoiler la mission complète » à la place d'« Essayer les clés »
   if (e.veil) return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div><p class="f-muted">${esc(s.tt(EDTX.atFlowHintVeil))}</p>
-    <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start" aria-current="true"><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button></div></section>`;
+    <div class="f-list ms-atflowlist">${edStartRowHtml(s, true)}</div></section>`;
   const drawers = MS.readMission(doc)?.drawers || [],
     todo = new Set(DR.drawersTodo(doc).map(t => t.name)),
     sel = e.sel || 'start',
-    on = id => sel === id ? ' aria-current="true"' : '';
+    on = id => sel === id ? ' aria-current="true"' : '',
+    adding = e.kinds === 'new';
   return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button></div><p class="f-muted">${esc(s.tt(EDTX.atFlowHint))}</p>
-    <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on('start')}><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>${drawers.map(d => `<button type="button" class="ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-attag f-muted"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span> ${esc(s.tt(EDTX.atSealed))}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="ms-atpart ms-atadd" data-do="eddradd" data-dradd>${esc(s.tt(EDTX.dwAdd))}</button>` : ''}</div></section>`;
+    <div class="f-list ms-atflowlist">${edStartRowHtml(s, sel === 'start')}${drawers.map(d => `<button type="button" class="f-item ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="f-item ms-atpart ms-atadd" data-do="eddradd" data-dradd aria-expanded="${adding}">${esc(s.tt(EDTX.dwAdd))}</button>${adding ? edKindsHtml(s, 'new') : ''}` : ''}</div></section>`;
+}
+
+/** Le choix du TYPE d'un tiroir (SOG-0467) — LE MÊME sous « ＋ Tiroir » (`where` : 'new', le tiroir naît avec la clé touchée) et dans
+ *  la fiche d'un tiroir ('drawer', sa clé change) : une ligne par sorte de DR.TYPES (une liste à allonger), son nom ; une sorte que le
+ *  vol ne juge pas encore le dit en une ligne ; la clé en cours est marquée ; « Annuler » referme sans rien changer. */
+function edKindsHtml(s, where, cur = '') {
+  return `<div class="f-list ms-kinds" data-kinds="${where}" role="group" aria-label="${esc(s.tt(EDTX.dwKey))}">${DR.TYPES.map(t => `<button type="button" class="f-item ms-kind" data-do="edkind" data-key="${t.key}" aria-pressed="${t.key === cur}"><b>${esc(s.tt(EDTX[`dwKey_${t.key}`]))}</b>${t.judged ? '' : `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>`}</button>`).join('')}<button type="button" class="f-linkbtn ms-kindoff" data-do="edkindoff">${esc(s.tt(TX.cancel))}</button></div>`;
 }
 
 /** Les lignes des Lieux que la « Vue du pilote » garde (SOG-0448) : au stade choisi, seulement ce que le lecteur rend au pilote
@@ -1801,7 +1826,7 @@ function edDrawerHtml(s, doc) {
     fallback = `${field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"')}<p class="f-muted">${esc(s.tt(EDTX.dwFallbackHint))}</p>`,
     zones = of('zone'),
     objects = of('object'),
-    keys = [...DR.KEYS, ...(r.key === 'kept' ? ['kept'] : [])],
+    read = (MS.readMission(doc)?.drawers || []).find(x => x.id === r.id),
     body = r.key === 'time' ? `<div class="f-row">${select('point', EDTX.dwPoint, r.point || 'ORIGIN', [['ORIGIN', s.tt(EDTX.dwAtTakeoff)], ...points])}${field('delay', EDTX.dwDelay, r.delay, ' inputmode="numeric" maxlength="4"')}</div>` :
     r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${onMap('zone', EDTX.dwDraw)}${check('shown', EDTX.dwShown, r.shown === true)}${fallback}` :
     r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${onMap('object', EDTX.dwPose)}${fallback}` :
@@ -1819,7 +1844,8 @@ function edDrawerHtml(s, doc) {
     group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
   return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
     <div class="ms-dgrp" data-dgrp="key" data-open="1"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
-      <label class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><select data-k="eddr" data-f="key">${keys.map(k => `<option value="${k}"${k === r.key ? ' selected' : ''}>${esc(s.tt(EDTX[`dwKey_${k}`]))}</option>`).join('')}</select></label>
+      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) ? `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
+      ${e.kinds === 'drawer' ? edKindsHtml(s, 'drawer', r.key) : ''}
       ${body}</div>
     ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}<p class="f-muted">${esc(s.tt(EDTX.dwTitleHint))}</p>
       <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
@@ -1843,35 +1869,6 @@ function edDrawerInput(s, ev) {
   const r = edDrawerRow(e);
   if (!r) return;
   e.mapUndo?.clear(); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
-  const at = e.drawers.indexOf(r),
-    put = next => {
-      e.drawers[at] = next;
-      return next;
-    };
-  if (f === 'key' && DR.KEYS.includes(t.value)) {
-    if (t.value === r.key) return;
-    const places = e.places || ED.placesOf(edDoc(e)),
-      first = kind => places.find(p => p.id && p.kind === kind)?.id || '',
-      k = DR.withKey(r, t.value),
-      // la clé neuve prend ce qui se devine : la première zone, le premier objet, l'arrivée au terrain d'arrivée, posé, à l'arrêt
-      next = put({
-        ...k,
-        ...(t.value === 'zone' ? {
-          zone: first('zone')
-        } : t.value === 'object' ? {
-          object: first('object')
-        } : t.value === 'arrival' ? {
-          arrPoint: 'DESTINATION',
-          arrRadius: '1',
-          arrSpeed: '30',
-          arrGround: true
-        } : t.value === 'time' ? {
-          point: 'ORIGIN'
-        } : {})
-      });
-    next.said = edSaid(s, next);
-    return draw(s);
-  }
   if (['point', 'zone', 'object', 'arrPoint'].includes(f) && list) {
     r[f] = String(t.value).slice(0, 40);
     if (f === 'point') r.said = edSaid(s, r);
@@ -1976,25 +1973,6 @@ export function edHtml(s) {
 /** Une saisie de l'éditeur : un texte met à jour l'aperçu, les pastilles et l'en-tête seuls (le champ garde son curseur) ; une liste
  *  redessine l'écran (la famille propose son identifiant suivant et sa série à une mission neuve ou dupliquée). */
 export function edInput(s, ev) {
-  const out = edInputDo(s, ev);
-  edShowSel(s);
-  return out;
-}
-
-/** La carte choisie du déroulé reste en vue : la rangée défile en largeur seulement (jamais la page), après un geste ou une saisie
- *  qui a redessiné l'écran. */
-function edShowSel(s) {
-  const row = s.ed && s.el?.querySelector?.('.ms-atflowrow'),
-    cur = row?.querySelector('[aria-current]');
-  if (!row || !cur) return;
-  const a = cur.offsetLeft - row.offsetLeft,
-    b = a + cur.offsetWidth;
-  if (a < row.scrollLeft) row.scrollLeft = a;
-  else if (b > row.scrollLeft + row.clientWidth) row.scrollLeft = b - row.clientWidth;
-}
-
-/** Une saisie de l'éditeur (voir edInput). */
-function edInputDo(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return e.veil ? undefined : edDrawerInput(s, ev); // la fiche d'un tiroir (jamais dans l'atelier voilé)
@@ -2425,6 +2403,7 @@ async function edSave(s) {
       mapsAdd: null,
       drawers: null,
       drawerAsk: '',
+      kinds: '',
       path,
       origId: c.id,
       regIdx: line ? line.idx : e.regIdx,
@@ -2462,15 +2441,6 @@ function edLoadStep(e) {
 
 /** Les gestes de l'éditeur et ses entrées depuis le Registre. */
 export function edClick(s, b) {
-  const out = edClickDo(s, b);
-  // un geste qui attend (lire un fichier, enregistrer) redessine plus tard : la carte choisie revient en vue alors aussi
-  Promise.resolve(out).then(() => edShowSel(s), () => {});
-  edShowSel(s);
-  return out;
-}
-
-/** Les gestes de l'éditeur (voir edClick). */
-function edClickDo(s, b) {
   const r = s.reg,
     idx = Number.isInteger(+b.dataset.rid) ? +b.dataset.rid : -1,
     line = r?.lines.find(x => x.idx === idx);
@@ -2536,22 +2506,22 @@ function edClickDo(s, b) {
       s.ed.sel = !s.ed.veil && id !== 'start' && edDrawers(s.ed).some(r => r.id === id) ? id : 'start';
       s.ed.drawerAsk = '';
       s.ed.dopen = {};
+      s.ed.kinds = '';
       return draw(s);
     }
-    case 'eddradd': { // « ＋ Tiroir » : le suivant, au geste du pilote, sa fiche ouverte
-      const row = DR.blankDrawer(edDrawers(s.ed), s.ed.base);
-      if (!row) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');
-      edDrawerRow(s.ed);
-      row.said = edSaid(s, row);
-      s.ed.drawers = [...s.ed.drawers, row];
-      s.ed.sel = row.id;
-      s.ed.drawerAsk = '';
-      s.ed.dopen = {
-        texts: true
-      };
-      draw(s);
-      return s.el.querySelector('[data-drawer] [data-f=title]')?.focus();
-    }
+    case 'eddradd': // « ＋ Tiroir » (SOG-0467) : ouvre sous lui le choix du type, retouché il le referme — rien n'est créé
+      if (!DR.blankDrawer(edDrawers(s.ed), s.ed.base)) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');
+      s.ed.kinds = s.ed.kinds === 'new' ? '' : 'new';
+      return draw(s);
+    case 'edkindopen': // la clé d'un tiroir : le même choix, ouvert ou refermé dans sa fiche
+      if (!edDrawerRow(s.ed)) return;
+      s.ed.kinds = s.ed.kinds === 'drawer' ? '' : 'drawer';
+      return draw(s);
+    case 'edkindoff': // « Annuler » : le choix se referme, rien n'est créé ni changé
+      s.ed.kinds = '';
+      return draw(s);
+    case 'edkind':
+      return edKind(s, b.dataset.key);
     case 'eddrdel': { // « Retirer ce tiroir », en deux temps : le second appui est inerte une seconde (comme pour un lieu cité)
       const e = s.ed,
         r = edDrawerRow(e);
@@ -2893,8 +2863,45 @@ function edClickDo(s, b) {
 /** Les gestes qui ne jouent pas dans l'atelier voilé (SOG-0459) : l'essai des clés, les tiroirs, les cartes proposées (elles nomment
  *  les zones par leur rang). */
 const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddradd', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
-  'eddrchipdel', 'eddrdraw', 'edmapspropose'
+  'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff'
 ]);
+
+/** Un type touché dans le choix (SOG-0467) : sous « ＋ Tiroir », le tiroir suivant naît avec cette clé (DR.keyed : ce qu'elle devine)
+ *  et sa fiche s'ouvre, son titre en main ; dans la fiche d'un tiroir, sa clé devient celle-ci (la même : rien ne change). Le choix se
+ *  referme. Une sorte que DR.TYPES ne propose pas (une page forgée) : rien. */
+function edKind(s, key) {
+  const e = s.ed;
+  if (!DR.TYPES.some(t => t.key === key) || !['new', 'drawer'].includes(e.kinds)) return;
+  const places = e.places || ED.placesOf(edDoc(e));
+  if (e.kinds === 'new') {
+    const blank = DR.blankDrawer(edDrawers(e), e.base);
+    e.kinds = '';
+    if (!blank) {
+      s.ctx.notify(s.tt(EDTX.dwMax), 'info');
+      return draw(s);
+    }
+    edDrawerRow(e);
+    const row = DR.keyed(blank, key, places);
+    row.said = edSaid(s, row);
+    e.drawers = [...e.drawers, row];
+    e.sel = row.id;
+    e.drawerAsk = '';
+    e.dopen = {
+      texts: true
+    };
+    draw(s);
+    return s.el.querySelector('[data-drawer] [data-f=title]')?.focus();
+  }
+  const r = edDrawerRow(e);
+  e.kinds = '';
+  if (r && r.key !== key) {
+    e.mapUndo?.clear(); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
+    const next = DR.keyed(r, key, places);
+    next.said = edSaid(s, next);
+    e.drawers[e.drawers.indexOf(r)] = next;
+  }
+  return draw(s);
+}
 
 /** « Dévoiler la mission complète » (SOG-0459) : la question du cadre (« Dévoiler » / « Garder le secret ») ; sur oui, l'atelier
  *  d'aujourd'hui, entier — les saisies de la séance voilée sont gardées ; une mission qui ne cachait rien (aucun tiroir, aucune ligne

@@ -1050,6 +1050,40 @@ kind (`ED.newPlace`, one gesture to undo, a full kind: a notification); with a r
   rest of the redraw, SOG-0478); the open sheet is not touched.
 - Veiled workshop: nothing to add (hidden rows are never touched, `edHid`).
 
+### 7 quinquetricies. The unfolding is a vertical list; « ＋ Tiroir » opens the choice of the type (18 Nov 2026; SOG-0467; noreg N129, N73, N78)
+
+The user (SOG-0467): « Ta maquette étire les tiroirs en largeur, la mienne en hauteur ; je préfère réduire le texte secondaire et étirer en
+hauteur » and « Le + qui cache le nouveau type est probablement suffisant : concis, il ne fait apparaître l'information qu'au moment où on en a
+besoin ». The ergonomist (18 Nov, 11:26): « ＋ Tiroir » opens the choice of the basic brick — the kinds of key — and the drawer is born with it.
+
+- **The list (reused: the list rows of the suite).** `edFlowHtml` renders `f-list` and `button.f-item` — the rows of the list of missions
+  (`ms-mrow` in module.js) and of the frame (`frame/design/primitives.css`): « Au départ » (its two ends in one line), one drawer per row (its
+  mark ✓ / !, « Tiroir n · title », its key in ONE secondary line), « ＋ Tiroir » last. 0 to 12 drawers; the chosen row is marked
+  (`aria-current`); touching a row opens its sheet (`edsel`, unchanged). No sideways scroll at any width: the horizontal row (`.ms-atflowrow`,
+  `scroll-snap`) and `edShowSel`, which scrolled it, are gone. The tags « visible » and « tiroir scellé » (.75 em, under the small size of the
+  suite) are gone: the mark and the rank say it. Veiled (SOG-0459): « Au départ » alone and « Dévoiler la mission complète », unchanged.
+- **The choice of the type (new: one component).** `edKindsHtml(s, where, cur)`, the SAME under « ＋ Tiroir » (`s.ed.kinds = 'new'`) and in
+  the sheet of a drawer (`'drawer'`, opened by touching the key in force, `data-kindcur`; the `<select data-f=key>` is gone). One row per
+  entry of `DR.TYPES` — `[{ key, judged }]` in editor_drawers.js, a list to lengthen (the catalogue of bricks by families will come into it;
+  it waits for the user) —, the key in force marked (`aria-pressed`), « Annuler ». A kind the flight does not judge yet says « s'ouvre au geste
+  ou à l'heure de repli » in one secondary line, never hidden (`dwNotJudged`); today the five kinds offered are judged, so the line only shows
+  on the key in force of a drawer whose key the flight does not judge (`MS.notJudgedYet`). Touching a type: under « ＋ Tiroir »,
+  `DR.blankDrawer`, then `DR.keyed(row, key, places)` — the guess the old list of keys made (the first zone, the first object, the arrival at
+  the destination 1 NM / 30 kt / on the ground, the hour after take-off), moved from `edDrawerInput` into editor_drawers.js so both paths
+  share it —, and the sheet opens with its title in hand; in a sheet, the key changes (the same key: nothing). « ＋ Tiroir » touched again,
+  or « Annuler », closes without creating anything. Twelve drawers: « ＋ Tiroir » is not offered (as before; a forged touch says « Douze
+  tiroirs au plus. »). `edkind`, `edkindopen` and `edkindoff` do not play in the veiled workshop (`VEILED_OFF`).
+- **What the workshop writes, what the flight judges** (read in `modules/missions/drawers.js` `follows` and `frame/lib/mission.js`
+  `notJudgedYet`). The five kinds the workshop WRITES are all judged in flight: the pilot's gesture, an hour (`time`), a passage zone the
+  pilot crosses himself, a fixed object, an arrival without escort. NOT judged yet: the conditions of version 1.1 (`trigger_condition` of kind
+  `hover`, `landing`, `overflight`, `sequence`, `event`), a zone crossed by a target (`trigger_actor`), a moving object, an arrival with an
+  escort (`escort_min_sec`). The workshop only KEEPS these (key `kept`), so they are not offered. To write: `hover`, `landing`, `overflight`
+  need their fields in the sheet (a point or an object, then radius, duration, gap, speed and heights — the reader `holdRule` refuses a rule
+  with one missing; `hover` alone has six numbers), `sequence` an editor of its steps (one to ten rules), `event` an event identifier and the
+  drawer that sends it (`emit_event`).
+- Cases: N73 now checks the list (the « ONE row that scrolls sideways » of SOG-0444 is replaced); N78 changes the key by the choice
+  (`dw_key`) and reads the key in force from `data-kindcur`; N129 is new.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

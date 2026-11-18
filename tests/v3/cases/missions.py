@@ -2354,6 +2354,14 @@ def ed_reveal(c):
       window.scrollTo(0, 0) }""", row(c, 'veilNothing', EDTX_FILE))
 
 
+def dw_key(c, key):
+    """Changes the key of the drawer whose sheet is open by THE choice of the type (SOG-0467, the same as under « ＋ Tiroir »): touches the
+    key in the sheet, then the type."""
+    c.tap(f'{E} [data-drawer] [data-kindcur]')
+    c.until(f"!!document.querySelector('{E} [data-kinds=drawer]')", what='the choice of the type in the sheet of the drawer')
+    c.tap(f'{E} [data-kinds=drawer] [data-key="{key}"]')
+
+
 def _ed_fill(c, k, v):
     c.page.fill(f'{E} input[data-k={k}]', v)
 
@@ -3482,14 +3490,14 @@ def n73(c):
          'wide: the map (always shown, no button) and the unfolding on the left, the sheet on the right')
     c.ok(c.js(f"getComputedStyle(document.querySelector('{E} [data-edtodobtn] .ms-attodofirst')).display") != 'none', 'hidden',
          'wide: the foot also says the first point to complete')
-    row_w = c.js(f"(() => {{ const r = document.querySelector('{E} .ms-atflowrow'); return [r.scrollWidth > r.clientWidth || r.children.length <= 4, getComputedStyle(r).flexWrap] }})()")
-    c.eq(row_w[1], 'nowrap', 'the unfolding is ONE row (it scrolls sideways, it never wraps)', what='the row')
+    row_w = c.js(f"(() => {{ const r = document.querySelector('{E} .ms-atflowlist'); return [r.scrollWidth <= r.clientWidth, getComputedStyle(r).display] }})()")
+    c.eq(row_w, [True, 'grid'], 'the unfolding is a vertical list, never a sideways scroll (SOG-0467 replaced the row of SOG-0444)', what='the list')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.shot('N73_1280_workshop.png')
     # a drawer keyed by an object in a mission that has none: the sheet says so and leads to the Lieux (SOG-0445, the ergonomist's reading)
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
-    c.until(f"!!document.querySelector('{E} [data-drawer] [data-f=key]')", what='the sheet of drawer 1')
-    c.page.select_option(f'{E} [data-drawer] [data-f=key]', 'object')
+    c.until(f"!!document.querySelector('{E} [data-drawer] [data-kindcur]')", what='the sheet of drawer 1')
+    dw_key(c, 'object')
     c.until(f"!!document.querySelector('{E} [data-drawer] [data-dwnone]')", what='nothing to choose is said')
     none = c.text(f'{E} [data-drawer] [data-dwnone]')
     c.ok(norm(row(c, 'dwNoObject', EDTX_FILE)) in norm(none) and c.count(f'{E} [data-drawer] [data-f=object]') == 0, none,
@@ -4689,8 +4697,10 @@ def n77(c):
 
 
 _DW = f'{E} [data-drawer]'
-_DW_FIELDS = f"[...document.querySelectorAll('{_DW} [data-k=eddr]')].map(x => x.dataset.f)"
-_DW_VAL = f"""(f) => {{ const x = document.querySelector('{_DW} [data-k=eddr][data-f="' + f + '"]'); return !x ? null : x.type === 'checkbox' ? x.checked : x.value }}"""
+# the key is THE choice of the type (SOG-0467): its button in the sheet says the key in force (data-kindcur), the other fields are data-k=eddr
+_DW_FIELDS = f"[...(document.querySelector('{_DW} [data-kindcur]') ? ['key'] : []), ...[...document.querySelectorAll('{_DW} [data-k=eddr]')].map(x => x.dataset.f)]"
+_DW_VAL = f"""(f) => {{ if (f === 'key') return document.querySelector('{_DW} [data-kindcur]')?.dataset.kindcur ?? null;
+  const x = document.querySelector('{_DW} [data-k=eddr][data-f="' + f + '"]'); return !x ? null : x.type === 'checkbox' ? x.checked : x.value }}"""
 _DW_CARDS = f"[...document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]')].map(x => [x.dataset.sel, x.querySelector('b').textContent.trim(), (x.querySelector('[data-dkey]')?.textContent || '').trim(), (x.querySelector('[data-dmark]')?.textContent || '').trim(), x.getAttribute('aria-current')])"
 
 
@@ -4758,7 +4768,7 @@ def n78(c):
     c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}})")
     c.shot('N78_390_drawer_zone.png')
     # another key: an object to find — chosen among the objects of the mission; the fallback time stays
-    c.page.select_option(f'{_DW} [data-f=key]', 'object')
+    dw_key(c, 'object')
     c.until(f"!!document.querySelector('{_DW} [data-f=object]')", what='the key « object »')
     c.eq([c.js(_DW_VAL, f) for f in ('key', 'object', 'fallback', 'shown')], ['object', 'OBJ-1', '60', None], 'the first object is proposed, the fallback time is kept', what='values')
     c.eq(norm(c.js(_DW_CARDS)[1][2]), T('atKey_object'), 'the card says the new key', what='the key on the card')
@@ -4778,13 +4788,14 @@ def n78(c):
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", timeout=3000, what='drawer 3 by ONE click after typing')
     c.eq(c.js(_DW_FIELDS), ['key', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stopadd', 'fallback', 'title', 'message', 'brief', 'routeadd'], 'the fields of an arrival', what='fields')
     c.eq([c.js(_DW_VAL, f) for f in ('arrPoint', 'arrRadius', 'arrSpeed', 'arrGround')], ['DESTINATION', '1', '30', True], 'read from the file', what='the arrival')
-    # « ＋ Tiroir »: the fifth, by the pilot's gesture; then an hour after take-off
+    # « ＋ Tiroir »: the fifth, by the pilot's gesture (SOG-0467: chosen in the choice of the type it opens); then an hour after take-off
     c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.tap(f'{E} [data-kinds=new] [data-key="hand"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer open (the first free letter)')
     c.eq([norm(c.text(f'{_DW} [data-dwhead]')), c.js(_DW_VAL, 'key'), c.js(_DW_FIELDS)], [T('dwSheet', n=5), 'hand', ['key', 'title', 'message', 'brief', 'routeadd']],
          'a new drawer: rank 5, the pilot\'s gesture, nothing else asked', what='the new drawer')
     c.page.fill(f'{_DW} [data-f=title]', 'Retour anticipé')
-    c.page.select_option(f'{_DW} [data-f=key]', 'time')
+    dw_key(c, 'time')
     c.until(f"!!document.querySelector('{_DW} [data-f=delay]')", what='the key « hour »')
     c.eq(c.js(_DW_VAL, 'point'), 'ORIGIN', 'after the take-off by default', what='the point')
     c.page.fill(f'{_DW} [data-f=delay]', '20')
@@ -8719,5 +8730,85 @@ def n128(c):
     got = line()
     c.ok('XPT01' in got and '44°54′N' in got and '1°27′E' in got and 'à placer' not in got, got,
          'the title line of the place taken from the base says its code and its position at once, with the sheet still open (before « OK »)')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+
+_FLOW_GEO = f"""(() => {{ const list = document.querySelector('{E} [data-atflow] .ms-atflowlist');
+  if (!list) return null;
+  const rows = [...list.children].filter(x => x.matches('[data-part], [data-dradd]')).map(x => {{ const r = x.getBoundingClientRect();
+    return [x.dataset.part || 'add', Math.round(r.left), Math.round(r.top), Math.round(r.bottom)] }});
+  return {{ rows, list: list.scrollWidth - list.clientWidth, page: document.documentElement.scrollWidth - document.documentElement.clientWidth }} }})()"""
+_FLOW_N = f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length"
+
+
+def _flow_vertical(c, width):
+    """The rows of the unfolding are one UNDER the other, on the same left edge, « Au départ » first, « ＋ Tiroir » last, nothing scrolls
+    sideways (the list, the page)."""
+    g = c.js(_FLOW_GEO)
+    c.ok(g is not None, g, f'{width}: the unfolding is a list')
+    rows = g['rows']
+    c.eq([rows[0][0], rows[-1][0]], ['start', 'add'], f'{width}: « Au départ » in the first row, « ＋ Tiroir » in the last', what='the ends')
+    c.ok(all(b[2] >= a[3] - 1 for a, b in zip(rows, rows[1:])) and max(r[1] for r in rows) - min(r[1] for r in rows) <= 1, rows,
+         f'{width}: each row lower than the one before, on the same left edge')
+    c.ok(g['list'] <= 0 and g['page'] <= 0, g, f'{width}: no sideways scroll, neither in the list nor in the page')
+
+
+@case('N129', 'Missions › the workshop, the unfolding is a VERTICAL list (SOG-0467): « Au départ », one drawer per row (its mark, « Tiroir n · its title », '
+      'its key in one line), « ＋ Tiroir » last, one under the other at 390 and at 1280, never a sideways scroll; « ＋ Tiroir » opens the choice of the '
+      'TYPE under it and creates nothing, a second touch (or « Annuler ») closes it; « une zone de passage » creates a drawer keyed by a zone (the first '
+      'zone guessed) and opens its sheet; its key changes by THE SAME choice in its sheet; at twelve drawers « ＋ Tiroir » is no longer offered',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0467 (the user: « je préfère réduire le texte secondaire et étirer en hauteur » ; « Le + qui cache le nouveau type est probablement '
+      'suffisant » ; the ergonomist, 18 Nov 11:26: « ＋ Tiroir » opens the choice of the basic brick) — modules/missions/EDITOR.md § 7 quinquetricies')
+def n129(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)
+    c.until(f"document.querySelectorAll('{E} [data-atflow] [data-kind=drawer]').length === 4", timeout=10000, what='the four drawers of X-001A')
+    _flow_vertical(c, 390)
+    one = c.js(f"(() => {{ const r = document.querySelector('{E} [data-atflow] [data-sel=\"B\"]'); return [r.querySelector('[data-dmark]')?.textContent.trim(), r.querySelector('[data-dtitle]')?.textContent.trim(), r.querySelector('[data-dkey]')?.textContent.trim()] }})()")
+    c.ok(one[0] == '!' and norm(one[1]) == 'Tiroir 1 · Zone' and bool(one[2]), one, 'a drawer row: its mark, « Tiroir 1 · Zone », its key in one line')
+    # « ＋ Tiroir »: the choice of the type, nothing created; touched again, closed; « Annuler » closes it too
+    c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.until(f"!!document.querySelector('{E} [data-atflow] [data-kinds=new]')", what='the choice of the type under « ＋ Tiroir »')
+    kinds = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
+    c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival'], 'the types the format writes, in order', what='the choice')
+    c.eq(c.js(_FLOW_N), 4, 'opening the choice creates nothing', what='the drawers')
+    below = c.js(f"(() => {{ const a = document.querySelector('{E} [data-dradd]').getBoundingClientRect(), k = document.querySelector('{E} [data-kinds=new]').getBoundingClientRect(); return k.top >= a.bottom - 1 }})()")
+    c.ok(below, below, 'the choice opens IN PLACE, under « ＋ Tiroir »')
+    c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.until(f"!document.querySelector('{E} [data-kinds]')", what='a second touch closes the choice')
+    c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+    c.until(f"!document.querySelector('{E} [data-kinds]')", what='« Annuler » closes the choice')
+    c.eq(c.js(_FLOW_N), 4, 'nothing was created', what='the drawers')
+    # « une zone de passage »: the drawer is born keyed by the zone, its sheet open
+    c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.tap(f'{E} [data-kinds=new] [data-key="zone"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer, its sheet open')
+    c.eq([c.js(_FLOW_N), c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'zone')], [5, 'zone', 'ZONE-1'], 'a drawer keyed by a zone, the first zone guessed', what='the new drawer')
+    # its key by THE SAME choice, in its sheet
+    c.tap(f'{_DW} [data-kindcur]')
+    c.until(f"!!document.querySelector('{_DW} [data-kinds=drawer]')", what='the choice in the sheet')
+    same = c.js(f"[...document.querySelectorAll('{_DW} [data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, x.getAttribute('aria-pressed')])")
+    c.eq(same, [[k, 'true' if k == 'zone' else 'false'] for k in kinds], 'the same choice, the key in force marked', what='the choice in the sheet')
+    c.tap(f'{_DW} [data-kinds=drawer] [data-key="object"]')
+    c.until(f"document.querySelector('{_DW} [data-kindcur]')?.dataset.kindcur === 'object'", what='the key changed')
+    c.eq([c.js(_DW_VAL, 'object'), c.count(f'{E} [data-kinds]')], ['OBJ-1', 0], 'the first object guessed, the choice closed', what='the changed key')
+    # 1280: the same list, one row under the other
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.tap(f'{E} [data-atflow] [data-sel="start"]')
+    _flow_vertical(c, 1280)
+    # twelve drawers: « ＋ Tiroir » is no longer offered
+    for n in range(6, 13):
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        c.tap(f'{E} [data-kinds=new] [data-key="hand"]')
+        c.until(f"({_FLOW_N}) === {n}", what=f'drawer {n}')
+    c.eq(c.count(f'{E} [data-atflow] [data-dradd]'), 0, 'twelve drawers: « ＋ Tiroir » is no longer offered', what='the add row')
     ed_leave(c)
     c.js(_REG_CLEAR)
