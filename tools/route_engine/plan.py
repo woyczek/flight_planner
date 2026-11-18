@@ -56,7 +56,9 @@ def check_request(request):
             raise ValueError(f'{k} : type invalide')
         out[k] = v
     for k in ('dep', 'arr', 'dep_runway', 'arr_runway'):
-        if k in out and out[k] and not re.fullmatch(r'[A-Za-z0-9]{1,4}', out[k]):
+        # SOG-0466 lot 2 : un aérodrome (dep, arr) peut être une HÉLISTATION au code de liste du SIA à cinq signes (« LF418 » : deux lettres et trois chiffres) ; les champs de piste gardent leurs quatre signes
+        ok = r'[A-Za-z0-9]{1,4}|[A-Za-z]{2}\d{3}' if k in ('dep', 'arr') else r'[A-Za-z0-9]{1,4}'
+        if k in out and out[k] and not re.fullmatch(ok, out[k], re.A):
             raise ValueError(f'{k} : code invalide')
     if len(out.get('route', '')) > MAX_ROUTE:
         raise ValueError('route : trop longue')

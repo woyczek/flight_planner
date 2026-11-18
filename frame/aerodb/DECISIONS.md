@@ -3629,3 +3629,9 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 - **Engine**: the overlay is read when the context is built (the fingerprint includes `data/local/xplane/`), added after the official network and only for the zones with fewer than 20 official segments; a segment already there (same ends, same route) is not doubled; `source_cycle` stays empty (the cycle of X-Plane is « 2610 », not a date). The review carries the cycle.
 - **Region**: the verb reads only the zones of the region of the route (west -32, south 24, east 62, north 75): not the world.
 - **Not done**: the lateral limits of nothing; the terminal fixes (the net holds the airway ends only: a point of a typed route that is on no airway stays unknown); the line of Settings (frame/settings, contract fixed with the screen: GET, POST, and the button « Lire le réseau X-Plane » that starts `xplane/build`).
+
+## 19 November 2026 — SOG-0466 lot 2: the five-sign codes of the heliports in the route request
+
+- **Found**: the front of the module was already right (the light index, `suggest`, `coords`, `aerodromes({ icao })` find `LF418`); the only refusal was the request of the engine (`plan.validate`: one to four signs of `[A-Za-z0-9]`, and `engine.assess` three to four).
+- **Done**: `dep` and `arr` accept `^[A-Za-z0-9]{1,4}$` or `^[A-Za-z]{2}[0-9]{3}$` (ASCII only); the runway fields are unchanged. Not widened: the lookups by `[A-Z0-9]{3,4}` or four letters of `aerodb.js` (procedures, runways, charts, eAIP, ground, VFR routes): a heliport has none, the answer stays empty. The route text (`LF418` as first or last word) is read as the aerodrome (a word of two letters and three digits is not an airway: the airway pattern starts with one letter and digits).
+- **To say to Features SOG**: the exact pattern of the common field is the one above.

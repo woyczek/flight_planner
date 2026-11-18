@@ -843,7 +843,7 @@ MAX_BAND_ISSUES=40      # SOG-0401 (4) : les suites de tronçons hors de la band
 def assess(request,_nav=None,_rad=None,_path=None):
     dep=str(request.get('dep','')).strip().upper(); arr=str(request.get('arr','')).strip().upper()
     for ad in [dep,arr]:
-        if not re.fullmatch('[A-Z0-9]{3,4}',ad): raise ValueError('Code aérodrome invalide : '+ad)
+        if not re.fullmatch(r'[A-Z0-9]{3,4}|[A-Z]{2}\d{3}',ad,re.A): raise ValueError('Code aérodrome invalide : '+ad)      # SOG-0466 lot 2 : ou le code de liste d'une hélistation (« LF418 »)
     when=dt.datetime.fromisoformat(str(request.get('date','2026-11-09T12:00')).replace('Z','+00:00'))
     # UI and CLI inputs are UTC. Offset-aware ISO requests are normalized to UTC.
     if when.tzinfo: when=when.astimezone(dt.timezone.utc).replace(tzinfo=None)

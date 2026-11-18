@@ -16060,3 +16060,71 @@ def k356(c):
             c.eq(post({'path': ''}), (200, {'ok': True, 'configured': False, 'state': None}), 'an empty path clears the configuration', what='clear')
     finally:
         L.DATA, L.say = kept_data, kept_say
+
+
+@case('K357', 'Heliports, the five-sign LIST codes (« LF418 ») as departure and arrival (SOG-0466 lot 2, the request of the user, SOG-0465): `AeroDb.coords` / `aerodromes({ icao })` find them by their list code and by name, `suggest` proposes them, and the route request accepts them as `dep` and `arr` (the pattern is « four signs of [A-Za-z0-9] OR two letters and three digits »; the runway fields keep four signs); an invented base with one heliport answers a calculation',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0466 lot 2 (the relay, 18 Nov: « aerodb.aerodrome() et le calcul de route acceptent les codes de liste des hélistations à 5 signes (LF418) en départ et en arrivée »). The pattern shared with the common field of Features SOG: ^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$ (the list codes of the SIA: LF418, TF003, NW004). The lookups of procedures, runways and charts keep their own pattern: a heliport has none. Red before: the request adest LF418 is refused (« arr : code invalide »).')
+def k357(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const day = Date.parse('2026-11-10T12:00:00Z');
+      const kinds = ['meta', 'aerodromes', 'aeroindex', 'navaids', 'points', 'vrp', 'airways', 'airspaces'];
+      const fields = ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar', 'hardLen', 'type'];
+      const rows = [['LFPG', 'PARIS CHARLES DE GAULLE', 49.01, 2.55, 392, 0, 0, 4200, 'AD'], ['LF418', 'LYON CENTRE HOSPITALIER SUD', 45.7025, 4.8075, 520, 0, 0, null, 'HP'], ['FMEH', "SAINT PAUL L'ERMITAGE", -21.068, 55.2494, 826, 0, 0, null, 'HP']];
+      const files = Object.fromEntries(kinds.map(k => ['sia/base/fr/2026-10-29/' + k + '.json', k === 'meta' ? { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: 'meta', parserVersion: 29, data: {} }
+        : k === 'aeroindex' ? { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: k, data: { fields, rows } } : { schema: 2, zone: 'fr', cycle: '2026-10-29', kind: k, data: [] }]));
+      files['sia/base/index.json'] = { schema: 2, kind: 'index', zones: { fr: { cycle: '2026-10-29', prefixes: ['LF'], kb: { aeroindex: 3 } } } };
+      const reader = { read: async p => p in files ? { value: files[p], rev: 'r' } : null, list: async prefix => Object.keys(files).filter(p => p.startsWith(prefix)), watch: () => () => {} };
+      const db = AeroDB.create({ reader, lnmperf: false, now: () => day });
+      return {
+        byCode: (await db.suggest('LF418')).map(x => x.code + ':' + x.rank), byName: (await db.suggest('centre hospitalier')).map(x => x.code), byStart: (await db.suggest('LF4')).map(x => x.code),
+        coords: await db.coords('LF418'), coordsLow: await db.coords('lf418'), ads: (await db.aerodromes({ icao: 'LF418' })).map(a => a.icao || a.id), none: await db.coords('LF999'),
+        proc: await db.procedures('LF418'), runways: await db.runways('LF418')
+      };
+    }""")
+    c.eq((r['byCode'], r['byName'], r['byStart']), (['LF418:0'], ['LF418'], ['LF418']), 'the completion proposes the heliport by its LIST code (exact: rank 0), by a word of its name, by the start of its code', what='suggest')
+    c.eq((r['coords']['name'], round(r['coords']['lat'], 4), r['coordsLow']['name'], r['ads'], r['none']), ('LYON CENTRE HOSPITALIER SUD', 45.7025, 'LYON CENTRE HOSPITALIER SUD', ['LF418'], None), 'the position of « LF418 » (also in lower case) and the aerodrome record are found; an unknown code gives nothing', what='coords')
+    c.eq((r['proc'], r['runways']), ([], []), 'a heliport has no procedure and no runway table: the lookups answer an empty list, never an error', what='no proc')
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTAAA': (51.7, -1.0), 'PTBBB': (50.5, 4.0), 'PTCCC': (48.5, 9.0), 'PTDDD': (47.0, 13.0)}
+    ways = [{'route': 'L601', 'a': pt(a, *pos[a]), 'b': pt(b, *pos[b]), 'lower': 0, 'upper': 66000} for a, b in (('PTAAA', 'PTBBB'), ('PTBBB', 'PTCCC'), ('PTCCC', 'PTDDD'))]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        rows = [['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0], ['LF418', 'INVENTED HOSPITAL HELIPAD', 46.9, 13.1, 500, 0, 0]]
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': rows}, 'points': [pt(k, *v) for k, v in pos.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        results_cache.ENABLED = False
+        try:
+            errs = {}
+            for k, v in (('arr5', {'adest': 'LF418'}), ('dep5', {'adep': 'LF418', 'adest': 'EGLL'}), ('bad6', {'adest': 'LFXX18'}), ('bad3d', {'adest': 'L4181'})):
+                req = {'action': 'compute', 'adep': 'EGLL', 'adest': 'EGLL', 'date': '2026-11-10T10:30', 'alternatives': False, 'proposals': False, 'fl': 350, **v}
+                try:
+                    PL.compute(view.to_request(req), data, radz, fra)
+                    errs[k] = None
+                except ValueError as e:
+                    errs[k] = str(e)
+            res = PL.compute(view.to_request({'action': 'compute', 'adep': 'EGLL', 'adest': 'LF418', 'date': '2026-11-10T10:30', 'alternatives': False, 'proposals': False, 'fl': 350}), data, radz, fra)
+        finally:
+            results_cache.ENABLED = True
+    c.eq((errs['arr5'], errs['dep5']), (None, None), 'the request accepts the list code of a heliport as departure and as arrival', what='request')
+    c.eq((errs['bad6'], errs['bad3d']), ('arr : code invalide', 'arr : code invalide'), 'a code of six signs and a code of one letter and four digits are still refused', what='refused')
+    c.ok(res['primary'].get('status') != 'CALCUL IMPOSSIBLE' and (res['primary'].get('route') or '').endswith('LF418'), str(res['primary'].get('status')) + ' ' + str(res['primary'].get('route')), 'a calculation to the heliport LF418 gives a route that ends at it')
