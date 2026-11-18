@@ -2106,7 +2106,7 @@
     {
      "id": "SOG-0446",
      "kind": "feature",
-     "state": "planned",
+     "state": "later",
      "fr": "Socle de carte : éditer sur la carte (toucher nu, déplacer, tracé en cours, couches de l'auteur, repères d'AeroDB cliquables) et lire l'altitude du terrain",
      "en": "Map base: editing on the map (bare tap, drag, path in progress, author layers, clickable AeroDB landmarks) and reading terrain elevation",
      "de": "Kartensockel: Bearbeiten auf der Karte (Tippen, Ziehen, laufender Linienzug, Autorenebenen, anklickbare AeroDB-Marken) und Geländehöhe lesen",
