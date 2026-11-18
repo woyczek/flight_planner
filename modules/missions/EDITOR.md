@@ -612,7 +612,10 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   through `setRefs`. A late answer (the view moved, the workshop was left) is dropped; without a base, no landmark and no message.
   **Nothing is fetched from the network by this**: the base is the one the device already holds.
 - **What the base returns is bounded** (`refData`, pure): an identifier of 24 signs at most and a position within bounds, 300 per
-  kind; nothing else is kept. An identifier is shown by `textContent` in the line of the tool only.
+  kind; nothing else is kept. An identifier is shown by `textContent` in the line of the tool only. **A landmark that carries a
+  local mark is dropped** — `local`, or a `source` / `zone` of X-Plane, Eurocontrol or Little Navmap (the Security session's guard of
+  18 Nov; rule SOG-0153 / Q-0061: such a position never goes into a file of the shared data, and « Ajouter comme point » writes one):
+  it is neither drawn nor addable. The lists of `aerodb` read the published base; `refData` does not assume it.
 - **A landmark touched says what it is** — « Repère : la balise TSV. », « le terrain », « le point », « le point VFR » — in the line
   of the tool, is marked on the map, and **« Ajouter comme point »** is shown beside the line. **The touch creates nothing.** The
   button makes of it a turning point of the mission (`newPlace`: a free identifier), at its position, under its name; it is a gesture

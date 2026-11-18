@@ -90,15 +90,23 @@ export function circleRing(c, km, n = MAPB.ring) {
   return out;
 }
 
+/** Les sources dont une position ne va jamais dans un fichier du dépôt de données (SOG-0153, Q-0061) : X-Plane, Eurocontrol, Little
+ *  Navmap — un repère qui en vient (sa `source` ou sa `zone`), ou qui se dit `local`, n'est ni dessiné ni ajoutable. */
+const LOCAL_SOURCES = Object.freeze(['xplane', 'eurocontrol', 'eurocontrol_rad', 'lnm']);
+/** Ce repère porte-t-il un marqueur local ? */
+const isLocal = x => !!x.local || [x.source, x.zone].some(v => typeof v === 'string' && LOCAL_SOURCES.includes(v.trim().toLowerCase()));
+
 /** Les repères de la base aéronautique d'un cadre, tels que la couche du socle les prend (referenceLayer : { aerodromes [{ icao, lat,
  *  lon }], navaids, points, vrp [{ id, lat, lon }] }), bornés : une position dans ses bornes, un identifiant de vingt-quatre signes
- *  au plus, trois cents par sorte ; le reste de ce que la base rend n'est pas gardé. Pur. */
+ *  au plus, trois cents par sorte ; le reste de ce que la base rend n'est pas gardé. **Un repère qui porte un marqueur local est
+ *  écarté** (Sécurisation, 18 nov. 2026 : « Ajouter comme point » écrit sa position dans un fichier de mission, qui part dans le dépôt
+ *  partagé — les listes d'aerodb lisent la base publiée, mais on ne le suppose pas). Pur. */
 export function refData(lists) {
   const l = lists && typeof lists === 'object' ? lists : {},
     take = (list, idOf) => {
       const out = [];
       for (const x of Array.isArray(list) ? list.slice(0, 5000) : []) {
-        const at = x && typeof x === 'object' ? posOf(x.lat, x.lon) : null,
+        const at = x && typeof x === 'object' && !isLocal(x) ? posOf(x.lat, x.lon) : null,
           raw = at ? idOf(x) : '',
           id = typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim().slice(0, 24) : '';
         if (id && out.length < MAPB.refMax) out.push({

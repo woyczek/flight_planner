@@ -5009,7 +5009,9 @@ _EDREFS = "(() => { const m = window.__edMap; return m ? [...new Set(m.queryRend
 _REFDATA_JS = """async () => { const EM = await import('/modules/missions/editor_map.js'); let threw = '';
   for (const h of [null, 'x', 7, [], { navaids: 'x', points: [null, 7, 'x', { id: {}, lat: 1, lon: 1 }, { id: 'A', lat: {}, lon: [] }] }]) try { EM.refData(h) } catch (e) { threw += String(e) }
   const d = EM.refData({ aerodromes: [{ icao: 'LFZZ', name: 'TEST', lat: 44.25, lon: 1.7, elev: 100 }, { icao: 'BAD', lat: 91, lon: 1 }],
-    navaids: [{ id: 'TSV', lat: '44.3', lon: 1.3, type: 'VOR' }, null, { id: {}, lat: 1, lon: 1 }], points: Array.from({ length: 900 }, (_, n) => ({ id: 'P' + n, lat: 1, lon: 1 })),
+    navaids: [{ id: 'TSV', lat: '44.3', lon: 1.3, type: 'VOR' }, null, { id: {}, lat: 1, lon: 1 }, { id: 'LOC', lat: 44.3, lon: 1.31, local: true },
+      { id: 'XPL', lat: 44.31, lon: 1.3, source: 'xplane' }, { id: 'EUR', lat: 44.32, lon: 1.3, zone: 'eurocontrol' }, { id: 'LNM', lat: 44.33, lon: 1.3, source: ' LNM ' },
+      { id: 'RAD', lat: 44.34, lon: 1.3, zone: 'eurocontrol_rad' }], points: Array.from({ length: 900 }, (_, n) => ({ id: 'P' + n, lat: 1, lon: 1 })),
     vrp: [{ name: 'N'.repeat(40), lat: 1, lon: 1 }, { id: '', lat: 1, lon: 1 }] });
   return { d: [d.aerodromes, d.navaids, d.points.length, d.vrp.map(v => v.id.length)], empty: EM.refData(null), threw } }"""
 
@@ -5018,7 +5020,8 @@ _REFDATA_JS = """async () => { const EM = await import('/modules/missions/editor
       'base in the frame of the view, under the elements of the author; a landmark touched says what it is in the line of the tool and '
       '« Ajouter comme point » is offered beside it — THE TOUCH CREATES NOTHING; the button makes of it a turning point of the mission, at '
       'its position, under its name (a gesture of the map: it can be undone); a touch on the bare map forgets the landmark; with a tool '
-      'of pose in hand, a touch on a landmark poses as anywhere else; what the base returns is bounded',
+      'of pose in hand, a touch on a landmark poses as anywhere else; what the base returns is bounded, and a landmark that carries a '
+      'local mark (X-Plane, Eurocontrol, Little Navmap) is neither drawn nor addable',
       'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0444, lot P2, the landmarks (modules/missions/EDITOR.md § 2: « A landmark of AeroDB touched says what it is and offers '
       'Ajouter comme point: touching it creates nothing », § 7 octodecies; modules/maps/INTEGRATION.md § 7 bis: `referenceLayer`; '
@@ -5034,14 +5037,16 @@ def n100(c):
     c.eq([r['d'], r['empty'], r['threw']], [[[{'icao': 'LFZZ', 'lat': 44.25, 'lon': 1.7}], [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3}], 300, [24]],
                                             {'aerodromes': [], 'navaids': [], 'points': [], 'vrp': []}, ''],
          'the landmarks kept for the map: an identifier (24 signs) and a position within bounds, 300 per kind; a latitude of 91, an identifier that is not a text: not kept; '
-         'no hostile answer throws', what='the landmarks bounded')
+         'a landmark that carries a local mark — `local`, or a source or a zone of X-Plane, Eurocontrol, Little Navmap — is not kept either (its position must never '
+         'reach a file of the shared data); no hostile answer throws', what='the landmarks bounded')
     # the registry, the mission, and a small published base: a beacon, a fix and an aerodrome near the mission
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.js(_REG_CLEAR)
     c.js(_TEXTS_JS, _TRIAL_TEXTS)
     c.open('missions', wait=False, app='company', aero_extra={
-        'navaids': [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3, 'type': 'VOR', 'name': 'TESTVILLE'}],
+        'navaids': [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3, 'type': 'VOR', 'name': 'TESTVILLE'}, {'id': 'XPL', 'lat': 44.5, 'lon': 1.1, 'source': 'xplane'},
+                    {'id': 'LOC', 'lat': 44.55, 'lon': 1.9, 'local': True}],
         'points': [{'id': 'NEPIX', 'lat': 44.7, 'lon': 1.75, 'type': 'RNAV'}],
         'aerodromes': [{'icao': 'LFZZ', 'name': 'ZZ TEST', 'lat': 44.25, 'lon': 1.7, 'elev': 100}]})
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
@@ -5052,6 +5057,11 @@ def n100(c):
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"JSON.stringify({_EDREFS}) === '[\"LFZZ\",\"NEPIX\",\"TSV\"]'", timeout=15000, what='the landmarks of the base on the map')
     c.eq(hint(), T('atHint_select'), 'the landmarks are shown; nothing is chosen', what='the line')
+    # a landmark with a local mark is neither drawn nor addable (the base seeded carries two: one from X-Plane, one said local)
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.5, 1.1]))
+    c.wait(400)
+    c.ok(c.js(_EDREFS) == ['LFZZ', 'NEPIX', 'TSV'] and add() is True and hint() == T('atHint_select'), [c.js(_EDREFS), hint()],
+         'the two landmarks that carry a local mark are not drawn; a touch where one of them is says nothing and offers nothing')
     # a landmark touched says what it is; the touch creates nothing (the Lieux are unfolded, to count their rows)
     c.tap(f'{E} [data-do="edstep"][data-step="places"]')
     c.until(f"({_EDPLACE_IDS}).length === 7", what='the seven places of the mission listed')
