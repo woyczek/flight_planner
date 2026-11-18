@@ -41,7 +41,7 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'draft.js',
     'editor_drawers.js', 'catalog.js', 'catalog.yaml', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'assign.js', 'assign_view.js', // SOG-0443 : « Affecter… » — le calcul pur et l'écran
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
