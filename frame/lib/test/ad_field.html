@@ -31,6 +31,9 @@
   <div data-adline="edarr"></div>
   <div data-adsug hidden></div>
 </div>
+<div id="screen2" style="position:relative"><label>Point <input data-k="edpt" autocomplete="off"></label>
+  <div data-adsug hidden></div>
+</div>
 <pre id="out"></pre>
 <script type="module">
   import {
@@ -76,7 +79,12 @@
       lat: x.lat,
       lon: x.lon
     }))),
-    find: async () => [],
+    // SOG-0480 : deux points de banc, « XRN » (deux homonymes) et la balise « XNV »
+    find: async q => (calls.push(['find', q]), /^xr/i.test(q) ? [{ kind: 'point', code: 'XRN', name: 'XRN', lat: 46, lon: 2 }] : /^xn/i.test(q) ? [{
+      kind: 'navaid', code: 'XNV', name: 'VOR XNV', lat: 45.1, lon: 1.1 }] : []),
+    coordsAll: async (code, o) => (calls.push(['coordsAll', code, o?.near || null]), code === 'XRN' ? [{ kind: 'point', item: { lat: 45.2, lon: 1.2 },
+      distanceNm: 14 }, { kind: 'point', item: { lat: 60, lon: 20 }, distanceNm: 1100 }] : code === 'XNV' ? [{ kind: 'navaid', item: { lat: 45.1, lon: 1.1,
+      name: 'VOR XNV' }, distanceNm: 6 }] : []),
     on: () => () => offs++
   };
   const ctx = {
@@ -154,8 +162,67 @@
   ck('ses imports restent dans frame/lib (aucun module)', imports.length > 0 && imports.every(p => p.startsWith('./')), JSON.stringify(
     imports));
   ck('aucune globale de l’application lue', !/window\.(SogFrame|AeroDB|AppFramework)/.test(src));
+  // SOG-0480 : sans l'option points, un texte qui ne nomme qu'un point ne propose rien (Carburant inchangé)
+  input.value = 'xr';
+  F.onInput({
+    type: 'input',
+    target: input
+  });
+  await wait(50);
+  ck('sans l’option points : aucun point proposé (Carburant inchangé)', screen.querySelectorAll('[data-adsug] [data-code]').length === 0,
+    screen.querySelector('[data-adsug]').innerHTML.slice(0, 120));
+  // avec l'option : les homonymes de XRN, le plus proche de near() d'abord ; le choix rend l'identifiant et sa position
+  const screen2 = document.getElementById('screen2'),
+    pt = screen2.querySelector('[data-k=edpt]');
+  const P = createAdField({
+    ctx,
+    body: () => screen2,
+    gone: () => false,
+    keys: ['edpt'],
+    points: true,
+    near: () => ({
+      lat: 45.0,
+      lon: 1.0
+    }),
+    idPrefix: 'bn-pt'
+  });
+  pt.addEventListener('input', e => P.onInput(e));
+  pt.value = 'xr';
+  P.onInput({
+    type: 'input',
+    target: pt
+  });
+  await wait(80);
+  const pv = [...screen2.querySelectorAll('[data-adsug] [data-code]')].map(x => x.dataset.code);
+  ck('points : les deux XRN, le plus proche d’abord, chacun avec sa position', JSON.stringify(pv) === JSON.stringify(['XRN@45.20000,1.20000',
+    'XRN@60.00000,20.00000']), JSON.stringify(pv));
+  ck('points : near() donné à coordsAll', JSON.stringify(calls.find(c => c[0] === 'coordsAll' && c[1] === 'XRN')?.[2]) === '[45,1]', JSON.stringify(
+    calls.filter(c => c[0] === 'coordsAll')));
+  ck('points : le genre et la distance dans la ligne', /point/.test(screen2.querySelector('[data-adsug]').textContent) && /14 NM/.test(screen2
+    .querySelector('[data-adsug]').textContent), screen2.querySelector('[data-adsug]').textContent);
+  P.onClick({
+    target: screen2.querySelector('[data-adsug] [data-code="XRN@45.20000,1.20000"]')
+  });
+  await wait(30);
+  ck('choix d’un point : le champ reçoit l’identifiant, la position est gardée', pt.value === 'XRN' && JSON.stringify(P.positionOf('edpt')) ===
+    JSON.stringify({
+      code: 'XRN',
+      lat: 45.2,
+      lon: 1.2
+    }), JSON.stringify([pt.value, P.positionOf('edpt')]));
+  pt.value = 'XRNX';
+  ck('le texte changé depuis le choix : plus de position', P.positionOf('edpt') === null, JSON.stringify(P.positionOf('edpt')));
+  pt.value = 'xn';
+  P.onInput({
+    type: 'input',
+    target: pt
+  });
+  await wait(80);
+  ck('points : une balise proposée avec son nom', /VOR XNV/.test(screen2.querySelector('[data-adsug]').textContent) && /balise/.test(screen2
+    .querySelector('[data-adsug]').textContent), screen2.querySelector('[data-adsug]').textContent);
+  P.stop();
   F.stop();
-  ck('stop : l’abonnement à la base arrêté', offs === 1, offs);
+  ck('stop : l’abonnement à la base arrêté', offs === 2, offs);
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

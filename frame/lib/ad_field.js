@@ -11,9 +11,14 @@
 //     gone(),       le montage a-t-il été démonté ou remplacé
 //     keys,         les clés des champs ([data-k="<clé>"]) qui portent un code de terrain : ['dep', 'arr', 'altn'], ['eddep', 'edarr']…
 //     value(k),     facultatif : la valeur d'une clé quand son champ n'est pas à l'écran (Carburant : la route du vol)
-//     idPrefix      facultatif : le préfixe des identifiants des propositions ('ad-sug')
+//     idPrefix,     facultatif : le préfixe des identifiants des propositions ('ad-sug')
+//     points,       facultatif (SOG-0480) : vrai, le champ propose AUSSI les points de la base (balises, points du réseau, points de
+//                   report : « LF485 », « REN »), après les terrains ; sans lui, des terrains seulement (Carburant)
+//     near()        facultatif, avec points : { lat, lon } de référence (le départ de la mission) — les homonymes d'un point sont
+//                   classés par distance, et le choix d'un point rend son identifiant AVEC sa position :
+//                   le champ reçoit l'identifiant, ses data-lat / data-lon / data-code reçoivent la position choisie (positionOf)
 //   }
-//   api = { paint, onInput, onKey, onFocusOut, onPointerDown, onClick, texts, isPicking, known, hitsFor, nameKnown, stop }
+//   api = { paint, onInput, onKey, onFocusOut, onPointerDown, onClick, texts, isPicking, known, hitsFor, nameKnown, positionOf, stop }
 //   zoneAt(zones, p) : la zone d'une position (exporté pour modules/fuel/zone_gap.js)
 //
 // Le marquage de l'écran : un champ [data-k="<clé>"] par clé ; facultatifs, une ligne [data-adline="<clé>"] sous un champ (le nom
@@ -29,8 +34,17 @@ import {
 } from './suggest_list.js'; // la liste de propositions, commune à tous les champs qui proposent
 const TX = {
   unknown: ['inconnu', 'unknown', 'unbekannt', 'desconocido'],
-  listLabel: ['Terrains proposés', 'Suggested aerodromes', 'Vorgeschlagene Flugplätze', 'Aeródromos propuestos']
+  listLabel: ['Terrains proposés', 'Suggested aerodromes', 'Vorgeschlagene Flugplätze', 'Aeródromos propuestos'],
+  // SOG-0480 : le genre d'un point proposé
+  navaid: ['balise', 'navaid', 'Funkfeuer', 'radioayuda'],
+  point: ['point', 'waypoint', 'Wegpunkt', 'punto'],
+  vrp: ['point de report', 'reporting point', 'Meldepunkt', 'punto de notificación']
 };
+/** SOG-0480 : les genres de points proposés avec l'option `points`, et la forme de leur identifiant (deux à cinq signes). */
+const POINT_KINDS = ['navaid', 'point', 'vrp'],
+  POINT_CODE = /^[A-Z0-9]{2,5}$/,
+  // la valeur d'une proposition de point dans la liste : l'identifiant et la position, pour distinguer les homonymes
+  POINT_VALUE = /^([A-Z0-9]{2,5})@(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)$/;
 /** Nombre de propositions au plus (décision du concepteur : sept). */
 const MAX_SUGGESTIONS = 7;
 /** Rayon autour d'une ville où ses terrains sont proposés (NM ; SOG-0158). */
@@ -75,8 +89,16 @@ export function createAdField(host) {
       idPrefix: host.idPrefix || 'ad-sug',
       fields: () => KEYS.map(k => body()?.querySelector(`[data-k="${k}"]`)),
       owns: el => KEYS.includes(el?.dataset?.k),
-      write: (input, code) => {
-        input.value = code;
+      write: (input, v) => {
+        // SOG-0480 : un point rend son identifiant AVEC sa position ; un terrain, son code seul (comme avant)
+        const m = POINT_VALUE.exec(String(v));
+        input.value = m ? m[1] : v;
+        if (m) Object.assign(input.dataset, {
+          code: m[1],
+          lat: m[2],
+          lon: m[3]
+        });
+        else ['code', 'lat', 'lon'].forEach(k => delete input.dataset[k]);
         return true;
       }
     });
@@ -243,6 +265,35 @@ export function createAdField(host) {
       if (!list.live(seq)) return;
       for (const x of bySize(near, c)) push(x, String(c.name || '').trim());
     }
+    // 2 bis (SOG-0480, option points) : les points de la base dont l'identifiant ou le nom répond — chaque identifiant avec ses homonymes,
+    // les plus proches de near() d'abord (aerodb.coordsAll), trois au plus par identifiant
+    if (host.points === true && !full() && typeof A.coordsAll === 'function') {
+      const ref = typeof host.near === 'function' ? host.near() : null,
+        near = ref && Number.isFinite(+ref.lat) && Number.isFinite(+ref.lon) ? [+ref.lat, +ref.lon] : null,
+        codes = [...new Set((found || []).filter(p => POINT_KINDS.includes(p.kind)).map(p => String(p.code || '').trim().toUpperCase())
+          .filter(c => POINT_CODE.test(c)))].slice(0, MAX_SUGGESTIONS);
+      for (const code of codes) {
+        if (full()) break;
+        const all = await Promise.resolve().then(() => A.coordsAll(code, near ? {
+          near
+        } : {})).catch(() => []);
+        if (!list.live(seq)) return;
+        for (const x of (Array.isArray(all) ? all : []).filter(x => POINT_KINDS.includes(x?.kind)).slice(0, 3)) {
+          const lat = +x.item?.lat,
+            lon = +x.item?.lon,
+            value = `${code}@${lat.toFixed(5)},${lon.toFixed(5)}`;
+          if (full() || !Number.isFinite(lat) || !Number.isFinite(lon) || seen.has(value)) continue;
+          seen.add(value);
+          const nm = String(x.item?.name || '').trim(),
+            far = Number.isFinite(+x.distanceNm) ? `${Math.round(+x.distanceNm)} NM` : '';
+          hits.push({
+            value,
+            label: [nm && nm.toUpperCase() !== code ? nm : '', `(${[tt(TX[x.kind]), far].filter(Boolean).join(' · ')})`].filter(Boolean)
+              .join(' ')
+          });
+        }
+      }
+    }
     // 3. le texte au milieu d'un nom
     for (const x of weak) push(x);
     for (const p of (found || []).filter(p => p.kind === 'aerodrome')) push(p);
@@ -282,6 +333,19 @@ export function createAdField(host) {
     },
     /** Nombre de terrains proposés pour le champ k au dernier texte tapé (0 si la liste est fermée ou pour un autre champ). */
     hitsFor: k => list.input()?.dataset?.k === k ? list.hits().length : 0,
+    /** SOG-0480 : la position choisie d'un point pour la clé k — { code, lat, lon } tant que le champ porte l'identifiant choisi ; null
+     *  sinon (rien de choisi, un terrain, ou le texte changé depuis le choix). */
+    positionOf: k => {
+      const el = body()?.querySelector(`[data-k="${k}"]`),
+        code = String(el?.value || '').trim().toUpperCase(),
+        lat = +el?.dataset?.lat,
+        lon = +el?.dataset?.lon;
+      return el && el.dataset.code === code && Number.isFinite(lat) && Number.isFinite(lon) ? {
+        code,
+        lat,
+        lon
+      } : null;
+    },
     /** Le nom gardé d'un code : chaîne ('' sans nom), null (inconnu d'aerodb), undefined (pas encore demandé ou en cours). */
     nameKnown: code => names.get(code),
     /** Arrête l'abonnement à la base. */
