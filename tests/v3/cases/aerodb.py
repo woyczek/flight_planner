@@ -15656,3 +15656,46 @@ def k350(c):
     sv = [m.group(1) for m in [re.search(r'const VERSION =\s*(\d+)', (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'))]]
     pv = re.search(r'const PARSER_VERSION = (\d+)', (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8'))
     c.eq((int(sv[0]), int(pv.group(1))), (29, 29), 'the parser version is 29 in both places (the zones built before have no usual name and are rebuilt: parser-old)', what='version')
+
+
+@case('K351', 'Heliports (SOG-0466, lot 1): an openAIP heliport with no code (id = name) is the SAME as the SIA one (code of the list « LF418 ») when it is of kind HP and within 100 m, or within 300 m with the same normalised name; otherwise both stay — the SIA code is kept, the other name goes to `aka` and its source to `also`, `icao` stays empty; the light index of the zone carries every coded heliport under its LIST code (« LF418 ») so that the completion of the aerodrome fields proposes it by code and by name',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0466 (the user: « on n’a pas les hélistations ? »; the ergonomics session, 18 Nov: « un toit d’hôpital et une aire au sol voisins » are not merged on 300 m alone). Measured on the base of 29 Oct: 562 heliports of France = 275 from the SIA (245 LFnnn, 25 OACI of the overseas, 5 other prefixes) + 287 from openAIP with no code; 222 of these 287 are the same as a SIA one by this rule (218 within 100 m, 4 within 300 m with the same name), 65 stay: 562 → 340. The light index held 24 heliports (the ones with an OACI): « LF418 » was not proposed. Invented heliports.')
+def k351(c):
+    c.page.goto(f'{c.base}/frame/aerodb/test/procedures.html', wait_until='load')
+    r = c.js("""async () => {
+      const fr = document.createElement('iframe'); document.body.appendChild(fr); const w = fr.contentWindow;
+      const load = src => new Promise((ok, no) => { const s = w.document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error(src)); w.document.head.appendChild(s); });
+      await load('/shared/sia_base.js'); await load('/shared/aero_sources.js');
+      const hp = (id, icao, name, lat, lon, extra = {}) => ({ id, icao, name, type: 'HP', lat, lon, elev: null, ...extra });
+      const sia = () => ({ aero: { aerodromes: [hp('LF418', '', 'LYON CENTRE HOSPITALIER SUD', 45.7025, 4.8075, { elev: 520 }), hp('LF419', '', 'BOURGOIN JALLIEU HOPITAL', 45.5961, 5.245), hp('LF420', '', 'TIGNES', 45.4941, 6.9297), hp('FMEH', 'FMEH', "SAINT PAUL L'ERMITAGE", -21.068, 55.2494), { id: 'LFPG', icao: 'LFPG', name: 'PARIS CDG', type: 'AD', lat: 49.0, lon: 2.55 }] } });
+      // 0.0004 deg of latitude = 44 m ; 0.002 = 222 m ; 0.004 = 445 m
+      const oa = () => ({ aero: { aerodromes: [
+        hp('LYON HOPITAL SUD (TOIT)', '', 'Lyon Hôpital Sud (toit)', 45.7029, 4.8075, { elev: 900 }),                  // 44 m: the same as LF418
+        hp('BOURGOIN-JALLIEU, hopital', '', 'Bourgoin-Jallieu  HOPITAL', 45.5981, 5.245),                                // 222 m, same name normalised: the same as LF419
+        hp('TIGNES SOL', '', 'TIGNES AIRE AU SOL', 45.4961, 6.9297),                                                     // 222 m, another name: stays
+        hp('BOURGOIN AUTRE', '', 'BOURGOIN JALLIEU HOPITAL', 45.5921, 5.245),                                            // 445 m, same name: stays
+        hp('ISOLATED', '', 'ISOLATED HELIPAD', 44.0, 3.0),                                                              // nothing near: stays
+        { id: 'AIRFIELD', icao: '', name: 'LYON CENTRE HOSPITALIER SUD', type: 'AD', lat: 45.7025, lon: 4.8075 }          // not a heliport: never merged
+      ] } });
+      const A = w.AeroSources, merged = A.merge(sia(), oa()), ids = merged.aero.aerodromes.map(a => a.id);
+      const get = id => merged.aero.aerodromes.find(a => a.id === id);
+      // the other order: openAIP first, the SIA read after
+      const rev = A.merge(oa(), sia()), revIds = rev.aero.aerodromes.map(a => a.id);
+      const idx = w.SiaBase.aeroIndex(merged.aero.aerodromes);
+      return { ids, l418: get('LF418'), l419: get('LF419'), l420: get('LF420'), n: ids.length, revIds, revL418: rev.aero.aerodromes.find(a => a.id === 'LF418'), idx };
+    }""")
+    c.eq(r['ids'], ['LF418', 'LF419', 'LF420', 'FMEH', 'LFPG', 'TIGNES SOL', 'BOURGOIN AUTRE', 'ISOLATED', 'AIRFIELD'],
+         'within 100 m: merged (LF418); within 300 m with the same normalised name (accents, case, punctuation, double blank): merged (LF419); within 300 m with another name, beyond 300 m, isolated: stay; an aerodrome that is not an HP is never merged', what='ids')
+    l418 = r['l418']
+    c.eq((l418['icao'], l418['elev'], l418['aka'], l418['also']), ('', 520, ['Lyon Hôpital Sud (toit)'], ['openaip']),
+         'the SIA code is kept, `icao` stays empty (« OACI or nothing »), the elevation of the SIA is kept, the other name goes to `aka` and its source to `also`', what='kept')
+    c.eq((r['l419'].get('aka'), r['l419']['also']), (None, ['openaip']), 'the same name once normalised adds no `aka`, the source is still said', what='same name')
+    c.eq(r['n'], 9, 'SIA 5 + openAIP 6 − 2 merged = 9', what='count')
+    c.eq(sorted(r['revIds']), sorted(r['ids']), 'the other order (openAIP first, the SIA read after) ends with the same heliports: the coded one replaces the uncoded one', what='order')
+    c.eq((r['revL418']['aka'], r['revL418']['also']), (['Lyon Hôpital Sud (toit)'], ['openaip']), 'in that order too, the name and the source of the replaced one are kept', what='order name')
+    rows = {row[0]: row for row in r['idx']['rows']}
+    c.eq(sorted(rows), ['FMEH', 'LF418', 'LF419', 'LF420', 'LFPG'], 'the light index: the OACI aerodromes AND the heliports of the list (LF418…), under their LIST code; a heliport with no code (openAIP name) has none', what='index')
+    c.eq((rows['LF418'][1], rows['LF418'][8], rows['FMEH'][8]), ('LYON CENTRE HOSPITALIER SUD', 'HP', 'HP'), 'the row carries the name and the kind HP', what='row')
+    ag = (ROOT / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8')
+    c.ok("a.type === 'HP'" in ag and r'[A-Z]{2}\d{3}' in ag, 'aerodb.js', 'the completion (`suggest`) accepts the five-sign list code of a heliport')

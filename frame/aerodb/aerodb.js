@@ -3491,7 +3491,8 @@
             for (const a of list || []) {
               if (!a?.icao && !a?.id) continue;
               const code = String(a.icao || a.id).toUpperCase();
-              if (!/^[A-Z0-9]{3,4}$/.test(code) || !num(a.lat) || !num(a.lon)) continue;
+              if (!/^[A-Z0-9]{3,4}$/.test(code) && !(a.type === 'HP' && /^[A-Z]{2}\d{3}$/.test(code)) || !num(a.lat) || !num(a
+                  .lon)) continue; // SOG-0466 : le code de liste d'une hélistation (« LF418 », 5 signes) est un code
               out.push({
                 code,
                 name: String(a.name || ''),

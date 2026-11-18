@@ -2378,7 +2378,9 @@
     };
     return {
       fields: AEROINDEX_FIELDS,
-      rows: (list || []).filter(a => /^[A-Z]{4}$/.test(String(a?.icao || '').toUpperCase())).map(a => [String(a.icao).toUpperCase(),
+      // SOG-0466 : une hélistation du SIA sans code OACI entre sous son CODE DE LISTE (« LF418 ») : la complétion des champs de terrain la propose par ce code et par son nom ; la fiche garde `icao` vide (« OACI ou rien »)
+      rows: (list || []).filter(a => /^[A-Z]{4}$/.test(String(a?.icao || '').toUpperCase()) || a?.type === 'HP' && /^[A-Z]{2}\d{3}$/.test(
+        String(a?.id || ''))).map(a => [String(a.icao || a.id).toUpperCase(),
         String(a.name || ''), n(a.lat, 5), n(a.lon, 5), n(a.elev, 0), n(a.bearing, 0), n(a.magVar, 2), n(a.hardLen, 0),
         /^(AD|AH|HP|MIL)$/.test(String(a.type || '').toUpperCase()) ? String(a.type).toUpperCase() : 'AD'
       ])

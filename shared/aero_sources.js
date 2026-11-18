@@ -847,7 +847,9 @@
       out = [];
     for (const d of oh) {
       const day = OA_DAYS[+d.dayOfWeek];
-      if (!day || typeof d.startTime !== 'string' || typeof d.endTime !== 'string' || !/^\d{2}:\d{2}$/.test(d.startTime) || !/^\d{2}:\d{2}$/.test(d.endTime) || d.startTime === '00:00' && d.endTime === '00:00') continue; // le fichier est déposé : une heure n'est écrite que sous la forme HH:MM
+      if (!day || typeof d.startTime !== 'string' || typeof d.endTime !== 'string' || !/^\d{2}:\d{2}$/.test(d.startTime) || !
+        /^\d{2}:\d{2}$/.test(d.endTime) || d.startTime === '00:00' && d.endTime === '00:00')
+        continue; // le fichier est déposé : une heure n'est écrite que sous la forme HH:MM
       const k = `${d.startTime}-${d.endTime}${d.sunrise ? ' SR' : ''}${d.sunset ? ' SS' : ''}`;
       (by.get(k) || by.set(k, []).get(k)).push(day);
     }
@@ -1393,6 +1395,37 @@
   /** Vrai si a et b (lat, lon) sont à au plus nm milles marins l'un de l'autre. */
   const within = (a, b, nm) => Math.hypot((a.lat - b.lat) * 60, (a.lon - b.lon) * 60 * Math.cos(a.lat * Math.PI / 180)) <= nm;
 
+  /** SOG-0466 (lot 1) : deux hélistations de sources différentes sont la MÊME quand elles sont de genre HP et à moins de 100 m, ou à moins de 300 m avec le même nom normalisé (sans accents ni ponctuation, majuscules) ; sinon elles restent deux (un toit d'hôpital et une aire au sol voisins). Celle qui a un CODE (« LF418 » du SIA : un code de liste, pas un OACI) le garde ; le nom de l'autre va dans `aka`, sa source dans `also`. */
+  const HELI_SAME_M = 100,
+    HELI_NAMED_M = 300,
+    HELI_CODE = /^(?:[A-Z]{2}\d{3}|[A-Z]{4})$/;
+  const heliName = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, ' ').trim();
+  const heliMeters = (a, b) => Math.hypot((a.lat - b.lat) * 111195, (a.lon - b.lon) * 111195 * Math.cos(a.lat * Math.PI / 180));
+  /** L'hélistation de `list` qui est la même que `a` (la plus proche qui répond à la règle), ou null ; `want` : 'coded' ou 'uncoded' (celles de la liste qui ont, ou n'ont pas, un code). */
+  function sameHeliport(list, a, want) {
+    let best = null,
+      bd = Infinity;
+    for (const b of list) {
+      if (b.type !== 'HP' || HELI_CODE.test(String(b.id || '')) !== (want === 'coded')) continue;
+      const d = heliMeters(a, b);
+      if ((d < HELI_SAME_M || d < HELI_NAMED_M && heliName(a.name) === heliName(b.name)) && d < bd) {
+        best = b;
+        bd = d;
+      }
+    }
+    return best;
+  }
+  /** Ajoute à `keep` le nom (`aka`, 3 au plus, 80 signes) et la source (`also`) de `other` ; la position et les champs vides de `keep` sont complétés. */
+  function absorbHeliport(keep, other, src) {
+    if (heliName(other.name) && heliName(other.name) !== heliName(keep.name)) {
+      const aka = keep.aka ||= [];
+      if (aka.length < 3 && !aka.includes(String(other.name).slice(0, 80))) aka.push(String(other.name).slice(0, 80));
+    }
+    const also = keep.also ||= [];
+    if (src && !also.includes(src)) also.push(src);
+    if (keep.elev == null && other.elev != null) keep.elev = other.elev;
+  }
+
   /** Fusionne part dans base (modifiée en place et renvoyée) selon les règles anti-doublons décrites au-dessus de FAMILY ;
    *  les MTR sont toujours ajoutées, voies et obstacles ajoutés sans contrôle. Points de report VFR d'une autre source
    *  (openAIP : id = nom = code) : écartés quand la liste a déjà le même point sous son identifiant préfixé du SIA (même code
@@ -1419,11 +1452,28 @@
       };
       const near = (list, x) => list.some(y => y.id === x.id && Math.abs(y.lat - x.lat) < .04 && Math.abs(y.lon - x.lon) < .06);
       const icao = new Set((base.aero.aerodromes || []).map(a => a.icao).filter(Boolean));
-      for (const a of part.aero.aerodromes || [])
+      const ads = base.aero.aerodromes ||= [];
+      for (const a of part.aero.aerodromes || []) {
+        if (a.type === 'HP' && !a.icao && !HELI_CODE.test(String(a.id ||
+            ''))) { // SOG-0466 : une hélistation sans code (openAIP : id = nom) qui est celle du SIA (LF418…) ne s'ajoute pas
+          const twin = sameHeliport(ads, a, 'coded');
+          if (twin) {
+            absorbHeliport(twin, a, part.src || 'openaip');
+            continue;
+          }
+        } else if (a.type === 'HP' && HELI_CODE.test(String(a.id ||
+            ''))) { // le SIA lu APRÈS : il remplace l'hélistation sans code déjà là, et lui prend son nom
+          const twin = sameHeliport(ads, a, 'uncoded');
+          if (twin) {
+            ads.splice(ads.indexOf(twin), 1);
+            absorbHeliport(a, twin, 'openaip');
+          }
+        }
         if (!a.icao || !icao.has(a.icao)) {
           icao.add(a.icao);
-          (base.aero.aerodromes ||= []).push(a);
+          ads.push(a);
         }
+      }
       for (const k of ['navaids', 'points', 'vrp']) {
         const list = base.aero[k] ||= [];
         // index par identifiant : la recherche de voisins reste rapide sur des centaines de milliers de points
