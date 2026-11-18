@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6f3f806",
+  "organisation": "49fa9cd",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -4175,12 +4175,13 @@
     {
      "id": "SOG-0443",
      "kind": "feature",
-     "state": "later",
+     "state": "done",
      "fr": "Affecter une mission depuis la V3 (geste minimal, ligne lisible par la V2)",
      "en": "Assign a mission from V3 (minimal gesture, a line V2 can read)",
      "de": "Eine Mission aus V3 zuweisen (minimale Geste, eine von V2 lesbare Zeile)",
      "es": "Asignar una misión desde la V3 (gesto mínimo, línea legible por la V2)",
-     "rank": 439
+     "rank": 439,
+     "test": true
     }
    ]
   },

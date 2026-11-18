@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 332,
+  "tests": 333,
   "verdicts": 219
  },
  "apps": [
@@ -4504,6 +4504,20 @@
    "test": "Il te faut une mission à tiroirs : exporte-en une de ton atelier (« Exporter YAML », par exemple « Recherche sur glacier »), puis Missions, « Ajouter des missions » avec ce fichier, et prends-la comme TA mission. Page rechargée, ouvre sa fiche. Attendu : (1) « Tiroirs » à la place de la ligne des zones — « Tiroir 1 · titre », sa clé en clair ; (2) seul le premier tiroir fermé porte « Ouvrir le tiroir » (geste en deux temps), les suivants disent « après le tiroir n » ; (3) un tiroir à heure s'ouvre tout seul à son heure ; (4) ouvert, il montre son message puis son briefing ; (5) pour une zone, un objet ou une arrivée, la ligne dit « Cet appareil ne suit pas encore ce passage : le tiroir s'ouv",
    "since": "2026-11-17",
    "state": "known"
+  },
+  {
+   "id": "SOG-0443",
+   "app": "compagnie",
+   "title": {
+    "fr": "Affecter une mission depuis la V3 (geste minimal, ligne lisible par la V2)",
+    "en": "Assign a mission from V3 (minimal gesture, a line V2 can read)",
+    "de": "Eine Mission aus V3 zuweisen (minimale Geste, eine von V2 lesbare Zeile)",
+    "es": "Asignar una misión desde la V3 (gesto mínimo, línea legible por la V2)"
+   },
+   "test": "Missions (niveau Courant ou plus), fiche d'une mission : « Affecter… ». Remplis Pilote (trois lettres ou un trigramme proposé), Indicatif, Décollage (date et heure UTC) et Aéronef (le type de la mission, une immatriculation facultative), puis « Affecter ». Attendu : une notification « … est affecté à …, décollage …Z », et la ligne paraît dans « Affectations de cette mission » avec « Retirer ». Si le pilote a déjà une mission à cette heure, une notification orange le dit, et un second « Affecter » écrit quand même. « Retirer » marque la ligne annulée. Le pilote retrouve la mission dans « Mes missions affectées ».",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T20:32:16Z"
   },
   {
    "id": "SOG-0444",
