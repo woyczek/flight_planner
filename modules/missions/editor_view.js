@@ -1306,7 +1306,7 @@ const edBrickFam = (e, fams) => fams.includes(e.brickFam) ? e.brickFam : fams.in
  *  choisie — sept au plus, chacune son titre et sa clé en une ligne ; rien tant que le catalogue n'est pas lu, ou s'il est vide. */
 function edBricksHtml(s) {
   const e = s.ed,
-    bricks = e.cat?.bricks || [];
+    bricks = (e.cat?.bricks || []).filter(b => DR.judgedKind(b.key)); // SOG-0500 (d) : la règle de leur clé (rien que le vol ne juge pas)
   if (!bricks.length) return '';
   const lang = s.ctx.lang?.() || 'fr',
     fams = [...new Set(bricks.map(b => b.family))],
@@ -3468,7 +3468,7 @@ export function edClick(s, b) {
     case 'edmodelsave': // « Enregistrer comme modèle » (l'atelier entier seulement)
       return edModelSave(s);
     case 'edbrick': { // une brique du catalogue, sous « ＋ Tiroir » : le tiroir naît d'elle (une brique que le catalogue lu ne porte pas : rien)
-      const brick = (s.ed.cat?.bricks || []).find(x => x.id === b.dataset.brick);
+      const brick = (s.ed.cat?.bricks || []).find(x => x.id === b.dataset.brick && DR.judgedKind(x.key));
       return brick ? edKind(s, brick.key, brick) : undefined;
     }
     case 'eddrdel': { // « Retirer ce tiroir », en deux temps : le second appui est inerte une seconde (comme pour un lieu cité)

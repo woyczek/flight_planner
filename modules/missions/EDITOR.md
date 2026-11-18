@@ -1464,6 +1464,22 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   screen and « ＋ Tiroir » never diverge. It passes today. When Affectation's lot makes `follows` accept the landing, `notJudgedYet` of `frame/lib/mission.js`
   must say false for those landings in the same lot, or N155 turns red and names the kind.
 
+### 7 duoquinquagies. The 32 bricks of the 1.1 conditions in the catalogue (18 Nov 2026; SOG-0500 (d); noreg N156, N138, N139)
+
+- **What**: the 32 bricks of the user's catalogue whose key is a 1.1 condition (relevé of 18 Nov: 12 landings, 7 hovers, 2 followings, 5 overflights,
+  1 sequence, 5 messages), added to `modules/missions/catalog.yaml` with their texts in four languages (the user's are French only: translated here).
+  60 bricks, 16 families (HEMS and SOF added): `LIMITS` (80 bricks, 16 families, 128 KB) still holds — not widened. The file weighs 35 KB.
+- **A following is a hover** on an object (`le-track`, `aar-follow`): 1 000 m, 0 to 3 000 ft, 20 kt of relative speed tolerated (a choice of this lot: the
+  user's tool says « hover élargi : 1 000 m, 0-3 000 ft » without a speed).
+- **Nothing of a real look**: the ids and texts that told a real unit's scenario are renamed (`maritime-customs` → `maritime-team`, « Dépose puis reprise d'une
+  équipe »; `le-customs` → `le-contact`, « Identification d'un contact »); « VIP » → « Embarquement d'une autorité », « Transfert offshore » → « Transfert
+  vers une plateforme », « Dépose à l'hôpital » → « Dépose au point de soins »; no callsign, no place, no position. The path of the user's tool enters nowhere.
+- **Read** (`catalog.js`): `DR.KEYS` gives the keys a brick may have; `paramsOf` reads the numbers of a rule under the file's names with `DR.RULE_NUM` (the
+  reader's bounds, `MS.HOLD_BOUNDS`) and a sequence's `steps` (ten at most, each a hover, a landing or an overflight, its confirmation word); `drawerFrom` puts
+  them on the row (`DR.keyed` guesses the place); `modelFromSession` keeps them in a personal model (a rule's place when it is a place of the model).
+- **Offered under the rule of their key**: `edBricksHtml` lists only the bricks whose key the flight judges (`DR.judgedKind`), the families with such bricks
+  only; a forged `edbrick` of a brick not judged does nothing. Today: none of the 32.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

@@ -74,8 +74,9 @@ export const CONDS = Object.freeze([...HOLDS, 'sequence', 'event']);
 export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival', ...CONDS]);
 /** Les clés qui regardent l'avion : elles ont une heure de repli. */
 const LIVE = new Set(['zone', 'object', 'arrival', 'kept', ...CONDS]);
-/** Les nombres d'une règle : le champ de la ligne → [le champ du fichier, ses bornes — celles du lecteur]. */
-const RULE_NUM = Object.freeze({
+/** Les nombres d'une règle : le champ de la ligne → [le champ du fichier, ses bornes — celles du lecteur] (exporté : le catalogue lit
+ *  les réglages d'une brique avec les mêmes bornes). */
+export const RULE_NUM = Object.freeze({
   radiusM: ['radius_m', H.radiusM],
   radiusNm: ['radius_nm', H.radiusNm],
   duration: ['duration_sec', H.durationSec],

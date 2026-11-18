@@ -12,7 +12,10 @@
 //     models [{ id, type, title, brief, drawers [spec], places [{ id, kind, okind, name }] }], dropped (entrées écartées) } ;
 //     une « spec » de tiroir : { id?, family?, key (une de editor_drawers.js KEYS), title, message, brief (textes { fr, en, de, es }),
 //     place (la clé d'un lieu du modèle, ou ''), fallback (minutes, ou null), params ({ radius_nm, speed_max_kt, require_on_ground,
-//     delay_min } bornés), route [mots] }. Y : js-yaml (le cadre le charge ; schéma CORE).
+//     delay_min } bornés ; pour une condition 1.1, SOG-0500 (d) : les nombres de sa règle sous les noms du fichier — radius_m,
+//     duration_sec, max_gap_sec, speed_tolerance_kt, height_min_ft… —, require_confirmation d'un survol, et pour une suite `steps`
+//     [{ kind, …nombres, confirmation }], dix au plus — les bornes du lecteur, MS.HOLD_BOUNDS), route [mots] }. Y : js-yaml (le cadre le
+//     charge ; schéma CORE).
 //   textIn(t, lang) → le texte d'une langue (le français à défaut, puis la première langue écrite) ; '' sinon.
 //   drawerFrom(blank, spec, places, lang, idOf) → la ligne de tiroir d'une spec (editor_drawers.js keyed : ce que la clé devine), son
 //     titre et son message pré-remplis ; idOf(clé d'un lieu du modèle) → l'identifiant du lieu dans la séance ('' sinon).
@@ -56,6 +59,8 @@ const PLACE_KINDS = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
 /** Les mots de route qui disent le départ ou l'arrivée. */
 const ENDS = new Set(['ORIGIN', 'DESTINATION']);
 const B = MS.DRAWER_BOUNDS;
+/** Les clés qui regardent l'avion : elles ont une heure de repli (les conditions 1.1 aussi, SOG-0500 (d)). */
+const LIVE_KEYS = Object.freeze(['zone', 'object', 'arrival', ...DR.CONDS]);
 
 /** Un objet du fichier (ni liste, ni valeur nue). */
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -109,7 +114,43 @@ function paramsOf(v, key) {
     const d = num(p.delay_min, 0, B.delayMin);
     if (d !== null) out.delay_min = d;
   }
+  if (DR.HOLDS.includes(key)) Object.assign(out, holdParams(p, key));
+  // une suite : ses étapes, une règle chacune (une étape d'une autre sorte n'est pas lue), dix au plus (la borne du lecteur)
+  if (key === 'sequence') {
+    const steps = listOf(p.steps, B.steps, () => {}).map(st => isObj(st) && DR.HOLDS.includes(st.kind) ? {
+      kind: st.kind,
+      ...holdParams(st, st.kind),
+      ...(typeof st.confirmation === 'string' && MS.CONFIRM_WORD.test(st.confirmation) && st.kind !== 'landing' ? {
+        confirmation: st.confirmation
+      } : {})
+    } : null).filter(Boolean);
+    if (steps.length) out.steps = steps;
+  }
   return out;
+}
+
+/** Les nombres d'une règle de maintien ou de survol (SOG-0500 (d)), sous les noms du fichier, bornés par le lecteur : seuls ceux que
+ *  sa sorte lit (DR.RULE_USE) ; la confirmation d'un survol, un booléen. */
+function holdParams(p, kind) {
+  const out = {},
+    use = DR.RULE_USE[kind] || [];
+  for (const [f, [k, [lo, hi]]] of Object.entries(DR.RULE_NUM)) {
+    const v = use.includes(f) ? num(p[k], lo, hi) : null;
+    if (v !== null) out[k] = v;
+  }
+  if (use.includes('confirm') && typeof p.require_confirmation === 'boolean') out.require_confirmation = p.require_confirmation;
+  return out;
+}
+
+/** Les réglages d'une brique posés sur une règle de la séance (des textes pour ses champs) ; `p` : les nombres sous les noms du
+ *  fichier. */
+function ruleFrom(rule, kind, p) {
+  const use = DR.RULE_USE[kind] || [];
+  for (const [f, [k]] of Object.entries(DR.RULE_NUM))
+    if (use.includes(f) && p[k] !== undefined) rule[f] = String(p[k]);
+  if (use.includes('confirm') && typeof p.require_confirmation === 'boolean') rule.confirm = p.require_confirmation;
+  if (typeof p.confirmation === 'string') rule.confirmation = p.confirmation;
+  return rule;
 }
 
 /** Une spec de tiroir lue — une brique (`brick` vrai : son « brief », ce qu'elle fait, devient le message du tiroir), ou un tiroir de
@@ -261,6 +302,19 @@ export function drawerFrom(blank, spec, places, lang, idOf = () => '') {
   if (at && spec.key === 'zone') row.zone = at;
   if (at && spec.key === 'object') row.object = at;
   if (at && spec.key === 'time') row.point = at;
+  // SOG-0500 (d) : une condition 1.1 — ses nombres ; son lieu, un objet ou un point du modèle
+  if (DR.HOLDS.includes(spec.key)) {
+    ruleFrom(row.rule, spec.key, p);
+    if (at) {
+      const obj = (Array.isArray(places) ? places : []).find(x => x && x.id === at)?.kind === 'object';
+      row.rule.point = obj ? '' : at;
+      row.rule.object = obj ? at : '';
+    }
+  }
+  if (spec.key === 'sequence' && Array.isArray(p.steps) && p.steps.length) row.steps = p.steps.map(st => ruleFrom({
+    kind: st.kind,
+    ...DR.holdRow(st.kind, places)
+  }, st.kind, st));
   if (spec.key === 'time' && p.delay_min !== undefined) row.delay = String(p.delay_min);
   if (spec.key === 'arrival') {
     if (p.radius_nm !== undefined) row.arrRadius = String(p.radius_nm);
@@ -268,8 +322,7 @@ export function drawerFrom(blank, spec, places, lang, idOf = () => '') {
     if (p.require_on_ground !== undefined) row.arrGround = p.require_on_ground === true;
   }
   // l'heure de repli : seulement pour une clé qui regarde l'avion (withKey la vide pour les autres)
-  if (spec.fallback !== null && spec.fallback !== undefined && ['zone', 'object', 'arrival'].includes(spec.key)) row.fallback = String(
-    spec.fallback);
+  if (spec.fallback !== null && spec.fallback !== undefined && LIVE_KEYS.includes(spec.key)) row.fallback = String(spec.fallback);
   row.route = (spec.route || []).map(t => ENDS.has(t) ? t : idOf(t)).filter(Boolean);
   return row;
 }
@@ -367,11 +420,26 @@ export function modelFromSession({
     title: one(title, LIMITS.title),
     drawers: (Array.isArray(drawers) ? drawers : []).slice(0, LIMITS.drawers).map(r => {
       const key = DR.KEYS.includes(r.key) ? r.key : 'hand', // une clé gardée telle quelle n'est pas écrite : le geste du pilote seul
+        // SOG-0500 (d) : les nombres d'une règle (et de chaque étape) repris sous les noms du fichier, bornés par paramsOf
+        fileOf = rule => Object.fromEntries(Object.entries(DR.RULE_NUM).map(([f, [k]]) => [k, String(rule?.[f] ?? '').trim() === '' ?
+          undefined : +rule[f]
+        ]).concat([
+          ['require_confirmation', rule?.confirm === false ? false : rule?.confirm === true ? true : undefined],
+          ['confirmation', rule?.confirmation || undefined]
+        ])),
         params = paramsOf({
-          radius_nm: +r.arrRadius || undefined,
-          speed_max_kt: r.arrSpeed === '' ? undefined : +r.arrSpeed,
+          radius_nm: key === 'arrival' ? +r.arrRadius || undefined : DR.HOLDS.includes(key) ? fileOf(r.rule).radius_nm : undefined,
+          speed_max_kt: key === 'arrival' ? r.arrSpeed === '' ? undefined : +r.arrSpeed : DR.HOLDS.includes(key) ? fileOf(r.rule)
+            .speed_max_kt : undefined,
           require_on_ground: key === 'arrival' ? r.arrGround === true : undefined,
-          delay_min: r.delay === '' ? undefined : +r.delay
+          delay_min: r.delay === '' ? undefined : +r.delay,
+          ...(DR.HOLDS.includes(key) ? fileOf(r.rule) : {}),
+          ...(key === 'sequence' ? {
+            steps: (Array.isArray(r.steps) ? r.steps : []).map(st => ({
+              kind: st.kind,
+              ...fileOf(st)
+            }))
+          } : {})
         }, key),
         fb = r.fallback === '' ? null : num(+r.fallback, 0, B.delayMin, true),
         d = {
@@ -380,9 +448,11 @@ export function modelFromSession({
         };
       if (one(r.message, LIMITS.message, true)) d.message = one(r.message, LIMITS.message, true);
       if (one(r.brief, LIMITS.message, true)) d.brief = one(r.brief, LIMITS.message, true);
-      const place = at(key === 'zone' ? r.zone : key === 'object' ? r.object : key === 'time' ? r.point : '');
+      const place = at(key === 'zone' ? r.zone : key === 'object' ? r.object : key === 'time' ? r.point : DR.HOLDS.includes(key) ? r
+        .rule
+        ?.object || r.rule?.point || '' : '');
       if (place) d.place = place;
-      if (fb !== null && ['zone', 'object', 'arrival'].includes(key)) d.fallback_min = fb;
+      if (fb !== null && LIVE_KEYS.includes(key)) d.fallback_min = fb;
       if (Object.keys(params).length) d.params = params;
       const route = (Array.isArray(r.route) ? r.route : []).filter(t => ENDS.has(t) || keys.has(t)).slice(0, LIMITS.route);
       if (route.length) d.route = route;

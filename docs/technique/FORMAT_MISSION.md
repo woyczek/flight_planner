@@ -299,6 +299,11 @@ phases:
 - A sequence, a message awaited or a key the workshop cannot represent (a nested sequence, a step that is not an object, more than
   ten steps, an event that is not a bare word) stays `kept`, as it is.
 
+**The bricks of the catalogue** (SOG-0500 (d)): the 32 bricks of these conditions in `modules/missions/catalog.yaml` carry the numbers
+of their rule under `params`, with the same names and the same bounds (`radius_m`, `duration_sec`, …, `steps` for a sequence); a
+brick never carries a place nor a message identifier — the drawer born of it follows the first object of the mission, else the
+target, else the arrival, and « À compléter » asks for the identifier of a message.
+
 **What the flight judges, and what the workshop offers** (SOG-0500 (c)): the flight judges a key when `follows(key)` of
 `modules/missions/drawers.js` (« Affectation ») says so — today a zone the pilot crosses himself (no `actor`), a fixed object, an
 arrival without a following (`escortMinSec` 0) —, and always the pilot's gesture and the hour (no position needed). The workshop

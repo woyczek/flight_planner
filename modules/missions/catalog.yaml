@@ -1,12 +1,13 @@
 # V3 missions — le catalogue des briques et des modèles de l'atelier (SOG-0444, lot « modèles de mission »), livré avec le module, lu
 # en lecture seule par modules/missions/catalog.js (readCatalog : une entrée non fiable, bornée — 128 Ko, 80 briques, 20 modèles,
 # 12 tiroirs et 20 lieux par modèle, identifiants à forme fermée, textes sans balise, nombres dans leurs bornes).
-# Une brique est un tiroir sans lieu : sa clé (une de celles que l'atelier sait écrire : hand, time, zone, object, arrival), son titre
-# et son message en quatre langues, son heure de repli. Un modèle : un type (la famille, vide pour toute famille), des tiroirs (une
+# Une brique est un tiroir sans lieu : sa clé (une de celles que l'atelier sait écrire : hand, time, zone, object, arrival, et les
+# conditions 1.1 hover, landing, overflight, sequence, event — SOG-0500 (d)), son titre et son message en quatre langues, ses réglages
+# (`params`, bornés comme le lecteur les borne), son heure de repli. Une brique n'est proposée que si le vol juge sa clé. Un modèle : un type (la famille, vide pour toute famille), des tiroirs (une
 # brique, et ce que le modèle y change) et des lieux « à placer » — une sorte et un nom, jamais une position.
 # Tout est inventé : aucun indicatif, aucune immatriculation, aucun lieu réel, aucune coordonnée.
 version: 1
-families: [SAR, HADR, MARITIME, LE, FIRE, AIRLIFT, AIRBORNE, SPECIAL, COMBAT, ISR, COMMAND, AAR, FI, SURVEY]
+families: [SAR, HADR, MARITIME, LE, FIRE, AIRLIFT, AIRBORNE, SPECIAL, COMBAT, ISR, COMMAND, AAR, FI, SURVEY, HEMS, SOF]
 bricks:
   # --- une zone de passage (15)
   - id: sar-land
@@ -175,6 +176,214 @@ bricks:
     brief: { fr: "Valider l’arrivée au terrain de destination.", en: "Validate the arrival at the destination aerodrome.", de: "Die Ankunft am Zielplatz bestätigen.", es: "Validar la llegada al aeródromo de destino." }
     params: { radius_nm: 1, speed_max_kt: 30, require_on_ground: true }
     fallback_min: 120
+  # --- les conditions de la version 1.1 (SOG-0500 (d)) : proposées sous « ＋ Tiroir » seulement quand le vol juge leur clé
+  # (editor_drawers.js judgedKind : follows de drawers.js) ; leurs nombres, ceux du lecteur (MS.HOLD_BOUNDS) ; un suivi est un
+  # stationnaire élargi qui suit un objet (1 000 m, 0 à 3 000 ft)
+  # --- un poser (12)
+  - id: hems-primary
+    family: HEMS
+    key: landing
+    title: { fr: "Prise en charge sur site", en: "On-site pick-up", de: "Aufnahme vor Ort", es: "Atención en el lugar" }
+    brief: { fr: "Se poser et stabiliser la prise en charge avant d’ouvrir la suite.", en: "Land and steady the pick-up before the next part opens.", de: "Landen und die Aufnahme stabilisieren, bevor der nächste Teil öffnet.", es: "Aterrizar y estabilizar la atención antes de abrir la continuación." }
+    fallback_min: 60
+  - id: hems-medevac
+    family: HEMS
+    key: landing
+    title: { fr: "Dépose au point de soins", en: "Drop-off at the care point", de: "Absetzen am Versorgungspunkt", es: "Entrega en el punto de atención" }
+    brief: { fr: "Valider le poser au point de soins et la dépose du patient.", en: "Validate the landing at the care point and the patient’s drop-off.", de: "Die Landung am Versorgungspunkt und das Absetzen des Patienten bestätigen.", es: "Validar el aterrizaje en el punto de atención y la entrega del paciente." }
+    fallback_min: 60
+  - id: sar-csar
+    family: SAR
+    key: landing
+    title: { fr: "Extraction en zone contrainte", en: "Extraction in a constrained area", de: "Bergung in einem beengten Gebiet", es: "Extracción en zona restringida" }
+    brief: { fr: "Valider la prise en charge sur la zone d’extraction.", en: "Validate the pick-up in the extraction area.", de: "Die Aufnahme im Bergungsgebiet bestätigen.", es: "Validar la recogida en la zona de extracción." }
+    fallback_min: 60
+  - id: hadr-evac
+    family: HADR
+    key: landing
+    title: { fr: "Évacuation de population", en: "Evacuation of people", de: "Evakuierung der Bevölkerung", es: "Evacuación de población" }
+    brief: { fr: "Stabiliser le poser pour embarquer les personnes.", en: "Steady the landing to board the people.", de: "Die Landung stabilisieren, um die Personen aufzunehmen.", es: "Estabilizar el aterrizaje para embarcar a las personas." }
+    fallback_min: 60
+  - id: hadr-supply
+    family: HADR
+    key: landing
+    title: { fr: "Acheminement de secours", en: "Relief delivery", de: "Hilfsgütertransport", es: "Envío de ayuda" }
+    brief: { fr: "Livrer l’aide au point de dépose confirmé.", en: "Deliver the aid at the confirmed drop point.", de: "Die Hilfe am bestätigten Absetzpunkt abliefern.", es: "Entregar la ayuda en el punto de entrega confirmado." }
+    fallback_min: 60
+  - id: airlift-cargo
+    family: AIRLIFT
+    key: landing
+    title: { fr: "Livraison de fret", en: "Cargo delivery", de: "Frachtlieferung", es: "Entrega de carga" }
+    brief: { fr: "Se poser au point de livraison, s’immobiliser, puis poursuivre.", en: "Land at the delivery point, come to a stop, then go on.", de: "Am Lieferpunkt landen, anhalten, dann weiterfliegen.", es: "Aterrizar en el punto de entrega, detenerse y luego continuar." }
+    fallback_min: 60
+  - id: airlift-personnel
+    family: AIRLIFT
+    key: landing
+    title: { fr: "Embarquement de personnel", en: "Boarding personnel", de: "Aufnahme von Personal", es: "Embarque de personal" }
+    brief: { fr: "Un poser stabilisé valide l’embarquement.", en: "A steady landing validates the boarding.", de: "Eine stabile Landung bestätigt die Aufnahme.", es: "Un aterrizaje estabilizado valida el embarque." }
+    fallback_min: 60
+  - id: airlift-remote
+    family: AIRLIFT
+    key: landing
+    title: { fr: "Desserte d’un site isolé", en: "Serving a remote site", de: "Versorgung eines abgelegenen Ortes", es: "Servicio a un sitio aislado" }
+    brief: { fr: "Valider une escale sur un site isolé.", en: "Validate a stop at a remote site.", de: "Einen Halt an einem abgelegenen Ort bestätigen.", es: "Validar una escala en un sitio aislado." }
+    fallback_min: 60
+  - id: special-vip
+    family: SPECIAL
+    key: landing
+    title: { fr: "Embarquement d’une autorité", en: "Boarding an official", de: "Aufnahme einer Amtsperson", es: "Embarque de una autoridad" }
+    brief: { fr: "Un poser stabilisé valide la prise en charge.", en: "A steady landing validates the pick-up.", de: "Eine stabile Landung bestätigt die Aufnahme.", es: "Un aterrizaje estabilizado valida la recogida." }
+    fallback_min: 60
+  - id: sof-insert
+    family: SOF
+    key: landing
+    title: { fr: "Insertion par poser", en: "Insertion by landing", de: "Absetzen durch Landung", es: "Inserción por aterrizaje" }
+    brief: { fr: "Se poser sur le point d’insertion.", en: "Land on the insertion point.", de: "Am Absetzpunkt landen.", es: "Aterrizar en el punto de inserción." }
+    fallback_min: 60
+  - id: common-landing
+    family: common
+    key: landing
+    title: { fr: "Poser de précision", en: "Precision landing", de: "Präzisionslandung", es: "Aterrizaje de precisión" }
+    brief: { fr: "Rester posé 60 secondes dans un cercle de 5 mètres, valeurs modifiables.", en: "Stay landed 60 seconds within a 5-metre circle; the values can be changed.", de: "60 Sekunden in einem Kreis von 5 Metern gelandet bleiben; die Werte sind änderbar.", es: "Permanecer posado 60 segundos en un círculo de 5 metros; los valores se pueden cambiar." }
+    params: { radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_max_kt: 3 }
+    fallback_min: 60
+  - id: common-return
+    family: common
+    key: landing
+    title: { fr: "Retour à son terrain", en: "Back to one’s aerodrome", de: "Rückkehr zum eigenen Platz", es: "Regreso a su aeródromo" }
+    brief: { fr: "Valider le poser stabilisé au terrain d’arrivée.", en: "Validate the steady landing at the arrival aerodrome.", de: "Die stabile Landung am Zielplatz bestätigen.", es: "Validar el aterrizaje estabilizado en el aeródromo de llegada." }
+    fallback_min: 120
+  # --- un stationnaire (7), un suivi (2)
+  - id: hems-rescue
+    family: HEMS
+    key: hover
+    title: { fr: "Treuillage d’un blessé", en: "Hoisting a casualty", de: "Aufwinchen eines Verletzten", es: "Izado de un herido" }
+    brief: { fr: "Tenir le stationnaire pour permettre la récupération.", en: "Hold the hover so the recovery can be made.", de: "Den Schwebeflug halten, damit die Aufnahme gelingt.", es: "Mantener el estacionario para permitir la recuperación." }
+    fallback_min: 60
+  - id: sar-recovery
+    family: SAR
+    key: hover
+    title: { fr: "Récupération de personnes", en: "Recovering people", de: "Aufnahme von Personen", es: "Recuperación de personas" }
+    brief: { fr: "Maintenir une position de treuillage pendant la durée prévue.", en: "Hold a hoisting position for the planned time.", de: "Eine Windenposition für die vorgesehene Dauer halten.", es: "Mantener una posición de izado durante el tiempo previsto." }
+    fallback_min: 60
+  - id: maritime-offshore
+    family: MARITIME
+    key: hover
+    title: { fr: "Transfert vers une plateforme", en: "Transfer to a platform", de: "Transfer zu einer Plattform", es: "Transferencia a una plataforma" }
+    brief: { fr: "Se stabiliser par rapport au point de transfert.", en: "Steady yourself relative to the transfer point.", de: "Sich relativ zum Transferpunkt stabilisieren.", es: "Estabilizarse respecto al punto de transferencia." }
+    fallback_min: 60
+  - id: special-training
+    family: SPECIAL
+    key: hover
+    title: { fr: "Maintien de précision", en: "Precision hold", de: "Präzises Halten", es: "Mantenimiento de precisión" }
+    brief: { fr: "Tenir une position 60 s dans un cercle de 5 m par défaut.", en: "Hold a position for 60 s within a 5 m circle by default.", de: "Eine Position standardmäßig 60 s in einem Kreis von 5 m halten.", es: "Mantener una posición 60 s en un círculo de 5 m por defecto." }
+    fallback_min: 60
+  - id: sof-rope
+    family: SOF
+    key: hover
+    title: { fr: "Descente à la corde", en: "Rope descent", de: "Abseilen", es: "Descenso por cuerda" }
+    brief: { fr: "Maintenir le stationnaire avant de confirmer la dépose.", en: "Hold the hover before confirming the drop-off.", de: "Den Schwebeflug halten, bevor das Absetzen bestätigt wird.", es: "Mantener el estacionario antes de confirmar la entrega." }
+    fallback_min: 60
+  - id: sof-extract
+    family: SOF
+    key: hover
+    title: { fr: "Extraction par treuillage", en: "Extraction by hoist", de: "Bergung per Winde", es: "Extracción con grúa" }
+    brief: { fr: "Tenir la position puis confirmer la récupération.", en: "Hold the position, then confirm the recovery.", de: "Die Position halten, dann die Aufnahme bestätigen.", es: "Mantener la posición y luego confirmar la recuperación." }
+    fallback_min: 60
+  - id: common-hover
+    family: common
+    key: hover
+    title: { fr: "Stationnaire fixe ou relatif", en: "Fixed or relative hover", de: "Fester oder relativer Schwebeflug", es: "Estacionario fijo o relativo" }
+    brief: { fr: "Stabiliser position, hauteur et vitesse relative 60 secondes dans un rayon de 5 mètres.", en: "Steady position, height and relative speed for 60 seconds within a 5-metre radius.", de: "Position, Höhe und Relativgeschwindigkeit 60 Sekunden in einem Radius von 5 Metern stabilisieren.", es: "Estabilizar posición, altura y velocidad relativa 60 segundos en un radio de 5 metros." }
+    params: { radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 }
+    fallback_min: 60
+  - id: le-track
+    family: LE
+    key: hover
+    title: { fr: "Suivi d’un véhicule", en: "Following a vehicle", de: "Verfolgung eines Fahrzeugs", es: "Seguimiento de un vehículo" }
+    brief: { fr: "Suivre une cible mobile dans une enveloppe relative.", en: "Follow a moving target within a relative envelope.", de: "Einem beweglichen Ziel in einem relativen Bereich folgen.", es: "Seguir un blanco móvil dentro de una envolvente relativa." }
+    params: { radius_m: 1000, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 20, height_min_ft: 0, height_max_ft: 3000 }
+    fallback_min: 60
+  - id: aar-follow
+    family: AAR
+    key: hover
+    title: { fr: "Maintien relatif au ravitailleur", en: "Holding station on the tanker", de: "Relative Position zum Tanker halten", es: "Posición relativa al avión cisterna" }
+    brief: { fr: "Tenir une enveloppe relative à la trajectoire du ravitailleur.", en: "Hold an envelope relative to the tanker’s track.", de: "Einen Bereich relativ zur Bahn des Tankers halten.", es: "Mantener una envolvente relativa a la trayectoria del avión cisterna." }
+    params: { radius_m: 1000, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 20, height_min_ft: 0, height_max_ft: 3000 }
+    fallback_min: 60
+  # --- un survol (5)
+  - id: sar-sea
+    family: SAR
+    key: overflight
+    title: { fr: "Survol d’un radeau ou d’un navire", en: "Overflying a raft or a ship", de: "Überflug eines Floßes oder Schiffs", es: "Sobrevuelo de una balsa o un buque" }
+    brief: { fr: "Identifier un contact en mer et transmettre sa position.", en: "Identify a contact at sea and pass on its position.", de: "Einen Kontakt auf See identifizieren und seine Position weitergeben.", es: "Identificar un contacto en el mar y transmitir su posición." }
+    fallback_min: 60
+  - id: maritime-ship
+    family: MARITIME
+    key: overflight
+    title: { fr: "Identifier un navire en route", en: "Identifying a ship under way", de: "Ein fahrendes Schiff identifizieren", es: "Identificar un buque en navegación" }
+    brief: { fr: "Survoler le navire pour confirmer son identification.", en: "Overfly the ship to confirm its identification.", de: "Das Schiff überfliegen, um seine Identifizierung zu bestätigen.", es: "Sobrevolar el buque para confirmar su identificación." }
+    fallback_min: 60
+  - id: maritime-fish
+    family: MARITIME
+    key: overflight
+    title: { fr: "Contrôle des pêches", en: "Fisheries check", de: "Fischereikontrolle", es: "Control pesquero" }
+    brief: { fr: "Identifier un navire et transmettre le contact à l’autre équipage.", en: "Identify a ship and pass the contact to the other crew.", de: "Ein Schiff identifizieren und den Kontakt an die andere Besatzung weitergeben.", es: "Identificar un buque y transmitir el contacto a la otra tripulación." }
+    fallback_min: 60
+  - id: le-contact
+    family: LE
+    key: overflight
+    title: { fr: "Identification d’un contact", en: "Identifying a contact", de: "Identifizierung eines Kontakts", es: "Identificación de un contacto" }
+    brief: { fr: "Identifier le contact puis informer les autres moyens.", en: "Identify the contact, then inform the other assets.", de: "Den Kontakt identifizieren, dann die anderen Kräfte informieren.", es: "Identificar el contacto y luego informar a los demás medios." }
+    fallback_min: 60
+  - id: isr-recon
+    family: ISR
+    key: overflight
+    title: { fr: "Reconnaissance d’objectif", en: "Objective reconnaissance", de: "Zielaufklärung", es: "Reconocimiento de objetivo" }
+    brief: { fr: "Survoler l’objectif pour confirmer l’acquisition.", en: "Overfly the objective to confirm the acquisition.", de: "Das Ziel überfliegen, um die Erfassung zu bestätigen.", es: "Sobrevolar el objetivo para confirmar la adquisición." }
+    fallback_min: 60
+  # --- une suite d'étapes (1)
+  - id: maritime-team
+    family: MARITIME
+    key: sequence
+    title: { fr: "Dépose puis reprise d’une équipe", en: "Dropping then picking up a team", de: "Absetzen und Wiederaufnahme eines Teams", es: "Entrega y recogida de un equipo" }
+    brief: { fr: "Deux stationnaires relatifs au navire, chacun confirmé par le pilote.", en: "Two hovers relative to the ship, each confirmed by the pilot.", de: "Zwei Schwebeflüge relativ zum Schiff, jeder vom Piloten bestätigt.", es: "Dos estacionarios relativos al buque, cada uno confirmado por el piloto." }
+    params:
+      steps:
+        - { kind: hover, radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100, confirmation: deploy }
+        - { kind: hover, radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100, confirmation: recover }
+    fallback_min: 60
+  # --- un message d'un équipage (5) : l'identifiant du message reste à écrire (« À compléter » le dit)
+  - id: fire-divert
+    family: FIRE
+    key: event
+    title: { fr: "Déroutement sur un nouveau feu", en: "Diversion to a new fire", de: "Umleitung zu einem neuen Brand", es: "Desvío hacia un nuevo incendio" }
+    brief: { fr: "Un message coordonné modifie la priorité de la mission.", en: "A coordinated message changes the priority of the mission.", de: "Eine abgestimmte Nachricht ändert die Priorität der Mission.", es: "Un mensaje coordinado cambia la prioridad de la misión." }
+    fallback_min: 60
+  - id: combat-dact
+    family: COMBAT
+    key: event
+    title: { fr: "Présentation d’un opposant", en: "An opponent’s presentation", de: "Auftreten eines Gegners", es: "Presentación de un oponente" }
+    brief: { fr: "Un message coordonné déclenche la présentation.", en: "A coordinated message triggers the presentation.", de: "Eine abgestimmte Nachricht löst das Auftreten aus.", es: "Un mensaje coordinado desencadena la presentación." }
+    fallback_min: 60
+  - id: command-relay
+    family: COMMAND
+    key: event
+    title: { fr: "Relais de contact entre équipages", en: "Contact relay between crews", de: "Kontaktweitergabe zwischen Besatzungen", es: "Relevo de contacto entre tripulaciones" }
+    brief: { fr: "Le message d’un équipage ouvre la suite de la mission du destinataire.", en: "A crew’s message opens the rest of the recipient’s mission.", de: "Die Nachricht einer Besatzung öffnet den weiteren Teil der Mission des Empfängers.", es: "El mensaje de una tripulación abre la continuación de la misión del destinatario." }
+    fallback_min: 60
+  - id: command-coord
+    family: COMMAND
+    key: event
+    title: { fr: "Coordination de secours", en: "Rescue coordination", de: "Rettungskoordination", es: "Coordinación de rescate" }
+    brief: { fr: "Partager une position confirmée avec le moyen de récupération.", en: "Share a confirmed position with the recovery asset.", de: "Eine bestätigte Position mit dem Bergungsmittel teilen.", es: "Compartir una posición confirmada con el medio de recuperación." }
+    fallback_min: 60
+  - id: common-radio
+    family: common
+    key: event
+    title: { fr: "Message entre équipages", en: "Message between crews", de: "Nachricht zwischen Besatzungen", es: "Mensaje entre tripulaciones" }
+    brief: { fr: "Attendre le message envoyé par un autre équipage.", en: "Wait for the message sent by another crew.", de: "Auf die Nachricht einer anderen Besatzung warten.", es: "Esperar el mensaje enviado por otra tripulación." }
+    fallback_min: 60
 models:
   - id: blank
     type: ""

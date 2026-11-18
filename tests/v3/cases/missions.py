@@ -9309,8 +9309,8 @@ def n137(c):
 
 
 @case('N138', 'Missions › the catalogue of bricks and models (pure, no screen): modules/missions/catalog.yaml, a file of the code repository, is read by '
-      '`readCatalog` of modules/missions/catalog.js as an UNTRUSTED input — the delivered file gives 28 bricks (the keys the workshop writes: 15 zones, 6 objects, '
-      '6 gestures, 1 arrival), 3 models (blank, glacier, interception) and no position nor callsign; a file of 200 KB is refused whole, 100 bricks are cut at 80, '
+      '`readCatalog` of modules/missions/catalog.js as an UNTRUSTED input — the delivered file gives 60 bricks (the keys the workshop writes: 15 zones, 6 objects, '
+      '6 gestures, 1 arrival, and since SOG-0500 (d) the 32 of the 1.1 conditions), 3 models (blank, glacier, interception) and no position nor callsign; a file of 200 KB is refused whole, 100 bricks are cut at 80, '
       'an identifier « ../x » is set aside, a text with a tag is refused, a number 1e9 is not read (never brought back into its bounds), a YAML anchor is refused; '
       'the bench modules/missions/test/catalog.html, every check passing', 'N',
       tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
@@ -9340,7 +9340,7 @@ def n138(c):
         cat: [cat.bricks.length, cat.models.map(m => m.id), cat.dropped] } }""")
     c.eq([got['huge'], got['many'], got['dot'], got['tag'], got['big']], ['size', [80, 20], ['ok'], ['t2'], None],
          'a 200 KB file refused; 100 bricks cut at 80; « ../x » set aside; a title with a tag refused; a fallback of 1e9 not read', what='the bounds')
-    c.eq(got['cat'], [28, ['blank', 'search-glacier', 'interception'], 0], 'the delivered catalogue: 28 bricks, the three models, nothing set aside', what='the delivered catalogue')
+    c.eq(got['cat'], [60, ['blank', 'search-glacier', 'interception'], 0], 'the delivered catalogue: 60 bricks (32 of the 1.1 conditions since SOG-0500 (d)), the three models, nothing set aside', what='the delivered catalogue')
 
 
 _BRICKS = f"[...document.querySelectorAll('{E} [data-kinds=new] [data-bricks] [data-do=edbrick]')].map(x => [x.dataset.brick, x.querySelector('b').textContent.trim(), x.querySelector('.f-muted').textContent.trim()])"
@@ -10350,3 +10350,67 @@ def n155(c):
     c.eq(c.js(_DW_VAL, 'key'), 'landing', 'a forged « hover » is refused: the key stays', what='a forged kind')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0500 (d): the 32 bricks of the 1.1 conditions in the delivered catalogue — read, offered under the rule of their key, written as the
+# reader reads them
+_BRICKS11_JS = """async () => { const MS = await import('/frame/lib/mission.js'), C = await import('/modules/missions/catalog.js'),
+    DR = await import('/modules/missions/editor_drawers.js');
+  const text = await (await fetch('/modules/missions/catalog.yaml', { cache: 'no-store' })).text(), cat = C.readCatalog(text, window.jsyaml);
+  const cond = cat.bricks.filter(b => DR.CONDS.includes(b.key));
+  const base = { mission: { id: 'X-001A', type: 'REG' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, target: { id: 'TARGET', name: 'Cible', lat: 44.5, lon: 1.5 },
+    objects: [{ id: 'OBJ-1', kind: 'ship', lat: 44.6, lon: 1.4, detection_range_nm: 1 }] };
+  const places = [{ id: 'TARGET', kind: 'target' }, { id: 'OBJ-1', kind: 'object' }];
+  // each brick of a 1.1 condition, born as « ＋ Tiroir » would make it (CAT.drawerFrom), written, read back
+  const read = cond.map(b => { const row = C.drawerFrom(DR.blankDrawer([], base), b, places, 'fr');
+    const doc = DR.withDrawerRows(base, [row]), d = MS.readMission(doc).drawers[0];
+    return [b.id, b.key, d.key.kind === 'condition' ? d.key.condition : d.key.kind, d.keyWhy, DR.condMissing(row).join(','), row.fallback,
+      d.key.rule ? [d.key.rule.radiusM ?? d.key.rule.radiusNm, d.key.rule.durationSec, d.key.rule.object?.id || d.key.rule.point] : (d.key.steps || []).map(s => s.confirmation)] });
+  // what « ＋ Tiroir » offers: the bricks whose key the flight judges (the page's rule, DR.judgedKind) — and, if the flight judged everything
+  const offered = cat.bricks.filter(b => DR.judgedKind(b.key)).length, ifJudged = cat.bricks.filter(b => DR.judgedKind(b.key, () => true)).length;
+  // a model saved from a sitting keeps a hover's numbers and a sequence's steps (« Enregistrer comme modèle »)
+  const hover = C.drawerFrom(DR.blankDrawer([], base), cat.bricks.find(b => b.id === 'common-hover'), places, 'fr'),
+    team = C.drawerFrom(DR.blankDrawer([hover], base), cat.bricks.find(b => b.id === 'maritime-team'), places, 'fr');
+  const m = C.modelFromSession({ id: 'essai', title: 'Essai', family: 'SAR', drawers: [hover, team], places: [{ id: 'OBJ-1', kind: 'object', name: 'Navire' }] });
+  const again = C.readCatalog(C.modelText(m, window.jsyaml), window.jsyaml).models[0];
+  const back = C.applyModel({ places: [], base }, again, 'fr').drawers;
+  return { total: cat.bricks.length, cond: cond.length, families: cat.families, dropped: cat.dropped, read, offered, ifJudged,
+    model: m.drawers.map(d => [d.key, d.place || '', d.params]), back: back.map(r => [r.key, r.rule?.radiusM, r.rule?.object, (r.steps || []).map(s => s.confirmation)]),
+    real: /douan|UC3|DRAGON|CERBERE|F-G|Sallanches|BEECH|HELI29/i.test(text), bytes: new TextEncoder().encode(text).length } }"""
+
+
+@case('N156', 'Missions › the 32 bricks of the 1.1 conditions in the catalogue (SOG-0500 (d), pure, in the page): modules/missions/catalog.yaml gives 60 bricks '
+      '(28 + 12 landings, 9 hovers — 2 of them a following: a wide hover on an object, 1 000 m, 0 to 3 000 ft —, 5 overflights, 1 sequence, 5 messages), '
+      '16 families (HEMS and SOF added), nothing set aside, nothing of a real look; each brick of a condition, born as « ＋ Tiroir » makes it, is written '
+      'and read back by the reader as its condition, without a reason, nothing missing but the identifier of a message; « ＋ Tiroir » offers only the bricks '
+      'whose key the flight judges (28 today, 60 if it judged everything); a model saved from a sitting keeps a hover\'s numbers and a sequence\'s steps', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500 (d): « les 32 briques 1.1 du catalogue de l\'utilisateur : ajoute-les à catalog.yaml (textes ×4, bornes respectées), proposées sous la '
+      'même règle que leur clé (rien tant que le vol ne juge pas). Rien d\'allure réelle. »; EDITOR.md § 7 duoquinquagies')
+def n156(c):
+    c.page.goto(f'{c.base}/modules/missions/test/catalog.html')
+    c.until('!!window.jsyaml', timeout=10000, what='js-yaml in the bench page')
+    g = c.js(_BRICKS11_JS)
+    c.eq([g['total'], g['cond'], len(g['families']), g['families'][-2:], g['dropped'], g['real']], [60, 32, 16, ['HEMS', 'SOF'], 0, False],
+         '60 bricks, 32 of the 1.1 conditions, 16 families, nothing set aside, nothing of a real look', what='the catalogue')
+    c.ok(g['bytes'] <= 131072, g['bytes'], 'within its bound (128 KB)')
+    # a message awaited without its identifier is read as the gesture with the reason « condition » (the reader never guesses one)
+    bad = [r for r in g['read'] if (r[2], r[3]) != ((r[1], '') if r[1] != 'event' else ('hand', 'condition'))]
+    c.eq(bad, [], 'every brick read back as its condition (a message without its identifier: unread, said)', what='read back')
+    c.eq(sorted({r[4] for r in g['read']}), ['', 'event'], 'nothing missing but the identifier of a message', what='missing')
+    c.eq({r[5] for r in g['read']}, {'60', '120'}, 'a fallback on each', what='fallback')
+    by = {r[0]: r for r in g['read']}
+    c.eq([by['le-track'][6], by['common-landing'][6], by['common-hover'][6], by['sar-sea'][6], by['maritime-team'][6]],
+         [[1000, 60, 'OBJ-1'], [5, 60, 'DESTINATION'], [5, 60, 'OBJ-1'], [0.5, None, 'OBJ-1'], ['deploy', 'recover']],
+         'a following on the object, a precision landing of 60 s at the arrival, a hover on the object, an overflight, two steps confirmed',
+         what='some bricks')
+    c.eq([g['offered'], g['ifJudged']], [28, 60], '« ＋ Tiroir » offers only what the flight judges', what='offered')
+    c.eq(g['model'], [['hover', 'OBJ-1', {'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100}],
+                      ['sequence', '', {'steps': [
+                          {'kind': 'hover', 'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100, 'confirmation': 'deploy'},
+                          {'kind': 'hover', 'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100, 'confirmation': 'recover'}]}]],
+         'the model keeps the numbers and the steps', what='the model')
+    c.eq(g['back'], [['hover', '5', 'OBJ-2', []], ['sequence', '', '', ['deploy', 'recover']]],
+         'the model applied again: the hover\'s numbers, on the object the model poses (OBJ-1 of the model, OBJ-2 in this mission, whose OBJ-1 is taken), '
+         'the steps', what='the model applied')
