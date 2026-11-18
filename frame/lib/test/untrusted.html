@@ -1,0 +1,101 @@
+<!doctype html>
+<!-- Banc des gardes de lecture (frame/lib/untrusted.js, SOG-0468 (a)) : une clé PROPRE (jamais celle du prototype : « __proto__ », « constructor », « toString »), un objet simple, un nombre fini, un nombre borné, un texte sans caractères
+     de format invisibles, un identifiant écrit ; des entrées hostiles (jamais d'exception). Page nue ; window.__untrustedBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>untrusted — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    own,
+    has,
+    plain,
+    finite,
+    bounded,
+    visible,
+    clean,
+    idWord
+  } from '../untrusted.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__untrustedBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__untrustedBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const J = v => JSON.stringify(v);
+  (() => {
+    // own / has : la clé PROPRE seulement
+    const o = JSON.parse('{"a":1,"__proto__":{"x":1},"7":"sept","n":null}');
+    ck('own : une clé propre rend sa valeur (y compris null et une clé numérique)', own(o, 'a') === 1 && own(o, 'n') === null && own(o,
+      7) === 'sept' && own(o, '7') === 'sept');
+    ck('own : « __proto__ » posé par JSON.parse est la valeur posée, pas le prototype', J(own(o, '__proto__')) === '{"x":1}');
+    ck('own : « toString », « constructor », « __proto__ » d\'un objet vide : undefined', own({}, 'toString') === undefined && own({},
+      'constructor') === undefined && own({}, '__proto__') === undefined && own({}, 'hasOwnProperty') === undefined);
+    ck('own : une clé absente : undefined', own(o, 'zz') === undefined);
+    ck('own : tableau, null, texte, nombre, fonction, rien : undefined', [
+      [1, 2], null, 'abc', 5, () => 1, undefined
+    ].every(v => own(v, 0) === undefined && own(v, 'length') === undefined));
+    ck('own : une clé qui n\'est ni texte ni nombre : undefined', [null, undefined, {},
+      [], true, Symbol('s')
+    ].every(k => own({
+      a: 1
+    }, k) === undefined));
+    ck('has : vrai pour une clé propre (même null), faux pour le prototype, les tableaux et les clés mal typées', has(o, 'a') && has(o,
+        'n') && has(o, '__proto__') && !has({}, 'toString') && !has([1], 0) && !has(null, 'a') && !has('abc', 0) && !has(o, null) && !
+      has(o, {}));
+    // plain / finite / bounded
+    ck('plain : un objet simple est rendu tel quel ; tableau, null, texte, nombre, fonction, rien : null', plain(o) === o && [
+      [],
+      [1], null, undefined, 'a', 5, () => 1, true
+    ].every(v => plain(v) === null));
+    ck('finite : un nombre fini est rendu ; NaN, ±Infinity, « 5 », null, \'\', true, rien, un objet : null', finite(5) === 5 && finite(
+      0) === 0 && finite(-2.5) === -2.5 && [NaN, Infinity, -Infinity, '5', null, '', true, undefined, {},
+      []
+    ].every(v => finite(v) === null));
+    ck('bounded : les bornes sont comprises ; hors bornes, NaN, ±Infinity, texte : null', bounded(0, 0, 10) === 0 && bounded(10, 0,
+      10) === 10 && bounded(5, 0, 10) === 5 && bounded(-0.1, 0, 10) === null && bounded(10.1, 0, 10) === null && [NaN, Infinity, '5',
+      null, true
+    ].every(v => bounded(v, 0, 10) === null));
+    // visible / clean / idWord
+    ck('visible : retire les marques de sens d\'écriture, l\'espace de largeur nulle et la marque d\'ordre', visible('a‮b⁦c​d﻿e‎f') ===
+      'abcdef');
+    ck('visible : garde le liant, l\'anti-liant et l\'espace fine insécable ; \'\' pour rien', visible('a‌b‍c d') === 'a‌b‍c d' &&
+      visible(null) === '' && visible(undefined) === '');
+    ck('clean : les blancs sont repliés et rognés', clean('  a \t b\n\n c  ') === 'a b c' && clean('‮  x⁦ ') === 'x' && clean(null) ===
+      '');
+    ck('idWord : un texte ou un nombre, nettoyé, en capitales ; le reste : \'\'', idWord(' lfpo‮ ') === 'LFPO' && idWord(12) === '12' &&
+      idWord('a  b') === 'A B' && [{}, null, undefined, [], true, () => 1].every(v => idWord(v) === ''));
+    // hostiles : jamais d'exception
+    let threw = null;
+    try {
+      for (const v of [undefined, null, NaN, Symbol('s'), Object.create(null), new Proxy({}, {}), [], '', {}, 0, -0, 1n]) {
+        try {
+          own(v, 'a');
+          has(v, 'a');
+          plain(v);
+          finite(v);
+          bounded(v, 0, 1);
+        } catch (e) {
+          threw = e;
+        }
+      }
+      own(Object.create(null), 'a');
+    } catch (e) {
+      threw = e;
+    }
+    ck('des entrées hostiles ne font jamais d\'exception (objet sans prototype, Proxy, symbole, BigInt)', threw === null, String(threw));
+    window.__untrustedBench.done = true;
+  })();
+</script>
+</body>
+</html>

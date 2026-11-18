@@ -1011,6 +1011,21 @@ and heights): a **fix** `{ at | t, lat, lon, altFt, aglFt, onGround, headingDeg,
 Geometry: a local plane (equirectangular) around the zone or the object, true to ± 1 % up to 500 km; a side of a contour is a straight line of that plane; the date line is handled. Not in this service (other lots, or the caller's): X-Plane's
 traffic table, the holds (hover, landing held), the opening notification, and what stays with the caller — « Affectation » in flight, « Création » in the trial: the arrival's `required` points and `escortMinSec`, an object's `confirm` (in range AND on the pilot's word), a zone's `actor` (the target crosses, not the pilot) and a moving object (`motion`: the caller gives the object's position at the instant of the fix). The keys of the mission reader can be passed as they are: the service reads only the fields it names (a zone: `shape`, `ceilingFt`; an object: `lat`, `lon`, `rangeNm`, `heightFt`, `altitudeFt`; an arrival: `at`, `radiusNm`, `speedMaxKt`, `onGround`), `altitudeFt` null being « not written », which the `auto` height rule reads as a ground object.
 
+## 12c. Reading guards (`frame/lib/untrusted.js`, SOG-0468 (a))
+
+What comes from a file, a launcher answer or a pilot is an object of `JSON.parse` and is never trusted. ONE definition of the small guards that ten files copied (pure: no page, no state, no network, never an exception):
+
+| Function | Gives |
+|---|---|
+| `own(o, k)` | the value of the key `k` (text or number) of the object ITSELF — a plain object, not an array, not null — else `undefined`: `__proto__`, `constructor` and `toString` never answer with what the prototype carries (a `__proto__` set by `JSON.parse` is the value set) |
+| `has(o, k)` | true when `k` is such an own key (same rules; unlike the old `view_state.js` copy it refuses an array) |
+| `plain(v)` | `v` when it is a non-null object and not an array, else `null` |
+| `finite(v)` | `v` when it is a finite number (`typeof 'number'`: not `'5'`, not `null`, not `true`), else `null` |
+| `bounded(v, lo, hi)` | `v` when it is a finite number in `[lo, hi]` (bounds included), else `null` |
+| `visible(v)`, `clean(v)`, `idWord(v)` | the text without its invisible format characters (bidi marks, zero-width, byte-order mark; the joiners and the narrow no-break space are kept); with the blanks folded and trimmed; a written identifier (text or number) cleaned and upper-cased, `''` otherwise |
+
+Not here, on purpose: the TOLERANT readings (a number written `'5'`, `''` or `null` read as absent or converted: `num` of `mission.js`, `fuel_units.js`, `pane_model.js`, `fuel/model.js`…) keep their own semantics at their owners, under another name. `mission.js` re-exports `visible` (its documented API does not change). The sites that still copy these guards move one file at a time, with their owners (the static case of Security lists the ones that remain). Bench `frame/lib/test/untrusted.html` (A265); the rules are Security's (K470).
+
 ## 13. Service screens (`APP.screens`)
 
 A service screen is not a module. It is a screen of the frame, opened over the current module like Settings and the

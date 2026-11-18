@@ -5309,6 +5309,13 @@ def a256(c):
     c.check_errors()
 
 
+@case('A265', 'The reading guards (SOG-0468 (a), frame/lib/untrusted.js): a key of the object ITSELF (never « __proto__ », « constructor », « toString » of the prototype), a plain object, a finite number, a bounded number, a text without invisible format characters, a written identifier; hostile inputs never throw', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (a) (the ergonomist; the list is Security’s): ONE definition of the small guards that ten files copied — frame/lib/test/untrusted.html (window.__untrustedBench): own / has read only an own key of a plain object (the prototype never answers), plain, finite (typeof number), bounded (bounds included), visible / clean / idWord (the invisible format characters out, the joiners and the narrow no-break space kept); nothing throws')
+def a265(c):
+    _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
+
+
 @case('A264', 'ctx.unsaved (SOG-0458): a module that says « I have unsaved changes » is not unmounted without the frame\'s question (menu, Back), refusing keeps it intact on its address, the browser warns when the tab closes, and nothing is asked when nothing changed', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0458 (the ergonomist, after SOG-0454: the missions workshop asks before « Cancel » but the menu, « Back » and closing the tab lost the work in silence): ctx.unsaved(() => bool) — one function the frame asks when the user leaves — and, while it says true, the frame asks ITS question (« Quitter sans enregistrer ? ») before it unmounts the module (menu, Back, another address of the same module: every change of address goes through the router), goes back in the history to the entry that was left (same entries, same position: a second Back asks again, Forward leads nowhere else) and keeps the module mounted and intact when the user stays, lets go when the user leaves, arms the browser warning of the tab (beforeunload) for as long as a module says so, and asks nothing when nothing changed; the declaration falls with the unmounting')
