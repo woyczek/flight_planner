@@ -6464,3 +6464,35 @@ def n111(c):
     c.js("(async () => { (await import('/modules/missions/mission_map.js')).stopMap() })()")
     c.until("document.querySelectorAll('.maplibregl-canvas').length === 0", timeout=8000, what='the map given back')
     c.eq(c.count(f'{M} [data-msmap] [data-mm]'), 0, 'stopMap removes the block and its map', what='stopMap')
+
+
+_THEATRE_JS = """async () => { const MS = await import('/frame/lib/mission.js'); let threw = '';
+  const rd = (extra, doc = {}) => { try { const m = MS.readMission({ mission: { id: 'X-9', type: 'REG', ...extra }, ...doc }); return m ? [m.theatre, m.country] : null } catch (e) { threw += String(e); return '?' } };
+  const th = [{ theatre: 'Vallee Test' }, { theatre: '  Vallee \\n  Test  ' }, { theatre: 'A'.repeat(60) }, { theatre: 'Vall\\u202Eee\\u200B Test' }, { theatre: 12 }, { theatre: ['Vallee'] },
+    { theatre: { a: 1 } }, { theatre: null }, {}].map(x => rd(x)[0]);
+  const co = ['FR', 'fr', 'FRA', 'F1', 12, ['FR'], ' FR ', 'F\\u202ER', null, { a: 1 }].map(x => rd({ country: x })[1]);
+  const hostile = [null, undefined, 7, 'x', [], { mission: null }, { mission: { id: 'X', type: 'R', theatre: Symbol.iterator.toString() } }, { mission: { id: 'X', type: 'R', theatre: { toString() { throw 1 } }, country: { toString() { throw 2 } } } }];
+  for (const h of hostile) { try { MS.readMission(h) } catch (e) { threw += String(e) } }
+  const doc = { mission: { id: 'X-9', type: 'REG', theatre: 'Vallee Test', country: 'FR' }, title: 'T', zones: [{ id: 'Z1', lat: 45, lon: 1, radius_km: 5 }],
+    phases: [{ id: 'B', title: 'Zone', trigger_zone: 'Z1', fallback_delay_min: 60 }, { id: 'C', title: 'Retour', trigger_condition: { kind: 'arrival', point: 'DESTINATION' } }] };
+  const m = MS.readMission(doc), pv = [MS.pilotView(m, []), MS.pilotView(m, ['B']), MS.pilotView(m, [], { mine: false })];
+  return { threw, th, co, none: rd({}), drawers: m.drawers.length, pv: pv.map(v => [v.theatre, v.country, v.drawers.length]) } }"""
+
+
+@case('N112', 'Missions › the reader, `theatre` and `country` (pure, no screen): the theatre is a text, cleaned (invisible and writing-direction '
+      'characters removed, blanks folded) and cut at 40 signs; the country is exactly two capital letters; anything else (a number, a list, '
+      'an object, null, « fr », « FRA », « F1 ») reads an empty text; a mission without these keys reads empty; no hostile input throws; '
+      'both fields go through pilotView as they are (they are public)',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0455 (the request of Features SOG: the reader gives the theatre and the country of the mission, bounded; '
+      'frame/lib/mission.js `readMission`; docs/technique/FORMAT_MISSION.md § 1)')
+def n112(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_THEATRE_JS)
+    c.eq(r['th'], ['Vallee Test', 'Vallee Test', 'A' * 40, 'Vallee Test', '', '', '', '', ''],
+         'the theatre: a text cleaned and cut at 40 signs (a writing-direction character and a zero-width one removed); a number, a list, an object, null or nothing reads empty', what='the theatre')
+    c.eq(r['co'], ['FR', '', '', '', '', '', 'FR', 'FR', '', ''],
+         'the country: exactly two capital letters once cleaned — « fr », « FRA », « F1 », 12, a list, null, an object read empty', what='the country')
+    c.eq([r['none'], r['drawers'], r['pv']], [['', ''], 2, [['Vallee Test', 'FR', 2], ['Vallee Test', 'FR', 2], ['Vallee Test', 'FR', 2]]],
+         'a mission without these keys reads empty and empty; both fields go through pilotView of a mission with drawers (closed, open, browsed) as they are', what='public')
+    c.eq(r['threw'], '', 'no hostile input throws', what='no throw')

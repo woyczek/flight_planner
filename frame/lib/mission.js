@@ -5,7 +5,7 @@
 // fichiers (ctx.data) et le YAML (frame/lib/js-yaml.min.js, le lecteur du cadre).
 //
 // API :
-//   readMission(doc) → mission { id, type, subtype, title, summary, organisation, operation, origin, destination, target, points,
+//   readMission(doc) → mission { id, type, subtype, theatre, country, title, summary, organisation, operation, origin, destination, target, points,
 //     routeOrder, aircraft, cruiseLevelFt, cruiseSpeedKt, estimate, notes, constraints, risks, category, teams, zones, rendezvous,
 //     turns, maps, objectives, payload, details, hasCoords } ; null sans mission.id ou mission.type (seuls champs exigés). origin /
 //     destination / target : { name, icao, lat, lon } ou null ; points : { id → { id, name, lat, lon, kind } } (tournants, rendez-vous,
@@ -15,6 +15,8 @@
 //     participants, role }] et turns [{ id, name, role, lat, lon }] (60 points), maps [{ id, file (motif strict, un nom de fichier du
 //     dossier de la mission), type, description, centreRef }] (20), objectives { primary, secondary }, payload { description, massKg,
 //     passengers }, details [paragraphe] (2 000 caractères chacun), hasCoords (un lieu, un point ou une zone situé).
+//     theatre : le théâtre (`mission.theatre`), un texte nettoyé coupé à 40 signes, sinon '' ; country : le pays (`mission.country`), exactement
+//     deux lettres majuscules (« FR »), sinon '' — publics : pilotView les rend tels quels (SOG-0455).
 //     mapLook { base: 'fast' | 'relief', airspaces: bool } : le fond et la couche de la carte de la mission (SOG-0456 ; la clé
 //     `mission_map`, bornée par mapLook(v) — exportée : l'atelier s'en sert aussi).
 //     visible(v) → le texte sans ses caractères de format invisibles (contrôles de sens d'écriture, espace de largeur nulle…) : tout
@@ -696,6 +698,9 @@ export function readMission(doc) {
     id,
     type,
     subtype: clean(m.subtype),
+    theatre: typeof m.theatre === 'string' ? cut(m.theatre, 40) : '', // le théâtre : un texte nettoyé, 40 signes (SOG-0455)
+    // le pays : exactement deux majuscules, sinon rien
+    country: typeof m.country === 'string' && /^[A-Z]{2}$/.test(clean(m.country)) ? clean(m.country) : '',
     title: clean(d.title),
     summary: visible(d.summary).trim(),
     organisation: m.role === 'organisation' || /Z$/.test(id),
