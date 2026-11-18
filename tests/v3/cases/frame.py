@@ -5316,6 +5316,44 @@ def a265(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A266', 'ctx.unsaved also guards the address that leaves the document (SOG-0458, found by « Création »): an address of another application (APP.elsewhere) asks the frame’s question BEFORE the redirect; ctx.askLeave() gives the modules the same question', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0458 (« Création de missions » plugging the workshop): from Pilot, #missions is an address of the Company application (APP.elsewhere): the frame redirected at once (location.replace) before it looked at ctx.unsaved, so only the browser’s warning played; the guard stands before the redirect (the moved screens too), refusing keeps the module and the page, accepting lets the redirect go; and ctx.askLeave() — the same question, the same words, true when the user leaves — is given to the modules for their own « Annuler » (« reuse »: no copy of the texts)')
+def a266(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    src = (ROOT / 'modules' / 'hello' / 'module.js').read_text(encoding='utf-8')
+    head = 'export async function mount(el, ctx) {'
+    assert src.count(head) == 1
+    patched = src.replace(head, head + "\n  window.__d = false; window.__ctx = ctx; el.dataset.mark = 'kept'; ctx.unsaved?.(() => window.__d);")
+    c.context.route(re.compile(r'/modules/hello/module\.js'), lambda r: r.fulfill(status=200, content_type='text/javascript', body=patched))
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")
+    loads = []
+    c.page.on('load', lambda: loads.append(c.page.url))
+    c.open('hello', wait=False)
+    c.until("!!document.querySelector('[data-module=hello]')", timeout=20000, what='the module mounted')
+    n0 = len(loads)
+    # an address of the other application, the module has changes: the question comes BEFORE the redirect
+    c.js("() => { window.__d = true; location.hash = '#missions' }")
+    c.until("!!document.querySelector('.f-modal [data-no]')", timeout=20000, what='the frame asks before the redirect')
+    c.wait(700)
+    c.eq(len(loads), n0, 'no page was loaded: the redirect has not happened', what='no redirect yet')
+    c.tap('.f-modal [data-no]')
+    c.until("!document.querySelector('.f-modal') && location.hash === '#hello'", timeout=10000, what='stayed: the address is back')
+    c.wait(500)
+    c.eq([len(loads), c.js("() => !!document.querySelector('[data-module=hello][data-mark=kept]')")], [n0, True], 'stay: the page and the module are those of before', what='stayed intact')
+    # ctx.askLeave: the same question for a module's own button
+    c.js("() => { window.__q = window.__ctx.askLeave() }")
+    c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=10000, what='askLeave asks')
+    c.eq(c.js("() => ((document.querySelector('.f-modal p') || {}).textContent || '').startsWith('Quitter sans enregistrer')"), True, 'the same words as the frame’s question', what='same words')
+    c.tap('.f-modal [data-ok]')
+    c.eq(c.js("() => window.__q"), True, 'askLeave gives true when the user leaves', what='askLeave true')
+    # leaving: the redirect goes (the function says false first, as a module does after its own question)
+    c.js("() => { window.__d = false; location.hash = '#missions' }")
+    c.until("location.href.includes('app=company') || document.querySelector('[data-app=company]') || !document.querySelector('[data-module=hello]')", timeout=20000, what='the redirect went')
+    c.check_errors()
+
+
 @case('A264', 'ctx.unsaved (SOG-0458): a module that says « I have unsaved changes » is not unmounted without the frame\'s question (menu, Back), refusing keeps it intact on its address, the browser warns when the tab closes, and nothing is asked when nothing changed', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0458 (the ergonomist, after SOG-0454: the missions workshop asks before « Cancel » but the menu, « Back » and closing the tab lost the work in silence): ctx.unsaved(() => bool) — one function the frame asks when the user leaves — and, while it says true, the frame asks ITS question (« Quitter sans enregistrer ? ») before it unmounts the module (menu, Back, another address of the same module: every change of address goes through the router), goes back in the history to the entry that was left (same entries, same position: a second Back asks again, Forward leads nowhere else) and keeps the module mounted and intact when the user stays, lets go when the user leaves, arms the browser warning of the tab (beforeunload) for as long as a module says so, and asks nothing when nothing changed; the declaration falls with the unmounting')

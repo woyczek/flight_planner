@@ -3935,15 +3935,17 @@
   /** Pose la question de sortie. Oui : l'adresse demandée est rejouée sans question. Non : l'adresse d'avant est remise, sans rien démonter — en
    *  traversant l'historique jusqu'à l'entrée quittée (API Navigation : « précédent » refusé rend l'entrée, la pile ne change pas, un second
    *  « précédent » repose la question) ; sans cette API, par replaceState (l'entrée où le navigateur était allé est réécrite). */
+  /** La question de sortie, les mots du cadre (SOG-0458) : vraie si l'utilisateur quitte ; aussi donnée aux modules (ctx.askLeave) pour que leur propre « Annuler » dise les mêmes. */
+  const leaveQuestion = () => ask(t(T.leave.ask), {
+    ok: t(T.leave.ok),
+    cancel: t(T.leave.stay)
+  });
   async function askLeave() {
     if (leaving) return;
     leaving = true;
     let yes = false;
     try {
-      yes = await ask(t(T.leave.ask), {
-        ok: t(T.leave.ok),
-        cancel: t(T.leave.stay)
-      });
+      yes = await leaveQuestion();
     } finally {
       leaving = false;
     }
@@ -3989,6 +3991,9 @@
     if (location.hash.startsWith('#ivao-return?')) return void takeIvaoReturn().then(route);
     // ancienne adresse d'un écran gardée en renvoi (l'adresse remplacée : le retour arrière ne la rejoue pas)
     const moved = MOVED[parseHash().id];
+    // SOG-0458 : une adresse qui sort de ce document (un autre écran redirigé, une autre application) démonte le module tout autant : la question d'abord
+    if (!leaveOk && (moved || APPS[APP.elsewhere?.[parseHash().id]] && APPS[APP.elsewhere[parseHash().id]] !== APP) && unsavedNow())
+      return askLeave();
     if (moved && selfNavigate(`redirect: moved ${parseHash().id} → ${moved}`, () => location.replace(`#${moved}`), {
         auto: first && bootedBySelf
       })) return;
@@ -4628,6 +4633,7 @@
       query,
       // SOG-0458 : ctx.unsaved(() => booléen) — la fonction que le cadre interroge au moment de quitter (changement d'écran, « Retour », fermeture de l'onglet) ;
       // vrai : le cadre pose sa question avant de démonter le module et le navigateur avertit à la fermeture de l'onglet ; ctx.unsaved(null) retire la déclaration
+      askLeave: leaveQuestion, // la question de sortie du cadre (vraie : on quitte), pour le « Annuler » d'un module : les mêmes mots que le menu
       unsaved: fn => {
         const key = entry.id + (inPane ? '#pane' : '');
         if (typeof fn !== 'function') return void unsavedBy.delete(key);
