@@ -3360,3 +3360,7 @@ The Atmosphere (`atmo.js`) and the editing base (`lib/map_edit.js`) wrote their 
 ### The last radii of the Map: `R_NM` (SOG-0468 (2), 18 Nov)
 
 `R_NM` is exported by `frame/lib/geo.js` (V3 Frame, 7f58c2019). The ES modules of the Map read it (`flight_time.js` `alongRoute`, `state.js` `greatCircle`). The two classic scripts cannot import: `render.js` and `lib/vertical_profile.js` name the radius once, as a COPY of `R_NM` with its comment (the way their copies of `rhumbNm` already are), and derive their metres from it (`R_NM * 1852`). The great circle of `render.js` was at 6 371 008,8 m, the profile at 6 371 000 m: 1,3e-6 and 6e-8 from the single radius, below any figure the cases state. Case D284 (the literal appears 0 times in the ES modules, once in each classic script, no radius in metres, `MapsRender.gc` = `gcNm` to 1e-9 NM).
+
+### The accent folding: `stripMarks` of the frame (SOG-0468 (2), 19 Nov)
+
+`frame/lib/text.js` (V3 Frame, 86ad26e96) gives the primitive `stripMarks` and five forms. `find.js` (the loupe: capitals) and `ground.js` (the ground list: lower case) took their copy of the NFD folding from it: `stripMarks(v).toUpperCase()` and `stripMarks(s).toLowerCase()`, and NOT `foldUpper` / `foldLower`, which also trim: the copies did not, and a search keeps its blank (`Q = fold(q).trim()` in the loupe trims where it means to). `mission.js` and `lib/vertical_profile.js` are classic scripts: they cannot import, their copies stay, as the copies of `rhumbNm` do. Case D285.

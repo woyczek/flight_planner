@@ -26,6 +26,9 @@ import {
   schedule
 } from './draw.js';
 import {
+  stripMarks
+} from '../../frame/lib/text.js';
+import {
   runwaysOf,
   runwayVector,
   runwayPoint,
@@ -82,7 +85,8 @@ const rawCtx = c => isMuted(c) ? c : c.canvas?.getContext?.('2d') || c;
 const holdMark = name => String(name || '').split(/[＠@]/)[0].trim() || String(name || '');
 /** Le groupe d'un élément : sa nature et son nom (OpenStreetMap découpe une voie en plusieurs tronçons : une ligne de la liste, tous les tronçons surlignés). */
 export const grpOf = it => `g:${it.kind}:${it.name}`;
-const fold = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+// sans accents et en minuscules, SANS rogner (foldLower rognerait) : la primitive du cadre
+const fold = s => stripMarks(s).toLowerCase();
 const finite = (v, lo, hi) => Number.isFinite(+v) && +v >= lo && +v <= hi;
 const ll = p => Array.isArray(p) && finite(p[0], -180, 180) && finite(p[1], -90, 90) ? [+p[0], +p[1]] : null;
 

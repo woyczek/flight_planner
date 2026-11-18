@@ -18,6 +18,9 @@ import {
   text
 } from './lib/safe_text.js';
 import {
+  stripMarks
+} from '../../frame/lib/text.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -71,7 +74,8 @@ const KIND = {
   vrp: 3,
   city: 4
 };
-const fold = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+// sans accents et en capitales, SANS rogner (foldUpper rognerait : une recherche garde son blanc) : la primitive du cadre
+const fold = v => stripMarks(v).toUpperCase();
 /** Le rang d'un lieu pour le texte q (déjà en capitales) : 0 l'identifiant EXACT (une balise, un point, un terrain), 1 un identifiant qui COMMENCE par le texte, 2 un nom (ou un mot du nom) qui commence par lui, 3 le reste. */
 const rankOf = (p, q) => {
   const code = fold(p.code),

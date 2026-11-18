@@ -9781,6 +9781,19 @@ def d284(c):
     c.ok(r['r'] == 3440.065 and r['worst'] < 1e-9, f'{r}', 'the radius copied in render.js is the one of the frame: its rhumb distance equals the one of the frame to 1e-9 NM (its great circle, internal, takes the same constant)')
 
 
+@case('D285', 'The accent folding of the Map is the frame stripMarks (SOG-0468 (2)): find.js and ground.js write no NFD of their own; the classic scripts (mission.js, vertical_profile.js) keep theirs', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0468 (2), frame/lib/text.js (V3 Frame, 86ad26e96): the loupe (find.js, in capitals) and the ground list (ground.js, in lower case) each copied the same normalize NFD and the removal of the combining marks; both call stripMarks now, with their case and WITHOUT the trim of foldUpper and foldLower (the copies did not trim: a search with a space must keep it); mission.js and lib/vertical_profile.js are classic scripts: no import, the copy stays')
+def d285(c):
+    import re
+    for f, case_ in (('modules/maps/find.js', 'toUpperCase'), ('modules/maps/ground.js', 'toLowerCase')):
+        src = (ROOT / f).read_text(encoding='utf-8')
+        c.eq(('normalize(' in src, 'stripMarks(v)' in src or 'stripMarks(s)' in src, 'frame/lib/text.js' in src, case_ in src), (False, True, True, True), f + ': no NFD of its own, stripMarks of frame/lib/text.js, the case kept', what=f)
+    c.open('maps')
+    r = c.js("""async () => { const T = await import('/frame/lib/text.js'); return { up: T.stripMarks('Évreux-Fauville ôÂ').toUpperCase(), low: T.stripMarks('  Cognac Châteaubernard ').toLowerCase(), none: T.stripMarks(null) } }""")
+    c.eq((r['up'], r['low'], r['none']), ('EVREUX-FAUVILLE OA', '  cognac chateaubernard ', ''), 'stripMarks then the case, blanks kept: what find.js (capitals) and ground.js (lower case) gave', what='fold')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
