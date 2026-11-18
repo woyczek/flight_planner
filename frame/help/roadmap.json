@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f1eb8b5",
+  "organisation": "d4e78b5",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -4292,12 +4292,13 @@
     {
      "id": "SOG-0469",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : pas de carte du tout sur une mission dont les lieux n'ont pas de position (terrains écrits en minuscules)",
      "en": "Mission workshop: no map at all on a mission whose places have no position (airfields written in lower case)",
      "de": "Missionswerkstatt: gar keine Karte bei einer Mission, deren Orte keine Position haben (Flugplätze kleingeschrieben)",
      "es": "Taller de misiones: ningún mapa en una misión cuyos lugares no tienen posición (aeródromos escritos en minúsculas)",
-     "rank": 447
+     "rank": 447,
+     "test": true
     },
     {
      "id": "SOG-0471",
@@ -4525,12 +4526,13 @@
     {
      "id": "SOG-0448",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Le secret d'un tiroir fermé : la fiche, le Détail et la Carte ne montrent que ce que cite la partie visible ou un tiroir ouvert",
      "en": "The secret of a closed drawer: the sheet, the Detail and the Map only show what the visible part or an opened drawer cites",
      "de": "Das Geheimnis einer geschlossenen Schublade: Blatt, Detail und Karte zeigen nur, was der sichtbare Teil oder eine geöffnete Schublade nennt",
      "es": "El secreto de un cajón cerrado: la ficha, el Detalle y el Mapa solo muestran lo que cita la parte visible o un cajón abierto",
-     "rank": 458
+     "rank": 458,
+     "test": true
     }
    ]
   },
@@ -4568,12 +4570,13 @@
     {
      "id": "SOG-0459",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions à tiroirs : l'existence même des tiroirs est cachée ; on choisit de dévoiler la mission complète",
      "en": "Missions with drawers: the very existence of drawers is hidden; revealing the full mission is a deliberate choice",
      "de": "Missionen mit Schubladen: schon ihre Existenz bleibt verborgen; die ganze Mission wird nur auf ausdrücklichen Wunsch aufgedeckt",
      "es": "Misiones con cajones: se oculta incluso que existan; revelar la misión completa es una elección expresa",
-     "rank": 459
+     "rank": 459,
+     "test": true
     }
    ]
   },
@@ -4612,12 +4615,13 @@
     {
      "id": "SOG-0460",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Missions : l'aller-retour avec ChatGPT — copier le prompt, coller la réponse, alimenter le registre (tiroirs et zones en contour compris)",
      "en": "Missions: the round trip with ChatGPT — copy the prompt, paste the answer, feed the register (drawers and outlined areas included)",
      "de": "Missionen: der Hin- und Rückweg mit ChatGPT — Prompt kopieren, Antwort einfügen, Register füllen (mit Schubladen und umrissenen Gebieten)",
      "es": "Misiones: la ida y vuelta con ChatGPT — copiar el prompt, pegar la respuesta, alimentar el registro (cajones y zonas con contorno incluidos)",
-     "rank": 461
+     "rank": 461,
+     "test": true
     }
    ]
   },
