@@ -3716,3 +3716,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Done**: `rad_repairs` extracted from `plan.plan` (same loop, three attempts at most), with the two corrections of the fiche. The old K303 assertion « the answer says a detour of +n NM » passed only because of the defect: its retry had failed (one NAT entry in the bench) and the head route differed from the first retry's by 8 NM; this was the sentence of a retry that did not exist.
 - **Not done**: a bench with a second entry that the fallback can take on the real base (with ETIKI as an ordinary entry the route does not pass by REGHI at all, so the fallback is not needed): the mechanism is proved by K376 with a scripted search.
+## 19 November 2026 — SOG-0476: the arrival that cannot be reached
+
+- **Measure** (the base of this workstation): `is` carries 118 airways of which 96 span FL195 to FL285 and none reaches FL350; the nearest points of `is` and `gb` are INACO and STN, 452 NM apart. The fallback of SOG-0474 did not fire (points existed near the aerodrome, at no usable level and linked to nothing). The first try (a bridge from any reachable point) joined the departure to a NAT point (`60/20`): the A* then found nothing, because the NAT edges are placed apart by the NAT layer: they are now excluded from the reachability, as are the edges whose ceiling is below the level.
+- **Done**: `Nav.bridge_gap`; the REVUE of a gap; K358. Ten reference flights identical; London → Keflavik and Keflavik → London computed (1.9 s, 2.3 s).
+- **Not done**: Keflavik → New York (no network to the west; NAT routes not used for a bridge); the X-Plane network of Q-0108 does not take Iceland (it has an official, low, network: the threshold by LEVEL is the ergonomist's decision).

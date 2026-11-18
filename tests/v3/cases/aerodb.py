@@ -17738,3 +17738,101 @@ def k379(c):
     t0 = time.perf_counter()
     found = D.EXC.findall(hostile)
     c.ok(found == [] and time.perf_counter() - t0 < 0.5, str((found, time.perf_counter() - t0)), 'a text of 7 000 signs made to make the pattern of the exception backtrack is read in under half a second (the two classes are bounded)')
+@case('K358', 'Route engine, SOG-0476 (an arrival that cannot be reached): when the arrival is NOT reachable from the departure at the requested level — a part of the network that is isolated or whose airways stop below the level (Iceland: FL285, 452 NM from the network of the United Kingdom) — the route is never lost: ONE direct leg joins the two parts (the shortest, at most 900 NM), marked `no_network: gap`, said in a REVUE « la base n\'a pas de liaison entre … et … », status « CONTRÔLE PARTIEL »; a flight whose arrival is reachable gets none',
+      'K', static=True,
+      rule='SOG-0476 (the relay, 18 Nov: « le repli s\'étend au terrain qui n\'est pas ATTEIGNABLE depuis l\'autre bout »). Measured on the real base: EGLL → BIKF answered « CALCUL IMPOSSIBLE » at every level and took the whole bound (15 s); the Icelandic network (118 segments) stops at FL285 and lies 452 NM from the UK network. After: 1.9 s, CONTRÔLE PARTIEL, 1 061 NM, a direct of 271 NM; the routes of ten reference flights are identical. The reachability counts only the edges usable at the level (a ceiling below it is not usable) and never the NAT routes (the NAT layer places them apart). Invented airports, points and routes.')
+def k358(c):
+    import gzip
+    import json
+    import os
+    import tempfile
+    RJ = _regen()
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view, results_cache
+    pt = lambda i, lat, lon: {'id': i, 'type': 'ICAO', 'lat': lat, 'lon': lon}
+    pos = {'PTAAA': (51.7, -1.0), 'PTBBB': (50.5, 4.0), 'PTCCC': (48.5, 9.0), 'PTDDD': (47.0, 13.0), 'PTEEE': (47.4, 14.0)}
+    isl = {'ISAAA': (44.5, 16.0), 'ISBBB': (44.2, 17.0), 'ISCCC': (43.9, 18.0)}
+    air = lambda route, pts, ids, upper: [{'route': route, 'a': pt(a, *pts[a]), 'b': pt(b, *pts[b]), 'lower': 0, 'upper': upper} for a, b in zip(ids, ids[1:])]
+    ways = air('L601', pos, ['PTAAA', 'PTBBB', 'PTCCC', 'PTDDD', 'PTEEE'], 66000) + air('UN800', isl, ['ISAAA', 'ISBBB', 'ISCCC'], 28500)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        RF.make_base(data)
+        d = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        rows = [['EGLL', 'LONDON HEATHROW', 51.47, -0.45, 83, 0, 0], ['LQXX', 'ISLAND AIRFIELD', 43.8, 18.3, 100, 0, 0], ['EGWU', 'NEAR AIRFIELD', 51.55, -0.9, 120, 0, 0]]
+        for k, v in {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': rows}, 'points': [pt(k, *v) for k, v in {**pos, **isl}.items()], 'navaids': [], 'airways': ways}.items():
+            with open(os.path.join(d, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        rad = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad, RF.rad_sheets())
+        radz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(radz, I.merge([], [I.read_book(rad)[1]]))
+        fra = os.path.join(data, 'route', 'fra.json.gz')
+        with gzip.open(fra, 'wt', encoding='utf-8') as f:
+            json.dump([], f)
+        results_cache.ENABLED = False
+        try:
+            def run(adep, adest, fl):
+                res = PL.compute(view.to_request({'action': 'compute', 'adep': adep, 'adest': adest, 'date': '2026-11-10T10:30', 'alternatives': False, 'proposals': False, 'fl': fl}), data, radz, fra)
+                p = res['primary']
+                return p.get('status'), p.get('route'), [i['text'] for i in p.get('issues', []) if i['level'] == 'REVUE' and 'liaison' in i['text']], [l.get('no_network') for l in p.get('legs', [])]
+            island = run('EGLL', 'LQXX', 350)
+            back = run('LQXX', 'EGLL', 350)
+            normal = run('EGLL', 'EGWU', 350)
+        finally:
+            results_cache.ENABLED = True
+    c.eq(island[0], 'CONTRÔLE PARTIEL — À VÉRIFIER', 'the arrival is on a part of the network whose airways stop below the level and that touches nothing: the route is returned, to examine (not « CALCUL IMPOSSIBLE »)', what='status')
+    c.ok(bool(island[1]) and 'PTEEE' in island[1] and ' DCT ISAAA UN800 ISCCC DCT LQXX' in island[1], str(island[1]), 'the route goes to PTEEE (the last point of the main network), ONE direct leg to the isolated part (ISAAA, its nearest point), its airway, then the aerodrome (the step down to FL280 for an airway that stops at FL285 is the engine own)')
+    c.eq((len(island[2]), 'PTEEE' in island[2][0] and 'ISAAA' in island[2][0] and ' NM ' in island[2][0], island[3].count('gap')), (1, True, 1), 'one REVUE says « la base n\'a pas de liaison entre PTEEE et ISCCC », the length of the direct; exactly one leg is marked gap', what='review')
+    c.ok(bool(back[1]) and back[0] != 'CALCUL IMPOSSIBLE' and back[3].count('gap') == 1, str(back[:2]), 'the other way (departure on the isolated part): a route too, with its one direct')
+    c.ok(normal[0] != 'CALCUL IMPOSSIBLE' and not normal[2] and 'gap' not in normal[3], str(normal[:3]), 'a flight whose arrival is reachable has no such leg nor such review: nothing changes for it')
+
+
+@case('K359', 'Route engine, SOG-0476 review by Security (cost): `bridge_gap` answers at once when the two parts of the graph are farther apart than the bound (the boxes of the two sets), walks only the BORDER of each ring of the grid, and has a budget of visits — two invented grids of 3 000 points at 1 360 NM from each other give None in less than a second; two grids within reach still give the shortest direct',
+      'K', static=True,
+      rule='Security (19 Nov): the search of the grid went over the whole square of each ring (about 13 000 iterations per point) and was called at every graph whose arrival is not reachable: a flight from Europe to North America outside the NAT (two large networks, no neighbour over the Atlantic) was 30 000 points × 13 000 = minutes with no guard of time. Now: boxes first (the case of the Atlantic: one look), the border of the ring only (O(r)), a budget of 2 000 000 visits (then what is found, or nothing: nothing is lost). Invented grids.')
+def k359(c):
+    import time
+    RJ = _regen()
+    from route_engine import engine
+
+    class N:
+        pass
+    def grid(n, lat0, lon0, tag):
+        nodes, ids = {}, []
+        for i in range(55):
+            for j in range(55):
+                k = f'{tag}{i:02d}{j:02d}'
+                nodes[k] = {'id': k, 'lat': lat0 + i * 0.04, 'lon': lon0 + j * 0.04}
+                ids.append(k)
+        return nodes, ids
+
+    def build(lon_b):
+        n = N()
+        na, ia = grid(0, 40.0, -10.0, 'AA')
+        nb, ib = grid(0, 40.0, lon_b, 'BB')
+        n.nodes = {**na, **nb, 'DEP': {'id': 'DEP', 'lat': 40.0, 'lon': -10.1}, 'ARR': {'id': 'ARR', 'lat': 40.0, 'lon': lon_b + 2.3}}
+        g = {'DEP': [(k, {'route': 'DCT'}) for k in ia[:3]]}
+        for k, k2 in zip(ia, ia[1:]):
+            g.setdefault(k, []).append((k2, {'route': 'UA1', 'upper': 66000}))
+        for k, k2 in zip(ib, ib[1:]):
+            g.setdefault(k, []).append((k2, {'route': 'UB1', 'upper': 66000}))
+        g[ib[-1]] = [('ARR', {'route': 'DCT'})]
+        return n, g
+    far, g_far = build(20.0)
+    t0 = time.time()
+    r_far = engine.Nav.bridge_gap(far, g_far, 'DEP', 'ARR', 350)
+    far_s = time.time() - t0
+    near, g_near = build(-6.0)
+    t0 = time.time()
+    r_near = engine.Nav.bridge_gap(near, g_near, 'DEP', 'ARR', 350)
+    near_s = time.time() - t0
+    c.eq((r_far, far_s < 1.0), (None, True), 'two grids of 3 000 points at about 1 360 NM from each other: no link, and the answer takes less than a second (the boxes are enough)', what='far')
+    c.ok(r_near is not None and r_near[0] < 900 and r_near[1].startswith('AA') and r_near[2].startswith('BB') and near_s < 5.0, str(r_near) + ' %.2fs' % near_s, 'two grids within reach (a few NM apart): the shortest direct, from the part of the departure to the part of the arrival, in a few seconds at most')
+    keep = engine.MAX_BRIDGE_VISITS
+    engine.MAX_BRIDGE_VISITS = 10
+    try:
+        capped = engine.Nav.bridge_gap(near, g_near, 'DEP', 'ARR', 350)
+    finally:
+        engine.MAX_BRIDGE_VISITS = keep
+    c.ok(capped is None or capped[0] < 900, str(capped), 'a budget of visits that is too small ends the search at once with what it has (the shortest found so far, or nothing): never an exception, never a long loop')

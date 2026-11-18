@@ -20,6 +20,7 @@ GRAPH_MIN_S = 0.0   # SOG-0354 L5 (3) : un vol océanique ne COMMENCE pas la con
 DEADLINE_CEIL = None      # SOG-0475 : la fin du calcul entier (plan.plan la pose) : la borne de tête ne s'étend jamais au-delà
 GRAPH_SEARCH_MIN_S = 3.0      # SOG-0475 : après la construction d'un graphe, la recherche a au moins cela (dans la limite du calcul entier) : un graphe de 5 à 9 s (un vol long d'Europe) ne mange plus toute la borne de tête
 TURN_CACHE_MAX = 200000      # revue de Sécurisation : au plus ce nombre de triplets (précédent, point, suivant) dans la mémoire des virages d'un Nav ; au-delà elle est vidée
+MAX_BRIDGE_VISITS = 2_000_000      # SOG-0476 (Sécurisation) : les cellules et points visités par une recherche de direct
 NO_NETWORK_MAX_NM = 900      # SOG-0474 : au-delà, aucun direct de repli (le terrain est trop loin de tout réseau lu)
 DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
 
@@ -503,6 +504,58 @@ class Nav:
         self.last_search=dict(algorithm='parcours en largeur (liaison sans altitude)',expanded=len(seen),seconds=0.0,found=False,fra_reachable=fra_seen)
         return False
 
+    def bridge_gap(self,g,a,b,fl,steps=False):
+        """SOG-0476 : (NM, de, vers) le plus court direct d'un point atteignable DEPUIS `a` à un point d'où `b` est atteignable, à NO_NETWORK_MAX_NM au plus ; None sinon. Les deux parties du graphe ne se touchent pas (la base n'a pas de voie entre elles) : le direct
+        est le seul lien, dit en revue (jamais une route perdue). Parcours en largeur sans altitude, grille d'un degré sur le plus grand des deux ensembles : borné par la taille du graphe."""
+        usable=lambda e:not e.get('nat') and (steps or not isinstance(e.get('upper'),(int,float)) or e['upper']>=fl*100)      # les routes NAT ne relient pas : la couche NAT les pose à part (sections) ; une voie dont le plafond est sous le niveau demandé n'est pas utilisable à ce niveau (sauf si les paliers sont permis)
+        def reach(start,adj):
+            seen={start};todo=[start]
+            while todo:
+                for other,e in adj.get(todo.pop(),()):
+                    if other not in seen and usable(e):seen.add(other);todo.append(other)
+            return seen
+        fwd=reach(a,g)
+        if b in fwd:return None
+        rev=collections.defaultdict(list)
+        for u,edges in g.items():
+            for v,e in edges:rev[v].append((u,e))
+        together={a};todo=[a]      # SOG-0476 (Essais : K105) : si `b` est du MÊME réseau que `a` sans tenir compte du sens, ce n'est pas une coupure mais un sens unique pris à rebours : jamais ponté (une voie à sens unique reste interdite à rebours)
+        while todo:
+            k=todo.pop()
+            for other,e in list(g.get(k,()))+list(rev.get(k,())):
+                if other not in together and usable(e):together.add(other);todo.append(other)
+        if b in together:return None
+        bwd=reach(b,rev)
+        real=lambda k:'|FRA|' not in k and '|PROC|' not in k and k in self.nodes
+        fwd={k for k in fwd if real(k) and k!=a};bwd={k for k in bwd if real(k) and k!=b}
+        if not fwd or not bwd:return None
+        small,big,toward_b=(fwd,bwd,True) if len(fwd)<=len(bwd) else (bwd,fwd,False)
+        def box(keys):
+            lats=[self.nodes[k]['lat'] for k in keys];lons=[self.nodes[k]['lon'] for k in keys]
+            return min(lats),max(lats),min(lons),max(lons)
+        (s0,s1,so0,so1),(b0,b1,bo0,bo1)=box(small),box(big)      # SOG-0476 (Sécurisation) : deux boîtes à plus de 900 NM l'une de l'autre (l'Atlantique : deux grands réseaux sans voisin) : aucun lien possible, rien n'est parcouru
+        dlat=max(0.0,s0-b1,b0-s1)*60;dlon=max(0.0,so0-bo1,bo0-so1)*60*math.cos(math.radians(min(80.0,max(abs(s0),abs(s1),abs(b0),abs(b1)))))
+        if max(dlat,dlon)>NO_NETWORK_MAX_NM:return None
+        cells=collections.defaultdict(list)
+        for k in big:
+            p=self.nodes[k];cells[(math.floor(p['lat']),math.floor(p['lon']))].append(k)
+        reach_deg=int(NO_NETWORK_MAX_NM/60)+2
+        best=None;visits=0
+        for k in small:
+            p=self.nodes[k];la,lo=math.floor(p['lat']),math.floor(p['lon'])
+            for r in range(reach_deg+1):      # l'anneau r : SON BORD seulement (la longitude compte double : un degré de longitude vaut moins d'un degré de latitude)
+                ring=[(x,y) for x in (la-r,la+r) for y in range(lo-2*r,lo+2*r+1)] if r else [(la,lo)]
+                if r:ring+=[(x,y) for y in (lo-2*r,lo+2*r) for x in range(la-r+1,la+r)]
+                for xy in ring:
+                    for other in cells.get(xy,()):
+                        visits+=1
+                        d=nm(p,self.nodes[other])
+                        if d<=NO_NETWORK_MAX_NM and (best is None or d<best[0]):best=(d,k,other) if toward_b else (d,other,k)
+                    visits+=1
+                if visits>MAX_BRIDGE_VISITS:return best      # un budget de visites : au-delà, ce qui est trouvé (ou rien : non décidé, rien de perdu)
+                if best and best[0]<=r*30:break      # un anneau plus loin ne peut pas être plus proche
+        return best
+
     def no_network_anchor(self,airport,isdep,g,incoming,fl,a,b):
         """SOG-0474 : le point du réseau le plus proche d'un terrain qui n'en a aucun à portée de raccord : (NM, clé), dans la plus grande partie CONNEXE du réseau haut à ce niveau (`nat_layer.main_network` : un point isolé n'est pas un point de repli) ET ATTEIGNABLE depuis le départ (vers l'arrivée pour un départ : un bout de voie à sens unique qui ne mène nulle part n'est pas le dernier point connu), à NO_NETWORK_MAX_NM au plus ; None sinon."""
         from . import nat_layer
@@ -641,6 +694,10 @@ class Nav:
                     e=dict(route='DCT',nm=d,connector=True,**({'no_network':True} if fallback else {}))
                     if isdep: g.setdefault(airport,[]).append((k,e))
                     else: g.setdefault(k,[]).append((airport,e))
+            link=self.bridge_gap(g,a,b,fl,allow_steps)      # SOG-0476 : l'arrivée n'est PAS atteignable depuis le départ AU NIVEAU DEMANDÉ (un réseau isolé ou plafonné : l'Islande, à 452 NM de celui du Royaume-Uni, ses voies s'arrêtent à FL285) : jamais une route perdue ; UN direct entre les deux parties, dit
+            if link:
+                gap,u,v=link
+                g.setdefault(u,[]).append((v,dict(route='DCT',nm=gap,connector=True,no_network='gap')))
             # An imposed AD is an overflight waypoint, never a landing. Only this
             # explicit simulation connector is added; its altitude stays airborne.
             for ident in via:
@@ -1074,8 +1131,12 @@ def assess(request,_nav=None,_rad=None,_path=None):
     if xp:
         names=sorted({l['via'] for l in xp if l['via']!='DCT'})[:8]
         issue('REVUE',f"Réseau X-Plane (Navigraph), personnel, cycle {(getattr(nav,'xplane',None) or {}).get('cycle') or '?'} : {len(xp)} tronçon(s) ({', '.join(names)}) d'un État sans réseau officiel — non officiel, à vérifier.")
+    for l in legs:      # SOG-0476 : la base n'a pas de liaison entre deux parties du réseau : un direct, dit avec ses deux bouts et sa longueur
+        if l.get('no_network')=='gap':
+            from_id,to_id,km=l['start']['id'],l['end']['id'],l['nm']
+            issue('REVUE',f"Réseau absent : la base n'a pas de liaison entre {from_id} et {to_id} ; un direct de {km:.0f} NM les relie, simulation non validée (aucune route lue).")
     for l in legs:      # SOG-0474 : le terrain n'a aucun point du réseau à portée de raccord (la base n'a pas le réseau de son État) : la route va jusqu'au dernier point connu, puis UN direct, dit
-        if l.get('no_network'):
+        if l.get('no_network') is True:
             far_end=l['end'] if l['start']['id'] in (dep,arr) else l['start']
             ad_end=l['start'] if far_end is l['end'] else l['end']
             ad_id,far_id,km=ad_end['id'],far_end['id'],l['nm']
