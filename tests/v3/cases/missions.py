@@ -6474,7 +6474,8 @@ def n105(c):
 
 _RTMOVE = f'{E} [data-chipmove="start"]'
 _DWMOVE = f'{_DW} [data-chipmove="drawer"]'
-_CHIPMOVE_STATE = """(sel) => { const r = document.querySelector(sel); return r ? [r.querySelector('[data-chiphint]').hidden, ...[...r.querySelectorAll('button')].map(b => b.disabled)] : null }"""
+# SOG-0467: the line « Touchez un lieu pour le choisir… » is gone (in the help); the first item says whether a chip is chosen (what hid that line)
+_CHIPMOVE_STATE = """(sel) => { const r = document.querySelector(sel); return r ? [!!r.parentElement.querySelector('[data-chipsel]'), ...[...r.querySelectorAll('button')].map(b => b.disabled)] : null }"""
 _RTPRESSED = f"[...document.querySelectorAll('{E} [data-edroute] [data-chip]')].filter(x => x.hasAttribute('data-chipsel') && x.querySelector('.ms-chipname').getAttribute('aria-pressed') === 'true').map(x => x.dataset.chip)"
 _DWPRESSED = f"[...document.querySelectorAll('{_DW} [data-dwroute] [data-chip]')].filter(x => x.hasAttribute('data-chipsel') && x.querySelector('.ms-chipname').getAttribute('aria-pressed') === 'true').map(x => x.dataset.chip)"
 _RTFIXED = f"[...document.querySelectorAll('{E} [data-edroute] [data-chipfixed]')].map(x => [x.dataset.chip, x.querySelectorAll('button').length])"
@@ -6534,11 +6535,11 @@ def n106(c):
     ed_places(c)
     c.until(f"!!document.querySelector('{E} [data-edroute]')", what='the route of the departure in the Lieux')
     c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
-    c.eq([order(), c.js(_RTFIXED), c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE), norm(c.text(f'{_RTMOVE} [data-chiphint]')),
+    c.eq([order(), c.js(_RTFIXED), c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE), c.count(f'{_RTMOVE} [data-chiphint]'),
           [norm(x) for x in c.js(f"[...document.querySelectorAll('{_RTMOVE} button')].map(b => b.textContent)")]],
-         [['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'], [['ORIGIN', 0], ['DESTINATION', 0]], [], [False, True, True], T('rtMoveHint'), [T('rtEarlier'), T('rtLater')]],
-         'the departure and the arrival are anchored chips: no button to choose them, no cross; under the chips the two arrows, not given while no chip is chosen, and the '
-         'line that says how', what='before a choice')
+         [['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'], [['ORIGIN', 0], ['DESTINATION', 0]], [], [False, True, True], 0, [T('rtEarlier'), T('rtLater')]],
+         'the departure and the arrival are anchored chips: no button to choose them, no cross; under the chips the two arrows, not given while no chip is chosen (the '
+         'line that said how is in the help since SOG-0467)', what='before a choice')
     # a chip chosen, in place
     c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
     c.tap(f'{E} [data-edroute] [data-chip="PT1"] .ms-chipname')
@@ -8954,4 +8955,89 @@ def n131(c):
     w = c.js(f"(() => {{ const r = document.querySelector('{_EDTOOLS}'); return [r.scrollWidth <= r.clientWidth, document.documentElement.scrollWidth <= document.documentElement.clientWidth] }})()")
     c.eq(w, [True, True], '390: the row of tools holds without scrolling sideways', what='the row at 390')
     ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+
+# SOG-0467, the rule of the text: per GROUP (a card, a group of a sheet, a sub-group with its own title, the fields of a place, the line under the
+# tools of the map), at most ONE line of secondary text — a visible `.f-muted` or `small` with text. Not secondary text: a field label (`label`,
+# `.ms-lbl`), the data of a row of a list (`.f-item`, `.ms-plrow`, `.ms-edteam`, `li`, `.ms-chip`), what the pilot will read (`.ms-pilot`), the value
+# line of the aerodrome field of the suite (`.ms-adname`), the sketch. A group added to the screen with one of these classes is measured too.
+# And no secondary text smaller than `.f-muted` (a probe gives its size).
+_TEXT_RULE = f"""(() => {{ const root = document.querySelector('{E}'); if (!root) return null;
+  const GROUPS = '.f-card, .ms-atgrp, .ms-dgrp, .ms-edsub, .ms-plform, .ms-atmaphintrow',
+    NOT = 'label, .ms-lbl, .f-item, .ms-plrow, .ms-edteam, li, .ms-chip, .ms-pilot, .ms-adname, .ms-atsketch, .ms-crumb',
+    seen = el => {{ const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden' }},
+    probe = Object.assign(document.createElement('p'), {{ className: 'f-muted', textContent: 'x' }});
+  root.append(probe); const ref = parseFloat(getComputedStyle(probe).fontSize); probe.remove();
+  const by = new Map(), small = [];
+  for (const x of root.querySelectorAll('.f-muted, small, .ms-trstate, .ms-attag')) {{
+    if (!seen(x) || !x.textContent.trim()) continue;
+    if (parseFloat(getComputedStyle(x).fontSize) < ref - 0.5) small.push(x.textContent.trim().slice(0, 40));
+    if (x.closest(NOT) || x.parentElement.closest('.f-muted, small')) continue;
+    const g = x.closest(GROUPS); if (!g) continue;
+    if (!by.has(g)) by.set(g, []);
+    by.get(g).push(x.textContent.replace(/\\s+/g, ' ').trim().slice(0, 60)) }}
+  return {{ over: [...by].filter(([, t]) => t.length > 1).map(([g, t]) => [g.className.split(' ').filter(Boolean).slice(0, 2).join('.') + (g.dataset.grp || g.dataset.dgrp ? ':' + (g.dataset.grp || g.dataset.dgrp) : ''), t]),
+    groups: by.size, small }} }})()"""
+
+
+def _text_rule(c, where):
+    """At most one line of secondary text per group, never smaller than f-muted, in the state `where`."""
+    r = c.js(_TEXT_RULE)
+    c.ok(r is not None and not r['over'] and not r['small'], r, f'{where}: at most one line of secondary text per group, none smaller than f-muted')
+
+
+@case('N132', 'Missions › the workshop, less text (SOG-0467): a sentence of explanation stays on screen only for an EMPTY state, an ALERT or a QUESTION — '
+      'the others are in the help; at most ONE line of secondary text per group (a card, a group of a sheet, a sub-group, the fields of a place, the '
+      'line under the tools of the map), never smaller than f-muted — measured at 390 and at 1280 in every state of the workshop: the unfolding and the '
+      'choice of the type, the sheet of the departure and each of its groups, the Lieux and a place open, the sheet of each drawer, the trial, a new '
+      'mission, a veiled one', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0467 (the ergonomist\'s opinion, which is the rule: cut rather than shrink) — modules/missions/EDITOR.md § 7 octotricies')
+def n132(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        reg_open(c, _TRIAL_TEXTS)
+        c.tap(f'{R} [data-rowid="X-001A"] > summary')
+        c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+        c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+        _text_rule(c, f'{width}, veiled')
+        ed_reveal(c)
+        c.until(f"!!document.querySelector('{E} [data-atflow] [data-dradd]')", timeout=10000, what='the whole workshop')
+        _text_rule(c, f'{width}, the workshop')
+        if width < 850:
+            c.tap(f'{E} [data-do=edmap]')
+            _text_rule(c, f'{width}, the map unfolded')
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        _text_rule(c, f'{width}, the choice of the type')
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        for step in ('cadre', 'teams', 'story', 'risks', 'timeline'):
+            if c.js(f"document.querySelector('{E} [data-steps] [data-step=\"{step}\"]').getAttribute('aria-expanded')") != 'true':
+                c.tap(f'{E} [data-steps] [data-step="{step}"]')
+            c.until(f"document.querySelector('{E}')?.dataset.step === '{step}'", what=step)
+            _text_rule(c, f'{width}, the group {step}')
+        for i in range(7):
+            c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="{i}"]')
+            c.until(f"!!document.querySelector('{E} [data-plform=\"{i}\"]')", what=f'the place {i} open')
+            _text_rule(c, f'{width}, the place {i} open')
+        for d in ('B', 'C', 'D', 'E'):
+            c.tap(f'{E} [data-atflow] [data-sel="{d}"]')
+            c.until(f"document.querySelector('{_DW}')?.dataset.drawer === '{d}'", what=f'the sheet of drawer {d}')
+            _text_rule(c, f'{width}, the sheet of drawer {d}')
+            for g in ('texts', 'route', 'pilot') if width < 850 else ():  # on a wide module the three groups are unfolded
+                if c.js(f"document.querySelector('{_DW} [data-do=eddrgrp][data-grp={g}]').getAttribute('aria-expanded')") != 'true':
+                    c.tap(f'{_DW} [data-do="eddrgrp"][data-grp="{g}"]')
+                _text_rule(c, f'{width}, drawer {d}, {g} unfolded')
+            c.tap(f'{_DW} [data-kindcur]')
+            _text_rule(c, f'{width}, drawer {d}, the choice of its key')
+        c.tap(f'{E} [data-atflow] [data-trbtn]')
+        c.until(f"!!document.querySelector('{E} [data-trial]')", what='the trial')
+        _text_rule(c, f'{width}, the trial')
+        c.tap(f'{E} [data-atflow] [data-trbtn]')
+        ed_leave(c)
+        c.until(_REG_READ, timeout=20000, what='back to the registry')
+        c.tap(f'{R} [data-do="edcreate"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission')
+        _text_rule(c, f'{width}, a new mission')
+        ed_leave(c)
     c.js(_REG_CLEAR)

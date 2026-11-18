@@ -61,6 +61,11 @@
 // venir à l'écran DANS la liste (edPlShow, après chaque dessin : la colonne ne défile pas) ; une ligne touchée choisit le lieu sur la
 // carte. Au téléphone, le cadre se met sous la carte (l'ordre des blocs, en CSS). Les cinq autres groupes de la fiche gardent leur pli.
 //
+// Moins de texte (SOG-0467, l'avis de l'ergonome qui fait règle : on COUPE plutôt que rapetisser) : une phrase d'explication ne reste à
+// l'écran que dans un état vide, une alerte ou une question ; les autres sont dans l'aide « Comment s'en servir » (missions-editor). Au
+// plus UNE ligne de texte secondaire par groupe (une carte, un groupe de la fiche, la rangée d'outils de la carte), à la taille de
+// f-muted, jamais plus petite ; la ligne qui dit le contenu d'un groupe ne se montre que replié. EDITOR.md § 7 octotricies.
+//
 // L'atelier voilé (SOG-0459 ; l'utilisateur, 18 nov. : « l'existence même des tiroirs est cachée par défaut, à tout le monde, auteur
 // compris ; on choisit de dévoiler ») : une mission EXISTANTE ouverte par « Modifier » ou « Dupliquer » s'ouvre voilée (s.ed.veil,
 // ED.veiledAt : sauf `state().fullView === true`) ; une mission créée est entière. Voilé, l'atelier ne montre que ce que le pilote voit
@@ -211,13 +216,13 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-dgrp[data-open=""]>.ms-dbody{display:none}
 [data-module="missions"] .ms-dsum{grid-template-columns:auto minmax(0,1fr)}
 [data-module="missions"] .ms-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
-[data-module="missions"] .ms-edroute{margin-top:12px;padding-top:10px;border-top:1px solid var(--sog-line,#ddd)}
-[data-module="missions"] .ms-edroute>h4{margin:0 0 4px}
+[data-module="missions"] .ms-edsub{margin-top:12px;padding-top:10px;border-top:1px solid var(--sog-line,#ddd)}
+[data-module="missions"] .ms-edsub>h4{margin:0 0 4px}
 [data-module="missions"] .ms-pilot{border:1px solid var(--sog-line,#ddd);padding:8px 10px;margin:0 0 8px;background:var(--sog-bg,#fff)}
 [data-module="missions"] .ms-pilot p{margin:.3em 0}
 [data-module="missions"] .ms-pilot p:empty{display:none}
 [data-module="missions"] .ms-pilot .ms-pre{white-space:pre-wrap;overflow-wrap:anywhere}
-[data-module="missions"] .ms-pilot .ms-attag{font-size:.75em;letter-spacing:.05em;text-transform:uppercase}
+[data-module="missions"] .ms-pilot .ms-attag{font-size:var(--sog-size-s);font-weight:600}
 [data-module="missions"] .ms-chip{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--sog-line,#ddd);padding:0 0 0 10px;min-height:44px}
 [data-module="missions"] .ms-chip>button{min-width:44px;min-height:44px;border:0;background:none;font:inherit;color:inherit}
 [data-module="missions"] .ms-chip:has(>.ms-chipname){padding:0}
@@ -231,7 +236,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-chipmove>button{min-height:44px}
 [data-module="missions"] .ms-atflowhead{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 [data-module="missions"] .ms-atflowhead>h3{margin:0}
-[data-module="missions"] .ms-trstate{display:block;font-size:.85em;font-weight:600;color:var(--sog-muted,#666)}
+[data-module="missions"] .ms-trstate{display:block;font-size:var(--sog-size-s);font-weight:600;color:var(--sog-muted,#666)}
 [data-module="missions"] .ms-trstate:empty{display:none}
 [data-module="missions"] .ms-trstate[data-open="1"]{color:var(--ok,#1e7e34)}
 [data-module="missions"] .ms-trrange{width:100%;min-height:44px}
@@ -243,7 +248,8 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atgrp:last-child{border-bottom:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atsum{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:8px;align-items:center;width:100%;min-height:48px;text-align:left;border:0;background:none;padding:4px 0;font:inherit;color:inherit}
 [data-module="missions"] .ms-atsum>b{white-space:nowrap}
-[data-module="missions"] .ms-atline{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.9em}
+[data-module="missions"] .ms-atline{text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--sog-size-s)}
+[data-module="missions"] :is(.ms-atgrp, .ms-dgrp)[data-open="1"]>.ms-atsum>.ms-atline{display:none} /* déplié, le groupe montre son contenu : sa ligne se tait */
 [data-module="missions"] .ms-atgrp[data-open="1"]>.ms-atsum{font-size:1.05em}
 [data-module="missions"] .ms-atbody{padding:2px 0 10px;min-width:0}
 [data-module="missions"] .ms-atbody>h3{display:none}
@@ -268,7 +274,7 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-atbody .ms-edteam{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-atbody .ms-edteam>.ms-edtdel{grid-column:3;grid-row:1 / span 2}
 [data-module="missions"] .ms-atbody .ms-edthead{display:none}
-[data-module="missions"] .ms-atbody .ms-tlabel{display:block}
+[data-module="missions"] .ms-atbody .ms-tlabel{display:block;font-size:var(--sog-size-s)} /* SOG-0467 : jamais plus petit que f-muted */
 [data-module="missions"] .ms-atbody .ms-evrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}
 [data-module="missions"] .ms-atbody .ms-evrow>.ms-evtext{grid-column:1 / span 2}
 [data-module="missions"] .ms-atfoot{position:sticky;bottom:var(--f-tab-space,0px);margin-top:auto;background:var(--sog-bg,#fff);border-top:1px solid var(--sog-line,#ddd);z-index:2}
@@ -426,22 +432,26 @@ function edCadreHtml(s) {
     field = (k, label, input, hint = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span>${input}${hint ? `<small class="f-muted" data-hint="${k}">${esc(hint)}</small>` : ''}</label>`,
     text = (k, v, extra = '') => `<input data-k="${k}" value="${esc(v)}" autocomplete="off"${extra}>`,
     sel = (k, list, v, empty = true) => `<select data-k="${k}">${empty ? '<option value=""></option>' : ''}${list.map(x => `<option value="${esc(x.code)}"${x.code === v ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select>`,
-    idHint = e.mode === 'edit' ? c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '' : c.id === num.id ? s.tt(TX.edIdNext) : '',
+    // SOG-0467 : une indication au plus — en modification, « l'ancien est gardé » quand l'identifiant change ; sinon la série suivante
+    idHint = e.mode === 'edit' && c.id.toUpperCase() !== e.origId ? s.tt(TX.edIdKept) : '',
+    seriesHint = e.mode === 'edit' ? '' : s.tt(TX.edNextSeries, {
+      n: num.nextSeries
+    }),
     // SOG-0465 : Départ et Arrivée, le champ de terrain de la suite (frame/lib/ad_field.js) — le code d'un terrain dans le champ (son nom
     // dessous, data-adline), le texte d'un lieu qui n'est pas un terrain ; la liste des propositions posée dans la rangée (data-adsug)
     AD = edAd(s),
     ad = (k, label, v) => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="${k}" value="${esc(ED.fieldText(v))}" maxlength="160" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="ed-adsug" placeholder="${esc(s.tt(TX.edPlaceHint))}"><small class="ms-adname" data-adline="${k}"></small></label>`,
     ads = `<div class="f-row ms-adrow">${ad('eddep', TX.edDep, c.dep)}${ad('edarr', TX.edArr, c.arr)}<div class="ms-adsug" id="ed-adsug" data-adsug role="listbox" aria-label="${esc(s.tt(AD.texts.listLabel))}" hidden></div></div>`;
   if (ED.liaison(c.family)) // une liaison (famille commerciale) : le Cadre réduit (décision du 13 nov.), six éléments
-    return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3><p class="f-muted" data-liaison>${esc(s.tt(TX.edLiaisonHint))}</p>
-    <div class="f-row">${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edCharge, sel('edsub', subs, c.subtype)) : ''}</div>
+    return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3>
+    <div class="f-row" data-liaison>${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edCharge, sel('edsub', subs, c.subtype)) : ''}</div>
     ${ads}
     <div class="f-row">${field('edco', TX.edAirline, coSelect(s, 'edco', c.airline || MS.PERSONAL))}${field('edac', TX.edAircraft, text('edac', c.aircraft, ' maxlength="12" autocapitalize="characters" placeholder="A320"'))}</div>
-    ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'), c.title && c.title === ED.liaisonTitle(c.dep, c.arr) ? s.tt(TX.edTitleAuto) : '')}
-    <div class="f-row">${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), s.tt(TX.edNextSeries, { n: num.nextSeries }))}</div>`;
-  return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3><p class="f-muted">${esc(s.tt(TX.edCadreHint))}</p>
+    ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
+    <div class="f-row">${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), idHint ? '' : seriesHint)}</div>`;
+  return `<h3>1. ${esc(s.tt(TX.stepCadre))}</h3>
     <div class="f-row">${field('edfam', TX.edFamily, sel('edfam', edFamilies(s, lang), c.family))}${subs.length ? field('edsub', TX.edSubtype, sel('edsub', subs, c.subtype)) : ''}</div>
-    <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), s.tt(TX.edNextSeries, { n: num.nextSeries }))}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
+    <div class="f-row">${field('edser', TX.edSeries, text('edser', c.series, ` inputmode="numeric" maxlength="5"${e.regSeries ? ` placeholder="${esc(e.regSeries)}"` : ''}`), idHint ? '' : seriesHint)}${field('edid', TX.edId, text('edid', c.id, ' maxlength="5" autocapitalize="characters"'), idHint)}</div>
     ${field('edtitle', TX.edTitle, text('edtitle', c.title, ' maxlength="200"'))}
     ${field('edth', TX.edTheatre, sel('edth', theatres.map(t => ({ code: t, label: t })), c.theatre))}
     ${ads}`;
@@ -500,7 +510,7 @@ const edStepOk = (e, doc, step) => !edTodos(e, doc).some(t => t.step === step);
 function edTeamsHtml(s) {
   const rows = s.ed.teams || [],
     inp = (i, f, v, label, extra = '') => `<label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(label))}</span><input data-k="edteam" data-i="${i}" data-f="${f}" value="${esc(v)}" placeholder="${esc(s.tt(label))}" autocomplete="off"${extra}></label>`;
-  return `<h3>2. ${esc(s.tt(TX.stepTeams))}</h3><p class="f-muted">${esc(s.tt(TX.edTeamsHint))}</p>
+  return `<h3>2. ${esc(s.tt(TX.stepTeams))}</h3>
     <div class="f-list" data-edteams>${rows.length ? `<div class="ms-edteam ms-edthead f-muted" aria-hidden="true">${[TX.edTeamName, TX.edTeamType, TX.edTeamService, TX.edTeamRole].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>` : ''}${rows.length ? rows.map((r, i) => `<div class="ms-edteam" data-team="${i}">${inp(i, 'name', r.name, TX.edTeamName, ' maxlength="80"')}${inp(i, 'type', r.type, TX.edTeamType, ' maxlength="60" autocapitalize="characters"')}${inp(i, 'service', r.service, TX.edTeamService, ' maxlength="120"')}${inp(i, 'role', r.role, TX.edTeamRole, ' maxlength="200"')}<button type="button" class="ms-edtdel" data-do="edteamdel" data-i="${i}" title="${esc(s.tt(TX.edTeamDel))}" aria-label="${esc(s.tt(TX.edTeamDel))}">✕</button></div>`).join('') : `<p class="f-muted" data-noteam>${esc(s.tt(TX.edTeamNone))}</p>`}</div>
     ${rows.length < ED.TEAMS_MAX ? `<button type="button" data-do="edteamadd">${esc(s.tt(TX.edTeamAdd))}</button>` : ''}`;
 }
@@ -582,14 +592,13 @@ function edPlacesHtml(s, listOnly = false) {
         }) : '', r.alt ? s.tt(EDTX.plAltIs, {
           a: dec(s, r.alt)
         }) : ''].filter(Boolean).join(' · ');
-        return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc(r.id)} — ${esc(s.tt(e.veil ? EDTX.plObjectHintVeil : EDTX.plObjectHint))}</p>
+        return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
         <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
         <div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
           <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>
-        ${r.moving ? `<p class="f-muted" data-plmoving>${esc(s.tt(EDTX.plMoving))}</p>` : ''}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
       }
       // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
@@ -611,8 +620,7 @@ function edPlacesHtml(s, listOnly = false) {
     list = rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><button type="button" class="ms-plpick" data-do="edplace" data-i="${i}"${on(i) ? ' aria-current="true"' : ''}><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span></button></div>`).join('');
   if (listOnly) return list; // SOG-0478 : un geste en cours ne remplace que les lignes
   const open = e.placeEdit >= 0 && rows[e.placeEdit] && shown[e.placeEdit] ? form(rows[e.placeEdit], e.placeEdit) : '';
-  return `<p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
-    <div data-edplaces><div class="ms-pllist" data-pllist>${list}</div>${open}</div>
+  return `<div data-edplaces><div class="ms-pllist" data-pllist>${list}</div>${open}</div>
     <div class="f-row ms-pladd">${e.veil || rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>${edRouteHtml(s, rows)}`;
 }
 
@@ -670,14 +678,14 @@ function edChipEnds(chips, sel) {
   };
 }
 
-/** Les deux flèches d'une route, sous ses pastilles : « ← Plus tôt » et « Plus tard → » déplacent la pastille choisie d'un rang ;
- *  avant qu'une pastille soit choisie, la ligne dit comment faire. Rien pour une route de moins de deux lieux LIBRES (les ancres
- *  de la route du départ ne comptent pas). */
+/** Les deux flèches d'une route, sous ses pastilles : « ← Plus tôt » et « Plus tard → » déplacent la pastille choisie d'un rang (ni
+ *  données avant qu'une pastille soit choisie ; la façon de faire est dans l'aide, SOG-0467). Rien pour une route de moins de deux lieux
+ *  LIBRES (les ancres de la route du départ ne comptent pas). */
 function edChipMoveHtml(s, where, chips) {
   const ends = edChipEnds(chips, edChipSel(s.ed, where)),
     w = where === 'start' ? 'start' : 'drawer',
     btn = (step, label, off) => `<button type="button" data-do="edchipmove" data-where="${w}" data-step="${step}"${off ? ' disabled' : ''}>${esc(s.tt(label))}</button>`;
-  return chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-chipmove" data-chipmove="${w}"><p class="f-muted" data-chiphint${ends.at < 0 ? '' : ' hidden'}>${esc(s.tt(EDTX.rtMoveHint))}</p>${btn(-1, EDTX.rtEarlier, ends.first)}${btn(1, EDTX.rtLater, ends.last)}</div>`;
+  return chips.filter(c => !c.fixed).length < 2 ? '' : `<div class="ms-chipmove" data-chipmove="${w}">${btn(-1, EDTX.rtEarlier, ends.first)}${btn(1, EDTX.rtLater, ends.last)}</div>`;
 }
 
 /** Les pastilles et les flèches d'une route, remises SUR PLACE après un choix ou un déplacement (SOG-0449 : la flèche pressée n'est
@@ -701,9 +709,7 @@ function edChipsShow(s, where, moved) {
       name?.setAttribute('aria-pressed', String(on));
     }
   if (!row) return;
-  const hint = row.querySelector('[data-chiphint]'),
-    [earlier, later] = row.querySelectorAll('button');
-  if (hint) hint.hidden = ends.at >= 0;
+  const [earlier, later] = row.querySelectorAll('button');
   if (earlier) earlier.disabled = ends.first;
   if (later) later.disabled = ends.last;
 }
@@ -717,7 +723,7 @@ function edRouteHtml(s, rows) {
     name = r => r.kind === 'dep' || r.kind === 'arr' ? String(r.name || '').split(' · ')[0] : r.id,
     by = new Map(edShown(e, rows).filter(Boolean).map(r => [ED.routeToken(r), r]).filter(x => x[0])),
     options = [...by].map(([t, r]) => [t, [name(r), r.kind === 'dep' || r.kind === 'arr' ? '' : r.name].filter(Boolean).join(' · ')]);
-  return `<div class="ms-edroute" data-edroute><h4>${esc(s.tt(EDTX.rtTitle))}</h4><p class="f-muted">${esc(s.tt(route.length ? EDTX.rtHint : EDTX.rtNone))}</p>
+  return `<div class="ms-edroute ms-edsub" data-edroute><h4>${esc(s.tt(EDTX.rtTitle))}</h4>${route.length ? '' : `<p class="f-muted">${esc(s.tt(EDTX.rtNone))}</p>`}
     <div class="ms-chips" data-rtchips>${edChipsHtml(s, 'start', edRouteChips(e, rows))}</div>${edChipMoveHtml(s, 'start', edRouteChips(e, rows))}
     ${route.length < ED.ROUTE_MAX ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="edroute" data-f="add"><option value=""></option>${options.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}</div>`;
 }
@@ -727,7 +733,7 @@ function edStoryHtml(s) {
   const t = s.ed.story || {},
     area = (f, label, v, rows, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><textarea data-k="edstory" data-f="${f}" rows="${rows}"${extra}>${esc(v)}</textarea>${f === 'summary' ? `<small class="f-muted" data-stcount>${esc(s.tt(TX.stCount, { n: String(v).length, m: ED.SUMMARY_MAX }))}</small>` : ''}</label>`,
     inp = (f, label, v, extra = '') => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edstory" data-f="${f}" value="${esc(v)}" autocomplete="off"${extra}></label>`;
-  return `<h3>4. ${esc(s.tt(TX.stepStory))}</h3><p class="f-muted">${esc(s.tt(TX.edStoryHint))}</p>
+  return `<h3>4. ${esc(s.tt(TX.stepStory))}</h3>
     ${area('summary', TX.stSummary, t.summary, 4)}
     ${area('description', TX.stDescription, t.description, 8, ` maxlength="${ED.TEXT_MAX}"`)}
     ${area('primary', TX.stPrimary, t.primary, 2, ' maxlength="2000"')}
@@ -740,7 +746,7 @@ function edRisksHtml(s) {
   const e = s.ed,
     rows = e.risks || [],
     field = (i, f, label, v) => `<label class="f-field"><span>${esc(s.tt(label))}</span><input data-k="edrisk" data-i="${i}" data-f="${f}" value="${esc(v ?? '')}" maxlength="300" autocomplete="off"></label>`;
-  return `<h3>5. ${esc(s.tt(TX.stepRisks))}</h3><p class="f-muted">${esc(s.tt(TX.edRisksHint))}</p>
+  return `<h3>5. ${esc(s.tt(TX.stepRisks))}</h3>
     <div class="f-list" data-edrisks>${rows.length ? rows.map((r, i) => `<div class="ms-plrow ms-rkrow" data-risk="${i}"><span class="ms-plbody"><b>${esc(r.hazard || s.tt(TX.rkNoHazard))}${r.mitigation ? ` → ${esc(r.mitigation)}` : ''}</b>${r.consequence ? `<span class="f-muted">${esc(r.consequence)}</span>` : ''}</span><button type="button" class="f-linkbtn" data-do="edrisk" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.riskEdit === i ? `<div class="ms-plform" data-rkform="${i}">${field(i, 'hazard', TX.rkHazard, r.hazard)}${field(i, 'consequence', TX.rkConsequence, r.consequence)}${field(i, 'mitigation', TX.rkMitigation, r.mitigation)}<div class="f-row"><button type="button" data-do="edriskok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edriskdel" data-i="${i}">${esc(s.tt(TX.plRemove))}</button></div></div>` : ''}</div>`).join('') : `<p class="f-muted" data-norisk>${esc(s.tt(TX.rkNone))}</p>`}</div>
     ${rows.length < ED.RISKS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edriskadd">${esc(s.tt(TX.rkAdd))}</button></div>` : ''}`;
 }
@@ -766,12 +772,13 @@ function edTimelineHtml(s) {
     missing = e.veil ? [] : ED.proposedMaps(doc),
     opt = (v, label, cur) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(label)}</option>`,
     row = (r, i) => `<div class="ms-edteam ms-evrow" data-event="${i}"><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evAt))}</span><input data-k="edevent" data-i="${i}" data-f="at" value="${esc(r.at)}" placeholder="H+30mn" maxlength="20" autocomplete="off"></label><label class="f-field"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evPlace))}</span><select data-k="edevent" data-i="${i}" data-f="place">${opt('', s.tt(TX.evFree), r.place)}${[...places.map(p => [p.id.toUpperCase(), `${p.id}${p.name ? ` — ${p.name}` : ''}`]), ...(r.place && !places.some(p => p.id.toUpperCase() === r.place) ? [[r.place, r.place]] : [])].map(([v, l]) => opt(v, l, r.place)).join('')}</select></label><label class="f-field ms-evtext"><span class="ms-tlabel f-muted">${esc(s.tt(TX.evText))}</span><input data-k="edevent" data-i="${i}" data-f="text" value="${esc(r.text)}" maxlength="500" autocomplete="off"></label><button type="button" class="ms-edtdel" data-do="edeventdel" data-i="${i}" title="${esc(s.tt(TX.evDel))}" aria-label="${esc(s.tt(TX.evDel))}">✕</button></div>`;
-  return `<h3>6. ${esc(s.tt(TX.stepTimeline))}</h3><p class="f-muted">${esc(s.tt(TX.edTimelineHint))}</p>
-    <div class="f-list" data-edevents>${rows.length ? `<div class="ms-edteam ms-evrow ms-edthead f-muted" aria-hidden="true">${[TX.evAt, TX.evPlace, TX.evText].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>${rows.map(row).join('')}` : `<p class="f-muted" data-noevent>${esc(s.tt(TX.evNone))}</p>`}</div>
-    ${!ED.eventsStorable(doc) ? `<p class="f-muted" data-evnohome>${esc(s.tt(TX.evNoHome))}</p>` : rows.length < ED.EVENTS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edeventadd">${esc(s.tt(TX.evAdd))}</button></div>` : ''}
-    <h4>${esc(s.tt(TX.mpTitle))}</h4>
+  const storable = ED.eventsStorable(doc);
+  return `<h3>6. ${esc(s.tt(TX.stepTimeline))}</h3>
+    <div class="f-list" data-edevents>${rows.length ? `<div class="ms-edteam ms-evrow ms-edthead f-muted" aria-hidden="true">${[TX.evAt, TX.evPlace, TX.evText].map(l => `<span>${esc(s.tt(l))}</span>`).join('')}<span></span></div>${rows.map(row).join('')}` : storable ? `<p class="f-muted" data-noevent>${esc(s.tt(TX.evNone))}</p>` : ''}</div>
+    ${!storable ? `<p class="f-muted" data-evnohome>${esc(s.tt(TX.evNoHome))}</p>` : rows.length < ED.EVENTS_MAX ? `<div class="f-row ms-pladd"><button type="button" data-do="edeventadd">${esc(s.tt(TX.evAdd))}</button></div>` : ''}
+    <div class="ms-edsub" data-edmapsgrp><h4>${esc(s.tt(TX.mpTitle))}</h4>
     <div class="f-list" data-edmaps>${maps.length ? maps.map(m => `<div class="ms-plrow ms-rkrow" data-map="${esc(m.id)}"><span class="ms-plbody"><b>${esc(TX[`mt_${m.type}`] ? s.tt(TX[`mt_${m.type}`]) : m.type || m.id)}</b><span class="f-muted">${esc([m.description || m.id, m.unplaced ? s.tt(TX.mpUnplaced) : ''].filter(Boolean).join(' · '))}</span></span></div>`).join('') : `<p class="f-muted" data-nomap>${esc(s.tt(TX.mpNone))}</p>`}</div>
-    <div class="f-row ms-pladd">${missing.length ? `<button type="button" data-do="edmapspropose">${esc(s.tt(TX.mpPropose, { n: missing.length }))}</button>` : ''}<span class="f-muted">${esc(s.tt(TX.mpStudio))}</span></div>`;
+    ${missing.length ? `<div class="f-row ms-pladd"><button type="button" data-do="edmapspropose">${esc(s.tt(TX.mpPropose, { n: missing.length }))}</button></div>` : ''}</div>`;
 }
 
 /** Vrai sur un module large (la fiche à côté de la carte) : à l'ouverture, le premier groupe de la fiche est déplié ; sur un module
@@ -839,7 +846,7 @@ function edPlacesCardHtml(s, doc) {
  *  groupe dit son contenu en une ligne et porte sa marque (✓ ou !). */
 function edSheetHtml(s, doc) {
   const names = edNames();
-  return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atSheet))}</h3><p class="f-muted">${esc(s.tt(EDTX.atSheetHint))}</p>
+  return `<section class="f-card ms-atsheet" data-atsheet><h3>${esc(s.tt(EDTX.atSheet))}</h3>
     <div data-steps>${ED.STEPS.filter(k => k !== 'places').map(k => {
     const ok = edStepOk(s.ed, doc, k),
       open = s.ed.step === k;
@@ -860,14 +867,14 @@ function edStartRowHtml(s, on) {
 function edFlowHtml(s, doc, run = null) {
   const e = s.ed;
   // SOG-0459, l'atelier voilé : « Au départ » seul, et « Dévoiler la mission complète » à la place d'« Essayer les clés »
-  if (e.veil) return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div><p class="f-muted">${esc(s.tt(EDTX.atFlowHintVeil))}</p>
+  if (e.veil) return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="edunveil" data-unveil>${esc(s.tt(EDTX.veilBtn))}</button></div>
     <div class="f-list ms-atflowlist">${edStartRowHtml(s, true)}</div></section>`;
   const drawers = MS.readMission(doc)?.drawers || [],
     todo = new Set(DR.drawersTodo(doc).map(t => t.name)),
     sel = e.sel || 'start',
     on = id => sel === id ? ' aria-current="true"' : '',
     adding = e.kinds === 'new';
-  return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button></div><p class="f-muted">${esc(s.tt(EDTX.atFlowHint))}</p>
+  return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button></div>
     <div class="f-list ms-atflowlist">${edStartRowHtml(s, sel === 'start')}${drawers.map(d => `<button type="button" class="f-item ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="f-item ms-atpart ms-atadd" data-do="eddradd" data-dradd aria-expanded="${adding}">${esc(s.tt(EDTX.dwAdd))}</button>${adding ? edKindsHtml(s, 'new') : ''}` : ''}</div></section>`;
 }
 
@@ -1168,7 +1175,7 @@ function edLookSaid(s) {
 function edLookHtml(s) {
   const w = edMapWant(s.ed),
     btn = b => edIconBtn(ED_ICONS[b], s.tt(EDTX[`atBase_${b}`]), `data-do="edmapbase" data-base="${b}" aria-pressed="${w.base === b}"`);
-  return `<div class="ms-atlook" data-maplook><span class="f-muted">${esc(s.tt(EDTX.atBase))}</span>${btn('fast')}${btn('relief')}<label><input type="checkbox" data-k="edmapspaces"${w.airspaces ? ' checked' : ''}><span>${esc(s.tt(EDTX.atSpaces))}</span></label><small class="f-muted ms-atlooksaid" data-maplooksaid>${esc(edLookSaid(s))}</small></div>`;
+  return `<div class="ms-atlook" data-maplook><span class="f-muted ms-lbl">${esc(s.tt(EDTX.atBase))}</span>${btn('fast')}${btn('relief')}<label><input type="checkbox" data-k="edmapspaces"${w.airspaces ? ' checked' : ''}><span>${esc(s.tt(EDTX.atSpaces))}</span></label><small class="f-muted ms-atlooksaid" data-maplooksaid>${esc(edLookSaid(s))}</small></div>`;
 }
 
 /** Les espaces aériens du cadre de la vue (la couche « Espaces » est allumée, la vue vient de s'arrêter) : demandés à la base de la
@@ -2023,7 +2030,7 @@ function edDrawerHtml(s, doc) {
     // avec la carte : la zone ou l'objet se pose aussi sur elle, et devient la clé de ce tiroir
     onMap = (kind, text) => EM.stateOf(e) ? `<p class="ms-dwdraw"><button type="button" class="f-linkbtn" data-do="eddrdraw" data-kind="${kind}">${esc(s.tt(text))}</button></p>` : '',
     num = ' inputmode="decimal" maxlength="8"',
-    fallback = `${field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"')}<p class="f-muted">${esc(s.tt(EDTX.dwFallbackHint))}</p>`,
+    fallback = field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"'),
     zones = of('zone'),
     objects = of('object'),
     read = (MS.readMission(doc)?.drawers || []).find(x => x.id === r.id),
@@ -2034,8 +2041,7 @@ function edDrawerHtml(s, doc) {
         <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
         <div class="f-field"><span>${esc(s.tt(EDTX.dwStops))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
         ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}${fallback}` :
-    r.key === 'kept' ? `<p class="f-muted" data-dwkept>${esc(s.tt(EDTX.dwKept, { why: s.tt(EDTX[`dwWhy_${r.keptWhy}`] || EDTX.dwWhy_condition) }))}</p>${fallback}` :
-    `<p class="f-muted">${esc(s.tt(EDTX.dwHandHint))}</p>`,
+    r.key === 'kept' ? `<p class="f-muted" data-dwkept>${esc(s.tt(EDTX.dwKept, { why: s.tt(EDTX[`dwWhy_${r.keptWhy}`] || EDTX.dwWhy_condition) }))}</p>${fallback}` : '',
     route = r.route.map(now).filter(Boolean),
     lines = edDrawerLines(s, r, now),
     pv = edPilotView(s, doc, r.id),
@@ -2047,10 +2053,10 @@ function edDrawerHtml(s, doc) {
       <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) ? `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
       ${e.kinds === 'drawer' ? edKindsHtml(s, 'drawer', r.key) : ''}
       ${body}</div>
-    ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}<p class="f-muted">${esc(s.tt(EDTX.dwTitleHint))}</p>
+    ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}
       <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
       <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label>`)}
-    ${group('route', EDTX.dwGrpRoute, `<p class="f-muted">${esc(s.tt(route.length ? EDTX.dwRouteHint : EDTX.dwRouteNone))}</p>
+    ${group('route', EDTX.dwGrpRoute, `${route.length ? '' : `<p class="f-muted">${esc(s.tt(EDTX.dwRouteNone))}</p>`}
       <div class="ms-chips" data-dwroute>${edChipsHtml(s, r.id, edDrawerChips(e, r))}</div>${edChipMoveHtml(s, r.id, edDrawerChips(e, r))}
       ${route.length < 60 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwRouteAdd))}</span><select data-k="eddr" data-f="routeadd"><option value=""></option>${[...points, ['DESTINATION', s.tt(EDTX.dwDest)]].map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}`)}
     ${group('pilot', EDTX.dwGrpPilot, `<div class="ms-pilot" data-pvbefore><span class="ms-attag f-muted">${esc(s.tt(EDTX.dwPilotBefore))}</span><p data-pvnothing>${esc(s.tt(EDTX.dwPilotNothing))}</p></div>
@@ -2135,7 +2141,7 @@ const trState = (s, d) => d.open ? s.tt(EDTX.trOpenAt, {
 function edTrialHtml(s, run) {
   const t = s.ed.trial,
     first = run.ok ? run.drawers.find(d => !d.open) : null;
-  return `<section class="f-card ms-atsheet" data-atsheet data-trial><h3>${esc(s.tt(EDTX.trTitle))}</h3><p class="f-muted">${esc(s.tt(EDTX.trHint))}</p>
+  return `<section class="f-card ms-atsheet" data-atsheet data-trial><h3>${esc(s.tt(EDTX.trTitle))}</h3>
     <label class="f-field"><span>${esc(s.tt(EDTX.trTime))} — <b data-trlabel>${esc(trAt(s, t.min))}</b></span><input type="range" class="ms-trrange" data-k="edtr" data-f="min" min="0" max="${t.max}" step="0.25" value="${t.min}"></label>
     <div class="f-row"><label class="f-field"><span>${esc(s.tt(EDTX.trAlt))}</span><input data-k="edtr" data-f="alt" value="${esc(t.alt)}" inputmode="numeric" maxlength="6" autocomplete="off"></label><label class="f-field"><span>${esc(s.tt(EDTX.trSpeed))}</span><input data-k="edtr" data-f="speed" value="${esc(t.speed)}" inputmode="numeric" maxlength="4" autocomplete="off"></label></div>
     <label class="ms-plcheck"><input type="checkbox" data-k="edtr" data-f="declares"${t.declares !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.trDeclares))}</span></label>

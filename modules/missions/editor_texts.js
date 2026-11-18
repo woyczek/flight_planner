@@ -105,14 +105,6 @@ export const EDTX = {
     'Name oder Kennung: Meldepunkt, Funkfeuer, Netzpunkt', 'nombre, o código: notificación, radioayuda, punto de red'
   ],
   plNameList: ['Points proposés', 'Suggested points', 'Vorgeschlagene Punkte', 'Puntos propuestos'],
-  plObjectHintVeil: ['identifiant donné par l\'atelier.', 'identifier given by the workshop.', 'Kennung von der Werkstatt vergeben.',
-    'identificador dado por el taller.'
-  ],
-  plObjectHint: ['identifiant donné par l\'atelier ; un tiroir le cite comme clé.',
-    'identifier given by the workshop; a drawer cites it as its key.',
-    'Kennung von der Werkstatt vergeben; eine Schublade nennt sie als Schlüssel.',
-    'identificador dado por el taller; un cajón lo cita como llave.'
-  ],
   plOKind: ['Sorte d\'objet', 'Kind of object', 'Art des Objekts', 'Tipo de objeto'],
   ok_wreck: ['épave', 'wreck', 'Wrack', 'restos'],
   ok_raft: ['radeau', 'raft', 'Rettungsinsel', 'balsa'],
@@ -178,10 +170,6 @@ export const EDTX = {
   dwWhy_escort: ['une arrivée après un suivi', 'an arrival after a following', 'eine Ankunft nach einer Verfolgung',
     'una llegada tras un seguimiento'
   ],
-  dwHandHint: ['Le pilote l\'ouvre par « Ouvrir le tiroir ».', 'The pilot opens it by « Open the drawer ».',
-    'Der Pilot öffnet sie mit „Schublade öffnen“.',
-    'El piloto lo abre con «Abrir el cajón».'
-  ],
   dwPoint: ['Au passage de', 'When passing', 'Beim Passieren von', 'Al pasar por'],
   dwAtTakeoff: ['le décollage', 'the take-off', 'der Start', 'el despegue'],
   dwDelay: ['Délai (min)', 'Delay (min)', 'Verzögerung (min)', 'Retraso (min)'],
@@ -234,23 +222,9 @@ export const EDTX = {
   dwFallback: ['Heure de repli (min après le décollage)', 'Fallback time (min after take-off)', 'Ersatzzeit (min nach dem Start)',
     'Hora de reserva (min tras el despegue)'
   ],
-  dwFallbackHint: ['Sans position reçue de l\'avion, le tiroir s\'ouvre à cette heure.',
-    'Without a position received from the aircraft, the drawer opens at that time.',
-    'Ohne empfangene Position des Luftfahrzeugs öffnet sich die Schublade zu dieser Zeit.',
-    'Sin posición recibida de la aeronave, el cajón se abre a esa hora.'
-  ],
   dwTitle: ['Titre', 'Title', 'Titel', 'Título'],
-  dwTitleHint: ['Le pilote le lit sur le tiroir fermé : restez neutre si la suite doit surprendre.',
-    'The pilot reads it on the closed drawer: stay neutral if what follows must surprise.',
-    'Der Pilot liest ihn auf der geschlossenen Schublade: bleiben Sie neutral, wenn das Folgende überraschen soll.',
-    'El piloto lo lee en el cajón cerrado: sea neutro si lo que sigue debe sorprender.'
-  ],
   dwMessage: ['Message à l\'ouverture', 'Message at the opening', 'Nachricht beim Öffnen', 'Mensaje a la apertura'],
   dwBrief: ['Briefing du tiroir', 'Briefing of the drawer', 'Briefing der Schublade', 'Briefing del cajón'],
-  dwRouteHint: ['Les lieux que le pilote rejoint après l\'ouverture, dans l\'ordre.',
-    'The places the pilot joins after the opening, in order.',
-    'Die Orte, die der Pilot nach dem Öffnen anfliegt, der Reihe nach.', 'Los lugares que el piloto alcanza tras la apertura, en orden.'
-  ],
   dwRouteNone: ['Aucune suite : la route de la mission continue.', 'No onward route: the mission route goes on.',
     'Keine Folgeroute: die Route der Mission geht weiter.', 'Sin ruta siguiente: la ruta de la misión continúa.'
   ],
@@ -285,12 +259,6 @@ export const EDTX = {
   trBtn: ['Essayer les clés', 'Try the keys', 'Schlüssel ausprobieren', 'Probar las llaves'],
   trClose: ['Fermer l\'essai', 'Close the trial', 'Versuch schließen', 'Cerrar la prueba'],
   trTitle: ['Essai des clés', 'Trial of the keys', 'Versuch der Schlüssel', 'Prueba de las llaves'],
-  trHint: [
-    'Sans simulateur : l\'avion suit la route du départ, avancez le temps. Le même calcul que le vol ; rien n\'est écrit dans la mission.',
-    'Without a simulator: the aircraft follows the route of the departure, move the time. The same computation as the flight; nothing is written in the mission.',
-    'Ohne Simulator: das Luftfahrzeug folgt der Route des Abflugs, bewegen Sie die Zeit. Dieselbe Berechnung wie im Flug; nichts wird in die Mission geschrieben.',
-    'Sin simulador: la aeronave sigue la ruta de la salida, avance el tiempo. El mismo cálculo que el vuelo; nada se escribe en la misión.'
-  ],
   trTime: ['Temps depuis le décollage', 'Time since take-off', 'Zeit seit dem Start', 'Tiempo desde el despegue'],
   trAt: ['H + {m} min', 'H + {m} min', 'H + {m} min', 'H + {m} min'],
   trAlt: ['Altitude de l\'avion (ft)', 'Altitude of the aircraft (ft)', 'Höhe des Luftfahrzeugs (ft)', 'Altitud de la aeronave (ft)'],
@@ -471,17 +439,7 @@ export const EDTX = {
   // une pastille de route se choisit ; deux flèches la déplacent d'un rang (la route du départ comme la suite d'un tiroir)
   rtEarlier: ['← Plus tôt', '← Earlier', '← Früher', '← Antes'],
   rtLater: ['Plus tard →', 'Later →', 'Später →', 'Después →'],
-  rtMoveHint: ['Touchez un lieu pour le choisir, puis déplacez-le par les flèches.',
-    'Touch a place to choose it, then move it with the arrows.',
-    'Einen Ort berühren, um ihn zu wählen, dann mit den Pfeilen verschieben.',
-    'Toque un lugar para elegirlo y muévalo con las flechas.'
-  ],
   rtTitle: ['Route du départ', 'Route of the departure', 'Route des Abflugs', 'Ruta de la salida'],
-  rtHint: ['Les lieux que le pilote rejoint, dans l\'ordre. Sur la carte, l\'outil « Tracé » en ajoute au toucher.',
-    'The places the pilot reaches, in order. On the map, the « Route » tool adds some by a touch.',
-    'Die Orte, die der Pilot nacheinander erreicht. Auf der Karte fügt das Werkzeug „Route“ sie durch Berühren hinzu.',
-    'Los lugares que el piloto alcanza, en orden. En el mapa, la herramienta «Trazado» los añade con un toque.'
-  ],
   rtNone: ['Aucun lieu dans la route du départ.', 'No place in the route of the departure.', 'Kein Ort in der Route des Abflugs.',
     'Ningún lugar en la ruta de la salida.'
   ],
@@ -628,15 +586,7 @@ export const EDTX = {
     'La misión ya lleva tantos lugares de este tipo como puede.'
   ],
   atFlow: ['Déroulé de la mission', 'Unfolding of the mission', 'Ablauf der Mission', 'Desarrollo de la misión'],
-  atFlowHint: ['Ce que le pilote lit au départ, puis les tiroirs, dans l\'ordre.',
-    'What the pilot reads at the departure, then the drawers, in order.',
-    'Was der Pilot beim Abflug liest, dann die Schubladen, der Reihe nach.',
-    'Lo que el piloto lee a la salida, luego los cajones, en orden.'
-  ],
   // SOG-0459, l'atelier voilé : le déroulé ne dit que le départ ; « Dévoiler la mission complète » est sur TOUTE mission ouverte voilée
-  atFlowHintVeil: ['Ce que le pilote lit au départ.', 'What the pilot reads at the departure.', 'Was der Pilot beim Abflug liest.',
-    'Lo que el piloto lee a la salida.'
-  ],
   veilBtn: ['Dévoiler la mission complète', 'Reveal the whole mission', 'Die ganze Mission aufdecken', 'Desvelar la misión completa'],
   veilAsk: ['Dévoiler la mission complète ? Vous ne pourrez plus la découvrir en la jouant.',
     'Reveal the whole mission? You will no longer be able to discover it by playing it.',
@@ -668,11 +618,6 @@ export const EDTX = {
   atKey_hand: ['clé : geste du pilote', 'key: the pilot\'s gesture', 'Schlüssel: Geste des Piloten', 'llave: gesto del piloto'],
   atSheet: ['Au départ — visible par le pilote', 'At the departure — visible to the pilot', 'Beim Abflug — für den Piloten sichtbar',
     'A la salida — visible para el piloto'
-  ],
-  atSheetHint: ['Ce que le pilote lit avant de partir. Six groupes ; chacun dit son contenu en une ligne.',
-    'What the pilot reads before leaving. Six groups; each says its content in one line.',
-    'Was der Pilot vor dem Abflug liest. Sechs Gruppen; jede nennt ihren Inhalt in einer Zeile.',
-    'Lo que el piloto lee antes de salir. Seis grupos; cada uno dice su contenido en una línea.'
   ],
   atLine_none: ['à remplir', 'to fill in', 'auszufüllen', 'por rellenar'],
   atLine_teams: ['{n} équipe(s)', '{n} team(s)', '{n} Team(s)', '{n} equipo(s)'],

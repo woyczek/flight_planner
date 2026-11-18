@@ -1137,6 +1137,76 @@ next to « Annuler le geste ». Point (4), the third background, waits for the e
   gesture (`edMapRemember`) and any retouch of a sheet (`edUndoClear`, in place of every `mapUndo.clear()`) empty it; « Enregistrer » too.
 - Cases: N93 reads the name of « Recentrer » from its `aria-label`; N95, N108 and N118 count « Rétablir » in the row; N131 is new.
 
+### 7 octotricies. Less text: cut rather than shrink (18 Nov 2026; SOG-0467; noreg N132, N106)
+
+The ergonomist's opinion, which is the rule (SOG-0467, point 3): a sentence of explanation stays on screen only for an EMPTY state, an ALERT or a
+QUESTION; every other one leaves the screen for the help « Comment s'en servir » (the chapter of the editor, anchor `missions-editor`). At most ONE
+line of secondary text per group — a card, a group of a sheet, a sub-group with its own title (`.ms-edsub`: the route of the departure, the maps of
+the Chronologie), the fields of a place (`.ms-plform`), the line under the tools of the map (the line of the tool is a state instruction: the
+line allowed to its group) —, at the small size of the suite (`f-muted`, `--sog-size-s`), never smaller. No alert, no empty state, no question is
+removed.
+
+- **Measured, not eyeballed** (N132, `_TEXT_RULE` in missions.py): in every state of the workshop at 390 and 1280 — veiled, whole, the map, the
+  choice of the type, each group of the sheet, each place open, the sheet of each drawer with its groups and the choice of its key, the trial, a new
+  mission — the visible `.f-muted` and `small` elements with text are counted per closest group (`.f-card`, `.ms-atgrp`, `.ms-dgrp`, `.ms-edsub`,
+  `.ms-plform`, `.ms-atmaphintrow`: a group added with one of these classes is measured too). Not secondary text: a field label (`label`, `.ms-lbl`
+  — « Fond »), the data of a row of a list (`.f-item`, `.ms-plrow`, `.ms-edteam`, `li`, `.ms-chip`), what the pilot will read (`.ms-pilot`), the
+  value line of the aerodrome field of the suite (`.ms-adname`), the sketch. No secondary text is smaller than a probe `p.f-muted`.
+- **What changed to hold it.** The line that says what a group contains shows only when the group is folded (`.ms-atline` hidden in an unfolded
+  `.ms-atgrp` / `.ms-dgrp`). The Cadre says one indication at most: in a mission being modified « l'ancien est gardé » when its identifier changes,
+  otherwise nothing; for a new mission or a copy « suivante : n » under Série. « cible mobile » joins the identifier line of a moving object. A
+  Chronologie written as a text says only « La chronologie de ce fichier est un texte… » (not « Aucun événement » with it). The maps of the
+  Chronologie are a sub-group (`data-edmapsgrp`). The tags of « Ce que le pilote voit » (.75 em) and the state of a drawer during a trial (.85 em)
+  take the small size of the suite. The arrows of a route lose the line that said how to use them (`data-chiphint`); N106 checks that it is gone.
+- **The sentences removed from the screen, and where the help says them** (`modules/missions/help/{fr,en,de,es}.md`, `missions-editor`):
+  1. « Ce que le pilote lit au départ, puis les tiroirs, dans l'ordre. » (the unfolding) — « le déroulé, une liste de haut en bas (« Au départ »,
+     puis un tiroir par ligne… ».
+  2. « Ce que le pilote lit au départ. » (the veiled unfolding) — « l'atelier ne montre que ce que le pilote voit au départ ».
+  3. « Ce que le pilote lit avant de partir. Six groupes ; chacun dit son contenu en une ligne. » (the sheet) — « la fiche du départ, ce que le
+     pilote lit avant de partir, en cinq groupes… Chaque groupe dit son contenu en une ligne ».
+  4. « Ce qui range la mission : sa famille, sa série, son identifiant, d'où elle part et où elle arrive. » (Cadre) — « Les groupes Cadre (famille
+     et sous-type, série, identifiant, titre, théâtre, départ, arrivée) ».
+  5. « Une liaison : le départ, l'arrivée, la compagnie, la charge et l'aéronef ; le titre se propose seul. » (the reduced Cadre) — « Une mission
+     commerciale… a un Cadre réduit… le titre se propose seul ».
+  6. « le suivant de la famille » (under Identifiant) and « suivante : n » in a mission being modified — « La famille propose l'identifiant
+     suivant et la série en cours ».
+  7. « proposé d'après le départ et l'arrivée » (under the title of a liaison) — « le titre se propose seul (« LFPO → LFRS ») tant que vous ne
+     l'avez pas changé ».
+  8. « Les équipages et services engagés : une ligne par équipe. » — « Équipes (une ligne par équipe : indicatif, type, service, rôle… ».
+  9. « Cible, zones, points tournants et rendez-vous. Une ligne par lieu ; « Modifier » en ouvre les champs. » — « Lieux (une ligne par lieu…
+     la toucher en ouvre les champs, sous la liste… ».
+  10. « identifiant donné par l'atelier ; un tiroir le cite comme clé. » / « identifiant donné par l'atelier. » (an object; the identifier stays)
+      — « son identifiant est donné par l'atelier ; sa ligne… dit le tiroir qui le cite ».
+  11. « Les lieux que le pilote rejoint, dans l'ordre. Sur la carte, l'outil « Tracé » en ajoute au toucher. » (the route of the departure) —
+      « La route du départ se lit en pastilles… l'outil « Tracé » ajoute chaque lieu touché à la route du départ ».
+  12. « Touchez un lieu pour le choisir, puis déplacez-le par les flèches. » (a route, the departure's and a drawer's) — « un lieu touché se
+      choisit : les deux flèches « ← Plus tôt » et « Plus tard → » le déplacent d'un rang ».
+  13. « Ce que lit le pilote : le résumé (la synthèse le montre entier jusqu'à 600 signes), la description, les objectifs, la charge. » (Récit) —
+      « Récit (le résumé, avec son compte de signes : la synthèse le montre entier jusqu'à 600… ».
+  14. « Une ligne par risque : le danger, sa conséquence, la parade. La fiche en montre trois sur sa première page. » — « Risques (une ligne
+      « danger → parade » par risque — la fiche de la mission en montre trois sur sa première page… » (ADDED by this lot).
+  15. « H = décollage prévu. Un événement par ligne : l'heure (H+30mn, H+1h05mn), un lieu de la mission ou rien, ce qui se passe. » — « une ligne
+      par événement : l'heure comptée depuis le décollage prévu, « H+30mn », un lieu de la mission ou aucun, ce qui se passe ».
+  16. « Les images des cartes se font au studio cartographique de la V2. » — « dont les images se font au studio cartographique de la V2 ».
+  17. « Le pilote l'ouvre par « Ouvrir le tiroir ». » (the key « the pilot's gesture alone »; stale since SOG-0459) — « le geste du pilote seul :
+      il l'ouvre par « Demander la suite » » (ADDED).
+  18. « Sans position reçue de l'avion, le tiroir s'ouvre à cette heure. » (under the fallback time) — « son heure de repli quand la clé regarde
+      l'avion (sans position reçue de l'avion, le tiroir s'ouvre à cette heure) » (ADDED).
+  19. « Le pilote le lit sur le tiroir fermé : restez neutre si la suite doit surprendre. » (the title of a drawer; stale since SOG-0459) — « son
+      titre — que le pilote lit une fois le tiroir ouvert — ».
+  20. « Les lieux que le pilote rejoint après l'ouverture, dans l'ordre. » (the onward route of a drawer) — « sa suite de route lieu par lieu ».
+  21. « Sans simulateur : l'avion suit la route du départ, avancez le temps. Le même calcul que le vol ; rien n'est écrit dans la mission. » (the
+      trial) — « l'avion de l'essai suit la route du départ, vous avancez le temps au curseur… c'est le calcul même du vol, et l'essai n'écrit
+      rien dans la mission ».
+  22. (SOG-0467 commit 1) the tags « visible » and « tiroir scellé » of the cards of the unfolding — the mark and the rank say it.
+  The texts 1, 2, 3, 10, 11, 12, 17, 18, 19, 20 and 21 leave `editor_texts.js`; 4 to 9 and 13 to 16 are texts of `module.js` (Features SOG),
+  now unused by the workshop and left there.
+- **Kept on screen**: the empty states (« Aucune équipe… », « Aucun risque… », « Aucun événement… », « Aucune carte déclarée. », « Aucun lieu
+  dans la route du départ. », « Aucune suite… », « Aucune zone / Aucun objet dans cette mission — créez-le dans les Lieux »), the alerts and states
+  (« l'ancien est gardé », « La chronologie de ce fichier est un texte… », « Cette clé ne s'édite pas encore ici… », « Contour de n sommets… »,
+  « Le polygone garde ses n points… », « cible mobile », the count of signs of the summary, « Plusieurs repères : choisissez. », what the row
+  « Fond / Espaces » says), the line under the tools of the map, « Ce que le pilote voit » (what the pilot will read), the questions.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
