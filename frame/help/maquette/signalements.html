@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aide : Signalements, la liste (maquette)</title>
+<title>Aide : Mes signalements, la liste (maquette)</title>
 <style>
 :root {
   --ink: #1b1f24;
@@ -348,10 +348,10 @@ textarea {
 
   <!-- ===== LA LISTE ===== -->
   <section class="screen" data-screen="list">
-    <h1>Signalements</h1>
-    <p class="muted" style="margin:0 0 10px">Ce que vous avez signalé, ce qui en est devenu, et ce qui reste à faire.</p>
+    <h1>Signaler un problème ou une demande</h1>
+    <div class="card" style="margin:0 0 6px"><span class="muted">(le formulaire d'aujourd'hui : sorte, titre, texte, « Envoyer »)</span></div>
+    <h2 style="margin-top:20px">Mes signalements</h2>
     <input class="search" type="search" placeholder="Chercher dans les signalements et les fiches" aria-label="Chercher dans les signalements et les fiches">
-    <p class="hint">Un seul champ : le titre, le texte, l'écran, le numéro d'une fiche (SOG-0409).</p>
 
     <div class="grp" data-grp="now">
       <h2>Maintenant <small>3</small></h2>
@@ -363,36 +363,34 @@ textarea {
     </div>
 
     <div class="grp" data-grp="next">
-      <h2>Ensuite <small>7 sur 19</small></h2>
+      <h2>Ensuite <small>4</small></h2>
       <ul class="list">
         <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Performance</span><b>Procédures : longue phase de rafraîchissement après un choix de SID</b></div><div class="meta"><span class="st b">Fiche SOG-0372</span> · 16/11 · Carte · <span class="pri">Gênant · souvent</span></div></button></li>
         <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Ergonomie</span><b>Mes signalements : les distinguer par une couleur d'état</b></div><div class="meta"><span class="st g">Fait · SOG-0316</span> · 14/11 · Signaler · <span class="pri">Mineur · toujours</span></div></button></li>
-        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Signaler : la page est lente à la frappe</b></div><div class="meta"><span class="st g">Fait · SOG-0409</span> · 14/11 · Signaler · <span class="pri">Gênant · toujours</span></div></button></li>
-        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Missions : position de l'avion pour un sous-objectif</b></div><div class="meta"><span class="st b">Fiche SOG-0447</span> · 16/11 · Missions · <span class="pri">Gênant · rare</span></div></button></li>
-        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>NAT : la lecture du jour semble réussir mais échoue en silence</b></div><div class="meta"><span class="st r">Refusé</span> · 16/11 · Données · <span class="pri">Gênant · rare</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Signaler : la page est lente à la frappe</b></div><div class="meta"><span class="st g">Fait · SOG-0409</span> · 14/11 · Signaler · <span class="pri">Gênant · souvent</span></div></button></li>
         <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Ergonomie</span><b>Clignotement de la page Réglages pendant la synchro</b></div><div class="meta"><span class="st g">Fait · SOG-0361</span> · 16/11 · Réglages · <span class="pri">Mineur · toujours</span></div></button></li>
-        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Roadmap : filtrer par module</b></div><div class="meta"><span class="st y">Sans fiche</span> · 12/11 · Roadmap · <span class="pri">Mineur · souvent</span></div></button></li>
       </ul>
-      <button class="more" type="button">Voir les 12 suivants</button>
     </div>
 
     <div class="grp" data-grp="later">
-      <h2>Plus tard <small>11</small></h2>
-      <button class="more" type="button" style="margin-top:0">Voir (7 sur 11)</button>
+      <h2>Plus tard <small>3</small></h2>
+      <ul class="list">
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Missions : position de l'avion pour un sous-objectif</b></div><div class="meta"><span class="st b">Fiche SOG-0447</span> · 16/11 · Missions · <span class="pri">Gênant · rare</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>NAT : la lecture du jour semble réussir mais échoue en silence</b></div><div class="meta"><span class="st r">Refusé</span> · 16/11 · Données · <span class="pri">Gênant · rare</span></div></button></li>
+        <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Demande</span><b>Roadmap : filtrer par module</b></div><div class="meta"><span class="st y">Sans fiche</span> · 12/11 · Roadmap · <span class="pri">Mineur · souvent</span></div></button></li>
+      </ul>
     </div>
 
     <div class="grp" data-grp="unrated">
       <h2>À classer <small>31 sans priorité</small></h2>
-      <p class="hint" style="margin:0 0 6px">Ces signalements n'ont encore ni gravité ni fréquence : ouvrez-en un pour les choisir.</p>
       <button class="more" type="button" style="margin-top:0">Voir (7 sur 31)</button>
     </div>
   </section>
 
   <!-- ===== UNE RECHERCHE ===== -->
   <section class="screen" data-screen="search" hidden>
-    <h1>Signalements</h1>
+    <h2 style="margin-top:16px">Mes signalements</h2>
     <input class="search" type="search" value="tape" aria-label="Chercher dans les signalements et les fiches">
-    <p class="hint">2 signalements et 1 fiche contiennent « tape ». Les mots sont cherchés où qu'ils soient, sans tenir compte des majuscules ni des accents.</p>
     <div class="grp">
       <h2>Signalements <small>2</small></h2>
       <ul class="list">
@@ -406,12 +404,12 @@ textarea {
         <li><button class="item" type="button" data-open><div class="t1"><span class="tag">SOG-0409</span><b>Signaler : la page est lente à la fra<span class="hl">ppe</span></b></div><div class="meta"><span class="st g">Fait</span> · validée par vous le 17/11 · 1 signalement</div></button></li>
       </ul>
     </div>
-    <p class="note">Une recherche qui ne trouve rien le dit, avec le nombre total de signalements cherchés (« 0 sur 53 ») : on voit que la liste a bien été lue.</p>
+    <p class="note">État vide : « Aucun signalement ne contient « xyz » (53 cherchés). »</p>
   </section>
 
   <!-- ===== LA FICHE D'UN SIGNALEMENT ===== -->
   <section class="screen" data-screen="detail" hidden>
-    <button class="back" type="button" data-back>← Signalements</button>
+    <button class="back" type="button" data-back>← Mes signalements</button>
     <div class="split">
       <div>
         <div class="t1" style="margin-top:6px"><span class="tag">Bug</span><span class="st g">Fait · SOG-0409</span></div>
@@ -435,11 +433,10 @@ textarea {
             </div>
             <div>
               <label>Fréquence — à quelle fréquence ça arrive</label>
-              <div class="seg" role="group" aria-label="Fréquence"><button type="button" aria-pressed="true">Toujours</button><button type="button" aria-pressed="false">Souvent</button><button type="button" aria-pressed="false">Rare</button></div>
+              <div class="seg" role="group" aria-label="Fréquence"><button type="button" aria-pressed="false">Toujours</button><button type="button" aria-pressed="true">Souvent</button><button type="button" aria-pressed="false">Rare</button></div>
             </div>
           </div>
-          <p class="result">Gênant et toujours : « Ensuite »</p>
-          <p class="note" style="margin:4px 0 0">Bloquant : toujours « Maintenant ». Gênant et toujours : « Ensuite ». Le reste : « Plus tard ». Votre choix, pas celui de l'ergonome.</p>
+          <p class="result">Ensuite</p>
         </div>
         <div class="card">
           <h3>Commentaires <small class="muted">2</small></h3>
@@ -448,7 +445,6 @@ textarea {
           <label class="note" for="cm-new" style="display:block;margin-top:8px">Ajouter un commentaire</label>
           <textarea id="cm-new" placeholder="Votre commentaire (2 000 signes)"></textarea>
           <button class="primary" type="button">Ajouter</button>
-          <p class="note" style="margin:6px 0 0">Il part comme un signalement lié à celui-ci : même chemin, rien de nouveau à régler.</p>
         </div>
       </div>
     </div>
@@ -457,7 +453,6 @@ textarea {
   <!-- ===== COTE PILOTE ===== -->
   <section class="screen" data-screen="pilot" hidden>
     <h1>Mes signalements</h1>
-    <p class="muted" style="margin:0 0 10px">Ce que vous avez signalé depuis cet appareil et depuis le dépôt de votre compagnie.</p>
     <input class="search" type="search" placeholder="Chercher dans mes signalements" aria-label="Chercher dans mes signalements">
     <div class="grp">
       <h2>Mes signalements <small>5</small></h2>
@@ -467,21 +462,8 @@ textarea {
         <li><button class="item" type="button" data-open><div class="t1"><span class="tag">Bug</span><b>Le brouillon n'est pas gardé hors ligne</b></div><div class="meta"><span class="st y">Non envoyé : part au retour du réseau</span> · 18/11 · Signaler</div></button></li>
       </ul>
     </div>
-    <div class="card">
-      <h3>Ce que le pilote ne voit pas</h3>
-      <ul style="margin:0;padding-left:20px">
-        <li>pas de priorité (gravité, fréquence) : c'est le choix de l'ergonome ;</li>
-        <li>pas les signalements des autres pilotes ;</li>
-        <li>un commentaire du pilote part avec le prochain envoi groupé, comme un signalement lié (« non envoyé » tant que le réseau manque).</li>
-      </ul>
-    </div>
   </section>
 
-  <h2>Questions ouvertes</h2>
-  <ol>
-    <li>Une page de plus (Aide › Signalements), ou la même liste dans la Roadmap, où chaque fiche montre déjà ses signalements d'origine ? Cette maquette est une page à part, qui renvoie vers la fiche de la Roadmap.</li>
-    <li>La priorité (gravité, fréquence) est-elle posée par l'utilisateur seul, ou aussi par l'ergonome ?</li>
-  </ol>
 </div>
 <script>
 (() => {
