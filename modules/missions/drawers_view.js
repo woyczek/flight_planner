@@ -126,6 +126,15 @@ export const TX = {
   openOverflightBy: ['ouvert au survol de {by}, à {t}', 'opened when {by} overflew, at {t}', 'beim Überflug von {by} geöffnet um {t}',
     'abierto al sobrevuelo de {by}, a las {t}'
   ],
+  // la condition « stationnaire » de l'atelier (SOG-0500, lot 4) : jamais le lieu, comme l'atterrissage
+  keyHover: ['s\'ouvre au stationnaire', 'opens on hover', 'öffnet sich beim Schwebeflug', 'se abre al estacionario'],
+  openHoverMe: ['ouvert à votre stationnaire, à {t}', 'opened on your hover, at {t}', 'bei Ihrem Schwebeflug geöffnet um {t}',
+    'abierto a su estacionario, a las {t}'
+  ],
+  openHoverBy: ['ouvert au stationnaire de {by}, à {t}', 'opened when {by} hovered, at {t}',
+    'beim Schwebeflug von {by} geöffnet um {t}',
+    'abierto al estacionario de {by}, a las {t}'
+  ],
   gotHere: ['reçu ici à {t}', 'received here at {t}', 'hier empfangen um {t}', 'recibido aquí a las {t}'],
   // un tiroir ouvert : comment et quand
   openTime: ['ouvert à l\'heure, à {t}', 'opened on time, at {t}', 'planmäßig geöffnet um {t}', 'abierto a su hora, a las {t}'],
@@ -480,14 +489,15 @@ function onFix(v, fix) {
   (turned && v.mine ? load(v) : Promise.resolve()).then(() => judge(v, prev, fix)).catch(() => {});
 }
 
-/** Juge un trajet : un constat de zone, d'arrivée, d'atterrissage (tenu par holding, v.hold) ou de survol sans confirmation s'écrit tout de suite au carnet ; un objet à portée, ou un survol à confirmer
+/** Juge un trajet : un constat de zone, d'arrivée, d'atterrissage ou de stationnaire (tenu par holding, v.hold) ou de survol sans confirmation s'écrit tout de suite au carnet ; un objet à portée, ou un survol à confirmer
  *  (confirm : vrai), attend « Demander » (tenu dans v.inRange, rien n'est peint : l'écran ne dit pas qu'un objet est attendu). */
 async function judge(v, prev, fix) {
   if (!v.mine || !v.states || v.busy) return;
   const first = v.states.find(x => !x.open && !x.locked),
     here = !!first && followsHere(v, first);
   let f = null;
-  if (here && D.howOf(first.key) === 'landing') { // un atterrissage se tient : l'état de la tenue est gardé par tiroir
+  if (here && D.isHold(first
+      .key)) { // une tenue (atterrissage, stationnaire) : l'état de la tenue : l'état de la tenue est gardé par tiroir
     const r = D.holding(first.key, v.hold?.id === first.id ? v.hold.hold : null, fix);
     v.hold = {
       id: first.id,
@@ -647,6 +657,7 @@ export function describe(tt, s, d, {
   });
   else if (D.howOf(k) === 'landing') key = tt(TX.keyLanding); // jamais le lieu (voir TX.keyLanding)
   else if (D.howOf(k) === 'overflight') key = tt(TX.keyOverflight); // jamais le lieu (voir TX.keyOverflight)
+  else if (D.howOf(k) === 'hover') key = tt(TX.keyHover); // jamais le lieu (voir TX.keyHover)
   else if (k.kind && k.kind !== 'hand') key = tt(TX.keyHidden); // une condition de l'auteur, une clé que cet écran ne connaît pas
   else key = tt(TX.keyHand);
   // l'heure de repli n'est dite que si elle concerne le pilote : la clé n'est pas suivie sur cet appareil
@@ -680,7 +691,7 @@ export function describe(tt, s, d, {
         .openZoneBy) :
       s.how === 'object' ? (s.mine ? TX.openObjectMe : TX.openObjectBy) : s.how === 'arrival' ? (s.mine ? TX.openArrivalMe : TX
         .openArrivalBy) : s.how === 'landing' ? (s.mine ? TX.openLandingMe : TX.openLandingBy) : s.how === 'overflight' ? (s.mine ? TX
-        .openOverflightMe : TX.openOverflightBy) :
+        .openOverflightMe : TX.openOverflightBy) : s.how === 'hover' ? (s.mine ? TX.openHoverMe : TX.openHoverBy) :
       s.mine ? TX.openHandMe : TX.openHandBy;
     how = tt(row, {
       t: fmtZ(new Date(other && Number.isFinite(s.srcAt) ? s.srcAt : s.at)),

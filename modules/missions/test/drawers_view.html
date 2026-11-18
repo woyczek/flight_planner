@@ -1237,6 +1237,126 @@
     DV.stop();
   }
 
+  // ---- SOG-0500, lot 4 : le stationnaire de l'atelier jugé en vol (une tenue comme l'atterrissage). Clé à la forme de holdRule ;
+  // hauteurs SOL (aglFt), que seul le simulateur donne. 10 s d'affilée, bande de 10 à 100 ft.
+  const HOVK = {
+      kind: 'condition',
+      condition: 'hover',
+      rule: {
+        kind: 'hover',
+        label: '',
+        point: 'DESTINATION',
+        at: {
+          lat: 45.0,
+          lon: 1.0
+        },
+        object: null,
+        radiusM: 50,
+        radiusNm: null,
+        durationSec: 10,
+        maxGapSec: 10,
+        speedMaxKt: null,
+        speedToleranceKt: 5,
+        heightMinFt: 10,
+        heightMaxFt: 100,
+        confirmation: '',
+        confirm: false
+      },
+      fallbackMin: 120
+    },
+    HDRAWER = {
+      title: 'Stationnaire',
+      message: 'Bien tenu.',
+      brief: '',
+      key: HOVK
+    },
+    TH = Date.now(),
+    // un relevé du simulateur, des secondes avant maintenant : en l'air à 33 m du point, 40 ft sol, 2 nœuds, sauf indication
+    hfix = (secAgo, more = {}) => ({
+      lat: 45.0003,
+      lon: 1.0,
+      at: iso(TH - secAgo * 1000),
+      altFt: 240,
+      aglFt: 40,
+      onGround: false,
+      gsKt: 2,
+      ...more
+    });
+  ck('hover, describe : la clé dit « s\'ouvre au stationnaire », jamais le lieu (ni « DESTINATION » ni un lieu caché), avec ou sans point ; jugée en vol, l\'appareil la suit ; ouverte : « ouvert à votre stationnaire », « ouvert au stationnaire de BBB »',
+    say(HOVK).key === 's\'ouvre au stationnaire' && !/DESTINATION/.test(say(HOVK).key) && say({
+      ...HOVK,
+      rule: {
+        ...HOVK.rule,
+        point: null
+      }
+    }).key === 's\'ouvre au stationnaire' && say(HOVK, {
+      live: true
+    }).follow === 'followed' && say(HOVK, {}, {
+      open: true,
+      how: 'hover',
+      mine: true,
+      at: AT
+    }).how === 'ouvert à votre stationnaire, à 19:20Z' && say(HOVK, {}, {
+      open: true,
+      how: 'hover',
+      mine: false,
+      by: 'BBB',
+      at: AT,
+      srcAt: AT
+    }).how === 'ouvert au stationnaire de BBB, à 19:20Z', [say(HOVK), say(HOVK, {}, {
+      open: true,
+      how: 'hover',
+      mine: true,
+      at: AT
+    })]);
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(HDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit(hfix(30, {
+    gsKt: 40,
+    aglFt: 300
+  }));
+  await sleep(150);
+  ctx.live.emit(hfix(20));
+  await sleep(150);
+  ctx.live.emit(hfix(15));
+  await sleep(150);
+  const hNotYet = empty() && !ctx.store.get(BOOK)?.drawer_B;
+  ctx.live.emit(hfix(10));
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const hb = ctx.store.get(BOOK)?.drawer_B;
+  ck('le stationnaire : en transit puis tenu 5 s, rien ; tenu 10 s d\'affilée (relevés du simulateur espacés de 5 s), le constat « hover » est écrit avec ses deux relevés (hauteur sol comprise) et « Suite de la mission » dit « ouvert à votre stationnaire, à … » sans nommer le lieu',
+    hNotYet && hb?.how === 'hover' && hb.from?.aglFt === 40 && hb.to?.onGround === false && Date.parse(hb.to.at) - Date.parse(hb.from.at) === 10e3 && /^ouvert à votre stationnaire, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Stationnaire') && !/DESTINATION/.test(stage
+      .textContent), [hNotYet, hb, ctx.notes]);
+  DV.stop();
+  // la source ne donne pas la hauteur sol (GPS du navigateur, IVAO, VATSIM) : la condition n'est jamais remplie, ni par « Demander »
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(HDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  for (const s of [40, 35, 30, 25, 20, 15, 10, 5]) {
+    ctx.live.emit(hfix(s, {
+      source: 'gps',
+      aglFt: undefined
+    }));
+    await sleep(40);
+  }
+  await sleep(150);
+  await ask();
+  ck('le stationnaire avec une source sans hauteur sol (GPS) : aucun constat, rien ne s\'ouvre, « Demander » ne l\'ouvre pas',
+    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
+  DV.stop();
+
   // le rattrapage au retour de la page : la trace gardée du vol de cette mission
   const crossing = start => ({
     from: iso(start),

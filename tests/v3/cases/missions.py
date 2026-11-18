@@ -3153,8 +3153,8 @@ def n80(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 112, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (112 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 126, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (126 at least)')
 
 
 # ---- the session « Création de missions »: cases N70 to N79 (the editor's references, the drawers' format)
@@ -3740,8 +3740,8 @@ def n81(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers_view.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 104, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (104 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 107, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (107 at least)')
 
 # SOG-0441 (lot T2), SOG-0459: the « Suite de la mission » section on the mission sheet. Invented missions X-90x (no real mission, no AIP content).
 DW = 'modules/missions/drawers_view.js'

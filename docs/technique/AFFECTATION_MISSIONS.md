@@ -622,6 +622,36 @@ is now judged like the landing, with no hold state: a pass is judged on one leg.
   height, `confirm`), stands, catch-up, hostile entries, `HOWS`/`SHARED`, the record; in flight with and without `confirm`, a source
   without ground height.
 
+### 11.8 Hover judged in flight (SOG-0500, lot 4)
+
+The workshop's `{ kind: 'condition', condition: 'hover', rule, fallbackMin }` (`holdRule` of `frame/lib/mission.js`, not modified) is a HOLD,
+like the landing of § 11.6: the same `holding(key, hold, fix)` serves both, through a table `HOLDS` of `drawers.js` —
+`{ landing: { spec: landSpec, ok: isDown }, hover: { spec: hoverSpec, ok: isHovering } }`, chosen by `howOf(key)` — and the same
+`standsHeld()` (renamed from `standsLanded`) holds the honesty bound in `stands`. Nothing of the landing's hold was copied. `isHold(key)`
+(exported) tells whether a key is judged by a hold; `drawers_view.js` uses it in place of the test on `'landing'`, and `finding()` and
+`catchUp()` return `null` for any hold.
+
+- **The rule** `{ kind: 'hover', at | object, radiusM, durationSec, maxGapSec, speedToleranceKt, heightMinFt, heightMaxFt, confirmation }`.
+  `hoverSpec(key)` returns `null` (not judged) for: not a hover; neither a readable point nor a still object; `confirmation !== ''`; a number
+  not finite; `radiusM <= 0`; `durationSec <= 0`; `maxGapSec < FIX_PERIOD_SEC`; `speedToleranceKt < 0`; `heightMinFt > heightMaxFt`.
+- **A fix is hovering** when ALL hold: it is within `radiusM` of the point (or of the still object) AND `gsKt <= speedToleranceKt` —
+  `arrived()` of `frame/lib/crossing.js`, called with `{ at, radiusNm: radiusM / 1852, speedMaxKt: speedToleranceKt }` and no `onGround`, so
+  the distance test is the framework's, not a copy; `onGround === false` (in the air: `null` never counts, and neither does `true`); and
+  `aglFt` is finite and within `[heightMinFt, heightMaxFt]`. The heights are heights ABOVE GROUND, as decided with Création.
+- **The hold.** The condition is met after `durationSec` seconds in a row; two successive fixes are never more than `maxGapSec` apart
+  (and `maxGapSec >= FIX_PERIOD_SEC`, as for the landing); any fix that does not hover, a longer gap, a fix without a time or an unknown
+  datum resets it. The finding is `{ how: 'hover', at, from, to }`. In `stands`, both fixes hover by the reader's key, and the gap is
+  `durationSec <= gap < durationSec + maxGapSec` — what an honest device writes. Replayed, not proved, as for the landing.
+- **Only the simulator gives `aglFt`.** With the browser GPS, IVAO or VATSIM the condition is never met: the drawer opens at its fallback
+  time or by the gesture. Trail points carry `aglFt`, but there is no catch-up anyway (one point per nautical mile).
+- **No noise measurement is needed**: the simulator's positions are exact, and the pilot's drift is what `radiusM` measures.
+- **Shared.** `'hover'` is in `HOWS` and `SHARED`; `howOf(key)` returns it; `follows(key)` accepts the hover.
+- **Texts** (four languages): `keyHover` (« s'ouvre au stationnaire », NEVER the place), `openHoverMe`, `openHoverBy`.
+- **Cases.** N80 (126 checks, 14 new: follows, holding in every direction — on the ground, unknown ground, too fast, out of the band,
+  unknown height, out of the radius, too long a gap —, hostile entries, `stands` and its bounds, `finding` / `catchUp` null, `isHold`,
+  `HOWS` / `SHARED`, the record) and N81 (107, 3 new: the texts, a hover held in flight, a source without ground height). The checks of
+  the landing stay green: the generalisation changes nothing for it. The event (lot 3) waits for the ergonomist.
+
 ## 12. Assigning a mission from V3 (SOG-0443)
 
 The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with

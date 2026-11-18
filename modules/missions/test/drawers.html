@@ -2138,12 +2138,12 @@
         return String(e);
       }
     })() === true);
-  ck('overflight, HOWS et SHARED contiennent « overflight » ; howOf apparie la condition et le genre ; une condition « hover » reste « condition »',
+  ck('overflight, HOWS et SHARED contiennent « overflight » ; howOf apparie la condition et le genre ; une condition « sequence » reste « condition »',
     D.HOWS.includes('overflight') && D.SHARED.includes('overflight') && D.howOf(OV) === 'overflight' && D.howOf(LAND) === 'landing' && D.howOf(over({
       kind: 'hover'
     })) === 'overflight' && D.howOf({
       kind: 'condition',
-      condition: 'hover'
+      condition: 'sequence'
     }) === 'condition');
   // le carnet : un constat overflight s'écrit, se relit, et le constat d'un autre pilote ouvre le tiroir (comme l'atterrissage)
   const ovDoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'overflight', {
@@ -2184,6 +2184,309 @@
     })[0];
   ck('overflight, carnet : le constat s\'écrit avec ses deux relevés (hauteur sol comprise) et se relit ; celui de BBB ouvre le tiroir chez AAA (« overflight », par BBB) ; sur une autre bande chez le lecteur, il est refusé (« shape »)',
     ovBook?.drawers?.B?.how === 'overflight' && ovBook.drawers.B.from?.aglFt === 1000 && ovSt.open === true && ovSt.how === 'overflight' && ovSt.by === 'BBB' && ovSt.refused.length === 0 && ovOff.open === false && ovOff.refused[0]?.why === 'shape', [ovBook, ovSt, ovOff]);
+
+  // ---- SOG-0500, lot 4 : la condition « stationnaire » de l'atelier jugée en vol — une TENUE comme l'atterrissage (follows, holding,
+  // stands, finding, catchUp, HOWS, SHARED). La clé a la forme exacte rendue par holdRule ; hauteurs SOL (aglFt) ; points inventés.
+  const hrule = {
+      kind: 'hover',
+      label: '',
+      point: 'DESTINATION',
+      at: {
+        lat: 45.0,
+        lon: 1.0
+      },
+      object: null,
+      radiusM: 50,
+      radiusNm: null,
+      durationSec: 30,
+      maxGapSec: 10,
+      speedMaxKt: null,
+      speedToleranceKt: 5,
+      heightMinFt: 10,
+      heightMaxFt: 100,
+      confirmation: '',
+      confirm: false
+    },
+    hov = (more = {}) => ({
+      kind: 'condition',
+      condition: 'hover',
+      rule: {
+        ...hrule,
+        ...more
+      },
+      fallbackMin: 60
+    }),
+    HOV = hov(),
+    // un relevé en stationnaire à 33 m du point (rayon 50 m), 40 ft sol, 2 nœuds, en l'air, à ce nombre de secondes après le décollage
+    hv = (sec, more = {}) => ({
+      lat: 45.0003,
+      lon: 1.0,
+      at: iso(T0 + sec * 1000),
+      altFt: 240,
+      aglFt: 40,
+      onGround: false,
+      gsKt: 2,
+      ...more
+    }),
+    hevery5 = (to, more) => Array.from({
+      length: to / 5 + 1
+    }, (_, i) => hv(i * 5, more)),
+    hobj = o => hov({
+      at: null,
+      object: o
+    });
+  ck('hover, follows : un point, un rayon, une durée, un écart permis d\'une période de relevé au moins, une tolérance de vitesse, une bande de hauteur → jugé ; maxGapSec 4, un mot de confirmation, un rayon ou une durée nuls, une tolérance négative, une bande à l\'envers, un nombre illisible, un objet mobile, ni point ni objet : non ; un objet immobile : oui',
+    D.follows(HOV) && D.follows(hov({
+      maxGapSec: 5
+    })) && !D.follows(hov({
+      maxGapSec: 4
+    })) && !D.follows(hov({
+      confirmation: 'posed'
+    })) && !D.follows(hov({
+      radiusM: 0
+    })) && !D.follows(hov({
+      durationSec: 0
+    })) && !D.follows(hov({
+      speedToleranceKt: -1
+    })) && D.follows(hov({
+      speedToleranceKt: 0
+    })) && !D.follows(hov({
+      heightMinFt: 200,
+      heightMaxFt: 100
+    })) && !D.follows(hov({
+      heightMinFt: null
+    })) && !D.follows(hov({
+      radiusM: NaN
+    })) && !D.follows(hov({
+      heightMaxFt: Infinity
+    })) && !D.follows(hov({
+      durationSec: '30'
+    })) && !D.follows(hobj({
+      lat: 45.0,
+      lon: 1.0,
+      moving: true
+    })) && D.follows(hobj({
+      lat: 45.0,
+      lon: 1.0,
+      moving: false
+    })) && !D.follows(hov({
+      at: null,
+      object: null
+    })) && !D.follows({
+      kind: 'condition',
+      condition: 'hover',
+      rule: {
+        ...hrule,
+        kind: 'landing'
+      }
+    }) && !D.follows({
+      kind: 'condition',
+      condition: 'hover',
+      rule: null
+    }));
+  const h30 = play(HOV, hevery5(30));
+  ck('hover, holding : en stationnaire 30 s d\'affilée par relevés de 5 s → un constat « hover » au relevé de 30 s (du premier au dernier) ; à 25 s, rien',
+    h30.n === 6 && h30.first?.how === 'hover' && h30.first.at === T0 + 30e3 && h30.first.from.at === iso(T0) && h30.first.to.at === iso(T0 + 30e3) && h30.first.from.aglFt === 40 && play(HOV, hevery5(25)).first === null, h30);
+  ck('hover, holding : posé (onGround vrai) remet la tenue à zéro ; onGround inconnu ou absent ne compte jamais',
+    play(HOV, [...hevery5(15), hv(20, {
+      onGround: true
+    }), ...hevery5(60).slice(5)]).n === 11 && play(HOV, hevery5(60, {
+      onGround: true
+    })).first === null && play(HOV, hevery5(60, {
+      onGround: null
+    })).first === null && play(HOV, hevery5(60, {
+      onGround: undefined
+    })).first === null);
+  ck('hover, holding : trop vite (au-dessus de la tolérance) remet à zéro ; vitesse inconnue ne compte jamais ; la tolérance elle-même tient',
+    play(HOV, [...hevery5(15), hv(20, {
+      gsKt: 6
+    }), ...hevery5(60).slice(5)]).n === 11 && play(HOV, hevery5(60, {
+      gsKt: 6
+    })).first === null && play(HOV, hevery5(60, {
+      gsKt: undefined
+    })).first === null && play(HOV, hevery5(60, {
+      gsKt: 5
+    })).n === 6);
+  ck('hover, holding : hors de la bande de hauteur sol remet à zéro (trop bas, trop haut) ; les bornes tiennent ; aglFt absent, nul ou illisible ne compte jamais (l\'altitude seule non plus)',
+    play(HOV, [...hevery5(15), hv(20, {
+      aglFt: 5
+    }), ...hevery5(60).slice(5)]).n === 11 && play(HOV, [...hevery5(15), hv(20, {
+      aglFt: 150
+    }), ...hevery5(60).slice(5)]).n === 11 && play(HOV, hevery5(60, {
+      aglFt: 10
+    })).n === 6 && play(HOV, hevery5(60, {
+      aglFt: 100
+    })).n === 6 && play(HOV, hevery5(60, {
+      aglFt: undefined
+    })).first === null && play(HOV, hevery5(60, {
+      aglFt: null
+    })).first === null && play(HOV, hevery5(60, {
+      aglFt: NaN
+    })).first === null && play(HOV, hevery5(60, {
+      aglFt: undefined,
+      altFt: 50
+    })).first === null);
+  ck('hover, holding : hors rayon (111 m pour 50 m) remet à zéro ; un écart de 12 s avec maxGapSec 10 aussi ; un écart de 10 s exactement tient',
+    play(HOV, hevery5(60, {
+      lat: 45.001
+    })).first === null && play(HOV, [...hevery5(15), hv(20, {
+      lat: 45.001
+    }), ...hevery5(60).slice(5)]).n === 11 && play(HOV, [hv(0), hv(5), hv(10), hv(22), hv(27), hv(32), hv(37), hv(42), hv(47), hv(52)]).n === 9 && play(HOV, [hv(0), hv(10), hv(20), hv(30)]).n === 3);
+  ck('hover, holding : un objet immobile à la place du point tient aussi',
+    play(hobj({
+      lat: 45.0,
+      lon: 1.0,
+      moving: false
+    }), hevery5(30)).n === 6);
+  const hNoThrow = (...a) => {
+    try {
+      const r = D.holding(...a);
+      return !!r && r.f === null;
+    } catch {
+      return false;
+    }
+  };
+  ck('hover, holding : les entrées hostiles ne lèvent pas — fix null, heure illisible ou absente, clé null, tenue absurde, règle absurde',
+    hNoThrow(HOV, null, null) && hNoThrow(HOV, null, hv(0, {
+      at: 'pas une heure'
+    })) && hNoThrow(HOV, null, {
+      lat: 45.0003,
+      lon: 1.0,
+      onGround: false,
+      aglFt: 40,
+      gsKt: 2
+    }) && hNoThrow(null, null, hv(0)) && hNoThrow(undefined, 'x', hv(0)) && hNoThrow(HOV, {
+      from: 3,
+      last: {}
+    }, hv(0)) && hNoThrow(HOV, 7, 'x') && hNoThrow({
+      kind: 'condition',
+      condition: 'hover',
+      rule: null
+    }, null, hv(0)) && hNoThrow(hov({
+      radiusM: 'x',
+      heightMaxFt: {}
+    }), null, hv(0)));
+  ck('hover, finding rend toujours null (la tenue a un état : holding) ; catchUp aussi (la trace garde un point par mille marin)',
+    D.finding(HOV, null, hv(0)) === null && D.finding(HOV, hv(0), hv(40)) === null && D.catchUp(HOV, {
+      from: iso(T0),
+      trail: [
+        [45.0003, 1.0, 240, 10, 40, 0],
+        [45.0003, 1.0, 240, 60, 40, 0]
+      ]
+    }) === null);
+  const hf = {
+    how: 'hover',
+    from: hv(0),
+    to: hv(30)
+  };
+  ck('hover, stands : le constat tenu sur la clé du lecteur → vrai (30 s, 31 s, 39 s) ; trop court (29 s), écart de 40 s (durationSec + maxGapSec) ou de 3 h, hors rayon chez le lecteur, vitesse, sol, hauteur sol non tenus, d\'une autre sorte → faux',
+    D.stands(hf, HOV) === true && D.stands({
+      ...hf,
+      to: hv(31)
+    }, HOV) === true && D.stands({
+      ...hf,
+      to: hv(39)
+    }, HOV) === true && !D.stands({
+      ...hf,
+      to: hv(29)
+    }, HOV) && !D.stands({
+      ...hf,
+      to: hv(40)
+    }, HOV) && !D.stands({
+      ...hf,
+      to: hv(3 * 3600)
+    }, HOV) && !D.stands(hf, hov({
+      at: {
+        lat: 46.0,
+        lon: 1.0
+      }
+    })) && !D.stands({
+      ...hf,
+      from: hv(0, {
+        onGround: true
+      })
+    }, HOV) && !D.stands({
+      ...hf,
+      to: hv(30, {
+        onGround: null
+      })
+    }, HOV) && !D.stands({
+      ...hf,
+      to: hv(30, {
+        gsKt: 9
+      })
+    }, HOV) && !D.stands({
+      ...hf,
+      to: hv(30, {
+        aglFt: undefined
+      })
+    }, HOV) && !D.stands({
+      ...hf,
+      from: null
+    }, HOV) && !D.stands({
+      ...hf,
+      how: 'landing'
+    }, HOV) && !D.stands(hf, LAND) && !D.stands({
+      ...hf,
+      how: 'landing'
+    }, LAND) && !D.stands(hf, hov({
+      confirmation: 'posed'
+    })));
+  ck('hover, stands : faux hors de la bande de hauteur sol chez le lecteur (bande 200 à 300 ft pour des relevés à 40 ft), vrai dans une bande qui les contient',
+    !D.stands(hf, hov({
+      heightMinFt: 200,
+      heightMaxFt: 300
+    })) && D.stands(hf, hov({
+      heightMinFt: 0,
+      heightMaxFt: 40
+    })) === true);
+  ck('hover, isHold : vrai pour l\'atterrissage et le stationnaire jugés ici, faux pour le reste (survol, zone, objet, stationnaire non jugé)',
+    typeof D.isHold === 'function' && D.isHold(HOV) === true && D.isHold(LAND) === true && D.isHold(OV) === false && D.isHold(ARR) === false && D.isHold(hov({
+      maxGapSec: 4
+    })) === false && D.isHold(null) === false && D.isHold({
+      kind: 'zone'
+    }) === false);
+  ck('hover, HOWS et SHARED contiennent « hover » ; howOf apparie la condition et le genre',
+    D.HOWS.includes('hover') && D.SHARED.includes('hover') && D.howOf(HOV) === 'hover' && D.howOf(LAND) === 'landing');
+  // le carnet : un constat hover s'écrit, se relit, et le constat d'un autre pilote ouvre le tiroir (comme l'atterrissage)
+  const hDoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'hover', {
+      from: hf.from,
+      to: hf.to,
+      at: T0 + 30e3,
+      source: 'xplane'
+    }),
+    hBook = D.readBook(hDoc, ID),
+    hTheirs = peer('B', T0 + 30e3, 'hover', {
+      from: hf.from,
+      to: hf.to
+    }),
+    hSt = st({
+      drawers: [{
+        id: 'B',
+        title: 'Stationnaire',
+        key: HOV
+      }],
+      others: [
+        ['BBB', hTheirs]
+      ],
+      now: T0 + 41 * MIN
+    })[0],
+    hOff = st({
+      drawers: [{
+        id: 'B',
+        title: 'Stationnaire',
+        key: hov({
+          heightMinFt: 200,
+          heightMaxFt: 300
+        })
+      }],
+      others: [
+        ['BBB', hTheirs]
+      ],
+      now: T0 + 41 * MIN
+    })[0];
+  ck('hover, carnet : le constat s\'écrit avec ses deux relevés (hauteur sol comprise) et se relit ; celui de BBB ouvre le tiroir chez AAA (« hover », par BBB) ; sur une autre bande chez le lecteur, il est refusé (« shape »)',
+    hBook?.drawers?.B?.how === 'hover' && hBook.drawers.B.from?.aglFt === 40 && hSt.open === true && hSt.how === 'hover' && hSt.by === 'BBB' && hSt.refused.length === 0 && hOff.open === false && hOff.refused[0]?.why === 'shape', [hBook, hSt, hOff]);
 
   window.__bench = {
     done: true,
