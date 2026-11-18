@@ -386,6 +386,14 @@ export const EDTX = {
     'Route: Berühren Sie einen Ort, um ihn der Folgeroute der Schublade {n} hinzuzufügen.',
     'Trazado: toque un lugar para añadirlo a la ruta siguiente del cajón {n}.'
   ],
+  // une pastille de route se choisit ; deux flèches la déplacent d'un rang (la route du départ comme la suite d'un tiroir)
+  rtEarlier: ['← Plus tôt', '← Earlier', '← Früher', '← Antes'],
+  rtLater: ['Plus tard →', 'Later →', 'Später →', 'Después →'],
+  rtMoveHint: ['Touchez un lieu pour le choisir, puis déplacez-le par les flèches.',
+    'Touch a place to choose it, then move it with the arrows.',
+    'Einen Ort berühren, um ihn zu wählen, dann mit den Pfeilen verschieben.',
+    'Toque un lugar para elegirlo y muévalo con las flechas.'
+  ],
   rtTitle: ['Route du départ', 'Route of the departure', 'Route des Abflugs', 'Ruta de la salida'],
   rtHint: ['Les lieux que le pilote rejoint, dans l\'ordre. Sur la carte, l\'outil « Tracé » en ajoute au toucher.',
     'The places the pilot reaches, in order. On the map, the « Route » tool adds some by a touch.',

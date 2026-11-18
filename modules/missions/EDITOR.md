@@ -699,6 +699,21 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - A late answer (another search since, the workshop left) is dropped (`s.ed.seekTok`).
 - **Not done**: the towns as places to go to; « Radiale et distance… » from a beacon.
 
+### 7 tervicies. A route is reordered by two arrows on the chip chosen (18 Nov 2026; SOG-0444, the rests of lot P2 — lot D; noreg N106)
+
+- **A chip is chosen by a touch** on its name (a button, `aria-pressed`; touched again, it is left; one chip chosen at a time:
+  `s.ed.chipSel = { where, n }`, `where` = `'start'` for the route of the departure, else the drawer of the sheet). The cross still
+  removes the place — and forgets the choice.
+- **Under the chips, two arrows**: « ← Plus tôt » and « Plus tard → » move the chip chosen by one rank; the first cannot go earlier,
+  the last cannot go later (the arrow is disabled). Before a chip is chosen, the line says how (« Touchez un lieu pour le choisir,
+  puis déplacez-le par les flèches. ») and the arrows are not given. Nothing for a route of fewer than two places.
+- **In place** (SOG-0449): a choice changes attributes only; a move rewrites the chips, **not the arrows** — the arrow pressed stays
+  under the finger and is pressed several times in a row; the lines, what the pilot will read and the map follow by `edRefresh`.
+- **The same for the onward route of a drawer** (`edDrawerChips`, `edChipsHtml`, `edChipMoveHtml`, `edChipsShow` are shared).
+- The move is pure: `ED.routeMove(route, n, step, shown)` → `{ route, at }` — the place swaps with the nearest chip shown on that
+  side (an entry the sheet does not show, a place the file cites that no longer exists, stays where it is); the same route when
+  there is nothing to do. A move from the sheet is not a gesture of the map: « Annuler le geste » has nothing to give back after it.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

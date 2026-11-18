@@ -4967,6 +4967,8 @@ def n99(c):
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
     c.eq([c.js(_DWCHIPS), hint(), c.js(_EDTOOL_STATE)[2][:2]], [['PT2'], T('atHint_routeDrawer', n=2), ['route', 'true']],
          'drawer 2 chosen: its onward route is PT2; the tool is still in hand and the line says it now fills the onward route of drawer 2', what='a drawer chosen')
+    # the sheet of a drawer is shorter than the Lieux: the page, scrolled for the chips, may leave the map above the view — bring it back
+    c.js(f"document.querySelector('{_EDMAP} [data-atmapslot]').scrollIntoView({{block: 'center'}})")
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.25]))
     c.until(f"({_DWCHIPS}).length === 2", timeout=8000, what='a place added to the onward route of drawer 2')
     c.ok(c.js(_DWCHIPS)[0] == 'PT2' and c.js(_DWCHIPS)[1] in ('ZONE-1', 'PT1') and 'onward' in c.js(_EDMAP_IDS, None), [c.js(_DWCHIPS), c.js(_EDMAP_IDS, None)],
@@ -5615,5 +5617,132 @@ def n105(c):
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.js(f"document.querySelector('{_SEEK}').scrollIntoView({{block: 'center'}})")
     c.shot('N105_390_seek_many.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)
+
+
+
+_RTMOVE = f'{E} [data-chipmove="start"]'
+_DWMOVE = f'{_DW} [data-chipmove="drawer"]'
+_CHIPMOVE_STATE = """(sel) => { const r = document.querySelector(sel); return r ? [r.querySelector('[data-chiphint]').hidden, ...[...r.querySelectorAll('button')].map(b => b.disabled)] : null }"""
+_RTPRESSED = f"[...document.querySelectorAll('{E} [data-edroute] [data-chip]')].filter(x => x.hasAttribute('data-chipsel') && x.querySelector('.ms-chipname').getAttribute('aria-pressed') === 'true').map(x => x.dataset.chip)"
+_DWPRESSED = f"[...document.querySelectorAll('{_DW} [data-dwroute] [data-chip]')].filter(x => x.hasAttribute('data-chipsel') && x.querySelector('.ms-chipname').getAttribute('aria-pressed') === 'true').map(x => x.dataset.chip)"
+_ROUTEMOVE_JS = """async () => { const ED = await import('/modules/missions/editor.js'); let threw = '';
+  const r = ['A', 'B', 'C', 'D'], gone = w => w !== 'X';
+  for (const h of [[null, 0, 1], ['x', 0, 1], [r, 'x', 1], [r, 1.5, 1], [r, -1, 1], [r, 9, -1], [r, 1, 1, 'x'], [r, {}, {}]])
+    try { const m = ED.routeMove(...h); if (m.at !== -1 && !(h[3] === 'x' && m.route === r)) threw += 'moved' + JSON.stringify(h) } catch (e) { threw += String(e) }
+  return { threw, later: ED.routeMove(r, 1, 1), earlier: ED.routeMove(r, 1, -1), first: ED.routeMove(r, 0, -1).route === r, last: ED.routeMove(r, 3, 1).route === r,
+    kept: r.join(''), hidden: ED.routeMove(['A', 'X', 'X', 'B', 'C'], 0, 1, gone), edge: ED.routeMove(['A', 'B', 'X'], 1, 1, gone).at } }"""
+
+
+@case('N106', 'Missions › the workshop, a route is reordered by two arrows on the chip chosen: a chip of the route of the departure is '
+      'chosen by a touch (in place: nothing is redrawn; touched again, it is left); « ← Plus tôt » and « Plus tard → » move it by one '
+      'rank and stay under the finger — the arrow pressed is the same element, pressed several times in a row; the first cannot go '
+      'earlier, the last cannot go later; before a chip is chosen the line says how; the onward route of a drawer is reordered the '
+      'same way and what the pilot will read follows; the file saved carries the new orders',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, the rests of lot P2 — lot D (the ergonomist, 18 Nov: « réordonner les pastilles par deux flèches sur la pastille '
+      'choisie »; modules/missions/EDITOR.md § 7 tervicies; SOG-0449: what the finger presses is not redrawn)')
+def n106(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    order = lambda: [x[0] for x in c.js(_RTCHIPS)]  # noqa: E731
+    # the move itself, pure
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_ROUTEMOVE_JS)
+    c.eq([r['threw'], r['later'], r['earlier'], r['first'], r['last'], r['kept'], r['hidden'], r['edge']],
+         ['', {'route': ['A', 'C', 'B', 'D'], 'at': 2}, {'route': ['B', 'A', 'C', 'D'], 'at': 0}, True, True, 'ABCD', {'route': ['B', 'X', 'X', 'A', 'C'], 'at': 3}, 1],
+         'a place moves by one chip, earlier or later, and says its new rank; the first does not go earlier nor the last later (the same route is returned); the route given '
+         'is not retouched; an entry the screen does not show stays where it is — the place jumps over it, and does not move when only such entries follow; no hostile '
+         'argument throws nor moves anything', what='the move')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-do=\"edstep\"][data-step=\"places\"]')", timeout=15000, what='the workshop')
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edroute]')", what='the route of the departure in the Lieux')
+    c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
+    c.eq([order(), c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE), norm(c.text(f'{_RTMOVE} [data-chiphint]')), [norm(x) for x in c.js(f"[...document.querySelectorAll('{_RTMOVE} button')].map(b => b.textContent)")]],
+         [['ORIGIN', 'PT1', 'TARGET', 'DESTINATION'], [], [False, True, True], T('rtMoveHint'), [T('rtEarlier'), T('rtLater')]],
+         'under the chips of the route: the two arrows, not given while no chip is chosen, and the line that says how', what='before a choice')
+    # a chip chosen, in place
+    c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    c.tap(f'{E} [data-edroute] [data-chip="PT1"] .ms-chipname')
+    c.eq([c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE), all(c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")), order()],
+         [['PT1'], [True, False, False], True, ['ORIGIN', 'PT1', 'TARGET', 'DESTINATION']],
+         'a chip touched is chosen — in place, no button redrawn: it is marked, the line gives way to the two arrows, both given (PT1 is neither first nor last)', what='a chip chosen')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N106_1280_chosen.png')
+    # « Plus tard → » twice in a row: the same arrow under the finger
+    c.tap(f'{_RTMOVE} button >> nth=1')
+    c.until(f"JSON.stringify(({_RTCHIPS}).map(x => x[0])) === '[\"ORIGIN\",\"TARGET\",\"PT1\",\"DESTINATION\"]'", timeout=8000, what='PT1 one rank later')
+    c.eq([c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE), all(c.js(f"[...document.querySelectorAll('{_RTMOVE} button')].map(b => !!b.__kept)"))], [['PT1'], [True, False, False], True],
+         '« Plus tard → » moved PT1 by one rank; it is still the chip chosen; the arrows are the same elements', what='one rank later')
+    c.tap(f'{_RTMOVE} button >> nth=1')
+    c.until(f"JSON.stringify(({_RTCHIPS}).map(x => x[0])) === '[\"ORIGIN\",\"TARGET\",\"DESTINATION\",\"PT1\"]'", timeout=8000, what='PT1 last')
+    c.eq([c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE)], [['PT1'], [True, False, True]], 'pressed again, the same arrow moved it again: PT1 is last and cannot go later',
+         what='the last')
+    for _ in range(3):
+        c.tap(f'{_RTMOVE} button >> nth=0')
+        c.wait(150)
+    c.eq([order(), c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE)], [['PT1', 'ORIGIN', 'TARGET', 'DESTINATION'], ['PT1'], [True, True, False]],
+         '« ← Plus tôt » three times: PT1 is first and cannot go earlier', what='the first')
+    c.tap(f'{_RTMOVE} button >> nth=1')
+    c.until(f"({_RTCHIPS})[1][0] === 'PT1'", timeout=8000, what='PT1 second again')
+    # touched again, the chip is left; another chip chosen takes its place
+    c.tap(f'{E} [data-edroute] [data-chip="PT1"] .ms-chipname')
+    c.eq([c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE)], [[], [False, True, True]], 'touched again, the chip is left: the arrows are not given any more', what='the chip left')
+    c.tap(f'{E} [data-edroute] [data-chip="TARGET"] .ms-chipname')
+    c.tap(f'{E} [data-edroute] [data-chip="DESTINATION"] .ms-chipname')
+    c.eq(c.js(_RTPRESSED), ['DESTINATION'], 'one chip chosen at a time', what='another chip')
+    c.tap(f'{_RTMOVE} button >> nth=0')
+    c.until(f"({_RTCHIPS})[2][0] === 'DESTINATION'", timeout=8000, what='the arrival one rank earlier')
+    c.eq(order(), ['ORIGIN', 'PT1', 'DESTINATION', 'TARGET'], 'the arrival moved one rank earlier', what='the arrival moved')
+    # a cross forgets the choice
+    c.tap(f'{E} [data-edroute] [data-chip="TARGET"] [data-do="edroutedel"]')
+    c.until(f"({_RTCHIPS}).length === 3", what='TARGET removed')
+    c.eq([c.js(_RTPRESSED), c.js(_CHIPMOVE_STATE, _RTMOVE)], [[], [False, True, True]], 'a place removed: no chip is chosen any more', what='after a cross')
+    # the onward route of a drawer: the same two arrows; what the pilot will read follows in place
+    c.tap(f'{E} [data-atflow] [data-sel="C"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of drawer 2')
+    c.js(f"document.querySelector('{_DW} [data-dgrp=route]').scrollIntoView({{block: 'center'}})")
+    # on a wide module the groups of a drawer are always unfolded (their title is not a button there)
+    c.until(f"getComputedStyle(document.querySelector('{_DW} [data-dgrp=route] .ms-dbody')).display !== 'none'", what='« La suite de route » unfolded')
+    c.eq([c.js(_DWCHIPS), c.count(_DWMOVE)], [['PT2'], 0], 'a route of one place has no arrows', what='one place')
+    c.page.select_option(f'{_DW} [data-k=eddr][data-f=routeadd]', 'PT1')
+    c.until(f"({_DWCHIPS}).length === 2", what='PT1 added to the onward route')
+    c.page.select_option(f'{_DW} [data-k=eddr][data-f=routeadd]', 'DESTINATION')
+    c.until(f"({_DWCHIPS}).length === 3", what='the arrival added to the onward route')
+    c.eq([c.js(_DWCHIPS), c.js(_CHIPMOVE_STATE, _DWMOVE)], [['PT2', 'PT1', 'DESTINATION'], [False, True, True]], 'three places: the arrows are there, not given yet', what='the onward route')
+    c.tap(f'{_DW} [data-dwroute] [data-chip="PT1"] .ms-chipname')
+    c.tap(f'{_DWMOVE} button >> nth=0')
+    c.until(f"({_DWCHIPS})[0] === 'PT1'", timeout=8000, what='PT1 first in the onward route')
+    line = norm(c.text(f'{_DW} [data-dline="route"]'))
+    c.ok(c.js(_DWCHIPS) == ['PT1', 'PT2', 'DESTINATION'] and c.js(_DWPRESSED) == ['PT1'] and c.js(_CHIPMOVE_STATE, _DWMOVE) == [True, True, False] and line.index('PT1') < line.index('PT2')
+         and order() == [] and c.js(f"document.querySelector('{_DW}').dataset.drawer") == 'C', [c.js(_DWCHIPS), c.js(_DWPRESSED), c.js(_CHIPMOVE_STATE, _DWMOVE), line],
+         'the chip chosen of the onward route moved one rank earlier: it is first; the line of the group follows in place; the sheet of the drawer stays')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_DW} [data-dgrp=route]').scrollIntoView({{block: 'center'}})")
+    c.shot('N106_1280_drawer.png')
+    # saved: the file carries both orders
+    c.tap(f'{E} [data-do="edsave"]')
+    c.wait(600)
+    flat = re.sub(r'\s+', ' ', c.js(_TEXT_OF, path) or '')
+    c.ok(re.search(r'route_order: ?\[? ?-? ?ORIGIN,? ?-? ?PT1,? ?-? ?DESTINATION ?\]?', flat) is not None and re.search(r'PT1,? ?-? ?PT2,? ?-? ?DESTINATION', flat) is not None, flat[:700],
+         'the file saved carries the route of the departure reordered (ORIGIN, PT1, DESTINATION) and the onward route of drawer 2 reordered (PT1, PT2, DESTINATION)')
+    # on a phone
+    c.tap(f'{E} [data-atflow] [data-sel="start"]')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.count(f'{E} [data-edroute]') == 0:
+        c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edroute]')", what='the route of the departure on a phone')
+    c.js(f"document.querySelector('{E} [data-edroute]').scrollIntoView({{block: 'center'}})")
+    c.tap(f'{E} [data-edroute] [data-chip="PT1"] .ms-chipname')
+    box = c.js(f"(() => {{ const r = document.querySelector('{_RTMOVE}').getBoundingClientRect(), b = [...document.querySelectorAll('{_RTMOVE} button')].map(x => x.getBoundingClientRect().height); return [r.left >= 0, r.right <= innerWidth + 1, Math.min(...b) >= 44] }})()")
+    c.eq([box, c.js(_RTPRESSED)], [[True, True, True], ['PT1']], 'on a phone the two arrows hold in the width and are 44 px high; a chip is chosen the same way', what='a phone')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N106_390_chosen.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)

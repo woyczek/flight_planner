@@ -1411,6 +1411,30 @@ export function routeToken(row) {
   return r.kind === 'dep' ? 'ORIGIN' : r.kind === 'arr' ? 'DESTINATION' : cut(r.id, 40);
 }
 
+/** Une route où le lieu de rang n a avancé (step < 0) ou reculé (step > 0) d'UNE pastille : il échange sa place avec la pastille
+ *  montrée la plus proche de ce côté (`shown(entrée)` : une entrée que l'écran ne montre pas — un lieu que le fichier cite et qui
+ *  n'existe plus — reste où elle est). → { route, at } : la route neuve et le rang neuf du lieu ; la même route et le même rang s'il
+ *  n'y a rien à faire (un rang hors de la route, le premier qu'on avance, le dernier qu'on recule). La route donnée n'est pas
+ *  retouchée. */
+export function routeMove(route, n, step, shown = () => true) {
+  const list = Array.isArray(route) ? route : [],
+    dir = step < 0 ? -1 : 1,
+    same = {
+      route: list,
+      at: Number.isInteger(n) && n >= 0 && n < list.length ? n : -1
+    };
+  if (same.at < 0 || typeof shown !== 'function') return same;
+  let to = n + dir;
+  while (to >= 0 && to < list.length && !shown(list[to])) to += dir;
+  if (to < 0 || to >= list.length) return same;
+  const out = list.slice();
+  [out[n], out[to]] = [out[to], out[n]];
+  return {
+    route: out,
+    at: to
+  };
+}
+
 /** Les sortes de lieu qu'un geste de la carte déplace : ni le départ ni l'arrivée (des terrains : leur position vient de la base). */
 export const MOVABLE = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
 /** Les bornes du rayon d'une zone ronde, en km (celles du lecteur : 500 au plus). */
