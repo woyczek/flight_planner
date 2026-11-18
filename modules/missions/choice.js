@@ -20,6 +20,9 @@
 
 import * as MS from '../../frame/lib/mission.js';
 import {
+  fmtDur
+} from '../../frame/lib/time.js'; // SOG-0468 (4) : les durées du cadre
+import {
   isCode
 } from '../../frame/lib/ad_field.js'; // un code de terrain complet, la règle du champ commun (hélistations comprises)
 
@@ -106,8 +109,7 @@ export function theatreOf(m, {
 
 /** Une durée en minutes pour l'œil : « 45 min », « 1 h », « 1 h 20 ». */
 export function hm(min) {
-  const v = Math.max(0, Math.round(+min || 0)),
-    h = Math.floor(v / 60),
-    m = v % 60;
-  return h ? m ? `${h} h ${String(m).padStart(2, '0')}` : `${h} h` : `${m} min`;
+  return fmtDur(min, {
+    wholeHour: true
+  }); // SOG-0468 (4) : le formateur du cadre, « 2 h » pour une heure ronde
 }

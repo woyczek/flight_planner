@@ -5,6 +5,9 @@
 // le vol est écrit par Carburant. Pas encore : l'enveloppe, le lecteur
 // page à page, l'affectation (§ 5–6).
 import * as MS from '../../frame/lib/mission.js';
+import {
+  fmtHm
+} from '../../frame/lib/time.js'; // SOG-0468 (4) : les durées du cadre
 import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des YAML avant toute écriture (SOG-0212 b)
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
@@ -42,7 +45,8 @@ export const meta = {
     'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
-    '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js', '../../frame/lib/callsign_field.js', // SOG-0488 : le champ d'indicatif (Équipes)
+    '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
+    '../../frame/lib/callsign_field.js', // SOG-0488 : le champ d'indicatif (Équipes)
     '../../frame/lib/icons.js', // l'atelier (editor_view.js) l'importe : demandé par Création (I26)
     '../../frame/lib/suggest_list.js', // SOG-0465 (adnames.js : importé par ad_field.js) : le champ de terrain de l'atelier (Départ, Arrivée), celui de Carburant
     '../../frame/lib/crossing.js',
@@ -50,7 +54,8 @@ export const meta = {
     '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
     // SOG-0464 : le profil vertical de la Carte sous la carte de l'atelier (modules/maps/lib/profile_embed.js, de BUGS SOG) et les scripts
     // qu'il charge (render.js est déjà ci-dessus)
-    '../maps/lib/profile_embed.js?v=0', '../maps/lib/aero_symbols.js?v=0', '../maps/lib/vertical_profile.js?v=0', '../maps/profile.js?v=0',
+    '../maps/lib/profile_embed.js?v=0', '../maps/lib/aero_symbols.js?v=0', '../maps/lib/vertical_profile.js?v=0',
+    '../maps/profile.js?v=0',
     '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
@@ -854,7 +859,9 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   "'": '&#39;'
 } [c]));
 /** Des minutes en « h:mm ». */
-const hmm = m => Number.isFinite(+m) && m > 0 ? `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}` : '';
+const hmm = m => fmtHm(m, {
+  positive: true
+}); // SOG-0468 (4) : « 1:05 », rien pour une durée nulle ou illisible
 const WAIT_MS = 8000; // attente d'un fichier pas encore sur l'appareil, au-delà : « pas encore sur l'appareil », la lecture continue
 
 /** Un fichier YAML du dépôt, lu en attendant le réseau s'il n'est pas encore sur l'appareil (data.get rendait null tout de suite :

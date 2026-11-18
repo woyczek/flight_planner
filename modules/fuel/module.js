@@ -70,7 +70,9 @@ import {
   fmtZ,
   fmtZLocal,
   fmtDateZ,
-  fmtDayZ
+  fmtDayZ,
+  fmtHm,
+  fmtDur
 } from '../../frame/lib/time.js'; // heures en UTC (« 16:30Z »), l'heure locale seulement au départ et à l'arrivée
 
 export const meta = {
@@ -1672,10 +1674,8 @@ const num = v => {
  *  compagnie quand elle la donnera), pieds en dessous (frame/lib/route_text.js). */
 const flTxt = h => RT.formatLevel(h, +S?.ctx?.airline?.transitionFt || 5000);
 /** Durée en minutes → h:mm. */
-const hmm = m => {
-  const x = Math.max(0, Math.round(+m || 0));
-  return `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}`;
-};
+// SOG-0468 (4) : « 1:05 », le formateur du cadre (négatif ou illisible : « 0:00 »)
+const hmm = m => fmtHm(+m || 0);
 
 /** Charge le calcul pur (scripts du dossier du module, une fois par page), tous au montage : le service worker du
  *  cadre garde le point d'entrée du module dès la première visite et les fichiers qu'il importe au premier passage. */
@@ -6270,7 +6270,7 @@ function lvlMix(C) {
   }
   const fl = ft => `FL${String(Math.round(ft / 100)).padStart(3, '0')}`,
     q = C?.q,
-    hm = m => `${Math.floor(m / 60)}:${String(Math.round(m % 60)).padStart(2, '0')}`,
+    hm = m => fmtHm(m), // SOG-0468 (4) : arrondi à la minute AVANT le partage (jamais « 1:60 »)
     times = q?.climb?.min != null && q?.cruise?.min != null ? tt(TX.lvlMixTimes, {
       c: hm(q.climb.min),
       k: hm(q.cruise.min)
@@ -6626,10 +6626,8 @@ async function startFlight() {
   } else setTimeout(() => location.hash = '#maps?from=fuel', 350);
 }
 /** Durée « 1 h 12 » (« 12 min » sous l'heure). */
-const dur = min => {
-  const m = Math.max(0, Math.round(min));
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
-};
+// SOG-0468 (4) : « 45 min », « 1 h 05 », le formateur du cadre
+const dur = min => fmtDur(min);
 /** Heure UTC « 16:30Z » d'un instant ISO (frame/lib/time.js). */
 const hhmmOf = iso => fmtZ(iso);
 /** Heure UTC et heure locale de l'appareil « 16:30Z (18:30) » : seulement au départ, au décollage et à l'arrivée prévus. */
