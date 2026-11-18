@@ -10,6 +10,9 @@ import {
   flownPts
 } from './state.js';
 import {
+  START_VIEW
+} from './lib/map_base.js';
+import {
   TX
 } from './texts.js';
 import {
@@ -412,10 +415,7 @@ function fitOf() {
     prop =
     altnPoints(); // les terrains de dégagement proposés par Carburant, quand ils sont dessinés (SOG-0398, lot 2) : la vue les garde avec l'arrivée, une marge de 40 NM
   return viewOf() || MapsRender.bboxOf([...pts, ...(S.route.altn ? [S.route.altn] : []), ...prop], prop.length ? 40 : 25) || {
-    w: -5,
-    s: 41,
-    e: 10,
-    n: 51.5
+    ...START_VIEW
   };
 }
 /** Recadre la vue quand les terrains proposés arrivent ou sont retirés (altn.js) : l'emprise du vol les prend, ou les rend ; la caméra ne bouge pas si l'utilisateur a déplacé la carte ou en mode choix / mission. */

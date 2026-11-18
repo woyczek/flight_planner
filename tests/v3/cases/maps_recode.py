@@ -9415,6 +9415,18 @@ def d269(c):
     c.ok(g['changed'], str(g), 'another route: another object')
 
 
+@case('D270', 'The starting view of the Map is one exported constant (lib/map_base.js START_VIEW), used by the Map when it has nothing to frame', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0469 (the ergonomist: « RÉUTILISE la vue de départ de la Carte »): START_VIEW = { w: -5, s: 41, e: 10, n: 51.5 } (Western Europe), frozen, exported by the base the missions workshop already imports; the Map’s own fallback (fitOf of data.js) reads it: no second copy of the box')
+def d270(c):
+    _me_open(c)
+    r = c.js("""async () => { const m = await import('/modules/maps/lib/map_base.js'), t = await (await fetch('/modules/maps/data.js')).text(), i = t.indexOf('function fitOf');
+      const body = t.slice(i, t.indexOf('export function refit', i));
+      return { v: { ...m.START_VIEW }, frozen: Object.isFrozen(m.START_VIEW), uses: /START_VIEW/.test(body), copy: /w: -5|s: 41|n: 51\.5/.test(body) } }""")
+    c.eq(r['v'], {'w': -5, 's': 41, 'e': 10, 'n': 51.5}, 'START_VIEW is the Western-Europe box the Map has always started on', what=str(r))
+    c.ok(r['frozen'] and r['uses'] and not r['copy'], str(r), 'it is frozen, the Map’s fallback reads it, and no second copy of the box is written in fitOf')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

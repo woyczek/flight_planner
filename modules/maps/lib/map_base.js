@@ -44,6 +44,14 @@ export const STYLE_TOPO = {
     source: 'otm'
   }]
 };
+/** La vue de départ de la Carte quand elle n'a rien à cadrer (pas de route, pas de mission située) : l'Europe de l'Ouest, { w, s, e, n } (SOG-0469 : la Carte et l'atelier de missions la
+ *  partagent). MapLibre : bounds [[w, s], [e, n]]. */
+export const START_VIEW = Object.freeze({
+  w: -5,
+  s: 41,
+  e: 10,
+  n: 51.5
+});
 /** Attente des tuiles par défaut (ms) : fond pas prêt après ce délai, fond uni. */
 export const TILE_WAIT = 10e3;
 
