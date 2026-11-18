@@ -343,6 +343,10 @@ The 1.1 rules: `radius_m` 0.1 to 10 000, `duration_sec` 1 to 3 600, `max_gap_sec
 overflight 0.001 to 100; a point AND an object, or neither, is unreadable; a sequence has 1 to 10 steps, never nested; the
 id of an event and a recipient are short words (80 signs, `[A-Za-z0-9_.-]`).
 
+**What `to` holds is not decided yet** (the ergonomist decides on Thursday: a call sign, a role or « all »). Until then the workshop writes only
+`emit_event: { id, to: [all] }` (« all » passes `EVENT_ID`) and its sheet offers no field for the recipients. A file that already carries other
+recipients KEEPS them as written (nothing is rewritten unless the author touches the message); the screen says them, without a way to add.
+
 **`height_min_ft` and `height_max_ft` (a hover, an overflight) are HEIGHTS above the ground (AGL), not altitudes above sea level.** The flight
 judges them only with the simulator, in agreement with « Affectation ». The workshop says so in the label of the two fields of a drawer's sheet
 (« Hauteur minimale (ft, sol) »).

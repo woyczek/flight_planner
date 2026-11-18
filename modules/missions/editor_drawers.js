@@ -362,11 +362,16 @@ function emitOf(v) {
   };
 }
 
+/** Le destinataire que l'atelier écrit d'un message neuf : tous les équipages (`all` passe le motif EVENT_ID du lecteur). */
+const ALL = 'all';
+
 /** Les destinataires saisis (séparés par des virgules, des points-virgules ou des blancs) : seize mots au plus. */
 const recipients = v => String(v ?? '').split(/[\s,;]+/).map(x => cut(x, 80)).filter(Boolean).slice(0, 16);
 
 /** Le message envoyé à l'ouverture, écrit dans une partie : rien de saisi → la clé part ; sinon l'identifiant et les destinataires qui
- *  ont la forme du lecteur (MS.EVENT_ID) — un mot qui ne l'a pas n'est jamais écrit ; une autre clé de `emit_event` reste. */
+ *  ont la forme du lecteur (MS.EVENT_ID) — un mot qui ne l'a pas n'est jamais écrit ; une autre clé de `emit_event` reste. Sans destinataire
+ *  (l'écran n'en propose plus la saisie : l'ergonome tranche jeudi ce que contient `to`), l'atelier écrit `to: ['all']` ; les destinataires
+ *  qu'un fichier porte déjà (la ligne les garde dans `emitTo`) restent tels quels. */
 function putEmit(o, r) {
   const id = cut(r.emit, 80),
     to = recipients(r.emitTo);
@@ -378,6 +383,7 @@ function putEmit(o, r) {
   if (MS.EVENT_ID.test(id)) e.id = id;
   else delete e.id;
   if (ok.length) e.to = ok;
+  else if (MS.EVENT_ID.test(id)) e.to = [ALL];
   else delete e.to;
   o.emit_event = e;
 }

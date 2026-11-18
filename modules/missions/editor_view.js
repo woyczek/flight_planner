@@ -2573,9 +2573,15 @@ function edEventHtml(s, rows, r) {
   return `<label class="f-field"><span>${esc(s.tt(EDTX.dwEvent))}</span><input data-k="eddr" data-f="event" value="${esc(r.event || '')}" maxlength="80" autocomplete="off" list="ms-dwevents"></label><datalist id="ms-dwevents">${ids.map(x => `<option value="${esc(x)}"></option>`).join('')}</datalist><p class="f-muted" data-dwemitter>${esc(edEventFrom(s, rows, r))}</p>`;
 }
 
-/** Le message qu'un tiroir envoie en s'ouvrant (`emit_event`, SOG-0500) : son identifiant et ses destinataires. */
+/** Le message qu'un tiroir envoie en s'ouvrant (`emit_event`, SOG-0500) : son identifiant seul se saisit. Les destinataires ne se saisissent
+ *  plus (l'ergonome tranche ce que contient `to` : indicatif, rôle ou « all ») : l'atelier écrit `to: ['all']` ; ceux qu'un fichier porte déjà
+ *  sont gardés tels quels et dits (jamais réécrits tant que l'auteur n'y touche pas). */
 function edEmitHtml(s, r) {
-  return `<div class="f-row" data-dwemit><label class="f-field"><span>${esc(s.tt(EDTX.dwEmit))}</span><input data-k="eddr" data-f="emit" value="${esc(r.emit || '')}" maxlength="80" autocomplete="off"></label><label class="f-field"><span>${esc(s.tt(EDTX.dwEmitTo))}</span><input data-k="eddr" data-f="emitTo" value="${esc(r.emitTo || '')}" maxlength="400" autocomplete="off"></label></div>`;
+  const to = String(r.emitTo || '').trim(),
+    line = !to || to.toLowerCase() === 'all' ? s.tt(EDTX.dwEmitAll) : s.tt(EDTX.dwEmitKept, {
+      to
+    });
+  return `<div data-dwemit><label class="f-field"><span>${esc(s.tt(EDTX.dwEmit))}</span><input data-k="eddr" data-f="emit" value="${esc(r.emit || '')}" maxlength="80" autocomplete="off"></label><p class="f-muted" data-dwemitto>${esc(line)}</p></div>`;
 }
 
 /** Les champs d'une règle de maintien ou de survol (SOG-0500) : son lieu — un point de la mission OU un objet suivi (deux listes : en
@@ -2748,8 +2754,8 @@ function edDrawerInput(s, ev) {
     };
     return draw(s);
   }
-  if (['event', 'emit', 'emitTo'].includes(f) && !list) {
-    r[f] = String(t.value).slice(0, f === 'emitTo' ? 400 : 80);
+  if (['event', 'emit'].includes(f) && !list) {
+    r[f] = String(t.value).slice(0, 80);
     return edRefresh(s);
   }
   if (['point', 'zone', 'object', 'arrPoint'].includes(f) && list) {

@@ -10213,9 +10213,10 @@ def n153(c):
         {'kind': 'landing', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3}]},
         'step 1: its duration only, its other key kept; step 2 another kind: written whole (its confirmation gone)', what='a step changed')
     c.eq(g['untouched'], True, 'nothing changed: the document is identical', what='nothing changed')
-    c.eq(g['missing'], [{'key': 'condIncomplete', 'name': '1', 'what': ['steps']}, {'key': 'emitIncomplete', 'name': '1'},
-                        {'key': 'condIncomplete', 'name': '2', 'what': ['event']}], 'what is missing, named', what='to complete')
-    c.eq(g['notWritten'], [None, {'id': 'EV-B'}], 'a message that is not a word is not written; no recipient: no « to »', what='not written')
+    c.eq(g['missing'], [{'key': 'condIncomplete', 'name': '1', 'what': ['steps']}, {'key': 'condIncomplete', 'name': '2', 'what': ['event']}],
+         'what is missing, named (a message with its identifier and no recipient is complete: it goes to « all »)', what='to complete')
+    c.eq(g['notWritten'], [None, {'id': 'EV-B', 'to': ['all']}],
+         'a message that is not a word is not written; no recipient typed: the workshop writes `to: [all]` (the ergonomist decides on Thursday what `to` holds)', what='not written')
     c.eq(g['stepMissing'], ['2.duration'], 'a step out of bounds, named with its rank', what='a step')
     c.eq(g['kept'], [['kept', 'condition']] * 4, 'kept as they are', what='kept')
 
@@ -10269,7 +10270,9 @@ def n154(c):
              f'{width}: the key, its mention, step 1 open, step 2 in one line', what='the steps')
         c.eq([c.js(_STEP_VAL, [0, f]) for f in ('kind', 'label', 'object', 'radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax', 'confirmation')],
              ['hover', 'Dépose', 'OBJ-1', '5', '60', '10', '2', '10', '100', 'deploy'], f'{width}: the fields of step 1', what='step 1')
-        c.eq([c.js(_DW_VAL, 'emit'), c.js(_DW_VAL, 'emitTo')], ['EV-B', 'ALPHA'], f'{width}: the message sent at the opening', what='the message sent')
+        c.eq([c.js(_DW_VAL, 'emit'), c.count(f'{_DW} [data-f="emitTo"]'), norm(c.js(f"document.querySelector('{_DW} [data-dwemitto]').textContent"))],
+             ['EV-B', 0, norm(row(c, 'dwEmitKept', EDTX_FILE).replace('{to}', 'ALPHA'))],
+             f'{width}: the message sent at the opening: its identifier only is typed, no recipient field, the recipients of the file said and kept', what='the message sent')
         c.js(f"document.querySelector('{_DW} [data-dwsteps]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P13a_{width}_sequence.png')
         c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstep][data-n="1"]')

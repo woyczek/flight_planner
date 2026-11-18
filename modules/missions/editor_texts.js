@@ -373,8 +373,10 @@ export const EDTX = {
   dwEmit: ['Message envoyé à l\'ouverture', 'Message sent at the opening', 'Beim Öffnen gesendete Nachricht',
     'Mensaje enviado al abrirse'
   ],
-  dwEmitTo: ['Destinataires (séparés par des virgules)', 'Recipients (separated by commas)', 'Empfänger (durch Kommas getrennt)',
-    'Destinatarios (separados por comas)'
+  // le message envoyé à l'ouverture : l'atelier n'écrit que « all » en attendant l'ergonome (SOG-0500) ; les destinataires d'un fichier sont dits, gardés
+  dwEmitAll: ['Envoyé à tous les équipages', 'Sent to all crews', 'An alle Besatzungen gesendet', 'Enviado a todas las tripulaciones'],
+  dwEmitKept: ['Destinataires du fichier, gardés : {to}', 'Recipients of the file, kept: {to}', 'Empfänger der Datei, beibehalten: {to}',
+    'Destinatarios del archivo, conservados: {to}'
   ],
   dwMiss_steps: ['au moins une étape', 'at least one step', 'mindestens ein Schritt', 'al menos una etapa'],
   dwMiss_event: ['l\'identifiant du message', 'the identifier of the message', 'die Kennung der Nachricht',

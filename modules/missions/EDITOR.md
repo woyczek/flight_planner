@@ -1500,6 +1500,12 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   (`still` of `edRuleHtml`: a moving object is not judged; a moving object already written stays shown with its « ? ») and its gap says its minimum
   (`dwGapMin`, « 5 au moins », from `DR.landingGapMin`, which `ruleMissing` already enforced: under 5 s, « À compléter »). Captures `P13b_390_atterrissage.png`, `P13b_1280_atterrissage.png`.
 
+- **A message between crews goes to « all »** (SOG-0500, the relay's decision; noreg N153, N154): until the ergonomist decides on Thursday what `to` holds (a call sign, a
+  role or « all »), the sheet of a drawer that sends a message has the identifier field only — the free entry of the recipients (`emitTo`, commit dcb285eb2) is gone from
+  the screen. A message with its identifier and no recipient is written `emit_event: { id, to: ['all'] }` (`putEmit`; « all » passes `MS.EVENT_ID`); recipients a file
+  already carries stay as written (the row keeps them in `emitTo`, the sheet says « Destinataires du fichier, gardés : … »), and nothing is rewritten if the author does
+  not touch the message. « Message envoyé sans destinataire » can no longer arise from the screen.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
