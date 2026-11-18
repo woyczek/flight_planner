@@ -699,14 +699,16 @@ function spread(L) {
   }
 }
 
-/** Un geste fini sur une poignée, rendu à l'écran : un lieu touché est choisi, déplacé s'il a bougé ; la poignée d'un rayon le règle ; un
- *  sommet touché est choisi (l'écran propose « Retirer ce sommet »), déplacé s'il a bougé ; le milieu d'un côté, touché ou tiré, pose
- *  un sommet là où le geste finit. */
-function done(L, id, moved, at) {
+/** Un geste sur une poignée, rendu à l'écran — LE SEUL chemin de toutes les poignées (SOG-0478) : un lieu touché est choisi, déplacé
+ *  s'il a bougé ; la poignée d'un rayon le règle ; un sommet touché est choisi (l'écran propose « Retirer ce sommet »), déplacé s'il a
+ *  bougé ; le milieu d'un côté, touché ou tiré, pose un sommet là où le geste finit. `drag` (vrai) : le geste n'est pas fini, l'écran
+ *  redessine aussitôt ce qui dépend de la poignée (le centre d'une zone, un sommet, un objet, le rayon) comme le doigt la porte — sans
+ *  rien garder ; un milieu de côté n'attend que la fin (poser un sommet change les poignées). */
+function done(L, id, moved, at, drag = false) {
   const t = partsOf(id),
     cb = L.cb;
   if (!t) return;
-  if (t.what === 'mid') return cb?.onInsert?.({
+  if (t.what === 'mid') return drag ? undefined : cb?.onInsert?.({
     i: t.i,
     k: t.k,
     lat: at.lat,
@@ -716,7 +718,8 @@ function done(L, id, moved, at) {
     i: t.i,
     k: t.k,
     lat: at.lat,
-    lon: at.lon
+    lon: at.lon,
+    drag
   }) : cb?.onVertexPick?.({
     i: t.i,
     k: t.k
@@ -724,12 +727,14 @@ function done(L, id, moved, at) {
   if (!moved) return cb?.onPick?.(t.i);
   if (t.what === 'radius') return cb?.onRadius?.({
     i: t.i,
-    km: at.meters / 1000
+    km: at.meters / 1000,
+    drag
   });
   cb?.onMove?.({
     i: t.i,
     lat: at.lat,
-    lon: at.lon
+    lon: at.lon,
+    drag
   });
 }
 
@@ -833,27 +838,17 @@ function gestures(L, map, o) {
   L.drag = dragHandles(map, L.host, {
     handles: () => handlesOf(L),
     ignore,
-    onMove: m => {
-      const c = m.kind === 'radius' ? (L.feats?.points || []).find(p => p.id === m.id)?.center : null;
-      L.pv.set(c ? {
-        circle: {
-          lat: c.lat,
-          lon: c.lon,
-          meters: m.meters
-        }
-      } : {
-        ghost: {
-          lat: m.lat,
-          lon: m.lon
-        }
-      });
-    },
+    // à chaque image du geste : l'écran redessine aussitôt (done, drag) ; avant les six pixels, c'est encore un toucher
+    onMove: m => m.moved && done(L, m.id, true, m, true),
     onEnd: m => {
       L.pv.clear();
       done(L, m.id, m.moved, m);
     },
     onTap: h => done(L, h.id, false, h),
-    onCancel: () => L.pv.clear()
+    onCancel: () => {
+      L.pv.clear();
+      L.cb?.onDragCancel?.(); // un geste lâché (la poignée a disparu, le doigt est parti) : l'écran rend ce qu'il montrait avant lui
+    }
   });
   L.tap = tapPosition(map, L.host, {
     ignore,
@@ -1072,7 +1067,9 @@ async function start(L, o) {
  *  rendu par onRoute(rang) ; 'view' : la carte ne fait que montrer ; 'put' : pendant un essai, un toucher rend la position où
  *  poser l'avion — onPut({ lat, lon })),
  *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom), ref (le repère de la base touché, marqué sur la carte) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
- *  onRadius({ i, km }), onPose({ lat, lon, spanKm }), et pour un contour onVertex({ i, k, lat, lon }), onInsert({ i, k, lat, lon }),
+ *  onRadius({ i, km }), onPose({ lat, lon, spanKm }), et pour un contour onVertex({ i, k, lat, lon }), onInsert({ i, k, lat, lon }) —
+ *  onMove, onRadius et onVertex rendent aussi chaque image d'un geste en cours (`drag: true` : redessiner aussitôt, rien à garder), et
+ *  onDragCancel() un geste lâché sans fin —,
  *  onVertexPick({ i, k }) ; onRoute(rang) en Tracé ; les repères de la base : onView({ bbox, zoom }) quand la vue s'arrête (l'écran
  *  les demande et les rend par setRefs), onRef({ id, kind, lat, lon }) quand un repère est touché en Sélection. Sans élément situé :
  *  la carte s'ouvre sur le cadre large de mapFeatures (SOG-0469) ; sans cadre du tout (une entrée qui n'est pas de mapFeatures) :
@@ -1103,13 +1100,14 @@ export function show(slot, feats, o) {
     spaces = o.spaces === true,
     sig = signature(feats),
     boxSig = JSON.stringify(feats.box),
+    held = !!L.drag?.dragging?.(), // un geste en cours : la vue ne bouge pas sous le doigt (le cadre est repris à la fin du geste)
     reframed = boxSig !== JSON.stringify(L.box);
   L.cb = o;
   L.mode = ['select', 'point', 'route', 'zone', 'object', 'view', 'put'].includes(o.mode) ? o.mode : 'select';
   L.sel = Number.isInteger(o.sel) ? o.sel : -1;
   L.selLabel = o.selLabel || '';
   L.feats = feats;
-  L.box = feats.box;
+  if (!held) L.box = feats.box;
   if (base !== L.base) L.reliefOff = false; // un fond redemandé est réessayé
   L.base = base;
   if (spaces !== L.spaces) {
@@ -1142,7 +1140,7 @@ export function show(slot, feats, o) {
     else L.pv?.clear();
   }
   const resized = mapSize(L.map, L.host);
-  if ((reframed || resized) && !L.moved) frame(L);
+  if ((reframed || resized) && !L.moved && !held) frame(L);
 }
 
 /** Cadre la vue sur une zone (le rang de sa ligne), avec une marge : ses sommets ne s'attrapent pas quand elle est petite dans une

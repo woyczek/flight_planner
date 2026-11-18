@@ -974,6 +974,19 @@ aerodrome field of Fuel, moved into `frame/lib/ad_field.js` (and `frame/lib/sugg
 - Known limit of the block: a free name of four letters (« metz ») shows « inconnu » under the field, the block taking any four signs
   for a code to look up.
 
+### 7 untricies. A handle moved redraws at once what depends on it (18 Nov 2026; SOG-0478; noreg N121)
+
+The user, 18 Nov: « quand on déplace le centre d'une zone, un objet, autre poignée, il faut un redraw. de la même manière que quand on
+change le diamètre d'un cercle. » Until now only the radius showed its result while the finger was down (a preview circle of the base);
+the centre of a zone, an object, a point or a vertex showed a small ghost dot and the circle, the outline, the route and the rows of the
+Lieux stayed at the old place until the release. Now **one single path serves every handle** (`done` in `editor_map.js`, then
+`edMapGesture` in `editor_view.js`): at each frame of the gesture the rows take the position of the finger WITHOUT keeping anything
+(the state of before waits in `e.dragBase`), and what depends on them is redrawn in place at most once per frame — the map elements
+(circle, outline, route, labels), the line of the Lieux (the rows are replaced only when they changed), the counts and the preview;
+the view does not reframe under the finger (the frame is taken again at the end). At the release the state of before is given back to
+the same function as ever: one « Annuler le geste » per gesture. The point between two vertices still waits for the end (placing a
+vertex changes the handles); a gesture dropped without an end gives back the rows of before.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

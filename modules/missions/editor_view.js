@@ -481,7 +481,7 @@ const dec = (s, v) => (s.ctx.lang?.() || 'fr') === 'en' ? String(v ?? '') : Stri
 
 /** L'étape Lieux (la maquette editeur_lieux_*.png) : une ligne par lieu, « Modifier » en ouvre les champs sur place ; « + Zone »,
  *  « + Point tournant », « + Rendez-vous » (et « + Cible » sans cible) ; « Sur la carte » montre la mission dans la Carte. */
-function edPlacesHtml(s) {
+function edPlacesHtml(s, listOnly = false) {
   const e = s.ed,
     rows = e.places || [],
     badge = {
@@ -550,8 +550,10 @@ function edPlacesHtml(s) {
     id = e.cadre.id.trim().toUpperCase(),
     shown = edShown(e, rows); // SOG-0459 : l'atelier voilé ne montre pas les lignes cachées (elles restent à leur rang)
   // « + Cible » : jamais dans l'atelier voilé (une cible cachée ne doit pas se deviner à son absence)
+  const list = rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('');
+  if (listOnly) return list; // SOG-0478 : un geste en cours ne remplace que les lignes
   return `<h3>3. ${esc(s.tt(TX.stepPlaces))}</h3><p class="f-muted">${esc(s.tt(TX.edPlacesHint))}</p>
-    <div class="f-list" data-edplaces>${rows.map((r, i) => !shown[i] ? '' : `<div class="ms-plrow" data-place="${i}" data-kind="${r.kind}"><span class="ms-plbadge">${esc(s.tt(badge[r.kind]))}</span><span class="ms-plbody"><b>${esc([r.id, r.name].filter(Boolean).join(' · ') || s.tt(TX.plUnplaced))}</b><span class="f-muted">${esc(detail(r, i))}</span></span><button type="button" class="f-linkbtn" data-do="edplace" data-i="${i}">${esc(s.tt(TX.edModify))}</button>${e.placeEdit === i ? form(r, i) : ''}</div>`).join('')}</div>
+    <div class="f-list" data-edplaces>${list}</div>
     <div class="f-row ms-pladd">${e.veil || rows.some(r => r.kind === 'target') ? '' : `<button type="button" data-do="edplaceadd" data-kind="target">${esc(s.tt(TX.plAddTarget))}</button>`}<button type="button" data-do="edplaceadd" data-kind="zone">${esc(s.tt(TX.plAddZone))}</button><button type="button" data-do="edplaceadd" data-kind="pt">${esc(s.tt(TX.plAddPt))}</button><button type="button" data-do="edplaceadd" data-kind="rdv">${esc(s.tt(TX.plAddRdv))}</button><button type="button" data-do="edplaceadd" data-kind="object">${esc(s.tt(EDTX.plAddObject))}</button>${e.mode === 'edit' && id ? `<a class="f-linkbtn" data-plmap href="${esc(mapHref({ id }, {}))}">${esc(s.tt(TX.plOnMap))}</a>` : ''}</div>${edRouteHtml(s, rows)}`;
 }
 
@@ -1123,9 +1125,10 @@ function edMapShow(s) {
     selLabel: edPlaceName((e.places || [])[edMapSel(e)]),
     ref: edMapRef(e),
     onPick: i => edMapPick(s, e, i),
-    onMove: m => edMapGesture(s, e, rows => ED.movePlace(rows, m.i, m), m.i),
-    onRadius: m => edMapGesture(s, e, rows => ED.placeRadius(rows, m.i, m.km), m.i),
-    onVertex: m => edMapGesture(s, e, rows => ED.moveVertex(rows, m.i, m.k, m), m.i, m.k),
+    onMove: m => edMapGesture(s, e, rows => ED.movePlace(rows, m.i, m), m.i, -1, m.drag),
+    onRadius: m => edMapGesture(s, e, rows => ED.placeRadius(rows, m.i, m.km), m.i, -1, m.drag),
+    onVertex: m => edMapGesture(s, e, rows => ED.moveVertex(rows, m.i, m.k, m), m.i, m.k, m.drag),
+    onDragCancel: () => edMapDragCancel(s, e),
     onInsert: m => edMapGesture(s, e, rows => ED.insertVertex(rows, m.i, m.k, m), m.i, m.k + 1),
     onVertexPick: m => edMapVertexPick(s, e, m),
     onPose: p => edMapPose(s, e, p),
@@ -1298,11 +1301,22 @@ function edMapVertexPick(s, e, m) {
 
 /** Un geste de la carte qui retouche les lignes (déplacer un lieu ou un sommet, régler un rayon, poser un sommet) : `change(lignes)` rend de NOUVELLES lignes, ou les
  *  mêmes quand le geste est refusé (ED.movePlace, ED.placeRadius : alors rien ne change, la carte revient à ce qu'elle montrait).
- *  L'état d'avant est gardé pour « Annuler le geste » ; le lieu reste choisi. */
-function edMapGesture(s, e, change, i, vertex = -1) {
+ *  L'état d'avant est gardé pour « Annuler le geste » ; le lieu reste choisi.
+ *  SOG-0478 : LE SEUL chemin de toutes les poignées. `live` (vrai) : le geste n'est pas fini — les lignes prennent la position du doigt
+ *  SANS rien garder (l'état d'avant reste dans e.dragBase) et ce qui en dépend est redessiné aussitôt (edLive) ; à la fin du geste,
+ *  l'état d'avant est rendu à `change`, qui repart de lui comme avant. */
+function edMapGesture(s, e, change, i, vertex = -1, live = false) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
-  const before = edPlaces(e),
-    after = change(before);
+  if (live) {
+    if (!e.dragBase) e.lastLive = ''; // un geste neuf : la liste des Lieux n'a encore rien montré de lui
+    e.dragBase ||= edPlaces(e);
+    e.places = change(e.dragBase);
+    return edLive(s, e);
+  }
+  const before = e.dragBase || edPlaces(e);
+  edLiveStop(e);
+  e.places = before;
+  const after = change(before);
   if (after === before) return edRefresh(s);
   edMapRemember(e);
   e.places = after;
@@ -1310,6 +1324,38 @@ function edMapGesture(s, e, change, i, vertex = -1) {
   e.mapVertex = vertex; // le sommet déplacé ou posé reste choisi (« Retirer ce sommet » le concerne)
   e.placeAsk = -1;
   if (e.placeEdit !== i) e.placeEdit = -1; // une autre ligne ouverte se referme : ses champs ne diraient plus ce que la carte montre
+  draw(s);
+}
+
+/** Un geste en cours : ce qui dépend du lieu que le doigt porte (le rond, le contour, la route, la liste des Lieux, le compte, l'aperçu)
+ *  est redessiné, au plus une fois par image — par les mêmes écritures sur place que la frappe d'un champ (edRefresh), la liste des Lieux
+ *  remplaçant ses lignes seulement quand elles ont changé. Un geste achevé entre-temps (ou l'atelier quitté) : rien. */
+function edLive(s, e) {
+  if (e.liveAsk) return;
+  e.liveAsk = requestAnimationFrame(() => {
+    e.liveAsk = 0;
+    if (state() !== s || s.ed !== e || !e.dragBase) return;
+    edRefresh(s);
+    const list = s.el.querySelector('[data-edplaces]'),
+      html = list ? edPlacesHtml(s, true) : '';
+    if (list && e.lastLive !== html) list.innerHTML = e.lastLive = html;
+  });
+}
+
+/** La fin d'un geste en cours (fini, ou lâché) : l'image demandée et pas encore dessinée est annulée, et il n'y a plus d'état d'avant à rendre. */
+function edLiveStop(e) {
+  if (e.liveAsk) cancelAnimationFrame(e.liveAsk);
+  e.liveAsk = 0;
+  e.dragBase = null;
+  e.lastLive = '';
+}
+
+/** Un geste lâché sans fin (le doigt est parti, la poignée a disparu) : les lignes reprennent leur état d'avant le geste, tout est
+ *  redessiné. */
+function edMapDragCancel(s, e) {
+  if (state() !== s || s.ed !== e || !e.dragBase) return;
+  e.places = e.dragBase;
+  edLiveStop(e);
   draw(s);
 }
 

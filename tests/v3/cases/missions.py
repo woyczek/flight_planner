@@ -7925,3 +7925,119 @@ def n120(c):
     look('P7a_1280_choisi.png')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0478: the mission of N121 — the trial mission with ZONE-1 (round, 5 km) at 44.2 / 1.8 and OBJ-1 at 44.5 / 1.9, so that no two handles lie under one another
+_DRAG_MISSION = (_TRIAL_MISSION.replace("centre: { lat: 44.8, lon: 1.2 }, radius_km: 5", "centre: { lat: 44.2, lon: 1.8 }, radius_km: 5")
+                 .replace("lat: 44.6, lon: 1.42, detection", "lat: 44.5, lon: 1.9, detection"))
+_DRAG_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _DRAG_MISSION]]
+# the first point of the outline drawn for an element (a round zone: its north point; a contour: its first vertex), [lat, lon], or null
+_DRAG_RING = """(fid) => { const f = window.__edMap.queryRenderedFeatures().find(x => x.layer.id.startsWith('me-auth-') && x.properties.fid === fid && x.geometry.type === 'Polygon');
+  return f ? [f.geometry.coordinates[0][0][1], f.geometry.coordinates[0][0][0]] : null }"""
+# the dot drawn for an element, [lat, lon], or null
+_DRAG_DOT = """(fid) => { const f = window.__edMap.queryRenderedFeatures().find(x => x.layer.id.startsWith('me-auth-') && x.properties.fid === fid && x.geometry.type === 'Point');
+  return f ? [f.geometry.coordinates[1], f.geometry.coordinates[0]] : null }"""
+# whether the line of the route is drawn under a position ([lat, lon])
+_DRAG_ROUTE = "(at) => ((" + _EDMAP_IDS + ")(at) || []).includes('route')"
+# what the row of the Lieux says (its name and its detail), spaces collapsed
+_DRAG_ROW = """(i) => { const r = document.querySelector('""" + E + """ [data-edplaces] [data-place="' + i + '"] .ms-plbody'); return r ? r.textContent.replace(/\\s+/g, ' ').trim() : '' }"""
+_DRAG_NEAR = """([p, la, lo, d]) => !!p && Math.abs(p[0] - la) < d && Math.abs(p[1] - lo) < d"""
+
+
+def _ed_hold(c, a, b):
+    """Presses the mouse on the position `a` of the workshop's map and moves it to `b` WITHOUT releasing: a gesture in progress."""
+    x0, y0 = c.js(_EDMAP_XY, a)
+    x1, y1 = c.js(_EDMAP_XY, b)
+    c.page.mouse.move(x0, y0)
+    c.page.mouse.down()
+    c.page.mouse.move((x0 + x1) / 2, (y0 + y1) / 2, steps=4)
+    c.page.mouse.move(x1, y1, steps=4)
+
+
+@case('N121', 'Missions › the workshop, a handle moved redraws AT ONCE what depends on it (SOG-0478): the centre of a round zone, the handle of its radius, an '
+      'object, a point of the route and the vertex of a contour — one single path for every handle: while the finger is still down the circle, the outline, the '
+      'route and the row of the Lieux already say the new position (nothing is kept yet, the view does not move under the finger); released, the rows hold it and '
+      'ONE « Annuler le geste » gives the place back',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0478 (the user, 18 Nov: « quand on déplace le centre d\'une zone, un objet, autre poignée, il faut un redraw. de la même manière que quand on '
+      'change le diamètre d\'un cercle. »): modules/missions/editor_map.js `done` (drag), modules/missions/editor_view.js `edMapGesture`, `edLive`; '
+      'modules/missions/EDITOR.md § 7 untricies')
+def n121(c):
+    row = lambda i: c.js(_DRAG_ROW, i)  # noqa: E731
+    near = lambda p, la, lo, d=0.02: c.js(_DRAG_NEAR, [p, la, lo, d])  # noqa: E731
+    undo = lambda: c.js(_EDTOOL_STATE)[5][2]  # noqa: E731 (True: nothing to undo)
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _DRAG_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    ed_reveal(c)  # SOG-0459: the mission opens veiled; this case reads the whole workshop
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="3"]')
+    c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen')
+    c.until(f"!!({_DRAG_RING})('place:3')", what='the circle of ZONE-1 drawn')
+    view0 = c.js(_EDMAP_VIEW)
+    c.ok(near(c.js(_DRAG_RING, 'place:3'), 44.245, 1.8), c.js(_DRAG_RING, 'place:3'), 'the circle of ZONE-1 is drawn on its centre (44.2 / 1.8), 5 km')
+    # the centre of a zone: the finger is still down, the circle already follows, the row says the position, the view stays
+    _ed_hold(c, [44.2, 1.8], [44.1, 1.95])
+    c.until(f"(({_DRAG_RING})('place:3') || [0, 0])[1] > 1.9", timeout=5000, what='the circle follows the finger')
+    c.ok(near(c.js(_DRAG_RING, 'place:3'), 44.145, 1.95), c.js(_DRAG_RING, 'place:3'),
+         'finger still down: the circle of ZONE-1 is already at the new centre (it stayed at the old place until the release before SOG-0478)')
+    c.until(f"({_DRAG_ROW})(3).includes('44°06′N')", timeout=5000, what='the row of the Lieux follows')
+    c.ok('1°57′E' in row(3) and c.js(_EDMAP_VIEW) == view0, [row(3), c.js(_EDMAP_VIEW), view0],
+         'finger still down: the row of ZONE-1 says 44°06′N 1°57′E, and the view did not move under the finger')
+    c.ok(undo() is True, c.js(_EDTOOL_STATE)[5], 'nothing to undo while the gesture is not over: no state was kept')
+    c.page.mouse.up()
+    c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the gesture can be undone')
+    c.ok(near(c.js(_DRAG_RING, 'place:3'), 44.145, 1.95) and abs(float(c.js(_EDPLACE_VAL, [3, 'lat']) or 0) - 44.1) < 0.02, [c.js(_DRAG_RING, 'place:3'), c.js(_EDPLACE_VAL, [3, 'lat'])],
+         'released: the circle stays at the new centre, the rows hold it')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"(({_DRAG_RING})('place:3') || [0, 0])[1] < 1.85", timeout=5000, what='the circle back')
+    c.ok(undo() is True and '44°12′N' in row(3), [undo(), row(3)], 'ONE « Annuler le geste » gave the zone back (nothing more to undo): the circle and the row are where they were')
+    # the handle of the radius goes through the same path: the circle grows with the finger
+    east = 1.8 + 5 / (111.32 * 0.7176)
+    _ed_hold(c, [44.2, east], [44.2, east + 0.25])
+    c.until(f"(({_DRAG_RING})('place:3') || [0, 0])[0] > 44.3", timeout=5000, what='the circle grows with the finger')
+    c.ok('cercle 5 km' not in row(3) and 'cercle' in row(3), row(3), 'finger still down: the row of the Lieux already says the new radius')
+    c.page.mouse.up()
+    c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the radius set, to undo')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"(({_DRAG_RING})('place:3') || [99, 0])[0] < 44.26", timeout=5000, what='the radius back')
+    # an object: its dot follows, its row too
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="6"]')
+    c.until(f"{_EDSEL} === 'OBJ-1 · Naufragé'", what='OBJ-1 chosen')
+    _ed_hold(c, [44.5, 1.9], [44.35, 1.95])
+    c.until(f"(({_DRAG_DOT})('place:6') || [99, 0])[0] < 44.4", timeout=5000, what='the dot of OBJ-1 follows the finger')
+    c.until(f"({_DRAG_ROW})(6).includes('44°21′N')", timeout=5000, what='the row of OBJ-1 follows')
+    c.page.mouse.up()
+    c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the object moved, to undo')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"(({_DRAG_DOT})('place:6') || [0, 0])[0] > 44.45", timeout=5000, what='the object back')
+    # a point of the route: the line of the route already goes through the new position
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="4"]')
+    c.until(f"{_EDSEL} === 'PT1 · Point un'", what='PT1 chosen')
+    _ed_hold(c, [44.8, 1.2], [44.9, 1.3])
+    c.until(f"({_DRAG_ROUTE})([44.9, 1.3]) && !({_DRAG_ROUTE})([44.8, 1.2])", timeout=5000, what='the route goes through the finger')
+    c.ok(near(c.js(_DRAG_DOT, 'place:4'), 44.9, 1.3) and '44°54′N' in row(4), [c.js(_DRAG_DOT, 'place:4'), row(4)],
+         'finger still down: the dot of PT1 and the row of the Lieux say the new position, and the line of the route goes through it')
+    c.page.mouse.up()
+    c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the point moved, to undo')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"({_DRAG_ROUTE})([44.8, 1.2])", timeout=5000, what='the route back')
+    # a vertex of a contour: the outline already has it where the finger is
+    c.tap(f'{E} [data-edplaces] [data-do="edplace"][data-i="3"]')
+    c.until(f"{_EDSEL} === 'ZONE-1 · Secteur nord'", what='ZONE-1 chosen again')
+    c.tap(f'{E} [data-edplaces] [data-plform="3"] [data-do="edzoneshape"]')
+    c.until(f"({_EDVERTS})(3) === 6", timeout=8000, what='the six vertices on the map')
+    v0 = c.js(_DRAG_DOT, 'vertex:3:0')
+    view1 = c.js(_EDMAP_VIEW)
+    _ed_hold(c, v0, [v0[0] - 0.02, v0[1] + 0.02])
+    c.until(f"(({_DRAG_DOT})('vertex:3:0') || [99, 0])[0] < {v0[0] - 0.01}", timeout=5000, what='the vertex follows the finger')
+    c.ok(near(c.js(_DRAG_DOT, 'vertex:3:0'), v0[0] - 0.02, v0[1] + 0.02) and c.js(_EDMAP_VIEW) == view1, [c.js(_DRAG_DOT, 'vertex:3:0'), c.js(_EDMAP_VIEW), view1],
+         'finger still down: the first vertex of the outline of ZONE-1 is already at the finger, the view stays')
+    c.page.mouse.up()
+    c.until(f"!({_EDTOOL_STATE})[5][2]", timeout=5000, what='the vertex moved, to undo')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
