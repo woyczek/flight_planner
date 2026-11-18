@@ -10652,6 +10652,111 @@ def k380(c):
 
 
 
+@case('K362', 'UK SID charts of the conventional and RNAV1 form (SOG-0499, EGGW): the SID blocks of a chart are read by their PATTERN — identifier at a line head (a name cut over two lines re-joined), runway at the head of the next line, exit point at the end of the sentence, level at the exit, position from the WAYPOINTS section (decimal seconds) or the labels of the drawing, else none — the same partial record as the EGLL SIDs; noise lines, doubled print, an interlaced restriction and an amendment line are not read; the 6-1 context chart gives nothing; the EGLL template still reads', 'K', static=True,
+      rule='SOG-0499, relay decision 18 Nov 2026 (the user on EGGW: « 0 of 9 pages read »): same contract as the EGLL SIDs (SOG-0374) — partial record, status `check`, path NOT read, nothing invented; a position the chart does not give is left without lat/lon (aerodb resolves the name in its base or marks a doubt); reading by PATTERNS only, never by the absolute position of a line, with guards (bounded text, line-anchored regexes, names, runways and levels validated). Invented pages only.')
+def k362(c):
+    import sys
+    sys.path.insert(0, str(ROOT / 'tools'))
+    import proc_uk_sid as S
+    # page conventionnelle INVENTÉE : bruit du dessin, impression doublée, nom coupé, deux SID, restriction intercalée, notes, ligne CHANGE, cartouche, numéro de carte en dernier
+    conv = '\n'.join([
+        'R999', '1400', 'SFC', 'ZIBLEY', 'ZIB 113.45D', '(Ch 81X)', '513512N 0011110W', '412',
+        'VAXOP', '513012N 0004501W', 'VAXOP 2K', 'ZIB R031', '(211°)', 'QOL QDM 254°', 'ZIB D7', '5000', '081', '°', '13.5',
+        'R998R998', '1300013000', 'SFCSFC',
+        'VAX',
+        'OP 2K Climb straight ahead to 500 (AAL) turn left to intercept ZIB VOR R031. At ZIB D7 turn right onto QOL QDM 254° N27',
+        'RWY 25 ensuring that ZIB DME does not decrease below 4NM. Cross ZIB VOR R342 at 3000 or above to QOL NDB.',
+        'Cross QOL NDB at 4000. Cross ZIB VOR R100 at 6000 or above to VAXOP. Wexcombe or Pellow Down.',
+        'DEBOK 1Q Climb straight ahead. At I-ZBX D3.8 turn right onto QOL QDM 075°. Ensure',
+        'RWY 07 obstacle gradient 6% until 1500. Then left to DEBOK.',
+        'GENERAL INFORMATION', '1 SIDs reflect the noise preferential routes.', 'NOTE 1 RWY 25 obstacle clearance gradient 6%.',
+        'CHANGE (11/26): ZIB VOR RECALIBRATED. RADIAL.', 'ZQ990', '514000N 0010000W', '102',
+        'ACC 121.280 (VAXOP 2K) LONDON CONTROL', 'TRANSITION ALTITUDE', '6000', 'AERO INFO DATE 12 AUG 26', 'BEARINGS, TRACKS AND RADIALS ARE MAGNETIC',
+        'ALTITUDES AND ELEVATIONS ARE IN FEET', 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) - ICAO', 'AD 2-EGXX-6-4'])
+    # page RNAV1 INVENTÉE : deux colonnes entrelacées, coordonnées dans « WAYPOINTS » en secondes décimales
+    rnav = '\n'.join([
+        'R997', '2500', 'SFC', 'ZQ201', 'ZQ204', '(260°)', '7.5', '°',
+        'VAXOP 3Z Climb straight ahead to 1200 (QNH), then turn left direct ZQ201, then to ZQ204, left to  Q871 and for landing at',
+        'RWY 26 ZQ207, right to ZQ210, KOBIX, left to VAXOP.  Wexcombe or Pellow Down.',
+        'GENERAL INFORMATION', '1 SIDs are RNAV1.', 'ADDITIONAL RNAV DATA', 'WAYPOINTS',
+        'ZQ201 : 513000.50N 0003000.25W', 'VAXOP : 514530.75N 0004015.50W',
+        'TRANSITION ALTITUDE', '6000', 'AERO INFO DATE 12 AUG 26', 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) - ICAO', 'AD 2-EGXX-6-5'])
+    # carte « 6-1 » de contexte INVENTÉE : aucun bloc
+    ctx = '\n'.join(['R996', '1500', 'SFC', 'ZIBLEY', 'ZIB 113.45D', '513512N 0011110W', '081', '°',
+                     'ARRIVAL AND DEPARTURE INFORMATION', '1 Departures follow the noise routes.', 'TRANSITION ALTITUDE', '6000', 'AERO INFO DATE 12 AUG 26',
+                     'STANDARD DEPARTURE CHART - INSTRUMENT (SID) - ICAO', 'AD 2-EGXX-6-1'])
+    plain = 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) - ICAO'
+    got, warn = S.read_chart(conv, plain, 'EGXX')
+    c.ok(len(got) == 2, str([p.get('name') for p in got]), 'a conventional chart whose title lists no designator gives its two SID blocks (red before SOG-0499: nothing read)')
+    c.eq([(p['id'], p['name'], p['runways'], p['transition'], [x['id'] for x in p['points']], p['points'][0].get('alt'), p['partial']['read'], p['partial']['unread'], p['status']) for p in got],
+         [('EGXX.SID.VAXOP2K.RW25', 'VAXOP 2K', ['25'], 'VAXOP', ['VAXOP'], {'type': 'min', 'ft': 6000}, ['exit', 'runway', 'level'], ['path'], 'check'),
+          ('EGXX.SID.DEBOK1Q.RW07', 'DEBOK 1Q', ['07'], 'DEBOK', ['DEBOK'], None, ['exit', 'runway'], ['path'], 'check')],
+         'each block: the name re-joined when cut (« VAX » / « OP 2K … »), the runway at the head of the NEXT line, the exit point that ends the sentence (not the interlaced restriction), the level AT the exit (6000, not 4000 at QOL NDB nor 500 AAL), one point, no path', what='conventional')
+    vax, deb = got
+    c.eq((vax['points'][0]['lat'], vax['points'][0]['lon']), (round(51 + 30 / 60 + 12 / 3600, 6), round(-(45 / 60 + 1 / 3600), 6)), 'the position of the exit comes from its label in the drawing', what='label')
+    c.ok('lat' not in deb['points'][0] and 'lon' not in deb['points'][0], str(deb['points'][0]), 'an exit point whose position the chart does not give has no lat/lon (left to aerodb), never a guess')
+    c.eq(warn, ['DEBOK 1Q: limite de niveau au point de sortie non lue'], 'the only warning: the level not read at DEBOK (the drawing label « VAXOP 2K » adds no « piste non lue »)', what='warnings')
+    got2, warn2 = S.read_chart(rnav, 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 26 VAXOP 3Z - ICAO', 'EGXX')
+    lat, lon = round(51 + 45 / 60 + 30.75 / 3600, 6), round(-(40 / 60 + 15.5 / 3600), 6)
+    c.eq([(p['id'], p['runways'], p['transition'], p['points'][0].get('lat'), p['points'][0].get('lon'), p['points'][0].get('alt'), p['partial']['read']) for p in got2],
+         [('EGXX.SID.VAXOP3Z.RW26', ['26'], 'VAXOP', lat, lon, None, ['exit', 'runway'])],
+         'RNAV1: the exit « left to VAXOP. » (« Q871 », the restriction and the first-column points are not it), its position from the WAYPOINTS section with decimal seconds', what='rnav')
+    c.eq(warn2, ['VAXOP 3Z: limite de niveau au point de sortie non lue'], 'the designator of the title read by the block path: the EGLL « paragraphe … ne se retrouve pas » warning is withdrawn', what='rnav-warnings')
+    got3, warn3 = S.read_chart(ctx, plain, 'EGXX')
+    c.ok(got3 == [] and len(warn3) <= 1, str(warn3), 'the 6-1 context chart: no SID, at most one warning')
+    # la forme d'EGLL (constantes de K282) se lit toujours de la même façon
+    text = ('R160 UNL SFC 000 30W 5100N MIDHURST (Ch 87X) 233 510314N 0003730W MID 114.00 MAXIT 1F MAXIT 1G MODMI 1K LON R182.0/D15.3 MID R024.9/D12.0 511401N 0002910W MODMI LON R193.4/D14.7 '
+            '511459N 0003343W MAXIT TRACK MILEAGE 17MODMI 1K 19MAXIT 1F '
+            'OBSTACLE CLEARANCE .6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09R R025.MID VOR3.5, then turn right onto D LON R124 until LON VOR2 Straight ahead to MODMI 1J '
+            '.6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09L R025.MID VOR3.5, then turn right onto D LON Straight ahead to MODMI 1K '
+            '.6000 at MAXIT R010 and continue to cross MID VOR12 or above RWY 27R 3000 7.7 at D LON QDR 160. Straight ahead to intercept MAXIT 1F '
+            '.6000 at MAXIT R010 and continue RWY 27L Straight ahead to intercept MAXIT 1G')
+    old, _ = S.read_chart(text, 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L RWY 27R/L MODMI 1J 1K MAXIT 1F 1G (RNAV SUBSTITUTION ONLY)', 'EGXX')
+    c.eq([(p['name'], p['runways'], p['points'][0]['id'], p['points'][0].get('alt'), p['status'], p['partial']['unread']) for p in old],
+         [('MODMI 1J', ['09R'], 'MODMI', {'type': 'min', 'ft': 6000}, 'check', ['path']), ('MODMI 1K', ['09L'], 'MODMI', {'type': 'min', 'ft': 6000}, 'check', ['path']),
+          ('MAXIT 1F', ['27R'], 'MAXIT', {'type': 'min', 'ft': 6000}, 'check', ['path']), ('MAXIT 1G', ['27L'], 'MAXIT', {'type': 'min', 'ft': 6000}, 'check', ['path'])],
+         'the EGLL template (title designators) reads the same four SIDs as K282', what='egll')
+    # gardes : bruit seul, niveau hors bornes, coordonnée invalide
+    c.eq(S.read_blocks('\n'.join(['081', '°', 'SFCSFC', 'CHANGE (11/26): ABC 1D RWY 25 to ABCDE.']), 'EGXX'), ([], []), 'noise, doubled print and an amendment line are never read', what='noise')
+    odd, _ = S.read_blocks('\n'.join(['KELUP 4M Climb straight ahead.', 'RWY 09 Cross KELUP at 99999 then to KELUP.', 'WAYPOINTS', 'KELUP : 516099.00N 0006000.00W']), 'EGXX')
+    c.eq([(p['name'], p['points'][0].get('alt'), 'lat' in p['points'][0]) for p in odd], [('KELUP 4M', None, False)], 'a level out of bounds and a coordinate with 60+ minutes are left, never corrected', what='guards')
+    # the launcher: a SID read by its BLOCKS from a chart whose title names no designator still says its chart (source.file, source.chart) — the chart it was read from, not one found by the title
+    import os
+    import tempfile
+    import types
+    from pathlib import Path
+    RJ = _regen()
+    import pdf_guard
+    import personal_use
+    fn, check = RJ.REGISTRY[('proc', 'ukpkg-fetch')]
+    ns = types.SimpleNamespace(**fn.__globals__)
+
+    class Job:
+        def log(self, t): pass
+        def step(self, *a): pass
+        def cancelled(self): return False
+    real, real_require = pdf_guard.read_text, pdf_guard.require
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        dl = td / 'Downloads'
+        pkg = dl / 'UK-AIRAC-11-26' / 'AIRAC 11-2026' / '2026-10-29-AIRAC'
+        (pkg / 'html' / 'eAIP').mkdir(parents=True)
+        (pkg / 'graphics').mkdir()
+        (pkg / 'graphics' / '475391.pdf').write_bytes(b'%PDF-1.4 y')
+        row = '<table><tr><td><p>STANDARD DEPARTURE CHART - INSTRUMENT (SID) - ICAO</p></td></tr><tr><td><a href="../../graphics/475391.pdf">AD\xa02.EGXX-6-4</a></td></tr></table>'
+        (pkg / 'html' / 'eAIP' / 'EG-AD-2.EGXX-en-GB.html').write_text('<html><head><meta name="EM.effectiveDateStart" content="2026-10-29"/></head><body>' + row + '</body></html>', encoding='utf-8')
+        personal_use.write(str(td / 'data'), True, False)
+        pdf_guard.read_text = lambda data, path, first=0, count=1, **k: {'pages': 1, 'texts': [conv]}
+        pdf_guard.require = lambda *a, **k: None
+        try:
+            res = ns._read_ukpkg(ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl)]}))
+        finally:
+            pdf_guard.read_text, pdf_guard.require = real, real_require
+    srcs = sorted({(p['source']['file'], p['source']['chart']) for p in res['docs'][0]['procedures']})
+    c.eq((len(res['docs'][0]['procedures']), srcs), (2, [('ukpkg_EGXX_6-4.pdf', 'graphics/475391.pdf')]), 'the launcher: both SIDs of a chart whose title names none carry the chart they were read from (file and online path)', what='origin')
+
+
+
 @case('K274', 'Route engine: a fallback proposal after the search budget says so (`status: proposal`, a sentence) and does not cost the budget of every level (SOG-0161, EIDW → KBOS: 35 s)', 'K', static=True,
       rule='Ergonomist 14 Nov 2026 (rest of SOG-0161): EIDW → KBOS and EIDW → KJFK took 35 s to answer « ok » with a fallback proposal that looked like a route (12 to 17 % controlled). The head route\'s search had reached its budget (6 s / 100 000 states: « ce résultat ne prouve pas l\'absence de route »); the engine then searched other levels, each reaching the same budget (about 13 s), then the proposals (9 s). Now: when the head route is refused because its search reached the budget, the other levels are NOT searched (it says so in the failures) and the proposals come at once (real base: 35 s → 15 s); the answer of the screen carries `status` — `computed` | `proposal` | `none` — and its `message` says « Aucune route calculée : … Propositions de repli à examiner : routes partielles »; `ok` stays true (the answer is valid) and nothing is removed')
 def k274(c):

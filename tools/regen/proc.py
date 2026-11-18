@@ -151,7 +151,7 @@ def _read_ukpkg(env):
         return {'ok': False, 'reason': 'no-tables'}
     dest = os.path.join(env.data, 'local', 'upload')
     done, refused = uk_package.copy_charts(root, env.icao, charts, dest)
-    procedures, warnings, formats = [], list(refused), []
+    procedures, warnings, formats, origin = [], list(refused), [], {}      # origin : la carte d'où chaque fiche est lue (id(fiche) → entrée de l'index)
     day = uk_package.page_date(page) or uk_package.package_date(root)      # la date d'entrée en vigueur lue dans la page de l'aérodrome (meta EM.effectiveDateStart), sinon celle du nom du dossier ; réelle et ≤ aujourd'hui ; None sinon : cycle INCONNU, jamais la date du jour
     for k, chart in enumerate(charts):
         name = uk_package.canonical(env.icao, chart)
@@ -168,6 +168,8 @@ def _read_ukpkg(env):
             formats.append({'file': name, 'ok': False, 'reason': 'pdf'})
             continue
         found, why = proc_uk_sid.read_chart(text, chart['title'], env.icao)
+        for p in found:
+            origin[id(p)] = chart      # la carte d'où CETTE fiche est lue (SOG-0499 : une SID lue par ses blocs vient d'une carte dont le titre ne la nomme pas forcément)
         procedures += found
         warnings += why
         # une carte dont le texte ne donne aucune SID : code `no-table` (« carte sans table », proc_geometry.PAGE_CODES) — jamais « table non reconnue », aucune table n'est attendue sur une carte (essai de l'utilisateur sur EGGW, 18/11)
@@ -175,8 +177,8 @@ def _read_ukpkg(env):
     if not procedures:
         return {'docs': [], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {}}
     for p in procedures:
-        p['source'] = {'kind': 'ukpkg', 'ref': 'ukpkg', 'file': name_of(p, charts, env.icao), 'cycle': day or UNKNOWN_CYCLE, 'at': None, **({} if day else {'cycle_unknown': True})}
-        chart = chart_of(p, charts)
+        chart = origin.get(id(p)) or chart_of(p, charts)      # la carte lue, sinon celle dont le titre porte le désignateur
+        p['source'] = {'kind': 'ukpkg', 'ref': 'ukpkg', 'file': uk_package.canonical(env.icao, chart) if chart else None, 'cycle': day or UNKNOWN_CYCLE, 'at': None, **({} if day else {'cycle_unknown': True})}
         p['source']['chart'] = uk_package.chart_path(chart) if chart else None      # « graphics/<chiffres>.pdf » : le lien « Carte » de la fiche (aerodb.js chartUrl), sous la base du fichier
     doc = {'schema': 1, 'icao': env.icao, 'cycle': day or UNKNOWN_CYCLE, 'updated_at': None, 'procedures': procedures, 'formats': formats, 'warnings': warnings,
            'notice': "Source : paquet eAIP du Royaume-Uni (NATS) posé à la main ; SID lues par la couche texte de leurs cartes : point de sortie et niveaux seulement, tracé non lu (voir la carte). Données NON OPÉRATIONNELLES : simulation seulement."}
