@@ -3651,7 +3651,8 @@ function scheduleWx() {
  *  hors ligne, sa réserve. Les TAF seulement quand une date de vol les rend utiles (terrains avec METAR, départ,
  *  arrivée, dégagement). Fiche des terrains (axe de piste) par aerodb. loud : les refus sont dits. */
 async function wxFetch(loud = false) {
-  if (!S) return; // lecture programmée (scheduleWx) partie après le démontage
+  // lecture programmée (scheduleWx) partie après le démontage ; SOG-0493 : ou un montage dont le vol n'est pas encore lu (completeMount)
+  if (!S?.flight) return;
   const s = S,
     when = wxWhen();
   await wxCorridor();
@@ -3983,7 +3984,7 @@ async function wxRead(btn) {
 /** Heure visée (secondes) : la date du vol (current_flight.planned_at), sinon aucune (METAR, prévision de maintenant). La
  *  météo des terrains (TAF) et les vents et températures en altitude du devis sont lus à cette heure. */
 const wxWhen = () => {
-  const t = Date.parse(S.flight.planned_at || '');
+  const t = Date.parse(S?.flight?.planned_at || ''); // SOG-0493 : un montage dont le vol n'est pas encore lu n'a pas de date
   return Number.isFinite(t) ? Math.round(t / 1000) : null;
 };
 /** Résumés des terrains (METAR, ou TAF si la date du vol tombe dans sa validité). */
@@ -8220,7 +8221,8 @@ export async function mount(el, ctx) {
       }
       a.n++;
       a.at = Date.now();
-      wxFetch(false);
+      // SOG-0493 : wxFetch lit le montage courant (S) ; la carte d'un montage remplacé ne le fait pas lire pour le nouveau
+      if (S === self && !gone(self)) wxFetch(false);
       return null;
     },
     wind: icao => {
