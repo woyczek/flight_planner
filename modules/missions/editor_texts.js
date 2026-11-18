@@ -347,6 +347,43 @@ export const EDTX = {
   ],
   dwSaid_landing: ['au poser stabilisé', 'on a steady landing', 'bei einer stabilen Landung', 'al aterrizaje estabilizado'],
   dwSaid_overflight: ['au survol', 'on the overflight', 'beim Überflug', 'en el sobrevuelo'],
+  dwKey_sequence: ['une suite d\'étapes', 'a sequence of steps', 'eine Folge von Schritten', 'una secuencia de etapas'],
+  dwKey_event: ['un message d\'un équipage', 'a message from a crew', 'eine Nachricht einer Besatzung', 'un mensaje de una tripulación'],
+  dwSaid_sequence: ['à la fin d\'une suite d\'étapes', 'at the end of a sequence of steps', 'am Ende einer Folge von Schritten',
+    'al final de una secuencia de etapas'
+  ],
+  dwSaid_event: ['à un message d\'un équipage', 'on a message from a crew', 'auf eine Nachricht einer Besatzung',
+    'con un mensaje de una tripulación'
+  ],
+  dwSteps: ['Les étapes, dans l\'ordre', 'The steps, in order', 'Die Schritte, der Reihe nach', 'Las etapas, en orden'],
+  dwStep: ['Étape {n}', 'Step {n}', 'Schritt {n}', 'Etapa {n}'],
+  dwStepKind: ['Sorte', 'Kind', 'Art', 'Tipo'],
+  dwStepLabel: ['Nom de l\'étape', 'Name of the step', 'Name des Schritts', 'Nombre de la etapa'],
+  dwStepAdd: ['＋ Étape', '＋ Step', '＋ Schritt', '＋ Etapa'],
+  dwStepDel: ['Retirer l\'étape', 'Remove the step', 'Schritt entfernen', 'Quitar la etapa'],
+  dwEvent: ['Message attendu (son identifiant)', 'Expected message (its identifier)', 'Erwartete Nachricht (ihre Kennung)',
+    'Mensaje esperado (su identificador)'
+  ],
+  dwEventFrom: ['Envoyé par le tiroir {n} à son ouverture', 'Sent by drawer {n} when it opens', 'Von Schublade {n} beim Öffnen gesendet',
+    'Enviado por el cajón {n} al abrirse'
+  ],
+  dwEventOther: ['Envoyé par un autre équipage', 'Sent by another crew', 'Von einer anderen Besatzung gesendet',
+    'Enviado por otra tripulación'
+  ],
+  dwEmit: ['Message envoyé à l\'ouverture', 'Message sent at the opening', 'Beim Öffnen gesendete Nachricht',
+    'Mensaje enviado al abrirse'
+  ],
+  dwEmitTo: ['Destinataires (séparés par des virgules)', 'Recipients (separated by commas)', 'Empfänger (durch Kommas getrennt)',
+    'Destinatarios (separados por comas)'
+  ],
+  dwMiss_steps: ['au moins une étape', 'at least one step', 'mindestens ein Schritt', 'al menos una etapa'],
+  dwMiss_event: ['l\'identifiant du message', 'the identifier of the message', 'die Kennung der Nachricht',
+    'el identificador del mensaje'
+  ],
+  dwMissStep: ['étape {n} : {what}', 'step {n}: {what}', 'Schritt {n}: {what}', 'etapa {n}: {what}'],
+  dwTodo_emitIncomplete: ['message envoyé sans identifiant ou sans destinataire', 'message sent without an identifier or a recipient',
+    'gesendete Nachricht ohne Kennung oder Empfänger', 'mensaje enviado sin identificador o sin destinatario'
+  ],
   dwRulePoint: ['Sur un point', 'Over a point', 'Über einem Punkt', 'Sobre un punto'],
   dwRuleObject: ['ou en suivant un objet', 'or following an object', 'oder einem Objekt folgend', 'o siguiendo un objeto'],
   dwRadiusM: ['Rayon (m)', 'Radius (m)', 'Radius (m)', 'Radio (m)'],

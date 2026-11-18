@@ -2515,12 +2515,64 @@ const RULE_LABEL = Object.freeze({
   hMin: 'dwHMin',
   hMax: 'dwHMax',
   hOrder: 'dwMiss_hOrder',
-  confirmation: 'dwStepConfirm'
+  confirmation: 'dwStepConfirm',
+  kind: 'dwStepKind',
+  steps: 'dwMiss_steps',
+  event: 'dwMiss_event'
 });
+/** Les champs d'une règle qui se saisissent au clavier (un nombre, le nom d'une étape, son mot de confirmation). */
+const RULE_TYPED = new Set(['radiusM', 'radiusNm', 'duration', 'gap', 'speed', 'tol', 'hMin', 'hMax', 'label', 'confirmation']);
 
-/** Les champs qui manquent à une règle (DR.ruleMissing), dits par leurs libellés de la fiche ; '' sans rien. */
+/** Ce qui manque à une condition (DR.condMissing), dit par les libellés de la fiche (« étape 2 : Durée (s) ») ; '' sans rien. */
 function edMissText(s, what) {
-  return (Array.isArray(what) ? what : []).map(k => RULE_LABEL[k] ? s.tt(EDTX[RULE_LABEL[k]]) : '').filter(Boolean).join(', ');
+  const one = k => {
+    const m = /^(\d+)\.(\w+)$/.exec(k),
+      l = m ? one(m[2]) : RULE_LABEL[k] ? s.tt(EDTX[RULE_LABEL[k]]) : '';
+    return m && l ? s.tt(EDTX.dwMissStep, {
+      n: m[1],
+      what: l
+    }) : l;
+  };
+  return (Array.isArray(what) ? what : []).map(one).filter(Boolean).join(', ');
+}
+
+/** Les étapes d'une suite (SOG-0500) : une seule ouverte à la fois (s.ed.stepOpen ; la première par défaut) — sa sorte (un
+ *  stationnaire, un poser, un survol), son nom, les champs de sa règle (edRuleHtml), son mot de confirmation, « Retirer l'étape » ; les
+ *  autres en une ligne (son rang, sa sorte, son nom, son lieu), touchée elle s'ouvre ; « ＋ Étape » jusqu'à la borne du lecteur
+ *  (MS.DRAWER_BOUNDS.steps). */
+function edStepsHtml(s, r, opts) {
+  const steps = Array.isArray(r.steps) ? r.steps : [],
+    open = Math.min(Number.isInteger(s.ed.stepOpen) ? s.ed.stepOpen : 0, steps.length - 1),
+    kind = st => s.tt(EDTX[`dwKey_${st.kind}`] || EDTX.dwKey_hover),
+    card = (st, n) => `<div class="ms-dwstep" data-step="${n + 1}" data-open="1"><h4 class="ms-dwstephead">${esc(s.tt(EDTX.dwStep, { n: n + 1 }))}</h4><label class="f-field"><span>${esc(s.tt(EDTX.dwStepKind))}</span><select data-k="eddr" data-f="step.kind" data-n="${n}">${DR.HOLDS.map(k => `<option value="${k}"${k === st.kind ? ' selected' : ''}>${esc(s.tt(EDTX[`dwKey_${k}`]))}</option>`).join('')}</select></label>
+      <label class="f-field"><span>${esc(s.tt(EDTX.dwStepLabel))}</span><input data-k="eddr" data-f="step.label" data-n="${n}" value="${esc(st.label || '')}" maxlength="120" autocomplete="off"></label>
+      ${edRuleHtml(s, st, st.kind, 'step', n, opts)}
+      ${st.kind === 'landing' ? '' : `<label class="f-field"><span>${esc(s.tt(EDTX.dwStepConfirm))}</span><input data-k="eddr" data-f="step.confirmation" data-n="${n}" value="${esc(st.confirmation || '')}" maxlength="24" autocomplete="off"></label>`}
+      <button type="button" class="f-linkbtn" data-do="eddrstepdel" data-n="${n}">${esc(s.tt(EDTX.dwStepDel))}</button></div>`,
+    line = (st, n) => `<button type="button" class="f-item ms-dwstep" data-do="eddrstep" data-n="${n}" data-step="${n + 1}"><b>${esc(s.tt(EDTX.dwStep, { n: n + 1 }))}</b><span class="f-muted">${esc([kind(st), st.label, opts.now(st.point || st.object || '')].filter(Boolean).join(' · '))}</span></button>`;
+  return `<div class="f-field ms-dwsteps" data-dwsteps><span>${esc(s.tt(EDTX.dwSteps))}</span>${steps.map((st, n) => n === open ? card(st, n) : line(st, n)).join('')}${steps.length < MS.DRAWER_BOUNDS.steps ? `<button type="button" class="f-linkbtn" data-do="eddrstepadd">${esc(s.tt(EDTX.dwStepAdd))}</button>` : ''}</div>`;
+}
+
+/** D'où vient le message qu'un tiroir attend (SOG-0500) : le tiroir de la mission qui l'envoie à son ouverture (son rang), sinon un
+ *  autre équipage. */
+function edEventFrom(s, rows, r) {
+  const want = String(r.event ?? '').trim(),
+    n = want ? rows.findIndex(x => x.id !== r.id && String(x.emit ?? '').trim() === want) : -1;
+  return n >= 0 ? s.tt(EDTX.dwEventFrom, {
+    n: n + 1
+  }) : s.tt(EDTX.dwEventOther);
+}
+
+/** Le message qu'un tiroir attend (SOG-0500) : son identifiant (les messages qu'envoient les autres tiroirs de la mission sont
+ *  proposés), et d'où il vient (edEventFrom, suivi à la frappe). */
+function edEventHtml(s, rows, r) {
+  const ids = [...new Set(rows.filter(x => x.id !== r.id && x.emit).map(x => x.emit))];
+  return `<label class="f-field"><span>${esc(s.tt(EDTX.dwEvent))}</span><input data-k="eddr" data-f="event" value="${esc(r.event || '')}" maxlength="80" autocomplete="off" list="ms-dwevents"></label><datalist id="ms-dwevents">${ids.map(x => `<option value="${esc(x)}"></option>`).join('')}</datalist><p class="f-muted" data-dwemitter>${esc(edEventFrom(s, rows, r))}</p>`;
+}
+
+/** Le message qu'un tiroir envoie en s'ouvrant (`emit_event`, SOG-0500) : son identifiant et ses destinataires. */
+function edEmitHtml(s, r) {
+  return `<div class="f-row" data-dwemit><label class="f-field"><span>${esc(s.tt(EDTX.dwEmit))}</span><input data-k="eddr" data-f="emit" value="${esc(r.emit || '')}" maxlength="80" autocomplete="off"></label><label class="f-field"><span>${esc(s.tt(EDTX.dwEmitTo))}</span><input data-k="eddr" data-f="emitTo" value="${esc(r.emitTo || '')}" maxlength="400" autocomplete="off"></label></div>`;
 }
 
 /** Les champs d'une règle de maintien ou de survol (SOG-0500) : son lieu — un point de la mission OU un objet suivi (deux listes : en
@@ -2610,6 +2662,18 @@ function edDrawerHtml(s, doc) {
     // avec la carte : la zone ou l'objet se pose aussi sur elle, et devient la clé de ce tiroir
     onMap = (kind, text) => EM.stateOf(e) ? `<p class="ms-dwdraw"><button type="button" class="f-linkbtn" data-do="eddrdraw" data-kind="${kind}">${esc(s.tt(text))}</button></p>` : '',
     num = ' inputmode="decimal" maxlength="8"',
+    // SOG-0500 : les lieux d'une règle (un point, ou un objet suivi), pour la condition et pour chaque étape d'une suite
+    ruleOpts = {
+      points: [
+        ['DESTINATION', s.tt(EDTX.dwDest)],
+        ['ORIGIN', s.tt(EDTX.dwDep)], ...points
+      ],
+      objects: of('object'),
+      now
+    },
+    // le message envoyé à l'ouverture : montré quand le tiroir en envoie un (dans le fichier ou la séance)
+    fileRow = DR.drawerRowsOf(e.base).find(x => x.id === r.id),
+    emits = !!(r.emit || r.emitTo || fileRow?.emit || fileRow?.emitTo),
     fallback = field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"'),
     zones = of('zone'),
     objects = of('object'),
@@ -2621,7 +2685,9 @@ function edDrawerHtml(s, doc) {
         <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
         <div class="f-field"><span>${esc(s.tt(EDTX.dwStops))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
         ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}${fallback}` :
-    DR.HOLDS.includes(r.key) ? `${edRuleHtml(s, r.rule || DR.blankRule(), r.key, 'rule', null, { points: [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points], objects, now })}${fallback}` :
+    DR.HOLDS.includes(r.key) ? `${edRuleHtml(s, r.rule || DR.blankRule(), r.key, 'rule', null, ruleOpts)}${fallback}` :
+    r.key === 'sequence' ? `${edStepsHtml(s, r, ruleOpts)}${fallback}` :
+    r.key === 'event' ? `${edEventHtml(s, rows, r)}${fallback}` :
     r.key === 'kept' ? `<p class="f-muted" data-dwkept>${esc(s.tt(EDTX.dwKept, { why: s.tt(EDTX[`dwWhy_${r.keptWhy}`] || EDTX.dwWhy_condition) }))}</p>${fallback}` : '',
     route = r.route.map(now).filter(Boolean),
     lines = edDrawerLines(s, r, now),
@@ -2631,9 +2697,9 @@ function edDrawerHtml(s, doc) {
     group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
   return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
     <div class="ms-dgrp" data-dgrp="key" data-open="1"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
-      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) || DR.HOLDS.includes(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
+      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) || DR.CONDS.includes(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
       ${e.kinds === 'drawer' ? edKindsHtml(s, 'drawer', r.key) : ''}
-      ${body}</div>
+      ${body}${emits ? edEmitHtml(s, r) : ''}</div>
     ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}
       <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
       <label class="f-field"><span>${esc(s.tt(EDTX.dwBrief))}</span><textarea data-k="eddr" data-f="brief" rows="6" maxlength="20000">${esc(r.brief)}</textarea></label>`)}
@@ -2659,6 +2725,26 @@ function edDrawerInput(s, ev) {
   // SOG-0500 : un champ d'une règle (la condition du tiroir)
   const rf = /^rule\.([a-zA-Z]+)$/.exec(f || '');
   if (rf) return edRuleInput(s, r.rule, rf[1], t, list);
+  // une étape d'une suite : sa sorte (une liste : l'étape reprend ce que la sorte devine, son nom gardé), ou un champ de sa règle
+  const sf = /^step\.([a-zA-Z]+)$/.exec(f || ''),
+    n = +t.dataset.n;
+  if (sf) {
+    const st = Number.isInteger(n) && n >= 0 && Array.isArray(r.steps) ? r.steps[n] : null;
+    if (!st) return;
+    if (sf[1] !== 'kind') return edRuleInput(s, st, sf[1], t, list);
+    if (!list || !DR.HOLDS.includes(t.value)) return;
+    r.steps[n] = {
+      kind: t.value,
+      ...DR.holdRow(t.value, e.places || ED.placesOf(edDoc(e))),
+      label: st.label,
+      confirmation: t.value === 'landing' ? '' : st.confirmation
+    };
+    return draw(s);
+  }
+  if (['event', 'emit', 'emitTo'].includes(f) && !list) {
+    r[f] = String(t.value).slice(0, f === 'emitTo' ? 400 : 80);
+    return edRefresh(s);
+  }
   if (['point', 'zone', 'object', 'arrPoint'].includes(f) && list) {
     r[f] = String(t.value).slice(0, 40);
     if (f === 'point') r.said = edSaid(s, r);
@@ -2692,10 +2778,33 @@ function edRuleInput(s, rule, k, t, list) {
     return draw(s);
   }
   if (k === 'confirm' && t.type === 'checkbox') rule.confirm = t.checked === true;
-  else if (!list && Object.hasOwn(RULE_LABEL, k) && !['at', 'hOrder'].includes(k) || !list && k === 'label') rule[k] = String(t.value)
-    .slice(0, 120);
+  else if (!list && RULE_TYPED.has(k)) rule[k] = String(t.value).slice(0, 120);
   else return;
   return edRefresh(s);
+}
+
+/** Un geste sur les étapes d'une suite (SOG-0500) : ouvrir l'étape `n`, en ajouter une (jusqu'à la borne du lecteur), retirer
+ *  l'étape `n`. Le tiroir choisi n'a pas de suite (une page forgée), un rang hors liste : rien. */
+function edStepDo(s, what, n) {
+  const e = s.ed,
+    r = edDrawerRow(e);
+  if (!r || r.key !== 'sequence' || !Array.isArray(r.steps)) return;
+  edUndoClear(e);
+  if (what === 'eddrstepadd') {
+    if (r.steps.length >= MS.DRAWER_BOUNDS.steps) return;
+    r.steps.push({
+      kind: 'hover',
+      ...DR.holdRow('hover', e.places || ED.placesOf(edDoc(e)))
+    });
+    e.stepOpen = r.steps.length - 1;
+  } else {
+    if (!Number.isInteger(n) || n < 0 || n >= r.steps.length) return;
+    if (what === 'eddrstepdel') {
+      r.steps.splice(n, 1);
+      e.stepOpen = Math.max(0, n - 1);
+    } else e.stepOpen = n;
+  }
+  return draw(s);
 }
 
 /** Un nombre saisi dans un champ de l'essai, ou undefined (l'essai prend alors sa valeur par défaut : une altitude inconnue). */
@@ -3070,6 +3179,7 @@ function edRefresh(s) {
     put(q('[data-dline="route"]'), lines.route);
     const pv = edPilotView(s, doc, drow.id);
     for (const k of ['name', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
+    if (drow.key === 'event') put(q('[data-dwemitter]'), edEventFrom(s, edDrawers(e), drow)); // SOG-0500 : d'où vient le message
   }
   const dtodo = new Set(edDrawersTodo(doc).map(t => t.name));
   for (const d of e.veil ? [] : edMission(doc)?.drawers || []) {
@@ -3393,6 +3503,10 @@ export function edClick(s, b) {
         block: 'nearest'
       });
     }
+    case 'eddrstep': // SOG-0500 : une étape d'une suite touchée s'ouvre (une seule à la fois)
+    case 'eddrstepadd': // « ＋ Étape » : un stationnaire, ce que la sorte devine ; il s'ouvre
+    case 'eddrstepdel': // « Retirer l'étape »
+      return edStepDo(s, b.dataset.do, +b.dataset.n);
     case 'eddrstopdel': { // un arrêt retiré de ceux qu'une arrivée demande
       const r = edDrawerRow(s.ed),
         n = +b.dataset.n;
@@ -3699,6 +3813,7 @@ export function edClick(s, b) {
 /** Les gestes qui ne jouent pas dans l'atelier voilé (SOG-0459) : l'essai des clés, les tiroirs, les cartes proposées (elles nomment
  *  les zones par leur rang). */
 const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddradd', 'eddrdel', 'eddrgrp', 'eddrplaces', 'eddrstopdel',
+  'eddrstep', 'eddrstepadd', 'eddrstepdel',
   'eddrchipdel', 'eddrdraw', 'edmapspropose', 'edkind', 'edkindopen', 'edkindoff', 'edbrick', 'edmodel',
   'edmodeloff', 'edmodelpick', 'edmodelsave'
 ]);

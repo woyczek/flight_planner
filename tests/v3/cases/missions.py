@@ -10097,3 +10097,169 @@ def n152(c):
              f'{width}: the duration written, nothing else moved', what='the file written')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+# SOG-0500 (b): a sequence of steps, a message awaited and the message sent at the opening — the pure round trip in the page
+_SEQ_PURE_JS = """async () => { const MS = await import('/frame/lib/mission.js'), DR = await import('/modules/missions/editor_drawers.js');
+  const J = x => JSON.stringify(x), out = {};
+  const base = { mission: { id: 'X-001A', type: 'REG' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', name: 'Point un', lat: 44.8, lon: 1.2 }],
+    objects: [{ id: 'OBJ-1', kind: 'ship', name: 'Navire', lat: 44.6, lon: 1.4, detection_range_nm: 1 }], phases: [] };
+  const places = [{ id: 'PT1', kind: 'pt' }, { id: 'OBJ-1', kind: 'object' }];
+  // a sequence born of DR.keyed: one hover step; a second step, a landing, added; then written and read back
+  let rows = [], seq = DR.keyed(DR.blankDrawer(rows, base), 'sequence', places);
+  seq.steps.push({ kind: 'landing', ...DR.holdRow('landing', places), label: 'Poser' });
+  seq.steps[0].label = 'Descente'; seq.steps[0].confirmation = 'deploy'; seq.fallback = '45'; seq.emit = 'EV-B'; seq.emitTo = 'ALPHA, BRAVO';
+  rows = [seq];
+  const ev = DR.keyed(DR.blankDrawer(rows, base), 'event', places); ev.event = 'EV-B'; ev.fallback = '90';
+  rows = [seq, ev];
+  const doc = DR.withDrawerRows(base, rows), m = MS.readMission(doc), back = DR.drawerRowsOf(doc);
+  out.written = doc.phases.map(p => ({ id: p.id, trigger_condition: p.trigger_condition, emit_event: p.emit_event ?? null }));
+  out.read = m.drawers.map(d => [d.key.kind, d.key.condition, d.keyWhy, (d.key.steps || []).map(s => [s.kind, s.object?.id ?? s.point, s.label, s.confirmation]), d.key.event ?? null, d.emits]);
+  out.back = [J(back[0].steps) === J(seq.steps), back[0].emit, back[0].emitTo, back[1].event];
+  out.todo = DR.drawersTodo(doc).filter(t => !['noMessage', 'noBrief'].includes(t.key));
+  // the bound of the reader: ten steps at most — an eleventh is never written
+  const many = structuredClone(seq); many.steps = Array.from({ length: 11 }, () => ({ kind: 'hover', ...DR.holdRow('hover', places) }));
+  out.ten = DR.withDrawerRows(base, [many]).phases[0].trigger_condition.steps.length;
+  out.bound = MS.DRAWER_BOUNDS.steps;
+  // a step changed keeps the other keys of ITS step; a step of another kind is written whole
+  const file = { ...base, phases: [{ id: 'B', trigger_condition: { kind: 'sequence', note: 'gardée', steps: [
+    { kind: 'hover', object: 'OBJ-1', radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100, x_extra: 1 },
+    { kind: 'hover', object: 'OBJ-1', radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100, confirmation: 'recover' }] } }] };
+  const fr = DR.drawerRowsOf(file); out.fileKey = [fr[0].key, fr[0].steps.length, fr[0].steps[1].confirmation];
+  const r1 = structuredClone(fr); r1[0].steps[0].duration = '30'; r1[0].steps[1] = { kind: 'landing', ...DR.holdRow('landing', places) };
+  out.stepEdit = DR.withDrawerRows(file, r1).phases[0].trigger_condition;
+  out.untouched = J(DR.withDrawerRows(file, structuredClone(fr))) === J(file);
+  // what is missing: no step; a step out of bounds; an event that is not a word; a message sent without recipient
+  const r2 = structuredClone(rows); r2[0].steps = []; r2[1].event = 'deux mots'; r2[0].emitTo = '';
+  const d2 = DR.withDrawerRows(base, r2);
+  out.missing = DR.drawersTodo(d2).filter(t => !['noMessage', 'noBrief'].includes(t.key));
+  out.notWritten = [d2.phases[1].trigger_condition.event ?? null, d2.phases[0].emit_event];
+  const r3 = structuredClone(rows); r3[0].steps[1].duration = '0';
+  out.stepMissing = DR.condMissing(r3[0]);
+  // a nested sequence, a step that is not an object, more than ten steps in a file: kept as they are (not rows to edit)
+  const keptOf = c => DR.drawerRowsOf({ ...base, phases: [{ id: 'B', trigger_condition: c }] })[0];
+  out.kept = [keptOf({ kind: 'sequence', steps: [{ kind: 'sequence', steps: [] }] }), keptOf({ kind: 'sequence', steps: ['x'] }),
+    keptOf({ kind: 'sequence', steps: Array.from({ length: 11 }, () => ({ kind: 'hover' })) }), keptOf({ kind: 'event', event: { a: 1 } })].map(r => [r.key, r.keptWhy]);
+  return out }"""
+
+
+@case('N153', 'Missions › the workshop WRITES a sequence of steps and a message between crews (SOG-0500 (b), pure, in the page): a sequence keyed by '
+      '`DR.keyed` (one hover step), a landing step added, written and read back by `readMission` as `{ condition: sequence, steps }` and by `drawerRowsOf` '
+      'as the same steps; a drawer awaiting a message `{ condition: event, event }`; the message sent at the opening (`emit_event { id, to }`) read back '
+      'by the reader as `emits`; ten steps at most (the reader\'s bound: an eleventh is never written); a step changed keeps the other keys of its step, '
+      'a step of another kind is written whole; « À compléter » names a sequence without step, a step out of bounds (« 2.duration »), a message that is '
+      'not a word, a message sent without recipient — none of them written; a nested sequence, a step that is not an object, eleven steps, an event '
+      'that is not a word are kept as they are', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500 (b): « sequence : un éditeur d\'étapes minimal (liste d\'étapes, chacune une condition simple, … lis la borne du lecteur) ; event : '
+      'l\'identifiant de l\'événement et le tiroir qui l\'émet (emit_event) »; EDITOR.md § 7 quinquagies')
+def n153(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    g = c.js(_SEQ_PURE_JS)
+    c.eq(g['written'], [
+        {'id': 'B', 'trigger_condition': {'kind': 'sequence', 'steps': [
+            {'kind': 'hover', 'object': 'OBJ-1', 'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10,
+             'height_max_ft': 100, 'label': 'Descente', 'confirmation': 'deploy'},
+            {'kind': 'landing', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3, 'label': 'Poser'}]},
+         'emit_event': {'id': 'EV-B', 'to': ['ALPHA', 'BRAVO']}},
+        {'id': 'C', 'trigger_condition': {'kind': 'event', 'event': 'EV-B'}, 'emit_event': None}],
+        'the sequence, its two steps in the reader\'s form; the message awaited; the message sent at the opening', what='written')
+    c.eq(g['read'], [['condition', 'sequence', '', [['hover', 'OBJ-1', 'Descente', 'deploy'], ['landing', 'DESTINATION', 'Poser', '']], None,
+                      {'id': 'EV-B', 'to': ['ALPHA', 'BRAVO']}],
+                     ['condition', 'event', '', [], 'EV-B', None]], 'read back by the reader, without a reason', what='read')
+    c.eq(g['back'], [True, 'EV-B', 'ALPHA, BRAVO', 'EV-B'], 'the same rows read back', what='read back')
+    c.eq(g['todo'], [], 'nothing missing (the fallback written)', what='to complete')
+    c.eq([g['ten'], g['bound']], [10, 10], 'ten steps at most, the reader\'s bound', what='the bound')
+    c.eq(g['fileKey'], ['sequence', 2, 'recover'], 'the sequence of the file in rows', what='the file row')
+    c.eq(g['stepEdit'], {'kind': 'sequence', 'note': 'gardée', 'steps': [
+        {'kind': 'hover', 'object': 'OBJ-1', 'radius_m': 5, 'duration_sec': 30, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100,
+         'x_extra': 1},
+        {'kind': 'landing', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3}]},
+        'step 1: its duration only, its other key kept; step 2 another kind: written whole (its confirmation gone)', what='a step changed')
+    c.eq(g['untouched'], True, 'nothing changed: the document is identical', what='nothing changed')
+    c.eq(g['missing'], [{'key': 'condIncomplete', 'name': '1', 'what': ['steps']}, {'key': 'emitIncomplete', 'name': '1'},
+                        {'key': 'condIncomplete', 'name': '2', 'what': ['event']}], 'what is missing, named', what='to complete')
+    c.eq(g['notWritten'], [None, {'id': 'EV-B'}], 'a message that is not a word is not written; no recipient: no « to »', what='not written')
+    c.eq(g['stepMissing'], ['2.duration'], 'a step out of bounds, named with its rank', what='a step')
+    c.eq(g['kept'], [['kept', 'condition']] * 4, 'kept as they are', what='kept')
+
+
+_SEQ_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Mission en suite
+summary: Une suite inventée.
+cruise_speed_kt: 120
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.2 }
+objects:
+  - { id: OBJ-1, kind: ship, name: Navire d'essai, lat: 44.6, lon: 1.42, detection_range_nm: 1 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - id: B
+    title: Dépose et reprise
+    message: Déposez l'équipe.
+    brief: Deux stationnaires.
+    fallback_delay_min: 60
+    emit_event: { id: EV-B, to: [ALPHA] }
+    trigger_condition:
+      kind: sequence
+      steps:
+        - { kind: hover, object: OBJ-1, radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100, label: Dépose, confirmation: deploy }
+        - { kind: hover, object: OBJ-1, radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100, label: Reprise, confirmation: recover }
+  - { id: C, title: Retour, message: Rentrez., brief: Retour au terrain., fallback_delay_min: 120, trigger_condition: { kind: event, event: EV-B } }
+"""
+_STEPS = f"[...document.querySelectorAll('{E} [data-drawer] [data-dwsteps] [data-step]')].map(x => [x.dataset.step, x.dataset.open || ''])"
+_STEP_VAL = f"""([n, f]) => {{ const x = document.querySelector('{E} [data-drawer] [data-k=eddr][data-f="step.' + f + '"][data-n="' + n + '"]'); return !x ? null : x.type === 'checkbox' ? x.checked : x.value }}"""
+
+
+@case('N154', 'Missions › the workshop, a drawer of the file keyed by a SEQUENCE and one awaiting a MESSAGE (SOG-0500 (b), an invented file): the sheet '
+      'of the sequence says « une suite d\'étapes » and its mention, its steps in order — one open at a time (its kind, its name, the fields of its rule, '
+      'its confirmation word, « Retirer l\'étape »), the others in one line; touching a line opens it; its kind changed to a landing gives the fields of a '
+      'landing (no confirmation word); « ＋ Étape » adds a hover; the message sent at the opening (its identifier, its recipients); the sheet of the '
+      'drawer awaiting the message says its identifier and that drawer 1 sends it; « Enregistrer » writes the steps changed and nothing else; at 390 '
+      'and at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500 (b): the steps are a minimal editor, the reader\'s bound (10); EDITOR.md § 7 quinquagies')
+def n154(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, _SEQ_MISSION)
+        ed_reveal(c)
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the sequence')
+        c.eq([c.js(_DW_VAL, 'key'), c.count(f'{_DW} [data-dwnotjudged]'), c.js(_STEPS)], ['sequence', 1, [['1', '1'], ['2', '']]],
+             f'{width}: the key, its mention, step 1 open, step 2 in one line', what='the steps')
+        c.eq([c.js(_STEP_VAL, [0, f]) for f in ('kind', 'label', 'object', 'radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax', 'confirmation')],
+             ['hover', 'Dépose', 'OBJ-1', '5', '60', '10', '2', '10', '100', 'deploy'], f'{width}: the fields of step 1', what='step 1')
+        c.eq([c.js(_DW_VAL, 'emit'), c.js(_DW_VAL, 'emitTo')], ['EV-B', 'ALPHA'], f'{width}: the message sent at the opening', what='the message sent')
+        if width == 390:
+            c.js(f"document.querySelector('{_DW} [data-dwsteps]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
+        c.shot(f'P13a_{width}_sequence.png')
+        c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstep][data-n="1"]')
+        c.until(f"document.querySelector('{_DW} [data-dwsteps] [data-step=\"2\"]')?.dataset.open === '1'", what='step 2 open')
+        c.page.select_option(f'{_DW} select[data-f="step.kind"][data-n="1"]', 'landing')
+        c.until(f"document.querySelector('{_DW} select[data-f=\"step.kind\"][data-n=\"1\"]')?.value === 'landing'", what='step 2 a landing')
+        c.eq([c.js(_STEP_VAL, [1, f]) for f in ('label', 'point', 'radiusM', 'duration', 'gap', 'speed', 'confirmation', 'tol')],
+             ['Reprise', 'DESTINATION', '5', '10', '10', '3', None, None], f'{width}: a landing step: its fields, its name kept, no confirmation word', what='step 2')
+        c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstepadd]')
+        c.until(f"document.querySelectorAll('{_DW} [data-dwsteps] [data-step]').length === 3", what='a third step')
+        c.eq([c.js(_STEPS), c.js(_STEP_VAL, [2, 'kind'])], [[['1', ''], ['2', ''], ['3', '1']], 'hover'], f'{width}: « ＋ Étape » adds a hover, open', what='added')
+        c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstepdel][data-n="2"]')
+        c.until(f"document.querySelectorAll('{_DW} [data-dwsteps] [data-step]').length === 2", what='the third step removed')
+        c.tap(f'{E} [data-atflow] [data-sel="C"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of the drawer awaiting the message')
+        c.eq([c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'event'), norm(c.js(f"document.querySelector('{_DW} [data-dwemitter]').textContent"))],
+             ['event', 'EV-B', norm(row(c, 'dwEventFrom', EDTX_FILE).replace('{n}', '1'))], f'{width}: the message awaited, sent by drawer 1', what='the event')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
+        after = c.js('(t) => window.jsyaml.load(t)', c.js(_TEXT_OF, path))
+        before = c.js('(t) => window.jsyaml.load(t)', _SEQ_MISSION)
+        before['phases'][0]['trigger_condition']['steps'][1] = {'kind': 'landing', 'label': 'Reprise', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10,
+                                                                 'max_gap_sec': 10, 'speed_max_kt': 3}
+        c.eq({k: after.get(k) for k in ('phases', 'objects', 'route_order')}, {k: before.get(k) for k in ('phases', 'objects', 'route_order')},
+             f'{width}: step 2 written as a landing, nothing else moved', what='the file written')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

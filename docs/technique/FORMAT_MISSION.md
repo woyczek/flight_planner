@@ -55,8 +55,8 @@ phases:
 - **Not a secret**: a pilot who opens the file reads the drawer. It is a game's seal, as the V2's sealed folds are.
 - **The route of a drawer** never enters the mission's own route (`route_order` at the top): the pilot takes it by a
   gesture. Its first id is the splice — the trigger point in a V2 part, the last point of the part before in the workshop.
-- A private block `x_mission_editor`, `coordination` and `emit_event` (the workshop's) are not read; whoever rewrites the
-  file keeps them as they are.
+- A private block `x_mission_editor` and `coordination` (the workshop's) are not read; whoever rewrites the file keeps them as
+  they are. `emit_event` is read as `emits` (§ 4) and written by the V3 workshop (§ 4 quinquies).
 
 ## 3. Zones and objects: two ways of writing them, both read
 
@@ -273,6 +273,31 @@ phases:
   once published; until then the reader's bound) — and no `confirmation`. The workshop proposes 10 s and a gap of 10 s.
 - **« À compléter »**: a rule the reader would refuse says what it misses (`condIncomplete`: the point or the object, a number out of
   its bounds, a minimum height above the maximum, a confirmation that is not a word).
+
+**A sequence, a message between crews** (SOG-0500 (b)):
+
+```yaml
+phases:
+  - id: B
+    trigger_condition:
+      kind: sequence               # 1 to 10 steps (DRAWER_BOUNDS.steps), in order, each a rule of the form above
+      steps:
+        - { kind: hover, object: OBJ-1, radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2,
+            height_min_ft: 10, height_max_ft: 100, label: Dépose, confirmation: deploy }
+        - { kind: landing, point: DESTINATION, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3, label: Poser }
+    emit_event: { id: EV-B, to: [ALPHA] }   # the message this drawer sends when it opens: a word, 1 to 16 recipients (words)
+  - id: C
+    trigger_condition: { kind: event, event: EV-B }   # opens on that message
+```
+
+- A step is a hover, a landing or an overflight — never a sequence; `label` names it, `confirmation` (a word, `[a-z][a-z0-9_]`, 24
+  signs) is the gesture the pilot confirms (none for a landing). The workshop never writes an eleventh step.
+- A step changed keeps the other keys of ITS step; a step whose kind changes is written whole.
+- `event` and every recipient are words (`EVENT_ID`: `[A-Za-z0-9][A-Za-z0-9_.-]`, 80 signs): a text that is not one is never
+  written, and « À compléter » says it (`condIncomplete` with `event`; `emitIncomplete` for a message sent without an identifier or
+  a recipient, which the reader does not read).
+- A sequence, a message awaited or a key the workshop cannot represent (a nested sequence, a step that is not an object, more than
+  ten steps, an event that is not a bare word) stays `kept`, as it is.
 
 ## 5. An untrusted file
 

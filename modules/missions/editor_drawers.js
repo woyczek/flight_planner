@@ -16,7 +16,11 @@
 //   KEYS : les clés que l'atelier édite — hand (le geste du pilote seul), time (l'heure : un point et un délai), zone (une zone de
 //     passage), object (un objet à trouver), arrival (l'arrivée au terrain) ; et les conditions de la version 1.1 (SOG-0500) : hover
 //     (un stationnaire), landing (un poser), overflight (un survol) — HOLDS, une règle chacune (`rule` de la ligne), écrite dans
-//     `trigger_condition` sous la forme exacte que le lecteur lit (holdRule de frame/lib/mission.js), avec SES bornes (MS.HOLD_BOUNDS).
+//     `trigger_condition` sous la forme exacte que le lecteur lit (holdRule de frame/lib/mission.js), avec SES bornes (MS.HOLD_BOUNDS) ;
+//     sequence (une suite d'étapes : `steps` de la ligne, de une à MS.DRAWER_BOUNDS.steps, chacune { kind (une de HOLDS), …règle }) ;
+//     event (`event` de la ligne : l'identifiant d'un message entre équipages, MS.EVENT_ID). CONDS : ces cinq conditions.
+//   Le message qu'un tiroir envoie en s'ouvrant (`emit_event` { id, to }) : `emit` et `emitTo` de la ligne (l'identifiant ; les
+//     destinataires, séparés par des virgules, seize au plus), pour toute clé.
 //   blankRule() → une règle vide { point, object, label, radiusM, radiusNm, duration, gap, speed, tol, hMin, hMax, confirmation,
 //     confirm } (des textes pour les champs ; confirm : un booléen) ; holdRow(kind, places) → la règle qu'une sorte devine (un objet
 //     de la mission à suivre, sinon la cible, sinon l'arrivée ; un poser : l'arrivée ; les valeurs par défaut de l'atelier de
@@ -31,8 +35,10 @@
 //     lieux, l'arrivée au terrain d'arrivée (1 NM, 30 kt, posé), l'heure après le décollage.
 //   drawerRowsOf(doc) → [{ i (la place dans `phases`, -1 pour une ligne ajoutée), id (B à M, donné, jamais saisi), title, said (la clé
 //     dite en clair, `trigger`), message, brief, key (une de KEYS, ou 'kept'), keptWhy, point, delay, zone, shown, object, arrPoint,
-//     arrRadius, arrSpeed, arrGround, stops [identifiants], rule (la règle d'une condition HOLDS), fallback, route [identifiants] }] —
-//     les nombres en texte, pour les champs.
+//     arrRadius, arrSpeed, arrGround, stops [identifiants], rule (la règle d'une condition HOLDS), steps (les étapes d'une suite),
+//     event (le message attendu), emit, emitTo, fallback, route [identifiants] }] — les nombres en texte, pour les champs.
+//   condMissing(row) → ce qui manque à la condition d'une ligne (ruleMissing ; une suite : 'steps' sans étape, `<n>.<champ>` pour
+//     l'étape n ; un message attendu : 'event') — [] sinon.
 //     key 'kept' : une clé que l'atelier n'édite pas encore, MONTRÉE et GARDÉE telle quelle — keptWhy : 'several' (plusieurs clés
 //     écrites), 'inPart' (une zone ou un objet écrits dans la partie), 'actor' (une cible franchit la zone), 'condition' (une condition
 //     de la version 1.1 de l'atelier), 'escort' (une arrivée après un suivi). Choisir une autre clé la remplace (withKey).
@@ -46,7 +52,8 @@
 //   drawersTodo(doc) → [{ key, name (le rang), what? }] : ce qu'un tiroir a « à compléter », jamais bloquant — noMessage, noBrief,
 //     noFallback (une clé qui regarde l'avion sans heure de repli), condIncomplete (une condition dont la règle n'est pas complète :
 //     `what`, les champs de ruleMissing — le lecteur la refuserait), keyUnread (une clé que le lecteur ne sait pas lire : le tiroir ne
-//     s'ouvre qu'à la main), routeUnknown (sa suite de route cite un lieu absent).
+//     s'ouvre qu'à la main), routeUnknown (sa suite de route cite un lieu absent), emitIncomplete (un message envoyé sans identifiant
+//     ou sans destinataire : le lecteur ne le lit pas).
 import * as MS from '../../frame/lib/mission.js';
 import * as DW from './drawers.js'; // lu, jamais modifié : la période d'un relevé du vol (FIX_PERIOD_SEC, quand Affectation la publie)
 import {
@@ -57,7 +64,9 @@ const B = MS.DRAWER_BOUNDS,
   H = MS.HOLD_BOUNDS;
 /** Les conditions de maintien et de survol (version 1.1) que l'atelier écrit : la liste du lecteur. */
 export const HOLDS = MS.HOLD_KINDS;
-export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival', ...HOLDS]);
+/** Les conditions de la version 1.1 que l'atelier écrit : les règles, la suite d'étapes, le message attendu. */
+export const CONDS = Object.freeze([...HOLDS, 'sequence', 'event']);
+export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival', ...CONDS]);
 /** Les sortes que le choix du type propose (voir l'en-tête) : les cinq clés jugées en vol, dans l'ordre de KEYS. Une condition de la
  *  version 1.1 n'y est pas (SOG-0500 : le vol ne la juge pas encore) ; un tiroir déjà écrit avec elle s'édite. */
 export const TYPES = Object.freeze(KEYS.slice(0, 5).map(key => Object.freeze({
@@ -65,7 +74,7 @@ export const TYPES = Object.freeze(KEYS.slice(0, 5).map(key => Object.freeze({
   judged: true
 })));
 /** Les clés qui regardent l'avion : elles ont une heure de repli. */
-const LIVE = new Set(['zone', 'object', 'arrival', 'kept', ...HOLDS]);
+const LIVE = new Set(['zone', 'object', 'arrival', 'kept', ...CONDS]);
 /** Les nombres d'une règle : le champ de la ligne → [le champ du fichier, ses bornes — celles du lecteur]. */
 const RULE_NUM = Object.freeze({
   radiusM: ['radius_m', H.radiusM],
@@ -196,6 +205,19 @@ function landingGapMin() {
   return Number.isFinite(p) ? Math.max(p, H.maxGapSec[0]) : H.maxGapSec[0];
 }
 
+/** Ce qui manque à la condition d'une ligne (voir l'en-tête). */
+export function condMissing(row) {
+  const r = isObj(row) ? row : {};
+  if (HOLDS.includes(r.key)) return ruleMissing(r.key, r.rule);
+  if (r.key === 'sequence') {
+    const steps = Array.isArray(r.steps) ? r.steps : [];
+    if (!steps.length) return ['steps'];
+    return steps.flatMap((st, n) => HOLDS.includes(st?.kind) ? ruleMissing(st.kind, st).map(f => `${n + 1}.${f}`) : [`${n + 1}.kind`]);
+  }
+  if (r.key === 'event') return MS.EVENT_ID.test(String(r.event ?? '').trim()) ? [] : ['event'];
+  return [];
+}
+
 /** Les champs à compléter d'une règle (voir l'en-tête) : les bornes et les exigences du lecteur, jamais d'autres ; pour un poser, la
  *  période d'un relevé du vol aussi (landingGapMin). */
 export function ruleMissing(kind, rule) {
@@ -229,7 +251,9 @@ function keyOf(p) {
       arrSpeed: '',
       arrGround: false,
       stops: [],
-      rule: blankRule()
+      rule: blankRule(),
+      steps: [],
+      event: ''
     },
     written = ['trigger_zone', 'trigger_object', 'trigger_condition', 'trigger_point'].filter(k => has(p[k])),
     kept = why => ({
@@ -261,6 +285,29 @@ function keyOf(p) {
         rule
       } : kept('condition');
     }
+    // une suite : ses étapes, une règle chacune (une étape d'une autre sorte, une liste trop longue : la clé est gardée telle quelle)
+    if (kind === 'sequence') {
+      const all = Array.isArray(c.steps) ? c.steps : null,
+        steps = all && all.length <= B.steps ? all.map(x => {
+          const k = isObj(x) ? cut(x.kind, 24).toLowerCase() : '',
+            rule = HOLDS.includes(k) ? ruleOf(x) : null;
+          return rule ? {
+            kind: k,
+            ...rule
+          } : null;
+        }) : null;
+      return steps && !steps.includes(null) ? {
+        ...f,
+        key: 'sequence',
+        steps
+      } : kept('condition');
+    }
+    // un message attendu : son identifiant, un mot nu
+    if (kind === 'event') return !has(c.event) || scalar(c.event) ? {
+      ...f,
+      key: 'event',
+      event: has(c.event) ? cut(c.event, 80) : ''
+    } : kept('condition');
     if (!isObj(c) || kind !== 'arrival' || has(c.point) && !scalar(c.point)) return kept('condition');
     if (has(c.escort_min_sec) && +c.escort_min_sec !== 0) return kept('escort');
     return {
@@ -298,10 +345,41 @@ export function drawerRowsOf(doc) {
       message: lines(p.message, B.message),
       brief: lines(p.brief, B.brief),
       ...keyOf(p),
+      ...emitOf(p.emit_event),
       fallback: numText(p.fallback_delay_min),
       route: tokens(p.route_order, B.route)
     };
   });
+}
+
+/** Le message qu'une partie envoie en s'ouvrant, en champs : { emit (l'identifiant), emitTo (les destinataires, séparés par des
+ *  virgules) } — '' pour ce qui n'est pas un mot nu. */
+function emitOf(v) {
+  const e = isObj(v) ? v : {};
+  return {
+    emit: scalar(e.id) ? cut(e.id, 80) : '',
+    emitTo: (Array.isArray(e.to) ? e.to : []).slice(0, 16).filter(scalar).map(x => cut(x, 80)).filter(Boolean).join(', ')
+  };
+}
+
+/** Les destinataires saisis (séparés par des virgules, des points-virgules ou des blancs) : seize mots au plus. */
+const recipients = v => String(v ?? '').split(/[\s,;]+/).map(x => cut(x, 80)).filter(Boolean).slice(0, 16);
+
+/** Le message envoyé à l'ouverture, écrit dans une partie : rien de saisi → la clé part ; sinon l'identifiant et les destinataires qui
+ *  ont la forme du lecteur (MS.EVENT_ID) — un mot qui ne l'a pas n'est jamais écrit ; une autre clé de `emit_event` reste. */
+function putEmit(o, r) {
+  const id = cut(r.emit, 80),
+    to = recipients(r.emitTo);
+  if (!id && !to.length) return void delete o.emit_event;
+  const e = {
+      ...(isObj(o.emit_event) ? o.emit_event : {})
+    },
+    ok = to.filter(x => MS.EVENT_ID.test(x));
+  if (MS.EVENT_ID.test(id)) e.id = id;
+  else delete e.id;
+  if (ok.length) e.to = ok;
+  else delete e.to;
+  o.emit_event = e;
 }
 
 /** La ligne avec une autre clé (voir l'en-tête). */
@@ -323,6 +401,8 @@ export function withKey(row, key) {
     arrGround: false,
     stops: [],
     rule: blankRule(),
+    steps: [],
+    event: '',
     fallback: LIVE.has(k) ? String(r.fallback ?? '') : ''
   };
 }
@@ -345,6 +425,11 @@ export function keyed(row, key, places = []) {
       point: 'ORIGIN'
     } : HOLDS.includes(key) ? {
       rule: holdRow(key, places)
+    } : key === 'sequence' ? {
+      steps: [{
+        kind: 'hover',
+        ...holdRow('hover', places)
+      }]
     } : {})
   };
 }
@@ -461,15 +546,45 @@ function putKey(o, r, diff, was = null) {
     };
     putRule(c, r.key, r.rule, was && was.key === r.key ? was.rule : null);
     o.trigger_condition = c;
+  } else if (r.key === 'sequence' && ch('steps')) {
+    // { kind: sequence, steps: [{ kind, point | object, … }] } : une étape de la même sorte qu'avant à son rang garde ses autres clés ;
+    // une étape neuve, ou d'une autre sorte, s'écrit entière ; au-delà de la borne du lecteur, rien
+    const c = {
+        ...(isObj(o.trigger_condition) ? o.trigger_condition : {}),
+        kind: 'sequence'
+      },
+      before = Array.isArray(c.steps) ? c.steps : [],
+      prev = was && was.key === 'sequence' ? was.steps : [];
+    c.steps = (Array.isArray(r.steps) ? r.steps : []).filter(st => HOLDS.includes(st?.kind)).slice(0, B.steps).map((st, n) => {
+      const same = prev[n] && prev[n].kind === st.kind && isObj(before[n]),
+        s = same ? {
+          ...before[n]
+        } : {};
+      s.kind = st.kind;
+      putRule(s, st.kind, st, same ? prev[n] : null);
+      return s;
+    });
+    o.trigger_condition = c;
+  } else if (r.key === 'event' && ch('event')) {
+    const c = {
+        ...(isObj(o.trigger_condition) ? o.trigger_condition : {}),
+        kind: 'event'
+      },
+      word = cut(r.event, 80);
+    if (MS.EVENT_ID.test(word)) c.event = word;
+    else delete c.event;
+    o.trigger_condition = c;
   }
 }
 
 /** Les champs d'une ligne qui se comparent (une liste par sa forme écrite). */
 const FIELDS = ['title', 'said', 'message', 'brief', 'key', 'point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius',
   'arrSpeed',
-  'arrGround', 'stops', 'rule', 'fallback', 'route'
+  'arrGround', 'stops', 'rule', 'steps', 'event', 'emit', 'emitTo', 'fallback', 'route'
 ];
-const KEY_OF = ['point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stops', 'rule'];
+const KEY_OF = ['point', 'delay', 'zone', 'shown', 'object', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stops', 'rule', 'steps',
+  'event'
+];
 /** La forme écrite d'un champ, pour comparer : une liste ou une règle par leur JSON, le reste en texte. */
 function text(v) {
   return Array.isArray(v) ? JSON.stringify(v.map(x => isObj(x) ? x : String(x ?? ''))) : isObj(v) ? JSON.stringify(v) : String(v ?? '');
@@ -497,6 +612,8 @@ export function withDrawerRows(doc, rows) {
         for (const k of KEY_FIELDS) delete o[k];
         putKey(o, r, KEY_OF);
       } else if (r.key !== 'kept') putKey(o, r, diff, was);
+      // le message envoyé à l'ouverture : il ne dépend pas de la clé
+      if (diff.includes('emit') || diff.includes('emitTo')) putEmit(o, r);
       // l'heure de repli saisie s'écrit quelle que soit la clé (withKey la vide pour une clé qui ne regarde pas l'avion)
       if (diff.includes('fallback')) putNumber(o, 'fallback_delay_min', r.fallback, 0, B.delayMin, true);
       if (diff.includes('route')) {
@@ -555,7 +672,7 @@ export function drawersTodo(doc) {
         name
       }),
       row = rows.find(r => r.id === x.id),
-      miss = row && HOLDS.includes(row.key) ? ruleMissing(row.key, row.rule) : [];
+      miss = row ? condMissing(row) : [];
     // SOG-0500 : une règle incomplète dit CE qui manque (le lecteur la refuserait : le tiroir ne s'ouvrirait qu'à la main)
     if (miss.length) out.push({
       key: 'condIncomplete',
@@ -567,6 +684,7 @@ export function drawersTodo(doc) {
     if (!x.message) add('noMessage');
     if (!x.brief) add('noBrief');
     if (x.routeUnknown) add('routeUnknown');
+    if (row && (row.emit || row.emitTo) && !x.emits) add('emitIncomplete');
   }
   return out;
 }

@@ -1426,6 +1426,27 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   « s'ouvre au geste ou à l'heure de repli » (`data-dwnotjudged`).
 - Captures: `P13a_390_landing.png`, `P13a_1280_landing.png` (case N152).
 
+### 7 quinquagies. A sequence of steps, a message between crews (18 Nov 2026; SOG-0500 (b); noreg N153, N154)
+
+- **The row**: `key: 'sequence'` with `steps` `[{ kind, …rule }]` (each a hover, a landing or an overflight; 1 to `MS.DRAWER_BOUNDS.steps` = 10, the reader's
+  bound — the brief said « 8 au plus — lis la borne du lecteur »: the reader says 10); `key: 'event'` with `event` (the identifier awaited); for ANY key,
+  `emit` and `emitTo` (`emit_event { id, to }`, the message the drawer sends when it opens; recipients as words separated by commas, 16 at most). `DR.CONDS`
+  is the five 1.1 conditions.
+- **Written** (`putKey`, `putEmit`): the steps by `putRule` each — a step of the same kind at its rank keeps the other keys of its step, another kind is written
+  whole, never beyond ten; `event` and the recipients only as words (`MS.EVENT_ID`); nothing typed → `emit_event` removed. Read back by `readMission` (N153).
+- **Kept as they are** (`keptWhy: 'condition'`): a nested sequence, a step that is not an object, more than ten steps, an event that is not a bare word.
+- **« À compléter »**: `condMissing(row)` — `steps` (no step), `<n>.<field>` (« étape 2 : Durée (s) »), `event`; `emitIncomplete` when the reader would not
+  read the message sent.
+- **The sheet**: « Les étapes, dans l'ordre » — ONE step open at a time (`s.ed.stepOpen`): its heading, « Sorte » (a hover, a landing, an overflight: changing
+  it takes what the kind guesses, the name kept), « Nom de l'étape », the fields of its rule (`edRuleHtml`, the same as a single condition), « Mot de
+  confirmation (facultatif) » (not for a landing), « Retirer l'étape »; the other steps in one line each (rank, kind, name, place) — touched, it opens;
+  « ＋ Étape » (a hover) up to the bound. A message awaited: « Message attendu (son identifiant) » (the messages the other drawers send are proposed) and one
+  line that says where it comes from (« Envoyé par le tiroir 1 à son ouverture », or « Envoyé par un autre équipage »), followed as one types. « Message envoyé
+  à l'ouverture » and « Destinataires » show only for a drawer that sends one (in the file or in the sitting): not offered while the flight does not judge
+  the messages (SOG-0500 (c)).
+- Actions `eddrstep`, `eddrstepadd`, `eddrstepdel` are off in the veiled workshop (`VEILED_OFF`).
+- Captures: `P13a_390_sequence.png`, `P13a_1280_sequence.png` (case N154).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
