@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 305,
+  "tests": 306,
   "verdicts": 213
  },
  "apps": [
@@ -4561,6 +4561,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T09:36:00Z"
+  },
+  {
+   "id": "SOG-0461",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte : le sens d'une voie aérienne paraît en même temps que son cartouche ; une petite flèche séparée du cartouche par un liseré blanc",
+    "en": "Map: an airway's direction shows together with its label; a small arrow set apart from the label by a white edge",
+    "de": "Karte: die Richtung einer Luftstraße erscheint zugleich mit ihrem Schild; ein kleiner Pfeil, durch einen weißen Rand vom Schild getrennt",
+    "es": "Mapa: el sentido de una aerovía aparece a la vez que su etiqueta; una flecha pequeña separada de la etiqueta por un filete blanco"
+   },
+   "test": "Carte, voies aériennes affichées. Sur une voie à sens unique, le cartouche porte une pointe dans le sens permis, de sa couleur, coupée du corps par un trait blanc ; une voie à double sens n'a pas de pointe. Dézoome : tant que le cartouche est là, la pointe y est aussi (avant, le sens ne venait qu'en zoomant).",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T10:09:58Z"
   }
  ],
  "decisions": [
@@ -4590,6 +4604,21 @@
     "Oui : le lanceur lit l'ENR 5.1 sur le site du SIA, à chaque cycle",
     "Non : seulement ce qui est déjà lu (nom usuel, horaires, conditions, gestionnaire)",
     "Par un PDF de l'AIP que je dépose moi-même, sans nouvelle lecture du site",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0104",
+   "fiche": "SOG-0444",
+   "app": "compagnie",
+   "question": "Atelier de missions : d'où vient le catalogue des modèles et des briques ? Vois file:///E:/DEFA-v3-missions-creation/modules/missions/maquette/atelier.html#modele (la ligne « Modèle : … · Changer de modèle »)",
+   "context": "Tu as dit oui à « Changer de modèle » (Q-0099). Mais la V3 n'a aujourd'hui aucun modèle ni aucune brique : « Créer une mission » ouvre un atelier vide. Ta maquette, elle, en a (tes soixante briques en seize familles, tes modèles), et je m'étais interdit de recopier ses exemples dans le dépôt. Dans tous les cas le catalogue sera un fichier du dépôt que tu pourras compléter, pas du code. Le lot attend ta réponse, et celle sur la palette (Q-0101) : les deux se conçoivent ensemble.",
+   "options": [
+    "De ma maquette : reprends mes briques et mes modèles, je t'y autorise",
+    "Trois modèles inventés pour commencer (recherche qui se précise, interception, bateau mobile) ; j'ajouterai les miens au fichier",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-18",
