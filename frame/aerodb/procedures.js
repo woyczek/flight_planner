@@ -144,11 +144,12 @@
     };
   }
 
-  /** Distance orthodromique en milles marins (haversine) : de quoi trouver le point le plus proche d'un seuil. */
+  /** Distance orthodromique en milles marins entre deux { lat, lon } : de quoi trouver le point le plus proche d'un seuil. La formule n'est écrite qu'UNE fois, dans aerodb.js (distNm) : aerodb.js la donne à
+   *  cette bibliothèque (`setDistance`) quand il la charge, ou au démarrage si elle est déjà là (SOG-0468 (4)). */
+  let distNm = null;
   const gcNm = (a, b) => {
-    const r = Math.PI / 180,
-      h = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2;
-    return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
+    if (!distNm) throw new Error('AeroDBProcedures : la distance n\'est pas fournie (setDistance, par aerodb.js)');
+    return distNm([a.lat, a.lon], [b.lat, b.lon]);
   };
   const placedPt = p => p && num(p.lat) !== null && num(p.lon) !== null;
 
@@ -311,9 +312,8 @@
       la2 = b.lat * rad,
       dl = (b.lon - a.lon) * rad,
       y = Math.sin(dl) * Math.cos(la2),
-      x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl),
-      h = Math.sin((la2 - la1) / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dl / 2) ** 2;
-    return [(Math.atan2(y, x) / rad + 360) % 360, 2 * R_NM * Math.asin(Math.sqrt(h))];
+      x = Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dl);
+    return [(Math.atan2(y, x) / rad + 360) % 360, gcNm(a, b)];
   };
   const destination = (a, bearing, nm) => {
     const rad = Math.PI / 180,
@@ -359,6 +359,9 @@
   const pathOf = points => arr(points).filter(p => p && Number.isFinite(p.lat) && Number.isFinite(p.lon));
 
   window.AeroDBProcedures = {
+    setDistance: fn => {
+      if (typeof fn === 'function') distNm = fn;
+    },
     fixesOf,
     pathOf,
     developArc,

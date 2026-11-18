@@ -17560,3 +17560,14 @@ def k374(c):
     except AttributeError:
         wrote = False
     c.eq((wrote, RF.aliases('UL607') & {'UL607', 'Z'}, 'UL607' in RF.aliases('UL607'), RF.aliases('SID1A') | {'Q'}), (False, frozenset({'UL607'}), True, frozenset({'SID1A', 'SID', 'Q'})), 'the set cannot be written to; reading it (in, &, |) works as with a set', what='read only')
+
+
+@case('K375', 'aerodb (SOG-0468 (4)): the great-circle distance is written ONCE in the aerodb scripts — `distNm` of aerodb.js; procedures.js receives it (`setDistance`, at the load of the library by aerodb.js or at the start of aerodb.js when the library is already there) and no longer writes the haversine formula (neither `gcNm` nor the distance of `bearingNm`)',
+      'K', static=True,
+      rule='SOG-0468 (4) (the relay chose (c): one function in aerodb.js passed to procedures.js, in these two files only; no classic script more at V3 Frame). The scripts are classic (window.*): they cannot import the ES module frame/lib/geo.js. Measured in node on 20 000 random arcs: the development of an arc (radius, sweep, arc length, points) differs from the former one by 4e-12 at most (the rounding of `(b - a) * r` against `b * r - a * r`), the gaps and the number of points never. The case reads the sources; the pages of test/ play the behaviour in the browser.')
+def k375(c):
+    import re
+    src = (c.root / 'frame' / 'aerodb' / 'procedures.js').read_text(encoding='utf-8')
+    host = (c.root / 'frame' / 'aerodb' / 'aerodb.js').read_text(encoding='utf-8')
+    c.eq((len(re.findall(r'Math\.sqrt\(h\)', src)), 'setDistance' in src, 'gcNm(a, b)' in src), (0, True, True), 'procedures.js: no haversine any more (no « Math.sqrt(h) »), the distance is given by setDistance, bearingNm takes its distance from gcNm', what='procedures')
+    c.eq((len(re.findall(r'2 \* 3440\.065 \* Math\.asin', host)), len(re.findall(r'setDistance\(distNm\)', host))), (1, 3), 'aerodb.js: the formula once (distNm) and three gifts of it to the library (at the start, at the load by procLib, at the load by procedureFromOfp)', what='aerodb')

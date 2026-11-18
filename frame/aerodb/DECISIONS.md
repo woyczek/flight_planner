@@ -3706,3 +3706,8 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Done**: `aliases` memoized (K374). **Dropped after measure**: the index « alias → names » for `engine.airway_portion` (it already keeps its result per (airway, p, q) and its graph per airway) and the list of identifiers with « / » (`engine.keys_of`: it runs only for an identifier written as a coordinate, a NAT point, and does not appear in the profile).
 - **Left**: item 4 of the survey (the JavaScript copies of the distance: `aerodb` and `procedures` → `frame/lib/geo.js`).
+
+## 19 November 2026 — SOG-0468 (4): one distance in the aerodb scripts
+
+- **Decided** (the relay, choice (c)): one function in `aerodb.js`, passed to `procedures.js`; nothing in `index.html`, `sw.js` or the test pages (the files of V3 Frame stay as they are). `procedures.js` throws if it is used without a distance (it never falls back on a second copy). `aar.js` (kilometres, another radius) and the radius constant of `destination` are not the formula: left.
+- **Not played here**: the pages `frame/aerodb/test/procedures.html` and `perf_procedures.html` (the browser): to replay by Essais.

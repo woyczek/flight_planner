@@ -175,6 +175,8 @@
       h = Math.sin((b[0] - a[0]) * r / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin((b[1] - a[1]) * r / 2) ** 2;
     return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
   };
+  // La bibliothèque des procédures n'écrit pas la formule : elle reçoit celle-ci (SOG-0468 (4)) ; déjà chargée (une page d'essai), elle la reçoit maintenant.
+  if (window.AeroDBProcedures) window.AeroDBProcedures.setDistance(distNm);
   /** Distance (NM) d'un point [lat, lon] au cadre [ouest, sud, est, nord] d'une zone (0 dedans). */
   const boxDistNm = (p, box) => !box ? 0 : distNm(p, [Math.min(Math.max(p[0], box[1]), box[3]), Math.min(Math.max(p[1], box[0]), box[
     2])]);
@@ -902,7 +904,10 @@
       cycleMemo.set(key, e);
       return e.p;
     };
-    const procLib = () => loadOwn('procedures.js', 'AeroDBProcedures').then(() => window.AeroDBProcedures);
+    const procLib = () => loadOwn('procedures.js', 'AeroDBProcedures').then(() => {
+      window.AeroDBProcedures.setDistance(distNm);
+      return window.AeroDBProcedures;
+    });
     /** Date ISO 8601 en UTC, à la seconde (« 2026-10-28T10:00:00Z »), d'une date lue dans un fichier ; null si illisible. */
     const isoUtc = v => {
       const t = typeof v === 'string' ? Date.parse(v) : NaN;
@@ -3222,6 +3227,7 @@
        *  n'est écrit : c'est la procédure du vol courant. */
       async procedureFromOfp(ofp) {
         await loadOwn('procedures.js', 'AeroDBProcedures');
+        window.AeroDBProcedures.setDistance(distNm);
         return window.AeroDBProcedures.fromOfp(ofp);
       },
       /** Garde la SID et la STAR d'un OFP dans proc-seen/<OACI>.json (synchronisé avec le dépôt privé, source secondaire) ;
