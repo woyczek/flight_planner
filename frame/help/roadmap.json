@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3e2e89e",
-  "fiches": 468,
+  "organisation": "150de10",
+  "fiches": 472,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3001,6 +3001,27 @@
    ]
   },
   {
+   "id": "pilote-routes-atlantique-robustesse",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; Atlantique ; robustesse",
+    "en": "Routes ; Atlantique ; robustesse",
+    "de": "Routes ; Atlantique ; robustesse",
+    "es": "Routes ; Atlantique ; robustesse"
+   },
+   "items": [
+    {
+     "id": "SOG-0470",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes NAT : deux défauts trouvés à la relecture de sécurité (une erreur sur un fichier NAT mal formé ; des relances sans espacement)",
+     "en": "NAT tracks: two defects found by the security review (an error on a malformed NAT file; reloads with no spacing)",
+     "de": "NAT-Routen: zwei Fehler aus der Sicherheitsprüfung (Absturz bei fehlerhafter NAT-Datei; Neuladen ohne Abstand)",
+     "es": "Rutas NAT: dos defectos hallados en la revisión de seguridad (un error con un archivo NAT mal formado; recargas sin espaciar)"
+    }
+   ]
+  },
+  {
    "id": "pilote-routes-fiabilite-europe",
    "app": "pilote",
    "label": {
@@ -3891,6 +3912,15 @@
      "en": "Mission workshop: building blocks only at “＋ Drawer”, the sequence as a vertical list, less secondary text",
      "de": "Missionswerkstatt: Bausteine nur bei „＋ Schublade“, der Ablauf als senkrechte Liste, weniger Nebentext",
      "es": "Taller de misiones: los bloques solo en «＋ Cajón», la secuencia en vertical, menos texto secundario"
+    },
+    {
+     "id": "SOG-0472",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : « Lieux » en tête de la colonne de droite, dans un cadre, avec une liste défilante où l'on choisit",
+     "en": "Mission workshop: “Places” at the top of the right column, framed, with a scrolling list to pick from",
+     "de": "Missionswerkstatt: „Orte“ oben in der rechten Spalte, im Rahmen, mit einer rollenden Auswahlliste",
+     "es": "Taller de misiones: «Lugares» arriba de la columna derecha, enmarcado, con una lista desplazable para elegir"
     }
    ]
   },
@@ -3912,6 +3942,15 @@
      "en": "Mission workshop: no map at all on a mission whose places have no position (airfields written in lower case)",
      "de": "Missionswerkstatt: gar keine Karte bei einer Mission, deren Orte keine Position haben (Flugplätze kleingeschrieben)",
      "es": "Taller de misiones: ningún mapa en una misión cuyos lugares no tienen posición (aeródromos escritos en minúsculas)"
+    },
+    {
+     "id": "SOG-0471",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : des icônes pour les outils et les fonds, la zone ronde ou en contour au choix, un troisième fond avec les noms",
+     "en": "Mission workshop: icons for tools and backgrounds, round or outlined area by choice, a third background with names",
+     "de": "Missionswerkstatt: Symbole für Werkzeuge und Hintergründe, Gebiet rund oder als Umriss, ein dritter Hintergrund mit Namen",
+     "es": "Taller de misiones: iconos para herramientas y fondos, zona redonda o con contorno a elegir, un tercer fondo con nombres"
     }
    ]
   },
@@ -4971,7 +5010,7 @@
     {
      "id": "SOG-0267",
      "kind": "bug",
-     "state": "later",
+     "state": "done",
      "fr": "« Module roadmap impossible à charger » : dire la cause (le lanceur ne répond plus) et ce qu'il faut faire",
      "en": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
      "de": "“Module roadmap could not be loaded”: say the cause (the launcher no longer answers) and what to do",
@@ -6879,6 +6918,15 @@
      "es": "Ajustes en el teléfono: la página sube sola durante la sincronización",
      "rank": 363,
      "test": true
+    },
+    {
+     "id": "SOG-0473",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages : cocher certaines cases décale l'écran, et le second clic arrive n'importe où",
+     "en": "Settings: ticking some boxes shifts the screen, and the second click lands anywhere",
+     "de": "Einstellungen: Manche Kästchen verschieben den Bildschirm, der zweite Klick landet irgendwo",
+     "es": "Ajustes: al marcar ciertas casillas la pantalla se desplaza y el segundo clic cae en cualquier sitio"
     }
    ]
   },
