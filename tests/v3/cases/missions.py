@@ -5790,7 +5790,7 @@ _PV_SEARCH_JS = """async () => { const MS = await import('/frame/lib/mission.js'
     rendezvous: [{ id: 'RDV-1', name: 'Secours au sol', lat: 45.33, lon: 1.44 }],
     zones: [{ id: 'ZONE-1', name: 'Vallee', centre: { lat: 45.25, lon: 1.3 }, radius_km: 6 }, { id: 'ZONE-2', name: 'Moraine', centre: { lat: 45.31, lon: 1.42 }, radius_km: 2 }],
     route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
-    phases: [{ id: 'B', title: 'La vallee', trigger_zone: 'ZONE-1', fallback_delay_min: 30, route_order: ['PT2'] },
+    phases: [{ id: 'B', title: 'La vallee', trigger_zone: 'ZONE-1', zone_shown: true, fallback_delay_min: 30, route_order: ['PT2'] },
       { id: 'C', title: 'Le glacier', trigger_zone: 'ZONE-2', zone_shown: false, fallback_delay_min: 60, route_order: ['TARGET', 'RDV-1'] }] };
   const m = MS.readMission(doc), before = JSON.stringify(m), F = SE.missionFields(m), find = w => SE.where(F, SE.fold(w));
   const plain = MS.readMission({ ...doc, phases: undefined }), P = SE.missionFields(plain);
@@ -5806,7 +5806,8 @@ _PV_SEARCH_JS = """async () => { const MS = await import('/frame/lib/mission.js'
       'not touched', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0448 (Features SOG, 18 Nov 2026: the search index read the whole mission, closed drawers included; the ergonomist: « une '
       'vraie fuite » — the index reads pilotView(m, []), for every mission, no following of the openings per device in this version: a '
-      'word of a drawer already open does not find the mission, said in modules/missions/DECISIONS.md); an invented mission (N103)')
+      'word of a drawer already open does not find the mission, said in modules/missions/DECISIONS.md); an invented mission (N103), its '
+      'drawer B written « zone_shown: true » (SOG-0459: a key absent means hidden) so that « vallee » is a place of the visible part')
 def n32(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     r = c.js(_PV_SEARCH_JS)
