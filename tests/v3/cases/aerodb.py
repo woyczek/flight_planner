@@ -16358,7 +16358,7 @@ def k356(c):
                 (cd / n).write_text('\n'.join(lines) + '\n', encoding='utf-8')
             post = lambda body, lan=False: (lambda f: (L.Setup._post_xplane(f, '/__setup/xplane', json.dumps(body).encode() if not isinstance(body, bytes) else body), f.out[-1])[1])(Fake(lan))
             get = lambda lan=False: (lambda f: (L.Setup._get_xplane(f, '/__setup/xplane'), f.out[-1])[1])(Fake(lan))
-            c.eq(get(), (200, {'ok': True, 'configured': False, 'state': None, 'cycle': None, 'zones': None}), 'without a configuration: not configured, no state', what='get none')
+            c.eq(get(), (200, {'ok': True, 'configured': False, 'state': None, 'cycle': None, 'zones': None, 'built': None}), 'without a configuration: not configured, no state, no network built', what='get none')
             c.eq((post({'path': str(xp)}, lan=True)[0], get(lan=True)[0]), (403, 403), 'a device of the local network (or the relay): 403 for the read and the write', what='lan')
             c.eq(post({'path': str(xp)}), (403, {'ok': False, 'reason': 'not-personal'}), 'without the personal tick of the LAUNCHER: not-personal', what='not personal')
             PU.write(td, True, False)
@@ -16368,7 +16368,7 @@ def k356(c):
             c.eq(said, [], 'a refusal says nothing on the console', what='silent')
             code, out = post({'path': str(xp)})
             c.eq((code, out, said), (200, {'ok': True, 'configured': True, 'state': 'ok', 'cycle': '2610'}, ['X-Plane : dossier enregistré']), 'the folder is accepted: the state, the cycle of the header, one line on the console WITHOUT the folder', what='ok')
-            c.eq(get(), (200, {'ok': True, 'configured': True, 'state': 'ok', 'cycle': '2610', 'zones': None}), 'GET gives the state and the cycle, never the path; no network built yet', what='get ok')
+            c.eq(get(), (200, {'ok': True, 'configured': True, 'state': 'ok', 'cycle': '2610', 'zones': None, 'built': None}), 'GET gives the state and the cycle of the FOLDER, never the path; no network built yet (`built` null)', what='get ok')
             texts = json.dumps([get(), said, out])
             c.ok('My XPlane' not in texts and str(td) not in texts, 'no name', 'the name of the folder of the user is in no answer and no line of the console')
             # the verb
@@ -16390,7 +16390,7 @@ def k356(c):
             c.eq((res['ok'], res['zones'], res['cycle'], res['counts']), (True, 1, '2610', {'ba': {'points': 3, 'airways': 2}}), 'only Bosnia (no official network in the base) is built; France (25 segments) is not; the cycle is the one of the header', what='verb ok')
             written = sorted(p.name for p in (data / 'local' / 'xplane').iterdir())
             c.eq(written, ['net_2610.json'], 'the verb writes ONE file, data/local/xplane/net_<cycle>.json, nothing else', what='files')
-            c.eq(get()[1]['zones'], 1, 'GET now says how many zones the fallback network covers', what='zones')
+            c.eq((get()[1]['zones'], get()[1]['built']), (1, '2610'), 'GET now says how many zones the fallback network covers and the cycle of the network BUILT (`built`: the screen compares it with `cycle`, that of the folder, to decide to build again)', what='zones')
             for n in ('earth_awy.dat',):
                 (cd / n).unlink()
             c.eq(fn(job, {}, ctx), {'ok': False, 'reason': 'not-xplane'}, 'a folder that lost one of the files: not-xplane', what='lost file')

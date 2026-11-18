@@ -272,15 +272,16 @@ def net_of(data):
 
 
 def status(data):
-    """{ configured, state ('ok' | 'missing' | 'not-xplane' | 'unreadable' | None), cycle ('2610' | None), zones (nombre | None) } : l'état est RECALCULÉ (le dossier est revalidé), jamais le chemin."""
+    """{ configured, state ('ok' | 'missing' | 'not-xplane' | 'unreadable' | None), cycle ('2610' | None : celui du DOSSIER), zones (nombre | None), built ('2610' | None : le cycle du réseau CONSTRUIT, data/local/xplane/net_*.json) } : l'état est RECALCULÉ (le dossier est revalidé), jamais le chemin."""
     path = config_read(data)
     net = net_of(data)
     zones = len(net['zones']) if net else None
+    built = net.get('cycle') if net and isinstance(net.get('cycle'), str) and re.fullmatch(r'\d{4}', net['cycle']) else None      # SOG-0474 : la page compare le cycle du dossier à celui du réseau en place pour décider de relancer ; une valeur qui n'a pas la forme d'un cycle (« 2610 ») n'est pas rendue
     if not path:
-        return {'configured': False, 'state': None, 'cycle': None, 'zones': zones}
+        return {'configured': False, 'state': None, 'cycle': None, 'zones': zones, 'built': built}
     ok, why = check_folder(path)
     state = 'ok' if ok else 'not-xplane' if why == 'no-files' else 'missing' if why == 'missing' else 'unreadable'
-    return {'configured': True, 'state': state, 'cycle': (read_cycle(path) or None) if ok else None, 'zones': zones}
+    return {'configured': True, 'state': state, 'cycle': (read_cycle(path) or None) if ok else None, 'zones': zones, 'built': built}
 
 
 def set_path(data, path, certified):
