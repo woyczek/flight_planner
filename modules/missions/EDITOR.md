@@ -603,6 +603,25 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   never undoes what was done in a sheet.
 - **Not done**: reordering the chips of a route (remove and add again); the landmarks of AeroDB (next), « Poser l'avion ici ».
 
+### 7 octodecies. P2: the landmarks of the aeronautical base (18 Nov 2026; SOG-0444 lot P2; noreg N100)
+
+- **The map shows the landmarks of AeroDB in the frame of the view** — aerodromes, beacons, fixes, VFR points — on the reference
+  layer of the editing base (`referenceLayer`, under the author's elements, small dots, from zoom 7: the base's threshold). When the
+  view stops (`moveend`, 300 ms later, zoom 7 and beyond, a frame that changed), `editor_map.js` tells the screen (`onView`); the
+  screen asks the suite's base (`ctx.aerodb.aerodromes`, `navaids`, `points`, `vrp` of the bounding box) and gives the answer back
+  through `setRefs`. A late answer (the view moved, the workshop was left) is dropped; without a base, no landmark and no message.
+  **Nothing is fetched from the network by this**: the base is the one the device already holds.
+- **What the base returns is bounded** (`refData`, pure): an identifier of 24 signs at most and a position within bounds, 300 per
+  kind; nothing else is kept. An identifier is shown by `textContent` in the line of the tool only.
+- **A landmark touched says what it is** — « Repère : la balise TSV. », « le terrain », « le point », « le point VFR » — in the line
+  of the tool, is marked on the map, and **« Ajouter comme point »** is shown beside the line. **The touch creates nothing.** The
+  button makes of it a turning point of the mission (`newPlace`: a free identifier), at its position, under its name; it is a gesture
+  of the map (« Annuler le geste » gives it back). A touch on the bare map, a place chosen, a tool taken forget the landmark.
+- In Sélection only: with a tool of pose in hand, a touch on a landmark poses as anywhere else; an element of the author under the
+  finger wins; a line (the route, the trail) does not hide a landmark.
+- **On a phone**, a mission of 150 km is framed under zoom 7: the landmarks only come when the author gets closer.
+- **Not done**: « Radiale et distance… » for a beacon; the names of the landmarks on the map (they are said when touched).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

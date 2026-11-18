@@ -22,6 +22,9 @@
 // Tracé (push 3b) : la route du départ en pastilles sous la liste des Lieux (s.ed.route : ses identifiants retouchés, ED.withRoute dans
 // edDoc) ; l'outil « Tracé » de la carte ajoute le lieu touché à la route choisie — celle du départ, ou la suite de route du tiroir
 // choisi dans le déroulé — et reste en main ; la suite de route du tiroir choisi est dessinée sur la carte.
+// Les repères de la base aéronautique : quand la vue s'arrête (au zoom 7 et au-delà), l'écran demande à ctx.aerodb les aérodromes,
+// balises, points et points VFR du cadre et les rend à la carte (EM.refData les borne) ; un repère touché en Sélection (s.ed.mapRef)
+// dit ce qu'il est dans la ligne et « Ajouter comme point » se montre à côté — le toucher ne crée rien.
 //
 // L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (lot P1 : le croquis des
 // lieux, sans outil) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
@@ -624,6 +627,10 @@ const edMapVertex = e => {
   const r = (e.places || [])[edMapSel(e)];
   return r?.kind === 'zone' && r.ring && Number.isInteger(e.mapVertex) && e.mapVertex >= 0 && e.mapVertex < r.poly ? e.mapVertex : -1;
 };
+/** Le repère de la base touché sur la carte (s.ed.mapRef : { id, kind, lat, lon }), en Sélection et sans lieu choisi ; null sinon. */
+const edMapRef = e => edMapTool(e) === 'select' && edMapSel(e) < 0 && e.mapRef && ['aerodrome', 'navaid', 'fix', 'vrp'].includes(e.mapRef
+    .kind) ? e
+  .mapRef : null;
 /** Le tiroir pour lequel on pose une zone ou un objet sur la carte (« Dessiner sur la carte », s.ed.drawFor : sa lettre) : sa ligne
  *  avec son rang, ou null. */
 const edDrawFor = e => {
@@ -649,6 +656,9 @@ function edMapHint(s) {
     n: edSelDrawer(e).rank
   }) : s.tt(EDTX.atHint_route);
   if (tool !== 'select') return s.tt(EDTX[`atHint_${tool}`]);
+  if (!r && edMapRef(e)) return s.tt(EDTX[`atRef_${edMapRef(e).kind}`], {
+    id: edMapRef(e).id
+  });
   if (!r) return s.tt(EDTX.atHint_select);
   if (r.kind === 'zone' && r.ring) return edMapVertex(e) >= 0 ? s.tt(EDTX.atHint_vertex, {
     k: edMapVertex(e) + 1,
@@ -674,7 +684,7 @@ function edMapHtml(s, doc, run = null) {
     off = !live || tool === 'view',
     btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
 }
 
 /** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
@@ -747,8 +757,10 @@ function edMapShow(s) {
         if (t) b.setAttribute('aria-pressed', String(tool === t));
       }
       if (hint && hint.textContent !== text) hint.textContent = text;
-      const del = q('[data-vertexdel]');
+      const del = q('[data-vertexdel]'),
+        add = q('[data-refadd]');
       if (del) del.hidden = !(edMapVertex(e) >= 0 && tool === 'select');
+      if (add) add.hidden = !edMapRef(e);
     };
   if (!slot || !e.mapFeats) return mark();
   e.mapLook ||= edMapLook(s);
@@ -759,6 +771,7 @@ function edMapShow(s) {
     mode: edMapTool(e),
     sel: edMapSel(e),
     selLabel: edPlaceName((e.places || [])[edMapSel(e)]),
+    ref: edMapRef(e),
     onPick: i => edMapPick(s, e, i),
     onMove: m => edMapGesture(s, e, rows => ED.movePlace(rows, m.i, m), m.i),
     onRadius: m => edMapGesture(s, e, rows => ED.placeRadius(rows, m.i, m.km), m.i),
@@ -767,10 +780,52 @@ function edMapShow(s) {
     onVertexPick: m => edMapVertexPick(s, e, m),
     onPose: p => edMapPose(s, e, p),
     onRoute: i => edMapRoute(s, e, i),
+    onView: v => edMapRefsAsk(s, e, v),
+    onRef: r => edMapRefPick(s, e, r),
     onState: () => state() === s && s.ed === e && mark(),
     alive: () => state() === s && s.ed === e
   });
   mark();
+}
+
+/** Les repères de la base aéronautique du cadre de la vue (la vue vient de s'arrêter, au zoom des repères) : demandés à la base de la
+ *  suite (ctx.aerodb : aérodromes, balises, points, points VFR), bornés (EM.refData), puis rendus à la carte. Une réponse en retard
+ *  (la vue a bougé depuis, l'atelier est quitté) est jetée ; sans base, ou si elle ne répond pas : pas de repère, sans message. */
+function edMapRefsAsk(s, e, v) {
+  const a = s.ctx.aerodb;
+  if (!a || state() !== s || s.ed !== e || !Array.isArray(v?.bbox) || v.bbox.length !== 4) return;
+  const tok = e.refTok = (e.refTok || 0) + 1,
+    ask = (f, extra = {}) => typeof a[f] === 'function' ? Promise.resolve().then(() => a[f]({
+      bbox: v.bbox,
+      ...extra
+    })).catch(() => []) : Promise.resolve([]);
+  Promise.all([ask('aerodromes'), ask('navaids'), ask('points'), ask('vrp')]).then(([aerodromes, navaids, points, vrp]) => {
+    if (state() !== s || s.ed !== e || tok !== e.refTok) return;
+    EM.setRefs(e, EM.refData({
+      aerodromes,
+      navaids,
+      points,
+      vrp
+    }));
+  });
+}
+
+/** Un repère de la base touché en Sélection : il dit ce qu'il est dans la ligne de l'outil et « Ajouter comme point » se montre à
+ *  côté ; LE TOUCHER NE CRÉE RIEN. Plus aucun lieu n'est choisi. Sur place. */
+function edMapRefPick(s, e, r) {
+  if (state() !== s || s.ed !== e || e.trial?.on || !r) return;
+  e.mapRef = {
+    id: String(r.id || '').slice(0, 24),
+    kind: r.kind,
+    lat: r.lat,
+    lon: r.lon
+  };
+  e.mapVertex = -1;
+  if (edMapSel(e) >= 0) {
+    e.mapSel = -1;
+    return edRefresh(s);
+  }
+  edMapShow(s);
 }
 
 /** Un lieu ajouté à la fin de la route du départ (son jeton : « ORIGIN », « DESTINATION » ou son identifiant) ; soixante au plus :
@@ -832,10 +887,12 @@ function edPlaces(e) {
  *  départ, le groupe « Lieux », la ligne en vue. La carte nue ne choisit plus rien (sur place). Une carte d'une autre séance : rien. */
 function edMapPick(s, e, i) {
   if (state() !== s || s.ed !== e || e.trial?.on) return;
+  const hadRef = !!e.mapRef;
+  e.mapRef = null; // un lieu choisi, ou la carte nue : plus de repère touché
   const rows = edPlaces(e);
   e.mapVertex = -1;
   if (!Number.isInteger(i) || !rows[i]) {
-    if (edMapSel(e) < 0) return;
+    if (edMapSel(e) < 0) return hadRef ? edMapShow(s) : undefined;
     e.mapSel = -1;
     return edRefresh(s);
   }
@@ -1606,6 +1663,7 @@ async function edSave(s) {
       route: null,
       // la carte : plus de lieu choisi, plus de geste à annuler (un état d'avant désignerait les rangs de l'ancien fichier)
       mapSel: -1,
+      mapRef: null,
       mapVertex: -1,
       mapUndo: null,
       tool: 'select',
@@ -1784,7 +1842,27 @@ function edClickDo(s, b) {
     case 'edtool': // un outil de la carte pris en main : sur place (le bouton pressé n'est pas redessiné) ; le même outil repris le lâche
       s.ed.tool = ['point', 'route', 'zone', 'object'].includes(b.dataset.tool) && s.ed.tool !== b.dataset.tool ? b.dataset.tool : 'select';
       s.ed.drawFor = ''; // un outil pris à la main ne pose plus pour un tiroir
+      s.ed.mapRef = null;
       return edMapShow(s);
+    case 'edrefadd': { // « Ajouter comme point » : le repère touché devient un point tournant de la mission, à sa position, sous son nom
+      const e = s.ed,
+        r = edMapRef(e);
+      if (!r) return edMapShow(s);
+      const made = ED.newPlace(edPlaces(e), 'pt', e.base, {
+        lat: r.lat,
+        lon: r.lon
+      });
+      if (!made) {
+        s.ctx.notify?.(s.tt(EDTX.atPoseFull), 'warn');
+        return edMapShow(s);
+      }
+      edMapRemember(e);
+      e.places = made.rows.map((x, k) => k === made.at ? {
+        ...x,
+        name: r.id
+      } : x);
+      return edMapPick(s, e, made.at);
+    }
     case 'eddrdraw': { // « Dessiner sur la carte » (une zone) ou « Poser sur la carte » (un objet) depuis la fiche d'un tiroir : l'outil
       // en main, la carte dépliée ; ce qui sera posé deviendra la clé de ce tiroir
       const e = s.ed,

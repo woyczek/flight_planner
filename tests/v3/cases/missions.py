@@ -5002,3 +5002,104 @@ def n99(c):
     c.shot('N99_390_route.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+_EDREFS = "(() => { const m = window.__edMap; return m ? [...new Set(m.queryRenderedFeatures().filter(x => x.layer.id.startsWith('me-ref-')).map(x => x.properties.rid))].sort() : null })()"
+_REFDATA_JS = """async () => { const EM = await import('/modules/missions/editor_map.js'); let threw = '';
+  for (const h of [null, 'x', 7, [], { navaids: 'x', points: [null, 7, 'x', { id: {}, lat: 1, lon: 1 }, { id: 'A', lat: {}, lon: [] }] }]) try { EM.refData(h) } catch (e) { threw += String(e) }
+  const d = EM.refData({ aerodromes: [{ icao: 'LFZZ', name: 'TEST', lat: 44.25, lon: 1.7, elev: 100 }, { icao: 'BAD', lat: 91, lon: 1 }],
+    navaids: [{ id: 'TSV', lat: '44.3', lon: 1.3, type: 'VOR' }, null, { id: {}, lat: 1, lon: 1 }], points: Array.from({ length: 900 }, (_, n) => ({ id: 'P' + n, lat: 1, lon: 1 })),
+    vrp: [{ name: 'N'.repeat(40), lat: 1, lon: 1 }, { id: '', lat: 1, lon: 1 }] });
+  return { d: [d.aerodromes, d.navaids, d.points.length, d.vrp.map(v => v.id.length)], empty: EM.refData(null), threw } }"""
+
+
+@case('N100', 'Missions › the workshop, the landmarks of the aeronautical base: the map shows the aerodromes, the beacons and the fixes of the '
+      'base in the frame of the view, under the elements of the author; a landmark touched says what it is in the line of the tool and '
+      '« Ajouter comme point » is offered beside it — THE TOUCH CREATES NOTHING; the button makes of it a turning point of the mission, at '
+      'its position, under its name (a gesture of the map: it can be undone); a touch on the bare map forgets the landmark; with a tool '
+      'of pose in hand, a touch on a landmark poses as anywhere else; what the base returns is bounded',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, the landmarks (modules/missions/EDITOR.md § 2: « A landmark of AeroDB touched says what it is and offers '
+      'Ajouter comme point: touching it creates nothing », § 7 octodecies; modules/maps/INTEGRATION.md § 7 bis: `referenceLayer`; '
+      'frame/aerodb: `aerodromes`, `navaids`, `points`, `vrp` of a bounding box)')
+def n100(c):
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    add = lambda: c.js(f"document.querySelector('{_EDMAP} [data-refadd]').hidden")  # noqa: E731
+    near = lambda v, x: v is not None and abs(float(v) - x) < 0.02  # noqa: E731
+    # what the base returns is bounded before it reaches the map
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_REFDATA_JS)
+    c.eq([r['d'], r['empty'], r['threw']], [[[{'icao': 'LFZZ', 'lat': 44.25, 'lon': 1.7}], [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3}], 300, [24]],
+                                            {'aerodromes': [], 'navaids': [], 'points': [], 'vrp': []}, ''],
+         'the landmarks kept for the map: an identifier (24 signs) and a position within bounds, 300 per kind; a latitude of 91, an identifier that is not a text: not kept; '
+         'no hostile answer throws', what='the landmarks bounded')
+    # the registry, the mission, and a small published base: a beacon, a fix and an aerodrome near the mission
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _TRIAL_TEXTS)
+    c.open('missions', wait=False, app='company', aero_extra={
+        'navaids': [{'id': 'TSV', 'lat': 44.3, 'lon': 1.3, 'type': 'VOR', 'name': 'TESTVILLE'}],
+        'points': [{'id': 'NEPIX', 'lat': 44.7, 'lon': 1.75, 'type': 'RNAV'}],
+        'aerodromes': [{'icao': 'LFZZ', 'name': 'ZZ TEST', 'lat': 44.25, 'lon': 1.7, 'elev': 100}]})
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"JSON.stringify({_EDREFS}) === '[\"LFZZ\",\"NEPIX\",\"TSV\"]'", timeout=15000, what='the landmarks of the base on the map')
+    c.eq(hint(), T('atHint_select'), 'the landmarks are shown; nothing is chosen', what='the line')
+    # a landmark touched says what it is; the touch creates nothing (the Lieux are unfolded, to count their rows)
+    c.tap(f'{E} [data-do="edstep"][data-step="places"]')
+    c.until(f"({_EDPLACE_IDS}).length === 7", what='the seven places of the mission listed')
+    n = len(c.js(_EDPLACE_IDS))
+    c.ok(add() is True, add(), '« Ajouter comme point » is not shown while no landmark is touched')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.3, 1.3]))
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched')
+    c.eq([hint(), norm(c.text(f'{_EDMAP} [data-refadd]')), len(c.js(_EDPLACE_IDS)), c.js(_EDSEL)], [T('atRef_navaid', id='TSV'), T('atRefAdd'), n, None],
+         'the beacon touched says what it is, « Ajouter comme point » is offered — and no place was created by the touch', what='a landmark touched')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N100_1280_landmark.png')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.25, 1.7]))
+    c.until(f"document.querySelector('{_EDMAP} [data-maphint]').textContent.includes('LFZZ')", timeout=8000, what='the aerodrome touched')
+    c.eq(hint(), T('atRef_aerodrome', id='LFZZ'), 'an aerodrome of the base says it is one', what='an aerodrome touched')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.15, 1.15]))
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === true", timeout=8000, what='the landmark forgotten')
+    c.eq([hint(), len(c.js(_EDPLACE_IDS))], [T('atHint_select'), n], 'a touch on the bare map forgets the landmark; still nothing created', what='the bare map')
+    # « Ajouter comme point »: a turning point at its position, under its name; a gesture of the map
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.3, 1.3]))
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched again')
+    c.tap(f'{_EDMAP} [data-refadd]')
+    c.until(f"{_EDSEL} === 'PT3 · TSV'", timeout=8000, what='PT3 created from the beacon and chosen')
+    c.ok(near(c.js(_EDPLACE_VAL, [6, 'lat']), 44.3) and near(c.js(_EDPLACE_VAL, [6, 'lon']), 1.3) and c.js(_EDPLACE_VAL, [6, 'name']) == 'TSV' and len(c.js(_EDPLACE_IDS)) == n + 1
+         and add() is True and c.js(_EDTOOL_STATE)[5] == ['edmapundo', None, False], [c.js(_EDPLACE_VAL, [6, 'name']), c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDTOOL_STATE)[5]],
+         '« Ajouter comme point » made a turning point of the mission at the position of the beacon, under its name; its row is open; the gesture can be undone')
+    c.tap(f'{_EDTOOLS} [data-do="edmapundo"]')
+    c.until(f"({_EDPLACE_IDS}).length === {n}", timeout=8000, what='the point undone')
+    # with a tool of pose in hand, a touch on a landmark poses as anywhere else
+    c.tap(f'{_EDTOOLS} [data-tool="point"]')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.7, 1.75]))
+    c.until(f"{_EDSEL} === 'PT3'", timeout=8000, what='a point posed on a landmark')
+    c.ok(near(c.js(_EDPLACE_VAL, [6, 'lat']), 44.7) and c.js(_EDPLACE_VAL, [6, 'name']) == '' and add() is True, [c.js(_EDPLACE_VAL, [6, 'lat']), c.js(_EDPLACE_VAL, [6, 'name'])],
+         'with « Point » in hand, a touch on a landmark poses a point there, as anywhere else (no name taken): the tool decides')
+    # on a phone
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    # the frame of a wide mission on a phone is under the zoom of the landmarks (7): they are neither shown nor asked for; closer, they come
+    c.ok(c.js("window.__edMap.getZoom()") < 7 and c.js(_EDREFS) == [], [c.js("window.__edMap.getZoom()"), c.js(_EDREFS)],
+         'on a phone the whole mission is framed under zoom 7: no landmark is shown')
+    c.js("window.__edMap.jumpTo({ center: [1.35, 44.35], zoom: 8.5 })")
+    c.until(f"({_EDREFS} || []).includes('TSV')", timeout=15000, what='the landmarks on a phone, closer')
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.3, 1.3]))
+    c.until(f"document.querySelector('{_EDMAP} [data-refadd]').hidden === false", timeout=8000, what='the beacon touched on a phone')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N100_390_landmark.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

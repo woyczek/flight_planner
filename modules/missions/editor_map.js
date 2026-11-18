@@ -13,6 +13,9 @@
 //     lieu porte son identifiant écrit sur la carte (un marqueur de MapLibre, pas une police du fond). Tout
 //     passe par le socle d'édition (tapPosition, dragHandles, previewLayer) ; ce fichier ne fait que dire quelles poignées existent
 //     et rendre le geste fini à l'écran (onPick, onMove, onRadius, onPose), qui seul retouche les lignes.
+//   - les REPÈRES de la base aéronautique (aerodromes, balises, points, points VFR du cadre de la vue) : la couche de référence du
+//     socle (referenceLayer), sous les éléments de l'auteur ; refData(listes) les borne ; un repère touché est rendu à l'écran
+//     (onRef), il n'est jamais créé par le toucher.
 //   - la carte EN VIE (une seule : l'atelier d'une mission à la fois) : show(slot, feats, options) la démarre dans un hôte à elle,
 //     gardé d'un dessin à l'autre (l'écran est redessiné par innerHTML : l'hôte est reposé dans l'emplacement neuf), fit() recadre,
 //     focus(i) cadre la vue sur une zone, stop() la retire avec son contexte WebGL. Sans tuiles, un fond uni (MapLibre sur un style local) ; sans MapLibre ni WebGL, ou
@@ -27,6 +30,7 @@ import {
   authorLayers,
   dragHandles,
   previewLayer,
+  referenceLayer,
   tapPosition
 } from '../maps/lib/map_edit.js';
 import * as ED from './editor.js';
@@ -39,7 +43,9 @@ export const MAPB = Object.freeze({
   margin: 0.02,
   wait: 6000,
   waitPlain: 4000,
-  padding: 36
+  padding: 36,
+  refZoom: 7, // les repères de la base ne se montrent et ne se demandent qu'à partir de ce zoom
+  refMax: 300 // par sorte, au plus
 });
 /** Les sortes de lieu qu'une poignée déplace (celles de ED.MOVABLE : ni le départ ni l'arrivée, ni l'avion de l'essai). */
 const MOVABLE = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
@@ -82,6 +88,37 @@ export function circleRing(c, km, n = MAPB.ring) {
     });
   }
   return out;
+}
+
+/** Les repères de la base aéronautique d'un cadre, tels que la couche du socle les prend (referenceLayer : { aerodromes [{ icao, lat,
+ *  lon }], navaids, points, vrp [{ id, lat, lon }] }), bornés : une position dans ses bornes, un identifiant de vingt-quatre signes
+ *  au plus, trois cents par sorte ; le reste de ce que la base rend n'est pas gardé. Pur. */
+export function refData(lists) {
+  const l = lists && typeof lists === 'object' ? lists : {},
+    take = (list, idOf) => {
+      const out = [];
+      for (const x of Array.isArray(list) ? list.slice(0, 5000) : []) {
+        const at = x && typeof x === 'object' ? posOf(x.lat, x.lon) : null,
+          raw = at ? idOf(x) : '',
+          id = typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim().slice(0, 24) : '';
+        if (id && out.length < MAPB.refMax) out.push({
+          id,
+          lat: at.lat,
+          lon: at.lon
+        });
+      }
+      return out;
+    };
+  return {
+    aerodromes: take(l.aerodromes, x => x.icao || x.id).map(a => ({
+      icao: a.id,
+      lat: a.lat,
+      lon: a.lon
+    })),
+    navaids: take(l.navaids, x => x.id),
+    points: take(l.points, x => x.id),
+    vrp: take(l.vrp, x => x.id || x.name)
+  };
 }
 
 /** Le contour d'une ligne de zone : ses sommets ({ lat, lon }), lus bornés par ED.ringOf (3 à 100, tous situés) ; null sans contour
@@ -438,6 +475,60 @@ function done(L, id, moved, at) {
   });
 }
 
+/** Le repère de la base sous un pixel (à dix pixels près) : { id, kind, lat, lon } bornés, ou null — lu des couches de référence du
+ *  socle (« me-ref-… »). */
+function refAt(L, x, y) {
+  let f = null;
+  try {
+    f = L.map.queryRenderedFeatures([
+      [x - 10, y - 10],
+      [x + 10, y + 10]
+    ]).find(q => String(q.layer?.id || '').startsWith('me-ref-'));
+  } catch {
+    return null;
+  }
+  const at = f?.geometry?.type === 'Point' ? posOf(f.geometry.coordinates[1], f.geometry.coordinates[0]) : null,
+    id = String(f?.properties?.rid ?? '').slice(0, 24),
+    kind = ['aerodrome', 'navaid', 'fix', 'vrp'].includes(f?.properties?.kind) ? f.properties.kind : 'fix';
+  return at && id ? {
+    id,
+    kind,
+    lat: at.lat,
+    lon: at.lon
+  } : null;
+}
+
+/** Dit à l'écran le cadre de la vue, au repos (une fois le mouvement fini), à partir du zoom des repères : l'écran demande alors à la
+ *  base aéronautique les repères de ce cadre et les rend par setRefs. */
+function viewed(L) {
+  clearTimeout(L.viewTimer);
+  L.viewTimer = setTimeout(() => {
+    if (LIVE !== L || !L.map) return;
+    let b, zoom;
+    try {
+      b = L.map.getBounds();
+      zoom = L.map.getZoom();
+    } catch {
+      return;
+    }
+    if (zoom < MAPB.refZoom) return;
+    const box = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map(v => +(+v).toFixed(4));
+    if (box.every(Number.isFinite) && JSON.stringify(box) !== L.viewSig) {
+      L.viewSig = JSON.stringify(box);
+      L.cb?.onView?.({
+        bbox: box,
+        zoom
+      });
+    }
+  }, 300);
+}
+
+/** Les repères de la base du cadre de la vue (refData), posés sur la couche de référence du socle : sous les éléments de l'auteur. */
+export function setRefs(owner, data) {
+  if (!LIVE || LIVE.owner !== owner || !LIVE.ref) return;
+  LIVE.ref.update(data || {});
+}
+
 /** Branche les gestes du socle d'édition sur la carte en vie (une fois, au démarrage) : le retour pendant un glisser, le geste fini
  *  rendu à l'écran. Rien n'est retouché ici. */
 function gestures(L, map, o) {
@@ -445,6 +536,13 @@ function gestures(L, map, o) {
   L.pv = previewLayer(map, 'mission', {
     tokens: o.colors?.preview
   });
+  // les repères de la base aéronautique : une couche du socle, sous les éléments de l'auteur ; le toucher passe par tapPosition (refAt)
+  L.ref = referenceLayer(map, {
+    data: {},
+    minzoom: MAPB.refZoom
+  });
+  map.on('moveend', () => viewed(L));
+  viewed(L);
   L.drag = dragHandles(map, L.host, {
     handles: () => handlesOf(L),
     ignore,
@@ -474,9 +572,12 @@ function gestures(L, map, o) {
     ignore,
     onTap: p => {
       if (L.mode === 'select') {
-        // en Sélection : l'élément sous le doigt est choisi (un terrain, un contour, le rond d'une zone) ; la carte nue ne choisit rien
-        const f = L.auth?.at(p.x, p.y);
-        return L.cb?.onPick?.(f ? rankOf(f.id) : -1);
+        // en Sélection : l'élément sous le doigt est choisi (un terrain, un contour, le rond d'une zone) ; sinon un repère de la base
+        // dit ce qu'il est (il n'est pas créé) ; la carte nue ne choisit rien
+        // (un trait — la route, la trace — ne se choisit pas : sous le doigt, il ne masque pas un repère)
+        const i = rankOf(L.auth?.at(p.x, p.y)?.id),
+          r = i < 0 ? refAt(L, p.x, p.y) : null;
+        return r ? L.cb?.onRef?.(r) : L.cb?.onPick?.(i);
       }
       if (L.mode === 'view') return; // pendant un essai des clés la carte ne fait que montrer
       if (L.mode === 'route') {
@@ -589,9 +690,11 @@ async function start(L, o) {
  *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg, preview }), onState(état),
  *  alive() ; mode ('select' : la Sélection ; 'point', 'zone', 'object' : un outil de pose ; 'route' : Tracé — un lieu touché est
  *  rendu par onRoute(rang) ; 'view' : la carte ne fait que montrer),
- *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
+ *  sel (le rang du lieu choisi, -1 sinon), selLabel (son nom), ref (le repère de la base touché, marqué sur la carte) ; les gestes finis : onPick(rang | -1), onMove({ i, lat, lon }),
  *  onRadius({ i, km }), onPose({ lat, lon, spanKm }), et pour un contour onVertex({ i, k, lat, lon }), onInsert({ i, k, lat, lon }),
- *  onVertexPick({ i, k }). Sans élément situé (pas de cadre) : pas de carte. */
+ *  onVertexPick({ i, k }) ; onRoute(rang) en Tracé ; les repères de la base : onView({ bbox, zoom }) quand la vue s'arrête (l'écran
+ *  les demande et les rend par setRefs), onRef({ id, kind, lat, lon }) quand un repère est touché en Sélection. Sans élément situé
+ *  (pas de cadre) : pas de carte. */
 export function show(slot, feats, o) {
   if (LIVE && LIVE.owner !== o.owner) stop();
   if (!slot || !feats?.box) return;
@@ -634,6 +737,14 @@ export function show(slot, feats, o) {
   L.sig = sig;
   L.drag?.refresh(); // un geste dont la poignée a disparu est lâché
   mark(L);
+  // le repère de la base que la ligne de l'outil dit est marqué sur la carte (la marque d'accroche du retour de geste), hors d'un geste
+  const ref = o.ref ? posOf(o.ref.lat, o.ref.lon) : null;
+  if (!L.drag?.dragging?.()) {
+    if (ref) L.pv?.set({
+      snap: ref
+    });
+    else L.pv?.clear();
+  }
   const resized = mapSize(L.map, L.host);
   if ((reframed || resized) && !L.moved) frame(L);
 }
@@ -680,9 +791,11 @@ export function stop() {
   LIVE = null;
   if (!L) return;
   clearTimeout(L.timer);
+  clearTimeout(L.viewTimer);
   L.ro?.disconnect();
   try {
     for (const m of L.labels?.values() || []) m.remove();
+    L.ref?.stop();
     L.tap?.stop();
     L.drag?.stop();
     L.pv?.remove();

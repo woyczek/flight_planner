@@ -419,6 +419,19 @@ export const EDTX = {
     'Berühren Sie die Karte: was dort gesetzt wird, ist der Schlüssel der Schublade {n}.',
     'Toque el mapa: lo que se ponga ahí será la llave del cajón {n}.'
   ],
+  atRef_aerodrome: ['Repère : le terrain {id}.', 'Landmark: the aerodrome {id}.', 'Orientierungspunkt: der Flugplatz {id}.',
+    'Referencia: el aeródromo {id}.'
+  ],
+  atRef_navaid: ['Repère : la balise {id}.', 'Landmark: the beacon {id}.', 'Orientierungspunkt: das Funkfeuer {id}.',
+    'Referencia: la radioayuda {id}.'
+  ],
+  atRef_fix: ['Repère : le point {id}.', 'Landmark: the fix {id}.', 'Orientierungspunkt: der Wegpunkt {id}.',
+    'Referencia: el punto {id}.'
+  ],
+  atRef_vrp: ['Repère : le point VFR {id}.', 'Landmark: the VFR point {id}.', 'Orientierungspunkt: der VFR-Meldepunkt {id}.',
+    'Referencia: el punto VFR {id}.'
+  ],
+  atRefAdd: ['Ajouter comme point', 'Add as a point', 'Als Punkt hinzufügen', 'Añadir como punto'],
   atVertexDel: ['Retirer ce sommet', 'Remove this vertex', 'Diesen Eckpunkt entfernen', 'Quitar este vértice'],
   atVertexMin: ['Un contour garde au moins trois sommets.', 'An outline keeps at least three vertices.',
     'Ein Umriss behält mindestens drei Eckpunkte.', 'Un contorno conserva al menos tres vértices.'
