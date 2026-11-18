@@ -702,6 +702,16 @@ export const EDTX = {
     'Einen Ort entfernen oder seine Kennung ändern verlangt, die Mission aufzudecken.',
     'Quitar un lugar o cambiar su identificador exige desvelar la misión.'
   ],
+  // SOG-0486, le brouillon : l'atelier repris sur un brouillon de l'appareil (draft.js), ou ce qui l'empêche
+  draftBack: ['Brouillon repris.', 'Draft resumed.', 'Entwurf wieder aufgenommen.', 'Borrador recuperado.'],
+  draftUnread: ['Ce brouillon ne se lit plus.', 'This draft can no longer be read.', 'Dieser Entwurf ist nicht mehr lesbar.',
+    'Este borrador ya no se puede leer.'
+  ],
+  draftGone: ['La mission {id} n\'est plus au registre : son brouillon ne se reprend pas.',
+    'Mission {id} is no longer in the registry: its draft cannot be resumed.',
+    'Die Mission {id} ist nicht mehr im Register: ihr Entwurf kann nicht wieder aufgenommen werden.',
+    'La misión {id} ya no está en el registro: su borrador no se puede recuperar.'
+  ],
   atStart: ['Au départ', 'At the departure', 'Beim Abflug', 'A la salida'],
   atDrawer: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
   atKey_time: ['clé : heure', 'key: hour', 'Schlüssel: Uhrzeit', 'llave: hora'],

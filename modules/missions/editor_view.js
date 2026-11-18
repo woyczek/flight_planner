@@ -7,7 +7,9 @@
 //     fiche et le registre) : REGISTRY, TX, allRows, coSelect, cut, draw, esc, famChoices, famHtml, famLetter, mapHref, regLoad,
 //     subChoices, yamlFile ; et state() → l'état du module en cours (réaffecté à chaque montage).
 //   edClick, edHtml, edInput : l'écran (s.ed), une saisie, un clic « ed… » — appelés par l'aiguillage de module.js.
-//   edAfter(s | null) : après chaque dessin, et au démontage — la carte du socle (voir « La carte »).
+//   edAfter(s | null) : après chaque dessin, et au démontage — la carte du socle (voir « La carte ») ; le brouillon (voir « Le brouillon »).
+//   La reprise d'un brouillon : un bouton `data-do="eddraft" data-key="<CLE>"` touché pendant que le registre est ouvert (l'aiguillage
+//     de module.js rend à edClick tout « ed… ») ; la liste des brouillons et leur effacement : draft.js (listDrafts, dropDraft).
 //
 // La carte (SOG-0444, lot P2, première brique) : la mission dessinée sur le socle de carte de la suite (editor_map.js) dans un cadre de
 // taille fixe, le croquis dessous tant qu'elle n'est pas là (et sans carte) ; module.js appelle edAfter(s) après chaque dessin (la
@@ -113,6 +115,16 @@
 // par edAd et branché sur les mêmes écoutes (celles dont la cible est dans [data-edteams]) ; le choix écrit l'indicatif et, quand un seul type
 // est connu, le type OACI de la ligne (évènement input, que edInput enregistre) ; rien n'est écrit tant que l'auteur ne tape ni ne choisit.
 //
+// Le brouillon (SOG-0486 ; l'utilisateur : « Ne jamais enregistrer, même après beaucoup d'étapes, c'est gênant ») : l'atelier garde la
+// mission en cours SUR L'APPAREIL (draft.js : cache/missions/draft_<CLE>.json, la politique `cache` du cadre, jamais publiée) — après
+// chaque dessin et chaque frappe (edAfter, edRefresh) un écrit est demandé, au plus un par seconde (edDraftSoon), fait seulement si
+// l'atelier est « changé » au sens de la question de sortie (edDirty, le même test que ctx.unsaved) et si le document diffère du
+// dernier écrit ; une dernière fois à la sortie de l'atelier (edLeave, et le démontage du module : edAfter(null)). Le texte est celui
+// qu'« Enregistrer » écrirait (edSaveCadre, edDoc, ED.yamlText), voilé ou non. « Enregistrer » réussi efface le brouillon ; « Quitter
+// sans enregistrer » le garde. « eddraft » (edResume) rouvre l'atelier sur un brouillon, dans son mode : une modification relit le
+// fichier de la mission (le point de comparaison de « changé ») puis prend le document du brouillon ; une création ou une copie le
+// prend tel quel (une copie reste voilée). Le contrat pour le registre : EDITOR.md § 7 octoquadragies.
+//
 // L'essai des clés (SOG-0444, lot P4) : « Essayer les clés », dans l'en-tête du déroulé, met le volet de l'essai à la place de la
 // fiche (s.ed.trial : { on, min, max, speed, alt, declares, hands }) ; le calcul est celui de editor_trial.js sur le document de la
 // séance ; la carte se déplie d'elle-même et montre l'avion et sa trace ; chaque carte du déroulé dit « ouvert à H + 6 min » ou
@@ -122,6 +134,7 @@ import {
 } from '../../frame/lib/callsign_field.js'; // SOG-0488 : le champ d'indicatif de la suite (les Équipes)
 import * as ADD from './add.js';
 import * as CAT from './catalog.js'; // le catalogue des briques et des modèles (lot « modèles de mission »)
+import * as DF from './draft.js'; // SOG-0486 : le brouillon de l'atelier, sur l'appareil
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
 import * as EM from './editor_map.js';
@@ -668,21 +681,38 @@ async function edRead(s, path) {
   }
 }
 
-/** Ouvre l'éditeur : « new » (Créer), « edit » (Modifier) ou « dup » (Dupliquer) une ligne du registre. */
-async function edOpen(s, mode, line = null) {
-  if (mode === 'new') {
+/** Ouvre l'éditeur : « new » (Créer), « edit » (Modifier) ou « dup » (Dupliquer) une ligne du registre. `draft` (SOG-0486) : le
+ *  document d'un brouillon repris (edResume) — une création ou une copie le prend pour base, une modification relit d'abord le fichier
+ *  de la mission (ce que « changé » et « Enregistrer » comparent) puis travaille sur le brouillon. */
+async function edOpen(s, mode, line = null, draft = null) {
+  if (mode === 'new' || (mode === 'dup' && draft)) {
+    const base = draft || ED.blank();
     s.ed = {
       mode,
       step: 'cadre',
-      base: ED.blank(),
-      cadre: ED.cadreOf(ED.blank()),
+      base,
+      cadre: ED.cadreOf(base),
       path: '',
       regIdx: -1,
       regId: '',
       origId: '',
       pending: false
     };
-    s.ed.start = edDoc(s.ed); // ce qu'« Annuler » compare : rien de saisi, rien à perdre (SOG-0454)
+    if (draft) Object.assign(s.ed, {
+      cadreAuto: {
+        dep: s.ed.cadre.dep,
+        arr: s.ed.cadre.arr
+      },
+      // une copie reprise reste voilée, comme à son ouverture (SOG-0459) ; une création est entière
+      veil: ED.veiledAt(mode, state()?.fullView),
+      veilHide: ED.veilHidden(base),
+      draftKey: DF.keyOf(mode, '')
+    });
+    // ce qu'« Annuler » compare : rien de saisi, rien à perdre (SOG-0454) ; un brouillon repris, la mission vierge — il a à perdre
+    s.ed.start = draft ? edDoc({
+      base: ED.blank(),
+      cadre: ED.cadreOf(ED.blank())
+    }) : edDoc(s.ed);
     edDeclare(s);
     edCatalog(s); // les briques et les modèles : lus pendant que l'atelier se dessine
     return draw(s);
@@ -696,7 +726,7 @@ async function edOpen(s, mode, line = null) {
   if (got.err) return s.ctx.notify(s.tt(TX.edUnreadable, {
     e: got.err
   }), 'warn');
-  const base = mode === 'dup' ? ED.duplicate(got.doc) : got.doc,
+  const base = mode === 'dup' ? ED.duplicate(got.doc) : mode === 'edit' && draft ? draft : got.doc,
     cadre = ED.cadreOf(base);
   // audit 182 : rien n'est prérempli d'ailleurs que du fichier (sinon « Enregistrer » sans rien toucher l'écrirait) ; la série du
   // registre, quand le fichier n'en porte pas, n'est montrée qu'en indication dans le champ ; la famille de la ligne sert à la copie seule
@@ -726,6 +756,11 @@ async function edOpen(s, mode, line = null) {
     veilHide: ED.veilHidden(base)
   };
   if (mode === 'dup') s.ed.start = edDoc(s.ed); // une copie pas encore retouchée se quitte sans question (SOG-0454)
+  // SOG-0486 : le brouillon repris est « changé » par rapport au fichier, que « Enregistrer » compare aussi
+  if (mode === 'edit' && draft) {
+    s.ed.start = got.doc;
+    s.ed.draftKey = DF.keyOf(mode, s.ed.origId);
+  }
   edDeclare(s);
   edCatalog(s);
   draw(s);
@@ -2384,7 +2419,10 @@ function edCadreSet(s, key, value) {
  *  effet la seconde. */
 export function edAfter(s) {
   try {
-    if (!s) { // au démontage : la carte en vie, quelle qu'elle soit, et le champ de terrain (SOG-0465)
+    if (!s) { // au démontage : la carte en vie, quelle qu'elle soit, et le champ de terrain (SOG-0465) ; le brouillon, une dernière fois
+      const live = DRAFT_LIVE;
+      DRAFT_LIVE = null;
+      if (live?.ed) edDraftLast(live, live.ed);
       edAdStop();
       return EM.stop();
     }
@@ -2393,6 +2431,7 @@ export function edAfter(s) {
       edAdStop();
       return EM.editing() ? EM.stop() : undefined;
     }
+    edDraftSoon(s); // SOG-0486 : ce que ce dessin montre est gardé sur l'appareil (au plus un écrit par seconde)
     edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée
     edMapShow(s);
     edProfile(s); // SOG-0464 : le canvas du profil est neuf à chaque dessin de l'écran
@@ -3029,6 +3068,7 @@ function edRefresh(s) {
   }
   // le libellé du bouton : ses nœuds de texte seulement (le bouton reste le même élément)
   if (btn && e.lastTodoBtn !== label) btn.innerHTML = e.lastTodoBtn = label;
+  edDraftSoon(s); // SOG-0486 : la frappe est gardée sur l'appareil (au plus un écrit par seconde)
 }
 
 /** Le registre retouché par l'éditeur : relu d'abord (un autre pilote a pu l'écrire), `change(doc)` → { doc } | { error } ; une seule
@@ -3053,11 +3093,7 @@ async function edRegister(s, change) {
 async function edSave(s) {
   const e = s.ed;
   if (!e || e.busy) return;
-  const c = {
-      ...e.cadre,
-      id: e.cadre.id.trim().toUpperCase(),
-      family: e.cadre.family.trim().toUpperCase()
-    },
+  const c = edSaveCadre(e),
     letter = edLetter(s, c.family),
     block = ED.blocking(c, {
       rows: allRows(s),
@@ -3068,7 +3104,8 @@ async function edSave(s) {
     l: letter
   }), 'warn');
   // audit 182 : « Enregistrer » sans rien toucher n'écrit rien (le fichier reste identique, octet pour octet)
-  if (e.mode === 'edit' && ED.same(edDoc(e, c), e.base)) return s.ctx.notify(s.tt(TX.edSame), 'info');
+  // (un brouillon repris compare au fichier lu à la reprise, `start` : SOG-0486)
+  if (e.mode === 'edit' && ED.same(edDoc(e, c), e.start || e.base)) return s.ctx.notify(s.tt(TX.edSame), 'info');
   const path = e.mode === 'edit' && c.id === e.origId && e.path ? e.path : ED.pathFor(letter, c.family, c.id);
   if (!path) return s.ctx.notify(s.tt(TX.edBlock_idForm), 'warn');
   e.busy = true;
@@ -3080,6 +3117,7 @@ async function edSave(s) {
       module: 'missions'
     });
     s.tree?.add(path); // SOG-0365 : écrit sur cet appareil, il y est jouable
+    edDraftDone(s, e); // SOG-0486 : la mission est écrite, son brouillon n'a plus lieu d'être
     const regErr = await edRegister(s, reg => {
       if (e.mode !== 'edit' || !e.regId) return ED.regAdd(reg, RG.entryOfMission(doc, path, undefined, RG.seriesRows(RG.entries(
         reg))));
@@ -3172,6 +3210,8 @@ export function edClick(s, b) {
       return line && edOpen(s, 'edit', line);
     case 'eddup':
       return line && edOpen(s, 'dup', line);
+    case 'eddraft': // SOG-0486 : « reprendre » un brouillon, depuis le registre (le bouton de la ligne du brouillon, module.js)
+      return edResume(s, String(b.dataset.key || ''));
     case 'edsave':
       return edSave(s);
     case 'edtrial': { // « Essayer les clés » : le volet de l'essai prend la place de la fiche ; rien n'est écrit dans la mission
@@ -3680,7 +3720,105 @@ async function edLeave(s) {
   if (edDirty(e) && !(await s.ctx.askLeave())) return;
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
   s.ed = null;
+  edDraftLast(s, e); // SOG-0486 : « Quitter sans enregistrer » garde le brouillon (c'est son but : ne rien perdre)
   s.ctx.unsaved?.(null); // l'atelier n'existe plus : plus rien à garder (le cadre ne pose pas une seconde question)
   draw(s);
   if (s.reg) regLoad(s);
+}
+
+// ---------------------------------------------------------------- le brouillon (SOG-0486 ; voir l'en-tête, « Le brouillon »)
+const DRAFT_MS = 1000; // au plus un écrit du brouillon par seconde
+let DRAFT_LIVE = null; // l'état du module dont l'atelier écrit un brouillon : le démontage l'écrit une dernière fois
+
+/** Le cadre tel qu'« Enregistrer » l'écrit (identifiant et famille en majuscules) : le même pour la mission et pour son brouillon. */
+function edSaveCadre(e) {
+  return {
+    ...e.cadre,
+    id: e.cadre.id.trim().toUpperCase(),
+    family: e.cadre.family.trim().toUpperCase()
+  };
+}
+
+/** Demande un écrit du brouillon (après un dessin, une frappe) : un seul en attente à la fois, fait une seconde plus tard. */
+function edDraftSoon(s) {
+  const e = s?.ed;
+  if (!e) return;
+  DRAFT_LIVE = s;
+  if (e.draftTimer) return;
+  e.draftTimer = setTimeout(() => {
+    e.draftTimer = 0;
+    edDraftKeep(s, e);
+  }, DRAFT_MS);
+}
+
+/** Écrit le brouillon de la séance `e` : seulement si l'atelier est « changé » (edDirty, le test de la question de sortie) et si son
+ *  document n'est pas celui du dernier écrit ; rien pendant « Enregistrer ». `last` : la sortie de l'atelier (la séance n'est plus
+ *  l'écran en cours). Un texte au-delà de la borne (draft.js) n'est pas écrit. */
+async function edDraftKeep(s, e, last = false) {
+  clearTimeout(e.draftTimer);
+  e.draftTimer = 0;
+  if (!last && (state() !== s || s.ed !== e)) return;
+  if (e.busy || !edDirty(e)) return;
+  const gen = e.draftGen || 0, // « Enregistrer » pendant l'attente ci-dessous : cet écrit n'a plus lieu d'être
+    key = DF.keyOf(e.mode, e.origId),
+    c = edSaveCadre(e),
+    doc = edDoc(e, c);
+  if (!key || (e.draftDoc && e.draftKey === key && ED.same(doc, e.draftDoc))) return;
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  if ((e.draftGen || 0) !== gen || e.busy) return;
+  const rec = DF.draftOf({
+    key,
+    mode: e.mode,
+    title: c.title,
+    text: ED.yamlText(doc, globalThis.jsyaml)
+  });
+  if (!rec) return;
+  e.draftDoc = doc;
+  e.draftKey = key;
+  await Promise.resolve().then(() => s.ctx.data.put(DF.draftPath(key), rec, {
+    module: 'missions'
+  })).catch(() => {
+    e.draftDoc = null; // refusé : le prochain changement réessaie
+  });
+}
+
+/** La sortie de l'atelier (« Annuler », le démontage) : un atelier changé écrit son brouillon une dernière fois ; un atelier revenu
+ *  à son point de départ efface le brouillon que CETTE séance a écrit ou repris (il ne garderait qu'un état abandonné). */
+function edDraftLast(s, e) {
+  if (edDirty(e)) return edDraftKeep(s, e, true);
+  clearTimeout(e.draftTimer);
+  e.draftTimer = 0;
+  if (e.draftKey) DF.dropDraft(s.ctx, e.draftKey);
+}
+
+/** « Enregistrer » a écrit la mission : le brouillon de la séance (sa clé d'AVANT l'enregistrement : « new » pour une création) est
+ *  effacé, et l'écrit en attente oublié. */
+function edDraftDone(s, e) {
+  clearTimeout(e.draftTimer);
+  e.draftTimer = 0;
+  const key = DF.keyOf(e.mode, e.origId);
+  for (const k of new Set([key, e.draftKey].filter(Boolean))) DF.dropDraft(s.ctx, k);
+  e.draftGen = (e.draftGen || 0) + 1;
+  e.draftDoc = null;
+  e.draftKey = '';
+}
+
+/** « Reprendre » un brouillon (SOG-0486, `data-do="eddraft"`, depuis le registre) : le brouillon de la clé lu et validé (draft.js
+ *  readDraft) ; une modification demande la ligne de sa mission au registre (sinon : la mission n'y est plus) ; l'atelier s'ouvre dans
+ *  le mode du brouillon (edOpen, `draft`), « changé ». Une clé hors forme, un atelier déjà ouvert : rien. */
+async function edResume(s, key) {
+  const path = DF.draftPath(key);
+  if (!path || s.ed) return;
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  const d = DF.readDraft(await Promise.resolve().then(() => s.ctx.data.get(path)).catch(() => null), globalThis.jsyaml);
+  if (state() !== s || s.ed) return;
+  if (!d || d.key !== key) return s.ctx.notify(s.tt(EDTX.draftUnread), 'warn');
+  if (d.mode === 'edit') {
+    const line = (s.reg?.lines || []).find(x => x.row?.id === key);
+    if (!line) return s.ctx.notify(s.tt(EDTX.draftGone, {
+      id: key
+    }), 'warn');
+    await edOpen(s, 'edit', line, d.doc);
+  } else await edOpen(s, d.mode, null, d.doc);
+  if (state() === s && s.ed?.draftKey === key) s.ctx.notify(s.tt(EDTX.draftBack), 'info');
 }

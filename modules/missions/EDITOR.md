@@ -1360,6 +1360,48 @@ point of Unicode, and the same result for `undefined`, `null`, numbers, texts wi
 in `editor.js` and again in `editor_drawers.js`; `untrusted.js` has no equivalent, so `editor.js` exports the one, `editor_drawers.js` imports it
 (no cycle: `editor.js` imports no workshop file).
 
+### 7 octoquadragies. The draft: the mission in progress kept on the device (18 Nov 2026; SOG-0486; noreg N150, N109, N119, N122)
+
+The user: « Ne jamais enregistrer, même après beaucoup d'étapes, c'est gênant. Conserver une mission en brouillon, et la proposer en tête de liste du registre. »
+The ergonomist: the workshop keeps the mission ON THE DEVICE at each change, never published until « Enregistrer »; ONE draft per mission.
+
+- **Where**: `cache/missions/draft_<KEY>.json`, the frame's `cache` policy (the module's `writes` already declare `cache/missions/`: this device only, never
+  synchronised), written by `ctx.data.put(…, { module: 'missions' })`. `KEY` is the identifier of the mission opened by « Atelier » (mode `edit`), or `new` for
+  a mission created or copied and not yet saved (ONE creation draft at a time: a new « Créer une mission » overwrites it at its first change). Form
+  `^(new|[A-Z0-9-]{1,24})$`; an identifier outside it has no draft (nothing is written).
+- **Content** (`draft.js` `draftOf`): `{ version: 1, updated_at, key, mode ('new' | 'dup' | 'edit'), title, text }`, `text` = the YAML « Enregistrer » would
+  write at that instant (`edSaveCadre`, `edDoc`, `ED.yamlText`, the same functions as `edSave`), veiled or not (the veil filters the screen, never what is
+  written: the drawers stay in the text); 256 KB at most, else nothing is written.
+- **When** (`editor_view.js`): after each drawing (`edAfter`) and each keystroke (`edRefresh`) a write is asked (`edDraftSoon`), made one second later at most
+  once per second (`edDraftKeep`), only when the workshop is « changed » in the sense of the question before leaving (`edDirty`, the test `ctx.unsaved` reads:
+  no second detector) and the document differs from the last one written; once more when the workshop is left (`edLeave` after « Quitter sans enregistrer »,
+  and the unmount of the module, `edAfter(null)`). A workshop back to its starting point erases the draft THIS session wrote or resumed.
+- **« Enregistrer »** that wrote the mission erases the draft (its key before the save: `new` for a creation). « Quitter sans enregistrer » keeps it: that is
+  its purpose. The question of the frame still says « Les changements seront perdus » (frame/app.js, V3 Frame's): to be reworded there.
+- **Reading** (`draft.js` `readDraft`, `listDrafts`): the file is on the device but read as untrusted — the size first (the file, then the text), the envelope
+  (version 1, key and mode that go together), the text read by js-yaml with the CORE schema and refused with an alias or beyond `MS.NODES_MAX` (`shapeOf`), as
+  the workshop reads a mission file. Not `readMission`: a draft of a new mission has no identifier nor family yet, and `readMission` refuses that. Anything
+  else → null, never an exception. `listDrafts` reads what the device keeps (`data.cached`, no network), 40 files at most, the files over the size left
+  unread, a draft whose key is not its file's left aside, ten at most, the most recent first.
+- **Resuming** (`edResume`): the workshop opens in the draft's mode, « changed »: an `edit` draft needs the registry line of its mission (else « La mission
+  X-… n'est plus au registre : son brouillon ne se reprend pas. »), reads the mission file (what « changed » and « Enregistrer » compare: `s.ed.start`), then
+  works on the draft's document; a `new` or `dup` draft is taken as it is (a copy stays veiled, `ED.veiledAt`). « Brouillon repris. » is said; an unreadable
+  draft says « Ce brouillon ne se lit plus. » and opens nothing.
+
+**The contract for the registry (Features SOG: the line of the registry is theirs).**
+
+1. `import * as DF from './draft.js'` in module.js; `draft.js` goes into `meta.files` (case I26 asks for it).
+2. When the Registry screen opens (and after a return from the workshop): `s.drafts = await DF.listDrafts(s.ctx)` → `[{ key, mode, id, title, updated_at }]`.
+3. Draw one line per draft AT THE HEAD of the registry list: « Brouillon — <title or id> », its date, and two buttons.
+4. « Reprendre »: `<button type="button" data-do="eddraft" data-key="${esc(d.key)}">` — THE ONE LINE: the existing switch of `onClick`
+   (`b.dataset.do.startsWith('ed') && (s.ed || s.reg)` → `edClick`) already hands it to the workshop, which reads, validates and opens the draft.
+5. « Jeter »: the registry's own confirmation (`ctx.ask`), then `await DF.dropDraft(s.ctx, d.key)` and the list read again.
+6. Nothing else to know: the key is checked again by the workshop (`DF.KEY`); a draft that no longer reads is said by the workshop, never an error.
+7. A draft `edit` of a mission absent from `s.reg.lines` is refused by the workshop: the registry may hide such a line or show it greyed.
+8. The texts of the line (« Brouillon », « Reprendre », « Jeter », the question) are the registry's, in four languages.
+9. The drafts are on THIS device only: another device of the pilot does not see them (the `cache` policy).
+10. Case N150 touches a forged `data-do="eddraft"` button in the registry bar: the same path as the line.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

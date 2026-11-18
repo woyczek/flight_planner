@@ -1,6 +1,7 @@
 """Area N — Missions (modules/missions/SPEC.md): the V2 missions read as they are (frame/lib/mission.js), the list of the airline's missions,
 choose or draw, and the flight handed to Fuel.  Cases: N1–N5.  Invented missions only (names, positions, callsigns, the aerodromes XTST
 and XTSU): no AIP content and no real mission of the user's data."""
+import json
 import re
 import time
 
@@ -1691,7 +1692,7 @@ _REG_TEXTS = [['missions/mission_registry.yaml', _REG_REGISTRY],
 _REG_CLEAR = """async () => { if (!(await indexedDB.databases()).some(d => d.name === 'sogFrame')) return false; const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
   for (const st of ['pending', 'docs']) { if (!db.objectStoreNames.contains(st)) continue;
     const keys = await new Promise(res => { const q = db.transaction(st).objectStore(st).getAllKeys(); q.onsuccess = () => res(q.result); q.onerror = () => res([]) });
-    const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^missions\\/(mission_registry\\.yaml|X_REG\\/)/.test(String(k))) t.objectStore(st).delete(k);
+    const t = db.transaction(st, 'readwrite'); for (const k of keys) if (/^(missions\\/(mission_registry\\.yaml|X_REG\\/)|cache\\/missions\\/draft_)/.test(String(k))) t.objectStore(st).delete(k);
     await new Promise(res => { t.oncomplete = res; t.onerror = res }) }
   db.close(); return true }"""
 R = f'{M} [data-pane=registry]'
@@ -9770,3 +9771,173 @@ def n133(c):
          'the origin « Hélistation test (XT123) » reads the icao XT123; « (XTST) » stays XTST; « (2024) » and « (TEST1234) » are no code; lower case is put in capitals; the destination is read too',
          what='icao read')
     c.eq(r['fn'], ['XT123', '', ''], 'icaoOf: the helistation code, a number alone nothing, null nothing', what='icaoOf')
+
+
+# SOG-0486: the draft of the workshop, on the device (modules/missions/draft.js) — read back by the pure reader of the module, in the page
+_DRAFT_READ = """async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const DF = await import('/modules/missions/draft.js');
+  const t = await (%s)(p); if (typeof t !== 'string') return null; let env = null; try { env = JSON.parse(t) } catch { return { bytes: t.length, broken: true } }
+  const d = DF.readDraft(env, globalThis.jsyaml);
+  return { bytes: t.length, version: env.version, key: env.key, mode: env.mode, title: env.title,
+    read: d && { key: d.key, mode: d.mode, title: d.title, summary: d.doc.summary ?? null, phases: d.doc.phases ?? null } } }""" % _TEXT_OF
+# the entry of the resumption, as the registry will carry it (Features SOG's line): a button `data-do="eddraft" data-key` touched in the registry
+_DRAFT_RESUME = f"""(key) => {{ const bar = document.querySelector('{R} .ms-regbar'); if (!bar) return false; const b = document.createElement('button');
+  b.type = 'button'; b.dataset.do = 'eddraft'; b.dataset.key = key; b.textContent = 'reprendre'; bar.append(b); b.click(); b.remove(); return true }}"""
+# drafts written by hand into the device's cache (the frame's record of a `cache` file)
+_DRAFT_PUT = """async (rows) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  await new Promise((res, rej) => { const tx = db.transaction('docs', 'readwrite');
+    for (const [path, text] of rows) tx.objectStore('docs').put({ path, text, base: text, rev: '', at: Date.now(), policy: 'cache' });
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error) }); db.close(); return rows.length }"""
+# listDrafts and readDraft over what the device keeps (FrameData.cached, and the texts read as the frame reads a .json: parsed, or null)
+_DRAFT_LIST = """async () => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const DF = await import('/modules/missions/draft.js');
+  const text = %s;
+  const get = async p => { const t = await text(p); try { return t == null ? null : JSON.parse(t) } catch { return null } };
+  const list = await DF.listDrafts({ data: { cached: p => FrameData.cached(p), get } }, globalThis.jsyaml);
+  const reads = {}; for (const k of ['new', 'X-002', 'X-003', 'X-004', 'X-005', 'X-006']) { const d = DF.readDraft(await get(DF.draftPath(k)), globalThis.jsyaml); reads[k] = d && d.key }
+  return { list: list.map(d => [d.key, d.mode, d.title]), reads,
+    pure: [DF.draftPath('../x'), DF.draftPath('new'), DF.keyOf('edit', 'x-001a'), DF.keyOf('dup', 'X-001A'), DF.keyOf('edit', 'X-001A'),
+      DF.draftOf({ key: 'new', mode: 'edit', text: 't' }), DF.draftOf({ key: 'new', mode: 'new', text: 'x'.repeat(262145) }), DF.readDraft('{', globalThis.jsyaml)] } }""" % _TEXT_OF
+_NOTES = "[...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim())"
+
+
+def _draft_env(key, mode, text, title='t'):
+    """The JSON text of a draft as draft.js writes it (an invented one)."""
+    return json.dumps({'version': 1, 'updated_at': '2026-11-18T10:00:00.000Z', 'key': key, 'mode': mode, 'title': title, 'text': text}, ensure_ascii=False)
+
+
+@case('N150', 'Missions › the workshop keeps the mission in progress as a DRAFT on the device (SOG-0486): a created mission, its title and summary typed, is '
+      'written to cache/missions/draft_new.json while the workshop is open and once more when it is left by « Quitter sans enregistrer » — bounded, its `text` '
+      'read back gives the title and the summary; the entry of the resumption (`data-do="eddraft" data-key="new"`, touched in the registry) reopens the workshop '
+      'with the fields back and says « Brouillon repris. »; « Enregistrer » writes the mission and erases the draft; an EXISTING mission (X-001A, four drawers, '
+      'veiled) retitled then left → draft_X-001A.json with its drawers intact, resumed veiled, saved; corrupted drafts (a file of 300 KB, broken JSON, an '
+      'unreadable text, an alias, a key that is not its file\'s) are ignored by listDrafts and refused at the resumption with a notification, never an '
+      'error; at 390 and at 1280', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0486 (the user: « Ne jamais enregistrer, même après beaucoup d\'étapes, c\'est gênant. Conserver une mission en brouillon, et la proposer en tête '
+      'de liste du registre. »; the ergonomist: on the device at each change, never published, ONE per mission, « Enregistrer » erases it); EDITOR.md § 7 octoquadragies')
+def n150(c):
+    title = 'Brouillon inventé, jamais enregistré'
+    summ = 'Un résumé inventé, tapé puis laissé sans enregistrer.'
+    path_new = 'missions/X_REG/X-002/missionX-002.yaml'
+    quiet = "document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())"  # at 390 a toast covers the foot
+
+    def story():
+        """Unfolds the Récit when it is not, and waits for its summary."""
+        if not c.js(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')"):
+            c.js(quiet)
+            c.tap(f'{E} [data-steps] [data-step="story"]')
+        c.until(f"!!document.querySelector('{E} [data-k=edstory][data-f=summary]')", what='the Récit unfolded')
+
+    def leave_unsaved(what):
+        """« Annuler », then « Quitter sans enregistrer » (the question of the frame), back to the registry."""
+        c.js(quiet)
+        c.tap(f'{E} [data-do="edcancel"]')
+        c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what=f'{what}: the question before leaving')
+        c.tap('.f-modal [data-ok]')
+        c.until(f"!document.querySelector('{E}') && !!document.querySelector('{R}')", timeout=10000, what=f'{what}: back to the registry')
+
+    def save(what):
+        c.js(quiet)
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what=what)
+
+    def draft_until(path, test, what):
+        """Waits (8 s) until the draft of `path`, read back, satisfies `test`; returns it."""
+        got = None
+        for _ in range(32):
+            got = c.js(_DRAFT_READ, path)
+            if test(got):
+                return got
+            c.wait(250)
+        c.ok(False, got, what)
+        return got
+
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        # (A) a created mission, never saved
+        reg_open(c, _ED_TEXTS)
+        c.tap(f'{R} [data-do="edcreate"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission on its Cadre')
+        c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
+        c.until(f"document.querySelector('{E} input[data-k=edid]')?.value === 'X-002'", what='the next identifier proposed')
+        _ed_fill(c, 'edtitle', title)
+        story()
+        c.page.fill(f'{E} [data-k=edstory][data-f=summary]', summ)
+        d = draft_until('cache/missions/draft_new.json', lambda d: bool(d and (d.get('read') or {}).get('summary') == summ),
+                        f'{width}: the draft is written while the workshop is open (at most one second after the change)')
+        leave_unsaved('(A)')
+        d = draft_until('cache/missions/draft_new.json', lambda d: bool(d and d.get('read')), f'{width}: the draft stays after « Quitter sans enregistrer »')
+        r = d.get('read') or {}
+        c.eq([d.get('version'), d.get('key'), d.get('mode'), d.get('title'), r.get('title'), r.get('summary'), d.get('bytes') <= 270336],
+             [1, 'new', 'new', title, title, summ, True], f'{width}: draft_new.json — version, key, mode, title; its text read back gives the title and the summary; bounded',
+             what='(A) the draft')
+        # the resumption: the entry the registry will carry
+        c.ok(c.js(_DRAFT_RESUME, 'new'), '', 'the entry of the resumption touched in the registry')
+        c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(title)}", timeout=10000, what='the workshop reopened on the draft')
+        notes = c.js(_NOTES)
+        c.ok(any(norm(row(c, 'draftBack', EDTX_FILE)) in norm(n) for n in notes), notes, f'{width}: « Brouillon repris. » is said')
+        c.js('window.scrollTo(0, 0)')
+        c.shot(f'P12a_{width}_repris.png')  # the workshop resumed, « Brouillon repris. » said
+        cadre = [c.js(f"document.querySelector('{E} input[data-k=edtitle]').value"), c.js(f"document.querySelector('{E} input[data-k=edid]').value")]
+        story()  # one group unfolded at a time: the Cadre folds
+        c.eq(cadre + [c.js(_STORY_JS).get('summary')], [title, 'X-002', summ], f'{width}: the fields are back (title, identifier, summary)', what='(A) resumed')
+        save('(A) the resumed draft saved')
+        st = c.js(_STORY_OF, path_new) or {}
+        c.eq([st.get('title'), st.get('summary')], [title, summ], f'{width}: « Enregistrer » writes the mission of the draft', what='(A) the mission')
+        draft_until('cache/missions/draft_new.json', lambda d: d is None, f'{width}: « Enregistrer » erased the draft')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+    # (B) an existing mission (four drawers, veiled), retitled, left: draft_<ID>.json, its drawers intact; resumed veiled; saved
+    retitled = 'Mission d’essai retouchée, en brouillon'
+    reg_open(c, _TRIAL_TEXTS)
+    phases = c.js("async (t) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); return globalThis.jsyaml.load(t).phases }", _TRIAL_MISSION)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A') && document.querySelector('{E}').dataset.veil === '1'",
+            timeout=15000, what='X-001A in the veiled workshop')
+    if not c.count(f'{E} input[data-k=edtitle]'):
+        c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    _ed_fill(c, 'edtitle', retitled)
+    leave_unsaved('(B)')
+    d = draft_until('cache/missions/draft_X-001A.json', lambda d: bool(d and (d.get('read') or {}).get('title') == retitled), 'the draft of X-001A after leaving')
+    r = d.get('read') or {}
+    c.eq([d.get('key'), d.get('mode'), r.get('key'), len(phases or []), r.get('phases') == phases], ['X-001A', 'edit', 'X-001A', 4, True],
+         '(B) draft_X-001A.json: its key, mode « edit », and the four drawers of the file intact (the veil filters the screen, never the draft)', what='(B) the draft')
+    c.ok(c.js(_DRAFT_RESUME, 'X-001A'), '', 'the entry of the resumption of X-001A')
+    c.until(f"document.querySelector('{E} input[data-k=edtitle]')?.value === {json.dumps(retitled)}", timeout=15000, what='X-001A reopened on its draft')
+    c.eq([c.js(f"document.querySelector('{E}').dataset.veil"), c.js(f"document.querySelector('{E}').dataset.mode")], ['1', 'edit'],
+         '(B) resumed in its mode, veiled as « Modifier » opens it', what='(B) resumed')
+    save('(B) the resumed draft of X-001A saved')
+    doc = c.js(f"""async (p) => {{ const t = await ({_TEXT_OF})(p); return t && globalThis.jsyaml.load(t, {{ schema: globalThis.jsyaml.CORE_SCHEMA }}) }}""",
+               'missions/X_REG/X-001A/missionX-001A.yaml') or {}
+    c.eq([doc.get('title'), doc.get('phases') == phases], [retitled, True], '(B) « Enregistrer » writes the retitled mission, its drawers intact', what='(B) the file')
+    draft_until('cache/missions/draft_X-001A.json', lambda d: d is None, '(B) « Enregistrer » erased the draft of X-001A')
+    ed_leave(c)
+
+    # (C) corrupted drafts: ignored, refused at the resumption, never an error
+    good = 'mission: { id: X-006A, type: REG }\ntitle: Bon brouillon\n'
+    c.js(_DRAFT_PUT, [
+        ['cache/missions/draft_new.json', _draft_env('new', 'new', 'title: gros\n# ' + 'x' * 300000 + '\n')],
+        ['cache/missions/draft_X-002.json', '{"version":1,"key":"X-002","mode":"edit","text":'],
+        ['cache/missions/draft_X-003.json', _draft_env('X-003', 'edit', 'mission: [\n  : : :\n')],
+        ['cache/missions/draft_X-004.json', _draft_env('X-004', 'edit', 'a: &x { b: 1 }\nc: *x\n')],
+        ['cache/missions/draft_X-005.json', _draft_env('X-009', 'edit', good)],
+        ['cache/missions/draft_X-006.json', _draft_env('X-006', 'edit', good, 'Bon brouillon')]])
+    got = c.js(_DRAFT_LIST)
+    c.eq(got.get('list'), [['X-006', 'edit', 'Bon brouillon']], '(C) listDrafts: only the readable draft (300 KB, broken JSON, unreadable text, alias, key of another file: left aside)',
+         what='(C) listDrafts')
+    c.eq(got.get('reads'), {'new': None, 'X-002': None, 'X-003': None, 'X-004': None, 'X-005': 'X-009', 'X-006': 'X-006'},
+         '(C) readDraft: null for the corrupted ones (the key of X-005 is not its file\'s: listDrafts and the resumption refuse it)', what='(C) readDraft')
+    c.eq(got.get('pure'), [None, 'cache/missions/draft_new.json', '', 'new', 'X-001A', None, None, None],
+         '(C) the forms: a path never leaves cache/missions/, a lower-case identifier has no draft, a copy is « new », a key and its mode go together, 256 KB at most',
+         what='(C) pure')
+    for key, said in (('new', 'draftUnread'), ('X-003', 'draftUnread'), ('X-005', 'draftUnread'), ('X-006', 'draftGone')):
+        c.js(quiet)
+        c.ok(c.js(_DRAFT_RESUME, key), '', f'the resumption of {key}')
+        want = norm(row(c, said, EDTX_FILE).replace('{id}', key))
+        for _ in range(20):
+            if any(want in norm(n) for n in c.js(_NOTES)):
+                break
+            c.wait(200)
+        c.eq([any(want in norm(n) for n in c.js(_NOTES)), c.count(E)], [True, 0], f'(C) the resumption of {key}: « {want} », no workshop', what=f'(C) {key}')
+    c.js(_REG_CLEAR)
