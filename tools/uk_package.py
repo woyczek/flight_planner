@@ -1,10 +1,10 @@
 """Le paquet eAIP du Royaume-Uni (NATS, « AIRAC 11-2026 ») posé à la main : sa RECONNAISSANCE par son contenu, l'index des cartes d'un aérodrome et la recopie des seuls PDF utiles (SOG-0374, 16 nov. 2026).
 
-Les faits (lus le 16 nov. 2026 sur le paquet de l'utilisateur, 2 766 fichiers, 881 Mo, sans AIXM) : <paquet>/html/eAIP/EG-AD-2.<OACI>-en-GB.html (une page par aérodrome : 116) et <paquet>/graphics/<numéro>.pdf (2 093 cartes) ; la page d'un aérodrome liste ses cartes dans des lignes de tableau
+Les faits (lus le 16 nov. 2026 sur le paquet de l'utilisateur, 2 766 fichiers, 881 Mo, sans AIXM) : <paquet>/html/eAIP/EG-AD-2.<OACI>-en-GB.html (une page par aérodrome : 116) et <paquet>/graphics/<numéro>.pdf (2 093 cartes) ; la page d'un aérodrome liste ses cartes dans des lignes de tableau, et son en-tête porte UNE balise <meta name="EM.effectiveDateStart" content="AAAA-MM-JJ"/> : la date d'entrée en vigueur du cycle (les autres balises EM.* sont vides, DC.date est la date de publication : jamais lues)
 (« AD 2.EGLL-6-1 » = le lien vers ../../graphics/525824.pdf, avec son titre : « STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L … »). Le paquet est un dossier extrait ; il se pose sous un dossier des Téléchargements, sous un ou deux niveaux de dossiers (« UK-AIRAC-11-26/AIRAC 11-2026/2026-10-29-AIRAC »).
 
 Règles : jamais un chemin venu d'une page (un nom de PDF est ramené à des chiffres, un code d'aérodrome à quatre lettres) ; la recherche ne regarde que des NOMS de dossiers (jamais le contenu d'un fichier avant d'avoir reconnu le paquet par sa forme : html/eAIP/EG-AD-2.*-en-GB.html + graphics/),
-sur trois niveaux, dans les seuls dossiers dont le nom évoque un AIP (airac, aip, nats, le mot uk), au plus MAX_TOTAL entrées au total, sans suivre ni lien symbolique ni jonction Windows (`_link` : os.path.isjunction, Python 3.12 et après ; ce poste a Python 3.14) ; le NOM du dossier de l'utilisateur ne sort jamais de ce module (la date en est lue : package_date) ; la page de l'aérodrome et chaque PDF sont lus sous un plafond de taille ; seuls les PDF d'UN aérodrome et d'UNE sorte (les cartes SID) sont recopiés, sous un nom canonique, dans le dossier que l'appelant donne (data/local/upload/ :
+sur trois niveaux, dans les seuls dossiers dont le nom évoque un AIP (airac, aip, nats, le mot uk), au plus MAX_TOTAL entrées au total, sans suivre ni lien symbolique ni jonction Windows (`_link` : os.path.isjunction, Python 3.12 et après ; ce poste a Python 3.14) ; le NOM du dossier de l'utilisateur ne sort jamais de ce module (la date en est lue : package_date, en repli de celle de la page de l'aérodrome : page_date) ; la page de l'aérodrome et chaque PDF sont lus sous un plafond de taille ; seuls les PDF d'UN aérodrome et d'UNE sorte (les cartes SID) sont recopiés, sous un nom canonique, dans le dossier que l'appelant donne (data/local/upload/ :
 la lecture de PDF de pdf_guard n'ouvre rien d'autre). Bibliothèque standard seulement."""
 import datetime
 import html as htmllib
@@ -18,6 +18,7 @@ MAX_DEPTH = 3
 NAME_HINT = re.compile(r'airac|aip|nats|(?<![a-z])uk(?![a-z])', re.I)      # le MOT « uk » entier (jamais « duke »)
 MAX_TOTAL = 3000                      # entrées parcourues au TOTAL par une recherche (tous dossiers, tous niveaux)
 DATE_NAME = re.compile(r'(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)', re.A)
+PAGE_DATE = re.compile(r'<meta\s+name\s*=\s*(["\'])EM\.effectiveDateStart\1\s+content\s*=\s*(["\'])(\d{4})-(\d{2})-(\d{2})\2', re.A)      # la balise de l'en-tête de la page, rien d'autre
 MAX_ROWS = 20000
 MAX_ROW = 20000
 ROOT_ENTRIES = 20000                  # le dossier Téléchargements lui-même est souvent très peuplé : ses NOMS seuls sont regardés (comme base/cycle)
@@ -77,17 +78,29 @@ def is_package(root):
     return False
 
 
+def _bounded_date(y, m, d, today):
+    """La date AAAA-MM-JJ si (y, m, d) est une VRAIE date du calendrier, de 2000-01-01 à `today` inclus ; None sinon (jour impossible, futur, trop ancien). Ne rend que la chaîne ISO normalisée, bâtie sur trois entiers : jamais le texte lu."""
+    try:
+        day = datetime.date(int(y), int(m), int(d))
+    except ValueError:
+        return None
+    return day.isoformat() if datetime.date(2000, 1, 1) <= day <= today else None
+
+
 def package_date(root, today=None):
     """La date du paquet, lue dans le NOM de son dossier (« 2026-10-29-AIRAC ») : AAAA-MM-JJ si c'est une vraie date, de 2000 à aujourd'hui ; None sinon (aucune date, une date impossible ou du futur : « 2099-01-01 »). Jamais la date du jour à la place d'une date absente."""
     today = today or datetime.date.today()
     m = DATE_NAME.search(os.path.basename(str(root)))
     if not m:
         return None
-    try:
-        d = datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-    except ValueError:
-        return None
-    return d.isoformat() if datetime.date(2000, 1, 1) <= d <= today else None
+    return _bounded_date(m.group(1), m.group(2), m.group(3), today)
+
+
+def page_date(page, today=None):
+    """La date d'entrée en vigueur lue dans la PAGE d'un aérodrome : la balise <meta name="EM.effectiveDateStart" content="AAAA-MM-JJ"/> de son en-tête (strictement cette forme, dans les 64 premiers Kio, la première occurrence). Une vraie date de 2000 à `today` ; None sinon (pas de balise, date impossible, du futur, chiffres d'une autre écriture). La page est une entrée non fiable : rien n'en sort que la chaîne ISO bâtie sur trois entiers, rien n'est journalisé, rien n'est un chemin. Les autres balises (EM.effectiveDateEnd, EM.AIRAC, DC.date) et les titres des paragraphes ne sont jamais lus."""
+    today = today or datetime.date.today()
+    m = PAGE_DATE.search(page[:65536]) if isinstance(page, str) else None
+    return _bounded_date(m.group(3), m.group(4), m.group(5), today) if m else None
 
 
 def find(folders, today=None):

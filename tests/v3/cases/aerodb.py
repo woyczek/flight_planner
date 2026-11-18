@@ -10500,6 +10500,69 @@ def k282(c):
             P.drop_contexts()
 
 
+@case('K343', 'UK eAIP package (SOG-0374, lot A): the cycle of the SIDs is the effective date printed in the aerodrome page (meta EM.effectiveDateStart, strict ISO form, a real date up to today); the folder name stays the fallback; a package whose folder has no date no longer writes cycle 1970', 'K', static=True,
+      rule='The user, 16 Nov 2026: the UK sheets came out outdated (« cycle inconnu ») because the cycle was read only in the folder name. The page header carries ONE EM.effectiveDateStart; EM.effectiveDateEnd, EM.AIRAC and the like are empty, DC.date is the publication date, the paragraph titles are per amendment: none of them is read. Untrusted page: only the normalised ISO string comes out.')
+def k343(c):
+    import datetime
+    import os
+    import sys
+    import tempfile
+    import types
+    from pathlib import Path
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    RJ = _regen()
+    import uk_package as U
+    today = datetime.date(2026, 11, 18)
+    tag = '<meta name="EM.effectiveDateStart" content="2026-10-29"/>'
+    head = '<html><head><meta name="DC.date" content="2026-10-01"/><meta name="EM.effectiveDateEnd" content=""/><meta name="EM.AIRAC" content=""/>' + tag + '</head><body></body></html>'
+    c.eq(U.page_date(head, today), '2026-10-29', 'the effective date is the one of EM.effectiveDateStart, not the DC.date (publication) nor the empty tags', what='read')
+    for what, bad in (('no tag', '<html><head></head></html>'), ('DC.date only', '<meta name="DC.date" content="2026-10-01"/>'), ('future', tag.replace('2026-10-29', '2026-12-01')),
+                      ('impossible', tag.replace('2026-10-29', '2026-02-30')), ('other digits', tag.replace('2026-10-29', '\u0662\u0660\u0662\u0666-\u0661\u0660-\u0662\u0669')),
+                      ('beyond 64 KiB', ' ' * 70000 + tag), ('end only', '<meta name="EM.effectiveDateEnd" content="2026-10-29"/>')):
+        c.eq(U.page_date(bad, today), None, f'refused, unknown: {what}', what=what)
+    c.eq([U.package_date(n, today) for n in ('2026-10-29-AIRAC', 'AIRAC 11-2026')], ['2026-10-29', None], 'the folder name keeps its behaviour: a real date, else unknown', what='package_date')
+    fn, check = RJ.REGISTRY[('proc', 'ukpkg-fetch')]
+    ns = types.SimpleNamespace(**fn.__globals__)
+    import pdf_guard
+    import personal_use
+    title = 'STANDARD DEPARTURE CHART - INSTRUMENT (SID) RWY 09R/L MODMI 1J 1K (RNAV SUBSTITUTION ONLY) - ICAO'
+    text = ('511401N 0002910W MODMI .6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09R R025.MID VOR3.5, then turn right onto D LON R124 until LON VOR2 Straight ahead to MODMI 1J '
+            '.6000 at MODMI or above, continue to cross 5000 at D MID or above Cross RWY 09L R025.MID VOR3.5, then turn right onto D LON Straight ahead to MODMI 1K')
+
+    class Job:
+        def log(self, t): pass
+        def step(self, *a): pass
+        def cancelled(self): return False
+    real, real_require = pdf_guard.read_text, pdf_guard.require
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        td = Path(td)
+        dl = td / 'Downloads'
+        pkg = dl / 'UK-AIRAC-11-26' / 'AIRAC 11-2026' / 'AIRAC-pkg'
+        (pkg / 'html' / 'eAIP').mkdir(parents=True)
+        (pkg / 'graphics').mkdir()
+        (pkg / 'graphics' / '475385.pdf').write_bytes(b'%PDF-1.4 x')
+        personal_use.write(str(td / 'data'), True, False)
+        pdf_guard.read_text = lambda data, path, first=0, count=1, **k: {'pages': 1, 'texts': [text]}
+        pdf_guard.require = lambda *a, **k: None
+        try:
+            got = []
+            for body in (head, head.replace(tag, '')):
+                row = '<table><tr><td><p>' + title + '</p></td></tr><tr><td><a href="../../graphics/475385.pdf">AD\xa02.EGXX-6-2</a></td></tr></table>'
+                (pkg / 'html' / 'eAIP' / 'EG-AD-2.EGXX-en-GB.html').write_text(body.replace('<body>', '<body>' + row), encoding='utf-8')
+                res = ns._read_ukpkg(ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl)]}))
+                doc = res['docs'][0]
+                got.append((doc['cycle'], [bool(p['source'].get('cycle_unknown')) for p in doc['procedures']]))
+            # a chart whose text gives no SID (a conventional SID chart, the user's EGGW of 18 Nov): the page code is `no-table` (« carte sans table »), never « table non reconnue »
+            pdf_guard.read_text = lambda data, path, first=0, count=1, **k: {'pages': 1, 'texts': ['nothing readable here']}
+            blank = ns._read_ukpkg(ns.Env(Job(), 'EGXX', {'data': str(td / 'data'), 'secrets': None, 'downloads': lambda: [str(dl)]}))
+        finally:
+            pdf_guard.read_text, pdf_guard.require = real, real_require
+    c.ok(got[0][0] == '2026-10-29' and got[0][1] and not any(got[0][1]), str(got[0]), 'the page date wins over a folder with no date: cycle 2026-10-29, no SID marked unknown')
+    c.ok(got[1][0] == '1970-01-01' and got[1][1] and all(got[1][1]), str(got[1]), 'without the tag the fallback is unchanged: cycle 1970-01-01 and `cycle_unknown` on every SID')
+    c.eq((blank['docs'], [(f['ok'], f.get('reason')) for f in blank['formats']]), ([], [(False, 'no-table')]), 'a chart with no readable SID is a page not read with the code no-table (a chart, no table expected), the document is empty', what='no-table')
+
+
 @case('K274', 'Route engine: a fallback proposal after the search budget says so (`status: proposal`, a sentence) and does not cost the budget of every level (SOG-0161, EIDW → KBOS: 35 s)', 'K', static=True,
       rule='Ergonomist 14 Nov 2026 (rest of SOG-0161): EIDW → KBOS and EIDW → KJFK took 35 s to answer « ok » with a fallback proposal that looked like a route (12 to 17 % controlled). The head route\'s search had reached its budget (6 s / 100 000 states: « ce résultat ne prouve pas l\'absence de route »); the engine then searched other levels, each reaching the same budget (about 13 s), then the proposals (9 s). Now: when the head route is refused because its search reached the budget, the other levels are NOT searched (it says so in the failures) and the proposals come at once (real base: 35 s → 15 s); the answer of the screen carries `status` — `computed` | `proposal` | `none` — and its `message` says « Aucune route calculée : … Propositions de repli à examiner : routes partielles »; `ok` stays true (the answer is valid) and nothing is removed')
 def k274(c):

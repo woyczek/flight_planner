@@ -142,7 +142,8 @@ def _read_ukpkg(env):
     root = roots[-1]
     env.say(f'{env.icao}: paquet du Royaume-Uni trouvé')      # jamais le nom du dossier de l'utilisateur
     try:
-        charts = uk_package.sid_charts(uk_package.chart_index(uk_package.aerodrome_page(root, env.icao), env.icao))
+        page = uk_package.aerodrome_page(root, env.icao)
+        charts = uk_package.sid_charts(uk_package.chart_index(page, env.icao))
     except ValueError as e:
         return {'ok': False, 'reason': 'no-tables', 'message': str(e)}
     if not charts:
@@ -150,7 +151,7 @@ def _read_ukpkg(env):
     dest = os.path.join(env.data, 'local', 'upload')
     done, refused = uk_package.copy_charts(root, env.icao, charts, dest)
     procedures, warnings, formats = [], list(refused), []
-    day = uk_package.package_date(root)      # la date lue dans le nom du dossier, réelle et ≤ aujourd'hui ; None sinon : cycle INCONNU, jamais la date du jour
+    day = uk_package.page_date(page) or uk_package.package_date(root)      # la date d'entrée en vigueur lue dans la page de l'aérodrome (meta EM.effectiveDateStart), sinon celle du nom du dossier ; réelle et ≤ aujourd'hui ; None sinon : cycle INCONNU, jamais la date du jour
     for k, chart in enumerate(charts):
         name = uk_package.canonical(env.icao, chart)
         env.step(f'{env.icao}: {chart["label"]}', k, len(charts), 'cartes')
@@ -168,7 +169,8 @@ def _read_ukpkg(env):
         found, why = proc_uk_sid.read_chart(text, chart['title'], env.icao)
         procedures += found
         warnings += why
-        formats.append({'file': name, 'ok': bool(found), 'procedures': len(found)})
+        # une carte dont le texte ne donne aucune SID : code `no-table` (« carte sans table », proc_geometry.PAGE_CODES) — jamais « table non reconnue », aucune table n'est attendue sur une carte (essai de l'utilisateur sur EGGW, 18/11)
+        formats.append({'file': name, 'ok': bool(found), 'procedures': len(found), **({} if found else {'reason': 'no-table'})})
     if not procedures:
         return {'docs': [], 'formats': formats, 'warnings': warnings, 'dropped': [], 'extra': {}}
     for p in procedures:
