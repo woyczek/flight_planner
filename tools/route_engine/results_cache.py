@@ -17,6 +17,8 @@ import math
 import os
 import re
 
+import safe_json
+
 VERSION = 1
 ENABLED = True                    # les essais du CONTEXTE (K238) le coupent : sans cela le second appel ne demanderait même pas le contexte
 MAX_FILES = 64
@@ -96,22 +98,14 @@ def _sound(doc):
     return True
 
 
-def _refuse_constant(name):
-    raise ValueError('nombre non fini : ' + name)
-
-
 def load(data, k, sig, now=None):
     """(résultat, { computedAt, until }) gardé pour cette demande, ou None : fichier absent, trop gros, illisible, d'une autre version, d'une autre empreinte, échu."""
     if not ENABLED:
         return None
     now = now or dt.datetime.now(dt.timezone.utc)
     path = os.path.join(folder(data), k + '.json')
-    try:
-        if os.path.getsize(path) > MAX_BYTES:
-            return None
-        with open(path, encoding='utf-8') as f:
-            doc = json.load(f, parse_constant=_refuse_constant)
-    except (OSError, ValueError, RecursionError, MemoryError):          # RecursionError : un fichier très imbriqué (audit 205) est un fichier illisible, le calcul est refait
+    doc, why = safe_json.read(path, MAX_BYTES, encoding='utf-8')          # absent, trop gros, très imbriqué (audit 205), NaN / Infinity : un fichier illisible, le calcul est refait
+    if why:
         return None
     if not _sound(doc) or not isinstance(doc, dict) or doc.get('version') != VERSION or doc.get('key') != k or doc.get('sig') != sig or not isinstance(doc.get('result'), dict) or doc['result'].get('ok') is not True:
         return None
