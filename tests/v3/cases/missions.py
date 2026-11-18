@@ -1392,6 +1392,12 @@ def n33(c):
     c.eq(norm(c.text(f'{R} [data-rowid="X-901A"] [data-do=regedit]')), norm(row(c, 'regEdit')), '« Corriger la ligne du registre »', what='correct')
     c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"]').scrollIntoView({{block: 'center'}})")
     c.shot(f'N33_{c.design}_390_{c.lang}_registry.png')
+    c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
+    c.shot(f'N33_{c.design}_390_{c.lang}_registryhead.png')  # the box « Voir le contenu complet des missions » (SOG-0459)
+    c.page.set_viewport_size({'width': 1280, 'height': 900})
+    c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
+    c.shot(f'N33_{c.design}_1280_{c.lang}_registry.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
     c.tap(f'{R} [data-rowid="X-901A"] [data-do=regbrief]')
     S = f'{M} [data-pane=mission][data-id="X-901A"]'
     c.until(f"!!document.querySelector('{S} [data-first] [data-choice] [data-dur]')", timeout=10000, what='the Brief with its line of choice')
