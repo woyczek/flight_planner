@@ -10693,3 +10693,41 @@ def n160(c):
         c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+@case('N161', 'Missions › the sheet of a drawer whose judged condition (a landing, an overflight, a hover; an invented file) already follows a MOVING object says '
+      '« (mobile : non jugé) » after the name of the object instead of a « ? » (the « ? » is for a value that designates nothing any more): the select shows the object '
+      'of the file selected, named, with the mention; its value is the file\'s own, nothing is rewritten; the mention « s\'ouvre au geste ou à l\'heure de repli » of the '
+      'drawer shows too (the flight does not judge a moving object); the list still offers only the still objects; at 390 and at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0500, retouche de l\'ergonome (19 Nov): « un fichier qui désigne déjà un objet MOBILE montre l\'objet avec un « ? » : c\'est trompeur ; montre le nom '
+      'de l\'objet suivi de « (mobile : non jugé) », en quatre langues ; la mention du tiroir doit aussi paraître ; la valeur du fichier reste telle quelle »')
+def n161(c):
+    ship = "objects:\n  - { id: OBJ-2, kind: ship, name: Navire mobile, lat: 44.5, lon: 1.5, detection_range_nm: 1, speed_kt: 10, motion: axis, course_deg: 90 }\n"
+    land = 'trigger_condition: { kind: landing, point: PT1, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 }'
+    conds = {'landing': 'trigger_condition: { kind: landing, object: OBJ-2, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 }',
+             'overflight': 'trigger_condition: { kind: overflight, object: OBJ-2, radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 }',
+             'hover': 'trigger_condition: { kind: hover, object: OBJ-2, radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 }'}
+    sel = f'{_DW} select[data-f="rule.object"]'
+    opt = f"(() => {{ const s = document.querySelector('{sel}'); return [s.value, s.selectedOptions[0]?.textContent.trim() || '', [...s.options].map(o => o.value)] }})()"
+    want = norm(f"OBJ-2 · Navire mobile {row(c, 'dwMoving', EDTX_FILE)}")
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        for kind, cond in conds.items():
+            _ed_open(c, _LANDING_MISSION.replace('objects:\n', ship).replace(land, cond))
+            ed_reveal(c)
+            c.tap(f'{E} [data-atflow] [data-sel="B"]')
+            c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
+            val, text, values = c.js(opt)
+            c.eq([val, norm(text), values], ['OBJ-2', want, ['', 'OBJ-1', 'OBJ-2']],
+                 f'{width} {kind}: the moving object of the file is selected, named, « (mobile : non jugé) » after its name, no « ? »; the list offers the still object and the file\'s value', what='the object')
+            c.eq(c.js(_DW_VAL, 'key'), kind, f'{width} {kind}: the key is the file\'s own', what='the key')
+            c.eq([c.count(f'{_DW} [data-dwnotjudged]'), norm(c.js(f"document.querySelector('{_DW} [data-dwnotjudged]')?.textContent || ''"))],
+                 [1, norm(row(c, 'dwNotJudged', EDTX_FILE))], f'{width} {kind}: the mention « s\'ouvre au geste ou à l\'heure de repli » shows', what='the mention')
+            if kind == 'landing':
+                c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
+                c.shot(f'P13e_{width}_objet_mobile.png')  # the sheet of a landing on a moving object
+            c.tap(f'{E} [data-do="edcancel"]')
+            c.wait(200)
+            c.eq(c.count('.f-modal [data-ok]'), 0, f'{width} {kind}: leaving asks nothing: opening the sheet rewrote nothing', what='nothing written')
+            c.js(_REG_CLEAR)

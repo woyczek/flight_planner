@@ -2595,16 +2595,27 @@ function edRuleHtml(s, rule, kind, pre, n, {
   still,
   now
 }) {
+  let wide =
+    false; // un objet mobile et sa mention : le lieu passe seul sur sa rangée (un téléphone ne tient pas le nom et la mention en demi-rangée)
   const use = DR.RULE_USE[kind] || [],
     at = n === null ? '' : ` data-n="${n}"`,
     num = (f, text) => use.includes(f) ? `<label class="f-field"><span>${esc((kind === 'landing' || kind === 'hover') && f === 'gap' ? s.tt(EDTX.dwGapMin, { min: DR.landingGapMin() }) : s.tt(text))}</span><input data-k="eddr" data-f="${pre}.${f}"${at} value="${esc(rule[f] ?? '')}" inputmode="decimal" maxlength="8" autocomplete="off"></label>` : '',
     pick = (f, text, options) => {
       const cur = now(rule[f] || '') || '',
-        all = cur && !options.some(o => o[0].toUpperCase() === cur.toUpperCase()) ? [...options, [cur, `${cur} ?`]] : options;
+        // la valeur du fichier ne figure pas dans la liste : un objet MOBILE (la liste des objets immobiles ne l'offre pas) dit « mobile : non jugé »,
+        // toute autre valeur « ? » (elle ne désigne plus rien) ; la valeur du fichier n'est pas réécrite
+        gone = cur && !options.some(o => o[0].toUpperCase() === cur.toUpperCase()),
+        moving = gone && f === 'object' ? objects.find(o => o[0].toUpperCase() === cur.toUpperCase()) : null,
+        all = (wide = wide || !!moving, gone) ? [...options, moving ? [cur, `${moving[1]} ${s.tt(EDTX.dwMoving)}`] : [cur, `${cur} ?`]] : options;
       return `<label class="f-field"><span>${esc(s.tt(text))}</span><select data-k="eddr" data-f="${pre}.${f}"${at}><option value="">${esc(s.tt(EDTX.dwChoose))}</option>${all.map(o => `<option value="${esc(o[0])}"${o[0].toUpperCase() === cur.toUpperCase() ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
     },
-    row = (...cells) => cells.some(Boolean) ? `<div class="f-row">${cells.join('')}</div>` : '';
-  return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${row(pick('point', EDTX.dwRulePoint, points), pick('object', EDTX.dwRuleObject, kind === 'landing' || kind === 'overflight' || kind === 'hover' ? still : objects))}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
+    row = (...cells) => cells.some(Boolean) ? `<div class="f-row">${cells.join('')}</div>` : '',
+    place = list => {
+      const a = pick('point', EDTX.dwRulePoint, points),
+        b = pick('object', EDTX.dwRuleObject, list);
+      return wide ? row(a) + row(b) : row(a, b);
+    };
+  return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${place(kind === 'landing' || kind === 'overflight' || kind === 'hover' ? still : objects)}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
 }
 
 /** Ce que « Les textes » et « La suite de route » d'un tiroir contiennent, dit en une ligne (un groupe replié ne cache pas ce qu'il

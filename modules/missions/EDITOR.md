@@ -1525,6 +1525,13 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   moving object, so that the copy never diverges from `follows`; it was RED for the hover before this lot (`THE control: ['hover', 'hover+obj']`). Only the sequence and
   the event stay not judged. Captures `P13d_390_stationnaire.png`, `P13d_1280_stationnaire.png` (the sheet of a hover).
 
+- **A moving object says « (mobile : non jugé) »** (SOG-0500, the ergonomist's touch-up of 19 Nov; noreg N161). In the sheet of a drawer whose judged condition (landing,
+  overflight, hover) already follows a MOVING object, the object select used to show the file's value with a « ? » — the mechanism of « the file's value designates
+  nothing any more », misleading here: the object exists, the flight just does not judge a moving one. The select now shows the object's name followed by
+  « (mobile : non jugé) » (`dwMoving`, four languages); a value that designates nothing keeps its « ? ». The value is the file's own and nothing is rewritten without
+  a gesture of the author; the list still offers only still objects; the mention « s'ouvre au geste ou à l'heure de repli » of the drawer shows (it comes from
+  `MS.notJudgedYet` of the read key, which is true for a moving object). Captures `P13e_390_objet_mobile.png`, `P13e_1280_objet_mobile.png`.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
