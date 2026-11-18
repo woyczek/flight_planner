@@ -4303,14 +4303,16 @@ def n87(c):
       'the former one in `assigned_by`; module.js declares missions/affectations.json « keyed:assignments:mission+pilot+role » (the key of '
       'tools/data_sync.py) — with « record » one line of two devices is lost')
 def n88(c):
-    c.page.goto(f'{c.base}/modules/missions/test/assign.html', wait_until='load')
-    try:
-        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=60000)
-    except Exception:
-        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/assign.html') from None
-    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 59, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (59 at least)')
+    # the pure bench (assign.js), then the screen bench (assign_view.js on a fake ctx) — I28: each opened by its path
+    for path, least in (('modules/missions/test/assign.html', 59), ('modules/missions/test/assign_view.html', 48)):
+        c.page.goto(f'{c.base}/{path}', wait_until='load')
+        try:
+            c.page.wait_for_function('window.__bench && window.__bench.done', timeout=60000)
+        except Exception:
+            raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', path) from None
+        r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+        c.ok(r['fail'] == 0 and r['pass'] >= least, f"{path}: {r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+             f'every check of the bench passes ({least} at least)')
 
 
 # SOG-0443: the screen « Affecter… ». An invented mission X-905A (type EC25, base XTST, one drawer whose words must never show), two
