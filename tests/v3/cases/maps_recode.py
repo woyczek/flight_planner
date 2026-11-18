@@ -9751,6 +9751,20 @@ def d282(c):
     c.ok(not fmt(r['name']) and not fmt(r['route']) and not fmt(r['dep']), str(r), 'no invisible format character is left in a proposed route\'s name, text or code')
 
 
+@case('D283', 'One great-circle distance for the Map and the Atmosphere (SOG-0468 (2)): atmo.js and lib/map_edit.js take `gcNm` of frame/lib/geo.js (3 440,065 NM, the radius of the route engine) — no haversine, no radius of their own', 'D',
+      tags=('maps', 'atmosphere'), designs=('standard',), night=False, screens=False,
+      rule='SOG-0468 (2) (the ergonomist: one radius for the whole suite, the one of tools/route_engine/geo.py, so that the page and the engine give the same distance to the NM): atmo.js wrote its own haversine at 3440.065 and lib/map_edit.js its own at 6371008.8 m (1.3e-6 apart); both call frame/lib/geo.js gcNm now (the edit base multiplies by 1852 for its metres), and its circle takes the same radius')
+def d283(c):
+    import re
+    for f in ('modules/atmosphere/atmo.js', 'modules/maps/lib/map_edit.js'):
+        src = (ROOT / f).read_text(encoding='utf-8')
+        c.eq((len(re.findall(r'Math\.sqrt\((?:h|d)\)', src)), '6371' in src, 'gcNm' in src and 'frame/lib/geo.js' in src), (0, False, True), f'{f}: no haversine, no radius of its own, the distance comes from frame/lib/geo.js', what=f)
+    c.open('atmosphere', flight=True)
+    r = c.js("""async () => { const A = await import('/modules/atmosphere/atmo.js'), G = await import('/frame/lib/geo.js'), a = { lat: 43.4, lon: 5.2 }, b = { lat: 47.1, lon: -1.6 };
+      return { same: A.gcNm === G.gcNm || A.gcNm(a, b) === G.gcNm(a, b), nm: G.gcNm(a, b), anti: G.gcNm({ lat: 0, lon: 0 }, { lat: 0, lon: 180 }) / Math.PI } }""")
+    c.ok(r['same'] and abs(r['anti'] - 3440.065) < 1e-6, f'{r}', "the Atmosphere gives the frame's distance, to the digit, and the frame's radius is 3440.065 NM")
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

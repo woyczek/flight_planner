@@ -19,7 +19,8 @@ import {
   wrapLon,
   nearLon,
   unwrapLons,
-  rhumbAt
+  rhumbAt,
+  gcNm
 } from '../../frame/lib/geo.js';
 
 export {
@@ -330,10 +331,9 @@ export function icing(x) {
 export const cumulusBaseFt = col => col?.sfc?.tC != null && col.sfc.tdC != null ? col.sfc.pa + 400 * Math.max(0, col.sfc.tC - col.sfc.tdC) :
   null;
 
-/** Distance orthodromique (NM) et route vraie (°). */
-export const gcNm = (a, b) => {
-  const d = Math.sin((b.lat - a.lat) * R / 2) ** 2 + Math.cos(a.lat * R) * Math.cos(b.lat * R) * Math.sin((b.lon - a.lon) * R / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(d)));
+/** Distance orthodromique (NM) : la fonction du cadre (frame/lib/geo.js, le rayon du moteur de routes), redite ici pour les importeurs d'atmo.js ; et route vraie (°). */
+export {
+  gcNm
 };
 export const bearing = (a, b) => {
   const y = Math.sin((b.lon - a.lon) * R) * Math.cos(b.lat * R),

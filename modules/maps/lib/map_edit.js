@@ -5,7 +5,19 @@
 // `map` : une carte MapLibre, ou tout objet { toXY(lat, lon) → { x, y }, toLL(x, y) → { lat, lon } } (la Carte sans fond MapLibre y donne son
 // canevas). Distances en MÈTRES ; positions { lat, lon } en degrés (longitude dans [-180, 180[, arrondie au millionième quand elle vient d'un pixel).
 
-const R_EARTH = 6371008.8;
+import {
+  gcNm
+} from '../../../frame/lib/geo.js';
+
+const M_PER_NM = 1852,
+  // le rayon de la Terre en mètres : celui du cadre (frame/lib/geo.js, 3 440,065 NM = le moteur de routes), lu de sa fonction (la moitié d'un grand cercle, de pôle à pôle, est π·R) et non recopié
+  R_EARTH = gcNm({
+    lat: 0,
+    lon: 0
+  }, {
+    lat: 0,
+    lon: 180
+  }) / Math.PI * M_PER_NM;
 const rad = d => d * Math.PI / 180;
 const round6 = v => Math.round(v * 1e6) / 1e6;
 const wrapLon = l => {
@@ -15,12 +27,7 @@ const wrapLon = l => {
 const isPos = p => Number.isFinite(+p?.lat) && Number.isFinite(+p?.lon);
 
 /** Distance en mètres entre deux positions (grand cercle). */
-function metersBetween(a, b) {
-  const dLat = rad(b.lat - a.lat),
-    dLon = rad(b.lon - a.lon),
-    h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R_EARTH * Math.asin(Math.min(1, Math.sqrt(h)));
-}
+const metersBetween = (a, b) => gcNm(a, b) * M_PER_NM;
 /** La carte vue par la base : project(lat, lon) → { x, y } et unproject(x, y) → { lat, lon } arrondie, longitude dans [-180, 180[. */
 function viewOf(map) {
   if (typeof map.toXY === 'function' && typeof map.toLL === 'function') return {
