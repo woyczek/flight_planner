@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 330,
+  "tests": 331,
   "verdicts": 219
  },
  "apps": [
@@ -4937,6 +4937,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:26:09Z"
+  },
+  {
+   "id": "SOG-0504",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : quand la reprise « passer par X » échoue, le moteur abandonne sans essayer « X écarté », et la revue dit « X écarté … +0 NM » à tort",
+    "en": "Routes: when the “go via X” retry fails, the engine gives up without trying “X avoided”, and the review wrongly says “X avoided … +0 NM”",
+    "de": "Routen: Scheitert der Versuch „über X“, gibt der Rechner auf, ohne „X gemieden“ zu probieren, und die Prüfung meldet fälschlich „X gemieden … +0 NM“",
+    "es": "Rutas: si falla el reintento «pasar por X», el motor abandona sin probar «X evitado», y la revisión dice por error «X evitado … +0 NM»"
+   },
+   "test": "Rien de visible au premier coup d'œil : quand une règle impose de passer par un point qu'on ne peut pas prendre, le moteur essaie maintenant de l'éviter, et la revue de la route dit ce qui s'est vraiment passé (reprise ratée, repli tenté, règle enfreinte) au lieu d'annoncer un détour qui n'a pas eu lieu. À vérifier en lisant la revue d'une route longue en Europe.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T19:24:45Z"
   }
  ],
  "decisions": [

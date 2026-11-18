@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "34cad0d",
+  "organisation": "fafa739",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -3127,11 +3127,12 @@
     {
      "id": "SOG-0504",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes : quand la reprise « passer par X » échoue, le moteur abandonne sans essayer « X écarté », et la revue dit « X écarté … +0 NM » à tort",
      "en": "Routes: when the “go via X” retry fails, the engine gives up without trying “X avoided”, and the review wrongly says “X avoided … +0 NM”",
      "de": "Routen: Scheitert der Versuch „über X“, gibt der Rechner auf, ohne „X gemieden“ zu probieren, und die Prüfung meldet fälschlich „X gemieden … +0 NM“",
-     "es": "Rutas: si falla el reintento «pasar por X», el motor abandona sin probar «X evitado», y la revisión dice por error «X evitado … +0 NM»"
+     "es": "Rutas: si falla el reintento «pasar por X», el motor abandona sin probar «X evitado», y la revisión dice por error «X evitado … +0 NM»",
+     "test": true
     }
    ]
   },
