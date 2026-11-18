@@ -16945,7 +16945,7 @@ def k478(c):
 # frame/lib/untrusted.js; the sites still carrying an identical copy are listed here — the list only shrinks (a migrated site leaves it, a NEW copy is refused)
 LEGACY_UNTRUSTED_COPIES = {
     'own': {'modules/data/model_sets.js': 1, 'modules/fuel/route_engine.js': 1, 'modules/missions/drawers.js': 1},
-    'plain': {'frame/lib/crossing.js': 1, 'frame/lib/mission.js': 1, 'modules/maps/pilot.js': 1}}
+    'plain': {'frame/lib/crossing.js': 1, 'frame/lib/mission.js': 1}}
 
 
 @case('K479', 'frame/lib/untrusted.js, SOG-0468 (c): the guards « the OWN key of a plain object » and « a plain object » are defined once (frame/lib/untrusted.js) and no NEW copy is written in the pages: the files that still carry an identical copy are exactly the list of the sites to migrate (it only shrinks)',

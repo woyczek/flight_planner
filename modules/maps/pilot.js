@@ -6,16 +6,17 @@
 //   de tiroir : une mission sans tiroir se dessine comme avant.
 import {
   readMission,
-  pilotView,
-  visible
+  pilotView
 } from '../../frame/lib/mission.js';
+import {
+  plain,
+  idWord as word
+} from '../../frame/lib/untrusted.js'; // SOG-0468 (c) : l'objet simple et l'identifiant écrit, définis une fois par le cadre
 import {
   openPath,
   readOpen
 } from '../missions/drawers.js'; // le document des tiroirs ouverts que « Affectation » publie sur l'appareil, et sa lecture bornée (FORMAT_MISSION § 4 bis, AFFECTATION_MISSIONS § 11.4)
 
-const word = v => typeof v === 'string' || typeof v === 'number' ? visible(v).replace(/\s+/g, ' ').trim().toUpperCase() : '';
-const plain = v => v && typeof v === 'object' && !Array.isArray(v) ? v : null;
 const idOf = (x, key = '') => word(plain(x) ? x.id ?? key : x ?? key);
 /** Les clés de liste de lieux que MapsMission.parse lit (points d'itinéraire, rendez-vous) et celles de la cible. */
 const PLACES = ['turning_points', 'turningPoints', 'points_tournants', 'waypoints', 'points', 'rendezvous', 'rdv'];
