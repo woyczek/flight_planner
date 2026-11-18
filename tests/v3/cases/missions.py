@@ -9683,14 +9683,14 @@ _PROF_WRAP = """
 export async function drawProfile(cv, pts, o) {
   (window.__PTS ||= []).push(JSON.parse(JSON.stringify(pts)));
   const r = await __real(cv, pts, o);
-  return r && r.ok && r.terrain && !('clear' in r) ? { ...r, clear: window.__CLEAR || null } : r;
+  return r && r.ok && r.terrain ? { ...r, clear: window.__CLEAR ?? null } : r; // the case IMPOSES its margin: the real `clear` (156be0182) depends on the fake relief
 }
 """
 
 
 @case('N143', 'Missions › the workshop, the profile names its places and says a cruise under the relief (SOG-0464, retouch): the points given to drawProfile carry the identifier of '
       'their place (so the Carte writes it under the axis); `clear` below zero says « La croisière passe sous le relief à {nm} NM ({ft} ft) » (four languages), a margin under 500 ft '
-      '« Marge faible au-dessus du relief », a wide margin or no `clear` says nothing; the answer of the real drawProfile is faked for the case when it has no `clear`',
+      '« Marge faible au-dessus du relief », a wide margin or no `clear` says nothing; the `clear` of the real drawProfile is replaced by the margin of the case',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0464 retouch: modules/missions/editor_view.js `edProfile` (identifier of each point of `route` found in `e.mapFeats.points`; `clear` read when it exists), '
       'modules/maps/INTEGRATION.md § 7 ter; modules/missions/EDITOR.md § 7 quadragies')
