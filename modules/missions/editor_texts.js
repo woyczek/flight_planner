@@ -392,6 +392,11 @@ export const EDTX = {
   dwTol: ['Écart de vitesse toléré (kt)', 'Tolerated speed deviation (kt)', 'Tolerierte Geschwindigkeitsabweichung (kt)',
     'Desviación de velocidad tolerada (kt)'
   ],
+  // un atterrissage : le trou de relevés toléré ne descend pas sous la période d'un relevé du vol (SOG-0500, lot d'Affectation)
+  dwGapMin: ['Trou de relevés toléré (s, {min} au moins)', 'Tolerated gap in fixes (s, {min} at least)',
+    'Tolerierte Messlücke (s, mindestens {min})',
+    'Hueco de lecturas tolerado (s, {min} como mínimo)'
+  ],
   dwHMin: ['Hauteur minimale (ft, sol)', 'Minimum height (ft, AGL)', 'Mindesthöhe (ft, über Grund)',
     'Altura mínima (ft, sobre el suelo)'
   ],

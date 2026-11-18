@@ -200,7 +200,7 @@ export function holdRow(kind, places = []) {
 
 /** Le plus court trou de relevés qu'un poser tolère : la période d'un relevé du vol (DW.FIX_PERIOD_SEC, lue par l'espace de noms : son
  *  absence n'est pas une erreur), jamais sous la borne du lecteur. */
-function landingGapMin() {
+export function landingGapMin() {
   const p = DW.FIX_PERIOD_SEC;
   return Number.isFinite(p) ? Math.max(p, H.maxGapSec[0]) : H.maxGapSec[0];
 }

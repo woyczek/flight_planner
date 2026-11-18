@@ -2581,22 +2581,24 @@ function edEmitHtml(s, r) {
 /** Les champs d'une règle de maintien ou de survol (SOG-0500) : son lieu — un point de la mission OU un objet suivi (deux listes : en
  *  choisir un vide l'autre ; la valeur du fichier y figure toujours, suivie d'un « ? » quand elle ne désigne plus rien) —, puis les
  *  nombres que sa sorte lit (DR.RULE_USE), deux par rangée, et pour un survol la confirmation du pilote. `pre` : 'rule' (la condition
- *  du tiroir) ou 'step' (une étape d'une suite ; `n` son rang). Tout texte du fichier passe par esc(). */
+ *  du tiroir) ou 'step' (une étape d'une suite ; `n` son rang). Un atterrissage ne propose que les objets IMMOBILES (`still`). Tout texte
+ *  du fichier passe par esc(). */
 function edRuleHtml(s, rule, kind, pre, n, {
   points,
   objects,
+  still,
   now
 }) {
   const use = DR.RULE_USE[kind] || [],
     at = n === null ? '' : ` data-n="${n}"`,
-    num = (f, text) => use.includes(f) ? `<label class="f-field"><span>${esc(s.tt(text))}</span><input data-k="eddr" data-f="${pre}.${f}"${at} value="${esc(rule[f] ?? '')}" inputmode="decimal" maxlength="8" autocomplete="off"></label>` : '',
+    num = (f, text) => use.includes(f) ? `<label class="f-field"><span>${esc(kind === 'landing' && f === 'gap' ? s.tt(EDTX.dwGapMin, { min: DR.landingGapMin() }) : s.tt(text))}</span><input data-k="eddr" data-f="${pre}.${f}"${at} value="${esc(rule[f] ?? '')}" inputmode="decimal" maxlength="8" autocomplete="off"></label>` : '',
     pick = (f, text, options) => {
       const cur = now(rule[f] || '') || '',
         all = cur && !options.some(o => o[0].toUpperCase() === cur.toUpperCase()) ? [...options, [cur, `${cur} ?`]] : options;
       return `<label class="f-field"><span>${esc(s.tt(text))}</span><select data-k="eddr" data-f="${pre}.${f}"${at}><option value="">${esc(s.tt(EDTX.dwChoose))}</option>${all.map(o => `<option value="${esc(o[0])}"${o[0].toUpperCase() === cur.toUpperCase() ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
     },
     row = (...cells) => cells.some(Boolean) ? `<div class="f-row">${cells.join('')}</div>` : '';
-  return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${row(pick('point', EDTX.dwRulePoint, points), pick('object', EDTX.dwRuleObject, objects))}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
+  return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${row(pick('point', EDTX.dwRulePoint, points), pick('object', EDTX.dwRuleObject, kind === 'landing' ? still : objects))}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
 }
 
 /** Ce que « Les textes » et « La suite de route » d'un tiroir contiennent, dit en une ligne (un groupe replié ne cache pas ce qu'il
@@ -2672,6 +2674,8 @@ function edDrawerHtml(s, doc) {
         ['ORIGIN', s.tt(EDTX.dwDep)], ...points
       ],
       objects: of('object'),
+      // un atterrissage ne se juge que sur un point ou un objet IMMOBILE (follows de drawers.js) : sa liste ne propose que ceux-là
+      still: places.filter(p => p.id && p.kind === 'object' && !p.moving).map(p => [p.id, label(p)]),
       now
     },
     // le message envoyé à l'ouverture : montré quand le tiroir en envoie un (dans le fichier ou la séance)

@@ -1467,8 +1467,8 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   à l'heure de repli » shows for a key the flight does not judge (`!DR.judgedKind`), or for a key the reader reads as not judged (`MS.notJudgedYet`). « Message
   envoyé à l'ouverture » shows for a drawer that sends one, or when the flight judges messages.
 - **The control** (Affectation): for every kind of key the reader gives, `MS.notJudgedYet(k) === !(hand || time || follows(k))` (case N155) — the pilot's
-  screen and « ＋ Tiroir » never diverge. It passes today. When Affectation's lot makes `follows` accept the landing, `notJudgedYet` of `frame/lib/mission.js`
-  must say false for those landings in the same lot, or N155 turns red and names the kind.
+  screen and « ＋ Tiroir » never diverge. It went RED on the landing when Affectation's 3c2e2abba made `follows` accept it (N155 named `landing`, twice); the
+  same lot makes `notJudgedYet` of `frame/lib/mission.js` say false for it (see § 7 duoquinquagies, « The landing is judged »).
 
 ### 7 duoquinquagies. The 32 bricks of the 1.1 conditions in the catalogue (18 Nov 2026; SOG-0500 (d); noreg N156, N138, N139)
 
@@ -1491,6 +1491,14 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   departure and the arrival (a mission needs none), so the tick was TRUE, while the line said « à remplir » for ANY empty group — the line was the lying one.
   « à remplir » is now said only by the groups `ED.todo` does require (teams, story, risks, timeline); « Lieux » with no place of its own says
   « aucun lieu » (`atLine_noplace`, four languages), its mark stays ✓.
+
+- **The landing is judged** (SOG-0500, after Affectation's 3c2e2abba; noreg N155, N158, N139, N152, N129, N156). `follows` accepts a condition `landing`: `rule.kind` `landing`,
+  a readable point or a STILL object, an empty `confirmation`, `max_gap_sec` ≥ `FIX_PERIOD_SEC` (5 s), finite numbers. `notJudgedYet` (`frame/lib/mission.js`) says false in exactly
+  those conditions — the rule is written there (`landingJudged`, `FIX_PERIOD_SEC` copied: the frame imports no module; the comment says it must follow `follows`, N155 keeps
+  both together). « ＋ Tiroir » therefore offers the landing (the `judged` flag comes from `follows`; « Un poser » on the screen) and the 12 landing bricks of the catalogue
+  (40 offered instead of 28); a landing drawer no longer carries the mention « s'ouvre au geste ou à l'heure de repli ». The sheet of a landing offers only the STILL objects
+  (`still` of `edRuleHtml`: a moving object is not judged; a moving object already written stays shown with its « ? ») and its gap says its minimum
+  (`dwGapMin`, « 5 au moins », from `DR.landingGapMin`, which `ruleMissing` already enforced: under 5 s, « À compléter »). Captures `P13b_390_atterrissage.png`, `P13b_1280_atterrissage.png`.
 
 ### 8. What is NOT ported
 
