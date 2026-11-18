@@ -60,14 +60,35 @@ function place(h, kind) {
     lon
   };
 }
-/** Les propositions pour un texte : aerodb.find (lieux des zones ouvertes, villes) puis les terrains de toutes les zones (suggest) qui n'y sont pas ; SHOWN au plus, sans doublon. */
-async function search(q) {
-  const A = S.ctx?.aerodb;
+/** À rang égal : les terrains, puis les balises, les points, les points VFR, les villes. */
+const KIND = {
+  aerodrome: 0,
+  navaid: 1,
+  point: 2,
+  vrp: 3,
+  city: 4
+};
+const fold = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+/** Le rang d'un lieu pour le texte q (déjà en capitales) : 0 l'identifiant EXACT (une balise, un point, un terrain), 1 un identifiant qui COMMENCE par le texte, 2 un nom (ou un mot du nom) qui commence par lui, 3 le reste. */
+const rankOf = (p, q) => {
+  const code = fold(p.code),
+    name = fold(p.name);
+  return code && code === q ? 0 : code && code.startsWith(q) ? 1 : name.startsWith(q) || name.split(/[^A-Z0-9]+/).some(w => w.startsWith(
+    q)) ? 2 : 3;
+};
+/** Les propositions pour un texte (SOG-0491, refusée au test : « REN » donnait tout sauf la VOR REN) : l'identifiant EXACT d'abord, où qu'il soit — aerodb.find ne lit que les zones OUVERTES,
+ *  coordsAll cherche l'identifiant dans toutes les zones publiées — puis les identifiants qui commencent par le texte, puis les noms ; aerodb.find (lieux des zones ouvertes, villes) et suggest
+ *  (les terrains de toutes les zones) complètent ; SHOWN au plus, sans doublon (un identifiant donné par deux sources n'est proposé qu'une fois). */
+export async function searchPlaces(q, A) {
   if (!A) return [];
-  const [found, ads] = await Promise.all([
-      Promise.resolve(A.find?.(q, 12)).catch(() => []),
+  const Q = fold(q).trim(),
+    [exact, found, ads] = await Promise.all([
+      // un identifiant (3 à 5 signes) est demandé à TOUTES les zones publiées ; coordsAll les parcourt une à une jusqu'à le trouver : jamais plus de 1,5 s d'attente, et pas pour un texte qui n'en est pas un
+      /^[A-Z0-9]{3,5}$/.test(Q) ? Promise.race([Promise.resolve(A.coordsAll?.(q.trim())), new Promise(ok => setTimeout(() => ok([]),
+        1500))]).catch(() => []) : [],
+      Promise.resolve(A.find?.(q, 40)).catch(() => []),
       Promise.resolve(A.suggest?.(q, {
-        n: 6
+        n: 10
       })).catch(() => [])
     ]),
     out = [],
@@ -79,11 +100,26 @@ async function search(q) {
       seen.add(k);
       out.push(p);
     };
+  for (const x of Array.isArray(exact) ? exact.slice(0, 6) : []) {
+    const it = x?.item || {};
+    add(place({
+      code: it.icao || it.id,
+      name: it.name,
+      lat: it.lat,
+      lon: it.lon
+    }, ['aerodrome', 'navaid', 'point', 'vrp'].includes(x?.kind) ? x.kind : 'point'));
+  }
   for (const h of Array.isArray(found) ? found : []) add(place(h, ['aerodrome', 'navaid', 'point', 'vrp', 'city'].includes(h?.kind) ? h
     .kind : 'point'));
   for (const h of Array.isArray(ads) ? ads : []) add(place(h, 'aerodrome'));
-  return out.slice(0, SHOWN);
+  // l'ordre : exact, début d'identifiant, noms ; à rang égal, l'ordre des sources (la même suite stable)
+  return out.map((p, i) => ({
+    p,
+    i,
+    r: rankOf(p, Q)
+  })).sort((a, b) => a.r - b.r || KIND[a.p.kind] - KIND[b.p.kind] || a.i - b.i).map(x => x.p).slice(0, SHOWN);
 }
+const search = q => searchPlaces(q, S.ctx?.aerodb);
 
 const kindText = kind => tt(TX.findKinds[kind] || TX.findKinds.point);
 /** Centre la carte sur le lieu (la caméra est ensuite celle de l'utilisateur) ; sur le fond uni, le cadre se pose autour de lui. */

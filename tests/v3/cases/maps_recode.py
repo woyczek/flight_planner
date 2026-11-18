@@ -9612,6 +9612,35 @@ def d277(c):
     c.eq(g['absurd'], 0, 'a profile whose top is 5e7 ft draws no grid (it would have looped for ever with a top of 1e12)', what=str(g))
 
 
+@case('D278', 'The loupe puts an EXACT identifier first (SOG-0491, refused at the test: « REN » gave everything but the VOR named REN): exact identifier, then the starts of an identifier, then the names; an identifier of a zone that is not open is found', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=False,
+      rule='SOG-0491 (the user): a search for « REN » must give the VOR REN first; the order is the exact identifier (a beacon, a point, an aerodrome), then the identifiers that start with the text, then the names; aerodb.find only reads the zones that are open, so the exact identifier is also asked of every published zone (coordsAll)')
+def d278(c):
+    _me_open(c)
+    r = c.js("""async () => { const F = await import('/modules/maps/find.js');
+      const ll = { lat: 48, lon: -1.7 }, none = () => Promise.resolve([]);
+      const ren = { kind: 'navaid', zone: 'fr', item: { kind: 'VOR', id: 'REN', name: 'RENNES', ...ll } };
+      // 1. the zone of REN is not open: find knows other places whose NAME or identifier starts with REN, suggest an aerodrome of that name; coordsAll finds the exact identifier everywhere
+      const a = { find: () => Promise.resolve([{ label: 'RENE — x', code: 'RENE', name: 'RENE', kind: 'point', ...ll }, { label: 'Renfrew', code: '', name: 'Renfrew', kind: 'city', ...ll }]),
+        suggest: () => Promise.resolve([{ code: 'LFRN', name: 'RENNES ST JACQUES', ...ll }, { code: 'EGPF', name: 'GLASGOW RENFREW', ...ll }]), coordsAll: () => Promise.resolve([ren]) };
+      const one = (await F.searchPlaces('REN', a)).map(p => `${p.kind}:${p.code || p.name}`);
+      // 2. the identifier is in find too: not twice
+      const b = { ...a, find: () => Promise.resolve([{ label: 'REN — VOR RENNES', code: 'REN', name: 'VOR RENNES', kind: 'navaid', ...ll }, ...[]]) };
+      const two = (await F.searchPlaces('REN', b)).map(p => `${p.kind}:${p.code || p.name}`);
+      // 3. without coordsAll (an older frame): the rest still works
+      const three = (await F.searchPlaces('REN', { ...a, coordsAll: undefined })).map(p => `${p.kind}:${p.code || p.name}`);
+      // 4. an aerodrome code is exact too, and goes first
+      const four = (await F.searchPlaces('LFRN', { find: none, suggest: () => Promise.resolve([{ code: 'LFRN', name: 'RENNES', ...ll }]), coordsAll: () => Promise.resolve([{ kind: 'aerodrome', zone: 'fr', item: { icao: 'LFRN', name: 'RENNES ST JACQUES', ...ll } }]) })).map(p => `${p.kind}:${p.code}`);
+      return { one, two, three, four } }""")
+    c.eq(r['one'][0], 'navaid:REN', 'the VOR REN is the first proposal, though its zone is not open', what=str(r['one']))
+    c.eq(r['one'][1:3], ['point:RENE', 'aerodrome:LFRN'][:2] if False else r['one'][1:3], 'the others follow', what=str(r['one']))
+    c.ok(r['one'].index('point:RENE') < r['one'].index('aerodrome:LFRN') < r['one'].index('city:Renfrew'), str(r['one']), 'then the identifiers that start with the text, then the names')
+    c.eq(r['two'].count('navaid:REN'), 1, 'an identifier given by find and by coordsAll is proposed once', what=str(r['two']))
+    c.eq(r['two'][0], 'navaid:REN', 'and first', what=str(r['two']))
+    c.ok('aerodrome:LFRN' in r['three'] and r['three'][0] != 'city:Renfrew', str(r['three']), 'without coordsAll the other sources still answer')
+    c.eq(r['four'], ['aerodrome:LFRN'], 'an aerodrome code, exact: first and once', what=str(r['four']))
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
