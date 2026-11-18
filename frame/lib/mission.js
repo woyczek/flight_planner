@@ -66,8 +66,10 @@
 //     n'est pas exactement `true`, ou des options illisibles (échec fermé). Une mission SANS tiroir est rendue telle quelle (ses
 //     parties écartées ne sont pas comptées) ; une mission dont tous les tiroirs sont fermés a `drawers: []`. Ajoute
 //     `pilot: { mine, opened }` — aucun compte de ce qui est caché. `profileRoute` (le texte `vertical_profile.route`, dont la Carte tire
-//     ses jetons) et `profilePoints` ([{ id, lat, lon }], `route_points`) : readMission les rend tels qu'écrits (bornés) ; la vue en retire
-//     tout jeton ou point qui nomme un lieu qu'elle ne garde pas (SOG-0459) — les autres jetons (niveau, ORIGIN…) restent, et le jeton
+//     ses jetons) et `profilePoints` ([{ id, name, lat, lon, alt_ft }], `route_points` : id = `id` sinon `name` tel qu'écrit, name = le nom ou '',
+//     alt_ft = l'altitude à atteindre au point, un nombre de 0 à 60 000, sinon null) : readMission les rend bornés ; la vue en retire
+//     tout jeton ou point qui nomme un lieu qu'elle ne garde pas — par son identifiant ou son nom, un nom de plusieurs mots (« Port Alpha »)
+//     aussi, entre blancs, virgule ou point-virgule, son « /niveau » avec lui, sans manger le nom d'un lieu gardé (SOG-0459) — les autres jetons (niveau, ORIGIN…) restent, et le jeton
 //     revient avec le tiroir ouvert. Pour AFFICHER seulement : le suivi des clés en vol et l'atelier
 //     lisent la mission entière (readMission). null sans mission.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points, depAt, arrAt }, aircraft: { type, registration }, levelFt, speedKt, mission,
@@ -727,9 +729,11 @@ export function readMission(doc) {
     // la Carte en tire ses jetons de route ; pilotView en retire ce qui nomme un lieu que la vue ne garde pas (SOG-0459)
     profileRoute: typeof plain(d.vertical_profile)?.route === 'string' ? cut(d.vertical_profile.route, PROFILE_TEXT) : '',
     profilePoints: list(plain(d.vertical_profile)?.route_points, 200).map(p => ({
-      id: idWord(plain(p)?.name ?? plain(p)?.id),
+      id: cut(plain(p)?.id ?? plain(p)?.name, 80),
+      name: cut(plain(p)?.name, 80),
       lat: latOf(plain(p)?.lat),
-      lon: lonOf(plain(p)?.lon)
+      lon: lonOf(plain(p)?.lon),
+      alt_ft: num(plain(p)?.alt_ft) !== null && +plain(p).alt_ft >= 0 && +plain(p).alt_ft <= 60000 ? +plain(p).alt_ft : null
     })).filter(p => p.id && p.lat !== null && p.lon !== null),
     aircraft: ac.map(a => ({
       type: clean(a.type || a.icao).split(' ')[0].toUpperCase(),
@@ -944,21 +948,26 @@ export function pilotView(mission, opened = [], options = null) {
     if (id !== '__proto__' && (plain(all[id])?.kind === 'target' ? targetSeen : seen(id))) points[id] = all[id];
   // le cheminement du profil : un jeton qui nomme un lieu de la mission que la vue ne garde pas (son identifiant, son nom, ou l'identifiant
   // d'un lieu que seul un tiroir cite) n'y est plus ; les autres jetons (un niveau, un mot clé, ORIGIN…) restent
-  const lost = new Set(),
+  const lost = new Set(), // les identifiants et les noms (en capitales, blancs réduits) des lieux que la vue ne garde pas
+    keptNames = new Set(), // les noms des lieux gardés (un nom caché ne les mange pas)
     lose = v => {
       const w = idWord(v);
       if (w && !cited.has(w)) lost.add(w);
+    },
+    place = (id, name, isKept) => {
+      const i = idWord(id),
+        n = idWord(name);
+      if (isKept) {
+        if (n) keptNames.add(n);
+      } else {
+        if (i) lost.add(i);
+        if (n) lost.add(n);
+      }
     };
-  for (const id of Object.keys(all)) {
-    lose(id);
-    lose(plain(all[id])?.name);
-  }
+  for (const id of Object.keys(all)) place(id, plain(all[id])?.name, plain(all[id])?.kind === 'target' ? targetSeen : seen(id));
   for (const x of [...(Array.isArray(m.zones) ? m.zones : []), ...(Array.isArray(m.rendezvous) ? m.rendezvous : []),
       ...(Array.isArray(m.turns) ? m.turns : [])
-    ].slice(0, 200)) {
-    lose(plain(x)?.id);
-    lose(plain(x)?.name);
-  }
+    ].slice(0, 200)) place(plain(x)?.id, plain(x)?.name, seen(plain(x)?.id));
   for (const d of drawers) {
     const k = plain(d.key) || {};
     lose(k.zoneId);
@@ -967,12 +976,43 @@ export function pilotView(mission, opened = [], options = null) {
     (Array.isArray(d.route) ? d.route : []).slice(0, DRAWER_BOUNDS.route).forEach(p => lose(plain(p) ? p.id : p));
   }
   ['ORIGIN', 'DESTINATION'].forEach(w => lost.delete(w)); // le départ et l'arrivée ne sont pas des lieux cachés
+  for (const w of keptNames) lost.delete(w); // le nom d'un lieu gardé ne part jamais
   const named = t => ![t, t.split('/')[0]].some(w => lost.has(idWord(w))),
-    profileRoute = (typeof m.profileRoute === 'string' ? m.profileRoute : '').slice(0, PROFILE_TEXT).split(/[\s,;]+/).filter(Boolean).slice(
-      0, 300)
-    .filter(named).join(' '),
+    // les noms de PLUSIEURS mots (« Port Alpha »), gardés ou non : le texte est coupé aux blancs, ils sont donc cherchés AVANT, mot à mot,
+    // les plus longs d'abord, bornés (200 noms, 8 mots) ; un nom ne se reconnaît qu'entre blancs, virgule, point-virgule ou bords du texte
+    multi = (set, keptFlag) => [...set].filter(n => n.includes(' ') && n.length <= 80).slice(0, 200).map(n => ({
+      words: n.split(' ').slice(0, 8),
+      keptFlag
+    })),
+    names = [...multi(lost, false), ...multi(keptNames, true)].sort((x, y) => y.words.length - x.words.length || (x.keptFlag ? -1 : 1)),
+    text = (typeof m.profileRoute === 'string' ? m.profileRoute : '').slice(0, PROFILE_TEXT),
+    toks = [...text.matchAll(/[^\s,;]+/g)].slice(0, 300).map(x => ({
+      t: x[0],
+      at: x.index
+    })),
+    kept = [];
+  for (let i = 0; i < toks.length;) {
+    const hit = names.find(n => n.words.every((w, j) => {
+      const k = toks[i + j];
+      if (!k) return false;
+      const u = k.t.toUpperCase(),
+        last = j === n.words.length - 1;
+      return (last ? u.split('/')[0] : u) === w && (j === 0 || /^\s+$/.test(text.slice(toks[i + j - 1].at + toks[i + j - 1].t.length,
+        k.at)));
+    }));
+    if (hit) {
+      if (hit.keptFlag)
+        for (let j = 0; j < hit.words.length; j++) kept.push(toks[i + j].t);
+      i += hit.words.length;
+    } else {
+      if (named(toks[i].t)) kept.push(toks[i].t);
+      i += 1;
+    }
+  }
+  const profileRoute = kept.join(' '),
     profilePoints = (Array.isArray(m.profilePoints) ? m.profilePoints : []).slice(0, 200).filter(p => plain(p) && named(String(p.id ??
-      '')));
+        '')) &&
+      named(String(p.name ?? '')));
   const zones = keep(m.zones),
     rendezvous = keep(m.rendezvous),
     turns = keep(m.turns),

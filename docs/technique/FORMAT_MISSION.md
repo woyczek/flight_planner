@@ -162,10 +162,15 @@ reader: `pilotView(mission, opened, { mine = true })` returns the mission read, 
   text, 1 or false: hidden) — kept in `zones` as an ordinary zone, nothing tying it to the drawer;
 - the route text of the vertical profile (`vertical_profile.route`, from which the Map draws its route tokens) and its resolved points
   (`vertical_profile.route_points`) are read by `readMission` as `profileRoute` (a text of 2 000 signs at most) and `profilePoints`
-  (`[{ id, lat, lon }]`, 200 at most), and **filtered by `pilotView`**: a token (cut at « / », compared as an identifier) or a point
-  that names a place the view does not keep — a place only a closed drawer cites, or its name — is not there; a level, a key word,
-  `ORIGIN` and `DESTINATION` stay; with the drawer open, the token comes back. A screen that draws the route reads these two fields
-  of the view, never `vertical_profile` of the document;
+  (`[{ id, name, lat, lon, alt_ft }]`, 200 at most: `id` is the written `id`, else the `name`, as written; `name` the name or `''`;
+  `alt_ft` the altitude to reach at the point, a number from 0 to 60 000, else `null`), and **filtered by `pilotView`**: a token (cut
+  at « / », so « PT8/3000 » leaves whole; compared as an identifier) or a point that names a place the view does not keep — a place
+  only a closed drawer cites, by its identifier or its name — is not there. A name in SEVERAL words (« Port Alpha ») is looked for
+  in the text BEFORE it is cut at the blanks, case and repeated blanks ignored, only between blanks, commas, semicolons or the ends
+  of the text (« Seaport Alpha » is not « Port Alpha »), with its « /level » if it has one; the name of a place that is kept is
+  never eaten by a hidden shorter one (« Port » hidden, « Port Bravo » visible). A level, a key word, `ORIGIN` and `DESTINATION`
+  stay; with the drawer open, the token comes back. A screen that draws the route reads these two fields of the view, never
+  `vertical_profile` of the document;
 - `opened` is the letters of the open drawers of MY mission, a bounded input: only the letters of `DRAWER_IDS` count; `mine: false`
   (a mission one browses) gives the visible part alone, whatever `opened` says; **`mine` is read strictly** (the Security session,
   18 Nov): without options, or without `mine`, the mission is mine — the default —, but a `mine` that is not exactly `true` (the text

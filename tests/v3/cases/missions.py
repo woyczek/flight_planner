@@ -7076,8 +7076,17 @@ _PV_NOTHING_JS = """async () => { const MS = await import('/frame/lib/mission.js
   const prof = v => [v.profileRoute ?? '', (v.profilePoints || []).map(p => p.id).join(' ')], pw = (...a) => prof(MS.pilotView(m, ...a));
   const hostile = [7, { route: {} }, { route: 'PT8 '.repeat(5000) }, { route: 'PT8', route_points: 'x' }, { route: ['PT8'], route_points: [null, 7, { name: {} }] }]
     .map(vp => { try { const v = MS.pilotView(MS.readMission({ ...doc, vertical_profile: vp }), []); return [typeof (v.profileRoute ?? ''), (v.profileRoute ?? '').length <= 2000, (v.profileRoute ?? '').includes('PT8'), (v.profilePoints || []).length] } catch (e) { threw += String(e); return null } });
+  // the names of the places, in several words or not, and the levels glued to a token (« Port Alpha » hidden, « Port Bravo » visible, « Port » hidden)
+  const doc2 = { ...doc, rendezvous: [], objects: [], zones: [{ id: 'Z1', centre: { lat: 44.9, lon: 1.9 }, radius_km: 2 }],
+    turning_points: [{ id: 'PT1', name: 'Port Bravo', lat: 44.8, lon: 1.2 }, { id: 'PT8', name: 'Port Alpha', lat: 44.51, lon: 1.61 }, { id: 'PT7', name: 'Port', lat: 44.6, lon: 1.7 }],
+    route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
+    vertical_profile: { route: 'ORIGIN Port Alpha/FL65 PT1/FL65 Port Bravo PT8/3000 N0450F350 FL105 5500 ft Seaport Alpha VFR Port DESTINATION TARGET/FL65 Port  alpha, port;bravo',
+      route_points: [{ id: 'PT1', name: 'Port Bravo', lat: 44.8, lon: 1.2, alt_ft: 3000 }, { name: 'Port Alpha', lat: 44.51, lon: 1.61, alt_ft: 'x' }, { id: 'P9', lat: 44.0, lon: 1.0, alt_ft: 70000 },
+        { id: 'P10', lat: 44.1, lon: 1.1, alt_ft: 0 }, { id: 'PT7', lat: 44.6, lon: 1.7 }, { id: 'P11', name: 'Port', lat: 44.2, lon: 1.2 }] },
+    phases: [{ id: 'B', title: 'B', trigger_zone: 'Z1', fallback_delay_min: 30, route_order: ['PT8'] }, { id: 'C', title: 'C', trigger_zone: 'Z1', fallback_delay_min: 60, route_order: ['PT7'] }] };
+  const m2 = MS.readMission(doc2), pw2 = (...a) => { const v = MS.pilotView(m2, ...a); return [v.profileRoute, v.profilePoints.map(p => [p.id, p.name, p.alt_ft])] };
   const one = MS.pilotView(m, ['C']);
-  return { profile: { none: pw([]), c: pw(['C']), b: pw(['B']), notMine: pw(['B', 'C'], { mine: false }), strict: pw(['B'], { mine: 'true' }),
+  return { prof2: { none: pw2([]), b: pw2(['B']), whole: m2.profilePoints.map(p => [p.id, p.name, p.alt_ft]) }, profile: { none: pw([]), c: pw(['C']), b: pw(['B']), notMine: pw(['B', 'C'], { mine: false }), strict: pw(['B'], { mine: 'true' }),
     whole: [m.profileRoute ?? '', (m.profilePoints || []).length], hostile },
     none: [none.drawers, none.drawersRefused, none.pilot, Object.keys(none.pilot).sort(), found(none), none.zones.length, none.rendezvous.length, none.turns.map(t => t.id)],
     one: [one.drawers.map(d => [d.id, d.rank, d.title]), found(one).filter(w => !['Tiroir speleo', 'Mot de clef speleo', '"trigger"', '"rank"', 'OBJ-9', 'RDV-3', 'Equipe cachee', '44.52', '44.54', 'Speleo perdu'].includes(w))],
@@ -7117,6 +7126,18 @@ def n113(c):
           ['ORIGIN PT1 PT8, RDV-3 FL050 ZONE-7/x CLIMB DESTINATION', 2]],
          'a `mine` that is not strictly true: the profile route of the visible part alone; the mission read (readMission) keeps the whole text and both points',
          what='profile route, mine and the whole')
+    q = r['prof2']
+    c.eq(q['none'], ['ORIGIN PT1/FL65 Port Bravo N0450F350 FL105 5500 ft Seaport Alpha VFR DESTINATION TARGET/FL65 bravo',
+                     [['PT1', 'Port Bravo', 3000], ['P9', '', None], ['P10', '', 0]]],
+         'the route text and the points, nothing open: « Port Alpha » (two words, hidden) leaves with its « /FL65 », « PT8/3000 » leaves whole, a hidden « Port » does not eat the visible '
+         '« Port Bravo », « Seaport Alpha » is not « Port Alpha », « Port  alpha » (two blanks, other case) leaves, « port;bravo » is not a name (« bravo » stays); « PT1/FL65 », '
+         '« N0450F350 », « FL105 », « 5500 », « ft », « VFR », « TARGET/FL65 » stay, in their order; a point named « Port Alpha » or « Port » is gone, an altitude out of 0 to 60 000 or not a number reads null',
+         what='names in several words')
+    c.eq(q['b'], ['ORIGIN Port Alpha/FL65 PT1/FL65 Port Bravo PT8/3000 N0450F350 FL105 5500 ft Seaport Alpha VFR DESTINATION TARGET/FL65 Port alpha bravo',
+                  [['PT1', 'Port Bravo', 3000], ['Port Alpha', 'Port Alpha', None], ['P9', '', None], ['P10', '', 0]]],
+         'drawer B open: its « Port Alpha » and « PT8/3000 » come back; the hidden « Port » (drawer C) still leaves', what='names, drawer open')
+    c.eq(q['whole'], [['PT1', 'Port Bravo', 3000], ['Port Alpha', 'Port Alpha', None], ['P9', '', None], ['P10', '', 0], ['PT7', '', None], ['P11', 'Port', None]],
+         'the mission read keeps every point: id (the id, else the name), name, alt_ft (null out of 0 to 60 000)', what='points read')
     c.eq(p['hostile'], [['string', True, False, 0]] * 5, 'hostile vertical_profile (a number, a route that is an object, 20 000 signs, a list, bad points): no exception, a bounded text, '
          'no hidden word', what='profile hostile')
     c.eq(r['refused'], [1, 0, [], False], 'a mission whose only part is refused: the reader counts it, the view does not say it (0), and returns nothing of it',
