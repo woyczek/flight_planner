@@ -1572,6 +1572,10 @@ aerodb's memory (`frame/aerodb/DECISIONS.md`), although the same session holds b
     lot's; until it writes `profile.path` the profile draws its fallback, and a quote without `origin` gives times by the quote's
     total over the flown path.
 
+## The Map's vertical profile is opened to other modules by a loader and one call, not copied (SOG-0464, 18 Nov)
+
+The workshop of missions wants the profile under its map (« le relief est important dans la définition du trajet »), and the user's rule is reuse. The profile is a pair of classic scripts (`SiaProfile`, `MapsProfile`) that the Map loads in `screen.js` (`loadLibs`, with everything else of the screen). **Chosen**: a small ES module `lib/profile_embed.js` with its own loader of the four scripts it needs (`SiaAero`, `MapsRender`, `SiaProfile`, `MapsProfile`: the order matters, `MapsRender` gives the rhumb-line distances so that the length matches the Map's) and one call, `drawProfile(canvas, points, { load, levelFt })`; the Map is not changed (it keeps `loadLibs`; its profile cases replayed). **Not done**: airspaces, airways, obstacles and MORA on the embedded profile (the workshop asks for the relief; they would need the Map's data layer); the colours are the profile's own (a white card, as the Map's), not design tokens; no cursor, no window. The relief is read through the caller's `load` (no `fetch`, no host added); offline `build` is made without elevation and the result says `terrain: false` — the caller says it.
+
 ## The aerodrome procedures layer (28 Oct 2026, V3_SPECIFICATION § 10.22)
 
 SPEC § 6.11, INTEGRATION § 3 ter. Choices of the session, with their reasons:

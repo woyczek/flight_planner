@@ -394,6 +394,31 @@ As built (18 Nov), the notes on the contract above:
   and **D261** (the gestures and the layers). The Map's Edit mode goes through `hitTest`, `anchorsOf`, `snapTo`, `createUndo`, `dragHandles` and `tapPosition`
   (`edit.js`; the Edit cases D30, D153, D154 are replayed unchanged); `lib/map_edit.js` is in the module's `lazy` list with `edit.js`.
 
+## 7 ter. The vertical profile outside the Map — `lib/profile_embed.js` (SOG-0464, 18 Nov 2026)
+
+The user's rule (SPEC_MISSIONS_TIROIRS § 11.4): « tout ce qui peut être constitué de modules doit être constitué de modules ». The Map's vertical profile (`lib/vertical_profile.js`
+→ `SiaProfile`, `profile.js` → `MapsProfile`) is **reused**, not copied: `lib/profile_embed.js` (an ES module that imports nothing) loads its four classic scripts once
+(`lib/aero_symbols.js` → `SiaAero`, `render.js` → `MapsRender`, `lib/vertical_profile.js`, `profile.js`) and draws a route into a `<canvas>` of the caller.
+
+```js
+import { loadProfile, drawProfile } from '../maps/lib/profile_embed.js';
+const r = await drawProfile(canvas, points, { load, levelFt = 0, scale = 0.8, width, height });
+```
+
+- `points`: `[{ lat, lon, id | name }]`, two at least (a point may carry `alt` or `lvl`, as a mission's route does). No flight level needed: without `levelFt` the relief alone
+  is drawn, with it the climb, the cruise and the descent too.
+- `load(url) → Blob`: the caller's tile loader (the Map's: `tileLoader(ctx)` of `state.js`, i.e. `ctx.net.fetch`). The brick never calls `fetch`; **no host is added**:
+  the Terrarium tiles `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/9/x/y.png` are already in the pages' policy, and the caller's module declares the same host
+  in its `net`. The tiles read are kept per loader (a moved place re-reads none of the same tiles).
+- It **paints** into the canvas (its own white background and palette, like the Map's profile: no design token to resolve); the canvas gets the size `width × height` in CSS
+  pixels (default: its size in the page) at the device's pixel ratio.
+- → `{ ok: true, terrain, nm }` — `terrain` is **false when no relief could be read** (offline, no `load`, a refused tile): the profile is then built without relief and the
+  caller must SAY so (« relief indisponible »); `nm` the length of the route. `{ ok: false, stale: true }` when a newer drawing of the same canvas took its place (nothing
+  painted; call again freely while a place is dragged). `null`: fewer than two positions, a route of no length, or the libraries did not load.
+- Declare in `meta.files` (offline): `../maps/lib/profile_embed.js`, and the four scripts (`../maps/lib/aero_symbols.js`, `../maps/render.js`, `../maps/lib/vertical_profile.js`,
+  `../maps/profile.js`).
+- Bench `lib/test/profile_embed.html`, case D268; the Map's own profile cases are unchanged (the Map does not use this file).
+
 ## 8. The weather cross-section: what maps reads from the frame and atmosphere
 
 The sheet's "Weather" content (SPEC § 9) calls atmosphere's pure renderer with data read through the frame's weather layer.

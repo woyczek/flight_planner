@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Banc profile_embed</title>
+<!-- Banc de lib/profile_embed.js (modules/maps/INTEGRATION.md § 7 ter, SOG-0464) : le profil vertical de la Carte dessiné dans un canvas, hors de la Carte. Les tuiles
+     Terrarium sont synthétiques (aucun réseau) : window.__pe expose drawProfile, le canvas et le chargeur ; le cas D268 de tests/v3/cases/maps_recode.py juge. -->
+<style>
+body {
+  margin: 0;
+  font: 13px system-ui, sans-serif
+}
+canvas {
+  display: block;
+  width: 600px;
+  height: 240px
+}
+</style>
+</head><body><canvas id="cv"></canvas>
+<script type="module">
+import {
+  loadProfile,
+  drawProfile
+} from '../profile_embed.js?v=0';
+// une tuile Terrarium synthétique : l'altitude vaut 800 m + 100 m par colonne de tuile (z9) ; la tuile 9/255/... n'est pas utilisée
+const loaded = [];
+const load = async url => {
+  loaded.push(url);
+  const m = /\/(\d+)\/(\d+)\/(\d+)\.png$/.exec(url),
+    x = +m[2],
+    c = new OffscreenCanvas(256, 256),
+    g = c.getContext('2d'),
+    v = Math.round((800 + 100 * (x % 5) + 32768) * 256);
+  g.fillStyle = `rgb(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255})`;
+  g.fillRect(0, 0, 256, 256);
+  return c.convertToBlob();
+};
+window.__pe = {
+  loadProfile,
+  drawProfile,
+  load,
+  loaded,
+  canvas: document.getElementById('cv'),
+  ready: true
+};
+</script>
+</body></html>

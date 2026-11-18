@@ -10,6 +10,7 @@ Dépôt : <https://framagit.org/asr/flight_planner> — demandes de fusion : `!n
 ## [Unreleased]
 
 ### V3
+- **Map base: the vertical profile outside the Map, `lib/profile_embed.js`** (SOG-0464, request of « Mission creation »; the user: « tout ce qui peut être constitué de modules doit être constitué de modules ») — `drawProfile(canvas, points, { load, levelFt })` draws the Map's own profile (`SiaProfile`, `MapsProfile`, reused not copied) of a route into a canvas, with the Terrarium tiles the caller loads (no host added); offline or without a loader the profile is built without relief and says so (`terrain: false`); a newer drawing replaces an older (`stale`). `modules/maps/INTEGRATION.md` § 7 ter, bench `lib/test/profile_embed.html`, case D268.
 - **Missions: « Ajouter des missions » reads an assistant's whole answer** (SOG-0460) — every « ```yaml » block (else « ``` » block) is a source, the text around is ignored and said; a tab indentation is refused by a clear sentence; a YAML error is said in the screen's language with the line of the pasted text; manuals ×4; N36.
 - **Missions: the Detail no longer folds its sections up when the sheet is drawn again** (SOG-0448, a side effect: a drawer that opens redraws the sheet) — each section stays as the pilot left it; N35.
 - **Missions: nothing says a mission has drawers; « Voir le contenu complet des missions » in the registry** (SOG-0459, part of Features SOG) — unticked by default, never saved, unticked again after leaving Missions; the line of choice of the Brief on the visible part; manuals ×4; N34.

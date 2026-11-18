@@ -9277,6 +9277,33 @@ def d266(c):
     c.eq([r['small'][2], r['small'][4]], [0.45, 0.06], 'picked and partial keep their own opacity (.45, .06)', what=str(r['small']))
 
 
+@case('D268', 'The vertical profile of the Map outside the Map (lib/profile_embed.js): the relief under a route drawn in a canvas, with the tiles the caller loads; no relief offline, said; fewer than two points gives null; a later drawing replaces an earlier one', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0464 (« tout ce qui peut être constitué de modules… reuse »): drawProfile(canvas, points, { load, levelFt }) is the profile of the Map (SiaProfile, MapsProfile) loaded without the Map’s screen; the relief comes from the Terrarium tiles read through the caller’s load(url) (no host added, the tiles of the route only); offline or without load the profile is built without relief and says so (terrain false); under two points, null; a drawing that a newer one has replaced paints nothing (stale)')
+def d268(c):
+    c.page.goto(f'{c.base}/modules/maps/lib/test/profile_embed.html', wait_until='load')
+    c.until("() => window.__pe && window.__pe.ready", timeout=30000, what='the bench is ready')
+    r = c.js("""async () => { const P = window.__pe, cv = P.canvas, pts = [{ lat: 45.0, lon: 1.0, id: 'A' }, { lat: 45.2, lon: 1.6, id: 'B' }, { lat: 45.1, lon: 2.4, id: 'C' }];
+      const px = () => { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 200 || d[i + 1] < 200 || d[i + 2] < 200) n++; return n };
+      const none = await P.drawProfile(cv, pts.slice(0, 1), { load: P.load });
+      const blank = px();
+      const withRelief = await P.drawProfile(cv, pts, { load: P.load, levelFt: 9000 }), inked = px(), tiles = P.loaded.length, hosts = [...new Set(P.loaded.map(u => new URL(u).host))];
+      const again = await P.drawProfile(cv, pts, { load: P.load, levelFt: 9000 }), tiles2 = P.loaded.length;
+      const noLoad = await P.drawProfile(cv, pts, {});
+      const g = P.drawProfile(cv, pts, { load: P.load }), h = P.drawProfile(cv, pts.slice(0, 2), { load: P.load }), both = [await g, await h];
+      return { none, blank, withRelief, inked, tiles, tiles2, hosts, again, noLoad, both, lib: !!(window.SiaProfile && window.MapsProfile && window.SiaAero && window.MapsRender) } }""")
+    c.eq(r['none'], None, 'fewer than two points: null', what=str(r['none']))
+    c.ok(r['withRelief'] and r['withRelief']['ok'] and r['withRelief']['terrain'] is True and 60 < r['withRelief']['nm'] < 80, str(r['withRelief']), 'three points: drawn, with relief, the length of the route in NM')
+    c.ok(r['inked'] > 2000, f"{r['inked']} inked pixels", 'the canvas holds the profile (not a blank page)')
+    c.eq(r['hosts'], ['s3.amazonaws.com'], 'the only host asked, through the caller’s loader, is the Terrarium one', what=str(r['hosts']))
+    c.eq(r['tiles2'], r['tiles'], 'a second drawing of the same route reads no tile again', what=f"{r['tiles']} → {r['tiles2']}")
+    c.ok(r['noLoad'] and r['noLoad']['ok'] and r['noLoad']['terrain'] is False, str(r['noLoad']), 'without a loader: drawn without relief, and it says so (terrain false)')
+    c.ok(r['both'][0].get('stale') is True and r['both'][1].get('ok') is True, str(r['both']), 'a drawing replaced by a newer one on the same canvas paints nothing (stale)')
+    c.ok(r['lib'], 'libs', 'the Map’s libraries (SiaAero, MapsRender, SiaProfile, MapsProfile) are loaded by the call, no screen of the Map')
+    c.js("async () => { const P = window.__pe; await P.drawProfile(P.canvas, [{ lat: 45.0, lon: 1.0, id: 'A' }, { lat: 45.2, lon: 1.6, id: 'B' }, { lat: 45.1, lon: 2.4, id: 'C' }], { load: P.load, levelFt: 9000 }); return true }")
+    c.shot('D268_profile_embed.png')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast
