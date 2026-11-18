@@ -343,7 +343,10 @@
     mission: ID,
     pilot: 'XYZ',
     role: 'mission'
-  }, NOW + 5 * MIN);
+  }, {
+    by: 'QRS',
+    now: NOW + 5 * MIN
+  });
   ck('retirer : la ligne passe « annulée », updated_at neuf, le reste de la ligne tel quel ; jamais supprimée ; les autres lignes intactes',
     rm.doc && rm.doc.assignments.length === 3 && rm.doc.assignments[2].status === 'annulée' && rm.doc.assignments[2].updated_at ===
     new Date(
@@ -359,11 +362,57 @@
     mission: ID,
     pilot: 'XYZ',
     role: 'mission'
+  }, {
+    by: 'QRS'
   }).error === 'gone' && A.withdrawn(rm.doc, {
     mission: ID,
     pilot: 'DEF',
     role: 'mission'
+  }, {
+    by: 'QRS'
   }).error === 'gone');
+  // Sécurisation, 18/11 : « Retirer » écrit celui qui retire ; l'ancien auteur gardé dans assigned_by (validé, sinon absent)
+  const rmBy = A.withdrawn(two.doc, {
+    mission: ID,
+    pilot: 'XYZ',
+    role: 'mission'
+  }, {
+    by: ' def',
+    now: NOW
+  });
+  ck('retirer : `by` = celui qui retire (« def » → DEF), `assigned_by` = l\'ancien auteur (QRS) ; le reste de la forme lue par mine() inchangé',
+    rmBy.line?.by === 'DEF' && rmBy.line?.assigned_by === 'QRS' && J(Object.keys(rmBy.line)) === J(['mission', 'title', 'pilot',
+      'callsign', 'takeoff', 'departure', 'aircraft', 'status', 'role', 'updated_at', 'by', 'assigned_by'
+    ]) && rmBy.line.callsign === 'TEST31' && J(rmBy.line.aircraft) === J(L3.aircraft), rmBy.line);
+  ck('retirer avec un auteur invalide (vide, « AB », « ../ », absent) : « by », rien n\'est écrit', ['', 'AB', '../', undefined, null]
+    .every(
+      b => {
+        const r = A.withdrawn(two.doc, {
+          mission: ID,
+          pilot: 'XYZ',
+          role: 'mission'
+        }, {
+          by: b,
+          now: NOW
+        });
+        return r.error === 'by' && !r.doc;
+      }));
+  const oldBad = A.withdrawn({
+    assignments: [{
+      ...L3,
+      by: '<b>',
+      assigned_by: 'ZZZ'
+    }]
+  }, {
+    mission: ID,
+    pilot: 'XYZ',
+    role: 'mission'
+  }, {
+    by: 'DEF',
+    now: NOW
+  });
+  ck('l\'ancien auteur qui ne se valide pas (« <b> ») : pas de `assigned_by` (pas même un ancien) ; `by` = DEF', oldBad.line?.by ===
+    'DEF' && !Object.hasOwn(oldBad.line || {}, 'assigned_by'), oldBad.line);
 
   // ---- 5. le conflit
   const idx = {
@@ -481,7 +530,10 @@
         mission: ID,
         pilot: 'ABC',
         role: 'mission'
-      }, NOW));
+      }, {
+        by: 'QRS',
+        now: NOW
+      }));
     return w.error && !w.doc && r.error && !r.doc && safe(() => A.conflictOf(d, {
       mission: ID,
       pilot: 'ABC',
@@ -498,12 +550,45 @@
     }))
   };
   ck('plus de 2 000 lignes : « size » — rien n\'est écrit (jamais les lignes des autres tronquées) ; la liste et le conflit se taisent',
-    A.readIndex(big).why === 'size' && A.withLine(big, L, NOW).error === 'size' && A.withdrawn(big, L, NOW).error === 'size' && J(A
+    A.readIndex(big).why === 'size' && A.withLine(big, L, NOW).error === 'size' && A.withdrawn(big, L, {
+      by: 'QRS',
+      now: NOW
+    }).error === 'size' && J(A
       .listOf(big, ID)) === '[]' && A.conflictOf(big, {
       mission: ID,
       pilot: 'ABC',
       takeoff: L.takeoff
     }) === null);
+  const giant = {
+    updatedAt: '2026-11-18T08:00:00.000Z',
+    assignments: [other, {
+      mission: 'X-001A',
+      pilot: 'AAA',
+      role: 'mission',
+      note: 'x'.repeat(A.MAX_SIZE + 1)
+    }]
+  };
+  ck('une ligne de plus d\'un mégaoctet (fichier par ailleurs valide, deux lignes) : « size » — rien n\'est écrit, ni par Affecter ni par Retirer',
+    A.MAX_SIZE === 1000000 && A.readIndex(giant).why === 'size' && A.withLine(giant, L, NOW).error === 'size' && !A.withLine(giant, L,
+      NOW)
+    .doc && A.withdrawn(giant, {
+      mission: 'X-901A',
+      pilot: 'ABC',
+      role: 'mission'
+    }, {
+      by: 'QRS',
+      now: NOW
+    }).error === 'size', A.readIndex(giant));
+  const edge = {
+    assignments: [{
+      mission: 'X-001A',
+      pilot: 'AAA',
+      role: 'mission',
+      note: 'x'.repeat(A.MAX_SIZE - 200)
+    }]
+  };
+  ck('un fichier lu sous le plafond qui le passerait une fois la ligne ajoutée : « size » à l\'écriture, rien n\'est écrit', A.readIndex(
+    edge).ok && A.withLine(edge, L, NOW).error === 'size' && !A.withLine(edge, L, NOW).doc, A.withLine(edge, L, NOW).error);
   const full = {
     assignments: [...big.assignments.slice(2), cancelled]
   };
@@ -599,7 +684,10 @@
       mission: 'X-901A',
       pilot: 'ABC',
       role: 'mission'
-    }, NOW).doc, // A retire ABC de X-901A
+    }, {
+      by: 'QRS',
+      now: NOW
+    }).doc, // A retire ABC de X-901A
     m2 = JSON.parse(FD.mergeText(P, T(B0), T(devA2), T(devB)).text);
   ck('un retrait sur un appareil, un ajout sur l\'autre : les deux tiennent (X-901A annulée, XYZ ajouté)', m2.assignments.find(l => l
     .mission === 'X-901A')?.status === 'annulée' && m2.assignments.some(l => l.pilot === 'XYZ'), m2.assignments);

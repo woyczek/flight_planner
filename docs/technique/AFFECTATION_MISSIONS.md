@@ -603,17 +603,22 @@ one call in each) — not by `module.js`.
   After a write: the list is updated, the fields are emptied (the type kept), « ABC est affecté à X-905A, décollage 20:00Z. ».
 - **« Retirer ».** The line gets `status: 'annulée'` and a new `updated_at` — never deleted; it leaves the list; « ABC n'est plus
   affecté à X-905A. ». No confirmation: the line is assigned again in two gestures (the same key becomes « affectée » again).
+  « Retirer » writes `by` = the trigram of the device that withdraws (validated as for « Affecter »; none: nothing is written, an `err`
+  notification says so) and keeps the former `by` in `assigned_by` when it validates (absent otherwise); nothing else of the shape read by
+  `mine()` changes (Sécurisation, 18 Nov).
 - **Untrusted inputs.** Any pilot writes the repository, so the file read may be hostile: every key read by `own()` (never an inherited
   key, `__proto__` kept as data), texts bounded and cleaned, every text shown escaped (`esc`), at most 2 000 lines read — beyond, nothing
-  is written and an `err` notification says so (the lines of others are never cut); an unreadable file, another shape, a line that
+  is written and an `err` notification says so (the lines of others are never cut); the JSON text is capped at `MAX_SIZE` = 1 000 000
+  signs, for the file read AND for the file to write (`MAX_LINES` bounds the number of lines, not their size: a giant line of another
+  pilot would be copied at every assignment) — beyond, the reason is `size`, nothing is written, the same `err` notification; an unreadable file, another shape, a line that
   throws or a file that does not serialise again: nothing is written, said by an `err` notification. No path is ever built from a value
   read; the only document written is `missions/affectations.json` (and `ctx.data.sync()` is asked right after, as `drawers_view.js`
   does). No new timer.
 - **Limits, said.** No rights and no availability check (the airline's organisation); a pilot of the airline can assign or withdraw
   anyone. The pilot of the line is a trigram, not an account.
-- Cases: N88 (the bench `modules/missions/test/assign.html`, 54 checks: the input, the line read back by `mine()` and `seanceOf()`, the
+- Cases: N88 (the bench `modules/missions/test/assign.html`, 59 checks: the input, the line read back by `mine()` and `seanceOf()`, the
   key, the withdrawal, the conflict under two hours, the list, the hostile files, the merge of two devices through
   `frame/store/frame_data.js` and its counter-proof with `record`), N89 (the screen, four languages: no button at the Discovery level,
   the button, the form, the conflict said by a notification then assigned anyway, the line read in the store, the list, the notification, XYZ assigned,
   « Retirer », the device of ABC that finds X-905A in « Mes missions affectées » only while the line is not cancelled). The view bench
-  `modules/missions/test/assign_view.html` (45 checks) is played by the session.
+  `modules/missions/test/assign_view.html` (48 checks) is played by the session.

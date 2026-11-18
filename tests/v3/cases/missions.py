@@ -4299,7 +4299,8 @@ def n87(c):
       rule='SOG-0443 (Q-0093: a minimal gesture to assign from V3): the line { mission, title, pilot, callsign, takeoff, departure, '
       'aircraft { type, registration }, status, role, updated_at, by } is the shape mine() and seanceOf() already read; its key never '
       'changes; every write re-reads the file and keeps every other line as it is; more than 2 000 lines, an unreadable file or another '
-      'shape: nothing is written; module.js declares missions/affectations.json « keyed:assignments:mission+pilot+role » (the key of '
+      'shape or a JSON text over 1 000 000 signs (read or to write): nothing is written; « Retirer » writes its author in `by` and keeps '
+      'the former one in `assigned_by`; module.js declares missions/affectations.json « keyed:assignments:mission+pilot+role » (the key of '
       'tools/data_sync.py) — with « record » one line of two devices is lost')
 def n88(c):
     c.page.goto(f'{c.base}/modules/missions/test/assign.html', wait_until='load')
@@ -4308,8 +4309,8 @@ def n88(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/assign.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 54, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (54 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 59, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (59 at least)')
 
 
 # SOG-0443: the screen « Affecter… ». An invented mission X-905A (type EC25, base XTST, one drawer whose words must never show), two

@@ -431,6 +431,9 @@
     1 && text('[data-as-line] span').startsWith('XYZ') && J(c.notes.at(-1)) === J(['ok', 'ABC n\'est plus affecté à X-905A.']), [gone, c
       .notes.at(-1)
     ]);
+  ck('« Retirer » écrit celui qui retire (by = QRS) et garde l\'ancien auteur (assigned_by = QRS)', gone.by === 'QRS' && gone
+    .assigned_by ===
+    'QRS', gone);
   ck('… et ABC ne lit plus X-905A dans « Mes missions affectées »', !mine(c.store.get(P), 'ABC', Date.parse(`${TODAY}T12:00:00Z`)).some(
     a => a.mission === ID));
   fill({
@@ -517,6 +520,31 @@
   await go(hw);
   ck('sans trigramme sur cet appareil : rien n\'est écrit, l\'erreur est dite', hw.puts.length === 0 && hw.notes.at(-1)?.[0] === 'err', hw
     .notes);
+  DV.stop();
+  const hx = fakeCtx({
+    level: 2,
+    trigram: 'AB',
+    docs: {
+      [P]: {
+        assignments: [{
+          mission: ID,
+          pilot: 'XYZ',
+          callsign: 'TEST32',
+          takeoff: `${TODAY}T20:02:00.000Z`,
+          role: 'mission',
+          status: 'affectée',
+          by: 'QRS'
+        }]
+      }
+    }
+  });
+  mount(hx);
+  btn().click();
+  await until(() => !!q('[data-as-line]'));
+  q('[data-as-line="0"] [data-as-remove]').click();
+  await until(() => hx.notes.length > 0);
+  ck('« Retirer » sans trigramme valide sur cet appareil (« AB ») : rien n\'est écrit, une notification « err » le dit', hx.puts.length ===
+    0 && hx.notes.at(-1)?.[0] === 'err' && hx.store.get(P).assignments[0].status === 'affectée', hx.notes);
   DV.stop();
   const hr = fakeCtx({
     level: 2

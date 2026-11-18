@@ -430,13 +430,18 @@ async function submit(w) {
 
 /** « Retirer » : la ligne de cette clé passée « annulée » (jamais supprimée), le fichier relu avant ; elle quitte la liste. */
 async function withdraw(w, i) {
-  const ref = w.lines[i];
+  const ref = w.lines[i],
+    by = A.meOf(w.ctx.identity?.trigram); // celui qui retire : écrit dans la ligne (Sécurisation, 18/11)
   if (w.busy || !ref) return;
+  if (!by) return void w.ctx.notify?.(w.tt(TX.noTrigram), 'err');
   w.busy = true;
   try {
     const got = await reread(w);
     if (!got || W !== w) return;
-    const out = A.withdrawn(got.doc, ref, Date.now());
+    const out = A.withdrawn(got.doc, ref, {
+      by,
+      now: Date.now()
+    });
     if (out.error) {
       w.ctx.notify?.(w.tt(out.error === 'gone' ? TX.gone : out.error === 'size' ? TX.bigFile : TX.badFile), out.error === 'gone' ?
         'warn' :

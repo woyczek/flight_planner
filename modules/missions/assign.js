@@ -8,7 +8,8 @@
 // rien de plus. Sa CLÉ est mission + pilot + role (la règle de fusion `keyed:assignments:mission+pilot+role` déclarée par module.js,
 // la même que tools/data_sync.py) : elle ne change jamais sur une ligne ; changer de pilote = retirer l'une, affecter l'autre.
 //
-// Le fichier est écrit par n'importe quel pilote (une entrée NON FIABLE) : lu par own(), borné (au plus MAX_LINES lignes, sinon RIEN
+// Le fichier est écrit par n'importe quel pilote (une entrée NON FIABLE) : lu par own(), borné (au plus MAX_LINES lignes et MAX_SIZE
+// signes de texte JSON, lu comme à écrire, sinon RIEN
 // n'est écrit — jamais les lignes des autres tronquées), un fichier illisible ou d'une autre forme n'est jamais réécrit. Les lignes
 // des autres sont gardées TELLES QUELLES (ni relues, ni réécrites, ni réordonnées) ; seule la ligne de la clé visée est remplacée.
 //
@@ -20,7 +21,8 @@
 //   lineOf(mission, value, { by, now }) → la ligne à écrire, ou null (mission : { id, title, departure } — sa partie VISIBLE).
 //   keyOf(line) → « mission|pilot|role » : la clé de la règle de fusion.
 //   withLine(doc, line, now) → { doc, updated } (updated : la clé existait déjà, non annulée) ou { error: 'shape' | 'size' | 'line' }.
-//   withdrawn(doc, ref, now) → { doc, line } (la ligne passée « annulée ») ou { error: 'shape' | 'size' | 'gone' } ; ref : { mission,
+//   withdrawn(doc, ref, { by, now }) → { doc, line } (la ligne passée « annulée », `by` = celui qui retire, l'ancien `by` gardé dans
+//     `assigned_by` s'il se valide) ou { error: 'shape' | 'size' | 'gone' | 'by' } (by : pas de trigramme valide) ; ref : { mission,
 //     pilot, role } tels que listOf les a rendus.
 //   conflictOf(doc, { mission, pilot, takeoff }) → { mission, takeoff } : une affectation NON annulée du même pilote, d'une AUTRE
 //     mission, dont le décollage est à MOINS de deux heures (CONFLICT_MS) de celui-ci ; null sinon.
@@ -40,6 +42,10 @@ import {
 
 /** Au plus tant de lignes lues dans le fichier : au-delà, rien n'est écrit (jamais les lignes des autres tronquées). */
 export const MAX_LINES = 2000;
+/** Au plus tant de signes dans le texte JSON du fichier (JSON.stringify(doc).length, environ un mégaoctet), lu ET à écrire : MAX_LINES
+ *  borne le nombre de lignes, pas leur taille — une ligne géante d'un autre pilote serait recopiée à chaque affectation (Sécurisation,
+ *  18/11). Au-delà : la raison 'size', rien n'est écrit. */
+export const MAX_SIZE = 1000000;
 /** Un conflit : une autre mission du même pilote dont le décollage est à MOINS de deux heures (deux heures pile : pas de conflit). */
 export const CONFLICT_MS = 2 * 3600e3;
 const TRIGRAMS_MAX = 400, // trigrammes proposés dans la liste du champ « Pilote »
@@ -95,8 +101,12 @@ export function readIndex(doc) {
       ok: false,
       why: 'size'
     };
-    // le fichier doit se réécrire tel qu'il est lu : un accesseur qui lève, un cycle, un nombre géant illisible → rien n'est écrit
-    JSON.stringify(doc);
+    // le fichier doit se réécrire tel qu'il est lu : un accesseur qui lève, un cycle, un nombre géant illisible → rien n'est écrit ;
+    // un texte de plus de MAX_SIZE signes (une ligne géante) → 'size'
+    if (JSON.stringify(doc).length > MAX_SIZE) return {
+      ok: false,
+      why: 'size'
+    };
     return {
       ok: true,
       lines: list.slice()
@@ -207,7 +217,8 @@ function rankOf(lines, key) {
 }
 
 /** Le fichier à écrire : la ligne de la clé remplacée À SA PLACE, ou ajoutée en dernier ; toutes les autres lignes et toutes les autres
- *  clés du fichier gardées telles quelles ; `updatedAt` neuf. Ne lève jamais. */
+ *  clés du fichier gardées telles quelles ; `updatedAt` neuf. → { doc } ou { error: 'shape' | 'size' } (plus de MAX_SIZE signes une fois
+ *  écrit). Ne lève jamais. */
 function written(doc, lines, now) {
   try {
     const out = {
@@ -215,10 +226,16 @@ function written(doc, lines, now) {
       updatedAt: new Date(Number.isFinite(now) ? now : Date.now()).toISOString(),
       assignments: lines
     };
-    JSON.stringify(out); // un fichier qui ne se réécrit pas n'est pas écrit
-    return out;
+    // un fichier qui ne se réécrit pas, ou qui passerait MAX_SIZE signes, n'est pas écrit
+    return JSON.stringify(out).length > MAX_SIZE ? {
+      error: 'size'
+    } : {
+      doc: out
+    };
   } catch {
-    return null;
+    return {
+      error: 'shape'
+    };
   }
 }
 
@@ -244,16 +261,23 @@ export function withLine(doc, line, now = Date.now()) {
   if (at >= 0) lines[at] = line;
   else lines.push(line);
   const out = written(doc, lines, now);
-  return out ? {
-    doc: out,
+  return out.error ? out : {
+    doc: out.doc,
     updated
-  } : {
-    error: 'shape'
   };
 }
 
-/** Retirer : la ligne de cette clé passée « annulée », `updated_at` neuf — jamais supprimée (elle se ré-affecte en deux gestes). */
-export function withdrawn(doc, ref, now = Date.now()) {
+/** Retirer : la ligne de cette clé passée « annulée », `updated_at` neuf, `by` = celui qui retire (validé comme lineOf), l'ancien `by`
+ *  gardé dans `assigned_by` (absent s'il ne se valide pas) — jamais supprimée (elle se ré-affecte en deux gestes). Rien d'autre de la
+ *  ligne ne change (la forme lue par mine()). */
+export function withdrawn(doc, ref, {
+  by,
+  now = Date.now()
+} = {}) {
+  const me = triOf(by);
+  if (!me) return {
+    error: 'by'
+  };
   const r = readIndex(doc);
   if (!r.ok) return {
     error: r.why
@@ -268,11 +292,15 @@ export function withdrawn(doc, ref, now = Date.now()) {
     if (!old || own(old, 'status') === 'annulée' || !midOf(own(old, 'mission')) || !triOf(own(old, 'pilot'))) return {
       error: 'gone'
     };
+    const before = triOf(own(old, 'by'));
     line = {
       ...old,
       status: 'annulée',
-      updated_at: new Date(Number.isFinite(now) ? now : Date.now()).toISOString()
+      updated_at: new Date(Number.isFinite(now) ? now : Date.now()).toISOString(),
+      by: me
     };
+    if (before) line.assigned_by = before;
+    else delete line.assigned_by;
   } catch {
     return {
       error: 'shape'
@@ -280,11 +308,9 @@ export function withdrawn(doc, ref, now = Date.now()) {
   }
   r.lines[at] = line;
   const out = written(doc, r.lines, now);
-  return out ? {
-    doc: out,
+  return out.error ? out : {
+    doc: out.doc,
     line
-  } : {
-    error: 'shape'
   };
 }
 
