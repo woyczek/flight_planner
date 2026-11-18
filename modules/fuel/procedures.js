@@ -333,6 +333,12 @@ export function createProcedures(host) {
       // les approches que l'AIP ne donne qu'en carte (aerodb.chartOnly, quand aerodb l'a : [{ name, runway, url }])
       chartOnly = side === 'arr' && typeof ctx.aerodb?.chartOnly === 'function' ? await Promise.resolve().then(() => ctx.aerodb
         .chartOnly(icao)).catch(() => []) : [],
+      // SOG-0374 lot C : au Royaume-Uni, les cartes SID (départ : celles d'où aucune SID n'est lue) ou STAR (arrivée : aucune n'est lue)
+      // que le fichier du terrain liste, nommées par leur libellé (aerodb.chartOnly, adresse composée par aerodb, jamais ici)
+      kindCharts = /^EG[A-Z]{2}$/.test(String(icao || '').toUpperCase()) && typeof ctx.aerodb?.chartOnly === 'function' ? await Promise
+      .resolve().then(() => ctx.aerodb.chartOnly(icao, {
+        kind: side === 'dep' ? 'SID' : 'STAR'
+      })).catch(() => []) : [],
       // SOG-0248 : « aucune approche » ne se dit que quand aerodb le sait (approachSummary.none : un terrain du SIA sans carte d'approche)
       summary = side === 'arr' && typeof ctx.aerodb?.approachSummary === 'function' ? await Promise.resolve().then(() => ctx.aerodb
         .approachSummary(icao)).catch(() => null) : null;
@@ -360,6 +366,8 @@ export function createProcedures(host) {
       appNone: summary?.none === true,
       chartOnly: (Array.isArray(chartOnly) ? chartOnly : []).filter(x => x && typeof x.url === 'string' && /^https:\/\//.test(x.url))
         .slice(0, 20),
+      kindCharts: (Array.isArray(kindCharts) ? kindCharts : []).filter(x => x && typeof x.url === 'string' && /^https:\/\/[^\s"'<>]+$/
+        .test(x.url)).slice(0, 20),
       nodata: !known.length && !all.length
     };
   }
@@ -1026,7 +1034,7 @@ export function createProcedures(host) {
   };
   /** Une ligne du côté ouvert (SOG-0308) : son nom, sa valeur en mots, sa source en petit, UN geste « Changer » à droite ; la liste
    *  qu'il ouvre est à sa place, dessous (les listes data-k de toujours). */
-  const rowHtml = (side, row, label, fields) => `<div class="fu-prow" data-prow="${row}"><span class="fu-plab">${esc(tt(label))}</span><span class="fu-pval" data-r="v-${row}"></span><span class="fu-psrc" data-r="s-${row}">${row === 'app' ? '<span class="fu-appaid" data-r="aid" data-appaid hidden></span>' : ''}<span data-r="src-${row}"></span><span data-chart-slot="${row}"></span></span>${row === 'rwy' ? '<p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>' : ''}<button type="button" class="fu-pchange" data-do="procchange" data-side="${side}" data-row="${row}" aria-expanded="false">${esc(tt(TX.procChangeBtn))}</button><div class="fu-plist" data-r="l-${row}" hidden>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}"><span class="fu-pflab">${esc(tt(f.label))}</span><select data-k="${f.k}"></select></label>`).join('')}</div>${row === 'app' ? '<p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
+  const rowHtml = (side, row, label, fields) => `<div class="fu-prow" data-prow="${row}"><span class="fu-plab">${esc(tt(label))}</span><span class="fu-pval" data-r="v-${row}"></span><span class="fu-psrc" data-r="s-${row}">${row === 'app' ? '<span class="fu-appaid" data-r="aid" data-appaid hidden></span>' : ''}<span data-r="src-${row}"></span><span data-chart-slot="${row}"></span></span>${row === 'rwy' ? '<p class="fu-rwyprob" data-r="rwyprob" data-rwyprob hidden></p>' : ''}<button type="button" class="fu-pchange" data-do="procchange" data-side="${side}" data-row="${row}" aria-expanded="false">${esc(tt(TX.procChangeBtn))}</button><div class="fu-plist" data-r="l-${row}" hidden>${fields.map(f => `<label class="f-field fu-pf fu-pf-${f.cls}"><span class="fu-pflab">${esc(tt(f.label))}</span><select data-k="${f.k}"></select></label>`).join('')}</div>${row === 'main' ? '<p class="fu-kindcharts f-muted" data-r="kindcharts" data-kindcharts hidden></p>' : ''}${row === 'app' ? '<p class="fu-doubtline" data-r="doubt" data-doubtline hidden></p><p class="fu-chartonly f-muted" data-r="chartonly" data-chartonly hidden></p>' : ''}</div>`;
   /** Squelette d'un côté (SOG-0308) : l'en-tête, la phrase du côté replié, puis, déplié, les trois lignes et le pied « Source et
    *  cartes » ; sans donnée, la ligne de lecture seule (« Lire les procédures »), toujours vue. patchSide remplit le tout. */
   const skeleton = (side, m, fields) => {
@@ -1333,6 +1341,14 @@ export function createProcedures(host) {
       const rec = chosenDoubt(m);
       dl.hidden = !rec;
       setHtml(dl, rec ? `⚑ ${esc(tt(TX.procDoubt))} : ${esc(doubtWhy(rec))}` : '');
+    }
+    // SOG-0374 lot C : les cartes SID / STAR de l'AIP d'un terrain du Royaume-Uni, sur une ligne sous la liste ; jamais choisies (rien
+    // n'en est lu), chacune un lien vers sa carte en ligne
+    const kc = el.querySelector('[data-r="kindcharts"]');
+    if (kc) {
+      const list = m.kindCharts || [];
+      kc.hidden = !list.length;
+      setHtml(kc, list.length ? `${esc(tt(TX.procKindCharts, { kind: side === 'dep' ? 'SID' : 'STAR' }))} ${list.map(x => `<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer" data-kindchart>${esc(String(x.name || '').slice(0, 40) || tt(TX.procChartLink))}</a>`).join('<span class="fu-sep" aria-hidden="true"> · </span>')}` : '');
     }
     const co = el.querySelector('[data-r="chartonly"]');
     if (co) {
@@ -2077,6 +2093,13 @@ export function createProcedures(host) {
       k: 'fail',
       m: msg
     });
+    if (res?.ok) {
+      // SOG-0374 lot C : la page en ligne du terrain (chartsUrl, null avant la lecture : le cycle vient du fichier) et la carte de chaque
+      // choix sont redemandées à aerodb
+      charts.delete(k);
+      for (const c of [...chartOfProc.keys()])
+        if (c.startsWith(`${k}|`)) chartOfProc.delete(c);
+    }
     if (res?.ok) live?.afterRead(k, res); // les SID lues entrent dans la liste
     else if (live && live !== api) live.render(); // un autre montage vivant : sa ligne aussi
     if (!host.gone()) {

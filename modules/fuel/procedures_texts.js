@@ -133,6 +133,8 @@ export const TX = {
     '{name} — solo carta en el AIP'
   ],
   procChartLink: ['carte', 'chart', 'Karte', 'carta'],
+  // SOG-0374 lot C : les cartes SID ou STAR de l'AIP d'un terrain du Royaume-Uni, chacune nommée par son libellé
+  procKindCharts: ['Cartes {kind} de l’AIP :', 'AIP {kind} charts:', 'AIP-Karten {kind}:', 'Cartas {kind} del AIP:'],
   procFinalOnly: ['finale seule', 'final only', 'nur Endanflug', 'solo tramo final'],
   procNoApp: ['Aucune approche publiée pour ce terrain.', 'No approach published for this aerodrome.',
     'Kein Anflug für diesen Flugplatz veröffentlicht.',

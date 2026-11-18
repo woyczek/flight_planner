@@ -8471,3 +8471,102 @@ def f278(c):
     # gave « 1 autres » on both sides; Essais, 18/11)
     want = {'fr': '1 autre', 'en': '1 more', 'de': '1 weitere', 'es': '1 más'}[c.lang]
     c.eq(norm(f['more']), want, '« 1 autre » / « 1 more »: the singular, agreed by the frame — never « 1 autres »', what='more')
+
+
+# SOG-0374 lot C: aerodb's chart answers for an EG.. aerodrome, held by the case (invented addresses under example.test, never NATS): the
+# STAR and SID charts the aerodrome's file lists (chartOnly with a kind), the chart of a choice (chartUrl), the aerodrome's page (chartsUrl,
+# null until the package is read); the UK package's reading answered by the case, as in _UK_STUB
+_UK_CHART_STUB = """(() => { window.__ukc = { go: null, read: false, asked: { charts: 0, only: [] } };
+  const U = 'https://charts.example.test/EGLL/';
+  let real; Object.defineProperty(window, 'AeroDB', { configurable: true, get: () => real, set: v => {
+    real = v && { ...v, create: (...a) => { const db = v.create(...a);
+      try {
+        const f = db.fetchProcedures, eg = k => /^EG[A-Z]{2}$/.test(String(k || '').toUpperCase());
+        db.fetchProcedures = (icao, o = {}) => o && o.source === 'ukpkg'
+          ? new Promise(res => window.__ukc.go = r => { window.__ukc.go = null; window.__ukc.read = !!r.ok; res(r); }) : f.call(db, icao, o);
+        const only = db.chartOnly, url = db.chartUrl, page = db.chartsUrl;
+        db.chartOnly = (icao, o = {}) => {
+          if (!eg(icao)) return only.call(db, icao, o);
+          const k = o && o.kind || 'IAC';
+          window.__ukc.asked.only.push(k);
+          return Promise.resolve(k === 'SID' ? [{ name: 'AD 2.EGLL-6-3', runway: '', url: U + '63.pdf' }]
+            : k === 'STAR' ? [{ name: 'AD 2.EGLL-7-1', runway: '', url: U + '71.pdf' }, { name: 'AD 2.EGLL-7-2', runway: '', url: U + '72.pdf' },
+              { name: 'AD 2.EGLL-7-9', runway: '', url: 'javascript:alert(1)' }] : []);
+        };
+        db.chartUrl = proc => !eg(proc && proc.icao) ? url.call(db, proc) : Promise.resolve(proc.kind === 'RWY' ? U + 'adc.pdf'
+          : proc.kind === 'SID' ? U + 'sid-' + String(proc.id).split('.')[2] + '.pdf' : null);
+        db.chartsUrl = icao => !eg(icao) ? page.call(db, icao) : (window.__ukc.asked.charts++, Promise.resolve(window.__ukc.read ? U + 'page.html' : null));
+      } catch (e) {}
+      return db } } } }) })()"""
+
+
+@case('F279', 'Procedures, an aerodrome of the United Kingdom: the SID charts (departure) and the STAR charts (arrival) of its AIP listed '
+      'under the SID / STAR line, each a link named by its label, opened in a new tab — none chosen (nothing is read from them), an '
+      'address other than https never a link; the chart of the runway and of a SID read in part on their line; after the package is '
+      'read, the aerodrome\'s page and the charts asked again', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=False,
+      langs4=True,
+      rule='SOG-0374 lot C (the ergonomist; Procédures 00fdedbd0: aerodb.chartOnly(icao, {kind}) and chartUrl for EG.. from the NATS file, '
+      'chartsUrl null until the package is read); aerodb\'s answers held by the case, invented records and addresses')
+def f279(c):
+    T = 'modules/fuel/procedures_texts.js'
+    D = f'{FUEL} [data-proc="dep"]'
+    A = f'{FUEL} [data-proc="arr"]'
+    c.page.add_init_script(_UK_CHART_STUB)
+    _route_launcher(c, ['route/compute'])
+    docs = _uk_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):  # a local flight: EGLL is the arrival too (its STAR charts)
+            d[1]['route'].update(text='EGLL EGLL', arr='EGLL', points=[{'id': 'EGLL', 'lat': 51.47, 'lon': -0.46},
+                                                                      {'id': 'EGLL', 'lat': 51.47, 'lon': -0.46}])
+    c.open('fuel', docs=docs)
+    to_step(c, 1)
+    unfold(c, 'dep')
+    c.until(f"!!document.querySelector('{D} [data-kindcharts]:not([hidden]) a[data-kindchart]')", timeout=15000,
+            what='the SID charts of EGLL under the SID line')
+    lab = lambda kind: norm(tx(T, 'procKindCharts', c.lang).replace('{kind}', kind))
+    links = lambda sel: c.js(f"[...document.querySelectorAll('{sel} [data-kindcharts] a')].map(a => [a.textContent, a.getAttribute('href'), "
+                             f"a.target, a.rel])")
+    c.ok(norm(c.text(f'{D} [data-kindcharts]')).startswith(lab('SID')), c.text(f'{D} [data-kindcharts]'), '« Cartes SID de l’AIP : » '
+         'in the screen\'s language')
+    c.eq(links(D), [['AD 2.EGLL-6-3', 'https://charts.example.test/EGLL/63.pdf', '_blank', 'noopener noreferrer']],
+         'one link per chart, named by its label, new tab, noopener', what='SID charts')
+    c.eq(c.count(f'{D} select option[value^="__chart"]'), 0,
+         'never a choice of the list', what='not chosen')
+    unfold(c, 'arr')
+    c.until(f"!!document.querySelector('{A} [data-kindcharts]:not([hidden]) a[data-kindchart]')", timeout=15000,
+            what='the STAR charts of EGLL under the STAR line')
+    c.ok(norm(c.text(f'{A} [data-kindcharts]')).startswith(lab('STAR')), c.text(f'{A} [data-kindcharts]'), '« Cartes STAR de l’AIP : »')
+    c.eq([x[:2] for x in links(A)], [['AD 2.EGLL-7-1', 'https://charts.example.test/EGLL/71.pdf'],
+                                     ['AD 2.EGLL-7-2', 'https://charts.example.test/EGLL/72.pdf']],
+         'the two https charts; « javascript: » never a link', what='STAR charts')
+    c.eq(c.count(f'{FUEL} [data-kindcharts] a[href^="javascript"]'), 0, 'no javascript: address anywhere', what='guard')
+    asked = c.js("window.__ukc.asked.only")
+    c.ok('SID' in asked and 'STAR' in asked, asked, 'aerodb asked for the SID and STAR charts of EGLL (chartOnly with a kind)')
+    # the runway and the SID read in part: their chart on their line (chartUrl, as for the SIA)
+    pick_proc(c, 'p-dep-sid', 'EGLL.SID.XMODA1J.RW09L.NONE')
+    if not c.js(f"document.querySelector('{D} select[data-k=p-dep-rwy]')?.value"):  # the SID's runway, when the SID did not set it
+        pick_proc(c, 'p-dep-rwy', c.js(f"[...document.querySelectorAll('{D} select[data-k=p-dep-rwy] option')].map(o => o.value)"
+                                       f".find(v => /09L/.test(v)) || ''"))
+    c.until(f"!!document.querySelector('{D} [data-chart-slot=rwy] a[data-chart=RWY]') && "
+            f"!!document.querySelector('{D} [data-chart-slot=main] a[data-chart=SID]')", timeout=10000, what='the chart of the runway and of the SID')
+    c.eq([c.js(f"document.querySelector('{D} [data-chart-slot={r}] a').getAttribute('href')") for r in ('rwy', 'main')],
+         ['https://charts.example.test/EGLL/adc.pdf', 'https://charts.example.test/EGLL/sid-XMODA1J.pdf'], 'ADC and the SID\'s chart',
+         what='chosen charts')
+    c.js(f"document.querySelector('{D} [data-kindcharts]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F279_{c.design}_390_{c.lang}_dep.png')
+    c.js(f"document.querySelector('{A} [data-kindcharts]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F279_{c.design}_390_{c.lang}_arr.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{D}').scrollIntoView({{block: 'start'}})")
+    c.shot(f'F279_{c.design}_1280_{c.lang}.png')
+    # before the package is read: no « Cartes » page (chartsUrl null); after a reading, asked again and shown
+    open_foot(c, 'dep')
+    c.eq(c.count(f'{D} [data-source-slot] a[data-charts]'), 0, 'no page of the aerodrome before the package is read', what='before')
+    n = c.js("window.__ukc.asked.charts")
+    c.tap(f'{D} [data-do=procukpkg]')
+    c.until("window.__ukc.go !== null", timeout=8000, what='the package asked')
+    c.js("window.__ukc.go({ ok: true, procedures: [] })")
+    c.until(f"!!document.querySelector('{D} [data-source-slot] a[data-charts]')", timeout=10000,
+            what='the page of the aerodrome, asked again after the reading')
+    c.ok(c.js("window.__ukc.asked.charts") > n, c.js("window.__ukc.asked.charts"), 'chartsUrl asked again after the reading')
