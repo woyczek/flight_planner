@@ -9163,6 +9163,27 @@ def d261(c):
     c.eq([i for i in c.js('() => window.__me.layerIds()') if i.startswith('me-ref-')], [], 'stop() takes the reference layer away', what='layers')
 
 
+@case('D262', 'The base’s map offline (lib/map_base.js startTiles): a local style is drawn without network, a style that needs the network still gives null at once', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0446 (request of « Création de missions »): startTiles gave null as soon as the device was offline, even for a plain local style; offline it now gives null only for a style that needs a host (an address, tiles, url, glyphs, sprite), and MapLibre itself is a file of the repository')
+def d262(c):
+    c.page.add_init_script("if (location.pathname.endsWith('/map_edit.html') && /offline/.test(location.search)) Object.defineProperty(Navigator.prototype, 'onLine', { get: () => false })")  # the page is offline before its first script
+    c.page.goto(f'{c.base}{_ME_URL}?offline', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__me && (window.__me.ready || window.__me.failed)', timeout=30000)
+    except Exception:
+        raise Fail('the bench never drew its map', 'a map offline with a local style', _ME_URL) from None
+    c.eq(c.js('() => navigator.onLine'), False, 'the bench is offline', what='onLine')
+    c.ok(not c.js('window.__me.failed'), 'no map', 'a local style (a background alone) gives a map offline')
+    r = c.js("""async () => { const M = window.__me, t = performance.now(), mk = () => document.body.appendChild(Object.assign(document.createElement('div'), { style: 'width:100px;height:100px' })),
+      url = await M.startTiles(mk(), { style: 'https://tiles.openfreemap.org/styles/positron', bounds: [[0, 40], [10, 50]] }),
+      tiles = await M.startTiles(mk(), { style: { version: 8, sources: { x: { type: 'raster', tiles: ['https://a.example/{z}/{x}/{y}.png'] } }, layers: [] }, bounds: [[0, 40], [10, 50]] }),
+      glyphs = await M.startTiles(mk(), { style: { version: 8, glyphs: 'https://a.example/{fontstack}/{range}.pbf', sources: {}, layers: [] }, bounds: [[0, 40], [10, 50]] });
+      return { url, tiles, glyphs, ms: performance.now() - t } }""")
+    c.eq([r['url'], r['tiles'], r['glyphs']], [None, None, None], 'a style address, a remote source or glyphs still give null offline', what=str(r))
+    c.ok(r['ms'] < 2000, str(r['ms']), 'and at once, without waiting for the tiles')
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

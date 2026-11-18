@@ -97,6 +97,13 @@ export function loadMapLibre() {
   });
 }
 
+/** Le style a-t-il besoin du réseau ? Une URL de style, une source qui vient d'un hôte (tuiles, url, données par adresse), des glyphes ou un sprite : oui. Un style posé en objet
+ *  qui n'a que des sources locales (aucune, ou des données en place) se dessine hors ligne : MapLibre est lui-même un fichier du dépôt (SOG-0446, demande de « Création de missions »). */
+export function needsNetwork(style) {
+  if (!style || typeof style !== 'object') return true;
+  if (style.glyphs || style.sprite) return true;
+  return Object.values(style.sources || {}).some(s => !s || s.tiles || s.url || typeof s.data === 'string');
+}
 /** Fond MapLibre dans le cadre `container` ; rend la carte une fois chargée, null s'il ne vient pas (hors ligne, MapLibre
  *  introuvable, pas de WebGL, hôte refusé, erreur avant le chargement, délai dépassé, hôte parti) : la carte à demi
  *  construite est alors retirée, et l'appelant passe au fond uni.
@@ -124,7 +131,7 @@ export async function startTiles(container, {
   onStyleLoad,
   onLoad
 } = {}) {
-  if (navigator.onLine === false) return null;
+  if (navigator.onLine === false && needsNetwork(style)) return null;
   const ml = await loadMapLibre();
   if (!ml || !alive()) return null;
   return new Promise(ok => {
