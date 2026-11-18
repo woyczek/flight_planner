@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "533e542",
-  "fiches": 466,
+  "organisation": "524a24b",
+  "fiches": 468,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -2375,6 +2375,27 @@
    ]
   },
   {
+   "id": "pilote-code-modules-vitesse",
+   "app": "pilote",
+   "label": {
+    "fr": "Code ; modules ; vitesse",
+    "en": "Code ; modules ; vitesse",
+    "de": "Code ; modules ; vitesse",
+    "es": "Code ; modules ; vitesse"
+   },
+   "items": [
+    {
+     "id": "SOG-0468",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Passe d'optimisation et de factorisation du code",
+     "en": "Code optimisation and factoring pass",
+     "de": "Durchgang zur Optimierung und Zusammenführung des Codes",
+     "es": "Pasada de optimización y factorización del código"
+    }
+   ]
+  },
+  {
    "id": "pilote-compte-rendu",
    "app": "pilote",
    "label": {
@@ -3870,6 +3891,27 @@
      "en": "Mission workshop: building blocks only at “＋ Drawer”, the sequence as a vertical list, less secondary text",
      "de": "Missionswerkstatt: Bausteine nur bei „＋ Schublade“, der Ablauf als senkrechte Liste, weniger Nebentext",
      "es": "Taller de misiones: los bloques solo en «＋ Cajón», la secuencia en vertical, menos texto secundario"
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-atelier-carte",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; atelier ; carte",
+    "en": "Missions ; atelier ; carte",
+    "de": "Missions ; atelier ; carte",
+    "es": "Missions ; atelier ; carte"
+   },
+   "items": [
+    {
+     "id": "SOG-0469",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : pas de carte du tout sur une mission dont les lieux n'ont pas de position (terrains écrits en minuscules)",
+     "en": "Mission workshop: no map at all on a mission whose places have no position (airfields written in lower case)",
+     "de": "Missionswerkstatt: gar keine Karte bei einer Mission, deren Orte keine Position haben (Flugplätze kleingeschrieben)",
+     "es": "Taller de misiones: ningún mapa en una misión cuyos lugares no tienen posición (aeródromos escritos en minúsculas)"
     }
    ]
   },

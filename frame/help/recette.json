@@ -4595,6 +4595,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0105",
+   "fiche": "SOG-0466",
+   "app": "pilote",
+   "question": "Hélistations : le lanceur peut-il lire trois choses de plus sur le site du SIA (la liste des codes, la partie AD 3 de l'eAIP, les cartes VACH) ?",
+   "context": "Mesure d'AeroDB : la base a déjà 562 hélistations, dont beaucoup en double (elles seront fusionnées sans rien demander). Mais le lanceur ne sait ouvrir aucune carte d'hélistation, et le code d'une carte (souvent en « H… ») n'est pas le code LFnnn de la base : seule la liste des codes du SIA que tu cites fait le lien. Trois lectures seraient à ajouter, toutes sur le site du SIA déjà interrogé pour les aérodromes : (a) le PDF de la liste des codes, une fois ; (b) la partie AD 3 de l'eAIP, à chaque cycle ; (c) les cartes VACH/AD/AD-3.<code>.pdf, à la demande, quand tu ouvres une hélistation. Sécurisation relira ce code du lanceur.",
+   "options": [
+    "Oui aux trois",
+    "La liste des codes et l'AD 3 seulement ; pas les cartes",
+    "Non : seulement la fusion des doublons, rien de plus à lire",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
