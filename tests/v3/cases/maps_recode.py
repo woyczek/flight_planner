@@ -9198,13 +9198,14 @@ _AWYTAG_JS = r"""() => {
       const v = o[p]; return typeof v === 'function' ? v.bind(o) : v }, set(o, p, v) { o[p] = v; return true } });
   const seg = (route, lat, dir, lon0, lon1) => ({ route, a: { id: route + 'A', lat, lon: lon0 }, b: { id: route + 'B', lat, lon: lon1 }, lower: 6500, upper: 19500, nm: 150, ...(dir ? { dir } : {}) });
   const BOX = [{ lat: 44.0, lon: -4 }, { lat: 46.0, lon: 4 }];
-  const one = (segs, labels = true) => { fills.length = 0; strokes.length = 0; rects.length = 0; const fit = R.bboxOf(BOX, 0), { toC, shown } = R.mercator(fit, W, H, 12);
+  const one = (segs, labels = true, box = BOX) => { fills.length = 0; strokes.length = 0; rects.length = 0; const fit = R.bboxOf(box, 0), { toC, shown } = R.mercator(fit, W, H, 12);
     const prof = R.routeProfile(9000); if (!labels) prof.elements = { ...(prof.elements || {}), awLabels: false };
     const out = R.draw(ctx, { toC, W, H, scale: 1, bbox: shown, profile: prof, data: { airways: segs }, route: [], marks: [] }), P = segs.map(s => toC(s.a.lat, s.a.lon)), Q = segs.map(s => toC(s.b.lat, s.b.lon));
     const arrows = fills.filter(f => f.pts.length === 3).map(f => { const [t, p, q] = f.pts, bx = (p[0] + q[0]) / 2, by = (p[1] + q[1]) / 2; return { tip: t, p, base: [bx, by], c: [(t[0] + bx) / 2, (t[1] + by) / 2], dx: t[0] - bx, dy: t[1] - by, color: f.color, path: f.path } });
     return { hits: (out && out.airways || []).map(h => ({ x: h.x, y: h.y, r: h.r, w: h.w, h: h.h, route: h.g.route })), rects: [...new Set(rects)], arrows: arrows.map(a => ({ c: a.c, tip: a.tip, base: a.base, p: a.p, dx: a.dx, dy: a.dy, color: a.color, edge: strokes.filter(k => k.path === a.path).map(k => ({ color: k.color, width: k.width })) })), P, Q } };
   return { F: one([seg('QF', 45.0, 'F', -2.5, 0)]), B: one([seg('QB', 45.0, 'B', -2.5, 0)]), FB: one([seg('QX', 45.0, 'FB', -2.5, 0)]), nolab: one([seg('QF', 45.0, 'F', -2.5, 0)], false),
-    tiny: one([seg('QT', 45.0, 'F', -0.1, 0)]) }
+    tiny: one([seg('QT', 45.0, 'F', -0.1, 0)]),
+    bare: one([seg('QS', 45.0, 'F', -0.28, -0.27)], true, [{ lat: 44.985, lon: -0.3 }, { lat: 45.105, lon: -0.15 }]) }
 }"""
 
 
@@ -9237,6 +9238,11 @@ def d264(c):
     c.eq([len(r['FB']['hits']), len(r['FB']['arrows'])], [1, 0], 'both ways: the cartouche, no point', what=str(r['FB'])[:200])
     c.eq(len(r['nolab']['arrows']), 0, 'names off, zoom under 9: no cartouche and no arrow (the earlier rule: arrows from zoom 9)', what=str(r['nolab'])[:200])
     c.eq(len(r['tiny']['arrows']), 0, 'a segment too short for its cartouche (and under 18 px): no arrow', what=str(r['tiny'])[:200])
+    # SOG-0492: the small arrow of a segment with no cartouche (zoom 9 and over) has no white edge: like the cartouche, it is the airway's colour alone
+    b = r['bare']
+    c.ok(len(b['hits']) == 0 and len(b['arrows']) == 1, str(b)[:300], 'a short segment at a close zoom: no cartouche, one small arrow')
+    if b['arrows']:
+        c.eq(b['arrows'][0]['edge'], [], 'the small arrow has no white edge (SOG-0492): nothing is stroked around it', what=str(b['arrows'][0]))
 
 
 @case('D265', 'Airways, SOG-0461 (captures): the cartouche of a one-way segment keeps its point in the allowed direction, cut by a white line, at two zooms, alone and with the second pane', 'D',
@@ -9492,6 +9498,25 @@ def d272(c):
         c.shot(f'D272_{name}_{c.width}.png')
         c.js("() => { const b = document.querySelector('.f-sheet-close'); if (b) b.click(); return true }")
         c.wait(400)
+
+
+@case('D273', 'Airways, SOG-0492 (captures): the small arrow of a one-way segment too short for a cartouche has the airway’s colour alone, no white edge', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0492 (the user: the white edge of the AWY arrow, which the cartouche does not have: remove it): at a close zoom a short one-way segment carries its small arrow at the middle, in the colour of the airway, without a white edge')
+def d273(c):
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    f = _awy_flight()
+    segs = []
+    for i, (route, dr) in enumerate([('Z669', 'F'), ('T873', 'B')]):
+        la = 45.12 + i * .06
+        segs.append({'route': route, 'a': {'id': f'S{i + 1}A', 'lat': la, 'lon': 0.80}, 'b': {'id': f'S{i + 1}B', 'lat': la, 'lon': 0.815}, 'lower': 6500, 'upper': 19500, 'nm': 1.0, 'dir': dr})
+    c.open('maps', docs=fdocs(f) + [['cache/maps/ui.json', {'preset': 'lowifr', 'layers': {}}, 'cache']], flight=False, airfields=True, airways=segs, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("() => { const m = window.__mpMap; m.jumpTo({ center: [0.8075, 45.15], zoom: 11.4 }); const p = m.project([0.8075, 45.15]); m.panBy([0, p.y - 230], { duration: 0 }); return true }")
+    c.wait(2500)
+    c.shot('D273_arrow_small.png')
 
 
 def _no_duplicate_names():

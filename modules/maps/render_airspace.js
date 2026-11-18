@@ -438,7 +438,7 @@
    *  comme si on avait donné un coup de couteau ») : un tronçon qui a son cartouche le garde avec une POINTE dans le sens permis, à tout zoom : un triangle aussi haut que
    *  le cartouche, de sa couleur, à son bout aval, séparé du corps par un trait du fond (`edge`) — la pointe est cernée du fond, qui coupe aussi le trait de la voie autour
    *  d'elle. Sur une branche de la route (`along`) le cartouche est peint après la route : sa pointe aussi (`over`). Un tronçon sans cartouche (court, noms éteints, place
-   *  prise) garde la petite flèche d'avant, au milieu, à partir du zoom 9 (`late`) : tous les triangles d'une teinte dans un seul tracé (le coût du dessin, D68). */
+   *  prise) garde la petite flèche d'avant, au milieu, à partir du zoom 9 (`late`), sans liseré (SOG-0492) : tous les triangles d'une teinte dans un seul tracé (le coût du dessin, D68). */
   function drawOneWay(ctx, list, hits, scale, late, edge, over) {
     const s = 4.5 * scale,
       g = 1.8 * scale, // le trait blanc entre le corps du cartouche et sa pointe
@@ -489,11 +489,7 @@
       }
     }
     if (!paths.size) return;
-    // la petite flèche : le liseré du fond d'abord, la flèche par-dessus
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 2.4 * scale;
-    ctx.strokeStyle = edge;
-    for (const p of paths.values()) ctx.stroke(p);
+    // la petite flèche : de la seule couleur de la voie, comme le cartouche — sans liseré blanc (SOG-0492 : le liseré est celui de la pointe du cartouche, pas de la petite flèche)
     ctx.globalAlpha = .9;
     for (const [col, p] of paths) {
       ctx.fillStyle = col;
