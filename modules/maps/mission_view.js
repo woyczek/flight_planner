@@ -48,6 +48,12 @@ import {
   viewPending,
   viewAdopt
 } from './view_state.js';
+import {
+  pilotRoot,
+  drawersState,
+  stateKey,
+  openDocPath
+} from './pilot.js';
 
 /** Chemin du YAML d'une mission : missions/<l>_<FAMILLE>/<ID>/mission<ID>.yaml (l'identifiant capturé). */
 const MISSION_YAML = /^missions\/[^/]+\/([^/]+)\/mission[^/]*\.ya?ml$/i;
@@ -175,7 +181,15 @@ async function loadMission(id, reuse = false) {
       text = typeof r?.value === 'string' ? r.value : r?.text;
     if (S !== me) return; // la Carte a été quittée pendant la lecture
     if (!text) throw new Error('empty');
-    S.mission = MapsMission.parse(window.jsyaml.load(text));
+    // ce que le pilote peut voir (SOG-0448) : les lieux d'un tiroir fermé ne sont ni lus ni dessinés ; une mission sans tiroir est lue comme avant
+    const root = window.jsyaml.load(text),
+      st = await drawersState(S.ctx, hit.id);
+    if (S !== me) return;
+    S.mission = MapsMission.parse(pilotRoot(root, st.opened, st.mine));
+    S.missionShown = {
+      id: hit.id,
+      key: stateKey(st)
+    };
     S.mission.id ||= hit.id;
     S.missionRev = r.rev || '';
   } catch (e) {
@@ -183,6 +197,23 @@ async function loadMission(id, reuse = false) {
       e: e?.message || e
     });
   }
+}
+/** Ce que le pilote voit d'une mission à tiroirs change quand un tiroir s'ouvre (SOG-0448) : « Affectation » récrit son document sur l'appareil ; la mission montrée est
+ *  alors relue, et dessinée de nouveau avec les lieux du tiroir. Rien n'est refait quand l'état lu est celui déjà montré. L'état est relu aussi UNE fois à la pose de
+ *  l'écoute (comme altnStart) : le document a pu changer entre la lecture de la mission et la fin du montage. Rend l'arrêt. */
+export function pilotStart() {
+  const check = async paths => {
+    const me = S,
+      shown = S?.missionShown;
+    if (!shown || (paths && !paths.some(p => p === openDocPath(shown.id)))) return;
+    const st = await drawersState(S.ctx, shown.id);
+    if (S !== me || S.missionShown?.id !== shown.id || stateKey(st) === S.missionShown.key) return;
+    if (S.missionId === shown.id) serial(() => applyMission(false));
+    else if (S.missionAside === shown.id) loadAside();
+  };
+  const stop = S?.ctx?.data?.watch?.('cache/missions/', check);
+  check(null);
+  return () => stop?.();
 }
 /** Le vol nomme une mission (SOG-0193 L1) : la Carte reste en vue vol (météo, procédures, Édition, couches, itinéraires) et la mission passe en surimpression : ses zones,
  *  ses points à rôle, sa fenêtre ; la carte de la mission (cartes fournies, vues) est un lien de la fenêtre. */

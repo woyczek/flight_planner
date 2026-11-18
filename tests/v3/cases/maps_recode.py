@@ -9276,6 +9276,96 @@ def d266(c):
     c.eq([ord_('none'), ord_('small'), ord_('bad'), ord_('zero')], [0.25, 0.04, 0.25, 0], 'the opacity of an ordinary entity: .25 without the option, the given value (.04, 0), a value outside 0..1 ignored', what=str(r))
     c.eq([r['small'][2], r['small'][4]], [0.45, 0.06], 'picked and partial keep their own opacity (.45, .06)', what=str(r['small']))
 
+_PL_URL = '/modules/maps/lib/test/pilot.html'
+# a mission invented for SOG-0448 (the same as the reader's bench, frame/lib/test/mission.html): a hiker to find on a glacier; the hidden position (45.31 N, 1.42 E) is that of the target, of the zone of drawer C and of a nearby rendezvous
+_PL_DOC = {
+    'schema': 'helo-xp-mission', 'mission': {'id': 'X-002A', 'type': 'REG'}, 'title': 'Glacier', 'cruise_speed_kt': 100,
+    'origin': {'name': 'Base Test (XTST)', 'lat': 45, 'lon': 1}, 'destination': {'name': 'Base Test (XTST)', 'lat': 45, 'lon': 1},
+    'target': {'id': 'TARGET', 'name': 'Randonneur', 'lat': 45.31, 'lon': 1.42},
+    'turning_points': [{'id': 'PT1', 'name': 'Col', 'lat': 45.2, 'lon': 1.2}, {'id': 'PT2', 'name': 'Refuge', 'lat': 45.35, 'lon': 1.5}],
+    'rendezvous': [{'id': 'RDV-1', 'name': 'Secours au sol', 'lat': 45.33, 'lon': 1.44}],
+    'zones': [{'id': 'ZONE-1', 'name': 'Vallée', 'centre': {'lat': 45.25, 'lon': 1.3}, 'radius_km': 6},
+              {'id': 'ZONE-2', 'name': 'Glacier', 'centre': {'lat': 45.31, 'lon': 1.42}, 'radius_km': 2}],
+    'objects': [{'id': 'OBJ-1', 'kind': 'person', 'name': 'Randonneur', 'lat': 45.31, 'lon': 1.42, 'detection_range_nm': 1}],
+    'route_order': ['ORIGIN', 'PT1', 'DESTINATION'], 'maps': [{'id': 'carte1', 'filename': 'detail_X-002A_1.png', 'centre_ref': 'PT1'}],
+    'phases': [{'id': 'B', 'title': 'La vallée', 'trigger_zone': 'ZONE-1', 'fallback_delay_min': 30, 'route_order': ['PT2']},
+               {'id': 'C', 'title': 'Le glacier', 'trigger_zone': 'ZONE-2', 'zone_shown': False, 'fallback_delay_min': 60, 'message': 'Randonneur vu vers 45.31 N.', 'route_order': ['TARGET', 'RDV-1']},
+               {'id': 'D', 'title': 'Trouvé', 'trigger_object': 'OBJ-1', 'fallback_delay_min': 90}]}
+
+
+@case('D263', 'What the pilot may see of a mission with drawers (modules/maps/pilot.js, SOG-0448): a closed drawer’s target, zone, places and the framing they would fix are not read by the Map; opened, they come; a mission without a drawer is read as before', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0448 (FORMAT_MISSION.md § 4 bis): the Map reads the mission through the reader’s rule (pilotView), never a rule of its own — what belongs to a closed drawer is neither drawn nor named; at its opening it appears; a mission read for browsing (not mine) opens nothing; a mission without a drawer is the same object')
+def d263(c):
+    c.page.goto(f'{c.base}{_PL_URL}', wait_until='load')
+    c.page.wait_for_function('window.__pl && window.__pl.ready', timeout=30000)
+    read = lambda opened, mine, doc=_PL_DOC: c.js('(q) => { const r = window.__pl.read(q[0], q[1], q[2]); return { points: r.points.map(p => p.id), zones: r.zones.map(z => z.id), maps: r.maps.map(m => m.center && m.center.lat), json: JSON.stringify(r) } }', [doc, opened, mine])
+    closed = read([], True)
+    c.eq(closed['points'], ['ORIGIN', 'PT1'], 'closed: the Map reads the departure (the arrival is the same position) and the point of the visible route; the target, the second point and the rendezvous of drawers B and C are not read', what=str(closed['points']))
+    c.eq(closed['zones'], ['ZONE-1'], 'closed: the zone that drawer B shows is read, the zone drawer C hides is not', what=str(closed['zones']))
+    c.ok(not any(w in closed['json'] for w in ('45.31', '1.42', 'Randonneur', 'ZONE-2', 'Refuge', 'Secours')), closed['json'][:200], 'closed: nothing of the hidden place (position, name) is in what the Map read')
+    opened = read(['B', 'C'], True)
+    c.eq(sorted(opened['points']), ['ORIGIN', 'PT1', 'PT2', 'RDV-1', 'TARGET'], 'drawers B and C open: the places they name come (PT2, the rendezvous, the target)', what=str(opened['points']))
+    c.ok('ZONE-2' in opened['zones'] and '45.31' in opened['json'], str(opened['zones']), 'drawer C open: its zone is read')
+    browse = read(['B', 'C'], False)
+    c.eq(browse['points'], closed['points'], 'a mission one browses (not mine) opens nothing, whatever the device says', what=str(browse['points']))
+    # the aliases of the V2 that the Map reads and the reader does not (waypoints, points, rdv, points_tournants): a place written there and cited only by a closed drawer is not read either (Sécurisation, 18 Nov)
+    alias = {k: v for k, v in _PL_DOC.items() if k not in ('turning_points', 'rendezvous', 'phases', 'objects')}
+    alias['turning_points'] = [_PL_DOC['turning_points'][0]]
+    alias['waypoints'] = [{'id': 'WPX', 'name': 'Passage', 'lat': 45.31, 'lon': 1.42}]
+    alias['rdv'] = [{'id': 'RDVX', 'name': 'Secours aliasés', 'lat': 45.33, 'lon': 1.44}]
+    alias['points'] = {'PTY': {'lat': 45.36, 'lon': 1.47, 'name': 'Pointé'}}
+    alias['phases'] = [{'id': 'B', 'title': 'Au passage', 'trigger_point': 'WPX', 'trigger_delay_min': 5, 'fallback_delay_min': 30, 'route_order': ['PTY', 'RDVX']}]
+    shut = read([], True, alias)
+    c.ok(not any(w in shut['json'] for w in ('45.31', '1.42', '45.33', '45.36', 'Passage', 'Secours aliasés', 'Pointé')) and sorted(shut['points']) == ['ORIGIN', 'PT1'], str(shut['points']), 'aliases, closed: a place written under waypoints / rdv / points and cited only by a closed drawer is not read')
+    live = read(['B'], True, alias)
+    c.ok({'WPX', 'RDVX', 'PTY'} <= set(live['points']), str(live['points']), 'aliases, the drawer open: they come back')
+    c.eq(read(['B'], False, alias)['points'], shut['points'], 'aliases, a mission not mine: closed whatever the device says', what=str(shut['points']))
+    # beyond what the reader reads (60 turning points): the 61st place, cited only by a closed drawer, is not drawn either (the failure is closed)
+    many = {k: v for k, v in _PL_DOC.items() if k not in ('turning_points', 'rendezvous', 'phases', 'objects', 'zones')}
+    many['turning_points'] = [{'id': f'T{i}', 'name': f'Lieu {i}', 'lat': 44 + i * 0.01, 'lon': 1 + i * 0.01} for i in range(1, 62)]
+    many['route_order'] = ['ORIGIN', 'T1', 'DESTINATION']
+    many['phases'] = [{'id': 'B', 'title': 'Loin', 'trigger_point': 'T61', 'trigger_delay_min': 5, 'fallback_delay_min': 30}]
+    far = read([], True, many)
+    c.ok(far['points'] == ['ORIGIN', 'T1'] and 'T61' not in far['json'] and 'Lieu 61' not in far['json'], str(far['points'])[:200], 'more than 60 places: the 61st, which only a closed drawer cites, is not drawn (nor any place nothing visible cites)')
+    c.eq(c.js('(q) => { const d = JSON.parse(JSON.stringify(q)); delete d.phases; return window.__pl.pilotRoot(d, [], false) === d }', _PL_DOC), True, 'a mission without a drawer is returned as it is (the same object): it is drawn as before', what='same')
+    c.eq(c.js('(q) => { const a = JSON.stringify(q); window.__pl.read(q, [], false); return JSON.stringify(q) === a }', _PL_DOC), True, 'the file read is never modified', what='unchanged')
+
+
+@case('D267', 'The Map shows what the pilot may see of a mission with drawers (SOG-0448): a closed drawer’s places are not drawn nor listed, the drawers open on the device bring them, a mission not mine opens nothing; the document is read through readOpen', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False, phone=False,
+      rule='SOG-0448 / SOG-0459 (FORMAT_MISSION.md § 4 bis, AFFECTATION_MISSIONS.md § 11.4): the Map draws pilotView(mission, opened) with the drawers « Affectation » publishes in cache/missions/open_<ID>.json (read by readOpen: another mission, not mine, a day old or malformed → closed); a closed drawer leaves no place, zone or target on the Map, not even its existence; when the document changes while the Map is open the mission is drawn again with the places')
+def d267(c):
+    import json as _json
+    c.page.set_viewport_size({'width': 1280, 'height': 760})
+    doc = dict(_PL_DOC, mission={'id': 'S-002A', 'type': 'REG'})
+    now = lambda: c.js("() => new Date().toISOString()")
+    ids = lambda: c.js("() => { const S = window.__mp.S; return { pts: S.mission.points.map(p => p.id).sort(), zones: S.mission.zones.map(z => z.id).sort(), shown: S.missionShown } }")
+    for mode in ('alone', 'dual'):
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_RAW_JS, ['missions/2_SAR/S-002A/missionS-002A.yaml', _json.dumps(doc)])
+        c.open('maps?mission=S-002A' + ('&pane=1' if mode == 'dual' else ''), docs=fdocs(flight()), airfields=True, wait=False)
+        c.until("() => !!document.querySelector('.mp-mbar') && !document.querySelector('.mp-mbar').hidden", timeout=15000, what='the mission banner')
+        c.js(_STATE_JS)
+        c.until("() => !!window.__mp.S.mission", timeout=8000, what='the mission is read')
+        g = ids()
+        c.eq(g['pts'], ['ORIGIN', 'PT1'], f'{mode}: no document published: the Map reads the visible part only (the departure, the point of the visible route)', what=str(g))
+        c.eq(g['zones'], ['ZONE-1'], f'{mode}: and the zone a closed drawer shows, not the one it hides', what=str(g))
+        c.wait(1500)
+        c.shot(f'D267_{mode}_closed.png')
+        # Affectation publishes the open drawers of MY mission: the Map reads them while it is open
+        c.js("async (d) => { const w = FrameData.adapter({ id: 'assign', writes: [{ prefix: 'cache/missions/', policy: 'cache' }] }); await w.put('cache/missions/open_S-002A.json', d); return true }", {'schema': 1, 'mission': 'S-002A', 'mine': True, 'seance': None, 'opened': ['B', 'C'], 'at': now()})
+        c.wait(2500)    # the document of the device reaches the Map within a second or two
+        c.wait(2500)    # the document of the device reaches the Map within a second or two
+        g = ids()
+        c.eq(g['pts'], ['ORIGIN', 'PT1', 'PT2', 'RDV-1', 'TARGET'], f'{mode}: drawers B and C open: PT2, the rendezvous and the target come', what=str(g))
+        c.ok('ZONE-2' in g['zones'], str(g), f'{mode}: and the zone of drawer C')
+        c.shot(f'D267_{mode}_open.png')
+        # not mine: nothing opens, whatever the device says
+        c.js("async (d) => { const w = FrameData.adapter({ id: 'assign', writes: [{ prefix: 'cache/missions/', policy: 'cache' }] }); await w.put('cache/missions/open_S-002A.json', d); return true }", {'schema': 1, 'mission': 'S-002A', 'mine': False, 'seance': None, 'opened': ['B', 'C'], 'at': now()})
+        c.wait(2500)
+        c.eq(ids()['pts'], ['ORIGIN', 'PT1'], f'{mode}: not mine: closed again', what='pts')
+
 
 @case('D268', 'The vertical profile of the Map outside the Map (lib/profile_embed.js): the relief under a route drawn in a canvas, with the tiles the caller loads; no relief offline, said; fewer than two points gives null; a later drawing replaces an earlier one', 'D',
       tags=('maps',), screens=False, designs=('standard',), night=False,

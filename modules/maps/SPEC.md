@@ -1317,6 +1317,15 @@ The ETAs and the planned position are **derived**, never read from `progress`: `
 
 ## 15. Mission maps (`mission.js`, `window.MapsMission`)
 
+- **What the pilot may see of a mission with drawers** (SOG-0448 / SOG-0459, 18 Nov; `pilot.js`): the Map never draws the whole file. `loadMission` reads the mission file, then
+  `pilotRoot(root, opened, mine)` takes out of the parsed YAML what `pilotView` (`frame/lib/mission.js`, FORMAT_MISSION.md § 4 bis) hides — the places (turning points, rendezvous), the zones
+  and the target that only a closed drawer cites (the places the Map accepts under V2 aliases — `waypoints`, `points`, `rdv`, `points_tournants`, `turningPoints`, or under `mission:` — are handed to the reader as its own `turning_points` / `rendezvous`, so it judges them too) — and `MapsMission.parse` reads the rest (so the points, the zones, the framing of the maps and the route all come from the visible part;
+  nothing says a closed drawer exists, nothing counts it). The rule is the reader's: this file writes none. The inputs: the drawers open on the device, from
+  `cache/missions/open_<ID>.json` (written by « Mission assignment », read through `readOpen` of `modules/missions/drawers.js`: another mission, a document that is not mine, a day old,
+  future-dated or malformed → closed; no document → closed). While the Map is open, `pilotStart` watches `cache/missions/` (and reads once at the start of the watch): when the document of the shown
+  mission changes, the mission is read again and drawn with the places of the drawer. A mission without a drawer is read as before (the same object). **The limit, said**: the document says what the
+  mission's sheet computed last; with the sheet closed, a drawer whose hour passes stays closed on the Map until the sheet is back (too little shown, never too much). Noreg D263 (the filter, pure),
+  D267 (the Map, closed → open → not mine).
 - **A flight that names a mission stays in the flight view** (SOG-0193 L1, 10 Nov, V3 § 10.47; it replaces the next item's « opens on that mission »): `S.missionId` comes from the address only;
   `flight.mission` sets `S.missionAside` (`deriveMission`, `loadAside`): the flight's route, profile, layers, weather, procedures and Édition are untouched, and the mission is drawn over the flight view
   (`aside` of the renderer: zones in a light tint with their name, the points with a role), with its window (title, id, family, « The mission's map » → `#maps?mission=<ID>`) and its legend rows. Noreg D153.

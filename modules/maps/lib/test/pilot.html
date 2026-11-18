@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Banc pilot</title>
+<!-- Banc de modules/maps/pilot.js (SOG-0448) : la lecture d'une mission par la Carte (MapsMission) après pilotRoot ; le cas D263 de tests/v3/cases/maps_recode.py y pose une mission inventée et lit ce que la Carte en dessinerait. -->
+<script src="../../mission.js?v=0"></script>
+</head><body>
+<script type="module">
+import {
+  pilotRoot
+} from '../../pilot.js?v=0';
+window.__pl = {
+  pilotRoot,
+  read: (doc, opened, mine) => window.MapsMission.parse(pilotRoot(doc, opened, mine)),
+  ready: true
+};
+</script>
+</body></html>

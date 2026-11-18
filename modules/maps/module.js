@@ -87,7 +87,8 @@ import {
   deriveMission,
   retryMission,
   restoreProvided,
-  missionEvents
+  missionEvents,
+  pilotStart
 } from './mission_view.js';
 import {
   viewRead,
@@ -139,7 +140,7 @@ export const meta = {
   reads: ['pilot/', {
     prefix: 'missions/',
     policy: 'reference'
-  }, 'cache/maps/', 'cache/fuel/display.json', 'airline/'],
+  }, 'cache/maps/', 'cache/fuel/display.json', 'cache/missions/', 'airline/'],
   // les tours de piste VFR de l'extracteur de l'utilisateur (SOG-0253) : le verbe `vfr/circuits` du lanceur, LECTURE SEULE (circuits.js ; sans lanceur, rien n'est dessiné)
   launcher: {
     routes: ['regen/job'],
@@ -165,7 +166,8 @@ export const meta = {
     'lv.js?v=0',
     'vfr.js?v=0', 'circuits.js?v=0', 'follow.js?v=0', 'light.js?v=0', 'view_state.js?v=0',
     'flight_time.js?v=0',
-    'mission_view.js?v=0',
+    'mission_view.js?v=0', 'pilot.js?v=0', '../missions/drawers.js?v=0', '../../frame/lib/crossing.js?v=0',
+    '../../frame/lib/mission.js?v=0',
     'weather.js?v=0',
     'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0',
     'lib/aero_symbols.js?v=0', 'lib/vertical_profile.js?v=0',
@@ -417,6 +419,7 @@ export async function mount(el, ctx) {
   ); // la fenêtre d'un vol suit le vol même quand une carte fournie y est déjà montrée (le choix peut venir avant la fin du montage, SOG-0251)
   S.stops.push(altsStart()); // les itinéraires que Carburant propose (SOG-0134 a)
   S.stops.push(altnStart()); // les terrains de dégagement que Carburant propose (SOG-0398, lot 2)
+  S.stops.push(pilotStart()); // les tiroirs ouverts de la mission montrée (SOG-0448 : le document d'Affectation)
   S.stops.push(atcStart()); // les contrôleurs en ligne IVAO / VATSIM, lus tant que leur couche est allumée (SOG-0094)
   S.stops.push(lvEvents()); // la fiche d'un espace de la liste (SOG-0163)
   S.stops.push(followStart()); // le suivi du vol (SOG-0304) : sous la carte au téléphone, une colonne de 340 px dès 1 000 px
