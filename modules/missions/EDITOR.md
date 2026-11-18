@@ -1350,6 +1350,16 @@ tool in hand stays marked (`aria-pressed`). At 390 the row wraps onto a second l
 scrolls sideways. A set that lost an icon would bring back every written name together (never a mixed row). Case N131 follows: besides the names, it
 reads that every button carries `data-icon` and an `svg`, and no written text.
 
+### 7 septquadragies. The reader and the workshop share the frame's guards for untrusted input (18 Nov 2026; SOG-0468; no change of behaviour; noreg N1, N113, N127, N133)
+
+`frame/lib/mission.js` imported nothing of the frame's guards: it carried its own `visible` (the invisible format characters), `clean`, `plain` and
+`idWord`. Since `frame/lib/untrusted.js` (c62741c36) holds ONE definition of them, the reader imports `visible`, `clean`, `plain` and `idWord` from
+it and keeps `export { visible }` (the workshop reads `MS.visible`). Before the change the two sets were compared: the same pattern for every code
+point of Unicode, and the same result for `undefined`, `null`, numbers, texts with invisible characters, objects, arrays and an object with its own
+`toString`. `num` stays in the reader (a tolerant reading, not a guard). `cut` (a one-line text, without invisible characters, bounded) was written
+in `editor.js` and again in `editor_drawers.js`; `untrusted.js` has no equivalent, so `editor.js` exports the one, `editor_drawers.js` imports it
+(no cycle: `editor.js` imports no workshop file).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

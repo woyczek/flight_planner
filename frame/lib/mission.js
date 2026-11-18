@@ -84,19 +84,18 @@
 import {
   isCode
 } from './ad_field.js'; // le test d'un code de terrain est celui du champ commun (SOG-0465) : une fonction pure, jamais recopiée ici
+import {
+  visible,
+  clean,
+  plain,
+  idWord
+} from './untrusted.js';
+export {
+  visible
+};
 
-/** Les caractères de format invisibles qui trompent l'œil : la marque arabe (U+061C), l'espace de largeur nulle (U+200B), les marques
- *  et les contrôles de sens d'écriture (U+200E, U+200F, U+202A à U+202E, U+2066 à U+2069), le liant de mots et les opérateurs
- *  invisibles (U+2060 à U+2064), les formats dépréciés (U+206A à U+206F), les annotations interlinéaires (U+FFF9 à U+FFFB), la
- *  marque d'ordre (U+FEFF). Gardés à dessein : le liant et l'anti-liant (U+200C, U+200D : des écritures et des émojis en ont
- *  besoin) et l'espace fine insécable (U+202F, la typographie française). */
-const HIDDEN = /[\u061C\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u206F\uFFF9-\uFFFB\uFEFF]/g;
-/** Un texte d'un fichier sans ses caractères de format invisibles (un fichier de mission ou de registre est écrit par tout pilote : un
- *  titre ne doit pas se lire autrement qu'il est écrit) — LA fonction, pour le lecteur et pour l'atelier (modules/missions/
- *  editor_drawers.js) ; '' pour rien. */
-export const visible = v => String(v ?? '').replace(HIDDEN, '');
-/** Un texte nettoyé (caractères invisibles retirés, blancs repliés), '' pour rien. */
-const clean = v => visible(v).replace(/\s+/g, ' ').trim();
+// Les gardes d'entrée non fiable (un texte sans ses caractères de format invisibles, un texte nettoyé, un objet simple, un identifiant écrit) sont
+// ceux du cadre (frame/lib/untrusted.js, une seule définition) ; `visible` reste exporté d'ici : l'atelier (modules/missions/) le lit par le lecteur.
 /** Un nombre fini, ou null. */
 const num = v => v === null || v === undefined || v === '' || !Number.isFinite(+v) ? null : +v;
 
@@ -286,10 +285,6 @@ const positive = (v, hi) => {
   const n = within(v, 0, hi);
   return n !== null && n > 0 ? n : null;
 };
-/** Un objet du fichier (ni liste, ni valeur nue), ou null. */
-const plain = v => v && typeof v === 'object' && !Array.isArray(v) ? v : null;
-/** Un identifiant écrit (un texte ou un nombre), comme il se compare : sans blancs autour, en capitales ; '' sinon. */
-const idWord = v => typeof v === 'string' || typeof v === 'number' ? clean(v).toUpperCase() : '';
 /** La longueur au plus du texte du cheminement du profil vertical (`profileRoute`). */
 const PROFILE_TEXT = 2000;
 /** Oui ou non écrit dans le fichier (false, 0, « non », « no », « false » : non) ; `dflt` quand rien n'est écrit. */

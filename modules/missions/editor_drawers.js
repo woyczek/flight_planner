@@ -38,6 +38,9 @@
 //     (une clé qui regarde l'avion sans heure de repli), keyUnread (une clé que le lecteur ne sait pas lire : le tiroir ne s'ouvre
 //     qu'à la main), routeUnknown (sa suite de route cite un lieu absent).
 import * as MS from '../../frame/lib/mission.js';
+import {
+  cut
+} from './editor.js'; // « un texte d'une ligne, sans caractère invisible, borné » : la définition unique est celle de l'atelier
 
 const B = MS.DRAWER_BOUNDS;
 export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival']);
@@ -53,8 +56,6 @@ const KEY_FIELDS = ['trigger_zone', 'zone_shown', 'trigger_actor', 'trigger_obje
   'trigger_delay_min'
 ];
 
-/** Un texte d'une ligne, sans caractère invisible, borné. */
-const cut = (v, n) => MS.visible(v).replace(/\s+/g, ' ').trim().slice(0, n);
 /** Un texte de plusieurs lignes (le message, le briefing), comme le lecteur le lit : ses sauts de ligne gardés, borné. */
 const lines = (v, n) => typeof v === 'string' || typeof v === 'number' ? MS.visible(v).replace(/\r\n?/g, '\n').replace(
     /[ \t]+\n/g, '\n').trim()

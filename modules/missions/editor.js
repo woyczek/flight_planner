@@ -100,8 +100,9 @@ export const THEATRES = ['métropole', 'Corse', 'Antilles', 'Guyane', 'Réunion'
 const MISSION_ID = /^[A-Z]-\d{3}[A-Z]?$/,
   FAMILY = /^[A-Z][A-Z0-9_]{1,23}$/;
 
-/** Un texte nettoyé (sans caractère de format invisible : `visible` du lecteur, blancs repliés) et borné. */
-const cut = (v, n) => MS.visible(v).replace(/\s+/g, ' ').trim().slice(0, n);
+/** Un texte nettoyé (sans caractère de format invisible : `visible` du lecteur, blancs repliés) et borné — la définition unique de l'atelier
+ *  (editor_drawers.js l'importe). */
+export const cut = (v, n) => MS.visible(v).replace(/\s+/g, ' ').trim().slice(0, n);
 /** Un objet du document, ou {}. */
 const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
 /** Une liste du document comme le lecteur la lit (frame/lib/mission.js list) : un tableau, un objet seul = une entrée, sinon rien
