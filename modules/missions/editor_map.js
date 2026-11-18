@@ -657,15 +657,18 @@ function spanKm(map) {
 /** Chaque lieu dit son identifiant sur la carte (l'ergonome, 18 nov. 2026 : « une carte de points sans nom ne se lit pas »), et le lieu
  *  choisi son nom complet : des marqueurs de MapLibre — des éléments de la page, leur texte par textContent, qui ne prennent aucun
  *  toucher —, pas une police du fond (un fond n'en porte pas toujours). Un marqueur par étiquette, gardé d'un dessin à l'autre, déplacé,
- *  retiré avec son lieu ; pendant un essai des clés, les étiquettes restent, aucun lieu n'est choisi. */
+ *  retiré avec son lieu ; pendant un essai des clés, les étiquettes restent, aucun lieu n'est choisi. Seul ce qui change est touché (texte,
+ *  choix, position, pose sur la carte) et l'empilement n'est refait que si une étiquette a bougé (SOG-0468). */
 function mark(L) {
   const ml = globalThis.maplibregl,
     want = new Map((L.map && ml?.Marker ? L.feats?.labels || [] : []).map(l => [l.id, l]));
+  let moved = false; // une étiquette posée, retirée, déplacée, ou dont le texte ou le choix a changé : alors seulement spread
   L.labels ||= new Map();
   for (const [id, m] of L.labels)
     if (!want.has(id)) {
       m.remove();
       L.labels.delete(id);
+      moved = true;
     }
   for (const [id, l] of want) {
     let m = L.labels.get(id);
@@ -681,22 +684,46 @@ function mark(L) {
       });
       L.labels.set(id, m);
     }
+    // ce que l'étiquette est déjà sur CETTE carte : on ne touche que ce qui change (addTo retire puis rattache l'élément : 118 mutations
+    // par frappe pour 59 étiquettes, SOG-0468)
     const el = m.getElement(),
+      st = LBL.get(m) || {},
+      on = st.map === L.map,
       chosen = L.mode === 'select' && id === `place:${L.sel}`,
       text = String((chosen && L.selLabel) || l.text).slice(0, 60);
-    if (el.textContent !== text) el.textContent = text;
-    if (chosen) el.dataset.mapsel = '';
-    else delete el.dataset.mapsel;
-    m.setLngLat([l.lon, l.lat]).addTo(L.map);
+    if (el.textContent !== text) {
+      el.textContent = text;
+      moved = true;
+    }
+    if (chosen !== ('mapsel' in el.dataset)) {
+      if (chosen) el.dataset.mapsel = '';
+      else delete el.dataset.mapsel;
+      moved = true;
+    }
+    if (!on || st.lon !== l.lon || st.lat !== l.lat) {
+      m.setLngLat([l.lon, l.lat]);
+      if (!on) m.addTo(L.map);
+      LBL.set(m, {
+        map: L.map,
+        lon: l.lon,
+        lat: l.lat
+      });
+      moved = true;
+    }
   }
-  spread(L);
+  if (moved || L.map?.getZoom() !== L.spreadZoom) spread(L); // aussi quand l'échelle n'est plus celle du dernier empilement
 }
 
+/** Ce que chaque étiquette (marqueur) a déjà reçu : { map, lon, lat } — la carte où elle est posée et sa position (mark ne retouche que
+ *  ce qui change). */
+const LBL = new WeakMap();
+
 /** Les étiquettes de lieux voisins s'empilent au lieu de se recouvrir (une zone centrée sur un point, un objet près de la cible) :
- *  chacune monte d'une ligne tant qu'elle en touche une déjà posée — à l'échelle de la vue, donc refait à chaque dessin et à chaque
- *  changement d'échelle. */
+ *  chacune monte d'une ligne tant qu'elle en touche une déjà posée — à l'échelle de la vue, donc refait quand une étiquette bouge (mark) et à
+ *  chaque changement d'échelle. */
 function spread(L) {
   if (!L.map || !L.labels) return;
+  L.spreadZoom = L.map.getZoom();
   const step = 16,
     placed = [];
   for (const m of L.labels.values()) {
