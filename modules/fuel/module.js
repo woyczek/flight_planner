@@ -7,6 +7,10 @@
 // Calcul pur dans performance_model.js, model.js, levels.js, sheets.js (chargés à la demande, une fois) ; ici seulement
 // l'écran, les lectures et écritures par ctx.data, SimBrief par ctx.net, l'identité par ctx.identity. Styles limités au
 // module ([data-module="fuel"]) sur les jetons --sog-… du cadre ; aucune feuille globale.
+import {
+  isIcao,
+  isIcaoAlpha
+} from '../../frame/lib/ad_field.js'; // SOG-0468 (2) : les règles nommées du code de terrain
 import * as XL from '../../frame/lib/external_links.js';
 import * as WX from './weather.js';
 import * as FPL from './fpl.js'; // SOG-0402 : le message de plan de vol OACI pour la validation d'Eurocontrol
@@ -3589,7 +3593,7 @@ function onPlanClick(e) {
 const wxIds = () => {
   const r = S.flight.route || {},
     corr = S.wxCorr?.list?.map(x => x.id) || [];
-  return [...new Set([r.dep, ...corr, r.arr, r.altn].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z]{4}$/.test(x)))];
+  return [...new Set([r.dep, ...corr, r.arr, r.altn].map(x => String(x || '').toUpperCase()).filter(x => isIcaoAlpha(x)))];
 };
 /** Terrains du couloir de la route : aerodromes d'aerodb dans l'emprise de chaque tronçon élargie du rayon des réglages
  *  (10 NM par défaut), gardés à ce rayon de la route, départ et arrivée exclus, triés le long de la route. Gardé tant que
@@ -3621,7 +3625,7 @@ async function wxCorridor() {
           lite: true // index léger des terrains (code, position, altitude, axe de piste) : assez pour le couloir
         }).catch(() => null)) || []) {
         const id = String(ad?.icao || '').toUpperCase();
-        if (/^[A-Z]{4}$/.test(id) && Number.isFinite(+ad.lat) && Number.isFinite(+ad.lon)) seen.set(id, ad);
+        if (isIcaoAlpha(id) && Number.isFinite(+ad.lat) && Number.isFinite(+ad.lon)) seen.set(id, ad);
       }
     }
     for (const [id, ad] of seen) {
@@ -5221,7 +5225,7 @@ async function altnChkDraw(C) {
   const s = S,
     id = String(S.flight.route?.altn || '').toUpperCase().trim();
   altnPropStale();
-  if (!/^[A-Z0-9]{4}$/.test(id)) {
+  if (!isIcao(id)) {
     box.innerHTML = altnPropHtml();
     return;
   }
@@ -5351,7 +5355,7 @@ async function altnProposeRun() {
     arr = String(r.arr || '').toUpperCase(),
     I = S.altnIn,
     sheet = I?.sheet;
-  if (!/^[A-Z0-9]{4}$/.test(arr)) return;
+  if (!isIcao(arr)) return;
   const P = S.altnProp = {
       arr,
       key: altnPropKey(),
@@ -5481,7 +5485,7 @@ function altnPropStale() {
 function altnPropHtml() {
   const r = S.flight.route || {},
     P = S.altnProp;
-  if (!/^[A-Z0-9]{4}$/.test(String(r.arr || ''))) return '';
+  if (!isIcao(String(r.arr || ''))) return '';
   if (!P) return `<p class="fu-altnprop"><button type="button" class="fu-linkbtn" data-do="altnpropose">${esc(tt(TX.altnPropose))}</button></p>`;
   if (P.pending) return `<p class="fu-altnprop f-muted" data-altnprop role="status">${esc(tt(TX.altnPropBusy))}</p>`;
   // ce qui empêche de proposer, dit ; le geste reste là pour réessayer
@@ -5521,7 +5525,7 @@ async function altnTouched(icao) {
   const P = S?.altnProp,
     k = String(icao ?? '').toUpperCase();
   // l'adresse et l'événement viennent de dehors (un lien peut porter #fuel?altn=) : le code revalidé, et seulement un terrain proposé
-  if (!/^[A-Z0-9]{4}$/.test(k) || !P || P.pending || !P.list.some(x => x.icao === k)) return;
+  if (!isIcao(k) || !P || P.pending || !P.list.some(x => x.icao === k)) return;
   P.touched = k;
   P.reopen = true; // le repli fermé : rouvert sur le terrain touché
   altnChkDraw(S.C);
@@ -5537,7 +5541,7 @@ async function altnFromAddress(icao) {
     d = await Promise.resolve(S.ctx.data.get(ALTN_DOC)).catch(() => null),
     v = d?.value ?? d;
   if (gone(s) || !v || v.schema !== 1 || v.arr !== String(S.flight.route?.arr || '').toUpperCase() || v.key !== altnPropKey()) return;
-  const list = (Array.isArray(v.list) ? v.list : []).slice(0, AC.CAND_DOC).filter(x => /^[A-Z]{4}$/.test(String(x?.icao || '')) &&
+  const list = (Array.isArray(v.list) ? v.list : []).slice(0, AC.CAND_DOC).filter(x => isIcaoAlpha(String(x?.icao || '')) &&
     Number.isFinite(+x.lat) && Number.isFinite(+x.lon) && Number.isFinite(+x.nm));
   if (!list.length) return;
   S.altnProp = {
@@ -7066,7 +7070,7 @@ function procStateOf(icao) {
 /** La réponse gardée d'un terrain (voir zoneGapOf) : { html, readable, demand } ; null en cours (la demande partie au premier appel). */
 function procGap(icao) {
   const k = String(icao || '').toUpperCase();
-  if (!/^[A-Z]{4}$/.test(k) || !S?.ctx?.aerodb) return null;
+  if (!isIcaoAlpha(k) || !S?.ctx?.aerodb) return null;
   S.gapAds ||= new Map();
   if (S.gapAds.has(k)) return S.gapAds.get(k);
   S.gapAds.set(k, null);
@@ -7109,7 +7113,7 @@ function procGap(icao) {
 /** Des noms inconnus : quand la base n'a aucun point publié à 60 NM d'un terrain du vol, la ligne le dit (la zone manque, pas le point ;
  *  SOG-0012 : la zone EI de la base n'a que des terrains et des navaids). */
 async function zoneNote(s, seq, points, line) {
-  const ends = [points[0], points.at(-1)].filter(p => p && /^[A-Z]{4}$/.test(p.id || '') && Number.isFinite(+p.lat));
+  const ends = [points[0], points.at(-1)].filter(p => p && isIcaoAlpha(p.id || '') && Number.isFinite(+p.lat));
   for (const p of ends) {
     const near = await Promise.resolve().then(() => s.ctx.aerodb?.points?.({
       lat: +p.lat,
@@ -8234,7 +8238,7 @@ export async function mount(el, ctx) {
           n: 0,
           at: 0
         });
-      if (!/^[A-Z0-9]{4}$/.test(k) || a.n >= 4) return null;
+      if (!isIcao(k) || a.n >= 4) return null;
       // hors réseau, ou trop tôt : un nouvel essai à l'échéance (la carte se redessine et redemande), rien n'est lu maintenant
       const due = self.ctx.net?.online?.() === false ? 15e3 : a.at + 15e3 - Date.now();
       if (due > 0) {
@@ -8745,7 +8749,7 @@ async function atisFeed(url, net, s = S) {
 async function arrInfoKeep() {
   const s = S,
     icao = String(S?.flight?.route?.arr || '').toUpperCase();
-  if (!s || gone(s) || s.flightPending || !/^[A-Z0-9]{4}$/.test(icao)) return;
+  if (!s || gone(s) || s.flightPending || !isIcao(icao)) return;
   const [ads, rws] = await Promise.all([Promise.resolve().then(() => s.ctx.aerodb?.aerodromes?.({
     icao
   })).catch(() => null), Promise.resolve().then(() => s.ctx.aerodb?.runways?.(icao)).catch(() => null)]);

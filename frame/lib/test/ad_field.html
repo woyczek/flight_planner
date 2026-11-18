@@ -39,6 +39,8 @@
   import {
     createAdField,
     isCode,
+    isIcao,
+    isIcaoAlpha,
     zoneAt
   } from '../ad_field.js?v=0';
   const out = document.getElementById('out'),
@@ -222,6 +224,10 @@
   const pv = [...screen2.querySelectorAll('[data-adsug] [data-code]')].map(x => x.dataset.code);
   ck('points : la ligne montre l’identifiant, jamais la clé interne « CODE@lat,lon »', [...screen2.querySelectorAll('[data-adsug] [data-code]')]
     .every(x => x.querySelector('b')?.textContent === 'XRN' && !/@/.test(x.textContent)), screen2.querySelector('[data-adsug]').textContent);
+  // SOG-0468 (2) : les deux règles nommées, le même résultat que les motifs qu'elles remplacent
+  ck('isIcao = /^[A-Z0-9]{4}$/ et isIcaoAlpha = /^[A-Z]{4}$/, sur les mêmes entrées', ['LFPO', 'EG74', 'LF418', 'lfpo', '', null, undefined,
+    0, 1234, 'LFP', ' LFPO'].every(v => isIcao(v) === /^[A-Z0-9]{4}$/.test(v) && isIcaoAlpha(v) === /^[A-Z]{4}$/.test(v)) && isIcao('EG74') &&
+    !isIcaoAlpha('EG74') && !isIcao('LF418'));
   ck('isCode exporté : la même règle que l’instance, sans écran', isCode('LF418') && isCode('LFPO') && !isCode('LF41A') && !isCode('') &&
     isCode === P.isCode);
   ck('points : les deux XRN, le plus proche d’abord, chacun avec sa position', JSON.stringify(pv) === JSON.stringify(['XRN@45.20000,1.20000',

@@ -24,6 +24,9 @@
 //     du message (quarante signes) ; '' sans rien.
 
 import {
+  isIcaoAlpha
+} from '../../frame/lib/ad_field.js'; // SOG-0468 (2) : les règles nommées du code de terrain
+import {
   tokenize
 } from '../../frame/lib/route_text.js';
 
@@ -219,7 +222,7 @@ export function message(o = {}) {
   if (!/^[A-Z][A-Z0-9]{1,3}$/.test(type)) errors.push('type');
   // SOG-0483 : un indicateur OACI (quatre lettres) d'abord ; sinon le code de liste d'une hélistation, écrit ZZZZ, son lieu en case 18
   const places = o.places && typeof o.places === 'object' ? o.places : {},
-    at13 = (k, key) => /^[A-Z]{4}$/.test(k) ? [k, ''] : HELI.test(k) && placeWord(places[key]) ? ['ZZZZ', placeWord(places[key])] : null,
+    at13 = (k, key) => isIcaoAlpha(k) ? [k, ''] : HELI.test(k) && placeWord(places[key]) ? ['ZZZZ', placeWord(places[key])] : null,
     d13 = at13(dep, 'dep'),
     a13 = at13(arr, 'arr'),
     l13 = altn ? at13(altn, 'altn') : ['', ''];

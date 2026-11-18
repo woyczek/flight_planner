@@ -11,6 +11,9 @@
 //     without proof). « RWY 24 RENAMED TO RWY 23 », « VISUAL OPS RWY 28 », a RVR group (R19/1100U), « RMK VOR 23 » give no runway.
 //   · An ATIS older than 90 minutes is not said.
 
+import {
+  isIcao
+} from '../../frame/lib/ad_field.js'; // SOG-0468 (2) : les règles nommées du code de terrain
 /** The age limit of an ATIS (ms). */
 export const MAX_AGE_MS = 90 * 60e3;
 // a runway number (01 to 36, with L / R / C), followed by nothing that makes it another token (« 19/1100U », « 23X »)
@@ -146,7 +149,7 @@ export function windOfText(text) {
  *  a fresh ATIS. The text itself is never returned. */
 export function atisInfo(net, feed, icao, side, now = Date.now()) {
   const ad = String(icao || '').toUpperCase();
-  if (!/^[A-Z0-9]{4}$/.test(ad) || !['arr', 'dep'].includes(side)) return null;
+  if (!isIcao(ad) || !['arr', 'dep'].includes(side)) return null;
   const fresh = entriesOf(net, feed, ad).filter(e => Number.isFinite(e.at) && now - e.at <= MAX_AGE_MS && e.at - now <= 10 * 60e3 && (!e
     .kind || (e.kind === 'A') === (side === 'arr')));
   if (!fresh.length) return null;
@@ -165,7 +168,7 @@ export function atisInfo(net, feed, icao, side, now = Date.now()) {
  *  old, no phrasing of the list, a clash between its phrasings or between its ATIS). `known`: the runways of the aerodrome (any form). */
 export function atisSide(net, feed, icao, side, known, now = Date.now()) {
   const ad = String(icao || '').toUpperCase();
-  if (!/^[A-Z0-9]{4}$/.test(ad) || !['arr', 'dep'].includes(side)) return null;
+  if (!isIcao(ad) || !['arr', 'dep'].includes(side)) return null;
   const keys = new Set([...(known || [])].map(rwKey).filter(Boolean)),
     said = [];
   for (const e of entriesOf(net, feed, ad)) {

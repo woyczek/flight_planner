@@ -32,6 +32,10 @@
 // État : un seul objet par terrain (ads : fiches montrées au dernier dessin, comptes de la dernière lecture). La carte se met à
 // jour sur place : quand seules les listes changent, les options des listes existantes sont remplacées, le focus n'est jamais
 // déplacé ; la structure n'est refaite que si le terrain, le départ du vol ou la présence d'une liste de transition change.
+import {
+  isIcao,
+  isIcaoAlpha
+} from '../../frame/lib/ad_field.js'; // SOG-0468 (2) : les règles nommées du code de terrain
 import * as CF from '../../frame/lib/current_flight.js';
 import * as PR from '../../frame/lib/procedures.js';
 import * as RT from '../../frame/lib/route_text.js';
@@ -309,7 +313,7 @@ export function createProcedures(host) {
   async function sideModel(side) {
     const r = host.flight().route || {},
       icao = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
-    if (!/^[A-Z0-9]{4}$/.test(icao)) return null;
+    if (!isIcao(icao)) return null;
     const kinds = side === 'dep' ? ['SID'] : ['STAR', 'APP'],
       [known, every, cov, place, cat] = await Promise.all([askAero(() => ctx.aerodb?.runways?.(icao)), askAero(() => ctx.aerodb
           ?.procedures?.(
@@ -813,7 +817,7 @@ export function createProcedures(host) {
    *  de recherche inventée). Seule une adresse https:// est un lien. */
   function chartsHtml(icao) {
     const k = String(icao || '').toUpperCase();
-    if (!/^[A-Z]{4}$/.test(k) || typeof ctx.aerodb?.chartsUrl !== 'function') return '';
+    if (!isIcaoAlpha(k) || typeof ctx.aerodb?.chartsUrl !== 'function') return '';
     if (!charts.has(k)) {
       charts.set(k, undefined);
       Promise.resolve().then(() => ctx.aerodb.chartsUrl(k)).catch(() => null).then(url => {
@@ -832,7 +836,7 @@ export function createProcedures(host) {
   const GROUND_WHY = ['busy', 'too-soon', 'failed', 'no-data'];
   /** Demande l'état du sol d'un terrain à aerodb, le garde borné (entrée non fiable : un texte du lanceur) et remplit ses emplacements. */
   function askGround(k) {
-    if (typeof ctx.aerodb?.groundStatus !== 'function' || !/^[A-Z0-9]{4}$/.test(k)) return;
+    if (typeof ctx.aerodb?.groundStatus !== 'function' || !isIcao(k)) return;
     clearTimeout(groundTimers.get(k));
     groundTimers.delete(k);
     Promise.resolve().then(() => ctx.aerodb.groundStatus(k)).catch(() => null).then(st => {
@@ -948,7 +952,7 @@ export function createProcedures(host) {
    *  du choix (chartUrl) ; '' sinon, ou tant que la réponse n'est pas venue (l'emplacement se remplit à la réponse). */
   function rowChartHtml(icao, side, row) {
     const k = String(icao || '').toUpperCase();
-    if (!/^[A-Z]{4}$/.test(k)) return ''; // sans chartUrl, la page de données reste (SOG-0330)
+    if (!isIcaoAlpha(k)) return ''; // sans chartUrl, la page de données reste (SOG-0330)
     // SOG-0298 : l'approche choisie par sa carte a sa carte sur sa ligne (l'adresse donnée par aerodb.chartOnly)
     const acx = row === 'app' && side === 'arr' ? appChartOf(CF.proceduresOf(host.flight()).arr) : null;
     if (acx && CF.proceduresOf(host.flight()).arr?.app === undefined) {
@@ -1111,7 +1115,7 @@ export function createProcedures(host) {
    *  carte des procédures (« ILS 13R · ITST 110.30 · axe 132° · DME »), '' sans approche ILS / LOC ou sans ILS en base (rien d'inventé). */
   function approachAid() {
     const icao = String(host.flight()?.route?.arr || '').toUpperCase();
-    return /^[A-Z0-9]{4}$/.test(icao) ? aidHtml({
+    return isIcao(icao) ? aidHtml({
       icao
     }) : '';
   }
@@ -1379,7 +1383,7 @@ export function createProcedures(host) {
   const icaoOfSide = side => {
     const r = host.flight().route || {},
       v = String((side === 'dep' ? r.dep : r.arr) || '').trim().toUpperCase();
-    return /^[A-Z0-9]{4}$/.test(v) ? v : '';
+    return isIcao(v) ? v : '';
   };
   /** SOG-0345 (b) : la phrase d'un côté en attente — la lecture en cours, puis, à la borne, la limite du dépôt (la phrase du bandeau du
    *  cadre, SOG-0337) ou « pas encore lues ; elles se lisent depuis le poste ». */
@@ -1491,7 +1495,7 @@ export function createProcedures(host) {
 
   function adoptOnce() {
     const r = host.flight()?.route || {},
-      ids = [...new Set([r.dep, r.arr].map(x => String(x || '').toUpperCase()).filter(x => /^[A-Z0-9]{4}$/.test(x)))],
+      ids = [...new Set([r.dep, r.arr].map(x => String(x || '').toUpperCase()).filter(x => isIcao(x)))],
       k = ids.join('>');
     if (!k || k === adoptKey || typeof ctx.aerodb?.adoptProcRead !== 'function') return;
     adoptKey = k;
@@ -1965,7 +1969,7 @@ export function createProcedures(host) {
   async function readLnm(icao) {
     const k = String(icao || '').toUpperCase(),
       say = (row, v, level) => ctx.notify(ctx.t(row, v), level);
-    if (!/^[A-Z0-9]{4}$/.test(k) || typeof ctx.aerodb?.fetchLnm !== 'function') return;
+    if (!isIcao(k) || typeof ctx.aerodb?.fetchLnm !== 'function') return;
     // SOG-0432 : une marque plus vieille que la borne n'est plus une lecture en cours (page gelée, réponse perdue) : rendue d'office
     if (lnmReading && !(Date.now() - lnmReading.at < LNM_PAGE_MAX_MS)) lnmReading = null;
     if (lnmReading) return say(TX.procLnmBusyPage, {

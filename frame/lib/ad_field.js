@@ -60,6 +60,12 @@ const CODE = /^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$/;
 /** Le texte (déjà en majuscules) est-il un code de terrain complet (CODE) ? Fonction pure, exportée pour les modules sans écran (l'atelier
  *  de Missions, editor.js) ; l'instance du champ donne la même (api.isCode). */
 export const isCode = v => CODE.test(String(v || ''));
+/** SOG-0468 (2) : un code de terrain écrit en quatre signes (lettres ou chiffres) — la forme de tout code saisi ou lu (« LFPO », « EG74 »).
+ *  Fonction pure ; même résultat que /^[A-Z0-9]{4}$/.test(v). */
+export const isIcao = v => /^[A-Z0-9]{4}$/.test(v);
+/** SOG-0468 (2) : un indicateur OACI réel, quatre LETTRES (« LFPO » ; ni « EG74 » ni « LF418 ») — pour ce qui exige un terrain publié
+ *  sous un indicateur (météo, procédures, plan de vol). Fonction pure ; même résultat que /^[A-Z]{4}$/.test(v). */
+export const isIcaoAlpha = v => /^[A-Z]{4}$/.test(v);
 /** La zone d'une position : le plus petit cadre qui la contient, sinon le plus proche ; null sans zones (sorti de
  *  modules/fuel/zone_gap.js avec ce bloc, qui le réexporte). */
 export function zoneAt(zones, p) {

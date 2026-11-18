@@ -18,7 +18,8 @@ import {
   SHEETS_STYLE
 } from './sheets.js';
 import {
-  createAdField
+  createAdField,
+  isIcaoAlpha
 } from '../../frame/lib/ad_field.js'; // SOG-0490 : le champ de terrain commun (complétion, nom sous le champ), celui de Carburant
 import * as MC from '../../frame/lib/mission_categories.js'; // la compagnie dite comme Réglages la dit (SOG-0190, même source que SOG-0181)
 
@@ -666,7 +667,7 @@ function regFill(s, row, base = {}) {
       ...base,
       registration: regOfQuery(row.reg) || row.reg,
       type: row.sug || '',
-      ...(/^[A-Z]{4}$/.test(row.base) ? {
+      ...(isIcaoAlpha(row.base) ? {
         base: row.base
       } : {})
     }),

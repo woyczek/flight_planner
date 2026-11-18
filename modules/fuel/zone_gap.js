@@ -18,7 +18,8 @@
 //     '' pour un État lisible ou détenu.
 
 import {
-  zoneAt
+  zoneAt,
+  isIcaoAlpha
 } from '../../frame/lib/ad_field.js'; // la zone d'une position, sortie avec le champ de terrain (SOG-0465)
 export {
   zoneAt
@@ -93,7 +94,7 @@ export function gapHtml(g, {
   lnm = false
 }) {
   if (!STATES.includes(g?.state)) return '';
-  const code = /^[A-Z]{4}$/.test(String(icao || '')) ? String(icao) : '',
+  const code = isIcaoAlpha(String(icao || '')) ? String(icao) : '',
     ext = a => `<a href="${esc(a[1])}" target="_blank" rel="noopener noreferrer" data-ext="${esc(a[0])}">${esc(a[0])}</a>`,
     outs = [lnm ? `<span data-ext="lnm">${esc(tt(TX.lnm))}</span>` : '', ext(['Navigraph', code ? `https://charts.navigraph.com/airport/${code}` : 'https://charts.navigraph.com/']),
       ext(['ChartFox', code ? `https://chartfox.org/${code}` : 'https://chartfox.org/'])
@@ -113,7 +114,7 @@ export function procHtml(state, {
 }) {
   if (!state || KEEP_READ.includes(state.reason)) return '';
   const i = Math.max(0, ['fr', 'en', 'de', 'es'].indexOf(lang)),
-    code = /^[A-Z]{4}$/.test(String(icao || '')) ? String(icao) : '',
+    code = isIcaoAlpha(String(icao || '')) ? String(icao) : '',
     ext = a => `<a href="${esc(a[1])}" target="_blank" rel="noopener noreferrer" data-ext="${esc(a[0])}">${esc(a[0])}</a>`,
     outs = [lnm ? `<span data-ext="lnm">${esc(tt(TX.lnm))}</span>` : '', ext(['Navigraph', code ? `https://charts.navigraph.com/airport/${code}` : 'https://charts.navigraph.com/']),
       ext(['ChartFox', code ? `https://chartfox.org/${code}` : 'https://chartfox.org/'])

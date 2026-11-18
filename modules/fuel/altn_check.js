@@ -30,6 +30,9 @@
 // catégories et heures seulement : aucun texte tiers).
 
 import {
+  isIcaoAlpha
+} from '../../frame/lib/ad_field.js'; // SOG-0468 (2) : les règles nommées du code de terrain
+import {
   ceiling,
   category,
   visibility
@@ -151,7 +154,7 @@ export function candidates(ads, {
     skip = new Set(exclude.map(x => String(x || '').toUpperCase()));
   for (const ad of (Array.isArray(ads) ? ads : []).slice(0, 5000)) {
     const icao = String(ad?.icao || '').toUpperCase();
-    if (!/^[A-Z]{4}$/.test(icao) || skip.has(icao) || ad.type === 'HP' || ad.water === true || ad.public === false || !num(ad.lat) ||
+    if (!isIcaoAlpha(icao) || skip.has(icao) || ad.type === 'HP' || ad.water === true || ad.public === false || !num(ad.lat) ||
       !num(ad.lon)) continue;
     const nm = dist(from, {
       lat: +ad.lat,
