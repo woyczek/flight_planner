@@ -476,6 +476,16 @@ and nobody else computes them.
   A place of a mission with drawers that nothing cites (neither the route, nor the centre of a map, nor a drawer) is not shown: the
   reader's rule; the invented missions of N82 cite their zone by a map. It is a seal of the game, not a protection: the file stays
   readable by whoever opens it.
+- **A document more than a day old is « nothing open »** (a closed failure, wanted): it holds again as soon as the section of the
+  sheet has computed once more.
+- **The readers to pass** (the Security session, 18 Nov 2026) — the seal exists only where it is applied: every screen that shows a
+  PILOT a mission read whole must go through `pilotView` with `readOpen`, and each one that does goes back through the Security
+  session. Done: the sheet and its Detail (here). To do, by their owners: the Map (`modules/maps/mission_view.js`, `screen.js`,
+  `module.js` — BUGS SOG), « Préparer ce vol » of Carburant (`modules/fuel/module.js`, `MS.readMission` then `MS.missionFlight`),
+  the report (`modules/report/module.js`), the search in the content of the missions (`modules/missions/search.js`
+  `missionFields`, the index built by `module.js`). Not concerned: the workshop of the author, who sees everything
+  (`editor*.js`), and the tools that handle the file itself (`add.js`, `move.js`, `registry.js`). Listed from the files that import
+  the reader; what each of them shows of a closed drawer today was not measured here.
 - Cases: N80 (81 checks: `openPath`, `openAfter`, `readOpen` and its hostile entries), N81 (74: `sees` before and after the reading,
   the document written, the sheet told once, a browsed mission, the document undone), N84 (the sheet of an invented mission whose
   drawer 1 hides a zone, a point and a rendezvous: closed, opened by the gesture, then the same file as another pilot's mission; 390
