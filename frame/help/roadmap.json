@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3925b24",
-  "fiches": 502,
+  "organisation": "f1eb8b5",
+  "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3113,6 +3113,27 @@
    ]
   },
   {
+   "id": "pilote-routes",
+   "app": "pilote",
+   "label": {
+    "fr": "Route",
+    "en": "Route",
+    "de": "Route",
+    "es": "Ruta"
+   },
+   "items": [
+    {
+     "id": "SOG-0504",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : quand la reprise « passer par X » échoue, le moteur abandonne sans essayer « X écarté », et la revue dit « X écarté … +0 NM » à tort",
+     "en": "Routes: when the “go via X” retry fails, the engine gives up without trying “X avoided”, and the review wrongly says “X avoided … +0 NM”",
+     "de": "Routen: Scheitert der Versuch „über X“, gibt der Rechner auf, ohne „X gemieden“ zu probieren, und die Prüfung meldet fälschlich „X gemieden … +0 NM“",
+     "es": "Rutas: si falla el reintento «pasar por X», el motor abandona sin probar «X evitado», y la revisión dice por error «X evitado … +0 NM»"
+    }
+   ]
+  },
+  {
    "id": "pilote-routes-atlantique",
    "app": "pilote",
    "label": {
@@ -4063,11 +4084,12 @@
     {
      "id": "SOG-0503",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : « Voir la carte » envoie à la Carte, mais le retour vers la mission ne se fait pas",
      "en": "Missions: “View the map” goes to the Map, but returning to the mission does not work",
      "de": "Missionen: „Karte anzeigen“ führt zur Karte, aber die Rückkehr zur Mission klappt nicht",
-     "es": "Misiones: «Ver el mapa» lleva al Mapa, pero el regreso a la misión no funciona"
+     "es": "Misiones: «Ver el mapa» lleva al Mapa, pero el regreso a la misión no funciona",
+     "test": true
     }
    ]
   },
