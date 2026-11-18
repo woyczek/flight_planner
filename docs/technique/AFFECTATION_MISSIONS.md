@@ -582,7 +582,11 @@ bounds it (`holdRule`), and until this lot no flight judged it. `drawers.js` now
   decide for a `condition` key, so `notJudgedYet` of `mission.js` (which still says « not judged » for every condition) is not asked.
 - **Shared.** `'landing'` is in `HOWS` and `SHARED`: the finding of one pilot of the mission opens the drawer for all, as an arrival does.
   `howOf(key)` pairs the finding with its key (`'landing'` for the condition, `key.kind` otherwise). `stands()` replays a landing on the
-  reader's own key: both fixes down by THAT key, at least `durationSec` apart, at most 24 hours apart.
+  reader's own key: both fixes down by THAT key, at least `durationSec` apart and LESS than `durationSec + maxGapSec` apart — what an
+  honest device writes (`holding` concludes at the first fix that completes the duration, and two successive fixes down are
+  `maxGapSec` apart at most), so a forged finding must look like a real one (Sécurisation, 18 Nov). **Replayed, not proved**: a
+  hostile record can carry two fixes « on the ground » `durationSec` apart without having flown — the same level of trust as the
+  zone and arrival findings already accepted.
 - **Texts** (four languages): `keyLanding` (« s'ouvre à l'atterrissage », NEVER the place: the point may be a place the mission
   still hides, and its identifier — « DESTINATION », an id of the workshop — is not a name for the pilot), `openLandingMe`,
   `openLandingBy`.

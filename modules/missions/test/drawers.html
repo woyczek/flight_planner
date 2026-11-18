@@ -1803,16 +1803,24 @@
     from: dn(0),
     to: dn(30)
   };
-  ck('landing, stands : le constat tenu sur la clé du lecteur → vrai ; trop court (29 s), hors rayon chez le lecteur (autre point), vitesse ou sol non tenus, plus de 24 h, d\'une autre sorte → faux',
+  // l'écart d'un constat honnête est sous durationSec + maxGapSec (holding conclut au premier relevé qui complète la durée, deux
+  // relevés posés successifs sont à maxGapSec au plus) : un constat forgé doit ressembler à ce qu'écrit l'appareil (Sécurisation, 18/11)
+  ck('landing, stands : le constat tenu sur la clé du lecteur → vrai (30 s, 31 s, 39 s) ; trop court (29 s), écart de 40 s (durationSec + maxGapSec) ou de 3 h, hors rayon chez le lecteur (autre point), vitesse ou sol non tenus, d\'une autre sorte → faux',
     D.stands(lf, LAND) && D.stands({
       ...lf,
-      to: dn(24 * 3600)
+      to: dn(31)
+    }, LAND) === true && D.stands({
+      ...lf,
+      to: dn(39)
     }, LAND) === true && !D.stands({
       ...lf,
       to: dn(29)
     }, LAND) && !D.stands({
       ...lf,
-      to: dn(24 * 3600 + 1)
+      to: dn(40)
+    }, LAND) && !D.stands({
+      ...lf,
+      to: dn(3 * 3600)
     }, LAND) && !D.stands(lf, land({
       at: {
         lat: 46.0,

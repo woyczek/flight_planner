@@ -339,12 +339,15 @@ export function holding(key, hold, fix) {
 }
 
 /** Le constat d'un atterrissage tient-il sur CETTE clé ? Les deux relevés sont posés selon elle, séparés d'au moins `durationSec`
- *  secondes et de vingt-quatre heures au plus. */
+ *  secondes et de MOINS de `durationSec + maxGapSec` : ce qu'un appareil honnête écrit (holding conclut au premier relevé qui
+ *  complète la durée, et deux relevés posés successifs sont à maxGapSec au plus) — un constat forgé doit lui ressembler
+ *  (Sécurisation, 18/11). Rejoué, pas prouvé : deux relevés « au sol » d'un carnet hostile tiennent comme ceux d'un vrai. */
 function standsLanded(e, key) {
   const spec = landSpec(key);
   if (!spec || !e.from || !e.to) return false;
   const gap = Date.parse(e.to.at) - Date.parse(e.from.at);
-  return isDown(e.from, spec) && isDown(e.to, spec) && gap >= spec.durationSec * 1000 && gap <= 24 * 3600e3;
+  return isDown(e.from, spec) && isDown(e.to, spec) && gap >= spec.durationSec * 1000 && gap < (spec.durationSec + spec
+    .maxGapSec) * 1000;
 }
 
 /** Les relevés d'une trace gardée ({ from: ISO du départ, trail: [[lat, lon, altFt, s, aglFt?, ground?]…] }, frame/lib/trail.js) depuis
