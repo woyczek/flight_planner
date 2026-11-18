@@ -130,6 +130,7 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-rmore>summary::before{content:none;display:none} /* un bouton, pas un repli : sans le chevron des replis du cadre */
 [data-module="missions"] .ms-rmore[open]>div{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin-top:4px}
 /* « Préparer ce vol » reste l'action première du Brief : la barre des gestes colle au bas de l'écran tant que la première page défile */
+[data-module="missions"] .ms-actslot{display:contents} /* SOG-0459 : la place des gestes d'« Affectation des missions » (« Demander la suite », « Lire la mission »), après « Préparer ce vol » */
 [data-module="missions"] .ms-first>.ms-actions{position:sticky;bottom:var(--f-tab-space,0px);background:var(--sog-bg,#fff);padding:6px 0;z-index:1}
 [data-module="missions"] .ms-rbody>span{display:block;margin:.15em 0}
 [data-module="missions"] .ms-rrow button + button{margin-left:.5em} /* « Corriger » et « Retirer du registre » ne se touchent pas (retouche de N28) */
@@ -1426,9 +1427,9 @@ function firstHtml(s, r, m, drawn, why) {
     `<div data-risks><p class="f-muted" data-norisk>${esc(s.tt(TX.noRisk))}</p></div>` : ''}
     ${teams.length ? `<div data-teams><h3>${esc(s.tt(TX.teams))}</h3><ul class="ms-lines">${seven(s, teams.map(t => `<li data-team>${esc(t.name)}${t.role ? ` <span class="f-muted">${esc(t.role)}</span>` : ''}</li>`))}</ul></div>` : ''}
     ${zones.length ? `<p data-zones>${esc(s.tt(TX.zonesCount, { n: zones.length }))} : ${esc(zones.slice(0, 7).map(z => [z.id, z.name].filter(Boolean).join(' ')).join(', '))}${zones.length > 7 ? '…' : ''}</p>` : ''}
-    ${m?.drawers?.length ? '<section class="ms-drawers" data-drawers hidden></section>' : '' /* SOG-0441 : la section « Tiroirs », peinte par drawers_view.js */}
+    ${m ? '<section class="ms-drawers" data-drawers hidden></section>' : '' /* SOG-0441 : la section des tiroirs, peinte par drawers_view.js ; SOG-0459 : posée pour TOUTE mission lue — sa présence ne dit rien, elle reste cachée tant que rien n'est ouvert */}
     ${why}
-    <div class="f-row ms-actions"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}${s.open?.fromReg != null && s.reg ? `<button type="button" data-do="edmodify" data-rid="${s.open.fromReg}">${esc(s.tt(TX.atelier))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(s.open?.fromReg != null && s.reg ? TX.backToReg : TX.back))}</button></div>`;
+    <div class="f-row ms-actions"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a><span class="ms-actslot" data-actslot></span>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}${s.open?.fromReg != null && s.reg ? `<button type="button" data-do="edmodify" data-rid="${s.open.fromReg}">${esc(s.tt(TX.atelier))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(s.open?.fromReg != null && s.reg ? TX.backToReg : TX.back))}</button></div>`;
 }
 /** Une adresse de la Carte pour cette mission (l'application Pilote : la Carte n'est pas dans Compagnie) ; `extra` : map, zone. */
 const mapHref = (r, extra) => `?app=pilot#maps?mission=${encodeURIComponent(r.id)}${Object.entries(extra).filter(([, v]) => v).map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('')}`;

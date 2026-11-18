@@ -1404,8 +1404,12 @@ def n33(c):
     order = c.js(f"[...document.querySelector('{S} [data-first]').children].map(x => x.matches('h2') ? 'title' : x.matches('[data-choice]') ? 'choice' : x.matches('[data-summary]') ? 'summary' : x.matches('.ms-actions') ? 'actions' : '')"
                  ".filter(Boolean)")
     c.eq(order[:3], ['title', 'choice', 'summary'], 'the Brief: the title, the line of choice, the summary', what='order')
-    acts = c.js(f"[...document.querySelectorAll('{S} .ms-actions > *')].map(x => x.dataset.do)")
-    c.eq([acts[0], 'edmodify' in acts, acts[-1]], ['prepare', True, 'back'], '« Préparer ce vol » first, « Atelier » offered, then « Retour »', what='actions')
+    acts = c.js(f"[...document.querySelectorAll('{S} .ms-actions > *')].map(x => x.dataset.do || (x.matches('[data-actslot]') ? 'slot' : ''))")
+    c.eq([acts[0], acts[1], 'edmodify' in acts, acts[-1]], ['prepare', 'slot', True, 'back'],
+         '« Préparer ce vol » first, the place of the gestures of « Affectation » right after, « Atelier » offered, then « Retour »', what='actions')
+    # SOG-0459: the section of the drawers is posed for ANY mission read (X-901A has none): its presence says nothing, and it stays hidden
+    c.eq(c.js(f"[document.querySelectorAll('{S} [data-drawers]').length, document.querySelector('{S} [data-drawers]')?.hidden]"), [1, True],
+         'the drawers\' section posed and hidden on a mission without a drawer', what='drawers section')
     c.eq(norm(c.text(f'{S} .ms-actions [data-do=back]')), norm(row(c, 'backToReg')), '« Retour au registre »', what='back')
     # « Préparer ce vol » in reach on the phone, without scrolling the whole sheet
     c.ok(c.js(f"(() => {{ const b = document.querySelector('{S} [data-do=prepare]').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight }})()"),
