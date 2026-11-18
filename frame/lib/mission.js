@@ -56,7 +56,8 @@
 //     de route) ; la zone de passage d'un tiroir fermé aussi quand son auteur l'a dite « montrée » ; un tiroir fermé est SCELLÉ
 //     (`sealed: true` : son titre et sa clé dite en clair, le genre de sa clé et son heure de repli — ni message, ni briefing, ni suite
 //     de route, ni géométrie, ni objet). `opened` : les lettres des tiroirs ouverts de MA mission (une entrée bornée : seules les
-//     lettres de DRAWER_IDS comptent) ; `mine: false` (une mission qu'on feuillette) : la partie visible seule. Une mission SANS tiroir
+//     lettres de DRAWER_IDS comptent) ; `mine: false` (une mission qu'on feuillette) : la partie visible seule — et de même pour
+//     tout `mine` qui n'est pas exactement `true`, ou des options illisibles (échec fermé). Une mission SANS tiroir
 //     n'a pas de secret : elle est rendue telle quelle. Ajoute `pilot: { mine, opened, hidden: { places, drawers } }`. Pour AFFICHER
 //     seulement : le suivi des clés en vol lit la mission entière. null sans mission.
 //   missionFlight(mission, assignment) → { route: { dep, arr, points, depAt, arrAt }, aircraft: { type, registration }, levelFt, speedKt, mission,
@@ -920,7 +921,10 @@ function sealedDrawer(d) {
  *  la mission lue n'est modifié : un nouvel objet est rendu (la mission elle-même quand elle n'a pas de tiroir). */
 export function pilotView(mission, opened = [], options = null) {
   const m = plain(mission),
-    mine = plain(options)?.mine !== false; // des options qui n'en sont pas (null, un texte) : la mission est « la mienne », le défaut
+    // `mine` se lit STRICTEMENT (Sécurisation, 18 nov. 2026) : sans options (absentes, null) ou sans `mine`, la mission est la mienne
+    // (le défaut) ; un `mine` présent qui n'est pas exactement `true` (« false » en texte, 0, null), ou des options qui ne sont pas un
+    // objet, valent « pas la mienne » — échec fermé : aucun tiroir n'est tenu pour ouvert
+    mine = options === undefined || options === null ? true : plain(options) ? options.mine === undefined || options.mine === true : false;
   if (!m) return null;
   const drawers = (Array.isArray(m.drawers) ? m.drawers : []).filter(plain);
   if (!drawers.length) return m; // une mission sans tiroir n'a pas de secret

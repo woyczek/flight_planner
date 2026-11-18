@@ -5293,6 +5293,8 @@ _PV_VIEW_JS = """async () => { const MS = await import('/frame/lib/mission.js'),
     second: [seen(MS.pilotView(m, ['B', 'C'])), leak(MS.pilotView(m, ['B', 'C']))], all: seen(MS.pilotView(m, ['B', 'C', 'D', 'E', 'F'])),
     arrival: seen(MS.pilotView(m, ['E']))[4], browsed: [seen(MS.pilotView(m, ['B', 'C', 'D'], { mine: false })), leak(MS.pilotView(m, ['B', 'C', 'D'], { mine: false }))],
     sealed, texts: none.drawers.map(d => [d.title, d.trigger, d.message, d.brief, d.route.length]), opened, threw,
+    strict: [{ mine: 'false' }, { mine: 0 }, { mine: 'true' }, { mine: 1 }, { mine: null }, 'x', [], 7].map(o => { const v = MS.pilotView(m, ['B', 'C'], o); return [v.pilot.mine, leak(v)] }),
+    dflt: [undefined, null, {}, { mine: true }].map(o => { const v = MS.pilotView(m, ['B', 'C'], o); return [v.pilot.mine, leak(v)] }),
     plain: [MS.pilotView(plain, ['B']) === plain, !!plain.target, MS.pilotView(null, []), MS.pilotView('x', [])], untouched: J(m) === before } }"""
 
 
@@ -5332,6 +5334,9 @@ def n103(c):
          'its point; of an hour, its point and its delay — never a position that is not shown', what='the sealed keys')
     c.eq(r['texts'], [['La vallee', 'En entrant dans la vallee', '', '', 0], ['Le glacier', '', '', '', 0], ['Trouve', '', '', '', 0], ['Retour', '', '', '', 0], ['Heure', '', '', '', 0]],
          'a sealed drawer keeps its title and the key in plain words; its message, its briefing and its onward route are not returned', what='the sealed texts')
+    c.eq([r['strict'], r['dflt']], [[[False, False]] * 8, [[True, True]] * 4],
+         '`mine` is read strictly (the Security session, 18 Nov): a `mine` that is not exactly true — « false » as a text, 0, « true » as a text, 1, null — or options that are '
+         'not an object mean « not mine »: nothing is held open, nothing leaks; without options, or without `mine`, the mission is mine (the default)', what='mine, strictly')
     c.eq(r['opened'], [[], [], [], [], [], ['B'], ['B', 'C']], 'the open drawers are a bounded input: only the letters of the drawers count, once each, in order', what='the open drawers')
     c.eq(r['plain'], [True, True, None, None], 'a mission without a drawer has no secret: it is returned as it is, its target with it; without a mission, null', what='no drawer')
     c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the mission read is not touched')

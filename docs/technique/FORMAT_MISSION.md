@@ -157,7 +157,9 @@ reader: `pilotView(mission, opened, { mine = true })` returns the mission read, 
   kind of its key and its fallback time (plus the point and the delay of an hour, the point of an arrival, and the only flags
   `notJudgedYet` reads) — never a position, an object, a message, a briefing or an onward route;
 - `opened` is the letters of the open drawers of MY mission, a bounded input: only the letters of `DRAWER_IDS` count; `mine: false`
-  (a mission one browses) gives the visible part alone, whatever `opened` says;
+  (a mission one browses) gives the visible part alone, whatever `opened` says; **`mine` is read strictly** (the Security session,
+  18 Nov): without options, or without `mine`, the mission is mine — the default —, but a `mine` that is not exactly `true` (the text
+  « false », 0, null) or options that are not an object mean « not mine »: a closed failure, no drawer is held open;
 - **a mission without a drawer has no secret**: it is returned as it is (the V2 missions are shown as before);
 - `pilot: { mine, opened, hidden: { places, drawers } }` is added.
 
