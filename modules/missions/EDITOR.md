@@ -870,6 +870,18 @@ no badge, no title of a closed drawer.
     keeps the value of the file, written back as it is, until the author chooses a place himself (his choice replaces it; a hidden one
     cannot be chosen, even by a forged page). The other references were checked: the route of the departure and the centre of a map cite
     a place, which makes it visible; the keys, stops and onward routes of the drawers are not shown while veiled; participants and the vertical profile are not references the workshop shows.
+  - **Removing a place says nothing of a drawer** (the Security session's retouch; noreg N117): a place added in the sitting can be
+    given any identifier — the one a hidden drawer cites (« ZONE-1 » is guessed) would have made « Retirer » say « ZONE-1 est encore
+    cité par : clé du tiroir 2 », a probe. While veiled, `removePlace` reads who cites the place in the document WITHOUT its `phases`
+    (`edCiteDoc`): only the route, the maps, the chronology, the profile and the alerts are counted, before the question and in the
+    sentence. The saved file keeps the reference of the drawer (`withRefs` only follows the places of the file). Checked for the same
+    leak: « À compléter » (`ED.veilTodo`, the document without its drawers: no dead reference, no drawer without key or point), the line
+    of a place (« clé du tiroir n » not said while veiled), renaming a new place (no message): nothing else names a drawer.
+  - **The limits, said** (asked by the Security session): it is a secret of the SCREEN — the file stays readable by whoever opens it,
+    and the V2 shows everything; the identifier proposed for a new place jumps above the greatest number of the file, hidden ones
+    included (if the visible is ZONE-1 and ZONE-6 is proposed, a ZONE-5 or more exists or has existed); free texts (a title, a
+    description, the text of an event) say what the author wrote in them; the attributes `data-place` / `data-i` of the page carry the
+    ranks of the file (a gap in them tells a hidden row).
 
 ### 8. What is NOT ported
 

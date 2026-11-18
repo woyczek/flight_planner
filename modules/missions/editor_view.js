@@ -396,6 +396,20 @@ function edTodos(e, doc) {
   return e?.veil ? ED.veilTodo(doc, edShown(e, e.places || ED.placesOf(doc))) : ED.todo(doc);
 }
 
+/** Le document où l'on cherche QUI CITE un lieu avant de le retirer (SOG-0459, retouche de Sécurisation) : celui de la séance ; dans
+ *  l'atelier voilé, sans ses `phases` — un lieu neuf à qui l'on donne l'identifiant qu'un tiroir caché cite (« ZONE-1 » se devine)
+ *  ne doit pas faire dire « cité par : clé du tiroir 2 » (une sonde). Le document enregistré, lui, garde ses tiroirs intacts : seul
+ *  le message change (withRefs ne suit que les lieux du fichier). */
+function edCiteDoc(e) {
+  const d = edDoc(e);
+  if (!e?.veil || !d || typeof d !== 'object') return d;
+  const out = {
+    ...d
+  };
+  delete out.phases;
+  return out;
+}
+
 /** Vrai quand une étape de la fiche n'a rien à compléter (edTodos : la marque ✓ ou !). */
 const edStepOk = (e, doc, step) => !edTodos(e, doc).some(t => t.step === step);
 
@@ -2422,7 +2436,7 @@ function edClickDo(s, b) {
           key: 'missions-place-cited',
           ms: 3600e3
         },
-        r = ED.removePlace(s.ed.places, i, edDoc(s.ed), s.ed.placeAsk ?? -1, Date.now() - (s.ed.placeAskAt || 0));
+        r = ED.removePlace(s.ed.places, i, edCiteDoc(s.ed), s.ed.placeAsk ?? -1, Date.now() - (s.ed.placeAskAt || 0));
       if (r.wait) return;
       if (r.ask >= 0) {
         s.ed.placeAskAt = Date.now();

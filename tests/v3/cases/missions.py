@@ -7402,3 +7402,55 @@ def n116(c):
          what='a place chosen')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+# SOG-0459, the probe of a new place (the Security session): the trial mission (invented) with a fifth drawer whose key cites « ZONE-9 »,
+# a zone the file does not carry; _TRIAL_MISSION itself is not changed (other cases read it)
+_VEIL_PROBE_MISSION = _TRIAL_MISSION.replace('  - { id: E, title: Geste }\n', '  - { id: E, title: Geste }\n  - { id: F, title: Ravin, trigger_zone: ZONE-9, fallback_delay_min: 30 }\n')
+assert _VEIL_PROBE_MISSION != _TRIAL_MISSION
+_VEIL_PROBE_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _VEIL_PROBE_MISSION]]
+_VEIL_PROBE_SAID = f"""(() => {{ const root = document.querySelector('{E}'), clone = root.cloneNode(true); clone.querySelector('[data-unveil]')?.remove();
+  clone.querySelectorAll('style').forEach(x => x.remove()); const notes = [...document.querySelectorAll('#fNotes .f-note')].map(n => n.textContent).join(' | ');
+  const page = clone.textContent;
+  return {{ notes: [/tiroir/i.test(notes), /cité|cite/i.test(notes)], page: [/tiroir/i.test(page), /cité par/i.test(page), page.includes('ZONE-9')] }} }})()"""
+_VEIL_PROBE_FILE = """async ([p, before]) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const Y = globalThis.jsyaml, J = x => JSON.stringify(x);
+  const a = Y.load(before, { schema: Y.CORE_SCHEMA }), b = Y.load(await (%s)(p), { schema: Y.CORE_SCHEMA });
+  return [b.title, J(a.phases) === J(b.phases), (b.zones || []).map(z => z.id), b.phases[4]] }""" % _TEXT_OF
+
+
+@case('N117', 'Missions › the veiled workshop, the probe of a new place: a zone added in the sitting and given the identifier a hidden drawer '
+      'cites (« ZONE-9 ») is removed by ONE press, and no sentence — neither a notification nor a text of the page — names a drawer or says '
+      '« cité par »; after « Enregistrer » the `phases` of the file are identical to the original (the reference of the drawer is kept)',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0459, retouch of the Security session (« le premier appui sur Retirer dit ZONE-1 est encore cité par : clé du tiroir 2 — le '
+      'rang et l\'existence d\'un tiroir ; c\'est une sonde »): in a veiled workshop removePlace counts the citations of the document without '
+      'its drawers; modules/missions/EDITOR.md § 7 septvicies')
+def n117(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _VEIL_PROBE_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-unveil]')", timeout=15000, what='the veiled workshop')
+    c.tap(f'{E} [data-steps] [data-step="places"]')
+    c.until(f"!!document.querySelector('{E} [data-edplaces]')", what='the Lieux unfolded')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="zone"]')
+    c.until(f"!!document.querySelector('{E} [data-plform=\"4\"] input[data-f=id]')", what='the form of the new zone')
+    c.page.fill(f'{E} [data-plform="4"] input[data-f=id]', 'ZONE-9')
+    c.tap(f'{E} [data-plform="4"] [data-do="edplacedel"]')
+    c.wait(400)
+    c.eq([c.js(_VEIL_PROBE_SAID), c.count(f'{E} [data-edplaces] [data-place]'), c.count(f'{E} [data-plform]')],
+         [{'notes': [False, False], 'page': [False, False, False]}, 4, 0],
+         'the new zone named ZONE-9 is removed by one press: no notification and no text of the page names a drawer or says « cité par », ZONE-9 is gone',
+         what='the probe')
+    c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre')
+    c.page.fill(f'{E} input[data-k=edtitle]', 'Mission d\'essai, sonde')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    c.eq(c.js(_VEIL_PROBE_FILE, [path, _VEIL_PROBE_MISSION]), ['Mission d\'essai, sonde', True, ['ZONE-1'],
+                                                                {'id': 'F', 'title': 'Ravin', 'trigger_zone': 'ZONE-9', 'fallback_delay_min': 30}],
+         'saved: the title written; the phases identical to the file — the drawer still cites ZONE-9; no zone added', what='the saved file')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
