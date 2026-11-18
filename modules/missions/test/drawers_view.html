@@ -979,6 +979,126 @@
     inAir && ctx.store.get(BOOK)?.drawer_B?.how === 'arrival' && /^ouvert à l'arrivée, à \d\d:\d\dZ$/.test(text(
       '[data-dw="B"] [data-dw-how]')), [inAir, ctx.store.get(BOOK), ctx.notes]);
   DV.stop();
+  // ---- SOG-0500, lot 1 : l'atterrissage de l'atelier jugé en vol. Clé à la forme de holdRule (frame/lib/mission.js), 10 s d'affilée.
+  const LAND = {
+      kind: 'condition',
+      condition: 'landing',
+      rule: {
+        kind: 'landing',
+        label: '',
+        point: 'DESTINATION',
+        at: {
+          lat: 45.0,
+          lon: 1.0
+        },
+        object: null,
+        radiusM: 300,
+        radiusNm: null,
+        durationSec: 10,
+        maxGapSec: 10,
+        speedMaxKt: 3,
+        speedToleranceKt: null,
+        heightMinFt: null,
+        heightMaxFt: null,
+        confirmation: '',
+        confirm: false
+      },
+      fallbackMin: 120
+    },
+    LDRAWER = {
+      title: 'Posé',
+      message: 'Bien posé.',
+      brief: '',
+      key: LAND
+    },
+    TL = Date.now(),
+    // un relevé à l'heure simulée donnée (des secondes avant maintenant), posé à 111 m du point sauf indication
+    lfix = (secAgo, more = {}) => ({
+      lat: 45.001,
+      lon: 1.0,
+      at: iso(TL - secAgo * 1000),
+      onGround: true,
+      gsKt: 1,
+      ...more
+    });
+  ck('landing, describe : la clé dit « s\'ouvre à l\'atterrissage à DESTINATION » (sans point : « s\'ouvre à l\'atterrissage ») ; jugée en vol, l\'appareil la suit comme une arrivée ; sans position en direct, la même note que l\'arrivée ; ouverte : « ouvert à votre atterrissage », « ouvert à l\'atterrissage de BBB »',
+    say(LAND).key === 's\'ouvre à l\'atterrissage à DESTINATION' && say({
+      ...LAND,
+      rule: {
+        ...LAND.rule,
+        point: null
+      }
+    }).key === 's\'ouvre à l\'atterrissage' && say(LAND, {
+      live: true
+    }).follow === 'followed' && say(LAND, {
+      live: false
+    }).note === say(ARR, {
+      live: false
+    }).note && say(LAND, {}, {
+      open: true,
+      how: 'landing',
+      mine: true,
+      at: AT
+    }).how === 'ouvert à votre atterrissage, à 19:20Z' && say(LAND, {}, {
+      open: true,
+      how: 'landing',
+      mine: false,
+      by: 'BBB',
+      at: AT,
+      srcAt: AT
+    }).how === 'ouvert à l\'atterrissage de BBB, à 19:20Z', [say(LAND, {
+      live: false
+    }), say(ARR, {
+      live: false
+    })]);
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(LDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit(lfix(30, {
+    onGround: false,
+    gsKt: 90
+  }));
+  await sleep(150);
+  ctx.live.emit(lfix(20));
+  await sleep(150);
+  ctx.live.emit(lfix(15));
+  await sleep(150);
+  const notYet = empty() && !ctx.store.get(BOOK)?.drawer_B;
+  ctx.live.emit(lfix(10));
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const lb = ctx.store.get(BOOK)?.drawer_B;
+  ck('l\'atterrissage : en vol puis posé 5 s, rien ; posé 10 s d\'affilée (relevés espacés de 5 s), le constat « landing » est écrit avec ses deux relevés et « Suite de la mission » dit « ouvert à votre atterrissage, à … »',
+    notYet && lb?.how === 'landing' && lb.from?.onGround === true && lb.to?.onGround === true && Date.parse(lb.to.at) - Date.parse(lb.from.at) === 10e3 && /^ouvert à votre atterrissage, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.some(n => n[0] === 'ok' && n[1] === 'Suite de la mission : Posé'), [notYet, lb, ctx.notes]);
+  DV.stop();
+  // la source ne dit pas « au sol » (GPS du navigateur, VATSIM) : la condition n'est jamais satisfaite, le tiroir attend son repli ou le geste
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(LDRAWER, HAND), {
+    mine: true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  for (const s of [40, 35, 30, 25, 20, 15, 10, 5]) {
+    ctx.live.emit(lfix(s, {
+      source: 'gps',
+      onGround: undefined,
+      gsKt: 0
+    }));
+    await sleep(40);
+  }
+  await sleep(150);
+  await ask();
+  ck('l\'atterrissage avec une source qui ignore « au sol » (GPS) : aucun constat, rien ne s\'ouvre, « Demander » ne l\'ouvre pas ; la clé dit la même chose qu\'une arrivée non suivie',
+    empty() && !ctx.store.get(BOOK)?.drawer_B && ctx.notes.at(-1)?.[1] === 'Rien de nouveau pour l\'instant', [ctx.store.get(BOOK), ctx.notes]);
+  DV.stop();
+
   // le rattrapage au retour de la page : la trace gardée du vol de cette mission
   const crossing = start => ({
     from: iso(start),

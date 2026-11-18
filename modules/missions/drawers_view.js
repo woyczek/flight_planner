@@ -108,6 +108,18 @@ export const TX = {
   openArrivalBy: ['ouvert à l\'arrivée de {by}, à {t}', 'opened when {by} arrived, at {t}', 'bei der Ankunft von {by} geöffnet um {t}',
     'abierto a la llegada de {by}, a las {t}'
   ],
+  // la condition « atterrissage » de l'atelier (SOG-0500) : un point nommé comme pour l'arrivée, sinon sans lieu (un objet)
+  keyLanding: ['s\'ouvre à l\'atterrissage à {p}', 'opens on landing at {p}', 'öffnet sich bei der Landung in {p}',
+    'se abre al aterrizar en {p}'
+  ],
+  keyLandingAny: ['s\'ouvre à l\'atterrissage', 'opens on landing', 'öffnet sich bei der Landung', 'se abre al aterrizar'],
+  openLandingMe: ['ouvert à votre atterrissage, à {t}', 'opened on your landing, at {t}', 'bei Ihrer Landung geöffnet um {t}',
+    'abierto a su aterrizaje, a las {t}'
+  ],
+  openLandingBy: ['ouvert à l\'atterrissage de {by}, à {t}', 'opened when {by} landed, at {t}',
+    'bei der Landung von {by} geöffnet um {t}',
+    'abierto al aterrizaje de {by}, a las {t}'
+  ],
   gotHere: ['reçu ici à {t}', 'received here at {t}', 'hier empfangen um {t}', 'recibido aquí a las {t}'],
   // un tiroir ouvert : comment et quand
   openTime: ['ouvert à l\'heure, à {t}', 'opened on time, at {t}', 'planmäßig geöffnet um {t}', 'abierto a su hora, a las {t}'],
@@ -439,8 +451,12 @@ const liveNow = v => v.flying && v.ctx.live?.status === 'tracking';
  *  pas « pas encore jugée en vol », un tiroir que je n'ai pas rescellé, et une position en direct. */
 function followsHere(v, st) {
   const d = v.drawers.find(x => x.id === st.id);
-  return liveNow(v) && !st.sealed && D.follows(st.key) && !v.notJudged?.(st.key) && d?.keyWhy !== 'condition';
+  return liveNow(v) && !st.sealed && judgedKey(st.key, v.notJudged) && d?.keyWhy !== 'condition';
 }
+
+/** Cette clé se juge-t-elle avec une position en direct ? drawers.js fait foi pour une condition de l'atelier (SOG-0500 : le lecteur,
+ *  `notJudgedYet`, les dit encore toutes « pas encore jugées ») ; le lecteur garde le dernier mot pour les autres clés. */
+const judgedKey = (key, notJudged) => D.follows(key) && (key.kind === 'condition' || !notJudged?.(key));
 
 /** Un relevé de la position en direct (toutes les cinq secondes) : le trajet depuis le relevé d'avant est jugé pour le premier
  *  tiroir fermé. Ne lève jamais (un abonné qui rejette n'est pas attrapé par le cadre). */
@@ -458,14 +474,26 @@ function onFix(v, fix) {
   (turned && v.mine ? load(v) : Promise.resolve()).then(() => judge(v, prev, fix)).catch(() => {});
 }
 
-/** Juge un trajet : un constat de zone ou d'arrivée s'écrit tout de suite au carnet ; un objet à portée attend « Demander » (tenu dans
+/** Juge un trajet : un constat de zone, d'arrivée ou d'atterrissage (tenu par holding, v.hold) s'écrit tout de suite au carnet ; un objet à portée attend « Demander » (tenu dans
  *  v.inRange, rien n'est peint : l'écran ne dit pas qu'un objet est attendu). */
 async function judge(v, prev, fix) {
   if (!v.mine || !v.states || v.busy) return;
   const first = v.states.find(x => !x.open && !x.locked),
-    f = first && followsHere(v, first) ? D.finding(first.key, prev, fix, {
+    here = !!first && followsHere(v, first);
+  let f = null;
+  if (here && D.howOf(first.key) === 'landing') { // un atterrissage se tient : l'état de la tenue est gardé par tiroir
+    const r = D.holding(first.key, v.hold?.id === first.id ? v.hold.hold : null, fix);
+    v.hold = {
+      id: first.id,
+      hold: r.hold
+    };
+    f = r.f;
+  } else {
+    v.hold = null;
+    if (here) f = D.finding(first.key, prev, fix, {
       trail: v.ctx.live?.trail?.()
-    }) : null;
+    });
+  }
   if (!f) { // plus à portée depuis une minute : « Demander » ne l'ouvre plus
     if (v.inRange && (!first || v.inRange.id !== first.id || Date.now() - v.inRange.seen > RANGE_MS)) v.inRange = null;
     return;
@@ -611,6 +639,9 @@ export function describe(tt, s, d, {
   else if (k.kind === 'arrival' && typeof k.point === 'string' && k.point) key = tt(TX.keyArrival, {
     p: k.point
   });
+  else if (D.howOf(k) === 'landing') key = typeof k.rule?.point === 'string' && k.rule.point ? tt(TX.keyLanding, {
+    p: k.rule.point
+  }) : tt(TX.keyLandingAny);
   else if (k.kind && k.kind !== 'hand') key = tt(TX.keyHidden); // une condition de l'auteur, une clé que cet écran ne connaît pas
   else key = tt(TX.keyHand);
   // l'heure de repli n'est dite que si elle concerne le pilote : la clé n'est pas suivie sur cet appareil
@@ -619,7 +650,7 @@ export function describe(tt, s, d, {
   if (k.kind !== 'time') {
     const inFlight = !!k.kind && k.kind !== 'hand',
       // ce que l'appareil sait juger avec une position (drawers.js), hors de ce que le lecteur dit « pas encore jugé en vol »
-      judged = inFlight && D.follows(k) && !notJudged?.(k) && d?.keyWhy !== 'condition',
+      judged = inFlight && judgedKey(k, notJudged) && d?.keyWhy !== 'condition',
       // l'heure d'abord, une seule fois ; « H + 1 h 30 » seulement quand l'heure n'est pas connue (pas encore de départ)
       at = Number.isFinite(k.fallbackMin) ? tt(TX.willOpen, {
         t: due ? `${due}${est}` : hPlus(tt, k.fallbackMin)
@@ -643,7 +674,7 @@ export function describe(tt, s, d, {
     const row = s.how === 'time' ? TX.openTime : s.how === 'fallback' ? TX.openFallback : s.how === 'zone' ? (s.mine ? TX.openZoneMe : TX
         .openZoneBy) :
       s.how === 'object' ? (s.mine ? TX.openObjectMe : TX.openObjectBy) : s.how === 'arrival' ? (s.mine ? TX.openArrivalMe : TX
-        .openArrivalBy) :
+        .openArrivalBy) : s.how === 'landing' ? (s.mine ? TX.openLandingMe : TX.openLandingBy) :
       s.mine ? TX.openHandMe : TX.openHandBy;
     how = tt(row, {
       t: fmtZ(new Date(other && Number.isFinite(s.srcAt) ? s.srcAt : s.at)),

@@ -559,6 +559,35 @@ pure function of `drawers.js`.
   range then opened in range, the arrival), N84 (the secret in the sheet and the Detail; the gesture is « Demander »), N87 (the same
   screen and the same answer for X-907A, without `phases`, and X-908A, two drawers closed).
 
+### 11.6 Landing judged in flight (SOG-0500, lot 1)
+
+The workshop (format 1.1) writes the key `{ kind: 'condition', condition: 'landing', rule, fallbackMin }`; `frame/lib/mission.js` reads and
+bounds it (`holdRule`), and until this lot no flight judged it. `drawers.js` now does, with the same service as the arrival:
+
+- **The rule.** A fix is « down » when it is within `radiusM` metres of the point (`rule.at`) or of the still object (`rule.object`, not
+  `moving`), `gsKt <= speedMaxKt` and `onGround === true` — `arrived()` of `frame/lib/crossing.js`, called with
+  `{ at, radiusNm: radiusM / 1852, speedMaxKt, onGround: true }`, never copied. The condition is met when the pilot stayed down for
+  `durationSec` seconds in a row. Two successive down fixes are never more than `maxGapSec` apart; a fix that is not down, a gap that is too
+  long, a fix without a readable time or an unknown datum (`ok === null`) resets the hold. A missing datum never satisfies the condition.
+- **`holding(key, hold, fix) → { hold, f }`** (pure, never throws): `hold` is `null` or `{ from, last }`; `f` is `null` or the finding
+  `{ how: 'landing', at, from, to }` (`at`: the instant of the fix that completes the hold, in ms). `finding()` returns `null` for a landing
+  and `catchUp()` too: a hold needs a state, and the kept trail has one point per nautical mile, so an aircraft on the ground leaves no points.
+  `drawers_view.js` keeps `v.hold` per drawer (reset when the first closed drawer changes) and records the finding like an arrival.
+- **Which sources know « on the ground ».** The simulator, every 5 s (`LIVE_SIM` of `frame/app.js`), and IVAO, every 15 to 60 s; neither the
+  browser GPS nor VATSIM. With those the datum is unknown, the condition is never met, and the drawer opens at its fallback time or by hand,
+  as an arrival does today.
+- **`follows(key)`** accepts a landing when the point is readable (or the object is not mobile), `rule.confirmation === ''` (a confirmation
+  word asked by the author is not judged yet, by prudence) and `rule.maxGapSec >= FIX_PERIOD_SEC` (5): a shorter permitted gap can never be
+  held with fixes five seconds apart. Hover, overflight, sequence and event stay unjudged. `followsHere()` and `describe()` let `D.follows`
+  decide for a `condition` key, so `notJudgedYet` of `mission.js` (which still says « not judged » for every condition) is not asked.
+- **Shared.** `'landing'` is in `HOWS` and `SHARED`: the finding of one pilot of the mission opens the drawer for all, as an arrival does.
+  `howOf(key)` pairs the finding with its key (`'landing'` for the condition, `key.kind` otherwise). `stands()` replays a landing on the
+  reader's own key: both fixes down by THAT key, at least `durationSec` apart, at most 24 hours apart.
+- **Texts** (four languages): `keyLanding` (« s'ouvre à l'atterrissage à {p} », without a point `keyLandingAny`; the point is written as
+  `keyArrival` does), `openLandingMe`, `openLandingBy`.
+- **Cases.** N80 (100 checks, 9 new: follows, holding, hostile entries, stands, finding and catchUp null, HOWS/SHARED, the record and the
+  other pilot's finding) and N81 (99, 3 new: the texts, a landing held in flight, a source that ignores « on the ground »).
+
 ## 12. Assigning a mission from V3 (SOG-0443)
 
 The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with

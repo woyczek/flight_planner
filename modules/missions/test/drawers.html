@@ -1639,6 +1639,252 @@
   ck('… et 5 min après son trajet : retenu aussi — aucune règle ne lie l\'heure du constat à celle de ses relevés (le rejeu ne juge que le trajet, l\'heure seulement contre le futur et la référence)',
     o5m.open === true && o5m.how === 'object' && o5m.by === 'BBB' && o5m.refused.length === 0, o5m);
 
+  // ---- SOG-0500, lot 1 : la condition « atterrissage » de l'atelier jugée en vol (follows, holding, stands, catchUp, HOWS, SHARED).
+  // La clé a la forme exacte rendue par holdRule de frame/lib/mission.js ; points et positions inventés.
+  const rule0 = {
+      kind: 'landing',
+      label: '',
+      point: 'DESTINATION',
+      at: {
+        lat: 45.0,
+        lon: 1.0
+      },
+      object: null,
+      radiusM: 300,
+      radiusNm: null,
+      durationSec: 30,
+      maxGapSec: 10,
+      speedMaxKt: 3,
+      speedToleranceKt: null,
+      heightMinFt: null,
+      heightMaxFt: null,
+      confirmation: '',
+      confirm: false
+    },
+    land = (more = {}) => ({
+      kind: 'condition',
+      condition: 'landing',
+      rule: {
+        ...rule0,
+        ...more
+      },
+      fallbackMin: 60
+    }),
+    LAND = land(),
+    // un relevé posé à 111 m du point (rayon 300 m), à ce nombre de secondes après le décollage
+    dn = (sec, more = {}) => ({
+      lat: 45.001,
+      lon: 1.0,
+      at: iso(T0 + sec * 1000),
+      altFt: 100,
+      onGround: true,
+      gsKt: 1,
+      ...more
+    }),
+    // la tenue rejouée relevé après relevé : { first (le premier constat), n (le rang du relevé qui le complète) }
+    play = (key, fixes) => {
+      let hold = null,
+        first = null,
+        n = -1;
+      fixes.forEach((x, i) => {
+        const r = D.holding(key, hold, x);
+        hold = r.hold;
+        if (r.f && !first) {
+          first = r.f;
+          n = i;
+        }
+      });
+      return {
+        first,
+        n
+      };
+    },
+    every5 = (to, more) => Array.from({
+      length: to / 5 + 1
+    }, (_, i) => dn(i * 5, more));
+  ck('landing, follows : un point et un écart permis d\'une période de relevé (5 s) au moins → jugé ; 4 s : non ; un mot de confirmation, un objet mobile : non ; un objet immobile : oui ; hover, overflight, sequence, event : non',
+    D.FIX_PERIOD_SEC === 5 && D.follows(land({
+      maxGapSec: 5
+    })) && !D.follows(land({
+      maxGapSec: 4
+    })) && D.follows(LAND) && !D.follows(land({
+      confirmation: 'posed'
+    })) && !D.follows(land({
+      at: null,
+      object: {
+        lat: 45.0,
+        lon: 1.0,
+        moving: true
+      }
+    })) && D.follows(land({
+      at: null,
+      object: {
+        lat: 45.0,
+        lon: 1.0,
+        moving: false
+      }
+    })) && !D.follows(land({
+      at: null,
+      object: null
+    })) && ['hover', 'overflight'].every(k => !D.follows({
+      kind: 'condition',
+      condition: k,
+      rule: {
+        ...rule0,
+        kind: k
+      },
+      fallbackMin: null
+    })) && !D.follows({
+      kind: 'condition',
+      condition: 'sequence',
+      steps: [rule0]
+    }) && !D.follows({
+      kind: 'condition',
+      condition: 'event',
+      event: 'go'
+    }));
+  const s30 = play(LAND, every5(30));
+  ck('landing, holding : posé 30 s d\'affilée par relevés de 5 s → un constat « landing » au relevé de 30 s (du premier posé au dernier) ; à 25 s, rien',
+    s30.n === 6 && s30.first?.how === 'landing' && s30.first.at === T0 + 30e3 && s30.first.from.at === iso(T0) && s30.first.to.at === iso(T0 + 30e3) && play(LAND, every5(25)).first === null, s30);
+  const gap = [dn(0), dn(5), dn(10), dn(22), dn(27), dn(32), dn(37), dn(42), dn(47), dn(52)],
+    air = [...every5(15), dn(20, {
+      onGround: false
+    }), ...every5(60).slice(5)];
+  ck('landing, holding : un relevé en l\'air au milieu remet la tenue à zéro ; un écart de 12 s avec maxGapSec 10 aussi ; un écart de 10 s exactement tient',
+    play(LAND, air).n === 11 && play(LAND, gap).n === 9 && play(LAND, [dn(0), dn(10), dn(20), dn(30)]).n === 3, [play(LAND, air), play(LAND, gap)]);
+  ck('landing, holding : « au sol » inconnu ou absent ne compte jamais ; une vitesse au-dessus de speedMaxKt ou inconnue remet à zéro ; un relevé hors rayon (445 m pour 300 m) aussi',
+    play(LAND, every5(60, {
+      onGround: null
+    })).first === null && play(LAND, every5(60, {
+      onGround: undefined
+    })).first === null && play(LAND, every5(60, {
+      gsKt: 4
+    })).first === null && play(LAND, every5(60, {
+      gsKt: undefined
+    })).first === null && play(LAND, every5(60, {
+      lat: 45.004
+    })).first === null && play(LAND, [...every5(15), dn(20, {
+      lat: 45.004
+    }), ...every5(60).slice(5)]).n === 11);
+  const noThrow = (...a) => {
+    try {
+      const r = D.holding(...a);
+      return !!r && r.f === null;
+    } catch {
+      return false;
+    }
+  };
+  ck('landing, holding : les entrées hostiles ne lèvent pas — fix null, heure illisible ou absente, clé null, tenue absurde',
+    noThrow(LAND, null, null) && noThrow(LAND, null, dn(0, {
+      at: 'pas une heure'
+    })) && noThrow(LAND, null, {
+      lat: 45.001,
+      lon: 1.0,
+      onGround: true,
+      gsKt: 1
+    }) && noThrow(null, null, dn(0)) && noThrow(undefined, 'x', dn(0)) && noThrow(LAND, {
+      from: 3,
+      last: {}
+    }, dn(0)) && noThrow(LAND, 7, 'x') && noThrow({
+      kind: 'condition',
+      condition: 'landing',
+      rule: null
+    }, null, dn(0)));
+  ck('landing, finding rend toujours null (la tenue a un état : holding) ; catchUp aussi (la trace garde un point par mille marin)',
+    D.finding(LAND, null, dn(0)) === null && D.finding(LAND, dn(0), dn(40)) === null && D.catchUp(LAND, {
+      from: iso(T0),
+      trail: [
+        [45.001, 1.0, 0, 10, 0, 1],
+        [45.001, 1.0, 0, 60, 0, 1]
+      ]
+    }) === null);
+  const lf = {
+    how: 'landing',
+    from: dn(0),
+    to: dn(30)
+  };
+  ck('landing, stands : le constat tenu sur la clé du lecteur → vrai ; trop court (29 s), hors rayon chez le lecteur (autre point), vitesse ou sol non tenus, plus de 24 h, d\'une autre sorte → faux',
+    D.stands(lf, LAND) && D.stands({
+      ...lf,
+      to: dn(24 * 3600)
+    }, LAND) === true && !D.stands({
+      ...lf,
+      to: dn(29)
+    }, LAND) && !D.stands({
+      ...lf,
+      to: dn(24 * 3600 + 1)
+    }, LAND) && !D.stands(lf, land({
+      at: {
+        lat: 46.0,
+        lon: 1.0
+      }
+    })) && !D.stands({
+      ...lf,
+      from: dn(0, {
+        onGround: false
+      })
+    }, LAND) && !D.stands({
+      ...lf,
+      to: dn(30, {
+        gsKt: 9
+      })
+    }, LAND) && !D.stands({
+      ...lf,
+      to: dn(30, {
+        onGround: null
+      })
+    }, LAND) && !D.stands({
+      ...lf,
+      from: null
+    }, LAND) && !D.stands({
+      ...lf,
+      how: 'arrival'
+    }, LAND) && !D.stands(lf, ARR) && !D.stands(lf, land({
+      confirmation: 'posed'
+    })));
+  ck('landing, HOWS et SHARED contiennent « landing » ; howOf apparie la condition et le genre', D.HOWS.includes('landing') && D.SHARED.includes('landing') && D.howOf(LAND) === 'landing' && D.howOf(ARR) === 'arrival' && D.howOf(null) === undefined);
+  // le carnet : un constat landing s'écrit, se relit, et le constat d'un autre pilote ouvre le tiroir (comme l'arrivée)
+  const landDoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'landing', {
+      from: lf.from,
+      to: lf.to,
+      at: T0 + 30e3,
+      source: 'xplane'
+    }),
+    landBook = D.readBook(landDoc, ID),
+    theirs = peer('B', T0 + 30e3, 'landing', {
+      from: lf.from,
+      to: lf.to
+    }),
+    landSt = st({
+      drawers: [{
+        id: 'B',
+        title: 'Posé',
+        key: LAND
+      }],
+      others: [
+        ['BBB', theirs]
+      ],
+      now: T0 + 41 * MIN
+    })[0],
+    landOff = st({
+      drawers: [{
+        id: 'B',
+        title: 'Posé',
+        key: land({
+          at: {
+            lat: 46.0,
+            lon: 1.0
+          }
+        })
+      }],
+      others: [
+        ['BBB', theirs]
+      ],
+      now: T0 + 41 * MIN
+    })[0];
+  ck('landing, carnet : le constat s\'écrit avec ses deux relevés et se relit ; celui de BBB ouvre le tiroir chez AAA (« landing », par BBB) ; sur un autre point chez le lecteur, il est refusé (« shape »)',
+    landBook?.drawers?.B?.how === 'landing' && landBook.drawers.B.from?.at === iso(T0) && landSt.open === true && landSt.how === 'landing' && landSt.by === 'BBB' && landSt.refused.length === 0 && landOff.open === false && landOff.refused[0]?.why === 'shape', [landBook, landSt, landOff]);
+
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

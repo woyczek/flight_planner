@@ -38,7 +38,7 @@
 //     référence prévue en millisecondes (le décollage affecté, ou le départ du vol), ou null.
 //   bookFor(book, seance) → le carnet s'il est de cette séance, sinon null.
 //   stateOf(drawers, { me, seance, book, others, seen, now, passage, crosses }) → un état par tiroir :
-//     { id, title, key, open, how ('time' | 'fallback' | 'hand' | 'zone' | 'object' | null), at, by (trigramme ; null pour une heure),
+//     { id, title, key, open, how ('time' | 'fallback' | 'hand' | 'zone' | 'object' | 'arrival' | 'landing' | null), at, by (trigramme ; null pour une heure),
 //       mine, dueAt (l'heure d'ouverture prévue : la clé `time`, ou le repli ; null si inconnue), estimated (cette heure est estimée),
 //       locked (un tiroir d'avant est encore fermé : rien ne l'ouvre), after (l'identifiant du tiroir d'avant), srcAt (l'heure du fait
 //       qui l'a ouvert, `at` étant celle où il a joué), gotAt (l'heure où cet appareil a reçu l'ouverture d'un autre, ou null), other
@@ -50,7 +50,7 @@
 //     estimées du départ à ce lieu (un nombre, ou { min }), null si inconnu ; crosses({ from, to }, key) → vrai si ce trajet coupe la
 //     forme de la clé (par défaut : stands, le rejeu par le service du cadre — un constat sans relevé ne tient pas).
 //   follows(key) → vrai si la clé se juge avec une position en direct ; finding(key, prev, next, { trail }) → le constat d'un trajet,
-//     ou null ; stands(entry, key) → le constat d'un carnet tient-il sur cette clé ; catchUp(key, trail, since) → le constat retrouvé sur
+//     ou null (jamais pour un atterrissage : holding(key, hold, fix) → { hold, f }, SOG-0500, tient l'état d'une tenue posée) ; stands(entry, key) → le constat d'un carnet tient-il sur cette clé ; catchUp(key, trail, since) → le constat retrouvé sur
 //     la trace gardée (le rattrapage au retour de la page).
 //   asked(states, { inRange }) → { id, how: 'hand' | 'object' } ou null (SOG-0459) : le tiroir qu'ouvre le geste neutre « Demander la
 //     suite » — le premier fermé, si sa clé est le geste, ou un objet que l'appareil suit et a à portée (`inRange` : son identifiant).
@@ -81,10 +81,10 @@ import {
 /** Les identifiants de tiroir : ceux du lecteur de mission (un tiroir lu a toujours sa place dans le carnet). */
 export const LETTERS = [...DRAWER_IDS];
 /** Ce qui s'écrit dans un carnet : un geste ou un constat. L'heure et l'heure de repli se calculent. */
-export const HOWS = ['hand', 'zone', 'object', 'arrival'];
+export const HOWS = ['hand', 'zone', 'object', 'arrival', 'landing'];
 /** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
  *  l'ergonome du 17/11 en attendant Q-0094 : « pour tous ou pour soi ? ») — pour l'ouvrir à tous, ajouter 'hand' ici, rien d'autre. */
-export const SHARED = ['zone', 'object', 'arrival'];
+export const SHARED = ['zone', 'object', 'arrival', 'landing'];
 export const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre (à l'écriture comme au rejeu)
 const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim', 'trail']; // trail : constat retrouvé sur la trace gardée (rattrapage)
 const TRI = /^[A-Z]{3}$/,
@@ -235,7 +235,7 @@ function checkOther(e, {
   if (ref != null && e.at < ref - BEFORE_MS) return 'before';
   // un constat de zone sur un tiroir sans zone ; un constat sur une clé que ce fichier ne sait pas suivre (une cible qui franchit,
   // un objet mobile, une arrivée avec suivi) : l'écran dit qu'elle n'est pas jugée en vol, le constat d'un autre ne l'ouvre pas
-  if (e.how !== 'hand' && (key?.kind !== e.how || !follows(key))) return 'key';
+  if (e.how !== 'hand' && (howOf(key) !== e.how || !follows(key))) return 'key';
   // le constat est REJOUÉ sur le fichier de mission de celui qui lit, avec le même service et le même mot que celui qui l'a écrit
   if (e.how !== 'hand' && !(e.to && (typeof crosses === 'function' ? crosses({
       from: e.from,
@@ -245,13 +245,106 @@ function checkOther(e, {
 }
 
 /** Vrai si CE fichier sait juger cette clé avec une position en direct : une zone que le pilote franchit lui-même, un objet immobile,
- *  une arrivée sans suivi d'escorte. Le reste (cible qui franchit, objet mobile, suivi, condition de l'atelier) n'est pas jugé en vol. */
+ *  une arrivée sans suivi d'escorte, une condition « atterrissage » de l'atelier (SOG-0500 : un point ou un objet immobile, sans mot de
+ *  confirmation, un écart permis d'au moins une période de relevé). Le reste (cible qui franchit, objet mobile, suivi, survol,
+ *  maintien, séquence, événement) n'est pas jugé en vol. */
 export function follows(key) {
   if (!key || typeof key !== 'object') return false;
   if (key.kind === 'zone') return !key.actor;
   if (key.kind === 'object') return !!key.object && !key.object.moving;
   if (key.kind === 'arrival') return !(key.escortMinSec > 0);
-  return false;
+  return !!landSpec(key);
+}
+
+/** Le genre de constat d'une clé : « landing » pour la condition « atterrissage » de l'atelier, `key.kind` sinon (ce que le carnet écrit
+ *  dans `how`). */
+export const howOf = key => key?.kind === 'condition' && key.condition === 'landing' ? 'landing' : key?.kind;
+
+/** La période d'un relevé du simulateur, en secondes (LIVE_SIM de frame/app.js) : un écart permis plus court (`maxGapSec`) ne peut
+ *  jamais être tenu. */
+export const FIX_PERIOD_SEC = 5;
+
+/** Un point { lat, lon } lisible (nombres dans leurs bornes), ou null. */
+const spotOf = p => p && typeof p === 'object' && Number.isFinite(p.lat) && Math.abs(p.lat) <= 90 && Number.isFinite(p.lon) && Math.abs(p
+    .lon) <=
+  180 ? {
+    lat: p.lat,
+    lon: p.lon
+  } : null;
+
+/** Ce que le vol juge d'une condition « atterrissage » : { at, radiusNm, speedMaxKt, onGround: true, durationSec, maxGapSec }, ou null
+ *  quand elle ne se juge pas ici : pas un atterrissage, ni point lisible ni objet immobile, un mot de confirmation demandé par l'auteur
+ *  (pas encore jugé, par prudence), un écart permis sous la période d'un relevé, un nombre illisible. */
+function landSpec(key) {
+  const r = key && key.kind === 'condition' && key.condition === 'landing' ? key.rule : null;
+  if (!r || typeof r !== 'object' || r.kind !== 'landing' || r.confirmation !== '') return null;
+  const at = r.at ? spotOf(r.at) : r.object && !r.object.moving ? spotOf(r.object) : null,
+    num = v => typeof v === 'number' && Number.isFinite(v) ? v : null,
+    radiusM = num(r.radiusM),
+    durationSec = num(r.durationSec),
+    maxGapSec = num(r.maxGapSec),
+    speedMaxKt = num(r.speedMaxKt);
+  if (!at || !(radiusM > 0) || !(durationSec > 0) || maxGapSec === null || maxGapSec < FIX_PERIOD_SEC || speedMaxKt === null || speedMaxKt <
+    0)
+    return null;
+  return {
+    at,
+    radiusNm: radiusM / 1852,
+    speedMaxKt,
+    onGround: true,
+    durationSec,
+    maxGapSec
+  };
+}
+
+/** Ce relevé est-il « posé » selon cette règle : au rayon, sous la vitesse, au sol ? Une donnée inconnue ne l'est jamais. */
+const isDown = (fix, spec) => arrived(fix, spec).ok === true;
+
+/** La TENUE d'un atterrissage : (clé, tenue d'avant, relevé) → { hold, f }. hold : null, ou { from, last } (le premier relevé posé de la
+ *  tenue en cours, le dernier) ; f : null, ou le constat { how: 'landing', at, from, to } quand le pilote est resté posé `durationSec`
+ *  secondes d'affilée (at : l'instant du relevé qui la complète). Deux relevés posés successifs ne sont jamais séparés de plus de
+ *  `maxGapSec` ; un relevé non posé, un écart trop long, une donnée inconnue ou sans heure remet la tenue à zéro. Ne lève jamais. */
+export function holding(key, hold, fix) {
+  const none = {
+    hold: null,
+    f: null
+  };
+  try {
+    const spec = landSpec(key),
+      b = fixOf(fix),
+      t = b?.at ? Date.parse(b.at) : NaN;
+    if (!spec || !b || !Number.isFinite(t) || !isDown(b, spec)) return none;
+    const from = hold && typeof hold === 'object' ? fixOf(hold.from) : null,
+      last = hold && typeof hold === 'object' ? fixOf(hold.last) : null,
+      t0 = from?.at ? Date.parse(from.at) : NaN,
+      t1 = last?.at ? Date.parse(last.at) : NaN,
+      kept = Number.isFinite(t0) && Number.isFinite(t1) && t0 <= t1 && t > t1 && t - t1 <= spec.maxGapSec * 1000,
+      start = kept ? from : b,
+      ts = kept ? t0 : t;
+    return {
+      hold: {
+        from: start,
+        last: b
+      },
+      f: t - ts >= spec.durationSec * 1000 ? {
+        how: 'landing',
+        at: t,
+        from: start,
+        to: b
+      } : null
+    };
+  } catch {
+    return none;
+  }
+}
+
+/** Le constat d'un atterrissage tient-il sur CETTE clé ? Les deux relevés sont posés selon elle, séparés d'au moins `durationSec`
+ *  secondes et de vingt-quatre heures au plus. */
+function standsLanded(e, key) {
+  const spec = landSpec(key);
+  if (!spec || !e.from || !e.to) return false;
+  const gap = Date.parse(e.to.at) - Date.parse(e.from.at);
+  return isDown(e.from, spec) && isDown(e.to, spec) && gap >= spec.durationSec * 1000 && gap <= 24 * 3600e3;
 }
 
 /** Les relevés d'une trace gardée ({ from: ISO du départ, trail: [[lat, lon, altFt, s, aglFt?, ground?]…] }, frame/lib/trail.js) depuis
@@ -299,7 +392,7 @@ function stopsDone(key, prev, next, trail) {
 export function finding(key, prev, next, {
   trail
 } = {}) {
-  if (!follows(key)) return null;
+  if (!follows(key) || howOf(key) === 'landing') return null; // un atterrissage a besoin d'un état : holding()
   const b = fixOf(next),
     a = prev ? fixOf(prev) : null;
   if (!b) return null;
@@ -327,7 +420,8 @@ export function finding(key, prev, next, {
 /** Le constat d'un carnet tient-il sur CETTE clé (le fichier de mission de celui qui lit) ? Rejoué par le même service : la zone
  *  touchée par le trajet, l'objet à portée, l'arrivée posée au dernier relevé. */
 export function stands(e, key) {
-  if (!e || !e.to || !key || key.kind !== e.how) return false;
+  if (!e || !e.to || !key || howOf(key) !== e.how) return false;
+  if (e.how === 'landing') return standsLanded(e, key);
   // les deux relevés d'un constat ne font un trajet que s'ils sont à une minute au plus l'un de l'autre (la règle de l'écriture) :
   // sinon un « from » lointain tracerait une corde à travers la forme — le dernier relevé est alors jugé seul
   const same = !e.from || (e.from.lat === e.to.lat && e.from.lon === e.to.lon && e.from.at === e.to.at),
@@ -343,7 +437,7 @@ export function stands(e, key) {
  *  fermé ; null : toute la trace), ou null. La trace garde un point par mille marin : un trajet plus grossier que les relevés. Un
  *  objet qui veut « Objet en vue » n'est jamais rattrapé (il faut le geste, à portée). */
 export function catchUp(key, trail, since = null) {
-  if (!follows(key)) return null;
+  if (!follows(key) || howOf(key) === 'landing') return null; // la trace n'a pas de points d'un appareil posé (un par mille marin)
   const fixes = trailFixes(trail, since);
   for (let i = 0; i < fixes.length; i++) {
     const f = finding(key, i ? fixes[i - 1] : null, fixes[i], {
