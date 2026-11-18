@@ -6850,7 +6850,7 @@ def n109(c):
     c.tap(f'{E} [data-do="edcancel"]')
     c.until(asked, timeout=8000, what='the question before leaving')
     said = c.js("(() => { const m = document.querySelector('.f-modal'); return [m.querySelector('p').textContent, m.querySelector('[data-ok]').textContent, m.querySelector('[data-no]').textContent] })()")
-    c.eq([norm(x) for x in said], [L('ask'), L('ok'), L('stay')], 'with an unsaved change, the frame asks: « Quitter sans enregistrer » or « Rester dans l\'atelier »', what='the question')
+    c.eq([norm(x) for x in said], [L('keptAsk'), L('keptOk'), L('stay')], 'with an unsaved change, the frame asks (the draft keeps everything, SOG-0486 `kept`): « Quitter » or « Rester dans l\'atelier »', what='the question')
     c.shot('N109_1280_ask.png')
     c.tap('.f-modal [data-no]')
     c.wait(300)
@@ -7904,7 +7904,7 @@ def n118(c):
 def n119(c):
     title = f"document.querySelector('{E} input[data-k=edtitle]')?.value"
     asked = "!!document.querySelector('.f-modal [data-ok]')"
-    FRAME_ASK = 'Quitter sans enregistrer ? Les changements seront perdus.'
+    FRAME_ASK = 'Quitter ? Vos changements restent en brouillon sur cet appareil.'  # SOG-0486: the workshop keeps a draft (`kept`)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
 
     def open_x():
@@ -7955,7 +7955,7 @@ def n119(c):
     to_registry()
     open_x()
     _ed_fill(c, 'edtitle', 'Un titre retouché')
-    ASKED = [1, FRAME_ASK, 'Quitter sans enregistrer', 'Rester']
+    ASKED = [1, FRAME_ASK, 'Quitter', 'Rester']
     to_fuel('menu')
     to_fuel('menu')
     c.eq(question(), ASKED, '(a) the menu: ONE question, the frame\'s words', what='question (a)')
@@ -9832,6 +9832,8 @@ def n150(c):
         c.js(quiet)
         c.tap(f'{E} [data-do="edcancel"]')
         c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what=f'{what}: the question before leaving')
+        c.eq(norm(c.js("document.querySelector('.f-modal p').textContent")), norm(tx('frame/app.js', 'keptAsk', c.lang, after='leave: {')),
+             f'{what}: the question says the draft keeps the changes (SOG-0486, `kept`)', what='the question')
         c.tap('.f-modal [data-ok]')
         c.until(f"!document.querySelector('{E}') && !!document.querySelector('{R}')", timeout=10000, what=f'{what}: back to the registry')
 

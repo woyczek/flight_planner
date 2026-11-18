@@ -3888,7 +3888,9 @@ function edDirty(e) {
  *  vraie seulement si l'atelier est ouvert ET modifié (après « Enregistrer » l'état est à jour, un atelier fermé dit faux). Idempotente :
  *  la même clé côté cadre, une déclaration ne s'ajoute pas à l'autre. */
 function edDeclare(s) {
-  s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed));
+  s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed), {
+    kept: true
+  }); // le brouillon garde tout (SOG-0486) : le cadre le dit dans sa question
 }
 
 /** « Annuler » (SOG-0454, SOG-0458) : quitte l'atelier et rend le registre ; avec un changement non enregistré, la question du cadre
@@ -3897,7 +3899,9 @@ function edDeclare(s) {
 async function edLeave(s) {
   const e = s.ed;
   if (!e) return;
-  if (edDirty(e) && !(await s.ctx.askLeave())) return;
+  if (edDirty(e) && !(await s.ctx.askLeave({
+      kept: true
+    }))) return;
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
   s.ed = null;
   edDraftLast(s, e); // SOG-0486 : « Quitter sans enregistrer » garde le brouillon (c'est son but : ne rien perdre)
