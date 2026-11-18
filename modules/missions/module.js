@@ -42,7 +42,7 @@ export const meta = {
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
   files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'paste.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
-    'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
+    'editor_drawers.js', 'catalog.js', 'catalog.yaml', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'assign.js', 'assign_view.js', // SOG-0443 : « Affecter… » — le calcul pur et l'écran
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
