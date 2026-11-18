@@ -588,7 +588,7 @@ function gestures(L, map, o) {
         return r ? L.cb?.onRef?.(r) : L.cb?.onPick?.(i);
       }
       if (L.mode === 'view') return; // pendant un essai des clés la carte ne fait que montrer
-      if (L.mode === 'put') return L.cb?.onPut?.({ // « Poser l'avion ici » : le toucher rend la position où poser l'avion de l'essai
+      if (L.mode === 'put') return L.cb?.onPut?.({ // « Placer l'avion ici » : le toucher rend la position où poser l'avion de l'essai
         lat: p.lat,
         lon: p.lon
       });

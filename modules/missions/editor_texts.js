@@ -324,8 +324,19 @@ export const EDTX = {
   trEv_hand: ['tiroir {n} : à ouvrir à la main', 'drawer {n}: to be opened by hand', 'Schublade {n}: von Hand zu öffnen',
     'cajón {n}: se abre a mano'
   ],
-  trEv_put: ['l\'avion est posé à la main', 'the aircraft is put by hand', 'das Luftfahrzeug wird von Hand gesetzt',
+  // « placé », jamais « posé » : pour un pilote, « posé » veut dire atterri, et la clé « arrivée » le dit déjà (l'ergonome, 18 nov.)
+  trEv_put: ['l\'avion est placé à la main', 'the aircraft is placed by hand', 'das Luftfahrzeug wird von Hand gesetzt',
     'la aeronave se pone a mano'
+  ],
+  trOrder_object: ['à portée de l\'objet du tiroir {n} : rien ne s\'ouvre, le tiroir {first} d\'abord',
+    'within range of the object of drawer {n}: nothing opens, drawer {first} first',
+    'in Reichweite des Objekts der Schublade {n}: nichts öffnet sich, zuerst Schublade {first}',
+    'al alcance del objeto del cajón {n}: nada se abre, primero el cajón {first}'
+  ],
+  trOrder_zone: ['dans la zone du tiroir {n} : rien ne s\'ouvre, le tiroir {first} d\'abord',
+    'in the zone of drawer {n}: nothing opens, drawer {first} first',
+    'in der Zone der Schublade {n}: nichts öffnet sich, zuerst Schublade {first}',
+    'en la zona del cajón {n}: nada se abre, primero el cajón {first}'
   ],
   trEv_landed: ['posé à l\'arrivée', 'landed at the arrival', 'an der Ankunft gelandet', 'posado en la llegada'],
   trUnknown_alt: ['tiroir {n} : inconnu — il manque l\'altitude de l\'avion (la zone a un plafond)',
@@ -462,13 +473,13 @@ export const EDTX = {
   atHint_object: ['Touchez la carte : l\'objet à trouver est posé là.', 'Touch the map: the object to find is posed there.',
     'Berühren Sie die Karte: das zu findende Objekt wird dort gesetzt.', 'Toque el mapa: el objeto por encontrar se pone ahí.'
   ],
-  atHint_put: ['Touchez la carte : l\'avion de l\'essai est posé là, à H + {m} min.',
-    'Touch the map: the aircraft of the trial is put there, at H + {m} min.',
+  atHint_put: ['Touchez la carte : l\'avion de l\'essai est placé là, à H + {m} min.',
+    'Touch the map: the aircraft of the trial is placed there, at H + {m} min.',
     'Berühren Sie die Karte: das Luftfahrzeug des Versuchs wird dort gesetzt, bei H + {m} min.',
     'Toque el mapa: la aeronave de la prueba se pone ahí, a H + {m} min.'
   ],
-  atPut: ['Poser l\'avion ici', 'Put the aircraft here', 'Luftfahrzeug hier setzen', 'Poner la aeronave aquí'],
-  atPutFull: ['Un essai porte vingt poses au plus : « Recommencer » les oublie.',
+  atPut: ['Placer l\'avion ici', 'Place the aircraft here', 'Luftfahrzeug hier setzen', 'Poner la aeronave aquí'],
+  atPutFull: ['Un essai porte vingt placements au plus : « Recommencer » les oublie.',
     'A trial carries twenty placements at most: « Start again » forgets them.',
     'Ein Versuch trägt höchstens zwanzig Setzungen: „Neu beginnen“ vergisst sie.',
     'Una prueba lleva veinte colocaciones como máximo: «Volver a empezar» las olvida.'

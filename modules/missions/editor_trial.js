@@ -24,9 +24,11 @@
 //     tiroir), 'near' (objet à portée : le pilote doit le déclarer), 'ceiling' (dans la zone, au-dessus de son plafond), 'unknown' (why :
 //     'alt' — il manque l'altitude ; 'height' — il manque la hauteur ; 'ground' — « au sol » inconnu ; 'time' — le point de l'heure n'est
 //     pas sur la route, ou la mission n'a pas de vitesse ; 'data'), 'stops' (arrivé sans avoir fait les arrêts demandés), 'unjudged'
-//     (une clé que le vol ne juge pas encore), 'unread' (une clé que le lecteur ne lit pas), 'hand' (à ouvrir à la main), 'landed'.
+//     (une clé que le vol ne juge pas encore), 'unread' (une clé que le lecteur ne lit pas), 'hand' (à ouvrir à la main), 'landed',
+//     'put' (l'avion est placé à la main), 'order' (why : 'object' | 'zone' ; first : le rang du tiroir encore fermé qui passe avant —
+//     l'avion est à portée de l'objet, ou dans la zone, d'un tiroir SUIVANT : rien ne s'ouvre, le premier fermé d'abord).
 //     declares : le pilote déclare « Objet en vue » dès qu'il est à portée (vrai par défaut) ; hands : { B: 12 } — le pilote ouvre ce
-//     tiroir à la main à cette minute ; puts : [{ min, lat, lon }] — « Poser l'avion ici » (lot P2) : à cette minute l'auteur pose
+//     tiroir à la main à cette minute ; puts : [{ min, lat, lon }] — « Placer l'avion ici » (lot P2) : à cette minute l'auteur pose
 //     l'avion à cette position (vingt poses au plus, bornées ; une pose illisible est ignorée). POSER N'EST PAS VOLER : il est jugé
 //     là sur sa position seule, sans trajet depuis là où il était (une zone où on le pose s'ouvre, un objet à portée se trouve ; une
 //     zone qu'un trait droit aurait traversée ne s'ouvre pas) ; puis il repart de là vers ce qu'il lui restait à suivre ; posé après
@@ -35,7 +37,7 @@ import * as CR from '../../frame/lib/crossing.js';
 import * as MS from '../../frame/lib/mission.js';
 
 export const TRIAL = Object.freeze({
-  puts: 20, // « Poser l'avion ici » : vingt poses au plus
+  puts: 20, // « Placer l'avion ici » : vingt poses au plus
   stepMin: 0.25,
   maxMin: 600,
   speedKt: Object.freeze([20, 600]),
@@ -105,7 +107,7 @@ function run(mission, opts) {
     alt = within(o.altFt, ...TRIAL.altFt, null),
     declares = o.declares !== false,
     hands = o.hands && typeof o.hands === 'object' ? o.hands : {},
-    // « Poser l'avion ici » : les poses lisibles (une minute et une position dans leurs bornes), dans l'ordre du temps
+    // « Placer l'avion ici » : les poses lisibles (une minute et une position dans leurs bornes), dans l'ordre du temps
     puts = (Array.isArray(o.puts) ? o.puts : []).slice(0, TRIAL.puts).map(p => {
       const a = p && typeof p === 'object' ? at(p) : null,
         min = a ? within(p.min, 0, TRIAL.maxMin, null) : null;
@@ -330,6 +332,21 @@ function run(mission, opts) {
         });
       }
     }
+    // l'ordre du vol, DIT (l'ergonome, 18 nov.) : l'avion est là où la clé d'un tiroir suivant jouerait — à portée de son objet, dans
+    // sa zone — mais un tiroir d'avant est encore fermé : rien ne s'ouvre, et le journal dit lequel d'abord (une fois par tiroir)
+    const first = drawers.find(x => x && !open.has(x.id));
+    if (first)
+      for (const d of drawers) {
+        if (d === first || open.has(d.id) || (d.keyWhy && d.keyWhy !== 'several')) continue;
+        const k = d.key && typeof d.key === 'object' ? d.key : {};
+        if (MS.notJudgedYet(k)) continue;
+        if (k.kind === 'object' ? CR.reach(prev, fix, k.object).ok === true : k.kind === 'zone' ? CR.crossed(prev, fix, k).touched ===
+          true :
+          false) once(d, 'order', {
+          why: k.kind,
+          first: first.rank
+        });
+      }
     if (t >= until - 1e-9) break;
     const step = Math.min(TRIAL.stepMin, until - t);
     t = Math.round((t + step) * 1e6) / 1e6;

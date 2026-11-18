@@ -154,7 +154,7 @@ The V3 map is MapLibre. The workshop goes through the entries the Map's owner ex
 
 ### 4. The trial of the keys (« Essayer les clés »)
 
-A pane beside the map, never a window over it: « Poser l'avion ici » by a touch, the time on a slider, the aircraft, its trail, the zone
+A pane beside the map, never a window over it: « Placer l'avion ici » by a touch, the time on a slider, the aircraft, its trail, the zone
 and the object drawn, a log in plain words. It runs **the same pure judgement as the flight** — `frame/lib/crossing.js` (SOG-0447:
 `crossed`, `reach`, `arrived`, `replay`), which takes the reader's keys as they are — else the trial lies. A datum that is missing
 never satisfies a key: the log says « inconnu : il manque l'altitude », never a « oui » by default. What the service does not judge
@@ -431,7 +431,7 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
 - **Nothing is written**: the trial reads; « Enregistrer » after a trial writes nothing more than before (N91 checks the file byte
   for byte).
 - `module.js`: two entries of `meta.files`, granted by its owner — `'editor_trial.js'` and `'../../frame/lib/crossing.js'` (once).
-- **Not done**: « Poser l'avion ici » by a touch on the map and the drawing of the zone and of the object during the trial (they come
+- **Not done**: « Placer l'avion ici » by a touch on the map and the drawing of the zone and of the object during the trial (they come
   with the map of P2, SOG-0446); a wind, a climb, a target that moves (P5).
 
 ### 7 undecies. P2, first brick: the suite's map in the workshop, read only (18 Nov 2026; SOG-0444 lot P2; noreg N92, N93)
@@ -468,7 +468,7 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
 - **What leaves the device** (the Security session's note, 18 Nov): opening the map asks the tile provider for the area shown, hence
   that of the mission, as the Map does; the help of the workshop says so in four languages; offline, nothing is asked.
 - **Not done** (next bricks): Sélection and the drag of a place, the poses (Point, Objet, Zone), the handles of a zone and its
-  contour, Tracé, the landmarks of AeroDB, « Vue du pilote », « Poser l'avion ici »; no name is written on the map yet (a base style
+  contour, Tracé, the landmarks of AeroDB, « Vue du pilote », « Placer l'avion ici »; no name is written on the map yet (a base style
   does not always carry glyphs: the names come with the selection). **Asked of the map's owner**: `startTiles` gives up at once when
   the device is offline, even for a local style — the plain background therefore only serves when the tiles do not come.
 
@@ -519,7 +519,7 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - **Nothing new is written**: the file is written at « Enregistrer » by `withPlaces`, as when the fields are typed (N95 reads the
   saved file).
 - **Not done** (third brick): the contour and its vertices, Tracé, the landmarks of AeroDB, « Dessiner sur la carte » from the sheet
-  of a drawer, « Poser l'avion ici », « Vue du pilote ».
+  of a drawer, « Placer l'avion ici », « Vue du pilote ».
 
 ### 7 quaterdecies. P2, third brick: the contour of a zone — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N96)
 
@@ -566,7 +566,7 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   « les six poignées sont entassées, personne ne les attrape »): « Tracer son contour », and choosing a zone with a contour — on the
   map or by « Modifier » — frame the view on the zone, with a margin (`focus(i)` of `editor_map.js`); the view then no longer
   reframes itself on the mission, **« Recentrer » comes back to it**; moving a place or a vertex never reframes (N97).
-- **Not done**: Tracé and the landmarks of AeroDB (next push), « Poser l'avion ici », « Vue du pilote ».
+- **Not done**: Tracé and the landmarks of AeroDB (next push), « Placer l'avion ici », « Vue du pilote ».
 
 ### 7 sexdecies. P2, push 3b: Tracé — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N98)
 
@@ -601,7 +601,7 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   changes of a drawer — its onward route, the zone or the object it cites (« Dessiner sur la carte »). **A retouch made in a sheet**
   — a chip removed, « Ajouter un lieu… », a field of a drawer, like a typing in a place — **empties what the button keeps**: it
   never undoes what was done in a sheet.
-- **Not done**: reordering the chips of a route (remove and add again); the landmarks of AeroDB (next), « Poser l'avion ici ».
+- **Not done**: reordering the chips of a route (remove and add again); the landmarks of AeroDB (next), « Placer l'avion ici ».
 
 ### 7 octodecies. P2: the landmarks of the aeronautical base (18 Nov 2026; SOG-0444 lot P2; noreg N100)
 
@@ -625,7 +625,7 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - **On a phone**, a mission of 150 km is framed under zoom 7: the landmarks only come when the author gets closer.
 - **Not done**: « Radiale et distance… » for a beacon; the names of the landmarks on the map (they are said when touched).
 
-### 7 novodecies. P2: « Poser l'avion ici » — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N101)
+### 7 novodecies. P2: « Placer l'avion ici » — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N101)
 
 - The trial engine (`trialRun` of `editor_trial.js`, § 7 nonies) takes **placements by hand**: `puts: [{ min, lat, lon }]` — at that
   minute the author puts the aircraft of the trial at that position. Twenty at most (`TRIAL.puts`), each one bounded (a minute within
@@ -637,11 +637,15 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   flight holds: only the first closed drawer can open.
 - Then it **goes on from there** towards what it had left to follow (the route of the departure, or the onward route it had taken);
   put after its landing, it stays on the ground, there; put at minute zero, it starts there. The log says `put`.
+- **The order of the flight is said** (the ergonomist's reading of 18 Nov): when the aircraft is within range of the object, or in
+  the zone, of a LATER drawer while an earlier one is still closed, nothing opens and the log says which one comes first — `order`
+  (`why`: `object` | `zone`; `first`: the rank of the first closed drawer), once per drawer: « à portée de l'objet du tiroir 2 :
+  rien ne s'ouvre, le tiroir 1 d'abord ». It holds for the whole trial, not only after a placement.
 - Nothing is written in the mission; no input throws (N101).
 
-### 7 vicies. P2: « Poser l'avion ici » on the screen (18 Nov 2026; SOG-0444 lot P2; noreg N102; the pure part: § 7 novodecies)
+### 7 vicies. P2: « Placer l'avion ici » on the screen (18 Nov 2026; SOG-0444 lot P2; noreg N102; the pure part: § 7 novodecies)
 
-- **During a trial of the keys, « Poser l'avion ici » is a button beside the line under the tools of the map** (where « Retirer ce
+- **During a trial of the keys, « Placer l'avion ici » is a button beside the line under the tools of the map** (where « Retirer ce
   sommet » and « Ajouter comme point » are, out of a trial; the trial pane already has seven controls). It is taken in hand IN PLACE
   (`aria-pressed`; taken again, it is dropped) and the line says « Touchez la carte : l'avion de l'essai est posé là, à H + 2 min ».
 - **The next touch on the map puts the aircraft there, at the minute of the slider** (`s.ed.trial.puts`; a placement at the same
@@ -649,6 +653,9 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
   The trial is computed again by the same engine: the card of the drawer says « ouvert à H + 2 min », the log « l'avion est posé à
   la main », the map shows the aircraft there.
 - « Recommencer » forgets the placements with the gestures of the pilot; closing the trial hides the button.
+- **The word is « placer », never « poser »** (the ergonomist, 18 Nov): for a pilot « posé » means LANDED, and the arrival key already
+  says « posé ». The button is « Placer l'avion ici », the log « l'avion est placé à la main ». (« Posé » stays for a place put on the
+  map by a tool: it is not about the aircraft.)
 - Nothing is written in the mission (N102 compares the saved file).
 - With this, lot P2 is delivered but for « Vue du pilote » on the map (waits for the pure function of SOG-0448), « Radiale et
   distance… » for a beacon and the reordering of the chips of a route (asked for later).

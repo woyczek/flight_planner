@@ -5141,19 +5141,19 @@ _PUTS_JS = """async () => { const TR = await import('/modules/missions/editor_tr
   return { none: sum(run({ untilMin: 10 })), zone: sum(run({ untilMin: 3, puts: [{ min: 2, lat: 44.8, lon: 1.2 }] })),
     high: sum(TR.trialRun(m, { untilMin: 3, altFt: 5000, puts: [{ min: 2, lat: 44.8, lon: 1.2 }] }))[4],
     both: sum(run({ untilMin: 5, puts: [{ min: 4, lat: 44.6, lon: 1.42 }, { min: 2, lat: 44.8, lon: 1.2 }] })),
-    order: sum(run({ untilMin: 5, puts: [{ min: 2, lat: 44.6, lon: 1.42 }] }))[3].slice(0, 2),
+    order: (r => [r[3].slice(0, 2), r[4]])(sum(run({ untilMin: 5, puts: [{ min: 2, lat: 44.6, lon: 1.42 }] }))),
     ground: sum(run({ untilMin: 60, puts: [{ min: 50, lat: 44.5, lon: 1.5 }] })).slice(1, 3), start: sum(run({ untilMin: 0, puts: [{ min: 0, lat: 44.9, lon: 1.1 }] })).slice(1, 2),
     ignored, many: many.log.filter(l => l.ev === 'put').length, trail: many.trail.length <= TR.TRIAL.trail, threw, untouched: J(m) === before } }"""
 
 
-@case('N101', 'Missions › the workshop, « Poser l\'avion ici » (pure part, no screen): the trial takes placements by hand — at a minute the '
+@case('N101', 'Missions › the workshop, « Placer l\'avion ici » (pure part, no screen): the trial takes placements by hand — at a minute the '
       'aircraft is put at a position; putting is not flying: it is judged there on its position alone, so a zone it is put in opens '
       '(under its ceiling), an object it is put near is found — in the order of the flight, the first closed drawer first — and a zone '
       'a straight line would have crossed does not; then it '
       'goes on towards what it had left to follow; put after its landing it stays on the ground, there; put at minute zero it starts '
       'there; twenty placements at most, bounded: an unreadable placement is ignored; no hostile input throws; nothing is written in '
       'the mission', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
-      rule='SOG-0444, lot P2, « Poser l\'avion ici », the pure part (modules/missions/EDITOR.md § 4: « Poser l\'avion ici by a touch… It runs '
+      rule='SOG-0444, lot P2, « Placer l\'avion ici », the pure part (modules/missions/EDITOR.md § 4: « Placer l\'avion ici by a touch… It runs '
       'the same pure judgement as the flight », § 7 novodecies): modules/missions/editor_trial.js, `puts`; the engine: N90')
 def n101(c):
     c.page.goto(c.base + '/frame/manifest.webmanifest')
@@ -5166,8 +5166,9 @@ def n101(c):
     c.eq([r['both'][3][:2], r['both'][4]], [[[1, True, 'zone', 2], [2, True, 'object', 4]], '0:start | 2:put | 2:open 1 zone | 4:put | 4:open 2 object | 4:route 2 | 4:hand 3'],
          'two placements (given out of order: they play in the order of time): the zone, then the object the aircraft is put near — it then takes the onward route of that drawer',
          what='two placements')
-    c.eq(r['order'], [[1, False, None, None], [2, False, None, None]], 'put near the object while drawer 1 is still closed: nothing opens — the zone between where it was and '
-         'where it is put is NOT crossed (putting is not flying), and only the first closed drawer can open',
+    c.eq(r['order'], [[[1, False, None, None], [2, False, None, None]], '0:start | 2:put | 2:order 2 object'], 'put near the object while drawer 1 is still closed: nothing '
+         'opens — the zone between where it was and where it is put is NOT crossed (putting is not flying), only the first closed drawer can open — and the log says why: '
+         'within range of the object of drawer 2, drawer 1 first',
          what='the order of the flight')
     c.eq([r['ground'], r['start']], [[[44.5, 1.5, True], 37], [[44.9, 1.1, True]]], 'put after its landing, the aircraft stays on the ground, there (it landed at minute 37); put at '
          'minute zero, it starts there', what='on the ground')
@@ -5181,13 +5182,13 @@ _TRPUT = f'{_EDMAP} [data-trput]'
 _TRPUT_STATE = f"(() => {{ const b = document.querySelector('{_TRPUT}'); return [b.hidden, b.getAttribute('aria-pressed')] }})()"
 
 
-@case('N102', 'Missions › the workshop, « Poser l\'avion ici »: during a trial of the keys a button beside the line of the tool takes the '
+@case('N102', 'Missions › the workshop, « Placer l\'avion ici »: during a trial of the keys a button beside the line of the tool takes the '
       'hand (in place: no button redrawn) and the line says at which minute; the next touch on the map puts the aircraft of the trial '
       'there, at the minute of the slider — the zone it is put in opens at that minute, the log says it was put by hand, the map shows '
       'it there — and the tool is dropped: another touch does nothing; « Recommencer » forgets the placements; out of a trial the '
       'button is not shown; nothing is written in the mission',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
-      rule='SOG-0444, lot P2, « Poser l\'avion ici » (modules/missions/EDITOR.md § 4: « Poser l\'avion ici by a touch », § 7 vicies; '
+      rule='SOG-0444, lot P2, « Placer l\'avion ici » (modules/missions/EDITOR.md § 4: « Poser l\'avion ici by a touch », § 7 vicies; '
       'the pure part: N101; SOG-0449)')
 def n102(c):
     path = 'missions/X_REG/X-001A/missionX-001A.yaml'
@@ -5200,18 +5201,18 @@ def n102(c):
     c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
     c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
     c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
-    c.eq(c.js(_TRPUT_STATE), [True, 'false'], 'out of a trial « Poser l\'avion ici » is not shown', what='before the trial')
+    c.eq(c.js(_TRPUT_STATE), [True, 'false'], 'out of a trial « Placer l\'avion ici » is not shown', what='before the trial')
     c.tap(f'{E} [data-atflow] [data-trbtn]')
     c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
     c.js(_TR_SET, 2)
     c.eq([c.js(_TRPUT_STATE), norm(c.text(_TRPUT)), hint(), c.js(_TR_STATES)[0][1]], [[False, 'false'], T('atPut'), T('atHint_view'), ''],
-         'during the trial « Poser l\'avion ici » is offered beside the line of the tool; at minute 2 drawer 1 is closed (the zone is entered at 6 min 15 s)', what='the button')
+         'during the trial « Placer l\'avion ici » is offered beside the line of the tool; at minute 2 drawer 1 is closed (the zone is entered at 6 min 15 s)', what='the button')
     # taken in place; the line says at which minute
     c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
     c.tap(_TRPUT)
     kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
     c.ok(all(kept) and c.js(_TRPUT_STATE) == [False, 'true'] and hint() == T('atHint_put', m=2), [c.js(_TRPUT_STATE), hint()],
-         '« Poser l\'avion ici » taken in hand in place (no button redrawn): the line says the next touch puts the aircraft there, at H + 2 min')
+         '« Placer l\'avion ici » taken in hand in place (no button redrawn): the line says the next touch puts the aircraft there, at H + 2 min')
     # the touch puts the aircraft in the zone: it opens at that minute; the tool is dropped
     c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
     c.until(f"({_TR_STATES})[0][1] === '1'", timeout=8000, what='drawer 1 open')
@@ -5230,10 +5231,18 @@ def n102(c):
     c.js(_TR_SET, 2)
     c.eq([c.js(_TR_STATES)[0][1], any(T('trEv_put') in norm(x) for x in c.js(_TR_LOG))], ['', False], '« Recommencer » forgets the placements: at minute 2 drawer 1 is closed again',
          what='started again')
+    # the order of the flight is said: placed near the object of drawer 2 while drawer 1 is closed, nothing opens and the log says why
+    c.tap(_TRPUT)
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.6, 1.42]))
+    c.until(f"({_TR_LOG}).length >= 3", timeout=8000, what='the log after the placement near the object')
+    log = [norm(x) for x in c.js(_TR_LOG)]
+    c.ok([x[1] for x in c.js(_TR_STATES)[:2]] == ['', ''] and any(T('trOrder_object', n=2, first=1) in x for x in log), [c.js(_TR_STATES)[:2], log],
+         'placed within range of the object of drawer 2 while drawer 1 is closed: nothing opens, and the log says « le tiroir 1 d\'abord »')
+    c.tap(f'{_TR} [data-do="edtrreset"]')
     # closing the trial: the button is gone, nothing was written
     c.tap(f'{_TR} [data-do="edtrialoff"]')
     c.until(f"!document.querySelector('{_TR}')", what='the trial closed')
-    c.eq(c.js(_TRPUT_STATE)[0], True, 'the trial closed: « Poser l\'avion ici » is not shown any more', what='after the trial')
+    c.eq(c.js(_TRPUT_STATE)[0], True, 'the trial closed: « Placer l\'avion ici » is not shown any more', what='after the trial')
     c.tap(f'{E} [data-do="edsave"]')
     c.wait(400)
     c.eq(c.js(_TEXT_OF, path), _TRIAL_MISSION, 'the trial and its placement wrote nothing in the mission: the file is the same', what='the file')

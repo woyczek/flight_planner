@@ -25,7 +25,7 @@
 // Les repères de la base aéronautique : quand la vue s'arrête (au zoom 7 et au-delà), l'écran demande à ctx.aerodb les aérodromes,
 // balises, points et points VFR du cadre et les rend à la carte (EM.refData les borne) ; un repère touché en Sélection (s.ed.mapRef)
 // dit ce qu'il est dans la ligne et « Ajouter comme point » se montre à côté — le toucher ne crée rien.
-// « Poser l'avion ici » : pendant un essai des clés, un bouton à côté de la ligne de l'outil (s.ed.trial.putting) ; le toucher suivant
+// « Placer l'avion ici » : pendant un essai des clés, un bouton à côté de la ligne de l'outil (s.ed.trial.putting) ; le toucher suivant
 // de la carte ajoute une pose à s.ed.trial.puts ({ min, lat, lon } à la minute du curseur) ; le moteur de l'essai la joue.
 //
 // L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (lot P1 : le croquis des
@@ -611,7 +611,7 @@ function edMapFeats(s, doc, run = null) {
 /** Le rang du lieu choisi sur la carte (s.ed.mapSel), -1 sinon. */
 const edMapSel = e => Number.isInteger(e.mapSel) ? e.mapSel : -1;
 /** L'outil de la carte : 'select' (la Sélection, à l'ouverture et après chaque pose), 'point', 'zone', 'object' ; 'view' pendant un
- *  essai des clés (la carte ne fait que montrer) ; 'put' pendant un essai, quand « Poser l'avion ici » est en main ; 'route' : Tracé,
+ *  essai des clés (la carte ne fait que montrer) ; 'put' pendant un essai, quand « Placer l'avion ici » est en main ; 'route' : Tracé,
  *  qui reste en main jusqu'à ce qu'on le quitte. */
 const edMapTool = e => e.trial?.on ? (e.trial.putting ? 'put' : 'view') : ['point', 'route', 'zone', 'object'].includes(e.tool) ? e.tool :
   'select';
@@ -807,7 +807,7 @@ function edMapShow(s) {
   mark();
 }
 
-/** « Poser l'avion ici » : le toucher de la carte pose l'avion de l'essai là, à la minute du curseur (une pose à la même minute
+/** « Placer l'avion ici » : le toucher de la carte pose l'avion de l'essai là, à la minute du curseur (une pose à la même minute
  *  remplace la précédente ; vingt au plus, sinon une notification) ; l'outil est lâché ; l'essai est recalculé (le même moteur :
  *  poser n'est pas voler). Rien n'est écrit dans la mission. */
 function edTrialPut(s, e, p) {
@@ -1287,7 +1287,7 @@ function edTrialRun(s, doc) {
     altFt: trNum(t.alt),
     declares: t.declares !== false,
     hands: t.hands,
-    puts: t.puts // « Poser l'avion ici » : les poses de l'auteur (le moteur les borne)
+    puts: t.puts // « Placer l'avion ici » : les poses de l'auteur (le moteur les borne)
   });
 }
 
@@ -1301,8 +1301,9 @@ function edTrialLines(s, run) {
   if (!run.ok) return [s.tt(EDTX.trNoRoute)];
   return run.log.map(l => {
     const row = l.ev === 'start' ? EDTX.trStart : l.ev === 'open' ? EDTX[`trOpen_${l.how}`] || EDTX.trOpen_hand : l.ev === 'unknown' ? EDTX[
-      `trUnknown_${l.why}`] || EDTX.trUnknown_data : EDTX[`trEv_${l.ev}`] || EDTX.trUnknown_data;
-    return `${trAt(s, l.min)} — ${s.tt(row, { n: l.ev === 'start' ? run.drawers.length : l.rank })}`;
+      `trUnknown_${l.why}`] || EDTX.trUnknown_data : l.ev === 'order' ? EDTX[`trOrder_${l.why}`] || EDTX.trUnknown_data : EDTX[
+      `trEv_${l.ev}`] || EDTX.trUnknown_data;
+    return `${trAt(s, l.min)} — ${s.tt(row, { n: l.ev === 'start' ? run.drawers.length : l.rank, first: l.first })}`;
   });
 }
 
@@ -1789,7 +1790,7 @@ function edClickDo(s, b) {
         putting: false
       });
       return draw(s);
-    case 'edtrput': // « Poser l'avion ici » : pris en main sur place (repris, il est lâché) ; le toucher suivant de la carte pose l'avion
+    case 'edtrput': // « Placer l'avion ici » : pris en main sur place (repris, il est lâché) ; le toucher suivant de la carte pose l'avion
       if (!s.ed.trial?.on) return;
       s.ed.trial.putting = !s.ed.trial.putting;
       return edMapShow(s);
