@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "00e756f",
-  "fiches": 474,
+  "organisation": "bdfdbe3",
+  "fiches": 481,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -3048,6 +3048,15 @@
      "en": "Routes: on a long European flight, the free-route graph uses up the whole lead phase — “computation impossible”",
      "de": "Routen: Auf einem langen Europaflug verbraucht der Free-Route-Graph die ganze Anfangsphase – „Berechnung unmöglich“",
      "es": "Rutas: en un vuelo largo por Europa, el grafo de ruta libre agota toda la fase inicial — «cálculo imposible»"
+    },
+    {
+     "id": "SOG-0476",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : Londres → Islande (EGLL → BIKF) rend « calcul impossible »",
+     "en": "Routes: London → Iceland (EGLL → BIKF) gives “computation impossible”",
+     "de": "Routen: London → Island (EGLL → BIKF) ergibt „Berechnung unmöglich“",
+     "es": "Rutas: Londres → Islandia (EGLL → BIKF) da «cálculo imposible»"
     }
    ]
   },
@@ -3951,6 +3960,42 @@
      "en": "Mission workshop: “Places” at the top of the right column, framed, with a scrolling list to pick from",
      "de": "Missionswerkstatt: „Orte“ oben in der rechten Spalte, im Rahmen, mit einer rollenden Auswahlliste",
      "es": "Taller de misiones: «Lugares» arriba de la columna derecha, enmarcado, con una lista desplazable para elegir"
+    },
+    {
+     "id": "SOG-0479",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : le nom de l'outil « contour » (« draw its outline ») n'est pas clair",
+     "en": "Mission workshop: the name of the outline tool (“draw its outline”) is unclear",
+     "de": "Missionswerkstatt: Der Name des Umriss-Werkzeugs („draw its outline“) ist unklar",
+     "es": "Taller de misiones: el nombre de la herramienta de contorno («draw its outline») no es claro"
+    },
+    {
+     "id": "SOG-0480",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : un point tournant peut être n'importe quel point de la base aéronautique (LF485, REN…)",
+     "en": "Mission workshop: a turning point can be any point of the aeronautical database (LF485, REN…)",
+     "de": "Missionswerkstatt: Ein Wendepunkt kann jeder Punkt der Luftfahrtdatenbank sein (LF485, REN…)",
+     "es": "Taller de misiones: un punto de viraje puede ser cualquier punto de la base aeronáutica (LF485, REN…)"
+    },
+    {
+     "id": "SOG-0481",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : avec un point choisi, « ajouter » une cible ou un point tournant ajoute le point choisi",
+     "en": "Mission workshop: with a point selected, adding a target or turning point adds the selected point",
+     "de": "Missionswerkstatt: Mit gewähltem Punkt fügt „Ziel/Wendepunkt hinzufügen“ den gewählten Punkt hinzu",
+     "es": "Taller de misiones: con un punto seleccionado, añadir un objetivo o punto de viraje añade el punto seleccionado"
+    },
+    {
+     "id": "SOG-0482",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : une liste de points n'est pas un itinéraire — déplacer points, zones et objets dans l'ordre",
+     "en": "Mission workshop: a list of points is not an itinerary — reorder points, areas and objects",
+     "de": "Missionswerkstatt: Eine Punkteliste ist keine Route – Punkte, Gebiete und Objekte umordnen",
+     "es": "Taller de misiones: una lista de puntos no es un itinerario — reordenar puntos, zonas y objetos"
     }
    ]
   },
@@ -3981,6 +4026,15 @@
      "en": "Mission workshop: icons for tools and backgrounds, round or outlined area by choice, a third background with names",
      "de": "Missionswerkstatt: Symbole für Werkzeuge und Hintergründe, Gebiet rund oder als Umriss, ein dritter Hintergrund mit Namen",
      "es": "Taller de misiones: iconos para herramientas y fondos, zona redonda o con contorno a elegir, un tercer fondo con nombres"
+    },
+    {
+     "id": "SOG-0478",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Atelier de missions : déplacer le centre d'une zone, un objet ou une autre poignée ne redessine pas",
+     "en": "Mission workshop: moving an area's centre, an object or another handle does not redraw",
+     "de": "Missionswerkstatt: Verschieben eines Gebietsmittelpunkts, Objekts oder anderen Griffs zeichnet nicht neu",
+     "es": "Taller de misiones: mover el centro de una zona, un objeto u otro tirador no redibuja"
     }
    ]
   },
@@ -7018,6 +7072,27 @@
    ]
   },
   {
+   "id": "maintenance-reglages-langue-cadre",
+   "app": "maintenance",
+   "label": {
+    "fr": "Réglages ; langue ; cadre",
+    "en": "Réglages ; langue ; cadre",
+    "de": "Réglages ; langue ; cadre",
+    "es": "Réglages ; langue ; cadre"
+   },
+   "items": [
+    {
+     "id": "SOG-0477",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages perdus sur 127.0.0.1:8000, et l'interface bloquée en anglais",
+     "en": "Settings lost on 127.0.0.1:8000, and the interface stuck in English",
+     "de": "Einstellungen auf 127.0.0.1:8000 verloren, Oberfläche bleibt auf Englisch",
+     "es": "Ajustes perdidos en 127.0.0.1:8000 y la interfaz bloqueada en inglés"
+    }
+   ]
+  },
+  {
    "id": "maintenance-reglages-telephone",
    "app": "maintenance",
    "label": {
@@ -8544,6 +8619,35 @@
    ]
   }
  ],
+ "reports": {
+  "SIG-02d3670a2b": {
+   "fiche": "SOG-0409"
+  },
+  "SIG-0a6b49a578": {
+   "fiche": "SOG-0473"
+  },
+  "SIG-434254a246": {
+   "fiche": "SOG-0369"
+  },
+  "SIG-53e48e89e6": {
+   "fiche": "SOG-0384"
+  },
+  "SIG-553e91e7b9": {
+   "fiche": "SOG-0434"
+  },
+  "SIG-905ec186d3": {
+   "fiche": "SOG-0385"
+  },
+  "SIG-9cdb5bd567": {
+   "fiche": "SOG-0372"
+  },
+  "SIG-c3d5390007": {
+   "fiche": "SOG-0462"
+  },
+  "SIG-f53a8897b8": {
+   "fiche": "SOG-0388"
+  }
+ },
  "capabilities": {
   "asof": "2026-11-16",
   "pct": 67,

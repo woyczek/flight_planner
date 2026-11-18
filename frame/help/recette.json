@@ -4641,6 +4641,22 @@
    "recommended": 0
   },
   {
+   "id": "Q-0110",
+   "fiche": "SOG-0479",
+   "app": "compagnie",
+   "question": "Atelier : quel nom pour le bouton qui passe une zone du rond au polygone (et retour) ?",
+   "context": "Aujourd'hui, dans la fiche d'une zone (colonne « Lieux ») : « Tracer son contour » / « La rendre ronde » (en anglais « Draw its outline » / « Make it round »). « Tracer » laisse croire qu'on dessine à main levée ; en fait le bouton change le rond en un polygone dont on déplace ensuite les sommets sur la carte. Le même couple de mots servira à l'outil Zone de la carte (SOG-0471). Proposé par Création ; les traductions suivent le même modèle.",
+   "options": [
+    "« Changer en polygone » / « Changer en cercle » (un verbe : le bouton fait une chose)",
+    "« Zone en polygone » / « Zone ronde »",
+    "« Forme : polygone » / « Forme : cercle »",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
