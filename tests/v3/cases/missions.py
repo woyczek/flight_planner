@@ -4503,7 +4503,7 @@ _GEST_JS = """async () => {
     object: [o.rows[o.at].id, o.rows[o.at].lat, o.rows[o.at].lon, o.rows[o.at].confirm], blank: [b.rows[b.at].id, b.rows[b.at].lat, b.rows[b.at].lon],
     full: [ED.newPlace(rows, 'target', doc, { lat: 1, lon: 1 }), ED.newPlace(rows, 'dep', doc), ED.newPlace(rows, '__proto__', doc)],
     moved: [moved[at('PT1')].lat, moved[at('PT1')].lon, moved !== rows, moved[at('PT1')].name],
-    refused: [same(ED.movePlace(rows, 0, { lat: 44, lon: 1 })), same(ED.movePlace(rows, at('ZONE-2'), { lat: 44, lon: 1 })), same(ED.movePlace(rows, at('PT1'), { lat: 91, lon: 1 })),
+    refused: [same(ED.movePlace(rows, 0, { lat: 44, lon: 1 })), same(ED.movePlace(rows, 1, { lat: 44, lon: 1 })), same(ED.movePlace(rows, at('PT1'), { lat: 91, lon: 1 })),
       same(ED.movePlace(rows, at('PT1'), { lat: '44', lon: '1' })), same(ED.movePlace(rows, 'x', { lat: 44, lon: 1 })), same(ED.movePlace(rows, 99, { lat: 44, lon: 1 }))],
     radius: [grown[at('ZONE-1')].radius, same(ED.placeRadius(rows, at('ZONE-1'), 0.01)), same(ED.placeRadius(rows, at('ZONE-1'), 501)), same(ED.placeRadius(rows, at('ZONE-1'), NaN)),
       same(ED.placeRadius(rows, at('ZONE-2'), 5)), same(ED.placeRadius(rows, at('PT1'), 5)), same(ED.placeRadius(rows, at('ZONE-1'), '5'))],
@@ -4513,7 +4513,7 @@ _GEST_JS = """async () => {
 
 @case('N94', 'Missions › the workshop, the gestures of the map (pure part, no screen): a place posed is a new row at the place of its kind, '
       'with a free identifier and the position of the touch (five decimals); a place moved takes the new position; the radius of a round '
-      'zone is set in km; the departure, the arrival and a contour are not moved; a position or a radius out of bounds is refused — never '
+      'zone is set in km; the departure and the arrival are not moved (a contour is moved as a block: N96); a position or a radius out of bounds is refused — never '
       'brought back into its bounds —, the same rows are returned; what the file then writes is the row; no hostile input throws',
       'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0444, lot P2, second brick, the pure part (modules/missions/EDITOR.md § 2: « After a pose the tool goes back to Sélection », '
@@ -4528,7 +4528,7 @@ def n94(c):
          'a position out of bounds is not kept: the row is created « à placer »; without a position (the button of the Lieux), the same', what='to place')
     c.eq(r['full'], [None, None, None], 'one target only; the departure and unknown kinds are never posed', what='refused poses')
     c.eq(r['moved'], ['44.75', '1.25', True, 'Point un'], 'a place moved takes the position, in new rows; its other fields stay', what='a place moved')
-    c.eq(r['refused'], [True] * 6, 'refused, the SAME rows returned: the departure, a contour, a latitude of 91, texts instead of numbers, a rank that is not one',
+    c.eq(r['refused'], [True] * 6, 'refused, the SAME rows returned: the departure, the arrival, a latitude of 91, texts instead of numbers, a rank that is not one',
          what='refused moves')
     c.eq(r['radius'], ['7.46', True, True, True, True, True, True], 'the radius of a round zone at two decimals; 0.01 km, 501 km, not a number, a contour, a point, a text: '
          'refused', what='the radius')
@@ -4662,3 +4662,67 @@ def n95(c):
     c.shot('N95_390_tools.png')
     c.tap(f'{E} [data-do="edcancel"]')
     c.js(_REG_CLEAR)
+
+
+
+# the pure part of the contour of a zone: its vertices in the row, their gestures, round ↔ contour (modules/missions/editor.js)
+_RING_JS = """async () => {
+  const ED = await import('/modules/missions/editor.js');
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'x',
+    zones: [{ id: 'ZONE-1', centre: { lat: 44.8, lon: 1.2 }, radius_km: 5 },
+      { id: 'ZONE-2', name: 'Contour', polygon: [{ lat: 44.5, lon: 1.5, note: 'kept' }, { lat: 44.5, lon: 1.7 }, { lat: 44.4, lon: 1.7 }] },
+      { id: 'ZONE-3', name: 'Illisible', points: [{ lat: 44.5, lon: 1.5 }, { lat: 'x', lon: 1.7 }, { lat: 44.4, lon: 1.7 }] },
+      { id: 'ZONE-4', name: 'Cent un', vertices: Array.from({ length: 101 }, (_, n) => ({ lat: 44 + n / 1000, lon: 1 })) }] };
+  const rows = ED.placesOf(doc), before = JSON.stringify([rows, doc]), same = x => x === rows, J = JSON.stringify;
+  const moved = ED.moveVertex(rows, 1, 1, { lat: 44.55, lon: 1.75 }), ins = ED.insertVertex(rows, 1, 0, { lat: 44.52, lon: 1.6 }),
+    contour = ED.toContour(rows, 0), round = ED.toRound(rows, 1), slid = ED.movePlace(rows, 1, { lat: 44.0, lon: 1.0 });
+  let threw = '';
+  for (const h of [null, 'x', 7, [null, 'x', { kind: 'zone', ring: 'a,b;c', poly: 3 }, { kind: 'zone', ring: {}, poly: 3 }]])
+    try { ED.moveVertex(h, 2, 0, h); ED.insertVertex(h, 3, 0, { lat: 1, lon: 1 }); ED.removeVertex(h, 2, 0); ED.toContour(h, 2); ED.toRound(h, 3); ED.ringOf(h) } catch (e) { threw += String(e) }
+  return { rings: rows.map(r => [r.id, r.poly, r.ring]), ringOf: [ED.ringOf(rows[1]), ED.ringOf(rows[0]), ED.ringOf({ ring: '91,0;0,0;1,1' }), ED.ringOf({ ring: '1,1,1;0,0;1,1' })],
+    unchanged: J(ED.withPlaces(doc, rows)) === J(doc),
+    moved: [moved[1].ring, ED.withPlaces(doc, moved).zones[1]],
+    inserted: [ins[1].ring, ins[1].poly, ED.withPlaces(doc, ins).zones[1].polygon.map(v => J(v))],
+    removed: [same(ED.removeVertex(rows, 1, 0)), ED.removeVertex(ins, 1, 1)[1].ring],
+    contour: [contour[0].poly, contour[0].ring.split(';')[0], contour[0].radius, Object.keys(ED.withPlaces(doc, contour).zones[0]).join(' ')],
+    round: [round[1].ring, round[1].poly, round[1].lat, round[1].lon, +round[1].radius > 5 && +round[1].radius < 12, ED.withPlaces(doc, round).zones[1]],
+    slid: [slid[1].ring, ED.ringMiddle(ED.ringOf(slid[1])).map(v => +v.toFixed(4))],
+    refused: [same(ED.moveVertex(rows, 1, 9, { lat: 44, lon: 1 })), same(ED.moveVertex(rows, 1, 0, { lat: 91, lon: 1 })), same(ED.moveVertex(rows, 1, 0, { lat: '44', lon: '1' })),
+      same(ED.moveVertex(rows, 0, 0, { lat: 44, lon: 1 })), same(ED.moveVertex(rows, 2, 0, { lat: 44, lon: 1 })), same(ED.insertVertex(rows, 1, 5, { lat: 44, lon: 1 })),
+      same(ED.toContour(rows, 1)), same(ED.toRound(rows, 0)), same(ED.movePlace(rows, 2, { lat: 44, lon: 1 })), same(ED.movePlace(rows, 3, { lat: 44, lon: 1 })),
+      same(ED.movePlace(rows, 1, { lat: 89.99, lon: 1 }))],
+    threw, untouched: JSON.stringify([rows, doc]) === before } }"""
+
+
+@case('N96', 'Missions › the workshop, the contour of a zone (pure part, no screen): the row of a zone carries its vertices when they can be '
+      'read (3 to 100, all located) — an unreadable contour is kept as the file writes it and is not touched; a vertex is moved, one is '
+      'inserted, one is removed (never under three); a contour is moved as a block by its middle; a round zone becomes a contour of six '
+      'vertices at its radius, a contour becomes round again (its middle, the mean distance of its vertices); the file writes the '
+      'vertices under the key it used, a vertex left in place keeps its other keys; nothing changed, nothing rewritten; a gesture '
+      'refused returns the same rows; no hostile input throws',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, third brick, the pure part (modules/missions/EDITOR.md § 2: « a square handle moves a vertex, a small one '
+      'between two vertices inserts one, a vertex touched offers Retirer ce sommet (three at least). 3 to 100 vertices (SOG-0440) »; audit '
+      '182: only what changed is written): modules/missions/editor.js `ringOf`, `moveVertex`, `insertVertex`, `removeVertex`, `toContour`, '
+      '`toRound`, `movePlace`, `withPlaces`')
+def n96(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_RING_JS)
+    c.eq(r['rings'], [['ZONE-1', 0, ''], ['ZONE-2', 3, '44.5,1.5;44.5,1.7;44.4,1.7'], ['ZONE-3', 3, ''], ['ZONE-4', 101, '']],
+         'a contour that can be read is in the row; one with a vertex that is not a position, or with 101 vertices, is not (kept as it is)', what='the rows')
+    c.eq(r['ringOf'], [[[44.5, 1.5], [44.5, 1.7], [44.4, 1.7]], None, None, None], 'the vertices of a row; a latitude of 91 or a third number: no contour', what='ringOf')
+    c.ok(r['unchanged'] is True, r['unchanged'], 'nothing changed: the document written back is the same (audit 182)')
+    c.eq(r['moved'], ['44.5,1.5;44.55,1.75;44.4,1.7', {'id': 'ZONE-2', 'name': 'Contour', 'polygon': [{'lat': 44.5, 'lon': 1.5, 'note': 'kept'}, {'lat': 44.55, 'lon': 1.75},
+                                                                                                    {'lat': 44.4, 'lon': 1.7}]}],
+         'a vertex moved: written under the key of the file (« polygon »), the vertex left in place keeps its other keys', what='a vertex moved')
+    c.eq(r['inserted'], ['44.5,1.5;44.52,1.6;44.5,1.7;44.4,1.7', 4, ['{"lat":44.5,"lon":1.5,"note":"kept"}', '{"lat":44.52,"lon":1.6}', '{"lat":44.5,"lon":1.7}',
+                                                                    '{"lat":44.4,"lon":1.7}']], 'a vertex inserted after the first one', what='a vertex inserted')
+    c.eq(r['removed'], [True, '44.5,1.5;44.5,1.7;44.4,1.7'], 'never under three vertices (the same rows); with four, one is removed', what='a vertex removed')
+    c.eq(r['contour'], [6, '44.84497,1.2', '5', 'id centre radius_km points'], 'a round zone becomes a contour of six vertices at its radius (the first due north); its '
+         'centre and its radius stay, for the way back; a new contour is written under « points »', what='round to contour')
+    c.eq(r['round'], ['', 0, '44.46667', '1.63333', True, {'id': 'ZONE-2', 'name': 'Contour', 'centre': {'lat': 44.46667, 'lon': 1.63333}, 'radius_km': r['round'][5]['radius_km']}],
+         'a contour becomes round: its vertices are removed from the file, its centre is its middle, its radius the mean distance of its vertices', what='contour to round')
+    c.eq(r['slid'], ['44.03333,0.86667;44.03333,1.06667;43.93333,1.06667', [44, 1]], 'a contour moved as a block: its middle goes where the gesture ends', what='a contour moved')
+    c.eq(r['refused'], [True] * 11, 'refused, the SAME rows: a vertex that does not exist, a latitude of 91, texts, a round zone, an unreadable contour, a contour that '
+         'would leave the bounds…', what='refused gestures')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws; the rows and the document read are not touched')

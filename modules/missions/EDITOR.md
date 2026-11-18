@@ -521,6 +521,25 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - **Not done** (third brick): the contour and its vertices, Tracé, the landmarks of AeroDB, « Dessiner sur la carte » from the sheet
   of a drawer, « Poser l'avion ici », « Vue du pilote ».
 
+### 7 quaterdecies. P2, third brick: the contour of a zone — the pure part (18 Nov 2026; SOG-0444 lot P2; no screen; noreg N96)
+
+- **The row of a zone carries its vertices**: `ring`, a text (« 44.5,1.5;44.5,1.7;44.4,1.7 »: lat,lon, six decimals at most) when the
+  file's contour can be read — 3 to 100 vertices (`VERTICES`, the reader's bound), every one a position; else `''`, and **an unreadable
+  contour is kept as the file writes it** (`poly` still says how many vertices it has; no gesture touches it). A text keeps the row
+  flat, like its other fields: the rule « nothing changed, nothing rewritten » compares rows as before.
+- `ringOf(row)` → `[[lat, lon]…]` or `null`; `ringMiddle(ring)` (where the map puts the label and the handle of a contour).
+- **Gestures** (new rows; the SAME rows when refused): `moveVertex(rows, i, k, pos)`, `insertVertex(rows, i, k, pos)` (after vertex k;
+  never over 100), `removeVertex(rows, i, k)` (never under 3); `movePlace` now **moves a readable contour as a block** — `pos` is
+  where its middle goes, its centre follows when it has one —, refused when a vertex would leave the bounds. Positions of a gesture
+  are numbers, kept at five decimals; nothing is brought back into its bounds.
+- **The shape**: `toContour(rows, i)` makes of a round zone (a centre and a radius within bounds) a contour of six vertices at its
+  radius, the first due north — its centre and its radius stay in the row, for the way back; `toRound(rows, i)` removes the vertices,
+  takes the middle for centre when there was none and the mean distance of the vertices for radius when there was none.
+- **The file** (`withPlaces`): the vertices are written under the key the file used (`points`, else `polygon`, else `vertices`;
+  `points` for a new contour), a vertex left in place keeps the file's object (its other keys), a moved or inserted one is
+  `{ lat, lon }`; a zone made round again loses the key. Nothing changed, nothing rewritten (N96 compares the documents).
+- N94 follows: a contour is no longer « refused » by `movePlace`.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

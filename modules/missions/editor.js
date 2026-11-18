@@ -35,7 +35,11 @@
 //     les gestes de la carte de l'atelier (SOG-0444, lot P2) : newPlace(rows, kind, base, at) → { rows, at } | null — une ligne neuve à
 //     la place de sa sorte, située si `at` ({ lat, lon, radius }) le dit ; movePlace(rows, i, { lat, lon }) et placeRadius(rows, i, km)
 //     → de NOUVELLES lignes, ou les mêmes quand le geste est refusé (départ, arrivée, contour, position ou rayon hors bornes : jamais
-//     ramenés dans leurs bornes) ; MOVABLE : les sortes qu'un geste déplace ; RADIUS_KM : les bornes du rayon d'une zone ; deadRefs(doc) → les références qui ne
+//     ramenés dans leurs bornes) ; MOVABLE : les sortes qu'un geste déplace ; RADIUS_KM : les bornes du rayon d'une zone ;
+//     le contour d'une zone (troisième brique) : sa ligne porte `ring`, ses sommets en texte (« lat,lon;lat,lon;… », '' sans contour
+//     ou pour un contour illisible, gardé tel quel) ; ringOf(row) → [[lat, lon]…] | null ; ringMiddle(ring) ; moveVertex, insertVertex,
+//     removeVertex(rows, i, k[, pos]) ; toContour(rows, i) et toRound(rows, i) ; movePlace déplace un contour d'un bloc ; VERTICES :
+//     3 à 100 sommets ; withPlaces écrit les sommets retouchés sous la clé du fichier (points, polygon ou vertices) ; deadRefs(doc) → les références qui ne
 //     désignent aucun lieu ; mapsNoCentre(doc), drawersNoPoint(doc), drawersNoKey(doc) → les cartes au centre vidé, les parties au délai
 //     sans point, les parties restées sans clé (leur zone ou le point de leur arrivée retirés).
 //   THEATRES : les théâtres de la V2 (apps/cpco/mission_skeleton.js).
@@ -295,6 +299,39 @@ const written = v => v !== undefined && v !== null && v !== '';
 /** Oui ou non écrit dans le fichier, comme le lecteur le lit (false, 0, « non », « no », « false » : non). */
 const yes = (v, dflt) => !written(v) ? dflt : !(v === false || v === 0 || /^(false|no|non|0)$/i.test(String(v).trim()));
 
+/** Les bornes du nombre de sommets d'un contour (celles du lecteur : frame/lib/mission.js DRAWER_BOUNDS.vertices). */
+export const VERTICES = Object.freeze([3, 100]);
+/** Un sommet lu : [lat, lon] dans ses bornes (un nombre, ou un texte de nombre), sinon null — jamais ramené dans ses bornes. */
+const vertexOf = v => {
+  const o = v && typeof v === 'object' ? (Array.isArray(v) ? {
+      lat: v[0],
+      lon: v[1]
+    } : v) : null,
+    num = (x, max) => (typeof x === 'number' || (typeof x === 'string' && x.trim() !== '')) && Number.isFinite(+x) && Math.abs(+x) <=
+    max ?
+    Math.round(+x * 1e6) / 1e6 : null,
+    lat = o ? num(o.lat, 90) : null,
+    lon = o ? num(o.lon, 180) : null;
+  return lat === null || lon === null ? null : [lat, lon];
+};
+/** Les sommets d'un contour en texte de ligne — « 44.5,1.5;44.5,1.7;44.4,1.7 » — quand ils sont 3 à 100 et tous situés ; '' sinon (le
+ *  contour n'est alors pas retouché : le fichier le garde tel quel). */
+const ringText = list => {
+  if (!Array.isArray(list) || list.length < VERTICES[0] || list.length > VERTICES[1]) return '';
+  const pts = list.map(vertexOf);
+  return pts.every(Boolean) ? pts.map(p => p.join(',')).join(';') : '';
+};
+/** Les sommets d'une ligne de zone : [[lat, lon]…] (3 à 100, bornés), ou null sans contour retouchable. */
+export function ringOf(row) {
+  const t = row && typeof row === 'object' && typeof row.ring === 'string' ? row.ring : '';
+  if (!t || t.length > 4000) return null;
+  const pts = t.split(';').map(x => {
+    const [a, b, more] = x.split(',');
+    return more === undefined ? vertexOf([a, b]) : null;
+  });
+  return pts.length >= VERTICES[0] && pts.length <= VERTICES[1] && pts.every(Boolean) ? pts : null;
+}
+
 /** Les lieux d'une mission (voir l'en-tête). */
 export function placesOf(doc) {
   const d = obj(doc),
@@ -337,7 +374,9 @@ export function placesOf(doc) {
       lon: numText(c.lon ?? o.lon),
       radius: numText(o.radius_km ?? o.radiusKm),
       tot: numText(o.time_on_task_min),
-      poly: poly ? poly.length : 0
+      poly: poly ? poly.length : 0,
+      ring: ringText(
+        poly) // les sommets d'un contour lisible (SOG-0444, lot P2) ; '' : pas de contour, ou un contour gardé tel quel
     });
   });
   arr(d.turning_points).forEach((p, i) => out.push({
@@ -459,8 +498,24 @@ export function withPlaces(doc, rows) {
     if (all.length) out[key] = all;
     else if (key in out) delete out[key];
   };
-  rebuild('zone', 'zones', ['id', 'name', 'role', 'zkind', 'lat', 'lon', 'radius', 'tot'], (z, r, diff, b) => {
+  rebuild('zone', 'zones', ['id', 'name', 'role', 'zkind', 'lat', 'lon', 'radius', 'tot', 'ring'], (z, r, diff, b) => {
     if (diff.includes('zkind')) text(z, 'kind', r.zkind, 40);
+    if (diff.includes('ring')) {
+      // les sommets : sous la clé que le fichier emploie (points, sinon polygon, sinon vertices ; « points » pour une zone neuve) ; un
+      // sommet resté à sa place garde l'objet du fichier (ses autres clés) ; sans sommet (la zone redevient ronde), la clé est retirée
+      const keys = ['points', 'polygon', 'vertices'],
+        key = keys.find(k => Array.isArray(b[k])) || 'points',
+        old = arrOf(b[key]),
+        ring = ringOf(r);
+      for (const k of keys) delete z[k];
+      if (ring) z[key] = ring.map(([lat, lon]) => old.find(v => {
+        const q = vertexOf(v);
+        return q && q[0] === lat && q[1] === lon && !Array.isArray(v);
+      }) || {
+        lat,
+        lon
+      });
+    }
     if (diff.includes('lat') || diff.includes('lon')) {
       const lat = coord(r.lat, 90),
         lon = coord(r.lon, 180);
@@ -1329,7 +1384,8 @@ export function newPlace(rows, kind, base = null, at = null) {
         zkind: '',
         radius: km,
         tot: '',
-        poly: 0
+        poly: 0,
+        ring: ''
       } : kind === 'rdv' ? {
         participants: ''
       } : kind === 'object' ? {
@@ -1352,19 +1408,118 @@ export function newPlace(rows, kind, base = null, at = null) {
   };
 }
 
-/** Un lieu déplacé par un geste de la carte : sa ligne prend la position (cinq décimales). Refusé — les MÊMES lignes sont rendues —
- *  pour le départ et l'arrivée, pour une zone en contour (ses sommets ne se déplacent pas d'un bloc ici), pour un rang inconnu ou une
- *  position hors bornes. */
+/** Le milieu des sommets d'un contour ([lat, lon], six décimales) : là où la carte pose son étiquette et sa poignée. */
+export function ringMiddle(ring) {
+  return [Math.round(ring.reduce((t, p) => t + p[0], 0) / ring.length * 1e6) / 1e6, Math.round(ring.reduce((t, p) => t + p[1], 0) / ring
+    .length * 1e6) / 1e6];
+}
+/** La ligne d'une zone avec ces sommets (cinq décimales), ou null s'ils ne font pas un contour (3 à 100, tous situés). */
+function rowWithRing(r, ring) {
+  const text = ringText(ring.map(([lat, lon]) => [Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5]));
+  return text ? {
+    ...r,
+    ring: text,
+    poly: ring.length
+  } : null;
+}
+/** Remplace la ligne i par `row` (de nouvelles lignes), ou rend les MÊMES lignes quand `row` est nul (le geste est refusé). */
+const swapRow = (rows, i, row) => row ? rows.map((x, k) => k === i ? row : x) : rows;
+/** La ligne i quand c'est une zone en contour retouchable, avec ses sommets ; sinon null. */
+function contourAt(rows, i) {
+  const r = Array.isArray(rows) && Number.isInteger(i) ? rows[i] : null,
+    ring = r && typeof r === 'object' && r.kind === 'zone' ? ringOf(r) : null;
+  return ring ? {
+    r,
+    ring
+  } : null;
+}
+/** Une position de geste ({ lat, lon } en nombres) dans ses bornes : [lat, lon], sinon null. */
+const gestureAt = pos => typeof pos?.lat === 'number' && typeof pos?.lon === 'number' ? vertexOf(pos) : null;
+
+/** Un lieu déplacé par un geste de la carte : sa ligne prend la position (cinq décimales). Une zone en contour se déplace d'un bloc :
+ *  `pos` est la place de son milieu, chaque sommet suit (et son centre, s'il en a un). Refusé — les MÊMES lignes sont rendues — pour le
+ *  départ et l'arrivée, pour un contour gardé tel quel (illisible), pour un rang inconnu, une position hors bornes, ou un contour dont
+ *  un sommet sortirait des bornes. */
 export function movePlace(rows, i, pos) {
   const r = Array.isArray(rows) && Number.isInteger(i) ? rows[i] : null,
     lat = posText(pos?.lat, 90),
     lon = posText(pos?.lon, 180);
-  if (!r || typeof r !== 'object' || !MOVABLE.includes(r.kind) || (r.kind === 'zone' && r.poly) || !lat || !lon) return rows;
+  if (!r || typeof r !== 'object' || !MOVABLE.includes(r.kind) || !lat || !lon) return rows;
+  if (r.kind === 'zone' && r.poly) {
+    const c = contourAt(rows, i);
+    if (!c) return rows;
+    const [mla, mlo] = ringMiddle(c.ring),
+      row = rowWithRing(r, c.ring.map(p => [p[0] + pos.lat - mla, p[1] + pos.lon - mlo]));
+    if (!row) return rows;
+    const cla = posText(+r.lat + pos.lat - mla, 90),
+      clo = posText(+r.lon + pos.lon - mlo, 180);
+    return swapRow(rows, i, r.lat !== '' && r.lon !== '' && cla && clo ? {
+      ...row,
+      lat: cla,
+      lon: clo
+    } : row);
+  }
   return rows.map((x, k) => k === i ? {
     ...x,
     lat,
     lon
   } : x);
+}
+
+/** Les sommets d'un contour, par un geste de la carte — de NOUVELLES lignes, ou les MÊMES quand le geste est refusé (pas un contour
+ *  retouchable, un rang de sommet inconnu, une position hors bornes, moins de 3 ou plus de 100 sommets) : moveVertex(rows, i, k, pos)
+ *  déplace le sommet k ; insertVertex(rows, i, k, pos) en pose un après le sommet k ; removeVertex(rows, i, k) retire le sommet k. */
+export function moveVertex(rows, i, k, pos) {
+  const c = contourAt(rows, i),
+    at = gestureAt(pos);
+  if (!c || !at || !Number.isInteger(k) || !c.ring[k]) return rows;
+  return swapRow(rows, i, rowWithRing(c.r, c.ring.map((p, n) => n === k ? at : p)));
+}
+export function insertVertex(rows, i, k, pos) {
+  const c = contourAt(rows, i),
+    at = gestureAt(pos);
+  if (!c || !at || !Number.isInteger(k) || !c.ring[k] || c.ring.length >= VERTICES[1]) return rows;
+  return swapRow(rows, i, rowWithRing(c.r, [...c.ring.slice(0, k + 1), at, ...c.ring.slice(k + 1)]));
+}
+export function removeVertex(rows, i, k) {
+  const c = contourAt(rows, i);
+  if (!c || !Number.isInteger(k) || !c.ring[k] || c.ring.length <= VERTICES[0]) return rows;
+  return swapRow(rows, i, rowWithRing(c.r, c.ring.filter((_, n) => n !== k)));
+}
+
+/** La forme d'une zone : toContour(rows, i) fait d'une zone ronde (un centre et un rayon dans leurs bornes) un contour de six sommets
+ *  à son rayon — son centre et son rayon restent dans la ligne, pour le retour ; toRound(rows, i) rend ronde une zone en contour : ses
+ *  sommets sont retirés, son centre est son milieu quand elle n'en avait pas, son rayon la distance moyenne de ses sommets quand elle
+ *  n'en avait pas (dans RADIUS_KM). Refusé (les MÊMES lignes) pour ce qui n'est pas la forme attendue. */
+export function toContour(rows, i) {
+  const r = Array.isArray(rows) && Number.isInteger(i) ? rows[i] : null;
+  if (!r || typeof r !== 'object' || r.kind !== 'zone' || r.poly) return rows;
+  const c = vertexOf(r),
+    km = positive(r.radius, RADIUS_KM[1]);
+  if (!c || km === null || km < RADIUS_KM[0]) return rows;
+  const d = km / 111.195,
+    k = Math.max(0.01, Math.cos(c[0] * Math.PI / 180));
+  return swapRow(rows, i, rowWithRing(r, [0, 1, 2, 3, 4, 5].map(n => [c[0] + d * Math.cos(n * Math.PI / 3), c[1] + d * Math.sin(n * Math
+    .PI /
+    3) / k])));
+}
+export function toRound(rows, i) {
+  const c = contourAt(rows, i);
+  if (!c) return rows;
+  const mid = ringMiddle(c.ring),
+    centre = vertexOf(c.r) || mid,
+    k = Math.max(0.01, Math.cos(centre[0] * Math.PI / 180)),
+    mean = c.ring.reduce((t, p) => t + Math.hypot(p[0] - centre[0], (p[1] - centre[1]) * k) * 111.195, 0) / c.ring.length,
+    had = positive(c.r.radius, RADIUS_KM[1]),
+    km = had !== null && had >= RADIUS_KM[0] ? had : Math.min(RADIUS_KM[1], Math.max(RADIUS_KM[0], Math.round(mean * 100) / 100));
+  return swapRow(rows, i, {
+    ...c.r,
+    lat: String(Math.round(centre[0] * 1e5) / 1e5),
+    lon: String(Math.round(centre[1] * 1e5) / 1e5),
+    radius: String(km),
+    ring: '',
+    poly: 0
+  });
 }
 
 /** Le rayon d'une zone ronde réglé par sa poignée, en km (deux décimales). Refusé — les MÊMES lignes — pour ce qui n'est pas une zone
