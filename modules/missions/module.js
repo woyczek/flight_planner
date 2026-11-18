@@ -42,7 +42,8 @@ export const meta = {
     'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
-    '../../frame/lib/ad_field.js', '../../frame/lib/suggest_list.js', // SOG-0465 : le champ de terrain de l'atelier (Départ, Arrivée), celui de Carburant
+    '../../frame/lib/ad_field.js', '../../frame/lib/adnames.js',
+    '../../frame/lib/suggest_list.js', // SOG-0465 (adnames.js : importé par ad_field.js) : le champ de terrain de l'atelier (Départ, Arrivée), celui de Carburant
     '../../frame/lib/crossing.js',
     '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
     '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
