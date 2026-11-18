@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 322,
+  "tests": 325,
   "verdicts": 219
  },
  "apps": [
@@ -4653,6 +4653,20 @@
    "state": "known"
   },
   {
+   "id": "SOG-0465",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : Départ et Arrivée avec le champ de terrain de la suite (complétion comprise)",
+    "en": "Mission workshop: Departure and Arrival with the suite's airfield field (completion included)",
+    "de": "Missionswerkstatt: Start und Ziel mit dem Flugplatzfeld der Suite (samt Vervollständigung)",
+    "es": "Taller de misiones: Salida y Llegada con el campo de aeródromo de la suite (con autocompletado)"
+   },
+   "test": "Missions, atelier d'une mission : touche « Départ » et tape « lf » : la même liste que dans Carburant propose des terrains (et des hélistations, après la reconstruction de la zone fr) avec leur nom ; choisis-en un : le code s'écrit, le nom paraît dessous, et la carte se cadre sur les deux terrains. Un texte libre (« Hôpital Nord ») reste possible.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T17:42:11Z"
+  },
+  {
    "id": "SOG-0469",
    "app": "compagnie",
    "title": {
@@ -4739,6 +4753,20 @@
    "delivered": "2026-11-18T15:16:13Z"
   },
   {
+   "id": "SOG-0478",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : déplacer le centre d'une zone, un objet ou une autre poignée ne redessine pas",
+    "en": "Mission workshop: moving an area's centre, an object or another handle does not redraw",
+    "de": "Missionswerkstatt: Verschieben eines Gebietsmittelpunkts, Objekts oder anderen Griffs zeichnet nicht neu",
+    "es": "Taller de misiones: mover el centro de una zona, un objeto u otro tirador no redibuja"
+   },
+   "test": "Atelier d'une mission, carte : fais glisser le centre d'une zone ronde, puis un objet, puis un sommet d'une zone en polygone. Attendu : pendant le geste, le cercle, le polygone, le tracé et la liste des Lieux suivent le doigt, comme quand on change le rayon ; un seul « Annuler » défait le geste entier.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T17:42:18Z"
+  },
+  {
    "id": "SOG-0483",
    "app": "pilote",
    "title": {
@@ -4751,6 +4779,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T16:49:26Z"
+  },
+  {
+   "id": "SOG-0485",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : « Enregistrer » vide le brief et la description de la mission — perdus",
+    "en": "Mission workshop: “Save” empties the mission's brief and description — lost",
+    "de": "Missionswerkstatt: „Speichern“ leert Briefing und Beschreibung der Mission – verloren",
+    "es": "Taller de misiones: «Guardar» vacía el briefing y la descripción de la misión — perdidos"
+   },
+   "test": "Atelier d'une mission : ouvre le Récit, tape un brief, « Enregistrer ». Laisse le Récit déplié, ajoute une phrase à la description, puis « Enregistrer » à nouveau. Attendu : la seconde saisie est enregistrée (pas de « rien n'a changé ») ; ferme puis rouvre la mission : les deux textes sont là.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T17:42:29Z"
   },
   {
    "id": "SOG-0490",

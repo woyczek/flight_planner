@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "d4e78b5",
+  "organisation": "777195b",
   "fiches": 503,
   "untranslated": 0,
   "priorities": 481,
@@ -4262,11 +4262,12 @@
     {
      "id": "SOG-0485",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : « Enregistrer » vide le brief et la description de la mission — perdus",
      "en": "Mission workshop: “Save” empties the mission's brief and description — lost",
      "de": "Missionswerkstatt: „Speichern“ leert Briefing und Beschreibung der Mission – verloren",
-     "es": "Taller de misiones: «Guardar» vacía el briefing y la descripción de la misión — perdidos"
+     "es": "Taller de misiones: «Guardar» vacía el briefing y la descripción de la misión — perdidos",
+     "test": true
     },
     {
      "id": "SOG-0495",
@@ -4313,12 +4314,13 @@
     {
      "id": "SOG-0478",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : déplacer le centre d'une zone, un objet ou une autre poignée ne redessine pas",
      "en": "Mission workshop: moving an area's centre, an object or another handle does not redraw",
      "de": "Missionswerkstatt: Verschieben eines Gebietsmittelpunkts, Objekts oder anderen Griffs zeichnet nicht neu",
      "es": "Taller de misiones: mover el centro de una zona, un objeto u otro tirador no redibuja",
-     "rank": 449
+     "rank": 449,
+     "test": true
     }
    ]
   },
@@ -4335,12 +4337,13 @@
     {
      "id": "SOG-0465",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : Départ et Arrivée avec le champ de terrain de la suite (complétion comprise)",
      "en": "Mission workshop: Departure and Arrival with the suite's airfield field (completion included)",
      "de": "Missionswerkstatt: Start und Ziel mit dem Flugplatzfeld der Suite (samt Vervollständigung)",
      "es": "Taller de misiones: Salida y Llegada con el campo de aeródromo de la suite (con autocompletado)",
-     "rank": 450
+     "rank": 450,
+     "test": true
     }
    ]
   },
