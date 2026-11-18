@@ -230,7 +230,8 @@ export function createMapScreen(app) {
   /** Fond uni de la Carte : Mercator sur l'emprise du vol, contours des pays ; le canevas reçoit toucher et survol. */
   function flat() {
     $('box').classList.add('at-flat');
-    loadOutlines().then(schedule, () => {});
+    loadOutlines(ctx.aerodb).then(schedule,
+      () => {}); // les contours du cadre (aerodb.zoneOutlines), comme la Carte : la copie lib/outlines.js n'existe plus (SOG-0468)
     const over = $('over'),
       llOf = ev => {
         const r = over.getBoundingClientRect(),

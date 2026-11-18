@@ -24,7 +24,7 @@ export const meta = {
     '../../frame/lib/flight_time.js?v=0', '../../frame/lib/flight_path.js?v=0',
     '../../frame/lib/time.js?v=0', '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/icons.js?v=0'],
   lazy: ['edit.js?v=0', 'tune.js?v=0',            // the Edit mode, the tuning page: loaded at their first use
-    'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0', 'lib/outlines.js?v=0',
+    'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0',
     '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/texts.js?v=0', '../fuel/winds.js?v=0'],   // the cut (§ 8)
   net: ['tiles.openfreemap.org', 'tiles.versatiles.org',           // called by MapLibre itself
     's3.amazonaws.com/elevation-tiles-prod']                         // Terrarium tiles (relief of the profile, hillshade, contours)
@@ -307,7 +307,7 @@ with and without tiles).
 import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, setBottomInset, zonesLayer, pointsLayer, COVER_ZOOM, loadRender,
          loadOutlines, plainView, drawPlain, STYLE_DAY, STYLE_NIGHT, STYLES, TILE_WAIT } from '../maps/lib/map_base.js';
 // declare in the module's meta: files '../maps/lib/map_base.js?v=0'; lazy '../maps/lib/maplibre-gl.js?v=0',
-// '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'; net 'tiles.openfreemap.org'
+// '../maps/lib/maplibre-gl.css?v=0'; net 'tiles.openfreemap.org'
 ```
 
 | Function | Contract |
@@ -323,7 +323,7 @@ import { loadMapLibre, styleFor, startTiles, mapSize, isOwnResize, setBottomInse
 | `pointsLayer(map, features, { colors, onTap, minzoom = COVER_ZOOM })` → `{ update(features, colors), fit(padding = 24, bounds), remove() }` | dots one can touch, by id (the Data module's map of procedures: the aerodromes whose procedures are read; Settings, 1 Nov 2026). `features`: a FeatureCollection of `Point` `[lon, lat]`, each `{ id (ICAO code), tone: 'ok' \| 'warn' \| 'err' \| 'muted' }`; `colors` `{ ok, warn, err, muted, line }` resolved by the caller (`line`: the outline, and an unknown tone). A 5 px dot at the tone's colour with a `line` outline, fixed size, **nothing under `minzoom`**; no text (a base style does not always carry glyphs: the code goes to `onTap`). `onTap(id)`: as `zonesLayer` (MapLibre's `click`, never after a drag or a pinch), the topmost dot under the finger, else within 11 px; **a tap on a dot never ticks the zone under it** (`zonesLayer` steps aside when a dot of the same map is hit, whatever the order the layers were made in). Kept across a change of style; `update` without new layers; `fit` frames `bounds` or the dots (zoom 11 at most); `remove` takes everything away. Bench: the same page, noreg D95 |
 | `COVER_ZOOM` | `7`: the zoom (MapLibre) from which aerodromes show one by one on a map of coverage — `pointsLayer`'s default `minzoom`, and the Map's own threshold for colouring non-public aerodromes by their coverage (`coverPins` of `render.js`, given by `draw.js` as `coverZoom`: it was 180 px per degree, the same zoom); one value |
 | `loadRender()` → `Promise` | loads `render.js` (`window.MapsRender`) if it is not there: the core only (background, `mercator`, `tokens`), enough for atmosphere; the map's own loader adds `render_airspace.js` and `render_route.js` |
-| `loadOutlines()` → `Promise` | loads `lib/outlines.js` (`window.MAPS_OUTLINES`, 350 KB), once; rejects (and the next call tries again) if it does not come |
+| `loadOutlines(aerodb)` → `Promise` | the countries of the plain background (`window.MAPS_OUTLINES`) from `aerodb.zoneOutlines()`, once; rejects (and the next call tries again) without aerodb or if they do not come (`lib/outlines.js`, 350 KB, no longer exists: SOG-0468) |
 | `plainView(fit, W, H, pad = 12)` → `{ toC(lat, lon), toLL(x, y), shown }` | Mercator fitting the box `fit` (`{ w, e, s, n }`) in W × H, north up (`MapsRender.mercator`; `loadRender()` first) |
 | `drawPlain(ctx, toC, W, H, colors)` | sea, then land from the outlines (sea only until they arrive); `colors` `{ sea, land, border }`, day defaults |
 | `STYLE_DAY`, `STYLE_NIGHT`, `STYLES`, `TILE_WAIT` | the constants |

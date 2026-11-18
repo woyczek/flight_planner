@@ -715,3 +715,17 @@ def e21(c):
             opened += 1
             shut()
     c.ok(opened <= 5, f'{opened} of 8 taps opened a slice', 'taps of the empty grid read nothing: most of eight taps open no slice')
+
+
+@case('E99', 'The plain background of the Weather map draws the countries the frame gives (aerodb.zoneOutlines), not a copy of its own', 'E', tags=('atmosphere', 'maps'), screens=False,
+      rule='SOG-0468 (3) (the ergonomist: the copy of the outlines, 350 KB, goes): Atmosphere read lib/outlines.js « until it also goes through aerodb »; it now asks aerodb.zoneOutlines() like the Map, and the copy is deleted')
+def e99(c):
+    c.page.route(re.compile(r'.*tiles\.openfreemap\.org.*'), lambda r: r.abort())
+    c.page.add_init_script("""(() => { let ab; Object.defineProperty(window, 'AeroDB', { configurable: true, get() { return ab }, set(v) { ab = v;
+      if (v && v.create && !v.__zo) { const o = v.create; v.__zo = 1; v.create = function (...a) { const A = o.apply(this, a), z = A.zoneOutlines;
+        if (typeof z === 'function') A.zoneOutlines = (...q) => { window.__zoCalls = (window.__zoCalls || 0) + 1; return z.apply(A, q) };
+        return A } } } }) })()""")
+    c.open('atmosphere', flight=True, aero=True, wait=False)
+    c.until("() => Array.isArray(window.MAPS_OUTLINES) && window.MAPS_OUTLINES.length > 100", timeout=20000, what='the countries of the plain background')
+    c.ok((c.js('window.__zoCalls') or 0) >= 1, f"{c.js('window.__zoCalls')}", 'read through aerodb.zoneOutlines()')
+    c.eq(c.js("() => performance.getEntriesByType('resource').some(e => /maps\/lib\/outlines\.js/.test(e.name))"), False, 'the copy (lib/outlines.js) is not loaded', what='outlines.js')

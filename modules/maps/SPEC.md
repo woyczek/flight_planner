@@ -26,7 +26,7 @@ The Pilot application's map, fast on a phone:
 | `lib/map_base.js` | MapLibre and the plain background, shared with atmosphere (INTEGRATION § 7) |
 | `lib/axis_window.js` | the window on a distance axis, shared with atmosphere (INTEGRATION § 10) |
 | `lib/aero_symbols.js`, `lib/vertical_profile.js` | copies of the V2 studio's code (`SiaAero`, `SiaProfile`), diverging where this document says so |
-| `lib/profiles.js`, `lib/outlines.js` | generated: the studio's built-in display profiles, the country outlines |
+| `lib/profiles.js` | generated: the studio's built-in display profiles (the country outlines of the plain background come from `aerodb.zoneOutlines()`) |
 | `lib/maplibre-gl.js`, `.css` | MapLibre |
 
 The routing over the airways is a frame library (`frame/lib/routing.js`, INTEGRATION § 9); the ETA and the planned

@@ -82,11 +82,12 @@ export const meta = {
     'atmo.js?v=0', 'demo.js?v=0', 'world.js?v=0', 'world_build.js?v=0', 'lib/weather_map.js?v=0', 'section.js?v=0', 'texts.js?v=0',
     '../maps/lib/map_base.js?v=0', '../maps/lib/axis_window.js?v=0', '../maps/render.js?v=0',
     '../../frame/lib/sheet.js?v=0', '../../frame/lib/geo.js?v=0', '../../frame/lib/weather_store.js?v=0',
-    '../../frame/lib/flight_path.js?v=0', '../../frame/lib/flight_time.js?v=0', '../../frame/lib/icons.js?v=0', '../../frame/lib/hit_target.js?v=0',
+    '../../frame/lib/flight_path.js?v=0', '../../frame/lib/flight_time.js?v=0', '../../frame/lib/icons.js?v=0',
+    '../../frame/lib/hit_target.js?v=0',
     '../../frame/lib/route_text.js?v=0', '../../frame/lib/metar.js?v=0', '../fuel/winds.js?v=0', '../fuel/weather.js?v=0'
   ],
   // du module Carte, gardés au premier usage : MapLibre, et les contours des pays du fond uni
-  lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'],
+  lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0'],
   // tuiles appelées par MapLibre lui-même (jamais par ctx.net) ; CSP connect-src du cadre
   net: ['tiles.openfreemap.org']
 };

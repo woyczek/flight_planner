@@ -612,14 +612,13 @@ export function pointsLayer(map, features, {
 /** Noyau de dessin du module Carte (window.MapsRender : projection du fond uni, fond, jetons du design), chargé une fois. */
 export const loadRender = () => window.MapsRender ? Promise.resolve() : import('../render.js?v=0');
 /** Contours des pays du fond uni (window.MAPS_OUTLINES : les anneaux [lon, lat]), chargés une fois au premier dessin sans tuiles :
- *  ceux du cadre quand aerodb les offre (aerodb.zoneOutlines(), la seule source ; la Carte), sinon la copie lib/outlines.js
- *  (Atmosphère, jusqu'à ce qu'elle passe aussi par aerodb) ; la promesse est refusée (et la demande suivante réessaie) s'ils ne
- *  viennent pas. */
+ *  ceux du cadre (aerodb.zoneOutlines(), la seule source : la Carte et Atmosphère ; la copie lib/outlines.js n'existe plus, SOG-0468) ;
+ *  la promesse est refusée (et la demande suivante réessaie) s'ils ne viennent pas, ou sans aerodb. */
 let outlinesP = null;
 export const loadOutlines = (aerodb = null) => outlinesP ||= (aerodb?.zoneOutlines ? Promise.resolve().then(() => aerodb.zoneOutlines())
   .then(z => {
     window.MAPS_OUTLINES = Object.values(z || {}).flatMap(v => v?.rings || []);
-  }) : import('./outlines.js?v=0')).catch(e => {
+  }) : Promise.reject(new Error('map_base: no aerodb.zoneOutlines'))).catch(e => {
   outlinesP = null;
   throw e;
 });

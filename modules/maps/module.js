@@ -185,10 +185,9 @@ export const meta = {
   ],
   // gardés au premier usage : le mode Édition et la page de réglage ; MapLibre (1 Mo, inutile sans tuiles) ; le rendu de la coupe
   // météo d'Atmosphère (au premier « Météo ») ; les contours des pays du fond uni viennent d'aerodb (zoneOutlines, le cadre), la
-  // copie lib/outlines.js reste le repli de map_base.loadOutlines sans aerodb (Atmosphère)
+  // copie lib/outlines.js n'existe plus (SOG-0468) : Atmosphère passe aussi par aerodb
   lazy: ['edit.js?v=0', 'find.js?v=0', '../../frame/lib/suggest_list.js?v=0', 'lib/map_edit.js?v=0', 'tune.js?v=0',
     'lib/maplibre-gl.js?v=0', 'lib/maplibre-gl.css?v=0',
-    'lib/outlines.js?v=0',
     '../atmosphere/section.js?v=0', '../atmosphere/atmo.js?v=0', '../atmosphere/texts.js?v=0', '../fuel/winds.js?v=0'
   ],
   // hôtes publics appelés directement par MapLibre (tuiles) et par le relief ombré ; CSP connect-src du cadre
