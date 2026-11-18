@@ -7,9 +7,14 @@
 //     fiche et le registre) : REGISTRY, TX, allRows, coSelect, cut, draw, esc, famChoices, famHtml, famLetter, mapHref, regLoad,
 //     subChoices, yamlFile ; et state() → l'état du module en cours (réaffecté à chaque montage).
 //   edClick, edHtml, edInput : l'écran (s.ed), une saisie, un clic « ed… » — appelés par l'aiguillage de module.js.
+//   edAfter(s | null) : après chaque dessin, et au démontage — la carte du socle (voir « La carte »).
 //
-// L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (le croquis des lieux, sans
-// outil dans ce lot) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
+// La carte (SOG-0444, lot P2, première brique) : la mission dessinée sur le socle de carte de la suite (editor_map.js) dans un cadre de
+// taille fixe, le croquis dessous tant qu'elle n'est pas là (et sans carte) ; module.js appelle edAfter(s) après chaque dessin (la
+// carte, qui vit dans un hôte à elle, est reposée) et edAfter(null) au démontage (elle est retirée).
+//
+// L'écran (SOG-0444, lot P1 ; modules/missions/EDITOR.md « Porting the workshop ») : la carte de la mission (lot P1 : le croquis des
+// lieux, sans outil) et le déroulé (« Au départ », puis les tiroirs du fichier, lus tels quels) ; la fiche du départ — les six étapes
 // en six groupes repliables, un seul déplié (s.ed.step ; '' : tous repliés) ; le pied : « Enregistrer », « À compléter (n) » qui ouvre
 // la liste nommée, « Annuler ». Rien de ce qu'on peut presser n'est redessiné pendant la frappe (SOG-0449 : edRefresh).
 //
@@ -25,6 +30,7 @@
 import * as ADD from './add.js';
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
+import * as EM from './editor_map.js';
 import {
   describe as pilotSays
 } from './drawers_view.js';
@@ -71,7 +77,13 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmapbtn{min-height:44px}
 [data-module="missions"] .ms-atmapbody{display:none;margin-top:8px}
 [data-module="missions"] .ms-atmap[data-open="1"] .ms-atmapbody{display:block}
-[data-module="missions"] .ms-atmapbody .ms-thumb{margin-top:0;max-height:320px}
+[data-module="missions"] .ms-atmapframe{position:relative;height:300px;overflow:hidden}
+[data-module="missions"] .ms-atmapslot,[data-module="missions"] .ms-atsketch{position:absolute;inset:0}
+[data-module="missions"] .ms-atmaphost{width:100%;height:100%}
+[data-module="missions"] .ms-atsketch{display:flex;align-items:center;justify-content:center;background:var(--sog-bg,#fff)}
+[data-module="missions"] .ms-atsketch[hidden],[data-module="missions"] .ms-atmaptools[hidden]{display:none}
+[data-module="missions"] .ms-atsketch .ms-thumb{margin-top:0;width:100%;height:100%;border:0}
+[data-module="missions"] .ms-atmaptools{position:absolute;bottom:8px;left:8px;z-index:2}
 [data-module="missions"] .ms-atflowrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity}
 [data-module="missions"] .ms-atpart{flex:0 0 172px;scroll-snap-align:start;border:1px solid var(--sog-line,#ddd);border-top:4px solid var(--sog-muted,#888);padding:8px 10px;min-height:84px;background:var(--sog-bg,#fff)}
 [data-module="missions"] .ms-atpart[data-kind=start]{border-top-color:var(--ok,#1e7e34)}
@@ -141,6 +153,9 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
   [data-module="missions"] .ms-atgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(22em,26em);gap:16px;align-items:start}
   [data-module="missions"] .ms-atmapbtn{display:none}
   [data-module="missions"] .ms-atmapbody{display:block;margin-top:0}
+  [data-module="missions"] .ms-atmapframe{height:min(46dvh,440px)}
+  /* la carte et le déroulé restent en vue pendant que la fiche défile (l'ergonome, 18 nov.) */
+  [data-module="missions"] .ms-atmain{position:sticky;top:var(--f-pane-top,70px);align-self:start}
   [data-module="missions"] .ms-atpart{flex-basis:220px}
   [data-module="missions"] .ms-attodobtn .ms-attodofirst{display:inline}
   /* la fiche d'un tiroir sur un module large : ses trois groupes dépliés, leurs titres ne se touchent pas */
@@ -528,11 +543,129 @@ function edFlowHtml(s, doc, run = null) {
     <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on('start')}><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>${drawers.map(d => `<button type="button" class="ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-attag f-muted"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span> ${esc(s.tt(EDTX.atSealed))}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="ms-atpart ms-atadd" data-do="eddradd" data-dradd>${esc(s.tt(EDTX.dwAdd))}</button>` : ''}</div></section>`;
 }
 
-/** La carte de la mission (lot P1 : le croquis des lieux, sans outil — la carte d'édition vient avec le socle de carte, SOG-0446) :
- *  repliée derrière son bouton sur un module étroit, toujours montrée sur un module large. */
+/** Ce que la carte dessine de la séance (editor_map.js, pur) : les lignes des Lieux que l'écran montre, les sommets des contours lus
+ *  dans le fichier d'origine, la route du départ (celle que suit l'essai), l'essai en cours. */
+function edMapFeats(s, doc, run = null) {
+  const e = s.ed;
+  return EM.mapFeatures(e.places || ED.placesOf(doc), {
+    zones: e.base?.zones,
+    // « XTST · Base Test » (placeText : le code d'abord) : la position de la base quand le fichier ne la dit pas
+    adPos: name => adPosOf(s, (/^[A-Z]{4}(?= ·|$)/.exec(String(name || '')) || [])[0]),
+    path: TR.pathOf(MS.readMission(doc)),
+    run
+  });
+}
+
+/** La carte de la mission (SOG-0444, lot P2, première brique) : un cadre de taille fixe — rien ne bouge quand la carte arrive — où la
+ *  carte du socle (editor_map.js) prend la place du croquis dès qu'elle est là ; sans carte (hors ligne, pas de WebGL), le croquis
+ *  reste. « Recentrer » n'est montré qu'avec elle. Repliée derrière son bouton sur un module étroit, toujours montrée sur un module
+ *  large. La carte elle-même est posée après le dessin (edAfter). */
 function edMapHtml(s, doc, run = null) {
-  const thumb = thumbHtml(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${s.ed.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!s.ed.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>`;
+  const thumb = thumbHtml(s, doc, run),
+    live = EM.stateOf(s.ed);
+  s.ed.mapFeats = edMapFeats(s, doc, run);
+  return `<div class="ms-atmap" data-atmap data-open="${s.ed.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!s.ed.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div><div class="ms-atmaptools" data-atmaptools${live ? '' : ' hidden'}><button type="button" data-do="edmapfit">${esc(s.tt(EDTX.atMapFit))}</button></div></div></div></div>`;
+}
+
+/** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
+function edToken(s, name) {
+  const probe = document.createElement('i');
+  probe.style.cssText = `display:none;color:var(${name})`;
+  s.el.append(probe);
+  const v = getComputedStyle(probe).color;
+  probe.remove();
+  return v;
+}
+
+/** L'allure de la carte, lue du design : sombre ou non (le fond des graphiques, comme le module Données), la couleur de chaque sorte
+ *  de lieu (celles du croquis), du trait et des zones, le fond uni. */
+function edMapLook(s) {
+  const t = n => edToken(s, n),
+    bg = t('--sog-chart-bg'),
+    [r, g, b] = (bg.match(/[\d.]+/g) || [255, 255, 255]).slice(0, 3).map(Number),
+    accent = t('--sog-accent'),
+    muted = t('--sog-muted');
+  return {
+    dark: 0.2126 * r + 0.7152 * g + 0.0722 * b < 110,
+    colors: {
+      bg,
+      tokens: {
+        default: muted,
+        line: accent,
+        fill: t('--sog-ok'),
+        dep: accent,
+        arr: accent,
+        plane: accent,
+        target: t('--sog-err'),
+        rdv: t('--sog-warn'),
+        zone: t('--sog-ok'),
+        object: t('--sog-text'),
+        pt: muted
+      }
+    }
+  };
+}
+
+/** Pose ou met à jour la carte du socle dans l'emplacement du dessin courant, et dit son état à l'écran : avec elle, le croquis se
+ *  cache et « Recentrer » se montre (deux attributs : aucun bouton n'est redessiné, SOG-0449). */
+function edMapShow(s) {
+  const e = s.ed,
+    q = sel => s.el.querySelector(sel),
+    slot = q('[data-atmapslot]'),
+    mark = () => {
+      const live = EM.stateOf(e),
+        body = q('[data-atmapbody]'),
+        sketch = q('[data-atsketch]'),
+        tools = q('[data-atmaptools]');
+      if (body) body.dataset.map = live;
+      if (sketch) sketch.hidden = !!live;
+      if (tools) tools.hidden = !live;
+    };
+  if (!slot || !e.mapFeats) return;
+  e.mapLook ||= edMapLook(s);
+  EM.show(slot, e.mapFeats, {
+    owner: e,
+    dark: e.mapLook.dark,
+    colors: e.mapLook.colors,
+    onTap: f => edMapTap(s, f),
+    onState: () => state() === s && s.ed === e && mark(),
+    alive: () => state() === s && s.ed === e
+  });
+  mark();
+}
+
+/** Un lieu touché sur la carte mène à sa ligne des Lieux, ouverte : la fiche du départ, le groupe « Lieux », la ligne en vue. Pendant
+ *  un essai des clés la carte ne fait que montrer : rien. */
+function edMapTap(s, f) {
+  const e = s.ed,
+    i = /^place:(\d{1,3})$/.exec(String(f?.id || '')) ? +String(f.id).slice(6) : -1;
+  if (!e || e.trial?.on || i < 0) return;
+  if (!e.places) e.places = ED.placesOf(edDoc(e));
+  if (!e.places[i]) return;
+  e.sel = 'start';
+  e.step = 'places';
+  e.placeAsk = -1;
+  e.placeEdit = i;
+  draw(s);
+  s.el.querySelector(`[data-edplaces] [data-place="${i}"]`)?.scrollIntoView?.({
+    block: 'nearest'
+  });
+}
+
+/** Après chaque dessin de la page (module.js l'appelle à la fin de son dessin, et au démontage avec null) : dans l'atelier, la carte
+ *  du socle est reposée dans l'emplacement neuf ; hors de l'atelier, elle est retirée avec son contexte WebGL. Les conditions du
+ *  propriétaire de module.js (Features SOG, 18 nov. 2026), puisque cet appel est sur le chemin de chaque dessin : il ne lève JAMAIS
+ *  (une erreur de la carte ne casse pas le dessin de la page) ; hors de l'atelier il ne fait rien — sans carte en vie, EM.stop() rend
+ *  aussitôt, sans toucher la page ni rien charger (MapLibre n'est chargé qu'à l'ouverture de l'atelier) ; appelé deux fois, il est sans
+ *  effet la seconde. */
+export function edAfter(s) {
+  try {
+    if (!s?.ed) return EM.stop();
+    s.ed.mapLook = null; // le design a pu changer de ton entre deux dessins
+    edMapShow(s);
+  } catch {
+    /* la carte ne casse jamais le dessin : l'écran garde son croquis */
+  }
 }
 
 /** « À compléter » : les points à compléter, nommés (jamais bloquants) — la liste que le bouton du pied ouvre : ceux du départ, puis
@@ -1085,8 +1218,8 @@ function edRefresh(s) {
     put(mark, bad ? '!' : '✓');
     if (mark) mark.dataset.kind = bad ? 'warn' : 'ok';
   }
-  // le croquis et la liste « À compléter » ne portent aucun bouton : leur contenu se remplace
-  const map = q('[data-atmapbody]'),
+  // le croquis et la liste « À compléter » ne portent aucun bouton : leur contenu se remplace ; la carte du socle suit sur place
+  const map = q('[data-atsketch]'),
     todo = q('[data-edtodo]'),
     btn = q('[data-edtodobtn]'),
     run = edTrialRun(s, doc),
@@ -1094,6 +1227,8 @@ function edRefresh(s) {
     list = edTodoHtml(s, doc),
     label = edTodoBtnHtml(s, doc);
   if (map && e.lastThumb !== thumb) map.innerHTML = e.lastThumb = thumb;
+  e.mapFeats = edMapFeats(s, doc, run);
+  edMapShow(s);
   if (run) {
     // l'essai : l'heure, le journal (des textes), l'état de chaque carte, le bouton « Ouvrir à la main » (le même élément)
     const log = q('[data-trlog]'),
@@ -1346,6 +1481,8 @@ function edClickDo(s, b) {
     case 'edmap':
       s.ed.mapOpen = !s.ed.mapOpen;
       return draw(s);
+    case 'edmapfit': // « Recentrer » : la vue revient au cadre de la mission (rien n'est redessiné)
+      return EM.fit();
     case 'edstep':
       if (!ED.OPEN.includes(b.dataset.step)) return;
       // un groupe touché se déplie ; déjà déplié, il se replie (un seul à la fois)

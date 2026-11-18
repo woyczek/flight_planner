@@ -357,6 +357,7 @@ export const EDTX = {
   atMapNone: ['Aucun lieu placé : la carte est vide.', 'No place set: the map is empty.', 'Kein Ort gesetzt: die Karte ist leer.',
     'Ningún lugar situado: el mapa está vacío.'
   ],
+  atMapFit: ['Recentrer', 'Recenter', 'Neu zentrieren', 'Recentrar'],
   atFlow: ['Déroulé de la mission', 'Unfolding of the mission', 'Ablauf der Mission', 'Desarrollo de la misión'],
   atFlowHint: ['Ce que le pilote lit au départ, puis les tiroirs, dans l\'ordre.',
     'What the pilot reads at the departure, then the drawers, in order.',

@@ -186,7 +186,7 @@ keep `fallback_delay_min` and « fallback hour »), « zone de passage », « ob
 | lot | content | waits for |
 |---|---|---|
 | P1 (delivered, § 7 ter) | the screen in its new frame WITHOUT the map tools nor the drawers (the library's place is kept and shows nothing): the unfolding (A alone, the drawers of the file listed read-only), the sheet of part A in six groups, the foot; phone and wide; the six steps' cases replayed on the new screen | this specification read |
-| P2 | the map as the place of edition: the six tools, drag, landmarks of AeroDB, no accidental creation | SOG-0446 |
+| P2 (first brick delivered, § 7 undecies) | the map as the place of edition: the five tools, drag, landmarks of AeroDB, no accidental creation | SOG-0446 |
 | P3 | the drawers (SOG-0445): the card « ＋ Tiroir » (twelve at most), the sheet in three groups, the five keys, the fallback hour, « Ce que le pilote voit », « Vue du pilote : départ · 1 · 2 · 3… » on the map | P1; Q-0095 for where the file writes; Sécurisation (a deposited file is written) |
 | P4 | the trial of the keys | SOG-0447 |
 | P3 bis | the library's content: the bricks, read from a catalogue kept in the repository (never copied from the user's workshop), by family, with a search | P3 |
@@ -433,6 +433,42 @@ by what, and a log of facts. Nothing is written in the mission. Not yet imported
 - `module.js`: two entries of `meta.files`, granted by its owner — `'editor_trial.js'` and `'../../frame/lib/crossing.js'` (once).
 - **Not done**: « Poser l'avion ici » by a touch on the map and the drawing of the zone and of the object during the trial (they come
   with the map of P2, SOG-0446); a wind, a climb, a target that moves (P5).
+
+### 7 undecies. P2, first brick: the suite's map in the workshop, read only (18 Nov 2026; SOG-0444 lot P2; noreg N92, N93)
+
+- **The map of the workshop is the suite's map base** (`modules/maps/lib/map_base.js`: MapLibre on demand, the day or night background,
+  giving up) and the mission is drawn on **the author's layers of the editing base** (`modules/maps/lib/map_edit.js`, `authorLayers`,
+  SOG-0446). No gesture and no layer is written here. File: `modules/missions/editor_map.js`.
+- **The pure part**, `mapFeatures(rows, { zones, adPos, path, run })` → `{ points, lines, polygons, box }`: the rows of the Lieux the
+  screen shows (`s.ed.places`, else `placesOf`) — every located place is a point of its kind (the departure and the arrival at the
+  position of the base when the file gives none), a round zone a ring of 64 vertices around its centre (0.05 to 500 km), a contour its
+  3 to 100 vertices **read in the file's zones** (they are not edited yet), the route of the departure a dashed line (`pathOf` of
+  `editor_trial.js`: the one the trial follows), and during a trial the trail and the aircraft. The identifier of an element is
+  `place:i`, the rank of its row. Untrusted input: a number out of its bounds is never brought back into them — the element is not
+  drawn; labels are cut at 60 signs and only go to MapLibre properties.
+- **The live map** (one at a time): `show(slot, feats, options)` starts it in a host of its own, kept from one drawing to the next
+  (the screen is redrawn by `innerHTML`: the host is put back in the new slot), `fit()`, `stop()`. First the suite's background
+  (`startTiles` with `styleFor`), else **a plain background** (MapLibre on a local style, nothing to fetch), else — offline, no WebGL,
+  MapLibre missing — nothing: the sketch of P1 stays. The view is framed on the mission at the start, again when the frame of the
+  mission or the size of the box changes, **until the author moves the view**; « Recentrer » frames it again.
+- **The screen**: a frame of fixed size (300 px; `min(46dvh, 440px)` on a wide module) — nothing moves when the map arrives —, the
+  sketch under it until the map is there, « Recentrer » at its bottom left, shown with the map only. **A place touched leads to its
+  row of the Lieux, open** (the sheet of the departure, the group « Lieux »); during a trial of the keys a touch does nothing. The map
+  follows the typing in place (`edRefresh`: the same canvas, no button redrawn — SOG-0449). **On a wide module the map and the
+  unfolding are sticky** under the header of the page (`--f-pane-top`): they stay in view while the sheet scrolls (the ergonomist,
+  18 Nov).
+- **`module.js`** (granted by its owner): `meta.files` — `'editor_map.js'`, `'../maps/lib/map_base.js?v=0'`,
+  `'../maps/lib/map_edit.js?v=0'`, `'../maps/render.js?v=0'`; `meta.lazy` — MapLibre (script and style sheet) and
+  `'../maps/lib/outlines.js?v=0'` (what the base may load); `meta.net` — `tiles.openfreemap.org`, **a host that is new for the
+  Company page** as a declaration (it is already in `CONNECT` of `tools/csp_policy.py`: nothing is widened; read by the Security
+  session); two calls of one line — `edAfter(s)` at the end of `draw` (the map is put back, or removed out of the workshop),
+  `edAfter(null)` in `unmount`. **The owner's conditions** (Features SOG, 18 Nov), since the call is on the path of every drawing of
+  the page: `edAfter` never throws (its body is in its own `try`), does nothing out of the workshop (no map alive: `stop()` returns
+  at once, nothing is loaded — MapLibre is only loaded when the workshop opens, N93 counts the requests), and is idempotent.
+- **Not done** (next bricks): Sélection and the drag of a place, the poses (Point, Objet, Zone), the handles of a zone and its
+  contour, Tracé, the landmarks of AeroDB, « Vue du pilote », « Poser l'avion ici »; no name is written on the map yet (a base style
+  does not always carry glyphs: the names come with the selection). **Asked of the map's owner**: `startTiles` gives up at once when
+  the device is offline, even for a local style — the plain background therefore only serves when the tiles do not come.
 
 ### 8. What is NOT ported
 

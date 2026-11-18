@@ -4291,3 +4291,185 @@ def n91(c):
     c.wait(400)
     c.eq(c.js(_TEXT_OF, path), _TRIAL_MISSION, 'the trial wrote nothing in the mission: the file is the same', what='the file')
     c.js(_REG_CLEAR)
+
+
+
+# the pure part of the workshop's map: what it draws of the rows of the Lieux (modules/missions/editor_map.js, mapFeatures)
+_MAPF_JS = """async () => {
+  const EM = await import('/modules/missions/editor_map.js'), ED = await import('/modules/missions/editor.js');
+  const doc = { mission: { id: 'X-001A', type: 'REG' }, title: 'x',
+    origin: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 }, destination: { name: 'Base Test Sud (XTSU)' },
+    target: { id: 'TARGET', name: 'Cible', lat: 44.6, lon: 1.4 },
+    turning_points: [{ id: 'PT1', name: 'Point un', lat: 44.8, lon: 1.2 }, { id: 'PT2', name: 'Hors bornes', lat: 95, lon: 1.6 }, { id: 'PT3', name: 'Sans position' }],
+    zones: [{ id: 'ZONE-1', name: 'Ronde', centre: { lat: 44.8, lon: 1.2 }, radius_km: 5 },
+      { id: 'ZONE-2', name: 'Contour', points: [{ lat: 44.5, lon: 1.5 }, { lat: 44.5, lon: 1.7 }, { lat: 44.4, lon: 1.7 }, { lat: 44.4, lon: 1.5 }] },
+      { id: 'ZONE-3', name: 'Rayon hostile', centre: { lat: 44.2, lon: 1.9 }, radius_km: 99999 },
+      { id: 'ZONE-4', name: 'Deux sommets', points: [{ lat: 44.5, lon: 1.5 }, { lat: 44.5, lon: 1.7 }, { lat: 'x', lon: 1.7 }] }],
+    objects: [{ id: 'OBJ-1', kind: 'person', name: 'N'.repeat(200), lat: 44.6, lon: 1.42, detection_range_nm: 1 }] };
+  const rows = ED.placesOf(doc), before = JSON.stringify([rows, doc]);
+  const f = EM.mapFeatures(rows, { zones: doc.zones, adPos: n => /XTSU/.test(n) ? { lat: 44.0, lon: 2.0 } : null,
+    path: [{ lat: 45, lon: 1 }, { lat: 44.8, lon: 1.2 }, { lat: 999, lon: 0 }, { lat: 44, lon: 2 }],
+    run: { ok: true, trail: [[45, 1], [44.9, 1.1], ['x', 2], [44.85, 1.15]] } });
+  const kindOf = i => rows[i].kind + (rows[i].id ? ':' + rows[i].id : ''), R = 6371.0088, rad = Math.PI / 180,
+    km = (a, b) => { const h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)) },
+    ring = f.polygons.find(p => kindOf(+p.id.slice(6)) === 'zone:ZONE-1').rings[0], far = ring.map(p => km({ lat: 44.8, lon: 1.2 }, p)),
+    inBox = p => p.lon >= f.box.w && p.lon <= f.box.e && p.lat >= f.box.s && p.lat <= f.box.n;
+  let threw = '';
+  const hostile = [null, 'x', 42, [null, 7, 'x', { kind: 'zone', i: '__proto__', poly: 4 }, { kind: 'zone', i: -1, poly: 4 }, { kind: 'pt', lat: {}, lon: [] }]];
+  for (const h of hostile) try { EM.mapFeatures(h, { zones: h, adPos: () => { throw new Error('x') }, path: h, run: { ok: true, trail: h } }) } catch (e) { if (!/^Error: x$/.test(String(e))) threw += String(e) }
+  return { points: f.points.map(p => [p.id === 'plane' ? 'plane' : kindOf(+p.id.slice(6)), p.kind, p.lat, p.lon]),
+    labels: [f.points.find(p => p.kind === 'object').label, EM.mapFeatures([{ kind: 'pt', name: 'N'.repeat(200), lat: 1, lon: 1 }]).points[0].label.length],
+    polygons: f.polygons.map(p => [kindOf(+p.id.slice(6)), p.rings.length, p.rings[0].length]),
+    circle: [ring.length, +ring[0].lat.toFixed(4), ring[0].lon, +Math.min(...far).toFixed(2), +Math.max(...far).toFixed(2)],
+    lines: f.lines.map(l => [l.id, !!l.dash, l.points.length]), box: f.box,
+    inside: [...f.points, ...f.polygons.flatMap(p => p.rings[0]), ...f.lines.flatMap(l => l.points)].every(inBox),
+    none: [EM.mapFeatures([]).box, EM.mapFeatures(ED.placesOf({ mission: { id: 'X-001A' }, origin: { name: 'Sans position' } })).box],
+    empty: hostile.map(h => { const g = EM.mapFeatures(h, { zones: h, path: h, run: { ok: true, trail: h } }); return [g.points.length, g.lines.length, g.polygons.length, g.box] }),
+    threw, untouched: JSON.stringify([rows, doc]) === before } }"""
+
+
+@case('N92', 'Missions › the workshop, the map (pure part, no screen): what the map draws of the rows of the Lieux — every located place '
+      'as a point of its kind (the departure and the arrival at the position of the base when the file gives none), a round zone as a '
+      'ring around its centre at its radius, a contour by its vertices read in the file, the route of the departure as a dashed line, '
+      'and during a trial of the keys the trail and the aircraft; the frame holds everything; a number out of its bounds is never '
+      'brought back into them — the element is not drawn; no hostile input throws; nothing read is touched',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, first brick (modules/missions/EDITOR.md § 2 and § 7 undecies; modules/maps/INTEGRATION.md § 7 bis, '
+      '`authorLayers`: points, lines, polygons): modules/missions/editor_map.js, `mapFeatures`; a file of data/ is an input that is not '
+      'trusted: bounded numbers, labels cut')
+def n92(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_MAPF_JS)
+    c.eq(r['points'], [['dep', 'dep', 45, 1], ['arr', 'arr', 44, 2], ['target:TARGET', 'target', 44.6, 1.4], ['zone:ZONE-3', 'zone', 44.2, 1.9],
+                       ['pt:PT1', 'pt', 44.8, 1.2], ['object:OBJ-1', 'object', 44.6, 1.42], ['plane', 'plane', 44.85, 1.15]],
+         'every located place is a point of its kind: the arrival at the position of the base; a zone whose radius is out of bounds is its centre alone; a point at '
+         'latitude 95 and a point without a position are not drawn; the aircraft of the trial at the end of its trail', what='the points')
+    c.eq(r['labels'], ['OBJ-1', 60], 'a label is the identifier, else the name cut at sixty signs', what='the labels')
+    c.eq(r['polygons'], [['zone:ZONE-1', 1, 64], ['zone:ZONE-2', 1, 4]],
+         'a round zone is a ring of 64 vertices, a contour its own vertices; a contour with a vertex that is not a position is not drawn', what='the zones')
+    c.ok(r['circle'][:3] == [64, 44.845, 1.2] and 4.99 <= r['circle'][3] <= r['circle'][4] <= 5.01, r['circle'],
+         'the ring starts due north of the centre and every vertex is at 5 km of it')
+    c.eq(r['lines'], [['route', True, 3], ['trail', False, 3]], 'the route of the departure is dashed (a position out of bounds is skipped), the trail of the trial is plain',
+         what='the lines')
+    c.ok(r['inside'] is True and r['box']['w'] < 1 and r['box']['e'] > 2 and r['box']['s'] < 44 and r['box']['n'] > 45, r['box'], 'the frame holds every element, with a margin')
+    c.eq(r['none'], [None, None], 'nothing located: no frame (the screen then shows no map)', what='nothing located')
+    c.eq(r['empty'], [[0, 0, 0, None]] * 4, 'rows, zones, a route and a trail that are not what they should be: nothing is drawn', what='hostile inputs')
+    c.ok(r['threw'] == '' and r['untouched'] is True, [r['threw'], r['untouched']], 'no hostile input throws (but the caller\'s own function); what was read is not touched')
+
+
+
+# MapLibre is loaded on demand: its Map is wrapped the moment it appears, to keep the map of the workshop (window.__edMap, taken when the screen frames it)
+# and to count the maps removed (window.__edMapRemoved) — nothing of this is in the product
+_EDMAP_HOOK = """(() => { let ml; window.__edMap = null; window.__edMapRemoved = 0;
+  const hook = v => { const M = v && v.Map; if (M && !M.prototype.__ed) { M.prototype.__ed = 1;
+    const fb = M.prototype.fitBounds, rm = M.prototype.remove;
+    M.prototype.fitBounds = function (...a) { if (this.getContainer().closest('[data-atmapslot]')) window.__edMap = this; return fb.apply(this, a) };
+    M.prototype.remove = function (...a) { window.__edMapRemoved++; return rm.apply(this, a) } } return v };
+  Object.defineProperty(window, 'maplibregl', { configurable: true, get() { return ml }, set(v) { ml = hook(v) } }) })()"""
+_EDMAP = f'{E} [data-atmapbody]'
+_EDMAP_XY = """([la, lo]) => { const m = window.__edMap, p = m.project([lo, la]), r = m.getContainer().getBoundingClientRect(); return [r.left + p.x, r.top + p.y] }"""
+# the author's elements drawn under a position (or, without one, in the whole view): their identifiers, once each
+_EDMAP_IDS = """(at) => { const m = window.__edMap; if (!m) return null; const p = at ? m.project([at[1], at[0]]) : null;
+  const f = (p ? m.queryRenderedFeatures([[p.x - 3, p.y - 3], [p.x + 3, p.y + 3]]) : m.queryRenderedFeatures()).filter(x => x.layer.id.startsWith('me-auth-'));
+  return [...new Set(f.map(x => x.properties.fid))].sort() }"""
+_EDMAP_VIEW = "(() => { const c = window.__edMap.getCenter(); return [+c.lat.toFixed(3), +c.lng.toFixed(3), +window.__edMap.getZoom().toFixed(2)] })()"
+
+
+@case('N93', 'Missions › the workshop, the map: the mission is drawn on the suite\'s map base in a frame of fixed size — the places, the '
+      'zones, the objects, the route of the departure — in place of the sketch, which stays under it until the map is there (and when '
+      'there is none); a place touched leads to its row of the Lieux, open; the map follows the typing in place (no button is redrawn, '
+      'the same canvas); « Recentrer » brings the view back; during a trial of the keys it shows the aircraft and its trail and a touch '
+      'does nothing; on a phone it starts when unfolded; without tiles, a plain background; leaving the workshop removes the map',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0444, lot P2, first brick (modules/missions/EDITOR.md § 2 and § 7 undecies; modules/maps/INTEGRATION.md § 7 and § 7 bis: '
+      '`startTiles`, `authorLayers`; SOG-0449; V3_SPECIFICATION § 7.1 rule 22: nothing moves when the map arrives)')
+def n93(c):
+    T = lambda k: norm(row(c, k, EDTX_FILE))  # noqa: E731
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    # the list, then the registry: the page is drawn many times and the map library is never asked for (the condition of module.js's owner)
+    loaded = "performance.getEntriesByType('resource').filter(e => /maplibre-gl|outlines\\.js/.test(e.name)).length"
+    c.eq([c.js(loaded), c.js('typeof window.maplibregl'), c.count('.maplibregl-canvas')], [0, 'undefined', 0],
+         'the list and the registry open without loading MapLibre nor the outlines: the map library waits for the workshop', what='before the workshop')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E} [data-steps]')", timeout=10000, what='X-001A in the workshop')
+    box = c.js(f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmapframe').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)] }})()")
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 6", timeout=10000, what='the elements of the mission drawn')
+    c.eq([c.js(f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmapframe').getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)] }})()"),
+          c.count(f'{_EDMAP} [data-atmapslot] canvas'), c.js(f"document.querySelector('{_EDMAP} [data-atsketch]').hidden"),
+          c.js(f"document.querySelector('{_EDMAP} [data-atmaptools]').hidden"), norm(c.text(f'{_EDMAP} [data-do=edmapfit]'))],
+         [box, 1, True, False, T('atMapFit')], 'the map takes the place of the sketch in the same frame (nothing moved); « Recentrer » is shown with it', what='the frame')
+    c.eq([c.js(_EDMAP_IDS, None), c.js(_EDMAP_IDS, [44.8, 1.2]), c.js(_EDMAP_IDS, [44.4, 1.6])],
+         [['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'place:5', 'place:6', 'route'], ['place:3', 'place:4', 'route'], ['place:5', 'route']],
+         'the departure, the arrival, the target, the zone, the two points, the object and the route; at PT1: the point, its zone and the route; at PT2: the '
+         'point and the route', what='the elements')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N93_1280_map.png')
+    # a place touched leads to its row, open; the same canvas, the same view
+    view = c.js(_EDMAP_VIEW)
+    c.js(f"document.querySelector('{_EDMAP} canvas').__kept = true")
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.4, 1.6]))
+    c.until(f"!!document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"5\"][data-f=lat]')", what='the row of PT2, open')
+    c.ok(c.js(f"document.querySelector('{_EDMAP} canvas').__kept === true") and c.js(_EDMAP_VIEW) == view and c.js(f"document.querySelector('{_EDMAP}').dataset.map") == 'tiles',
+         [c.js(_EDMAP_VIEW), view], 'the screen was redrawn: the same map is put back (same canvas, same view)')
+    # on a wide module the map and the unfolding stay in view while the sheet scrolls to the row
+    c.js(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"5\"][data-f=lat]').scrollIntoView({{block: 'center'}})")
+    c.settle()
+    top = c.js(f"(() => {{ const r = document.querySelector('{_EDMAP} .ms-atmapframe').getBoundingClientRect(); const h = document.querySelector('header')?.getBoundingClientRect().bottom || 0; return [r.top >= h, r.bottom <= innerHeight] }})()")
+    c.eq(top, [True, True], 'the sheet scrolled to the row of the place: the map stays whole in view, under the header of the page (the left part is sticky)', what='the map in view')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N93_1280_row.png')
+    # the map follows the typing, in place
+    c.js(f"document.querySelectorAll('{E} button').forEach(b => b.__kept = true)")
+    c.page.fill(f'{E} [data-edplaces] [data-k=edplace][data-i="5"][data-f=lat]', '44.3')
+    c.until(f"(({_EDMAP_IDS})([44.3, 1.6]) || []).includes('place:5')", timeout=8000, what='PT2 moved on the map')
+    kept = c.js(f"[...document.querySelectorAll('{E} button')].map(b => !!b.__kept)")
+    c.ok(len(kept) >= 10 and all(kept) and 'place:5' not in c.js(_EDMAP_IDS, [44.4, 1.6]), kept, 'PT2 follows its latitude on the map; no button was redrawn (SOG-0449)')
+    # « Recentrer » (the page may have scrolled to the row: the map is brought back in view first)
+    c.js(f"document.querySelector('{_EDMAP}').scrollIntoView({{block: 'center'}})")
+    x, y = c.js(_EDMAP_XY, [44.3, 1.1])
+    c.page.mouse.move(x, y)
+    c.page.mouse.down()
+    c.page.mouse.move(x + 120, y + 60, steps=6)
+    c.page.mouse.up()
+    c.until(f"(() => {{ const v = {_EDMAP_VIEW}; return Math.abs(v[0] - {view[0]}) > 0.002 || Math.abs(v[1] - {view[1]}) > 0.002 }})()", what='the view moved by the author')
+    c.tap(f'{_EDMAP} [data-do=edmapfit]')
+    c.eq(c.js(_EDMAP_VIEW), view, '« Recentrer » brings the view back to the frame of the mission', what='the view')
+    # the trial of the keys: the aircraft and its trail; a touch does nothing
+    c.tap(f'{E} [data-do="edplaceok"]')
+    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
+    c.js(_TR_SET, 10)
+    c.until(f"['plane', 'trail'].every(k => (({_EDMAP_IDS})() || []).includes(k))", timeout=8000, what='the aircraft and its trail on the map')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.0, 2.0]))
+    c.wait(300)
+    c.ok(c.count(_TR) == 1 and c.count(f'{E} [data-steps]') == 0, 'the trial left', 'during the trial a touch on a place does nothing: the trial stays')
+    c.tap(f'{_TR} [data-do="edtrialoff"]')
+    c.until(f"!document.querySelector('{_TR}')", what='the trial closed')
+    # on a phone: folded, the map waits; unfolded, it is there
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N93_390_map.png')
+    # leaving the workshop removes the map
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.until(f"!document.querySelector('{E}')", what='the workshop left')
+    c.eq([c.js('window.__edMapRemoved'), c.count('.maplibregl-canvas')], [1, 0], 'the map is removed with the workshop', what='the map removed')
+    c.ok(c.js(loaded) >= 1, c.js(loaded), 'the map library was loaded by the workshop, and only then')
+    # without tiles: MapLibre on a plain background, the same elements
+    c.page.route(re.compile(r'^https://tiles\.openfreemap\.org/styles/'), lambda route: route.abort('failed'))
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.tap(f'{R} [data-rowid="X-001A"] > summary') if c.count(f'{R} [data-rowid="X-001A"][open]') == 0 else None
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'plain'", timeout=20000, what='the plain background')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements on the plain background')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)

@@ -11,6 +11,7 @@ import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur 
 import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
 import {
   init as edInit,
+  edAfter,
   edClick,
   edHtml,
   edInput
@@ -35,14 +36,18 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'editor_drawers.js', 'editor_trial.js', 'assigned.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/crossing.js',
+    '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0', '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
     '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
   ],
+  // la carte de l'atelier : MapLibre, chargé à la demande par le socle de carte (comme Données et Météo) ; ses tuiles, appelées par lui
+  lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0', '../maps/lib/outlines.js?v=0'],
+  net: ['tiles.openfreemap.org'],
   reads: ['missions/', 'cr/',
     'airline/', 'pilot/',
     'cache/missions/' // SOG-0441 : les carnets des pilotes de la mission, le vol courant ; ce que l'appareil a vu ouvert
@@ -944,6 +949,7 @@ export function unmount() {
   if (S?.onPop) window.removeEventListener('popstate', S.onPop);
   for (const u of S?.urls || []) URL.revokeObjectURL(u);
   DW.stop(); // SOG-0441 : les minuteurs et l'écoute de la section « Tiroirs »
+  edAfter(null); // SOG-0444, lot P2 : la carte de l'atelier est retirée avec son contexte WebGL
   S = null;
 }
 
@@ -1042,6 +1048,7 @@ function draw(s) {
     notJudged: k => !!MS.notJudgedYet?.(k) // la règle du lecteur (frame/lib/mission.js) : une clé que le vol ne sait pas encore juger
   });
   else DW.stop();
+  edAfter(s); // SOG-0444, lot P2 : la carte de l'atelier, reposée après chaque dessin (retirée hors de l'atelier)
 }
 
 /** La date d'un compte rendu en « jj/mm/aaaa ». */

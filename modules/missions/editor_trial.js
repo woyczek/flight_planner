@@ -54,8 +54,9 @@ const nm = (a, b) => {
   return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
 };
 
-/** Les positions que l'avion de l'essai suit : le départ, les points situés de la route du départ, l'arrivée. */
-function pathOf(mission) {
+/** Les positions que l'avion de l'essai suit : le départ, les points situés de la route du départ, l'arrivée (la carte de l'atelier
+ *  dessine la même route : editor_map.js). */
+export function pathOf(mission) {
   let f = null;
   try {
     f = MS.missionFlight(mission);
