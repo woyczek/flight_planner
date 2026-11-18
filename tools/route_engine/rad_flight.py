@@ -59,6 +59,19 @@ def clock_active(clock,start,end):
 def names(text):
     return set(re.findall(r'[A-Z][A-Z0-9_*]{1,30}',text.upper()))
 
+def unread_spaces_issue(summary,limit=8):
+    """SOG-0501 (c) : la phrase de revue des règles RAD que le vol touche et que la base NE PEUT PAS appliquer parce que leur cible est un ESPACE sans contour (LDZOC, LDZON, EDUUUTA…) : (texte, nombre de règles) ou None ; `summary['unknown_spaces']` = [{ space, rules }] ; au plus `limit` espaces."""
+    spaces=[x for x in (summary or {}).get('unknown_spaces') or [] if isinstance(x,dict) and isinstance(x.get('space'),str) and isinstance(x.get('rules'),list) and x['rules']]
+    if not spaces:return None
+    total=len({r for x in spaces for r in x['rules']})
+    named=[f"{x['space']} ({', '.join(str(r) for r in x['ad'][:3])})" for x in spaces if isinstance(x.get('ad'),list) and x['ad']]      # les règles qui nomment le terrain de départ ou d'arrivée, d'abord
+    spaces=sorted(spaces,key=lambda x:not(isinstance(x.get('ad'),list) and x['ad']))
+    shown='; '.join(f"{x['space']} ({', '.join(str(r) for r in x['rules'][:3])}{', …' if len(x['rules'])>3 else ''})" for x in spaces[:limit])
+    more=f' ; {len(spaces)-limit} autre(s) espace(s)' if len(spaces)>limit else ''
+    first=f" ; celles qui nomment le terrain de départ ou d'arrivée : {'; '.join(named[:8])}" if named else ''
+    return f"Règles RAD NON appliquées : {total} règle(s) dont la cible est un espace sans contour dans la base{first} — tous les espaces : {shown}{more} ; l'IFPS les applique, la route peut être refusée par elles.",total
+
+
 def aliases(text):
     text=re.sub('[^A-Z0-9]','',text.upper())
     return {text,re.sub(r'\d[A-Z]$','',text)}-{''}
@@ -168,7 +181,9 @@ def target(rule,ctx,legs,rad):
         if not re.fullmatch(r'[A-Z0-9]{2,8}',v[7]):return None,[]
         if ctx.get('known') is not None and v[7] not in ctx['known']:
             # SOG-0401 : la cible n'est pas un POINT de la base : c'est un ESPACE (une FRA, une UTA, un ACC : LSASFRA, EDUUUTA…) ; la base n'en a pas le polygone sous ce nom (aucun des 25 307 espaces de la base de ce poste ne porte ces noms) : la règle n'est pas appliquée, elle est « à examiner », DITE avec l'espace
-            ctx.setdefault('unknown_spaces',{}).setdefault(v[7],[]).append(rule['id']);rule['assessment']='À interpréter : la cible est un ESPACE ('+v[7]+') inconnu de la base (aucun polygone) : règle non appliquée'
+            ctx.setdefault('unknown_spaces',{}).setdefault(v[7],[]).append(rule['id'])
+            if any(re.search(r'\b'+re.escape(str(code))+r'\b',' '.join(str(x) for x in v)) for code in (ctx.get('dep'),ctx.get('arr')) if code):ctx.setdefault('unknown_ad',set()).add(rule['id'])      # SOG-0501 (c) : la règle NOMME le terrain de départ ou d'arrivée du vol : dite en premier
+            rule['assessment']='À interpréter : la cible est un ESPACE ('+v[7]+') inconnu de la base (aucun polygone) : règle non appliquée'
             return None,[]
         if v[7] not in ctx['points']:return False,[]
         return True,[i for i,l in enumerate(legs) if v[7] in [l['start']['id'],l['end']['id']]]
@@ -256,7 +271,7 @@ def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None
             else:avoids.append(dict(kind='segment',via=l['via'],start=l['start']['id'],end=l['end']['id']))
     return dict(scope='Vol entier : départ, tous les points SID, route, tous les points STAR et arrivée',segments=len(legs),phases=ctx['phases'],
         evaluated_conditions=decided,review_conditions=sum('interpréter' in c['assessment'] for c in candidates),findings=findings,search_exclusions=avoids,
-        unknown_spaces=[dict(space=s,rules=sorted(set(r))) for s,r in sorted(ctx.get('unknown_spaces',{}).items())])      # SOG-0401 : les règles dont la cible est un espace inconnu de la base, par espace
+        unknown_spaces=[dict(space=s,rules=sorted(set(r)),**({'ad':sorted(set(r)&ctx['unknown_ad'])} if ctx.get('unknown_ad') and set(r)&ctx['unknown_ad'] else {})) for s,r in sorted(ctx.get('unknown_spaces',{}).items())])      # SOG-0401 : les règles dont la cible est un espace inconnu de la base, par espace
 
 def static_blocks(rad,dep,arr):
     """Airport-only ONLY/NOT conditions can safely constrain the graph upfront."""

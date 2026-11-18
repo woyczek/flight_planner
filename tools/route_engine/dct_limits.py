@@ -134,6 +134,15 @@ def check(rad, legs, dep, arr, typed, procedures=None):
     if not legs or not getattr(rad, 'book', None):
         return {'checked': checked, 'not_applied': note}, issues
     for end, ad, leg in (('dep', dep, legs[0]), ('arr', arr, legs[-1])):
+        if ad and leg.get('no_network') is True and leg.get('via') == 'DCT':      # SOG-0501 (c) : le direct de repli d'un terrain sans réseau (SOG-0474) est dit AVEC la limite du RAD qu'il dépasse : l'IFPS le refuse (ROUTE134), la base n'a ni le réseau ni les STAR de cet État
+            a, b = str((leg.get('start') or {}).get('id', '')).upper(), str((leg.get('end') or {}).get('id', '')).upper()
+            if (a if end == 'dep' else b) == str(ad).upper():
+                lim = limit_of(rad, ad, end)
+                nm = round(float(leg.get('nm') or 0), 1)
+                if lim['state'] == 'known' and lim['nm'] > 0 and nm > lim['nm']:
+                    checked.append({'ad': ad, 'end': end, 'point': b if end == 'dep' else a, 'leg_nm': nm, 'state': 'exceeded', 'limit_nm': lim['nm'], 'rule': lim['rule']})
+                    issues.append(('REVUE', f'{ad} : le direct de repli de {nm:g} NM {"au départ" if end == "dep" else "à l’arrivée"} (aucun réseau de cet État dans la base) dépasse la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]}) : l’IFPS le refusera (ROUTE134) ; il faut les {"SID" if end == "dep" else "STAR"} et le réseau de cet État'))
+                continue
         if not ad or leg.get('procedure_id') or leg.get('no_network') or leg.get('via') != 'DCT' or leg.get('kind') in ('SID', 'STAR', 'APPROACH_LINK'):      # SOG-0474 : le direct sans réseau est dit à part
             continue
         a, b = str((leg.get('start') or {}).get('id', '')).upper(), str((leg.get('end') or {}).get('id', '')).upper()

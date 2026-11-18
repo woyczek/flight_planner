@@ -3675,3 +3675,7 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Measure** (the IFPS check of the user, EGGW → LQSA FL350, 24 errors; the text of the user is not copied): the two « CRITICAL SHARP TURN » are at WLD (T104 → Z98) and at RIDAR (Z98 → Y161): 138.3° and 139.2° measured on our route; the largest turn of the same route that the IFPS did not refuse is 68.4° (the next ones: 56°, 49°, 41°).
 - **Decision of the relay**: forbid above **100°**, PROVISIONAL and prudent (the value of the IFPS manual is not known here), said as such here and in the CHANGELOG. **Limit of the method**: the check is made on the best path that reached each state (the A* keeps one predecessor per state): a dearer path that would arrive with a gentler turn is not kept by the search; the limit can therefore make a route disappear that exists.
+
+## 19 November 2026 — SOG-0501 (c): known and not applied
+
+- **Done**: three reviews (ROUTE134 with the limit LQ_LIM_AD; the RAD rules whose target has no outline; the free route not read). **Corrected from the triage**: LO2196A (« via OBEDI ») is NOT a small lot: OBEDI exists only as a free-route point of the EUROCONTROL book (zone of Vienna, entry D), SAXFRA, the other point of the mandatory route of the IFPS, is in no source of the workstation, and the base has no airway that reaches either: the rule is read and flagged « infraction » by the engine, it cannot be satisfied with the data; it stays flagged.

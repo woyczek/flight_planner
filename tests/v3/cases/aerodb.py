@@ -17325,3 +17325,43 @@ def k365(c):
           sharp('A|FRA|x', 'B', 'D'), sharp('A', 'Z', 'D'), engine.Nav.sharp_turn(fake, 'A', 'B', 'D', None, {'kind': 'AIRWAY'})],
          [False] * 7, 'no turn is judged at a procedure link (SID, STAR), a gate, a connector, a node of the FRA graph, a node without a position, or at the start of the route', what='exempt')
     c.eq(sorted(fake._turn_cache.items(), key=str)[:1] != [], True, 'the answer is kept per triplet (previous, point, next)', what='cache')
+
+
+@case('K366', 'Route engine, SOG-0501 (c): what the engine KNOWS it does not apply is said in a REVUE — the fallback direct of an aerodrome without network that exceeds its RAD limit (LQSA: 45 NM, « ROUTE134 »), the RAD rules whose target is a space without outline (LDZOC, LDZON…), the free route of the States whose outlines and levels are not read (« PROF407 », « ROUTE52 ») — never silence',
+      'K', static=True,
+      rule='SOG-0501 (the user passed EGGW → LQSA FL350 to the IFPS: 24 errors). Three of them cannot be corrected by the engine for lack of data: ROUTE134 (the direct LATLO → LQSA of 327 NM against the limit LQ_LIM_AD « LQSA ARR/DEP DCT 45NM » of the RAD: no network, no STAR of Bosnia in the base), LD3003B and LD2098B (their targets LDZOC and LDZON are sectors of Zagreb, no outline), PROF407 and ROUTE52 (the free-route airspaces of Belgium, Germany and France: no outline, no levels). The engine already said some of it in fields (`dct_limits`, `rad.unknown_spaces`, `fra_floors.not_read`); the REVUE says it where the user reads. Invented legs and rules.')
+def k366(c):
+    import importlib
+    import sys
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('route_engine.dct_limits')
+    RF = importlib.import_module('route_engine.rad_flight')
+    FF = importlib.import_module('route_engine.fra_floor')
+    leg = lambda a, b, nm, **k: {'via': 'DCT', 'kind': 'DCT', 'start': {'id': a}, 'end': {'id': b}, 'nm': nm, **k}
+    air = lambda a, b, nm, zone: {'via': 'L1', 'kind': 'AIRWAY', 'start': {'id': a}, 'end': {'id': b}, 'nm': nm, 'source_zone': zone}
+    kept = D.limit_of
+    try:
+        D.limit_of = lambda rad, icao, end: {'state': 'known', 'nm': 45.0, 'rule': 'LQ_LIM_AD'}
+        rad = types.SimpleNamespace(book=True)
+        summary, issues = D.check(rad, [air('EGGW', 'PTAAA', 10, 'xx'), leg('PTAAA', 'LQXX', 327.3, no_network=True)], 'EGGW', 'LQXX', False)
+        plain = D.check(rad, [air('EGGW', 'PTAAA', 10, 'xx'), leg('PTAAA', 'LQXX', 327.3)], 'EGGW', 'LQXX', False)[1]
+        within = D.check(rad, [air('EGGW', 'PTAAA', 10, 'xx'), leg('PTAAA', 'LQXX', 40.0, no_network=True)], 'EGGW', 'LQXX', False)[1]
+        far = D.check(rad, [air('EGGW', 'PTAAA', 10, 'xx'), leg('PTAAA', 'PTBBB', 327.3, no_network=True)], 'EGGW', 'LQXX', False)[1]
+    finally:
+        D.limit_of = kept
+    c.eq([i[0] for i in issues], ['REVUE'], 'the fallback direct of an aerodrome without network that is longer than the RAD limit gives ONE review', what='level')
+    c.ok('327.3 NM' in issues[0][1].replace(',', '.') or '327,3 NM' in issues[0][1] or '327.3' in issues[0][1], issues[0][1], 'it says the length of the direct, the limit (45 NM), the rule (LQ_LIM_AD) and that the IFPS will refuse it (ROUTE134)')
+    c.ok('45 NM' in issues[0][1] and 'LQ_LIM_AD' in issues[0][1] and 'ROUTE134' in issues[0][1], issues[0][1], 'the limit, the rule and the code of the IFPS are named')
+    c.eq([summary['checked'][0]['state'], summary['checked'][0]['limit_nm'], len(plain), len(within), len(far)], ['exceeded', 45.0, 1, 0, 0], 'the state is `exceeded` in `dct_limits.checked`; a direct inside the limit says nothing; a no-network direct that does not touch the aerodrome is not judged (the gap of K358)', what='state')
+    one = RF.unread_spaces_issue({'unknown_spaces': [{'space': 'LDZOC', 'rules': ['LD3003']}, {'space': 'LDZON', 'rules': ['LD2098', 'LD2098', 'LD2099', 'LD2100', 'LD2101']}]})
+    c.eq((one[1], 'LDZOC (LD3003)' in one[0], 'LDZON (LD2098, LD2098, LD2099, …)' in one[0], 'NON appliquées' in one[0]), (5, True, True, True), 'the rules not applied for lack of an outline are counted (distinct ones) and named by space, three at most each', what='rules')
+    many = RF.unread_spaces_issue({'unknown_spaces': [{'space': f'SP{i}', 'rules': [f'R{i}']} for i in range(12)]})
+    c.eq((many[1], '4 autre(s) espace(s)' in many[0], 'SP7' in many[0], 'SP8' in many[0]), (12, True, True, False), 'at most eight spaces are listed, the others counted', what='bound')
+    named = RF.unread_spaces_issue({'unknown_spaces': [{'space': 'AAA', 'rules': ['R1']}, {'space': 'ZZZ', 'rules': ['R9', 'R8'], 'ad': ['R9']}]})[0]
+    c.eq(("celles qui nomment le terrain de départ ou d'arrivée : ZZZ (R9)" in named, named.index('tous les espaces : ZZZ') > 0), (True, True), 'the rules that NAME the aerodrome of the flight are said first, and the space that holds them is listed before the others', what='aerodrome')
+    c.eq([RF.unread_spaces_issue({}), RF.unread_spaces_issue({'unknown_spaces': []}), RF.unread_spaces_issue({'unknown_spaces': [{'space': 'X', 'rules': []}, 'bad', {'space': 3, 'rules': ['R']}]}), RF.unread_spaces_issue(None)], [None] * 4,
+         'nothing to say, nothing said: an empty list, a space without rule or a damaged entry gives no line', what='none')
+    text = FF.unread_issue([air('A', 'B', 10, 'de'), air('B', 'C', 10, 'de'), air('C', 'D', 10, 'fr'), air('D', 'E', 10, 'gb'), leg('E', 'F', 5), {'via': 'L2', 'kind': 'SID', 'source_zone': 'de'}, {'via': 'L3', 'kind': 'AIRWAY', 'connector': True, 'source_zone': 'es'}])
+    c.eq(('Allemagne, France' in text, '3 tronçon(s)' in text, 'Espagne' in text, 'PROF407' in text, 'ROUTE52' in text), (True, True, False, True, True), 'the States of NOT_READ the route flies airways in are named with the number of legs; a State of the base with no such rule, a DCT, a SID and a connector are not counted', what='free route')
+    c.eq((FF.unread_issue([air('A', 'B', 10, 'gb'), leg('B', 'C', 5)]), FF.unread_issue([]), FF.unread_issue(None)), (None, None, None), 'a route without such legs says nothing', what='nothing')

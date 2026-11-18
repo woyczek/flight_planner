@@ -1024,6 +1024,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
         for r in floor_runs[:fra_floor.MAX_ISSUES]:issue('ERREUR',r['text'])
         if len(floor_runs)>fra_floor.MAX_ISSUES:issue('ERREUR',f'{sum(len(r["legs"]) for r in floor_runs[fra_floor.MAX_ISSUES:])} autres tronçons de voie volés dans un espace de route libre, non détaillés.')
     if floor_unknown:issue('REVUE',f'{floor_unknown} tronçon(s) de voie d’un pays à plancher de route libre dont le profil ne donne pas l’altitude : à examiner.')
+    unread_fra=fra_floor.unread_issue(legs)      # SOG-0501 (c) : la route libre des États dont la base n'a ni contours ni niveaux : dite, jamais passée sous silence
+    if unread_fra:issue('REVUE',unread_fra)
     for r in floor_runs:
         for l in r['legs']:
             l['alerts'].append(r['short'])
@@ -1099,6 +1101,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
         leg['time_start_min']=elapsed;elapsed+=leg['nm']/(leg.get('planned_speed_kt') or options['speed_kt'])*60;leg['time_end_min']=elapsed
     rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl,nav.airway_portion)
     atomic_ids={(b['sheet'],b['row']) for b in violations}
+    unread_rules=rad_flight.unread_spaces_issue(rad_summary)      # SOG-0501 (c) : les règles dont la cible est un espace sans contour (LDZOC…) : dites avec leur nombre
+    if unread_rules:issue('REVUE',unread_rules[0])
     for finding in rad_summary['findings']:
         if (finding['sheet'],finding['row']) not in atomic_ids:issue('REVUE' if fallback else 'ERREUR',('Règle RAD enfreinte (aucune route sans infraction, la meilleure est rendue) : ' if fallback else '')+finding['text'])
         for index in finding['segments']:

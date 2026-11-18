@@ -17,6 +17,20 @@ COUNTRIES = {'it': 'LI', 'ch': 'LS'}      # la liste fermée de ce lot : le pays
 NOT_READ = {'de': 'Allemagne : trois tranches (EDUUFRAW FL245, EDUUFRAN FL285, EDUUFRAE FL315) sans contours pour dire laquelle', 'fr': 'France : route libre par sous-espace (LFFRAE, LFFRAN, LFFRASE…)',
             'es': 'Espagne : route libre par sous-espace'}
 TERMINAL = ('SID', 'STAR', 'APPROACH_LINK')
+
+
+def unread_issue(legs):
+    """SOG-0501 (c) : la phrase de revue des États de NOT_READ dont la route emprunte des voies (hors raccords et directs) : leur route libre est par tranches ou sous-espaces dont la base n'a pas les contours, la voie peut ne pas exister aux niveaux de la route libre (l'IFPS : PROF407, ROUTE52) ; None si aucun."""
+    count = {}
+    for leg in legs or []:
+        z = leg.get('source_zone')
+        if z in NOT_READ and leg.get('kind') not in TERMINAL and leg.get('via') not in (None, 'DCT') and not leg.get('connector'):
+            count[z] = count.get(z, 0) + 1
+    if not count:
+        return None
+    names = [NOT_READ[z].split(':')[0].strip() for z in sorted(count)]
+    return f"Voies d'États à route libre non lue ({', '.join(names)} : {sum(count.values())} tronçon(s) de voie) : la base n'a pas les contours ni les niveaux de leur route libre ; une voie peut ne pas y exister (l'IFPS : PROF407), et un direct depuis un point qui n'est pas un point de route libre y est refusé (ROUTE52) ; non vérifié ici."
+
 MAX_ISSUES = 40
 MAX_TEXT = 4000      # un texte de cellule plus long est illisible (à examiner)
 PLAUSIBLE = (100, 500)      # un plancher de route libre est un niveau de vol entre FL100 et FL500 : « ABV FL10 » est une cellule abîmée, pas un plancher
