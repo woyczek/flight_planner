@@ -77,6 +77,7 @@ export const meta = {
     '../../frame/lib/last_flight.js', '../../frame/lib/current_flight.js', '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
     '../../frame/lib/mission.js',
+    '../../frame/lib/adnames.js', '../../frame/lib/untrusted.js', // importés par mission.js (cas I26 ; Création, 18/11)
     '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js',
     '../../frame/lib/geo.js', // importé par current_flight.js et flight_path.js (cas I26)

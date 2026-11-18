@@ -28,8 +28,11 @@
 // de texte est celle de adnames.js (Carburant et la Carte).
 import {
   adLabel,
-  adLine
-} from './adnames.js'; // la règle de texte du nom, partagée avec la Carte (§ 10.27)
+  adLine,
+  isCode,
+  isIcao,
+  isIcaoAlpha
+} from './adnames.js'; // la règle de texte du nom, partagée avec la Carte (§ 10.27) ; la forme d'un code (SOG-0468 (2))
 import {
   createSuggestList
 } from './suggest_list.js'; // la liste de propositions, commune à tous les champs qui proposent
@@ -54,18 +57,13 @@ const CITY_NM = 40;
 const fold = v => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 /** Longueur minimale du texte pour proposer. */
 const MIN_CHARS = 2;
-/** Un code de terrain complet : quatre caractères, ou le code de liste d'une hélistation du SIA — deux lettres et trois chiffres
- *  (« LF418 » ; le motif d'AeroDB, SOG-0465 : aerodb.suggest, coords et route/compute le prennent), ASCII seulement. */
-const CODE = /^(?:[A-Z0-9]{4}|[A-Z]{2}[0-9]{3})$/;
-/** Le texte (déjà en majuscules) est-il un code de terrain complet (CODE) ? Fonction pure, exportée pour les modules sans écran (l'atelier
- *  de Missions, editor.js) ; l'instance du champ donne la même (api.isCode). */
-export const isCode = v => CODE.test(String(v || ''));
-/** SOG-0468 (2) : un code de terrain écrit en quatre signes (lettres ou chiffres) — la forme de tout code saisi ou lu (« LFPO », « EG74 »).
- *  Fonction pure ; même résultat que /^[A-Z0-9]{4}$/.test(v). */
-export const isIcao = v => /^[A-Z0-9]{4}$/.test(v);
-/** SOG-0468 (2) : un indicateur OACI réel, quatre LETTRES (« LFPO » ; ni « EG74 » ni « LF418 ») — pour ce qui exige un terrain publié
- *  sous un indicateur (météo, procédures, plan de vol). Fonction pure ; même résultat que /^[A-Z]{4}$/.test(v). */
-export const isIcaoAlpha = v => /^[A-Z]{4}$/.test(v);
+/** La forme d'un code de terrain (isCode, isIcao, isIcaoAlpha) : définie dans adnames.js (calcul pur, lu aussi sans écran), réexportée
+ *  ici pour les lecteurs du champ (Carburant, Aéronefs, Missions). */
+export {
+  isCode,
+  isIcao,
+  isIcaoAlpha
+};
 /** La zone d'une position : le plus petit cadre qui la contient, sinon le plus proche ; null sans zones (sorti de
  *  modules/fuel/zone_gap.js avec ce bloc, qui le réexporte). */
 export function zoneAt(zones, p) {
@@ -139,7 +137,7 @@ export function createAdField(host) {
     // le texte du champ quand il est à l'écran (la saisie de recherche n'écrit la route qu'une fois le terrain choisi), sinon la route
     const el = body()?.querySelector(`input[data-k="${k}"]`),
       v = String(el ? el.value : host.value?.(k) || '').trim().toUpperCase();
-    return CODE.test(v) ? v : '';
+    return isCode(v) ? v : '';
   };
 
   /** Dessine les lignes de nom : « LFPO — Paris-Orly » sous les champs (vide sous quatre caractères, « inconnu » sans réponse), le nom
@@ -221,7 +219,7 @@ export function createAdField(host) {
       full = () => hits.length >= MAX_SUGGESTIONS,
       push = (x, tail = '') => {
         const code = String(x.icao || x.code || x.id || '').trim().toUpperCase();
-        if (full() || !CODE.test(code) || seen.has(code)) return;
+        if (full() || !isCode(code) || seen.has(code)) return;
         seen.add(code);
         const name = String(x.name || '').trim();
         hits.push({
