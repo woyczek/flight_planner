@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e73f872",
-  "fiches": 491,
+  "organisation": "e43e6fb",
+  "fiches": 493,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -919,6 +919,15 @@
      "de": "Kraftstoff: deckt der Ausweichkraftstoff das Durchstarten, die Strecke zum Ausweichflugplatz (mit Wind) und den Anflug?",
      "es": "Combustible: ¿cubre el combustible de alternativo la aproximación frustrada, el tramo al alternativo (con viento) y la aproximación?",
      "rank": 387
+    },
+    {
+     "id": "SOG-0493",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : la page gèle aussitôt l'arrivée LQSA saisie (EGGW → LQSA)",
+     "en": "Fuel: the page freezes as soon as the LQSA arrival is entered (EGGW → LQSA)",
+     "de": "Kraftstoff: Die Seite friert ein, sobald die Ankunft LQSA eingegeben ist (EGGW → LQSA)",
+     "es": "Combustible: la página se congela en cuanto se introduce la llegada LQSA (EGGW → LQSA)"
     }
    ]
   },
@@ -3105,12 +3114,13 @@
     {
      "id": "SOG-0470",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Routes NAT : deux défauts trouvés à la relecture de sécurité (une erreur sur un fichier NAT mal formé ; des relances sans espacement)",
      "en": "NAT tracks: two defects found by the security review (an error on a malformed NAT file; reloads with no spacing)",
      "de": "NAT-Routen: zwei Fehler aus der Sicherheitsprüfung (Absturz bei fehlerhafter NAT-Datei; Neuladen ohne Abstand)",
      "es": "Rutas NAT: dos defectos hallados en la revisión de seguridad (un error con un archivo NAT mal formado; recargas sin espaciar)",
-     "rank": 424
+     "rank": 424,
+     "test": true
     }
    ]
   },
@@ -5796,6 +5806,27 @@
      "de": "Eine Geste, die den Launcher braucht, sagt es, wenn er fehlt („A → B berechnen“ ohne Wirkung)",
      "es": "Un gesto que necesita el lanzador lo dice cuando el lanzador falta («Calcular A → B» sin efecto)",
      "rank": 231
+    }
+   ]
+  },
+  {
+   "id": "maintenance-carburant-degagement-donnees",
+   "app": "maintenance",
+   "label": {
+    "fr": "Carburant ; dégagement ; données",
+    "en": "Carburant ; dégagement ; données",
+    "de": "Carburant ; dégagement ; données",
+    "es": "Carburant ; dégagement ; données"
+   },
+   "items": [
+    {
+     "id": "SOG-0494",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : aucun dégagement proposé pour Sarajevo (LQSA) — « aucun terrain entre 30 et 300 NM ne passe la piste et les moyens »",
+     "en": "Fuel: no alternate offered for Sarajevo (LQSA) — no aerodrome within 30–300 NM passes runway and aids",
+     "de": "Kraftstoff: Kein Ausweichflugplatz für Sarajevo (LQSA) – keiner im Umkreis von 30–300 NM besteht Piste und Hilfen",
+     "es": "Combustible: ningún alternativo para Sarajevo (LQSA) — ningún aeródromo a 30–300 NM pasa pista y ayudas"
     }
    ]
   },

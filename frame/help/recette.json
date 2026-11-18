@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 311,
+  "tests": 312,
   "verdicts": 215
  },
  "apps": [
@@ -4622,6 +4622,20 @@
    "delivered": "2026-11-18T12:59:27Z"
   },
   {
+   "id": "SOG-0470",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes NAT : deux défauts trouvés à la relecture de sécurité (une erreur sur un fichier NAT mal formé ; des relances sans espacement)",
+    "en": "NAT tracks: two defects found by the security review (an error on a malformed NAT file; reloads with no spacing)",
+    "de": "NAT-Routen: zwei Fehler aus der Sicherheitsprüfung (Absturz bei fehlerhafter NAT-Datei; Neuladen ohne Abstand)",
+    "es": "Rutas NAT: dos defectos hallados en la revisión de seguridad (un error con un archivo NAT mal formado; recargas sin espaciar)"
+   },
+   "test": "Rien de nouveau à l'écran : ce sont des durcissements. Carburant, un vol transatlantique (par exemple EGLL → KJFK) avec les routes NAT du jour : la route se calcule comme avant, la Carte montre les routes NAT, et aucun message d'erreur ne paraît. La source NAT est relue au plus une fois toutes les cinq minutes.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T14:06:30Z"
+  },
+  {
    "id": "SOG-0474",
    "app": "pilote",
    "title": {
@@ -4661,6 +4675,22 @@
     "Oui, tout : aérodromes, pistes et SID/STAR officiels de la DFS",
     "Aérodromes et pistes seulement ; pas les SID/STAR",
     "Non : points et balises seulement",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0112",
+   "fiche": "SOG-0487",
+   "app": "compagnie",
+   "question": "Registre des missions : dans quel ordre veux-tu les lignes ?",
+   "context": "Aujourd'hui (relevé de Features SOG) : d'abord les missions trouvées hors registre (« + »), puis les lignes rangées par état (à problème « ! », lues ✓, non lues « ? »), puis par série et par numéro. Une famille est éparpillée, et une ligne SAUTE de place quand tu la lis (« ? » devient ✓). Proposé : les brouillons en tête (SOG-0486), puis les « + », puis tout le registre par famille (dans l'ordre du filtre de famille), et dans une famille par série puis par numéro. L'état n'est plus qu'un signe, rien ne bouge pendant la lecture. Un intertitre discret par famille, retiré quand un filtre de famille est actif. Il n'y a pas aujourd'hui de compte des lignes à problème au-dessus de la liste : si les « ! » quittent la tête, il faudrait ajouter une ligne « N lignes à traiter ». Garder les « ! » en tête n'ajoute rien, et elles ne sautent pas pendant la lecture (leur état vient du plan du registre).",
+   "options": [
+    "Par famille, puis série et numéro, et les « ! » restent en tête de liste (recommandé : rien à ajouter)",
+    "Par famille, puis série et numéro, et une ligne « N lignes à traiter » au-dessus remplace les « ! » en tête",
+    "Garder l'ordre par état, mais stable : une ligne lue ne change plus de place",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-18",
