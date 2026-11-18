@@ -1066,6 +1066,21 @@ const unbind = bind(root, { cols: COLS, dflt: DFLT, getState: () => S.sort,
 
 **The module declares** `{ prefix: 'cache/sort/', policy: 'cache' }` in `meta.writes` (a write outside the declared prefixes throws, § 3) and `'../../frame/lib/sortlist.js'`, `'../../frame/lib/untrusted.js'` in `meta.files` (I26). **CSS** (`frame/design/primitives.css`, tokens only): `.f-sortbtn` (44 px, flat in every design), the arrows ▲ ▼ and a dim ↕ from `[aria-sort]`, the bar and its panel; in a container of 700 px or less `.f-sortwide` (the caller's table wrapper) is hidden and `.f-sortnarrow` (the caller's list) shown — the view and each module are containers. Bench `frame/lib/test/sortlist.html` (A311), demonstration `frame/lib/test/sortlist_demo.html` (A312). Migrations (the Data coverage table, the missions registry, then the others) are done by each table's owner.
 
+## 12e. Text folding (`frame/lib/text.js`, SOG-0468 (2))
+
+About fifteen files copied their own accent folding, in five variants of one idea (strip the combining marks, then a case, then a filter). One primitive and the five forms, each giving EXACTLY what the copy it replaces gave (bench `frame/lib/test/text.html`, A350):
+
+| Function | Gives |
+|---|---|
+| `stripMarks(v)` | the text without its combining marks (NFD, U+0300–U+036F removed); case and blanks untouched |
+| `foldUpper(v)` | `stripMarks`, upper case, trimmed (AeroDB, registry, countries, website) |
+| `foldLower(v)` | `stripMarks`, lower case, trimmed (the aerodrome field) |
+| `foldAlnum(v)` | `stripMarks`, upper case, only A–Z and 0–9 (aircraft type keys, sheets; `sheets.js` writes `foldAlnum(s \|\| '')`: 0 and false are the empty text there) |
+| `wordsOf(v)` | `stripMarks`, lower case, every other run of signs becomes one space (search words) |
+| `slug(v, max = 40)` | `stripMarks`, lower case, hyphens, cut at `max` (a readable identifier) |
+
+A null or absent value is the empty text; nothing throws on a text, a number or an absent value. What stays with a module: a folding of its own (`report/model.js` also drops the dots and folds the blanks, `fuel/fpl.js` keeps spaces), built on `stripMarks`. The files that still carry a copy migrate ONE AT A TIME, with their owners (the classic scripts of `frame/aerodb` reach the module by `import()` or a `window` export: their owner decides).
+
 ## 13. Service screens (`APP.screens`)
 
 A service screen is not a module. It is a screen of the frame, opened over the current module like Settings and the

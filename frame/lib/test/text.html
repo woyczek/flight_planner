@@ -1,0 +1,97 @@
+<!doctype html>
+<!-- Banc du pliage de texte (frame/lib/text.js, SOG-0468 (2)) : chaque forme rend EXACTEMENT ce que rendait la copie qu'elle remplace (les expressions d'origine sont recopiées ici, une par fichier), sur un corpus
+     d'accents, de ligatures, de blancs, de signes, de valeurs absentes ; jamais d'exception. Page nue ; window.__textBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>text — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<script type="module">
+  import {
+    stripMarks,
+    foldUpper,
+    foldLower,
+    foldAlnum,
+    wordsOf,
+    slug
+  } from '../text.js?v=0';
+  const rows = [],
+    out = document.getElementById('out');
+  window.__textBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__textBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  // le corpus : accents, ligatures, signes, blancs, valeurs absentes, caractères hors du plan de base
+  const corpus = ['', ' ', '  Île-de-Ré  ', 'Éléphant', 'Ærø', 'Œuvre', 'straße', 'İstanbul', 'ǅ', 'EC 135 T2+', 'H-225 « Caracal »',
+    'a_b.c/d', '  tab\tet\nsaut  ', 'Crème brûlée à l’œuf', 'Zürich-Flughafen (LSZH)', 'São Tomé', 'ﬁn', '𝒜𝒷𝒸', '😀 ok', 'x'.repeat(80) +
+    '-yz', '---a---', 'Ａｂｃ１２３', 'Ångström', '١٢٣', null, undefined, 0, 12, false
+  ];
+  // les copies d'origine, une par variante (mot pour mot de l'expression de chaque fichier)
+  const orig = {
+    aerodb: s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+      .trim(), // frame/aerodb/aerodb.js, registry.js, modules/website/model.js (trim avant : même résultat)
+    website: v => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase(),
+    aircraft: s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g,
+      ''), // frame/aerodb/aircraft.js
+    sheets: s => String(s || '').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]/g,
+      ''), // frame/aerodb/sheets.js (la casse AVANT)
+    adfield: v => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(), // frame/lib/ad_field.js
+    words: t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ')
+      .trim(), // modules/missions/search.js
+    slug40: t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      .slice(0, 40).replace(/-+$/, ''),
+    slug24: n => String(n ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      .slice(0, 24).replace(/-+$/g, '') // frame/settings/access.js
+  };
+  const same = (name, mine, theirs) => {
+    const bad = [];
+    for (const v of corpus) {
+      let a, b;
+      try {
+        a = mine(v);
+      } catch (e) {
+        a = 'THROW ' + e.message;
+      }
+      try {
+        b = theirs(v);
+      } catch (e) {
+        b = 'THROW ' + e.message;
+      }
+      if (a !== b) bad.push(JSON.stringify([v, a, b]));
+    }
+    ck(name, bad.length === 0, bad.slice(0, 3).join(' | '));
+  };
+  (() => {
+    same('foldUpper = le pliage d\'aerodb.js, registry.js (NFD, capitales, trim)', foldUpper, orig.aerodb);
+    same('foldUpper = le « up » de modules/website/model.js (trim AVANT la casse : même résultat)', foldUpper, orig.website);
+    same('foldAlnum = la clé de type de frame/aerodb/aircraft.js', foldAlnum, orig.aircraft);
+    same(
+      "foldAlnum = celle de frame/aerodb/sheets.js (la casse AVANT la décomposition ; son appel écrit « s || '' », donc 0 et faux sont le texte vide)",
+      v => foldAlnum(v || ''), orig.sheets);
+    same('foldLower = le pliage de frame/lib/ad_field.js', foldLower, orig.adfield);
+    same('wordsOf = la recherche de modules/missions/search.js', wordsOf, orig.words);
+    same('slug(v, 40) = l\'identifiant de modules/missions/catalog.js', v => slug(v, 40), orig.slug40);
+    same('slug(v, 24) = celui de frame/settings/access.js', v => slug(v, 24), orig.slug24);
+    ck('stripMarks : « Île-de-Ré » → « Ile-de-Re », sans changer ni la casse ni les blancs', stripMarks(' Île-de-Ré ') === ' Ile-de-Re ',
+      stripMarks(' Île-de-Ré '));
+    ck('les ligatures et les lettres sans décomposition restent : « Œuvre », « Ærø », « straße »', stripMarks('Œuvre Ærø straße') ===
+      'Œuvre Ærø straße', stripMarks('Œuvre Ærø straße'));
+    ck('une valeur nulle, absente, 0 ou faux : le texte (vide ou « 0 » / « false »), jamais d\'exception', [null, undefined].every(v =>
+        foldUpper(v) === '' && foldLower(v) === '' && foldAlnum(v) === '' && wordsOf(v) === '' && slug(v) === '') && foldAlnum(0) ===
+      '0' && foldUpper(false) === 'FALSE');
+    ck('slug coupe à `max` puis retire les tirets de fin ; la valeur par défaut est 40', slug('a'.repeat(39) + ' b', 40) === 'a'.repeat(
+      39) && slug('x'.repeat(80)).length === 40, slug('a'.repeat(39) + ' b', 40));
+    window.__textBench.done = true;
+  })();
+</script>
+</body>
+</html>

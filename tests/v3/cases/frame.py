@@ -5316,6 +5316,13 @@ def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A350', 'The text folding of the frame (SOG-0468 (2), frame/lib/text.js): stripMarks, foldUpper, foldLower, foldAlnum, wordsOf and slug give EXACTLY what the copies they replace gave (aerodb, registry, aircraft, sheets, ad_field, missions search and catalog, settings), on a corpus of accents, ligatures, signs, blanks and absent values', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (2) (the ergonomist: one definition, the identical pairs first): about fifteen files copied their own accent folding in five variants of one idea (strip the combining marks, then a case, then a filter); frame/lib/text.js gives the primitive and the five forms, and the bench frame/lib/test/text.html (window.__textBench) shows each equal to the original expression of the file it replaces on a corpus; a migrating file changes nothing of what it computes')
+def a350(c):
+    _bench(c, 'frame/lib/test/text.html', '__textBench')
+
+
 @case('A326', 'The clipboard helpers (SOG-0468 (1), frame/lib/clipboard.js): copyAndTell says the CALLER\'s « ok » once when copied, its « manual » warning when the text is only shown, never the copied text, never throws; readClipboard gives html and text as raw STRINGS (nothing inserted), bounded at 1 048 576 characters, « denied » / « unavailable »', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (1) (the ergonomist): one copy-and-tell for the frame\'s three copies (load-failure card, roadmap, recette) that said « ok » or nothing when the copy failed, and one read of the clipboard for the two identical blocks (access.js, website): frame/lib/test/clipboard.html (window.__clipboardBench), navigator.clipboard and document.execCommand faked')
