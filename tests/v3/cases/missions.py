@@ -9299,3 +9299,38 @@ def n137(c):
          'every request to the Terrarium host went through the fake loader of the case; nothing reached the network')
     c.context.unroute(re.compile(r'^https://s3\.amazonaws\.com/elevation-tiles-prod/'))
     c.js(_REG_CLEAR)
+
+
+@case('N138', 'Missions › the catalogue of bricks and models (pure, no screen): modules/missions/catalog.yaml, a file of the code repository, is read by '
+      '`readCatalog` of modules/missions/catalog.js as an UNTRUSTED input — the delivered file gives 28 bricks (the keys the workshop writes: 15 zones, 6 objects, '
+      '6 gestures, 1 arrival), 3 models (blank, glacier, interception) and no position nor callsign; a file of 200 KB is refused whole, 100 bricks are cut at 80, '
+      'an identifier « ../x » is set aside, a text with a tag is refused, a number 1e9 is not read (never brought back into its bounds), a YAML anchor is refused; '
+      'the bench modules/missions/test/catalog.html, every check passing', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='Lot « modèles de mission », decision (A) of the relay of the ergonomist (18 Nov): the catalogue is ONE file of the code repository, read and bounded '
+      'as an untrusted input (128 KB, 80 bricks, 20 models, 12 drawers and 20 places per model, closed identifiers, texts through `visible` of the reader and cut, '
+      'no number out of bounds); EDITOR.md § 7 unquadragies')
+def n138(c):
+    path = 'modules/missions/test/catalog.html'
+    c.page.goto(f'{c.base}/{path}', wait_until='load')
+    try:
+        c.page.wait_for_function('window.__bench && window.__bench.done', timeout=30000)
+    except Exception:
+        raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', path) from None
+    r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
+    c.ok(r['fail'] == 0 and r['pass'] >= 27, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}", 'every check of the bench passes')
+    # the five bounds of the brief, measured again here from the reader itself (not only from the bench's words)
+    got = c.js("""async () => { const C = await import('/modules/missions/catalog.js'); const Y = window.jsyaml;
+      const b = (id, t = 'Titre', n = 60) => `  - { id: ${id}, family: SAR, key: zone, title: "${t}", brief: "b", fallback_min: ${n} }\\n`;
+      const f = x => `version: 1\\nbricks:\\n${x}`;
+      const huge = C.readCatalog(f(b('a')) + '# ' + 'x'.repeat(200 * 1024) + '\\n', Y),
+        many = C.readCatalog(f(Array.from({ length: 100 }, (_, i) => b('b-' + i)).join('')), Y),
+        dot = C.readCatalog(f(b('"../x"') + b('ok')), Y),
+        tag = C.readCatalog(f(b('t1', '<script>x</script>') + b('t2')), Y),
+        big = C.readCatalog(f(b('n1', 'N', '1e9')), Y),
+        cat = C.readCatalog(await (await fetch('/modules/missions/catalog.yaml', { cache: 'no-store' })).text(), Y);
+      return { huge: huge.why, many: [many.bricks.length, many.dropped], dot: dot.bricks.map(x => x.id), tag: tag.bricks.map(x => x.id), big: big.bricks[0]?.fallback,
+        cat: [cat.bricks.length, cat.models.map(m => m.id), cat.dropped] } }""")
+    c.eq([got['huge'], got['many'], got['dot'], got['tag'], got['big']], ['size', [80, 20], ['ok'], ['t2'], None],
+         'a 200 KB file refused; 100 bricks cut at 80; « ../x » set aside; a title with a tag refused; a fallback of 1e9 not read', what='the bounds')
+    c.eq(got['cat'], [28, ['blank', 'search-glacier', 'interception'], 0], 'the delivered catalogue: 28 bricks, the three models, nothing set aside', what='the delivered catalogue')

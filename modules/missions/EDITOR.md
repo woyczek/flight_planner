@@ -1248,6 +1248,33 @@ the Carte's profile (`modules/maps/lib/profile_embed.js`, contract in `modules/m
   column of the grid and no longer stuck while the sheet scrolled (N121).
 - **Case N137**: the tile loader is a fake at the level of the browser (a plain Terrarium tile built in the page, or a refusal); every other host is aborted by the harness.
 
+### 7 unquadragies. The catalogue of bricks and models: one file of the code repository, read as untrusted (18 Nov 2026; lot « modèles de mission », decision A; noreg N138)
+
+The user's tool keeps its bricks and models in code; the suite keeps them in ONE data file delivered with the module, `modules/missions/catalog.yaml`, read only, never
+copied from the tool. It is read by `readCatalog(text, Y)` of `modules/missions/catalog.js` (pure: no page, no storage, no network) exactly like a file any pilot could
+have written — the same reader reads the personal models (§ 7 quaterquadragies).
+
+- **Keys**: `version: 1`; `families` (codes of the themes of `frame/lib/mission_themes.js`, their labels are the themes' — not repeated); `bricks[]`: `id`, `family`,
+  `key` (one of the keys the workshop writes: `hand`, `time`, `zone`, `object`, `arrival`), `title` and `brief` in `{ fr, en, de, es }`, `params` (an arrival: `radius_nm`,
+  `speed_max_kt`, `require_on_ground`; a time: `delay_min`), `fallback_min`; `models[]`: `id`, `type` (a family, or empty for any), `title` and `brief` in four languages,
+  `drawers[]` (a brick by `brick: <id>` and what the model changes in it — `title`, `message`, `brief`, `place`, `fallback_min`, `route` — or a whole drawer by `key`),
+  `places[]` (`id` — a key local to the model —, `kind`: target, zone, pt, rdv, object; `okind` for an object; `name` in four languages) WITHOUT position.
+- **Bounds** (`LIMITS`): 128 KB (more: refused whole, `size`); 16 families, 80 bricks, 20 models, 12 drawers and 20 places per model (beyond: cut, counted in
+  `dropped`); identifiers of the closed form `^[a-z0-9-]{1,40}$` (« ../x » set aside); texts through `visible` of the reader (invisible format characters out), cut
+  (title 80, brief 600, message 2 000, name 60), a text with a tag (`<`, `>`) or an address (`://`, `javascript:`) refused; a number out of its bounds never read nor
+  brought back into them (a fallback of 1e9: none); a YAML anchor refuses the file (`alias`, `shapeOf` of the reader); an unknown key is never copied; a position
+  written on a place of a model is never read.
+- **What is delivered**: the 28 bricks the workshop WRITES today (15 passage zones, 6 objects to find, 6 gestures of the pilot alone — the tool's `manual` —, 1 arrival),
+  their French from the tool, translated; three models: « Mission vierge », « Recherche sur un glacier » (SAR: a passage zone, a person to find, the return to the
+  aerodrome; three drawers, two places to place), « Interception d'un aéronef » (COMBAT: an entry zone, the aircraft to identify, the return). Every text is invented:
+  no callsign, no registration, no real place, no coordinate.
+- **What is set aside, and why**: the 32 bricks whose keys are those of the 1.1 conditions (landing 12, hover 7, overflight 5, event 5, follow 2, sequence 1) — the
+  reader reads them but the workshop does not write them; they come with SOG-0500. The model « Bateau mobile · 2 aéronefs » (`coordination.participants` is not read by
+  the suite, its conditions are 1.1). From the glacier: the required stop of its arrival (a real hospital) and its exercise coordinates; from the interception: the zone
+  crossed by the mobile target and the 30 s escort of its arrival (keys the workshop keeps but does not write); the tool's `catalog-index.json` (its path, the user's
+  fleet), its callsigns and registrations, its private block `x_mission_editor`.
+- **Bench**: `modules/missions/test/catalog.html` (the delivered file, then forged ones: 200 KB, 100 bricks, « ../x », a tag, 1e9, an anchor, a position).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

@@ -1,0 +1,292 @@
+<!doctype html>
+<!-- Banc du catalogue des briques et des modèles de l'atelier (modules/missions/catalog.js, lot « modèles de mission ») : le catalogue livré
+     (modules/missions/catalog.yaml) lu, puis des fichiers forgés — trop gros, trop de briques, un identifiant « ../x », un texte avec
+     balise, un nombre 1e9, une ancre YAML, une position écrite — refusés ou coupés ; la clé `mission_model` d'une mission ; un modèle
+     appliqué, changé, tiré d'une séance (ni position, ni équipe, ni indicatif). Missions et lieux inventés. Fonctions pures ; page nue ;
+     window.__bench = { done, pass, fail, rows }. -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>catalog — bench</title>
+<style>
+  body {
+    font: 13px/1.5 ui-monospace, monospace;
+    margin: 12px
+  }
+  .FAIL {
+    color: #b00020;
+    font-weight: 700
+  }
+  .PASS {
+    color: #1b6e2a
+  }
+</style>
+<script src="../../../frame/lib/js-yaml.min.js?v=0"></script>
+</head>
+<body>
+<h1 style="font-size:16px">catalog.js — bench</h1>
+<pre id="out"></pre>
+<script type="module">
+  import * as C from '../catalog.js?v=0';
+  import * as ED from '../editor.js?v=0';
+  const out = document.getElementById('out'),
+    rows = [],
+    Y = window.jsyaml;
+  /** Une vérification : nom, vrai ou faux, ce qu'on a mesuré. */
+  function ck(name, ok, got = '') {
+    rows.push({
+      name,
+      ok: !!ok,
+      detail: ok ? '' : typeof got === 'string' ? got : JSON.stringify(got)
+    });
+    const l = document.createElement('div');
+    l.className = ok ? 'PASS' : 'FAIL';
+    l.textContent = `${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + rows[rows.length - 1].detail}`;
+    out.append(l);
+  }
+  /** Une brique inventée, en texte YAML. */
+  const brick = (id, extra = '') =>
+    `  - { id: ${id}, family: SAR, key: zone, title: { fr: "Brique", en: "Brick", de: "Baustein", es: "Ladrillo" }, brief: "Ce qu'elle fait."${extra} }\n`;
+  const file = (bricks, models = '') => `version: 1\nfamilies: [SAR]\nbricks:\n${bricks}${models ? `models:\n${models}` : ''}`;
+
+  // ---- le catalogue livré
+  const text = await (await fetch('../catalog.yaml', {
+      cache: 'no-store'
+    })).text(),
+    cat = C.readCatalog(text, Y),
+    keys = cat.bricks.reduce((o, b) => ({
+      ...o,
+      [b.key]: (o[b.key] || 0) + 1
+    }), {});
+  ck('le catalogue livré se lit entier : 28 briques, 3 modèles, 14 familles, rien d\'écarté', cat.ok && cat.bricks.length === 28 && cat
+    .models
+    .length === 3 && cat.families.length === 14 && cat.dropped === 0, [cat.why, cat.bricks.length, cat.models.length, cat.dropped]);
+  ck('les 28 briques sont celles que l\'atelier sait écrire : 15 zones, 6 objets, 6 gestes, 1 arrivée', JSON.stringify(keys) === JSON
+    .stringify({
+      zone: 15,
+      object: 6,
+      hand: 6,
+      arrival: 1
+    }), keys);
+  ck('les trois modèles : la mission vierge, le glacier (recherche, trois tiroirs), l\'interception', JSON.stringify(cat.models.map(m => [m
+    .id, m.type, m.drawers.length, m.places.length
+  ])) === JSON.stringify([
+    ['blank', '', 0, 0],
+    ['search-glacier', 'SAR', 3, 2],
+    ['interception', 'COMBAT', 3, 2]
+  ]), cat.models.map(m => m.id));
+  ck('chaque titre et chaque message existent dans les quatre langues', cat.bricks.every(b => C.LANGS.every(l => b.title[l] && b.message[
+    l])) && cat.models.every(m => C.LANGS.every(l => m.title[l])), '');
+  ck('le fichier livré n\'écrit aucune position ni aucun indicatif (latitude, longitude, mot de lettres et de chiffres)', !
+    /\b(lat|lon|latitude|longitude|callsign)\s*:/i
+    .test(text) && !/\b[A-Z]{3,}\d{2,}\b/.test(text), '');
+  ck('le fichier livré tient dans sa borne (128 Ko)', new TextEncoder().encode(text).length <= C.LIMITS.bytes, text.length);
+
+  // ---- des fichiers forgés : refusés ou coupés
+  ck('un fichier de 200 Ko est refusé entier (« size »)', C.readCatalog(file(brick('a')) + `# ${'x'.repeat(200 * 1024)}\n`, Y).why ===
+    'size', '');
+  const many = C.readCatalog(file(Array.from({
+    length: 100
+  }, (_, i) => brick(`b-${i}`)).join('')), Y);
+  ck('cent briques : les 80 premières lues, 20 écartées', many.ok && many.bricks.length === 80 && many.dropped === 20 && many.bricks[79]
+    .id === 'b-79', [many.bricks.length, many.dropped]);
+  const dot = C.readCatalog(file(brick('"../x"') + brick('"A-Majuscule"') + brick(`${'a'.repeat(41)}`) + brick('ok-1')), Y);
+  ck('un identifiant « ../x », en majuscules ou de 41 signes est écarté ; « ok-1 » est lu', dot.bricks.map(b => b.id).join() === 'ok-1' &&
+    dot.dropped === 3, dot.bricks.map(b => b.id));
+  const tag = C.readCatalog(file(
+    '  - { id: t1, family: SAR, key: zone, title: "<img src=x onerror=alert(1)>", brief: "b" }\n' +
+    '  - { id: t2, family: SAR, key: zone, title: "Titre", brief: "<b>gras</b>" }\n' +
+    '  - { id: t3, family: SAR, key: zone, title: "Voir https://exemple.test", brief: "b" }\n' +
+    `  - { id: t4, family: SAR, key: zone, title: "${'é'.repeat(300)}", brief: "b‮c" }\n`), Y);
+  ck('un titre avec balise ou adresse : la brique est écartée ; un message avec balise n\'est pas lu ; un titre long est coupé à 80, un caractère invisible retiré',
+    tag.bricks.map(b => b.id).join() === 't2,t4' && tag.bricks[0].message === null && tag.bricks[1].title.fr.length === 80 && tag.bricks[
+      1]
+    .message.fr === 'bc', tag.bricks.map(b => [b.id, b.title?.fr?.length, b.message]));
+  const big = C.readCatalog(file(
+    '  - { id: n1, family: SPECIAL, key: arrival, title: "A", brief: "b", fallback_min: 1e9, params: { radius_nm: 1e9, speed_max_kt: 30, require_on_ground: "oui" } }\n' +
+    '  - { id: n2, family: SAR, key: zone, title: "Z", brief: "b", fallback_min: -5 }\n' +
+    '  - { id: n3, family: SAR, key: zone, title: "Z", brief: "b", fallback_min: 12.5 }\n'), Y);
+  ck('un nombre 1e9, négatif ou fractionnaire n\'est pas lu (ni ramené dans ses bornes) ; un oui écrit en texte non plus', big.bricks.every(
+    b => b.fallback === null) && JSON.stringify(big.bricks[0].params) === JSON.stringify({
+    speed_max_kt: 30
+  }), big.bricks.map(b => [b.fallback, b.params]));
+  const hover = C.readCatalog(file(
+    '  - { id: h1, family: SAR, key: hover, title: "Stationnaire", brief: "b" }\n  - { id: h2, family: "x/y", key: zone, title: "Z", brief: "b" }\n'
+  ), Y);
+  ck('une clé que l\'atelier n\'écrit pas encore (hover) et une famille sans sa forme : écartées', hover.bricks.length === 0 && hover
+    .dropped === 2, hover);
+  ck('une ancre YAML (« &a » / « *a ») : refusé entier (« alias »)', C.readCatalog(
+    'version: 1\nbricks:\n  - &a { id: a1, family: SAR, key: zone, title: "A", brief: "b" }\n  - *a\n', Y).why === 'alias', '');
+  ck('une autre version, un texte qui n\'est pas un objet, un YAML illisible, rien : refusés', C.readCatalog('version: 2\n', Y).why ===
+    'version' && C.readCatalog('- a\n- b\n', Y).why === 'shape' && C.readCatalog('a: [\n', Y).why === 'unreadable' && C.readCatalog(null,
+      Y)
+    .why === 'unreadable', '');
+  const pos = C.readCatalog(file(brick('z1'),
+    '  - id: m1\n    type: SAR\n    title: Modèle\n    drawers: [{ brick: z1, place: zone-1 }, { brick: inconnue }, { key: object, title: O, place: obj-9 }]\n' +
+    '    places: [{ id: zone-1, kind: zone, name: Z, lat: 45.1, lon: 6.2, radius_km: 3 }, { id: "../p", kind: zone }, { id: p2, kind: volcan }]\n'
+  ), Y);
+  ck('un lieu de modèle ne garde que sa clé, sa sorte et son nom (une position écrite n\'est jamais lue) ; « ../p » et une sorte inconnue écartés',
+    JSON.stringify(pos.models[0].places) === JSON.stringify([{
+      id: 'zone-1',
+      kind: 'zone',
+      okind: '',
+      name: {
+        fr: 'Z',
+        en: 'Z',
+        de: 'Z',
+        es: 'Z'
+      }
+    }]), pos.models[0].places);
+  ck('un tiroir de modèle : une brique connue reprise (sa clé, son lieu) ; une brique inconnue écartée ; un lieu que le modèle ne pose pas n\'est pas cité',
+    pos.models[0].drawers.length === 2 && pos.models[0].drawers[0].key === 'zone' && pos.models[0].drawers[0].place === 'zone-1' && pos
+    .models[0].drawers[1].place === '', pos.models[0].drawers);
+
+  // ---- la clé mission_model
+  const doc = {
+    mission: {
+      id: 'X-001A'
+    },
+    zones: [{
+      id: 'ZONE-1',
+      lat: 45.1,
+      lon: 6.2,
+      radius_km: 2
+    }],
+    objects: [{
+      id: 'OBJ-1',
+      kind: 'person'
+    }]
+  };
+  const mm = v => C.modelOf({
+    ...doc,
+    mission_model: v
+  });
+  ck('mission_model lue : son identifiant, ses lieux qui existent encore', JSON.stringify(mm({
+    id: 'search-glacier',
+    placed: ['ZONE-1', 'OBJ-1', 'PT9', 7]
+  })) === JSON.stringify({
+    id: 'search-glacier',
+    placed: ['ZONE-1', 'OBJ-1']
+  }), mm({
+    id: 'search-glacier',
+    placed: ['ZONE-1']
+  }));
+  ck('mission_model mal formée → aucun modèle (identifiant « ../x », placed qui n\'est pas une liste, plus de 20 lieux, une valeur nue)',
+    [mm({
+      id: '../x'
+    }), mm({
+      id: 'a',
+      placed: 'ZONE-1'
+    }), mm({
+      id: 'a',
+      placed: Array(21).fill('ZONE-1')
+    }), mm('a'), C.modelOf(doc)].every(x => x === null), '');
+  ck('withModel écrit la clé, ou la retire', C.withModel(doc, {
+    id: 'a',
+    placed: ['ZONE-1']
+  }).mission_model.id === 'a' && !('mission_model' in C.withModel({
+    ...doc,
+    mission_model: {
+      id: 'a'
+    }
+  }, null)) && !('mission_model' in doc), '');
+
+  // ---- appliquer, changer de modèle
+  const glacier = cat.models.find(m => m.id === 'search-glacier'),
+    blank = cat.models.find(m => m.id === 'blank'),
+    one = C.applyModel({
+      places: [],
+      base: ED.blank(),
+      prior: null
+    }, glacier, 'fr');
+  ck('le glacier appliqué à une mission neuve : deux lieux « à placer » (ZONE-1, OBJ-1), trois tiroirs qui les citent, posés par le modèle',
+    JSON.stringify(one.places.map(p => [p.id, p.kind, p.lat, p.lon])) === JSON.stringify([
+      ['ZONE-1', 'zone', '', ''],
+      ['OBJ-1', 'object', '', '']
+    ]) && one.drawers.map(d => `${d.id}:${d.key}:${d.zone || d.object || d.arrPoint}`).join() ===
+    'B:zone:ZONE-1,C:object:OBJ-1,D:arrival:DESTINATION' && one.placed.join() === 'ZONE-1,OBJ-1', [one.places, one.drawers.map(d => d
+      .id), one.placed]);
+  ck('… ses textes en français, son heure de repli', one.drawers[0].title === 'Entrée sur le glacier' && one.drawers[1].message ===
+    'Valider un contact visuel en portée.' && one.drawers[0].fallback === '60' && one.drawers[2].fallback === '120', one.drawers.map(
+      d => [d.title, d.fallback]));
+  const placed = one.places.map(p => p.id === 'ZONE-1' ? {
+      ...p,
+      lat: '45.1',
+      lon: '6.2'
+    } : p),
+    mine = [...placed, {
+      kind: 'pt',
+      i: -1,
+      id: 'PT1',
+      name: 'Point',
+      lat: '',
+      lon: ''
+    }],
+    prior = {
+      id: 'search-glacier',
+      placed: one.placed
+    },
+    say = C.modelChange(mine, one.drawers, prior);
+  ck('« Changer de modèle » dit : les trois tiroirs et OBJ-1 (encore à placer) remplacés ; ZONE-1 (placée) gardée ; PT1 (le vôtre) gardé',
+    say.drawers === 3 && say.gone.join() === 'OBJ-1' && say.kept.join() === 'ZONE-1' && say.mine.join() === 'PT1', say);
+  const two = C.applyModel({
+    places: mine,
+    base: ED.blank(),
+    prior
+  }, blank, 'fr');
+  ck('… la mission vierge appliquée : aucun tiroir, ZONE-1 et PT1 restent, OBJ-1 part', two.drawers.length === 0 && two.places.map(p => p
+      .id)
+    .join() === 'ZONE-1,PT1', two.places.map(p => p.id));
+
+  // ---- enregistrer comme modèle
+  const sess = C.modelFromSession({
+      id: 'mon-modele',
+      title: 'Mon <b>modèle</b>',
+      family: 'SAR',
+      drawers: one.drawers,
+      places: [...placed, {
+        kind: 'rdv',
+        i: -1,
+        id: 'RDV-1',
+        name: 'Rendez-vous',
+        lat: '45',
+        lon: '6',
+        participants: 'XTEST01, XTEST02'
+      }, {
+        kind: 'dep',
+        i: 0,
+        id: '',
+        name: 'XTST · Base Test',
+        lat: '44',
+        lon: '1'
+      }]
+    }),
+    stext = C.modelText(sess, Y);
+  ck('le modèle tiré d\'une séance : ni position, ni départ, ni participants (indicatifs), ni identifiant de mission ; un titre avec balise refusé',
+    !/\blat\b|\blon\b|XTEST|X-001A|origin|teams/.test(stext) && sess.title === '' && sess.places.map(p => p.id).join() ===
+    'ZONE-1,OBJ-1,RDV-1', stext);
+  const back = C.readCatalog(stext, Y);
+  ck('… et relu par le même lecteur : un modèle, ses trois tiroirs complets (clé, textes, lieu)', back.ok && back.models.length === 0 &&
+    back.dropped === 1, back);
+  const ok2 = C.readCatalog(C.modelText({
+    ...sess,
+    title: 'Mon modèle'
+  }, Y), Y);
+  ck('… avec un titre : relu, ses tiroirs reprennent clé, lieu et heure de repli', ok2.ok && ok2.models[0].drawers.map(d =>
+    `${d.key}:${d.place}:${d.fallback}`).join() === 'zone:ZONE-1:60,object:OBJ-1:60,arrival::120', ok2.models[0]?.drawers);
+  ck('slug et chemin : « Mon modèle d\'été » → mon-modele-d-ete ; un trigramme sans sa forme ou « ../x » → aucun chemin', C.slug(
+      'Mon modèle d\'été') === 'mon-modele-d-ete' && C.modelPath('abc', 'mon-modele') === 'pilot/ABC/modeles/mon-modele.yaml' && C
+    .modelPath('AB', 'x') === null && C.modelPath('ABC', '../x') === null && C.slug('<>') === '', '');
+
+  window.__bench = {
+    done: true,
+    pass: rows.filter(r => r.ok).length,
+    fail: rows.filter(r => !r.ok).length,
+    rows: rows.filter(r => !r.ok)
+  };
+  const h = document.createElement('div');
+  h.textContent = `${window.__bench.pass} PASS · ${window.__bench.fail} FAIL`;
+  out.prepend(h);
+</script>
+</body>
+</html>

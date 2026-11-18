@@ -1,0 +1,216 @@
+# V3 missions — le catalogue des briques et des modèles de l'atelier (SOG-0444, lot « modèles de mission »), livré avec le module, lu
+# en lecture seule par modules/missions/catalog.js (readCatalog : une entrée non fiable, bornée — 128 Ko, 80 briques, 20 modèles,
+# 12 tiroirs et 20 lieux par modèle, identifiants à forme fermée, textes sans balise, nombres dans leurs bornes).
+# Une brique est un tiroir sans lieu : sa clé (une de celles que l'atelier sait écrire : hand, time, zone, object, arrival), son titre
+# et son message en quatre langues, son heure de repli. Un modèle : un type (la famille, vide pour toute famille), des tiroirs (une
+# brique, et ce que le modèle y change) et des lieux « à placer » — une sorte et un nom, jamais une position.
+# Tout est inventé : aucun indicatif, aucune immatriculation, aucun lieu réel, aucune coordonnée.
+version: 1
+families: [SAR, HADR, MARITIME, LE, FIRE, AIRLIFT, AIRBORNE, SPECIAL, COMBAT, ISR, COMMAND, AAR, FI, SURVEY]
+bricks:
+  # --- une zone de passage (15)
+  - id: sar-land
+    family: SAR
+    key: zone
+    title: { fr: "Recherche terrestre progressive", en: "Progressive land search", de: "Schrittweise Landsuche", es: "Búsqueda terrestre progresiva" }
+    brief: { fr: "Une zone de passage révèle le secteur précis.", en: "A passage zone reveals the precise sector.", de: "Eine Durchflugzone gibt den genauen Sektor frei.", es: "Una zona de paso revela el sector preciso." }
+    fallback_min: 60
+  - id: hadr-flood
+    family: HADR
+    key: zone
+    title: { fr: "Reconnaissance d’inondation", en: "Flood reconnaissance", de: "Hochwassererkundung", es: "Reconocimiento de inundación" }
+    brief: { fr: "Le survol du secteur révèle les besoins prioritaires.", en: "Flying over the sector reveals the priority needs.", de: "Der Überflug des Sektors zeigt den dringendsten Bedarf.", es: "El sobrevuelo del sector revela las necesidades prioritarias." }
+    fallback_min: 60
+  - id: maritime-patrol
+    family: MARITIME
+    key: zone
+    title: { fr: "Patrouille sur axe connu", en: "Patrol on a known axis", de: "Patrouille auf bekannter Achse", es: "Patrulla en un eje conocido" }
+    brief: { fr: "Parcourir un secteur avant de révéler un contact.", en: "Cover a sector before a contact is revealed.", de: "Einen Sektor abfliegen, bevor ein Kontakt freigegeben wird.", es: "Recorrer un sector antes de revelar un contacto." }
+    fallback_min: 60
+  - id: maritime-pollution
+    family: MARITIME
+    key: zone
+    title: { fr: "Recherche d’une pollution", en: "Pollution search", de: "Suche nach einer Verschmutzung", es: "Búsqueda de una contaminación" }
+    brief: { fr: "Le passage dans le secteur révèle la zone de constat.", en: "Passing through the sector reveals the area to report on.", de: "Der Durchflug des Sektors gibt das Feststellungsgebiet frei.", es: "El paso por el sector revela la zona de constatación." }
+    fallback_min: 60
+  - id: le-police
+    family: LE
+    key: zone
+    title: { fr: "Observation de secteur", en: "Sector observation", de: "Sektorbeobachtung", es: "Observación de sector" }
+    brief: { fr: "Le passage dans la zone déclenche le compte rendu.", en: "Passing through the zone triggers the report.", de: "Der Durchflug der Zone löst den Bericht aus.", es: "El paso por la zona activa el informe." }
+    fallback_min: 60
+  - id: fire-gaar
+    family: FIRE
+    key: zone
+    title: { fr: "Guet aérien armé", en: "Armed aerial watch", de: "Bewaffnete Luftbeobachtung", es: "Vigilancia aérea armada" }
+    brief: { fr: "Une entrée de zone révèle un départ de feu.", en: "Entering a zone reveals an outbreak of fire.", de: "Der Einflug in eine Zone gibt einen Brandausbruch frei.", es: "La entrada en una zona revela un conato de incendio." }
+    fallback_min: 60
+  - id: fire-drop
+    family: FIRE
+    key: zone
+    title: { fr: "Présentation pour largage", en: "Run-in for a drop", de: "Anflug zum Abwurf", es: "Aproximación para descarga" }
+    brief: { fr: "Franchir la zone de présentation pour confirmer le passage.", en: "Cross the run-in zone to confirm the pass.", de: "Die Anflugzone durchfliegen, um den Überflug zu bestätigen.", es: "Cruzar la zona de aproximación para confirmar el paso." }
+    fallback_min: 60
+  - id: airlift-tactical
+    family: AIRLIFT
+    key: zone
+    title: { fr: "Transport tactique", en: "Tactical transport", de: "Taktischer Transport", es: "Transporte táctico" }
+    brief: { fr: "Un passage imposé ouvre la suite de l’itinéraire.", en: "A required pass opens the rest of the route.", de: "Ein vorgeschriebener Durchflug öffnet den weiteren Streckenverlauf.", es: "Un paso obligado abre el resto del itinerario." }
+    fallback_min: 60
+  - id: airborne-drop
+    family: AIRBORNE
+    key: zone
+    title: { fr: "Franchissement d’une DZ", en: "Crossing a DZ", de: "Überflug einer DZ", es: "Paso por una DZ" }
+    brief: { fr: "Passer la zone de largage puis déclarer le largage.", en: "Pass the drop zone, then declare the drop.", de: "Die Absetzzone überfliegen, dann den Abwurf melden.", es: "Pasar la zona de lanzamiento y luego declarar el lanzamiento." }
+    fallback_min: 60
+  - id: combat-bfm
+    family: COMBAT
+    key: zone
+    title: { fr: "Entrée de secteur BFM", en: "BFM sector entry", de: "Einflug in den BFM-Sektor", es: "Entrada en el sector BFM" }
+    brief: { fr: "L’entrée dans le secteur débloque les consignes d’entraînement.", en: "Entering the sector unlocks the training instructions.", de: "Der Einflug in den Sektor gibt die Übungsanweisungen frei.", es: "La entrada en el sector desbloquea las consignas de entrenamiento." }
+    fallback_min: 60
+  - id: isr-watch
+    family: ISR
+    key: zone
+    title: { fr: "Tenue d’une zone de surveillance", en: "Holding a surveillance zone", de: "Halten einer Überwachungszone", es: "Mantenimiento de una zona de vigilancia" }
+    brief: { fr: "Une entrée de secteur ouvre le mandat de surveillance.", en: "Entering the sector opens the surveillance tasking.", de: "Der Einflug in den Sektor eröffnet den Überwachungsauftrag.", es: "La entrada en el sector abre el mandato de vigilancia." }
+    fallback_min: 60
+  - id: fi-vor
+    family: FI
+    key: zone
+    title: { fr: "Passage de contrôle VOR", en: "VOR check pass", de: "VOR-Prüfdurchflug", es: "Paso de control VOR" }
+    brief: { fr: "Franchir une zone construite depuis une radiale et une distance.", en: "Cross a zone built from a radial and a distance.", de: "Eine aus Radial und Entfernung gebildete Zone durchfliegen.", es: "Cruzar una zona construida a partir de un radial y una distancia." }
+    fallback_min: 60
+  - id: fi-ils
+    family: FI
+    key: zone
+    title: { fr: "Passe de contrôle ILS", en: "ILS check pass", de: "ILS-Prüfdurchflug", es: "Pasada de control ILS" }
+    brief: { fr: "Valider le passage de la zone prévue ; aucune mesure ILS simulée.", en: "Validate the pass through the planned zone; no ILS measurement is simulated.", de: "Den Durchflug der vorgesehenen Zone bestätigen; keine ILS-Messung wird simuliert.", es: "Validar el paso por la zona prevista; no se simula ninguna medición ILS." }
+    fallback_min: 60
+  - id: survey-mapping
+    family: SURVEY
+    key: zone
+    title: { fr: "Passe de cartographie", en: "Mapping pass", de: "Kartierungsdurchflug", es: "Pasada de cartografía" }
+    brief: { fr: "Franchir une bande de travail puis ouvrir la suivante.", en: "Cross a work strip, then open the next one.", de: "Einen Arbeitsstreifen durchfliegen, dann den nächsten öffnen.", es: "Cruzar una franja de trabajo y luego abrir la siguiente." }
+    fallback_min: 60
+  - id: survey-weather
+    family: SURVEY
+    key: zone
+    title: { fr: "Reconnaissance météorologique", en: "Weather reconnaissance", de: "Wettererkundung", es: "Reconocimiento meteorológico" }
+    brief: { fr: "L’entrée de secteur révèle le prochain point de prélèvement.", en: "Entering the sector reveals the next sampling point.", de: "Der Einflug in den Sektor gibt den nächsten Messpunkt frei.", es: "La entrada en el sector revela el siguiente punto de muestreo." }
+    fallback_min: 60
+  # --- un objet à trouver (6)
+  - id: sar-aircraft
+    family: SAR
+    key: object
+    title: { fr: "Localisation d’une épave", en: "Locating a wreck", de: "Ortung eines Wracks", es: "Localización de unos restos" }
+    brief: { fr: "Confirmer le contact visuel avec l’épave.", en: "Confirm visual contact with the wreck.", de: "Den Sichtkontakt mit dem Wrack bestätigen.", es: "Confirmar el contacto visual con los restos." }
+    fallback_min: 60
+  - id: le-missing
+    family: LE
+    key: object
+    title: { fr: "Recherche d’une personne", en: "Searching for a person", de: "Suche nach einer Person", es: "Búsqueda de una persona" }
+    brief: { fr: "Valider un contact visuel en portée.", en: "Validate a visual contact within range.", de: "Einen Sichtkontakt in Reichweite bestätigen.", es: "Validar un contacto visual al alcance." }
+    fallback_min: 60
+  - id: airborne-sar
+    family: AIRBORNE
+    key: object
+    title: { fr: "Largage d’un kit SAR", en: "Dropping a SAR kit", de: "Abwurf eines SAR-Kits", es: "Lanzamiento de un kit SAR" }
+    brief: { fr: "Identifier le contact avant de déclarer la livraison.", en: "Identify the contact before declaring the delivery.", de: "Den Kontakt identifizieren, bevor die Lieferung gemeldet wird.", es: "Identificar el contacto antes de declarar la entrega." }
+    fallback_min: 60
+  - id: combat-intercept
+    family: COMBAT
+    key: object
+    title: { fr: "Interception d’une cible", en: "Intercepting a target", de: "Abfangen eines Ziels", es: "Interceptación de un objetivo" }
+    brief: { fr: "Confirmer le contact en distance et en hauteur.", en: "Confirm the contact in distance and height.", de: "Den Kontakt nach Entfernung und Höhe bestätigen.", es: "Confirmar el contacto en distancia y altura." }
+    fallback_min: 60
+  - id: command-policing
+    family: COMMAND
+    key: object
+    title: { fr: "Police du ciel — contact", en: "Air policing — contact", de: "Luftraumüberwachung — Kontakt", es: "Policía del aire — contacto" }
+    brief: { fr: "Identifier l’aéronef avant de révéler la consigne d’accompagnement.", en: "Identify the aircraft before the escort instruction is revealed.", de: "Das Luftfahrzeug identifizieren, bevor die Begleitanweisung freigegeben wird.", es: "Identificar la aeronave antes de revelar la consigna de acompañamiento." }
+    fallback_min: 60
+  - id: aar-join
+    family: AAR
+    key: object
+    title: { fr: "Ralliement du ravitailleur", en: "Joining the tanker", de: "Heranführung an den Tanker", es: "Reunión con el avión cisterna" }
+    brief: { fr: "Rejoindre le contact ; le transfert carburant reste déclaré.", en: "Join the contact; the fuel transfer stays declared.", de: "Den Kontakt erreichen; die Kraftstoffübergabe bleibt gemeldet.", es: "Alcanzar el contacto; la transferencia de combustible sigue declarada." }
+    fallback_min: 60
+  # --- le geste du pilote seul (6)
+  - id: fire-reload
+    family: FIRE
+    key: hand
+    title: { fr: "Écopage / rechargement déclaré", en: "Scooping / reload declared", de: "Wasseraufnahme / Nachladen gemeldet", es: "Carga de agua / recarga declarada" }
+    brief: { fr: "Le pilote confirme le rechargement avant la nouvelle rotation.", en: "The pilot confirms the reload before the next rotation.", de: "Der Pilot bestätigt das Nachladen vor dem nächsten Umlauf.", es: "El piloto confirma la recarga antes de la nueva rotación." }
+  - id: airborne-personnel
+    family: AIRBORNE
+    key: hand
+    title: { fr: "Largage de personnel déclaré", en: "Personnel drop declared", de: "Personenabsprung gemeldet", es: "Lanzamiento de personal declarado" }
+    brief: { fr: "La confirmation de l’équipage valide le largage.", en: "The crew’s confirmation validates the drop.", de: "Die Bestätigung der Besatzung bestätigt den Absprung.", es: "La confirmación de la tripulación valida el lanzamiento." }
+  - id: isr-sensor
+    family: ISR
+    key: hand
+    title: { fr: "Observation capteur déclarée", en: "Sensor observation declared", de: "Sensorbeobachtung gemeldet", es: "Observación por sensor declarada" }
+    brief: { fr: "L’opérateur confirme l’identification capteur.", en: "The operator confirms the sensor identification.", de: "Der Operator bestätigt die Sensoridentifizierung.", es: "El operador confirma la identificación por sensor." }
+  - id: aar-disconnect
+    family: AAR
+    key: hand
+    title: { fr: "Fin de ravitaillement déclarée", en: "End of refuelling declared", de: "Ende der Luftbetankung gemeldet", es: "Fin del reabastecimiento declarado" }
+    brief: { fr: "L’équipage confirme la déconnexion et ouvre le retour.", en: "The crew confirms the disconnection and opens the return.", de: "Die Besatzung bestätigt die Trennung und öffnet den Rückflug.", es: "La tripulación confirma la desconexión y abre el regreso." }
+  - id: fi-procedure
+    family: FI
+    key: hand
+    title: { fr: "Validation de procédure déclarée", en: "Procedure validation declared", de: "Verfahrensprüfung gemeldet", es: "Validación de procedimiento declarada" }
+    brief: { fr: "L’équipage confirme la fin de la procédure de contrôle.", en: "The crew confirms the end of the check procedure.", de: "Die Besatzung bestätigt das Ende des Prüfverfahrens.", es: "La tripulación confirma el fin del procedimiento de control." }
+  - id: survey-lidar
+    family: SURVEY
+    key: hand
+    title: { fr: "Acquisition LIDAR déclarée", en: "LIDAR acquisition declared", de: "LIDAR-Erfassung gemeldet", es: "Adquisición LIDAR declarada" }
+    brief: { fr: "L’opérateur confirme la fin d’acquisition.", en: "The operator confirms the end of the acquisition.", de: "Der Operator bestätigt das Ende der Erfassung.", es: "El operador confirma el fin de la adquisición." }
+  # --- l'arrivée au terrain (1)
+  - id: special-ferry
+    family: SPECIAL
+    key: arrival
+    title: { fr: "Convoyage vers le terrain", en: "Ferry to the aerodrome", de: "Überführung zum Platz", es: "Traslado al aeródromo" }
+    brief: { fr: "Valider l’arrivée au terrain de destination.", en: "Validate the arrival at the destination aerodrome.", de: "Die Ankunft am Zielplatz bestätigen.", es: "Validar la llegada al aeródromo de destino." }
+    params: { radius_nm: 1, speed_max_kt: 30, require_on_ground: true }
+    fallback_min: 120
+models:
+  - id: blank
+    type: ""
+    title: { fr: "Mission vierge", en: "Blank mission", de: "Leere Mission", es: "Misión en blanco" }
+    brief: { fr: "Aucun tiroir, aucun lieu : tout est à poser.", en: "No drawer, no place: everything is yours to set.", de: "Keine Schublade, kein Ort: alles ist selbst zu setzen.", es: "Ningún cajón, ningún lugar: todo queda por poner." }
+    drawers: []
+    places: []
+  - id: search-glacier
+    type: SAR
+    title: { fr: "Recherche sur un glacier", en: "Search on a glacier", de: "Suche auf einem Gletscher", es: "Búsqueda en un glaciar" }
+    brief: { fr: "Une zone de passage, une personne à trouver, le retour au terrain.", en: "A passage zone, a person to find, the return to the aerodrome.", de: "Eine Durchflugzone, eine zu findende Person, die Rückkehr zum Platz.", es: "Una zona de paso, una persona por encontrar, el regreso al aeródromo." }
+    drawers:
+      - brick: sar-land
+        place: zone-1
+        title: { fr: "Entrée sur le glacier", en: "Entering the glacier", de: "Einflug über den Gletscher", es: "Entrada en el glaciar" }
+      - brick: le-missing
+        place: obj-1
+        title: { fr: "Personne en vue", en: "Person in sight", de: "Person in Sicht", es: "Persona a la vista" }
+      - brick: special-ferry
+        title: { fr: "Retour au terrain", en: "Return to the aerodrome", de: "Rückkehr zum Platz", es: "Regreso al aeródromo" }
+    places:
+      - { id: zone-1, kind: zone, name: { fr: "Secteur de recherche", en: "Search sector", de: "Suchsektor", es: "Sector de búsqueda" } }
+      - { id: obj-1, kind: object, okind: person, name: { fr: "Personne à trouver", en: "Person to find", de: "Zu findende Person", es: "Persona por encontrar" } }
+  - id: interception
+    type: COMBAT
+    title: { fr: "Interception d’un aéronef", en: "Intercepting an aircraft", de: "Abfangen eines Luftfahrzeugs", es: "Interceptación de una aeronave" }
+    brief: { fr: "Une zone d’entrée, l’aéronef à identifier, le retour au terrain.", en: "An entry zone, the aircraft to identify, the return to the aerodrome.", de: "Eine Einflugzone, das zu identifizierende Luftfahrzeug, die Rückkehr zum Platz.", es: "Una zona de entrada, la aeronave por identificar, el regreso al aeródromo." }
+    drawers:
+      - brick: combat-bfm
+        place: zone-1
+        title: { fr: "Entrée dans le secteur", en: "Entering the sector", de: "Einflug in den Sektor", es: "Entrada en el sector" }
+      - brick: combat-intercept
+        place: obj-1
+        title: { fr: "Contact établi", en: "Contact made", de: "Kontakt hergestellt", es: "Contacto establecido" }
+      - brick: special-ferry
+        title: { fr: "Retour au terrain", en: "Return to the aerodrome", de: "Rückkehr zum Platz", es: "Regreso al aeródromo" }
+    places:
+      - { id: zone-1, kind: zone, name: { fr: "Secteur d’interception", en: "Interception sector", de: "Abfangsektor", es: "Sector de interceptación" } }
+      - { id: obj-1, kind: object, okind: aircraft, name: { fr: "Aéronef à identifier", en: "Aircraft to identify", de: "Zu identifizierendes Luftfahrzeug", es: "Aeronave por identificar" } }
