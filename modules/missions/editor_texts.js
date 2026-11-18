@@ -484,6 +484,22 @@ export const EDTX = {
     'Ein Versuch trägt höchstens zwanzig Setzungen: „Neu beginnen“ vergisst sie.',
     'Una prueba lleva veinte colocaciones como máximo: «Volver a empezar» las olvida.'
   ],
+  // « Vue du pilote » (SOG-0448) : ce que le pilote peut voir à un stade — la règle du lecteur (pilotView), sur la carte de l'atelier
+  atView: ['Vue de la carte', 'View of the map', 'Ansicht der Karte', 'Vista del mapa'],
+  atView_all: ['Tout — la vue de l\'auteur', 'Everything — the author\'s view', 'Alles — die Sicht des Autors',
+    'Todo — la vista del autor'
+  ],
+  atView_start: ['Vue du pilote : au départ', 'Pilot\'s view: at the departure', 'Sicht des Piloten: beim Abflug',
+    'Vista del piloto: a la salida'
+  ],
+  atView_n: ['Vue du pilote : tiroir {n} ouvert', 'Pilot\'s view: drawer {n} open', 'Sicht des Piloten: Schublade {n} offen',
+    'Vista del piloto: cajón {n} abierto'
+  ],
+  atHint_pilot: ['Vue du pilote : la carte ne montre que ce qu\'il peut voir à ce stade ; les outils reviennent avec « Tout ».',
+    'Pilot\'s view: the map shows only what he may see at this stage; the tools come back with « Everything ».',
+    'Sicht des Piloten: die Karte zeigt nur, was er in diesem Stadium sehen darf; die Werkzeuge kommen mit „Alles“ zurück.',
+    'Vista del piloto: el mapa solo muestra lo que puede ver en esta etapa; las herramientas vuelven con «Todo».'
+  ],
   atHint_view: ['Pendant l\'essai, la carte montre l\'avion et sa trace.', 'During the trial, the map shows the aircraft and its trail.',
     'Während des Versuchs zeigt die Karte das Luftfahrzeug und seine Spur.',
     'Durante la prueba, el mapa muestra la aeronave y su traza.'

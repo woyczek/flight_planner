@@ -25,6 +25,8 @@
 // Les repères de la base aéronautique : quand la vue s'arrête (au zoom 7 et au-delà), l'écran demande à ctx.aerodb les aérodromes,
 // balises, points et points VFR du cadre et les rend à la carte (EM.refData les borne) ; un repère touché en Sélection (s.ed.mapRef)
 // dit ce qu'il est dans la ligne et « Ajouter comme point » se montre à côté — le toucher ne crée rien.
+// « Vue du pilote » (SOG-0448) : le sélecteur « Vue de la carte » sous le cadre (s.ed.mapView : -1 tout, 0 au départ, n après le
+// tiroir n) ; en vue du pilote la carte ne dessine que ce que MS.pilotView garde (edPilotRows) et ne fait que montrer.
 // « Placer l'avion ici » : pendant un essai des clés, un bouton à côté de la ligne de l'outil (s.ed.trial.putting) ; le toucher suivant
 // de la carte ajoute une pose à s.ed.trial.puts ({ min, lat, lon } à la minute du curseur) ; le moteur de l'essai la joue.
 //
@@ -105,6 +107,8 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmaptools button{min-height:44px;padding-left:10px;padding-right:10px}
 [data-module="missions"] .ms-atmaptools button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
 [data-module="missions"] .ms-atmaptools .ms-atmapend{margin-left:auto}
+[data-module="missions"] .ms-atmapview{margin:8px 0 0}
+[data-module="missions"] .ms-atmapview select{width:100%;min-height:44px}
 [data-module="missions"] .ms-atmaphintrow{display:flex;align-items:center;gap:8px;margin:0 0 6px;min-height:44px}
 [data-module="missions"] .ms-atmaphint{margin:0;flex:1 1 auto}
 [data-module="missions"] .ms-atmaphintrow>button{flex:0 0 auto;min-height:44px}
@@ -592,11 +596,42 @@ function edFlowHtml(s, doc, run = null) {
     <div class="ms-atflowrow"><button type="button" class="ms-atpart" data-do="edsel" data-sel="start" data-part="start" data-kind="start"${on('start')}><span class="ms-attag f-muted">${esc(s.tt(EDTX.atVisible))}</span><b>${esc(s.tt(EDTX.atStart))}</b><span class="f-muted" data-flowline>${esc(ED.liaisonTitle(c.dep, c.arr))}</span></button>${drawers.map(d => `<button type="button" class="ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-attag f-muted"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span> ${esc(s.tt(EDTX.atSealed))}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="ms-atpart ms-atadd" data-do="eddradd" data-dradd>${esc(s.tt(EDTX.dwAdd))}</button>` : ''}</div></section>`;
 }
 
+/** Les lignes des Lieux que la « Vue du pilote » garde (SOG-0448) : au stade choisi, seulement ce que le lecteur rend au pilote
+ *  (MS.pilotView : UNE règle, celle de la fiche, du Détail et de la Carte) — le départ et l'arrivée toujours, la cible si elle est
+ *  montrée, un objet seulement quand le tiroir dont il est la clé est ouvert, les autres lieux par leur identifiant. Une ligne non
+ *  gardée devient null : les rangs des autres ne bougent pas. En vue de l'auteur, ou pour une mission sans tiroir : toutes. */
+function edPilotRows(e, doc, rows) {
+  const n = edMapStage(e);
+  if (n < 0) return rows;
+  const m = MS.readMission(doc),
+    v = MS.pilotView(m, (m?.drawers || []).slice(0, n).map(d => d.id));
+  if (!v || v === m) return rows;
+  const up = x => String(x ?? '').trim().toUpperCase(),
+    kept = new Set([...Object.keys(v.points), ...v.zones.map(z => z.id), ...v.rendezvous.map(z => z.id), ...v.turns.map(z => z.id)].map(
+      up)),
+    objects = new Set(v.drawers.filter(d => !d.sealed).map(d => up(d.key?.object?.id)).filter(Boolean));
+  return rows.map(r => r.kind === 'dep' || r.kind === 'arr' ? r : r.kind === 'target' ? (v.target ? r : null) : r.kind === 'object' ? (
+    objects.has(up(r.id)) ? r : null) : r.id && kept.has(up(r.id)) ? r : null);
+}
+
+/** Le sélecteur « Vue de la carte », sous le cadre : « Tout — la vue de l'auteur », puis la vue du pilote au départ et après chaque
+ *  tiroir. Montré seulement quand la mission a des tiroirs, et hors d'un essai des clés (l'essai montre tout) ; inactif tant que la
+ *  carte n'est pas là (elle arrive après le dessin : edMapShow le donne sur place). */
+function edMapViewHtml(s, live) {
+  const e = s.ed,
+    n = edDrawers(e).length,
+    stage = edMapStage(e),
+    opt = (v, text) => `<option value="${v}"${stage === v ? ' selected' : ''}>${esc(text)}</option>`;
+  if (!n || e.trial?.on) return '';
+  return `<label class="f-field ms-atmapview" data-mapview><span class="f-muted">${esc(s.tt(EDTX.atView))}</span><select data-k="edmapview"${live ? '' : ' disabled'}>${opt(-1, s.tt(EDTX.atView_all))}${opt(0, s.tt(EDTX.atView_start))}${Array.from({ length: n }, (_, k) => opt(k + 1, s.tt(EDTX.atView_n, { n: k + 1 }))).join('')}</select></label>`;
+}
+
 /** Ce que la carte dessine de la séance (editor_map.js, pur) : les lignes des Lieux que l'écran montre, les sommets des contours lus
  *  dans le fichier d'origine, la route du départ (celle que suit l'essai), l'essai en cours. */
 function edMapFeats(s, doc, run = null) {
-  const e = s.ed;
-  return EM.mapFeatures(e.places || ED.placesOf(doc), {
+  const e = s.ed,
+    rows = e.places || ED.placesOf(doc);
+  return EM.mapFeatures(run ? rows : edPilotRows(e, doc, rows), {
     zones: e.base?.zones,
     // « XTST · Base Test » (placeText : le code d'abord) : la position de la base quand le fichier ne la dit pas
     adPos: name => adPosOf(s, (/^[A-Z]{4}(?= ·|$)/.exec(String(name || '')) || [])[0]),
@@ -613,8 +648,11 @@ const edMapSel = e => Number.isInteger(e.mapSel) ? e.mapSel : -1;
 /** L'outil de la carte : 'select' (la Sélection, à l'ouverture et après chaque pose), 'point', 'zone', 'object' ; 'view' pendant un
  *  essai des clés (la carte ne fait que montrer) ; 'put' pendant un essai, quand « Placer l'avion ici » est en main ; 'route' : Tracé,
  *  qui reste en main jusqu'à ce qu'on le quitte. */
-const edMapTool = e => e.trial?.on ? (e.trial.putting ? 'put' : 'view') : ['point', 'route', 'zone', 'object'].includes(e.tool) ? e.tool :
-  'select';
+const edMapTool = e => e.trial?.on ? (e.trial.putting ? 'put' : 'view') : edMapStage(e) >= 0 ? 'view' : ['point', 'route', 'zone', 'object']
+  .includes(e.tool) ? e.tool : 'select';
+/** Le stade de la « Vue du pilote » sur la carte (s.ed.mapView ; SOG-0448) : -1 — tout, la vue de l'auteur (le défaut) ; 0 — le
+ *  pilote au départ ; n — le pilote une fois le tiroir n ouvert (les tiroirs 1 à n). Borné au nombre de tiroirs de la séance. */
+const edMapStage = e => Number.isInteger(e.mapView) && e.mapView >= 0 ? Math.min(e.mapView, edDrawers(e).length) : -1;
 /** Pendant un essai des clés (la carte montre, ou attend qu'on pose l'avion) : les outils d'édition ne se donnent pas. */
 const edMapTrial = tool => tool === 'view' || tool === 'put';
 /** Le tiroir choisi dans le déroulé (sa ligne et son rang), ou null quand c'est « Au départ ». */
@@ -662,6 +700,7 @@ function edMapHint(s) {
   if (tool === 'put') return s.tt(EDTX.atHint_put, {
     m: trMin(e.trial.min)
   });
+  if (tool === 'view' && !e.trial?.on) return s.tt(EDTX.atHint_pilot);
   if (['zone', 'object'].includes(tool) && edDrawFor(e)) return s.tt(EDTX.atHint_drawFor, {
     n: edDrawFor(e).rank
   });
@@ -697,7 +736,7 @@ function edMapHtml(s, doc, run = null) {
     off = !live || edMapTrial(tool),
     btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && edMapTrial(tool) ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div></div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edMapViewHtml(s, live)}</div></div>`;
 }
 
 /** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
@@ -774,9 +813,11 @@ function edMapShow(s) {
         add = q('[data-refadd]');
       if (del) del.hidden = !(edMapVertex(e) >= 0 && tool === 'select');
       if (add) add.hidden = !edMapRef(e);
+      const view = q('[data-mapview] select');
+      if (view) view.disabled = !live;
       const put = q('[data-trput]');
       if (put) {
-        put.hidden = !(live && edMapTrial(tool));
+        put.hidden = !(live && e.trial?.on);
         put.setAttribute('aria-pressed', String(tool === 'put'));
       }
     };
@@ -1377,6 +1418,16 @@ function edInputDo(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return edDrawerInput(s, ev); // la fiche d'un tiroir
+  if (k === 'edmapview') { // « Vue de la carte » : tout (l'auteur), ou ce que le pilote voit à un stade ; plus de lieu choisi
+    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT') return;
+    const n = Number(ev.target.value);
+    e.mapView = Number.isInteger(n) && n >= 0 && n <= edDrawers(e).length ? n : -1;
+    e.mapSel = -1;
+    e.mapVertex = -1;
+    e.mapRef = null;
+    e.drawFor = '';
+    return draw(s);
+  }
   if (k === 'edroute') { // la route du départ : « Ajouter un lieu… » en ajoute un à la fin
     const token = String(ev.target.value || '').slice(0, 40);
     // seulement le jeton d'un lieu de la séance : une page forgée n'écrit pas un identifiant quelconque dans la route
@@ -1704,6 +1755,7 @@ async function edSave(s) {
       route: null,
       // la carte : plus de lieu choisi, plus de geste à annuler (un état d'avant désignerait les rangs de l'ancien fichier)
       mapSel: -1,
+      mapView: -1,
       mapRef: null,
       mapVertex: -1,
       mapUndo: null,

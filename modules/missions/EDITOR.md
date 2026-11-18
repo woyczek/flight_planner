@@ -660,6 +660,23 @@ What the tools of the map will call, on the rows of the Lieux (`modules/missions
 - With this, lot P2 is delivered but for « Vue du pilote » on the map (waits for the pure function of SOG-0448), « Radiale et
   distance… » for a beacon and the reordering of the chips of a route (asked for later).
 
+### 7 unvicies. « Vue du pilote » on the map of the workshop (18 Nov 2026; SOG-0448, lot B; noreg N104; the rule: `pilotView`, N103)
+
+- **Under the frame of the map, a list « Vue de la carte »** (the row of tools already has seven buttons): « Tout — la vue de
+  l'auteur » (the default: the author sees everything), « Vue du pilote : au départ », then « Vue du pilote : tiroir n ouvert » for
+  each drawer of the sitting. `s.ed.mapView` = -1, 0 or n. Shown only when the mission has drawers and out of a trial of the keys
+  (the trial shows everything); disabled until the map is there (it is given in place when the map arrives).
+- **In the pilot's view the map draws only what the reader gives the pilot at that stage** — `MS.pilotView(readMission(doc), the
+  letters of the first n drawers)`, the ONE rule of the sheet, the Detail and the Map: `edPilotRows` replaces by `null` the rows of
+  the Lieux that the view does not keep (the ranks of the others do not move) — the departure and the arrival always, the target
+  when it is shown, an object only when the drawer it is the key of is open, the other places by their identifier. The names
+  written on the map follow.
+- **The map only shows**: the tools are not given, a touch does nothing, the line says « Vue du pilote : la carte ne montre que ce
+  qu'il peut voir à ce stade ; les outils reviennent avec « Tout » ». Choosing a view forgets the place chosen.
+- The sheet on the right is NOT filtered: it is the author's. « Ce que le pilote voit » of a drawer (§ 7 octies) stays the
+  preview of the drawer itself.
+- **Not done**: the onward routes of the open drawers drawn in the pilot's view; the view during a trial of the keys.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

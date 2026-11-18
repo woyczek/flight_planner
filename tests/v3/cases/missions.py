@@ -5379,3 +5379,78 @@ def n32(c):
          what='plain')
     c.eq([r['untouched'], r['hostile']], [True, [0, 0, 0, 0, 0]], 'the mission read is not touched; no hostile input throws',
          what='untouched')
+
+
+
+_EDVIEW = f'{_EDMAP} [data-mapview] select'
+_EDLABELS = f"[...document.querySelectorAll('{_EDMAP} [data-maplbl]')].map(x => x.textContent).sort()"
+
+
+@case('N104', 'Missions › the workshop, « Vue du pilote » on the map: under the map a list chooses the view — « Tout — la vue de l\'auteur », '
+      'then the pilot\'s view at the departure and after each drawer; in the pilot\'s view the map draws only what the reader gives the '
+      'pilot at that stage (the same rule as the sheet and the Map: `pilotView`) — at the departure the object a closed drawer hides and '
+      'the point of its onward route are not drawn, their names are not written; once that drawer is open they are; the tools are not '
+      'given and a touch does nothing; back to « Tout », everything is drawn and the tools come back; during a trial of the keys the '
+      'list is not shown', 'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0448, lot B (the ergonomist, 17 Nov: « L\'auteur, dans l\'atelier, voit tout, et choisit Vue du pilote »; '
+      'modules/missions/EDITOR.md § 7 unvicies; the rule: frame/lib/mission.js `pilotView`, N103)')
+def n104(c):
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    hint = lambda: norm(c.text(f'{_EDMAP} [data-maphint]'))  # noqa: E731
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _TRIAL_TEXTS)
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"document.querySelector('{_EDMAP}')?.dataset.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the elements of the mission drawn')
+    every = ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'place:5', 'place:6', 'route']
+    c.eq([[[v, norm(t), on] for v, t, on in c.js(f"[...document.querySelectorAll('{_EDVIEW} option')].map(o => [o.value, o.textContent.trim(), o.selected])")], c.js(_EDMAP_IDS, None)],
+         [[['-1', T('atView_all'), True], ['0', T('atView_start'), False], ['1', T('atView_n', n=1), False], ['2', T('atView_n', n=2), False], ['3', T('atView_n', n=3), False],
+           ['4', T('atView_n', n=4), False]], every],
+         'under the map, the list of the views: everything (the author, by default), the pilot at the departure, then after each of the four drawers; the author sees everything',
+         what='the list')
+    # the pilot at the departure: the object of the closed drawer 2 and the point of its onward route are not drawn, nor named
+    c.page.select_option(_EDVIEW, '0')
+    c.until(f"(({_EDMAP_IDS})() || []).length === 6", timeout=8000, what='the view of the pilot at the departure')
+    c.eq([c.js(_EDMAP_IDS, None), c.js(_EDLABELS), hint(), [x[2] for x in c.js(_EDTOOL_STATE)[:6]], c.js(f"document.querySelector('{_EDVIEW}').value")],
+         [['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route'], ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], T('atHint_pilot'), [True] * 6, '0'],
+         'at the departure the pilot sees the route and its places, and the zone drawer 1 shows; the object drawer 2 hides (OBJ-1) and the point of its onward route (PT2) are '
+         'neither drawn nor named; the tools are not given and the line says why', what='the pilot at the departure')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N104_1280_pilot.png')
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
+    c.wait(300)
+    c.ok(c.js(_EDSEL) is None and c.count(f'{E} [data-steps]') == 1 and c.js(f"document.querySelector('{_EDVIEW}').value") == '0', c.js(_EDSEL),
+         'in the pilot\'s view a touch on a place does nothing: the map only shows')
+    # after drawer 1: the same; after drawer 2: its object and its onward route are shown
+    c.page.select_option(_EDVIEW, '1')
+    c.wait(400)
+    c.eq(c.js(_EDMAP_IDS, None), ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route'], 'drawer 1 open: nothing more (its zone was already shown)', what='after drawer 1')
+    c.page.select_option(_EDVIEW, '2')
+    c.until(f"(({_EDMAP_IDS})() || []).length === 8", timeout=8000, what='the view of the pilot after drawer 2')
+    c.eq([c.js(_EDMAP_IDS, None), c.js(_EDLABELS)], [every, ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'XTST', 'XTSU', 'ZONE-1']],
+         'drawer 2 open: the object it was hiding and the point of its onward route are drawn and named', what='after drawer 2')
+    # back to everything: the tools come back
+    c.page.select_option(_EDVIEW, '-1')
+    c.until(f"({_EDTOOL_STATE})[0][2] === false", timeout=8000, what='the tools back')
+    c.eq([c.js(_EDMAP_IDS, None), hint(), c.js(_EDTOOL_STATE)[0]], [every, T('atHint_select'), ['select', 'true', False]], '« Tout »: everything is drawn, the tools come back',
+         what='the author again')
+    # during a trial of the keys the list is not shown (the trial shows everything)
+    c.tap(f'{E} [data-atflow] [data-trbtn]')
+    c.until(f"!!document.querySelector('{_TR}')", what='the trial pane')
+    c.eq(c.count(f'{_EDMAP} [data-mapview]'), 0, 'during a trial of the keys the list of the views is not shown', what='during the trial')
+    c.tap(f'{_TR} [data-do="edtrialoff"]')
+    c.until(f"!document.querySelector('{_TR}')", what='the trial closed')
+    # on a phone
+    c.page.select_option(_EDVIEW, '0')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if c.js(f"getComputedStyle(document.querySelector('{_EDMAP}')).display") == 'none':
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"(() => {{ const k = document.querySelector('{_EDMAP} canvas'); return !!k && k.getBoundingClientRect().width > 300 }})()", timeout=10000, what='the map unfolded on a phone')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_EDMAP} [data-mapview]').scrollIntoView({{block: 'end'}})")
+    c.shot('N104_390_pilot.png')
+    c.tap(f'{E} [data-do="edcancel"]')
+    c.js(_REG_CLEAR)
