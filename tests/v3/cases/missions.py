@@ -6182,3 +6182,285 @@ def n109(c):
     c.tap('.f-modal [data-ok]')
     gone('the new mission abandoned')
     c.js(_REG_CLEAR)
+
+
+# SOG-0456: the block « carte de mission » — its background (« Rapide » / « Relief »), its layer « Espaces », the key of the file
+def _ring(lat0, lat1, lon0, lon1):
+    return [[lat0, lon0], [lat0, lon1], [lat1, lon1], [lat1, lon0], [lat0, lon0]]
+
+
+# the case's own airspaces, around the trial mission (45 N 1 E → 44 N 2 E): a D, a P, an R of the RTBA — drawn; a TMA, an R whose
+# ring is out of bounds, an R without ring — not drawn (the base gives too « R 99 TEST », drawn, and a CTA and a TMA, not drawn)
+_MAP_SPACES = [
+    {'type': 'D', 'name': 'D 1 TEST', 'lower': 'SFC', 'upper': 'FL100', 'rings': [_ring(44.3, 44.45, 1.2, 1.4)]},
+    {'type': 'P', 'name': 'P 2 TEST', 'lower': 'SFC', 'upper': 'FL050', 'rings': [_ring(44.5, 44.6, 1.6, 1.75)]},
+    {'type': 'R', 'name': 'R 45 TEST', 'azba': True, 'lower': '800ft', 'upper': 'FL100', 'rings': [_ring(44.65, 44.75, 1.3, 1.6)]},
+    {'type': 'TMA', 'cls': 'D', 'name': 'TMA 3 TEST', 'lower': 'FL050', 'upper': 'FL100', 'rings': [_ring(44.2, 44.9, 1.1, 1.9)]},
+    {'type': 'R', 'name': 'R HOSTILE', 'lower': 'SFC', 'upper': 'UNL', 'rings': [[[95, 1.2], [44.4, 1.3], [44.3, 1.4]]]},
+    {'type': 'R', 'name': 'R VIDE', 'lower': 'SFC', 'upper': 'UNL', 'rings': 'x'},
+]
+_PNG_1 = __import__('base64').b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+_LOOK = f'{_EDMAP} [data-maplook]'
+_LOOK_STATE = (f"(() => {{ const r = document.querySelector('{_LOOK}'); return [[...r.querySelectorAll('[data-do=edmapbase]')].map(b => b.dataset.base + ':' + b.getAttribute('aria-pressed')), "
+               "r.querySelector('input[data-k=edmapspaces]').checked, r.querySelector('[data-maplooksaid]').textContent.trim()] })()")
+# the airspaces the map draws (the source of the zones layer of the base): their tones, sorted; and whether its layers lie under the author's
+_MAP_TONES = """(() => { const m = window.__edMap, st = m.getStyle(), src = Object.entries(st.sources).find(([k]) => k.startsWith('mb-zones-'));
+  return src ? (src[1].data.features || []).map(f => f.properties.tone).sort() : null })()"""
+_MAP_UNDER = """(() => { const ids = window.__edMap.getStyle().layers.map(l => l.id), z = ids.map((x, i) => x.startsWith('mb-zones-') ? i : -1).filter(i => i >= 0),
+  a = ids.map((x, i) => x.startsWith('me-') ? i : -1).filter(i => i >= 0); return z.length > 0 && a.length > 0 && Math.max(...z) < Math.min(...a) })()"""
+_MAPLOOK_JS = """async () => { const MS = await import('/frame/lib/mission.js'), ED = await import('/modules/missions/editor.js'), EM = await import('/modules/missions/editor_map.js'); let threw = '';
+  const looks = [undefined, null, 7, 'relief', [], ['relief'], { base: 'satellite', airspaces: 'yes' }, { base: 'RELIEF', airspaces: 1 }, { base: ['relief'], airspaces: [true] },
+    { base: 'relief' }, { airspaces: true }, { base: 'relief', airspaces: true, url: 'https://x.test/{z}/{x}/{y}.png' }].map(v => { try { const k = MS.mapLook(v); return k.base + (k.airspaces === true ? '+' : '') + Object.keys(k).length } catch (e) { threw += String(e); return '?' } });
+  const base = { mission: { id: 'X-1', type: 'REG' }, title: 'T' }, same = ED.withMapLook(base, { base: 'fast', airspaces: false }), set = ED.withMapLook(base, { base: 'relief', airspaces: true, url: 'x' }),
+    back = ED.withMapLook(set, { base: 'nope' });
+  const ring = n => Array.from({ length: n }, (_, i) => [44 + Math.sin(i) / 10, 1 + Math.cos(i) / 10]);
+  const sp = (list) => { try { return EM.spaceFeatures(list).features } catch (e) { threw += String(e); return [] } };
+  const kinds = sp([{ type: 'R', rings: [ring(5)] }, { type: 'D', rings: [ring(5)] }, { type: 'P', rings: [ring(5)] }, { type: 'TMA', azba: true, rings: [ring(5)] }, { type: 'TMA', rings: [ring(5)] },
+    { type: 'CTR', azba: 'true', rings: [ring(5)] }, { type: ['R'], rings: [ring(5)] }]);
+  const bad = sp([null, 7, 'x', { type: 'R' }, { type: 'R', rings: 'x' }, { type: 'R', rings: [[[1, 2]]] }, { type: 'R', rings: [[[95, 1], [44, 1], [44, 2]]] }, { type: 'R', rings: [[[44, 1], [44, 181], [45, 2]]] },
+    { type: 'R', rings: [[['44', {}], [44, 1], [44, 2]]] }, { type: 'R', rings: [ring(2001)] }]);
+  const one = sp([{ type: 'R', name: '<b>x</b>', rings: [[[44, 1], [44, 2], [45, 2]], ...Array.from({ length: 12 }, () => ring(4))] }])[0];
+  for (const h of [null, 'x', 7, {}]) sp(h);
+  return { threw, looks, same: same === base, set: set.mission_map, kept: JSON.stringify(Object.keys(set)), back: back.mission_map, untouched: !('mission_map' in base),
+    bases: [EM.baseOf('relief'), EM.baseOf('RELIEF'), EM.baseOf(null), EM.baseOf({})], kinds: kinds.map(f => f.properties.tone), bad: bad.length,
+    one: [Object.keys(one.properties).sort(), one.geometry.type, one.geometry.coordinates.length, one.geometry.coordinates[0][0][0], one.geometry.coordinates[0][0].length],
+    cap: sp(Array.from({ length: 900 }, () => ({ type: 'D', rings: [ring(4)] }))).length } }"""
+
+
+@case('N110', 'Missions › the workshop, the map of the mission has a background and a layer chosen by the author: under the map, « Fond » '
+      '— « Rapide » (the one of today, the default) or « Relief » (the topographic background of the map base) — and « Espaces » (the '
+      'R, D and P zones and the RTBA of the aeronautical base, read by the frame of the view, off by default: nothing is read while it '
+      'is off); the airspaces lie under the mission; too wide a view says « rapprochez la vue »; « Relief » that does not come says so '
+      'and the map stays in « Rapide »; the choice is written in the file by a bounded key (`mission_map`: two closed values and a '
+      'boolean) and read again; an unknown value reads « Rapide », layer off',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0456 (the user, 18 Nov: a topographic view for medical evacuation and insertion, the RTBA and the airspaces for '
+      'interception, « garder la vue rapide dans tous les cas »; the ergonomist: one block on the map base, a background « Rapide » or '
+      '« Relief », a layer « Espaces » loaded on demand, the choice of the author written by a bounded key; '
+      'modules/missions/EDITOR.md § 7 sexvicies; docs/technique/FORMAT_MISSION.md § 4 ter)')
+def n110(c):
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    look = lambda: (lambda v: (v[0], v[1], norm(v[2])))(c.js(_LOOK_STATE))  # noqa: E731
+    state = f"document.querySelector('{_EDMAP}')?.dataset.map"
+    file = 'missions/X_REG/X-001A/missionX-001A.yaml'
+
+    def base(name):
+        c.tap(f'{_LOOK} [data-do="edmapbase"][data-base="{name}"]')
+
+    # the key of the file is bounded, the choice is written only when it changes, the airspaces of the base are bounded and sorted
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    r = c.js(_MAPLOOK_JS)
+    c.eq([r['threw'], r['looks'], r['bases']],
+         ['', ['fast2', 'fast2', 'fast2', 'fast2', 'fast2', 'fast2', 'fast2', 'fast2', 'fast2', 'relief2', 'fast+2', 'relief+2'], ['relief', 'fast', 'fast', 'fast']],
+         'the key read: « relief » exactly, « true » exactly — anything else (absent, another type, another word, another case) reads « fast », layer off; two fields come out, never a third', what='the key bounded')
+    c.eq([r['same'], r['set'], r['kept'], r['back'], r['untouched']], [True, {'base': 'relief', 'airspaces': True}, '["mission","title","mission_map"]', {'base': 'fast', 'airspaces': False}, True],
+         'the choice written: nothing when it is what the file says; else `mission_map` with its two fields and nothing else (a field of the caller is not written); the document given is not touched', what='the key written')
+    c.eq([r['kinds'], r['bad'], r['one'], r['cap']], [['warn', 'muted', 'err', 'err'], 0, [['id', 'tone'], 'MultiPolygon', 8, [1, 44], 4], 400],
+         'the airspaces drawn: R, D, P and the RTBA (`azba` exactly true) — no other type; a ring out of bounds, too short, too long, or not a list is not drawn; eight rings per space, 400 spaces, '
+         'rings closed, in [lon, lat]; no name goes to the map; no hostile list throws', what='the airspaces bounded')
+    # the workshop, with a small published base
+    c.page.add_init_script(_EDMAP_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _TRIAL_TEXTS)
+    c.open('missions', wait=False, app='company', airspaces=_MAP_SPACES)
+    c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"{state} === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the suite in the workshop')
+    c.until(f"(({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the mission drawn')
+    c.wait(500)
+    c.eq([look(), c.js(_MAP_TONES), c.js(_MAP_UNDER)], [(['fast:true', 'relief:false'], False, ''), [], True],
+         'a mission that says nothing: « Rapide » in hand, « Espaces » off and nothing read — the layer of the airspaces is empty, and lies under the mission', what='at the opening')
+    # « Espaces »: read by the frame of the view, drawn under the mission, counted; the box and the map are not redrawn
+    c.js(f"document.querySelector('{_LOOK} input').__kept = true; document.querySelector('{_EDMAP} canvas').__kept = true")
+    c.tap(f'{_LOOK} input[data-k="edmapspaces"]')
+    c.until(f"(({_MAP_TONES}) || []).length === 4", timeout=10000, what='the airspaces of the view drawn')
+    c.eq([look(), c.js(_MAP_TONES), c.js(_MAP_UNDER), c.js(f"[document.querySelector('{_LOOK} input').__kept, document.querySelector('{_EDMAP} canvas').__kept]"), len(c.js(_EDMAP_IDS, None))],
+         [(['fast:true', 'relief:false'], True, T('atSpacesN', n=4).replace('(s)', 's')), ['err', 'err', 'muted', 'warn'], True, [True, True], 8],
+         '« Espaces » on: the R zone of the base, the D, the P and the RTBA of the view are drawn (not the CTA nor the TMA, not the hostile ring), under the mission, and counted; '
+         'the box pressed and the map are the same elements (nothing is redrawn); the mission is still drawn', what='Espaces on')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N110_1280_spaces.png')
+    # too wide a view: nothing is read, the layer is emptied and the line says so; « Recentrer » brings them back
+    c.js("window.__edMap.jumpTo({ zoom: 3 })")
+    c.until(f"(({_MAP_TONES}) || []).length === 0", timeout=8000, what='the layer emptied')
+    c.eq(look()[2], T('atSpacesFar'), 'a view too wide reads nothing: the line says to come closer', what='too wide')
+    c.tap(f'{_EDMAP} [data-do="edmapfit"]')
+    c.until(f"(({_MAP_TONES}) || []).length === 4", timeout=10000, what='the airspaces back')
+    # « Relief » that does not come (the bench answers no tile host): said, the map stays in « Rapide », the choice stays
+    base('relief')
+    c.until(f"document.querySelector('{_LOOK} [data-maplooksaid]').textContent.includes({T('atReliefOff')!r}.slice(0, 20))", timeout=15000, what='Relief said unavailable')
+    c.until(f"{state} === 'tiles'", timeout=10000, what='the map back in Rapide')
+    c.until(f"(({_MAP_TONES}) || []).length === 4 && (({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the mission and the airspaces drawn again')
+    c.ok(look()[0] == ['fast:false', 'relief:true'] and look()[1] is True and T('atReliefOff') in look()[2], look(),
+         '« Relief » that does not come: the line says it, the map stays in « Rapide » with the mission and the airspaces; the choice of the author stays « Relief »')
+    # « Relief » that comes (the tiles answered by the case, from no network): the topographic background, the mission on it
+    c.page.route('**/*.tile.opentopomap.org/**', lambda r: r.fulfill(status=200, content_type='image/png', body=_PNG_1))
+    base('fast')
+    c.until(f"{state} === 'tiles' && !document.querySelector('{_LOOK} [data-maplooksaid]').textContent.includes({T('atReliefOff')!r}.slice(0, 20))", timeout=10000, what='Rapide again')
+    base('relief')
+    c.until(f"{state} === 'relief'", timeout=15000, what='the topographic background')
+    c.until(f"(({_MAP_TONES}) || []).length === 4 && (({_EDMAP_IDS})() || []).length >= 8", timeout=10000, what='the mission and the airspaces on the relief')
+    c.eq([look(), c.js("window.__edMap.getStyle().layers[0].id"), c.js(_MAP_UNDER), c.js(_EDLABELS)],
+         [(['fast:false', 'relief:true'], True, T('atSpacesN', n=4).replace('(s)', 's')), 'otm', True, ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'XTST', 'XTSU', 'ZONE-1']],
+         '« Relief »: the topographic background of the map base, the airspaces on it, the mission above, every place named', what='Relief')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{E} [data-atmap]').scrollIntoView({{block: 'start'}})")
+    c.shot('N110_1280_relief.png')
+    # saved: the bounded key in the file; reopened: the choice of the author is the one of the file
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]') && !document.querySelector('{E} [data-do=edsave]').disabled", timeout=10000, what='saved')
+    t = c.js(_TEXT_OF, file) or ''
+    c.ok(re.search(r'\nmission_map:\n  base: relief\n  airspaces: true\n', t) and t.count('mission_map') == 1 and 'opentopomap' not in t, t[-200:],
+         'saved: `mission_map` with « base: relief » and « airspaces: true » — two fields, no address of any host')
+    ed_leave(c)
+    c.until(_REG_READ, timeout=20000, what='back to the registry')
+    c.tap(f'{R} [data-rowid="X-001A"] > summary')
+    c.tap(f'{R} [data-rowid="X-001A"] [data-do="edmodify"]')
+    c.until(f"{state} === 'relief'", timeout=15000, what='reopened in Relief')
+    c.until(f"(({_MAP_TONES}) || []).length === 4", timeout=10000, what='the airspaces of the file')
+    c.eq(look()[:2], (['fast:false', 'relief:true'], True), 'reopened: « Relief » and « Espaces », as the file says', what='reopened')
+    # back to the default: the key says it; at 390 the row holds on the screen
+    base('fast')
+    c.until(f"{state} === 'tiles'", timeout=10000, what='Rapide')
+    c.tap(f'{_LOOK} input[data-k="edmapspaces"]')
+    c.until(f"(({_MAP_TONES}) || []).length === 0", timeout=8000, what='the layer emptied')
+    c.eq(look(), (['fast:true', 'relief:false'], False, ''), '« Espaces » off: the layer is emptied, nothing is said', what='Espaces off')
+    c.tap(f'{E} [data-do="edsave"]')
+    for _ in range(24):  # the file follows the save
+        t = c.js(_TEXT_OF, file) or ''
+        if 'base: fast' in t:
+            break
+        c.wait(250)
+    c.ok(re.search(r'\nmission_map:\n  base: fast\n  airspaces: false\n', t), t[-200:], 'the default chosen again is written as such: « base: fast », « airspaces: false »')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    if not c.js(f"document.querySelector('{E} [data-atmap]').dataset.open"):
+        c.tap(f'{E} [data-do="edmap"]')
+    c.until(f"{state} === 'tiles'", timeout=10000, what='the map at 390')
+    c.tap(f'{_LOOK} input[data-k="edmapspaces"]')
+    c.until(f"(({_MAP_TONES}) || []).length >= 1", timeout=10000, what='the airspaces at 390')
+    c.js(f"document.querySelector('{_LOOK}').scrollIntoView({{block: 'center'}})")
+    wide = c.js(f"(() => {{ const r = document.querySelector('{_LOOK}').getBoundingClientRect(), b = [...document.querySelectorAll('{_LOOK} button, {_LOOK} label')].map(x => x.getBoundingClientRect()); "
+                "return [r.right <= innerWidth && r.left >= 0, b.every(x => x.height >= 44 && x.right <= innerWidth), document.documentElement.scrollWidth <= innerWidth] })()")
+    c.eq(wide, [True, True, True], 'at 390 the row « Fond / Espaces » holds in the width, each control 44 px high, the page does not scroll sideways', what='at 390')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N110_390_look.png')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+# SOG-0456: the block in READ ONLY (modules/missions/mission_map.js) — posed by the case in a slot of the module, the way the Brief
+# and the reader will (the contract at the head of the file); the map is taken when the block frames it
+_MM_HOOK = _EDMAP_HOOK.replace('[data-atmapslot]', '[data-mmslot]')
+_MM = f'{M} [data-msmap] [data-mm]'
+# poses the block: the trial mission (with the key of the map the case wants), n drawers open, an aeronautical base of the case's own
+_MM_POSE = """async ([text, opened, fresh]) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js');
+  const MM = await import('/modules/missions/mission_map.js'), TX = (await import('/modules/missions/editor_texts.js')).EDTX, mod = document.querySelector('[data-module="missions"]');
+  const k = window.__mm ||= { owner: {}, asked: 0, alive: true, calls: 0 };
+  if (fresh === true) { k.owner = {}; k.doc = null }
+  k.doc ||= globalThis.jsyaml.load(text, { schema: globalThis.jsyaml.CORE_SCHEMA });
+  k.frozen = JSON.stringify(k.doc);
+  let slot = mod.querySelector('[data-msmap]');
+  if (!slot || fresh === 'redraw') { slot?.remove(); slot = document.createElement('div'); slot.dataset.msmap = ''; mod.append(slot) }
+  const ring = (a, b, c, d) => [[a, c], [a, d], [b, d], [b, c], [a, c]];
+  k.calls++;
+  return MM.readMap(slot, { doc: k.doc, opened, owner: k.owner, alive: () => k.alive, tt: (t, v) => String(t[0]).replace('{n}', v?.n ?? '').replace(/\\(s\\)/g, 's'),
+    ctx: { aerodb: { airspaces: async q => { k.asked++; k.bbox = q.bbox; return [{ type: 'R', rings: [ring(44.3, 44.45, 1.2, 1.4)] }, { type: 'D', azba: true, rings: [ring(44.5, 44.6, 1.6, 1.75)] }, { type: 'CTR', rings: [ring(44, 45, 1, 2)] }] },
+      aerodromes: async () => [] } } }) }"""
+_MM_STATE = f"""(() => {{ const r = document.querySelector('{_MM}'); if (!r) return null;
+  return {{ map: r.dataset.map, base: [...r.querySelectorAll('button[data-mm=base]')].map(b => b.dataset.base + ':' + b.getAttribute('aria-pressed')), spaces: r.querySelector('input[data-mm=spaces]').checked,
+    said: r.querySelector('[data-maplooksaid]').textContent.trim(), labels: [...r.querySelectorAll('[data-maplbl]')].map(x => x.textContent).sort(), dos: r.querySelectorAll('[data-do], [data-k]').length,
+    frame: Math.round(r.querySelector('.ms-atmapframe').getBoundingClientRect().height), border: getComputedStyle(r.querySelector('.ms-atmapframe')).borderTopWidth }} }})()"""
+
+
+@case('N111', 'Missions › the map of the mission in READ ONLY (the block the Brief and the reader pose): it draws what the pilot may see '
+      '— at the departure nothing of a closed drawer, then what each open drawer shows —, in the background and with the layer the '
+      'author chose in the file; the pilot changes them for the sitting, nothing is written; it only shows: a touch chooses nothing, '
+      'no tool; posed again after a redraw of the screen it is the same map; a mission without any located place gives no map; '
+      'stopMap gives the map back',
+      'N', tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0456 (the ergonomist, 18 Nov: « la carte de l\'atelier devient le bloc carte de mission : mode LECTURE SEULE utilisable '
+      'par le Brief et la liseuse »; the contract: the head of modules/missions/mission_map.js; modules/missions/EDITOR.md '
+      '§ 7 sexvicies; the rule of what the pilot sees: frame/lib/mission.js `pilotView`, N103)')
+def n111(c):
+    T = lambda key, **v: norm(__import__('functools').reduce(lambda t, kv: t.replace('{' + kv[0] + '}', str(kv[1])), v.items(), row(c, key, EDTX_FILE)))  # noqa: E731
+    st = lambda: c.js(_MM_STATE)  # noqa: E731
+    tones = "(window.__edMap ? " + _MAP_TONES + " : null)"
+    relief = _TRIAL_MISSION.rstrip('\n') + '\nmission_map:\n  base: relief\n  airspaces: true\n'
+
+    c.page.add_init_script(_MM_HOOK)
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    open_missions(c)
+    c.page.route('**/*.tile.opentopomap.org/**', lambda r: r.fulfill(status=200, content_type='image/png', body=_PNG_1))
+    # a mission that says nothing about its map, at the departure: Rapide, Espaces off, what the pilot may see
+    c.eq(c.js(_MM_POSE, [_TRIAL_MISSION, 0, True]), True, 'the block is posed: the mission has located places', what='posed')
+    c.until(f"({_MM_STATE})?.map === 'tiles' && !!window.__edMap", timeout=15000, what='the map of the block')
+    c.until(f"({_MM_STATE}).labels.length === 5", timeout=8000, what='the places of the departure')
+    s = st()
+    c.eq([s['base'], s['spaces'], s['said'], s['labels'], s['dos'], s['frame'], s['border'], c.js('window.__mm.asked'), c.js(_EDMAP_IDS, None)],
+         [['fast:true', 'relief:false'], False, '', ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], 0, 300, '1px', 0, ['place:0', 'place:1', 'place:2', 'place:3', 'place:4', 'route']],
+         'at the departure: « Rapide », « Espaces » off and nothing asked of the base; the pilot sees the route and its places and the zone drawer 1 shows — not the object of the closed drawer 2 (OBJ-1) nor '
+         'the point of its onward route (PT2); the block carries no control of the screen that poses it (no data-do, no data-k); its frame is 300 px high, with its hairline', what='at the departure')
+    # it only shows: a touch on a place chooses nothing; no handle
+    c.page.mouse.click(*c.js(_EDMAP_XY, [44.8, 1.2]))
+    c.wait(300)
+    c.eq([c.count(f'{_MM} [data-mapsel]'), st()['labels']], [0, ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1']], 'a touch on a place chooses nothing: the map only shows', what='read only')
+    # posed again after a redraw of the screen (a new slot): the same map, not a new one
+    c.js("document.querySelector('[data-msmap] canvas').__kept = true")
+    c.eq(c.js(_MM_POSE, [_TRIAL_MISSION, 0, 'redraw']), True, 'posed again in the new slot', what='posed again')
+    c.wait(300)
+    c.eq([c.js("document.querySelector('[data-msmap] canvas').__kept"), c.count(f'{M} [data-msmap]'), c.js('window.__edMapRemoved')], [True, 1, 0],
+         'after a redraw of the screen the block is put back in the new slot: the same map, none removed', what='the same map')
+    # two drawers open: what they show is drawn
+    c.js(_MM_POSE, [_TRIAL_MISSION, 2, False])
+    c.until(f"({_MM_STATE}).labels.length === 7", timeout=8000, what='the places of two open drawers')
+    c.eq(st()['labels'], ['OBJ-1', 'PT1', 'PT2', 'TARGET', 'XTST', 'XTSU', 'ZONE-1'], 'two drawers open: the object of drawer 2 and the point of its onward route are shown', what='two drawers open')
+    # the pilot turns « Espaces » on, for the sitting: read by the frame of the view, sorted by the block, under the mission
+    c.tap(f'{_MM} input[data-mm="spaces"]')
+    c.until(f"(({tones}) || []).length === 2", timeout=10000, what='the airspaces of the view')
+    bbox = c.js('window.__mm.bbox')
+    c.ok(st()['said'] == T('atSpacesN', n=2).replace('(s)', 's') and c.js(tones) == ['err', 'warn'] and c.js(_MAP_UNDER) and len(bbox) == 4 and bbox[0] < 1 < 2 < bbox[2], [st()['said'], c.js(tones), bbox],
+         '« Espaces » on: the base is asked for the frame of the view; the R zone and the RTBA are drawn under the mission (not the CTR), and counted')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{_MM}').scrollIntoView({{block: 'center'}})")
+    c.shot('N111_1280_read.png')
+    # « Relief » for the sitting; « Recentrer »
+    c.tap(f'{_MM} button[data-mm="base"][data-base="relief"]')
+    c.until(f"({_MM_STATE})?.map === 'relief'", timeout=15000, what='the relief')
+    c.until(f"({_MM_STATE}).labels.length === 7 && (({tones}) || []).length === 2", timeout=10000, what='the mission and the airspaces on the relief')
+    c.eq([st()['base'], st()['spaces']], [['fast:false', 'relief:true'], True], '« Relief », chosen by the pilot for the sitting: the mission and the airspaces on it', what='Relief')
+    c.js("window.__edMap.jumpTo({ center: [5, 47], zoom: 9 })")
+    c.wait(600)
+    c.tap(f'{_MM} button[data-mm="fit"]')
+    c.until(f"Math.abs(window.__edMap.getCenter().lat - 44.5) < 0.3", timeout=8000, what='the view back on the mission')
+    c.eq(c.js('JSON.stringify(window.__mm.doc) === window.__mm.frozen'), True, 'nothing was written: the document of the mission is untouched', what='nothing written')
+    # another mission (another owner) whose file says « Relief » and « Espaces »: the block opens so
+    c.eq(c.js(_MM_POSE, [relief, 0, True]), True, 'another mission posed', what='another mission')
+    c.until(f"({_MM_STATE})?.map === 'relief' && (({tones}) || []).length === 2", timeout=15000, what='the choice of the author')
+    s = st()
+    c.eq([s['base'], s['spaces'], s['labels']], [['fast:false', 'relief:true'], True, ['PT1', 'TARGET', 'XTST', 'XTSU', 'ZONE-1']],
+         'a mission whose author chose « Relief » and « Espaces » opens so — at the departure, with what the pilot may see', what='the choice of the author')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{_MM}').scrollIntoView({{block: 'center'}})")
+    c.wait(400)
+    wide = c.js(f"(() => {{ const r = document.querySelector('{_MM}').getBoundingClientRect(), b = [...document.querySelectorAll('{_MM} button, {_MM} label')].map(x => x.getBoundingClientRect()); "
+                "return [r.right <= innerWidth && r.left >= 0, b.every(x => x.height >= 44 && x.right <= innerWidth), document.documentElement.scrollWidth <= innerWidth] })()")
+    c.eq(wide, [True, True, True], 'at 390 the block holds in the width, each control 44 px high', what='at 390')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.shot('N111_390_read.png')
+    # a mission with no located place: no map, the slot stays empty; stopMap gives the map back
+    removed = c.js('window.__edMapRemoved')
+    c.eq(c.js(_MM_POSE, ['mission: { id: X-9, type: REG }\ntitle: Sans lieu\norigin: { name: Quelque part }\n', 0, True]), False, 'a mission without any located place: no map', what='no place')
+    c.eq([c.count(f'{M} [data-msmap] *'), c.js('window.__edMapRemoved') > removed, c.count('.maplibregl-canvas')], [0, True, 0],
+         'the slot stays empty (the screen hides its heading), and the map of the mission before is removed', what='the slot empty')
+    c.js(_MM_POSE, [_TRIAL_MISSION, 0, True])
+    c.until(f"({_MM_STATE})?.map === 'tiles'", timeout=15000, what='posed once more')
+    c.js("(async () => { (await import('/modules/missions/mission_map.js')).stopMap() })()")
+    c.until("document.querySelectorAll('.maplibregl-canvas').length === 0", timeout=8000, what='the map given back')
+    c.eq(c.count(f'{M} [data-msmap] [data-mm]'), 0, 'stopMap removes the block and its map', what='stopMap')

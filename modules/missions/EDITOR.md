@@ -767,6 +767,51 @@ interfaces » — a text link at the far end of the foot, after « Enregistrer �
   the tab asks nothing — said to the ergonomist.
 - The cases that leave the workshop go through `ed_leave` (the question answered when it comes).
 
+### 7 sexvicies. The block « carte de mission »: a background, a layer, a read-only mode (18 Nov 2026; SOG-0456; noreg N110, N111)
+
+The user, after his first sitting: the map of the workshop is « très rapide », to be kept; a topographic view is needed for medical
+evacuation and insertion, the RTBA and the airspaces for interception. The ergonomist: **one block**, on the map base, the same
+code in the workshop (edition) and in READ ONLY (the Brief, the reader) — never a second engine, never the Map module embedded.
+
+- **The background** (`editor_map.js`: `BASES`, `baseOf`, option `base` of `show`): « Rapide » — the chain of today: the suite's
+  background, else the plain one; it works offline — or « Relief », the topographic style of the map base (`styleFor({ base:
+  'otm-topo' })`, a host already in the policy of the pages; **no new host**). The chain of `start` is « Relief » (when wanted),
+  the suite's background, the plain one. A background changed on a live map **restarts the map in the same host** (`restart`:
+  the same fall-back as at the first start; the view is kept when the author had moved it). « Relief » that does not come —
+  offline (`startTiles` gives `null` at once), or four tiles refused with none received (`reliefWatch`) — leaves the map in
+  « Rapide », and the row says « Relief indisponible… » (`reliefMissing`); the choice stays.
+- **The layer « Espaces »** (option `spaces`, `onSpaces`, `setSpaces`, `spaceFeatures`): the R, D and P zones and the RTBA
+  (`azba`) of the aeronautical base, drawn by the zones layer of the map base (`zonesLayer`), posed BEFORE the author's layers —
+  under the mission, and under again after a change of style. **Off by default, and nothing is read while it is off**: that is
+  what keeps the map fast. On, when the view comes to rest at zoom 5 or closer, the screen is asked for the airspaces of the
+  frame (`ctx.aerodb.airspaces({ bbox })`) and gives them back; the block bounds them (`spaceFeatures`: the type, `azba` exactly
+  true, rings of 3 to 2 000 points within bounds, 8 rings per space, 400 spaces; no name goes to the map) and the row says how
+  many are drawn. A wider view empties the layer and says « rapprochez la vue ». Tones: the RTBA and P « err », R « warn », D
+  « muted ». **Asked of the map base** (BUGS SOG): an option `fill` of `zonesLayer` for outlines (its 25 % fill hides the mission
+  under overlapping spaces); the block already passes `fill: 0.04`.
+- **The author chooses, for HIS mission** (the row « Fond : Rapide | Relief » and the box « Espaces » under the map; `edLookHtml`,
+  `s.ed.mapWant`): written in the file by `ED.withMapLook` — the bounded key `mission_map` (`docs/technique/FORMAT_MISSION.md`
+  § 4 ter), only when it differs from what the file says. In place: the button pressed and the box are not redrawn.
+- **The read-only mode** (`mission_map.js`: `readMap(slot, { doc, opened, owner, ctx, tt, alive })`, `stopMap()` — **the contract
+  is at the head of that file**): the block draws what `pilotView` keeps with the `opened` first drawers open, in mode `view` (a
+  touch chooses nothing, no handle), in the background and with the layer of the file; the pilot changes them for the sitting —
+  nothing is written, neither in the mission nor on the device. It brings its frame, its style and its row (« Fond », « Espaces »,
+  « Recentrer »); it carries no `data-do`: the screen that poses it receives nothing. Called again after each draw of the
+  screen, it is put back in the new slot — the same map. One mission map lives at a time in the module; out of the workshop,
+  `edAfter` removes the map of the WORKSHOP only (`EM.editing()`).
+- **Not a third mode**: the full view is « Ouvrir dans la Carte », the gesture of the screen that poses the block.
+- **Measures** (18 Nov, the bench of this session: a visible page, the graphics card of the machine; **no real network** — the
+  suite's background is the bench's empty style, the topographic tiles a local image: the cost of the drawing, not of the line):
+
+  | state | first frame after the slot (3 openings) | a 3 s drag and six wheel steps |
+  |---|---|---|
+  | Rapide | 88 to 175 ms | 100 frames/s, worst frame 10.3 ms |
+  | Relief | 121 to 152 ms | 100 frames/s, worst frame 10.6 ms |
+  | Rapide + Espaces (173 spaces drawn of 300 seeded) | 129 to 155 ms | 100 frames/s, worst frame 10.8 ms |
+
+  A background changed on a live map: 180 to 230 ms. Not measured, said as such: the real tiles of the two hosts on the user's
+  line, a phone.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

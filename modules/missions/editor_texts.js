@@ -379,6 +379,34 @@ export const EDTX = {
   ],
   atMap: ['Carte de la mission', 'Map of the mission', 'Karte der Mission', 'Mapa de la misión'],
   // la carte sur son fond uni (hors ligne, ou le fond de la suite n'est pas venu) : dit une fois par séance, en notification
+  mmNone: ['Carte indisponible sur cet appareil.', 'Map unavailable on this device.', 'Karte auf diesem Gerät nicht verfügbar.',
+    'Mapa no disponible en este dispositivo.'
+  ],
+  atBase: ['Fond', 'Background', 'Hintergrund', 'Fondo'],
+  atBase_fast: ['Rapide', 'Fast', 'Schnell', 'Rápido'],
+  atBase_relief: ['Relief', 'Relief', 'Relief', 'Relieve'],
+  atSpaces: ['Espaces', 'Airspaces', 'Lufträume', 'Espacios'],
+  atReliefOff: ['Relief indisponible (hors ligne, ou le fond ne répond pas) : la carte reste en Rapide.',
+    'Relief unavailable (offline, or the background does not answer): the map stays in Fast.',
+    'Relief nicht verfügbar (offline, oder der Hintergrund antwortet nicht): Die Karte bleibt in Schnell.',
+    'Relieve no disponible (sin conexión, o el fondo no responde): el mapa sigue en Rápido.'
+  ],
+  atSpacesFar: ['Espaces : rapprochez la vue pour les voir.', 'Airspaces: zoom in to see them.',
+    'Lufträume: Ansicht vergrößern, um sie zu sehen.', 'Espacios: acerque la vista para verlos.'
+  ],
+  atSpacesNoBase: ['Espaces : la base aéronautique ne répond pas sur cet appareil.',
+    'Airspaces: the aeronautical base does not answer on this device.',
+    'Lufträume: Die Luftfahrtdatenbank antwortet auf diesem Gerät nicht.',
+    'Espacios: la base aeronáutica no responde en este dispositivo.'
+  ],
+  atSpacesN: ['{n} espace(s) dessiné(s) dans cette vue (zones R, D, P et RTBA).',
+    '{n} airspace(s) drawn in this view (R, D, P zones and RTBA).',
+    'In dieser Ansicht gezeichnete Lufträume: {n} (R-, D-, P-Zonen und RTBA).',
+    '{n} espacio(s) dibujado(s) en esta vista (zonas R, D, P y RTBA).'
+  ],
+  atSpacesNone: ['Espaces : aucun connu dans cette vue.', 'Airspaces: none known in this view.',
+    'Lufträume: in dieser Ansicht keiner bekannt.', 'Espacios: ninguno conocido en esta vista.'
+  ],
   atMapPlain: ['Fond de carte indisponible : la carte montre les lieux sur un fond uni. Tout le reste fonctionne.',
     'Map background unavailable: the map shows the places on a plain background. Everything else works.',
     'Kartenhintergrund nicht verfügbar: die Karte zeigt die Orte auf einfarbigem Grund. Alles andere funktioniert.',

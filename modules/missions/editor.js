@@ -930,6 +930,23 @@ export function proposedMaps(doc) {
   return out.filter(m => !have.has(m.id));
 }
 
+/** Le fond et la couche de la carte de la mission lus du fichier (SOG-0456 ; `mission_map`, borné par le lecteur). */
+export const mapLookOf = doc => MS.mapLook(obj(doc).mission_map);
+
+/** Le document avec le choix de l'auteur pour la carte de la mission : `mission_map: { base, airspaces }` — deux valeurs fermées et
+ *  un booléen, rien d'autre n'y est écrit. Un choix identique à ce que le fichier dit ne retouche rien (audit 182). */
+export function withMapLook(doc, look) {
+  const want = MS.mapLook(look),
+    have = mapLookOf(doc);
+  if (want.base === have.base && want.airspaces === have.airspaces) return doc;
+  const out = structuredClone(obj(doc));
+  out.mission_map = {
+    base: want.base,
+    airspaces: want.airspaces
+  };
+  return out;
+}
+
 /** Le document avec les cartes proposées ajoutées à la fin de `maps` (un objet seul devient une liste ; jamais une carte retirée). */
 export function withMaps(doc, add) {
   const out = structuredClone(obj(doc)),

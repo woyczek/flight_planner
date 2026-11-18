@@ -101,8 +101,7 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmap[data-open="1"] .ms-atmapbody{display:block}
 [data-module="missions"] .ms-atmapframe{position:relative;height:300px;overflow:hidden;box-sizing:border-box;border:1px solid var(--sog-line,#ddd)}
 [data-module="missions"] .ms-atmapslot,[data-module="missions"] .ms-atsketch{position:absolute;inset:0}
-[data-module="missions"] .ms-atmaphost{width:100%;height:100%}
-[data-module="missions"] .ms-atsketch{display:flex;align-items:center;justify-content:center;background:var(--sog-bg,#fff)}
+${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:center;justify-content:center;background:var(--sog-bg,#fff)}
 [data-module="missions"] .ms-atsketch[hidden]{display:none}
 [data-module="missions"] .ms-atsketch .ms-thumb{margin-top:0;width:100%;height:100%;border:0}
 [data-module="missions"] .ms-atmaptools{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
@@ -124,8 +123,6 @@ const AT_STYLE = `[data-module="missions"] .ms-at{display:flex;flex-direction:co
 [data-module="missions"] .ms-atmaphintrow>button{flex:0 0 auto;min-height:44px}
 [data-module="missions"] .ms-atmaphintrow>button[hidden]{display:none}
 [data-module="missions"] .ms-atmaphintrow>button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
-[data-module="missions"] .ms-atmaplbl{pointer-events:none;background:color-mix(in srgb,var(--sog-bg,#fff) 82%,transparent);color:var(--sog-text,#222);padding:0 4px;font-size:.78em;line-height:1.5;white-space:nowrap;max-width:16em;overflow:hidden;text-overflow:ellipsis}
-[data-module="missions"] .ms-atmaplbl[data-mapsel]{background:var(--sog-bg,#fff);border:1px solid var(--sog-accent);padding:1px 6px;font-size:.85em;z-index:1}
 [data-module="missions"] .ms-atflowrow{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scroll-snap-type:x proximity}
 [data-module="missions"] .ms-atpart{flex:0 0 172px;scroll-snap-align:start;border:1px solid var(--sog-line,#ddd);border-top:4px solid var(--sog-muted,#888);padding:8px 10px;min-height:84px;background:var(--sog-bg,#fff)}
 [data-module="missions"] .ms-atpart[data-kind=start]{border-top-color:var(--ok,#1e7e34)}
@@ -367,6 +364,7 @@ function edDoc(e, cadre = e.cadre) {
   if (e.risks) d = ED.withRisks(d, e.risks);
   if (e.events) d = ED.withEvents(d, e.events);
   if (e.mapsAdd?.length) d = ED.withMaps(d, e.mapsAdd);
+  if (e.mapWant) d = ED.withMapLook(d, e.mapWant); // SOG-0456 : le fond et la couche de la carte, choisis par l'auteur
   if (e.drawers) d = DR.withDrawerRows(d, e.drawers); // SOG-0445 : les tiroirs retouchés (une zone et un objet y sont cités, jamais écrits)
   return ED.withRefs(d, e.base, e.places); // SOG-0439 : après toutes les étapes, les références suivent les lieux renommés ou retirés
 }
@@ -911,54 +909,62 @@ function edMapHtml(s, doc, run = null) {
     off = !live || edMapTrial(tool),
     btn = t => `<button type="button" data-do="edtool" data-tool="${t}" aria-pressed="${tool === t}"${off ? ' disabled' : ''}>${esc(s.tt(EDTX[`atTool_${t}`]))}</button>`;
   e.mapFeats = edMapFeats(s, doc, run);
-  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
+  return `<div class="ms-atmap" data-atmap data-open="${e.mapOpen || run ? '1' : ''}"><button type="button" class="ms-atmapbtn" data-do="edmap" aria-expanded="${!!e.mapOpen}">${esc(s.tt(EDTX.atMap))}</button><div class="ms-atmapbody f-card" data-atmapbody data-edpreview data-map="${live}"><div class="ms-atmaptools" data-atmaptools>${['select', 'point', 'route', 'zone', 'object'].map(btn).join('')}<button type="button" class="ms-atmapend" data-do="edmapundo"${off || !e.mapUndo?.size() ? ' disabled' : ''}>${esc(s.tt(EDTX.atMapUndo))}</button><button type="button" data-do="edmapfit"${live ? '' : ' disabled'}>${esc(s.tt(EDTX.atMapFit))}</button></div><div class="ms-atmaphintrow"><p class="f-muted ms-atmaphint" data-maphint>${esc(edMapHint(s))}</p><button type="button" data-do="edvertexdel" data-vertexdel${edMapVertex(e) >= 0 && tool === 'select' ? '' : ' hidden'}>${esc(s.tt(EDTX.atVertexDel))}</button><button type="button" data-do="edrefadd" data-refadd${edMapRef(e) ? '' : ' hidden'}>${esc(s.tt(EDTX.atRefAdd))}</button><button type="button" data-do="edtrput" data-trput aria-pressed="${tool === 'put'}"${live && e.trial?.on ? '' : ' hidden'}>${esc(s.tt(EDTX.atPut))}</button></div><div class="ms-atmapframe"><div class="ms-atmapslot" data-atmapslot></div><div class="ms-atsketch" data-atsketch${live ? ' hidden' : ''}>${thumb || `<p class="f-muted">${esc(s.tt(EDTX.atMapNone))}</p>`}</div></div>${edLookHtml(s)}${edSeekHtml(s, live)}${edMapViewHtml(s, live)}</div></div>`;
 }
 
-/** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton. */
-function edToken(s, name) {
-  const probe = document.createElement('i');
-  probe.style.cssText = `display:none;color:var(${name})`;
-  s.el.append(probe);
-  const v = getComputedStyle(probe).color;
-  probe.remove();
-  return v;
+/** Le fond et la couche de la carte de la mission en cours (SOG-0456) : le choix de la séance, sinon ce que le fichier dit. */
+function edMapWant(e) {
+  return e.mapWant || ED.mapLookOf(e.base);
 }
 
-/** L'allure de la carte, lue du design : sombre ou non (le fond des graphiques, comme le module Données), la couleur de chaque sorte
- *  de lieu (celles du croquis), du trait et des zones, le fond uni. */
-function edMapLook(s) {
-  const t = n => edToken(s, n),
-    bg = t('--sog-chart-bg'),
-    [r, g, b] = (bg.match(/[\d.]+/g) || [255, 255, 255]).slice(0, 3).map(Number),
-    accent = t('--sog-accent'),
-    muted = t('--sog-muted');
-  return {
-    dark: 0.2126 * r + 0.7152 * g + 0.0722 * b < 110,
-    colors: {
-      bg,
-      preview: {
-        accent,
-        bg: t('--sog-bg'),
-        snap: t('--sog-warn')
-      },
-      tokens: {
-        handle: t('--sog-warn'),
-        vertex: accent,
-        mid: muted,
-        default: muted,
-        line: accent,
-        fill: t('--sog-ok'),
-        dep: accent,
-        arr: accent,
-        plane: accent,
-        target: t('--sog-err'),
-        rdv: t('--sog-warn'),
-        zone: t('--sog-ok'),
-        object: t('--sog-text'),
-        pt: muted
-      }
-    }
-  };
+/** Ce que la rangée « Fond / Espaces » dit de plus : « Relief » voulu qui n'est pas venu, et pour la couche des espaces ce que la
+ *  vue en montre (leur nombre, aucun, la vue trop large, la base qui ne répond pas). */
+function edLookSaid(s) {
+  const e = s.ed,
+    w = edMapWant(e),
+    sp = e.spacesSaid,
+    out = [];
+  if (w.base === 'relief' && EM.reliefMissing(e)) out.push(s.tt(EDTX.atReliefOff));
+  if (w.airspaces && sp) out.push(sp === 'far' ? s.tt(EDTX.atSpacesFar) : sp === 'nobase' ? s.tt(EDTX.atSpacesNoBase) : sp.n > 0 ? s.tt(
+    EDTX.atSpacesN, {
+      n: sp.n
+    }) : s.tt(EDTX.atSpacesNone));
+  return out.join(' ');
+}
+
+/** « Fond » et « Espaces » de la carte de la mission (SOG-0456), sous son cadre : le choix de l'AUTEUR pour sa mission, écrit dans
+ *  le fichier (`mission_map`) — le fond « Rapide » (celui de la suite, sinon uni ; il marche hors ligne) ou « Relief » (le fond
+ *  topographique du socle), et la couche des espaces aériens (zones R, D, P et RTBA), éteinte d'office et lue à la demande. */
+function edLookHtml(s) {
+  const w = edMapWant(s.ed),
+    btn = b =>
+    `<button type="button" data-do="edmapbase" data-base="${b}" aria-pressed="${w.base === b}">${esc(s.tt(EDTX[`atBase_${b}`]))}</button>`;
+  return `<div class="ms-atlook" data-maplook><span class="f-muted">${esc(s.tt(EDTX.atBase))}</span>${btn('fast')}${btn('relief')}<label><input type="checkbox" data-k="edmapspaces"${w.airspaces ? ' checked' : ''}><span>${esc(s.tt(EDTX.atSpaces))}</span></label><small class="f-muted ms-atlooksaid" data-maplooksaid>${esc(edLookSaid(s))}</small></div>`;
+}
+
+/** Les espaces aériens du cadre de la vue (la couche « Espaces » est allumée, la vue vient de s'arrêter) : demandés à la base de la
+ *  suite (ctx.aerodb.airspaces, par l'emprise), bornés et triés par le bloc (EM.setSpaces : zones R, D, P et RTBA), et la rangée dit
+ *  combien sont dessinés. Une réponse en retard est jetée ; sans base : dit, sans autre message. */
+function edMapSpacesAsk(s, e, v) {
+  if (state() !== s || s.ed !== e) return;
+  const a = s.ctx.aerodb,
+    tok = e.spTok = (e.spTok || 0) + 1,
+    say = x => {
+      e.spacesSaid = x;
+      const el = s.el.querySelector('[data-maplooksaid]'),
+        text = edLookSaid(s);
+      if (el && el.textContent !== text) el.textContent = text;
+    };
+  if (v?.far) return say('far');
+  if (typeof a?.airspaces !== 'function' || !Array.isArray(v?.bbox) || v.bbox.length !== 4) return say('nobase');
+  Promise.resolve().then(() => a.airspaces({
+    bbox: v.bbox
+  })).catch(() => null).then(list => {
+    if (state() !== s || s.ed !== e || e.spTok !== tok) return;
+    say(Array.isArray(list) ? {
+      n: EM.setSpaces(e, list)
+    } : 'nobase');
+  });
 }
 
 /** Pose ou met à jour la carte du socle dans l'emplacement du dessin courant, et dit son état à l'écran SUR PLACE (des attributs et un
@@ -992,8 +998,11 @@ function edMapShow(s) {
         add = q('[data-refadd]');
       if (del) del.hidden = !(edMapVertex(e) >= 0 && tool === 'select');
       if (add) add.hidden = !edMapRef(e);
-      const view = q('[data-mapview] select');
+      const view = q('[data-mapview] select'),
+        said = q('[data-maplooksaid]'),
+        saidText = edLookSaid(s);
       if (view) view.disabled = !live;
+      if (said && said.textContent !== saidText) said.textContent = saidText;
       for (const x of s.el.querySelectorAll('[data-refseek] input, [data-refseek] > button')) x.disabled = !live;
       const put = q('[data-trput]');
       if (put) {
@@ -1002,12 +1011,16 @@ function edMapShow(s) {
       }
     };
   if (!slot || !e.mapFeats) return mark();
-  e.mapLook ||= edMapLook(s);
+  e.mapLook ||= EM.lookOf(s.el);
   EM.show(slot, e.mapFeats, {
     owner: e,
     dark: e.mapLook.dark,
     colors: e.mapLook.colors,
     mode: edMapTool(e),
+    edit: true, // la carte de l'atelier (edAfter la retire hors de l'atelier)
+    base: edMapWant(e).base,
+    spaces: edMapWant(e).airspaces,
+    onSpaces: v => edMapSpacesAsk(s, e, v),
     sel: edMapSel(e),
     selLabel: edPlaceName((e.places || [])[edMapSel(e)]),
     ref: edMapRef(e),
@@ -1247,7 +1260,9 @@ function edMapPose(s, e, p) {
  *  effet la seconde. */
 export function edAfter(s) {
   try {
-    if (!s?.ed) return EM.stop();
+    if (!s) return EM.stop(); // au démontage : la carte en vie, quelle qu'elle soit
+    // hors de l'atelier : la carte de l'ATELIER seulement — celle d'un bloc en lecture (mission_map.js : le Brief, la liseuse) reste
+    if (!s.ed) return EM.editing() ? EM.stop() : undefined;
     s.ed.mapLook = null; // le design a pu changer de ton entre deux dessins
     edMapShow(s);
   } catch {
@@ -1609,6 +1624,15 @@ function edInputDo(s, ev) {
     if (ev.type === 'change' && document.activeElement === ev.target) edRefSeek(s);
     return;
   }
+  if (k === 'edmapspaces') { // « Espaces » : la couche des espaces aériens — le choix de l'auteur, écrit dans le fichier
+    if (ev.type !== 'change' || ev.target.type !== 'checkbox') return;
+    e.mapWant = {
+      ...edMapWant(e),
+      airspaces: ev.target.checked === true
+    };
+    e.spacesSaid = null;
+    return edMapShow(s); // sur place : la carte allume ou éteint sa couche, rien n'est redessiné
+  }
   if (k === 'edmapview') { // « Vue de la carte » : tout (l'auteur), ou ce que le pilote voit à un stade ; plus de lieu choisi
     if (ev.type !== 'change' || ev.target.tagName !== 'SELECT') return;
     const n = Number(ev.target.value);
@@ -1946,6 +1970,7 @@ async function edSave(s) {
       placeEdit: -1,
       route: null,
       // la carte : plus de lieu choisi, plus de geste à annuler (un état d'avant désignerait les rangs de l'ancien fichier)
+      mapWant: null, // le fond et la couche sont désormais ceux du fichier enregistré
       mapSel: -1,
       mapView: -1,
       mapRef: null,
@@ -2382,6 +2407,16 @@ function edClickDo(s, b) {
     case 'edteamdel':
       s.ed.teams = (s.ed.teams || []).filter((_, i) => i !== +b.dataset.i);
       return draw(s);
+    case 'edmapbase': { // « Fond » : Rapide ou Relief — le choix de l'auteur, écrit dans le fichier ; la carte est refaite sur place
+      const base = EM.baseOf(b.dataset.base);
+      s.ed.mapWant = {
+        ...edMapWant(s.ed),
+        base
+      };
+      for (const x of s.el.querySelectorAll('[data-maplook] [data-do=edmapbase]')) x.setAttribute('aria-pressed', String(x.dataset
+        .base === base));
+      return edMapShow(s);
+    }
     case 'edcancel':
       return edLeave(s);
   }

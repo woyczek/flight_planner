@@ -15,6 +15,8 @@
 //     participants, role }] et turns [{ id, name, role, lat, lon }] (60 points), maps [{ id, file (motif strict, un nom de fichier du
 //     dossier de la mission), type, description, centreRef }] (20), objectives { primary, secondary }, payload { description, massKg,
 //     passengers }, details [paragraphe] (2 000 caractères chacun), hasCoords (un lieu, un point ou une zone situé).
+//     mapLook { base: 'fast' | 'relief', airspaces: bool } : le fond et la couche de la carte de la mission (SOG-0456 ; la clé
+//     `mission_map`, bornée par mapLook(v) — exportée : l'atelier s'en sert aussi).
 //     visible(v) → le texte sans ses caractères de format invisibles (contrôles de sens d'écriture, espace de largeur nulle…) : tout
 //     texte lu d'un fichier passe par là ; l'atelier l'emploie aussi.
 //     drawerSlots(doc) → [{ i, id }] : les parties de `phases` qui sont des tiroirs (leur place, leur lettre) — la règle
@@ -635,6 +637,17 @@ export function shapeOf(doc, max = NODES_MAX) {
 }
 
 /** Une mission lue (voir l'en-tête). */
+/** Le fond et la couche de la carte de la mission (SOG-0456 ; la clé `mission_map` du fichier, écrite par l'atelier) :
+ *  { base: 'fast' | 'relief', airspaces: bool } — deux valeurs fermées et un booléen strict ; une clé absente, une valeur inconnue,
+ *  tout autre type se lisent « fast » et faux (le fichier est une entrée non fiable : rien d'autre n'en sort). */
+export function mapLook(v) {
+  const m = v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  return {
+    base: m.base === 'relief' ? 'relief' : 'fast',
+    airspaces: m.airspaces === true
+  };
+}
+
 export function readMission(doc) {
   const d = doc && typeof doc === 'object' ? doc : {},
     m = d.mission || {},
@@ -695,6 +708,7 @@ export function readMission(doc) {
     target: placeOf(d.target),
     points,
     holdUnread: unread, // les clés de durée non reconnues (§ 1 ter : rien ne tombe en silence)
+    mapLook: mapLook(d.mission_map), // le fond et la couche de la carte de la mission, choisis par l'auteur (SOG-0456)
     routeOrder: (Array.isArray(d.route_order) ? d.route_order : []).map(x => clean(typeof x === 'object' ? x?.id : x)).filter(Boolean),
     aircraft: ac.map(a => ({
       type: clean(a.type || a.icao).split(' ')[0].toUpperCase(),

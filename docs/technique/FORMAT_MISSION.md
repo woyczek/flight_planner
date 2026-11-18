@@ -170,6 +170,25 @@ workshop, sees everything. Who goes through it: the sheet and the Detail of a mi
 open drawers published on the device by « Affectation » — none writes a rule of its own. Bench: `frame/lib/test/mission.html`
 (noreg N1); noreg N103.
 
+## 4 ter. The map of the mission — `mission_map` (SOG-0456, 18 Nov 2026)
+
+The author chooses, in the workshop, how the map of HIS mission opens — in the workshop, in the Brief and in the reader:
+
+```yaml
+mission_map:
+  base: relief      # « fast » (the default) or « relief » — the topographic background
+  airspaces: true   # the layer « Espaces »: the R, D and P zones and the RTBA of the view
+```
+
+- **Two closed values and a boolean, nothing else.** The reader gives `mapLook: { base: 'fast' | 'relief', airspaces: bool }`
+  (`mapLook(v)`, exported): `base` is « relief » only when the file writes exactly `relief`; `airspaces` is true only for the
+  boolean `true`. An absent key, another word, another case, another type (a list, a number, a text) read « fast », layer off.
+  **Nothing else comes out of the key**: no address, no style, no name of a host — the backgrounds are those of the map base.
+- The workshop writes the key only when the author's choice differs from what the file says (`ED.withMapLook`), with these two
+  fields and no other.
+- It is a wish of display, never a secret and never a rule of the game: the pilot changes the background and the layer on his
+  device, for the sitting. Bench: noreg N110 (the key), N111 (the block in read only).
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a

@@ -21,11 +21,17 @@
 //     focus(i) cadre la vue sur une zone, stop() la retire avec son contexte WebGL. Sans tuiles — et HORS LIGNE, sans rien demander
 //     (le socle dessine un style local hors ligne depuis SOG-0446) —, un fond uni (MapLibre sur un style local) ; sans MapLibre ni WebGL : rien —
 //     l'écran garde son croquis.
+// Le BLOC « carte de mission » (SOG-0456 ; EDITOR.md § 7 sexvicies) : ce fichier est le même code en édition (l'atelier) et en
+// lecture seule (mission_map.js : le Brief, la liseuse). Son fond — « Rapide » (le fond de la suite, sinon le fond uni) ou
+// « Relief » (le fond topographique du socle) — et sa couche « Espaces » (zones R, D, P et RTBA de la base aéronautique, par la
+// couche de zones du socle, sous la mission ; éteinte d'office, lue à la demande par le cadre de la vue) sont des options de
+// show() ; aucun hôte ni aucun style n'y vient d'un fichier.
 import {
   isOwnResize,
   mapSize,
   startTiles,
-  styleFor
+  styleFor,
+  zonesLayer
 } from '../maps/lib/map_base.js';
 import {
   authorLayers,
@@ -49,8 +55,87 @@ export const MAPB = Object.freeze({
   refMax: 300, // par sorte, au plus
   seekMax: 5, // « Chercher un repère » : candidats montrés, au plus
   seekZoom: 10, // … et le zoom de la vue centrée sur le repère trouvé, au moins (au-delà du zoom des repères : il est dessiné)
-  seekBox: 0.02 // … et la demi-largeur (degrés) du cadre où la base doit le confirmer
+  seekBox: 0.02, // … et la demi-largeur (degrés) du cadre où la base doit le confirmer
+  spacesZoom: 5, // « Espaces » (SOG-0456) : les espaces du cadre ne sont demandés et dessinés qu'à partir de ce zoom
+  spacesMax: 400, // … espaces dessinés, au plus
+  spaceRings: 8, // … anneaux d'un espace, au plus
+  spaceRing: 2000, // … sommets d'un anneau, au plus (au-delà l'anneau n'est pas dessiné)
+  spaceFill: 0.04, // … l'opacité du remplissage d'un espace (des contours, pas des aplats)
+  reliefErrors: 4 // « Relief » : tuiles refusées sans qu'aucune soit venue avant de repartir en « Rapide »
 });
+/** Les règles de style que le bloc porte partout où il est posé (l'atelier, la lecture seule — mission_map.js) : son hôte, les
+ *  étiquettes des lieux, la rangée « Fond / Espaces » et sa ligne. */
+export const MAP_CSS = `[data-module="missions"] .ms-atmaphost{width:100%;height:100%}
+[data-module="missions"] .ms-atmaplbl{pointer-events:none;background:color-mix(in srgb,var(--sog-bg,#fff) 82%,transparent);color:var(--sog-text,#222);padding:0 4px;font-size:.78em;line-height:1.5;white-space:nowrap;max-width:16em;overflow:hidden;text-overflow:ellipsis}
+[data-module="missions"] .ms-atmaplbl[data-mapsel]{background:var(--sog-bg,#fff);border:1px solid var(--sog-accent);padding:1px 6px;font-size:.85em;z-index:1}
+[data-module="missions"] .ms-atlook{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 0}
+[data-module="missions"] .ms-atlook button,[data-module="missions"] .ms-atlook label{min-height:44px}
+[data-module="missions"] .ms-atlook button[aria-pressed="true"]{border-color:var(--sog-accent);box-shadow:inset 0 0 0 1px var(--sog-accent)}
+[data-module="missions"] .ms-atlook label{display:flex;align-items:center;gap:8px;margin:0 0 0 8px}
+[data-module="missions"] .ms-atlook input{width:20px;height:20px;flex:0 0 auto}
+[data-module="missions"] .ms-atlooksaid{flex:1 1 100%}
+[data-module="missions"] .ms-atlooksaid:empty{display:none}
+`;
+/** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton, lue dans `el`. */
+function token(el, name) {
+  const probe = document.createElement('i');
+  probe.style.cssText = `display:none;color:var(${name})`;
+  el.append(probe);
+  const v = getComputedStyle(probe).color;
+  probe.remove();
+  return v;
+}
+
+/** L'allure de la carte, lue du design à l'endroit où le bloc est posé (`el` : un élément du module) : sombre ou non (le fond des
+ *  graphiques, comme le module Données), la couleur de chaque sorte de lieu (celles du croquis), du trait et des zones, le fond uni,
+ *  les tons de la couche « Espaces ». → { dark, colors: { bg, preview, spaces, tokens } } pour show(). */
+export function lookOf(el) {
+  const t = n => token(el, n),
+    bg = t('--sog-chart-bg'),
+    [r, g, b] = (bg.match(/[\d.]+/g) || [255, 255, 255]).slice(0, 3).map(Number),
+    accent = t('--sog-accent'),
+    muted = t('--sog-muted');
+  return {
+    dark: 0.2126 * r + 0.7152 * g + 0.0722 * b < 110,
+    colors: {
+      bg,
+      preview: {
+        accent,
+        bg: t('--sog-bg'),
+        snap: t('--sog-warn')
+      },
+      // la couche « Espaces » (les tons de la couche de zones du socle) : le RTBA et les zones P, les zones R, les zones D
+      spaces: {
+        err: t('--sog-err'),
+        warn: t('--sog-warn'),
+        muted,
+        ok: t('--sog-ok'),
+        line: muted
+      },
+      tokens: {
+        handle: t('--sog-warn'),
+        vertex: accent,
+        mid: muted,
+        default: muted,
+        line: accent,
+        fill: t('--sog-ok'),
+        dep: accent,
+        arr: accent,
+        plane: accent,
+        target: t('--sog-err'),
+        rdv: t('--sog-warn'),
+        zone: t('--sog-ok'),
+        object: t('--sog-text'),
+        pt: muted
+      }
+    }
+  };
+}
+
+/** Les fonds du bloc (SOG-0456) : « Rapide » — le fond de la suite, sinon le fond uni ; il marche hors ligne — et « Relief », le fond
+ *  topographique du socle. Toute autre valeur se lit « Rapide ». */
+export const BASES = Object.freeze(['fast', 'relief']);
+export const baseOf = v => v === 'relief' ? 'relief' : 'fast';
 /** Les sortes de lieu qu'une poignée déplace (celles de ED.MOVABLE : ni le départ ni l'arrivée, ni l'avion de l'essai). */
 const MOVABLE = Object.freeze(['target', 'zone', 'pt', 'rdv', 'object']);
 
@@ -418,6 +503,49 @@ const plainStyle = bg => ({
   }]
 });
 
+/** Les espaces que la couche « Espaces » dessine (SOG-0456) : les zones réglementées, dangereuses et interdites, et le RTBA. */
+const SPACE_TYPES = Object.freeze(['R', 'D', 'P']);
+
+/** Les espaces de la base aéronautique (ctx.aerodb.airspaces : { type, azba, rings en [lat, lon] }) en entités de la couche de zones
+ *  du socle (zonesLayer : MultiPolygon en [lon, lat], { id, tone }) — le RTBA (`azba`) et les zones P au ton « err », les zones R au
+ *  ton « warn », les zones D au ton « muted » ; tout autre type n'est pas dessiné. La base est une entrée bornée comme une autre :
+ *  un anneau dont un sommet est hors bornes, trop court ou trop long n'est pas dessiné ; quatre cents espaces au plus. Aucun nom ne
+ *  va sur la carte. */
+export function spaceFeatures(list) {
+  const features = [];
+  for (const a of Array.isArray(list) ? list : []) {
+    if (features.length >= MAPB.spacesMax) break;
+    if (!a || typeof a !== 'object') continue;
+    const rtba = a.azba === true,
+      type = typeof a.type === 'string' ? a.type : '';
+    if (!rtba && !SPACE_TYPES.includes(type)) continue;
+    const polys = [];
+    for (const ring of (Array.isArray(a.rings) ? a.rings : []).slice(0, MAPB.spaceRings)) {
+      if (!Array.isArray(ring) || ring.length < 3 || ring.length > MAPB.spaceRing) continue;
+      const pts = ring.map(p => Array.isArray(p) ? posOf(p[0], p[1]) : null);
+      if (pts.some(p => !p)) continue;
+      const out = pts.map(p => [p.lon, p.lat]);
+      if (out[0][0] !== out.at(-1)[0] || out[0][1] !== out.at(-1)[1]) out.push([...out[0]]);
+      polys.push([out]);
+    }
+    if (polys.length) features.push({
+      type: 'Feature',
+      properties: {
+        id: `space:${features.length}`,
+        tone: rtba || type === 'P' ? 'err' : type === 'R' ? 'warn' : 'muted'
+      },
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: polys
+      }
+    });
+  }
+  return {
+    type: 'FeatureCollection',
+    features
+  };
+}
+
 let LIVE = null; // la carte en vie : { owner, host, map, auth, pv, drag, tap, labels, mode, sel, cb, state, sig, box, dark, moved, … }
 
 /** Ce que désigne l'identifiant d'un élément : { what: 'place' | 'radius', i } (le rang de la ligne), { what: 'vertex' | 'mid', i, k }
@@ -605,16 +733,45 @@ function viewed(L) {
     } catch {
       return;
     }
-    if (zoom < MAPB.refZoom) return;
-    const box = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map(v => +(+v).toFixed(4));
-    if (box.every(Number.isFinite) && JSON.stringify(box) !== L.viewSig) {
-      L.viewSig = JSON.stringify(box);
+    const box = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map(v => +(+v).toFixed(4)),
+      sig = JSON.stringify(box);
+    if (!box.every(Number.isFinite)) return;
+    spacesView(L, box, zoom, sig);
+    if (zoom >= MAPB.refZoom && sig !== L.viewSig) {
+      L.viewSig = sig;
       L.cb?.onView?.({
         bbox: box,
         zoom
       });
     }
   }, 300);
+}
+
+/** La couche « Espaces » suit la vue au repos (SOG-0456) : allumée, au zoom des espaces et au-delà, l'écran est prié de lire ceux du
+ *  cadre (onSpaces({ bbox, zoom }) ; il les rend par setSpaces) ; en deçà la couche est vidée et l'écran le sait
+ *  (onSpaces({ far: true })). Éteinte : rien n'est demandé — c'est ce qui garde la carte rapide. */
+function spacesView(L, box, zoom, sig) {
+  if (!L.spaces) return;
+  const far = zoom < MAPB.spacesZoom,
+    key = far ? 'far' : sig;
+  if (key === L.spSig) return;
+  L.spSig = key;
+  if (far) L.zl?.update(null);
+  L.cb?.onSpaces?.(far ? {
+    far: true
+  } : {
+    bbox: box,
+    zoom
+  });
+}
+
+/** Les espaces du cadre de la vue (la réponse à onSpaces), posés SOUS les éléments de la mission ; → le nombre d'espaces dessinés
+ *  (0 quand la couche est éteinte ou la carte absente). */
+export function setSpaces(owner, list) {
+  if (!LIVE || LIVE.owner !== owner || !LIVE.zl || !LIVE.spaces) return 0;
+  const fc = spaceFeatures(list);
+  LIVE.zl.update(fc);
+  return fc.features.length;
 }
 
 /** Les repères de la base du cadre de la vue (refData), posés sur la couche de référence du socle : sous les éléments de l'auteur. */
@@ -692,8 +849,69 @@ function gestures(L, map, o) {
   });
 }
 
-/** L'état de la carte en vie pour l'écran : 'tiles' (le fond de la suite), 'plain' (le fond uni), '' (pas de carte : le croquis). */
+/** L'état de la carte en vie pour l'écran : 'relief' (le fond topographique), 'tiles' (le fond de la suite), 'plain' (le fond uni),
+ *  '' (pas de carte : le croquis). */
 export const stateOf = owner => LIVE && LIVE.owner === owner && LIVE.map ? LIVE.state : '';
+/** Vrai quand la carte en vie est celle de l'atelier (posée avec `edit: true`), pas celle d'un bloc en lecture. */
+export const editing = () => !!LIVE?.cb?.edit;
+/** Vrai quand « Relief » est voulu et n'est pas venu (hors ligne, ou l'hôte des tuiles ne répond pas) : la carte est en « Rapide »,
+ *  l'écran le dit. */
+export const reliefMissing = owner => !!(LIVE && LIVE.owner === owner && LIVE.map && LIVE.base === 'relief' && LIVE.state !== 'relief');
+
+/** « Relief » qui ne vient pas alors que l'appareil se dit en ligne : quelques tuiles refusées sans qu'aucune soit venue, et la
+ *  carte repart en « Rapide » (la chaîne des fonds, sans « Relief ») ; l'écran le sait par onState. */
+function reliefWatch(L, map) {
+  let bad = 0,
+    ok = false;
+  map.on('sourcedata', e => {
+    if (e?.sourceId === 'otm' && e.tile) ok = true;
+  });
+  map.on('error', e => {
+    if (e?.sourceId !== 'otm' || ok || LIVE !== L || L.map !== map || ++bad < MAPB.reliefErrors) return;
+    L.reliefOff = true;
+    restart(L);
+  });
+}
+
+/** Retire la carte de son hôte — ses couches, ses gestes, ses étiquettes, son contexte WebGL — sans retirer l'hôte. */
+function unmap(L) {
+  clearTimeout(L.timer);
+  clearTimeout(L.viewTimer);
+  L.ro?.disconnect();
+  try {
+    for (const m of L.labels?.values() || []) m.remove();
+    L.ref?.stop();
+    L.tap?.stop();
+    L.drag?.stop();
+    L.pv?.remove();
+    L.zl?.remove();
+    L.auth?.remove();
+    L.map?.remove();
+  } catch {
+    /* déjà retirée */
+  }
+  L.labels = L.ref = L.tap = L.drag = L.pv = L.zl = L.auth = L.map = L.ro = null;
+  L.viewSig = L.spSig = '';
+}
+
+/** Refait la carte dans le même hôte (le fond voulu a changé, ou « Relief » ne vient pas) : la chaîne des fonds repart du début —
+ *  le même repli qu'au premier démarrage — ; la vue est gardée si l'auteur l'avait déplacée. */
+function restart(L) {
+  if (L.starting) return;
+  L.camera = null;
+  if (L.map && L.moved) try {
+    const c = L.map.getCenter();
+    L.camera = {
+      center: [c.lng, c.lat],
+      zoom: L.map.getZoom()
+    };
+  } catch {
+    /* la vue reviendra au cadre de la mission */
+  }
+  unmap(L);
+  L.state = '';
+  start(L, L.cb);
+}
 
 /** Recadre la vue sur la mission (le premier cadre), sans animation ; ce n'est pas un geste de l'auteur. */
 function frame(L) {
@@ -711,37 +929,51 @@ function frame(L) {
   L.fitting = false;
 }
 
-/** Démarre la carte dans son hôte : le fond de la suite, sinon le fond uni — hors ligne le socle rend null AUSSITÔT pour le fond de
+/** Démarre la carte dans son hôte : « Relief » d'abord quand il est voulu, puis le fond de la suite, sinon le fond uni — hors ligne le socle rend null AUSSITÔT pour le fond de
  *  la suite (rien n'est demandé) et dessine le fond uni, un style local ; puis les couches de l'auteur et le premier cadre. Sans
  *  carte (pas de WebGL, MapLibre absent) : `onState('')`, l'écran garde son croquis. */
 async function start(L, o) {
   L.starting = true;
   const alive = () => LIVE === L && o.alive(),
     common = {
-      bounds: boundsOf(L.box),
-      padding: MAPB.padding,
+      // la vue gardée d'une carte refaite (restart), sinon le cadre de la mission
+      ...(L.camera ? L.camera : {
+        bounds: boundsOf(L.box),
+        padding: MAPB.padding
+      }),
       attributionControl: {
         compact: true
       },
       alive
-    };
-  let map = await startTiles(L.host, {
-      ...common,
-      style: styleFor({
+    },
+    built = L.base,
+    // la chaîne des fonds : « Relief » quand il est voulu (et n'a pas déjà manqué), le fond de la suite, le fond uni
+    chain = [
+      ...(built === 'relief' && !L.reliefOff ? [
+        ['relief', styleFor({
+          base: 'otm-topo'
+        }), MAPB.wait]
+      ] : []),
+      ['tiles', styleFor({
         dark: L.dark
-      }),
-      wait: MAPB.wait
-    }),
-    state = 'tiles';
-  if (!map && alive()) {
+      }), MAPB.wait],
+      ['plain', plainStyle(o.colors?.bg), MAPB.waitPlain]
+    ];
+  let map = null,
+    state = '';
+  for (const [name, style, wait] of chain) {
     map = await startTiles(L.host, {
       ...common,
-      style: plainStyle(o.colors?.bg),
-      attributionControl: false,
-      wait: MAPB.waitPlain
+      style,
+      wait,
+      ...(name === 'plain' ? {
+        attributionControl: false
+      } : {})
     });
-    state = 'plain';
+    state = name;
+    if (map || !alive()) break;
   }
+  L.camera = null;
   L.starting = false;
   if (!alive()) {
     try {
@@ -757,6 +989,14 @@ async function start(L, o) {
   }
   L.map = map;
   L.state = state;
+  L.built = built;
+  // « Espaces » : la couche de zones du socle, posée AVANT celles de l'auteur — donc dessous, et de nouveau dessous après un
+  // changement de style (les couches reviennent dans l'ordre où elles ont été posées) ; vide tant que la couche est éteinte
+  L.zl = zonesLayer(map, null, {
+    colors: o.colors?.spaces,
+    fill: MAPB.spaceFill // des contours : le remplissage léger, demandé au socle (sans l'option, celui du socle)
+  });
+  if (state === 'relief') reliefWatch(L, map);
   L.auth = authorLayers(map, {
     id: 'mission',
     tokens: o.colors?.tokens
@@ -769,7 +1009,7 @@ async function start(L, o) {
   });
   map.on('zoomend', () => spread(L)); // les étiquettes voisines s'empilent à l'échelle de la vue
   mapSize(map, L.host);
-  frame(L);
+  if (!L.moved) frame(L);
   // MapLibre ne suit pas seul la taille de son cadre (le socle) : la fenêtre change de taille, l'appareil tourne, la carte se déplie —
   // la taille est reprise une fois arrêtée, et la vue recadrée tant que l'auteur ne l'a pas déplacée
   if (typeof ResizeObserver === 'function') {
@@ -782,11 +1022,15 @@ async function start(L, o) {
     L.ro.observe(L.host);
   }
   o.onState(state);
+  if (L.base !== built) restart(L); // le fond voulu a changé pendant le démarrage
 }
 
 /** Montre la carte de la mission dans `slot` (l'emplacement du dessin courant) : la démarre au premier appel, repose son hôte après
  *  chaque dessin, met ses éléments à jour s'ils ont changé, la recadre tant que l'auteur n'a pas déplacé la vue. `feats` : mapFeatures ;
- *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg, preview }), onState(état),
+ *  options : owner (la séance : une autre séance repart d'une carte neuve), dark, colors ({ tokens, bg, preview, spaces } : lookOf),
+ *  onState(état), base ('fast' | 'relief' : le fond voulu ; changé, la carte est refaite dans le même hôte), spaces (la couche
+ *  « Espaces » allumée) avec onSpaces({ bbox, zoom } | { far: true }) — l'écran lit les espaces du cadre et les rend par setSpaces —,
+ *  edit (vrai : la carte de l'atelier),
  *  alive() ; mode ('select' : la Sélection ; 'point', 'zone', 'object' : un outil de pose ; 'route' : Tracé — un lieu touché est
  *  rendu par onRoute(rang) ; 'view' : la carte ne fait que montrer ; 'put' : pendant un essai, un toucher rend la position où
  *  poser l'avion — onPut({ lat, lon })),
@@ -812,8 +1056,13 @@ export function show(slot, feats, o) {
       moved: false,
       fitting: false,
       starting: false,
-      failed: false
+      failed: false,
+      base: 'fast',
+      spaces: false,
+      reliefOff: false
     },
+    base = baseOf(o.base),
+    spaces = o.spaces === true,
     sig = signature(feats),
     boxSig = JSON.stringify(feats.box),
     reframed = boxSig !== JSON.stringify(L.box);
@@ -823,7 +1072,16 @@ export function show(slot, feats, o) {
   L.selLabel = o.selLabel || '';
   L.feats = feats;
   L.box = feats.box;
+  if (base !== L.base) L.reliefOff = false; // un fond redemandé est réessayé
+  L.base = base;
+  if (spaces !== L.spaces) {
+    L.spaces = spaces;
+    L.spSig = '';
+    if (!spaces) L.zl?.update(null);
+    else if (L.map) viewed(L);
+  }
   if (L.host.parentNode !== slot) slot.replaceChildren(L.host);
+  if (L.map && L.built !== base) return restart(L); // le fond voulu a changé : la carte est refaite dans le même hôte
   if (!L.map) {
     L.sig = sig;
     if (!L.starting && !L.failed && L.host.clientWidth > 0) start(L, o); // repliée (sans taille), elle démarre à son ouverture
@@ -919,24 +1177,11 @@ export function fit() {
   frame(LIVE);
 }
 
-/** Retire la carte en vie (en quittant l'atelier, au démontage) : ses couches, la carte et son contexte WebGL, son hôte. */
-export function stop() {
+/** Retire la carte en vie (en quittant l'atelier, au démontage ; `owner` : seulement si c'est la sienne) : ses couches, la carte et son contexte WebGL, son hôte. */
+export function stop(owner = null) {
   const L = LIVE;
+  if (!L || (owner && L.owner !== owner)) return; // la carte d'une autre séance n'est pas touchée
   LIVE = null;
-  if (!L) return;
-  clearTimeout(L.timer);
-  clearTimeout(L.viewTimer);
-  L.ro?.disconnect();
-  try {
-    for (const m of L.labels?.values() || []) m.remove();
-    L.ref?.stop();
-    L.tap?.stop();
-    L.drag?.stop();
-    L.pv?.remove();
-    L.auth?.remove();
-    L.map?.remove();
-  } catch {
-    /* déjà retirée */
-  }
+  unmap(L);
   L.host.remove();
 }
