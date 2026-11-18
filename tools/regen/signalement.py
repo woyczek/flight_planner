@@ -26,6 +26,7 @@ import os
 import re
 import secrets
 import sys
+import tempfile
 import threading
 import time
 import unicodedata
@@ -379,11 +380,19 @@ def lire(job, args, ctx):
 
 
 # ---- la liste, la fiche, la priorité et les commentaires (SOG-0410)
+_JOINERS = ('‌', '‍')   # le liant et l'anti-liant : des écritures et des émojis en ont besoin (comme frame/lib/untrusted.js `visible`)
+
+
+def _no_format(s):
+    """Sans caractère de FORMAT (catégorie Cf : marques et contrôles de sens d'écriture, espace de largeur nulle, marque d'ordre…) : un texte ne se lit pas autrement qu'il est écrit. Le liant et l'anti-liant restent."""
+    return ''.join(c for c in s if c in _JOINERS or unicodedata.category(c) != 'Cf')
+
+
 def _clean(v, n, multiline=False):
-    """Un texte non fiable : borné à `n` signes, sans caractère de commande (la tabulation et le saut de ligne restent si `multiline`) ; '' si ce n'est pas un texte."""
+    """Un texte non fiable : borné à `n` signes, sans caractère de commande (la tabulation et le saut de ligne restent si `multiline`) ni de format ; '' si ce n'est pas un texte."""
     if not isinstance(v, str):
         return ''
-    return (CONTROL if multiline else CONTROL_ALL).sub('', v[:n * 2]).strip()[:n]
+    return _no_format((CONTROL if multiline else CONTROL_ALL).sub('', v[:n * 2])).strip()[:n]
 
 
 def fold(s):
@@ -528,7 +537,8 @@ def check_comment(a):
     """Contrôle de signalement/commenter : { id, text } et rien d'autre ; texte de 1 à 2000 signes, sans caractère de commande (tabulation et saut de ligne permis)."""
     if not isinstance(a, dict) or set(a) != {'id', 'text'} or not isinstance(a['id'], str) or not ID.fullmatch(a['id']) or not _text(a['text'], MAX_COMMENT, CONTROL):
         return None
-    return {'id': a['id'], 'text': a['text'].strip()}
+    text = _no_format(a['text']).strip()
+    return {'id': a['id'], 'text': text} if text else None
 
 
 def explain_fields(a):
@@ -551,13 +561,16 @@ def lister(job, args, ctx):
         v, text, comments = _view(sid, r, fiches, notes)
         first = 0
         if words:
-            ftext, idx = _fold_map(text)
+            ftext = fold(text)   # d'un coup (un seul normalize) ; la carte des positions seulement pour un signalement trouvé dont le pliage a changé la longueur
             hays = [fold(v['title']), ftext, fold(v['screen']), fold(v.get('fiche', '')), fold(v.get('answer', ''))]
             pos = [[_first_word(h, w) for h in hays] for w in words]
             if any(max(p) < 0 for p in pos):
                 continue
             in_text = [p[1] for p in pos if p[1] >= 0]
-            first = idx[min(in_text)] if in_text else 0
+            if in_text:
+                first = min(in_text)
+                if len(ftext) != len(text):
+                    first = _fold_map(text)[1][first]
         a = max(0, min(first - 60, len(text) - EXCERPT))
         v['excerpt'] = re.sub(r'\s+', ' ', text[a:a + EXCERPT]).strip()
         v['comments'] = len(comments)
@@ -615,15 +628,16 @@ def _write_notes(path, doc):
     data = (json.dumps(doc, ensure_ascii=False, indent=1) + '\n').encode('utf-8')
     if len(data) > FILE_MAX:
         return 'too-big'
-    tmp = path + '.tmp'
+    tmp = None
     try:
-        with open(tmp, 'wb') as f:
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix='.' + NOTES_FILE + '.', suffix='.tmp')   # créé en exclusivité : un nom déjà là (un lien) n'est jamais suivi
+        with os.fdopen(fd, 'wb') as f:
             f.write(data)
         os.replace(tmp, path)
     except OSError:
         return 'failed'
     finally:
-        if os.path.exists(tmp):
+        if tmp and os.path.exists(tmp):
             try:
                 os.remove(tmp)
             except OSError:

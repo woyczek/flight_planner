@@ -16554,3 +16554,51 @@ def k360(c):
     own = sorted(f for f, t in texts.items() if re.search(r'3440\.065', t))
     geo_text = (c.root / 'tools' / 'route_engine' / 'geo.py').read_text(encoding='utf-8')
     c.eq((own, len(re.findall(r'R_NM = 3440\.065', geo_text))), ([], 1), 'no file of the route engine and its tools writes the radius any more: ONE constant, in geo.py (the formula of the other sessions is theirs, signalled)', what='one place')
+
+
+@case('K478', 'Security notes on « Mes signalements », SOG-0410: a title, a text or a comment carries no FORMAT character (U+202E, U+2066, U+200B, U+FEFF…: it would read otherwise than it is written; the joiners stay), a search folds a text in one pass and still cuts its excerpt where the match is, and the notes file is written through a temporary file created exclusively (a link already at the old « .tmp » name is never followed)',
+      'K', static=True, rule=SG_RULE)
+def k478(c):
+    import json
+    import tempfile
+    import time
+    from pathlib import Path
+    run, RJ = _sg_world()
+    bad = '‮⁦​﻿‎'
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        root = Path(td)
+        org = root / 'organisation'
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000b1': {'kind': 'bug', 'title': 'ab' + bad + 'c', 'text': 'x' + bad + 'y ﬁn du texte', 'screen': 'fuel', 'at': '2026-11-18T08:00:00Z', 'state': 'new'}}))
+        it = run('lister', {}, root)['items'][0]
+        c.eq((it['id'], it['title']), ('SIG-00000000b1', 'abc'), 'a title read from the file has no format character', what='title')
+        d = run('detail', {'id': 'SIG-00000000b1'}, root)['item']
+        c.eq(d['text'], 'xy ﬁn du texte', 'a text read from the file has none either', what='text')
+        r = run('commenter', {'id': 'SIG-00000000a1', 'text': bad + 'A‍B' + bad + 'C'}, root)
+        c.eq(r['comment']['text'], 'A‍BC', 'a comment is stored without them, the zero-width JOINER stays (scripts and emoji need it)', what='comment')
+        c.ok(run('commenter', {'id': 'SIG-00000000a1', 'text': bad}, root) is None, '', 'a comment made only of format characters is refused (empty)')
+        # the search folds in one pass: a ligature changes the length, the excerpt still starts near the match
+        far = 'a' * 400 + ' ﬁnal ' + 'b' * 400
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports({'SIG-00000000b2': {'kind': 'bug', 'title': 'Long', 'text': far, 'screen': 'fuel', 'at': '2026-11-19T08:00:00Z', 'state': 'new'}}))
+        got = [i for i in run('lister', {'q': 'final'}, root)['items'] if i['id'] == 'SIG-00000000b2']
+        c.ok(len(got) == 1 and 'ﬁnal' in got[0]['excerpt'] and len(got[0]['excerpt']) <= 240, repr(got)[:120], 'the match of a ligature is found and the excerpt is cut around it')
+        got = [i for i in run('lister', {'q': 'rien-de-tel'}, root)['items']]
+        c.eq(got, [], 'a word found nowhere: no report', what='no match')
+        # a lot of text: the search stays quick
+        many = {'SIG-%010x' % (0x1000 + n): {'kind': 'bug', 'title': 'T%d' % n, 'text': ('lorem ipsum dolor sit amet ' * 76)[:2000], 'screen': 'fuel', 'at': '2026-11-01T%02d:00:00Z' % (n % 24), 'state': 'new'} for n in range(1500)}
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports(many))
+        t0 = time.time()
+        res = run('lister', {'q': 'dolor zzzzz'}, root)
+        c.ok(res['total'] == 0 and res['searched'] >= 1500 and time.time() - t0 < 2.0, f"{res['total']} {res['searched']} {time.time() - t0:.2f}s", '1 500 reports of 2 000 signs searched in under two seconds')
+        # the temporary file: a link at the old name is not followed (skipped where the system forbids a link)
+        victim = root / 'victim.txt'
+        victim.write_text('keep', encoding='utf-8')
+        link = org / 'SIGNALEMENTS_NOTES.json.tmp'
+        try:
+            link.symlink_to(victim)
+        except (OSError, NotImplementedError):
+            link = None
+        _sg_put(root, 'SIGNALEMENTS.json', _sg_reports())
+        c.ok(run('commenter', {'id': 'SIG-00000000a1', 'text': 'ok'}, root)['ok'], '', 'the comment is written')
+        c.eq(victim.read_text(encoding='utf-8'), 'keep', 'what a link at the old temporary name points to is never written', what='victim')
+        c.eq([p.name for p in org.glob('.SIGNALEMENTS_NOTES*')], [], 'no temporary file is left', what='no tmp')
+        c.ok(json.loads((org / 'SIGNALEMENTS_NOTES.json').read_text(encoding='utf-8'))['items']['SIG-00000000a1']['comments'][-1]['text'] == 'ok', '', 'the notes file holds the comment')
