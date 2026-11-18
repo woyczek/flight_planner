@@ -5585,6 +5585,21 @@ def a260(c):
     c.check_errors()
 
 
+@case('A285', 'The Pilot page, opened as it is (no address, a flight planned, Fuel and the Map side by side on a wide screen), is still ALIVE after 30 s and no task of the page lasts more than five seconds (SOG-0493: the page froze for 3 to 7 minutes)', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0493 (the user: « freeze reproductible très facilement : il suffit d\'ouvrir la page pilote »): the page was frozen by a single task of 203 to 435 s a few seconds after it opened, and no case opened the page and waited; this one opens the Pilot page on a planned flight, lets it sit for 30 s, then asks it for a value (a frozen page does not answer) and reads the page\'s own long-task list: none of five seconds or more')
+def a285(c):
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False, 'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    c.open('fuel', flight=True, started=False, wait=False)
+    c.until("!!document.querySelector('[data-module=fuel]') && !!window.SogFrame", timeout=30000, what='the Pilot page is drawn')
+    c.wait(30000)
+    c.eq(c.js('() => 1 + 1'), 2, 'the page answers after 30 s: it is alive', what='alive')
+    worst = c.js("() => window.SogFrame.longTasks().worstMs")
+    c.ok(worst < 5000, f'{worst} ms', 'no task of the page lasted five seconds or more')
+    c.check_errors()
+
+
 @case('A284', 'The page profile survives a task longer than its buffer (SOG-0430 A2, SOG-0493): when the browser stops the profiler because its buffer is full (a task of more than 60 s) the profile of the beginning of the task is kept and attached to it, not lost to the empty profile that restarts', 'A',
       designs=('standard',), screens=False, night=False,
       rule='SOG-0493 (the Pilot page froze for 203, 213 and 435 s on the user\'s workstation and the three long tasks were kept WITHOUT a profile): the sample buffer holds 6000 samples (60 s at 10 ms); a longer task makes the browser fire « samplebufferfull » when the task is over, BEFORE the long task is reported; the handler restarted a new profiler and threw the full one away, so profileTake read an empty profile and kept nothing. The full profile is now held and used for the task that just ended (it holds its beginning: the loop)')
