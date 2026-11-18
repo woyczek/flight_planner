@@ -23,6 +23,19 @@ RFL_ATOM=re.compile(r'\bRFL\s+(?:(ABV|BLW)\s+FL\s*(\d{2,3})|BTN\s+FL\s*(\d{2,3})
 
 AT_ATOM=re.compile(r'\b(?:RFL\s+)?(ABV|BLW)\s+FL\s*(\d{2,3})\s+AT\s+([A-Z][A-Z0-9]{1,6})\b')      # SOG-0401 : « ABV FL245 AT UMDAS », « RFL BLW FL105 AT X » : le niveau AU POINT, tel que le PROFIL du vol le donne (le point doit être sur la route : sinon la condition est fausse)
 
+AT_LIST=re.compile(r'\b(?:RFL\s+)?(ABV|BLW)\s+FL\s*(\d{2,3})\s+AT\s+\(\s*([A-Z][A-Z0-9]{1,6}(?:\s*,\s*[A-Z][A-Z0-9]{1,6})+)\s*\)')      # SOG-0501 (e) : « ABV FL245 AT (VTB, MORAL) » : le niveau du profil à L'UN des points de la liste
+
+BTN_ATOM=re.compile(r'\bBTN\s+FL\s*(\d{2,3})\s*-\s*FL\s*(\d{2,3})\s+AT\s+([A-Z][A-Z0-9]{1,6})\b')      # SOG-0501 (e) : « BTN FL245-FL660 AT BADRU » : le niveau du PROFIL au point est ENTRE les deux niveaux
+
+def between_test(lo,hi,point,ctx):
+    """Vrai / faux : le niveau du profil au point `point` est-il entre FL`lo` et FL`hi` ? Le point absent de la route : faux ; l'altitude inconnue ou EXACTEMENT sur une limite : None (jamais devinée)."""
+    if point not in ctx.get('points',()):return False
+    alt=(ctx.get('alt') or {}).get(point)
+    if not isinstance(alt,(int,float)):return None
+    a,b=int(lo)*100,int(hi)*100
+    if a>=b or abs(alt-a)<1 or abs(alt-b)<1:return None
+    return a<alt<b
+
 def at_test(kind,level,point,ctx):
     """Vrai / faux / None : le niveau du profil au point `point` est-il au-dessus (ABV) ou au-dessous (BLW) de FL`level` ? Le point absent de la route : faux ; l'altitude du profil inconnue ou EXACTEMENT sur la limite : None."""
     if point not in ctx.get('points',()):return False
@@ -96,8 +109,9 @@ def alternatives(text):
     if not re.match(r'^1\.\s',text):return None
     pieces=re.split(r'\s*(?:^|(?<=\s))(\d{1,2})\.\s+',text)      # ['', '1', 'ARR (…)', '2', 'DEP (…)']
     nums=pieces[1::2];body=[x.strip() for x in pieces[2::2]]
-    if len(body)<2 or nums!=[str(i) for i in range(1,len(body)+1)] or any(not x for x in body):return None
-    if any(re.search(r'(?:^|\s)(?:[a-z]\.|[ivx]+\))\s|\bEXC\b|;',x,re.I) for x in body):return None
+    if not body or nums!=[str(i) for i in range(1,len(body)+1)] or any(not x for x in body):return None      # SOG-0501 (e) : une liste d'UN seul élément (« 1. DEP (EDMA, EDMO) ») est cet élément
+    if any(x.startswith('EXC ') for x in body):return None      # SOG-0501 (e) : « 1. EXC … 2. EXC … » : le sens d'un OU d'exceptions n'est pas décidé
+    if any(';' in x for x in body):return None      # SOG-0501 (e) : une alternative peut porter « EXC » et des sous-listes (lues par `condition`) ; le point-virgule reste non décidé
     return body
 
 def split_parts(util,clock):
@@ -110,57 +124,124 @@ def split_parts(util,clock):
     return None
 
 def condition(text,ctx,rad):
-    """Only simple conjunctions of DEP/ARR/VIA and one EXC are decidable here."""
+    """SOG-0401 / SOG-0501 (e) : le texte d'une condition RAD : des alternatives numérotées (OU), des exceptions « EXC » (avec des sous-listes « A. … B. … » ou « I) … II) … », elles-mêmes avec leurs exceptions), des suites « … AND-THEN … » lues dans l'ordre du vol, des conjonctions « & » d'atomes DEP / ARR / ARR/DEP / VIA / RFL / ABV / BLW / BTN. Vrai, faux, ou None (non décidé : jamais une règle devinée)."""
     if len(text)>MAX_CONDITION:return None      # SOG-0401 (Sécurisation) : un texte de cellule plus long est illisible, il n'est pas décidé (le coût de la lecture reste borné)
     text=' '.join(text.upper().split())
     if not text:return True
-    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',AT_ATOM.sub(' ',RFL_ATOM.sub(' ',text))):return None      # les atomes RFL lus (ci-dessus) ne bloquent plus ; tout autre niveau reste non décidé
-    numbered=alternatives(text)      # SOG-0401 (forme A) : « 1. ARR (LSGC, LSZH) 2. DEP (LSZA, LSZL) » : des alternatives (OU) numérotées, chacune une conjonction simple
+    if re.search(r'\b(?:BELOW|ABOVE|BLW|ABV|RFL|ACFT|PBN|EXCEPT|FL\d+)\b',BTN_ATOM.sub(' ',AT_LIST.sub(' ',AT_ATOM.sub(' ',RFL_ATOM.sub(' ',text))))):return None      # les atomes de niveau lus (ci-dessus) ne bloquent plus ; tout autre niveau reste non décidé
+    numbered=alternatives(text)      # SOG-0401 (forme A) : « 1. ARR (LSGC, LSZH) 2. DEP (LSZA, LSZL) » : des alternatives (OU) numérotées
     if numbered:
         results=[condition(a,ctx,rad) for a in numbered]
         return True if any(r is True for r in results) else False if all(r is False for r in results) else None
     if text.startswith('ALL '):text=text[4:]
-    # Do not interpret enumerations, flight levels, aircraft types or activation.
-    parts=re.split(r'\s+EXC\s+',text)
-    if len(parts)>2:return None
-    def conjunction(value):
-        matches=list(re.finditer(r'(DEP|ARR|VIA|RFL|ABV|BLW)\s+([A-Z0-9_*(), /-]+?)(?=\s*(?:&|\bAND\b|$))',value))
-        if not matches:return None
-        residue=value
-        tests=[]
-        for m in reversed(matches):residue=residue[:m.start()]+residue[m.end():]
-        if re.sub(r'\bAND\b|[&\s]','',residue):return None
-        for m in matches:
-            spec=m[2]
-            if m[1] in ('ABV','BLW') or (m[1]=='RFL' and re.search(r'\bAT\b',spec)):      # SOG-0401 : « ABV FLnnn AT point » : le niveau du PROFIL au point
-                a=AT_ATOM.fullmatch(((m[1]+' ') if m[1]!='RFL' else 'RFL ')+spec.strip()) if m[1]!='RFL' else AT_ATOM.fullmatch('RFL '+spec.strip())
-                if not a:return None
-                t=at_test(a[1],a[2],a[3],ctx)
-                if t is None:return None
-                tests.append(t);continue
-            if m[1]=='RFL':      # SOG-0401 : le niveau demandé (ctx['fl'], le niveau déposé) ; inconnu ou sur la limite : non décidé
-                t=rfl_test(spec,ctx.get('fl'))
-                if t is None:return None
-                tests.append(t);continue
-            if m[1]=='VIA' and rad_via.read(spec.strip()) is not None:      # SOG-0401 (forme B) : « VIA (A DCT B) », « VIA (A L607 B) », « VIA (* DCT B) » : une SUITE, lue dans l'ordre du vol (vrai, faux, ou non décidé)
-                t=rad_via.match(spec.strip(),ctx.get('legs'),aliases,ctx.get('known'))
-                if t is None:return None
-                tests.append(t);continue
-            if names(spec)&{'AND','OR','EXC','DEP','ARR','VIA','ABV','BLW','FL','RFL','TYP','PBN','NOT','DCT','SID','STAR','BELOW','ABOVE','EXCEPT'}:return None
-            if m[1] in ['DEP','ARR']:
-                if any(not (re.fullmatch('[A-Z0-9_*]{4}',t) or t in rad.groups) for t in names(spec)):return None
-                tests.append(rad.match(spec,ctx[m[1].lower()]))
-            else:
-                tokens=names(spec)
-                if any('_' in t or '*' in t for t in tokens):return None
-                if len(tokens)>1 and ',' not in spec:return None
-                if ctx.get('known') is not None and not tokens<=ctx['known']:return None
-                tests.append(bool(tokens & ctx['all']))
-        return all(tests)
-    main=conjunction(parts[0])
-    if main is None:return None
-    if len(parts)==1:return main
-    exc=conjunction(parts[1]);return None if exc is None else main and not exc
+    return exception(text,ctx,rad)
+
+ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII']
+
+def sublist(text):
+    """SOG-0501 (e) : les éléments d'une sous-liste « A. … B. … » ou « I) … II) … » (le texte COMMENCE par le premier repère, les repères se suivent) ; None sinon."""
+    for first,marker,names_ in (('A.',r'(?:^|(?<=\s))([A-Z])\.\s+',[chr(65+i) for i in range(26)]),('I)',r'(?:^|(?<=\s))([IVX]{1,4})\)\s+',ROMAN)):
+        if not text.startswith(first+' '):continue
+        pieces=re.split(marker,text)
+        found=pieces[1::2];body=[x.strip() for x in pieces[2::2]]
+        if pieces[0].strip() or len(body)<2 or found!=names_[:len(body)] or any(not x for x in body):return None
+        return body
+    return None
+
+def exception(text,ctx,rad):
+    """« principal EXC exceptions » : vrai si le principal est vrai et qu'aucune exception ne l'est ; un principal vide (« EXC VIA LC ») est toujours vrai ; une sous-liste d'exceptions est un OU. Faux dès que le principal est faux ou qu'une exception est vraie, même si le reste n'est pas décidé."""
+    m=re.search(r'(?:^|\s)EXC\s+',text)
+    if not m:return sequence(text,ctx,rad)
+    head,tail=text[:m.start()].strip(),text[m.end():].strip()
+    main=True if not head else sequence(head,ctx,rad)
+    if main is False:return False
+    items=sublist(tail)
+    if items:
+        results=[exception(x,ctx,rad) for x in items]
+        exc=True if any(r is True for r in results) else False if all(r is False for r in results) else None
+    elif re.search(r'(?:^|\s)EXC\s',tail):return None
+    else:exc=sequence(tail,ctx,rad)
+    if exc is True:return False
+    return None if main is None or exc is None else main and not exc
+
+def sequence(text,ctx,rad):
+    """« X AND-THEN Y » : X, puis Y plus loin sur la route. Vrai si tous les termes sont vrais ET dans l'ordre du vol ; faux si l'un est faux, ou si tous sont vrais mais dans un autre ordre ; None si l'ordre ne se lit pas."""
+    terms=[x.strip() for x in re.split(r'\s+AND-THEN\s+',text)]
+    if len(terms)==1:return conjunction(text,ctx,rad)
+    if any(not x for x in terms):return None
+    results=[conjunction(x,ctx,rad) for x in terms]
+    if any(r is False for r in results):return False
+    if any(r is None for r in results):return None
+    found=[places(x,ctx) for x in terms]
+    if any(f is None for f in found):return None
+    here=-2
+    for f in found:
+        later=[p for p in f if p>=here]
+        if not later:return False
+        here=min(later)
+    return True
+
+def places(term,ctx):
+    """Où le terme est sur la route (une liste de positions : n pour le point n, n+0,5 pour le tronçon n) ; None quand le terme n'est pas un seul VIA de noms, ni DEP, ni ARR (l'ordre n'est alors pas connu)."""
+    flight=rad_via._flight(ctx.get('legs'))
+    if not flight:return None
+    nodes,edges=flight
+    atoms=[x.strip() for x in term.split('&')]
+    via=[x for x in atoms if x.startswith('VIA ')]
+    if len(via)==1:
+        spec=via[0][4:].strip()
+        if rad_via.read(spec) is not None:return None      # une suite « (A DCT B) » : la position de son début n'est pas calculée ici
+        tokens=names(spec)
+        return sorted([i for i,n in enumerate(nodes) if n in tokens]+[j+.5 for j,e in enumerate(edges) if aliases(e)&tokens])
+    if via:return None
+    if len(atoms)==1 and atoms[0].startswith('DEP '):return [-1]
+    if len(atoms)==1 and atoms[0].startswith('ARR '):return [len(nodes)+1]
+    return None
+
+def conjunction(value,ctx,rad):
+    matches=list(re.finditer(r'(ARR/DEP|DEP/ARR|DEP|ARR|VIA|RFL|ABV|BLW|BTN)\s+([A-Z0-9_*(), /-]+?)(?=\s*(?:&|\bAND\b|$))',value))
+    if not matches:return None
+    residue=value
+    tests=[]
+    for m in reversed(matches):residue=residue[:m.start()]+residue[m.end():]
+    if re.sub(r'\bAND\b|[&\s]','',residue):return None
+    for m in matches:
+        spec=m[2]
+        if m[1]=='BTN':      # SOG-0501 (e) : « BTN FL245-FL660 AT point » : le niveau du PROFIL au point, entre deux niveaux
+            a=BTN_ATOM.fullmatch('BTN '+spec.strip())
+            if not a:return None
+            t=between_test(a[1],a[2],a[3],ctx)
+            if t is None:return None
+            tests.append(t);continue
+        if m[1] in ('ABV','BLW') or (m[1]=='RFL' and re.search(r'\bAT\b',spec)):      # SOG-0401 : « ABV FLnnn AT point » : le niveau du PROFIL au point
+            a=AT_ATOM.fullmatch(((m[1]+' ') if m[1]!='RFL' else 'RFL ')+spec.strip()) if m[1]!='RFL' else AT_ATOM.fullmatch('RFL '+spec.strip())
+            if not a:
+                lst=AT_LIST.fullmatch(((m[1]+' ') if m[1]!='RFL' else 'RFL ')+spec.strip())      # SOG-0501 (e) : une LISTE de points : vrai à l'un d'eux, faux à aucun, sinon non décidé
+                if not lst:return None
+                each=[at_test(lst[1],lst[2],x.strip(),ctx) for x in lst[3].split(',')]
+                t=True if any(r is True for r in each) else False if all(r is False for r in each) else None
+            else:t=at_test(a[1],a[2],a[3],ctx)
+            if t is None:return None
+            tests.append(t);continue
+        if m[1]=='RFL':      # SOG-0401 : le niveau demandé (ctx['fl'], le niveau déposé) ; inconnu ou sur la limite : non décidé
+            t=rfl_test(spec,ctx.get('fl'))
+            if t is None:return None
+            tests.append(t);continue
+        if m[1]=='VIA' and rad_via.read(spec.strip()) is not None:      # SOG-0401 (forme B) : « VIA (A DCT B) », « VIA (A L607 B) », « VIA (* DCT B) » : une SUITE, lue dans l'ordre du vol (vrai, faux, ou non décidé)
+            t=rad_via.match(spec.strip(),ctx.get('legs'),aliases,ctx.get('known'))
+            if t is None:return None
+            tests.append(t);continue
+        if names(spec)&{'AND','OR','EXC','DEP','ARR','VIA','ABV','BLW','FL','RFL','TYP','PBN','NOT','DCT','SID','STAR','BELOW','ABOVE','EXCEPT'}:return None
+        if m[1] in ['DEP','ARR','ARR/DEP','DEP/ARR']:
+            if any(not (re.fullmatch('[A-Z0-9_*]{4}',t) or t in rad.groups) for t in names(spec)):return None
+            tests.append(any(rad.match(spec,ctx[end]) for end in (['dep','arr'] if '/' in m[1] else [m[1].lower()])))      # SOG-0501 (e) : « ARR/DEP X » : X est le départ OU l'arrivée
+        else:
+            tokens=names(spec)
+            if any('_' in t or '*' in t for t in tokens):return None
+            if len(tokens)>1 and ',' not in spec:return None
+            if ctx.get('known') is not None and not tokens<=ctx['known']:return None
+            tests.append(bool(tokens & ctx['all']))
+    return all(tests)
 
 UNSURE='?'      # SOG-0401 : « le vol est sur la voie du segment, mais on ne sait pas s'il vole une portion DU segment » : ni applicable ni sans objet
 

@@ -3684,3 +3684,9 @@ The user asked (« une liste globale de tous les refreshs à faire, avec une coc
 
 - **Measure** (the user's second pass on the route of the branch « turn »; the detail is in the user's file, not copied): gone — the two PROF340 (turns), PROF407 EDUU100E, ED2996A, ED2325A, ED2327A, ROUTE165; new — ROUTE135 (the route had no SID at EGGW: « EGGW DCT LAM »). The prediction of the triage was right.
 - **Done**: the exception « (except below FL105) » of a list of aerodromes is read per aerodrome (K370). **Not done / answer**: a SID of EGGW cannot be rendered until the UK package is read (SOG-0499); the engine's route still starts with a DCT to LAM and says so (« aucune SID complète connectée utilisée ») and, now, that the RAD limit is 0 NM.
+
+## 19 November 2026 — SOG-0501 (e): the forms of the RAD (first slice)
+
+- **Done**: the grammar of `condition` is a small recursive reading (alternatives, exception with sub-lists, sequence in order, conjunction of atoms); atoms ARR/DEP, BTN … AT, ABV/BLW … AT (list). 28 % → 72 % of the 8,602 parts readable, no true/false result changed (measured by `cover.py` on the real RAD with a synthetic flight); two of thirteen reference routes change, for rules now applied.
+- **Decided**: « 1. EXC … 2. EXC … » stays not decided (the meaning of an OR of exceptions is not written anywhere); a sub-list after AND-THEN or without EXC stays not decided (the rule does not say if it is an OR or an AND).
+- **Not done**: the aircraft attributes (PBN, engine, flight type, type), the FIR as an aerodrome set, XNG (crossing of a border), « IN country », a level along a portion of airway. **Aside (not mine)**: K303 (real base, LEMD → KBOS) fails on the branch before this change too.

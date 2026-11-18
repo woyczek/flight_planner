@@ -15097,8 +15097,8 @@ def k332(c):
     pad = lambda row: row + [''] * (17 - len(row))
     # 1. the grammar of form A (unit)
     c.eq((RFL.alternatives('1. ARR (AAAA, BBBB) 2. DEP (CCCC)'), RFL.alternatives('1. VIA X EXC a. VIA Y'), RFL.alternatives('1. DEP AAAA'), RFL.alternatives('1. DEP AAAA 3. DEP BBBB'), RFL.alternatives('DEP AAAA')),
-         (['ARR (AAAA, BBBB)', 'DEP (CCCC)'], None, None, None, None),
-         'the alternatives: a numbered list of at least two (1., 2., …) in order; a sub-list « a. », an exception, a single item, a gap in the numbers, no number: not decided here', what='alternatives')
+         (['ARR (AAAA, BBBB)', 'DEP (CCCC)'], ['VIA X EXC a. VIA Y'], ['DEP AAAA'], None, None),
+         'the alternatives: a numbered list (1., 2., …) in order, of one item or more (SOG-0501 (e): a one-item list is that item; an alternative may carry an exception and a sub-list, read by `condition`); a gap in the numbers, no number: not decided here', what='alternatives')
 
     class G:
         groups = {}
@@ -17389,3 +17389,43 @@ def k370(c):
     D.CACHE.clear()
     rad2 = types.SimpleNamespace(book={'file': 'k370b', 'sheets': {D.SHEET: [{'v': ['', '', '', 'AA_LIM_AD', 'Limits', text2, 'H24'], 'row': 1}]}}, active=lambda r: True)
     c.eq((D.limit_of(rad2, 'AAAA', 'dep')['state'], D.limit_of(rad2, 'AAZZ', 'dep')['state']), ('known', 'complex'), 'a clause that carries a level (« FL095 and above ») that is NOT an exception of an aerodrome is still « complex » for the aerodromes it covers', what='level')
+
+
+@case('K371', 'Route engine, SOG-0501 (e) (forms of the RAD): a condition is read with its exceptions « EXC » (the exception may be a sub-list « A. … B. … » or « I) … II) … » that carries its own exceptions, or an empty main part « EXC VIA LC »), its sequences « X AND-THEN Y » in the order of the flight, « ARR/DEP », « BTN FLa-FLb AT point », « ABV FLn AT (p, q) » and a numbered list of ONE item; what is still ambiguous (an « EXC » as an alternative, a sub-list without an exception, a sequence whose order is not known) stays not decided',
+      'K', static=True,
+      rule='SOG-0501 (e) (the relay: « le gros lot des formes du RAD, forme B : listes numérotées + EXC + sous-listes + groupes + « ABV/BLW FL AT » »). Measured on the real RAD of 29 Oct 2026 (8 602 parts of rules of the sheet 2B, a synthetic flight): 28 % of the conditions were read, 72 % are now, and not one result that was true or false has changed. Invented codes (the RAD is the property of EUROCONTROL and stays on the workstation).')
+def k371(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import rad_flight as RF
+    leg = lambda a, b, v, k='ENROUTE': {'start': {'id': a}, 'end': {'id': b}, 'via': v, 'kind': k}
+    legs = [leg('EDDF', 'AAA', 'SID1', 'SID'), leg('AAA', 'BBB', 'L607'), leg('BBB', 'CCC', 'L607'), leg('CCC', 'DDD', 'DCT'), leg('DDD', 'LFMN', 'STAR1', 'STAR')]
+
+    class Rad:
+        groups = {}
+
+        def match(self, expr, ad):
+            return ad in expr.upper().replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+    ctx = RF.context(legs, 'EDDF', 'LFMN')
+    ctx['known'], ctx['fl'], ctx['alt'] = None, 350, {'BBB': 35000, 'CCC': 20000}
+    cond = lambda t: RF.condition(t, dict(ctx), Rad())
+    c.eq([cond('1. ARR (LFMN, LFML)'), cond('1. ARR (LFML)'), cond('ARR LFMN & VIA (AAA L607 CCC)')], [True, False, True],
+         'a numbered list of ONE item is that item; the conditions that were read are read as before', what='one item')
+    c.eq([cond('ARR LFMN EXC A. VIA (AAA L607 CCC) B. VIA (EEE DCT FFF)'), cond('ARR LFMN EXC A. VIA (EEE DCT FFF) B. VIA (GGG DCT HHH)'), cond('ARR LFMN EXC I) VIA (EEE DCT FFF) II) DEP EDDF'), cond('ARR LFMN EXC A. VIA (EEE DCT FFF) B. VIA (GGG DCT HHH) EXC I) DEP EDDF')],
+         [False, True, False, True],
+         'an exception that is a sub-list is an OR (the exception A holds: the condition does not; none holds: it does); « I) II) » are read too; an exception inside the item B belongs to the item B (B: the main part is false: the exception B does not hold)', what='exceptions')
+    c.eq([cond('ARR LFMN EXC A. VIA (AAA L607 CCC) EXC I) VIA (GGG DCT HHH) II) DEP EDDF B. VIA (GGG DCT HHH)'), cond('ARR LFMN EXC A. VIA (AAA L607 CCC) EXC I) VIA (GGG DCT HHH) II) DEP QQQQ B. VIA (GGG DCT HHH)')], [True, False],
+         'an exception of an exception: the item A is « via AAA…CCC except with a departure from EDDF » (the exception holds: the item A does not, the condition does) ; with another departure, the item A holds and the condition does not', what='nested')
+    c.eq([cond('EXC VIA ZZZ'), cond('EXC VIA AAA'), cond('1. EXC VIA ZZZ 2. EXC VIA AAA'), cond('VIA ZZZ EXC VIA (AAA DCT BBB)'), cond('VIA (CCC L607 BBB) EXC VIA AAA'), cond('VIA (CCC L607 BBB) EXC VIA ZZZ'), cond('VIA AAA EXC A. VIA ZZZ B. VIA (AAA DCT BBB)')],
+         [True, False, None, False, False, None, None],
+         'an empty main part is true; « 1. EXC … 2. EXC … » is not decided; a false main part makes the condition false even if the exception is not decided, a true exception makes it false even if the main part is not decided; otherwise not decided', what='short')
+    c.eq([cond('VIA AAA AND-THEN VIA CCC'), cond('VIA CCC AND-THEN VIA AAA'), cond('VIA AAA AND-THEN VIA ZZZ'), cond('DEP EDDF AND-THEN VIA AAA AND-THEN ARR LFMN'), cond('ARR LFMN AND-THEN VIA AAA'), cond('VIA AAA AND-THEN VIA (AAA L607 CCC)'), cond('VIA L607 AND-THEN VIA CCC'), cond('VIA CCC AND-THEN VIA L607')],
+         [True, False, False, True, False, None, True, False],
+         'X AND-THEN Y: true when both are on the flight and in that order (a point is at its node, an airway between its two nodes), false when one is missing or when the order is the other one; a term that is a sequence « (A L607 C) » has no position: not decided', what='then')
+    c.eq([cond('ARR/DEP LFMN'), cond('DEP/ARR EDDF'), cond('ARR/DEP QQQQ'), cond('BTN FL245-FL660 AT BBB'), cond('BTN FL245-FL660 AT ZZZ'), cond('BTN FL245-FL660 AT AAA'), cond('BTN FL350-FL660 AT BBB'), cond('BTN FL245-FL660 AT BBB & ARR LFMN')],
+         [True, True, False, True, False, None, None, True],
+         'ARR/DEP: the aerodrome is the departure or the arrival; BTN: the level of the PROFILE at the point is between the two levels (a point that is not on the route: false; a level not known, or exactly on a limit: not decided)', what='atoms')
+    c.eq([cond('ABV FL245 AT (ZZZ, BBB)'), cond('ABV FL400 AT (ZZZ, BBB)'), cond('ABV FL245 AT (ZZZ, AAA)'), cond('BLW FL245 AT (CCC, ZZZ)')], [True, False, None, True],
+         'a level at a LIST of points: true at one of them, false at none, not decided when a point of the list is on the route without a known level and none is true', what='at list')
+    c.eq([cond('1. DEP EDDF A. ARR LFMN B. VIA AAA'), cond('VIA AAA AND-THEN A. VIA CCC B. VIA BBB'), cond('FLT-TYPE (M)'), cond('ABV FL245 AT (AAA L607 CCC)')], [None] * 4,
+         'still not decided: a sub-list without an exception, a sub-list after AND-THEN, a flight type, a level along a portion of airway', what='open')
