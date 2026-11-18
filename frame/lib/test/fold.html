@@ -1,0 +1,186 @@
+<!doctype html>
+<!-- Banc du pli (frame/lib/fold.js, SOG-0468 (3)) : fold() rend EXACTEMENT le texte des constructions qu'il remplace (les expressions d'origine sont recopiées ici : Données › cycle suivant, Données › paquets,
+     Rapport de recette, Réglages › jetons), et wireFolds() retient l'ouverture et la fermeture sans écrire pour rien. Page nue ; window.__foldBench = { done, pass, fail, rows } pour un pilote (Playwright). -->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>fold — bench</title>
+</head>
+<body>
+<pre id="out"></pre>
+<div id="host"></div>
+<script type="module">
+  import {
+    fold,
+    foldOf,
+    openFold,
+    wireFolds
+  } from '../fold.js?v=0';
+  const rows = [],
+    out = document.getElementById('out'),
+    host = document.getElementById('host');
+  window.__foldBench = {
+    done: false,
+    pass: 0,
+    fail: 0,
+    rows
+  };
+  const ck = (name, ok, detail = '') => {
+    window.__foldBench[ok ? 'pass' : 'fail']++;
+    rows.push(`${ok ? 'PASS' : 'FAIL'} ${name}${ok ? '' : ' — ' + detail}`);
+    out.append(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + detail}\n`);
+  };
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  // les constructions d'origine, mot pour mot
+  const orig = {
+    later: (id, title, body, pill, isOpen) => `<details class="d-lc" data-lc-fold="${id}"${isOpen ? ' open' : ''}><summary><span class="d-lct">${esc(title)}</span>${pill ? ` <span class="d-pill" data-lc-pill>${esc(pill)}</span>` : ''}<i class="d-chev" aria-hidden="true"></i></summary>${body}</details>`,
+    recette: (k, title, body, isOpen) => `<details class="f-rc-sec" data-section="${k}"${isOpen ? ' open' : ''}><summary><b>${title}</b></summary>${body}</details>`,
+    pack: (key, line, body, isOpen) => `<details class="d-pack d-pack-countries" data-pack-fold="${esc(key)}"${isOpen ? ' open' : ''}><summary class="d-packline">${line}</summary>${body}</details>`,
+    tokens: (n, body) => `<details data-tokens-existing><summary>${esc('Existants (' + n + ')')}</summary>${body}</details>`,
+    plain: (title, body) => `<details><summary>${esc(title)}</summary>${body}</details>`
+  };
+  const eq = (name, a, b) => ck(name, a === b, JSON.stringify([a, b]));
+  const titles = ['Cycle suivant', 'Jeu « <b> » & "x"', '', 'Ré\'sumé'];
+  for (const isOpen of [false, true])
+    for (const pill of ['', 'nouveau', '<i>1</i>'])
+      for (const t of titles) {
+        eq(`later.js : ${isOpen ? 'ouvert' : 'fermé'}, pastille ${JSON.stringify(pill)}, titre ${JSON.stringify(t)}`,
+          fold({
+            cls: 'd-lc',
+            attrs: {
+              'data-lc-fold': 'x1'
+            },
+            open: isOpen,
+            head: `<span class="d-lct">${esc(t)}</span>${pill ? ` <span class="d-pill" data-lc-pill>${esc(pill)}</span>` : ''}<i class="d-chev" aria-hidden="true"></i>`,
+            body: '<p>corps</p>'
+          }), orig.later('x1', t, '<p>corps</p>', pill, isOpen));
+      }
+  eq('recette.js : le titre avec sa pastille de nombre en <b>', fold({
+    cls: 'f-rc-sec',
+    attrs: {
+      'data-section': 'ko'
+    },
+    open: true,
+    head: '<b>À revoir <span class="f-muted" data-count>(3)</span></b>',
+    body: '<ul></ul>'
+  }), orig.recette('ko', 'À revoir <span class="f-muted" data-count>(3)</span>', '<ul></ul>', true));
+  eq('packs.js : la classe du <summary> et la clé échappée', fold({
+    cls: 'd-pack d-pack-countries',
+    attrs: {
+      'data-pack-fold': 'c:FR'
+    },
+    sumCls: 'd-packline',
+    open: false,
+    head: '<b>France</b>',
+    body: '<div></div>'
+  }), orig.pack('c:FR', '<b>France</b>', '<div></div>', false));
+  eq('pilot_tokens.js : pas de classe, un attribut sans valeur, le titre échappé', fold({
+    attrs: {
+      'data-tokens-existing': true
+    },
+    title: 'Existants (4)',
+    body: '<ul></ul>'
+  }), orig.tokens(4, '<ul></ul>'));
+  eq('le plus simple : <details><summary>titre</summary>corps</details>', fold({
+    title: 'a < b',
+    body: '<p>x</p>'
+  }), orig.plain('a < b', '<p>x</p>'));
+  eq('une clé écrit data-fold, après les attributs et avant « open »', fold({
+    cls: 'c',
+    attrs: {
+      'data-a': 1
+    },
+    key: 'k"1',
+    open: true,
+    title: 't'
+  }), '<details class="c" data-a="1" data-fold="k&#34;1" open><summary>t</summary></details>');
+  eq('un attribut faux ou nul n\'est pas écrit ; un nom douteux est écarté (pas d\'injection par le nom)', fold({
+    attrs: {
+      'data-a': false,
+      'data-b': null,
+      'x onclick=1 y': 'z',
+      'data-ok': 'v'
+    },
+    title: 't'
+  }), '<details data-ok="v"><summary>t</summary></details>');
+  eq('une valeur nulle ou absente : jamais d\'exception, le pli est vide', fold(), '<details><summary></summary></details>');
+  eq('le titre est du texte (échappé), head du HTML sûr (passe avant)', fold({
+    title: '<i>',
+    head: '<i>h</i>'
+  }), '<details><summary><i>h</i></summary></details>');
+  // le DOM : wireFolds
+  const mk = (open, key) => {
+    host.innerHTML = fold({
+      key: 'a',
+      title: 'A',
+      open: !!open,
+      body: '<p>x</p>'
+    }) + fold({
+      key: 'b',
+      title: 'B',
+      body: '<p>y</p>'
+    }) + fold({
+      title: 'sans clé',
+      body: '<p>z</p>'
+    });
+    return host;
+  };
+  const flip = d => new Promise(res => {
+    d.addEventListener('toggle', () => setTimeout(res, 0), {
+      once: true
+    });
+    d.open = !d.open;
+  });
+  (async () => {
+    let root = mk(false);
+    const log = [];
+    const off = wireFolds(root, (k, o, el) => log.push([k, o, el.tagName]));
+    await flip(foldOf(root, 'a'));
+    await flip(foldOf(root, 'a'));
+    await flip(root.querySelectorAll('details')[2]);
+    ck('wireFolds : une ouverture puis une fermeture donnent set(clé, état, pli) deux fois ; un pli sans clé, rien', JSON.stringify(
+      log) === JSON.stringify([
+      ['a', true, 'DETAILS'],
+      ['a', false, 'DETAILS']
+    ]), JSON.stringify(log));
+    off();
+    await flip(foldOf(root, 'b'));
+    ck('off() retire l\'écouteur', log.length === 2, JSON.stringify(log));
+    // get : aucune écriture pour rien
+    root = mk(false);
+    const state = {
+      a: false
+    };
+    const w = [];
+    const off2 = wireFolds(root, (k, o) => {
+      w.push([k, o]);
+      state[k] = o;
+    }, {
+      get: k => state[k]
+    });
+    state.a = true; // l'appelant sait déjà que « a » est ouvert
+    await flip(foldOf(root, 'a')); // s'ouvre : déjà vrai : rien
+    await flip(foldOf(root, 'a')); // se ferme : change : écrit
+    ck('wireFolds avec get : set seulement quand la valeur change', JSON.stringify(w) === JSON.stringify([
+      ['a', false]
+    ]), JSON.stringify(w));
+    off2();
+    // openFold
+    root = mk(false);
+    const o = openFold(root, 'b');
+    ck('openFold ouvre le pli de la clé et le rend ; une clé inconnue : null ; un pli déjà ouvert reste ouvert', o?.open === true && o
+      .dataset.fold === 'b' && openFold(root, 'zz') === null && openFold(root, 'b').open === true);
+    ck('foldOf : la clé n\'est pas un sélecteur (guillemets, crochets)', foldOf(mk(false), 'a"]') === null && foldOf(root, 'a') !==
+      null);
+    ck('wireFolds sans racine ou sans set : off() inerte, jamais d\'exception', (() => {
+      try {
+        return typeof wireFolds(null, () => {}) === 'function' && typeof wireFolds(root) === 'function';
+      } catch {
+        return false;
+      }
+    })());
+    window.__foldBench.done = true;
+  })();
+</script>
+</body>
+</html>

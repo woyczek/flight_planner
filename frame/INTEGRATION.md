@@ -1081,6 +1081,18 @@ About fifteen files copied their own accent folding, in five variants of one ide
 
 A null or absent value is the empty text; nothing throws on a text, a number or an absent value. What stays with a module: a folding of its own (`report/model.js` also drops the dots and folds the blanks, `fuel/fpl.js` keeps spaces), built on `stripMarks`. The files that still carry a copy migrate ONE AT A TIME, with their owners (the classic scripts of `frame/aerodb` reach the module by `import()` or a `window` export: their owner decides).
 
+## 12f. The fold (`frame/lib/fold.js`, SOG-0468 (3))
+
+About thirty `<details><summary>` were written by hand (Data, Settings, Fuel, Report) and nine listeners on `toggle` each ran their own chain of `matches(...)`. One builder says the fold, one listener keeps it; the module keeps nothing: the open / closed state stays the caller's (a variable of the screen, a key of `ctx.data`), given to `fold()` at each drawing and received back from `wireFolds()`.
+
+| Function | Gives |
+|---|---|
+| `fold({ cls, attrs, key, open, title, head, sumCls, sumAttrs, body })` | the HTML text of the fold. `cls`: the class of `<details>` (the one the CSS and the cases already know); `attrs`: more attributes `{ 'data-pack-theme': id }` (value escaped; false or absent: not written; true: the name alone; a name that is not `[a-z][a-z0-9-]*` is dropped); `key`: `data-fold`, what `wireFolds` gives back (no key: the fold is not kept); `open`: the `open` attribute; `title`: TEXT (escaped); `head`: the content of `<summary>` as already safe HTML (title, badge, chevron), before `title`; `sumCls`, `sumAttrs`: of `<summary>`; `body`: already safe HTML |
+| `wireFolds(root, set, { get })` | ONE capturing `toggle` listener on `root`; for each connected `<details data-fold>` that changes, `set(key, open, el)`; with `get(key)`, `set` is called only when the value changes; returns `off()` |
+| `foldOf(root, key)` / `openFold(root, key)` | the fold of that key or null; opens it when closed (a link that leads to a card opens its fold first) |
+
+Migrating a builder changes nothing of what it draws: the bench proves `fold()` equal to the original text of four builders (Data cycle, packs, recette, tokens); a migrating file keeps its class and its own `data-` attribute (`attrs`), and gains `data-fold` only when it passes a key. What stays with the caller: what an opening does (read a file, start a map), in its `set`. Owners migrate one at a time: Data and Settings first, Fuel last; the missions registry is NOT migrated (it becomes a table, SOG-0498).
+
 ## 13. Service screens (`APP.screens`)
 
 A service screen is not a module. It is a screen of the frame, opened over the current module like Settings and the

@@ -5316,6 +5316,13 @@ def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A351', 'The fold of the frame (SOG-0468 (3), frame/lib/fold.js): fold() gives EXACTLY the text of the <details> builders it replaces (Data cycle, packs, recette, tokens), wireFolds() reports an opened or closed fold once and writes nothing for an unchanged value, openFold() opens by key', 'A',
+      tags=('launcher',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (3) (the ergonomist: one <details> builder, one owner at a time): about thirty hand-written <details><summary> and nine toggle listeners, each with its chain of matches; frame/lib/fold.js says the fold once (fold) and keeps it once (wireFolds(root, set, { get })), the bench frame/lib/test/fold.html (window.__foldBench) shows fold() equal to the original text of four builders; the state stays the caller\'s')
+def a351(c):
+    _bench(c, 'frame/lib/test/fold.html', '__foldBench')
+
+
 @case('A350', 'The text folding of the frame (SOG-0468 (2), frame/lib/text.js): stripMarks, foldUpper, foldLower, foldAlnum, wordsOf and slug give EXACTLY what the copies they replace gave (aerodb, registry, aircraft, sheets, ad_field, missions search and catalog, settings), on a corpus of accents, ligatures, signs, blanks and absent values', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (2) (the ergonomist: one definition, the identical pairs first): about fifteen files copied their own accent folding in five variants of one idea (strip the combining marks, then a case, then a filter); frame/lib/text.js gives the primitive and the five forms, and the bench frame/lib/test/text.html (window.__textBench) shows each equal to the original expression of the file it replaces on a corpus; a migrating file changes nothing of what it computes')
