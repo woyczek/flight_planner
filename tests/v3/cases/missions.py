@@ -3746,7 +3746,8 @@ def n82(c):
          t[:200], 'a browsed mission keeps its zones line')
     sheet('X-902A')
     c.settle()
-    c.eq(c.count(S), 0, 'a mission without drawers has no section', what='section')
+    # SOG-0459 (asked by « Affectation des missions »): the section is posed for ANY mission read, hidden — its presence says nothing
+    c.eq(c.js(f"[...document.querySelectorAll('{S}')].map(x => x.hidden)"), [True], 'a mission without drawers: its section posed and hidden — nothing shown (SOG-0459)', what='section')
     c.js(_DW_CLEAR)
 
 
