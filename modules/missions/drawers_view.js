@@ -13,7 +13,7 @@
 // API : show(host, { ctx, id, mission, passage, notJudged }) — pose la section dans `host` (l'élément [data-drawers] de la fiche,
 //   redessiné avec elle : rappeler show à chaque dessin) ; passage(pointId) et notJudged(key) viennent de frame/lib/mission.js
 //   (passageMin, notJudgedYet) ; stop() — la fiche se ferme, le module se démonte.
-//   describe(tt, state, drawer, { live, notJudged }) → { key, note, how } : les phrases d'un tiroir (la clé d'un tiroir fermé, la note
+//   describe(tt, state, drawer, { live, notJudged, inRange }) → { key, note, how, follow } : les phrases d'un tiroir (la clé d'un tiroir fermé, la note
 //   « pas encore jugé en vol » ou « sans position en direct », comment et quand il s'est ouvert) — pur : l'aperçu de l'éditeur peut
 //   s'en servir pour dire la même chose que l'écran du pilote. TX : les textes, quatre langues.
 
@@ -76,6 +76,25 @@ export const TX = {
     'el cajón se abre a mano'
   ],
   // l'ordre : seul le premier tiroir encore fermé peut s'ouvrir
+  // la position en direct : ce que l'appareil suit, l'objet à portée, le geste « Objet en vue »
+  followed: ['Cet appareil suit ce passage', 'This device follows this passage', 'Dieses Gerät verfolgt diesen Durchflug',
+    'Este dispositivo sigue este paso'
+  ],
+  inRange: ['À portée de l\'objet : déclarez « Objet en vue »', 'In range of the object: declare “Object in sight”',
+    'In Reichweite des Objekts: melden Sie „Objekt in Sicht“', 'Al alcance del objeto: declare «Objeto a la vista»'
+  ],
+  seen: ['Objet en vue', 'Object in sight', 'Objekt in Sicht', 'Objeto a la vista'],
+  notInRange: ['L\'objet n\'est pas à portée de cet appareil : approchez-vous, puis déclarez « Objet en vue »',
+    'The object is not in range of this device: get closer, then declare “Object in sight”',
+    'Das Objekt ist nicht in Reichweite dieses Geräts: nähern Sie sich, dann melden Sie „Objekt in Sicht“',
+    'El objeto no está al alcance de este dispositivo: acérquese y declare «Objeto a la vista»'
+  ],
+  openArrivalMe: ['ouvert à l\'arrivée, à {t}', 'opened on arrival, at {t}', 'bei der Ankunft geöffnet um {t}',
+    'abierto a la llegada, a las {t}'
+  ],
+  openArrivalBy: ['ouvert à l\'arrivée de {by}, à {t}', 'opened when {by} arrived, at {t}', 'bei der Ankunft von {by} geöffnet um {t}',
+    'abierto a la llegada de {by}, a las {t}'
+  ],
   afterDrawer: ['après le tiroir {n}', 'after drawer {n}', 'nach Schublade {n}', 'después del cajón {n}'],
   gotHere: ['reçu ici à {t}', 'received here at {t}', 'hier empfangen um {t}', 'recibido aquí a las {t}'],
   sealedNote: ['rescellé', 'resealed', 'wieder versiegelt', 'resellado'],
@@ -157,6 +176,7 @@ const STYLE = `[data-drawers]{margin:0 0 12px}
 [data-drawers] .dw-list{display:grid;gap:8px;margin:6px 0 0;max-width:64ch}
 @container (min-width: 850px){[data-module="missions"] .ms-sheet:has([data-drawers][data-mine]){grid-template-columns:minmax(16em,40em) minmax(0,1fr)}}
 [data-drawers] .dw-row[data-locked]{opacity:.75}
+[data-drawers] [data-dw-follow]{color:var(--sog-accent)}
 [data-drawers] .dw-row{border:1px solid var(--sog-border);padding:8px 10px;background:var(--sog-bg)}
 [data-drawers] .dw-row[data-open]{border-left:3px solid var(--sog-accent)}
 [data-drawers] .dw-env{display:flex;gap:10px;align-items:flex-start}
@@ -180,6 +200,7 @@ export function stop() {
   clearTimeout(V.armTimer);
   clearInterval(V.poll);
   V.unwatch?.();
+  V.unlive?.();
   document.removeEventListener('visibilitychange', onVisible);
   V = null;
 }
@@ -226,7 +247,13 @@ export function show(host, {
     states: null, // null : pas encore lu (la ligne « n tiroirs » en attendant)
     armed: '', // le tiroir dont « Ouvrir » attend sa confirmation
     said: new Set(), // ce qui est déjà notifié (ouvertures, refus)
-    first: true // le premier calcul : aucune notification pour ce qui était déjà ouvert
+    first: true, // le premier calcul : aucune notification pour ce qui était déjà ouvert
+    flying: false, // le vol démarré de CETTE mission est en cours : une position en direct est la sienne
+    prevFix: null, // le relevé d'avant : le trajet jugé va de lui au relevé reçu
+    inRange: null, // { id, f, seen, source } : le dernier trajet à portée de l'objet du premier tiroir fermé
+    caught: new Set(), // les tiroirs dont la trace gardée a déjà été relue (une fois par tiroir)
+    wasLive: false, // la position en direct au dernier relevé : son arrivée fait relire la section
+    busy: false // un constat est en cours d'écriture
   };
   bind(host);
   paint();
@@ -235,6 +262,10 @@ export function show(host, {
     if (V !== v) return;
     // un carnet (le mien sur un autre appareil, celui d'un autre) ou le vol changé par une synchronisation : relu
     v.unwatch = ctx.data.watch?.('pilot/', paths => V === v && [].concat(paths || []).some(p => v.paths?.has(p)) && load(v));
+    // la position en direct : UN abonnement du cadre (ctx.live.watch, un relevé toutes les cinq secondes), jamais un minuteur ici ;
+    // le démontage du module désabonne de lui-même, stop() aussi
+    v.prevFix = ctx.live?.last || null; // le dernier relevé du cadre : le premier relevé reçu est jugé depuis lui
+    v.unlive = ctx.live?.watch?.(fix => onFix(v, fix));
   });
 }
 
@@ -294,7 +325,9 @@ async function load(v) {
     me,
     seance,
     myPath,
-    doc
+    doc,
+    flying: Number.isFinite(startAt),
+    startIso: Number.isFinite(startAt) ? flight.started.at : ''
   });
   const seen = D.readSeen(seenDoc, seance),
     before = v.states,
@@ -322,6 +355,94 @@ async function load(v) {
   announce(v, before, states);
   paint();
   arm(v, peers.length);
+  // le rattrapage au retour de la page : le premier tiroir fermé que l'appareil suit est relu UNE fois sur la trace gardée du vol de
+  // cette mission (depuis l'instant où il est devenu le premier fermé) — la trace d'un autre vol n'est jamais lue
+  const first = states.find(x => !x.open && !x.locked);
+  if (first && followsHere(v, first) && !v.caught.has(first.id)) {
+    v.caught.add(first.id);
+    const trail = v.ctx.live?.trail?.(),
+      f = trail && trail.from === v.startIso ? D.catchUp(first.key, trail, first.since) : null;
+    if (f) record(v, first.id, f, 'trail').catch(() => {});
+  }
+}
+
+/** L'appareil a-t-il une position en direct qui est celle du vol de cette mission ? */
+const liveNow = v => v.flying && v.ctx.live?.status === 'tracking';
+
+/** Ce tiroir (le premier fermé) est-il suivi par cet appareil, maintenant ? Une clé que drawers.js sait juger, que le lecteur ne dit
+ *  pas « pas encore jugée en vol », un tiroir que je n'ai pas rescellé, et une position en direct. */
+function followsHere(v, st) {
+  const d = v.drawers.find(x => x.id === st.id);
+  return liveNow(v) && !st.sealed && D.follows(st.key) && !v.notJudged?.(st.key) && d?.keyWhy !== 'condition';
+}
+
+/** Un relevé de la position en direct (toutes les cinq secondes) : le trajet depuis le relevé d'avant est jugé pour le premier
+ *  tiroir fermé. Ne lève jamais (un abonné qui rejette n'est pas attrapé par le cadre). */
+function onFix(v, fix) {
+  if (V !== v) return;
+  const live = liveNow(v),
+    turned = live !== v.wasLive,
+    // deux relevés à plus d'une minute l'un de l'autre (ou sans heure) ne font pas un trajet : le relevé est jugé seul, et ce qui
+    // s'est passé entre les deux est l'affaire du rattrapage sur la trace
+    gap = Date.parse(fix?.at) - Date.parse(v.prevFix?.at),
+    prev = gap >= 0 && gap <= LEG_MS ? v.prevFix : null;
+  v.prevFix = fix;
+  v.wasLive = live;
+  // la position en direct vient d'arriver (ou de se taire) : la section est relue — sa note le dit, la trace gardée est rattrapée
+  (turned && v.mine ? load(v) : Promise.resolve()).then(() => judge(v, prev, fix)).catch(() => {});
+}
+
+/** Juge un trajet : un constat de zone ou d'arrivée s'écrit tout de suite au carnet ; un objet à portée attend « Objet en vue ». */
+async function judge(v, prev, fix) {
+  if (!v.mine || !v.states || v.busy) return;
+  const first = v.states.find(x => !x.open && !x.locked),
+    f = first && followsHere(v, first) ? D.finding(first.key, prev, fix, {
+      trail: v.ctx.live?.trail?.()
+    }) : null;
+  if (!f) { // plus à portée depuis une minute : le geste « Objet en vue » redevient refusé
+    if (v.inRange && (!first || v.inRange.id !== first.id || Date.now() - v.inRange.seen > RANGE_MS)) {
+      v.inRange = null;
+      paint();
+    }
+    return;
+  }
+  if (f.confirm) {
+    const was = v.inRange?.id === first.id;
+    v.inRange = {
+      id: first.id,
+      f,
+      seen: Date.now(),
+      source: fix?.source
+    };
+    if (!was) paint();
+    return;
+  }
+  await record(v, first.id, f, fix?.source);
+}
+
+/** Écrit un constat (ses deux relevés, l'heure du fait) dans le carnet de ce pilote, redessine et demande un passage. */
+async function record(v, id, f, source) {
+  if (V !== v || v.busy) return;
+  v.busy = true;
+  try {
+    const next = D.withOpen(v.doc, {
+      mission: v.id,
+      me: v.me,
+      seance: v.seance,
+      now: Date.now()
+    }, id, f.how, {
+      from: f.from,
+      to: f.to,
+      at: f.at,
+      source: f.source || source
+    });
+    if (!next || !await put(v, v.myPath, next) || V !== v) return;
+    v.inRange = null;
+    await load(v);
+    Promise.resolve().then(() => v.ctx.data.sync?.()).catch(() => {});
+  } finally {
+    v.busy = false;
+  }
 }
 
 /** Le rang d'un tiroir à l'écran (« Tiroir 1, 2, 3… ») : sa place dans la mission. */
@@ -402,9 +523,8 @@ async function put(v, path, value) {
   }
 }
 
-/** Les clés que l'appareil juge en vol : aucune tant que le service du cadre (zone franchie, objet à portée) n'existe pas — le lot de
- *  la zone y ajoutera 'zone'. */
-export const JUDGED = [];
+const RANGE_MS = 60e3; // « Objet en vue » est accepté une minute après le dernier relevé à portée
+const LEG_MS = 60e3; // deux relevés font un trajet s'ils sont à une minute au plus l'un de l'autre
 const SEVEN = 7; // sept tiroirs à l'écran, les suivants repliés
 const BRIEF_CUT = 1200; // le briefing (jusqu'à 20 000 signes dans le fichier) : le début, puis « Lire la suite » (la liseuse : lot T3)
 
@@ -428,7 +548,8 @@ function hPlus(tt, min) {
  *  ouvert ('' fermé). live : l'appareil a une position en direct ; notJudged(key) : la règle du lecteur (frame/lib/mission.js). */
 export function describe(tt, s, d, {
   live = false,
-  notJudged
+  notJudged,
+  inRange = false
 } = {}) {
   const k = s.key || {},
     due = s.dueAt != null ? fmtZ(new Date(s.dueAt)) : '',
@@ -448,31 +569,38 @@ export function describe(tt, s, d, {
   });
   else if (k.kind && k.kind !== 'hand') key = tt(TX.keyHidden); // une condition de l'auteur, une clé que cet écran ne connaît pas
   else key = tt(TX.keyHand);
-  // l'heure de repli n'est dite que si elle concerne le pilote : la clé n'est pas jugée sur cet appareil
-  let note = '';
+  // l'heure de repli n'est dite que si elle concerne le pilote : la clé n'est pas suivie sur cet appareil
+  let note = '',
+    follow = ''; // 'followed' : l'appareil suit ce passage ; 'range' : à portée de l'objet
   if (k.kind !== 'time') {
     const inFlight = !!k.kind && k.kind !== 'hand',
-      unjudged = (inFlight && (!JUDGED.includes(k.kind) || !!notJudged?.(k))) || d?.keyWhy === 'condition',
+      // ce que l'appareil sait juger avec une position (drawers.js), hors de ce que le lecteur dit « pas encore jugé en vol »
+      judged = inFlight && D.follows(k) && !notJudged?.(k) && d?.keyWhy !== 'condition',
       // l'heure d'abord, une seule fois ; « H + 1 h 30 » seulement quand l'heure n'est pas connue (pas encore de départ)
       at = Number.isFinite(k.fallbackMin) ? tt(TX.willOpen, {
         t: due ? `${due}${est}` : hPlus(tt, k.fallbackMin)
       }) : '';
-    if (unjudged) note = tt(TX.notJudged, {
+    if ((inFlight && !judged) || d?.keyWhy === 'condition') note = tt(TX.notJudged, {
       x: at ? tt(TX.orByHand, {
         x: at
       }) : tt(TX.byHandOnly)
     });
-    else if (inFlight && !live) note = tt(TX.noLive, {
+    else if (judged && !live) note = tt(TX.noLive, {
       x: at || tt(TX.byHandOnly)
     });
-    else if (!inFlight && at) note = at; // le geste seul avec une heure de repli (une condition que le lecteur n'a pas lue)
+    else if (judged) {
+      follow = inRange ? 'range' : 'followed';
+      note = tt(inRange ? TX.inRange : TX.followed);
+    } else if (at) note = at; // le geste seul avec une heure de repli (une condition que le lecteur n'a pas lue)
   }
   let how = '';
   if (s.open) {
     const other = !!s.by && !s.mine; // ouvert par un autre : l'heure du fait (son constat), pas celle où il a joué ici
     const row = s.how === 'time' ? TX.openTime : s.how === 'fallback' ? TX.openFallback : s.how === 'zone' ? (s.mine ? TX.openZoneMe : TX
         .openZoneBy) :
-      s.how === 'object' ? (s.mine ? TX.openObjectMe : TX.openObjectBy) : s.mine ? TX.openHandMe : TX.openHandBy;
+      s.how === 'object' ? (s.mine ? TX.openObjectMe : TX.openObjectBy) : s.how === 'arrival' ? (s.mine ? TX.openArrivalMe : TX
+        .openArrivalBy) :
+      s.mine ? TX.openHandMe : TX.openHandBy;
     how = tt(row, {
       t: fmtZ(new Date(other && Number.isFinite(s.srcAt) ? s.srcAt : s.at)),
       by: s.by || ''
@@ -481,7 +609,8 @@ export function describe(tt, s, d, {
   return {
     key,
     note,
-    how
+    how,
+    follow
   };
 }
 
@@ -489,10 +618,14 @@ export function describe(tt, s, d, {
  *  son message, son briefing. Tout texte du fichier passe par esc. */
 function rowHtml(v, s) {
   const d = v.drawers.find(x => x.id === s.id) || {},
+    range = !!v.inRange && v.inRange.id === s.id && Date.now() - v.inRange.seen <= RANGE_MS,
     t = describe(v.tt, s, d, {
-      live: v.ctx.live?.status === 'tracking',
-      notJudged: v.notJudged
+      live: liveNow(v),
+      notJudged: v.notJudged,
+      inRange: range
     }),
+    // « Objet en vue » : sur un objet que l'appareil suit et que l'auteur veut déclaré (refusé hors de portée, au clic)
+    seen = !!t.follow && s.key?.kind === 'object' && s.key.object?.confirm !== false,
     name = `<b><span data-dw-n>${esc(v.tt(TX.drawerN, { n: rank(v, s.id) }))}</span>${s.title ? ` · ${esc(s.title)}` : ''}</b>`;
   // l'ordre : un tiroir dont un précédent est encore fermé ne dit que « après le tiroir n », sans geste
   if (s.locked) return `<div class="dw-row" data-dw="${s.id}" data-locked><div class="dw-env"><span class="dw-ico" role="img" aria-label="${esc(v.tt(TX.envelope))}"></span><div>
@@ -501,9 +634,9 @@ function rowHtml(v, s) {
   if (!s.open) return `<div class="dw-row" data-dw="${s.id}"><div class="dw-env"><span class="dw-ico" role="img" aria-label="${esc(v.tt(TX.envelope))}"></span><div>
     <div class="dw-top">${name}</div>
     <small class="f-muted dw-key" data-dw-key>${esc(t.key)}${s.sealed ? ` · ${esc(v.tt(TX.sealedNote))}` : ''}</small>
-    ${t.note ? `<small class="f-muted dw-key" data-dw-note>${esc(t.note)}</small>` : ''}
+    ${t.note ? `<small class="f-muted dw-key" data-dw-note${t.follow ? ` data-dw-follow="${t.follow}"` : ''}>${esc(t.note)}</small>` : ''}
     ${(s.hands || []).slice(0, 3).map(h => `<small class="f-muted dw-key" data-dw-hand="${esc(h.by)}">${esc(v.tt(TX.handBy, { by: h.by, t: fmtZ(new Date(h.at)) }))}</small>`).join('')}
-    <div class="dw-acts"><button type="button" class="f-linkbtn" data-dw-open="${s.id}"${v.armed === s.id ? ' data-armed' : ''}>${esc(v.tt(v.armed === s.id ? TX.confirm : TX.open))}</button></div></div></div></div>`;
+    <div class="dw-acts">${seen ? `<button type="button" class="${range ? 'primary' : 'f-linkbtn'}" data-dw-seen="${s.id}">${esc(v.tt(TX.seen))}</button>` : ''}<button type="button" class="f-linkbtn" data-dw-open="${s.id}"${v.armed === s.id ? ' data-armed' : ''}>${esc(v.tt(v.armed === s.id ? TX.confirm : TX.open))}</button></div></div></div></div>`;
   const brief = typeof d.brief === 'string' ? d.brief : '',
     cut = brief.length > BRIEF_CUT ? brief.slice(0, brief.lastIndexOf(' ', BRIEF_CUT) > BRIEF_CUT / 2 ? brief.lastIndexOf(' ', BRIEF_CUT) :
       BRIEF_CUT) : brief,
@@ -540,9 +673,18 @@ function paint() {
 /** Les gestes : « Ouvrir le tiroir » en deux temps (le second dans les cinq secondes), « Resceller ». */
 async function onClick(e) {
   const v = V,
-    b = e.target.closest?.('[data-dw-open],[data-dw-seal]');
+    b = e.target.closest?.('[data-dw-open],[data-dw-seal],[data-dw-seen]');
   if (!v || !b || !v.host.contains(b)) return;
   e.stopPropagation();
+  if (b.dataset.dwSeen) { // « Objet en vue » : refusé hors de portée (le dernier relevé à portée a plus d'une minute, ou aucun)
+    const r = v.inRange;
+    if (!r || r.id !== b.dataset.dwSeen || Date.now() - r.seen > RANGE_MS) return void v.ctx.notify?.(v.tt(TX.notInRange), 'warn');
+    v.said.add(`open:${r.id}`); // mon propre geste n'est pas annoncé
+    return void record(v, r.id, {
+      ...r.f,
+      at: Date.now()
+    }, r.source).catch(() => {});
+  }
   const id = b.dataset.dwOpen || b.dataset.dwSeal;
   if (b.dataset.dwOpen && v.states?.find(x => x.id === id)?.locked) return; // l'ordre : seul le premier tiroir fermé s'ouvre
   const ctx = {

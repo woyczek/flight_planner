@@ -269,9 +269,9 @@
     q('[data-dw="C"]')?.dataset.open === 'time' && /^ouvert à l'heure, à \d\d:\d\dZ$/.test(text('[data-dw="C"] [data-dw-how]')) && text(
       '[data-dw="C"] [data-dw-text]').includes('CYRANO') && ctx.notes.length === 1 && ctx.notes[0][0] === 'ok' && ctx.notes[0][1]
     .startsWith('Tiroir 2 ouvert'), [text('[data-dw="C"]'), ctx.notes]);
-  ck('le tiroir 3 devient le premier fermé : sa clé en clair (« montrée sur la Carte »), son geste, et la phrase du pilote — l\'heure d\'abord, une seule fois',
+  ck('le tiroir 3 devient le premier fermé : sa clé en clair (« montrée sur la Carte »), son geste, et, sans position en direct, l\'heure à laquelle il s\'ouvrira — l\'heure d\'abord, une seule fois',
     text('[data-dw="D"] [data-dw-key]') === 's\'ouvre au passage de la zone montrée sur la Carte' && text(
-      '[data-dw="D"] [data-dw-note]') === `Cet appareil ne suit pas encore ce passage : le tiroir s'ouvrira à ${z(T0 + 90 * MIN)} (heure estimée), ou à la main` && gestures() === 'D' && !q('[data-locked]'), [text('[data-dw="D"]')]);
+      '[data-dw="D"] [data-dw-note]') === `Sans position en direct sur cet appareil : le tiroir s'ouvrira à ${z(T0 + 90 * MIN)} (heure estimée)` && gestures() === 'D' && !q('[data-locked]'), [text('[data-dw="D"]')]);
 
   // ---- 4. la fiche redessinée : le même état dans un élément neuf
   DV.show(host(), {
@@ -320,8 +320,16 @@
       state: 'open',
       at: iso(Date.now() - 1000),
       how: 'zone',
-      from: [44.52, -1.25, 2000],
-      to: [44.49, -1.15, 2000],
+      from: {
+        lat: 44.52,
+        lon: -1.25,
+        altFt: 2000
+      },
+      to: {
+        lat: 44.49,
+        lon: -1.15,
+        altFt: 2000
+      },
       source: 'xplane'
     }
   }));
@@ -343,8 +351,16 @@
   // ---- 6. « reçu ici à … » ; le constat d'un autre SOUS VERROU
   const T3 = Date.now() - 30 * MIN,
     leg = {
-      from: [44.52, -1.25, 2000],
-      to: [44.49, -1.15, 2000]
+      from: {
+        lat: 44.52,
+        lon: -1.25,
+        altFt: 2000
+      },
+      to: {
+        lat: 44.49,
+        lon: -1.15,
+        altFt: 2000
+      }
     };
   ctx = fakeCtx({
     docs: {
@@ -496,13 +512,39 @@
   DV.stop();
   await mount(ctx, missionOf(ZONE), 1);
   ck('… et une zone sans heure connue : « H + 1 h 30 », une seule fois', text('[data-dw="B"] [data-dw-note]') ===
-    'Cet appareil ne suit pas encore ce passage : le tiroir s\'ouvrira à H + 1 h 30, ou à la main', text('[data-dw="B"] [data-dw-note]'));
+    'Sans position en direct sur cet appareil : le tiroir s\'ouvrira à H + 1 h 30', text('[data-dw="B"] [data-dw-note]'));
 
-  // ---- 9. l'heure de repli n'est dite que si elle concerne le pilote (décision de l'ergonome) ; le briefing long ; describe()
+  // ---- 9. l'heure de repli n'est dite que si elle concerne le pilote ; le briefing long ; describe()
   DV.stop();
-  DV.JUDGED.push('zone'); // comme si l'appareil savait juger une zone en vol (le lot de la zone)
   const T2 = Date.now() - 5 * MIN,
-    long = 'Consigne. '.repeat(400); // 4 000 signes
+    long = 'Consigne. '.repeat(400), // 4 000 signes
+    /** Une fausse position en direct : un abonnement (ctx.live.watch) auquel le banc envoie des relevés, une trace gardée. */
+    fakeLive = (trail = null) => {
+      const subs = new Set();
+      return {
+        status: 'tracking',
+        subs,
+        watch: fn => (subs.add(fn), () => subs.delete(fn)),
+        trail: () => trail,
+        emit: fix => subs.forEach(fn => fn(Object.freeze({
+          source: 'xplane',
+          at: iso(Date.now()),
+          altFt: 2000,
+          ...fix
+        })))
+      };
+    },
+    /** Les documents d'une mission affectée à AAA et BBB dont le vol d'AAA est démarré. */
+    flying = (start, more = {}) => ({
+      'missions/affectations.json': index(start),
+      'pilot/AAA/current_flight.json': {
+        mission: ID,
+        started: {
+          at: iso(start)
+        }
+      },
+      ...more
+    });
   ctx = fakeCtx({
     docs: {
       'missions/affectations.json': index(T2),
@@ -523,24 +565,27 @@
     brief: long
   }, ZONE);
   await mount(ctx, longMission, 2);
-  ck('une zone que l\'appareil jugerait, SANS position en direct : « Sans position en direct sur cet appareil : le tiroir s\'ouvrira à … », sans « ou à la main »',
-    text('[data-dw="C"] [data-dw-note]') === `Sans position en direct sur cet appareil : le tiroir s'ouvrira à ${z(T2 + 90 * MIN)} (heure estimée)`, text('[data-dw="C"] [data-dw-note]'));
+  ck('une zone SANS position en direct : « Sans position en direct sur cet appareil : le tiroir s\'ouvrira à … », sans « ou à la main »',
+    text('[data-dw="C"] [data-dw-note]') === `Sans position en direct sur cet appareil : le tiroir s'ouvrira à ${z(T2 + 90 * MIN)} (heure estimée)` && !q('[data-dw-follow]'), text('[data-dw="C"] [data-dw-note]'));
   ck('un briefing long (4 000 signes) : le début à l\'écran, la suite repliée sous « Lire la suite », rien de perdu', (b => b.length <=
       1201 && b.endsWith('…'))(text('[data-dw="B"] [data-dw-brief]')) && text('[data-dw="B"] [data-dw-more] summary') ===
     'Lire la suite' && (text('[data-dw="B"] [data-dw-brief]').slice(0, -1) + ' ' + (q('[data-dw="B"] [data-dw-more] p').textContent ||
       '')).replace(/\s+/g, ' ').trim() === long.trim(), text('[data-dw="B"] [data-dw-brief]').length);
   DV.stop();
-  ctx.live = {
-    status: 'tracking'
-  };
-  await mount(ctx, longMission, 2, {
-    notJudged: k => !!k.actor
+  ctx.live = fakeLive();
+  await mount(ctx, longMission, 2);
+  ck('une position en direct mais le vol de cette mission n\'est pas démarré (la position est celle d\'un autre vol) : la zone n\'est pas suivie — « Sans position en direct… »',
+    text('[data-dw="C"] [data-dw-note]').startsWith('Sans position en direct sur cet appareil') && !q('[data-dw-follow]') && ctx.live.subs
+    .size === 1);
+  ctx.live.emit({
+    lat: 44.5,
+    lon: -1.2
   });
-  ck('la même zone AVEC une position en direct : l\'heure de repli reste hors de la vue du pilote (aucune note)', !q(
-      '[data-dw="C"] [data-dw-note]') && text('[data-dw="C"] [data-dw-key]') === 's\'ouvre au passage de la zone montrée sur la Carte',
-    text('[data-dw="C"]'));
-  DV.JUDGED.pop();
+  await sleep(200);
+  ck('… et un relevé dans la zone n\'ouvre rien (ce n\'est pas le vol de cette mission)', !q('[data-dw="C"][data-open]') && !ctx.store.get(
+    BOOK).drawer_C);
   DV.stop();
+  ck('stop() rend l\'abonnement à la position en direct', ctx.live.subs.size === 0);
   const tt = (row, v) => String(row[0]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''),
     /** Les phrases d'un tiroir, espaces normalisés (« H + 1 h 30 » porte des espaces insécables). */
     say = (key, o = {}, st = {}) => Object.fromEntries(Object.entries(DV.describe(tt, {
@@ -548,7 +593,35 @@
       dueAt: null,
       ...st
     }, {}, o)).map(([k, v]) => [k, v.replace(/\s+/g, ' ')])),
-    AT = Date.UTC(2026, 10, 18, 19, 20);
+    AT = Date.UTC(2026, 10, 18, 19, 20),
+    OBJ = {
+      kind: 'object',
+      object: {
+        kind: 'raft',
+        lat: 44.6,
+        lon: -1.3,
+        rangeNm: 0.5,
+        heightFt: null,
+        altitudeFt: null,
+        confirm: true,
+        moving: false
+      },
+      fallbackMin: 45
+    },
+    ARR = {
+      kind: 'arrival',
+      point: 'DESTINATION',
+      at: {
+        lat: 45.0,
+        lon: 1.0
+      },
+      radiusNm: 1,
+      speedMaxKt: 30,
+      onGround: true,
+      required: [],
+      escortMinSec: 0,
+      fallbackMin: 120
+    };
   ck('« H + 1 h 30 » ne se coupe pas en fin de ligne (espaces insécables)', DV.describe(tt, {
     key: {
       kind: 'zone',
@@ -556,68 +629,327 @@
     },
     dueAt: null
   }, {}).note.includes('H\u00a0+\u00a01\u00a0h\u00a030'));
-  ck('describe (pur, pour l\'aperçu de l\'éditeur) : la phrase du pilote dit l\'heure UNE fois quand elle est connue (« à 19:20Z (heure estimée) », sans « H + »), sinon « H + … »',
+  ck('describe, sans position en direct : l\'heure à laquelle le tiroir s\'ouvrira, UNE fois (« à 19:20Z (heure estimée) », sans « H + » ; « H + … » tant qu\'aucune heure n\'est connue)',
     say({
       kind: 'zone',
       fallbackMin: 90
     }, {}, {
+      dueAt: AT,
+      estimated: true
+    }).note === 'Sans position en direct sur cet appareil : le tiroir s\'ouvrira à 19:20Z (heure estimée)' && say(OBJ).note ===
+    'Sans position en direct sur cet appareil : le tiroir s\'ouvrira à H + 45 min' && say({
+      kind: 'zone',
+      shown: false,
+      fallbackMin: 60
+    }).note.includes('H + 60 min') && say(ARR).note.endsWith('H + 2 h'), [say({
+      kind: 'zone',
+      fallbackMin: 90
+    }, {}, {
+      dueAt: AT,
+      estimated: true
+    }), say(OBJ), say(ARR)]);
+  ck('describe, avec une position en direct : « Cet appareil suit ce passage » (l\'heure de repli reste hors de la vue du pilote) ; à portée de l\'objet : « déclarez « Objet en vue » »',
+    say({
+      kind: 'zone',
+      fallbackMin: 90
+    }, {
+      live: true
+    }, {
+      dueAt: AT
+    }).note === 'Cet appareil suit ce passage' && say({
+      kind: 'zone',
+      fallbackMin: 90
+    }, {
+      live: true
+    }).follow === 'followed' && say(OBJ, {
+      live: true,
+      inRange: true
+    }).note === 'À portée de l\'objet : déclarez « Objet en vue »' && say(OBJ, {
+      live: true,
+      inRange: true
+    }).follow === 'range' && say(ARR, {
+      live: true
+    }).follow === 'followed' && say({
+      kind: 'hand'
+    }, {
+      live: true
+    }).follow === '');
+  ck('describe : ce que l\'appareil ne suit vraiment pas, même avec une position — une zone franchie par une cible, un objet mobile, un suivi d\'escorte, une condition de l\'atelier : « Cet appareil ne suit pas encore ce passage : … »',
+    say({
+      kind: 'zone',
+      actor: {
+        id: 'OBJ-2'
+      },
+      fallbackMin: 90
+    }, {
+      live: true
+    }, {
       dueAt: AT,
       estimated: true
     }).note === 'Cet appareil ne suit pas encore ce passage : le tiroir s\'ouvrira à 19:20Z (heure estimée), ou à la main' && say({
-      kind: 'object',
-      fallbackMin: 45
+      ...OBJ,
+      object: {
+        ...OBJ.object,
+        moving: true
+      }
+    }, {
+      live: true
     }).note === 'Cet appareil ne suit pas encore ce passage : le tiroir s\'ouvrira à H + 45 min, ou à la main' && say({
-      kind: 'zone',
-      shown: false,
-      fallbackMin: 60
-    }).note.includes('H + 60 min') && say({
-      kind: 'arrival',
-      point: 'DESTINATION',
-      fallbackMin: 120
-    }).note.includes('H + 2 h,'), [say({
-      kind: 'zone',
-      fallbackMin: 90
-    }, {}, {
-      dueAt: AT,
-      estimated: true
-    }), say({
-      kind: 'object',
-      fallbackMin: 45
-    })]);
-  ck('describe : les clés en clair — l\'objet, la zone cachée, l\'arrivée ; une condition non lue (à la main) ; le geste seul avec un repli ; « ouvert sur « Objet en vue » »',
-    say({
-      kind: 'object',
-      fallbackMin: 45
-    }).key === 's\'ouvre quand l\'objet est trouvé' && say({
-      kind: 'zone',
-      shown: false,
-      fallbackMin: 60
-    }).key === 's\'ouvre en vol' && say({
-      kind: 'arrival',
-      point: 'DESTINATION',
-      fallbackMin: 120
-    }).key === 's\'ouvre à l\'arrivée à DESTINATION' && say({
+      ...ARR,
+      escortMinSec: 60
+    }, {
+      live: true
+    }).note.startsWith('Cet appareil ne suit pas encore') && say({
       kind: 'condition',
       condition: 'hover'
+    }, {
+      live: true
     }).note === 'Cet appareil ne suit pas encore ce passage : le tiroir est à ouvrir à la main' && say({
+      kind: 'zone',
+      fallbackMin: 90
+    }, {
+      live: true,
+      notJudged: () => true
+    }).follow === '');
+  ck('describe : les clés en clair — l\'objet, la zone cachée, l\'arrivée ; le geste seul avec un repli ; « ouvert sur « Objet en vue » », « ouvert à l\'arrivée »',
+    say(OBJ).key === 's\'ouvre quand l\'objet est trouvé' && say({
+      kind: 'zone',
+      shown: false,
+      fallbackMin: 60
+    }).key === 's\'ouvre en vol' && say(ARR).key === 's\'ouvre à l\'arrivée à DESTINATION' && say({
       kind: 'hand',
       fallbackMin: 30
     }).note === 'le tiroir s\'ouvrira à H + 30 min' && say({
       kind: 'hand'
-    }).note === '' && say({
-      kind: 'object'
-    }, {}, {
+    }).note === '' && say(OBJ, {}, {
       open: true,
       how: 'object',
       mine: true,
       at: Date.UTC(2026, 10, 18, 14, 51)
-    }).how === 'ouvert sur « Objet en vue », à 14:51Z', [say({
-      kind: 'condition',
-      condition: 'hover'
-    }), say({
-      kind: 'hand',
-      fallbackMin: 30
-    })]);
+    }).how === 'ouvert sur « Objet en vue », à 14:51Z' && say(ARR, {}, {
+      open: true,
+      how: 'arrival',
+      mine: false,
+      by: 'BBB',
+      at: AT,
+      srcAt: AT
+    }).how === 'ouvert à l\'arrivée de BBB, à 19:20Z');
+
+  // ---- 9 bis. la position en direct (ctx.live.watch) : la zone franchie, « Objet en vue », l'arrivée posée, le rattrapage
+  const T5 = Date.now() - 20 * MIN;
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(ZONE, HAND), 2);
+  await until(() => ctx.live.subs.size === 1);
+  ck('le vol de cette mission est démarré, l\'appareil a une position : « Cet appareil suit ce passage » (état « suivi »), l\'heure de repli hors de la vue, pas de geste « Objet en vue » sur une zone',
+    text('[data-dw="B"] [data-dw-note]') === 'Cet appareil suit ce passage' && q('[data-dw="B"] [data-dw-note]').dataset.dwFollow ===
+    'followed' && !q('[data-dw-seen]') && gestures() === 'B', text('[data-dw="B"]'));
+  ctx.live.emit({
+    lat: 44.7,
+    lon: -1.5
+  });
+  await sleep(150);
+  ck('un relevé hors de la zone : rien ne s\'ouvre, rien n\'est écrit pour ce tiroir', !q('[data-open]') && !ctx.store.get(BOOK)?.drawer_B);
+  const syncedBefore = ctx.synced;
+  ctx.live.emit({
+    lat: 44.5,
+    lon: -1.2,
+    aglFt: 1500,
+    onGround: false,
+    gsKt: 120
+  });
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const zb = ctx.store.get(BOOK)?.drawer_B;
+  ck('le trajet entre dans la zone : le CONSTAT est écrit au carnet (« zone », ses DEUX relevés à pleine précision, la source), le tiroir s\'ouvre (« ouvert au passage de la zone, à … »), une notification le dit, un passage est demandé',
+    zb?.how === 'zone' && zb.from?.lat === 44.7 && zb.to?.lat === 44.5 && zb.to.aglFt === 1500 && zb.to.onGround === false && zb
+    .source === 'xplane' && /^ouvert au passage de la zone, à \d\d:\d\dZ$/.test(text('[data-dw="B"] [data-dw-how]')) && ctx.notes.some(
+      n => n[0] === 'ok' && n[1].startsWith('Tiroir 1 ouvert')) && ctx.synced === syncedBefore + 1 && gestures() === 'C', [zb, ctx.notes]);
+  DV.stop();
+  // l'objet : à portée ET « Objet en vue »
+  const OBJD = {
+    title: 'Radeau',
+    message: 'Radeau confirmé.',
+    brief: '',
+    key: OBJ
+  };
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(OBJD, HAND), 2);
+  await until(() => ctx.live.subs.size === 1);
+  ck('un objet que l\'appareil suit : « Cet appareil suit ce passage », et le geste « Objet en vue » à côté de « Ouvrir le tiroir »', text(
+    '[data-dw="B"] [data-dw-note]') === 'Cet appareil suit ce passage' && text('[data-dw-seen="B"]') === 'Objet en vue' && !q(
+    '[data-dw-seen="B"]').classList.contains('primary') && gestures() === 'B');
+  q('[data-dw-seen="B"]').click();
+  await sleep(100);
+  ck('« Objet en vue » HORS de portée : refusé, dit par une notification, rien d\'écrit', ctx.notes.length === 1 && ctx.notes[0][0] ===
+    'warn' && ctx.notes[0][1].includes('pas à portée') && !ctx.store.get(BOOK)?.drawer_B && !q('[data-open]'), ctx.notes);
+  ctx.live.emit({
+    lat: 44.61,
+    lon: -1.32
+  });
+  ctx.live.emit({
+    lat: 44.6,
+    lon: -1.3
+  });
+  await until(() => q('[data-dw="B"] [data-dw-note]')?.dataset.dwFollow === 'range');
+  ck('le trajet passe à portée : « À portée de l\'objet : déclarez « Objet en vue » » (état « à portée »), le geste mis en avant, rien d\'écrit sans le geste',
+    text('[data-dw="B"] [data-dw-note]') === 'À portée de l\'objet : déclarez « Objet en vue »' && q('[data-dw-seen="B"]').classList
+    .contains('primary') && !ctx.store.get(BOOK)?.drawer_B && !q('[data-open]'), text('[data-dw="B"]'));
+  q('[data-dw-seen="B"]').click();
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const ob = ctx.store.get(BOOK)?.drawer_B;
+  ck('« Objet en vue » à portée : le constat est écrit (« object », le trajet à portée), le tiroir s\'ouvre (« ouvert sur « Objet en vue », à … »), mon geste n\'est pas annoncé',
+    ob?.how === 'object' && ob.from?.lat === 44.61 && ob.to?.lat === 44.6 && /^ouvert sur « Objet en vue », à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')) && ctx.notes.length === 1 && text('[data-dw="B"] [data-dw-msg]') === 'Radeau confirmé.', [ob, ctx
+      .notes
+    ]);
+  DV.stop();
+  // l'arrivée posée
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf({
+    title: 'Au terrain',
+    message: 'Bien posé.',
+    brief: '',
+    key: ARR
+  }, HAND), 2);
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit({
+    lat: 45.0,
+    lon: 1.0,
+    onGround: false,
+    gsKt: 90
+  });
+  await sleep(150);
+  const inAir = !q('[data-open]');
+  ctx.live.emit({
+    lat: 45.0,
+    lon: 1.0,
+    onGround: true,
+    gsKt: 8
+  });
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  ck('l\'arrivée : au terrain mais en vol, rien ; posé et lent, le constat « arrival » est écrit et le tiroir s\'ouvre (« ouvert à l\'arrivée, à … »)',
+    inAir && ctx.store.get(BOOK)?.drawer_B?.how === 'arrival' && /^ouvert à l'arrivée, à \d\d:\d\dZ$/.test(text(
+      '[data-dw="B"] [data-dw-how]')), [inAir, ctx.store.get(BOOK)]);
+  DV.stop();
+  // le rattrapage au retour de la page : la trace gardée du vol de cette mission
+  const crossing = start => ({
+    from: iso(start),
+    trail: [
+      [44.7, -1.5, 2000, 60],
+      [44.52, -1.25, 2000, 300],
+      [44.49, -1.15, 2000, 400],
+      [44.3, -1.0, 2000, 900]
+    ]
+  });
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive(crossing(T5));
+  await mount(ctx, missionOf(ZONE, HAND), 2);
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const tb = ctx.store.get(BOOK)?.drawer_B;
+  ck('le rattrapage : la page revient, la trace gardée de CE vol a traversé la zone → le constat est retrouvé et écrit (source « trail », les deux points de la trace, l\'heure du franchissement)',
+    tb?.how === 'zone' && tb.source === 'trail' && tb.from?.lat === 44.52 && tb.to?.lat === 44.49 && Date.parse(tb.at) > T5 + 300e3 &&
+    Date.parse(tb.at) <= T5 + 400e3, tb);
+  DV.stop();
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive(crossing(T5 - 3 * 3600e3));
+  await mount(ctx, missionOf(ZONE, HAND), 2);
+  await sleep(300);
+  ck('la trace d\'un AUTRE vol (un autre départ) n\'est jamais lue : rien ne s\'ouvre', !q('[data-open]') && !ctx.store.get(BOOK)
+    ?.drawer_B);
+  DV.stop();
+  // le premier relevé reçu est jugé depuis le dernier relevé du cadre (ctx.live.last) : un trajet qui traverse la zone sans relevé dedans
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  ctx.live.last = Object.freeze({
+    source: 'xplane',
+    at: iso(Date.now() - 5000),
+    lat: 44.5,
+    lon: -1.3,
+    altFt: 2000
+  });
+  await mount(ctx, missionOf(ZONE, HAND), 2);
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit({
+    lat: 44.5,
+    lon: -1.1
+  });
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  const through = ctx.store.get(BOOK)?.drawer_B;
+  ck('le premier relevé reçu est jugé depuis le dernier relevé du cadre : le trajet a traversé la zone entre les deux (aucun relevé dedans) → franchi, les deux relevés au carnet',
+    through?.how === 'zone' && through.from?.lon === -1.3 && through.to?.lon === -1.1, through);
+  DV.stop();
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  ctx.live.last = Object.freeze({
+    source: 'xplane',
+    at: iso(Date.now() - 5 * MIN),
+    lat: 44.5,
+    lon: -1.3,
+    altFt: 2000
+  });
+  await mount(ctx, missionOf(ZONE, HAND), 2);
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit({
+    lat: 44.5,
+    lon: -1.1
+  });
+  await sleep(250);
+  ck('deux relevés à plus d\'une minute l\'un de l\'autre ne font pas un trajet : le relevé est jugé seul, rien ne s\'ouvre (la trace gardée dira ce qui s\'est passé)',
+    !q('[data-open]') && !ctx.store.get(BOOK)?.drawer_B, ctx.store.get(BOOK));
+  DV.stop();
+  // la position en direct arrive APRÈS le dessin : la note change au premier relevé, la trace gardée est rattrapée
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  ctx.live.status = 'off';
+  await mount(ctx, missionOf(ZONE, HAND), 2);
+  await until(() => ctx.live.subs.size === 1);
+  const before = text('[data-dw="B"] [data-dw-note]');
+  ctx.live.status = 'tracking';
+  ctx.live.emit({
+    lat: 44.9,
+    lon: -1.9
+  });
+  await until(() => !!q('[data-dw="B"] [data-dw-follow="followed"]'));
+  ck('la position en direct arrive après le dessin : « Sans position en direct… » puis, au premier relevé, « Cet appareil suit ce passage » (sans attendre la minute)',
+    before.startsWith('Sans position en direct sur cet appareil') && text('[data-dw="B"] [data-dw-note]') ===
+    'Cet appareil suit ce passage' && !q('[data-open]'), [before, text('[data-dw="B"] [data-dw-note]')]);
+  DV.stop();
+  // ce que l'appareil ne suit vraiment pas, même en vol : la règle du lecteur
+  ctx = fakeCtx({
+    docs: flying(T5)
+  });
+  ctx.live = fakeLive();
+  await mount(ctx, missionOf(ZONE, HAND), 2, {
+    notJudged: () => true
+  });
+  await until(() => ctx.live.subs.size === 1);
+  ctx.live.emit({
+    lat: 44.5,
+    lon: -1.2
+  });
+  await sleep(200);
+  ck('une clé que le lecteur dit « pas encore jugée en vol » (une cible mobile) : « Cet appareil ne suit pas encore ce passage : … » même avec une position, et un relevé dans la zone n\'ouvre rien',
+    text('[data-dw="B"] [data-dw-note]').startsWith('Cet appareil ne suit pas encore ce passage : le tiroir s\'ouvrira à ') && !q(
+      '[data-dw-follow]') && !q('[data-open]'), text('[data-dw="B"]'));
+  DV.stop();
 
   // ---- 10. le passage de synchronisation à la minute : seulement pendant que le premier tiroir fermé est attendu
   ctx = fakeCtx({

@@ -340,9 +340,8 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   l'arrivée à … », « à ouvrir à la main » — and « Ouvrir le tiroir ». Neither its message nor its briefing is in the page.
 - **Only the first closed drawer has « Ouvrir le tiroir »**; a locked one shows its envelope, its name and « après le tiroir n ».
 - **The fallback time is said only when it concerns the pilot** (the ergonomist, 17 Nov, 18 h 42) — otherwise it stays out of his
-  sight: when the key is **not followed in flight** on this device (`JUDGED`, empty until the frame's detection service is wired: the
-  zone, the object, the arrival; and the reader's own rule `notJudgedYet`: a moving target, a required following, a condition of the
-  workshop) — the pilot's sentence, the hour first and once: « Cet appareil ne suit pas encore ce passage : le tiroir s'ouvrira à
+  sight: when the key is **not followed in flight** on this device (§ 11.3: what `follows(key)` of `drawers.js` does not judge, and
+  the reader's own rule `notJudgedYet` — a moving target, a required following, a condition of the workshop) — the pilot's sentence, the hour first and once: « Cet appareil ne suit pas encore ce passage : le tiroir s'ouvrira à
   19:20Z (heure estimée), ou à la main » (« H + 1 h 30 » only while no hour is known) —, or when the device has **no live position**
   (`ctx.live.status` is not `tracking`) — « Sans position en direct sur cet appareil : le tiroir s'ouvrira à 19:20Z ».
 - **Wide screen**: the first column of the sheet widens for MY mission (up to 40 em) and a drawer is 64 characters wide at most.
@@ -385,3 +384,49 @@ until its **key** has played: a time (`time`: the departure, or the estimated pa
   « un trigramme de l'identité avec des blancs » (red). The module declares the whole `pilot/` prefix (as Fuel does) and writes only
   `bookPath`: not to be widened. The minute re-reading costs up to twelve repository reads a minute on a device without launcher: it
   runs only while a drawer is awaited and the page is visible, and stops at the opening.
+
+### 11.3 The zone lot — the drawers follow the flight (`frame/lib/crossing.js` through `ctx.live.watch`)
+
+The ergonomist's word, 17 Nov 2026, 21 h 48. The frame's crossing service (SOG-0447, `frame/lib/crossing.js`) judges; this module
+decides what is followed, writes the finding and says it.
+
+- **What is followed** — `follows(key)` of `drawers.js`: a zone the PILOT crosses (no `actor`), an object that does not move, an
+  arrival without a required following (`escortMinSec`). The rest is not judged by the device and keeps the sentence « Cet appareil
+  ne suit pas encore ce passage : … » : a moving target (an actor that crosses the zone, a moving object), a required following,
+  a condition of the workshop's 1.1 contract (`keyWhy === 'condition'`, `notJudgedYet`).
+- **When** — only for the **first closed drawer** (the order), only while **the started flight of THIS mission** is under way
+  (`current_flight.json` carries `mission` = this one and `started.at`) and the frame has a live position (`ctx.live.status ===
+  'tracking'`). A live position during another flight is not this mission's: the line then says « Sans position en direct sur cet
+  appareil : … ». One subscription (`ctx.live.watch`, a fix every five seconds), released by `stop()`; **no timer of this module**.
+- **The leg** — each fix is judged with the one before — the first one received with the frame's last fix (`ctx.live.last`); two
+  fixes more than a minute apart are not a leg: the fix is judged alone, the track says the rest — (`finding(key, prev, next, {
+  trail })`): a zone the leg **touches**
+  (`crossed(...).touched`: entered, inside, or crossed between two fixes), under its ceiling; an object the leg passes **in range**
+  (`reach(...).ok`, range and height); an arrival **landed** (`arrived(...).ok`: within the radius, on the ground, under the maximum
+  speed) once every required stop was approached, on the kept track or on this leg. An absent datum never satisfies a key (the
+  service's rule): « on the ground » unknown is not landed.
+- **The finding is written at once** in the pilot's own record, by the same `withOpen` as a gesture: `how` (`zone`, `object`,
+  `arrival`), `at` = the time of the FACT (the crossing, never in the future), `source`, and **the two fixes of the leg**, `from` and
+  `to`, each `{ lat, lon, at, altFt, aglFt, onGround, gsKt }` at full precision (read through the service's `fixOf`; an unknown
+  field is absent). Then a synchronisation pass is asked (`ctx.data.sync()`), as after a gesture.
+- **Another device replays it** — `stands(entry, key)`: the finding of another pilot's record is re-played by the same service on
+  the reader's OWN mission file; a finding without a fix, or whose leg does not touch the zone, reach the object or land at the
+  arrival, is refused (« shape ») and named as before. An arrival is a finding: open for all (`SHARED`).
+- **« Objet en vue »** — an object whose author wants the pilot's word (`confirm`, the default) is never opened by the range alone:
+  in range, the line says « À portée de l'objet : déclarez « Objet en vue » » and the button becomes the main one; the pilot's touch
+  writes the finding (the leg in range, the time of the touch). The button is accepted for one minute after the last fix in range;
+  out of range it is refused with a notification (« L'objet n'est pas à portée de cet appareil : … »). `confirm: false`: the range
+  opens.
+- **The catch-up** — when the page comes back (or when the live position arrives after the drawing), the first closed drawer that is
+  followed is replayed ONCE on the kept track of the flight (`ctx.live.trail()`, read only when its `from` is the `started.at` of this
+  flight) since the moment it became the first closed one (`since`): `catchUp(key, trail, since)`, source `trail`. The track keeps a
+  point per nautical mile: a coarser leg than the fixes. An object that wants « Objet en vue » is never caught up.
+- **On screen** — a followed drawer says « Cet appareil suit ce passage » (`[data-dw-follow="followed"]`), without the fallback hour
+  (it does not concern the pilot); an opened one « ouvert au passage de la zone, à … », « ouvert sur « Objet en vue », à … »,
+  « ouvert à l'arrivée, à … ». The section is re-read at the first fix that turns the live position on or off; a live position that
+  goes silent is said at the next minute at the latest.
+- **Not done here**: the page closed, nothing is judged (the catch-up does it at the return, on the track); a watch held by the frame
+  (V3 Frame's idea, `device/watches.json`) is the ergonomist's to settle. The fallback hour still opens the drawer for everyone.
+- Cases: N80 (70 checks: `follows`, `finding`, `stands`, `catchUp`, the fixes of a record), N81 (64: the subscription, the three
+  states, the catch-up, the flight of another mission), N83 (the sheet with a simulated launcher and simulator: followed, crossed,
+  in range and « Objet en vue », the arrival; 390 and 1280 px, four languages).

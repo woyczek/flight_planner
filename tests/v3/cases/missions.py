@@ -2801,8 +2801,8 @@ def n80(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 58, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (58 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 70, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (70 at least)')
 
 
 # ---- the session « Création de missions »: cases N70 to N79 (the editor's references, the drawers' format)
@@ -3379,8 +3379,8 @@ def n81(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers_view.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 46, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (46 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 64, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (64 at least)')
 
 # SOG-0441 (lot T2): the « Tiroirs » section on the mission sheet. Invented missions X-90x (no real mission, no AIP content).
 DW = 'modules/missions/drawers_view.js'
@@ -3439,7 +3439,7 @@ _DW_CLEAR = """async () => { if (!(await indexedDB.databases()).some(d => d.name
       'a mission I only browse says « Tiroirs : n »',
       'N', tags=('missions',), designs=('standard',), langs4=True,
       rule='SOG-0441 T2 (SPEC_MISSIONS_TIROIRS § 5): in HIS mission the pilot reads one drawer per line — closed: its title and its key in '
-      'words (« heure estimée »; the fallback time only when it concerns him: « pas encore jugé en vol », no live position), neither message nor briefing; « Ouvrir le tiroir » asks a '
+      'words (« heure estimée »; the fallback time only when it concerns him: no live position on the flight of the mission, a key the device does not follow), neither message nor briefing; « Ouvrir le tiroir » asks a '
       'second touch, then writes pilot/<TRI>/missions/<ID>.json and shows how and when it opened, its message and its briefing; the gesture '
       'of another pilot of the mission opens for him only and is said; a mission that is not his says only « Tiroirs : n »; a title is text')
 def n82(c):
@@ -3513,9 +3513,9 @@ def n82(c):
     # the second drawer is now the first closed one: its key, the pilot's sentence, the only gesture
     kc = norm(c.text(f'{S} [data-dw="C"] [data-dw-key]'))
     note = norm(c.text(f'{S} [data-dw="C"] [data-dw-note]'))
-    c.ok(kc == norm(row('keyZone')) and note.startswith(norm(row('notJudged').split('{x}')[0])) and re.search(r'\d\d:\d\dZ', note) is not None
+    c.ok(kc == norm(row('keyZone')) and note.startswith(norm(row('noLive').split('{x}')[0])) and re.search(r'\d\d:\d\dZ', note) is not None
          and 'H +' not in note, [kc, note],
-         'drawer 2: « s\'ouvre au passage de la zone montrée sur la Carte », and the pilot\'s sentence — the fallback hour first, once')
+         'drawer 2: « s\'ouvre au passage de la zone montrée sur la Carte », and the pilot\'s sentence — no live position here (no started flight of this mission): the fallback hour first, once')
     c.eq(c.js(f"[...document.querySelectorAll('{S} [data-dw-open]')].map(b => b.dataset.dwOpen)"), ['C'], 'the gesture moved to drawer 2', what='gestures')
     c.eq(norm(c.text(f'{S} [data-dw="D"] [data-dw-after]')), after(2), 'drawer 3 still waits for drawer 2', what='drawer 3')
     c.eq(c.doc('pilot/XYZ/missions/X-901A.json').get('drawer_B', {}).get('how'), 'hand', 'another pilot\'s record is never written', what='the other record')
@@ -3532,6 +3532,144 @@ def n82(c):
     sheet('X-902A')
     c.settle()
     c.eq(c.count(S), 0, 'a mission without drawers has no section', what='section')
+    c.js(_DW_CLEAR)
+
+
+# SOG-0441 (zone lot): the drawers follow the flight. An invented mission whose three drawers have a zone, an object and an arrival.
+_DW_LIVE_REGISTRY = """missions:
+  - { id: X-904A, family: TESTTIROIR, title: Recherche suivie, folder: X_TIR/X-904A, files: [missionX-904A.yaml] }
+"""
+_DW_LIVE = """mission: { id: X-904A, type: SAR, subtype: RECHERCHE }
+title: Recherche suivie
+summary: Un canot inventé dérive au sud de la base. Décollez ; la suite vous sera donnée au passage de la zone.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.5, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+zones:
+  - { id: ZONE-1, name: Secteur nord, kind: search, centre: { lat: 44.8, lon: 1.0 }, radius_km: 3 }
+objects:
+  - { id: OBJ-1, kind: raft, name: Canot, lat: 44.7, lon: 1.0, detection_range_nm: 0.5 }
+route_order: [ORIGIN, DESTINATION]
+phases:
+  - id: B
+    title: Secteur de recherche
+    message: "Un canot orange a été vu au sud du secteur."
+    brief: Descendez à 500 ft et cherchez vers le sud.
+    trigger_zone: ZONE-1
+    fallback_delay_min: 60
+  - id: C
+    title: Canot en vue
+    message: "Restez en vue du canot, un navire arrive."
+    brief: Orbitez à 500 ft.
+    trigger_object: OBJ-1
+    fallback_delay_min: 90
+  - id: D
+    title: Compte rendu
+    message: "Mission terminée."
+    brief: Rendez compte au centre.
+    trigger_condition: { kind: arrival, point: DESTINATION, radius_nm: 1, speed_max_kt: 30, require_on_ground: true }
+    fallback_delay_min: 120
+"""
+
+
+@case('N83', 'Missions: the drawers follow the flight — with a live position on the started flight of the mission, the first closed drawer '
+      'says « Cet appareil suit ce passage »; the zone crossed opens it and writes the finding, with its two fixes, in my record; an object '
+      'in range offers « Objet en vue » (refused out of range, never opened by the range alone); the landed arrival opens the last one',
+      'N', tags=('missions',), designs=('standard',), langs4=True,
+      rule='SOG-0441, zone lot (the ergonomist, 17 Nov 2026, 21 h 48): the frame\'s crossing service (frame/lib/crossing.js, SOG-0447) judges '
+      'each leg of the live position (ctx.live.watch) for the FIRST closed drawer of the mission of the started flight — a zone the leg '
+      'touches, an object in range (the pilot then declares « Objet en vue »), an arrival landed; the finding is written in the pilot\'s own '
+      'record pilot/<TRI>/missions/<ID>.json with the two fixes of the leg, so that another device replays it; « Cet appareil ne suit pas '
+      'encore ce passage » stays only for what the device really does not judge; the launcher and the simulator are simulated (two routes), '
+      'no network')
+def n83(c):
+    import datetime
+    import json
+    at = lambda m: (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=m)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    full = {'server': True, 'root': '', 'git': True, 'data': True, 'dataGit': True, 'dataRepo': '', 'lfs': False, 'csp': True, 'relaxNav': False,
+            'host': 'TEST', 'lan': False, 'suite': 'abcd1234abcd1234'}
+    fix = lambda lat, lon, **more: {'lat': lat, 'lon': lon, 'altFt': 2000, 'aglFt': 1500, 'onGround': False, 'headingDeg': 180, 'trackDeg': 180,
+                                    'gsKt': 120, 'source': 'xplane', **more}
+    now = {'fix': fix(44.9, 1.0)}                  # north of the zone (its centre is at 44.8, radius 3 km)
+    c.context.route(re.compile(r'/__setup/status'), lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps(full)))
+    c.context.route(re.compile(r'/__setup/sim/position'),
+                    lambda r: r.fulfill(status=200, content_type='application/json', body=json.dumps({**now['fix'], 'at': at(0)})))
+    start = at(-12)
+    flight = {'schema': 1, 'by': 'fuel', 'updated_at': start, 'mission': 'X-904A', 'started': {'at': start},
+              'aircraft': {'type': 'EC25', 'registration': 'F-TEST'},
+              'route': {'text': 'XTST XTSU', 'dep': 'XTST', 'arr': 'XTSU', 'points': [{'id': 'XTST', 'lat': 45.0, 'lon': 1.0}, {'id': 'XTSU', 'lat': 44.5, 'lon': 1.0}],
+                        'distanceNm': 30, 'trackDeg': 180}, 'level': {'ft': 1500}}
+    BOOK = 'pilot/ABC/missions/X-904A.json'
+    S = f'{M} [data-drawers]'
+    row = lambda k: tx(DW, k, c.lang)
+    head = lambda k: norm(row(k).split('{')[0])
+    try:
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_DW_CLEAR)
+        c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DW_LIVE_REGISTRY], ['missions/X_TIR/X-904A/missionX-904A.yaml', _DW_LIVE]])
+        c.open('missions', wait=False, app='company', docs=[['pilot/ABC/current_flight.json', flight, 'document']])
+        c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-904A\"]')", timeout=20000, what='the list')
+        c.tap(f'{M} [data-list] [data-id="X-904A"]')
+        c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-904A'", timeout=10000, what='the sheet of X-904A')
+
+        def frame_it(name):
+            """The section at the top of the screen, then the picture."""
+            c.js(f"document.querySelector('{S}').scrollIntoView({{block: 'start'}})")
+            c.shot(f'N83_{c.design}_{c.width}_{c.lang}_{name}.png')
+
+        # followed: the mission of my started flight, a live position, the first closed drawer is a zone
+        c.until(f"!!document.querySelector('{S} [data-dw=\"B\"] [data-dw-follow=\"followed\"]')", timeout=40000, what='the first drawer followed by this device')
+        c.eq(norm(c.text(f'{S} [data-dw="B"] [data-dw-note]')), norm(row('followed')), '« Cet appareil suit ce passage » — no fallback hour, it does not concern him',
+             what='the note of a followed drawer')
+        c.ok(c.count(f'{S} [data-dw-open="B"]') == 1 and c.count(f'{S} [data-dw-seen]') == 0 and c.count(f'{S} [data-dw][data-locked]') == 2
+             and (c.doc(BOOK) or {}).get('drawer_B') is None, c.text(S), 'the gesture stays, the next two drawers wait, nothing opened outside the zone')
+        frame_it('followed')
+        # crossed: the next fix is inside the zone — the finding is written with the two fixes of the leg
+        now['fix'] = fix(44.80, 1.0)
+        c.until(f"document.querySelector('{S} [data-dw=\"B\"]')?.dataset.open === 'zone'", timeout=40000, what='the first drawer opened by the zone')
+        book = c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', what='my record carries the finding')
+        b = book['drawer_B']
+        c.ok(b['how'] == 'zone' and b.get('source') == 'xplane' and abs(b['from']['lat'] - 44.9) < 1e-9 and abs(b['to']['lat'] - 44.8) < 1e-9
+             and b['to'].get('altFt') == 2000 and b['to'].get('onGround') is False and book['seance'].startswith(f'S:{start[:19]}') and 'drawer_C' not in book, book,
+             'my record: the zone, the source, the TWO fixes of the leg at full precision, the play of this flight — the next drawer untouched')
+        t = norm(c.text(f'{S} [data-dw="B"]'))
+        c.ok(head('openZoneMe') in t and 'canot orange' in t and 'Descendez' in t and re.search(r'\d\d:\d\dZ', t) is not None, t,
+             'open: « ouvert au passage de la zone, à … », its message and its briefing')
+        # the object, out of range: followed, « Objet en vue » is offered but refused
+        c.until(f"!!document.querySelector('{S} [data-dw=\"C\"] [data-dw-follow=\"followed\"]')", timeout=20000, what='the second drawer followed')
+        c.ok(norm(c.text(f'{S} [data-dw="C"] [data-dw-key]')) == norm(row('keyObject')) and c.count(f'{S} [data-dw-seen="C"]') == 1
+             and c.count(f'{S} [data-dw-seen="C"].primary') == 0, c.text(f'{S} [data-dw="C"]'),
+             'drawer 2: « s\'ouvre quand l\'objet est trouvé », « Objet en vue » offered, not yet the main button')
+        c.tap(f'{S} [data-dw-seen="C"]')
+        c.wait(600)
+        c.ok('drawer_C' not in c.doc(BOOK) and c.count(f'{S} [data-dw="C"][data-open]') == 0, c.doc(BOOK), '« Objet en vue » out of range writes nothing')
+        frame_it('crossed')
+        # in range: the sentence and the main button; the range alone never opens
+        now['fix'] = fix(44.705, 1.0, altFt=600, aglFt=600)
+        c.until(f"!!document.querySelector('{S} [data-dw=\"C\"] [data-dw-follow=\"range\"]')", timeout=40000, what='the object in range')
+        c.ok(norm(c.text(f'{S} [data-dw="C"] [data-dw-note]')) == norm(row('inRange')) and c.count(f'{S} [data-dw-seen="C"].primary') == 1
+             and 'drawer_C' not in c.doc(BOOK), c.text(f'{S} [data-dw="C"]'),
+             'in range: « À portée de l\'objet : déclarez « Objet en vue » », the main button, nothing written before the pilot\'s word')
+        frame_it('range')
+        c.tap(f'{S} [data-dw-seen="C"]')
+        book = c.until_doc(BOOK, lambda d: d and d.get('drawer_C', {}).get('state') == 'open', what='my record carries the object found')
+        c.ok(book['drawer_C']['how'] == 'object' and abs(book['drawer_C']['to']['lat'] - 44.705) < 1e-9 and 'drawer_D' not in book, book,
+             'my record: the object, the fix in range')
+        c.until(f"document.querySelector('{S} [data-dw=\"C\"]')?.dataset.open === 'object'", timeout=8000, what='the second drawer open on screen')
+        # the arrival: in flight over the aerodrome opens nothing; landed, slow, it does
+        c.until(f"!!document.querySelector('{S} [data-dw=\"D\"] [data-dw-follow=\"followed\"]')", timeout=20000, what='the third drawer followed')
+        now['fix'] = fix(44.5, 1.0, altFt=1200, aglFt=800)
+        c.wait(11000)
+        c.ok('drawer_D' not in c.doc(BOOK), c.doc(BOOK), 'over the arrival aerodrome, in flight: nothing opens')
+        now['fix'] = fix(44.5, 1.0, altFt=400, aglFt=0, onGround=True, gsKt=6)
+        c.until(f"document.querySelector('{S} [data-dw=\"D\"]')?.dataset.open === 'arrival'", timeout=40000, what='the third drawer opened by the arrival')
+        book = c.doc(BOOK)
+        c.ok(book['drawer_D']['how'] == 'arrival' and book['drawer_D']['to'].get('onGround') is True
+             and head('openArrivalMe') in norm(c.text(f'{S} [data-dw="D"]')), book.get('drawer_D'),
+             'landed and slow at the arrival: the last drawer opens, « ouvert à l\'arrivée, à … »')
+    finally:
+        c.context.unroute(re.compile(r'/__setup/status'))
+        c.context.unroute(re.compile(r'/__setup/sim/position'))
     c.js(_DW_CLEAR)
 
 

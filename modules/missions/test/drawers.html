@@ -427,20 +427,63 @@
   ck('un tiroir déjà ouvert par moi garde sa première ouverture (heure, manière)', again.drawer_D.at === iso(T0 + 20 * MIN) && again
     .drawer_D.how === 'hand' && again.updated_at === iso(T0 + 50 * MIN), again);
   const found = D.withOpen(opened, ctx(T0 + 60 * MIN), 'C', 'zone', {
-    from: [44.512345678, -1.204, 2400.4],
-    to: [44.498, -1.171, 2350],
+    from: {
+      lat: 44.512345678,
+      lon: -1.204,
+      altFt: 2400.4,
+      at: iso(T0 + 59 * MIN),
+      aglFt: 800,
+      onGround: false,
+      gsKt: 120,
+      junk: 'x'
+    },
+    to: {
+      lat: 44.498,
+      lon: -1.171,
+      altFt: 'haut',
+      at: iso(T0 + 60 * MIN)
+    },
     source: 'xplane',
     extra: 'x'
   });
-  ck('un constat (zone) porte son trajet borné et sa source ; les autres tiroirs du carnet sont gardés', JSON.stringify(found.drawer_C) ===
-    JSON.stringify({
+  ck('un constat (zone) porte ses DEUX relevés à pleine précision, bornés par le service du cadre (un champ inconnu ou illisible est absent), et sa source ; les autres tiroirs du carnet sont gardés',
+    JSON.stringify(found.drawer_C) === JSON.stringify({
       state: 'open',
       at: iso(T0 + 60 * MIN),
       how: 'zone',
-      from: [44.51235, -1.204, 2400],
-      to: [44.498, -1.171, 2350],
+      from: {
+        lat: 44.512345678,
+        lon: -1.204,
+        at: iso(T0 + 59 * MIN),
+        altFt: 2400.4,
+        aglFt: 800,
+        onGround: false,
+        gsKt: 120
+      },
+      to: {
+        lat: 44.498,
+        lon: -1.171,
+        at: iso(T0 + 60 * MIN)
+      },
       source: 'xplane'
     }) && found.drawer_D.at === iso(T0 + 20 * MIN), found);
+  ck('l\'heure d\'un constat est celle du FAIT (le franchissement), jamais dans le futur ; un relevé à 0°, 0° ou en tableau n\'est pas gardé',
+    D.withOpen(null, ctx(T0 + 60 * MIN), 'C', 'zone', {
+      at: T0 + 57 * MIN
+    }).drawer_C.at === iso(T0 + 57 * MIN) && D.withOpen(null, ctx(T0 + 60 * MIN), 'C', 'zone', {
+      at: T0 + 90 * MIN,
+      from: {
+        lat: 0,
+        lon: 0
+      },
+      to: [44.5, -1.2, 2000]
+    }).drawer_C.at === iso(T0 + 60 * MIN) && D.withOpen(null, ctx(T0 + 60 * MIN), 'C', 'zone', {
+      from: {
+        lat: 0,
+        lon: 0
+      },
+      to: [44.5, -1.2, 2000]
+    }).drawer_C.from === undefined);
   ck('withOpen : un tiroir hors de B à M, une manière inconnue, un pilote ou une mission illisibles : rien à écrire', [D.withOpen(null,
     ctx(T0), 'N'), D.withOpen(null, ctx(T0), 'B', 'time'), D.withOpen(null, {
     ...ctx(T0),
@@ -453,10 +496,35 @@
     read2 = D.withRead(read, ctx(T0 + 31 * MIN));
   ck('withRead : la première lecture est gardée', read.read_at === iso(T0 + 30 * MIN) && read2.read_at === iso(T0 + 30 * MIN) && read2
     .drawer_D.state === 'open', [read, read2]);
+  // un trajet qui traverse la zone du tiroir C (cercle de 3 km autour de 44.5 N, 1.2 W), et un autre, loin
   const leg = {
-    from: [44.52, -1.25, 2000],
-    to: [44.49, -1.15, 2000]
-  };
+      from: {
+        lat: 44.52,
+        lon: -1.25,
+        at: iso(T0 + 29 * MIN),
+        altFt: 2000
+      },
+      to: {
+        lat: 44.49,
+        lon: -1.15,
+        at: iso(T0 + 30 * MIN),
+        altFt: 2000
+      }
+    },
+    far = {
+      from: {
+        lat: 45.2,
+        lon: -1.25,
+        at: iso(T0 + 29 * MIN),
+        altFt: 2000
+      },
+      to: {
+        lat: 45.19,
+        lon: -1.15,
+        at: iso(T0 + 30 * MIN),
+        altFt: 2000
+      }
+    };
   s = st({
     doc: found,
     others: [
@@ -576,6 +644,20 @@
     id: 'C',
     crosses: () => false
   }) === 'closed:BBB=shape:');
+  ck('le rejeu par le service du cadre (sans jugement injecté) : un constat de zone sans relevé, ou dont le trajet passe loin de la zone, est refusé (« shape ») ; celui qui la traverse ouvre',
+    refusal([
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone')]
+    ], {
+      id: 'C'
+    }) === 'closed:BBB=shape:' && refusal([
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', far)]
+    ], {
+      id: 'C'
+    }) === 'closed:BBB=shape:' && refusal([
+      ['BBB', peer('C', T0 + 30 * MIN, 'zone', leg)]
+    ], {
+      id: 'C'
+    }) === 'OPEN::');
   let seenArgs = null;
   s = st({
     others: [
@@ -824,6 +906,239 @@
     s.length === 12 && s.map(x => x.id).join('') === 'BCDEFGHIJKLM' && s.filter(x => x.open).map(x => x.id).join() === 'B,C' && by(s, 'D')
     .locked === false && by(s, 'E').locked === true && by(s, 'E').after === 'D' && by(s, 'M').after === 'L' && D.LETTERS.length === 12, s
     .map(x => x.id + (x.open ? '*' : x.locked ? '-' : '')).join());
+
+  // ---- le jugement en vol (frame/lib/crossing.js) : la zone franchie, l'objet à portée, l'arrivée posée
+  const Z = drawers[1].key, // le cercle de 3 km autour de 44.5 N, 1.2 W
+    fx = (lat, lon, m, more = {}) => ({
+      lat,
+      lon,
+      at: iso(T0 + m * MIN),
+      altFt: 2000,
+      ...more
+    }),
+    OBJ = {
+      kind: 'object',
+      object: {
+        kind: 'raft',
+        lat: 44.6,
+        lon: -1.3,
+        rangeNm: 0.5,
+        heightFt: null,
+        altitudeFt: null,
+        confirm: true,
+        moving: false
+      },
+      fallbackMin: 60
+    },
+    ARR = {
+      kind: 'arrival',
+      point: 'DESTINATION',
+      at: {
+        lat: 45.0,
+        lon: 1.0
+      },
+      radiusNm: 1,
+      speedMaxKt: 30,
+      onGround: true,
+      required: [],
+      escortMinSec: 0,
+      fallbackMin: null
+    };
+  ck('follows : ce qui se juge avec une position en direct — une zone que le pilote franchit, un objet immobile, une arrivée sans suivi ; pas une zone franchie par une cible, un objet mobile, un suivi d\'escorte, une condition, l\'heure, le geste',
+    D.follows(Z) && D.follows(OBJ) && D.follows(ARR) && !D.follows({
+      ...Z,
+      actor: {
+        id: 'OBJ-2'
+      }
+    }) && !D.follows({
+      ...OBJ,
+      object: {
+        ...OBJ.object,
+        moving: true
+      }
+    }) && !D.follows({
+      ...ARR,
+      escortMinSec: 60
+    }) && !D.follows({
+      kind: 'condition',
+      condition: 'hover'
+    }) && !D.follows({
+      kind: 'time'
+    }) && !D.follows({
+      kind: 'hand'
+    }) && !D.follows(null));
+  let f = D.finding(Z, fx(44.52, -1.25, 29), fx(44.5, -1.2, 30));
+  ck('zone : le trajet entre deux relevés ENTRE dans la zone → un constat « zone » avec ses deux relevés et l\'heure du franchissement ; les deux relevés dehors mais le trajet qui la TRAVERSE aussi ; un relevé seul dedans aussi',
+    f?.how === 'zone' && f.from.lat === 44.52 && f.to.lat === 44.5 && f.at > T0 + 29 * MIN && f.at <= T0 + 30 * MIN && D.finding(Z, fx(
+      44.52, -1.25, 29), fx(44.49, -1.15, 30))?.how === 'zone' && D.finding(Z, null, fx(44.5, -1.2, 30))?.how === 'zone', f);
+  ck('zone : un trajet qui passe loin, un relevé illisible, un plafond non tenu (5 000 ft sous 3 000) ou une altitude inconnue sous un plafond : aucun constat — une donnée qui manque ne satisfait jamais une clé',
+    D.finding(Z, fx(45.2, -1.25, 29), fx(45.19, -1.15, 30)) === null && D.finding(Z, null, {
+      lat: 'x',
+      lon: -1.2
+    }) === null && D.finding({
+      ...Z,
+      ceilingFt: 3000
+    }, null, fx(44.5, -1.2, 30, {
+      altFt: 5000
+    })) === null && D.finding({
+      ...Z,
+      ceilingFt: 3000
+    }, null, {
+      lat: 44.5,
+      lon: -1.2,
+      at: iso(T0)
+    }) === null && D.finding({
+      ...Z,
+      ceilingFt: 3000
+    }, null, fx(44.5, -1.2, 30))?.how === 'zone');
+  f = D.finding(OBJ, fx(44.61, -1.32, 29), fx(44.59, -1.28, 30));
+  ck('objet : le trajet passe à portée (0,5 NM) → un constat « objet » qui attend encore « Objet en vue » (confirm) ; sans confirmation demandée par l\'auteur, il vaut tout de suite ; hors de portée, rien',
+    f?.how === 'object' && f.confirm === true && D.finding({
+      ...OBJ,
+      object: {
+        ...OBJ.object,
+        confirm: false
+      }
+    }, null, fx(44.6, -1.3, 30))?.confirm === false && D.finding(OBJ, fx(44.7, -1.32, 29), fx(44.69, -1.28, 30)) === null, f);
+  const landed = fx(45.0, 1.0, 50, {
+      onGround: true,
+      gsKt: 10
+    }),
+    STOP = {
+      ...ARR,
+      required: [{
+        id: 'PT2',
+        lat: 44.5,
+        lon: 1.5
+      }]
+    },
+    trail = {
+      from: iso(T0),
+      trail: [
+        [44.9, 1.1, 2000, 600],
+        [44.5, 1.5, 2000, 1500],
+        [44.9, 1.1, 2000, 2700]
+      ]
+    };
+  ck('arrivée : dans le rayon, lent ET posé → un constat « arrivée » ; en vol, trop vite, ou « au sol » inconnu : rien', D.finding(ARR,
+    null, landed)?.how === 'arrival' && D.finding(ARR, null, fx(45.0, 1.0, 50, {
+    onGround: false,
+    gsKt: 10
+  })) === null && D.finding(ARR, null, fx(45.0, 1.0, 50, {
+    onGround: true,
+    gsKt: 80
+  })) === null && D.finding(ARR, null, fx(45.0, 1.0, 50, {
+    gsKt: 10
+  })) === null);
+  ck('arrivée avec une escale requise : rien tant que l\'escale n\'a pas été approchée ; faite sur la trace gardée, l\'arrivée vaut', D
+    .finding(STOP, null, landed) === null && D.finding(STOP, null, landed, {
+      trail: {
+        from: iso(T0),
+        trail: [
+          [44.9, 1.1, 2000, 600]
+        ]
+      }
+    }) === null && D.finding(STOP, null, landed, {
+      trail
+    })?.how === 'arrival');
+  ck('stands : le constat d\'un carnet rejoué sur la clé de celui qui lit — vrai pour le trajet qui traverse, faux pour une autre zone, faux pour un autre genre de clé ; l\'objet et l\'arrivée de même',
+    D.stands({
+      how: 'zone',
+      ...leg
+    }, Z) && !D.stands({
+      how: 'zone',
+      ...leg
+    }, {
+      ...Z,
+      shape: {
+        circle: {
+          lat: 46,
+          lon: 3,
+          radiusM: 3000
+        }
+      }
+    }) && !D.stands({
+      how: 'zone',
+      ...leg
+    }, OBJ) && D.stands({
+      how: 'object',
+      from: fx(44.61, -1.32, 29),
+      to: fx(44.59, -1.28, 30)
+    }, OBJ) && D.stands({
+      how: 'arrival',
+      to: landed
+    }, ARR) && !D.stands({
+      how: 'arrival',
+      to: fx(45.0, 1.0, 50)
+    }, ARR) && !D.stands({
+      how: 'zone'
+    }, Z));
+  const tz = {
+    from: iso(T0),
+    trail: [
+      [44.7, -1.5, 2000, 60],
+      [44.52, -1.25, 2000, 900],
+      [44.49, -1.15, 2000, 1000],
+      [44.3, -1.0, 2000, 1800]
+    ]
+  };
+  f = D.catchUp(Z, tz);
+  ck('rattrapage : la trace gardée traverse la zone → le constat est retrouvé (source « trail », ses deux points, l\'heure du franchissement) ; rien si la traversée précède l\'instant où le tiroir est devenu le premier fermé ; un objet qui veut « Objet en vue » n\'est jamais rattrapé ; une trace illisible ne donne rien',
+    f?.how === 'zone' && f.source === 'trail' && f.from.lat === 44.52 && f.to.lat === 44.49 && f.at > T0 + 900e3 && f.at <= T0 + 1000e3 &&
+    D.catchUp(Z, tz, T0 + 1200e3) === null && D.catchUp(OBJ, {
+      from: iso(T0),
+      trail: [
+        [44.6, -1.3, 2000, 60]
+      ]
+    }) === null && D.catchUp({
+      ...OBJ,
+      object: {
+        ...OBJ.object,
+        confirm: false
+      }
+    }, {
+      from: iso(T0),
+      trail: [
+        [44.6, -1.3, 2000, 60]
+      ]
+    })?.how === 'object' && D.catchUp(Z, null) === null && D.catchUp(Z, {
+      from: 'x',
+      trail: 'y'
+    }) === null, f);
+  s = st({
+    chain: true,
+    now: T0 + 41 * MIN
+  });
+  ck('« since » : depuis quand un tiroir est le premier fermé — l\'ouverture de celui d\'avant (le rattrapage ne remonte pas plus haut) ; rien pour le premier ni pour un tiroir verrouillé',
+    by(s, 'B').open && by(s, 'C').since === T0 + 40 * MIN && by(s, 'D').since === null && by(st({
+      chain: true,
+      now: T0
+    }), 'B').since === null);
+  s = st({
+    drawers: [{
+      id: 'B',
+      key: ARR
+    }],
+    others: [
+      ['BBB', peer('B', T0 + 50 * MIN, 'arrival', {
+        to: landed
+      })]
+    ],
+    now: T0 + 51 * MIN
+  });
+  ck('le constat d\'arrivée d\'un autre ouvre pour tous quand il tient (posé, au terrain) ; il est refusé quand son relevé est en vol', by(
+    s, 'B').open && by(s, 'B').how === 'arrival' && by(s, 'B').by === 'BBB' && by(st({
+    drawers: [{
+      id: 'B',
+      key: ARR
+    }],
+    others: [
+      ['BBB', peer('B', T0 + 50 * MIN, 'arrival', {
+        to: fx(45.0, 1.0, 50)
+      })]
+    ],
+    now: T0 + 51 * MIN
+  }), 'B').refused[0]?.why === 'shape', by(s, 'B'));
 
   // ---- l'ORDRE : une clé, l'heure de repli ou le geste n'ouvrent que le premier tiroir encore fermé
   s = st({

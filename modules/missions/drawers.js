@@ -8,7 +8,8 @@
 //     lu la condition de l'auteur, et toute clé que ce fichier ne sait pas encore juger — « arrivée », cible mobile : elle n'est pas
 //     refusée, le tiroir reste fermé et s'ouvre au geste ou à son heure de repli) : CALCULÉES, jamais écrites ;
 //   · les CARNETS : un par pilote et par mission, `pilot/<TRI>/missions/<ID>.json` — chacun n'écrit que le sien (aucun conflit
-//     d'écriture) ; seuls les gestes (« Ouvrir le tiroir ») et les constats (zone franchie, objet trouvé) s'y écrivent.
+//     d'écriture) ; seuls les gestes (« Ouvrir le tiroir ») et les constats (zone franchie, objet trouvé, arrivée posée — avec les
+//     DEUX relevés du trajet, à pleine précision, pour qu'un autre appareil rejoue le constat) s'y écrivent.
 // « Ouvert pour tous » (décision de l'utilisateur, 17/11/2026, Q-0087) se CALCULE : un tiroir est ouvert dès que le carnet d'UN pilote
 // de la mission dit un CONSTAT (zone franchie, objet trouvé). Le GESTE « Ouvrir le tiroir » n'ouvre que pour celui qui le fait (sur tous
 // ses appareils) : les autres le lisent (`hands` : « BBB l'a ouvert à la main ») et gardent leur tiroir fermé — en attendant la réponse
@@ -47,7 +48,10 @@
 //       (les ouvertures d'autres carnets non retenues : 'stranger', 'seance', 'future', 'before', 'key', 'shape') }.
 //     others : [{ pilot, book }] (les carnets des autres, déjà passés par readBook) ; seen : readSeen(…) ; passage(pointId) → minutes
 //     estimées du départ à ce lieu (un nombre, ou { min }), null si inconnu ; crosses({ from, to }, key) → vrai si ce trajet coupe la
-//     forme de la clé (le service du cadre, plus tard : sans lui, une ouverture « zone » d'un autre n'est jugée que sur le reste).
+//     forme de la clé (par défaut : stands, le rejeu par le service du cadre — un constat sans relevé ne tient pas).
+//   follows(key) → vrai si la clé se juge avec une position en direct ; finding(key, prev, next, { trail }) → le constat d'un trajet,
+//     ou null ; stands(entry, key) → le constat d'un carnet tient-il sur cette clé ; catchUp(key, trail, since) → le constat retrouvé sur
+//     la trace gardée (le rattrapage au retour de la page).
 //   seenAfter(seen, states, seance, now) → ce que l'appareil garde après ce calcul ; readSeen(doc, seance) → { B: { by, at, how, got } }
 //     borné (got : l'heure où l'appareil l'a reçue).
 //   withOpen(doc, ctx, id, how, fix?), withSeal(doc, ctx, id), withRead(doc, ctx), withStart(doc, ctx, startAt) → le carnet à écrire
@@ -56,15 +60,21 @@
 import {
   DRAWER_IDS
 } from '../../frame/lib/mission.js'; // la liste fermée du lecteur (B à M) : une seule liste, jamais recopiée
+import {
+  crossed,
+  reach,
+  arrived,
+  fixOf as fixRead
+} from '../../frame/lib/crossing.js'; // le service de franchissement du cadre (SOG-0447) : le MÊME jugement en vol et au rejeu d'un constat
 
 /** Les identifiants de tiroir : ceux du lecteur de mission (un tiroir lu a toujours sa place dans le carnet). */
 export const LETTERS = [...DRAWER_IDS];
 /** Ce qui s'écrit dans un carnet : un geste ou un constat. L'heure et l'heure de repli se calculent. */
-export const HOWS = ['hand', 'zone', 'object'];
+export const HOWS = ['hand', 'zone', 'object', 'arrival'];
 /** Les ouvertures d'un AUTRE carnet qui ouvrent le tiroir ici : les constats. Le geste d'un autre n'ouvre que pour lui (décision de
  *  l'ergonome du 17/11 en attendant Q-0094 : « pour tous ou pour soi ? ») — pour l'ouvrir à tous, ajouter 'hand' ici, rien d'autre. */
-export const SHARED = ['zone', 'object'];
-const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim'];
+export const SHARED = ['zone', 'object', 'arrival'];
+const SOURCES = ['xplane', 'lnm', 'gps', 'ivao', 'vatsim', 'trail']; // trail : constat retrouvé sur la trace gardée (rattrapage)
 const TRI = /^[A-Z]{3}$/,
   MID = /^[A-Z]-\d{3}[A-Z]?$/,
   SEANCE = /^(A:(\d{4}-\d{2}-\d{2}|0)|S:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)$/;
@@ -92,14 +102,20 @@ const midOf = v => {
   const s = typeof v === 'string' ? v.trim().toUpperCase() : '';
   return MID.test(s) ? s : '';
 };
-/** Une position [lat, lon, altFt | null] bornée (jamais 0°, 0°), sinon null. */
+/** Un relevé de position gardé dans un carnet : { at, lat, lon, altFt, aglFt, onGround, gsKt } à PLEINE précision, relu borné par le
+ *  service du cadre (fixOf de crossing.js : la porte d'un relevé venu d'un fichier) ; null s'il est illisible, ou à 0°, 0°. Un champ
+ *  inconnu est absent. */
 function fixOf(v) {
-  if (!Array.isArray(v) || v.length < 2 || v.length > 3) return null;
-  const [lat, lon, alt] = v;
-  if (typeof lat !== 'number' || typeof lon !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  if (Math.abs(lat) > 90 || lon < -180 || lon > 180 || (lat === 0 && lon === 0)) return null;
-  const a = typeof alt === 'number' && Number.isFinite(alt) && alt >= -2000 && alt <= 100000 ? Math.round(alt) : null;
-  return [Math.round(lat * 1e5) / 1e5, Math.round(lon * 1e5) / 1e5, a];
+  const f = fixRead(v);
+  if (!f || (f.lat === 0 && f.lon === 0)) return null;
+  const out = {
+    lat: f.lat,
+    lon: f.lon
+  };
+  if (f.t !== null) out.at = isoOf(f.t);
+  for (const k of ['altFt', 'aglFt', 'onGround', 'gsKt'])
+    if (f[k] !== null && f[k] !== undefined) out[k] = f[k];
+  return out;
 }
 
 /** Le chemin du carnet de ce pilote pour cette mission, ou null (voir l'en-tête). */
@@ -208,11 +224,122 @@ function checkOther(e, {
   if (e.at > now + FUTURE_MS) return 'future';
   if (ref != null && e.at < ref - BEFORE_MS) return 'before';
   if (e.how !== 'hand' && key?.kind !== e.how) return 'key'; // un constat de zone sur un tiroir sans zone
-  if (e.how !== 'hand' && typeof crosses === 'function' && !(e.from && e.to && crosses({
+  // le constat est REJOUÉ sur le fichier de mission de celui qui lit, avec le même service et le même mot que celui qui l'a écrit
+  if (e.how !== 'hand' && !(e.to && (typeof crosses === 'function' ? crosses({
       from: e.from,
       to: e.to
-    }, key))) return 'shape';
+    }, key) : stands(e, key)))) return 'shape';
   return '';
+}
+
+/** Vrai si CE fichier sait juger cette clé avec une position en direct : une zone que le pilote franchit lui-même, un objet immobile,
+ *  une arrivée sans suivi d'escorte. Le reste (cible qui franchit, objet mobile, suivi, condition de l'atelier) n'est pas jugé en vol. */
+export function follows(key) {
+  if (!key || typeof key !== 'object') return false;
+  if (key.kind === 'zone') return !key.actor;
+  if (key.kind === 'object') return !!key.object && !key.object.moving;
+  if (key.kind === 'arrival') return !(key.escortMinSec > 0);
+  return false;
+}
+
+/** Les relevés d'une trace gardée ({ from: ISO du départ, trail: [[lat, lon, altFt, s, aglFt?, ground?]…] }, frame/lib/trail.js) depuis
+ *  cet instant, à la forme d'un relevé ; [] si la trace est illisible. Deux mille points au plus. */
+function trailFixes(trail, startMs) {
+  const t0 = msOf(own(trail, 'from')),
+    pts = own(trail, 'trail');
+  if (t0 === null || !Array.isArray(pts)) return [];
+  const out = [];
+  for (const q of pts.slice(-2000)) {
+    if (!Array.isArray(q) || !Number.isFinite(q[3])) continue;
+    const t = t0 + q[3] * 1000;
+    if (Number.isFinite(startMs) && t < startMs) continue;
+    const f = fixOf({
+      t,
+      lat: q[0],
+      lon: q[1],
+      altFt: q[2],
+      aglFt: q[4],
+      onGround: q[5] === 1 ? true : q[5] === 0 ? false : null
+    });
+    if (f) out.push(f);
+  }
+  return out;
+}
+
+/** Les escales requises d'une arrivée sont-elles faites ? Chacune (douze au plus) doit avoir été approchée — à moins du rayon de
+ *  l'arrivée — sur la trace gardée, ou sur ce trajet. Sans escale requise : vrai. */
+function stopsDone(key, prev, next, trail) {
+  const req = (Array.isArray(key.required) ? key.required : []).slice(0, 12);
+  if (!req.length) return true;
+  const fixes = [...trailFixes(trail, null), ...(prev ? [prev] : []), next];
+  return req.every(q => fixes.some((f, i) => reach(i ? fixes[i - 1] : null, f, {
+    lat: q?.lat,
+    lon: q?.lon,
+    rangeNm: key.radiusNm,
+    heightFt: null
+  }).ok === true));
+}
+
+/** Le CONSTAT de ce trajet (prev → next, deux relevés ; prev null : le relevé seul) pour cette clé, ou null : { how, at, from, to,
+ *  confirm } — zone : le trajet touche la zone (le mot « touched » du service : entré, dedans, traversé) ; objet : le trajet passe à
+ *  portée (confirm : vrai quand le pilote doit encore déclarer « Objet en vue ») ; arrivée : posé au terrain, escales requises faites
+ *  (trail : la trace gardée). Une donnée qui manque ne satisfait jamais une clé. */
+export function finding(key, prev, next, {
+  trail
+} = {}) {
+  if (!follows(key)) return null;
+  const b = fixOf(next),
+    a = prev ? fixOf(prev) : null;
+  if (!b) return null;
+  const t = b.at ? Date.parse(b.at) : null,
+    leg = (how, at, more = {}) => ({
+      how,
+      at: Number.isFinite(at) ? at : t,
+      from: a || b,
+      to: b,
+      ...more
+    });
+  if (key.kind === 'zone') {
+    const r = crossed(a, b, key);
+    return r.touched === true ? leg('zone', r.at) : null;
+  }
+  if (key.kind === 'object') {
+    const r = reach(a, b, key.object);
+    return r.ok === true ? leg('object', r.at, {
+      confirm: key.object.confirm !== false
+    }) : null;
+  }
+  return arrived(b, key).ok === true && stopsDone(key, a, b, trail) ? leg('arrival', t) : null;
+}
+
+/** Le constat d'un carnet tient-il sur CETTE clé (le fichier de mission de celui qui lit) ? Rejoué par le même service : la zone
+ *  touchée par le trajet, l'objet à portée, l'arrivée posée au dernier relevé. */
+export function stands(e, key) {
+  if (!e || !e.to || !key || key.kind !== e.how) return false;
+  const same = !e.from || (e.from.lat === e.to.lat && e.from.lon === e.to.lon && e.from.at === e.to.at),
+    prev = same ? null : e.from;
+  if (e.how === 'zone') return crossed(prev, e.to, key).touched === true;
+  if (e.how === 'object') return !!key.object && reach(prev, e.to, key.object).ok === true;
+  if (e.how === 'arrival') return arrived(e.to, key).ok === true;
+  return false;
+}
+
+/** Le rattrapage : le premier constat de cette clé sur la trace gardée depuis `since` (l'instant où ce tiroir est devenu le premier
+ *  fermé ; null : toute la trace), ou null. La trace garde un point par mille marin : un trajet plus grossier que les relevés. Un
+ *  objet qui veut « Objet en vue » n'est jamais rattrapé (il faut le geste, à portée). */
+export function catchUp(key, trail, since = null) {
+  if (!follows(key)) return null;
+  const fixes = trailFixes(trail, since);
+  for (let i = 0; i < fixes.length; i++) {
+    const f = finding(key, i ? fixes[i - 1] : null, fixes[i], {
+      trail
+    });
+    if (f && !f.confirm) return {
+      ...f,
+      source: 'trail'
+    };
+  }
+  return null;
 }
 
 /** Les minutes estimées jusqu'à un lieu, d'après la fonction donnée (un nombre, ou { min }) ; 0 pour le départ ; null si inconnues. */
@@ -363,6 +490,7 @@ export function stateOf(drawers, {
       estimated: dueAt != null && estimated,
       locked: locked && !w,
       after: locked ? prev : null,
+      since: !locked && Number.isFinite(prevAt) ? prevAt : null, // depuis quand il est le premier fermé (l'ouverture de celui d'avant)
       sealed: sealed && !w && !locked,
       gone: !!w?.gone,
       gotAt: w && w.by && w.by !== tri && got && got.by === w.by && Number.isFinite(got.got) ? got.got : null,
@@ -487,9 +615,11 @@ export function withOpen(doc, ctx, id, how = 'hand', fix = null) {
   const b = baseOf(doc, ctx);
   if (!b || !LETTERS.includes(id) || !HOWS.includes(how)) return null;
   const now = Number.isFinite(ctx.now) ? ctx.now : Date.now();
+  // l'heure d'un constat est celle du fait (le franchissement), jamais dans le futur ; celle d'un geste, l'instant du geste
+  const at = how !== 'hand' && Number.isFinite(fix?.at) ? Math.min(fix.at, now) : now;
   if (b.drawers[id]?.state !== 'open') b.drawers[id] = {
     state: 'open',
-    at: now,
+    at,
     how,
     from: fixOf(fix?.from),
     to: fixOf(fix?.to),
