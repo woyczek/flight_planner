@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "f46a307",
-  "fiches": 460,
+  "organisation": "79031e6",
+  "fiches": 462,
   "untranslated": 0,
   "priorities": 374,
   "capabilities_untranslated": 0
@@ -1768,6 +1768,27 @@
      "de": "Gradrahmen / Rose: etwas Abstand zwischen Pfeilspitzen und Ziffern",
      "es": "Marco graduado / rosa: algo de espacio entre las puntas de flecha y las cifras",
      "rank": 326
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-aerodb-espaces",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; AeroDB ; espaces",
+    "en": "Carte ; AeroDB ; espaces",
+    "de": "Carte ; AeroDB ; espaces",
+    "es": "Carte ; AeroDB ; espaces"
+   },
+   "items": [
+    {
+     "id": "SOG-0462",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Zones R et D : dire la nature du danger, le gestionnaire, les horaires et les conditions de pénétration",
+     "en": "R and D areas: state the nature of the hazard, the managing authority, the hours and the entry conditions",
+     "de": "R- und D-Gebiete: Art der Gefahr, zuständige Stelle, Zeiten und Einflugbedingungen angeben",
+     "es": "Zonas R y D: indicar la naturaleza del peligro, el gestor, los horarios y las condiciones de penetración"
     }
    ]
   },
@@ -3812,11 +3833,12 @@
     {
      "id": "SOG-0454",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : « Annuler » est mal placé, peu visible, et ne ressemble pas aux autres écrans",
      "en": "Mission workshop: “Cancel” is misplaced, hard to see, and unlike the other screens",
      "de": "Missionswerkstatt: „Abbrechen“ ist schlecht platziert, kaum sichtbar und anders als auf den übrigen Seiten",
-     "es": "Taller de misiones: «Cancelar» está mal situado, se ve poco y no se parece a las demás pantallas"
+     "es": "Taller de misiones: «Cancelar» está mal situado, se ve poco y no se parece a las demás pantallas",
+     "test": true
     }
    ]
   },
@@ -4002,6 +4024,27 @@
      "es": "Misiones en el teléfono: « Sortear » saca una misión cuyo archivo no se encuentra — proponer solo las jugables",
      "rank": 343,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-echanges-entre-appareils",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; échanges entre appareils",
+    "en": "Missions ; échanges entre appareils",
+    "de": "Missions ; échanges entre appareils",
+    "es": "Missions ; échanges entre appareils"
+   },
+   "items": [
+    {
+     "id": "SOG-0463",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Tiroirs ouverts pour tous : un canal en direct entre appareils qui ne soit pas le dépôt de données — étude",
+     "en": "Drawers opened for everyone: a live channel between devices other than the data repository — study",
+     "de": "Für alle geöffnete Schubladen: ein Live-Kanal zwischen Geräten, der nicht das Datenrepository ist — Studie",
+     "es": "Cajones abiertos para todos: un canal en directo entre dispositivos que no sea el repositorio de datos — estudio"
     }
    ]
   },

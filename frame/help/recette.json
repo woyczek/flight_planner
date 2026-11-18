@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
-  "tests": 303,
+  "tests": 304,
   "verdicts": 212
  },
  "apps": [
@@ -4530,96 +4530,33 @@
    "test": "Lanceur relancé. Carburant, calcule un vol d'Europe du Nord vers San Francisco (EGLL → KSFO, EHAM → KSFO). Attendu : le calcul revient à peu près à son temps d'hier (3 à 5 s) au lieu de 6 à 8 s ; la route est la même. EDDF → KSFO reste à environ 6 s : exception connue. Les vols de Madrid gardent leur route libre par le sud.",
    "since": "2026-11-17",
    "state": "known"
+  },
+  {
+   "id": "SOG-0454",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : « Annuler » est mal placé, peu visible, et ne ressemble pas aux autres écrans",
+    "en": "Mission workshop: “Cancel” is misplaced, hard to see, and unlike the other screens",
+    "de": "Missionswerkstatt: „Abbrechen“ ist schlecht platziert, kaum sichtbar und anders als auf den übrigen Seiten",
+    "es": "Taller de misiones: «Cancelar» está mal situado, se ve poco y no se parece a las demás pantallas"
+   },
+   "test": "Missions, Registre, « Atelier » (ou « Modifier ») sur une mission. En bas : « Enregistrer » puis « Annuler » côte à côte, en vrais boutons, et « À compléter » au bout de la barre. Change un titre puis clique « Annuler ». Attendu : la question « Quitter l'atelier sans enregistrer ? » ; « Rester dans l'atelier » garde ton changement, « Quitter sans enregistrer » le perd. Sans rien changer, « Annuler » quitte aussitôt.",
+   "since": "2026-11-18",
+   "state": "todo",
+   "delivered": "2026-11-18T09:01:17Z"
   }
  ],
  "decisions": [
   {
-   "id": "Q-0093",
-   "fiche": "SOG-0443",
-   "app": "compagnie",
-   "question": "Affectation : veux-tu pouvoir AFFECTER une mission depuis la V3 dès maintenant, ou cela reste-t-il au CPCO de la V2 ?",
-   "context": "Le 30/10 tu avais dit : le CPCO reste en V2 le temps de le refaire. La session « Affectation des missions » peut soit seulement LIRE les affectations écrites par la V2 (et les faire vivre chez le pilote : tiroirs, équipiers, transmission à Carburant), soit ajouter en V3 un geste minimal pour affecter (un pilote, un indicatif, une heure, un aéronef), sans droits ni contrôle de disponibilité, dont la ligne reste lisible par la V2. Ce que je conteste : refaire un morceau du CPCO en V3 sans l'avoir décidé.",
-   "options": [
-    "Oui : un geste minimal pour affecter en V3, compatible avec la V2 ; le reste (contrôles, convoyages) reste au CPCO",
-    "Non : la V3 lit seulement ; on affecte dans le CPCO de la V2 jusqu'à sa refonte",
-    "Oui, et c'est le début de la refonte du CPCO en V3 (dis ce que tu veux en premier, dans le texte)",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0094",
-   "fiche": "SOG-0441",
-   "app": "compagnie",
-   "question": "Missions à tiroir : le geste « Ouvrir le tiroir » d'un pilote (à la main, sans la zone) ouvre-t-il pour TOUS, ou pour lui seul ?",
-   "context": "Tu as décidé qu'un tiroir ouvert par le passage dans la zone l'est pour tous les appareils de la mission. Reste le geste manuel hérité de la V2. Ce que conteste la session « Affectation des missions », et moi avec elle : si le geste d'un seul ouvre pour tous, l'impatience d'un pilote donne la suite à tout l'équipage, et les contrôles sur la zone ne servent plus à rien.",
-   "options": [
-    "Pour lui seul : les autres lisent « RBR l'a ouvert à la main » et gardent leur tiroir fermé",
-    "Pour tous, comme la zone",
-    "Supprimer le geste manuel : seules la zone, l'objet, l'heure et l'heure de repli ouvrent",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0097",
-   "fiche": "SOG-0441",
-   "app": "compagnie",
-   "question": "Tiroirs ouverts pour tous : faut-il mesurer une fois, sur le vrai dépôt, le délai entre deux appareils ?",
-   "context": "Au banc (deux postes d'essai, un dépôt local, aucun réseau), l'ouverture d'un tiroir par un pilote s'affiche chez l'autre 47 secondes après. Sur le vrai dépôt, chaque échange prend en plus le temps du réseau : non mesuré, et je ne le mesure pas sans ton accord (ce serait quelques écritures d'essai dans le dépôt des données). L'écran ne promet aucun délai : il dira l'écart réel quand il dépasse une minute (« ouvert par BBB à 20:14Z — reçu ici à 20:16Z »).",
-   "options": [
-    "Pas de mesure dédiée : l'écran dit l'écart réel, on le lira à ton premier vol à deux",
-    "Une mesure dédiée sur le vrai dépôt, avec une mission d'essai que je te prépare et que tu retires ensuite",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0098",
+   "id": "Q-0101",
    "fiche": "SOG-0444",
    "app": "compagnie",
-   "question": "Atelier de missions : où vit la palette de briques ?",
-   "context": "Ta version 1.3 l'a cachée derrière « ＋ Tiroir », et tu la trouves gênante à chercher. Deux variantes dessinées cette nuit (captures envoyées : atelier_biblio_1280 et atelier_briques_1280). La colonne de gauche montre tout d'un coup, mais à 1280 px elle rétrécit la carte, et repliée elle cache de nouveau la palette. La rangée sous le déroulé pose la brique là où elle va (à côté de « ＋ Tiroir »), laisse la carte large, et se parcourt par onglets de famille, la famille de la mission en premier.",
+   "question": "Atelier de missions : où vit la palette de briques ? Ouvre file:///E:/DEFA-v3-missions-creation/modules/missions/maquette/atelier.html#briques puis la même adresse finie par #biblio",
+   "context": "Reprise de Q-0098, avec les adresses. « #briques » : une rangée « Briques » sous le déroulé (familles en onglets, la famille de la mission d'abord, recherche) ; la brique tombe à côté de « ＋ Tiroir » et la carte garde sa largeur. « #biblio » : la colonne de gauche repliable ; elle montre tout d'un coup, mais à 1280 px elle rétrécit la carte, et repliée elle cache de nouveau la palette. Les briques de la maquette sont inventées. Les deux captures à 1280 sont aussi dans le fil de la session (atelier_briques_1280, atelier_biblio_1280).",
    "options": [
-    "Une rangée « Briques » sous le déroulé (familles en onglets, recherche, repliable)",
-    "La colonne de gauche, repliable",
+    "La rangée « Briques » sous le déroulé (#briques)",
+    "La colonne de gauche, repliable (#biblio)",
     "Les deux : la rangée par défaut, la colonne sur un très grand écran",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0099",
-   "fiche": "SOG-0444",
-   "app": "compagnie",
-   "question": "Atelier de missions : le modèle de départ, on le choisit une fois ou on peut en changer ?",
-   "context": "Dans ta version 1.3 le modèle (« Recherche sur glacier », « Bateau mobile »…) ne se choisit plus qu'au premier écran. Variante dessinée (capture atelier_modele_1280) : une ligne sous le titre dit « Modèle : … — il a posé 2 tiroirs et 3 lieux · Changer de modèle » ; le changement dit AVANT ce qu'il remplace (ce que le modèle avait posé, même retouché) et ce qu'il garde (ce que tu as écrit ou ajouté).",
-   "options": [
-    "Visible sous le titre, avec « Changer de modèle » qui dit avant ce qu'il remplace et ce qu'il garde",
-    "Choisi à la création seulement, comme dans ta version 1.3",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-17",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0100",
-   "fiche": "SOG-0460",
-   "app": "compagnie",
-   "question": "Aller-retour ChatGPT : de quel prompt part-on ?",
-   "context": "Le dépôt n'a que le prompt de la V2 (docs/technique/PROMPT_GENERATEUR_MISSIONS.md), d'avant les tiroirs. Tu dis que le tien a probablement changé (tiroirs, polygones de zone de déclenchement). Je n'ai trouvé aucun prompt dans le dossier de ta maquette. Le retour (coller un YAML dans « Ajouter des missions ») existe déjà ; il sera vérifié sur une mission inventée à tiroirs.",
-   "options": [
-    "Tu pars du prompt du dépôt et tu le mets à jour depuis le format de ma maquette ; je le relis",
-    "Je te donne le mien : je le dépose dans organisation/ (dis-moi quand c'est fait dans le texte)",
     "Autre (dans le texte)"
    ],
    "since": "2026-11-18",
