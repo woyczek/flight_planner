@@ -10,9 +10,10 @@
 //     hors d'une fiche (pas de .ms-sheet ni de place) : rien ;
 //   · « Affecter cette mission » prend la place de la fiche (l'attribut data-assigning sur .ms-sheet : la première page cachée au
 //     téléphone, le détail à côté d'elle sur un module large) : en tête les affectations NON annulées de cette mission (« Retirer »),
-//     puis Pilote, Indicatif, Décollage (UTC), Aéronef, le conflit s'il y en a un, « Affecter » et « Annuler » — sept éléments au plus ;
+//     puis Pilote, Indicatif, Décollage (UTC), Aéronef, « Affecter » et « Annuler » — sept éléments au plus ;
 //     « ← Fiche » (au téléphone) et « Annuler » le referment ;
-//   · un conflit (le même pilote sur une autre mission à moins de deux heures) est DIT au premier « Affecter », jamais bloquant : un
+//   · un conflit (le même pilote sur une autre mission à moins de deux heures) est DIT au premier « Affecter » par une notification
+//     flottante « warn » (aucun encadré dans la page : la règle des avertissements), jamais bloquant : un
 //     second « Affecter » écrit.
 // Celui qui affecte ne voit de la mission que sa partie VISIBLE (pilotView, mine: false) : rien d'un tiroir n'entre dans le formulaire
 // ni dans la ligne écrite (titre, terrain de départ, types de la mission).
@@ -46,7 +47,7 @@ export const TX = {
   back: ['← Fiche', '← Sheet', '← Blatt', '← Ficha'],
   more: ['{n} autres', '{n} more', '{n} weitere', '{n} más'],
   lineOff: ['décollage {t}', 'take-off {t}', 'Start {t}', 'despegue {t}'],
-  // un conflit dit, jamais bloquant
+  // un conflit dit par une notification « warn », jamais bloquant
   conflict: ['{p} a déjà une mission à cette heure : {m}, décollage {t}. Vous pouvez affecter quand même.',
     '{p} already has a mission at this time: {m}, take-off {t}. You can assign anyway.',
     '{p} hat zu dieser Zeit bereits eine Mission: {m}, Start {t}. Sie können trotzdem zuweisen.',
@@ -118,7 +119,6 @@ const STYLE = `[data-module="missions"] [data-pane="mission"].ms-sheet[data-assi
 [data-module="missions"] .ms-asrow>input[type="time"]{flex:0 0 7em}
 [data-module="missions"] .ms-asrow>select{flex:0 0 7em} /* le type (« EC25 ») étroit : l'immatriculation et son texte indicatif ont la place */
 [data-module="missions"] [data-as="registration"]::placeholder{font-size:var(--sog-size-s,.875rem)}
-[data-module="missions"] .ms-asconf{border-left:3px solid var(--sog-warn);background:var(--sog-bg);padding:8px 10px;margin:4px 0 8px}
 [data-module="missions"] .ms-asacts{margin:4px 0 0}
 @container (min-width: 850px){
   [data-module="missions"] [data-pane="mission"].ms-sheet[data-assigning] .ms-first{display:block}
@@ -187,7 +187,6 @@ export function show(host, {
       vals: null, // les valeurs des champs, gardées d'un dessin à l'autre
       lines: [], // les affectations listées (listOf)
       pilots: [], // les trigrammes proposés
-      conflict: null, // { pilot, mission, takeoff } : le conflit dit
       warned: '', // « pilote|décollage » du conflit déjà dit : un second « Affecter » écrit
       busy: false
     };
@@ -249,7 +248,6 @@ function onOpen(e) {
   Object.assign(w, {
     open: true,
     vals: fresh(w),
-    conflict: null,
     warned: ''
   });
   w.btn?.setAttribute('aria-expanded', 'true');
@@ -296,8 +294,7 @@ function formHtml(w) {
     row = (l, i) => `<div class="ms-asline" data-as-line="${i}"><span>${esc(lineText(w, l))}</span><button type="button" class="f-linkbtn" data-as-remove="${i}">${esc(tt(TX.remove))}</button></div>`,
     rows = w.lines.map(row),
     list = rows.length ? `<div class="ms-aslist" data-as-list><h3>${esc(tt(TX.listHead))}</h3>${rows.slice(0, SEVEN).join('')}${rows.length > SEVEN ? `<details class="ms-more"><summary class="f-muted">${esc(tt(TX.more, { n: rows.length - SEVEN }))}</summary>${rows.slice(SEVEN).join('')}</details>` : ''}</div>` : '',
-    types = w.mission.types.length ? w.mission.types.map(t => `<option value="${esc(t)}"${t === v.type ? ' selected' : ''}>${esc(t)}</option>`).join('') : '<option value="">—</option>',
-    conf = w.conflict ? `<p class="ms-asconf" data-as-conflict role="status">${esc(tt(TX.conflict, { p: w.conflict.pilot, m: w.conflict.mission, t: fmtZ(w.conflict.takeoff) }))}</p>` : '';
+    types = w.mission.types.length ? w.mission.types.map(t => `<option value="${esc(t)}"${t === v.type ? ' selected' : ''}>${esc(t)}</option>`).join('') : '<option value="">—</option>';
   return `<div class="ms-asbar"><button type="button" class="f-linkbtn" data-as-back>${esc(tt(TX.back))}</button><b>${esc([w.id, w.mission.title].filter(Boolean).join(' '))}</b></div>
     <h2>${esc(tt(TX.head))}</h2>${list}
     <div class="ms-asfields">
@@ -305,7 +302,7 @@ function formHtml(w) {
     <label class="f-field"><span>${esc(tt(TX.callsign))}</span><input data-as="callsign" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${esc(v.callsign)}"></label>
     <div class="f-field" role="group" aria-label="${esc(tt(TX.takeoff))}"><span>${esc(tt(TX.takeoff))}</span><div class="ms-asrow"><input type="date" data-as="date" aria-label="${esc(tt(TX.date))}" value="${esc(v.date)}"><input type="time" data-as="time" aria-label="${esc(tt(TX.time))}" value="${esc(v.time)}"></div></div>
     <div class="f-field" role="group" aria-label="${esc(tt(TX.aircraft))}"><span>${esc(tt(TX.aircraft))}</span><div class="ms-asrow"><select data-as="type" aria-label="${esc(tt(TX.type))}">${types}</select><input data-as="registration" maxlength="10" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${esc(tt(TX.registration))}" aria-label="${esc(tt(TX.registration))}" value="${esc(v.registration)}"></div></div>
-    </div><datalist id="asPilots">${w.pilots.map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>${conf}
+    </div><datalist id="asPilots">${w.pilots.map(p => `<option value="${esc(p)}"></option>`).join('')}</datalist>
     <div class="f-row ms-asacts"><button type="button" class="primary" data-as-go>${esc(tt(TX.go))}</button><button type="button" data-as-cancel>${esc(tt(TX.cancel))}</button></div>`;
 }
 
@@ -393,13 +390,13 @@ async function submit(w) {
         pilot: v.pilot,
         takeoff: v.takeoff
       });
-    if (conf && w.warned !== sig) { // dit, jamais bloquant : le second « Affecter » écrit
+    if (conf && w.warned !== sig) { // dit par une notification « warn », jamais bloquant : le second « Affecter » écrit
       w.warned = sig;
-      w.conflict = {
-        pilot: v.pilot,
-        ...conf
-      };
-      return paint(true);
+      return void w.ctx.notify?.(w.tt(TX.conflict, {
+        p: v.pilot,
+        m: conf.mission,
+        t: fmtZ(conf.takeoff)
+      }), 'warn');
     }
     const now = Date.now(),
       line = A.lineOf(w.mission, v, {
@@ -415,7 +412,6 @@ async function submit(w) {
     if (!await put(w, out.doc) || W !== w) return;
     Object.assign(w, {
       warned: '',
-      conflict: null,
       lines: A.listOf(out.doc, w.id),
       vals: fresh(w, v.type)
     });

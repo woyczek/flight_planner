@@ -182,7 +182,7 @@
     go = async c => {
         const n = c.notes.length + c.puts.length;
         q('[data-as-go]').click();
-        await until(() => c.notes.length + c.puts.length > n || !!q('[data-as-conflict]'));
+        await until(() => c.notes.length + c.puts.length > n);
         await sleep(30);
       },
       index = () => ({
@@ -347,9 +347,11 @@
     registration: 'f-test'
   });
   await go(c);
-  ck('premier « Affecter » : le conflit est DIT sous les champs (ABC sur X-901A, 19:40Z), rien n\'est écrit', text('[data-as-conflict]') ===
-    'ABC a déjà une mission à cette heure : X-901A, décollage 19:40Z. Vous pouvez affecter quand même.' && c.puts.length === 0, text(
-      '[data-as-conflict]'));
+  const CONFLICT = 'ABC a déjà une mission à cette heure : X-901A, décollage 19:40Z. Vous pouvez affecter quand même.';
+  ck('premier « Affecter » : le conflit est DIT par une notification « warn » (ABC sur X-901A, 19:40Z), mot pour mot ; rien n\'est écrit',
+    J(c.notes.at(-1)) === J(['warn', CONFLICT]) && c.puts.length === 0, c.notes.at(-1));
+  ck('… aucun encadré ni aucune marque du conflit dans la page (ni son texte, ni un élément de plus)', !stage.textContent.includes(
+    'a déjà une mission') && !q('[data-as-conflict],.ms-asconf,[role="status"]'), box().innerHTML.slice(-300));
   ck('… les valeurs tapées restent dans les champs', q('[data-as="pilot"]').value === 'abc' && q('[data-as="registration"]').value ===
     'f-test');
   await go(c);
@@ -375,7 +377,7 @@
       '[data-as-list] h3') === 'Affectations de cette mission' && qa('[data-as-line]').length === 1 && text('[data-as-line] span') ===
     'ABC · TEST31 · décollage 20:00Z · EC25 F-TEST' && text('[data-as-remove]') === 'Retirer', text('[data-as-list]'));
   ck('les champs se vident, le type reste ; le conflit n\'est plus dit', ['pilot', 'callsign', 'date', 'time', 'registration'].every(k => q(
-    `[data-as="${k}"]`).value === '') && q('[data-as="type"]').value === 'EC25' && !q('[data-as-conflict]'));
+    `[data-as="${k}"]`).value === '') && q('[data-as="type"]').value === 'EC25' && !stage.textContent.includes('a déjà une mission'));
   // la même clé : mise à jour
   fill({
     pilot: 'ABC',
@@ -385,7 +387,7 @@
     type: 'H135'
   });
   await go(c); // ABC a toujours X-901A à 19:40Z : le conflit est dit de nouveau, puis « Affecter » quand même
-  const said = !!q('[data-as-conflict]') && c.puts.length === 1;
+  const said = J(c.notes.at(-1)) === J(['warn', CONFLICT]) && c.puts.length === 1;
   await go(c);
   const doc2 = c.store.get(P),
     abc = doc2.assignments.filter(l => l.mission === ID && l.pilot === 'ABC');

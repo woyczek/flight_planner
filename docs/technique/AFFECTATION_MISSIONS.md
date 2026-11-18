@@ -568,7 +568,7 @@ one call in each) — not by `module.js`.
   the Detail are hidden; on a wide module the first page stays on the left and the form takes the column of the Detail; « ← Fiche » on
   a phone, « Annuler » everywhere close it). Seven elements at most: the assignments of this mission (one line per NOT cancelled line,
   « ABC · TEST31 · décollage 20:00Z · EC25 F-TEST » and « Retirer »; beyond seven, « {n} autres »), Pilote, Indicatif, Décollage (UTC),
-  Aéronef, the conflict when there is one, « Affecter » and « Annuler ». No help line under a field: « immatriculation (facultative) »
+  Aéronef, « Affecter » and « Annuler ». No help line under a field: « immatriculation (facultative) »
   is the placeholder of the field.
 - **The fields.** Pilot: an input with a `<datalist>` of the trigrams that have a pilot's folder (`ctx.data.list('pilot/')`, read by
   pattern as `frame/help/signaler.js` does; 400 at most), any three letters accepted (`/^[A-Z]{3}$/` after upper-casing, the rule of
@@ -596,7 +596,8 @@ one call in each) — not by `module.js`.
   `assignments` array of the most recent device won and the other line was lost — the bench shows both. The key is the one of
   `tools/data_sync.py` (`mission|pilot|role`).
 - **Conflict, said, never blocking.** At the first « Affecter », if the pilot already has a NOT cancelled line of ANOTHER mission whose
-  take-off is LESS than two hours from this one (two hours exactly: no conflict), the form says « ABC a déjà une mission à cette heure :
+  take-off is LESS than two hours from this one (two hours exactly: no conflict), a floating `warn` notification says — no box, no mark
+  in the form (the user's rule: warnings go by the floating notification, never twice) — « ABC a déjà une mission à cette heure :
   X-901A, décollage 19:40Z. Vous pouvez affecter quand même. »; a second « Affecter » writes. The same pilot already on THIS mission (a
   line not cancelled): « Affecter » updates his line (same key) and the notification says « ABC : affectation mise à jour ».
   After a write: the list is updated, the fields are emptied (the type kept), « ABC est affecté à X-905A, décollage 20:00Z. ».
@@ -613,6 +614,6 @@ one call in each) — not by `module.js`.
 - Cases: N88 (the bench `modules/missions/test/assign.html`, 54 checks: the input, the line read back by `mine()` and `seanceOf()`, the
   key, the withdrawal, the conflict under two hours, the list, the hostile files, the merge of two devices through
   `frame/store/frame_data.js` and its counter-proof with `record`), N89 (the screen, four languages: no button at the Discovery level,
-  the button, the form, the conflict said then assigned anyway, the line read in the store, the list, the notification, XYZ assigned,
+  the button, the form, the conflict said by a notification then assigned anyway, the line read in the store, the list, the notification, XYZ assigned,
   « Retirer », the device of ABC that finds X-905A in « Mes missions affectées » only while the line is not cancelled). The view bench
   `modules/missions/test/assign_view.html` (45 checks) is played by the session.

@@ -4384,11 +4384,10 @@ def n89(c):
             c.page.select_option(sel, x) if k == 'type' else c.page.fill(sel, x)
 
     def assign():
-        """« Affecter » and its answer: a notification more, or the conflict said."""
-        n0, had = len(c.note_log()), c.count(f'{_AS_BOX} [data-as-conflict]')
+        """« Affecter » and its answer: a notification more (the conflict too is a notification)."""
+        n0 = len(c.note_log())
         c.tap(f'{_AS_BOX} [data-as-go]')
-        c.until(f"window.__notes.length > {n0} || ({'false' if had else 'true'} && !!document.querySelector('{_AS_BOX} [data-as-conflict]'))",
-                timeout=6000, what='the answer of « Affecter »')
+        c.until(f"window.__notes.length > {n0}", timeout=6000, what='the answer of « Affecter » (a notification)')
         c.settle()
 
     # the Discovery level: no « Affecter… »
@@ -4427,8 +4426,10 @@ def n89(c):
     c.shot(f'N89_{c.design}_{c.width}_{c.lang}_form.png')
     # the conflict, said, never blocking
     assign()
-    c.eq(norm(c.text(f'{_AS_BOX} [data-as-conflict]')), fmt('conflict', p='ABC', m='X-901A', t='19:40Z'),
-         'first « Affecter »: the conflict is said under the fields', what='the conflict')
+    c.eq(norm(c.note_log()[-1]), fmt('conflict', p='ABC', m='X-901A', t='19:40Z'),
+         'first « Affecter »: the conflict is said by a floating notification, word for word', what='the conflict')
+    c.ok(norm(fmt('conflict', p='ABC', m='X-901A', t='19:40Z'))[:20] not in norm(c.text(_AS_BOX)) and c.count(f'{_AS_BOX} [role="status"]') == 0,
+         c.text(_AS_BOX)[-200:], 'no box and no mark of the conflict in the form (warnings go by the floating notification only)')
     c.eq(len(c.doc(P)['assignments']), 1, 'nothing written yet', what='lines')
     c.shot(f'N89_{c.design}_{c.width}_{c.lang}_conflict.png')
     assign()
