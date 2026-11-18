@@ -4,6 +4,7 @@ reported as reviews; they never become permissions or silently pass as valid.
 """
 import collections,re
 from . import fra   # SOG-0081 : import relatif
+from . import rad_via      # SOG-0401 (forme B) : la SUITE d'un groupe VIA
 
 def active_during(clock,start,end):
     if clock=='H24':return True
@@ -75,7 +76,7 @@ def context(legs,dep,arr):
     for n,l in enumerate(legs):
         if n==0 and isinstance(l.get('altitude_start_ft'),(int,float)):alt[l['start']['id']]=l['altitude_start_ft']
         if isinstance(l.get('altitude_end_ft'),(int,float)):alt[l['end']['id']]=l['altitude_end_ft']
-    return dict(points=points,routes=routes,all=points|routes,dep=dep,arr=arr,sid=sid,star=star,phases=dict(phases),alt=alt)
+    return dict(points=points,routes=routes,all=points|routes,dep=dep,arr=arr,sid=sid,star=star,phases=dict(phases),alt=alt,legs=legs)      # `legs` : la suite des tronçons, pour les groupes VIA qui se lisent dans l'ordre (rad_via)
 
 def alternatives(text):
     """SOG-0401 (forme A) : les alternatives NUMÉROTÉES « 1. … 2. … » d'une condition (le RAD les lit comme un OU), ou None quand le texte n'est pas une liste numérotée simple : une seule alternative, ou une sous-liste « a. », « i) », une exception, un point-virgule : non décidé ici."""
@@ -126,6 +127,10 @@ def condition(text,ctx,rad):
                 tests.append(t);continue
             if m[1]=='RFL':      # SOG-0401 : le niveau demandé (ctx['fl'], le niveau déposé) ; inconnu ou sur la limite : non décidé
                 t=rfl_test(spec,ctx.get('fl'))
+                if t is None:return None
+                tests.append(t);continue
+            if m[1]=='VIA' and rad_via.read(spec.strip()) is not None:      # SOG-0401 (forme B) : « VIA (A DCT B) », « VIA (A L607 B) », « VIA (* DCT B) » : une SUITE, lue dans l'ordre du vol (vrai, faux, ou non décidé)
+                t=rad_via.match(spec.strip(),ctx.get('legs'),aliases,ctx.get('known'))
                 if t is None:return None
                 tests.append(t);continue
             if names(spec)&{'AND','OR','EXC','DEP','ARR','VIA','ABV','BLW','FL','RFL','TYP','PBN','NOT','DCT','SID','STAR','BELOW','ABOVE','EXCEPT'}:return None

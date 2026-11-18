@@ -15484,3 +15484,52 @@ def k346(c):
     c.eq((len(v['unknown_spaces']), len(v['unknown_spaces'][0]['rules']), v['unknown_spaces'][0]['space']), (view.MAX_UNKNOWN_SPACES, view.MAX_UNKNOWN_RULES, 'S0'), 'at most 100 unknown spaces, 50 rules each, the first ones in order', what='unknown spaces')
     # `network_for` is nested in `nat_layer.add`: no end-to-end case (reviewed by Security: the constant is enough, the code is `min(networks, key=...)` on a non-empty dict)
     c.eq(nat_layer.NETWORK_FLOORS_MAX, 16, 'the floors of the networks of a track are bounded at 16')
+
+
+@case('K347', 'Route engine, SOG-0401 (RAD form B, 1st form): the SEQUENCE of a « VIA (…) » group is read in the order of the flight — « VIA (AAA DCT BBB) », « VIA (AAA L607 CCC) », « VIA (* DCT DDD) », « VIA ((BBB, CCC) DCT DDD) », « VIA (AAA (DCT, N871) BBB) » — true when the flight has them, false when a point, an airway or a direct leg the group needs is not on the flight, and NOT DECIDED otherwise (every part present but not in order, a point the base does not know, a text that is not a sequence: the rule stays to review)',
+      'K', static=True,
+      rule='SOG-0401 form B (ergonomics session: « forme B élargie, un formulaire à la fois, un cas chacun ») : the groups VIA with a connector (airway or DCT) were all « à examiner » (about 8 000 occurrences in the workbook): the first form is the sequence. A decided rule that is wrong is worse than a rule « à examiner »: only a strict match is true; false only when something the group needs is absent from the flight. Texts of the case are invented (points AAA…, airways L607 / N871), never the workbook\'s. Red before: every case is None.')
+def k347(c):
+    RJ = _regen()
+    from route_engine import rad_via as V, rad_flight as RF
+    leg = lambda a, b, v, k='ENROUTE': {'start': {'id': a}, 'end': {'id': b}, 'via': v, 'kind': k}
+    legs = [leg('EDDF', 'AAA', 'SID1', 'SID'), leg('AAA', 'BBB', 'L607'), leg('BBB', 'CCC', 'L607'), leg('CCC', 'DDD', 'DCT'), leg('DDD', 'LFMN', 'STAR1', 'STAR')]
+    m = lambda s, known=None: V.match(s, legs, RF.aliases, known)
+    c.eq([V.read(s) is not None for s in ['(AAA DCT BBB)', '(AAA L607 CCC)', '(* DCT DDD)', '((BBB, CCC) DCT DDD)', '(AAA (DCT, N871) BBB)', '(AAA, BBB, CCC)', '(AAA BBB)', '(AAA DCT BBB DCT)', 'AAA', '(L607 DCT BBB)', '(AAA * BBB)']],
+         [True, True, True, True, True, False, False, False, False, False, False],
+         'what is read as a sequence: node, connector, node…; a list of points, two nodes in a row, a text that ends on a connector, an airway where a point is expected, « * » as a connector: not read', what='read')
+    c.eq([m('(AAA L607 CCC)'), m('(AAA L607 BBB)'), m('(BBB L607 CCC)'), m('(CCC DCT DDD)'), m('(* DCT DDD)'), m('((BBB, CCC) DCT DDD)'), m('(AAA (DCT, L607) BBB)'), m('(CCC (DCT, N871) DDD)')],
+         [True] * 8, 'a PORTION of an airway is enough (AAA to CCC over two legs, BBB to CCC over one); a direct leg is ONE leg; « * » is any point; a list of points; a list of connectors', what='true')
+    c.eq([m('(AAA N871 BBB)'), m('(ZZZ DCT DDD)'), m('(CCC DCT ZZZ)'), m('((XXX, YYY) DCT DDD)')],
+         [False] * 4, 'false when something the group needs is not on the flight: an airway no leg uses (N871), a point (ZZZ), a list of points none of which is on the flight', what='false')
+    c.eq([m('(BBB L607 DDD)'), m('(AAA DCT BBB)'), m('(DDD DCT CCC)'), m('(CCC L607 BBB)'), m('(AAA DCT BBB DCT CCC)')],
+         [None] * 5, 'NOT decided when every part is on the flight but not in the order of the group (L607 stops at CCC, then a direct leg; AAA to BBB is on L607, not direct; the direction is reversed; the two direct legs of the group are not on the flight, which has other legs between)', what='not decided')
+    c.eq([m('(AAA L607 CCC)', known={'AAA', 'BBB'}), m('(AAA L607 CCC)', known={'AAA', 'BBB', 'CCC'})], [None, True], 'a point the base does not know (CCC) is not decided; known, it is', what='known')
+    c.eq(V.match('(AAA DCT BBB)', None, RF.aliases, None), None, 'no legs: not decided')
+    c.eq(V.match('(AAA DCT BBB)', [leg('AAA', 'BBB', 'DCT'), leg('CCC', 'DDD', 'DCT')], RF.aliases, None), None, 'legs that do not chain: the order of the flight is not known, not decided')
+
+    import time      # Security: the text of a rule is not trusted: twenty « * » on an airway are not an exponential search
+    names = ['PT' + chr(65 + i // 26) + chr(65 + i % 26) + 'A' for i in range(120)]
+    long_legs = [leg(names[i], names[i + 1], 'L607') for i in range(99)] + [leg(names[99], names[100], 'N871')]
+    hostile = '(' + ' '.join(['*', 'L607'] * 19 + [names[0]]) + ')'
+    t0 = time.time()
+    res = V.match(hostile, long_legs, RF.aliases, None)
+    c.eq((V.read(hostile) is not None, res, time.time() - t0 < 1.0), (True, None, True), 'a group of 19 airway connectors between « * » on a flight of 100 legs, all on that airway but the last, ends in less than a second and is NOT DECIDED (the old search did not end: about 10^20 calls)', what='cost')
+    keep, V.MAX_STEPS = V.MAX_STEPS, 3
+    try:
+        capped = V.match('(AAA L607 CCC)', legs, RF.aliases, None)
+    finally:
+        V.MAX_STEPS = keep
+    c.eq((capped, V.match('(AAA L607 CCC)', legs, RF.aliases, None)), (None, True), 'past the cap of steps the answer is NOT DECIDED (never true or false); back to the normal cap it is true again', what='step cap')
+    class Rad:
+        groups = {}
+
+        def match(self, expr, ad):
+            return ad in expr.upper().replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+    rad = Rad()
+    ctx = RF.context(legs, 'EDDF', 'LFMN')
+    ctx['known'], ctx['fl'] = None, 350
+    cond = lambda t: RF.condition(t, ctx, rad)
+    c.eq([cond('ARR LFMN & VIA (AAA L607 CCC)'), cond('ARR LFMN & VIA (AAA N871 BBB)'), cond('VIA (* DCT DDD) EXC VIA ((BBB, CCC) DCT DDD)'), cond('VIA (* DCT DDD) EXC VIA ((EEE, FFF) DCT DDD)'), cond('VIA (BBB L607 DDD)'), cond('VIA (AAA, ZZZ)')],
+         [True, False, False, True, None, True],
+         'in a condition: with ARR, with the exception EXC (the exception holds: the condition does not), a sequence not decided leaves the condition not decided, a plain list of points is read as before', what='condition')
