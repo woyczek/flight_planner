@@ -4,7 +4,7 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0ee91a1",
+  "organisation": "150de10",
   "fiches": 472,
   "untranslated": 0,
   "priorities": 374,
@@ -4129,12 +4129,11 @@
     {
      "id": "SOG-0455",
      "kind": "feature",
-     "state": "done",
+     "state": "planned",
      "fr": "Missions : deux vues d'une même mission — le Brief (pilote : l'histoire d'abord) et l'Atelier (auteur : la carte d'abord) ; le registre ouvre le Brief",
      "en": "Missions: two views of one mission — the Brief (pilot: the story first) and the Workshop (author: the map first); the register opens the Brief",
      "de": "Missionen: zwei Ansichten einer Mission — das Briefing (Pilot: zuerst die Geschichte) und die Werkstatt (Autor: zuerst die Karte); das Register öffnet das Briefing",
-     "es": "Misiones: dos vistas de una misma misión — el Brief (piloto: primero la historia) y el Taller (autor: primero el mapa); el registro abre el Brief",
-     "test": true
+     "es": "Misiones: dos vistas de una misma misión — el Brief (piloto: primero la historia) y el Taller (autor: primero el mapa); el registro abre el Brief"
     }
    ]
   },
@@ -4151,7 +4150,7 @@
     {
      "id": "SOG-0460",
      "kind": "feature",
-     "state": "doing",
+     "state": "planned",
      "fr": "Missions : l'aller-retour avec ChatGPT — copier le prompt, coller la réponse, alimenter le registre (tiroirs et zones en contour compris)",
      "en": "Missions: the round trip with ChatGPT — copy the prompt, paste the answer, feed the register (drawers and outlined areas included)",
      "de": "Missionen: der Hin- und Rückweg mit ChatGPT — Prompt kopieren, Antwort einfügen, Register füllen (mit Schubladen und umrissenen Gebieten)",
