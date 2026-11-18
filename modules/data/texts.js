@@ -1968,10 +1968,10 @@ export const TX = {
   cov: {
     title: ['Couverture par pays', 'Coverage by country', 'Abdeckung nach Land', 'Cobertura por país'],
     intro: [
-      'Ce que la base porte aujourd’hui pour chaque pays, lu dans ses fichiers : le nombre de points, de voies, d’espaces, de FIR, de terrains avec procédures et avec couche sol (non : aucun). Touchez un en-tête pour trier, un pays pour voir ses sources et leur licence.',
-      'What the base holds today for each country, read from its files: the number of points, airways, airspaces, FIRs, aerodromes with procedures and with a ground layer (no: none). Touch a heading to sort, a country to see its sources and their licence.',
-      'Was die Basis heute für jedes Land enthält, aus ihren Dateien gelesen: Zahl der Punkte, Strecken, Lufträume, FIR, Flugplätze mit Verfahren und mit Bodenschicht (nein: keine). Tippen Sie auf eine Überschrift zum Sortieren, auf ein Land für seine Quellen und deren Lizenz.',
-      'Lo que la base contiene hoy para cada país, leído de sus archivos: número de puntos, aerovías, espacios, FIR, aeródromos con procedimientos y con capa de suelo (no: ninguno). Toque un encabezado para ordenar, un país para ver sus fuentes y su licencia.'
+      'Ce que la base porte aujourd’hui pour chaque pays, lu dans ses fichiers : le nombre de points, de voies, d’espaces, de FIR, de terrains avec procédures et avec couche sol (non : aucun). Touchez un pays pour voir ses sources et leur licence.',
+      'What the base holds today for each country, read from its files: the number of points, airways, airspaces, FIRs, aerodromes with procedures and with a ground layer (no: none). Touch a country to see its sources and their licence.',
+      'Was die Basis heute für jedes Land enthält, aus ihren Dateien gelesen: Zahl der Punkte, Strecken, Lufträume, FIR, Flugplätze mit Verfahren und mit Bodenschicht (nein: keine). Tippen Sie auf ein Land für seine Quellen und deren Lizenz.',
+      'Lo que la base contiene hoy para cada país, leído de sus archivos: número de puntos, aerovías, espacios, FIR, aeródromos con procedimientos y con capa de suelo (no: ninguno). Toque un país para ver sus fuentes y su licencia.'
     ],
     no: ['non', 'no', 'nein', 'no'],
     country: ['Pays', 'Country', 'Land', 'País'],

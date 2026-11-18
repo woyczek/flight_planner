@@ -151,9 +151,12 @@ import {
   startToursUpload
 } from './tours.js';
 import {
+  bindCovSort,
   closeCovTable,
   covClick,
-  openCovTable
+  initCovSort,
+  openCovTable,
+  unbindCovSort
 } from './covtable.js';
 
 export const meta = {
@@ -179,14 +182,18 @@ export const meta = {
     'model_thread.js',
     'zoneop.js', 'select.js',
     '../../frame/lib/plural.js', '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par model_sets.js
+    '../../frame/lib/sortlist.js', // SOG-0498 : le tri du tableau de couverture (covtable.js)
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
   lazy: ['../maps/lib/maplibre-gl.js?v=0', '../maps/lib/maplibre-gl.css?v=0'],
   net: ['tiles.openfreemap.org'],
-  reads: ['cache/data/'],
+  reads: ['cache/data/', 'cache/sort/'], // cache/sort/ : l'ordre gardé du tableau de couverture est LU par loadState (SOG-0498), pas seulement écrit
   writes: [{
     prefix: 'cache/data/',
+    policy: 'cache'
+  }, {
+    prefix: 'cache/sort/', // l'ordre choisi du tableau de couverture (frame/lib/sortlist.js, SOG-0498)
     policy: 'cache'
   }]
 };
@@ -232,7 +239,7 @@ function onClick(e) {
   if (mv) return mv.disabled ? undefined : moveClick(mv); // « Ranger les sources brutes » (carte Inventaire)
   const pt = e.target.closest?.('button[data-pack-tab]');
   if (pt) return setPackTab(pt.dataset.packTab); // les onglets Régions | Thèmes (SOG-0165)
-  if (e.target.closest?.('[data-covtable]') && e.target.closest?.('[data-cov-sort], [data-cov-row], [data-cov-reload]')) return covClick(
+  if (e.target.closest?.('[data-covtable]') && e.target.closest?.('[data-cov-row], [data-cov-reload]')) return covClick(
     e); // le tableau de couverture (SOG-0174)
   const rg = e.target.closest?.(
     '[data-act="reg-choose"], [data-act="reg-cancel"]'); // « Choisir le fichier… » et « Annuler » du registre français (registry.js)
@@ -610,6 +617,8 @@ export async function mount(el, ctx) {
   // « ? » de l'en-tête : le chapitre au paragraphe du groupe ouvert, sinon à celui du cycle
   ctx.helpAnchor?.(() => helpGroup() ? `data-group-${helpGroup()}` : 'data-cycle');
   S.body.addEventListener('click', onClick);
+  initCovSort(); // l'ordre gardé du tableau de couverture est lu à l'appareil (SOG-0498)
+  bindCovSort(); // et ses gestes (en-têtes, « Trier », « Remettre l'ordre ») sont posés une fois sur le corps de l'écran
   S.body.addEventListener('pointerover', onPackOver);
   S.body.addEventListener('pointerout', onPackOut);
   S.body.addEventListener('pointerover', onGroupOver);
@@ -670,6 +679,7 @@ export function unmount() {
   window.removeEventListener('resize', S.onResize);
   cancelAnimationFrame(S.rz);
   clearTimeout(S.again);
+  unbindCovSort();
   destroyMaps();
   stopTimer(); // le suivi s'arrête de lui-même au démontage (le cadre) : le travail, lui, continue sur le lanceur
   for (const f of S.stops) f?.();

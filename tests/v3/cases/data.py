@@ -5240,13 +5240,9 @@ def l66(c):
     c.check_errors()
 
 
-@case('L67', 'Données: the coverage table by country (SOG-0174): read from the launcher (base/coverage: once at the opening, shared with the hatch of the world map), seven columns at most (country, points, airways, airspaces, FIR, procedures, ground: a number or « non »), sortable, a country unfolds to its sources and their licence; what the launcher answers is untrusted', 'L', tags=('data',), langs4=True,
-      designs=('standard',), screens=True, night=False,
-      rule='SOG-0174 (the user: « des données aéro pour TOUS les pays »; the ergonomist: one row per country, columns points / airways / airspaces / FIR / procedures / ground, source and licence, sortable, seven columns at most on screen, the rest in the detail of the row): the block is folded and reads nothing until opened; the answer is bounded (zone ids, closed list of source ids, integers); a refused or unreadable answer is said with « Relire »')
-def l67(c):
-    lang = c.lang
-    T = lambda k: _trow(k, lang, after='  cov: {')
-    cov_ok = _view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': {
+def _cov_ok():
+    """The answer of base/coverage the cases of the coverage table read: France, Spain and the United States (the last one with hostile values) and one zone dropped for its identifier."""
+    return _view('done', step='Terminé', jid='jc', result={'ok': True, 'zones': {
         'fr': {'cycle': '2026-10-29', 'parserVersion': 28, 'counts': {'aerodromes': 1872, 'navaids': 424, 'points': 4277, 'airways': 1493, 'airspaces': 2559, 'vrp': 1121, 'fir': 15}, 'procedures': 6, 'ground': 1,
                'sources': {'declared': ['sia', 'dircam', 'openaip', 'mora', 'xplane'], 'present': ['dircam', 'openaip', 'sia', 'evil']}, 'has': {'points': True}},
         'es': {'cycle': '2026-10-29', 'parserVersion': 23, 'counts': {'aerodromes': 217, 'navaids': 84, 'points': 0, 'airways': 0, 'airspaces': 380, 'vrp': 272, 'fir': 0}, 'procedures': 0, 'ground': 0,
@@ -5254,6 +5250,15 @@ def l67(c):
         'us': {'cycle': 'not a date', 'parserVersion': None, 'counts': {'aerodromes': '<img src=x onerror=window.__pwn=1>', 'navaids': -5, 'points': 0, 'airways': 0, 'airspaces': 9230, 'vrp': 0, 'fir': 0}, 'procedures': 2257, 'ground': 0,
                'sources': {'declared': ['faa'], 'present': []}, 'has': {}},
         'ZZ!': {'cycle': None, 'counts': {}, 'sources': {}, 'has': {}}}})
+
+
+@case('L67', 'Données: the coverage table by country (SOG-0174): read from the launcher (base/coverage: once at the opening, shared with the hatch of the world map), seven columns at most (country, points, airways, airspaces, FIR, procedures, ground: a number or « non »), sortable, a country unfolds to its sources and their licence; what the launcher answers is untrusted', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0174 (the user: « des données aéro pour TOUS les pays »; the ergonomist: one row per country, columns points / airways / airspaces / FIR / procedures / ground, source and licence, sortable, seven columns at most on screen, the rest in the detail of the row): the block is folded and reads nothing until opened; the answer is bounded (zone ids, closed list of source ids, integers); a refused or unreadable answer is said with « Relire »')
+def l67(c):
+    lang = c.lang
+    T = lambda k: _trow(k, lang, after='  cov: {')
+    cov_ok = _cov_ok()
     st = _launcher(c, [cov_ok], verbs=_VERBS + ['base/coverage'])
     st['status'] = _ALL_OK()
     cfg, _ = _fixture()
@@ -5272,7 +5277,7 @@ def l67(c):
     c.until("document.querySelectorAll('[data-cov-zone]').length === 3", timeout=10000, what='the table')
     c.eq([[p['set'], p['verb'], p['args']] for p in _posts(st, 'coverage')], [['base', 'coverage', {}]], 'one read, no argument', what='one read')
     c.eq(c.count('[data-cov-table] thead th'), 7, 'seven columns: the country and six', what='columns')
-    c.eq(c.js("[...document.querySelectorAll('[data-cov-table] thead button')].map(b => b.dataset.covSort)"), ['zone', 'points', 'airways', 'airspaces', 'fir', 'procedures', 'ground'], 'country, points, airways, airspaces, FIR, procedures, ground', what='headings')
+    c.eq(c.js("[...document.querySelectorAll('[data-cov-table] thead button')].map(b => b.dataset.sort)"), ['zone', 'points', 'airways', 'airspaces', 'fir', 'procedures', 'ground'], 'country, points, airways, airspaces, FIR, procedures, ground', what='headings')
     c.eq(c.js("[...document.querySelectorAll('[data-cov-zone]')].map(r => r.dataset.covZone).sort()"), ['es', 'fr', 'us'], 'the zone with a bad identifier is dropped', what='rows')
     cellv = lambda z, col: c.js(f"document.querySelector('[data-cov-zone={z}] td[data-col={col}]').dataset.n")
     c.eq([cellv('fr', 'points'), cellv('fr', 'airways'), cellv('fr', 'fir'), cellv('fr', 'procedures'), cellv('fr', 'ground')], ['4277', '1493', '15', '6', '1'], 'the counts of France', what='fr counts')
@@ -5284,21 +5289,23 @@ def l67(c):
         c.shot(f'L67_standard_{c.width}_{lang}_delivered.png')
     # ---- sort: the same button reverses; numbers go down first
     order = lambda: c.js("[...document.querySelectorAll('[data-cov-zone]')].map(r => r.dataset.covZone)")
-    c.tap('[data-cov-sort=airspaces]')
-    c.until("document.querySelector('[data-cov-sort=airspaces]').closest('th').getAttribute('aria-sort') === 'descending'", timeout=4000, what='sorted down')
+    # SOG-0498: the sort is the common block (frame/lib/sortlist.js): the heading of the table on a computer, « Trier » and its panel on a phone
+    _cov_sort(c, 'airspaces')
+    c.until("document.querySelector('[data-cov-table] th[data-col=airspaces]').getAttribute('aria-sort') === 'descending'", timeout=4000, what='sorted down')
     c.eq(order(), ['us', 'fr', 'es'], 'airspaces, most first: 9 230, 2 559, 380', what='sort down')
-    c.tap('[data-cov-sort=airspaces]')
-    c.until("document.querySelector('[data-cov-sort=airspaces]').closest('th').getAttribute('aria-sort') === 'ascending'", timeout=4000, what='sorted up')
-    c.eq(order(), ['es', 'fr', 'us'], 'the same heading again reverses', what='sort up')
-    # ---- a country unfolds: its sources with the catalogue's licence, those not read yet
-    c.tap('[data-cov-row=es]')
-    c.until("!!document.querySelector('[data-cov-detail=es]')", timeout=4000, what='the detail of Spain')
-    c.eq(c.js("document.querySelector('[data-cov-row=es]').getAttribute('aria-expanded')"), 'true', 'the country says it is open', what='expanded')
-    c.eq(c.js("[...document.querySelectorAll('[data-cov-detail=es] [data-cov-source]')].map(l => l.dataset.covSource)"), ['openaip'], 'the sources read', what='sources')
-    c.ok(c.count('[data-cov-detail=es] [data-cov-notyet]') == 1 and 'lfv' in c.js("document.querySelector('[data-cov-detail=es] [data-cov-notyet]').textContent.toLowerCase()"), None, 'LFV is declared but not read yet: said (X-Plane and MORA, listed for every zone, are not)')
-    c.tap('[data-cov-row=fr]')
-    c.until("!!document.querySelector('[data-cov-detail=fr]')", timeout=4000, what='the detail of France')
-    c.eq(c.js("[...document.querySelectorAll('[data-cov-detail=fr] [data-cov-source]')].map(l => l.dataset.covSource)"), ['dircam', 'openaip', 'sia'], 'an identifier outside the closed list (« evil ») is ignored', what='closed list')
+    _cov_sort(c, 'airspaces', 'asc')
+    c.until("document.querySelector('[data-cov-table] th[data-col=airspaces]').getAttribute('aria-sort') === 'ascending'", timeout=4000, what='sorted up')
+    c.eq(order(), ['es', 'fr', 'us'], 'the same column again reverses', what='sort up')
+    # ---- a country unfolds: its sources with the catalogue's licence, those not read yet (in the table on a computer, in the list on a phone: the same detail)
+    view = '[data-cov-list]' if c.phone else '[data-cov-table]'
+    c.tap(f'{view} [data-cov-row=es]')
+    c.until(f"!!document.querySelector('{view} [data-cov-detail=es]')", timeout=4000, what='the detail of Spain')
+    c.eq(c.js(f"document.querySelector('{view} [data-cov-row=es]').getAttribute('aria-expanded')"), 'true', 'the country says it is open', what='expanded')
+    c.eq(c.js(f"[...document.querySelectorAll('{view} [data-cov-detail=es] [data-cov-source]')].map(l => l.dataset.covSource)"), ['openaip'], 'the sources read', what='sources')
+    c.ok(c.count(f'{view} [data-cov-detail=es] [data-cov-notyet]') == 1 and 'lfv' in c.js(f"document.querySelector('{view} [data-cov-detail=es] [data-cov-notyet]').textContent.toLowerCase()"), None, 'LFV is declared but not read yet: said (X-Plane and MORA, listed for every zone, are not)')
+    c.tap(f'{view} [data-cov-row=fr]')
+    c.until(f"!!document.querySelector('{view} [data-cov-detail=fr]')", timeout=4000, what='the detail of France')
+    c.eq(c.js(f"[...document.querySelectorAll('{view} [data-cov-detail=fr] [data-cov-source]')].map(l => l.dataset.covSource)"), ['dircam', 'openaip', 'sia'], 'an identifier outside the closed list (« evil ») is ignored', what='closed list')
     # ---- unreadable answer: said, « Relire » asks again
     c.js("document.querySelector('[data-covtable]').open = false")
     c.until("!document.querySelector('[data-covtable]').open", timeout=4000, what='folded again')
@@ -10602,4 +10609,269 @@ def l163(c):
         _xp_wait(c, lambda: len(st['xplane_posts']) == p0 + 1, 'the folder is saved')
         c.wait(2500)
         c.eq([len(_XP_JOBS(st)) - n, norm(c.text('[data-xplane-state]'))], [0, norm(_trow('okCycle', lang, after='  xp: {').replace('{c}', '2610'))], f'regen/verbs = {verbs!r}: no reading is asked, the line says only « Enregistré »', what=f'no verb {verbs!r}')
+    c.check_errors()
+
+
+# ---- SOG-0498: the coverage table sorts through the common block (frame/lib/sortlist.js) --------------------------------------------------------------
+# What the fake answer (_cov_ok) gives: points France 4277, Spain and the United States 0 (« non » = empty); airspaces 2559 / 380 / 9230; procedures 6 / 0 / 2257.  Names in the language of the run give the default order.
+_COV_COLS = ['points', 'airways', 'airspaces', 'fir', 'procedures', 'ground']
+_COV_DEFAULT = {'fr': ['es', 'us', 'fr'], 'en': ['fr', 'es', 'us'], 'de': ['fr', 'es', 'us'], 'es': ['es', 'us', 'fr']}   # Espagne, États-Unis, France / France, Spain, United States / Frankreich, Spanien, Vereinigte Staaten / España, Estados Unidos, Francia
+_COV_TABLE_JS = "[...document.querySelectorAll('[data-cov-table] [data-cov-zone]')].map(r => r.dataset.covZone)"
+_COV_LIST_JS = "[...document.querySelectorAll('[data-cov-list] [data-cov-item]')].map(r => r.dataset.covItem)"
+_COV_SORTS_JS = "[...document.querySelectorAll('[data-cov-table] thead th')].map(th => th.dataset.col + ':' + th.getAttribute('aria-sort'))"
+_COV_NOW_JS = "(() => { const th = document.querySelector('[data-cov-table] thead th[aria-sort=ascending], [data-cov-table] thead th[aria-sort=descending]'); return th ? [th.dataset.col, th.getAttribute('aria-sort') === 'ascending' ? 'asc' : 'desc'] : null })()"
+_COV_FILE = 'cache/sort/coverage.json'
+
+
+def _cov_unfold(c, st):
+    """From an opened screen: waits for the opening and for the read of the world map, then opens the block « Couverture par pays » and waits for its three rows."""
+    n0 = len(_posts(st, 'coverage'))
+    _all_open(c)
+    c.until("[...document.querySelectorAll('[data-state-sentence] [data-filter]')].reduce((a, b) => a + parseInt(b.textContent, 10), 0) === 5", timeout=8000, what='the opening is over')
+    for _ in range(50):   # the read of the map follows the state read: wait for it, never a fixed delay
+        if len(_posts(st, 'coverage')) > n0:
+            break
+        c.wait(150)
+    c.wait(600)
+    c.js("document.querySelector('[data-covtable]').open = true")
+    c.until("document.querySelectorAll('[data-cov-table] [data-cov-zone]').length === 3", timeout=10000, what='the table')
+    c.js("document.querySelector('[data-covtable]').scrollIntoView()")
+
+
+def _cov_start(c):
+    """The coverage table as L67 opens it (fake launcher answering base/coverage); returns the launcher's state."""
+    st = _launcher(c, [_cov_ok()], verbs=_VERBS + ['base/coverage'])
+    st['status'] = _ALL_OK()
+    cfg, _ = _fixture()
+    _open(c, _sized(cfg))
+    _cov_unfold(c, st)
+    return st
+
+
+def _cov_reload(c, st):
+    """The screen again (the page reloads, the cache of the device stays) and the block opened again."""
+    st['i'] = 0
+    c.page.reload()
+    c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the screen again')
+    c.settle()
+    c.js("document.querySelectorAll('details[data-base-detail]').forEach(d => { d.open = true })")
+    _cov_unfold(c, st)
+
+
+def _cov_seed(c, text):
+    """Writes the raw text of cache/sort/coverage.json in the device's cache (what an older or a hostile pass could have left there)."""
+    c.page.evaluate("""(text) => new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const tx = r.result.transaction('docs', 'readwrite'); tx.objectStore('docs').put({ path: 'cache/sort/coverage.json', text, base: '', rev: '', at: Date.now(), policy: 'cache' }); tx.oncomplete = () => { r.result.close(); res() }; tx.onerror = () => rej(tx.error) }; r.onerror = () => rej(r.error) })""", text)
+
+
+def _cov_is(c, want, what):
+    """Waits until the table AND the list of the phone (both are in the page at every width, the block hides one of them) hold the countries in `want`."""
+    for _ in range(20):   # up to 4 s; on a failure the last eq below says what the table and the list held (an until only says « never true »)
+        if [c.js(_COV_TABLE_JS), c.js(_COV_LIST_JS)] == [want, want]:
+            break
+        c.wait(200)
+    c.eq([c.js(_COV_TABLE_JS), c.js(_COV_LIST_JS)], [want, want], what, what=what)
+
+
+def _cov_sorts(c, key=None, dir=None):
+    """The `key:aria-sort` of the seven headings in the order of the table: only `key` is sorted (`dir`), or none (the country, ascending)."""
+    key, dir = key or 'zone', dir or 'asc'
+    return [f'{k}:' + (('ascending' if dir == 'asc' else 'descending') if k == key else 'none') for k in ['zone'] + _COV_COLS]
+
+
+def _cov_sort(c, key, dir=None):
+    """A sort gesture as the width gives it.  On a computer: the heading of the column (the column starts in its first direction, a second click reverses).  On a phone: « Trier » opens the panel (once),
+    the radio of the column, then the direction.  `dir` ('asc' | 'desc'): the direction to reach, by the second click or by the direction button."""
+    now = lambda: c.js(_COV_NOW_JS)
+    if c.phone:
+        if c.js("document.querySelector('[data-sort-open]').getAttribute('aria-expanded')") != 'true':
+            c.tap('[data-sort-open]')
+        if (now() or [None])[0] != key:
+            c.tap(f'label:has(> input[data-sort-col][value="{key}"])')
+        if dir and now() and now()[1] != dir:
+            c.tap(f'[data-sort-dir={dir}]')
+    else:
+        if (now() or [None])[0] != key:
+            c.tap(f'[data-cov-table] [data-sort="{key}"]')
+        if dir and now() and now()[1] != dir:
+            c.tap(f'[data-cov-table] [data-sort="{key}"]')
+    if dir:
+        c.until(f"document.querySelector('[data-cov-table] th[data-col={key}]').getAttribute('aria-sort') === '{'ascending' if dir == 'asc' else 'descending'}'", timeout=4000, what=f'{key} {dir}')
+
+
+@case('L164', 'Données: the coverage table opens in its default order — the country, ascending — with « Remettre l\u2019ordre » hidden and nothing written in cache/sort (SOG-0498)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0498 (the user, Q-0115 / Q-0116): a list has a default order, explicit; the default order is not a choice and is not kept; the heading of the sorted column says it with aria-sort; « Remettre l\u2019ordre » is hidden at the default order')
+def l164(c):
+    lang = c.lang
+    _cov_start(c)
+    c.eq(c.js(_COV_SORTS_JS), _cov_sorts(c), 'the country is the sorted column, ascending; the six others say none', what='aria-sort')
+    _cov_is(c, _COV_DEFAULT[lang], 'the countries by their name in the language of the run')
+    c.eq(c.js("document.querySelector('[data-covtable] [data-sort-reset]').hidden"), True, '« Remettre l\u2019ordre » is hidden at the default order', what='reset hidden')
+    c.eq(c.js("document.querySelector('[data-covtable] [data-sort-open]').getAttribute('aria-expanded')"), 'false', 'the panel of the phone is closed', what='panel closed')
+    c.eq(norm(c.text('[data-covtable] [data-sort-label]')), norm(_trow('country', lang, after='  cov: {')), 'the button « Trier » names the country, in the language of the run', what='label')
+    c.wait(600)
+    c.eq([c.doc(_COV_FILE), c.doc_paths('cache/sort/')], [None, []], 'the default order is written nowhere', what='nothing written')
+    c.check_errors()
+
+
+@case('L165', 'Données: the coverage table sorts — a number column goes down first, a count of 0 (« non ») is a value (first when ascending), one heading says aria-sort, « Remettre l\u2019ordre » appears and brings the default back, the order is written in cache/sort/coverage.json (SOG-0498)', 'L', tags=('data',), langs4=False,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0498: sortRows — text ascending / number descending first, the same gesture reverses, a count of 0 is a value (ascending puts it first), ties by the country; aria-sort on the sorted heading only; saveState writes { key, dir } when the order changes (the default again included: the file says it); the unfolded countries stay unfolded')
+def l165(c):
+    lang = c.lang
+    _cov_start(c)
+    default = _COV_DEFAULT[lang]
+    hidden = lambda: c.js("document.querySelector('[data-covtable] [data-sort-reset]').hidden")
+    # ---- a number column: down first; France alone has points, the two with none follow by name; ascending, the zeros come first
+    _cov_sort(c, 'points')
+    _cov_is(c, ['fr', 'es', 'us'], 'points, most first: France, then the two without points by name')
+    c.eq(c.js(_COV_SORTS_JS), _cov_sorts(c, 'points', 'desc'), 'only points says descending', what='aria-sort down')
+    c.eq(hidden(), False, '« Remettre l\u2019ordre » is shown away from the default order', what='reset shown')
+    c.until_doc(_COV_FILE, lambda d: bool(d) and d.get('key') == 'points' and d.get('dir') == 'desc', what='the order written: points, desc')
+    _cov_sort(c, 'points', 'asc')
+    _cov_is(c, ['es', 'us', 'fr'], 'points, fewest first: the two « non » come first (by name), France last')
+    c.eq(c.js(_COV_SORTS_JS), _cov_sorts(c, 'points', 'asc'), 'only points says ascending', what='aria-sort up')
+    c.until_doc(_COV_FILE, lambda d: bool(d) and d.get('key') == 'points' and d.get('dir') == 'asc', what='the order written: points, asc')
+    # ---- a country unfolded stays unfolded through a sort
+    view = '[data-cov-list]' if c.phone else '[data-cov-table]'
+    c.tap(f'{view} [data-cov-row=fr]')
+    c.until(f"!!document.querySelector('{view} [data-cov-detail=fr]')", timeout=4000, what='the detail of France')
+    _cov_sort(c, 'procedures')
+    _cov_is(c, ['us', 'fr', 'es'], 'procedures, most first: 2 257, 6, none')
+    c.ok(c.count(f'{view} [data-cov-detail=fr]') == 1 and c.js(f"document.querySelector('{view} [data-cov-row=fr]').getAttribute('aria-expanded')") == 'true', None, 'the unfolded country stays unfolded after the sort')
+    _cov_sort(c, 'procedures', 'asc')
+    _cov_is(c, ['es', 'fr', 'us'], 'procedures, fewest first: the « non » first, then 6, then 2 257')
+    # ---- a column with no empty value: both directions are plain
+    _cov_sort(c, 'airspaces')
+    _cov_is(c, ['us', 'fr', 'es'], 'airspaces, most first: 9 230, 2 559, 380')
+    _cov_sort(c, 'airspaces', 'asc')
+    _cov_is(c, ['es', 'fr', 'us'], 'airspaces, fewest first')
+    # ---- the country (text): ascending first, the same gesture reverses
+    _cov_sort(c, 'zone', 'desc')
+    _cov_is(c, list(reversed(default)), 'the country, descending: the reverse of the default order')
+    c.eq(c.js(_COV_SORTS_JS), _cov_sorts(c, 'zone', 'desc'), 'the country says descending', what='aria-sort country')
+    c.eq(hidden(), False, 'descending is not the default order: « Remettre l\u2019ordre » stays shown', what='reset shown again')
+    # ---- « Remettre l'ordre »: the default order, the file says so
+    _cov_sort(c, 'airspaces')
+    c.tap('[data-covtable] [data-sort-reset]')
+    _cov_is(c, default, 'the default order is back')
+    c.eq([c.js(_COV_SORTS_JS), hidden()], [_cov_sorts(c), True], 'the country says ascending again and the button hides', what='reset done')
+    c.until_doc(_COV_FILE, lambda d: bool(d) and d.get('key') == 'zone' and d.get('dir') == 'asc', what='the default order written back (saveState writes what the order became, not a deletion)')
+    c.check_errors()
+
+
+@case('L166', 'Données: the order of the coverage table is kept on the device — folding and unfolding the block, then reloading the screen, give the chosen order again (cache/sort/coverage.json read) (SOG-0498)', 'L', tags=('data',), langs4=False,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0498: loadState once per screen (at the mount), kept in the screen (S.covSort) so that closing the block (which drops its rows) or the re-reading does not lose it; a new screen reads the file')
+def l166(c):
+    lang = c.lang
+    st = _cov_start(c)
+    _cov_sort(c, 'airspaces')
+    _cov_is(c, ['us', 'fr', 'es'], 'airspaces, most first')
+    c.until_doc(_COV_FILE, lambda d: bool(d) and d.get('key') == 'airspaces' and d.get('dir') == 'desc', what='written')
+    # ---- the block folded and unfolded: it reads again, the order stays
+    c.js("document.querySelector('[data-covtable]').open = false")
+    c.until("!document.querySelector('[data-covtable]').open", timeout=4000, what='folded')
+    c.js("document.querySelector('[data-covtable]').open = true")
+    c.until("document.querySelectorAll('[data-cov-table] [data-cov-zone]').length === 3", timeout=10000, what='the table again')
+    _cov_is(c, ['us', 'fr', 'es'], 'the order survives the closing of the block')
+    c.eq(c.js(_COV_SORTS_JS), _cov_sorts(c, 'airspaces', 'desc'), 'the heading says it', what='aria-sort kept')
+    c.eq(c.js("document.querySelector('[data-covtable] [data-sort-reset]').hidden"), False, '« Remettre l\u2019ordre » is shown', what='reset shown')
+    # ---- the screen again: the file is read
+    _cov_reload(c, st)
+    _cov_is(c, ['us', 'fr', 'es'], 'the order survives the reload of the screen')
+    c.eq(c.js(_COV_SORTS_JS), _cov_sorts(c, 'airspaces', 'desc'), 'the heading says it after the reload', what='aria-sort reloaded')
+    c.eq(norm(c.text('[data-covtable] [data-sort-label]')), norm(_trow('airspaces', lang, after='  cov: {')), 'the button « Trier » names the column kept', what='label reloaded')
+    c.eq(c.js("document.querySelector('[data-covtable] [data-sort-reset]').hidden"), False, '« Remettre l\u2019ordre » is shown after the reload', what='reset after reload')
+    # ---- back to the default: kept as well
+    c.tap('[data-covtable] [data-sort-reset]')
+    _cov_is(c, _COV_DEFAULT[lang], 'the default order')
+    c.until_doc(_COV_FILE, lambda d: bool(d) and d.get('key') == 'zone' and d.get('dir') == 'asc', what='the default written')
+    _cov_reload(c, st)
+    _cov_is(c, _COV_DEFAULT[lang], 'the default order after the reload')
+    c.eq(c.js("document.querySelector('[data-covtable] [data-sort-reset]').hidden"), True, '« Remettre l\u2019ordre » is hidden', what='reset hidden')
+    c.check_errors()
+
+
+@case('L167', 'Données: SECURITY — a hostile cache/sort/coverage.json (a key of the prototype, an unknown column, a bad direction, a huge key, an object, a text that is not JSON) gives the default order and breaks nothing; a good file with extra fields is read for its two fields only (SOG-0498)', 'L', tags=('data',), langs4=False,
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0498, § 10.36: the kept order is an untrusted input — stateOf reads `key` and `dir` as OWN keys of a plain object, `key` must name a column, `dir` asc | desc, anything else is the default order; nothing of the file is drawn')
+def l167(c):
+    lang = c.lang
+    st = _cov_start(c)
+    default = _COV_DEFAULT[lang]
+    hostile = [
+        ('a key of the prototype', '{"key":"__proto__","dir":"asc"}'),
+        ('a name of the prototype', '{"key":"constructor","dir":"desc"}'),
+        ('an unknown column', '{"key":"nope","dir":"asc"}'),
+        ('a bad direction', '{"key":"points","dir":"sideways"}'),
+        ('no direction', '{"key":"points"}'),
+        ('a huge key', json.dumps({'key': 'x' * 5000, 'dir': 'asc'})),
+        ('an object and a list', '{"key":{"a":1},"dir":["asc"]}'),
+        ('the fields inherited through __proto__', '{"__proto__":{"key":"airspaces","dir":"desc"}}'),
+        ('a text that is not JSON', 'not json at all'),
+        ('a list', '[1,2,3]'),
+    ]
+    for what, text in hostile:
+        _cov_seed(c, text)
+        _cov_reload(c, st)
+        c.eq([c.js(_COV_TABLE_JS), c.js(_COV_LIST_JS)], [default, default], f'{what}: the default order', what=what)
+        c.eq(c.js(_COV_SORTS_JS), _cov_sorts(c), f'{what}: the country, ascending', what=what + ' (aria-sort)')
+        c.eq(c.js("document.querySelector('[data-covtable] [data-sort-reset]').hidden"), True, f'{what}: « Remettre l\u2019ordre » is hidden', what=what + ' (reset)')
+        c.ok(c.js('window.__pwn === undefined') and c.count('[data-covtable] img') == 0, None, f'{what}: nothing runs, nothing is drawn')
+    # ---- the control: a good file, with a field more that is read for nothing
+    _cov_seed(c, json.dumps({'key': 'airspaces', 'dir': 'desc', 'extra': '<img src=x onerror=window.__pwn=1>'}))
+    _cov_reload(c, st)
+    _cov_is(c, ['us', 'fr', 'es'], 'a good file is read (so the checks above are not blind)')
+    c.ok(c.js('window.__pwn === undefined') and c.count('[data-covtable] img') == 0, None, 'the extra field is read for nothing')
+    c.check_errors()
+
+
+@case('L168', 'Données: the coverage table at 1280 and 390 — 44 px headings and no sideways scroll on a computer; on a phone the table is hidden, a list with the six numbers of each country is shown, « Trier » opens its panel, a column sorts the list, 44 px everywhere, no overflow (SOG-0498)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0498 (mock-up tri_registre): in a pane of 700 px or less the block hides .f-sortwide and shows .f-sortnarrow — one line per country in the sorted order, the name unfolds the same detail as the table; a heading, « Trier », a radio, a direction and « Remettre l\u2019ordre » are 44 px at least')
+def l168(c):
+    lang = c.lang
+    _cov_start(c)
+    big = lambda sel: c.js("(s) => [...document.querySelectorAll(s)].filter(e => e.offsetParent).map(e => Math.round(e.getBoundingClientRect().height))", sel)
+    noscroll = lambda: c.js("[document.documentElement.scrollWidth, window.innerWidth, document.querySelector('[data-covtable]').scrollWidth, document.querySelector('[data-covtable]').clientWidth]")
+    fits = lambda: (lambda v: v[0] <= v[1] + 1 and v[2] <= v[3] + 1)(noscroll())
+    if not c.phone:
+        c.ok(c.shown('[data-cov-table]') and not c.shown('[data-cov-list]') and not c.shown('[data-covtable] [data-sort-open]'), None, 'a computer: the table is shown, neither the list nor « Trier »')
+        hs = big('[data-cov-table] .f-sortbtn')
+        c.ok(len(hs) == 7 and min(hs) >= 44, hs, 'the seven headings are buttons of 44 px at least')
+        c.ok(fits(), noscroll(), 'no sideways scroll, of the page or of the block')
+        c.shot(f'L168_standard_{c.width}_{lang}_default.png')
+        _cov_sort(c, 'airspaces')
+        _cov_is(c, ['us', 'fr', 'es'], 'airspaces, most first')
+        c.js("document.querySelector('[data-covtable]').scrollIntoView()")
+        c.shot(f'L168_standard_{c.width}_{lang}_sorted.png')
+    else:
+        c.ok(not c.shown('[data-cov-table]') and c.shown('[data-cov-list]') and c.shown('[data-covtable] [data-sort-open]'), None, 'a phone: the table is hidden, the list and « Trier » are shown')
+        c.eq(c.count('[data-cov-list] [data-cov-item]'), 3, 'one line per country', what='lines')
+        c.eq(c.js("[...document.querySelectorAll('[data-cov-list] [data-cov-item=fr] dd')].map(d => d.dataset.col)"), _COV_COLS, 'the six numbers of a country, in the order of the columns', what='six numbers')
+        c.eq(c.js("[...document.querySelectorAll('[data-cov-list] [data-cov-item=fr] dd')].map(d => d.dataset.n)"), ['4277', '1493', '2559', '15', '6', '1'], 'the counts of France', what='counts')
+        nons = [norm(t) for t in c.js("[...document.querySelectorAll('[data-cov-list] [data-cov-item=es] dd')].map(d => d.textContent.trim())")]
+        c.eq(nons.count(norm(_trow('no', lang, after='  cov: {'))), 5, 'five of the six counts of Spain are « non »', what='non')
+        c.ok(fits(), noscroll(), 'no sideways scroll at 390')
+        c.shot(f'L168_standard_{c.width}_{lang}_default.png')
+        c.tap('[data-covtable] [data-sort-open]')
+        c.until("document.querySelector('[data-covtable] [data-sort-open]').getAttribute('aria-expanded') === 'true' && !document.querySelector('[data-covtable] [data-sort-panel]').hidden", timeout=4000, what='the panel opens')
+        c.ok(c.shown('[data-covtable] [data-sort-panel]'), None, '« Trier » opens its panel')
+        c.shot(f'L168_standard_{c.width}_{lang}_panel.png')
+        c.tap('label:has(> input[data-sort-col][value="airspaces"])')
+        _cov_is(c, ['us', 'fr', 'es'], 'a column of the panel sorts the list, most first')
+        c.eq(norm(c.text('[data-covtable] [data-sort-label]')), norm(_trow('airspaces', lang, after='  cov: {')), '« Trier » names the column', what='label')
+        c.ok(c.shown('[data-covtable] [data-sort-panel]'), None, 'the panel stays open for the next gesture')
+        hs = big('[data-covtable] .f-sortbar > button') + big('[data-covtable] .f-sortpanel label') + big('[data-covtable] .f-sortdirs button')
+        c.ok(len(hs) >= 10 and min(hs) >= 44, hs, '« Trier », « Remettre l\u2019ordre », the radios and the directions are 44 px at least')
+        c.ok(fits(), noscroll(), 'no sideways scroll with the panel open')
+        c.js("document.querySelector('[data-covtable]').scrollIntoView()")
+        c.shot(f'L168_standard_{c.width}_{lang}_sorted.png')
+        # ---- the name unfolds, in the list, the detail of the table
+        c.tap('[data-cov-list] [data-cov-row=es]')
+        c.until("!!document.querySelector('[data-cov-list] [data-cov-detail=es]')", timeout=4000, what='the detail in the list')
+        same = c.js("(() => { const a = document.querySelector('[data-cov-list] [data-cov-detail=es] dl'), b = document.querySelector('[data-cov-table] [data-cov-detail=es] dl'); return !!a && !!b && a.innerHTML === b.innerHTML })()")
+        c.ok(same, None, 'the list and the table unfold the same detail')
+        c.ok(fits(), noscroll(), 'no sideways scroll with a country unfolded')
     c.check_errors()

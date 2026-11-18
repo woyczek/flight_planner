@@ -1,4 +1,4 @@
-// V3 data — le tableau de couverture par pays (SOG-0174, V3_SPECIFICATION § 10.44) : la lecture de base/coverage (aerodb, contrat écrit dans frame/aerodb/INTEGRATION.md) mise en lignes bornées, les valeurs des colonnes et le tri. Pur : ni page, ni lanceur, ni stockage ;
+// V3 data — le tableau de couverture par pays (SOG-0174, V3_SPECIFICATION § 10.44) : la lecture de base/coverage (aerodb, contrat écrit dans frame/aerodb/INTEGRATION.md) mise en lignes bornées et les valeurs des colonnes (le tri est le bloc commun frame/lib/sortlist.js, SOG-0498). Pur : ni page, ni lanceur, ni stockage ;
 // tout ce que le lanceur répond est une entrée non fiable (identifiants de zone et de source en liste, nombres entiers bornés, booléens stricts).
 
 /** Les colonnes du tableau après le pays (sept colonnes au plus à l'écran : le pays et ces six). */
@@ -44,10 +44,4 @@ export function coverageOf(final) {
 /** La valeur d'une colonne pour une ligne : le nombre d'enregistrements (0 : « non »). */
 export function covValue(row, col) {
   return col === 'procedures' ? row.procedures : col === 'ground' ? row.ground : row.counts[col] ?? 0;
-}
-/** Les lignes triées (une copie) : par nom de pays (`key` 'zone', `name(zone)` donne le nom) ou par une colonne, `dir` 'asc' | 'desc' ; à égalité, le nom. */
-export function sortCoverage(rows, key, dir, name) {
-  const by = (a, b) => String(name(a.zone)).localeCompare(String(name(b.zone)), 'fr');
-  const s = dir === 'desc' ? -1 : 1;
-  return [...rows].sort((a, b) => key === 'zone' ? s * by(a, b) : s * (covValue(a, key) - covValue(b, key)) || by(a, b));
 }
