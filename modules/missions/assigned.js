@@ -10,7 +10,12 @@
 
 const KINDS = ['discord', 'srs', 'joinfs', 'teamspeak', 'other'];
 /** Un texte nettoyé (sans caractère de contrôle) et borné ; '' pour ce qui n'est pas un texte. */
-const cut = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
+export const cut = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
+/** Les règles de lecture d'une ligne, exportées pour qu'assign.js (l'écriture) les réutilise au lieu de les recopier. */
+export const TRI = /^[A-Z]{3}$/, // le pilote
+  CALLSIGN = /^[A-Z0-9-]{2,12}$/i, // l'indicatif
+  TYPE = /^[A-Z0-9]{2,8}$/i, // le type de l'aéronef
+  ICAO = /^[A-Z0-9]{4}$/; // le terrain de départ
 /** Une heure ISO UTC lisible, sinon null. */
 const isoOf = v => {
   const t = Date.parse(typeof v === 'string' ? v : '');
@@ -50,7 +55,7 @@ function meetOf(m) {
 /** Les affectations à venir de ce trigramme (voir l'en-tête). */
 export function mine(doc, trigram, now = Date.now()) {
   const me = String(trigram || '').toUpperCase();
-  if (!/^[A-Z]{3}$/.test(me)) return [];
+  if (!TRI.test(me)) return [];
   const out = [];
   for (const a of (Array.isArray(doc?.assignments) ? doc.assignments : []).slice(0, 5000)) {
     if (!a || typeof a !== 'object' || String(a.pilot ?? '').toUpperCase() !== me || a.status === 'annulée') continue;
@@ -64,10 +69,10 @@ export function mine(doc, trigram, now = Date.now()) {
     out.push({
       mission,
       title: cut(a.title, 120),
-      callsign: /^[A-Z0-9-]{2,12}$/i.test(cut(a.callsign, 12)) ? cut(a.callsign, 12).toUpperCase() : '',
+      callsign: CALLSIGN.test(cut(a.callsign, 12)) ? cut(a.callsign, 12).toUpperCase() : '',
       registration: cut(ac.registration, 12).toUpperCase(),
-      type: /^[A-Z0-9]{2,8}$/i.test(cut(ac.type, 8)) ? cut(ac.type, 8).toUpperCase() : '',
-      departure: /^[A-Z0-9]{4}$/.test(dep) ? dep : '',
+      type: TYPE.test(cut(ac.type, 8)) ? cut(ac.type, 8).toUpperCase() : '',
+      departure: ICAO.test(dep) ? dep : '',
       takeoff,
       ferry: a.role === 'convoyage',
       rdv,

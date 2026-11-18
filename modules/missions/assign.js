@@ -36,12 +36,21 @@ import {
   own
 } from '../../frame/lib/untrusted.js'; // la valeur d'une clé PROPRE d'un objet, jamais une clé héritée (K479, SOG-0468 c : écrite une fois)
 import {
-  mine
-} from './assigned.js'; // le lecteur de « Mes missions affectées » : la ligne construite doit y passer telle quelle
+  mine,
+  cut,
+  TRI,
+  CALLSIGN,
+  TYPE,
+  ICAO
+} from './assigned.js'; // le lecteur de « Mes missions affectées » : la ligne construite doit y passer telle quelle ; ses règles de lecture
 import {
   bookPath,
-  seanceOf
-} from './drawers.js'; // la validation du trigramme et de l'identifiant (bookPath, comme drawers_view.js), la séance des tiroirs
+  seanceOf,
+  msOf
+} from './drawers.js'; // la validation du trigramme et de l'identifiant (bookPath, comme drawers_view.js), la séance des tiroirs, l'instant ISO borné
+import {
+  two
+} from '../../frame/lib/time.js'; // deux chiffres
 
 /** Au plus tant de lignes lues dans le fichier : au-delà, rien n'est écrit (jamais les lignes des autres tronquées). */
 export const MAX_LINES = 2000;
@@ -54,28 +63,16 @@ export const CONFLICT_MS = 2 * 3600e3;
 const TRIGRAMS_MAX = 400, // trigrammes proposés dans la liste du champ « Pilote »
   PATHS_MAX = 20000; // chemins de pilot/ parcourus au plus
 
-// Les règles de lecture de assigned.js (mine) : elles n'y sont pas exportées — recopiées ICI à l'identique, et chaque ligne construite
-// est REPASSÉE par mine() et seanceOf() (lineOf) : une divergence se voit au banc, jamais dans le fichier.
-const TRI = /^[A-Z]{3}$/, // assigned.js : le pilote
-  CALLSIGN = /^[A-Z0-9-]{2,12}$/i, // assigned.js : l'indicatif
-  TYPE = /^[A-Z0-9]{2,8}$/i, // assigned.js : le type de l'aéronef
-  ICAO = /^[A-Z0-9]{4}$/, // assigned.js : le terrain de départ
-  REG = /^[A-Z0-9-]{1,10}$/i; // l'immatriculation (SOG-0443 : facultative, dix signes)
+// Les règles de lecture de assigned.js (mine : cut, TRI, CALLSIGN, TYPE, ICAO) sont IMPORTÉES, plus recopiées ; chaque ligne construite
+// est tout de même REPASSÉE par mine() et seanceOf() (lineOf) : une divergence se voit au banc, jamais dans le fichier.
+const REG = /^[A-Z0-9-]{1,10}$/i; // l'immatriculation (SOG-0443 : facultative, dix signes) : propre à l'affectation
 
-/** Un texte nettoyé (sans caractère de contrôle) et borné ; '' pour ce qui n'est pas un texte (la règle `cut` de assigned.js). */
-const cut = (v, n) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n) : '';
 /** Un trigramme en capitales, '' sinon — validé comme drawers_view.js le fait : par bookPath (rogné, trois lettres). */
 const triOf = v => bookPath(typeof v === 'string' ? v : '', 'A-000')?.split('/')[1] || '';
 /** Le trigramme de l'auteur d'une écriture (voir l'en-tête). */
 export const meOf = v => triOf(v);
 /** Un identifiant de mission en capitales, '' sinon — validé par bookPath (la forme des dossiers de missions/). */
 const midOf = v => bookPath('AAA', typeof v === 'string' ? v : '')?.split('/')[3]?.replace(/\.json$/, '') || '';
-/** Un instant en millisecondes d'un texte ISO borné, sinon null. */
-const msOf = v => {
-  const t = typeof v === 'string' && v.length <= 40 ? Date.parse(v) : NaN;
-  return Number.isFinite(t) ? t : null;
-};
-const two = n => String(n).padStart(2, '0');
 
 /** Le fichier relu (voir l'en-tête) : ses lignes telles quelles, ou pourquoi il ne se réécrit pas. Ne lève jamais. */
 export function readIndex(doc) {

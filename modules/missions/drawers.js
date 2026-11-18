@@ -96,7 +96,7 @@ export const FUTURE_MS = 2 * 60e3,
 const CREW_MAX = 12;
 
 /** Un instant en millisecondes d'un texte ISO borné, sinon null. */
-const msOf = v => {
+export const msOf = v => {
   const t = typeof v === 'string' && v.length <= 40 ? Date.parse(v) : NaN;
   return Number.isFinite(t) ? t : null;
 };
