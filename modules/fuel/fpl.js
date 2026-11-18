@@ -24,6 +24,9 @@
 //     du message (quarante signes) ; '' sans rien.
 
 import {
+  stripMarks
+} from '../../frame/lib/text.js'; // SOG-0468 (2) : sans marques de combinaison, le cadre
+import {
   isIcaoAlpha
 } from '../../frame/lib/ad_field.js'; // SOG-0468 (2) : les règles nommées du code de terrain
 import {
@@ -73,7 +76,7 @@ export function placeWord(p) {
     },
     pos = Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? (([ld, lm], [od, om]) =>
       `${pad(ld, 2)}${pad(lm, 2)}${lat < 0 ? 'S' : 'N'}${pad(od, 3)}${pad(om, 2)}${lon < 0 ? 'W' : 'E'}`)(dm(lat), dm(lon)) : '',
-    name = String(p?.name ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace(
+    name = stripMarks(p?.name).toUpperCase().replace(/[^A-Z0-9 ]+/g, ' ').replace( // SOG-0468 (2) : les espaces gardées, sur stripMarks
       /\s+/g, ' ').trim().slice(0, 40).trim();
   return [pos, name].filter(Boolean).join(' ');
 }
