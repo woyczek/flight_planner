@@ -90,6 +90,9 @@ import {
   plain,
   idWord
 } from './untrusted.js';
+import {
+  gcNm
+} from './geo.js'; // LA distance du grand cercle du cadre (SOG-0468 (2)) : R = 3 440,065 NM, plus de copie ici
 export {
   visible
 };
@@ -896,15 +899,8 @@ export function routeNm(mission) {
   const pts = [mission.origin, ...f.route.points, mission.destination].filter(p => latOf(p?.lat) !== null && lonOf(p?.lon) !== null);
   if (pts.length < 2) return null;
   let nm = 0;
-  for (let i = 1; i < pts.length; i++) nm += legNm(pts[i - 1], pts[i]);
+  for (let i = 1; i < pts.length; i++) nm += gcNm(pts[i - 1], pts[i]);
   return Math.round(nm);
-}
-
-/** La distance en NM entre deux lieux situés (le calcul de routeNm). */
-function legNm(a, b) {
-  const rad = Math.PI / 180,
-    h = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lon - a.lon) * rad / 2) ** 2;
-  return 2 * 3440.065 * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
 /** Ce que le pilote peut voir d'une mission (voir l'en-tête ; SOG-0448, SOG-0459). La règle, écrite une fois : un lieu n'est montré
@@ -1059,7 +1055,7 @@ export function passageMin(mission, pointId) {
     kt = num(mission.cruiseSpeedKt);
   let nm = 0,
     held = 0;
-  for (let i = 1; i < pts.length; i++) nm += legNm(pts[i - 1], pts[i]);
+  for (let i = 1; i < pts.length; i++) nm += gcNm(pts[i - 1], pts[i]);
   for (const p of f.route.points.slice(0, at))
     if (p.hold) held += (p.hold.min + p.hold.max) / 2;
   return {
