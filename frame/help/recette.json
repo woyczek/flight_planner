@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-18",
   "tests": 318,
-  "verdicts": 217
+  "verdicts": 219
  },
  "apps": [
   "pilote",
@@ -4563,8 +4563,9 @@
    },
    "test": "Missions, Registre. Sous chaque titre : la ligne de choix (durée, « ≈ » quand elle est estimée ; nombre d'aéronefs ; théâtre quand il est connu). Déplie une ligne : « Brief » en premier, puis « Atelier », « Dupliquer » et « ⋯ » (« Corriger la ligne du registre », « Retirer du registre »). « Brief » ouvre la fiche du pilote : titre, ligne de choix, résumé, risques ; « Préparer ce vol » en premier ; « Retour au registre » te rend la même ligne, dépliée. En tête du registre : la case « Voir le contenu complet des missions », décochée ; coche-la, quitte Missions, reviens : elle est de nouveau décochée.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T10:45:04Z"
+   "state": "ok",
+   "delivered": "2026-11-18T10:45:04Z",
+   "at": "2026-11-18T17:01:39Z"
   },
   {
    "id": "SOG-0456",
@@ -4577,8 +4578,9 @@
    },
    "test": "Missions, Registre, ouvre une mission dans l'atelier. Sous la carte : « Fond : Rapide | Relief » et la case « Espaces ». Passe en « Relief » (il faut le réseau) : le fond topographique paraît, la carte reste fluide. Coche « Espaces » : les zones R, D, P et le RTBA de la vue se dessinent, et une ligne dit combien. Enregistre, rouvre la mission : le fond et la case sont ceux que tu avais choisis. Hors ligne, « Relief » dit qu'il n'est pas disponible et la carte reste en « Rapide ».",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T09:36:00Z"
+   "state": "ok",
+   "delivered": "2026-11-18T09:36:00Z",
+   "at": "2026-11-18T17:02:47Z"
   },
   {
    "id": "SOG-0460",
@@ -4732,13 +4734,14 @@
    },
    "test": "Carte : touche la loupe et tape « REN ». Attendu : la VOR REN en PREMIER, puis les autres. Puis « toul » : les terrains, balises et villes de Toulouse. Choisis un terrain : la carte se centre avec un repère, « Fiche du terrain » ouvre sa fiche ; avec un vol, « Ajouter à la route » l'insère. Échap ferme.",
    "since": "2026-11-18",
-   "state": "todo",
-   "delivered": "2026-11-18T16:48:09Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "chercher « REN » donne tout, sauf la VOR nommée REN. qui devrait être le premier résultat.",
-    "at": "2026-11-18T16:22:25Z"
-   }
+   "state": "known",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "chercher « REN » donne tout, sauf la VOR nommée REN. qui devrait être le premier résultat.",
+     "at": "2026-11-18T16:22:25Z"
+    }
+   ]
   },
   {
    "id": "SOG-0494",
@@ -4756,6 +4759,36 @@
   }
  ],
  "decisions": [
+  {
+   "id": "Q-0115",
+   "fiche": "SOG-0498",
+   "app": "maintenance",
+   "question": "Registre des missions sur ordinateur : un vrai tableau triable par colonne, ou garder les lignes dépliables et ajouter seulement un tri ?",
+   "context": "Maquette envoyée (tri_registre). Un tableau : chaque colonne (état, identifiant, titre, famille, série, origine → destination, durée) se trie dans les deux sens ; mais une ligne ne se déplie plus : ses gestes (Brief, Atelier, Dupliquer, ⋯) passent dans une action de ligne. Au téléphone, dans les deux cas, les lignes restent en liste avec un bouton « Trier » qui ouvre un petit panneau. Le même bloc servira aux futurs écrans de statistiques.",
+   "options": [
+    "Un vrai tableau triable (comme la maquette), les gestes passent dans une action de ligne",
+    "Garder les lignes dépliables, avec seulement une barre de tri au-dessus",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
+   "id": "Q-0116",
+   "fiche": "SOG-0498",
+   "app": "maintenance",
+   "question": "Le tri que tu choisis dans une liste : on le garde d'une visite à l'autre ?",
+   "context": "Par exemple, tu tries le registre par durée : en revenant demain, la liste est-elle encore triée par durée (sur cet appareil, avec une entrée « Remettre l'ordre » pour revenir à l'ordre de départ), ou repart-elle toujours de l'ordre par défaut ? L'ordre par défaut proposé : par identifiant, le plus récent en haut.",
+   "options": [
+    "Gardé sur cet appareil, avec « Remettre l'ordre »",
+    "Jamais gardé : chaque visite repart de l'ordre par défaut",
+    "Autre (dans le texte)"
+   ],
+   "since": "2026-11-18",
+   "state": "todo",
+   "recommended": 0
+  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",

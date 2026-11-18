@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "fb99406",
-  "fiches": 500,
+  "organisation": "ffd4e95",
+  "fiches": 502,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1855,12 +1855,11 @@
     {
      "id": "SOG-0491",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Carte : chercher un point, un terrain ou autre par un outil loupe",
      "en": "Map: search for a point, an aerodrome or anything else with a magnifier tool",
      "de": "Karte: Punkt, Flugplatz oder anderes mit einem Lupenwerkzeug suchen",
-     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa",
-     "test": true
+     "es": "Mapa: buscar un punto, un aeródromo u otro con una herramienta de lupa"
     },
     {
      "id": "SOG-0492",
@@ -2132,6 +2131,27 @@
      "de": "Leistung: auf LFPO → KEGE ist das Flugprofil sehr langsam (2 Bilder pro Sekunde)",
      "es": "Rendimiento: en LFPO → KEGE el perfil de vuelo es muy lento (2 imágenes por segundo)",
      "rank": 82
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-profil-vertical-atelier",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; profil vertical ; atelier",
+    "en": "Carte ; profil vertical ; atelier",
+    "de": "Carte ; profil vertical ; atelier",
+    "es": "Carte ; profil vertical ; atelier"
+   },
+   "items": [
+    {
+     "id": "SOG-0502",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "Carte et atelier : une croisière qui passe sous le relief n'est pas signalée dans la coupe",
+     "en": "Map and workshop: a cruise below terrain is not flagged on the vertical profile",
+     "de": "Karte und Werkstatt: Ein Reiseflug unter dem Gelände wird im Vertikalprofil nicht gemeldet",
+     "es": "Mapa y taller: un crucero por debajo del relieve no se señala en el perfil vertical"
     }
    ]
   },
@@ -3631,8 +3651,7 @@
      "en": "Mission map: one block for the workshop and the Brief — “Fast” or “Terrain” background, “Airspace” layer (RTBA, areas)",
      "de": "Missionskarte: ein Baustein für Werkstatt und Briefing — Hintergrund „Schnell“ oder „Relief“, Ebene „Lufträume“ (RTBA, Gebiete)",
      "es": "Mapa de misión: un solo bloque para el taller y el Brief — fondo «Rápido» o «Relieve», capa «Espacios» (RTBA, zonas)",
-     "rank": 434,
-     "test": true
+     "rank": 434
     }
    ]
   },
@@ -4027,6 +4046,27 @@
      "de": "„Schubladen“-Missionen: ein nächster Teil wird durch das Durchfliegen einer Zone freigegeben, dazu ein in X-Plane zu findendes Objekt — zuerst die Spezifikation",
      "es": "Misiones «de cajones»: una parte siguiente revelada al pasar por una zona, y un objeto que encontrar en X-Plane — primero la especificación",
      "rank": 435
+    }
+   ]
+  },
+  {
+   "id": "compagnie-missions-carte-navigation",
+   "app": "compagnie",
+   "label": {
+    "fr": "Missions ; Carte ; navigation",
+    "en": "Missions ; Carte ; navigation",
+    "de": "Missions ; Carte ; navigation",
+    "es": "Missions ; Carte ; navigation"
+   },
+   "items": [
+    {
+     "id": "SOG-0503",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : « Voir la carte » envoie à la Carte, mais le retour vers la mission ne se fait pas",
+     "en": "Missions: “View the map” goes to the Map, but returning to the mission does not work",
+     "de": "Missionen: „Karte anzeigen“ führt zur Karte, aber die Rückkehr zur Mission klappt nicht",
+     "es": "Misiones: «Ver el mapa» lleva al Mapa, pero el regreso a la misión no funciona"
     }
    ]
   },
@@ -4532,8 +4572,7 @@
      "en": "Missions: two views of one mission — the Brief (pilot: the story first) and the Workshop (author: the map first); the register opens the Brief",
      "de": "Missionen: zwei Ansichten einer Mission — das Briefing (Pilot: zuerst die Geschichte) und die Werkstatt (Autor: zuerst die Karte); das Register öffnet das Briefing",
      "es": "Misiones: dos vistas de una misma misión — el Brief (piloto: primero la historia) y el Taller (autor: primero el mapa); el registro abre el Brief",
-     "rank": 460,
-     "test": true
+     "rank": 460
     }
    ]
   },
@@ -9083,6 +9122,9 @@
   },
   "SIG-553e91e7b9": {
    "fiche": "SOG-0434"
+  },
+  "SIG-7b206c7a34": {
+   "fiche": "SOG-0503"
   },
   "SIG-905ec186d3": {
    "fiche": "SOG-0385"
