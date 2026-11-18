@@ -1822,6 +1822,9 @@ def n29(c):
     c.page.fill(f'{R} [data-k=rq]', 'quatre')
     c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-704A found')
     c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] summary')
+    # the notification of the previous step (a refusal) sits at the bottom of the screen: gone, and the line centred, before « ⋯ »
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.js(f"document.querySelector('{R} [data-reglist] [data-rowid=\"X-704A\"]').scrollIntoView({{block: 'center'}})")
     c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] .ms-rmore > summary')  # SOG-0455: « Retirer du registre » behind « ⋯ »
     c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] [data-do="regremove"]')
     c.until("!!document.querySelector('.f-modal [data-ok]')", what='asks before removing')
