@@ -790,6 +790,8 @@ aerolínea», por ejemplo) se muestra sola, sea cual sea el nivel; «← Ajustes
 **El nivel.** «Nivel» elige lo que muestra el menú: Descubrimiento, Habitual o Completo, con un toque. Bajo cada opción,
 la línea «Menú:» indica qué herramientas muestra; una herramienta oculta sigue accesible por su dirección.
 
+**El idioma.** «Idioma» elige el idioma de toda la suite: Automático (el del navegador), Français, English, Deutsch o Español. La elección se aplica a todas las pantallas y la pantalla se recarga enseguida. Es propia de ESTA dirección del navegador: localhost y 127.0.0.1 son dos espacios separados, cada uno con su propio idioma.
+
 **El diseño.** «Diseño» muestra una miniatura por aspecto — Estándar, Gabinete, Robusto — y el tono: Automático
 (como el sistema), Día o Noche. Un toque lo aplica en el acto, solo en este dispositivo. Un diseño reservado al
 ordenador no se aplica en un teléfono: la tarjeta dice cuál se muestra en su lugar, y su miniatura está marcada; tocar

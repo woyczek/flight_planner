@@ -772,6 +772,8 @@ le niveau ; « ← Réglages » ramène à la liste.
 **Le niveau.** « Niveau » choisit ce que le menu montre : Découverte, Courant ou Complet, d'un toucher. Sous chaque
 choix, la ligne « Menu : » dit quels outils il montre ; un outil caché reste joignable par son adresse.
 
+**La langue.** « Langue » choisit la langue de toute la suite : Automatique (celle du navigateur), Français, English, Deutsch ou Español. Le choix s'applique à tous les écrans et l'écran se recharge aussitôt. Il est propre à CETTE adresse du navigateur : localhost et 127.0.0.1 sont deux espaces séparés, qui gardent chacun leur langue.
+
 **Le design.** « Design » montre une vignette par habillage — Standard, Cabinet, Durci — et le ton : Automatique
 (comme le système), Jour ou Nuit. Un toucher l'applique aussitôt, sur cet appareil seulement. Un design réservé à
 l'ordinateur ne s'applique pas sur un téléphone : la carte dit lequel est montré à la place, et sa vignette est marquée ;

@@ -30,6 +30,8 @@ führt zur Liste zurück.
 **Die Stufe.** „Stufe“ wählt, was das Menü zeigt: Einstieg, Alltag oder Vollständig, mit einem Tippen. Unter jeder Wahl
 sagt die Zeile „Menü:“, welche Werkzeuge sie zeigt; ein ausgeblendetes Werkzeug bleibt über seine Adresse erreichbar.
 
+**Die Sprache.** „Sprache“ wählt die Sprache der ganzen Suite: Automatisch (die des Browsers), Français, English, Deutsch oder Español. Die Wahl gilt für alle Bildschirme, und der Bildschirm lädt sofort neu. Sie gehört zu DIESER Adresse des Browsers: localhost und 127.0.0.1 sind zwei getrennte Bereiche, die jeweils ihre eigene Sprache behalten.
+
 **Das Design.** „Design“ zeigt eine Vorschau je Aussehen — Standard, Kabinett, Robust — und den Ton: Automatisch (wie
 das System), Tag oder Nacht. Ein Tippen wendet es sofort an, nur auf diesem Gerät. Ein dem Computer vorbehaltenes
 Design gilt nicht auf einem Telefon: Die Karte sagt, welches stattdessen gezeigt wird, und seine Vorschau ist markiert;

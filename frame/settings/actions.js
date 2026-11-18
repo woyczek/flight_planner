@@ -312,6 +312,13 @@
       });
       again();
     }));
+    // la langue (SOG-0477) : écrite d'abord, puis l'écran est rechargé — elle touche la barre, les titres et tous les écrans
+    view.querySelectorAll('[data-lang-pick]').forEach(i => i.addEventListener('change', () => {
+      if (!window.SogSettingsKit.saveLang(i.dataset.langPick)) return;
+      // le cadre compte les rechargements qu'il fait lui-même (selfNavigate) : un rechargement brut, trois fois en dix secondes, lui ressemble à une boucle (« Rechargements en série arrêtés ») ; sans son API : le rechargement simple
+      if (typeof c.reloadApp === 'function') c.reloadApp('reload: language');
+      else location.reload();
+    }));
     view.querySelectorAll('[data-level]').forEach(i => i.addEventListener('change', async () => {
       const n = +i.dataset.level;
       await c.own.put('device/level.json', {

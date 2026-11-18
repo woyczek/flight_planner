@@ -767,6 +767,8 @@ tools use them to prefill; with several users, the trigram is needed.
 **The level.** “Level” chooses what the menu shows: Discovery, Everyday or Full, with one tap. Under each choice, the
 “Menu:” line says which tools it shows; a hidden tool stays reachable by its address.
 
+**The language.** “Language” chooses the language of the whole suite: Automatic (the browser's), Français, English, Deutsch or Español. The choice applies to every screen and the screen reloads at once. It belongs to THIS address of the browser: localhost and 127.0.0.1 are two separate spaces, each keeping its own language.
+
 **The design.** “Design” shows one thumbnail per look — Standard, Cabinet, Rugged — and the tone: Automatic (as the
 system), Day or Night. One tap applies it at once, on this device only. A design reserved for the computer does not
 apply on a phone: the card says which one is shown instead, and its thumbnail is marked; touching a thumbnail replaces

@@ -68,6 +68,9 @@
       [name, desc] = T.levels[lvl - 1] || T.levels[0],
       levelBlock = `<h3>${esc(t(T.level))}</h3><div class="f-pills" role="radiogroup" aria-label="${esc(t(T.level))}">${T.levels.map(([n], k) => `<label class="f-pill"><input type="radio" name="sogLevel" data-level="${k + 1}" ${lvl === k + 1 ? 'checked' : ''}><span>${esc(t(n))}</span></label>`).join('')}</div>
         <p class="f-muted" data-level-says title="${esc(t(T.levelShows, { m: shows(lvl) }))}"><b>${esc(t(name))}</b> — ${esc(t(desc))}</p>`;
+    // la langue de l'écran (SOG-0477) : le choix enregistré sur cet appareil ; « Automatique » = la langue du navigateur ; les noms des langues sont écrits dans leur langue
+    const saved = window.SogSettingsKit.savedLang(),
+      langBlock = `<h3>${esc(t(T.lang))}</h3><div class="f-pills" role="radiogroup" aria-label="${esc(t(T.lang))}">${[['auto', t(T.langAuto), ''], ['fr', 'Français', 'fr'], ['en', 'English', 'en'], ['de', 'Deutsch', 'de'], ['es', 'Español', 'es']].map(([k, n, l]) => `<label class="f-pill"><input type="radio" name="sogLang" data-lang-pick="${k}" ${saved === k ? 'checked' : ''}><span${l ? ` lang="${l}"` : ''}>${esc(n)}</span></label>`).join('')}</div>`;
     const sets = c.designs?.() || [];
     let design = '';
     if (sets.length) {
@@ -85,7 +88,7 @@
           <span class="f-design-thumb" data-design="${esc(d.id)}" data-tone="${night ? 'night' : 'day'}"><span class="f-design-bar"></span><span class="f-design-card">${esc(t(T.sample))}<span class="f-design-chip"></span></span></span>
           <span class="f-design-name">${esc(t(d.label))}${d.textured ? ` <span class="f-muted">· ${esc(t(T.textured))}</span>` : ''}</span></button>`).join('')}</div></details>`;
     }
-    return `<div class="f-card" data-card="display"><h2>${esc(t(T.groups.display))}</h2>${levelBlock}${design}</div>`;
+    return `<div class="f-card" data-card="display"><h2>${esc(t(T.groups.display))}</h2>${levelBlock}${langBlock}${design}</div>`;
   };
   /** Carte Usages : les échanges cochés (« Seul sur cet appareil » est l'état sans échange) et la phrase qui les résume. */
   const usages = env => {

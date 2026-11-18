@@ -265,6 +265,36 @@
     }));
   }
 
+  /** Les langues de l'écran, dans l'ordre du cadre (frame/app.js : LANGS). */
+  const LANGS = ['fr', 'en', 'de', 'es'];
+  /** La langue enregistrée sur cet appareil, comme la lit le cadre (`lang()` de frame/app.js : sogFrame:lang, sinon repositoryLanguageMode) : 'fr' | 'en' | 'de' | 'es', ou 'auto' quand rien de valable n'est
+   *  gardé (la langue du navigateur décide alors). Le stockage peut être indisponible : 'auto'. */
+  const savedLang = () => {
+    try {
+      const l = localStorage.getItem('sogFrame:lang') || localStorage.getItem('repositoryLanguageMode') || '';
+      return LANGS.includes(l) ? l : 'auto';
+    } catch {
+      return 'auto';
+    }
+  };
+  /** Enregistre le choix de langue (SOG-0477) : 'auto' ou l'une des quatre langues, sinon rien. 'auto' efface sogFrame:lang (le cadre retombe sur le navigateur) et note « auto » pour les pages V2 ; une langue est
+   *  écrite dans les deux clés (le cadre lit sogFrame:lang, les pages V2 lisent repositoryLanguageMode). Rend vrai si l'écriture a eu lieu. */
+  const saveLang = v => {
+    if (v !== 'auto' && !LANGS.includes(v)) return false;
+    try {
+      if (v === 'auto') {
+        localStorage.removeItem('sogFrame:lang');
+        localStorage.setItem('repositoryLanguageMode', 'auto');
+      } else {
+        localStorage.setItem('sogFrame:lang', v);
+        localStorage.setItem('repositoryLanguageMode', v);
+      }
+      return true;
+    } catch {
+      return false; // stockage indisponible
+    }
+  };
+
   window.SogSettingsKit = {
     teReady,
     recordOwn,
@@ -287,6 +317,8 @@
     fill,
     tokenWarnings,
     holdTouched,
-    restoreTouched
+    restoreTouched,
+    savedLang,
+    saveLang
   };
 })();

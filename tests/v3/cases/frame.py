@@ -9911,3 +9911,39 @@ def a265(c):
     c.ok(abs(last['top'] - pos['users']['top']) <= 1, round(last['top'] - pos['users']['top'], 1), 0, 'the box « users » did not move either')
     c.shot('A265_320.png')   # the card cut by the top edge, both boxes ticked, the touched box at the place it was
     c.check_errors()
+
+
+@case('A266', 'Settings: the Display card gives the language of the screen (SOG-0477) — Automatic, Français, English, Deutsch, Español; each choice is kept (sogFrame:lang and repositoryLanguageMode), the screen reloads in that language and one can always come back to French; « Automatic » forgets the choice (the browser decides)',
+      'A', designs=('standard',), screens=True, phone=True, night=False, tags=('settings',),
+      rule='SOG-0477: the Settings had no language control; on a new origin (127.0.0.1 does not share the storage of localhost) the frame fell back on the language of the browser (en-GB) with no way out. The Display card now has five radios [data-lang-pick] (auto, fr, en, de, es), written by SogSettingsKit.saveLang, then the screen reloads; the radio checked is the one kept (SogSettingsKit.savedLang)')
+def a266(c):
+    # the harness sets sogFrame:lang at EVERY load: what the page wrote when it left is kept in sessionStorage and put back by the next load (the browser keeps localStorage by itself)
+    c.page.add_init_script("""(() => { const KEYS = ['sogFrame:lang', 'repositoryLanguageMode'];
+      try { const k = sessionStorage.getItem('__keepLang'); if (k) { const v = JSON.parse(k); for (const n of KEYS) v[n] === null ? localStorage.removeItem(n) : localStorage.setItem(n, v[n]) } } catch (e) {}
+      addEventListener('pagehide', () => { try { const v = {}; for (const n of KEYS) v[n] = localStorage.getItem(n); sessionStorage.setItem('__keepLang', JSON.stringify(v)) } catch (e) {} }) })()""")
+    c.open('settings', docs=LEVEL3)
+    titles = {'fr': 'Affichage', 'en': 'Display', 'de': 'Anzeige', 'es': 'Visualización'}
+    c.until("!!document.querySelector('[data-card=\"display\"] [data-lang-pick]')", timeout=20000, what='the language choice in the Display card (there is none before SOG-0477)')
+    c.eq(c.count('[data-card="display"] [data-lang-pick]'), 5, 'five choices: auto, fr, en, de, es', what='[data-lang-pick]')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].map(i => i.dataset.langPick)"), ['auto', 'fr', 'en', 'de', 'es'], 'the choices, in this order')
+    c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].map(i => i.closest('label').textContent.trim()).slice(1)"),
+         ['Français', 'English', 'Deutsch', 'Español'], 'the languages are named in their own language')
+    for lang in ('fr', 'en', 'de', 'es', 'auto'):
+        shown = lang if lang != 'auto' else c.lang          # the locale of the run is the language of the browser
+        if not c.js("(l) => document.querySelector(`[data-lang-pick=${l}]`).checked", lang):
+            c.js("window.__beforeLang = 1")
+            c.tap(f'[data-card="display"] [data-lang-pick={lang}]')
+            c.until("(t) => !window.__beforeLang && document.querySelector('[data-card=\"display\"] h2')?.textContent.trim() === t", arg=titles[shown], timeout=15000,
+                    what=f'{lang}: the screen reloaded and the card is titled « {titles[shown]} »')
+            kept = c.js("JSON.parse(sessionStorage.getItem('__keepLang') || 'null')")   # what the page held when it left
+            c.ok(kept is not None, kept, 'the values written before the reload', f'{lang}: the page wrote its choice before reloading')
+            if lang == 'auto':
+                c.eq(kept['sogFrame:lang'], None, 'the choice « Automatic » forgets sogFrame:lang (the browser decides)', what='sogFrame:lang')
+            else:
+                c.eq(kept['sogFrame:lang'], lang, f'sogFrame:lang is the language chosen ({lang})', what='sogFrame:lang')
+            c.eq(kept['repositoryLanguageMode'], lang, f'repositoryLanguageMode is {lang}: the pages of V2 read it', what='repositoryLanguageMode')
+        c.eq(c.js("[...document.querySelectorAll('[data-card=\"display\"] [data-lang-pick]')].filter(i => i.checked).map(i => i.dataset.langPick)"), [lang],
+             f'{lang}: the radio checked is the one kept', what='radio checked')
+        c.eq(c.text('[data-card="display"] h2'), titles[shown], f'{lang}: the card is titled in the language chosen', what='title of the card')
+    c.shot(f'A266_auto_{c.width}.png')   # the Display card after « Automatic »: five choices, Automatic checked
+    c.check_errors()

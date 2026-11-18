@@ -84,6 +84,9 @@
       'Mit mehreren Nutzern ist das Kürzel nötig: Es zeichnet jedes Senden und ordnet Ihre Dateien.',
       'Con varios usuarios el trigrama es necesario: firma cada envío y ordena sus ficheros.'
     ],
+    // langue de l'écran (SOG-0477)
+    lang: ['Langue', 'Language', 'Sprache', 'Idioma'],
+    langAuto: ['Automatique', 'Automatic', 'Automatisch', 'Automático'],
     // niveau d'usage
     level: ['Niveau', 'Level', 'Stufe', 'Nivel'],
     levelHint: ['Ce que l’appli vous montre ; un module caché reste joignable par son adresse.',
