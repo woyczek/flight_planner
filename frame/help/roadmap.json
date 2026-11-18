@@ -4,8 +4,8 @@
  "updated": "2026-11-18",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "a5ec9fd",
-  "fiches": 482,
+  "organisation": "d8b8541",
+  "fiches": 483,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -7200,6 +7200,27 @@
      "de": "Einstellungen: der gelbe Punkt bei « Erste Schritte » sagt nicht, was fehlt; GitLab-Token: 5 Tage vorher warnen, am Vortag deutlicher, abgelaufen noch deutlicher",
      "es": "Ajustes: el punto amarillo de « Puesta en marcha » no dice qué falla; token de GitLab: avisar 5 días antes, más fuerte la víspera, más aún caducado",
      "rank": 367
+    }
+   ]
+  },
+  {
+   "id": "maintenance-reglages-cadre",
+   "app": "maintenance",
+   "label": {
+    "fr": "Réglages ; cadre",
+    "en": "Réglages ; cadre",
+    "de": "Réglages ; cadre",
+    "es": "Réglages ; cadre"
+   },
+   "items": [
+    {
+     "id": "SOG-0484",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Réglages : changer de langue recharge l'application hors du cadre — alerte « rechargements en série » au troisième essai, et Échap ne ferme plus Réglages",
+     "en": "Settings: changing language reloads the app outside the frame — “reload loop” alert on the third try, and Escape no longer closes Settings",
+     "de": "Einstellungen: Sprachwechsel lädt die App am Rahmen vorbei neu – Warnung „Neuladeschleife“ beim dritten Mal, Escape schließt die Einstellungen nicht mehr",
+     "es": "Ajustes: cambiar de idioma recarga la aplicación fuera del marco — alerta de «recargas en serie» al tercer intento, y Escape ya no cierra Ajustes"
     }
    ]
   },
