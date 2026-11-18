@@ -16781,3 +16781,257 @@ def k363(c):
          'DFS aerodromes: the AD, the LS with an indicator (read as an AD) and the HP with an indicator are kept; the LS and the HP of a list number (ED1567, ED3065) and the PERMIT are left out; the longest HARD runway of the second file gives hardLen in metres (2 800 of the asphalt one: not the 3 500 of grass, not the 1 500 of concrete), a grass runway gives none, the runway of an aerodrome that was left out links nothing', what='aerodromes')
     c.eq((r['second'], r['aloneAds']), ([], 0), 'the runway file carries no aerodrome of its own; read alone it links nothing', what='runway file')
     c.eq(r['other'], ['EDXA', 'EDXB', 'ED1567', 'EDXH', 'ED3065', 'EDXP'], 'the table is the DFS\'s only: any other AIXM 5.1 file keeps every aerodrome as before', what='other sources')
+
+
+@case('K367', 'DFS lot 3 (the procedures of « ED Procedure », AIXM 5.1): `tools/dfs_proc.py` reads the 83 MB file as a STREAM and writes the common schema — the filed name of a SID / STAR (« EDBH PEROM TWO GOLF » → PEROM2G), one record per runway and per transition, the point of a leg (`endPoint`, else `startPoint`), the constraints, the holds NOT read but counted, the legs without a point kept without position, a doubt (`unresolved`, `rf-arc`) instead of an invented point, the file of ANOTHER source never overwritten; and the file is an untrusted input (no DOCTYPE, bounds)',
+      'K', static=True,
+      rule='DFS lot 3 (the relay, 19 Nov: the SID, STAR and approaches WITHOUT the holds, the 271 holds noted as not read in the count of the source; Procédures: SPEC § 5 quinquies, the point schema of tools/proc_cifp.py; Security: bounded stream, no entity, nothing taken from the content as a path). Measured on the real file (29 Oct): 1 939 procedures (821 SID, 241 STAR, 877 approaches) of 35 aerodromes, 14 876 legs, read in 2.3 s; 2 396 records of which 1 660 official, 719 in doubt `unresolved`, 17 in doubt `rf-arc`; 1 560 hold legs not read. The legs, the points and the names below are invented.')
+def k367(c):
+    import importlib
+    import json
+    import os
+    import sys
+    import re
+    import tempfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    D = importlib.import_module('dfs_proc')
+    u = lambda n: f'00000000-0000-4000-8000-{n:012d}'
+    head = ('<?xml version="1.0"?><message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" '
+            'xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">')
+    mem = lambda body: f'<message:hasMember>{body}</message:hasMember>'
+    dp = lambda n, d, lat, lon: mem(f'<aixm:DesignatedPoint gml:id="a{n}"><gml:identifier codeSpace="urn:uuid:">{u(n)}</gml:identifier><aixm:timeSlice><aixm:DesignatedPointTimeSlice><aixm:designator>{d}</aixm:designator>'
+                                    f'<aixm:location><aixm:Point><gml:pos>{lat} {lon}</gml:pos></aixm:Point></aixm:location></aixm:DesignatedPointTimeSlice></aixm:timeSlice></aixm:DesignatedPoint>')
+    nav = lambda n, d: mem(f'<aixm:Navaid gml:id="a{n}"><gml:identifier codeSpace="urn:uuid:">{u(n)}</gml:identifier><aixm:timeSlice><aixm:NavaidTimeSlice><aixm:designator>{d}</aixm:designator></aixm:NavaidTimeSlice></aixm:timeSlice></aixm:Navaid>')
+
+    def leg(tag, n, term, point=None, side='startPoint', **k):
+        pc = f'<aixm:{side}><aixm:TerminalSegmentPoint><aixm:flyOver>{"YES" if k.get("over") else "NO"}</aixm:flyOver><aixm:pointChoice_{k.get("kind", "fixDesignatedPoint")} xlink:href="urn:uuid:{u(point)}"/></aixm:TerminalSegmentPoint></aixm:{side}>' if point else ''
+        body = f'<aixm:legTypeARINC>{term}</aixm:legTypeARINC>'
+        if 'course' in k:
+            body += f'<aixm:course>{k["course"]}</aixm:course><aixm:courseType>{k.get("ctype", "MAG_BRG")}</aixm:courseType>'
+        if 'length' in k:
+            body += f'<aixm:length uom="NM">{k["length"]}</aixm:length>'
+        if 'lower' in k:
+            body += f'<aixm:lowerLimitAltitude uom="FT">{k["lower"]}</aixm:lowerLimitAltitude><aixm:altitudeInterpretation>{k.get("interp", "ABOVE_LOWER")}</aixm:altitudeInterpretation>'
+        if 'speed' in k:
+            body += f'<aixm:speedLimit uom="KT">{k["speed"]}</aixm:speedLimit>'
+        if 'vpa' in k:
+            body += f'<aixm:verticalAngle>{k["vpa"]}</aixm:verticalAngle>'
+        if 'turn' in k:
+            body += f'<aixm:turnDirection>{k["turn"]}</aixm:turnDirection>'
+        return mem(f'<aixm:{tag} gml:id="l{n}"><gml:identifier codeSpace="urn:uuid:">{u(n)}</gml:identifier><aixm:timeSlice><aixm:{tag}TimeSlice>{body}{pc}</aixm:{tag}TimeSlice></aixm:timeSlice></aixm:{tag}>')
+
+    def proc(tag, n, name, icao, transitions):
+        ts = ''
+        for typ, tid, rwy, legs in transitions:
+            rw = f'<aixm:departureRunwayTransition><aixm:LandingTakeoffAreaCollection><aixm:runway xlink:href="urn:uuid:{u(900)}" xlink:title="{rwy}"/></aixm:LandingTakeoffAreaCollection></aixm:departureRunwayTransition>' if rwy else ''
+            tl = ''.join(f'<aixm:transitionLeg><aixm:ProcedureTransitionLeg><aixm:seqNumberARINC>{s}</aixm:seqNumberARINC><aixm:theSegmentLeg xlink:href="urn:uuid:{u(g)}"/></aixm:ProcedureTransitionLeg></aixm:transitionLeg>' for s, g in legs)
+            ts += f'<aixm:flightTransition><aixm:ProcedureTransition><aixm:transitionId>{tid}</aixm:transitionId><aixm:type>{typ}</aixm:type>{rw}{tl}</aixm:ProcedureTransition></aixm:flightTransition>'
+        return mem(f'<aixm:{tag} gml:id="p{n}"><gml:identifier codeSpace="urn:uuid:">{u(n)}</gml:identifier><aixm:timeSlice><aixm:{tag}TimeSlice><aixm:name>{name}</aixm:name><aixm:airportHeliport xlink:href="urn:uuid:{u(800)}" xlink:title="{icao}"/>{ts}'
+                   f'</aixm:{tag}TimeSlice></aixm:timeSlice></aixm:{tag}>')
+    pts = head + dp(1, 'ALPHA', 50.1, 8.1) + dp(2, 'BRAVO', 50.2, 8.2) + dp(3, 'CHARL', 50.3, 8.3) + dp(4, 'DELTA', 50.4, 8.4) + nav(5, 'ABC') + '</message:AIXMBasicMessage>'
+    body = head
+    body += leg('DepartureLeg', 21, 'VA', course=270, lower=500)
+    body += leg('DepartureLeg', 22, 'DF', 1, over=True, turn='RIGHT')
+    body += leg('DepartureLeg', 23, 'TF', 2, side='endPoint', course=90.4, ctype='TRUE_BRG', length=12.3, lower=4000, interp='AT_LOWER', speed=210)
+    body += leg('ArrivalLeg', 24, 'TF', 3, course=180, length=7)
+    body += leg('ArrivalLeg', 25, 'HM', 3)
+    body += leg('ArrivalLeg', 26, 'TF', 4, length=5)
+    body += leg('FinalLeg', 27, 'TF', 4, vpa=3.0, lower=1200, interp='AT_LOWER')
+    body += leg('MissedApproachLeg', 28, 'CF', 1, course=90)
+    body += leg('InitialLeg', 29, 'TF', 5, kind='navaidSystem')
+    body += leg('ArrivalFeederLeg', 30, 'IF', 3)
+    body += leg('DepartureLeg', 31, 'TF', 99)
+    body += leg('DepartureLeg', 32, 'RF', 3, turn='LEFT')
+    body += proc('StandardInstrumentDeparture', 41, 'EDXA ALPHA TWO GOLF', 'EDXA', [('RWY', '', '27', [(10, 21), (20, 22), (30, 23)]), ('EN_ROUTE', 'XYZ', '', [(10, 23)])])
+    body += proc('StandardInstrumentArrival', 42, 'EDXA CHARLIE ONE', 'EDXA', [('COMMON', 'CHARL', '', [(10, 24), (20, 25), (30, 26)]), ('RWY', 'CHARL', '09', [(10, 29)])])
+    body += proc('InstrumentApproachProcedure', 43, 'I09: ILS RWY09', 'EDXA', [('FINAL', 'FINAL', '09', [(10, 27)]), ('APPROACH', 'IAFAA', '09', [(10, 30), (20, 29)]), ('MISSED', 'MISS', '09', [(10, 28)])])
+    body += proc('StandardInstrumentDeparture', 44, 'EDXB DELTA ONE', 'EDXB', [('RWY', '', '18', [(10, 21), (20, 31)])])
+    body += proc('StandardInstrumentDeparture', 45, 'EDXB ECHO ONE', 'EDXB', [('RWY', '', '18', [(10, 22), (20, 77)])])
+    body += proc('StandardInstrumentDeparture', 46, 'EDXB FOXTROT ONE', 'EDXB', [('RWY', '', '18', [(10, 22), (20, 32)])])
+    body += '</message:AIXMBasicMessage>'
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        wp, pp = os.path.join(td, 'wp.xml'), os.path.join(td, 'proc.xml')
+        open(wp, 'w', encoding='utf-8').write(pts)
+        open(pp, 'w', encoding='utf-8').write(body)
+        names, pwhy = D.points_of([wp, os.path.join(td, 'nothing.xml')])
+        c.eq((pwhy, sorted((v[0], v[1], v[2]) for v in names.values())), (None, [('ABC', None, None), ('ALPHA', 50.1, 8.1), ('BRAVO', 50.2, 8.2), ('CHARL', 50.3, 8.3), ('DELTA', 50.4, 8.4)]),
+             'the points and the navaids of the DFS files by their uuid (a navaid with no position of its own has none); a file that is missing is ignored', what='points')
+        r, why = D.read(pp, names)
+        c.eq((why, len(r[0]), len(r[1]), sorted({(p['kind']) for p in r[1]})), (None, 12, 6, ['APP', 'SID', 'STAR']), 'the file is read as a stream: 12 legs of seven kinds and 6 procedures', what='read')
+        docs, stats = D.build(*r)
+        sid = {p['id']: p for p in docs['EDXA']['procedures']}
+        c.eq(sorted(sid), ['EDXA.APP.ILSRWY09.RW09', 'EDXA.APP.ILSRWY09.RW09.IAFAA', 'EDXA.SID.ALPHA2G.RW27', 'EDXA.SID.ALPHA2G.RWALL.XYZ', 'EDXA.STAR.CHARLIE1.RW09'],
+             'the filed name (« ALPHA TWO GOLF » is ALPHA2G), one record per runway, one per transition (XYZ with RWALL: no single runway, IAFAA), the approach with its type and no « I09: »', what='ids')
+        row = lambda p: [(x['seq'], x['id'], x['leg'], x.get('crs'), x.get('trk'), x.get('alt'), x.get('nm'), x.get('kt'), x.get('turn'), x.get('over'), x.get('lat'), x.get('lon')) for x in p['points']]
+        c.eq(row(sid['EDXA.SID.ALPHA2G.RW27']),
+             [(1, None, 'VA', 270.0, None, {'type': 'min', 'ft': 500}, None, None, None, None, None, None), (2, 'ALPHA', 'DF', None, None, None, None, None, 'R', True, 50.1, 8.1),
+              (3, 'BRAVO', 'TF', None, 90.4, {'type': 'at', 'ft': 4000}, 12.3, 210, None, None, 50.2, 8.2)],
+             'a SID: the leg without a point (VA) is KEPT without position, with its course and its constraint; the point of a DF is the `startPoint` (that is how the DFS codes most of them), that of a TF the `endPoint`; a true course is `trk`, a magnetic one `crs`; distance, speed, turn, overflight', what='sid points')
+        c.eq(sid['EDXA.SID.ALPHA2G.RW27']['status'] + '|' + sid['EDXA.SID.ALPHA2G.RW27']['source']['kind'] + '|' + sid['EDXA.SID.ALPHA2G.RW27']['runways'][0], 'official|dfs|27', 'status official, source dfs, the runway of the transition', what='status')
+        c.eq([x['id'] for x in sid['EDXA.STAR.CHARLIE1.RW09']['points']], ['CHARL', 'DELTA', 'ABC'], 'a STAR: the common part then the runway transition; the HOLD (HM) is left out', what='star')
+        app = sid['EDXA.APP.ILSRWY09.RW09']
+        c.eq(([x['id'] for x in app['points']], [x.get('phase') for x in app['points']], app['points'][0].get('vpa'), app.get('type')), (['DELTA', 'ALPHA'], [None, 'missed'], 3.0, 'ILS'),
+             'an approach: the FINAL then the MISSED approach (phase missed), the vertical angle, the type read in the title', what='approach')
+        c.eq([x['id'] for x in sid['EDXA.APP.ILSRWY09.RW09.IAFAA']['points']], ['CHARL', 'ABC', 'DELTA', 'ALPHA'], 'an approach transition: its legs, then the final (the first point of the final is not written twice), then the missed approach', what='transition')
+        bad = {p['id']: (p['status'], p.get('doubt')) for p in docs['EDXB']['procedures']}
+        c.eq(bad, {'EDXB.SID.DELTA1.RW18': ('doubt', 'unresolved'), 'EDXB.SID.ECHO1.RW18': ('doubt', 'unresolved'), 'EDXB.SID.FOXTROT1.RW18': ('doubt', 'rf-arc')},
+             'a leg whose point is not in the files (unresolved), a leg that the transition cites and that the file does not carry (unresolved, counted), an arc of constant radius (RF: kept without its centre, rf-arc): a DOUBT, never an invented point', what='doubts')
+        c.eq((stats['holds'], stats['fixless'], stats['missing'], stats['rf']), (1, 2, 1, 1), 'the counts: one hold NOT read, two legs without a point (the VA read by two records), one leg cited and absent, one RF', what='counts')
+        c.ok(any('attente' in w and 'NON' in w for w in D.warnings_of(stats)), str(D.warnings_of(stats)), 'the holds not read are said in the warnings of the file (« 1 attente(s) NON lue(s) »)')
+        out = os.path.join(td, 'proc')
+        os.makedirs(os.path.join(out, '2026-10-29'))
+        other = {'schema': 1, 'icao': 'EDXB', 'procedures': [{'id': 'EDXB.SID.X.RWALL', 'source': {'kind': 'eaip'}}]}
+        json.dump(other, open(os.path.join(out, '2026-10-29', 'EDXB.json'), 'w'))
+        res = D.write(out, docs, '2026-10-29', stats)
+        files = sorted(os.listdir(os.path.join(out, '2026-10-29')))
+        doc = json.load(open(os.path.join(out, '2026-10-29', 'EDXA.json'), encoding='utf-8'))
+        idx = json.load(open(os.path.join(out, '2026-10-29', 'index.json'), encoding='utf-8'))
+        c.eq((res, files, json.load(open(os.path.join(out, '2026-10-29', 'EDXB.json')))['procedures'][0]['id']), ({'aerodromes': 1, 'procedures': 8, 'kept': ['EDXB']}, ['EDXA.json', 'EDXB.json', 'index.json'], 'EDXB.SID.X.RWALL'),
+             'one file per aerodrome and the index; the file of ANOTHER source (EDXB, eaip) is kept as it is and said', what='write')
+        c.eq((doc['schema'], doc['cycle'], doc['procedures'][0]['source']['cycle'], doc['procedures'][0]['source']['at'], idx['aerodromes']['EDXA'], 'DFS' in doc['notice']), (1, '2026-10-29', '2026-10-29', '2026-10-29', {'SID': 2, 'STAR': 1, 'APP': 2, 'status': 'official'}, True),
+             'the file: schema 1, the date of entry into force as cycle, source and date on each procedure, the counts in the index, the credit of the DFS in the notice', what='file')
+        res2 = D.write(out, docs, '2026-10-29', stats)
+        c.eq(res2['aerodromes'], 1, 'written again: the file of the same source is replaced, nothing else', what='again')
+        # the data/proc folder is synchronised: the files already there are untrusted inputs
+        open(os.path.join(out, '2026-10-29', 'index.json'), 'w').write('[' * 100000)
+        res3 = D.write(out, docs, '2026-10-29', stats)
+        c.eq(res3['aerodromes'], 1, 'SECURITY: an index nested on 100 000 levels is not a crash (RecursionError): it is discarded and rewritten', what='deep index')
+        json.dump({'schema': 1, 'aerodromes': {'EDYY': {'SID': 5, 'evil': 'x' * 10000, 'status': 'official'}, '../x': {'SID': 1}, 'EDZZ': 'str', 'EDXA': {'SID': True}, 'edxx': {'SID': 1}}}, open(os.path.join(out, '2026-10-29', 'index.json'), 'w'))
+        D.write(out, docs, '2026-10-29', stats)
+        idx2 = json.load(open(os.path.join(out, '2026-10-29', 'index.json'), encoding='utf-8'))['aerodromes']
+        c.eq(sorted(idx2), ['EDXA', 'EDYY'], 'a hostile index is not copied: only the keys that are an ICAO code with a dict of counts (SID, STAR, APP as numbers, a short status) are kept; the others are dropped', what='hostile index')
+        c.eq(idx2['EDYY'], {'SID': 5, 'status': 'official'}, 'and only the known keys of each value', what='index values')
+        open(os.path.join(out, '2026-10-29', 'EDXA.json'), 'w').write('[' * 100000)
+        c.eq(D.write(out, docs, '2026-10-29', stats)['kept'], ['EDXA', 'EDXB'], 'a file of an aerodrome that cannot be read as an untrusted input is KEPT (not overwritten), said, as the file of another source', what='deep file')
+        # the file is an untrusted input
+        hostile = lambda text: (open(pp, 'wb').write(text), D.read(pp, names))[1]
+        late = b'<?xml version="1.0"?><!--' + b'x' * 70000 + b'--><!DOCTYPE x [<!ENTITY a "bbbb">]><m>&a;</m>'      # a DOCTYPE AFTER 70 KB of comment: the test of the first 64 KB does not see it, the parser does
+        open(wp, 'wb').write(late)
+        c.eq((hostile(late)[1], D.points_of([wp])[1]), ('doctype', 'doctype'), 'SECURITY: a DOCTYPE or an entity declaration is refused WHEREVER it is in the file (70 KB of comments before it), in the procedures AND in the files of points (the folder that is synchronised)', what='late doctype')
+        open(wp, 'w', encoding='utf-8').write(pts)
+        kept_points = D.MAX_POINT_ELEMENTS
+        D.MAX_POINT_ELEMENTS = 10
+        try:
+            budget = D.points_of([wp])[1]
+        finally:
+            D.MAX_POINT_ELEMENTS = kept_points
+        open(wp, 'wb').write(b'<m><unclosed></m>')
+        c.eq((budget, D.points_of([wp])[1]), ('too-many', 'unreadable'), 'the files of points have a budget of elements (too-many) and a broken one is refused (unreadable): the job stops with a reason', what='points bounds')
+        c.eq([hostile(b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "bbbb">]><m>&a;</m>')[1], hostile(b'<m><unclosed></m>')[1], D.read(os.path.join(td, 'none.xml'), names)[1]], ['doctype', 'unreadable', 'missing'],
+             'a DOCTYPE or an entity is refused, a broken file is « unreadable », a missing one « missing »', what='hostile')
+        kept = (D.MAX_ELEMENTS, D.MAX_LEGS_PER_PROCEDURE, D.MAX_BYTES, D.MAX_POINTS_TOTAL)
+        try:
+            open(pp, 'w', encoding='utf-8').write(body)
+            D.MAX_ELEMENTS = 50
+            many = D.read(pp, names)[1]
+            D.MAX_ELEMENTS = kept[0]
+            D.MAX_LEGS_PER_PROCEDURE = 1
+            short = D.read(pp, names)[0][1][0]['transitions'][0]['legs']
+            D.MAX_LEGS_PER_PROCEDURE = kept[1]
+            D.MAX_BYTES = 100
+            big = D.read(pp, names)[1]
+            D.MAX_BYTES = kept[2]
+            D.MAX_POINTS_TOTAL = 2
+            capped = D.build(*D.read(pp, names)[0])[1]['procedures']
+        finally:
+            D.MAX_ELEMENTS, D.MAX_LEGS_PER_PROCEDURE, D.MAX_BYTES, D.MAX_POINTS_TOTAL = kept
+        c.eq((many, len(short), big, 0 < capped <= 2), ('too-many', 1, 'too-big', True), 'the bounds: a budget of elements (too-many), a number of legs per procedure, a size (too-big), a number of points in all (records are added while their points fit: some, not all)', what='bounds')
+    hostile_title = D.build({u(1): {'id': 'ALPHA', 'lat': 1.0, 'lon': 2.0, 'alt': None, 'leg': 'DF', '_ref': True}},
+                            [{'icao': 'EDXA', 'kind': 'SID', 'title': 'EDXA AL/PHA ../ <b> TWO GOLF', 'transitions': [{'id': '', 'type': 'RWY', 'runway': '27', 'legs': [(10, u(1))]}]}])[0]['EDXA']['procedures'][0]
+    c.eq((hostile_title['id'], hostile_title['name']), ('EDXA.SID.ALPHAB2G.RW27', 'AL/PHA../<B>2G'), 'an identifier keeps nothing but letters and digits of the title (the name stays as published)', what='hostile title')
+    c.eq([D.designator('EDBH PEROM TWO GOLF', 'EDBH'), D.designator('EDDF CINDY ONE ALPHA', 'EDDF'), D.designator('EDDM MIQ ONE', 'EDDM'), D.designator('ARTAX FIVE ALPHA', 'EDDS'), D.designator('FOO BAR', 'EDDS'), D.designator('', 'EDDS')],
+         ['PEROM2G', 'CINDY1A', 'MIQ1', 'ARTAX5A', 'FOO BAR', ''], 'the filed name from the title: the aerodrome in front is removed, the digit and the letter said in words are written (a title that has not this form is kept as it is)', what='designator')
+
+
+@case('K368', 'DFS lot 3 (the job `dfsproc/build` of the launcher): `aero_fetch.dfs_procedure` takes the 83 MB « ED Procedure » set of the amendment in force with an EXPLICIT download ceiling and the SHA-512 checked BEFORE any write, under one fixed name of data/local/dfs/ (never the folder of the base that is built); the verb takes no argument, reads the points of the two other DFS files, writes data/proc/<cycle>/ and answers the counts, the holds not read included; each refusal is a short code',
+      'K', static=True,
+      rule='DFS lot 3 (Security, 19 Nov: the download ceiling set EXPLICITLY — get(limit=…), not the default of 200 MB —, the SHA-512 before any walk, a fixed name, nothing taken from the content as a name, a path or an address). ED Procedure is 82.8 MB (29 Oct 2026): it is NOT put in data/sia/zones/de/, where the build of the base reads every XML into a DOM. Invented files.')
+def k368(c):
+    import hashlib
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    AF = importlib.import_module('aero_fetch')
+    RJ = _regen()
+    head = ('<?xml version="1.0"?><message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" '
+            'xmlns:xlink="http://www.w3.org/1999/xlink">')
+    u = lambda n: f'00000000-0000-4000-8000-{n:012d}'
+    mem = lambda b: f'<message:hasMember>{b}</message:hasMember>'
+    pts = head + mem(f'<aixm:DesignatedPoint gml:id="a1"><gml:identifier>{u(1)}</gml:identifier><aixm:timeSlice><aixm:DesignatedPointTimeSlice><aixm:designator>ALPHA</aixm:designator><aixm:location><aixm:Point><gml:pos>50.1 8.1</gml:pos></aixm:Point></aixm:location></aixm:DesignatedPointTimeSlice></aixm:timeSlice></aixm:DesignatedPoint>') + '</message:AIXMBasicMessage>'
+    nav = head + '</message:AIXMBasicMessage>'
+    leg = mem(f'<aixm:DepartureLeg gml:id="l1"><gml:identifier>{u(2)}</gml:identifier><aixm:timeSlice><aixm:DepartureLegTimeSlice><aixm:legTypeARINC>DF</aixm:legTypeARINC><aixm:startPoint><aixm:TerminalSegmentPoint><aixm:pointChoice_fixDesignatedPoint xlink:href="urn:uuid:{u(1)}"/></aixm:TerminalSegmentPoint></aixm:startPoint></aixm:DepartureLegTimeSlice></aixm:timeSlice></aixm:DepartureLeg>')
+    sid = mem(f'<aixm:StandardInstrumentDeparture gml:id="p1"><gml:identifier>{u(3)}</gml:identifier><aixm:timeSlice><aixm:StandardInstrumentDepartureTimeSlice><aixm:name>EDXA ALPHA ONE</aixm:name><aixm:airportHeliport xlink:href="urn:uuid:{u(9)}" xlink:title="EDXA"/>'
+              f'<aixm:flightTransition><aixm:ProcedureTransition><aixm:transitionId/><aixm:type>RWY</aixm:type><aixm:departureRunwayTransition><aixm:LandingTakeoffAreaCollection><aixm:runway xlink:href="urn:uuid:{u(8)}" xlink:title="27"/></aixm:LandingTakeoffAreaCollection></aixm:departureRunwayTransition>'
+              f'<aixm:transitionLeg><aixm:ProcedureTransitionLeg><aixm:seqNumberARINC>10</aixm:seqNumberARINC><aixm:theSegmentLeg xlink:href="urn:uuid:{u(2)}"/></aixm:ProcedureTransitionLeg></aixm:transitionLeg></aixm:ProcedureTransition></aixm:flightTransition>'
+              '</aixm:StandardInstrumentDepartureTimeSlice></aixm:timeSlice></aixm:StandardInstrumentDeparture>')
+    body = (head + leg + sid + '</message:AIXMBasicMessage>').encode('utf-8')
+    name = 'ED_Procedure_2026-10-01_2026-10-29_revision.xml'
+    sha = hashlib.sha512(body).hexdigest()
+    meta = lambda **kw: json.dumps({'Amdts': [{'Amdt': 1, 'Metadata': {'datasets': []}}, {'Amdt': 0, 'Metadata': {'datasets': [{'type': 'group', 'name': 'x', 'items': [
+        {'type': 'leaf', 'name': 'ED Runway', 'releases': [{'type': 'AIXM 5.1', 'filename': 'ED_Runway_a.xml', 'checksum': {'value': '0' * 128}}]},
+        {'type': 'leaf', 'name': 'ED Procedure', 'releases': [{'type': 'Excel', 'filename': 'x.xlsx'}, {'type': 'AIXM 5.1', 'filename': kw.get('name', name), 'checksum': {'value': kw.get('sha', sha)}}]}]}]}}]}).encode('utf-8')
+    calls = []
+
+    def fake(table):
+        def get(url, since=None, absent_ok=False, copy=None, limit=None, timeout=None):
+            calls.append((url.split('/rest')[-1], limit))
+            for part, v in table.items():
+                if part in url:
+                    if isinstance(v, tuple):
+                        raise OSError(v[1])
+                    return v
+            raise OSError('404')
+        return get
+    kept = AF.get
+    try:
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+            AF.get = fake({'/rest/0/' + name: body, '/rest/': meta()})
+            r = AF.dfs_procedure(td)
+            c.eq((r.get('effective'), r.get('unchanged'), r.get('bytes'), open(r['path'], 'rb').read() == body, os.path.relpath(r['path'], td).replace(os.sep, '/'), os.path.exists(os.path.join(td, 'sia'))),
+                 ('2026-10-29', False, len(body), True, 'local/dfs/dfs_ED_Procedure.xml', False), 'the amendment in force: the date of entry into force, ONE fixed name under data/local/dfs/ (neither served nor synchronised), nothing under data/sia/ where the base reads every XML', what='fetch')
+            c.eq(calls, [('/', None), ('/0/' + name, AF.DFS_PROC_LIMIT)], 'the metadata, then the file with the download ceiling SET EXPLICITLY (120 MB, not the default of 200 MB)', what='ceiling')
+            calls.clear()
+            r = AF.dfs_procedure(td)
+            c.eq((r.get('unchanged'), len(calls)), (True, 1), 'the file in place is the one the metadata names (same SHA-512): nothing is downloaded', what='unchanged')
+            os.remove(r['path'])
+            AF.get = fake({'/rest/0/': b'<other/>', '/rest/': meta()})
+            r = AF.dfs_procedure(td)
+            c.eq(('SHA-512' in r.get('error', ''), os.path.exists(os.path.join(td, 'local', 'dfs', 'dfs_ED_Procedure.xml'))), (True, False), 'a download whose SHA-512 is not the metadata\'s: refused, nothing written', what='checksum')
+            for label, m in (('hostile name', meta(name='../../x.xml')), ('name of another set', meta(name='ED_Runway_2026-10-01_2026-10-29_revision.xml')), ('bad sum', meta(sha='abc')), ('digits of another script', meta(name='ED_Procedure_٢٠٢٦-10-01_2026-10-29_revision.xml')),
+                             ('not json', b'<html/>'), ('no amendment', json.dumps({'Amdts': [{'Amdt': 2}]}).encode())):
+                AF.get = fake({'/rest/': m})
+                calls.clear()
+                r = AF.dfs_procedure(td)
+                c.eq(('error' in r, len(calls)), (True, 1), f'{label}: refused with a reason, nothing fetched under that name', what=label)
+            AF.get = fake({'/rest/': ('os', 'unreachable')})
+            c.eq(AF.dfs_procedure(td).get('error', '').startswith('DFS :'), True, 'the service unreachable: said', what='offline')
+            # the verb
+            fn, check = RJ.REGISTRY[('dfsproc', 'build')]
+            c.eq((check({}), check({'path': 'x'}), check(None)), ({}, None, None), 'the verb takes no argument: anything else in the request is refused (400)', what='args')
+            data = os.path.join(td, 'data')
+            os.makedirs(os.path.join(data, 'sia', 'zones', 'de'))
+            job = RJ.Job('dfsproc', 'build', {})
+            ctx = {'data': data}
+            keptdfs = AF.dfs
+            AF.dfs = lambda d: ([], ['offline'])
+            AF.get = fake({'/rest/0/' + name: body, '/rest/': meta()})
+            calls.clear()
+            c.eq((fn(job, {}, ctx), calls), ({'ok': False, 'reason': 'points'}, []), 'without the points and the navaids of the DFS (base/fetch has not taken them): `points`, and NOTHING is fetched of the 83 MB set (the points are looked for first)', what='no points')
+            for n, text in (('dfs_ED_Waypoints.xml', pts), ('dfs_ED_Navaids.xml', nav)):
+                open(os.path.join(data, 'sia', 'zones', 'de', n), 'w', encoding='utf-8').write(text)
+            AF.get = fake({'/rest/': ('os', 'unreachable')})
+            c.eq(fn(job, {}, ctx)['reason'], 'fetch', 'the 83 MB set cannot be fetched: `fetch`', what='fetch fails')
+            AF.get = fake({'/rest/0/' + name: body, '/rest/': meta()})
+            res = fn(job, {}, ctx)
+            c.eq((res['ok'], res['aerodromes'], res['procedures'], res['effective'], res['kept'], res['counts']['holds']), (True, 1, 1, '2026-10-29', [], 0), 'the verb: fetch, read, write: one aerodrome, one procedure, the date of entry into force, the counts', what='verb')
+            doc = json.load(open(os.path.join(data, 'proc', '2026-10-29', 'EDXA.json'), encoding='utf-8'))
+            c.eq((doc['procedures'][0]['id'], doc['procedures'][0]['points'][0]['id'], doc['procedures'][0]['source']['kind']), ('EDXA.SID.ALPHA1.RW27', 'ALPHA', 'dfs'), 'data/proc/<date>/<OACI>.json at the common schema, the point resolved from the points file', what='file')
+            open(os.path.join(data, 'local', 'dfs', 'dfs_ED_Procedure.xml'), 'wb').write(b'<?xml version="1.0"?><!DOCTYPE x [<!ENTITY a "b">]><m>&a;</m>')
+            AF.dfs_procedure = lambda d: {'path': os.path.join(d, 'local', 'dfs', 'dfs_ED_Procedure.xml'), 'effective': '2026-10-29', 'bytes': 1, 'unchanged': True}
+            c.eq(fn(job, {}, ctx)['reason'], 'doctype', 'a file with a DOCTYPE or an entity: refused with its code', what='doctype')
+    finally:
+        AF.get = kept
+        importlib.reload(AF)

@@ -1563,24 +1563,25 @@
     },
     publish: false,
     no: null,
-    status: 'abandoned',
+    status: 'used',
     n: ['DFS (Allemagne, AIXM 5.1)', 'DFS (Germany, AIXM 5.1)', 'DFS (Deutschland, AIXM 5.1)', 'DFS (Alemania, AIXM 5.1)'],
     url: 'https://aip.dfs.de/datasets/',
-    gives: ['Les procédures de l’Allemagne (« ED Procedure ») ; écartée : licence nécessaire, demande abandonnée (28 octobre 2026).',
-      'The procedures of Germany (“ED Procedure”); set aside: a licence is needed, request abandoned (28 October 2026).',
-      'Die Verfahren Deutschlands („ED Procedure“); zurückgestellt: Lizenz nötig, Anfrage aufgegeben (28. Oktober 2026).',
-      'Los procedimientos de Alemania («ED Procedure»); descartada: hace falta licencia, solicitud abandonada (28 de octubre de 2026).'
+    gives: [
+      'Les procédures de l’Allemagne (SID, STAR, approches, jeu « ED Procedure » : 1 939 procédures de 35 terrains) ; les attentes (HM, HA, HF) ne sont pas lues ; travail du lanceur, pas de la construction de la base.',
+      'The procedures of Germany (SID, STAR, approaches, dataset “ED Procedure”: 1,939 procedures of 35 aerodromes); the holds (HM, HA, HF) are not read; a job of the launcher, not of the build of the base.',
+      'Die Verfahren Deutschlands (SID, STAR, Anflüge, Datensatz „ED Procedure“: 1 939 Verfahren von 35 Plätzen); die Warteverfahren (HM, HA, HF) werden nicht gelesen; eine Aufgabe des Starters, nicht des Aufbaus der Basis.',
+      'Los procedimientos de Alemania (SID, STAR, aproximaciones, conjunto «ED Procedure»: 1 939 procedimientos de 35 aeródromos); las esperas (HM, HA, HF) no se leen; una tarea del lanzador, no de la construcción de la base.'
     ],
     pub: 'DFS Deutsche Flugsicherung',
-    credit: ['Source : DFS (protégé par le droit d’auteur, licence de la DFS demandée)',
-      'Source: DFS (copyrighted, DFS licence requested)', 'Quelle: DFS (urheberrechtlich geschützt, DFS-Lizenz angefragt)',
-      'Fuente: DFS (protegido por derechos de autor, licencia de la DFS solicitada)'
+    credit: ['Source : DFS Deutsche Flugsicherung, CC BY 4.0', 'Source: DFS Deutsche Flugsicherung, CC BY 4.0',
+      'Quelle: DFS Deutsche Flugsicherung, CC BY 4.0', 'Fuente: DFS Deutsche Flugsicherung, CC BY 4.0'
     ],
-    date: '2026-10-25',
+    date: '2026-11-19',
     localOnly: false,
-    lic: ['Protégé par le droit d’auteur (licence de la DFS)', 'Copyrighted (DFS licence)',
-      'Urheberrechtlich geschützt (Lizenz der DFS)',
-      'Protegido por derechos de autor (licencia de la DFS)'
+    lic: ['CC BY 4.0, crédit DFS (page des jeux de la DFS ; dépôt privé)',
+      'CC BY 4.0, credit DFS (DFS datasets page; private repository)',
+      'CC BY 4.0, Quellenangabe DFS (Seite der DFS-Datensätze; privates Repository)',
+      'CC BY 4.0, crédito DFS (página de conjuntos de la DFS; repositorio privado)'
     ]
   }, {
     id: 'eurocontrol_rad',

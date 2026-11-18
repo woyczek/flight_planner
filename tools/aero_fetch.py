@@ -352,13 +352,64 @@ def enaire(data):
     return out, errors
 
 
+DFS_PROC_FILE = re.compile(r'^ED_Procedure_(\d{4}-\d{2}-\d{2})_(\d{4}-\d{2}-\d{2})_[a-z]+\.xml\Z', re.A)
+DFS_PROC_LIMIT = 120 * 1024 * 1024      # le jeu « ED Procedure » fait 83 Mo (29 oct. 2026) : un plafond de téléchargement POSÉ EXPLICITEMENT (Sécurisation), pas le défaut de 200 Mo
+
+
+def dfs_procedure(data):
+    """Le jeu « ED Procedure » de la DFS (SID, STAR, approches ; AIXM 5.1 ; 83 Mo ; DFS lot 3) : { path, effective (date d'entrée en vigueur, AAAA-MM-JJ), bytes, unchanged } ou { error } ; l'amendement en vigueur (n° 0), la somme SHA-512 des
+    métadonnées vérifiée AVANT toute écriture, le fichier sous un nom FIXE `data/local/dfs/dfs_ED_Procedure.xml` (ni servi ni synchronisé : la construction de la base ne le lit pas, il fait 83 Mo) ; le nom du fichier du serveur n'est jamais un chemin."""
+    import hashlib
+    try:
+        meta, bad = safe_json.loads(get(DFS).decode('utf-8'))
+        if bad:
+            raise ValueError('métadonnées illisibles')
+    except (OSError, ValueError) as e:
+        return {'error': f'DFS : {e}'}
+
+    def leaves(items):
+        for it in items if isinstance(items, list) else []:
+            if isinstance(it, dict) and it.get('type') == 'group':
+                yield from leaves(it.get('items'))
+            elif isinstance(it, dict):
+                yield it
+    release = None
+    for amdt in meta.get('Amdts', []) if isinstance(meta, dict) else []:
+        if isinstance(amdt, dict) and amdt.get('Amdt') == 0:
+            for leaf in leaves((amdt.get('Metadata') or {}).get('datasets')):
+                if leaf.get('name') == 'ED Procedure':
+                    release = next((r for r in leaf.get('releases') or [] if isinstance(r, dict) and r.get('type') == 'AIXM 5.1'), None)
+    name = release.get('filename') if release else None
+    check = ((release or {}).get('checksum') or {}).get('value')
+    m = DFS_PROC_FILE.fullmatch(name) if isinstance(name, str) else None
+    if not (m and isinstance(check, str) and re.fullmatch(r'[0-9a-f]{128}', check)):
+        return {'error': 'DFS : le jeu « ED Procedure » (AIXM 5.1) n’est pas dans les métadonnées (format changé ?)'}
+    path = os.path.join(data, 'local', 'dfs', 'dfs_ED_Procedure.xml')
+    try:
+        with open(path, 'rb') as f:
+            if hashlib.sha512(f.read()).hexdigest() == check:
+                return {'path': path, 'effective': m.group(2), 'bytes': os.path.getsize(path), 'unchanged': True}
+    except OSError:
+        pass
+    try:
+        body = get(DFS + '0/' + name, limit=DFS_PROC_LIMIT)
+    except OSError as e:
+        return {'error': f'{name} : {e}'}
+    if hashlib.sha512(body).hexdigest() != check:
+        return {'error': f'{name} : la somme SHA-512 ne correspond pas aux métadonnées : rien n’est écrit'}
+    changed = write(path, body)
+    return {'path': path, 'effective': m.group(2), 'bytes': len(body), 'unchanged': not changed}
+
+
 def dfs(data):
     """Les données ATS de l'Allemagne (DFS, jeux « ED Routes », « ED Waypoints », « ED Navaids » et « ED Airspace StrokedBorders », AIXM 5.1, licence CC BY 4.0, crédit DFS) : l'amendement en vigueur (n° 0 des métadonnées), chaque jeu vérifié par sa somme SHA-512, rangé sous un nom STABLE de zones/de/
     (dfs_ED_Routes.xml, dfs_ED_Waypoints.xml, dfs_ED_Navaids.xml, dfs_ED_Airspace.xml : un fichier par jeu, l'amendement suivant le remplace). Les routes n'ont pas de points (leurs extrémités sont nommées par la référence) : les deux autres jeux les donnent (SOG-0462 suite, DFS lot 1 ; Q-0111 : ni les aérodromes, ni les pistes,
     ni les SID/STAR d'ici la réponse de l'utilisateur). La somme du fichier présent est comparée à celle des métadonnées : identique, rien n'est téléchargé (15 Mo pour les routes, 10 pour les points, 4,5 pour les balises, 20 pour les espaces) ; un jeu qui échoue est dit et les autres sont tout de même pris. Un nom de fichier du serveur qui n'a pas la forme attendue pour SON jeu n'est jamais un chemin."""
     import hashlib
     try:
-        meta = json.loads(get(DFS).decode('utf-8'))
+        meta, bad = safe_json.loads(get(DFS).decode('utf-8'))
+        if bad:
+            raise ValueError('métadonnées illisibles')
     except (OSError, ValueError) as e:
         return [], [f'DFS : {e}']
 
