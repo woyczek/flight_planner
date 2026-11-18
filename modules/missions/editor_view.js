@@ -1678,7 +1678,7 @@ function edMapShow(s) {
       }
     };
   if (!slot || !e.mapFeats) return mark();
-  e.mapLook ||= EM.lookOf(s.el);
+  if (e.mapLook?.key !== EM.lookKey()) e.mapLook = EM.lookOf(s.el); // relue seulement si le design a changé de ton (SOG-0468)
   EM.show(slot, e.mapFeats, {
     owner: e,
     dark: e.mapLook.dark,
@@ -2355,7 +2355,6 @@ export function edAfter(s) {
       return EM.editing() ? EM.stop() : undefined;
     }
     edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée
-    s.ed.mapLook = null; // le design a pu changer de ton entre deux dessins
     edMapShow(s);
     edProfile(s); // SOG-0464 : le canvas du profil est neuf à chaque dessin de l'écran
     edPlShow(s); // SOG-0472 : la liste des Lieux reprend sa place, la ligne choisie en vue

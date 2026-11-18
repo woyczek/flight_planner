@@ -77,26 +77,53 @@ export const MAP_CSS = `[data-module="missions"] .ms-atmaphost{width:100%;height
 [data-module="missions"] .ms-atlooksaid{flex:1 1 100%}
 [data-module="missions"] .ms-atlooksaid:empty{display:none}
 `;
-/** Une couleur du design telle que MapLibre la lit (il ne lit pas les variables CSS) : la valeur calculée d'un jeton, lue dans `el`. */
-function token(el, name) {
-  const probe = document.createElement('i');
-  probe.style.cssText = `display:none;color:var(${name})`;
-  el.append(probe);
-  const v = getComputedStyle(probe).color;
-  probe.remove();
-  return v;
+/** Les couleurs du design telles que MapLibre les lit (il ne lit pas les variables CSS) : la valeur calculée de chaque jeton de `names`,
+ *  lue dans `el`, en UN recalcul de style (SOG-0468) — une sonde par jeton, toutes posées ensemble dans une enveloppe, puis lues, puis
+ *  retirées ; un recalcul forcé par jeton coûtait le quart d'un dessin de l'écran. → { jeton: couleur }. */
+function tokens(el, names) {
+  const box = document.createElement('i'),
+    probes = names.map(name => {
+      const probe = document.createElement('i');
+      probe.style.color = `var(${name})`;
+      return probe;
+    });
+  box.style.display = 'none';
+  box.append(...probes);
+  el.append(box);
+  const out = {};
+  names.forEach((name, i) => out[name] = getComputedStyle(probes[i]).color);
+  box.remove();
+  return out;
+}
+
+/** Les jetons que lookOf lit (ceux du design que la carte reprend). */
+const LOOK_TOKENS = ['--sog-chart-bg', '--sog-accent', '--sog-muted', '--sog-bg', '--sog-warn', '--sog-err', '--sog-ok', '--sog-text'];
+
+/** Ce qui fait changer les jetons du design : sa marque, son ton et sa classe sur <html>, le ton de l'appareil (ton « auto »), les
+ *  feuilles de style chargées. Deux dessins de même clé lisent les mêmes couleurs : lookOf n'est refait que si la clé change (SOG-0468). */
+export function lookKey() {
+  const h = document.documentElement;
+  let dark = '';
+  try {
+    dark = String(matchMedia('(prefers-color-scheme: dark)').matches);
+  } catch {
+    /* sans matchMedia : la clé ne dépend pas du ton de l'appareil */
+  }
+  return [h.getAttribute('class'), h.getAttribute('data-design'), h.getAttribute('data-tone'), dark, document.styleSheets.length].join('|');
 }
 
 /** L'allure de la carte, lue du design à l'endroit où le bloc est posé (`el` : un élément du module) : sombre ou non (le fond des
  *  graphiques, comme le module Données), la couleur de chaque sorte de lieu (celles du croquis), du trait et des zones, le fond uni,
  *  les tons de la couche « Espaces ». → { dark, colors: { bg, preview, spaces, tokens } } pour show(). */
 export function lookOf(el) {
-  const t = n => token(el, n),
+  const v = tokens(el, LOOK_TOKENS),
+    t = n => v[n],
     bg = t('--sog-chart-bg'),
     [r, g, b] = (bg.match(/[\d.]+/g) || [255, 255, 255]).slice(0, 3).map(Number),
     accent = t('--sog-accent'),
     muted = t('--sog-muted');
   return {
+    key: lookKey(),
     dark: 0.2126 * r + 0.7152 * g + 0.0722 * b < 110,
     colors: {
       bg,
