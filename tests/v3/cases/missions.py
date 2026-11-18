@@ -1320,6 +1320,105 @@ target: { id: TARGET, name: Cible inventée, lat: 44.2, lon: 1.8, time_on_task_m
 route_order: [ORIGIN, PT1, PT2, TARGET, DESTINATION]
 """
 
+# SOG-0455: the Brief and the Workshop — invented missions: X-901A (a route of 60 NM and a speed in the file: « ≈ 30 min »), X-902A (a
+# duration written, two aircraft), X-903A (a type the type base does not know: no duration)
+_BR_PLACES = ("origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }\ndestination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }\n"
+              "turning_points: [{ id: PT1, name: Col, lat: 45.5, lon: 1.0 }]\nroute_order: [ORIGIN, PT1, DESTINATION]\n")
+_BR_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nmissions:\n'
+              '  - { id: X-901A, family: TESTREG, title: Brief un, folder: X_REG/X-901A, files: [missionX-901A.yaml] }\n'
+              '  - { id: X-902A, family: TESTREG, title: Brief deux, folder: X_REG/X-902A, files: [missionX-902A.yaml] }\n'
+              '  - { id: X-903A, family: TESTREG, title: Brief trois, folder: X_REG/X-903A, files: [missionX-903A.yaml] }\n'],
+             ['missions/X_REG/X-901A/missionX-901A.yaml', 'mission: { id: X-901A, type: TEST }\ntitle: Brief un\nsummary: Un resume.\n' + _BR_PLACES
+              + 'aircraft: [{ type: EC45, callsign: TEST01, cruise_speed_kt: 120 }]\n'],
+             ['missions/X_REG/X-902A/missionX-902A.yaml', 'mission: { id: X-902A, type: TEST }\ntitle: Brief deux\n' + _BR_PLACES
+              + 'timing: { estimated_flight_min: 45, estimated_block_min: 60 }\naircraft: [{ type: EC45, callsign: TEST02 }, { type: EC45, callsign: TEST03 }]\n'],
+             ['missions/X_REG/X-903A/missionX-903A.yaml', 'mission: { id: X-903A, type: TEST }\ntitle: Brief trois\n' + _BR_PLACES
+              + 'aircraft: [{ type: ZZZZ, callsign: TEST04 }]\n']]
+# the pure part (choice.js): the class read through the given classify (never a list of types), rounded to five minutes, nothing unknown
+_BR_PURE_JS = """async () => { const MS = await import('/frame/lib/mission.js'), CH = await import('/modules/missions/choice.js');
+  const base = { mission: { id: 'X-1', type: 'TEST' }, origin: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 }, destination: { name: 'Base Test (XTST)', lat: 45.0, lon: 1.0 },
+    turning_points: [{ id: 'PT1', name: 'Col', lat: 45.5, lon: 1.0 }], route_order: ['ORIGIN', 'PT1', 'DESTINATION'], aircraft: [{ type: 'EC45', callsign: 'T' }] };
+  const m = MS.readMission(base), cls = c => () => ({ category: c });
+  return { helico: CH.durationOf(m, cls('helico')), jet: CH.durationOf(m, cls('jet')), other: CH.durationOf(m, cls('other')),
+    none: CH.durationOf(m, null), threw: CH.durationOf(m, () => { throw new Error('x') }), proto: CH.durationOf(m, cls('__proto__')),
+    written: CH.durationOf(MS.readMission({ ...base, timing: { estimated_flight_min: 47 } }), null),
+    hm: [CH.hm(45), CH.hm(60), CH.hm(80), CH.hm(605)], dep: CH.depIcao(m), ac: CH.aircraftOf(m),
+    theatre: [CH.theatreOf({ theatre: '  Alpes\\u0007  du   nord ' }), CH.theatreOf({ theatre: 'x'.repeat(90) }).length,
+      CH.theatreOf({ country: 'FR' }, { region: c => c === 'FR' ? 'France' : '' }), CH.theatreOf({ country: 'fr1' }, { adState: 'Etat Test' }),
+      CH.theatreOf({}, {}), CH.theatreOf({ country: 'FR' }, { region: () => { throw new Error('x') }, adState: 'Etat Test' })] } }"""
+
+
+@case('N33', 'Missions › the Brief and the Workshop: each registry line says « duration · aircraft · theatre » under its title (what the file '
+      'says; a missing duration computed on the route given and marked « ≈ », with its legend; nothing unknown shown); unfolded, « Brief » '
+      'first, then « Atelier », « Dupliquer » and « ⋯ » (« Corriger la ligne du registre », « Retirer du registre »); « Brief » opens the '
+      'sheet with the same line under its title, « Préparer ce vol » first, « Atelier », and « Retour au registre » gives the registry back '
+      'at the same line, unfolded and in view; opened from the list, the sheet has no « Atelier »', 'N', tags=('missions',),
+      designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0455 (the user, 18 Nov 2026: « un utilisateur qui veut une mission a un brief d\'abord, pas une carte » ; « pour choisir, on '
+      'a besoin d\'une durée estimée, d\'un nombre d\'appareils, d\'un théâtre »; the ergonomist: the mock-up modules/missions/maquette/'
+      'brief.html, accepted; the duration at a typical speed of the CLASS read in a data of the type, never a list of types; the theatre: '
+      'the file, else the State of the departure aerodrome in AeroDB); invented missions')
+def n33(c):
+    r = c.js(_BR_PURE_JS)
+    c.eq([r['helico'], r['jet'], r['other'], r['none'], r['threw'], r['proto']],
+         [{'min': 30, 'est': 'class'}, {'min': 10, 'est': 'class'}, None, None, None, None],
+         'a duration at the typical speed of the class (60 NM: 30 min by helicopter, 10 min by jet, rounded to five), nothing for a class '
+         'unknown, without the service, when it throws or for a hostile class', what='class')
+    c.eq([r['written'], r['hm'], r['dep'], r['ac']], [{'min': 47, 'est': ''}, ['45 min', '1 h', '1 h 20', '10 h 05'], 'XTST', 1],
+         'a written duration as it is; « 45 min », « 1 h », « 1 h 20 »; the departure aerodrome; one aircraft', what='written')
+    c.eq(r['theatre'], ['Alpes du nord', 40, 'France', 'Etat Test', '', 'Etat Test'],
+         'the theatre of the file cleaned and bounded; else the country named; else the State of the aerodrome; else nothing', what='theatre')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    reg_open(c, _BR_TEXTS)
+    ch = lambda rid: c.js(f"""(() => {{ const x = document.querySelector('{R} [data-rowid="{rid}"] summary [data-choice]');
+      return x ? [x.querySelector('[data-dur]')?.dataset.dur || null, norm(x.querySelector('[data-dur]')?.textContent || ''), x.querySelector('[data-ac]')?.dataset.ac || null,
+        !!x.querySelector('[data-theatre]')] : null }})()""")
+    one = ch('X-901A')
+    c.eq([one[0], one[2], one[3]], ['file', '1', False], 'X-901A: a duration computed at the speed of the file, one aircraft, no theatre known',
+         what='X-901A')
+    c.ok(one[1].startswith('≈') and '30' in one[1], one, '« ≈ 30 min » under the title')
+    two = ch('X-902A')
+    c.eq([two[0], two[2]], ['written', '2'], 'X-902A: the duration written, two aircraft', what='X-902A')
+    c.ok('45' in two[1] and '≈' not in two[1], two, '« 45 min », without « ≈ »')
+    c.eq(ch('X-903A'), [None, '', '1', False], 'X-903A: a type the base does not know — no duration, one aircraft', what='X-903A')
+    c.ok(c.count(f'{R} [data-choicelegend]') == 1, '', 'the legend says « ≈ » once under the lines')
+    c.tap(f'{R} [data-rowid="X-901A"] > summary')
+    gest = c.js(f"[...document.querySelector('{R} [data-rowid=\"X-901A\"] .ms-rgest').children].map(x => x.dataset.do || (x.matches('details') ? 'more' : x.tagName))")
+    c.eq(gest, ['regbrief', 'edmodify', 'eddup', 'more'], '« Brief » first, then « Atelier », « Dupliquer », « ⋯ »', what='gestures')
+    c.ok(c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"] [data-do=regbrief]').classList.contains('primary')"), '', '« Brief » is the primary gesture')
+    c.ok(not c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"] [data-do=regedit]').checkVisibility()"), '', '« Corriger » folded behind « ⋯ »')
+    c.tap(f'{R} [data-rowid="X-901A"] .ms-rmore > summary')
+    c.until(f"!!document.querySelector('{R} [data-rowid=\"X-901A\"] [data-do=regedit]')?.checkVisibility()", what='« ⋯ » shows « Corriger la ligne du registre »')
+    c.eq(norm(c.text(f'{R} [data-rowid="X-901A"] [data-do=regedit]')), norm(row(c, 'regEdit')), '« Corriger la ligne du registre »', what='correct')
+    c.js(f"document.querySelector('{R} [data-rowid=\"X-901A\"]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'N33_{c.design}_390_{c.lang}_registry.png')
+    c.tap(f'{R} [data-rowid="X-901A"] [data-do=regbrief]')
+    S = f'{M} [data-pane=mission][data-id="X-901A"]'
+    c.until(f"!!document.querySelector('{S} [data-first] [data-choice] [data-dur]')", timeout=10000, what='the Brief with its line of choice')
+    order = c.js(f"[...document.querySelector('{S} [data-first]').children].map(x => x.matches('h2') ? 'title' : x.matches('[data-choice]') ? 'choice' : x.matches('[data-summary]') ? 'summary' : x.matches('.ms-actions') ? 'actions' : '')"
+                 ".filter(Boolean)")
+    c.eq(order[:3], ['title', 'choice', 'summary'], 'the Brief: the title, the line of choice, the summary', what='order')
+    acts = c.js(f"[...document.querySelectorAll('{S} .ms-actions > *')].map(x => x.dataset.do)")
+    c.eq([acts[0], 'edmodify' in acts, acts[-1]], ['prepare', True, 'back'], '« Préparer ce vol » first, « Atelier » offered, then « Retour »', what='actions')
+    c.eq(norm(c.text(f'{S} .ms-actions [data-do=back]')), norm(row(c, 'backToReg')), '« Retour au registre »', what='back')
+    # « Préparer ce vol » in reach on the phone, without scrolling the whole sheet
+    c.ok(c.js(f"(() => {{ const b = document.querySelector('{S} [data-do=prepare]').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight }})()"),
+         '', '« Préparer ce vol » in view at 390')
+    c.shot(f'N33_{c.design}_390_{c.lang}_brief.png')
+    c.tap(f'{S} .ms-actions [data-do=back]')
+    c.until(f"!!document.querySelector('{R} [data-rowid=\"X-901A\"]')?.open", timeout=8000, what='the registry given back, the line unfolded')
+    c.ok(c.js(f"(() => {{ const b = document.querySelector('{R} [data-rowid=\"X-901A\"]').getBoundingClientRect(); return b.top < innerHeight && b.bottom > 0 }})()"),
+         '', 'the line in view')
+    # from the list: no « Atelier » in the sheet
+    c.tap(f'{R} [data-do="regback"]')
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-901A\"]')", timeout=10000, what='the list')
+    c.tap(f'{M} [data-list] [data-id="X-901A"]')
+    c.until(f"!!document.querySelector('{S} [data-first] [data-choice]')", timeout=10000, what='the sheet from the list')
+    c.eq(c.count(f'{S} .ms-actions [data-do=edmodify]'), 0, 'opened from the list: no « Atelier »', what='no workshop')
+    c.page.set_viewport_size({'width': 1280, 'height': 900})
+    c.shot(f'N33_{c.design}_1280_{c.lang}_brief.png')
+    c.js(_REG_CLEAR)
+
 
 @case('N40', 'Time on area per point: read from the mission (a range counted at its maximum), said in the quote one line per point, changed by the pilot in the list of points; an unread duration key said',
       'N', tags=('missions', 'fuel'), designs=('standard',), screens=False, langs4=False,
@@ -1517,6 +1616,7 @@ def n29(c):
     c.page.fill(f'{R} [data-k=rq]', 'X-701A')
     c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-701A found')
     c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] summary')  # the line unfolded (SOG-0286)
+    c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] .ms-rmore > summary')  # SOG-0455: « Corriger la ligne du registre » behind « ⋯ »
     c.tap(f'{R} [data-reglist] [data-rowid="X-701A"] [data-do="regedit"]')
     c.until(f"!!document.querySelector('{R} [data-redit]')", what='the form of the line')
     c.page.fill(f'{R} [data-redit] [data-k=rtitle]', 'Titre corrigé')
@@ -1541,6 +1641,7 @@ def n29(c):
     c.page.fill(f'{R} [data-k=rq]', 'quatre')
     c.until(f"document.querySelectorAll('{R} [data-reglist] [data-rowid]').length === 1", what='X-704A found')
     c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] summary')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] .ms-rmore > summary')  # SOG-0455: « Retirer du registre » behind « ⋯ »
     c.tap(f'{R} [data-reglist] [data-rowid="X-704A"] [data-do="regremove"]')
     c.until("!!document.querySelector('.f-modal [data-ok]')", what='asks before removing')
     c.ok(norm(row(c, 'regRemoveAsk').replace('{id}', 'X-704A')) in norm(c.text('.f-modal') or ''), '', 'the question says the file stays')
@@ -1712,7 +1813,7 @@ def n43(c):
         c.js(f"document.querySelector('{R}').scrollIntoView({{block: 'start'}})")
         c.shot(f'N43_{c.design}_{w}_{c.lang}_delivered.png')
         c.tap(f'{rows} summary')
-        c.until(f"!!document.querySelector('{rows} [data-do=regedit]')?.checkVisibility()", what='the unfolded line shows « Corriger »')
+        c.until(f"!!document.querySelector('{rows} [data-do=regbrief]')?.checkVisibility()", what='the unfolded line shows « Brief » (SOG-0455)')
         c.ok('missions/X_REG/' in c.text(f'{rows}'), '', f'{w} px: the path when unfolded')
         c.until(f"!!document.querySelector('{R} select[data-k=rfam]')", what='the family filter at the head')
         c.page.select_option(f'{R} select[data-k=rfam]', 'TESTREG')

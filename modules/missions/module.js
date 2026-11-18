@@ -9,6 +9,7 @@ import * as ADD from './add.js'; // « Ajouter des missions » : la lecture des 
 import * as MOVE from './move.js';
 import * as RG from './registry.js'; // l'écran « Registre » : le calcul pur (SOG-0021)
 import * as SE from './search.js'; // la recherche dans le contenu des missions (SOG-0288) : le calcul pur
+import * as CH from './choice.js'; // la ligne de choix « durée · aéronefs · théâtre » (SOG-0455) : le calcul pur
 import {
   init as edInit,
   edAfter,
@@ -36,11 +37,13 @@ export const meta = {
   apps: ['company'], // l'application Compagnie (?app=company), seule (décision de l'utilisateur, 1er nov. 2026)
   level: 1,
   title: ['Missions', 'Missions', 'Missionen', 'Misiones'],
-  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'editor.js', 'editor_texts.js', 'editor_view.js', 'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
+  files: ['add.js', 'move.js', 'registry.js', 'search.js', 'choice.js', 'editor.js', 'editor_texts.js', 'editor_view.js',
+    'editor_drawers.js', 'editor_trial.js', 'editor_map.js', 'assigned.js',
     'drawers.js', 'drawers_view.js', '../../frame/lib/time.js', '../../frame/lib/clipboard.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/crossing.js',
-    '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0', '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
+    '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
+    '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
     '../../frame/lib/js-yaml.min.js',
     '../../frame/lib/mission_categories.js',
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js', '../report/vocab.js'
@@ -110,6 +113,24 @@ const STYLE = `[data-module="missions"] .ms-detail{display:none}
 [data-module="missions"] .ms-rsign[data-kind=ok]{color:var(--sog-ok)}
 [data-module="missions"] .ms-rsign[data-kind=info]{color:inherit}
 [data-module="missions"] .ms-rbody{padding:0 .75em .6em}
+/* SOG-0455 : la ligne de choix « durée · aéronefs · théâtre » — chaque morceau insécable, séparés par un point médian */
+[data-module="missions"] .ms-choice{display:flex;flex-wrap:wrap;column-gap:.45em;margin:.1em 0 .3em}
+[data-module="missions"] .ms-choice>span{white-space:nowrap}
+[data-module="missions"] .ms-choice>span+span::before{content:"·";margin-right:.45em;color:var(--sog-muted,#59636e)}
+[data-module="missions"] .ms-rrow>summary>.ms-choice{display:flex;font-size:var(--sog-size-s);margin:0}
+[data-module="missions"] .ms-rrow>summary[data-ch]::before{grid-row:span 3}
+[data-module="missions"] [data-choicelegend]{font-size:var(--sog-size-s);margin:.4em .75em}
+/* les gestes d'une ligne : « Brief » d'abord, « Atelier », « Dupliquer », puis « ⋯ » (corriger la ligne, la retirer) */
+[data-module="missions"] .ms-rgest{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
+[data-module="missions"] .ms-rgest button + button{margin-left:0}
+[data-module="missions"] .ms-rgest>button{padding-left:12px;padding-right:12px}
+[data-module="missions"] .ms-rmore{position:relative}
+[data-module="missions"] .ms-rmore>summary{list-style:none;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border:1px solid var(--sog-border);border-radius:var(--sog-radius-s);cursor:pointer}
+[data-module="missions"] .ms-rmore>summary::-webkit-details-marker{display:none}
+[data-module="missions"] .ms-rmore>summary::before{content:none;display:none} /* un bouton, pas un repli : sans le chevron des replis du cadre */
+[data-module="missions"] .ms-rmore[open]>div{display:flex;flex-direction:column;align-items:stretch;gap:4px;margin-top:4px}
+/* « Préparer ce vol » reste l'action première du Brief : la barre des gestes colle au bas de l'écran tant que la première page défile */
+[data-module="missions"] .ms-first>.ms-actions{position:sticky;bottom:var(--f-tab-space,0px);background:var(--sog-bg,#fff);padding:6px 0;z-index:1}
 [data-module="missions"] .ms-rbody>span{display:block;margin:.15em 0}
 [data-module="missions"] .ms-rrow button + button{margin-left:.5em} /* « Corriger » et « Retirer du registre » ne se touchent pas (retouche de N28) */
 [data-module="missions"] .ms-regbar{align-items:center}
@@ -487,7 +508,30 @@ const TX = {
     'Das Register hat sich inzwischen geändert: es wird neu gelesen, bitte erneut versuchen.',
     'El registro cambió entretanto: se vuelve a leer, inténtelo de nuevo.'
   ],
-  regEdit: ['Corriger', 'Correct', 'Korrigieren', 'Corregir'],
+  regEdit: ['Corriger la ligne du registre', 'Correct the registry line', 'Registerzeile korrigieren', 'Corregir la línea del registro'],
+  // SOG-0455 : les deux vues d'une mission, et la ligne de choix
+  brief: ['Brief', 'Brief', 'Briefing', 'Briefing'],
+  atelier: ['Atelier', 'Workshop', 'Werkstatt', 'Taller'],
+  regMoreGest: ['Autres gestes', 'More actions', 'Weitere Aktionen', 'Más acciones'],
+  backToReg: ['Retour au registre', 'Back to the registry', 'Zurück zum Register', 'Volver al registro'],
+  acCount1: ['{n} aéronef', '{n} aircraft', '{n} Luftfahrzeug', '{n} aeronave'],
+  acCount: ['{n} aéronefs', '{n} aircraft', '{n} Luftfahrzeuge', '{n} aeronaves'],
+  durClass: ['Durée estimée sur la route fournie, à vitesse type', 'Duration estimated on the route given, at a typical speed',
+    'Dauer geschätzt auf der angegebenen Route, mit typischer Geschwindigkeit',
+    'Duración estimada sobre la ruta dada, a velocidad típica'
+  ],
+  durFile: ['Durée estimée sur la route fournie, à la vitesse du fichier',
+    'Duration estimated on the route given, at the speed in the file',
+    'Dauer geschätzt auf der angegebenen Route, mit der Geschwindigkeit der Datei',
+    'Duración estimada sobre la ruta dada, a la velocidad del archivo'
+  ],
+  durWritten: ['Durée écrite dans le fichier', 'Duration written in the file', 'In der Datei angegebene Dauer',
+    'Duración escrita en el archivo'
+  ],
+  choiceLegend: ['≈ : durée estimée sur la route fournie, à vitesse type', '≈: duration estimated on the route given, at a typical speed',
+    '≈: Dauer geschätzt auf der angegebenen Route, mit typischer Geschwindigkeit',
+    '≈: duración estimada sobre la ruta dada, a velocidad típica'
+  ],
   // l'éditeur de missions (SOG-0287, maquette validée le 13 nov. : modules/missions/maquette/)
   edCreate: ['Créer une mission', 'Create a mission', 'Mission anlegen', 'Crear una misión'],
   edModify: ['Modifier', 'Edit', 'Bearbeiten', 'Modificar'],
@@ -1049,6 +1093,13 @@ function draw(s) {
     notJudged: k => !!MS.notJudgedYet?.(k) // la règle du lecteur (frame/lib/mission.js) : une clé que le vol ne sait pas encore juger
   });
   else DW.stop();
+  // SOG-0455 : revenu du Brief au registre — la ligne d'où l'on venait, ramenée sous les yeux
+  if (!s.open && !s.ed && s.reg?.scrollBack) {
+    s.reg.scrollBack = false;
+    s.el.querySelector(`.ms-rrow[data-rid="${s.reg.back}"]`)?.scrollIntoView?.({
+      block: 'center'
+    });
+  }
   edAfter(s); // SOG-0444, lot P2 : la carte de l'atelier, reposée après chaque dessin (retirée hors de l'atelier)
 }
 
@@ -1095,6 +1146,82 @@ function resultsHtml(s) {
   return `<p class="f-muted" data-count${s.q && s.idx?.ready ? ' data-indexed' : ''}>${esc(s.tt(one(s, hits.length) ? TX.count1 : TX.count, { n: hits.length }))}</p>${unreadHtml(s, s.q)}
     <div class="f-list" data-list>${hits.length ? body : s.tree && !s.rows.some(r => playable(s, r)) ? `<p class="f-warn" data-noplayable>${esc(s.tt(TX.noPlayable))}</p>` : `<p class="f-muted">${esc(s.tt(TX.noHit))}</p>`}</div>
     ${hits.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="more">${esc(s.tt(TX.more, { n: hits.length - shown.length }))}</button>` : ''}`;
+}
+
+// ---------------------------------------------------------------- la ligne de choix (SOG-0455)
+const LANGS = ['fr', 'en', 'de', 'es'];
+/** Les deux services de la ligne de choix, chargés une fois et sans bloquer le dessin : la classe d'un type (aerodb.aircraft().classify :
+ *  la description OACI du type) et l'État d'un terrain (aerodb.suggest : le pays de sa zone) ; quand l'un arrive, l'écran se complète. */
+function choiceKit(s) {
+  if (s.kit) return s.kit;
+  const kit = s.kit = {
+    classify: null,
+    state: new Map(), // code OACI → nom de l'État ('' : inconnu), dans la langue de l'écran
+    lang: s.ctx.lang?.() || 'fr'
+  };
+  Promise.resolve().then(() => s.ctx.aerodb?.aircraft?.()).then(A => {
+    if (S !== s || s.kit !== kit || typeof A?.classify !== 'function') return;
+    kit.classify = t => A.classify(t);
+    kitRedraw(s);
+  }).catch(() => {});
+  return kit;
+}
+/** L'État d'un terrain (aerodb), demandé une fois par code ; '' tant qu'il n'est pas connu (ou jamais, pour un terrain inconnu). */
+function adStateOf(s, kit, icao) {
+  if (!icao) return '';
+  if (kit.state.has(icao)) return kit.state.get(icao);
+  kit.state.set(icao, '');
+  const suggest = s.ctx.aerodb?.suggest;
+  if (typeof suggest === 'function') Promise.resolve().then(() => suggest.call(s.ctx.aerodb, icao, {
+    n: 3,
+    lang: Math.max(0, LANGS.indexOf(kit.lang))
+  })).then(list => {
+    const hit = (Array.isArray(list) ? list : []).find(x => x?.code === icao);
+    const name = typeof hit?.country === 'string' && hit.country !== hit.zone ? hit.country : '';
+    if (S !== s || s.kit !== kit || !name) return;
+    kit.state.set(icao, name);
+    kitRedraw(s);
+  }).catch(() => {});
+  return '';
+}
+/** Le nom d'un pays (code ISO) par le navigateur ; '' s'il ne le connaît pas. */
+function regionName(lang, code) {
+  try {
+    const n = new Intl.DisplayNames([lang], {
+      type: 'region'
+    }).of(code);
+    return n && n !== code ? n : '';
+  } catch {
+    return '';
+  }
+}
+/** Un service arrivé : la fiche ou le registre redessinés une fois (regroupés) ; pendant une frappe au registre, ses lignes seules. */
+function kitRedraw(s) {
+  if (s.kitTimer) return;
+  s.kitTimer = setTimeout(() => {
+    s.kitTimer = null;
+    if (S !== s || s.ed || !(s.open || s.reg)) return;
+    const typing = s.el.contains(document.activeElement) && document.activeElement?.matches?.('input, textarea, select');
+    const box = !s.open && s.reg ? s.el.querySelector('[data-regrows]') : null;
+    if (typing && box) box.innerHTML = regListHtml(s);
+    else if (!typing) draw(s);
+  }, 80);
+}
+/** La ligne de choix d'une mission lue (voir choice.js) : « ≈ 1 h 20 · 1 aéronef · métropole » ; '' quand rien n'est connu. */
+function choiceHtml(s, m) {
+  const kit = choiceKit(s),
+    d = CH.durationOf(m, kit.classify),
+    n = CH.aircraftOf(m),
+    th = CH.theatreOf(m, {
+      region: c => regionName(kit.lang, c),
+      adState: adStateOf(s, kit, CH.depIcao(m))
+    }),
+    parts = [
+      d ? `<span data-dur="${d.est || 'written'}" title="${esc(s.tt(d.est === 'class' ? TX.durClass : d.est === 'file' ? TX.durFile : TX.durWritten))}">${d.est ? '≈ ' : ''}${esc(CH.hm(d.min))}</span>` : '',
+      n ? `<span data-ac="${n}">${esc(s.tt(one(s, n) ? TX.acCount1 : TX.acCount, { n }))}</span>` : '',
+      th ? `<span data-theatre>${esc(th)}</span>` : ''
+    ].filter(Boolean);
+  return parts.length ? `<span class="ms-choice" data-choice>${parts.join('')}</span>` : '';
 }
 
 /** Le chemin du fichier d'une ligne du registre (« missions/<dossier>/<fichier> ») ; '' sans dossier ou fichier sûrs. */
@@ -1273,6 +1400,7 @@ function firstHtml(s, r, m, drawn, why) {
   // la famille : son sigle en gras puis son nom long (SOG-0187, comme au compte rendu et dans la liste ; familyParts)
   return `<h2><b>${esc(r.id)}</b> ${esc(m?.title || r.title)} <span class="f-muted ms-fam" data-family-of="${esc(r.family)}">${famHtml(s, r.family)}</span>${drawn ? ` <span class="f-badge" data-kind="accent" data-drawn>${esc(s.tt(TX.drawn))}</span>` : ''}</h2>
     ${kindLine.length || flownBadge ? `<p class="f-muted" data-cat>${esc(kindLine.join(' · '))}${kindLine.length && flownBadge ? ' ' : ''}${flownBadge}</p>` : ''}
+    ${m ? choiceHtml(s, m) : ''}
     ${s.co?.filter ? coHtml(s, r) : ''}
     ${m?.summary ? `<div class="ms-summary" data-summary><h3>${esc(s.tt(TX.sumTitle))}</h3><p data-sumtext>${esc(sumCut(m.summary))}</p>${m.summary.length > SUM_MAX ? `<button type="button" class="f-linkbtn" data-do="detail" data-readmore>${esc(s.tt(TX.readMore))}</button>` : ''}</div>` : ''}
     ${m ? risks.length ? `<div data-risks><h3>${esc(s.tt(TX.risks))}</h3><ul class="ms-lines">${risks.slice(0, 3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul>${risks.length > 3 ? `<details class="ms-more" data-riskmore><summary class="f-muted">${esc(s.tt(TX.more, { n: risks.length - 3 }))}</summary><ul class="ms-lines">${risks.slice(3).map(x => `<li data-risk>${esc(x.hazard)}${x.mitigation ? ` → ${esc(x.mitigation)}` : ''}</li>`).join('')}</ul></details>` : ''}</div>` :
@@ -1281,7 +1409,7 @@ function firstHtml(s, r, m, drawn, why) {
     ${zones.length ? `<p data-zones>${esc(s.tt(TX.zonesCount, { n: zones.length }))} : ${esc(zones.slice(0, 7).map(z => [z.id, z.name].filter(Boolean).join(' ')).join(', '))}${zones.length > 7 ? '…' : ''}</p>` : ''}
     ${m?.drawers?.length ? '<section class="ms-drawers" data-drawers hidden></section>' : '' /* SOG-0441 : la section « Tiroirs », peinte par drawers_view.js */}
     ${why}
-    <div class="f-row ms-actions"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(TX.back))}</button></div>`;
+    <div class="f-row ms-actions"><a class="f-btn primary" data-do="prepare" href="#fuel?mission=${encodeURIComponent(r.id)}">${esc(s.tt(TX.prepare))}</a>${m ? `<button type="button" class="ms-todetail" data-do="detail">${esc(s.tt(TX.detail))}</button>` : ''}${drawn ? `<button type="button" data-do="draw">${esc(s.tt(TX.drawAgain))}</button>` : ''}${s.open?.fromReg != null && s.reg ? `<button type="button" data-do="edmodify" data-rid="${s.open.fromReg}">${esc(s.tt(TX.atelier))}</button>` : ''}<button type="button" data-do="back">${esc(s.tt(s.open?.fromReg != null && s.reg ? TX.backToReg : TX.back))}</button></div>`;
 }
 /** Une adresse de la Carte pour cette mission (l'application Pilote : la Carte n'est pas dans Compagnie) ; `extra` : map, zone. */
 const mapHref = (r, extra) => `?app=pilot#maps?mission=${encodeURIComponent(r.id)}${Object.entries(extra).filter(([, v]) => v).map(([k, v]) => `&${k}=${encodeURIComponent(v)}`).join('')}`;
@@ -1336,7 +1464,7 @@ async function legacyPngs(s) {
 
 /** Ouvre une mission : son fichier lu (le registre suffit s'il ne vient pas, la cause dite) ; un fichier en retard est repris
  *  à son arrivée si la mission est encore ouverte. */
-async function openMission(s, row, drawn = false) {
+async function openMission(s, row, drawn = false, fromReg = null) {
   // un chemin que le registre donnait pas sûr (readRegistry l'a vidé) : jamais lu, dit
   const got = row.folder && row.file ? await yamlFile(s.ctx, `missions/${row.folder}/${row.file}`) : {
     why: 'unreadable',
@@ -1358,6 +1486,7 @@ async function openMission(s, row, drawn = false) {
       mission,
       drawn,
       pushed,
+      fromReg, // SOG-0455 : la place de la ligne du registre d'où le Brief est ouvert (« Retour » y ramène, « Atelier » y est offert)
       why: g.why || (mission ? '' : 'unreadable'), // un YAML lu sans mission.id ni mission.type : illisible, sans autre message
       err: g.err || ''
     };
@@ -1751,6 +1880,7 @@ async function regLoad(s) {
   r.found = [];
   r.plan = null;
   r.edit = null;
+  r.mis = new Map(); // SOG-0455 : place de la ligne → la mission lue (sa partie publique), pour la ligne de choix
   r.checking = true;
   draw(s);
   const set = new Set(await Promise.resolve().then(() => s.ctx.data.list('missions/')).catch(() => null) || []);
@@ -1776,8 +1906,14 @@ async function regLoad(s) {
       const path = j.e ? RG.pathOf(j.e.row) : j.p;
       let f = await yamlFile(s.ctx, path);
       if (f.why === 'late') f = await f.later;
-      if (j.e) r.status.set(j.e.idx, f.why === 'missing' ? 'missing' : f.doc && MS.readMission(f.doc) ? 'ok' : 'unreadable');
-      else {
+      if (j.e) {
+        const m = f.doc ? MS.readMission(f.doc) : null;
+        r.status.set(j.e.idx, f.why === 'missing' ? 'missing' : m ? 'ok' : 'unreadable');
+        // la partie publique seule (pilotView, aucun tiroir ouvert) : la ligne de choix ne dit rien d'un tiroir fermé
+        if (m) r.mis.set(j.e.idx, MS.pilotView(m, [], {
+          mine: false
+        }) || m);
+      } else {
         const entry = f.doc ? RG.entryOfMission(f.doc, path, undefined, RG.seriesRows(r.lines)) : null; // SOG-0036 : sa série
         if (entry && !ids.has(entry.id)) {
           ids.add(entry.id);
@@ -1856,7 +1992,7 @@ const SIGN = {
 
 /** La ligne repliée d'une mission (le modèle du tableau de la V2, SOG-0286) : le signe d'état, l'identifiant, le titre ; puis famille ·
  *  série et origine → destination. Deux lignes de texte au plus au téléphone, une seule sur un écran large. */
-function regSumHtml(s, k, word, id, title, fam, series, from, to, warn, where = '') {
+function regSumHtml(s, k, word, id, title, fam, series, from, to, warn, where = '', choice = '') {
   const kind = warn ? 'warn' : k === 'ok' ? 'ok' : k === 'checking' || k === 'notread' ? 'info' : 'warn',
     has = v => v !== undefined && v !== null && v !== '',
     second = [
@@ -1865,7 +2001,7 @@ function regSumHtml(s, k, word, id, title, fam, series, from, to, warn, where = 
     ].filter(Boolean).join(' · ');
   // l'identifiant raccourci à l'AFFICHAGE seul (12 signes, entier en infobulle) : l'identité garde ses 40 signes (audit 176)
   const shown = id.length > 12 ? `${id.slice(0, 11)}…` : id;
-  return `<summary><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b title="${esc(id)}">${esc(shown)}</b> ${esc(title)}</span><span class="f-muted">${esc(second)}${where}</span></summary>`;
+  return `<summary${choice ? ' data-ch' : ''}><span><span class="ms-rsign" data-kind="${kind}" data-rstate="${k}" title="${esc(word)}" aria-label="${esc(word)}">${SIGN[k] && !warn ? SIGN[k] : '!'}</span><b title="${esc(id)}">${esc(shown)}</b> ${esc(title)}</span>${choice}<span class="f-muted">${esc(second)}${where}</span></summary>`;
 }
 
 /** Une ligne du registre : repliée, le signe d'état, l'identifiant, le titre, famille · série, origine → destination ; au dépli, l'état
@@ -1889,8 +2025,8 @@ function regLineHtml(s, e, plan) {
     word = [st, dup ? s.tt(TX.regDup) : '', former ? s.tt(TX.regFormer, {
       f: cut(e.raw.id, 40)
     }) : ''].filter(Boolean).join(' · ');
-  return `<details class="ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"${r.edit === e.idx ? ' open' : ''}>${regSumHtml(s, k, word, row.id, row.title, row.family, e.raw.series, row.originIcao || cut(row.origin, 12), row.destinationIcao || cut(row.destination, 12), dup || former, whereHtml(s, row, r.q))}
-    <div class="ms-rbody"><span>${badges}</span><span class="f-muted">${esc(detail)}</span>${path ? `<span class="f-muted" data-rpath>${esc(path)}</span>` : ''}${r.edit === e.idx ? regEditHtml(s, e) : `<span class="f-row"><button type="button" data-do="edmodify" data-rid="${e.idx}">${esc(s.tt(TX.edModify))}</button><button type="button" data-do="eddup" data-rid="${e.idx}">${esc(s.tt(TX.edDup))}</button><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></span>`}</div></details>`;
+  return `<details class="ms-rrow" data-rid="${e.idx}" data-rowid="${esc(row.id)}"${r.edit === e.idx || r.back === e.idx ? ' open' : ''}>${regSumHtml(s, k, word, row.id, row.title, row.family, e.raw.series, row.originIcao || cut(row.origin, 12), row.destinationIcao || cut(row.destination, 12), dup || former, whereHtml(s, row, r.q), r.mis?.has(e.idx) ? choiceHtml(s, r.mis.get(e.idx)) : '')}
+    <div class="ms-rbody"><span>${badges}</span><span class="f-muted">${esc(detail)}</span>${path ? `<span class="f-muted" data-rpath>${esc(path)}</span>` : ''}${r.edit === e.idx ? regEditHtml(s, e) : `<span class="ms-rgest"><button type="button" class="primary" data-do="regbrief" data-rid="${e.idx}">${esc(s.tt(TX.brief))}</button><button type="button" data-do="edmodify" data-rid="${e.idx}">${esc(s.tt(TX.atelier))}</button><button type="button" data-do="eddup" data-rid="${e.idx}">${esc(s.tt(TX.edDup))}</button><details class="ms-rmore"><summary title="${esc(s.tt(TX.regMoreGest))}" aria-label="${esc(s.tt(TX.regMoreGest))}">⋯</summary><div><button type="button" data-do="regedit" data-rid="${e.idx}">${esc(s.tt(TX.regEdit))}</button><button type="button" data-do="regremove" data-rid="${e.idx}">${esc(s.tt(TX.regRemove))}</button></div></details></span>`}</div></details>`;
 }
 
 /** Le formulaire de correction d'une ligne : titre, série, numéro, opération. */
@@ -1910,8 +2046,11 @@ function regListHtml(s) {
     shown = r.all ? rows : rows.slice(0, REG_ROWS),
     found = f => `<details class="ms-rrow" data-rid="new" data-rowid="${esc(f.entry.id)}">${regSumHtml(s, 'notyet', s.tt(TX.regNotYet), f.entry.id, f.entry.title, f.entry.family, f.entry.series, '', '', false)}
       <div class="ms-rbody"><span><span class="f-badge" data-kind="warn">${esc(s.tt(TX.regNotYet))}</span></span><span class="f-muted">${esc([familyText(f.entry.family, s.ctx.lang?.() || 'fr'), f.entry.operation?.name].filter(Boolean).join(' · '))}</span><span class="f-muted" data-rpath>${esc(f.path)}</span></div></details>`,
-    item = x => x.kind === 'found' ? found(x.f) : regLineHtml(s, x.e, plan);
-  return `${unreadHtml(s, r.q)}<div class="f-list" data-reglist>${rows.length ? shown.map(item).join('') : `<p class="f-muted">${esc(s.tt(TX.regNone))}</p>`}</div>
+    item = x => x.kind === 'found' ? found(x.f) : regLineHtml(s, x.e, plan),
+    lines = rows.length ? shown.map(item).join('') : '';
+  // SOG-0455 : « ≈ » dit une fois sous la liste, dès qu'une ligne montre une durée estimée
+  return `${unreadHtml(s, r.q)}<div class="f-list" data-reglist>${rows.length ? lines : `<p class="f-muted">${esc(s.tt(TX.regNone))}</p>`}</div>
+    ${/data-dur="(class|file)"/.test(lines) ? `<p class="f-muted" data-choicelegend>${esc(s.tt(TX.choiceLegend))}</p>` : ''}
     ${rows.length > shown.length ? `<button type="button" class="f-linkbtn" data-do="regmore">${esc(s.tt(TX.more, { n: rows.length - shown.length }))}</button>` : ''}`;
 }
 
@@ -2046,6 +2185,12 @@ async function regClick(s, b) {
     case 'regmore':
       r.all = true;
       return draw(s);
+    case 'regbrief':
+      // SOG-0455 : le Brief de la mission (sa fiche, par pilotView) ; « Retour » rend le registre à cette ligne
+      if (!line) return;
+      r.back = idx;
+      r.scrollBack = true;
+      return openMission(s, line.row, false, idx);
     case 'regedit':
       r.edit = idx;
       return draw(s);
