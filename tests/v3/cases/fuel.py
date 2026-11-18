@@ -8429,7 +8429,7 @@ def f277(c):
         b = F.message({ ...base, dep: 'LFZZ', arr: 'XH418', altn: 'XH419', routeText: 'LFZZ ZZPTA ZZPTB XH418',
           places: { arr: heli, altn: { name: 'Autre Test' } } }),
         none = F.message({ ...base, dep: 'XH418', arr: 'LFZZ', routeText: 'XH418 ZZPTA ZZPTB LFZZ' });
-      const L = m => m.text.split('\n');
+      const L = m => m.text.split('\\n');
       return { a: [L(a)[2], L(a)[3], L(a)[5], a.errors], b: [L(b)[4], L(b)[5], b.errors], none: none.errors,
         word: [F.placeWord(heli), F.placeWord({ lat: -33.5, lon: -70.25 }), F.placeWord({}), F.placeWord({ name: '<b>x</b>' })] };
     })""")
