@@ -50,8 +50,25 @@ export function worldOf(final) {
     age: num(r.age),
     seconds: num(r.seconds, 1e6),
     reason: typeof r.reason === 'string' && /^[\w-]{1,30}$/.test(r.reason) ? r.reason : '',
-    last: worldLast(r.last)
+    last: worldLast(r.last),
+    auto: worldAuto(r.auto)
   };
+}
+/** SOG-0525 (3) : la tenue à jour que le lanceur fait lui-même (tools/weather_keep.py) : { next (ms), due (la publication est en retard : « next » est la prochaine tentative, sinon le prochain regard), fails } ou null si le lanceur n'en dit rien (ancien lanceur, SOG_NO_WEATHER_AUTO) ; entrée non fiable. */
+export function worldAuto(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const next = Number.isFinite(v.next) && v.next > 0 && v.next < 4e9 ? v.next * 1000 : null;
+  return next === null ? null : {
+    next,
+    due: v.due === true,
+    fails: num(v.fails, 1000) ?? 0
+  };
+}
+/** L'heure locale hh:mm de `at` (ms), ou '' si illisible. */
+export function clockOf(at) {
+  if (!Number.isFinite(at)) return '';
+  const d = new Date(at);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 /** SOG-0525 : la dernière lecture de la NOAA que le lanceur a gardée (data/local/last_results.json, par verbe) : { at (ms), ok, reason, message } ou null ; une entrée d'une autre forme : rien (entrée non fiable). */
 export function worldLast(v) {

@@ -4747,7 +4747,7 @@ def l176(c):
     c.until("!!document.querySelector('[data-set=world] [data-world-last]')", timeout=12000, what='the cause of the last failed read is said')
     c.until("!!document.querySelector('[data-set=world][data-phase=\"\"]')", timeout=8000, what='the row is idle')
     c.js("document.querySelector('[data-set=world]').open = true")
-    c.js("document.querySelector('[data-set=world]').scrollIntoView({block:'start'})")
+    c.page.locator('[data-set=world]').first.scroll_into_view_if_needed()      # the row is below the fold: the scrollIntoView of the page did not move
     c.wait(400)
     c.shot(f'L176_donnees_derniere_lecture_{c.width}.png')
     st['start'] = (429, {'reason': 'too-soon', 'wait': 300})
@@ -4767,6 +4767,55 @@ def l176(c):
     c.shot(f'L176_meteo_apres_lecture_{c.width}.png')
     t = c.js("() => document.querySelector('[data-module=atmosphere] [data-at=wnote]').textContent.replace(/\s+/g, ' ').trim()")
     c.ok(len(t) > 10, t, 'the line of the Meteo screen, with its button « Relire »')
+
+
+@case('L177', 'Données: the synoptic row says that the launcher keeps it up to date by itself and WHEN the next attempt is (late: the next attempt; up to date: the next run expected) — the launcher says it in `auto` (SOG-0525 (3))', 'L', tags=('data',),
+      designs=('standard',), screens=False, night=False,
+      rule='SOG-0525 (3) (the user: need to be sure it ends up updating): the launcher now starts the read by itself (tools/weather_keep.py) and weather/world status says auto { next, due, fails }: the row says it, in the language of the suite, with the clock time (hh:mm, local) of the next attempt when the publication is late, of the next look when it is up to date; nothing when the launcher says nothing (an old launcher, or SOG_NO_WEATHER_AUTO).')
+def l177(c):
+    lang = c.lang
+    WT = lambda key: _trow(key, lang, after='  world: {')
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    old = (now - datetime.timedelta(days=2)).isoformat().replace('+00:00', 'Z')
+    nxt = int(now.timestamp()) + 1800
+    status = _view('done', step='Terminé', result={'ok': True, 'exists': True, 'run': old, 'built': old, 'steps': 25, 'files': 51, 'bytes': 17100000,
+                                                     'auto': {'next': nxt, 'due': True, 'fails': 2, 'reason': 'no-run', 'last_start': nxt - 3600}})
+    st = _launcher(c, [status], verbs=_VERBS + ['weather/world'])
+    cfg, _ = _fixture()
+    _open(c, cfg)
+    _all_open(c)
+    c.until("!!document.querySelector('[data-set=world] [data-world-auto]')", timeout=12000, what='the row says the launcher keeps it up to date')
+    hm = c.js("(s) => { const d = new Date(s * 1000); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }", nxt)
+    t = norm(c.text('[data-world-auto]'))
+    c.ok(hm in t and norm(WT('auto')).split('{t}')[0] in t, f'{t} {hm}', 'late: the launcher says the clock time of its next attempt')
+    c.check_errors()
+
+
+@case('L178', 'SOG-0525 (3) (captures): the synoptic row says the launcher keeps it up to date by itself — late after two failures (next attempt) and up to date (next look) — the delivered state at 390 and 1280 (invented data)', 'L', tags=('data',),
+      designs=('standard',), night=False,
+      rule='SOG-0525 (3): the delivered state, to be read by the relay before the push: the Données row, opened, says « Mise à jour automatique par le lanceur : prochaine tentative à hh:mm » under the cause of the last failed read when the publication is late, and « À jour. Le lanceur relira la NOAA à hh:mm, quand le run suivant sera publié » when it is up to date. Invented data.')
+def l178(c):
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    old = (now - datetime.timedelta(days=2)).isoformat().replace('+00:00', 'Z')
+    cur = now.isoformat().replace('+00:00', 'Z')
+    t0 = int(now.timestamp())
+    late = _view('done', step='Terminé', result={'ok': True, 'exists': True, 'run': old, 'built': old, 'steps': 25, 'files': 51, 'bytes': 17100000,
+                                                   'last': {'ended': t0 - 1200, 'ok': False, 'reason': 'no-run', 'message': 'lecture impossible : HTTP 503'},
+                                                   'auto': {'next': t0 + 1800, 'due': True, 'fails': 2, 'reason': 'no-run', 'last_start': t0 - 1200}})
+    fresh = _view('done', step='Terminé', result={'ok': True, 'exists': True, 'run': cur, 'built': cur, 'steps': 25, 'files': 51, 'bytes': 17100000,
+                                                    'auto': {'next': t0 + 5 * 3600, 'due': False, 'fails': 0}})
+    for name, status in (('en_retard', late), ('a_jour', fresh)):
+        _launcher(c, [status], verbs=_VERBS + ['weather/world'])
+        cfg, _ = _fixture()
+        _open(c, cfg)
+        _all_open(c)
+        c.until("!!document.querySelector('[data-set=world] [data-world-auto]')", timeout=12000, what='the row says the launcher keeps it up to date')
+        c.until("!!document.querySelector('[data-set=world][data-phase=\"\"]')", timeout=8000, what='the row is idle')
+        c.js("document.querySelector('[data-set=world]').open = true")
+        c.page.locator('[data-set=world]').first.scroll_into_view_if_needed()      # the row is below the fold: the scrollIntoView of the page did not move (the first captures of L176 showed the top of the page)
+        c.wait(400)
+        c.shot(f'L178_donnees_{name}_{c.width}.png')
+    c.check_errors()
 
 
 @case('L51', 'Données: without weather/world in regen/verbs the synoptic row is grey with its reason and nothing is sent', 'L', tags=('data',),

@@ -4,7 +4,7 @@ La carte « monde » du module Atmosphère lit des pages publiées par tools/bui
 sur le poste, rien ne lançait l'outil : pas de carte. Un travail le lance.
 
 Un verbe, `weather/world` { action?: 'build' (par défaut) | 'status' } :
-  · `status` : { ok, exists, run, built, step, times: [première, dernière échéance], steps, files, bytes, age } — ce que la publication du poste contient (jamais d'appel réseau) ;
+  · `status` : { ok, exists, run, built, step, times: [première, dernière échéance], steps, files, bytes, age, last?, auto? } — ce que la publication du poste contient (jamais d'appel réseau) ; `auto` : la tenue à jour par le lanceur (tools/weather_keep.py) { next, due, fails, last_start?, reason? } ;
   · `build` : exécute tools/build_world_weather.py (bibliothèque standard ; NOMADS de la NOAA, GFS 1°, sans clé ni quota) vers un dossier de travail, CONTRÔLE ce qu'il a écrit (un index de schéma 1, des fichiers nommés par lui seul, taille et nombre bornés), puis le
     met en place d'un coup dans data/weather/world/ (SOG-0138 : data/local/ n'est servi à personne, hidden() du lanceur ; data/weather/ l'est, et n'est ni dans l'arbre du lanceur, FRAME_SKIP, ni dans git : `weather/` dans data/.gitignore et dans .git/info/exclude, posés ici s'ils manquent ; une publication de plusieurs Mo toutes les six heures n'a rien à faire dans l'historique). L'ancienne publication de data/local/weather/world/ est déplacée une fois, pas reconstruite. La publication d'avant sert de reprise
     (`--keep file://…`) : même run de GFS → rien n'est redemandé à la NOAA. Rend { ok, kept, run, built, times, steps, files, bytes, seconds, reason?, message? } ; reason : 'no-run' (aucun run publié / NOAA injoignable : l'ancienne publication reste), 'invalid' (le dossier produit n'est pas conforme : rien n'est remplacé), 'timeout', 'cancelled', 'failed'.
@@ -23,6 +23,7 @@ TOOLS = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if TOOLS not in sys.path:
     sys.path.insert(0, TOOLS)
 import regen_jobs  # noqa: E402  (le socle : inside, child_env)
+import weather_keep  # noqa: E402  (SOG-0525 (3) : la tenue à jour par le lanceur ; l'état s'en lit ici)
 import low_priority  # noqa: E402  (la priorité BASSE des sous-processus lourds, décidée en un seul endroit : SOG-0437)
 
 SCRIPT = os.path.join(TOOLS, 'build_world_weather.py')
@@ -237,7 +238,8 @@ def run(job, args, ctx):
     if args['action'] == 'status':
         part = _partial(data)
         last = _last(data)
-        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {}), **({'partial': part} if part else {}), **({'last': last} if last else {})}
+        auto = weather_keep.view(data)
+        return {'ok': True, **_summary(dest), **({'migrated': True} if moved else {}), **({'partial': part} if part else {}), **({'last': last} if last else {}), **({'auto': auto} if auto else {})}
     base = os.path.realpath(data)
     parent = os.path.dirname(dest)
     if not regen_jobs.inside(parent, base):

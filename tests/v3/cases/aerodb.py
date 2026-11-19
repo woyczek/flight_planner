@@ -7948,6 +7948,222 @@ def k164(c):
         c.eq((again.get('ok'), again.get('reason')), (False, 'too-soon'), 'and the ten minutes hold: no download chained by repeated presses', what='etapenone holds')
 
 
+@case('K407', 'The launcher keeps the world forecast up to date BY ITSELF (SOG-0525 (3)): one attempt at start and at each new GFS run, after a failure ONE attempt at the end of a growing wait (1 h, 2 h, 3 h at most), a floor kept across restarts, never a burst; a busy launcher is not an attempt; weather/world status says the next one', 'K', static=True,
+      rule='SOG-0525 (3) (the user: need to be sure it ends up updating, launcher first): the launcher never started a GFS read by itself, the page had to press the button, and a countdown with no reason came back. tools/weather_keep.py: decide(now, published_run, state) is pure (due when the published run is older than the run expected 4 h 30 after its hour, or nothing is published; own limit last_start stamped BEFORE the start, floor 30 min, doubled after each failure up to 3 h; a clock that jumped back is clamped); Keeper.tick() starts weather/world through the jobs, writes data/local/weather_auto.json (a restart keeps the wait and a download interrupted is a failure that does not lengthen it), counts a refusal busy as no attempt, opt-out SOG_NO_WEATHER_AUTO=1; weather/world status says auto { next, fails, last_start }. Red before: the module does not exist.')
+def k407(c):
+    import importlib
+    import json
+    import os
+    import sys
+    import tempfile
+    import time
+    tools = str(ROOT / 'tools')
+    if tools not in sys.path:
+        sys.path.insert(0, tools)
+    WK = importlib.import_module('weather_keep')
+    H = 3600
+    R0 = 1800000000 - 1800000000 % 21600      # a GFS run hour (00, 06, 12 or 18 Z)
+    d = WK.decide
+    d0 = d(R0 + 5 * H, None, {})
+    c.ok(d0['go'] is True and d0['due'] is True, str(d0), 'nothing published: an attempt now')
+    d1 = d(R0 + 5 * H, R0 - 6 * H, {})
+    c.ok(d1['go'] is True, str(d1), 'a published run older than the one expected (the run of R0 is out 4 h 30 after its hour): an attempt')
+    d2 = d(R0 + 5 * H, R0, {})
+    c.ok(d2['go'] is False and d2['due'] is False and d2['at'] == R0 + 6 * H + 4 * H + 1800, str(d2), 'the run expected is published: nothing to do, the next look when the next run is out (R0 + 10 h 30)')
+    d3 = d(R0 + 4 * H, R0 - 6 * H, {})
+    c.ok(d3['go'] is False and d3['due'] is False and d3['at'] == R0 + 4 * H + 1800, str(d3), 'four hours after the hour of a run it is not out yet: the run before is the one expected, and it is published')
+    now = R0 + 5 * H
+    f0 = d(now + 10, R0 - 6 * H, {'last_start': now, 'fails': 0})
+    f1 = d(now + 10, R0 - 6 * H, {'last_start': now, 'fails': 1})
+    f2 = d(now + 10, R0 - 6 * H, {'last_start': now, 'fails': 2})
+    f9 = d(now + 10, R0 - 6 * H, {'last_start': now, 'fails': 9})
+    c.eq((f0['go'], f0['at'], f1['at'], f2['at'], f9['at']), (False, now + 1800, now + 3600, now + 7200, now + 3 * H), 'the floor after any attempt is 30 min, doubled after each failure, 3 h at most', what='backoff')
+    fj = d(now, R0 - 6 * H, {'last_start': now + 50 * H, 'fails': 0})
+    c.ok(fj['go'] is False and fj['at'] == now + 1800, str(fj), 'a clock that jumped back does not push the next attempt out of reach (the last start is clamped to now)')
+    # the keeper: a fake launcher and a fake clock, a failing read for two days: no burst
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        clock = [R0 + 5 * H]
+        starts = []
+        outcome = {'ok': False, 'reason': 'no-run'}
+        pub = [None]
+
+        def start(set_, verb, args, author='', **kw):
+            starts.append(clock[0])
+            if outcome.get('ok'):
+                pub[0] = WK.expected_run(clock[0])      # a read that succeeds publishes the run expected
+            return {'ok': True, 'job': 'j%d' % len(starts)}
+
+        def view(id_=None):
+            return {'job': {'id': 'j%d' % len(starts), 'state': 'done', 'result': dict(outcome)}}
+        k = WK.Keeper(data, start, view, now=lambda: clock[0], published=lambda: pub[0])
+        for _ in range(48 * 60):
+            k.tick()
+            clock[0] += 60
+        gaps = [b - a for a, b in zip(starts, starts[1:])]
+        c.ok(8 <= len(starts) <= 20 and min(gaps) >= 1800 and gaps == sorted(gaps), str(len(starts)) + ' starts in 48 h, gaps ' + str(gaps[:8]), 'a read that always fails: a few attempts in two days, never closer than 30 min, the gaps never shrink (no burst)')
+        st = json.load(open(os.path.join(data, 'local', 'weather_auto.json'), encoding='utf-8'))
+        c.ok(st.get('fails', 0) >= 3 and isinstance(st.get('last_start'), int) and st.get('reason') == 'no-run', str(st), 'the state kept says the failures, the last start and the cause')
+        # a restart: the wait stays
+        n0 = len(starts)
+        for _ in range(4 * 60):      # until the next attempt has been made, then its end is counted
+            clock[0] += 60
+            k.tick()
+            if len(starts) > n0:
+                break
+        clock[0] += 60
+        k.tick()
+        n0 = len(starts)
+        clock[0] += 10
+        k2 = WK.Keeper(data, start, view, now=lambda: clock[0], published=lambda: pub[0])
+        k2.tick()
+        c.eq(len(starts), n0, 'a restart right after an attempt does not start another one (the wait is kept in data/local, not in memory)', what='restart')
+        # the provider answers: the next due attempt succeeds, then nothing until the next run
+        outcome.clear()
+        outcome.update({'ok': True})
+        for _ in range(4 * 60):
+            clock[0] += 60
+            k2.tick()
+            if len(starts) > n0:
+                break
+        c.ok(len(starts) == n0 + 1, str(len(starts)) + ' / ' + str(n0), 'the next attempt at the end of the wait: one start')
+        n1 = len(starts)
+        for _ in range(60):
+            clock[0] += 60
+            k2.tick()
+        c.eq(len(starts), n1, 'published run up to date: no more start', what='quiet')
+        st = json.load(open(os.path.join(data, 'local', 'weather_auto.json'), encoding='utf-8'))
+        c.eq(st.get('fails'), 0, 'a success clears the failures', what='cleared')
+        for _ in range(7 * 60):
+            clock[0] += 60
+            k2.tick()
+        c.eq(len(starts), n1 + 1, 'a new run is out (6 h later): one more attempt, not several', what='new-run')
+    # a busy launcher is not an attempt; an interrupted download does not lengthen the wait; the opt-out
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        clock = [R0 + 5 * H]
+        calls = []
+
+        def busy(set_, verb, args, author='', **kw):
+            calls.append(clock[0])
+            return {'ok': False, 'status': 409, 'reason': 'busy'}
+        k = WK.Keeper(data, busy, lambda i=None: {'job': None}, now=lambda: clock[0], published=lambda: None)
+        k.tick()
+        clock[0] += 60
+        k.tick()
+        st = {}
+        try:
+            st = json.load(open(os.path.join(data, 'local', 'weather_auto.json'), encoding='utf-8'))
+        except (OSError, ValueError):
+            pass
+        c.ok(len(calls) == 2 and not st.get('last_start') and not st.get('fails'), str(calls) + str(st), 'a launcher busy with another job: the keeper asks again a minute later, and it counted no attempt')
+        os.makedirs(os.path.join(data, 'local'), exist_ok=True)
+        json.dump({'last_start': clock[0] - 100, 'fails': 1, 'inflight': True}, open(os.path.join(data, 'local', 'weather_auto.json'), 'w'))
+        seen = []
+        k3 = WK.Keeper(data, lambda *a, **kw: (seen.append(1), {'ok': True, 'job': 'x'})[1], lambda i=None: {'job': None}, now=lambda: clock[0], published=lambda: None)
+        k3.tick()
+        st = json.load(open(os.path.join(data, 'local', 'weather_auto.json'), encoding='utf-8'))
+        c.ok(not seen and st.get('fails') == 1 and st.get('inflight') is False and st.get('reason') == 'interrupted', str(st) + str(seen), 'a download cut by a restart: a failure that says so, the floor holds, the wait does not grow')
+    # the thread: the FIRST look is inside the guard too (a twisted JSON of data/ raised at the first look killed the thread for good, silently)
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        calls, started = [], []
+
+        def twisted():
+            calls.append(1)
+            if len(calls) == 1:
+                raise RecursionError('twisted json')
+            return None
+        old_tick, old_pub = WK.TICK, WK.published_run
+        WK.TICK = 0.05
+        WK.published_run = lambda d: twisted()
+        try:
+            k = WK.begin(data, lambda *a, **kw: (started.append(1), {'ok': True, 'job': 'x'})[1], lambda i=None: {'job': None})      # the thread as the launcher starts it
+            end = time.time() + 5
+            while not started and time.time() < end:
+                time.sleep(0.05)
+            k.stop.set()
+            time.sleep(0.3)
+        finally:
+            WK.TICK, WK.published_run = old_tick, old_pub
+        c.ok(len(calls) >= 2 and started, str(len(calls)) + ' looks, ' + str(len(started)) + ' start', 'an exception at the FIRST look does not kill the thread: it looks again at the next tick (and the stop ends it)')
+    src = (ROOT / 'tools' / 'launch.py').read_text(encoding='utf-8')
+    c.ok('weather_keep.begin(DATA' in src and 'if not a.data:' in src.split('weather_keep.begin(DATA')[0][-400:], 'launch.py', 'the launcher starts the keeper on its own data, never on a trial copy (--data)')
+    c.ok(WK.enabled({'SOG_NO_WEATHER_AUTO': '1'}) is False and WK.enabled({}) is True, 'enabled', 'SOG_NO_WEATHER_AUTO=1 stops it (a metered line)')
+    # the status of weather/world says the next attempt
+    RJ = _regen()
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(os.path.join(data, 'local'))
+        ls = int(time.time()) - 600
+        json.dump({'last_start': ls, 'fails': 2, 'reason': 'no-run'}, open(os.path.join(data, 'local', 'weather_auto.json'), 'w'))
+        jobs = RJ.Jobs(RJ.REGISTRY, {'data': data}, min_gap={})
+        jobs.start('weather', 'world', {'action': 'status'})
+        end = time.time() + 20
+        v = jobs.view()['job']
+        while v['state'] == 'running' and time.time() < end:
+            time.sleep(0.1)
+            v = jobs.view()['job']
+        a = (v['result'] or {}).get('auto') or {}
+        c.ok(a.get('fails') == 2 and a.get('last_start') == ls and isinstance(a.get('next'), int) and a['next'] >= ls + 7200 and a.get('reason') == 'no-run', str(v['result'])[:300], 'the status says auto { next, fails, last_start, reason }')
+
+
+@case('K408', 'A read that the launcher starts BY ITSELF (the world forecast) never makes a pilot gesture wait or fail: the route calculation, the procedures, the ground layer, the statistics and a build all start at once and the automatic read stops (SOG-0525 (3), the relay: never a 409 because the launcher reads the NOAA)', 'K', static=True,
+      rule='SOG-0525 (3), condition of the relay before the push: a job that the keeper starts (Jobs.start(..., auto=True)) holds the single place of the launcher for up to two minutes; any gesture that is not a pure read beside (PARALLEL) received the usual 409 « busy » (route/compute is SIDE and goes beside ground/fetch only, proc/lnm and stats/output are READ_ONLY and not PARALLEL, ground/fetch is BACKGROUND). Now a gesture that arrives while the AUTOMATIC job runs stops it (its forecast times already read are kept and resumed, SOG-0429) and starts at once; the pure reads (PARALLEL) go beside it without stopping it; a read started by the user (not automatic) keeps the usual 409; the keeper counts a stopped read as no failure (the wait does not grow). Red before: the gestures got 409.')
+def k408(c):
+    import importlib
+    import os
+    import tempfile
+    import time
+    RJ = _regen()
+    fake = 'import time\nprint("@etape 1/3", flush=True)\ntime.sleep(60)\n'
+    ok = (lambda job, a, ctx: {'ok': True}, lambda a: {})
+    keys = [('route', 'compute'), ('proc', 'lnm'), ('stats', 'output'), ('ground', 'fetch'), ('aircraft', 'build'), ('base', 'status')]
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(data)
+        script = os.path.join(td, 'fake_world.py')
+        open(script, 'w', encoding='utf-8').write(fake)
+        reg = {('weather', 'world'): RJ.REGISTRY[('weather', 'world')], **{k: ok for k in keys}}
+
+        def begin(auto):
+            jobs = RJ.Jobs(reg, {'data': data, 'script': script}, min_gap={})
+            s = jobs.start('weather', 'world', {}, auto=True) if auto else jobs.start('weather', 'world', {})
+            end = time.time() + 10
+            while jobs.view()['job']['step'] == '' and time.time() < end:
+                time.sleep(0.05)
+            return jobs, s
+        for key in keys[:-1]:
+            jobs, s = begin(True)
+            auto_job = jobs.cur
+            t0 = time.time()
+            r = jobs.start(key[0], key[1], {})
+            c.ok(s.get('ok') and r.get('ok') and time.time() - t0 < 6 and auto_job.data['state'] == 'cancelled', str(r) + ' ' + str(auto_job.data['state']), 'while the automatic read runs, ' + key[0] + '/' + key[1] + ' starts at once and the automatic read is stopped')
+            end = time.time() + 10
+            while jobs.cur.data['state'] == 'running' and time.time() < end:
+                time.sleep(0.05)
+        jobs, s = begin(True)
+        r = jobs.start('base', 'status', {})
+        c.ok(s.get('ok') and r.get('ok') and jobs.cur.data['state'] == 'running' and jobs.cur.data['verb'] == 'world', str(r), 'a pure read (PARALLEL) goes beside the automatic read, which keeps running')
+        jobs.cancel(jobs.cur.id)
+        jobs, s = begin(False)
+        r = jobs.start('route', 'compute', {})
+        c.ok(s.get('ok') and r.get('status') == 409 and r.get('reason') == 'busy', str(r), 'a read started by the user (the button) is not stopped: the usual 409')
+        jobs.cancel(jobs.cur.id)
+        # the keeper: a stopped read is no failure (the wait does not grow)
+        WK = importlib.import_module('weather_keep')
+        data2 = os.path.join(td, 'data2')
+        os.makedirs(data2)
+        k = WK.Keeper(data2, lambda *a, **kw: {'ok': True, 'job': 'x'}, lambda i=None: {'job': {'state': 'cancelled', 'result': {'ok': False, 'reason': 'cancelled'}}}, now=lambda: 1800000000, published=lambda: None)
+        k.tick()
+        k.tick()
+        st = WK.load(data2)
+        c.ok(st.get('fails', 0) == 0 and st.get('reason') == 'cancelled' and st.get('inflight') is False, str(st), 'a read stopped by a gesture is no failure: the floor holds, the wait does not grow')
+
+
 @case('K167', 'proc/lnm: the SQLite URI of the Little Navmap base escapes `%` (a profile folder named « 100%41 » was opened as « 100A »: unreadable), `#` and `?` too (N1 of the security review)', 'K', static=True,
       rule='Security review of 10 Nov 2026, N1 (audit line 159): tools/regen/lnm.py built `file:` + path with only `?` and `#` escaped; a `%` in the path of the user profile (a folder named 100%41) was decoded by SQLite into another path, so the base was never found (unreadable) or, worse, another file was opened. The whole path is now quoted (`%` first); a base in a folder whose name holds `%`, a space or `#` is read as it is, still read-only')
 def k167(c):

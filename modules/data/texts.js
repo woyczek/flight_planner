@@ -868,6 +868,17 @@ export const TX = {
     ],
     agoMin: ['il y a {n} min', '{n} min ago', 'vor {n} Min.', 'hace {n} min'],
     agoH: ['il y a {n} h', '{n} h ago', 'vor {n} Std.', 'hace {n} h'],
+    // SOG-0525 (3) : le lanceur tient lui-même le synoptique à jour ; il dit quand (publication en retard : la prochaine tentative ; à jour : le prochain regard)
+    auto: ['Mise à jour automatique par le lanceur : prochaine tentative à {t}.',
+      'Automatic update by the launcher: next attempt at {t}.',
+      'Automatische Aktualisierung durch den Launcher: nächster Versuch um {t}.',
+      'Actualización automática por el lanzador: próximo intento a las {t}.'
+    ],
+    autoWait: ['À jour. Le lanceur relira la NOAA à {t}, quand le run suivant sera publié.',
+      'Up to date. The launcher will read the NOAA again at {t}, when the next run is out.',
+      'Aktuell. Der Launcher liest die NOAA um {t} erneut, wenn der nächste Lauf veröffentlicht ist.',
+      'Al día. El lanzador volverá a leer la NOAA a las {t}, cuando se publique la pasada siguiente.'
+    ],
     // le compte a rebours ne vient JAMAIS seul : il dit ce qui l'a arme (le depart de la derniere lecture, l'attente de dix minutes entre deux departs), puis ce qui reste
     tooSoon: [
       'Dernière lecture de la NOAA lancée à {t} : attente de dix minutes entre deux départs, la suivante est possible dans {n} s.',

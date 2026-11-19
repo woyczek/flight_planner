@@ -154,6 +154,7 @@ class Job:
         self.procs = []           # les processus que le verbe a lancés et déclarés (track) : un travail libéré les arrête
         self.released = False     # libéré par le lanceur (Jobs.release_job) : ce que le fil abandonné écrira ensuite est perdu
         self.cancel_at = None     # l'heure de la demande d'arrêt, si elle a été faite
+        self.auto = False         # lancé par le lanceur lui-même (le gardien du synoptique), pas par une page : il cède la place (Jobs._yield_auto)
         self.polled = time.time() # la dernière fois que la page a demandé où il en est (Jobs.view) : une lecture que plus personne ne suit est arrêtée (Jobs._sweep, SOG-0432)
 
     def offer(self, payload=None):
@@ -377,7 +378,8 @@ class Jobs:
                 job.data['state'] = 'error'
                 job.data['ended'] = job.data['ended'] or int(time.time())
 
-    def start(self, set_, verb, args, author=''):
+    def start(self, set_, verb, args, author='', auto=False):
+        """auto : le travail est lancé par le lanceur LUI-MÊME (le gardien du synoptique, tools/weather_keep.py), jamais par une page : il cède la place à tout geste qui n'est pas une lecture à côté (SOG-0525 (3))."""
         key = (str(set_ or ''), str(verb or ''))
         author = author if isinstance(author, str) and TRIGRAM.fullmatch(author) else ''
         if key not in self.registry:
@@ -401,6 +403,8 @@ class Jobs:
                 return {'ok': False, 'status': 409, 'reason': held, 'message': f'no job starts now ({held})'}
             if running:      # une lecture pure à côté du travail qui tient la place (ou d'une autre lecture qui la tient) : jamais refusée. Seule, elle se comporte comme avant (le dernier travail, le fichier du dernier travail)
                 return self._start_read(key, fn, a, author)
+        if key != ('weather', 'world'):
+            self._yield_auto()
         with self.lock:
             if self.held:
                 return {'ok': False, 'status': 409, 'reason': self.held, 'message': f'no job starts now ({self.held})'}
@@ -417,6 +421,7 @@ class Jobs:
             prev = self.last.get(key)
             self.last[key] = now
             job = Job(*key, a, clean=lambda t: clean_error(t, self.ctx), author=author)
+            job.auto = bool(auto)
             job.gap = (key, prev, now)      # le départ rendu si le travail dit qu'il n'a pas atteint le réseau (_run)
             if side:
                 self.side = job
@@ -426,6 +431,18 @@ class Jobs:
         job.thread = threading.Thread(target=self._run, args=(job, fn, a), daemon=True)
         job.thread.start()
         return {'ok': True, 'job': job.id}
+
+    def _yield_auto(self):
+        """SOG-0525 (3) : le travail courant a été lancé par le lanceur lui-même (le synoptique monde, jusqu'à deux minutes) : un geste de la page ne reçoit JAMAIS « occupé » à cause de lui. Il est arrêté (ses échéances déjà lues sont gardées et reprises, SOG-0429) et la place revient ; au plus huit secondes d'attente, au-delà le refus habituel. Les lectures pures (PARALLEL) ne passent pas par ici : elles partent à côté sans l'arrêter."""
+        with self.lock:
+            cur = self.cur
+        if cur is None or not getattr(cur, 'auto', False) or cur.data['state'] != 'running':
+            return
+        cur._cancel.set()
+        cur.cancel_at = cur.cancel_at or time.time()
+        end = time.time() + 8
+        while cur.data['state'] == 'running' and time.time() < end:
+            time.sleep(0.05)
 
     def _run(self, job, fn, a):
         try:

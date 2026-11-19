@@ -39,6 +39,7 @@ import safe_json  # le chargement borné d'un JSON non fiable
 import xplane_net  # le dossier d'X-Plane de l'utilisateur et le réseau de repli local (SOG-0474 suite, Q-0108)
 import personal_use  # la coche « usage personnel » tenue par le lanceur (data/local/personal_use.json, SOG-0238)
 import regen_jobs  # travaux longs du module Données (régénération) : un à la fois, état, annulation ; état du poste
+import weather_keep  # SOG-0525 (3) : le synoptique monde (GFS) tenu à jour par le lanceur (un fil, plancher et attente gardés dans data/local)
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 DATA = os.path.join(ROOT, 'data')
@@ -4811,6 +4812,12 @@ def main():
         pass
     tree_job_start()
     atexit.register(lambda: tree_save(force=True))
+    if not a.data:
+        # SOG-0525 (3) : le lanceur tient lui-même le synoptique monde (GFS) à jour — un départ au démarrage s'il est ancien, un par nouveau run, UNE tentative à la fin d'une attente qui grandit après un échec, un plancher de 30 min gardé dans data/local ; jamais sur une copie d'essai (--data) ; SOG_NO_WEATHER_AUTO=1 l'arrête
+        try:
+            weather_keep.begin(DATA, lambda *x, **k: regen().start(*x, **k), lambda i=None: regen().view(i))
+        except Exception as e:
+            say(f'  Synoptique monde : mise à jour automatique non lancée ({str(e)[:100]}).')
     if not a.no_browser:
         threading.Thread(target=lambda: (time.sleep(0.8), webbrowser.open(url)), daemon=True).start()
     say('')

@@ -101,6 +101,12 @@ function lastHtml() {
     why = tt(M.own(TX.world.why, l.reason) || TX.world.why.failed);
   return `<p class="f-warn" data-world-last>${esc(tt(TX.world.last, { when, why }))}${l.message ? ` <span class="f-muted">(${esc(l.message)})</span>` : ''}</p>`;
 }
+/** SOG-0525 (3) : ce que le lanceur fait lui-même : tenir le synoptique à jour ; l'heure de sa prochaine tentative (publication en retard) ou de son prochain regard (à jour) ; rien si le lanceur ne le dit pas. */
+function autoHtml() {
+  const a = S.world.status?.auto;
+  if (!a) return '';
+  return `<p class="f-muted" data-world-auto data-due="${a.due ? 'yes' : 'no'}">${esc(tt(a.due ? TX.world.auto : TX.world.autoWait, { t: M.clockOf(a.next) }))}</p>`;
+}
 /** La fin d'une construction en phrases : ce qu'elle a publié, ou la raison de l'échec. */
 function resultHtml() {
   const r = S.world.result;
@@ -123,6 +129,7 @@ function bodyHtml() {
     r = S.world;
   return `<p class="f-muted" data-world-hint>${esc(tt(TX.world.hint))}</p><p class="f-muted" data-world-local>${esc(tt(TX.world.local))}</p>
     ${lastHtml()}
+    ${autoHtml()}
     <p><button type="button" data-verb="world-build"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.world.build))}</button></p>
     ${gate.reason && !r.phase ? `<p class="f-muted" data-reason="${gate.reason}">${esc(tt(TX.greyReason[gate.reason]))}</p>` : ''}
     ${r.phase === 'running' ? `<div data-world-running><span>${esc(r.step || tt(TX.world.running))}</span>${r.resumedNow ? `<span class="f-muted" data-world-resumed>${esc(tt(TX.world.resumed, { k: r.resumedNow.have, n: r.resumedNow.of }))}</span>` : ''}<div class="d-bar" role="progressbar" data-indeterminate><i></i></div></div>` : resultHtml()}`;
