@@ -5201,21 +5201,6 @@
    "recommended": 0
   },
   {
-   "id": "Q-0118",
-   "fiche": "SOG-0512",
-   "app": "pilote",
-   "question": "Régression du zoom (Carburant) : quelle carte, quel geste ? (écris aussi depuis quand et sur quel appareil dans le texte)",
-   "context": "Features SOG ne la reproduit pas : les pushes de la nuit sur Carburant ne touchent pas la carte. Il lui faut la carte et le geste exacts ; Essais rejoue en attendant les cas de zoom de la Carte sur la tête et sur la version d'hier soir.",
-   "options": [
-    "La Carte ouverte à côté de Carburant (bouton « Carte ») : molette, pincement ou + / − ne zooment plus",
-    "La Carte ouverte à côté de Carburant : le zoom revient tout seul au cadrage de la route",
-    "« Choisir sur la carte » : mauvais cadrage ou zoom à l'ouverture",
-    "Autre (décris dans le texte)"
-   ],
-   "since": "2026-11-19",
-   "state": "todo"
-  },
-  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
