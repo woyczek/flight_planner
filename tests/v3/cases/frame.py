@@ -10606,12 +10606,12 @@ def _sg_reports53():
         n = len(items)
         items.append({'id': i, 'kind': kind, 'title': title, 'text': text, 'screen': screen, 'ctx': {'lang': 'fr', 'design': 'standard', 'size': 'phone', 'version': '0721a0c'},
                       'at': f'2026-11-{18 - n // 4:02d}T{10 + n % 4:02d}:38:00Z', 'state': 'new', 'gravity': g, 'frequency': f, 'comments': [], **kw})
-    add('SIG-1000000001', 'regression', 'Islande : la récupération Avians échoue, pas de repli', 'Le serveur ne répond pas.', 'data', 'blocking', 'always', fiche='SOG-0368', state='fiche')
+    add('SIG-1000000001', 'regression', 'Pays : le téléchargement des cartes échoue, sans repli', 'Le serveur ne répond pas.', 'data', 'blocking', 'always', fiche='SOG-0368', state='fiche')
     add(_SG_SLOW, 'bug', 'Recherche : la liste est lente', 'Quand je tape un mot dans la recherche, la liste met du temps à répondre. Est-ce qu’elle se recharge à chaque lettre ?',
         'signaler', 'annoying', 'often', fiche='SOG-0409', state='fiche', answer='Le brouillon s’écrivait à chaque signe.',
         comments=[{'id': 'COM-00000000a1', 'at': '2026-11-17T15:20:00Z', 'text': 'Merci, c’est réglé.'}])
-    add('SIG-1000000002', 'bug', 'NAT : la lecture du jour échoue en silence', 'Rien ne vient.', 'data', 'annoying', 'rare', fiche='SOG-0447', refused=True)
-    add('SIG-1000000003', 'request', 'Évitement des zones : récupérer les NOTAM', 'Une demande.', 'maps', 'minor', 'often')
+    add('SIG-1000000002', 'bug', 'Météo : la lecture du jour échoue sans message', 'Rien ne vient.', 'data', 'annoying', 'rare', fiche='SOG-0447', refused=True)
+    add('SIG-1000000003', 'request', 'Évitement des cheminées : récupérer la liste à jour', 'Une demande.', 'maps', 'minor', 'often')
     add(_SG_HOSTILE, 'bug', '<img src=x onerror="window.__pwn=1">‮evil', '<script>window.__pwn=2</script><img src=x onerror="window.__pwn=3">', 'fuel',
         comments=[{'id': 'COM-00000000b2', 'at': '2026-11-17T16:00:00Z', 'text': '<img src=x onerror="window.__pwn=4">'}])
     for k in range(8):
@@ -10788,7 +10788,7 @@ def a268(c):
       return li && [[...li.querySelectorAll('mark')].map(m => m.textContent), (li.closest('[data-grp]').querySelector('h3')?.textContent || '').trim()] }})()""")
     c.ok(r and r[0] == ['tape'], r, 'the latency report is found by « tape », the word marked in its excerpt')
     c.ok(norm(r[1]).startswith(_sgt('found', L)), r[1], 'the group of the reports found is named')
-    # several words, accents: « evitement recup » finds « Évitement des zones : récupérer… », both marked
+    # several words, accents: « evitement recup » finds « Évitement des cheminées : récupérer… », both marked
     c.page.fill('[data-q]', 'evitement RECUP')
     c.until("!!document.querySelector('[data-grp=found] li[data-id=\"SIG-1000000003\"]')", timeout=8000, what='the accented title found')
     c.eq(c.js("[...document.querySelectorAll('[data-grp=found] li[data-id=\"SIG-1000000003\"] .f-sg-t mark')].map(m => m.textContent)"), ['Évitement', 'récup'], 'accent- and case-blind, each word marked at the start of a word', what='marks')
