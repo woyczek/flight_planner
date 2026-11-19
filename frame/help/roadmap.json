@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "87bb9ad",
+  "organisation": "95e8d94",
   "fiches": 518,
   "untranslated": 0,
   "priorities": 481,
@@ -3678,11 +3678,12 @@
     {
      "id": "SOG-0519",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Champ de terrain (complétion) : la liste des propositions s'affiche en haut de l'écran, loin de la saisie",
      "en": "Airfield field (autocomplete): the suggestion list shows at the top of the screen, far from the input",
      "de": "Flugplatzfeld (Vervollständigung): die Vorschlagsliste erscheint oben am Bildschirm, weit weg von der Eingabe",
-     "es": "Campo de aeródromo (autocompletado): la lista de sugerencias aparece arriba de la pantalla, lejos de la entrada"
+     "es": "Campo de aeródromo (autocompletado): la lista de sugerencias aparece arriba de la pantalla, lejos de la entrada",
+     "test": true
     }
    ]
   },
