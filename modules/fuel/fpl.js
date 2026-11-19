@@ -167,8 +167,13 @@ export function item15(text, {
     out.push(g !== group ? `${word}/${g}` : word);
     group = g;
   });
+  // SOG-0529 (2) (l'IFPS : « EFPM214: MISSING ROUTE DATA ») : une route qui n'est que le départ et l'arrivée est un direct — la case 15
+  // n'est JAMAIS vide, elle porte « DCT »
+  const direct = !out.length;
+  if (direct) out.push('DCT');
   return {
     route: [head, ...out].join(' '),
+    direct,
     oceanic,
     sid,
     star,
@@ -252,6 +257,7 @@ export function message(o = {}) {
     errors,
     notes: {
       oceanic: r.oceanic,
+      direct: r.direct, // SOG-0529 (2) : la route n'est qu'un direct (case 15 « DCT »)
       sid: r.sid,
       star: r.star,
       now: !!o.eobt?.now,

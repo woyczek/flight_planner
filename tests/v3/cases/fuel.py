@@ -7262,7 +7262,9 @@ def f247(c):
       F.item15('EIDW DOGAL 54/20 55/30 KJFK', { dep: 'EIDW', arr: 'KJFK', speedKt: 470, levelFt: 37000 }).oceanic ])""")
     c.eq(got[0], _FPL_EU, 'a European flight: SID kept, DCT between points, the level change with its speed-level group', what='EU')
     c.eq(got[1], _FPL_NAT, 'an Atlantic flight: the NAT track, « 54/50 » as « 54N050W », the compound airway by its first designator (SOG-0422), the registration in item 18, the identification in capitals', what='NAT')
-    c.eq(got[2], ['route'], 'a route of the two aerodromes only: refused (« route vide »)', what='empty route')
+    # SOG-0529 (2), CHANGED EXPECTATION (the IFPS: « EFPM214: MISSING ROUTE DATA »): a route of the two aerodromes only is a direct, its
+    # item 15 « DCT » — no longer refused as « route vide » (F288 proves the DCT, the fold's words and the copy)
+    c.eq(got[2], [], 'a route of the two aerodromes only: a direct, item 15 « DCT », no longer refused (SOG-0529 (2))', what='empty route')
     c.eq(got[3], '2026-11-17T10:55:00.000Z', 'no time in the flight: now, rounded up to the next five minutes', what='now')
     c.eq(got[4], True, 'North Atlantic coordinates: said unchecked by Eurocontrol', what='oceanic')
     # 2. the screen: the button, the fold, the identification that can be changed
@@ -8932,3 +8934,64 @@ def f287(c):
         c.page.fill(f'{FUEL} input[data-k="arr"]', 'LFML')
         c.page.locator(f'{FUEL} input[data-k="arr"]').dispatch_event('change')
         c.until(f"document.querySelector('{line}')?.dataset.state === 'ok'", timeout=20000, what=f'{w} px: good again with LFML')
+
+
+@case('F288', 'Route step, « Copier pour Eurocontrol »: item 15 is NEVER empty — a route that is only the departure and the arrival is a '
+      'direct, written « DCT »; the fold and the copy say what to do (« no route computed between … : compute one or type it ») and that '
+      'its length, directs being limited by Eurocontrol according to the region (no prediction: the own sentences of the route check when it '
+      'judged the route)', 'F', tags=('fuel',), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0529 (2) (the user passed the IFPS a plan with an EMPTY route field, LFBY → LFST at FL090: « EFPM214: MISSING ROUTE DATA »; '
+      'the copy had refused « route vide », but the review fold showed the whole text, its item 15 ending at the speed-level group, and '
+      'it was copied from there by hand); the relay: never written empty, « DCT » for a direct, say what to do; nothing invented: the '
+      'judgement of the route check of AeroDB when there is one, else the length only')
+def f288(c):
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    got = c.js("""() => import('/modules/fuel/fpl.js').then(F => {
+      const r = F.item15('LFBY LFST', { dep: 'LFBY', arr: 'LFST', speedKt: 236, levelFt: 9000 }),
+        m = F.message({ type: 'C30J', wake: 'M', dep: 'LFBY', arr: 'LFST', reg: 'F-RAJA', eobt: F.eobtOf('2026-12-31T10:00:00Z'),
+          speedKt: 236, levelFt: 9000, routeText: 'LFBY LFST', eetMin: 120 });
+      return [r.route, r.direct, m.errors, m.text.split('\\n')[3], m.notes.direct,
+        F.item15('LFBY XPA LFST', { dep: 'LFBY', arr: 'LFST', speedKt: 236, levelFt: 9000 }).direct];
+    })""")
+    c.eq(got[:2], ['N0236F090 DCT', True], 'a route of the departure and the arrival only: item 15 « DCT », said direct', what='item 15')
+    c.ok('route' not in got[2], got[2], 'never refused as « route vide » any more: the field is never empty')
+    c.eq(got[3], '-N0236F090 DCT', 'the message line of item 15 is never the speed-level group alone', what='message')
+    c.eq(got[4:], [True, False], 'a route through a point is no direct', what='direct')
+    # the screen: the flight LFRS → LFML (about 370 NM) with the route of its two ends only
+    docs = flight_docs()
+    for d in docs:
+        if d[0].endswith('current_flight.json'):
+            pts = d[1]['route']['points']
+            d[1]['route']['text'] = 'LFRS LFML'
+            d[1]['route']['points'] = [pts[0], pts[-1]]
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.open('fuel', docs=docs)
+    wait_quote(c)
+    to_step(c, 1)
+    c.until(f"!!document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]')", timeout=10000, what='« Copier pour Eurocontrol »')
+    c.js(f"document.querySelector('{FUEL} [data-fpl] details[data-fplfold]').open = true")
+    text = c.text(f'{FUEL} [data-fpl] [data-fpltext]') or ''
+    c.ok(any(re.fullmatch(r'-N\d{4}F\d{3} DCT', l.strip()) for l in text.split('\n')), text, 'the review fold: item 15 « DCT », never empty')
+    want = {'fr': ('Aucune route calculée entre LFRS et LFML : calculez-en une ou saisissez-la',
+                   'les directs sont limités par Eurocontrol selon la région'),
+            'en': ('No route computed between LFRS and LFML: compute one or type it',
+                   'directs are limited by Eurocontrol according to the region'),
+            'de': ('Keine Route zwischen LFRS und LFML berechnet: berechnen oder eingeben',
+                   'Direktflüge sind von Eurocontrol je nach Region begrenzt'),
+            'es': ('Ninguna ruta calculada entre LFRS y LFML: calcule una o escríbala', 'Eurocontrol limita los directos según la región')}[c.lang]
+    notes = norm(c.text(f'{FUEL} [data-fpl] [data-fplnotes]') or '')
+    c.ok(all(norm(w) in notes for w in want), notes, 'the fold says what to do, and the length of the direct (no prediction)')
+    c.ok(re.search(r'\b3[5-9]\d NM\b', notes) is not None and 'probab' not in notes.lower(), notes,
+         'the length of the direct said (LFRS → LFML, about 370 NM), never « probably refused »')
+    c.eq(c.js(f"document.querySelector('{FUEL} [data-fpl] [data-do=fplcopy]').getAttribute('aria-disabled')"), None,
+         'the copy is offered (a direct is a route)', what='copy')
+    c.js("window.__n0 = (window.__notes || []).length")
+    c.tap(f'{FUEL} [data-fpl] [data-do="fplcopy"]')
+    c.until("(w) => (window.__notes || []).slice(window.__n0).some(n => n.replace(/[\s\u00a0\u202f]+/g, ' ').includes(w))", norm(want[0]),
+            timeout=6000, what='the copy says what to do')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{FUEL} [data-fpl]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F288_{c.design}_{w}_{c.lang}_direct.png')

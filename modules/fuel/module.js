@@ -629,6 +629,18 @@ const TX = {
   rFreeValid: ['valables {win}', 'valid {win}', 'gültig {win}', 'válidas {win}'],
   // SOG-0402 : « Copier pour Eurocontrol » et son pli de relecture
   fplCopy: ['Copier pour Eurocontrol', 'Copy for Eurocontrol', 'Für Eurocontrol kopieren', 'Copiar para Eurocontrol'],
+  // SOG-0529 (2) : une route qui n'est qu'un direct (case 15 « DCT ») — ce qu'il faut faire ; puis sa longueur
+  fplDirect: ['Aucune route calculée entre {dep} et {arr} : calculez-en une ou saisissez-la (la case 15 porte « DCT »).',
+    'No route computed between {dep} and {arr}: compute one or type it (item 15 carries « DCT »).',
+    'Keine Route zwischen {dep} und {arr} berechnet: berechnen oder eingeben (Feld 15 enthält „DCT“).',
+    'Ninguna ruta calculada entre {dep} y {arr}: calcule una o escríbala (la casilla 15 lleva «DCT»).'
+  ],
+  // sa longueur seulement, sans prédiction (le relais : rien d'inventé) ; le jugement, s'il existe, est celui du contrôle de route
+  fplDirectLong: ['Un direct de {d} NM ; les directs sont limités par Eurocontrol selon la région.',
+    'A direct of {d} NM; directs are limited by Eurocontrol according to the region.',
+    'Ein Direktflug von {d} NM; Direktflüge sind von Eurocontrol je nach Region begrenzt.',
+    'Un directo de {d} NM; Eurocontrol limita los directos según la región.'
+  ],
   fplFold: ['Plan de vol OACI (relecture)', 'ICAO flight plan (review)', 'ICAO-Flugplan (Durchsicht)', 'Plan de vuelo OACI (revisión)'],
   fplId: ['Identifiant', 'Identification', 'Kennung', 'Identificación'],
   fplNeutral: [
@@ -5252,7 +5264,7 @@ function fplDraw(C, textOnly = false) {
   const r = S.flight.route || {},
     n = F.m.notes,
     when = zTime(F.eobt.at.toISOString().slice(0, 16) + 'Z'),
-    notes = [tt(TX.fplNeutral, {
+    notes = [...fplDirectNotes(F.m), tt(TX.fplNeutral, {
       id: FPL.NEUTRAL_ID
     }), tt(TX.fplEquip, {
       e: FPL.EQUIPMENT,
@@ -5282,6 +5294,26 @@ function fplDraw(C, textOnly = false) {
   const open = !!box.querySelector('details[data-fplfold]')?.open;
   box.innerHTML = `<div class="f-row"><button type="button" data-do="fplcopy"${bad ? ' aria-disabled="true"' : ''}>${esc(tt(TX.fplCopy))}</button></div><details class="fu-fpl" data-fplfold${open ? ' open' : ''}><summary class="f-muted">${esc(tt(TX.fplFold))}</summary><label class="f-field">${esc(tt(TX.fplId))}<input data-k="fplid" class="fu-code" value="${esc(S.fplId || FPL.NEUTRAL_ID)}" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false"></label><div data-fplbody>${inner}</div></details>`;
 }
+/** SOG-0529 (2) : une route qui n'est qu'un direct — « aucune route calculée … : calculez-en une ou saisissez-la », puis : si le contrôle
+ *  de route d'AeroDB a jugé CE texte (« Contrôler », S.rcheck) et y a trouvé des écarts, SES phrases (RE.faultLines, trois au plus) ;
+ *  sinon sa longueur seulement (« un direct de … NM ; les directs sont limités par Eurocontrol selon la région »), jamais une prédiction.
+ *  [] pour une vraie route. */
+function fplDirectNotes(m) {
+  if (!m?.notes?.direct) return [];
+  const r = S.flight.route || {},
+    nm = +S.C?.nm,
+    rc = S.rcheck && S.rcheck.text === String(r.text || '') ? S.rcheck : null,
+    judged = rc ? RE.faultLines({
+      segments: rc.segments,
+      errors: rc.errors
+    }).slice(0, 3).map(l => [l.seg, l.text].filter(Boolean).join(' : ')).filter(Boolean) : [];
+  return [tt(TX.fplDirect, {
+    dep: String(r.dep || '').toUpperCase(),
+    arr: String(r.arr || '').toUpperCase()
+  }), ...(judged.length ? judged : [Number.isFinite(nm) && nm > 0 ? tt(TX.fplDirectLong, {
+    d: Math.round(nm)
+  }) : ''])].filter(Boolean);
+}
 /** SOG-0402 : les règles de forme qui échouent, dites ; SOG-0422 : l'élément de route hors forme cité (un tiret, une ponctuation). */
 function fplErrs(m) {
   return m.errors.map(k => tt(TX.fplErr[k], {
@@ -5305,8 +5337,10 @@ async function fplCopy() {
   if (fold) fold.open = true;
   // SOG-0422 (a) : UNE notification : sur une route océanique sans HF dans l'équipement supposé, la copie dit l'avertissement elle-même
   // (une seconde note attendrait derrière la première sur un téléphone et ne serait pas lue) ; l'équipement n'est jamais inventé
-  S.ctx.notify(shown ? `${tt(TX.copyManual)}${hf ? ` ${tt(TX.fplNoHf)}` : ''}` : tt(hf ? TX.fplCopiedHf : TX.fplCopied), shown || hf ? 'warn' :
-    'ok');
+  // SOG-0529 (2) : une route qui n'est qu'un direct : la même notification dit quoi faire, et prévient d'un direct long
+  const direct = fplDirectNotes(F.m).join(' ');
+  S.ctx.notify(`${shown ? `${tt(TX.copyManual)}${hf ? ` ${tt(TX.fplNoHf)}` : ''}` : tt(hf ? TX.fplCopiedHf : TX.fplCopied)}${direct ? ` ${direct}` : ''}`,
+    shown || hf || direct ? 'warn' : 'ok');
 }
 /** SOG-0398 : l'attente au plus des lectures de la base pour la ligne du dégagement (terrain, couverture). */
 const ALTN_CHK_WAIT_MS = 4000;
