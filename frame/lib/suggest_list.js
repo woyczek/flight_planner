@@ -63,7 +63,29 @@ export function createSuggestList(o) {
     if (input) i >= 0 ? input.setAttribute('aria-activedescendant', `${o.idPrefix}-${i}`) : input.removeAttribute('aria-activedescendant');
   }
 
-  /** Dessine la liste sous le champ input : posée par-dessus la suite de l'écran, sous le libellé du champ. */
+  /** SOG-0519 (l'utilisateur : la liste de « lan » collée en haut de la fenêtre, sur l'en-tête, loin du champ) : la liste se pose SOUS
+   *  le libellé du champ, ou au-dessus quand la place manque dessous et qu'il y en a plus dessus ; jamais sur l'en-tête du cadre. La
+   *  mesure est faite à l'écran (getBoundingClientRect) contre le bloc qui contient la liste, son propre parent, rendu positionné s'il ne
+   *  l'est pas : la liste et son champ sont alors dans le même bloc défilant, et la liste suit le défilement sans écouteur. L'ancien
+   *  calcul (offsetTop du libellé) ne valait que si le libellé et la liste avaient le même bloc de référence. */
+  function place(el, label) {
+    const parent = el.parentElement;
+    if (parent && getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+    const ref = el.offsetParent || parent;
+    if (!ref) return;
+    const rr = ref.getBoundingClientRect(),
+      lr = label.getBoundingClientRect(),
+      h = el.offsetHeight,
+      head = Math.max(0, document.querySelector('.f-head')?.getBoundingClientRect().bottom || 0),
+      below = window.innerHeight - lr.bottom,
+      above = lr.top - head,
+      up = below < h && above > below,
+      top = (up ? lr.top - h : lr.bottom) - rr.top - (ref.clientTop || 0) + (ref.scrollTop || 0);
+    el.style.top = `${Math.round(top)}px`;
+    el.dataset.side = up ? 'above' : 'below';
+  }
+
+  /** Dessine la liste sous le champ input : posée par-dessus la suite de l'écran, sous le libellé du champ (au-dessus faute de place). */
   function show(input, hits) {
     const el = box(),
       label = input?.closest('label');
@@ -71,8 +93,8 @@ export function createSuggestList(o) {
     st.input = input;
     st.hits = hits;
     el.innerHTML = hits.map((h, i) => `<button type="button" role="option" class="f-item fu-sugitem" id="${o.idPrefix}-${i}" tabindex="-1" aria-selected="false" data-${o.attr}="${esc(h.value)}"><span><b>${esc(h.text ?? h.value)}</b> ${esc(h.label)}</span></button>`).join(''); // `text` : ce que la ligne montre quand la valeur est une clé interne
-    el.style.top = `${label.offsetTop + label.offsetHeight}px`;
     el.hidden = !hits.length;
+    if (hits.length) place(el, label); // SOG-0519 : mesurée visible, sous (ou sur) son champ
     expanded(input, !!hits.length);
     activate(-1);
   }

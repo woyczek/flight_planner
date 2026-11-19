@@ -11843,4 +11843,60 @@ def n171(c):
     c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0]], ['XPT01', '44.9', '1.45', [True, True]], 'a code with a single point typed still moves the place', what='single')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     ed_leave(c)
+
+
+# SOG-0519: where the list of proposals of « Départ » is, on screen: the gap between the field's label and the list (below: its top under the
+# label; above: its bottom over the label), its side, the bottom of the frame's header and the top of the list
+_SUG_AT = f"""(() => {{ const b = document.querySelector('{E} [data-adsug]'), l = document.querySelector('{E} input[data-k=eddep]').closest('label');
+  const r = b.getBoundingClientRect(), q = l.getBoundingClientRect(), h = document.querySelector('.f-head')?.getBoundingClientRect().bottom || 0;
+  const up = b.dataset.side === 'above';
+  return {{ gap: Math.round(up ? q.top - r.bottom : r.top - q.bottom), side: b.dataset.side || '', head: Math.round(h), top: Math.round(r.top) }} }})()"""
+
+
+@case('N180', 'Missions › the workshop, Cadre: the list of proposals of « Départ » sits right under its field (over it when there is no room '
+      'below) — never stuck at the top of the window over the header —, and follows the field when the page scrolls; at 390 and 1 280',
+      'N', tags=('missions',), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0519 (the user\'s report SIG-6afcbd61c3, with its capture: « lan » typed in Départ, the list KLKR, LFRO, PHNY… at the top of the '
+      'window over the header, far from the field): frame/lib/suggest_list.js placed the list by the label\'s offsetTop, right only when the '
+      'label and the list had the same reference block; invented aerodromes of the base')
+def n180(c):
+    # NOT red before (measured by Essais on db3c2c701, veiled and whole workshop): in the page of the tests the label and the list share the
+    # same reference block, so the old offsetTop was right there; on the user's device they did not (his capture). The cause itself — a
+    # scrolled panel, the label and the list in different reference blocks — is reproduced by the bench of F267, red before (−160 px);
+    # this case holds the placement on the real screen and the follow of the scroll (the relay's decision, 19 Nov).
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_REG_CLEAR)
+        c.js(_TEXTS_JS, _LC_TEXTS)
+        c.open('missions', wait=False, app='company', aero_extra=_AD_BASE)
+        c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+        c.tap(f'{M} [data-do="regopen"]')
+        c.until(_REG_READ, timeout=20000, what='the registry read')
+        # an existing mission's workshop, as N120 opens it (its aerodromes XTST / XTSU make the base of the case known around them)
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        # the WHOLE workshop (« Dévoiler la mission complète »): the layout of a new mission, the user's capture (the veiled one placed the list
+        # right already)
+        ed_reveal(c)
+        if not c.count(f'{E} input[data-k=eddep]'):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", timeout=10000, what='the Cadre')
+        # the page scrolled: the field in the lower half of the screen, the page above it scrolled away (the user's capture)
+        c.js(f"(() => {{ const i = document.querySelector('{E} input[data-k=eddep]'); window.scrollBy(0, i.getBoundingClientRect().top - innerHeight * .55) }})()")
+        orig = c.js(f"document.querySelector('{E} input[data-k=eddep]').value")
+        c.page.fill(f'{E} input[data-k=eddep]', '')
+        c.page.locator(f'{E} input[data-k=eddep]').press_sequentially('xt', delay=40)
+        c.until(f"!!document.querySelector('{E} [data-adsug]:not([hidden]) [data-code]')", timeout=8000, what=f'{w} px: the aerodromes proposed')
+        a = c.js(_SUG_AT)
+        c.ok(0 <= a['gap'] <= 2, a, f'{w} px: the list right against its field ({a["side"]})')
+        c.ok(a['top'] >= a['head'], a, f'{w} px: never over the frame\'s header')
+        c.shot(f'N180_{c.design}_{w}_{c.lang}_list.png')
+        c.js("window.scrollBy(0, 40)")
+        c.wait(150)
+        b = c.js(_SUG_AT)
+        c.ok(0 <= b['gap'] <= 2, b, f'{w} px: the page scrolls, the list follows its field')
+        c.key('Escape')
+        c.page.fill(f'{E} input[data-k=eddep]', orig)  # the mission left as it was (nothing to save)
+        c.page.locator(f'{E} input[data-k=eddep]').blur()
     c.js(_REG_CLEAR)

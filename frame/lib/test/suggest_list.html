@@ -28,6 +28,12 @@
 <div id="screen"><label>Champ <input data-k="a" autocomplete="off"></label><label>Autre <input data-k="b" autocomplete="off"></label>
   <div data-sug hidden></div>
 </div>
+<div id="panel" style="height:220px;overflow:auto;border:1px solid #ccc">
+  <div style="height:400px"></div>
+  <div class="row"><div style="position:relative;padding:8px"><label>Départ <input data-k="c" autocomplete="off"></label></div>
+    <div data-sug2 hidden style="position:absolute;left:0;right:0;background:#fff;border:1px solid #888"></div></div>
+  <div style="height:600px"></div>
+</div>
 <pre id="out"></pre>
 <script type="module">
   import {
@@ -121,6 +127,27 @@
   ck('ticket : seule la dernière demande est vivante', !list.live(t1) && list.live(t2));
   alive = false;
   ck('écran démonté : aucune demande vivante', !list.live(t2));
+  // SOG-0519 : un champ dans un panneau défilé, son libellé dans un bloc positionné, la liste dans une rangée qui ne l'est pas (l'atelier
+  // de Missions) : la liste se pose SOUS le champ à l'écran, et le suit quand le panneau défile
+  const panel = document.getElementById('panel'),
+    C = panel.querySelector('[data-k=c]'),
+    box2 = () => panel.querySelector('[data-sug2]'),
+    list2 = createSuggestList({
+      body: () => panel,
+      box: '[data-sug2]',
+      attr: 'v',
+      idPrefix: 'bp',
+      fields: () => [C],
+      owns: el => el === C,
+      write: (input, v) => (input.value = v, true)
+    });
+  panel.scrollTop = 330;
+  list2.show(C, hits);
+  const gap = () => Math.round(box2().getBoundingClientRect().top - C.closest('label').getBoundingClientRect().bottom);
+  ck('SOG-0519 : dans un panneau défilé, la liste juste sous son champ (écart à l’écran ≤ 2 px)', Math.abs(gap()) <= 2, gap());
+  panel.scrollTop = 360;
+  ck('SOG-0519 : le panneau défile, la liste suit son champ', Math.abs(gap()) <= 2, gap());
+  list2.close();
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,
