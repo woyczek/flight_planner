@@ -18005,3 +18005,63 @@ def k391(c):
     FP.build(legs2, 0, 0, 350, speed_kt=450, climb_fps=2000 / 60, descent_fps=2000 / 60, strategy='adapt', free_arrival=True)
     cut = lambda nat: RF.context(legs2, 'DEP', 'ARR', nat)['alt']['A']
     c.ok(cut(False) >= 34999 and cut(True) < 10000, str((cut(False), cut(True))), 'EGLL → LEPA: MJV is the last point, 26 NM before the arrival; the profile ADAPTED keeps the cruise level there (the arrival connector is supposed free: the descent is all in the last leg), the NATURAL profile (the one the IFPS judges) is already in its descent (about 7 000 ft) — the rule LE2828 « BTN FL245-FL660 AT MJV » condemned MJV only on the adapted one: the route goes through MJV again (748 NM instead of 759.6)')
+
+
+@case('K392', 'Route engine, SOG-0513 (C a): the outlines of the spaces of the base (FIR, UIR) are read BOUNDED by the engine (`route_engine/spaces.py`): a file read by `safe_json`, at most 64 rings of 20 000 points and 1 500 000 points, finite numbers within the limits of latitude and longitude, no exception on a hostile file; the point in the space is the even-odd rule (a ring in a ring is a hole), the vertical limits are read (SFC, FL 245, 5500 ft AMSL) and never guessed (« UNL »: not read, the space covers nothing)',
+      'K', static=True,
+      rule='SOG-0513 lot C (the relay: « lecture des polygones par le moteur : bornée … relue par Sécurisation, puisque les fichiers de data/ ne sont pas fiables »). The engine read no outline of a space until now (points, airways, aerodromes). Bench of invented outlines in the order of the base [lat, lon]; the shape is that of LONDON FIR of the real file (15 vertices, SFC to FL 245), no datum of the user.')
+def k392(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import spaces as S
+    c.eq([S.level_ft(x) for x in ('SFC', 'GND', 'FL 245', 'FL245', '5500 ft AMSL', '1500 FT AGL', 'UNL', 'FL 9999', '', None, True, 24500, -5, float('nan'))], [0.0, 0.0, 24500.0, 24500.0, 5500.0, 1500.0, None, None, None, None, None, 24500.0, None, None],
+         'the vertical limits: SFC and GND are 0, FL 245 is 24 500 ft, « 5500 ft AMSL » 5 500; « UNL », a text of four digits of level, an empty text, a boolean, a negative number or NaN: not read', what='levels')
+    square = [[50.0, -2.0], [50.0, 2.0], [54.0, 2.0], [54.0, -2.0]]
+    hole = [[51.5, -0.5], [51.5, 0.5], [52.5, 0.5], [52.5, -0.5]]
+    rows = [{'name': 'ALPHA FIR', 'type': 'FIR', 'lower': 'SFC', 'upper': 'FL 245', 'rings': [square, hole]}, {'name': 'BETA UIR', 'type': 'UIR', 'lower': 'FL 245', 'upper': 'UNL', 'rings': [square]}, {'name': 'CTA', 'type': 'CTA', 'lower': 'SFC', 'upper': 'FL 65', 'rings': [square]}]
+    spaces = S.parse(rows, ('FIR', 'UIR'))
+    alpha, beta = spaces
+    c.eq([x['name'] for x in spaces], ['ALPHA FIR', 'BETA UIR'], 'only the wanted types are kept', what='types')
+    c.eq([S.inside(alpha, 52.0, 0.0), S.inside(alpha, 53.0, 1.0), S.inside(alpha, 49.0, 0.0), S.inside(alpha, 53.0, 3.0), S.inside(alpha, float('nan'), 0.0)], [False, True, False, False, False],
+         'a point in the hole is not in the space; a point in the ring is; outside, or NaN: not', what='inside')
+    c.eq([S.covers(alpha, 53.0, 1.0, 20000), S.covers(alpha, 53.0, 1.0, 30000), S.covers(beta, 53.0, 1.0, 30000), S.covers(beta, 53.0, 1.0, 20000)], [True, False, False, False],
+         'the vertical limits: in the FIR at 20 000 ft, not at 30 000; the UIR has an upper limit that is not read (UNL): it covers nothing, never guessed', what='covers')
+    many = [[[50.0 + i * 1e-3, 0.0], [50.0, 1.0 + i * 1e-3], [51.0, 1.0]] for i in range(200)]
+    hostile = [{'type': 'FIR', 'name': 'x' * 500, 'lower': 'SFC', 'upper': 'FL 100', 'rings': many},
+               {'type': 'FIR', 'name': 'NAN', 'lower': 'SFC', 'upper': 'FL 100', 'rings': [[[float('nan'), 0], [1, 1], [2, 2]], [[91, 0], [1, 1], [2, 2]], [[1, 181], [1, 1], [2, 2]], [[1, 1], [2, 2]], 'x', [[1, 1], [2], [3, 3]], [[True, 1], [1, 1], [2, 2]]]},
+               'not a dict', {'type': 'FIR', 'rings': 'x'}, {'type': 'FIR', 'rings': [[[1, 1], [1, 2], [2, 2]]], 'lower': 'SFC', 'upper': 'FL 100'}]
+    out = S.parse(hostile, ('FIR',))
+    c.eq((len(out[0]['rings']), len(out[0]['name']), len(out), out[-1]['rings']), (64, 120, 2, [[(1.0, 1.0), (1.0, 2.0), (2.0, 2.0)]]),
+         'at most 64 rings of a space, a name cut at 120, the rings with NaN, out of the limits, of two vertices, not a list or with a hole in the pairs are dropped (a space with none is dropped), a line that is not an object is ignored', what='bounds')
+    keep = S.MAX_POINTS
+    try:
+        S.MAX_POINTS = 10
+        capped = S.parse([{'type': 'FIR', 'rings': [[[1, 1], [1, 2], [2, 2]]] * 20, 'lower': 'SFC', 'upper': 'FL 1'}], ('FIR',))
+    finally:
+        S.MAX_POINTS = keep
+    c.eq(sum(len(r) for x in capped for r in x['rings']) <= 10, True, 'the total of vertices is bounded: past the cap nothing more is kept', what='total')
+    big = 10 ** 400      # json.loads accepts an integer of up to 4 300 digits: it must not reach a conversion (review of Security)
+    safe = lambda f: (lambda: [f(), None][1])
+    raised = []
+    for label, call in (('level', lambda: S.level_ft(big)), ('lat', lambda: S.parse([{'type': 'FIR', 'rings': [[[big, 0], [0, 0], [1, 1]]], 'lower': 'SFC', 'upper': 'FL 1'}], ('FIR',))),
+                        ('lon', lambda: S.parse([{'type': 'FIR', 'rings': [[[0, big], [0, 0], [1, 1]]], 'lower': 'SFC', 'upper': 'FL 1'}], ('FIR',))),
+                        ('limit', lambda: S.parse([{'type': 'FIR', 'rings': [[[1, 1], [1, 2], [2, 2]]], 'lower': big, 'upper': big}], ('FIR',))),
+                        ('inside lat', lambda: S.inside(alpha, big, 0)), ('inside lon', lambda: S.inside(alpha, 53.0, big)), ('covers ft', lambda: S.covers(alpha, 53.0, 1.0, big)),
+                        ('type list', lambda: S.parse([{'type': ['FIR'], 'rings': [[[1, 1], [1, 2], [2, 2]]]}, {'type': {'a': 1}, 'rings': [[[1, 1], [1, 2], [2, 2]]]}], frozenset({'FIR'})))):
+        try:
+            call()
+        except Exception as e:
+            raised.append((label, type(e).__name__))
+    c.eq(raised, [], 'an integer of 400 digits as a latitude, a longitude, a vertical limit or a level, and a type that is a list or an object with a set of types: nothing raises (the file comes from the data repository, whoever wrote it)', what='no exception')
+    c.eq((S.level_ft(big), S.parse([{'type': 'FIR', 'rings': [[[big, 0], [0, 0], [1, 1]]], 'lower': 'SFC', 'upper': 'FL 1'}], ('FIR',)), S.inside(alpha, big, 0), S.covers(alpha, 53.0, 1.0, big)), (None, [], False, False), 'and the answers are « not read », « no ring », « not inside », « not covered »', what='answers')
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        with open(os.path.join(td, 'airspaces.json'), 'w', encoding='utf-8') as f:
+            json.dump({'schema': 2, 'data': rows}, f)
+        found = S.read(td, ('FIR',))
+        with open(os.path.join(td, 'airspaces.json'), 'w', encoding='utf-8') as f:
+            f.write('{"data": [ NaN')
+        broken = S.read(td, ('FIR',))
+        c.eq(([x['name'] for x in found], broken, S.read(os.path.join(td, 'absent'), ('FIR',))), (['ALPHA FIR'], [], []), 'a file of the base is read; a broken file, or no file: no space, never an exception', what='files')
