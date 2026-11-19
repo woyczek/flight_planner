@@ -1000,7 +1000,8 @@ function edPlaceTexts(s, rows, doc) {
       r: dec(s, r.radius)
     }) : '', r.kind === 'zone' && r.tot ? s.tt(TX.plTot, {
       n: r.tot
-    }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, r.lat, r.lon)].filter(Boolean).join(' · ');
+    }) : '', r.kind === 'rdv' ? r.participants : '', r.kind === 'zone' && r.poly ? '' : dms(s, ...edLinePos(s, r))].filter(Boolean).join(
+      ' · ');
   return {
     zk,
     ok,
@@ -2482,6 +2483,14 @@ function edAdCs(s) {
 function edAdPt(s) {
   edAd(s);
   return AF.pt;
+}
+
+/** SOG-0506 (la réserve de l'utilisateur) : la position que la ligne d'un lieu DIT — [lat, lon] telles que le lieu les porte ; pour le départ ou
+ *  l'arrivée d'un fichier qui n'écrit qu'un code connu de la base, SANS position (on n'y écrit rien : ouvrir une mission ne la change pas), celle
+ *  que la base donne à ce code, la même que la carte dessine : la ligne ne dit plus « à placer » un lieu que la carte place. */
+function edLinePos(s, r) {
+  const at = edPos(r) ? null : r && (r.kind === 'dep' || r.kind === 'arr') ? adPosOf(s, ED.adCodeOf(r.name)) : null;
+  return at ? [at.lat, at.lon] : [r.lat, r.lon];
 }
 
 /** Une position valide d'un lieu des Lieux (champs en texte : un champ vide n'est pas 0) : { lat, lon } ou null. */

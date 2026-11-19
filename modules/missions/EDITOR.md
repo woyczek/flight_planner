@@ -1584,7 +1584,10 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
 - **The departure and the arrival**: a terrain the author types in Départ or Arrivée and the base knows writes its position in its line of the Lieux
   (`edEndFill`, at the typing and at the answer of the base): the file carries `origin: { name, icao, lat, lon }`. A terrain of the file the author did not
   retype is NOT rewritten (opening a mission writes nothing, « Annuler » asks nothing): the route of the map and the profile go through the position of
-  the base all the same (`ED.endsAt`, for the drawing only), where the map already showed it.
+  the base all the same (`ED.endsAt`, for the drawing only), where the map already showed it. **Its line of the Lieux says that position** too (the user's
+  reserve on SOG-0506, « il est encore noté « à placer » »; noreg N193, red before: `['dep', 'XTSL', 'à placer']`): `edLinePos` gives `dms` the position
+  of the base for a departure or an arrival with no position of its own (drawing only, nothing written); « À compléter » never counted them
+  (`todo` skips `dep` and `arr`); a true place to place (no position, no code) is still said « à placer » and counted.
 - Captures `P14a_390_verrouille.png`, `P14a_1280_verrouille.png` (the sheet locked; at 1280 the dashed route through the locked terrain beside it).
   The bench of N163 / N164 gives the locked terrain a code of its own, XTSL (« XTSL TEST LOCK », 44.55 N, 1.85 E): the departure of the trial
   mission, « Base Test (XTST) » at 45 N, 1 E, keeps its XTST in the base, so the captures no longer show two XTST.

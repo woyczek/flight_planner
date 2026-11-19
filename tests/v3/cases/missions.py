@@ -12434,3 +12434,53 @@ def n194(c):
     c.eq(c.count(f'{M} [data-pane=add] [data-refused] li'), 0, 'an unquoted date and a « << » key refused nothing', what='refused')
     c.js(_REG_CLEAR)
     c.check_errors()
+
+
+# SOG-0506, the user's reserve (« il est encore noté « à placer » »): a place locked on the position of the base is never said « à placer »
+_LKP_MISSION = _PB_NOTARGET.replace('origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }', 'origin: { name: XTSL, icao: XTSL }').replace(
+    '  - { id: PT2, name: Point deux, lat: 44.4, lon: 1.6 }\n', '  - { id: PT2, name: Point deux, lat: 44.4, lon: 1.6 }\n  - { id: PT3, name: XTSL, lat: 44.55, lon: 1.85 }\n')
+assert _LKP_MISSION != _PB_NOTARGET and 'PT3' in _LKP_MISSION and 'icao: XTSL' in _LKP_MISSION
+_LKP_ROWS = f"""() => [...document.querySelectorAll('{E} [data-edplaces] [data-place]')].map(r => [r.dataset.kind, r.querySelector('b')?.textContent.trim(),
+  (r.querySelector('.ms-plbody .f-muted')?.textContent || '').trim()])"""
+_LKP_TODO = f"[...document.querySelectorAll('{E} [data-edtodo] li')].map(x => x.dataset.todo || x.dataset.dtodo || '')"
+
+
+@case('N193', 'Missions › the workshop, a place LOCKED on the position of the base is never said « à placer » (SOG-0506, the user\'s reserve): in a mission whose departure is a '
+      'known code written without a position (XTSL, the way the workshop wrote it before) and whose turning point PT3 is named by a code of the base at the position of the base, '
+      'the line of the departure and the line of PT3 say that position — not « à placer » —, « À compléter » says nothing of « lieux à placer » for them, and a true place « to place » '
+      '(no position, no code: PT4) is still said « à placer » and still counted', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0506 (the user: « oui. mais il est encore noté « à placer ». ») — modules/missions/editor.js `todo`, `veilTodo`, modules/missions/editor_view.js `dms`, `edPlacesHtml`; '
+      'EDITOR.md § 7 tresquinquagies')
+def n193(c):
+    unplaced = row(c, 'plUnplaced')
+    at = '44°33′N 1°51′E'
+    for width in (390, 1280):
+        for extra, want_todo in (('', False), ('  - { id: PT4, name: Col perdu }\n', True)):
+            text = _LKP_MISSION.replace('zones:', extra + 'zones:', 1) if extra else _LKP_MISSION
+            assert extra in text
+            c.page.set_viewport_size({'width': width, 'height': c.height})
+            c.page.goto(c.base + '/frame/manifest.webmanifest')
+            c.js(_REG_CLEAR)
+            c.js(_TEXTS_JS, [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', text]])
+            c.open('missions', wait=False, app='company', aero_extra=_LK_BASE)
+            c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
+            c.tap(f'{M} [data-do="regopen"]')
+            c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
+            c.tap(f'{R} [data-rowid="X-001A"]')
+            c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+            ed_reveal(c)
+            ed_places(c)
+            c.wait(800)
+            rows = c.js(_LKP_ROWS)
+            dep = [r for r in rows if r[0] == 'dep'][0]
+            pt3 = [r for r in rows if r[1] and r[1].startswith('PT3')][0]
+            c.ok(unplaced not in ' '.join(dep) and at in dep[2], dep, f'{width}: the departure XTSL, a known code, says the position of the base — not « à placer »')
+            c.ok(unplaced not in ' '.join(pt3) and at in pt3[2], pt3, f'{width}: PT3 named XTSL at the position of the base says that position — not « à placer »')
+            if want_todo:
+                pt4 = [r for r in rows if r[1] and r[1].startswith('PT4')][0]
+                c.ok(unplaced in ' '.join(pt4), pt4, f'{width}: PT4, a true place to place, is still said « à placer »')
+            c.tap(f'{E} [data-do="edtodo"]')
+            c.eq('unplaced' in c.js(_LKP_TODO), want_todo, f'{width}: « À compléter » counts « lieux à placer » only with a true place to place (PT4 here: {want_todo})', what='the unplaced item')
+            ed_leave(c)
+            c.js(_REG_CLEAR)
