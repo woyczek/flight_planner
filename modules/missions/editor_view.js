@@ -52,16 +52,21 @@
 // suivent les lieux ; ils comptent dans « À compléter ».
 // Le déroulé est une LISTE VERTICALE (SOG-0467 ; l'utilisateur : « je préfère réduire le texte secondaire et étirer en hauteur ») — les
 // lignes de liste de la suite (f-list, f-item, celles de la liste des missions) : « Au départ », un tiroir par ligne (sa marque, « Tiroir n
-// · son titre », sa clé en une ligne), « ＋ Tiroir » ; aucun défilement en largeur. « ＋ Tiroir » n'ajoute plus rien d'office : il ouvre
-// SUR PLACE, sous lui, le choix du TYPE (s.ed.kinds = 'new' ; DR.offered : les sortes que le vol juge, SOG-0500 (c)) — un type touché
-// crée le tiroir avec cette clé (DR.keyed : ce
-// qu'une clé neuve devine) et ouvre sa fiche ; la clé d'un tiroir existant se change par LE MÊME choix, dans sa fiche (s.ed.kinds =
-// 'drawer') ; « ＋ Tiroir » retouché, ou « Annuler », le referme sans rien créer.
-// Les briques (lot « modèles de mission », décision A) : sous « ＋ Tiroir », LE MÊME choix propose aussi les briques du catalogue livré
-// (modules/missions/catalog.yaml, lu une fois par page par edCatalog, borné par CAT.readCatalog) — celles d'une famille à la fois (une
-// liste des familles, d'abord celle de la mission ; s.ed.brickFam) ; une brique touchée crée le tiroir avec sa clé (DR.keyed, par
-// CAT.drawerFrom), son titre, son message et son heure de repli, et ouvre sa fiche. Pas dans la fiche d'un tiroir : changer de clé ne
-// réécrit pas les textes de l'auteur.
+// · son titre », sa clé en une ligne), « ＋ Tiroir · Choisir une brique » ; aucun défilement en largeur.
+// La fenêtre des briques (SOG-0508, le geste de la maquette de l'utilisateur ; elle remplace le choix « sur place » de SOG-0467) :
+// « ＋ Tiroir » ouvre une fenêtre modale « Choisir une brique de tiroir » (s.ed.kinds = 'new') — la boîte du cadre (.f-modal), posée
+// dans document.body (KW, kwSync après chaque dessin : la vue du cadre est un conteneur de requêtes, une boîte « fixed » posée dans le
+// module n'en sortirait pas), plein écran au téléphone. Elle porte « Fermer » (Échap aussi : rien n'est créé), « Rechercher une
+// brique… » (s.ed.kq : la liste seule est refaite à la frappe), une ligne de compte (familles et briques proposées, appareil, famille
+// de la mission) et la liste en plis de la suite (SogFrame.fold : frame/lib/fold.js, donné par le cadre ; s.ed.kfold retient ce que
+// l'auteur ouvre ou ferme) — « Actions transverses » d'abord (les briques de toute mission), puis les thèmes de la maquette › une
+// famille › ses briques, puis « Une clé seule » (DR.offered : une clé sans texte). Seules les briques dont le vol juge la clé
+// (SOG-0500 (c)) ; le catalogue livré (modules/missions/catalog.yaml, lu une fois par page par edCatalog, borné par CAT.readCatalog).
+// UN toucher sur une brique crée le tiroir (CAT.drawerFrom : sa clé — ce que DR.keyed devine, rien n'est inventé : les lieux restent
+// « à placer » —, son titre, son message et son heure de repli), ferme la fenêtre, choisit le tiroir (sa fiche s'ouvre, son titre en
+// main) et le dit dans une notification qui porte « Annuler » (edAddUndo) ; douze tiroirs au plus. « Changer la clé », dans la fiche
+// d'un tiroir, ouvre LA MÊME fenêtre (s.ed.kinds = 'drawer') : une brique y change la clé et ses réglages, jamais les textes de
+// l'auteur ; une clé seule, la clé (DR.keyed).
 // Le modèle de la mission (lot « modèles de mission », décisions B et D ; la variante #modele de la maquette) : dans l'atelier ENTIER,
 // une ligne sous le titre dit le modèle (« Modèle : Recherche sur un glacier », ou « aucun ») et porte « Changer de modèle » (« Choisir
 // un modèle » sans modèle), qui ouvre SUR PLACE la liste des modèles (s.ed.modelOpen) : ceux du catalogue livré puis les modèles
@@ -151,6 +156,9 @@ import {
   createAdField
 } from '../../frame/lib/ad_field.js'; // SOG-0465 : le champ de terrain de la suite (Départ, Arrivée), celui de Carburant
 import {
+  foldLower
+} from '../../frame/lib/text.js'; // SOG-0508 : la recherche de la fenêtre des briques (accents et capitales ignorés)
+import {
   EDTX,
   citedText,
   removedText,
@@ -184,8 +192,8 @@ export function init(tools) {
 let CATALOG = null;
 
 /** Lit le catalogue livré (une fois par page) et le pose dans la séance (s.ed.cat) ; refusé ou absent (hors ligne sans copie) : un
- *  catalogue vide — l'atelier marche sans briques. À son arrivée, seul le choix ouvert sous « ＋ Tiroir » est redessiné (jamais un
- *  champ en cours de frappe). */
+ *  catalogue vide — l'atelier marche sans briques. À son arrivée, l'écran n'est redessiné que si la fenêtre des briques ou la liste des
+ *  modèles est ouverte (jamais un champ en cours de frappe : la fenêtre ne réécrit son contenu que s'il change, kwSync). */
 async function edCatalog(s) {
   const e = s.ed;
   if (!e) return;
@@ -207,7 +215,7 @@ async function edCatalog(s) {
   if (state() !== s || s.ed !== e) return;
   e.cat = cat;
   e.mine = mine;
-  if (e.kinds === 'new' || e.modelOpen) return draw(s);
+  if (['new', 'drawer'].includes(e.kinds) || e.modelOpen) return draw(s);
   // la ligne du modèle dit son nom, désormais connu : sur place (aucun bouton n'est remplacé)
   const name = s.el?.querySelector('[data-atmodelname]');
   put(name, edModelLine(s));
@@ -519,8 +527,29 @@ ${EM.MAP_CSS}[data-module="missions"] .ms-atsketch{display:flex;align-items:cent
 [data-module="missions"] .ms-kind>b::first-letter{text-transform:uppercase}
 [data-module="missions"] .ms-kind[aria-pressed="true"]{border-color:var(--sog-accent,#1a73e8);box-shadow:inset 0 0 0 1px var(--sog-accent,#1a73e8)}
 [data-module="missions"] .ms-kinds>.ms-kindoff{justify-self:start;min-height:44px}
-[data-module="missions"] .ms-bricks{margin:6px 0 0;padding-top:6px;border-top:1px solid var(--sog-line,#ddd)} /* les briques du catalogue, sous les types */
-[data-module="missions"] .ms-bricks>.f-field{margin:0}
+/* SOG-0508 : la fenêtre des briques, posée dans document.body (hors du module) : la boîte du cadre (.f-modal), plus large ; plein écran
+   jusqu'à 760 px ; la liste défile dans la fenêtre, le titre et la recherche restent à la vue ; toutes les touches à 44 px */
+.f-modal.ms-brickdlg>div{width:min(760px,100%);max-height:min(90vh,calc(100dvh - 32px));overflow:hidden;gap:8px}
+.f-modal.ms-brickdlg>div>.ms-kwpool{flex:1 1 auto;min-height:0;overflow:auto;overscroll-behavior:contain}
+.f-modal.ms-brickdlg>div>.ms-kwmeta{flex:none;overflow:visible}
+.ms-brickdlg .ms-kwhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ms-brickdlg .ms-kwhead h3{margin:0;min-width:0;overflow-wrap:anywhere}
+.ms-brickdlg .ms-kwhead button{flex:none;min-height:var(--sog-touch,44px)}
+.ms-brickdlg input[data-kwq]{width:100%;min-height:var(--sog-touch,44px);box-sizing:border-box}
+.ms-brickdlg .ms-kwmeta{margin:0}
+.ms-brickdlg .ms-kwpool summary{display:flex;align-items:center;gap:6px;min-height:var(--sog-touch,44px);cursor:pointer;font-weight:600}
+.ms-brickdlg .ms-kwgrp{border-bottom:1px solid var(--sog-border,#ddd)}
+.ms-brickdlg .ms-kwfam{margin-left:12px}
+.ms-brickdlg .ms-kwfam>summary{font-weight:400}
+.ms-brickdlg .ms-kwitem{display:flex;align-items:flex-start;gap:10px;width:100%;min-height:var(--sog-touch,44px);padding:8px 6px;margin:0;border:0;border-bottom:1px solid var(--sog-border,#ddd);border-radius:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.ms-brickdlg .ms-kwitem>*{pointer-events:none;min-width:0}
+.ms-brickdlg .ms-kwsym{flex:none;width:22px;font-size:18px;line-height:1.2;color:var(--sog-accent,#1a73e8)}
+.ms-brickdlg .ms-kwtext>b{display:block;font-weight:600}
+.ms-brickdlg .ms-kwtext>b::first-letter{text-transform:uppercase}
+.ms-brickdlg .ms-kwtext>.f-muted{display:block}
+.ms-brickdlg .ms-kwitem[aria-pressed="true"]{box-shadow:inset 3px 0 0 var(--sog-accent,#1a73e8)}
+@media (max-width:760px){.f-modal.ms-brickdlg{padding:0;place-items:stretch}.f-modal.ms-brickdlg>div{width:100%;height:100dvh;max-height:none;border-radius:0;box-sizing:border-box}}
+[data-module="missions"] .ms-kindchg{color:var(--sog-link,var(--sog-accent,#1a73e8));font-size:.9em}
 [data-module="missions"] .ms-atmodel{margin:0 0 10px} /* le modèle de la mission, sous le titre (lot « modèles de mission ») */
 [data-module="missions"] .ms-atmodelline{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;margin:0}
   [data-module="missions"] .ms-atmodelline>.f-linkbtn{padding-left:0;padding-right:0} /* retouche de l'ergonome : sans le retrait latéral du lien (le bord gauche reste aligné sur « Modèle : … »), mais gardant les 44 px de haut de la cible tactile */
@@ -1282,7 +1311,7 @@ function edStartRowHtml(s, on) {
 
 /** Le déroulé de la mission (SOG-0467 : une liste verticale, les lignes de liste de la suite) : « Au départ » (visible), puis un tiroir
  *  par ligne dans l'ordre — sa marque, « Tiroir n · son titre », sa clé en une ligne ; lus par le lecteur (frame/lib/mission.js) sur
- *  le document de la séance — et « ＋ Tiroir » (douze au plus), qui ouvre sous lui le choix du type (edKindsHtml). Une ligne se
+ *  le document de la séance — et « ＋ Tiroir » (douze au plus), qui ouvre la fenêtre des briques (SOG-0508, kwSync). Une ligne se
  *  touche : sa fiche s'ouvre (SOG-0445). Les lignes sont des boutons : rien n'y est remplacé pendant la frappe (edRefresh). */
 function edFlowHtml(s, doc, run = null) {
   const e = s.ed;
@@ -1292,35 +1321,245 @@ function edFlowHtml(s, doc, run = null) {
   const drawers = edMission(doc)?.drawers || [],
     todo = new Set(edDrawersTodo(doc).map(t => t.name)),
     sel = e.sel || 'start',
-    on = id => sel === id ? ' aria-current="true"' : '',
-    adding = e.kinds === 'new';
+    on = id => sel === id ? ' aria-current="true"' : '';
   return `<section class="f-card ms-atflow" data-atflow><div class="ms-atflowhead"><h3>${esc(s.tt(EDTX.atFlow))}</h3><button type="button" data-do="${run ? 'edtrialoff' : 'edtrial'}" data-trbtn aria-pressed="${!!run}">${esc(s.tt(run ? EDTX.trClose : EDTX.trBtn))}</button></div>
-    <div class="f-list ms-atflowlist">${edStartRowHtml(s, sel === 'start')}${drawers.map(d => `<button type="button" class="f-item ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="f-item ms-atpart ms-atadd" data-do="eddradd" data-dradd aria-expanded="${adding}">${esc(s.tt(EDTX.dwAdd))}</button>${adding ? edKindsHtml(s, 'new') : ''}` : ''}</div></section>`;
+    <div class="f-list ms-atflowlist">${edStartRowHtml(s, sel === 'start')}${drawers.map(d => `<button type="button" class="f-item ms-atpart" data-do="edsel" data-sel="${esc(d.id)}" data-part="${d.rank}" data-kind="drawer"${on(d.id)}><span class="ms-atparthead"><span class="ms-stepmark" data-kind="${todo.has(String(d.rank)) ? 'warn' : 'ok'}" data-dmark="${d.rank}" aria-hidden="true">${todo.has(String(d.rank)) ? '!' : '✓'}</span><b data-dtitle="${d.rank}">${esc(s.tt(EDTX.atDrawer, { n: d.rank }))}${d.title ? ` · ${esc(d.title)}` : ''}</b></span><span class="ms-trstate" data-trstate="${d.rank}" data-open="${run?.ok && run.drawers.find(x => x.id === d.id)?.open ? '1' : ''}">${run?.ok ? esc(trState(s, run.drawers.find(x => x.id === d.id) || {})) : ''}</span><span class="f-muted" data-dkey="${d.rank}">${esc(s.tt(EDTX[`atKey_${d.key.kind}`] || EDTX.atKey_hand))}</span></button>`).join('')}${drawers.length < MS.DRAWER_IDS.length ? `<button type="button" class="f-item ms-atpart ms-atadd" data-do="eddradd" data-dradd aria-haspopup="dialog"><b>${esc(s.tt(EDTX.dwAdd))}</b><span class="f-muted">${esc(s.tt(EDTX.dwAddSub))}</span></button>` : ''}</div></section>`;
 }
 
-/** Le choix du TYPE d'un tiroir (SOG-0467) — LE MÊME sous « ＋ Tiroir » (`where` : 'new', le tiroir naît avec la clé touchée) et dans
- *  la fiche d'un tiroir ('drawer', sa clé change) : une ligne par sorte que DR.offered propose (les sortes que le vol juge — drawers.js
- *  `follows`, SOG-0500 (c) —, et la clé en cours du tiroir), son nom ; une sorte que le vol ne juge pas encore (la clé en cours) le dit
- *  en une ligne ; la clé en cours est marquée ; « Annuler » referme sans rien changer. */
-function edKindsHtml(s, where, cur = '') {
-  return `<div class="f-list ms-kinds" data-kinds="${where}" role="group" aria-label="${esc(s.tt(EDTX.dwKey))}">${DR.offered(cur).map(t => `<button type="button" class="f-item ms-kind" data-do="edkind" data-key="${t.key}" aria-pressed="${t.key === cur}"><b>${esc(s.tt(EDTX[`dwKey_${t.key}`]))}</b>${t.judged ? '' : `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>`}</button>`).join('')}${where === 'new' ? edBricksHtml(s) : ''}<button type="button" class="f-linkbtn ms-kindoff" data-do="edkindoff">${esc(s.tt(TX.cancel))}</button></div>`;
+/** SOG-0508 : la fenêtre des briques en vie — { s, el, sig, pool, fresh, off } ; une à la fois, posée dans document.body (kwSync). */
+let KW = null;
+
+/** Les thèmes de la fenêtre des briques (ceux de la maquette de l'utilisateur, SOG-0508) : leur clé (EDTX.dwDom_<clé>) et leurs
+ *  familles dans l'ordre ; une famille du catalogue qui n'y est pas va dans « Autres familles ». */
+const KW_DOMAINS = Object.freeze([
+  ['help', ['HEMS', 'SAR', 'HADR']],
+  ['sea', ['MARITIME', 'LE']],
+  ['fire', ['FIRE']],
+  ['lift', ['AIRLIFT', 'AIRBORNE', 'SPECIAL']],
+  ['ops', ['COMBAT', 'ISR', 'COMMAND', 'AAR', 'SOF']],
+  ['measure', ['FI', 'SURVEY']]
+]);
+
+/** Le symbole d'une sorte de clé (ceux de la maquette ; l'heure, qu'elle ne dessine pas : ◷) ; « + » pour une autre. */
+const KW_SYM = Object.freeze({
+  hand: '✓',
+  time: '◷',
+  zone: '◯',
+  object: '◇',
+  arrival: '⚑',
+  landing: '⚑',
+  hover: '⊙',
+  overflight: '⌖',
+  sequence: '⇅',
+  event: '↗'
+});
+
+/** Un pli de la fenêtre : celui de la suite (frame/lib/fold.js, que le cadre donne par SogFrame.fold — l'importer ici l'ajouterait aux
+ *  fichiers du module) ; sans lui (le cadre n'a pas pu le charger), un groupe toujours ouvert, son titre en tête. */
+function kwFold(o) {
+  const F = globalThis.SogFrame?.fold;
+  return F ? F.fold(o) : `<section class="${esc(o.cls)}"><h4>${o.head ?? esc(o.title)}</h4>${o.body}</section>`;
 }
 
-/** La famille dont le choix montre les briques : celle choisie dans la liste, sinon celle de la mission, sinon la première. */
-const edBrickFam = (e, fams) => fams.includes(e.brickFam) ? e.brickFam : fams.includes(e.cadre?.family) ? e.cadre.family : fams[0] || '';
-
-/** Les briques du catalogue dans le choix du type (sous « ＋ Tiroir ») : la liste des familles qui en ont, puis les briques de la famille
- *  choisie — sept au plus, chacune son titre et sa clé en une ligne ; rien tant que le catalogue n'est pas lu, ou s'il est vide. */
-function edBricksHtml(s) {
+/** Ce que la fenêtre propose (SOG-0508) : les briques du catalogue dont le vol juge la clé (SOG-0500 (c)), les familles nommées dans la
+ *  langue, la famille de la mission, et `cur` : la clé en cours du tiroir (« Changer la clé »), '' sous « ＋ Tiroir ». */
+function kwOffer(s) {
   const e = s.ed,
-    bricks = (e.cat?.bricks || []).filter(b => DR.judgedKind(b.key)); // SOG-0500 (d) : la règle de leur clé (rien que le vol ne juge pas)
-  if (!bricks.length) return '';
-  const lang = s.ctx.lang?.() || 'fr',
-    fams = [...new Set(bricks.map(b => b.family))],
-    fam = edBrickFam(e, fams),
-    labels = new Map(edFamilies(s, lang).map(f => [f.code, f.label])),
-    label = f => f === 'common' ? s.tt(EDTX.dwBrickCommon) : labels.get(f) || f;
-  return `<div class="f-list ms-bricks" data-bricks role="group" aria-label="${esc(s.tt(EDTX.dwBricks))}"><label class="f-field"><span>${esc(s.tt(EDTX.dwBricks))}</span><select data-k="edbrickfam">${fams.map(f => `<option value="${esc(f)}"${f === fam ? ' selected' : ''}>${esc(label(f))}</option>`).join('')}</select></label>${bricks.filter(b => b.family === fam).slice(0, 7).map(b => `<button type="button" class="f-item ms-kind" data-do="edbrick" data-brick="${esc(b.id)}"><b>${esc(CAT.textIn(b.title, lang))}</b><span class="f-muted">${esc(s.tt(EDTX[`dwKey_${b.key}`] || EDTX.dwKey_hand))}</span></button>`).join('')}</div>`;
+    lang = s.ctx.lang?.() || 'fr';
+  return {
+    e,
+    lang,
+    bricks: (e.cat?.bricks || []).filter(b => DR.judgedKind(b.key)),
+    // le nom d'une famille, celui de la table des thèmes (« Récupération de personnel ») ; une famille qu'elle ne connaît pas : celui du registre
+    labels: new Map([...edFamilies(s, lang).map(f => [f.code, f.label]), ...MT.themes(lang).map(t => [t.id, t.name || t.short])]),
+    cur: e.kinds === 'drawer' ? edDrawerRow(e)?.key || '' : '',
+    fam: String(e.cadre?.family || '')
+  };
+}
+
+/** La liste de la fenêtre pour le texte cherché (s.ed.kq) : « Actions transverses » d'abord (les briques de toute mission), puis un pli par
+ *  thème › un pli par famille › ses briques (un bouton chacune : son symbole, son titre, sa clé en une ligne, son brief au survol), puis
+ *  « Une clé seule » (ce que DR.offered propose : une clé sans texte ; la clé en cours d'un tiroir marquée). Sans texte cherché, ouverts :
+ *  le thème et la famille de la mission (et « Une clé seule » pour changer une clé), sauf ce que l'auteur a ouvert ou fermé (s.ed.kfold) ;
+ *  avec un texte, ce qui y répond (accents et capitales ignorés), tout ouvert ; rien : « Aucune brique correspondante. » */
+function kwPoolHtml(s, o) {
+  const {
+    e,
+    lang,
+    bricks,
+    labels,
+    cur,
+    fam
+  } = o,
+  q = foldLower(e.kq || ''),
+    keyName = k => s.tt(EDTX[`dwKey_${k}`] || EDTX.dwKey_hand),
+    famName = f => labels.get(f) || f,
+    hit = text => !q || foldLower(text).includes(q),
+    kept = e.kfold || {},
+    open = (k, dflt) => q ? true : k in kept ? !!kept[k] : dflt,
+    sym = k => `<span class="ms-kwsym" data-kwsym aria-hidden="true">${KW_SYM[k] || '+'}</span>`,
+    brick = b => `<button type="button" class="ms-kwitem" data-do="edbrick" data-brick="${esc(b.id)}" title="${esc(CAT.textIn(b.message, lang))}">${sym(b.key)}<span class="ms-kwtext"><b>${esc(CAT.textIn(b.title, lang))}</b><span class="f-muted">${esc(keyName(b.key))}</span></span></button>`,
+    found = bricks.filter(b => hit([CAT.textIn(b.title, lang), CAT.textIn(b.message, lang), famName(b.family), b.family, keyName(b.key)]
+      .join(
+        ' '))),
+    common = found.filter(b => b.family === 'common'),
+    fams = [...new Set(found.filter(b => b.family !== 'common').map(b => b.family))],
+    known = new Set(KW_DOMAINS.flatMap(d => d[1])),
+    types = DR.offered(cur).filter(x => hit(keyName(x.key))),
+    out = [];
+  if (common.length) out.push(kwFold({
+    cls: 'ms-kwgrp',
+    key: 'common',
+    open: open('common', false),
+    title: s.tt(EDTX.dwWinCommon),
+    body: common.map(brick).join('')
+  }));
+  for (const [d, list] of [...KW_DOMAINS, ['other', fams.filter(f => !known.has(f))]]) {
+    const here = list.filter(f => fams.includes(f));
+    if (here.length) out.push(kwFold({
+      cls: 'ms-kwgrp',
+      key: `dom:${d}`,
+      open: open(`dom:${d}`, here.includes(fam)),
+      title: s.tt(EDTX[`dwDom_${d}`]),
+      body: here.map(f => kwFold({
+        cls: 'ms-kwfam',
+        attrs: {
+          'data-brickfam': f
+        },
+        key: `fam:${f}`,
+        open: open(`fam:${f}`, f === fam),
+        head: `<b>${esc(famName(f))}</b> <small class="f-muted">${esc(f)}</small>`,
+        body: found.filter(b => b.family === f).map(brick).join('')
+      })).join('')
+    }));
+  }
+  if (types.length) out.push(kwFold({
+    cls: 'ms-kwgrp',
+    key: 'keys',
+    open: open('keys', e.kinds === 'drawer'),
+    title: s.tt(EDTX.dwWinKeys),
+    body: types.map(x => `<button type="button" class="ms-kwitem" data-do="edkind" data-key="${x.key}" aria-pressed="${x.key === cur}">${sym(x.key)}<span class="ms-kwtext"><b>${esc(keyName(x.key))}</b>${x.judged ? '' : `<span class="f-muted">${esc(s.tt(EDTX.dwNotJudged))}</span>`}</span></button>`).join('')
+  }));
+  return out.join('') || `<p class="f-muted" data-kwnone>${esc(s.tt(EDTX.dwWinNone))}</p>`;
+}
+
+/** Le contenu de la fenêtre des briques (la maquette : « Choisir une brique de tiroir ») : son titre et « Fermer », le champ « Rechercher une
+ *  brique… », la ligne de compte (les familles et les briques proposées, l'appareil de la mission — sa première équipe — et sa famille),
+ *  la liste (kwPoolHtml). */
+function kwHtml(s, o) {
+  const team = ED.teamsOf(edDoc(o.e))[0],
+    unset = s.tt(EDTX.dwWinUnset),
+    meta = s.tt(EDTX.dwWinMeta, {
+      f: new Set(o.bricks.filter(b => b.family !== 'common').map(b => b.family)).size,
+      b: o.bricks.length,
+      a: team?.type || team?.name || unset,
+      m: o.fam ? o.labels.get(o.fam) || o.fam : unset
+    });
+  return `<div role="dialog" aria-modal="true" aria-labelledby="ms-kw-title"><div class="ms-kwhead"><h3 id="ms-kw-title">${esc(s.tt(EDTX.dwWinTitle))}</h3><button type="button" data-do="edkindoff">${esc(s.tt(EDTX.dwWinClose))}</button></div>
+    <input type="search" data-kwq value="${esc(o.e.kq || '')}" placeholder="${esc(s.tt(EDTX.dwWinSearch))}" aria-label="${esc(s.tt(EDTX.dwWinSearchLabel))}" maxlength="60" autocomplete="off" spellcheck="false">
+    <p class="f-muted ms-kwmeta" data-kwmeta>${esc(meta)}</p><div class="ms-kwpool" data-kwpool>${KW.pool = kwPoolHtml(s, o)}</div></div>`;
+}
+
+/** La fenêtre suit l'état de l'atelier, après chaque dessin (edAfter) : ouverte tant que s.ed.kinds vaut 'new' (« ＋ Tiroir ») ou
+ *  'drawer' (« Changer la clé »), jamais dans l'atelier voilé ; son contenu n'est réécrit que si ce qu'elle montre change (la sorte, la
+ *  clé en cours, le catalogue, la langue, la famille : la recherche garde sa frappe) ; à l'ouverture, la recherche prend le focus. */
+function kwSync(s) {
+  const e = s?.ed,
+    on = !!e && !e.veil && ['new', 'drawer'].includes(e.kinds);
+  if (!on || KW && KW.s !== s) kwStop();
+  if (!on) return;
+  const o = kwOffer(s),
+    sig = [e.kinds, o.cur, o.bricks.length, o.lang, o.fam].join('|');
+  if (!KW) KW = kwStart(s);
+  if (KW.sig === sig) return;
+  const had = KW.fresh || KW.el.contains(document.activeElement) && document.activeElement.matches('input[data-kwq]');
+  KW.sig = sig;
+  KW.el.dataset.kinds = e.kinds;
+  KW.el.innerHTML = kwHtml(s, o);
+  KW.fresh = false;
+  if (had) KW.el.querySelector('input[data-kwq]')?.focus();
+}
+
+/** Pose la fenêtre dans la page, avec ses écoutes : un bouton « ed… » touché va à edClick (comme ceux de l'atelier), la frappe de la
+ *  recherche refait la liste seule (si elle change), Échap ferme sans rien créer (avant l'Échap du cadre : la touche est prise), un pli
+ *  ouvert ou fermé est retenu pour la séance (wireFolds). */
+function kwStart(s) {
+  const el = document.createElement('div');
+  el.className = 'f-modal ms-brickdlg';
+  const click = ev => {
+      const b = ev.target.closest?.('button[data-do]');
+      if (b && el.contains(b) && state() === s && s.ed) edClick(s, b);
+    },
+    input = ev => {
+      if (!ev.target.matches?.('input[data-kwq]') || !s.ed || !KW) return;
+      const q = String(ev.target.value ?? '').slice(0, 60);
+      if (q === (s.ed.kq || '')) return;
+      s.ed.kq = q;
+      s.ed.kfold = {}; // un autre texte : ses plis s'ouvrent d'eux-mêmes (comme la maquette)
+      const html = kwPoolHtml(s, kwOffer(s)),
+        pool = el.querySelector('[data-kwpool]');
+      if (pool && html !== KW.pool) {
+        KW.pool = html;
+        pool.innerHTML = html;
+      }
+    },
+    key = ev => {
+      if (ev.key !== 'Escape' || ev.defaultPrevented || !s.ed) return;
+      ev.preventDefault();
+      kwClose(s);
+    },
+    offFold = globalThis.SogFrame?.fold?.wireFolds(el, (k, open) => {
+      if (s.ed) s.ed.kfold = {
+        ...(s.ed.kfold || {}),
+        [k]: open
+      };
+    }, {
+      get: k => s.ed?.kfold?.[k]
+    }) || (() => {});
+  el.addEventListener('click', click);
+  el.addEventListener('input', input);
+  document.addEventListener('keydown', key);
+  document.body.append(el);
+  return {
+    s,
+    el,
+    sig: '',
+    pool: '',
+    fresh: true,
+    off: () => {
+      el.removeEventListener('click', click);
+      el.removeEventListener('input', input);
+      document.removeEventListener('keydown', key);
+      offFold();
+      el.remove();
+    }
+  };
+}
+
+/** Retire la fenêtre et ses écoutes (fermée, hors de l'atelier, au démontage). */
+function kwStop() {
+  const k = KW;
+  KW = null;
+  k?.off();
+}
+
+/** Ouvre la fenêtre : 'new' (« ＋ Tiroir ») ou 'drawer' (« Changer la clé » du tiroir choisi) ; la recherche repart vide ; le catalogue
+ *  est relu s'il ne l'est pas encore (la fenêtre se redessine à son arrivée). */
+function kwOpen(s, where) {
+  const e = s.ed;
+  e.kinds = where;
+  e.kq = '';
+  if (!e.cat) edCatalog(s);
+  draw(s);
+}
+
+/** « Fermer », Échap : la fenêtre se ferme sans rien créer ni changer ; le focus revient à ce qui l'a ouverte. */
+function kwClose(s) {
+  const was = s.ed?.kinds;
+  if (!was) return;
+  s.ed.kinds = '';
+  draw(s);
+  s.el?.querySelector(was === 'drawer' ? '[data-drawer] [data-kindcur]' : '[data-atflow] [data-dradd]')?.focus();
 }
 
 /** Les lignes des Lieux que la « Vue du pilote » garde (SOG-0448) : au stade choisi, seulement ce que le lecteur rend au pilote
@@ -2636,13 +2875,16 @@ export function edAfter(s) {
       DRAFT_LIVE = null;
       if (live?.ed) edDraftLast(live, live.ed);
       edAdStop();
+      kwStop(); // SOG-0508 : la fenêtre des briques, posée hors du module
       return EM.stop();
     }
     // hors de l'atelier : la carte de l'ATELIER seulement — celle d'un bloc en lecture (mission_map.js : le Brief, la liseuse) reste
     if (!s.ed) {
       edAdStop();
+      kwStop();
       return EM.editing() ? EM.stop() : undefined;
     }
+    kwSync(s); // SOG-0508 : la fenêtre des briques suit l'état (ouverte, fermée, son contenu)
     edDraftSoon(s); // SOG-0486 : ce que ce dessin montre est gardé sur l'appareil (au plus un écrit par seconde)
     edAd(s).paint(); // SOG-0465 : les lignes de nom sous Départ et Arrivée
     edMapShow(s);
@@ -2950,8 +3192,7 @@ function edDrawerHtml(s, doc) {
     group = (k, title, inner) => `<div class="ms-dgrp" data-dgrp="${k}" data-open="${open[k] ? '1' : ''}"><button type="button" class="ms-atsum ms-dsum" data-do="eddrgrp" data-grp="${k}" aria-expanded="${!!open[k]}"><b>${esc(s.tt(title))}</b><span class="ms-atline f-muted" data-dline="${k}">${esc(lines[k])}</span></button><div class="ms-dbody">${inner}</div></div>`;
   return `<section class="f-card ms-atsheet" data-atsheet data-drawer="${esc(r.id)}"><h3 data-dwhead>${esc(s.tt(EDTX.dwSheet, { n: at + 1 }))}</h3>
     <div class="ms-dgrp" data-dgrp="key" data-open="1"><h4>${esc(s.tt(EDTX.dwGrpKey))}</h4>
-      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-expanded="${e.kinds === 'drawer'}"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span aria-hidden="true">▾</span>${read && MS.notJudgedYet(read.key) || DR.KEYS.includes(r.key) && !DR.judgedKind(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
-      ${e.kinds === 'drawer' ? edKindsHtml(s, 'drawer', r.key) : ''}
+      <div class="f-field"><span>${esc(s.tt(EDTX.dwKey))}</span><button type="button" class="f-item ms-kind" data-do="edkindopen" data-kindcur="${esc(r.key)}" aria-haspopup="dialog"><b>${esc(s.tt(EDTX[`dwKey_${r.key}`] || EDTX.dwKey_kept))}</b><span class="ms-kindchg" data-kindchg>${esc(s.tt(EDTX.dwKeyChange))}</span>${read && MS.notJudgedYet(read.key) || DR.KEYS.includes(r.key) && !DR.judgedKind(r.key) ? `<span class="f-muted" data-dwnotjudged>${esc(s.tt(EDTX.dwNotJudged))}</span>` : ''}</button></div>
       ${body}${emits || DR.judgedKind('event') ? edEmitHtml(s, r) : ''}</div>
     ${group('texts', EDTX.dwGrpTexts, `${field('title', EDTX.dwTitle, r.title, ' maxlength="120"')}
       <label class="f-field"><span>${esc(s.tt(EDTX.dwMessage))}</span><textarea data-k="eddr" data-f="message" rows="3" maxlength="2000">${esc(r.message)}</textarea></label>
@@ -3146,11 +3387,6 @@ export function edInput(s, ev) {
   const e = s.ed,
     k = ev.target?.dataset?.k;
   if (k === 'eddr') return e.veil ? undefined : edDrawerInput(s, ev); // la fiche d'un tiroir (jamais dans l'atelier voilé)
-  if (k === 'edbrickfam') { // les briques d'une autre famille, sous « ＋ Tiroir » : rien n'est créé
-    if (ev.type !== 'change' || ev.target.tagName !== 'SELECT' || e.veil || e.kinds !== 'new') return;
-    e.brickFam = String(ev.target.value || '').slice(0, 24);
-    return draw(s);
-  }
   if (k === 'edrefseek') { // « Chercher un repère » : le texte est gardé ; Entrée (un « change » le champ encore en main) cherche
     e.refSeek = String(ev.target.value ?? '').slice(0, 40);
     if (e.seekRows) { // le texte a changé : les candidats de l'ancien ne se proposent plus
@@ -3719,17 +3955,14 @@ export function edClick(s, b) {
       draw(s);
       return edSheetShow(s); // SOG-0467 : la fiche choisie vient à l'écran
     }
-    case 'eddradd': // « ＋ Tiroir » (SOG-0467) : ouvre sous lui le choix du type, retouché il le referme — rien n'est créé
+    case 'eddradd': // « ＋ Tiroir » (SOG-0508) : la fenêtre des briques s'ouvre — rien n'est créé
       if (!DR.blankDrawer(edDrawers(s.ed), s.ed.base)) return s.ctx.notify(s.tt(EDTX.dwMax), 'info');
-      s.ed.kinds = s.ed.kinds === 'new' ? '' : 'new';
-      return draw(s);
-    case 'edkindopen': // la clé d'un tiroir : le même choix, ouvert ou refermé dans sa fiche
+      return kwOpen(s, 'new');
+    case 'edkindopen': // « Changer la clé » d'un tiroir : LA MÊME fenêtre
       if (!edDrawerRow(s.ed)) return;
-      s.ed.kinds = s.ed.kinds === 'drawer' ? '' : 'drawer';
-      return draw(s);
-    case 'edkindoff': // « Annuler » : le choix se referme, rien n'est créé ni changé
-      s.ed.kinds = '';
-      return draw(s);
+      return kwOpen(s, 'drawer');
+    case 'edkindoff': // « Fermer » : la fenêtre se ferme, rien n'est créé ni changé
+      return kwClose(s);
     case 'edkind':
       return edKind(s, b.dataset.key);
     case 'edmodel': // « Changer de modèle » / « Choisir un modèle » : la liste s'ouvre sous la ligne, retouché il la referme
@@ -3744,7 +3977,7 @@ export function edClick(s, b) {
       return edModelPick(s, b.dataset.model, b.dataset.own === '1');
     case 'edmodelsave': // « Enregistrer comme modèle » (l'atelier entier seulement)
       return edModelSave(s);
-    case 'edbrick': { // une brique du catalogue, sous « ＋ Tiroir » : le tiroir naît d'elle (une brique que le catalogue lu ne porte pas : rien)
+    case 'edbrick': { // une brique de la fenêtre : le tiroir naît d'elle, ou la clé du tiroir devient la sienne (une brique que le catalogue lu ne porte pas : rien)
       const brick = (s.ed.cat?.bricks || []).find(x => x.id === b.dataset.brick && DR.judgedKind(x.key));
       return brick ? edKind(s, brick.key, brick) : undefined;
     }
@@ -4101,10 +4334,11 @@ const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddr
   'edmodeloff', 'edmodelpick', 'edmodelsave'
 ]);
 
-/** Un type touché dans le choix (SOG-0467) : sous « ＋ Tiroir », le tiroir suivant naît avec cette clé (DR.keyed : ce qu'elle devine)
- *  et sa fiche s'ouvre, son titre en main ; dans la fiche d'un tiroir, sa clé devient celle-ci (la même : rien ne change). Le choix se
- *  referme. Une sorte que DR.TYPES ne propose pas (une page forgée) : rien. `brick` : une brique du catalogue touchée sous « ＋ Tiroir »
- *  — le tiroir naît d'elle (CAT.drawerFrom : la même DR.keyed, puis son titre, son message et son heure de repli). */
+/** Une clé ou une brique touchée dans la fenêtre des briques (SOG-0508) : sous « ＋ Tiroir », le tiroir suivant naît avec cette clé
+ *  (DR.keyed : ce qu'elle devine) — d'une brique, avec son titre, son message et son heure de repli (CAT.drawerFrom) —, il est choisi, sa
+ *  fiche s'ouvre, son titre en main, et une notification le dit, avec « Annuler » (edAddUndo) ; par « Changer la clé », la clé du tiroir
+ *  devient celle-ci (la même sorte sans brique : rien ne change) — d'une brique, sa clé et ses réglages, les textes, la suite de route et
+ *  l'heure de repli de l'auteur gardés. La fenêtre se ferme. Une sorte que DR.offered ne propose pas (une page forgée) : rien. */
 function edKind(s, key, brick = null) {
   const e = s.ed;
   // SOG-0500 (c) : seulement ce que le choix propose (une sorte que le vol ne juge pas : la clé en cours du tiroir, rien d'autre)
@@ -4112,7 +4346,8 @@ function edKind(s, key, brick = null) {
     return;
   const places = e.places || ED.placesOf(edDoc(e));
   if (e.kinds === 'new') {
-    const blank = DR.blankDrawer(edDrawers(e), e.base);
+    const blank = DR.blankDrawer(edDrawers(e), e.base),
+      prev = e.sel || 'start';
     e.kinds = '';
     if (!blank) {
       s.ctx.notify(s.tt(EDTX.dwMax), 'info');
@@ -4128,17 +4363,52 @@ function edKind(s, key, brick = null) {
       texts: true
     };
     draw(s);
+    s.ctx.notify?.(s.tt(EDTX.dwAdded, {
+      n: e.drawers.indexOf(row) + 1,
+      title: row.title || s.tt(EDTX[`dwKey_${row.key}`] || EDTX.dwKey_hand)
+    }), 'ok', {
+      key: 'missions-drawer-added',
+      ms: 10000,
+      action: {
+        label: s.tt(EDTX.dwUndo),
+        run: () => edAddUndo(s, e, row.id, prev)
+      }
+    });
     return s.el.querySelector('[data-drawer] [data-f=title]')?.focus();
   }
   const r = edDrawerRow(e);
   e.kinds = '';
-  if (r && r.key !== key) {
+  if (r && (r.key !== key || brick)) {
     edUndoClear(e); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
-    const next = DR.keyed(r, key, places);
+    let next = DR.keyed(r, key, places);
+    if (brick) { // une brique pour la clé : sa clé et ses réglages ; les textes, la suite de route et l'heure de repli de l'auteur restent
+      const b = CAT.drawerFrom(r, brick, places, s.ctx.lang?.() || 'fr');
+      next = {
+        ...b,
+        title: r.title,
+        message: r.message,
+        brief: r.brief,
+        route: r.route,
+        fallback: b.fallback !== '' && String(r.fallback ?? '') !== '' ? String(r.fallback) : b.fallback
+      };
+    }
     next.said = edSaid(s, next);
     e.drawers[e.drawers.indexOf(r)] = next;
   }
-  return draw(s);
+  draw(s);
+  s.el?.querySelector('[data-drawer] [data-kindcur]')?.focus();
+}
+
+/** SOG-0508 : « Annuler » de la notification d'un tiroir que la fenêtre des briques a créé — le tiroir `id` est retiré, la ligne choisie
+ *  redevient celle d'avant (`prev`, si elle est encore là ; sinon « Au départ »). Rien si l'atelier a changé (une autre mission, l'atelier
+ *  fermé) ou si le tiroir n'y est plus. */
+function edAddUndo(s, e, id, prev) {
+  if (state() !== s || s.ed !== e || e.veil || !Array.isArray(e.drawers) || !e.drawers.some(r => r.id === id)) return;
+  e.drawers = e.drawers.filter(r => r.id !== id);
+  if (e.sel === id) e.sel = e.drawers.some(r => r.id === prev) ? prev : 'start';
+  e.kinds = '';
+  e.drawerAsk = '';
+  draw(s);
 }
 
 /** « Dévoiler la mission complète » (SOG-0459) : la question du cadre (« Dévoiler » / « Garder le secret ») ; sur oui, l'atelier

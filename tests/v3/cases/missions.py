@@ -2387,6 +2387,7 @@ _ED_TEXTS = [['missions/mission_registry.yaml', 'schema: mission-registry\nversi
               '  - { id: X-001A, family: REG, series: 1, title: Mission complète, folder: X_REG/X-001A, files: [missionX-001A.yaml] }\n'],
              ['missions/X_REG/X-001A/missionX-001A.yaml', _ED_FULL]]
 E = f'{M} [data-pane=editor]'
+_KW = '.f-modal.ms-brickdlg'  # SOG-0508: the window of the bricks (« ＋ Tiroir », « Changer la clé »), laid in document.body
 
 
 def ed_leave(c):
@@ -2423,12 +2424,20 @@ def ed_places(c):
     c.js(f"document.querySelector('{E} [data-atplaces]').scrollIntoView({{block: 'nearest'}})")
 
 
+def ed_kind(c, key):
+    """Touches a key alone in the open window of the bricks (SOG-0508: the group « Une clé seule », unfolded first when it is folded)."""
+    c.until(f"!!document.querySelector('{_KW} details[data-fold=keys]')", what='« Une clé seule » in the window of the bricks')
+    if not c.js(f"document.querySelector('{_KW} details[data-fold=keys]').open"):
+        c.tap(f'{_KW} details[data-fold=keys] > summary')
+    c.tap(f'{_KW} [data-do=edkind][data-key="{key}"]')
+
+
 def dw_key(c, key):
-    """Changes the key of the drawer whose sheet is open by THE choice of the type (SOG-0467, the same as under « ＋ Tiroir »): touches the
-    key in the sheet, then the type."""
+    """Changes the key of the drawer whose sheet is open by « Changer la clé », which opens THE window of « ＋ Tiroir » (SOG-0508): touches
+    the key in the sheet, then the key alone in the window."""
     c.tap(f'{E} [data-drawer] [data-kindcur]')
-    c.until(f"!!document.querySelector('{E} [data-kinds=drawer]')", what='the choice of the type in the sheet of the drawer')
-    c.tap(f'{E} [data-kinds=drawer] [data-key="{key}"]')
+    c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window of the bricks, for the key of the drawer')
+    ed_kind(c, key)
 
 
 def _ed_fill(c, k, v):
@@ -4874,7 +4883,7 @@ def n78(c):
     c.eq([c.js(_DW_VAL, f) for f in ('arrPoint', 'arrSpeed', 'arrGround')], ['DESTINATION', '30', True], 'read from the file', what='the arrival')
     # « ＋ Tiroir »: the fifth, by the pilot's gesture (SOG-0467: chosen in the choice of the type it opens); then an hour after take-off
     c.tap(f'{E} [data-atflow] [data-dradd]')
-    c.tap(f'{E} [data-kinds=new] [data-key="hand"]')
+    ed_kind(c, 'hand')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer open (the first free letter)')
     c.eq([norm(c.text(f'{_DW} [data-dwhead]')), c.js(_DW_VAL, 'key'), c.js(_DW_FIELDS)], [T('dwSheet', n=5), 'hand', ['key', 'title', 'message', 'brief', 'routeadd']],
          'a new drawer: rank 5, the pilot\'s gesture, nothing else asked', what='the new drawer')
@@ -8896,8 +8905,8 @@ def _flow_vertical(c, width):
 
 @case('N129', 'Missions › the workshop, the unfolding is a VERTICAL list (SOG-0467): « Au départ », one drawer per row (its mark, « Tiroir n · its title », '
       'its key in one line), « ＋ Tiroir » last, one under the other at 390 and at 1280, never a sideways scroll; « ＋ Tiroir » opens the choice of the '
-      'TYPE under it and creates nothing, a second touch (or « Annuler ») closes it; « une zone de passage » creates a drawer keyed by a zone (the first '
-      'zone guessed) and opens its sheet; its key changes by THE SAME choice in its sheet; at twelve drawers « ＋ Tiroir » is no longer offered',
+      'TYPE (since SOG-0508 in the window of the bricks) and creates nothing, Échap (or « Fermer ») closes it; « une zone de passage » creates a drawer keyed by a zone (the first '
+      'zone guessed) and opens its sheet; its key changes by THE SAME window from its sheet; at twelve drawers « ＋ Tiroir » is no longer offered',
       'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0467 (the user: « je préfère réduire le texte secondaire et étirer en hauteur » ; « Le + qui cache le nouveau type est probablement '
       'suffisant » ; the ergonomist, 18 Nov 11:26: « ＋ Tiroir » opens the choice of the basic brick) — modules/missions/EDITOR.md § 7 quinquetricies')
@@ -8913,31 +8922,31 @@ def n129(c):
     c.ok(one[0] == '!' and norm(one[1]) == 'Tiroir 1 · Zone' and bool(one[2]), one, 'a drawer row: its mark, « Tiroir 1 · Zone », its key in one line')
     # « ＋ Tiroir »: the choice of the type, nothing created; touched again, closed; « Annuler » closes it too
     c.tap(f'{E} [data-atflow] [data-dradd]')
-    c.until(f"!!document.querySelector('{E} [data-atflow] [data-kinds=new]')", what='the choice of the type under « ＋ Tiroir »')
-    kinds = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
+    c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of the bricks (SOG-0508)')
+    kinds = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
     c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'], 'the types the flight judges, in order (the landing since SOG-0500, 3c2e2abba; the overflight since 4c9b10ef3; the hover since 9cbbf9e11; the sequence since 72d7ef7dc)', what='the choice')
     c.eq(c.js(_FLOW_N), 4, 'opening the choice creates nothing', what='the drawers')
-    below = c.js(f"(() => {{ const a = document.querySelector('{E} [data-dradd]').getBoundingClientRect(), k = document.querySelector('{E} [data-kinds=new]').getBoundingClientRect(); return k.top >= a.bottom - 1 }})()")
-    c.ok(below, below, 'the choice opens IN PLACE, under « ＋ Tiroir »')
+    modal = c.js(f"document.querySelector('{_KW} [role=dialog]')?.getAttribute('aria-modal')")
+    c.eq(modal, 'true', 'the choice opens in a MODAL window (SOG-0508 replaced the choice in place of SOG-0467)', what='the window')
+    c.key('Escape')
+    c.until(f"!document.querySelector('{_KW}')", what='Échap closes the window')
     c.tap(f'{E} [data-atflow] [data-dradd]')
-    c.until(f"!document.querySelector('{E} [data-kinds]')", what='a second touch closes the choice')
-    c.tap(f'{E} [data-atflow] [data-dradd]')
-    c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
-    c.until(f"!document.querySelector('{E} [data-kinds]')", what='« Annuler » closes the choice')
+    c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
+    c.until(f"!document.querySelector('{_KW}')", what='« Fermer » closes the window')
     c.eq(c.js(_FLOW_N), 4, 'nothing was created', what='the drawers')
     # « une zone de passage »: the drawer is born keyed by the zone, its sheet open
     c.tap(f'{E} [data-atflow] [data-dradd]')
-    c.tap(f'{E} [data-kinds=new] [data-key="zone"]')
+    ed_kind(c, 'zone')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'F'", what='the new drawer, its sheet open')
     c.eq([c.js(_FLOW_N), c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'zone')], [5, 'zone', 'ZONE-1'], 'a drawer keyed by a zone, the first zone guessed', what='the new drawer')
     # its key by THE SAME choice, in its sheet
     c.tap(f'{_DW} [data-kindcur]')
-    c.until(f"!!document.querySelector('{_DW} [data-kinds=drawer]')", what='the choice in the sheet')
-    same = c.js(f"[...document.querySelectorAll('{_DW} [data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, x.getAttribute('aria-pressed')])")
+    c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
+    same = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, x.getAttribute('aria-pressed')])")
     c.eq(same, [[k, 'true' if k == 'zone' else 'false'] for k in kinds], 'the same choice, the key in force marked', what='the choice in the sheet')
-    c.tap(f'{_DW} [data-kinds=drawer] [data-key="object"]')
+    ed_kind(c, 'object')
     c.until(f"document.querySelector('{_DW} [data-kindcur]')?.dataset.kindcur === 'object'", what='the key changed')
-    c.eq([c.js(_DW_VAL, 'object'), c.count(f'{E} [data-kinds]')], ['OBJ-1', 0], 'the first object guessed, the choice closed', what='the changed key')
+    c.eq([c.js(_DW_VAL, 'object'), c.count(_KW)], ['OBJ-1', 0], 'the first object guessed, the window closed', what='the changed key')
     # 1280: the same list, one row under the other
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.settle()
@@ -8946,7 +8955,7 @@ def n129(c):
     # twelve drawers: « ＋ Tiroir » is no longer offered
     for n in range(6, 13):
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        c.tap(f'{E} [data-kinds=new] [data-key="hand"]')
+        ed_kind(c, 'hand')
         c.until(f"({_FLOW_N}) === {n}", what=f'drawer {n}')
     c.eq(c.count(f'{E} [data-atflow] [data-dradd]'), 0, 'twelve drawers: « ＋ Tiroir » is no longer offered', what='the add row')
     ed_leave(c)
@@ -9108,9 +9117,14 @@ _TEXT_RULE = f"""(() => {{ const root = document.querySelector('{E}'); if (!root
     groups: by.size, small }} }})()"""
 
 
-def _text_rule(c, where):
-    """At most one line of secondary text per group, never smaller than f-muted, in the state `where`."""
-    r = c.js(_TEXT_RULE)
+# SOG-0508: the same rule in the window of the bricks (laid in document.body): its dialog and its folds are groups, a brick is an item
+_TEXT_RULE_KW = _TEXT_RULE.replace(f"document.querySelector('{E}')", f"document.querySelector('{_KW} [role=dialog]')").replace(
+    ".ms-atmaphintrow',", ".ms-atmaphintrow, details, [role=dialog]',").replace(".ms-crumb',", ".ms-crumb, .ms-kwitem',")
+
+
+def _text_rule(c, where, rule=None):
+    """At most one line of secondary text per group, never smaller than f-muted, in the state `where` (`rule`: another root)."""
+    r = c.js(rule or _TEXT_RULE)
     c.ok(r is not None and not r['over'] and not r['small'], r, f'{where}: at most one line of secondary text per group, none smaller than f-muted')
 
 
@@ -9135,8 +9149,10 @@ def n132(c):
             c.tap(f'{E} [data-do=edmap]')
             _text_rule(c, f'{width}, the map unfolded')
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        _text_rule(c, f'{width}, the choice of the type')
-        c.tap(f'{E} [data-atflow] [data-dradd]')
+        c.until(f"document.querySelectorAll('{_KW} [data-do=edbrick]').length > 0", timeout=10000, what='the window of the bricks')
+        _text_rule(c, f'{width}, the choice of the type (the window of the bricks, SOG-0508)', _TEXT_RULE_KW)
+        c.key('Escape')
+        c.until(f"!document.querySelector('{_KW}')", what='the window closed')
         for step in ('cadre', 'teams', 'story', 'risks', 'timeline'):
             if c.js(f"document.querySelector('{E} [data-steps] [data-step=\"{step}\"]').getAttribute('aria-expanded')") != 'true':
                 c.tap(f'{E} [data-steps] [data-step="{step}"]')
@@ -9155,7 +9171,10 @@ def n132(c):
                     c.tap(f'{_DW} [data-do="eddrgrp"][data-grp="{g}"]')
                 _text_rule(c, f'{width}, drawer {d}, {g} unfolded')
             c.tap(f'{_DW} [data-kindcur]')
-            _text_rule(c, f'{width}, drawer {d}, the choice of its key')
+            c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
+            _text_rule(c, f'{width}, drawer {d}, the choice of its key (the window of the bricks, SOG-0508)', _TEXT_RULE_KW)
+            c.key('Escape')
+            c.until(f"!document.querySelector('{_KW}')", what='the window closed')
         c.tap(f'{E} [data-atflow] [data-trbtn]')
         c.until(f"!!document.querySelector('{E} [data-trial]')", what='the trial')
         _text_rule(c, f'{width}, the trial')
@@ -9416,7 +9435,7 @@ def n138(c):
     c.eq(got['cat'], [60, ['blank', 'search-glacier', 'interception'], 0], 'the delivered catalogue: 60 bricks (32 of the 1.1 conditions since SOG-0500 (d)), the three models, nothing set aside', what='the delivered catalogue')
 
 
-_BRICKS = f"[...document.querySelectorAll('{E} [data-kinds=new] [data-bricks] [data-do=edbrick]')].map(x => [x.dataset.brick, x.querySelector('b').textContent.trim(), x.querySelector('.f-muted').textContent.trim()])"
+_BRICKS = f"(f) => [...document.querySelectorAll('{_KW}[data-kinds=new] [data-brickfam=\"' + f + '\"] [data-do=edbrick]')].filter(x => x.checkVisibility()).map(x => [x.dataset.brick, x.querySelector('b').textContent.trim(), x.querySelector('.f-muted').textContent.trim()])"
 
 
 def _ed_new(c, family):
@@ -9428,11 +9447,11 @@ def _ed_new(c, family):
     c.until(f"document.querySelector('{E} select[data-k=edfam]')?.value === '{family}'", what=f'the family {family}')
 
 
-@case('N139', 'Missions › the workshop, the bricks of the catalogue under « ＋ Tiroir » (lot « modèles de mission »): THE SAME choice of the type (SOG-0467) '
-      'offers, under the five types, the bricks of ONE family at a time — the family of the mission first (SAR: « Recherche terrestre progressive » and '
-      '« Localisation d\'une épave », each with its key in one line), a list of the families that have bricks changes the family (FIRE: three bricks) and creates '
-      'nothing; touching a brick creates the drawer with its key, its title, its message and its fallback filled in and opens its sheet; the choice in the '
-      'sheet of a drawer (its key) offers no brick; at 390 and at 1280', 'N',
+@case('N139', 'Missions › the workshop, the bricks of the catalogue under « ＋ Tiroir » (lot « modèles de mission »): THE SAME choice of the type (SOG-0467; '
+      'since SOG-0508 the window of the bricks) offers the types and the bricks, one fold per family — the family of the mission open first (SAR: « Recherche terrestre progressive » and '
+      '« Localisation d\'une épave », each with its key in one line), opening another family (FIRE: three bricks) creates '
+      'nothing; touching a brick creates the drawer with its key, its title, its message and its fallback filled in and opens its sheet; the window opened '
+      'from the sheet of a drawer (its key) is the same, its bricks too (SOG-0508); at 390 and at 1280', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='Lot « modèles de mission » (the user: « Tout ce qui peut être constitué de modules doit être constitué de modules. KISS, oui, mais reuse. »): the bricks '
       'ENTER the choice of SOG-0467 (`edKindsHtml`, `DR.TYPES`, `DR.keyed`), not a second component; EDITOR.md § 7 duoquadragies')
@@ -9441,37 +9460,36 @@ def n139(c):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         _ed_new(c, 'SAR')
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        c.until(f"document.querySelectorAll('{E} [data-kinds=new] [data-bricks] [data-do=edbrick]').length > 0", timeout=10000, what='the bricks under the types')
-        kinds = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
+        c.until(f"document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edbrick]').length > 0", timeout=10000, what='the bricks in the window')
+        kinds = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
         c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'], f'{width}: the five types are still there, first, then the hover, the landing, the overflight and the sequence', what='the choice')
-        c.eq(c.js(f"document.querySelector('{E} [data-kinds=new] select[data-k=edbrickfam]').value"), 'SAR', f'{width}: the family of the mission first', what='the family')
-        c.eq(c.js(_BRICKS), [['sar-land', 'Recherche terrestre progressive', 'une zone de passage'], ['sar-aircraft', 'Localisation d’une épave', 'un objet à trouver'],
+        c.eq(c.js(f"[...document.querySelectorAll('{_KW} details.ms-kwfam[open]')].map(x => x.dataset.brickfam)"), ['SAR'], f'{width}: the family of the mission first (open)', what='the family')
+        c.eq(c.js(_BRICKS, 'SAR'), [['sar-land', 'Recherche terrestre progressive', 'une zone de passage'], ['sar-aircraft', 'Localisation d’une épave', 'un objet à trouver'],
               ['sar-csar', 'Extraction en zone contrainte', 'un poser'], ['sar-recovery', 'Récupération de personnes', 'un stationnaire'], ['sar-sea', 'Survol d’un radeau ou d’un navire', 'un survol']],
              f'{width}: the bricks of SAR, each its title and its key (a landing, a hover and an overflight brick too, since the flight judges them)', what='the bricks')
         if width == 390:
-            c.js(f"document.querySelector('{E} [data-kinds=new]').scrollIntoView({{block: 'center'}})")
             c.shot('P11a_390_briques.png')
-        c.page.select_option(f'{E} [data-kinds=new] select[data-k=edbrickfam]', 'FIRE')
-        c.until(f"document.querySelector('{E} [data-kinds=new] select[data-k=edbrickfam]')?.value === 'FIRE'", what='the family FIRE')
-        c.eq([x[0] for x in c.js(_BRICKS)], ['fire-gaar', 'fire-drop', 'fire-reload'], f'{width}: another family, its bricks', what='the bricks of FIRE')
+        if not c.js(f"document.querySelector('{_KW} details[data-fold=\"dom:fire\"]').open"):
+            c.tap(f'{_KW} details[data-fold="dom:fire"] > summary')
+        c.tap(f'{_KW} details[data-fold="fam:FIRE"] > summary')
+        c.until(f"document.querySelector('{_KW} details[data-fold=\"fam:FIRE\"]')?.open === true", what='the family FIRE')
+        c.eq([x[0] for x in c.js(_BRICKS, 'FIRE')], ['fire-gaar', 'fire-drop', 'fire-reload'], f'{width}: another family, its bricks', what='the bricks of FIRE')
         c.eq(c.js(_FLOW_N), 0, 'changing the family creates nothing', what='the drawers')
         if width == 1280:
-            c.js(f"document.querySelector('{E} [data-kinds=new]').scrollIntoView({{block: 'center'}})")
             c.shot('P11a_1280_briques.png')
-        c.page.select_option(f'{E} [data-kinds=new] select[data-k=edbrickfam]', 'SAR')
-        c.until(f"document.querySelectorAll('{E} [data-kinds=new] [data-brick=sar-land]').length === 1", what='back to SAR')
-        c.tap(f'{E} [data-kinds=new] [data-brick="sar-land"]')
+        c.tap(f'{_KW}[data-kinds=new] [data-brick="sar-land"]')
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the drawer born of the brick, its sheet open')
-        got = [c.js(_FLOW_N), c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'title'), c.js(_DW_VAL, 'message'), c.js(_DW_VAL, 'fallback'), c.count(f'{E} [data-kinds]')]
+        got = [c.js(_FLOW_N), c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'title'), c.js(_DW_VAL, 'message'), c.js(_DW_VAL, 'fallback'), c.count(_KW)]
         c.eq(got, [1, 'zone', 'Recherche terrestre progressive', 'Une zone de passage révèle le secteur précis.', '60', 0],
-             f'{width}: one drawer keyed by a zone, its title, its message and its fallback filled in, the choice closed', what='the drawer of the brick')
+             f'{width}: one drawer keyed by a zone, its title, its message and its fallback filled in, the window closed', what='the drawer of the brick')
         if width == 390:
             c.shot('P11a_390_tiroir.png')
-        # the key of a drawer: the same choice, without bricks (changing the key does not rewrite the author's texts)
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the note of the new drawer (SOG-0508)
+        # the key of a drawer: THE SAME window since SOG-0508, its bricks included (a brick there does not rewrite the author's texts: N176)
         c.tap(f'{_DW} [data-kindcur]')
-        c.until(f"!!document.querySelector('{_DW} [data-kinds=drawer]')", what='the choice in the sheet')
-        c.eq(c.count(f'{_DW} [data-kinds=drawer] [data-bricks]'), 0, f'{width}: no brick in the sheet of a drawer', what='the choice in the sheet')
-        c.tap(f'{_DW} [data-kinds=drawer] [data-do=edkindoff]')
+        c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
+        c.ok(c.count(f'{_KW}[data-kinds=drawer] [data-do=edbrick]') > 0, c.count(f'{_KW}[data-kinds=drawer] [data-do=edbrick]'), f'{width}: the same window, its bricks too, for the key of a drawer')
+        c.tap(f'{_KW}[data-kinds=drawer] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
 
@@ -10194,10 +10212,10 @@ def n152(c):
                 what='« À compléter » says the duration')
         c.page.fill(f'{_DW} [data-f="rule.duration"]', '20')
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
-        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)"), ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'],
+        c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
+        c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)"), ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'],
              f'{width}: « ＋ Tiroir » offers the hover, the landing, the overflight and the sequence, no event', what='the offer')
-        c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+        c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
         after = c.js('(t) => window.jsyaml.load(t)', c.js(_TEXT_OF, path))
@@ -10478,22 +10496,24 @@ def n155(c):
     _ed_open(c, _LANDING_MISSION)
     ed_reveal(c)
     c.tap(f'{E} [data-atflow] [data-dradd]')
-    c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
-    page = c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
+    c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
+    page = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
     c.eq(page, g['offered'], 'the page offers what DR.offered says', what='the page')
-    c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+    c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
     c.tap(f'{E} [data-atflow] [data-sel="B"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
     c.tap(f'{_DW} [data-kindcur]')
-    c.until(f"!!document.querySelector('{_DW} [data-kinds=drawer]')", what='the choice in the sheet')
-    got = c.js(f"[...document.querySelectorAll('{_DW} [data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, !!x.querySelector('.f-muted'), x.getAttribute('aria-pressed')])")
+    c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
+    got = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, !!x.querySelector('.f-muted'), x.getAttribute('aria-pressed')])")
     c.eq(got, [['hand', False, 'false'], ['time', False, 'false'], ['zone', False, 'false'], ['object', False, 'false'], ['arrival', False, 'false'],
                ['hover', False, 'false'], ['landing', False, 'true'], ['overflight', False, 'false'], ['sequence', False, 'false']], 'the key in force kept (judged: no mention), the hover, the overflight and the sequence judged too, no event', what='the choice of the drawer')
     # a forged touch of a kind the flight does not judge changes nothing
     c.js(f"""(() => {{ const b = document.createElement('button'); b.dataset.do = 'edkind'; b.dataset.key = 'event';
-      document.querySelector('{_DW} [data-kinds=drawer]').append(b); b.click() }})()""")
+      document.querySelector('{_KW}[data-kinds=drawer] [data-kwpool]').append(b); b.click() }})()""")
     c.wait(200)
     c.eq(c.js(_DW_VAL, 'key'), 'landing', 'a forged « event » is refused: the key stays', what='a forged kind')
+    c.key('Escape')  # the window of the key, still open (SOG-0508)
+    c.until(f"!document.querySelector('{_KW}')", what='the window closed')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
@@ -10649,12 +10669,12 @@ def n158(c):
         c.page.fill(f'{_DW} [data-f="rule.gap"]', '5')
         c.until(f"{mark} === '✓'", what='a gap of 5 s (the minimum) has nothing to complete')
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
-        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('landing'), 1,
+        c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
+        c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('landing'), 1,
              f'{width}: « ＋ Tiroir » offers « atterrissage »', what='the offer')
         c.js(f"document.querySelector('{E} [data-atflow] [data-dradd]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
         c.shot(f'P13b_{width}_atterrissage.png')  # the choice of the type under « ＋ Tiroir », with the landing
-        c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+        c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
 
@@ -10718,13 +10738,13 @@ def n159(c):
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
         c.shot(f'P13c_{width}_survol_fiche.png')  # the sheet of an overflight
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
-        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('overflight'), 1,
+        c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
+        c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('overflight'), 1,
              f'{width}: « ＋ Tiroir » offers « survol »', what='the offer')
-        c.eq(c.count(f'{E} [data-kinds=new] [data-do=edkind] .f-muted'), 0, f'{width}: no type of the choice carries the « not judged » mention', what='the mentions')
+        c.eq(c.count(f'{_KW}[data-kinds=new] [data-do=edkind] .f-muted'), 0, f'{width}: no type of the choice carries the « not judged » mention', what='the mentions')
         c.js(f"document.querySelector('{E} [data-atflow] [data-dradd]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
         c.shot(f'P13c_{width}_survol.png')  # the choice of the type under « ＋ Tiroir », with the overflight
-        c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+        c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
 
@@ -10789,11 +10809,11 @@ def n160(c):
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
         c.shot(f'P13d_{width}_stationnaire.png')  # the sheet of a hover
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
-        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('hover'), 1,
+        c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
+        c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('hover'), 1,
              f'{width}: « ＋ Tiroir » offers « stationnaire »', what='the offer')
-        c.eq(c.count(f'{E} [data-kinds=new] [data-do=edkind] .f-muted'), 0, f'{width}: no type of the choice carries the « not judged » mention', what='the mentions')
-        c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+        c.eq(c.count(f'{_KW}[data-kinds=new] [data-do=edkind] .f-muted'), 0, f'{width}: no type of the choice carries the « not judged » mention', what='the mentions')
+        c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
 
@@ -10906,11 +10926,11 @@ def n162(c):
         _ed_open(c, text)
         ed_reveal(c)
         c.tap(f'{E} [data-atflow] [data-dradd]')
-        c.until(f"!!document.querySelector('{E} [data-kinds=new]')", what='the choice under « ＋ Tiroir »')
-        c.eq(c.js(f"[...document.querySelectorAll('{E} [data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('sequence'), 1,
+        c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
+        c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)").count('sequence'), 1,
              f'{width}: « ＋ Tiroir » offers « suite d\'étapes » once', what='the offer')
-        c.eq(c.count(f'{E} [data-kinds=new] [data-do=edkind] .f-muted'), 0, f'{width}: no type of the choice carries the « not judged » mention', what='the mentions')
-        c.tap(f'{E} [data-kinds=new] [data-do=edkindoff]')
+        c.eq(c.count(f'{_KW}[data-kinds=new] [data-do=edkind] .f-muted'), 0, f'{width}: no type of the choice carries the « not judged » mention', what='the mentions')
+        c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
         ed_leave(c)
         c.js(_REG_CLEAR)
 
@@ -11466,5 +11486,189 @@ def n169(c):
     got = c.js(_PB_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')['pts']
     c.eq(got[2:], [['PT3', 'XPT01', 44.9, 1.45]], 'the file: the moved point with its code and the position of the base', what='the file')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the note of the move stays 10 s, over the foot
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+# SOG-0508: « ＋ Tiroir » opens the window of the bricks (the user's mock-up), one touch creates the drawer
+_KW_BRICKS = f"[...document.querySelectorAll('{_KW} [data-do=edbrick]')].filter(x => x.checkVisibility()).map(x => x.dataset.brick)"
+_KW_GROUPS = f"[...document.querySelectorAll('{_KW} [data-kwpool] > details')].map(x => [x.dataset.fold, x.querySelector('summary').textContent.trim()])"
+_KW_NOTE = "[...document.querySelectorAll('#fNotes .f-note[data-key=\"missions-drawer-added\"]')].map(n => [n.querySelector('span').textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(), n.querySelector('[data-act]')?.textContent.trim() || ''])"
+_KW_NOTES_OFF = "document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())"
+
+
+def _kw_open(c, family='SAR'):
+    """A new mission of this family, then « ＋ Tiroir »: waits for the window and the bricks of the catalogue in it."""
+    _ed_new(c, family)
+    c.tap(f'{E} [data-atflow] [data-dradd]')
+    c.until(f"document.querySelectorAll('{_KW} [data-do=edbrick]').length > 0", timeout=10000, what='the window of the bricks')
+
+
+def _kw_rule():
+    return ('SOG-0508 (the user, 19 Nov 08:51: « les briques de base, qui correspondent aux tiroirs, donnent directement une popup de choix. c\'est plus clair. '
+            'reprends la maquette… et reproduis ce comportement ») — modules/missions/EDITOR.md § 7 quinquinquagies')
+
+
+@case('N172', 'Missions › the workshop, « ＋ Tiroir » (SOG-0508): « ＋ Tiroir · Choisir une brique » opens a MODAL window « Choisir une brique de tiroir » '
+      '(« Fermer », a search field, a line of counts), full screen at 390, centred at 1280, its touches 44 px high; ONE touch on a brick creates ONE drawer '
+      '(its key, its title, its message), closes the window, selects the drawer (its sheet open) and says so in a notification that carries « Annuler »; '
+      'at 390 and at 1280', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False, rule=_kw_rule())
+def n172(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _kw_open(c)
+        tile = c.js(f"[...document.querySelector('{E} [data-atflow] [data-dradd]').children].map(x => x.textContent.trim())")
+        c.eq(tile, [norm(row(c, 'dwAdd', EDTX_FILE)), norm(row(c, 'dwAddSub', EDTX_FILE))], f'{width}: the tile says « ＋ Tiroir » and « Choisir une brique »', what='the tile')
+        head = c.js(f"[document.querySelector('{_KW} [role=dialog]')?.getAttribute('aria-modal'), document.querySelector('{_KW} [role=dialog] h3')?.textContent.trim(), "
+                    f"document.querySelector('{_KW} [data-do=edkindoff]')?.textContent.trim(), document.querySelector('{_KW} input[data-kwq]')?.placeholder, "
+                    f"!!document.querySelector('{_KW} [data-kwmeta]')?.textContent.trim(), document.activeElement?.matches('{_KW} input[data-kwq]')]")
+        c.eq(head, ['true', row(c, 'dwWinTitle', EDTX_FILE), row(c, 'dwWinClose', EDTX_FILE), row(c, 'dwWinSearch', EDTX_FILE), True, True],
+             f'{width}: a modal window, its title, « Fermer », the search field (in hand), the line of counts', what='the window')
+        geo = c.js(f"""(() => {{ const d = document.querySelector('{_KW} [role=dialog]').getBoundingClientRect();
+          const low = [...document.querySelectorAll('{_KW} button, {_KW} summary, {_KW} input')].filter(x => x.checkVisibility()).filter(x => x.getBoundingClientRect().height < 43.5).length;
+          return [Math.round(d.left), Math.round(d.top), Math.round(d.width), Math.round(d.height), innerWidth, innerHeight, low] }})()""")
+        if width == 390:
+            c.ok(geo[0] == 0 and geo[1] == 0 and geo[2] == geo[4] and geo[3] == geo[5] and geo[6] == 0, geo, '390: the window takes the whole screen, every touch 44 px high')
+        else:
+            c.ok(geo[0] > 0 and geo[2] <= 760 and abs(geo[0] - (geo[4] - geo[2] - geo[0])) <= 2 and geo[6] == 0, geo, '1280: the window is centred, 760 px wide at most, every touch 44 px high')
+        c.eq(c.js(_FLOW_N), 0, f'{width}: opening the window creates nothing', what='the drawers')
+        c.settle()
+        c.shot(f'P15a_{width}_fenetre.png')
+        # ONE touch on a brick (SAR, the family of the mission, is open): the drawer is created, selected, the window closed, a notification
+        c.tap(f'{_KW} [data-brick="sar-land"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the drawer born of the brick, its sheet open')
+        got = [c.js(_FLOW_N), c.js(_DW_VAL, 'key'), c.js(_DW_VAL, 'title'), c.js(_DW_VAL, 'message'), c.count(_KW),
+               c.js(f"document.querySelector('{E} [data-atflow] [data-sel=\"B\"]')?.getAttribute('aria-current')")]
+        c.eq(got, [1, 'zone', 'Recherche terrestre progressive', 'Une zone de passage révèle le secteur précis.', 0, 'true'],
+             f'{width}: one touch: ONE drawer, its key, its title and its message, the window closed, the drawer selected', what='the drawer')
+        c.until(f"({_KW_NOTE}).length === 1", timeout=3000, what='the notification')
+        want = norm(row(c, 'dwAdded', EDTX_FILE).replace('{n}', '1').replace('{title}', 'Recherche terrestre progressive'))
+        c.eq(c.js(_KW_NOTE), [[want, row(c, 'dwUndo', EDTX_FILE)]], f'{width}: the notification says the drawer and carries « Annuler »', what='the notification')
+        c.settle()
+        c.shot(f'P15a_{width}_cree.png')
+        c.js(_KW_NOTES_OFF)
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N173', 'Missions › the workshop, « ＋ Tiroir » (SOG-0508): « Annuler » of the notification undoes the drawer the window created — no drawer left, '
+      'the sheet of the start back; at 390 and at 1280', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False, rule=_kw_rule())
+def n173(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _kw_open(c)
+        c.tap(f'{_KW} [data-brick="sar-land"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the drawer created')
+        c.until(f"({_KW_NOTE}).length === 1", timeout=3000, what='the notification')
+        c.tap('#fNotes .f-note[data-key="missions-drawer-added"] [data-act]')
+        c.until(f"({_FLOW_N}) === 0", timeout=3000, what='the drawer undone')
+        c.eq([c.js(_FLOW_N), c.count(_DW), c.js(f"document.querySelector('{E} [data-atflow] [data-sel=\"start\"]')?.getAttribute('aria-current')")], [0, 0, 'true'],
+             f'{width}: « Annuler »: no drawer, the sheet of the start back', what='undone')
+        c.js(_KW_NOTES_OFF)
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N174', 'Missions › the workshop, the window of the bricks (SOG-0508): the search filters — « treuil » leaves only the bricks that say it (accents '
+      'and capitals ignored, every group open), « précision » finds « Poser de précision » typed without its accent; a word nothing says leaves '
+      '« Aucune brique correspondante. »; searching creates nothing', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False, rule=_kw_rule())
+def n174(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    _kw_open(c)
+    every = c.js(f"document.querySelectorAll('{_KW} [data-do=edbrick]').length")
+    c.page.fill(f'{_KW} input[data-kwq]', 'TREUIL')
+    c.until(f"!({_KW_BRICKS}).includes('sar-land')", timeout=3000, what='the list filtered')
+    seen = c.js(_KW_BRICKS)
+    said = c.js(f"[...document.querySelectorAll('{_KW} [data-do=edbrick]')].filter(x => x.checkVisibility()).every(x => (x.textContent + ' ' + x.title).normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().includes('treuil'))")
+    c.ok('hems-rescue' in seen and 'sof-extract' in seen and said and 0 < len(seen) < every, [seen, said, every],
+         '« TREUIL »: only the bricks that say it (« Treuillage d\'un blessé », « Extraction par treuillage »…), and some')
+    c.eq(c.js(f"[...document.querySelectorAll('{_KW} [data-kwpool] details')].every(d => d.open)"), True, 'a search opens every group it keeps', what='the groups')
+    c.page.fill(f'{_KW} input[data-kwq]', 'precision')
+    c.until(f"({_KW_BRICKS}).includes('common-landing')", timeout=3000, what='« Poser de précision » found')
+    c.page.fill(f'{_KW} input[data-kwq]', 'zzzq')
+    c.until(f"!!document.querySelector('{_KW} [data-kwnone]')", timeout=3000, what='nothing found')
+    c.eq([c.text(f'{_KW} [data-kwnone]'), c.js(f"[...document.querySelectorAll('{_KW} [data-kwpool] button')].length"), c.js(_FLOW_N)],
+         [row(c, 'dwWinNone', EDTX_FILE), 0, 0], '« Aucune brique correspondante. », no button, nothing created', what='no match')
+    c.page.fill(f'{_KW} input[data-kwq]', '')
+    c.until(f"document.querySelectorAll('{_KW} [data-do=edbrick]').length === {every}", timeout=3000, what='every brick back')
+    c.tap(f'{_KW} [data-do=edkindoff]')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N175', 'Missions › the workshop, the window of the bricks (SOG-0508): Échap closes it and creates nothing, « Fermer » too; the focus goes back to '
+      '« ＋ Tiroir »; at 390 and at 1280', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False, rule=_kw_rule())
+def n175(c):
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _kw_open(c)
+        c.key('Escape')
+        c.until(f"!document.querySelector('{_KW}')", timeout=3000, what='Échap closes the window')
+        c.eq([c.js(_FLOW_N), c.count(f'{E}'), c.js(f"document.activeElement?.matches('{E} [data-dradd]')")], [0, 1, True],
+             f'{width}: Échap: the window closed, nothing created, the workshop still there, the focus on « ＋ Tiroir »', what='Échap')
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        c.until(f"!!document.querySelector('{_KW}')", what='the window again')
+        c.tap(f'{_KW} [data-do=edkindoff]')
+        c.until(f"!document.querySelector('{_KW}')", timeout=3000, what='« Fermer » closes the window')
+        c.eq(c.js(_FLOW_N), 0, f'{width}: « Fermer »: nothing created', what='Fermer')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
+
+
+@case('N176', 'Missions › the workshop, « Changer la clé » of a drawer (SOG-0508) opens THE SAME window (its title, its search, its bricks, the keys alone '
+      'open, the key in force marked); a brick touched there changes the key and keeps the author\'s texts; a key alone changes the key; Échap changes '
+      'nothing', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False, rule=_kw_rule())
+def n176(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    _kw_open(c)
+    c.tap(f'{_KW} [data-brick="sar-land"]')
+    c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the drawer created')
+    c.js(_KW_NOTES_OFF)
+    c.eq(c.text(f'{_DW} [data-kindcur] [data-kindchg]'), row(c, 'dwKeyChange', EDTX_FILE), 'the key of the drawer says « Changer la clé »', what='the key')
+    c.tap(f'{_DW} [data-kindcur]')
+    c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
+    same = c.js(f"""[document.querySelector('{_KW} [role=dialog] h3')?.textContent.trim(), !!document.querySelector('{_KW} input[data-kwq]'),
+      document.querySelectorAll('{_KW} [data-do=edbrick]').length > 0, document.querySelector('{_KW} details[data-fold=keys]')?.open,
+      [...document.querySelectorAll('{_KW} [data-do=edkind][aria-pressed=true]')].map(x => x.dataset.key)]""")
+    c.eq(same, [row(c, 'dwWinTitle', EDTX_FILE), True, True, True, ['zone']], 'the same window: its title, its search, its bricks; the keys alone open, the key in force marked', what='the window')
+    c.key('Escape')
+    c.until(f"!document.querySelector('{_KW}')", timeout=3000, what='Échap')
+    c.eq([c.js(_DW_VAL, 'key'), c.js(f"document.activeElement?.matches('{_DW} [data-kindcur]')")], ['zone', True], 'Échap changes nothing, the focus back on the key', what='Échap')
+    # a brick: its key (a landing), the author's texts kept
+    c.tap(f'{_DW} [data-kindcur]')
+    c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window again')
+    c.page.fill(f'{_KW} input[data-kwq]', 'precision')
+    c.until(f"({_KW_BRICKS}).includes('common-landing')", timeout=3000, what='« Poser de précision »')
+    c.tap(f'{_KW} [data-brick="common-landing"]')
+    c.until(f"document.querySelector('{_DW} [data-kindcur]')?.dataset.kindcur === 'landing'", what='the key changed')
+    c.eq([c.js(_DW_VAL, 'title'), c.js(_DW_VAL, 'message'), c.count(_KW), c.js(_FLOW_N)],
+         ['Recherche terrestre progressive', 'Une zone de passage révèle le secteur précis.', 0, 1], 'a brick for the key: a landing, the texts kept, the window closed, no drawer added', what='by a brick')
+    # a key alone
+    dw_key(c, 'hand')
+    c.until(f"document.querySelector('{_DW} [data-kindcur]')?.dataset.kindcur === 'hand'", what='the pilot\'s gesture')
+    c.eq([c.js(_DW_VAL, 'title'), c.count(_KW), c.js(_FLOW_N)], ['Recherche terrestre progressive', 0, 1], 'a key alone: the key changed, the title kept', what='by a key')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+@case('N177', 'Missions › the workshop, the window of the bricks (SOG-0508): « Actions transverses » comes FIRST (the bricks of any mission the flight judges: '
+      '« Poser de précision », « Retour à son terrain », « Stationnaire fixe ou relatif »; the message between crews, not judged, is not offered), then the '
+      'groups of families (SAR, the family of the mission, open in its group), then « Une clé seule »; each brick a button with its symbol, its title, its '
+      'key in one line and its brief on hover', 'N', tags=('missions',), designs=('standard',), screens=False, langs4=False, rule=_kw_rule())
+def n177(c):
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    _kw_open(c)
+    groups = c.js(_KW_GROUPS)
+    c.eq(groups[0], ['common', row(c, 'dwWinCommon', EDTX_FILE)], '« Actions transverses » first', what='the first group')
+    c.eq(groups[-1], ['keys', row(c, 'dwWinKeys', EDTX_FILE)], '« Une clé seule » last', what='the last group')
+    c.ok(len(groups) >= 3 and all(g[0].startswith('dom:') for g in groups[1:-1]), groups, 'between them, the groups of families')
+    common = c.js(f"[...document.querySelectorAll('{_KW} details[data-fold=common] [data-do=edbrick]')].map(x => x.dataset.brick)")
+    c.eq(common, ['common-landing', 'common-return', 'common-hover'], 'the cross-cutting bricks the flight judges (no « Message entre équipages »)', what='the cross-cutting bricks')
+    sar = c.js(f"[document.querySelector('{_KW} details[data-fold=\"fam:SAR\"]')?.open, document.querySelector('{_KW} details[data-fold=\"fam:SAR\"]')?.parentElement.closest('details')?.open, "
+               f"document.querySelector('{_KW} details[data-fold=\"fam:FIRE\"]')?.open]")
+    c.eq(sar, [True, True, False], 'the family of the mission open, in its open group; another family closed', what='the families')
+    one = c.js(f"(() => {{ const b = document.querySelector('{_KW} [data-brick=\"sar-land\"]'); return [b.tagName, b.querySelector('[data-kwsym]')?.textContent.trim(), b.querySelector('b')?.textContent.trim(), b.querySelector('.f-muted')?.textContent.trim(), b.title] }})()")
+    c.eq(one, ['BUTTON', '◯', 'Recherche terrestre progressive', norm(row(c, 'dwKey_zone', EDTX_FILE)), 'Une zone de passage révèle le secteur précis.'],
+         'a brick: a button, its symbol, its title, its key, its brief on hover', what='a brick')
+    c.tap(f'{_KW} [data-do=edkindoff]')
     ed_leave(c)
     c.js(_REG_CLEAR)

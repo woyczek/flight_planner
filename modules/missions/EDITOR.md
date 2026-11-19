@@ -1604,6 +1604,42 @@ file that carries `radius_m` or `radius_nm` keeps it as it is (only what changes
 without `radius_m` (`holdRule`, `conditionJudged`: N155, N158 keep the reader and `follows` together). The trial of the keys (`editor_trial.js`) judges an
 arrival like the flight: `AD_NM` and `TRANSIT_NM` imported from `drawers.js`, never copied.
 
+### 7 quinquinquagies. « ＋ Tiroir » opens the window of the bricks; one touch creates the drawer (19 Nov 2026; SOG-0508; noreg N172 to N177, N129, N139)
+
+The user's gesture (his mock-up: « les briques de base, qui correspondent aux tiroirs, donnent directement une popup de choix. c'est plus clair »)
+replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the list of the families are gone).
+
+- **The tile**: « ＋ Tiroir » with « Choisir une brique » under it (`aria-haspopup="dialog"`); still hidden at twelve drawers, still off in the veiled workshop.
+- **The window** (`kwSync`, `kwStart`, `kwHtml`, `kwPoolHtml` in `editor_view.js`): the frame's box (`.f-modal`, its veil and its look in every design),
+  laid in `document.body` and driven by the state after each drawing (`edAfter`): the frame's view and the module are query containers, so a fixed box laid
+  inside the module would stay inside it. Open while `s.ed.kinds` is `'new'` (« ＋ Tiroir ») or `'drawer'` (« Changer la clé »); its content is
+  rewritten only when what it shows changes (the purpose, the key in force, the catalogue, the language, the family), so the search keeps what is typed.
+  Full screen up to 760 px; centred and 760 px wide at most above; every touch 44 px high. « Fermer » and Échap close it and create nothing; the focus goes
+  back to what opened it. Its buttons go to `edClick`, like the workshop's.
+- **Its content**, the mock-up's: the title « Choisir une brique de tiroir » and « Fermer »; « Rechercher une brique… » (`s.ed.kq`, 60 characters; the
+  list alone is redone as one types; accents and capitals ignored by `foldLower` of `frame/lib/text.js`; every fold kept open while a text is searched);
+  one line of counts (families and bricks offered, the aircraft — the type of the first team, else its name — and the family of the mission, « à définir »
+  when absent); then the folds of the suite (`fold` and `wireFolds` of `frame/lib/fold.js`, taken from `SogFrame.fold`: importing the file here would
+  have to list it in `meta.files` of `module.js`, case I26; without it, plain sections, always open). « Actions transverses » first (the bricks of family
+  `common`), then the mock-up's six themes (Secours et assistance, Mer, douane et sécurité, Feu et protection civile, Transport et projection, Opérations
+  aériennes, Mesure et validation; a family the table does not name goes to « Autres familles ») › one fold per family (its name from
+  `frame/lib/mission_themes.js`, its code) › its bricks, then « Une clé seule » (`DR.offered`: a key with no text, the key in force of a drawer marked).
+  Open with no search: the theme and the family of the mission (and « Une clé seule » when the key of a drawer changes); what the author opens or closes is
+  kept for the session (`s.ed.kfold`, cleared when the search changes). Nothing found: « Aucune brique correspondante. »
+- **A brick** is a button: its symbol (the mock-up's: ⚑ landing and arrival, ⊙ hover, ⇅ sequence, ⌖ overflight, ◇ object, ◯ zone, ✓ the gesture;
+  ◷ the hour, which the mock-up does not draw), its title, its key in one line, its brief as `title` (shown on hover).
+- **One touch** on a brick (or a key alone) under « ＋ Tiroir » creates the drawer (`CAT.drawerFrom`: its key with what `DR.keyed` guesses, its title, its
+  message, its fallback), closes the window, selects the drawer (its sheet open, its title in hand) and says so: `ctx.notify` « Tiroir n ajouté : <title>. »
+  (key `missions-drawer-added`, 10 s) with « Annuler » (`edAddUndo`: the drawer removed, the former row chosen again; nothing if the workshop changed or
+  the drawer is gone). The settings (duration, places…) are made afterwards in the sheet of the drawer.
+- **« Changer la clé »** (the key of a drawer, `data-kindcur`; it says « Changer la clé » instead of ▾) opens THE SAME window: a key alone changes the key
+  (`DR.keyed`); a brick gives its key and its settings (its rule, its steps, its arrival) and never the author's texts — title, message, brief, onward route
+  and a fallback already written stay.
+- **Kept from the V3, against the mock-up**: (a) no point invented at the centre of the map — the places a brick needs stay « à placer », as before;
+  (b) twelve drawers, not three; (c) only the bricks whose key the flight judges (`DR.judgedKind`, SOG-0500 (c)): « Message entre équipages » (`event`) is not
+  offered today. Not taken from the mock-up: the level « type » under the family (the V3 catalogue has no subtype: the bricks sit in their family) and the
+  count of indexed missions after the code of a family.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

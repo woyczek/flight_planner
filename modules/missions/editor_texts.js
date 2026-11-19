@@ -151,8 +151,32 @@ export const EDTX = {
   // la fiche d'un tiroir (SOG-0445) : le déroulé, les trois groupes (la clé, les textes, la suite de route), « à compléter », la clé
   // dite en clair (`trigger`, que le pilote lit sur le tiroir fermé : des mots qui ne nomment ni la zone ni l'objet)
   dwAdd: ['＋ Tiroir', '＋ Drawer', '＋ Schublade', '＋ Cajón'],
-  dwBricks: ['Briques', 'Bricks', 'Bausteine', 'Ladrillos'], // lot « modèles de mission » : les briques du catalogue sous « ＋ Tiroir »
-  dwBrickCommon: ['Toute mission', 'Any mission', 'Jede Mission', 'Cualquier misión'],
+  // SOG-0508 : la fenêtre des briques que « ＋ Tiroir » et « Changer la clé » ouvrent (la maquette de l'utilisateur)
+  dwAddSub: ['Choisir une brique', 'Choose a brick', 'Baustein wählen', 'Elegir un ladrillo'],
+  dwKeyChange: ['Changer la clé', 'Change the key', 'Schlüssel ändern', 'Cambiar la llave'],
+  dwWinTitle: ['Choisir une brique de tiroir', 'Choose a drawer brick', 'Schubladen-Baustein wählen', 'Elegir un ladrillo de cajón'],
+  dwWinClose: ['Fermer', 'Close', 'Schließen', 'Cerrar'],
+  dwWinSearch: ['Rechercher une brique…', 'Search for a brick…', 'Baustein suchen…', 'Buscar un ladrillo…'],
+  dwWinSearchLabel: ['Rechercher une brique', 'Search for a brick', 'Baustein suchen', 'Buscar un ladrillo'],
+  dwWinMeta: ['Familles : {f} · briques : {b} · appareil : {a} · famille : {m}',
+    'Families: {f} · bricks: {b} · aircraft: {a} · family: {m}',
+    'Familien: {f} · Bausteine: {b} · Luftfahrzeug: {a} · Familie: {m}', 'Familias: {f} · ladrillos: {b} · aeronave: {a} · familia: {m}'
+  ],
+  dwWinUnset: ['à définir', 'to be set', 'festzulegen', 'por definir'],
+  dwWinNone: ['Aucune brique correspondante.', 'No matching brick.', 'Kein passender Baustein.', 'Ningún ladrillo coincide.'],
+  dwWinCommon: ['Actions transverses', 'Cross-cutting actions', 'Übergreifende Aktionen', 'Acciones transversales'],
+  dwWinKeys: ['Une clé seule', 'A key alone', 'Nur ein Schlüssel', 'Solo una llave'],
+  dwDom_help: ['Secours et assistance', 'Rescue and assistance', 'Rettung und Hilfe', 'Rescate y asistencia'],
+  dwDom_sea: ['Mer, douane et sécurité', 'Sea, customs and security', 'See, Zoll und Sicherheit', 'Mar, aduana y seguridad'],
+  dwDom_fire: ['Feu et protection civile', 'Fire and civil protection', 'Brand- und Katastrophenschutz', 'Fuego y protección civil'],
+  dwDom_lift: ['Transport et projection', 'Transport and deployment', 'Transport und Verlegung', 'Transporte y proyección'],
+  dwDom_ops: ['Opérations aériennes', 'Air operations', 'Luftoperationen', 'Operaciones aéreas'],
+  dwDom_measure: ['Mesure et validation', 'Measurement and validation', 'Messung und Validierung', 'Medición y validación'],
+  dwDom_other: ['Autres familles', 'Other families', 'Weitere Familien', 'Otras familias'],
+  dwAdded: ['Tiroir {n} ajouté : {title}.', 'Drawer {n} added: {title}.', 'Schublade {n} hinzugefügt: {title}.',
+    'Cajón {n} añadido: {title}.'
+  ],
+  dwUndo: ['Annuler', 'Undo', 'Rückgängig', 'Deshacer'],
   // le modèle de la mission (lot « modèles de mission ») : la ligne sous le titre, la liste, la question « Remplacé » / « Gardé »
   mdLine: ['Modèle : {name}', 'Model: {name}', 'Modell: {name}', 'Modelo: {name}'],
   mdNone: ['aucun', 'none', 'keines', 'ninguno'],
