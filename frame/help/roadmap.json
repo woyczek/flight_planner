@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "5d98ab9",
-  "fiches": 513,
+  "organisation": "542a675",
+  "fiches": 514,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -2021,6 +2021,27 @@
      "de": "BLOCKIEREND: die Windfiedern (und alles entlang der Route) folgen der Linie nicht — die Linie liegt auf dem Großkreis, die Fiedern auf der Geraden",
      "es": "BLOQUEANTE: las barbas de viento (y todo lo que sigue la ruta) no siguen el trazado — el trazado va por el círculo máximo, las barbas por la línea recta",
      "rank": 78
+    }
+   ]
+  },
+  {
+   "id": "pilote-carte-ifr",
+   "app": "pilote",
+   "label": {
+    "fr": "Carte ; IFR",
+    "en": "Carte ; IFR",
+    "de": "Carte ; IFR",
+    "es": "Carte ; IFR"
+   },
+   "items": [
+    {
+     "id": "SOG-0515",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte (fond IFR) : un cartouche de voie passe sous le tracé de la route, et un MORA se pose sur un cartouche",
+     "en": "Map (IFR background): an airway label goes under the route line, and a MORA sits on a label",
+     "de": "Karte (IFR-Hintergrund): ein Luftstraßenschild liegt unter der Routenlinie, und ein MORA sitzt auf einem Schild",
+     "es": "Mapa (fondo IFR): una etiqueta de aerovía queda bajo la línea de la ruta, y un MORA se pone sobre una etiqueta"
     }
    ]
   },
@@ -9311,6 +9332,9 @@
   },
   "SIG-434254a246": {
    "fiche": "SOG-0369"
+  },
+  "SIG-4789f2f9a6": {
+   "fiche": "SOG-0515"
   },
   "SIG-53e48e89e6": {
    "fiche": "SOG-0384"
