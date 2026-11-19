@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 351,
+  "tests": 352,
   "verdicts": 221
  },
  "apps": [
@@ -5243,6 +5243,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T09:11:03Z"
+  },
+  {
+   "id": "SOG-0515",
+   "app": "pilote",
+   "title": {
+    "fr": "Carte (fond IFR) : un cartouche de voie passe sous le tracé de la route, et un MORA se pose sur un cartouche",
+    "en": "Map (IFR background): an airway label goes under the route line, and a MORA sits on a label",
+    "de": "Karte (IFR-Hintergrund): ein Luftstraßenschild liegt unter der Routenlinie, und ein MORA sitzt auf einem Schild",
+    "es": "Mapa (fondo IFR): una etiqueta de aerovía queda bajo la línea de la ruta, y un MORA se pone sobre una etiqueta"
+   },
+   "test": "Recharge la page. Carburant, la route UPALO V20 LUVOP LFRN, fond IFR : aucun cartouche d'une voie non suivie n'est caché sous le trait de la route (il est déplacé le long de sa voie, ou dessiné par-dessus) ; aucun chiffre de MORA ne se pose sur un cartouche ou un texte (il disparaît à ce zoom s'il n'a pas de place).",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T10:12:35Z"
   }
  ],
  "decisions": [

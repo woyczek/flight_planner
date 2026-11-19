@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "eed777a",
+  "organisation": "3b0f61c",
   "fiches": 518,
   "untranslated": 0,
   "priorities": 481,
@@ -2044,11 +2044,12 @@
     {
      "id": "SOG-0515",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Carte (fond IFR) : un cartouche de voie passe sous le tracé de la route, et un MORA se pose sur un cartouche",
      "en": "Map (IFR background): an airway label goes under the route line, and a MORA sits on a label",
      "de": "Karte (IFR-Hintergrund): ein Luftstraßenschild liegt unter der Routenlinie, und ein MORA sitzt auf einem Schild",
-     "es": "Mapa (fondo IFR): una etiqueta de aerovía queda bajo la línea de la ruta, y un MORA se pone sobre una etiqueta"
+     "es": "Mapa (fondo IFR): una etiqueta de aerovía queda bajo la línea de la ruta, y un MORA se pone sobre una etiqueta",
+     "test": true
     }
    ]
   },
