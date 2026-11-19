@@ -18,7 +18,11 @@
 //     (un stationnaire), landing (un poser), overflight (un survol) — HOLDS, une règle chacune (`rule` de la ligne), écrite dans
 //     `trigger_condition` sous la forme exacte que le lecteur lit (holdRule de frame/lib/mission.js), avec SES bornes (MS.HOLD_BOUNDS) ;
 //     sequence (une suite d'étapes : `steps` de la ligne, de une à MS.DRAWER_BOUNDS.steps, chacune { kind (une de HOLDS), …règle }) ;
-//     event (`event` de la ligne : l'identifiant d'un message entre équipages, MS.EVENT_ID). CONDS : ces cinq conditions.
+//     event (`event` de la ligne : l'identifiant d'un message entre équipages, MS.EVENT_ID) ; refill (SOG-0521 : le ravitaillement en
+//     retardant à une STATION, un objet de genre refill — `rule` de la ligne : object, duration (s), heading (°, facultatif), et ce
+//     qu'un fichier écrit déjà de radiusM, gap, headTol, speed ; jamais un point ; les paramètres et leurs bornes : MS.REFILL_RULE).
+//     CONDS : ces six conditions ; RULED : celles dont la ligne porte une règle (HOLDS et refill) ; ruleBounds(kind, f) : les bornes
+//     d'un nombre d'une règle de cette sorte (celles du lecteur).
 //   Le message qu'un tiroir envoie en s'ouvrant (`emit_event` { id, to }) : `emit` et `emitTo` de la ligne (l'identifiant ; les
 //     destinataires, séparés par des virgules, seize au plus), pour toute clé.
 //   blankRule() → une règle vide { point, object, label, radiusM, radiusNm, duration, gap, speed, tol, hMin, hMax, confirmation,
@@ -70,7 +74,12 @@ const B = MS.DRAWER_BOUNDS,
 /** Les conditions de maintien et de survol (version 1.1) que l'atelier écrit : la liste du lecteur. */
 export const HOLDS = MS.HOLD_KINDS;
 /** Les conditions de la version 1.1 que l'atelier écrit : les règles, la suite d'étapes, le message attendu. */
-export const CONDS = Object.freeze([...HOLDS, 'sequence', 'event']);
+export const CONDS = Object.freeze([...HOLDS, 'sequence', 'event', 'refill']);
+/** Les conditions dont la ligne porte UNE règle (`rule`) : le maintien, le poser, le survol, et le ravitaillement (SOG-0521). Une étape
+ *  d'une suite n'est jamais un ravitaillement (le lecteur la refuse) : les étapes restent dans HOLDS. */
+export const RULED = Object.freeze([...HOLDS, 'refill']);
+/** Les paramètres d'un ravitaillement en retardant : LA table du lecteur (MS.REFILL_RULE), jamais recopiée. */
+const RF = MS.REFILL_RULE;
 export const KEYS = Object.freeze(['hand', 'time', 'zone', 'object', 'arrival', ...CONDS]);
 /** Les clés qui regardent l'avion : elles ont une heure de repli. */
 const LIVE = new Set(['zone', 'object', 'arrival', 'kept', ...CONDS]);
@@ -84,26 +93,41 @@ export const RULE_NUM = Object.freeze({
   speed: ['speed_max_kt', H.landingSpeedKt],
   tol: ['speed_tolerance_kt', H.speedToleranceKt],
   hMin: ['height_min_ft', H.heightFt],
-  hMax: ['height_max_ft', H.heightFt]
+  hMax: ['height_max_ft', H.heightFt],
+  // SOG-0521 : le cap d'accostage d'un ravitaillement et sa tolérance
+  heading: ['heading_deg', RF.headingBoundsDeg],
+  headTol: ['heading_tol_deg', RF.headingTolBoundsDeg]
 });
+/** Les bornes d'un nombre `f` d'une règle de la sorte `kind` : celles du lecteur (RULE_NUM) ; un ravitaillement a SES bornes de rayon
+ *  (MS.REFILL_RULE) et un écart jamais sous la période d'un relevé (sa borne du lecteur : la même règle que les tenues). */
+export function ruleBounds(kind, f) {
+  if (kind === 'refill' && f === 'radiusM') return RF.radiusBoundsM;
+  if (kind === 'refill' && f === 'gap') return [Math.max(landingGapMin(), H.maxGapSec[0]), H.maxGapSec[1]];
+  return RULE_NUM[f] ? RULE_NUM[f][1] : null;
+}
 /** Les champs qu'une sorte de règle lit (holdRule du lecteur) ; le libellé et le mot de confirmation valent pour toutes. */
 export const RULE_USE = Object.freeze({
   hover: Object.freeze(['point', 'object', 'radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax', 'label', 'confirmation']),
   // un poser n'a pas de mot de confirmation (Affectation, 18 nov. : le vol le jugera sans) — un mot déjà écrit reste tel quel
   // SOG-0507 : plus de rayon (m) : un poser se juge par paliers (un point), ou à 1 NM (un terrain) ; `radius_m` d'un fichier est gardé tel quel, jamais lu ni exigé
   landing: Object.freeze(['point', 'object', 'duration', 'gap', 'speed', 'label']),
-  overflight: Object.freeze(['point', 'object', 'radiusNm', 'hMin', 'hMax', 'confirm', 'label', 'confirmation'])
+  overflight: Object.freeze(['point', 'object', 'radiusNm', 'hMin', 'hMax', 'confirm', 'label', 'confirmation']),
+  // SOG-0521 : une station (jamais un point), la durée, le cap ; le rayon, l'écart, la tolérance et la vitesse ne s'écrivent que s'ils
+  // sont saisis (vides : le lecteur prend MS.REFILL_RULE) ; repartir (`require_departure`) s'écrit vrai pour une règle neuve
+  refill: Object.freeze(['object', 'duration', 'heading', 'radiusM', 'gap', 'headTol', 'speed', 'label', 'depart'])
 });
 /** Les nombres qu'une sorte de règle exige : sans l'un d'eux, ou hors de ses bornes, le lecteur la refuse. */
 const RULE_NEED = Object.freeze({
   hover: ['radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax'],
   // la vitesse d'un poser est écrite (le lecteur prend 3 kt sans elle ; Affectation veut une règle complète)
   landing: ['duration', 'gap', 'speed'],
-  overflight: ['radiusNm', 'hMin', 'hMax']
+  overflight: ['radiusNm', 'hMin', 'hMax'],
+  refill: [] // tout nombre absent prend le paramètre du lecteur ; un nombre SAISI doit être dans ses bornes (ruleMissing)
 });
 /** Les champs du fichier qu'une règle porte (une règle neuve, ou d'une autre sorte, les perd tous avant d'écrire les siens). */
 const RULE_FILE = ['point', 'object', 'label', 'radius_m', 'radius_nm', 'duration_sec', 'max_gap_sec', 'speed_max_kt',
-  'speed_tolerance_kt', 'height_min_ft', 'height_max_ft', 'confirmation', 'require_confirmation'
+  'speed_tolerance_kt', 'height_min_ft', 'height_max_ft', 'confirmation', 'require_confirmation', 'heading_deg', 'heading_tol_deg',
+  'require_departure'
 ];
 /** Les champs du fichier qui portent une clé. */
 const KEY_FIELDS = ['trigger_zone', 'zone_shown', 'trigger_actor', 'trigger_object', 'trigger_condition', 'trigger_point',
@@ -146,8 +170,11 @@ export const blankRule = () => ({
   tol: '',
   hMin: '',
   hMax: '',
+  heading: '',
+  headTol: '',
   confirmation: '',
-  confirm: true
+  confirm: true,
+  depart: true // SOG-0521 : un ravitaillement repart une fois rempli (le défaut du lecteur)
 });
 
 /** Une règle du fichier en champs (une condition, ou une étape d'une suite) ; null quand son lieu n'est pas un identifiant nu (une
@@ -161,13 +188,21 @@ function ruleOf(c) {
   for (const [f, [k]] of Object.entries(RULE_NUM)) r[f] = numText(c[k]);
   r.confirmation = scalar(c.confirmation) ? cut(c.confirmation, 24) : '';
   r.confirm = yes(c.require_confirmation, true);
+  r.depart = yes(c.require_departure, true);
   return r;
 }
 
 /** La règle qu'une sorte devine (voir l'en-tête) ; `places` : les lignes des Lieux de la séance. */
 export function holdRow(kind, places = []) {
   const first = k => (Array.isArray(places) ? places : []).find(p => p && p.id && p.kind === k)?.id || '',
-    obj = first('object'),
+    obj = first('object');
+  // SOG-0521 : un ravitaillement — la première STATION des lieux (un objet de genre refill), la durée minimale du lecteur ; rien d'autre
+  if (kind === 'refill') return {
+    ...blankRule(),
+    object: (Array.isArray(places) ? places : []).find(p => p && p.id && p.kind === 'object' && p.okind === 'refill')?.id || '',
+    duration: String(RF.durationSec)
+  };
+  const
     at = kind === 'landing' ? {
       point: 'DESTINATION'
     } : obj ? {
@@ -227,7 +262,7 @@ export const toleranceNm = () => ({
 /** Ce qui manque à la condition d'une ligne (voir l'en-tête). */
 export function condMissing(row) {
   const r = isObj(row) ? row : {};
-  if (HOLDS.includes(r.key)) return ruleMissing(r.key, r.rule);
+  if (RULED.includes(r.key)) return ruleMissing(r.key, r.rule);
   if (r.key === 'sequence') {
     const steps = Array.isArray(r.steps) ? r.steps : [];
     if (!steps.length) return ['steps'];
@@ -243,7 +278,14 @@ export function ruleMissing(kind, rule) {
   const r = isObj(rule) ? rule : {},
     out = [],
     blank = v => String(v ?? '').trim() === '',
-    ok = f => within(r[f], ...RULE_NUM[f][1]) !== null;
+    ok = f => within(r[f], ...ruleBounds(kind, f)) !== null;
+  // SOG-0521 : un ravitaillement — une station et jamais un point ; chaque nombre saisi dans ses bornes (vide : le paramètre du lecteur)
+  if (kind === 'refill') {
+    if (blank(r.object) || !blank(r.point)) out.push('at');
+    for (const f of ['duration', 'heading', 'radiusM', 'gap', 'headTol', 'speed'])
+      if (!blank(r[f]) && !ok(f)) out.push(f);
+    return out;
+  }
   if (blank(r.point) === blank(r.object)) out.push('at');
   for (const f of RULE_NEED[kind] || [])
     if (!ok(f)) out.push(f);
@@ -295,8 +337,8 @@ function keyOf(p) {
   if (written[0] === 'trigger_condition') {
     const c = p.trigger_condition,
       kind = isObj(c) ? cut(c.kind, 24).toLowerCase() : '';
-    // SOG-0500 : un stationnaire, un poser, un survol — leurs champs, la règle lue comme le lecteur la lit
-    if (HOLDS.includes(kind)) {
+    // SOG-0500 : un stationnaire, un poser, un survol — leurs champs, la règle lue comme le lecteur la lit ; SOG-0521 : un ravitaillement
+    if (RULED.includes(kind)) {
       const rule = ruleOf(c);
       return rule ? {
         ...f,
@@ -448,7 +490,7 @@ export function keyed(row, key, places = []) {
       arrGround: true
     } : key === 'time' ? {
       point: 'ORIGIN'
-    } : HOLDS.includes(key) ? {
+    } : RULED.includes(key) ? {
       rule: holdRow(key, places)
     } : key === 'sequence' ? {
       steps: [{
@@ -528,7 +570,8 @@ function putRule(c, kind, rule, was) {
       if (MS.CONFIRM_WORD.test(word)) c.confirmation = word;
       else delete c.confirmation;
     } else if (f === 'confirm') c.require_confirmation = r.confirm !== false;
-    else putNumber(c, RULE_NUM[f][0], r[f], ...RULE_NUM[f][1]);
+    else if (f === 'depart') c.require_departure = r.depart !== false;
+    else putNumber(c, RULE_NUM[f][0], r[f], ...ruleBounds(kind, f));
   }
 }
 
@@ -563,8 +606,9 @@ function putKey(o, r, diff, was = null) {
       else delete c.required_points;
     }
     o.trigger_condition = c;
-  } else if (HOLDS.includes(r.key) && ch('rule')) {
-    // SOG-0500 : { kind, point | object, radius_m…, height_max_ft } — la forme de holdRule ; une autre clé de la condition reste
+  } else if (RULED.includes(r.key) && ch('rule')) {
+    // SOG-0500 : { kind, point | object, radius_m…, height_max_ft } — la forme de holdRule ; SOG-0521 : { kind: refill, object,
+    // duration_sec, heading_deg… } — la forme de refillRule ; une autre clé de la condition reste
     const c = {
       ...(isObj(o.trigger_condition) ? o.trigger_condition : {}),
       kind: r.key
@@ -714,6 +758,11 @@ const SAMPLE_DOC = Object.freeze({
     lat: 44.6,
     lon: 1.4,
     detection_range_nm: 1
+  }, {
+    id: 'OBJ-2', // SOG-0521 : une station de retardant, pour écrire un ravitaillement
+    kind: 'refill',
+    lat: 44.65,
+    lon: 1.35
   }]
 });
 let sampleKeys = null;
@@ -731,6 +780,10 @@ function samples() {
     }, {
       id: 'OBJ-1',
       kind: 'object'
+    }, {
+      id: 'OBJ-2',
+      kind: 'object',
+      okind: 'refill'
     }],
     rows = [];
   for (const key of KEYS) {

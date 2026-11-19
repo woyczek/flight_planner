@@ -1650,12 +1650,35 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
 ### 7 sexquinquagies. A « refill » kind of object: the retardant station of an aerodrome (19 Nov 2026; the user's request for the fire missions; noreg N179)
 
 - `refill` is added to `MS.OBJECT_KINDS` (`frame/lib/mission.js`), the one closed list: the choice « Sorte d'objet » of a place of the sort
-  object (`editor_view.js`) offers it — « Station de retardant (refill) » / « Retardant station (refill) » / « Retardant-Station (Refill) » /
-  « Estación de retardante (refill) » (`ok_refill`, `editor_texts.js`) — and `withPlaces` writes `kind: refill` (a kind outside the list is
+  object (`editor_view.js`) offers it — « Station de retardant » / « Retardant station » / « Retardant-Station » /
+  « Estación de retardante » (`ok_refill`, `editor_texts.js`; « (refill) » dropped on 19 Nov, SOG-0521: the label was cut by the arrow of
+  the select at 390 and 1280) — and `withPlaces` writes `kind: refill` (a kind outside the list is
   still not written).
 - A refill is **still by nature**: the reader gives `moving: false` and `motion: null` even if the file writes a speed, a route or an axis on it
   (choice made alone: ignored, not refused — the object stays playable and a landing on it is judged like on any still object).
 - Not in this batch: the choice of the aerodrome from an AeroDB list (locked position), and the « refill » brick of the fire family.
+
+### 7 septquinquagies. The sheet of a drawer keyed by a retardant refill (19 Nov 2026; SOG-0521; noreg N183, N182, N155)
+
+- `refill` joins `DR.KEYS` / `DR.CONDS` (`editor_drawers.js`); `DR.RULED` (hover, landing, overflight, refill) lists the keys whose line
+  carries a `rule`; the steps of a sequence stay `HOLDS` (a refill is never a step). `DR.ruleBounds(kind, f)` gives the reader's bounds of a
+  number of a rule — a refill has its own radius bounds and a gap never under one fix period, both read from `MS.REFILL_RULE` (the one
+  table of the reader: R = 30 m, ± 30°, 300 s, 10 s; never copied).
+- **Not offered** under « ＋ Tiroir » while the flight does not judge it (`DR.offered` / `follows`: `TYPES` says `refill: false`), but a
+  drawer already written edits: the key « un ravitaillement en retardant » with the mention « s'ouvre au geste ou à l'heure de repli ».
+- **The sheet** (`edRefillHtml`, `editor_view.js`): the station — a list of the objects of the kind refill ALONE (the file's value kept, with
+  « ? » when it names no station any more; none: the sheet says so and leads to the Lieux) —, the minimum duration in MINUTES (written in
+  seconds, `duration_sec`), the docking heading (`heading_deg`, optional); the radius, the gap, the heading tolerance and the speed show only
+  when the file writes them. ONE line says the rule (`edRefillLine`): « Se poser, s'arrêter à 30 m de la station, 5 min au moins, puis
+  repartir », « , au cap 270° ± 30° » with a heading, without « puis repartir » when the file does not require it — it follows the typing.
+- « À compléter »: a station missing (or a point), a number typed out of its bounds (`condIncomplete`); a station « to place » makes the key
+  unreadable (`keyUnread`).
+- **A station is not « found »** (the relay, 19 Nov): the sheet of a place of the kind refill shows neither « Portée de détection », nor
+  « Trouvé seulement quand le pilote le déclare », nor the heights; its line in the Lieux says no range; what the file writes there is kept as it
+  is. « Un objet à trouver » never offers a station (the reader refuses that key). The kind's label is « Station de retardant » (« (refill) »
+  dropped: the select cut it).
+- Choices made alone: the condition is named `refill`, not `refuel` (the air-to-air refuelling of the AAR family); the minimum duration is
+  `duration_sec`, the word of the holds; the gap, the radius and the tolerance are not offered to type (the parameters of the reader).
 
 ### 8. What is NOT ported
 

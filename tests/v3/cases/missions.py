@@ -4825,7 +4825,7 @@ def n77(c):
          what='the fold of the heights')
     c.eq(c.js(f"document.querySelector('{F} [data-f=confirm]').checked"), True, '« trouvé seulement quand le pilote le déclare » is checked (the default of the format)',
          what='the box')
-    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f=okind] option')].map(o => o.value)"), ['', 'wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft'],
+    c.eq(c.js(f"[...document.querySelectorAll('{F} [data-f=okind] option')].map(o => o.value)"), ['', 'wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft', 'refill'],
          'the kinds are the reader\'s list', what='kinds')
     c.page.fill(f'{F} [data-f=range]', '0.5')
     forged = c.js(f"""() => {{ const f = document.querySelector('{F} [data-f=range]'), x = f.cloneNode(); x.dataset.f = 'id'; x.value = 'FORGED'; f.parentNode.appendChild(x);
@@ -10583,13 +10583,13 @@ def n155(c):
                        'refill+obj': False},
          'what the flight judges today (follows of drawers.js; the landing since 3c2e2abba, the overflight since 4c9b10ef3, the hover since 9cbbf9e11: each on a point or a still object, never on a moving one; the sequence since 72d7ef7dc)', what='judged today')
     c.eq(g['types'], [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', True], ['landing', True],
-                      ['overflight', True], ['sequence', True], ['event', False]], 'DR.TYPES: the flag of each kind, from the flight', what='the types')
+                      ['overflight', True], ['sequence', True], ['event', False], ['refill', False]], 'DR.TYPES: the flag of each kind, from the flight (the refill not yet, SOG-0521)', what='the types')
     c.eq(g['typesAgree'], True, 'judgedKind and TYPES say the same', what='judgedKind')
     c.eq([g['offered'], g['offeredCur'], g['offeredIfJudged'], g['offeredNone']],
          [['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'],
           [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', True], ['landing', True], ['overflight', True], ['sequence', True]],
-          ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'event'], ['hand', 'time']],
-         'offered today; the key in force kept; a flight that judges everything: ten; a flight that judges nothing: the gesture and the hour',
+          ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'event', 'refill'], ['hand', 'time']],
+         'offered today; the key in force kept; a flight that judges everything: eleven (the refill, SOG-0521); a flight that judges nothing: the gesture and the hour',
          what='offered')
     # the screen: « ＋ Tiroir » shows exactly what DR.offered says, the choice of a landing drawer keeps its key with its mention
     c.page.set_viewport_size({'width': 390, 'height': c.height})
@@ -12088,13 +12088,21 @@ _REFILL_READ_JS = """async () => { const MS = await import('/frame/lib/mission.j
   const hostile = [null, 'refill', [], { kind: 'refill', object: '__proto__' }, { kind: 'refill', object: 'OBJ-1', heading_deg: Infinity },
     { kind: 'refill', object: 'OBJ-1', duration_sec: NaN }, { kind: 'refill', object: 'OBJ-1', label: 'x'.repeat(5000) }].map(read);
   const m = MS.readMission({ ...base, phases: [{ id: 'B', title: 'Remplir le reservoir', trigger_condition: { kind: 'refill', object: 'OBJ-1' } }] });
+  // a station is not « found » (the relay, 19 Nov): read without a detection range (rangeNm null), a range written kept as it is; a landing on it
+  // is judged, an object key on it is not a key (the gesture alone, « object ») — and the reader and the flight agree on each
+  const st = MS.readMission({ ...base, objects: [...base.objects, { id: 'OBJ-4', kind: 'refill', name: 'Station portee', lat: 44.7, lon: 1.3, detection_range_nm: 0.4 }],
+    phases: [{ id: 'B', trigger_condition: { kind: 'landing', object: 'OBJ-1', duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 } },
+      { id: 'C', trigger_condition: { kind: 'landing', object: 'OBJ-4', duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 } },
+      { id: 'D', trigger_object: 'OBJ-1' }, { id: 'E', trigger_object: 'OBJ-4' }, { id: 'F', trigger_object: 'OBJ-2' }] }).drawers;
+  const agree = k => MS.notJudgedYet(k) === !(k.kind === 'hand' || k.kind === 'time' || D.follows(k));
+  const station = st.map(d => [d.key.kind, d.keyWhy, d.key.rule?.object?.rangeNm ?? d.key.object?.rangeNm ?? null, MS.notJudgedYet(d.key), D.follows(d.key), agree(d.key)]);
   return { R: [R.radiusM, R.radiusBoundsM, R.headingTolDeg, R.headingTolBoundsDeg, R.headingBoundsDeg, R.durationSec, R.maxGapSec, Object.isFrozen(R)],
     dflt: read({ kind: 'refill', object: 'OBJ-1' }),
     written: read({ kind: 'refill', object: 'obj-1', radius_m: 25, duration_sec: 420, max_gap_sec: 6, speed_max_kt: 1, heading_deg: 270, heading_tol_deg: 20,
       require_departure: false }),
     bad, hostile: hostile.map(x => x[0]),
     seq: read({ kind: 'sequence', steps: [{ kind: 'refill', object: 'OBJ-1' }] }),
-    closed: JSON.stringify(MS.pilotView(m, [])), open: MS.pilotView(m, ['B']).drawers.map(d => [d.id, d.condition, d.key.rule?.object?.name]) } }"""
+    station, closed: JSON.stringify(MS.pilotView(m, [])), open: MS.pilotView(m, ['B']).drawers.map(d => [d.id, d.condition, d.key.rule?.object?.name]) } }"""
 
 
 @case('N182', 'Missions › the reader reads the retardant refill (SOG-0521, pure, in the page): `trigger_condition: { kind: refill, object }` on an object of the kind '
@@ -12122,3 +12130,101 @@ def n182(c):
     c.ok('Station inventee' not in g['closed'] and 'refill' not in g['closed'] and 'Remplir' not in g['closed'], g['closed'][:200],
          'a closed refill drawer: neither its title, nor its condition, nor its station in the pilot\'s view')
     c.eq(g['open'], [['B', 'refill', 'Station inventee']], 'open, the drawer is there whole, its station resolved', what='open')
+    c.eq(g['station'], [['condition', '', None, False, True, True], ['condition', '', 0.4, False, True, True], ['hand', 'object', None, False, False, True],
+                        ['hand', 'object', None, False, False, True], ['object', '', 1, False, True, True]],
+         'a station without a range is read (rangeNm null) and a landing on it judged; a range written is kept; an object key on a station is not a key (the gesture, « object »); '
+         'a vehicle stays an object to find; the reader and the flight agree on each', what='the station is not found')
+
+
+# SOG-0521: a drawer of the file keyed by a retardant refill, in the workshop (an invented file: an invented station, no real aerodrome)
+_REFILL_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
+title: Mission retardant
+summary: Un ravitaillement inventé.
+cruise_speed_kt: 120
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test Sud (XTSU), lat: 44.0, lon: 2.0 }
+turning_points:
+  - { id: PT1, name: Point un, lat: 44.8, lon: 1.2 }
+objects:
+  - { id: OBJ-1, kind: vehicle, name: Véhicule d'essai, lat: 44.6, lon: 1.42, detection_range_nm: 1 }
+  - { id: OBJ-2, kind: refill, name: Station d'essai, lat: 44.62, lon: 1.38, detection_range_nm: 0.4 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - { id: B, title: Remplir le réservoir, message: Posez-vous à la station., brief: Un remplissage inventé., fallback_delay_min: 60, trigger_condition: { kind: refill, object: OBJ-2, duration_sec: 300 } }
+"""
+
+
+@case('N183', 'Missions › the workshop, a drawer of the file keyed by a retardant REFILL (SOG-0521, an invented file): its sheet shows the key « un '
+      'ravitaillement en retardant » with the mention « s\'ouvre au geste ou à l\'heure de repli » (the flight does not judge it yet), three fields only — the '
+      'station, chosen among the objects of the kind refill alone (not the vehicle), the minimum duration in MINUTES (300 s → 5), the docking heading, '
+      'empty —, and ONE line that says the rule (« Se poser, s\'arrêter à 30 m de la station, 5 min au moins, puis repartir »), which follows the typing '
+      '(a heading 270 adds « , au cap 270° ± 30° », 7 min); « ＋ Tiroir » does not offer the refill; « Enregistrer » writes `duration_sec: 420` and '
+      '`heading_deg: 270` and nothing else moves (the station keeps the range the file writes); in the Lieux the station says « Station de retardant » '
+      'and no range, and its sheet has no range, no « trouvé seulement quand le pilote le déclare », no heights (a station is not found), the vehicle\'s '
+      'has them; at 390 and at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0521: « la fiche d\'un tiroir à clé refuel — le choix de l\'objet refill, la durée minimale (min), le cap d\'accostage facultatif ; la ligne '
+      'secondaire unique dit la règle ; la clé n\'est PAS proposée au « ＋ Tiroir » tant que le vol ne la juge pas » ; the relay (19 Nov): « une station de '
+      'retardant ne se trouve pas : masque la portée, la confirmation et la hauteur »; EDITOR.md § 7 septquinquagies')
+def n183(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    fields = f"[...document.querySelectorAll('{_DW} [data-dwrule=rule] [data-k=eddr]')].map(x => x.dataset.f)"
+    opts = f"(() => {{ const s = document.querySelector('{_DW} select[data-f=\"rule.object\"]'); return [s.value, [...s.options].map(o => o.value)] }})()"
+    line = f"(document.querySelector('{_DW} [data-dwrefill]')?.textContent || '')"
+    rule = row(c, 'dwRefillRule', EDTX_FILE)
+    hdg = row(c, 'dwRefillHdg', EDTX_FILE)
+    # the line of a place in the Lieux, and the fields of its sheet
+    place = """(id) => { const b = [...document.querySelectorAll('%s [data-edplaces] [data-place]')].find(x => x.querySelector('b')?.textContent.startsWith(id));
+      return b ? [b.dataset.place, b.querySelector('.ms-plbody .f-muted').textContent] : null }""" % E
+    form = f"(i) => [...document.querySelectorAll('{E} [data-plform=\"' + i + '\"] [data-f]')].map(x => x.dataset.f)"
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, _REFILL_MISSION)
+        ed_reveal(c)
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
+        c.eq([c.js(_DW_VAL, 'key'), norm(c.js(f"document.querySelector('{_DW} [data-kindcur] b').textContent")),
+              norm(c.js(f"document.querySelector('{_DW} [data-dwnotjudged]')?.textContent || ''"))],
+             ['refill', norm(row(c, 'dwKey_refill', EDTX_FILE)), norm(row(c, 'dwNotJudged', EDTX_FILE))],
+             f'{width}: the key « un ravitaillement en retardant », with the mention « s\'ouvre au geste ou à l\'heure de repli »', what='the key')
+        c.eq(c.js(fields), ['rule.object', 'rule.durMin', 'rule.heading'], f'{width}: three fields — the station, the minimum duration, the heading', what='the fields')
+        c.eq(c.js(opts), ['OBJ-2', ['', 'OBJ-2']], f'{width}: the station of the file chosen, the stations alone offered (not the vehicle)', what='the stations')
+        c.eq([c.js(_RULE_VAL, 'durMin'), c.js(_RULE_VAL, 'heading')], ['5', ''], f'{width}: 300 s said in minutes; no heading', what='the values')
+        c.eq(norm(c.js(line)), norm(rule.replace('{r}', '30').replace('{hdg}', '').replace('{min}', '5')),
+             f'{width}: the one line says the rule', what='the line')
+        c.eq(c.js(_DW_VAL, 'fallback'), '60', f'{width}: its fallback', what='the fallback')
+        c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
+        c.shot(f'P16a_{width}_refuel.png')
+        c.page.fill(f'{_DW} [data-f="rule.heading"]', '270')
+        c.page.fill(f'{_DW} [data-f="rule.durMin"]', '7')
+        want = norm(rule.replace('{r}', '30').replace('{hdg}', hdg.replace('{hdg}', '270').replace('{tol}', '30')).replace('{min}', '7'))
+        c.until(f"(w) => {line}.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w", want, what=f'{width}: the line follows the typing')
+        c.tap(f'{E} [data-atflow] [data-dradd]')
+        c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
+        offered = c.js(f"[...document.querySelectorAll('{_KW} [data-do=edkind]')].map(x => x.dataset.key)")
+        c.ok('refill' not in offered and 'landing' in offered, offered, f'{width}: « ＋ Tiroir » does not offer the refill (the flight does not judge it)')
+        c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
+        # the Lieux: the station is not « found » — no range on its line, no detection field in its sheet; the vehicle keeps them
+        ed_places(c)
+        st, veh = c.js(place, 'OBJ-2'), c.js(place, 'OBJ-1')
+        c.ok(st and row(c, 'ok_refill', EDTX_FILE) in st[1] and '0,4' not in st[1] and '0.4' not in st[1], st,
+             f'{width}: the line of the station says « Station de retardant », no range')
+        c.tap(f'{E} [data-place="{st[0]}"] [data-do="edplace"]')
+        c.until(f"!!document.querySelector('{E} [data-plform=\"{st[0]}\"]')", what='the sheet of the station')
+        c.eq(c.js(form, st[0]), ['name', 'okind', 'lat', 'lon'], f'{width}: the station: no range, no confirmation, no heights', what='the station')
+        c.js(f"document.querySelector('{E} [data-plform=\"{st[0]}\"]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'P16a_{width}_refuel_station.png')
+        c.tap(f'{E} [data-plform="{st[0]}"] [data-do="edplaceok"]')
+        c.tap(f'{E} [data-place="{veh[0]}"] [data-do="edplace"]')
+        c.until(f"!!document.querySelector('{E} [data-plform=\"{veh[0]}\"]')", what='the sheet of the vehicle')
+        c.eq(c.js(form, veh[0]), ['name', 'okind', 'lat', 'lon', 'range', 'confirm', 'height', 'alt'], f'{width}: the vehicle keeps its fields of detection', what='the vehicle')
+        c.tap(f'{E} [data-plform="{veh[0]}"] [data-do="edplaceok"]')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
+        after = c.js('(t) => window.jsyaml.load(t)', c.js(_TEXT_OF, path))
+        before = c.js('(t) => window.jsyaml.load(t)', _REFILL_MISSION)
+        before['phases'][0]['trigger_condition'].update({'duration_sec': 420, 'heading_deg': 270})
+        c.eq({k: after.get(k) for k in ('phases', 'turning_points', 'objects', 'route_order')}, {k: before.get(k) for k in ('phases', 'turning_points', 'objects', 'route_order')},
+             f'{width}: the duration and the heading written, nothing else moved (the station keeps its range)', what='the file written')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

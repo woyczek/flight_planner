@@ -145,7 +145,11 @@ phases:
   station of an aerodrome's loading area: an object that **never moves** — a `motion`, a `route_order`, a `speed_kt` or a
   `course_deg` written on it are not read (`moving` is false, `motion` is null), so a landing on it is judged like a landing on any
   still object (`follows`; `notJudgedYet` is false). The list of aerodromes that offer a refill, and the position it is locked on,
-  will come from AeroDB (not written yet): for now the author places the object by hand.
+  will come from AeroDB (not written yet): for now the author places the object by hand. A station is **not « found »** (the relay,
+  19 Nov 2026, SOG-0521): its `detection_range_nm` is not required (`rangeNm` is null without it; a range written within its bounds is
+  read as it is, and the workshop never rewrites it), and a `trigger_object` that names a refill is **not a key** — the gesture alone,
+  `keyWhy: 'object'` (neither the reader nor `follows` judges it); a landing, a hover or an overflight on it is read as on any still
+  object.
 - `passageMin(mission, pointId)` → `{ nm, min }`: the distance (as `routeNm`) and the estimated minutes from the
   departure to a point of part A — distance at the cruise speed, plus the time on task of the points before (the middle
   of a range); `min` is null without a speed; null when the point is not on the route of part A; `'ORIGIN'` is 0.
@@ -383,6 +387,9 @@ phases:
   step of a sequence** (the sequence is then unreadable).
 - **Not judged in flight yet**: `notJudgedYet` is true and `follows` (`modules/missions/drawers.js`) is false; the drawer opens by the
   gesture or at its fallback hour. The day « Affectation » judges it, `notJudgedYet` follows (noreg N155 keeps the two in agreement).
+- **What the workshop writes** (`modules/missions/editor_drawers.js`, `RULED`): the station, `duration_sec` (typed in minutes) and
+  `heading_deg` when typed, `require_departure: true` for a new rule; never a point; `radius_m`, `max_gap_sec`, `heading_tol_deg` and
+  `speed_max_kt` only when the file already writes them (kept as they are unless changed) — absent, the reader takes `REFILL_RULE`.
 - **The pilot's view**: a closed refill drawer leaves nothing (§ 4 bis); open, it is there whole, its station resolved.
   Bench: `frame/lib/test/mission.html` (noreg N1); noreg N182.
 

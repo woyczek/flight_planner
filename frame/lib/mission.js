@@ -341,7 +341,9 @@ function zoneKey(z) {
 }
 
 /** Un objet à trouver (écrit dans la partie, ou un objet de `objects`) → { id, kind, name, lat, lon, rangeNm, heightFt, altitudeFt,
- *  confirm, moving, motion } ; null quand il est illisible (sans position ou sans portée dans leurs bornes). Un genre que OBJECT_KINDS
+ *  confirm, moving, motion } ; null quand il est illisible (sans position ou sans portée dans leurs bornes). Une station de retardant
+ *  (`refill`, SOG-0521) ne se « trouve » pas : sa portée n'est pas exigée (`rangeNm` null sans elle ; une portée écrite et bornée est lue
+ *  telle quelle). Un genre que OBJECT_KINDS
  *  ne connaît pas : '' (l'objet reste jouable). confirm : trouvé à portée ET sur le mot du pilote (vrai par défaut). motion : null pour
  *  un objet fixe ; { kind: 'route', route (points résolus), speedKt, startDelayMin } ou { kind: 'axis', courseDeg, speedKt,
  *  startDelayMin } pour une cible mobile — lue et bornée, pas encore jugée en vol. `resolve` : un identifiant → un point de la mission. */
@@ -362,7 +364,7 @@ function objectKey(v, resolve) {
     route = (Array.isArray(o.route_order) ? o.route_order : []).slice(0, B.route).map(resolve).filter(Boolean),
     still = kind === 'refill', // une station de retardant ne bouge pas : sa vitesse et son mouvement écrits sont ignorés
     axis = cut(o.motion, 20).toLowerCase() === 'axis' || !route.length && course !== null && speed !== null;
-  if (lat === null || lon === null || range === null) return null;
+  if (lat === null || lon === null || range === null && !still) return null;
   return {
     id: cut(o.id, 40),
     kind: OBJECT_KINDS.includes(kind) ? kind : '',
@@ -675,7 +677,9 @@ function drawersOf(d, points) {
     } else if (keys[0] === 'trigger_object') {
       const oid = idWord(p.trigger_object),
         o = objectKey(oid ? byId(d.objects, oid, B.listed) : p.trigger_object, resolve);
-      if (o) key = {
+      // SOG-0521 : une station de retardant ne se « trouve » pas — un objet à trouver qui en est une n'est pas une clé (le geste seul, dit
+      // « object » : le vol ne la juge pas, `follows` non plus)
+      if (o && o.kind !== 'refill') key = {
         kind: 'object',
         object: o,
         fallbackMin

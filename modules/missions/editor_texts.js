@@ -130,9 +130,7 @@ export const EDTX = {
   ok_ship: ['navire', 'ship', 'Schiff', 'buque'],
   ok_smoke: ['fumée', 'smoke', 'Rauch', 'humo'],
   ok_aircraft: ['aéronef', 'aircraft', 'Luftfahrzeug', 'aeronave'],
-  ok_refill: ['Station de retardant (refill)', 'Retardant station (refill)', 'Retardant-Station (Refill)',
-    'Estación de retardante (refill)'
-  ],
+  ok_refill: ['Station de retardant', 'Retardant station', 'Retardant-Station', 'Estación de retardante'],
   plRange: ['Portée de détection (NM)', 'Detection range (NM)', 'Erfassungsreichweite (NM)', 'Alcance de detección (NM)'],
   plHeight: ['Hauteur de détection (ft)', 'Detection height (ft)', 'Erfassungshöhe (ft)', 'Altura de detección (ft)'],
   plAlt: ['Altitude de l\'objet (ft)', 'Altitude of the object (ft)', 'Höhe des Objekts (ft)', 'Altitud del objeto (ft)'],
@@ -417,6 +415,32 @@ export const EDTX = {
   dwSaid_event: ['à un message d\'un équipage', 'on a message from a crew', 'auf eine Nachricht einer Besatzung',
     'con un mensaje de una tripulación'
   ],
+  // SOG-0521 : le ravitaillement en retardant — son nom, sa clé dite en clair, la fiche (la station, la durée minimale, le cap), sa règle en une ligne
+  dwKey_refill: ['un ravitaillement en retardant', 'a retardant refill', 'eine Retardant-Befüllung', 'un reabastecimiento de retardante'],
+  dwSaid_refill: ['au départ de la station de retardant, une fois rempli', 'on leaving the retardant station, once refilled',
+    'beim Verlassen der Retardant-Station, nach dem Befüllen', 'al dejar la estación de retardante, una vez lleno'
+  ],
+  dwRefillStation: ['Station de retardant', 'Retardant station', 'Retardant-Station', 'Estación de retardante'],
+  dwNoRefill: ['Aucune station de retardant dans cette mission — créez un objet « Station de retardant » dans les Lieux.',
+    'No retardant station in this mission — create an object “Retardant station” in the Places.',
+    'Keine Retardant-Station in dieser Mission — legen Sie unter Orte ein Objekt „Retardant-Station“ an.',
+    'Ninguna estación de retardante en esta misión: cree un objeto «Estación de retardante» en los Lugares.'
+  ],
+  dwRefillMin: ['Durée minimale (min)', 'Minimum duration (min)', 'Mindestdauer (min)', 'Duración mínima (min)'],
+  dwRefillHeading: ['Cap d\'accostage (°)', 'Docking heading (°)', 'Anlegekurs (°)', 'Rumbo de atraque (°)'],
+  dwRefillOptional: ['facultatif', 'optional', 'optional', 'opcional'],
+  dwRefillTol: ['Tolérance de cap (± °)', 'Heading tolerance (± °)', 'Kurstoleranz (± °)', 'Tolerancia de rumbo (± °)'],
+  dwRefillRule: ['Se poser, s\'arrêter à {r} m de la station{hdg}, {min} min au moins, puis repartir',
+    'Land, stop within {r} m of the station{hdg}, stay {min} min at least, then leave',
+    'Landen, höchstens {r} m vor der Station anhalten{hdg}, mindestens {min} min bleiben, dann wieder abfliegen',
+    'Aterrizar, detenerse a {r} m de la estación{hdg}, {min} min como mínimo, y volver a salir'
+  ],
+  dwRefillStay: ['Se poser, s\'arrêter à {r} m de la station{hdg}, {min} min au moins',
+    'Land, stop within {r} m of the station{hdg}, stay {min} min at least',
+    'Landen, höchstens {r} m vor der Station anhalten{hdg}, mindestens {min} min bleiben',
+    'Aterrizar, detenerse a {r} m de la estación{hdg}, {min} min como mínimo'
+  ],
+  dwRefillHdg: [', au cap {hdg}° ± {tol}°', ', heading {hdg}° ± {tol}°', ', Kurs {hdg}° ± {tol}°', ', rumbo {hdg}° ± {tol}°'],
   dwSteps: ['Les étapes, dans l\'ordre', 'The steps, in order', 'Die Schritte, der Reihe nach', 'Las etapas, en orden'],
   dwStep: ['Étape {n}', 'Step {n}', 'Schritt {n}', 'Etapa {n}'],
   dwStepKind: ['Sorte', 'Kind', 'Art', 'Tipo'],

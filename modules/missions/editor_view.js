@@ -981,8 +981,9 @@ function edPlaceTexts(s, rows, doc) {
         name: c.name
       })),
     // un objet à trouver : sa sorte, sa portée, « caché au pilote », le tiroir dont il est la clé (ou aucun), sa position
+    // SOG-0521 : une station de retardant ne se « trouve » pas — sa ligne ne dit pas de portée
     objectDetail = (r, i) => [ok(r.okind), s.tt(EDTX.plHidden), ...(e.veil ? [] : usedBy(i).length ? usedBy(i) : [s.tt(EDTX.plNoDrawer)]), r
-      .range ? s.tt(
+      .range && r.okind !== 'refill' ? s.tt(
         EDTX.plRangeIs, {
           r: dec(s, r.range)
         }) : '', r.moving ? s.tt(EDTX.plMoving) : '', dms(s, r.lat, r.lon)
@@ -1034,17 +1035,20 @@ function edPlacesHtml(s, listOnly = false, doc = edDoc(s.ed)) {
         // la règle des sept : le nom, la sorte, la latitude, la longitude, la portée, « trouvé sur la parole du pilote », et UN repli
         // « Hauteur — facultatif » (la hauteur de détection et l'altitude de l'objet), fermé d'office, qui dit son contenu quand il est rempli
         const heights = [r.height ? s.tt(EDTX.plHeightIs, {
-          h: dec(s, r.height)
-        }) : '', r.alt ? s.tt(EDTX.plAltIs, {
-          a: dec(s, r.alt)
-        }) : ''].filter(Boolean).join(' · ');
+            h: dec(s, r.height)
+          }) : '', r.alt ? s.tt(EDTX.plAltIs, {
+            a: dec(s, r.alt)
+          }) : ''].filter(Boolean).join(' · '),
+          // SOG-0521 : une station de retardant ne se « trouve » pas — ni portée, ni « trouvé sur la parole du pilote », ni hauteurs ; ce que
+          // le fichier en porte reste tel quel (rien n'est réécrit tant qu'on n'y touche pas)
+          station = r.okind === 'refill';
         return `<div class="ms-plform" data-plform="${i}"><p class="f-muted" data-plid>${esc([r.id, r.moving ? s.tt(EDTX.plMoving) : ''].filter(Boolean).join(' · '))}</p>
         <div class="f-row">${field(i, 'name', TX.plName, r.name, ' maxlength="120"')}<label class="f-field"><span>${esc(s.tt(EDTX.plOKind))}</span><select data-k="edplace" data-i="${i}" data-f="okind"><option value=""></option>${[...new Set([...MS.OBJECT_KINDS, r.okind].filter(Boolean))].map(v => `<option value="${esc(v)}"${v === r.okind ? ' selected' : ''}>${esc(ok(v))}</option>`).join('')}</select></label></div>
         <div class="f-row">${field(i, 'lat', TX.plLat, r.lat, num)}${field(i, 'lon', TX.plLon, r.lon, num)}</div>
-        <div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
+        ${station ? '' : `<div class="f-row">${field(i, 'range', EDTX.plRange, r.range, num)}</div>
         <label class="ms-plcheck"><input type="checkbox" data-k="edplace" data-i="${i}" data-f="confirm"${r.confirm ? ' checked' : ''}><span>${esc(s.tt(EDTX.plConfirm))}</span></label>
         <details class="ms-plfold" data-plheights><summary>${esc(heights ? `${s.tt(EDTX.plHeightsOf)} — ${heights}` : s.tt(EDTX.plHeights))}</summary>
-          <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>
+          <div class="f-row">${field(i, 'height', EDTX.plHeight, r.height, num)}${field(i, 'alt', EDTX.plAlt, r.alt, num)}</div></details>`}
         <div class="f-row"><button type="button" data-do="edplaceok">${esc(s.tt(TX.plDone))}</button><button type="button" data-do="edplacedel" data-i="${i}">${esc(s.tt(e.placeAsk === i ? EDTX.plRemoveAnyway : TX.plRemove))}</button></div></div>`;
       }
       // SOG-0480 : le Nom d'un point tournant, d'une cible ou d'un rendez-vous est le champ commun de la suite (points de la base compris) ;
@@ -1353,7 +1357,8 @@ const KW_SYM = Object.freeze({
   hover: '⊙',
   overflight: '⌖',
   sequence: '⇅',
-  event: '↗'
+  event: '↗',
+  refill: '⤓' // SOG-0521 : se poser à la station de retardant
 });
 
 /** Un pli de la fenêtre : celui de la suite (frame/lib/fold.js, importé ici et listé dans meta.files de module.js). */
@@ -2978,10 +2983,15 @@ const RULE_LABEL = Object.freeze({
   confirmation: 'dwStepConfirm',
   kind: 'dwStepKind',
   steps: 'dwMiss_steps',
-  event: 'dwMiss_event'
+  event: 'dwMiss_event',
+  heading: 'dwRefillHeading', // SOG-0521 : le cap d'accostage d'un ravitaillement et sa tolérance
+  headTol: 'dwRefillTol'
 });
-/** Les champs d'une règle qui se saisissent au clavier (un nombre, le nom d'une étape, son mot de confirmation). */
-const RULE_TYPED = new Set(['radiusM', 'radiusNm', 'duration', 'gap', 'speed', 'tol', 'hMin', 'hMax', 'label', 'confirmation']);
+/** Les champs d'une règle qui se saisissent au clavier (un nombre, le nom d'une étape, son mot de confirmation ; le cap d'un
+ *  ravitaillement et sa tolérance). */
+const RULE_TYPED = new Set(['radiusM', 'radiusNm', 'duration', 'gap', 'speed', 'tol', 'hMin', 'hMax', 'label', 'confirmation', 'heading',
+  'headTol'
+]);
 
 /** Ce qui manque à une condition (DR.condMissing), dit par les libellés de la fiche (« étape 2 : Durée (s) ») ; '' sans rien. */
 function edMissText(s, what) {
@@ -3093,6 +3103,59 @@ function edRuleHtml(s, rule, kind, pre, n, {
   return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${place(kind === 'landing' || kind === 'overflight' || kind === 'hover' ? still : objects)}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${kind === 'landing' ? edJudgedLine(s, rule) : ''}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
 }
 
+/** La durée minimale d'un ravitaillement, en minutes pour son champ : les secondes de la ligne divisées par 60 (deux décimales au plus) ;
+ *  un texte qui n'est pas un nombre est rendu tel quel (« À compléter » le dit). */
+function refillMin(v) {
+  const t = String(v ?? '').trim();
+  return /^\d+(\.\d+)?$/.test(t) ? String(Math.round(+t / 60 * 100) / 100) : t;
+}
+
+/** La règle d'un ravitaillement en retardant dite en une ligne (SOG-0521) : « Se poser, s'arrêter à 30 m de la station, 5 min au moins,
+ *  puis repartir » — avec « , au cap 270° ± 30° » quand un cap est saisi, sans « puis repartir » quand le fichier ne l'exige pas. Un nombre
+ *  vide ou hors de ses bornes (DR.ruleBounds, celles du lecteur) est dit par le paramètre du lecteur (MS.REFILL_RULE) : la ligne dit ce
+ *  que le pilote devra faire, « À compléter » dit ce qui est à reprendre. */
+function edRefillLine(s, rule) {
+  const R = MS.REFILL_RULE,
+    r = rule && typeof rule === 'object' ? rule : DR.blankRule(),
+    num = (f, dflt) => {
+      const t = String(r[f] ?? '').trim(),
+        [lo, hi] = DR.ruleBounds('refill', f);
+      return /^\d+(\.\d+)?$/.test(t) && +t >= lo && +t <= hi ? +t : dflt;
+    },
+    hdg = num('heading', null);
+  return s.tt(r.depart === false ? EDTX.dwRefillStay : EDTX.dwRefillRule, {
+    r: dec(s, num('radiusM', R.radiusM)),
+    min: dec(s, Math.round(num('duration', R.durationSec) / 60 * 10) / 10),
+    hdg: hdg === null ? '' : s.tt(EDTX.dwRefillHdg, {
+      hdg: dec(s, hdg),
+      tol: dec(s, num('headTol', R.headingTolDeg))
+    })
+  });
+}
+
+/** La fiche d'un ravitaillement en retardant (SOG-0521) : la station — une liste des SEULS objets de genre refill des Lieux (la valeur
+ *  du fichier y figure toujours, suivie d'un « ? » quand elle n'en désigne plus une ; sans station, la fiche le dit et mène aux Lieux) —,
+ *  la durée minimale en MINUTES (écrite en secondes) et le cap d'accostage, facultatif ; le rayon, l'écart, la tolérance de cap et la
+ *  vitesse ne se montrent que lorsque la ligne les porte (le fichier les écrit : vides, le lecteur prend MS.REFILL_RULE) ; puis la règle
+ *  en une ligne (edRefillLine). Tout texte du fichier passe par esc(). */
+function edRefillHtml(s, rule, places, now) {
+  const r = rule && typeof rule === 'object' ? rule : DR.blankRule(),
+    stations = places.filter(p => p.id && p.kind === 'object' && p.okind === 'refill').map(p => [p.id, [p.id, p.name].filter(Boolean).join(
+      ' · ')]),
+    cur = now(r.object || '') || '',
+    all = cur && !stations.some(o => o[0].toUpperCase() === cur.toUpperCase()) ? [...stations, [cur, `${cur} ?`]] : stations,
+    field = (f, text, v, mode = 'decimal', hint = '') => `<label class="f-field"><span>${esc(s.tt(text))}</span><input data-k="eddr" data-f="rule.${f}" value="${esc(v ?? '')}" inputmode="${mode}" maxlength="8" autocomplete="off"${hint ? ` placeholder="${esc(hint)}"` : ''}></label>`,
+    extra = [
+      ['radiusM', EDTX.dwRadiusM],
+      ['gap', EDTX.dwGap],
+      ['headTol', EDTX.dwRefillTol],
+      ['speed', EDTX.dwArrSpeed]
+    ].filter(([f]) => String(r[f] ?? '').trim() !== '').map(([f, text]) => field(f, text, r[f])),
+    pairs = extra.reduce((out, x, n) => n % 2 ? [...out.slice(0, -1), out[out.length - 1] + x] : [...out, x], []),
+    pick = all.length ? `<label class="f-field"><span>${esc(s.tt(EDTX.dwRefillStation))}</span><select data-k="eddr" data-f="rule.object"><option value="">${esc(s.tt(EDTX.dwChoose))}</option>${all.map(o => `<option value="${esc(o[0])}"${o[0].toUpperCase() === cur.toUpperCase() ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>` : `<p class="f-muted" data-dwnone>${esc(s.tt(EDTX.dwNoRefill))} <button type="button" class="f-linkbtn" data-do="eddrplaces">${esc(s.tt(EDTX.dwToPlaces))}</button></p>`;
+  return `<div class="ms-dwrule" data-dwrule="rule" data-rulekind="refill">${pick}<div class="f-row">${field('durMin', EDTX.dwRefillMin, refillMin(r.duration))}${field('heading', EDTX.dwRefillHeading, r.heading, 'numeric', s.tt(EDTX.dwRefillOptional))}</div>${pairs.map(x => `<div class="f-row">${x}</div>`).join('')}<p class="f-muted" data-dwrefill>${esc(edRefillLine(s, r))}</p></div>`;
+}
+
 /** Ce que « Les textes » et « La suite de route » d'un tiroir contiennent, dit en une ligne (un groupe replié ne cache pas ce qu'il
  *  porte) : { texts, route }. */
 function edDrawerLines(s, r, now) {
@@ -3175,17 +3238,19 @@ function edDrawerHtml(s, doc) {
     emits = !!(r.emit || r.emitTo || fileRow?.emit || fileRow?.emitTo),
     fallback = field('fallback', EDTX.dwFallback, r.fallback, ' inputmode="numeric" maxlength="4"'),
     zones = of('zone'),
-    objects = of('object'),
+    // SOG-0521 : un objet à trouver n'est jamais une station de retardant (elle ne se « trouve » pas : le lecteur refuse la clé)
+    findable = places.filter(p => p.id && p.kind === 'object' && p.okind !== 'refill').map(p => [p.id, label(p)]),
     read = (MS.readMission(doc)?.drawers || []).find(x => x.id === r.id),
     body = r.key === 'time' ? `<div class="f-row">${select('point', EDTX.dwPoint, r.point || 'ORIGIN', [['ORIGIN', s.tt(EDTX.dwAtTakeoff)], ...points])}${field('delay', EDTX.dwDelay, r.delay, ' inputmode="numeric" maxlength="4"')}</div>` :
     r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${onMap('zone', EDTX.dwDraw)}${check('shown', EDTX.dwShown, r.shown === true)}${fallback}` :
-    r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${onMap('object', EDTX.dwPose)}${fallback}` :
+    r.key === 'object' ? `${findable.length || r.object ? select('object', EDTX.dwObject, r.object, findable) : none(EDTX.dwNoObject)}${onMap('object', EDTX.dwPose)}${fallback}` :
     r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
         <p class="f-muted" data-dwjudged="arrival">${esc(s.tt(EDTX.dwArrJudged, { nm: dec(s, DR.toleranceNm().field) }))}</p>
         <div class="f-row">${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
         <div class="f-field"><span data-dwjudged="stops">${esc(s.tt(EDTX.dwStops, { nm: dec(s, DR.toleranceNm().transit) }))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
         ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}
         ${fallback}` :
+    r.key === 'refill' ? `${edRefillHtml(s, r.rule, places, now)}${fallback}` : // SOG-0521 : le ravitaillement en retardant
     DR.HOLDS.includes(r.key) ? `${edRuleHtml(s, r.rule || DR.blankRule(), r.key, 'rule', null, ruleOpts)}${fallback}` :
     r.key === 'sequence' ? `${edStepsHtml(s, r, ruleOpts)}${fallback}` :
     r.key === 'event' ? `${edEventHtml(s, rows, r)}${fallback}` :
@@ -3276,6 +3341,13 @@ function edRuleInput(s, rule, k, t, list) {
     rule[k] = String(t.value).slice(0, 40);
     if (rule[k]) rule[k === 'point' ? 'object' : 'point'] = '';
     return draw(s);
+  }
+  // SOG-0521 : la durée minimale d'un ravitaillement se saisit en minutes et s'écrit en secondes ; un texte qui n'est pas un nombre reste
+  // tel quel (« À compléter » le dit), jamais ramené dans ses bornes
+  if (k === 'durMin' && !list) {
+    const v = String(t.value).slice(0, 12).trim().replace(',', '.');
+    rule.duration = /^\d+(\.\d+)?$/.test(v) ? String(Math.round(+v * 60)) : v;
+    return edRefresh(s);
   }
   if (k === 'confirm' && t.type === 'checkbox') rule.confirm = t.checked === true;
   else if (!list && RULE_TYPED.has(k)) rule[k] = String(t.value).slice(0, 120);
@@ -3485,8 +3557,16 @@ export function edInput(s, ev) {
         f ===
         'id')) row[f] = ev.target.value;
     // un objet à trouver : son identifiant ne se saisit pas ; « trouvé sur la parole du pilote » est une case
-    else if (row?.kind === 'object' && ['okind', 'range', 'height', 'alt'].includes(f)) row[f] = ev.target.value;
-    else if (row?.kind === 'object' && f === 'confirm') row.confirm = ev.target.checked === true;
+    else if (row?.kind === 'object' && ['okind', 'range', 'height', 'alt'].includes(f)) {
+      row[f] = ev.target.value;
+      // SOG-0521 : une sorte qui devient (ou cesse d'être) une station de retardant redessine la fiche, quand ses champs de détection
+      // montrés ne lui vont plus (lu sur la fiche : l'événement « input » de la liste a déjà posé la sorte)
+      if (f === 'okind' && ev.type === 'change' && !!ev.target.closest('[data-plform]')?.querySelector('[data-f="range"]') === (row
+          .okind === 'refill')) {
+        edRefresh(s);
+        return draw(s);
+      }
+    } else if (row?.kind === 'object' && f === 'confirm') row.confirm = ev.target.checked === true;
     if (k === 'edplname') edPlName(s, e, ev, +ev.target.dataset
       .i); // SOG-0480 : un choix de la liste donne le code et la position de la base
     // SOG-0495 : un code tapé de la base prend sa position ; SOG-0506 : le point choisi dans la liste, s'il l'est encore, et le nom d'avant
@@ -3700,6 +3780,7 @@ function edRefresh(s) {
     const pv = edPilotView(s, doc, drow.id);
     for (const k of ['name', 'msg', 'brief', 'route']) put(q(`[data-pv${k}]`), pv[k]);
     if (drow.key === 'event') put(q('[data-dwemitter]'), edEventFrom(s, edDrawers(e), drow)); // SOG-0500 : d'où vient le message
+    if (drow.key === 'refill') put(q('[data-dwrefill]'), edRefillLine(s, drow.rule)); // SOG-0521 : la règle suit la frappe
   }
   const dtodo = new Set(edDrawersTodo(doc).map(t => t.name));
   for (const d of e.veil ? [] : edMission(doc)?.drawers || []) {
