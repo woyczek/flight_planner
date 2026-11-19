@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 344,
+  "tests": 346,
   "verdicts": 219
  },
  "apps": [
@@ -4988,6 +4988,34 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T17:42:29Z"
+  },
+  {
+   "id": "SOG-0486",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : une mission en cours est un brouillon gardé, proposé en tête du registre, même sans « Enregistrer »",
+    "en": "Mission workshop: a mission in progress is a kept draft, offered at the top of the register, even without “Save”",
+    "de": "Missionswerkstatt: Eine laufende Mission bleibt als Entwurf erhalten und steht oben im Register, auch ohne „Speichern“",
+    "es": "Taller de misiones: una misión en curso se guarda como borrador y aparece arriba del registro, incluso sin «Guardar»"
+   },
+   "test": "Missions : ouvre l'atelier d'une mission (ou crée-en une), change un champ SANS « Enregistrer », puis quitte (Retour ou une autre appli) : la question de sortie dit que le brouillon garde tout. Reviens au Registre : en tête, une ligne « Brouillon — identifiant · titre · date ». « Reprendre » rouvre l'atelier avec ta saisie ; « Jeter » l'efface après confirmation.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T01:53:03Z"
+  },
+  {
+   "id": "SOG-0487",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : le registre n'a pas d'ordre défini — en prévoir un",
+    "en": "Missions: the register has no defined order — provide one",
+    "de": "Missionen: Das Register hat keine festgelegte Reihenfolge – eine vorsehen",
+    "es": "Misiones: el registro no tiene un orden definido — prever uno"
+   },
+   "test": "Missions › Registre. Sur ordinateur : un tableau ; touche un en-tête de colonne (Identifiant, Titre, Famille, Série…) : la liste se trie, un second toucher inverse ; une ligne choisie ouvre sa fiche à droite (Brief, Atelier, Dupliquer, ⋯). Au téléphone : des cartes, « Trier : Identifiant ▼ » au-dessus ; une carte ouvre la fiche en plein écran, « ← Registre » la referme. Recharge la page : ton tri est gardé.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T01:53:09Z"
   },
   {
    "id": "SOG-0488",

@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0760fa2",
+  "organisation": "cfec957",
   "fiches": 504,
   "untranslated": 0,
   "priorities": 481,
@@ -4373,11 +4373,12 @@
     {
      "id": "SOG-0486",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : une mission en cours est un brouillon gardé, proposé en tête du registre, même sans « Enregistrer »",
      "en": "Mission workshop: a mission in progress is a kept draft, offered at the top of the register, even without “Save”",
      "de": "Missionswerkstatt: Eine laufende Mission bleibt als Entwurf erhalten und steht oben im Register, auch ohne „Speichern“",
-     "es": "Taller de misiones: una misión en curso se guarda como borrador y aparece arriba del registro, incluso sin «Guardar»"
+     "es": "Taller de misiones: una misión en curso se guarda como borrador y aparece arriba del registro, incluso sin «Guardar»",
+     "test": true
     }
    ]
   },
@@ -4568,11 +4569,12 @@
     {
      "id": "SOG-0487",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : le registre n'a pas d'ordre défini — en prévoir un",
      "en": "Missions: the register has no defined order — provide one",
      "de": "Missionen: Das Register hat keine festgelegte Reihenfolge – eine vorsehen",
-     "es": "Misiones: el registro no tiene un orden definido — prever uno"
+     "es": "Misiones: el registro no tiene un orden definido — prever uno",
+     "test": true
     }
    ]
   },
