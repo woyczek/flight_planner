@@ -1344,6 +1344,40 @@ const TX = {
     'Auto: ein Datenblatt des Luftfahrzeugs ist nötig (keine Typschätzung)',
     'Auto: hace falta una ficha de la aeronave (no una estimación del tipo)'
   ],
+  // SOG-0529 : « Auto » ne retient qu'un niveau où le moteur de route (route/levels d'AeroDB) trouve une route VALIDE, et dit pourquoi
+  levelAutoValid: ['{fl} (auto) · {t} — le moins gourmand avec une route valide',
+    '{fl} (auto) · {t} — the lowest burn with a valid route',
+    '{fl} (auto) · {t} — geringster Verbrauch mit gültiger Route', '{fl} (auto) · {t} — el de menor consumo con ruta válida'
+  ],
+  levelAutoDirect: [' ; raccord direct (aucune procédure volable à ce niveau)', '; direct connector (no procedure flyable at this level)',
+    '; Direktanschluss (kein Verfahren auf dieser Fläche fliegbar)', '; enlace directo (ningún procedimiento volable a este nivel)'
+  ],
+  levelAutoSkip: [' ; {fl} écarté', '; {fl} set aside', '; {fl} verworfen', '; {fl} descartado'],
+  // le pli de la raison du moteur (le bloc des critères du dégagement) : la phrase reste courte, la raison se déplie au toucher
+  levelAutoWhyFold: ['Raison du moteur de route', 'Route engine’s reason', 'Begründung der Routenberechnung',
+    'Motivo del motor de rutas'
+  ],
+  levelAutoPartial: [' ({n} niveaux jugés sur {m} : temps dépassé)', ' ({n} of {m} levels judged: time exceeded)',
+    ' ({n} von {m} Flächen bewertet: Zeit überschritten)', ' ({n} de {m} niveles evaluados: tiempo excedido)'
+  ],
+  levelAutoNone: ['Auto : aucun niveau avec une route valide de {lo} à {hi}', 'Auto: no level with a valid route from {lo} to {hi}',
+    'Auto: keine Fläche mit gültiger Route von {lo} bis {hi}', 'Auto: ningún nivel con ruta válida de {lo} a {hi}'
+  ],
+  levelAutoBusy: ['Auto : recherche d’un niveau avec une route valide…', 'Auto: looking for a level with a valid route…',
+    'Auto: Suche nach einer Fläche mit gültiger Route…', 'Auto: buscando un nivel con una ruta válida…'
+  ],
+  levelAutoUnchecked: ['{fl} (auto) · {t} — route non vérifiée ({why})', '{fl} (auto) · {t} — route not checked ({why})',
+    '{fl} (auto) · {t} — Route nicht geprüft ({why})', '{fl} (auto) · {t} — ruta no comprobada ({why})'
+  ],
+  levelAutoCause: {
+    nolauncher: ['pas de lanceur', 'no launcher', 'kein Launcher', 'sin lanzador'],
+    busy: ['poste occupé', 'workstation busy', 'Rechner beschäftigt', 'puesto ocupado'],
+    offline: ['lanceur injoignable', 'launcher unreachable', 'Launcher nicht erreichbar', 'lanzador inaccesible'],
+    stopped: ['calcul arrêté', 'computation stopped', 'Berechnung abgebrochen', 'cálculo detenido'],
+    failed: ['calcul en échec', 'computation failed', 'Berechnung fehlgeschlagen', 'cálculo fallido'],
+    'no-rad': ['RAD non importé', 'RAD not imported', 'RAD nicht importiert', 'RAD no importado'],
+    invalid: ['demande refusée', 'request refused', 'Anfrage abgelehnt', 'solicitud rechazada']
+  },
   levelAutoSaid: ['auto · {t}', 'auto · {t}', 'auto · {t}', 'auto · {t}'], // une ligne sous le champ (le niveau est dans le champ)
   goal: ['Montée', 'Climb', 'Steigflug', 'Ascenso'],
   goals: {
@@ -3027,6 +3061,7 @@ function renderPlanBody() {
       <div class="f-grid fu-ads">${[['dep', TX.dep], ['arr', TX.arr], ['altn', TX.altn]].map(([k, label]) => `${k === 'arr' ? `<button type="button" class="fu-adswap" data-do="adswap" title="${esc(tt(TX.adSwap))}" aria-label="${esc(tt(TX.adSwap))}">⇄</button>` : ''}<label class="f-field">${esc(tt(label))}<input data-k="${k}" value="${esc(r[k] ?? '')}" class="fu-code" autocapitalize="characters" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="fu-adsug"><small class="fu-adname" data-adline="${k}"></small></label>`).join('')}<div class="fu-sug" id="fu-adsug" data-adsug role="listbox" aria-label="${esc(tt(S.AD.texts.listLabel))}" hidden></div></div>
       <div class="fu-altnchk" data-altnchk aria-live="polite"></div>
       <div class="f-grid fu-flight"><label class="f-field">${esc(tt(TX.level))}<span class="fu-when"><input data-k="fl" value="${esc(f.level?.ft ? Math.round(f.level.ft / 100) : '')}" inputmode="numeric"><button type="button" data-do="levelauto" aria-pressed="${!!f.level?.auto}" title="${esc(tt(TX.levelAutoHint))}">${esc(tt(TX.levelAuto))}</button></span><small class="f-muted" data-lvlauto></small></label><p class="f-muted fu-lvlmix" data-lvlmix hidden></p><label class="f-field" title="${esc(tt(TX.wxDateHint))}">${esc(wxDateParts()[0])}<span class="fu-when"><input data-k="wxdate" type="datetime-local" value="${esc(whenField(f.planned_at))}"><button type="button" data-do="when30" aria-label="${esc(tt(TX.when30))}" title="${esc(tt(TX.when30))}">${svg('clock')}<b>+30</b></button><button type="button" data-do="whennow" aria-label="${esc(tt(TX.whenNowLong))}" title="${esc(tt(TX.whenNowLong))}">${esc(tt(TX.whenNow))}</button></span><small class="f-muted" data-datenote>${esc(wxDateParts()[1])}</small></label></div>
+      <div class="fu-lvlwhy" data-lvlwhy hidden><p class="f-muted" data-lvlmain></p><details class="fu-altnfold" data-lvlfold hidden><summary class="f-muted">${esc(tt(TX.levelAutoWhyFold))}</summary><p class="f-muted" data-lvlreason></p></details></div>
       <p class="f-warn" data-pastdate hidden></p>
       <div class="f-grid fu-themes" data-themes></div>
     </div>`)}
@@ -3221,6 +3256,7 @@ function onPlanInput(e) {
       if (e.type === 'change') renderRinfo();
       break;
     case 'fl':
+      autoStop(); // SOG-0529 : un niveau saisi arrête la recherche de « Auto » ; il n'est jamais remplacé
       f.level = {
         ft: num(v) ? num(v) * 100 : null
       };
@@ -4598,6 +4634,7 @@ async function routeAsk(action) {
 }
 /** La demande elle-même (routeAsk), mesurée : appui (t0), départ de la demande au lanceur (t1), réponse (t2), liste dessinée (t3). */
 async function routeAskRun(s, act, r, o, box, retry) {
+  autoStop(); // SOG-0529 (Sécurisation) : le geste de l'utilisateur passe avant la recherche d'« Auto » (la place unique du lanceur)
   await altsMoreStop(); // SOG-0296 : une nouvelle demande arrête la recherche des variantes de la précédente
   if (!(await RE.answers(S.ctx.launcher))) {
     if (!gone(s) && box) box.innerHTML = `<p class="f-warn" data-rnolauncher>${esc(tt(TX.rNoLauncher))} ${retry}</p>`;
@@ -6470,10 +6507,25 @@ function levelAuto(C) {
     b.setAttribute('aria-pressed', String(!!f.level?.auto));
   }
   const cons = Object.values(f.route?.constraints || {}).map(Number).filter(v => v > 0),
-    a = !why && f.level?.auto && C.D ? window.FuelLevels.autoLevel(C.D, +f.route?.trackDeg || 0, {
+    cands = !why && f.level?.auto && C.D ? (window.FuelLevels.autoCandidates || (() => []))(C.D, +f.route?.trackDeg || 0, {
       minFt: Math.max(3000, ...cons),
-      maxFt: +sheet?.cruise?.ceilingFt > 0 ? +sheet.cruise.ceilingFt : 20000
-    }) : null;
+      maxFt: +sheet?.cruise?.ceilingFt > 0 ? +sheet.cruise.ceilingFt : 20000,
+      max: RE.LEVELS_MAX
+    }) : [];
+  // SOG-0529 : le moteur de route juge les candidats (route/levels, une demande par clé du vol) ; le choix se fait ici
+  const J = cands.length ? autoJudge(cands) : null;
+  if (J?.busy) {
+    lvlLines(line, '', {
+      main: tt(TX.levelAutoBusy)
+    });
+    return false;
+  }
+  if (J?.none) {
+    S.autoTries = 0;
+    lvlLines(line, '', J.none); // aucun niveau valide : le niveau n'est pas changé, et c'est dit (la raison du moteur dans le pli)
+    return false;
+  }
+  const a = J?.pick || null;
   if (a && a.h !== +f.level?.ft && (S.autoTries || 0) < 2) {
     S.autoTries = (S.autoTries || 0) + 1;
     f.level = {
@@ -6489,11 +6541,128 @@ function levelAuto(C) {
     return true;
   }
   S.autoTries = 0;
-  if (line) line.textContent = f.level?.auto && C.q?.hasFuel ? tt(TX.levelAutoSaid, {
+  const said = f.level?.auto && C.q?.hasFuel;
+  lvlLines(line, said ? tt(TX.levelAutoSaid, {
     fl: flTxt(+f.level.ft),
     t: hmm(C.q.minutes)
-  }) : '';
+  }) : '', said && J?.say ? J.say(flTxt(+f.level.ft), hmm(C.q.minutes)) : null);
   return false;
+}
+/** SOG-0529 : la ligne courte sous le champ Niveau (« auto · 1:12 », une ligne de hauteur réservée : la rangée Niveau / Date ne bouge
+ *  jamais — F122, F243) et l'explication du choix d'« Auto », à part, sous la rangée et pleine largeur (data-lvlwhy) : why = { main, reason }
+ *  — la phrase courte, puis la raison du moteur dans un pli qui se déplie au toucher (data-lvlfold, le bloc des critères du dégagement ;
+ *  son état ouvert gardé) ; tout caché sans phrase. Textes posés par textContent (la raison vient du lanceur). */
+function lvlLines(line, short, why) {
+  if (line) line.textContent = short;
+  const w = S.body?.querySelector('[data-lvlwhy]');
+  if (!w) return;
+  const main = why?.main || '',
+    reason = why?.reason || '',
+    m = w.querySelector('[data-lvlmain]'),
+    fold = w.querySelector('[data-lvlfold]'),
+    r = w.querySelector('[data-lvlreason]');
+  if (m) m.textContent = main;
+  if (r) r.textContent = reason;
+  if (fold) fold.hidden = !reason;
+  w.hidden = !main;
+}
+/** SOG-0529 : arrête la recherche de « Auto » (un niveau saisi, un autre vol, le démontage) — le travail du lanceur est annulé. */
+function autoStop() {
+  S?.autoLv?.ctrl?.abort();
+  if (S) S.autoLv = null;
+}
+/** SOG-0529 (l'utilisateur : FL090 choisi par « Auto », plan de vol refusé par l'IFPS) : les candidats (FuelLevels.autoCandidates, dans
+ *  l'ordre des préférences) jugés par le moteur de route — UN appel route/levels par clé du vol (les arguments de « Calculer » sans niveau,
+ *  et l'ensemble des candidats), gardé (S.autoLv) ; le choix refait ici à chaque dessin. Rend { busy } pendant l'appel ; { none } (la
+ *  phrase) quand aucun n'est valide ; sinon { pick, say(fl, t) } — pick : le premier VALIDE dont le raccord est une procédure (ou 'none'),
+ *  sinon le premier valide en raccord direct (dit) ; sans lanceur ou sur un échec, le moins gourmand, « route non vérifiée (cause) ». */
+function autoJudge(cands) {
+  const launcher = S.ctx.launcher,
+    flOf = c => Math.round(c.h / 100),
+    unchecked = cause => ({
+      pick: cands[0],
+      say: (fl, t) => ({
+        main: tt(TX.levelAutoUnchecked, {
+          fl,
+          t,
+          why: tt(TX.levelAutoCause[cause] || TX.levelAutoCause.failed)
+        })
+      })
+    });
+  if (typeof launcher?.job !== 'function') return unchecked('nolauncher');
+  // la clé (Sécurisation) : sans la date tirée de l'horloge (argsKey : l'heure prévue du vol en tient lieu — sinon un appel de plus à chaque
+  // minute) ni les vitesses (elles suivent le niveau : chaque niveau posé relancerait l'appel)
+  const {
+    speed_kt,
+    climb_fpm,
+    descent_fpm,
+    terminal_speed_kt,
+    ...base
+  } = RE.levelsArgs(routeArgs('compute'), []),
+    key = JSON.stringify([argsKey(base), cands.map(flOf).sort((x, y) => x - y)]);
+  if (S.autoLv?.key !== key) {
+    autoStop();
+    const s = S,
+      ctrl = new AbortController();
+    S.autoLv = {
+      key,
+      busy: true,
+      ctrl
+    };
+    RE.levels(launcher, RE.levelsArgs(routeArgs('compute'), cands.map(flOf)), {
+      signal: ctrl.signal
+    }).then(raw => {
+      if (gone(s) || s.autoLv?.key !== key) return;
+      s.autoLv = {
+        key,
+        busy: false,
+        res: RE.levelsRead(raw) || {
+          ok: false,
+          reason: 'failed'
+        }
+      };
+      refresh(); // le dessin refait choisit sur la réponse
+    });
+  }
+  const L = S.autoLv;
+  if (L.busy) return {
+    busy: true
+  };
+  if (!L.res?.ok) return unchecked(L.res?.reason || 'failed');
+  const by = new Map(L.res.levels.map(x => [x.fl, x])),
+    valid = cands.filter(c => by.get(flOf(c))?.valid),
+    pick = valid.find(c => by.get(flOf(c)).connector !== 'direct') || valid[0] || null,
+    partial = L.res.stopped === 'time' || L.res.stopped === 'cancelled' ? tt(TX.levelAutoPartial, {
+      n: L.res.levels.length,
+      m: cands.length
+    }) : '';
+  if (!pick) {
+    const fls = cands.map(flOf),
+      first = cands.map(c => by.get(flOf(c))).find(Boolean);
+    return {
+      none: {
+        main: tt(TX.levelAutoNone, {
+          lo: flTxt(Math.min(...fls) * 100),
+          hi: flTxt(Math.max(...fls) * 100)
+        }) + partial,
+        reason: first?.reason || ''
+      }
+    };
+  }
+  // le premier candidat plus économique écarté par le moteur, et sa raison (celle du moteur, jamais réécrite)
+  const skipped = cands.slice(0, cands.indexOf(pick)).map(c => by.get(flOf(c))).find(x => x && !x.valid);
+  return {
+    pick,
+    say: (fl, t) => ({
+      main: tt(TX.levelAutoValid, {
+        fl,
+        t
+      }) + (by.get(flOf(pick)).connector === 'direct' ? tt(TX.levelAutoDirect) : '') + (skipped ? tt(TX.levelAutoSkip, {
+        fl: flTxt(skipped.fl * 100)
+      }) : '') + partial,
+      reason: skipped?.reason || '' // la raison du moteur, telle quelle, dans le pli
+    })
+  };
 }
 
 /** SOG-0391 (b bis) : « Recalculer à FLxxx » — le niveau du vol posé à ce FL (comme une saisie : « Auto » retiré), puis le calcul relancé ;
@@ -9466,6 +9635,7 @@ export function unmount() {
   clearTimeout(S.roTimer);
   clearTimeout(S.wxTimer);
   clearTimeout(S.wxAutoTimer);
+  autoStop(); // SOG-0529 : le travail route/levels en cours est annulé
   S.body = null;
   S = null;
 }

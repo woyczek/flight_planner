@@ -3017,9 +3017,16 @@ def _route_launcher(c, verbs):
     common = {'rad': {'title': 'RAD test', 'start': '2026-10-29'}, 'fra': None, 'report': '', 'limitation': 'Précontrôle de simulation, jamais une validation IFPS.',
               'gaps': [{'name': 'RAD complet', 'reason': 'Seules les interdictions simples H24.'}]}
 
+    def polled():
+        """The job a GET follows (?id=jN), else the last one posted (SOG-0529: two jobs at once never mix)."""
+        i = urllib.parse.parse_qs(urllib.parse.urlparse(polled.url).query).get('id', [''])[0]
+        n = int(i[1:]) if i[:1] == 'j' and i[1:].isdigit() else 0
+        return st['posts'][n - 1] if 1 <= n <= len(st['posts']) else (st['posts'][-1] if st['posts'] else {})
+
     def handler(route):
         req = route.request
         u = urllib.parse.urlparse(req.url)
+        polled.url = req.url
         body = {}
         if st.get('down') and '/__setup/regen/' in u.path:   # SOG-0208: the launcher stopped after the mount, its jobs do not answer
             return route.abort()
@@ -3039,6 +3046,14 @@ def _route_launcher(c, verbs):
         elif u.path.endswith('/__setup/regen/job/cancel'):
             st.setdefault('cancels', []).append(json.loads(req.post_data or '{}'))
             body = {'ok': True}
+        elif u.path.endswith('/__setup/regen/job') and req.method != 'POST' and st['posts'] and 'levels' in (polled().get('args') or {}):
+            # SOG-0529: route/levels — the answer given by the case's rule for the levels asked (st['levels_rule'])
+            asked = (polled().get('args') or {}).get('levels') or []
+            rule = st.get('levels_rule')
+            res = rule(asked) if rule else {'ok': False, 'reason': 'failed', 'message': 'no rule'}
+            jid = urllib.parse.parse_qs(u.query).get('id', ['j' + str(len(st['posts']))])[0]
+            body = {'id': jid, 'state': 'running', 'step': '', 'done': 0, 'total': 1, 'unit': '', 'log': []} if res is None \
+                else {'id': jid, 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': '', 'log': [], 'result': res}
         elif u.path.endswith('/__setup/regen/job') and st['posts'] and (st['posts'][-1].get('args') or {}).get('alternatives') \
                 and time.time() - st.get('t', 0) < st.get('delay_alt', 0):
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'running', 'step': '', 'done': 0, 'total': 1, 'unit': '', 'log': []}
@@ -3046,7 +3061,8 @@ def _route_launcher(c, verbs):
             # SOG-0134: a slow launcher (st['delay'] seconds after the request): the job says « running » until then
             body = {'id': 'j' + str(len(st['posts'])), 'state': 'running', 'step': '', 'done': 0, 'total': 1, 'unit': '', 'log': []}
         elif u.path.endswith('/__setup/regen/job'):
-            a = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
+            last = (st['posts'][-1].get('args') or {}) if st['posts'] else {}
+            a = (polled().get('args') or {}) if 'levels' in last else last  # SOG-0529: a route/levels job posted after it never answers for it
             res = {'ok': False, 'reason': 'no-rad', 'message': 'no RAD imported on this workstation: import the EUROCONTROL RAD workbooks first (job route/import-rad)'} \
                 if st['norad'] else {'ok': False, 'reason': 'failed', 'message': 'search stopped'} if a.get('action') == 'compute' and a.get('alternatives') and st.get('fail_alt') else \
                 dict(dict(common, ok=True, alternatives=phase(st.get('alts') or alts, a), segments=alts[0]['segments'], issues=[], message='2 alternative(s).',
@@ -9107,4 +9123,115 @@ def f291(c):
     c.js(_F281_NOTES_OFF)
     c.js(f"document.querySelector('{FUEL} [data-wx]').scrollIntoView({{block: 'start'}})")
     c.shot(f'F291_{c.design}_{c.lang}_age.png')
+    c.check_errors()
+
+
+# SOG-0529: the answers of route/levels for F292 (invented reasons: never a real RAD identifier)
+def _lv(fl, valid, connector='procedure', reason=''):
+    return {'fl': fl, 'ok': True, 'valid': valid, 'status': 'ok', 'distance_nm': 370.0, 'route': 'LFRS DCT LFML', 'connector': connector,
+            'reason': reason or ('route valide' if valid else ''), 'errors': [], 'states': 40, 'interrupted': False}
+
+
+_LV_DIRECT = 'raccord direct de 64,2 NM à l’arrivée au-delà de la limite de 0 NM du RAD (XX_LIM_AD) : à examiner, jamais une route valide'
+_LV_NONE = 'Aucune route trouvée sur le réseau disponible à ce niveau'
+
+
+@case('F292', '« Auto » level: only a level where the route engine finds a VALID route is taken — the cheapest one the engine refuses is set '
+      'aside and its reason said; a published arrival is preferred to a direct connector, which is said; no valid level: the level is not '
+      'changed and it is said', 'F', tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0529 (the user: FL090 chosen by « Auto », the plan refused by the IFPS); AeroDB a357bed08, route/levels (12 levels at most, '
+      'first_valid false: the choice stays in Fuel); the relay\'s agreement, points (1) to (7); a fake launcher, invented sheet and reasons')
+def f292(c):
+    st = _route_launcher(c, ['route/compute', 'route/levels'])
+    hi = {'id': 'C30J', 'name': 'C-130J', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+          'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'ceilingFt': 25000}}
+    valid = {'fr': 'le moins gourmand avec une route valide', 'en': 'the lowest burn with a valid route',
+             'de': 'geringster Verbrauch mit gültiger Route', 'es': 'el de menor consumo con ruta válida'}[c.lang]
+    none = {'fr': 'Auto : aucun niveau avec une route valide', 'en': 'Auto: no level with a valid route',
+            'de': 'Auto: keine Fläche mit gültiger Route', 'es': 'Auto: ningún nivel con ruta válida'}[c.lang]
+    direct = {'fr': 'raccord direct (aucune procédure volable à ce niveau)', 'en': 'direct connector (no procedure flyable at this level)',
+              'de': 'Direktanschluss (kein Verfahren auf dieser Fläche fliegbar)',
+              'es': 'enlace directo (ningún procedimiento volable a este nivel)'}[c.lang]
+    fl = f'{FUEL} input[data-k="fl"]'
+    L = f'{FUEL} [data-lvlwhy]'  # the explanation of the choice, under the row Level / Date (the short line « auto · 1:12 » stays)
+
+    def auto_with(rule, w=390):
+        st['levels_rule'] = rule
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        docs = flight_docs()
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                d[1]['aircraft']['sheetId'] = 'C30J'
+        c.open('fuel', docs=docs + [['aircraft/sheets/C30J.json', hi, 'document']], airfields=True)
+        wait_quote(c)
+        to_step(c, 0)
+        n0 = len(st['posts'])
+        c.tap(f'{FUEL} [data-do="levelauto"]')
+        for _ in range(60):
+            got = [p.get('args') or {} for p in st['posts'][n0:] if 'levels' in (p.get('args') or {})]
+            if got:
+                return got[0]
+            c.wait(200)
+        raise Fail('no route/levels request', 'a request', 'none')
+
+    # 1. the cheapest candidate refused by the engine (a direct connector beyond the RAD limit): the next one, valid, is taken
+    a = auto_with(lambda lv: {'ok': True, 'levels': [_lv(lv[0], False, 'direct', _LV_DIRECT)] + [_lv(x, True) for x in lv[1:]],
+                              'first_valid': lv[1] if len(lv) > 1 else None, 'stopped': 'end', 'asked': len(lv)})
+    lv = a.get('levels') or []
+    c.ok(1 < len(lv) <= 12 and 'fl' not in a and 'route' not in a and a.get('first_valid') is False, a,
+         'one request: the candidates in the order of preference (12 at most), without fl nor route, first_valid false')
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(lv[1]), what='the second candidate taken (the first refused)')
+    c.until(f"(w) => (document.querySelector('{L}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)", norm(valid),
+            timeout=8000, what='the line says why')
+    line = norm(c.text(L) or '')  # textContent: the reason folded is read too
+    c.ok(norm(_LV_DIRECT) in line and f'{lv[0]:03d}' in line, line, 'the cheaper level set aside, with the engine\'s reason as it is')
+    c.eq(norm(c.text(f'{L} [data-lvlreason]') or ''), norm(_LV_DIRECT), 'the reason of the engine in the fold, as it is', what='fold')
+    c.eq(c.js(f"document.querySelector('{L} [data-lvlfold]').open"), False, 'the fold of the reason closed until it is touched', what='closed')
+    for w in (390, 1280):  # the captures with the fold CLOSED (the relay): the reason unfolds on a touch
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{fl}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F292_{c.design}_{w}_{c.lang}_valid.png')
+    # 2. no valid level: the level of the flight is not changed, and it is said
+    before = 270  # lib.FLIGHT: FL270
+    auto_with(lambda lv: {'ok': True, 'levels': [_lv(x, False, 'none', _LV_NONE) for x in lv], 'first_valid': None, 'stopped': 'end',
+                          'asked': len(lv)})
+    c.until(f"(w) => (document.querySelector('{L}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)", norm(none),
+            timeout=8000, what='« no level with a valid route » said')
+    c.eq(c.js(f"document.querySelector('{fl}').value"), str(before), 'no valid level: the level of the flight is not changed', what='kept')
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.settle()
+        c.js(_F281_NOTES_OFF)
+        c.js(f"document.querySelector('{fl}').scrollIntoView({{block: 'center'}})")
+        c.shot(f'F292_{c.design}_{w}_{c.lang}_none.png')  # the fold closed
+    # 3. only a direct connector is valid: it is taken, and said
+    a = auto_with(lambda lv: {'ok': True, 'levels': [_lv(lv[0], False, 'none', _LV_NONE), _lv(lv[1], True, 'direct')] +
+                              [_lv(x, False, 'none', _LV_NONE) for x in lv[2:]], 'first_valid': lv[1], 'stopped': 'end', 'asked': len(lv)})
+    lv = a.get('levels') or []
+    c.until(f"(v) => document.querySelector('{fl}').value === v", str(lv[1]), what='the only valid level, a direct connector, taken')
+    c.until(f"(w) => (document.querySelector('{L}')?.textContent || '').replace(/[\\s\\u00a0\\u202f]+/g, ' ').includes(w)", norm(direct),
+            timeout=8000, what='the direct connector said')
+    # 4. (Sécurisation) a flight WITHOUT planned time, drawn again two minutes later (the clock of the page moved on): ONE call only —
+    # the key never holds the date taken from the clock (red before: one more call at each new minute)
+    auto_with(lambda lv: {'ok': True, 'levels': [_lv(x, True) for x in lv], 'first_valid': lv[0], 'stopped': 'end', 'asked': len(lv)})
+    c.until(f"(document.querySelector('{L}')?.textContent || '').includes('(auto)')", timeout=8000, what='the auto level judged')
+    calls = lambda: sum(1 for p in st['posts'] if 'levels' in (p.get('args') or {}))
+    n1 = calls()
+    c.js("(() => { const t = Date.now, d = 120000; Date.now = () => t() + d })()")  # two minutes later
+    # a change outside the request (the wind, on another step: set by its event): a new drawing
+    c.js(f"""(() => {{ const i = document.querySelector('{FUEL} input[data-k="wdir"]'); i.value = '270';
+      i.dispatchEvent(new Event('input', {{ bubbles: true }})); i.dispatchEvent(new Event('change', {{ bubbles: true }})) }})()""")
+    c.wait(2500)
+    c.eq(calls(), n1, 'a new minute: no new route/levels call (the key without the date of the clock)', what='one call')
+    # 5. (Sécurisation) a search of « Auto » running (the launcher does not answer yet), « Calculer A → B » tapped: the search is
+    # cancelled first, the computation leaves (the user's gesture before a search nobody asked for)
+    auto_with(lambda lv: None)
+    c.until(f"(document.querySelector('{L}')?.textContent || '').length > 0", timeout=8000, what='the search under way said')
+    n_cancel = len(st.get('cancels') or [])
+    to_step(c, 1)
+    sent = _compute_now(c, st)
+    c.ok(len(sent) >= 1, sent, 'the computation left')
+    c.ok(len(st.get('cancels') or []) > n_cancel, st.get('cancels'), 'the search of « Auto » cancelled (regen/job/cancel) before it')
     c.check_errors()

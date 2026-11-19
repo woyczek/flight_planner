@@ -185,6 +185,76 @@ export async function run(launcher, args, {
   }
 }
 
+/** SOG-0529 (niveau « Auto ») : le travail route/levels d'AeroDB (frame/aerodb/INTEGRATION.md, « the levels of a trip in one call ») —
+ *  au plus LEVELS_MAX niveaux par appel, dans l'ordre des préférences de l'appelant. */
+export const LEVELS_MAX = 12;
+const CONNECTORS = ['procedure', 'direct', 'none'],
+  STOPS = ['first-valid', 'end', 'cancelled', 'time'],
+  LEVEL_FAILS = ['no-rad', 'invalid', 'failed', 'busy', 'offline', 'stopped'];
+/** Les arguments de route/levels : ceux de route/compute (forme de l'écran, `request`) sans `action`, `fl` ni `route`, plus `levels` (les
+ *  FL dans l'ordre des préférences, LEVELS_MAX au plus) et `first_valid: false` (tous les niveaux jugés : le choix reste à Carburant). */
+export function levelsArgs(computeArgs, levels) {
+  const {
+    action,
+    fl,
+    route,
+    ...rest
+  } = computeArgs || {};
+  return {
+    ...rest,
+    levels: (Array.isArray(levels) ? levels : []).filter(v => Number.isInteger(v) && v >= 10 && v <= 660).slice(0, LEVELS_MAX),
+    first_valid: false
+  };
+}
+/** Un appel de route/levels : le résultat BRUT ({ ok, … }), ou, sans résultat, { ok: false, reason } comme run ; null sans lanceur. */
+export async function levels(launcher, args, {
+  signal
+} = {}) {
+  if (typeof launcher?.job !== 'function') return null;
+  try {
+    const r = await launcher.job('regen/job', {
+      set: 'route',
+      verb: 'levels',
+      args
+    }, signal ? {
+      signal
+    } : undefined);
+    if (r?.result && typeof r.result === 'object') return r.result;
+    return {
+      ok: false,
+      reason: r?.status === 409 ? 'busy' : r?.offline ? 'offline' : r?.cancelled || ['cancelled', 'interrupted'].includes(r?.state) ?
+        'stopped' : 'failed'
+    };
+  } catch {
+    return {
+      ok: false,
+      reason: 'offline'
+    };
+  }
+}
+/** La réponse de route/levels lue bornée (une entrée non fiable) : { ok: true, levels: [{ fl, ok, valid, connector, reason }], stopped,
+ *  asked } — un niveau hors de FL10 à FL660 oublié, une raison de 200 signes au plus ; ou { ok: false, reason } (raison de la liste). */
+export function levelsRead(res) {
+  if (!res || typeof res !== 'object') return null;
+  if (res.ok !== true) return {
+    ok: false,
+    reason: LEVEL_FAILS.includes(res.reason) ? res.reason : 'failed'
+  };
+  const list = (Array.isArray(res.levels) ? res.levels : []).slice(0, LEVELS_MAX).map(x => ({
+    fl: Number.isInteger(x?.fl) && x.fl >= 10 && x.fl <= 660 ? x.fl : null,
+    ok: x?.ok === true,
+    valid: x?.valid === true,
+    connector: CONNECTORS.includes(x?.connector) ? x.connector : 'none',
+    reason: text(x?.reason, 200)
+  })).filter(x => x.fl !== null);
+  return {
+    ok: true,
+    levels: list,
+    stopped: STOPS.includes(res.stopped) ? res.stopped : 'end',
+    asked: Number.isInteger(res.asked) && res.asked >= 0 && res.asked <= LEVELS_MAX ? res.asked : list.length
+  };
+}
+
 /** Un tronçon de la réponse, borné : sa sorte prise dans la liste du contrat (sinon « altitude », comme le lanceur). */
 function segOf(s) {
   return {

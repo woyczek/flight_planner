@@ -372,8 +372,37 @@
     };
   }
 
+  /** SOG-0529 : les niveaux candidats de « Auto », dans l'ordre des préférences — les mêmes que autoLevel (tenables, de la règle
+   *  semi-circulaire, entre minFt et maxFt), celui d'autoLevel d'abord (à 2 % près, le plus bas), puis les autres du moins au plus
+   *  gourmand ; `max` au plus (le contrat de route/levels : 12). Une place pour un filtre de plus sur la liste avant le choix (SOG-0530,
+   *  table des niveaux en attente de Q-0130). [{ h, fuel, minutes }]. */
+  function autoCandidates(D, trackDeg, {
+    minFt = 3000,
+    maxFt = 20000,
+    tie = 0.02,
+    max = 12
+  } = {}) {
+    const first = autoLevel(D, trackDeg, {
+      minFt,
+      maxFt,
+      tie
+    });
+    if (!first) return [];
+    const east = ((+trackDeg || 0) % 360 + 360) % 360 < 180,
+      top = Math.min(Number.isFinite(+maxFt) && +maxFt > 0 ? +maxFt : 20000, D.hi ?? Infinity),
+      rest = D.real.filter(r => r && Number.isFinite(r.fuel) && r.h !== first.h && r.h >= minFt && r.h <= top && r.h % 1000 === 0 && (r
+        .h /
+        1000 % 2 === 1) === east).sort((a, b) => a.fuel - b.fuel || a.h - b.h).map(r => ({
+        h: r.h,
+        fuel: r.fuel,
+        minutes: r.minutes
+      }));
+    return [first, ...rest].slice(0, Math.max(1, max));
+  }
+
   window.FuelLevels = {
     autoLevel,
+    autoCandidates,
     GOALS,
     TRIP_KEYS,
     extendSeries,
