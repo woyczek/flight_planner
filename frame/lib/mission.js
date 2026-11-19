@@ -38,7 +38,7 @@
 //       { kind: 'condition', condition: 'hover' | 'landing' | 'overflight' | 'sequence' | 'event' | 'refill', rule | steps | event,
 //         fallbackMin } (les conditions de la version 1.1 de l'atelier : lues bornées ; `refill`, le ravitaillement en retardant à une
 //         station, SOG-0521 : rule { kind: 'refill', object (la station), radiusM, durationSec, maxGapSec, speedMaxKt, headingDeg | null,
-//         headingTolDeg, departure } — lu borné, jamais jugé en vol tant que `follows` ne le juge pas)
+//         headingTolDeg, departure } — lu borné, jugé en vol quand la station est immobile et lisible et la règle complète : conditionJudged)
 //       { kind: 'hand', fallbackMin | null }
 //     keyWhy : '' | 'several' | 'zone' | 'object' | 'actor' | 'condition' | 'point' | 'delay' ; condition : le genre de trigger_condition
 //     écrit ; emits : { id, to } (le message envoyé aux autres équipages à l'ouverture) ou null ; route : la suite de route en points résolus (la forme de missionFlight) — jamais dans turns, routeNm ni missionFlight.
@@ -47,7 +47,7 @@
 //     forme d'un mot de confirmation et d'un identifiant d'événement — LES règles de lecture, que l'atelier reprend pour écrire (SOG-0500).
 //   REFILL_RULE : les paramètres d'un ravitaillement en retardant (SOG-0521, Q-0121) — R (30 m) et ses bornes, la tolérance de cap (± 30°)
 //     et ses bornes, les bornes du cap, la durée minimale (300 s) et l'écart permis (10 s) par défaut ; l'atelier les lit d'ici.
-//   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1 — sauf l'atterrissage, le survol, le stationnaire et la suite d'étapes complets, que le vol juge —,
+//   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1 — sauf l'atterrissage, le survol, le stationnaire, la suite d'étapes et le ravitaillement en retardant complets, que le vol juge —,
 //     cible qui franchit, objet mobile, suivi) ; suit `follows` de drawers.js, le contrôle N155 le garde.
 //   passageMin(mission, pointId) → { nm, min | null } : la distance et le temps estimé du départ au passage d'un point de la partie A
 //     ('ORIGIN' : 0) ; null si le point n'est pas dans la route de la partie A.
@@ -495,7 +495,7 @@ function refillStation(objects, id) {
  *  de genre refill, placée ; chaque nombre absent prend sa valeur de REFILL_RULE (la vitesse : celle d'un poser, HOLD_BOUNDS), un
  *  nombre écrit hors de ses bornes rend la règle illisible (jamais ramené) ; le cap est facultatif (absent : aucun cap exigé) ;
  *  `require_departure` (vrai par défaut) : repartir après le remplissage. `station` : un identifiant → la station (refillStation).
- *  Lue et bornée : le vol ne la juge pas encore (notJudgedYet). */
+ *  Lue et bornée : le vol la juge (SOG-0521, `refillSpec` de drawers.js) quand elle est complète : conditionJudged. */
 function refillRule(c, station) {
   const R = REFILL_RULE,
     H = HOLD_BOUNDS,
@@ -559,9 +559,9 @@ export function drawerSlots(doc) {
  *  d'accord (`notJudgedYet(k) === !(hand || time || follows(k))`). */
 const FIX_PERIOD_SEC = 5;
 
-/** Une condition « atterrissage », « survol », « stationnaire » ou « suite d'étapes » que le vol sait juger (SOG-0500, lot d'Affectation :
- *  3c2e2abba l'atterrissage, 4c9b10ef3 le survol, 9cbbf9e11 le stationnaire, 72d7ef7dc la suite) : LA règle de `landSpec` / `overSpec` /
- *  `hoverSpec` / `seqOf` de modules/missions/drawers.js, une par sorte, recopiée ici sans l'importer (le cadre n'importe pas un module) —
+/** Une condition « atterrissage », « survol », « stationnaire », « suite d'étapes » ou « ravitaillement » que le vol sait juger (SOG-0500, lot d'Affectation :
+ *  3c2e2abba l'atterrissage, 4c9b10ef3 le survol, 9cbbf9e11 le stationnaire, 72d7ef7dc la suite ; SOG-0521 35720d6cb / 0e8b9e307 le ravitaillement) : LA règle de `landSpec` / `overSpec` /
+ *  `hoverSpec` / `seqOf` / `refillSpec` de modules/missions/drawers.js, une par sorte, recopiée ici sans l'importer (le cadre n'importe pas un module) —
  *  suit `follows`, N155 les garde tous : il échoue dès que les deux divergent. Pour toutes : le genre de la
  *  clé et de la règle, AUCUN mot de confirmation demandé par l'auteur, un point lisible ou un objet IMMOBILE, des nombres finis. Un
  *  atterrissage : une durée au-dessus de 0 (le rayon n'est plus lu, SOG-0507), un écart permis d'au moins la période d'un relevé (FIX_PERIOD_SEC), une vitesse d'au
@@ -569,11 +569,30 @@ const FIX_PERIOD_SEC = 5;
  *  moins 0 et une bande de hauteur (sol) finie, le bas sous le haut. Un survol : un rayon au-dessus de 0 et une bande de hauteur (sol)
  *  finie, le bas sous le haut ; `require_confirmation` y est permis (le pilote demande la suite à portée), jamais un mot. Une suite d'étapes :
  *  de une à DRAWER_BOUNDS.steps étapes, chacune d'un genre jugé (atterrissage, survol, stationnaire : jamais une suite dans une suite), jugée
- *  par la règle de son genre ci-dessus, et AUCUN survol à confirmer (`confirm` : un « Demander » au milieu d'une suite n'est pas jugé). */
+ *  par la règle de son genre ci-dessus, et AUCUN survol à confirmer (`confirm` : un « Demander » au milieu d'une suite n'est pas jugé).
+ *  Un ravitaillement en retardant (`refillSpec`) : une STATION immobile à une position lisible (`rule.object`, jamais `rule.at`),
+ *  `confirmation` vide et `confirm` non vrai, un rayon dans REFILL_RULE.radiusBoundsM, une durée au-dessus de 0, un écart permis d'au
+ *  moins FIX_PERIOD_SEC, une vitesse d'au moins 0, une tolérance de cap dans REFILL_RULE.headingTolBoundsDeg et un cap absent (ou null)
+ *  ou dans REFILL_RULE.headingBoundsDeg. */
 function conditionJudged(key) {
-  // un ravitaillement en retardant (`refill`, SOG-0521) n'est PAS jugé : `follows` ne le connaît pas encore (le lot d'Affectation) —
-  // quand elle le jugera, cette règle le suivra (N155 échouera d'ici là)
-  if (key.condition === 'refill') return false;
+  // un ravitaillement en retardant (`refill`, SOG-0521) : LA règle de `refillSpec` (drawers.js, lot d'Affectation), sans rien en plus
+  if (key.condition === 'refill') {
+    const q = key.rule;
+    if (!q || typeof q !== 'object' || q.kind !== 'refill' || q.confirmation !== '' || q.confirm === true) return false;
+    const fin = v => typeof v === 'number' && Number.isFinite(v) ? v : null,
+      inside = (v, [lo, hi]) => v !== null && v >= lo && v <= hi,
+      o = q.object && !q.object.moving ? q.object : null,
+      radiusM = fin(q.radiusM),
+      durationSec = fin(q.durationSec),
+      maxGapSec = fin(q.maxGapSec),
+      speedMaxKt = fin(q.speedMaxKt),
+      tol = fin(q.headingTolDeg),
+      head = q.headingDeg === null || q.headingDeg === undefined ? null : fin(q.headingDeg);
+    return !!o && Number.isFinite(o.lat) && Math.abs(o.lat) <= 90 && Number.isFinite(o.lon) && Math.abs(o.lon) <= 180 &&
+      inside(radiusM, REFILL_RULE.radiusBoundsM) && durationSec > 0 && maxGapSec !== null && maxGapSec >= FIX_PERIOD_SEC &&
+      speedMaxKt !== null && speedMaxKt >= 0 && inside(tol, REFILL_RULE.headingTolBoundsDeg) &&
+      (q.headingDeg == null || inside(head, REFILL_RULE.headingBoundsDeg));
+  }
   if (key.condition === 'sequence') {
     const steps = key.steps;
     return Array.isArray(steps) && steps.length >= 1 && steps.length <= DRAWER_BOUNDS.steps && steps.every(s => !!s && typeof s ===

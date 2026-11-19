@@ -134,8 +134,8 @@ phases:
 - **A kind of condition this reader does not know is never an error**: `{ kind: 'hand' }`, `keyWhy: 'condition'`, and
   `condition` names it. The kind is kept only as a short word (`[a-z0-9_]`), never as free text.
 - **Not judged in flight yet** — `notJudgedYet(key)` says it, for the pilot's screen (« pas encore jugé en vol — s'ouvre à
-  l'heure de repli ou au geste »): a 1.1 condition (except a complete landing, overflight or hover, over a point or a still object, and a sequence of one to
-  ten such steps with no overflight to confirm, which the flight judges: `follows` of `drawers.js`; a `refill` is never judged yet), a zone crossed by a target (`key.actor`), an object that moves
+  l'heure de repli ou au geste »): a 1.1 condition (except a complete landing, overflight or hover, over a point or a still object, a sequence of one to
+  ten such steps with no overflight to confirm, and a complete `refill` on a still station — `refillSpec` of `drawers.js`, SOG-0521 —, which the flight judges: `follows` of `drawers.js`), a zone crossed by a target (`key.actor`), an object that moves
   (`key.object.moving`), a required following (`key.escortMinSec > 0`).
 - `drawerSlots(doc)` → `[{ i, id }]`: which entries of `phases` are drawers (their place in the list, their id) — the one rule of
   acceptance, shared by the reader and by the workshop (`modules/missions/editor_drawers.js`), which keeps the other entries as
@@ -321,8 +321,8 @@ brick never carries a message identifier, nor a position — the drawer born of 
 target, else the arrival, and « À compléter » asks for the identifier of a message. Since SOG-0521 a brick MAY create places « to
 place » (`places`, four at most, read like those of a model: a kind and a name, never a position; `place` cites one of them): the
 FIRE brick `fire-refill` (« Ravitaillement en retardant ») creates its station — an object of the kind `refill`, written without a
-position, a range or a confirmation — and keys its drawer on it (`kind: refill`, 300 s); it is offered only once the flight judges the
-refill.
+position, a range or a confirmation — and keys its drawer on it (`kind: refill`, 300 s); it is offered, as soon as the flight
+judges its key (SOG-0521: it does).
 
 **What the flight judges, and what the workshop offers** (SOG-0500 (c)): the flight judges a key when `follows(key)` of
 `modules/missions/drawers.js` (« Affectation ») says so — today a zone the pilot crosses himself (no `actor`), a fixed object, an
@@ -389,8 +389,11 @@ phases:
 - **Unreadable** (the gesture alone, `keyWhy: 'condition'`, `condition: 'refill'`): a `point`, an object of another kind, a station
   « to place » or absent, a number written out of its bounds (never clamped), a heading that is not a number. A refill is **never a
   step of a sequence** (the sequence is then unreadable).
-- **Not judged in flight yet**: `notJudgedYet` is true and `follows` (`modules/missions/drawers.js`) is false; the drawer opens by the
-  gesture or at its fallback hour. The day « Affectation » judges it, `notJudgedYet` follows (noreg N155 keeps the two in agreement).
+- **Judged in flight** (SOG-0521, Affectation's `refillSpec`; the reader's `conditionJudged` writes the same rule, noreg N155 and N182 keep the
+  two in agreement): `notJudgedYet` is false and `follows` (`modules/missions/drawers.js`) true when the key is a refill whose rule has a STATION that
+  does not move, at a readable position (`rule.object`, never `rule.at`), no confirmation word and no `confirm`, a radius of `REFILL_RULE.radiusBoundsM`,
+  a duration above 0, a gap of one fix period (5 s) at least, a speed of 0 at least, a tolerance of `REFILL_RULE.headingTolBoundsDeg` and a heading absent
+  (or null) or of `REFILL_RULE.headingBoundsDeg`; otherwise `notJudgedYet` is true and the drawer opens by the gesture or at its fallback hour.
 - **What the workshop writes** (`modules/missions/editor_drawers.js`, `RULED`): the station, `duration_sec` (typed in minutes) and
   `heading_deg` when typed, `require_departure: true` for a new rule; never a point; `radius_m`, `max_gap_sec`, `heading_tol_deg` and
   `speed_max_kt` only when the file already writes them (kept as they are unless changed) — absent, the reader takes `REFILL_RULE`.

@@ -1688,7 +1688,7 @@
       []) === null && pilotView('x', []) === null && JSON.stringify(glacier) === glacierBefore, '');
 
   // SOG-0521 : le ravitaillement en retardant (`trigger_condition: { kind: refill }`) — une STATION (un objet de genre refill, placé),
-  // les paramètres de REFILL_RULE à défaut, chaque nombre écrit borné (jamais ramené), jamais jugé en vol (notJudgedYet vrai)
+  // les paramètres de REFILL_RULE à défaut, chaque nombre écrit borné (jamais ramené), jugé en vol quand la règle est complète (notJudgedYet faux : la règle de `refillSpec`, SOG-0521)
   const refillMission = c => readMission({
       ...drawerBase,
       objects: [{
@@ -1730,11 +1730,11 @@
     .durationSec >= 1 && R.durationSec <= 3600 && R.maxGapSec >= 5 && R.maxGapSec <= 60 && Object.isFrozen(R) && [R.radiusM, R
       .headingTolDeg, R.durationSec, R.maxGapSec
     ].join() === '30,30,300,10', JSON.stringify(R));
-  same('refill : une station seule → la règle aux paramètres par défaut (R, 300 s, 10 s, 3 kt, sans cap, ± 30°, repartir), jamais jugée',
+  same('refill : une station seule → la règle aux paramètres par défaut (R, 300 s, 10 s, 3 kt, sans cap, ± 30°, repartir), jugée en vol (notJudgedYet faux)',
     refillOf({
       kind: 'refill',
       object: 'OBJ-1'
-    }), ['refill', 'OBJ-1', 'refill', 30, 300, 10, 3, null, 30, true, true]);
+    }), ['refill', 'OBJ-1', 'refill', 30, 300, 10, 3, null, 30, true, false]);
   same('refill : les nombres écrits dans leurs bornes sont lus tels quels (le cap 270° ± 15°, sans départ exigé)', refillOf({
     kind: 'REFILL',
     object: 'obj-1',
@@ -1745,7 +1745,32 @@
     heading_deg: 270,
     heading_tol_deg: 15,
     require_departure: false
-  }), ['refill', 'OBJ-1', 'refill', 20, 420, 5, 0, 270, 15, false, true]);
+  }), ['refill', 'OBJ-1', 'refill', 20, 420, 5, 0, 270, 15, false, false]);
+  // la règle de `refillSpec` (drawers.js) : une station IMMOBILE à une position lisible (jamais `at`), sans mot ni confirmation, un rayon de 1 à 200 m, une durée au-dessus de 0,
+  // un écart d'au moins 5 s, une vitesse d'au moins 0, une tolérance de 1 à 90°, un cap absent ou de 0 à 359° ; la clé complète lue d'un fichier, puis UN changement à la fois
+  const refillKey = refillMission({
+      kind: 'refill',
+      object: 'OBJ-1'
+    }).drawers[0].key,
+    refillJudged = f => {
+      const k = JSON.parse(JSON.stringify(refillKey));
+      f(k.rule, k);
+      return notJudgedYet(k);
+    };
+  same('refill : jugé quand la règle est complète, pas jugé dès qu\'un élément manque ou sort de ses bornes (la règle de refillSpec)', [
+    () => {}, r => r.object.moving = true, r => {
+      r.at = {
+        lat: 44.6,
+        lon: 1.4
+      };
+      r.object = null;
+    }, r => r.object = null, r => r.object.lat = 91, r => r.confirmation = 'x', r => r.confirm = true, r => r.confirm = false, r => r.radiusM = 0, r => r.radiusM = 1,
+    r => r.radiusM = 200, r => r.radiusM = 201, r => r.durationSec = 0, r => r.maxGapSec = 4, r => r.maxGapSec = 5, r => r.speedMaxKt = -1, r => r.speedMaxKt = 0,
+    r => r.headingTolDeg = 0, r => r.headingTolDeg = 90, r => r.headingTolDeg = 91, r => r.headingDeg = 360, r => r.headingDeg = 359, r => r.headingDeg = null,
+    r => r.headingDeg = NaN, r => r.departure = false, (r, k) => k.rule = null
+  ].map(refillJudged), [false, true, true, true, true, true, true, false, true, false, false, true, true, true, false, true, false, true, false, true, true, false, false, true,
+    false, true
+  ]);
   const refillBad = [{
     point: 'PT1'
   }, {

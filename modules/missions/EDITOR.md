@@ -1665,8 +1665,9 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
   carries a `rule`; the steps of a sequence stay `HOLDS` (a refill is never a step). `DR.ruleBounds(kind, f)` gives the reader's bounds of a
   number of a rule — a refill has its own radius bounds and a gap never under one fix period, both read from `MS.REFILL_RULE` (the one
   table of the reader: R = 30 m, ± 30°, 300 s, 10 s; never copied).
-- **Not offered** under « ＋ Tiroir » while the flight does not judge it (`DR.offered` / `follows`: `TYPES` says `refill: false`), but a
-  drawer already written edits: the key « un ravitaillement en retardant » with the mention « s'ouvre au geste ou à l'heure de repli ».
+- **Offered** under « ＋ Tiroir » as soon as the flight judges it (`DR.offered` / `follows`: `TYPES` says `refill: true` since SOG-0521, once
+  Affectation's `refillSpec` is in `drawers.js`; the reader's `conditionJudged` writes the same rule, noreg N155 and N182): the key « un
+  ravitaillement en retardant » carries no mention « s'ouvre au geste ou à l'heure de repli » (the mention stays for a key the flight does not judge).
 - **The sheet** (`edRefillHtml`, `editor_view.js`): the station — a list of the objects of the kind refill ALONE (the file's value kept, with
   « ? » when it names no station any more; none: the sheet says so and leads to the Lieux) —, the minimum duration in MINUTES (written in
   seconds, `duration_sec`), the docking heading (`heading_deg`, optional); the radius, the gap, the heading tolerance and the speed show only
@@ -1695,8 +1696,8 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
   `modelFromSession`): a refill brick keeps `duration_sec`, bounded by `DR.ruleBounds`.
 - The FIRE brick `fire-refill` — « Ravitaillement en retardant » / « Retardant refill » / « Retardant-Befüllung » / « Reabastecimiento de
   retardante », its brief « Posez-vous à la station de retardant, placez-vous contre elle, restez le temps du remplissage, puis repartez. »
-  (×4), 300 s, a fallback of 60 min — creates « Station de retardant » (`okind: refill`). It is **not offered** today (`DR.judgedKind` of
-  `refill` is false); with a flight that judges the refill (a simulated `follows`, the way of N155) it would be.
+  (×4), 300 s, a fallback of 60 min — creates « Station de retardant » (`okind: refill`). It is **offered** (`DR.judgedKind` of
+  `refill` is true since SOG-0521, `follows` of the flight; N156 counts 56 offered bricks, N139 lists it in the FIRE family).
 - `withPlaces` (`editor.js`) never writes `require_confirmation` on a station of retardant (a station is not « found »; what a file carries
   stays as it is).
 

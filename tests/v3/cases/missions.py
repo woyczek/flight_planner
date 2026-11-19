@@ -9021,7 +9021,7 @@ def n129(c):
     c.tap(f'{E} [data-atflow] [data-dradd]')
     c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of the bricks (SOG-0508)')
     kinds = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
-    c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'], 'the types the flight judges, in order (the landing since SOG-0500, 3c2e2abba; the overflight since 4c9b10ef3; the hover since 9cbbf9e11; the sequence since 72d7ef7dc)', what='the choice')
+    c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'refill'], 'the types the flight judges, in order (the landing since SOG-0500, 3c2e2abba; the overflight since 4c9b10ef3; the hover since 9cbbf9e11; the sequence since 72d7ef7dc; the retardant refill since 35720d6cb, SOG-0521)', what='the choice')
     c.eq(c.js(_FLOW_N), 4, 'opening the choice creates nothing', what='the drawers')
     modal = c.js(f"document.querySelector('{_KW} [role=dialog]')?.getAttribute('aria-modal')")
     c.eq(modal, 'true', 'the choice opens in a MODAL window (SOG-0508 replaced the choice in place of SOG-0467)', what='the window')
@@ -9559,7 +9559,7 @@ def n139(c):
         c.tap(f'{E} [data-atflow] [data-dradd]')
         c.until(f"document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edbrick]').length > 0", timeout=10000, what='the bricks in the window')
         kinds = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)")
-        c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'], f'{width}: the five types are still there, first, then the hover, the landing, the overflight and the sequence', what='the choice')
+        c.eq(kinds, ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'refill'], f'{width}: the five types are still there, first, then the hover, the landing, the overflight, the sequence and the refill (judged since SOG-0521)', what='the choice')
         c.eq(c.js(f"[...document.querySelectorAll('{_KW} details.ms-kwfam[open]')].map(x => x.dataset.brickfam)"), ['SAR'], f'{width}: the family of the mission first (open)', what='the family')
         c.eq(c.js(_BRICKS, 'SAR'), [['sar-land', 'Recherche terrestre progressive', 'une zone de passage'], ['sar-aircraft', 'Localisation d’une épave', 'un objet à trouver'],
               ['sar-csar', 'Extraction en zone contrainte', 'un poser'], ['sar-recovery', 'Récupération de personnes', 'un stationnaire'], ['sar-sea', 'Survol d’un radeau ou d’un navire', 'un survol']],
@@ -9570,7 +9570,7 @@ def n139(c):
             c.tap(f'{_KW} details[data-fold="dom:fire"] > summary')
         c.tap(f'{_KW} details[data-fold="fam:FIRE"] > summary')
         c.until(f"document.querySelector('{_KW} details[data-fold=\"fam:FIRE\"]')?.open === true", what='the family FIRE')
-        c.eq([x[0] for x in c.js(_BRICKS, 'FIRE')], ['fire-gaar', 'fire-drop', 'fire-reload'], f'{width}: another family, its bricks', what='the bricks of FIRE')
+        c.eq([x[0] for x in c.js(_BRICKS, 'FIRE')], ['fire-gaar', 'fire-drop', 'fire-reload', 'fire-refill'], f'{width}: another family, its bricks (the retardant refill since SOG-0521: the flight judges it)', what='the bricks of FIRE')
         c.eq(c.js(_FLOW_N), 0, 'changing the family creates nothing', what='the drawers')
         if width == 1280:
             c.shot('P11a_1280_briques.png')
@@ -10310,8 +10310,8 @@ def n152(c):
         c.page.fill(f'{_DW} [data-f="rule.duration"]', '20')
         c.tap(f'{E} [data-atflow] [data-dradd]')
         c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
-        c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)"), ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'],
-             f'{width}: « ＋ Tiroir » offers the hover, the landing, the overflight and the sequence, no event', what='the offer')
+        c.eq(c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=new] [data-do=edkind]')].map(x => x.dataset.key)"), ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'refill'],
+             f'{width}: « ＋ Tiroir » offers the hover, the landing, the overflight, the sequence and the refill, no event', what='the offer')
         c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
         c.tap(f'{E} [data-do="edsave"]')
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
@@ -10552,7 +10552,7 @@ _JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), 
 
 @case('N155', 'Missions › what « ＋ Tiroir » offers comes from what the FLIGHT judges (SOG-0500 (c)): the flag `judged` of each kind is `follows` of '
       'modules/missions/drawers.js (Affectation\'s function) applied to the key the READER reads of a drawer of that kind written by the workshop itself — '
-      'the gesture and the hour always judged; today the five keys hand, time, zone, object, arrival are offered, with the hover, the landing, the overflight and the sequence of steps (the four 1.1 conditions the flight judges), each judged on a point and on a still object and never on a moving one, '
+      'the gesture and the hour always judged; today the five keys hand, time, zone, object, arrival are offered, with the hover, the landing, the overflight, the sequence of steps and the retardant refill (the five 1.1 conditions the flight judges), each judged on a point and on a still object and never on a moving one, '
       'a sequence when each of its one to ten steps is judged by the rule of its kind (no overflight to confirm, no confirmation word, no moving object; none empty, none over ten, none inside another); with a function that '
       'judges everything, the ten kinds would be offered (the same function the page calls, `DR.offered`, with the flight\'s function given); a drawer '
       'keyed by a landing keeps its key in its own choice, with its mention; THE CONTROL of Affectation: for every kind of key the reader gives (hand, '
@@ -10580,16 +10580,16 @@ def n155(c):
     c.eq(g['judged'], {'hand': True, 'time': True, 'zone': True, 'zone+actor': False, 'object': True, 'object+moving': False, 'arrival': True,
                        'arrival+escort': False, 'hover': True, 'hover+obj': True, 'hover+moving': False, 'landing': True, 'landing+obj': True,
                        'landing+moving': False, 'overflight': True, 'overflight+obj': True, 'overflight+moving': False, 'sequence': True, 'event': False,
-                       'refill+obj': False},
-         'what the flight judges today (follows of drawers.js; the landing since 3c2e2abba, the overflight since 4c9b10ef3, the hover since 9cbbf9e11: each on a point or a still object, never on a moving one; the sequence since 72d7ef7dc)', what='judged today')
+                       'refill+obj': True},
+         'what the flight judges today (follows of drawers.js; the landing since 3c2e2abba, the overflight since 4c9b10ef3, the hover since 9cbbf9e11: each on a point or a still object, never on a moving one; the sequence since 72d7ef7dc; the refill on its still station since 35720d6cb, SOG-0521)', what='judged today')
     c.eq(g['types'], [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', True], ['landing', True],
-                      ['overflight', True], ['sequence', True], ['event', False], ['refill', False]], 'DR.TYPES: the flag of each kind, from the flight (the refill not yet, SOG-0521)', what='the types')
+                      ['overflight', True], ['sequence', True], ['event', False], ['refill', True]], 'DR.TYPES: the flag of each kind, from the flight (the refill since SOG-0521)', what='the types')
     c.eq(g['typesAgree'], True, 'judgedKind and TYPES say the same', what='judgedKind')
     c.eq([g['offered'], g['offeredCur'], g['offeredIfJudged'], g['offeredNone']],
-         [['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence'],
-          [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', True], ['landing', True], ['overflight', True], ['sequence', True]],
+         [['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'refill'],
+          [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', True], ['landing', True], ['overflight', True], ['sequence', True], ['refill', True]],
           ['hand', 'time', 'zone', 'object', 'arrival', 'hover', 'landing', 'overflight', 'sequence', 'event', 'refill'], ['hand', 'time']],
-         'offered today; the key in force kept; a flight that judges everything: eleven (the refill, SOG-0521); a flight that judges nothing: the gesture and the hour',
+         'offered today (ten: the refill since SOG-0521); the key in force kept; a flight that judges everything: eleven (the event too); a flight that judges nothing: the gesture and the hour',
          what='offered')
     # the screen: « ＋ Tiroir » shows exactly what DR.offered says, the choice of a landing drawer keeps its key with its mention
     c.page.set_viewport_size({'width': 390, 'height': c.height})
@@ -10606,7 +10606,7 @@ def n155(c):
     c.until(f"!!document.querySelector('{_KW}[data-kinds=drawer]')", what='the window, for the key')
     got = c.js(f"[...document.querySelectorAll('{_KW}[data-kinds=drawer] [data-do=edkind]')].map(x => [x.dataset.key, !!x.querySelector('.f-muted'), x.getAttribute('aria-pressed')])")
     c.eq(got, [['hand', False, 'false'], ['time', False, 'false'], ['zone', False, 'false'], ['object', False, 'false'], ['arrival', False, 'false'],
-               ['hover', False, 'false'], ['landing', False, 'true'], ['overflight', False, 'false'], ['sequence', False, 'false']], 'the key in force kept (judged: no mention), the hover, the overflight and the sequence judged too, no event', what='the choice of the drawer')
+               ['hover', False, 'false'], ['landing', False, 'true'], ['overflight', False, 'false'], ['sequence', False, 'false'], ['refill', False, 'false']], 'the key in force kept (judged: no mention), the hover, the overflight, the sequence and the refill judged too, no event', what='the choice of the drawer')
     # a forged touch of a kind the flight does not judge changes nothing
     c.js(f"""(() => {{ const b = document.createElement('button'); b.dataset.do = 'edkind'; b.dataset.key = 'event';
       document.querySelector('{_KW}[data-kinds=drawer] [data-kwpool]').append(b); b.click() }})()""")
@@ -10651,7 +10651,7 @@ _BRICKS11_JS = """async () => { const MS = await import('/frame/lib/mission.js')
       '(28 + 12 landings, 9 hovers — 2 of them a following: a wide hover on an object, 1 000 m, 0 to 3 000 ft —, 5 overflights, 1 sequence, 5 messages), '
       '16 families (HEMS and SOF added), nothing set aside, nothing of a real look; each brick of a condition, born as « ＋ Tiroir » makes it, is written '
       'and read back by the reader as its condition, without a reason, nothing missing but the identifier of a message; « ＋ Tiroir » offers only the bricks '
-      'whose key the flight judges (55 today, with the 12 landings, the 5 overflights, the 9 hovers and the sequence, 61 if it judged everything, the refill of SOG-0521 included); a model saved from a sitting keeps a hover\'s numbers and a sequence\'s steps', 'N',
+      'whose key the flight judges (56 today, with the 12 landings, the 5 overflights, the 9 hovers, the sequence and the refill of SOG-0521, 61 if it judged everything); a model saved from a sitting keeps a hover\'s numbers and a sequence\'s steps', 'N',
       tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0500 (d): « les 32 briques 1.1 du catalogue de l\'utilisateur : ajoute-les à catalog.yaml (textes ×4, bornes respectées), proposées sous la '
       'même règle que leur clé (rien tant que le vol ne juge pas). Rien d\'allure réelle. »; EDITOR.md § 7 duoquinquagies')
@@ -10673,7 +10673,7 @@ def n156(c):
          [[1000, 60, 'OBJ-1'], [None, 60, 'DESTINATION'], [5, 60, 'OBJ-1'], [0.5, None, 'OBJ-1'], ['deploy', 'recover']],
          'a following on the object, a precision landing of 60 s at the arrival (no radius since SOG-0507), a hover on the object, an overflight, two steps confirmed',
          what='some bricks')
-    c.eq([g['offered'], g['ifJudged']], [55, 61], '« ＋ Tiroir » offers only what the flight judges (the 12 landings since 3c2e2abba, the 5 overflights since 4c9b10ef3, the 9 hovers since 9cbbf9e11, the sequence since 72d7ef7dc; not the refill, SOG-0521)', what='offered')
+    c.eq([g['offered'], g['ifJudged']], [56, 61], '« ＋ Tiroir » offers only what the flight judges (the 12 landings since 3c2e2abba, the 5 overflights since 4c9b10ef3, the 9 hovers since 9cbbf9e11, the sequence since 72d7ef7dc, the refill brick since 35720d6cb, SOG-0521)', what='offered')
     c.eq(g['model'], [['hover', 'OBJ-1', {'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100}],
                       ['sequence', '', {'steps': [
                           {'kind': 'hover', 'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100, 'confirmation': 'deploy'},
@@ -12081,6 +12081,20 @@ _REFILL_READ_JS = """async () => { const MS = await import('/frame/lib/mission.j
     const r = d.key.rule;
     return d.key.kind === 'condition' ? [d.key.condition, r.object.id, r.object.kind, r.object.moving, r.radiusM, r.durationSec, r.maxGapSec, r.speedMaxKt, r.headingDeg,
       r.headingTolDeg, r.departure, MS.notJudgedYet(d.key), D.follows(d.key)] : [d.key.kind, d.keyWhy, d.condition] };
+  // the rule of the flight (`refillSpec`): the complete key read from the file, then ONE change at a time on a copy — the reader's notJudgedYet and the flight's follows must agree on each
+  const k0 = MS.readMission({ ...base, phases: [{ id: 'B', title: 'Remplir', trigger_condition: { kind: 'refill', object: 'OBJ-1' } }] }).drawers[0].key;
+  const mut = f => { const k = JSON.parse(JSON.stringify(k0)); f(k.rule, k); return k };
+  const variants = { complete: () => {}, moving: r => { r.object.moving = true; }, at: r => { r.at = { lat: 44.6, lon: 1.4 }; r.object = null; }, noObject: r => { r.object = null; },
+    latOut: r => { r.object.lat = 91; }, lonOut: r => { r.object.lon = -181; }, latText: r => { r.object.lat = '44.6'; },
+    word: r => { r.confirmation = 'deploy'; }, confirm: r => { r.confirm = true; }, confirmFalse: r => { r.confirm = false; }, otherKind: r => { r.kind = 'landing'; }, noRule: (r, k) => { k.rule = null; },
+    r0: r => { r.radiusM = 0; }, r1: r => { r.radiusM = 1; }, r200: r => { r.radiusM = 200; }, r201: r => { r.radiusM = 201; }, rNaN: r => { r.radiusM = NaN; }, rText: r => { r.radiusM = '30'; },
+    d0: r => { r.durationSec = 0; }, dNeg: r => { r.durationSec = -1; }, dInf: r => { r.durationSec = Infinity; }, d1: r => { r.durationSec = 1; },
+    g4: r => { r.maxGapSec = 4; }, g5: r => { r.maxGapSec = 5; }, gNull: r => { r.maxGapSec = null; },
+    s0: r => { r.speedMaxKt = 0; }, sNeg: r => { r.speedMaxKt = -1; }, sNaN: r => { r.speedMaxKt = NaN; },
+    t0: r => { r.headingTolDeg = 0; }, t1: r => { r.headingTolDeg = 1; }, t90: r => { r.headingTolDeg = 90; }, t91: r => { r.headingTolDeg = 91; }, tNull: r => { r.headingTolDeg = null; },
+    h0: r => { r.headingDeg = 0; }, h359: r => { r.headingDeg = 359; }, h360: r => { r.headingDeg = 360; }, hNeg: r => { r.headingDeg = -1; }, hNull: r => { r.headingDeg = null; },
+    hUndef: r => { r.headingDeg = undefined; }, hNaN: r => { r.headingDeg = NaN; }, hText: r => { r.headingDeg = '270'; }, noDeparture: r => { r.departure = false; } };
+  const judged = Object.fromEntries(Object.entries(variants).map(([n, f]) => { const k = mut(f); return [n, [MS.notJudgedYet(k), D.follows(k)]] }));
   const R = MS.REFILL_RULE || {};
   const bad = [{ point: 'PT1' }, { object: 'OBJ-1', point: 'PT1' }, { object: 'OBJ-2' }, { object: 'OBJ-3' }, { object: 'OBJ-9' }, { object: ['OBJ-1'] },
     { object: 'OBJ-1', radius_m: 0 }, { object: 'OBJ-1', radius_m: 201 }, { object: 'OBJ-1', duration_sec: 0 }, { object: 'OBJ-1', duration_sec: 3601 },
@@ -12102,7 +12116,7 @@ _REFILL_READ_JS = """async () => { const MS = await import('/frame/lib/mission.j
     dflt: read({ kind: 'refill', object: 'OBJ-1' }),
     written: read({ kind: 'refill', object: 'obj-1', radius_m: 25, duration_sec: 420, max_gap_sec: 6, speed_max_kt: 1, heading_deg: 270, heading_tol_deg: 20,
       require_departure: false }),
-    bad, hostile: hostile.map(x => x[0]),
+    judged, bad, hostile: hostile.map(x => x[0]),
     seq: read({ kind: 'sequence', steps: [{ kind: 'refill', object: 'OBJ-1' }] }),
     station, closed: JSON.stringify(MS.pilotView(m, [])), open: MS.pilotView(m, ['B']).drawers.map(d => [d.id, d.condition, d.key.rule?.object?.name]) } }"""
 
@@ -12111,8 +12125,9 @@ _REFILL_READ_JS = """async () => { const MS = await import('/frame/lib/mission.j
       '« refill » that is placed gives the condition « refill » with the parameters of MS.REFILL_RULE when nothing is written (R = 30 m, 300 s, a gap of 10 s, 3 kt, '
       'no heading, a tolerance of ± 30°, a departure required), the numbers written within their bounds as they are; a point, a point AND a station, an object of '
       'another kind, a station « to place » or absent, a number out of its bounds (radius 1 to 200 m, duration 1 to 3 600 s, a gap under one fix period or over 60 s, '
-      'heading 0 to 359, tolerance 1 to 90) make it unreadable — the gesture alone, said « condition »; never a step of a sequence; never judged in flight '
-      '(`notJudgedYet` true, `follows` false); a closed refill drawer leaves nothing in the pilot\'s view; hostile entries raise nothing', 'N',
+      'heading 0 to 359, tolerance 1 to 90) make it unreadable — the gesture alone, said « condition »; never a step of a sequence; judged in flight when complete '
+      '(`notJudgedYet` false, `follows` true — the rule of `refillSpec`, SOG-0521) and not judged, the reader and the flight agreeing, on a key whose station moves, is a point, '
+      'is out of range, or whose number is out of its bounds, with a word or a confirmation; a closed refill drawer leaves nothing in the pilot\'s view; hostile entries raise nothing', 'N',
       tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0521, the user (19 Nov): « atterrir, se placer contre l\'objet, faire un refill (mini 5mn), repartir » ; « il faut orienter la bestiole dans le bon sens »; '
       'the relay: R and the heading tolerance are parameters (Q-0121: 30 m, ± 30°) in ONE exported constant of the reader; Sécurisation: the bounds of the holds; '
@@ -12121,10 +12136,19 @@ def n182(c):
     c.page.goto(f'{c.base}/frame/manifest.webmanifest')
     g = c.js(_REFILL_READ_JS)
     c.eq(g['R'], [30, [1, 200], 30, [1, 90], [0, 359], 300, 10, True], 'MS.REFILL_RULE: R 30 m (1 to 200), ± 30° (1 to 90), heading 0 to 359, 300 s, 10 s, frozen', what='the parameters')
-    c.eq(g['dflt'], ['refill', 'OBJ-1', 'refill', False, 30, 300, 10, 3, None, 30, True, True, False],
-         'a station alone: the parameters by default, a departure required, never judged (notJudgedYet true, follows false)', what='the defaults')
-    c.eq(g['written'], ['refill', 'OBJ-1', 'refill', False, 25, 420, 6, 1, 270, 20, False, True, False],
+    c.eq(g['dflt'], ['refill', 'OBJ-1', 'refill', False, 30, 300, 10, 3, None, 30, True, False, True],
+         'a station alone: the parameters by default, a departure required, judged (notJudgedYet false, follows true: the rule of refillSpec, SOG-0521)', what='the defaults')
+    c.eq(g['written'], ['refill', 'OBJ-1', 'refill', False, 25, 420, 6, 1, 270, 20, False, False, True],
          'the numbers written within their bounds are read as they are (the identifier read as the reader reads it)', what='written')
+    # [notJudgedYet, follows] of the complete key and of each change made to it: judged only when `refillSpec` reads it (a still station at a readable position, no word, no
+    # confirmation, a radius 1 to 200 m, a duration above 0, a gap of 5 s at least, a speed of 0 at least, a tolerance 1 to 90°, a heading absent or 0 to 359°)
+    T, F = [False, True], [True, False]
+    c.eq(g['judged'], {'complete': T, 'moving': F, 'at': F, 'noObject': F, 'latOut': F, 'lonOut': F, 'latText': F, 'word': F, 'confirm': F, 'confirmFalse': T, 'otherKind': F, 'noRule': F,
+                       'r0': F, 'r1': T, 'r200': T, 'r201': F, 'rNaN': F, 'rText': F, 'd0': F, 'dNeg': F, 'dInf': F, 'd1': T, 'g4': F, 'g5': T, 'gNull': F,
+                       's0': T, 'sNeg': F, 'sNaN': F, 't0': F, 't1': T, 't90': T, 't91': F, 'tNull': F, 'h0': T, 'h359': T, 'h360': F, 'hNeg': F, 'hNull': T,
+                       'hUndef': T, 'hNaN': F, 'hText': F, 'noDeparture': T},
+         'the refill is judged exactly as refillSpec judges it: notJudgedYet(k) === !follows(k) on the complete key and on each change of it (a moving station, a point instead of a station, '
+         'a position out of range or a text, a word, a confirmation, a number at and beyond its bounds, a heading absent, null, 0, 359, 360, a text) — the reader and the flight agree', what='refill judged')
     c.eq([x for x in g['bad'] if x != ['hand', 'condition', 'refill']], [],
          'a point, a point and a station, another kind, a station to place or absent, an object as a list, a number out of its bounds: the gesture alone, « condition »', what='unreadable')
     c.eq(g['hostile'], ['hand', 'hand', 'hand', 'hand', 'hand', 'hand', 'refill'], 'hostile entries: nothing raises, nothing read but a plain label', what='hostile')
@@ -12157,10 +12181,10 @@ phases:
 
 
 @case('N183', 'Missions › the workshop, a drawer of the file keyed by a retardant REFILL (SOG-0521, an invented file): its sheet shows the key « un '
-      'ravitaillement en retardant » with the mention « s\'ouvre au geste ou à l\'heure de repli » (the flight does not judge it yet), three fields only — the '
+      'ravitaillement en retardant » with no mention « s\'ouvre au geste ou à l\'heure de repli » (the flight judges it, SOG-0521), three fields only — the '
       'station, chosen among the objects of the kind refill alone (not the vehicle), the minimum duration in MINUTES (300 s → 5), the docking heading, '
       'empty —, and ONE line that says the rule (« Se poser, s\'arrêter à 30 m de la station, 5 min au moins, puis repartir »), which follows the typing '
-      '(a heading 270 adds « , au cap 270° ± 30° », 7 min); « ＋ Tiroir » does not offer the refill; « Enregistrer » writes `duration_sec: 420` and '
+      '(a heading 270 adds « , au cap 270° ± 30° », 7 min); « ＋ Tiroir » offers the refill; « Enregistrer » writes `duration_sec: 420` and '
       '`heading_deg: 270` and nothing else moves (the station keeps the range the file writes); in the Lieux the station says « Station de retardant » '
       'and no range, and its sheet has no range, no « trouvé seulement quand le pilote le déclare », no heights (a station is not found), the vehicle\'s '
       'has them; at 390 and at 1280', 'N',
@@ -12187,8 +12211,8 @@ def n183(c):
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
         c.eq([c.js(_DW_VAL, 'key'), norm(c.js(f"document.querySelector('{_DW} [data-kindcur] b').textContent")),
               norm(c.js(f"document.querySelector('{_DW} [data-dwnotjudged]')?.textContent || ''"))],
-             ['refill', norm(row(c, 'dwKey_refill', EDTX_FILE)), norm(row(c, 'dwNotJudged', EDTX_FILE))],
-             f'{width}: the key « un ravitaillement en retardant », with the mention « s\'ouvre au geste ou à l\'heure de repli »', what='the key')
+             ['refill', norm(row(c, 'dwKey_refill', EDTX_FILE)), ''],
+             f'{width}: the key « un ravitaillement en retardant », without the mention « s\'ouvre au geste ou à l\'heure de repli » (the flight judges it)', what='the key')
         c.eq(c.js(fields), ['rule.object', 'rule.durMin', 'rule.heading'], f'{width}: three fields — the station, the minimum duration, the heading', what='the fields')
         c.eq(c.js(opts), ['OBJ-2', ['', 'OBJ-2']], f'{width}: the station of the file chosen, the stations alone offered (not the vehicle)', what='the stations')
         c.eq([c.js(_RULE_VAL, 'durMin'), c.js(_RULE_VAL, 'heading')], ['5', ''], f'{width}: 300 s said in minutes; no heading', what='the values')
@@ -12204,7 +12228,7 @@ def n183(c):
         c.tap(f'{E} [data-atflow] [data-dradd]')
         c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')
         offered = c.js(f"[...document.querySelectorAll('{_KW} [data-do=edkind]')].map(x => x.dataset.key)")
-        c.ok('refill' not in offered and 'landing' in offered, offered, f'{width}: « ＋ Tiroir » does not offer the refill (the flight does not judge it)')
+        c.ok('refill' in offered and 'landing' in offered, offered, f'{width}: « ＋ Tiroir » offers the refill (the flight judges it)')
         c.tap(f'{_KW}[data-kinds=new] [data-do=edkindoff]')
         # the Lieux: the station is not « found » — no range on its line, no detection field in its sheet; the vehicle keeps them
         ed_places(c)
@@ -12283,8 +12307,8 @@ bricks:
       'out of the list set aside, a place cited that the brick does not pose not cited); the FIRE brick `fire-refill` (key refill, its brief in four languages, '
       '300 s, a fallback of 60 min) creates a station « Station de retardant » (an object of the kind refill, « to place », a free identifier: OBJ-2 beside OBJ-1) '
       'that its drawer cites; written, the station has no position, no range, no confirmation — the key is unread until the author places it, then it reads '
-      '(the condition refill on OBJ-2, 300 s, not judged); the brick is not offered today and would be with a flight that judges the refill (DR.judgedKind '
-      'with a simulated `follows`, the way of N155); no other brick creates a place', 'N',
+      '(the condition refill on OBJ-2, 300 s, judged); the brick is offered, the flight judging the refill (DR.judgedKind, `follows` of drawers.js, '
+      'and with a simulated one, the way of N155); no other brick creates a place', 'N',
       tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0521: « les briques peuvent créer des LIEUX (catalog.js : un champ places lu et borné comme celui des modèles — « à placer », sans position, '
       'genres fermés ; rien d\'inventé). Puis la brique FIRE « Ravitaillement en retardant » (×4) : clé refuel sur un objet refill « à placer » qu\'elle crée ; '
@@ -12303,9 +12327,9 @@ def n184(c):
     c.eq(g['written'][1:], ['{"id":"OBJ-2","name":"Station de retardant","kind":"refill","lat":null,"lon":null}'],
          'written: the station without a position, a range or a confirmation', what='the file')
     c.eq(g['phase'], {'kind': 'refill', 'object': 'OBJ-2', 'duration_sec': 300, 'require_departure': True}, 'the condition written in the reader\'s form', what='the condition')
-    c.eq([g['read1'], g['read2']], [['hand', 'condition', 'refill'], ['condition', 'refill', 'OBJ-2', 300, True]],
-         'unread while the station is to place; placed, the key reads — not judged', what='read')
-    c.eq([g['judged'], g['offered']], [[False, True], [False, True]], 'the refill is not judged today, the brick not offered; a flight that judges it would offer both', what='offered')
+    c.eq([g['read1'], g['read2']], [['hand', 'condition', 'refill'], ['condition', 'refill', 'OBJ-2', 300, False]],
+         'unread while the station is to place; placed, the key reads — judged', what='read')
+    c.eq([g['judged'], g['offered']], [[True, True], [True, True]], 'the refill is judged (follows of drawers.js, SOG-0521), the brick offered; with a flight that judges everything too', what='offered')
     c.eq(g['hostile'], [[['a', 'object', 'refill', 'id,kind,name,okind'], ['c', 'object', '', 'id,kind,name,okind']], '', 4],
          'a hostile brick: four places read at most (two beyond, set aside), no position read, a duplicate and a kind out of the list set aside, an unknown kind of object read « », a place cited and not posed not cited',
          what='the hostile brick')
