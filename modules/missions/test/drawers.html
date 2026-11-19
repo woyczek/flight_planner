@@ -3226,7 +3226,7 @@
       key: seqL
     }],
     dPeer = holdAt(PT({}), 0.15, 5),
-    dLine = l => `${l.rank}:${l.by}:${l.mine}:${l.tier}:${l.distNm}`,
+    dLine = l => `${l.title}:${l.by}:${l.mine}:${l.tier}:${l.distNm}`,
     dMine = D.debriefOf(st({
       drawers: dDrawers,
       doc: dDoc,
@@ -3247,11 +3247,24 @@
       chain: true,
       now: T0 + 20 * MIN
     }));
-  ck('débrief : mes deux posés et l\'étape de la suite, une ligne chacun, dans l\'ordre de `at` (rang 1, 2, 3), le palier recalculé (« réussi » 0,15 ; « excellent » 0,04 ; « réussi » 0,15)',
-    dMine.map(dLine).join() === '1:AAA:true:réussi:0.15,2:AAA:true:excellent:0.04,3:AAA:true:réussi:0.15' && dMine.every((l, i) => l.how === 'landing' && (i === 0 ||
+  ck('débrief : mes deux posés et l\'étape de la suite, une ligne chacun, dans l\'ordre de `at` (« Posé 1 », « Posé 2 », « Suite »), le palier recalculé (« réussi » 0,15 ; « excellent » 0,04 ; « réussi » 0,15)',
+    dMine.map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15' && dMine.every((l, i) => l.how === 'landing' && (i === 0 ||
       dMine[i - 1].at < l.at)), dMine);
   ck('débrief : le posé de BBB dont le tier écrit ment (« excellent » à 0,001) est RECALCULÉ chez moi (« réussi », 0,15), la ligne de BBB après la mienne à l\'heure du fait',
-    dBoth.map(dLine).join() === '1:AAA:true:réussi:0.15,1:BBB:false:réussi:0.15,2:AAA:true:excellent:0.04,3:AAA:true:réussi:0.15', dBoth);
+    dBoth.map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 1:BBB:false:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15', dBoth);
+  ck('débrief : chaque ligne porte `title` (le titre du tiroir tel que l\'état le porte) et JAMAIS `rank` ni un numéro de tiroir ; un tiroir sans titre donne un titre vide ; à égalité d\'heure l\'ordre des états reste (tri stable)',
+    dBoth.every(l => typeof l.title === 'string' && !('rank' in l)) && !JSON.stringify(dBoth).includes('"rank"') && D.debriefOf([{
+      open: true,
+      title: 'Zéro',
+      lands: [{ at: 5, tier: 'réussi', distNm: 0.1, by: 'AAA', mine: true }]
+    }, {
+      open: true,
+      lands: [{ at: 5, tier: 'parfait', distNm: 0.05, by: 'BBB', mine: false }]
+    }, {
+      open: true,
+      title: 7,
+      lands: [{ at: 1, tier: 'parfait', distNm: 0.05, by: 'CCC', mine: false }]
+    }]).map(l => `${l.title}|${l.by}`).join() === '|CCC,Zéro|AAA,|BBB', dBoth);
   const dShifted = peer('B', T0 + 35e3, 'landing', {
       from: {
         ...dPeer.from,
@@ -3274,7 +3287,7 @@
       now: T0 + 20 * MIN
     });
   ck('débrief : la preuve de BBB qui ne tient pas sur ma clé (stands : posée loin du point chez moi) est absente, même avec un tier écrit « excellent » ; la mienne reste',
-    D.debriefOf(dShift).map(dLine).join() === '1:AAA:true:réussi:0.15,2:AAA:true:excellent:0.04,3:AAA:true:réussi:0.15' && by(dShift, 'B').refused[0]?.why === 'shape', dShift);
+    D.debriefOf(dShift).map(dLine).join() === 'Posé 1:AAA:true:réussi:0.15,Posé 2:AAA:true:excellent:0.04,Suite:AAA:true:réussi:0.15' && by(dShift, 'B').refused[0]?.why === 'shape', dShift);
   const dField = st({
     drawers: [{
       id: 'B',
@@ -3373,9 +3386,9 @@
     });
   ck('débrief : des entrées hostiles ne lèvent jamais (un tier hors TIERS, une distance NaN ou hors bornes, une heure illisible, un accesseur qui lève) ; seule la ligne lisible reste, `mine` strictement vrai',
     dHostileOut.every(r => Array.isArray(r)) && dHostileOut.slice(0, 7).every(r => r.length === 0) && dHostileOut[7].length === 1 && dHostileOut[7][0].by === 'CCC' &&
-    dHostileOut[7][0].mine === false && dHostileOut[7][0].rank === 2, dHostileOut);
-  ck('débrief : jamais de lieu — une ligne n\'a que rang, genre, palier, distance, heure, auteur, « mine » ; ni coordonnées ni identifiant de point',
-    dBoth.every(l => Object.keys(l).join() === 'rank,how,tier,distNm,at,by,mine') && !/PT1|lat|lon|point/.test(JSON.stringify(dBoth)), dBoth[0]);
+    dHostileOut[7][0].mine === false && dHostileOut[7][0].title === '', dHostileOut);
+  ck('débrief : jamais de lieu — une ligne n\'a que titre, genre, palier, distance, heure, auteur, « mine » ; ni coordonnées ni identifiant de point',
+    dBoth.every(l => Object.keys(l).join() === 'title,how,tier,distNm,at,by,mine') && !/PT1|lat|lon|point/.test(JSON.stringify(dBoth)), dBoth[0]);
 
 
   window.__bench = {

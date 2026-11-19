@@ -730,9 +730,10 @@ The user's figures (19 Nov 2026) REPLACE the radius written in the mission file,
 A block « Débrief » in the sheet of MY mission: one line per precision landing judged, mine and the crew mates'. Nothing is written; it
 reads what the section already computes (`drawers.js`, `drawers_view.js`; `frame/lib/precision.js` is imported, not touched).
 
-- **The datum.** `debriefOf(states)` takes the states of `stateOf` and returns `[{ rank, how: 'landing', tier, distNm, at, by, mine }]`:
-  `rank` is the place of the drawer in the suite (1 for the first), `at` the hour of the fact, `by` the trigram, `mine` true for my own
-  landing. Ordered by `at` (then rank). A landing on an airfield (no tier), a drawer opened by hand, another condition, a closed drawer:
+- **The datum.** `debriefOf(states)` takes the states of `stateOf` and returns `[{ title, how: 'landing', tier, distNm, at, by, mine }]`:
+  `title` is the title of the drawer as its state carries it (empty when it has none), never its number (§ 7.4, the secret: a number would
+  betray that another drawer exists), `at` the hour of the fact, `by` the trigram, `mine` true for my own
+  landing. Ordered by `at` (then the order of the states: the sort is stable, no number is exposed). A landing on an airfield (no tier), a drawer opened by hand, another condition, a closed drawer:
   no line. Never a place, never a point identifier, no score. Pure; it never throws (a hostile entry is left out: a tier outside `TIERS`,
   a distance outside 0 to 0.5, an unreadable hour).
 - **The proofs.** `stateOf` now gives each open drawer `lands: [{ at, tier, distNm, by, mine }]`, from every opening kept for it (mine and
@@ -741,11 +742,13 @@ reads what the section already computes (`drawers.js`, `drawers_view.js`; `frame
   the same rank), never the `tier` written in the record; a proof that does not stand on the reader's key (`stands`) gives no line.
 - **The screen.** Under « Suite de la mission », a title « Débrief » and a list that reuses the blocks of the section (`h3`, `dw-list`,
   `dw-row`); present only with at least one line (so after a drawer opens), at every level from the first, withdrawn by `stop()`. The line:
-  « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z », followed by « — BBB » for a crew mate; the tier words are `TIER_TEXT`, the
+  « Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z » (the title of the drawer, never its number: § 7.4, the rule of the secret),
+  followed by « — BBB » for a crew mate; a drawer without a title gives « Atterrissage réussi (0,15 NM), à 19:20Z » (`debriefMeUntitled`,
+  `debriefByUntitled`); the title is cut at 120 signs and escaped like the rest of the line; the tier words are `TIER_TEXT`, the
   separator `TX.decSep`, the hour `fmtZ`. `debriefLine(tt, line)` is the pure text, in the four languages.
-- **Cases.** N80 (169 checks, 7 new: the three landings in order, the lying tier of a crew mate recomputed, the proof off my key, the airfield,
-  no drawer open or under a lock, hostile entries, no place), N81 (119, 5 new: absent without a landing, present with two lines, level 1,
-  `stop()`, the exact text in four languages) and the screen case N181 (390 and 1280 px, four languages, invented data).
+- **Cases.** N80 (170 checks, 8 new: the three landings in order, the lying tier of a crew mate recomputed, the proof off my key, the airfield,
+  no drawer open or under a lock, hostile entries, no place), N81 (122, 8 new: absent without a landing, present with two lines, level 1,
+  `stop()`, the exact text in four languages, without a title, no number of drawer, a hostile title escaped) and the screen case N181 (390 and 1280 px, four languages, invented data).
 
 ## 12. Assigning a mission from V3 (SOG-0443)
 

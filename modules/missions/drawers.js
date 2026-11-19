@@ -61,7 +61,7 @@
 //     forme de la clé (par défaut : stands, le rejeu par le service du cadre — un constat sans relevé ne tient pas).
 //     lands : [{ at, tier, distNm, by, mine }] (SOG-0516, lot B) les posés de précision JUGÉS de ce tiroir ouvert — les miens et ceux des équipiers, le
 //       palier RECALCULÉ chez le lecteur, une preuve qui ne tient pas sur sa clé (stands) absente ; [] sinon.
-//   debriefOf(states) → [{ rank, how: 'landing', tier, distNm, at, by, mine }] : le débrief de la mission, une ligne par posé de précision jugé (voir plus bas).
+//   debriefOf(states) → [{ title, how: 'landing', tier, distNm, at, by, mine }] : le débrief de la mission, une ligne par posé de précision jugé (voir plus bas).
 //   follows(key) → vrai si la clé se juge avec une position en direct ; finding(key, prev, next, { trail }) → le constat d'un trajet,
 //     ou null (jamais pour une tenue — atterrissage, stationnaire : holding(key, hold, fix) → { hold, f }, SOG-0500, tient l'état d'une tenue posée) ; stands(entry, key) → le constat d'un carnet tient-il sur cette clé ; catchUp(key, trail, since) → le constat retrouvé sur
 //     la trace gardée (le rattrapage au retour de la page). Un SURVOL (SOG-0500, lot 2) se juge sans état : finding rend le constat
@@ -843,13 +843,14 @@ function landLines(e, key) {
 }
 
 /** Le DÉBRIEF de MA mission (SOG-0516, lot B) : une ligne par posé de PRÉCISION jugé, les miens et ceux des équipiers, d'après les états
- *  de stateOf (qui portent `lands`, le palier recalculé chez le lecteur) → [{ rank, how: 'landing', tier, distNm, at, by, mine }], dans
- *  l'ordre de `at` (puis du rang). rank : la place du tiroir dans la suite (1 pour le premier). Un posé au terrain, une autre condition,
+ *  de stateOf (qui portent `lands`, le palier recalculé chez le lecteur) → [{ title, how: 'landing', tier, distNm, at, by, mine }], dans
+ *  l'ordre de `at` (puis de l'ordre des états, le tri est stable). title : le titre du tiroir, tel que l'état le porte (vide s'il n'en a pas) ;
+ *  jamais son numéro : un rang trahirait qu'un autre tiroir existe (§ 7.4, la règle du secret). Un posé au terrain, une autre condition,
  *  un tiroir fermé : aucune ligne ; jamais un lieu ni un identifiant de point. Pure ; ne lève jamais (une entrée hostile est omise). */
 export function debriefOf(states) {
   const out = [];
   try {
-    (Array.isArray(states) ? states : []).slice(0, LETTERS.length).forEach((s, i) => {
+    (Array.isArray(states) ? states : []).slice(0, LETTERS.length).forEach(s => {
       try {
         const lands = s && s.open === true ? own(s, 'lands') : null;
         for (const l of (Array.isArray(lands) ? lands : []).slice(0, SEQ_MAX * 8)) {
@@ -860,7 +861,7 @@ export function debriefOf(states) {
           if (typeof tier === 'string' && TIERS.includes(tier) && typeof distNm === 'number' && Number.isFinite(distNm) && distNm >=
             0 &&
             distNm <= PRECISION[PRECISION.length - 1].nm && typeof at === 'number' && Number.isFinite(at)) out.push({
-            rank: i + 1,
+            title: typeof own(s, 'title') === 'string' ? own(s, 'title') : '',
             how: 'landing',
             tier,
             distNm,
@@ -873,7 +874,7 @@ export function debriefOf(states) {
         /* une entrée hostile : omise */
       }
     });
-    return out.sort((a, b) => a.at - b.at || a.rank - b.rank).slice(0, 200);
+    return out.sort((a, b) => a.at - b.at).slice(0, 200);
   } catch {
     return [];
   }

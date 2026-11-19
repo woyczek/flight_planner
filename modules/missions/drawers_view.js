@@ -136,11 +136,19 @@ export const TX = {
   ],
   // le débrief de MA mission (SOG-0516, lot B) : une ligne par posé de précision jugé, le mien puis ceux des équipiers ; jamais un lieu
   debriefHead: ['Débrief', 'Debrief', 'Nachbesprechung', 'Informe'],
-  debriefMe: ['Tiroir {rank} — atterrissage {tier} ({d} NM), à {t}', 'Drawer {rank} — landing: {tier} ({d} NM), at {t}',
-    'Schublade {rank} — Landung {tier} ({d} NM) um {t}', 'Cajón {rank} — aterrizaje {tier} ({d} NM), a las {t}'
+  debriefMe: ['{title} — atterrissage {tier} ({d} NM), à {t}', '{title} — landing: {tier} ({d} NM), at {t}',
+    '{title} — Landung {tier} ({d} NM) um {t}', '{title} — aterrizaje {tier} ({d} NM), a las {t}'
   ],
-  debriefBy: ['Tiroir {rank} — atterrissage {tier} ({d} NM), à {t} — {by}', 'Drawer {rank} — landing: {tier} ({d} NM), at {t} — {by}',
-    'Schublade {rank} — Landung {tier} ({d} NM) um {t} — {by}', 'Cajón {rank} — aterrizaje {tier} ({d} NM), a las {t} — {by}'
+  debriefBy: ['{title} — atterrissage {tier} ({d} NM), à {t} — {by}', '{title} — landing: {tier} ({d} NM), at {t} — {by}',
+    '{title} — Landung {tier} ({d} NM) um {t} — {by}', '{title} — aterrizaje {tier} ({d} NM), a las {t} — {by}'
+  ],
+  // sans titre (un tiroir qui n'en a pas) : la phrase commence par la majuscule, sans « — » d'attaque
+  debriefMeUntitled: ['Atterrissage {tier} ({d} NM), à {t}', 'Landing: {tier} ({d} NM), at {t}', 'Landung {tier} ({d} NM) um {t}',
+    'Aterrizaje {tier} ({d} NM), a las {t}'
+  ],
+  debriefByUntitled: ['Atterrissage {tier} ({d} NM), à {t} — {by}', 'Landing: {tier} ({d} NM), at {t} — {by}',
+    'Landung {tier} ({d} NM) um {t} — {by}',
+    'Aterrizaje {tier} ({d} NM), a las {t} — {by}'
   ],
   tier: TIER_TEXT, // les quatre mots des paliers : ceux du cadre (frame/lib/precision.js, SOG-0516)
   decSep: [',', '.', ',', ','], // le séparateur décimal de la langue (une distance s'écrit avec deux décimales)
@@ -664,6 +672,7 @@ async function put(v, path, value) {
 
 const RANGE_MS = 60e3; // un objet est « à portée » pour « Demander » une minute après le dernier relevé à portée
 const SEVEN = 7; // sept tiroirs ouverts à l'écran, les suivants repliés
+const TITLE_CUT = 120; // un titre de tiroir à l'écran : 120 signes au plus (comme un message d'erreur ailleurs)
 const BRIEF_CUT = 1200; // le briefing (jusqu'à 20 000 signes dans le fichier) : le début, puis « Lire la suite » (la liseuse : lot T3)
 
 /** « H + 60 min », « H + 1 h 30 », « H + 2 h » (la maquette). */
@@ -798,8 +807,10 @@ function debriefRow(v, l) {
 
 /** Le texte d'une ligne du débrief (pur : le banc le dit dans les quatre langues) : tt(ligne, valeurs) traduit ; l, une ligne de debriefOf. */
 export function debriefLine(tt, l) {
-  return tt(l.mine ? TX.debriefMe : TX.debriefBy, {
-    rank: l.rank,
+  const title = typeof l.title === 'string' ? l.title.slice(0, TITLE_CUT) :
+    ''; // le titre du tiroir, jamais son numéro (§ 7.4) ; l'échappement est à debriefRow
+  return tt(title ? (l.mine ? TX.debriefMe : TX.debriefBy) : (l.mine ? TX.debriefMeUntitled : TX.debriefByUntitled), {
+    title,
     tier: tt(TX.tier[l.tier]),
     d: l.distNm.toFixed(2).replace('.', tt(TX.decSep)), // deux décimales, le séparateur de la langue
     t: fmtZ(new Date(l.at)),

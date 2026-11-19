@@ -3222,8 +3222,8 @@ def n80(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 162, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (162 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 170, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (170 at least)')
 
 
 # ---- the session « Création de missions »: cases N70 to N79 (the editor's references, the drawers' format)
@@ -3817,8 +3817,8 @@ def n81(c):
     except Exception:
         raise Fail('the bench never reported done (window.__bench.done)', 'a finished bench', 'modules/missions/test/drawers_view.html') from None
     r = c.js('({ pass: window.__bench.pass, fail: window.__bench.fail, rows: window.__bench.rows })')
-    c.ok(r['fail'] == 0 and r['pass'] >= 114, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
-         'every check of the bench passes (114 at least)')
+    c.ok(r['fail'] == 0 and r['pass'] >= 122, f"{r['pass']} passed, {r['fail']} failed. First failures: {(r['rows'] or [])[:3]}",
+         'every check of the bench passes (122 at least)')
 
 # SOG-0441 (lot T2), SOG-0459: the « Suite de la mission » section on the mission sheet. Invented missions X-90x (no real mission, no AIP content).
 DW = 'modules/missions/drawers_view.js'
@@ -4418,13 +4418,13 @@ phases:
 
 
 @case('N181', 'Missions: the debrief of my mission — under « Suite de la mission », a block « Débrief » with one line per precision landing '
-      'judged (mine, then a crew mate\'s: « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z — BBB »), the tier recomputed on MY key whatever '
+      'judged (mine, then a crew mate\'s: « Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z — BBB »; the TITLE of the drawer, never its number), the tier recomputed on MY key whatever '
       'the record says, the decimal separator of the language, no place, no score; seen from the first level',
       'N', tags=('missions',), designs=('standard',), langs4=True,
       rule='SOG-0516, lot B (the ergonomist, 19 Nov 2026): « Débrief » in the sheet of MY mission, under the sequel, from a pure datum '
       '(modules/missions/drawers.js `debriefOf`: one line per judged precision landing, mine and the crew mates\', the tier recomputed with '
       '`landTier` on the reader\'s rule, a proof that does not stand on the reader\'s key left out); present only with a line, so after a '
-      'drawer opens; visible at every level; the words of the tiers are TIER_TEXT (frame/lib/precision.js); never a place, never a score')
+      'drawer opens; visible at every level; the words of the tiers are TIER_TEXT (frame/lib/precision.js); never a place, never a score; the line says the TITLE of the drawer, never its number (§ 7.4, the secret: a number would betray a closed drawer)')
 def n181(c):
     import datetime
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -4449,8 +4449,9 @@ def n181(c):
     # the words of the tiers WRITTEN here (the expected value is written, not read from the texts: TIER_TEXT is frozen, no « key: [ » row)
     word = lambda tier: {'réussi': ['réussi', 'good', 'gelungen', 'logrado'],
                          'parfait': ['parfait', 'perfect', 'perfekt', 'perfecto']}[tier][['fr', 'en', 'de', 'es'].index(lang)]
-    say = lambda key, tier, d, s, by='': norm(re.sub(r'\{(\w+)\}', lambda m: {'rank': '2', 'tier': word(tier), 'd': d.replace('.', tx(DW, 'decSep', lang)),
-                                                                              't': clock(s), 'by': by}[m.group(1)], tx(DW, key, lang)))
+    # the expected lines are WRITTEN here, in the four languages (never read from the texts): « title — landing tier (d NM), at t [— by] »
+    LAND = {'fr': 'atterrissage {w} ({d} NM), à {t}', 'en': 'landing: {w} ({d} NM), at {t}', 'de': 'Landung {w} ({d} NM) um {t}', 'es': 'aterrizaje {w} ({d} NM), a las {t}'}
+    say = lambda tier, d, s, by='': norm('Le point repéré — ' + LAND[lang].format(w=word(tier), d=d.replace('.', tx(DW, 'decSep', lang)), t=clock(s)) + (f' — {by}' if by else ''))
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_DW_CLEAR)
     c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DB_REGISTRY], ['missions/X_TIR/X-909A/missionX-909A.yaml', _DB_MISSION],
@@ -4467,12 +4468,15 @@ def n181(c):
     after = c.js(f"!!(document.querySelector('{S} [data-dw-list]').compareDocumentPosition(document.querySelector('{D}')) & Node.DOCUMENT_POSITION_FOLLOWING)")
     c.ok(after, after, 'the debrief is after the list of the open drawers')
     lines = c.js(f"[...document.querySelectorAll('{D} [data-dwd]')].map(e => e.textContent)")
-    c.eq([norm(x) for x in lines], [say('debriefMe', 'réussi', '0.15', -720), say('debriefBy', 'parfait', '0.08', -660, 'BBB')],
-         'two lines: mine (the written « excellent » ignored: recomputed « réussi », 0.15 NM) then BBB\'s (« parfait », 0.08 NM), the hour of the fact, the separator of the language',
+    c.eq([norm(x) for x in lines], [say('réussi', '0.15', -720), say('parfait', '0.08', -660, 'BBB')],
+         'two lines, the TITLE of the drawer first: mine (the written « excellent » ignored: recomputed « réussi », 0.15 NM) then BBB\'s (« parfait », 0.08 NM), the hour of the fact, the separator of the language',
          what='lines')
     html = c.js(f"document.querySelector('{D}').outerHTML")
     c.ok(not re.search(r'PT1|Point|44\.|1\.25|lat|lon|Tiroir 1|score|rank', html.replace('data-dwd', '')), html[-300:],
          'no place, no coordinate, no score in the lines')
+    # the secret (§ 7.4): no line says the word of the drawer, in any language, nor a number of drawer
+    no_word = not any(re.search(r'Tiroir|Drawer|Schublade|Cajón', x) for x in lines)
+    c.ok(no_word, lines, 'no line of the debrief says « Tiroir » / « Drawer » / « Schublade » / « Cajón » (the title, never the number)')
     shown = c.js(f"(() => {{ const e = document.querySelector('{D}'); return !!e && e.offsetHeight > 0 && getComputedStyle(e).visibility !== 'hidden' }})()")
     c.ok(shown, shown, 'visible at the first level (Découverte): it is not a gesture')
     c.js(f"document.querySelector('{S} [data-dw-debrief-head]').scrollIntoView({{block: 'center'}})")

@@ -2113,6 +2113,7 @@
     }),
     dMission = missionOf(HAND, {
       ...LDRAWER,
+      title: 'Le point repéré',
       key: LANDP
     }),
     dBook = (...entries) => peer(Object.fromEntries(entries), DX),
@@ -2165,7 +2166,7 @@
   const dRows = qa('[data-dwd]').map(e => e.textContent.replace(/\s+/g, ' ').trim());
   ck('débrief : présent après l\'ouverture d\'un tiroir, SOUS « Suite de la mission » ; deux lignes — la mienne (le tier écrit « excellent » ignoré : « réussi », 0,15) puis celle de BBB (« parfait », 0,08), l\'heure du fait, jamais un lieu',
     qa('h3').map(h => h.textContent).join() === 'Suite de la mission,Débrief' && q('[data-dw-list]').compareDocumentPosition(q('[data-dw-debrief]')) & Node.DOCUMENT_POSITION_FOLLOWING &&
-    dRows.join('|') === `Tiroir 2 — atterrissage réussi (0,15 NM), à ${z(DT)}|Tiroir 2 — atterrissage parfait (0,08 NM), à ${z(DT + 60e3)} — BBB` && !/PT1|DESTINATION|45\.|lat/.test(q('[data-dw-debrief]').outerHTML),
+    dRows.join('|') === `Le point repéré — atterrissage réussi (0,15 NM), à ${z(DT)}|Le point repéré — atterrissage parfait (0,08 NM), à ${z(DT + 60e3)} — BBB` && !/PT1|DESTINATION|45\.|lat/.test(q('[data-dw-debrief]').outerHTML),
     dRows);
   ck('débrief : visible au niveau 1 (Découverte) comme aux autres ; marqué mine / non mine',
     ctx.level === 1 && !q('[data-dw-debrief]').hidden && qa('[data-dwd]').map(e => e.dataset.dwdMine).join() === '1,0');
@@ -2175,7 +2176,7 @@
   // le texte, dans les quatre langues : espaces normalisés, le séparateur décimal de la langue, l'heure du fait
   const dSay = (i, l) => DV.debriefLine((row, v) => String(row[i]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''), l).replace(/\s+/g, ' '),
     dLn = {
-      rank: 2,
+      title: 'Le point repéré',
       how: 'landing',
       tier: 'réussi',
       distNm: 0.15,
@@ -2183,23 +2184,50 @@
       by: 'BBB',
       mine: true
     };
-  ck('débrief, texte exact : « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z » en français ; en anglais « Drawer 2 — landing: good (0.15 NM), at 19:20Z » (point décimal) ; équipier : « — BBB » ; en allemand et en espagnol la virgule',
-    dSay(0, dLn) === 'Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z' && dSay(1, dLn) === 'Drawer 2 — landing: good (0.15 NM), at 19:20Z' && dSay(0, {
+  ck('débrief, texte exact : « Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z » en français ; en anglais « … — landing: good (0.15 NM), at 19:20Z » (point décimal) ; équipier : « — BBB » ; en allemand et en espagnol la virgule',
+    dSay(0, dLn) === 'Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z' && dSay(1, dLn) === 'Le point repéré — landing: good (0.15 NM), at 19:20Z' && dSay(0, {
       ...dLn,
       mine: false
-    }) === 'Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z — BBB' && dSay(1, {
+    }) === 'Le point repéré — atterrissage réussi (0,15 NM), à 19:20Z — BBB' && dSay(1, {
       ...dLn,
       mine: false
-    }) === 'Drawer 2 — landing: good (0.15 NM), at 19:20Z — BBB' && dSay(2, dLn) === 'Schublade 2 — Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, {
+    }) === 'Le point repéré — landing: good (0.15 NM), at 19:20Z — BBB' && dSay(2, dLn) === 'Le point repéré — Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, {
       ...dLn,
       mine: false
-    }) === 'Cajón 2 — aterrizaje logrado (0,15 NM), a las 19:20Z — BBB' && [0, 1, 2, 3].map(i => dSay(i, {
+    }) === 'Le point repéré — aterrizaje logrado (0,15 NM), a las 19:20Z — BBB' && [0, 1, 2, 3].map(i => dSay(i, {
       ...dLn,
       tier: 'partiel',
       distNm: 0.5
     })).every((t, i) => t.includes(['partiel', 'partial', 'teilweise', 'parcial'][i])) && ['Débrief', 'Debrief', 'Nachbesprechung', 'Informe'].every((w, i) => DV.TX.debriefHead[i] === w),
     [0, 1, 2, 3].map(i => dSay(i, dLn)));
-
+  // sans titre : la phrase commence par la majuscule, sans « — » d'attaque, dans les quatre langues, moi et l'équipier
+  const dNo = { ...dLn, title: '' };
+  ck('débrief sans titre : « Atterrissage réussi (0,15 NM), à 19:20Z » (puis « — BBB »), « Landing: good … », « Landung gelungen … », « Aterrizaje logrado … » ; un titre absent ou non texte vaut vide',
+    dSay(0, dNo) === 'Atterrissage réussi (0,15 NM), à 19:20Z' && dSay(0, { ...dNo, mine: false }) === 'Atterrissage réussi (0,15 NM), à 19:20Z — BBB' &&
+    dSay(1, dNo) === 'Landing: good (0.15 NM), at 19:20Z' && dSay(1, { ...dNo, mine: false }) === 'Landing: good (0.15 NM), at 19:20Z — BBB' &&
+    dSay(2, dNo) === 'Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, { ...dNo, mine: false }) === 'Aterrizaje logrado (0,15 NM), a las 19:20Z — BBB' &&
+    dSay(0, { ...dLn, title: undefined }) === dSay(0, dNo) && dSay(0, { ...dLn, title: 7 }) === dSay(0, dNo));
+  // jamais un numéro : un tiroir de rang 3 (pas de rang dans la ligne) ne dit ni « Tiroir » ni « 3 » hors de l'heure et de la distance ; le titre est borné à 120 signes
+  const dNum = [0, 1, 2, 3].map(i => dSay(i, { ...dLn, rank: 3 }).replace(/\d{1,2}:\d{2}Z/, '').replace(/\d[.,]\d{2}/, ''));
+  ck('débrief : aucun numéro de tiroir dans la ligne (ni « Tiroir »/« Drawer »/« Schublade »/« Cajón » ni chiffre hors heure et distance), même si la donnée porte un rang ; le titre est borné à 120 signes',
+    dNum.every(t => !/Tiroir|Drawer|Schublade|Cajón|\d/.test(t)) && dSay(0, { ...dLn, title: 'x'.repeat(300) }).startsWith('x'.repeat(120) + ' —') && !dSay(0, { ...dLn, title: 'x'.repeat(300) }).includes('x'.repeat(121)), dNum);
+  // un titre hostile est échappé (la phrase entière passe par esc) : du texte, jamais un élément
+  DV.stop();
+  ctx = fakeCtx({
+    docs: dDocs(true, false)
+  });
+  await mount(ctx, missionOf(HAND, {
+    ...LDRAWER,
+    title: '<b id="dwx">Le "point"</b>',
+    key: LANDP
+  }), {
+    mine: true
+  });
+  await until(() => qa('[data-dwd]').length === 1);
+  ck('débrief : un titre hostile (<b>, guillemets) est du texte échappé, jamais un élément',
+    !q('[data-dwx], #dwx') && q('[data-dwd]').textContent.startsWith('<b id="dwx">Le "point"</b> — atterrissage'), q('[data-dwd]').innerHTML);
+  DV.stop();
+  stage.innerHTML = '';
 
   window.__bench = {
     done: true,
