@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 358,
+  "tests": 359,
   "verdicts": 221
  },
  "apps": [
@@ -5285,6 +5285,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T09:11:03Z"
+  },
+  {
+   "id": "SOG-0513",
+   "app": "pilote",
+   "title": {
+    "fr": "Routes : IFPS du jour, EGLL → LFRN (BE9L, F270) — 8 erreurs : voies basses au FL270, RAD EGLF1034D/E et LF3564A via NEVIL, limite de SID EGLL, DCT en FRA du Royaume-Uni",
+    "en": "Routes: today's IFPS, EGLL → LFRN (BE9L, F270) — 8 errors: low airways at FL270, RAD via NEVIL, EGLL SID limit, DCT in UK FRA",
+    "de": "Routen: IFPS von heute, EGLL → LFRN (BE9L, F270) — 8 Fehler: untere Luftstraßen auf FL270, RAD über NEVIL, SID-Grenze EGLL, DCT im FRA des Vereinigten Königreichs",
+    "es": "Rutas: IFPS de hoy, EGLL → LFRN (BE9L, F270) — 8 errores: aerovías bajas a FL270, RAD vía NEVIL, límite de SID de EGLL, DCT en el FRA del Reino Unido"
+   },
+   "test": "Recharge la page. (1) Carburant, colle la route de ton IFPS du matin (MID L612 HAWKE DCT NEVIL G27 ANGLO G273 RAVIG T501 LUKEM T493 UPALO V20 LUVOP) au FL270, « Contrôler » : G27, G273 et T501 sont dites hors de leurs niveaux, LF3564 à NEVIL aussi, comme l'IFPS — et plus L612 ni T493 en trop. (2) Calcule LPPT → KMIA au FL370 sans message NAT : une route existe (par 39/15, environ 3 700 NM). (3) Un calcul sans niveau dit en tête « Niveau du vol absent : le calcul est fait au FL180 ».",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T13:57:18Z"
   },
   {
    "id": "SOG-0515",

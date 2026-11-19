@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e9322e4",
+  "organisation": "e9c90fd",
   "fiches": 519,
   "untranslated": 0,
   "priorities": 481,
@@ -3208,11 +3208,12 @@
     {
      "id": "SOG-0513",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Routes : IFPS du jour, EGLL → LFRN (BE9L, F270) — 8 erreurs : voies basses au FL270, RAD EGLF1034D/E et LF3564A via NEVIL, limite de SID EGLL, DCT en FRA du Royaume-Uni",
      "en": "Routes: today's IFPS, EGLL → LFRN (BE9L, F270) — 8 errors: low airways at FL270, RAD via NEVIL, EGLL SID limit, DCT in UK FRA",
      "de": "Routen: IFPS von heute, EGLL → LFRN (BE9L, F270) — 8 Fehler: untere Luftstraßen auf FL270, RAD über NEVIL, SID-Grenze EGLL, DCT im FRA des Vereinigten Königreichs",
-     "es": "Rutas: IFPS de hoy, EGLL → LFRN (BE9L, F270) — 8 errores: aerovías bajas a FL270, RAD vía NEVIL, límite de SID de EGLL, DCT en el FRA del Reino Unido"
+     "es": "Rutas: IFPS de hoy, EGLL → LFRN (BE9L, F270) — 8 errores: aerovías bajas a FL270, RAD vía NEVIL, límite de SID de EGLL, DCT en el FRA del Reino Unido",
+     "test": true
     }
    ]
   },
