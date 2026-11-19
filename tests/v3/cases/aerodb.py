@@ -9985,12 +9985,11 @@ def k267(c):
     c.eq([refused(v) for v in (1, 8, 25, 0.5, 8.5)], [None, None, None, 'alternatives_budget : de 1 à 25 secondes', None], 'the field is optional and bounded: 1 to 25 s (a decimal is fine, 0.5 is not)', what='bounds')
     c.eq([bool(refused(v)) for v in (0, 26, -3, True, '8', None, float('nan'))], [True] * 7, 'zero, 26, negative, a boolean, a string, null and NaN are refused', what='refused')
     c.eq(view.to_request({'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'alternatives': True, 'alternatives_budget': 3})['alternatives_budget'], 3, 'the screen\'s form carries it to the engine\'s request', what='screen form')
-    clock = {'t': 0.0}
-    real = (time.perf_counter, engine.assess)
+    real = engine.assess
 
-    def stepped(*a, **k):
-        clock['t'] += 3.0                      # each search costs 3 s of the (fake) clock
-        return real[1](*a, **k)
+    def stepped(request, nav, rad, *a, **k):
+        nav.states_total = getattr(nav, 'states_total', 0) + 3 * P.STATES_PER_S      # each search costs 3 s of the OLD contract (150 000 states): SOG-0524 counts the budgets in states, not on a clock
+        return real(request, nav, rad, *a, **k)
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = os.path.join(td, 'data')
         os.makedirs(data)
@@ -10000,15 +9999,13 @@ def k267(c):
         rad = os.path.join(data, 'route', 'rad.json.gz')
         I.write(rad, I.merge([], [I.read_book(book)[1]]))
         out = {}
-        time.perf_counter = lambda: real[0]() * 0 + clock['t']
         engine.assess = stepped
         try:
             for label, extra in (('default', {}), ('1 s', {'alternatives_budget': 1}), ('25 s', {'alternatives_budget': 25}), ('none asked', {'alternatives': False})):
-                clock['t'] = 0.0
                 res = P.compute(dict(base, **extra), data, rad, None)
                 out[label] = (len(res['alternative_attempts']), len(res['alternatives']), res['alternative_message'][:40])
         finally:
-            time.perf_counter, engine.assess = real
+            engine.assess = real
     c.eq((out['25 s'][0], out['25 s'][1]), (4, 3), 'with the whole 25 s the alternatives are tried: four searches, three alternatives (the baseline of the fixture; the first search, FL350 with adapted levels, is the primary itself now that the check reads an aerodrome with no SID as the search does — SOG-0371 — so it is not an alternative)', what='baseline')
     c.ok(out['1 s'][0] < 3 and out['1 s'][1] < out['25 s'][1], str(out), 'with `alternatives_budget` 1 the search stops after the first search that goes past it: fewer attempts, fewer alternatives, the primary unchanged')
     c.eq(out['default'][0], 3, 'the default is 8 s: three searches of 3 s fit before the third check (6 s)', what='default')
@@ -10322,14 +10319,14 @@ def k281(c):
             creq = V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': written, 'enable_fra': False})
             back = P.compute(creq, data, rad, None)
             errors = [i['text'] for i in back['primary'].get('issues') or [] if i['level'] == 'ERREUR']
-            c.eq((errors, back['automatic_alternatives'], back['alternatives'], back['recovery'], time.perf_counter() - t0 < P.HEAD_BUDGET_S), ([], False, [], None, True),
-                 'the route the engine wrote is accepted by the check (no ERREUR: no refusal for a climb the search adapted), within 5 s, no variant', what='round trip')
+            c.eq((errors, back['automatic_alternatives'], back['alternatives'], back['recovery'], back['states'] <= P.HEAD_STATES), ([], False, [], None, True),
+                 'the route the engine wrote is accepted by the check (no ERREUR: no refusal for a climb the search adapted), within the states budget of the head route (SOG-0524: counted in states, no longer in seconds), no variant', what='round trip')
             # (a) a refused check: what is refused, no variants, no fallback proposals; with `alternatives` asked the search is still there
             bad = written.replace(' H1 ', ' H1 ZZZ ', 1)
             t0 = time.perf_counter()
             r1 = P.compute(V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': bad, 'enable_fra': False}), data, rad, None)
-            c.eq(([i['text'] for i in r1['primary']['issues'] if i['level'] == 'ERREUR' and 'ZZZ' in i['text']] != [], r1['automatic_alternatives'], r1['alternatives'], r1['recovery'], r1['alternative_message'], time.perf_counter() - t0 < P.HEAD_BUDGET_S),
-                 (True, False, [], None, '', True), 'a refused check says what is refused (the unknown point) in the bound of the head route: no automatic variants, no fallback proposals, no message about variants', what='refused check')
+            c.eq(([i['text'] for i in r1['primary']['issues'] if i['level'] == 'ERREUR' and 'ZZZ' in i['text']] != [], r1['automatic_alternatives'], r1['alternatives'], r1['recovery'], r1['alternative_message'], r1['states'] <= P.HEAD_STATES),
+                 (True, False, [], None, '', True), 'a refused check says what is refused (the unknown point) in the states budget of the head route: no automatic variants, no fallback proposals, no message about variants', what='refused check')
             r2 = P.compute(V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'ESSA', 'fl': 350, 'date': '2026-11-10T12:00', 'route': bad, 'enable_fra': False, 'alternatives': True}), data, rad, None)
             c.ok(bool(r2['alternatives']) or r2['alternative_message'] != '' or r2['alternative_failures'], str(r2['alternative_message']), 'with `alternatives` asked the check still searches variants (SOG-0401: variants found, no phrase « sans incompatibilité » any more: the message is empty)')
             # (c) the positions of the points of each itinerary
@@ -10961,30 +10958,32 @@ def k276(c):
     c.ok('size_report(zone, texts, cap)' in src and "'big':" in src and "'readCap': cap" in src and 'plafond de lecture du cadre illisible' in src, 'build() source', 'base/build calls it for every zone it writes, carries `big` and `readCap` in its result and logs an unreadable cap')
 
 
-@case('K278', 'Route engine: every phase has a HARD bound that the searches in flight obey (SOG-0371): the head route 5 s, the whole calculation 15 s, the alternatives their own (8 s); what did not finish is said « proposition »; EGLL → KJFK took 40 s at the launcher', 'K', static=True,
-      rule='User report 16 Nov 2026 (« SOG route check EGLL → KJFK · launcher 39685 ms »): measured on the real base with the NAT of the day (16/11): the head route is computed and accepted in 2.5 to 3.0 s cold (context 1.0 s, NAT layer 0.2 s, the search 1.7 s; 34 % controlled, 53 % incomplete: the ocean is « autorisation non vérifiée », 13 % fallback); the 40 s are the ALTERNATIVES the Fuel screen asks with `alternatives: true`: 25 s of budget (the whole plan) plus the searches under way, which finished 3 to 5 s past it (28.5 s here with 25 s asked, 11.6 s since the budget of 8 s of 14 Nov was pushed: a launcher that was not restarted still ran the old code); the 1.6 s of 13 Nov were measured WITHOUT alternatives. Now `engine.DEADLINE` (set by plan() for each phase: the head route and its RAD retries 5 s, then the alternatives their budget, the proposals the whole 15 s) bounds EVERY search, also the one under way, and `generate` does not build a graph (1 to 3 s) it would have no time to search; the proposals of recovery stop refining their anchors past it. Measured here after: EGLL → KJFK with the alternatives 11.8 s, without 2.5 s; EIDW → KBOS (head route refused) 14 to 15 s as a proposition')
+@case('K278', 'Route engine: every phase has a bound in STATES that the searches in flight obey (SOG-0371, redone by SOG-0524): the head route 250 000, the whole calculation 750 000, the alternatives 400 000 (`alternatives_budget` seconds x 50 000); what did not finish is said « proposition »; the bounds do not depend on the load of the workstation; the clock is only a wide safety (a calculation that passes it is « interrompu »)',
+      'K', static=True,
+      rule='User report 16 Nov 2026 (« SOG route check EGLL → KJFK · launcher 39685 ms ») made the phases bounded in SECONDS (5 s head route, 15 s whole calculation, 8 s alternatives: K278 of the day); SOG-0524 (the relay, 19 Nov: « les budgets se comptent en ÉTATS ») counts them in states of the search (`nav.states_total`): the same request gives the same answer whatever the load (K402 plays a slow clock). The bench is the invented base of the fixtures; `engine.assess` is replaced by a function that adds 20 000 states at each call and records the ceiling it was given (`engine.STATE_CEIL`, absolute: the counter of the Nav at the start of the calculation + the budget).')
 def k278(c):
     import os
     import sys
     import tempfile
-    import time
     sys.path.insert(0, str(ROOT / 'tools'))
     sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
     import route_fixture as RF
     from route_engine import engine
     from route_engine import import_books as I
     from route_engine import plan as P
-    c.eq((P.HEAD_BUDGET_S, P.TOTAL_BUDGET_S, P.ALT_BUDGET_S), (5.0, 15.0, 8.0), 'the budgets: the head route 5 s, the whole calculation 15 s, the alternatives 8 s', what='constants')
-    clock = {'t': 0.0}
-    real = (time.perf_counter, engine.assess)
+    c.eq((P.HEAD_STATES, P.TOTAL_STATES, int(P.ALT_BUDGET_S * P.STATES_PER_S), P.GUARD_S), (250000, 750000, 400000, 120.0), 'the budgets: the head route 250 000 states, the whole calculation 750 000, the alternatives 400 000 (8 s x 50 000), the clock a wide safety of 120 s', what='constants')
+    real = engine.assess
     seen = []
+    fail = {'head': False, 's0': None}
 
     def stepped(request, nav, radbook, *a, **k):
-        seen.append((request.get('mode'), round(engine.DEADLINE - clock['t0'], 3) if engine.DEADLINE is not None else None, round(clock['t'], 3)))
-        clock['t'] += 2.0
-        if len(seen) == 1 and clock.get('fail_head'):
-            raise ValueError('Budget de recherche atteint (3 s / 100 000 états). Ce résultat ne prouve pas l’absence de route.')
-        return real[1](request, nav, radbook, *a, **k)
+        if not seen:
+            fail['s0'] = getattr(nav, 'states_total', 0)
+        seen.append((request.get('mode'), engine.STATE_CEIL - fail['s0'], getattr(nav, 'states_total', 0) - fail['s0']))
+        nav.states_total = getattr(nav, 'states_total', 0) + 20000
+        if len(seen) == 1 and fail['head']:
+            raise ValueError('Budget de recherche atteint (100 000 états). Ce résultat ne prouve pas l’absence de route.')
+        return real(request, nav, radbook, *a, **k)
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = os.path.join(td, 'data')
         os.makedirs(data)
@@ -10995,25 +10994,24 @@ def k278(c):
         I.write(rad, I.merge([], [I.read_book(book)[1]]))
         base = {'dep': 'LFPO', 'arr': 'EIDW', 'fl': 350, 'date': '2026-11-10T12:00', 'enable_fra': False, 'alternatives': True}
         out = {}
-        time.perf_counter = lambda: clock['t']
         engine.assess = stepped
         try:
             for label, head_fails in (('accepted', False), ('refused by its budget', True)):
-                clock.update(t=100.0, t0=100.0, fail_head=head_fails)
+                fail['head'] = head_fails
                 seen.clear()
                 P.drop_contexts()
                 P.compute(dict(base), data, rad, None)
-                out[label] = (list(seen), engine.DEADLINE)
+                out[label] = (list(seen), engine.STATE_CEIL)
         finally:
-            time.perf_counter, engine.assess = real
+            engine.assess = real
             P.drop_contexts()
     a_seen, a_after = out['accepted']
-    c.eq(a_seen[0][1], 5.0, 'the head route is searched under a deadline of 5 s after the start of the calculation', what='head')
-    c.ok(len(a_seen) > 1 and all(0 < s[1] <= 15.0 for s in a_seen[1:]) and a_seen[1][1] == 10.0, str(a_seen), 'then the alternatives: their own bound (8 s after the head route: 2 + 8 = 10 s here, never over the 15 s of the whole); the first of them is checked under it')
+    c.eq(a_seen[0][1], 250000, 'the head route is searched under a ceiling of 250 000 states after the start of the calculation', what='head')
+    c.ok(len(a_seen) > 1 and all(0 < s[1] <= 750000 for s in a_seen[1:]) and 400000 < a_seen[1][1] <= 440000, str(a_seen), 'then the alternatives: their own ceiling (400 000 states after the head route: 20 000 + 400 000 here, never over the 750 000 of the whole)')
     r_seen, r_after = out['refused by its budget']
-    c.ok(r_seen[0][1] == 5.0 and all(s[1] == 15.0 for s in r_seen[1:]) and len(r_seen) >= 2, str(r_seen), 'a head route refused by its budget: no alternative is searched (the proposals only) and they have the whole 15 s')
-    c.eq((a_after, r_after), (None, None), 'the deadline is reset when the calculation ends (a later search has none but its own 6 s)', what='reset')
-    # the entry of generate: no graph for a search that has no time
+    c.ok(r_seen[0][1] == 250000 and all(s[1] == 750000 for s in r_seen[1:]) and len(r_seen) >= 2, str(r_seen), 'a head route refused by its budget: no alternative is searched (the proposals only) and they have the whole 750 000 states')
+    c.eq((a_after, r_after), (None, None), 'the ceiling is reset when the calculation ends (a later search has none but its own 100 000 states)', what='reset')
+    # the entry of generate: the clock is only a safety — passed, no graph is built and the calculation is « interrompu », never « impossible »
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         data = os.path.join(td, 'data')
         os.makedirs(data)
@@ -11024,14 +11022,15 @@ def k278(c):
         I.write(rad, I.merge([], [I.read_book(book)[1]]))
         engine.DATA_DIR, engine.RAD_FILE = data, rad
         try:
+            import time
             nav, _ = P.context({'date': '2026-11-10T12:00'}, data)
             engine.DEADLINE = time.perf_counter() - 1
             try:
                 nav.generate('LFPO', 'EIDW', 350, 40)
                 got = None
-            except ValueError as e:
+            except engine.Interrupted as e:
                 got = str(e)
-            c.ok(got and got.startswith('Budget de recherche atteint'), str(got), 'a search asked after the deadline says « Budget de recherche atteint » at once (no graph is built)')
+            c.ok(got and got.startswith('Calcul interrompu') and 'trop lent' in got, str(got), 'a search asked after the safety instant says « Calcul interrompu : le poste est trop lent » at once (no graph is built; never « Budget de recherche atteint » nor « impossible »)')
         finally:
             engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
             P.drop_contexts()
@@ -11651,9 +11650,9 @@ def k287(c):
     c.eq((got[0].isoformat(), got[1].isoformat(), got[2], got[3], got[4] == got[0], info.hits, info.misses), ('2026-11-12', '2027-01-05', None, None, True, 1, 4), 'date_in gives the same dates as before (the first date of the text; an impossible one or none: None) and a text seen twice is parsed once', what='date_in')
 
 
-@case('K289', 'Route engine, SOG-0354: a flight that crosses the ATLANTIC has longer bounds (12 s for the head route, 12 s for a search, 20 s in all) so that the route that EXISTS is found instead of a fallback proposal; the flights of Europe keep their 5 s / 15 s; a CHECK keeps its 5 s; the answer says it (`budget`: { ocean, head_s, search_s, total_s })',
-      'K', tags=('alone',), static=True,
-      rule='TO PLAY ALONE (tag `alone`: `run.py --grep K289`; in a pass of many cases the machine is loaded and the bounds of 12 / 20 s of the engine cut the route short: « proposal », green alone 3 times of 3, 17 Nov 2026; the duration of a route is judged in the matrix, not here). Ergonomics session 16:06 (decision on the question (a) of AeroDB, L2b 1): measured on the real base, EIDW → KJFK and EIDW → KBOS DO have a route (the NAT E track and the North American Route N260B–N271B, already in the base) that the search finds in about 7 s of search; the head bound of 5 s (SOG-0371) cut it at 6 000 states of the 15 000 it needs and the screen got a fallback proposal. « A real route in ten seconds is worth more than a proposal in eight. » For a flight that crosses the Atlantic ONLY: the head route 10 s, a search 12 s, the alternatives and the fallback proposals only if time remains, 20 s in all. The criterion is decided BEFORE the search (no route known yet): the departure west of 35°W and the arrival east of 15°W, or the reverse (the very test of `nat_layer.hint`); the direct distance alone is not used (a flight of Europe of 1 500 NM keeps its 5 s). The answer carries `budget` so that the screen can say that it searches longer. The case is on the real base when it is there (skipped otherwise).')
+@case('K289', 'Route engine, SOG-0354 (in states since SOG-0524): a flight that crosses the ATLANTIC has longer bounds (600 000 states for the head route, 1 000 000 in all) so that the route that EXISTS is found instead of a fallback proposal; the flights of Europe keep their 250 000 / 750 000; a CHECK keeps those; the answer says it (`budget`: { ocean, head_s, search_s, total_s })',
+      'K', static=True,
+      rule='SOG-0524 (19 Nov 2026): the case was TO PLAY ALONE (a loaded machine cut the route short by the bounds of 12 / 20 s: « proposal », 17 Nov); the bounds are counted in states, the tag is gone, and the proofs no longer measure seconds but the states used (`res[\'states\']`). Ergonomics session 16:06 (decision on the question (a) of AeroDB, L2b 1): measured on the real base, EIDW → KJFK and EIDW → KBOS DO have a route (the NAT E track and the North American Route N260B–N271B, already in the base) that the search finds in about 7 s of search; the head bound of 5 s (SOG-0371) cut it at 6 000 states of the 15 000 it needs and the screen got a fallback proposal. « A real route in ten seconds is worth more than a proposal in eight. » For a flight that crosses the Atlantic ONLY: the head route 10 s, a search 12 s, the alternatives and the fallback proposals only if time remains, 20 s in all. The criterion is decided BEFORE the search (no route known yet): the departure west of 35°W and the arrival east of 15°W, or the reverse (the very test of `nat_layer.hint`); the direct distance alone is not used (a flight of Europe of 1 500 NM keeps its 5 s). The answer carries `budget` so that the screen can say that it searches longer. The case is on the real base when it is there (skipped otherwise).')
 def k289(c):
     import sys
     import time
@@ -11662,8 +11661,8 @@ def k289(c):
     from route_engine import plan as P, engine
     c.eq((P.crosses_ocean({'lon': -6.27}, {'lon': -73.78}), P.crosses_ocean({'lon': -73.78}, {'lon': -6.27}), P.crosses_ocean({'lon': 2.4}, {'lon': 11.0}), P.crosses_ocean({'lon': -6.27}, {'lon': 2.55}), P.crosses_ocean({'lon': -73.78}, {'lon': -118.4}), P.crosses_ocean({'lon': -6.27}, {'lon': -30.0}), P.crosses_ocean({'lon': -25.0}, {'lon': -6.0})),
          (True, True, False, False, False, False, False), 'the criterion: departure west of 35°W and arrival east of 15°W, or the reverse (Dublin → New York, New York → Dublin); Paris → Munich, Dublin → Paris, New York → Los Angeles, Dublin → mid-Atlantic and an Azores → Europe flight are not', what='criterion')
-    c.eq(P.budgets({'mode': 'calculate'}, True), {'ocean': True, 'head_s': 12.0, 'search_s': 12.0, 'total_s': 20.0}, 'the bounds of a flight that crosses the ocean', what='ocean bounds')
-    c.eq((P.budgets({'mode': 'calculate'}, False), P.budgets({'mode': 'validate'}, True)), ({'ocean': False, 'head_s': 5.0, 'search_s': 6.0, 'total_s': 15.0}, {'ocean': False, 'head_s': 5.0, 'search_s': 6.0, 'total_s': 15.0}), 'a flight that does not cross the ocean keeps 5 s / 6 s / 15 s, and a CHECK (a route entered) keeps its bounds whatever the flight', what='other bounds')
+    c.eq(P.budgets({'mode': 'calculate'}, True), {'ocean': True, 'head_states': 600000, 'total_states': 1000000, 'guard_s': 120.0}, 'the bounds of a flight that crosses the ocean', what='ocean bounds')
+    c.eq((P.budgets({'mode': 'calculate'}, False), P.budgets({'mode': 'validate'}, True)), ({'ocean': False, 'head_states': 250000, 'total_states': 750000, 'guard_s': 120.0}, {'ocean': False, 'head_states': 250000, 'total_states': 750000, 'guard_s': 120.0}), 'a flight that does not cross the ocean keeps 250 000 / 750 000 states, and a CHECK (a route entered) keeps its own', what='other bounds')
     data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
     if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
@@ -11676,13 +11675,12 @@ def k289(c):
         res = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
         took = time.perf_counter() - t
         v = view.to_view(res, view.to_request(args))
-        c.eq((v['status'], res['primary'].get('ok'), res['budget']['ocean'], bool((res.get('sections') or {}).get('chosen')), took < 20), ('computed', True, True, True, True), 'EIDW → KJFK on the real base: a ROUTE (by a NAT track: `sections.chosen`; SOG-0414: written point by point, the exit of the track being unknown to the base), not a fallback proposal, in less than 20 s', what='real flight')
+        c.eq((v['status'], res['primary'].get('ok'), res['budget']['ocean'], bool((res.get('sections') or {}).get('chosen')), res['states'] <= P.OCEAN_TOTAL_STATES and not res['interrupted']), ('computed', True, True, True, True), 'EIDW → KJFK on the real base: a ROUTE (by a NAT track: `sections.chosen`; SOG-0414: written point by point, the exit of the track being unknown to the base), not a fallback proposal, in less than 20 s', what='real flight')
         # the 20 s in all hold, even for the flight that has no route (LFPO → KLAX on this base): the alternatives are not started when they could not end in time, the fallback proposals keep the end of the budget
         args = {'action': 'compute', 'adep': 'LFPO', 'adest': 'KLAX', 'fl': 370, 'date': '2026-11-17T12:00', 'proposals': True, 'alternatives': True}
         t = time.perf_counter()
         res2 = P.compute(view.to_request(args), str(data), str(data / 'route' / 'rad.json.gz'), str(data / 'route' / 'fra.json.gz'))
-        took2 = time.perf_counter() - t
-        c.ok(took2 <= 20.5, f'{took2:.1f} s', 'LFPO → KLAX (a flight with no route on this base): the whole answer in 20 s at most (the bound of a flight that crosses the ocean)')
+        c.ok(res2['states'] <= P.OCEAN_TOTAL_STATES and not res2['interrupted'], str(res2['states']), 'LFPO → KLAX (a flight with no route on this base): the whole answer within the 1 000 000 states of a flight that crosses the ocean, never interrupted')
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
@@ -11838,8 +11836,8 @@ def k290(c):
         return
     from route_engine import plan as P, view, results_cache
     results_cache.ENABLED = False
-    saved = (P.OCEAN_HEAD_BUDGET_S, P.OCEAN_SEARCH_CAP_S, P.OCEAN_TOTAL_BUDGET_S)
-    P.OCEAN_HEAD_BUDGET_S, P.OCEAN_SEARCH_CAP_S, P.OCEAN_TOTAL_BUDGET_S = 60.0, 60.0, 80.0      # the whole search is the REFERENCE here: it must end whatever the load of the workstation (the bounds of the screen are the case of K289)
+    saved = (P.OCEAN_HEAD_STATES, P.OCEAN_TOTAL_STATES)
+    P.OCEAN_HEAD_STATES, P.OCEAN_TOTAL_STATES = 6_000_000, 8_000_000      # the whole search is the REFERENCE here: it must end (the bounds of the screen are the case of K289; SOG-0524: counted in states, so no longer a matter of the load of the workstation)
     try:
         out = {}
         for on in (False, True):
@@ -11851,7 +11849,7 @@ def k290(c):
         c.eq((out[True][0] == out[False][0], out[True][1] == out[False][1], True, [s['proof'] for s in sec.get('sections', [])], bool(sec.get('chosen'))), (True, True, True, ['computed', 'published', 'computed'], True),
              'EIDW → KJFK on the real base: with `sections` the SAME route (and the same distance) as the whole search, in three sections whose middle one is the published track; the answer says them', what='real flight')
     finally:
-        P.OCEAN_HEAD_BUDGET_S, P.OCEAN_SEARCH_CAP_S, P.OCEAN_TOTAL_BUDGET_S = saved
+        P.OCEAN_HEAD_STATES, P.OCEAN_TOTAL_STATES = saved
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
 
@@ -12319,7 +12317,7 @@ def k296(c):
     from pathlib import Path
     sys.path.insert(0, str(ROOT / 'tools'))
     from route_engine import engine, sections as S
-    saved = (engine.SEARCH_CAP_S, engine.DEADLINE, engine.GRAPH_MIN_S)
+    saved = (engine.SEARCH_CAP_S, engine.DEADLINE)
     try:
         engine.SEARCH_CAP_S, engine.DEADLINE = 12.0, None
         none = S._bound()
@@ -12331,15 +12329,25 @@ def k296(c):
         late = S._bound()
         c.eq((none, 3.0 - (t1 - t0) - 0.01 <= soon <= 3.0, late), (12.0, True, 0.0), 'the bound of a search: the cap with no phase bound; what remains before the bound of the phase when it is nearer; 0 when it is passed', what='bound')
         nav = engine.Nav.__new__(engine.Nav)
-        engine.GRAPH_MIN_S, engine.DEADLINE = 5.0, time.perf_counter() + 3.0
+        engine.DEADLINE = time.perf_counter() + 3.0
         try:
             nav.routing_graph('AAAA', 'BBBB', 370, 40)
             said = 'no refusal'
-        except ValueError as e:
-            said = str(e)
-        c.ok('Budget de recherche atteint' in said and 'construction du graphe' in said, said, 'a graph build is NOT begun when less than 5 s remain before the bound (it takes about 4 s and cannot be interrupted): the refusal says so, in the words that the screen already reads as a budget (« Budget de recherche atteint »)')
+        except engine.Interrupted as e:
+            said = 'interrupted: ' + str(e)
+        except Exception as e:      # the graph is begun (this Nav has no data): the time left does NOT refuse it
+            said = 'begun: ' + type(e).__name__
+        engine.DEADLINE = time.perf_counter() - 1.0
+        try:
+            nav.routing_graph('AAAA', 'BBBB', 370, 40)
+            late_said = 'no refusal'
+        except engine.Interrupted as e:
+            late_said = str(e)
+        except Exception as e:
+            late_said = type(e).__name__
+        c.ok(said.startswith('begun') and late_said.startswith('Calcul interrompu'), str((said, late_said)), 'SOG-0524: a graph build is no longer skipped for lack of time (the old rule « not begun when less than 5 s remain » made the answer depend on the load of the workstation): with time left it is begun; only the safety instant passed refuses it, as « Calcul interrompu » (never a « budget » nor « impossible »)')
     finally:
-        engine.SEARCH_CAP_S, engine.DEADLINE, engine.GRAPH_MIN_S = saved
+        engine.SEARCH_CAP_S, engine.DEADLINE = saved
     nodes = {'DEP': {'id': 'DEP', 'lat': 52.0, 'lon': -6.0}, 'ARR': {'id': 'ARR', 'lat': 41.0, 'lon': -74.0}, 'E1': {'id': 'E1', 'lat': 52.0, 'lon': -15.0}, 'X1': {'id': 'X1', 'lat': 47.0, 'lon': -60.0}}
     g = engine.RoutingGraph()
     g.flight = {'departure': 0}
@@ -12376,7 +12384,7 @@ def k296(c):
     c.eq((S.solve(cut, g, 'DEP', 'ARR'), cut.sections_info['steps'][-1]['name'], cut.sections_info['steps'][-1]['hit'], cut.sections_info['steps'][-1]['track']), (None, 'amérique', True, 'T1'),
          'a search that the bound cuts is a step with hit true (and the chain is not proven: the whole search follows)', what='hit')
     src = (ROOT / 'tools' / 'route_engine' / 'plan.py').read_text(encoding='utf-8')
-    c.ok("request['sections']) if request.get('sections') is not None else crossing" in src and "engine.GRAPH_MIN_S = 5.0 if bounds['ocean'] else 0.0" in src, 'plan.py', 'plan.plan: `sections` is the default of a flight across the Atlantic in calculation (an explicit `sections: false` refuses it) and posts the 5 s of the graph build')
+    c.ok("request['sections']) if request.get('sections') is not None else crossing" in src and 'GRAPH_MIN_S' not in src, 'plan.py', 'plan.plan: `sections` is the default of a flight across the Atlantic in calculation (an explicit `sections: false` refuses it); SOG-0524: it no longer posts a minimum of seconds for the graph build (there is none)')
     data = _real_nat()      # SOG-0394: a dated test NAT message, never the message of the day
     if data is None:
         c.ok(True, 'skipped', 'SKIPPED: the real base of the workstation is not here: the real-flight proof did not run')
@@ -12394,11 +12402,10 @@ def k296(c):
         c.eq((set(td), bool(td['sections']), bool(rd['sections']), to['sections'], ro['sections'], rd['primary'].get('route') == ro['primary'].get('route'), vd['timing'] == td),
              ({'context_s', 'tracks_s', 'graph_s', 'skeleton_s', 'sections', 'retries', 'total_s'}, True, True, [], None, True, True),      # `retries` (L5 4, defect 2): the retries at other levels, listed apart from the sections of the requested level
              'EIDW → KJFK on the real base, with NO `sections` key: the sections are used (the flight crosses the Atlantic) and the answer carries `timing`; with `sections: false` the whole search, the same route, `timing.sections` empty; the view carries `timing`', what='real flight')
-        c.ok(all(s['bound_s'] <= 12.0 and s['hit'] is False and s['seconds'] <= s['bound_s'] for s in td['sections']) and td['total_s'] >= td['context_s'], str(td)[:300], 'every step of the real flight is inside its bound and none was cut; the total is not below the context')
+        c.ok(all(s['bound_s'] <= 120.0 and s['hit'] is False and s['seconds'] <= s['bound_s'] for s in td['sections']) and td['total_s'] >= td['context_s'], str(td)[:300], 'every step of the real flight is inside its bound and none was cut; the total is not below the context')
     finally:
         results_cache.ENABLED = True
         engine.DEADLINE = engine.DATA_DIR = engine.RAD_FILE = None
-        engine.GRAPH_MIN_S = 0.0
 
 
 @case('K298', 'Route engine, SOG-0354 lot L5 (4): the matrix of flights (`tools/route_matrix.py`) makes its 144 requests from the NAT messages of the base — six aerodromes of Europe × six of North America, both directions, a departure whose PASSAGE at the entry of the ocean is inside the window of the message of that direction and one twelve hours away from it —, a request is answered by a route or a named reason (never a proposal on the bench), each record carries its seconds, NM, proofs, reason and bound, and the reduced table has no route text',
@@ -13159,7 +13166,7 @@ def k307(c):
          'the FIRST search has no state bound beyond the engine\'s; the EXTRA search is bounded by EXTRA_STATES (a number of states, the same on any load) and its only goal is ED: EF, whose lower bound is above the best chain, is not a goal (red before: the bound was a time, the goals all the entries that remain)', what='states')
     c.ok(isinstance(F.EXTRA_STATES, int) and F.EXTRA_STATES > 0 and not hasattr(F, 'EXTRA_SEARCH_S'), str(F.EXTRA_STATES), 'EXTRA_STATES is a number of states; the time bound of an extra search is gone')
     src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
-    c.ok('max_states=None' in src and "(max_states or 100000)" in src, 'engine.py', '`Nav.search(max_states=…)` bounds one search in states, checked as the bound of 100 000 states is')
+    c.ok('max_states=None' in src and 'cap=max_states or 100000' in src, 'engine.py', '`Nav.search(max_states=…)` bounds one search in states, checked as the bound of 100 000 states is')
     secs = (ROOT / 'tools' / 'route_engine' / 'sections.py').read_text(encoding='utf-8')
     c.ok("'max_states': max_states" in secs, 'sections.py', '`_europe` passes the bound of states to the search')
 
@@ -13246,9 +13253,9 @@ def k308(c):
     try:
         timed = free(after=2)
     finally:
-        F.FREE_S = 3.0
+        F.FREE_S = 30.0
     c.eq((timed['free']['ok'], timed['free'].get('cut'), 'temps de sécurité' in timed['reason']), (True, 'time', True), 'the safety time (FREE_S) cuts after the first chain: the answer keeps it and says « Route libre coupée par le temps de sécurité »', what='time')
-    c.ok(F.FREE_STATES == 60000 and F.FREE_S == 3.0, str((F.FREE_STATES, F.FREE_S)), 'the budget: 60 000 states for the whole free route, 3 s as the last-resort safety')
+    c.ok(F.FREE_STATES == 60000 and F.FREE_S == 30.0, str((F.FREE_STATES, F.FREE_S)), 'the budget: 60 000 states for the whole free route, 30 s as the last-resort safety (SOG-0524: it was 3 s, which cut the free route according to the load of the workstation)')
     src = (ROOT / 'tools' / 'route_engine' / 'engine.py').read_text(encoding='utf-8')
     c.ok('states_total' in src and 'def _search(' in src, 'engine.py', '`Nav.states_total` counts the states of every search (the budget of the free route is its difference)')
 
@@ -15939,31 +15946,13 @@ def k347(c):
          'in a condition: with ARR, with the exception EXC (the exception holds: the condition does not), a sequence not decided leaves the condition not decided, a plain list of points is read as before', what='condition')
 
 
-@case('K348', 'Route engine, SOG-0475 (bounded time): the search that follows a slow graph keeps at least `GRAPH_SEARCH_MIN_S` (3 s), never beyond the end of the whole calculation (`DEADLINE_CEIL`), never backwards — a long flight across Europe (a graph of 5 to 9 s) no longer finishes « Budget de recherche atteint (0 s) » with no search at all',
+@case('K348', 'Route engine, SOG-0475 (replaced by SOG-0524): the deadline of the head phase is no longer extended after a slow graph and a graph is no longer skipped for lack of time — there is no phase deadline in seconds any more (the phases are counted in states), only a wide safety: `extend_deadline`, `DEADLINE_CEIL`, `GRAPH_MIN_S` and `GRAPH_SEARCH_MIN_S` are gone',
       'K', static=True,
-      rule='SOG-0475 (found while measuring SOG-0474, 18 Nov): the head phase has 5 s from the start of the calculation (SOG-0371), context and graph included; the FRA graph of a long flight across Europe takes 5 to 9 s at rest (ESSA → LEMG: 9.5 s; EDDF → LFMN: 1 s), so the search had 0 s and the answer was « CALCUL IMPOSSIBLE » on a route that exists. Now `routing_graph` extends the head bound to now + 3 s when the graph ended later than that, up to the end of the whole calculation (15 s, 20 s over the ocean minus its reserve): the total time stays bounded, and a flight whose search ended before the bound gives the same route (identity checked on ten reference flights of Europe and the Atlantic).')
+      rule='SOG-0475 (18 Nov) had made the head phase extend its deadline (5 s) after a slow graph (ESSA → LEMG: 9 s of graph) so that the search still had 3 s; SOG-0524 (19 Nov, the relay: « les budgets se comptent en états ») removes the phase deadlines in seconds altogether: the extension, its ceiling and the rule « a graph is not begun when less than N s remain » have no object. The case asserts the absence (a case that changes says why).')
 def k348(c):
-    RJ = _regen()
-    from route_engine import engine, plan
-    keep = (engine.DEADLINE, engine.DEADLINE_CEIL)
-    try:
-        engine.DEADLINE, engine.DEADLINE_CEIL = 100.0, 112.0
-        engine.extend_deadline(104.0)
-        a = engine.DEADLINE
-        engine.extend_deadline(103.0)
-        b = engine.DEADLINE
-        engine.extend_deadline(130.0)
-        c2 = engine.DEADLINE
-        engine.DEADLINE, engine.DEADLINE_CEIL = None, 112.0
-        engine.extend_deadline(104.0)
-        d = engine.DEADLINE
-        engine.DEADLINE, engine.DEADLINE_CEIL = 100.0, None
-        engine.extend_deadline(104.0)
-        e = engine.DEADLINE
-    finally:
-        engine.DEADLINE, engine.DEADLINE_CEIL = keep
-    c.eq((a, b, c2, d, e), (104.0, 104.0, 112.0, None, 100.0), 'the bound moves to the asked instant; never backwards (103 after 104); never beyond the end of the calculation (130 → 112); with no bound or no end of calculation nothing moves', what='extend_deadline')
-    c.eq((engine.GRAPH_SEARCH_MIN_S, engine.DEADLINE_CEIL), (3.0, None), 'the search after a graph keeps at least 3 s; outside a calculation there is no ceiling (plan.plan resets it)', what='constants')
+    from route_engine import engine
+    c.eq([hasattr(engine, n) for n in ('extend_deadline', 'DEADLINE_CEIL', 'GRAPH_MIN_S', 'GRAPH_SEARCH_MIN_S')], [False] * 4, 'the deadline of a phase is not extended any more, a graph is not skipped for time: the four names are gone', what='gone')
+    c.eq((engine.STATE_CEIL, engine.DEADLINE, engine.SEARCH_CAP_S), (None, None, 120.0), 'outside a calculation: no state ceiling, no safety instant, the safety of one search is 120 s', what='defaults')
 
 
 @case('K349', 'Route engine, SOG-0474 (a State without a network): when the arrival aerodrome has NO point of the network within reach of a connector (the base has no point or airway for its State), the route is never lost: it goes to the last known point — the nearest point of the main network at the level that can be reached — then ONE direct leg to the aerodrome, said in a REVUE with the cause and the distance, status « CONTRÔLE PARTIEL » (red before: « CALCUL IMPOSSIBLE — Aucun point du réseau… »); a flight whose arrival has a network keeps no such leg',
@@ -17650,7 +17639,7 @@ def k376(c):
     fallback = dict(kind='point', point='YYYYY', fallback=True, id='R1', sheet='Annex 2B', row=1)
     head = lambda: dict(route='A', distance_nm=100, issues=[], rad_summary=dict(findings=[dict(id='R1')], search_exclusions=[dict(compel), dict(fallback)]))
     done = lambda route, nm: dict(route=route, distance_nm=nm, issues=[], rad_summary=dict(findings=[], search_exclusions=[]))
-    bounds = dict(ocean=False, head_s=5.0)
+    bounds = dict(ocean=False, head_states=250000)
 
     def play(script, bounds=bounds):
         seen = []
@@ -17672,8 +17661,8 @@ def k376(c):
     c.eq(both, ('A', [], [['compel'], ['point/fallback']], [False, False]), 'both fail: the route of the head is kept and NOTHING is said applied (no « Point Y écarté », no detour)', what='both fail')
     budget = play(lambda k: PL.SearchBudget('budget'))
     c.eq(budget, ('A', [], [['compel']], [False]), 'a budget that is reached is not a « no route »: no fallback is tried, nothing applied', what='budget')
-    late = play(lambda k: done('C', 105), bounds=dict(ocean=True, head_s=-1.0))
-    c.eq(late, ('A', [], [], [False]), 'an ocean flight past the bound of its head: the retry is not played (one attempt noted, without a route), nothing applied', what='bound')
+    late = play(lambda k: done('C', 105), bounds=dict(ocean=True, head_states=-1))
+    c.eq(late, ('A', [], [], [False]), 'an ocean flight past the states bound of its head (SOG-0524: it was a time): the retry is not played (one attempt noted, without a route), nothing applied', what='bound')
 
 
 @case('K377', 'Route engine, review of Security on SOG-0501 (e) (1): the static blocks of the RAD (`static_blocks`, the rules decided from the two aerodromes ALONE) never rest on a level or a position of the route — « ONLY AVBL FOR TFC BTN FL245-FL660 AT point », « ABV FL245 AT (p, q) », « BLW … AT point » are not decided there (a flight without a route is not « not at the point »), so no block is set on the target of such a rule for every flight',
@@ -18392,3 +18381,66 @@ def k401(c):
     nav.resolve_vias = lambda *a, **k: []
     got = nav.alternate_routes('S', 'E', 350, 40, (), count=2)
     c.eq(sorted(got), ['S DCT B DCT E', 'S UL1 E'], 'both ways are given, the one whose edges have no `_cost` too (red before: KeyError)', what='alternatives')
+
+
+@case('K402', 'Route engine, SOG-0524: the answer does not depend on the load of the workstation — a SLOW clock (a simulated machine that is 1 s per clock reading slower) gives the SAME route and the SAME three alternatives as a fast one (before: the alternatives were lost from 0.5 s, « CALCUL IMPOSSIBLE » from 3 s); the time is only a wide safety, and the calculation it interrupts is said « Calcul interrompu : le poste est trop lent », never « impossible »',
+      'K', static=True,
+      rule='SOG-0524 (the relay, 19 Nov: « les budgets se comptent en ÉTATS; une borne de temps ne reste qu\'en garde-fou large et, quand elle joue, la réponse dit « calcul interrompu, poste trop lent », pas « impossible » »). Measured by AeroDB (ESSA → LEMG, the reference flights): under a loaded workstation the 5 s of the head route and the 3 s of the free route cut the search: « CALCUL IMPOSSIBLE (budget de recherche atteint) » for a route that exists. The bench: the invented base of the fixtures (LFPO → EIDW), `time.perf_counter` replaced by a clock that moves by a step at each reading (the number of readings of a calculation is the same: 77); red before on the old code: step 0.5 s → no alternative, step 3 s → « CALCUL IMPOSSIBLE ».')
+def k402(c):
+    import os
+    import sys
+    import tempfile
+    import time
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    state = {'t': 1000.0, 'step': 0.0}
+    real = time.perf_counter
+
+    def clock():
+        state['t'] += state['step']
+        return state['t']
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(os.path.join(data, 'route'))
+        RF.make_base(data)
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        args = {'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'fl': 350, 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': True, 'proposals': True}
+
+        def run(step):
+            state.update(t=1000.0, step=step)
+            time.perf_counter = clock
+            try:
+                P.drop_contexts()
+                res = P.compute(V.to_request(dict(args)), data, rad, None)
+            finally:
+                time.perf_counter = real
+                P.drop_contexts()
+            p = res['primary']
+            return res, (p.get('status'), p.get('distance_nm'), p.get('route'), len(res['alternatives']), res['interrupted'])
+        fast_res, fast = run(0.0)
+        slow_res, slow = run(1.0)
+        late_res, late = run(3.0)
+        dead_res, dead = run(60.0)
+    c.eq((fast[3], fast[4]), (3, False), 'the reference: three alternatives, not interrupted', what='fast')
+    c.eq(slow, fast, 'a clock 1 s slower at each reading gives the SAME route and the SAME three alternatives (before: the alternatives were lost from 0.5 s: the 5 s of the head route and the 8 s of the alternatives were measured on the clock)', what='slow')
+    texts = [i['text'] for i in late_res['primary'].get('issues') or []]
+    c.ok(late[4] and late[0] != 'CALCUL IMPOSSIBLE' and late_res['primary'].get('ok') and any(x.startswith('Calcul interrompu : le poste est trop lent') for x in texts), str((late, texts[:2])), 'a clock that passes the safety AFTER the head route: the head route is returned, the answer says the calculation was interrupted (a REVUE), never « impossible »')
+    # an interruption outside the phases that `plan` catches (the context, the sections): `compute` still answers « interrompu », never an exception
+    from route_engine import engine
+    real_plan = P.plan
+
+    def raising(*a, **k):
+        raise engine.interrupted(120)
+    P.plan = raising
+    try:
+        net = P.compute(V.to_request(dict(args)), '.', None, None)
+    finally:
+        P.plan = real_plan
+    c.ok(net['interrupted'] and net['primary']['status'] == 'CALCUL INTERROMPU' and net['alternatives'] == [], str(net['primary']), 'an interruption that no phase of `plan` catches is still an ANSWER (« CALCUL INTERROMPU »), not an exception that leaves the launcher')
+    view = V.to_view(dead_res, V.to_request(dict(args)))
+    c.ok(dead[0] == 'CALCUL INTERROMPU' and dead[4] and str(dead_res['primary'].get('error')).startswith('Calcul interrompu : le poste est trop lent') and view['status'] == 'interrupted' and not view['alternatives'], str((dead[0], view['status'])), 'a clock that passes the safety before any route: « CALCUL INTERROMPU » and `status: interrupted` for the screen (not « none », not « impossible »: a route may exist), no proposal, no alternative')

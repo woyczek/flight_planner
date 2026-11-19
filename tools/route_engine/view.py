@@ -191,7 +191,7 @@ def to_view(plan_result, request, include_raw=False):
         if not alts:
             issues.append({'level': 'review', 'text': x})
     # SOG-0161 : `status` dit ce que l'écran a reçu — 'computed' (une route calculée et acceptée), 'proposal' (rien de calculé : des propositions de repli, routes PARTIELLES à examiner : `proposal: true` sur chacune), 'none' ; la phrase `message` le dit ; `ok` reste vrai (la réponse est valide)
-    status = 'none' if not alts else 'proposal' if alts[0].get('proposal') else 'computed'
+    status = ('interrupted' if plan_result.get('interrupted') else 'none') if not alts else 'proposal' if alts[0].get('proposal') else 'computed'      # SOG-0524 : 'interrupted' : le garde-fou de temps a joué (le poste est trop lent) et rien n'est calculé : ce n'est PAS une absence de route (`issues` le dit)
     why = str(p.get('error') or '').strip()
     message = f"Aucune route calculée{(' : ' + why[:160].rstrip('. ')) if why else ''}. Propositions de repli à examiner : routes partielles, une part n’est pas contrôlée." if status == 'proposal' else plan_result.get('alternative_message', '')
     changes = (p.get('profile_changes') or [])[:MAX_CHANGES] if p.get('ok') else []

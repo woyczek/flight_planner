@@ -25,12 +25,13 @@ FIELDS = {
     'objective': str, 'traffic': str, 'require_fra': bool, 'unable_rnav': bool, 'fra_preference': (int, float), 'aircraft': str, 'fuel_climb': (int, float), 'fuel_cruise': (int, float), 'fuel_descent': (int, float),     # RouteSim 4 (planning.py)
 }
 MAX_ROUTE = 600
-HEAD_BUDGET_S = 5.0                 # SOG-0371 : la route de TÊTE répond en 5 s au plus (à froid : le chargement du contexte compris) ; ce qui n'a pas abouti se dit « proposition »
-TOTAL_BUDGET_S = 15.0               # SOG-0371 : tout le calcul (tête, alternatives, propositions de repli) en 15 s au plus ; AUCUNE recherche ne dépasse la borne de sa phase (engine.DEADLINE)
-OCEAN_HEAD_BUDGET_S = 12.0            # SOG-0354 L2b : un vol qui traverse l'Atlantique : la route de tête 12 s (10 s laissait 1 à 1,5 s de marge : décision de l'ergonome), une recherche 12 s, tout 20 s (les alternatives et les propositions seulement s'il reste du temps) — la route d'EIDW → KJFK EXISTE et demande ~7 s de recherche
-OCEAN_SEARCH_CAP_S = 12.0
-OCEAN_TOTAL_BUDGET_S = 20.0
-ALT_BUDGET_S = 8.0                  # SOG-0296 : la recherche des ALTERNATIVES (après la route de tête) tient le poste au plus ce temps (facultatif, `alternatives_budget`, 1 à 25 s) : 25 s pour ne rien trouver de plus n'a pas à le tenir
+GUARD_S = 120.0                     # SOG-0524 : le GARDE-FOU de TEMPS de tout le calcul (secondes) : large, il ne décide de rien ; passé, le calcul est « interrompu » (le poste est trop lent), jamais « impossible » ni « proposition ». Les budgets se comptent en ÉTATS (le compteur `states_total` du Nav) : la même demande rend la même réponse quelle que soit la charge du poste
+HEAD_STATES = 250_000               # SOG-0524 : la route de TÊTE et ses reprises RAD (avant : 5 s) ; mesuré à vide : 450 à 13 500 états pour les vols de référence, 27 000 avec les alternatives
+TOTAL_STATES = 750_000              # SOG-0524 : tout le calcul : tête, alternatives, propositions de repli (avant : 15 s)
+STATES_PER_S = 50_000               # SOG-0524 : la vitesse d'une recherche à vide (états par seconde, mesurée : 50 000) ; sert à lire en états une durée de l'ancien contrat (`alternatives_budget` en secondes, la réserve et la tentative des vols océaniques)
+OCEAN_HEAD_STATES = 600_000         # SOG-0524 : un vol qui traverse l'Atlantique : la route de tête (avant : 12 s)
+OCEAN_TOTAL_STATES = 1_000_000      # SOG-0524 : tout le calcul d'un vol océanique (avant : 20 s)
+ALT_BUDGET_S = 8.0                  # SOG-0296 : la recherche des ALTERNATIVES (après la route de tête) : `alternatives_budget` (1 à 25) en SECONDES de l'ancien contrat, lues en états (× STATES_PER_S : 400 000 par défaut) ; SOG-0524 : plus une durée mesurée
 MAX_ALTERNATIVES = 3
 MAX_LEGS = 800
 MAX_ISSUES = 300
@@ -187,9 +188,9 @@ def crosses_ocean(a, b):
 
 
 def budgets(request, ocean):
-    """Les bornes de ce calcul : { ocean, head_s, search_s, total_s } — 5 s / 6 s / 15 s (SOG-0371), 12 s / 12 s / 20 s pour un vol qui traverse l'Atlantique en CALCUL ; un CONTRÔLE (une route saisie) garde les siennes. La réponse les rend (`budget`) : l'écran dit qu'il cherche plus longtemps."""
+    """Les bornes de ce calcul : { ocean, head_states, total_states, guard_s } — SOG-0524 : des ÉTATS (250 000 pour la route de tête, 750 000 pour tout le calcul ; 600 000 / 1 000 000 pour un vol qui traverse l'Atlantique en CALCUL) et un garde-fou de temps large (120 s) ; un CONTRÔLE (une route saisie) garde les siennes. La réponse les rend (`budget`)."""
     long_ = bool(ocean) and request.get('mode', 'calculate') == 'calculate'
-    return {'ocean': long_, 'head_s': OCEAN_HEAD_BUDGET_S if long_ else HEAD_BUDGET_S, 'search_s': OCEAN_SEARCH_CAP_S if long_ else 6.0, 'total_s': OCEAN_TOTAL_BUDGET_S if long_ else TOTAL_BUDGET_S}
+    return {'ocean': long_, 'head_states': OCEAN_HEAD_STATES if long_ else HEAD_STATES, 'total_states': OCEAN_TOTAL_STATES if long_ else TOTAL_STATES, 'guard_s': GUARD_S}
 
 
 def depart_of(request, now=None):
@@ -242,7 +243,7 @@ def rad_repairs(request, nav, rad, primary, check_budget, bounds, started, asses
             rad_retries.append(dict(excluded=avoids, error='reprise RAD non faite : elle n\'exclurait rien de neuf'))
             break
         wanted = list({json.dumps(x, sort_keys=True): x for x in [*avoids, *extra]}.values())
-        if bounds['ocean'] and time.perf_counter() > started + bounds['head_s']:      # SOG-0354 L2b : un vol océanique ne reprend pas la route de tête après sa borne (chaque reprise refait un graphe et une recherche : 6 s) — le total de 20 s tient
+        if bounds['ocean'] and getattr(nav, 'states_total', 0) - bounds.get('s0', 0) > bounds['head_states']:      # SOG-0354 L2b / SOG-0524 : un vol océanique ne reprend pas la route de tête après son budget d'états (chaque reprise refait un graphe et une recherche)
             rad_retries.append(dict(excluded=wanted, error='reprise RAD non faite : la borne de la route de tête est atteinte'))
             break
         try:
@@ -267,12 +268,12 @@ def plan(request, root):
     import time
     started = time.perf_counter()
 
-    limit = {'until': started + TOTAL_BUDGET_S, 'what': f'Budget global de recherche atteint ({TOTAL_BUDGET_S:g} s)'}
+    limit = {'ceil': 0, 'what': f'Budget global de recherche atteint ({TOTAL_STATES:,} états)'.replace(',', ' ')}      # SOG-0524 : le plafond du compteur d'états du Nav (posé plus bas, quand le contexte est lu)
 
-    next_attempt = {'cost': 0.0}      # SOG-0354 L2b : le coût d'une tentative de plus (un graphe de ~4 s et une recherche) : un vol océanique n'en commence pas une qui ne finirait pas dans son budget
+    next_attempt = {'cost': 0}      # SOG-0354 L2b / SOG-0524 : le coût d'une tentative de plus, en états (un graphe et une recherche) : un vol océanique n'en commence pas une qui ne finirait pas dans son budget
 
     def check_budget():
-        if time.perf_counter() > limit['until'] - next_attempt['cost']:
+        if getattr(nav, 'states_total', 0) > limit['ceil'] - next_attempt['cost']:
             raise SearchBudget(limit['what'] + '. Les propositions déjà contrôlées sont conservées ; la recherche n’est pas exhaustive.')
     request = dict(request, root=root)
     request.setdefault('date', '2026-11-09T12:00')
@@ -314,17 +315,21 @@ def plan(request, root):
     # SOG-0354 L2b (3) : l'option de la demande (posée à CHAQUE plan : le contexte gardé d'un calcul à l'autre ne porte jamais l'option d'une demande précédente) ; L5 (3) : PAR DÉFAUT pour un vol qui traverse l'Atlantique en calcul (`sections: false` la refuse)
     nav.sections = bool(request['sections']) if request.get('sections') is not None else crossing and request.get('mode', 'calculate') == 'calculate'
     bounds = budgets(request, crossing)      # SOG-0354 L2b : un vol qui traverse l'Atlantique cherche plus longtemps
-    reserve = 4.0 if bounds['ocean'] else 0.0      # SOG-0354 L2b : un vol océanique réserve la fin de ses 20 s aux propositions de repli ; les alternatives (un graphe de 4 s et une recherche chacune) s'arrêtent avant
-    limit['until'], limit['what'] = started + bounds['total_s'] - reserve, f"Budget global de recherche atteint ({bounds['total_s']:g} s)"
-    engine.SEARCH_CAP_S = bounds['search_s']
-    engine.GRAPH_MIN_S = 5.0 if bounds['ocean'] else 0.0      # SOG-0354 L5 (3) : un graphe (~4 s) n'est pas commencé quand il reste moins de 5 s avant la borne
-    request['_deadline'] = started + bounds['head_s']
-    engine.DEADLINE = started + bounds['head_s']       # SOG-0371 : la route de tête et ses reprises RAD ; la phase suivante pose la sienne
-    engine.DEADLINE_CEIL = limit['until']      # SOG-0475 : la borne de tête peut s'étendre après un graphe lent, jamais au-delà de la fin du calcul
+    reserve = 4 * STATES_PER_S if bounds['ocean'] else 0      # SOG-0354 L2b / SOG-0524 : un vol océanique réserve la fin de son budget aux propositions de repli (4 s de l'ancien contrat, en états)
+    s0 = getattr(nav, 'states_total', 0)      # le compteur du Nav au début de CE calcul : les budgets s'y ajoutent
+    bounds['s0'] = s0
+    limit['ceil'], limit['what'] = s0 + bounds['total_states'] - reserve, f"Budget global de recherche atteint ({bounds['total_states']:,} états)".replace(',', ' ')
+    engine.SEARCH_CAP_S = bounds['guard_s']
+    engine.DEADLINE = started + bounds['guard_s']      # SOG-0524 : le garde-fou de temps du calcul entier (large) ; les phases se bornent en états
+    engine.STATE_CEIL = s0 + bounds['head_states']      # la route de tête et ses reprises RAD ; la phase suivante pose la sienne
     if request.get('objective') == 'economical':
         request['alternatives'] = True
+    interrupted = False      # SOG-0524 : le garde-fou de temps a joué (le poste est trop lent) : ni « impossible » ni « proposition », et plus aucune phase
     try:
         primary = engine.assess(request, nav, rad)
+    except engine.Interrupted as e:
+        interrupted = True
+        primary = dict(ok=False, status='CALCUL INTERROMPU', error=str(e), route=request.get('route', ''), legs=[], issues=[])
     except ValueError as e:
         hint = nat_layer.hint(nav, str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper()) if request.get('mode', 'calculate') == 'calculate' else ''      # SOG-0263 : traversée sans track dans le sens du vol
         primary = dict(ok=False, status='CALCUL IMPOSSIBLE', error=str(e) + (' ' + hint if hint else ''), route=request.get('route', ''), legs=[], issues=[])
@@ -333,8 +338,12 @@ def plan(request, root):
     head_nm = primary.get('distance_nm')
     # A route-dependent RAD condition can only be decided after its SID, route and STAR are known. Retry with the implicated procedure / links excluded.
     if request.get('mode', 'calculate') == 'calculate':
-        primary, avoids, rad_retries = rad_repairs(request, nav, rad, primary, check_budget, bounds, started)
-    if request.get('mode', 'calculate') == 'calculate' and not primary.get('ok') and not request.get('_rad_fallback') and 'Budget de recherche atteint' not in str(primary.get('error') or '') and rad.blocks(str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper(), None):
+        try:
+            primary, avoids, rad_retries = rad_repairs(request, nav, rad, primary, check_budget, bounds, started)
+        except engine.Interrupted as e:      # SOG-0524 : la route de tête reste rendue, la reprise interrompue est dite
+            interrupted = True
+            rad_retries = [dict(excluded=[], error=str(e))]
+    if request.get('mode', 'calculate') == 'calculate' and not primary.get('ok') and not request.get('_rad_fallback') and not interrupted and 'Budget de recherche atteint' not in str(primary.get('error') or '') and rad.blocks(str(request.get('dep', '')).upper(), str(request.get('arr', '')).upper(), None):
         # SOG-0401 (règle de l'ergonome, 17 nov.) : « le calcul ne perd jamais une route à cause d'une règle qu'il sait décider » : aucune route n'a été trouvée avec les interdictions décidées comme blocs : la recherche est refaite SANS ces blocs, la meilleure route est rendue et les règles qu'elle enfreint sont dites (REVUE) ; « proposition » seulement quand rien ne relie les deux terrains
         try:
             check_budget()
@@ -343,6 +352,8 @@ def plan(request, root):
                 primary = fallback
                 request['_rad_fallback'] = True
                 primary.setdefault('issues', []).insert(0, {'level': 'REVUE', 'text': 'Aucune route sans infraction aux règles RAD que le contrôle sait décider : la meilleure route est rendue et les règles qu’elle enfreint sont dites ci-dessous (à examiner).'})
+        except engine.Interrupted:
+            interrupted = True
         except (ValueError, SearchBudget):
             pass
     if request.get('mode', 'calculate') == 'calculate' and primary.get('ok'):
@@ -361,10 +372,10 @@ def plan(request, root):
     first_info = getattr(nav, 'sections_info', None) if nav.sections else None      # SOG-0354 L5 (4) : les sections et le temps de la réponse sont ceux du niveau DEMANDÉ (de la route de tête et de ses reprises RAD) : les autres tentatives écrasaient `nav.sections_info`
     first_graph_s = getattr(nav, 'graph_seconds', None)
     retries = []      # les reprises à d'autres niveaux, listées à part : { fl, seconds, found }
-    engine.DEADLINE = limit['until']
+    engine.STATE_CEIL = limit['ceil']
     rejected = not primary['ok'] or bool(primary.get('data_gaps')) or any(i['level'] == 'ERREUR' for i in primary['issues'])
     if bounds['ocean'] and rejected:      # SOG-0354 L2b : une route de tête refusée : chaque tentative de plus refait un graphe (~4 s) et une recherche ; elle ne commence pas si elle ne finirait pas dans le budget (les alternatives d'une BONNE route de tête, elles, sont peu coûteuses : inchangées)
-        next_attempt['cost'] = 6.5
+        next_attempt['cost'] = int(6.5 * STATES_PER_S)
     # SOG-0371 : en CONTRÔLE (une route saisie, sans `alternatives` demandées) la réponse dit ce qui est refusé, dans la borne de la route de tête : ni variantes d'office ni propositions de repli (c'est « Calculer A → B » qui cherche)
     check_only = request.get('mode', 'calculate') == 'validate' and not request.get('alternatives')
     coverage_gaps = recovery.terminal_gaps(request, nav) if rejected else []
@@ -377,13 +388,13 @@ def plan(request, root):
     level_ok, level_why = level_matters(primary, first_info) if rejected and request.get('mode', 'calculate') == 'calculate' else (True, '')      # SOG-0354 L5 (4) défaut 2 : sans affaire de niveau, ni reprise à un autre niveau ni palier adapté ; la réponse part avec sa raison
     if budget_hit and not coverage_gaps:
         failures.append('Alternatives non cherchées : la recherche de la route de tête a atteint son budget (elles en auraient épuisé un autre à chaque niveau).')
-    if (rejected or request.get('alternatives')) and not coverage_gaps and not budget_hit and not check_only:
+    if (rejected or request.get('alternatives')) and not coverage_gaps and not budget_hit and not check_only and not interrupted:
         if not rejected:          # SOG-0296 : la route de tête est bonne, les alternatives sont un PLUS : leur recherche a son propre budget (8 s, `alternatives_budget`) ; un plan refusé garde les 25 s (ses propositions sont son recours)
             secs = float(request.get('alternatives_budget', ALT_BUDGET_S))
-            limit['until'] = min(limit['until'], time.perf_counter() + secs)
-            limit['what'] = f'Budget de recherche des alternatives atteint ({secs:g} s)'
-            request['_deadline'] = limit['until']
-            engine.DEADLINE = limit['until']
+            states = int(secs * STATES_PER_S)      # SOG-0524 : le budget des alternatives en états (`alternatives_budget` : les secondes de l'ancien contrat × STATES_PER_S)
+            limit['ceil'] = min(limit['ceil'], getattr(nav, 'states_total', 0) + states)
+            limit['what'] = f'Budget de recherche des alternatives atteint ({states:,} états)'.replace(',', ' ')
+            engine.STATE_CEIL = limit['ceil']
         try:
             dep = str(request['dep']).strip().upper()
             arr = str(request['arr']).strip().upper()
@@ -474,6 +485,9 @@ def plan(request, root):
                     except ValueError as e:
                         failures.append(f'FL{level}: ' + str(e))
                     retries.append({'fl': level, 'seconds': round(time.perf_counter() - began, 3), 'found': found})
+        except engine.Interrupted as e:      # SOG-0524 : les alternatives interrompues : la route de tête reste rendue
+            interrupted = True
+            failures.append(str(e))
         except (ValueError, SearchBudget) as e:
             failures.append(str(e))
     wanted = (rejected or bool(request.get('alternatives'))) and not check_only
@@ -487,21 +501,26 @@ def plan(request, root):
         alternatives = pool[1:4]
     message = ('' if alternatives else 'Aucune alternative trouvée. Consulter les niveaux essayés et leurs motifs d’échec.') if wanted else ''      # SOG-0401 : « sans incompatibilité détectée » n'est plus rendu (c'était un 0 constat sur les seules conditions décidables, 95 contre 555 à examiner) : l'écran compose sa phrase avec `rad.decided` et `rad.review`
     repli = None
-    if rejected and not alternatives and not check_only:
-        engine.DEADLINE = started + bounds['total_s']      # les propositions de repli ont la fin du budget
+    if rejected and not alternatives and not check_only and not interrupted:
+        engine.STATE_CEIL = s0 + bounds['total_states']      # les propositions de repli ont la fin du budget
         nav._routing_cache.clear()
         try:
             repli = recovery.propose(request, nav, rad)
+        except engine.Interrupted as e:
+            interrupted = True
+            repli = dict(proposals=[], pieces=[], note='Repli interrompu : ' + str(e))
         except (ValueError, KeyError) as e:
             repli = dict(proposals=[], pieces=[], note='Repli : ' + str(e))
         if repli.get('proposals'):
             message = 'Calcul réseau incomplet : ' + str(len(repli['proposals'])) + ' propositions de repli, dont ' + str(repli.get('fra_pieces', 0)) + ' portion(s) FRA. Les raccords DCT restent non validés.'
+    if interrupted and primary.get('ok'):      # SOG-0524 : une phase de plus (reprise RAD, alternatives, repli) a été interrompue : la route de tête est rendue, la réponse le dit
+        primary.setdefault('issues', []).insert(0, {'level': 'REVUE', 'text': 'Calcul interrompu : le poste est trop lent (plus de ' + format(bounds['guard_s'], 'g') + ' s) pendant une reprise RAD, les alternatives ou le repli : la route rendue est celle de tête, sans ce qui n\u2019a pas pu être cherché ; relancer le calcul.'})
     for r in [primary, *alternatives, *((repli or {}).get('proposals') or [])]:        # SOG-0161 : chaque tronçon classé (contrôlé / incomplet / repli / erreur), par couche, et le pourcentage de la distance contrôlée
         layered.annotate(r, rad)
     info = first_info
     level_retry = {'tried': bool(retries), 'matters': level_ok, 'why': level_why, 'levels': retries} if rejected and request.get('mode', 'calculate') == 'calculate' else None
     timing = {'context_s': context_s, 'tracks_s': (getattr(nav, 'nat', None) or {}).get('seconds'), 'graph_s': first_graph_s, 'skeleton_s': (info or {}).get('skeleton_s'), 'sections': list((info or {}).get('steps') or []), 'retries': retries, 'total_s': round(time.perf_counter() - started, 3)}      # SOG-0354 L5 (3) : où le temps est passé, étape par étape, avec la borne de chacune
-    return dict(budget=bounds, timing=timing, sections=info, level_retry=level_retry, primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
+    return dict(budget=bounds, interrupted=interrupted, states=getattr(nav, 'states_total', 0) - s0, timing=timing, sections=info, level_retry=level_retry, primary=primary, alternatives=alternatives, recovery=repli, coverage_gaps=coverage_gaps, rad_search_attempts=rad_retries, alternative_message=message, alternative_failures=list(dict.fromkeys(failures)),
                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=nav.last_search if hasattr(nav, 'last_search') else None, total_seconds=round(time.perf_counter() - started, 3)),
                 automatic_alternatives=rejected and not check_only, alternative_attempts=tested, input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr'))
 
@@ -565,6 +584,9 @@ def compute(request, data, rad_file, fra_file):
     try:
         with SOLVER_LOCK:
             return bound_result(plan(request, data))
+    except engine.Interrupted as e:      # SOG-0524 : le garde-fou de temps a joué hors des phases que `plan` rattrape (la lecture du contexte, les sections) : la réponse est « interrompu », jamais une exception qui sort
+        return bound_result(dict(budget=budgets(request, False), interrupted=True, states=0, timing={}, sections=None, level_retry=None, primary=dict(ok=False, status='CALCUL INTERROMPU', error=str(e), route=request.get('route', ''), legs=[], issues=[]), alternatives=[], recovery=None, coverage_gaps=[], rad_search_attempts=[], alternative_message='', alternative_failures=[],
+                                 search=dict(algorithm='A* avec labels altitude ; variantes par pénalisation des liens', last=None, total_seconds=None), automatic_alternatives=False, alternative_attempts=[], input_route=request.get('route', ''), via=request.get('via', []), dep=request.get('dep'), arr=request.get('arr')))
     finally:
-        engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = engine.DEADLINE_CEIL = None
-        engine.SEARCH_CAP_S = 6.0
+        engine.DATA_DIR = engine.RAD_FILE = fra.FRA_FILE = engine.DEADLINE = engine.STATE_CEIL = None
+        engine.SEARCH_CAP_S = 120.0

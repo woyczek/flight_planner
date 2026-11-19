@@ -16,21 +16,22 @@ from . import space_dct      # SOG-0513 lot C : la limite d'un direct dans un es
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = None   # SOG-0081 : dossier des données (sia/base, proc) posé par le travail du lanceur ; None : <root>/data, comme RouteSim 2
-SEARCH_CAP_S = 6.0   # SOG-0354 : la borne d'UNE recherche (A*) ; plan.plan() la porte à 12 s pour un vol qui traverse l'Atlantique (plan.budgets), et la remet à 6 s à la fin du calcul
-GRAPH_MIN_S = 0.0   # SOG-0354 L5 (3) : un vol océanique ne COMMENCE pas la construction d'un graphe (~4 s, non interruptible) quand il reste moins de cela avant la borne ; posé par plan.plan (5 s pour un vol qui traverse l'Atlantique), 0 sinon
-DEADLINE_CEIL = None      # SOG-0475 : la fin du calcul entier (plan.plan la pose) : la borne de tête ne s'étend jamais au-delà
-GRAPH_SEARCH_MIN_S = 3.0      # SOG-0475 : après la construction d'un graphe, la recherche a au moins cela (dans la limite du calcul entier) : un graphe de 5 à 9 s (un vol long d'Europe) ne mange plus toute la borne de tête
+SEARCH_CAP_S = 120.0   # SOG-0524 : le GARDE-FOU d'UNE recherche (A*), en secondes : large, il ne décide plus de rien — un calcul qui le dépasse est « interrompu » (le poste est trop lent), jamais « impossible » ; les budgets se comptent en ÉTATS (STATE_CEIL, `max_states`)
+STATE_CEIL = None   # SOG-0524 : le plafond ABSOLU du compteur d'états du Nav (`states_total`) de la phase en cours (route de tête, alternatives, propositions), posé par plan.plan() ; None : seule la borne propre de chaque recherche (100 000 états). Déterministe : la même demande rend la même réponse quelle que soit la charge du poste
+
+
+class Interrupted(Exception):
+    """SOG-0524 : le garde-fou de TEMPS a joué (le poste est trop lent) : le calcul n'a pas été mené à son terme — ce n'est PAS une absence de route (jamais un ValueError : aucun `except ValueError` ne le prend pour une route introuvable)."""
+
+
+def interrupted(seconds):
+    return Interrupted(f'Calcul interrompu : le poste est trop lent (plus de {seconds:g} s sans conclure). Ce n’est pas une absence de route : relancer le calcul, ou alléger ce qui charge le poste.')
 TURN_CACHE_MAX = 200000      # revue de Sécurisation : au plus ce nombre de triplets (précédent, point, suivant) dans la mémoire des virages d'un Nav ; au-delà elle est vidée
 MAX_BRIDGE_VISITS = 2_000_000      # SOG-0476 (Sécurisation) : les cellules et points visités par une recherche de direct
 NO_NETWORK_MAX_NM = 900      # SOG-0474 : au-delà, aucun direct de repli (le terrain est trop loin de tout réseau lu)
-DEADLINE = None   # SOG-0371 : l'instant (time.perf_counter) avant lequel TOUTE recherche doit finir, posé par plan.plan() pour chaque phase (route de tête, alternatives, propositions) : aucune recherche ne dépasse la borne de sa phase ; None : seule la borne propre de la recherche (6 s)
+DEADLINE = None   # SOG-0371 / SOG-0524 : l'instant (time.perf_counter) du GARDE-FOU de TEMPS du calcul entier, posé par plan.plan() (large : plan.GUARD_S) ; passé, une recherche ou un graphe qui commence lève `Interrupted`. Il ne borne plus aucune phase : les phases se bornent en états ; None : seul le garde-fou propre de la recherche
 
 
-def extend_deadline(until):
-    """SOG-0475 : repousse la borne de tête à `until` (jamais au-delà de DEADLINE_CEIL, jamais en arrière)."""
-    global DEADLINE
-    if DEADLINE is not None and DEADLINE_CEIL is not None and until > DEADLINE:
-        DEADLINE = max(DEADLINE, min(DEADLINE_CEIL, until))
 RAD_FILE = None   # SOG-0081 : chemin de rad.json.gz posé par le travail du lanceur (data/route/rad.json.gz) ; None : à côté du module, comme RouteSim 2
 MONTHS = dict(zip('JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC'.split(),range(1,13)))
 
@@ -388,7 +389,9 @@ class Nav:
         """
         import time
         begun=time.perf_counter();expanded=0;fra_reachable=False
-        stop_at=begun+SEARCH_CAP_S if DEADLINE is None else min(begun+SEARCH_CAP_S,DEADLINE)      # SOG-0371 : la borne de la phase en cours borne AUSSI la recherche déjà partie
+        cap=max_states or 100000      # SOG-0524 : le plafond d'états de CETTE recherche : le sien, ramené à ce qui reste à la phase (STATE_CEIL)
+        if STATE_CEIL is not None:cap=max(1,min(cap,STATE_CEIL-getattr(self,'states_total',0)))
+        stop_at=begun+SEARCH_CAP_S if DEADLINE is None else min(begun+SEARCH_CAP_S,DEADLINE)      # SOG-0371 / SOG-0524 (garde-fou de temps seulement) : la borne de la phase en cours borne AUSSI la recherche déjà partie
         names=[self.nodes[k]['id'] for k in waypoints]
         flight=getattr(g,'flight',None)
         low,high=initial_band or ((flight['departure'],flight['ceiling'] if flight.get('free_departure') else flight['departure']) if flight else (-1e9,1e9))   # SOG-0161 : free_departure : aucune SID lue, la montée n'est pas bornée par le raccord
@@ -425,10 +428,13 @@ class Nav:
         q=[(heuristic(start,0),0,origin)];costs={origin:0};prev={};labels=collections.defaultdict(list)
         labels[origin[:3]].append((0,low,high,origin))
         while q:
-            if expanded%128==0 and (expanded>=(max_states or 100000) or time.perf_counter()>stop_at):      # SOG-0354 L5 (4) : `max_states` borne UNE recherche en ÉTATS (déterministe : la même demande rend la même réponse quelle que soit la charge du poste) ; la borne de 100 000 états et le temps restent
+            if expanded%128==0 and time.perf_counter()>stop_at:      # SOG-0524 : le GARDE-FOU de temps : le poste est trop lent, le calcul est INTERROMPU (jamais dit « impossible » ni « budget atteint »)
+                self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated='time',fra_reachable=fra_reachable)
+                raise interrupted(round(stop_at-begun))
+            if expanded%128==0 and expanded>=cap:      # SOG-0354 L5 (4) : le budget en ÉTATS (déterministe : la même demande rend la même réponse quelle que soit la charge du poste)
                 self.last_search=dict(algorithm='A* / labels altitude non dominés',expanded=expanded,seconds=round(time.perf_counter()-begun,4),found=bool(reached),truncated=True,fra_reachable=fra_reachable)
                 if goal_set:return reached
-                raise ValueError(f'Budget de recherche atteint ({max(stop_at-begun,0):.0f} s / 100 000 états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
+                raise ValueError(f'Budget de recherche atteint ({cap:,} états). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.'.replace(',',' '))
             _,cost,state=heapq.heappop(q)
             if cost!=costs.get(state):continue
             expanded+=1;u,index,seen_fra,low,high=state
@@ -608,10 +614,7 @@ class Nav:
         base_key=json.dumps([dep,arr,fl,radius,profile_options,allow_steps,via,str(when),enable_fra,{k:v for k,v in cost_fields.items() if k not in ('_rad_avoid',)},sorted((getattr(self,'fra_floors',None) or {}).items())],sort_keys=True)      # SOG-0468 (1) : le graphe SANS les règles RAD (la construction, 1 à 3 s) ne dépend ni des interdictions ni des évitements : une reprise RAD ne le refait pas, elle n'applique que ses règles
         base=self._routing_base.get(base_key)
         if base is None:
-            if GRAPH_MIN_S and DEADLINE is not None and time.perf_counter()+GRAPH_MIN_S>DEADLINE:      # SOG-0354 L5 (3) : la construction (~4 s) ne commence pas si elle ne finirait pas avant la borne
-                raise ValueError(f'Budget de recherche atteint : la construction du graphe n’est pas commencée (moins de {GRAPH_MIN_S:g} s restent avant la borne). Ce résultat ne prouve pas l’absence de route.')
-            if DEADLINE_CEIL is not None and getattr(self,'_graph_cost',0.0) and time.perf_counter()+0.8*self._graph_cost>DEADLINE_CEIL:      # SOG-0475 : une reprise ne COMMENCE pas un graphe (non interruptible : 5 à 10 s sur un vol long d'Europe) qui ne finirait pas avant la fin du calcul : la route déjà trouvée est gardée
-                raise ValueError('Budget de recherche atteint : la construction du graphe n’est pas commencée (elle ne finirait pas avant la fin du calcul). Ce résultat ne prouve pas l’absence de route.')
+            if DEADLINE is not None and time.perf_counter()>DEADLINE:raise interrupted(round(SEARCH_CAP_S))      # SOG-0524 : plus de graphe écarté « faute de temps » (la réponse dépendait de la charge du poste) : seul le garde-fou de temps interrompt
 
         built=time.perf_counter()
         point_rules=collections.defaultdict(list);segment_rules=collections.defaultdict(list);procedure_rules=collections.defaultdict(list)
@@ -743,8 +746,6 @@ class Nav:
             graph.flight=dict(profile_options,departure=flight_profile.elevation(dep,self.ads[dep].get('elev')),arrival=flight_profile.elevation(arr,self.ads[arr].get('elev')),ceiling=fl*100,free_departure=not used_procs.get(dep),free_arrival=not used_procs.get(arr))   # SOG-0161 : sans SID (STAR) lue, la montée (la descente) du raccord est celle que la procédure ferait : supposée libre, dite « repli » par le contrôle
         self.graph_seconds=round(time.perf_counter()-built,3)
         self._graph_cost=max(getattr(self,'_graph_cost',0.0),self.graph_seconds)      # SOG-0475 : le coût d'un graphe de CE calcul (remis à 0 par plan.plan)
-        if DEADLINE is not None and DEADLINE_CEIL is not None:      # SOG-0475 : le graphe a pris la borne de tête (ESSA → LEMG : 9 s de graphe, aucune seconde de recherche : « budget atteint ») : la recherche a au moins GRAPH_SEARCH_MIN_S, jamais au-delà du calcul entier
-            extend_deadline(time.perf_counter()+GRAPH_SEARCH_MIN_S)
         self._routing_cache[cache_key]=(graph,a,b)
         if len(self._routing_cache)>1:self._routing_cache.popitem(last=False)
         return graph,a,b
@@ -759,8 +760,7 @@ class Nav:
 
     def generate(self,dep,arr,fl,radius,blocks=(),profile_options=None,allow_steps=False,via=(),when=None,enable_fra=True,terminal=None):
         import time
-        if DEADLINE is not None and time.perf_counter()>DEADLINE:      # SOG-0371 : le graphe (1 à 3 s) ne se construit pas pour une recherche qui n'aurait plus le temps
-            raise ValueError('Budget de recherche atteint (0 s / limite de temps du calcul). Ce résultat ne prouve pas l’absence de route ; réduire les contraintes ou examiner la couverture des bases.')
+        if DEADLINE is not None and time.perf_counter()>DEADLINE:raise interrupted(round(SEARCH_CAP_S))      # SOG-0524 : le garde-fou de temps (plus de limite de phase en secondes)
         g,a,b=self.routing_graph(dep,arr,fl,radius,blocks,profile_options,allow_steps,via,when,enable_fra,terminal)
         mandatory=self.resolve_vias(g,a,b,via)
         path=None
@@ -794,9 +794,7 @@ class Nav:
         def signature(path):return tuple((self.nodes[a]['id'],self.nodes[b]['id'],e['route'],e.get('fra_area')) for a,b,e in path if e.get('kind')!='FRA_GATE')
         def links(path):return {(self.nodes[a]['id'],self.nodes[b]['id'],e['route'],e.get('fra_area')) for a,b,e in path if e.get('kind')!='FRA_GATE' and not e.get('connector')}
         for attempt in range(max(8,count*3)):
-            if terminal and terminal.get('_deadline'):
-                import time
-                if time.perf_counter()>terminal['_deadline']:break
+            if STATE_CEIL is not None and getattr(self,'states_total',0)>=STATE_CEIL:break      # SOG-0524 : le budget de la phase, en états (avant : un instant)
             modified=RoutingGraph({u:[(v,dict(e,_cost=e.get('_cost',e['nm'])*(1+.4*usage[(u,v,e['route'],e.get('fra_area'))]))) for v,e in es] for u,es in g.items()})      # SOG-0524 : une arête sans `_cost` (les routes NAT GARDÉES d'un message précédent, hors fenêtre : sections._previous_system) coûte sa distance, comme la recherche le lit (`ratios`) ; `e['_cost']` levait KeyError : KJFK → EGLL avec des alternatives
             modified.flight=g.flight
             path=self.constrained_path(modified,start,end,mandatory,bool((terminal or {}).get('require_fra')))

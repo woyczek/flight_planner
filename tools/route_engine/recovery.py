@@ -136,7 +136,7 @@ def propose(request,nav,rad):
     assembled=[];pieces=[]
     for a,b in zip(expanded,expanded[1:]):
         path=None;distance=engine.nm(nav.nodes[a],nav.nodes[b])
-        if a in connected and b in connected and distance<=400 and time.perf_counter()-begun<5 and not late():
+        if a in connected and b in connected and distance<=400 and not late():      # SOG-0524 : plus de limite de 5 s (la réponse dépendait de la charge du poste) : chaque recherche est bornée en états, le garde-fou de temps seul interrompt
             try:path=nav.path(g,a,b)
             except ValueError:pass
             if path and sum(e['nm'] for u,v,e in path)>max(1,distance)*1.6:path=None

@@ -158,7 +158,7 @@ def windowed(request,nav,rad,anchors,base_path):
         p=engine.flight_profile.build(legs,engine.flight_profile.elevation(request['dep'],nav.ads[request['dep']].get('elev')),engine.flight_profile.elevation(request['arr'],nav.ads[request['arr']].get('elev')),fl,**engine.profile_options(request),strategy='adapt')
         return p['feasible']
     for i,j,area in sorted(candidates,key=lambda c:c[1]-c[0],reverse=True):
-        if time.perf_counter()-begun>3 or len(selected)>=3:break
+        if len(selected)>=3:break      # SOG-0524 : plus de limite de 3 s : chaque recherche est bornée en états (la phase), le garde-fou de temps seul interrompt
         if any(i<oldj and j>oldi for oldi,oldj,path in selected):continue
         g=engine.RoutingGraph({u:[(v,e) for v,e in es if e.get('kind') in ['FRA','FRA_GATE'] and e.get('fra_area')==area] for u,es in prepared.items()})
         exit_caps=[min(e['upper'],fl*100) for u,es in g.items() for v,e in es if v==anchors[j] and e.get('kind')=='FRA_GATE']
