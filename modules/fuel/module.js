@@ -886,6 +886,12 @@ const TX = {
   ],
   // le FL gris de la ligne de route, quand c'est le niveau par défaut du moteur (jamais pris pour celui du vol)
   rFlDefault: ['FL{fl} par défaut', 'FL{fl} by default', 'FL{fl} (Standard)', 'FL{fl} por defecto'],
+  // SOG-0517 : le vol sans niveau prend celui du calcul
+  rLevelSet: ['Niveau du vol fixé à FL{fl}, celui du calcul de la route : le devis et le plan de vol le portent.',
+    'Flight level set to FL{fl}, the one of the route computation: the quote and the flight plan carry it.',
+    'Flughöhe auf FL{fl} gesetzt, die der Routenberechnung: Angebot und Flugplan übernehmen sie.',
+    'Nivel del vuelo fijado en FL{fl}, el del cálculo de la ruta: el presupuesto y el plan de vuelo lo llevan.'
+  ],
   rClose: ['Fermer les propositions', 'Close the proposals', 'Vorschläge schließen', 'Cerrar las propuestas'],
   // SOG-0296 : deux demandes — la route de tête tout de suite, les variantes ensuite ; le cache du poste dit
   rMoreBusy: ['Variantes en recherche…', 'Searching for variants…', 'Varianten werden gesucht…', 'Buscando variantes…'],
@@ -2270,6 +2276,9 @@ function procsToText(say) {
     r = S?.flight?.route,
     ta = S?.body?.querySelector('[data-k="rtext"]');
   if (!m || !r || (ta && document.activeElement === ta)) return;
+  // SOG-0517 : le texte d'un itinéraire pris porte déjà la SID et la STAR du moteur, à leur place : il n'est pas réécrit (les points que
+  // la procédure couvre en disparaissaient, « LUGEN UN10 »)
+  if (r.from === 'engine') return;
   const o = CF.proceduresOf(S.flight),
     rec = id => typeof id === 'string' ? m.recs.get(id) || null : null,
     name = (id, x) => typeof id === 'string' ? RT.compactName(PR.nameOf(x, id)) || null : null,
@@ -4500,6 +4509,20 @@ async function routeAskRun(s, act, r, o, box, retry) {
   if (gone(s) || !S.body) return;
   routeAltsDraw();
   altsPublish('compute', n.plans); // pour la Carte (INTEGRATION § 3 bis)
+  // SOG-0517 : un vol sans niveau prend celui que le moteur a pris (« default » : FL180) — écrit dans le vol, le devis et le plan de vol
+  // le portent ; la seconde demande part avec lui (sinon elle se croirait d'une autre entrée et relancerait le calcul)
+  const took = n.level?.basis === 'default' && Number.isInteger(n.level.fl) && n.level.fl >= 10 && n.level.fl <= 660 ? n.level.fl : null;
+  if (took && !(+S.flight.level?.ft > 0) && routeFl() === null) {
+    S.flight.level = {
+      ft: took * 100
+    };
+    args.fl = took;
+    saveFlight();
+    refresh();
+    S.ctx.notify(tt(TX.rLevelSet, {
+      fl: String(took).padStart(3, '0')
+    }), 'info');
+  }
   if (S.ralts.more === 'busy') altsMore(s, args); // SOG-0296 : la seconde demande, sans attendre
   return routeDrawn(s);
 }
@@ -4513,13 +4536,22 @@ function routeArgs(act, r = S.flight.route || {}, o = CF.proceduresOf(S.flight))
     arr: r.arr,
     points: r.points,
     text: r.text,
-    fl: +S.flight.level?.ft > 0 ? Math.round(+S.flight.level.ft / 100) : null,
+    fl: routeFl(), // SOG-0517 : le niveau du vol, sinon celui du devis ; sans niveau du tout, le moteur prend le sien (écrit ensuite)
     date: new Date(Number.isFinite(when) ? when : Date.now()).toISOString().slice(0, 16),
     depRunway: o.dep?.rwy,
     arrRunway: o.arr?.rwy,
     alternatives: false,
     sections: act === 'compute' && oceanCrossing(r) // SOG-0354 (L2b 3) : le découpage par sections, pour un vol qui traverse l'océan
   });
+}
+/** SOG-0517 (l'utilisateur : « il faut le fixer, s'il est vide, puisque la route est calculée à ce niveau ») : le niveau du calcul de
+ *  route, en centaines de pieds — celui du vol, sinon le niveau de référence de la fiche de l'avion (celui que le devis prend sans
+ *  niveau, et que le plan de vol écrit) ; null sans l'un ni l'autre. Lu de la fiche, jamais du devis du moment (pas encore calculé à
+ *  l'ouverture) : la même demande donne le même niveau. Le niveau du devis et celui de la route ne divergent jamais en silence. */
+function routeFl() {
+  const ref = +currentSheet()?.cruise?.refAltFt,
+    ft = +S.flight?.level?.ft > 0 ? +S.flight.level.ft : ref > 0 ? ref : 0;
+  return ft > 0 ? Math.round(ft / 100) : null;
 }
 /** SOG-0296 : ce qui fait la demande (pour savoir si l'entrée a changé pendant la seconde) — ses champs, sans la date tirée de
  *  l'horloge (l'heure prévue du vol en tient lieu). */
@@ -5660,12 +5692,14 @@ function routeAltsDraw() {
   // SOG-0389 (b) : un vol sans niveau — le niveau par défaut du moteur dit en tête, avec le chemin du champ Niveau
   const L = A.n?.level,
     flTxt3 = fl => String(fl).padStart(3, '0'),
-    noLevel = L?.basis === 'default' && A.list?.length ? `<p class="f-row f-warn fu-rage" data-rnolevel><span>${esc(L.fl !== null ? tt(TX
+    // SOG-0517 : dit tant que le vol n'a pas de niveau ; le niveau du calcul y est écrit ensuite, la route est alors à son niveau
+    flightLevel = +S.flight?.level?.ft > 0,
+    noLevel = L?.basis === 'default' && !flightLevel && A.list?.length ? `<p class="f-row f-warn fu-rage" data-rnolevel><span>${esc(L.fl !== null ? tt(TX
       .rNoLevel, {
         fl: flTxt3(L.fl)
       }) : tt(TX.rNoLevel0))}</span><button type="button" class="fu-linkbtn" data-do="rgolevel">${esc(tt(TX.rNoLevelGo))}</button></p>` :
     '',
-    flOf = a => a.fl === null ? '' : L?.basis === 'default' && a.fl === L.fl ? tt(TX.rFlDefault, {
+    flOf = a => a.fl === null ? '' : L?.basis === 'default' && !flightLevel && a.fl === L.fl ? tt(TX.rFlDefault, {
       fl: flTxt3(a.fl)
     }) : `FL${flTxt3(a.fl)}`;
   const name = (a, i) => a.name || (a.proposal ? tt(TX.rProposal, {
@@ -6110,6 +6144,8 @@ function routeTake(i) {
   ta.dispatchEvent(new Event('input', {
     bubbles: true
   }));
+  // SOG-0517 : le texte d'un itinéraire pris reste celui du moteur, mot pour mot (voies, groupes de niveau) : pas de normalisation
+  if (S.flight.route) S.flight.route.from = 'engine';
   ta.dispatchEvent(new Event('change', {
     bubbles: true
   }));
@@ -6963,7 +6999,8 @@ function resolveRoute(normalize = true) {
     }
     if (S.aloft) aloftApply();
     const ta = S.body.querySelector('[data-k="rtext"]');
-    if (normalize && tokens.length && document.activeElement !== ta) {
+    // SOG-0517 : le texte d'un itinéraire pris reste celui du moteur, mot pour mot ; la première frappe le rend au pilote
+    if (normalize && tokens.length && document.activeElement !== ta && r.from !== 'engine') {
       r.text = withRwys(routeText(tokens));
       if (ta) ta.value = r.text;
     }

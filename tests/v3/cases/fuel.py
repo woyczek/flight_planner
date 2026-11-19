@@ -6805,28 +6805,31 @@ def f240(c):
     for d in docs:
         if d[0].endswith('current_flight.json'):
             d[1]['level'] = {'ft': None}
+            # SOG-0517: no sheet either (a sheet's reference level would be sent): the engine's default is the only level
+            d[1]['aircraft'] = {'type': 'ZZ9Z', 'registration': 'F-ZZZZ'}
     c.page.set_viewport_size({'width': 390, 'height': 667})
     c.open('fuel', docs=docs)
     to_step(c, 1)
     sent = _compute_now(c, st)
-    c.eq(sorted({str(a.get('fl')) for a in sent}), ['None'], 'no level in the flight: no request sends `fl` (the head route, then the variants)', what='request')
+    c.eq(str(sent[0].get('fl')), 'None', 'no level in the flight nor in a sheet: the head route is asked without `fl`', what='request')
+    # SOG-0517 (the user: « il faut le fixer ») : the level the engine took is written in the flight; the variants leave with it
+    cf_doc(c, lambda d: (d.get('level') or {}).get('ft') == 18000, 'the engine\'s FL180 written in the flight')
+    c.ok(all(str(a.get('fl')) == '180' for a in sent[1:]), [a.get('fl') for a in sent], 'the variants leave with the level written (FL180)')
+    # SOG-0517: the flight now carries the level of its route: no « Niveau non donné » line, the FL of the route line plain (never « par
+    # défaut »), after a reload too
     L = f'{FUEL} [data-routealts] [data-rnolevel]'
-    c.until(f"!!document.querySelector('{L}')", timeout=10000, what='the line « Niveau non donné »')
-    c.eq(norm(c.text(f'{L} > span') or ''), norm(tx(T, 'rNoLevel', c.lang).replace('{fl}', '180')),
-         '« Niveau non donné : route calculée à FL180 par défaut »', what='line')
     R0 = f'{FUEL} [data-altlist] [data-alt="0"]'
-    c.ok(norm(tx(T, 'rFlDefault', c.lang).replace('{fl}', '180')) in norm(c.text(R0) or ''), c.text(R0),
-         'the grey FL of the route line says « par défaut »')
-    c.js(f"document.querySelector('{L}').scrollIntoView({{block: 'center'}})")  # never under the fixed header
+    c.until(f"!!document.querySelector('{R0}')", timeout=10000, what='the route line')
+    c.eq(c.count(L), 0, 'the level written: no « Niveau non donné » line', what='no line')
+    c.ok('FL180' in norm(c.text(R0) or '') and norm(tx(T, 'rFlDefault', c.lang).replace('{fl}', '180')) not in norm(c.text(R0) or ''),
+         c.text(R0), 'the FL of the route line is the flight\'s, never « par défaut »')
+    c.js(f"document.querySelector('{R0}').scrollIntoView({{block: 'center'}})")  # never under the fixed header
     c.shot(f'F240_{c.design}_390_{c.lang}_nolevel.png')
-    # kept: the list read again from the device says it the same
     c.page.reload(wait_until='load')
     to_step(c, 1)
-    c.until(f"!!document.querySelector('{L}')", timeout=15000, what='the line, after a reload')
-    # the way to the field: the Flight step, the Level field focused
-    c.tap(f'{L} [data-do="rgolevel"]')
-    c.until(f"document.activeElement?.matches?.('{FUEL} [data-k=\"fl\"]')", timeout=5000, what='the Level field focused')
-    c.ok(c.js(f"window.__t.shown(document.querySelector('{FUEL} [data-k=\"fl\"]'))"), '', 'the Level field on screen')
+    c.until(f"!!document.querySelector('{R0}')", timeout=15000, what='the route line, after a reload')
+    c.eq(c.count(L), 0, 'after a reload: still no line (the flight has its level)', what='no line after reload')
+    to_step(c, 0)  # the Flight step, its Level field
     # a flight WITH level: no line, the FL plain
     st['alts'] = [_alt(1, 'Via UN10', 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 370, 270,
                        [_seg('LFRS', 'LUGEN'), _seg('LUGEN', 'NEPIX'), _seg('NEPIX', 'LFML')])]
@@ -8631,3 +8634,80 @@ def f282(c):
          'M140 (the group of XPC is the one in force: not written twice)', what='item 15')
     c.eq(got[1], ['group', 'XPA', 'group', 'XPB', 'group', 'XPC', 'group', 'XPD', 'M189', 'XPE'], 'the true groups stay groups, a bare « M189 » is '
          'a name', what='tokens')
+
+
+# SOG-0517: AeroDB's answer for the user's flight (EGLL → LFRN, FL270, 236 kt)
+_S0517_ENGINE = ('EGLL DCT MID L612 BOGNA L612 BENBO L612 HAWKE M189 NEVIL/F270 UZ273 ANGLO/F190 UZ273 DIKRO G273 RAVIG T501 LUKEM T493 '
+                 'UPALO V20 LUVOP DCT LFRN')
+
+
+@case('F283', 'Route step: « Calculer A → B » computes at the flight\'s level — the level of the flight, else the one of the quote (the sheet\'s '
+      'reference level), sent as `fl`; a flight with no level at all takes the level the engine computed at (FL180 by default), written '
+      'in the flight and said; a route taken keeps the engine\'s text, and its flight plan its airways and level changes', 'F',
+      tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0517 (measured in the user\'s Chrome: an empty route computed with NO level — the engine took FL180 while the flight was '
+      'filed at FL270, its low airways wrong at FL270; the user: « il faut le fixer, s\'il est vide, puisque la route est calculée à ce '
+      'niveau »); fake launcher, invented flight and sheet')
+def f283(c):
+    # 1. the flight plan of AeroDB's answer, as it is: each airway, the change to F190 as « ANGLO/N0236F190 » (speed AND level, ICAO)
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    fpl = c.js("""(t) => import('/modules/fuel/fpl.js').then(F => F.item15(t, { dep: 'EGLL', arr: 'LFRN', speedKt: 236, levelFt: 27000 }).route)""",
+               _S0517_ENGINE)
+    c.eq(fpl, 'N0236F270 MID L612 BOGNA L612 BENBO L612 HAWKE M189 NEVIL UZ273 ANGLO/N0236F190 UZ273 DIKRO G273 RAVIG T501 LUKEM T493 UPALO '
+         'V20 LUVOP', 'item 15 of the engine\'s text: M189 kept, the change to F190 with its speed (NEVIL/F270, the level in force, not '
+         'written twice)', what='item 15')
+    st = _route_launcher(c, ['route/compute'])
+
+    def opened(level, aircraft, extra):
+        docs = proc_flight()
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                d[1]['aircraft'] = aircraft
+                if level:
+                    d[1]['level'] = {'ft': level}
+                else:
+                    d[1].pop('level', None)
+        open_docs = proc_docs() + docs + extra
+        c.open('fuel', docs=open_docs, airfields=True)
+        to_step(c, 1)
+        c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+
+    def asked():
+        n = len(st['posts'])
+        c.tap(f'{FUEL} [data-do="rcompute"]')
+        for _ in range(40):
+            got = [p.get('args') or {} for p in st['posts'][n:] if (p.get('args') or {}).get('action') == 'compute']
+            if got:
+                return got[0]
+            c.wait(150)
+        raise Fail('no compute request', 'a request to route/compute', 'none')
+    # 2a. the flight's level is sent
+    opened(27000, {'type': 'C30J', 'registration': 'F-RAJA'}, [])
+    c.eq(asked().get('fl'), 270, 'the flight\'s level FL270 sent', what='flight level')
+    # 2b. no level in the flight: the quote's (the sheet's reference level, FL250) is sent — never the engine's default in silence
+    sheet = {'id': 'XT1', 'name': 'Essai', 'icao': 'C30J', 'unit': 'kg', 'usableFuel': 20000,
+             'cruise': {'tasKt': 330, 'fuelFlowPerHour': 2000, 'refAltFt': 25000}}
+    opened(0, {'type': 'C30J', 'sheetId': 'XT1', 'registration': 'F-RAJA'}, [['aircraft/sheets/XT1.json', sheet, 'document']])
+    c.eq(asked().get('fl'), 250, 'no level in the flight: the level of the quote (FL250) sent', what='quote level')
+    # 2c. no level and no quote: the engine takes its own (FL180), written in the flight and said
+    st['extra'] = {'sections': {'fl': 180, 'fl_basis': 'default', 'sections': []}}
+    opened(0, {'type': 'ZZ9Z', 'registration': 'F-ZZZZ'}, [])
+    c.js("window.__n0 = (window.__notes || []).length")
+    a = asked()
+    c.eq(a.get('fl'), None, 'no level anywhere: none sent (the engine takes its own)', what='no fl')
+    d = cf_doc(c, lambda d: ((d.get('level') or {}).get('ft') or 0) == 18000, 'the level the engine computed at, written in the flight')
+    c.eq((d.get('level') or {}).get('ft'), 18000, 'the flight now carries FL180, the level of its route', what='written')
+    c.until("(window.__notes || []).slice(window.__n0).some(x => x.includes('FL180'))", timeout=5000, what='said (FL180)')
+    st['extra'] = None
+    c.js(f"document.querySelector('{FUEL} [data-reng]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F283_{c.design}_390_{c.lang}_level.png')
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    c.settle()
+    c.js(f"document.querySelector('{FUEL} [data-reng]').scrollIntoView({{block: 'center'}})")
+    c.shot(f'F283_{c.design}_1280_{c.lang}_level.png')
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    # 3. a route taken keeps the engine's text word for word
+    c.until(f"!!document.querySelector('{FUEL} [data-alt=\"0\"] [data-do=rtake]')", timeout=10000, what='the first route of the answer')
+    c.tap(f'{FUEL} [data-alt="0"] [data-do="rtake"]')  # data-alt counts from 0: the first route, « Via UN10 »
+    d = cf_doc(c, lambda d: ((d.get('route') or {}).get('from') == 'engine'), 'the route taken, written')
+    c.eq((d.get('route') or {}).get('text'), 'LFRS NTS1A LUGEN UN10 NEPIX MEN1A LFML', 'the engine\'s text kept word for word', what='verbatim')
