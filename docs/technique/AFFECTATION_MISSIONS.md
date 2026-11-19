@@ -745,7 +745,7 @@ reads what the section already computes (`drawers.js`, `drawers_view.js`; `frame
   separator `TX.decSep`, the hour `fmtZ`. `debriefLine(tt, line)` is the pure text, in the four languages.
 - **Cases.** N80 (169 checks, 7 new: the three landings in order, the lying tier of a crew mate recomputed, the proof off my key, the airfield,
   no drawer open or under a lock, hostile entries, no place), N81 (119, 5 new: absent without a landing, present with two lines, level 1,
-  `stop()`, the exact text in four languages) and the screen case N171 (390 and 1280 px, four languages, invented data).
+  `stop()`, the exact text in four languages) and the screen case N181 (390 and 1280 px, four languages, invented data).
 
 ## 12. Assigning a mission from V3 (SOG-0443)
 
