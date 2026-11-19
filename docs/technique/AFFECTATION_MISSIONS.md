@@ -769,16 +769,16 @@ from the same table.
   `headingDeg` of `crossing.js`, which `fixOf` drops).
 - **The state « filled » and the departure** (`departure`, true by default). When the hold is complete the hold is « filled »
   (`hold: { from, last, to, full: true }`): nothing opens, and the state stays so as long as the pilot has not left, even if he moves a little
-  (a fix on the ground in the circle but too fast or at the wrong heading changes nothing; `last` follows the last HELD fix). The drawer
+  (a fix on the ground in the circle but too fast or at the wrong heading does not open it; `last` follows the last fix SETTLED in the circle, held or not). The drawer
   opens at the FIRST fix that is no longer « down in the circle »: `onGround === false`, or a fix outside the circle with a readable position.
-  A fix inside the circle whose `onGround` is unknown is NOT a departure. With `departure` false the drawer opens at the end of the hold, like
+  A fix inside the circle whose `onGround` is unknown is NOT a departure. The state « filled » lives in memory only (`v.hold`): reloading the page loses it, and the hold has to be done again. With `departure` false the drawer opens at the end of the hold, like
   a landing. The state lives in `v.hold` of the view, per drawer.
 - **The finding** (written by `withOpen` and `docOf`, read by `entryOf`, all bounded by `fixHd`): `{ how: 'refill', at (the departure fix, or
   the end of the hold without departure), from (the first held fix), to (the fix that completes the hold) }` and, with a departure, `last` (the
-  last held fix before the departure) and `off` (the departure fix). An older finding stays readable; an unreadable `last` or `off` is
+  last fix settled in the circle before the departure, held or not) and `off` (the departure fix). An older finding stays readable; an unreadable `last` or `off` is
   dropped, never the whole finding.
 - **`stands`** replays on the READER's key: `from` and `to` held, with a gap `>= durationSec` and `< durationSec + maxGapSec` (the honesty
-  bound Sécurisation asked for); with a departure, `last` held, `off` not held AND a departure (not on the ground in the circle), `off.at >
+  bound Sécurisation asked for); with a departure, `last` settled in the circle at the reader's (on the ground, within R: held or not), `off` not held AND a departure (not on the ground in the circle), `off.at >
   last.at` and `off.at - last.at <= maxGapSec`, `last.at >= to.at` with the wait on the ground bounded to 24 h. A wrong heading at the
   reader's, a station that moves or a refused key refuse the finding (`shape`). **Replayed, not proven**: forged fixes that satisfy the rule
   stand like those of a real flight.
@@ -790,7 +790,7 @@ from the same table.
 - **View.** `judge()` goes through `holding` as for a landing and a hover; `record` passes `last` and `off` to `withOpen`. The texts, in four
   languages and never the place: `keyRefill` (« s'ouvre au ravitaillement »), `openRefillMe` (« ouvert à votre ravitaillement en retardant, à
   {t} »), `openRefillBy` (« ouvert au ravitaillement en retardant de {by}, à {t} »). No tier, no debrief line.
-- **Cases.** N80 (the bench `drawers.html`, 200 checks, 30 new: each threshold just inside and just outside — the radius at R - 0.1 m and
+- **Cases.** N80 (the bench `drawers.html`, 201 checks, 31 new: each threshold just inside and just outside — the radius at R - 0.1 m and
   R + 0.1 m, the speed, the ground, the heading at plus and minus the tolerance and one more, 359 against 1, an unknown heading, the duration
   at `durationSec - 5` and `durationSec`, a gap of `maxGapSec` and of `maxGapSec + 0.1`, the departure (in the air, outside the circle, unknown
   ground, nothing while down, `departure` false), `stands` (true, a hold gap of `durationSec + maxGapSec`, `off` held, `off - last` over

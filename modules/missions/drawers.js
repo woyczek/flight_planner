@@ -465,6 +465,13 @@ const isRefilling = (fix, spec) => {
   return Number.isFinite(h) && Math.abs((h - spec.headingDeg + 540) % 360 - 180) <= spec.headingTolDeg;
 };
 
+/** Ce relevé est-il « posé dans R » : au sol (onGround exactement vrai) et à R au plus de la station, tenu ou non (vitesse, cap : aucune
+ *  contrainte). C'est `last` d'un ravitaillement : le dernier relevé posé dans R avant le départ. Inconnu : jamais. */
+const isSettled = (fix, spec) => arrived(fix, {
+  ...spec,
+  speedMaxKt: null
+}).ok === true;
+
 /** Ce relevé est-il un DÉPART : il n'est plus « posé dans R » — en l'air (onGround exactement faux), ou hors de R avec une position
  *  lisible. Posé ou d'état inconnu dans R : jamais un départ. */
 const isLeaving = (fix, spec) => {
@@ -529,7 +536,7 @@ function refilling(spec, hold, b, t) {
       f: null
     };
     if (!b || !Number.isFinite(t) || t <= t1) return keep; // sans heure (ou à rebours) : ni départ ni relevé tenu
-    if (isRefilling(b, spec)) return {
+    if (isSettled(b, spec)) return { // posé dans R, tenu ou non (il roule un peu) : `last` le suit
       hold: {
         ...keep.hold,
         last: b
@@ -802,8 +809,8 @@ function standsHeld(e, key) {
 }
 
 /** Le constat d'un ravitaillement tient-il sur CETTE clé ? Comme une tenue (standsHeld : `from` et `to` tenus selon la clé du lecteur,
- *  au cap demandé, séparés d'au moins `durationSec` et de moins de `durationSec + maxGapSec`) ; avec départ, `last` est tenu, `off` ne l'est
- *  pas et est un départ (en l'air, ou hors de R), `off` suit `last` de `maxGapSec` au plus, et `last` ne précède pas `to` (de 24 h au plus :
+ *  au cap demandé, séparés d'au moins `durationSec` et de moins de `durationSec + maxGapSec`) ; avec départ, `last` est posé dans R (tenu ou non :
+ *  il a pu rouler un peu), `off` ne l'est pas et est un départ (en l'air, ou hors de R), `off` suit `last` de `maxGapSec` au plus, et `last` ne précède pas `to` (de 24 h au plus :
  *  l'attente au sol). Rejoué, pas prouvé : des relevés forgés qui satisfont la règle tiennent comme ceux d'un vrai vol. */
 function standsRefill(e, key) {
   const spec = refillSpec(key);
@@ -811,7 +818,7 @@ function standsRefill(e, key) {
   const gap = Date.parse(e.to.at) - Date.parse(e.from.at);
   if (!(gap >= spec.durationSec * 1000 && gap < (spec.durationSec + spec.maxGapSec) * 1000)) return false;
   if (!spec.departure) return true;
-  if (!e.last || !e.off || !isRefilling(e.last, spec) || isRefilling(e.off, spec) || !isLeaving(e.off, spec)) return false;
+  if (!e.last || !e.off || !isSettled(e.last, spec) || isRefilling(e.off, spec) || !isLeaving(e.off, spec)) return false;
   const tl = Date.parse(e.last.at),
     to = Date.parse(e.to.at),
     gapOff = Date.parse(e.off.at) - tl;

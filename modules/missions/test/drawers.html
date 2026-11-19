@@ -3656,12 +3656,27 @@
       return r.first === null && r.hold?.full === true;
     }));
   const wob = rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
-    gsKt: 20
+    gsKt: SPD + 20
   }), rv(DUR + 10, {
+    gsKt: SPD + 20
+  }), rv(DUR + 15, {
     onGround: false
   })]);
-  ck('refill, départ : tant qu\'il n\'est pas reparti, l\'état reste « rempli » même s\'il bouge un peu (vitesse ou cap hors tenue) ; last reste le dernier relevé tenu, le départ est le premier relevé en l\'air',
-    wob.first?.last.at === iso(T0 + DUR * 1000) && wob.first.off.at === iso(T0 + (DUR + 10) * 1000) && rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
+  ck('refill, départ : tenue complète, puis deux relevés posés dans R mais trop rapides, puis un relevé en l\'air : le tiroir s\'ouvre, `last` est le dernier relevé trop rapide (posé dans R, tenu ou non), `off` le relevé en l\'air, et le constat tient chez le lecteur (stands vrai)',
+    wob.first?.last.at === iso(T0 + (DUR + 10) * 1000) && wob.first.last.gsKt === SPD + 20 && wob.first.off.at === iso(T0 + (DUR + 15) * 1000) && D.stands(wob.first,
+      RF) === true && D.stands({
+      ...wob.first,
+      last: rv(DUR + 10, {
+        onGround: null
+      })
+    }, RF) === false && D.stands({
+      ...wob.first,
+      last: rv(DUR + 10, {
+        m: RAD + 10
+      })
+    }, RF) === false);
+  ck('refill, départ : tant qu\'il n\'est pas reparti, l\'état reste « rempli » même s\'il bouge un peu (vitesse ou cap hors tenue)',
+    rplay(RF, [...reveryN(DUR), rv(DUR + 5, {
       gsKt: 20,
       headingDeg: 250
     })]).hold?.full === true, wob);

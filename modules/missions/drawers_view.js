@@ -170,12 +170,14 @@ export const TX = {
     'abierto al estacionario de {by}, a las {t}'
   ],
   // la condition « refill » de l'atelier (SOG-0521) : jamais le lieu, comme l'atterrissage
-  keyRefill: ['s\'ouvre au ravitaillement', 'opens on refuelling', 'öffnet sich beim Auftanken', 'se abre al repostaje'],
-  openRefillMe: ['ouvert à votre ravitaillement en retardant, à {t}', 'opened on your hot refuelling, at {t}',
-    'bei Ihrem Auftanken mit laufendem Triebwerk geöffnet um {t}', 'abierto a su repostaje en caliente, a las {t}'
+  keyRefill: ['s\'ouvre au ravitaillement', 'opens on the retardant refill', 'öffnet sich beim Löschmittel-Nachfüllen',
+    'se abre a la recarga de retardante'
   ],
-  openRefillBy: ['ouvert au ravitaillement en retardant de {by}, à {t}', 'opened when {by} refuelled hot, at {t}',
-    'beim Auftanken mit laufendem Triebwerk von {by} geöffnet um {t}', 'abierto al repostaje en caliente de {by}, a las {t}'
+  openRefillMe: ['ouvert à votre ravitaillement en retardant, à {t}', 'opened on your retardant refill, at {t}',
+    'bei Ihrem Löschmittel-Nachfüllen geöffnet um {t}', 'abierto a su recarga de retardante, a las {t}'
+  ],
+  openRefillBy: ['ouvert au ravitaillement en retardant de {by}, à {t}', 'opened on {by}\'s retardant refill, at {t}',
+    'beim Löschmittel-Nachfüllen von {by} geöffnet um {t}', 'abierto a la recarga de retardante de {by}, a las {t}'
   ],
   // la condition « suite d'étapes » de l'atelier (SOG-0500, lot 5) : ni le nombre d'étapes ni un lieu, et pas de progression étape par étape
   keySequence: ['s\'ouvre à la fin de ses étapes', 'opens at the end of its steps', 'öffnet sich am Ende seiner Etappen',
