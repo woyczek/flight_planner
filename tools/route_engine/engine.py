@@ -681,7 +681,7 @@ class Nav:
             terminal=terminal or {}; used_procs={}
             if terminal.get('use_procedures',False) and getattr(self,'procedures',None):
                 for ad,kind,rwy in [(dep,'SID',terminal.get('dep_runway','')),(arr,'STAR',terminal.get('arr_runway',''))]:
-                    used_procs[ad]=self.procedures.add_graph(g,ad,kind,rwy,float(terminal.get('terminal_speed_kt',220)),terminal.get('unable_rnav',False))
+                    used_procs[ad]=self.procedures.add_graph(g,ad,kind,rwy,float(terminal.get('terminal_speed_kt',220)),terminal.get('unable_rnav',False),fl*100)
             # DCT fallback is explicit when no complete, connected procedure is available.
             for airport,isdep in [(a,True),(b,False)]:
                 if used_procs.get(dep if isdep else arr):continue
@@ -1191,8 +1191,8 @@ def assess(request,_nav=None,_rad=None,_path=None):
         for ad,kind in [(dep,'SID'),(arr,'STAR')]:
             if kind not in selected_kinds:
                 stats=nav.procedures.stats.get(ad,{})
-                issue('REVUE',f'{ad} : aucune {kind} complète connectée utilisée ; raccord DCT de simulation. Catalogue : {stats.get(kind+"_total",0)} procédures, {stats.get(kind+"_usable",0)} résolues, {stats.get(kind+"_incomplete",0)} incomplètes, {stats.get(kind+"_doubt",0)} douteuses.')
-    dct_summary,dct_issues=dct_limits.check(rad,legs,dep,arr,request.get('mode')=='validate',nav.procedures)      # SOG-0401 (lot 3) : ROUTE135 d'Eurocontrol : un direct au raccord au-delà de la limite du RAD
+                issue('REVUE',f'{ad} : aucune {kind} complète connectée utilisée ; raccord DCT de simulation. Catalogue : {stats.get(kind+"_total",0)} procédures, {stats.get(kind+"_usable",0)} résolues, {stats.get(kind+"_incomplete",0)} incomplètes, {stats.get(kind+"_doubt",0)} douteuses.'+(f' {stats[kind+"_above_level"]} refusée(s) à ce niveau : leur point {"d’entrée" if kind=="STAR" else "de sortie"} exige une altitude au-dessus du niveau de croisière FL{fl:03d}.' if stats.get(kind+'_above_level') else ''))
+    dct_summary,dct_issues=dct_limits.check(rad,legs,dep,arr,request.get('mode')=='validate',nav.procedures,fl*100)      # SOG-0401 (lot 3) : ROUTE135 d'Eurocontrol : un direct au raccord au-delà de la limite du RAD
     for level,text in dct_issues:issue(level,text)
     for level,text in space_dct.check(rad,legs,lambda:space_dct.spaces_of(nav),request.get('mode')=='validate',dep,arr):issue(level,text)      # SOG-0513 lot C : ROUTE165 : la limite d'un direct dans EGTTNFRA (au-dessus de FL245 : 0 NM)
     gaps=[dict(name='FRA : géométrie et NPZ',reason='Points FRA, rôles E/X/I/A/D, niveaux numériques et horaires simples utilisés. Volumes des FRA, NPZ et règles complexes non fournis par la liste de points : les liaisons sont des candidates à contrôler.' if fra_loaded else 'Aucune liste FRA ne couvre cette date. Les DCT ne sont pas des autorisations FRA.'),

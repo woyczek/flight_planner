@@ -67,7 +67,15 @@ class Catalog:
             result.append((a['key'],b['key'],e))
         return result
 
-    def add_graph(self,g,ad,kind,runway='',speed=220,unable_rnav=False):
+    @staticmethod
+    def flyable(p,ceiling_ft):
+        """SOG-0529 : vrai si la procédure peut être volée du niveau de croisière `ceiling_ft` : son point d'entrée (STAR) ou de sortie (SID) n'EXIGE pas une altitude au-dessus de ce niveau (« au moins 12 000 ft » à EPL : pas au FL090). Sans niveau (None) : toujours vrai."""
+        seq=p.get('sequence') or []
+        if ceiling_ft is None or not seq:return True
+        need=bounds((seq[0] if p['kind']=='STAR' else seq[-1]).get('alt'))[0]
+        return not(isinstance(need,(int,float)) and need>ceiling_ft+.01)
+
+    def add_graph(self,g,ad,kind,runway='',speed=220,unable_rnav=False,ceiling_ft=None):
         available=self.options(ad,kind,runway);used=0
         connected=set(g)|{v for es in g.values() for v,e in es}
         for p in available:
@@ -75,6 +83,9 @@ class Catalog:
                 from . import planning   # SOG-0081 : import relatif
                 if planning.procedure_rnav(p) is not False:continue
             edges=self.edges(p,speed);endpoint=edges[-1][1] if kind=='SID' else edges[0][0]
+            if not self.flyable(p,ceiling_ft):      # SOG-0529 : une procédure dont le point d'entrée (STAR) ou de sortie (SID) EXIGE une altitude au-dessus du niveau de croisière ne peut pas être volée de ce niveau : elle n'est pas « utilisée » (le raccord DCT de simulation prend alors le relais, DIT et jugé par la limite du RAD) ; LFBY → LFST au FL090 : toutes les STAR de LFST commencent à EPL « au moins 12 000 ft » : « CALCUL IMPOSSIBLE », l'IFPS « MISSING ROUTE DATA »
+                self.above=getattr(self,'above',{});self.above.setdefault((ad,kind),set()).add(p['id']);self.stats.setdefault(ad,{})[kind+'_above_level']=len(self.above[(ad,kind)])
+                continue
             if endpoint not in connected:continue
             if not p.get('partial'):used+=1      # SOG-0374 : une SID lue en partie ne remplace pas le raccord DCT de simulation (elle s'y ajoute : un tracé de plus à la recherche)
             # Independent states keep different runway/procedure paths from splicing together.

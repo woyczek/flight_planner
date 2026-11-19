@@ -58,8 +58,9 @@ def parse(sheet_id, text, struck=False):
         exc = {x.group(1).upper() for x in EXC.finditer(seg)}      # SOG-0501 : les terrains dont la liste dit « (except below FL105) » : seuls ceux-là ne sont pas décidés ; les autres de la même liste le sont
         plain = EXC.sub(lambda x: x.group(1), seg)
         pref, codes = _subject(plain)
+        hard = bool(COMPLEX.search(plain) or COMPLEX.search(after) or re.search(r'\bEXCEPT\b', after, re.I))      # SOG-0529 : une condition de niveau, d'heure ou d'exception : non décidée
         out.append({'prefix': pref, 'codes': sorted(codes) if codes else None, 'kinds': sorted(_kinds(plain)), 'nm': int(m.group(1)), 'other': bool(re.search(r'\bOTHERS?\b', plain, re.I)),
-                    'exc': sorted(exc) or None, 'complex': bool(struck or COMPLEX.search(plain) or COMPLEX.search(after) or re.search(r'\bEXCEPT\b', after, re.I))})
+                    'exc': sorted(exc) or None, 'complex': hard, 'struck': bool(struck)})      # `struck` : une partie BARRÉE de la cellule a été retirée à l'import (la limite se lit, mais DIT qu'elle est à confirmer : jamais une ERREUR)
     return out
 
 
@@ -98,7 +99,7 @@ def limit_of(rad, icao, end):
     """La limite du direct au raccord de `icao` (`end` : 'dep' ou 'arr') : { state: known | complex | unknown, nm, rule } ; `rule` : la feuille qui la porte.
     known : un nombre de NM ; complex : une clause qui nomme ce terrain porte un niveau ou une heure (non décidée) ; unknown : aucune clause."""
     icao = str(icao or '').upper()
-    state, nm, rule = 'unknown', None, None
+    state, nm, rule, struck = 'unknown', None, None, False
     for sid, clauses in rules(rad).items():
         named = set()      # les terrains que les clauses d'avant de la feuille nomment : « Other AD's » veut dire tous les autres
         for cl in clauses:
@@ -112,23 +113,23 @@ def limit_of(rad, icao, end):
                 continue
             rule = sid
             if cl['complex'] or icao in (cl.get('exc') or ()):
-                state, nm = 'complex', None
+                state, nm, struck = 'complex', None, False
             else:
-                state, nm = 'known', cl['nm']
-    return {'state': state, 'nm': nm, 'rule': rule}
+                state, nm, struck = 'known', cl['nm'], bool(cl.get('struck'))
+    return {'state': state, 'nm': nm, 'rule': rule, 'struck': struck if state == 'known' else False}
 
 
-def connection_points(procedures, ad, end):
+def connection_points(procedures, ad, end, ceiling_ft=None):
     """Les points par lesquels une route peut quitter (SID : son dernier point) ou rejoindre (STAR : son premier point) le terrain d'après les procédures LUES ; None quand la base n'en lit aucune pour ce terrain (alors on ne sait pas)."""
     try:
         items = procedures.options(ad, 'SID' if end == 'dep' else 'STAR')
     except Exception:
         return None
-    pts = {str(x['sequence'][-1 if end == 'dep' else 0].get('id', '')).upper() for x in items if x.get('sequence')}
-    return pts or None
+    pts = {str(x['sequence'][-1 if end == 'dep' else 0].get('id', '')).upper() for x in items if x.get('sequence') and getattr(procedures, 'flyable', lambda p, c: True)(x, ceiling_ft)}      # SOG-0529 : seules les procédures volables de ce niveau
+    return pts if pts else (set() if items else None)      # set() : des procédures sont lues mais AUCUNE n'est volable de ce niveau ; None : la base n'en lit aucune
 
 
-def check(rad, legs, dep, arr, typed, procedures=None):
+def check(rad, legs, dep, arr, typed, procedures=None, ceiling_ft=None):
     """Le contrôle des raccords d'un résultat : ({ checked: [...], not_applied: [...] }, [(niveau, texte)]). Un raccord est le PREMIER tronçon depuis le terrain de départ (le DERNIER vers celui d'arrivée) quand c'est un direct sans
     SID ni STAR lue. Trois cas : (1) limite de N > 0 NM dépassée : ERREUR pour une route TAPÉE (comme Eurocontrol), REVUE pour une route calculée (la base n'a pas la SID que le RAD exige : la route le dit) ; (2) limite de 0 NM : la route doit
     commencer au dernier point d'une SID (finir au premier d'une STAR) : ERREUR pour une route tapée si les procédures du terrain sont LUES et que le point n'en est pas un ; sans procédure lue, « à examiner » (on ne sait pas si le point en est un) ;
@@ -163,7 +164,7 @@ def check(rad, legs, dep, arr, typed, procedures=None):
         if lim['state'] == 'known' and lim['nm'] > 0:
             if nm > lim['nm']:
                 rec['state'] = 'exceeded'
-                if typed:
+                if typed and not lim.get('struck'):      # SOG-0529 : une limite lue d'une cellule dont une partie barrée a été retirée n'invente jamais une ERREUR : REVUE, dite
                     issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, au-delà de la limite de {lim["nm"]:g} NM du RAD ({lim["rule"]})'))
                     flag()
                 else:
@@ -171,7 +172,8 @@ def check(rad, legs, dep, arr, typed, procedures=None):
             else:
                 rec['state'] = 'within'
         elif lim['state'] == 'known':      # 0 NM : le raccord est la SID / la STAR elle-même
-            pts = connection_points(procedures, ad, end)
+            pts = connection_points(procedures, ad, end, ceiling_ft)
+            said = ' (une partie barrée de la cellule du RAD a été retirée à l’import : à confirmer)' if lim.get('struck') else ''
             if pts is None:
                 rec['state'] = 'unknown'
                 issues.append(('REVUE', f'{ad} : limite du direct au raccord de 0 NM (RAD {lim["rule"]}) : la route doit {"commencer au dernier point d’une SID" if end == "dep" else "finir au premier point d’une STAR"} ; la base ne lit aucune {proc} pour {ad}, on ne peut pas dire si {far} en est un (à examiner)'))
@@ -179,11 +181,11 @@ def check(rad, legs, dep, arr, typed, procedures=None):
                 rec['state'] = 'within'
             else:
                 rec['state'] = 'exceeded'
-                if typed:
+                if typed and not lim.get('struck'):      # SOG-0529 : une limite lue d'une cellule dont une partie barrée a été retirée n'invente jamais une ERREUR : REVUE, dite
                     issues.append(('ERREUR', f'Raccord {link} : direct de {nm:g} NM au {what}, la limite du RAD est de 0 NM ({lim["rule"]}) et {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} de {ad}'))
                     flag()
                 else:
-                    issues.append(('REVUE', f'{ad} : raccord direct de {nm:g} NM au {what}, limite de 0 NM du RAD ({lim["rule"]}) : {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} lue'))
+                    issues.append(('REVUE', f'{ad} : raccord direct de {nm:g} NM au {what}, limite de 0 NM du RAD ({lim["rule"]}){said} : {far} n’est {"le dernier point d’aucune SID" if end == "dep" else "le premier point d’aucune STAR"} volable{(" à FL" + format(ceiling_ft / 100, "03.0f")) if ceiling_ft else ""} ; la route sera refusée par l’IFPS (ROUTE{"135" if end == "dep" else "134"}) : à examiner, jamais une route valide'))
         else:
             why = 'limite avec niveau ou horaire, non décidée' if lim['state'] == 'complex' else 'aucune limite lue pour ce terrain'
             issues.append(('REVUE', f'{ad} : limite du direct au raccord à examiner ({why}) ; direct de {nm:g} NM'))

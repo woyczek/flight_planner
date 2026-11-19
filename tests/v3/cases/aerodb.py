@@ -14772,9 +14772,9 @@ def k331(c):
     c.eq(got, {'ZZAA': (('known', 0), ('known', 0)), 'ZZBB': (('known', 10), ('known', 0)), 'ZZCC': (('known', 0), ('known', 30)), 'ZZDD': (('known', 10), ('known', 30)),
                'ZYNL': (('known', 40), ('known', 0)), 'ZYNS': (('known', 0), ('known', 0)), 'ZYAB': (('known', 40), ('known', 40)),
                'ZXAA': (('known', 0), ('known', 0)), 'ZXAO': (('known', 50), ('known', 50)), 'ZXGB': (('known', 0), ('known', 0)),
-               'ZWBD': (('known', 0), ('known', 0)), 'ZWAA': (('complex', None), ('complex', None)), 'ZVAA': (('complex', None), ('complex', None)), 'ZVCC': (('complex', None), ('complex', None)),
+               'ZWBD': (('known', 0), ('known', 0)), 'ZWAA': (('complex', None), ('complex', None)), 'ZVAA': (('known', 0), ('known', 0)), 'ZVCC': (('known', 50), ('known', 50)),      # SOG-0529: a cell whose STRUCK part was removed at the import is now READ (the live text is the rule in force) and `struck` says it: never an ERREUR, a REVUE « à confirmer » naming the rule (it was `complex`: LFST 0 NM (SID/STAR) was not decided, the connector EPL → LFST of 64 NM passed as « à examiner » without the rule)
                'QQQQ': (('unknown', None), ('unknown', None))},
-         'the grammar: a general limit of the country, an exception that replaces it (a list, a single aerodrome, a direction: ARR, DEP, ARR/DEP, « Departures/Arrivals »), the order of the text; a clause that carries « except … SID/STAR … FL » or a cell whose struck text was removed is NOT decided (`complex`); a country with no line: unknown; the lines that are not `XX_LIM_AD` are not read', what='grammar')
+         'the grammar: a general limit of the country, an exception that replaces it (a list, a single aerodrome, a direction: ARR, DEP, ARR/DEP, « Departures/Arrivals »), the order of the text; a clause that carries « except … SID/STAR … FL » (a cell whose struck text was removed is read since SOG-0529, with `struck`: never an ERREUR); a country with no line: unknown; the lines that are not `XX_LIM_AD` are not read', what='grammar')
     # 2. the check on legs (no engine): the cases of the decision
     leg = lambda a, b, nm, **kw: dict({'start': {'id': a}, 'end': {'id': b}, 'via': 'DCT', 'kind': 'DCT', 'nm': nm, 'alerts': [], 'compatible': True}, **kw)
 
@@ -18534,3 +18534,67 @@ def k403(c):
     want = {k: round(80 + k[1] * (15.5 / (k[0] or 450)) * 60) for k in got}
     c.eq(got, want, 'the altitude at the start of the last leg is the field elevation + the rate x the distance / the ground speed of the leg, to the foot (250 kt 7 520 ft, 300 kt 6 280 ft at 2 000 fpm; 250 kt at 1 800 fpm 6 776 ft)', what='formula')
     c.ok(got[(200, 2000)] > got[(250, 2000)] > got[(300, 2000)] and got[(250, 2000)] > got[(250, 1800)], str(got), 'a HIGHER terminal speed gives a LOWER altitude at the same point (a flatter path at a fixed rate), a lower descent rate too: the minimum altitude of an arrival (7 000 ft at BNN) is met at 250 kt / 2 000 fpm (7 520 ft) and not at 300 kt (6 280 ft), nor at 250 kt / 1 800 fpm (6 776 ft)')
+
+
+@case('K405', 'Route engine, SOG-0529 (« route fiable en Europe »; LFBY → LFST at FL090: « CALCUL IMPOSSIBLE », the IFPS « EFPM214: MISSING ROUTE DATA »): an arrival whose procedures ALL need an altitude above the cruise level at their entry point (a STAR « at or above 12 000 ft » at its first point, flown at FL090) is not an arrival that the flight can use: the procedures are refused for that level, said, and the DCT connector of simulation takes over — the route is found (before: no route at any level under the entry altitude)',
+      'K', static=True,
+      rule='SOG-0529 (the relay, 19 Nov, a BE9L LFBY → LFST N0238F090 filed with an EMPTY route field: « Le calcul n\'a rendu qu\'un direct, ou rien »). Measured by AeroDB on the base of the workstation, read only: LFBY → LFST fails at FL060 to FL110 and works from FL120 (480 NM, LFBY DCT ENSAC R10 LMG G21 EPL EPL1B LFST); every pair that ends at LFST fails at FL090; the raw lanes at 9 000 ft are connected from Dax to Strasbourg (the engine reaches the VOR STR 3 NM from the aerodrome), but the six STAR of LFST all start at EPL with « start_min 12 000 ft » (the edge constraint of the procedure) and, because a procedure was found, the DCT connector to the aerodrome is NOT built: no way in. Not a recent lot: the same on the engine before SOG-0474 (commit 81d5380de), SOG-0475, SOG-0501, SOG-0504, SOG-0524. The bench: an invented base (two aerodromes, lanes F050–F460, one STAR of ZZBB whose first point needs 12 000 ft); a flight at FL090 and at FL150.')
+def k405(c):
+    import json
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(ROOT / 'tools'))
+    sys.path.insert(0, str(ROOT / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as P, view as V
+    pts = {'A0': (50.0, 0.6), 'P1': (50.0, 3.0), 'P2': (50.0, 6.0), 'P3': (50.0, 9.0), 'P4': (50.0, 11.0), 'S1': (50.0, 11.6)}
+    airports = {'ZZAA': (50.0, 0.2), 'ZZBB': (50.0, 12.0)}
+    ways = [{'route': 'UL1', 'a': {'id': a, 'lat': pts[a][0], 'lon': pts[a][1]}, 'b': {'id': b, 'lat': pts[b][0], 'lon': pts[b][1]}, 'lower': 5000, 'upper': 46000} for a, b in zip(['A0', 'P1', 'P2', 'P3', 'P4'], ['P1', 'P2', 'P3', 'P4', 'S1'][:4])]
+    files = {'aeroindex': {'fields': ['icao', 'name', 'lat', 'lon', 'elev', 'bearing', 'magVar'], 'rows': [[k, k, v[0], v[1], 100, 0, 0] for k, v in airports.items()]},
+             'points': [{'id': k, 'type': 'ICAO', 'lat': v[0], 'lon': v[1]} for k, v in pts.items()], 'navaids': [], 'airways': ways}
+    star = {'icao': 'ZZBB', 'cycle': '2026-10-01', 'procedures': [{'kind': 'STAR', 'name': 'IAF1A', 'id': 'ZZBB.STAR.IAF1A', 'runways': ['09'], 'points': [
+        {'id': 'P4', 'lat': pts['P4'][0], 'lon': pts['P4'][1], 'alt': {'type': 'min', 'ft': 12000}}, {'id': 'S1', 'lat': pts['S1'][0], 'lon': pts['S1'][1], 'alt': {'type': 'at', 'ft': 3000}}]}]}
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        folder = os.path.join(data, 'sia', 'base', 'xx', '2026-10-29')
+        os.makedirs(folder)
+        for k, v in files.items():
+            with open(os.path.join(folder, k + '.json'), 'w', encoding='utf-8') as f:
+                json.dump({'schema': 2, 'zone': 'xx', 'cycle': '2026-10-29', 'kind': k, 'data': v}, f)
+        os.makedirs(os.path.join(data, 'proc', 'manual'))
+        with open(os.path.join(data, 'proc', 'manual', 'ZZBB.json'), 'w', encoding='utf-8') as f:
+            json.dump(star, f)
+        os.makedirs(os.path.join(data, 'route'))
+        book = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(book, RF.rad_sheets())
+        rad = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad, I.merge([], [I.read_book(book)[1]]))
+        out = {}
+        for fl in (90, 150):
+            p = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'date': '2026-11-09T12:00', 'enable_fra': False, 'use_procedures': True, 'alternatives': False, 'proposals': False}), data, rad, None)['primary']
+            out[fl] = (p.get('ok'), p.get('route'), [i['text'] for i in p.get('issues', []) if i['text'].startswith('ZZBB : aucune STAR')])
+        # SOG-0529, second condition (the ergonomics session): the engine passes ITS OWN result through the limit of the connector of the RAD (ROUTE134 / ROUTE135): a rule `ZZ_LIM_AD` « ZZBB ARR/DEP DCT = 0 NM (SID/STAR) » whose cell has a STRUCK part (removed at the import)
+        sheets = RF.rad_sheets()
+        row = ['', '29 OCT 2026 [2611]', 'UFN', 'ZZ_LIM_AD', 'Limits', 'x'] + [''] * 11
+        for name, rows in sheets:
+            if name == 'Annex 3A Conditions':
+                rows.append(row)
+        kept = '1. ZZ** ARR/DEP DCT = 50NM EXC a. (ZZBB) ARR/DEP DCT = 0NM (SID/STAR)'
+        book2 = os.path.join(td, 'RAD_2611_v1_0_b.xlsx')
+        RF.write_xlsx(book2, sheets, rich_strike={('Annex 3A Conditions', 2, 6): (kept, ' old struck text 40NM')})
+        rad2 = os.path.join(data, 'route', 'rad2.json.gz')
+        I.write(rad2, I.merge([], [I.read_book(book2)[1]]))
+        lim = {}
+        for fl in (90, 150):
+            p = P.compute(V.to_request({'action': 'compute', 'adep': 'ZZAA', 'adest': 'ZZBB', 'fl': fl, 'date': '2026-11-09T12:00', 'enable_fra': False, 'use_procedures': True, 'alternatives': False, 'proposals': False}), data, rad2, None)['primary']
+            lim[fl] = ([i['text'] for i in p.get('issues', []) if 'limite de 0 NM du RAD' in i['text']], [i['level'] for i in p.get('issues', []) if 'limite de 0 NM du RAD' in i['text']], p.get('status'))
+    c.ok(out[90][0] and out[90][1] and out[90][1].endswith('P4 DCT ZZBB'), str(out[90]), 'at FL090 the route is found: the STAR (first point at least 12 000 ft) is not usable at that level, the flight goes to the aerodrome by the DCT connector of simulation (red before: « CALCUL IMPOSSIBLE »)')
+    c.ok(any('1 refusée(s) à ce niveau' in t and 'FL090' in t for t in out[90][2]), str(out[90][2]), 'the answer says why: the procedure is refused for this level (its entry point needs an altitude above the cruise level), not only « aucune STAR utilisée »')
+    c.ok(out[150][0] and 'IAF1A' in (out[150][1] or ''), str(out[150]), 'at FL150 the STAR is used as before (the entry altitude is below the cruise level): nothing changes for the flights that can fly the procedure')
+    c.ok(len(lim[90][0]) == 1 and 'ZZ_LIM_AD' in lim[90][0][0] and 'FL090' in lim[90][0][0] and 'ROUTE134' in lim[90][0][0] and 'à examiner, jamais une route valide' in lim[90][0][0] and 'à confirmer' in lim[90][0][0], str(lim[90]),
+         'at FL090 the engine passes its own route through the limit of the connector of the RAD: ZZBB 0 NM (SID/STAR) and the direct to the aerodrome is not the first point of a STAR that can be flown at FL090: said with the RULE and « à examiner, jamais une route valide » (and « à confirmer »: a struck part of the cell was removed)')
+    c.eq((lim[90][1], lim[150][0]), (['REVUE'], []), 'a REVUE, never an ERREUR (the cell had a struck part); at FL150 the STAR is flown and the limit says nothing', what='level')
+
+
+
