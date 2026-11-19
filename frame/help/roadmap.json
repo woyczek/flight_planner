@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "c4417da",
+  "organisation": "6016505",
   "fiches": 529,
   "untranslated": 0,
   "priorities": 481,
@@ -4652,7 +4652,8 @@
      "fr": "Atelier de missions : « LFRF » reconnu par AeroDB mais pas comme point par la carte (itinéraire) ; un point nommé donne ses coordonnées et les verrouille",
      "en": "Mission workshop: “LFRF” is known to AeroDB but not as a point for the map's route; a named point gives its coordinates and locks them",
      "de": "Missionswerkstatt: „LFRF“ ist AeroDB bekannt, aber für die Route der Karte kein Punkt; ein benannter Punkt liefert seine Koordinaten und sperrt sie",
-     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea"
+     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea",
+     "test": true
     }
    ]
   },
@@ -4777,11 +4778,12 @@
     {
      "id": "SOG-0521",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions feu : un objet « refill » (station de retardant d'un pélicandrome) choisi dans la liste des pélicandromes, posé et verrouillé ; clé « un poser sur cet objet », jugée par paliers",
      "en": "Fire missions: a “refill” object (a pelicandrome's retardant station) chosen from the pelicandrome list, placed and locked; key “a landing on this object”, judged by grades",
      "de": "Brandmissionen: ein Objekt „Refill“ (Löschmittelstation eines Pelicandroms), aus der Liste gewählt, gesetzt und gesperrt; Schlüssel „eine Landung auf diesem Objekt“, in Stufen bewertet",
-     "es": "Misiones de incendio: un objeto «refill» (estación de retardante de un pelicandromo) elegido de la lista, colocado y bloqueado; clave «un aterrizaje en este objeto», juzgado por niveles"
+     "es": "Misiones de incendio: un objeto «refill» (estación de retardante de un pelicandromo) elegido de la lista, colocado y bloqueado; clave «un aterrizaje en este objeto», juzgado por niveles",
+     "test": true
     }
    ]
   },

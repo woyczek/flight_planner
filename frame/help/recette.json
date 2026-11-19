@@ -3,8 +3,8 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 364,
-  "verdicts": 233
+  "tests": 365,
+  "verdicts": 232
  },
  "apps": [
   "pilote",
@@ -5207,12 +5207,15 @@
     "de": "Missionswerkstatt: „LFRF“ ist AeroDB bekannt, aber für die Route der Karte kein Punkt; ein benannter Punkt liefert seine Koordinaten und sperrt sie",
     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea"
    },
-   "test": "Recharge la page. Atelier d'une mission : au Cadre, tape « lfrf » en Départ et choisis-le. Attendu : l'itinéraire et le profil partent bien de LFRF ; la fiche du lieu dit « Position de la base aéronautique : le terrain LFRF — verrouillée. Effacez le code pour la libérer. », ses coordonnées sont grisées et la carte ne le déplace pas. Sur un lieu déjà placé, choisis un code connu : il est déplacé à la position de la base, une notification le dit avec « Annuler ». Un nom libre ne déplace rien.",
+   "test": "Recharge la page. Ouvre la mission où tu avais vu « à placer » (ta réserve du 19/11). Attendu : un départ ou une arrivée que la base place sur la carte affiche sa position dans la liste des Lieux, et « À compléter » ne demande plus sa position ; un lieu qui n'a ni position ni code reste « à placer ». Question de Création : le lieu que tu avais vu était-il un départ ou une arrivée, ou un point tournant dont tu tapais le code (« à placer » jusqu'à la sortie du champ) ? Ce dernier cas n'est pas traité dans ce lot : dis-le s'il se montre encore.",
    "since": "2026-11-19",
-   "state": "reserve",
-   "delivered": "2026-11-19T11:06:45Z",
-   "comment": "oui. mais il est encore noté « à placer ». attention, collision à prévoir avec le refacto.",
-   "at": "2026-11-19T16:53:59Z"
+   "state": "todo",
+   "delivered": "2026-11-19T18:42:49Z",
+   "previous": {
+    "verdict": "reserve",
+    "comment": "oui. mais il est encore noté « à placer ». attention, collision à prévoir avec le refacto.",
+    "at": "2026-11-19T16:53:59Z"
+   }
   },
   {
    "id": "SOG-0507",
@@ -5413,6 +5416,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T14:16:24Z"
+  },
+  {
+   "id": "SOG-0521",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions feu : un objet « refill » (station de retardant d'un pélicandrome) choisi dans la liste des pélicandromes, posé et verrouillé ; clé « un poser sur cet objet », jugée par paliers",
+    "en": "Fire missions: a “refill” object (a pelicandrome's retardant station) chosen from the pelicandrome list, placed and locked; key “a landing on this object”, judged by grades",
+    "de": "Brandmissionen: ein Objekt „Refill“ (Löschmittelstation eines Pelicandroms), aus der Liste gewählt, gesetzt und gesperrt; Schlüssel „eine Landung auf diesem Objekt“, in Stufen bewertet",
+    "es": "Misiones de incendio: un objeto «refill» (estación de retardante de un pelicandromo) elegido de la lista, colocado y bloqueado; clave «un aterrizaje en este objeto», juzgado por niveles"
+   },
+   "test": "Recharge la page. Atelier d'une mission : « ＋ Tiroir » propose le ravitaillement en retardant ; ajoute-le sur une station (pélicandrome). Attendu : la ligne de règle dit 15 m de la plaque et ± 15° de cap ; l'aide dit que le vol le juge. Vole-la : posé à moins de 15 m de la plaque, au cap à ± 15°, le temps demandé, puis reparti : le compte rendu le juge réussi ; posé hors de l'une des bornes : il le juge manqué. Dis ce que tu as vu, avec la capture si ça diffère.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T18:42:49Z"
   },
   {
    "id": "SOG-0524",
