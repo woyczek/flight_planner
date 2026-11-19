@@ -5,6 +5,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fold
+} from '../../frame/lib/fold.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -692,7 +695,14 @@ function verbsHtml(gate, panel, pk) {
   // la base : « Mettre à jour » est dans la tête du panneau (stateHeadHtml), seule en vue et primaire (règle 13 : un seul primaire par écran) ; ici le reste sous « Plus », replié. Quand un cycle manuel manque, la prise du fichier, qui passe avant
   // tout, reste en vue et devient le primaire
   return `<div class="d-verbs" data-verbs-row>${miss ? pick + pickWhy : ''}
-    <details class="d-moreverbs" data-verbs-more${S.verbsOpen ? ' open' : ''}><summary>${esc(tt(TX.upd.more))}</summary><div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div>${miss ? '' : pickWhy}</details></div>`;
+    ${fold({
+      cls: 'd-moreverbs',
+      attrs: { 'data-verbs-more': true },
+      key: 'moreverbs',
+      open: S.verbsOpen,
+      title: tt(TX.upd.more),
+      body: `<div class="d-verbs">${dl}${miss ? '' : pick}${rebuild}${purge}</div>${miss ? '' : pickWhy}`
+    })}</div>`;
 }
 /** Ce qu'il y a dans la ligne d'une zone dans la liste dépliée de la phrase d'état : son nom (un bouton qui ouvre sa fiche), son état et ce qu'elle propose. */
 export function zoneRowInner(z) {
@@ -835,7 +845,16 @@ function setInner(panel) {
 }
 /** « Ma couverture », au pied de la base : un pli (les paquets de pays, la case « Je certifie… ») dans une carte à part, redessinée comme un panneau (data-mycov-box). */
 function myCovInner() {
-  return `<details class="d-mycov" data-my-coverage${S.myCovOpen ? ' open' : ''}><summary><h3>${esc(tt(TX.lc.myCovTitle))}</h3></summary>${choiceHtml('base', frozen())}</details>`;
+  return fold({
+    cls: 'd-mycov',
+    attrs: {
+      'data-my-coverage': true
+    },
+    key: 'mycov',
+    open: S.myCovOpen,
+    head: `<h3>${esc(tt(TX.lc.myCovTitle))}</h3>`,
+    body: choiceHtml('base', frozen())
+  });
 }
 
 function myCovHtml() {
@@ -916,12 +935,12 @@ export function openGroup(set, verb) {
 /** Amène aux États des procédures (le pli « Procédures », ouvert) et donne le focus à la première case à cocher ; le lien « Cochez au moins un État » d'un geste grisé y mène. Rien si le pli n'est pas dessiné. */
 export function focusStates() {
   openGroup('proc', 'fetch');
-  const fold = S.body?.querySelector('details.f-group[data-group="proc"]');
-  if (!fold) return;
-  fold.scrollIntoView({
+  const grp = S.body?.querySelector('details.f-group[data-group="proc"]');
+  if (!grp) return;
+  grp.scrollIntoView({
     block: 'start'
   });
-  fold.querySelector('input[data-item]')?.focus({
+  grp.querySelector('input[data-item]')?.focus({
     preventScroll: true
   });
 }

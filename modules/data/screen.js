@@ -5,6 +5,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fold as foldTag
+} from '../../frame/lib/fold.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -709,7 +712,16 @@ function groupsHtml() {
     fold = (id, title, st, inner) => {
       const open = id in S.manual ? S.manual[id] : false,
         v = foldView(id, st);
-      return `<details class="f-group d-fold" data-group="${id}"${open ? ' open' : ''}><summary><span>${esc(title)}</span>${foldSpan(v)}<i class="f-status-dot" data-attn${v.k === 'todo' ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i><i class="d-chev" aria-hidden="true"></i></summary>${inner}</details>`;
+      return foldTag({
+        cls: 'f-group d-fold',
+        attrs: {
+          'data-group': id
+        },
+        key: `group:${id}`,
+        open,
+        head: `<span>${esc(title)}</span>${foldSpan(v)}<i class="f-status-dot" data-attn${v.k === 'todo' ? '' : ' hidden'} title="${esc(tt(TX.attention))}"></i><i class="d-chev" aria-hidden="true"></i>`,
+        body: inner
+      });
     },
     proc = gid('proc'),
     air = gid('aircraft'),
@@ -764,13 +776,31 @@ function opHtml(e) {
 }
 /** Le « Détail de la base » (SOG-0229, lot 4) : UN pli fermé, au pied de l'écran, qui range ce qui se lit sans rien faire — la couverture par pays, l'inventaire des données du poste, le journal ; chacun garde son propre pli et sa lecture à l'ouverture. */
 function baseDetailHtml() {
-  return `<details class="d-lc d-bdetail" data-base-detail${S.baseDetailOpen ? ' open' : ''}><summary><span class="d-lct">${esc(tt(TX.bdet.title))}</span><i class="d-chev" aria-hidden="true"></i></summary>
-    <p class="f-muted">${esc(tt(TX.bdet.hint))}</p>${covTableHtml()}${inventoryHtml()}${journalHtml()}</details>`;
+  return foldTag({
+    cls: 'd-lc d-bdetail',
+    attrs: {
+      'data-base-detail': true
+    },
+    key: 'bdetail',
+    open: S.baseDetailOpen,
+    head: `<span class="d-lct">${esc(tt(TX.bdet.title))}</span><i class="d-chev" aria-hidden="true"></i>`,
+    body: `
+    <p class="f-muted">${esc(tt(TX.bdet.hint))}</p>${covTableHtml()}${inventoryHtml()}${journalHtml()}`
+  });
 }
 /** Le journal, replié, au pied de l'écran : les opérations les plus récentes d'abord. */
 function journalHtml() {
-  return `<details class="f-card d-journal" data-journal${S.journalOpen ? ' open' : ''}><summary>${esc(tt(TX.journal))}</summary>
-    ${S.journal.length ? `<ul class="d-ops">${[...S.journal].reverse().map(opHtml).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.journalEmpty))}</p>`}</details>`;
+  return foldTag({
+    cls: 'f-card d-journal',
+    attrs: {
+      'data-journal': true
+    },
+    key: 'journal',
+    open: S.journalOpen,
+    title: tt(TX.journal),
+    body: `
+    ${S.journal.length ? `<ul class="d-ops">${[...S.journal].reverse().map(opHtml).join('')}</ul>` : `<p class="f-muted">${esc(tt(TX.journalEmpty))}</p>`}`
+  });
 }
 /** Redessine le journal seul. */
 function renderJournal() {

@@ -5,6 +5,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fold
+} from '../../frame/lib/fold.js';
+import {
   count,
   esc,
   frozen,
@@ -66,8 +69,18 @@ function countriesHtml(p, st, line) {
   const cov = new Set(S.d.cov.ids),
     off = frozen() ? ' disabled' : '',
     key = `c:${p.id}`;
-  return `<details class="d-pack d-pack-countries" data-pack-fold="${esc(key)}"${S.packOpen.has(key) ? ' open' : ''}><summary class="d-packline">${line}</summary>
-    <div class="d-opts" data-pack-zones>${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}</div></details>`;
+  return fold({
+    cls: 'd-pack d-pack-countries',
+    attrs: {
+      'data-pack-fold': key
+    },
+    key: `packfold:${key}`,
+    open: S.packOpen.has(key),
+    head: line,
+    sumCls: 'd-packline',
+    body: `
+    <div class="d-opts" data-pack-zones>${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}</div>`
+  });
 }
 /** Un thème : un pli (son nom, le nombre de pays et ce qui reste à ajouter) qui montre ses pays dans la MÊME grille que la liste des zones — une case (dans la couverture ou non), le nom — l'état d'un pays de la couverture est dit une fois, dans la liste des zones — et, en tête, un interrupteur
  *  « tout le thème » ; plus aucun bouton dans une ligne (SOG-0165) : cocher un pays l'ajoute à la couverture, le décocher l'en retire après une question (jamais purgé). */
@@ -78,13 +91,19 @@ function themeRow(p) {
     all = st.known.length > 0 && !st.toAdd.length,
     some = st.inCoverage.length > 0 && st.toAdd.length > 0,
     off = frozen() ? ' disabled' : '';
-  return `<li data-pack="${esc(p.id)}" data-kind="theme"${zonesAttr(st)}><details class="d-pack" data-pack-theme="${esc(p.id)}"${S.packOpen.has(p.id) ? ' open' : ''}>
-    <summary><b>${esc(nameOf(p))}</b> <span class="f-muted">${esc(tt(TX.packs.themeCount, { n: count('country', st.known.length), m: st.toAdd.length }))}</span></summary>
+  return `<li data-pack="${esc(p.id)}" data-kind="theme"${zonesAttr(st)}>${fold({
+    cls: 'd-pack',
+    attrs: { 'data-pack-theme': p.id },
+    key: `pack:${p.id}`,
+    open: S.packOpen.has(p.id),
+    head: `<b>${esc(nameOf(p))}</b> <span class="f-muted">${esc(tt(TX.packs.themeCount, { n: count('country', st.known.length), m: st.toAdd.length }))}</span>`,
+    body: `
     <div class="d-opts" data-pack-zones>
       <div class="d-zrow"><label class="d-opt"><input type="checkbox" role="switch" data-pack-switch="${esc(p.id)}"${all ? ' checked' : ''}${some ? ' data-mixed' : ''}${off}><span><b>${esc(tt(TX.packs.themeAll))}</b></span></label></div>
       ${st.known.map(z => `<div class="d-zrow" data-pack-zone-row="${esc(z)}"><label class="d-opt"><input type="checkbox" data-pack-cov="${esc(z)}"${cov.has(z) ? ' checked' : ''}${off}><span>${esc(M.zoneName(S.d.zones, z, li()))}</span></label></div>`).join('')}
     </div>
-    ${notesHtml(p, st)}</details></li>`;
+    ${notesHtml(p, st)}`
+  })}</li>`;
 }
 /** Le bloc des paquets (dans la carte de la couverture) : les paquets régionaux puis les filtres thématiques ; '' sans `packs()` ou sans paquet lisible. */
 export function packsHtml() {
@@ -94,10 +113,19 @@ export function packsHtml() {
     themes = packs.filter(p => p.kind === 'theme'),
     tab = (S.packTab === 'themes' && themes.length) || !regions.length ? 'themes' : 'regions',
     btn = (k, n) => `<button type="button" data-pack-tab="${k}" aria-pressed="${tab === k}">${esc(tt(k === 'regions' ? TX.packs.regions : TX.packs.themes))} (${n})</button>`;
-  return `<details class="d-packs-fold" data-packs-fold${S.packsOpen ? ' open' : ''}><summary><h3>${esc(tt(TX.packs.title))}</h3></summary><div data-packs>
+  return fold({
+    cls: 'd-packs-fold',
+    attrs: {
+      'data-packs-fold': true
+    },
+    key: 'packs',
+    open: S.packsOpen,
+    head: `<h3>${esc(tt(TX.packs.title))}</h3>`,
+    body: `<div data-packs>
     ${regions.length && themes.length ? `<div class="d-tabs" data-pack-tabs>${btn('regions', regions.length)}${btn('themes', themes.length)}</div>` : ''}
     ${regions.length ? `<ul class="d-packs" data-pack-regions${tab === 'regions' ? '' : ' hidden'}>${regions.map(regionRow).join('')}</ul>` : ''}
-    ${themes.length ? `<div data-pack-themes-box${tab === 'themes' ? '' : ' hidden'}><p class="f-muted">${esc(tt(TX.packs.themesHint))}</p><ul class="d-packs" data-pack-themes>${themes.map(themeRow).join('')}</ul></div>` : ''}</div></details>`;
+    ${themes.length ? `<div data-pack-themes-box${tab === 'themes' ? '' : ' hidden'}><p class="f-muted">${esc(tt(TX.packs.themesHint))}</p><ul class="d-packs" data-pack-themes>${themes.map(themeRow).join('')}</ul></div>` : ''}</div>`
+  });
 }
 /** L'onglet des paquets (Régions | Thèmes) : le choix tient d'un dessin à l'autre. */
 export function setPackTab(tab) {

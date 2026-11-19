@@ -7,6 +7,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fold
+} from '../../frame/lib/fold.js';
+import {
   busyNow,
   catSource,
   count,
@@ -279,12 +282,28 @@ export function cycleBarHtml() {
 export function todoHtml() {
   const t = S.cw?.todo;
   if (!t || t.state === 'none') return '';
-  const open = S.cw.todoOpen ? ' open' : '',
-    marker = n => `<summary data-todo-marker><span>${esc(tt(TX.zx.tdMarker, { n }))}</span><i class="d-chev" aria-hidden="true"></i></summary>`;
-  if (t.state !== 'ready') return `<details class="d-todo" data-todo data-todo-state="${esc(t.state)}"${open}>${marker('…')}<h3>${esc(tt(TX.cwb.todoTitle))}</h3><p class="f-muted">${esc(tt({
+  const open = !!S.cw.todoOpen;
+  /** Le pli « À faire ce mois-ci » : son repère (« À faire ce mois-ci · n ») dans le <summary data-todo-marker>, le reste dans le corps ; `attrs` : l'état et l'attribut aria-busy. */
+  const wrap = (attrs, n, body) => fold({
+    cls: 'd-todo',
+    attrs: {
+      'data-todo': true,
+      ...attrs
+    },
+    key: 'todo',
+    open,
+    head: `<span>${esc(tt(TX.zx.tdMarker, { n }))}</span><i class="d-chev" aria-hidden="true"></i>`,
+    sumAttrs: {
+      'data-todo-marker': true
+    },
+    body
+  });
+  if (t.state !== 'ready') return wrap({
+    'data-todo-state': t.state
+  }, '…', `<h3>${esc(tt(TX.cwb.todoTitle))}</h3><p class="f-muted">${esc(tt({
     loading: TX.cwb.todoLoading,
     busy: TX.cwb.todoBusy
-  }[t.state] || TX.cwb.todoUnread))}</p></details>`;
+  }[t.state] || TX.cwb.todoUnread))}</p>`);
   const r = M.todoOf(t.data, it => M.isComputed(regimeOf(it.id, it)));
   const ds = M.datasetLines(t
       .data
@@ -295,12 +314,15 @@ export function todoHtml() {
   const sc = updateScope(),
     gate = updateGate(),
     all = r.todo.length && (!sc.known || sc.n > 0) ? `<p class="d-verbs" data-todo-all><button type="button" class="primary" data-todo-act="all"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.zx.tdAll, { n: sc.known ? sc.n : r.todo.length }))}</button>${gate.disabled ? greyNote(gate.reason) : ''}</p>` : '';
-  return `<details class="d-todo" data-todo data-todo-state="ready"${open}${t.dirty || t.reading ? ' aria-busy="true"' : ''}>${marker(nTodo)}<p class="f-muted d-todo-help" data-todo-help>${esc(tt(TX.d2.tdHelp))}</p>
+  return wrap({
+    'data-todo-state': 'ready',
+    'aria-busy': t.dirty || t.reading ? 'true' : false
+  }, nTodo, `<p class="f-muted d-todo-help" data-todo-help>${esc(tt(TX.d2.tdHelp))}</p>
     ${all}
     ${nTodo ? `<ul class="d-todo-l" data-todo-list>${r.todo.map(x => lineHtml(x.item, x.kind, t.data)).join('')}${ds.todo.map(d => datasetLineHtml(d, true)).join('')}</ul>` : `<p class="f-ok" data-todo-all>${esc(tt(TX.cwb.todoAll))}</p>`}
     ${opAreaHtml('base', 'todo')}
     ${nDone ? `<details class="d-todo-done" data-todo-done${S.cw.doneOpen ? ' open' : ''}><summary data-act="todo-done">${esc(tt(TX.cwb.todoDone, { n: nDone }))}</summary><ul class="d-todo-l">${r.done.map(it => lineHtml(it, null, t.data)).join('')}${ds.done.map(d => datasetLineHtml(d, false)).join('')}</ul></details>` : ''}
-    ${r.gone.length ? `<h4 class="f-muted" data-todo-unavailable-title>${esc(tt(TX.cw.unavailableTitle))}</h4><ul class="d-todo-l d-todo-gone" data-todo-gone>${r.gone.map(goneHtml).join('')}</ul>` : ''}</details>`;
+    ${r.gone.length ? `<h4 class="f-muted" data-todo-unavailable-title>${esc(tt(TX.cw.unavailableTitle))}</h4><ul class="d-todo-l d-todo-gone" data-todo-gone>${r.gone.map(goneHtml).join('')}</ul>` : ''}`);
 }
 /** La mise en page de « À faire ce mois-ci » (à côté de CW_STYLE) : un bloc encadré, replié sous son repère de la hauteur d'un doigt ; une ligne par source, les coches l'une sous l'autre au téléphone et côte à côte en large ; chaque bouton a la taille d'un doigt. */
 export const TODO_STYLE = `

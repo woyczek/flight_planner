@@ -6739,7 +6739,7 @@ def _l89_cycle(world):
     return answer
 
 
-def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_running=None, busy_view=None, publish=None, nat=None, my_coverage=True, extra=None, last_results=None):
+def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_running=None, busy_view=None, publish=None, nat=None, my_coverage=True, extra=None, last_results=None, views=()):
     """The Données screen on the fake launcher of lot B: the map and the packs of L88, the fake `base/cycle` (_l89_cycle), the state of five countries (France waits for a file seen in Downloads, the United Kingdom is stale and buildable,
     the others are up to date) read from the LIVE `world['zs']`; the stubbed catalogue says the SIA's two files and shelves UK Mil.  Returns (st, x4)."""
     x4 = lambda s: [f'{s} fr', f'{s} en', f'{s} de', f'{s} es']
@@ -6758,7 +6758,7 @@ def _l89_open(c, world, status=True, verbs=('base/pickup', 'base/cycle'), busy_r
         cfg['nat'] = nat   # the stub of aerodb answers natState() / natEnsure() from window.__stub.nat (lot C)
     if extra:
         extra(cfg)
-    st = _launcher(c, [], verbs=_VERBS + list(verbs), cycle=_l89_cycle(world), busy_running=busy_running, busy_view=busy_view, publish=publish, last_results=last_results)
+    st = _launcher(c, list(views), verbs=_VERBS + list(verbs), cycle=_l89_cycle(world), busy_running=busy_running, busy_view=busy_view, publish=publish, last_results=last_results)
     world.setdefault('zs', {'ca': _zst('up-to-date'), 'es': _zst('up-to-date'), 'us': _zst('up-to-date'),
                             'fr': _zst('stale', {'code': 'pickup-waiting', 'source': 'sia', 'cycle': '2026-11-26', 'zip': 'export_xml_bd_sia_2026-10-29-v01.zip'}, buildable=False), 'gb': _zst('stale', _NEWER)})
     if status:
@@ -10875,3 +10875,109 @@ def l168(c):
         c.ok(same, None, 'the list and the table unfold the same detail')
         c.ok(fits(), noscroll(), 'no sideways scroll with a country unfolded')
     c.check_errors()
+
+
+# the folds the screen kept before the common fold (SOG-0468 (3)), found by their classes; the key each one must carry, from its own attributes (bdetail has both d-lc and d-bdetail: asked first)
+_L169_LEGACY = ('details.f-group, details.d-journal, details.d-bdetail, details.d-moreverbs, details.d-packs-fold, details.d-mycov, details.d-todo, '
+                'details.d-lc, details.d-pack, details.d-covtable, details.d-inventory')
+_L169_KEYS = """(legacy) => {
+  const keyOf = d => d.matches('details.f-group') ? 'group:' + d.dataset.group : d.matches('details.d-bdetail') ? 'bdetail'
+    : d.matches('details.d-lc') ? 'lc:' + d.dataset.lcFold : d.matches('details.d-journal') ? 'journal' : d.matches('details.d-moreverbs') ? 'moreverbs'
+    : d.matches('details.d-packs-fold') ? 'packs' : d.matches('details.d-mycov') ? 'mycov' : d.matches('details.d-todo') ? 'todo'
+    : d.matches('details.d-covtable') ? 'covtable' : d.matches('details.d-inventory') ? 'inventory'
+    : d.matches('details.d-pack-countries') ? 'packfold:' + d.dataset.packFold : 'pack:' + d.dataset.packTheme;
+  return [...document.querySelector('[data-module=data]').querySelectorAll(legacy)].map(d => [keyOf(d), d.getAttribute('data-fold')]);
+}"""
+_L169_KEYS_WANT = sorted(['group:proc', 'group:vfr', 'group:aircraft', 'group:weather', 'group:sources', 'bdetail', 'covtable', 'inventory', 'journal', 'mycov', 'packs',
+                          'moreverbs', 'todo', 'lc:later', 'lc:change', 'lc:unread', 'lc:registry', 'lc:tours', 'pack:iles', 'packfold:c:ouest', 'packfold:c:amerique'])
+_L169_SELS = {'group:weather': 'details.f-group[data-group=weather]', 'group:proc': 'details.f-group[data-group=proc]', 'journal': 'details[data-journal]',
+              'bdetail': 'details[data-base-detail]', 'packs': 'details[data-packs-fold]', 'mycov': 'details[data-my-coverage]', 'moreverbs': 'details[data-verbs-more]',
+              'todo': 'details[data-todo]', 'lc:later': 'details[data-lc-fold=later]', 'pack:iles': 'details[data-pack-theme=iles]',
+              'packfold:c:ouest': 'details[data-pack-fold="c:ouest"]'}
+
+
+def _fold_hand(c, sel, state):
+    """Opens (`state` True) or closes a fold by hand and returns once its toggle event has gone through the listener of the screen (a capturing listener on the body runs before one set on the fold itself;
+    1.5 s at most: a fold whose event never comes is measured by what the next steps find)."""
+    c.js("""async ([sel, state]) => { const d = document.querySelector(sel); if (!d || d.open === state) return;
+      const gone = new Promise(r => d.addEventListener('toggle', r, { once: true })); d.open = state;
+      await Promise.race([gone, new Promise(r => setTimeout(r, 1500))]) }""", [sel, state])
+
+
+def _folds_open(c, sels):
+    """Whether each fold of `sels` is open now (None: not on the screen)."""
+    return c.js("(sels) => sels.map(s => { const d = document.querySelector(s); return d ? d.open : null })", list(sels))
+
+
+@case('L169', 'Données: every fold that keeps a state goes through the common fold (SOG-0468 (3), frame/lib/fold.js) — each one opens and closes by hand and does what it did (the state kept across a redraw, the coverage table and the inventory read again at each opening, the NAT line read when « Quand ça change » opens), and carries its data-fold key',
+      'L', tags=('data',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (3) (frame/INTEGRATION § 12f): the builders of Données keep their class and their own data- attribute and gain data-fold only; ONE listener (wireFolds) replaces the chain of matches of onToggle, with the same effects: group:<id> (kept), journal, bdetail, moreverbs, packs, mycov, todo (kept), lc:<id> (kept; « change » reads the NAT validity), pack:<id> and packfold:<key> (kept), covtable and inventory (read at each opening); the folds without a state (the lines of the sets, « n autres », « Déjà faits ») stay by hand and carry no key')
+def l169(c):
+    w = _l93_world()
+    valid = {'present': True, 'count': 17, 'from': '2026-11-12T07:00:00Z', 'validUntil': '2026-11-12T19:00:00Z', 'expired': False, 'current': 12}
+
+    def themes(cfg):
+        cfg['packs']['themes'] = [{'id': 'iles', 'names': ['Îles', 'Islands', 'Inseln', 'Islas'], 'zones': ['gb', 'jp', 'es']}]
+    st, _x4 = _l89_open(c, w, verbs=('base/pickup', 'base/cycle', 'base/publish', 'base/coverage'), publish=lambda a: w['plan'] if a.get('dry', True) else w['real'],
+                        nat={'state': valid}, my_coverage=False, extra=themes, views=[_cov_ok()])
+    _l93_ready(c)
+    st['inventory'] = _INV
+    calls = lambda: c.js('window.__stub.calls') or {}
+    # ---- 1. the folds of the screen, found by their classes: exactly these, each with its own key to come
+    pairs = c.js(_L169_KEYS, _L169_LEGACY)
+    c.eq(sorted(k for k, _ in pairs), _L169_KEYS_WANT, 'the folds that keep a state: five groups, the detail of the base with its coverage table, inventory and journal, « Ma couverture » with its packs and its « Plus », what is left to do, the five folds of the cycle, a theme and the two regions', what='folds')
+    # ---- 2. « Quand ça change » reads the NAT validity once, when it opens by hand (toggleLc)
+    c.eq(calls().get('natState', 0), 0, 'nothing reads the NAT line before the fold opens', what='no NAT read yet')
+    _fold_hand(c, 'details[data-lc-fold=change]', True)
+    c.until("(window.__stub.calls || {}).natState === 1", timeout=4000, what='the NAT line is read when « Quand ça change » opens')
+    # ---- 3. the inventory is read when it opens, and again at the next opening (S.inventory emptied when it closes)
+    c.eq(st['inventory_calls'], 0, 'folded: nothing read', what='inventory folded')
+    _fold_hand(c, 'details[data-inventory]', True)
+    c.until("document.querySelectorAll('[data-inventory-list] li').length === 7", timeout=15000, what='the seven lines')
+    c.eq(st['inventory_calls'], 1, 'one read, when opened', what='inventory read')
+    _fold_hand(c, 'details[data-inventory]', False)
+    _fold_hand(c, 'details[data-inventory]', True)
+    for _ in range(50):
+        if st['inventory_calls'] > 1:
+            break
+        c.wait(100)
+    c.wait(400)
+    c.eq(st['inventory_calls'], 2, 'closed then opened again: read again, once', what='inventory read again')
+    # ---- 4. the coverage table is read when it opens (shared with the hatch of the world map), and again at the next opening
+    for _ in range(50):   # the read of the map follows the state read: wait for it, never a fixed delay
+        if _posts(st, 'coverage'):
+            break
+        c.wait(150)
+    c.wait(600)
+    _fold_hand(c, 'details[data-covtable]', True)
+    c.until("document.querySelectorAll('[data-cov-zone]').length === 3", timeout=10000, what='the table')
+    n1 = len(_posts(st, 'coverage'))
+    _fold_hand(c, 'details[data-covtable]', False)
+    _fold_hand(c, 'details[data-covtable]', True)
+    for _ in range(50):
+        if len(_posts(st, 'coverage')) > n1:
+            break
+        c.wait(100)
+    c.wait(400)
+    c.eq(len(_posts(st, 'coverage')), n1 + 1, 'closed then opened again: the table is read again, once', what='table read again')
+    # ---- 5. the state of the others is kept across a whole redraw (the screen's own addZones, then removeZones): each flipped by hand, the screen redrawn, each as left
+    keys = list(_L169_SELS)
+    sels = [_L169_SELS[k] for k in keys]
+    before = _folds_open(c, sels)
+    c.eq([k for k, b in zip(keys, before) if b is None], [], 'each of these folds is on the screen', what='on the screen')
+    for sel, b in zip(sels, before):
+        _fold_hand(c, sel, not b)
+    _readd(c, 'it')
+    c.eq(_folds_open(c, sels), [not b for b in before], 'flipped by hand, kept across a redraw: ' + ', '.join(keys), what='kept')
+    for sel, b in zip(sels, before):
+        _fold_hand(c, sel, b)
+    _untick(c, 'it')
+    c.eq(_folds_open(c, sels), before, 'flipped back by hand, kept as left across a second redraw', what='kept again')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.check_errors()
+    # ---- 6. last: the contract of the common fold — each fold above carries data-fold with its key, every key is unique, the folds without a state carry none
+    pairs = c.js(_L169_KEYS, _L169_LEGACY)
+    c.eq(c.count('details.d-more[data-fold], details.f-card[data-set][data-fold], details.d-todo-done[data-fold]'), 0, 'the lines of the sets, « n autres » and « Déjà faits » have no state: no key', what='stateless')
+    c.eq([[k, f] for k, f in pairs if f != k], [], 'each fold carries data-fold with its key', what='data-fold')
+    c.eq(len({f for _, f in pairs}), len(pairs), 'the keys are unique on the screen', what='unique')
+    c.eq(c.count('[data-module=data] details[data-fold]'), len(pairs), 'no other fold of the screen carries a key', what='no other key')

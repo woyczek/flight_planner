@@ -7,6 +7,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fold as foldTag
+} from '../../frame/lib/fold.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -65,7 +68,16 @@ const cycleData = () => S.cw?.todo?.state === 'ready' ? S.cw.todo.data : null;
 /** Le nom court d'une source : celui du catalogue, à défaut celui de la liste du cycle, à défaut son identifiant. */
 const srcName = (id, data) => String(catSource(id)?.n?.[li()] || data?.items?.[id]?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');
 /** Un pli : son titre et son contenu ; l'état ouvert / fermé est retenu à la main. */
-const fold = (id, title, body, pill = '') => `<details class="d-lc" data-lc-fold="${id}"${S.cw.lc.open[id] ? ' open' : ''}><summary><span class="d-lct">${esc(title)}</span>${pill ? ` <span class="d-pill" data-lc-pill>${esc(pill)}</span>` : ''}<i class="d-chev" aria-hidden="true"></i></summary>${body}</details>`;
+const fold = (id, title, body, pill = '') => foldTag({
+  cls: 'd-lc',
+  attrs: {
+    'data-lc-fold': id
+  },
+  key: `lc:${id}`,
+  open: S.cw.lc.open[id],
+  head: `<span class="d-lct">${esc(title)}</span>${pill ? ` <span class="d-pill" data-lc-pill>${esc(pill)}</span>` : ''}<i class="d-chev" aria-hidden="true"></i>`,
+  body
+});
 
 // ------------------------------------------------------------------------------------------------ Cycle suivant
 /** « Cycle suivant (2612) » : trois listes — déjà dans Téléchargements (par les noms de fichiers), à aller chercher à la main, que le poste prendra seul quand il sera en vigueur — puis, à part, ce que l'éditeur n'offre plus ; '' tant que la liste du cycle n'est pas lue. */

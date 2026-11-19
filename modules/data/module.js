@@ -6,6 +6,9 @@ import {
   TX
 } from './texts.js';
 import {
+  wireFolds
+} from '../../frame/lib/fold.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -183,6 +186,7 @@ export const meta = {
     'zoneop.js', 'select.js',
     '../../frame/lib/plural.js', '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par model_sets.js
     '../../frame/lib/sortlist.js', // SOG-0498 : le tri du tableau de couverture (covtable.js)
+    '../../frame/lib/fold.js', // SOG-0468 (3) : le pli (fold) et son écouteur (wireFolds) : screen.js, packs.js, panels.js, later.js, todo.js, covtable.js, inventory.js, module.js
     '../maps/lib/map_base.js?v=0', '../maps/render.js?v=0', '../../frame/lib/dom.js', '../../frame/lib/time.js'
   ],
   // la carte des zones : MapLibre et les contours, chargés à la demande par le socle de carte (comme la Météo) ; les tuiles, appelées par MapLibre lui-même
@@ -486,35 +490,52 @@ function onInput(e) {
     t.closest('.d-codes')?.querySelector('[data-codes-error]')?.remove();
   }
 }
-/** Retient les groupes ouverts ou fermés à la main, d'un dessin à l'autre. */
-function onToggle(e) {
-  const g = e.target;
-  if (g instanceof HTMLDetailsElement && g.matches('details.f-group') && g.isConnected) S.manual[g.dataset.group] = g.open;
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-journal') && g.isConnected) S.journalOpen = g.open;
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-bdetail') && g.isConnected) S.baseDetailOpen = g
-    .open; // le « Détail de la base » (SOG-0229)
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-moreverbs') && g.isConnected) S.verbsOpen = g.open;
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-packs-fold') && g.isConnected) S.packsOpen = g
-    .open; // « Paquets de pays », replié d'origine (SOG-0228)
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-mycov') && g.isConnected) S.myCovOpen = g
-    .open; // « Ma couverture » (paquets, case « Je certifie… »), repliée d'origine
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-todo') && g.isConnected && S.cw) S.cw.todoOpen = g
-    .open; // « À faire ce mois-ci » : replié d'origine, l'ouverture à la main est gardée
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-lc') && g.isConnected) toggleLc(g.dataset.lcFold, g
-    .open); // cycle suivant, quand ça change, vu pas encore lu
-  else if (g instanceof HTMLDetailsElement && g.matches('details.d-pack') && g.isConnected) {
-    const key = g.dataset.packTheme || g.dataset.packFold; // un thème, ou le pli « Pays » d'une région (SOG-0186)
-    g.open ? S.packOpen.add(key) : S.packOpen.delete(key);
-  }
-  if (g instanceof HTMLDetailsElement && g.matches('details.d-covtable') && g.isConnected) {
-    if (g.open) openCovTable(); // le tableau se lit à l'ouverture, une fois (SOG-0174)
+/** Retient (ou oublie) un pli de paquet ouvert : `id` est l'identifiant du thème, ou « c:<paquet> » pour le pli « Pays » d'une région. */
+function setPackOpen(id, open) {
+  if (open) S.packOpen.add(id);
+  else S.packOpen.delete(id);
+}
+/** Ce que fait chaque pli de l'écran quand il s'ouvre ou se ferme, par genre : la clé du pli (data-fold, posée par fold()) est « genre » ou « genre:id », `id` le reste. Les plis sans clé (lignes de jeux, « n autres », « Déjà faits ») n'ont pas d'état. */
+const FOLD_EFFECT = {
+  group: (id, open) => {
+    S.manual[id] = open;
+  }, // un groupe ouvert ou fermé à la main, d'un dessin à l'autre
+  journal: (id, open) => {
+    S.journalOpen = open;
+  },
+  bdetail: (id, open) => {
+    S.baseDetailOpen = open;
+  }, // le « Détail de la base » (SOG-0229)
+  moreverbs: (id, open) => {
+    S.verbsOpen = open;
+  },
+  packs: (id, open) => {
+    S.packsOpen = open;
+  }, // « Paquets de pays », replié d'origine (SOG-0228)
+  mycov: (id, open) => {
+    S.myCovOpen = open;
+  }, // « Ma couverture » (paquets, case « Je certifie… »), repliée d'origine
+  todo: (id, open) => {
+    if (S.cw) S.cw.todoOpen = open;
+  }, // « À faire ce mois-ci » : replié d'origine, l'ouverture à la main est gardée
+  lc: (id, open) => toggleLc(id, open), // cycle suivant, quand ça change, vu pas encore lu
+  pack: (id, open) => setPackOpen(id, open), // un thème (SOG-0065)
+  packfold: (id, open) => setPackOpen(id, open), // le pli « Pays » d'une région (SOG-0186)
+  covtable: (id, open) => {
+    if (open) openCovTable(); // le tableau se lit à l'ouverture, une fois (SOG-0174)
     else closeCovTable(); // fermé : la prochaine ouverture relit
-  }
-  if (g instanceof HTMLDetailsElement && g.matches('details.d-inventory') && g.isConnected) {
-    if (g.open) openInventory(); // l'inventaire se lit à l'ouverture, une fois
+  },
+  inventory: (id, open) => {
+    if (open) openInventory(); // l'inventaire se lit à l'ouverture, une fois
     else S.inventory = null; // fermé : la prochaine ouverture relit (une lecture ratée peut être refaite)
   }
-  if (g instanceof HTMLDetailsElement && g.open) attachMaps(g); // un groupe qui s'ouvre : sa carte, jusque-là sans taille, démarre
+};
+/** Un pli de l'écran s'ouvre ou se ferme (wireFolds) : son effet (FOLD_EFFECT), puis, ouvert, ses cartes : celle d'un groupe, jusque-là sans taille, démarre. Pas de `get` : chaque bascule rejoue son effet, comme avant. */
+function onFold(key, open, el) {
+  const i = key.indexOf(':'),
+    kind = i < 0 ? key : key.slice(0, i);
+  if (Object.hasOwn(FOLD_EFFECT, kind)) FOLD_EFFECT[kind](i < 0 ? '' : key.slice(i + 1), open);
+  if (open) attachMaps(el);
 }
 /** Identifiant du groupe dont l'aide s'ouvre : le dernier touché s'il est encore ouvert, sinon le premier ouvert ; '' sans. */
 function helpGroup() {
@@ -648,7 +669,7 @@ export async function mount(el, ctx) {
   };
   window.addEventListener('online', S.onNet);
   window.addEventListener('offline', S.onNet);
-  S.body.addEventListener('toggle', onToggle, true);
+  S.stops.push(wireFolds(S.body, onFold)); // les plis à clé ; l'écouteur est retiré au démontage (S.stops)
   // la couverture par État dépend de la table de couverture d'aerodb : redemandée quand il annonce { coverage: true }
   if (ctx.aerodb?.on) S.stops.push(ctx.aerodb.on('change', onAerodbChange));
   const me = S;

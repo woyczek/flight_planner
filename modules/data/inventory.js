@@ -7,6 +7,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fold
+} from '../../frame/lib/fold.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js'; // un rendu ne bouge ni le défilement ni la frappe
 import {
@@ -99,12 +102,21 @@ function moveHtml() {
  *  Sans lanceur la carte n'existe pas : l'inventaire est celui de ce poste. */
 export function inventoryHtml() {
   const inv = S.inventory;
-  return `<details class="d-inventory" data-inventory${inv?.open ? ' open' : ''}><summary>${esc(tt(TX.inventory.title))}</summary>
+  return fold({
+    cls: 'd-inventory',
+    attrs: {
+      'data-inventory': true
+    },
+    key: 'inventory',
+    open: inv?.open,
+    title: tt(TX.inventory.title),
+    body: `
     <p class="f-muted">${esc(tt(TX.inventory.intro))}</p>
     ${inv?.state === 'loading' ? `<p class="f-muted" data-inv-state="loading">${esc(tt(TX.inventory.loading))}</p>` : ''}
     ${inv?.state === 'unread' ? `<p class="f-warn" data-inv-state="unread">${esc(tt(TX.inventory.unread))}</p>` : ''}
     ${inv?.rows ? `<ul class="d-inv" data-inventory-list>${rowsHtml(inv.rows)}</ul>
-      <p class="f-muted" data-inv-total>${esc(tt(TX.inventory.total, { n: M.fmtBytes(I.inventoryTotal(inv.rows), lang()) }))}</p>` : ''}${!S?.ctx?.launcher || moveGate() === 'unknownVerb' || (inv && inv.state !== 'unread') ? moveHtml() : ''}</details>`;
+      <p class="f-muted" data-inv-total>${esc(tt(TX.inventory.total, { n: M.fmtBytes(I.inventoryTotal(inv.rows), lang()) }))}</p>` : ''}${!S?.ctx?.launcher || moveGate() === 'unknownVerb' || (inv && inv.state !== 'unread') ? moveHtml() : ''}`
+  });
 }
 
 /** Redessine le seul bloc d'inventaire (comme le journal), sans toucher aux autres ni au défilement. */

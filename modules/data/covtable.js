@@ -7,6 +7,9 @@ import {
   TX
 } from './texts.js';
 import {
+  fold
+} from '../../frame/lib/fold.js';
+import {
   keepScroll
 } from '../../frame/lib/dom.js';
 import {
@@ -106,12 +109,21 @@ function tableHtml(c) {
 export function covTableHtml() {
   const c = S.cov,
     why = gate();
-  return `<details class="d-covtable" data-covtable${c?.open ? ' open' : ''}><summary>${esc(tt(TX.cov.title))}</summary>
+  return fold({
+    cls: 'd-covtable',
+    attrs: {
+      'data-covtable': true
+    },
+    key: 'covtable',
+    open: c?.open,
+    title: tt(TX.cov.title),
+    body: `
     <p class="f-muted">${esc(tt(TX.cov.intro))}</p>
     ${why ? `<p class="f-muted" data-cov-state="${why}">${esc(tt(TX.cov[why]))}</p>` : ''}
     ${!why && c?.state === 'loading' ? `<p class="f-muted" data-cov-state="loading">${esc(tt(TX.cov.loading))}</p>` : ''}
     ${!why && (c?.state === 'busy' || c?.state === 'unread') ? `<p class="f-warn" data-cov-state="${c.state}">${esc(tt(TX.cov[c.state]))}</p><p><button type="button" data-cov-reload>${esc(tt(TX.cov.reload))}</button></p>` : ''}
-    ${!why && c?.rows ? tableHtml(c) : ''}</details>`;
+    ${!why && c?.rows ? tableHtml(c) : ''}`
+  });
 }
 /** Redessine le seul bloc, sans toucher aux autres ni au défilement. */
 function redraw() {
