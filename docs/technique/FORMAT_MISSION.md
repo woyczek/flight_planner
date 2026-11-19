@@ -113,7 +113,7 @@ phases:
 | | `{ kind: 'zone', shape, ceilingFt, zoneId, shown, actor, fallbackMin }` — `shape` is `{ circle: { lat, lon, radiusM } }` or `{ polygon: [[lat, lon], …] }`; `shown` is true only when the file writes `zone_shown: true` (SOG-0459); `actor` is the moving target that crosses the zone (an object, as below), or null: the pilot |
 | | `{ kind: 'object', object, fallbackMin }` — `object` is `{ id, kind, name, lat, lon, rangeNm, heightFt, altitudeFt, confirm, hiddenUntil, moving, motion }`; `motion` is null, `{ kind: 'route', route, speedKt, startDelayMin }` or `{ kind: 'axis', courseDeg, speedKt, startDelayMin }` |
 | | `{ kind: 'arrival', point, at: { lat, lon }, radiusNm, speedMaxKt, onGround, required: [{ id, lat, lon }], escortMinSec, fallbackMin }` |
-| | `{ kind: 'condition', condition, rule \| steps \| event, fallbackMin }` — the workshop's 1.1 conditions: `hover`, `landing`, `overflight` (a `rule`), `sequence` (1 to 10 `steps`, each a rule), `event` (the id of a message between crews) |
+| | `{ kind: 'condition', condition, rule \| steps \| event, fallbackMin }` — the workshop's 1.1 conditions: `hover`, `landing`, `overflight` (a `rule`), `sequence` (1 to 10 `steps`, each a rule), `event` (the id of a message between crews); and `refill`, the retardant refill at a station (a `rule`, § 4 septies, SOG-0521) |
 | | `{ kind: 'hand', fallbackMin }` |
 | `keyWhy` | `''`; `'several'` (several keys written: one is kept, see below); `'zone'`, `'object'`, `'actor'`, `'condition'`, `'point'`, `'delay'` (the key could not be read: the drawer opens by hand, or at its fallback hour) |
 | `condition` | the kind of `trigger_condition` written (`arrival`, `hover`…), to say it; `''` without one |
@@ -135,7 +135,7 @@ phases:
   `condition` names it. The kind is kept only as a short word (`[a-z0-9_]`), never as free text.
 - **Not judged in flight yet** — `notJudgedYet(key)` says it, for the pilot's screen (« pas encore jugé en vol — s'ouvre à
   l'heure de repli ou au geste »): a 1.1 condition (except a complete landing, overflight or hover, over a point or a still object, and a sequence of one to
-  ten such steps with no overflight to confirm, which the flight judges: `follows` of `drawers.js`), a zone crossed by a target (`key.actor`), an object that moves
+  ten such steps with no overflight to confirm, which the flight judges: `follows` of `drawers.js`; a `refill` is never judged yet), a zone crossed by a target (`key.actor`), an object that moves
   (`key.object.moving`), a required following (`key.escortMinSec > 0`).
 - `drawerSlots(doc)` → `[{ i, id }]`: which entries of `phases` are drawers (their place in the list, their id) — the one rule of
   acceptance, shared by the reader and by the workshop (`modules/missions/editor_drawers.js`), which keeps the other entries as
@@ -344,6 +344,48 @@ turning_points:
 - **Never a position of a local source** (Sécurisation, SOG-0153 / Q-0061): a place of the base that comes from X-Plane, Eurocontrol, Little Navmap or a
   record marked `local` gives the workshop its code only — its position is never written in a mission file (the place stays « à placer »).
 
+## 4 septies. The retardant refill — `kind: refill` (SOG-0521, 19 Nov 2026)
+
+The user, 19 Nov 2026, for the fire missions: « ce n'est pas juste un poser, c'est atterrir, se placer contre l'objet, faire un refill
+(mini 5mn), repartir » and « il faut orienter la bestiole dans le bon sens ». The station is an object of the kind `refill` (§ 4: still by
+nature), placed on the loading position of the aerodrome; the drawer opens when the pilot has landed against it, stayed, and left again:
+
+```yaml
+objects:
+  - { id: OBJ-1, kind: refill, name: Station de retardant, lat: 44.6, lon: 1.4 }   # no detection range needed: a station is not « found »
+phases:
+  - id: B
+    trigger_condition:
+      kind: refill                 # a word of its own: « refuel » would read as the air-to-air refuelling of the AAR family
+      object: OBJ-1                # a STATION only: an object of the kind refill, placed (never a point)
+      duration_sec: 300            # optional, 1 to 3 600 — the minimum time against the station; 300 when absent
+      heading_deg: 270             # optional, 0 to 359 — the heading to stand at; absent: no heading required
+      # radius_m: 30               # optional, 1 to 200 — the distance to the station; REFILL_RULE.radiusM (30) when absent
+      # heading_tol_deg: 30        # optional, 1 to 90 — the tolerance on the heading; REFILL_RULE.headingTolDeg (30) when absent
+      # max_gap_sec: 10            # optional, 5 (one fix period) to 60 — the longest gap between two fixes; 10 when absent
+      # speed_max_kt: 3            # optional, 0 to 50 — « stopped »: the tolerance of a landing (HOLD_BOUNDS); 3 when absent
+      # require_departure: true    # optional, true by default — leave again once refilled
+    fallback_delay_min: 60
+```
+
+- **The rule**: land, stop within `radius_m` of the station, ground speed under `speed_max_kt`, at `heading_deg` ± `heading_tol_deg`
+  when a heading is written, stay `duration_sec` without a gap longer than `max_gap_sec` between two fixes, then leave
+  (`require_departure`).
+- **The parameters are ONE table of the reader**, `REFILL_RULE` (exported, frozen; read by the reader and by the workshop, never
+  copied): R = 30 m in 1 to 200, a heading tolerance of ± 30° in 1 to 90, a heading in 0 to 359, 300 s and 10 s by default — the values
+  proposed to the user (Q-0121). The duration and the gap have the bounds of the holds (`HOLD_BOUNDS`), the gap never under the period
+  of a fix (`FIX_PERIOD_SEC`, 5 s).
+- **The reader gives** `{ kind: 'condition', condition: 'refill', rule, fallbackMin }`, `rule` being `{ kind: 'refill', label, point:
+  null, at: null, object: { id, kind: 'refill', name, lat, lon, moving: false }, radiusM, durationSec, maxGapSec, speedMaxKt,
+  headingDeg | null, headingTolDeg, departure, confirmation: '', confirm: false }` — every absent number replaced by its parameter.
+- **Unreadable** (the gesture alone, `keyWhy: 'condition'`, `condition: 'refill'`): a `point`, an object of another kind, a station
+  « to place » or absent, a number written out of its bounds (never clamped), a heading that is not a number. A refill is **never a
+  step of a sequence** (the sequence is then unreadable).
+- **Not judged in flight yet**: `notJudgedYet` is true and `follows` (`modules/missions/drawers.js`) is false; the drawer opens by the
+  gesture or at its fallback hour. The day « Affectation » judges it, `notJudgedYet` follows (noreg N155 keeps the two in agreement).
+- **The pilot's view**: a closed refill drawer leaves nothing (§ 4 bis); open, it is there whole, its station resolved.
+  Bench: `frame/lib/test/mission.html` (noreg N1); noreg N182.
+
 ## 5. An untrusted file
 
 Any pilot can write a mission file. Texts are cut (title 120, `trigger` 200, message 2 000, briefing 20 000 signs); a
@@ -373,7 +415,8 @@ unreadable and the drawer opens by hand:
 The 1.1 rules: `radius_m` of a hover 0.1 to 10 000 (of a landing: not read), `duration_sec` 1 to 3 600, `max_gap_sec` 0.1 to 60, `speed_max_kt` of a landing 0 to
 50 (3 when absent), `speed_tolerance_kt` 0 to 100, `height_min_ft` ≤ `height_max_ft` within 0 to 60 000, `radius_nm` of an
 overflight 0.001 to 100; a point AND an object, or neither, is unreadable; a sequence has 1 to 10 steps, never nested; the
-id of an event and a recipient are short words (80 signs, `[A-Za-z0-9_.-]`).
+id of an event and a recipient are short words (80 signs, `[A-Za-z0-9_.-]`). A refill (§ 4 septies): `radius_m` 1 to 200, `duration_sec`
+1 to 3 600, `max_gap_sec` 5 to 60, `speed_max_kt` 0 to 50, `heading_deg` 0 to 359, `heading_tol_deg` 1 to 90, a station only.
 
 **What `to` holds is not decided yet** (the ergonomist decides on Thursday: a call sign, a role or « all »). Until then the workshop writes only
 `emit_event: { id, to: [all] }` (« all » passes `EVENT_ID`) and its sheet offers no field for the recipients. A file that already carries other

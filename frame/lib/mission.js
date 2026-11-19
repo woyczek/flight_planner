@@ -35,14 +35,18 @@
 //         fallbackMin | null }
 //       { kind: 'arrival', point, at: { lat, lon }, radiusNm, speedMaxKt, onGround, required: [{ id, lat, lon }], escortMinSec,
 //         fallbackMin | null }
-//       { kind: 'condition', condition: 'hover' | 'landing' | 'overflight' | 'sequence' | 'event', rule | steps | event, fallbackMin } (les
-//         conditions de la version 1.1 de l'atelier : lues bornées, pas encore jugées en vol)
+//       { kind: 'condition', condition: 'hover' | 'landing' | 'overflight' | 'sequence' | 'event' | 'refill', rule | steps | event,
+//         fallbackMin } (les conditions de la version 1.1 de l'atelier : lues bornées ; `refill`, le ravitaillement en retardant à une
+//         station, SOG-0521 : rule { kind: 'refill', object (la station), radiusM, durationSec, maxGapSec, speedMaxKt, headingDeg | null,
+//         headingTolDeg, departure } — lu borné, jamais jugé en vol tant que `follows` ne le juge pas)
 //       { kind: 'hand', fallbackMin | null }
 //     keyWhy : '' | 'several' | 'zone' | 'object' | 'actor' | 'condition' | 'point' | 'delay' ; condition : le genre de trigger_condition
 //     écrit ; emits : { id, to } (le message envoyé aux autres équipages à l'ouverture) ou null ; route : la suite de route en points résolus (la forme de missionFlight) — jamais dans turns, routeNm ni missionFlight.
 //   OBJECT_KINDS, DRAWER_IDS, DRAWER_BOUNDS : les genres d'objet (liste fermée), les identifiants des tiroirs, les bornes de lecture.
 //   HOLD_KINDS, HOLD_BOUNDS, CONFIRM_WORD, EVENT_ID : les conditions de maintien et de survol (1.1), les bornes de leurs nombres, la
 //     forme d'un mot de confirmation et d'un identifiant d'événement — LES règles de lecture, que l'atelier reprend pour écrire (SOG-0500).
+//   REFILL_RULE : les paramètres d'un ravitaillement en retardant (SOG-0521, Q-0121) — R (30 m) et ses bornes, la tolérance de cap (± 30°)
+//     et ses bornes, les bornes du cap, la durée minimale (300 s) et l'écart permis (10 s) par défaut ; l'atelier les lit d'ici.
 //   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1 — sauf l'atterrissage, le survol, le stationnaire et la suite d'étapes complets, que le vol juge —,
 //     cible qui franchit, objet mobile, suivi) ; suit `follows` de drawers.js, le contrôle N155 le garde.
 //   passageMin(mission, pointId) → { nm, min | null } : la distance et le temps estimé du départ au passage d'un point de la partie A
@@ -448,6 +452,75 @@ function holdRule(c, place, object) {
   return (pid ? !at : !obj) || need.some(k => r[k] === null) || r.heightMinFt !== null && r.heightMinFt > r.heightMaxFt ? null : r;
 }
 
+/** Les PARAMÈTRES d'un ravitaillement en retardant (la condition `refill`, SOG-0521 ; Q-0121 : les valeurs proposées à l'utilisateur) —
+ *  LA table, lue par le lecteur (refillRule) et par l'atelier (modules/missions/editor_drawers.js), jamais recopiée : le rayon R autour
+ *  de la station (m) et ses bornes, la tolérance de cap (°) et ses bornes, les bornes du cap d'accostage (°), la durée minimale par
+ *  défaut (s : « mini 5 mn », l'utilisateur, 19 nov.) et l'écart permis par défaut entre deux relevés (s). La durée et l'écart sont
+ *  bornés comme les tenues (HOLD_BOUNDS ; l'écart jamais sous la période d'un relevé, FIX_PERIOD_SEC). Chaque valeur par défaut est
+ *  dans ses bornes (le banc le vérifie). */
+export const REFILL_RULE = Object.freeze({
+  radiusM: 30,
+  radiusBoundsM: Object.freeze([1, 200]),
+  headingTolDeg: 30,
+  headingTolBoundsDeg: Object.freeze([1, 90]),
+  headingBoundsDeg: Object.freeze([0, 359]),
+  durationSec: 300,
+  maxGapSec: 10
+});
+
+/** La station d'un ravitaillement : l'objet de `objects` qui porte cet identifiant, de genre `refill`, à une position lisible →
+ *  { id, kind: 'refill', name, lat, lon, moving: false } ; null sinon (un autre genre, sans position, « à placer »). La portée de
+ *  détection n'est pas exigée : une station ne se « trouve » pas, on s'y pose. */
+function refillStation(objects, id) {
+  const o = plain(byId(objects, id, DRAWER_BOUNDS.listed)),
+    c = o ? plain(o.centre) || plain(o.center) || o : null,
+    lat = c ? within(c.lat, -90, 90) : null,
+    lon = c ? within(c.lon, -180, 180) : null;
+  return o && cut(o.kind, 40).toLowerCase() === 'refill' && lat !== null && lon !== null ? {
+    id: cut(o.id, 40),
+    kind: 'refill',
+    name: cut(o.name, 120),
+    lat,
+    lon,
+    moving: false
+  } : null;
+}
+
+/** Une règle de ravitaillement en retardant (`trigger_condition: { kind: refill, object, … }`, SOG-0521 : « atterrir, se placer contre
+ *  l'objet, faire un refill (mini 5 mn), repartir » ; « orienter la bestiole dans le bon sens ») → { kind: 'refill', label, point: null,
+ *  at: null, object (la station résolue), radiusM, durationSec, maxGapSec, speedMaxKt, headingDeg | null, headingTolDeg, departure,
+ *  confirmation: '', confirm: false } ; null quand elle est illisible. Une STATION seulement (jamais un point : `point` écrit → null),
+ *  de genre refill, placée ; chaque nombre absent prend sa valeur de REFILL_RULE (la vitesse : celle d'un poser, HOLD_BOUNDS), un
+ *  nombre écrit hors de ses bornes rend la règle illisible (jamais ramené) ; le cap est facultatif (absent : aucun cap exigé) ;
+ *  `require_departure` (vrai par défaut) : repartir après le remplissage. `station` : un identifiant → la station (refillStation).
+ *  Lue et bornée : le vol ne la juge pas encore (notJudgedYet). */
+function refillRule(c, station) {
+  const R = REFILL_RULE,
+    H = HOLD_BOUNDS,
+    absent = v => v === undefined || v === null || v === '',
+    num = (v, [lo, hi], dflt) => absent(v) ? dflt : within(v, lo, hi),
+    oid = idWord(c.object),
+    obj = oid && absent(c.point) ? station(oid) : null,
+    r = {
+      kind: 'refill',
+      label: cut(c.label, 120),
+      point: null,
+      at: null,
+      object: obj,
+      radiusM: num(c.radius_m, R.radiusBoundsM, R.radiusM),
+      durationSec: num(c.duration_sec, H.durationSec, R.durationSec),
+      maxGapSec: num(c.max_gap_sec, [FIX_PERIOD_SEC, H.maxGapSec[1]], R.maxGapSec),
+      speedMaxKt: num(c.speed_max_kt, H.landingSpeedKt, H.landingSpeedDefault),
+      headingDeg: num(c.heading_deg, R.headingBoundsDeg, null),
+      headingTolDeg: num(c.heading_tol_deg, R.headingTolBoundsDeg, R.headingTolDeg),
+      departure: yes(c.require_departure, true),
+      confirmation: '',
+      confirm: false
+    };
+  return !obj || ['radiusM', 'durationSec', 'maxGapSec', 'speedMaxKt', 'headingTolDeg'].some(k => r[k] === null) || !absent(c
+    .heading_deg) && r.headingDeg === null ? null : r;
+}
+
 /** Le message qu'un tiroir envoie en s'ouvrant (emit_event de l'atelier, version 1.1) → { id, to: [destinataire…] } ; null sans
  *  message ou quand il est illisible (seize destinataires au plus). */
 function emitOf(v) {
@@ -496,6 +569,9 @@ const FIX_PERIOD_SEC = 5;
  *  de une à DRAWER_BOUNDS.steps étapes, chacune d'un genre jugé (atterrissage, survol, stationnaire : jamais une suite dans une suite), jugée
  *  par la règle de son genre ci-dessus, et AUCUN survol à confirmer (`confirm` : un « Demander » au milieu d'une suite n'est pas jugé). */
 function conditionJudged(key) {
+  // un ravitaillement en retardant (`refill`, SOG-0521) n'est PAS jugé : `follows` ne le connaît pas encore (le lot d'Affectation) —
+  // quand elle le jugera, cette règle le suivra (N155 échouera d'ici là)
+  if (key.condition === 'refill') return false;
   if (key.condition === 'sequence') {
     const steps = key.steps;
     return Array.isArray(steps) && steps.length >= 1 && steps.length <= DRAWER_BOUNDS.steps && steps.every(s => !!s && typeof s ===
@@ -625,11 +701,12 @@ function drawersOf(d, points) {
         });
       condition = /^[a-z][a-z0-9_]{0,23}$/.test(kind) ? kind : '';
       // les conditions de la version 1.1 de l'atelier : lues bornées, pas encore jugées en vol (notJudgedYet)
+      // un ravitaillement en retardant (SOG-0521) : une règle sœur, sur une station (jamais une étape d'une suite : holdRule la refuse)
       const rule = k => holdRule(k, placeAt, id => objectKey(byId(d.objects, id, B.listed), resolve)),
         steps = kind === 'sequence' && Array.isArray(c.steps) && c.steps.length >= 1 && c.steps.length <= B.steps ? c.steps.map(x =>
           rule(
             plain(x) || {})) : null,
-        one = HOLD_KINDS.includes(kind) ? rule(c) : null,
+        one = HOLD_KINDS.includes(kind) ? rule(c) : kind === 'refill' ? refillRule(c, id => refillStation(d.objects, id)) : null,
         later = kind === 'sequence' ? steps && !steps.includes(null) ? {
           steps
         } : null : kind === 'event' ? EVENT_ID.test(String(c.event ?? '')) ? {

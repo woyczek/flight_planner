@@ -10499,7 +10499,8 @@ _JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), 
     destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', lat: 44.8, lon: 1.2 }],
     zones: [{ id: 'ZONE-1', centre: { lat: 44.7, lon: 1.3 }, radius_km: 5 }],
     objects: [{ id: 'OBJ-1', kind: 'vehicle', lat: 44.6, lon: 1.4, detection_range_nm: 1 },
-      { id: 'OBJ-2', kind: 'ship', lat: 44.5, lon: 1.5, detection_range_nm: 1, speed_kt: 10, motion: 'axis', course_deg: 90 }] };
+      { id: 'OBJ-2', kind: 'ship', lat: 44.5, lon: 1.5, detection_range_nm: 1, speed_kt: 10, motion: 'axis', course_deg: 90 },
+      { id: 'OBJ-3', kind: 'refill', name: 'Station inventee', lat: 44.55, lon: 1.45 }] };
   const hold = { radius_m: 5, duration_sec: 10, max_gap_sec: 10 };
   const one = [{ id: 'B' }, { id: 'C', trigger_point: 'PT1', trigger_delay_min: 5 }, { id: 'D', trigger_zone: 'ZONE-1' },
     { id: 'E', trigger_zone: 'ZONE-1', trigger_actor: 'OBJ-2' }, { id: 'F', trigger_object: 'OBJ-1' }, { id: 'G', trigger_object: 'OBJ-2' },
@@ -10515,7 +10516,8 @@ _JUDGED_JS = """async () => { const MS = await import('/frame/lib/mission.js'), 
     { id: 'F', trigger_condition: { kind: 'overflight', object: 'OBJ-1', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000, require_confirmation: false } },
     { id: 'G', trigger_condition: { kind: 'overflight', object: 'OBJ-2', radius_nm: 0.5, height_min_ft: 100, height_max_ft: 2000 } },
     { id: 'H', trigger_condition: { kind: 'sequence', steps: [{ kind: 'hover', object: 'OBJ-1', ...hold, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 }] } },
-    { id: 'I', trigger_condition: { kind: 'event', event: 'EV-1' } }];
+    { id: 'I', trigger_condition: { kind: 'event', event: 'EV-1' } },
+    { id: 'M', trigger_condition: { kind: 'refill', object: 'OBJ-3' } }];
   const keys = [...MS.readMission({ ...head, phases: one }).drawers, ...MS.readMission({ ...head, phases: two }).drawers]
     .map(d => [d.key, d.keyWhy]);
   // the sequences (lot 5): each step by the rule of its kind; read from a file (B to J), then keys built by hand that the reader never gives
@@ -10563,7 +10565,7 @@ def n155(c):
     c.page.goto(f'{c.base}/frame/manifest.webmanifest')
     g = c.js(_JUDGED_JS)
     c.eq(g['kinds'], ['hand', 'time', 'zone', 'zone+actor', 'object', 'object+moving', 'arrival', 'arrival+escort', 'hover', 'hover+obj', 'hover+moving', 'landing', 'landing+obj',
-                      'landing+moving', 'overflight', 'overflight+obj', 'overflight+moving', 'sequence', 'event'], 'every kind of key the reader gives, read without a reason', what='the keys')
+                      'landing+moving', 'overflight', 'overflight+obj', 'overflight+moving', 'sequence', 'event', 'refill+obj'], 'every kind of key the reader gives, read without a reason', what='the keys')
     c.eq(g['diverge'], [], 'notJudgedYet(k) === !(hand || time || follows(k)) for every kind: the reader and the flight agree', what='THE control')
     c.eq(g['divergeSeq'], [], 'the same control on every sequence of the file and on the keys built by hand: the reader and the flight agree', what='THE control, sequences')
     # [notJudgedYet, follows, howOf, why] of the sequences of a file: B judged (a still object, a landing), C a moving step, D a word, E an overflight to confirm, F an overflight not to confirm,
@@ -10577,7 +10579,8 @@ def n155(c):
          'the keys built by hand: [notJudgedYet, follows] agree — ten steps judged, eleven, none, not a list, a sequence in a sequence, an event, an overflight to confirm, a null and a text step not', what='the built sequences')
     c.eq(g['judged'], {'hand': True, 'time': True, 'zone': True, 'zone+actor': False, 'object': True, 'object+moving': False, 'arrival': True,
                        'arrival+escort': False, 'hover': True, 'hover+obj': True, 'hover+moving': False, 'landing': True, 'landing+obj': True,
-                       'landing+moving': False, 'overflight': True, 'overflight+obj': True, 'overflight+moving': False, 'sequence': True, 'event': False},
+                       'landing+moving': False, 'overflight': True, 'overflight+obj': True, 'overflight+moving': False, 'sequence': True, 'event': False,
+                       'refill+obj': False},
          'what the flight judges today (follows of drawers.js; the landing since 3c2e2abba, the overflight since 4c9b10ef3, the hover since 9cbbf9e11: each on a point or a still object, never on a moving one; the sequence since 72d7ef7dc)', what='judged today')
     c.eq(g['types'], [['hand', True], ['time', True], ['zone', True], ['object', True], ['arrival', True], ['hover', True], ['landing', True],
                       ['overflight', True], ['sequence', True], ['event', False]], 'DR.TYPES: the flag of each kind, from the flight', what='the types')
@@ -12062,3 +12065,60 @@ def n179(c):
     c.eq(g['o2'], {'kind': 'refill', 'moving': False, 'motion': None}, 'a refill that carries a speed, an axis and a course is read still', what='the refill that moves')
     c.eq([g['follows'], g['notJudged'], g['why']], [[True, True], [False, False], ['', '']],
          'a landing on a refill is judged (follows true, notJudgedYet false), with no reason', what='the landing')
+
+
+# SOG-0521: the retardant refill (`trigger_condition: { kind: refill }`), read by the reader — pure, in the page
+_REFILL_READ_JS = """async () => { const MS = await import('/frame/lib/mission.js'), D = await import('/modules/missions/drawers.js');
+  const base = { mission: { id: 'X-009A', type: 'FIRE' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', lat: 44.8, lon: 1.2 }],
+    objects: [{ id: 'OBJ-1', kind: 'refill', name: 'Station inventee', lat: 44.6, lon: 1.4 },
+      { id: 'OBJ-2', kind: 'vehicle', name: 'Camion', lat: 44.5, lon: 1.5, detection_range_nm: 1 },
+      { id: 'OBJ-3', kind: 'refill', name: 'Station a placer', lat: null, lon: null }] };
+  const read = c => { let d = null; try { d = MS.readMission({ ...base, phases: [{ id: 'B', title: 'Remplir le reservoir', trigger_condition: c, fallback_delay_min: 60 }] }).drawers[0] }
+    catch (e) { return ['throws', String(e)] }
+    const r = d.key.rule;
+    return d.key.kind === 'condition' ? [d.key.condition, r.object.id, r.object.kind, r.object.moving, r.radiusM, r.durationSec, r.maxGapSec, r.speedMaxKt, r.headingDeg,
+      r.headingTolDeg, r.departure, MS.notJudgedYet(d.key), D.follows(d.key)] : [d.key.kind, d.keyWhy, d.condition] };
+  const R = MS.REFILL_RULE || {};
+  const bad = [{ point: 'PT1' }, { object: 'OBJ-1', point: 'PT1' }, { object: 'OBJ-2' }, { object: 'OBJ-3' }, { object: 'OBJ-9' }, { object: ['OBJ-1'] },
+    { object: 'OBJ-1', radius_m: 0 }, { object: 'OBJ-1', radius_m: 201 }, { object: 'OBJ-1', duration_sec: 0 }, { object: 'OBJ-1', duration_sec: 3601 },
+    { object: 'OBJ-1', max_gap_sec: 4 }, { object: 'OBJ-1', max_gap_sec: 61 }, { object: 'OBJ-1', speed_max_kt: 51 }, { object: 'OBJ-1', heading_deg: 360 },
+    { object: 'OBJ-1', heading_deg: -5 }, { object: 'OBJ-1', heading_deg: 'nord' }, { object: 'OBJ-1', heading_tol_deg: 0 }, { object: 'OBJ-1', heading_tol_deg: 91 },
+    { object: 'OBJ-1', duration_sec: '1e9' }, { object: 'OBJ-1', radius_m: { a: 1 } }].map(c => read({ kind: 'refill', ...c }));
+  const hostile = [null, 'refill', [], { kind: 'refill', object: '__proto__' }, { kind: 'refill', object: 'OBJ-1', heading_deg: Infinity },
+    { kind: 'refill', object: 'OBJ-1', duration_sec: NaN }, { kind: 'refill', object: 'OBJ-1', label: 'x'.repeat(5000) }].map(read);
+  const m = MS.readMission({ ...base, phases: [{ id: 'B', title: 'Remplir le reservoir', trigger_condition: { kind: 'refill', object: 'OBJ-1' } }] });
+  return { R: [R.radiusM, R.radiusBoundsM, R.headingTolDeg, R.headingTolBoundsDeg, R.headingBoundsDeg, R.durationSec, R.maxGapSec, Object.isFrozen(R)],
+    dflt: read({ kind: 'refill', object: 'OBJ-1' }),
+    written: read({ kind: 'refill', object: 'obj-1', radius_m: 25, duration_sec: 420, max_gap_sec: 6, speed_max_kt: 1, heading_deg: 270, heading_tol_deg: 20,
+      require_departure: false }),
+    bad, hostile: hostile.map(x => x[0]),
+    seq: read({ kind: 'sequence', steps: [{ kind: 'refill', object: 'OBJ-1' }] }),
+    closed: JSON.stringify(MS.pilotView(m, [])), open: MS.pilotView(m, ['B']).drawers.map(d => [d.id, d.condition, d.key.rule?.object?.name]) } }"""
+
+
+@case('N182', 'Missions › the reader reads the retardant refill (SOG-0521, pure, in the page): `trigger_condition: { kind: refill, object }` on an object of the kind '
+      '« refill » that is placed gives the condition « refill » with the parameters of MS.REFILL_RULE when nothing is written (R = 30 m, 300 s, a gap of 10 s, 3 kt, '
+      'no heading, a tolerance of ± 30°, a departure required), the numbers written within their bounds as they are; a point, a point AND a station, an object of '
+      'another kind, a station « to place » or absent, a number out of its bounds (radius 1 to 200 m, duration 1 to 3 600 s, a gap under one fix period or over 60 s, '
+      'heading 0 to 359, tolerance 1 to 90) make it unreadable — the gesture alone, said « condition »; never a step of a sequence; never judged in flight '
+      '(`notJudgedYet` true, `follows` false); a closed refill drawer leaves nothing in the pilot\'s view; hostile entries raise nothing', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0521, the user (19 Nov): « atterrir, se placer contre l\'objet, faire un refill (mini 5mn), repartir » ; « il faut orienter la bestiole dans le bon sens »; '
+      'the relay: R and the heading tolerance are parameters (Q-0121: 30 m, ± 30°) in ONE exported constant of the reader; Sécurisation: the bounds of the holds; '
+      'docs/technique/FORMAT_MISSION.md § 4 septies')
+def n182(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    g = c.js(_REFILL_READ_JS)
+    c.eq(g['R'], [30, [1, 200], 30, [1, 90], [0, 359], 300, 10, True], 'MS.REFILL_RULE: R 30 m (1 to 200), ± 30° (1 to 90), heading 0 to 359, 300 s, 10 s, frozen', what='the parameters')
+    c.eq(g['dflt'], ['refill', 'OBJ-1', 'refill', False, 30, 300, 10, 3, None, 30, True, True, False],
+         'a station alone: the parameters by default, a departure required, never judged (notJudgedYet true, follows false)', what='the defaults')
+    c.eq(g['written'], ['refill', 'OBJ-1', 'refill', False, 25, 420, 6, 1, 270, 20, False, True, False],
+         'the numbers written within their bounds are read as they are (the identifier read as the reader reads it)', what='written')
+    c.eq([x for x in g['bad'] if x != ['hand', 'condition', 'refill']], [],
+         'a point, a point and a station, another kind, a station to place or absent, an object as a list, a number out of its bounds: the gesture alone, « condition »', what='unreadable')
+    c.eq(g['hostile'], ['hand', 'hand', 'hand', 'hand', 'hand', 'hand', 'refill'], 'hostile entries: nothing raises, nothing read but a plain label', what='hostile')
+    c.eq(g['seq'], ['hand', 'condition', 'sequence'], 'a refill is never a step of a sequence', what='the sequence')
+    c.ok('Station inventee' not in g['closed'] and 'refill' not in g['closed'] and 'Remplir' not in g['closed'], g['closed'][:200],
+         'a closed refill drawer: neither its title, nor its condition, nor its station in the pilot\'s view')
+    c.eq(g['open'], [['B', 'refill', 'Station inventee']], 'open, the drawer is there whole, its station resolved', what='open')

@@ -36,7 +36,8 @@
     routeNm,
     OBJECT_KINDS,
     notJudgedYet,
-    pilotView
+    pilotView,
+    REFILL_RULE
   } from '../mission.js?v=0';
   const out = document.getElementById('out'),
     rows = [];
@@ -1617,13 +1618,17 @@
         zone_shown: v
       })
     }), []))[2];
-  same('pilotView, aucun tiroir ouvert : la partie visible seule — sa route, le centre de sa carte ; la zone d\'un tiroir fermé sans zone_shown est cachée (SOG-0459)',
+  same(
+    'pilotView, aucun tiroir ouvert : la partie visible seule — sa route, le centre de sa carte ; la zone d\'un tiroir fermé sans zone_shown est cachée (SOG-0459)',
     seenOf(pilotView(glacier, [])), [false, 'PT1', '', '', 'PT1', '']);
-  ck('pilotView, aucun tiroir ouvert : la position cachée, le message et les titres des tiroirs ne sont dans RIEN de ce qui est rendu', !leaks(
-    pilotView(glacier, [])), JSON.stringify(pilotView(glacier, [])).slice(0, 200));
+  ck('pilotView, aucun tiroir ouvert : la position cachée, le message et les titres des tiroirs ne sont dans RIEN de ce qui est rendu', !
+    leaks(
+      pilotView(glacier, [])), JSON.stringify(pilotView(glacier, [])).slice(0, 200));
   same('pilotView, le premier tiroir ouvert : lui seul, entier — sa zone et sa suite de route en plus, rien du deuxième',
-    [seenOf(pilotView(glacier, ['B'])), pilotView(glacier, ['B']).drawers.map(d => [d.id, d.rank, d.title]), /Le glacier|Trouvé|Randonneur vu/.test(
-      JSON.stringify(pilotView(glacier, ['B'])))], [
+    [seenOf(pilotView(glacier, ['B'])), pilotView(glacier, ['B']).drawers.map(d => [d.id, d.rank, d.title]),
+      /Le glacier|Trouvé|Randonneur vu/.test(
+        JSON.stringify(pilotView(glacier, ['B'])))
+    ], [
       [false, 'PT1 PT2 ZONE-1', 'ZONE-1', '', 'PT1 PT2', 'B'],
       [
         ['B', 1, 'La vallée']
@@ -1638,7 +1643,8 @@
       route: 'ORIGIN PT1 PT2 FL050 ZONE-1 DESTINATION'
     }
   });
-  same('pilotView, le cheminement du profil : un jeton qui nomme un lieu d\'un tiroir fermé (PT2, ZONE-1) n\'y est plus, le point visible et le niveau restent ; le tiroir ouvert, ils reviennent',
+  same(
+    'pilotView, le cheminement du profil : un jeton qui nomme un lieu d\'un tiroir fermé (PT2, ZONE-1) n\'y est plus, le point visible et le niveau restent ; le tiroir ouvert, ils reviennent',
     [pilotView(glacierProfile, []).profileRoute, pilotView(glacierProfile, ['B']).profileRoute, glacierProfile.profileRoute], [
       'ORIGIN PT1 FL050 DESTINATION', 'ORIGIN PT1 PT2 FL050 ZONE-1 DESTINATION', 'ORIGIN PT1 PT2 FL050 ZONE-1 DESTINATION'
     ]);
@@ -1647,9 +1653,11 @@
       [], {
         mine: true,
         opened: []
-      }, 0
+      },
+      0
     ]);
-  same('pilotView, la zone de passage d\'un tiroir fermé : montrée avec zone_shown: true (le booléen) seulement ; « true » en texte, 1, false : cachée',
+  same(
+    'pilotView, la zone de passage d\'un tiroir fermé : montrée avec zone_shown: true (le booléen) seulement ; « true » en texte, 1, false : cachée',
     [true, 'true', 1, false, null].map(shownAs), ['ZONE-1', '', '', '', '']);
   same('pilotView, une mission qu\'on feuillette (pas la mienne) : la partie visible seule, quels que soient les tiroirs dits ouverts',
     [seenOf(pilotView(glacier, ['B', 'C', 'D'], {
@@ -1663,7 +1671,8 @@
       }
     ]);
   same('pilotView, des tiroirs ouverts qui ne sont pas des lettres de tiroir sont ignorés (une entrée bornée)',
-    [null, 'B', 7, {}, ['Z', 7, null, {}, '__proto__', 'b'],
+    [null, 'B', 7, {},
+      ['Z', 7, null, {}, '__proto__', 'b'],
       ['C', 'C', 'B']
     ].map(o => pilotView(glacier, o).pilot.opened), [
       [],
@@ -1674,8 +1683,151 @@
       ['B', 'C']
     ]);
   ck('pilotView : une mission sans tiroir n\'a pas de secret (elle est rendue telle quelle) ; sans mission, null ; la mission lue n\'est pas touchée',
-    (plainMission => pilotView(plainMission, ['B']) === plainMission && plainMission.target !== null)(readMission(minimal)) && pilotView(null,
+    (plainMission => pilotView(plainMission, ['B']) === plainMission && plainMission.target !== null)(readMission(minimal)) && pilotView(
+      null,
       []) === null && pilotView('x', []) === null && JSON.stringify(glacier) === glacierBefore, '');
+
+  // SOG-0521 : le ravitaillement en retardant (`trigger_condition: { kind: refill }`) — une STATION (un objet de genre refill, placé),
+  // les paramètres de REFILL_RULE à défaut, chaque nombre écrit borné (jamais ramené), jamais jugé en vol (notJudgedYet vrai)
+  const refillMission = c => readMission({
+      ...drawerBase,
+      objects: [{
+        id: 'OBJ-1',
+        kind: 'refill',
+        name: 'Station inventée',
+        lat: 44.6,
+        lon: 1.4
+      }, {
+        id: 'OBJ-2',
+        kind: 'vehicle',
+        lat: 44.5,
+        lon: 1.5,
+        detection_range_nm: 1
+      }, {
+        id: 'OBJ-3',
+        kind: 'refill',
+        name: 'Station à placer',
+        lat: null,
+        lon: null
+      }],
+      phases: [{
+        id: 'B',
+        title: 'Remplir',
+        trigger_condition: c,
+        fallback_delay_min: 60
+      }]
+    }),
+    refillOf = c => {
+      const d = refillMission(c).drawers[0],
+        r = d.key.rule;
+      return d.key.kind === 'condition' ? [d.key.condition, r.object.id, r.object.kind, r.radiusM, r.durationSec, r.maxGapSec, r.speedMaxKt,
+        r.headingDeg, r.headingTolDeg, r.departure, notJudgedYet(d.key)
+      ] : [d.key.kind, d.keyWhy, d.condition];
+    },
+    R = REFILL_RULE;
+  ck('refill : les paramètres de REFILL_RULE sont dans leurs bornes (R = 30 m, ± 30°, 300 s, 10 s)', R.radiusM >= R.radiusBoundsM[0] && R
+    .radiusM <= R.radiusBoundsM[1] && R.headingTolDeg >= R.headingTolBoundsDeg[0] && R.headingTolDeg <= R.headingTolBoundsDeg[1] && R
+    .durationSec >= 1 && R.durationSec <= 3600 && R.maxGapSec >= 5 && R.maxGapSec <= 60 && Object.isFrozen(R) && [R.radiusM, R
+      .headingTolDeg, R.durationSec, R.maxGapSec
+    ].join() === '30,30,300,10', JSON.stringify(R));
+  same('refill : une station seule → la règle aux paramètres par défaut (R, 300 s, 10 s, 3 kt, sans cap, ± 30°, repartir), jamais jugée',
+    refillOf({
+      kind: 'refill',
+      object: 'OBJ-1'
+    }), ['refill', 'OBJ-1', 'refill', 30, 300, 10, 3, null, 30, true, true]);
+  same('refill : les nombres écrits dans leurs bornes sont lus tels quels (le cap 270° ± 15°, sans départ exigé)', refillOf({
+    kind: 'REFILL',
+    object: 'obj-1',
+    radius_m: 20,
+    duration_sec: '420',
+    max_gap_sec: 5,
+    speed_max_kt: 0,
+    heading_deg: 270,
+    heading_tol_deg: 15,
+    require_departure: false
+  }), ['refill', 'OBJ-1', 'refill', 20, 420, 5, 0, 270, 15, false, true]);
+  const refillBad = [{
+    point: 'PT1'
+  }, {
+    object: 'OBJ-1',
+    point: 'PT1'
+  }, {
+    object: 'OBJ-2'
+  }, {
+    object: 'OBJ-3'
+  }, {
+    object: 'OBJ-9'
+  }, {
+    object: {
+      id: 'OBJ-1'
+    }
+  }, {
+    object: 'OBJ-1',
+    radius_m: 0
+  }, {
+    object: 'OBJ-1',
+    radius_m: 500
+  }, {
+    object: 'OBJ-1',
+    duration_sec: 0
+  }, {
+    object: 'OBJ-1',
+    duration_sec: 3601
+  }, {
+    object: 'OBJ-1',
+    max_gap_sec: 4
+  }, {
+    object: 'OBJ-1',
+    max_gap_sec: 61
+  }, {
+    object: 'OBJ-1',
+    speed_max_kt: 51
+  }, {
+    object: 'OBJ-1',
+    heading_deg: 360
+  }, {
+    object: 'OBJ-1',
+    heading_deg: -1
+  }, {
+    object: 'OBJ-1',
+    heading_deg: 'nord'
+  }, {
+    object: 'OBJ-1',
+    heading_deg: true
+  }, {
+    object: 'OBJ-1',
+    heading_tol_deg: 0
+  }, {
+    object: 'OBJ-1',
+    heading_tol_deg: 120
+  }, {
+    object: 'OBJ-1',
+    duration_sec: '1e9'
+  }].map(c => refillOf({
+    kind: 'refill',
+    ...c
+  })).filter(x => x.join() !== 'hand,condition,refill');
+  ck('refill : un point, un point ET une station, un objet d\'un autre genre, une station à placer ou absente, un objet écrit en entier, un nombre hors bornes (rayon, durée, écart sous la période d\'un relevé, vitesse, cap, tolérance) → le geste seul, dit « condition »',
+    !refillBad.length, JSON.stringify(refillBad));
+  same(
+    'refill : jamais une étape d\'une suite (le geste seul) ; un tiroir refill fermé ne laisse rien dans la vue du pilote, ouvert il y est entier',
+    [refillOf({
+      kind: 'sequence',
+      steps: [{
+        kind: 'refill',
+        object: 'OBJ-1'
+      }]
+    }), JSON.stringify(pilotView(refillMission({
+      kind: 'refill',
+      object: 'OBJ-1'
+    }), [])).includes('Station'), pilotView(refillMission({
+      kind: 'refill',
+      object: 'OBJ-1'
+    }), ['B']).drawers.map(d => [d.id, d.condition, d.key.rule.object.name])], [
+      ['hand', 'condition', 'sequence'], false, [
+        ['B', 'refill', 'Station inventée']
+      ]
+    ]);
 
   window.__bench = {
     done: true,
