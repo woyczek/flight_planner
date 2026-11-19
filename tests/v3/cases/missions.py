@@ -4819,9 +4819,12 @@ def n86(c):
     if not wide:
         c.tap(f'{RD} [data-rd-next]')
     t = norm(c.text(f'{RD} [data-rd-drawer="B"]'))
-    c.ok('Secteur de recherche' in t and 'rejoignez le secteur' in t and 'Descendez' in t and 'Point de treuillage' in t and re.search(r'\d\d:\d\dZ', t) is not None
-         and c.count(f'{RD} [data-rd-closed]') == 0, t,
-         'the page of the open drawer, the last one: its title, how and when it opened, its message, its briefing, its onward route; no closed drawer left')
+    # the drawer opened by « Demander la suite » is the first closed one, B « Point de recueil » (C, « Secteur de recherche », stays closed: its zone is hidden)
+    c.ok('Point de recueil' in t and 'rejoignez le point' in t and 'Descendez' in t and 'Point de treuillage' in t and re.search(r'\d\d:\d\dZ', t) is not None
+         and 'Secteur de recherche' not in t and c.count(f'{RD} [data-rd-closed]') == 0, t,
+         'the page of the open drawer B, the last one: its title, how and when it opened, its message, its briefing, its onward route; nothing of the closed drawer C')
+    c.ok(re.search(r'Tiroir|Drawer|Schublade|Cajón', c.text(RD)) is None and c.text(f'{RD} [data-rd-drawer="B"] h3').strip() == 'Point de recueil', c.text(RD),
+         'a page of the reader never says « Tiroir n »: the title only, no rank (SOG-0459, § 7.4)')
     c.shot(f'N86_{c.design}_{c.width}_{c.lang}_drawer.png')
     c.js(f"document.querySelector('{RD}').focus()")
     c.key('ArrowLeft')

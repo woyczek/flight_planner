@@ -298,7 +298,8 @@
   ck('la flèche droite du clavier : la page du tiroir ouvert — comment et quand, son message, son briefing, la suite de route ; la flèche d\'après est inerte',
     q('.rd-page')?.dataset.rdDrawer === 'B' && text('[data-rd-how]') === 'ouvert à la main (B)' && text('[data-rd-msg]').startsWith(
       'Le bateau') && q('[data-rd-brief]').textContent.includes('\n') && text('[data-rd-onward]') ===
-    'Suite de route : Point de treuillage → RDV-1' && q('[data-rd-next]').disabled && text('[data-rd-where]') === 'Page 4 sur 4', text(
+    'Suite de route : Point de treuillage → RDV-1' && q('[data-rd-next]').disabled && text('[data-rd-where]') === 'Page 4 sur 4' && text(
+      '.rd-page h3') === 'Secteur de recherche' && !/Tiroir|Drawer|Schublade|Cajón/.test(text('.rd-page')), text(
       '.rd-page'));
   /** Un glissé horizontal sur les pages (dx en pixels). */
   const swipe = dx => {

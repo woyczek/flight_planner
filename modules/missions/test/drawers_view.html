@@ -2449,7 +2449,7 @@
   q('[data-rd-read]').click();
   while (!q('[data-rd-next]').disabled) q('[data-rd-next]').click();
   ck('le tiroir ouvert a sa page, la dernière : son titre, son message, comment il s\'est ouvert ; « lu » est gardé à l\'écriture du geste',
-    q('.rd-page')?.dataset.rdDrawer === 'B' && text('.rd-page').includes('Secteur') && text('[data-rd-msg]') === 'Message du tiroir.' &&
+    q('.rd-page')?.dataset.rdDrawer === 'B' && text('.rd-page').includes('Secteur') && !/Tiroir|Drawer|Schublade|Cajón/.test(text('.rd-page')) && text('[data-rd-msg]') === 'Message du tiroir.' &&
     text('[data-rd-how]').startsWith('ouvert à votre demande') && ctx.store.get(BOOK).read_at === readAt && !q('[data-rd-closed]'), text(
       '.rd-page'));
   // une mission qu'on feuillette, dans une fiche : ni bouton ni liseuse

@@ -8,7 +8,7 @@
 //   · l'ENVELOPPE, une fois, pour une mission AFFECTÉE pas encore lue : « Ouvrir l'enveloppe » la note comme lue ;
 //   · la LISEUSE à la place de la fiche et du détail : une page à la fois sur un écran étroit, deux côte à côte sur un module large
 //     (850 px, le seuil de la fiche) ; « ‹ Page n sur N › », les flèches du clavier, le glissé ; « ← Fiche » y revient.
-// Un tiroir fermé n'a ni page ni titre : « Tiroirs encore fermés : n » au pied de la dernière page montrée. Quand un tiroir s'ouvre
+// Un tiroir fermé n'a ni page, ni titre, ni compte ; la page d'un tiroir ouvert n'a que son titre, jamais son rang (SOG-0459, § 7.4). Quand un tiroir s'ouvre
 // pendant la lecture, sa page s'ajoute à la fin (la fiche est redessinée, attach est rappelé).
 //
 // API : attach(sheet, { ctx, id, view, states, line, unread, how, routeNm, onRead }) — à rappeler à chaque dessin de la fiche de MA
@@ -39,7 +39,6 @@ export const TX = {
   kOrder: ['Ordre de mission', 'Mission order', 'Missionsauftrag', 'Orden de misión'],
   kBrief: ['Description et objectifs', 'Description and objectives', 'Beschreibung und Ziele', 'Descripción y objetivos'],
   kRoute: ['Route fournie', 'Provided route', 'Vorgegebene Route', 'Ruta proporcionada'],
-  kDrawer: ['Tiroir {n}', 'Drawer {n}', 'Schublade {n}', 'Cajón {n}'],
   mission: ['Mission', 'Mission', 'Mission', 'Misión'],
   pilot: ['Pour', 'For', 'Für', 'Para'],
   takeoff: ['Décollage', 'Take-off', 'Start', 'Despegue'],
@@ -194,7 +193,7 @@ function bodyHtml(p) {
     ${p.turns.length ? `<p><b>${esc(tt(TX.points))}</b></p><ol data-rd-turns>${p.turns.map(x => `<li>${esc([x.id, x.name].filter(Boolean).join(' · '))}</li>`).join('')}</ol>` : ''}
     <p class="rd-links"><a class="f-linkbtn" data-rd-map href="?app=pilot#maps?mission=${encodeURIComponent(A.o.id)}">${esc(tt(TX.onMap))}</a><a class="f-linkbtn" data-rd-prepare href="#fuel?mission=${encodeURIComponent(A.o.id)}">${esc(tt(TX.prepare))}</a></p>`;
   const how = A.o.how?.(p.state, p) || '';
-  return `<span class="rd-kick">${esc(tt(TX.kDrawer, { n: p.rank }))}</span><h3>${esc(p.title)}</h3>
+  return `<h3>${esc(p.title)}</h3>
     ${how ? `<p class="f-muted" data-rd-how>${esc(how)}</p>` : ''}
     ${p.message ? `<p class="rd-msg" data-rd-msg>${esc(p.message)}</p>` : ''}
     ${p.brief ? `<p data-rd-brief>${esc(p.brief)}</p>` : ''}
