@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ccc8bce",
+  "organisation": "0653c42",
   "fiches": 523,
   "untranslated": 0,
   "priorities": 481,
@@ -4515,8 +4515,7 @@
      "fr": "Atelier de missions : une mission en cours est un brouillon gardé, proposé en tête du registre, même sans « Enregistrer »",
      "en": "Mission workshop: a mission in progress is a kept draft, offered at the top of the register, even without “Save”",
      "de": "Missionswerkstatt: Eine laufende Mission bleibt als Entwurf erhalten und steht oben im Register, auch ohne „Speichern“",
-     "es": "Taller de misiones: una misión en curso se guarda como borrador y aparece arriba del registro, incluso sin «Guardar»",
-     "test": true
+     "es": "Taller de misiones: una misión en curso se guarda como borrador y aparece arriba del registro, incluso sin «Guardar»"
     }
    ]
   },
@@ -4558,8 +4557,7 @@
      "fr": "Atelier de missions : « LFRF » reconnu par AeroDB mais pas comme point par la carte (itinéraire) ; un point nommé donne ses coordonnées et les verrouille",
      "en": "Mission workshop: “LFRF” is known to AeroDB but not as a point for the map's route; a named point gives its coordinates and locks them",
      "de": "Missionswerkstatt: „LFRF“ ist AeroDB bekannt, aber für die Route der Karte kein Punkt; ein benannter Punkt liefert seine Koordinaten und sperrt sie",
-     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea",
-     "test": true
+     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea"
     }
    ]
   },
@@ -4776,8 +4774,7 @@
      "fr": "Missions : le registre n'a pas d'ordre défini — en prévoir un",
      "en": "Missions: the register has no defined order — provide one",
      "de": "Missionen: Das Register hat keine festgelegte Reihenfolge – eine vorsehen",
-     "es": "Misiones: el registro no tiene un orden definido — prever uno",
-     "test": true
+     "es": "Misiones: el registro no tiene un orden definido — prever uno"
     },
     {
      "id": "SOG-0520",
@@ -5020,8 +5017,7 @@
      "en": "Missions edited in the V2 editor and never filed: get them out of the browser (YAML to files, then V3)",
      "de": "In V2 bearbeitete, nie abgelegte Missionen: aus dem Browser holen (YAML in Dateien, dann V3)",
      "es": "Misiones editadas en la V2 y nunca guardadas: sacarlas del navegador (YAML a ficheros, luego V3)",
-     "rank": 170,
-     "test": true
+     "rank": 170
     }
    ]
   },

@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
   "tests": 362,
-  "verdicts": 224
+  "verdicts": 228
  },
  "apps": [
   "pilote",
@@ -2672,13 +2672,17 @@
    },
    "test": "Recharge la page. Anciennes pages (V2) › registre des missions › « Comparer avec le dossier » › ligne « 85 → T-085 » › « Ranger dans le dossier » : au bout de deux à trois secondes, une notification dit que le dossier « Missions » ne répond pas et la fenêtre de choix de dossier s'ouvre ; choisis E:\\DEFA\\data\\missions ; la mission est rangée sous T-085, l'ancien fichier gardé dans versions/. Dans la V3, Missions › T-085 : le résumé commence par « À la suite d'un épisode… ».",
    "since": "2026-11-13",
-   "state": "todo",
+   "state": "ko",
    "delivered": "2026-11-13T12:04:40Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "ranger dans le dossier ne fait rien : Mission T-085 non rangée : échec (Le dossier des missions ne répond pas (dossier déplacé, lecteur réseau absent ?). Le choisir de nouveau avec « Dossier des missions » ou « Relire le dossier ».).",
-    "at": "2026-11-13T10:16:01Z"
-   }
+   "comment": "« ranger les copies » ? il n’y a pas de bouton « comparer ». screenshot 17:52",
+   "at": "2026-11-19T16:53:07Z",
+   "history": [
+    {
+     "verdict": "ko",
+     "comment": "ranger dans le dossier ne fait rien : Mission T-085 non rangée : échec (Le dossier des missions ne répond pas (dossier déplacé, lecteur réseau absent ?). Le choisir de nouveau avec « Dossier des missions » ou « Relire le dossier ».).",
+     "at": "2026-11-13T10:16:01Z"
+    }
+   ]
   },
   {
    "id": "SOG-0294",
@@ -5004,8 +5008,9 @@
    },
    "test": "Missions : ouvre l'atelier d'une mission (ou crée-en une), change un champ SANS « Enregistrer », puis quitte (Retour ou une autre appli) : la question de sortie dit que le brouillon garde tout. Reviens au Registre : en tête, une ligne « Brouillon — identifiant · titre · date ». « Reprendre » rouvre l'atelier avec ta saisie ; « Jeter » l'efface après confirmation.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T01:53:03Z"
+   "state": "ok",
+   "delivered": "2026-11-19T01:53:03Z",
+   "at": "2026-11-19T16:53:10Z"
   },
   {
    "id": "SOG-0487",
@@ -5018,8 +5023,9 @@
    },
    "test": "Missions › Registre. Sur ordinateur : un tableau ; touche un en-tête de colonne (Identifiant, Titre, Famille, Série…) : la liste se trie, un second toucher inverse ; une ligne choisie ouvre sa fiche à droite (Brief, Atelier, Dupliquer, ⋯). Au téléphone : des cartes, « Trier : Identifiant ▼ » au-dessus ; une carte ouvre la fiche en plein écran, « ← Registre » la referme. Recharge la page : ton tri est gardé.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T01:53:09Z"
+   "state": "ok",
+   "delivered": "2026-11-19T01:53:09Z",
+   "at": "2026-11-19T16:53:15Z"
   },
   {
    "id": "SOG-0488",
@@ -5199,8 +5205,10 @@
    },
    "test": "Recharge la page. Atelier d'une mission : au Cadre, tape « lfrf » en Départ et choisis-le. Attendu : l'itinéraire et le profil partent bien de LFRF ; la fiche du lieu dit « Position de la base aéronautique : le terrain LFRF — verrouillée. Effacez le code pour la libérer. », ses coordonnées sont grisées et la carte ne le déplace pas. Sur un lieu déjà placé, choisis un code connu : il est déplacé à la position de la base, une notification le dit avec « Annuler ». Un nom libre ne déplace rien.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T11:06:45Z"
+   "state": "reserve",
+   "delivered": "2026-11-19T11:06:45Z",
+   "comment": "oui. mais il est encore noté « à placer ». attention, collision à prévoir avec le refacto.",
+   "at": "2026-11-19T16:53:59Z"
   },
   {
    "id": "SOG-0507",
