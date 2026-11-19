@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 355,
+  "tests": 356,
   "verdicts": 221
  },
  "apps": [
@@ -5285,6 +5285,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T10:12:35Z"
+  },
+  {
+   "id": "SOG-0517",
+   "app": "pilote",
+   "title": {
+    "fr": "Carburant : « Calculer » impose comme passages les points d'une route déjà présente, et le plan de vol perd les changements de niveau écrits par le moteur",
+    "en": "Fuel: “Compute” imposes the points of an existing route as waypoints, and the flight plan loses the level changes written by the engine",
+    "de": "Kraftstoff: „Berechnen“ erzwingt die Punkte einer vorhandenen Route, und der Flugplan verliert die vom Rechner geschriebenen Höhenwechsel",
+    "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor"
+   },
+   "test": "Recharge la page. Carburant, vol EGLL → LFRN au FL270 (niveau choisi dans le devis) : vide la route, « Calculer » : la route est calculée AU FL270 (plus de G27, G273, T501) et le texte du moteur passe tel quel dans le plan de vol (voies M… gardées, pas de « DCT » ajouté). Passe-la à l'IFPS. Sans aucun niveau : une notification dit « Niveau du vol fixé à FL180… ». Les points que tu tapes toi-même sont dits « Passages imposés au calcul ».",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T13:18:29Z"
   },
   {
    "id": "SOG-0518",
