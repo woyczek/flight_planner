@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "6b3ad91",
-  "fiches": 503,
+  "organisation": "0760fa2",
+  "fiches": 504,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -6625,6 +6625,15 @@
      "de": "Wartung › Daten: das Mausrad wirkt von der ganzen Seite aus auf die Karte",
      "es": "Mantenimiento › Datos: la rueda del ratón actúa sobre el mapa desde toda la página",
      "rank": 358
+    },
+    {
+     "id": "SOG-0505",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Données : « Tout est à jour » et « Cycle dépassé : téléchargez… puis reconstruisez » paraissent ensemble ; le conseil est faux quand seule la publication de la base manque",
+     "en": "Data: “Everything is up to date” and “Cycle out of date: download… then rebuild” appear together; the advice is wrong when only publishing the base is missing",
+     "de": "Daten: „Alles ist aktuell“ und „Zyklus abgelaufen: herunterladen… dann neu erstellen“ erscheinen zusammen; der Rat ist falsch, wenn nur die Veröffentlichung fehlt",
+     "es": "Datos: «Todo está al día» y «Ciclo vencido: descargue… y reconstruya» aparecen juntos; el consejo es erróneo cuando solo falta publicar la base"
     }
    ]
   },
