@@ -5385,7 +5385,7 @@
     "de": "Bodenkarte: benannte Haltepunkte (EGLL: BY1, NEVIS, LOKKI…) sind suchbar und ab dem Zoom der Hauptrollwege sichtbar",
     "es": "Mapa de tierra: los puntos de espera con nombre (EGLL: BY1, NEVIS, LOKKI…) se pueden buscar y se ven desde el zoom de las calles de rodaje principales"
    },
-   "test": "Recharge la page. Carte, sur EGLL : zoome jusqu'aux noms des voies de circulation principales (zoom 13) : les points d'attente (BY1, NEVIS, LOKKI…) et leur nom y sont déjà, sans chevaucher les autres étiquettes. La recherche du sol trouve « NEVIS » et un toucher cadre dessus.",
+   "test": "Recharge la page (pas de relance du lanceur). Carte, sol d'EGLL : zoome jusqu'à 14. Attendu : chaque point d'attente n'a qu'UNE étiquette ; une attente qui porte le nom d'une voie passant tout près garde son trait rouge sans nom, la voie garde le sien ; plus de doublon attente / voie comme sur ta capture du 19/11 à 17 h 50 ; au zoom 13, les attentes ne sont pas dessinées. La recherche sol trouve toujours les attentes par leur nom.",
    "since": "2026-11-19",
    "state": "known"
   },
