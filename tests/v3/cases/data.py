@@ -11196,6 +11196,11 @@ def _l173_put(c, obj):
     c.page.evaluate("""(text) => new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const tx = r.result.transaction('docs', 'readwrite'); tx.objectStore('docs').put({ path: 'cache/data/status-last.json', text, base: '', rev: '', at: Date.now(), policy: 'cache' }); tx.oncomplete = () => { r.result.close(); res() }; tx.onerror = () => rej(tx.error) }; r.onerror = () => rej(r.error) })""", json.dumps(obj))
 
 
+def _said(c, lang, key):
+    """How many times the sentence TX[key] is written in the text of the screen (innerText, whatever block wrote it)."""
+    return norm(c.js("document.querySelector('[data-module=data]').innerText")).count(norm(tx(TX, key, lang)))
+
+
 def _l173_release(c):
     """Lets the launcher answer base/status."""
     c.js("() => { window.__stHold = false; window.__stGo.splice(0).forEach(r => r()) }")
@@ -11259,10 +11264,11 @@ def l173(c):
     c.ok(len(tones) > 0 and all({'fr': 'ok', 'es': 'warn', 'gb': 'err', 'us': 'ok', 'ca': 'ok'}[z] == t for z, t in tones.items()), tones, 'the countries of the map are coloured by the kept state (green, amber, red), none neutral')
     c.eq(c.count('[data-status-reading]'), 1, 'ONE line says the launcher is still reading', what='reading line')
     c.eq([c.attr('[data-status-reading]', 'role'), norm(c.text('[data-status-reading]'))], ['status', norm(tx(TX, 'stateReading', lang))], 'role=status, worded in the language of the run', what='reading text')
-    c.eq(update(), [True, 'reading'], '« Mettre à jour » is grey, the reason is the reading of the state', what='update grey')
-    c.eq(norm(c.text('[data-update-reason]')), norm(tx(TX, 'reading', lang, after='greyReason: {')), 'worded as the line', what='update reason')
+    c.eq(update(), [True, None], '« Mettre à jour » is grey; the line of the reading says why, the reason is not repeated under the button', what='update grey')
+    c.eq(_said(c, lang, 'stateReading'), 1, '« Lecture de l\u2019état des zones… » is written ONCE on the whole screen, by the reading line', what='reading sentence, count in the text')
+    c.eq([c.count('[data-update-reason]'), c.count('[data-grey="reading"]'), c.count('[data-status-reading]')], [0, 0, 1], 'the sentence is said ONCE (the reading line): no grey reason repeats it under the update button or in the list of the month', what='reading said once')
     pub = _publish_state(c)
-    c.eq([pub['disabled'], pub['reason']], [True, 'reading'], '« Publier » is grey for the same reason (something is built and not published, the frame can publish)', what='publish grey')
+    c.eq([pub['disabled'], pub['reason']], [True, None], '« Publier » is grey (something is built and not published, the frame can publish) and the reading line is the only one to say why: no reason is repeated beside it', what='publish grey')
     c.tap('[data-state-sentence] [data-filter=failed]')
     c.until("!!document.querySelector('[data-state-zones] [data-zone-row=gb] [data-verb=retry-zone]')", timeout=6000, what='the failed zone unfolds')
     c.eq(c.js("document.querySelector('[data-state-zones] [data-zone-row=gb] [data-verb=retry-zone]').disabled"), True, 'the « Réessayer » of the failed zone is grey too: nothing starts on a kept state', what='retry grey')
@@ -11348,6 +11354,7 @@ def l174(c):
     # ---- 1. the kept state is shown, the first read fails: the line still says « reading » (a retry is coming), no button yet
     wait_reads(1)
     c.eq([reads(), sentence(), c.count('[data-status-reading]'), c.count('[data-act=status-retry]')], [1, [['upToDate', 3], ['rebuild', 1], ['failed', 1]], 1, 0], 'the first read was asked and failed: the kept state is there, the line says reading, no button yet', what='first failure')
+    c.eq([_said(c, lang, 'stateReading'), c.count('[data-status-unread]')], [1, 0], 'while the first read failed and the retry is coming: the reading sentence is written once, there is no « non lu » line yet', what='reading, once, in progress')
     # ---- a. at 10 s the automatic retry starts one more read (before the lot: no retry, no button)
     wait_reads(2, 16)   # the launcher client polls the job every second (the first read ends at about 1 s), then the retry starts 10 s later: the REAL clock, about 12 s
     c.eq(reads(), 2, 'ten seconds later ONE more read of base/status is started by itself', what='automatic retry')
@@ -11356,9 +11363,10 @@ def l174(c):
     pub = _publish_state(c)
     c.eq([c.count('[data-status-reading]'), c.count('[data-act=status-retry]'), c.js("document.querySelector('[data-act=status-retry]').disabled"), norm(c.text('[data-act=status-retry]')),
           norm(c.text('[data-status-unread]')), c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), pub['disabled'], pub['reason'], sentence()],
-         [0, 1, False, retry_word, norm(tx(TX, 'stateUnknown', lang).replace('{r}', tx(TX, 'stateUnread', lang)) + ' ' + retry_word), True, True, 'reading', [['upToDate', 3], ['rebuild', 1], ['failed', 1]]],
+         [0, 1, False, retry_word, norm(tx(TX, 'stateUnknown', lang).replace('{r}', tx(TX, 'stateUnread', lang)) + ' ' + retry_word), True, True, None, [['upToDate', 3], ['rebuild', 1], ['failed', 1]]],
          'the retry failed too: the existing « état non lu » line with ONE live « Réessayer » (the label of the retry buttons); « Mettre à jour » and « Publier » stay grey; the kept state stays', what='unread line')
     c.ok(c.js("[...document.querySelectorAll('[data-wmap] path[data-zone]')].every(p => p.dataset.tone !== 'unread')"), None, 'the countries of the map stay coloured')
+    c.eq([_said(c, lang, 'stateReading'), c.count('[data-status-unread]'), c.count('[data-act=status-retry]')], [0, 1, 1], 'the read FAILED: the progress sentence is gone everywhere, ONE « non lu » line with ONE « Réessayer » takes its place (never both)', what='unread XOR reading')
     shot('unread')
     # ---- c. a tap on « Réessayer »: ONE more read, no other job; the answer replaces the state, the line and the button go, « Mettre à jour » is live
     st['status'] = live

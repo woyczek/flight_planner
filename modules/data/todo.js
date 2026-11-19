@@ -119,7 +119,7 @@ function publishStep(it) {
 }
 /** Une raison de bouton gris écrite à côté de lui (jamais un bouton gris seul) ; '' quand la carte de l'opération en cours, dans ce bloc, la dit déjà. */
 function greyNote(reason) {
-  if (!reason || reason === 'busy' && busyCardHtml('base', 'todo')) return '';
+  if (!reason || reason === 'busy' && busyCardHtml('base', 'todo') || reason === 'reading') return ''; // « reading » : la ligne de lecture de la tête le dit déjà (SOG-0511)
   if (reason === 'no-state') return ` <span class="f-muted" data-grey="no-state"><button type="button" class="d-link" data-act="focus-states">${esc(tt(TX.greyReason['no-state']))}</button></span>`; // « Cochez au moins un État » : le lien qui mène à la case
   return ` <span class="f-muted" data-grey="${esc(reason)}">${esc(reason === 'busy' ? tt(TX.zx.greyBusy) : M.own(TX.greyReason, reason) ? tt(TX.greyReason[reason]) : M.own(TX.pubReason, reason) ? publishReason(reason) : tt(TX.greyReason.busy))}</span>`;
 }
