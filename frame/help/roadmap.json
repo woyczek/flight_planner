@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "2982dc2",
-  "fiches": 522,
+  "organisation": "526cf41",
+  "fiches": 523,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3215,6 +3215,15 @@
      "de": "Routen: IFPS von heute, EGLL → LFRN (BE9L, F270) — 8 Fehler: untere Luftstraßen auf FL270, RAD über NEVIL, SID-Grenze EGLL, DCT im FRA des Vereinigten Königreichs",
      "es": "Rutas: IFPS de hoy, EGLL → LFRN (BE9L, F270) — 8 errores: aerovías bajas a FL270, RAD vía NEVIL, límite de SID de EGLL, DCT en el FRA del Reino Unido",
      "test": true
+    },
+    {
+     "id": "SOG-0524",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : la réponse du calcul dépend de la charge du poste — ESSA → LEMG « calcul impossible (budget de recherche) » quand le poste est chargé ; borner en états, pas en temps",
+     "en": "Routes: the computed answer depends on machine load — ESSA → LEMG “impossible (search budget)” when busy; bound by states, not time",
+     "de": "Routen: die Antwort hängt von der Last des Rechners ab — ESSA → LEMG „unmöglich (Suchbudget)“ unter Last; nach Zuständen begrenzen, nicht nach Zeit",
+     "es": "Rutas: la respuesta depende de la carga del equipo — ESSA → LEMG «imposible (presupuesto de búsqueda)» con carga; acotar por estados, no por tiempo"
     }
    ]
   },
