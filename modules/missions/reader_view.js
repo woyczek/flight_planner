@@ -55,9 +55,6 @@ export const TX = {
   onward: ['Suite de route : {r}', 'Onward route: {r}', 'Weitere Route: {r}', 'Continuación de la ruta: {r}'],
   onMap: ['Voir sur la Carte', 'See on the Map', 'Auf der Karte ansehen', 'Ver en el Mapa'],
   prepare: ['Préparer ce vol', 'Prepare this flight', 'Diesen Flug vorbereiten', 'Preparar este vuelo'],
-  closed: ['Tiroirs encore fermés : {n}', 'Drawers still closed: {n}', 'Noch geschlossene Schubladen: {n}',
-    'Cajones aún cerrados: {n}'
-  ],
   // le pied : « Page 1 sur 4 », « Pages 3 et 4 sur 4 »
   page: ['Page {a} sur {n}', 'Page {a} of {n}', 'Seite {a} von {n}', 'Página {a} de {n}'],
   pages: ['Pages {a} et {b} sur {n}', 'Pages {a} and {b} of {n}', 'Seiten {a} und {b} von {n}', 'Páginas {a} y {b} de {n}'],
@@ -143,15 +140,21 @@ export function attach(sheet, o = {}) {
   }
   // « Lire la mission » : à côté de « Préparer ce vol », une fois par dessin de la fiche
   const row = sheet.querySelector('.ms-actions'),
+    slot = sheet.querySelector('[data-actslot]'),
     first = row?.querySelector('[data-do="prepare"]');
   if (row && !row.querySelector('[data-rd-read]')) {
     const b = document.createElement('button');
     b.type = 'button';
-    b.dataset.rdRead = o.id;
+    b.dataset.rdRead =
+      ''; // sans identifiant : la fiche d'une mission sans tiroir et celle d'une mission aux tiroirs fermés ont le même HTML
     b.textContent = tt(TX.read);
-    if (first) first.after(b);
+    if (slot) slot.prepend(b); // la place que module.js donne aux gestes de la section : « Lire la mission » en tête
+    else if (first) first.after(b);
     else row.prepend(b);
   }
+  const rb = slot?.querySelector(':scope > [data-rd-read]');
+  if (rb && slot.firstElementChild !== rb) slot.prepend(rb); // toujours en tête, même si « Demander la suite » est arrivé après
+
   // la largeur du module décide d'une ou de deux pages : redessinée quand elle passe le seuil
   if (!A.ro && typeof ResizeObserver === 'function') {
     const a = A;
@@ -247,9 +250,9 @@ function paint() {
         n
       });
     box.toggleAttribute('data-rd-two', a.two);
-    // le compte des tiroirs fermés : au pied de la DERNIÈRE page montrée (la seule sur un écran étroit, celle de droite sinon)
+    // aucun compte des tiroirs fermés : même le fait qu'il y en ait est caché (SOG-0459)
     html = `${head}<div class="rd-pages" data-rd-pages>${shown.map((p, i) => `<article class="rd-page" data-rd-page="${p.kind}"${p.kind === 'drawer' ? ` data-rd-drawer="${esc(p.id)}"` : ''}>${bodyHtml(p)}
-      <div class="rd-foot"><span${closed && i === shown.length - 1 ? ` data-rd-closed="${closed}">${esc(tt(TX.closed, { n: closed }))}` : '>'}</span><span data-rd-n>${sp.from + i + 1} / ${n}</span></div></article>`).join('')}</div>
+      <div class="rd-foot"><span data-rd-n>${sp.from + i + 1} / ${n}</span></div></article>`).join('')}</div>
       <div class="rd-pager"><button type="button" data-rd-prev aria-label="${esc(tt(TX.prev))}"${sp.prev === null ? ' disabled' : ''}>‹</button><span data-rd-where>${esc(where)}</span><button type="button" data-rd-next aria-label="${esc(tt(TX.next))}"${sp.next === null ? ' disabled' : ''}>›</button></div>`;
     a.prev = sp.prev;
     a.next = sp.next;

@@ -259,7 +259,7 @@
     empty() && !q('[data-dw]') && !/Tiroir|Recherche|Nouvel ordre|s'ouvre|après le|Cet appareil|Sans position/.test(stage.textContent),
     sec().outerHTML);
   ck('« Demander la suite » est posé DANS la place de la rangée, juste après « Préparer ce vol », « Retour » en dernier ; un seul bouton, neutre (aucun mot des tiroirs)',
-    order() === 'prepare slot(ask) back' && text('[data-dw-ask]') === 'Demander la suite' && qa('[data-dw-ask]').length === 1 && askBtn()
+    order() === 'prepare slot(BUTTON,ask) back' && text('[data-dw-ask]') === 'Demander la suite' && qa('[data-dw-ask]').length === 1 && askBtn()
     .type === 'button' && !askBtn().disabled, order());
   ck('un titre hostile n\'est pas dans la page tant que son tiroir est fermé ; rien n\'est interprété', !window.__xss && !q('img') && !
     stage.innerHTML.includes('Retour &lt;img'));
@@ -319,7 +319,7 @@
     mission
   });
   ck('la fiche redessinée : les deux tiroirs ouverts sont repeints tout de suite dans l\'élément neuf, « Demander la suite » reposé dans la nouvelle place (un seul)',
-    opened() === 'B:hand,C:time' && order() === 'prepare slot(ask) back' && qa('[data-dw-ask]').length === 1);
+    opened() === 'B:hand,C:time' && order() === 'prepare slot(BUTTON,ask) back' && qa('[data-dw-ask]').length === 1);
   const n4 = ctx.notes.length;
   await ask();
   ck('« Demander » sur l\'élément neuf : une seule réponse (une seule écoute) — la zone ne s\'ouvre jamais par « Demander » : « Rien de nouveau pour l\'instant », rien d\'écrit',
@@ -878,7 +878,7 @@
   });
   await until(() => ctx.live.subs.size === 1);
   ck('un objet que l\'appareil suit : rien à l\'écran (plus de « Objet en vue »), seul « Demander la suite » dans la rangée', empty() && !q(
-    '[data-dw-seen]') && order() === 'prepare slot(ask) back' && !stage.textContent.includes('Radeau'));
+    '[data-dw-seen]') && order() === 'prepare slot(BUTTON,ask) back' && !stage.textContent.includes('Radeau'));
   await ask();
   ck('« Demander » HORS de portée : « Rien de nouveau pour l\'instant », rien d\'écrit, rien d\'ouvert', JSON.stringify(ctx.notes) === JSON
     .stringify([
@@ -2096,8 +2096,8 @@
   await until(() => !!askBtn());
   const shared = [...q('[data-actslot]').children].map(e => e.hasAttribute('data-dw-ask') ? 'ask' : 'other').join();
   DV.stop();
-  ck('la place est partagée (le lot T3 y mettra « Lire la mission ») : « Demander la suite » y entre sans rien ôter, et stop() ne retire QUE lui',
-    shared === 'ask,other' && !q('[data-dw-ask]') && !!q('[data-actslot] [data-other]'), shared);
+  ck('la place est partagée (le lot T3 y met « Lire la mission ») : « Demander la suite » y entre sans rien ôter, et stop() ne retire QUE lui',
+    shared === 'other,ask,other' && !q('[data-dw-ask]') && !!q('[data-actslot] [data-other]'), shared);
   stage.innerHTML = '';
 
   // ---- SOG-0516, lot B : le bloc « Débrief » de MA mission, sous « Suite de la mission » : une ligne par posé de précision jugé
@@ -2406,9 +2406,8 @@
   // ---- 13. lot T3 : l'enveloppe et la liseuse posées avec la section, « lu » écrit dans MON carnet
   /** Une fausse fiche (.ms-sheet et sa rangée d'actions) dont la section « Tiroirs » est l'hôte. */
   const sheetHost = () => {
-    stage.innerHTML =
-      '<div data-module="missions"><div class="ms-sheet"><section class="ms-first"><section data-drawers></section><div class="ms-actions"><a data-do="prepare" href="#fuel">Préparer ce vol</a></div></section><section class="ms-detail"></section></div></div>';
-    return stage.querySelector('[data-drawers]');
+    stage.innerHTML = SHEET;
+    return q('[data-drawers]');
   };
   DV.stop();
   ctx = fakeCtx({
@@ -2425,9 +2424,8 @@
     }
   });
   await until(() => !!q('[data-rd-read]'));
-  ck('MA mission dans une fiche : « Lire la mission » est posé dans la rangée des actions, après « Préparer ce vol » ; rien n\'est écrit dans mon carnet',
-    qa('.ms-actions > *').map(e => e.textContent).join('|') === 'Préparer ce vol|Lire la mission' && !ctx.store.has(BOOK), qa(
-      '.ms-actions > *').map(e => e.textContent));
+  ck('MA mission dans une fiche : « Lire la mission » est posé EN TÊTE de la place de la rangée des actions, devant « Demander la suite » ; rien n\'est écrit dans mon carnet',
+    order() === 'prepare slot(BUTTON,ask) back' && q('[data-actslot]').firstElementChild.hasAttribute('data-rd-read') && !ctx.store.has(BOOK), order());
   q('[data-rd-read]').click();
   ck('mission affectée pas encore lue : l\'enveloppe — pour moi (mon trigramme), rien du tiroir fermé ni de sa zone', !!q(
       '[data-rd-env]') && text('.rd-lab').includes('AAA') && !q('[data-reader]').innerHTML.includes('Secteur') && !q('[data-reader]')
@@ -2436,7 +2434,7 @@
   await until(() => !!q('[data-rd-pages]'));
   ck('« Ouvrir l\'enveloppe » écrit « lu » dans MON carnet (read_at, la séance, aucun tiroir), demande un passage, et ouvre la liseuse ; la zone cachée et le titre du tiroir fermé n\'y sont pas',
     typeof ctx.store.get(BOOK)?.read_at === 'string' && /^A:/.test(ctx.store.get(BOOK).seance) && !Object.keys(ctx.store.get(BOOK)).some(
-      k => k.startsWith('drawer_')) && ctx.synced >= 1 && text('[data-rd-closed]') === 'Tiroirs encore fermés : 1' && !q(
+      k => k.startsWith('drawer_')) && ctx.synced >= 1 && !q('[data-rd-closed]') && !q(
       '[data-reader]').innerHTML.includes('Secteur') && !q('[data-reader]').innerHTML.includes('ZONE-2') && [...ctx.store.keys()]
     .every(p => p === BOOK || p.startsWith('cache/missions/') || p === 'missions/affectations.json'), [ctx.store.get(BOOK), text(
       '[data-reader]')]);
@@ -2446,13 +2444,13 @@
   ck('la mission lue : plus d\'enveloppe, « lu » n\'est pas récrit', !q('[data-rd-env]') && !!q('[data-rd-pages]') && ctx.store.get(BOOK)
     .read_at === readAt);
   q('[data-rd-back]').click();
-  await twice('B');
+  await ask();
   await until(() => ctx.store.get(BOOK)?.drawer_B?.state === 'open');
   q('[data-rd-read]').click();
   while (!q('[data-rd-next]').disabled) q('[data-rd-next]').click();
   ck('le tiroir ouvert a sa page, la dernière : son titre, son message, comment il s\'est ouvert ; « lu » est gardé à l\'écriture du geste',
     q('.rd-page')?.dataset.rdDrawer === 'B' && text('.rd-page').includes('Secteur') && text('[data-rd-msg]') === 'Message du tiroir.' &&
-    text('[data-rd-how]').startsWith('ouvert à la main') && ctx.store.get(BOOK).read_at === readAt && !q('[data-rd-closed]'), text(
+    text('[data-rd-how]').startsWith('ouvert à votre demande') && ctx.store.get(BOOK).read_at === readAt && !q('[data-rd-closed]'), text(
       '.rd-page'));
   // une mission qu'on feuillette, dans une fiche : ni bouton ni liseuse
   DV.stop();
@@ -2469,8 +2467,8 @@
     id: ID,
     mission: seenMission
   });
-  await until(() => !!q('[data-dw-count]'));
-  await sleep(100);
+  await until(() => ctx.asked.includes('missions/affectations.json'));
+  await sleep(150);
   ck('mission feuilletée : pas de « Lire la mission », pas de liseuse', !q('[data-rd-read]') && !q('[data-reader]'));
   // jouée seul (la mission de mon vol, sans affectation) : la liseuse, sans enveloppe, rien d'écrit
   DV.stop();

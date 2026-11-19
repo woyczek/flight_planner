@@ -282,9 +282,9 @@
   ck('« Ouvrir l\'enveloppe » : « lu » est demandé une fois, la liseuse s\'ouvre à la page 1 (l\'ordre), « Page 1 sur 4 », la flèche d\'avant est inerte',
     reads === 2 && !q('[data-rd-env]') && q('.rd-page')?.dataset.rdPage === 'order' && text('[data-rd-where]') === 'Page 1 sur 4' && q(
       '[data-rd-prev]').disabled && !q('[data-rd-next]').disabled && qa('.rd-page').length === 1, text('[data-rd-where]'));
-  ck('un titre de mission est du texte, jamais interprété ; « Tiroirs encore fermés : 1 » au pied de la page ; le titre du tiroir fermé n\'est nulle part',
-    window.__xss === undefined && !q('[data-reader] img') && text('.rd-page h3').includes('<img') && text('[data-rd-closed]') ===
-    'Tiroirs encore fermés : 1' && !q('[data-reader]').innerHTML.includes('Titre du tiroir fermé'), text('.rd-foot'));
+  ck('un titre de mission est du texte, jamais interprété ; aucun compte de tiroirs fermés (SOG-0459) ; le titre du tiroir fermé n\'est nulle part',
+    window.__xss === undefined && !q('[data-reader] img') && text('.rd-page h3').includes('<img') && !q('[data-rd-closed]') && !/ferm/.test(text(
+      '.rd-foot')) && !q('[data-reader]').innerHTML.includes('Titre du tiroir fermé'), text('.rd-foot'));
   q('[data-rd-next]').click();
   q('[data-rd-next]').click();
   ck('la flèche tourne la page : la route à la page 3, avec « Voir sur la Carte » et « Préparer ce vol » de cette mission', q('.rd-page')
@@ -367,9 +367,9 @@
     unread: false
   }));
   q('[data-rd-read]').click();
-  ck('module large (900 px) : deux pages côte à côte, « Pages 3 et 4 sur 4 » ; le compte des tiroirs fermés au pied de la page de droite seulement',
-    qa('.rd-page').length === 2 && text('[data-rd-where]') === 'Pages 3 et 4 sur 4' && qa('[data-rd-closed]').length === 1 && !!qa(
-      '.rd-page')[1].querySelector('[data-rd-closed]') && q('[data-rd-next]').disabled, text('[data-rd-where]'));
+  ck('module large (900 px) : deux pages côte à côte, « Pages 3 et 4 sur 4 » ; aucun compte de tiroirs fermés',
+    qa('.rd-page').length === 2 && text('[data-rd-where]') === 'Pages 3 et 4 sur 4' && qa('[data-rd-closed]').length === 0 && q(
+      '[data-rd-next]').disabled, text('[data-rd-where]'));
   q('[data-rd-prev]').click();
   ck('les pages reculent deux par deux : « Pages 1 et 2 sur 4 »', text('[data-rd-where]') === 'Pages 1 et 2 sur 4' && qa('.rd-page')
     .map(e => e.dataset.rdPage).join() === 'order,brief' && q('[data-rd-prev]').disabled, text('[data-rd-where]'));

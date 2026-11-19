@@ -257,7 +257,7 @@
   });
   mount(cMine);
   await until(() => !!q('[data-dw-ask]'));
-  ck('pour MA mission : « Demander la suite » d\'abord, « Affecter… » EN QUEUE de la place', slotOrder() === 'ask,assign', slotOrder());
+  ck('pour MA mission : « Lire la mission » en tête, « Demander la suite » ensuite, « Affecter… » EN QUEUE de la place', slotOrder() === 'BUTTON,ask,assign', slotOrder());
   q('[data-actslot]').prepend(Object.assign(document.createElement('a'), {
     textContent: 'Lire la mission'
   }));

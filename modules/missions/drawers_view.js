@@ -908,7 +908,7 @@ function paint() {
     if (V === v) v.restOpen = rest.open; // gardé à travers les dessins
   };
   placeAsk(v);
-  reader(v, v.mine && !!v.states?.length); // l'enveloppe et la liseuse : MA mission qui a des tiroirs (lot T3)
+  reader(v, v.mine); // l'enveloppe et la liseuse : MA mission, avec ou sans tiroir (le secret : rien ne dépend des tiroirs)
 }
 
 /** L'enveloppe et la liseuse de MA mission (lot T3, reader_view.js) : posées avec la section, retirées pour une mission qui n'est pas

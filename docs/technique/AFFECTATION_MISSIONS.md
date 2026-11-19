@@ -803,10 +803,11 @@ from the same table.
 
 The mock-up accepted by the ergonomist on 18 Nov 2026 (« un brief d'abord, pas une carte »): the pilot reads his mission page by page.
 
-- **« Lire la mission »** — a button in the row of actions of the sheet, right after « Préparer ce vol » (not an eighth element), for
-  MY mission only (assigned to me, or the mission of my flight) — and, in this batch, only for a mission that has drawers: the
-  « Tiroirs » section is what knows whose mission it is. `reader_view.js` puts the button in `.ms-actions` itself at every drawing of
-  the section (the row is drawn by `module.js`, which knows nothing of the reader; its only line there is the `files` entry).
+- **« Lire la mission »** — a button at the HEAD of the place `[data-actslot]` of the row of actions (in front of « Demander la suite »,
+  not an eighth element of the row), for MY mission only (assigned to me, or the mission of my flight), with or without drawers: since
+  SOG-0459 nothing on the sheet may depend on the drawers, so a mission with closed drawers and one without give the same HTML (the
+  button carries no identifier). `reader_view.js` puts the button itself at every drawing of the section (`module.js` knows nothing of
+  the reader; its only line there is the `files` entry); without a place, it goes right after « Préparer ce vol ».
 - **The envelope** — once, for an ASSIGNED mission this pilot has not read in this play: the mission, for whom (trigram, callsign)
   and the take-off, nothing of its content. « Ouvrir l'enveloppe » writes `read_at` in the pilot's OWN record
   (`pilot/<TRI>/missions/<ID>.json`, `withRead` of `drawers.js`: written once, kept by every later writing) and asks for a
@@ -819,13 +820,13 @@ The mock-up accepted by the ergonomist on 18 Nov 2026 (« un brief d'abord, pas 
   ONE page per OPEN drawer (how and when, its message, its whole briefing, its onward route by the names of its points). It does not
   repeat the Detail (no zones, no rendezvous, no maps). The pages turn by the arrows of the foot, the arrows of the keyboard and a
   horizontal swipe; the last page read is kept in memory while the page of the suite stays open.
-- **A closed drawer has neither a page nor a title** — the reader receives only the mission through `pilotView` (§ 11.4) and makes a
-  page only of a drawer that the state says open AND that the view does not seal; the others are counted: « Tiroirs encore fermés :
-  n », at the foot of the last page shown. A drawer that opens while the reader is shown adds its page at the end.
+- **A closed drawer has neither a page, nor a title, nor a count** — the reader receives only the mission through `pilotView` (§ 11.4)
+  and makes a page only of a drawer that the state says open AND that the view does not seal; the others are not said at all (SOG-0459:
+  not even that there is one; `pagesOf` still returns the number `closed`, which no screen shows). A drawer that opens while the reader is shown adds its page at the end.
 - **Not in this batch** — the line of choice of the order (« durée estimée · aéronefs · théâtre », SOG-0455) and the « Théâtre »
   page (the read-only map block, SOG-0456 / SOG-0457): they come with their owners' deliveries. « Prendre la suite de route »: the
-  onward route is only said. The page is not in the address. An assigned mission WITHOUT drawers has no reader yet (SOG-0442).
-- Cases: N85 (the bench `test/reader.html`, 31 checks: the pages, the spreads, the screen in a mock sheet), N81 (82: the wiring —
+  onward route is only said (the ergonomist's decision: the sentence stays as in the mock-up of 18 Nov). The page is not in the address.
+- Cases: N85 (the bench `test/reader.html`, 31 checks: the pages, the spreads, the screen in a mock sheet), N81 (130: the wiring —
   the button, the envelope, `read_at` in my record, a browsed mission, a mission played alone), N86 (the sheet of an invented assigned
   mission: the button, the envelope, « lu », the pages, the closed drawer absent, the opened drawer as the last page; 390 and
   1280 px, four languages).

@@ -3934,8 +3934,8 @@ def n82(c):
     c.eq([w for w in WORDS if w in page], [], 'no word of a closed drawer in the sheet — neither title, nor message, nor briefing, nor the gesture of another pilot',
          what='words of the drawers')
     row_now = c.js(_DW_ROW)
-    c.ok(row_now[:2] == ['prepare', 'slot:ask'] and row_now[-1] == 'back' and norm(c.text(_DW_ASK)) == norm(row('ask')), row_now,
-         'the row: « Préparer ce vol », then the place with « Demander la suite » in it, then the rest, « Retour » last')
+    c.ok(row_now[:2] == ['prepare', 'slot:BUTTON,ask'] and row_now[-1] == 'back' and norm(c.text(_DW_ASK)) == norm(row('ask')), row_now,
+         'the row: « Préparer ce vol », then the place with « Lire la mission » and « Demander la suite » in it, then the rest, « Retour » last')
     c.ok(c.js('window.__pwn') is None and c.count(f'{M} .ms-sheet img') == 0, c.js('window.__pwn'), 'nothing of the file is interpreted')
     c.ok(c.js(f"(() => {{ const z = document.querySelector('{M} .ms-first [data-zones]'); return !!z && getComputedStyle(z).display !== 'none' }})()"),
          c.text(f'{M} .ms-first'), 'before an opening the zones line of the first page is there, as for any mission')
@@ -4375,7 +4375,7 @@ def n87(c):
         return r
 
     bare, closed = play('X-907A'), play('X-908A')
-    c.ok(bare['empty'] and closed['empty'] and bare['row'][:2] == ['prepare', 'slot:ask'] and bare['row'] == closed['row'], [bare['row'], closed['row']],
+    c.ok(bare['empty'] and closed['empty'] and bare['row'][:2] == ['prepare', 'slot:BUTTON,ask'] and bare['row'] == closed['row'], [bare['row'], closed['row']],
          'both: the section hidden and empty, « Demander la suite » in the place after « Préparer ce vol », the same row')
     c.ok(bare['sheet'] == closed['sheet'], [bare['sheet'][-400:], closed['sheet'][-400:]],
          'the sheet before any gesture: the SAME HTML, element for element, with and without a sequel')
@@ -4690,7 +4690,7 @@ RDV = 'modules/missions/reader_view.js'
       'row of actions, the envelope and « lu », the pages turned by the arrows, the keyboard and a swipe, the sheet drawn again', 'N',
       tags=('missions',), designs=('standard',), screens=False,
       rule='SOG-0441 T3 (the mock-up accepted by the ergonomist on 18 Nov 2026): the reader does not repeat the Detail; a closed drawer has '
-      'neither a page nor a title in it, only the count « Tiroirs encore fermés : n » at the foot of the last page shown; the envelope '
+      'neither a page nor a title in it, and no count of them (SOG-0459); the envelope '
       'comes once, for an assigned mission not read yet; every text of the mission is text')
 def n85(c):
     c.page.goto(f'{c.base}/modules/missions/test/reader.html', wait_until='load')
@@ -4756,8 +4756,9 @@ def n86(c):
     # the sheet of MY mission: « Lire la mission » in the row of actions, beside « Préparer ce vol »
     sheet('X-905A')
     c.until(f"!!document.querySelector('{M} .ms-actions [data-rd-read]')", timeout=10000, what='« Lire la mission » in the row of actions')
-    acts = c.js(f"[...document.querySelectorAll('{M} .ms-actions > *')].map(e => e.matches('[data-do=prepare]') ? 'prepare' : e.matches('[data-rd-read]') ? 'read' : 'x')")
-    c.eq(acts[:2], ['prepare', 'read'], '« Lire la mission » comes right after « Préparer ce vol », in the same row', what='the row of actions')
+    acts = c.js(_DW_ROW)
+    c.eq(acts[:2], ['prepare', 'slot:BUTTON,ask'], '« Lire la mission » is the head of the place after « Préparer ce vol », in front of « Demander la suite »', what='the row of actions')
+    c.ok(c.js(f"document.querySelector('{M} [data-actslot]').firstElementChild.matches('[data-rd-read]')"), acts, '« Lire la mission » is the first element of the place')
     c.eq(norm(c.text(f'{M} [data-rd-read]')), norm(rd('read')), 'its label', what='label')
     c.ok(c.doc(BOOK) is None, c.doc(BOOK), 'nothing is written in my record yet')
     c.shot(f'N86_{c.design}_{c.width}_{c.lang}_sheet.png')
@@ -4795,16 +4796,18 @@ def n86(c):
     t = norm(c.text(f'{RD} [data-rd-page="route"]'))
     c.ok('PT1' in t and '120 kt' in t and c.count(f'{RD} [data-rd-map]') == 1 and c.count(f'{RD} [data-rd-prepare]') == 1, t,
          'the route: the point the visible part cites, the speed, « Voir sur la Carte » and « Préparer ce vol »')
-    c.eq([norm(c.text(f'{RD} [data-rd-closed]')), c.js(f"document.querySelector('{RD} [data-rd-next]').disabled")], [fill(rd('closed'), n=1), True],
-         '« Tiroirs encore fermés : 1 » at the foot of the last page; no page after it', what='closed count, next')
+    c.eq([c.count(f'{RD} [data-rd-closed]'), c.js(f"document.querySelector('{RD} [data-rd-next]').disabled")], [0, True],
+         'no count of closed drawers (SOG-0459: not even that there is one); no page after the last', what='closed count, next')
     html = c.js(f"document.querySelector('{RD}').innerHTML")
     c.eq([w for w in SECRET if w in html], [], 'a closed drawer has neither a page nor a title: nothing of it, nor of what it hides, in the reader',
          what='secret words in the reader')
     # back to the sheet; the drawer is opened by hand; the reader comes back where it was, with one page more
     c.tap(f'{RD} [data-rd-back]')
     c.ok(c.count(RD) == 0 and c.js(f"getComputedStyle(document.querySelector('{M} .ms-first')).display") != 'none', c.count(RD), '« ← Fiche »: the sheet is back')
-    c.tap(f'{S} [data-dw-open="B"]')
-    c.tap(f'{S} [data-dw-open="B"]')
+    c.until(f"(() => {{ const b = document.querySelector('{_DW_ASK}'); return !!b && !b.disabled }})()", timeout=10000, what='« Demander la suite » ready')
+    c.tap(_DW_ASK)
+    c.until(f"!!document.querySelector('{S} [data-dw-ask-yes]')", timeout=4000, what='the panel')
+    c.tap(f'{S} [data-dw-ask-yes]')
     c.until(f"document.querySelector('{S} [data-dw=\"B\"]')?.dataset.open === 'hand'", timeout=8000, what='the drawer is open on the sheet')
     book = c.until_doc(BOOK, lambda d: d and d.get('drawer_B', {}).get('state') == 'open', what='my record carries the open drawer')
     c.ok(bool(book.get('read_at')), book, '« lu » is kept when the gesture is written')
@@ -4825,7 +4828,7 @@ def n86(c):
     c.eq(where(), fill(rd('pages'), a=1, b=2, n=4) if wide else fill(rd('page'), a=3, n=4), 'the left arrow of the keyboard turns back', what='the pager')
     # a mission I only browse: neither the button nor the reader
     sheet('X-906A')
-    c.until(f"!!document.querySelector('{S} [data-dw-count]')", timeout=8000, what='the line « Tiroirs : 1 »')
+    c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-906A'", timeout=8000, what='the sheet of X-906A')
     c.settle()
     c.eq([c.count(f'{M} [data-rd-read]'), c.count(RD)], [0, 0], 'a mission I only browse has neither « Lire la mission » nor a reader', what='button, reader')
     c.js(_DW_CLEAR)
