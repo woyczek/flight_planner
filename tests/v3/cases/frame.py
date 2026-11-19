@@ -5316,6 +5316,74 @@ def a300(c):
     _bench(c, 'frame/lib/test/untrusted.html', '__untrustedBench')
 
 
+@case('A343', 'Settings › Company, the folds of access.js on SogFrame.text (SOG-0468 (2)): the code proposed from a name, the acronym of an added theme and the value of an added series give what the hand-written folds gave — accents, ligatures, signs outside the lists, a name of 60 signs', 'A',
+      tags=('airline',), designs=('standard',), screens=False, night=False,
+      rule='SOG-0468 (2) (a refactor without a change of behaviour): access.js folds a text in four places — catId (only caller: proposeCode, the code proposed from the first word of a name: slug of 24, dashes out, 8 signs), the acronym of an added theme (foldAlnum, then /^[A-Z][A-Z0-9]{1,7}$/), the value of an added series (stripMarks, then the signs outside A-Za-z0-9 _./()- become blanks, 40 signs); the four now come from window.SogFrame.text (no copy, no fallback) and the case plays the three paths through the screen with the expectations of the old code')
+def a353(c):
+    lang = c.lang
+    sj = 'frame/settings/access.js'
+    T = lambda k: tx(sj, k, lang, after='const TA = {')
+    docs = [['device/level.json', {'level': 3}, 'cache'],
+            ['airline/index.json', {'schema': 1, 'airlines': [{'code': 'aaa', 'name': 'Alpha Air'}]}, 'document'],
+            ['airline/aaa/settings.json', {'schema': 1, 'name': 'Alpha Air', 'networks': {'ivao': True}, 'kind': 'va'}, 'document'],
+            ['airline/aaa/fleet.json', {'schema': 1, 'aircraft': []}, 'document']]
+    c.open('settings?card=company', docs=docs)
+    c.until("!!document.querySelector('[data-wizard]') && !!document.querySelector('[data-airline-fiche] [data-theme-add]')", timeout=15000, what='the stepper and the sheet with its folded forms')
+    c.eq(c.js("!!window.SogFrame.text && typeof window.SogFrame.text.slug"), 'function', 'the frame gives the text folding to the screen (no fallback copy in access.js)', what='SogFrame.text')
+    fiche = lambda extra='': f'[data-card="company"] [data-airline-fiche] {extra}'.strip()
+    opn = lambda sel: c.js(f"document.querySelector('[data-airline-fiche] {sel}').open = true")
+    doc = lambda: c.doc('airline/aaa/themes.json')
+    say = lambda: norm(c.text('[data-fiche-msg]'))
+    # ---- (a) the code proposed from the first word of the name (catId: slug of 24, then the dashes out, 8 signs at most)
+    c.js("document.querySelector('[data-airline-add]').open = true")
+    proposed = {}
+    for name, want in [('Éclair Bleu', 'eclair'), ('Île-de-Ré Air', 'iledere'), ('Ñandú Æon', 'nandu'), ('Œuvre', 'uvre'), ('Ærø Air', 'r'),
+                       ('Établissements Pétrolifères', 'etabliss'), ('A-B-C-D-E-F-G-H-I-J-K-L-M', 'abcdefgh'), ('日本語 Air', ''), ('--- ##', '')]:
+        c.page.fill('[data-wizard] [data-f="co-name"]', name)
+        proposed[name] = c.js("document.querySelector('[data-wizard] [data-f=co-code]').value")
+        c.eq(proposed[name], want, f'the code proposed from « {name} »', what=f'proposed {name}')
+    # ---- (c) the acronym of an added theme: accents out, capitals, only A-Z and 0-9 (the second one: « ß » becomes « SS » in capitals, after the marks)
+    opn('[data-theme-add]')
+    c.page.fill('[data-f="th-short-aaa"]', 'é-1 x')
+    c.page.fill('[data-f="th-name-aaa"]', 'Étoile')
+    c.tap(fiche('[data-act=companyThemeAdd]'))
+    c.until_doc('airline/aaa/themes.json', lambda d: bool(d and len(d.get('added', {}).get('themes', [])) == 1), what='the first theme written')
+    opn('[data-theme-add]')
+    c.page.fill('[data-f="th-short-aaa"]', 'ß9')
+    c.page.fill('[data-f="th-name-aaa"]', 'Stress')
+    c.tap(fiche('[data-act=companyThemeAdd]'))
+    d = c.until_doc('airline/aaa/themes.json', lambda d: bool(d and len(d.get('added', {}).get('themes', [])) == 2), what='the second theme written')
+    c.eq([[x['id'], x['short'], x['labels'][0]] for x in d['added']['themes']], [['E1X', 'E1X', 'Étoile'], ['SS9', 'SS9', 'Stress']], 'the acronym is the text without accents, in capitals, A-Z and 0-9 only (« é-1 x » → E1X, « ß9 » → SS9); the label stays as typed', what='themes file')
+
+    def refuse(act, fields, key):
+        before = doc()
+        opn('[data-theme-add]' if act == 'companyThemeAdd' else '[data-series-add]')
+        c.js("document.querySelector('[data-fiche-msg]').textContent = ''")
+        # a field's maxlength (40) cuts a 60-sign fill at the keyboard level: the page's own bound (name.length > 40) is what this case wants to reach, so the attribute is lifted
+        c.js("document.querySelectorAll('[data-airline-fiche] [data-f]').forEach(e => e.removeAttribute('maxlength'))")
+        for f, v in fields.items():
+            (c.page.select_option if f.startswith('sr-theme') else c.page.fill)(f'[data-f="{f}"]', v)
+        c.tap(fiche(f'[data-act={act}]'))
+        c.until("document.querySelector('[data-fiche-msg]').textContent.trim() !== ''", timeout=6000, what=f'the refusal {key}')
+        c.eq(say(), norm(T(key)), f'refused in words: {key}', what=f'refusal {key}')
+        c.eq(doc(), before, 'and nothing is written', what=f'unchanged after {key}')
+    refuse('companyThemeAdd', {'th-short-aaa': 'é', 'th-name-aaa': 'Autre'}, 'themeBad')
+    refuse('companyThemeAdd', {'th-short-aaa': '日本', 'th-name-aaa': 'Autre'}, 'themeBad')
+    refuse('companyThemeAdd', {'th-short-aaa': 'e1x', 'th-name-aaa': 'Autre'}, 'themeDup')
+    # ---- (d) the value of an added series: accents out, the signs outside the list become blanks (then one blank), 40 signs at most; the label is the name as typed
+    for name, value in [('Frégate Ã', 'Fregate A'), ('Cæsar #1: été', 'C sar 1 ete'), ('Ligne (A/B) n°2', 'Ligne (A/B) n 2')]:
+        opn('[data-series-add]')
+        c.page.select_option('[data-f="sr-theme-aaa"]', 'HEMS')
+        c.page.fill('[data-f="sr-name-aaa"]', name)
+        c.tap(fiche('[data-act=companySeriesAdd]'))
+        c.until_doc('airline/aaa/themes.json', lambda d, v=value: bool(d) and any(x['value'] == v for x in d.get('added', {}).get('series', {}).get('HEMS', [])), what=f'the series {value} written')
+    d = doc()
+    c.eq([[x['value'], x['labels'][0]] for x in d['added']['series']['HEMS']], [['Fregate A', 'Frégate Ã'], ['C sar 1 ete', 'Cæsar #1: été'], ['Ligne (A/B) n 2', 'Ligne (A/B) n°2']], 'the value is the name without accent, the signs outside the list as blanks; the label is the name as typed', what='series file')
+    refuse('companySeriesAdd', {'sr-theme-aaa': 'HEMS', 'sr-name-aaa': 'x' * 60}, 'seriesBad')
+    refuse('companySeriesAdd', {'sr-theme-aaa': 'HEMS', 'sr-name-aaa': '***'}, 'seriesBad')
+    c.check_errors()
+
+
 @case('A352', 'SogFrame.text (SOG-0468 (2), the classic screens of Settings): the frame loads frame/lib/text.js with its start and gives it, frozen and ready before the first screen, to the screens that cannot await an import; the service worker keeps it for offline', 'A',
       tags=('launcher',), designs=('standard',), screens=False, night=False,
       rule='SOG-0468 (2) (Réglages: access.js draws synchronously, an `await import` would make four folds asynchronous or keep a second copy): window.SogFrame.text is { stripMarks, foldUpper, foldLower, foldAlnum, wordsOf, slug } of frame/lib/text.js, frozen, set before the first screen is drawn; frame/sw.js lists lib/text.js in its shell')

@@ -837,9 +837,10 @@
       return false;
     }
   }
-  /** Un identifiant de catégorie d'après son nom : minuscules sans accent, tirets, 24 signes au plus ; '' si rien ne reste. */
-  const catId = name => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
-    /^-+|-+$/g, '').slice(0, 24).replace(/-+$/g, '');
+  /** Le pliage de texte du cadre (SogFrame.text, frame/lib/text.js : prêt avant le premier écran, figé) ; sans repli : s'il manque, le cadre est en panne. */
+  const txt = () => window.SogFrame.text;
+  /** Un identifiant d'après un nom : minuscules sans accent, tirets, 24 signes au plus ; '' si rien ne reste (sert à proposer le code d'une compagnie). */
+  const catId = name => txt().slug(name, 24);
   /** Modifie le themes.json d'une compagnie : le fichier lu (filtré) ou, sans fichier, les thèmes du genre ; `edit(doc, CL)` change { chosen, added: { themes, series } } et rend '' (fait) ou la clé du refus ; écrit { schema, chosen (ordre de la table, puis les thèmes ajoutés), added, updated_at, by } ; au moins un thème. Rend '' ou la clé du refus. */
   async function writeThemes(env, code, edit) {
     const CL = await catLib();
@@ -1131,7 +1132,7 @@
       b.dataset.code = adopt;
     }
   }
-  /** Le code proposé d'après le nom (le premier mot, lettres et chiffres sans accent, 8 signes au plus) ; '' si rien ne s'y prête. */
+  /** Le code proposé d'après le nom (le premier mot passé par catId, sans tirets, 8 signes au plus) ; '' si rien ne s'y prête. */
   const proposeCode = name => catId(name.split(/\s+/)[0] || '').replace(/-/g, '').slice(0, 8);
   /** La vérification du pas « Identité » : le nom, le code (règle, pas `perso`, pas déjà pris, pas de dossier orphelin), le genre, vingt compagnies au plus ; rend '' ou la phrase du refus. `resume` : une création interrompue (son dossier est le nôtre). */
   async function wizardCheck(env, v, resume = false) {
@@ -1906,7 +1907,7 @@
         }, false, said);
       }
       if (act === 'companyThemeAdd') {
-        const short = val(`th-short-${code}`, root).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, ''),
+        const short = txt().foldAlnum(val(`th-short-${code}`, root)),
           name = themeText(val(`th-name-${code}`, root));
         if (!/^[A-Z][A-Z0-9]{1,7}$/.test(short) || !name || name.length > 40) return ficheSay(env, t(TA.themeBad));
         const letter = val(`th-letter-${code}`, root).trim().toUpperCase(),
@@ -1930,8 +1931,7 @@
       // une série ajoutée à un thème : la valeur est le nom sans accent (la forme permise du fichier), le libellé est le nom tel que saisi, recopié dans les quatre langues
       const theme = root.querySelector(`[data-f="sr-theme-${code}"]`)?.value || '',
         name = themeText(val(`sr-name-${code}`, root)),
-        value = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 _.\/()-]/g, ' ').replace(/\s+/g, ' ').trim()
-        .slice(0, 40);
+        value = txt().stripMarks(name).replace(/[^A-Za-z0-9 _.\/()-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
       if (!name || name.length > 40 || !/^[A-Za-z0-9][A-Za-z0-9 _.\/()-]{0,39}$/.test(value)) return ficheSay(env, t(TA.seriesBad));
       return themeWrite(env, code, (d, CL) => {
         const known = new Set([...(CL.themeOf(theme)?.series || []).map(x => x.value), ...(d.added.series[theme] || []).map(x => x
