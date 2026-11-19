@@ -735,8 +735,14 @@ function stateNamesHtml(groups) {
 
 /** La ligne sous la phrase d'état quand l'état montré est le dernier connu (SOG-0511) : « Lecture de l'état des zones… » tant que la lecture du lanceur tourne (role=status), puis, si elle n'a pas abouti, la ligne d'état non lu ; '' sinon. */
 function statusLineHtml(groups) {
+  if (S
+    .statusGaveUp
+  ) { // la relance a échoué aussi : « Réessayer » relit l'état seul ; sans état montré, la phrase d'état dit déjà « pas lu » : le bouton seul
+    const retry = `<button type="button" data-act="status-retry"${S.statusP ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>`;
+    return groups ? `<p class="f-muted" data-status-unread>${esc(tt(TX.stateUnknown, { r: stateWhy() }))} ${retry}</p>` : `<p class="d-verbs" data-status-unread>${retry}</p>`;
+  }
   if (!S.statusOld || !groups) return '';
-  return S.statusP ? `<p class="f-muted" role="status" data-status-reading>${esc(tt(TX.stateReading))}</p>` : `<p class="f-muted" data-status-unread>${esc(tt(TX.stateUnknown, { r: stateWhy() }))}</p>`;
+  return S.statusP || S.statusRetry ? `<p class="f-muted" role="status" data-status-reading>${esc(tt(TX.stateReading))}</p>` : `<p class="f-muted" data-status-unread>${esc(tt(TX.stateUnknown, { r: stateWhy() }))}</p>`;
 }
 
 function stateHeadHtml() {

@@ -774,6 +774,7 @@ def _launcher(c, views=(), last=None, start=(200, {'job': 'j1'}), cancel_view=No
                 body = {'id': 'jss', 'state': 'done', 'step': '', 'done': 1, 'total': 1, 'unit': 'états', 'log': [], 'result': res, 'zones': {}}
             elif 'id=' in u.query and st['posts'] and st['posts'][-1].get('verb') == 'status' and st.get('status') is not None:
                 res = st['status']
+                st['status_served'] = st.get('status_served', 0) + 1   # a read of the state was answered (the client of the launcher polls a job about once a second)
                 if callable(res):   # the answer depends on what was asked (args: zones, personal), like the real launcher's
                     res = res((st['posts'][-1].get('args') or {}))
                 if st.get('by_args'):   # like the real launcher: the state of the zones asked for only (60 at most)
@@ -11298,4 +11299,114 @@ def l173(c):
          'the hostile file shows only what is valid, injects nothing, pollutes nothing; the line is there and the button grey', what='hostile page')
     _l173_release(c)
     c.until("!document.querySelector('[data-status-reading]') && document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=12000, what='the launcher\u2019s answer replaces it')
+    c.check_errors()
+
+
+@case('L174', 'Données: a read of the state of the zones that fails is no dead end — one automatic retry after 10 s, then the line « état non lu » carries a live « Réessayer » that re-reads the state ALONE; the gestures stay grey until a complete read; the timer goes with the screen (SOG-0511)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0511 (the relay): a complete read of base/status that fails (refusal, silent launcher) is tried once more after STATUS_RETRY_MS, then `[data-status-unread]` + `[data-act=status-retry]` (the label of TX.upd.retry); the button starts the read and nothing else; it applies with a kept state AND without; the timer is stopped at unmount')
+def l174(c):
+    lang = c.lang
+    now_ms = int(time.time() * 1000)
+    ok = lambda: _zst('up-to-date')
+    seed = {'at': now_ms - 3600000, 'current': _cycles()[1].isoformat(), 'parserVersion': 23, 'zones': {
+        'ca': ok(), 'es': _zst('stale', {'code': 'parser-old', 'built': 22, 'current': 23}), 'fr': ok(), 'gb': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}), 'us': ok()}}
+    live = _status({'ca': ok(), 'es': ok(), 'fr': _zst('stale', _NEWER), 'gb': ok(), 'us': ok()})
+    fail = {'ok': False, 'reason': 'busy'}     # the launcher refuses the read: the job ends with ok false
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    _sync_cfg(c, True)
+    st = _launcher(c, [], verbs=_VERBS, sync=_L170_SYNC)
+    c.page.add_init_script(_SYNC_JS)
+    c.page.add_init_script("localStorage.setItem('sogFrame:dev', '1')")    # the example module: another module of Maintenance to leave for
+    st['status'] = fail
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    _open(c, _sized(cfg), docs=[[_STATUS_LAST, seed, 'cache']])
+    _all_open(c)
+    reads = lambda: len([p for p in st['posts'] if p.get('verb') == 'status' and p.get('set') == 'base'])
+    sentence = lambda: c.js(_SENTENCE_JS)
+    retry_word = norm(tx(TX, 'retry', lang, after='  upd: {'))
+
+    def wait_reads(n, secs=8):
+        for _ in range(secs * 10):
+            if reads() >= n:
+                break
+            c.wait(100)
+        c.wait(300)
+
+    def reopen():
+        c.page.reload()
+        _head(c)
+        _all_open(c)
+
+    def shot(name):
+        if lang == 'fr' and c.width in (390, 1280):
+            c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+            c.js("document.querySelector('[data-state-head]').scrollIntoView({ block: 'start' }); window.scrollBy(0, -90)")
+            c.shot(f'L174_{c.width}_fr_{name}.png')
+    # ---- 1. the kept state is shown, the first read fails: the line still says « reading » (a retry is coming), no button yet
+    wait_reads(1)
+    c.eq([reads(), sentence(), c.count('[data-status-reading]'), c.count('[data-act=status-retry]')], [1, [['upToDate', 3], ['rebuild', 1], ['failed', 1]], 1, 0], 'the first read was asked and failed: the kept state is there, the line says reading, no button yet', what='first failure')
+    # ---- a. at 10 s the automatic retry starts one more read (before the lot: no retry, no button)
+    wait_reads(2, 16)   # the launcher client polls the job every second (the first read ends at about 1 s), then the retry starts 10 s later: the REAL clock, about 12 s
+    c.eq(reads(), 2, 'ten seconds later ONE more read of base/status is started by itself', what='automatic retry')
+    # ---- b. the retry fails too: the line « état non lu » with ONE live « Réessayer »; the gestures stay grey; the kept zones stay coloured
+    c.until("!!document.querySelector('[data-status-unread] [data-act=status-retry]')", timeout=8000, what='the line with its button')
+    pub = _publish_state(c)
+    c.eq([c.count('[data-status-reading]'), c.count('[data-act=status-retry]'), c.js("document.querySelector('[data-act=status-retry]').disabled"), norm(c.text('[data-act=status-retry]')),
+          norm(c.text('[data-status-unread]')), c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), pub['disabled'], pub['reason'], sentence()],
+         [0, 1, False, retry_word, norm(tx(TX, 'stateUnknown', lang).replace('{r}', tx(TX, 'stateUnread', lang)) + ' ' + retry_word), True, True, 'reading', [['upToDate', 3], ['rebuild', 1], ['failed', 1]]],
+         'the retry failed too: the existing « état non lu » line with ONE live « Réessayer » (the label of the retry buttons); « Mettre à jour » and « Publier » stay grey; the kept state stays', what='unread line')
+    c.ok(c.js("[...document.querySelectorAll('[data-wmap] path[data-zone]')].every(p => p.dataset.tone !== 'unread')"), None, 'the countries of the map stay coloured')
+    shot('unread')
+    # ---- c. a tap on « Réessayer »: ONE more read, no other job; the answer replaces the state, the line and the button go, « Mettre à jour » is live
+    st['status'] = live
+    n_before = len(st['posts'])
+    c.tap('[data-act=status-retry]')
+    c.until("!document.querySelector('[data-status-unread]') && document.querySelectorAll('[data-state-sentence] [data-filter]').length === 2", timeout=12000, what='the answer replaces the state')
+    jobs = {p.get('verb') for p in st['posts'][n_before:]}
+    c.eq([reads(), sorted(jobs & {'build', 'fetch', 'publish', 'pickup', 'purge', 'download'})], [3, []], 'the tap made ONE more read of the state and no build, download, pickup, purge or publication', what='retry alone')
+    c.eq([sentence(), c.js("document.querySelector('[data-build] [data-verb=update]').disabled"), c.count('[data-act=status-retry]')], [[['upToDate', 4], ['rebuild', 1]], False, 0], 'the state is the launcher\u2019s, « Mettre à jour » is live, the button is gone', what='after retry')
+    # ---- d. no kept state (the file is recent now): the first read fails, the retry SUCCEEDS at 10 s: no button, the state appears
+    st['status'] = fail
+    base = reads()
+    served = st.get('status_served', 0)
+    _l173_put(c, {**seed, 'at': c.js('Date.now()')})   # a state kept just now is never shown (the clock is the page's)
+    reopen()
+    wait_reads(base + 1)
+    for _ in range(80):   # the first read is answered « failed » when the client polls the job (about 1 s): only then the launcher may start to answer well
+        if st.get('status_served', 0) > served:
+            break
+        c.wait(100)
+    c.wait(300)
+    c.eq([sentence(), c.count('[data-status-reading]'), c.count('[data-act=status-retry]')], [[], 0, 0], 'no kept state and a failed read: nothing drawn, nothing invented, no button yet', what='no state, first failure')
+    st['status'] = live
+    wait_reads(base + 2, 16)
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 2", timeout=12000, what='the retry succeeded')
+    c.eq([reads() - base, sentence(), c.count('[data-act=status-retry]'), c.count('[data-status-unread]')], [2, [['upToDate', 4], ['rebuild', 1]], 0, 0], 'the retry succeeded: the state is there, no button, no line', what='retry succeeds')
+    # ---- 3. no kept state, both reads fail: only the button is added (the sentence says the state is not read); a tap succeeds
+    st['status'] = fail
+    base = reads()
+    _l173_put(c, {**seed, 'at': c.js('Date.now()')})   # a state kept just now is never shown (the clock is the page's)
+    reopen()
+    wait_reads(base + 1)
+    wait_reads(base + 2, 16)
+    c.until("!!document.querySelector('[data-status-unread] [data-act=status-retry]')", timeout=8000, what='the button without a kept state')
+    c.eq([norm(c.text('[data-status-unread]')), c.js("document.querySelector('[data-act=status-retry]').disabled"), c.count('[data-state-sentence] [data-filter]')], [retry_word, False, 0],
+         'without a kept state the sentence already says « pas lu »: the button alone is added, live', what='no state, button')
+    st['status'] = live
+    c.tap('[data-act=status-retry]')
+    c.until("!document.querySelector('[data-status-unread]') && document.querySelectorAll('[data-state-sentence] [data-filter]').length === 2", timeout=12000, what='the tap succeeds')
+    # ---- e. the screen is left before the ten seconds: the timer goes with it, no error
+    st['status'] = fail
+    base = reads()
+    _l173_put(c, {**seed, 'at': c.js('Date.now()')})   # a state kept just now is never shown (the clock is the page's)
+    reopen()
+    wait_reads(base + 1)
+    before = c.js('window.__stub.fns.size')
+    c.go('hello')
+    c.until('window.__stub.fns.size < %d' % before, timeout=4000, what='the module is unmounted')
+    c.wait(11500)   # past the ten seconds of the real clock
+    c.eq(reads(), base + 1, 'the retry did not start once the screen was left', what='timer stopped')
     c.check_errors()

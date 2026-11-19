@@ -43,6 +43,7 @@ import {
 import {
   focusCertify,
   refreshStatus,
+  retryStatus,
   toggleWhy
 } from './status.js';
 import {
@@ -327,6 +328,8 @@ function onClick(e) {
   if (e.target.closest?.('[data-act="map-home"]')) return mapHome();
   const mz = e.target.closest?.('[data-act="map-zoom"]');
   if (mz) return mapZoomButton(mz.dataset.dir);
+  const sr = e.target.closest?.('[data-act="status-retry"]');
+  if (sr) return sr.disabled ? undefined : retryStatus(); // « Réessayer » de la ligne « état non lu » : relit l'état seul
   const zf = e.target.closest?.('[data-act="zone-filter"]');
   if (zf) return setZoneFilter(zf.dataset.filter); // un nombre de la phrase d'état : ses zones se déplient sur place
   const zw = e.target.closest?.('[data-act="zone-why"]');
@@ -565,6 +568,9 @@ export async function mount(el, ctx) {
     statusAt: null, // l'instant (ms) où cet état a été gardé ; jamais écrit dans le DOM tel quel
     statusKept: '', // les zones de la dernière écriture de status-last.json : la même lecture ne la réécrit pas
     statusLastRead: false, // status-last.json est lu une fois par montage
+    statusTried: false, // une lecture complète a déjà échoué dans cet épisode : la relance automatique est partie
+    statusRetry: null, // le minuteur de cette relance (arrêté au démontage)
+    statusGaveUp: false, // la relance a échoué aussi : la ligne « état non lu » porte le bouton « Réessayer »
     whyOpen: new Set(),
     zoneFilter: null, // le nombre de la phrase d'état déplié (upToDate, rebuild, failed, waiting, unknown) : ses zones sont listées sous la phrase ; null : rien de déplié
     world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)
@@ -704,6 +710,7 @@ export function unmount() {
   window.removeEventListener('resize', S.onResize);
   cancelAnimationFrame(S.rz);
   clearTimeout(S.again);
+  clearTimeout(S.statusRetry); // la relance de la lecture de l'état ne part plus
   unbindCovSort();
   destroyMaps();
   stopTimer(); // le suivi s'arrête de lui-même au démontage (le cadre) : le travail, lui, continue sur le lanceur

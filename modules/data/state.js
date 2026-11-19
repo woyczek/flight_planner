@@ -15,6 +15,8 @@ export const XPLANE_ROUTE =
   'xplane'; // le lanceur tient le dossier d'X-Plane de ce poste (Q-0108, `__setup/xplane`) : GET { ok, configured, state, cycle, zones }, POST { path } ("" efface) ; le LANCEUR contrôle le chemin, la page n'en garde rien
 export const STATUS_LAST =
   'cache/data/status-last.json'; // { at, current, parserVersion, zones } : le dernier état par zone lu en entier (base/status), montré à l'ouverture tant que la lecture du lanceur n'a pas abouti (SOG-0511)
+export const STATUS_RETRY_MS =
+  1e4; // une lecture COMPLÈTE de base/status qui n'a pas abouti : UNE relance automatique après ce délai, puis le bouton « Réessayer » (SOG-0511)
 export const STATUS_LAST_FRESH_MS =
   12e4; // un état gardé depuis moins de deux minutes n'est pas montré : le lanceur est chaud, sa réponse est à portée (la lenteur est celle du premier rafraîchissement)
 export const PERSONAL = 'cache/data/personal.json'; // { sources: [id], updated_at } : sources personnelles cochées, mémorisées (SOG-0079)

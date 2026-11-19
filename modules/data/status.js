@@ -18,6 +18,7 @@ import {
   serial,
   STATUS_LAST,
   STATUS_LAST_FRESH_MS,
+  STATUS_RETRY_MS,
   tt
 } from './state.js';
 import {
@@ -89,9 +90,9 @@ export function fetchStatus(ids) {
     }
     if (S !== me) return null;
     S.statusP = null;
+    const complete = !ids?.length || (S.d?.cov?.ids || []).every(id => ids.includes(id));
     if (st) {
       // une lecture COMPLÈTE (toute la couverture) remplace d'un coup l'état montré, même le dernier connu gardé sur l'appareil (SOG-0511) ; la lecture de quelques pays (un paquet, un pays) garde l'état des autres, et ne baisse pas le drapeau
-      const complete = !ids?.length || (S.d?.cov?.ids || []).every(id => ids.includes(id));
       S.status = !(complete && S.statusOld) && ids?.length && S.status?.zones ? {
         ...st,
         zones: {
@@ -102,12 +103,18 @@ export function fetchStatus(ids) {
       if (complete) {
         S.statusOld = false;
         S.statusAt = null;
+        S.statusTried = S.statusGaveUp = false; // l'épisode d'échec est fini : ni relance, ni bouton
+        clearTimeout(S.statusRetry);
+        S.statusRetry = null;
         keepStatus(S.status);
       }
       renderBuild();
       refreshRows(); // une ligne de jeu de la base lit aussi cet état (« à publier », SOG-0510)
-    } else if (S.statusOld)
-      renderBuild(); // la lecture n'a pas abouti : la ligne de progression devient la ligne « état non lu », le dernier état connu reste, les boutons restent gris
+    } else {
+      if (complete) readFailed();
+      if (S.statusOld || S.statusGaveUp)
+        renderBuild(); // la lecture n'a pas abouti : la ligne de progression devient la ligne « état non lu » (avec « Réessayer » après la relance), le dernier état connu reste, les boutons restent gris
+    }
     return st;
   })();
   return S.statusP;
@@ -139,6 +146,28 @@ export function seedStatus(file) {
   S.status = last.status;
   S.statusOld = true;
   S.statusAt = last.at;
+}
+/** Une lecture COMPLÈTE de l'état n'a pas abouti (refus, lanceur muet, réponse illisible), alors que l'écran n'a pas d'état lu de ce poste (aucun, ou le dernier connu) : UNE relance automatique après STATUS_RETRY_MS ; si elle échoue aussi, le bouton « Réessayer » (statusGaveUp). Le minuteur s'arrête au démontage ; il ne repart pas si une lecture tourne ou a réussi entre-temps. */
+function readFailed() {
+  if (S.status && !S.statusOld) return; // un état lu par le lanceur reste montré : rien à rattraper
+  if (S.statusTried) {
+    S.statusGaveUp = true;
+    return;
+  }
+  const me = S;
+  S.statusTried = true;
+  clearTimeout(S.statusRetry);
+  S.statusRetry = setTimeout(() => {
+    if (S !== me) return;
+    S.statusRetry = null;
+    if (!S.statusP && S.d?.cov?.ids && !(S.status && !S.statusOld)) fetchStatus(S.d.cov.ids);
+  }, STATUS_RETRY_MS);
+}
+/** « Réessayer » de la ligne « état non lu » : relit l'état de toute la couverture, SEUL (ni construction, ni téléchargement, ni publication) ; le bouton est gris pendant la lecture. */
+export function retryStatus() {
+  if (S.statusP || !S.d?.cov?.ids) return;
+  fetchStatus(S.d.cov.ids);
+  renderBuild();
 }
 /** Relit l'état sans attendre (après une opération, à l'ouverture) : la page se redessine à la réponse. */
 export function refreshStatus(ids) {
