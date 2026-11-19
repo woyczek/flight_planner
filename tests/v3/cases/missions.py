@@ -4446,7 +4446,9 @@ def n181(c):
     S = f'{M} [data-drawers]'
     D = f'{S} [data-dw-debrief]'
     lang = c.lang
-    word = lambda tier: tx('frame/lib/precision.js', tier, lang, after='export const TIER_TEXT')
+    # the words of the tiers WRITTEN here (the expected value is written, not read from the texts: TIER_TEXT is frozen, no « key: [ » row)
+    word = lambda tier: {'réussi': ['réussi', 'good', 'gelungen', 'logrado'],
+                         'parfait': ['parfait', 'perfect', 'perfekt', 'perfecto']}[tier][['fr', 'en', 'de', 'es'].index(lang)]
     say = lambda key, tier, d, s, by='': norm(re.sub(r'\{(\w+)\}', lambda m: {'rank': '2', 'tier': word(tier), 'd': d.replace('.', tx(DW, 'decSep', lang)),
                                                                               't': clock(s), 'by': by}[m.group(1)], tx(DW, key, lang)))
     c.page.goto(c.base + '/frame/manifest.webmanifest')
