@@ -11978,3 +11978,26 @@ def n191(c):
     c.page.go_back()
     c.until(f"!document.querySelector('{R}')", timeout=4000, what='Back leaves the registry (the stale entry skipped)')
     c.js(_REG_CLEAR)
+
+@case('N178', 'Missions › the workshop, a floating note never covers a button of the foot (SOG-0517, frame case A354): the foot of the workshop '
+      '(`.ms-atfoot`: « Enregistrer », « Annuler », « À compléter ») declares itself with `data-f-foot`, so a note that stays (here a notification with '
+      'an action, as « Brouillon repris. » or the move of a place) sits above it and its box meets no button of the foot; at 390 and at 1280',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0517 (the frame, b37ff8030: a foot is measured as a .f-bar when it carries data-f-foot; capture P14c: the note covered « Annuler »); '
+      'modules/missions/EDITOR.md')
+def n178(c):
+    for w in (390, 1280):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        _ed_new(c, 'SAR')
+        c.until(f"!!document.querySelector('{E} .ms-atfoot [data-do=edcancel]')", timeout=10000, what=f'{w} px: the foot of the workshop')
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("() => window.SogFrame.notify('Brouillon repris.', 'info', { action: { label: 'Annuler', run() {} } })")  # an action: the note stays
+        c.until("!!document.querySelector('#fNotes .f-note')", what=f'{w} px: a note is shown')
+        c.wait(400)
+        hit = c.js(f"""() => {{ const n = document.querySelector('#fNotes .f-note').getBoundingClientRect();
+            return [...document.querySelectorAll('{E} .ms-atfoot button')].filter(x => {{ const r = x.getBoundingClientRect();
+              return r.width && r.left < n.right && r.right > n.left && r.top < n.bottom && r.bottom > n.top }}).map(x => x.dataset.do || x.textContent.trim()) }}""")
+        c.eq(hit, [], f'{w} px: the note meets no button of the foot', what=f'no overlap {w}')
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        ed_leave(c)
+    c.js(_REG_CLEAR)

@@ -1645,6 +1645,8 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
   offered today. Not taken from the mock-up: the level « type » under the family (the V3 catalogue has no subtype: the bricks sit in their family) and the
   count of indexed missions after the code of a family.
 
+- **The foot of the workshop declares itself to the frame** (SOG-0517; noreg N178, red before, frame case A354): `.ms-atfoot` carries `data-f-foot`, so a floating note (« Brouillon repris. », the move of a place, « Annuler ») sits above « Enregistrer », « Annuler » and « À compléter », never over them.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews
