@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 363,
+  "tests": 364,
   "verdicts": 233
  },
  "apps": [
@@ -5427,6 +5427,19 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T16:57:36Z"
+  },
+  {
+   "id": "SOG-0526",
+   "app": "compagnie",
+   "title": {
+    "fr": "Essai d'usage de l'atelier — un quart d'heure, cinq gestes (avant le jalon « atelier figé »)",
+    "en": "Workshop usage trial — a quarter of an hour, five gestures (before the “workshop frozen” milestone)",
+    "de": "Nutzungsprobe der Werkstatt — eine Viertelstunde, fünf Schritte (vor dem Meilenstein „Werkstatt eingefroren“)",
+    "es": "Prueba de uso del taller — un cuarto de hora, cinco gestos (antes del hito «taller congelado»)"
+   },
+   "test": "ESSAI D'USAGE — UN QUART D'HEURE (pas une recette fiche par fiche). Recharge la page. (1) Missions › Registre › « Créer une mission » : choisis un modèle, tape un départ et une arrivée connus de la base, ajoute un tiroir par « ＋ Tiroir », puis « Enregistrer ». (2) Ferme, puis rouvre cette mission depuis le Registre : tout ce que tu as saisi est là. (3) Change un champ SANS enregistrer, quitte l'atelier, reviens au Registre : la ligne « Brouillon » en tête, « Reprendre » rend ta saisie. (4) « Ajouter des missions » : colle une réponse de ChatGPT telle quelle : la mission est lue, ajoutée au registre et s'ouvre dans l'atelier. (5) Ouvre une mission à tiroirs comme pilote (sa fiche, « Lire la m",
+   "since": "2026-11-19",
+   "state": "todo"
   }
  ],
  "decisions": [

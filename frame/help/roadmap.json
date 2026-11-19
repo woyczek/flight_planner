@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "df1f6fb",
-  "fiches": 524,
+  "organisation": "7160f85",
+  "fiches": 525,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -4427,6 +4427,16 @@
      "en": "Mission workshop: a chosen named point (LFRF…) stays “to place”, with no coordinates",
      "de": "Missionswerkstatt: Ein gewählter benannter Punkt (LFRF…) bleibt „zu platzieren“, ohne Koordinaten",
      "es": "Taller de misiones: un punto con nombre elegido (LFRF…) queda «por situar», sin coordenadas",
+     "test": true
+    },
+    {
+     "id": "SOG-0526",
+     "kind": "feature",
+     "state": "done",
+     "fr": "Essai d'usage de l'atelier — un quart d'heure, cinq gestes (avant le jalon « atelier figé »)",
+     "en": "Workshop usage trial — a quarter of an hour, five gestures (before the “workshop frozen” milestone)",
+     "de": "Nutzungsprobe der Werkstatt — eine Viertelstunde, fünf Schritte (vor dem Meilenstein „Werkstatt eingefroren“)",
+     "es": "Prueba de uso del taller — un cuarto de hora, cinco gestos (antes del hito «taller congelado»)",
      "test": true
     }
    ]
