@@ -18000,3 +18000,8 @@ def k391(c):
     when = datetime.datetime(2026, 11, 19, 8, 10)
     verdict = lambda nat: [f['id'] for f in RF.evaluate(Rad(), legs, 'DEP', 'ARR', when, [dict(rule)], None, 270, None, natural=nat)['findings']]
     c.eq((verdict(True), verdict(False)), (['XX0001'], []), 'ABV FL225 AT P3: violated on the filed level (27 000 ft at P3), not on the profile brought down to the ceiling (19 500 ft)', what='rule')
+    # the reference flight that changes with this lot (EGLL → LEPA FL350: 759.6 → 748.2 NM, MJV used again): the last point before an arrival connector that is supposed FREE (no STAR read)
+    legs2 = [leg('DEP', 'A', 'UL9', 722, 6500, 66000), leg('A', 'ARR', 'DCT', 26, 0, 66000, 'DCT')]
+    FP.build(legs2, 0, 0, 350, speed_kt=450, climb_fps=2000 / 60, descent_fps=2000 / 60, strategy='adapt', free_arrival=True)
+    cut = lambda nat: RF.context(legs2, 'DEP', 'ARR', nat)['alt']['A']
+    c.ok(cut(False) >= 34999 and cut(True) < 10000, str((cut(False), cut(True))), 'EGLL → LEPA: MJV is the last point, 26 NM before the arrival; the profile ADAPTED keeps the cruise level there (the arrival connector is supposed free: the descent is all in the last leg), the NATURAL profile (the one the IFPS judges) is already in its descent (about 7 000 ft) — the rule LE2828 « BTN FL245-FL660 AT MJV » condemned MJV only on the adapted one: the route goes through MJV again (748 NM instead of 759.6)')
