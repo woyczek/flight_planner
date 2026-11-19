@@ -337,14 +337,12 @@ export const EDTX = {
     'Ankunft beurteilt im Umkreis von {nm} NM um den Platz',
     'Llegada juzgada a {nm} NM del aeródromo'
   ],
-  dwStopsJudged: ['Un arrêt compte à {nm} NM du point', 'A stop counts within {nm} NM of the point',
-    'Ein Halt zählt im Umkreis von {nm} NM um den Punkt',
-    'Una parada cuenta a {nm} NM del punto'
-  ],
   dwArrSpeed: ['Vitesse maximale (kt)', 'Maximum speed (kt)', 'Höchstgeschwindigkeit (kt)', 'Velocidad máxima (kt)'],
   dwArrGround: ['Posé au sol', 'Landed, on the ground', 'Gelandet, am Boden', 'Posado en tierra'],
-  dwStops: ['Arrêts à faire avant l\'arrivée', 'Stops to make before the arrival', 'Halte vor der Ankunft',
-    'Paradas antes de la llegada'
+  dwStops: ['Arrêts à faire avant l\'arrivée (chacun compté à {nm} NM du point)',
+    'Stops to make before the arrival (each counted within {nm} NM of the point)',
+    'Halte vor der Ankunft (jeder zählt im Umkreis von {nm} NM um den Punkt)',
+    'Paradas antes de la llegada (cada una cuenta a {nm} NM del punto)'
   ],
   dwStopAdd: ['Ajouter un arrêt…', 'Add a stop…', 'Halt hinzufügen…', 'Añadir una parada…'],
   dwStopDel: ['Retirer l\'arrêt {id}', 'Remove the stop {id}', 'Halt {id} entfernen', 'Quitar la parada {id}'],

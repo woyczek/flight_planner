@@ -3183,9 +3183,9 @@ function edDrawerHtml(s, doc) {
     r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
         <p class="f-muted" data-dwjudged="arrival">${esc(s.tt(EDTX.dwArrJudged, { nm: dec(s, DR.toleranceNm().field) }))}</p>
         <div class="f-row">${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
-        <div class="f-field"><span>${esc(s.tt(EDTX.dwStops))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
+        <div class="f-field"><span data-dwjudged="stops">${esc(s.tt(EDTX.dwStops, { nm: dec(s, DR.toleranceNm().transit) }))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
         ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}
-        <p class="f-muted" data-dwjudged="stops">${esc(s.tt(EDTX.dwStopsJudged, { nm: dec(s, DR.toleranceNm().transit) }))}</p>${fallback}` :
+        ${fallback}` :
     DR.HOLDS.includes(r.key) ? `${edRuleHtml(s, r.rule || DR.blankRule(), r.key, 'rule', null, ruleOpts)}${fallback}` :
     r.key === 'sequence' ? `${edStepsHtml(s, r, ruleOpts)}${fallback}` :
     r.key === 'event' ? `${edEventHtml(s, rows, r)}${fallback}` :

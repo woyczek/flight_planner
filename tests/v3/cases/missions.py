@@ -11295,7 +11295,7 @@ def n167(c):
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of the arrival')
         c.eq([c.count(f'{_DW} [data-f="arrRadius"]'), c.count(f'{_DW} [data-f="arrSpeed"]')], [0, 1], f'{width}: the arrival: no radius, its speed', what='the fields')
         c.eq([text(f'{_DW} [data-dwjudged=arrival]'), text(f'{_DW} [data-dwjudged=stops]')],
-             [norm(row(c, 'dwArrJudged', EDTX_FILE).replace('{nm}', '1')), norm(row(c, 'dwStopsJudged', EDTX_FILE).replace('{nm}', '2'))],
+             [norm(row(c, 'dwArrJudged', EDTX_FILE).replace('{nm}', '1')), norm(row(c, 'dwStops', EDTX_FILE).replace('{nm}', '2'))],
              f'{width}: the arrival at 1 NM of the airfield, a stopover at 2 NM', what='the arrival lines')
         c.js(f"document.querySelector('{_DW} [data-dwjudged=arrival]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P14b_{width}_arrivee.png')
