@@ -40,7 +40,8 @@ export const PRECISION = Object.freeze([{
   nm: 0.5
 }].map(Object.freeze));
 /** Les identifiants des paliers, du meilleur au plus large. */
-export const TIERS = ['excellent', 'parfait', 'réussi', 'partiel'];
+// figés (V3 Frame, 19/11) : partagés par tous les modules qui les importent, un seul changement vaudrait pour toute la page
+export const TIERS = Object.freeze(['excellent', 'parfait', 'réussi', 'partiel']);
 /** Le palier d'une distance au point visé (milles marins), ou '' au-delà du dernier palier ; '' aussi pour une distance non finie ou
  *  négative. Les bornes sont comprises : exactement 0,2 NM, c'est « réussi ». */
 export const tierOf = distNm => {
@@ -49,12 +50,12 @@ export const tierOf = distNm => {
   return p ? p.tier : '';
 };
 /** Les mots des quatre paliers, par palier : [fr, en, de, es]. */
-export const TIER_TEXT = {
-  excellent: ['excellent', 'excellent', 'ausgezeichnet', 'excelente'],
-  parfait: ['parfait', 'perfect', 'perfekt', 'perfecto'],
-  réussi: ['réussi', 'good', 'gelungen', 'logrado'],
-  partiel: ['partiel', 'partial', 'teilweise', 'parcial']
-};
+export const TIER_TEXT = Object.freeze({
+  excellent: Object.freeze(['excellent', 'excellent', 'ausgezeichnet', 'excelente']),
+  parfait: Object.freeze(['parfait', 'perfect', 'perfekt', 'perfecto']),
+  réussi: Object.freeze(['réussi', 'good', 'gelungen', 'logrado']),
+  partiel: Object.freeze(['partiel', 'partial', 'teilweise', 'parcial'])
+});
 /** Une arrivée posée sur un terrain est « dans la zone » à cette distance, en milles marins, quel que soit `key.radiusNm` (la vitesse et
  *  le sol restent les règles de la clé) ; un posé de précision sur un terrain de la route (ORIGIN, DESTINATION) l'a aussi, sans palier. */
 export const AD_NM = 1;

@@ -44,6 +44,8 @@
     ck(`tierOf(${label}) réexporté par drawers.js : le même palier`, D.tierOf(d) === before[i], `obtenu '${D.tierOf(d)}'`);
   });
   ck('PRECISION, TIERS : les mêmes objets que ceux que drawers.js réexporte', D.PRECISION === P.PRECISION && D.TIERS === P.TIERS && D.AD_NM === P.AD_NM && D.FIX_PERIOD_SEC === P.FIX_PERIOD_SEC);
+  // V3 Frame, 19/11 : partagés par tous les modules qui les importent, ils sont figés — un module ne peut changer ni un palier ni un mot
+  ck('PRECISION, TIERS et TIER_TEXT sont figés (chaque palier, chaque liste de mots, et l\'objet des mots)', Object.isFrozen(P.PRECISION) && P.PRECISION.every(Object.isFrozen) && Object.isFrozen(P.TIERS) && Object.isFrozen(P.TIER_TEXT) && Object.values(P.TIER_TEXT).every(Object.isFrozen));
   eq('PRECISION : quatre paliers, bornes comprises', P.PRECISION.map(x => [x.tier, x.nm]), [
     ['excellent', 0.05],
     ['parfait', 0.1],
