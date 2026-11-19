@@ -4669,10 +4669,25 @@ function edDraftWrite(s, e) {
   e.draftKey = key;
   Promise.resolve().then(() => s.ctx.data.put(DF.draftPath(key), rec, {
     module: 'missions'
-  })).then(() => DF.pruneDrafts(s.ctx, key)).catch(() => {
-    if (e.draftDoc === doc) e.draftDoc = null; // refusé : le prochain changement réessaie
-  }); // SOG-0486 : au-delà de 40 brouillons, les plus anciens s'effacent (jamais celui-ci)
+  })).then(() => DF.pruneDrafts(s.ctx, key).catch(() =>
+    0), x => edDraftFailed(s, e, doc, x)); // SOG-0486 : au-delà de 40 brouillons, les plus anciens s'effacent (jamais celui-ci)
   return true;
+}
+
+/** L'écrit du brouillon est REFUSÉ après coup (edDraftWrite a déjà dit « gardé » : l'atelier est peut-être quitté, sans question) : le
+ *  prochain changement réessaie, et l'auteur l'apprend — la notification d'« Enregistrer » pour son échec (« Mission non enregistrée : … »,
+ *  le motif borné), une seule fois par séance, jamais en silence. Aucune exception. */
+function edDraftFailed(s, e, doc, x) {
+  if (e.draftDoc === doc) e.draftDoc = null;
+  if (e.draftFailNote) return;
+  e.draftFailNote = true;
+  try {
+    s.ctx.notify(s.tt(TX.edFailed, {
+      e: String(x?.message || x).slice(0, 120)
+    }), 'error');
+  } catch {
+    // le cadre n'a plus d'écran où le dire : rien de plus à faire
+  }
 }
 
 /** La sortie de l'atelier (« Annuler », le démontage) : un atelier changé écrit son brouillon une dernière fois ; un atelier revenu

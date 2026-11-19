@@ -12525,6 +12525,12 @@ def n196(c):
             c.wait(250)
         return got
 
+    # the write of the draft refused AFTER the workshop said « kept »: the store of the device throws for the draft's path (the flag is set after the page opens)
+    c.page.add_init_script("""(() => { const put = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function (v) {
+      if (window.__failDraft && v && typeof v.path === 'string' && v.path.includes('cache/missions/draft_')) throw new DOMException('quota exceeded', 'QuotaExceededError');
+      return put.apply(this, arguments) } })()""")
+    failed = lambda: [norm(x) for x in c.note_log() if norm(x).startswith('Mission non enregistrée :')]  # the log of every note, shown or waiting (a phone shows one at a time)  # noqa: E731
+
     for width in (390, 1280):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         # (A) « Annuler » with a kept draft: no question, one notification, the draft is there
@@ -12581,3 +12587,25 @@ def n196(c):
         c.shot(f'P21a_{width}_mobile.png')
         ed_leave(c)
         c.js(_REG_CLEAR)
+        # (E) a draft REFUSED after the exit: « Annuler », then « Back » — the workshop is left without a question, and the failure is said, once, never in silence
+        for how in ('Annuler', 'Back'):
+            open_x(_TRIAL_TEXTS)
+            c.js('window.__failDraft = true')
+            _ed_fill(c, 'edtitle', title)
+            c.js(quiet)
+            if how == 'Annuler':
+                c.tap(f'{E} [data-do="edcancel"]')
+            else:
+                c.page.go_back()
+            c.until(f"!document.querySelector('{E}')", timeout=20000, what=f'{how}: the workshop left')
+            c.eq(c.count('.f-modal'), 0, f'{width} {how}: no question (the draft was said kept)', what='no question')
+            for _ in range(24):
+                if failed():
+                    break
+                c.wait(250)
+            c.wait(1500)
+            got = failed()
+            c.eq(len(got), 1, f'{width} {how}: the refused draft is said ONCE (« Mission non enregistrée : … »)', what='the failure')
+            c.ok(any('quota exceeded' in x for x in got), got, f'{width} {how}: the note carries the reason')
+            c.js('window.__failDraft = false')
+            c.js(_REG_CLEAR)
