@@ -18081,9 +18081,11 @@ def k394(c):
             pad('', '2303 [23 MAR 2023]', 'UFN', 'EGTTNFRA_2', 'EGTTNFRA', 'below FL105', 'H24', '100NM', 'Allowed'),
             pad('', 'x', 'UFN', 'ZZ1', 'ZZZZFRA', 'above FL245', 'H24', '0NM', 'Not Allowed'),
             pad('', 'x', 'UFN', 'EGTTNFRA_9', 'EGTTNFRA', 'above FL300', '06:00-18:00', '0NM', 'Not Allowed'),
-            pad('DEL', 'x', 'UFN', 'EGTTNFRA_8', 'EGTTNFRA', 'above FL245', 'H24', '0NM', 'Not Allowed')]
+            pad('DEL', 'x', 'UFN', 'EGTTNFRA_8', 'EGTTNFRA', 'above FL245', 'H24', '0NM', 'Not Allowed'),
+            pad('', '2303 [23 MAR 2023]', 'UFN', 'EGTTNFRAW', 'EGTTNFRAW', 'Between FL105..FL245', 'H24', '0NM', 'Allowed')]
     rad = types.SimpleNamespace(book={'sheets': {D.SHEET: [{'v': v, 'row': i + 2} for i, v in enumerate(rows)]}}, active=lambda r: True)
-    c.eq(D.rows(rad), [dict(id='EGTTNFRA', area='EGTTNFRA', above_ft=24500, nm=0)], 'the line read (d): « above FL245 », H24, 0NM of EGTTNFRA; the lines « Between », « below », a time, an area that is not defined here, a deleted line: not read', what='rows')
+    c.eq(D.rows(rad), [dict(id='EGTTNFRA', area='EGTTNFRA', lo_ft=24500, hi_ft=99900, nm=0), dict(id='EGTTNFRA_4', area='EGTTNFRA', lo_ft=10500, hi_ft=24500, nm=0), dict(id='EGTTNFRA_2', area='EGTTNFRA', lo_ft=0, hi_ft=10500, nm=100), dict(id='EGTTNFRAW', area='EGTTNFRAW', lo_ft=10500, hi_ft=24500, nm=0)],
+         'the lines read (d): the three bands of EGTTNFRA (above FL245 0NM, Between FL105..FL245 0NM — the IFPS: « EGTTNFRA:105:245 » —, below FL105 100NM) and the band of EGTTNFRAW; a time, an area that is not defined here, a deleted line: not read', what='rows')
     box = lambda s, w, n, e: [[s, w], [s, e], [n, e], [n, w]]
     uir = S.parse([{'type': 'UIR', 'name': 'LONDON UIR', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, 2.0)]},
                    {'type': 'FRA', 'name': 'EGTT FRA WEST (AS PART OF BOREALIS FRA CONTINUUM)', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, -4.0)]},
@@ -18093,7 +18095,15 @@ def k394(c):
     out = D.check(rad, [middle], uir, True)
     c.eq([(lv, 'ROUTE165' in t and 'HAWKE..NEVIL (29 NM)' in t and 'FL245' in t and '0 NM' in t) for lv, t in out], [('ERREUR', True)], 'a direct of 29 NM at 27 000 ft whose middle is in the London space outside the FRA areas: ERROR for a typed route, with the codes of the IFPS', what='error')
     c.eq([lv for lv, _t in D.check(rad, [middle], uir, False)], ['REVUE'], 'a calculated route: a review', what='calculated')
-    c.eq([D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=24000)], uir, True), D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=24500)], uir, True)], [[], []], 'a direct that stays at or below FL245: no limit (the level reached on the leg decides)', what='level')
+    c.eq([[(lv, 'entre FL105 et FL245' in t) for lv, t in D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=24000)], uir, True)], D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=24500)], uir, True), D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=10000)], uir, True)], [[('ERREUR', True)], [], []],
+         'the level reached on the leg decides the line: at 24 000 ft the line « Between FL105..FL245 » (the IFPS: EGTTNFRA:105:245, 0 NM) holds, at exactly FL245 neither band, at 10 000 ft (a leg of 29 NM, limit 100 NM below FL105 and 0 NM from FL105: the band 105..245 is not reached) nothing', what='level')
+    west_leg = lambda nm=29, top=18000, **k: leg('A', 'B', 52.0, -7.0, 52.0, -6.5, nm, top=top, **k)
+    c.eq([[(lv, 'EGTTNFRAW' in t) for lv, t in D.check(rad, [west_leg()], uir, True)], [(lv, 'EGTTNFRA ' in t) for lv, t in D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=18000)], uir, True)]], [[('ERREUR', True)], [('ERREUR', True)]],
+         'in the FRA West footprint below FL245 the limit is that of EGTTNFRAW (the line of its own), outside it that of EGTTNFRA (the London space without the FRA West)', what='west')
+    c.eq([[(lv, 'au-dessous de FL105' in t) for lv, t in D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 150, top=8000, natural_start_ft=2000, natural_end_ft=8000)], uir, True)], D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 90, top=8000, natural_start_ft=2000, natural_end_ft=8000)], uir, True)], [[('ERREUR', True)], []],
+         'below FL105 the limit is 100 NM: a direct of 150 NM is too long, one of 90 NM is not', what='below')
+    c.eq([lv for lv, _t in D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=27000, natural_start_ft=5000, natural_end_ft=27000)], uir, True)], ['ERREUR', 'ERREUR'],
+         'a direct that climbs through a band is held by every line of the bands it crosses (here « Between FL105..FL245 » and « above FL245 »)', what='climb')
     c.eq([D.check(rad, [leg('A', 'B', 52.0, -7.0, 52.0, -6.5, 29)], uir, True), D.check(rad, [leg('A', 'B', 55.0, 0.0, 55.0, 0.5, 29)], uir, True), D.check(rad, [leg('A', 'B', 48.0, -1.0, 48.0, -0.5, 29)], uir, True)], [[], [], []],
          'a middle in the FRA West, in the FRA of Scotland (north of the London space), or outside the London space: no limit of EGTTNFRA', what='outside')
     near = [D.check(rad, [leg('NEVIL', 'X', 50.0, -1.0, 50.04, -0.9, 20)], uir, True), D.check(rad, [leg('A', 'B', 51.0, -4.06, 51.0, -3.96, 20)], uir, True), D.check(rad, [leg('A', 'B', 51.0, -4.04, 51.0, -3.94, 20)], uir, True)]
@@ -18110,7 +18120,7 @@ def k394(c):
     import math
     import time
     junk = types.SimpleNamespace(book={'sheets': {D.SHEET: [None, 'x', 7, {'v': 'abc'}, {'v': None}, {'v': [None] * 3}, {'v': pad('', '', '', 'EGTTNFRA', 'EGTTNFRA', 'above FL245', 'H24', '0NM')}, {'v': pad('', '', '', 'EGTTNFRA', 'EGTTNFRA', ['above FL245'], 'H24', '0NM')}, {'v': {'a': 1}}, {'row': 1}]}}, active=lambda r: True)
-    c.eq(D.rows(junk), [dict(id='EGTTNFRA', area='EGTTNFRA', above_ft=24500, nm=0)], 'a malformed workbook (a line that is not an object, a value that is not a list, a cell that is not a text): the bad lines are skipped, the good one is read, nothing is raised (review of Security)', what='junk')
+    c.eq(D.rows(junk), [dict(id='EGTTNFRA', area='EGTTNFRA', lo_ft=24500, hi_ft=99900, nm=0)], 'a malformed workbook (a line that is not an object, a value that is not a list, a cell that is not a text): the bad lines are skipped, the good one is read, nothing is raised (review of Security)', what='junk')
     c.eq((D.rows(types.SimpleNamespace(book=None, active=lambda r: True)), D.rows(types.SimpleNamespace(book={'sheets': 5}, active=lambda r: True)), D.rows(types.SimpleNamespace(book={'sheets': {D.SHEET: 'x'}}, active=lambda r: True))), ([], [], []), 'no book, a sheet that is not a list: no line', what='no book')
     circle = lambda la, lo, r, n: [[la + r * math.sin(2 * math.pi * k / n), lo + r * math.cos(2 * math.pi * k / n)] for k in range(n)]
     heavy = S.parse([{'type': 'UIR', 'name': 'LONDON UIR', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [circle(52.0, -1.0, 4.0, 20000)] + [circle(30.0 + 3 * k, 60.0, 1.0, 20000) for k in range(7)]},
