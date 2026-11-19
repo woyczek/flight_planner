@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "9d7a90f",
-  "fiches": 517,
+  "organisation": "eed777a",
+  "fiches": 518,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3659,6 +3659,27 @@
      "es": "Misiones: un clic en « Registro » no actualiza el riel izquierdo",
      "rank": 338,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "compagnie-cadre-commun-missions",
+   "app": "compagnie",
+   "label": {
+    "fr": "Cadre commun ; Missions",
+    "en": "Cadre commun ; Missions",
+    "de": "Cadre commun ; Missions",
+    "es": "Cadre commun ; Missions"
+   },
+   "items": [
+    {
+     "id": "SOG-0519",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Champ de terrain (complétion) : la liste des propositions s'affiche en haut de l'écran, loin de la saisie",
+     "en": "Airfield field (autocomplete): the suggestion list shows at the top of the screen, far from the input",
+     "de": "Flugplatzfeld (Vervollständigung): die Vorschlagsliste erscheint oben am Bildschirm, weit weg von der Eingabe",
+     "es": "Campo de aeródromo (autocompletado): la lista de sugerencias aparece arriba de la pantalla, lejos de la entrada"
     }
    ]
   },
@@ -9379,6 +9400,9 @@
   },
   "SIG-553e91e7b9": {
    "fiche": "SOG-0434"
+  },
+  "SIG-6afcbd61c3": {
+   "fiche": "SOG-0519"
   },
   "SIG-6fe9d5751f": {
    "fiche": "SOG-0518"
