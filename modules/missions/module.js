@@ -861,6 +861,11 @@ const TX = {
     'Der Entwurf konnte nicht verworfen werden.',
     'No se pudo descartar el borrador.'
   ],
+  // SOG-0520 : inscrire au registre une mission du dépôt qu'il ne connaît pas
+  regEnrol: ['Inscrire au registre', 'Enter in the registry', 'Ins Register eintragen', 'Inscribir en el registro'],
+  regEnrolled: ['{id} inscrite au registre.', '{id} entered in the registry.', '{id} ins Register eingetragen.',
+    '{id} inscrita en el registro.'
+  ],
   // SOG-0487 : la fiche d'une ligne du registre
   regSheetBack: ['← Registre', '← Registry', '← Register', '← Registro'],
   regSheetClose: ['Fermer la fiche', 'Close the sheet', 'Blatt schließen', 'Cerrar la ficha'],
@@ -2011,10 +2016,48 @@ async function addWrite(s) {
     if (row) s.rows = [...s.rows.filter(r => r.id !== i.id), row].sort((a, b) => b.id.localeCompare(a.id));
   }
   if (S !== s) return;
+  // SOG-0520 (l'utilisateur : « on importe un fichier yaml de mission. on veut le modifier : pas dans le registre ») : les missions
+  // écrites sont inscrites au registre, comme « Mettre à jour le registre » le ferait ; l'atelier les ouvre ensuite
+  if (done) await regAddWritten(s, list.slice(0, done));
+  if (S !== s) return;
   const away = list.slice(0, done).filter(i => s.co?.filter && MS.ownerOf(i) !== s.co.code).length;
   if (done) s.ctx.notify(`${s.tt(one(s, done) ? TX.added1 : TX.added, { n: done })}${away ? ` ${s.tt(away === done && done === 1 ? TX.addedElsewhereIt : away === 1 ? TX.addedElsewhere1 : TX.addedElsewhere, { n: away })}` : ''}`, 'ok');
   s.add = null;
   draw(s);
+}
+
+/** SOG-0520 : inscrit au registre les missions qu'« Ajouter des missions » vient d'écrire — leur entrée est celle de « Mettre à jour le
+ *  registre » (RG.entryOfMission : les champs du fichier lu, bornés ; la série du fichier, sinon la série en cours de sa famille) ; une
+ *  mission déjà inscrite (même identifiant) garde sa ligne. Le registre est relu juste avant (un autre pilote a pu l'écrire) ; un registre
+ *  illisible n'est jamais réécrit (dit), un registre absent est créé. L'écran Registre ouvert est relu. Rien d'autre n'est corrigé ici
+ *  (doubles, anciens identifiants : « Mettre à jour le registre »). */
+async function regAddWritten(s, written) {
+  try {
+    if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+    let got = await yamlFile(s.ctx, REGISTRY);
+    if (got.why === 'late') got = await got.later;
+    if (S !== s) return;
+    if (got.why && got.why !== 'missing') return s.ctx.notify(s.tt(TX.regFailed, {
+      e: got.err || s.tt(TX.regUnread)
+    }), 'error');
+    const doc = got.doc && typeof got.doc === 'object' ? got.doc : {},
+      series = RG.seriesRows(RG.entries(doc)),
+      found = written.map(i => ({
+        path: i.path,
+        entry: i.doc ? RG.entryOfMission(i.doc, i.path, undefined, series) : null
+      })).filter(f => f.entry),
+      res = RG.addMissions(doc, found);
+    if (!res.added) return;
+    await s.ctx.data.put(REGISTRY, RG.withHeader(res.doc, globalThis.jsyaml), {
+      module: 'missions'
+    });
+    if (S !== s) return;
+    if (s.reg && !s.reg.busy) await regLoad(s);
+  } catch (e) {
+    if (S === s) s.ctx.notify(s.tt(TX.regFailed, {
+      e: String(e?.message || e).slice(0, 120)
+    }), 'error');
+  }
 }
 
 /** Un texte nettoyé et borné. */
@@ -2331,8 +2374,10 @@ function regDurHtml(s, d) {
   return d ? `<span data-dur="${d.est || 'written'}" title="${esc(s.tt(d.est === 'class' ? TX.durClass : d.est === 'file' ? TX.durFile : TX.durWritten))}">${d.est ? '≈ ' : ''}${esc(CH.hm(d.min))}</span>` : '';
 }
 /** SOG-0487 : « ⋯ » d'une ligne — les gestes rapides sans quitter le tableau : Brief, Atelier, Dupliquer, Corriger, Retirer (le menu des
- *  gestes de l'ancienne ligne dépliée). Une mission hors registre n'en a pas. */
+ *  gestes de l'ancienne ligne dépliée). Une mission hors registre n'a que « Inscrire au registre » (SOG-0520). */
 function regRowMenuHtml(s, x) {
+  // SOG-0520 : une mission du dépôt que le registre ne connaît pas — un seul geste, l'inscrire (jamais en silence)
+  if (x.kind === 'found') return `<details class="ms-rmore" data-rowmenu><summary data-do="regmenu" aria-haspopup="menu" title="${esc(s.tt(TX.regMoreGest))}" aria-label="${esc(s.tt(TX.regMoreGest))}">⋯</summary><div role="menu" data-do="regmenu"><button type="button" role="menuitem" data-do="regenrol" data-found="${esc(x.f.entry.id)}">${esc(s.tt(TX.regEnrol))}</button></div></details>`;
   if (x.kind !== 'line') return '';
   const i = x.e.idx,
     g = (k, label, cls = '') => `<button type="button"${cls} role="menuitem" data-do="${k}" data-rid="${i}">${esc(s.tt(label))}</button>`;
@@ -2397,7 +2442,8 @@ function regSheetHtml(s) {
     if (!f) return '';
     return `<aside class="f-card ms-regsheet" data-regsheet data-sheetid="${esc(f.entry.id)}">${head(f.entry.id, f.entry.title)}
       <p><span class="f-badge" data-kind="warn" data-rstate="notyet">${esc(s.tt(TX.regNotYet))}</span> <span class="f-muted" data-rpath>${esc(s.tt(TX.regSheetFile, { p: f.path }))}</span></p>
-      <dl class="ms-sfacts">${fact(TX.regSheetFamily, esc(familyText(f.entry.family, lang)))}${fact(TX.regSeries, has(f.entry.series) ? esc(cut(f.entry.series, 8)) : '')}${fact(TX.regOperation, esc(f.entry.operation?.name || ''))}</dl></aside>`;
+      <dl class="ms-sfacts">${fact(TX.regSheetFamily, esc(familyText(f.entry.family, lang)))}${fact(TX.regSeries, has(f.entry.series) ? esc(cut(f.entry.series, 8)) : '')}${fact(TX.regOperation, esc(f.entry.operation?.name || ''))}</dl>
+      <span class="ms-rgest"><button type="button" class="primary" data-do="regenrol" data-found="${esc(f.entry.id)}">${esc(s.tt(TX.regEnrol))}</button></span></aside>`;
   }
   const e = r.lines.find(x => x.idx === sh.rid && x.row.id === sh.id); // une place reprise par une autre mission (ligne retirée) : rien
   if (!e) return '';
@@ -2604,6 +2650,19 @@ async function regClick(s, b) {
       return openMission(s, line.row, false, idx);
     case 'regmenu': // SOG-0487 : « ⋯ » d'une ligne s'ouvre ou se ferme seul (details) ; la ligne n'ouvre pas sa fiche
       return;
+    case 'regenrol': {
+      // SOG-0520 : inscrire au registre une mission du dépôt qu'il ne connaît pas (son entrée : les champs de son fichier, bornés)
+      const f = r.found.find(x => x.entry.id === b.dataset.found);
+      if (!f) return;
+      const id = f.entry.id;
+      // sa fiche se ferme ; son entrée d'historique devient sans objet (sautée au prochain Retour)
+      if (r.sheet?.found === id) regSheetLeave(s);
+      return regPut(s, doc => ({
+        doc: RG.addMissions(doc, [f]).doc
+      }), () => s.ctx.notify(s.tt(TX.regEnrolled, {
+        id
+      }), 'ok'));
+    }
     case 'regsheet': {
       // SOG-0487 : toucher une ligne ouvre sa fiche ; le Retour du navigateur la ferme (une entrée d'historique, à la première fiche)
       const fid = b.dataset.found;

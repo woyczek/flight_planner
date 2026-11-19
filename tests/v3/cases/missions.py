@@ -11900,3 +11900,81 @@ def n180(c):
         c.page.fill(f'{E} input[data-k=eddep]', orig)  # the mission left as it was (nothing to save)
         c.page.locator(f'{E} input[data-k=eddep]').blur()
     c.js(_REG_CLEAR)
+
+
+@case('N190', 'Missions › a mission imported by « Ajouter des missions » (a YAML pasted) is in the registry as soon as the import ends, without a '
+      'reload: its line is a registry line (never « pas dans le registre »), its sheet offers « Atelier », which opens the workshop',
+      'N', tags=('missions',), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0520 (the user, 19 Nov: « bug. de réindex. on importe un fichier yaml de mission. on veut le modifier : « pas dans le registre » »): '
+      'addWrite wrote the file without its registry entry; the entry is the one « Mettre à jour le registre » writes (RG.entryOfMission, the '
+      'fields of the file, bounded); an invented mission')
+def n190(c):
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_REG_CLEAR)
+    c.js(_TEXTS_JS, _LC_TEXTS)
+    c.open('missions', wait=False, app='company')
+    c.until(f"!!document.querySelector('{M} [data-do=add]')", timeout=15000, what='« Ajouter des missions »')
+    c.tap(f'{M} [data-do="add"]')
+    c.page.fill(f'{M} [data-pane=add] textarea[data-k=addtext]', 'mission: { id: X-950A, type: REG }\ntitle: Importée par un fichier\n')
+    c.tap(f'{M} [data-do="addread"]')
+    c.until(f"!!document.querySelector('{M} [data-do=addwrite]:not([disabled])')", timeout=8000, what='the file read')
+    c.tap(f'{M} [data-do="addwrite"]')
+    c.until(f"!document.querySelector('{M} [data-pane=add]')", timeout=8000, what='added')
+    # the registry has its line, written at the end of the import (no reload, no « Mettre à jour le registre »)
+    reg_wait_text(c, lambda t: 'X-950A' in t)
+    c.ok('X-950A' in reg_text(c), reg_text(c)[-300:], 'the registry file carries the imported mission')
+    c.tap(f'{M} [data-do="regopen"]')
+    c.until(_REG_READ, timeout=20000, what='the registry read')
+    c.until(f"!!document.querySelector('{R} [data-reglist] [data-rowid=\"X-950A\"]')", timeout=8000, what='its line')
+    c.eq(c.attr(f'{R} [data-reglist] [data-rowid="X-950A"] [data-rstate]', 'data-rstate'), 'ok',
+         'a registry line with its file there — never « pas dans le registre »', what='state')
+    c.tap(f'{R} [data-rowid="X-950A"]')
+    c.until(f"!!document.querySelector('{R} [data-regsheet] [data-do=edmodify]')", timeout=8000, what='« Atelier » in its sheet')
+    c.shot(f'N190_{c.design}_390_{c.lang}_sheet.png')
+    c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+    c.until(f"!!document.querySelector('{E}')", timeout=15000, what='« Atelier » opens the workshop of the imported mission')
+    c.js(_REG_CLEAR)
+
+
+@case('N191', 'Missions › a mission of the repository the registry does not know (imported before SOG-0520) is entered by an explicit gesture, '
+      '« Inscrire au registre », in its « ⋯ » (table) and in its sheet (phone) — never written by the opening of the registry; its line then '
+      'is a registry line and its sheet offers « Atelier »',
+      'N', tags=('missions',), designs=('standard',), screens=True, langs4=False,
+      rule='SOG-0520 (b), decision of the relay (19 Nov): the missions imported before the fix stay « pas dans le registre »; an explicit gesture, '
+      'never a silent write at the opening; the line written takes only the fields of the file, bounded (RG.entryOfMission, RG.addMissions); '
+      'invented X-7xx missions of the registry seed')
+def n191(c):
+    # 1 280 px: the table — the « ⋯ » of a line « pas dans le registre » carries the gesture
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c)
+    c.eq(c.attr(f'{R} [data-reglist] [data-rowid="X-711A"] [data-rstate]', 'data-rstate'), 'notyet', 'a mission the registry does not know',
+         what='before')
+    c.ok('X-711A' not in reg_text(c), reg_text(c)[-300:], 'opening the registry wrote nothing')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-711A"] [data-rowmenu] summary')
+    c.until(f"!!document.querySelector('{R} [data-rowid=\"X-711A\"] [data-rowmenu][open] [data-do=regenrol]')", timeout=4000, what='« Inscrire au registre » in its « ⋯ »')
+    c.shot(f'N191_{c.design}_1280_{c.lang}_menu.png')
+    c.tap(f'{R} [data-rowid="X-711A"] [data-do="regenrol"]')
+    c.until(f"document.querySelector('{R} [data-reglist] [data-rowid=\"X-711A\"] [data-rstate]')?.dataset.rstate === 'ok'", timeout=8000,
+            what='its line, a registry line')
+    c.ok('X-711A' in reg_text(c), reg_text(c)[-300:], 'the registry file carries the entered mission')
+    c.eq(c.attr(f'{R} [data-reglist] [data-rowid="X-710A"] [data-rstate]', 'data-rstate'), 'notyet', 'the other one is left as it was',
+         what='other')
+    # 390 px: the list — the sheet of a line « pas dans le registre » carries the gesture
+    c.page.set_viewport_size({'width': 390, 'height': c.height})
+    c.until(f"!!document.querySelector('{R} [data-reglist] [data-rowid=\"X-710A\"]')", timeout=8000, what='the list at 390 px')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-710A"]')
+    c.until(f"!!document.querySelector('{R} [data-regsheet] [data-do=regenrol]')", timeout=8000, what='« Inscrire au registre » in its sheet')
+    c.shot(f'N191_{c.design}_390_{c.lang}_sheet.png')
+    c.tap(f'{R} [data-regsheet] [data-do="regenrol"]')
+    c.until(f"document.querySelector('{R} [data-reglist] [data-rowid=\"X-710A\"] [data-rstate]')?.dataset.rstate === 'ok'", timeout=8000,
+            what='its line, a registry line')
+    c.eq(c.count(f'{R} [data-rstate=notyet]'), 0, 'no more mission unknown to the registry', what='notyet')
+    c.tap(f'{R} [data-reglist] [data-rowid="X-710A"]')
+    c.until(f"!!document.querySelector('{R} [data-regsheet] [data-do=edmodify]')", timeout=8000, what='« Atelier » in its sheet')
+    # the Back of the browser closes this sheet, then leaves the registry: the entry of the sheet closed by the gesture absorbs nothing
+    c.page.go_back()
+    c.until(f"!document.querySelector('{R} [data-regsheet]')", timeout=4000, what='Back closes the sheet')
+    c.page.go_back()
+    c.until(f"!document.querySelector('{R}')", timeout=4000, what='Back leaves the registry (the stale entry skipped)')
+    c.js(_REG_CLEAR)

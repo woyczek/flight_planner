@@ -140,6 +140,22 @@ export function applyPlan(doc, plan, now = new Date().toISOString()) {
   return out;
 }
 
+/** SOG-0520 : le registre avec les missions `found` ([{ path, entry }], entrées d'entryOfMission) ajoutées — seulement celles dont
+ *  l'identifiant n'y est pas encore (planOf) ; rien d'autre n'est corrigé (doubles, anciens identifiants : « Mettre à jour »). Rend
+ *  { doc, added } : `added` le nombre de lignes ajoutées (0 : le document rendu est l'original, rien à écrire). */
+export function addMissions(doc, found, now = new Date().toISOString()) {
+  const add = planOf(doc, new Map(), found).add;
+  return add.length ? {
+    doc: applyPlan(doc, {
+      add
+    }, now),
+    added: add.length
+  } : {
+    doc,
+    added: 0
+  };
+}
+
 /** Une valeur de série ou de numéro saisie : '' (effacée) ou un entier de 0 à 99999 ; undefined si refusée. */
 const whole = v => {
   const s = String(v ?? '').trim();
