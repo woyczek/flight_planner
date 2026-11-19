@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "cd514de",
+  "organisation": "54162cf",
   "fiches": 523,
   "untranslated": 0,
   "priorities": 481,
@@ -6887,8 +6887,7 @@
      "fr": "Données : « Tout est à jour » et « Cycle dépassé : téléchargez… puis reconstruisez » paraissent ensemble ; le conseil est faux quand seule la publication de la base manque",
      "en": "Data: “Everything is up to date” and “Cycle out of date: download… then rebuild” appear together; the advice is wrong when only publishing the base is missing",
      "de": "Daten: „Alles ist aktuell“ und „Zyklus abgelaufen: herunterladen… dann neu erstellen“ erscheinen zusammen; der Rat ist falsch, wenn nur die Veröffentlichung fehlt",
-     "es": "Datos: «Todo está al día» y «Ciclo vencido: descargue… y reconstruya» aparecen juntos; el consejo es erróneo cuando solo falta publicar la base",
-     "test": true
+     "es": "Datos: «Todo está al día» y «Ciclo vencido: descargue… y reconstruya» aparecen juntos; el consejo es erróneo cuando solo falta publicar la base"
     },
     {
      "id": "SOG-0509",
@@ -6897,8 +6896,7 @@
      "fr": "Données, la fiche d'un pays : « Mettre à jour » est blanc et tout en bas, alors que « Prendre le fichier téléchargé » est bleu et en vue — la seule action utile est « Mettre à jour »",
      "en": "Data, a country's sheet: “Update” is white and at the very bottom while “Take the downloaded file” is blue and in view — “Update” is the only useful action",
      "de": "Daten, Blatt eines Landes: „Aktualisieren“ ist weiß und ganz unten, „Heruntergeladene Datei nehmen“ blau und sichtbar — nur „Aktualisieren“ ist nötig",
-     "es": "Datos, ficha de un país: «Actualizar» es blanco y está al fondo, mientras «Tomar el archivo descargado» es azul y visible — la única acción útil es «Actualizar»",
-     "test": true
+     "es": "Datos, ficha de un país: «Actualizar» es blanco y está al fondo, mientras «Tomar el archivo descargado» es azul y visible — la única acción útil es «Actualizar»"
     },
     {
      "id": "SOG-0511",
@@ -6907,8 +6905,7 @@
      "fr": "Données : chaque jour, pendant le premier rafraîchissement, des pays « incolores » font croire qu'il y a quelque chose à faire",
      "en": "Data: every day, during the first refresh, “colourless” countries suggest there is work to do",
      "de": "Daten: Jeden Tag lassen „farblose“ Länder während der ersten Aktualisierung glauben, es gäbe etwas zu tun",
-     "es": "Datos: cada día, durante el primer refresco, países «sin color» hacen creer que hay algo que hacer",
-     "test": true
+     "es": "Datos: cada día, durante el primer refresco, países «sin color» hacen creer que hay algo que hacer"
     }
    ]
   },
@@ -6929,8 +6926,7 @@
      "fr": "Données : après une mise à jour, la France et le Royaume-Uni disent toujours « parseur ancien »",
      "en": "Data: after an update, France and the United Kingdom still say “old parser”",
      "de": "Daten: Nach einer Aktualisierung zeigen Frankreich und das Vereinigte Königreich weiter „alter Parser“",
-     "es": "Datos: tras una actualización, Francia y el Reino Unido siguen diciendo «analizador antiguo»",
-     "test": true
+     "es": "Datos: tras una actualización, Francia y el Reino Unido siguen diciendo «analizador antiguo»"
     }
    ]
   },
@@ -8117,8 +8113,7 @@
      "en": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "de": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
      "es": "Tokens: warn before expiry (the tokens sent to the pilots and one's own)",
-     "rank": 310,
-     "test": true
+     "rank": 310
     }
    ]
   },
