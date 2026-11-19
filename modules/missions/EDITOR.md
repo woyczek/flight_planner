@@ -1579,7 +1579,9 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   (`edEndFill`, at the typing and at the answer of the base): the file carries `origin: { name, icao, lat, lon }`. A terrain of the file the author did not
   retype is NOT rewritten (opening a mission writes nothing, « Annuler » asks nothing): the route of the map and the profile go through the position of
   the base all the same (`ED.endsAt`, for the drawing only), where the map already showed it.
-- Captures `P14a_390_verrouille.png`, `P14a_1280_verrouille.png` (the sheet locked; at 1280 the dashed route through XTST beside it).
+- Captures `P14a_390_verrouille.png`, `P14a_1280_verrouille.png` (the sheet locked; at 1280 the dashed route through the locked terrain beside it).
+  The bench of N163 / N164 gives the locked terrain a code of its own, XTSL (« XTSL TEST LOCK », 44.55 N, 1.85 E): the departure of the trial
+  mission, « Base Test (XTST) » at 45 N, 1 E, keeps its XTST in the base, so the captures no longer show two XTST.
 - **A position of a LOCAL source is never written** (Sécurisation's retouch, the rule of 18 Nov: SOG-0153, Q-0061; noreg N168). A position that comes
   from X-Plane, Eurocontrol (and its RAD), Little Navmap, or from a record marked `local`, never goes into a file of the data repository. ONE guard,
   `EM.publishable(x)` (editor_map.js: the `isLocal` of the map — `source` or `zone` in `xplane`, `eurocontrol`, `eurocontrol_rad`, `lnm`, or `local`

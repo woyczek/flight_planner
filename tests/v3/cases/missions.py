@@ -10965,11 +10965,12 @@ def n170(c):
     c.until(f"!!document.querySelector('{E}')", timeout=10000, what='« Reprendre » opens the workshop')
 
 
-# SOG-0506: a named point of the base gives its position AND locks it. The invented base of these cases: the aerodrome XTST away from the departure of the trial
-# mission (44.55 N, 1.85 E), and a reporting point whose NAME holds « XTST », so that « xtst » typed in full keeps a list to choose from.
+# SOG-0506: a named point of the base gives its position AND locks it. The invented base of these cases: the aerodrome XTSL, a code of its own (not the XTST of
+# the departure of the trial mission, « Base Test (XTST) » at 45 N, 1 E, kept in the base where it is), away from that departure (44.55 N, 1.85 E), and a
+# reporting point whose NAME holds « XTSL », so that « xtsl » typed in full keeps a list to choose from.
 _LK_AT = [44.55, 1.85]
-_LK_BASE = dict(_PB_BASE, vrp=_PB_BASE['vrp'] + [{'id': 'XTW', 'name': 'XTST OUEST', 'lat': 44.75, 'lon': 1.55}],
-                aerodromes=[{'icao': 'XTST', 'name': 'XTST TEST', 'lat': _LK_AT[0], 'lon': _LK_AT[1], 'elev': 100}, _PB_BASE['aerodromes'][1]])
+_LK_BASE = dict(_PB_BASE, vrp=_PB_BASE['vrp'] + [{'id': 'XTW', 'name': 'XTSL OUEST', 'lat': 44.75, 'lon': 1.55}],
+                aerodromes=[{'icao': 'XTSL', 'name': 'XTSL TEST LOCK', 'lat': _LK_AT[0], 'lon': _LK_AT[1], 'elev': 100}] + _PB_BASE['aerodromes'])
 # the route of the departure as the map of the workshop draws it ([lat, lon]…), read in the source of the author's layers
 _LK_ROUTE = """() => { const m = window.__edMap; if (!m) return null; const ids = new Set(m.getStyle().layers.filter(l => l.id.startsWith('me-auth-')).map(l => l.source));
   for (const id of ids) { const d = m.getSource(id)?.serialize?.()?.data; const f = (d?.features || []).find(x => x.properties?.fid === 'route');
@@ -11010,8 +11011,8 @@ def _lk_map(c):
     c.settle()
 
 
-@case('N163', 'Missions › the workshop, a named point of the base gives its position AND locks it (SOG-0506): in the sheet of a new turning point, « xtst » typed in '
-      'lower case, then the aerodrome XTST chosen in the list: the place takes the code and the COMPLETE position of the base; its latitude and longitude are read only and '
+@case('N163', 'Missions › the workshop, a named point of the base gives its position AND locks it (SOG-0506): in the sheet of a new turning point, « xtsl » typed in '
+      'lower case, then the aerodrome XTSL chosen in the list: the place takes the code and the COMPLETE position of the base; its latitude and longitude are read only and '
       'the sheet names the source (the aeronautical base, the code); added to the route of the departure, the dashed route of the map passes through its position; dragged '
       'on the map, it does not move (a free point does) and the line under the map says it is locked; the code erased, the place keeps its position as a free point: the '
       'fields are written again and the map moves it', 'N',
@@ -11030,18 +11031,18 @@ def n163(c):
     c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
     c.until(f"!!document.querySelector('{name}')", what='the Name of the new turning point')
     c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
-    c.page.locator(name).press_sequentially('xtst', delay=40)
-    c.until(f"({_AD_SUG}).includes('XTST')", timeout=8000, what='the aerodrome XTST proposed for « xtst »')
-    for _ in range(c.quiet(_AD_SUG).index('XTST') + 1):
+    c.page.locator(name).press_sequentially('xtsl', delay=40)
+    c.until(f"({_AD_SUG}).includes('XTSL')", timeout=8000, what='the aerodrome XTSL proposed for « xtsl »')
+    for _ in range(c.quiet(_AD_SUG).index('XTSL') + 1):
         c.key('ArrowDown')
     c.key('Enter')
-    c.until(f"document.querySelector('{name}').value === 'XTST'", timeout=5000, what='XTST chosen by the keyboard')
+    c.until(f"document.querySelector('{name}').value === 'XTSL'", timeout=5000, what='XTSL chosen by the keyboard')
     c.until(f"({_LK_STATE})()[1] !== ''", timeout=8000, what='the source of the position said in the sheet')
     got = [val(5, 'id'), val(5, 'name'), val(5, 'lat'), val(5, 'lon')]
-    c.ok(got[:2] == ['PT3', 'XTST'] and near(got[2], _LK_AT[0]) and near(got[3], _LK_AT[1]), got,
-         '« xtst » typed then XTST chosen: the code in capitals and the COMPLETE position of the base written in the place')
+    c.ok(got[:2] == ['PT3', 'XTSL'] and near(got[2], _LK_AT[0]) and near(got[3], _LK_AT[1]), got,
+         '« xtsl » typed then XTSL chosen: the code in capitals and the COMPLETE position of the base written in the place')
     st = c.js(_LK_STATE)
-    c.ok(st[0] == [True, True] and 'XTST' in st[1], st, 'the latitude and the longitude are read only; the sheet names the source of the position (the base, the code)')
+    c.ok(st[0] == [True, True] and 'XTSL' in st[1], st, 'the latitude and the longitude are read only; the sheet names the source of the position (the base, the code)')
     # a forged typing in a locked field is not taken
     c.js(f"""() => {{ const x = document.querySelector('{E} [data-plform] input[data-f=lat]'); x.value = '10'; x.dispatchEvent(new Event('input', {{ bubbles: true }})) }}""")
     c.wait(300)
@@ -11051,20 +11052,20 @@ def n163(c):
     c.until(f"[...document.querySelectorAll('{E} [data-rtchips] [data-chip]')].map(x => x.dataset.chip).includes('PT3')", what='PT3 in the route of the departure')
     _lk_map(c)
     c.until(f"(({_LK_ROUTE})() || []).some(p => Math.abs(p[0] - {_LK_AT[0]}) < 0.001 && Math.abs(p[1] - {_LK_AT[1]}) < 0.001)", timeout=8000,
-            what='the route of the map through XTST')
+            what='the route of the map through XTSL')
     c.ok(on_route(_LK_AT), c.js(_LK_ROUTE), 'the dashed route of the map passes through the position of the base')
-    # the capture of the relay: the sheet locked (and, on a computer, the map with the route through XTST beside it)
+    # the capture of the relay: the sheet locked (and, on a computer, the map with the route through XTSL beside it)
     c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: '{'center' if w < 768 else 'nearest'}'}})")
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.settle()
     c.shot(f'P14a_{w}_verrouille.png')
     _lk_map(c)
     # the map refuses to move it; a free point moves (the gesture is the same)
-    c.until(f"(({_EDMAP_IDS})({_LK_AT}) || []).includes('place:5')", timeout=8000, what='XTST drawn on the map')
+    c.until(f"(({_EDMAP_IDS})({_LK_AT}) || []).includes('place:5')", timeout=8000, what='XTSL drawn on the map')
     c.page.mouse.click(*c.js(_EDMAP_XY, _LK_AT))
-    c.until(f"String(({_EDSEL}) ?? '').includes('XTST')", timeout=5000, what='the locked point chosen on the map')
+    c.until(f"String(({_EDSEL}) ?? '').includes('XTSL')", timeout=5000, what='the locked point chosen on the map')
     hint = norm(c.text(f'{_EDMAP} [data-maphint]') or '')
-    c.eq(hint, norm(row(c, 'atHint_locked', EDTX_FILE).replace('{name}', 'PT3 · XTST')), 'the line under the map says it is locked by the base', what='the line')
+    c.eq(hint, norm(row(c, 'atHint_locked', EDTX_FILE).replace('{name}', 'PT3 · XTSL')), 'the line under the map says it is locked by the base', what='the line')
     _ed_drag(c, _LK_AT, [44.45, 1.95])
     c.wait(500)
     c.ok(near(val(5, 'lat'), _LK_AT[0]) and near(val(5, 'lon'), _LK_AT[1]), [val(5, 'lat'), val(5, 'lon')], 'dragged on the map, the locked point does not move')
@@ -11085,7 +11086,7 @@ def n163(c):
     c.js(_REG_CLEAR)
 
 
-@case('N164', 'Missions › the workshop, a departure typed in the Cadre takes its position from the base (SOG-0506): in a new mission, « xtst » typed in DÉPART: its line '
+@case('N164', 'Missions › the workshop, a departure typed in the Cadre takes its position from the base (SOG-0506): in a new mission, « xtsl » typed in DÉPART: its line '
       'of the Lieux is no longer « à placer », it carries the COMPLETE position of the base, locked (read only, the source named); the dashed route of the map starts there; '
       'the file is written with the code AND the position (origin: { name, icao, lat, lon }); and a file whose departure is a known code without a position draws its route '
       'from the position of the base all the same (nothing is written to the file by opening it)', 'N',
@@ -11101,8 +11102,8 @@ def n164(c):
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_REG_CLEAR)
-    # the second file: an existing mission whose departure is « XTST » with no position (as the workshop wrote it before SOG-0506)
-    legacy = _PB_NOTARGET.replace('origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }', 'origin: { name: XTST, icao: XTST }')
+    # the second file: an existing mission whose departure is « XTSL » with no position (as the workshop wrote it before SOG-0506)
+    legacy = _PB_NOTARGET.replace('origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }', 'origin: { name: XTSL, icao: XTSL }')
     c.js(_TEXTS_JS, [_PB_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', legacy]])
     c.open('missions', wait=False, app='company', aero_extra=_LK_BASE)
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
@@ -11135,9 +11136,9 @@ def n164(c):
     if not c.count(f'{E} input[data-k=eddep]'):
         c.tap(f'{E} [data-steps] [data-step="cadre"]')
     c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
-    c.page.locator(f'{E} input[data-k=eddep]').press_sequentially('xtst', delay=40)
+    c.page.locator(f'{E} input[data-k=eddep]').press_sequentially('xtsl', delay=40)
     c.page.locator(f'{E} input[data-k=eddep]').press('Tab')
-    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTST'", timeout=8000, what='« xtst » recognised: XTST')
+    c.until(f"document.querySelector('{E} input[data-k=eddep]').value === 'XTSL'", timeout=8000, what='« xtsl » recognised: XTSL')
     ed_places(c)
     dep = f"[...document.querySelectorAll('{E} [data-edplaces] [data-place]')].findIndex(x => x.dataset.kind === 'dep')"
     c.until(f"{dep} >= 0", what='the line of the departure in the Lieux')
@@ -11147,7 +11148,7 @@ def n164(c):
     lat = c.js(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value")
     lon = c.js(f"document.querySelector('{E} [data-plform] input[data-f=lon]').value")
     st = c.js(_LK_STATE)
-    c.ok(near(lat, _LK_AT[0]) and near(lon, _LK_AT[1]) and st[0] == [True, True] and 'XTST' in st[1], [lat, lon, st],
+    c.ok(near(lat, _LK_AT[0]) and near(lon, _LK_AT[1]) and st[0] == [True, True] and 'XTSL' in st[1], [lat, lon, st],
          'the departure takes the complete position of the base, locked: its fields read only, the source named')
     _lk_map(c)
     c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
@@ -11162,8 +11163,8 @@ def n164(c):
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     got = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
       return d.origin }""" % _TEXT_OF, path)
-    c.ok(isinstance(got, dict) and got.get('icao') == 'XTST' and near(got.get('lat'), _LK_AT[0]) and near(got.get('lon'), _LK_AT[1]), got,
-         'the file: origin written with its code AND its position { name, icao: XTST, lat, lon }')
+    c.ok(isinstance(got, dict) and got.get('icao') == 'XTSL' and near(got.get('lat'), _LK_AT[0]) and near(got.get('lon'), _LK_AT[1]), got,
+         'the file: origin written with its code AND its position { name, icao: XTSL, lat, lon }')
     ed_leave(c)
     c.js(_REG_CLEAR)
 
