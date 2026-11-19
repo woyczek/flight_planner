@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "82138af",
+  "organisation": "512864d",
   "fiches": 512,
   "untranslated": 0,
   "priorities": 481,
@@ -4752,11 +4752,12 @@
     {
      "id": "SOG-0507",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : tolérances de jugement en vol — point nommé en transit à 2 NM, posé de précision par paliers, posé sur un terrain à 1 NM",
      "en": "Missions: in-flight judging tolerances — named transit point within 2 NM, precision landing by grades, landing on an aerodrome within 1 NM",
      "de": "Missionen: Toleranzen der Bewertung im Flug — benannter Transitpunkt auf 2 NM, Präzisionslandung in Stufen, Landung auf einem Flugplatz auf 1 NM",
-     "es": "Misiones: tolerancias del juicio en vuelo — punto con nombre en tránsito a 2 NM, aterrizaje de precisión por niveles, aterrizaje en aeródromo a 1 NM"
+     "es": "Misiones: tolerancias del juicio en vuelo — punto con nombre en tránsito a 2 NM, aterrizaje de precisión por niveles, aterrizaje en aeródromo a 1 NM",
+     "test": true
     }
    ]
   },
