@@ -2906,7 +2906,11 @@ export function edAfter(s) {
     if (!s) { // au démontage : la carte en vie, quelle qu'elle soit, et le champ de terrain (SOG-0465) ; le brouillon, une dernière fois
       const live = DRAFT_LIVE;
       DRAFT_LIVE = null;
-      if (live?.ed) edDraftLast(live, live.ed);
+      if (live?.ed) {
+        const dirty = edDirty(live.ed);
+        // le cadre a laissé partir un atelier changé (son brouillon le garde, edDeclare) : une seule notification
+        if (edDraftLast(live, live.ed) && dirty) live.ctx.notify(live.tt(EDTX.draftKept), 'info');
+      }
       edAdStop();
       kwStop(); // SOG-0508 : la fenêtre des briques, posée hors du module
       return EM.stop();
@@ -3109,11 +3113,11 @@ function edRuleHtml(s, rule, kind, pre, n, {
     num = (f, text) => use.includes(f) ? `<label class="f-field"><span>${esc((kind === 'landing' || kind === 'hover') && f === 'gap' ? s.tt(EDTX.dwGapMin, { min: DR.landingGapMin() }) : s.tt(text))}</span><input data-k="eddr" data-f="${pre}.${f}"${at} value="${esc(rule[f] ?? '')}" inputmode="decimal" maxlength="8" autocomplete="off"></label>` : '',
     pick = (f, text, options) => {
       const cur = now(rule[f] || '') || '',
-        // la valeur du fichier ne figure pas dans la liste : un objet MOBILE (la liste des objets immobiles ne l'offre pas) dit « mobile : non jugé »,
+        // la valeur du fichier ne figure pas dans la liste : un objet MOBILE (la liste des objets immobiles ne l'offre pas) dit « s'ouvre au geste ou à l'heure de repli »,
         // toute autre valeur « ? » (elle ne désigne plus rien) ; la valeur du fichier n'est pas réécrite
         gone = cur && !options.some(o => o[0].toUpperCase() === cur.toUpperCase()),
         moving = gone && f === 'object' ? objects.find(o => o[0].toUpperCase() === cur.toUpperCase()) : null,
-        all = (wide = wide || !!moving, gone) ? [...options, moving ? [cur, `${moving[1]} ${s.tt(EDTX.dwMoving)}`] : [cur, `${cur} ?`]] : options;
+        all = (wide = wide || !!moving, gone) ? [...options, moving ? [cur, `${moving[1]} (${s.tt(EDTX.dwNotJudged)})`] : [cur, `${cur} ?`]] : options;
       return `<label class="f-field"><span>${esc(s.tt(text))}</span><select data-k="eddr" data-f="${pre}.${f}"${at}><option value="">${esc(s.tt(EDTX.dwChoose))}</option>${all.map(o => `<option value="${esc(o[0])}"${o[0].toUpperCase() === cur.toUpperCase() ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
     },
     row = (...cells) => cells.some(Boolean) ? `<div class="f-row">${cells.join('')}</div>` : '',
@@ -4558,9 +4562,18 @@ function edDirty(e) {
  *  vraie seulement si l'atelier est ouvert ET modifié (après « Enregistrer » l'état est à jour, un atelier fermé dit faux). Idempotente :
  *  la même clé côté cadre, une déclaration ne s'ajoute pas à l'autre. */
 function edDeclare(s) {
-  s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed), {
-    kept: true
-  }); // le brouillon garde tout (SOG-0486) : le cadre le dit dans sa question
+  edYaml(); // le brouillon s'écrit tout de suite à la sortie : js-yaml est déjà là (jamais attendu au moment de quitter)
+  // SOG-0486 + décision de l'ergonome (19 nov.) : un brouillon GARDÉ ne perd rien — la fonction dit FAUX quand tout ce qui a changé est dans le
+  // brouillon (edDraftWrite l'écrit à l'instant, au besoin) ; sans brouillon (texte au-delà de la borne, clé hors forme, écrit refusé,
+  // « Enregistrer » en cours) elle dit vrai et le cadre pose sa question, qui ne parle pas d'un brouillon (kept: false)
+  s.ctx.unsaved?.(() => !!s.ed && edDirty(s.ed) && (s.ed.busy || !edDraftWrite(s, s.ed)), {
+    kept: false
+  });
+}
+
+/** Charge js-yaml (le texte du brouillon) sans l'attendre : l'atelier l'appelle à son ouverture. Jamais d'exception. */
+function edYaml() {
+  if (!globalThis.jsyaml) import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href).catch(() => 0);
 }
 
 /** « Annuler » (SOG-0454, SOG-0458) : quitte l'atelier et rend le registre ; avec un changement non enregistré, la question du cadre
@@ -4569,15 +4582,23 @@ function edDeclare(s) {
 async function edLeave(s) {
   const e = s.ed;
   if (!e) return;
-  if (edDirty(e) && !(await s.ctx.askLeave({
-      kept: true
-    }))) return;
+  let kept = false;
+  if (edDirty(e)) {
+    // le brouillon d'abord : écrit à l'instant, il garde tout ce qui a changé — rien à demander (décision de l'ergonome, 19 nov.)
+    if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href).catch(() => 0);
+    if (state() !== s || s.ed !== e) return;
+    kept = !e.busy && edDraftWrite(s, e);
+    if (!kept && !(await s.ctx.askLeave({
+        kept: false
+      }))) return;
+  }
   if (state() !== s || s.ed !== e) return; // l'écran a changé pendant la question
   s.ed = null;
-  edDraftLast(s, e); // SOG-0486 : « Quitter sans enregistrer » garde le brouillon (c'est son but : ne rien perdre)
+  if (!kept) edDraftLast(s, e); // sans brouillon écrit, la sortie essaie une dernière fois (edDraftKeep) ; un brouillon gardé l'est déjà
   s.ctx.unsaved?.(null); // l'atelier n'existe plus : plus rien à garder (le cadre ne pose pas une seconde question)
   draw(s);
   if (s.reg) regLoad(s);
+  if (kept) s.ctx.notify(s.tt(EDTX.draftKept), 'info'); // une seule fois, au départ de l'atelier
 }
 
 // ---------------------------------------------------------------- le brouillon (SOG-0486 ; voir l'en-tête, « Le brouillon »)
@@ -4613,38 +4634,59 @@ async function edDraftKeep(s, e, last = false) {
   e.draftTimer = 0;
   if (!last && (state() !== s || s.ed !== e)) return;
   if (e.busy || !edDirty(e)) return;
-  const gen = e.draftGen || 0, // « Enregistrer » pendant l'attente ci-dessous : cet écrit n'a plus lieu d'être
-    key = DF.keyOf(e.mode, e.origId),
-    c = edSaveCadre(e),
-    doc = edDoc(e, c);
-  if (!key || (e.draftDoc && e.draftKey === key && ED.same(doc, e.draftDoc))) return;
+  const gen = e.draftGen || 0; // « Enregistrer » pendant l'attente ci-dessous : cet écrit n'a plus lieu d'être
+  if (!DF.keyOf(e.mode, e.origId)) return;
   if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
   if ((e.draftGen || 0) !== gen || e.busy) return;
+  edDraftWrite(s, e);
+}
+
+/** L'écrit du brouillon, SANS attente (js-yaml déjà chargé) : → vrai quand le brouillon de la séance garde le document tel qu'il est — il
+ *  vient d'être écrit (la demande part, le refus d'après remet `draftDoc` à zéro : le prochain changement réessaie) ou l'était déjà ;
+ *  faux sans brouillon : clé hors forme, js-yaml absent, texte au-delà de la borne (draft.js). Sert la sortie : la question du cadre et
+ *  celle d'« Annuler » ne sont posées que si ce brouillon n'existe pas. */
+function edDraftWrite(s, e) {
+  const key = DF.keyOf(e.mode, e.origId),
+    c = edSaveCadre(e),
+    doc = edDoc(e, c);
+  if (!key) return false;
+  if (e.draftDoc && e.draftKey === key && ED.same(doc, e.draftDoc)) return true;
+  if (!globalThis.jsyaml) return false;
+  let text = '';
+  try {
+    text = ED.yamlText(doc, globalThis.jsyaml);
+  } catch {
+    return false;
+  }
   const rec = DF.draftOf({
     key,
     mode: e.mode,
     title: c.title,
-    text: ED.yamlText(doc, globalThis.jsyaml)
+    text
   });
-  if (!rec) return;
+  if (!rec) return false;
   e.draftDoc = doc;
   e.draftKey = key;
-  await Promise.resolve().then(() => s.ctx.data.put(DF.draftPath(key), rec, {
+  Promise.resolve().then(() => s.ctx.data.put(DF.draftPath(key), rec, {
     module: 'missions'
-  })).catch(() => {
-    e.draftDoc = null; // refusé : le prochain changement réessaie
-  });
-  if (e.draftDoc) DF.pruneDrafts(s.ctx, key).catch(() =>
-    0); // SOG-0486 : au-delà de 40 brouillons, les plus anciens s'effacent (jamais celui-ci)
+  })).then(() => DF.pruneDrafts(s.ctx, key)).catch(() => {
+    if (e.draftDoc === doc) e.draftDoc = null; // refusé : le prochain changement réessaie
+  }); // SOG-0486 : au-delà de 40 brouillons, les plus anciens s'effacent (jamais celui-ci)
+  return true;
 }
 
 /** La sortie de l'atelier (« Annuler », le démontage) : un atelier changé écrit son brouillon une dernière fois ; un atelier revenu
  *  à son point de départ efface le brouillon que CETTE séance a écrit ou repris (il ne garderait qu'un état abandonné). */
 function edDraftLast(s, e) {
-  if (edDirty(e)) return edDraftKeep(s, e, true);
+  if (edDirty(e)) {
+    if (!e.busy && edDraftWrite(s, e)) return true;
+    edDraftKeep(s, e, true);
+    return false;
+  }
   clearTimeout(e.draftTimer);
   e.draftTimer = 0;
   if (e.draftKey) DF.dropDraft(s.ctx, e.draftKey);
+  return false;
 }
 
 /** « Enregistrer » a écrit la mission : le brouillon de la séance (sa clé d'AVANT l'enregistrement : « new » pour une création) est

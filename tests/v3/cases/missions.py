@@ -7015,6 +7015,7 @@ def n109(c):
     c.eq([c.count('.f-modal'), c.count(E)], [0, 0], 'a mission opened and left untouched leaves at once: no question', what='untouched')
     # at 1280: the same foot; a change, then « Annuler »: the question, and its two answers
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _NODRAFT_TEXTS)  # a draft kept asks no question (N196): the question is that of a mission without a draft
     open_x(True)
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
     c.eq(c.js(_FOOT_JS), _FOOT, 'at 1280: the same foot', what='the foot at 1280')
@@ -7024,7 +7025,7 @@ def n109(c):
     c.tap(f'{E} [data-do="edcancel"]')
     c.until(asked, timeout=8000, what='the question before leaving')
     said = c.js("(() => { const m = document.querySelector('.f-modal'); return [m.querySelector('p').textContent, m.querySelector('[data-ok]').textContent, m.querySelector('[data-no]').textContent] })()")
-    c.eq([norm(x) for x in said], [L('keptAsk'), L('keptOk'), L('stay')], 'with an unsaved change, the frame asks (the draft keeps everything, SOG-0486 `kept`): « Quitter » or « Rester dans l\'atelier »', what='the question')
+    c.eq([norm(x) for x in said], [L('ask'), L('ok'), L('stay')], 'with an unsaved change and no draft to keep it, the frame asks (the changes would be lost): « Quitter » or « Rester dans l\'atelier »', what='the question')
     c.shot('N109_1280_ask.png')
     c.tap('.f-modal [data-no]')
     c.wait(300)
@@ -7036,6 +7037,7 @@ def n109(c):
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
     c.ok('Un titre retouché' not in t and t0 != '' and t0 in t, t[:200], 'nothing was written: the file keeps its title')
     # saved, then « Annuler »: nothing to lose, no question
+    reg_open(c, _TRIAL_TEXTS)
     open_x(True)
     c.eq(c.js(title), t0, 'the mission reopened is the one of the file', what='reopened')
     _ed_fill(c, 'edtitle', 'Un titre enregistré')
@@ -7056,9 +7058,8 @@ def n109(c):
     c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", timeout=10000, what='a new mission')
     _ed_fill(c, 'edtitle', 'Une mission commencée')
     c.tap(f'{E} [data-do="edcancel"]')
-    c.until(asked, timeout=8000, what='a new mission with a title asks')
-    c.tap('.f-modal [data-ok]')
-    gone('the new mission abandoned')
+    gone('the new mission with a title: its draft keeps it, left at once')
+    c.eq(c.count('.f-modal'), 0, 'a new mission typed leaves at once: its draft is kept, no question (N196)', what='new, typed')
     c.js(_REG_CLEAR)
 
 
@@ -8078,7 +8079,7 @@ def n118(c):
 def n119(c):
     title = f"document.querySelector('{E} input[data-k=edtitle]')?.value"
     asked = "!!document.querySelector('.f-modal [data-ok]')"
-    FRAME_ASK = 'Quitter ? Vos changements restent en brouillon sur cet appareil.'  # SOG-0486: the workshop keeps a draft (`kept`)
+    FRAME_ASK = 'Quitter sans enregistrer ? Les changements seront perdus.'  # a mission whose draft cannot be kept (N196: a draft kept asks nothing)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
 
     def open_x():
@@ -8118,7 +8119,7 @@ def n119(c):
         c.wait(300)
         c.eq([c.count(E), c.js(title)], [1, 'Un titre retouché'], what + ': « Rester » keeps the workshop and what was typed', what=what)
 
-    reg_open(c, _TRIAL_TEXTS)
+    reg_open(c, _NODRAFT_TEXTS)
     open_x()
     t0 = c.js(title)
     # nothing changed: left at once, no question
@@ -8129,7 +8130,7 @@ def n119(c):
     to_registry()
     open_x()
     _ed_fill(c, 'edtitle', 'Un titre retouché')
-    ASKED = [1, FRAME_ASK, 'Quitter', 'Rester']
+    ASKED = [1, FRAME_ASK, 'Quitter sans enregistrer', 'Rester']
     to_fuel('menu')
     to_fuel('menu')
     c.eq(question(), ASKED, '(a) the menu: ONE question, the frame\'s words', what='question (a)')
@@ -8150,7 +8151,7 @@ def n119(c):
     t = c.js(_TEXT_OF, 'missions/X_REG/X-001A/missionX-001A.yaml') or ''
     c.ok('Un titre retouché' not in t and t0 in t, t[:200], 'nothing was written')
     # « Annuler »: ONE question, the frame's words, and the frame does not ask again (a fresh page: the history of the steps above is not this one's)
-    reg_open(c, _TRIAL_TEXTS)
+    reg_open(c, _NODRAFT_TEXTS)
     open_x()
     _ed_fill(c, 'edtitle', 'Un titre retouché')
     c.tap(f'{E} [data-do="edcancel"]')
@@ -10032,11 +10033,10 @@ def n150(c):
         """« Annuler », then « Quitter sans enregistrer » (the question of the frame), back to the registry."""
         c.js(quiet)
         c.tap(f'{E} [data-do="edcancel"]')
-        c.until("!!document.querySelector('.f-modal [data-ok]')", timeout=5000, what=f'{what}: the question before leaving')
-        c.eq(norm(c.js("document.querySelector('.f-modal p').textContent")), norm(tx('frame/app.js', 'keptAsk', c.lang, after='leave: {')),
-             f'{what}: the question says the draft keeps the changes (SOG-0486, `kept`)', what='the question')
-        c.tap('.f-modal [data-ok]')
         c.until(f"!document.querySelector('{E}') && !!document.querySelector('{R}')", timeout=10000, what=f'{what}: back to the registry')
+        c.eq(c.count('.f-modal'), 0, f'{what}: the draft keeps the changes, « Annuler » asks nothing (N196)', what='no question')
+        c.ok(any('Brouillon gardé' in x for x in c.notes()), c.notes(), f'{what}: the note « Brouillon gardé » says so')
+        c.js(quiet)
 
     def save(what):
         c.js(quiet)
@@ -10935,7 +10935,7 @@ def n161(c):
              'hover': 'trigger_condition: { kind: hover, object: OBJ-2, radius_m: 5, duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 }'}
     sel = f'{_DW} select[data-f="rule.object"]'
     opt = f"(() => {{ const s = document.querySelector('{sel}'); return [s.value, s.selectedOptions[0]?.textContent.trim() || '', [...s.options].map(o => o.value)] }})()"
-    want = norm(f"OBJ-2 · Navire mobile {row(c, 'dwMoving', EDTX_FILE)}")
+    want = "OBJ-2 · Navire mobile (s'ouvre au geste ou à l'heure de repli)"
     for width in (390, 1280):
         c.page.set_viewport_size({'width': width, 'height': c.height})
         for kind, cond in conds.items():
@@ -10945,7 +10945,7 @@ def n161(c):
             c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
             val, text, values = c.js(opt)
             c.eq([val, norm(text), values], ['OBJ-2', want, ['', 'OBJ-1', 'OBJ-2']],
-                 f'{width} {kind}: the moving object of the file is selected, named, « (mobile : non jugé) » after its name, no « ? »; the list offers the still object and the file\'s value', what='the object')
+                 f'{width} {kind}: the moving object of the file is selected, named, the mention of the fallback time in parentheses after its name, no « ? »; the list offers the still object and the file\'s value', what='the object')
             c.eq(c.js(_DW_VAL, 'key'), kind, f'{width} {kind}: the key is the file\'s own', what='the key')
             c.eq([c.count(f'{_DW} [data-dwnotjudged]'), norm(c.js(f"document.querySelector('{_DW} [data-dwnotjudged]')?.textContent || ''"))],
                  [1, norm(row(c, 'dwNotJudged', EDTX_FILE))], f'{width} {kind}: the mention « s\'ouvre au geste ou à l\'heure de repli » shows', what='the mention')
@@ -12485,3 +12485,99 @@ def n195(c):
             c.eq('unplaced' in c.js(_LKP_TODO), want_todo, f'{width}: « À compléter » counts « lieux à placer » only with a true place to place (PT4 here: {want_todo})', what='the unplaced item')
             ed_leave(c)
             c.js(_REG_CLEAR)
+
+
+
+# the decisions of the ergonomist (19 Nov): a draft kept asks no more « Quitter sans enregistrer ? »; a moving object « s'ouvre au geste ou à l'heure de repli »
+# a mission whose draft cannot be kept: a note the workshop keeps in the file makes its text pass the bound of a draft (256 KB, draft.js)
+_NODRAFT_MISSION = _TRIAL_MISSION + 'notes: ' + 'x' * 270000 + '\n'
+_NODRAFT_TEXTS = [_ED_TEXTS[0], ['missions/X_REG/X-001A/missionX-001A.yaml', _NODRAFT_MISSION]]
+
+
+@case('N196', 'Missions › the workshop, a draft KEPT asks no question when it is left (decision of the ergonomist, 19 Nov): a mission opened and its title changed is '
+      'in its draft (SOG-0486) — « Annuler » leaves at once, the browser\'s « Back » too (the frame is told by `ctx.unsaved`, which says false), and one notification, « Brouillon gardé », '
+      'says so; a mission whose draft cannot be written (its text over the bound) still asks the frame\'s question « Quitter sans enregistrer ? »; and a moving object in the sheet of a '
+      'drawer says « s\'ouvre au geste ou à l\'heure de repli » — never « non jugé »', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='the ergonomist, 19 Nov (RELECTURE_RELAIS, lines 251 and 268-272): « brouillon gardé, plus de question » and « (mobile : non jugé) » becomes the mention of SOG-0467 — '
+      'modules/missions/editor_view.js `edDeclare`, `edLeave`, `edDraftWrite`; modules/missions/editor_texts.js `draftKept`')
+def n196(c):
+    title = 'Un titre retouché'
+    asked = "!!document.querySelector('.f-modal [data-ok]')"
+    path = 'cache/missions/draft_X-001A.json'
+    quiet = "document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())"
+
+    def open_x(texts):
+        reg_open(c, texts)
+        c.tap(f'{R} [data-rowid="X-001A"]')
+        c.tap(f'{R} [data-regsheet] [data-do="edmodify"]')
+        ed_reveal(c)
+        c.until(f"document.querySelector('{E} [data-edhead]')?.textContent.includes('X-001A')", timeout=15000, what='X-001A in the workshop')
+        if not c.js(f"!!document.querySelector('{E} input[data-k=edtitle]')"):
+            c.tap(f'{E} [data-steps] [data-step="cadre"]')
+        c.until(f"!!document.querySelector('{E} input[data-k=edtitle]')", what='the Cadre unfolded')
+
+    def draft_has_title():
+        for _ in range(24):
+            got = c.js(_DRAFT_READ, path)
+            if got and got.get('read') and got['read']['title'] == title:
+                return got
+            c.wait(250)
+        return got
+
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        # (A) « Annuler » with a kept draft: no question, one notification, the draft is there
+        open_x(_TRIAL_TEXTS)
+        _ed_fill(c, 'edtitle', title)
+        c.eq(c.js("() => window.SogFrame.unsaved()"), False, f'{width}: the draft keeps the change: the frame is told there is nothing to lose', what='unsaved')
+        c.js(quiet)
+        c.tap(f'{E} [data-do="edcancel"]')
+        c.until(f"!document.querySelector('{E}')", timeout=8000, what='the workshop left at once')
+        c.eq(c.count('.f-modal'), 0, f'{width}: « Annuler » with a kept draft asks nothing', what='no question')
+        notes = c.notes()
+        c.ok(sum('Brouillon gardé' in x for x in notes) == 1, notes, f'{width}: ONE notification « Brouillon gardé »')
+        c.js(f"document.querySelector('{R}')?.scrollIntoView({{block: 'start'}})")
+        c.shot(f'P21a_{width}_brouillon.png')
+        got = draft_has_title()
+        c.ok(bool(got and got.get('read') and got['read']['title'] == title), got, f'{width}: the draft of X-001A holds the new title')
+        c.js(_REG_CLEAR)
+        # (B) the browser's « Back »: the frame asks nothing, the workshop is left, the note says so
+        open_x(_TRIAL_TEXTS)
+        _ed_fill(c, 'edtitle', title)
+        c.js(quiet)
+        c.page.go_back()
+        c.until(f"!document.querySelector('{E}')", timeout=20000, what='the workshop left by « Back »')
+        c.eq(c.count('.f-modal'), 0, f'{width}: « Back » with a kept draft: the frame asks nothing', what='no question (Back)')
+        c.ok(sum('Brouillon gardé' in x for x in c.notes()) == 1, c.notes(), f'{width}: « Back »: ONE notification « Brouillon gardé »')
+        c.js(_REG_CLEAR)
+        # (C) a draft that cannot be written: the question stays, with the words of the frame (the changes would be lost)
+        open_x(_NODRAFT_TEXTS)
+        _ed_fill(c, 'edtitle', title)
+        c.wait(1500)
+        c.eq(c.js("() => window.SogFrame.unsaved()"), True, f'{width}: no draft can be written (text over the bound): the frame knows there is something to lose', what='unsaved')
+        c.js(quiet)
+        c.tap(f'{E} [data-do="edcancel"]')
+        c.until(asked, timeout=8000, what='the question stays without a draft')
+        c.eq(norm(c.js("document.querySelector('.f-modal p').textContent")), 'Quitter sans enregistrer ? Les changements seront perdus.',
+             f'{width}: the question says the changes will be lost (no draft)', what='the question')
+        c.tap('.f-modal [data-no]')
+        c.until("!document.querySelector('.f-modal')", what='« Rester »')
+        c.eq(c.count(E), 1, f'{width}: « Rester » keeps the workshop', what='stay')
+        c.js(_REG_CLEAR)
+        # (D) a moving object in the sheet of a drawer
+        ship = "objects:\n  - { id: OBJ-2, kind: ship, name: Navire mobile, lat: 44.5, lon: 1.5, detection_range_nm: 1, speed_kt: 10, motion: axis, course_deg: 90 }\n"
+        land = 'trigger_condition: { kind: landing, point: PT1, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 }'
+        cond = 'trigger_condition: { kind: landing, object: OBJ-2, radius_m: 5, duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 }'
+        _ed_open(c, _LANDING_MISSION.replace('objects:\n', ship).replace(land, cond))
+        ed_reveal(c)
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
+        sel = f'{_DW} select[data-f="rule.object"]'
+        text = norm(c.js(f"document.querySelector('{sel}').selectedOptions[0]?.textContent.trim() || ''"))
+        c.eq(text, "OBJ-2 · Navire mobile (s'ouvre au geste ou à l'heure de repli)", f'{width}: the moving object says « s\'ouvre au geste ou à l\'heure de repli », not « non jugé »', what='the object')
+        c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -70)")
+        c.js(quiet)
+        c.shot(f'P21a_{width}_mobile.png')
+        ed_leave(c)
+        c.js(_REG_CLEAR)
