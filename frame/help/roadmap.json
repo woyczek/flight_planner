@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e09f364",
+  "organisation": "0c8b3ff",
   "fiches": 523,
   "untranslated": 0,
   "priorities": 481,
@@ -1294,8 +1294,7 @@
      "fr": "Carburant : le calcul et le contrôle de route reçoivent les vitesses de l'avion (croisière, montée, descente)",
      "en": "Fuel: route computation and check receive the aircraft's speeds (cruise, climb, descent)",
      "de": "Kraftstoff: Routenberechnung und -prüfung erhalten die Geschwindigkeiten des Flugzeugs (Reise, Steigen, Sinken)",
-     "es": "Combustible: el cálculo y el control de ruta reciben las velocidades del avión (crucero, ascenso, descenso)",
-     "test": true
+     "es": "Combustible: el cálculo y el control de ruta reciben las velocidades del avión (crucero, ascenso, descenso)"
     },
     {
      "id": "SOG-0517",
@@ -2049,8 +2048,7 @@
      "fr": "Carte (fond IFR) : un cartouche de voie passe sous le tracé de la route, et un MORA se pose sur un cartouche",
      "en": "Map (IFR background): an airway label goes under the route line, and a MORA sits on a label",
      "de": "Karte (IFR-Hintergrund): ein Luftstraßenschild liegt unter der Routenlinie, und ein MORA sitzt auf einem Schild",
-     "es": "Mapa (fondo IFR): una etiqueta de aerovía queda bajo la línea de la ruta, y un MORA se pone sobre una etiqueta",
-     "test": true
+     "es": "Mapa (fondo IFR): una etiqueta de aerovía queda bajo la línea de la ruta, y un MORA se pone sobre una etiqueta"
     }
    ]
   },

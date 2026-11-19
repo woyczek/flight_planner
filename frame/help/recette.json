@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
   "tests": 362,
-  "verdicts": 222
+  "verdicts": 224
  },
  "apps": [
   "pilote",
@@ -5312,8 +5312,9 @@
    },
    "test": "Recharge la page. Carburant, un vol en BE9L : « Calculer » puis « Contrôler » : les niveaux sont jugés avec les vitesses de ton avion (montée et descente de sa fiche), sans ligne « par défaut ». Pour un aéronef sans fiche de performances : la ligne « Vitesses par défaut du moteur (450 kt, 2 000 ft/min)… » le dit.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T15:41:36Z"
+   "state": "ok",
+   "delivered": "2026-11-19T15:41:36Z",
+   "at": "2026-11-19T16:45:45Z"
   },
   {
    "id": "SOG-0515",
@@ -5326,8 +5327,9 @@
    },
    "test": "Recharge la page. Carburant, la route UPALO V20 LUVOP LFRN, fond IFR : aucun cartouche d'une voie non suivie n'est caché sous le trait de la route (il est déplacé le long de sa voie, ou dessiné par-dessus) ; aucun chiffre de MORA ne se pose sur un cartouche ou un texte (il disparaît à ce zoom s'il n'a pas de place).",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T10:12:35Z"
+   "state": "ok",
+   "delivered": "2026-11-19T10:12:35Z",
+   "at": "2026-11-19T16:45:50Z"
   },
   {
    "id": "SOG-0516",
@@ -5796,39 +5798,6 @@
    "choice": 2,
    "text": "je ne suis pas sûr du calcul. le tracé était le même, en tout cas.",
    "at": "2026-11-17T10:14:56Z"
-  },
-  {
-   "id": "Q-0125",
-   "fiche": "SOG-0443",
-   "app": "compagnie",
-   "question": "Les fichiers de mission de la V3 doivent-ils rester lisibles par la V2 ?",
-   "context": "Une session a rapporté que tu avais dit le 18/11 : « aucune obligation de compatibilité avec la v2 (n'a jamais été utilisée). seules les fonctionnalités importent ». L'ergonome ne retire pas une contrainte sur le dire d'une autre session : confirme-le ici.",
-   "options": [
-    "Non : aucune compatibilité V2 exigée, seules les fonctionnalités comptent",
-    "Oui : une mission V3 doit rester lisible par la V2"
-   ],
-   "since": "2026-11-19",
-   "state": "answered",
-   "choice": 0,
-   "text": "/a priori/ non. pourquoi ? j’ai besoin d’en savoir plus. Si incompatible, migration. en revanche, compatibilité ascendante possible ?",
-   "at": "2026-11-19T16:45:00Z"
-  },
-  {
-   "id": "Q-0126",
-   "fiche": "SOG-0374",
-   "app": "pilote",
-   "question": "Pour lire les SID d'EGLL, la session Procédures doit voir les cartes de ton dossier de données. Comment fait-on ?",
-   "context": "Les cartes (copiées du paquet du Royaume-Uni et du cache EAD, textes publics de l'AIP) sont dans ton dossier de données, et le poste a refusé à Procédures de les lire le 18/11. Elle ne contourne pas ce refus. Ce n'est pas urgent : la priorité reste l'atelier.",
-   "options": [
-    "Je donne à Procédures une lecture SEULE des deux dossiers de cartes (data\\local\\upload et data\\local\\ead\\cache\\EGLL), par une règle de permission que je pose moi-même",
-    "Je lance moi-même une fois la lecture bornée d'une carte et je colle la forme du texte",
-    "Plus tard"
-   ],
-   "since": "2026-11-19",
-   "state": "answered",
-   "choice": 0,
-   "text": "",
-   "at": "2026-11-19T16:45:14Z"
   }
  ]
 }
