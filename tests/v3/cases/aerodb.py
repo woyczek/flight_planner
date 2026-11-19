@@ -18224,10 +18224,10 @@ def k398(c):
     r = c.js("""async () => {
       const good = (name, icao, lat, lon, extra = {}) => ({ name, icao, category: 'principal', lat, lon, status: 'actif', source: 'x', country: 'fr', ...extra });
       const file = { schema: 'pelicandromes', version: 1, country: 'fr', datum: 'WGS84', note: 'positions de chargement verifiees a la main', source: { name: 'f.yaml' }, sites: [
-        good('Zeta', 'LFAA', 45.0, 5.0), good('Alpha', 'lfbb', 43.0, 1.0), good('Beta', 'TOOLONG', 48.0, 2.0),
-        good('<b>Gamma</b>\\u202e\\u200b', 'LFCC', 44.0, 3.0, { evil: 'x', extra: { deep: 1 } }),
+        good('Zeta', 'LFAA', 45.0, 5.0, { cap: 360 }), good('Alpha', 'lfbb', 43.0, 1.0, { cap: 270 }), good('Beta', 'TOOLONG', 48.0, 2.0, { cap: 0 }),
+        good('<b>Gamma</b>\\u202e\\u200b', 'LFCC', 44.0, 3.0, { evil: 'x', extra: { deep: 1 }, cap: -1 }),
         good('Lat out', 'LFDD', 95.0, 3.0), good('Lon out', 'LFEE', 40.0, 190.0), good('Text lat', 'LFFF', '45', 3.0), good('', 'LFGG', 40.0, 3.0), good('No position', 'LFHH', undefined, undefined),
-        good('Long ' + 'x'.repeat(400), 'LFII', 46.0, 4.0), null, 7, 'text', [], good('Delta', 'LFJJ', 48.8, 2.3), good('Iso\\u2066late\\u2069d\\u061c', 'LFMM', 47.0, 1.0) ] };
+        good('Long ' + 'x'.repeat(400), 'LFII', 46.0, 4.0, { cap: '270' }), null, 7, 'text', [], good('Delta', 'LFJJ', 48.8, 2.3, { cap: 359 }), good('Iso\\u2066late\\u2069d\\u061c', 'LFMM', 47.0, 1.0, { cap: 12.5 }) ] };
       const hostile = JSON.parse('{"schema":"pelicandromes","version":1,"country":"pt","note":"n","sites":[{"__proto__":{"polluted":true},"name":"Proto","icao":"LFKK","lat":10,"lon":10,"status":"s","category":"c","constructor":"x"}]}');
       const files = { 'pelicandromes/fr.json': file, 'pelicandromes/de.json': { ...file, country: 'fr' }, 'pelicandromes/es.json': { schema: 'other', version: 1, sites: [] }, 'pelicandromes/it.json': { schema: 'pelicandromes', version: 2, sites: [] }, 'pelicandromes/pt.json': hostile };
       files['pelicandromes/gb.json'] = { schema: 'pelicandromes', version: 1, country: 'gb', note: 'n', sites: Array.from({ length: 600 }, (_, i) => good('S' + String(i).padStart(3, '0'), 'EG' + String(i % 100).padStart(2, '0'), 50 + (i % 5) / 10, -1 + i / 1000, { country: 'gb' })) };
@@ -18246,7 +18246,7 @@ def k398(c):
       files['pelicandromes/xx.json'] = { schema: 'pelicandromes', version: 1, country: 'xx', note: 'n', sites: [good('Late', 'LFLL', 1, 1, { country: 'xx' })] };
       const late = await db.pelicandromes({ country: 'xx' });
       const keys = x => Object.keys(x).sort().join();
-      return { all: { ok: all.ok, names: all.sites.map(s => s.name), total: all.total, count: all.count, rejected: all.rejected, note: all.note, datum: all.datum, keys: keys(all.sites[0]), keysOfAll: keys(all), frozen: Object.isFrozen(all) && Object.isFrozen(all.sites) && Object.isFrozen(all.sites[0]), icaos: all.sites.map(s => s.icao) },
+      return { all: { ok: all.ok, names: all.sites.map(s => s.name), total: all.total, count: all.count, rejected: all.rejected, note: all.note, datum: all.datum, caps: all.sites.map(s => s.cap), keys: keys(all.sites[0]), keysOfAll: keys(all), frozen: Object.isFrozen(all) && Object.isFrozen(all.sites) && Object.isFrozen(all.sites[0]), icaos: all.sites.map(s => s.icao) },
         sameDefault: JSON.stringify(dflt) === JSON.stringify(all), long: all.sites.find(s => s.name.startsWith('Long')).name.length, gamma: all.sites.find(s => s.icao === 'LFCC').name,
         near: { names: near.sites.map(s => s.name), d: near.sites.map(s => s.distanceNm), r: near.radiusNm, count: near.count, keys: keys(near.sites[0]) }, lim: { names: lim.sites.map(s => s.name), count: lim.count, total: lim.total },
         bad: bad.map(x => x.reason), other: other.map(x => x.ok ? 'ok' : x.reason), proto: { ok: proto.ok, names: proto.sites.map(s => s.name), polluted: ({}).polluted === true || Object.prototype.hasOwnProperty.call(proto.sites[0], 'polluted'), keys: keys(proto.sites[0]) },
@@ -18255,19 +18255,112 @@ def k398(c):
     names = ['Alpha', 'Beta', 'Delta', 'Isolated', 'Long ' + 'x' * 195, 'Zeta', 'b Gamma /b']
     c.eq((r['all']['ok'], r['all']['names'], r['all']['total'], r['all']['count'], r['all']['rejected']), (True, names, 7, 7, 9),
          'the good sites are kept, sorted by name; the hostile ones (a position outside the bounds, a number written as a text, no position, no name, entries that are not objects) are dropped and counted', what='clean')
+    c.eq(r['all']['caps'], [270, 0, 359, None, None, None, None],
+         'the cap (the orientation of the berthing, SOG-0521) is an integer from 0 to 359, null when unknown: 270, 0 and 359 are kept; 360, -1, 12.5 and a text \'270\' come out as null (the site is kept)', what='cap')
     c.eq(r['all']['icaos'], ['LFBB', '', 'LFJJ', 'LFMM', 'LFII', 'LFAA', 'LFCC'], 'a code that is not 2-4 letters or digits is emptied (« TOOLONG »), a lower-case one is upper-cased', what='icao')
     c.eq((r['gamma'], r['long'], r['all']['note'], r['all']['datum']), ('b Gamma /b', 200, 'positions de chargement verifiees a la main', 'WGS84'),
          'the text has no < > (replaced by a blank, blanks folded), no bidi mark, isolate (U+2066-2069), Arabic mark (U+061C) or zero-width sign (the class of frame/lib/untrusted.js: « Isolated » comes out of a name written with them); a name is cut at 200 signs; the note travels with the answer', what='text')
-    c.eq((r['all']['keys'], r['all']['keysOfAll'], r['all']['frozen'], r['sameDefault']), ('category,country,icao,lat,lon,name,status', 'count,country,datum,note,ok,rejected,sites,total', True, True),
+    c.eq((r['all']['keys'], r['all']['keysOfAll'], r['all']['frozen'], r['sameDefault']), ('cap,category,country,icao,lat,lon,name,status', 'count,country,datum,note,ok,rejected,sites,total', True, True),
          'the known fields only (the unknown ones the file adds, `evil` and `extra`, and the `source` of the site do not come out), the answer is frozen, the default country is fr', what='shape')
-    c.eq((r['near']['names'], r['near']['r'], r['near']['count'], r['near']['keys']), (['Delta', 'Beta'], 60, 2, 'category,country,distanceNm,icao,lat,lon,name,status'),
+    c.eq((r['near']['names'], r['near']['r'], r['near']['count'], r['near']['keys']), (['Delta', 'Beta'], 60, 2, 'cap,category,country,distanceNm,icao,lat,lon,name,status'),
          'near a position: only the sites within the radius (Delta 7 NM, Beta 56 NM from Paris; not Zeta or Alpha), the nearest first, the distance in NM on each', what='near')
     c.ok(r['near']['d'][0] < r['near']['d'][1] <= 60, str(r['near']['d']), 'the distances are sorted and within the radius')
     c.eq((r['lim']['names'], r['lim']['count'], r['lim']['total']), (['Alpha', 'Beta'], 2, 7), 'the limit cuts the list, the total says how many the file holds', what='limit')
     c.eq(r['bad'], ['country', 'country', 'country', 'near', 'near', 'near', 'near'], 'a country that is not two lower-case letters (FR, ../fr, a number) and a position that is not bounded numbers (a text, a latitude of 91, a negative radius, a string) are refused with their reason', what='refused')
     c.eq(r['other'], ['invalid', 'invalid', 'invalid', 'too-large', 'absent'], 'a file of another country, a wrong schema, a version other than 1, a file over 256 kB, a missing file: each its reason', what='reasons')
-    c.eq((r['proto']['ok'], r['proto']['names'], r['proto']['polluted'], r['proto']['keys']), (True, ['Proto'], False, 'category,country,icao,lat,lon,name,status'), 'a `__proto__` or `constructor` key of a site pollutes nothing and does not come out', what='proto')
+    c.eq((r['proto']['ok'], r['proto']['names'], r['proto']['polluted'], r['proto']['keys']), (True, ['Proto'], False, 'cap,category,country,icao,lat,lon,name,status'), 'a `__proto__` or `constructor` key of a site pollutes nothing and does not come out', what='proto')
     c.eq((r['gb']['total'], r['gb']['count'], r['gb']['rejected'], r['gb']['all']), (500, 100, 100, 500), 'a file of 600 sites: the first 500 are read (the rest counted as rejected), 100 given by default, at most 500 even when asked for more', what='bounds')
     c.eq((r['late'], r['decl'], r['api']), (True, [{'prefix': 'pelicandromes/', 'policy': 'reference'}], 'function'),
          'a missing file is not remembered (it appears: the next question reads it); the prefix `pelicandromes/` is declared as a reference read', what='declaration')
     c.ok(all(p.startswith('pelicandromes/') for p in r['only']), str(r['only']), 'the only files read are those of pelicandromes/ (never another path built from the query)')
+
+
+@case('K399', 'Job pelican/import, SOG-0521: the OPTIONAL `cap` of a site (the orientation of the berthing, an integer from 0 to 359; absent or empty = unknown) is read, bounded and compiled — the key is NOT written when it is unknown (a file without cap gives the same bytes as before), and a cap that is present but not an integer from 0 to 359 refuses the site, said',
+      'K', static=True,
+      rule='SOG-0521 (the relay, from the user: « un champ cap de chaque pélicandrome : orientation de l\'accostage, 0 à 359, facultatif »): the same schema `pelicandromes` v1 (a new optional key, no new version), read by the reduced YAML grammar, checked like the other values (a number that is finite and in its bounds, never a boolean or a text), compiled into data/pelicandromes/<country>.json; `aerodb.pelicandromes` gives it back (K398). The bench: invented sites.')
+def k399(c):
+    import json
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    _regen()
+    from regen import pelican as PE
+    head = 'schema: pelicandromes' + chr(10) + 'schema_version: 1' + chr(10) + 'datum: WGS84' + chr(10) + 'note: invented' + chr(10) + 'sites:' + chr(10)
+    rec = lambda nom, **k: '  - nom: ' + nom + chr(10) + '    latitude: 44.0' + chr(10) + '    longitude: 3.0' + chr(10) + ''.join(f'    {a}: {b}' + chr(10) for a, b in k.items())
+    text = head + rec('A', cap=270) + rec('B', cap=0) + rec('C', cap=359) + rec('D') + rec('E', cap='') + rec('F', cap=270.0)
+    doc, rejected = PE.compile_file(text, {'name': 'x.yaml', 'size': len(text), 'sha256': ''}, 'fr')
+    c.eq(([s['name'] for s in doc['sites']], [s.get('cap', 'absent') for s in doc['sites']], rejected), (['A', 'B', 'C', 'D', 'E', 'F'], [270, 0, 359, 'absent', 'absent', 270], []),
+         'a cap of 270, 0 or 359 (270.0 is 270) is compiled as an integer; no cap, or an empty one, writes NO key (unknown)', what='compiled')
+    c.ok(all(isinstance(s.get('cap', 0), int) and not isinstance(s.get('cap', 0), bool) for s in doc['sites']), str([s.get('cap') for s in doc['sites']]), 'the cap is an int, never a float or a boolean')
+    bad = {'360': 360, 'negative': -1, 'fraction': 270.5, 'text': '"270"', 'boolean': 'true', 'word': 'nord'}
+    out = {}
+    for k, v in bad.items():
+        d, rej = [], []
+        try:
+            d, rej = PE.compile_file(head + rec('Good', cap=90) + rec('Bad', cap=v), {'name': 'x.yaml', 'size': 1, 'sha256': ''}, 'fr')
+        except PE.Refused as e:
+            rej = str(e)
+        out[k] = ([s['name'] for s in d['sites']] if d else None, rej)
+    c.eq(out, {k: (['Good'], [{'index': 1, 'error': 'cap hors de 0 à 359 (un entier)'}]) for k in bad}, 'a cap that is present but not an integer from 0 to 359 (360, -1, 270.5, a text, a boolean, a word) refuses THAT site with its reason; the others are kept', what='refused')
+    plain = head + rec('A') + rec('B')
+    doc2, _r = PE.compile_file(plain, {'name': 'x.yaml', 'size': 1, 'sha256': ''}, 'fr')
+    c.ok(all('cap' not in s for s in doc2['sites']) and set(doc2['sites'][0]) == {'name', 'icao', 'category', 'lat', 'lon', 'status', 'source', 'country'}, str(sorted(doc2['sites'][0])), 'a file without cap compiles as it did before: the same keys, so the same bytes (no commit for nothing)')
+    c.eq(json.loads(json.dumps(doc['sites'][0], sort_keys=True))['cap'], 270, 'the compiled site carries the cap', what='json')
+    # Sécurisation: a huge integer is « valid for <= » and never goes through math.isfinite (OverflowError); the file is the user's, up to 256 kB
+    c.eq((PE.number(10 ** 400, -90, 90), PE.heading(10 ** 400), PE.heading(float('inf')), PE.heading(float('nan')), PE.number(float('nan'), -90, 90), PE.number(float('inf'), -90, 90)), (None,) * 6,
+         'a 400-digit integer, an infinity and a NaN are not a latitude nor a heading: no exception, None', what='numbers')
+    huge = '9' * 400
+    out = {}
+    for field in ('latitude', 'longitude', 'cap'):
+        vals = {'latitude': '44.0', 'longitude': '3.0', 'cap': '90'}
+        vals[field] = huge
+        txt = head + rec('Good') + '  - nom: Huge' + chr(10) + ''.join(f'    {k}: {v}' + chr(10) for k, v in vals.items())
+        d, rej = PE.compile_file(txt, {'name': 'x.yaml', 'size': 1, 'sha256': ''}, 'fr')
+        out[field] = ([s['name'] for s in d['sites']], [r['index'] for r in rej])
+    c.eq(out, {k: (['Good'], [1]) for k in ('latitude', 'longitude', 'cap')}, 'a 400-digit integer in latitude, longitude or cap refuses that site and the import goes on (red before: OverflowError stopped the job)', what='huge')
+    try:
+        PE.compile_file(head + rec('Good') + '  - nom: Huge' + chr(10) + '    latitude: ' + '9' * 5000 + chr(10) + '    longitude: 3.0' + chr(10), {'name': 'x.yaml', 'size': 1, 'sha256': ''}, 'fr')
+        refused = None
+    except PE.Refused as e:
+        refused = str(e)
+    c.ok(refused is not None and 'nombre illisible' in refused, str(refused), 'an integer of more than 4 300 digits (Python refuses it) is a refused FILE, said, never an exception that stops the job')
+
+
+@case('K400', 'The pelican sites tool (SOG-0521): a field « Cap d\'accostage » (0 to 359, empty = unknown) on each site, kept with the site, written in the YAML export only when known, read back by the import; a value that is not an integer from 0 to 359 is refused with a sentence',
+      'K', tags=('aerodb',), phone=False,
+      rule='SOG-0521 (the relay, from the user): the orientation of the berthing of each pelican site, optional. The adapted copy `apps/outils/pelicandromes/index.html` (the user\'s `original.html` stays as it came) gets the field; the YAML schema gains the optional key `cap`; `pelican/import` compiles it (K399); `aerodb.pelicandromes` gives it (K398). The page is run with nothing outside (the libraries are the repository\'s).')
+def k400(c):
+    import re
+    from pathlib import Path
+    c.context.route(re.compile(r'^https://'), lambda r: r.abort())
+    c.page.add_init_script("try { localStorage.removeItem('pelicandromes-osm-v1'); } catch (e) {}")
+    messages = []
+    c.page.on('dialog', lambda d: (messages.append(d.message), d.accept()))
+    c.page.goto(f'{c.base}/apps/outils/pelicandromes/index.html', wait_until='load')
+    c.until("typeof maplibregl === 'object' && typeof jsyaml === 'object'", timeout=15000, what='MapLibre and js-yaml from the repository')
+    c.until("document.querySelectorAll('#list .item').length > 20", timeout=10000, what='the list of sites')
+    cap = lambda v: (c.page.fill('#cap', v), c.page.press('#cap', 'Tab'))
+    c.eq(c.js("() => document.getElementById('cap').value"), '', 'a site with no cap shows an empty field (unknown)', what='empty')
+    cap('270')
+    c.eq(c.js("() => document.getElementById('cap').value"), '270', 'the cap typed is kept on the site', what='typed')
+    c.page.click('#next')
+    c.eq(c.js("() => document.getElementById('cap').value"), '', 'another site is still unknown', what='second')
+    for bad in ('400', '12.5', '-1'):
+        cap(bad)
+    c.eq((len(messages), all('0' in m and '359' in m for m in messages), c.js("() => document.getElementById('cap').value")), (3, True, ''), 'a cap outside 0 to 359, or not an integer, is refused with a sentence and the field goes back to unknown', what='refused')
+    cap('0')
+    with c.page.expect_download() as dl:
+        c.page.click('#export')
+    out = Path(dl.value.path()).read_text(encoding='utf-8')
+    c.eq([l.strip() for l in out.splitlines() if l.strip().startswith('cap:')], ['cap: 270', 'cap: 0'], 'the YAML export writes the cap of the sites that have one (0 is a heading, not unknown), and only of those', what='export')
+    cap('')
+    c.page.click('#prev')
+    c.eq(c.js("() => document.getElementById('cap').value"), '270', 'the cap is kept when the site is left and come back to', what='kept')
+    yaml = ('schema: pelicandromes' + chr(10) + 'schema_version: 1' + chr(10) + 'datum: WGS84' + chr(10) + 'sites:' + chr(10)
+            + '  - {nom: A, oaci: LFTW, latitude: 43.75, longitude: 4.41, cap: 90, statut: valide, source: x}' + chr(10)
+            + '  - {nom: B, oaci: LFMS, latitude: 44.07, longitude: 4.14, cap: 400, statut: valide, source: x}' + chr(10)
+            + '  - {nom: C, oaci: LFML, latitude: 43.43, longitude: 5.21, statut: valide, source: x}' + chr(10))
+    c.page.set_input_files('#import', {'name': 'p.yaml', 'mimeType': 'text/yaml', 'buffer': yaml.encode('utf-8')})
+    c.until("JSON.parse(localStorage.getItem('pelicandromes-osm-v1')).find(x => x.oaci === 'LFTW').cap === 90", timeout=5000, what='the import')
+    got = c.js("() => { const d = JSON.parse(localStorage.getItem('pelicandromes-osm-v1')); return ['LFTW', 'LFMS', 'LFML'].map(i => d.find(x => x.oaci === i).cap ?? null); }")
+    c.eq(got, [90, None, None], 'the import reads the cap (90), ignores one that is outside the bounds (400) and leaves the others as they are', what='import')
+    c.check_errors()

@@ -447,7 +447,7 @@
   const pelicanText = (v, n = PELICAN.TEXT) => typeof v === 'string' ?
     v.replace(/[؜​‎‏‪-‮⁠-⁤⁦-⁯￹-￻﻿]/g, '').replace(/[\u0000-\u001f\u007f-\u009f<>]/g, ' ').replace(/\s+/g, ' ')
     .trim().slice(0, n) : '';
-  /** Le fichier compilé nettoyé : { ok: true, country, datum, note, total, sites: [{ name, icao, category, lat, lon, status, country }] } ou
+  /** Le fichier compilé nettoyé : { ok: true, country, datum, note, total, sites: [{ name, icao, category, lat, lon, cap, status, country }] } ou
    *  { ok: false, reason: 'invalid' }. Un site dont le nom manque, ou dont la position manque ou sort des bornes, est écarté et compté (`rejected`). */
   function pelicanClean(doc, country) {
     if (ownKey(doc, 'schema') !== 'pelicandromes' || ownKey(doc, 'version') !== 1 || !Array.isArray(ownKey(doc, 'sites'))) return {
@@ -476,6 +476,7 @@
         category: pelicanText(ownKey(s, 'category'), 60),
         lat: Math.round(lat * 1e7) / 1e7,
         lon: Math.round(lon * 1e7) / 1e7,
+        cap: Number.isInteger(ownKey(s, 'cap')) && ownKey(s, 'cap') >= 0 && ownKey(s, 'cap') <= 359 ? ownKey(s, 'cap') : null,
         status: pelicanText(ownKey(s, 'status'), 60),
         country
       }));
@@ -3018,7 +3019,7 @@
         return packsP;
       },
       /** Les pélicandromes d'un pays (SOG-0521) : `await aerodb.pelicandromes({ country?: 'fr', near?: { lat, lon, radius_nm? }, limit? })` →
-       *  { ok: true, country, datum, note, total, count, sites: [{ name, icao, category, lat, lon, status, country, distanceNm? }] } ; lat / lon sont les
+       *  { ok: true, country, datum, note, total, count, sites: [{ name, icao, category, lat, lon, cap, status, country, distanceNm? }] } ; `cap` : l'orientation de l'accostage, un entier de 0 à 359, `null` quand il est inconnu (facultatif, SOG-0521) ; lat / lon sont les
        *  POSITIONS DE CHARGEMENT vérifiées à la main (la `note` du fichier le dit : à montrer partout où elles le sont, jamais pour la navigation réelle) ;
        *  { ok: false, reason: 'country' | 'near' | 'absent' | 'too-large' | 'invalid' }. Lu de data/pelicandromes/<pays>.json (sans écrire, sans le lanceur) : au
        *  plus 256 ko et 500 sites, champs connus seulement, nombres bornés, textes nettoyés ; le consommateur les pose avec `textContent`, jamais en HTML. Le

@@ -6,7 +6,7 @@ data/pelicandromes/<pays>.json, publié dans le dépôt des données (UN commit 
 écrire ; la prise refuse un fichier qui n'est plus celui que le plan a montré (nom et taille).
 Résultat { ok, dry, file: { name, size, sha256 } | null, sites, categories: { <catégorie>: n }, rejected: [{ index, error }], written, commit, reason? } ; reason : 'no-file' (rien dans Téléchargements), 'invalid' (le fichier
 n'est pas un fichier de pélicandromes lisible : le message dit pourquoi), 'not-shown', 'changed', 'failed'.
-Le fichier compilé : { schema: 'pelicandromes', version: 1, country, datum: 'WGS84', note, source: { name, size, sha256 }, sites: [{ name, icao, category, lat, lon, status, source, country }] } — rien d'horodaté (le même fichier
+Le fichier compilé : { schema: 'pelicandromes', version: 1, country, datum: 'WGS84', note, source: { name, size, sha256 }, sites: [{ name, icao, category, lat, lon, cap?, status, source, country }] } (`cap` : l'orientation de l'accostage, un entier de 0 à 359, FACULTATIF : la clé manque quand il est inconnu) — rien d'horodaté (le même fichier
 donne le même résultat, pas de commit pour rien). Les textes n'ont ni caractère de contrôle ni « < » ni « > » : à poser dans la page par textContent, jamais en HTML.
 Python : bibliothèque standard seulement (une grammaire YAML réduite : un document, des scalaires, une liste d'enregistrements à plat ; tout le reste — ancres, étiquettes, flux { } [ ], blocs | > — est refusé)."""
 import fnmatch
@@ -61,7 +61,10 @@ def _scalar(text, line):
     if text in ('true', 'false'):
         return text == 'true'
     if NUMBER.match(text):
-        return float(text) if '.' in text else int(text)
+        try:
+            return float(text) if '.' in text else int(text)
+        except (ValueError, OverflowError):      # un entier de plus de 4 300 chiffres (Python le refuse) : le fichier est refusé, dit, jamais une exception qui arrête le travail
+            raise Refused(f'ligne {line} : nombre illisible') from None
     return text
 
 
@@ -123,9 +126,16 @@ def clean(value):
 
 def number(value, lo, hi):
     """Un nombre fini dans ses bornes (jamais un booléen ni un texte), arrondi à 7 décimales ; None sinon."""
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not lo <= value <= hi:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not lo <= value <= hi:      # la comparaison D'ABORD : NaN et l'infini la ratent d'eux-mêmes, un entier géant est valable pour `<=` (math.isfinite lèverait OverflowError sur un entier de 400 chiffres)
         return None
     return round(float(value), 7)
+
+
+def heading(value):
+    """Le cap d'un site (SOG-0521) : l'orientation de l'accostage, un ENTIER de 0 à 359 degrés (un nombre fini, jamais un booléen ni un texte ; 270.0 vaut 270, 270.5 est refusé) ; None sinon. Facultatif : absent = inconnu."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 359 or value != int(value):      # les bornes d'abord, `int()` ensuite (jamais sur un infini ni un entier géant)
+        return None
+    return int(value)
 
 
 def site(raw, country):
@@ -139,7 +149,13 @@ def site(raw, country):
     icao = clean(raw.get('oaci')).upper()
     if icao and not ICAO.match(icao):
         return 'code OACI invalide'
-    return {'name': name, 'icao': icao, 'category': clean(raw.get('categorie')), 'lat': lat, 'lon': lon, 'status': clean(raw.get('statut')), 'source': clean(raw.get('source')), 'country': country}
+    out = {'name': name, 'icao': icao, 'category': clean(raw.get('categorie')), 'lat': lat, 'lon': lon, 'status': clean(raw.get('statut')), 'source': clean(raw.get('source')), 'country': country}
+    if raw.get('cap') not in (None, ''):      # SOG-0521 : le cap est FACULTATIF (absent ou vide : inconnu, la clé n'est pas écrite : un fichier sans cap donne les mêmes octets qu'avant) ; présent, il est valide ou le site est refusé, dit
+        cap = heading(raw.get('cap'))
+        if cap is None:
+            return 'cap hors de 0 à 359 (un entier)'
+        out['cap'] = cap
+    return out
 
 
 def compile_file(text, meta, country):
@@ -153,7 +169,10 @@ def compile_file(text, meta, country):
         raise Refused('datum : WGS84 attendu')
     sites, rejected = [], []
     for i, raw in enumerate(doc['sites']):
-        got = site(raw, country)
+        try:
+            got = site(raw, country)
+        except (OverflowError, ValueError):      # par prudence : un enregistrement illisible est refusé, dit ; l'import continue
+            got = 'nombre illisible'
         if isinstance(got, str):
             rejected.append({'index': i, 'error': got})
         else:
