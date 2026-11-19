@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
   "tests": 362,
-  "verdicts": 221
+  "verdicts": 222
  },
  "apps": [
   "pilote",
@@ -5283,8 +5283,9 @@
    },
    "test": "Carburant, la Carte ouverte à côté : zoome à la molette, au pincement et aux boutons + / −. Si le fond de carte ne vient pas (réseau, fournisseur de tuiles), une notification dit « Fond de carte indisponible : fond uni » au lieu d'une carte muette. Si le zoom meurt sans cette notification, préviens le relais AVANT de recharger.",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T09:11:03Z"
+   "state": "ok",
+   "delivered": "2026-11-19T09:11:03Z",
+   "at": "2026-11-19T16:45:27Z"
   },
   {
    "id": "SOG-0513",
@@ -5400,49 +5401,6 @@
   }
  ],
  "decisions": [
-  {
-   "id": "Q-0124",
-   "fiche": "",
-   "app": "",
-   "question": "Rationalisation : réduit-on le nombre de sessions, en fusionnant les rôles voisins ?",
-   "context": "Tu demandes de limiter les agents pour limiter les échanges. Ce que je conteste : les sous-agents de codage (Sonnet, Opus) ne coûtent rien au quota Fable ; ce qui l'a vidé, ce sont les messages ENTRE sessions arrivant sur des sessions Fable à long contexte (une soixantaine chez moi le 18/11), et les captures lues. Les quatre sessions Fable sont passées sur Opus ce soir. Ce qui réduit vraiment les échanges, c'est moins de SESSIONS : treize sont actives. Fusions possibles sans perdre un propriétaire de fichiers : Création + Affectation en une session « Missions » ; Procédures dans AeroDB ; Réglages dans V3 Frame ; les deux sessions Fable d'origine (Création, Affectation, au repos depuis leur relais) archivées. On passerait de treize à huit. Coût : une note de passation par session absorbée, et une demi-journée de rodage.",
-   "options": [
-    "Oui aux trois fusions et à l'archivage, une à la fois, après le lot en cours de chaque session",
-    "Seulement l'archivage des deux sessions d'origine et Réglages dans V3 Frame ; les autres restent",
-    "Non : on garde les sessions, on réduit seulement les messages (un par lot, plus de messages d'information)",
-    "Autre (dans le texte)"
-   ],
-   "since": "2026-11-19",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
-   "id": "Q-0125",
-   "fiche": "SOG-0443",
-   "app": "compagnie",
-   "question": "Les fichiers de mission de la V3 doivent-ils rester lisibles par la V2 ?",
-   "context": "Une session a rapporté que tu avais dit le 18/11 : « aucune obligation de compatibilité avec la v2 (n'a jamais été utilisée). seules les fonctionnalités importent ». L'ergonome ne retire pas une contrainte sur le dire d'une autre session : confirme-le ici.",
-   "options": [
-    "Non : aucune compatibilité V2 exigée, seules les fonctionnalités comptent",
-    "Oui : une mission V3 doit rester lisible par la V2"
-   ],
-   "since": "2026-11-19",
-   "state": "todo"
-  },
-  {
-   "id": "Q-0126",
-   "fiche": "SOG-0374",
-   "app": "pilote",
-   "question": "Pour lire les SID d'EGLL, la session Procédures doit voir les cartes de ton dossier de données. Comment fait-on ?",
-   "context": "Les cartes (copiées du paquet du Royaume-Uni et du cache EAD, textes publics de l'AIP) sont dans ton dossier de données, et le poste a refusé à Procédures de les lire le 18/11. Elle ne contourne pas ce refus. Ce n'est pas urgent : la priorité reste l'atelier.",
-   "options": [
-    "Je donne à Procédures une lecture SEULE des deux dossiers de cartes (data\\local\\upload et data\\local\\ead\\cache\\EGLL), par une règle de permission que je pose moi-même",
-    "Je lance moi-même une fois la lecture bornée d'une carte et je colle la forme du texte",
-    "Plus tard"
-   ],
-   "since": "2026-11-19",
-   "state": "todo"
-  },
   {
    "id": "Q-0058",
    "fiche": "SOG-0347",
@@ -5838,6 +5796,39 @@
    "choice": 2,
    "text": "je ne suis pas sûr du calcul. le tracé était le même, en tout cas.",
    "at": "2026-11-17T10:14:56Z"
+  },
+  {
+   "id": "Q-0125",
+   "fiche": "SOG-0443",
+   "app": "compagnie",
+   "question": "Les fichiers de mission de la V3 doivent-ils rester lisibles par la V2 ?",
+   "context": "Une session a rapporté que tu avais dit le 18/11 : « aucune obligation de compatibilité avec la v2 (n'a jamais été utilisée). seules les fonctionnalités importent ». L'ergonome ne retire pas une contrainte sur le dire d'une autre session : confirme-le ici.",
+   "options": [
+    "Non : aucune compatibilité V2 exigée, seules les fonctionnalités comptent",
+    "Oui : une mission V3 doit rester lisible par la V2"
+   ],
+   "since": "2026-11-19",
+   "state": "answered",
+   "choice": 0,
+   "text": "/a priori/ non. pourquoi ? j’ai besoin d’en savoir plus. Si incompatible, migration. en revanche, compatibilité ascendante possible ?",
+   "at": "2026-11-19T16:45:00Z"
+  },
+  {
+   "id": "Q-0126",
+   "fiche": "SOG-0374",
+   "app": "pilote",
+   "question": "Pour lire les SID d'EGLL, la session Procédures doit voir les cartes de ton dossier de données. Comment fait-on ?",
+   "context": "Les cartes (copiées du paquet du Royaume-Uni et du cache EAD, textes publics de l'AIP) sont dans ton dossier de données, et le poste a refusé à Procédures de les lire le 18/11. Elle ne contourne pas ce refus. Ce n'est pas urgent : la priorité reste l'atelier.",
+   "options": [
+    "Je donne à Procédures une lecture SEULE des deux dossiers de cartes (data\\local\\upload et data\\local\\ead\\cache\\EGLL), par une règle de permission que je pose moi-même",
+    "Je lance moi-même une fois la lecture bornée d'une carte et je colle la forme du texte",
+    "Plus tard"
+   ],
+   "since": "2026-11-19",
+   "state": "answered",
+   "choice": 0,
+   "text": "",
+   "at": "2026-11-19T16:45:14Z"
   }
  ]
 }

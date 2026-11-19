@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "441cf13",
+  "organisation": "e09f364",
   "fiches": 523,
   "untranslated": 0,
   "priorities": 481,
@@ -968,8 +968,7 @@
      "fr": "Carburant : régression du zoom de la carte",
      "en": "Fuel: map zoom regression",
      "de": "Kraftstoff: Rückschritt beim Kartenzoom",
-     "es": "Combustible: regresión del zoom del mapa",
-     "test": true
+     "es": "Combustible: regresión del zoom del mapa"
     }
    ]
   },
