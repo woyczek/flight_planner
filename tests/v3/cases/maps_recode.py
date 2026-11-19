@@ -9825,6 +9825,35 @@ def d287(c):
     c.ok(c.js("() => window.__mp.S.map.getZoom()") > z0, str(z0), 'and it zooms')
 
 
+@case('D288', 'When the base map is given up for a reason that is not the network being off, a floating notice says it (the pilot knows why the zoom is dead); offline, nothing more is said than the note of the sheet', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=True, phone=False,
+      rule='SOG-0512 (the relay, accepted): the Map fell back to its plain background in silence (no zoom, no pan, nothing said); a base that does not come while the browser says it is online (the style answers 500, a source that does not load, the wait) is announced once by a floating notice with the words that exist (plain: Base map unavailable: plain background); when the browser says it is offline the background is plain by design and the note of the sheet is enough')
+def d288(c):
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/styles/'), lambda route: route.fulfill(status=500, body='no'))
+    c.open('maps', flight=True)
+    c.ready('maps', sheet=True)
+    word = tx(M, 'plain', c.lang)
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", word, timeout=20000, what='the notice: the base map is unavailable')
+    c.eq(c.js("(w) => window.__notes.filter(n => n.replace(/[\s  ]+/g, ' ').includes(w)).length", word), 1, 'said once', what='notes')
+    c.page.add_init_script("Object.defineProperty(navigator, 'onLine', { get: () => false })")
+    c.open('maps', flight=True)
+    c.ready('maps', sheet=True)
+    c.wait(2500)
+    c.ok(not c.js("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", word), 'offline', 'offline: no floating notice (the plain background is expected)')
+
+
+@case('D289', 'A library of the Map that does not come: the Map says it in a floating notice (module.js asked a translator that does not exist there, tt, and threw)', 'D',
+      tags=('maps',), designs=('standard',), night=False, screens=True, phone=False,
+      rule='SOG-0512, found on the way: the failure path of loadLibs() in modules/maps/module.js called tt(TX.libsFailed, ...) where only ctx.t exists (tt is the translator of the other files of the Map): a ReferenceError inside the catch, the notice never shown and the mount left half done; ctx.t now')
+def d289(c):
+    c.context.route(re.compile(r'/modules/maps/lib/aero_symbols\.js'), lambda route: route.fulfill(status=404, body='gone'))
+    c.open('maps', flight=True, wait=False)
+    word = tx(M, 'libsFailed', c.lang).split('{')[0]
+    c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", word.replace(' ', ' ').strip(), timeout=20000, what='the notice: a library of the Map does not come')
+    c.eq([e for e in c.errors if 'aero_symbols' not in e], [], 'the missing file is the only error: no ReferenceError in the failure path', what='errors')
+    c.errors[:] = [e for e in c.errors if 'aero_symbols' not in e]
+
+
 def _no_duplicate_names():
     """A module-level name defined twice silently replaces the first one for every case that reads it (a duplicated _VIEW_JS and _BANNER_JS had changed D121 and D148 without a word): the file refuses to load."""
     import ast

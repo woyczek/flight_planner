@@ -355,7 +355,7 @@ export async function mount(el, ctx) {
     await loadLibs();
   } catch (
     e) { // une bibliothèque qui ne vient pas (fichier absent ou d'une autre version) : la Carte le dit, elle n'est pas à demi montée
-    if (S) ctx.notify?.(tt(TX.libsFailed, {
+    if (S) ctx.notify?.(ctx.t(TX.libsFailed, {
       m: e?.message || String(e)
     }), 'err');
     return;
@@ -413,10 +413,16 @@ export async function mount(el, ctx) {
   dataHead();
   sheetFit();
   S.tilesWait = true;
-  const tiles = S.route.points.length || S.missionId && S.mission ? await startTiles() : false;
+  const wantTiles = !!(S.route.points.length || S.missionId && S.mission),
+    tiles = wantTiles ? await startTiles() : false;
   if (!S) return;
   S.tilesWait = false;
-  if (!tiles) S.plain = true;
+  if (!tiles) {
+    S.plain = true;
+    // le fond abandonné alors que le navigateur se dit en ligne (le style répond 5xx, une source ne vient pas, le délai) : dit une fois, en notification flottante (SOG-0512 : le fond uni n'a ni zoom ni déplacement, le pilote sait pourquoi) ;
+    // hors ligne le fond uni est attendu, la note de la feuille suffit
+    if (wantTiles && navigator.onLine !== false) ctx.notify?.(ctx.t(TX.plain), 'warn');
+  }
   if (ctx.query?.tune) {
     const T = await need('tune').catch(() => null);
     if (!S) return;
