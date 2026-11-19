@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 346,
+  "tests": 347,
   "verdicts": 219
  },
  "apps": [
@@ -5168,6 +5168,20 @@
    "since": "2026-11-18",
    "state": "todo",
    "delivered": "2026-11-18T19:24:45Z"
+  },
+  {
+   "id": "SOG-0505",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données : « Tout est à jour » et « Cycle dépassé : téléchargez… puis reconstruisez » paraissent ensemble ; le conseil est faux quand seule la publication de la base manque",
+    "en": "Data: “Everything is up to date” and “Cycle out of date: download… then rebuild” appear together; the advice is wrong when only publishing the base is missing",
+    "de": "Daten: „Alles ist aktuell“ und „Zyklus abgelaufen: herunterladen… dann neu erstellen“ erscheinen zusammen; der Rat ist falsch, wenn nur die Veröffentlichung fehlt",
+    "es": "Datos: «Todo está al día» y «Ciclo vencido: descargue… y reconstruya» aparecen juntos; el consejo es erróneo cuando solo falta publicar la base"
+   },
+   "test": "Maintenance › Données, quand tes zones viennent d'être reconstruites au cycle en vigueur mais que la base n'est pas encore publiée. Attendu : UNE seule ligne orange « Les zones sont au cycle N, la publication reste au cycle N−1 : publiez la base », et la carte « Publier la base » active (fichiers modifiés · commit à envoyer). Jamais « Tout est à jour. » à côté de « téléchargez… reconstruisez ». Après « Publier » : « Tout est à jour. » seul.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T02:14:55Z"
   }
  ],
  "decisions": [
