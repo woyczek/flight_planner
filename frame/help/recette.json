@@ -4509,7 +4509,7 @@
     "de": "Schubladen-Missionen beim Piloten: die Schubladen seiner Mission lesen, öffnen (Zeit, Geste), das Heft, der Umschlag und der Leser",
     "es": "Misiones de cajones para el piloto: leer los cajones de su misión, abrirlos (hora, gesto), el cuaderno, el sobre y el lector"
    },
-   "test": "Il te faut une mission à tiroirs : exporte-en une de ton atelier (« Exporter YAML », par exemple « Recherche sur glacier »), puis Missions, « Ajouter des missions » avec ce fichier, et prends-la comme TA mission. Page rechargée, ouvre sa fiche. Attendu : (1) « Tiroirs » à la place de la ligne des zones — « Tiroir 1 · titre », sa clé en clair ; (2) seul le premier tiroir fermé porte « Ouvrir le tiroir » (geste en deux temps), les suivants disent « après le tiroir n » ; (3) un tiroir à heure s'ouvre tout seul à son heure ; (4) ouvert, il montre son message puis son briefing ; (5) pour une zone, un objet ou une arrivée, la ligne dit « Cet appareil ne suit pas encore ce passage : le tiroir s'ouv",
+   "test": "Recharge la page. Prends une mission à tiroirs comme TA mission, puis ouvre sa fiche et touche « Lire la mission ». Attendu : (1) une enveloppe fermée à ton nom avec « Ouvrir l'enveloppe » ; l'ouvrir la note comme lue dans ton carnet ; (2) la liseuse : une page à la fois sur téléphone, deux pages en vis-à-vis sur l'ordinateur (« Pages 3 et 4 sur 4 ») ; (3) après un vol où une clé a joué (ou « Demander la suite »), une page de plus pour ce tiroir, avec son titre et l'heure (« ouvert à votre demande, à …Z »), sans numéro « Tiroir n » ni compte des tiroirs encore fermés. Dis ce que tu as vu, avec la capture si ça diffère.",
    "since": "2026-11-17",
    "state": "known"
   },
