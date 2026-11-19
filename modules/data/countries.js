@@ -64,7 +64,7 @@ import {
 } from './update.js';
 import {
   uploadHtml,
-  uploadOff
+  zoneUploadOff
 } from './upload.js';
 import {
   DIRCAM_MEMBER,
@@ -142,7 +142,7 @@ function packList() {
 const ZONE_ID = /^[a-z0-9_-]{2,12}$/;
 const progressHere = () => !!S.cw?.sheet && progressOn(S.cw.sheet);
 /** La raison pour laquelle le choix d'un fichier est grisé : pas de lanceur, sinon une opération (la nôtre, dont l'avancement est sur la fiche, ou un envoi). */
-const uploadWhy = () => !S.ctx.launcher ? 'no-launcher' : 'busy';
+const uploadWhy = () => !S.ctx.launcher ? 'no-launcher' : busyNow() || S.upload ? 'busy' : 'reading';
 /** La raison écrite À CÔTÉ d'un bouton gris de la fiche (jamais un bouton gris seul) ; '' quand la carte de l'opération en cours, dans la fiche, la dit déjà. */
 function sheetGrey(reason) {
   if (!reason || reason === 'busy' && busyCardHtml('base', 'sheet')) return '';
@@ -738,7 +738,7 @@ function chooseHintHtml(sid) {
 function handHtml(sid, zone, z, item, cy, msg) {
   const busy = busyNow(),
     seen = handSeen(sid, z, item, cy),
-    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(zone)}" data-source="${esc(sid)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>${uploadOff() ? sheetGrey(uploadWhy()) : ''}`,
+    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(zone)}" data-source="${esc(sid)}"${zoneUploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>${zoneUploadOff() ? sheetGrey(uploadWhy()) : ''}`,
     hint = chooseHintHtml(sid),
     rename = seen ? renameOf(sid, z, item, cy) : '';
   if (rename) return `<div class="d-hand" data-hand="${esc(sid)}" data-hand-state="rename"><p class="f-warn" data-hand-rename>${esc(tt(TX.now.rename, { n: rename }))}</p>
@@ -867,7 +867,7 @@ function failedHtml(id) {
   const ff = S.result?.set === 'base' && S.result.verb === 'fetch' ? (S.result.out?.failed || []).filter(f => f.zone === id) : [];
   if (!ff.length) return '';
   const nasr = ff.some(f => f.source === 'faa' || f.source === 'faaclass');
-  return `<div class="d-src" data-sheet-failed>${S.cw.thread.has(id) ? '' : `<p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy(ff.map(f => ({ source: f.source, code: f.error, status: f.status ?? null, sentence: !!f.message }))) }))}</p>`}${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>` : ''}${nasr || pickSource(id) ? `<p class="d-zact"><button type="button" data-act="zone-upload" data-zone="${esc(id)}" data-source=""${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${uploadOff() ? sheetGrey(uploadWhy()) : ''}</p>` : ''}</div>`;
+  return `<div class="d-src" data-sheet-failed>${S.cw.thread.has(id) ? '' : `<p class="f-warn">${esc(tt(TX.cwb.failedLine, { r: sourcesWhy(ff.map(f => ({ source: f.source, code: f.error, status: f.status ?? null, sentence: !!f.message }))) }))}</p>`}${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>` : ''}${nasr || pickSource(id) ? `<p class="d-zact"><button type="button" data-act="zone-upload" data-zone="${esc(id)}" data-source=""${zoneUploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${zoneUploadOff() ? sheetGrey(uploadWhy()) : ''}</p>` : ''}</div>`;
 }
 /** Le nom court d'une source (celui du catalogue, à défaut celui de la liste du cycle ou son identifiant), sans la parenthèse de ses formats. */
 const srcName = (id, cy) => String(catSource(id)?.n?.[li()] || cy.data?.items?.[id]?.label?.[li()] || id).replace(/\s*\(.*\)\s*$/, '');

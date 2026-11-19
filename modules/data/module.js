@@ -561,6 +561,10 @@ export async function mount(el, ctx) {
     status: null, // l'état par zone que le lanceur a dit (base/status, M.statusOf) : { current, parserVersion, zones: { id: { state, reasons, buildable } } } ; null : jamais lu
     statusP: null, // la lecture en cours (une seule à la fois)
     statusAsked: false, // l'état a été demandé à l'ouverture
+    statusOld: false, // l'état par zone MONTRÉ est le dernier connu, gardé sur l'appareil (status-last.json) : aucune action ne part tant que la lecture du lanceur n'a pas abouti (SOG-0511) ; seule une lecture complète le baisse
+    statusAt: null, // l'instant (ms) où cet état a été gardé ; jamais écrit dans le DOM tel quel
+    statusKept: '', // les zones de la dernière écriture de status-last.json : la même lecture ne la réécrit pas
+    statusLastRead: false, // status-last.json est lu une fois par montage
     whyOpen: new Set(),
     zoneFilter: null, // le nombre de la phrase d'état déplié (upToDate, rebuild, failed, waiting, unknown) : ses zones sont listées sous la phrase ; null : rien de déplié
     world: worldInit(), // la ligne « Synoptique monde (GFS) » : phase, état lu, dernière fin (world.js)

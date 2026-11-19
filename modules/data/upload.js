@@ -50,10 +50,12 @@ const nameOfSource = id => (catSource(id)?.n?.[li()] || String(id).toUpperCase()
 
 /** Le bouton « Choisir le fichier… » de la ligne d'une zone peut-il partir ? Un lanceur, aucune autre opération, aucun envoi en cours. */
 export const uploadOff = () => !S.ctx.launcher || busyNow() || !!S.upload;
+/** Le bouton « Choisir le fichier… » d'une ZONE : comme uploadOff, et jamais tant que l'état montré est le dernier connu (la ligne de la zone en vient : SOG-0511). */
+export const zoneUploadOff = () => uploadOff() || !!S.statusOld;
 /** Le geste du bouton : le sélecteur du système s'ouvre (le champ caché de l'écran), la zone est retenue, et la source de la ligne qui l'a demandé (`source` : « dircam » lit l'ENR 5.7 dans l'archive du SIA ; vide : le lanceur reconnaît le fichier à son contenu).
  *  La source du dernier geste garde l'avancement et le message sur la fiche du pays. */
 export function chooseFile(zone, source = '') {
-  if (uploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
+  if (zoneUploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
   S.uploadZone = zone;
   S.uploadSource = /^[a-z0-9_]{2,24}$/.test(source || '') ? source : '';
   if (S.uploadSource) S.cw?.hand.set(zone, S.uploadSource);
@@ -253,7 +255,7 @@ export async function startUpload(zone, file, source = '') {
 /** L'envoi lui-même et ce qui le suit (la prise, la construction) : voir startUpload ; `note.chained` : un travail du lanceur suit l'envoi. */
 async function sendFile(zone, file, source, note) {
   const me = S;
-  if (!file || uploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
+  if (!file || zoneUploadOff() || !/^[a-z0-9_-]{2,12}$/.test(zone || '')) return;
   let name = String(file.name || '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').trim().slice(0, 120) || '?';
   const dircam = source === DIRCAM_SOURCE,
     origin = name; // le fichier que l'utilisateur a choisi (l'archive du SIA, ou le PDF), dit sur la ligne

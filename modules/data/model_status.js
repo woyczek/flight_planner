@@ -122,6 +122,69 @@ export function statusOf(final) {
     zones
   };
 }
+/** Une raison lue, remise sous la forme que le lanceur la dit (celle que reasonOf relit) : le code inconnu est rendu tel que le lanceur l'avait donné. */
+const reasonRaw = r => ({
+  code: r.code === 'unknown' ? r.raw : r.code,
+  why: r.why,
+  source: r.source,
+  set: r.set,
+  cycle: r.cycle,
+  built: r.built,
+  current: r.current,
+  count: r.count,
+  names: r.names,
+  zip: r.zip,
+  error: r.error
+});
+/** Un état lu (statusOf) sous la forme qui sera écrite sur l'appareil : { current, parserVersion, zones } avec chaque zone sous la forme du lanceur, cent zones au plus ; `key` : le texte des zones seules (sert à ne pas réécrire la même lecture). */
+export function persistable(st) {
+  const zones = {};
+  for (const [id, z] of Object.entries(st?.zones || {}).slice(0, 100)) zones[id] = {
+    state: z.state,
+    reasons: z.reasons.map(reasonRaw),
+    notices: z.notices.map(reasonRaw),
+    buildable: z.buildable,
+    builtCycle: z.builtCycle,
+    expectedCycle: z.expectedCycle,
+    parserVersion: z.parserVersion,
+    builtAt: z.builtAt,
+    publish: z.publish,
+    download: z.download ? {
+      done: z.download.done,
+      cycle: z.download.cycle,
+      at: z.download.at,
+      sources: z.download.list
+    } : null,
+    datedBy: z.datedBy,
+    deposited: z.deposited
+  };
+  return {
+    current: st?.current || '',
+    parserVersion: st?.parserVersion ?? null,
+    zones,
+    key: JSON.stringify(zones)
+  };
+}
+/** Le dernier état gardé sur l'appareil (cache/data/status-last.json), lu comme une entrée NON FIABLE : le même lecteur que la réponse du lanceur (statusOf : listes fermées, textes courts, nombres bornés), cent zones au plus ; { status, at (ms) } ; null pour un fichier illisible, vide ou sans date, comme s'il n'existait pas. */
+export function lastStatusOf(file) {
+  if (file === null || typeof file !== 'object' || Array.isArray(file)) return null;
+  const zs = file.zones;
+  if (zs === null || typeof zs !== 'object' || Array.isArray(zs)) return null;
+  const status = statusOf({
+    state: 'done',
+    result: {
+      ok: true,
+      current: file.current,
+      parserVersion: file.parserVersion,
+      zones: Object.fromEntries(Object.entries(zs).slice(0, 100))
+    }
+  });
+  if (!status || !Object.keys(status.zones).length || !Number.isFinite(file.at)) return null;
+  return {
+    status,
+    at: Math.max(0, Math.min(Math.trunc(file.at), 8.64e15))
+  };
+}
 /** L'état dessiné d'une zone : 'building' (la page la traite), l'état du lanceur, ou null sans état connu. */
 export function drawnState(status, id, running) {
   if (running) return 'building';

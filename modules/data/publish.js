@@ -50,6 +50,14 @@ function canGesture() {
 }
 /** L'état du bouton « Publier » : { disabled, reason } d'après le lanceur, la construction, le cadre, l'état de data/ et le réseau. */
 export function publishGate() {
+  const g = publishGateRaw();
+  return g.disabled || !S.statusOld ? g : {
+    disabled: true,
+    reason: 'reading'
+  }; // l'état des zones montré est le dernier connu : « Publier » ne part pas avant la lecture du lanceur (SOG-0511)
+}
+/** L'état du bouton « Publier » d'après le lanceur, la construction, le cadre, l'état de data/ et le réseau, sans la lecture de l'état des zones. */
+function publishGateRaw() {
   return M.publishState({
     launcher: !!S.ctx.launcher,
     publishing: !!S.pub.phase,

@@ -299,9 +299,9 @@ def _stub(cfg):
     set(v) { ab = v; if (v && v.create && !v.__data) { const o = v.create; v.__data = 1; v.create = function (...a) { return patch(o.apply(this, a)) } } } }) })()""" % json.dumps(cfg)
 
 
-def _open(c, cfg, target='data', my_coverage=True, detail=True):
+def _open(c, cfg, target='data', my_coverage=True, detail=True, docs=()):
     c.page.add_init_script(_stub(cfg))
-    c.open(target, docs=LEVEL3, wait=False, app='maintenance')  # le module Données est dans l'application Maintenance
+    c.open(target, docs=LEVEL3 + list(docs), wait=False, app='maintenance')  # le module Données est dans l'application Maintenance
     c.until("!!document.querySelector('[data-module=data] [data-data-head]')", timeout=20000, what='the head of the Données screen is drawn')
     c.settle()
     if detail:   # « Détail de la base » (SOG-0229, lot 4: the coverage table, the inventory and the journal) is folded when the screen opens: the cases that read them open it
@@ -11175,4 +11175,127 @@ def l172(c):
     c.wait(600)
     c.eq(states(), ['ok', 'ok'], 'the published parser is the current one: « À jour », unchanged', what='witness current')
     c.eq(pill('ukmil'), norm(tx(TX, 'ok', lang, after='state: {')), 'the pill says « À jour »', what='witness current pill')
+    c.check_errors()
+
+
+_STATUS_LAST = 'cache/data/status-last.json'
+# holds the answer of base/status (the POST of the job) until the case lets it go: the cold launcher of the first refresh of the day
+_L173_HOLD_JS = r"""(() => { window.__stGo = []; window.__stHold = true; const f = window.fetch;
+  window.fetch = function (u, o) { const url = String((u && u.url) || u), body = o && typeof o.body === 'string' ? o.body : '';
+    if (window.__stHold && url.includes('regen/job') && /"verb":\s*"status"/.test(body) && /"set":\s*"base"/.test(body)) return new Promise(r => { window.__stGo.push(r) }).then(() => f.call(this, u, o));
+    return f.call(this, u, o) } })()"""
+# every change of the screen: how many numbers the state sentence has and how many countries of the map are uncoloured at that moment (a drawing that empties then repaints shows a 0 here)
+_L173_WATCH_JS = r"""() => { window.__snap = []; new MutationObserver(() => window.__snap.push([document.querySelectorAll('[data-state-sentence] [data-filter]').length, document.querySelectorAll('[data-wmap] path[data-tone=unread]').length]))
+  .observe(document.querySelector('[data-module=data]'), { childList: true, subtree: true }) }"""
+_L173_TONES_JS = "Object.fromEntries([...document.querySelectorAll('[data-wmap] path[data-zone]')].map(p => [p.dataset.zone, p.dataset.tone]))"
+
+
+def _l173_put(c, obj):
+    """Writes the document of the last known state on the device, as an older pass (or a hostile one) could have left it."""
+    c.page.evaluate("""(text) => new Promise((res, rej) => { const r = indexedDB.open('sogFrame'); r.onsuccess = () => { const tx = r.result.transaction('docs', 'readwrite'); tx.objectStore('docs').put({ path: 'cache/data/status-last.json', text, base: '', rev: '', at: Date.now(), policy: 'cache' }); tx.oncomplete = () => { r.result.close(); res() }; tx.onerror = () => rej(tx.error) }; r.onerror = () => rej(r.error) })""", json.dumps(obj))
+
+
+def _l173_release(c):
+    """Lets the launcher answer base/status."""
+    c.js("() => { window.__stHold = false; window.__stGo.splice(0).forEach(r => r()) }")
+
+
+@case('L173', 'Données: the screen shows the LAST KNOWN state of the zones (kept on the device) while the launcher reads it — the zones are coloured and counted, one line says « Lecture de l\u2019état des zones… », « Mettre à jour » and « Publier » stay grey until the answer, which replaces the state without an empty frame; the file is read as untrusted, written after a complete read only when it changed (SOG-0511)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0511 (the user: on the first refresh of the day base/status is slow and the countries stay uncoloured): cache/data/status-last.json = the sanitised state of the last COMPLETE read; read at the mount through the same reader as the launcher\u2019s answer (statusOf), shown with S.statusOld when older than two minutes; every action that starts a job is grey with the reason `reading` until the complete answer; a failed read keeps the state and the grey buttons')
+def l173(c):
+    lang = c.lang
+    now_ms = int(time.time() * 1000)
+    ok = lambda: _zst('up-to-date')
+    _t, cur, _p, _n = _cycles()   # the seed carries the cycle in force of the run: a state kept under another cycle is not shown (a cycle change makes yesterday's « up to date » false)
+    seed = {'at': now_ms - 3600000, 'current': cur.isoformat(), 'parserVersion': 23, 'zones': {
+        'ca': ok(), 'es': _zst('stale', {'code': 'parser-old', 'built': 22, 'current': 23}), 'fr': ok(), 'gb': _zst('failed', {'code': 'failed', 'error': 'invalid-output'}), 'us': ok()}}
+    live = _status({'ca': ok(), 'es': ok(), 'fr': _zst('stale', _NEWER), 'gb': ok(), 'us': ok()})
+    # the fake launcher (a state of data/ to publish, a frame that can publish), the answer of base/status held by the page until the case releases it
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest', wait_until='load')
+    _sync_cfg(c, True)
+    st = _launcher(c, [], verbs=_VERBS, sync=_L170_SYNC)
+    c.page.add_init_script(_SYNC_JS)
+    c.page.add_init_script(_L173_HOLD_JS)
+    st['status'] = _ALL_OK()
+    cfg, _ = _fixture()
+    cfg['outlines'] = _outlines()
+    c.context.route(re.compile(r'^https://tiles\.openfreemap\.org/'), lambda r: r.fulfill(status=200, content_type='application/json', body=_ZSTYLE))
+    _open(c, _sized(cfg))
+    _all_open(c)
+    sentence = lambda: c.js(_SENTENCE_JS)
+    reading = lambda: c.count('[data-status-reading]')
+    update = lambda: c.js("(b => b ? [b.disabled, b.closest('[data-update-all]')?.querySelector('[data-update-reason]')?.dataset.updateReason || null] : null)(document.querySelector('[data-build] [data-verb=update]'))")
+
+    def reopen():
+        c.page.reload()
+        _head(c)
+        _all_open(c)
+    # ---- d. nothing kept yet: as before — no state drawn, no reading line, « Mettre à jour » live while the launcher reads
+    c.wait(500)
+    c.eq([sentence(), reading(), update()], [[], 0, [False, None]], 'no file: the state is not drawn, no line of reading is invented, « Mettre à jour » is live (the opening is usable at once)', what='no file')
+    c.eq([_publish_state(c)['disabled']], [False], '« Publier » is live too', what='no file publish')
+    # ---- e. the first complete read is kept on the device
+    _l173_release(c)
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=12000, what='the state arrives')
+    kept = c.until_doc(_STATUS_LAST, lambda d: bool(d) and sorted(d.get('zones', {})) == ['ca', 'es', 'fr', 'gb', 'us'], what='the complete read is kept')
+    c.eq([sorted({z['state'] for z in kept['zones'].values()}), kept['parserVersion'], isinstance(kept['at'], int)], [['up-to-date'], 23, True], 'cache/data/status-last.json holds the states of the five zones, the parser version, the instant', what='kept')
+    # a second identical read writes nothing: the document keeps its instant
+    reopen()
+    c.wait(300)
+    _l173_release(c)
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=12000, what='the same state arrives again')
+    c.wait(600)
+    c.eq(c.doc(_STATUS_LAST)['at'], kept['at'], 'the same read again does not write the document again (the instant is the first one)', what='no rewrite')
+    # ---- a. a state kept an hour ago (France up to date, Spain to rebuild, the United Kingdom failed): drawn at once, the launcher not answered yet
+    st['status'] = live
+    _l173_put(c, seed)
+    reopen()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length >= 3", timeout=12000, what='the kept state is drawn before the launcher answers')
+    # the measure of the defect comes first: the zones of the sentence, then the colours (before the lot: no state, no number, uncoloured zones)
+    c.eq(sentence(), [['upToDate', 3], ['rebuild', 1], ['failed', 1]], 'the sentence counts the kept state: 3 up to date · 1 to rebuild · 1 failed', what='sentence kept')
+    tones = {z: t for z, t in c.js(_L173_TONES_JS).items() if z in ('ca', 'es', 'fr', 'gb', 'us')}
+    c.ok(len(tones) > 0 and all({'fr': 'ok', 'es': 'warn', 'gb': 'err', 'us': 'ok', 'ca': 'ok'}[z] == t for z, t in tones.items()), tones, 'the countries of the map are coloured by the kept state (green, amber, red), none neutral')
+    c.eq(c.count('[data-status-reading]'), 1, 'ONE line says the launcher is still reading', what='reading line')
+    c.eq([c.attr('[data-status-reading]', 'role'), norm(c.text('[data-status-reading]'))], ['status', norm(tx(TX, 'stateReading', lang))], 'role=status, worded in the language of the run', what='reading text')
+    c.eq(update(), [True, 'reading'], '« Mettre à jour » is grey, the reason is the reading of the state', what='update grey')
+    c.eq(norm(c.text('[data-update-reason]')), norm(tx(TX, 'reading', lang, after='greyReason: {')), 'worded as the line', what='update reason')
+    pub = _publish_state(c)
+    c.eq([pub['disabled'], pub['reason']], [True, 'reading'], '« Publier » is grey for the same reason (something is built and not published, the frame can publish)', what='publish grey')
+    c.tap('[data-state-sentence] [data-filter=failed]')
+    c.until("!!document.querySelector('[data-state-zones] [data-zone-row=gb] [data-verb=retry-zone]')", timeout=6000, what='the failed zone unfolds')
+    c.eq(c.js("document.querySelector('[data-state-zones] [data-zone-row=gb] [data-verb=retry-zone]').disabled"), True, 'the « Réessayer » of the failed zone is grey too: nothing starts on a kept state', what='retry grey')
+    c.tap('[data-state-sentence] [data-filter=failed]')
+    if lang == 'fr' and c.width in (390, 1280):
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-state-head]').scrollIntoView({ block: 'start' }); window.scrollBy(0, -90)")
+        c.shot(f'L173_{c.width}_fr_lastknown.png')
+    # ---- b. the launcher answers (Spain is up to date now, France is to rebuild): the line goes, the counts change, the state is replaced without an empty frame
+    c.js(_L173_WATCH_JS)
+    _l173_release(c)
+    c.until("!document.querySelector('[data-status-reading]') && document.querySelectorAll('[data-state-sentence] [data-filter]').length === 2", timeout=12000, what='the launcher\u2019s answer replaces the state')
+    c.eq(sentence(), [['upToDate', 4], ['rebuild', 1]], 'the counts are the launcher\u2019s: 4 up to date · 1 to rebuild', what='sentence live')
+    c.eq(update(), [False, None], '« Mettre à jour » is live (France is to rebuild)', what='update live')
+    pub = _publish_state(c)
+    c.eq([pub['disabled'], pub['reason']], [False, None], '« Publier » is live', what='publish live')
+    snap = c.js('window.__snap')
+    c.ok(len(snap) >= 1 and all(n >= 1 and u == 0 for n, u in snap), snap, 'at no moment of the replacement the sentence lost its numbers or a country went neutral (every change of the screen was observed)')
+    c.eq(c.js(_L173_TONES_JS).get('fr'), 'warn', 'France is amber on the map now', what='tone live')
+    c.until_doc(_STATUS_LAST, lambda d: bool(d) and d['zones']['fr']['state'] == 'stale' and d['zones']['es']['state'] == 'up-to-date', what='the new complete read is kept')
+    # ---- c. the document is hostile: bounded and read like an answer of the launcher, nothing breaks
+    hostile = {'at': now_ms - 3600000, 'current': '<b>x</b>', 'parserVersion': 1e30, 'zones': {
+        'fr': ok(), 'ca': {'state': '<img src=x onerror=window.__pwn=1>'}, 'es': {'state': 'stale', 'reasons': [{'code': 'x' * 500}], 'buildable': 'yes', 'builtCycle': 5},
+        '__proto__': {'state': 'stale', 'polluted': True}, **{f'z{i:03d}': ok() for i in range(500)}}}
+    r = c.js("""async (f) => { const M = await import('/modules/data/model.js'); const r = M.lastStatusOf(f);
+      return r && { n: Object.keys(r.status.zones).length, proto: Object.hasOwn(r.status.zones, '__proto__'), polluted: ({}).state, ca: 'ca' in r.status.zones, es: r.status.zones.es.reasons.map(x => [x.code, x.raw.length]), pv: r.status.parserVersion } }""", hostile)
+    c.eq([r['n'] <= 100, r['proto'], r['polluted'], r['ca'], r['es'], r['pv']], [True, False, None, False, [['unknown', 40]], 1000000000], 'lastStatusOf: 100 zones at most, __proto__ and the invalid state dropped, a code bounded and said unknown, the version bounded, nothing polluted', what='lastStatusOf hostile')
+    c.eq([c.js("M => import('/modules/data/model.js').then(m => [m.lastStatusOf(null), m.lastStatusOf([]), m.lastStatusOf({ at: 1, zones: [] }), m.lastStatusOf({ zones: { fr: { state: 'up-to-date' } } }), m.lastStatusOf({ at: 'x', zones: { fr: { state: 'up-to-date' } } })])")], [[None] * 5], 'an unreadable, empty or undated document is as if it did not exist', what='lastStatusOf unreadable')
+    st['status'] = _ALL_OK()
+    _l173_put(c, hostile)
+    reopen()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length >= 2", timeout=12000, what='the hostile document is drawn as far as it is valid')
+    c.eq([c.js('window.__pwn === undefined'), c.count('[data-state-sentence] img, [data-module=data] img[src=x]'), c.js('({}).state === undefined'), reading(), (update() or [None])[0]], [True, 0, True, 1, True],
+         'the hostile file shows only what is valid, injects nothing, pollutes nothing; the line is there and the button grey', what='hostile page')
+    _l173_release(c)
+    c.until("!document.querySelector('[data-status-reading]') && document.querySelectorAll('[data-state-sentence] [data-filter]').length === 1", timeout=12000, what='the launcher\u2019s answer replaces it')
     c.check_errors()

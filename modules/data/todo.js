@@ -137,7 +137,8 @@ function gestureHtml(it, k) {
     if (!zones.length) return '';
     const pk = gateOf1();
     return seen ? btn('pick', tt(TX.zx.tdPick), ` data-zones="${esc(zones.join(','))}"`, pk.off, pk.reason) : btn('choose', tt(TX.up.choose), ` data-zone="${esc(zones[0])}"`, busyNow() || !S.ctx
-      .launcher, busyNow() ? 'busy' : 'no-launcher');
+      .launcher || S.statusOld, busyNow() ? 'busy' : !S.ctx.launcher ? 'no-launcher' : 'reading'
+    ); // l'état montré est le dernier connu : rien ne part avant la lecture du lanceur (SOG-0511)
   }
   if (k === 'publish') {
     const g = publishGate();

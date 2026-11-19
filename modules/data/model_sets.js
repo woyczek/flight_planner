@@ -254,14 +254,15 @@ export function verbKnown(known, set, verb) {
   return (Array.isArray(known) ? known : OLD_VERBS).includes(verbKey(set, verb));
 }
 /** L'état des boutons d'un panneau : { reason, verbs: { <verbe>: { disabled, reason } } }. `s` : { set, verbs (par défaut ceux du jeu), launcher,
- *  known (knownVerbs), busy (une opération tourne, la nôtre ou une autre, une question est posée), offline, items (nombre d'éléments cochés ;
+ *  known (knownVerbs), busy (une opération tourne, la nôtre ou une autre, une question est posée), reading (l'état montré est le dernier connu : la lecture du lanceur n'a pas abouti, SOG-0511), offline, items (nombre d'éléments cochés ;
  *  absent : le jeu n'en coche pas) }. Les raisons communes passent dans l'ordre no-launcher, busy, offline, « aucun élément » (SETS[set].noItem) ;
  *  un verbe que le lanceur ne connaît pas est gris pour sa raison propre, 'unknown-verb'. La raison du panneau, écrite une fois : no-launcher ; puis
  *  'unknown-verb' quand aucun des verbes n'est connu ; puis la commune ; puis 'unknown-verb' pour un verbe seul. */
 export function setGate(s) {
   const spec = SETS[s.set] || {},
     verbs = s.verbs || spec.verbs || [],
-    common = !s.launcher ? 'no-launcher' : s.busy ? 'busy' : s.offline ? 'offline' : s.items !== undefined && s.items !== null && !(s
+    common = !s.launcher ? 'no-launcher' : s.busy ? 'busy' : s.reading ? 'reading' : s.offline ? 'offline' : s.items !== undefined && s
+    .items !== null && !(s
       .items > 0) &&
     spec.noItem ? spec.noItem : null,
     per = Object.fromEntries(verbs.map(v => {

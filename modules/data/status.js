@@ -16,6 +16,8 @@ import {
   ROUTE,
   S,
   serial,
+  STATUS_LAST,
+  STATUS_LAST_FRESH_MS,
   tt
 } from './state.js';
 import {
@@ -23,7 +25,7 @@ import {
 } from './screen.js';
 import {
   uploadHtml,
-  uploadOff
+  zoneUploadOff
 } from './upload.js';
 import {
   buildZones,
@@ -88,19 +90,55 @@ export function fetchStatus(ids) {
     if (S !== me) return null;
     S.statusP = null;
     if (st) {
-      S.status = ids?.length && S.status?.zones ? { // la lecture de quelques pays (un paquet, un pays) garde l'état des autres
+      // une lecture COMPLÈTE (toute la couverture) remplace d'un coup l'état montré, même le dernier connu gardé sur l'appareil (SOG-0511) ; la lecture de quelques pays (un paquet, un pays) garde l'état des autres, et ne baisse pas le drapeau
+      const complete = !ids?.length || (S.d?.cov?.ids || []).every(id => ids.includes(id));
+      S.status = !(complete && S.statusOld) && ids?.length && S.status?.zones ? {
         ...st,
         zones: {
           ...S.status.zones,
           ...st.zones
         }
       } : st;
+      if (complete) {
+        S.statusOld = false;
+        S.statusAt = null;
+        keepStatus(S.status);
+      }
       renderBuild();
       refreshRows(); // une ligne de jeu de la base lit aussi cet état (« à publier », SOG-0510)
-    }
+    } else if (S.statusOld)
+      renderBuild(); // la lecture n'a pas abouti : la ligne de progression devient la ligne « état non lu », le dernier état connu reste, les boutons restent gris
     return st;
   })();
   return S.statusP;
+}
+/** Garde sur l'appareil le dernier état lu EN ENTIER (cache/data/status-last.json : les états sanitisés, cent zones au plus, l'instant de la lecture), seulement quand les zones ont changé depuis la dernière écriture ; ne lève jamais. */
+function keepStatus(st) {
+  try {
+    const p = M.persistable(st);
+    if (!Object.keys(p.zones).length || p.key === S.statusKept) return;
+    S.statusKept = p.key;
+    const w = S.ctx.data.put(STATUS_LAST, {
+      at: Date.now(),
+      current: p.current,
+      parserVersion: p.parserVersion,
+      zones: p.zones
+    });
+    if (w && typeof w.catch === 'function') w.catch(() => {});
+  } catch {}
+}
+/** Au montage : le dernier état connu gardé sur l'appareil devient l'état montré (S.status, avec S.statusOld : aucune action ne part avant la lecture du lanceur), comme une entrée NON FIABLE (M.lastStatusOf) ; sans lanceur ni verbe base/status, avec un fichier illisible, sans date ou gardé depuis moins de deux minutes : rien. */
+export function seedStatus(file) {
+  if (S.status || !S.ctx.launcher || !statusKnown()) return;
+  const last = M.lastStatusOf(file);
+  if (!last) return;
+  S.statusKept = M.persistable(last.status).key; // ce que le fichier dit déjà : la même lecture ne le réécrit pas, montré ou non
+  if (Date.now() - last.at < STATUS_LAST_FRESH_MS) return;
+  const cur = S.d?.cat?.airac?.cycleOf?.(Date.now())?.date; // un cycle a changé depuis l'écriture : « à jour » d'hier ne l'est plus, le dire en vert serait faux : rien n'est montré
+  if (typeof cur === 'string' && last.status.current && last.status.current !== cur) return;
+  S.status = last.status;
+  S.statusOld = true;
+  S.statusAt = last.at;
 }
 /** Relit l'état sans attendre (après une opération, à l'ouverture) : la page se redessine à la réponse. */
 export function refreshStatus(ids) {
@@ -228,7 +266,7 @@ function pickHtml(id, z, st, msg, main = 'data-zone-action') {
   const busy = busyNow(),
     g = gateOf('base', 1, [M.PICKUP.verb]).verbs[M.PICKUP.verb],
     seen = z.reasons.find(r => r.code === 'pickup-waiting' && r.zip),
-    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>`;
+    choose = (cls, label) => `<button type="button"${cls} data-act="zone-upload" data-zone="${esc(id)}"${zoneUploadOff() ? ' disabled' : ''}>${esc(tt(label))}</button>`;
   if (!seen) return `<p class="d-zact" ${main}="${esc(id)}" data-waiting data-pick><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> ${choose('', TX.up.choose)}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z, true)}`;
   const off = busy || g.disabled,
     grey = greyOnce(busy ? 'busy' : g.reason,
@@ -274,13 +312,13 @@ export function zoneActionHtml(id) {
     source: f.source,
     code: f.error,
     status: f.status ?? null
-  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${pickHtml(id, z, st, msg, 'data-zone-pick')}`; // le site ne répond pas : le fichier pris à la main reste le chemin (le pas-à-pas est dessous)
+  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || S.statusOld || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${pickHtml(id, z, st, msg, 'data-zone-pick')}`; // le site ne répond pas : le fichier pris à la main reste le chemin (le pas-à-pas est dessous)
   if (ff.length) return `<p class="d-zact" data-zone-action="${esc(id)}" data-fetch-failed><span class="f-muted">${esc(sourcesWhy(ff.map(f => ({
     source: f.source,
     code: f.error,
     status: f.status ?? null
-  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>${nasr ? ` <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>` : ''}</p>${msg}${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>${uploadHtml(id)}` : ''}`;
-  if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${msg}`;
+  }))))}</span> <button type="button" data-verb="retry-fetch" data-zone="${esc(id)}"${busy || S.statusOld || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button>${nasr ? ` <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${zoneUploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>` : ''}</p>${msg}${nasr ? `<p class="f-muted" data-nasr-hint>${nasrHint()}</p>${uploadHtml(id)}` : ''}`;
+  if (st === 'failed') return `<p class="d-zact" data-zone-action="${esc(id)}"><button type="button" data-verb="retry-zone" data-zone="${esc(id)}"${busy || S.statusOld || !S.ctx.launcher ? ' disabled' : ''}>${esc(tt(TX.upd.retry))}</button></p>${msg}`;
   // la zone attend un fichier, ou une prise ou un envoi vient de lui dire ce qui manque : « Choisir le fichier… » reste sur sa ligne
   if ((st === 'stale' || st === 'never-built') && !z.buildable && !msg && M.waitKind(z) === 'personal') return personalHtml(id,
     z); // la coche manque : ni « Prendre le fichier » ni « Choisir le fichier… »
@@ -293,7 +331,7 @@ export function zoneActionHtml(id) {
       off = busy || g.disabled,
       grey = greyOnce(busy ? 'busy' : g.reason,
         'base'); // un bouton gris dit pourquoi, à côté de lui (la carte de l'opération en cours le dit déjà : pas deux fois)
-    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button> <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${uploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
+    return `<p class="d-zact" data-zone-action="${esc(id)}" data-waiting><span class="f-muted">${esc(zoneReasons(id)[0] || tt(TX.zst[st]))}</span> <button type="button" data-verb="pickup" data-zones="${esc(id)}"${off ? ' disabled' : ''}>${esc(tt(TX.pickup))}</button> <button type="button" data-act="zone-upload" data-zone="${esc(id)}"${zoneUploadOff() ? ' disabled' : ''}>${esc(tt(TX.up.choose))}</button>${off && grey ? ` <span class="f-muted" data-zone-grey="${esc(id)}">${esc(tt(TX.greyReason[grey]))}</span>` : ''}</p>${uploadHtml(id)}${msg}${stepsHtml(id, z)}`;
   }
   return st === 'up-to-date' && S.zoneMsg.get(id)?.kind === 'hand' ? msg :
     ''; // l'édition lue d'un fichier pris à la main reste dite quand la zone est à jour

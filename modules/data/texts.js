@@ -398,6 +398,10 @@ export const TX = {
     'Der Zustand Ihrer Basis ist nicht bekannt: {r}.', 'No se conoce el estado de su base: {r}.'
   ],
   stateUnread: ['il n’a pas encore été lu', 'it has not been read yet', 'er wurde noch nicht gelesen', 'aún no se ha leído'],
+  // l'état montré est le dernier connu, gardé sur l'appareil, tant que le lanceur lit l'état des zones (SOG-0511) ; les mots de pubReading et de pgStatus
+  stateReading: ['Lecture de l’état des zones…', 'Reading the state of the zones…', 'Der Zustand der Zonen wird gelesen…',
+    'Leyendo el estado de las zonas…'
+  ],
   allFresh: ['Tout est à jour.', 'Everything is up to date.', 'Alles ist aktuell.', 'Todo está al día.'],
   // « Mettre à jour » n'a rien à faire seul mais des zones attendent l'utilisateur : dit à la place de « Tout est à jour. » (jamais les deux)
   handAlone: [
@@ -1015,6 +1019,9 @@ export const TX = {
       'This workstation’s launcher does not know this operation yet',
       'Der Starter dieses Rechners kennt diesen Vorgang noch nicht', 'El lanzador de este equipo aún no conoce esta operación'
     ],
+    reading: ['Lecture de l’état des zones…', 'Reading the state of the zones…', 'Der Zustand der Zonen wird gelesen…',
+      'Leyendo el estado de las zonas…'
+    ], // l'état montré est le dernier connu : rien ne part avant la lecture du lanceur (SOG-0511)
     offline: ['Hors ligne', 'Offline', 'Offline', 'Sin conexión']
   },
   // la marche : « 2 zones sur 5 », l’étape, le temps écoulé, une ligne par zone

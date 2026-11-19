@@ -91,6 +91,8 @@ export function gateOf(set, items, verbs) {
     launcher: !!S.ctx.launcher,
     known: S.known,
     busy: busyNow(),
+    reading: set === 'base' && !!S
+      .statusOld, // l'état montré est le dernier connu : aucun verbe de la base ne part avant la lecture du lanceur (SOG-0511)
     offline: navigator.onLine === false,
     items
   });
@@ -731,6 +733,12 @@ function stateNamesHtml(groups) {
   return lines.length ? `<p class="f-muted d-names" data-state-names-box>${lines.join(' · ')}</p>` : '';
 }
 
+/** La ligne sous la phrase d'état quand l'état montré est le dernier connu (SOG-0511) : « Lecture de l'état des zones… » tant que la lecture du lanceur tourne (role=status), puis, si elle n'a pas abouti, la ligne d'état non lu ; '' sinon. */
+function statusLineHtml(groups) {
+  if (!S.statusOld || !groups) return '';
+  return S.statusP ? `<p class="f-muted" role="status" data-status-reading>${esc(tt(TX.stateReading))}</p>` : `<p class="f-muted" data-status-unread>${esc(tt(TX.stateUnknown, { r: stateWhy() }))}</p>`;
+}
+
 function stateHeadHtml() {
   const groups = balance().groups,
     z = n => count('zone', n),
@@ -768,7 +776,7 @@ function stateHeadHtml() {
   const baseOnly = !none && !all.only && sc.known && sc.n > 0 ? `<p class="d-baseonly" data-base-only><button type="button" class="d-link" data-verb="update"${gate.disabled ? ' disabled' : ''}>${esc(tt(TX.d4.baseOnly, { n: sc.n }))}</button></p>` : '';
   // la forme de la maquette validée (lot D2) : le titre du cycle et sa barre d'avancement, la légende en une ligne (la phrase d'état, ses nombres restent des boutons), puis le bouton avec, à côté, ce qu'il fait
   const what = [all.what ? `<p class="f-muted" data-update-plan>${esc(all.what)}</p>` : '', notes.length ? `<p class="f-muted" data-update-notes>${esc(notes.join(' '))}</p>` : '', baseOnly].join('');
-  return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${tail}</p>${list}${stateNamesHtml(groups)}
+  return `<div class="d-statehead" data-state-head>${cycleBarHtml()}<p class="d-cap" data-state-sentence>${tail}</p>${list}${stateNamesHtml(groups)}${statusLineHtml(groups)}
     <div class="d-all" data-update-all><div class="d-go">${action}${what ? `<div class="d-what">${what}</div>` : ''}${why}</div>${chainBelowHtml()}</div>
     ${opAreaHtml('base', 'head')}</div>`;
 }

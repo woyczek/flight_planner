@@ -138,8 +138,9 @@ export function chainPlan() {
 }
 /** L'état du bouton « Tout mettre à jour » : { disabled, reason } ; reason : no-launcher | busy | offline | no-set (aucun jeu à lancer). */
 export function chainGate(plan) {
-  const reason = !S.ctx.launcher ? 'no-launcher' : busyNow() ? 'busy' : navigator.onLine === false ? 'offline' : !plan.runs.length ?
-    'no-set' : null;
+  const reason = !S.ctx.launcher ? 'no-launcher' : busyNow() ? 'busy' : navigator.onLine === false ? 'offline' : S.statusOld ? 'reading' : !
+    plan.runs.length ?
+    'no-set' : null; // l'état de la base montré est le dernier connu : rien ne part avant la lecture du lanceur (SOG-0511)
   return {
     disabled: !!reason,
     reason

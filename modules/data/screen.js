@@ -29,10 +29,12 @@ import {
   ROUTE_MEM,
   S,
   tt,
+  STATUS_LAST,
   VERBS_ROUTE
 } from './state.js';
 import {
-  refreshStatus
+  refreshStatus,
+  seedStatus
 } from './status.js';
 import {
   pdfLibsHtml
@@ -314,11 +316,12 @@ export async function load(fresh = false) {
     forgetReads(); // les fichiers ont bougé : la liste du cycle et les procédures se relisent
   }
   const me = S,
-    [cat, pub, zones, byState, stored, kept, routeMem, packsRaw] = await Promise.all([ask('sources'), ask('publication'), ask(
+    [cat, pub, zones, byState, stored, kept, routeMem, packsRaw, lastStatus] = await Promise.all([ask('sources'), ask('publication'), ask(
         'zones'), ask(
         'coverageByState'),
       S.ctx.data.get(COVERAGE).catch(() => null), S.personalRead ? null : S.ctx.data.get(PERSONAL).catch(() => null), S
-      .route.read ? null : S.ctx.data.get(ROUTE_MEM).catch(() => null), ask('packs')
+      .route.read ? null : S.ctx.data.get(ROUTE_MEM).catch(() => null), ask('packs'), S.statusLastRead ? null : S.ctx.data.get(
+        STATUS_LAST).catch(() => null)
     ]);
   if (S !== me) return; // démonté, ou remplacé, pendant la lecture
   // les cycles RAD et points FRA importés sur ce poste (SOG-0125) : lus une fois par montage, puis la fin d'un import les tient à jour
@@ -346,6 +349,12 @@ export async function load(fresh = false) {
   };
   // les zones à construire : toute la couverture (plus aucune sélection à la main : SOG-0262)
   S.ticked = new Set(cov.ids);
+  if (!S
+    .statusLastRead
+  ) { // le dernier état connu, gardé sur l'appareil : montré dès le premier dessin tant que la lecture du lanceur n'a pas abouti (SOG-0511)
+    S.statusLastRead = true;
+    seedStatus(lastStatus);
+  }
   if (fresh || !S
     .statusAsked
   ) { // l'état par zone du lanceur : à l'ouverture, puis après chaque opération réelle (le pays orange passe au vert sur sa réponse, SOG-0072)
