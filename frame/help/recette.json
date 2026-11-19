@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 353,
+  "tests": 355,
   "verdicts": 221
  },
  "apps": [
@@ -5189,6 +5189,20 @@
    "delivered": "2026-11-19T02:14:55Z"
   },
   {
+   "id": "SOG-0506",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : « LFRF » reconnu par AeroDB mais pas comme point par la carte (itinéraire) ; un point nommé donne ses coordonnées et les verrouille",
+    "en": "Mission workshop: “LFRF” is known to AeroDB but not as a point for the map's route; a named point gives its coordinates and locks them",
+    "de": "Missionswerkstatt: „LFRF“ ist AeroDB bekannt, aber für die Route der Karte kein Punkt; ein benannter Punkt liefert seine Koordinaten und sperrt sie",
+    "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea"
+   },
+   "test": "Recharge la page. Atelier d'une mission : au Cadre, tape « lfrf » en Départ et choisis-le. Attendu : l'itinéraire et le profil partent bien de LFRF ; la fiche du lieu dit « Position de la base aéronautique : le terrain LFRF — verrouillée. Effacez le code pour la libérer. », ses coordonnées sont grisées et la carte ne le déplace pas. Sur un lieu déjà placé, choisis un code connu : il est déplacé à la position de la base, une notification le dit avec « Annuler ». Un nom libre ne déplace rien.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T11:06:45Z"
+  },
+  {
    "id": "SOG-0507",
    "app": "compagnie",
    "title": {
@@ -5201,6 +5215,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T08:22:21Z"
+  },
+  {
+   "id": "SOG-0508",
+   "app": "compagnie",
+   "title": {
+    "fr": "Atelier de missions : « ＋ Tiroir » ouvre une fenêtre de choix des briques, et un toucher crée le tiroir — comme la maquette de l'utilisateur",
+    "en": "Mission workshop: “＋ Drawer” opens a brick picker window, and one tap creates the drawer — as in the user's mock-up",
+    "de": "Missionswerkstatt: „＋ Schublade“ öffnet ein Fenster zur Wahl der Bausteine, ein Tippen legt die Schublade an — wie im Entwurf des Nutzers",
+    "es": "Taller de misiones: «＋ Cajón» abre una ventana para elegir el bloque, y un toque crea el cajón — como en la maqueta del usuario"
+   },
+   "test": "Recharge la page. Atelier d'une mission : « ＋ Tiroir · Choisir une brique ». Attendu : une fenêtre « Choisir une brique de tiroir » (plein écran au téléphone), une recherche, « Actions transverses » en tête puis les thèmes et familles, celle de ta mission ouverte. UN toucher sur une brique crée le tiroir, ferme la fenêtre, montre sa fiche et le dit (« Tiroir n ajouté », avec Annuler). « Changer la clé » ouvre la même fenêtre.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T11:06:45Z"
   },
   {
    "id": "SOG-0509",

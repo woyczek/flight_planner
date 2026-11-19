@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "ac8313c",
+  "organisation": "90cfb8d",
   "fiches": 518,
   "untranslated": 0,
   "priorities": 481,
@@ -4176,11 +4176,12 @@
     {
      "id": "SOG-0508",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : « ＋ Tiroir » ouvre une fenêtre de choix des briques, et un toucher crée le tiroir — comme la maquette de l'utilisateur",
      "en": "Mission workshop: “＋ Drawer” opens a brick picker window, and one tap creates the drawer — as in the user's mock-up",
      "de": "Missionswerkstatt: „＋ Schublade“ öffnet ein Fenster zur Wahl der Bausteine, ein Tippen legt die Schublade an — wie im Entwurf des Nutzers",
-     "es": "Taller de misiones: «＋ Cajón» abre una ventana para elegir el bloque, y un toque crea el cajón — como en la maqueta del usuario"
+     "es": "Taller de misiones: «＋ Cajón» abre una ventana para elegir el bloque, y un toque crea el cajón — como en la maqueta del usuario",
+     "test": true
     }
    ]
   },
@@ -4524,11 +4525,12 @@
     {
      "id": "SOG-0506",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Atelier de missions : « LFRF » reconnu par AeroDB mais pas comme point par la carte (itinéraire) ; un point nommé donne ses coordonnées et les verrouille",
      "en": "Mission workshop: “LFRF” is known to AeroDB but not as a point for the map's route; a named point gives its coordinates and locks them",
      "de": "Missionswerkstatt: „LFRF“ ist AeroDB bekannt, aber für die Route der Karte kein Punkt; ein benannter Punkt liefert seine Koordinaten und sperrt sie",
-     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea"
+     "es": "Taller de misiones: «LFRF» lo conoce AeroDB pero el mapa no lo usa como punto de la ruta; un punto con nombre da sus coordenadas y las bloquea",
+     "test": true
     }
    ]
   },
