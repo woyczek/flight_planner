@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "3cb214e",
-  "fiches": 528,
+  "organisation": "78f8691",
+  "fiches": 529,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3317,6 +3317,27 @@
      "es": "Rutas NAT: dos defectos hallados en la revisión de seguridad (un error con un archivo NAT mal formado; recargas sin espaciar)",
      "rank": 424,
      "test": true
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-carburant",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; Carburant",
+    "en": "Routes ; Carburant",
+    "de": "Routes ; Carburant",
+    "es": "Routes ; Carburant"
+   },
+   "items": [
+    {
+     "id": "SOG-0530",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : avertir quand le niveau de croisière ne suit pas la règle semi-circulaire (sans bloquer)",
+     "en": "Fuel: warn when the cruising level does not follow the semicircular rule (without blocking)",
+     "de": "Kraftstoff: warnen, wenn die Reiseflughöhe der Halbkreisregel nicht folgt (ohne zu sperren)",
+     "es": "Combustible: avisar cuando el nivel de crucero no sigue la regla semicircular (sin bloquear)"
     }
    ]
   },
