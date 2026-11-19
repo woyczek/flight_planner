@@ -18065,3 +18065,58 @@ def k392(c):
             f.write('{"data": [ NaN')
         broken = S.read(td, ('FIR',))
         c.eq(([x['name'] for x in found], broken, S.read(os.path.join(td, 'absent'), ('FIR',))), (['ALPHA FIR'], [], []), 'a file of the base is read; a broken file, or no file: no space, never an exception', what='files')
+
+
+@case('K394', 'Route engine, SOG-0513 lot C (b, c, d): ROUTE165 — a DCT of the route that reaches a level above the line of the RAD (Annex 3B FRA LIM: EGTTNFRA, above FL245, H24, 0NM) and whose MIDDLE is in the London space outside the UK free-route areas is too long (ERROR for a typed route, review for a calculated one); the middle, not the ends (a point on a boundary is not decided); a middle within 3 NM of a limit, a base without the outline of London or without the FRA area: said, never guessed',
+      'K', static=True,
+      rule='SOG-0513 lot C (the IFPS of 19 Nov: « THE DCT SEGMENT HAWKE..NEVIL (29 NM) IS TOO LONG FOR EGTTNFRA:245:999. MAXIMUM IS 0 NM [EG3A] »). The line of the RAD is read (d); the zone is the London UIR (or the FIR of the same lateral limits) without the FRA areas (b); the test is on the middle of the direct with the highest level the aircraft reaches on it (c). The relay accepted the middle (NEVIL is ON the southern limit of the FIR, 50.00 N). Invented outlines and levels (the codes of the real RAD).')
+def k394(c):
+    import sys
+    import types
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import space_dct as D, spaces as S
+    pad = lambda *x: list(x) + [''] * (12 - len(x))
+    rows = [pad('', '2112 [02 DEC 2021]', 'UFN', 'EGTTNFRA', 'EGTTNFRA', 'above FL245', 'H24', '0NM', 'Not Allowed'),
+            pad('', '2303 [23 MAR 2023]', 'UFN', 'EGTTNFRA_4', 'EGTTNFRA', 'Between FL105..FL245', 'H24', '0NM', 'Allowed'),
+            pad('', '2303 [23 MAR 2023]', 'UFN', 'EGTTNFRA_2', 'EGTTNFRA', 'below FL105', 'H24', '100NM', 'Allowed'),
+            pad('', 'x', 'UFN', 'ZZ1', 'ZZZZFRA', 'above FL245', 'H24', '0NM', 'Not Allowed'),
+            pad('', 'x', 'UFN', 'EGTTNFRA_9', 'EGTTNFRA', 'above FL300', '06:00-18:00', '0NM', 'Not Allowed'),
+            pad('DEL', 'x', 'UFN', 'EGTTNFRA_8', 'EGTTNFRA', 'above FL245', 'H24', '0NM', 'Not Allowed')]
+    rad = types.SimpleNamespace(book={'sheets': {D.SHEET: [{'v': v, 'row': i + 2} for i, v in enumerate(rows)]}}, active=lambda r: True)
+    c.eq(D.rows(rad), [dict(id='EGTTNFRA', area='EGTTNFRA', above_ft=24500, nm=0)], 'the line read (d): « above FL245 », H24, 0NM of EGTTNFRA; the lines « Between », « below », a time, an area that is not defined here, a deleted line: not read', what='rows')
+    box = lambda s, w, n, e: [[s, w], [s, e], [n, e], [n, w]]
+    uir = S.parse([{'type': 'UIR', 'name': 'LONDON UIR', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, 2.0)]},
+                   {'type': 'FRA', 'name': 'EGTT FRA WEST (AS PART OF BOREALIS FRA CONTINUUM)', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, -4.0)]},
+                   {'type': 'FRA', 'name': 'EGPX FRA', 'lower': 'FL 255', 'upper': 'FL 660', 'rings': [box(54.0, -8.0, 56.0, 2.0)]}])
+    leg = lambda a, b, la0, lo0, la1, lo1, nm, top=27000, **k: dict({'via': 'DCT', 'kind': 'DCT', 'nm': nm, 'natural_max_ft': top, 'start': {'id': a, 'lat': la0, 'lon': lo0}, 'end': {'id': b, 'lat': la1, 'lon': lo1}}, **k)
+    middle = leg('HAWKE', 'NEVIL', 51.0, -1.0, 51.0, -0.5, 29)
+    out = D.check(rad, [middle], uir, True)
+    c.eq([(lv, 'ROUTE165' in t and 'HAWKE..NEVIL (29 NM)' in t and 'FL245' in t and '0 NM' in t) for lv, t in out], [('ERREUR', True)], 'a direct of 29 NM at 27 000 ft whose middle is in the London space outside the FRA areas: ERROR for a typed route, with the codes of the IFPS', what='error')
+    c.eq([lv for lv, _t in D.check(rad, [middle], uir, False)], ['REVUE'], 'a calculated route: a review', what='calculated')
+    c.eq([D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=24000)], uir, True), D.check(rad, [leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, top=24500)], uir, True)], [[], []], 'a direct that stays at or below FL245: no limit (the level reached on the leg decides)', what='level')
+    c.eq([D.check(rad, [leg('A', 'B', 52.0, -7.0, 52.0, -6.5, 29)], uir, True), D.check(rad, [leg('A', 'B', 55.0, 0.0, 55.0, 0.5, 29)], uir, True), D.check(rad, [leg('A', 'B', 48.0, -1.0, 48.0, -0.5, 29)], uir, True)], [[], [], []],
+         'a middle in the FRA West, in the FRA of Scotland (north of the London space), or outside the London space: no limit of EGTTNFRA', what='outside')
+    near = [D.check(rad, [leg('NEVIL', 'X', 50.0, -1.0, 50.04, -0.9, 20)], uir, True), D.check(rad, [leg('A', 'B', 51.0, -4.06, 51.0, -3.96, 20)], uir, True), D.check(rad, [leg('A', 'B', 51.0, -4.04, 51.0, -3.94, 20)], uir, True)]
+    c.eq([[lv for lv, _t in x] for x in near], [['REVUE'], ['REVUE'], ['REVUE']], 'a middle within 3 NM of a limit (the southern limit of the space, the boundary of the FRA West seen from either side): « not decided », never an error', what='boundary')
+    same = lambda **k: leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 29, **k)
+    c.eq(D.check(rad, [same(connector=True), same(kind='SID'), same(kind='FRA'), same(via='UL9'), leg('A', 'B', 51.0, -1.0, 51.0, -0.5, 0.2)], uir, True), [], 'a connector, a procedure, a free-route leg, a leg on an airway and a direct of 0.2 NM are not concerned', what='kinds')
+    c.eq([D.check(rad, [leg('EGLL', 'MID', 51.0, -1.0, 51.0, -0.5, 26)], uir, True, 'EGLL', 'LFRN'), D.check(rad, [leg('LUVOP', 'LFRN', 51.0, -1.0, 51.0, -0.5, 16)], uir, True, 'EGLL', 'LFRN'), len(D.check(rad, [leg('EGLL', 'MID', 51.0, -1.0, 51.0, -0.5, 26)], uir, True))], [[], [], 1],
+         'the direct that touches the aerodrome of departure or of arrival (the connector of an aerodrome with no procedure read) is not judged here: it has its own limit (ROUTE135)', what='aerodromes')
+    fir_only = S.parse([{'type': 'FIR', 'name': 'LONDON FIR', 'lower': 'SFC', 'upper': 'FL 245', 'rings': [box(50.0, -8.0, 54.0, 2.0)]}, {'type': 'FRA', 'name': 'EGTT FRA WEST', 'rings': [box(50.0, -8.0, 54.0, -4.0)]}])
+    c.eq([lv for lv, _t in D.check(rad, [middle], fir_only, True)], ['ERREUR'], 'the London FIR (the UIR takes its horizontal projection: the same lateral limits) stands in for the UIR while the base has no UIR', what='fir')
+    no_fra = [x for x in uir if x['type'] != 'FRA']
+    c.eq([(lv, 'zone FRA' in t) for lv, t in D.check(rad, [middle], no_fra, True)] + [(lv, 'FIR / UIR' in t) for lv, t in D.check(rad, [middle], [], True)] + [(lv, 'ROUTE165' in t) for lv, t in D.check(rad, [middle], lambda: uir, True)],
+         [('REVUE', True), ('REVUE', True), ('ERREUR', True)], 'without the FRA area, or without the outline of London: a review that says what is missing (never an error, never a guess); the outlines may be given by a function (read only when a direct is high enough)', what='missing')
+    import math
+    import time
+    junk = types.SimpleNamespace(book={'sheets': {D.SHEET: [None, 'x', 7, {'v': 'abc'}, {'v': None}, {'v': [None] * 3}, {'v': pad('', '', '', 'EGTTNFRA', 'EGTTNFRA', 'above FL245', 'H24', '0NM')}, {'v': pad('', '', '', 'EGTTNFRA', 'EGTTNFRA', ['above FL245'], 'H24', '0NM')}, {'v': {'a': 1}}, {'row': 1}]}}, active=lambda r: True)
+    c.eq(D.rows(junk), [dict(id='EGTTNFRA', area='EGTTNFRA', above_ft=24500, nm=0)], 'a malformed workbook (a line that is not an object, a value that is not a list, a cell that is not a text): the bad lines are skipped, the good one is read, nothing is raised (review of Security)', what='junk')
+    c.eq((D.rows(types.SimpleNamespace(book=None, active=lambda r: True)), D.rows(types.SimpleNamespace(book={'sheets': 5}, active=lambda r: True)), D.rows(types.SimpleNamespace(book={'sheets': {D.SHEET: 'x'}}, active=lambda r: True))), ([], [], []), 'no book, a sheet that is not a list: no line', what='no book')
+    circle = lambda la, lo, r, n: [[la + r * math.sin(2 * math.pi * k / n), lo + r * math.cos(2 * math.pi * k / n)] for k in range(n)]
+    heavy = S.parse([{'type': 'UIR', 'name': 'LONDON UIR', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [circle(52.0, -1.0, 4.0, 20000)] + [circle(30.0 + 3 * k, 60.0, 1.0, 20000) for k in range(7)]},
+                     {'type': 'FRA', 'name': 'EGTT FRA WEST', 'lower': 'FL 245', 'upper': 'FL 660', 'rings': [box(50.0, -8.0, 54.0, -6.0)]}])
+    many = [leg(f'A{i}', f'B{i}', 51.0 + (i % 40) * 0.05, -1.0, 51.0 + (i % 40) * 0.05, -0.5, 29) for i in range(400)]
+    t0 = time.perf_counter()
+    out = D.check(rad, many, heavy, True)
+    took = time.perf_counter() - t0
+    c.ok(took < 10 and 0 < sum(lv == 'ERREUR' for lv, _t in out) < 400 and any('trop lourds' in t for _lv, t in out), str((round(took, 1), len(out))), 'an outline of the London space of 160 000 vertices (8 rings of 20 000) and 400 high directs: the check is bounded by the work (a few directs are examined, the others said « not decided: outlines too heavy » in ONE review), not by the product — 0.9 s here instead of about 32 s (and minutes with the 1 500 000 vertices that `spaces` allows; review of Security)')
