@@ -906,6 +906,8 @@
           how: 'hand',
           from: null,
           to: null,
+          tier: null,
+          distNm: null,
           source: ''
         }
       }
@@ -1752,7 +1754,7 @@
     }), ...every5(60).slice(5)];
   ck('landing, holding : un relevé en l\'air au milieu remet la tenue à zéro ; un écart de 12 s avec maxGapSec 10 aussi ; un écart de 10 s exactement tient',
     play(LAND, air).n === 11 && play(LAND, gap).n === 9 && play(LAND, [dn(0), dn(10), dn(20), dn(30)]).n === 3, [play(LAND, air), play(LAND, gap)]);
-  ck('landing, holding : « au sol » inconnu ou absent ne compte jamais ; une vitesse au-dessus de speedMaxKt ou inconnue remet à zéro ; un relevé hors rayon (445 m pour 300 m) aussi',
+  ck('landing, holding : « au sol » inconnu ou absent ne compte jamais ; une vitesse au-dessus de speedMaxKt ou inconnue remet à zéro ; un relevé hors du rayon du terrain (2 224 m pour 1 NM = 1 852 m) aussi',
     play(LAND, every5(60, {
       onGround: null
     })).first === null && play(LAND, every5(60, {
@@ -1762,9 +1764,9 @@
     })).first === null && play(LAND, every5(60, {
       gsKt: undefined
     })).first === null && play(LAND, every5(60, {
-      lat: 45.004
+      lat: 45.02
     })).first === null && play(LAND, [...every5(15), dn(20, {
-      lat: 45.004
+      lat: 45.02
     }), ...every5(60).slice(5)]).n === 11);
   const noThrow = (...a) => {
     try {
@@ -2549,9 +2551,9 @@
     D.follows(S_LOH) && D.follows(seq(LAND)) && D.follows(seq(...Array.from({
       length: 10
     }, () => OV))));
-  ck('suite, follows : un survol à confirmer, une étape illisible (rayon nul), 0 étape, 11 étapes, une suite dans une suite, une étape d\'un autre genre, des étapes absentes → non',
+  ck('suite, follows : un survol à confirmer, une étape illisible (durée nulle), 0 étape, 11 étapes, une suite dans une suite, une étape d\'un autre genre, des étapes absentes → non',
     !D.follows(seq(L10, OVC)) && !D.follows(seq(L10, land({
-      radiusM: 0
+      durationSec: 0
     }))) && !D.follows(seq()) && !D.follows(seq(...Array.from({
       length: 11
     }, () => OV))) && !D.follows({
@@ -2810,6 +2812,384 @@
       to: e5.steps[0].to,
       at: T0
     }).drawer_B.steps === undefined);
+
+
+  // ---- SOG-0507 : les tolérances de l'utilisateur (l'utilisateur, 19/11) — chaque seuil, juste dedans et juste dehors ; elles remplacent
+  // le rayon du fichier (le rayon du fichier prend ici des valeurs qui ne peuvent PAS donner le même résultat : 0,2 ou 3 NM, 10 m ou 5 000 m).
+  const NM = 1 / (3440.065 * Math.PI / 180), // un mille marin en degrés de latitude (le rayon de la Terre du cadre, geo.js R_NM)
+    // un relevé posé à ce nombre de NM au sud du point (45,0 ; 1,0), à ce nombre de secondes après le décollage
+    ds = (nm, sec, more = {}) => ({
+      lat: 45.0 - nm * NM,
+      lon: 1.0,
+      at: iso(T0 + sec * 1000),
+      altFt: 0,
+      onGround: true,
+      gsKt: 1,
+      ...more
+    }),
+    // la tenue de 30 s par relevés de 5 s à cette distance du point
+    hold30 = (key, nm, more) => play(key, Array.from({
+      length: 7
+    }, (_, i) => ds(nm, i * 5, more))).first,
+    PT = key => land({
+      point: 'PT1',
+      ...key
+    });
+  ck('tierOf : les bornes sont COMPRISES — 0,05 excellent, 0,0501 parfait ; 0,1 parfait, 0,1001 réussi ; 0,2 réussi, 0,2001 partiel ; 0,5 partiel, 0,5001 manqué',
+    [D.tierOf(0), D.tierOf(0.05), D.tierOf(0.0501), D.tierOf(0.1), D.tierOf(0.1001), D.tierOf(0.2), D.tierOf(0.2001), D.tierOf(0.5), D.tierOf(
+      0.5001)].join() === 'excellent,excellent,parfait,parfait,réussi,réussi,partiel,partiel,', [D.tierOf(0.05), D.tierOf(0.0501)]);
+  ck('tierOf : NaN, une distance négative, undefined, l\'infini, un texte ou null → aucun palier ; PRECISION et TIERS : quatre paliers du meilleur au plus large, la liste figée',
+    [NaN, -1, undefined, Infinity, -Infinity, '0.1', null, {}].every(v => D.tierOf(v) === '') && D.TIERS.join() === 'excellent,parfait,réussi,partiel' &&
+    D.PRECISION.map(p => `${p.tier}:${p.nm}`).join() === 'excellent:0.05,parfait:0.1,réussi:0.2,partiel:0.5' && Object.isFrozen(D.PRECISION) &&
+    D.PRECISION.every(Object.isFrozen) && D.TRANSIT_NM === 2 && D.AD_NM === 1);
+
+  // l'escale requise : 2 NM, quel que soit le rayon de l'arrivée du fichier (0,5 ou 5 NM)
+  const stopAt = (nm, radiusNm) => D.finding({
+    ...ARR,
+    radiusNm,
+    required: [{
+      id: 'PT2',
+      lat: 44.5,
+      lon: 1.5
+    }]
+  }, null, landed, {
+    trail: {
+      from: iso(T0),
+      trail: [
+        [44.5 + nm * NM, 1.5, 2000, 600]
+      ]
+    }
+  });
+  ck('escale requise : approchée à 1,99 NM → faite, à 2,01 NM → non, avec un rayon d\'arrivée du fichier de 0,5 NM comme de 5 NM (le fichier n\'a plus la main)',
+    [0.5, 5].every(r => stopAt(1.99, r)?.how === 'arrival' && stopAt(2.01, r) === null), [stopAt(1.99, 0.5), stopAt(2.01, 0.5), stopAt(1.99, 5), stopAt(
+      2.01, 5)]);
+
+  // l'arrivée posée sur un terrain : 1 NM, quel que soit le rayon du fichier (0,2 ou 3 NM), pour finding, stands et catchUp
+  const arrAt = (nm, radiusNm, more = {}) => ({
+      key: {
+        ...ARR,
+        radiusNm,
+        ...more
+      },
+      fix: ds(nm, 50, {
+        gsKt: 10
+      })
+    }),
+    arrFound = (nm, r) => {
+      const a = arrAt(nm, r);
+      return D.finding(a.key, null, a.fix)?.how === 'arrival';
+    },
+    arrStands = (nm, r) => {
+      const a = arrAt(nm, r);
+      return D.stands({
+        how: 'arrival',
+        from: a.fix,
+        to: a.fix
+      }, a.key);
+    },
+    arrCaught = (nm, r) => D.catchUp({
+      ...ARR,
+      radiusNm: r,
+      speedMaxKt: null
+    }, {
+      from: iso(T0),
+      trail: [
+        [45.0 - nm * NM, 1.0, 0, 600, 0, 1]
+      ]
+    })?.how === 'arrival';
+  ck('arrivée posée (finding) : à 0,99 NM dans la zone, à 1,01 NM non, avec un rayon du fichier de 0,2 NM comme de 3 NM',
+    [0.2, 3].every(r => arrFound(0.99, r) && !arrFound(1.01, r)), [arrFound(0.99, 0.2), arrFound(1.01, 0.2), arrFound(0.99, 3), arrFound(1.01, 3)]);
+  ck('arrivée posée (stands, le rejeu chez le lecteur) : à 0,99 NM tient, à 1,01 NM non, rayon du fichier 0,2 ou 3 NM',
+    [0.2, 3].every(r => arrStands(0.99, r) && !arrStands(1.01, r)));
+  ck('arrivée posée (catchUp, la trace gardée) : à 0,99 NM rattrapée, à 1,01 NM non, rayon du fichier 0,2 ou 3 NM ; la vitesse et le sol restent la règle de la clé (trop vite : rien)',
+    [0.2, 3].every(r => arrCaught(0.99, r) && !arrCaught(1.01, r)) && D.finding({
+      ...ARR,
+      radiusNm: 3
+    }, null, ds(0.5, 50, {
+      gsKt: 80
+    })) === null);
+
+  // le posé de précision : des paliers, « posé » à 0,5 NM au plus ; radiusM du fichier ignoré
+  const t15 = [10, 5000].map(radiusM => hold30(PT({
+    radiusM
+  }), 0.15));
+  ck('posé de précision : tenu à 0,15 NM → un constat « landing » avec tier « réussi » et distNm 0,15, radiusM du fichier ignoré (10 m comme 5 000 m : le même)',
+    t15.every(f => f?.how === 'landing' && f.tier === 'réussi' && f.distNm === 0.15) && JSON.stringify(t15[0]) === JSON.stringify(t15[1]), t15);
+  ck('posé de précision : à 0,04 NM excellent, 0,09 parfait, 0,15 réussi, 0,3 partiel ; à 0,49 NM tenu, à 0,51 NM rien — radiusM de 5 000 m ou de 10 m, même résultat',
+    [0.04, 0.09, 0.15, 0.3].map(nm => hold30(PT({
+      radiusM: 10
+    }), nm)?.tier).join() === 'excellent,parfait,réussi,partiel' && [10, 5000].every(radiusM => hold30(PT({
+      radiusM
+    }), 0.49)?.tier === 'partiel' && hold30(PT({
+      radiusM
+    }), 0.51) === null));
+  ck('posé de précision : le constat porte la distance du relevé `to` arrondie au millième de NM (0,1234 → 0,123, « réussi »)',
+    hold30(PT({}), 0.1234)?.distNm === 0.123 && hold30(PT({}), 0.1234)?.tier === 'réussi' && hold30(PT({}), 0.1999)?.tier === 'réussi' && hold30(PT({}), 0.2001)?.tier === 'partiel');
+  // sur un terrain de la route : 1 NM, sans palier
+  const fieldOk = ['DESTINATION', 'ORIGIN'].map(point => [10, 5000].map(radiusM => hold30(land({
+    point,
+    radiusM
+  }), 0.9))).flat();
+  ck('posé sur un terrain de la route (DESTINATION, ORIGIN) : tenu à 0,9 NM sans palier, à 1,1 NM rien, radiusM du fichier ignoré',
+    fieldOk.every(f => f?.how === 'landing' && f.tier === undefined && f.distNm === undefined) && ['DESTINATION', 'ORIGIN'].every(point => hold30(land({
+      point,
+      radiusM: 5000
+    }), 1.1) === null && hold30(land({
+      point,
+      radiusM: 10
+    }), 1.1) === null), fieldOk);
+  ck('posé de précision : le point visé peut être un objet immobile (même règle des paliers) ; stands rejoue sur la règle du lecteur (0,15 tient, 0,51 non ; au terrain 0,9 tient, 1,1 non)',
+    hold30(land({
+      at: null,
+      point: null,
+      object: {
+        lat: 45.0,
+        lon: 1.0,
+        moving: false
+      }
+    }), 0.15)?.tier === 'réussi' && D.stands({
+      how: 'landing',
+      from: ds(0.15, 0),
+      to: ds(0.15, 30)
+    }, PT({})) && !D.stands({
+      how: 'landing',
+      from: ds(0.51, 0),
+      to: ds(0.51, 30)
+    }, PT({})) && D.stands({
+      how: 'landing',
+      from: ds(0.9, 0),
+      to: ds(0.9, 30)
+    }, land({
+      point: 'DESTINATION'
+    })) && !D.stands({
+      how: 'landing',
+      from: ds(1.1, 0),
+      to: ds(1.1, 30)
+    }, land({
+      point: 'DESTINATION'
+    })));
+  ck('stationnaire, survol : gardent le rayon de l auteur — un stationnaire à 0,15 NM avec un rayon de 30 m : pas tenu, avec 1 000 m (0,54 NM) à 0,5 NM : tenu ; un survol à 0,7 NM avec un rayon de 0,5 NM : non (sous la tolérance du terrain, 1 NM), avec 3 NM à 2 NM : oui',
+    D.holding(hov({
+      point: 'PT1',
+      radiusM: 30
+    }), null, hv(0, {
+      lat: 45.0 - 0.15 * NM
+    })).hold === null && D.holding(hov({
+      point: 'PT1',
+      radiusM: 1000
+    }), null, hv(0, {
+      lat: 45.0 - 0.5 * NM
+    })).hold !== null && D.finding(over({
+      radiusNm: 0.5
+    }), null, ovx(0, 45.0 - 0.7 * NM, 1000)) === null && D.finding(over({
+      radiusNm: 3
+    }), null, ovx(0, 45.0 - 2 * NM, 1000))?.how === 'overflight');
+
+  // le carnet : tier et distNm écrits, relus bornés ; un tier hostile et un distNm de 99 ignorés ; un ancien constat reste lisible
+  const lf15 = hold30(PT({}), 0.15),
+    tdoc = D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'landing', {
+      from: lf15.from,
+      to: lf15.to,
+      at: lf15.at,
+      tier: lf15.tier,
+      distNm: lf15.distNm
+    }),
+    tbook = D.readBook(tdoc, ID),
+    hdoc = bad => D.readBook({
+      schema: 1,
+      mission: ID,
+      seance: sc.key,
+      drawer_B: {
+        state: 'open',
+        at: iso(T0 + 31e3),
+        how: 'landing',
+        from: lf15.from,
+        to: lf15.to,
+        ...bad
+      }
+    }, ID)?.drawers?.B,
+    oldDoc = D.readBook({
+      schema: 1,
+      mission: ID,
+      seance: sc.key,
+      drawer_B: {
+        state: 'open',
+        at: iso(T0 + 31e3),
+        how: 'landing',
+        from: lf15.from,
+        to: lf15.to
+      }
+    }, ID)?.drawers?.B;
+  ck('carnet : un constat de précision s\'écrit avec tier et distNm et se relit (« réussi », 0,15) ; un constat d\'un autre genre n\'en écrit pas',
+    tdoc?.drawer_B?.tier === 'réussi' && tdoc.drawer_B.distNm === 0.15 && tbook.drawers.B.tier === 'réussi' && tbook.drawers.B.distNm === 0.15 &&
+    D.withOpen(null, ctx(T0), 'B', 'zone', {
+      from: lf15.from,
+      to: lf15.to,
+      at: T0,
+      tier: 'réussi',
+      distNm: 0.1
+    }).drawer_B.tier === undefined, [tdoc, tbook]);
+  ck('carnet : un tier hostile (hors TIERS, un texte, un objet) et un distNm hors bornes (99, -1, NaN, 0,5001, un texte) sont ignorés → null ; les valeurs bornées (0 et 0,5) sont gardées ; un ancien constat sans palier reste lisible',
+    ['nuke', '<b>réussi</b>', {}, ['réussi'], 'toString', 7].every(t => hdoc({
+      tier: t
+    })?.tier === null) && [99, -1, NaN, 0.5001, '0.1', {}, null, Infinity].every(d => hdoc({
+      distNm: d
+    })?.distNm === null) && hdoc({
+      distNm: 0
+    })?.distNm === 0 && hdoc({
+      distNm: 0.5
+    })?.distNm === 0.5 && hdoc({
+      tier: 'partiel'
+    })?.tier === 'partiel' && oldDoc?.how === 'landing' && oldDoc.tier === null && oldDoc.distNm === null, [hdoc({
+      tier: 'nuke',
+      distNm: 99
+    }), oldDoc]);
+  ck('carnet : withOpen ne garde pas un tier ou un distNm hostile passé en argument (rien d\'écrit)', (() => {
+    const d = D.withOpen(null, ctx(T0), 'B', 'landing', {
+      from: lf15.from,
+      to: lf15.to,
+      at: T0,
+      tier: 'nuke',
+      distNm: 99
+    }).drawer_B;
+    return d.tier === undefined && d.distNm === undefined;
+  })());
+
+  // replayTier : le palier recalculé chez le lecteur, jamais celui qu'un autre a écrit
+  const rt = (e, key) => D.replayTier(e, key);
+  ck('replayTier : recalcule le palier de `to` sur la clé du lecteur et ignore le tier écrit ; rien au terrain, au-delà de 0,5 NM, ni sur une entrée illisible',
+    rt({
+      to: lf15.to,
+      tier: 'excellent',
+      distNm: 0.001
+    }, PT({})) === 'réussi' && rt({
+      to: ds(0.04, 30),
+      tier: 'partiel'
+    }, PT({})) === 'excellent' && rt({
+      to: lf15.to
+    }, land({
+      point: 'DESTINATION'
+    })) === '' && rt({
+      to: ds(0.51, 30)
+    }, PT({})) === '' && [null, undefined, {}, 'x', {
+      to: null
+    }, {
+      to: {
+        lat: 'x'
+      }
+    }].every(e => rt(e, PT({})) === '') && rt({
+      to: lf15.to
+    }, null) === '' && rt({
+      to: lf15.to
+    }, ARR) === '');
+  // le palier d'un autre chez AAA : recalculé de son relevé, pas celui qu'il a écrit ; le mien aussi
+  const lyingPeer = peer('B', T0 + 30e3, 'landing', {
+      from: lf15.from,
+      to: lf15.to,
+      tier: 'excellent',
+      distNm: 0.001
+    }),
+    lyS = st({
+      drawers: [{
+        id: 'B',
+        title: 'Posé',
+        key: PT({})
+      }],
+      others: [
+        ['BBB', lyingPeer]
+      ],
+      now: T0 + 41 * MIN
+    })[0],
+    myS = st({
+      drawers: [{
+        id: 'B',
+        title: 'Posé',
+        key: PT({})
+      }],
+      doc: tdoc,
+      now: T0 + 41 * MIN
+    })[0],
+    fieldS = st({
+      drawers: [{
+        id: 'B',
+        title: 'Posé',
+        key: land({
+          point: 'DESTINATION'
+        })
+      }],
+      others: [
+        ['BBB', lyingPeer]
+      ],
+      now: T0 + 41 * MIN
+    })[0],
+    oldS = st({
+      drawers: [{
+        id: 'B',
+        title: 'Posé',
+        key: PT({})
+      }],
+      others: [
+        ['BBB', peer('B', T0 + 30e3, 'landing', {
+          from: lf15.from,
+          to: lf15.to
+        })]
+      ],
+      now: T0 + 41 * MIN
+    })[0];
+  ck('état d\'un tiroir « atterrissage » : tier et distNm RECALCULÉS chez le lecteur (le constat de BBB écrit « excellent » à 0,001 : on lit « réussi », 0,15) ; le mien de même ; au terrain et pour un ancien constat : aucun',
+    lyS.open && lyS.tier === 'réussi' && lyS.distNm === 0.15 && myS.open && myS.tier === 'réussi' && myS.distNm === 0.15 && fieldS.open && fieldS.tier === null &&
+    fieldS.distNm === null && oldS.open && oldS.tier === 'réussi' && by(st({
+      drawers: [{
+        id: 'B',
+        key: {
+          kind: 'hand'
+        }
+      }]
+    }), 'B').tier === null, [lyS, myS, fieldS, oldS]);
+
+  // une suite : la preuve de l'étape « atterrissage » de précision porte son palier ; le terrain n'en a pas ; le carnet la garde
+  const seqL = seq(PT({})),
+    seqLand = (nm, key = seqL) => {
+      let state = null,
+        res = null;
+      Array.from({
+        length: 7
+      }, (_, i) => ds(nm, i * 5)).forEach((x, i, a) => {
+        const r = D.stepping(key, state, a[i - 1] || null, x);
+        state = r.state;
+        res = res || r.f;
+      });
+      return res;
+    },
+    sq = seqLand(0.15),
+    sqField = seqLand(0.9, seq(land({
+      point: 'DESTINATION'
+    }))),
+    sdoc = sq ? D.withOpen(null, ctx(T0 + 40 * MIN), 'B', 'sequence', {
+      from: sq.from,
+      to: sq.to,
+      at: sq.at,
+      steps: sq.steps
+    }) : null,
+    sread = sdoc ? D.readBook(sdoc, ID)?.drawers?.B : null;
+  ck('suite : la preuve d\'une étape « atterrissage » de précision porte tier et distNm (0,15 → « réussi ») ; une étape au terrain (0,9 NM) tient sans palier ; le carnet les écrit et les relit bornés',
+    sq?.how === 'sequence' && sq.steps[0].tier === 'réussi' && sq.steps[0].distNm === 0.15 && sqField?.how === 'sequence' && sqField.steps[0].tier === null &&
+    sqField.steps[0].distNm === null && sdoc?.drawer_B?.steps?.[0]?.tier === 'réussi' && sdoc.drawer_B.steps[0].distNm === 0.15 && sread?.steps?.[0]?.tier ===
+    'réussi' && sread.steps[0].distNm === 0.15 && seqLand(0.51) === null, [sq, sqField, sread]);
+  ck('suite : la preuve rejouée chez le lecteur (stands) sur la clé d\'étape à la règle de précision ; replayTier d\'une preuve sur stepKey(règle) rend son palier recalculé ; un tier hostile dans une preuve lue → null',
+    sq && D.stands(sread, seqL) && D.replayTier(sread.steps[0], D.stepKey(PT({}).rule)) === 'réussi' && D.readBook({
+      schema: 1,
+      mission: ID,
+      seance: sc.key,
+      drawer_B: {
+        ...sdoc.drawer_B,
+        steps: [{
+          ...sdoc.drawer_B.steps[0],
+          tier: 'nuke',
+          distNm: 99
+        }]
+      }
+    }, ID).drawers.B.steps[0].tier === null, sread);
 
 
   window.__bench = {

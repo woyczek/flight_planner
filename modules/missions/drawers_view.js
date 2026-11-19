@@ -24,6 +24,8 @@
 //   describe(tt, state, drawer, { live, notJudged, inRange }) → { key, note, how, follow } : les phrases d'un tiroir (la clé d'un tiroir fermé, la note
 //   « pas encore jugé en vol » ou « sans position en direct », comment et quand il s'est ouvert) — pur : l'aperçu de l'éditeur peut
 //   s'en servir pour dire la même chose que l'écran du pilote. TX : les textes, quatre langues.
+//   Un posé de PRÉCISION (SOG-0507) dit son palier (excellent, parfait, réussi, partiel) et sa distance en NM, deux décimales, séparateur
+//   de la langue (TX.decSep) ; un atterrissage au terrain ou un ancien constat garde la phrase sans palier.
 //   sees(id, mission) → ce que la fiche et son Détail montrent de cette mission (SOG-0448) : pilotView du lecteur, avec les tiroirs
 //   que la section posée sait ouverts — rien d'ouvert tant qu'elle n'a pas lu, la partie visible seule pour une mission qui n'est pas
 //   la mienne. show() reçoit `changed` : rappelé quand ce que sees() a rendu n'est plus à jour (un tiroir s'ouvre) — la fiche se redessine.
@@ -118,6 +120,21 @@ export const TX = {
     'bei der Landung von {by} geöffnet um {t}',
     'abierto al aterrizaje de {by}, a las {t}'
   ],
+  // un posé de PRÉCISION (SOG-0507) : le palier et la distance au point visé ; sans palier connu (terrain, ancien constat), les phrases
+  // d'avant. Les mots des paliers sont ceux de drawers.js (TIERS) : des identifiants de données, dits ici dans les quatre langues.
+  openLandingTierMe: ['ouvert à votre atterrissage — {tier} ({d} NM), à {t}', 'opened on your landing — {tier} ({d} NM), at {t}',
+    'bei Ihrer Landung geöffnet — {tier} ({d} NM) um {t}', 'abierto a su aterrizaje — {tier} ({d} NM), a las {t}'
+  ],
+  openLandingTierBy: ['ouvert à l\'atterrissage de {by} — {tier} ({d} NM), à {t}', 'opened when {by} landed — {tier} ({d} NM), at {t}',
+    'bei der Landung von {by} geöffnet — {tier} ({d} NM) um {t}', 'abierto al aterrizaje de {by} — {tier} ({d} NM), a las {t}'
+  ],
+  tier: {
+    excellent: ['excellent', 'excellent', 'ausgezeichnet', 'excelente'],
+    parfait: ['parfait', 'perfect', 'perfekt', 'perfecto'],
+    réussi: ['réussi', 'good', 'gelungen', 'logrado'],
+    partiel: ['partiel', 'partial', 'teilweise', 'parcial']
+  },
+  decSep: [',', '.', ',', ','], // le séparateur décimal de la langue (une distance s'écrit avec deux décimales)
   // la condition « survol » de l'atelier (SOG-0500, lot 2) : jamais le lieu, comme l'atterrissage
   keyOverflight: ['s\'ouvre au survol', 'opens on overflight', 'öffnet sich beim Überflug', 'se abre al sobrevolar'],
   openOverflightMe: ['ouvert à votre survol, à {t}', 'opened on your overflight, at {t}', 'bei Ihrem Überflug geöffnet um {t}',
@@ -561,6 +578,8 @@ async function record(v, id, f, source) {
       to: f.to,
       at: f.at,
       steps: f.steps,
+      tier: f.tier, // le palier et la distance d'un posé de précision (SOG-0507) : relus bornés par withOpen
+      distNm: f.distNm,
       source: f.source || source
     });
     if (!next || !await put(v, v.myPath, next) || V !== v) return;
@@ -654,7 +673,9 @@ function hPlus(tt, min) {
 
 /** Les phrases d'un tiroir (voir l'en-tête) : key — la clé d'un tiroir fermé ; note — pourquoi l'heure de repli ou le geste le concernent
  *  (« pas encore jugé en vol », « sans position en direct »), '' quand la clé joue sur cet appareil ; how — comment et quand il s'est
- *  ouvert ('' fermé). live : l'appareil a une position en direct ; notJudged(key) : la règle du lecteur (frame/lib/mission.js). */
+ *  ouvert ('' fermé) — pour un posé de précision, le PALIER et la distance au point visé (SOG-0507 : `state.tier` et `state.distNm`,
+ *  recalculés par drawers.js chez le lecteur, jamais le palier écrit par l'autre ; sans palier, la phrase d'avant). live : l'appareil a
+ *  une position en direct ; notJudged(key) : la règle du lecteur (frame/lib/mission.js). */
 export function describe(tt, s, d, {
   live = false,
   notJudged,
@@ -717,9 +738,15 @@ export function describe(tt, s, d, {
         s.mine ? TX.openSequenceMe : TX
         .openSequenceBy) :
       s.mine ? TX.openHandMe : TX.openHandBy;
-    how = tt(row, {
+    const tierRow = s.how === 'landing' && typeof s.tier === 'string' && Object.hasOwn(TX.tier, s.tier) && Number.isFinite(s.distNm) ? (s
+      .mine ? TX.openLandingTierMe : TX.openLandingTierBy) : null;
+    how = tt(tierRow || row, {
       t: fmtZ(new Date(other && Number.isFinite(s.srcAt) ? s.srcAt : s.at)),
-      by: s.by || ''
+      by: s.by || '',
+      ...(tierRow ? {
+        tier: tt(TX.tier[s.tier]),
+        d: s.distNm.toFixed(2).replace('.', tt(TX.decSep)) // deux décimales, le séparateur de la langue
+      } : {})
     });
   }
   return {

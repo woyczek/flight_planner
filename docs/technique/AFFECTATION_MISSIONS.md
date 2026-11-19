@@ -690,6 +690,40 @@ conditions already judged alone — nothing of them was copied.
   hostile `steps`; two older checks that said « a sequence is not judged » now say it of an empty one and of `event`) and N81 (110, 3 new:
   the texts, a sequence done in flight, the same steps out of order). The event (lot 3) still waits for the ergonomist.
 
+### 11.10 Tolerances of the user (SOG-0507)
+
+The user's figures (19 Nov 2026) REPLACE the radius written in the mission file, only where he set them. Everything is in `drawers.js`
+(`mission.js`, `crossing.js`, `module.js` and the editor are not touched).
+
+- **Constants (exported).** `TRANSIT_NM = 2`, `AD_NM = 1`, `PRECISION = [{ tier: 'excellent', nm: 0.05 }, { tier: 'parfait', nm: 0.1 },
+  { tier: 'réussi', nm: 0.2 }, { tier: 'partiel', nm: 0.5 }]` (frozen), `TIERS = ['excellent', 'parfait', 'réussi', 'partiel']`.
+  `tierOf(distNm)` returns the tier, or `''` beyond 0.5 NM, for a non-finite or negative distance and for anything but a number. The bounds
+  are INCLUDED: exactly 0.2 NM is `réussi`. The tier words are data identifiers; their text is translated in the view.
+- **Required stopover: 2 NM.** `stopsDone` reaches each `key.required` point at `TRANSIT_NM`, not at the arrival's `radiusNm`.
+- **Arrival on an airfield: 1 NM.** Every `kind: 'arrival'` key is judged `{ ...key, radiusNm: AD_NM }` (`adKey`) in `finding`, `stands` and
+  `catchUp`; speed and ground stay the key's rules.
+- **Precision landing: tiers.** `landSpec` no longer reads `radiusM`: its `radiusNm` is the last tier (0.5 NM), so `isDown` counts the fix as
+  down from `partiel`; its new field `tiered` is true off an airfield. When the target is an airfield of the route (`rule.point` is `ORIGIN` or
+  `DESTINATION`) the radius is `AD_NM`, `tiered` is false and nothing carries a tier. `holding`, `standsHeld` and the steps of a sequence
+  (`stepKey`) use `landSpec`, so all follow. The hover, the overflight, the object and the zone keep the author's radius. A polygon has no
+  position: no tier.
+- **The finding and the record.** The finding of a tiered landing carries `tier` and `distNm` (distance of the fix `to` to the target,
+  taken from `arrived().distNm`, rounded to 0.001 NM); in a sequence the proof of a landing step carries them too. `withOpen` / `docOf` write
+  them when they exist; `entryOf` / `proofOf` read them bounded (`tier` in `TIERS`, `distNm` a finite number from 0 to 0.5) and give `null`
+  for anything else; an old finding without tier reads as before.
+- **At the reader's.** `stands` replays a landing on the READER's key at the tier radius. The tier shown is the one the reader recomputes
+  from `e.to` (`replayTier(e, key)`, exported; `state.tier` and `state.distNm` of `stateOf`), never the `tier` another pilot wrote.
+- **View.** `openLandingTierMe` / `openLandingTierBy` say the tier and the distance (« ouvert à votre atterrissage — réussi (0,15 NM), à … »;
+  two decimals, the language's separator through `TX.decSep`); without a known tier the earlier sentences stay. `record` passes `tier` and
+  `distNm` on to `withOpen`.
+- **Not used yet.** The tier only serves the drawer's line and the finding (Q-0117).
+- **Cases.** N80 (162 checks, 19 new: every threshold just inside and just outside — `tierOf`, the stopover at 1.99 / 2.01 NM with a file
+  radius of 0.5 or 5 NM, the arrival at 0.99 / 1.01 NM with a file radius of 0.2 or 3 NM for `finding`, `stands` and `catchUp`, the landing
+  at 0.15 / 0.51 NM with `radiusM` 10 m or 5 000 m, the airfield at 0.9 / 1.1 NM, the record bounds, `replayTier`, the sequence proof) and N81
+  (114, 4 new: the line in French, English, German, Spanish, without a tier, and end to end). Three older checks changed to follow the rule:
+  the hostile record (entries now carry `tier: null, distNm: null`), the landing « fix outside the radius » (445 m for 300 m became 2 224 m
+  for the airfield's 1 NM) and the sequence « unreadable step » (a zero `radiusM` is no longer read: a zero `durationSec` instead).
+
 ## 12. Assigning a mission from V3 (SOG-0443)
 
 The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with
