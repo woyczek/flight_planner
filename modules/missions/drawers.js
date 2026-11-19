@@ -59,6 +59,9 @@
 //     others : [{ pilot, book }] (les carnets des autres, déjà passés par readBook) ; seen : readSeen(…) ; passage(pointId) → minutes
 //     estimées du départ à ce lieu (un nombre, ou { min }), null si inconnu ; crosses({ from, to }, key) → vrai si ce trajet coupe la
 //     forme de la clé (par défaut : stands, le rejeu par le service du cadre — un constat sans relevé ne tient pas).
+//     lands : [{ at, tier, distNm, by, mine }] (SOG-0516, lot B) les posés de précision JUGÉS de ce tiroir ouvert — les miens et ceux des équipiers, le
+//       palier RECALCULÉ chez le lecteur, une preuve qui ne tient pas sur sa clé (stands) absente ; [] sinon.
+//   debriefOf(states) → [{ rank, how: 'landing', tier, distNm, at, by, mine }] : le débrief de la mission, une ligne par posé de précision jugé (voir plus bas).
 //   follows(key) → vrai si la clé se juge avec une position en direct ; finding(key, prev, next, { trail }) → le constat d'un trajet,
 //     ou null (jamais pour une tenue — atterrissage, stationnaire : holding(key, hold, fix) → { hold, f }, SOG-0500, tient l'état d'une tenue posée) ; stands(entry, key) → le constat d'un carnet tient-il sur cette clé ; catchUp(key, trail, since) → le constat retrouvé sur
 //     la trace gardée (le rattrapage au retour de la page). Un SURVOL (SOG-0500, lot 2) se juge sans état : finding rend le constat
@@ -807,6 +810,75 @@ export function asked(states, options = null) {
   }
 }
 
+/** Les posés de précision JUGÉS d'un constat (SOG-0516, lot B) : [{ at, tier, distNm }], le palier RECALCULÉ de chaque relevé sur la règle
+ *  du LECTEUR (landTier), jamais le palier écrit. Une preuve qui ne tient pas sur la clé du lecteur (stands) n'en donne aucun ; un posé
+ *  au terrain ou au-delà du dernier palier non plus. Un constat « landing » donne une ligne ; une suite, une par étape atterrissage, avec
+ *  l'heure de l'étape. Ne lève jamais. */
+function landLines(e, key) {
+  try {
+    if (!e || !e.to || !stands(e, key)) return [];
+    if (e.how === 'landing') {
+      const r = landTier(landOf(key), e.to);
+      return r.tier ? [{
+        at: e.at,
+        tier: r.tier,
+        distNm: r.distNm
+      }] : [];
+    }
+    if (e.how !== 'sequence') return [];
+    const keys = seqOf(key),
+      out = [];
+    (e.steps || []).forEach((p, j) => {
+      const r = p && p.how === 'landing' && keys ? landTier(landOf(keys[j]), p.to) : null;
+      if (r && r.tier) out.push({
+        at: p.at,
+        tier: r.tier,
+        distNm: r.distNm
+      });
+    });
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+/** Le DÉBRIEF de MA mission (SOG-0516, lot B) : une ligne par posé de PRÉCISION jugé, les miens et ceux des équipiers, d'après les états
+ *  de stateOf (qui portent `lands`, le palier recalculé chez le lecteur) → [{ rank, how: 'landing', tier, distNm, at, by, mine }], dans
+ *  l'ordre de `at` (puis du rang). rank : la place du tiroir dans la suite (1 pour le premier). Un posé au terrain, une autre condition,
+ *  un tiroir fermé : aucune ligne ; jamais un lieu ni un identifiant de point. Pure ; ne lève jamais (une entrée hostile est omise). */
+export function debriefOf(states) {
+  const out = [];
+  try {
+    (Array.isArray(states) ? states : []).slice(0, LETTERS.length).forEach((s, i) => {
+      try {
+        const lands = s && s.open === true ? own(s, 'lands') : null;
+        for (const l of (Array.isArray(lands) ? lands : []).slice(0, SEQ_MAX * 8)) {
+          const tier = own(l, 'tier'),
+            distNm = own(l, 'distNm'),
+            at = own(l, 'at'),
+            by = own(l, 'by');
+          if (typeof tier === 'string' && TIERS.includes(tier) && typeof distNm === 'number' && Number.isFinite(distNm) && distNm >=
+            0 &&
+            distNm <= PRECISION[PRECISION.length - 1].nm && typeof at === 'number' && Number.isFinite(at)) out.push({
+            rank: i + 1,
+            how: 'landing',
+            tier,
+            distNm,
+            at,
+            by: typeof by === 'string' ? by : '',
+            mine: own(l, 'mine') === true
+          });
+        }
+      } catch {
+        /* une entrée hostile : omise */
+      }
+    });
+    return out.sort((a, b) => a.at - b.at || a.rank - b.rank).slice(0, 200);
+  } catch {
+    return [];
+  }
+}
+
 /** L'état de chaque tiroir pour ce pilote à cet instant (voir l'en-tête). */
 export function stateOf(drawers, {
   me,
@@ -881,7 +953,9 @@ export function stateOf(drawers, {
       how: my.how,
       at: my.at,
       by: tri || null,
-      to: my.to
+      to: my.to,
+      from: my.from,
+      steps: my.steps
     });
     // les carnets des autres : une entrée non fiable
     const said = new Set();
@@ -912,7 +986,9 @@ export function stateOf(drawers, {
           how: e.how,
           at: e.at,
           by: o.pilot,
-          to: e.to
+          to: e.to,
+          from: e.from,
+          steps: e.steps
         });
       }
     }
@@ -963,6 +1039,12 @@ export function stateOf(drawers, {
       tier: land && land.tier ? land.tier :
       null, // le palier d'un posé de précision, recalculé ici ; null sans palier (terrain, autre clé)
       distNm: land && land.tier ? land.distNm : null,
+      lands: w ? found.flatMap(c => landLines(c, key).map(l =>
+        ({ // les posés jugés de ce tiroir, les miens et ceux des équipiers (SOG-0516, lot B)
+          ...l,
+          by: c.by || null,
+          mine: !!tri && c.by === tri
+        }))) : [],
       hands,
       refused
     });

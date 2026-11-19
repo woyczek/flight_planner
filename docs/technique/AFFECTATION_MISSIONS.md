@@ -725,6 +725,28 @@ The user's figures (19 Nov 2026) REPLACE the radius written in the mission file,
   the hostile record (entries now carry `tier: null, distNm: null`), the landing « fix outside the radius » (445 m for 300 m became 2 224 m
   for the airfield's 1 NM) and the sequence « unreadable step » (a zero `radiusM` is no longer read: a zero `durationSec` instead).
 
+### 11.11 Debrief (SOG-0516, lot B)
+
+A block « Débrief » in the sheet of MY mission: one line per precision landing judged, mine and the crew mates'. Nothing is written; it
+reads what the section already computes (`drawers.js`, `drawers_view.js`; `frame/lib/precision.js` is imported, not touched).
+
+- **The datum.** `debriefOf(states)` takes the states of `stateOf` and returns `[{ rank, how: 'landing', tier, distNm, at, by, mine }]`:
+  `rank` is the place of the drawer in the suite (1 for the first), `at` the hour of the fact, `by` the trigram, `mine` true for my own
+  landing. Ordered by `at` (then rank). A landing on an airfield (no tier), a drawer opened by hand, another condition, a closed drawer:
+  no line. Never a place, never a point identifier, no score. Pure; it never throws (a hostile entry is left out: a tier outside `TIERS`,
+  a distance outside 0 to 0.5, an unreadable hour).
+- **The proofs.** `stateOf` now gives each open drawer `lands: [{ at, tier, distNm, by, mine }]`, from every opening kept for it (mine and
+  the crew mates', never one under a lock): a landing finding gives one line, a sequence gives one per landing step with the hour of the
+  step. The tier is RECOMPUTED on the reader's rule (`landTier` of `frame/lib/precision.js`, on the reader's key, or the key of the step of
+  the same rank), never the `tier` written in the record; a proof that does not stand on the reader's key (`stands`) gives no line.
+- **The screen.** Under « Suite de la mission », a title « Débrief » and a list that reuses the blocks of the section (`h3`, `dw-list`,
+  `dw-row`); present only with at least one line (so after a drawer opens), at every level from the first, withdrawn by `stop()`. The line:
+  « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z », followed by « — BBB » for a crew mate; the tier words are `TIER_TEXT`, the
+  separator `TX.decSep`, the hour `fmtZ`. `debriefLine(tt, line)` is the pure text, in the four languages.
+- **Cases.** N80 (169 checks, 7 new: the three landings in order, the lying tier of a crew mate recomputed, the proof off my key, the airfield,
+  no drawer open or under a lock, hostile entries, no place), N81 (119, 5 new: absent without a landing, present with two lines, level 1,
+  `stop()`, the exact text in four languages) and the screen case N171 (390 and 1280 px, four languages, invented data).
+
 ## 12. Assigning a mission from V3 (SOG-0443)
 
 The user's word (Q-0093, 18 Nov 2026): yes to a minimal gesture to assign from V3; the CPCO's redesign waits. No compatibility with

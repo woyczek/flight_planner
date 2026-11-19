@@ -4388,6 +4388,97 @@ def n87(c):
     c.eq([w for w in WORDS if w in closed['text'] or w in closed['answer']], [], 'no word of the drawers (titles, messages, zone, object) in the page',
          what='words of the drawers')
     c.js(_DW_CLEAR)
+# SOG-0516, lot B: the debrief of MY mission — one line per precision landing judged, mine and the crew mates', the tier recomputed by the
+# reader. Invented data only: a helicopter, a marked point, two pilots.
+_DB_REGISTRY = """missions:
+  - { id: X-909A, family: TESTTIROIR, title: Posé de précision, folder: X_TIR/X-909A, files: [missionX-909A.yaml] }
+"""
+_DB_MISSION = """mission: { id: X-909A, type: SAR, subtype: RECHERCHE }
+title: Posé de précision
+summary: Un hélicoptère inventé doit se poser sur un point repéré. Décollez, la suite vous sera donnée en vol.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+turning_points:
+  - { id: PT1, lat: 44.75, lon: 1.25 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - id: B
+    title: Briefing
+    trigger: Au décollage
+    message: "Rejoignez le point repéré."
+    brief: Cap sur le point.
+  - id: C
+    title: Le point repéré
+    message: "Posez-vous sur le marquage."
+    brief: Posé tenu dix secondes.
+    trigger_condition: { kind: landing, point: PT1, radius_m: 30, duration_sec: 10, max_gap_sec: 10 }
+    fallback_delay_min: 120
+"""
+
+
+@case('N171', 'Missions: the debrief of my mission — under « Suite de la mission », a block « Débrief » with one line per precision landing '
+      'judged (mine, then a crew mate\'s: « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z — BBB »), the tier recomputed on MY key whatever '
+      'the record says, the decimal separator of the language, no place, no score; seen from the first level',
+      'N', tags=('missions',), designs=('standard',), langs4=True,
+      rule='SOG-0516, lot B (the ergonomist, 19 Nov 2026): « Débrief » in the sheet of MY mission, under the sequel, from a pure datum '
+      '(modules/missions/drawers.js `debriefOf`: one line per judged precision landing, mine and the crew mates\', the tier recomputed with '
+      '`landTier` on the reader\'s rule, a proof that does not stand on the reader\'s key left out); present only with a line, so after a '
+      'drawer opens; visible at every level; the words of the tiers are TIER_TEXT (frame/lib/precision.js); never a place, never a score')
+def n171(c):
+    import datetime
+    now = datetime.datetime.now(datetime.timezone.utc)
+    when = lambda s: now + datetime.timedelta(seconds=s)
+    iso = lambda s: when(s).strftime('%Y-%m-%dT%H:%M:%SZ')
+    clock = lambda s: when(s).strftime('%H:%MZ')
+    off = iso(-1800)                               # the assigned take-off, thirty minutes ago
+    idx = {'updatedAt': iso(0), 'assignments': [
+        {'mission': 'X-909A', 'title': 'Posé de précision', 'pilot': pilot, 'callsign': call, 'takeoff': off, 'status': 'affectée', 'role': 'mission'}
+        for pilot, call in (('ABC', 'TEST91'), ('BBB', 'TEST92'))]}
+    # a landing held ten seconds, nm nautical miles south of the point PT1 (44.75, 1.25), ending at second `end` before now
+    held = lambda end, nm: {'from': {'lat': round(44.75 - nm / 60, 6), 'lon': 1.25, 'at': iso(end - 10), 'altFt': 0, 'onGround': True, 'gsKt': 1},
+                            'to': {'lat': round(44.75 - nm / 60, 6), 'lon': 1.25, 'at': iso(end), 'altFt': 0, 'onGround': True, 'gsKt': 1}}
+    book = lambda by, entry: {'schema': 1, 'mission': 'X-909A', 'seance': f'A:{off[:10]}', 'by': by,
+                              'drawer_B': {'state': 'open', 'at': iso(-1700), 'how': 'hand'}, 'drawer_C': entry}
+    # mine: written « excellent » at 0.001 NM, held at 0.15 NM: the reader recomputes « réussi »; BBB's: « parfait », 0.08 NM
+    mine = book('ABC', {'state': 'open', 'at': iso(-720), 'how': 'landing', 'tier': 'excellent', 'distNm': 0.001, **held(-720, 0.15)})
+    theirs = book('BBB', {'state': 'open', 'at': iso(-660), 'how': 'landing', 'tier': 'parfait', 'distNm': 0.08, **held(-660, 0.08)})
+    S = f'{M} [data-drawers]'
+    D = f'{S} [data-dw-debrief]'
+    lang = c.lang
+    word = lambda tier: tx('frame/lib/precision.js', tier, lang, after='export const TIER_TEXT')
+    say = lambda key, tier, d, s, by='': norm(re.sub(r'\{(\w+)\}', lambda m: {'rank': '2', 'tier': word(tier), 'd': d.replace('.', tx(DW, 'decSep', lang)),
+                                                                              't': clock(s), 'by': by}[m.group(1)], tx(DW, key, lang)))
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    c.js(_DW_CLEAR)
+    c.js(_TEXTS_JS, [['missions/mission_registry.yaml', _DB_REGISTRY], ['missions/X_TIR/X-909A/missionX-909A.yaml', _DB_MISSION],
+                     ['missions/affectations.json', json.dumps(idx)]])
+    c.open('missions', wait=False, app='company', docs=[['device/level.json', {'level': 1}, 'cache'], ['pilot/ABC/missions/X-909A.json', mine, 'document'],
+                                                         ['pilot/BBB/missions/X-909A.json', theirs, 'document']])
+    c.until(f"!!document.querySelector('{M} [data-list] [data-id=\"X-909A\"]')", timeout=20000, what='the list')
+    c.tap(f'{M} [data-list] [data-id="X-909A"]')
+    c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-909A'", timeout=10000, what='the sheet of X-909A')
+    c.until(f"document.querySelectorAll('{D} [data-dwd]').length === 2", timeout=12000, what='the two lines of the debrief')
+    c.settle()
+    heads = [norm(c.text(h)) for h in (f'{S} > h3:nth-of-type(1)', f'{S} > h3:nth-of-type(2)')]
+    c.eq(heads, [norm(tx(DW, 'head', lang)), norm(tx(DW, 'debriefHead', lang))], 'the block « Débrief » comes under « Suite de la mission »', what='titles')
+    after = c.js(f"!!(document.querySelector('{S} [data-dw-list]').compareDocumentPosition(document.querySelector('{D}')) & Node.DOCUMENT_POSITION_FOLLOWING)")
+    c.ok(after, after, 'the debrief is after the list of the open drawers')
+    lines = c.js(f"[...document.querySelectorAll('{D} [data-dwd]')].map(e => e.textContent)")
+    c.eq([norm(x) for x in lines], [say('debriefMe', 'réussi', '0.15', -720), say('debriefBy', 'parfait', '0.08', -660, 'BBB')],
+         'two lines: mine (the written « excellent » ignored: recomputed « réussi », 0.15 NM) then BBB\'s (« parfait », 0.08 NM), the hour of the fact, the separator of the language',
+         what='lines')
+    html = c.js(f"document.querySelector('{D}').outerHTML")
+    c.ok(not re.search(r'PT1|Point|44\.|1\.25|lat|lon|Tiroir 1|score|rank', html.replace('data-dwd', '')), html[-300:],
+         'no place, no coordinate, no score in the lines')
+    shown = c.js(f"(() => {{ const e = document.querySelector('{D}'); return !!e && e.offsetHeight > 0 && getComputedStyle(e).visibility !== 'hidden' }})()")
+    c.ok(shown, shown, 'visible at the first level (Découverte): it is not a gesture')
+    c.js(f"document.querySelector('{S} [data-dw-debrief-head]').scrollIntoView({{block: 'center'}})")
+    c.settle()
+    c.shot(f'N171_{c.design}_{c.width}_{c.lang}_debrief.png')
+    c.js(_DW_CLEAR)
+
+
 
 
 # SOG-0443: « Affecter… » — assign a mission from V3. The pure part (modules/missions/assign.js) and the merge rule of

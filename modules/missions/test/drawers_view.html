@@ -2097,6 +2097,110 @@
     shared === 'ask,other' && !q('[data-dw-ask]') && !!q('[data-actslot] [data-other]'), shared);
   stage.innerHTML = '';
 
+  // ---- SOG-0516, lot B : le bloc « Débrief » de MA mission, sous « Suite de la mission » : une ligne par posé de précision jugé
+  const DX = Date.now() - 20 * MIN, // le décollage affecté
+    DT = DX + 10 * MIN, // l'heure du fait
+    dfix = (ms, nm) => ({
+      lat: 45.0 - nm * NMV,
+      lon: 1.0,
+      at: iso(ms),
+      onGround: true,
+      gsKt: 1
+    }),
+    dHeld = (ms, nm) => ({
+      from: dfix(ms - 10e3, nm),
+      to: dfix(ms, nm)
+    }),
+    dMission = missionOf(HAND, {
+      ...LDRAWER,
+      key: LANDP
+    }),
+    dBook = (...entries) => peer(Object.fromEntries(entries), DX),
+    dDocs = (mineLand, theirs) => ({
+      'missions/affectations.json': index(DX),
+      [BOOK]: dBook(['drawer_B', {
+        state: 'open',
+        at: iso(DX + MIN),
+        how: 'hand'
+      }], ...(mineLand ? [
+        ['drawer_C', {
+          state: 'open',
+          at: iso(DT),
+          how: 'landing',
+          ...dHeld(DT, 0.15),
+          tier: 'excellent', // un tier écrit qui ment : le débrief lit le recalcul
+          distNm: 0.001
+        }]
+      ] : [])),
+      ...(theirs ? {
+        [PEER]: dBook(['drawer_B', {
+          state: 'open',
+          at: iso(DX + 2 * MIN),
+          how: 'hand'
+        }], ['drawer_C', {
+          state: 'open',
+          at: iso(DT + 60e3),
+          how: 'landing',
+          ...dHeld(DT + 60e3, 0.08)
+        }])
+      } : {})
+    });
+  ctx = fakeCtx({
+    docs: dDocs(false, false)
+  });
+  await mount(ctx, dMission, {
+    mine: true
+  });
+  await until(() => !!q('[data-dw="B"][data-open]'));
+  ck('débrief : sans posé de précision jugé (un tiroir ouvert à la main), pas de bloc « Débrief » ni de titre',
+    !!q('[data-dw="B"]') && !q('[data-dw-debrief]') && !q('[data-dw-debrief-head]') && qa('h3').map(h => h.textContent).join() === 'Suite de la mission', sec().innerHTML);
+  DV.stop();
+  ctx = fakeCtx({
+    docs: dDocs(true, true)
+  });
+  await mount(ctx, dMission, {
+    mine: true
+  });
+  await until(() => qa('[data-dwd]').length === 2);
+  const dRows = qa('[data-dwd]').map(e => e.textContent.replace(/\s+/g, ' ').trim());
+  ck('débrief : présent après l\'ouverture d\'un tiroir, SOUS « Suite de la mission » ; deux lignes — la mienne (le tier écrit « excellent » ignoré : « réussi », 0,15) puis celle de BBB (« parfait », 0,08), l\'heure du fait, jamais un lieu',
+    qa('h3').map(h => h.textContent).join() === 'Suite de la mission,Débrief' && q('[data-dw-list]').compareDocumentPosition(q('[data-dw-debrief]')) & Node.DOCUMENT_POSITION_FOLLOWING &&
+    dRows.join('|') === `Tiroir 2 — atterrissage réussi (0,15 NM), à ${z(DT)}|Tiroir 2 — atterrissage parfait (0,08 NM), à ${z(DT + 60e3)} — BBB` && !/PT1|DESTINATION|45\.|lat/.test(q('[data-dw-debrief]').outerHTML),
+    dRows);
+  ck('débrief : visible au niveau 1 (Découverte) comme aux autres ; marqué mine / non mine',
+    ctx.level === 1 && !q('[data-dw-debrief]').hidden && qa('[data-dwd]').map(e => e.dataset.dwdMine).join() === '1,0');
+  DV.stop();
+  ck('débrief : stop() retire le bloc (titre et lignes), avec « Demander la suite »', !q('[data-dw-debrief]') && !q('[data-dw-debrief-head]') && !askBtn() && !!q('[data-dw-list]'));
+  stage.innerHTML = '';
+  // le texte, dans les quatre langues : espaces normalisés, le séparateur décimal de la langue, l'heure du fait
+  const dSay = (i, l) => DV.debriefLine((row, v) => String(row[i]).replace(/\{(\w+)\}/g, (_, k) => v?.[k] ?? ''), l).replace(/\s+/g, ' '),
+    dLn = {
+      rank: 2,
+      how: 'landing',
+      tier: 'réussi',
+      distNm: 0.15,
+      at: AT,
+      by: 'BBB',
+      mine: true
+    };
+  ck('débrief, texte exact : « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z » en français ; en anglais « Drawer 2 — landing: good (0.15 NM), at 19:20Z » (point décimal) ; équipier : « — BBB » ; en allemand et en espagnol la virgule',
+    dSay(0, dLn) === 'Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z' && dSay(1, dLn) === 'Drawer 2 — landing: good (0.15 NM), at 19:20Z' && dSay(0, {
+      ...dLn,
+      mine: false
+    }) === 'Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z — BBB' && dSay(1, {
+      ...dLn,
+      mine: false
+    }) === 'Drawer 2 — landing: good (0.15 NM), at 19:20Z — BBB' && dSay(2, dLn) === 'Schublade 2 — Landung gelungen (0,15 NM) um 19:20Z' && dSay(3, {
+      ...dLn,
+      mine: false
+    }) === 'Cajón 2 — aterrizaje logrado (0,15 NM), a las 19:20Z — BBB' && [0, 1, 2, 3].map(i => dSay(i, {
+      ...dLn,
+      tier: 'partiel',
+      distNm: 0.5
+    })).every((t, i) => t.includes(['partiel', 'partial', 'teilweise', 'parcial'][i])) && ['Débrief', 'Debrief', 'Nachbesprechung', 'Informe'].every((w, i) => DV.TX.debriefHead[i] === w),
+    [0, 1, 2, 3].map(i => dSay(i, dLn)));
+
+
   window.__bench = {
     done: true,
     pass: rows.filter(r => r.ok).length,

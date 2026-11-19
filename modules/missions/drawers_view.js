@@ -26,6 +26,9 @@
 //   s'en servir pour dire la même chose que l'écran du pilote. TX : les textes, quatre langues.
 //   Un posé de PRÉCISION (SOG-0507) dit son palier (excellent, parfait, réussi, partiel) et sa distance en NM, deux décimales, séparateur
 //   de la langue (TX.decSep) ; un atterrissage au terrain ou un ancien constat garde la phrase sans palier.
+//   « Débrief » (SOG-0516, lot B) : SOUS « Suite de la mission », une ligne par posé de précision jugé (drawers.js debriefOf : les miens et ceux des
+//   équipiers, le palier recalculé chez le lecteur), à tous les niveaux ; présent seulement s'il a une ligne ; ni score ni classement ni lieu.
+//   debriefLine(tt, ligne) → le texte d'une ligne du débrief, dans la langue de tt (pur).
 //   sees(id, mission) → ce que la fiche et son Détail montrent de cette mission (SOG-0448) : pilotView du lecteur, avec les tiroirs
 //   que la section posée sait ouverts — rien d'ouvert tant qu'elle n'a pas lu, la partie visible seule pour une mission qui n'est pas
 //   la mienne. show() reçoit `changed` : rappelé quand ce que sees() a rendu n'est plus à jour (un tiroir s'ouvre) — la fiche se redessine.
@@ -130,6 +133,14 @@ export const TX = {
   ],
   openLandingTierBy: ['ouvert à l\'atterrissage de {by} — {tier} ({d} NM), à {t}', 'opened when {by} landed — {tier} ({d} NM), at {t}',
     'bei der Landung von {by} geöffnet — {tier} ({d} NM) um {t}', 'abierto al aterrizaje de {by} — {tier} ({d} NM), a las {t}'
+  ],
+  // le débrief de MA mission (SOG-0516, lot B) : une ligne par posé de précision jugé, le mien puis ceux des équipiers ; jamais un lieu
+  debriefHead: ['Débrief', 'Debrief', 'Nachbesprechung', 'Informe'],
+  debriefMe: ['Tiroir {rank} — atterrissage {tier} ({d} NM), à {t}', 'Drawer {rank} — landing: {tier} ({d} NM), at {t}',
+    'Schublade {rank} — Landung {tier} ({d} NM) um {t}', 'Cajón {rank} — aterrizaje {tier} ({d} NM), a las {t}'
+  ],
+  debriefBy: ['Tiroir {rank} — atterrissage {tier} ({d} NM), à {t} — {by}', 'Drawer {rank} — landing: {tier} ({d} NM), at {t} — {by}',
+    'Schublade {rank} — Landung {tier} ({d} NM) um {t} — {by}', 'Cajón {rank} — aterrizaje {tier} ({d} NM), a las {t} — {by}'
   ],
   tier: TIER_TEXT, // les quatre mots des paliers : ceux du cadre (frame/lib/precision.js, SOG-0516)
   decSep: [',', '.', ',', ','], // le séparateur décimal de la langue (une distance s'écrit avec deux décimales)
@@ -294,6 +305,7 @@ export function stop() {
   clearTimeout(V.restTimer);
   clearInterval(V.poll);
   V.askBtn?.remove();
+  V.host?.querySelectorAll?.('[data-dw-debrief-head],[data-dw-debrief]').forEach(e => e.remove()); // le débrief part avec la fiche
   V.unwatch?.();
   V.unlive?.();
   document.removeEventListener('visibilitychange', onVisible);
@@ -777,6 +789,24 @@ function rowHtml(v, s) {
     ${canSeal ? `<div class="dw-acts"><button type="button" class="f-linkbtn" data-dw-seal="${esc(s.id)}">${esc(v.tt(TX.seal))}</button></div>` : ''}</div>`;
 }
 
+/** La ligne du débrief d'un posé de précision : « Tiroir 2 — atterrissage réussi (0,15 NM), à 19:20Z », suivie de « — BBB » pour un équipier. Les mots
+ *  des paliers sont ceux du cadre (TIER_TEXT), la distance a deux décimales et le séparateur de la langue, l'heure est celle du fait. Tout texte
+ *  du fichier (le trigramme) passe par esc. */
+function debriefRow(v, l) {
+  return `<div class="dw-row" data-dwd data-dwd-mine="${l.mine ? 1 : 0}"><small class="f-muted">${esc(debriefLine(v.tt, l))}</small></div>`;
+}
+
+/** Le texte d'une ligne du débrief (pur : le banc le dit dans les quatre langues) : tt(ligne, valeurs) traduit ; l, une ligne de debriefOf. */
+export function debriefLine(tt, l) {
+  return tt(l.mine ? TX.debriefMe : TX.debriefBy, {
+    rank: l.rank,
+    tier: tt(TX.tier[l.tier]),
+    d: l.distNm.toFixed(2).replace('.', tt(TX.decSep)), // deux décimales, le séparateur de la langue
+    t: fmtZ(new Date(l.at)),
+    by: l.by
+  });
+}
+
 /** Le temps de repos qui reste à « Demander la suite » pour cette mission (0 : la commande est prête). */
 function restLeft(v) {
   const until = REST.get(v.id);
@@ -830,7 +860,10 @@ function paint() {
   // sept lignes au plus, puis les suivantes repliées sous « {n} autres » (les ouverts seulement)
   const list = rows.length ? `<h3>${esc(v.tt(TX.head))}</h3><div class="dw-list" data-dw-list>${rows.slice(0, SEVEN).join('')}${rows.length > SEVEN ?
     `<details class="ms-more dw-rest" data-dw-rest${v.restOpen ? ' open' : ''}><summary class="f-muted">${esc(v.tt(TX.moreOpen, { n: rows.length - SEVEN }))}</summary><div class="dw-list">${rows.slice(SEVEN).join('')}</div></details>` : ''}</div>` : '';
-  v.host.innerHTML = box + list;
+  // le débrief : sous la suite, seulement s'il a au moins une ligne (donc après l'ouverture d'un tiroir) ; visible à tous les niveaux
+  const lines = rows.length ? D.debriefOf(v.states) : [],
+    debrief = lines.length ? `<h3 data-dw-debrief-head>${esc(v.tt(TX.debriefHead))}</h3><div class="dw-list" data-dw-debrief>${lines.map(l => debriefRow(v, l)).join('')}</div>` : '';
+  v.host.innerHTML = box + list + debrief;
   const rest = v.host.querySelector('[data-dw-rest]');
   if (rest) rest.ontoggle = () => {
     if (V === v) v.restOpen = rest.open; // gardé à travers les dessins

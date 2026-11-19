@@ -3191,6 +3191,192 @@
       }
     }, ID).drawers.B.steps[0].tier === null, sread);
 
+  // ---- le débrief de la mission (SOG-0516, lot B) : une ligne par posé de précision jugé, le palier recalculé chez le lecteur
+  const holdAt = (key, nm, off, more) => play(key, Array.from({
+      length: 7
+    }, (_, i) => ds(nm, off + i * 5, more))).first,
+    seqAt = (nm, off, key = seqL) => {
+      let state = null,
+        res = null;
+      Array.from({
+        length: 7
+      }, (_, i) => ds(nm, off + i * 5)).forEach((x, i, a) => {
+        const r = D.stepping(key, state, a[i - 1] || null, x);
+        state = r.state;
+        res = res || r.f;
+      });
+      return res;
+    },
+    dctx = ctx(T0 + 10 * MIN),
+    dB = holdAt(PT({}), 0.15, 0),
+    dC = holdAt(PT({}), 0.04, 60),
+    dD = seqAt(0.15, 120),
+    dDoc = D.withOpen(D.withOpen(D.withOpen(null, dctx, 'B', 'landing', dB), dctx, 'C', 'landing', dC), dctx, 'D', 'sequence', dD),
+    dDrawers = [{
+      id: 'B',
+      title: 'Posé 1',
+      key: PT({})
+    }, {
+      id: 'C',
+      title: 'Posé 2',
+      key: PT({})
+    }, {
+      id: 'D',
+      title: 'Suite',
+      key: seqL
+    }],
+    dPeer = holdAt(PT({}), 0.15, 5),
+    dLine = l => `${l.rank}:${l.by}:${l.mine}:${l.tier}:${l.distNm}`,
+    dMine = D.debriefOf(st({
+      drawers: dDrawers,
+      doc: dDoc,
+      chain: true,
+      now: T0 + 20 * MIN
+    })),
+    dBoth = D.debriefOf(st({
+      drawers: dDrawers,
+      doc: dDoc,
+      others: [
+        ['BBB', peer('B', T0 + 35e3, 'landing', {
+          from: dPeer.from,
+          to: dPeer.to,
+          tier: 'excellent',
+          distNm: 0.001
+        })]
+      ],
+      chain: true,
+      now: T0 + 20 * MIN
+    }));
+  ck('débrief : mes deux posés et l\'étape de la suite, une ligne chacun, dans l\'ordre de `at` (rang 1, 2, 3), le palier recalculé (« réussi » 0,15 ; « excellent » 0,04 ; « réussi » 0,15)',
+    dMine.map(dLine).join() === '1:AAA:true:réussi:0.15,2:AAA:true:excellent:0.04,3:AAA:true:réussi:0.15' && dMine.every((l, i) => l.how === 'landing' && (i === 0 ||
+      dMine[i - 1].at < l.at)), dMine);
+  ck('débrief : le posé de BBB dont le tier écrit ment (« excellent » à 0,001) est RECALCULÉ chez moi (« réussi », 0,15), la ligne de BBB après la mienne à l\'heure du fait',
+    dBoth.map(dLine).join() === '1:AAA:true:réussi:0.15,1:BBB:false:réussi:0.15,2:AAA:true:excellent:0.04,3:AAA:true:réussi:0.15', dBoth);
+  const dShifted = peer('B', T0 + 35e3, 'landing', {
+      from: {
+        ...dPeer.from,
+        lat: dPeer.from.lat + 0.5
+      },
+      to: {
+        ...dPeer.to,
+        lat: dPeer.to.lat + 0.5
+      },
+      tier: 'excellent',
+      distNm: 0.001
+    }),
+    dShift = st({
+      drawers: dDrawers,
+      doc: dDoc,
+      others: [
+        ['BBB', dShifted]
+      ],
+      chain: true,
+      now: T0 + 20 * MIN
+    });
+  ck('débrief : la preuve de BBB qui ne tient pas sur ma clé (stands : posée loin du point chez moi) est absente, même avec un tier écrit « excellent » ; la mienne reste',
+    D.debriefOf(dShift).map(dLine).join() === '1:AAA:true:réussi:0.15,2:AAA:true:excellent:0.04,3:AAA:true:réussi:0.15' && by(dShift, 'B').refused[0]?.why === 'shape', dShift);
+  const dField = st({
+    drawers: [{
+      id: 'B',
+      title: 'Terrain',
+      key: land({
+        point: 'DESTINATION'
+      })
+    }],
+    doc: D.withOpen(null, dctx, 'B', 'landing', dB),
+    others: [
+      ['BBB', peer('B', T0 + 35e3, 'landing', {
+        from: dPeer.from,
+        to: dPeer.to
+      })]
+    ],
+    now: T0 + 20 * MIN
+  });
+  ck('débrief : un posé au terrain (ORIGIN, DESTINATION, sans palier), un tiroir ouvert à la main et une autre condition : aucune ligne',
+    dField[0].open === true && D.debriefOf(dField).length === 0 && D.debriefOf(st({
+      doc: D.withOpen(null, dctx, 'B', 'hand')
+    })).length === 0 && D.debriefOf(st({
+      drawers: [{
+        id: 'B',
+        key: OV
+      }],
+      doc: D.withOpen(null, dctx, 'B', 'hand')
+    })).length === 0, dField);
+  ck('débrief : aucun tiroir ouvert → aucune ligne (une preuve de BBB sous le verrou d\'un tiroir d\'avant fermé n\'en fait pas)',
+    D.debriefOf(st({
+      drawers: dDrawers,
+      chain: true,
+      now: T0
+    })).length === 0 && D.debriefOf(st({
+      drawers: [{
+        id: 'B',
+        key: {
+          kind: 'hand'
+        }
+      }, {
+        id: 'C',
+        key: PT({})
+      }],
+      others: [
+        ['BBB', peer('C', T0 + 35e3, 'landing', {
+          from: dPeer.from,
+          to: dPeer.to
+        })]
+      ],
+      chain: true,
+      now: T0 + MIN
+    })).length === 0);
+  const dHostile = [null, undefined, 'x', 5, {}, [], [null, 1, 'x'], [{
+      open: true,
+      lands: 'x'
+    }, {
+      open: true,
+      lands: [null, 3, {
+        tier: 'nuke',
+        distNm: 0.1,
+        at: 1
+      }, {
+        tier: 'réussi',
+        distNm: NaN,
+        at: 1
+      }, {
+        tier: 'réussi',
+        distNm: 0.9,
+        at: 1
+      }, {
+        tier: 'réussi',
+        distNm: 0.1,
+        at: 'x'
+      }, {
+        tier: 'réussi',
+        distNm: 0.1,
+        at: 7,
+        by: 'CCC',
+        mine: 'oui'
+      }]
+    }, {
+      get open() {
+        throw new Error('dHostile');
+      }
+    }, {
+      open: true,
+      get lands() {
+        throw new Error('dHostile');
+      }
+    }]],
+    dHostileOut = dHostile.map(h => {
+      try {
+        return D.debriefOf(h);
+      } catch (e) {
+        return 'THROW';
+      }
+    });
+  ck('débrief : des entrées hostiles ne lèvent jamais (un tier hors TIERS, une distance NaN ou hors bornes, une heure illisible, un accesseur qui lève) ; seule la ligne lisible reste, `mine` strictement vrai',
+    dHostileOut.every(r => Array.isArray(r)) && dHostileOut.slice(0, 7).every(r => r.length === 0) && dHostileOut[7].length === 1 && dHostileOut[7][0].by === 'CCC' &&
+    dHostileOut[7][0].mine === false && dHostileOut[7][0].rank === 2, dHostileOut);
+  ck('débrief : jamais de lieu — une ligne n\'a que rang, genre, palier, distance, heure, auteur, « mine » ; ni coordonnées ni identifiant de point',
+    dBoth.every(l => Object.keys(l).join() === 'rank,how,tier,distNm,at,by,mine') && !/PT1|lat|lon|point/.test(JSON.stringify(dBoth)), dBoth[0]);
+
 
   window.__bench = {
     done: true,
