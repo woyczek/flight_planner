@@ -169,6 +169,7 @@ export const meta = {
     'mission_view.js?v=0', 'pilot.js?v=0', 'lib/safe_text.js?v=0', '../../frame/lib/text.js?v=0', '../missions/drawers.js?v=0',
     '../../frame/lib/crossing.js?v=0',
     '../../frame/lib/untrusted.js?v=0',
+    '../../frame/lib/precision.js?v=0', // SOG-0516 : importé par missions/drawers.js
     '../../frame/lib/mission.js?v=0',
     'weather.js?v=0',
     'render.js?v=0', 'render_airspace.js?v=0', 'render_route.js?v=0', 'profile.js?v=0', 'mission.js?v=0', 'contours.js?v=0',
