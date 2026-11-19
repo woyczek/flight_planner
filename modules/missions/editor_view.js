@@ -3115,8 +3115,8 @@ function refillMin(v) {
   return /^\d+(\.\d+)?$/.test(t) ? String(Math.round(+t / 60 * 100) / 100) : t;
 }
 
-/** La règle d'un ravitaillement en retardant dite en une ligne (SOG-0521) : « Se poser, s'arrêter à 30 m de la station, 5 min au moins,
- *  puis repartir » — avec « , au cap 270° ± 30° » quand un cap est saisi, sans « puis repartir » quand le fichier ne l'exige pas. Un nombre
+/** La règle d'un ravitaillement en retardant dite en une ligne (SOG-0521) : « Se poser, s'arrêter à 15 m de la station, 5 min au moins,
+ *  puis repartir » — avec « , au cap 270° ± 15° » quand un cap est saisi, sans « puis repartir » quand le fichier ne l'exige pas. Un nombre
  *  vide ou hors de ses bornes (DR.ruleBounds, celles du lecteur) est dit par le paramètre du lecteur (MS.REFILL_RULE) : la ligne dit ce
  *  que le pilote devra faire, « À compléter » dit ce qui est à reprendre. */
 function edRefillLine(s, rule) {

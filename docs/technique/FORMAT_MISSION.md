@@ -368,8 +368,8 @@ phases:
       object: OBJ-1                # a STATION only: an object of the kind refill, placed (never a point)
       duration_sec: 300            # optional, 1 to 3 600 — the minimum time against the station; 300 when absent
       heading_deg: 270             # optional, 0 to 359 — the heading to stand at; absent: no heading required
-      # radius_m: 30               # optional, 1 to 200 — the distance to the station; REFILL_RULE.radiusM (30) when absent
-      # heading_tol_deg: 30        # optional, 1 to 90 — the tolerance on the heading; REFILL_RULE.headingTolDeg (30) when absent
+      # radius_m: 15               # optional, 1 to 200 — the distance to the station; REFILL_RULE.radiusM (15) when absent
+      # heading_tol_deg: 15        # optional, 1 to 90 — the tolerance on the heading; REFILL_RULE.headingTolDeg (15) when absent
       # max_gap_sec: 10            # optional, 5 (one fix period) to 60 — the longest gap between two fixes; 10 when absent
       # speed_max_kt: 3            # optional, 0 to 50 — « stopped »: the tolerance of a landing (HOLD_BOUNDS); 3 when absent
       # require_departure: true    # optional, true by default — leave again once refilled
@@ -380,8 +380,8 @@ phases:
   when a heading is written, stay `duration_sec` without a gap longer than `max_gap_sec` between two fixes, then leave
   (`require_departure`).
 - **The parameters are ONE table of the reader**, `REFILL_RULE` (exported, frozen; read by the reader and by the workshop, never
-  copied): R = 30 m in 1 to 200, a heading tolerance of ± 30° in 1 to 90, a heading in 0 to 359, 300 s and 10 s by default — the values
-  proposed to the user (Q-0121). The duration and the gap have the bounds of the holds (`HOLD_BOUNDS`), the gap never under the period
+  copied): R = 15 m in 1 to 200, a heading tolerance of ± 15° in 1 to 90, a heading in 0 to 359, 300 s and 10 s by default — « plus strict »,
+  the user's answer to Q-0121 (the bounds are unchanged). The duration and the gap have the bounds of the holds (`HOLD_BOUNDS`), the gap never under the period
   of a fix (`FIX_PERIOD_SEC`, 5 s).
 - **The reader gives** `{ kind: 'condition', condition: 'refill', rule, fallbackMin }`, `rule` being `{ kind: 'refill', label, point:
   null, at: null, object: { id, kind: 'refill', name, lat, lon, moving: false }, radiusM, durationSec, maxGapSec, speedMaxKt,

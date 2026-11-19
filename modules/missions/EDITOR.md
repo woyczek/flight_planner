@@ -1664,15 +1664,15 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
 - `refill` joins `DR.KEYS` / `DR.CONDS` (`editor_drawers.js`); `DR.RULED` (hover, landing, overflight, refill) lists the keys whose line
   carries a `rule`; the steps of a sequence stay `HOLDS` (a refill is never a step). `DR.ruleBounds(kind, f)` gives the reader's bounds of a
   number of a rule — a refill has its own radius bounds and a gap never under one fix period, both read from `MS.REFILL_RULE` (the one
-  table of the reader: R = 30 m, ± 30°, 300 s, 10 s; never copied).
+  table of the reader: R = 15 m, ± 15° — « plus strict », the user's answer to Q-0121 —, 300 s, 10 s; never copied).
 - **Offered** under « ＋ Tiroir » as soon as the flight judges it (`DR.offered` / `follows`: `TYPES` says `refill: true` since SOG-0521, once
   Affectation's `refillSpec` is in `drawers.js`; the reader's `conditionJudged` writes the same rule, noreg N155 and N182): the key « un
   ravitaillement en retardant » carries no mention « s'ouvre au geste ou à l'heure de repli » (the mention stays for a key the flight does not judge).
 - **The sheet** (`edRefillHtml`, `editor_view.js`): the station — a list of the objects of the kind refill ALONE (the file's value kept, with
   « ? » when it names no station any more; none: the sheet says so and leads to the Lieux) —, the minimum duration in MINUTES (written in
   seconds, `duration_sec`), the docking heading (`heading_deg`, optional); the radius, the gap, the heading tolerance and the speed show only
-  when the file writes them. ONE line says the rule (`edRefillLine`): « Se poser, s'arrêter à 30 m de la station, 5 min au moins, puis
-  repartir », « , au cap 270° ± 30° » with a heading, without « puis repartir » when the file does not require it — it follows the typing.
+  when the file writes them. ONE line says the rule (`edRefillLine`): « Se poser, s'arrêter à 15 m de la station, 5 min au moins, puis
+  repartir », « , au cap 270° ± 15° » with a heading, without « puis repartir » when the file does not require it — it follows the typing.
 - « À compléter »: a station missing (or a point), a number typed out of its bounds (`condIncomplete`); a station « to place » makes the key
   unreadable (`keyUnread`).
 - **A station is not « found »** (the relay, 19 Nov): the sheet of a place of the kind refill shows neither « Portée de détection », nor

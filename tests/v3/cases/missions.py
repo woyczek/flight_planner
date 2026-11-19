@@ -12122,21 +12122,21 @@ _REFILL_READ_JS = """async () => { const MS = await import('/frame/lib/mission.j
 
 
 @case('N182', 'Missions › the reader reads the retardant refill (SOG-0521, pure, in the page): `trigger_condition: { kind: refill, object }` on an object of the kind '
-      '« refill » that is placed gives the condition « refill » with the parameters of MS.REFILL_RULE when nothing is written (R = 30 m, 300 s, a gap of 10 s, 3 kt, '
-      'no heading, a tolerance of ± 30°, a departure required), the numbers written within their bounds as they are; a point, a point AND a station, an object of '
+      '« refill » that is placed gives the condition « refill » with the parameters of MS.REFILL_RULE when nothing is written (R = 15 m, 300 s, a gap of 10 s, 3 kt, '
+      'no heading, a tolerance of ± 15°, a departure required), the numbers written within their bounds as they are; a point, a point AND a station, an object of '
       'another kind, a station « to place » or absent, a number out of its bounds (radius 1 to 200 m, duration 1 to 3 600 s, a gap under one fix period or over 60 s, '
       'heading 0 to 359, tolerance 1 to 90) make it unreadable — the gesture alone, said « condition »; never a step of a sequence; judged in flight when complete '
       '(`notJudgedYet` false, `follows` true — the rule of `refillSpec`, SOG-0521) and not judged, the reader and the flight agreeing, on a key whose station moves, is a point, '
       'is out of range, or whose number is out of its bounds, with a word or a confirmation; a closed refill drawer leaves nothing in the pilot\'s view; hostile entries raise nothing', 'N',
       tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0521, the user (19 Nov): « atterrir, se placer contre l\'objet, faire un refill (mini 5mn), repartir » ; « il faut orienter la bestiole dans le bon sens »; '
-      'the relay: R and the heading tolerance are parameters (Q-0121: 30 m, ± 30°) in ONE exported constant of the reader; Sécurisation: the bounds of the holds; '
+      'the relay: R and the heading tolerance are parameters (Q-0121, « plus strict »: 15 m, ± 15°) in ONE exported constant of the reader; Sécurisation: the bounds of the holds; '
       'docs/technique/FORMAT_MISSION.md § 4 septies')
 def n182(c):
     c.page.goto(f'{c.base}/frame/manifest.webmanifest')
     g = c.js(_REFILL_READ_JS)
-    c.eq(g['R'], [30, [1, 200], 30, [1, 90], [0, 359], 300, 10, True], 'MS.REFILL_RULE: R 30 m (1 to 200), ± 30° (1 to 90), heading 0 to 359, 300 s, 10 s, frozen', what='the parameters')
-    c.eq(g['dflt'], ['refill', 'OBJ-1', 'refill', False, 30, 300, 10, 3, None, 30, True, False, True],
+    c.eq(g['R'], [15, [1, 200], 15, [1, 90], [0, 359], 300, 10, True], 'MS.REFILL_RULE: R 15 m (1 to 200), ± 15° (1 to 90), heading 0 to 359, 300 s, 10 s, frozen', what='the parameters')
+    c.eq(g['dflt'], ['refill', 'OBJ-1', 'refill', False, 15, 300, 10, 3, None, 15, True, False, True],
          'a station alone: the parameters by default, a departure required, judged (notJudgedYet false, follows true: the rule of refillSpec, SOG-0521)', what='the defaults')
     c.eq(g['written'], ['refill', 'OBJ-1', 'refill', False, 25, 420, 6, 1, 270, 20, False, False, True],
          'the numbers written within their bounds are read as they are (the identifier read as the reader reads it)', what='written')
@@ -12183,8 +12183,8 @@ phases:
 @case('N183', 'Missions › the workshop, a drawer of the file keyed by a retardant REFILL (SOG-0521, an invented file): its sheet shows the key « un '
       'ravitaillement en retardant » with no mention « s\'ouvre au geste ou à l\'heure de repli » (the flight judges it, SOG-0521), three fields only — the '
       'station, chosen among the objects of the kind refill alone (not the vehicle), the minimum duration in MINUTES (300 s → 5), the docking heading, '
-      'empty —, and ONE line that says the rule (« Se poser, s\'arrêter à 30 m de la station, 5 min au moins, puis repartir »), which follows the typing '
-      '(a heading 270 adds « , au cap 270° ± 30° », 7 min); « ＋ Tiroir » offers the refill; « Enregistrer » writes `duration_sec: 420` and '
+      'empty —, and ONE line that says the rule (« Se poser, s\'arrêter à 15 m de la station, 5 min au moins, puis repartir »), which follows the typing '
+      '(a heading 270 adds « , au cap 270° ± 15° », 7 min); « ＋ Tiroir » offers the refill; « Enregistrer » writes `duration_sec: 420` and '
       '`heading_deg: 270` and nothing else moves (the station keeps the range the file writes); in the Lieux the station says « Station de retardant » '
       'and no range, and its sheet has no range, no « trouvé seulement quand le pilote le déclare », no heights (a station is not found), the vehicle\'s '
       'has them; at 390 and at 1280', 'N',
@@ -12216,14 +12216,14 @@ def n183(c):
         c.eq(c.js(fields), ['rule.object', 'rule.durMin', 'rule.heading'], f'{width}: three fields — the station, the minimum duration, the heading', what='the fields')
         c.eq(c.js(opts), ['OBJ-2', ['', 'OBJ-2']], f'{width}: the station of the file chosen, the stations alone offered (not the vehicle)', what='the stations')
         c.eq([c.js(_RULE_VAL, 'durMin'), c.js(_RULE_VAL, 'heading')], ['5', ''], f'{width}: 300 s said in minutes; no heading', what='the values')
-        c.eq(norm(c.js(line)), norm(rule.replace('{r}', '30').replace('{hdg}', '').replace('{min}', '5')),
+        c.eq(norm(c.js(line)), norm(rule.replace('{r}', '15').replace('{hdg}', '').replace('{min}', '5')),
              f'{width}: the one line says the rule', what='the line')
         c.eq(c.js(_DW_VAL, 'fallback'), '60', f'{width}: its fallback', what='the fallback')
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
         c.shot(f'P16a_{width}_refuel.png')
         c.page.fill(f'{_DW} [data-f="rule.heading"]', '270')
         c.page.fill(f'{_DW} [data-f="rule.durMin"]', '7')
-        want = norm(rule.replace('{r}', '30').replace('{hdg}', hdg.replace('{hdg}', '270').replace('{tol}', '30')).replace('{min}', '7'))
+        want = norm(rule.replace('{r}', '15').replace('{hdg}', hdg.replace('{hdg}', '270').replace('{tol}', '15')).replace('{min}', '7'))
         c.until(f"(w) => {line}.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() === w", want, what=f'{width}: the line follows the typing')
         c.tap(f'{E} [data-atflow] [data-dradd]')
         c.until(f"!!document.querySelector('{_KW}[data-kinds=new]')", what='the window of « ＋ Tiroir »')

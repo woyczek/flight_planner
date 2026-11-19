@@ -1725,16 +1725,16 @@
       ] : [d.key.kind, d.keyWhy, d.condition];
     },
     R = REFILL_RULE;
-  ck('refill : les paramètres de REFILL_RULE sont dans leurs bornes (R = 30 m, ± 30°, 300 s, 10 s)', R.radiusM >= R.radiusBoundsM[0] && R
+  ck('refill : les paramètres de REFILL_RULE sont dans leurs bornes (R = 15 m, ± 15°, 300 s, 10 s)', R.radiusM >= R.radiusBoundsM[0] && R
     .radiusM <= R.radiusBoundsM[1] && R.headingTolDeg >= R.headingTolBoundsDeg[0] && R.headingTolDeg <= R.headingTolBoundsDeg[1] && R
     .durationSec >= 1 && R.durationSec <= 3600 && R.maxGapSec >= 5 && R.maxGapSec <= 60 && Object.isFrozen(R) && [R.radiusM, R
       .headingTolDeg, R.durationSec, R.maxGapSec
-    ].join() === '30,30,300,10', JSON.stringify(R));
-  same('refill : une station seule → la règle aux paramètres par défaut (R, 300 s, 10 s, 3 kt, sans cap, ± 30°, repartir), jugée en vol (notJudgedYet faux)',
+    ].join() === '15,15,300,10', JSON.stringify(R));
+  same('refill : une station seule → la règle aux paramètres par défaut (R, 300 s, 10 s, 3 kt, sans cap, ± 15°, repartir), jugée en vol (notJudgedYet faux)',
     refillOf({
       kind: 'refill',
       object: 'OBJ-1'
-    }), ['refill', 'OBJ-1', 'refill', 30, 300, 10, 3, null, 30, true, false]);
+    }), ['refill', 'OBJ-1', 'refill', 15, 300, 10, 3, null, 15, true, false]);
   same('refill : les nombres écrits dans leurs bornes sont lus tels quels (le cap 270° ± 15°, sans départ exigé)', refillOf({
     kind: 'REFILL',
     object: 'obj-1',

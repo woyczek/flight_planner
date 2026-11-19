@@ -45,7 +45,7 @@
 //   OBJECT_KINDS, DRAWER_IDS, DRAWER_BOUNDS : les genres d'objet (liste fermée), les identifiants des tiroirs, les bornes de lecture.
 //   HOLD_KINDS, HOLD_BOUNDS, CONFIRM_WORD, EVENT_ID : les conditions de maintien et de survol (1.1), les bornes de leurs nombres, la
 //     forme d'un mot de confirmation et d'un identifiant d'événement — LES règles de lecture, que l'atelier reprend pour écrire (SOG-0500).
-//   REFILL_RULE : les paramètres d'un ravitaillement en retardant (SOG-0521, Q-0121) — R (30 m) et ses bornes, la tolérance de cap (± 30°)
+//   REFILL_RULE : les paramètres d'un ravitaillement en retardant (SOG-0521, Q-0121) — R (15 m, « plus strict », l'utilisateur) et ses bornes, la tolérance de cap (± 15°)
 //     et ses bornes, les bornes du cap, la durée minimale (300 s) et l'écart permis (10 s) par défaut ; l'atelier les lit d'ici.
 //   notJudgedYet(key) : vrai pour une clé que le vol ne sait pas encore juger (condition 1.1 — sauf l'atterrissage, le survol, le stationnaire, la suite d'étapes et le ravitaillement en retardant complets, que le vol juge —,
 //     cible qui franchit, objet mobile, suivi) ; suit `follows` de drawers.js, le contrôle N155 le garde.
@@ -461,9 +461,9 @@ function holdRule(c, place, object) {
  *  bornés comme les tenues (HOLD_BOUNDS ; l'écart jamais sous la période d'un relevé, FIX_PERIOD_SEC). Chaque valeur par défaut est
  *  dans ses bornes (le banc le vérifie). */
 export const REFILL_RULE = Object.freeze({
-  radiusM: 30,
+  radiusM: 15,
   radiusBoundsM: Object.freeze([1, 200]),
-  headingTolDeg: 30,
+  headingTolDeg: 15,
   headingTolBoundsDeg: Object.freeze([1, 90]),
   headingBoundsDeg: Object.freeze([0, 359]),
   durationSec: 300,
