@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e482cc3",
-  "fiches": 525,
+  "organisation": "bb87e68",
+  "fiches": 526,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1200,6 +1200,27 @@
      "de": "LFLC, ILS 26: der Link « Karte » öffnet die Datentabelle, nicht die ILS-Karte",
      "es": "LFLC, ILS 26: el enlace « Carta » abre la tabla de datos, no la carta del ILS",
      "rank": 322
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-procedures-meteo",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; procédures ; météo",
+    "en": "Carburant ; procédures ; météo",
+    "de": "Carburant ; procédures ; météo",
+    "es": "Carburant ; procédures ; météo"
+   },
+   "items": [
+    {
+     "id": "SOG-0527",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : un message « pas à jour » sans geste pour y remédier — procédures (« Relire » absent) et météo des terrains (la page sait ce qui lui manque et doit aller le chercher)",
+     "en": "Fuel: an “out of date” message with no gesture to fix it — procedures (no “Re-read”) and airfield weather (the page knows what it lacks and should fetch it)",
+     "de": "Kraftstoff: eine Meldung „nicht aktuell“ ohne Abhilfe — Verfahren (kein „Neu lesen“) und Platzwetter (die Seite weiß, was ihr fehlt, und soll es holen)",
+     "es": "Combustible: un aviso «no actualizado» sin gesto para corregirlo — procedimientos (sin «Releer») y meteo de aeródromos (la página sabe lo que le falta y debe buscarlo)"
     }
    ]
   },
@@ -9507,6 +9528,9 @@
   },
   "SIG-7b206c7a34": {
    "fiche": "SOG-0503"
+  },
+  "SIG-89463320ce": {
+   "fiche": "SOG-0527"
   },
   "SIG-905ec186d3": {
    "fiche": "SOG-0385"
