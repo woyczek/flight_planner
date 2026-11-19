@@ -17943,15 +17943,13 @@ def k359(c):
         g[ib[-1]] = [('ARR', {'route': 'DCT'})]
         return n, g
     far, g_far = build(20.0)
-    t0 = time.time()
     r_far = engine.Nav.bridge_gap(far, g_far, 'DEP', 'ARR', 350)
-    far_s = time.time() - t0
+    far_visits = engine.BRIDGE_VISITS      # SOG-0524 (suite): VISITS counted, not seconds (a stopwatch was red under load)
     near, g_near = build(-6.0)
-    t0 = time.time()
     r_near = engine.Nav.bridge_gap(near, g_near, 'DEP', 'ARR', 350)
-    near_s = time.time() - t0
-    c.eq((r_far, far_s < 1.0), (None, True), 'two grids of 3 000 points at about 1 360 NM from each other: no link, and the answer takes less than a second (the boxes are enough)', what='far')
-    c.ok(r_near is not None and r_near[0] < 900 and r_near[1].startswith('AA') and r_near[2].startswith('BB') and near_s < 5.0, str(r_near) + ' %.2fs' % near_s, 'two grids within reach (a few NM apart): the shortest direct, from the part of the departure to the part of the arrival, in a few seconds at most')
+    near_visits = engine.BRIDGE_VISITS
+    c.eq((r_far, far_visits), (None, 0), 'two grids of 3 000 points at about 1 360 NM from each other: no link, and NO cell is visited (the boxes are enough; counted in visits, no longer in seconds: SOG-0524)', what='far')
+    c.ok(r_near is not None and r_near[0] < 900 and r_near[1].startswith('AA') and r_near[2].startswith('BB') and 0 < near_visits <= engine.MAX_BRIDGE_VISITS * 1.01, str(r_near) + ' %d visits' % near_visits, 'two grids within reach (a few NM apart): the shortest direct, from the part of the departure to the part of the arrival, in a few seconds at most')
     keep = engine.MAX_BRIDGE_VISITS
     engine.MAX_BRIDGE_VISITS = 10
     try:

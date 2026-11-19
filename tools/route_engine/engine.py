@@ -27,6 +27,7 @@ class Interrupted(Exception):
 def interrupted(seconds):
     return Interrupted(f'Calcul interrompu : le poste est trop lent (plus de {seconds:g} s sans conclure). Ce n’est pas une absence de route : relancer le calcul, ou alléger ce qui charge le poste.')
 TURN_CACHE_MAX = 200000      # revue de Sécurisation : au plus ce nombre de triplets (précédent, point, suivant) dans la mémoire des virages d'un Nav ; au-delà elle est vidée
+BRIDGE_VISITS = 0      # SOG-0524 : les visites de la DERNIÈRE recherche de direct (`bridge_gap`), pour les cas
 MAX_BRIDGE_VISITS = 2_000_000      # SOG-0476 (Sécurisation) : les cellules et points visités par une recherche de direct
 NO_NETWORK_MAX_NM = 900      # SOG-0474 : au-delà, aucun direct de repli (le terrain est trop loin de tout réseau lu)
 DEADLINE = None   # SOG-0371 / SOG-0524 : l'instant (time.perf_counter) du GARDE-FOU de TEMPS du calcul entier, posé par plan.plan() (large : plan.GUARD_S) ; passé, une recherche ou un graphe qui commence lève `Interrupted`. Il ne borne plus aucune phase : les phases se bornent en états ; None : seul le garde-fou propre de la recherche
@@ -513,6 +514,8 @@ class Nav:
         return False
 
     def bridge_gap(self,g,a,b,fl,steps=False):
+        global BRIDGE_VISITS
+        BRIDGE_VISITS=0      # SOG-0524 (suite) : les visites de cette recherche, comptées (K359 les assertait en secondes : sous charge, rouge)
         """SOG-0476 : (NM, de, vers) le plus court direct d'un point atteignable DEPUIS `a` à un point d'où `b` est atteignable, à NO_NETWORK_MAX_NM au plus ; None sinon. Les deux parties du graphe ne se touchent pas (la base n'a pas de voie entre elles) : le direct
         est le seul lien, dit en revue (jamais une route perdue). Parcours en largeur sans altitude, grille d'un degré sur le plus grand des deux ensembles : borné par la taille du graphe."""
         usable=lambda e:not e.get('nat') and (steps or not isinstance(e.get('upper'),(int,float)) or e['upper']>=fl*100)      # les routes NAT ne relient pas : la couche NAT les pose à part (sections) ; une voie dont le plafond est sous le niveau demandé n'est pas utilisable à ce niveau (sauf si les paliers sont permis)
@@ -560,6 +563,7 @@ class Nav:
                         d=nm(p,self.nodes[other])
                         if d<=NO_NETWORK_MAX_NM and (best is None or d<best[0]):best=(d,k,other) if toward_b else (d,other,k)
                     visits+=1
+                BRIDGE_VISITS=visits
                 if visits>MAX_BRIDGE_VISITS:return best      # un budget de visites : au-delà, ce qui est trouvé (ou rien : non décidé, rien de perdu)
                 if best and best[0]<=r*30:break      # un anneau plus loin ne peut pas être plus proche
         return best
