@@ -18364,3 +18364,31 @@ def k400(c):
     got = c.js("() => { const d = JSON.parse(localStorage.getItem('pelicandromes-osm-v1')); return ['LFTW', 'LFMS', 'LFML'].map(i => d.find(x => x.oaci === i).cap ?? null); }")
     c.eq(got, [90, None, None], 'the import reads the cap (90), ignores one that is outside the bounds (400) and leaves the others as they are', what='import')
     c.check_errors()
+
+
+@case('K401', 'Route engine, SOG-0524: `alternate_routes` does not raise a KeyError on `_cost` for an edge that has no `_cost` (the kept NAT tracks of a previous message, out of their window: `sections._previous_system` copies the edges of the base, which get `_cost` only in the graph build): such an edge costs its distance, as the search reads it; KJFK → EGLL with alternatives requested stopped on this',
+      'K', static=True,
+      rule='SOG-0524 (found by AeroDB while counting the states of the reference flights, 19 Nov): PL.compute for KJFK → EGLL FL350 with `alternatives: true` ended with an exception (a KeyError on `_cost` at the cost of the modified graph of the alternatives: 54 edges of the kept track U lacked it), on the base before and after the fixes of the day. The bench: an invented graph of two ways, one by edges with `_cost`, the other by edges without (DCT of a kept NAT track); a Nav without base whose graph is given.')
+def k401(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import engine
+    nodes = {k: {'id': k, 'lat': la, 'lon': lo} for k, (la, lo) in {'S': (50.0, 0.0), 'A': (50.5, 2.0), 'B': (49.5, 2.0), 'E': (50.0, 4.0)}.items()}
+    g = engine.RoutingGraph()
+
+    def edge(u, v, route, cost=True, **k):
+        e = {'a': u, 'b': v, 'route': route, 'nm': engine.nm(nodes[u], nodes[v]), **k}
+        if cost:
+            e['_cost'] = e['nm']
+        g.setdefault(u, []).append((v, e))
+    edge('S', 'A', 'UL1')
+    edge('A', 'E', 'UL1')
+    edge('S', 'B', 'DCT', cost=False, zone='nat')
+    edge('B', 'E', 'DCT', cost=False, zone='nat')
+    g.flight = None
+    nav = engine.Nav.__new__(engine.Nav)
+    nav.nodes = nodes
+    nav.routing_graph = lambda *a, **k: (g, 'S', 'E')
+    nav.resolve_vias = lambda *a, **k: []
+    got = nav.alternate_routes('S', 'E', 350, 40, (), count=2)
+    c.eq(sorted(got), ['S DCT B DCT E', 'S UL1 E'], 'both ways are given, the one whose edges have no `_cost` too (red before: KeyError)', what='alternatives')

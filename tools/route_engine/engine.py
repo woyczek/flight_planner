@@ -797,7 +797,7 @@ class Nav:
             if terminal and terminal.get('_deadline'):
                 import time
                 if time.perf_counter()>terminal['_deadline']:break
-            modified=RoutingGraph({u:[(v,dict(e,_cost=e['_cost']*(1+.4*usage[(u,v,e['route'],e.get('fra_area'))]))) for v,e in es] for u,es in g.items()})
+            modified=RoutingGraph({u:[(v,dict(e,_cost=e.get('_cost',e['nm'])*(1+.4*usage[(u,v,e['route'],e.get('fra_area'))]))) for v,e in es] for u,es in g.items()})      # SOG-0524 : une arête sans `_cost` (les routes NAT GARDÉES d'un message précédent, hors fenêtre : sections._previous_system) coûte sa distance, comme la recherche le lit (`ratios`) ; `e['_cost']` levait KeyError : KJFK → EGLL avec des alternatives
             modified.flight=g.flight
             path=self.constrained_path(modified,start,end,mandatory,bool((terminal or {}).get('require_fra')))
             if path is None:break
