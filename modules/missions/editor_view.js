@@ -2729,6 +2729,24 @@ function edEmitHtml(s, r) {
   return `<div data-dwemit><label class="f-field"><span>${esc(s.tt(EDTX.dwEmit))}</span><input data-k="eddr" data-f="emit" value="${esc(r.emit || '')}" maxlength="80" autocomplete="off"></label><p class="f-muted" data-dwemitto>${esc(line)}</p></div>`;
 }
 
+/** La ligne qui dit de quoi un poser est jugé en vol, au lieu d'un rayon à saisir (SOG-0507) : « Jugé par paliers : partiel 0,5 NM · réussi
+ *  0,2 NM · parfait 0,1 NM · excellent 0,05 NM » pour un point ou un objet, « Jugé à 1 NM du terrain » quand il vise le départ ou l'arrivée.
+ *  Les chiffres sont lus de drawers.js (DR.precisionTiers, DR.toleranceNm), jamais écrits ici. */
+function edJudgedLine(s, rule) {
+  const word = {
+    excellent: EDTX.dwTier_excellent,
+    parfait: EDTX.dwTier_parfait,
+    'réussi': EDTX.dwTier_reussi,
+    partiel: EDTX.dwTier_partiel
+  };
+  if (DR.landingJudge(rule) === 'field') return `<p class="f-muted" data-dwjudged="field">${esc(s.tt(EDTX.dwJudgedField, { nm: dec(s, DR.toleranceNm().field) }))}</p>`;
+  const tiers = DR.precisionTiers().map(t => s.tt(EDTX.dwTierItem, {
+    tier: s.tt(word[t.tier]),
+    nm: dec(s, t.nm)
+  })).join(' · ');
+  return `<p class="f-muted" data-dwjudged="tiers">${esc(s.tt(EDTX.dwJudgedTiers, { tiers }))}</p>`;
+}
+
 /** Les champs d'une règle de maintien ou de survol (SOG-0500) : son lieu — un point de la mission OU un objet suivi (deux listes : en
  *  choisir un vide l'autre ; la valeur du fichier y figure toujours, suivie d'un « ? » quand elle ne désigne plus rien) —, puis les
  *  nombres que sa sorte lit (DR.RULE_USE), deux par rangée, et pour un survol la confirmation du pilote. `pre` : 'rule' (la condition
@@ -2760,7 +2778,7 @@ function edRuleHtml(s, rule, kind, pre, n, {
         b = pick('object', EDTX.dwRuleObject, list);
       return wide ? row(a) + row(b) : row(a, b);
     };
-  return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${place(kind === 'landing' || kind === 'overflight' || kind === 'hover' ? still : objects)}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
+  return `<div class="ms-dwrule" data-dwrule="${pre}"${at} data-rulekind="${esc(kind)}">${place(kind === 'landing' || kind === 'overflight' || kind === 'hover' ? still : objects)}${row(num('radiusM', EDTX.dwRadiusM), num('radiusNm', EDTX.dwArrRadius), num('duration', EDTX.dwDuration))}${row(num('gap', EDTX.dwGap), num('tol', EDTX.dwTol), num('speed', EDTX.dwArrSpeed))}${row(num('hMin', EDTX.dwHMin), num('hMax', EDTX.dwHMax))}${kind === 'landing' ? edJudgedLine(s, rule) : ''}${use.includes('confirm') ? `<label class="ms-plcheck"><input type="checkbox" data-k="eddr" data-f="${pre}.confirm"${at}${rule.confirm !== false ? ' checked' : ''}><span>${esc(s.tt(EDTX.dwConfirm))}</span></label>` : ''}</div>`;
 }
 
 /** Ce que « Les textes » et « La suite de route » d'un tiroir contiennent, dit en une ligne (un groupe replié ne cache pas ce qu'il
@@ -2851,9 +2869,11 @@ function edDrawerHtml(s, doc) {
     r.key === 'zone' ? `${zones.length || r.zone ? select('zone', EDTX.dwZone, r.zone, zones) : none(EDTX.dwNoZone)}${onMap('zone', EDTX.dwDraw)}${check('shown', EDTX.dwShown, r.shown === true)}${fallback}` :
     r.key === 'object' ? `${objects.length || r.object ? select('object', EDTX.dwObject, r.object, objects) : none(EDTX.dwNoObject)}${onMap('object', EDTX.dwPose)}${fallback}` :
     r.key === 'arrival' ? `${select('arrPoint', EDTX.dwArrPoint, r.arrPoint, [['DESTINATION', s.tt(EDTX.dwDest)], ['ORIGIN', s.tt(EDTX.dwDep)], ...points])}
-        <div class="f-row">${field('arrRadius', EDTX.dwArrRadius, r.arrRadius, num)}${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
+        <p class="f-muted" data-dwjudged="arrival">${esc(s.tt(EDTX.dwArrJudged, { nm: dec(s, DR.toleranceNm().field) }))}</p>
+        <div class="f-row">${field('arrSpeed', EDTX.dwArrSpeed, r.arrSpeed, num)}</div>${check('arrGround', EDTX.dwArrGround, r.arrGround === true)}
         <div class="f-field"><span>${esc(s.tt(EDTX.dwStops))}</span><div class="ms-chips" data-dwstops>${r.stops.map((w, n) => now(w) ? `<span class="ms-chip" data-stop="${esc(now(w))}">${esc(now(w))}<button type="button" data-do="eddrstopdel" data-n="${n}" aria-label="${esc(s.tt(EDTX.dwStopDel, { id: now(w) }))}">×</button></span>` : '').join('')}</div></div>
-        ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}${fallback}` :
+        ${r.stops.length < 20 ? `<label class="f-field"><span class="f-muted">${esc(s.tt(EDTX.dwStopAdd))}</span><select data-k="eddr" data-f="stopadd"><option value=""></option>${points.map(o => `<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('')}</select></label>` : ''}
+        <p class="f-muted" data-dwjudged="stops">${esc(s.tt(EDTX.dwStopsJudged, { nm: dec(s, DR.toleranceNm().transit) }))}</p>${fallback}` :
     DR.HOLDS.includes(r.key) ? `${edRuleHtml(s, r.rule || DR.blankRule(), r.key, 'rule', null, ruleOpts)}${fallback}` :
     r.key === 'sequence' ? `${edStepsHtml(s, r, ruleOpts)}${fallback}` :
     r.key === 'event' ? `${edEventHtml(s, rows, r)}${fallback}` :
@@ -2928,7 +2948,7 @@ function edDrawerInput(s, ev) {
     return draw(s);
   }
   if (['shown', 'arrGround'].includes(f) && t.type === 'checkbox') r[f] = t.checked === true;
-  else if (['title', 'message', 'brief', 'delay', 'fallback', 'arrRadius', 'arrSpeed'].includes(f) && !list) {
+  else if (['title', 'message', 'brief', 'delay', 'fallback', 'arrSpeed'].includes(f) && !list) {
     r[f] = t.value;
     if (f === 'delay') r.said = edSaid(s, r);
   }

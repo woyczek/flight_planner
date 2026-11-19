@@ -426,6 +426,7 @@ function holdRule(c, place, object) {
       point: pid ? ROUTE_END.has(pid) ? 'DESTINATION' : ROUTE_START.has(pid) ? 'ORIGIN' : pid : null,
       at,
       object: obj,
+      // un poser garde `radius_m` quand il est lisible (rien n'est réécrit), jamais refusé pour son absence ou ses bornes
       radiusM: over ? null : within(c.radius_m, ...H.radiusM),
       radiusNm: over ? within(c.radius_nm, ...H.radiusNm) : null,
       durationSec: over ? null : within(c.duration_sec, ...H.durationSec),
@@ -439,7 +440,9 @@ function holdRule(c, place, object) {
     },
     need = over ? ['radiusNm', 'heightMinFt', 'heightMaxFt'] : hover ? ['radiusM', 'durationSec', 'maxGapSec', 'speedToleranceKt',
       'heightMinFt', 'heightMaxFt'
-    ] : ['radiusM', 'durationSec', 'maxGapSec', 'speedMaxKt'];
+    ] : ['durationSec', 'maxGapSec',
+      'speedMaxKt'
+    ]; // un poser : le rayon n'est plus exigé (SOG-0507 : le vol juge par paliers, `radius_m` n'est plus lu)
   return (pid ? !at : !obj) || need.some(k => r[k] === null) || r.heightMinFt !== null && r.heightMinFt > r.heightMaxFt ? null : r;
 }
 
@@ -484,7 +487,7 @@ const FIX_PERIOD_SEC = 5;
  *  `hoverSpec` / `seqOf` de modules/missions/drawers.js, une par sorte, recopiée ici sans l'importer (le cadre n'importe pas un module) —
  *  suit `follows`, N155 les garde tous : il échoue dès que les deux divergent. Pour toutes : le genre de la
  *  clé et de la règle, AUCUN mot de confirmation demandé par l'auteur, un point lisible ou un objet IMMOBILE, des nombres finis. Un
- *  atterrissage : un rayon et une durée au-dessus de 0, un écart permis d'au moins la période d'un relevé (FIX_PERIOD_SEC), une vitesse d'au
+ *  atterrissage : une durée au-dessus de 0 (le rayon n'est plus lu, SOG-0507), un écart permis d'au moins la période d'un relevé (FIX_PERIOD_SEC), une vitesse d'au
  *  moins 0. Un stationnaire : un rayon et une durée au-dessus de 0, un écart permis d'au moins FIX_PERIOD_SEC, une tolérance de vitesse d'au
  *  moins 0 et une bande de hauteur (sol) finie, le bas sous le haut. Un survol : un rayon au-dessus de 0 et une bande de hauteur (sol)
  *  finie, le bas sous le haut ; `require_confirmation` y est permis (le pilote demande la suite à portée), jamais un mot. Une suite d'étapes :
@@ -514,7 +517,8 @@ function conditionJudged(key) {
       .heightMinFt <= r.heightMaxFt;
   if (r.kind === 'overflight')
     return num(r.radiusNm) > 0 && num(r.heightMinFt) !== null && num(r.heightMaxFt) !== null && r.heightMinFt <= r.heightMaxFt;
-  return num(r.radiusM) > 0 && num(r.durationSec) > 0 && num(r.maxGapSec) !== null && num(r.maxGapSec) >= FIX_PERIOD_SEC && num(r
+  // un atterrissage : plus de rayon exigé (SOG-0507, les tolérances de l'utilisateur priment : paliers ou terrain, `radius_m` n'est plus lu)
+  return num(r.durationSec) > 0 && num(r.maxGapSec) !== null && num(r.maxGapSec) >= FIX_PERIOD_SEC && num(r
       .speedMaxKt) !== null &&
     num(r.speedMaxKt) >= 0;
 }

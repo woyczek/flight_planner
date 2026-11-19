@@ -90,14 +90,15 @@ export const RULE_NUM = Object.freeze({
 export const RULE_USE = Object.freeze({
   hover: Object.freeze(['point', 'object', 'radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax', 'label', 'confirmation']),
   // un poser n'a pas de mot de confirmation (Affectation, 18 nov. : le vol le jugera sans) — un mot déjà écrit reste tel quel
-  landing: Object.freeze(['point', 'object', 'radiusM', 'duration', 'gap', 'speed', 'label']),
+  // SOG-0507 : plus de rayon (m) : un poser se juge par paliers (un point), ou à 1 NM (un terrain) ; `radius_m` d'un fichier est gardé tel quel, jamais lu ni exigé
+  landing: Object.freeze(['point', 'object', 'duration', 'gap', 'speed', 'label']),
   overflight: Object.freeze(['point', 'object', 'radiusNm', 'hMin', 'hMax', 'confirm', 'label', 'confirmation'])
 });
 /** Les nombres qu'une sorte de règle exige : sans l'un d'eux, ou hors de ses bornes, le lecteur la refuse. */
 const RULE_NEED = Object.freeze({
   hover: ['radiusM', 'duration', 'gap', 'tol', 'hMin', 'hMax'],
   // la vitesse d'un poser est écrite (le lecteur prend 3 kt sans elle ; Affectation veut une règle complète)
-  landing: ['radiusM', 'duration', 'gap', 'speed'],
+  landing: ['duration', 'gap', 'speed'],
   overflight: ['radiusNm', 'hMin', 'hMax']
 });
 /** Les champs du fichier qu'une règle porte (une règle neuve, ou d'une autre sorte, les perd tous avant d'écrire les siens). */
@@ -182,7 +183,6 @@ export function holdRow(kind, places = []) {
       hMin: '10',
       hMax: '100'
     } : kind === 'landing' ? {
-      radiusM: '5',
       duration: '10', // Affectation, 18 nov. : dix secondes posé, un trou de dix secondes toléré
       gap: '10',
       speed: String(H.landingSpeedDefault)
@@ -204,6 +204,25 @@ export function landingGapMin() {
   const p = DW.FIX_PERIOD_SEC;
   return Number.isFinite(p) ? Math.max(p, H.maxGapSec[0]) : H.maxGapSec[0];
 }
+
+/** De quoi un poser est jugé en vol (SOG-0507, les tolérances de l'utilisateur lues de drawers.js, jamais recopiées) : 'field' quand il vise
+ *  un terrain de la route (ORIGIN, DESTINATION et leurs synonymes du lecteur : à AD_NM, sans palier), 'tiers' sinon (des paliers). */
+export function landingJudge(rule) {
+  const p = String(isObj(rule) && typeof rule.point === 'string' ? rule.point : '').trim().toUpperCase();
+  return ['ORIGIN', 'DEPART', 'DEPARTURE', 'DESTINATION', 'ARRIVAL', 'ARRIVEE'].includes(p) ? 'field' : 'tiers';
+}
+
+/** Les paliers d'un posé de précision, du plus large au plus serré : [{ tier, nm }] (lus de PRECISION de drawers.js). */
+export const precisionTiers = () => [...DW.PRECISION].reverse().map(x => ({
+  tier: x.tier,
+  nm: x.nm
+}));
+
+/** Les tolérances de distance d'un terrain et d'une escale, en milles marins : { field, transit } (lues de drawers.js). */
+export const toleranceNm = () => ({
+  field: DW.AD_NM,
+  transit: DW.TRANSIT_NM
+});
 
 /** Ce qui manque à la condition d'une ligne (voir l'en-tête). */
 export function condMissing(row) {

@@ -39,10 +39,10 @@ phases:
     trigger_condition:             # 3. a condition: « arrival », or one of the workshop's 1.1 conditions (§ 4)
       kind: arrival
       point: DESTINATION           #    DESTINATION, ORIGIN, or a place of the mission
-      radius_nm: 1
+      radius_nm: 1                 #    no longer read by the flight: 1 NM of the airfield (SOG-0507, § 4 quinquies)
       speed_max_kt: 30
       require_on_ground: true
-      required_points: [PT2]       #    optional: stops made before the arrival
+      required_points: [PT2]       #    optional: stops made before the arrival (passed within 2 NM)
       escort_min_sec: 0            #    optional: seconds spent following a target
     trigger_point: RDV-1           # 4. the hour (V2): a place of the mission, or ORIGIN for a delay after take-off
     trigger_delay_min: 10          #    minutes after the estimated passage at trigger_point
@@ -252,7 +252,7 @@ phases:
     trigger_condition:             # a landing: the same, with a maximum speed and no height
       kind: landing
       point: DESTINATION
-      radius_m: 5
+      # radius_m: no longer read (SOG-0507): a landing is judged by tiers, or at 1 NM of a field of the route
       duration_sec: 10
       max_gap_sec: 10
       speed_max_kt: 3              #    0 to 50 (the reader takes 3 when absent; the workshop always writes it)
@@ -269,7 +269,14 @@ phases:
 - **What the workshop writes**: only what the author changed (the rule of `with…`, audit 182); a condition of another kind is
   replaced whole (no field of the old kind is left); a number out of the reader's bounds is never written nor clamped; a point and an
   object are never written together. Other keys of the condition (`label`, `confirmation`, a key it does not know) stay as written.
-- **A landing as « Affectation » will judge it** (18 Nov 2026): a point OR a fixed object, `radius_m`, `speed_max_kt`,
+- **The user's tolerances** (19 Nov 2026, SOG-0507; `modules/missions/drawers.js`: `TRANSIT_NM`, `AD_NM`, `PRECISION`) PRIME over
+  the file: `radius_m` of a landing is **no longer read** (the reader neither requires nor bounds it; a file that carries it keeps
+  it as it is, nothing is rewritten without a gesture); a precision landing on a point or an object is judged by TIERS of distance
+  to the aimed point — « partiel » 0.5 NM, « réussi » 0.2 NM, « parfait » 0.1 NM, « excellent » 0.05 NM (beyond 0.5 NM: missed); a
+  landing on a field of the route (`point`: ORIGIN, DESTINATION) is within the zone at 1 NM, without a tier; the radius of an
+  arrival (`radius_nm`) is **replaced by 1 NM** and a required stop (`required_points`) is passed within **2 NM**. A hover, an
+  overflight, a zone and an object keep the radius of the author. The workshop writes none of the replaced radii.
+- **A landing as « Affectation » will judge it** (18 Nov 2026): a point OR a fixed object, `speed_max_kt`,
   `duration_sec`, `max_gap_sec` — not shorter than the period of a fix of the flight (`FIX_PERIOD_SEC` of `modules/missions/drawers.js`
   once published; until then the reader's bound) — and no `confirmation`. The workshop proposes 10 s and a gap of 10 s.
 - **« À compléter »**: a rule the reader would refuse says what it misses (`condIncomplete`: the point or the object, a number out of
@@ -357,7 +364,7 @@ unreadable and the drawer opens by hand:
 | `escort_min_sec` | 0 to 3 600 |
 | `trigger_delay_min` | 0 to 1 440 |
 
-The 1.1 rules: `radius_m` 0.1 to 10 000, `duration_sec` 1 to 3 600, `max_gap_sec` 0.1 to 60, `speed_max_kt` of a landing 0 to
+The 1.1 rules: `radius_m` of a hover 0.1 to 10 000 (of a landing: not read), `duration_sec` 1 to 3 600, `max_gap_sec` 0.1 to 60, `speed_max_kt` of a landing 0 to
 50 (3 when absent), `speed_tolerance_kt` 0 to 100, `height_min_ft` ≤ `height_max_ft` within 0 to 60 000, `radius_nm` of an
 overflight 0.001 to 100; a point AND an object, or neither, is unreadable; a sequence has 1 to 10 steps, never nested; the
 id of an event and a recipient are short words (80 signs, `[A-Za-z0-9_.-]`).

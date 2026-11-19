@@ -4869,8 +4869,9 @@ def n78(c):
     # the arrival drawer: its fields; a key kept as it is would say so (N75) — here the hour
     c.page.click(f'{E} [data-atflow] [data-sel="D"]')
     c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'D'", timeout=3000, what='drawer 3 by ONE click after typing')
-    c.eq(c.js(_DW_FIELDS), ['key', 'arrPoint', 'arrRadius', 'arrSpeed', 'arrGround', 'stopadd', 'fallback', 'title', 'message', 'brief', 'routeadd'], 'the fields of an arrival', what='fields')
-    c.eq([c.js(_DW_VAL, f) for f in ('arrPoint', 'arrRadius', 'arrSpeed', 'arrGround')], ['DESTINATION', '1', '30', True], 'read from the file', what='the arrival')
+    c.eq(c.js(_DW_FIELDS), ['key', 'arrPoint', 'arrSpeed', 'arrGround', 'stopadd', 'fallback', 'title', 'message', 'brief', 'routeadd'],
+         'the fields of an arrival (no radius to type since SOG-0507: the arrival is judged at 1 NM of the airfield)', what='fields')
+    c.eq([c.js(_DW_VAL, f) for f in ('arrPoint', 'arrSpeed', 'arrGround')], ['DESTINATION', '30', True], 'read from the file', what='the arrival')
     # « ＋ Tiroir »: the fifth, by the pilot's gesture (SOG-0467: chosen in the choice of the type it opens); then an hour after take-off
     c.tap(f'{E} [data-atflow] [data-dradd]')
     c.tap(f'{E} [data-kinds=new] [data-key="hand"]')
@@ -10073,7 +10074,7 @@ _HOLD_PURE_JS = """async () => { const MS = await import('/frame/lib/mission.js'
   // the drawer of the file: its fields, then one field changed — the rest of the condition and emit_event stay as written
   const rows = DR.drawerRowsOf(base);
   out.fileRow = [rows[0].key, rows[0].rule.point, rows[0].rule.radiusM, rows[0].rule.duration, rows[0].rule.gap, rows[0].rule.speed];
-  const r1 = structuredClone(rows); r1[0].rule.radiusM = '7'; r1[0].rule.point = ''; r1[0].rule.object = 'OBJ-1';
+  const r1 = structuredClone(rows); r1[0].rule.duration = '7'; r1[0].rule.point = ''; r1[0].rule.object = 'OBJ-1';
   out.edited = DR.withDrawerRows(base, r1).phases[0];
   out.untouched = J(DR.withDrawerRows(base, structuredClone(rows))) === J(base);
   // out of the reader's bounds: never written, never brought back into bounds; said in « À compléter »
@@ -10115,9 +10116,9 @@ def n151(c):
     c.eq(g['hover']['read'], {'kind': 'condition', 'condition': 'hover', 'rule': {'kind': 'hover', 'point': None, 'object': 'OBJ-1', 'radiusM': 5, 'radiusNm': None,
          'durationSec': 60, 'maxGapSec': 10, 'speedMaxKt': None, 'speedToleranceKt': 2, 'heightMinFt': 10, 'heightMaxFt': 100, 'confirmation': '',
          'confirm': False}, 'fallbackMin': 30}, 'the reader reads the rule written', what='hover read')
-    c.eq(g['landing']['written'], {'kind': 'landing', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3},
-         'a landing at the arrival: 5 m, 10 s, a gap of 10 s, 3 kt written, no confirmation', what='landing written')
-    c.eq(g['landing']['read']['rule'], {'kind': 'landing', 'point': 'DESTINATION', 'object': None, 'radiusM': 5, 'radiusNm': None, 'durationSec': 10,
+    c.eq(g['landing']['written'], {'kind': 'landing', 'point': 'DESTINATION', 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3},
+         'a landing at the arrival: 10 s, a gap of 10 s, 3 kt written, no confirmation, NO radius (SOG-0507: the flight judges by tiers or at 1 NM of the airfield)', what='landing written')
+    c.eq(g['landing']['read']['rule'], {'kind': 'landing', 'point': 'DESTINATION', 'object': None, 'radiusM': None, 'radiusNm': None, 'durationSec': 10,
          'maxGapSec': 10, 'speedMaxKt': 3, 'speedToleranceKt': None, 'heightMinFt': None, 'heightMaxFt': None, 'confirmation': '', 'confirm': False},
          'the reader reads the landing', what='landing read')
     c.eq(g['overflight']['written'], {'kind': 'overflight', 'object': 'OBJ-1', 'radius_nm': 0.5, 'height_min_ft': 100, 'height_max_ft': 2000,
@@ -10127,17 +10128,17 @@ def n151(c):
         c.eq([g[k]['keyWhy'], g[k]['same'], g[k]['missing'], g[k]['todo']], ['', True, [], ['noMessage', 'noBrief']],
              f'{k}: read without a reason, the same row read back, nothing missing in the rule (only the texts to write)', what=f'{k} round trip')
     c.eq(g['fileRow'], ['landing', 'PT1', '5', '10', '10', '3'], 'the drawer of the file in fields', what='the file row')
-    c.eq(g['edited'], {'id': 'B', 'title': 'Poser', 'trigger_condition': {'kind': 'landing', 'radius_m': 7, 'duration_sec': 10, 'max_gap_sec': 10,
+    c.eq(g['edited'], {'id': 'B', 'title': 'Poser', 'trigger_condition': {'kind': 'landing', 'radius_m': 5, 'duration_sec': 7, 'max_gap_sec': 10,
                        'speed_max_kt': 3, 'extra': 'gardée', 'object': 'OBJ-1'}, 'emit_event': {'id': 'EV-1', 'to': ['A']}, 'fallback_delay_min': 60},
-         'the radius and the place changed, the rest as written (an unknown key, emit_event)', what='one field changed')
+         'the duration and the place changed, the rest as written (a radius_m the file carries is kept as it is, an unknown key, emit_event)', what='one field changed')
     c.eq(g['untouched'], True, 'nothing changed: the document is identical', what='nothing changed')
     c.eq(g['bounds'], [None, None, {'key': 'condIncomplete', 'name': '1', 'what': ['duration', 'gap']}],
          '99999 s and a gap of 0 s are not written, « À compléter » names them', what='the bounds')
     c.eq(g['rules'], [['at'], ['at'], ['hOrder'], ['confirmation']], 'what a rule misses, named', what='the rules')
     c.eq(g['switched'], {'kind': 'overflight', 'object': 'OBJ-1', 'radius_nm': 0.5, 'height_min_ft': 100, 'height_max_ft': 2000, 'require_confirmation': True},
          'another key: the landing is gone whole (its unknown key too: the condition is another one)', what='another key')
-    c.eq([g['threw'], g['hostile']], ['', {'kind': 'landing', 'extra': 'gardée'}],
-         'forged fields: nothing out of bounds written, nothing thrown', what='hostile rows')
+    c.eq([g['threw'], g['hostile']], ['', {'kind': 'landing', 'radius_m': 5, 'extra': 'gardée'}],
+         'forged fields: nothing out of bounds written, nothing thrown (the radius_m the file carries is no longer read nor touched: kept)', what='hostile rows')
 
 
 _LANDING_MISSION = """mission: { id: X-001A, type: REG, subtype: RECHERCHE }
@@ -10176,9 +10177,9 @@ def n152(c):
         c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the drawer')
         c.eq([c.js(_DW_VAL, 'key'), c.count(f'{_DW} [data-dwnotjudged]'), norm(c.js(f"document.querySelector('{_DW} [data-kindcur] b').textContent"))],
              ['landing', 0, norm(row(c, 'dwKey_landing', EDTX_FILE))], f'{width}: the key « un poser », no mention « not judged » (the flight judges it now, SOG-0500)', what='the key')
-        c.eq(c.js(_RULE_FIELDS), ['rule.point', 'rule.object', 'rule.radiusM', 'rule.duration', 'rule.gap', 'rule.speed'],
-             f'{width}: the fields of a landing, in order', what='the fields')
-        c.eq([c.js(_RULE_VAL, f) for f in ('point', 'object', 'radiusM', 'duration', 'gap', 'speed')], ['PT1', '', '5', '10', '10', '3'],
+        c.eq(c.js(_RULE_FIELDS), ['rule.point', 'rule.object', 'rule.duration', 'rule.gap', 'rule.speed'],
+             f'{width}: the fields of a landing, in order, no radius to type (SOG-0507)', what='the fields')
+        c.eq([c.js(_RULE_VAL, f) for f in ('point', 'object', 'duration', 'gap', 'speed')], ['PT1', '', '10', '10', '3'],
              f'{width}: the values of the file', what='the values')
         c.eq(c.js(_DW_VAL, 'fallback'), '60', f'{width}: its fallback', what='the fallback')
         c.js(f"document.querySelector('{_DW}').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
@@ -10266,7 +10267,7 @@ def n153(c):
         {'id': 'B', 'trigger_condition': {'kind': 'sequence', 'steps': [
             {'kind': 'hover', 'object': 'OBJ-1', 'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10,
              'height_max_ft': 100, 'label': 'Descente', 'confirmation': 'deploy'},
-            {'kind': 'landing', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3, 'label': 'Poser'}]},
+            {'kind': 'landing', 'point': 'DESTINATION', 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3, 'label': 'Poser'}]},
          'emit_event': {'id': 'EV-B', 'to': ['ALPHA', 'BRAVO']}},
         {'id': 'C', 'trigger_condition': {'kind': 'event', 'event': 'EV-B'}, 'emit_event': None}],
         'the sequence, its two steps in the reader\'s form; the message awaited; the message sent at the opening', what='written')
@@ -10280,7 +10281,7 @@ def n153(c):
     c.eq(g['stepEdit'], {'kind': 'sequence', 'note': 'gardée', 'steps': [
         {'kind': 'hover', 'object': 'OBJ-1', 'radius_m': 5, 'duration_sec': 30, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100,
          'x_extra': 1},
-        {'kind': 'landing', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3}]},
+        {'kind': 'landing', 'point': 'DESTINATION', 'duration_sec': 10, 'max_gap_sec': 10, 'speed_max_kt': 3}]},
         'step 1: its duration only, its other key kept; step 2 another kind: written whole (its confirmation gone)', what='a step changed')
     c.eq(g['untouched'], True, 'nothing changed: the document is identical', what='nothing changed')
     c.eq(g['missing'], [{'key': 'condIncomplete', 'name': '1', 'what': ['steps']}, {'key': 'condIncomplete', 'name': '2', 'what': ['event']}],
@@ -10350,7 +10351,7 @@ def n154(c):
         c.page.select_option(f'{_DW} select[data-f="step.kind"][data-n="1"]', 'landing')
         c.until(f"document.querySelector('{_DW} select[data-f=\"step.kind\"][data-n=\"1\"]')?.value === 'landing'", what='step 2 a landing')
         c.eq([c.js(_STEP_VAL, [1, f]) for f in ('label', 'point', 'radiusM', 'duration', 'gap', 'speed', 'confirmation', 'tol')],
-             ['Reprise', 'DESTINATION', '5', '10', '10', '3', None, None], f'{width}: a landing step: its fields, its name kept, no confirmation word', what='step 2')
+             ['Reprise', 'DESTINATION', None, '10', '10', '3', None, None], f'{width}: a landing step: its fields, its name kept, no confirmation word', what='step 2')
         c.tap(f'{_DW} [data-dwsteps] [data-do=eddrstepadd]')
         c.until(f"document.querySelectorAll('{_DW} [data-dwsteps] [data-step]').length === 3", what='a third step')
         c.eq([c.js(_STEPS), c.js(_STEP_VAL, [2, 'kind'])], [[['1', ''], ['2', ''], ['3', '1']], 'hover'], f'{width}: « ＋ Étape » adds a hover, open', what='added')
@@ -10364,7 +10365,7 @@ def n154(c):
         c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
         after = c.js('(t) => window.jsyaml.load(t)', c.js(_TEXT_OF, path))
         before = c.js('(t) => window.jsyaml.load(t)', _SEQ_MISSION)
-        before['phases'][0]['trigger_condition']['steps'][1] = {'kind': 'landing', 'label': 'Reprise', 'point': 'DESTINATION', 'radius_m': 5, 'duration_sec': 10,
+        before['phases'][0]['trigger_condition']['steps'][1] = {'kind': 'landing', 'label': 'Reprise', 'point': 'DESTINATION', 'duration_sec': 10,
                                                                  'max_gap_sec': 10, 'speed_max_kt': 3}
         c.eq({k: after.get(k) for k in ('phases', 'objects', 'route_order')}, {k: before.get(k) for k in ('phases', 'objects', 'route_order')},
              f'{width}: step 2 written as a landing, nothing else moved', what='the file written')
@@ -10543,8 +10544,8 @@ def n156(c):
     c.eq({r[5] for r in g['read']}, {'60', '120'}, 'a fallback on each', what='fallback')
     by = {r[0]: r for r in g['read']}
     c.eq([by['le-track'][6], by['common-landing'][6], by['common-hover'][6], by['sar-sea'][6], by['maritime-team'][6]],
-         [[1000, 60, 'OBJ-1'], [5, 60, 'DESTINATION'], [5, 60, 'OBJ-1'], [0.5, None, 'OBJ-1'], ['deploy', 'recover']],
-         'a following on the object, a precision landing of 60 s at the arrival, a hover on the object, an overflight, two steps confirmed',
+         [[1000, 60, 'OBJ-1'], [None, 60, 'DESTINATION'], [5, 60, 'OBJ-1'], [0.5, None, 'OBJ-1'], ['deploy', 'recover']],
+         'a following on the object, a precision landing of 60 s at the arrival (no radius since SOG-0507), a hover on the object, an overflight, two steps confirmed',
          what='some bricks')
     c.eq([g['offered'], g['ifJudged']], [55, 60], '« ＋ Tiroir » offers only what the flight judges (the 12 landings since 3c2e2abba, the 5 overflights since 4c9b10ef3, the 9 hovers since 9cbbf9e11, the sequence since 72d7ef7dc)', what='offered')
     c.eq(g['model'], [['hover', 'OBJ-1', {'radius_m': 5, 'duration_sec': 60, 'max_gap_sec': 10, 'speed_tolerance_kt': 2, 'height_min_ft': 10, 'height_max_ft': 100}],
@@ -11160,3 +11161,127 @@ def n164(c):
          'the file: origin written with its code AND its position { name, icao: XTST, lat, lon }')
     ed_leave(c)
     c.js(_REG_CLEAR)
+
+
+
+# SOG-0507: the reader and the flight no longer ask for a radius of a landing — `radius_m` is not read (the tiers of the user, 19 Nov, replace it)
+_LAND_NORADIUS_JS = """async () => { const MS = await import('/frame/lib/mission.js'), D = await import('/modules/missions/drawers.js');
+  const head = { mission: { id: 'X-001A', type: 'REG' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 }, turning_points: [{ id: 'PT1', lat: 44.8, lon: 1.2 }] };
+  const land = { kind: 'landing', point: 'PT1', duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 };
+  const variants = { noRadius: land, withRadius: { ...land, radius_m: 5 }, hugeRadius: { ...land, radius_m: 1e9 }, textRadius: { ...land, radius_m: 'x' },
+    inStep: null, hoverNoRadius: { kind: 'hover', point: 'PT1', duration_sec: 60, max_gap_sec: 10, speed_tolerance_kt: 2, height_min_ft: 10, height_max_ft: 100 } };
+  const out = {};
+  for (const [k, c] of Object.entries(variants)) {
+    const cond = k === 'inStep' ? { kind: 'sequence', steps: [land] } : c;
+    const d = MS.readMission({ ...head, phases: [{ id: 'B', trigger_condition: cond }] }).drawers[0];
+    out[k] = d ? [d.key.kind, MS.notJudgedYet(d.key), D.follows(d.key)] : null;
+  }
+  return out }"""
+
+
+@case('N165', 'Missions › the reader and the flight do not ask for the radius of a landing any more (SOG-0507, pure, in the page): a landing without `radius_m` is '
+      'read as a condition, `notJudgedYet` of the reader is false and `follows` of drawers.js true — also when `radius_m` is out of its bounds or not a number, '
+      'and for a landing step of a sequence —; a hover without its radius is still refused (read as the gesture)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0507 (the user, 19 Nov): « radius_m n\'est PLUS lu » — landSpec of modules/missions/drawers.js judges by tiers or at 1 NM of the airfield; holdRule and '
+      'conditionJudged of frame/lib/mission.js follow it (N155 keeps them together)')
+def n165(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    g = c.js(_LAND_NORADIUS_JS)
+    c.eq(g, {'noRadius': ['condition', False, True], 'withRadius': ['condition', False, True], 'hugeRadius': ['condition', False, True],
+             'textRadius': ['condition', False, True], 'inStep': ['condition', False, True], 'hoverNoRadius': ['hand', False, False]},
+         'a landing without a radius (or with one out of bounds, or a text) is read and judged; the same in a sequence; a hover without a radius is read as the gesture, not as a condition', what='the reader')
+
+
+# SOG-0507: the trial of the keys judges an arrival like the flight — at 1 NM of the airfield, a stopover at 2 NM, whatever `radius_nm` the file carries
+_TRIAL_TOL_JS = """async () => { const TR = await import('/modules/missions/editor_trial.js'), MS = await import('/frame/lib/mission.js');
+  const doc = (radius, stops) => ({ mission: { id: 'X-001A', type: 'REG' }, title: 'Essai', cruise_speed_kt: 120,
+    origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 }, destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    turning_points: [{ id: 'PT1', name: 'Un', lat: 44.8, lon: 1.2 }], route_order: ['ORIGIN', 'PT1', 'DESTINATION'],
+    phases: [{ id: 'B', title: 'Arrivée', fallback_delay_min: 600, trigger_condition: { kind: 'arrival', point: 'DESTINATION', radius_nm: radius, speed_max_kt: 400,
+      ...(stops ? { required_points: ['PT1'] } : {}) } }] });
+  const nm = x => x / 60, put = (lat, lon, min) => ({ min, lat, lon });
+  const run = (radius, puts, stops) => { const r = TR.trialRun(MS.readMission(doc(radius, stops)), { untilMin: 120, altFt: 100, puts }), d = r.drawers[0];
+    return d.open ? [d.how, d.min, r.log.filter(l => l.ev === 'stops').length] : [null, null, 0] };
+  const out = {};
+  // the arrival, 0.8 / 1 / 1.2 NM south of the airfield, put at minute 3 (the aircraft would otherwise arrive much later)
+  out.in08 = run(0.1, [put(44 - nm(0.8), 2, 3)], false);
+  out.out12 = run(5, [put(44 - nm(1.2), 2, 3)], false);
+  out.alone = run(5, [], false);
+  // a stopover: the aircraft is put 1.8 NM / 2.5 NM from PT1 at minute 2, then 0.8 NM from the airfield a quarter of a minute later
+  out.stop18 = run(0.1, [put(44.8 - nm(1.8), 1.2, 2), put(44 - nm(0.8), 2, 2.25)], true);
+  out.stop25 = run(5, [put(44.8 - nm(2.5), 1.2, 2), put(44 - nm(0.8), 2, 2.25)], true);
+  return out }"""
+
+
+@case('N166', 'Missions › the trial of the keys judges an arrival like the flight (SOG-0507, pure, in the page): an aircraft put 0.8 NM from the arrival opens it at '
+      'once — whatever the file\'s `radius_nm`, even 0.1 —, put 1.2 NM from it does not — even with `radius_nm` 5 —; it opens when the aircraft arrives', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0507 (the user, 19 Nov: an arrival is within the zone at 1 NM of the airfield, a stopover at 2 NM): modules/missions/editor_trial.js reads AD_NM and TRANSIT_NM '
+      'of modules/missions/drawers.js, like `finding` of the flight')
+def n166(c):
+    c.page.goto(f'{c.base}/frame/manifest.webmanifest')
+    g = c.js(_TRIAL_TOL_JS)
+    c.eq(g['in08'], ['arrival', 3, 0], 'put 0.8 NM from the airfield, `radius_nm` 0.1 in the file: the arrival opens at minute 3 (1 NM)', what='0.8 NM')
+    c.eq([g['out12'][0], g['out12'][1] > 3], ['arrival', True], 'put 1.2 NM from the airfield, `radius_nm` 5 in the file: not opened by the put (it opens later, when the aircraft arrives)',
+         what='1.2 NM')
+    c.eq([g['alone'][0], g['alone'][1] > 3], ['arrival', True], 'no placement: the arrival opens when the aircraft arrives', what='alone')
+    c.eq(g['stop18'], ['arrival', 2.25, 0], 'a stopover passed at 1.8 NM (2 NM), `radius_nm` 0.1 in the file: the arrival opens at minute 2.25', what='stopover 1.8 NM')
+    c.eq([g['stop25'][0], g['stop25'][1] > 3], ['arrival', True], 'a stopover passed at 2.5 NM (`radius_nm` 5 in the file): not made by the put, the arrival waits for the aircraft', what='stopover 2.5 NM')
+
+
+_TOL_MISSION = _LANDING_MISSION + "  - { id: C, title: Arrivée au terrain, message: Posez-vous au terrain., brief: Arrivée., fallback_delay_min: 90, trigger_condition: { kind: arrival, point: DESTINATION, radius_nm: 3, speed_max_kt: 30, require_on_ground: true, required_points: [PT1] } }\n"
+
+
+@case('N167', 'Missions › the workshop no longer asks for the radii the user\'s tolerances replace (SOG-0507): the sheet of a landing at a point has no « Rayon (m) » '
+      'but the line « Jugé par paliers : partiel 0,5 NM · réussi 0,2 NM · parfait 0,1 NM · excellent 0,05 NM » (the figures read from PRECISION of drawers.js), at the '
+      'arrival of the route « Jugé à 1 NM du terrain »; the sheet of an arrival has no radius field but « Arrivée jugée à 1 NM du terrain » and « Un arrêt compte à 2 NM '
+      'du point »; the drawer has nothing to complete without a radius; a file that carries `radius_m` (landing) and `radius_nm` (arrival) keeps them as they are when the '
+      'author changes something else; at 390 and at 1280', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0507 (the user, 19 Nov: stopover 2 NM, airfield 1 NM, tiers 0.5 / 0.2 / 0.1 / 0.05 NM; « l\'atelier pose ces valeurs par défaut et n\'invente pas d\'autre '
+      'réglage »): modules/missions/editor_view.js `edJudgedLine`, `edDrawerHtml`; modules/missions/editor_drawers.js `landingJudge`, `RULE_USE`')
+def n167(c):
+    path = 'missions/X_REG/X-001A/missionX-001A.yaml'
+    sep = '.' if c.lang == 'en' else ','
+    nmtxt = lambda v: str(v).replace('.', sep)  # noqa: E731
+    tiers = ' · '.join(f"{row(c, 'dwTier_' + k, EDTX_FILE)} {nmtxt(v)} NM" for k, v in (('partiel', 0.5), ('reussi', 0.2), ('parfait', 0.1), ('excellent', 0.05)))
+    text = lambda sel: norm(c.js(f"document.querySelector('{sel}')?.textContent || ''"))  # noqa: E731
+    for width in (390, 1280):
+        c.page.set_viewport_size({'width': width, 'height': c.height})
+        _ed_open(c, _TOL_MISSION)
+        ed_reveal(c)
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the sheet of the landing')
+        c.eq(c.count(f'{_DW} [data-f="rule.radiusM"]'), 0, f'{width}: no radius (m) to type on a landing', what='no radius')
+        c.eq(text(f'{_DW} [data-dwjudged=tiers]'), norm(row(c, 'dwJudgedTiers', EDTX_FILE).replace('{tiers}', tiers)), f'{width}: the tiers of a landing at a point, said', what='the tiers')
+        mark = f"document.querySelector('{E} [data-atflow] [data-dmark=\"1\"]')?.textContent.trim()"
+        c.eq(c.js(mark), '✓', f'{width}: nothing to complete (the file carries its radius, the workshop does not ask for it)', what='the mark')
+        c.js(f"document.querySelector('{_DW} [data-dwjudged]').scrollIntoView({{block: 'center'}})")
+        c.shot(f'P14b_{width}_paliers.png')  # the sheet of a landing: the tiers instead of the radius
+        c.page.select_option(f'{_DW} select[data-f="rule.point"]', 'DESTINATION')
+        c.until(f"!!document.querySelector('{_DW} [data-dwjudged=field]')", what='the landing at the arrival: judged at the airfield')
+        c.eq(text(f'{_DW} [data-dwjudged=field]'), norm(row(c, 'dwJudgedField', EDTX_FILE).replace('{nm}', '1')), f'{width}: a landing at the arrival: 1 NM of the airfield', what='the airfield')
+        c.page.select_option(f'{_DW} select[data-f="rule.point"]', 'PT1')
+        c.until(f"!!document.querySelector('{_DW} [data-dwjudged=tiers]')", what='back at the point')
+        c.tap(f'{E} [data-atflow] [data-sel="C"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'C'", what='the sheet of the arrival')
+        c.eq([c.count(f'{_DW} [data-f="arrRadius"]'), c.count(f'{_DW} [data-f="arrSpeed"]')], [0, 1], f'{width}: the arrival: no radius, its speed', what='the fields')
+        c.eq([text(f'{_DW} [data-dwjudged=arrival]'), text(f'{_DW} [data-dwjudged=stops]')],
+             [norm(row(c, 'dwArrJudged', EDTX_FILE).replace('{nm}', '1')), norm(row(c, 'dwStopsJudged', EDTX_FILE).replace('{nm}', '2'))],
+             f'{width}: the arrival at 1 NM of the airfield, a stopover at 2 NM', what='the arrival lines')
+        c.js(f"document.querySelector('{_DW} [data-dwjudged=arrival]').scrollIntoView({{block: 'start'}}); window.scrollBy(0, -90)")
+        c.shot(f'P14b_{width}_arrivee.png')
+        c.tap(f'{E} [data-atflow] [data-sel="B"]')
+        c.until(f"document.querySelector('{_DW}')?.dataset.drawer === 'B'", what='the landing again')
+        c.page.fill(f'{_DW} [data-f="rule.duration"]', '20')
+        c.tap(f'{E} [data-do="edsave"]')
+        c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='the mission saved')
+        after = c.js('(t) => window.jsyaml.load(t)', c.js(_TEXT_OF, path))
+        before = c.js('(t) => window.jsyaml.load(t)', _TOL_MISSION)
+        before['phases'][0]['trigger_condition']['duration_sec'] = 20
+        c.eq(after.get('phases'), before.get('phases'),
+             f'{width}: the duration written; the `radius_m` of the landing and the `radius_nm` of the arrival the file carries are kept as they are', what='the file written')
+        ed_leave(c)
+        c.js(_REG_CLEAR)

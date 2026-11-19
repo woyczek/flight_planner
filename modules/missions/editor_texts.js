@@ -292,6 +292,26 @@ export const EDTX = {
   dwDest: ['l\'arrivée', 'the arrival', 'die Ankunft', 'la llegada'],
   dwDep: ['le départ', 'the departure', 'der Abflug', 'la salida'],
   dwArrRadius: ['Rayon (NM)', 'Radius (NM)', 'Radius (NM)', 'Radio (NM)'],
+  // SOG-0507 : les tolérances de l'utilisateur, dites au lieu des rayons qu'elles remplacent (les mots des paliers sont ceux du carnet, drawers_view.js)
+  dwJudgedTiers: ['Jugé par paliers : {tiers}', 'Judged by tiers: {tiers}', 'Beurteilt nach Stufen: {tiers}',
+    'Juzgado por niveles: {tiers}'
+  ],
+  dwTierItem: ['{tier} {nm} NM', '{tier} {nm} NM', '{tier} {nm} NM', '{tier} {nm} NM'],
+  dwTier_excellent: ['excellent', 'excellent', 'ausgezeichnet', 'excelente'],
+  dwTier_parfait: ['parfait', 'perfect', 'perfekt', 'perfecto'],
+  dwTier_reussi: ['réussi', 'good', 'gelungen', 'logrado'],
+  dwTier_partiel: ['partiel', 'partial', 'teilweise', 'parcial'],
+  dwJudgedField: ['Jugé à {nm} NM du terrain', 'Judged within {nm} NM of the airfield', 'Beurteilt im Umkreis von {nm} NM um den Platz',
+    'Juzgado a {nm} NM del aeródromo'
+  ],
+  dwArrJudged: ['Arrivée jugée à {nm} NM du terrain', 'Arrival judged within {nm} NM of the airfield',
+    'Ankunft beurteilt im Umkreis von {nm} NM um den Platz',
+    'Llegada juzgada a {nm} NM del aeródromo'
+  ],
+  dwStopsJudged: ['Un arrêt compte à {nm} NM du point', 'A stop counts within {nm} NM of the point',
+    'Ein Halt zählt im Umkreis von {nm} NM um den Punkt',
+    'Una parada cuenta a {nm} NM del punto'
+  ],
   dwArrSpeed: ['Vitesse maximale (kt)', 'Maximum speed (kt)', 'Höchstgeschwindigkeit (kt)', 'Velocidad máxima (kt)'],
   dwArrGround: ['Posé au sol', 'Landed, on the ground', 'Gelandet, am Boden', 'Posado en tierra'],
   dwStops: ['Arrêts à faire avant l\'arrivée', 'Stops to make before the arrival', 'Halte vor der Ankunft',

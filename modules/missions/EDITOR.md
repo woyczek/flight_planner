@@ -1573,6 +1573,17 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   the base all the same (`ED.endsAt`, for the drawing only), where the map already showed it.
 - Captures `P14a_390_verrouille.png`, `P14a_1280_verrouille.png` (the sheet locked; at 1280 the dashed route through XTST beside it).
 
+### 7 quattuorquinquagies. The workshop no longer asks for the radii the user's tolerances replace (19 Nov 2026; SOG-0507; noreg N165, N166, N167)
+
+The user's figures (`drawers.js`: `TRANSIT_NM` 2, `AD_NM` 1, `PRECISION`, `TIERS`) prime over the file, and the workshop says them instead of
+asking for a radius: the sheet of a landing has no « Rayon (m) » but one line, « Jugé par paliers : partiel 0,5 NM · réussi 0,2 NM · parfait 0,1 NM ·
+excellent 0,05 NM » (`DR.precisionTiers`, read from `PRECISION`; the words are those of the pilot's book, four languages), or « Jugé à 1 NM du terrain »
+when its point is ORIGIN or DESTINATION (`DR.landingJudge`); the sheet of an arrival has no radius field but « Arrivée jugée à 1 NM du terrain » and
+« Un arrêt compte à 2 NM du point » (`DR.toleranceNm`). « À compléter » no longer requires `radius_m` of a landing (`RULE_NEED`), a new landing writes none, and a
+file that carries `radius_m` or `radius_nm` keeps it as it is (only what changes is written). The reader (`frame/lib/mission.js`) no longer refuses a landing
+without `radius_m` (`holdRule`, `conditionJudged`: N155, N158 keep the reader and `follows` together). The trial of the keys (`editor_trial.js`) judges an
+arrival like the flight: `AD_NM` and `TRANSIT_NM` imported from `drawers.js`, never copied.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

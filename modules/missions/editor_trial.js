@@ -35,6 +35,10 @@
 //     son atterrissage, il reste au sol, là. Le journal dit 'put'.
 import * as CR from '../../frame/lib/crossing.js';
 import * as MS from '../../frame/lib/mission.js';
+import {
+  AD_NM,
+  TRANSIT_NM
+} from './drawers.js'; // les tolérances de l'utilisateur (SOG-0507) : lues du jugement du vol, jamais recopiées
 
 export const TRIAL = Object.freeze({
   puts: 20, // « Placer l'avion ici » : vingt poses au plus
@@ -267,15 +271,19 @@ function run(mission, opts) {
         if (!visited.has(s.id) && CR.reach(prev, fix, {
             lat: s.lat,
             lon: s.lon,
-            rangeNm: key.radiusNm
+            rangeNm: TRANSIT_NM // une escale requise : à 2 NM (SOG-0507), quel que soit le rayon du fichier
           }).ok === true) visited.add(s.id);
-      const a = CR.arrived(fix, key);
+      // l'arrivée est jugée comme le vol la juge : à AD_NM (1 NM) du terrain, quel que soit `radius_nm` du fichier (SOG-0507)
+      const a = CR.arrived(fix, {
+        ...key,
+        radiusNm: AD_NM
+      });
       if (a.ok === true) {
         if (stops.every(s => visited.has(s.id))) return {
           how: 'arrival'
         };
         once(d, 'stops');
-      } else if (a.ok === null && a.distNm !== null && a.distNm <= key.radiusNm) once(d, 'unknown', {
+      } else if (a.ok === null && a.distNm !== null && a.distNm <= AD_NM) once(d, 'unknown', {
         why: 'ground'
       });
       return fallback();
