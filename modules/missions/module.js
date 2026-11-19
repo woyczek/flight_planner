@@ -56,6 +56,7 @@ export const meta = {
     '../../frame/lib/icons.js', // l'atelier (editor_view.js) l'importe : demandé par Création (I26)
     '../../frame/lib/suggest_list.js', // SOG-0465 (adnames.js : importé par ad_field.js) : le champ de terrain de l'atelier (Départ, Arrivée), celui de Carburant
     '../../frame/lib/crossing.js', '../../frame/lib/untrusted.js', // SOG-0468 (c) : importé par crossing.js
+    '../../frame/lib/precision.js', // SOG-0516 : les paliers d'un posé de précision, importés par drawers.js (il importe crossing.js et untrusted.js, déjà là)
     '../../frame/lib/geo.js', // SOG-0468 (2) : gcNm, que crossing.js importera (V3 Frame ; cas I26)
     '../../frame/lib/sortlist.js', // SOG-0487 : le tableau triable du registre (il importe untrusted.js, déjà là)
     '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
