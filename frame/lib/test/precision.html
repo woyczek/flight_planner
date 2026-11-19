@@ -542,6 +542,66 @@
   eq('precisionLandings : un tiroir illisible n\'empêche pas les autres', P.precisionLandings([null, ...drawers], book).map(x => x.id), ['B', 'D', 'D']);
   noThrow('precisionLandings : sans argument', () => P.precisionLandings());
 
+  // (4) le carnet écrit par le VRAI écrivain de Missions (D.withOpen), relu par precisionLandings
+  {
+    const ctx = now => ({
+      mission: 'M-001',
+      me: 'AAA',
+      seance: 'A:0',
+      now
+    });
+    const NOW = Date.UTC(2026, 10, 19, 12, 0, 0);
+    let doc = D.withOpen(null, ctx(NOW), 'B', 'landing', {
+      from: fixAt(2, 10),
+      to: fixAt(0.03, 12),
+      at: Date.UTC(2026, 10, 19, 10, 12),
+      source: 'xplane',
+      tier: 'partiel' // mensonger : relu par withOpen mais jamais pris par precisionLandings
+    });
+    doc = D.withOpen(doc, ctx(NOW), 'D', 'sequence', {
+      steps: [{
+        how: 'overflight',
+        from: at49(2),
+        to: at49(0),
+        at: Date.UTC(2026, 10, 19, 10, 25)
+      }, {
+        how: 'landing',
+        from: at49(2),
+        to: at49(0.15),
+        at: Date.UTC(2026, 10, 19, 10, 30)
+      }]
+    });
+    const seqKey = {
+      kind: 'condition',
+      condition: 'sequence',
+      steps: [{
+        kind: 'overflight',
+        at: {
+          lat: 49,
+          lon: 3
+        }
+      }, rule({
+        at: {
+          lat: 49,
+          lon: 3
+        }
+      })]
+    };
+    const w = P.precisionLandings([{
+      id: 'B',
+      key: key(rule())
+    }, {
+      id: 'D',
+      key: seqKey
+    }], doc);
+    ck('withOpen : le carnet de Missions est écrit (un constat et une suite)', !!doc && !!doc.drawer_B && !!doc.drawer_D && doc.drawer_D.steps.length === 2, JSON.stringify(doc).slice(0, 200));
+    eq('withOpen puis precisionLandings : une ligne par posé, le palier recalculé', w.map(x => [x.id, x.tier]), [
+      ['B', 'excellent'],
+      ['D', 'réussi']
+    ]);
+    ck('withOpen puis precisionLandings : `at` lisible (millisecondes du fait) et distance recalculée', w.length === 2 && w[0].at === Date.UTC(2026, 10, 19, 10, 12) && w[1].at === Date.UTC(2026, 10, 19, 10, 30) && close(w[0].distNm, 0.03) && close(w[1].distNm, 0.15), JSON.stringify(w));
+  }
+
   window.__precisionBench.done = true;
   out.append(`\n${window.__precisionBench.pass} passed, ${window.__precisionBench.fail} failed\n`);
 </script>
