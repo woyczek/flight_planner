@@ -309,6 +309,13 @@ const TX = {
     'Berechnet in {t} s — davon {p} s, um den Starter zu erreichen.', 'Calculado en {t} s — de ellos {p} s para alcanzar el lanzador.'
   ],
   rTimeCopy: ['Copier le diagnostic', 'Copy the diagnostic', 'Diagnose kopieren', 'Copiar el diagnóstico'],
+  // SOG-0514 : sans devis, la route est calculée et contrôlée avec les vitesses par défaut du moteur
+  rDefaultPerf: [
+    'Vitesses par défaut du moteur (450 kt, 2 000 ft/min) : aucune performance connue pour cet aéronef, ses niveaux sont jugés comme ceux d’un avion rapide.',
+    'Engine default speeds (450 kt, 2,000 ft/min): no performance known for this aircraft, its levels are judged as those of a fast aeroplane.',
+    'Standardgeschwindigkeiten der Engine (450 kt, 2 000 ft/min): keine Leistung für dieses Luftfahrzeug bekannt, seine Höhen werden wie die eines schnellen Flugzeugs beurteilt.',
+    'Velocidades por defecto del motor (450 kt, 2 000 ft/min): ninguna prestación conocida para esta aeronave, sus niveles se juzgan como los de un avión rápido.'
+  ],
   // SOG-0468 (1) : la copie n'a pu que MONTRER le texte (ni presse-papiers ni copie de secours : une tablette hors contexte sûr)
   copyManual: ['Copie impossible ici : le texte est affiché, copiez-le à la main.',
     'Copying is not possible here: the text is shown, copy it by hand.',
@@ -4548,7 +4555,8 @@ function routeArgs(act, r = S.flight.route || {}, o = CF.proceduresOf(S.flight))
     depRunway: o.dep?.rwy,
     arrRunway: o.arr?.rwy,
     alternatives: false,
-    sections: act === 'compute' && oceanCrossing(r) // SOG-0354 (L2b 3) : le découpage par sections, pour un vol qui traverse l'océan
+    sections: act === 'compute' && oceanCrossing(r), // SOG-0354 (L2b 3) : le découpage par sections, pour un vol qui traverse l'océan
+    perf: routePerf() // SOG-0514 : les vitesses de l'avion (le devis), au calcul comme au contrôle
   });
 }
 /** SOG-0517 (l'utilisateur : « il faut le fixer, s'il est vide, puisque la route est calculée à ce niveau ») : le niveau du calcul de
@@ -4593,6 +4601,20 @@ function rviaDraw() {
     list: ids.join(', ')
   }) : '';
 }
+/** SOG-0514 : les vitesses de l'avion pour le moteur de route (RE.perfFields) — le devis du vol courant et la fiche APD de son type ; null
+ *  sans devis (profil incomplet) ou sans performance connue de l'avion : un type sans fiche d'avion (TYPE_…) ni fiche APD n'a qu'un devis
+ *  par défaut (300 kt, 1 200 / 1 500 ft/min de normalizeSheet), jamais envoyé comme les chiffres de l'avion — le moteur prend ses
+ *  défauts, et la ligne du calcul le dit (perfDefaultHtml). */
+function routePerf() {
+  const C = S?.C || {},
+    sheet = C.sheet || currentSheet(),
+    code = sheet ? sheet.icao || sheet.type || sheet.id : '',
+    apd = code ? S.A?.perf?.(code) || null : null;
+  if (!sheet || (String(sheet.id || '').startsWith('TYPE_') && !apd)) return null;
+  return RE.perfFields(C.q, apd);
+}
+/** SOG-0514 : « Vitesses par défaut du moteur » quand le calcul ou le contrôle part sans les vitesses de l'avion ; '' sinon. */
+const perfDefaultHtml = () => routePerf() ? '' : `<p class="f-muted" data-rdefperf>${esc(tt(TX.rDefaultPerf))}</p>`;
 /** SOG-0296 : ce qui fait la demande (pour savoir si l'entrée a changé pendant la seconde) — ses champs, sans la date tirée de
  *  l'horloge (l'heure prévue du vol en tient lieu). */
 const argsKey = a => JSON.stringify({
@@ -5143,7 +5165,7 @@ function sectionsHtml(a) {
 const RAD_DATA_HREF = '?app=maintenance#data?source=eurocontrol_rad';
 /** Ce que le contrôle ne couvre pas (le contrat le demande : « aucune incompatibilité » ne vaut que pour ce qui est contrôlé) : la phrase
  *  du moteur et ses domaines hors contrôle, repliés. */
-const limitsHtml = n => n.limitation || n.gaps.length || n.rad ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}${n.rad ? '<div data-radlist></div>' : ''}</details>` : '';
+const limitsHtml = n => perfDefaultHtml() + (n.limitation || n.gaps.length || n.rad ? `<details class="fu-rlimits" data-rlimits><summary class="f-muted">${esc(tt(TX.rLimits))}</summary>${n.limitation ? `<p class="f-muted">${esc(n.limitation)}</p>` : ''}${n.gaps.map(g => `<p class="f-muted"><b>${esc(g.name)}</b> ${esc(g.reason)}</p>`).join('')}${n.rad ? '<div data-radlist></div>' : ''}</details>` : '');
 /** SOG-0401 : le détail du contrôle RAD, écrit à l'ouverture du pli seulement (la liste peut compter 1 500 conditions) — les espaces
  *  inconnus et leurs règles, puis les conditions laissées à examiner (cent au plus, puis leur nombre). */
 function radListFill(fold) {

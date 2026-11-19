@@ -21,7 +21,10 @@
 //   faultLines(plan) → [{ seg: 'FROM–TO' | '', kind, ruleId, text }] : un écart par ligne (SOG-0134) — chaque motif d'un segment fautif,
 //     un segment fautif sans motif, puis les erreurs du moteur qu'aucun motif ne dit déjà (seg vide).
 
-import { own, own as ownOf } from '../../frame/lib/untrusted.js'; // SOG-0468 (c) : la clé PROPRE d'un objet simple, définie une fois par le cadre
+import {
+  own,
+  own as ownOf
+} from '../../frame/lib/untrusted.js'; // SOG-0468 (c) : la clé PROPRE d'un objet simple, définie une fois par le cadre
 
 export const VERB = 'route/compute';
 /** SOG-0390 : un mot du texte de route rendu par le lanceur — identifiant, point NAT (« 54/50 »), ou nom de voie COMPOSÉ, lettres et
@@ -70,6 +73,36 @@ const cacheOf = c => c && typeof c === 'object' && c.hit === true && Number.isFi
 } : null;
 const num = (v, lo, hi) => Number.isFinite(+v) && v !== null && v !== '' && +v >= lo && +v <= hi ? +v : null;
 
+/** SOG-0514 : les vitesses de l'avion pour le moteur, tirées du devis de Carburant `q` (fiche de l'avion, fiche APD en référence, écart
+ *  ISA du jour) et de la fiche APD `apd` — { speed_kt, climb_fpm, descent_fpm, terminal_speed_kt? }, entiers positifs ; null sans devis
+ *  complet (le moteur prend alors ses défauts, 450 kt et 2 000 ft/min). Le moteur n'a qu'UNE pente de montée et UNE de descente : le
+ *  vario MOYEN jusqu'au niveau déposé (niveau ÷ durée de la montée du devis ; la descente : le dernier niveau de croisière `endFt`, celui
+ *  d'où le devis descend, palier compris, ÷ sa durée — comme verticalProfile) pose le sommet de montée
+ *  et le début de descente au bon moment (AeroDB, 19/11) ; les mêmes chiffres que le profil écrit pour la Carte (verticalProfile).
+ *  speed_kt : la TAS de croisière SANS vent, ce que l'IFPS juge. terminal_speed_kt : la Badin de montée initiale de la fiche APD (sous
+ *  5 000 ft, là où sont les procédures), sinon omis. Entrées bornées (la fiche APD vient du dossier de données : non fiable). */
+export function perfFields(q, apd = null) {
+  const lvl = num(q?.levelFt, 1, 70000),
+    end = num(q?.endFt, 1, 70000) ?? lvl, // le niveau d'où le devis descend (model.js : levels.at(-1).ft), sinon le niveau déposé
+    cm = num(q?.climb?.min, .1, 600),
+    dm = num(q?.descent?.min, .1, 600),
+    tas = num(q?.cruise?.tas, 30, 1500);
+  if (!lvl || !cm || !dm || !tas) return null;
+  const climb = Math.round(lvl / cm),
+    descent = Math.round(end / dm);
+  if (!(climb >= 50 && climb <= 20000) || !(descent >= 50 && descent <= 20000)) return null;
+  const out = {
+      speed_kt: Math.round(tas),
+      climb_fpm: climb,
+      descent_fpm: descent
+    },
+    term = num(apd?.climbInitial?.iasKt, 30, 400);
+  if (term) out.terminal_speed_kt = Math.round(term);
+  return out;
+}
+/** SOG-0514 : les quatre champs de vitesse du moteur, s'ils sont des entiers positifs (perfFields) — rien d'autre n'est recopié. */
+const PERF_KEYS = ['speed_kt', 'climb_fpm', 'descent_fpm', 'terminal_speed_kt'];
+
 /** La demande fermée du contrat (voir l'en-tête) : un champ absent est omis, jamais envoyé vide ou null (le lanceur refuserait). */
 export function request({
   action,
@@ -82,7 +115,8 @@ export function request({
   depRunway,
   arrRunway,
   alternatives = true,
-  sections = false
+  sections = false,
+  perf = null
 }) {
   const check = action === 'check',
     out = {
@@ -94,6 +128,9 @@ export function request({
   if (Number.isInteger(fl) && fl >= 10 && fl <= 660) out.fl = fl;
   if (/^[0-9]{2}[LRC]?$/.test(String(depRunway || ''))) out.rwyDep = String(depRunway);
   if (/^[0-9]{2}[LRC]?$/.test(String(arrRunway || ''))) out.rwyArr = String(arrRunway);
+  // SOG-0514 : les vitesses de l'avion, au calcul comme au contrôle (perfFields) ; absentes : le défaut du moteur
+  for (const k of PERF_KEYS)
+    if (Number.isInteger(perf?.[k]) && perf[k] > 0) out[k] = perf[k];
   if (check) {
     // SOG-0380 : le mot « aérodrome/piste » du champ (« LFPO/02 », SOG-0089) n'est pas un point pour le moteur (« Point inconnu dans AeroDB :
     // LFPO/02 ») : le départ ou l'arrivée seul dans le texte, sa piste dans son champ quand aucune n'est choisie ; un autre terrain intact
@@ -447,7 +484,8 @@ function departOf(res, asked) {
  *  relisent après un rechargement : les seules clés que proofOf et levelOf lisent, bornées comme ils les bornent ; relu par eux. */
 export function sectionsKept(v) {
   // SOG-0470 (Sécurisation) : une valeur simple bornée — un texte de 200 signes, un nombre fini, un booléen ; rien d'autre
-  const leaf = x => typeof x === 'string' ? x.slice(0, 200) : typeof x === 'number' ? Number.isFinite(x) ? x : null : typeof x === 'boolean' ?
+  const leaf = x => typeof x === 'string' ? x.slice(0, 200) : typeof x === 'number' ? Number.isFinite(x) ? x : null : typeof x ===
+    'boolean' ?
     x :
     null,
     // un objet réduit à ses champs lus (liste blanche), chacun une valeur simple bornée ; null s'il n'est pas un objet

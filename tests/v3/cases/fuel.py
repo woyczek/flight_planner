@@ -8755,3 +8755,75 @@ def f284(c):
     c.eq((d.get('route') or {}).get('typed'), [], 'a route taken imposes nothing', what='typed reset')
     c.until(f"!document.querySelector('{FUEL} [data-rvia]:not([hidden])')", timeout=8000, what='no « Passages imposés » line after a route taken')
     c.eq(via(), [], 'the next computation is free: the route taken does not carry itself over', what='after take')
+
+
+# SOG-0514: an invented BE9L sheet (a slow turboprop: cruise 220 kt, climb about 1 200 ft/min, descent 1 000 ft/min)
+_BE9L = {'id': 'BE9L', 'name': 'BE9L (essai)', 'icao': 'BE9L', 'unit': 'kg', 'usableFuel': 1200,
+         'cruise': {'tasKt': 220, 'fuelFlowPerHour': 250, 'ceilingFt': 30000},
+         'climb': {'rateFpm': 1200, 'tasKt': 160, 'fuelFlowPerHour': 300},
+         'descent': {'rateFpm': 1000, 'tasKt': 200, 'fuelFlowPerHour': 150}}
+
+
+# the frame's floating notes closed (their ✕), until none comes for 0.6 s: a capture for the relay shows the screen, not the notes
+_F281_NOTES_OFF = """async () => { let calm = 0; for (let i = 0; i < 40 && calm < 4; i++) { const x = document.querySelector('#fNotes .f-note [data-x]');
+  if (x) { x.click(); calm = 0 } else calm++; await new Promise(r => setTimeout(r, 150)) } return document.querySelectorAll('#fNotes .f-note').length }"""
+
+
+@case('F281', 'Route step, « Calculer » and « Contrôler » send the aircraft\'s speeds to the engine: speed_kt (cruise TAS, no wind), climb_fpm and '
+      'descent_fpm (the AVERAGE rate up to the filed level, the same figures as the profile written for the Map) — whole numbers; an aircraft '
+      'without known performance sends NONE of them (the engine\'s defaults) and the screen says « vitesses par défaut du moteur »', 'F',
+      tags=('fuel', 'aerodb'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0514 (AeroDB, 19 Nov, reproducing the IFPS of SOG-0513: without them the engine takes 2 000 ft/min and judges a slow aircraft '
+      'as a fast one); AeroDB\'s answer: the average rate up to the filed level, the TAS without wind; invented sheet, fake launcher')
+def f281(c):
+    st = _route_launcher(c, ['route/compute'])
+
+    def opened(aircraft, extra):
+        docs = proc_flight()
+        for d in docs:
+            if d[0].endswith('current_flight.json'):
+                d[1]['aircraft'] = aircraft
+                d[1]['level'] = {'ft': 20000}
+        c.open('fuel', docs=proc_docs() + docs + extra, airfields=True)
+        to_step(c, 1)
+        c.until(f"!!document.querySelector('{FUEL} [data-reng]:not([hidden]) [data-do=rcompute]')", timeout=10000, what='the two buttons')
+
+    def asked(act):
+        n = len(st['posts'])
+        c.tap(f'{FUEL} [data-do="{"rcompute" if act == "compute" else "rcheck"}"]')
+        for _ in range(40):
+            got = [p.get('args') or {} for p in st['posts'][n:] if (p.get('args') or {}).get('action') == act]
+            if got:
+                return got[0]
+            c.wait(150)
+        raise Fail(f'no {act} request', 'a request to route/compute', 'none')
+
+    keys = ('speed_kt', 'climb_fpm', 'descent_fpm', 'terminal_speed_kt')
+    # 1. a BE9L with its sheet: the four... three fields (no APD in the base of the case: no terminal speed, nothing invented)
+    opened({'type': 'BE9L', 'sheetId': 'BE9L', 'registration': 'F-ZZBE'}, [['aircraft/sheets/BE9L.json', _BE9L, 'document']])
+    d = cf_doc(c, lambda d: bool((d.get('profile') or {}).get('climbFpm')), 'the profile of the quote written for the Map')
+    prof = d['profile']
+    for act in ('compute', 'check'):
+        a = asked(act)
+        got = {k: a.get(k) for k in keys}
+        c.ok(all(isinstance(got[k], int) and got[k] > 0 for k in keys[:3]), got, f'{act}: speed_kt, climb_fpm, descent_fpm, whole positive numbers')
+        c.ok(150 <= got['speed_kt'] <= 260, got, f'{act}: the cruise TAS of the BE9L (about 220 kt), never the engine\'s 450')
+        c.ok(abs(got['climb_fpm'] - prof['climbFpm']) <= 10 and abs(got['descent_fpm'] - prof['descentFpm']) <= 10, [got, prof],
+             f'{act}: the average rates up to the filed level, the same as the profile written for the Map')
+        c.ok(got['climb_fpm'] < 2000 and got['descent_fpm'] < 2000, got, f'{act}: a slow aircraft, never the engine\'s 2 000 ft/min')
+        c.eq(got['terminal_speed_kt'], None, f'{act}: no APD sheet in the base: no terminal speed (nothing invented)', what=f'{act} terminal')
+    c.eq(c.count(f'{FUEL} [data-rdefperf]'), 0, 'with its performance: no « vitesses par défaut »', what='no default line')
+    c.js(_F281_NOTES_OFF)
+    c.shot(f'F281_{c.design}_{c.lang}_perf.png')  # for the relay: the route step with the aircraft's speeds (no line)
+    # 2. an aircraft whose performance is unknown (no sheet): no field at all, and the screen says the engine's defaults are used
+    opened({'type': 'ZZ9Z', 'registration': 'F-ZZZZ'}, [])
+    a = asked('compute')
+    c.eq({k: a.get(k) for k in keys if k in a}, {}, 'without performance: none of the four fields (the engine\'s defaults)', what='no fields')
+    c.until(f"!!document.querySelector('{FUEL} [data-rdefperf]')", timeout=8000, what='« vitesses par défaut du moteur » said')
+    want = {'fr': 'Vitesses par défaut du moteur', 'en': 'Engine default speeds', 'de': 'Standardgeschwindigkeiten der Engine',
+            'es': 'Velocidades por defecto del motor'}[c.lang]
+    c.ok(norm(want) in norm(c.text(f'{FUEL} [data-rdefperf]') or ''), c.text(f'{FUEL} [data-rdefperf]'), 'said in words (written here, never read from the module)')
+    c.js(_F281_NOTES_OFF)
+    c.js(f"document.querySelector('{FUEL} [data-rdefperf]').scrollIntoView({{ block: 'center' }})")  # the line on screen, clear of the sticky bar
+    c.wait(300)
+    c.shot(f'F281_{c.design}_{c.lang}_default.png')  # for the relay: the line « Vitesses par défaut du moteur »
