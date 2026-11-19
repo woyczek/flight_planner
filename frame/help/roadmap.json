@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "14fb712",
+  "organisation": "ad258e2",
   "fiches": 516,
   "untranslated": 0,
   "priorities": 481,
@@ -6812,11 +6812,12 @@
     {
      "id": "SOG-0510",
      "kind": "feature",
-     "state": "doing",
+     "state": "done",
      "fr": "Données : après une mise à jour, la France et le Royaume-Uni disent toujours « parseur ancien »",
      "en": "Data: after an update, France and the United Kingdom still say “old parser”",
      "de": "Daten: Nach einer Aktualisierung zeigen Frankreich und das Vereinigte Königreich weiter „alter Parser“",
-     "es": "Datos: tras una actualización, Francia y el Reino Unido siguen diciendo «analizador antiguo»"
+     "es": "Datos: tras una actualización, Francia y el Reino Unido siguen diciendo «analizador antiguo»",
+     "test": true
     }
    ]
   },
