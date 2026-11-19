@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "7815db9",
-  "fiches": 521,
+  "organisation": "4ab6c11",
+  "fiches": 522,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3476,6 +3476,27 @@
      "de": "Mittwochsdurchgang: Ordner des Repositorys aufräumen und neu ordnen (rad, organisation, fuelplanner… tote Einstiege ins Archiv)",
      "es": "Pasada del miércoles: limpiar y reorganizar las carpetas del repositorio (rad, organisation, fuelplanner… entradas muertas a archivos)",
      "rank": 133
+    }
+   ]
+  },
+  {
+   "id": "pilote-x-plane-feu-pelicandromes",
+   "app": "pilote",
+   "label": {
+    "fr": "X-Plane ; feu ; pélicandromes",
+    "en": "X-Plane ; feu ; pélicandromes",
+    "de": "X-Plane ; feu ; pélicandromes",
+    "es": "X-Plane ; feu ; pélicandromes"
+   },
+   "items": [
+    {
+     "id": "SOG-0523",
+     "kind": "feature",
+     "state": "doing",
+     "fr": "X-Plane : une scène générée qui pose les stations de retardant sur tous les pélicandromes recensés (permanent : trappe et deux conteneurs ; provisoire : camion-citerne et un conteneur)",
+     "en": "X-Plane: a generated scenery placing retardant stations on all listed pelicandromes (permanent: hatch and two containers; temporary: tanker truck and one container)",
+     "de": "X-Plane: eine erzeugte Szenerie mit Löschmittelstationen auf allen erfassten Pelicandromen (dauerhaft: Bodenklappe und zwei Container; vorläufig: Tankwagen und ein Container)",
+     "es": "X-Plane: un escenario generado que coloca estaciones de retardante en todos los pelicandromos (permanente: trampilla y dos contenedores; provisional: camión cisterna y un contenedor)"
     }
    ]
   },
