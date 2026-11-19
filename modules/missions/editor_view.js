@@ -918,8 +918,16 @@ const edDrawersTodo = doc => edOnce(doc, 'dtodo', () => DR.drawersTodo(doc));
  *  fois par document (edOnce ; dans l'atelier voilé la clé porte les lieux cachés) : cinq marques d'étape, six lignes, la liste et le
  *  bouton le demandaient chacun. */
 function edTodos(e, doc) {
-  return edOnce(doc, e?.veil ? `todo:${(e.veilHide || []).join()}` : 'todo', () => e?.veil ? ED.veilTodo(doc, edShown(e, e.places || ED.placesOf(doc))) : ED.todo(
-    doc));
+  const list = edOnce(doc, e?.veil ? `todo:${(e.veilHide || []).join()}` : 'todo', () => e?.veil ? ED.veilTodo(doc, edShown(e, e.places || ED.placesOf(doc))) : ED
+      .todo(
+        doc)),
+    s = state();
+  if (!s || !list.some(t => t.key === 'origin' || t.key === 'destination')) return list;
+  // SOG-0506 (la réserve de l'utilisateur) : un départ ou une arrivée que la base place (un code connu, écrit sans position) n'est pas « à placer » — la
+  // carte le dessine déjà là ; hors de edOnce, car la base répond après le premier calcul (adPosOf redessine à sa réponse)
+  const at = ED.endsAt(doc, k => adPosOf(s, k)),
+    placed = key => Number.isFinite(+at?.[key]?.lat) && Number.isFinite(+at?.[key]?.lon) && at[key].lat !== null && at[key].lon !== null;
+  return list.filter(t => !(t.key === 'origin' && placed('origin') || t.key === 'destination' && placed('destination')));
 }
 
 /** Le document où l'on cherche QUI CITE un lieu avant de le retirer (SOG-0459, retouche de Sécurisation) : celui de la séance ; dans

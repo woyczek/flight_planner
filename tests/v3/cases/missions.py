@@ -12481,6 +12481,7 @@ def n193(c):
                 pt4 = [r for r in rows if r[1] and r[1].startswith('PT4')][0]
                 c.ok(unplaced in ' '.join(pt4), pt4, f'{width}: PT4, a true place to place, is still said « à placer »')
             c.tap(f'{E} [data-do="edtodo"]')
+            c.ok('origin' not in c.js(_LKP_TODO), c.js(_LKP_TODO), f'{width}: « À compléter » no longer asks for « position du départ » (the base places XTSL)')
             c.eq('unplaced' in c.js(_LKP_TODO), want_todo, f'{width}: « À compléter » counts « lieux à placer » only with a true place to place (PT4 here: {want_todo})', what='the unplaced item')
             ed_leave(c)
             c.js(_REG_CLEAR)
