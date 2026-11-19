@@ -17948,3 +17948,55 @@ def k396(c):
     best, why = F.solve(nav, g, 'DEP', 'ARR', 1.0, resolve, europe)
     c.eq((why, best and best['entry'], seen['reach'], sorted(seen['bands'])), (None, best and best['entry'], F.LOW_FT, [i for i in sorted(seen['bands']) if i != 'E1']), 'the free route asks the search of Europe for the oceanic floor, and no pair is resolved with the entry E1 (before: E1 came first and failed with every exit)', what='solve')
     c.ok(best is not None and best['entry'] in ('E2', 'E3'), str(best and best['entry']), 'the free route is found by a high entry')
+
+
+@case('K390', 'Route engine, SOG-0513 (A): the band of a lane is judged against the level the aircraft REACHES on each leg (the natural profile of the filed level), not only on the cruise: a lane whose ceiling is below that level does not exist « in F(ceiling)..F999 » (the IFPS, PROF195) in the climb, the cruise or the descent; a lane the aircraft has not yet reached (or has already left) is not flagged — L612 and T493 of the IFPS of the user are not, G27, G273 and T501 are',
+      'K', static=True,
+      rule='SOG-0513 (the IFPS of 19 Nov: EGLL → LFRN F270, BE9L, N0231: PROF195 on G27, G273 and T501 only). Measured with the aircraft performance of EUROCONTROL for BE9L (climb and descent 1 000 ft/min, 231 kt): climb gradient 260 ft/NM, the level of the flight reaches F270 at 104 NM and the descent begins at 138 NM; T501 (160 to 176 NM) is still above F195 at 160 NM, T493 (176 to 192 NM) is not; L612 (50 to 75 NM) is still below F245. The cruise-only judgement missed T501 (in the descent window) and, with the default rates (2 000 ft/min), flagged L612 and T493. Invented lane names, the levels of the real lanes.')
+def k390(c):
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import flight_profile as FP
+
+    def leg(a, b, via, nm, low, high, kind='AIRWAY'):
+        return {'start': {'id': a}, 'end': {'id': b}, 'via': via, 'nm': nm, 'lower': low, 'upper': high, 'kind': kind}
+    legs = [leg('DEP', 'P1', 'DCT', 50, 0, 66000, 'DCT'), leg('P1', 'P2', 'LA', 25, 10500, 24500), leg('P2', 'P3', 'GA', 29, 6500, 19500), leg('P3', 'P4', 'GB', 56, 6500, 19500),
+            leg('P4', 'P5', 'TC', 16, 6500, 19500), leg('P5', 'P6', 'TD', 16, 14500, 19500), leg('P6', 'ARR', 'DCT', 50, 0, 66000, 'DCT')]
+    profile = FP.build(legs, 0, 0, 270, speed_kt=231, climb_fps=1000 / 60, descent_fps=1000 / 60, strategy='adapt')
+    runs = FP.band_findings(legs, 270, profile['cruise_nm'], None)
+    c.eq([r['text'].split(' hors de la bande')[0] for r in runs], ['Tronçon GA P2–P3 : niveau FL270', 'Tronçon GB P3–P4 : niveau FL270', 'Tronçon TC P4–P5 : niveau FL213'],
+         'the lanes above their ceiling at some point: GA and GB at the cruise level, TC (in the descent) at the highest level it reaches on it (FL213) — not LA (the aircraft is still below its ceiling 245), not TD (already below its ceiling 195)', what='bands')
+    c.eq([round(l['natural_end_ft'] / 100) * 100 for l in legs[:3]], [13000, 19500, 27000], 'the natural level at the end of each leg is on the leg (about 13 000 ft at 50 NM, 19 500 at 75, 27 000 at 104: 260 ft per NM), whatever the strategy', what='natural')
+    changed = [dict(l) for l in legs]
+    runs_marked = FP.band_findings(changed, 270, profile['cruise_nm'], [0, 0, 0, 0, 0, 0, 0])
+    c.eq(len(runs_marked), 3, 'a route that carries no level group (levels all empty) is judged as above', what='no marks')
+    runs_level = FP.band_findings(changed, 270, profile['cruise_nm'], [0, 0, 190, 190, 190, 190, 0])
+    c.eq(len(runs_level), 0, 'the levels written in the route (FL190 on the four lanes) are judged instead: FL190 is inside 195: nothing', what='written levels')
+
+
+
+@case('K391', 'Route engine, SOG-0513 (A): the RAD rules on a LEVEL AT A POINT (« ABV FL225 AT point ») judge the profile of the level FILED when the route carries no level change — a lane above its ceiling is not « brought down » to it by the profile of the strategy (the IFPS keeps the filed level: LF3564 on NEVIL); a route that carries level changes keeps the profile of the strategy',
+      'K', static=True,
+      rule='SOG-0513 (A) (LF3564A of the IFPS: « TRAFFIC VIA NEVIL:F225..F999 »): our check gave NEVIL the level 19 500 ft (the profile adapted to the ceiling of G27) and could not decide the rule. `build` puts the natural altitudes on each leg (`natural_*`); `rad_flight.context(…, natural=True)` reads them; the engine asks for them when the route has no level group and no written change. Invented codes.')
+def k391(c):
+    import datetime
+    import sys
+    sys.path.insert(0, str(c.root / 'tools'))
+    from route_engine import flight_profile as FP, rad_flight as RF
+
+    def leg(a, b, via, nm, low, high, kind='AIRWAY'):
+        return {'start': {'id': a}, 'end': {'id': b}, 'via': via, 'nm': nm, 'lower': low, 'upper': high, 'kind': kind}
+    legs = [leg('DEP', 'P1', 'DCT', 75, 0, 66000, 'DCT'), leg('P1', 'P3', 'GA', 29, 6500, 19500), leg('P3', 'P4', 'GB', 80, 6500, 19500), leg('P4', 'ARR', 'DCT', 58, 0, 66000, 'DCT')]
+    FP.build(legs, 0, 0, 270, speed_kt=231, climb_fps=1000 / 60, descent_fps=1000 / 60, strategy='adapt')
+    natural, adapted = RF.context(legs, 'DEP', 'ARR', True)['alt'], RF.context(legs, 'DEP', 'ARR')['alt']
+    c.eq((round(natural['P3'] / 100) * 100, adapted['P3']), (27000, 19500), 'the altitude at P3 (end of the lane GA, ceiling 195): the filed level 27 000 ft in the natural profile; 19 500 in the profile adapted to the ceiling', what='context')
+
+    class Rad:
+        groups = {}
+
+        def match(self, expr, ad):
+            return ad in expr.upper().replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+    rule = {'sheet': 'Annex 2B', 'id': 'XX0001', 'row': 7, 'change': '', 'values': ['', '', '', 'XX0001', '', '', '', 'P3', 'NOT AVBL FOR TFC\n1. ABV FL225 AT P3\n2. ARR ZZZZ', 'H24', 'C', '']}
+    when = datetime.datetime(2026, 11, 19, 8, 10)
+    verdict = lambda nat: [f['id'] for f in RF.evaluate(Rad(), legs, 'DEP', 'ARR', when, [dict(rule)], None, 270, None, natural=nat)['findings']]
+    c.eq((verdict(True), verdict(False)), (['XX0001'], []), 'ABV FL225 AT P3: violated on the filed level (27 000 ft at P3), not on the profile brought down to the ceiling (19 500 ft)', what='rule')

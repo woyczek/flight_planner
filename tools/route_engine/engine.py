@@ -1174,7 +1174,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
     elapsed=0.
     for leg in legs:
         leg['time_start_min']=elapsed;elapsed+=leg['nm']/(leg.get('planned_speed_kt') or options['speed_kt'])*60;leg['time_end_min']=elapsed
-    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl,nav.airway_portion)
+    rad_summary=rad_flight.evaluate(rad,legs,dep,arr,when,candidates,set(nav.ids)|used_routes,fl,nav.airway_portion,natural=not marks and not written)      # SOG-0513 (A) : sans changement de niveau dans la route, les règles de niveau jugent le profil du niveau déposé
     atomic_ids={(b['sheet'],b['row']) for b in violations}
     unread_rules=rad_flight.unread_spaces_issue(rad_summary)      # SOG-0501 (c) : les règles dont la cible est un espace sans contour (LDZOC…) : dites avec leur nombre
     if unread_rules:issue('REVUE',unread_rules[0])

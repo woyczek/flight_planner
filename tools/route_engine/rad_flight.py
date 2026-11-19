@@ -93,7 +93,7 @@ def aliases(text):
     text=re.sub('[^A-Z0-9]','',text.upper())
     return frozenset({text,re.sub(r'\d[A-Z]$','',text)}-{''})
 
-def context(legs,dep,arr):
+def context(legs,dep,arr,natural=False):
     points={dep,arr};routes=set();phases=collections.Counter();sid=set();star=set()
     for l in legs:
         points.update([l['start']['id'],l['end']['id']]);routes.update(aliases(l['via']));phases[l['kind']]+=1
@@ -104,8 +104,9 @@ def context(legs,dep,arr):
     if stars:star.add(stars[0]['start']['id'])
     alt={}      # SOG-0401 : l'altitude que le PROFIL donne à chaque point de la route : le bout de chaque tronçon (le point où l'avion passe), le début du premier pour le départ
     for n,l in enumerate(legs):
-        if n==0 and isinstance(l.get('altitude_start_ft'),(int,float)):alt[l['start']['id']]=l['altitude_start_ft']
-        if isinstance(l.get('altitude_end_ft'),(int,float)):alt[l['end']['id']]=l['altitude_end_ft']
+        start_ft,end_ft=(l.get('natural_start_ft'),l.get('natural_end_ft')) if natural and isinstance(l.get('natural_end_ft'),(int,float)) else (l.get('altitude_start_ft'),l.get('altitude_end_ft'))      # SOG-0513 (A) : `natural` : le profil du niveau DÉPOSÉ (celui que l'IFPS juge : une voie hors bande n'est pas « ramenée » à son plafond) quand la route ne porte aucun changement de niveau ; sinon le profil de la stratégie
+        if n==0 and isinstance(start_ft,(int,float)):alt[l['start']['id']]=start_ft
+        if isinstance(end_ft,(int,float)):alt[l['end']['id']]=end_ft
     return dict(points=points,routes=routes,all=points|routes,dep=dep,arr=arr,sid=sid,star=star,phases=dict(phases),alt=alt,legs=legs)      # `legs` : la suite des tronçons, pour les groupes VIA qui se lisent dans l'ordre (rad_via)
 
 def alternatives(text):
@@ -292,8 +293,8 @@ def target(rule,ctx,legs,rad):
         return False,[]
     return None,[]
 
-def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None):
-    ctx=context(legs,dep,arr);findings=[];avoids=[];decided=0
+def evaluate(rad,legs,dep,arr,when,candidates,known_ids=None,fl=None,airway=None,natural=False):
+    ctx=context(legs,dep,arr,natural);findings=[];avoids=[];decided=0
     ctx['airway']=airway      # SOG-0401 : airway(alias,p,q) -> (tronçons de p à q dans le sens de la voie, tronçons en sens inverse) ou None si la voie ne relie pas p et q
     ctx['known']=known_ids;ctx['fl']=int(fl) if isinstance(fl,(int,float)) else None      # SOG-0401 : le niveau demandé (déposé), pour les conditions « RFL ABV FLnnn »
     duplicates=collections.Counter((c['sheet'],c['id']) for c in candidates if c.get('change')!='DEL')

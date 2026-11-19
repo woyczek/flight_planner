@@ -89,22 +89,28 @@ def band_findings(legs, cruise_fl, window, levels=None):
     Un tronçon est de croisière s'il a une bande numérique, n'est ni une SID, ni une STAR, ni un raccord d'approche, n'a pas déjà un motif vertical et recouvre la partie de croisière du profil (`window`, en NM : de la fin de la montée au début de la descente) ; la suite de la même voie et de la même bande qui prolonge un tronçon dit (jusque dans la descente) l'est aussi.
     `levels` (SOG-0401, retouche j) : le niveau déposé à chaque tronçon quand la route porte des groupes de niveau « POINT/Fnnn » (centaines de pieds ; None : le niveau de la demande) ; sans lui, le niveau de la demande pour toute la route.
     Rend une liste de suites { legs, text, short } : une suite = des tronçons consécutifs d'une même voie, de même bande, même niveau, même zone, même cycle."""
-    if not window:
-        return []
     found = []
     for n, leg in enumerate(legs):
-        cruise = (levels[n] if levels and levels[n] else cruise_fl) * 100
+        override = bool(levels and levels[n])
+        cruise = (levels[n] if override else cruise_fl) * 100
         low, high = leg.get('lower'), leg.get('upper')
-        if not isinstance(low, (int, float)) or not isinstance(high, (int, float)) or leg.get('kind') in TERMINAL_KINDS or leg.get('data_gap') or leg.get('vertical_errors') or low <= cruise <= high:
+        if not isinstance(low, (int, float)) or not isinstance(high, (int, float)) or leg.get('kind') in TERMINAL_KINDS or leg.get('data_gap') or leg.get('vertical_errors'):
+            continue
+        reached = leg.get('natural_max_ft')
+        top = cruise if override or not isinstance(reached, (int, float)) else min(cruise, reached)      # SOG-0513 (A) : le niveau le plus haut que l'avion atteint SUR ce tronçon (profil naturel) : une voie dont le plafond est sous lui n'existe pas dans « F(plafond)..F999 » (l'IFPS : PROF195), qu'il monte, croise ou descende ; sous le plancher : seulement en croisière, comme avant
+        above_ceiling = top > high + .5
+        below_floor = cruise < low
+        if not above_ceiling and not (below_floor and window):
             continue
         key = (leg['via'], low, high, leg.get('source_zone'), leg.get('source_cycle'), cruise)
         follows = bool(found) and found[-1]['key'] == key and found[-1]['index'][-1] == n - 1       # la suite de la même voie, de la même bande, après un tronçon dit : la descente ordinaire ne l'excuse pas (le palier est déjà ramené depuis le premier)
-        if not follows and (leg.get('distance_end_nm', 0) <= window[0] + .01 or leg.get('distance_start_nm', 0) >= window[1] - .01):
-            continue
+        if not above_ceiling and not follows and (not window or leg.get('distance_end_nm', 0) <= window[0] + .01 or leg.get('distance_start_nm', 0) >= window[1] - .01):
+            continue      # sous le plancher : seulement les tronçons de croisière (ou la suite d'un tronçon dit) ; au-dessus du plafond : tout tronçon que l'avion y survole
         if follows:
             found[-1]['index'].append(n)
+            found[-1]['top'] = max(found[-1]['top'], top)
         else:
-            found.append(dict(key=key, index=[n]))
+            found.append(dict(key=key, index=[n], top=top))
     out = []
     for run in found:
         via, low, high, zone, cycle, cruise = run['key']
@@ -112,7 +118,8 @@ def band_findings(legs, cruise_fl, window, levels=None):
         chain = [members[0]['start']['id']] + [m['end']['id'] for m in members]
         if len(chain) > 8:
             chain = chain[:3] + ['…'] + chain[-2:]
-        above = cruise > high
+        above = run['top'] > high + .5
+        cruise = run['top'] if above else cruise      # le niveau le plus haut atteint sur la suite (le niveau déposé en croisière)
         gap = round(cruise - high if above else low - cruise)
         verdict = f'au-dessus du plafond {fl_text(high)}' if above else f'sous le plancher {fl_text(low)}'
         source = ', '.join(x for x in [f'cycle {cycle}' if cycle else '', f'zone {zone}' if zone else ''] if x)
@@ -183,6 +190,7 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
         else: current=None
     for n,(leg,(a,b)) in enumerate(zip(legs,ranges)):
         heights=altitudes[a:b+1]; min_h=min(heights); max_h=max(heights); reasons=[]
+        natural=[nominal(t) for t in elapsed[a:b+1]]      # SOG-0513 (A) : le profil NATUREL du niveau déposé sur ce tronçon (montée, croisière, descente), quelle que soit la stratégie : c'est celui que l'IFPS juge ; `altitude_*` est celui de la stratégie (adapté aux plafonds)
         lower=leg.get('lower'); upper=leg.get('upper')
         if isinstance(lower,(int,float)) and lower==0:lower=ground
         if isinstance(lower,(int,float)) and min_h<lower-.1: reasons.append(f'Profil minimum {min_h:.0f} ft sous le plancher {lower:g} ft (écart {lower-min_h:.0f} ft).')
@@ -199,6 +207,7 @@ def build(legs,departure_ft,arrival_ft,cruise_fl,speed_kt=450,climb_fps=2000/60,
         if max_h-min_h>1 and abs(delta)<1: phase='montée / descente'
         leg.update(index=n,distance_start_nm=round(positions[a],3),distance_end_nm=round(positions[b],3),
             altitude_start_ft=round(altitudes[a],1),altitude_end_ft=round(altitudes[b],1),altitude_min_ft=round(min_h,1),altitude_max_ft=round(max_h,1),
+            natural_start_ft=round(natural[0],1),natural_end_ft=round(natural[-1],1),natural_max_ft=round(max(natural),1),
             phase=phase,speed_kt=speeds[n],speed_limit=None,compatible=not reasons if leg.get('kind')!='APPROACH_LINK' and (leg['via']!='DCT' or leg.get('kind')=='FRA') else None,
             vertical_errors=reasons,alerts=list(reasons),source_cycle=leg.get('source_cycle'))
     if abs(altitudes[0]-departure_ft)>.1 or abs(altitudes[-1]-arrival_ft)>.1: feasible=False
