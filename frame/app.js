@@ -992,8 +992,9 @@
         h = innerHeight;
       let best = null,
         top = h;
-      // la barre visible la plus haute parmi celles collées dans la moitié basse de la fenêtre (une vue cachée n'a pas de boîte)
-      for (const b of box.childElementCount ? document.querySelectorAll('.f-bar') : []) {
+      // la barre visible la plus haute parmi celles collées dans la moitié basse de la fenêtre (une vue cachée n'a pas de boîte) :
+      // .f-bar, ou le pied qu'un écran déclare lui-même par data-f-foot (le pied de l'atelier des missions : SOG-0517)
+      for (const b of box.childElementCount ? document.querySelectorAll('.f-bar, [data-f-foot]') : []) {
         const r = b.getClientRects().length ? b.getBoundingClientRect() : null;
         if (r && r.height && r.top > h / 2 && r.top < top && r.bottom <= h + 1) {
           best = b;

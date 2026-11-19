@@ -1476,6 +1476,28 @@ def a45(c):
             what='no note: --f-bar-clear removed')
 
 
+@case('A354', 'A floating note sits ABOVE the fixed foot of the current screen, never on a button of it (SOG-0517): a foot marked data-f-foot (not only .f-bar) lifts .f-notes, at 390 and at 1280, and the note cuts none of its buttons', 'A', designs=('standard',), screens=False, night=False,
+      rule='SOG-0517 (the workshop of the missions, capture P14c): the note covered the workshop\'s « Annuler » at 1280 and the whole foot at 390, because the frame only knew .f-bar; a screen declares its sticky foot with data-f-foot (the frame measures it as a .f-bar: --f-bar-clear on .f-notes), and the note\'s box never meets a button of the foot')
+def a354(c):
+    c.open('hello')                                                 # a module with no bar of its own
+    c.js("() => window.SogFrame.notify('Brouillon retiré', 'info', { action: { label: 'Annuler', run() {} } })")   # an action: the note stays
+    c.until("!!document.querySelector('#fNotes .f-note')", what='a note is shown')
+    c.js("() => document.querySelectorAll('.f-bar').forEach(b => b.remove())")      # no other bar: only the screen's foot decides where the note sits
+    for w, h in ((390, 800), (1280, 800)):
+        c.page.set_viewport_size({'width': w, 'height': h})
+        c.js("""() => { document.querySelectorAll('[data-test-foot]').forEach(x => x.remove()); const b = document.createElement('div'); b.dataset.fFoot = ''; b.dataset.testFoot = '';
+                        b.style.cssText = 'position:fixed;left:0;right:0;bottom:var(--f-tab-space,0px);height:64px;display:flex;gap:8px;align-items:center;justify-content:flex-end;z-index:10';
+                        b.innerHTML = '<button type="button" style="min-height:44px">Annuler</button><button type="button" style="min-height:44px">Valider</button>'; document.getElementById('fView').append(b); dispatchEvent(new Event('resize')) }""")
+        c.until("""() => { const n = document.getElementById('fNotes').getBoundingClientRect(), b = document.querySelector('[data-test-foot]').getBoundingClientRect();
+                           return n.bottom <= b.top - 7 }""", what=f'the note sits above the foot at {w}')
+        hit = c.js("""() => { const n = document.getElementById('fNotes').getBoundingClientRect();
+                        return [...document.querySelectorAll('[data-test-foot] button')].filter(x => { const r = x.getBoundingClientRect();
+                          return r.left < n.right && r.right > n.left && r.top < n.bottom && r.bottom > n.top }).length }""")
+        c.eq(hit, 0, f'at {w}: the note cuts no button of the foot', what=f'no overlap {w}')
+    c.js("() => document.querySelector('[data-test-foot]').remove()")
+    c.check_errors()
+
+
 @case('A46', 'Applications: each one’s identity in the header, and a switcher on its name', 'A', designs=('standard',), screens=False, night=False, langs4=True,
       rule='frame/SPEC 3.1 (the user 30 Oct, Simplification’s rule): icon and tint declared in APPS (Maintenance: the plane in --sog-err, tab icon too); the name opens the list of applications, one above the device’s level greyed with its level, a tap replaces the page with ?app=… and its first module')
 def a46(c):

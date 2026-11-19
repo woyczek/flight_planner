@@ -396,7 +396,7 @@ for about 25 ms after each write of fuel: journey J2's intermittent failure).
     `viewport-fit=cover`). `--f-tab-space` (bar + hairline + safe area) is what anything stuck at the bottom of the
     window must clear: the sticky result bar `.f-bar` (`bottom: var(--f-tab-space, 0px)`) and the notifications. The
     view is above the bar in the grid, so nothing hides under it. The notifications also clear a view's `.f-bar` stuck at
-    the bottom (30 Oct 2026): while a note is shown the frame sets `--f-bar-clear` on `.f-notes` (the distance from the
+    the bottom (30 Oct 2026; also a foot marked `data-f-foot`, SOG-0517): while a note is shown the frame sets `--f-bar-clear` on `.f-notes` (the distance from the
     bar's top to the foot of the window, plus 8 px; followed when the bar, the window or the scroll changes, removed with
     the last note), on a phone and on a computer alike.
   - **The selected tab changes form, not only colour**: its icon switches from the outline to the **filled variant**

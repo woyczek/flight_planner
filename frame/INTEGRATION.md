@@ -372,8 +372,8 @@ The conflicts seen more than 30 days ago are dropped at the first pass of a load
 - `ctx.notify(text, kind)` (on a phone, up to 760 px, **one note at a time**: the others wait, an `err` goes in front of an information, a note with an action never blocks the queue; SOG-0131; every call is announced by the window event `frame-note`), `ctx.ask(text, { ok, cancel, sections, note })` (titled groups of lines, SPEC § ctx), `ctx.askText(text, { value })`: the frame's notifications and question
   windows.
 - The header's application name is the frame's (a button that switches application, SPEC § 3.1): a module never writes
-  into `#fApp`, `#fAppIco` or `#fName`; on a phone its `meta.title` takes the name's place by itself (rule 16). The notes rise above your sticky result bar by themselves when it has the class `.f-bar` and sits in the
-  lower half of the window: never restyle `.f-notes` from a module.
+  into `#fApp`, `#fAppIco` or `#fName`; on a phone its `meta.title` takes the name's place by itself (rule 16). The notes rise above your sticky result bar by themselves when it has the class `.f-bar` — or the attribute `data-f-foot` for a foot that is not a `.f-bar` (the missions workshop's `.ms-atfoot`, SOG-0517; A354) — and sits in the
+  lower half of the window: never restyle `.f-notes` from a module, and never put a button where a note rises.
 
 - `data.watch(prefix, paths => …)`: called after a synchronisation, after a write in this tab or in another tab. Re-read
   what you show; do not assume who changed it.
