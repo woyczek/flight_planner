@@ -4829,6 +4829,10 @@ def n86(c):
     c.js(f"document.querySelector('{RD}').focus()")
     c.key('ArrowLeft')
     c.eq(where(), fill(rd('pages'), a=1, b=2, n=4) if wide else fill(rd('page'), a=3, n=4), 'the left arrow of the keyboard turns back', what='the pager')
+    # the reader hides the sheet and its « Retour » (`.ms-sheet[data-reading]`): leave it by « ← Fiche » before going back to the list
+    c.tap(f'{RD} [data-rd-back]')
+    c.until(f"document.querySelector('{M} [data-do=back]') && getComputedStyle(document.querySelector('{M} .ms-first')).display !== 'none'", timeout=6000,
+            what='the sheet is back, with its « Retour »')
     # a mission I only browse: neither the button nor the reader
     sheet('X-906A')
     c.until(f"document.querySelector('{M} .ms-sheet')?.dataset.id === 'X-906A'", timeout=8000, what='the sheet of X-906A')
