@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "bb87e68",
-  "fiches": 526,
+  "organisation": "3f36436",
+  "fiches": 527,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -1035,6 +1035,27 @@
      "de": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "es": "Quote: the wind is counted on the flight's overall track, not leg by leg (wrong time on a dog-leg route)",
      "rank": 31
+    }
+   ]
+  },
+  {
+   "id": "pilote-carburant-degagement",
+   "app": "pilote",
+   "label": {
+    "fr": "Carburant ; dégagement",
+    "en": "Carburant ; dégagement",
+    "de": "Carburant ; dégagement",
+    "es": "Carburant ; dégagement"
+   },
+   "items": [
+    {
+     "id": "SOG-0528",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carburant : changer l'arrivée garde le terrain de dégagement sans le revérifier ni le marquer",
+     "en": "Fuel: changing the destination keeps the alternate without re-checking or flagging it",
+     "de": "Kraftstoff: Beim Ändern des Zielflughafens bleibt der Ausweichflughafen ungeprüft und unmarkiert",
+     "es": "Combustible: cambiar el destino mantiene el alternativo sin volver a comprobarlo ni marcarlo"
     }
    ]
   },
@@ -9537,6 +9558,9 @@
   },
   "SIG-9cdb5bd567": {
    "fiche": "SOG-0372"
+  },
+  "SIG-a8e8977878": {
+   "fiche": "SOG-0528"
   },
   "SIG-b576067218": {
    "fiche": "SOG-0510"
