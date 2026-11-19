@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "62ede4f",
+  "organisation": "412dfdd",
   "fiches": 519,
   "untranslated": 0,
   "priorities": 481,
@@ -4734,11 +4734,12 @@
     {
      "id": "SOG-0520",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : une mission importée par un fichier YAML ne se modifie pas — « pas dans le registre » (réindexation manquante)",
      "en": "Missions: a mission imported from a YAML file cannot be edited — “not in the register” (missing reindex)",
      "de": "Missionen: Eine aus einer YAML-Datei importierte Mission lässt sich nicht bearbeiten — „nicht im Register“ (fehlende Neuindizierung)",
-     "es": "Misiones: una misión importada desde un archivo YAML no se puede editar — «no está en el registro» (falta reindexar)"
+     "es": "Misiones: una misión importada desde un archivo YAML no se puede editar — «no está en el registro» (falta reindexar)",
+     "test": true
     }
    ]
   },

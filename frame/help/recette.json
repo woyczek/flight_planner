@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 359,
+  "tests": 360,
   "verdicts": 221
  },
  "apps": [
@@ -5355,6 +5355,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T13:45:24Z"
+  },
+  {
+   "id": "SOG-0520",
+   "app": "compagnie",
+   "title": {
+    "fr": "Missions : une mission importée par un fichier YAML ne se modifie pas — « pas dans le registre » (réindexation manquante)",
+    "en": "Missions: a mission imported from a YAML file cannot be edited — “not in the register” (missing reindex)",
+    "de": "Missionen: Eine aus einer YAML-Datei importierte Mission lässt sich nicht bearbeiten — „nicht im Register“ (fehlende Neuindizierung)",
+    "es": "Misiones: una misión importada desde un archivo YAML no se puede editar — «no está en el registro» (falta reindexar)"
+   },
+   "test": "Recharge la page. (1) Ta mission déjà importée : dans le Registre, sa ligne dit « pas dans le registre » ; touche son « ⋯ » › « Inscrire au registre » : elle devient une ligne du registre et s'ouvre dans l'Atelier. (2) Importe un autre fichier YAML (« Ajouter des missions ») : la mission est au registre dès la fin de l'import, sa fiche s'ouvre avec Brief et Atelier.",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T14:16:24Z"
   }
  ],
  "decisions": [
