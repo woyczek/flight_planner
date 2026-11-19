@@ -5401,22 +5401,6 @@
  ],
  "decisions": [
   {
-   "id": "Q-0121",
-   "fiche": "SOG-0521",
-   "app": "compagnie",
-   "question": "Ravitaillement en retardant : à quelle distance de la plaque et à quel cap l'appareil doit-il s'arrêter pour que le remplissage (5 min au moins) compte ?",
-   "context": "La clé « ravitaillement » : se poser, s'arrêter contre la station (vitesse sol nulle), y rester au moins 5 min, repartir. Création propose 30 m de la plaque et un cap d'accostage à ± 30° quand le site en porte un (le cap serait ajouté à la liste des pélicandromes).",
-   "options": [
-    "30 m et ± 30° (proposition de Création)",
-    "Plus strict : 15 m et ± 15°",
-    "Plus large : 50 m, sans cap",
-    "Autre (écris les chiffres)"
-   ],
-   "since": "2026-11-19",
-   "state": "todo",
-   "recommended": 0
-  },
-  {
    "id": "Q-0122",
    "fiche": "SOG-0521",
    "app": "compagnie",
