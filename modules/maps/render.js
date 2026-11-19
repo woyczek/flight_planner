@@ -1264,7 +1264,7 @@
         rank: 'mora',
         key: `mora:${m.lat},${m.lon}`,
         anchor: q,
-        force: 'reserve',
+        // sans place libre la MORA se tait à ce zoom : elle ne recouvre jamais un texte (SOG-0515 ; elle était réservée et peinte au centre quand même)
         boxes: (pl ? [
           [0, 0],
           [0, -d],
@@ -1557,6 +1557,7 @@
         placer: pl,
         pal,
         zoom: zv,
+        crossesRoute: crossed, // vrai si le trait de la route coupe ce rectangle (les cartouches des voies non suivies ne restent pas dessous, SOG-0515)
         natFlight // le vol vu des routes NAT (flight_time.js natFlightOf) : { dir, at } ou null
       });
       let labels = [],

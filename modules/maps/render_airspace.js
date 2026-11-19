@@ -332,7 +332,10 @@
       const {
         x,
         y
-      } = c;
+      } = c,
+      // une voie que la route ne suit pas n'a jamais son cartouche SOUS le trait de la route : la place prise est hors du trait (le glissement, render.js offRoute), sinon le cartouche est peint
+      // après la route, par-dessus, comme celui d'une voie suivie (SOG-0515)
+      over = along || !!env.crossesRoute?.(box(c));
       seen.add(`${g.route}|${Math.round(x / 90)}|${Math.round(y / 90)}`);
       ends.hits.push({
         x,
@@ -341,7 +344,7 @@
         g,
         w, // la longueur et la demi-hauteur du cartouche du nom, et s'il est peint par-dessus la route : sa pointe (le sens) se pose à son bout
         h: f * .7,
-        along
+        along: over
       });
       // la cartouche de la voie (la primitive du noyau, R-M5) : son nom en blanc sur sa couleur, tournée le long du tronçon ; la route
       // interrompue : un liseré du fond autour ; une seule ligne sous elle : la distance (couleur de la voie), puis le niveau minimal
@@ -366,7 +369,7 @@
             y,
             angle: ang
           },
-          margin: along ? {
+          margin: over ? {
             px: 2 * scale,
             color: env.theme.bg
           } : null,
@@ -390,7 +393,7 @@
           }] : [])]
         });
       };
-      if (along) ends.over.push(paint);
+      if (over) ends.over.push(paint);
       else paint();
       if (el(profile, 'awLabels') !== false && len > 140 * scale) {
         // routes vraies près de chaque bout (comme « 097° » sur les cartes)

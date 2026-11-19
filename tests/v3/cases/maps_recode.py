@@ -9852,6 +9852,78 @@ def d289(c):
     c.until("(w) => (window.__notes || []).some(n => n.replace(/[\s  ]+/g, ' ').includes(w))", word.replace(' ', ' ').strip(), timeout=20000, what='the notice: a library of the Map does not come')
     c.eq([e for e in c.errors if 'aero_symbols' not in e], [], 'the missing file is the only error: no ReferenceError in the failure path', what='errors')
     c.errors[:] = [e for e in c.errors if 'aero_symbols' not in e]
+_UNDER_JS = r"""() => {
+  const R = window.MapsRender, W = 600, H = 400, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const raw = cv.getContext('2d'), texts = [];
+  const ctx = new Proxy(raw, { get(o, p) {
+      if (p === 'fillText') return (t, x, y, ...a) => { texts.push({ t: String(t), x, y, w: o.measureText(String(t)).width, f: parseFloat(o.font) || 10 }); return o.fillText(t, x, y, ...a) };
+      const v = o[p]; return typeof v === 'function' ? v.bind(o) : v }, set(o, p, v) { o[p] = v; return true } });
+  const seg = (route, lat, lon0, lon1) => ({ route, a: { id: route + 'A', lat, lon: lon0 }, b: { id: route + 'B', lat, lon: lon1 }, lower: 6500, upper: 19500, nm: 150 });
+  const BOX = [{ lat: 44.0, lon: -4 }, { lat: 46.0, lon: 4 }];
+  const one = (segs, route, mora, block) => { texts.length = 0; const fit = R.bboxOf(BOX, 0), { toC, shown } = R.mercator(fit, W, H, 12);
+    const prof = R.routeProfile(9000); if (mora) prof.elements = { ...(prof.elements || {}), mora: true };
+    const out = R.draw(ctx, { toC, W, H, scale: 1, bbox: shown, profile: prof, data: { airways: segs, moraCells: mora || [] }, route, marks: [], reserve: block ? pl => pl.add(block(toC)) : undefined });
+    const rp = route.map(q => toC(q.lat, q.lon));
+    return { hits: (out && out.airways || []).map(h => ({ x: h.x, y: h.y, w: h.w, h: h.h, over: !!h.along, route: h.g.route })), rp, texts: texts.slice(), W, H } };
+  const rt = (a, b) => [{ lat: a[0], lon: a[1], id: 'R1' }, { lat: b[0], lon: b[1], id: 'R2' }];
+  return { same: one([seg('QA', 45.0, -2.5, 0)], rt([45.0, -2.6], [45.0, 0.1])),
+    cross: one([seg('QC', 45.0, -2.5, 0)], rt([44.5, -1.25], [45.5, -1.25])),
+    mora: one([], [], [{ lat: 45.0, lon: -1.25, mora: '2⁷' }], toC => { const q = toC(45.0, -1.25); return { x0: q.x - 70, y0: q.y - 50, x1: q.x + 70, y1: q.y + 50 } }),
+    moraFree: one([seg('QM', 45.0, -2.5, 0)], [], [{ lat: 45.5, lon: 2.5, mora: '2⁷' }]) }
+}"""
+
+
+@case('D290', 'Airways, SOG-0515 (1): a cartouche of a way the route does not follow is never UNDER the route line: it slides along its way, or, with no free place, is painted over the line', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0515 (the user, capture UPALO V20 LUVOP LFRN): « une voie NON empruntée n’a jamais son cartouche sous le tracé ; on le déplace le long de sa voie, ou on le dessine au-dessus faute de place. Une voie empruntée peut rester dessous. » The placement already prefers the places the route does not cut (render.js offRoute) but, with none free, kept a cut place and painted the cartouche before the route: under it; the cartouche taken in a cut place is now painted after the route, like the one of a way the route follows')
+def d290(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    r = c.js(_UNDER_JS)
+    a = r['same']
+    c.eq([len(a['hits']), a['hits'][0]['over'] if a['hits'] else None], [1, True], 'a way that lies along the route line (not followed): its cartouche has no free place, it is painted over the line', what=str(a['hits']))
+    b = r['cross']
+    c.eq(len(b['hits']), 1, 'a way crossed by the route in the middle: one cartouche', what=str(b['hits']))
+    if b['hits']:
+        h, x = b['hits'][0], b['rp'][0]['x']
+        c.ok(not h['over'] and abs(h['x'] - x) > h['w'] / 2, f"cartouche x {h['x']:.1f}, line x {x:.1f}, half-length {h['w'] / 2:.1f}", 'a cut middle: the cartouche slid along its way, clear of the line (nothing painted over)')
+
+
+@case('D291', 'Maps, SOG-0515 (2): a MORA never covers a text — moved inside its cell, or left out at this zoom', 'D',
+      tags=('maps',), screens=False, designs=('standard',), night=False,
+      rule='SOG-0515 (the user, capture, towards UN29): « Un MORA ne recouvre jamais un texte : il est décalé dans sa case ou masqué à ce zoom. » drawGridMora asked force reserve: with none of its nine places free it was painted at the centre anyway, over the cartouche of an airway; it now keeps silent')
+def d291(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    r = c.js(_UNDER_JS)
+    m = r['mora']
+    mo = [t for t in m['texts'] if t['t'] == '2⁷']
+    c.eq(mo, [], 'a text already stands over the whole cell (a block reserved at the cell, ahead of the MORA in rank): the MORA is left out, it is not painted over it (before: painted at the centre anyway)', what=str(mo))
+    f = [t for t in r['moraFree']['texts'] if t['t'] == '2⁷']
+    c.ok(len(f) >= 1, str(r['moraFree']['texts'])[:200], 'a MORA with free room is still drawn')
+
+
+@case('D292', 'SOG-0515 (captures): a cartouche of a way the route does not follow stays off the route line; a MORA never covers a text — the delivered state, at 390 and 1280', 'D',
+      tags=('maps',), screens=True, designs=('standard',), night=False,
+      rule='SOG-0515: the delivered state, to be read by the ergonomist then the user: (a) a way lying along the route (not followed): its cartouche is painted over the route line; (b) a way crossed by the route: its cartouche slid clear of the line; (c) a MORA with a text already over its cell: left out')
+def d292(c):
+    c.page.goto(f'{c.base}/modules/maps/test/render.html', wait_until='load')
+    c.until("() => window.MapsRender && document.getElementById('out') && document.getElementById('out').textContent.length > 20", what='the render bench is drawn')
+    c.js("""() => { const R = window.MapsRender, W = 340, H = 190, wrap = document.createElement('div'); wrap.style.cssText = 'position:absolute;left:0;top:0;right:0;background:#fff;padding:6px;z-index:9';
+      const seg = (route, lat, lon0, lon1) => ({ route, a: { id: route + 'A', lat, lon: lon0 }, b: { id: route + 'B', lat, lon: lon1 }, lower: 6500, upper: 19500, nm: 150 });
+      const BOX = [{ lat: 44.4, lon: -3.2 }, { lat: 45.6, lon: 1.2 }], rt = (a, b) => [{ lat: a[0], lon: a[1], id: 'R1' }, { lat: b[0], lon: b[1], id: 'R2' }];
+      const one = (title, segs, route, mora, block) => { const cv = document.createElement('canvas'); cv.width = W; cv.height = H; cv.style.cssText = 'display:block;max-width:100%;border:1px solid #888;margin:0 0 4px'; const ctx = cv.getContext('2d');
+        const fit = R.bboxOf(BOX, 0), { toC, shown } = R.mercator(fit, W, H, 12); ctx.fillStyle = '#f4f4f0'; ctx.fillRect(0, 0, W, H);
+        const prof = R.routeProfile(9000); if (mora) prof.elements = { ...(prof.elements || {}), mora: true };
+        R.draw(ctx, { toC, W, H, scale: 1, bbox: shown, profile: prof, data: { airways: segs, moraCells: mora || [] }, route, marks: [], reserve: block ? pl => pl.add(block(toC)) : undefined });
+        if (block) { const b = block(toC); ctx.strokeStyle = '#888'; ctx.setLineDash([3, 3]); ctx.strokeRect(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0); ctx.setLineDash([]); ctx.fillStyle = '#555'; ctx.font = '10px sans-serif'; ctx.fillText('a text is here', b.x0 + 4, b.y0 + 11) }
+        const t = document.createElement('div'); t.textContent = title; t.style.cssText = 'font:12px sans-serif;margin:2px 0'; wrap.append(t, cv) };
+      one('(a) a way along the route, not followed: the cartouche over the line', [seg('QA', 45.0, -2.5, 0)], rt([45.0, -2.6], [45.0, 0.1]));
+      one('(b) a way crossed by the route: the cartouche slid clear', [seg('QC', 45.0, -2.5, 0)], rt([44.5, -1.25], [45.5, -1.25]));
+      one('(c) a MORA with a text already over its cell: left out', [], [], [{ lat: 45.0, lon: -1.25, mora: '2⁷' }], toC => { const q = toC(45.0, -1.25); return { x0: q.x - 70, y0: q.y - 40, x1: q.x + 70, y1: q.y + 40 } });
+      document.body.append(wrap); window.scrollTo(0, 0); return true }""")
+    c.wait(500)
+    c.shot(f'D292_awy_route_mora_{c.width}.png')
 
 
 def _no_duplicate_names():
