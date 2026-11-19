@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "0c8b3ff",
+  "organisation": "457970e",
   "fiches": 523,
   "untranslated": 0,
   "priorities": 481,
@@ -1299,12 +1299,11 @@
     {
      "id": "SOG-0517",
      "kind": "feature",
-     "state": "done",
+     "state": "later",
      "fr": "Carburant : « Calculer » impose comme passages les points d'une route déjà présente, et le plan de vol perd les changements de niveau écrits par le moteur",
      "en": "Fuel: “Compute” imposes the points of an existing route as waypoints, and the flight plan loses the level changes written by the engine",
      "de": "Kraftstoff: „Berechnen“ erzwingt die Punkte einer vorhandenen Route, und der Flugplan verliert die vom Rechner geschriebenen Höhenwechsel",
-     "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor",
-     "test": true
+     "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor"
     }
    ]
   },

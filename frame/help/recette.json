@@ -5356,8 +5356,7 @@
    },
    "test": "Recharge la page. Carburant, vol EGLL → LFRN au FL270 (niveau choisi dans le devis) : vide la route, « Calculer » : la route est calculée AU FL270 (plus de G27, G273, T501) et le texte du moteur passe tel quel dans le plan de vol (voies M… gardées, pas de « DCT » ajouté). Passe-la à l'IFPS. Sans aucun niveau : une notification dit « Niveau du vol fixé à FL180… ». Les points que tu tapes toi-même sont dits « Passages imposés au calcul ».",
    "since": "2026-11-19",
-   "state": "todo",
-   "delivered": "2026-11-19T13:18:29Z"
+   "state": "known"
   },
   {
    "id": "SOG-0518",
