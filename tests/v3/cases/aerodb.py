@@ -16014,7 +16014,7 @@ def k349(c):
     c.ok(near[0] != 'CALCUL IMPOSSIBLE' and not near[2] and not any(near[3]), str(near[:3]), 'a flight whose arrival HAS a network (EGWU, 9 NM from a point) has no such leg nor such review: nothing changes for it')
 
 
-@case('K350', 'Zones R / D / P (SOG-0462, lot A): the usual name of a French space (XML_SIA `NomUsuel`, « MONT SAINT MICHEL » for R 12) is carried as `uname`, joined to the AIXM record by territory + type + name; the FAA and NAV CANADA `TIMESOFUSE` is also carried as `hours`; openAIP gives only the hours it PUBLISHES (a day at real times, BY NOTAM, ON REQUEST…) — its default « 00:00-00:00 » is NOT « H24 » and writes nothing — and its remarks as `rem`; texts as the source writes them, bounded; parser version 29',
+@case('K350', 'Zones R / D / P (SOG-0462, lot A): the usual name of a French space (XML_SIA `NomUsuel`, « MONT SAINT MICHEL » for R 12) is carried as `uname`, joined to the AIXM record by territory + type + name; the FAA and NAV CANADA `TIMESOFUSE` is also carried as `hours`; openAIP gives only the hours it PUBLISHES (a day at real times, BY NOTAM, ON REQUEST…) — its default « 00:00-00:00 » is NOT « H24 » and writes nothing — and its remarks as `rem`; texts as the source writes them, bounded; parser version 31',
       'K', tags=('aerodb',), phone=False,
       rule='SOG-0462 (the user, 18 Nov: for the zones R and D, the nature of the danger, the manager, the hours and the conditions; « la R du Mont-Saint-Michel n’a rien à voir avec la R 108 »). Measured on this workstation (18 Nov): France 871 / 874 zones with hours and 853 with remarks, 781 of 874 get a usual name by the key; FAA / NAV CANADA carried the hours in `info` only; openAIP gives « 00:00-00:00 » to 8 797 of its 8 820 R / D / P (reading it as hours would write a false H24). Never translated, never reworded; a field the source does not give is absent. The nature of the danger (`nat`) stays absent until the ENR 5.1 is read (lot B). Invented data.')
 def k350(c):
@@ -16059,7 +16059,7 @@ def k350(c):
     c.ok('uname' not in sz['FAA ZONE'] and 'nat' not in sz['FAA ZONE'], str(sorted(sz['FAA ZONE'])), 'no usual name where the source has none, never a nature of the danger (lot B)')
     sv = [m.group(1) for m in [re.search(r'const VERSION =\s*(\d+)', (ROOT / 'shared' / 'sia_base.js').read_text(encoding='utf-8'))]]
     pv = re.search(r'const PARSER_VERSION = (\d+)', (ROOT / 'frame' / 'aerodb' / 'catalogue.js').read_text(encoding='utf-8'))
-    c.eq((int(sv[0]), int(pv.group(1))), (30, 30), 'the parser version is 30 in both places (the German zone, built before the DFS airspaces, is rebuilt: parser-old; 29 gave the usual names, kept)', what='version')
+    c.eq((int(sv[0]), int(pv.group(1))), (31, 31), 'the parser version is 31 in both places (SOG-0513, 19 Nov: the FIR free-route areas and the London UIR read by projection: every zone built before is rebuilt, parser-old; 30 had the DFS airspaces, 29 gave the usual names, kept)', what='version')
 
 
 @case('K351', 'Heliports (SOG-0466, lot 1): an openAIP heliport with no code (id = name) is the SAME as the SIA one (code of the list « LF418 ») when it is of kind HP and within 100 m, or within 300 m with the same normalised name; otherwise both stay — the SIA code is kept, the other name goes to `aka` and its source to `also`, `icao` stays empty; the light index of the zone carries every coded heliport under its LIST code (« LF418 ») so that the completion of the aerodrome fields proposes it by code and by name',
@@ -18159,3 +18159,36 @@ def k395(c):
         c.eq([i['text'] for i in with_level['issues'] if i['text'].startswith('Niveau du vol absent')], [], 'a request that gives its level: the sentence is not said', what='with level')
         check = PL.compute(V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'EIDW', 'date': '2026-11-09T12:00', 'enable_fra': False, 'route': 'LFPO DCT OLZOM B1 SITET A1 KEPAD A1 BOYNE DCT EIDW', 'alternatives': False}), data, rad_gz, None)['primary']
         c.ok(any(i['text'].startswith('Niveau du vol absent') for i in check['issues'][:1]), str(check['issues'][:1]), 'a check of a route typed without a level says it too, first: it is judged at FL180')
+
+
+@case('K393', 'AIXM 5.1 reader, SOG-0513 lot C (parser 31): an airspace WITHOUT a surface of its own whose horizontal projection depends on another airspace (HORZ_PROJECTION, by identifier — the LONDON UIR of the NATS file, that of the LONDON FIR) takes the rings of that space, bounded (4 hops at most, never twice the same space, no loop); a restricted area whose name begins with the four-letter designator of a FIR and FRA (« EGTT FRA WEST (AS PART OF BOREALIS FRA CONTINUUM) ») is kept under the type FRA, one that does not (« FRANKLAND », « DFS FRA CELL ») is not',
+      'K', rule='SOG-0513 lot C (the IFPS: « DCT SEGMENT HAWKE..NEVIL IS TOO LONG FOR EGTTNFRA:245:999 »): the engine needs the London space above FL 245 and the free-route area to say « outside the FRA »; the NATS file gives the UIR by a dependency and the FRA West as a restricted area (RAS). Invented identifiers and outlines.')
+def k393(c):
+    head = ('<?xml version="1.0"?><message:AIXMBasicMessage xmlns:message="http://www.aixm.aero/schema/5.1.1/message" xmlns:aixm="http://www.aixm.aero/schema/5.1.1" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:xlink="http://www.w3.org/1999/xlink">')
+
+    def asp(uid, typ, name, ring=None, dep=None):
+        pos = ''.join(f'<gml:pos>{la} {lo}</gml:pos>' for la, lo in ring) if ring else ''
+        patch = ('<gml:PolygonPatch><gml:exterior><gml:Ring><gml:curveMember><gml:Curve><gml:segments><gml:GeodesicString>' + pos + '</gml:GeodesicString></gml:segments></gml:Curve></gml:curveMember></gml:Ring></gml:exterior></gml:PolygonPatch>') if ring else ''
+        depend = (f'<aixm:contributorAirspace><aixm:AirspaceVolumeDependency><aixm:dependency>HORZ_PROJECTION</aixm:dependency><aixm:theAirspace xlink:href="urn:uuid:{dep}"/></aixm:AirspaceVolumeDependency></aixm:contributorAirspace>') if dep else ''
+        return (f'<message:hasMember><aixm:Airspace gml:id="id.{uid}"><gml:identifier codeSpace="urn:uuid:">{uid}</gml:identifier><aixm:timeSlice><aixm:AirspaceTimeSlice><aixm:interpretation>BASELINE</aixm:interpretation>'
+                f'<aixm:type>{typ}</aixm:type><aixm:designator>{uid.upper()}</aixm:designator><aixm:name>{name}</aixm:name>'
+                '<aixm:geometryComponent><aixm:AirspaceGeometryComponent><aixm:theAirspaceVolume><aixm:AirspaceVolume>'
+                '<aixm:upperLimit uom="FL">245</aixm:upperLimit><aixm:upperLimitReference>STD</aixm:upperLimitReference><aixm:lowerLimit uom="FL">65</aixm:lowerLimit><aixm:lowerLimitReference>STD</aixm:lowerLimitReference>'
+                '<aixm:horizontalProjection><aixm:Surface srsName="urn:ogc:def:crs:EPSG::4326"><gml:patches>' + patch + '</gml:patches></aixm:Surface></aixm:horizontalProjection>' + depend
+                + '</aixm:AirspaceVolume></aixm:theAirspaceVolume></aixm:AirspaceGeometryComponent></aixm:geometryComponent></aixm:AirspaceTimeSlice></aixm:timeSlice></aixm:Airspace></message:hasMember>')
+    box = lambda la, lo: [(la, lo), (la, lo + 2), (la + 2, lo + 2), (la + 2, lo), (la, lo)]
+    xml = (head + asp('fir1', 'FIR', 'LONDON FIR', box(50, -2)) + asp('uir1', 'UIR', 'LONDON UIR', None, 'fir1') + asp('fra1', 'RAS', 'EGTT FRA WEST (AS PART OF BOREALIS FRA CONTINUUM)', box(51, -6))
+           + asp('ras2', 'RAS', 'FRANKLAND PRISON', box(54, -1)) + asp('cell', 'RAS', 'DFS FRA CELL', box(52, 9)) + asp('la', 'UIR', 'LOOP A', None, 'lb') + asp('lb', 'UIR', 'LOOP B', None, 'la')
+           + asp('c1', 'UIR', 'CHAIN 1', None, 'c2') + asp('c2', 'UIR', 'CHAIN 2', None, 'c3') + asp('c3', 'UIR', 'CHAIN 3', None, 'c4') + asp('c4', 'UIR', 'CHAIN 4', None, 'c5') + asp('c5', 'UIR', 'CHAIN 5', None, 'c6') + asp('c6', 'UIR', 'CHAIN 6', box(52, 3))
+           + asp('gone', 'UIR', 'NO TARGET', None, 'does-not-exist') + '</message:AIXMBasicMessage>')
+    c.page.goto(f'{c.base}/frame/aerodb/test/vrp_sources.html', wait_until='load')
+    c.page.wait_for_function('!!window.AeroSources', timeout=30000)
+    r = c.js("""(xml) => { const z = window.AeroSources.aixm5(xml).airspaces; const by = n => z.find(x => x.name === n);
+      return { rows: z.map(x => [x.type, x.name, x.rings.length]), same: JSON.stringify(by('LONDON UIR').rings) === JSON.stringify(by('LONDON FIR').rings) }; }""", xml)
+    c.eq(r['rows'], [['FIR', 'LONDON FIR', 1], ['UIR', 'LONDON UIR', 1], ['FRA', 'EGTT FRA WEST (AS PART OF BOREALIS FRA CONTINUUM)', 1], ['UIR', 'CHAIN 2', 1], ['UIR', 'CHAIN 3', 1], ['UIR', 'CHAIN 4', 1], ['UIR', 'CHAIN 5', 1], ['UIR', 'CHAIN 6', 1]],
+         'the UIR takes the ring of the FIR it points to; the FRA West is kept as FRA, FRANKLAND and « DFS FRA CELL » (a control cell of Germany, three letters before FRA: Essais, K113) are not; two spaces that point to each other (a loop), a space that points to nothing and a chain of five hops (CHAIN 1: past the 4 hops) have no ring and are dropped; the others of the chain, within 4 hops, are kept', what='rows')
+    c.ok(r['same'], r, 'the rings of the UIR are those of the FIR (same lateral limits, same simplification)')
+    hub = asp('hub', 'UIR', 'HUB', box(40, 0)) + ''.join(asp(f'h{i}', 'UIR', f'S{i}', None, 'hub') for i in range(5200))
+    r = c.js("""(xml) => { const t0 = performance.now(); const z = window.AeroSources.aixm5(xml).airspaces; return { spaces: z.filter(x => /^S[0-9]+$/.test(x.name)).length, hub: z.filter(x => x.name === 'HUB').length, ms: performance.now() - t0 }; }""", head + hub + '</message:AIXMBasicMessage>')
+    c.eq((r['spaces'], r['hub']), (5000, 1), '5 200 spaces that point to the same hub: the rings taken by a dependency are bounded in the whole file (5 000), the hub is read once, not once for each; past the budget a space without a surface of its own is no longer followed (review of Security)', what='budget')
+    c.ok(r['ms'] < 20000, r, 'and the file is read in a moment (under 20 s), not in a time that grows with the product of the spaces by the size of the hub')

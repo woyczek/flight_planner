@@ -233,8 +233,8 @@
   });
   /** Types gardés (les autres — secteurs, parachutage, vol à voile… — n'apportent rien aux cartes de mission) ; FIR et UIR (SOG-0169) : des repères de carte, jamais des volumes à franchir (le profil vertical les écarte), leurs anneaux simplifiés à 0,01°. */
   const KEEP = new Set(['P', 'R', 'D', 'W', 'A', 'TRA', 'TSA', 'MOA', 'MTR', 'CTR', 'CTA', 'TMA', 'ATZ', 'MATZ', 'TMZ', 'RMZ', 'RMZ-TMZ',
-    'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA', 'FIR', 'UIR'
-  ]);
+    'SIV', 'ADIZ', 'TIZ', 'TIA', 'MCTR', 'HTZ', 'LFA', 'FIR', 'UIR', 'FRA'
+  ]); // FRA (SOG-0513 lot C) : une zone de route libre (« EGTT FRA WEST ») du fichier AIXM d'un État : un repère, pour dire « hors de la route libre »
   /** Type d'un espace AIXM 5.1 / FAA / divers ramené au vocabulaire de la base. */
   function normType(t) {
     const u = String(t || '').toUpperCase().replace(/[\s-]+/g, '_');
@@ -400,10 +400,47 @@
     if (dfs) out.layered = true;
     const where = new Map; // identifiant → { id, lat, lon } (points et balises, pour les tronçons de route)
     // espaces
-    for (const f of doc.getElementsByTagNameNS(NSX, 'Airspace')) {
+    const airspaceNodes = [...doc.getElementsByTagNameNS(NSX, 'Airspace')],
+      byUuid = new Map(airspaceNodes.map(f => [idOf(f),
+        f
+      ])); // SOG-0513 (lot C) : pour suivre la PROJECTION HORIZONTALE d'un espace qui n'a pas de surface propre (la UIR de Londres : celle de la FIR)
+    /** Les anneaux d'un volume ; un volume SANS surface propre dont la projection horizontale dépend d'un autre espace (HORZ_PROJECTION, par identifiant) prend ceux de cet espace.
+     *  Borné : au plus 4 renvois, jamais deux fois le même espace (pas de boucle), au plus 64 anneaux. */
+    const MAX_PROJECTION_DEPTH = 4,
+      MAX_PROJECTED_RINGS = 64,
+      MAX_PROJECTED_TOTAL =
+      5000; // revue de Sécurisation : au plus 5 000 anneaux repris PAR RENVOI dans tout le fichier (un espace « moyeu » cité par des centaines de milliers d'autres n'est pas recopié autant de fois) ; au-delà, un volume sans surface propre n'est plus suivi
+    const ownCache = new Map, // les anneaux PROPRES d'un volume : lus une fois (le moyeu n'est pas relu à chaque renvoi)
+      ownRings = v => {
+        let r = ownCache.get(v);
+        if (!r) ownCache.set(v, r = kids(v, 'Ring').map(ringOf).filter(x => x.length > 2));
+        return r;
+      };
+    let projected = 0;
+    const ringsOfVolume = (v, depth, seen) => {
+      const own = ownRings(v);
+      if (own.length || depth <= 0) return own;
+      const out = [];
+      for (const dep of kids(v, 'AirspaceVolumeDependency')) {
+        if (projected > MAX_PROJECTED_TOTAL) return [];
+        if (text(dep, 'dependency') !== 'HORZ_PROJECTION') continue;
+        const id = href(kid(dep, 'theAirspace'));
+        if (!id || seen.has(id) || !byUuid.has(id)) continue;
+        seen.add(id);
+        const target = slice(byUuid.get(id), 'AirspaceTimeSlice');
+        for (const tv of kids(target, 'AirspaceVolume')) out.push(...ringsOfVolume(tv, depth - 1, seen));
+        if (out.length >= MAX_PROJECTED_RINGS) break;
+      }
+      const kept = out.slice(0, MAX_PROJECTED_RINGS);
+      projected += kept.length;
+      return projected > MAX_PROJECTED_TOTAL ? [] : kept;
+    };
+    for (const f of airspaceNodes) {
       const s = slice(f, 'AirspaceTimeSlice');
       if (!s) continue;
-      const type = dfs ? dfsType(text(s, 'type'), text(s, 'localType')) : normType(text(s, 'type'));
+      let type = dfs ? dfsType(text(s, 'type'), text(s, 'localType')) : normType(text(s, 'type'));
+      if (!dfs && type === 'RAS' && /^[A-Z]{4} FRA\b/i.test(text(s, 'name'))) type =
+        'FRA'; // SOG-0513 : « EGTT FRA WEST (AS PART OF BOREALIS FRA CONTINUUM) » : une zone de route libre d'un État (le nom commence par l'indicatif OACI à quatre lettres de la FIR puis FRA), gardée sous son propre type ; « DFS FRA CELL » (une cellule de contrôle de la DFS : trois lettres) ne l'est pas (K113)
       if (!type || !KEEP.has(type)) continue;
       const vols = kids(s, 'AirspaceVolume');
       const notes = kids(s, 'note').map(n => n.textContent).join(' ');
@@ -416,7 +453,7 @@
         hours = uniq(noteLines.filter(n => n.time).map(n => n.text)),
         rem = uniq(noteLines.filter(n => !n.time).map(n => n.text));
       for (const v of vols) {
-        const rings = kids(v, 'Ring').map(ringOf).filter(r => r.length > 2);
+        const rings = ringsOfVolume(v, MAX_PROJECTION_DEPTH, new Set([idOf(f)]));
         if (!rings.length) continue;
         const up = kid(v, 'upperLimit'),
           lo = kid(v, 'lowerLimit');
