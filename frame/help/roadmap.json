@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "1539842",
-  "fiches": 516,
+  "organisation": "4f36157",
+  "fiches": 517,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -2367,6 +2367,15 @@
      "de": "Boden: ein Rollhalt behält seinen roten Strich, wenn sein Schild entfällt; LFBD, zwei Schilder übereinander",
      "es": "Suelo: un punto de espera conserva su trazo rojo cuando se quita su etiqueta; LFBD, dos etiquetas superpuestas",
      "rank": 334
+    },
+    {
+     "id": "SOG-0518",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Carte au sol : les points d'arrêt nommés (EGLL : BY1, NEVIS, LOKKI…) se cherchent à la loupe et se voient dès le zoom des voies de circulation principales",
+     "en": "Ground map: named holding points (EGLL: BY1, NEVIS, LOKKI…) can be searched and are shown from the zoom of the main taxiways",
+     "de": "Bodenkarte: benannte Haltepunkte (EGLL: BY1, NEVIS, LOKKI…) sind suchbar und ab dem Zoom der Hauptrollwege sichtbar",
+     "es": "Mapa de tierra: los puntos de espera con nombre (EGLL: BY1, NEVIS, LOKKI…) se pueden buscar y se ven desde el zoom de las calles de rodaje principales"
     }
    ]
   },
@@ -9371,6 +9380,9 @@
   },
   "SIG-553e91e7b9": {
    "fiche": "SOG-0434"
+  },
+  "SIG-6fe9d5751f": {
+   "fiche": "SOG-0518"
   },
   "SIG-7b206c7a34": {
    "fiche": "SOG-0503"
