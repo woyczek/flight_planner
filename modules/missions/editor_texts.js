@@ -116,6 +116,11 @@ export const EDTX = {
   plSrc_point: ['le point du réseau {code}', 'the network point {code}', 'der Netzpunkt {code}', 'el punto de red {code}'],
   plSrc_vrp: ['le point de report {code}', 'the reporting point {code}', 'der Meldepunkt {code}', 'el punto de notificación {code}'],
   plSrc_plain: ['{code}', '{code}', '{code}', '{code}'],
+  // SOG-0506 (décision de l'utilisateur) : un code connu tapé ou choisi sur un lieu déjà placé le déplace à la position de la base, et le dit
+  plMoved: ['Déplacé à la position de la base : {name}.', 'Moved to the position from the base: {name}.',
+    'An die Position aus der Datenbank verschoben: {name}.', 'Desplazado a la posición de la base: {name}.'
+  ],
+  plMovedUndo: ['Annuler', 'Undo', 'Rückgängig', 'Deshacer'],
   plOKind: ['Sorte d\'objet', 'Kind of object', 'Art des Objekts', 'Tipo de objeto'],
   ok_wreck: ['épave', 'wreck', 'Wrack', 'restos'],
   ok_raft: ['radeau', 'raft', 'Rettungsinsel', 'balsa'],

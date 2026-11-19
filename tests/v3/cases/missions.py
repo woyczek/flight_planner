@@ -8685,7 +8685,7 @@ def n125(c):
 
 @case('N126', 'Missions › the workshop, a point named by its code takes its position from the base (SOG-0495): in the sheet of a new turning point, the name typed is a code '
       'of the base — a reporting point or an aerodrome, in lower case too — and the place, left « à placer » until now, takes the position of the base and the code; a place '
-      'that already has a position is not moved; a name the base does not know changes nothing', 'N',
+      'that already has a position is moved to the position of the base (SOG-0506, the user\'s decision: case N169); a name the base does not know changes nothing', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0495 (the user\'s defect: a named point chosen by its code stays « à placer »): modules/missions/editor_view.js `edNameBase`, `edPlaceFromBase`')
 def n126(c):
@@ -8719,13 +8719,15 @@ def n126(c):
     c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.1')
     c.page.fill(f'{E} [data-plform] [data-f=name]', 'xpt01')
     c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
-    c.wait(600)
-    c.eq([val(8, 'name'), val(8, 'lat'), val(8, 'lon')], ['xpt01', '44.5', '1.1'], 'a place that already has a position is not moved by its name', what='already placed')
+    c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"8\"][data-f=lat]')?.value === '44.9'", timeout=8000, what='the placed point moved')
+    c.eq([val(8, 'name'), val(8, 'lat'), val(8, 'lon')], ['XPT01', '44.9', '1.45'],
+         'a place that already has a position, named by a known code, is moved to the position of the base (SOG-0506, the user\'s decision)', what='already placed')
     c.tap(f'{E} [data-do="edsave"]')
     c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
     got = c.js(_PB_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')['pts']
     c.eq(got[2:5], [['PT3', 'XPT01', 44.9, 1.45], ['PT4', 'XTSU', 44, 2], ['PT5', 'Pont nord', None, None]],
          'the file: the two points placed from the base carry their position and their code; the unknown one stays without a position', what='the file')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # SOG-0506: the note of the move stays 10 s, over the foot
     ed_leave(c)
     c.js(_REG_CLEAR)
 
@@ -11387,5 +11389,81 @@ def n168(c):
       return [d.origin, d.destination] }""" % _TEXT_OF, 'missions/X_REG/X-008/missionX-008.yaml')
     c.ok(isinstance(ends, list) and all(isinstance(x, dict) and 'lat' not in x and 'lon' not in x for x in ends) and [x.get('icao') for x in ends] == ['XLNM', 'XLOC'], ends,
          'the file: origin and destination written with their code and WITHOUT the position of a local source')
+    ed_leave(c)
+    c.js(_REG_CLEAR)
+
+
+# SOG-0506, the choice (2) refused by the relay (the user's rule: « choisir un point nommé donne les coordonnées, mais les bloque »): a known code typed
+# on a place ALREADY placed moves it to the position of the base and locks it, with « Annuler » in the notification. The note of a move, by its text.
+_MOVED_NOTE = """(t) => [...document.querySelectorAll('#fNotes .f-note')].map(n => [n.querySelector('span')?.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim(),
+  n.querySelector('[data-act]')?.textContent.trim() || '']).filter(x => x[0] === t)"""
+
+
+@case('N169', 'Missions › the workshop, a known code typed on a place ALREADY placed moves it to the position of the base (SOG-0506, the user\'s decision): a turning point '
+      'placed by hand (44.5 N, 1.1 E, « Pont nord »): a free name that is not a known code (« Pont sud ») moves nothing; « xpt01 » typed moves it to the position of '
+      'XPT01, its code as its name, locked, and a notification says « Déplacé à la position de la base » with « Annuler »; « Annuler » puts back the former position AND '
+      'the former name, free again; XPT01 chosen in the list of the Name moves it the same way; the file carries the moved point', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0506 (the relay refused the choice (2): « choisir un point nommé donne les coordonnées, mais les bloque »): modules/missions/editor_view.js '
+      '`edNameBase`, `edNameUndo`, `edPlName`; EDITOR.md § 7 tresquinquagies')
+def n169(c):
+    w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
+    val = lambda f: c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]')?.value ?? null")  # noqa: E731
+    name = f'{E} [data-plform] input[data-k=edplname]'
+    moved = norm(row(c, 'plMoved', EDTX_FILE).replace('{name}', 'PT3 · XPT01'))
+    undo = norm(row(c, 'plMovedUndo', EDTX_FILE))
+
+    def typed(text):
+        """The Name of the open sheet typed and left (the change of the field)."""
+        c.page.fill(name, text)
+        c.page.locator(name).press('Tab')
+
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    _pb_open(c, w)
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"!!document.querySelector('{name}')", what='the sheet of a new turning point')
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    c.page.fill(f'{E} [data-plform] input[data-f=lat]', '44.5')
+    c.page.fill(f'{E} [data-plform] input[data-f=lon]', '1.1')
+    typed('Pont nord')
+    c.wait(600)
+    # 1. a free name that is not a known code moves nothing
+    typed('Pont sud')
+    c.wait(800)
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_MOVED_NOTE, moved)], ['Pont sud', '44.5', '1.1', []], 'a free name moves nothing, says nothing', what='free name')
+    typed('Pont nord')
+    c.wait(600)
+    # 2. a known code typed on the placed point: moved to the position of the base, locked, said, with « Annuler »
+    typed('xpt01')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.9'", timeout=8000, what='the placed point moved to XPT01')
+    c.until(f"({_LK_STATE})()[0].every(x => x)", timeout=5000, what='the moved point locked')
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)[0]], ['XPT01', '44.9', '1.45', [True, True]],
+         '« xpt01 » typed on a placed point: its code, the position of the base, locked', what='moved')
+    c.eq(c.js(_MOVED_NOTE, moved), [[moved, undo]], 'a notification says it was moved to the position of the base, with « Annuler »', what='the note')
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    c.settle()
+    c.shot(f'P14c_{w}_deplace.png')
+    # 3. « Annuler »: the former position AND the former name, free again
+    c.tap('#fNotes .f-note [data-act]')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.5'", timeout=5000, what='the former position back')
+    c.until(f"({_LK_STATE})()[0].every(x => !x)", timeout=5000, what='the point free again')
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_LK_STATE)], ['Pont nord', '44.5', '1.1', [[False, False], '']],
+         '« Annuler »: the former position and the former name, the point free again', what='undone')
+    # 4. XPT01 chosen in the list of the Name: moved the same way
+    c.page.fill(name, '')
+    c.page.locator(name).press_sequentially('xpt', delay=40)
+    c.until(f"({_AD_SUG}).some(x => x.startsWith('XPT01@'))", timeout=8000, what='XPT01 proposed for « xpt »')
+    for _ in range(next(k for k, x in enumerate(c.quiet(_AD_SUG)) if x.startswith('XPT01@')) + 1):
+        c.key('ArrowDown')
+    c.key('Enter')
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value === '44.9'", timeout=8000, what='the placed point moved by the choice in the list')
+    c.eq([val('name'), val('lat'), val('lon'), c.js(_MOVED_NOTE, moved)[:1]], ['XPT01', '44.9', '1.45', [[moved, undo]]],
+         'XPT01 chosen in the list on a placed point: moved, said, with « Annuler »', what='chosen')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js(_PB_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')['pts']
+    c.eq(got[2:], [['PT3', 'XPT01', 44.9, 1.45]], 'the file: the moved point with its code and the position of the base', what='the file')
+    c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")  # the note of the move stays 10 s, over the foot
     ed_leave(c)
     c.js(_REG_CLEAR)

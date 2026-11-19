@@ -1565,8 +1565,16 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   arrival: `icao`, or the code in the name), AND the position equal to the one the base gives to that code (1e-4 degree). `edSrcOf` asks the base once per
   code and position (`aerodb.coordsAll` with `near`, for the homonyms; `adPosOf` for a terrain), keeps the answer (400 entries at most) and redraws in place
   (`edSrcPaint`). A file written by hand with a name that is a code but another position is a free point, as before.
-- **Freed by erasing the code**: the name no longer the code, the place keeps its position as a free point (the gesture of SOG-0495: a name typed never
-  moves a placed point); its fields are written again and the map moves it. No new word.
+- **Freed by erasing the code**: the name no longer the code, the place keeps its position as a free point; its fields are written again and the map
+  moves it. No new word.
+- **A known code on a place ALREADY placed moves it** (the user's decision, the choice (2) refused by the relay: « choisir un point nommé donne les
+  coordonnées, mais les bloque »; noreg N169, N126 follows it). Until then a name typed never moved a placed point (SOG-0495). Now a code of the base,
+  typed (the `change` of the Name) or chosen in the list, and publishable (`EM.publishable`), gives the place the position of the base and locks it,
+  whether it was placed or not (`edNameBase`, one request at a time per place: the `change` that follows a choice does not ask again). A place that was
+  elsewhere is MOVED, and a notification says « Déplacé à la position de la base : PT3 · XPT01. » with « Annuler » (`plMoved`, `plMovedUndo`; the
+  frame's action note, `ms` 10 s): `edNameUndo` gives the place back its former position AND the name it had before the typing (`e.nameWas`, kept at
+  the first key of the Name), free again — nothing is done if the place was touched since. A free name that is not a known code moves nothing, says
+  nothing. « Annuler le geste » of the map is not used: it never undoes a typing (SOG-0471). Capture `P14c_390_deplace.png`.
 - **The departure and the arrival**: a terrain the author types in Départ or Arrivée and the base knows writes its position in its line of the Lieux
   (`edEndFill`, at the typing and at the answer of the base): the file carries `origin: { name, icao, lat, lon }`. A terrain of the file the author did not
   retype is NOT rewritten (opening a mission writes nothing, « Annuler » asks nothing): the route of the map and the profile go through the position of

@@ -2495,51 +2495,110 @@ function edEndFill(s, e, key) {
   return true;
 }
 
-/** SOG-0495 : le nom d'un point tournant, d'une cible ou d'un rendez-vous venu d'être tapé (un « change ») est-il un point de la base ?
- *  Un lieu SANS position qui porte un mot seul demande la base (aerodb.coordsAll, le plus proche d'abord) ; si elle connaît un lieu
- *  PUBLIABLE de ce code (EM.publishable, SOG-0506 : jamais une source locale), le lieu prend sa position et son code (edPlaceFromBase).
- *  `pick` (SOG-0506) : le point choisi dans la liste du Nom ({ code, lat, lon } du champ commun, qui ne dit pas sa source) — seul CE lieu
- *  de la base, à cette position, est retenu, et la base le confirme publiable avant qu'une position soit écrite. Rien n'est changé si
- *  le lieu a déjà une position (sauf un choix de la liste), si le nom a changé entre-temps ou si la base ne répond rien de publiable. */
-function edNameBase(s, e, i, pick = null) {
+/** SOG-0495, SOG-0506 : le nom d'un point tournant, d'une cible ou d'un rendez-vous venu d'être tapé (un « change ») ou choisi dans la
+ *  liste est-il un point de la base ? Un mot seul est demandé à la base (aerodb.coordsAll, le plus proche d'abord) ; si elle connaît un
+ *  lieu PUBLIABLE de ce code (EM.publishable : jamais une source locale), le lieu prend sa position et son code (edPlaceFromBase), et il
+ *  est verrouillé. Décision de l'utilisateur (SOG-0506, « choisir un point nommé donne les coordonnées, mais les bloque ») : un lieu DÉJÀ
+ *  placé ailleurs est DÉPLACÉ à la position de la base — une notification le dit, avec « Annuler » (edNameUndo : l'ancienne position et
+ *  le nom d'avant). `pick` : le point choisi dans la liste du Nom ({ code, lat, lon } du champ commun, qui ne dit pas sa source) — seul
+ *  CE lieu de la base, à cette position, est retenu ; `was` : le nom du lieu avant la frappe. Une seule demande à la fois par lieu (le
+ *  « change » qui suit un choix ne la refait pas) ; rien n'est changé si le nom a changé entre-temps, si une demande plus récente l'a
+ *  remplacée ou si la base ne connaît rien de publiable (un nom libre ne déplace rien). */
+function edNameBase(s, e, i, {
+  pick = null,
+  was
+} = {}) {
   const row = e.places?.[i],
     word = String(row?.name || '').trim().toUpperCase(),
     a = s.ctx.aerodb;
-  if (!row || !['pt', 'target', 'rdv'].includes(row.kind) || !pick && edPos(row) || !/^\S{2,24}$/.test(word) || typeof a?.coordsAll !==
-    'function') return;
+  if (!row || !['pt', 'target', 'rdv'].includes(row.kind) || !/^\S{2,24}$/.test(word) || typeof a?.coordsAll !== 'function') return;
   const at = pick ? edPos(pick) : null;
   if (pick && (!at || String(pick.code ?? '').trim().toUpperCase() !== word)) return;
-  const near = at || edPtNear(s);
+  const near = at || edPtNear(s),
+    key = `${row.id}|${word}|${at ? `${at.lat},${at.lon}` : ''}`,
+    asks = e.nameAsks ||= new Map(),
+    name = typeof was === 'string' ? was : String(row.name ?? '');
+  if (asks.get(i) === key) return; // la même demande est en cours (le « change » qui suit un choix de la liste)
+  asks.set(i, key);
   Promise.resolve().then(() => a.coordsAll(word, near ? {
     near: [near.lat, near.lon]
   } : {})).catch(() => []).then(all => {
+    if (asks.get(i) !== key) return; // une demande plus récente pour ce lieu
+    asks.delete(i);
     // SOG-0506 (Sécurisation) : le premier lieu publiable, borné (et, pour un choix de la liste, celui-là même)
     const hit = (Array.isArray(all) ? all : []).find(x => EM.publishable(x) && edPos(x.item) && (!at || edSamePos(x.item, at)));
     const now = state() === s && s.ed === e ? e.places?.[i] : null;
-    if (!hit || !now || now.id !== row.id || !at && edPos(now) || String(now.name || '').trim().toUpperCase() !== word) return;
-    edPlaceFromBase(s, e, {
+    if (!hit || !now || now.id !== row.id || String(now.name || '').trim().toUpperCase() !== word) return;
+    const from = edPos(now),
+      to = edPos(hit.item);
+    if (from && edSamePos(from, to) && now.name === word) return; // déjà là, sous son code (le « change » après un choix)
+    const before = {
+      name,
+      lat: now.lat,
+      lon: now.lon
+    };
+    const done = edPlaceFromBase(s, e, {
       at: i,
       code: word,
-      lat: +hit.item.lat,
-      lon: +hit.item.lon,
+      lat: to.lat,
+      lon: to.lon,
       from: hit.kind, // SOG-0506 : le genre du point dans la base, pour nommer la source
       rec: hit
+    });
+    if (done >= 0 && from && !edSamePos(from, to)) s.ctx.notify?.(s.tt(EDTX.plMoved, {
+      name: edPlaceName(now)
+    }), 'info', {
+      key: 'missions-moved',
+      ms: 10000,
+      action: {
+        label: s.tt(EDTX.plMovedUndo),
+        run: () => edNameUndo(s, e, now, before, to)
+      }
     });
     edRefresh(s);
   });
 }
 
+/** SOG-0506 : « Annuler » de la notification d'un lieu déplacé à la position de la base — le lieu `row` reprend sa position et son nom
+ *  d'avant (`before` : { name, lat, lon }, les champs tels qu'ils étaient) ; il redevient libre si ce nom n'est pas un code de la base à
+ *  cette position (edSrcOf). Rien n'est fait si l'atelier a changé, si le lieu n'est plus dans les Lieux ou s'il a été retouché depuis
+ *  (une autre position que celle de la base `to`). */
+function edNameUndo(s, e, row, before, to) {
+  const i = state() === s && s.ed === e ? (e.places || []).indexOf(row) : -1;
+  if (i < 0 || !edSamePos(edPos(row), to)) return;
+  edUndoClear(e); // une retouche de la fiche : « Annuler le geste » n'a plus rien à rendre
+  Object.assign(row, {
+    name: before.name,
+    lat: before.lat,
+    lon: before.lon
+  });
+  for (const f of ['name', 'lat', 'lon']) putProp(s.el.querySelector(`[data-plform="${i}"] input[data-f="${f}"]`), 'value', row[f]);
+  edRefresh(s);
+}
+
 /** Le Nom d'un lieu qui peut être un point de la base vient d'être retouché (SOG-0480, le champ commun ayant déjà la main) : un CHOIX
  *  de la liste donne au lieu le code (son nom) et la position de la base (positionOf) — SOG-0506 : par edNameBase, qui fait confirmer
- *  par la base que ce point est publiable (la liste du champ commun ne dit pas sa source) ; un terrain choisi n'a pas de position dans la
- *  liste, sa position est demandée comme à un code tapé (edNameBase). Un texte libre reste tel quel et rien n'est écrit tant qu'aucun
- *  point n'est choisi ; le « change » qui suit un choix ne refait rien (le lieu a déjà sa position). */
+ *  par la base que ce point est publiable (la liste du champ commun ne dit pas sa source) et déplace un lieu déjà placé ; un terrain
+ *  choisi n'a pas de position dans la liste, sa position est demandée comme à un code tapé (edNameBase). Un texte libre reste tel quel et
+ *  rien n'est écrit tant qu'aucun point n'est choisi ; le « change » qui suit un choix ne refait rien (la même demande, ou le lieu déjà
+ *  là). */
 function edPlName(s, e, ev, i) {
   const pt = edAdPt(s),
     row = e.places?.[i];
   pt.onInput(ev);
   if (!pt.isPicking() || !row || !['pt', 'target', 'rdv'].includes(row.kind)) return;
-  edNameBase(s, e, i, pt.positionOf('edplname'));
+  edNameBase(s, e, i, {
+    pick: pt.positionOf('edplname'),
+    was: edNameWas(e, row)
+  });
+}
+
+/** SOG-0506 : le nom qu'avait le lieu `row` avant la frappe en cours dans son Nom (gardé à la première touche, edInput), puis oublié —
+ *  ce que « Annuler » d'un déplacement lui rend ; undefined sans frappe gardée pour ce lieu. */
+function edNameWas(e, row) {
+  const w = e.nameWas;
+  e.nameWas = null;
+  return w && w.row === row ? w.name : undefined;
 }
 
 /** Un champ du Cadre retenu : la valeur (`key` : dep, arr, family…), le titre proposé d'une liaison qui suit les deux bouts, et la ligne
@@ -3174,6 +3233,11 @@ export function edInput(s, ev) {
     // SOG-0506 : la position d'un lieu verrouillé par la base ne se saisit pas (le champ est en lecture seule ; une page forgée non plus)
     if (row && (f === 'lat' || f === 'lon') && edSrcOf(s, row)) return putProp(ev.target, 'value', row[f]);
     edUndoClear(e); // « Annuler le geste » ne défait jamais une saisie : après elle, il n'a plus rien à rendre
+    // SOG-0506 : le nom d'avant la frappe, gardé à sa première touche — « Annuler » d'un déplacement par un code le rend
+    if (row && f === 'name' && e.nameWas?.row !== row) e.nameWas = {
+      row,
+      name: String(row.name ?? '')
+    };
     // l'identifiant d'un objet est donné par l'atelier : il ne se saisit pas, même par une page forgée (Sécurisation, 18 nov.)
     if (row && ['id', 'name', 'role', 'lat', 'lon', 'zkind', 'radius', 'tot', 'participants'].includes(f) && !(row.kind === 'object' &&
         f ===
@@ -3183,8 +3247,11 @@ export function edInput(s, ev) {
     else if (row?.kind === 'object' && f === 'confirm') row.confirm = ev.target.checked === true;
     if (k === 'edplname') edPlName(s, e, ev, +ev.target.dataset
       .i); // SOG-0480 : un choix de la liste donne le code et la position de la base
-    if (f === 'name' && ev.type === 'change') edNameBase(s, e, +ev.target.dataset
-      .i); // SOG-0495 : un code tapé de la base prend sa position
+    // SOG-0495 : un code tapé de la base prend sa position ; SOG-0506 : le point choisi dans la liste, s'il l'est encore, et le nom d'avant
+    if (f === 'name' && ev.type === 'change') edNameBase(s, e, +ev.target.dataset.i, {
+      pick: k === 'edplname' ? edAdPt(s).positionOf('edplname') : null,
+      was: edNameWas(e, row)
+    });
     return edRefresh(s);
   }
   if (k === 'edteam') { // une équipe : la ligne retouchée en place (le champ garde son curseur)
