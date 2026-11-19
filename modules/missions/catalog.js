@@ -31,6 +31,9 @@
 //     ni identifiant de mission, ni équipes, ni indicatifs ; modelText(model, Y) → le texte YAML du fichier ({ version, models: [m] }).
 //   slug(title) → l'identifiant d'un modèle tiré de son nom ('' sinon) ; modelPath(trigram, id) → 'pilot/<TRI>/modeles/<id>.yaml' | null.
 import * as MS from '../../frame/lib/mission.js';
+import {
+  slug as textSlug
+} from '../../frame/lib/text.js';
 import * as DR from './editor_drawers.js';
 import * as ED from './editor.js';
 
@@ -484,8 +487,7 @@ export function modelText(model, Y = globalThis.jsyaml) {
 
 /** L'identifiant d'un modèle tiré de son nom (voir l'en-tête) : minuscules sans accent, un tiret entre les mots, 40 signes. */
 export function slug(title) {
-  const s = MS.visible(title).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
-    /^-+|-+$/g, '').slice(0, 40).replace(/-+$/, '');
+  const s = textSlug(MS.visible(title), 40); // le pliage commun du cadre (frame/lib/text.js, SOG-0468), plus de copie ici
   return ID.test(s) ? s : '';
 }
 
