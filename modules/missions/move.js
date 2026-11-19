@@ -23,7 +23,9 @@ const bare = doc => {
 export function withAirline(text, code, Y) {
   let doc;
   try {
-    doc = Y.load(String(text ?? ''));
+    doc = Y.load(String(text ?? ''), {
+      schema: Y.CORE_SCHEMA // SOG-0522 : une date non quotée reste un texte, aucune étiquette !!set, !!binary ni « << » construite
+    });
   } catch {
     return null;
   }
@@ -54,7 +56,9 @@ export function withAirline(text, code, Y) {
   if (want) t = `${t.replace(/\n*$/, '\n')}airline: ${want}\n`;
   let ok = false;
   try {
-    const back = Y.load(t);
+    const back = Y.load(t, {
+      schema: Y.CORE_SCHEMA
+    });
     ok = bare(back) === bare(doc) && MS.ownerOf({
       airline: back?.mission?.airline ?? back?.airline
     }) === (want || MS.PERSONAL);

@@ -31,7 +31,11 @@ const clean = (v, n = 200) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(
 
 /** Les missions d'un texte (voir l'en-tête) ; single : le texte ne porte qu'une mission, au premier niveau. */
 function docsOf(Y, text) {
-  const all = Y.loadAll(text).filter(d => d !== null && d !== undefined),
+  // SOG-0522 (Sécurisation) : au schéma CORE — une date non quotée reste un texte, aucune étiquette !!set, !!binary ni clé de fusion
+  // « << » n'est construite ; une étiquette inconnue lève : le texte est refusé (raison yaml, à sa ligne)
+  const all = Y.loadAll(text, null, {
+      schema: Y.CORE_SCHEMA
+    }).filter(d => d !== null && d !== undefined),
     docs = [];
   for (const d of all) {
     if (Array.isArray(d)) docs.push(...d);

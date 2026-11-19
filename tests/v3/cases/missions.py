@@ -12345,3 +12345,68 @@ def n185(c):
         ed_leave(c)
         c.js(_REG_CLEAR)
 
+
+
+# SOG-0522 (Sécurisation): the registry and the missions of the repository read in the CORE schema — invented X-93x missions
+_CORE_TEXTS = [
+    ['missions/mission_registry.yaml', 'schema: mission-registry\nversion: 1\nupdatedAt: 2026-11-19\nmissions:\n'
+     '  - { id: X-931A, family: TESTREG, title: Une date, folder: X_REG/X-931A, files: [missionX-931A.yaml], created: 2026-11-19 }\n'
+     '  - { id: X-932A, family: TESTREG, title: Un binaire, folder: X_REG/X-932A, files: [missionX-932A.yaml] }\n'
+     '  - { id: X-933A, family: TESTREG, title: Une fusion, folder: X_REG/X-933A, files: [missionX-933A.yaml] }\n'],
+    ['missions/X_REG/X-931A/missionX-931A.yaml', 'mission: { id: X-931A, type: TEST }\ndate: 2026-11-19\ntitle: Une date\n'],
+    ['missions/X_REG/X-932A/missionX-932A.yaml', 'mission: { id: X-932A, type: TEST }\ntitle: Un binaire\nextra: !!binary aGVsbG8=\n'],
+    ['missions/X_REG/X-933A/missionX-933A.yaml', 'mission: { id: X-933A, type: TEST }\ntitle: Une fusion\nnotes:\n  <<: { a: 1 }\n  b: 2\n'],
+    ['missions/X_REG/X-934A/missionX-934A.yaml', 'mission: { id: X-934A, type: TEST }\ndate: 2026-11-19\ntitle: Hors registre\n'],
+]
+
+
+@case('N193', 'Missions › the registry and the missions of the repository are read in the CORE schema: an unquoted date stays a text (the '
+      'line is read, and the registry rewritten by a gesture keeps « 2026-11-19 », never a timestamp), a « !!binary » makes the file '
+      '« illisible », a « << » key is a plain key; never an error out of the page',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0522 (Sécurisation, 19 Nov): Missions read its YAML without a schema (parse(), « Ajouter des missions », move.js): the '
+      'default schema makes Dates, builds !!set, !!binary and the merge key, while the reader (readMission, readRegistry, shapeOf) and the '
+      'rewriting of the registry expect dates that stay texts; the workshop already read in CORE; invented missions')
+def n193(c):
+    c.page.set_viewport_size({'width': 1280, 'height': c.height})
+    reg_open(c, _CORE_TEXTS)
+    c.eq(reg_states(c), {'X-934A': 'notyet', 'X-933A': 'ok', 'X-932A': 'unreadable', 'X-931A': 'ok'},
+         'a date and a « << » key read; a « !!binary » refused as « fichier illisible » (CORE builds no binary)', what='states')
+    # a gesture rewrites the registry (« Inscrire au registre »): its unquoted date stays the text it was, never a Date dumped as a timestamp
+    c.tap(f'{R} [data-reglist] [data-rowid="X-934A"] [data-rowmenu] summary')
+    c.tap(f'{R} [data-rowid="X-934A"] [data-do="regenrol"]')
+    c.until(f"document.querySelector('{R} [data-reglist] [data-rowid=\"X-934A\"] [data-rstate]')?.dataset.rstate === 'ok'", timeout=8000,
+            what='the registry rewritten')
+    t = reg_text(c)
+    c.ok('X-934A' in t and "created: '2026-11-19'" in t and 'created: 2026-11-19T' not in t, t[-500:],
+         'the date of a line kept as the text it was in the rewriting (a Date would be dumped « 2026-11-19T00:00:00.000Z »)')
+    c.js(_REG_CLEAR)
+    c.check_errors()
+
+
+@case('N194', 'Missions › « Ajouter des missions » reads the pasted YAML in the CORE schema: a « !!binary » is refused (reason yaml), '
+      'never accepted; an unquoted date and a « << » key are read as before (two missions ready to add)',
+      'N', tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0522 (Sécurisation, 19 Nov): add.js read the pasted texts in the default schema (Dates, !!set, !!binary, merge key); the '
+      'whole reader expects dates that stay texts; MS.shapeOf before any writing stays (add.js); invented missions')
+def n194(c):
+    def pasted(text):
+        c.page.set_viewport_size({'width': 1280, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_REG_CLEAR)
+        c.js(_TEXTS_JS, _LC_TEXTS)
+        c.open('missions', wait=False, app='company')
+        c.until(f"!!document.querySelector('{M} [data-do=add]')", timeout=15000, what='« Ajouter des missions »')
+        c.tap(f'{M} [data-do="add"]')
+        c.page.fill(f'{M} [data-pane=add] textarea[data-k=addtext]', text)
+        c.tap(f'{M} [data-do="addread"]')
+
+    pasted('mission: { id: X-941A, type: REG }\ntitle: Un binaire\nextra: !!binary aGVsbG8=\n')
+    c.until(f"!!document.querySelector('{M} [data-pane=add] [data-refused] [data-reason=yaml]')", timeout=8000, what='the binary refused')
+    c.eq(c.count(f'{M} [data-pane=add] [data-do=addwrite]:not([disabled])'), 0, 'nothing to add', what='binary')
+    pasted('mission: { id: X-942A, type: REG }\ndate: 2026-11-19\ntitle: Une date\n---\nmission: { id: X-943A, type: REG }\ntitle: Une fusion\n'
+           'notes:\n  <<: { a: 1 }\n  b: 2\n')
+    c.until(f"!!document.querySelector('{M} [data-do=addwrite]:not([disabled])')", timeout=8000, what='the two missions read')
+    c.eq(c.count(f'{M} [data-pane=add] [data-refused] li'), 0, 'an unquoted date and a « << » key refused nothing', what='refused')
+    c.js(_REG_CLEAR)
+    c.check_errors()

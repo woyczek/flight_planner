@@ -932,7 +932,12 @@ async function parse(text, max = MS.NODES_MAX) {
   };
   try {
     if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
-    const doc = globalThis.jsyaml.load(text);
+    // SOG-0522 (Sécurisation) : au schéma CORE, comme l'atelier — une date non quotée reste un texte (le lecteur et la réécriture du
+    // registre l'attendent), aucune étiquette !!set, !!binary ni clé de fusion « << » n'est construite ; une étiquette inconnue lève :
+    // « fichier illisible », dit à sa ligne
+    const doc = globalThis.jsyaml.load(text, {
+      schema: globalThis.jsyaml.CORE_SCHEMA
+    });
     // audit 186 : un registre ou une mission à ancres YAML (n'importe quel pilote écrit le dépôt) se dit illisible, et n'est donc jamais
     // réécrit (le registre ne se réécrit pas quand il ne se lit pas : regPut, edRegister)
     if (MS.shapeOf(doc, max)) return {
@@ -1996,7 +2001,9 @@ async function addWrite(s) {
       const out = MOVE.withAirline(i.text, as, globalThis.jsyaml);
       if (out) {
         i.text = out.text;
-        i.doc = globalThis.jsyaml.load(out.text);
+        i.doc = globalThis.jsyaml.load(out.text, {
+          schema: globalThis.jsyaml.CORE_SCHEMA // SOG-0522 : relu comme add.js l'a lu
+        });
         i.airline = as === MS.PERSONAL ? '' : as;
       }
     }
