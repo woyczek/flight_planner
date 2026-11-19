@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "abc5abe",
-  "fiches": 527,
+  "organisation": "26b3a76",
+  "fiches": 528,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -3370,6 +3370,27 @@
      "en": "Routes: the engine's EGGW → LQSA route is rejected by Eurocontrol's IFPS (24 errors: FRA, RAD, mandatory routes, STAR)",
      "de": "Routen: Die Route EGGW → LQSA des Rechners wird vom IFPS von Eurocontrol abgelehnt (24 Fehler: FRA, RAD, Pflichtrouten, STAR)",
      "es": "Rutas: la ruta EGGW → LQSA del motor es rechazada por el IFPS de Eurocontrol (24 errores: FRA, RAD, rutas obligatorias, STAR)"
+    }
+   ]
+  },
+  {
+   "id": "pilote-routes-plan-de-vol",
+   "app": "pilote",
+   "label": {
+    "fr": "Routes ; plan de vol",
+    "en": "Routes ; plan de vol",
+    "de": "Routes ; plan de vol",
+    "es": "Routes ; plan de vol"
+   },
+   "items": [
+    {
+     "id": "SOG-0529",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Routes : LFBY → LFST au FL090, le calcul ne rend qu'un direct (ou rien) ; le plan de vol part avec un champ de route vide (Eurocontrol : EFPM214 MISSING ROUTE DATA) et « Copier pour Eurocontrol » refuse sans dire quoi faire",
+     "en": "Routes: LFBY → LFST at FL090, the engine returns only a direct (or nothing); the flight plan leaves with an empty route field (Eurocontrol EFPM214 MISSING ROUTE DATA) and “Copy for Eurocontrol” refuses without saying what to do",
+     "de": "Routen: LFBY → LFST auf FL090 liefert nur einen Direktflug (oder nichts); der Flugplan geht mit leerem Routenfeld (Eurocontrol EFPM214) und „Für Eurocontrol kopieren“ verweigert ohne Hinweis",
+     "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer"
     }
    ]
   },
