@@ -5509,10 +5509,10 @@
     "de": "Routen: LFBY → LFST auf FL090 liefert nur einen Direktflug (oder nichts); der Flugplan geht mit leerem Routenfeld (Eurocontrol EFPM214) und „Für Eurocontrol kopieren“ verweigert ohne Hinweis",
     "es": "Rutas: LFBY → LFST a FL090, el motor solo da un directo (o nada); el plan de vuelo sale con el campo de ruta vacío (Eurocontrol EFPM214) y «Copiar para Eurocontrol» rechaza sin decir qué hacer"
    },
-   "test": "RELANCE le lanceur (sur a357bed08 ou plus récent), puis recharge la page. Carburant : BE9L, LFBY → LFST au FL090 (forcé), calcule la route. Attendu : plus de « calcul impossible » ; si les procédures de LFST exigent plus haut que FL090, le calcul le dit et propose un raccord en direct jugé par la limite des directs, ou rend la route « à examiner » avec chaque règle nommée — jamais une route qu'Eurocontrol refusera présentée comme bonne ; la case 15 n'est jamais vide (« DCT » au pire). Passe ce plan à l'IFPS et colle sa réponse. Le niveau « Auto » (le moteur choisit un niveau valide) n'est pas encore livré : il viendra de Features SOG.",
+   "test": "Le lanceur doit tourner sur a357bed08 ou plus récent (déjà demandé), puis recharge la page. Carburant : BE9L, LFBY → LFST. (1) Niveau forcé FL090, calcule : plus de « calcul impossible » ; la route est bonne, ou « à examiner » avec chaque règle nommée ; la case 15 n'est jamais vide. (2) Touche « Auto » : pendant la recherche la ligne le dit ; ensuite elle dit le niveau choisi et pourquoi (« FLxxx (auto) · durée — le moins gourmand avec une route valide ; FLyyy écarté »), la raison du moteur dans le pli « Raison du moteur de route » ; si aucun niveau n'a de route valide, le niveau n'est PAS changé et la ligne le dit. (3) Passe à l'IFPS le plan « Auto » et le plan FL090 forcé, et colle les deu",
    "since": "2026-11-19",
    "state": "todo",
-   "delivered": "2026-11-19T22:19:13Z"
+   "delivered": "2026-11-19T23:43:16Z"
   }
  ],
  "decisions": [
