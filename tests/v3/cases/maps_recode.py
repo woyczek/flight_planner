@@ -3253,9 +3253,9 @@ _GSTAT = """() => { const g = window.__mp.S.ground; if (!g) return null; const r
 _HOLDSTAND_JS = """() => { const g = window.__mp.S.ground, r = [...g.cache.values()].find(x => x.items); const hs = new Set(r.items.filter(i => i.kind === 'hold').map(i => i.id)); return [g.hits.filter(h => !h.pts && hs.has(h.id)).length, g.hits.filter(h => !h.pts && !hs.has(h.id)).length, [...g.drawn].filter(([k, v]) => v && hs.has(k)).length] }"""
 
 
-@case('D112', 'Ground layer: only with a flight aerodrome and zoom 13 or more; lines, taxiway names and holds at 13, stands at 16; absent without AeroDB’s ground()', 'D',
+@case('D112', 'Ground layer: only with a flight aerodrome and zoom 13 or more; lines and taxiway names at 13, holds at 14, stands at 16; absent without AeroDB’s ground()', 'D',
       tags=('maps',), designs=('standard',), night=False, phone=False,
-      rule='SOG-0518 (the ergonomist agreed): the holds and their names come at the zoom of the names of the main taxiways, 13 (they came at 15 from SOG-0195). V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 13 or more (SOG-0195: one level earlier than the first 14); the taxiway lines from 13, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
+      rule='SOG-0518 (the ergonomist agreed): the holds and their names come at zoom 14 (they came at 15 from SOG-0195; the user, Q-0127: try it, see in use, the main taxiways stay at 13). V3 spec 10.40 (SOG-0046), cost rule D68: the layer needs a departure or an arrival of the flight and zoom 13 or more (SOG-0195: one level earlier than the first 14); the taxiway lines from 13, their names from 15, the stands and holds (points and names) from 16; never without AeroDb.ground')
 def d112(c):
     _ground_open(c, aerodb=False)
     _ground_at(c, 15)
@@ -3269,11 +3269,11 @@ def d112(c):
     _ground_at(c, 13, 1500)
     st = c.js(_GSTAT)
     nh = c.js(_HOLDSTAND_JS)
-    c.ok(st and st['twy'] > 50 and nh[0] > 0 and nh[1] == 0 and nh[2] > 0, f'{st} {nh}', 'at 13: the taxiway lines and their names, and the holds with their names (SOG-0518: the threshold of the main taxiways), no stand')
+    c.ok(st and st['twy'] > 50 and nh[0] == 0 and nh[1] == 0 and nh[2] == 0, f'{st} {nh}', 'at 13: the taxiway lines and their names, no hold yet (SOG-0518, Q-0127: the holds come at 14), no stand')
     _ground_at(c, 14, 1200)
     st = c.js(_GSTAT)
     nh = c.js(_HOLDSTAND_JS)
-    c.ok(st and st['twy'] > 50 and nh[0] > 0 and nh[1] == 0, f'{st} {nh}', 'at 14: the same, still no stand')
+    c.ok(st and st['twy'] > 50 and nh[0] > 0 and nh[1] == 0 and nh[2] > 0, f'{st} {nh}', 'at 14: the holds and their names (SOG-0518, Q-0127), still no stand')
     _ground_at(c, 15, 1200)
     st = c.js(_GSTAT)
     holds = c.js("() => (window.__mp.S.ground.hits || []).filter(h => h.id && !h.pts && /^hold|^h/.test(String(h.id))).length")
@@ -6621,12 +6621,20 @@ def d197(c):
 
 
 
+# SOG-0518 (a): a hold that has the name of the taxiway it stands on has no sign of its own (D296). The benches of the SIGNS (D198, D204) measure the signs and their names: a hold
+# that has the name of a taxiway of the file is renamed here with a distinct name (« H » before it), so that they still prove three signs and their names
+_UNHOMONYM_JS = """async () => { const S = window.__mp.S, fx = await S.ctx.aerodb.ground('LFPO'), tn = new Set(fx.items.filter(i => i.kind === 'twy' && i.name).map(i => i.name.toLowerCase())), at = String.fromCharCode(0xff20);
+  const items = fx.items.map(i => i.kind === 'hold' && i.name && tn.has(i.name.split('@')[0].split(at)[0].trim().toLowerCase()) ? { ...i, name: 'H' + i.name } : i);
+  S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? { ...fx, items } : null; S.ground = null; return items.length }"""
+
+
 @case('D198', 'Ground: a holding point is a red sign with white bold letters (the AIP’s), readable where it appears: text of 11 px or more, contrast of 4.5 or more, never a bare text beside a 4 px square', 'D',
       tags=('maps',), designs=('standard',), night=False, phone=False,
       rule='SOG-0297 (the user, 13 Nov: « K et W22 illisibles. ce sont des points d’arrêt, cartouche rouge »): the holds were a 4 px red square and a plain 10.5 px text; measure: size of the text and contrast of its sign')
 def d198(c):
     c.page.set_viewport_size({'width': 1280, 'height': 760})
     _ground_open(c)
+    c.js(_UNHOMONYM_JS)
     _ground_at(c, 15, 1500)
     r = c.js("""() => { const g = window.__mp.S.ground, signs = (g.signs || []).filter(s => s.kind === 'hold');
       const lum = h => { const v = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4)); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2] };
@@ -6636,6 +6644,11 @@ def d198(c):
     c.ok(r['n'] >= 3, f'{r}', 'the holding points are drawn as signs at zoom 15')
     c.ok(r['minFs'] >= 11 and r['minH'] >= 15 and r['minW'] >= 15, f'{r}', 'the text is 11 px or more, the sign 15 px or more each way (« K » is not a speck)')
     c.ok(r['minContrast'] >= 4.5 and r['red'], f'{r}', 'white letters on red, a contrast of 4.5 or more')
+    # SOG-0518 (a): a hold with the name of its taxiway (within 5 m): its red bar stays, it has no name (no sign); the other holds keep theirs
+    c.js("([fx]) => { window.__mp.S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? fx : null; window.__mp.S.ground = null; return true }", [_DUP_FX])
+    _ground_at(c, 16, 1600, (2.3800, 48.7237))
+    h = c.js("() => { const g = window.__mp.S.ground; return { drawn: Object.fromEntries([...g.drawn]), bars: g.holdMarks, signs: (g.signs || []).filter(s => s.kind === 'hold').map(s => s.id) } }")
+    c.ok('h1' not in h['drawn'] and h['signs'].count('A10E') == 1 and 'COBRA' in h['signs'] and h['bars'] == 4, str(h), 'a hold that has the name of its taxiway (h1): its red bar, no sign and no name; the A10E that is NOT on that taxiway (h3) and COBRA keep their sign (SOG-0518)')
     c.shot('D198_standard_hold_signs_15_delivered.png')
 
 
@@ -6811,6 +6824,7 @@ def d203(c):
 def d204(c):
     c.page.set_viewport_size({'width': 1280, 'height': 760})
     _ground_open(c)
+    c.js(_UNHOMONYM_JS)
     c.js("""async () => { const S = window.__mp.S, fx = await S.ctx.aerodb.ground('LFPO');
       const items = fx.items.concat([{ id: 'ap-U', kind: 'apron', name: 'U', point: [2.3794, 48.7233], line: [[2.376, 48.7225], [2.383, 48.7225], [2.383, 48.7245], [2.376, 48.7245]] }]);
       S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? { ...fx, items } : null; S.ground = null; S.runwayZoom = 11;
@@ -9952,13 +9966,13 @@ def d294(c):
     c.ok(it is not None and abs(g['c'][0] - it[1]) < 0.003 and abs(g['c'][1] - it[0]) < 0.003 and g['z'] >= 16.5, f'{g} {it}', 'a touch on the row frames the hold, close enough to read it (zoom 17)')
 
 
-@case('D295', 'SOG-0518 (captures): the holding points with their names at zoom 13, and the ground search finding one — the delivered state, at 390 and 1280', 'D',
+@case('D295', 'SOG-0518 (captures): the holding points with their names at zoom 14, and the ground search finding one — the delivered state, at 390 and 1280', 'D',
       tags=('maps',), designs=('standard',), night=False,
-      rule='SOG-0518: the delivered state, to be read by the ergonomist then the user: the holds (red) and their names appear at the zoom of the main taxiways (13), placed without overlap; the ground search finds a hold by its name')
+      rule='SOG-0518: the delivered state, to be read by the ergonomist then the user: the holds (red) and their names appear at zoom 14 (Q-0127), the main taxiways at 13, placed without overlap; the ground search finds a hold by its name')
 def d295(c):
     _ground_open(c)
-    _ground_at(c, 13.4, 1800, (2.3794, 48.7233))
-    c.shot(f'D295_holds_z13_{c.width}.png')
+    _ground_at(c, 14.4, 1800, (2.3794, 48.7233))
+    c.shot(f'D295_holds_z14_{c.width}.png')
     _ground_at(c, 16, 1200, _PARK_AT)
     c.js("async () => { const V = await import('/modules/maps/vfr.js'); V.pinAd({ icao: 'LFPO', name: 'LFPO TEST', lat: 48.7233, lon: 2.3794 }) }")
     c.until("() => !!document.querySelector('.mp-ad-ground')", timeout=8000, what='the aerodrome card offers the ground list')
@@ -9967,6 +9981,57 @@ def d295(c):
     c.page.fill('.mp-gd-q', 'w4')
     c.wait(500)
     c.shot(f'D295_ground_search_{c.width}.png')
+
+
+_DUP_FX = {'icao': 'LFPO', 'cycle': '2026-11-16', 'source': 'osm', 'attribution': 'OpenStreetMap contributors, ODbL', 'items': [
+    {'id': 'w1', 'kind': 'twy', 'name': 'A10E', 'line': [[2.3800, 48.7233], [2.3815, 48.7233]]},
+    {'id': 'w2', 'kind': 'twy', 'name': 'Taxiway B', 'line': [[2.3700, 48.7240], [2.3900, 48.7240]]},
+    {'id': 'h1', 'kind': 'hold', 'name': 'A10E', 'point': [2.3815, 48.7233]},
+    {'id': 'h2', 'kind': 'hold', 'name': 'COBRA', 'point': [2.3800, 48.7240]},
+    {'id': 'h3', 'kind': 'hold', 'name': 'A10E', 'point': [2.3850, 48.7240]},
+    {'id': 'h4', 'kind': 'hold', 'name': '', 'point': [2.3760, 48.7240]}]}
+
+
+@case('D296', 'Holding points, SOG-0518 (recette): a hold whose name is the name of the taxiway it sits on (within 5 m) has no label of its own, its red bar stays; the taxiway keeps its name', 'D',
+      tags=('maps',), designs=('standard',), night=False, phone=False,
+      rule='SOG-0518 (recette, the user: « il y a duplication avec les points qui sont en fait sur une twy »; the relay accepted (a)): on EGLL 37 hold names are also the name of the taxiway the hold stands on (A10E on A10E: a short link carrying the same ref); the same name was drawn twice, red (hold) and yellow (taxiway). One label, the taxiway one; the hold keeps its red bar without a name; a hold with that name that is NOT on that taxiway (more than 5 m) keeps its label; a hold with another name keeps its label')
+def d296(c):
+    _ground_open(c)
+    c.js("([fx]) => { window.__mp.S.ctx.aerodb.ground = async icao => icao === 'LFPO' ? fx : null; return true }", [_DUP_FX])
+    _ground_at(c, 16, 1600, (2.3800, 48.7237))
+    r = c.js("""() => { const g = window.__mp.S.ground; return { drawn: Object.fromEntries([...g.drawn]), bars: g.holdMarks, items: [...g.cache.values()].find(x => x.items)?.items.length } }""")
+    d = r['drawn']
+    c.eq([d.get('h1'), d.get('h2'), d.get('h3'), 'h4' in d], [None, True, True, False], 'A10E on its own taxiway: no label; COBRA: labelled; an A10E that is not on the taxiway A10E: labelled; the unnamed hold: no label', what=str(r))
+    c.eq(d.get('w1'), True, 'the taxiway A10E keeps its name', what=str(r))
+    c.ok(r['bars'] == 4, str(r), 'the four holds keep their red bar, named or not')
+
+
+@case('D297', 'SOG-0518 (captures, recette): EGLL, the holding points without the duplicate names, at the zoom of the holds — the delivered state at 390 and 1280', 'D',
+      tags=('maps',), designs=('standard',), night=False,
+      rule='SOG-0518 (recette KO, capture EGLL zoom 13): the delivered state, to be read by the ergonomist then the user, on the REAL ground file of EGLL (public OpenStreetMap data of the data repository, read at run time, not kept in the tests; the case is skipped without it): one label where a hold and its taxiway had the same name; the counts of the hold labels drawn are said')
+def d297(c):
+    import subprocess
+    # the data repository lives in the main checkout (a worktree of the code has no data/): its path is the parent of the common git directory
+    com = subprocess.run(['git', 'rev-parse', '--git-common-dir'], capture_output=True, text=True, cwd=str(ROOT)).stdout.strip()
+    fx = (ROOT / com).resolve().parent / 'data' / 'proc' / 'ground' / 'EGLL.json'
+    if not fx.exists():
+        raise Skip('no ground file of EGLL in the data repository')
+    doc = json.loads(fx.read_text(encoding='utf-8'))
+    f = flight()
+    f['route']['dep'] = 'EGLL'
+    f['route']['points'][0] = {'id': 'EGLL', 'lat': 51.4706, 'lon': -0.4619}
+    c.open('maps', docs=fdocs(f) + [['cache/maps/state.json', {}, 'cache']], flight=False, airfields=True, wait=False)
+    c.ready('maps', sheet=True)
+    c.js(_STATE_JS)
+    hook_map(c)
+    c.js("([fx]) => { window.__mp.S.ctx.aerodb.ground = async icao => icao === 'EGLL' ? fx : null; return true }", [doc])
+    for z in (13, 14):
+        c.js("([z]) => { window.__mpMap.jumpTo({ center: [-0.4619, 51.4706], zoom: z }); return true }", [z])
+        c.wait(2500)
+        n = c.js("""() => { const g = window.__mp.S.ground, r = [...g.cache.values()].find(x => x.items); if (!r) return null; const H = new Set(r.items.filter(i => i.kind === 'hold').map(i => i.id));
+          return { labels: [...g.drawn].filter(([k, v]) => v && H.has(k)).length, dup: r.dup ? r.dup.size : -1 } }""")
+        c.ok(n is not None and n['dup'] > 20, f'z{z}: {n}', f'zoom {z}: the file is read, the duplicate holds are found')
+        c.shot(f'D297_egll_z{z}_{c.width}.png')
 
 
 def _no_duplicate_names():

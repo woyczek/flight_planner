@@ -37,6 +37,8 @@ import {
 
 export const Z_LINE = 13, // un cran plus tôt qu'avant (SOG-0195 : « les taxiways apparaissent trop tard au zoom »)
   Z_NAME = 15,
+  Z_HOLD =
+  14, // le zoom des points d'attente et de leur nom (SOG-0518 ; décision d'écran de l'utilisateur, Q-0127 : 14, « essayons, on verra à l'usage » ; les voies principales viennent à 13)
   Z_PARK = 16,
   // le point d'attente : cartouche rouge, lettres blanches grasses (contraste 5,9 : 4,5 est le minimum de lecture), 12 px, 16 de haut (SOG-0297)
   // le code couleur des panneaux d'un terrain (SOG-0297, SOG-0252 : ce sont les couleurs du terrain, pas celles du design) : une voie jaune sur noir (une position), un point d'arrêt blanc sur rouge, une aire noir sur blanc
@@ -83,6 +85,40 @@ const G = () => S.ground ||= {
 const isMuted = c => Object.prototype.hasOwnProperty.call(c, 'measureText');
 const rawCtx = c => isMuted(c) ? c : c.canvas?.getContext?.('2d') || c;
 const holdMark = name => String(name || '').split(/[＠@]/)[0].trim() || String(name || '');
+/** Distance maximale (m) entre un point d'attente et la voie où il se trouve (SOG-0518 : OpenStreetMap pose le point d'attente sur un nœud de la voie, à 0 à 5 m). */
+const HOLD_ON_TWY_M = 5;
+/** Les points d'attente dont le nom est celui de la voie où ils se trouvent : leur étiquette ferait doublon avec celle de la voie (EGLL : « A10E » sur un raccord « A10E », 37 noms ; SOG-0518, refus de recette) ; leur
+ *  trait rouge reste, sans nom. Calculé une fois par fichier (rec.dup : l'ensemble des identifiants). */
+function dupHolds(rec) {
+  if (rec.dup) return rec.dup;
+  const byName = new Map(),
+    out = new Set();
+  for (const it of rec.items)
+    if (it.kind === 'twy' && it.name) {
+      const k = fold(it.name);
+      if (!byName.has(k)) byName.set(k, []);
+      byName.get(k).push(it);
+    }
+  for (const h of rec.items) {
+    const ways = h.kind === 'hold' && h.name ? byName.get(fold(holdMark(h.name))) : null,
+      p = h.point || h.line?.[0];
+    if (!ways || !p) continue;
+    const ky = 110540,
+      kx = 111320 * Math.cos(p[1] * Math.PI / 180);
+    if (ways.some(w => w.line.some((a, i) => {
+        const b = w.line[i + 1];
+        if (!b) return false;
+        const ax = (a[0] - p[0]) * kx,
+          ay = (a[1] - p[1]) * ky,
+          dx = (b[0] - a[0]) * kx,
+          dy = (b[1] - a[1]) * ky,
+          L = dx * dx + dy * dy,
+          t = L ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L)) : 0;
+        return Math.hypot(ax + t * dx, ay + t * dy) <= HOLD_ON_TWY_M;
+      }))) out.add(h.id);
+  }
+  return rec.dup = out;
+}
 /** Le groupe d'un élément : sa nature et son nom (OpenStreetMap découpe une voie en plusieurs tronçons : une ligne de la liste, tous les tronçons surlignés). */
 export const grpOf = it => `g:${it.kind}:${it.name}`;
 // sans accents et en minuscules, SANS rogner (foldLower rognerait) : la primitive du cadre
@@ -353,11 +389,16 @@ export function groundLayout(toC, zReal, W, H) {
   for (const icao of groundIcaos()) {
     const rec = recOf(icao);
     if (!rec) load(icao);
-    else if (rec.items) items.push(...rec.items.map(it => ({
-      ...it,
-      icao
-    })));
-    else if (rec.status === 'none') {
+    else if (rec.items) {
+      const dup = dupHolds(rec);
+      items.push(...rec.items.map(it => ({
+        ...it,
+        icao,
+        ...(dup.has(it.id) ? {
+          sameAsTwy: true // son nom est celui de sa voie : pas d'étiquette, son trait rouge reste
+        } : {})
+      })));
+    } else if (rec.status === 'none') {
       // seulement un terrain que cette vue montre (celui d'à côté ne se lit pas parce qu'on regarde l'autre)
       const at0 = (S.route?.points || []).find(p => String(p.id || '').toUpperCase() === icao) || (String(S.route?.altn?.id || '')
         .toUpperCase() === icao ? S.route.altn : null);
@@ -380,7 +421,7 @@ export function groundLayout(toC, zReal, W, H) {
         it,
         pts
       });
-    } else if (it.kind === 'hold' ? at(zReal, Z_LINE) : it.kind === 'apron' ? at(zReal, Z_NAME) : at(zReal, Z_PARK)) {
+    } else if (it.kind === 'hold' ? at(zReal, Z_HOLD) : it.kind === 'apron' ? at(zReal, Z_NAME) : at(zReal, Z_PARK)) {
       // les points d'attente (rouges : « no entry ») avec leur nom au zoom du trait et du nom des voies principales (SOG-0518 : ils venaient à Z_NAME, après elles) ; les aires (leur nom) à Z_NAME ; les postes à Z_PARK (SOG-0195)
       const p = toC(it.point[1], it.point[0]);
       if (p.x > -10 && p.x < W + 10 && p.y > -10 && p.y < H + 10) shown.push({
@@ -611,6 +652,7 @@ export function groundLayout(toC, zReal, W, H) {
         for (const s of shown) {
           const it = s.it;
           if (!it.name || it.kind === 'twy' || it.kind === 'apron' || it.kind !== 'hold' && !at(zReal, Z_PARK)) continue;
+          if (it.kind === 'hold' && it.sameAsTwy) continue;
           if (it.kind === 'hold') {
             c.font = `bold ${HOLD_FONT}px system-ui, sans-serif`;
             const mark = holdMark(it.name);
