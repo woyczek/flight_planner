@@ -5474,6 +5474,20 @@
    "state": "todo"
   },
   {
+   "id": "Q-0126",
+   "fiche": "SOG-0374",
+   "app": "pilote",
+   "question": "Pour lire les SID d'EGLL, la session Procédures doit voir les cartes de ton dossier de données. Comment fait-on ?",
+   "context": "Les cartes (copiées du paquet du Royaume-Uni et du cache EAD, textes publics de l'AIP) sont dans ton dossier de données, et le poste a refusé à Procédures de les lire le 18/11. Elle ne contourne pas ce refus. Ce n'est pas urgent : la priorité reste l'atelier.",
+   "options": [
+    "Je donne à Procédures une lecture SEULE des deux dossiers de cartes (data\\local\\upload et data\\local\\ead\\cache\\EGLL), par une règle de permission que je pose moi-même",
+    "Je lance moi-même une fois la lecture bornée d'une carte et je colle la forme du texte",
+    "Plus tard"
+   ],
+   "since": "2026-11-19",
+   "state": "todo"
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
