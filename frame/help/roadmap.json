@@ -4,8 +4,8 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "95e8d94",
-  "fiches": 518,
+  "organisation": "e9322e4",
+  "fiches": 519,
   "untranslated": 0,
   "priorities": 481,
   "capabilities_untranslated": 0
@@ -4729,6 +4729,15 @@
      "de": "Missionen: Das Register hat keine festgelegte Reihenfolge – eine vorsehen",
      "es": "Misiones: el registro no tiene un orden definido — prever uno",
      "test": true
+    },
+    {
+     "id": "SOG-0520",
+     "kind": "feature",
+     "state": "planned",
+     "fr": "Missions : une mission importée par un fichier YAML ne se modifie pas — « pas dans le registre » (réindexation manquante)",
+     "en": "Missions: a mission imported from a YAML file cannot be edited — “not in the register” (missing reindex)",
+     "de": "Missionen: Eine aus einer YAML-Datei importierte Mission lässt sich nicht bearbeiten — „nicht im Register“ (fehlende Neuindizierung)",
+     "es": "Misiones: una misión importada desde un archivo YAML no se puede editar — «no está en el registro» (falta reindexar)"
     }
    ]
   },
