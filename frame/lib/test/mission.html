@@ -708,7 +708,7 @@
       fallbackMin: null
     }]);
   ck('tiroirs : OBJECT_KINDS, la liste fermée', Object.isFrozen(OBJECT_KINDS) && OBJECT_KINDS.join() ===
-    'wreck,raft,person,vehicle,container,ship,smoke,aircraft', OBJECT_KINDS.join());
+    'wreck,raft,person,vehicle,container,ship,smoke,aircraft,refill', OBJECT_KINDS.join()); // SOG-0521 : la station de retardant
   // la cinquième clé : l'arrivée
   dm = withPhases([{
     id: 'B',

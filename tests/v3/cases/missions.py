@@ -12028,3 +12028,37 @@ def n192(c):
         c.eq(hit, 0, f'{w} px: the note cuts no button of the foot', what=f'no overlap {w}')
         c.shot(f'N192_{c.design}_{w}_{c.lang}_note.png')
     c.check_errors()
+
+
+# the kind of object « refill » (the retardant station of an aerodrome), read by the reader and judged for a landing: a pure case, in the page
+_REFILL_JS = """async () => { const MS = await import('/frame/lib/mission.js'), DR = await import('/modules/missions/drawers.js');
+  const base = { mission: { id: 'X-001A', type: 'REG' }, origin: { name: 'Base Test (XTST)', lat: 45, lon: 1 },
+    destination: { name: 'Base Test Sud (XTSU)', lat: 44, lon: 2 },
+    objects: [{ id: 'OBJ-1', kind: 'refill', name: 'Station inventee', lat: 44.6, lon: 1.4, detection_range_nm: 1 },
+      { id: 'OBJ-2', kind: 'refill', name: 'Station qui bouge', lat: 44.7, lon: 1.5, detection_range_nm: 1, speed_kt: 12, course_deg: 90,
+        motion: 'axis' }],
+    phases: [{ id: 'B', title: 'Recharger', trigger_condition: { kind: 'landing', object: 'OBJ-1', duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 },
+        fallback_delay_min: 60 },
+      { id: 'C', title: 'Recharger bis', trigger_condition: { kind: 'landing', object: 'OBJ-2', duration_sec: 10, max_gap_sec: 10, speed_max_kt: 3 },
+        fallback_delay_min: 60 }] };
+  const m = MS.readMission(base), k = m.drawers.map(d => d.key);
+  const obj = x => x && { kind: x.kind, moving: x.moving, motion: x.motion };
+  return { kinds: MS.OBJECT_KINDS, o1: obj(k[0].rule?.object), o2: obj(k[1].rule?.object),
+    follows: k.map(x => DR.follows(x)), notJudged: k.map(x => MS.notJudgedYet(x)), why: m.drawers.map(d => d.keyWhy || '') } }"""
+
+
+@case('N179', 'Missions › the kind of object « refill » (the retardant station of an aerodrome; the user, 19 Nov): `refill` is in MS.OBJECT_KINDS, the reader '
+      'reads an object `kind: refill` with that kind, a landing on it is judged (`follows` true, `notJudgedYet` false), and a refill that carries a speed, '
+      'an axis or a motion is read still (`moving` false, `motion` null)', 'N',
+      tags=('missions',), designs=('standard',), screens=False, langs4=False,
+      rule='the user, 19 Nov (the fire missions: the refill, the retardant station of the pelicandrome); '
+      'frame/lib/mission.js OBJECT_KINDS; docs/technique/FORMAT_MISSION.md; modules/missions/EDITOR.md § 7 sexquinquagies')
+def n179(c):
+    c.page.goto(f'{c.base}/modules/missions/test/catalog.html')
+    c.until('!!window.jsyaml', timeout=10000, what='js-yaml in the bench page')
+    g = c.js(_REFILL_JS)
+    c.ok('refill' in g['kinds'], g['kinds'], 'refill is a kind of the closed list')
+    c.eq(g['o1'], {'kind': 'refill', 'moving': False, 'motion': None}, 'the object is read with the kind refill, still', what='the refill')
+    c.eq(g['o2'], {'kind': 'refill', 'moving': False, 'motion': None}, 'a refill that carries a speed, an axis and a course is read still', what='the refill that moves')
+    c.eq([g['follows'], g['notJudged'], g['why']], [[True, True], [False, False], ['', '']],
+         'a landing on a refill is judged (follows true, notJudgedYet false), with no reason', what='the landing')

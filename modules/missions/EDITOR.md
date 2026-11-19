@@ -1647,6 +1647,16 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
 
 - **The foot of the workshop declares itself to the frame** (SOG-0517; noreg N178, red before, frame case A354): `.ms-atfoot` carries `data-f-foot`, so a floating note (« Brouillon repris. », the move of a place, « Annuler ») sits above « Enregistrer », « Annuler » and « À compléter », never over them.
 
+### 7 sexquinquagies. A « refill » kind of object: the retardant station of an aerodrome (19 Nov 2026; the user's request for the fire missions; noreg N179)
+
+- `refill` is added to `MS.OBJECT_KINDS` (`frame/lib/mission.js`), the one closed list: the choice « Sorte d'objet » of a place of the sort
+  object (`editor_view.js`) offers it — « Station de retardant (refill) » / « Retardant station (refill) » / « Retardant-Station (Refill) » /
+  « Estación de retardante (refill) » (`ok_refill`, `editor_texts.js`) — and `withPlaces` writes `kind: refill` (a kind outside the list is
+  still not written).
+- A refill is **still by nature**: the reader gives `moving: false` and `motion: null` even if the file writes a speed, a route or an axis on it
+  (choice made alone: ignored, not refused — the object stays playable and a landing on it is judged like on any still object).
+- Not in this batch: the choice of the aerodrome from an AeroDB list (locked position), and the « refill » brick of the fire family.
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

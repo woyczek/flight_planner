@@ -249,8 +249,9 @@ function sheetOf(d) {
 // `coordination` et `emit_event` ne sont pas lus (gardés tels quels par qui réécrit).
 
 /** Les genres d'un objet à trouver : la liste fermée, à allonger ICI seulement (l'éditeur et l'écran du pilote la lisent) ; `aircraft` :
- *  une cible mobile. */
-export const OBJECT_KINDS = Object.freeze(['wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft']);
+ *  une cible mobile ; `refill` : la station de retardant d'un pélicandrome, IMMOBILE par nature (un `motion` ou une vitesse écrits sur
+ *  elle ne sont pas lus : objectKey la rend immobile). */
+export const OBJECT_KINDS = Object.freeze(['wreck', 'raft', 'person', 'vehicle', 'container', 'ship', 'smoke', 'aircraft', 'refill']);
 /** Les identifiants des tiroirs dans le fichier, dans l'ordre (la partie A est le reste de la mission) : douze au plus, la borne de
  *  sécurité de la lecture (l'utilisateur, 17 nov. : « pourquoi limiter à 3 tiroirs ? » — la limite à B, C, D venait du générateur de la
  *  V2). À l'écran un tiroir se dit par son RANG (« Tiroir 1 ») : les lettres désignent déjà les équipages d'une opération. */
@@ -355,6 +356,7 @@ function objectKey(v, resolve) {
     delay = within(o.start_delay_min, 0, B.delayMin),
     course = within(o.course_deg, 0, 360),
     route = (Array.isArray(o.route_order) ? o.route_order : []).slice(0, B.route).map(resolve).filter(Boolean),
+    still = kind === 'refill', // une station de retardant ne bouge pas : sa vitesse et son mouvement écrits sont ignorés
     axis = cut(o.motion, 20).toLowerCase() === 'axis' || !route.length && course !== null && speed !== null;
   if (lat === null || lon === null || range === null) return null;
   return {
@@ -369,8 +371,8 @@ function objectKey(v, resolve) {
     confirm: yes(o.require_confirmation, true),
     hiddenUntil: EVENT_ID.test(String(o.hidden_until_event ?? '')) ? String(o.hidden_until_event) :
     '', // caché au pilote jusqu'à cet événement
-    moving: !!(speed !== null && (axis ? course !== null : route.length)),
-    motion: speed === null ? null : axis ? course === null ? null : {
+    moving: !still && !!(speed !== null && (axis ? course !== null : route.length)),
+    motion: still || speed === null ? null : axis ? course === null ? null : {
       kind: 'axis',
       courseDeg: course,
       speedKt: speed,

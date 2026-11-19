@@ -130,6 +130,9 @@ export const EDTX = {
   ok_ship: ['navire', 'ship', 'Schiff', 'buque'],
   ok_smoke: ['fumée', 'smoke', 'Rauch', 'humo'],
   ok_aircraft: ['aéronef', 'aircraft', 'Luftfahrzeug', 'aeronave'],
+  ok_refill: ['Station de retardant (refill)', 'Retardant station (refill)', 'Retardant-Station (Refill)',
+    'Estación de retardante (refill)'
+  ],
   plRange: ['Portée de détection (NM)', 'Detection range (NM)', 'Erfassungsreichweite (NM)', 'Alcance de detección (NM)'],
   plHeight: ['Hauteur de détection (ft)', 'Detection height (ft)', 'Erfassungshöhe (ft)', 'Altura de detección (ft)'],
   plAlt: ['Altitude de l\'objet (ft)', 'Altitude of the object (ft)', 'Höhe des Objekts (ft)', 'Altitud del objeto (ft)'],

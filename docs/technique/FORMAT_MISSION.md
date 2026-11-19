@@ -71,7 +71,7 @@ zones:
     ceiling_ft: 3000               # optional: the zone only plays below this altitude (above sea level)
 objects:
   - id: OBJ-1
-    kind: person                   # wreck | raft | person | vehicle | container | ship | smoke | aircraft
+    kind: person                   # wreck | raft | person | vehicle | container | ship | smoke | aircraft | refill
     name: Naufragé
     lat: 44.610000
     lon: 1.310000
@@ -141,7 +141,11 @@ phases:
   acceptance, shared by the reader and by the workshop (`modules/missions/editor_drawers.js`), which keeps the other entries as
   they are.
 - `OBJECT_KINDS` is the one closed list of kinds (exported; to extend it, add a word there). A kind the list does not
-  know is read `''`: the object is still played.
+  know is read `''`: the object is still played. `refill` (19 Nov 2026, the user's request for the fire missions) is the retardant
+  station of an aerodrome's loading area: an object that **never moves** — a `motion`, a `route_order`, a `speed_kt` or a
+  `course_deg` written on it are not read (`moving` is false, `motion` is null), so a landing on it is judged like a landing on any
+  still object (`follows`; `notJudgedYet` is false). The list of aerodromes that offer a refill, and the position it is locked on,
+  will come from AeroDB (not written yet): for now the author places the object by hand.
 - `passageMin(mission, pointId)` → `{ nm, min }`: the distance (as `routeNm`) and the estimated minutes from the
   departure to a point of part A — distance at the cruise speed, plus the time on task of the points before (the middle
   of a range); `min` is null without a speed; null when the point is not on the route of part A; `'ORIGIN'` is 0.
