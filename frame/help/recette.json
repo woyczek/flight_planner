@@ -3,7 +3,7 @@
  "generated": {
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
-  "tests": 347,
+  "tests": 348,
   "verdicts": 219
  },
  "apps": [
@@ -5182,6 +5182,20 @@
    "since": "2026-11-19",
    "state": "todo",
    "delivered": "2026-11-19T02:14:55Z"
+  },
+  {
+   "id": "SOG-0509",
+   "app": "maintenance",
+   "title": {
+    "fr": "Données, la fiche d'un pays : « Mettre à jour » est blanc et tout en bas, alors que « Prendre le fichier téléchargé » est bleu et en vue — la seule action utile est « Mettre à jour »",
+    "en": "Data, a country's sheet: “Update” is white and at the very bottom while “Take the downloaded file” is blue and in view — “Update” is the only useful action",
+    "de": "Daten, Blatt eines Landes: „Aktualisieren“ ist weiß und ganz unten, „Heruntergeladene Datei nehmen“ blau und sichtbar — nur „Aktualisieren“ ist nötig",
+    "es": "Datos, ficha de un país: «Actualizar» es blanco y está al fondo, mientras «Tomar el archivo descargado» es azul y visible — la única acción útil es «Actualizar»"
+   },
+   "test": "Maintenance › Données : touche un pays qui a un fichier dans Téléchargements (la France, par exemple). Attendu : sans défiler, juste sous la phrase d'état, UN seul bouton bleu « Mettre à jour ce pays » (il prend le fichier et reconstruit). « Prendre le fichier téléchargé » n'est plus bleu ; il reste plus bas, dans le bloc de sa source (il prépare un essai à blanc et liste les fichiers).",
+   "since": "2026-11-19",
+   "state": "todo",
+   "delivered": "2026-11-19T08:16:23Z"
   }
  ],
  "decisions": [

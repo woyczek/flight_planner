@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "e34c2ed",
+  "organisation": "82138af",
   "fiches": 512,
   "untranslated": 0,
   "priorities": 481,
@@ -6710,11 +6710,12 @@
     {
      "id": "SOG-0509",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Données, la fiche d'un pays : « Mettre à jour » est blanc et tout en bas, alors que « Prendre le fichier téléchargé » est bleu et en vue — la seule action utile est « Mettre à jour »",
      "en": "Data, a country's sheet: “Update” is white and at the very bottom while “Take the downloaded file” is blue and in view — “Update” is the only useful action",
      "de": "Daten, Blatt eines Landes: „Aktualisieren“ ist weiß und ganz unten, „Heruntergeladene Datei nehmen“ blau und sichtbar — nur „Aktualisieren“ ist nötig",
-     "es": "Datos, ficha de un país: «Actualizar» es blanco y está al fondo, mientras «Tomar el archivo descargado» es azul y visible — la única acción útil es «Actualizar»"
+     "es": "Datos, ficha de un país: «Actualizar» es blanco y está al fondo, mientras «Tomar el archivo descargado» es azul y visible — la única acción útil es «Actualizar»",
+     "test": true
     },
     {
      "id": "SOG-0511",
