@@ -50,7 +50,11 @@
     slug40: t => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
       .slice(0, 40).replace(/-+$/, ''),
     slug24: n => String(n ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      .slice(0, 24).replace(/-+$/g, '') // frame/settings/access.js
+      .slice(0, 24).replace(/-+$/g, ''), // frame/settings/access.js
+    zNorm: v => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g,
+      ''), // modules/maps/lib/vertical_profile.js (lit SogFrame.text.foldAlnum)
+    keyNorm: s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g,
+      '') // modules/maps/mission.js (lit SogFrame.text.wordsOf)
   };
   const same = (name, mine, theirs) => {
     const bad = [];
@@ -81,6 +85,10 @@
     same('wordsOf = la recherche de modules/missions/search.js', wordsOf, orig.words);
     same('slug(v, 40) = l\'identifiant de modules/missions/catalog.js', v => slug(v, 40), orig.slug40);
     same('slug(v, 24) = celui de frame/settings/access.js', v => slug(v, 24), orig.slug24);
+    same('foldAlnum = le zNorm de modules/maps/lib/vertical_profile.js', foldAlnum, orig.zNorm);
+    same(
+      "wordsOf(v) avec les espaces en tirets bas = le keyNorm de modules/maps/mission.js (les seules espaces du résultat sont celles de wordsOf)",
+      v => wordsOf(v).replace(/ /g, '_'), orig.keyNorm);
     ck('stripMarks : « Île-de-Ré » → « Ile-de-Re », sans changer ni la casse ni les blancs', stripMarks(' Île-de-Ré ') === ' Ile-de-Re ',
       stripMarks(' Île-de-Ré '));
     ck('les ligatures et les lettres sans décomposition restent : « Œuvre », « Ærø », « straße »', stripMarks('Œuvre Ærø straße') ===
