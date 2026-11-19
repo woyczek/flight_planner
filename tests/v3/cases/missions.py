@@ -12445,14 +12445,14 @@ _LKP_ROWS = f"""() => [...document.querySelectorAll('{E} [data-edplaces] [data-p
 _LKP_TODO = f"[...document.querySelectorAll('{E} [data-edtodo] li')].map(x => x.dataset.todo || x.dataset.dtodo || '')"
 
 
-@case('N193', 'Missions › the workshop, a place LOCKED on the position of the base is never said « à placer » (SOG-0506, the user\'s reserve): in a mission whose departure is a '
+@case('N195', 'Missions › the workshop, a place LOCKED on the position of the base is never said « à placer » (SOG-0506, the user\'s reserve): in a mission whose departure is a '
       'known code written without a position (XTSL, the way the workshop wrote it before) and whose turning point PT3 is named by a code of the base at the position of the base, '
       'the line of the departure and the line of PT3 say that position — not « à placer » —, « À compléter » says nothing of « lieux à placer » for them, and a true place « to place » '
       '(no position, no code: PT4) is still said « à placer » and still counted', 'N',
       tags=('missions',), designs=('standard',), screens=False, langs4=False,
       rule='SOG-0506 (the user: « oui. mais il est encore noté « à placer ». ») — modules/missions/editor.js `todo`, `veilTodo`, modules/missions/editor_view.js `dms`, `edPlacesHtml`; '
       'EDITOR.md § 7 tresquinquagies')
-def n193(c):
+def n195(c):
     unplaced = row(c, 'plUnplaced')
     at = '44°33′N 1°51′E'
     for width in (390, 1280):
