@@ -4425,13 +4425,21 @@ const VEILED_OFF = new Set(['edtrial', 'edtrhand', 'edtrput', 'edtrreset', 'eddr
  *  (DR.keyed : ce qu'elle devine) — d'une brique, avec son titre, son message et son heure de repli (CAT.drawerFrom) —, il est choisi, sa
  *  fiche s'ouvre, son titre en main, et une notification le dit, avec « Annuler » (edAddUndo) ; par « Changer la clé », la clé du tiroir
  *  devient celle-ci (la même sorte sans brique : rien ne change) — d'une brique, sa clé et ses réglages, les textes, la suite de route et
- *  l'heure de repli de l'auteur gardés. La fenêtre se ferme. Une sorte que DR.offered ne propose pas (une page forgée) : rien. */
+ *  l'heure de repli de l'auteur gardés. Une brique qui crée des lieux (SOG-0521 : la station de retardant d'un ravitaillement) les pose
+ *  « à placer » dans les Lieux (CAT.posePlaces : un identifiant libre, aucune position, rien d'inventé) et sa clé les cite ; « Annuler »
+ *  les retire avec le tiroir s'ils sont encore à placer. La fenêtre se ferme. Une sorte que DR.offered ne propose pas (une page forgée) :
+ *  rien. */
 function edKind(s, key, brick = null) {
   const e = s.ed;
   // SOG-0500 (c) : seulement ce que le choix propose (une sorte que le vol ne juge pas : la clé en cours du tiroir, rien d'autre)
   if (!['new', 'drawer'].includes(e.kinds) || !DR.offered(e.kinds === 'drawer' ? edDrawerRow(e)?.key || '' : '').some(t => t.key === key))
     return;
-  const places = e.places || ED.placesOf(edDoc(e));
+  const lang = s.ctx.lang?.() || 'fr',
+    // SOG-0521 : les lieux que la brique crée, posés « à placer » ; la ligne de tiroir cite leurs identifiants
+    posed = brick?.places?.length ? CAT.posePlaces(e.places || ED.placesOf(edDoc(e)), brick.places, e.base, lang) : null,
+    places = posed ? posed.rows : e.places || ED.placesOf(edDoc(e)),
+    idOf = k => posed?.map.get(k) || '';
+  if (posed && (e.kinds !== 'new' || DR.blankDrawer(edDrawers(e), e.base))) e.places = posed.rows;
   if (e.kinds === 'new') {
     const blank = DR.blankDrawer(edDrawers(e), e.base),
       prev = e.sel || 'start';
@@ -4441,7 +4449,7 @@ function edKind(s, key, brick = null) {
       return draw(s);
     }
     edDrawerRow(e);
-    const row = brick ? CAT.drawerFrom(blank, brick, places, s.ctx.lang?.() || 'fr') : DR.keyed(blank, key, places);
+    const row = brick ? CAT.drawerFrom(blank, brick, places, lang, idOf) : DR.keyed(blank, key, places);
     row.said = edSaid(s, row);
     e.drawers = [...e.drawers, row];
     e.sel = row.id;
@@ -4458,7 +4466,7 @@ function edKind(s, key, brick = null) {
       ms: 10000,
       action: {
         label: s.tt(EDTX.dwUndo),
-        run: () => edAddUndo(s, e, row.id, prev)
+        run: () => edAddUndo(s, e, row.id, prev, posed?.made || [])
       }
     });
     return s.el.querySelector('[data-drawer] [data-f=title]')?.focus();
@@ -4469,7 +4477,7 @@ function edKind(s, key, brick = null) {
     edUndoClear(e); // une retouche de la fiche d'un tiroir : « Annuler le geste » n'a plus rien à rendre
     let next = DR.keyed(r, key, places);
     if (brick) { // une brique pour la clé : sa clé et ses réglages ; les textes, la suite de route et l'heure de repli de l'auteur restent
-      const b = CAT.drawerFrom(r, brick, places, s.ctx.lang?.() || 'fr');
+      const b = CAT.drawerFrom(r, brick, places, lang, idOf);
       next = {
         ...b,
         title: r.title,
@@ -4487,11 +4495,13 @@ function edKind(s, key, brick = null) {
 }
 
 /** SOG-0508 : « Annuler » de la notification d'un tiroir que la fenêtre des briques a créé — le tiroir `id` est retiré, la ligne choisie
- *  redevient celle d'avant (`prev`, si elle est encore là ; sinon « Au départ »). Rien si l'atelier a changé (une autre mission, l'atelier
- *  fermé) ou si le tiroir n'y est plus. */
-function edAddUndo(s, e, id, prev) {
+ *  redevient celle d'avant (`prev`, si elle est encore là ; sinon « Au départ »). Les lieux que sa brique a posés (`made`, SOG-0521) partent
+ *  avec lui tant qu'ils sont des lignes de la séance encore « à placer » (un lieu placé depuis est à l'auteur : il reste). Rien si l'atelier
+ *  a changé (une autre mission, l'atelier fermé) ou si le tiroir n'y est plus. */
+function edAddUndo(s, e, id, prev, made = []) {
   if (state() !== s || s.ed !== e || e.veil || !Array.isArray(e.drawers) || !e.drawers.some(r => r.id === id)) return;
   e.drawers = e.drawers.filter(r => r.id !== id);
+  if (made.length && Array.isArray(e.places)) e.places = e.places.filter(p => !(p && p.i === -1 && made.includes(p.id) && CAT.unplaced(p)));
   if (e.sel === id) e.sel = e.drawers.some(r => r.id === prev) ? prev : 'start';
   e.kinds = '';
   e.drawerAsk = '';

@@ -1680,6 +1680,25 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
 - Choices made alone: the condition is named `refill`, not `refuel` (the air-to-air refuelling of the AAR family); the minimum duration is
   `duration_sec`, the word of the holds; the gap, the radius and the tolerance are not offered to type (the parameters of the reader).
 
+### 7 octoquinquagies. A brick creates its places « to place »: the brick « Ravitaillement en retardant » (19 Nov 2026; SOG-0521; noreg N184, N156, N138)
+
+- `catalog.js` reads a field `places` of a brick as those of a model (`placeOf`: an identifier of the closed form, a kind of `PLACE_KINDS`, an
+  object kind of `MS.OBJECT_KINDS` or nothing, a name in four languages, never a position; `LIMITS.brickPlaces`: four; a duplicate, a kind
+  out of the list, an entry beyond four set aside and counted in `dropped`); `place` is kept only if it names one of them.
+- `CAT.posePlaces(rows, specs, base, lang)` poses them in the sitting, the way of `applyModel` (which now calls it): `ED.newPlace` — the
+  place of its kind, a free identifier (`nextPlaceId`), « to place », its name, its object kind; nothing invented. `edKind`
+  (`editor_view.js`) poses the places of a brick touched under « ＋ Tiroir » (or by « Changer la clé ») and its drawer cites them
+  (`CAT.drawerFrom` with `idOf`); « Annuler » of the notification removes them with the drawer while they are lines of the sitting still
+  « to place ».
+- `DR.RULED` replaces `DR.HOLDS` where the catalogue reads, applies and saves the numbers of a rule (`paramsOf`, `drawerFrom`,
+  `modelFromSession`): a refill brick keeps `duration_sec`, bounded by `DR.ruleBounds`.
+- The FIRE brick `fire-refill` — « Ravitaillement en retardant » / « Retardant refill » / « Retardant-Befüllung » / « Reabastecimiento de
+  retardante », its brief « Posez-vous à la station de retardant, placez-vous contre elle, restez le temps du remplissage, puis repartez. »
+  (×4), 300 s, a fallback of 60 min — creates « Station de retardant » (`okind: refill`). It is **not offered** today (`DR.judgedKind` of
+  `refill` is false); with a flight that judges the refill (a simulated `follows`, the way of N155) it would be.
+- `withPlaces` (`editor.js`) never writes `require_confirmation` on a station of retardant (a station is not « found »; what a file carries
+  stays as it is).
+
 ### 8. What is NOT ported
 
 The typed test positions; the YAML tree (level 4, stays in the V2); the ZIP of an operation and the several crews

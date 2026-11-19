@@ -58,11 +58,12 @@
       ...o,
       [b.key]: (o[b.key] || 0) + 1
     }), {});
-  ck('le catalogue livré se lit entier : 60 briques, 3 modèles, 16 familles, rien d\'écarté', cat.ok && cat.bricks.length === 60 && cat
+  ck('le catalogue livré se lit entier : 61 briques, 3 modèles, 16 familles, rien d\'écarté', cat.ok && cat.bricks.length === 61 && cat
     .models
     .length === 3 && cat.families.length === 16 && cat.dropped === 0, [cat.why, cat.bricks.length, cat.models.length, cat.dropped]);
   // SOG-0500 (d) : les 32 briques des conditions 1.1 (un suivi est un stationnaire qui suit un objet)
-  ck('les 60 briques sont celles que l\'atelier sait écrire : 15 zones, 6 objets, 6 gestes, 1 arrivée, 12 posers, 9 stationnaires, 5 survols, 1 suite, 5 messages',
+  // SOG-0521 : le ravitaillement en retardant (une brique, qui crée sa station « à placer »)
+  ck('les 61 briques sont celles que l\'atelier sait écrire : 15 zones, 6 objets, 6 gestes, 1 arrivée, 12 posers, 9 stationnaires, 5 survols, 1 suite, 5 messages, 1 ravitaillement',
     JSON.stringify(keys) === JSON.stringify({
       zone: 15,
       object: 6,
@@ -72,7 +73,8 @@
       hover: 9,
       overflight: 5,
       sequence: 1,
-      event: 5
+      event: 5,
+      refill: 1
     }), keys);
   ck('les trois modèles : la mission vierge, le glacier (recherche, trois tiroirs), l\'interception', JSON.stringify(cat.models.map(m => [m
     .id, m.type, m.drawers.length, m.places.length

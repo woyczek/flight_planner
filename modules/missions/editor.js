@@ -718,7 +718,9 @@ export function withPlaces(doc, rows) {
     num('range', 'detection_range_nm', positive(r.range, 100) || null);
     num('height', 'detection_height_ft', positive(r.height, 60000));
     num('alt', 'altitude_ft', (v => v !== null && v >= -1500 ? v : null)(coord(r.alt, 60000)));
-    if (diff.includes('confirm')) o.require_confirmation = r.confirm === true;
+    // SOG-0521 : une station de retardant ne se « trouve » pas — « trouvé sur la parole du pilote » ne lui est jamais écrit (ce que le
+    // fichier en porte reste tel quel)
+    if (diff.includes('confirm') && cut(r.okind, 24).toLowerCase() !== 'refill') o.require_confirmation = r.confirm === true;
   });
   return out;
 }

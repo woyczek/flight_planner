@@ -3,12 +3,14 @@
 // personnel (pilot/<TRI>/modeles/<id>.yaml, écrit par n'importe quel appareil du pilote) sont des entrées NON FIABLES, lues par la même
 // fonction et bornées de même : taille, nombre d'entrées, identifiants à forme fermée, textes nettoyés par `visible` du lecteur
 // (frame/lib/mission.js) et coupés, un texte qui porte une balise ou une adresse refusé, un nombre hors bornes jamais écrit (ni ramené
-// dans ses bornes), aucune clé inconnue recopiée, aucune ancre YAML. Une brique est un tiroir sans lieu ; un modèle, des tiroirs et des
-// lieux « à placer » (une sorte et un nom, jamais une position).
+// dans ses bornes), aucune clé inconnue recopiée, aucune ancre YAML. Une brique est un tiroir — sans lieu, ou avec les lieux « à placer »
+// qu'elle crée (SOG-0521 : la station de retardant d'un ravitaillement ; quatre au plus) ; un modèle, des tiroirs et des lieux « à placer »
+// (une sorte et un nom, jamais une position).
 //
 // API :
 //   LIMITS : les bornes de lecture ; ID : la forme d'un identifiant de brique ou de modèle ; LANGS : les quatre langues.
-//   readCatalog(text, Y) → { ok, why ('' | 'size' | 'unreadable' | 'alias' | 'shape' | 'version'), families [codes], bricks [spec],
+//   readCatalog(text, Y) → { ok, why ('' | 'size' | 'unreadable' | 'alias' | 'shape' | 'version'), families [codes], bricks [spec +
+//     places [{ id, kind, okind, name }] : les lieux « à placer » que la brique crée, lus comme ceux d'un modèle, LIMITS.brickPlaces au plus],
 //     models [{ id, type, title, brief, drawers [spec], places [{ id, kind, okind, name }] }], dropped (entrées écartées) } ;
 //     une « spec » de tiroir : { id?, family?, key (une de editor_drawers.js KEYS), title, message, brief (textes { fr, en, de, es }),
 //     place (la clé d'un lieu du modèle, ou ''), fallback (minutes, ou null), params ({ radius_nm, speed_max_kt, require_on_ground,
@@ -27,6 +29,9 @@
 //     « Changer de modèle » remplace (tous les tiroirs, les lieux posés par le modèle encore à placer) et ce qu'il garde (les lieux
 //     posés par le modèle et placés depuis, les lieux de l'auteur).
 //   applyModel({ places, drawers, base, prior }, model, lang) → { places, drawers, placed } : les lignes de la séance après le modèle.
+//   posePlaces(rows, specs, base, lang) → { rows, map (la clé d'un lieu de la spec → son identifiant dans la séance), made [identifiants] } :
+//     les lieux d'un modèle ou d'une brique posés « à placer » (editor.js newPlace : un identifiant libre, aucune position) ; rien
+//     d'inventé — une sorte et un nom (SOG-0444, SOG-0521).
 //   modelFromSession({ id, title, family, drawers, places }) → l'entrée de modèle d'une séance : tiroirs complets, lieux sans position,
 //     ni identifiant de mission, ni équipes, ni indicatifs ; modelText(model, Y) → le texte YAML du fichier ({ version, models: [m] }).
 //   slug(title) → l'identifiant d'un modèle tiré de son nom ('' sinon) ; modelPath(trigram, id) → 'pilot/<TRI>/modeles/<id>.yaml' | null.
@@ -49,7 +54,8 @@ export const LIMITS = Object.freeze({
   message: 2000,
   name: 60,
   route: 20,
-  placed: 20
+  placed: 20,
+  brickPlaces: 4 // SOG-0521 : les lieux qu'une brique crée
 });
 export const ID = /^[a-z0-9-]{1,40}$/;
 export const LANGS = Object.freeze(['fr', 'en', 'de', 'es']);
@@ -117,7 +123,7 @@ function paramsOf(v, key) {
     const d = num(p.delay_min, 0, B.delayMin);
     if (d !== null) out.delay_min = d;
   }
-  if (DR.HOLDS.includes(key)) Object.assign(out, holdParams(p, key));
+  if (DR.RULED.includes(key)) Object.assign(out, holdParams(p, key)); // SOG-0521 : un ravitaillement aussi
   // une suite : ses étapes, une règle chacune (une étape d'une autre sorte n'est pas lue), dix au plus (la borne du lecteur)
   if (key === 'sequence') {
     const steps = listOf(p.steps, B.steps, () => {}).map(st => isObj(st) && DR.HOLDS.includes(st.kind) ? {
@@ -132,13 +138,14 @@ function paramsOf(v, key) {
   return out;
 }
 
-/** Les nombres d'une règle de maintien ou de survol (SOG-0500 (d)), sous les noms du fichier, bornés par le lecteur : seuls ceux que
- *  sa sorte lit (DR.RULE_USE) ; la confirmation d'un survol, un booléen. */
+/** Les nombres d'une règle de maintien ou de survol (SOG-0500 (d)) ou d'un ravitaillement (SOG-0521), sous les noms du fichier, bornés
+ *  par le lecteur (DR.ruleBounds : les bornes de SA sorte) : seuls ceux que sa sorte lit (DR.RULE_USE) ; la confirmation d'un survol, un
+ *  booléen. */
 function holdParams(p, kind) {
   const out = {},
     use = DR.RULE_USE[kind] || [];
-  for (const [f, [k, [lo, hi]]] of Object.entries(DR.RULE_NUM)) {
-    const v = use.includes(f) ? num(p[k], lo, hi) : null;
+  for (const [f, [k]] of Object.entries(DR.RULE_NUM)) {
+    const v = use.includes(f) ? num(p[k], ...DR.ruleBounds(kind, f)) : null;
     if (v !== null) out[k] = v;
   }
   if (use.includes('confirm') && typeof p.require_confirmation === 'boolean') out.require_confirmation = p.require_confirmation;
@@ -230,11 +237,24 @@ export function readCatalog(text, Y = globalThis.jsyaml) {
       continue;
     }
     seen.add(id);
+    // SOG-0521 : les lieux « à placer » que la brique crée (lus comme ceux d'un modèle : une sorte et un nom, jamais une position) ; la
+    // brique ne cite que l'un d'eux
+    const places = [],
+      keys = new Set();
+    for (const p of listOf(v.places, LIMITS.brickPlaces, over).map(placeOf)) {
+      if (!p || keys.has(p.id)) {
+        dropped += 1;
+        continue;
+      }
+      keys.add(p.id);
+      places.push(p);
+    }
     bricks.push({
       id,
       family,
       ...spec,
-      place: '',
+      place: keys.has(spec.place) ? spec.place : '',
+      places,
       route: []
     });
   }
@@ -305,8 +325,8 @@ export function drawerFrom(blank, spec, places, lang, idOf = () => '') {
   if (at && spec.key === 'zone') row.zone = at;
   if (at && spec.key === 'object') row.object = at;
   if (at && spec.key === 'time') row.point = at;
-  // SOG-0500 (d) : une condition 1.1 — ses nombres ; son lieu, un objet ou un point du modèle
-  if (DR.HOLDS.includes(spec.key)) {
+  // SOG-0500 (d) : une condition 1.1 — ses nombres ; son lieu, un objet ou un point du modèle (SOG-0521 : la station d'un ravitaillement)
+  if (DR.RULED.includes(spec.key)) {
     ruleFrom(row.rule, spec.key, p);
     if (at) {
       const obj = (Array.isArray(places) ? places : []).find(x => x && x.id === at)?.kind === 'object';
@@ -368,18 +388,13 @@ export function modelChange(places, drawers, prior) {
   };
 }
 
-/** Les lignes de la séance après un modèle (voir l'en-tête) : les tiroirs remplacés, les lieux du modèle d'avant encore à placer
- *  retirés, ceux du nouveau posés « à placer » avec un identifiant libre (editor.js newPlace) ; les tiroirs citent ces identifiants. */
-export function applyModel({
-  places,
-  base = null,
-  prior = null
-}, model, lang) {
-  const gone = new Set(modelChange(places, [], prior).gone),
-    map = new Map();
-  let rows = (Array.isArray(places) ? places : []).filter(p => !(p && p.id && gone.has(p.id)));
-  for (const p of model?.places || []) {
-    const made = ED.newPlace(rows, p.kind, base, null);
+/** Les lieux d'une spec posés dans la séance (voir l'en-tête) : chacun par editor.js newPlace (sa place dans l'ordre des sortes, un
+ *  identifiant libre, « à placer »), son nom dans la langue, sa sorte d'objet ; une sorte pleine : il n'est pas posé (la clé ne cite rien). */
+export function posePlaces(rows, specs, base, lang) {
+  const map = new Map();
+  let out = Array.isArray(rows) ? rows : [];
+  for (const p of Array.isArray(specs) ? specs : []) {
+    const made = p && PLACE_KINDS.includes(p.kind) ? ED.newPlace(out, p.kind, base, null) : null;
     if (!made) continue;
     const r = {
       ...made.rows[made.at],
@@ -388,9 +403,28 @@ export function applyModel({
         okind: p.okind
       } : {})
     };
-    rows = made.rows.map((x, i) => i === made.at ? r : x);
+    out = made.rows.map((x, i) => i === made.at ? r : x);
     map.set(p.id, r.id);
   }
+  return {
+    rows: out,
+    map,
+    made: [...map.values()].filter(Boolean)
+  };
+}
+
+/** Les lignes de la séance après un modèle (voir l'en-tête) : les tiroirs remplacés, les lieux du modèle d'avant encore à placer
+ *  retirés, ceux du nouveau posés « à placer » avec un identifiant libre (posePlaces) ; les tiroirs citent ces identifiants. */
+export function applyModel({
+  places,
+  base = null,
+  prior = null
+}, model, lang) {
+  const gone = new Set(modelChange(places, [], prior).gone),
+    {
+      rows,
+      map
+    } = posePlaces((Array.isArray(places) ? places : []).filter(p => !(p && p.id && gone.has(p.id))), model?.places, base, lang);
   const list = [];
   for (const d of model?.drawers || []) {
     const blank = DR.blankDrawer(list, base);
@@ -431,12 +465,12 @@ export function modelFromSession({
           ['confirmation', rule?.confirmation || undefined]
         ])),
         params = paramsOf({
-          radius_nm: key === 'arrival' ? +r.arrRadius || undefined : DR.HOLDS.includes(key) ? fileOf(r.rule).radius_nm : undefined,
-          speed_max_kt: key === 'arrival' ? r.arrSpeed === '' ? undefined : +r.arrSpeed : DR.HOLDS.includes(key) ? fileOf(r.rule)
+          radius_nm: key === 'arrival' ? +r.arrRadius || undefined : DR.RULED.includes(key) ? fileOf(r.rule).radius_nm : undefined,
+          speed_max_kt: key === 'arrival' ? r.arrSpeed === '' ? undefined : +r.arrSpeed : DR.RULED.includes(key) ? fileOf(r.rule)
             .speed_max_kt : undefined,
           require_on_ground: key === 'arrival' ? r.arrGround === true : undefined,
           delay_min: r.delay === '' ? undefined : +r.delay,
-          ...(DR.HOLDS.includes(key) ? fileOf(r.rule) : {}),
+          ...(DR.RULED.includes(key) ? fileOf(r.rule) : {}),
           ...(key === 'sequence' ? {
             steps: (Array.isArray(r.steps) ? r.steps : []).map(st => ({
               kind: st.kind,
@@ -451,7 +485,7 @@ export function modelFromSession({
         };
       if (one(r.message, LIMITS.message, true)) d.message = one(r.message, LIMITS.message, true);
       if (one(r.brief, LIMITS.message, true)) d.brief = one(r.brief, LIMITS.message, true);
-      const place = at(key === 'zone' ? r.zone : key === 'object' ? r.object : key === 'time' ? r.point : DR.HOLDS.includes(key) ? r
+      const place = at(key === 'zone' ? r.zone : key === 'object' ? r.object : key === 'time' ? r.point : DR.RULED.includes(key) ? r
         .rule
         ?.object || r.rule?.point || '' : '');
       if (place) d.place = place;

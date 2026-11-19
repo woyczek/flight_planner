@@ -317,8 +317,12 @@ phases:
 
 **The bricks of the catalogue** (SOG-0500 (d)): the 32 bricks of these conditions in `modules/missions/catalog.yaml` carry the numbers
 of their rule under `params`, with the same names and the same bounds (`radius_m`, `duration_sec`, …, `steps` for a sequence); a
-brick never carries a place nor a message identifier — the drawer born of it follows the first object of the mission, else the
-target, else the arrival, and « À compléter » asks for the identifier of a message.
+brick never carries a message identifier, nor a position — the drawer born of it follows the first object of the mission, else the
+target, else the arrival, and « À compléter » asks for the identifier of a message. Since SOG-0521 a brick MAY create places « to
+place » (`places`, four at most, read like those of a model: a kind and a name, never a position; `place` cites one of them): the
+FIRE brick `fire-refill` (« Ravitaillement en retardant ») creates its station — an object of the kind `refill`, written without a
+position, a range or a confirmation — and keys its drawer on it (`kind: refill`, 300 s); it is offered only once the flight judges the
+refill.
 
 **What the flight judges, and what the workshop offers** (SOG-0500 (c)): the flight judges a key when `follows(key)` of
 `modules/missions/drawers.js` (« Affectation ») says so — today a zone the pilot crosses himself (no `actor`), a fixed object, an

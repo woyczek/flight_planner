@@ -1,8 +1,9 @@
 # V3 missions — le catalogue des briques et des modèles de l'atelier (SOG-0444, lot « modèles de mission »), livré avec le module, lu
 # en lecture seule par modules/missions/catalog.js (readCatalog : une entrée non fiable, bornée — 128 Ko, 80 briques, 20 modèles,
 # 12 tiroirs et 20 lieux par modèle, identifiants à forme fermée, textes sans balise, nombres dans leurs bornes).
-# Une brique est un tiroir sans lieu : sa clé (une de celles que l'atelier sait écrire : hand, time, zone, object, arrival, et les
-# conditions 1.1 hover, landing, overflight, sequence, event — SOG-0500 (d)), son titre et son message en quatre langues, ses réglages
+# Une brique est un tiroir sans lieu — ou avec les lieux « à placer » qu'elle crée (`places`, quatre au plus, la forme de ceux d'un modèle ;
+# `place` cite l'un d'eux : SOG-0521) : sa clé (une de celles que l'atelier sait écrire : hand, time, zone, object, arrival, et les
+# conditions 1.1 hover, landing, overflight, sequence, event — SOG-0500 (d) — et refill, SOG-0521), son titre et son message en quatre langues, ses réglages
 # (`params`, bornés comme le lecteur les borne), son heure de repli. Une brique n'est proposée que si le vol juge sa clé. Un modèle : un type (la famille, vide pour toute famille), des tiroirs (une
 # brique, et ce que le modèle y change) et des lieux « à placer » — une sorte et un nom, jamais une position.
 # Tout est inventé : aucun indicatif, aucune immatriculation, aucun lieu réel, aucune coordonnée.
@@ -383,6 +384,18 @@ bricks:
     key: event
     title: { fr: "Message entre équipages", en: "Message between crews", de: "Nachricht zwischen Besatzungen", es: "Mensaje entre tripulaciones" }
     brief: { fr: "Attendre le message envoyé par un autre équipage.", en: "Wait for the message sent by another crew.", de: "Auf die Nachricht einer anderen Besatzung warten.", es: "Esperar el mensaje enviado por otra tripulación." }
+    fallback_min: 60
+  # --- un ravitaillement en retardant (1 ; SOG-0521) : la station est un lieu « à placer » que la brique crée — le vol ne juge pas
+  #     encore la clé : la brique n'est proposée que lorsqu'il la jugera
+  - id: fire-refill
+    family: FIRE
+    key: refill
+    title: { fr: "Ravitaillement en retardant", en: "Retardant refill", de: "Retardant-Befüllung", es: "Reabastecimiento de retardante" }
+    brief: { fr: "Posez-vous à la station de retardant, placez-vous contre elle, restez le temps du remplissage, puis repartez.", en: "Land at the retardant station, move up against it, stay while it refills, then leave again.", de: "Landen Sie an der Retardant-Station, stellen Sie sich direkt an sie, bleiben Sie während der Befüllung und fliegen Sie dann wieder ab.", es: "Aterrice en la estación de retardante, colóquese junto a ella, permanezca durante el llenado y vuelva a salir." }
+    place: station
+    places:
+      - { id: station, kind: object, okind: refill, name: { fr: "Station de retardant", en: "Retardant station", de: "Retardant-Station", es: "Estación de retardante" } }
+    params: { duration_sec: 300 }
     fallback_min: 60
 models:
   - id: blank
