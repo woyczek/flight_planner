@@ -1625,8 +1625,7 @@ replaces the choice in place of SOG-0467 (`edKindsHtml`, `edBricksHtml` and the 
 - **Its content**, the mock-up's: the title « Choisir une brique de tiroir » and « Fermer »; « Rechercher une brique… » (`s.ed.kq`, 60 characters; the
   list alone is redone as one types; accents and capitals ignored by `foldLower` of `frame/lib/text.js`; every fold kept open while a text is searched);
   one line of counts (families and bricks offered, the aircraft — the type of the first team, else its name — and the family of the mission, « à définir »
-  when absent); then the folds of the suite (`fold` and `wireFolds` of `frame/lib/fold.js`, taken from `SogFrame.fold`: importing the file here would
-  have to list it in `meta.files` of `module.js`, case I26; without it, plain sections, always open). « Actions transverses » first (the bricks of family
+  when absent); then the folds of the suite (`fold` and `wireFolds` of `frame/lib/fold.js`, imported by `editor_view.js`, the file being listed in `meta.files` of `module.js`, case I26). « Actions transverses » first (the bricks of family
   `common`), then the mock-up's six themes (Secours et assistance, Mer, douane et sécurité, Feu et protection civile, Transport et projection, Opérations
   aériennes, Mesure et validation; a family the table does not name goes to « Autres familles ») › one fold per family (its name from
   `frame/lib/mission_themes.js`, its code) › its bricks, then « Une clé seule » (`DR.offered`: a key with no text, the key in force of a drawer marked).

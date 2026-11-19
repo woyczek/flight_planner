@@ -58,7 +58,7 @@
 // dans document.body (KW, kwSync après chaque dessin : la vue du cadre est un conteneur de requêtes, une boîte « fixed » posée dans le
 // module n'en sortirait pas), plein écran au téléphone. Elle porte « Fermer » (Échap aussi : rien n'est créé), « Rechercher une
 // brique… » (s.ed.kq : la liste seule est refaite à la frappe), une ligne de compte (familles et briques proposées, appareil, famille
-// de la mission) et la liste en plis de la suite (SogFrame.fold : frame/lib/fold.js, donné par le cadre ; s.ed.kfold retient ce que
+// de la mission) et la liste en plis de la suite (frame/lib/fold.js, importé ici ; s.ed.kfold retient ce que
 // l'auteur ouvre ou ferme) — « Actions transverses » d'abord (les briques de toute mission), puis les thèmes de la maquette › une
 // famille › ses briques, puis « Une clé seule » (DR.offered : une clé sans texte). Seules les briques dont le vol juge la clé
 // (SOG-0500 (c)) ; le catalogue livré (modules/missions/catalog.yaml, lu une fois par page par edCatalog, borné par CAT.readCatalog).
@@ -150,6 +150,8 @@ import {
 import * as MS from '../../frame/lib/mission.js';
 import * as MT from '../../frame/lib/mission_themes.js';
 import * as IC from '../../frame/lib/icons.js';
+// SOG-0508 : les plis de la fenêtre des briques (fold, wireFolds) ; le fichier est dans meta.files de module.js (cas I26)
+import * as FD from '../../frame/lib/fold.js';
 import * as RG from './registry.js';
 import * as TR from './editor_trial.js';
 import {
@@ -1354,11 +1356,9 @@ const KW_SYM = Object.freeze({
   event: '↗'
 });
 
-/** Un pli de la fenêtre : celui de la suite (frame/lib/fold.js, que le cadre donne par SogFrame.fold — l'importer ici l'ajouterait aux
- *  fichiers du module) ; sans lui (le cadre n'a pas pu le charger), un groupe toujours ouvert, son titre en tête. */
+/** Un pli de la fenêtre : celui de la suite (frame/lib/fold.js, importé ici et listé dans meta.files de module.js). */
 function kwFold(o) {
-  const F = globalThis.SogFrame?.fold;
-  return F ? F.fold(o) : `<section class="${esc(o.cls)}"><h4>${o.head ?? esc(o.title)}</h4>${o.body}</section>`;
+  return FD.fold(o);
 }
 
 /** Ce que la fenêtre propose (SOG-0508) : les briques du catalogue dont le vol juge la clé (SOG-0500 (c)), les familles nommées dans la
@@ -1508,14 +1508,14 @@ function kwStart(s) {
       ev.preventDefault();
       kwClose(s);
     },
-    offFold = globalThis.SogFrame?.fold?.wireFolds(el, (k, open) => {
+    offFold = FD.wireFolds(el, (k, open) => {
       if (s.ed) s.ed.kfold = {
         ...(s.ed.kfold || {}),
         [k]: open
       };
     }, {
       get: k => s.ed?.kfold?.[k]
-    }) || (() => {});
+    });
   el.addEventListener('click', click);
   el.addEventListener('input', input);
   document.addEventListener('keydown', key);

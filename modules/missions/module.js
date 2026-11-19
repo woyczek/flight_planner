@@ -59,6 +59,7 @@ export const meta = {
     '../../frame/lib/precision.js', // SOG-0516 : les paliers d'un posé de précision, importés par drawers.js (il importe crossing.js et untrusted.js, déjà là)
     '../../frame/lib/geo.js', // SOG-0468 (2) : gcNm, que crossing.js importera (V3 Frame ; cas I26)
     '../../frame/lib/sortlist.js', // SOG-0487 : le tableau triable du registre (il importe untrusted.js, déjà là)
+    '../../frame/lib/fold.js', // SOG-0508 : les plis de la fenêtre des briques, importés par editor_view.js (pur, sans import)
     '../maps/lib/map_base.js?v=0', '../maps/lib/map_edit.js?v=0',
     '../maps/render.js?v=0', // la carte de l'atelier (SOG-0444, lot P2) : le socle de carte, son édition, son rendu
     // SOG-0464 : le profil vertical de la Carte sous la carte de l'atelier (modules/maps/lib/profile_embed.js, de BUGS SOG) et les scripts
