@@ -5244,6 +5244,21 @@
    "state": "todo"
   },
   {
+   "id": "Q-0120",
+   "fiche": "SOG-0513",
+   "app": "pilote",
+   "question": "Le contrôle des directs au Royaume-Uni (ROUTE165 de ton IFPS) demande un nouveau lecteur (parseur 31) : toutes tes zones devront être reconstruites UNE fois. Quand ?",
+   "context": "Le lecteur garde l'espace supérieur de Londres et la zone FRA ouest du Royaume-Uni. Le parseur change pour toutes les zones : l'écran Données les dira « à reconstruire » (une seule fois). Le push attend la correction de l'étiquette « à publier » (SOG-0510). Le moteur est testé d'ici là sur des contours inventés.",
+   "options": [
+    "Dès que SOG-0510 est livrée : je reconstruis tout une fois",
+    "Plus tard : grouper avec le prochain changement de lecteur",
+    "Jamais pour ça : le contrôle des directs au Royaume-Uni ne vaut pas une reconstruction"
+   ],
+   "since": "2026-11-19",
+   "state": "todo",
+   "recommended": 0
+  },
+  {
    "id": "Q-0058",
    "fiche": "SOG-0347",
    "app": "maintenance",
