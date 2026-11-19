@@ -213,6 +213,16 @@ const LOCAL_SOURCES = Object.freeze(['xplane', 'eurocontrol', 'eurocontrol_rad',
 /** Ce repère porte-t-il un marqueur local ? */
 const isLocal = x => !!x.local || [x.source, x.zone].some(v => typeof v === 'string' && LOCAL_SOURCES.includes(v.trim().toLowerCase()));
 
+/** SOG-0506 (Sécurisation, règle du 18 nov., SOG-0153 / Q-0061) : une position venue de ce lieu de la base peut-elle aller dans un fichier
+ *  de mission ? Faux pour ce qui n'est pas un objet, et pour un lieu qui porte un marqueur local (isLocal) — lui, ou l'enregistrement
+ *  `item` qu'il enveloppe (aerodb.coordsAll : { kind, item, zone… }). LA garde de tous les chemins qui écrivent ou verrouillent une position
+ *  de la base (l'atelier : adPosOf, edPlaceFromBase, edNameBase, edPtSrc ; ici : refData, seekRows). Pur. */
+export function publishable(x) {
+  if (!x || typeof x !== 'object' || Array.isArray(x) || isLocal(x)) return false;
+  const item = x.item;
+  return !(item && typeof item === 'object' && isLocal(item));
+}
+
 /** Les repères de la base aéronautique d'un cadre, tels que la couche du socle les prend (referenceLayer : { aerodromes [{ icao, lat,
  *  lon }], navaids, points, vrp [{ id, lat, lon }] }), bornés : une position dans ses bornes, un identifiant de vingt-quatre signes
  *  au plus, trois cents par sorte ; le reste de ce que la base rend n'est pas gardé. **Un repère qui porte un marqueur local est
@@ -223,7 +233,7 @@ export function refData(lists) {
     take = (list, idOf) => {
       const out = [];
       for (const x of Array.isArray(list) ? list.slice(0, 5000) : []) {
-        const at = x && typeof x === 'object' && !isLocal(x) ? posOf(x.lat, x.lon) : null,
+        const at = publishable(x) ? posOf(x.lat, x.lon) : null,
           raw = at ? idOf(x) : '',
           id = typeof raw === 'string' || typeof raw === 'number' ? String(raw).trim().slice(0, 24) : '';
         if (id && out.length < MAPB.refMax) out.push({
@@ -290,10 +300,10 @@ export function seekRows(exact, found) {
     };
   for (const x of list(exact)) {
     const item = x && typeof x === 'object' && x.item && typeof x.item === 'object' ? x.item : null;
-    if (item && !isLocal(x) && !isLocal(item)) add(x.kind, item.icao || item.id || item.name, item.name, item.lat, item.lon);
+    if (item && publishable(x)) add(x.kind, item.icao || item.id || item.name, item.name, item.lat, item.lon);
   }
   for (const x of list(found))
-    if (x && typeof x === 'object' && !isLocal(x)) add(x.kind, x.code || x.name, x.name, x.lat, x.lon);
+    if (publishable(x)) add(x.kind, x.code || x.name, x.name, x.lat, x.lon);
   return out.map(r => out.filter(q => q.label === r.label).length > 1 ? {
     ...r,
     label: `${r.label} · ${r.lat.toFixed(2)}, ${r.lon.toFixed(2)}`

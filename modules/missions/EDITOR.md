@@ -1572,6 +1572,16 @@ et ce que le vol sait en juger ; une condition que le vol ne sait pas juger n'es
   retype is NOT rewritten (opening a mission writes nothing, « Annuler » asks nothing): the route of the map and the profile go through the position of
   the base all the same (`ED.endsAt`, for the drawing only), where the map already showed it.
 - Captures `P14a_390_verrouille.png`, `P14a_1280_verrouille.png` (the sheet locked; at 1280 the dashed route through XTST beside it).
+- **A position of a LOCAL source is never written** (Sécurisation's retouch, the rule of 18 Nov: SOG-0153, Q-0061; noreg N168). A position that comes
+  from X-Plane, Eurocontrol (and its RAD), Little Navmap, or from a record marked `local`, never goes into a file of the data repository. ONE guard,
+  `EM.publishable(x)` (editor_map.js: the `isLocal` of the map — `source` or `zone` in `xplane`, `eurocontrol`, `eurocontrol_rad`, `lnm`, or `local`
+  true —, on the record and on the `item` it wraps), and every path that writes or locks a position of the base goes through it: `adPosOf` (the first
+  PUBLISHABLE aerodrome of the code: a local one gives no position to the Cadre, to `edEndFill`, to the lock of a departure or an arrival, nor to the
+  drawing — the code stays a known terrain, `noteAerodrome`), `edNameBase` (the code typed, and the point chosen in the list of the Name: the common
+  field does not say its source, so the base confirms it publishable at its position before anything is written — one answer of the base later than
+  before), `edPlaceFromBase` (the record of the base is now a required argument, refused unless publishable: the references of the map pass it, already
+  filtered by `refData`), `edPtSrc` (a local record locks nothing); `refData` and `seekRows` use the same function. A local terrain or point typed in the
+  workshop keeps its code, with no position (« à placer »).
 
 ### 7 quattuorquinquagies. The workshop no longer asks for the radii the user's tolerances replace (19 Nov 2026; SOG-0507; noreg N165, N166, N167)
 

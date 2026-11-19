@@ -8607,6 +8607,8 @@ def n124(c):
     c.key('Enter')
     val = lambda f: c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]').value")  # noqa: E731
     c.until(f"document.querySelector('{E} [data-plform] input[data-f=name]').value === 'XPT01'", timeout=5000, what='XPT01 chosen by the keyboard')
+    # SOG-0506: the base confirms the point chosen is publishable before its position is written (one answer of the base later)
+    c.until(f"document.querySelector('{E} [data-plform] input[data-f=lat]').value !== ''", timeout=5000, what='the position of XPT01 written')
     c.ok(abs(float(val('lat')) - 44.9) < 0.001 and abs(float(val('lon')) - 1.45) < 0.001 and val('id') == 'PT3', [val('id'), val('name'), val('lat'), val('lon')],
          'the place takes the POSITION of the base and the code as its name; its identifier PT3 stays')
     c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
@@ -10975,14 +10977,15 @@ _LK_STATE = f"""() => {{ const f = document.querySelector('{E} [data-plform]'), 
   return [['lat', 'lon'].map(k => f?.querySelector('input[data-f=' + k + ']')?.readOnly === true), src && !src.hidden ? src.textContent.replace(/[\\s\\u00a0\\u202f]+/g, ' ').trim() : ''] }}"""
 
 
-def _lk_open(c, width):
-    """Opens the WHOLE workshop of the trial mission without target on the invented base of SOG-0506, the Lieux shown, the map of the workshop there, at `width`."""
+def _lk_open(c, width, base=None):
+    """Opens the WHOLE workshop of the trial mission without target on the invented base of SOG-0506 (`base`: another one, N168), the Lieux shown, the map of the
+    workshop there, at `width`."""
     c.page.add_init_script(_EDMAP_HOOK)
     c.page.set_viewport_size({'width': 1280, 'height': c.height})
     c.page.goto(c.base + '/frame/manifest.webmanifest')
     c.js(_REG_CLEAR)
     c.js(_TEXTS_JS, _PB_TEXTS)
-    c.open('missions', wait=False, app='company', aero_extra=_LK_BASE)
+    c.open('missions', wait=False, app='company', aero_extra=base or _LK_BASE)
     c.until(f"!!document.querySelector('{M} [data-do=regopen]')", timeout=15000, what='the Registry button')
     c.tap(f'{M} [data-do="regopen"]')
     c.until(_REG_READ, timeout=20000, what='the registry read, every file read')
@@ -11285,3 +11288,104 @@ def n167(c):
              f'{width}: the duration written; the `radius_m` of the landing and the `radius_nm` of the arrival the file carries are kept as they are', what='the file written')
         ed_leave(c)
         c.js(_REG_CLEAR)
+
+
+# SOG-0506 (Sécurisation, the rule of 18 Nov, SOG-0153 / Q-0061): a position that comes from X-Plane, Eurocontrol, Little Navmap, or from a record marked
+# `local`, never goes into a file of the data repository. The invented base of this case: an aerodrome XLNM whose source is « lnm », an aerodrome XLOC
+# marked `local`, a reporting point XLV whose source is « lnm » (it is proposed in the list of the Name), beside the published XTSU of _PB_BASE.
+_LOCAL_BASE = dict(_PB_BASE, aerodromes=[{'icao': 'XLNM', 'name': 'XLNM TEST LNM', 'lat': 44.3, 'lon': 1.9, 'elev': 100, 'source': 'lnm'},
+                                         {'icao': 'XLOC', 'name': 'XLOC TEST LOCAL', 'lat': 44.2, 'lon': 1.7, 'elev': 100, 'local': True}] + _PB_BASE['aerodromes'],
+                   vrp=[{'id': 'XLV', 'name': 'XLV TEST LNM', 'lat': 44.35, 'lon': 1.65, 'source': 'lnm'}] + _PB_BASE['vrp'])
+
+
+@case('N168', 'Missions › the workshop never writes a position of a LOCAL source into the mission (SOG-0506, the retouch of Sécurisation): on an invented base where '
+      'the aerodrome XLNM comes from Little Navmap (source « lnm »), the aerodrome XLOC is marked `local` and the reporting point XLV comes from « lnm », a turning point '
+      'named « xlnm » or « xloc », or XLV chosen in the list of its Name, takes NO position (the Name stays, latitude and longitude empty); a point placed by hand at the '
+      'position of XLNM and named XLNM is not locked; the published XTSU still gives its position; the file written carries none of these positions; in a new mission, '
+      'XLNM typed in DÉPART and XLOC in ARRIVÉE keep their code and get no position, in the Lieux and in the file', 'N',
+      tags=('missions', 'security'), designs=('standard',), screens=False, langs4=False,
+      rule='SOG-0506 (Sécurisation: the guard of the map, `isLocal` of editor_map.js, applied to EVERY path that writes a position of the base — EM.publishable): '
+      'modules/missions/editor_view.js `adPosOf`, `edNameBase`, `edPlaceFromBase`, `edPtSrc`, `edEndFill`; modules/missions/editor_map.js `publishable`')
+def n168(c):
+    w = c.page.viewport_size['width'] if c.page.viewport_size else 1280
+    val = lambda i, f: c.js(_EDPLACE_VAL, [i, f])  # noqa: E731
+    name = f'{E} [data-plform] input[data-k=edplname]'
+
+    def named(i, text):
+        """A new turning point, the name typed and left (the change of the field)."""
+        c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+        c.until(f"({_EDPLACE_IDS}).length === {i + 2}", what='a turning point added')
+        c.page.fill(f'{E} [data-plform] [data-f=name]', text)
+        c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
+
+    c.page.goto(c.base + '/frame/manifest.webmanifest')
+    _lk_open(c, w, _LOCAL_BASE)
+    # 1. a turning point named by the code of a local aerodrome (« lnm », then `local`): no position
+    for i, text in ((5, 'xlnm'), (6, 'xloc')):
+        named(i, text)
+        c.wait(800)
+        c.eq([val(i, 'name'), val(i, 'lat'), val(i, 'lon')], [text, '', ''], f'« {text} », an aerodrome of a local source: the Name stays, no position', what=text)
+    # 2. a local reporting point chosen in the list of the Name: no position either
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"({_EDPLACE_IDS}).length === 9", what='a turning point added')
+    c.js(f"document.querySelector('{E} [data-plform]').scrollIntoView({{block: 'center'}})")
+    c.page.locator(name).press_sequentially('xlv', delay=40)
+    c.until(f"({_AD_SUG}).some(x => x.startsWith('XLV@'))", timeout=8000, what='the local reporting point XLV proposed for « xlv »')
+    for _ in range(next(k for k, x in enumerate(c.quiet(_AD_SUG)) if x.startswith('XLV@')) + 1):
+        c.key('ArrowDown')
+    c.key('Enter')
+    c.until(f"document.querySelector('{name}').value === 'XLV'", timeout=5000, what='XLV chosen by the keyboard')
+    c.wait(800)
+    c.eq([val(7, 'name'), val(7, 'lat'), val(7, 'lon')], ['XLV', '', ''], 'XLV (source « lnm ») chosen in the list: its code, no position', what='XLV')
+    # 3. the published aerodrome still gives its position (the guard refuses the local sources only)
+    named(8, 'xtsu')
+    c.until(f"document.querySelector('{E} [data-edplaces] [data-k=edplace][data-i=\"8\"][data-f=lat]')?.value !== ''", timeout=8000, what='XTSU placed from the base')
+    c.eq([val(8, 'name'), val(8, 'lat'), val(8, 'lon')], ['XTSU', '44', '2'], 'the published XTSU: its code and its position', what='XTSU')
+    # 4. a point placed by hand at the position of XLNM and named XLNM: not locked (a local record locks nothing)
+    c.tap(f'{E} [data-do="edplaceadd"][data-kind="pt"]')
+    c.until(f"({_EDPLACE_IDS}).length === 11", what='a turning point added')
+    c.page.fill(f'{E} [data-plform] [data-f=lat]', '44.3')
+    c.page.fill(f'{E} [data-plform] [data-f=lon]', '1.9')
+    c.page.fill(f'{E} [data-plform] [data-f=name]', 'XLNM')
+    c.page.locator(f'{E} [data-plform] [data-f=name]').press('Tab')
+    c.wait(800)
+    c.eq([c.js(_LK_STATE), val(9, 'lat'), val(9, 'lon')], [[[False, False], ''], '44.3', '1.9'],
+         'a point at the position of the local XLNM, named XLNM: not locked, no source said, its position as typed', what='not locked')
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    got = c.js(_PB_FILE, 'missions/X_REG/X-001A/missionX-001A.yaml')['pts']
+    c.eq(got[2:], [['PT3', 'xlnm', None, None], ['PT4', 'xloc', None, None], ['PT5', 'XLV', None, None], ['PT6', 'XTSU', 44, 2], ['PT7', 'XLNM', 44.3, 1.9]],
+         'the file: no position of a local source (the one typed by hand is the author\'s), the published XTSU with its own', what='the file')
+    ed_leave(c)
+    # 5. a new mission: XLNM typed in DÉPART, XLOC in ARRIVÉE — their code, no position, in the Lieux and in the file
+    c.until(f"!!document.querySelector('{R} [data-do=edcreate]')", timeout=10000, what='back to the registry')
+    if c.count(f'{R} [data-regsheet]'):
+        c.tap(f'{R} [data-regsheet] [data-do=regsheetclose] >> visible=true')
+    c.tap(f'{R} [data-do="edcreate"]')
+    c.until(f"!!document.querySelector('{E}')", what='the editor')
+    c.page.select_option(f'{E} select[data-k=edfam]', 'REG')
+    c.until(f"!!document.querySelector('{E} input[data-k=edid]')?.value", what='the identifier proposed')
+    _ed_fill(c, 'edid', 'X-008')
+    _ed_fill(c, 'edtitle', 'Terrains locaux')
+    if not c.count(f'{E} input[data-k=eddep]'):
+        c.tap(f'{E} [data-steps] [data-step="cadre"]')
+    c.until(f"!!document.querySelector('{E} input[data-k=eddep]')", what='the Cadre')
+    for k, code in (('eddep', 'XLNM'), ('edarr', 'XLOC')):
+        c.page.locator(f'{E} input[data-k={k}]').press_sequentially(code.lower(), delay=40)
+        c.page.locator(f'{E} input[data-k={k}]').press('Tab')
+        c.until(f"document.querySelector('{E} input[data-k={k}]').value === '{code}'", timeout=8000, what=f'« {code.lower()} » recognised: {code}')
+    c.wait(800)
+    ed_places(c)
+    for kind in ('dep', 'arr'):
+        c.tap(f"{E} [data-edplaces] [data-place][data-kind={kind}] [data-do=edplace]")
+        c.until(f"!!document.querySelector('{E} [data-plform] input[data-f=lat]')", what=f'the sheet of the line {kind}')
+        got = [c.js(f"document.querySelector('{E} [data-plform] input[data-f={f}]').value") for f in ('lat', 'lon')] + [c.js(_LK_STATE)]
+        c.eq(got, ['', '', [[False, False], '']], f'the line {kind} of a local aerodrome: no position written, nothing locked', what=kind)
+    c.tap(f'{E} [data-do="edsave"]')
+    c.until(f"!!document.querySelector('{E} [data-edpending]')", timeout=10000, what='saved')
+    ends = c.js("""async (p) => { if (!globalThis.jsyaml) await import('/frame/lib/js-yaml.min.js'); const d = globalThis.jsyaml.load(await (%s)(p), { schema: globalThis.jsyaml.CORE_SCHEMA });
+      return [d.origin, d.destination] }""" % _TEXT_OF, 'missions/X_REG/X-008/missionX-008.yaml')
+    c.ok(isinstance(ends, list) and all(isinstance(x, dict) and 'lat' not in x and 'lon' not in x for x in ends) and [x.get('icao') for x in ends] == ['XLNM', 'XLOC'], ends,
+         'the file: origin and destination written with their code and WITHOUT the position of a local source')
+    ed_leave(c)
+    c.js(_REG_CLEAR)

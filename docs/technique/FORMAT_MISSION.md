@@ -337,6 +337,8 @@ turning_points:
   rule reads an ordinary place.
 - An origin or a destination written without a position (the workshop before SOG-0506, a hand-written file) is read as before (`missionFlight` gives
   `depAt: null`, the frame resolves the terrain by its `icao`); the workshop draws its route through the position of the base without rewriting the file.
+- **Never a position of a local source** (Sécurisation, SOG-0153 / Q-0061): a place of the base that comes from X-Plane, Eurocontrol, Little Navmap or a
+  record marked `local` gives the workshop its code only — its position is never written in a mission file (the place stays « à placer »).
 
 ## 5. An untrusted file
 

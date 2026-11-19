@@ -2329,11 +2329,15 @@ function edPlaceFromBase(s, e, {
   code,
   lat,
   lon,
-  from = ''
+  from = '',
+  rec
 }) {
   // garde de Sécurisation : la base est un fichier du dépôt, non fiable — position dans les limites, code court, sinon rien n'est écrit
   const bound = (v, max) => v !== null && v !== undefined && String(v).trim() !== '' && Number.isFinite(+v) && Math.abs(+v) <= max;
   const clean = String(code ?? '').trim().toUpperCase();
+  // SOG-0506 (Sécurisation) : `rec`, le lieu de la base d'où vient la position, est obligatoire — une source locale (X-Plane, Eurocontrol,
+  // Little Navmap, `local`) n'écrit jamais sa position dans la mission (EM.publishable, la garde de la carte)
+  if (!EM.publishable(rec)) return -1;
   if (!bound(lat, 90) || !bound(lon, 180) || !/^[A-Z0-9][A-Z0-9 ./-]{0,23}$/.test(clean)) return -1;
   const num = v => String(+(+v).toFixed(5));
   let i = at;
@@ -2409,9 +2413,8 @@ function edPtSrc(s, code, at) {
     Promise.resolve().then(() => a.coordsAll(code, {
       near: [+at.lat, +at.lon]
     })).catch(() => []).then(all => {
-      const hit = (Array.isArray(all) ? all : []).find(x => Math.abs(+x?.item?.lat) <= 90 && Math.abs(+x?.item?.lon) <= 180 &&
-        edSamePos(x
-          .item, at));
+      // SOG-0506 (Sécurisation) : un lieu de source locale ne verrouille rien (EM.publishable)
+      const hit = (Array.isArray(all) ? all : []).find(x => EM.publishable(x) && edPos(x.item) && edSamePos(x.item, at));
       const v = hit ? {
         kind: Object.hasOwn(SRC_KINDS, hit.kind) ? SRC_KINDS[hit.kind] : ''
       } : null;
@@ -2493,35 +2496,42 @@ function edEndFill(s, e, key) {
 }
 
 /** SOG-0495 : le nom d'un point tournant, d'une cible ou d'un rendez-vous venu d'être tapé (un « change ») est-il un point de la base ?
- *  Un lieu SANS position qui porte un mot seul demande la base (aerodb.coordsAll, le plus proche d'abord) ; si elle le connaît, le lieu
- *  prend sa position et son code (edPlaceFromBase). Rien n'est changé si le lieu a déjà une position, si le nom a changé entre-temps ou
- *  si la base ne répond rien. */
-function edNameBase(s, e, i) {
+ *  Un lieu SANS position qui porte un mot seul demande la base (aerodb.coordsAll, le plus proche d'abord) ; si elle connaît un lieu
+ *  PUBLIABLE de ce code (EM.publishable, SOG-0506 : jamais une source locale), le lieu prend sa position et son code (edPlaceFromBase).
+ *  `pick` (SOG-0506) : le point choisi dans la liste du Nom ({ code, lat, lon } du champ commun, qui ne dit pas sa source) — seul CE lieu
+ *  de la base, à cette position, est retenu, et la base le confirme publiable avant qu'une position soit écrite. Rien n'est changé si
+ *  le lieu a déjà une position (sauf un choix de la liste), si le nom a changé entre-temps ou si la base ne répond rien de publiable. */
+function edNameBase(s, e, i, pick = null) {
   const row = e.places?.[i],
     word = String(row?.name || '').trim().toUpperCase(),
     a = s.ctx.aerodb;
-  if (!row || !['pt', 'target', 'rdv'].includes(row.kind) || edPos(row) || !/^\S{2,24}$/.test(word) || typeof a?.coordsAll !== 'function')
-    return;
-  const near = edPtNear(s);
+  if (!row || !['pt', 'target', 'rdv'].includes(row.kind) || !pick && edPos(row) || !/^\S{2,24}$/.test(word) || typeof a?.coordsAll !==
+    'function') return;
+  const at = pick ? edPos(pick) : null;
+  if (pick && (!at || String(pick.code ?? '').trim().toUpperCase() !== word)) return;
+  const near = at || edPtNear(s);
   Promise.resolve().then(() => a.coordsAll(word, near ? {
     near: [near.lat, near.lon]
   } : {})).catch(() => []).then(all => {
-    const hit = (Array.isArray(all) ? all : []).find(x => Number.isFinite(+x?.item?.lat) && Number.isFinite(+x?.item?.lon));
+    // SOG-0506 (Sécurisation) : le premier lieu publiable, borné (et, pour un choix de la liste, celui-là même)
+    const hit = (Array.isArray(all) ? all : []).find(x => EM.publishable(x) && edPos(x.item) && (!at || edSamePos(x.item, at)));
     const now = state() === s && s.ed === e ? e.places?.[i] : null;
-    if (!hit || !now || now.id !== row.id || edPos(now) || String(now.name || '').trim().toUpperCase() !== word) return;
+    if (!hit || !now || now.id !== row.id || !at && edPos(now) || String(now.name || '').trim().toUpperCase() !== word) return;
     edPlaceFromBase(s, e, {
       at: i,
       code: word,
       lat: +hit.item.lat,
       lon: +hit.item.lon,
-      from: hit.kind // SOG-0506 : le genre du point dans la base, pour nommer la source
+      from: hit.kind, // SOG-0506 : le genre du point dans la base, pour nommer la source
+      rec: hit
     });
     edRefresh(s);
   });
 }
 
 /** Le Nom d'un lieu qui peut être un point de la base vient d'être retouché (SOG-0480, le champ commun ayant déjà la main) : un CHOIX
- *  de la liste donne au lieu le code (son nom) et la position de la base (positionOf) ; un terrain choisi n'a pas de position dans la
+ *  de la liste donne au lieu le code (son nom) et la position de la base (positionOf) — SOG-0506 : par edNameBase, qui fait confirmer
+ *  par la base que ce point est publiable (la liste du champ commun ne dit pas sa source) ; un terrain choisi n'a pas de position dans la
  *  liste, sa position est demandée comme à un code tapé (edNameBase). Un texte libre reste tel quel et rien n'est écrit tant qu'aucun
  *  point n'est choisi ; le « change » qui suit un choix ne refait rien (le lieu a déjà sa position). */
 function edPlName(s, e, ev, i) {
@@ -2529,12 +2539,7 @@ function edPlName(s, e, ev, i) {
     row = e.places?.[i];
   pt.onInput(ev);
   if (!pt.isPicking() || !row || !['pt', 'target', 'rdv'].includes(row.kind)) return;
-  const at = pt.positionOf('edplname');
-  if (!at) return edNameBase(s, e, i);
-  edPlaceFromBase(s, e, {
-    at: i,
-    ...at
-  });
+  edNameBase(s, e, i, pt.positionOf('edplname'));
 }
 
 /** Un champ du Cadre retenu : la valeur (`key` : dep, arr, family…), le titre proposé d'une liaison qui suit les deux bouts, et la ligne
@@ -3267,17 +3272,31 @@ function adPosOf(s, icao) {
     Promise.resolve().then(() => s.ctx.aerodb.aerodromes({
       icao: k
     })).then(list => {
-      const a = list?.[0],
-        lat = +a?.lat,
-        lon = +a?.lon;
-      return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? {
-        lat,
-        lon
-      } : null;
-    }).catch(() => null).then(v => {
+      const at = a => {
+          const lat = +a?.lat,
+            lon = +a?.lon;
+          return Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 ? {
+            lat,
+            lon
+          } : null;
+        },
+        all = Array.isArray(list) ? list.slice(0, 50) : [];
+      // SOG-0506 (Sécurisation) : la position du premier terrain PUBLIABLE de ce code (EM.publishable) — un terrain de source locale n'en
+      // donne aucune, ni au Cadre, ni à la carte, ni au verrou ; le code reste un terrain connu (SOG-0469)
+      return {
+        v: at(all.find(a => EM.publishable(a) && at(a))),
+        known: all.some(a => at(a))
+      };
+    }).catch(() => ({
+      v: null,
+      known: false
+    })).then(({
+      v,
+      known
+    }) => {
       s.adPos.set(k, v);
-      ED.noteAerodrome(k, !!v); // un texte n'est un terrain que si la base le connaît (SOG-0469)
-      if (v && state() === s && s.ed) {
+      ED.noteAerodrome(k, known); // un texte n'est un terrain que si la base le connaît (SOG-0469)
+      if (known && state() === s && s.ed) {
         edRecode(s);
         for (const key of ['dep', 'arr']) edEndFill(s, s.ed, key); // SOG-0506 : la position de la base écrite au terrain saisi
         edRefresh(s);
@@ -3798,7 +3817,8 @@ export function edClick(s, b) {
         code: r.id,
         lat: r.lat,
         lon: r.lon,
-        from: r.kind // SOG-0506 : le genre du repère, la source du lieu
+        from: r.kind, // SOG-0506 : le genre du repère, la source du lieu
+        rec: r // le repère de la carte (EM.refData l'a déjà passé par EM.publishable)
       });
       if (at < 0) return edMapShow(s);
       return edMapPick(s, e, at);
@@ -3962,7 +3982,8 @@ export function edClick(s, b) {
           code: ref.id,
           lat: ref.lat,
           lon: ref.lon,
-          from: ref.kind // SOG-0506 : le genre du repère, la source du lieu
+          from: ref.kind, // SOG-0506 : le genre du repère, la source du lieu
+          rec: ref // le repère de la carte (EM.refData l'a déjà passé par EM.publishable)
         });
         return at < 0 ? edMapShow(s) : edMapPick(s, s.ed, at);
       }
