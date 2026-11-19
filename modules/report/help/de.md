@@ -33,7 +33,11 @@ Beispiel VIP oder Überführung bei den Sondereinsätzen). Solange Sie diesen Sc
 
 <a id="report-step-3"></a>**Das Ergebnis.** Im letzten Schritt: das Ergebnis, Ihre Beobachtungen, die Besatzung (Sie zuerst, als Kommandant) und
 der Kraftstoff beim Start und bei der Landung. Unstimmigkeiten — Zeiten in falscher Reihenfolge, Datum in der Zukunft,
-Kraftstoff, der zunimmt — werden gemeldet.
+Kraftstoff, der zunimmt — werden gemeldet. Der Flug einer Mission, übernommen mit „Aktueller Flug“, bringt seine Präzisionslandungen
+mit: die Stufe (ausgezeichnet, perfekt, gelungen, teilweise) und den Abstand zum Zielpunkt, neu berechnet aus dem Einsatzlogbuch nach
+der Regel der Missionsdatei; „Einsatzlogbuch“ sagt, woher sie kommen. Nur die Landungen dieses Fluges zählen (seit seinem Start). Ein
+korrigierter Abstand bewertet die Stufe neu; die Stufe bleibt änderbar, und nichts wird ohne Sie gesendet. Ein von Hand geändertes
+Logbuch spielt eine Stufe nach, es beweist sie nicht.
 
 <a id="report-load"></a>**Zuladung.** „Verwenden“ übernimmt Familie und Serie des Flugs; Sie können sie ändern, der Bericht hat das letzte Wort. Eine Serie, die etwas befördert (Fracht, Passagiere, VIP), fügt im letzten Schritt die Karte „Zuladung“ mit einem einzigen Feld hinzu: die beförderte Fracht in kg oder die Zahl der Passagiere. Jede andere Serie fügt nichts hinzu.
 

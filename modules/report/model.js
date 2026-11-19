@@ -120,6 +120,7 @@ const emptyMission = (family = '') => ({
   events: [],
   missionData: {},
   results: {
+    precisionLandings: [], // SOG-0516 : [{ tier, distNm }] — les posés de précision du vol, palier recalculé du carnet (module.js precisionOf)
     outcome: '',
     detail: '',
     interruptionReason: '',

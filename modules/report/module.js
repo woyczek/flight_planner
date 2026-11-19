@@ -14,6 +14,7 @@ import * as MC from '../../frame/lib/mission_categories.js'; // les catégories 
 import * as MT from '../../frame/lib/mission_themes.js'; // les thèmes de la compagnie, la charge d'une série (SOG-0202 T2)
 import * as MS from '../../frame/lib/mission.js'; // categoryOf
 import * as CF from '../../frame/lib/current_flight.js';
+import * as P from '../../frame/lib/precision.js'; // SOG-0516 : le palier d'un posé de précision, RECALCULÉ du carnet (jamais lu)
 import {
   formatLevel
 } from '../../frame/lib/route_text.js';
@@ -54,7 +55,10 @@ export const meta = {
   title: ['Compte rendu', 'Mission report', 'Einsatzbericht', 'Informe de misión'], // en-tête du téléphone (règle 16)
   apps: ['pilot'],
   level: 1,
-  reads: ['cr/', 'pilot/', 'cache/report/', 'airline/'], // airline/ : les catégories de la compagnie (SOG-0041)
+  reads: ['cr/', 'pilot/', 'cache/report/', 'airline/',
+    'missions/'
+  ], // airline/ : les catégories de la compagnie (SOG-0041) ; missions/ :
+  // le registre et le fichier de la mission du vol, lus pour recalculer les paliers des posés de précision (SOG-0516)
   // « Mesures » (§ 10.37 A étape 3) : les journaux du dossier Output du poste par le travail stats/output d'AeroDB
   launcher: {
     routes: ['regen/job', 'regen/job/cancel'],
@@ -78,6 +82,9 @@ export const meta = {
     '../../frame/lib/mission_themes.js', '../../frame/lib/airline.js',
     '../../frame/lib/mission.js',
     '../../frame/lib/adnames.js', '../../frame/lib/untrusted.js', // importés par mission.js (cas I26 ; Création, 18/11)
+    '../../frame/lib/precision.js', '../../frame/lib/crossing.js',
+    '../../frame/lib/geo.js', // SOG-0516 : precision.js et ce qu'il importe (I26)
+    '../../frame/lib/js-yaml.min.js', // SOG-0516 : le registre et la mission sont en YAML (chargé à la demande)
     '../../frame/lib/flight_time.js',
     '../../frame/lib/flight_path.js',
     '../../frame/lib/geo.js', // importé par current_flight.js et flight_path.js (cas I26)
@@ -148,6 +155,10 @@ const TX = {
   takenAltn: L('dégagement {a}', 'alternate {a}', 'Ausweich {a}', 'alternativo {a}'),
   srcStarted: L('Vol démarré (carburant)', 'Flight started (fuel)', 'Flug gestartet (Kraftstoff)', 'Vuelo iniciado (combustible)'),
   srcQuote: L('Devis carburant', 'Fuel quote', 'Kraftstoffkalkulation', 'Cálculo de combustible'),
+  // SOG-0516 : les posés de précision du vol, recalculés du carnet de sa mission
+  srcBook: L('Carnet de la mission', 'Mission logbook', 'Einsatzlogbuch', 'Cuaderno de la misión'),
+  precision: L('Posés de précision', 'Precision landings', 'Präzisionslandungen', 'Aterrizajes de precisión'),
+  addPrecision: L('+ Posé', '+ Landing', '+ Landung', '+ Aterrizaje'),
   // SOG-0088 (a) : un point imposé par la mission sauté par un direct du contrôle (route.directs de Carburant)
   notOverflown: L('{id} non survolé : direct du contrôle vers {to} ({t}).', '{id} not overflown: direct from ATC to {to} ({t}).',
     '{id} nicht überflogen: Direkt der Flugsicherung nach {to} ({t}).', '{id} no sobrevolado: directo del control a {to} ({t}).'),
@@ -581,6 +592,75 @@ function collection(col, title) {
     ${srcLine(items.flatMap((_, i) => col.fields.map(fd => ({ path: `${col.path}.${i}.${fd.path}`, label: fd.label }))))}
     ${items.map((it, i) => `<div class="rp-item"><div class="f-grid">${col.fields.map(fd => control(fd, it?.[fd.path], `${col.path}.${i}.`)).join('')}</div><button type="button" data-do="del" data-i="${i}">${esc(tt(TX.remove))}</button></div>`).join('')}
     <button type="button" data-do="add">${esc(col.add ? tt(col.add) : tt(TX.addCrew))}</button></div>`;
+}
+// SOG-0516 : les posés de précision du vol (results.precisionLandings) : le palier (les mots de precision.js) et la distance au point visé,
+// en milles marins ; une distance corrigée rejuge le palier (P.tierOf, onInput)
+const PREC = 'results.precisionLandings';
+const precCol = () => ({
+  path: PREC,
+  add: TX.addPrecision,
+  empty: () => ({
+    tier: '',
+    distNm: null
+  }),
+  fields: [f('tier', L('Palier', 'Tier', 'Stufe', 'Nivel'), 'select', {
+    blank: true,
+    options: P.TIERS.map(t => ({
+      value: t,
+      label: P.TIER_TEXT[t]
+    }))
+  }), f('distNm', L('Distance au point (NM)', 'Distance to the point (NM)', 'Abstand zum Punkt (NM)', 'Distancia al punto (NM)'),
+    'number')]
+});
+/** SOG-0516 : la liste des posés d'un CR relu (un brouillon, un CR enregistré : des fichiers que tout pilote écrit), bornée — vingt lignes au
+ *  plus, un palier de P.TIERS ou '', une distance finie de 0 au dernier palier ou null ; le reste est oublié. */
+function precClean(m) {
+  const list = M.get(m, PREC),
+    last = P.PRECISION[P.PRECISION.length - 1].nm;
+  M.set(m, PREC, (Array.isArray(list) ? list : []).slice(0, 20).filter(x => x && typeof x === 'object' && !Array.isArray(x)).map(x => ({
+    tier: P.TIERS.includes(x.tier) ? x.tier : '',
+    distNm: typeof x.distNm === 'number' && Number.isFinite(x.distNm) && x.distNm >= 0 && x.distNm <= last ? x.distNm : null
+  })));
+  return m;
+}
+/** SOG-0516 : les posés de précision du vol en cours, recalculés : la mission du vol (son identifiant, cf.mission) lue au registre puis
+ *  dans son fichier, le carnet de ce pilote pour elle (pilot/<TRI>/missions/<ID>.json), et P.precisionLandings, qui RECALCULE chaque palier
+ *  du relevé sur la règle de la mission (le palier écrit dans le carnet n'est jamais lu). Seuls les posés de CE vol : à partir de son
+ *  départ, deux minutes d'horloge au plus dans le futur. [{ tier, distNm }] ; [] sans mission, sans départ, sans carnet ou sur un fichier
+ *  illisible (jamais d'exception). Un carnet forgé rejoue un palier, il ne le prouve pas : le pilote relit, rien n'est envoyé sans lui. */
+async function precisionOf(cf) {
+  try {
+    const id = typeof cf?.mission === 'string' ? cf.mission.trim().toUpperCase() : '',
+      tri = String(S.ctx.identity?.trigram || '').trim().toUpperCase(),
+      from = Date.parse(cf?.started?.at || '');
+    if (!/^[A-Z]-\d{3}[A-Z]?$/.test(id) || !/^[A-Z]{3}$/.test(tri) || !Number.isFinite(from)) return [];
+    const reg = await yamlDoc('missions/mission_registry.yaml', MS.REGISTRY_NODES_MAX),
+      row = reg && MS.readRegistry(reg).find(r => r.id === id && r.folder && r.file),
+      doc = row && await yamlDoc(`missions/${row.folder}/${row.file}`, MS.NODES_MAX),
+      mission = doc && MS.readMission(doc),
+      book = mission && await S.ctx.data.get(`pilot/${tri}/missions/${id}.json`);
+    if (!mission || !book) return [];
+    const until = Date.now() + 2 * 60e3;
+    return P.precisionLandings(mission.drawers, book).filter(x => x.at >= from && x.at <= until).slice(0, 20).map(x => ({
+      tier: x.tier,
+      distNm: Math.round(x.distNm * 1000) / 1000
+    }));
+  } catch {
+    return [];
+  }
+}
+/** SOG-0516 : un document YAML de data/ (js-yaml du cadre, chargé une fois), ou null : absent, illisible, ou à ancres et trop grand
+ *  (MS.shapeOf, la règle de Missions : n'importe quel pilote écrit le dépôt). Lu au schéma CORE (Sécurisation) : une date non quotée
+ *  reste un texte, aucune étiquette !!set, !!binary ni clé de fusion « << » n'est construite (une étiquette inconnue lève : rien). */
+async function yamlDoc(path, max) {
+  const t = await S.ctx.data.get(path);
+  if (t && typeof t === 'object') return MS.shapeOf(t, max) ? null : t;
+  if (typeof t !== 'string' || !t.trim()) return null;
+  if (!globalThis.jsyaml) await import(new URL('../../frame/lib/js-yaml.min.js', import.meta.url).href);
+  const doc = globalThis.jsyaml.load(t, {
+    schema: globalThis.jsyaml.CORE_SCHEMA
+  });
+  return doc && typeof doc === 'object' && !MS.shapeOf(doc, max) ? doc : null;
 }
 // équipage (bloc crew de la V2 : rôle, nom ; rôles de la famille)
 const crewCol = () => ({
@@ -1028,7 +1108,7 @@ function renderBody() {
         <div class="f-row rp-next"><button type="button" data-step="2">${esc(tt(TX.next))}</button></div>
       </section>
       <section class="rp-step" data-s="2"${step === 2 ? '' : ' hidden'}>
-        <div class="f-card"><h2>${esc(tt(TX.steps[2]))}</h2>${grid([FIELDS.outcome, FIELDS.observations])}</div>
+        <div class="f-card"><h2>${esc(tt(TX.steps[2]))}</h2>${grid([FIELDS.outcome, FIELDS.observations])}${(M.get(m, PREC) || []).length ? collection(precCol(), tt(TX.precision)) : ''}</div>
         <div class="f-card">${collection(crewCol(), tt(TX.crew))}</div>
         <div class="f-card"><h2>${esc(tt(TX.fuel))}</h2>${grid([FIELDS.fuelUnit, FIELDS.fuelStart, FIELDS.fuelLanding])}</div>
         ${loadHtml()}
@@ -1320,7 +1400,7 @@ async function openReport(path) {
     by,
     ...mission
   } = r;
-  S.m = toZ(M.fillDefaults(mission, M.emptyMission(mission.family)));
+  S.m = precClean(toZ(M.fillDefaults(mission, M.emptyMission(mission.family)))); // SOG-0516 : ses posés relus bornés
   S.missionSeen = true; // CR déjà enregistré : sa mission a été choisie
   S.path = path;
   S.saved = savedOf(r); // sa compagnie, enregistrée avec lui (SOG-0181)
@@ -1378,6 +1458,7 @@ async function showRecent() {
 /** Définition du champ d'un chemin : champs communs, champs des blocs de la famille, champs de ses collections
  *  (« chemin.<n>.champ »). */
 function fieldOf(path) {
+  if (path.startsWith(`${PREC}.`)) return precCol().fields.find(x => x.path === path.slice(PREC.length + 1).replace(/^\d+\./, ''));
   const blocks = FAMILIES[S.m.family]?.blocks || [];
   return Object.values(FIELDS).find(x => x.path === path) || blocks.flatMap(b => b.fields || []).find(x => x.path === path) || blocks
     .map(b => b.collection).filter(Boolean).map(c => path.startsWith(`${c.path}.`) && c.fields.find(x => x.path === path.slice(c.path.length +
@@ -1422,6 +1503,15 @@ function onInput(e) {
   const [path, v] = readControl(el);
   const loadWas = path === 'series' ? loadNow()?.load || '' : '';
   M.set(S.m, path, v);
+  // SOG-0516 : une distance corrigée rejuge le palier de sa ligne (P.tierOf : '' au-delà du dernier palier) ; le palier reste modifiable
+  const dist = /^results\.precisionLandings\.(\d+)\.distNm$/.exec(path);
+  if (dist && typeof v === 'number' && Number.isFinite(v)) {
+    const tp = `${PREC}.${dist[1]}.tier`;
+    M.set(S.m, tp, P.tierOf(v));
+    delete S.sources[tp];
+    const sel = S.body.querySelector(`select[data-path="${tp}"]`);
+    if (sel) sel.value = M.get(S.m, tp);
+  }
   if (path === 'series' && (loadNow()?.load || '') !== loadWas) queueMicrotask(() => S?.body &&
     render()); // la carte « Charge » suit la série
   delete S.sources[path];
@@ -1530,7 +1620,15 @@ async function onClick(e) {
       takeCategory(cf.missionCategory); // SOG-0041 : la charge que demande la catégorie de sa mission
       takeTheme(cf); // SOG-0202 T2 : le thème et le sous-thème du vol
       notOverflown(cf);
+      // SOG-0516 : les posés de précision du vol, recalculés du carnet de sa mission ; seulement dans une liste vide (rien d'écrasé)
+      const prec = (M.get(S.m, PREC) || []).length ? [] : await precisionOf(cf);
+      if (!S) return;
+      const precVals = Object.fromEntries(prec.flatMap((x, i) => [
+        [`${PREC}.${i}.tier`, x.tier],
+        [`${PREC}.${i}.distNm`, x.distNm]
+      ]));
       return fill({
+        ...precVals,
         'aircraft.0.registration': a.registration,
         'aircraft.0.type': a.type,
         'aircraft.0.callsign': a.callsign,
@@ -1544,13 +1642,16 @@ async function onClick(e) {
         'fuel.unit': cf.quote?.block > 0 ? cf.quote.unit : '',
         'fuel.start': cf.quote?.block > 0 ? cf.quote.block : ''
       }, tt(TX.current), {
+        ...Object.fromEntries(Object.keys(precVals).map(k => [k, tt(TX.srcBook)])),
         'timeline.engineStart': tt(TX.srcStarted),
         'fuel.unit': tt(TX.srcQuote),
         'fuel.start': tt(TX.srcQuote)
       });
     }
     case 'add': {
-      const def = col === 'crew' ? crewCol() : (FAMILIES[S.m.family]?.blocks || []).map(x => x.collection).find(c => c?.path === col);
+      const def = col === 'crew' ? crewCol() : col === PREC ? precCol() : (FAMILIES[S.m.family]?.blocks || []).map(x => x.collection)
+        .find(c =>
+          c?.path === col);
       const list = M.get(S.m, col) || [];
       list.push(def.empty());
       M.set(S.m, col, list);
@@ -1586,7 +1687,7 @@ export async function mount(el, ctx) {
   ctx.helpAnchor?.(() => S?.body?.querySelector('.f-steps')?.offsetParent ? `report-step-${S.step + 1}` : 'report-steps');
   const d = await ctx.data.get(DRAFT);
   if (d?.mission?.family && FAMILIES[d.mission.family]) {
-    S.m = toZ(M.fillDefaults(d.mission, M.emptyMission(d.mission.family)));
+    S.m = precClean(toZ(M.fillDefaults(d.mission, M.emptyMission(d.mission.family)))); // SOG-0516 : ses posés relus bornés
     S.missionSeen = d.missionSeen !== false; // brouillon d'avant ce repère : tenu pour vu
     S.path = d.path || null;
     S.sources = d.sources || {};

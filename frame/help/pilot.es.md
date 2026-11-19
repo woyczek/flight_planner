@@ -608,7 +608,11 @@ de ✓: la familia y la serie de un informe nuevo se toman por defecto. La serie
 
 <a id="report-step-3"></a>**El resultado.** En el último paso: el resultado, sus observaciones, la tripulación (usted primero, como comandante) y
 el combustible a la salida y al aterrizaje. Las incoherencias — horas desordenadas, fecha futura, combustible que
-aumenta — se señalan.
+aumenta — se señalan. El vuelo de una misión tomado con «Vuelo en curso» trae sus aterrizajes de precisión: el nivel (excelente,
+perfecto, logrado, parcial) y la distancia al punto buscado, recalculados del cuaderno de la misión con la regla del archivo de la
+misión; «Cuaderno de la misión» dice de dónde vienen. Solo cuentan los aterrizajes de este vuelo (desde su salida). Una distancia
+corregida vuelve a juzgar el nivel; el nivel sigue siendo modificable y nada se envía sin usted. Un cuaderno modificado a mano repite
+un nivel, no lo prueba.
 
 <a id="report-load"></a>**Carga.** «Usar» toma la familia y la serie del vuelo; puede cambiarlos, el informe tiene la última palabra. Una serie que transporta (Carga, Pasajeros, VIP) añade, en el último paso, la tarjeta «Carga» con un solo campo: la carga embarcada en kg o el número de pasajeros. Cualquier otra serie no añade nada.
 

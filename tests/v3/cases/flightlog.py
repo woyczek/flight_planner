@@ -846,3 +846,107 @@ def l135(c):
     c.open('flightlog')
     c.until("!!document.querySelector('[data-module=flightlog]')", timeout=20000, what='Mes vols mounted')
     _no_breakpoint_lost(c, 'flightlog')
+
+
+# SOG-0516 (Features SOG's part): the report of the flight of a mission is prefilled with its precision landings, the tier RECOMPUTED from
+# the logbook on the mission's rule (frame/lib/precision.js). Invented data only: a helicopter, a marked point, one pilot.
+_PL_REGISTRY = """updatedAt: 2026-11-19
+missions:
+  - { id: X-916A, family: TESTTIROIR, title: Posé de précision, folder: X_TIR/X-916A, files: [missionX-916A.yaml], created: 2026-11-19 }
+"""  # unquoted dates: read as texts (CORE schema, Sécurisation), the same lines
+_PL_MISSION = """mission: { id: X-916A, type: SAR, subtype: RECHERCHE }
+date: 2026-11-19
+title: Posé de précision
+summary: Un hélicoptère inventé doit se poser sur un point repéré.
+origin: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+destination: { name: Base Test (XTST), lat: 45.0, lon: 1.0 }
+aircraft: [{ type: EC25, cruise_level: 1500 ft, cruise_speed_kt: 120 }]
+turning_points:
+  - { id: PT1, lat: 44.75, lon: 1.25 }
+route_order: [ORIGIN, PT1, DESTINATION]
+phases:
+  - id: B
+    title: Briefing
+    trigger: Au décollage
+    message: "Rejoignez le point repéré."
+  - id: C
+    title: Le point repéré
+    message: "Posez-vous sur le marquage."
+    trigger_condition: { kind: landing, point: PT1, radius_m: 30, duration_sec: 10, max_gap_sec: 10 }
+    fallback_delay_min: 120
+"""
+_PL_TEXTS_JS = """async (texts) => { const db = await new Promise((res, rej) => { const r = indexedDB.open('sogFrame');
+  r.onupgradeneeded = () => { const d = r.result; for (const [n, o] of [['docs', { keyPath: 'path' }], ['pending', { keyPath: 'path' }], ['meta', { keyPath: 'key' }],
+    ['conflicts', { keyPath: 'id', autoIncrement: true }]]) if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, o) };
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error) });
+  await new Promise((res, rej) => { const tx = db.transaction('docs', 'readwrite');
+    for (const [path, text] of texts) tx.objectStore('docs').put({ path, text, base: text, rev: '', at: Date.now(), policy: 'reference' });
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error) }); db.close(); return texts.length }"""
+
+
+# the frame's floating notes closed (their ✕), until none comes for 0.6 s: a capture for the relay shows the screen, not the notes
+_PL_NOTES_OFF = """async () => { let calm = 0; for (let i = 0; i < 40 && calm < 4; i++) { const x = document.querySelector('#fNotes .f-note [data-x]');
+  if (x) { x.click(); calm = 0 } else calm++; await new Promise(r => setTimeout(r, 150)) } return document.querySelectorAll('#fNotes .f-note').length }"""
+
+
+@case('G22', 'Report: the flight of a mission is prefilled with its precision landings — the tier RECOMPUTED from the logbook on the '
+      'mission\'s rule (a tier written in the logbook is never read), the distance to the point, said « Carnet de la mission »; a corrected '
+      'distance re-judges the tier; a landing before the flight started is not this flight\'s',
+      'G', tags=('report', 'missions'), designs=('standard',), screens=True, langs4=True,
+      rule='SOG-0516 (the user, 19 Nov, Q-0117: « a minima : débrief de mission, CR de mission (pré-remplissage) »; the ergonomist: the tier '
+      'recomputed at the reader, never the one written; the prefill stays editable, nothing is sent without the pilot); frame/lib/precision.js '
+      'precisionLandings; invented mission X-916A, the logbook forged « excellent, 0.001 NM » for a landing held at 0.15 NM; the registry and the '
+      'mission read in the CORE schema (Sécurisation: an unquoted date stays a text, the same lines)')
+def g22(c):
+    import datetime
+    from lib import flight_docs
+    now = datetime.datetime.now(datetime.timezone.utc)
+    iso = lambda s: (now + datetime.timedelta(seconds=s)).strftime('%Y-%m-%dT%H:%M:%SZ')
+    # a landing held ten seconds, 0.15 NM south of PT1 (44.75, 1.25), ending twelve minutes ago
+    fix = lambda s: {'lat': round(44.75 - 0.15 / 60, 6), 'lon': 1.25, 'at': iso(s), 'altFt': 0, 'onGround': True, 'gsKt': 1}
+    book = {'schema': 1, 'mission': 'X-916A', 'seance': 'S:' + iso(-1800)[:19] + '.000Z', 'by': 'ABC',
+            'drawer_B': {'state': 'open', 'at': iso(-1700), 'how': 'hand'},
+            'drawer_C': {'state': 'open', 'at': iso(-720), 'how': 'landing', 'tier': 'excellent', 'distNm': 0.001, 'from': fix(-730), 'to': fix(-720)}}
+    src = {'fr': 'Carnet de la mission', 'en': 'Mission logbook', 'de': 'Einsatzlogbuch', 'es': 'Cuaderno de la misión'}[c.lang]
+    R = '[data-module="report"]'
+    COL = f'{R} [data-col="results.precisionLandings"]'
+
+    def opened(started_s, w):
+        c.page.set_viewport_size({'width': w, 'height': c.height})
+        c.page.goto(c.base + '/frame/manifest.webmanifest')
+        c.js(_PL_TEXTS_JS, [['missions/mission_registry.yaml', _PL_REGISTRY], ['missions/X_TIR/X-916A/missionX-916A.yaml', _PL_MISSION]])
+        docs = flight_docs(started=True)
+        docs[1][1]['mission'] = 'X-916A'
+        docs[1][1]['started'] = {'at': iso(started_s)}
+        c.open('report', docs=docs + [['pilot/ABC/missions/X-916A.json', book, 'document'], ['cache/report/draft.json', {}, 'cache']])
+        c.until(f"!!document.querySelector('{R} [data-do=current]')", timeout=10000, what='the current-flight card is offered')
+        c.wait(400)
+        c.tap(f'{R} [data-do="current"]')
+        c.until(f"[...document.querySelectorAll('{R} input')].some(i => i.value === 'F-RAJA')", what='the flight prefills the form')
+        c.settle()
+        if c.js(f"!!document.querySelector('{R} .f-steps button[data-step=\"2\"]')?.offsetParent"):
+            c.tap(f'{R} .f-steps button[data-step="2"]')  # a phone: one step at a time, the outcome is on the third
+            c.settle()
+
+    for w in (390, 1280):
+        # 1. the flight started thirty minutes ago: the landing of twelve minutes ago is its own
+        opened(-1800, w)
+        c.until(f"!!document.querySelector('{COL} select[data-path=\"results.precisionLandings.0.tier\"]')", timeout=8000, what=f'{w} px: the precision landings')
+        got = c.js(f"[...document.querySelectorAll('{COL} .rp-item')].map(i => [i.querySelector('select').value, i.querySelector('input').value])")
+        c.eq(got, [['réussi', '0.15']], f'{w} px: one landing, the tier RECOMPUTED (held at 0.15 NM: « réussi »), never the « excellent » written in the logbook', what=f'{w} tier')
+        c.ok(src in (c.text(COL) or ''), c.text(COL), f'{w} px: said « Prérempli depuis : {src} »')
+        c.js(_PL_NOTES_OFF)
+        c.js(f"document.querySelector('{COL}').scrollIntoView({{ block: 'center' }})")  # the block on screen, clear of the save bar
+        c.wait(300)
+        c.shot(f'G22_{c.design}_{w}_{c.lang}_prefill.png')
+        # a corrected distance re-judges the tier (the pilot has the last word; nothing is sent here)
+        sel = f'{COL} input[data-path="results.precisionLandings.0.distNm"]'
+        c.page.fill(sel, '0.04')
+        c.page.locator(sel).dispatch_event('input')
+        c.eq(c.js(f"document.querySelector('{COL} select[data-path=\"results.precisionLandings.0.tier\"]').value"), 'excellent',
+             f'{w} px: 0.04 NM corrected: « excellent »', what=f'{w} rejudged')
+    # 2. the flight started five minutes ago: the landing of twelve minutes ago belongs to an earlier flight — nothing prefilled
+    opened(-300, 1280)
+    c.wait(800)
+    c.eq(c.count(COL), 0, 'a landing before the flight started is not this flight\'s: no precision landing', what='earlier flight')
+    c.check_errors()

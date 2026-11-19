@@ -596,7 +596,11 @@ marqué « à voir » au lieu du ✓ : la famille et la série d'un compte rendu
 
 <a id="report-step-3"></a>**Le résultat.** Au dernier pas : le résultat, vos observations, l'équipage (vous d'abord, comme commandant de bord) et
 le carburant au départ et à l'atterrissage. Les incohérences — heures dans le désordre, date future, carburant qui
-augmente — sont signalées.
+augmente — sont signalées. Le vol d'une mission repris par « Vol en cours » apporte ses posés de précision : le palier
+(excellent, parfait, réussi, partiel) et la distance au point visé, recalculés du carnet de la mission sur la règle du fichier de la
+mission, « Carnet de la mission » dit d'où ils viennent. Seuls les posés de ce vol comptent (depuis son départ). Une distance corrigée
+rejuge le palier ; le palier reste modifiable, et rien n'est envoyé sans vous. Un carnet modifié à la main rejoue un palier, il ne le
+prouve pas.
 
 <a id="report-load"></a>**Charge.** « Utiliser » reprend la famille et la série du vol ; vous pouvez les changer, le compte rendu a le dernier mot. Une série qui transporte (Fret, Passagers, VIP) ajoute, au dernier pas, la carte « Charge » avec un seul champ : le fret embarqué en kg, ou le nombre de passagers. Une autre série n'ajoute rien.
 

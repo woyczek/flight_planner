@@ -32,7 +32,10 @@ the series of a new report are taken by default. The default series is the famil
 
 <a id="report-step-3"></a>**The result.** At the last step: the outcome, your observations, the crew (you first, as aircraft commander) and the
 fuel at departure and at landing. Inconsistencies — times out of order, a future date, fuel that goes up — are
-flagged.
+flagged. The flight of a mission taken by « Current flight » brings its precision landings: the tier (excellent, perfect, good,
+partial) and the distance to the point aimed at, recomputed from the mission logbook on the rule of the mission file, « Mission logbook »
+says where they come from. Only the landings of this flight count (since its departure). A corrected distance re-judges the tier; the
+tier stays editable, and nothing is sent without you. A logbook edited by hand replays a tier, it does not prove it.
 
 <a id="report-load"></a>**Load.** “Use” takes the flight's family and series; you can change them, the report has the last word. A series that carries (Cargo, Passengers, VIP) adds, on the last step, the “Load” card with a single field: the freight carried in kg, or the number of passengers. Any other series adds nothing.
 
