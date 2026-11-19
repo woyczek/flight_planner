@@ -4,7 +4,7 @@
  "updated": "2026-11-19",
  "generated": {
   "tool": "tools/roadmap_build.py",
-  "organisation": "78f8691",
+  "organisation": "c492602",
   "fiches": 529,
   "untranslated": 0,
   "priorities": 481,
@@ -4964,7 +4964,7 @@
     {
      "id": "SOG-0522",
      "kind": "feature",
-     "state": "planned",
+     "state": "done",
      "fr": "Missions : le YAML du registre, des missions et de l'import se lit au schéma CORE partout (dates qui restent du texte, pas de !!set, !!binary ni « << »)",
      "en": "Missions: the register, mission and import YAML is read with the CORE schema everywhere (dates stay text; no !!set, !!binary or “<<”)",
      "de": "Missionen: Das YAML von Register, Missionen und Import wird überall mit dem CORE-Schema gelesen (Daten bleiben Text; kein !!set, !!binary oder „<<“)",

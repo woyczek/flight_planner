@@ -5369,7 +5369,7 @@
     "de": "Kraftstoff: „Berechnen“ erzwingt die Punkte einer vorhandenen Route, und der Flugplan verliert die vom Rechner geschriebenen Höhenwechsel",
     "es": "Combustible: «Calcular» impone los puntos de una ruta ya presente, y el plan de vuelo pierde los cambios de nivel escritos por el motor"
    },
-   "test": "Recharge la page. Carburant, vol EGLL → LFRN au FL270 (niveau choisi dans le devis) : vide la route, « Calculer » : la route est calculée AU FL270 (plus de G27, G273, T501) et le texte du moteur passe tel quel dans le plan de vol (voies M… gardées, pas de « DCT » ajouté). Passe-la à l'IFPS. Sans aucun niveau : une notification dit « Niveau du vol fixé à FL180… ». Les points que tu tapes toi-même sont dits « Passages imposés au calcul ».",
+   "test": "Recharge la page. Carburant, un vol au niveau VIDÉ : « Calculer ». Attendu : la page 1 porte le niveau du calcul (celui de la fiche de l'avion, sinon FL180) et le dit dans une notification ; le profil et le devis sont à ce niveau.",
    "since": "2026-11-19",
    "state": "known"
   },
