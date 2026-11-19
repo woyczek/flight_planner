@@ -4,7 +4,7 @@
   "tool": "tools/recette_build.py",
   "at": "2026-11-19",
   "tests": 349,
-  "verdicts": 220
+  "verdicts": 221
  },
  "apps": [
   "pilote",
@@ -5059,18 +5059,19 @@
    },
    "test": "Carte : touche la loupe, tape « REN » : la VOR REN vient en premier ; choisis-la (la carte se centre). Ferme, puis rouvre la loupe et cherche « toul » : la liste vient, et un choix centre de nouveau la carte. Recommence une troisième fois sans fermer.",
    "since": "2026-11-18",
-   "state": "todo",
+   "state": "ok",
    "delivered": "2026-11-18T17:16:40Z",
-   "previous": {
-    "verdict": "ko",
-    "comment": "la première fois, ça marche nickel. centrage et tout. La seconde, rien ne se passe.",
-    "at": "2026-11-18T16:54:05Z"
-   },
+   "at": "2026-11-19T08:44:24Z",
    "history": [
     {
      "verdict": "ko",
      "comment": "chercher « REN » donne tout, sauf la VOR nommée REN. qui devrait être le premier résultat.",
      "at": "2026-11-18T16:22:25Z"
+    },
+    {
+     "verdict": "ko",
+     "comment": "la première fois, ça marche nickel. centrage et tout. La seconde, rien ne se passe.",
+     "at": "2026-11-18T16:54:05Z"
     }
    ]
   },
