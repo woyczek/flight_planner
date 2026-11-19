@@ -11106,3 +11106,73 @@ def l171(c):
     r = m('es')
     c.eq([r['primary'], r['disabled'], r['primaries'], r['aboveSources']], [False, True, [], True], 'a country that is up to date: the button is grey, never primary (as before), still at the head', what='witness es')
     c.check_errors()
+
+
+# the published United Kingdom brought to the builders' version (the witness where nothing is old any more): sessionStorage `__pubGbCurrent`, read by an init script that runs after the stub's own
+_PUB_GB_CURRENT_JS = """(() => { try { if (sessionStorage.getItem('__pubGbCurrent') && window.__stub) { const b = window.__stub.publication.base; b.gb = { ...b.es, cycleSource: 'nats' } } } catch {} })()"""
+
+
+@case('L172', 'Données: a row of the base whose zones were rebuilt here with the current parser but whose PUBLISHED version is still old reads « À publier », never « Parseur ancien »; « Parseur ancien » stays for a zone built with an older parser and when the state is not read (SOG-0510)', 'L', tags=('data',), langs4=True,
+      designs=('standard',), screens=True, night=False,
+      rule='SOG-0510 (the user, after an update: France and the United Kingdom still said « Parseur ancien »; the relay): the label measured the PUBLISHED base against the builders\' constant; when every fed zone whose published version is old is up-to-date in the launcher\'s state with parserVersion >= the constant, the row is `unpublished` (« À publier »); no state read, or a zone built with an older parser, stays `parser`')
+def l172(c):
+    lang = c.lang
+    cfg, _ = _fixture()           # the constant is 19; the published United Kingdom (gb) is at 18: the rows fed by gb are « Parseur ancien » on the published base alone
+    st = _launcher(c, [], verbs=_VERBS)
+    st['status'] = _ALL_OK()      # the launcher: the five zones up to date, built with parser 23 (>= 19): the United Kingdom was rebuilt here
+    _open(c, _sized(cfg))
+    c.page.add_init_script(_PUB_GB_CURRENT_JS)   # after the stub's own script (the witness 3)
+    _all_open(c)
+    c.js("document.querySelectorAll('details.d-more').forEach(d => { d.open = true })")
+    state = lambda rid: c.js("(id) => (r => r ? r.dataset.state : null)(document.querySelector('[data-set=\"' + id + '\"]'))", rid)
+    states = lambda: [state('ukmil'), state('nats')]
+    pill = lambda rid: norm(c.text(f'[data-set="{rid}"] .f-badge[data-pill]') or '')
+    old_word = lambda: norm(tx(TX, 'parser', lang, after='state: {'))
+
+    def reload():
+        c.page.reload()
+        _head(c)
+        _all_open(c)
+        c.js("document.querySelectorAll('details.d-more').forEach(d => { d.open = true })")
+
+    def settle_rows(want):
+        """The rows are redrawn when the launcher's state arrives (after the first drawing): waits for them to leave `want` (up to 4 s), the following eq says what they held."""
+        for _ in range(20):
+            if state('ukmil') != want:
+                break
+            c.wait(200)
+    # ---- a. the zones are rebuilt here (the launcher says so), the published United Kingdom is old: « À publier »
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length >= 1", timeout=12000, what='the state of the zones is read')
+    settle_rows('parser')
+    c.eq(states(), ['unpublished', 'unpublished'], 'zones rebuilt here, published version old: the rows fed by the United Kingdom read « à publier » (data-state), never « parser »', what='unpublished')
+    c.eq([pill('ukmil'), pill('nats')], [norm(tx(TX, 'unpublished', lang, after='state: {'))] * 2, 'the pill says « À publier » in the language of the run, not « Parseur ancien »', what='unpublished pill')
+    c.ok(pill('ukmil') != old_word(), pill('ukmil'), 'and it is not the word of « Parseur ancien »')
+    if lang == 'fr' and c.width in (390, 1280):
+        _all_open(c)   # the redrawing that followed the state may have folded them again
+        c.js("document.querySelectorAll('details.d-more').forEach(d => { d.open = true })")
+        c.js("document.querySelectorAll('#fNotes .f-note').forEach(n => n.remove())")
+        c.js("document.querySelector('[data-set=\"ukmil\"]').scrollIntoView({ block: 'center' })")
+        c.shot(f'L172_{c.width}_fr_unpublished.png')
+    # ---- b. witness 1: the United Kingdom was rebuilt here with an OLDER parser (the launcher: to rebuild, parser-old, built with 18): « Parseur ancien » as before
+    ok = lambda: _zst('up-to-date')
+    old_built = {**_zst('stale', {'code': 'parser-old', 'built': 18, 'current': 19}), 'parserVersion': 18}
+    st['status'] = _status({'ca': ok(), 'es': ok(), 'fr': ok(), 'gb': old_built, 'us': ok()})
+    reload()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length >= 2", timeout=12000, what='the state of the zones is read (one to rebuild)')
+    c.eq(states(), ['parser', 'parser'], 'a zone built here with an older parser: « Parseur ancien » as before', what='witness older parser')
+    c.eq(pill('ukmil'), old_word(), 'the pill says « Parseur ancien »', what='witness older parser pill')
+    # ---- c. witness 2: the state is not read (the launcher does not know base/status): « Parseur ancien » as before
+    st['verbs'] = ['base/fetch', 'base/build', 'base/purge']
+    reload()
+    c.wait(600)
+    c.eq([c.count('[data-state-sentence] [data-filter]'), states()], [0, ['parser', 'parser']], 'no state read: the published version alone speaks, « Parseur ancien » as before', what='witness not read')
+    # ---- d. witness 3: the published version is the builders' one and the zone is up to date here: « À jour »
+    st['verbs'] = _VERBS
+    st['status'] = _ALL_OK()
+    c.page.evaluate("sessionStorage.setItem('__pubGbCurrent', '1')")
+    reload()
+    c.until("document.querySelectorAll('[data-state-sentence] [data-filter]').length >= 1", timeout=12000, what='the state of the zones is read')
+    c.wait(600)
+    c.eq(states(), ['ok', 'ok'], 'the published parser is the current one: « À jour », unchanged', what='witness current')
+    c.eq(pill('ukmil'), norm(tx(TX, 'ok', lang, after='state: {')), 'the pill says « À jour »', what='witness current pill')
+    c.check_errors()

@@ -11,7 +11,8 @@ export const AGE_LIMIT_DAYS = 28;
 /** Ordre de priorité des états d'une ligne (SPEC § 6.2) : un seul est montré ; ceux que les données ne permettent pas encore de
  *  calculer (nouveau cycle, source plus récente, non publié) sont listés pour mémoire. `absent` passe avant tout : sans rien de
  *  publié, aucun autre état n'a de sens ; `stale-age` est la règle des 28 jours des jeux sans cycle. */
-export const STATE_ORDER = ['absent', 'partial', 'stale-cycle', 'new-cycle', 'parser', 'source-newer', 'unpushed', 'outdated', 'stale-age',
+export const STATE_ORDER = ['absent', 'partial', 'stale-cycle', 'new-cycle', 'parser', 'unpublished', 'source-newer', 'unpushed',
+  'outdated', 'stale-age',
   'ok'
 ];
 /** Jeux dont l'état se lit ailleurs que dans la base par zone : source → partie de publication(). */
@@ -99,11 +100,17 @@ export function parserOld(current, found) {
   if (!Number.isFinite(current)) return false;
   return !Number.isFinite(found) || found < current;
 }
+/** La zone LOCALE est-elle à jour avec l'analyseur courant ? Vrai ssi le lanceur (`local` : { zone: { state, parserVersion } }, S.status.zones) dit la zone « up-to-date » et que la version d'analyseur de sa construction est un nombre au moins égal à la constante des constructeurs ; faux sans état lu, sans constante, sans version (entrée non fiable : own(), nombres seulement). Sert à distinguer « Parseur ancien » (construit avec un vieil analyseur) de « à publier » (reconstruit, seule la publication est restée ancienne, SOG-0510). */
+export function localFresh(local, zone, parserVersion) {
+  const z = local !== null && typeof local === 'object' && Object.hasOwn(local, zone) ? local[zone] : null;
+  return !!z && z.state === 'up-to-date' && Number.isFinite(z.parserVersion) && Number.isFinite(parserVersion) && z.parserVersion >=
+    parserVersion;
+}
 /** La plus basse de plusieurs versions ; null dès que l'une est inconnue. */
 export function lowestVersion(list) {
   return list.length && list.every(Number.isFinite) ? Math.min(...list) : null;
 }
-/** L'état à montrer d'après des drapeaux { absent, stale ('warn' | 'err' | null), parser, outdated, old } : [état, niveau] avec le
+/** L'état à montrer d'après des drapeaux { absent, stale ('warn' | 'err' | null), parser, unpublished, outdated, old } : [état, niveau] avec le
  *  niveau 'ok' | 'warn' | 'err' de la pastille ; l'ordre est celui de STATE_ORDER. */
 export function pickState(f) {
   if (f.absent) return ['absent', 'warn'];
@@ -112,6 +119,9 @@ export function pickState(f) {
   ]; // un jeu aux cycles mélangés n'est jamais « à jour » ni seulement « dépassé » : il est en partie à jour (SOG-0191)
   if (f.stale) return ['stale-cycle', f.stale];
   if (f.parser) return ['parser', 'warn'];
+  if (f.unpublished) return ['unpublished',
+    'warn'
+  ]; // reconstruit sur ce poste avec l'analyseur courant, publication restée ancienne : à publier (SOG-0510)
   if (f.outdated) return ['outdated', 'warn'];
   if (f.old) return ['stale-age', 'warn'];
   return ['ok', 'ok'];
@@ -194,7 +204,7 @@ export function baseOf(pubBase, zoneIds) {
 }
 /** La ligne d'un jeu de données (une source du catalogue) : { id, group, status, kind, state, level, cycle, cycleDate, at, ageDays,
  *  counts, zones, fed, attention, unknown }. `env` : { airac, pub (publication() ou null), ids (zones de la couverture), now,
- *  parserVersion (constante des constructeurs, absente aujourd'hui) }. Une source écartée ou envisagée n'a jamais d'état ; une
+ *  parserVersion (constante des constructeurs, absente aujourd'hui), local (optionnel : l'état par zone du lanceur, { zone: { state, parserVersion } } ; sans lui, ou pour une zone sans état lu, une version publiée ancienne se lit « Parseur ancien ») }. Une source écartée ou envisagée n'a jamais d'état ; une
  *  source dont publication() ne dit rien (la météo) non plus ; sans publication() lisible la ligne est `unknown` et sans état. */
 export function rowOf(src, env) {
   const row = {
@@ -236,6 +246,10 @@ export function rowOf(src, env) {
     row.oldestSource = b.oldestSource;
     row.at = b.at;
     flags.parser = !flags.absent && parserOld(env.parserVersion, b.whole ? null : b.parserVersion);
+    // SOG-0510 : l'étiquette mesure la base PUBLIÉE ; si chaque zone nourrie dont la version publiée est ancienne a été reconstruite ici avec l'analyseur courant (le lanceur la dit à jour), il reste à publier, pas à reconstruire
+    const old = flags.parser ? b.zones.filter(z => z.published && (z.format === 'whole' || parserOld(env.parserVersion, z.parserVersion))) :
+      [];
+    if (old.length && old.every(z => localFresh(env.local, z.zone, env.parserVersion)))[flags.parser, flags.unpublished] = [false, true];
   } else if (part === 'proc') {
     const p = env.pub.proc,
       e = p?.inForce && p.cycles?.[p.inForce];

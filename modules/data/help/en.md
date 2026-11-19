@@ -24,7 +24,7 @@ What the airline publishes for the app — the aeronautical base, the procedures
 
 <a id="data-zone-link"></a>**Links to a zone.** `#data?zone=<id>` opens the base, ticks that zone alone and brings “Update” on screen; a zone that is not in the defined countries is said, with “Add a country”. The reasons of a zone to rebuild also count: file of the cycle absent, built before a source's file was there, file present but the “personal” box not ticked (rebuild with the box), file to drop. A **notice** (“zone without points or airways: the source does not carry them”) does not make the zone stale.
 
-<a id="data-states-pill"></a>**The badges.** "Up to date": nothing to do. "Cycle out of date": the published cycle is older than the cycle in force (orange, red after a week). "Old parser": published by an older version of the builders. "Over 28 days old": a set without a cycle, published more than 28 days ago. "Not in the repository": nothing is published. A group opens by itself when one of its lines needs attention.
+<a id="data-states-pill"></a>**The badges.** "Up to date": nothing to do. "Cycle out of date": the published cycle is older than the cycle in force (orange, red after a week). "Old parser": published by an older version of the builders. "To publish": the zone is already rebuilt on this workstation with the current parser, only its publication stayed old. "Over 28 days old": a set without a cycle, published more than 28 days ago. "Not in the repository": nothing is published. A group opens by itself when one of its lines needs attention.
 
 <a id="data-more"></a>**The other data sets.** At most seven lines per group; "n more data sets" unfolds the rest and the sources that are only considered or set aside (their link, licence and status).
 

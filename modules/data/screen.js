@@ -743,19 +743,31 @@ function groupsHtml() {
     ].join('')}`
   };
 }
+/** Les groupes de l'écran d'après la publication et l'état par zone du lanceur (S.status) : une zone reconstruite ici dont seule la publication est ancienne fait lire sa ligne « à publier » et non « Parseur ancien » (SOG-0510) ; null sans catalogue. */
+function groupsOf() {
+  const d = S.d;
+  return d.cat && S.airac ? M.buildGroups(d.cat, {
+    airac: S.airac,
+    pub: d.pub,
+    ids: d.cov.ids,
+    now: S.now,
+    parserVersion: d.cat.PARSER_VERSION,
+    local: S.status?.zones || null
+  }) : null;
+}
+/** L'état par zone du lanceur vient d'arriver ou de changer (status.js) : si l'état d'une ligne de jeu en dépend, l'écran se redessine ; sinon rien ne bouge (le seul coût est le recalcul des groupes). */
+export function refreshRows() {
+  if (!S?.body || !S.d || !S.groups) return;
+  const key = gs => JSON.stringify((gs || []).flatMap(g => [...g.rows, ...g.more].map(r => [r.id, r.state])));
+  if (key(groupsOf()) !== key(S.groups)) render();
+}
 /** L'écran : l'en-tête, la couverture, « Tout mettre à jour », les groupes, le journal. */
 function renderBody() {
   S.now = Date.now();
   S.airac = S.d.cat?.airac || null;
   S.cycleId = S.airac ? S.airac.cycleOf(S.now).id : undefined;
   const d = S.d;
-  S.groups = d.cat && S.airac ? M.buildGroups(d.cat, {
-    airac: S.airac,
-    pub: d.pub,
-    ids: d.cov.ids,
-    now: S.now,
-    parserVersion: d.cat.PARSER_VERSION
-  }) : null;
+  S.groups = groupsOf();
   S.attn = M.staleGroups(S
     .groups); // les groupes dont le cycle publié est dépassé : le point d'attention de « Construire » et de « Tout mettre à jour »
   const myCov = S.body.querySelector('details.d-mycov');

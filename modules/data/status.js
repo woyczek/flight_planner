@@ -19,6 +19,9 @@ import {
   tt
 } from './state.js';
 import {
+  refreshRows
+} from './screen.js';
+import {
   uploadHtml,
   uploadOff
 } from './upload.js';
@@ -93,6 +96,7 @@ export function fetchStatus(ids) {
         }
       } : st;
       renderBuild();
+      refreshRows(); // une ligne de jeu de la base lit aussi cet état (« à publier », SOG-0510)
     }
     return st;
   })();

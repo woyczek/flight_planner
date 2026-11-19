@@ -142,6 +142,9 @@ export const TX = {
     'stale-cycle': ['Cycle dépassé', 'Cycle out of date', 'Zyklus überholt', 'Ciclo superado'],
     'stale-age': ['Plus de 28 jours', 'Over 28 days old', 'Über 28 Tage alt', 'Más de 28 días'],
     parser: ['Parseur ancien', 'Old parser', 'Alter Parser', 'Analizador antiguo'],
+    unpublished: ['À publier', 'To publish', 'Zu veröffentlichen',
+      'Por publicar'
+    ], // reconstruit ici avec l'analyseur courant, publication restée ancienne (SOG-0510)
     outdated: ['Périmé', 'Outdated', 'Veraltet', 'Caducado'],
     absent: ['Absent du dépôt', 'Not in the repository', 'Nicht im Repository', 'Ausente del repositorio'],
     ok: ['À jour', 'Up to date', 'Aktuell', 'Al día']

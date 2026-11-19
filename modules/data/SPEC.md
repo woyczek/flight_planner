@@ -498,7 +498,7 @@ remote). One pill, by priority, the others in the detail:
 1. **« Cycle dépassé »** — the published cycle is older than the cycle in force (amber; red past its end + 7 days).
 2. **« Nouveau cycle »** — the next cycle's source is available and not built.
 3. **« Parseur ancien »** — published `parserVersion` below the builders' current one (`AeroCatalogue.PARSER_VERSION`, equal to
-   V2's `SiaBase` version until the builders of D5; read, never written in the module).
+   V2's `SiaBase` version until the builders of D5; read, never written in the module). The pill measures the PUBLISHED base: when every fed zone whose published version is old has been rebuilt here (the launcher's `base/status` says it `up-to-date` with a `parserVersion` at least the constant), the row reads **« À publier »** (`unpublished`, SOG-0510) instead; without the status, or with a zone whose state is not read, it stays « Parseur ancien ».
 4. **« Source plus récente »** — downloaded after the last build, or the inputs' fingerprint changed.
 5. **« Non publié »** — built here, not on the repository.
 6. **« Périmé »** — a procedure read by hand, EAD or OCR whose cycle is no longer in force (amber, with « Relire »): still

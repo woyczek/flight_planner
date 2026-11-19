@@ -97,6 +97,8 @@ export function zoneStateOf(z) {
     buildable: z.buildable === true,
     builtCycle: day(z.builtCycle),
     expectedCycle: day(z.expectedCycle),
+    parserVersion: int(z
+      .parserVersion), // la version d'analyseur avec laquelle la zone a été construite sur ce poste (SOG-0510) ; null sans
     builtAt: typeof z.builtAt === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(z.builtAt) ? z.builtAt.slice(0, 30) : null,
     publish: publishOf(z.publish),
     download: downloadOf(z.download),
