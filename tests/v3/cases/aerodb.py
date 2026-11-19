@@ -18130,3 +18130,32 @@ def k394(c):
     out = D.check(rad, many, heavy, True)
     took = time.perf_counter() - t0
     c.ok(took < 10 and 0 < sum(lv == 'ERREUR' for lv, _t in out) < 400 and any('trop lourds' in t for _lv, t in out), str((round(took, 1), len(out))), 'an outline of the London space of 160 000 vertices (8 rings of 20 000) and 400 high directs: the check is bounded by the work (a few directs are examined, the others said « not decided: outlines too heavy » in ONE review), not by the product — 0.9 s here instead of about 32 s (and minutes with the 1 500 000 vertices that `spaces` allows; review of Security)')
+
+
+@case('K395', 'Route engine, SOG-0517: a request WITHOUT a level (`fl_basis` = default: the engine takes FL180) says it FIRST in the answer — « Niveau du vol absent : le calcul est fait au FL180, le niveau par défaut du moteur » — and does not say it when the level is given',
+      'K', static=True,
+      rule='SOG-0517 (the relay, measured at the user: the request of « Calculer » had `via` empty and NO level; the engine computed at FL180 and found « EGLL DCT MID L612 HAWKE M189 NEVIL G27 ANGLO G273 RAVIG T501 LUKEM T493 UPALO V20 LUVOP DCT LFRN », lanes that stop at FL195, for a flight filed at FL270: the route of the IFPS of 19 Nov). Replayed here on the base of the user: the same route. The hypothesis of the imposed points (`via`) was wrong and is dropped. The bench is the fixture of the route engine (LFPO → EIDW by A1).')
+def k395(c):
+    import os
+    import sys
+    import tempfile
+    sys.path.insert(0, str(c.root / 'tools'))
+    sys.path.insert(0, str(c.root / 'tests' / 'v3'))
+    import route_fixture as RF
+    from route_engine import import_books as I, plan as PL, view as V
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
+        data = os.path.join(td, 'data')
+        os.makedirs(os.path.join(data, 'route'))
+        RF.make_base(data)
+        rad_file = os.path.join(td, 'RAD_2611_v1_0.xlsx')
+        RF.write_xlsx(rad_file, RF.rad_sheets())
+        rad_gz = os.path.join(data, 'route', 'rad.json.gz')
+        I.write(rad_gz, I.merge([], [I.read_book(rad_file)[1]]))
+        run = lambda **extra: PL.compute(V.to_request(dict({'action': 'compute', 'adep': 'LFPO', 'adest': 'EIDW', 'date': '2026-11-09T12:00', 'enable_fra': False, 'speed_kt': 200, 'alternatives': False}, **extra)), data, rad_gz, None)['primary']
+        no_level = run()
+        first = [i['text'] for i in no_level['issues'] if i['level'] == 'REVUE'][:1]
+        c.ok(bool(first) and first[0].startswith('Niveau du vol absent : le calcul est fait au FL180'), str(first), 'a request with no level: the first review of the answer says the engine took FL180 by default')
+        with_level = run(fl=270)
+        c.eq([i['text'] for i in with_level['issues'] if i['text'].startswith('Niveau du vol absent')], [], 'a request that gives its level: the sentence is not said', what='with level')
+        check = PL.compute(V.to_request({'action': 'check', 'adep': 'LFPO', 'adest': 'EIDW', 'date': '2026-11-09T12:00', 'enable_fra': False, 'route': 'LFPO DCT OLZOM B1 SITET A1 KEPAD A1 BOYNE DCT EIDW', 'alternatives': False}), data, rad_gz, None)['primary']
+        c.ok(any(i['text'].startswith('Niveau du vol absent') for i in check['issues'][:1]), str(check['issues'][:1]), 'a check of a route typed without a level says it too, first: it is judged at FL180')

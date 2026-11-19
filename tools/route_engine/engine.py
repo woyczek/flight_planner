@@ -1213,6 +1213,7 @@ def assess(request,_nav=None,_rad=None,_path=None):
                 else:named.append([via,a_,b_])
             seen_cycle=nav.cycles.get(zone)
             issue('REVUE',f'Cycle de navigation périmé pour {zone.upper()} : {cycle}, source de '+', '.join(f'{v} ({a_} → {b_})' for v,a_,b_ in named[:4])+(f' et {len(named)-4} autre(s)' if len(named)>4 else '')+(f' ; le cycle courant de la zone est {seen_cycle}' if seen_cycle and seen_cycle!=cycle else '')+'.')
+    if request.get('fl_basis')=='default':issues.insert(0,dict(level='REVUE',text=f"Niveau du vol absent : le calcul est fait au FL{fl:03d}, le niveau par défaut du moteur ; un autre niveau donne d'autres voies (les voies ont leurs bandes de niveau)."))      # SOG-0517 : la demande n'avait pas de niveau (Carburant : le vol sans niveau) : dit EN TÊTE (l'IFPS de l'utilisateur du 19/11 : calculé au FL180, déposé au FL270)
     errors=[x for x in issues if x['level']=='ERREUR']
     data_gaps=[dict(start=l['start']['id'],end=l['end']['id'],via=l['via'],reason=l['data_gap']) for l in legs if l.get('data_gap')]
     status='ERREURS DÉTECTÉES' if errors else 'CONTRÔLE INCOMPLET — DONNÉES MANQUANTES' if data_gaps else 'CONTRÔLE PARTIEL — À VÉRIFIER'
